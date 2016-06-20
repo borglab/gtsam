@@ -130,6 +130,9 @@ public:
 };
 // DiscreteConditional
 
+// traits
+template<> struct traits<DiscreteConditional> : public Testable<DiscreteConditional> {};
+
 /* ************************************************************************* */
 template<typename ITERATOR>
 DiscreteConditional::shared_ptr DiscreteConditional::Combine(

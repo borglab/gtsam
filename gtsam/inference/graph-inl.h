@@ -18,7 +18,6 @@
 #pragma once
 
 #include <stdexcept>
-#include <boost/foreach.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -31,8 +30,6 @@
 #include <boost/graph/prim_minimum_spanning_tree.hpp>
 
 #include <gtsam/inference/graph.h>
-
-#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
 namespace gtsam {
 
@@ -123,9 +120,10 @@ predecessorMap2Graph(const PredecessorMap<KEY>& p_map) {
   G g;
   std::map<KEY, V> key2vertex;
   V v1, v2, root;
-  KEY child, parent;
   bool foundRoot = false;
-  FOREACH_PAIR(child, parent, p_map) {
+  for(auto child_parent: p_map) {
+    KEY child, parent;
+    std::tie(child,parent) = child_parent;
     if (key2vertex.find(child) == key2vertex.end()) {
        v1 = add_vertex(child, g);
        key2vertex.insert(std::make_pair(child, v1));
@@ -193,7 +191,7 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>
   // attach the relative poses to the edges
   PoseEdge edge12, edge21;
   bool found1, found2;
-  BOOST_FOREACH(typename G::sharedFactor nl_factor, graph) {
+  for(typename G::sharedFactor nl_factor: graph) {
 
     if (nl_factor->keys().size() > 2)
       throw std::invalid_argument("composePoses: only support factors with at most two keys");
@@ -243,7 +241,7 @@ PredecessorMap<KEY> findMinimumSpanningTree(const G& fg) {
   // convert edge to string pairs
   PredecessorMap<KEY> tree;
   typename SDGraph<KEY>::vertex_iterator itVertex = boost::vertices(g).first;
-  BOOST_FOREACH(const typename SDGraph<KEY>::Vertex& vi, p_map){
+  for(const typename SDGraph<KEY>::Vertex& vi: p_map){
     KEY key = boost::get(boost::vertex_name, g, *itVertex);
     KEY parent = boost::get(boost::vertex_name, g, vi);
     tree.insert(key, parent);
@@ -258,7 +256,7 @@ void split(const G& g, const PredecessorMap<KEY>& tree, G& Ab1, G& Ab2) {
 
   typedef typename G::sharedFactor F ;
 
-  BOOST_FOREACH(const F& factor, g)
+  for(const F& factor: g)
   {
     if (factor->keys().size() > 2)
       throw(std::invalid_argument("split: only support factors with at most two keys"));

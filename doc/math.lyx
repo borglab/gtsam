@@ -1,5 +1,5 @@
-#LyX 2.0 created this file. For more info see http://www.lyx.org/
-\lyxformat 413
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
 \begin_document
 \begin_header
 \textclass article
@@ -17,13 +17,13 @@ theorems-ams-bytype
 \font_roman times
 \font_sans default
 \font_typewriter default
+\font_math auto
 \font_default_family rmdefault
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
-
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -34,15 +34,24 @@ theorems-ams-bytype
 \use_hyperref false
 \papersize default
 \use_geometry true
-\use_amsmath 1
-\use_esint 0
-\use_mhchem 1
-\use_mathdots 1
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 0
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 0
+\use_package stmaryrd 1
+\use_package undertilde 1
 \cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
+\justification true
 \use_refstyle 0
 \index Index
 \shortcut idx
@@ -1237,21 +1246,28 @@ reference "eq:ApproximateObjective"
 \end_inset
 
 .
- In particular, the notion of an exponential map allows us to define an
- incremental transformation as tracing out a geodesic curve on the group
- manifold along a certain 
+ In particular, the notion of an exponential map allows us to define a mapping
+ from 
 \series bold
-tangent vector
+local coordinates
 \series default
  
 \begin_inset Formula $\xi$
 \end_inset
 
+ back to a neighborhood in 
+\begin_inset Formula $G$
+\end_inset
+
+ around 
+\begin_inset Formula $a$
+\end_inset
+
 , 
 \begin_inset Formula 
-\[
-a\oplus\xi\define a\exp\left(\hat{\xi}\right)
-\]
+\begin{equation}
+a\oplus\xi\define a\exp\left(\hat{\xi}\right)\label{eq:expmap}
+\end{equation}
 
 \end_inset
 
@@ -1263,11 +1279,12 @@ with
 \begin_inset Formula $n$
 \end_inset
 
--dimensional Lie group, 
+-dimensional Lie group.
+ Above, 
 \begin_inset Formula $\hat{\xi}\in\mathfrak{g}$
 \end_inset
 
- the Lie algebra element corresponding to the vector 
+ is the Lie algebra element corresponding to the vector 
 \begin_inset Formula $\xi$
 \end_inset
 
@@ -1305,7 +1322,7 @@ For the Lie group
 \end_inset
 
  is denoted as 
-\begin_inset Formula $\omega$
+\begin_inset Formula $\omega t$
 \end_inset
 
  and represents an angular displacement.
@@ -1314,17 +1331,17 @@ For the Lie group
 \end_inset
 
  is a skew symmetric matrix denoted as 
-\begin_inset Formula $\Skew{\omega}\in\sothree$
+\begin_inset Formula $\Skew{\omega t}\in\sothree$
 \end_inset
 
 , and is given by
 \begin_inset Formula 
 \[
-\Skew{\omega}=\left[\begin{array}{ccc}
+\Skew{\omega t}=\left[\begin{array}{ccc}
 0 & -\omega_{z} & \omega_{y}\\
 \omega_{z} & 0 & -\omega_{x}\\
 -\omega_{y} & \omega_{x} & 0
-\end{array}\right]
+\end{array}\right]t
 \]
 
 \end_inset
@@ -1334,10 +1351,134 @@ Finally, the increment
 \end_inset
 
  corresponds to an incremental rotation 
-\begin_inset Formula $R\oplus\omega=Re^{\Skew{\omega}}$
+\begin_inset Formula $R\oplus\omega t=Re^{\Skew{\omega t}}$
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Subsection
+Local Coordinates vs.
+ Tangent Vectors
+\end_layout
+
+\begin_layout Standard
+In differential geometry, 
+\series bold
+tangent vectors
+\series default
+ 
+\begin_inset Formula $v\in T_{a}G$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+ are elements of the Lie algebra 
+\begin_inset Formula $\mathfrak{g}$
+\end_inset
+
+, and are defined as
+\begin_inset Formula 
+\[
+v\define\Jac{\gamma(t)}t{t=0}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ is some curve that passes through 
+\begin_inset Formula $a$
+\end_inset
+
+ at 
+\begin_inset Formula $t=0$
+\end_inset
+
+, i.e.
+ 
+\begin_inset Formula $\gamma(0)=a$
+\end_inset
+
+.
+ In particular, for any fixed local coordinate 
+\begin_inset Formula $\xi$
+\end_inset
+
+ the map 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:expmap"
+
+\end_inset
+
+ can be used to define a 
+\series bold
+geodesic curve
+\series default
+ on the group manifold defined by 
+\begin_inset Formula $\gamma:t\mapsto ae^{\widehat{t\xi}}$
+\end_inset
+
+, and the corresponding tangent vector is given by 
+\begin_inset Formula 
+\begin{equation}
+\Jac{ae^{\widehat{t\xi}}}t{t=0}=a\xihat\label{eq:tangent-vector}
+\end{equation}
+
+\end_inset
+
+This defines the mapping between local coordinates 
+\begin_inset Formula $\xi\in\Rn$
+\end_inset
+
+ and actual tangent vectors 
+\begin_inset Formula $a\xihat\in g$
+\end_inset
+
+: the vector 
+\begin_inset Formula $\xi$
+\end_inset
+
+ defines a direction of travel on the manifold, but does so in the local
+ coordinate frame 
+\begin_inset Formula $a$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Example
+Assume a rigid body's attitude is described by 
+\begin_inset Formula $R_{b}^{n}(t)$
+\end_inset
+
+, where the indices denote the navigation frame 
+\begin_inset Formula $N$
+\end_inset
+
+ and body frame 
+\begin_inset Formula $B$
+\end_inset
+
+, respectively.
+ An extrinsically calibrated gyroscope measures the angular velocity 
+\begin_inset Formula $\omega^{b}$
+\end_inset
+
+, in the body frame, and the corresponding tangent vector is 
+\begin_inset Formula 
+\[
+\dot{R}_{b}^{n}(t)=R_{b}^{n}(t)\widehat{\omega^{b}}
+\]
+
+\end_inset
+
+ 
 \end_layout
 
 \begin_layout Subsection
@@ -1352,7 +1493,7 @@ reference "def:differentiable"
 
 \end_inset
 
- to map exponential coordinates 
+ to map local coordinates 
 \begin_inset Formula $\xi$
 \end_inset
 
@@ -1368,7 +1509,7 @@ reference "def:differentiable"
 \begin_inset Formula $Df_{a}$
 \end_inset
 
- locally approximates a function 
+ approximates the function 
 \begin_inset Formula $f$
 \end_inset
 
@@ -1378,6 +1519,10 @@ reference "def:differentiable"
 
  to 
 \begin_inset Formula $\Reals m$
+\end_inset
+
+ in a neighborhood around 
+\begin_inset Formula $a$
 \end_inset
 
 :
@@ -1455,41 +1600,6 @@ derivative
 .
 \end_layout
 
-\begin_layout Standard
-Note that the vectors 
-\begin_inset Formula $\xi$
-\end_inset
-
- can be viewed as lying in the tangent space to 
-\begin_inset Formula $G$
-\end_inset
-
- at 
-\begin_inset Formula $a$
-\end_inset
-
-, but defining this rigorously would take us on a longer tour of differential
- geometry.
- Informally, 
-\begin_inset Formula $\xi$
-\end_inset
-
- is simply the direction, in a local coordinate frame, that is locally tangent
- at 
-\begin_inset Formula $a$
-\end_inset
-
- to a geodesic curve 
-\begin_inset Formula $\gamma:t\mapsto ae^{\widehat{t\xi}}$
-\end_inset
-
- traced out by the exponential map, with 
-\begin_inset Formula $\gamma(0)=a$
-\end_inset
-
-.
-\end_layout
-
 \begin_layout Subsection
 Derivative of an Action
 \begin_inset CommandInset label
@@ -1502,11 +1612,7 @@ name "sec:Derivatives-of-Actions"
 \end_layout
 
 \begin_layout Standard
-The (usual) action of an 
-\begin_inset Formula $n$
-\end_inset
-
--dimensional matrix group 
+The (usual) action of a matrix group 
 \begin_inset Formula $G$
 \end_inset
 
@@ -1531,7 +1637,7 @@ Since this is a function defined on the product
 \end_inset
 
  the derivative is a linear transformation 
-\begin_inset Formula $Df:\Multi{2n}n$
+\begin_inset Formula $Df:\Multi{m+n}n$
 \end_inset
 
  with
@@ -1542,7 +1648,15 @@ Df_{(T,p)}\left(\xi,\delta p\right)=D_{1}f_{(T,p)}\left(\xi\right)+D_{2}f_{(T,p)
 
 \end_inset
 
+where 
+\begin_inset Formula $m$
+\end_inset
 
+ is the dimensionality of the manifold 
+\begin_inset Formula $G$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Theorem
@@ -1571,7 +1685,7 @@ H(p) & I_{n}\end{array}\right]
 \end_inset
 
 with 
-\begin_inset Formula $H:\Reals n\rightarrow\Reals{n\times n}$
+\begin_inset Formula $H:\Reals m\rightarrow\Reals{n\times m}$
 \end_inset
 
  a linear mapping that depends on 
@@ -1698,7 +1812,7 @@ with
 \end_inset
 
  an 
-\begin_inset Formula $n\times n$
+\begin_inset Formula $n\times m$
 \end_inset
 
  matrix that depends on 
@@ -3000,7 +3114,7 @@ f(ge^{\xhat})=f(ge^{\xhat}g^{-1}g)=f(e^{\Ad g\xhat}g)
 \end_layout
 
 \begin_layout Subsection
-Derivative of the Exponential and Logarithm Map
+Derivative of the Exponential Map
 \end_layout
 
 \begin_layout Theorem
@@ -3064,17 +3178,196 @@ For
 \begin_inset Formula $\xi\neq0$
 \end_inset
 
-, things are not simple, see .
+, things are not simple.
+ As with pushforwards above, we will be looking for an 
+\begin_inset Formula $n\times n$
+\end_inset
+
  
-\begin_inset Flex URL
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+Jacobian 
+\begin_inset Formula $f'(\xi)$
+\end_inset
+
+ such that
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+
+\begin_inset Formula 
+\begin{equation}
+f\left(\xi+\delta\right)\approx f\left(\xi\right)\exp\left(\widehat{f'(\xi)\delta}\right)\label{eq:push_exp}
+\end{equation}
+
+\end_inset
+
+Differential geometry tells us that for any Lie algebra element 
+\begin_inset Formula $\xihat\in\mathfrak{g}$
+\end_inset
+
+ there exists a 
+\emph on
+linear
+\emph default
+ map 
+\begin_inset Formula $d\exp_{\xihat}:T_{\xihat}\mathfrak{g}\rightarrow T_{\exp(\xihat)}G$
+\end_inset
+
+, which is given by
+\begin_inset Foot
 status collapsed
 
 \begin_layout Plain Layout
+See 
+\begin_inset Flex URL
+status open
 
-http://deltaepsilons.wordpress.com/2009/11/06/helgasons-formula-for-the-differenti
-al-of-the-exponential/
+\begin_layout Plain Layout
+
+http://deltaepsilons.wordpress.com/2009/11/06/
 \end_layout
 
+\end_inset
+
+ or 
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+https://en.wikipedia.org/wiki/Derivative_of_the_exponential_map
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{equation}
+d\exp_{\xihat}\hat{x}=\exp(\xihat)\frac{1-\exp(-ad_{\xihat})}{ad_{\xihat}}\hat{x}\label{eq:dexp}
+\end{equation}
+
+\end_inset
+
+with 
+\begin_inset Formula $\hat{x}\in T_{\xihat}\mathfrak{g}$
+\end_inset
+
+ and 
+\begin_inset Formula $ad_{\xihat}$
+\end_inset
+
+ itself a linear map taking 
+\begin_inset Formula $\hat{x}$
+\end_inset
+
+ to 
+\begin_inset Formula $[\xihat,\hat{x}]$
+\end_inset
+
+, the Lie bracket.
+ The actual formula above is not really as important as the fact that the
+ linear map exists, although it is expressed directly in terms of tangent
+ vectors to 
+\begin_inset Formula $\mathfrak{g}$
+\end_inset
+
+ and 
+\begin_inset Formula $G$
+\end_inset
+
+.
+ Equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:dexp"
+
+\end_inset
+
+ is a tangent vector, and comparing with 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:tangent-vector"
+
+\end_inset
+
+ we see that it maps to local coordinates 
+\begin_inset Formula $y$
+\end_inset
+
+ as follows:
+\begin_inset Formula 
+\[
+\yhat=\frac{1-\exp(-ad_{\xihat})}{ad_{\xihat}}\hat{x}
+\]
+
+\end_inset
+
+which can be used to construct the Jacobian 
+\begin_inset Formula $f'(\xi)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Example
+For 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+, the operator 
+\begin_inset Formula $ad_{\xihat}$
+\end_inset
+
+ is simply a matrix multiplication when representing 
+\begin_inset Formula $\sothree$
+\end_inset
+
+ using 3-vectors, i.e., 
+\begin_inset Formula $ad_{\xihat}x=\xihat x$
+\end_inset
+
+, and the 
+\begin_inset Formula $3\times3$
+\end_inset
+
+ Jacobian corresponding to 
+\begin_inset Formula $d\exp$
+\end_inset
+
+ is 
+\begin_inset Formula 
+\[
+f'(\xi)=\frac{I_{3\times3}-\exp(-\xihat)}{\xihat}=\sum_{k=0}^{\infty}\frac{(-1)^{k}}{(k+1)!}\xihat^{k}
+\]
+
+\end_inset
+
+which, similar to the exponential map, has a simple closed form expression
+ for 
+\begin_inset Formula $\SOthree$
 \end_inset
 
 .
@@ -6797,7 +7090,7 @@ Then
 \begin_layout Standard
 \begin_inset CommandInset bibtex
 LatexCommand bibtex
-bibfiles "/Users/dellaert/papers/refs"
+bibfiles "refs"
 options "plain"
 
 \end_inset

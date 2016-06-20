@@ -40,7 +40,8 @@ Since Eigen version 3.1 and later, users can benefit from built-in Intel MKL opt
 <a href="http://eigen.tuxfamily.org/Counter/redirect_to_mkl.php"> Intel MKL </a> provides highly optimized multi-threaded mathematical routines for x86-compatible architectures.
 Intel MKL is available on Linux, Mac and Windows for both Intel64 and IA32 architectures.
 
-\warning Be aware that Intel® MKL is a proprietary software. It is the responsibility of the users to buy MKL licenses for their products. Moreover, the license of the user product has to allow linking to proprietary software that excludes any unmodified versions of the GPL.
+\note
+Intel® MKL is a proprietary software and it is the responsibility of users to buy or register for community (free) Intel MKL licenses for their products. Moreover, the license of the user product has to allow linking to proprietary software that excludes any unmodified versions of the GPL.
 
 Using Intel MKL through Eigen is easy:
 -# define the \c EIGEN_USE_MKL_ALL macro before including any Eigen's header

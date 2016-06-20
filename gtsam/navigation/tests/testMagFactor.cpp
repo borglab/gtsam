@@ -40,7 +40,7 @@ Point3 nM(22653.29982, -1956.83010, 44202.47862);
 // Let's assume scale factor,
 double scale = 255.0 / 50000.0;
 // ...ground truth orientation,
-Rot3 nRb = Rot3::yaw(-0.1);
+Rot3 nRb = Rot3::Yaw(-0.1);
 Rot2 theta = nRb.yaw();
 // ...and bias
 Point3 bias(10, -10, 50);
@@ -48,7 +48,7 @@ Point3 bias(10, -10, 50);
 Point3 scaled = scale * nM;
 Point3 measured = nRb.inverse() * (scale * nM) + bias;
 
-LieScalar s(scale * nM.norm());
+double s(scale * nM.norm());
 Unit3 dir(nM);
 
 SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
@@ -71,36 +71,36 @@ TEST( MagFactor, Factors ) {
 
   // MagFactor
   MagFactor f(1, measured, s, dir, bias, model);
-  EXPECT( assert_equal(zero(3),f.evaluateError(theta,H1),1e-5));
-  EXPECT( assert_equal(numericalDerivative11<Rot2> //
+  EXPECT( assert_equal(Z_3x1,f.evaluateError(theta,H1),1e-5));
+  EXPECT( assert_equal((Matrix)numericalDerivative11<Vector,Rot2> //
       (boost::bind(&MagFactor::evaluateError, &f, _1, none), theta), H1, 1e-7));
 
 // MagFactor1
   MagFactor1 f1(1, measured, s, dir, bias, model);
-  EXPECT( assert_equal(zero(3),f1.evaluateError(nRb,H1),1e-5));
-  EXPECT( assert_equal(numericalDerivative11<Rot3> //
+  EXPECT( assert_equal(Z_3x1,f1.evaluateError(nRb,H1),1e-5));
+  EXPECT( assert_equal(numericalDerivative11<Vector,Rot3> //
       (boost::bind(&MagFactor1::evaluateError, &f1, _1, none), nRb), H1, 1e-7));
 
 // MagFactor2
   MagFactor2 f2(1, 2, measured, nRb, model);
-  EXPECT( assert_equal(zero(3),f2.evaluateError(scaled,bias,H1,H2),1e-5));
-  EXPECT( assert_equal(numericalDerivative11<Point3> //
+  EXPECT( assert_equal(Z_3x1,f2.evaluateError(scaled,bias,H1,H2),1e-5));
+  EXPECT( assert_equal(numericalDerivative11<Vector,Point3> //
       (boost::bind(&MagFactor2::evaluateError, &f2, _1, bias, none, none), scaled),//
       H1, 1e-7));
-  EXPECT( assert_equal(numericalDerivative11<Point3> //
+  EXPECT( assert_equal(numericalDerivative11<Vector,Point3> //
       (boost::bind(&MagFactor2::evaluateError, &f2, scaled, _1, none, none), bias),//
       H2, 1e-7));
 
 // MagFactor2
   MagFactor3 f3(1, 2, 3, measured, nRb, model);
-  EXPECT(assert_equal(zero(3),f3.evaluateError(s,dir,bias,H1,H2,H3),1e-5));
-  EXPECT(assert_equal(numericalDerivative11<LieScalar> //
+  EXPECT(assert_equal(Z_3x1,f3.evaluateError(s,dir,bias,H1,H2,H3),1e-5));
+  EXPECT(assert_equal((Matrix)numericalDerivative11<Vector,double> //
       (boost::bind(&MagFactor3::evaluateError, &f3, _1, dir, bias, none, none, none), s),//
       H1, 1e-7));
-  EXPECT(assert_equal(numericalDerivative11<Unit3> //
+  EXPECT(assert_equal(numericalDerivative11<Vector,Unit3> //
       (boost::bind(&MagFactor3::evaluateError, &f3, s, _1, bias, none, none, none), dir),//
       H2, 1e-7));
-  EXPECT(assert_equal(numericalDerivative11<Point3> //
+  EXPECT(assert_equal(numericalDerivative11<Vector,Point3> //
       (boost::bind(&MagFactor3::evaluateError, &f3, s, dir, _1, none, none, none), bias),//
       H3, 1e-7));
 }

@@ -86,7 +86,7 @@ TEST( ProjectionFactorPPPC, Error ) {
   Vector actualError(factor.evaluateError(pose, Pose3(), point, *K1));
 
   // The expected error is (-3.0, 0.0) pixels / UnitCovariance
-  Vector expectedError = (Vector(2) << -3.0, 0.0);
+  Vector expectedError = Vector2(-3.0, 0.0);
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -107,7 +107,7 @@ TEST( ProjectionFactorPPPC, ErrorWithTransform ) {
   Vector actualError(factor.evaluateError(pose, transform, point, *K1));
 
   // The expected error is (-3.0, 0.0) pixels / UnitCovariance
-  Vector expectedError = (Vector(2) << -3.0, 0.0);
+  Vector expectedError = Vector2(-3.0, 0.0);
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -128,19 +128,19 @@ TEST( ProjectionFactorPPPC, Jacobian ) {
   factor.evaluateError(pose, Pose3(), point, *K1, H1Actual, H2Actual, H3Actual, H4Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = (Matrix(2, 6) << 0., -554.256, 0., -92.376, 0., 0., 554.256, 0., 0., 0., -92.376, 0.);
-  Matrix H3Expected = (Matrix(2, 3) << 92.376, 0., 0., 0., 92.376, 0.);
+  Matrix H1Expected = (Matrix(2, 6) << 0., -554.256, 0., -92.376, 0., 0., 554.256, 0., 0., 0., -92.376, 0.).finished();
+  Matrix H3Expected = (Matrix(2, 3) << 92.376, 0., 0., 0., 92.376, 0.).finished();
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
   CHECK(assert_equal(H3Expected, H3Actual, 1e-3));
 
   // Verify H2 and H4 with numerical derivatives
-  Matrix H2Expected = numericalDerivative11<LieVector, Pose3>(
+  Matrix H2Expected = numericalDerivative11<Vector, Pose3>(
       boost::bind(&TestProjectionFactor::evaluateError, &factor, pose, _1, point,
           *K1, boost::none, boost::none, boost::none, boost::none), Pose3());
 
-  Matrix H4Expected = numericalDerivative11<LieVector, Cal3_S2>(
+  Matrix H4Expected = numericalDerivative11<Vector, Cal3_S2>(
       boost::bind(&TestProjectionFactor::evaluateError, &factor, pose, Pose3(), point,
           _1, boost::none, boost::none, boost::none, boost::none), *K1);
 
@@ -164,19 +164,19 @@ TEST( ProjectionFactorPPPC, JacobianWithTransform ) {
   factor.evaluateError(pose, body_P_sensor, point, *K1, H1Actual, H2Actual, H3Actual, H4Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = (Matrix(2, 6) << -92.376, 0., 577.350, 0., 92.376, 0., -9.2376, -577.350, 0., 0., 0., 92.376);
-  Matrix H3Expected = (Matrix(2, 3) << 0., -92.376, 0., 0., 0., -92.376);
+  Matrix H1Expected = (Matrix(2, 6) << -92.376, 0., 577.350, 0., 92.376, 0., -9.2376, -577.350, 0., 0., 0., 92.376).finished();
+  Matrix H3Expected = (Matrix(2, 3) << 0., -92.376, 0., 0., 0., -92.376).finished();
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
   CHECK(assert_equal(H3Expected, H3Actual, 1e-3));
 
   // Verify H2 and H4 with numerical derivatives
-  Matrix H2Expected = numericalDerivative11<LieVector, Pose3>(
+  Matrix H2Expected = numericalDerivative11<Vector, Pose3>(
       boost::bind(&TestProjectionFactor::evaluateError, &factor, pose, _1, point,
           *K1, boost::none, boost::none, boost::none, boost::none), body_P_sensor);
 
-  Matrix H4Expected = numericalDerivative11<LieVector, Cal3_S2>(
+  Matrix H4Expected = numericalDerivative11<Vector, Cal3_S2>(
       boost::bind(&TestProjectionFactor::evaluateError, &factor, pose, body_P_sensor, point,
           _1, boost::none, boost::none, boost::none, boost::none), *K1);
 

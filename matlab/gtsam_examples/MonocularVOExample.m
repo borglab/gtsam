@@ -40,7 +40,7 @@ end
 
 %% Create initial estimate
 initial = Values;
-trueE = EssentialMatrix(aRb,Sphere2(aTb));
+trueE = EssentialMatrix(aRb,Unit3(aTb));
 initialE = trueE.retract([0.1, -0.1, 0.1, 0.1, -0.1]');
 initial.insert(1, initialE);
 
@@ -52,5 +52,5 @@ result = optimizer.optimize();
 
 %% Print result (as essentialMatrix) and error
 error = graph.error(result)
-E = result.at(1)
+E = result.atEssentialMatrix(1)
 

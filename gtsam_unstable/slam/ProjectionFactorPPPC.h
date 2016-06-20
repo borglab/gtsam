@@ -52,7 +52,9 @@ namespace gtsam {
     typedef boost::shared_ptr<This> shared_ptr;
 
     /// Default constructor
-    ProjectionFactorPPPC() : throwCheirality_(false), verboseCheirality_(false) {}
+  ProjectionFactorPPPC() :
+      measured_(0.0, 0.0), throwCheirality_(false), verboseCheirality_(false) {
+  }
 
     /**
      * Constructor
@@ -89,9 +91,9 @@ namespace gtsam {
     virtual ~ProjectionFactorPPPC() {}
 
     /// @return a deep copy of this factor
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+    virtual NonlinearFactor::shared_ptr clone() const {
+      return boost::static_pointer_cast<NonlinearFactor>(
+          NonlinearFactor::shared_ptr(new This(*this))); }
 
     /**
      * print
@@ -100,7 +102,7 @@ namespace gtsam {
      */
     void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       std::cout << s << "ProjectionFactorPPPC, z = ";
-      measured_.print();
+      traits<Point2>::Print(measured_);
       Base::print("", keyFormatter);
     }
 
@@ -109,7 +111,7 @@ namespace gtsam {
       const This *e = dynamic_cast<const This*>(&p);
       return e
           && Base::equals(p, tol)
-          && this->measured_.equals(e->measured_, tol);
+          && traits<Point2>::Equals(this->measured_, e->measured_, tol);
     }
 
     /// Evaluate error h(x)-z and optionally derivatives
@@ -120,29 +122,28 @@ namespace gtsam {
         boost::optional<Matrix&> H4 = boost::none) const {
       try {
           if(H1 || H2 || H3 || H4) {
-            gtsam::Matrix H0, H02;
+            Matrix H0, H02;
             PinholeCamera<CALIBRATION> camera(pose.compose(transform, H0, H02), K);
             Point2 reprojectionError(camera.project(point, H1, H3, H4) - measured_);
             *H2 = *H1 * H02;
             *H1 = *H1 * H0;
-            return reprojectionError.vector();
+            return reprojectionError;
           } else {
             PinholeCamera<CALIBRATION> camera(pose.compose(transform), K);
-            Point2 reprojectionError(camera.project(point, H1, H3, H4) - measured_);
-            return reprojectionError.vector();
+            return camera.project(point, H1, H3, H4) - measured_;
           }
       } catch( CheiralityException& e) {
-        if (H1) *H1 = zeros(2,6);
-        if (H2) *H2 = zeros(2,6);
-        if (H3) *H3 = zeros(2,3);
-        if (H4) *H4 = zeros(2,CALIBRATION::Dim());
+        if (H1) *H1 = Matrix::Zero(2,6);
+        if (H2) *H2 = Matrix::Zero(2,6);
+        if (H3) *H3 = Matrix::Zero(2,3);
+        if (H4) *H4 = Matrix::Zero(2,CALIBRATION::Dim());
         if (verboseCheirality_)
           std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
               " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
         if (throwCheirality_)
           throw e;
       }
-      return ones(2) * 2.0 * K.fx();
+      return Vector::Ones(2) * 2.0 * K.fx();
     }
 
     /** return the measurement */
@@ -161,11 +162,18 @@ namespace gtsam {
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(measured_);
       ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
   };
+
+  /// traits
+  template<class POSE, class LANDMARK, class CALIBRATION>
+  struct traits<ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> > :
+      public Testable<ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> > {
+  };
+
 } // \ namespace gtsam

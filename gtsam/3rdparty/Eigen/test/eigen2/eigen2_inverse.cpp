@@ -25,7 +25,6 @@ template<typename MatrixType> void inverse(const MatrixType& m)
 
   MatrixType m1 = MatrixType::Random(rows, cols),
              m2(rows, cols),
-             mzero = MatrixType::Zero(rows, cols),
              identity = MatrixType::Identity(rows, rows);
 
   while(ei_abs(m1.determinant()) < RealScalar(0.1) && rows <= 8)

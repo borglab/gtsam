@@ -57,7 +57,7 @@ result.print(sprintf('\nFinal result:\n'));
 %% Plot Covariance Ellipses
 cla;
 hold on
-plot([result.at(5).x;result.at(2).x],[result.at(5).y;result.at(2).y],'r-');
+plot([result.atPose2(5).x;result.atPose2(2).x],[result.atPose2(5).y;result.atPose2(2).y],'r-');
 marginals = Marginals(graph, result);
 
 plot2DTrajectory(result, [], marginals);

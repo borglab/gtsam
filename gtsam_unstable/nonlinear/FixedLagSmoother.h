@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -24,7 +24,9 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
+
 #include <map>
+#include <vector>
 
 namespace gtsam {
 
@@ -111,16 +113,16 @@ protected:
   void updateKeyTimestampMap(const KeyTimestampMap& newTimestamps);
 
   /** Erase keys from the Key-Timestamps database */
-  void eraseKeyTimestampMap(const std::set<Key>& keys);
+  void eraseKeyTimestampMap(const KeyVector& keys);
 
   /** Find the most recent timestamp of the system */
   double getCurrentTimestamp() const;
 
   /** Find all of the keys associated with timestamps before the provided time */
-  std::set<Key> findKeysBefore(double timestamp) const;
+  KeyVector findKeysBefore(double timestamp) const;
 
   /** Find all of the keys associated with timestamps before the provided time */
-  std::set<Key> findKeysAfter(double timestamp) const;
+  KeyVector findKeysAfter(double timestamp) const;
 
 }; // FixedLagSmoother
 

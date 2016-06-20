@@ -9,11 +9,6 @@
 
 #include "main.h"
 
-template<typename T> bool isNotNaN(const T& x)
-{
-  return x==x;
-}
-
 // workaround aggressive optimization in ICC
 template<typename T> EIGEN_DONT_INLINE  T sub(T a, T b) { return a - b; }
 

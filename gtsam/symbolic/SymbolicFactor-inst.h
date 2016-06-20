@@ -17,15 +17,16 @@
 
 #pragma once
 
-#include <utility>
-#include <boost/shared_ptr.hpp>
-#include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
-
-#include <gtsam/inference/Factor.h>
-#include <gtsam/inference/Key.h>
 #include <gtsam/symbolic/SymbolicFactor.h>
 #include <gtsam/symbolic/SymbolicConditional.h>
+#include <gtsam/inference/Factor.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/base/timing.h>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
+
+#include <utility>
 
 namespace gtsam
 {
@@ -37,20 +38,22 @@ namespace gtsam
     std::pair<boost::shared_ptr<SymbolicConditional>, boost::shared_ptr<SymbolicFactor> >
       EliminateSymbolic(const FactorGraph<FACTOR>& factors, const Ordering& keys)
     {
+      gttic(EliminateSymbolic);
+
       // Gather all keys
-      FastSet<Key> allKeys;
-      BOOST_FOREACH(const boost::shared_ptr<FACTOR>& factor, factors) {
+      KeySet allKeys;
+      for(const boost::shared_ptr<FACTOR>& factor: factors) {
         allKeys.insert(factor->begin(), factor->end());
       }
 
       // Check keys
-      BOOST_FOREACH(Key key, keys) {
+      for(Key key: keys) {
         if(allKeys.find(key) == allKeys.end())
           throw std::runtime_error("Requested to eliminate a key that is not in the factors");
       }
 
       // Sort frontal keys
-      FastSet<Key> frontals(keys);
+      KeySet frontals(keys);
       const size_t nFrontals = keys.size();
 
       // Build a key vector with the frontals followed by the separator

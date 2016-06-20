@@ -152,7 +152,7 @@ namespace internal {
   /** Calculate the marginal on the specified keys, returning a set of LinearContainerFactors.
    * Unlike other GTSAM functions with similar purposes, this version can operate on disconnected graphs.  */
   NonlinearFactorGraph calculateMarginalFactors(const NonlinearFactorGraph& graph, const Values& theta,
-      const FastSet<Key>& remainingKeys, const GaussianFactorGraph::Eliminate& eliminateFunction);
+      const KeySet& remainingKeys, const GaussianFactorGraph::Eliminate& eliminateFunction);
 
 }
 

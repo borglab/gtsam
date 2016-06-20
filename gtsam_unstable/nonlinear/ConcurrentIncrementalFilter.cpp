@@ -43,7 +43,7 @@ bool ConcurrentIncrementalFilter::equals(const ConcurrentFilter& rhs, double tol
 
 /* ************************************************************************* */
 ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const boost::optional<FastList<Key> >& keysToMove, const boost::optional< std::vector<size_t> >& removeFactorIndices) {
+    const boost::optional<FastList<Key> >& keysToMove, const boost::optional< FactorIndices >& removeFactorIndices) {
 
   gttic(update);
 
@@ -56,43 +56,43 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
   Result result;
 
   // We do not need to remove any factors at this time
-  gtsam::FastVector<size_t> removedFactors;
+  FactorIndices removedFactors;
 
   if(removeFactorIndices){
     removedFactors.insert(removedFactors.end(), removeFactorIndices->begin(), removeFactorIndices->end());
   }
 
   // Generate ordering constraints that force the 'keys to move' to the end
-  boost::optional<gtsam::FastMap<gtsam::Key,int> > orderingConstraints = boost::none;
+  boost::optional<FastMap<Key,int> > orderingConstraints = boost::none;
   if(keysToMove && keysToMove->size() > 0) {
-    orderingConstraints = gtsam::FastMap<gtsam::Key,int>();
+    orderingConstraints = FastMap<Key,int>();
     int group = 1;
     // Set all existing variables to Group1
     if(isam2_.getLinearizationPoint().size() > 0) {
-      BOOST_FOREACH(const gtsam::Values::ConstKeyValuePair& key_value, isam2_.getLinearizationPoint()) {
+      for(const Values::ConstKeyValuePair& key_value: isam2_.getLinearizationPoint()) {
         orderingConstraints->operator[](key_value.key) = group;
       }
       ++group;
     }
     // Assign new variables to the root
-    BOOST_FOREACH(const gtsam::Values::ConstKeyValuePair& key_value, newTheta) {
+    for(const Values::ConstKeyValuePair& key_value: newTheta) {
       orderingConstraints->operator[](key_value.key) = group;
     }
     // Set marginalizable variables to Group0
-    BOOST_FOREACH(gtsam::Key key, *keysToMove){
+    for(Key key: *keysToMove){
       orderingConstraints->operator[](key) = 0;
     }
   }
 
   // Create the set of linear keys that iSAM2 should hold constant
   // iSAM2 takes care of this for us; no need to specify additional noRelin keys
-  boost::optional<gtsam::FastList<gtsam::Key> > noRelinKeys = boost::none;
+  boost::optional<FastList<Key> > noRelinKeys = boost::none;
 
   // Mark additional keys between the 'keys to move' and the leaves
   boost::optional<FastList<Key> > additionalKeys = boost::none;
   if(keysToMove && keysToMove->size() > 0) {
     std::set<Key> markedKeys;
-    BOOST_FOREACH(gtsam::Key key, *keysToMove) {
+    for(Key key: *keysToMove) {
       if(isam2_.getLinearizationPoint().exists(key)) {
         ISAM2Clique::shared_ptr clique = isam2_[key];
         GaussianConditional::const_iterator key_iter = clique->conditional()->begin();
@@ -100,7 +100,7 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
           markedKeys.insert(*key_iter);
           ++key_iter;
         }
-        BOOST_FOREACH(const gtsam::ISAM2Clique::shared_ptr& child, clique->children) {
+        for(const ISAM2Clique::shared_ptr& child: clique->children) {
           RecursiveMarkAffectedKeys(key, child, markedKeys);
         }
       }
@@ -110,17 +110,17 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
 
   // Update the system using iSAM2
   gttic(isam2);
-  gtsam::ISAM2Result isam2Result = isam2_.update(newFactors, newTheta, removedFactors, orderingConstraints, noRelinKeys, additionalKeys);
+  ISAM2Result isam2Result = isam2_.update(newFactors, newTheta, removedFactors, orderingConstraints, noRelinKeys, additionalKeys);
   gttoc(isam2);
 
   if(keysToMove && keysToMove->size() > 0) {
 
     gttic(cache_smoother_factors);
     // Find the set of factors that will be removed
-    std::vector<size_t> removedFactorSlots = FindAdjacentFactors(isam2_, *keysToMove, currentSmootherSummarizationSlots_);
+    FactorIndices removedFactorSlots = FindAdjacentFactors(isam2_, *keysToMove, currentSmootherSummarizationSlots_);
     // Cache these factors for later transmission to the smoother
     NonlinearFactorGraph removedFactors;
-    BOOST_FOREACH(size_t slot, removedFactorSlots) {
+    for(size_t slot: removedFactorSlots) {
       const NonlinearFactor::shared_ptr& factor = isam2_.getFactorsUnsafe().at(slot);
       if(factor) {
         smootherFactors_.push_back(factor);
@@ -128,17 +128,17 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
       }
     }
     // Cache removed values for later transmission to the smoother
-    BOOST_FOREACH(Key key, *keysToMove) {
+    for(Key key: *keysToMove) {
       smootherValues_.insert(key, isam2_.getLinearizationPoint().at(key));
     }
     gttoc(cache_smoother_factors);
 
     gttic(marginalize);
-    std::vector<size_t> marginalFactorsIndices;
-    std::vector<size_t> deletedFactorsIndices;
+    FactorIndices marginalFactorsIndices;
+    FactorIndices deletedFactorsIndices;
     isam2_.marginalizeLeaves(*keysToMove, marginalFactorsIndices, deletedFactorsIndices);
     currentSmootherSummarizationSlots_.insert(currentSmootherSummarizationSlots_.end(), marginalFactorsIndices.begin(), marginalFactorsIndices.end());
-    BOOST_FOREACH(size_t index, deletedFactorsIndices) {
+    for(size_t index: deletedFactorsIndices) {
       currentSmootherSummarizationSlots_.erase(std::remove(currentSmootherSummarizationSlots_.begin(), currentSmootherSummarizationSlots_.end(), index), currentSmootherSummarizationSlots_.end());
     }
     gttoc(marginalize);
@@ -184,7 +184,7 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
   previousSmootherSummarization_ = smootherSummarization;
 
   // Find the set of new separator keys
-  const FastSet<Key>& newSeparatorKeys = isam2_.getFixedVariables();
+  const KeySet& newSeparatorKeys = isam2_.getFixedVariables();
 
   // Use the shortcut to calculate an updated marginal on the current separator
   // Combine just the shortcut and the previousSmootherSummarization
@@ -193,7 +193,7 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
   graph.push_back(smootherShortcut_);
   Values values;
   values.insert(smootherSummarizationValues);
-  BOOST_FOREACH(Key key, newSeparatorKeys) {
+  for(Key key: newSeparatorKeys) {
     if(!values.exists(key)) {
       values.insert(key, isam2_.getLinearizationPoint().at(key));
     }
@@ -201,7 +201,7 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
 
   // Force iSAM2 not to relinearize anything during this iteration
   FastList<Key> noRelinKeys;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, isam2_.getLinearizationPoint()) {
+  for(const Values::ConstKeyValuePair& key_value: isam2_.getLinearizationPoint()) {
     noRelinKeys.push_back(key_value.key);
   }
 
@@ -210,7 +210,7 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
       isam2_.params().getEliminationFunction());
 
   // Remove the old factors on the separator and insert the new ones
-  FastVector<size_t> removeFactors(currentSmootherSummarizationSlots_.begin(), currentSmootherSummarizationSlots_.end());
+  FactorIndices removeFactors(currentSmootherSummarizationSlots_.begin(), currentSmootherSummarizationSlots_.end());
   ISAM2Result result = isam2_.update(currentSmootherSummarization, Values(), removeFactors, boost::none, noRelinKeys, boost::none, false);
   currentSmootherSummarizationSlots_ = result.newFactorsIndices;
 
@@ -232,7 +232,7 @@ void ConcurrentIncrementalFilter::getSummarizedFactors(NonlinearFactorGraph& fil
   filterSummarization = calculateFilterSummarization();
 
   // Copy the current separator values into the output
-  BOOST_FOREACH(Key key, isam2_.getFixedVariables()) {
+  for(Key key: isam2_.getFixedVariables()) {
     filterSummarizationValues.insert(key, isam2_.getLinearizationPoint().at(key));
   }
 
@@ -271,12 +271,12 @@ void ConcurrentIncrementalFilter::RecursiveMarkAffectedKeys(const Key& key, cons
   if(std::find(clique->conditional()->beginParents(), clique->conditional()->endParents(), key) != clique->conditional()->endParents()) {
 
     // Mark the frontal keys of the current clique
-    BOOST_FOREACH(Key idx, clique->conditional()->frontals()) {
+    for(Key idx: clique->conditional()->frontals()) {
       additionalKeys.insert(idx);
     }
 
     // Recursively mark all of the children
-    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children) {
+    for(const ISAM2Clique::shared_ptr& child: clique->children) {
       RecursiveMarkAffectedKeys(key, child, additionalKeys);
     }
   }
@@ -285,13 +285,13 @@ void ConcurrentIncrementalFilter::RecursiveMarkAffectedKeys(const Key& key, cons
 }
 
 /* ************************************************************************* */
-std::vector<size_t> ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2& isam2, const FastList<Key>& keys, const std::vector<size_t>& factorsToIgnore) {
+FactorIndices ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2& isam2, const FastList<Key>& keys, const FactorIndices& factorsToIgnore) {
 
   // Identify any new factors to be sent to the smoother (i.e. any factor involving keysToMove)
-  std::vector<size_t> removedFactorSlots;
+  FactorIndices removedFactorSlots;
   const VariableIndex& variableIndex = isam2.getVariableIndex();
-  BOOST_FOREACH(Key key, keys) {
-    const FastList<size_t>& slots = variableIndex[key];
+  for(Key key: keys) {
+    const FastVector<size_t>& slots = variableIndex[key];
     removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
   }
 
@@ -300,7 +300,7 @@ std::vector<size_t> ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2
   removedFactorSlots.erase(std::unique(removedFactorSlots.begin(), removedFactorSlots.end()), removedFactorSlots.end());
 
   // Remove any linear/marginal factor that made it into the set
-  BOOST_FOREACH(size_t index, factorsToIgnore) {
+  for(size_t index: factorsToIgnore) {
     removedFactorSlots.erase(std::remove(removedFactorSlots.begin(), removedFactorSlots.end(), index), removedFactorSlots.end());
   }
 
@@ -312,14 +312,14 @@ std::vector<size_t> ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2
 void ConcurrentIncrementalFilter::updateShortcut(const NonlinearFactorGraph& removedFactors) {
 
   // Calculate the set of shortcut keys: NewSeparatorKeys + OldSeparatorKeys
-  FastSet<Key> shortcutKeys;
-  BOOST_FOREACH(size_t slot, currentSmootherSummarizationSlots_) {
+  KeySet shortcutKeys;
+  for(size_t slot: currentSmootherSummarizationSlots_) {
     const NonlinearFactor::shared_ptr& factor = isam2_.getFactorsUnsafe().at(slot);
     if(factor) {
       shortcutKeys.insert(factor->begin(), factor->end());
     }
   }
-  BOOST_FOREACH(Key key, previousSmootherSummarization_.keys()) {
+  for(Key key: previousSmootherSummarization_.keys()) {
     shortcutKeys.insert(key);
   }
 
@@ -343,19 +343,19 @@ NonlinearFactorGraph ConcurrentIncrementalFilter::calculateFilterSummarization()
   // variables that result from marginalizing out all of the other variables
 
   // Find the set of current separator keys
-  const FastSet<Key>& separatorKeys = isam2_.getFixedVariables();
+  const KeySet& separatorKeys = isam2_.getFixedVariables();
 
   // Find all cliques that contain any separator variables
   std::set<ISAM2Clique::shared_ptr> separatorCliques;
-  BOOST_FOREACH(Key key, separatorKeys) {
+  for(Key key: separatorKeys) {
     ISAM2Clique::shared_ptr clique = isam2_[key];
     separatorCliques.insert( clique );
   }
 
   // Create the set of clique keys LC:
   std::vector<Key> cliqueKeys;
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, separatorCliques) {
-    BOOST_FOREACH(Key key, clique->conditional()->frontals()) {
+  for(const ISAM2Clique::shared_ptr& clique: separatorCliques) {
+    for(Key key: clique->conditional()->frontals()) {
       cliqueKeys.push_back(key);
     }
   }
@@ -363,8 +363,8 @@ NonlinearFactorGraph ConcurrentIncrementalFilter::calculateFilterSummarization()
 
   // Gather all factors that involve only clique keys
   std::set<size_t> cliqueFactorSlots;
-  BOOST_FOREACH(Key key, cliqueKeys) {
-    BOOST_FOREACH(size_t slot, isam2_.getVariableIndex()[key]) {
+  for(Key key: cliqueKeys) {
+    for(size_t slot: isam2_.getVariableIndex()[key]) {
       const NonlinearFactor::shared_ptr& factor = isam2_.getFactorsUnsafe().at(slot);
       if(factor) {
         std::set<Key> factorKeys(factor->begin(), factor->end());
@@ -376,29 +376,29 @@ NonlinearFactorGraph ConcurrentIncrementalFilter::calculateFilterSummarization()
   }
 
   // Remove any factor included in the current smoother summarization
-  BOOST_FOREACH(size_t slot, currentSmootherSummarizationSlots_) {
+  for(size_t slot: currentSmootherSummarizationSlots_) {
     cliqueFactorSlots.erase(slot);
   }
 
   // Create a factor graph from the identified factors
   NonlinearFactorGraph graph;
-  BOOST_FOREACH(size_t slot, cliqueFactorSlots) {
+  for(size_t slot: cliqueFactorSlots) {
     graph.push_back(isam2_.getFactorsUnsafe().at(slot));
   }
 
   // Find the set of children of the separator cliques
   std::set<ISAM2Clique::shared_ptr> childCliques;
   // Add all of the children
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, separatorCliques) {
+  for(const ISAM2Clique::shared_ptr& clique: separatorCliques) {
     childCliques.insert(clique->children.begin(), clique->children.end());
   }
   // Remove any separator cliques that were added because they were children of other separator cliques
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, separatorCliques) {
+  for(const ISAM2Clique::shared_ptr& clique: separatorCliques) {
     childCliques.erase(clique);
   }
 
   // Augment the factor graph with cached factors from the children
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, childCliques) {
+  for(const ISAM2Clique::shared_ptr& clique: childCliques) {
     LinearContainerFactor::shared_ptr factor(new LinearContainerFactor(clique->cachedFactor(), isam2_.getLinearizationPoint()));
     graph.push_back( factor );
   }

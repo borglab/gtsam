@@ -41,7 +41,7 @@ marginals = Marginals(graph, result);
 toc
 P={};
 for i=1:result.size()-1
-    pose_i = result.at(i);
+    pose_i = result.atPose2(i);
     P{i}=marginals.marginalCovariance(i);
     plotPose2(pose_i,'b',P{i})
 end

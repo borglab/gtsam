@@ -18,7 +18,6 @@
  */
 
 #include <gtsam/discrete/DiscreteFactor.h>
-#include <boost/foreach.hpp>
 
 using namespace std;
 

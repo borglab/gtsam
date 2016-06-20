@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -11,7 +11,7 @@
 
 /**
  * @file Marginals.cpp
- * @brief 
+ * @brief
  * @author Richard Roberts
  * @date May 14, 2012
  */
@@ -26,7 +26,8 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization)
+Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization,
+                     EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering)
 {
   gttic(MarginalsConstructor);
 
@@ -39,9 +40,9 @@ Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, 
   // Compute BayesTree
   factorization_ = factorization;
   if(factorization_ == CHOLESKY)
-    bayesTree_ = *graph_.eliminateMultifrontal(boost::none, EliminatePreferCholesky);
+    bayesTree_ = *graph_.eliminateMultifrontal(ordering, EliminatePreferCholesky);
   else if(factorization_ == QR)
-    bayesTree_ = *graph_.eliminateMultifrontal(boost::none, EliminateQR);
+    bayesTree_ = *graph_.eliminateMultifrontal(ordering, EliminateQR);
 }
 
 /* ************************************************************************* */
@@ -53,32 +54,35 @@ void Marginals::print(const std::string& str, const KeyFormatter& keyFormatter) 
 }
 
 /* ************************************************************************* */
+GaussianFactor::shared_ptr Marginals::marginalFactor(Key variable) const {
+  gttic(marginalFactor);
+
+  // Compute marginal factor
+  if(factorization_ == CHOLESKY)
+    return bayesTree_.marginalFactor(variable, EliminatePreferCholesky);
+  else if(factorization_ == QR)
+    return bayesTree_.marginalFactor(variable, EliminateQR);
+  else
+    throw std::runtime_error("Marginals::marginalFactor: Unknown factorization");
+}
+
+/* ************************************************************************* */
+Matrix Marginals::marginalInformation(Key variable) const {
+
+  // Get information matrix (only store upper-right triangle)
+  gttic(marginalInformation);
+  return marginalFactor(variable)->information();
+}
+
+/* ************************************************************************* */
 Matrix Marginals::marginalCovariance(Key variable) const {
   return marginalInformation(variable).inverse();
 }
 
 /* ************************************************************************* */
-Matrix Marginals::marginalInformation(Key variable) const {
-  gttic(marginalInformation);
-
-  // Compute marginal
-  GaussianFactor::shared_ptr marginalFactor;
-  if(factorization_ == CHOLESKY)
-    marginalFactor = bayesTree_.marginalFactor(variable, EliminatePreferCholesky);
-  else if(factorization_ == QR)
-    marginalFactor = bayesTree_.marginalFactor(variable, EliminateQR);
-
-  // Get information matrix (only store upper-right triangle)
-  gttic(AsMatrix);
-  return marginalFactor->information();
-}
-
-/* ************************************************************************* */
 JointMarginal Marginals::jointMarginalCovariance(const std::vector<Key>& variables) const {
   JointMarginal info = jointMarginalInformation(variables);
-  info.blockMatrix_.full().triangularView() =
-    info.blockMatrix_.full().selfadjointView().llt().solve(
-    Matrix::Identity(info.blockMatrix_.full().rows(), info.blockMatrix_.full().rows())).triangularView<Eigen::Upper>();
+  info.blockMatrix_.invertInPlace();
   return info;
 }
 
@@ -121,7 +125,7 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
     // Get dimensions from factor graph
     std::vector<size_t> dims;
     dims.reserve(variablesSorted.size());
-    BOOST_FOREACH(Key key, variablesSorted) {
+    for(Key key: variablesSorted) {
       dims.push_back(values_.at(key).dim());
     }
 
@@ -130,10 +134,15 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
 }
 
 /* ************************************************************************* */
+VectorValues Marginals::optimize() const {
+  return bayesTree_.optimize();
+}
+
+/* ************************************************************************* */
 void JointMarginal::print(const std::string& s, const KeyFormatter& formatter) const {
   cout << s << "Joint marginal on keys ";
   bool first = true;
-  BOOST_FOREACH(Key key, keys_) {
+  for(Key key: keys_) {
     if(!first)
       cout << ", ";
     else

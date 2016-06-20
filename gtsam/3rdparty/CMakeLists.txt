@@ -1,6 +1,6 @@
 # install CCOLAMD headers
 install(FILES CCOLAMD/Include/ccolamd.h DESTINATION include/gtsam/3rdparty/CCOLAMD)
-install(FILES UFconfig/UFconfig.h DESTINATION include/gtsam/3rdparty/UFconfig)
+install(FILES SuiteSparse_config/SuiteSparse_config.h DESTINATION include/gtsam/3rdparty/SuiteSparse_config)
 
 if(NOT GTSAM_USE_SYSTEM_EIGEN)
 	# Find plain .h files
@@ -18,7 +18,7 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 
 	# do the same for the unsupported eigen folder
 	file(GLOB_RECURSE  unsupported_eigen_headers "${CMAKE_CURRENT_SOURCE_DIR}/Eigen/unsupported/Eigen/*.h")
-	
+
 	file(GLOB unsupported_eigen_dir_headers_all "Eigen/unsupported/Eigen/*")
 	foreach(unsupported_eigen_dir ${unsupported_eigen_dir_headers_all})
 		get_filename_component(filename ${unsupported_eigen_dir} NAME)
@@ -36,11 +36,18 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 	install(DIRECTORY Eigen/Eigen
 		DESTINATION include/gtsam/3rdparty/Eigen
 		FILES_MATCHING PATTERN "*.h")
-	
+
 	install(DIRECTORY Eigen/unsupported/Eigen
 		DESTINATION include/gtsam/3rdparty/Eigen/unsupported/
 		FILES_MATCHING PATTERN "*.h")
 endif()
+
+option(GTSAM_BUILD_METIS_EXECUTABLES "Build metis library executables" OFF)
+if(GTSAM_SUPPORT_NESTED_DISSECTION)
+	add_subdirectory(metis)
+endif()
+
+add_subdirectory(ceres)
 
 ############ NOTE:  When updating GeographicLib be sure to disable building their examples
 ############        and unit tests by commenting out their lines:
@@ -53,10 +60,10 @@ endif()
 include(GeographicLib/cmake/FindGeographicLib.cmake)
 
 # Set up the option to install GeographicLib
-if(GEOGRAPHICLIB_FOUND)
-  set(install_geographiclib_default OFF)
-else()
+if(GEOGRAPHICLIB-NOTFOUND)
   set(install_geographiclib_default ON)
+else()
+  set(install_geographiclib_default OFF)
 endif()
 option(GTSAM_INSTALL_GEOGRAPHICLIB "Build and install the 3rd-party library GeographicLib" ${install_geographiclib_default})
 
@@ -68,3 +75,5 @@ endif()
 if(GTSAM_INSTALL_GEOGRAPHICLIB)
   add_subdirectory(GeographicLib)
 endif()
+
+set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)

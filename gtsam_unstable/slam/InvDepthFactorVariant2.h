@@ -16,7 +16,6 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/numericalDerivative.h>
 
 namespace gtsam {
@@ -24,7 +23,7 @@ namespace gtsam {
 /**
  * Binary factor representing a visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant2: public NoiseModelFactor2<Pose3, LieVector> {
+class InvDepthFactorVariant2: public NoiseModelFactor2<Pose3, Vector3> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -35,7 +34,7 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor2<Pose3, LieVector> Base;
+  typedef NoiseModelFactor2<Pose3, Vector3> Base;
 
   /// shorthand for this class
   typedef InvDepthFactorVariant2 This;
@@ -44,7 +43,9 @@ public:
   typedef boost::shared_ptr<This> shared_ptr;
 
   /// Default constructor
-  InvDepthFactorVariant2() : K_(new Cal3_S2(444, 555, 666, 777, 888)) {}
+  InvDepthFactorVariant2() :
+      measured_(0.0, 0.0), K_(new Cal3_S2(444, 555, 666, 777, 888)) {
+  }
 
   /**
    * Constructor
@@ -68,57 +69,60 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "InvDepthFactorVariant2",
-      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const {
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s, keyFormatter);
-    measured_.print(s + ".z");
+    traits<Point2>::Print(measured_, s + ".z");
   }
 
   /// equals
-  virtual bool equals(const gtsam::NonlinearFactor& p, double tol = 1e-9) const {
+  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*>(&p);
     return e
         && Base::equals(p, tol)
-        && this->measured_.equals(e->measured_, tol)
+        && traits<Point2>::Equals(this->measured_, e->measured_, tol)
         && this->K_->equals(*e->K_, tol)
-        && this->referencePoint_.equals(e->referencePoint_, tol);
+        && traits<Point3>::Equals(this->referencePoint_, e->referencePoint_, tol);
   }
 
-  Vector inverseDepthError(const Pose3& pose, const LieVector& landmark) const {
+  Vector inverseDepthError(const Pose3& pose, const Vector3& landmark) const {
     try {
       // Calculate the 3D coordinates of the landmark in the world frame
       double theta = landmark(0), phi = landmark(1), rho = landmark(2);
       Point3 world_P_landmark = referencePoint_ + Point3(cos(theta)*cos(phi)/rho, sin(theta)*cos(phi)/rho, sin(phi)/rho);
       // Project landmark into Pose2
       PinholeCamera<Cal3_S2> camera(pose, *K_);
-      gtsam::Point2 reprojectionError(camera.project(world_P_landmark) - measured_);
-      return reprojectionError.vector();
+      return camera.project(world_P_landmark) - measured_;
     } catch( CheiralityException& e) {
       std::cout << e.what()
           << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key2()) << "]"
           << " moved behind camera [" << DefaultKeyFormatter(this->key1()) <<"]"
           << std::endl;
-      return gtsam::ones(2) * 2.0 * K_->fx();
+      return Vector::Ones(2) * 2.0 * K_->fx();
     }
-    return (gtsam::Vector(1) << 0.0);
+    return (Vector(1) << 0.0).finished();
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Pose3& pose, const LieVector& landmark,
-      boost::optional<gtsam::Matrix&> H1=boost::none,
-      boost::optional<gtsam::Matrix&> H2=boost::none) const {
+  Vector evaluateError(const Pose3& pose, const Vector3& landmark,
+      boost::optional<Matrix&> H1=boost::none,
+      boost::optional<Matrix&> H2=boost::none) const {
 
-    if(H1) {
-      (*H1) = numericalDerivative11<Pose3>(boost::bind(&InvDepthFactorVariant2::inverseDepthError, this, _1, landmark), pose);
+    if (H1) {
+      (*H1) = numericalDerivative11<Vector, Pose3>(
+          boost::bind(&InvDepthFactorVariant2::inverseDepthError, this, _1,
+              landmark), pose);
     }
-    if(H2) {
-      (*H2) = numericalDerivative11<LieVector>(boost::bind(&InvDepthFactorVariant2::inverseDepthError, this, pose, _1), landmark);
+    if (H2) {
+      (*H2) = numericalDerivative11<Vector, Vector3>(
+          boost::bind(&InvDepthFactorVariant2::inverseDepthError, this, pose,
+              _1), landmark);
     }
 
     return inverseDepthError(pose, landmark);
   }
 
   /** return the measurement */
-  const gtsam::Point2& imagePoint() const {
+  const Point2& imagePoint() const {
     return measured_;
   }
 
@@ -137,7 +141,7 @@ private:
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(K_);

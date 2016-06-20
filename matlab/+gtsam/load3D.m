@@ -46,9 +46,9 @@ for i=1:n
                 graph.add(BetweenFactorPose3(i1, i2, dpose, model));
                 if successive
                     if i2>i1
-                        initial.insert(i2,initial.at(i1).compose(dpose));
+                        initial.insert(i2,initial.atPose3(i1).compose(dpose));
                     else
-                        initial.insert(i1,initial.at(i2).compose(dpose.inverse));
+                        initial.insert(i1,initial.atPose3(i2).compose(dpose.inverse));
                     end
                 end
             end

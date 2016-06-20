@@ -59,24 +59,6 @@ private:
   }
 };
 
-/**
- * Range measurement concept
- * Given a pair of Lie variables, there must exist a function to calculate
- * range with derivatives.
- */
-template<class V1, class V2>
-class RangeMeasurementConcept {
-private:
-  static double checkRangeMeasurement(const V1& x, const V2& p) {
-    return x.range(p);
-  }
-
-  static double checkRangeMeasurementDerivatives(const V1& x, const V2& p) {
-    boost::optional<Matrix&> H1, H2;
-    return x.range(p, H1, H2);
-  }
-};
-
 } // \namespace gtsam
 
 /**
@@ -91,8 +73,4 @@ private:
 /** Pose Concept macros */
 #define GTSAM_CONCEPT_POSE_INST(T) template class gtsam::PoseConcept<T>;
 #define GTSAM_CONCEPT_POSE_TYPE(T) typedef gtsam::PoseConcept<T> _gtsam_PoseConcept##T;
-
-/** Range Measurement macros */
-#define GTSAM_CONCEPT_RANGE_MEASUREMENT_INST(V1,V2) template class gtsam::RangeMeasurementConcept<V1,V2>;
-#define GTSAM_CONCEPT_RANGE_MEASUREMENT_TYPE(V1,V2) typedef gtsam::RangeMeasurementConcept<V1,V2> _gtsam_RangeMeasurementConcept##V1##V2;
 

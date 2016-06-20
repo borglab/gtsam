@@ -17,8 +17,8 @@
 
 #include <gtsam/global_includes.h>
 #include <gtsam/base/Matrix.h>
+
 #include <boost/assign/list_of.hpp>
-#include <boost/foreach.hpp>
 #include <map>
 
 using namespace std;
@@ -75,7 +75,7 @@ map<int, double> testWithoutMemoryAllocation()
 
   const vector<size_t> grainSizes = list_of(1)(10)(100)(1000);
   map<int, double> timingResults;
-  BOOST_FOREACH(size_t grainSize, grainSizes)
+  for(size_t grainSize: grainSizes)
   {
     tbb::tick_count t0 = tbb::tick_count::now();
     tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithoutAllocation(results));
@@ -128,13 +128,13 @@ map<int, double> testWithMemoryAllocation()
 
   const vector<size_t> grainSizes = list_of(1)(10)(100)(1000);
   map<int, double> timingResults;
-  BOOST_FOREACH(size_t grainSize, grainSizes)
+  for(size_t grainSize: grainSizes)
   {
     tbb::tick_count t0 = tbb::tick_count::now();
     tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithAllocation(results));
     tbb::tick_count t1 = tbb::tick_count::now();
     cout << "With memory allocation, grain size = " << grainSize << ", time = " << (t1 - t0).seconds() << endl;
-    timingResults[grainSize] = (t1 - t0).seconds();
+    timingResults[(int)grainSize] = (t1 - t0).seconds();
   }
 
   return timingResults;
@@ -149,29 +149,29 @@ int main(int argc, char* argv[])
   const vector<int> numThreads = list_of(1)(4)(8);
   Results results;
 
-  BOOST_FOREACH(size_t n, numThreads)
+  for(size_t n: numThreads)
   {
     cout << "With " << n << " threads:" << endl;
-    tbb::task_scheduler_init init(n);
-    results[n].grainSizesWithoutAllocation = testWithoutMemoryAllocation();
-    results[n].grainSizesWithAllocation = testWithMemoryAllocation();
+    tbb::task_scheduler_init init((int)n);
+    results[(int)n].grainSizesWithoutAllocation = testWithoutMemoryAllocation();
+    results[(int)n].grainSizesWithAllocation = testWithMemoryAllocation();
     cout << endl;
   }
 
   cout << "Summary of results:" << endl;
-  BOOST_FOREACH(const Results::value_type& threads_result, results)
+  for(const Results::value_type& threads_result: results)
   {
     const int threads = threads_result.first;
     const ResultWithThreads& result = threads_result.second;
     if(threads != 1)
     {
-      BOOST_FOREACH(const ResultWithThreads::value_type& grainsize_time, result.grainSizesWithoutAllocation)
+      for(const ResultWithThreads::value_type& grainsize_time: result.grainSizesWithoutAllocation)
       {
         const int grainsize = grainsize_time.first;
         const double speedup = results[1].grainSizesWithoutAllocation[grainsize] / grainsize_time.second;
         cout << threads << " threads, without allocation, grain size = " << grainsize << ", speedup = " << speedup << endl;
       }
-      BOOST_FOREACH(const ResultWithThreads::value_type& grainsize_time, result.grainSizesWithAllocation)
+      for(const ResultWithThreads::value_type& grainsize_time: result.grainSizesWithAllocation)
       {
         const int grainsize = grainsize_time.first;
         const double speedup = results[1].grainSizesWithAllocation[grainsize] / grainsize_time.second;

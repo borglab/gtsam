@@ -15,10 +15,10 @@
  * @author  Frank Dellaert
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Rot2.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/testLie.h>
+#include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;
 
@@ -49,7 +49,9 @@ TEST( Rot2, unit)
 /* ************************************************************************* */
 TEST( Rot2, transpose)
 {
-  CHECK(assert_equal(R.inverse().matrix(),R.transpose()));
+  Matrix expected = R.inverse().matrix();
+  Matrix actual = R.transpose();
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
@@ -60,8 +62,8 @@ TEST( Rot2, compose)
 
   Matrix H1, H2;
   (void) Rot2::fromAngle(1.0).compose(Rot2::fromAngle(2.0), H1, H2);
-  EXPECT(assert_equal(eye(1), H1));
-  EXPECT(assert_equal(eye(1), H2));
+  EXPECT(assert_equal(I_1x1, H1));
+  EXPECT(assert_equal(I_1x1, H2));
 }
 
 /* ************************************************************************* */
@@ -72,8 +74,8 @@ TEST( Rot2, between)
 
   Matrix H1, H2;
   (void) Rot2::fromAngle(1.0).between(Rot2::fromAngle(2.0), H1, H2);
-  EXPECT(assert_equal(-eye(1), H1));
-  EXPECT(assert_equal(eye(1), H2));
+  EXPECT(assert_equal(-I_1x1, H1));
+  EXPECT(assert_equal(I_1x1, H2));
 }
 
 /* ************************************************************************* */
@@ -87,7 +89,7 @@ TEST( Rot2, equals)
 /* ************************************************************************* */
 TEST( Rot2, expmap)
 {
-  Vector v = zero(1);
+  Vector v = Z_1x1;
   CHECK(assert_equal(R.retract(v), R));
 }
 
@@ -96,7 +98,7 @@ TEST(Rot2, logmap)
 {
   Rot2 rot0(Rot2::fromAngle(M_PI/2.0));
   Rot2 rot(Rot2::fromAngle(M_PI));
-  Vector expected = (Vector(1) << M_PI/2.0);
+  Vector expected = (Vector(1) << M_PI/2.0).finished();
   Vector actual = rot0.localCoordinates(rot);
   CHECK(assert_equal(expected, actual));
 }
@@ -151,6 +153,47 @@ TEST( Rot2, relativeBearing )
   // Check numerical derivative
   expectedH = numericalDerivative11(relativeBearing_, l2);
   CHECK(assert_equal(expectedH,actualH));
+}
+
+//******************************************************************************
+Rot2 T1(0.1);
+Rot2 T2(0.2);
+
+//******************************************************************************
+TEST(Rot2 , Invariants) {
+  Rot2 id;
+
+  EXPECT(check_group_invariants(id,id));
+  EXPECT(check_group_invariants(id,T1));
+  EXPECT(check_group_invariants(T2,id));
+  EXPECT(check_group_invariants(T2,T1));
+
+  EXPECT(check_manifold_invariants(id,id));
+  EXPECT(check_manifold_invariants(id,T1));
+  EXPECT(check_manifold_invariants(T2,id));
+  EXPECT(check_manifold_invariants(T2,T1));
+
+}
+
+//******************************************************************************
+TEST(Rot2 , LieGroupDerivatives) {
+  Rot2 id;
+
+  CHECK_LIE_GROUP_DERIVATIVES(id,id);
+  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
+
+}
+
+//******************************************************************************
+TEST(Rot2 , ChartDerivatives) {
+  Rot2 id;
+
+  CHECK_CHART_DERIVATIVES(id,id);
+  CHECK_CHART_DERIVATIVES(id,T2);
+  CHECK_CHART_DERIVATIVES(T2,id);
+  CHECK_CHART_DERIVATIVES(T2,T1);
 }
 
 /* ************************************************************************* */

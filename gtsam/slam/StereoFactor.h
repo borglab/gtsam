@@ -138,15 +138,15 @@ public:
         return (stereoCam.project(point, H1, H2) - measured_).vector();
       }
     } catch(StereoCheiralityException& e) {
-      if (H1) *H1 = zeros(3,6);
-      if (H2) *H2 = zeros(3,3);
+      if (H1) *H1 = Matrix::Zero(3,6);
+      if (H2) *H2 = Z_3x3;
       if (verboseCheirality_)
       std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
           " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
       if (throwCheirality_)
         throw e;
     }
-    return ones(3) * 2.0 * K_->fx();
+    return Vector3::Constant(2.0 * K_->fx());
   }
 
   /** return the measured */
@@ -169,7 +169,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NoiseModelFactor2",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);
@@ -179,5 +179,9 @@ private:
     ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
   }
 };
+
+/// traits
+template<class T1, class T2>
+struct traits<GenericStereoFactor<T1, T2> > : public Testable<GenericStereoFactor<T1, T2> > {};
 
 } // \ namespace gtsam

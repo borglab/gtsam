@@ -91,6 +91,7 @@ following macros are supported; none of them are defined by default.
  - \b EIGEN_MATRIX_PLUGIN - filename of plugin for extending the Matrix class.
  - \b EIGEN_MATRIXBASE_PLUGIN - filename of plugin for extending the MatrixBase class.
  - \b EIGEN_PLAINOBJECTBASE_PLUGIN - filename of plugin for extending the PlainObjectBase class.
+ - \b EIGEN_MAPBASE_PLUGIN - filename of plugin for extending the MapBase class.
  - \b EIGEN_QUATERNIONBASE_PLUGIN - filename of plugin for extending the QuaternionBase class.
  - \b EIGEN_SPARSEMATRIX_PLUGIN - filename of plugin for extending the SparseMatrix class.
  - \b EIGEN_SPARSEMATRIXBASE_PLUGIN - filename of plugin for extending the SparseMatrixBase class.

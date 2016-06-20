@@ -1,7 +1,7 @@
 
 #include <iostream>
 
-#if (defined __GNUC__)
+#if (defined __GNUC__) && (!defined __MINGW32__) && (!defined __CYGWIN__)
 #define EIGEN_WEAK_LINKING __attribute__ ((weak))
 #else
 #define EIGEN_WEAK_LINKING

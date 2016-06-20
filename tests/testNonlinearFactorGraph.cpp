@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -9,7 +9,7 @@
 
  * -------------------------------------------------------------------------- */
 
-/** 
+/**
  * @file    testNonlinearFactorGraph.cpp
  * @brief   Unit tests for Non-Linear Factor NonlinearFactorGraph
  * @brief   testNonlinearFactorGraph
@@ -66,9 +66,9 @@ TEST( NonlinearFactorGraph, error )
 TEST( NonlinearFactorGraph, keys )
 {
   NonlinearFactorGraph fg = createNonlinearFactorGraph();
-  FastSet<Key> actual = fg.keys();
+  KeySet actual = fg.keys();
   LONGS_EQUAL(3, (long)actual.size());
-  FastSet<Key>::const_iterator it = actual.begin();
+  KeySet::const_iterator it = actual.begin();
   LONGS_EQUAL((long)L(1), (long)*(it++));
   LONGS_EQUAL((long)X(1), (long)*(it++));
   LONGS_EQUAL((long)X(2), (long)*(it++));
@@ -79,14 +79,14 @@ TEST( NonlinearFactorGraph, GET_ORDERING)
 {
   Ordering expected; expected += L(1), X(2), X(1); // For starting with l1,x1,x2
   NonlinearFactorGraph nlfg = createNonlinearFactorGraph();
-  Ordering actual = Ordering::COLAMD(nlfg);
+  Ordering actual = Ordering::Colamd(nlfg);
   EXPECT(assert_equal(expected,actual));
 
   // Constrained ordering - put x2 at the end
   Ordering expectedConstrained; expectedConstrained += L(1), X(1), X(2);
   FastMap<Key, int> constraints;
   constraints[X(2)] = 1;
-  Ordering actualConstrained = Ordering::COLAMDConstrained(nlfg, constraints);
+  Ordering actualConstrained = Ordering::ColamdConstrained(nlfg, constraints);
   EXPECT(assert_equal(expectedConstrained, actualConstrained));
 }
 
@@ -107,9 +107,9 @@ TEST( NonlinearFactorGraph, linearize )
 {
   NonlinearFactorGraph fg = createNonlinearFactorGraph();
   Values initial = createNoisyValues();
-  GaussianFactorGraph linearized = *fg.linearize(initial);
+  GaussianFactorGraph linearFG = *fg.linearize(initial);
   GaussianFactorGraph expected = createGaussianFactorGraph();
-  CHECK(assert_equal(expected,linearized)); // Needs correct linearizations
+  CHECK(assert_equal(expected,linearFG)); // Needs correct linearizations
 }
 
 /* ************************************************************************* */
@@ -163,6 +163,38 @@ TEST( NonlinearFactorGraph, symbolic )
   SymbolicFactorGraph actual = *graph.symbolic();
 
   EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(NonlinearFactorGraph, UpdateCholesky) {
+  NonlinearFactorGraph fg = createNonlinearFactorGraph();
+  Values initial = createNoisyValues();
+
+  // solve conventionally
+  GaussianFactorGraph linearFG = *fg.linearize(initial);
+  auto delta = linearFG.optimizeDensely();
+  auto expected = initial.retract(delta);
+
+  // solve with new method
+  EXPECT(assert_equal(expected, fg.updateCholesky(initial)));
+
+  // solve with Ordering
+  Ordering ordering;
+  ordering += L(1), X(2), X(1);
+  EXPECT(assert_equal(expected, fg.updateCholesky(initial, ordering)));
+
+  // solve with new method, heavily damped
+  auto dampen = [](const HessianFactor::shared_ptr& hessianFactor) {
+    auto iterator = hessianFactor->begin();
+    for (; iterator != hessianFactor->end(); iterator++) {
+      const auto index = std::distance(hessianFactor->begin(), iterator);
+      auto block = hessianFactor->info().diagonalBlock(index);
+      for (int j = 0; j < block.rows(); j++) {
+        block(j, j) += 1e9;
+      }
+    }
+  };
+  EXPECT(assert_equal(initial, fg.updateCholesky(initial, boost::none, dampen), 1e-6));
 }
 
 /* ************************************************************************* */

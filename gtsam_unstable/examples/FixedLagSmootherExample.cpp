@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
 
   // Create a prior on the first pose, placing it at the origin
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
-  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.3, 0.3, 0.1));
+  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
   Key priorKey = 0;
   newFactors.push_back(PriorFactor<Pose2>(priorKey, priorMean, priorNoise));
   newValues.insert(priorKey, priorMean); // Initialize the first pose at the mean of the prior
@@ -104,11 +104,11 @@ int main(int argc, char** argv) {
 
     // Add odometry factors from two different sources with different error stats
     Pose2 odometryMeasurement1 = Pose2(0.61, -0.08, 0.02);
-    noiseModel::Diagonal::shared_ptr odometryNoise1 = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.1, 0.05));
+    noiseModel::Diagonal::shared_ptr odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.05));
     newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement1, odometryNoise1));
 
     Pose2 odometryMeasurement2 = Pose2(0.47, 0.03, 0.01);
-    noiseModel::Diagonal::shared_ptr odometryNoise2 = noiseModel::Diagonal::Sigmas((Vector(3) << 0.05, 0.05, 0.05));
+    noiseModel::Diagonal::shared_ptr odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector3(0.05, 0.05, 0.05));
     newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
 
     // Update the smoothers with the new factors
@@ -133,11 +133,11 @@ int main(int argc, char** argv) {
   // And to demonstrate the fixed-lag aspect, print the keys contained in each smoother after 3.0 seconds
   cout << "After 3.0 seconds, " << endl;
   cout << "  Batch Smoother Keys: " << endl;
-  BOOST_FOREACH(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp, smootherBatch.timestamps()) {
+  for(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp: smootherBatch.timestamps()) {
     cout << setprecision(5) << "    Key: " << key_timestamp.first << "  Time: " << key_timestamp.second << endl;
   }
   cout << "  iSAM2 Smoother Keys: " << endl;
-  BOOST_FOREACH(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp, smootherISAM2.timestamps()) {
+  for(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp: smootherISAM2.timestamps()) {
     cout << setprecision(5) << "    Key: " << key_timestamp.first << "  Time: " << key_timestamp.second << endl;
   }
 

@@ -69,6 +69,12 @@ protected:
   void testGroup##testName##Test::run (TestResult& result_) 
 
 /**
+ * Declare friend in a class to test its private methods
+ */
+#define FRIEND_TEST(testGroup, testName) \
+    friend class testGroup##testName##Test;
+
+/**
  * For debugging only: use TEST_UNSAFE to allow debuggers to have access to exceptions, as this
  * will not wrap execution with a try/catch block
  */
@@ -79,6 +85,12 @@ protected:
             void run (TestResult& result_);} \
     testGroup##testName##Instance; \
   void testGroup##testName##Test::run (TestResult& result_)
+
+/**
+ * Use this to disable unwanted tests without commenting them out.
+ */
+#define TEST_DISABLED(testGroup, testName)\
+    void testGroup##testName##Test(TestResult& result_, const std::string& name_)
 
 /*
  * Convention for tests:

@@ -14,8 +14,6 @@
 
 namespace gtsam {
 
-GTSAM_UNSTABLE_EXPORT Matrix cov(const Matrix& m);
-
 class GTSAM_UNSTABLE_EXPORT AHRS {
 
 private:
@@ -25,18 +23,24 @@ private:
   KalmanFilter KF_;          ///< initial Kalman filter
 
   // Quantities needed for integration
-  Matrix F_g_;              ///< gyro bias dynamics
-  Matrix F_a_;              ///< acc bias dynamics
-  Matrix var_w_;            ///< dynamic noise variances
+  Matrix3 F_g_;              ///< gyro bias dynamics
+  Matrix3 F_a_;              ///< acc bias dynamics
+
+  typedef Eigen::Matrix<double,12,1> Variances;
+  Variances var_w_;            ///< dynamic noise variances
 
   // Quantities needed for aiding
-  Vector sigmas_v_a_;       ///< measurement sigma
-  Vector n_g_;              ///< gravity in nav frame
-  Matrix n_g_cross_;        ///< and its skew-symmetric matrix
+  Vector3 sigmas_v_a_;       ///< measurement sigma
+  Vector3 n_g_;              ///< gravity in nav frame
+  Matrix3 n_g_cross_;        ///< and its skew-symmetric matrix
 
-  Matrix Pg_, Pa_;
+  Matrix3 Pg_, Pa_;
 
 public:
+
+  typedef Eigen::Matrix<double,3,Eigen::Dynamic> Vector3s;
+  static Matrix3 Cov(const Vector3s& m);
+
   /**
    * AHRS constructor
    * @param stationaryU initial interval of gyro measurements, 3xn matrix

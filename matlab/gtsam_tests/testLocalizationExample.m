@@ -29,7 +29,7 @@ groundTruth.insert(2, Pose2(2.0, 0.0, 0.0));
 groundTruth.insert(3, Pose2(4.0, 0.0, 0.0));
 model = noiseModel.Diagonal.Sigmas([0.1; 0.1; 10]);
 for i=1:3
-    graph.add(PriorFactorPose2(i, groundTruth.at(i), model));
+    graph.add(PriorFactorPose2(i, groundTruth.atPose2(i), model));
 end
 
 %% Initialize to noisy points
@@ -46,7 +46,7 @@ result = optimizer.optimizeSafely();
 marginals = Marginals(graph, result);
 P={};
 for i=1:result.size()
-    pose_i = result.at(i);
-    CHECK('pose_i.equals(groundTruth.pose(i)',pose_i.equals(groundTruth.at(i),1e-4));
+    pose_i = result.atPose2(i);
+    CHECK('pose_i.equals(groundTruth.pose(i)',pose_i.equals(groundTruth.atPose2(i),1e-4));
     P{i}=marginals.marginalCovariance(i);
 end

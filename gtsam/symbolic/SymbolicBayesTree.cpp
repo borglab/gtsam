@@ -16,8 +16,6 @@
  * @author Richard Roberts
  */
 
-#include <boost/foreach.hpp>
-
 #include <gtsam/symbolic/SymbolicBayesTree.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/symbolic/SymbolicBayesNet.h>

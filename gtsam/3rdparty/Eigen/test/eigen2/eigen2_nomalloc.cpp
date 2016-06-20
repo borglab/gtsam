@@ -25,22 +25,12 @@ template<typename MatrixType> void nomalloc(const MatrixType& m)
   */
 
   typedef typename MatrixType::Scalar Scalar;
-  typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
 
   int rows = m.rows();
   int cols = m.cols();
 
   MatrixType m1 = MatrixType::Random(rows, cols),
-             m2 = MatrixType::Random(rows, cols),
-             m3(rows, cols),
-             mzero = MatrixType::Zero(rows, cols),
-             identity = Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime>
-                              ::Identity(rows, rows),
-             square = Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime>
-                              ::Random(rows, rows);
-  VectorType v1 = VectorType::Random(rows),
-             v2 = VectorType::Random(rows),
-             vzero = VectorType::Zero(rows);
+             m2 = MatrixType::Random(rows, cols);
 
   Scalar s1 = ei_random<Scalar>();
 

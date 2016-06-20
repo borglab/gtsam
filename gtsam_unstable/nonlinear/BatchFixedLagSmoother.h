@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -67,7 +67,7 @@ public:
   template<class VALUE>
   VALUE calculateEstimate(Key key) const {
     const Vector delta = delta_.at(key);
-    return theta_.at<VALUE>(key).retract(delta);
+    return traits<VALUE>::Retract(theta_.at<VALUE>(key), delta);
   }
 
   /** read the current set of optimizer parameters */
@@ -99,6 +99,30 @@ public:
   const VectorValues& getDelta() const {
     return delta_;
   }
+
+  /// Calculate marginal covariance on given variable
+  Matrix marginalCovariance(Key key) const;
+
+  /// Marginalize specific keys from a linear graph.
+  /// Does not check whether keys actually exist in graph.
+  /// In that case will fail somewhere deep within elimination
+  static GaussianFactorGraph CalculateMarginalFactors(
+      const GaussianFactorGraph& graph, const KeyVector& keys,
+      const GaussianFactorGraph::Eliminate& eliminateFunction = EliminatePreferCholesky);
+
+  /// Marginalize specific keys from a nonlinear graph, wrap in LinearContainers
+  static NonlinearFactorGraph CalculateMarginalFactors(
+      const NonlinearFactorGraph& graph, const Values& theta, const KeyVector& keys,
+      const GaussianFactorGraph::Eliminate& eliminateFunction = EliminatePreferCholesky);
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  static NonlinearFactorGraph calculateMarginalFactors(
+      const NonlinearFactorGraph& graph, const Values& theta, const std::set<Key>& keys,
+      const GaussianFactorGraph::Eliminate& eliminateFunction = EliminatePreferCholesky) {
+    KeyVector keyVector(keys.begin(), keys.end());
+    return CalculateMarginalFactors(graph, theta, keyVector, eliminateFunction);
+  }
+#endif
 
 protected:
 
@@ -134,8 +158,6 @@ protected:
   /** A cross-reference structure to allow efficient factor lookups by key **/
   FactorIndex factorIndex_;
 
-
-
   /** Augment the list of factors with a set of new factors */
   void insertFactors(const NonlinearFactorGraph& newFactors);
 
@@ -143,24 +165,21 @@ protected:
   void removeFactors(const std::set<size_t>& deleteFactors);
 
   /** Erase any keys associated with timestamps before the provided time */
-  void eraseKeys(const std::set<Key>& keys);
+  void eraseKeys(const KeyVector& keys);
 
   /** Use colamd to update into an efficient ordering */
-  void reorder(const std::set<Key>& marginalizeKeys = std::set<Key>());
+  void reorder(const KeyVector& marginalizeKeys = KeyVector());
 
   /** Optimize the current graph using a modified version of L-M */
   Result optimize();
 
   /** Marginalize out selected variables */
-  void marginalize(const std::set<Key>& marginalizableKeys);
-
-  static NonlinearFactorGraph calculateMarginalFactors(const NonlinearFactorGraph& graph, const Values& theta,
-      const std::set<Key>& marginalizeKeys, const GaussianFactorGraph::Eliminate& eliminateFunction);
+  void marginalize(const KeyVector& marginalizableKeys);
 
 private:
   /** Private methods for printing debug information */
   static void PrintKeySet(const std::set<Key>& keys, const std::string& label);
-  static void PrintKeySet(const gtsam::FastSet<Key>& keys, const std::string& label);
+  static void PrintKeySet(const gtsam::KeySet& keys, const std::string& label);
   static void PrintSymbolicFactor(const NonlinearFactor::shared_ptr& factor);
   static void PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor);
   static void PrintSymbolicGraph(const NonlinearFactorGraph& graph, const std::string& label);

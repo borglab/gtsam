@@ -21,7 +21,7 @@ using symbol_shorthand::B;
 
 TEST(BiasedGPSFactor, errorNoiseless) {
 
-  Rot3 R = Rot3::rodriguez(0.1, 0.2, 0.3);
+  Rot3 R = Rot3::Rodrigues(0.1, 0.2, 0.3);
   Point3 t(1.0, 0.5, 0.2);
   Pose3 pose(R,t);
   Point3 bias(0.0,0.0,0.0);
@@ -29,14 +29,14 @@ TEST(BiasedGPSFactor, errorNoiseless) {
   Point3 measured = t + noise;
 
   BiasedGPSFactor factor(X(1), B(1), measured, Isotropic::Sigma(3, 0.05));
-  Vector expectedError = (Vector(3) << 0.0, 0.0, 0.0 );
+  Vector expectedError = Vector3(0.0, 0.0, 0.0 );
   Vector actualError = factor.evaluateError(pose,bias);
   EXPECT(assert_equal(expectedError,actualError, 1E-5));
 }
 
 TEST(BiasedGPSFactor, errorNoisy) {
 
-  Rot3 R = Rot3::rodriguez(0.1, 0.2, 0.3);
+  Rot3 R = Rot3::Rodrigues(0.1, 0.2, 0.3);
   Point3 t(1.0, 0.5, 0.2);
   Pose3 pose(R,t);
   Point3 bias(0.0,0.0,0.0);
@@ -44,14 +44,14 @@ TEST(BiasedGPSFactor, errorNoisy) {
   Point3 measured = t - noise;
 
   BiasedGPSFactor factor(X(1), B(1), measured, Isotropic::Sigma(3, 0.05));
-  Vector expectedError = (Vector(3) << 1.0, 2.0, 3.0 );
+  Vector expectedError = Vector3(1.0, 2.0, 3.0 );
   Vector actualError = factor.evaluateError(pose,bias);
   EXPECT(assert_equal(expectedError,actualError, 1E-5));
 }
 
 TEST(BiasedGPSFactor, jacobian) {
 
-  Rot3 R = Rot3::rodriguez(0.1, 0.2, 0.3);
+  Rot3 R = Rot3::Rodrigues(0.1, 0.2, 0.3);
   Point3 t(1.0, 0.5, 0.2);
   Pose3 pose(R,t);
   Point3 bias(0.0,0.0,0.0);

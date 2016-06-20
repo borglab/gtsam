@@ -13,25 +13,26 @@
  * @file Manifold.h
  * @brief Base class and basic functions for Manifold types
  * @author Alex Cunningham
+ * @author Frank Dellaert
+ * @author Mike Bosse
  */
 
 #pragma once
 
-#include <string>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/OptionalJacobian.h>
+
+#include <boost/concept_check.hpp>
+#include <boost/concept/requires.hpp>
+#include <boost/type_traits/is_base_of.hpp>
 
 namespace gtsam {
 
+/// tag to assert a type is a manifold
+struct manifold_tag {};
+
 /**
- * Concept check class for Manifold types
- * Requires a mapping between a linear tangent space and the underlying
- * manifold, of which Lie is a specialization.
- *
- * The necessary functions to implement for Manifold are defined
- * below with additional details as to the interface.  The
- * concept checking function in class Manifold will check whether or not
- * the function exists and throw compile-time errors.
- *
  * A manifold defines a space in which there is a notion of a linear tangent space
  * that can be centered around a given point on the manifold.  These nonlinear
  * spaces may have such properties as wrapping around (as is the case with rotations),
@@ -47,57 +48,183 @@ namespace gtsam {
  * the creation for the retract and localCoordinates functions is that they be
  * inverse operations.
  *
- * Returns dimensionality of the tangent space, which may be smaller than the number
- * of nonlinear parameters.
- *     size_t dim() const;
- *
- * Returns a new T that is a result of updating *this with the delta v after pulling
- * the updated value back to the manifold T.
- *     T retract(const Vector& v) const;
- *
- * Returns the linear coordinates of lp in the tangent space centered around *this.
- *     Vector localCoordinates(const T& lp) const;
- *
- * By convention, we use capital letters to designate a static function
- * @tparam T is a Lie type, like Point2, Pose3, etc.
  */
-template <class T>
-class ManifoldConcept {
-private:
-  /** concept checking function - implement the functions this demands */
-  static T concept_check(const T& t) {
 
-    /** assignment */
-    T t2 = t;
+template <typename T> struct traits;
 
-    /**
-     * Returns dimensionality of the tangent space
-     */
-    size_t dim_ret = t.dim();
+namespace internal {
 
-    /**
-     * Returns Retraction update of T
-     */
-    T retract_ret = t.retract(gtsam::zero(dim_ret));
+/// Requirements on type to pass it to Manifold template below
+template<class Class>
+struct HasManifoldPrereqs {
 
-    /**
-     * Returns local coordinates of another object
-     */
-    Vector localCoords_ret = t.localCoordinates(t2);
+  enum { dim = Class::dimension };
 
-    return retract_ret;
+  Class p, q;
+  Eigen::Matrix<double, dim, 1> v;
+  OptionalJacobian<dim, dim> Hp, Hq, Hv;
+
+  BOOST_CONCEPT_USAGE(HasManifoldPrereqs) {
+    v = p.localCoordinates(q);
+    q = p.retract(v);
   }
 };
 
-} // namespace gtsam
+/// Extra manifold traits for fixed-dimension types
+template<class Class, int N>
+struct ManifoldImpl {
+  // Compile-time dimensionality
+  static int GetDimension(const Class&) {
+    return N;
+  }
+};
 
-/**
- * Macros for using the ManifoldConcept
- *  - An instantiation for use inside unit tests
- *  - A typedef for use inside generic algorithms
- *
- * NOTE: intentionally not in the gtsam namespace to allow for classes not in
- * the gtsam namespace to be more easily enforced as testable
- */
-#define GTSAM_CONCEPT_MANIFOLD_INST(T) template class gtsam::ManifoldConcept<T>;
-#define GTSAM_CONCEPT_MANIFOLD_TYPE(T) typedef gtsam::ManifoldConcept<T> _gtsam_ManifoldConcept_##T;
+/// Extra manifold traits for variable-dimension types
+template<class Class>
+struct ManifoldImpl<Class, Eigen::Dynamic> {
+  // Run-time dimensionality
+  static int GetDimension(const Class& m) {
+    return m.dim();
+  }
+};
+
+/// A helper that implements the traits interface for GTSAM manifolds.
+/// To use this for your class type, define:
+/// template<> struct traits<Class> : public internal::ManifoldTraits<Class> { };
+template<class Class>
+struct ManifoldTraits: ManifoldImpl<Class, Class::dimension> {
+
+  // Check that Class has the necessary machinery
+  BOOST_CONCEPT_ASSERT((HasManifoldPrereqs<Class>));
+
+  // Dimension of the manifold
+  enum { dimension = Class::dimension };
+
+  // Typedefs required by all manifold types.
+  typedef Class ManifoldType;
+  typedef manifold_tag structure_category;
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+
+  // Local coordinates
+  static TangentVector Local(const Class& origin, const Class& other) {
+    return origin.localCoordinates(other);
+  }
+
+  // Retraction back to manifold
+  static Class Retract(const Class& origin, const TangentVector& v) {
+    return origin.retract(v);
+  }
+};
+
+/// Both ManifoldTraits and Testable
+template<class Class> struct Manifold: ManifoldTraits<Class>, Testable<Class> {};
+
+} // \ namespace internal
+
+/// Check invariants for Manifold type
+template<typename T>
+BOOST_CONCEPT_REQUIRES(((IsTestable<T>)),(bool)) //
+check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
+  typename traits<T>::TangentVector v0 = traits<T>::Local(a,a);
+  typename traits<T>::TangentVector v = traits<T>::Local(a,b);
+  T c = traits<T>::Retract(a,v);
+  return v0.norm() < tol && traits<T>::Equals(b,c,tol);
+}
+
+/// Manifold concept
+template<typename T>
+class IsManifold {
+
+public:
+
+  typedef typename traits<T>::structure_category structure_category_tag;
+  static const int dim = traits<T>::dimension;
+  typedef typename traits<T>::ManifoldType ManifoldType;
+  typedef typename traits<T>::TangentVector TangentVector;
+
+  BOOST_CONCEPT_USAGE(IsManifold) {
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<manifold_tag, structure_category_tag>::value),
+        "This type's structure_category trait does not assert it as a manifold (or derived)");
+    BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
+
+    // make sure Chart methods are defined
+    v = traits<T>::Local(p, q);
+    q = traits<T>::Retract(p, v);
+  }
+
+private:
+
+  TangentVector v;
+  ManifoldType p, q;
+};
+
+/// Give fixed size dimension of a type, fails at compile time if dynamic
+template<typename T>
+struct FixedDimension {
+  typedef const int value_type;
+  static const int value = traits<T>::dimension;
+  BOOST_STATIC_ASSERT_MSG(value != Eigen::Dynamic,
+      "FixedDimension instantiated for dymanically-sized type.");
+};
+
+/// Helper class to construct the product manifold of two other manifolds, M1 and M2
+/// Assumes nothing except manifold structure for M1 and M2, and the existence
+/// of default constructor for those types
+template<typename M1, typename M2>
+class ProductManifold: public std::pair<M1, M2> {
+  BOOST_CONCEPT_ASSERT((IsManifold<M1>));
+  BOOST_CONCEPT_ASSERT((IsManifold<M2>));
+
+protected:
+  enum { dimension1 = traits<M1>::dimension };
+  enum { dimension2 = traits<M2>::dimension };
+
+public:
+  enum { dimension = dimension1 + dimension2 };
+  inline static size_t Dim() { return dimension;}
+  inline size_t dim() const { return dimension;}
+
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+
+  /// Default constructor needs default constructors to be defined
+  ProductManifold():std::pair<M1,M2>(M1(),M2()) {}
+
+  // Construct from two original manifold values
+  ProductManifold(const M1& m1, const M2& m2):std::pair<M1,M2>(m1,m2) {}
+
+  /// Retract delta to manifold
+  ProductManifold retract(const TangentVector& xi) const {
+    M1 m1 = traits<M1>::Retract(this->first,  xi.template head<dimension1>());
+    M2 m2 = traits<M2>::Retract(this->second, xi.template tail<dimension2>());
+    return ProductManifold(m1,m2);
+  }
+
+  /// Compute the coordinates in the tangent space
+  TangentVector localCoordinates(const ProductManifold& other) const {
+    typename traits<M1>::TangentVector v1 = traits<M1>::Local(this->first,  other.first);
+    typename traits<M2>::TangentVector v2 = traits<M2>::Local(this->second, other.second);
+    TangentVector v;
+    v << v1, v2;
+    return v;
+  }
+};
+
+// Define any direct product group to be a model of the multiplicative Group concept
+template<typename M1, typename M2>
+struct traits<ProductManifold<M1, M2> > : internal::Manifold<ProductManifold<M1, M2> > {
+};
+
+} // \ namespace gtsam
+
+///**
+// * Macros for using the ManifoldConcept
+// *  - An instantiation for use inside unit tests
+// *  - A typedef for use inside generic algorithms
+// *
+// * NOTE: intentionally not in the gtsam namespace to allow for classes not in
+// * the gtsam namespace to be more easily enforced as testable
+// */
+#define GTSAM_CONCEPT_MANIFOLD_INST(T) template class gtsam::IsManifold<T>;
+#define GTSAM_CONCEPT_MANIFOLD_TYPE(T) typedef gtsam::IsManifold<T> _gtsam_IsManifold_##T;

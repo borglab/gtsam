@@ -22,7 +22,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
 
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
@@ -269,7 +268,7 @@ public:
     VelDelta -= 2*skewSymmetric(world_rho + world_omega_earth)*world_V1_body * dt12;
 
     // Predict
-    return Vel1.compose( VelDelta );
+    return Vel1 + VelDelta;
 
   }
 
@@ -295,7 +294,7 @@ public:
     VELOCITY Vel2Pred = predictVelocity(Pose1, Vel1, Bias1);
 
     // Calculate error
-    return Vel2.between(Vel2Pred);
+    return Vel2Pred-Vel2;
   }
 
   Vector evaluateError(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, const POSE& Pose2, const VELOCITY& Vel2,
@@ -315,8 +314,9 @@ public:
 
     // Jacobian w.r.t. Vel1
     if (H2){
-      Matrix H2_Pose = numericalDerivative11<POSE, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
-      Matrix H2_Vel = numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
+      if (Vel1.size()!=3) throw std::runtime_error("Frank's hack to make this compile will not work if size != 3");
+      Matrix H2_Pose = numericalDerivative11<POSE, Vector3>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
+      Matrix H2_Vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
       *H2 = stack(2, &H2_Pose, &H2_Vel);
     }
 
@@ -336,13 +336,14 @@ public:
 
     // Jacobian w.r.t. Vel2
     if (H5){
-      Matrix H5_Pose = numericalDerivative11<POSE, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
-      Matrix H5_Vel = numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
+      if (Vel2.size()!=3) throw std::runtime_error("Frank's hack to make this compile will not work if size != 3");
+      Matrix H5_Pose = numericalDerivative11<POSE, Vector3>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
+      Matrix H5_Vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
       *H5 = stack(2, &H5_Pose, &H5_Vel);
     }
 
     Vector ErrPoseVector(POSE::Logmap(evaluatePoseError(Pose1, Vel1, Bias1, Pose2, Vel2)));
-    Vector ErrVelVector(VELOCITY::Logmap(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2)));
+    Vector ErrVelVector(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2));
 
     return concatVectors(2, &ErrPoseVector, &ErrVelVector);
   }
@@ -433,21 +434,21 @@ public:
     delta_t += msr_dt;
 
     // Update EquivCov_Overall
-    Matrix Z_3x3 = zeros(3,3);
-    Matrix I_3x3 = eye(3,3);
+    Matrix Z_3x3 = Z_3x3;
+    Matrix I_3x3 = I_3x3;
 
-    Matrix H_pos_pos = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
-    Matrix H_pos_vel = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
+    Matrix H_pos_pos = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
+    Matrix H_pos_vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
     Matrix H_pos_angles = Z_3x3;
     Matrix H_pos_bias = collect(2, &Z_3x3, &Z_3x3);
 
-    Matrix H_vel_vel = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_vel_in_t0);
-    Matrix H_vel_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, _1, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
-    Matrix H_vel_bias = numericalDerivative11<LieVector, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
+    Matrix H_vel_vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_vel_in_t0);
+    Matrix H_vel_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, _1, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
+    Matrix H_vel_bias = numericalDerivative11<Vector3, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
     Matrix H_vel_pos = Z_3x3;
 
-    Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
-    Matrix H_angles_bias = numericalDerivative11<LieVector, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, delta_angles, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
+    Matrix H_angles_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
+    Matrix H_angles_bias = numericalDerivative11<Vector3, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, delta_angles, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
     Matrix H_angles_pos = Z_3x3;
     Matrix H_angles_vel = Z_3x3;
 
@@ -460,7 +461,7 @@ public:
 
 
     noiseModel::Gaussian::shared_ptr model_discrete_curr = calc_descrete_noise_model(model_continuous_overall, msr_dt );
-    Matrix Q_d = inverse(model_discrete_curr->R().transpose() * model_discrete_curr->R() );
+    Matrix Q_d = (model_discrete_curr->R().transpose() * model_discrete_curr->R()).inverse();
 
     EquivCov_Overall = F * EquivCov_Overall * F.transpose() + Q_d;
     // Luca: force identity covariance matrix (for testing purposes)
@@ -535,9 +536,9 @@ public:
   static inline noiseModel::Gaussian::shared_ptr CalcEquivalentNoiseCov(const noiseModel::Gaussian::shared_ptr& gaussian_acc, const noiseModel::Gaussian::shared_ptr& gaussian_gyro,
       const noiseModel::Gaussian::shared_ptr& gaussian_process){
 
-    Matrix cov_acc = inverse( gaussian_acc->R().transpose() * gaussian_acc->R() );
-    Matrix cov_gyro = inverse( gaussian_gyro->R().transpose() * gaussian_gyro->R() );
-    Matrix cov_process = inverse( gaussian_process->R().transpose() * gaussian_process->R() );
+    Matrix cov_acc = ( gaussian_acc->R().transpose() * gaussian_acc->R() ).inverse();
+    Matrix cov_gyro = ( gaussian_gyro->R().transpose() * gaussian_gyro->R() ).inverse();
+    Matrix cov_process = ( gaussian_process->R().transpose() * gaussian_process->R() ).inverse();
 
     cov_process.block(0,0, 3,3) += cov_gyro;
     cov_process.block(6,6, 3,3) += cov_acc;
@@ -549,9 +550,9 @@ public:
       const noiseModel::Gaussian::shared_ptr& gaussian_process,
       Matrix& cov_acc, Matrix& cov_gyro, Matrix& cov_process_without_acc_gyro){
 
-    cov_acc = inverse( gaussian_acc->R().transpose() * gaussian_acc->R() );
-    cov_gyro = inverse( gaussian_gyro->R().transpose() * gaussian_gyro->R() );
-    cov_process_without_acc_gyro = inverse( gaussian_process->R().transpose() * gaussian_process->R() );
+    cov_acc = ( gaussian_acc->R().transpose() * gaussian_acc->R() ).inverse();
+    cov_gyro = ( gaussian_gyro->R().transpose() * gaussian_gyro->R() ).inverse();
+    cov_process_without_acc_gyro = ( gaussian_process->R().transpose() * gaussian_process->R() ).inverse();
   }
 
   static inline void Calc_g_rho_omega_earth_NED(const Vector& Pos_NED, const Vector& Vel_NED, const Vector& LatLonHeight_IC, const Vector& Pos_NED_Initial,
@@ -560,12 +561,12 @@ public:
     Matrix ENU_to_NED = (Matrix(3, 3) <<
         0.0,  1.0,  0.0,
         1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0);
+        0.0,  0.0, -1.0).finished();
 
     Matrix NED_to_ENU = (Matrix(3, 3) <<
         0.0,  1.0,  0.0,
         1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0);
+        0.0,  0.0, -1.0).finished();
 
     // Convert incoming parameters to ENU
     Vector Pos_ENU = NED_to_ENU * Pos_NED;
@@ -613,7 +614,7 @@ public:
 
     Rot3 R_ECEF_to_ENU( UEN_to_ENU * C2 * C1 );
 
-    Vector omega_earth_ECEF((Vector(3) << 0.0, 0.0, 7.292115e-5));
+    Vector omega_earth_ECEF(Vector3(0.0, 0.0, 7.292115e-5));
     omega_earth_ENU = R_ECEF_to_ENU.matrix() * omega_earth_ECEF;
 
     // Calculating g
@@ -627,7 +628,7 @@ public:
     double Ro( sqrt(Rp*Rm) );           // mean earth radius of curvature
     double g0( 9.780318*( 1 + 5.3024e-3 * pow(sin(lat_new),2) - 5.9e-6 * pow(sin(2*lat_new),2) ) );
     double g_calc( g0/( pow(1 + height/Ro, 2) ) );
-    g_ENU = (Vector(3) << 0.0, 0.0, -g_calc);
+    g_ENU = (Vector(3) << 0.0, 0.0, -g_calc).finished();
 
 
     // Calculate rho
@@ -636,7 +637,7 @@ public:
     double rho_E = -Vn/(Rm + height);
     double rho_N = Ve/(Rp + height);
     double rho_U = Ve*tan(lat_new)/(Rp + height);
-    rho_ENU = (Vector(3) << rho_E, rho_N, rho_U);
+    rho_ENU = (Vector(3) << rho_E, rho_N, rho_U).finished();
   }
 
   static inline noiseModel::Gaussian::shared_ptr calc_descrete_noise_model(const noiseModel::Gaussian::shared_ptr& model, double delta_t){
@@ -651,7 +652,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NonlinearFactor2",
         boost::serialization::base_object<Base>(*this));
   }

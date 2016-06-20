@@ -14,8 +14,8 @@ import gtsam.*
 
 %% Create a hexagon of poses
 hexagon = circlePose3(6,1.0);
-p0 = hexagon.at(0);
-p1 = hexagon.at(1);
+p0 = hexagon.atPose3(0);
+p1 = hexagon.atPose3(1);
 
 %% create a Pose graph with one equality constraint and one measurement
 fg = NonlinearFactorGraph;
@@ -33,11 +33,11 @@ fg.add(BetweenFactorPose3(5,0, delta, covariance));
 initial = Values;
 s = 0.10;
 initial.insert(0, p0);
-initial.insert(1, hexagon.at(1).retract(s*randn(6,1)));
-initial.insert(2, hexagon.at(2).retract(s*randn(6,1)));
-initial.insert(3, hexagon.at(3).retract(s*randn(6,1)));
-initial.insert(4, hexagon.at(4).retract(s*randn(6,1)));
-initial.insert(5, hexagon.at(5).retract(s*randn(6,1)));
+initial.insert(1, hexagon.atPose3(1).retract(s*randn(6,1)));
+initial.insert(2, hexagon.atPose3(2).retract(s*randn(6,1)));
+initial.insert(3, hexagon.atPose3(3).retract(s*randn(6,1)));
+initial.insert(4, hexagon.atPose3(4).retract(s*randn(6,1)));
+initial.insert(5, hexagon.atPose3(5).retract(s*randn(6,1)));
 
 %% Plot Initial Estimate
 cla

@@ -17,13 +17,36 @@
 #include <sstream>
 #include <vector>
 #include <typeinfo>
+
+// The following includes of STL headers have to be done _before_ the
+// definition of macros min() and max().  The reason is that many STL
+// implementations will not work properly as the min and max symbols collide
+// with the STL functions std:min() and std::max().  The STL headers may check
+// for the macro definition of min/max and issue a warning or undefine the
+// macros.
+//
+// Still, Windows defines min() and max() in windef.h as part of the regular
+// Windows system interfaces and many other Windows APIs depend on these
+// macros being available.  To prevent the macro expansion of min/max and to
+// make Eigen compatible with the Windows environment all function calls of
+// std::min() and std::max() have to be written with parenthesis around the
+// function name.
+//
+// All STL headers used by Eigen should be included here.  Because main.h is
+// included before any Eigen header and because the STL headers are guarded
+// against multiple inclusions, no STL header will see our own min/max macro
+// definitions.
 #include <limits>
 #include <algorithm>
-#include <sstream>
 #include <complex>
 #include <deque>
 #include <queue>
+#include <list>
 
+// To test that all calls from Eigen code to std::min() and std::max() are
+// protected by parenthesis against macro expansion, the min()/max() macros
+// are defined here and any not-parenthesized min/max call will cause a
+// compiler error.
 #define min(A,B) please_protect_your_min_with_parentheses
 #define max(A,B) please_protect_your_max_with_parentheses
 
@@ -381,6 +404,26 @@ void randomPermutationVector(PermutationVectorType& v, typename PermutationVecto
     do j = internal::random<Index>(0, size-1); while(j==i);
     std::swap(v(i), v(j));
   }
+}
+
+template<typename T> bool isNotNaN(const T& x)
+{
+  return x==x;
+}
+
+template<typename T> bool isNaN(const T& x)
+{
+  return x!=x;
+}
+
+template<typename T> bool isInf(const T& x)
+{
+  return x > NumTraits<T>::highest();
+}
+
+template<typename T> bool isMinusInf(const T& x)
+{
+  return x < NumTraits<T>::lowest();
 }
 
 } // end namespace Eigen

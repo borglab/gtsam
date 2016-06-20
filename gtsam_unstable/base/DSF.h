@@ -19,7 +19,6 @@
 #pragma once
 
 #include <gtsam_unstable/base/BTree.h>
-#include <boost/foreach.hpp>
 #include <iostream>
 #include <list>
 #include <set>
@@ -58,14 +57,14 @@ public:
   // constructor with a list of unconnected keys
   DSF(const std::list<KEY>& keys) :
       Tree() {
-    BOOST_FOREACH(const KEY& key, keys)
+    for(const KEY& key: keys)
       *this = this->add(key, key);
   }
 
   // constructor with a set of unconnected keys
   DSF(const std::set<KEY>& keys) :
       Tree() {
-    BOOST_FOREACH(const KEY& key, keys)
+    for(const KEY& key: keys)
       *this = this->add(key, key);
   }
 
@@ -109,7 +108,7 @@ public:
   // create a new singleton with a list of fully connected keys
   Self makeList(const std::list<KEY>& keys) const {
     Self t = *this;
-    BOOST_FOREACH(const KEY& key, keys)
+    for(const KEY& key: keys)
       t = t.makePair(key, keys.front());
     return t;
   }
@@ -117,7 +116,7 @@ public:
   // return a dsf in which all find_set operations will be O(1) due to path compression.
   DSF flatten() const {
     DSF t = *this;
-    BOOST_FOREACH(const KeyLabel& pair, (Tree)t)
+    for(const KeyLabel& pair: (Tree)t)
       t.findSet_(pair.first);
     return t;
   }
@@ -125,7 +124,7 @@ public:
   // maps f over all keys, must be invertible
   DSF map(boost::function<KEY(const KEY&)> func) const {
     DSF t;
-    BOOST_FOREACH(const KeyLabel& pair, (Tree)*this)
+    for(const KeyLabel& pair: (Tree)*this)
       t = t.add(func(pair.first), func(pair.second));
     return t;
   }
@@ -133,7 +132,7 @@ public:
   // return the number of sets
   size_t numSets() const {
     size_t num = 0;
-    BOOST_FOREACH(const KeyLabel& pair, (Tree)*this)
+    for(const KeyLabel& pair: (Tree)*this)
       if (pair.first == pair.second)
         num++;
     return num;
@@ -147,7 +146,7 @@ public:
   // return all sets, i.e. a partition of all elements
   std::map<KEY, Set> sets() const {
     std::map<KEY, Set> sets;
-    BOOST_FOREACH(const KeyLabel& pair, (Tree)*this)
+    for(const KeyLabel& pair: (Tree)*this)
       sets[findSet(pair.second)].insert(pair.first);
     return sets;
   }
@@ -155,7 +154,7 @@ public:
   // return a partition of the given elements {keys}
   std::map<KEY, Set> partition(const std::list<KEY>& keys) const {
     std::map<KEY, Set> partitions;
-    BOOST_FOREACH(const KEY& key, keys)
+    for(const KEY& key: keys)
       partitions[findSet(key)].insert(key);
     return partitions;
   }
@@ -163,7 +162,7 @@ public:
   // get the nodes in the tree with the given label
   Set set(const KEY& label) const {
     Set set;
-    BOOST_FOREACH(const KeyLabel& pair, (Tree)*this) {
+    for(const KeyLabel& pair: (Tree)*this) {
       if (pair.second == label || findSet(pair.second) == label)
         set.insert(pair.first);
     }
@@ -183,7 +182,7 @@ public:
   // print the object
   void print(const std::string& name = "DSF") const {
     std::cout << name << std::endl;
-    BOOST_FOREACH(const KeyLabel& pair, (Tree)*this)
+    for(const KeyLabel& pair: (Tree)*this)
       std::cout << (std::string) pair.first << " " << (std::string) pair.second
           << std::endl;
   }

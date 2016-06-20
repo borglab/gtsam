@@ -86,17 +86,17 @@ for i=1:20
     
     if i > 1
         if i < 11
-            initial.insert(i,result.at(i-1).compose(move_forward));
+            initial.insert(i,result.atPose3(i-1).compose(move_forward));
             fg.add(BetweenFactorPose3(i-1,i, move_forward, covariance));
         else
-            initial.insert(i,result.at(i-1).compose(move_circle));
+            initial.insert(i,result.atPose3(i-1).compose(move_circle));
             fg.add(BetweenFactorPose3(i-1,i, move_circle, covariance));
         end
         
     end
     
     % generate some camera measurements
-    cam_pose = initial.at(i).compose(actual_transform);
+    cam_pose = initial.atPose3(i).compose(actual_transform);
 %     gtsam.plotPose3(cam_pose);
     cam = SimpleCamera(cam_pose,K);
     i
@@ -127,10 +127,10 @@ for i=1:20
     hold on;
     
     %% plot results
-    result_camera_transform = result.at(1000);
+    result_camera_transform = result.atPose3(1000);
     for j=1:i
-      gtsam.plotPose3(result.at(j));
-      gtsam.plotPose3(result.at(j).compose(result_camera_transform),[],0.5);
+      gtsam.plotPose3(result.atPose3(j));
+      gtsam.plotPose3(result.atPose3(j).compose(result_camera_transform),[],0.5);
     end
     
     xlabel('x (m)');
@@ -143,10 +143,10 @@ for i=1:20
 %     axis equal
     
     for l=101:100+nrPoints
-        plotPoint3(result.at(l),'g');
+        plotPoint3(result.atPoint3(l),'g');
     end
     
-    ty = result.at(1000).translation().y();
+    ty = result.atPose3(1000).translation().y();
     text(5,5,5,sprintf('Y-Transform: %0.2g',ty));
   
     if(write_video)
@@ -168,7 +168,7 @@ fprintf('Cheirality Exception count: %d\n', cheirality_exception_count);
 
 
 disp('Transform after optimization');
-result.at(1000)
+result.atPose3(1000)
 
 
 

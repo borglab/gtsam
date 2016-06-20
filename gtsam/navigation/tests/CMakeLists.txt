@@ -14,15 +14,10 @@ if(GTSAM_INSTALL_GEOGRAPHICLIB)
   endif()
 
 else()
-  if(GEOGRAPHICLIB_FOUND)
+  if(GeographicLib_LIBRARIES)
     # If we're not installing, but it's already installed, use the installed one
     include_directories(${GeographicLib_INCLUDE_DIRS})
-    list(APPEND test_link_libraries )
-	#if(MSVC)
-    #  list(APPEND test_link_libraries GeographicLib_STATIC)
-    #else()
-      list(APPEND test_link_libraries ${GeographicLib_LIBRARIES})
-    #endif()
+    list(APPEND test_link_libraries ${GeographicLib_LIBRARIES})
   else()
     # We don't have GeographicLib
     set(tests_excluded testGeographicLib.cpp testGPSFactor.cpp testMagFactor.cpp)

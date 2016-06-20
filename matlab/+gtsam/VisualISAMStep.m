@@ -27,7 +27,7 @@ for k=1:length(data.Z{nextPoseIndex})
 end
 
 %% Initial estimates for the new pose.
-prevPose = result.at(symbol('x',nextPoseIndex-1));
+prevPose = result.atPose3(symbol('x',nextPoseIndex-1));
 initialEstimates.insert(symbol('x',nextPoseIndex), prevPose.compose(odometry));
 
 %% Update ISAM

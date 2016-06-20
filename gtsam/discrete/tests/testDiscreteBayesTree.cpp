@@ -63,7 +63,7 @@
 ////  double evaluate(const DiscreteConditional::Values & values) {
 ////    double result = (*(this->conditional_))(values);
 ////    // evaluate all children and multiply into result
-////    BOOST_FOREACH(boost::shared_ptr<Clique> c, children_)
+////    for(boost::shared_ptr<Clique> c: children_)
 ////      result *= c->evaluate(values);
 ////    return result;
 ////  }
@@ -213,7 +213,7 @@
 //
 //  // calculate all shortcuts to root
 //  DiscreteBayesTree::Nodes cliques = bayesTree.nodes();
-//  BOOST_FOREACH(Clique::shared_ptr c, cliques) {
+//  for(Clique::shared_ptr c: cliques) {
 //    DiscreteBayesNet shortcut = c->shortcut(R, EliminateDiscrete);
 //    if (debug) {
 //      c->printSignature();

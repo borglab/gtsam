@@ -60,7 +60,7 @@ int main(int argc, char** argv){
   
   initial_estimate.insert(Symbol('K', 0), *noisy_K);
 
-  noiseModel::Diagonal::shared_ptr calNoise = noiseModel::Diagonal::Sigmas((Vector(5) << 500, 500, 1e-5, 100, 100));
+  noiseModel::Diagonal::shared_ptr calNoise = noiseModel::Diagonal::Sigmas((Vector(5) << 500, 500, 1e-5, 100, 100).finished());
   graph.push_back(PriorFactor<Cal3_S2>(Symbol('K', 0), *noisy_K, calNoise));
 
 
@@ -115,7 +115,7 @@ int main(int argc, char** argv){
   params.verbosity = NonlinearOptimizerParams::ERROR;
 
   //create Levenberg-Marquardt optimizer to optimize the factor graph
-  LevenbergMarquardtOptimizer optimizer = LevenbergMarquardtOptimizer(graph, initial_estimate,params);
+  LevenbergMarquardtOptimizer optimizer(graph, initial_estimate,params);
 //  Values result = optimizer.optimize();
 
   string K_values_file = "K_values.txt";

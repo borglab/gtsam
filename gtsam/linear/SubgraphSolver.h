@@ -9,27 +9,37 @@
 
  * -------------------------------------------------------------------------- */
 
+/**
+ * @file   SubgraphSolver.h
+ * @brief  Subgraph Solver from IROS 2010
+ * @date   2010
+ * @author Frank Dellaert
+ * @author Yong Dian Jian
+ */
+
 #pragma once
 
-
 #include <gtsam/linear/ConjugateGradientSolver.h>
-#include <gtsam/inference/Ordering.h>
-#include <boost/tuple/tuple.hpp>
-#include <iosfwd>
 
 namespace gtsam {
 
-  // Forward declarations
-  class GaussianFactorGraph;
-  class GaussianBayesNet;
-  class SubgraphPreconditioner;
+// Forward declarations
+class GaussianFactorGraph;
+class GaussianBayesNet;
+class SubgraphPreconditioner;
 
-class GTSAM_EXPORT SubgraphSolverParameters : public ConjugateGradientParameters {
+class GTSAM_EXPORT SubgraphSolverParameters: public ConjugateGradientParameters {
 public:
   typedef ConjugateGradientParameters Base;
-  SubgraphSolverParameters() : Base() {}
-  void print() const { Base::print(); }
-  virtual void print(std::ostream &os) const { Base::print(os); }
+  SubgraphSolverParameters() :
+      Base() {
+  }
+  void print() const {
+    Base::print();
+  }
+  virtual void print(std::ostream &os) const {
+    Base::print(os);
+  }
 };
 
 /**
@@ -53,8 +63,7 @@ public:
  *
  * \nosubgrouping
  */
-
-class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
+class GTSAM_EXPORT SubgraphSolver: public IterativeSolver {
 
 public:
   typedef SubgraphSolverParameters Parameters;
@@ -62,41 +71,64 @@ public:
 protected:
   Parameters parameters_;
   Ordering ordering_;
-  boost::shared_ptr<SubgraphPreconditioner> pc_;  ///< preconditioner object
+  boost::shared_ptr<SubgraphPreconditioner> pc_; ///< preconditioner object
 
 public:
-  /* Given a gaussian factor graph, split it into a spanning tree (A1) + others (A2) for SPCG */
-  SubgraphSolver(const GaussianFactorGraph &A, const Parameters &parameters, const Ordering& ordering);
-  SubgraphSolver(const boost::shared_ptr<GaussianFactorGraph> &A, const Parameters &parameters, const Ordering& ordering);
 
-  /* The user specify the subgraph part and the constraint part, may throw exception if A1 is underdetermined */
-  SubgraphSolver(const GaussianFactorGraph &Ab1, const GaussianFactorGraph &Ab2, const Parameters &parameters, const Ordering& ordering);
-  SubgraphSolver(const boost::shared_ptr<GaussianFactorGraph> &Ab1, const boost::shared_ptr<GaussianFactorGraph> &Ab2, const Parameters &parameters, const Ordering& ordering);
+  /// Given a gaussian factor graph, split it into a spanning tree (A1) + others (A2) for SPCG
+  SubgraphSolver(const GaussianFactorGraph &A, const Parameters &parameters,
+      const Ordering& ordering);
+
+  /// Shared pointer version
+  SubgraphSolver(const boost::shared_ptr<GaussianFactorGraph> &A,
+      const Parameters &parameters, const Ordering& ordering);
+
+  /**
+   * The user specify the subgraph part and the constraint part
+   * may throw exception if A1 is underdetermined
+   */
+  SubgraphSolver(const GaussianFactorGraph &Ab1, const GaussianFactorGraph &Ab2,
+      const Parameters &parameters, const Ordering& ordering);
+
+  /// Shared pointer version
+  SubgraphSolver(const boost::shared_ptr<GaussianFactorGraph> &Ab1,
+      const boost::shared_ptr<GaussianFactorGraph> &Ab2,
+      const Parameters &parameters, const Ordering& ordering);
 
   /* The same as above, but the A1 is solved before */
-  SubgraphSolver(const boost::shared_ptr<GaussianBayesNet> &Rc1, const GaussianFactorGraph &Ab2, const Parameters &parameters, const Ordering& ordering);
-  SubgraphSolver(const boost::shared_ptr<GaussianBayesNet> &Rc1, const boost::shared_ptr<GaussianFactorGraph> &Ab2, const Parameters &parameters, const Ordering& ordering);
+  SubgraphSolver(const boost::shared_ptr<GaussianBayesNet> &Rc1,
+      const GaussianFactorGraph &Ab2, const Parameters &parameters,
+      const Ordering& ordering);
 
-  virtual ~SubgraphSolver() {}
+  /// Shared pointer version
+  SubgraphSolver(const boost::shared_ptr<GaussianBayesNet> &Rc1,
+      const boost::shared_ptr<GaussianFactorGraph> &Ab2,
+      const Parameters &parameters, const Ordering& ordering);
 
-  VectorValues optimize () ;
-  VectorValues optimize (const VectorValues &initial) ;
+  /// Destructor
+  virtual ~SubgraphSolver() {
+  }
 
-  /* interface to the nonlinear optimizer that the subclasses have to implement */
-  virtual VectorValues optimize (
-    const GaussianFactorGraph &gfg,
-    const KeyInfo &keyInfo,
-    const std::map<Key, Vector> &lambda,
-    const VectorValues &initial
-  ) ;
+  /// Optimize from zero
+  VectorValues optimize();
+
+  /// Optimize from given initial values
+  VectorValues optimize(const VectorValues &initial);
+
+  /** Interface that IterativeSolver subclasses have to implement */
+  virtual VectorValues optimize(const GaussianFactorGraph &gfg,
+      const KeyInfo &keyInfo, const std::map<Key, Vector> &lambda,
+      const VectorValues &initial);
 
 protected:
 
   void initialize(const GaussianFactorGraph &jfg);
-  void initialize(const boost::shared_ptr<GaussianBayesNet> &Rc1, const boost::shared_ptr<GaussianFactorGraph> &Ab2);
+  void initialize(const boost::shared_ptr<GaussianBayesNet> &Rc1,
+      const boost::shared_ptr<GaussianFactorGraph> &Ab2);
 
-  boost::tuple<boost::shared_ptr<GaussianFactorGraph>, boost::shared_ptr<GaussianFactorGraph> >
-  splitGraph(const GaussianFactorGraph &gfg) ;
+  boost::tuple<boost::shared_ptr<GaussianFactorGraph>,
+      boost::shared_ptr<GaussianFactorGraph> >
+  splitGraph(const GaussianFactorGraph &gfg);
 };
 
 } // namespace gtsam

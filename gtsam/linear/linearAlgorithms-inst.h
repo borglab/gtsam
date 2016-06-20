@@ -55,10 +55,10 @@ namespace gtsam
           OptimizeData myData;
           myData.parentData = parentData;
           // Take any ancestor results we'll need
-          BOOST_FOREACH(Key parent, clique->conditional_->parents())
+          for(Key parent: clique->conditional_->parents())
             myData.cliqueResults.insert(std::make_pair(parent, myData.parentData->cliqueResults.at(parent)));
+
           // Solve and store in our results
-          //collectedResult.insert(clique->conditional()->solve(collectedResult/*myData.ancestorResults*/));
           {
             GaussianConditional& c = *clique->conditional();
             // Solve matrix
@@ -68,7 +68,7 @@ namespace gtsam
               DenseIndex dim = 0;
               FastVector<VectorValues::const_iterator> parentPointers;
               parentPointers.reserve(clique->conditional()->nrParents());
-              BOOST_FOREACH(Key parent, clique->conditional()->parents()) {
+              for(Key parent: clique->conditional()->parents()) {
                 parentPointers.push_back(myData.cliqueResults.at(parent));
                 dim += parentPointers.back()->second.size();
               }
@@ -76,23 +76,30 @@ namespace gtsam
               // Fill parent vector
               xS.resize(dim);
               DenseIndex vectorPos = 0;
-              BOOST_FOREACH(const VectorValues::const_iterator& parentPointer, parentPointers) {
+              for(const VectorValues::const_iterator& parentPointer: parentPointers) {
                 const Vector& parentVector = parentPointer->second;
                 xS.block(vectorPos,0,parentVector.size(),1) = parentVector.block(0,0,parentVector.size(),1);
                 vectorPos += parentVector.size();
               }
             }
-            xS = c.getb() - c.get_S() * xS;
-            Vector soln = c.get_R().triangularView<Eigen::Upper>().solve(xS);
+
+            // NOTE(gareth): We can no longer write: xS = b - S * xS
+            // This is because Eigen (as of 3.3) no longer evaluates S * xS into
+            // a temporary, and the operation trashes valus in xS.
+            // See: http://eigen.tuxfamily.org/index.php?title=3.3
+            const Vector rhs = c.getb() - c.get_S() * xS;
+
+            // TODO(gareth): Inline instantiation of Eigen::Solve and check flag
+            const Vector solution = c.get_R().triangularView<Eigen::Upper>().solve(rhs);
 
             // Check for indeterminant solution
-            if(soln.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());
+            if(solution.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());
 
             // Insert solution into a VectorValues
             DenseIndex vectorPosition = 0;
             for(GaussianConditional::const_iterator frontal = c.beginFrontals(); frontal != c.endFrontals(); ++frontal) {
               VectorValues::const_iterator r =
-                collectedResult.insert(*frontal, soln.segment(vectorPosition, c.getDim(frontal)));
+                collectedResult.insert(*frontal, solution.segment(vectorPosition, c.getDim(frontal)));
               myData.cliqueResults.insert(make_pair(r->first, r));
               vectorPosition += c.getDim(frontal);
             }
@@ -108,7 +115,7 @@ namespace gtsam
       //  OptimizeData myData;
       //  myData.parentData = parentData;
       //  // Take any ancestor results we'll need
-      //  BOOST_FOREACH(Key parent, clique->conditional_->parents())
+      //  for(Key parent: clique->conditional_->parents())
       //    myData.ancestorResults.insert(parent, myData.parentData->ancestorResults[parent]);
       //  // Solve and store in our results
       //  myData.results.insert(clique->conditional()->solve(myData.ancestorResults));

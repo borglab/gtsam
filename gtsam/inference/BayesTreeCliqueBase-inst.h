@@ -18,7 +18,6 @@
 
 #include <gtsam/inference/BayesTreeCliqueBase.h>
 #include <gtsam/base/timing.h>
-#include <boost/foreach.hpp>
 
 namespace gtsam {
 
@@ -44,8 +43,8 @@ namespace gtsam {
   FastVector<Key>
     BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::separator_setminus_B(const derived_ptr& B) const
   {
-    FastSet<Key> p_F_S_parents(this->conditional()->beginParents(), this->conditional()->endParents());
-    FastSet<Key> indicesB(B->conditional()->begin(), B->conditional()->end());
+    KeySet p_F_S_parents(this->conditional()->beginParents(), this->conditional()->endParents());
+    KeySet indicesB(B->conditional()->begin(), B->conditional()->end());
     FastVector<Key> S_setminus_B;
     std::set_difference(p_F_S_parents.begin(), p_F_S_parents.end(),
       indicesB.begin(), indicesB.end(), back_inserter(S_setminus_B));
@@ -58,8 +57,8 @@ namespace gtsam {
     const derived_ptr& B, const FactorGraphType& p_Cp_B) const
   {
     gttic(shortcut_indices);
-    FastSet<Key> allKeys = p_Cp_B.keys();
-    FastSet<Key> indicesB(B->conditional()->begin(), B->conditional()->end());
+    KeySet allKeys = p_Cp_B.keys();
+    KeySet indicesB(B->conditional()->begin(), B->conditional()->end());
     FastVector<Key> S_setminus_B = separator_setminus_B(B);
     FastVector<Key> keep;
     // keep = S\B intersect allKeys (S_setminus_B is already sorted)
@@ -83,7 +82,7 @@ namespace gtsam {
   template<class DERIVED, class FACTORGRAPH>
   size_t BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::treeSize() const {
     size_t size = 1;
-    BOOST_FOREACH(const derived_ptr& child, children)
+    for(const derived_ptr& child: children)
       size += child->treeSize();
     return size;
   }
@@ -96,7 +95,7 @@ namespace gtsam {
       return 0;
 
     size_t subtree_count = 1;
-    BOOST_FOREACH(const derived_ptr& child, children)
+    for(const derived_ptr& child: children)
       subtree_count += child->numCachedSeparatorMarginals();
 
     return subtree_count;
@@ -204,7 +203,7 @@ namespace gtsam {
     // root are also generated. So, if this clique's cached shortcut is set,
     // recursively call over all child cliques. Otherwise, it is unnecessary.
     if (cachedSeparatorMarginal_) {
-      BOOST_FOREACH(derived_ptr& child, children) {
+      for(derived_ptr& child: children) {
         child->deleteCachedShortcuts();
       }
 

@@ -5,26 +5,24 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/base/deprecated/LieMatrix_Deprecated.h>
+#include <gtsam/base/deprecated/LieVector_Deprecated.h>
 #include <gtsam/slam/serialization.h>
 #include <gtsam/base/serialization.h>
 
 //#include <gtsam/slam/AntiFactor.h>
-#include <gtsam/slam/BearingFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 //#include <gtsam/slam/BoundingConstraint.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/sam/RangeFactor.h>
 #include <gtsam/slam/StereoFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/base/LieVector.h>
-#include <gtsam/base/LieMatrix.h>
-//#include <gtsam/geometry/StereoPoint2.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3DS2.h>
@@ -81,9 +79,6 @@ typedef RangeFactor<SimpleCamera, Point3>               RangeFactorSimpleCameraP
 typedef RangeFactor<CalibratedCamera, CalibratedCamera> RangeFactorCalibratedCamera;
 typedef RangeFactor<SimpleCamera, SimpleCamera>         RangeFactorSimpleCamera;
 
-typedef BearingFactor<Pose2, Point2, Rot2> BearingFactor2D;
-typedef BearingFactor<Pose3, Point3, Rot3> BearingFactor3D;
-
 typedef BearingRangeFactor<Pose2, Point2>  BearingRangeFactor2D;
 typedef BearingRangeFactor<Pose3, Point3>  BearingRangeFactor3D;
 
@@ -117,21 +112,21 @@ BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 
 /* Create GUIDs for geometry */
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT(gtsam::LieVector);
-BOOST_CLASS_EXPORT(gtsam::LieMatrix);
-BOOST_CLASS_EXPORT(gtsam::Point2);
-BOOST_CLASS_EXPORT(gtsam::StereoPoint2);
-BOOST_CLASS_EXPORT(gtsam::Point3);
-BOOST_CLASS_EXPORT(gtsam::Rot2);
-BOOST_CLASS_EXPORT(gtsam::Rot3);
-BOOST_CLASS_EXPORT(gtsam::Pose2);
-BOOST_CLASS_EXPORT(gtsam::Pose3);
-BOOST_CLASS_EXPORT(gtsam::Cal3_S2);
-BOOST_CLASS_EXPORT(gtsam::Cal3DS2);
-BOOST_CLASS_EXPORT(gtsam::Cal3_S2Stereo);
-BOOST_CLASS_EXPORT(gtsam::CalibratedCamera);
-BOOST_CLASS_EXPORT(gtsam::SimpleCamera);
-BOOST_CLASS_EXPORT(gtsam::StereoCamera);
+GTSAM_VALUE_EXPORT(gtsam::LieVector);
+GTSAM_VALUE_EXPORT(gtsam::LieMatrix);
+GTSAM_VALUE_EXPORT(gtsam::Point2);
+GTSAM_VALUE_EXPORT(gtsam::StereoPoint2);
+GTSAM_VALUE_EXPORT(gtsam::Point3);
+GTSAM_VALUE_EXPORT(gtsam::Rot2);
+GTSAM_VALUE_EXPORT(gtsam::Rot3);
+GTSAM_VALUE_EXPORT(gtsam::Pose2);
+GTSAM_VALUE_EXPORT(gtsam::Pose3);
+GTSAM_VALUE_EXPORT(gtsam::Cal3_S2);
+GTSAM_VALUE_EXPORT(gtsam::Cal3DS2);
+GTSAM_VALUE_EXPORT(gtsam::Cal3_S2Stereo);
+GTSAM_VALUE_EXPORT(gtsam::CalibratedCamera);
+GTSAM_VALUE_EXPORT(gtsam::SimpleCamera);
+GTSAM_VALUE_EXPORT(gtsam::StereoCamera);
 
 /* Create GUIDs for factors */
 /* ************************************************************************* */
@@ -185,8 +180,6 @@ BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCameraPoint, "gtsam::RangeFactorCal
 BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCameraPoint, "gtsam::RangeFactorSimpleCameraPoint");
 BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCamera, "gtsam::RangeFactorCalibratedCamera");
 BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCamera, "gtsam::RangeFactorSimpleCamera");
-
-BOOST_CLASS_EXPORT_GUID(BearingFactor2D, "gtsam::BearingFactor2D");
 
 BOOST_CLASS_EXPORT_GUID(BearingRangeFactor2D, "gtsam::BearingRangeFactor2D");
 

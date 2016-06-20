@@ -321,7 +321,7 @@ struct Graph2: public std::list<Factor2> {
 
 /** Add a factor graph*/
 //  void operator +=(const Graph2& graph) {
-//    BOOST_FOREACH(const Factor2& f, graph)
+//    for(const Factor2& f: graph)
 //        push_back(f);
 //  }
 friend std::ostream& operator <<(std::ostream &os, const Graph2& graph);
@@ -334,7 +334,7 @@ friend std::ostream& operator <<(std::ostream &os, const Graph2& graph);
 //  return graph;
 //}
 std::ostream& operator <<(std::ostream &os, const Graph2& graph) {
-BOOST_FOREACH(const Factor2& f, graph)
+for(const Factor2& f: graph)
 os << f << endl;
 return os;
 }

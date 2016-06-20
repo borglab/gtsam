@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -33,9 +33,9 @@ static const size_t indexBits = keyBits - chrBits;
 static const Key chrMask = Key(UCHAR_MAX)  << indexBits; // For some reason, std::numeric_limits<unsigned char>::max() fails
 static const Key indexMask = ~chrMask;
 
-Symbol::Symbol(Key key) {
-  c_ = (unsigned char) ((key & chrMask) >> indexBits);
-  j_ = key & indexMask;
+Symbol::Symbol(Key key) :
+  c_((unsigned char) ((key & chrMask) >> indexBits)),
+  j_ (key & indexMask) {
 }
 
 Key Symbol::key() const {

@@ -8,6 +8,8 @@ function h = covarianceEllipse(x,P,color, k)
 % it is assumed x and y are the first two components of state x
 % k is scaling for std deviations, defaults to 1 std
 
+hold on
+
 [e,s] = eig(P(1:2,1:2));
 s1 = s(1,1);
 s2 = s(2,2);

@@ -104,9 +104,7 @@ void evalSolverSugarFunction( const POLYNOMIAL& pols, const ROOTS& roots, const 
     // 1) the roots found are correct
     // 2) the roots have distinct moduli
 
-    typedef typename POLYNOMIAL::Scalar                 Scalar;
     typedef typename REAL_ROOTS::Scalar                 Real;
-    typedef PolynomialSolver<Scalar, Deg >              PolynomialSolverType;
 
     //Test realRoots
     std::vector< Real > calc_realRoots;

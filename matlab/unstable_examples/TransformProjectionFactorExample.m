@@ -61,17 +61,17 @@ cheirality_exception_count = 0;
 for i=1:20
     if i > 1
         if i < 11
-            initial.insert(i,initial.at(i-1).compose(move_forward));
+            initial.insert(i,initial.atPose3(i-1).compose(move_forward));
             fg.add(BetweenFactorPose3(i-1,i, move_forward, covariance));
         else
-            initial.insert(i,initial.at(i-1).compose(move_circle));
+            initial.insert(i,initial.atPose3(i-1).compose(move_circle));
             fg.add(BetweenFactorPose3(i-1,i, move_circle, covariance));
         end
         
     end
     
     % generate some camera measurements
-    cam_pose = initial.at(i).compose(actual_transform);
+    cam_pose = initial.atPose3(i).compose(actual_transform);
     gtsam.plotPose3(cam_pose);
     cam = SimpleCamera(cam_pose,K);
     i
@@ -93,14 +93,14 @@ fprintf('Cheirality Exception count: %d\n', cheirality_exception_count);
 
 %% camera plotting
 for i=1:20
-   gtsam.plotPose3(initial.at(i).compose(camera_transform));
+   gtsam.plotPose3(initial.atPose3(i).compose(camera_transform));
 end
 
 xlabel('x (m)');
 ylabel('y (m)');
 
 disp('Transform before optimization');
-initial.at(1000)
+initial.atPose3(1000)
 
 params = LevenbergMarquardtParams;
 params.setAbsoluteErrorTol(1e-15);
@@ -112,7 +112,7 @@ optimizer = LevenbergMarquardtOptimizer(fg, initial, params);
 result = optimizer.optimizeSafely();
 
 disp('Transform after optimization');
-result.at(1000)
+result.atPose3(1000)       % results is empty here. optimizer doesn't generate result?
 
 axis([0 25 0 25 0 10]);
 axis equal

@@ -19,7 +19,6 @@ install(FILES
   GtsamMatlabWrap.cmake
   GtsamPythonWrap.cmake
   GtsamTesting.cmake
-  GtsamTestingObsolete.cmake
   README.html
   DESTINATION "${SCRIPT_INSTALL_DIR}/GTSAMCMakeTools")
 

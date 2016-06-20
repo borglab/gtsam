@@ -42,10 +42,10 @@ TEST( Rot3AttitudeFactor, Constructor ) {
 
   // Create a linearization point at the zero-error point
   Rot3 nRb;
-  EXPECT(assert_equal(zero(2),factor.evaluateError(nRb),1e-5));
+  EXPECT(assert_equal((Vector) Z_2x1,factor.evaluateError(nRb),1e-5));
 
   // Calculate numerical derivatives
-  Matrix expectedH = numericalDerivative11<Rot3>(
+  Matrix expectedH = numericalDerivative11<Vector,Rot3>(
       boost::bind(&Rot3AttitudeFactor::evaluateError, &factor, _1, boost::none),
       nRb);
 
@@ -75,10 +75,10 @@ TEST( Pose3AttitudeFactor, Constructor ) {
 
   // Create a linearization point at the zero-error point
   Pose3 T(Rot3(), Point3(-5.0, 8.0, -11.0));
-  EXPECT(assert_equal(zero(2),factor.evaluateError(T),1e-5));
+  EXPECT(assert_equal((Vector) Z_2x1,factor.evaluateError(T),1e-5));
 
   // Calculate numerical derivatives
-  Matrix expectedH = numericalDerivative11<Pose3>(
+  Matrix expectedH = numericalDerivative11<Vector,Pose3>(
       boost::bind(&Pose3AttitudeFactor::evaluateError, &factor, _1,
           boost::none), T);
 

@@ -40,7 +40,7 @@ void generate_matlab_toolbox(
   wrap::Module module(interfacePath, moduleName, false);
 
   // Then emit MATLAB code
-  module.matlab_code(toolboxPath,headerPath);
+  module.matlab_code(toolboxPath);
 }
 
 /** Displays usage information */

@@ -11,6 +11,7 @@ namespace Eigen {
   - \subpage TopicCustomizingEigen
   - \subpage TopicMultiThreading
   - \subpage TopicUsingIntelMKL
+  - \subpage TopicPitfalls
   - \subpage TopicTemplateKeyword
   - \subpage UserManual_UnderstandingEigen
 */
@@ -119,6 +120,8 @@ namespace Eigen {
 /** \addtogroup TutorialSparse
     \ingroup Sparse_chapter */
 /** \addtogroup TopicSparseSystems
+    \ingroup Sparse_chapter */
+/** \addtogroup MatrixfreeSolverExample
     \ingroup Sparse_chapter */
 
 /** \addtogroup Sparse_Reference

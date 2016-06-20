@@ -90,10 +90,13 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
   };
 
-} // namespace
+// traits
+template<> struct traits<DiscreteBayesNet> : public Testable<DiscreteBayesNet> {};
+
+} // \ namespace gtsam
 

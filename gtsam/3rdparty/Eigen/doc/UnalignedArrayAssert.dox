@@ -7,8 +7,8 @@ Hello! You are seeing this webpage because your program terminated on an asserti
 my_program: path/to/eigen/Eigen/src/Core/DenseStorage.h:44:
 Eigen::internal::matrix_array<T, Size, MatrixOptions, Align>::internal::matrix_array()
 [with T = double, int Size = 2, int MatrixOptions = 2, bool Align = true]:
-Assertion `(reinterpret_cast<size_t>(array) & 0xf) == 0 && "this assertion
-is explained here: http://eigen.tuxfamily.org/dox/UnalignedArrayAssert.html
+Assertion `(reinterpret_cast<size_t>(array) & (sizemask)) == 0 && "this assertion
+is explained here: http://eigen.tuxfamily.org/dox/group__TopicUnalignedArrayAssert.html
 **** READ THIS WEB PAGE !!! ****"' failed.
 </pre>
 
@@ -46,9 +46,9 @@ then you need to read this separate page: \ref TopicStructHavingEigenMembers "St
 
 Note that here, Eigen::Vector2d is only used as an example, more generally the issue arises for all \ref TopicFixedSizeVectorizable "fixed-size vectorizable Eigen types".
 
-\section c2 Cause 2: STL Containers
+\section c2 Cause 2: STL Containers or manual memory allocation
 
-If you use STL Containers such as std::vector, std::map, ..., with Eigen objects, or with classes containing Eigen objects, like this,
+If you use STL Containers such as std::vector, std::map, ..., with %Eigen objects, or with classes containing %Eigen objects, like this,
 
 \code
 std::vector<Eigen::Matrix2f> my_vector;
@@ -59,6 +59,8 @@ std::map<int, my_class> my_map;
 then you need to read this separate page: \ref TopicStlContainers "Using STL Containers with Eigen".
 
 Note that here, Eigen::Matrix2f is only used as an example, more generally the issue arises for all \ref TopicFixedSizeVectorizable "fixed-size vectorizable Eigen types" and \ref TopicStructHavingEigenMembers "structures having such Eigen objects as member".
+
+The same issue will be exhibited by any classes/functions by-passing operator new to allocate memory, that is, by performing custom memory allocation followed by calls to the placement new operator. This is for instance typically the case of \c std::make_shared or \c std::allocate_shared for which is the solution is to use an \ref aligned_allocator "aligned allocator" as detailed in the \ref TopicStlContainers "solution for STL containers".
 
 \section c3 Cause 3: Passing Eigen objects by value
 
@@ -107,7 +109,10 @@ Two possibilities:
       128-bit alignment code and thus preserves ABI compatibility, but completely disables vectorization.</li>
 </ul>
 
-For more information, see <a href="http://eigen.tuxfamily.org/index.php?title=FAQ#I_disabled_vectorization.2C_but_I.27m_still_getting_annoyed_about_alignment_issues.21">this FAQ</a>.
+If you want to know why defining EIGEN_DONT_VECTORIZE does not by itself disable 128-bit alignment and the assertion, here's the explanation:
+
+It doesn't disable the assertion, because otherwise code that runs fine without vectorization would suddenly crash when enabling vectorization.
+It doesn't disable 128bit alignment, because that would mean that vectorized and non-vectorized code are not mutually ABI-compatible. This ABI compatibility is very important, even for people who develop only an in-house application, as for instance one may want to have in the same application a vectorized path and a non-vectorized path.
 
 */
 

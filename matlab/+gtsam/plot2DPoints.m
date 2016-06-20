@@ -18,15 +18,18 @@ hold on
 % Plot points and covariance matrices
 for i = 0:keys.size-1
     key = keys.at(i);
-    p = values.at(key);
-    if isa(p, 'gtsam.Point2')
+    try
+        p = values.atPoint2(key);
         if haveMarginals
             P = marginals.marginalCovariance(key);
             gtsam.plotPoint2(p, linespec, P);
         else
             gtsam.plotPoint2(p, linespec);
         end
+    catch err
+        % I guess it's not a Point2
     end
+    
 end
 
 if ~holdstate

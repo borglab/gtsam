@@ -23,12 +23,17 @@ if (GTSAM_BUILD_DOCS)
     # GTSAM core subfolders
     set(gtsam_doc_subdirs 
         gtsam/base 
+        gtsam/discrete 
         gtsam/geometry 
         gtsam/inference 
-        gtsam/discrete 
         gtsam/linear 
+        gtsam/navigation 
         gtsam/nonlinear 
+        gtsam/sam 
+        gtsam/sfm 
         gtsam/slam 
+        gtsam/smart 
+        gtsam/symbolic 
         gtsam
     )
     

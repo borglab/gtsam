@@ -9,6 +9,8 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #define EIGEN2_SUPPORT
+#define EIGEN_NO_EIGEN2_DEPRECATED_WARNING
+
 #define EIGEN_NO_STATIC_ASSERT
 #include "main.h"
 #include <functional>

@@ -19,6 +19,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
@@ -32,14 +33,20 @@ using namespace gtsam::serializationTestHelpers;
 
 /* ************************************************************************* */
 // Export all classes derived from Value
-BOOST_CLASS_EXPORT(gtsam::Cal3_S2)
-BOOST_CLASS_EXPORT(gtsam::Cal3Bundler)
-BOOST_CLASS_EXPORT(gtsam::Point3)
-BOOST_CLASS_EXPORT(gtsam::Pose3)
-BOOST_CLASS_EXPORT(gtsam::Rot3)
-BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3_S2>)
-BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3DS2>)
-BOOST_CLASS_EXPORT(gtsam::PinholeCamera<Cal3Bundler>)
+GTSAM_VALUE_EXPORT(gtsam::Cal3_S2);
+GTSAM_VALUE_EXPORT(gtsam::Cal3Bundler);
+GTSAM_VALUE_EXPORT(gtsam::Point3);
+GTSAM_VALUE_EXPORT(gtsam::Pose3);
+GTSAM_VALUE_EXPORT(gtsam::Rot3);
+GTSAM_VALUE_EXPORT(gtsam::PinholeCamera<Cal3_S2>);
+GTSAM_VALUE_EXPORT(gtsam::PinholeCamera<Cal3DS2>);
+GTSAM_VALUE_EXPORT(gtsam::PinholeCamera<Cal3Bundler>);
+
+namespace detail {
+template<class T> struct pack {
+ typedef T type;
+};
+}
 
 /* ************************************************************************* */
 typedef PinholeCamera<Cal3_S2>        PinholeCal3S2;
@@ -56,7 +63,16 @@ static Cal3DS2 cal2(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
 static Cal3Bundler cal3(1.0, 2.0, 3.0);
 
 TEST (Serialization, TemplatedValues) {
+  EXPECT(equalsObj(pt3));
+  GenericValue<Point3> chv1(pt3);
+  EXPECT(equalsObj(chv1));
+  PinholeCal3S2 pc(pose3,cal1);
+  EXPECT(equalsObj(pc));
+
   Values values;
+  values.insert(1,pt3);
+
+  EXPECT(equalsObj(values));
   values.insert(Symbol('a',0),  PinholeCal3S2(pose3, cal1));
   values.insert(Symbol('s',5), PinholeCal3DS2(pose3, cal2));
   values.insert(Symbol('d',47), PinholeCal3Bundler(pose3, cal3));

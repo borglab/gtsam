@@ -23,11 +23,8 @@ template<typename MatrixType> void basicStuff(const MatrixType& m)
              m2 = MatrixType::Random(rows, cols),
              m3(rows, cols),
              mzero = MatrixType::Zero(rows, cols),
-             identity = Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime>
-                              ::Identity(rows, rows),
              square = Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime>::Random(rows, rows);
   VectorType v1 = VectorType::Random(rows),
-             v2 = VectorType::Random(rows),
              vzero = VectorType::Zero(rows);
 
   Scalar x = ei_random<Scalar>();

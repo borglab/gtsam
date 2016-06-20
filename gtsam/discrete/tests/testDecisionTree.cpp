@@ -44,11 +44,21 @@ void dot(const T&f, const string& filename) {
 struct Crazy { int a; double b; };
 typedef DecisionTree<string,Crazy> CrazyDecisionTree; // check that DecisionTree is actually generic (as it pretends to be)
 
+// traits
+namespace gtsam {
+template<> struct traits<CrazyDecisionTree> : public Testable<CrazyDecisionTree> {};
+}
+
 /* ******************************************************************************** */
 // Test string labels and int range
 /* ******************************************************************************** */
 
 typedef DecisionTree<string, int> DT;
+
+// traits
+namespace gtsam {
+template<> struct traits<DT> : public Testable<DT> {};
+}
 
 struct Ring {
   static inline int zero() {

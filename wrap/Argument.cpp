@@ -18,8 +18,8 @@
 
 #include "Argument.h"
 
-#include <boost/foreach.hpp>
 #include <boost/regex.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -29,39 +29,59 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
+Argument Argument::expandTemplate(const TemplateSubstitution& ts) const {
+  Argument instArg = *this;
+  instArg.type = ts.tryToSubstitite(type);
+  return instArg;
+}
+
+/* ************************************************************************* */
+ArgumentList ArgumentList::expandTemplate(
+    const TemplateSubstitution& ts) const {
+  ArgumentList instArgList;
+  for(const Argument& arg: *this) {
+    Argument instArg = arg.expandTemplate(ts);
+    instArgList.push_back(instArg);
+  }
+  return instArgList;
+}
+
+/* ************************************************************************* */
 string Argument::matlabClass(const string& delim) const {
   string result;
-  BOOST_FOREACH(const string& ns, namespaces)
+  for(const string& ns: type.namespaces())
     result += ns + delim;
-  if (type == "string" || type == "unsigned char" || type == "char")
+  if (type.name() == "string" || type.name() == "unsigned char"
+      || type.name() == "char")
     return result + "char";
-  if (type == "Vector" || type == "Matrix")
+  if (type.name() == "Vector" || type.name() == "Matrix")
     return result + "double";
-  if (type == "int" || type == "size_t")
+  if (type.name() == "int" || type.name() == "size_t")
     return result + "numeric";
-  if (type == "bool")
+  if (type.name() == "bool")
     return result + "logical";
-  return result + type;
+  return result + type.name();
 }
 
 /* ************************************************************************* */
 bool Argument::isScalar() const {
-  return (type == "bool" || type == "char" || type == "unsigned char"
-      || type == "int" || type == "size_t" || type == "double");
+  return (type.name() == "bool" || type.name() == "char"
+      || type.name() == "unsigned char" || type.name() == "int"
+      || type.name() == "size_t" || type.name() == "double");
 }
 
 /* ************************************************************************* */
 void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
   file.oss << "  ";
 
-  string cppType = qualifiedType("::");
-  string matlabUniqueType = qualifiedType();
+  string cppType = type.qualifiedName("::");
+  string matlabUniqueType = type.qualifiedName();
 
-  if (is_ptr)
+  if (is_ptr && type.category != Qualified::EIGEN)
     // A pointer: emit an "unwrap_shared_ptr" call which returns a pointer
     file.oss << "boost::shared_ptr<" << cppType << "> " << name
         << " = unwrap_shared_ptr< ";
-  else if (is_ref)
+  else if (is_ref && type.category != Qualified::EIGEN)
     // A reference: emit an "unwrap_shared_ptr" call and de-reference the pointer
     file.oss << cppType << "& " << name << " = *unwrap_shared_ptr< ";
   else
@@ -73,27 +93,26 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
     file.oss << cppType << " " << name << " = unwrap< ";
 
   file.oss << cppType << " >(" << matlabName;
-  if (is_ptr || is_ref)
+  if( (is_ptr || is_ref) && type.category != Qualified::EIGEN)
     file.oss << ", \"ptr_" << matlabUniqueType << "\"";
   file.oss << ");" << endl;
 }
 
 /* ************************************************************************* */
-string Argument::qualifiedType(const string& delim) const {
-  string result;
-  BOOST_FOREACH(const string& ns, namespaces)
-    result += ns + delim;
-  return result + type;
+void Argument::proxy_check(FileWriter& proxyFile, const string& s) const {
+  proxyFile.oss << "isa(" << s << ",'" << matlabClass(".") << "')";
+  if (type.name() == "Vector")
+    proxyFile.oss << " && size(" << s << ",2)==1";
 }
 
 /* ************************************************************************* */
 string ArgumentList::types() const {
   string str;
   bool first = true;
-  BOOST_FOREACH(Argument arg, *this) {
+  for(Argument arg: *this) {
     if (!first)
       str += ",";
-    str += arg.type;
+    str += arg.type.name();
     first = false;
   }
   return str;
@@ -104,15 +123,15 @@ string ArgumentList::signature() const {
   string sig;
   bool cap = false;
 
-  BOOST_FOREACH(Argument arg, *this) {
-    BOOST_FOREACH(char ch, arg.type)
+  for(Argument arg: *this) {
+    for(char ch: arg.type.name())
       if (isupper(ch)) {
         sig += ch;
         //If there is a capital letter, we don't want to read it below
         cap = true;
       }
     if (!cap)
-      sig += arg.type[0];
+      sig += arg.type.name()[0];
     //Reset to default
     cap = false;
   }
@@ -124,7 +143,7 @@ string ArgumentList::signature() const {
 string ArgumentList::names() const {
   string str;
   bool first = true;
-  BOOST_FOREACH(Argument arg, *this) {
+  for(Argument arg: *this) {
     if (!first)
       str += ",";
     str += arg.name;
@@ -135,15 +154,16 @@ string ArgumentList::names() const {
 
 /* ************************************************************************* */
 bool ArgumentList::allScalar() const {
-  BOOST_FOREACH(Argument arg, *this)
-      if (!arg.isScalar()) return false;
+  for(Argument arg: *this)
+    if (!arg.isScalar())
+      return false;
   return true;
 }
 
 /* ************************************************************************* */
 void ArgumentList::matlab_unwrap(FileWriter& file, int start) const {
   int index = start;
-  BOOST_FOREACH(Argument arg, *this) {
+  for(Argument arg: *this) {
     stringstream buf;
     buf << "in[" << index << "]";
     arg.matlab_unwrap(file, buf.str());
@@ -155,45 +175,32 @@ void ArgumentList::matlab_unwrap(FileWriter& file, int start) const {
 void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
   file.oss << name << "(";
   bool first = true;
-  BOOST_FOREACH(Argument arg, *this) {
+  for(Argument arg: *this) {
     if (!first)
       file.oss << ", ";
-    file.oss << arg.type << " " << arg.name;
+    file.oss << arg.type.name() << " " << arg.name;
     first = false;
   }
   file.oss << ")";
 }
+
 /* ************************************************************************* */
-void ArgumentList::emit_call(FileWriter& file, const ReturnValue& returnVal,
-    const string& wrapperName, int id, bool staticMethod) const {
-  returnVal.emit_matlab(file);
-  file.oss << wrapperName << "(" << id;
-  if (!staticMethod)
-    file.oss << ", this";
-  file.oss << ", varargin{:});\n";
-}
-/* ************************************************************************* */
-void ArgumentList::emit_conditional_call(FileWriter& file,
-    const ReturnValue& returnVal, const string& wrapperName, int id,
-    bool staticMethod) const {
+void ArgumentList::proxy_check(FileWriter& proxyFile) const {
   // Check nr of arguments
-  file.oss << "if length(varargin) == " << size();
+  proxyFile.oss << "if length(varargin) == " << size();
   if (size() > 0)
-    file.oss << " && ";
-  // ...and their types
+    proxyFile.oss << " && ";
+  // ...and their type.names
   bool first = true;
   for (size_t i = 0; i < size(); i++) {
     if (!first)
-      file.oss << " && ";
-    file.oss << "isa(varargin{" << i + 1 << "},'" << (*this)[i].matlabClass(".")
-        << "')";
+      proxyFile.oss << " && ";
+    string s = "varargin{" + boost::lexical_cast<string>(i + 1) + "}";
+    (*this)[i].proxy_check(proxyFile, s);
     first = false;
   }
-  file.oss << "\n";
-
-  // output call to C++ wrapper
-  file.oss << "        ";
-  emit_call(file, returnVal, wrapperName, id, staticMethod);
+  proxyFile.oss << "\n";
 }
+
 /* ************************************************************************* */
 

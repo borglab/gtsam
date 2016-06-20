@@ -16,7 +16,7 @@ gtsam.plot3DPoints(result, [], marginals);
 M = 1;
 while result.exists(symbol('x',M))
     ii = symbol('x',M);
-    pose_i = result.at(ii);
+    pose_i = result.atPose3(ii);
     if options.hardConstraint && (M==1)
         gtsam.plotPose3(pose_i,[],10);
     else

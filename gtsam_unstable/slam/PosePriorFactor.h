@@ -88,7 +88,7 @@ namespace gtsam {
         // manifold equivalent of h(x)-z -> log(z,h(x))
         return prior_.localCoordinates(p.compose(*body_P_sensor_, H));
       } else {
-        if(H) (*H) = eye(p.dim());
+        if(H) (*H) = I_6x6;
         // manifold equivalent of h(x)-z -> log(z,h(x))
         return prior_.localCoordinates(p);
       }
@@ -101,7 +101,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(prior_);
       ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);

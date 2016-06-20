@@ -8,7 +8,7 @@ function [ measurements ] = project_landmarks( pose, landmarks, K )
     measurements = Values;
     
     for i=1:size(landmarks)-1
-        z = camera.project(landmarks.at(symbol('l',i)));
+        z = camera.project(landmarks.atPoint3(symbol('l',i)));
         
         % check bounding box
         if z.x < 0 || z.x > 1280

@@ -38,13 +38,13 @@ namespace {
 
 // Set up initial pose, odometry difference, loop closure difference, and initialization errors
 const Pose3 poseInitial;
-const Pose3 poseOdometry( Rot3::RzRyRx((Vector(3) << 0.05, 0.10, -0.75)), Point3(1.0, -0.25, 0.10) );
-const Pose3 poseError( Rot3::RzRyRx((Vector(3) << 0.01, 0.02, -0.1)), Point3(0.05, -0.05, 0.02) );
+const Pose3 poseOdometry( Rot3::RzRyRx(Vector3(0.05, 0.10, -0.75)), Point3(1.0, -0.25, 0.10) );
+const Pose3 poseError( Rot3::RzRyRx(Vector3(0.01, 0.02, -0.1)), Point3(0.05, -0.05, 0.02) );
 
 // Set up noise models for the factors
 const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-const SharedDiagonal noiseOdometery = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5));
-const SharedDiagonal noiseLoop = noiseModel::Diagonal::Sigmas((Vector(6) << 0.25, 0.25, 0.25, 1.0, 1.0, 1.0));
+const SharedDiagonal noiseOdometery = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5).finished());
+const SharedDiagonal noiseLoop = noiseModel::Diagonal::Sigmas((Vector(6) << 0.25, 0.25, 0.25, 1.0, 1.0, 1.0).finished());
 
 /* ************************************************************************* */
 Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int maxIter = 100) {
@@ -513,7 +513,7 @@ TEST( ConcurrentIncrementalSmootherGN, synchronize_2 )
 //  Values expectedLinearizationPoint = BatchOptimize(allFactors, allValues, 1);
   Values expectedLinearizationPoint = filterSeparatorValues;
   Values actualLinearizationPoint;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, filterSeparatorValues) {
+  for(const Values::ConstKeyValuePair& key_value: filterSeparatorValues) {
     actualLinearizationPoint.insert(key_value.key, smoother.getLinearizationPoint().at(key_value.key));
   }
   CHECK(assert_equal(expectedLinearizationPoint, actualLinearizationPoint, 1e-6));
@@ -581,14 +581,14 @@ TEST( ConcurrentIncrementalSmootherGN, synchronize_3 )
 //  GaussianSequentialSolver GSS = GaussianSequentialSolver(*LinFactorGraph);
 //  GaussianBayesNet::shared_ptr GBNsptr = GSS.eliminate();
 
-  FastSet<Key> allkeys = LinFactorGraph->keys();
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, filterSeparatorValues)
+  KeySet allkeys = LinFactorGraph->keys();
+  for(const Values::ConstKeyValuePair& key_value: filterSeparatorValues)
     allkeys.erase(key_value.key);
   std::vector<Key> variables(allkeys.begin(), allkeys.end());
   std::pair<GaussianBayesNet::shared_ptr, GaussianFactorGraph::shared_ptr> result = LinFactorGraph->eliminatePartialSequential(variables, EliminateCholesky);
 
   expectedSmootherSummarization.resize(0);
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, *result.second) {
+  for(const GaussianFactor::shared_ptr& factor: *result.second) {
     expectedSmootherSummarization.push_back(LinearContainerFactor(factor, allValues));
   }
 
@@ -600,8 +600,6 @@ TEST( ConcurrentIncrementalSmootherGN, synchronize_3 )
 ///* ************************************************************************* */
 TEST( ConcurrentIncrementalSmoother, removeFactors_topology_1 )
 {
-  std::cout << "*********************** removeFactors_topology_1 ************************" << std::endl;
-
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.optimizationParams = ISAM2GaussNewtonParams();
@@ -629,9 +627,7 @@ TEST( ConcurrentIncrementalSmoother, removeFactors_topology_1 )
   // factor we want to remove
   // NOTE: we can remove factors, paying attention that the remaining graph remains connected
   // we remove a single factor, the number 1, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
-  std::vector<size_t> removeFactorIndices(2,1);
-
-
+  FactorIndices removeFactorIndices(2,1);
 
   // Add no factors to the smoother (we only want to test the removal)
   NonlinearFactorGraph noFactors;
@@ -657,7 +653,6 @@ TEST( ConcurrentIncrementalSmoother, removeFactors_topology_1 )
 /////* ************************************************************************* */
 //TEST( ConcurrentIncrementalSmoother, removeFactors_topology_2 )
 //{
-//  std::cout << "*********************** removeFactors_topology_2 ************************" << std::endl;
 //  // we try removing the last factor
 //
 //  // Create a set of optimizer parameters
@@ -711,7 +706,6 @@ TEST( ConcurrentIncrementalSmoother, removeFactors_topology_1 )
 /////* ************************************************************************* */
 //TEST( ConcurrentBatchSmoother, removeFactors_topology_3 )
 //{
-//  std::cout << "*********************** removeFactors_topology_3 ************************" << std::endl;
 //  // we try removing the first factor
 //
 //  // Create a set of optimizer parameters
@@ -761,7 +755,6 @@ TEST( ConcurrentIncrementalSmoother, removeFactors_topology_1 )
 /////* ************************************************************************* */
 //TEST( ConcurrentBatchSmoother, removeFactors_values )
 //{
-//  std::cout << "*********************** removeFactors_values ************************" << std::endl;
 //  // we try removing the last factor
 //
 //  // Create a set of optimizer parameters

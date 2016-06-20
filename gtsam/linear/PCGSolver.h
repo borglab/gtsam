@@ -1,20 +1,25 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /*
- * PCGSolver.h
- *
- *  Created on: Jan 31, 2012
- *  Author: Yong-Dian Jian
+ * @file PCGSolver.h
+ * @brief Preconditioned Conjugate Gradient Solver for linear systems
+ * @date Jan 31, 2012
+ * @author Yong-Dian Jian
+ * @author Sungtae An
  */
 
 #pragma once
 
-#include <gtsam/linear/IterativeSolver.h>
 #include <gtsam/linear/ConjugateGradientSolver.h>
-#include <gtsam/linear/VectorValues.h>
-#include <boost/shared_ptr.hpp>
-
-#include <algorithm>
-#include <iosfwd>
-#include <map>
 #include <string>
 
 namespace gtsam {
@@ -22,15 +27,19 @@ namespace gtsam {
 class GaussianFactorGraph;
 class KeyInfo;
 class Preconditioner;
+class VectorValues;
 struct PreconditionerParameters;
 
-/*****************************************************************************/
+/**
+ * Parameters for PCG
+ */
 struct GTSAM_EXPORT PCGSolverParameters: public ConjugateGradientParameters {
 public:
   typedef ConjugateGradientParameters Base;
   typedef boost::shared_ptr<PCGSolverParameters> shared_ptr;
 
-  PCGSolverParameters() {}
+  PCGSolverParameters() {
+  }
 
   virtual void print(std::ostream &os) const;
 
@@ -42,8 +51,9 @@ public:
   boost::shared_ptr<PreconditionerParameters> preconditioner_;
 };
 
-/*****************************************************************************/
-/* A virtual base class for the preconditioned conjugate gradient solver */
+/**
+ * A virtual base class for the preconditioned conjugate gradient solver
+ */
 class GTSAM_EXPORT PCGSolver: public IterativeSolver {
 public:
   typedef IterativeSolver Base;
@@ -57,7 +67,8 @@ protected:
 public:
   /* Interface to initialize a solver without a problem */
   PCGSolver(const PCGSolverParameters &p);
-  virtual ~PCGSolver() {}
+  virtual ~PCGSolver() {
+  }
 
   using IterativeSolver::optimize;
 
@@ -67,7 +78,9 @@ public:
 
 };
 
-/*****************************************************************************/
+/**
+ * System class needed for calling preconditionedConjugateGradient
+ */
 class GTSAM_EXPORT GaussianFactorGraphSystem {
 public:
 
@@ -97,13 +110,17 @@ public:
   void getb(Vector &b) const;
 };
 
-/* utility functions */
-/**********************************************************************************/
+/// @name utility functions
+/// @{
+
+/// Create VectorValues from a Vector
 VectorValues buildVectorValues(const Vector &v, const Ordering &ordering,
     const std::map<Key, size_t> & dimensions);
 
-/**********************************************************************************/
+/// Create VectorValues from a Vector and a KeyInfo class
 VectorValues buildVectorValues(const Vector &v, const KeyInfo &keyInfo);
+
+/// @}
 
 }
 

@@ -19,18 +19,18 @@
 
 #pragma once
 
-#include <string>
-
-#include <gtsam/base/types.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/ConcurrentMap.h>
 #include <gtsam/base/FastVector.h>
+
+#include <string>
 
 namespace gtsam {
 
   // Forward declarations
   template<class FACTOR> class FactorGraph;
-  template<class BAYESTREE, class GRAPH> class ClusterTree;
+  template<class BAYESTREE, class GRAPH> class EliminatableClusterTree;
 
   /* ************************************************************************* */
   /** clique statistics */
@@ -247,13 +247,13 @@ namespace gtsam {
     void fillNodesIndex(const sharedClique& subtree);
 
     // Friend JunctionTree because it directly fills roots and nodes index.
-    template<class BAYESRTEE, class GRAPH> friend class ClusterTree;
+    template<class BAYESRTEE, class GRAPH> friend class EliminatableClusterTree;
 
   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(nodes_);
       ar & BOOST_SERIALIZATION_NVP(roots_);
     }

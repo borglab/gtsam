@@ -1,11 +1,25 @@
 % Test runner script - runs each test 
 
-display 'Starting: testJacobianFactor'
-testJacobianFactor
+%% geometry
+display 'Starting: testCal3Unified'
+testCal3Unified
 
+%% linear
 display 'Starting: testKalmanFilter'
 testKalmanFilter
 
+display 'Starting: testJacobianFactor'
+testJacobianFactor
+
+%% nonlinear
+display 'Starting: testValues'
+testValues
+
+%% SLAM
+display 'Starting: testPriorFactor'
+testPriorFactor
+
+%% examples
 display 'Starting: testLocalizationExample'
 testLocalizationExample
 
@@ -30,11 +44,14 @@ testStereoVOExample
 display 'Starting: testVisualISAMExample'
 testVisualISAMExample
 
-display 'Starting: testSerialization'
-testSerialization
-
+%% MATLAB specific
 display 'Starting: testUtilities'
 testUtilities
+
+if(exist('testSerialization.m','file'))
+    display 'Starting: testSerialization'
+    testSerialization
+end
 
 % end of tests
 display 'Tests complete!'

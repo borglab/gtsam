@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -18,7 +18,7 @@
 
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
-
+#include <gtsam/base/testLie.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
@@ -33,15 +33,28 @@ using namespace gtsam;
 GTSAM_CONCEPT_TESTABLE_INST(Rot3)
 GTSAM_CONCEPT_LIE_INST(Rot3)
 
-static Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
+static Rot3 R = Rot3::Rodrigues(0.1, 0.4, 0.2);
 static Point3 P(0.2, 0.7, -2.0);
 static double error = 1e-9, epsilon = 0.001;
-static const Matrix I3 = eye(3);
+
+//******************************************************************************
+TEST(Rot3 , Concept) {
+  BOOST_CONCEPT_ASSERT((IsGroup<Rot3 >));
+  BOOST_CONCEPT_ASSERT((IsManifold<Rot3 >));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Rot3 >));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, chart)
+{
+  Matrix R = (Matrix(3, 3) << 0, 1, 0, 1, 0, 0, 0, 0, -1).finished();
+  Rot3 rot3(R);
+}
 
 /* ************************************************************************* */
 TEST( Rot3, constructor)
 {
-  Rot3 expected(I3);
+  Rot3 expected((Matrix)I_3x3);
   Point3 r1(1,0,0), r2(0,1,0), r3(0,0,1);
   Rot3 actual(r1, r2, r3);
   CHECK(assert_equal(actual,expected));
@@ -50,7 +63,7 @@ TEST( Rot3, constructor)
 /* ************************************************************************* */
 TEST( Rot3, constructor2)
 {
-  Matrix R = (Matrix(3, 3) << 0, 1, 0, 1, 0, 0, 0, 0, -1);
+  Matrix R = (Matrix(3, 3) << 0, 1, 0, 1, 0, 0, 0, 0, -1).finished();
   Rot3 actual(R);
   Rot3 expected(0, 1, 0, 1, 0, 0, 0, 0, -1);
   CHECK(assert_equal(actual,expected));
@@ -82,63 +95,70 @@ TEST( Rot3, equals)
 
 /* ************************************************************************* */
 // Notice this uses J^2 whereas fast uses w*w', and has cos(t)*I + ....
-Rot3 slow_but_correct_rodriguez(const Vector& w) {
-  double t = norm_2(w);
-  Matrix J = skewSymmetric(w / t);
+Rot3 slow_but_correct_Rodrigues(const Vector& w) {
+  double t = w.norm();
+  Matrix3 J = skewSymmetric(w / t);
   if (t < 1e-5) return Rot3();
-  Matrix R = I3 + sin(t) * J + (1.0 - cos(t)) * (J * J);
-  return R;
+  Matrix3 R = I_3x3 + sin(t) * J + (1.0 - cos(t)) * (J * J);
+  return Rot3(R);
 }
 
 /* ************************************************************************* */
-TEST( Rot3, rodriguez)
+TEST( Rot3, Rodrigues)
 {
-  Rot3 R1 = Rot3::rodriguez(epsilon, 0, 0);
-  Vector w = (Vector(3) << epsilon, 0., 0.);
-  Rot3 R2 = slow_but_correct_rodriguez(w);
+  Rot3 R1 = Rot3::Rodrigues(epsilon, 0, 0);
+  Vector w = (Vector(3) << epsilon, 0., 0.).finished();
+  Rot3 R2 = slow_but_correct_Rodrigues(w);
   CHECK(assert_equal(R2,R1));
 }
 
 /* ************************************************************************* */
-TEST( Rot3, rodriguez2)
+TEST( Rot3, Rodrigues2)
 {
-  Vector axis = (Vector(3) << 0., 1., 0.); // rotation around Y
+  Vector axis = Vector3(0., 1., 0.); // rotation around Y
   double angle = 3.14 / 4.0;
-  Rot3 actual = Rot3::rodriguez(axis, angle);
   Rot3 expected(0.707388, 0, 0.706825,
                        0, 1,        0,
                -0.706825, 0, 0.707388);
+  Rot3 actual = Rot3::AxisAngle(axis, angle);
   CHECK(assert_equal(expected,actual,1e-5));
+  Rot3 actual2 = Rot3::Rodrigues(angle*axis);
+  CHECK(assert_equal(expected,actual2,1e-5));
 }
 
 /* ************************************************************************* */
-TEST( Rot3, rodriguez3)
+TEST( Rot3, Rodrigues3)
 {
-  Vector w = (Vector(3) << 0.1, 0.2, 0.3);
-  Rot3 R1 = Rot3::rodriguez(w / norm_2(w), norm_2(w));
-  Rot3 R2 = slow_but_correct_rodriguez(w);
+  Vector w = Vector3(0.1, 0.2, 0.3);
+  Rot3 R1 = Rot3::AxisAngle(w / w.norm(), w.norm());
+  Rot3 R2 = slow_but_correct_Rodrigues(w);
   CHECK(assert_equal(R2,R1));
 }
 
 /* ************************************************************************* */
-TEST( Rot3, rodriguez4)
+TEST( Rot3, Rodrigues4)
 {
-  Vector axis = (Vector(3) << 0., 0., 1.); // rotation around Z
+  Vector axis = Vector3(0., 0., 1.); // rotation around Z
   double angle = M_PI/2.0;
-  Rot3 actual = Rot3::rodriguez(axis, angle);
+  Rot3 actual = Rot3::AxisAngle(axis, angle);
   double c=cos(angle),s=sin(angle);
   Rot3 expected(c,-s, 0,
                 s, c, 0,
                 0, 0, 1);
-  CHECK(assert_equal(expected,actual,1e-5));
-  CHECK(assert_equal(slow_but_correct_rodriguez(axis*angle),actual,1e-5));
+  CHECK(assert_equal(expected,actual));
+  CHECK(assert_equal(slow_but_correct_Rodrigues(axis*angle),actual));
 }
 
 /* ************************************************************************* */
 TEST( Rot3, retract)
 {
-  Vector v = zero(3);
-  CHECK(assert_equal(R.retract(v), R));
+  Vector v = Z_3x1;
+  CHECK(assert_equal(R, R.retract(v)));
+
+//  // test Canonical coordinates
+//  Canonical<Rot3> chart;
+//  Vector v2 = chart.local(R);
+//  CHECK(assert_equal(R, chart.retract(v2)));
 }
 
 /* ************************************************************************* */
@@ -149,8 +169,8 @@ TEST(Rot3, log)
   Rot3 R;
 
 #define CHECK_OMEGA(X,Y,Z) \
-  w = (Vector(3) << (double)X, (double)Y, double(Z)); \
-  R = Rot3::rodriguez(w); \
+  w = (Vector(3) << (double)X, (double)Y, double(Z)).finished(); \
+  R = Rot3::Rodrigues(w); \
   EXPECT(assert_equal(w, Rot3::Logmap(R),1e-12));
 
   // Check zero
@@ -182,8 +202,8 @@ TEST(Rot3, log)
 
   // Windows and Linux have flipped sign in quaternion mode
 #if !defined(__APPLE__) && defined (GTSAM_USE_QUATERNIONS)
-  w = (Vector(3) << x*PI, y*PI, z*PI); 
-  R = Rot3::rodriguez(w); 
+  w = (Vector(3) << x*PI, y*PI, z*PI).finished();
+  R = Rot3::Rodrigues(w);
   EXPECT(assert_equal(Vector(-w), Rot3::Logmap(R),1e-12));
 #else
   CHECK_OMEGA(x*PI,y*PI,z*PI)
@@ -191,9 +211,9 @@ TEST(Rot3, log)
 
   // Check 360 degree rotations
 #define CHECK_OMEGA_ZERO(X,Y,Z) \
-  w = (Vector(3) << (double)X, (double)Y, double(Z)); \
-  R = Rot3::rodriguez(w); \
-  EXPECT(assert_equal(zero(3), Rot3::Logmap(R)));
+  w = (Vector(3) << (double)X, (double)Y, double(Z)).finished(); \
+  R = Rot3::Rodrigues(w); \
+  EXPECT(assert_equal((Vector) Z_3x1, Rot3::Logmap(R)));
 
   CHECK_OMEGA_ZERO( 2.0*PI,      0,      0)
   CHECK_OMEGA_ZERO(      0, 2.0*PI,      0)
@@ -201,49 +221,43 @@ TEST(Rot3, log)
   CHECK_OMEGA_ZERO(x*2.*PI,y*2.*PI,z*2.*PI)
 }
 
-Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta){
-  return Rot3::Logmap( Rot3::Expmap(thetahat).compose( Rot3::Expmap(deltatheta) ) );
+/* ************************************************************************* */
+TEST(Rot3, retract_localCoordinates)
+{
+  Vector3 d12 = Vector3::Constant(0.1);
+  Rot3 R2 = R.retract(d12);
+  EXPECT(assert_equal(d12, R.localCoordinates(R2)));
+}
+/* ************************************************************************* */
+TEST(Rot3, expmap_logmap)
+{
+  Vector d12 = Vector3::Constant(0.1);
+  Rot3 R2 = R.expmap(d12);
+  EXPECT(assert_equal(d12, R.logmap(R2)));
 }
 
 /* ************************************************************************* */
-TEST( Rot3, rightJacobianExpMapSO3 )
+TEST(Rot3, retract_localCoordinates2)
 {
-  // Linearization point
-  Vector thetahat = (Vector(3) << 0.1, 0, 0);
-
-  Matrix expectedJacobian = numericalDerivative11<Rot3, LieVector>(
-      boost::bind(&Rot3::Expmap, _1), thetahat);
-  Matrix actualJacobian = Rot3::rightJacobianExpMapSO3(thetahat);
-  CHECK(assert_equal(expectedJacobian, actualJacobian));
+  Rot3 t1 = R, t2 = R*R, origin;
+  Vector d12 = t1.localCoordinates(t2);
+  EXPECT(assert_equal(t2, t1.retract(d12)));
+  Vector d21 = t2.localCoordinates(t1);
+  EXPECT(assert_equal(t1, t2.retract(d21)));
+  EXPECT(assert_equal(d12, -d21));
 }
-
-/* ************************************************************************* */
-TEST( Rot3, rightJacobianExpMapSO3inverse )
-{
-  // Linearization point
-  Vector thetahat = (Vector(3) << 0.1,0.1,0); ///< Current estimate of rotation rate bias
-  Vector deltatheta = (Vector(3) << 0, 0, 0);
-
-  Matrix expectedJacobian = numericalDerivative11<LieVector>(
-      boost::bind(&evaluateLogRotation, thetahat, _1), deltatheta);
-  Matrix actualJacobian = Rot3::rightJacobianExpMapSO3inverse(thetahat);
-  EXPECT(assert_equal(expectedJacobian, actualJacobian));
-}
-
 /* ************************************************************************* */
 TEST(Rot3, manifold_expmap)
 {
-  Rot3 gR1 = Rot3::rodriguez(0.1, 0.4, 0.2);
-  Rot3 gR2 = Rot3::rodriguez(0.3, 0.1, 0.7);
+  Rot3 gR1 = Rot3::Rodrigues(0.1, 0.4, 0.2);
+  Rot3 gR2 = Rot3::Rodrigues(0.3, 0.1, 0.7);
   Rot3 origin;
 
   // log behaves correctly
-  Vector d12 = gR1.localCoordinates(gR2, Rot3::EXPMAP);
-  CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::EXPMAP)));
-  Vector d21 = gR2.localCoordinates(gR1, Rot3::EXPMAP);
-  CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::EXPMAP)));
+  Vector d12 = Rot3::Logmap(gR1.between(gR2));
+  Vector d21 = Rot3::Logmap(gR2.between(gR1));
 
-  // Check that it is expmap
+  // Check expmap
   CHECK(assert_equal(gR2, gR1*Rot3::Expmap(d12)));
   CHECK(assert_equal(gR1, gR2*Rot3::Expmap(d21)));
 
@@ -251,7 +265,7 @@ TEST(Rot3, manifold_expmap)
   CHECK(assert_equal(d12,-d21));
 
   // lines in canonical coordinates correspond to Abelian subgroups in SO(3)
-  Vector d = (Vector(3) << 0.1, 0.2, 0.3);
+  Vector d = Vector3(0.1, 0.2, 0.3);
   // exp(-d)=inverse(exp(d))
   CHECK(assert_equal(Rot3::Expmap(-d),Rot3::Expmap(d).inverse()));
   // exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
@@ -263,14 +277,13 @@ TEST(Rot3, manifold_expmap)
 }
 
 /* ************************************************************************* */
-class AngularVelocity: public Point3 {
-public:
-  AngularVelocity(const Point3& p) :
-    Point3(p) {
-  }
-  AngularVelocity(double wx, double wy, double wz) :
-    Point3(wx, wy, wz) {
-  }
+class AngularVelocity : public Vector3 {
+ public:
+  template <typename Derived>
+  inline AngularVelocity(const Eigen::MatrixBase<Derived>& v)
+      : Vector3(v) {}
+
+  AngularVelocity(double wx, double wy, double wz) : Vector3(wx, wy, wz) {}
 };
 
 AngularVelocity bracket(const AngularVelocity& X, const AngularVelocity& Y) {
@@ -283,10 +296,10 @@ TEST(Rot3, BCH)
   // Approximate exmap by BCH formula
   AngularVelocity w1(0.2, -0.1, 0.1);
   AngularVelocity w2(0.01, 0.02, -0.03);
-  Rot3 R1 = Rot3::Expmap (w1.vector()), R2 = Rot3::Expmap (w2.vector());
+  Rot3 R1 = Rot3::Expmap (w1), R2 = Rot3::Expmap (w2);
   Rot3 R3 = R1 * R2;
   Vector expected = Rot3::Logmap(R3);
-  Vector actual = BCH(w1, w2).vector();
+  Vector actual = BCH(w1, w2);
   CHECK(assert_equal(expected, actual,1e-5));
 }
 
@@ -322,8 +335,8 @@ TEST( Rot3, unrotate)
 /* ************************************************************************* */
 TEST( Rot3, compose )
 {
-  Rot3 R1 = Rot3::rodriguez(0.1, 0.2, 0.3);
-  Rot3 R2 = Rot3::rodriguez(0.2, 0.3, 0.5);
+  Rot3 R1 = Rot3::Rodrigues(0.1, 0.2, 0.3);
+  Rot3 R2 = Rot3::Rodrigues(0.2, 0.3, 0.5);
 
   Rot3 expected = R1 * R2;
   Matrix actualH1, actualH2;
@@ -342,10 +355,10 @@ TEST( Rot3, compose )
 /* ************************************************************************* */
 TEST( Rot3, inverse )
 {
-  Rot3 R = Rot3::rodriguez(0.1, 0.2, 0.3);
+  Rot3 R = Rot3::Rodrigues(0.1, 0.2, 0.3);
 
   Rot3 I;
-  Matrix actualH;
+  Matrix3 actualH;
   Rot3 actual = R.inverse(actualH);
   CHECK(assert_equal(I,R*actual));
   CHECK(assert_equal(I,actual*R));
@@ -364,16 +377,16 @@ TEST( Rot3, between )
   Matrix expectedr1 = (Matrix(3, 3) <<
       0.5, -sqrt(3.0)/2.0, 0.0,
       sqrt(3.0)/2.0, 0.5, 0.0,
-      0.0, 0.0, 1.0);
+      0.0, 0.0, 1.0).finished();
   EXPECT(assert_equal(expectedr1, r1.matrix()));
 
-  Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
+  Rot3 R = Rot3::Rodrigues(0.1, 0.4, 0.2);
   Rot3 origin;
   EXPECT(assert_equal(R, origin.between(R)));
   EXPECT(assert_equal(R.inverse(), R.between(origin)));
 
-  Rot3 R1 = Rot3::rodriguez(0.1, 0.2, 0.3);
-  Rot3 R2 = Rot3::rodriguez(0.2, 0.3, 0.5);
+  Rot3 R1 = Rot3::Rodrigues(0.1, 0.2, 0.3);
+  Rot3 R2 = Rot3::Rodrigues(0.2, 0.3, 0.5);
 
   Rot3 expected = R1.inverse() * R2;
   Matrix actualH1, actualH2;
@@ -381,31 +394,10 @@ TEST( Rot3, between )
   EXPECT(assert_equal(expected,actual));
 
   Matrix numericalH1 = numericalDerivative21(testing::between<Rot3> , R1, R2);
-  CHECK(assert_equal(numericalH1,actualH1, 1e-4));
+  CHECK(assert_equal(numericalH1,actualH1));
 
   Matrix numericalH2 = numericalDerivative22(testing::between<Rot3> , R1, R2);
-  CHECK(assert_equal(numericalH2,actualH2, 1e-4));
-}
-
-/* ************************************************************************* */
-Vector w = (Vector(3) << 0.1, 0.27, -0.2);
-
-// Left trivialization Derivative of exp(w) wrpt w:
-// How does exp(w) change when w changes?
-// We find a y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
-// => y = log (exp(-w) * exp(w+dw))
-Vector3 testDexpL(const Vector3& dw) {
-  return Rot3::Logmap(Rot3::Expmap(-w) * Rot3::Expmap(w + dw));
-}
-
-TEST( Rot3, dexpL) {
-  Matrix actualDexpL = Rot3::dexpL(w);
-  Matrix expectedDexpL = numericalDerivative11<LieVector>(testDexpL,
-      LieVector(zero(3)), 1e-2);
-  EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-5));
-
-  Matrix actualDexpInvL = Rot3::dexpInvL(w);
-  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
+  CHECK(assert_equal(numericalH2,actualH2));
 }
 
 /* ************************************************************************* */
@@ -445,19 +437,19 @@ TEST( Rot3, yaw_pitch_roll )
   double t = 0.1;
 
   // yaw is around z axis
-  CHECK(assert_equal(Rot3::Rz(t),Rot3::yaw(t)));
+  CHECK(assert_equal(Rot3::Rz(t),Rot3::Yaw(t)));
 
   // pitch is around y axis
-  CHECK(assert_equal(Rot3::Ry(t),Rot3::pitch(t)));
+  CHECK(assert_equal(Rot3::Ry(t),Rot3::Pitch(t)));
 
   // roll is around x axis
-  CHECK(assert_equal(Rot3::Rx(t),Rot3::roll(t)));
+  CHECK(assert_equal(Rot3::Rx(t),Rot3::Roll(t)));
 
   // Check compound rotation
-  Rot3 expected = Rot3::yaw(0.1) * Rot3::pitch(0.2) * Rot3::roll(0.3);
-  CHECK(assert_equal(expected,Rot3::ypr(0.1,0.2,0.3)));
+  Rot3 expected = Rot3::Yaw(0.1) * Rot3::Pitch(0.2) * Rot3::Roll(0.3);
+  CHECK(assert_equal(expected,Rot3::Ypr(0.1,0.2,0.3)));
 
-  CHECK(assert_equal((Vector)(Vector(3) << 0.1, 0.2, 0.3),expected.ypr()));
+  CHECK(assert_equal((Vector)Vector3(0.1, 0.2, 0.3),expected.ypr()));
 }
 
 /* ************************************************************************* */
@@ -467,25 +459,25 @@ TEST( Rot3, RQ)
   Matrix actualK;
   Vector actual;
   boost::tie(actualK, actual) = RQ(R.matrix());
-  Vector expected = (Vector(3) << 0.14715, 0.385821, 0.231671);
-  CHECK(assert_equal(I3,actualK));
+  Vector expected = Vector3(0.14715, 0.385821, 0.231671);
+  CHECK(assert_equal(I_3x3,actualK));
   CHECK(assert_equal(expected,actual,1e-6));
 
   // Try using xyz call, asserting that Rot3::RzRyRx(x,y,z).xyz()==[x;y;z]
   CHECK(assert_equal(expected,R.xyz(),1e-6));
-  CHECK(assert_equal((Vector)(Vector(3) << 0.1,0.2,0.3),Rot3::RzRyRx(0.1,0.2,0.3).xyz()));
+  CHECK(assert_equal((Vector)Vector3(0.1,0.2,0.3),Rot3::RzRyRx(0.1,0.2,0.3).xyz()));
 
-  // Try using ypr call, asserting that Rot3::ypr(y,p,r).ypr()==[y;p;r]
-  CHECK(assert_equal((Vector)(Vector(3) << 0.1,0.2,0.3),Rot3::ypr(0.1,0.2,0.3).ypr()));
-  CHECK(assert_equal((Vector)(Vector(3) << 0.3,0.2,0.1),Rot3::ypr(0.1,0.2,0.3).rpy()));
+  // Try using ypr call, asserting that Rot3::Ypr(y,p,r).ypr()==[y;p;r]
+  CHECK(assert_equal((Vector)Vector3(0.1,0.2,0.3),Rot3::Ypr(0.1,0.2,0.3).ypr()));
+  CHECK(assert_equal((Vector)Vector3(0.3,0.2,0.1),Rot3::Ypr(0.1,0.2,0.3).rpy()));
 
   // Try ypr for pure yaw-pitch-roll matrices
-  CHECK(assert_equal((Vector)(Vector(3) << 0.1,0.0,0.0),Rot3::yaw (0.1).ypr()));
-  CHECK(assert_equal((Vector)(Vector(3) << 0.0,0.1,0.0),Rot3::pitch(0.1).ypr()));
-  CHECK(assert_equal((Vector)(Vector(3) << 0.0,0.0,0.1),Rot3::roll (0.1).ypr()));
+  CHECK(assert_equal((Vector)Vector3(0.1,0.0,0.0),Rot3::Yaw (0.1).ypr()));
+  CHECK(assert_equal((Vector)Vector3(0.0,0.1,0.0),Rot3::Pitch(0.1).ypr()));
+  CHECK(assert_equal((Vector)Vector3(0.0,0.0,0.1),Rot3::Roll (0.1).ypr()));
 
   // Try RQ to recover calibration from 3*3 sub-block of projection matrix
-  Matrix K = (Matrix(3, 3) << 500.0, 0.0, 320.0, 0.0, 500.0, 240.0, 0.0, 0.0, 1.0);
+  Matrix K = (Matrix(3, 3) << 500.0, 0.0, 320.0, 0.0, 500.0, 240.0, 0.0, 0.0, 1.0).finished();
   Matrix A = K * R.matrix();
   boost::tie(actualK, actual) = RQ(A);
   CHECK(assert_equal(K,actualK));
@@ -494,15 +486,15 @@ TEST( Rot3, RQ)
 
 /* ************************************************************************* */
 TEST( Rot3, expmapStability ) {
-  Vector w = (Vector(3) << 78e-9, 5e-8, 97e-7);
+  Vector w = Vector3(78e-9, 5e-8, 97e-7);
   double theta = w.norm();
   double theta2 = theta*theta;
   Rot3 actualR = Rot3::Expmap(w);
   Matrix W = (Matrix(3, 3) << 0.0, -w(2), w(1),
                           w(2), 0.0, -w(0),
-                          -w(1), w(0), 0.0 );
+                          -w(1), w(0), 0.0 ).finished();
   Matrix W2 = W*W;
-  Matrix Rmat = I3 + (1.0-theta2/6.0 + theta2*theta2/120.0
+  Matrix Rmat = I_3x3 + (1.0-theta2/6.0 + theta2*theta2/120.0
       - theta2*theta2*theta2/5040.0)*W + (0.5 - theta2/24.0 + theta2*theta2/720.0)*W2 ;
   Rot3 expectedR( Rmat );
   CHECK(assert_equal(expectedR, actualR, 1e-10));
@@ -510,7 +502,7 @@ TEST( Rot3, expmapStability ) {
 
 /* ************************************************************************* */
 TEST( Rot3, logmapStability ) {
-  Vector w = (Vector(3) << 1e-8, 0.0, 0.0);
+  Vector w = Vector3(1e-8, 0.0, 0.0);
   Rot3 R = Rot3::Expmap(w);
 //  double tr = R.r1().x()+R.r2().y()+R.r3().z();
 //  std::cout.precision(5000);
@@ -518,7 +510,7 @@ TEST( Rot3, logmapStability ) {
 //  std::cout << "trace: " << tr << std::endl;
 //  R.print("R = ");
   Vector actualw = Rot3::Logmap(R);
-  CHECK(assert_equal(w, actualw, 1e-15)); // this should be fixed for Quaternions!!!
+  CHECK(assert_equal(w, actualw, 1e-15));
 }
 
 /* ************************************************************************* */
@@ -528,19 +520,19 @@ TEST(Rot3, quaternion) {
   Rot3 R1 = Rot3((Matrix)(Matrix(3, 3) <<
       0.271018623057411,   0.278786459830371,   0.921318086098018,
       0.578529366719085,   0.717799701969298,  -0.387385285854279,
-     -0.769319620053772,   0.637998195662053,   0.033250932803219));
+     -0.769319620053772,   0.637998195662053,   0.033250932803219).finished());
 
   Quaternion q2(0.263360579192421, 0.571813128030932, 0.494678363680335, 0.599136268678053);
   Rot3 R2 = Rot3((Matrix)(Matrix(3, 3) <<
       -0.207341903877828,   0.250149415542075,   0.945745528564780,
        0.881304914479026,  -0.371869043667957,   0.291573424846290,
-       0.424630407073532,   0.893945571198514,  -0.143353873763946));
+       0.424630407073532,   0.893945571198514,  -0.143353873763946).finished());
 
   // Check creating Rot3 from quaternion
   EXPECT(assert_equal(R1, Rot3(q1)));
-  EXPECT(assert_equal(R1, Rot3::quaternion(q1.w(), q1.x(), q1.y(), q1.z())));
+  EXPECT(assert_equal(R1, Rot3::Quaternion(q1.w(), q1.x(), q1.y(), q1.z())));
   EXPECT(assert_equal(R2, Rot3(q2)));
-  EXPECT(assert_equal(R2, Rot3::quaternion(q2.w(), q2.x(), q2.y(), q2.z())));
+  EXPECT(assert_equal(R2, Rot3::Quaternion(q2.w(), q2.x(), q2.y(), q2.z())));
 
   // Check converting Rot3 to quaterion
   EXPECT(assert_equal(Vector(R1.toQuaternion().coeffs()), Vector(q1.coeffs())));
@@ -553,18 +545,24 @@ TEST(Rot3, quaternion) {
   Point3 expected1 = R1*p1;
   Point3 expected2 = R2*p2;
 
-  Point3 actual1 = Point3(q1*p1.vector());
-  Point3 actual2 = Point3(q2*p2.vector());
+  Point3 actual1 = Point3(q1*p1);
+  Point3 actual2 = Point3(q2*p2);
 
   EXPECT(assert_equal(expected1, actual1));
   EXPECT(assert_equal(expected2, actual2));
 }
 
 /* ************************************************************************* */
+Matrix Cayley(const Matrix& A) {
+  Matrix::Index n = A.cols();
+  const Matrix I = Matrix::Identity(n,n);
+  return (I-A)*(I+A).inverse();
+}
+
 TEST( Rot3, Cayley ) {
   Matrix A = skewSymmetric(1,2,-3);
   Matrix Q = Cayley(A);
-  EXPECT(assert_equal(I3, trans(Q)*Q));
+  EXPECT(assert_equal((Matrix)I_3x3, trans(Q)*Q));
   EXPECT(assert_equal(A, Cayley(Q)));
 }
 
@@ -575,6 +573,62 @@ TEST( Rot3, stream)
   std::ostringstream os;
   os << R;
   EXPECT(os.str() == "\n|1, 0, 0|\n|0, 1, 0|\n|0, 0, 1|\n");
+}
+
+/* ************************************************************************* */
+TEST( Rot3, slerp)
+{
+  // A first simple test
+  Rot3 R1 = Rot3::Rz(1), R2 = Rot3::Rz(2), R3 = Rot3::Rz(1.5);
+  EXPECT(assert_equal(R1, R1.slerp(0.0,R2)));
+  EXPECT(assert_equal(R2, R1.slerp(1.0,R2)));
+  EXPECT(assert_equal(R3, R1.slerp(0.5,R2)));
+  // Make sure other can be *this
+  EXPECT(assert_equal(R1, R1.slerp(0.5,R1)));
+}
+
+//******************************************************************************
+Rot3 T1(Rot3::AxisAngle(Vector3(0, 0, 1), 1));
+Rot3 T2(Rot3::AxisAngle(Vector3(0, 1, 0), 2));
+
+//******************************************************************************
+TEST(Rot3 , Invariants) {
+  Rot3 id;
+
+  EXPECT(check_group_invariants(id,id));
+  EXPECT(check_group_invariants(id,T1));
+  EXPECT(check_group_invariants(T2,id));
+  EXPECT(check_group_invariants(T2,T1));
+  EXPECT(check_group_invariants(T1,T2));
+
+  EXPECT(check_manifold_invariants(id,id));
+  EXPECT(check_manifold_invariants(id,T1));
+  EXPECT(check_manifold_invariants(T2,id));
+  EXPECT(check_manifold_invariants(T2,T1));
+  EXPECT(check_manifold_invariants(T1,T2));
+}
+
+//******************************************************************************
+TEST(Rot3 , LieGroupDerivatives) {
+  Rot3 id;
+
+  CHECK_LIE_GROUP_DERIVATIVES(id,id);
+  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
+  CHECK_LIE_GROUP_DERIVATIVES(T1,T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
+}
+
+//******************************************************************************
+TEST(Rot3 , ChartDerivatives) {
+  Rot3 id;
+  if (ROT3_DEFAULT_COORDINATES_MODE == Rot3::EXPMAP) {
+    CHECK_CHART_DERIVATIVES(id,id);
+    CHECK_CHART_DERIVATIVES(id,T2);
+    CHECK_CHART_DERIVATIVES(T2,id);
+    CHECK_CHART_DERIVATIVES(T1,T2);
+    CHECK_CHART_DERIVATIVES(T2,T1);
+  }
 }
 
 /* ************************************************************************* */

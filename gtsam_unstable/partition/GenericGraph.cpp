@@ -6,7 +6,6 @@
  *  Description: generic graph types used in partitioning
  */
 #include <iostream>
-#include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
@@ -98,7 +97,7 @@ namespace gtsam { namespace partition {
       }
 
       // erase unused factors
-      BOOST_FOREACH(const FactorList::iterator& it, toErase)
+      for(const FactorList::iterator& it: toErase)
         factors.erase(it);
 
       if (!succeed) break;
@@ -107,7 +106,7 @@ namespace gtsam { namespace partition {
     list<vector<size_t> > islands;
     map<size_t, vector<size_t> > arrays = dsf.arrays();
     size_t key; vector<size_t> array;
-    BOOST_FOREACH(boost::tie(key, array), arrays)
+    for(boost::tie(key, array): arrays)
       islands.push_back(array);
     return islands;
   }
@@ -116,14 +115,14 @@ namespace gtsam { namespace partition {
   /* ************************************************************************* */
   void print(const GenericGraph2D& graph, const std::string name) {
     cout << name << endl;
-    BOOST_FOREACH(const sharedGenericFactor2D& factor_, graph)
+    for(const sharedGenericFactor2D& factor_: graph)
       cout << factor_->key1.index << " " << factor_->key2.index << endl;
   }
 
   /* ************************************************************************* */
   void print(const GenericGraph3D& graph, const std::string name) {
     cout << name << endl;
-    BOOST_FOREACH(const sharedGenericFactor3D& factor_, graph)
+    for(const sharedGenericFactor3D& factor_: graph)
       cout << factor_->key1.index << " " << factor_->key2.index << " (" <<
       factor_->key1.type << ", " << factor_->key2.type <<")" << endl;
   }
@@ -174,7 +173,7 @@ namespace gtsam { namespace partition {
       }
 
       // erase unused factors
-      BOOST_FOREACH(const FactorList::iterator& it, toErase)
+      for(const FactorList::iterator& it: toErase)
       factors.erase(it);
 
       if (!succeed) break;
@@ -204,7 +203,7 @@ namespace gtsam { namespace partition {
 
     // compute the constraint number per camera
     std::fill(nrConstraints.begin(),  nrConstraints.end(),    0);
-    BOOST_FOREACH(const sharedGenericFactor3D& factor_, graph) {
+    for(const sharedGenericFactor3D& factor_: graph) {
       const int& key1 = factor_->key1.index;
       const int& key2 = factor_->key2.index;
       if (workspace.dictionary[key1] != -1 &&  workspace.dictionary[key2] != -1 &&
@@ -258,7 +257,7 @@ namespace gtsam { namespace partition {
 
     // check the constraint number of every variable
     // find the camera and landmark keys
-    BOOST_FOREACH(const sharedGenericFactor3D& factor_, graph) {
+    for(const sharedGenericFactor3D& factor_: graph) {
       //assert(factor_->key2.type == NODE_LANDMARK_3D); // only VisualSLAM should come here, not StereoSLAM
       if (workspace.dictionary[factor_->key1.index] != -1) {
         if (factor_->key1.type == NODE_POSE_3D)
@@ -287,7 +286,7 @@ namespace gtsam { namespace partition {
     // add singular variables directly as islands
     if (!singularCameras.empty()) {
       if (verbose) cout << "singular cameras:";
-      BOOST_FOREACH(const size_t i, singularCameras) {
+      for(const size_t i: singularCameras) {
         islands.push_back(vector<size_t>(1, i)); // <---------------------------
         if (verbose) cout << i << " ";
       }
@@ -295,7 +294,7 @@ namespace gtsam { namespace partition {
     }
     if (!singularLandmarks.empty()) {
       if (verbose) cout << "singular landmarks:";
-      BOOST_FOREACH(const size_t i, singularLandmarks) {
+      for(const size_t i: singularLandmarks) {
         islands.push_back(vector<size_t>(1, i)); // <---------------------------
         if (verbose) cout << i << " ";
       }
@@ -306,10 +305,10 @@ namespace gtsam { namespace partition {
     // regenerating islands
     map<size_t, vector<size_t> > labelIslands = dsf.arrays();
     size_t label; vector<size_t> island;
-    BOOST_FOREACH(boost::tie(label, island), labelIslands) {
+    for(boost::tie(label, island): labelIslands) {
       vector<size_t> filteredIsland; // remove singular cameras from array
       filteredIsland.reserve(island.size());
-      BOOST_FOREACH(const size_t key, island) {
+      for(const size_t key: island) {
         if ((isCamera[key]   && singularCameras.find(key) == singularCameras.end()) ||        // not singular
             (isLandmark[key] && singularLandmarks.find(key) == singularLandmarks.end()) ||    // not singular
             (!isCamera[key] && !isLandmark[key])) {   // the key is not involved in any factor, so the type is undertermined
@@ -321,7 +320,7 @@ namespace gtsam { namespace partition {
 
     // sanity check
     size_t nrKeys = 0;
-    BOOST_FOREACH(const vector<size_t>& island, islands)
+    for(const vector<size_t>& island: islands)
       nrKeys += island.size();
     if (nrKeys != keys.size())  {
       cout << nrKeys << " vs " << keys.size() << endl;
@@ -363,7 +362,7 @@ namespace gtsam { namespace partition {
     // for odometry xi-xj where i<j, we always store cameraToCamera[i] = j, otherwise equal to -1 if no odometry
     vector<int> cameraToCamera(dictionary.size(), -1);
     size_t key_i, key_j;
-    BOOST_FOREACH(const sharedGenericFactor3D& factor_, graph) {
+    for(const sharedGenericFactor3D& factor_: graph) {
       if (factor_->key1.type == NODE_POSE_3D) {
         if (factor_->key2.type == NODE_LANDMARK_3D) {// projection factor
           cameraToLandmarks[factor_->key1.index].push_back(factor_->key2.index);
@@ -382,7 +381,7 @@ namespace gtsam { namespace partition {
     }
 
     // sort the landmark keys for the late getNrCommonLandmarks call
-    BOOST_FOREACH(vector<LandmarkKey> &landmarks, cameraToLandmarks){
+    for(vector<LandmarkKey> &landmarks: cameraToLandmarks){
       if (!landmarks.empty())
         std::sort(landmarks.begin(), landmarks.end());
     }
@@ -417,7 +416,7 @@ namespace gtsam { namespace partition {
     const vector<int>& dictionary = workspace.dictionary;
     vector<bool> isValidCamera(workspace.dictionary.size(), false);
     vector<bool> isValidLandmark(workspace.dictionary.size(), false);
-    BOOST_FOREACH(const sharedGenericFactor3D& factor_, graph) {
+    for(const sharedGenericFactor3D& factor_: graph) {
       assert(factor_->key1.type == NODE_POSE_3D);
       //assert(factor_->key2.type == NODE_LANDMARK_3D);
       const size_t& key1 = factor_->key1.index;
@@ -463,7 +462,7 @@ namespace gtsam { namespace partition {
     }
 
     // debug info
-    BOOST_FOREACH(const size_t key, frontals) {
+    for(const size_t key: frontals) {
       if (isValidCamera[key] && nrConstraints[key] < minNrConstraintsPerCamera)
         cout << "singular camera:" << key << " with " << nrConstraints[key] << " constraints" << endl;
     }

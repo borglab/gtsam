@@ -98,11 +98,19 @@ template<typename Scalar, int Mode, int Options> void transformations()
   Matrix3 matrot1, m;
 
   Scalar a = internal::random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
-  Scalar s0 = internal::random<Scalar>();
+  Scalar s0 = internal::random<Scalar>(),
+         s1 = internal::random<Scalar>();
+  
+  while(v0.norm() < test_precision<Scalar>()) v0 = Vector3::Random();
+  while(v1.norm() < test_precision<Scalar>()) v1 = Vector3::Random();
+    
 
   VERIFY_IS_APPROX(v0, AngleAxisx(a, v0.normalized()) * v0);
   VERIFY_IS_APPROX(-v0, AngleAxisx(Scalar(M_PI), v0.unitOrthogonal()) * v0);
-  VERIFY_IS_APPROX(cos(a)*v0.squaredNorm(), v0.dot(AngleAxisx(a, v0.unitOrthogonal()) * v0));
+  if(abs(cos(a)) > test_precision<Scalar>())
+  {
+    VERIFY_IS_APPROX(cos(a)*v0.squaredNorm(), v0.dot(AngleAxisx(a, v0.unitOrthogonal()) * v0));
+  }
   m = AngleAxisx(a, v0.normalized()).toRotationMatrix().adjoint();
   VERIFY_IS_APPROX(Matrix3::Identity(), m * AngleAxisx(a, v0.normalized()));
   VERIFY_IS_APPROX(Matrix3::Identity(), AngleAxisx(a, v0.normalized()) * m);
@@ -123,11 +131,18 @@ template<typename Scalar, int Mode, int Options> void transformations()
   // angle-axis conversion
   AngleAxisx aa = AngleAxisx(q1);
   VERIFY_IS_APPROX(q1 * v1, Quaternionx(aa) * v1);
-  VERIFY_IS_NOT_APPROX(q1 * v1, Quaternionx(AngleAxisx(aa.angle()*2,aa.axis())) * v1);
+  
+  if(abs(aa.angle()) > NumTraits<Scalar>::dummy_precision())
+  {
+    VERIFY( !(q1 * v1).isApprox(Quaternionx(AngleAxisx(aa.angle()*2,aa.axis())) * v1) );
+  }
 
   aa.fromRotationMatrix(aa.toRotationMatrix());
   VERIFY_IS_APPROX(q1 * v1, Quaternionx(aa) * v1);
-  VERIFY_IS_NOT_APPROX(q1 * v1, Quaternionx(AngleAxisx(aa.angle()*2,aa.axis())) * v1);
+  if(abs(aa.angle()) > NumTraits<Scalar>::dummy_precision())
+  {
+    VERIFY( !(q1 * v1).isApprox(Quaternionx(AngleAxisx(aa.angle()*2,aa.axis())) * v1) );
+  }
 
   // AngleAxis
   VERIFY_IS_APPROX(AngleAxisx(a,v1.normalized()).toRotationMatrix(),
@@ -347,7 +362,9 @@ template<typename Scalar, int Mode, int Options> void transformations()
   // test transform inversion
   t0.setIdentity();
   t0.translate(v0);
-  t0.linear().setRandom();
+  do {
+    t0.linear().setRandom();
+  } while(t0.linear().jacobiSvd().singularValues()(2)<test_precision<Scalar>());
   Matrix4 t044 = Matrix4::Zero();
   t044(3,3) = 1;
   t044.block(0,0,t0.matrix().rows(),4) = t0.matrix();
@@ -397,6 +414,29 @@ template<typename Scalar, int Mode, int Options> void transformations()
   t20 = Translation2(v20) * (Rotation2D<Scalar>(s0) * Eigen::Scaling(s0));
   t21 = Translation2(v20) * Rotation2D<Scalar>(s0) * Eigen::Scaling(s0);
   VERIFY_IS_APPROX(t20,t21);
+  
+  Rotation2D<Scalar> R0(s0), R1(s1);
+  t20 = Translation2(v20) * (R0 * Eigen::Scaling(s0));
+  t21 = Translation2(v20) * R0 * Eigen::Scaling(s0);
+  VERIFY_IS_APPROX(t20,t21);
+  
+  t20 = Translation2(v20) * (R0 * R0.inverse() * Eigen::Scaling(s0));
+  t21 = Translation2(v20) * Eigen::Scaling(s0);
+  VERIFY_IS_APPROX(t20,t21);
+  
+  VERIFY_IS_APPROX(s0, (R0.slerp(0, R1)).angle());
+  VERIFY_IS_APPROX(s1, (R0.slerp(1, R1)).angle());
+  VERIFY_IS_APPROX(s0, (R0.slerp(0.5, R0)).angle());
+  VERIFY_IS_APPROX(Scalar(0), (R0.slerp(0.5, R0.inverse())).angle());
+  
+  // check basic features
+  {
+    Rotation2D<Scalar> r1;           // default ctor
+    r1 = Rotation2D<Scalar>(s0);     // copy assignment
+    VERIFY_IS_APPROX(r1.angle(),s0);
+    Rotation2D<Scalar> r2(r1);       // copy ctor
+    VERIFY_IS_APPROX(r2.angle(),s0);
+  }
 }
 
 template<typename Scalar> void transform_alignment()

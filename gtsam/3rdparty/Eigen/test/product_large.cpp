@@ -9,6 +9,27 @@
 
 #include "product.h"
 
+template<typename T>
+void test_aliasing()
+{
+  int rows = internal::random<int>(1,12);
+  int cols = internal::random<int>(1,12);
+  typedef Matrix<T,Dynamic,Dynamic> MatrixType;
+  typedef Matrix<T,Dynamic,1> VectorType;
+  VectorType x(cols); x.setRandom();
+  VectorType z(x);
+  VectorType y(rows); y.setZero();
+  MatrixType A(rows,cols); A.setRandom();
+  // CwiseBinaryOp
+  VERIFY_IS_APPROX(x = y + A*x, A*z);
+  x = z;
+  // CwiseUnaryOp
+  VERIFY_IS_APPROX(x = T(1.)*(A*x), A*z);
+  x = z;
+  VERIFY_IS_APPROX(x = y+(-(A*x)), -A*z);
+  x = z;
+}
+
 void test_product_large()
 {
   for(int i = 0; i < g_repeat; i++) {
@@ -17,6 +38,8 @@ void test_product_large()
     CALL_SUBTEST_3( product(MatrixXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_4( product(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
     CALL_SUBTEST_5( product(Matrix<float,Dynamic,Dynamic,RowMajor>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+
+    CALL_SUBTEST_1( test_aliasing<float>() );
   }
 
 #if defined EIGEN_TEST_PART_6

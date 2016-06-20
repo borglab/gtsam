@@ -70,7 +70,7 @@ namespace gtsam {
      * @param body_P_sensor is the transform from body to sensor frame (default identity)
      */
     MultiProjectionFactor(const Vector& measured, const SharedNoiseModel& model,
-        FastSet<Key> poseKeys, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
+        KeySet poseKeys, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
         boost::optional<POSE> body_P_sensor = boost::none) :
           Base(model), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
           throwCheirality_(false), verboseCheirality_(false) {
@@ -91,7 +91,7 @@ namespace gtsam {
      * @param body_P_sensor is the transform from body to sensor frame  (default identity)
      */
     MultiProjectionFactor(const Vector& measured, const SharedNoiseModel& model,
-        FastSet<Key> poseKeys, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
+        KeySet poseKeys, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality,
         boost::optional<POSE> body_P_sensor = boost::none) :
           Base(model), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
@@ -101,9 +101,9 @@ namespace gtsam {
     virtual ~MultiProjectionFactor() {}
 
     /// @return a deep copy of this factor
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+    virtual NonlinearFactor::shared_ptr clone() const {
+      return boost::static_pointer_cast<NonlinearFactor>(
+          NonlinearFactor::shared_ptr(new This(*this))); }
 
     /**
      * print
@@ -143,20 +143,20 @@ namespace gtsam {
 //
 //        if(body_P_sensor_) {
 //          if(H1) {
-//            gtsam::Matrix H0;
+//            Matrix H0;
 //            PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_, H0), *K_);
 //            Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
 //            *H1 = *H1 * H0;
-//            return reprojectionError.vector();
+//            return reprojectionError;
 //          } else {
 //            PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_), *K_);
 //            Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
-//            return reprojectionError.vector();
+//            return reprojectionError;
 //          }
 //        } else {
 //          PinholeCamera<CALIBRATION> camera(pose, *K_);
 //          Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
-//          return reprojectionError.vector();
+//          return reprojectionError;
 //        }
 //      }
 
@@ -168,31 +168,31 @@ namespace gtsam {
       try {
         if(body_P_sensor_) {
           if(H1) {
-            gtsam::Matrix H0;
+            Matrix H0;
             PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_, H0), *K_);
             Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
             *H1 = *H1 * H0;
-            return reprojectionError.vector();
+            return reprojectionError;
           } else {
             PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_), *K_);
             Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
-            return reprojectionError.vector();
+            return reprojectionError;
           }
         } else {
           PinholeCamera<CALIBRATION> camera(pose, *K_);
           Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
-          return reprojectionError.vector();
+          return reprojectionError;
         }
       } catch( CheiralityException& e) {
-        if (H1) *H1 = zeros(2,6);
-        if (H2) *H2 = zeros(2,3);
+        if (H1) *H1 = Matrix::Zero(2,6);
+        if (H2) *H2 = Matrix::Zero(2,3);
         if (verboseCheirality_)
           std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
               " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
         if (throwCheirality_)
           throw e;
       }
-      return ones(2) * 2.0 * K_->fx();
+      return Vector::Ones(2) * 2.0 * K_->fx();
     }
 
     /** return the measurements */
@@ -216,7 +216,7 @@ namespace gtsam {
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(measured_);
       ar & BOOST_SERIALIZATION_NVP(K_);

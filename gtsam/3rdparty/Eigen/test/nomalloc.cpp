@@ -165,6 +165,38 @@ void ctms_decompositions()
   Eigen::JacobiSVD<Matrix> jSVD; jSVD.compute(A, ComputeFullU | ComputeFullV);
 }
 
+void test_zerosized() {
+  // default constructors:
+  Eigen::MatrixXd A;
+  Eigen::VectorXd v;
+  // explicit zero-sized:
+  Eigen::ArrayXXd A0(0,0);
+  Eigen::ArrayXd v0(std::ptrdiff_t(0)); // FIXME ArrayXd(0) is ambiguous
+
+  // assigning empty objects to each other:
+  A=A0;
+  v=v0;
+}
+
+template<typename MatrixType> void test_reference(const MatrixType& m) {
+  typedef typename MatrixType::Scalar Scalar;
+  enum { Flag          =  MatrixType::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor};
+  enum { TransposeFlag = !MatrixType::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor};
+  typename MatrixType::Index rows = m.rows(), cols=m.cols();
+  // Dynamic reference:
+  typedef Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Flag         > > Ref;
+  typedef Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, TransposeFlag> > RefT;
+
+  Ref r1(m);
+  Ref r2(m.block(rows/3, cols/4, rows/2, cols/2));
+  RefT r3(m.transpose());
+  RefT r4(m.topLeftCorner(rows/2, cols/2).transpose());
+
+  VERIFY_RAISES_ASSERT(RefT r5(m));
+  VERIFY_RAISES_ASSERT(Ref r6(m.transpose()));
+  VERIFY_RAISES_ASSERT(Ref r7(Scalar(2) * m));
+}
+
 void test_nomalloc()
 {
   // check that our operator new is indeed called:
@@ -175,5 +207,6 @@ void test_nomalloc()
   
   // Check decomposition modules with dynamic matrices that have a known compile-time max size (ctms)
   CALL_SUBTEST_4(ctms_decompositions<float>());
-
+  CALL_SUBTEST_5(test_zerosized());
+  CALL_SUBTEST_6(test_reference(Matrix<float,32,32>()));
 }

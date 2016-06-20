@@ -112,9 +112,9 @@ TEST( Graph, composePoses )
 TEST( GaussianFactorGraph, findMinimumSpanningTree )
 {
   GaussianFactorGraph g;
-  Matrix I = eye(2);
+  Matrix I = I_2x2;
   Vector2 b(0, 0);
-  const SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(2) << 0.5, 0.5));
+  const SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.5));
   using namespace symbol_shorthand;
   g += JacobianFactor(X(1), I, X(2), I, b, model);
   g += JacobianFactor(X(1), I, X(3), I, b, model);

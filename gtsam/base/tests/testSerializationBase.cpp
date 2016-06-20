@@ -16,6 +16,8 @@
  * @date Feb 7, 2012
  */
 
+#include <gtsam/inference/Key.h>
+
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/FastList.h>
@@ -30,9 +32,9 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::serializationTestHelpers;
 
-Vector v1 = (Vector(2) << 1.0, 2.0);
-Vector v2 = (Vector(2) << 3.0, 4.0);
-Vector v3 = (Vector(2) << 5.0, 6.0);
+Vector v1 = Vector2(1.0, 2.0);
+Vector v2 = Vector2(3.0, 4.0);
+Vector v3 = Vector2(5.0, 6.0);
 
 /* ************************************************************************* */
 TEST (Serialization, FastList) {
@@ -60,10 +62,10 @@ TEST (Serialization, FastMap) {
 
 /* ************************************************************************* */
 TEST (Serialization, FastSet) {
-  FastSet<double> set;
-  set.insert(1.0);
-  set.insert(2.0);
-  set.insert(3.0);
+  KeySet set;
+  set.insert(1);
+  set.insert(2);
+  set.insert(3);
 
   EXPECT(equality(set));
   EXPECT(equalityXML(set));
@@ -84,23 +86,23 @@ TEST (Serialization, FastVector) {
 
 /* ************************************************************************* */
 TEST (Serialization, matrix_vector) {
-  EXPECT(equality<Vector>((Vector(4) << 1.0, 2.0, 3.0, 4.0)));
+  EXPECT(equality<Vector>((Vector(4) << 1.0, 2.0, 3.0, 4.0).finished()));
   EXPECT(equality<Vector2>(Vector2(1.0, 2.0)));
   EXPECT(equality<Vector3>(Vector3(1.0, 2.0, 3.0)));
   EXPECT(equality<Vector6>((Vector6() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished()));
-  EXPECT(equality<Matrix>((Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0)));
+  EXPECT(equality<Matrix>((Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished()));
 
-  EXPECT(equalityXML<Vector>((Vector(4) << 1.0, 2.0, 3.0, 4.0)));
+  EXPECT(equalityXML<Vector>((Vector(4) << 1.0, 2.0, 3.0, 4.0).finished()));
   EXPECT(equalityXML<Vector2>(Vector2(1.0, 2.0)));
   EXPECT(equalityXML<Vector3>(Vector3(1.0, 2.0, 3.0)));
   EXPECT(equalityXML<Vector6>((Vector6() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished()));
-  EXPECT(equalityXML<Matrix>((Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0)));
+  EXPECT(equalityXML<Matrix>((Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished()));
 
-  EXPECT(equalityBinary<Vector>((Vector(4) << 1.0, 2.0, 3.0, 4.0)));
+  EXPECT(equalityBinary<Vector>((Vector(4) << 1.0, 2.0, 3.0, 4.0).finished()));
   EXPECT(equalityBinary<Vector2>(Vector2(1.0, 2.0)));
   EXPECT(equalityBinary<Vector3>(Vector3(1.0, 2.0, 3.0)));
   EXPECT(equalityBinary<Vector6>((Vector6() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished()));
-  EXPECT(equalityBinary<Matrix>((Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0)));
+  EXPECT(equalityBinary<Matrix>((Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished()));
 }
 
 /* ************************************************************************* */

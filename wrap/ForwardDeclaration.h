@@ -27,6 +27,7 @@ namespace wrap {
     std::string name;
     bool isVirtual;
     ForwardDeclaration() : isVirtual(false) {}
+    ForwardDeclaration(const std::string& s) : name(s), isVirtual(false) {}
   };
 
 }

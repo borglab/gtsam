@@ -54,7 +54,7 @@ namespace gtsam {
 //    /** return product of all factors as a single factor */
 //    DecisionTreeFactor product() const {
 //      DecisionTreeFactor result;
-//      BOOST_FOREACH(const sharedFactor& factor, *this)
+//      for(const sharedFactor& factor: *this)
 //        if (factor) result = (*factor) * result;
 //      return result;
 //    }

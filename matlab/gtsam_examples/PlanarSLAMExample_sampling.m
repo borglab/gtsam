@@ -55,14 +55,14 @@ plot2DPoints(sample, [], marginals);
 
 for j=1:2
     key = symbol('l',j);
-    point{j} = sample.at(key);
+    point{j} = sample.atPoint2(key);
     Q{j}=marginals.marginalCovariance(key);
     S{j}=chol(Q{j}); % for sampling
 end
 
-plot([sample.at(i1).x; sample.at(j1).x],[sample.at(i1).y; sample.at(j1).y], 'c-');
-plot([sample.at(i2).x; sample.at(j1).x],[sample.at(i2).y; sample.at(j1).y], 'c-');
-plot([sample.at(i3).x; sample.at(j2).x],[sample.at(i3).y; sample.at(j2).y], 'c-');
+plot([sample.atPose2(i1).x; sample.atPoint2(j1).x],[sample.atPose2(i1).y; sample.atPoint2(j1).y], 'c-');
+plot([sample.atPose2(i2).x; sample.atPoint2(j1).x],[sample.atPose2(i2).y; sample.atPoint2(j1).y], 'c-');
+plot([sample.atPose2(i3).x; sample.atPoint2(j2).x],[sample.atPose2(i3).y; sample.atPoint2(j2).y], 'c-');
 view(2); axis auto; axis equal
 
 %% Do Sampling on point 2

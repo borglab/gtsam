@@ -24,7 +24,7 @@ const double tol = 1e-5;
 
 /* ************************************************************************* */
 TEST(testSampler, basic) {
-  Vector sigmas = (Vector(3) << 1.0, 0.1, 0.0);
+  Vector sigmas = Vector3(1.0, 0.1, 0.0);
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(sigmas);
   char seed = 'A';
   Sampler sampler1(model, seed), sampler2(model, 1), sampler3(model, 1);

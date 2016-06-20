@@ -34,10 +34,10 @@ function [p, stats] = csymamd (S, knobs, cmember)			    %#ok
 %    p = csymamd(S) is about the same as p = symamd(S).  knobs and its default
 %    values differ.
 %
-%    Authors: S. Larimore, T. Davis (Univ of Florida), and S. Rajamanickam, in
+%    Authors: S. Larimore, T. Davis, and S. Rajamanickam, in
 %    collaboration with J. Gilbert and E. Ng.  Supported by the National
 %    Science Foundation (DMS-9504974, DMS-9803599, CCR-0203270), and a grant
-%    from Sandia National Lab.  See http://www.cise.ufl.edu/research/sparse
+%    from Sandia National Lab.  See http://www.suitesparse.com
 %    for ccolamd, csymamd, amd, colamd, symamd, and other related orderings.
 %
 %    See also AMD, CCOLAMD, COLAMD, SYMAMD, SYMRCM.

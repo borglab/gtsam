@@ -22,7 +22,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
 
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
@@ -368,8 +367,8 @@ public:
     delta_t += msr_dt;
 
     // Update EquivCov_Overall
-    Matrix Z_3x3 = zeros(3,3);
-    Matrix I_3x3 = eye(3,3);
+    Matrix Z_3x3 = Z_3x3;
+    Matrix I_3x3 = I_3x3;
 
     Matrix H_pos_pos = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
     Matrix H_pos_vel = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
@@ -484,12 +483,12 @@ public:
     Matrix ENU_to_NED = (Matrix(3, 3) <<
         0.0,  1.0,  0.0,
         1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0);
+        0.0,  0.0, -1.0).finished();
 
     Matrix NED_to_ENU = (Matrix(3, 3) <<
         0.0,  1.0,  0.0,
         1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0);
+        0.0,  0.0, -1.0).finished();
 
     // Convert incoming parameters to ENU
     Vector Pos_ENU = NED_to_ENU * Pos_NED;
@@ -575,7 +574,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NonlinearFactor2",
         boost::serialization::base_object<Base>(*this));
   }

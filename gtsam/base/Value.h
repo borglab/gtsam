@@ -18,9 +18,11 @@
 
 #pragma once
 
-#include <memory>
-#include <boost/serialization/assume_abstract.hpp>
+#include <gtsam/config.h>      // Configuration from CMake
+
 #include <gtsam/base/Vector.h>
+#include <boost/serialization/assume_abstract.hpp>
+#include <memory>
 
 namespace gtsam {
 
@@ -36,7 +38,7 @@ namespace gtsam {
    * Values can operate generically on Value objects, retracting or computing
    * local coordinates for many Value objects of different types.
    *
-   * Inheriting from the DerivedValue class templated provides a generic implementation of
+   * Inheriting from the DerivedValue class template provides a generic implementation of
    * the pure virtual functions retract_(), localCoordinates_(), and equals_(), eliminating
    * the need to implement these functions in your class. Note that you must inherit from
    * DerivedValue templated on the class you are defining. For example you cannot define
@@ -120,7 +122,14 @@ namespace gtsam {
     virtual Vector localCoordinates_(const Value& value) const = 0;
 
     /** Assignment operator */
-    virtual Value& operator=(const Value& rhs) = 0;
+    virtual Value& operator=(const Value& /*rhs*/) {
+      //needs a empty definition so recursion in implicit derived assignment operators work
+     return *this;
+    }
+
+    /** Cast to known ValueType */
+    template<typename ValueType>
+    const ValueType& cast() const;
 
     /** Virutal destructor */
     virtual ~Value() {}
@@ -158,7 +167,8 @@ namespace gtsam {
      * */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {}
+    void serialize(ARCHIVE & /*ar*/, const unsigned int /*version*/) {
+    }
 
   };
 

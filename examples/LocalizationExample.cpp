@@ -93,8 +93,8 @@ public:
     // Consequently, the Jacobians are:
     // [ derror_x/dx  derror_x/dy  derror_x/dtheta ] = [1 0 0]
     // [ derror_y/dx  derror_y/dy  derror_y/dtheta ] = [0 1 0]
-    if (H) (*H) = (Matrix(2,3) << 1.0,0.0,0.0, 0.0,1.0,0.0);
-    return (Vector(2) << q.x() - mx_, q.y() - my_);
+    if (H) (*H) = (Matrix(2,3) << 1.0,0.0,0.0, 0.0,1.0,0.0).finished();
+    return (Vector(2) << q.x() - mx_, q.y() - my_).finished();
   }
 
   // The second is a 'clone' function that allows the factor to be copied. Under most
@@ -118,14 +118,14 @@ int main(int argc, char** argv) {
 
   // 2a. Add odometry factors
   // For simplicity, we will use the same noise model for each odometry factor
-  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.1));
+  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
   // Create odometry (Between) factors between consecutive poses
   graph.add(BetweenFactor<Pose2>(1, 2, Pose2(2.0, 0.0, 0.0), odometryNoise));
   graph.add(BetweenFactor<Pose2>(2, 3, Pose2(2.0, 0.0, 0.0), odometryNoise));
 
   // 2b. Add "GPS-like" measurements
   // We will use our custom UnaryFactor for this.
-  noiseModel::Diagonal::shared_ptr unaryNoise = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1)); // 10cm std on x,y
+  noiseModel::Diagonal::shared_ptr unaryNoise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1)); // 10cm std on x,y
   graph.add(boost::make_shared<UnaryFactor>(1, 0.0, 0.0, unaryNoise));
   graph.add(boost::make_shared<UnaryFactor>(2, 2.0, 0.0, unaryNoise));
   graph.add(boost::make_shared<UnaryFactor>(3, 4.0, 0.0, unaryNoise));

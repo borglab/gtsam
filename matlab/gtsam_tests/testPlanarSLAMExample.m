@@ -60,10 +60,10 @@ result = optimizer.optimizeSafely();
 marginals = Marginals(graph, result);
 
 %% Check first pose and point equality
-pose_1 = result.at(symbol('x',1));
+pose_1 = result.atPose2(symbol('x',1));
 marginals.marginalCovariance(symbol('x',1));
 CHECK('pose_1.equals(Pose2,1e-4)',pose_1.equals(Pose2,1e-4));
 
-point_1 = result.at(symbol('l',1));
+point_1 = result.atPoint2(symbol('l',1));
 marginals.marginalCovariance(symbol('l',1));
 CHECK('point_1.equals(Point2(2,2),1e-4)',point_1.equals(Point2(2,2),1e-4));

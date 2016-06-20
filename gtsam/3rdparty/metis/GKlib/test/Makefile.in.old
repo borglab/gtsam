@@ -1,0 +1,258 @@
+#*************************************************************************
+# Global flags
+#*************************************************************************
+gdb         = yes
+debug       = no
+memdbg      = no
+openmp      = no
+x86compiler = gcc
+
+VERNUM = 0.1.0
+
+
+
+#*************************************************************************
+# System-specific compilation flags
+#*************************************************************************
+# Get some basic information about the system that you are working on
+cputype = $(shell uname -m | sed "s/\\ /_/g")
+systype = $(shell uname)
+ifeq ($(findstring CYGWIN, $(systype)),CYGWIN)
+#  systype = CYGWIN
+  systype = MSWIN
+  cputype = x86
+endif
+
+
+GKLIBINCDIR   = $(HOME)/work/algorithms/GKlib/trunk/
+GKLIBBUILDDIR = $(HOME)/work/algorithms/GKlib/builds/$(systype)-$(cputype)
+
+
+ifeq ($(systype),MSWIN)
+  #-------------------------------------------------------------------
+  # These defs are very much Visual Studio Specific
+  #-------------------------------------------------------------------
+  #Compiler information
+  CC = cl
+  OPTFLAGS = /Ox
+  COPTIONS = -DWIN32 -DMSC -D_CRT_SECURE_NO_DEPRECATE 
+
+  #Compile input/output file specification
+  SOURCEFILE = /c $<
+  OUTPUTFILE = /Fo$@
+
+  #Output specification for executables
+  EXEOUTPUTFILE = /Fe$@   # This option is when cl is used for linking
+  #EXEOUTPUTFILE = /OUT:$@  # This option is used when link is used for linking
+
+  #Linker information
+  LDOPTIONS = /MT 
+  #LD = /cygdrive/c/Program\ Files/Microsoft\ Visual\ Studio\ 8/VC/BIN/link
+  LD = cl 
+  MERGEMANIFEST = 
+
+  #Library creation information
+  AR = lib /OUT:$@ 
+  RANLIB =
+
+  ifeq ($(openmp),yes)
+    COPTIONS  += -D__OPENMP__ /openmp 
+    LDOPTIONS += /openmp
+    MERGEMANIFEST = vc_mt -manifest $@.manifest -outputresource:$@\;1
+  endif
+
+  #Library information
+  ifeq ($(cputype),i386)
+    LIBPLOTDIR = ../Libplot/Win32
+  else
+    LIBPLOTDIR = ../Libplot/Win64
+  endif
+  LIBS = $(LIBPLOTDIR)/libplot.lib  $(BUILDDIR)/libcluto.lib $(GKLIBBUILDDIR)/libGKlib.lib
+
+  # Standard file extensions 
+  OBJEXT = .obj
+  LIBEXT = .lib
+  EXEEXT = .exe
+else
+  ifeq ($(systype),Linux)
+    ifeq ($(x86compiler),gcc) 
+      #Compiler information
+      CC = gcc
+      OPTFLAGS = -O6 
+      COPTIONS = -DLINUX -D_FILE_OFFSET_BITS=64 -pedantic -std=c99  -pthread
+
+      #Linker information
+      LDOPTIONS = 
+      LD = gcc 
+      
+      MERGEMANIFEST = 
+
+      #Library creation information
+      AR = ar rv
+      RANLIB = ar -ts
+    else
+      #Compiler information
+      CC = icc
+      OPTFLAGS = -O3 
+      COPTIONS = -DLINUX -D_FILE_OFFSET_BITS=64 -std=c99 
+
+      #Linker information
+      LDOPTIONS = 
+      LD = icc 
+
+      #Library creation information
+      AR = ar rv
+      RANLIB = ar -ts
+
+      ifeq ($(openmp),yes)
+        COPTIONS  += -D__OPENMP__ -openmp -openmp-report2
+        LDOPTIONS += -openmp
+      endif
+    endif
+
+    #Library information
+    ifeq ($(cputype),x86_64) 
+      LIBPLOTDIR = ../Libplot/Linux64
+    else
+      LIBPLOTDIR = ../Libplot/Linux32
+    endif
+  endif
+
+
+  ifeq ($(systype),SunOS)
+    #Compiler information
+    CC = /opt/SUNWspro/bin/cc
+    OPTFLAGS = -xO4 
+    COPTIONS =-DSUNOS  
+
+    #Linker information
+    LDOPTIONS = 
+    LD = /opt/SUNWspro/bin/cc
+
+
+    #Library creation information
+    AR = ar rv
+    RANLIB = ar -ts
+
+    #Library information
+    LIBPLOTDIR = ../Libplot/SunOS
+  endif
+
+
+  ifeq ($(systype),Darwin)
+    #Compiler information
+    CC = gcc
+    OPTFLAGS = -O6 
+    COPTIONS = -DDARWIN -D_FILE_OFFSET_BITS=64 -pedantic -std=c99 
+
+    #Linker information
+    LDOPTIONS = -fvisibility=default
+    LD = gcc 
+
+    #Library creation information
+    AR = ar rv
+    RANLIB = ar -ts
+
+    #Library information
+    ifeq ($(cputype),i386)
+      LIBPLOTDIR = ../Libplot/Darwini386
+    else
+      LIBPLOTDIR = ../Libplot/DarwinPPC
+    endif
+  endif
+
+  ifeq ($(systype),CYGWIN)
+    #Compiler information
+    CC = gcc
+    OPTFLAGS = -O6
+    COPTIONS = -DCYGWIN -DWIN32 -D_FILE_OFFSET_BITS=64 -Wall -std=c99 -pedantic -mno-cygwin
+
+    #Linker information
+    LDOPTIONS = -mno-cygwin
+    LD = gcc
+
+    #Library creation information
+    AR = ar crv
+    RANLIB = ar -ts
+
+    #Library information
+    LIBPLOTDIR = ../Libplot/CYGWIN
+  endif
+
+
+  #-------------------------------------------------------------------
+  # These defs are common among the GNU/GCC based systems
+  #-------------------------------------------------------------------
+  #Compile input/output file specification
+  SOURCEFILE = -c $<
+  OUTPUTFILE = -o $@
+
+  #Output specification for executables
+  EXEOUTPUTFILE = -o $@
+
+  #Library creation information
+  AR = ar crv $@ 
+  RANLIB = ar -ts $@
+
+  #Libraries needed for linking
+  LIBSDIR  = -L$(BUILDDIR) -L$(GKLIBBUILDDIR) -L$(HOME)/local/lib
+  LIBS     = -lGKlib -lpcreposix -lpcre -lz -lm
+
+  # Standard file extensions 
+  OBJEXT = .o
+  LIBEXT = .a
+  EXEEXT = 
+endif
+
+
+#**************************************************************************
+DMALLOCINC =
+DMALLOCFLAGS =
+DEBUGFLAGS =
+
+ifeq ($(dmalloc),yes)
+  DMALLOCINC = -I$(HOME)/local/include
+  DMALLOCFLAGS = -DDMALLOC
+  OPTFLAGS = -g
+endif
+
+ifeq ($(debug),yes)
+  DEBUGFLAGS = -DDEBUG
+  OPTFLAGS = -g
+endif
+
+ifeq ($(gdb),yes)
+  OPTFLAGS += -g
+endif
+#**************************************************************************
+
+
+#**************************************************************************
+# Create the build directory if it does not exist
+#**************************************************************************
+ifeq ($(systype),Darwin)
+  BINDIR    = $(HOME)
+else
+  BINDIR    = $(HOME)/work/bin/$(systype)-$(cputype)
+  $(shell mkdir -p $(BINDIR))
+endif
+
+ifeq ($(openmp),no)
+  BUILDDIR    = ./builds/$(systype)-$(cputype)
+else
+  BUILDDIR    = ./builds/$(systype)-$(cputype)-openmp
+endif
+
+LIBBUILDDIR = $(BUILDDIR)/lib
+PRGBUILDDIR = $(BUILDDIR)/prg
+$(shell mkdir -p $(BUILDDIR))
+$(shell mkdir -p $(LIBBUILDDIR))
+$(shell mkdir -p $(PRGBUILDDIR))
+
+
+
+
+INCLUDES = -I./ -I$(GKLIBINCDIR) -I$(LIBPLOTDIR) -I$(HOME)/local/include 
+CFLAGS   = $(COPTIONS) $(OPTFLAGS) $(DEBUGFLAGS) $(INCLUDES)
+
+

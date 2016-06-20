@@ -63,7 +63,7 @@ namespace gtsam {
         {
           int largestProblemSize = 0;
           int secondLargestProblemSize = 0;
-          BOOST_FOREACH(const boost::shared_ptr<NODE>& child, node->children)
+          for(const boost::shared_ptr<NODE>& child: node->children)
           {
             if (child->problemSize() > largestProblemSize)
             {

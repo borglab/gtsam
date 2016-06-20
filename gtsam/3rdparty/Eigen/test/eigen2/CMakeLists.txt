@@ -4,6 +4,7 @@ add_dependencies(eigen2_check eigen2_buildtests)
 add_dependencies(buildtests eigen2_buildtests)
 
 add_definitions("-DEIGEN2_SUPPORT_STAGE10_FULL_EIGEN2_API")
+add_definitions("-DEIGEN_NO_EIGEN2_DEPRECATED_WARNING")
 
 ei_add_test(eigen2_meta)
 ei_add_test(eigen2_sizeof)

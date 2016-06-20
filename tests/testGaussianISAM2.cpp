@@ -6,27 +6,25 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/base/debug.h>
-#include <gtsam/base/TestableAssertions.h>
-#include <gtsam/base/LieVector.h>
-#include <gtsam/base/treeTraversal-inst.h>
+#include <tests/smallExample.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/inference/Ordering.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/Marginals.h>
-#include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
-#include <tests/smallExample.h>
-
-#include <boost/foreach.hpp>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/treeTraversal-inst.h>
 #include <boost/assign/list_of.hpp>
+#include <gtsam/base/deprecated/LieScalar.h>
 using namespace boost::assign;
 #include <boost/range/adaptor/map.hpp>
 namespace br { using namespace boost::adaptors; using namespace boost::range; }
@@ -35,13 +33,16 @@ using namespace std;
 using namespace gtsam;
 using boost::shared_ptr;
 
+static const SharedNoiseModel model;
+static const LieScalar Zero(0);
+
 //  SETDEBUG("ISAM2 update", true);
 //  SETDEBUG("ISAM2 update verbose", true);
 //  SETDEBUG("ISAM2 recalculate", true);
 
 // Set up parameters
-SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.1, M_PI/100.0));
-SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas((Vector(2) << M_PI/100.0, 0.1));
+SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.1, M_PI/100.0).finished());
+SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas((Vector(2) << M_PI/100.0, 0.1).finished());
 
 ISAM2 createSlamlikeISAM2(
     boost::optional<Values&> init_values = boost::none,
@@ -169,10 +170,10 @@ done:
 //  // Create values where indices 1 and 3 are above the threshold of 0.1
 //  VectorValues values;
 //  values.reserve(4, 10);
-//  values.push_back_preallocated((Vector(2) << 0.09, 0.09));
-//  values.push_back_preallocated((Vector(3) << 0.11, 0.11, 0.09));
-//  values.push_back_preallocated((Vector(3) << 0.09, 0.09, 0.09));
-//  values.push_back_preallocated((Vector(2) << 0.11, 0.11));
+//  values.push_back_preallocated(Vector2(0.09, 0.09));
+//  values.push_back_preallocated(Vector3(0.11, 0.11, 0.09));
+//  values.push_back_preallocated(Vector3(0.09, 0.09, 0.09));
+//  values.push_back_preallocated(Vector2(0.11, 0.11));
 //
 //  // Create a permutation
 //  Permutation permutation(4);
@@ -184,12 +185,12 @@ done:
 //  Permuted<VectorValues> permuted(permutation, values);
 //
 //  // After permutation, the indices above the threshold are 2 and 2
-//  FastSet<Key> expected;
+//  KeySet expected;
 //  expected.insert(2);
 //  expected.insert(3);
 //
 //  // Indices checked by CheckRelinearization
-//  FastSet<Key> actual = Impl::CheckRelinearization(permuted, 0.1);
+//  KeySet actual = Impl::CheckRelinearization(permuted, 0.1);
 //
 //  EXPECT(assert_equal(expected, actual));
 //}
@@ -203,14 +204,14 @@ struct ConsistencyVisitor
     consistent(true), isam(isam) {}
   int operator()(const ISAM2::sharedClique& node, int& parentData)
   {
-    if(std::find(isam.roots().begin(), isam.roots().end(), node) == isam.roots().end())
+    if(find(isam.roots().begin(), isam.roots().end(), node) == isam.roots().end())
     {
       if(node->parent_.expired())
         consistent = false;
-      if(std::find(node->parent()->children.begin(), node->parent()->children.end(), node) == node->parent()->children.end())
+      if(find(node->parent()->children.begin(), node->parent()->children.end(), node) == node->parent()->children.end())
         consistent = false;
     }
-    BOOST_FOREACH(Key j, node->conditional()->frontals())
+    for(Key j: node->conditional()->frontals())
     {
       if(isam.nodes().at(j).get() != node.get())
         consistent = false;
@@ -223,7 +224,7 @@ struct ConsistencyVisitor
 bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, const ISAM2& isam, Test& test, TestResult& result) {
 
   TestResult& result_ = result;
-  const std::string name_ = test.getName();
+  const string name_ = test.getName();
 
   Values actual = isam.calculateEstimate();
   Values expected = fullinit.retract(fullgraph.linearize(fullinit)->optimize());
@@ -249,7 +250,7 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
   // Check gradient at each node
   bool nodeGradientsOk = true;
   typedef ISAM2::sharedClique sharedClique;
-  BOOST_FOREACH(const sharedClique& clique, isam.nodes() | br::map_values) {
+  for(const sharedClique& clique: isam.nodes() | br::map_values) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
     jfg += clique->conditional();
@@ -285,23 +286,23 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
 TEST(ISAM2, AddFactorsStep1)
 {
   NonlinearFactorGraph nonlinearFactors;
-  nonlinearFactors += PriorFactor<LieVector>(10, LieVector(), gtsam::SharedNoiseModel());
+  nonlinearFactors += PriorFactor<LieScalar>(10, Zero, model);
   nonlinearFactors += NonlinearFactor::shared_ptr();
-  nonlinearFactors += PriorFactor<LieVector>(11, LieVector(), gtsam::SharedNoiseModel());
+  nonlinearFactors += PriorFactor<LieScalar>(11, Zero, model);
 
   NonlinearFactorGraph newFactors;
-  newFactors += PriorFactor<LieVector>(1, LieVector(), gtsam::SharedNoiseModel());
-  newFactors += PriorFactor<LieVector>(2, LieVector(), gtsam::SharedNoiseModel());
+  newFactors += PriorFactor<LieScalar>(1, Zero, model);
+  newFactors += PriorFactor<LieScalar>(2, Zero, model);
 
   NonlinearFactorGraph expectedNonlinearFactors;
-  expectedNonlinearFactors += PriorFactor<LieVector>(10, LieVector(), gtsam::SharedNoiseModel());
-  expectedNonlinearFactors += PriorFactor<LieVector>(1, LieVector(), gtsam::SharedNoiseModel());
-  expectedNonlinearFactors += PriorFactor<LieVector>(11, LieVector(), gtsam::SharedNoiseModel());
-  expectedNonlinearFactors += PriorFactor<LieVector>(2, LieVector(), gtsam::SharedNoiseModel());
+  expectedNonlinearFactors += PriorFactor<LieScalar>(10, Zero, model);
+  expectedNonlinearFactors += PriorFactor<LieScalar>(1, Zero, model);
+  expectedNonlinearFactors += PriorFactor<LieScalar>(11, Zero, model);
+  expectedNonlinearFactors += PriorFactor<LieScalar>(2, Zero, model);
 
-  const FastVector<size_t> expectedNewFactorIndices = list_of(1)(3);
+  const FactorIndices expectedNewFactorIndices = list_of(1)(3);
 
-  FastVector<size_t> actualNewFactorIndices;
+  FactorIndices actualNewFactorIndices;
 
   ISAM2::Impl::AddFactorsStep1(newFactors, true, nonlinearFactors, actualNewFactorIndices);
 
@@ -417,7 +418,7 @@ TEST(ISAM2, removeFactors)
   ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
 
   // Remove the 2nd measurement on landmark 0 (Key 100)
-  FastVector<size_t> toRemove;
+  FactorIndices toRemove;
   toRemove.push_back(12);
   isam.update(NonlinearFactorGraph(), Values(), toRemove);
 
@@ -437,7 +438,7 @@ TEST(ISAM2, removeVariables)
   ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
 
   // Remove the measurement on landmark 0 (Key 100)
-  FastVector<size_t> toRemove;
+  FactorIndices toRemove;
   toRemove.push_back(7);
   toRemove.push_back(14);
   isam.update(NonlinearFactorGraph(), Values(), toRemove);
@@ -464,7 +465,7 @@ TEST(ISAM2, swapFactors)
   // Remove the measurement on landmark 0 and replace with a different one
   {
     size_t swap_idx = isam.getFactorsUnsafe().size()-2;
-    FastVector<size_t> toRemove;
+    FactorIndices toRemove;
     toRemove.push_back(swap_idx);
     fullgraph.remove(swap_idx);
 
@@ -481,7 +482,7 @@ TEST(ISAM2, swapFactors)
 
   // Check gradient at each node
   typedef ISAM2::sharedClique sharedClique;
-  BOOST_FOREACH(const sharedClique& clique, isam.nodes() | br::map_values) {
+  for(const sharedClique& clique: isam.nodes() | br::map_values) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
     jfg += clique->conditional();
@@ -547,7 +548,7 @@ TEST(ISAM2, constrained_ordering)
     fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     if(i >= 3)
-      isam.update(newfactors, init, FastVector<size_t>(), constrained);
+      isam.update(newfactors, init, FactorIndices(), constrained);
     else
       isam.update(newfactors, init);
   }
@@ -568,7 +569,7 @@ TEST(ISAM2, constrained_ordering)
     fullinit.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
     fullinit.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
 
-    isam.update(newfactors, init, FastVector<size_t>(), constrained);
+    isam.update(newfactors, init, FactorIndices(), constrained);
     ++ i;
   }
 
@@ -582,7 +583,7 @@ TEST(ISAM2, constrained_ordering)
     init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
-    isam.update(newfactors, init, FastVector<size_t>(), constrained);
+    isam.update(newfactors, init, FactorIndices(), constrained);
   }
 
   // Add odometry from time 10 to 11 and landmark measurement at time 10
@@ -597,7 +598,7 @@ TEST(ISAM2, constrained_ordering)
     init.insert((i+1), Pose2(6.9, 0.1, 0.01));
     fullinit.insert((i+1), Pose2(6.9, 0.1, 0.01));
 
-    isam.update(newfactors, init, FastVector<size_t>(), constrained);
+    isam.update(newfactors, init, FactorIndices(), constrained);
     ++ i;
   }
 
@@ -606,7 +607,7 @@ TEST(ISAM2, constrained_ordering)
 
   // Check gradient at each node
   typedef ISAM2::sharedClique sharedClique;
-  BOOST_FOREACH(const sharedClique& clique, isam.nodes() | br::map_values) {
+  for(const sharedClique& clique: isam.nodes() | br::map_values) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
     jfg += clique->conditional();
@@ -648,7 +649,7 @@ namespace {
   bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
     Matrix expectedAugmentedHessian, expected3AugmentedHessian;
     vector<Key> toKeep;
-    BOOST_FOREACH(Key j, isam.getDelta() | br::map_keys)
+    for(Key j: isam.getDelta() | br::map_keys)
       if(find(leafKeys.begin(), leafKeys.end(), j) == leafKeys.end())
         toKeep.push_back(j);
 
@@ -694,25 +695,24 @@ namespace {
 TEST(ISAM2, marginalizeLeaves1)
 {
   ISAM2 isam;
-
   NonlinearFactorGraph factors;
-  factors += PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += PriorFactor<LieScalar>(0, Zero, model);
 
-  factors += BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += BetweenFactor<LieScalar>(0, 1, Zero, model);
+  factors += BetweenFactor<LieScalar>(1, 2, Zero, model);
+  factors += BetweenFactor<LieScalar>(0, 2, Zero, model);
 
   Values values;
-  values.insert(0, LieVector(0.0));
-  values.insert(1, LieVector(0.0));
-  values.insert(2, LieVector(0.0));
+  values.insert(0, Zero);
+  values.insert(1, Zero);
+  values.insert(2, Zero);
 
   FastMap<Key,int> constrainedKeys;
   constrainedKeys.insert(make_pair(0,0));
   constrainedKeys.insert(make_pair(1,1));
   constrainedKeys.insert(make_pair(2,2));
 
-  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+  isam.update(factors, values, FactorIndices(), constrainedKeys);
 
   FastList<Key> leafKeys = list_of(0);
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
@@ -724,18 +724,18 @@ TEST(ISAM2, marginalizeLeaves2)
   ISAM2 isam;
 
   NonlinearFactorGraph factors;
-  factors += PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += PriorFactor<LieScalar>(0, Zero, model);
 
-  factors += BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(2, 3, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += BetweenFactor<LieScalar>(0, 1, Zero, model);
+  factors += BetweenFactor<LieScalar>(1, 2, Zero, model);
+  factors += BetweenFactor<LieScalar>(0, 2, Zero, model);
+  factors += BetweenFactor<LieScalar>(2, 3, Zero, model);
 
   Values values;
-  values.insert(0, LieVector(0.0));
-  values.insert(1, LieVector(0.0));
-  values.insert(2, LieVector(0.0));
-  values.insert(3, LieVector(0.0));
+  values.insert(0, Zero);
+  values.insert(1, Zero);
+  values.insert(2, Zero);
+  values.insert(3, Zero);
 
   FastMap<Key,int> constrainedKeys;
   constrainedKeys.insert(make_pair(0,0));
@@ -743,7 +743,7 @@ TEST(ISAM2, marginalizeLeaves2)
   constrainedKeys.insert(make_pair(2,2));
   constrainedKeys.insert(make_pair(3,3));
 
-  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+  isam.update(factors, values, FactorIndices(), constrainedKeys);
 
   FastList<Key> leafKeys = list_of(0);
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
@@ -755,25 +755,25 @@ TEST(ISAM2, marginalizeLeaves3)
   ISAM2 isam;
 
   NonlinearFactorGraph factors;
-  factors += PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += PriorFactor<LieScalar>(0, Zero, model);
 
-  factors += BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += BetweenFactor<LieScalar>(0, 1, Zero, model);
+  factors += BetweenFactor<LieScalar>(1, 2, Zero, model);
+  factors += BetweenFactor<LieScalar>(0, 2, Zero, model);
 
-  factors += BetweenFactor<LieVector>(2, 3, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += BetweenFactor<LieScalar>(2, 3, Zero, model);
 
-  factors += BetweenFactor<LieVector>(3, 4, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(4, 5, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(3, 5, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += BetweenFactor<LieScalar>(3, 4, Zero, model);
+  factors += BetweenFactor<LieScalar>(4, 5, Zero, model);
+  factors += BetweenFactor<LieScalar>(3, 5, Zero, model);
 
   Values values;
-  values.insert(0, LieVector(0.0));
-  values.insert(1, LieVector(0.0));
-  values.insert(2, LieVector(0.0));
-  values.insert(3, LieVector(0.0));
-  values.insert(4, LieVector(0.0));
-  values.insert(5, LieVector(0.0));
+  values.insert(0, Zero);
+  values.insert(1, Zero);
+  values.insert(2, Zero);
+  values.insert(3, Zero);
+  values.insert(4, Zero);
+  values.insert(5, Zero);
 
   FastMap<Key,int> constrainedKeys;
   constrainedKeys.insert(make_pair(0,0));
@@ -783,7 +783,7 @@ TEST(ISAM2, marginalizeLeaves3)
   constrainedKeys.insert(make_pair(4,4));
   constrainedKeys.insert(make_pair(5,5));
 
-  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+  isam.update(factors, values, FactorIndices(), constrainedKeys);
 
   FastList<Key> leafKeys = list_of(0);
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
@@ -795,21 +795,21 @@ TEST(ISAM2, marginalizeLeaves4)
   ISAM2 isam;
 
   NonlinearFactorGraph factors;
-  factors += PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1));
-  factors += BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1));
+  factors += PriorFactor<LieScalar>(0, Zero, model);
+  factors += BetweenFactor<LieScalar>(0, 2, Zero, model);
+  factors += BetweenFactor<LieScalar>(1, 2, Zero, model);
 
   Values values;
-  values.insert(0, LieVector(0.0));
-  values.insert(1, LieVector(0.0));
-  values.insert(2, LieVector(0.0));
+  values.insert(0, Zero);
+  values.insert(1, Zero);
+  values.insert(2, Zero);
 
   FastMap<Key,int> constrainedKeys;
   constrainedKeys.insert(make_pair(0,0));
   constrainedKeys.insert(make_pair(1,1));
   constrainedKeys.insert(make_pair(2,2));
 
-  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+  isam.update(factors, values, FactorIndices(), constrainedKeys);
 
   FastList<Key> leafKeys = list_of(1);
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));

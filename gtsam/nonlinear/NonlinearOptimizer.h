@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,41 +23,7 @@
 
 namespace gtsam {
 
-class NonlinearOptimizer;
-
-/**
- * Base class for a nonlinear optimization state, including the current estimate
- * of the variable values, error, and number of iterations.  Optimizers derived
- * from NonlinearOptimizer usually also define a derived state class containing
- * additional state specific to the algorithm (for example, Dogleg state
- * contains the current trust region radius).
- */
-class GTSAM_EXPORT NonlinearOptimizerState {
-public:
-
-  /** The current estimate of the variable values. */
-  Values values;
-
-  /** The factor graph error on the current values. */
-  double error;
-
-  /** The number of optimization iterations performed. */
-  int iterations;
-
-  NonlinearOptimizerState() {}
-
-  /** Virtual destructor */
-  virtual ~NonlinearOptimizerState() {}
-
-protected:
-  NonlinearOptimizerState(const NonlinearFactorGraph& graph, const Values& values, unsigned int iterations = 0) :
-    values(values), error(graph.error(values)), iterations(iterations) {}
-
-  NonlinearOptimizerState(const Values& values, double error, unsigned int iterations) :
-    values(values), error(error), iterations(iterations) {}
-
-  friend class NonlinearOptimizer;
-};
+namespace internal { struct NonlinearOptimizerState; }
 
 /**
  * This is the abstract interface for classes that can optimize for the
@@ -65,42 +31,25 @@ protected:
  *
  * To use a class derived from this interface, construct the class with a
  * NonlinearFactorGraph and an initial Values variable assignment.  Next, call the
- * optimize() method, which returns a new NonlinearOptimizer object containing
- * the optimized variable assignment.  Call the values() method to retrieve the
- * optimized estimate.  Alternatively, to take a shortcut, instead of calling
- * optimize(), call optimized(), which performs full optimization and returns
- * the resulting Values instead of the new optimizer.
- *
- * Note:  This class is immutable, optimize() and iterate() return new
- * NonlinearOptimizer objects, so be sure to use the returned object and not
- * simply keep the unchanged original.
+ * optimize() method which returns the optimized variable assignment.
  *
  * Simple and compact example:
  * \code
 // One-liner to do full optimization and use the result.
-// Note use of "optimized()" to directly return Values, instead of "optimize()" that returns a new optimizer.
-Values::const_shared_ptr result = DoglegOptimizer(graph, initialValues).optimized();
+Values result = DoglegOptimizer(graph, initialValues).optimize();
 \endcode
  *
  * Example exposing more functionality and details:
  * \code
 // Create initial optimizer
-DoglegOptimizer initial(graph, initialValues);
+DoglegOptimizer optimizer(graph, initialValues);
 
 // Run full optimization until convergence.
-// Note use of "optimize()" to return a new optimizer, instead of "optimized()" that returns only the Values.
-// NonlinearOptimizer pointers are always returned, though they are actually a derived optimizer type.
-NonlinearOptimizer::auto_ptr final = initial->optimize();
+Values result = optimizer->optimize();
 
 // The new optimizer has results and statistics
-cout << "Converged in " << final->iterations() << " iterations "
-        "with final error " << final->error() << endl;
-
-// The values are a const_shared_ptr (boost::shared_ptr<const Values>)
-Values::const_shared_ptr result = final->values();
-
-// Use the results
-useTheResult(result);
+cout << "Converged in " << optimizer.iterations() << " iterations "
+        "with final error " << optimizer.error() << endl;
 \endcode
  *
  * Example of setting parameters before optimization:
@@ -112,29 +61,23 @@ params.relativeErrorTol = 1e-3;
 params.absoluteErrorTol = 1e-3;
 
 // Optimize
-Values::const_shared_ptr result = DoglegOptimizer(graph, initialValues, params).optimized();
+Values result = DoglegOptimizer(graph, initialValues, params).optimize();
 \endcode
  *
  * This interface also exposes an iterate() method, which performs one
- * iteration, returning a NonlinearOptimizer containing the adjusted variable
- * assignment.  The optimize() method simply calls iterate() multiple times,
+ * iteration.  The optimize() method simply calls iterate() multiple times,
  * until the error changes less than a threshold.  We expose iterate() so that
  * you can easily control what happens between iterations, such as drawing or
  * printing, moving points from behind the camera to in front, etc.
  *
- * To modify the graph, values, or parameters between iterations, call the
- * update() functions, which preserve all other state (for example, the trust
- * region size in DoglegOptimizer).  Derived optimizer classes also have
- * additional update methods, not in this abstract interface, for updating
- * algorithm-specific state.
- *
- * For more flexibility, since all functions are virtual, you may override them
- * in your own derived class.
+ * For more flexibility you may override virtual methods in your own derived class.
  */
 class GTSAM_EXPORT NonlinearOptimizer {
 
 protected:
-  NonlinearFactorGraph graph_;
+  NonlinearFactorGraph graph_; ///< The graph with nonlinear factors
+
+  std::unique_ptr<internal::NonlinearOptimizerState> state_; ///< PIMPL'd state
 
 public:
   /** A shared pointer to this class */
@@ -163,13 +106,13 @@ public:
   const Values& optimizeSafely();
 
   /// return error
-  double error() const { return _state().error; }
+  double error() const;
 
   /// return number of iterations
-  int iterations() const { return _state().iterations; }
+  size_t iterations() const;
 
   /// return values
-  const Values& values() const { return _state().values; }
+  const Values& values() const;
 
   /// @}
 
@@ -177,33 +120,31 @@ public:
   /// @{
 
   /** Virtual destructor */
-  virtual ~NonlinearOptimizer() {}
+  virtual ~NonlinearOptimizer();
 
   /** Default function to do linear solve, i.e. optimize a GaussianFactorGraph */
   virtual VectorValues solve(const GaussianFactorGraph &gfg,
-      const Values& initial, const NonlinearOptimizerParams& params) const;
+      const NonlinearOptimizerParams& params) const;
 
   /** Perform a single iteration, returning a new NonlinearOptimizer class
    * containing the updated variable assignments, which may be retrieved with
    * values().
    */
-  virtual void iterate() = 0;
+  virtual GaussianFactorGraph::shared_ptr iterate() = 0;
 
   /// @}
 
-protected:  
+protected:
   /** A default implementation of the optimization loop, which calls iterate()
    * until checkConvergence returns true.
    */
   void defaultOptimize();
 
-  virtual const NonlinearOptimizerState& _state() const = 0;
-
   virtual const NonlinearOptimizerParams& _params() const = 0;
 
-  /** Constructor for initial construction of base classes. */
-  NonlinearOptimizer(const NonlinearFactorGraph& graph) : graph_(graph) {}
-
+  /** Constructor for initial construction of base classes. Takes ownership of state. */
+  NonlinearOptimizer(const NonlinearFactorGraph& graph,
+                     std::unique_ptr<internal::NonlinearOptimizerState> state);
 };
 
 /** Check whether the relative error decrease is less than relativeErrorTreshold,
@@ -213,5 +154,8 @@ protected:
 GTSAM_EXPORT bool checkConvergence(double relativeErrorTreshold,
     double absoluteErrorTreshold, double errorThreshold,
     double currentError, double newError, NonlinearOptimizerParams::Verbosity verbosity = NonlinearOptimizerParams::SILENT);
+
+GTSAM_EXPORT bool checkConvergence(const NonlinearOptimizerParams& params, double currentError,
+                                   double newError);
 
 } // gtsam

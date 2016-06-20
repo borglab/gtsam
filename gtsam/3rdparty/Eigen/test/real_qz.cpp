@@ -25,6 +25,22 @@ template<typename MatrixType> void real_qz(const MatrixType& m)
   MatrixType A = MatrixType::Random(dim,dim),
              B = MatrixType::Random(dim,dim);
 
+
+  // Regression test for bug 985: Randomly set rows or columns to zero
+  Index k=internal::random<Index>(0, dim-1);
+  switch(internal::random<int>(0,10)) {
+  case 0:
+    A.row(k).setZero(); break;
+  case 1:
+    A.col(k).setZero(); break;
+  case 2:
+    B.row(k).setZero(); break;
+  case 3:
+    B.col(k).setZero(); break;
+  default:
+    break;
+  }
+
   RealQZ<MatrixType> qz(A,B);
   
   VERIFY_IS_EQUAL(qz.info(), Success);

@@ -71,9 +71,9 @@ marginals = Marginals(graph, result);
 plot2DTrajectory(result, [], marginals);
 plot2DPoints(result, 'b', marginals);
 
-plot([result.at(i1).x; result.at(j1).x],[result.at(i1).y; result.at(j1).y], 'c-');
-plot([result.at(i2).x; result.at(j1).x],[result.at(i2).y; result.at(j1).y], 'c-');
-plot([result.at(i3).x; result.at(j2).x],[result.at(i3).y; result.at(j2).y], 'c-');
+plot([result.atPose2(i1).x; result.atPoint2(j1).x],[result.atPose2(i1).y; result.atPoint2(j1).y], 'c-');
+plot([result.atPose2(i2).x; result.atPoint2(j1).x],[result.atPose2(i2).y; result.atPoint2(j1).y], 'c-');
+plot([result.atPose2(i3).x; result.atPoint2(j2).x],[result.atPose2(i3).y; result.atPoint2(j2).y], 'c-');
 axis([-0.6 4.8 -1 1])
 axis equal
 view(2)

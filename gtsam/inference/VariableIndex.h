@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,22 +17,22 @@
 
 #pragma once
 
-#include <vector>
-#include <deque>
-#include <stdexcept>
-#include <boost/foreach.hpp>
-
-#include <gtsam/base/FastList.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/base/types.h>
-#include <gtsam/base/timing.h>
 #include <gtsam/inference/Key.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/base/FastVector.h>
+#include <gtsam/dllexport.h>
+
+#include <boost/optional/optional.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
+
+#include <cassert>
+#include <stdexcept>
 
 namespace gtsam {
 
 /**
  * The VariableIndex class computes and stores the block column structure of a
- * factor graph.  The factor graph stores a collection of factors, each of 
+ * factor graph.  The factor graph stores a collection of factors, each of
  * which involves a set of variables.  In contrast, the VariableIndex is built
  * from a factor graph prior to elimination, and stores the list of factors
  * that involve each variable.  This information is stored as a deque of
@@ -43,9 +43,9 @@ class GTSAM_EXPORT VariableIndex {
 public:
 
   typedef boost::shared_ptr<VariableIndex> shared_ptr;
-  typedef FastList<size_t> Factors;
+  typedef FastVector<size_t> Factors;
   typedef Factors::iterator Factor_iterator;
-  typedef Factors::const_iterator Factor_const_iterator;  
+  typedef Factors::const_iterator Factor_const_iterator;
 
 protected:
   typedef FastMap<Key,Factors> KeyMap;
@@ -81,7 +81,7 @@ public:
    * The number of variable entries.  This is one greater than the variable
    * with the highest index.
    */
-  Key size() const { return index_.size(); }
+  size_t size() const { return index_.size(); }
 
   /** The number of factors in the original factor graph */
   size_t nFactors() const { return nFactors_; }
@@ -175,6 +175,11 @@ protected:
   /// @}
 };
 
-}
+/// traits
+template<>
+struct traits<VariableIndex> : public Testable<VariableIndex> {
+};
+
+} //\ namespace gtsam
 
 #include <gtsam/inference/VariableIndex-inl.h>

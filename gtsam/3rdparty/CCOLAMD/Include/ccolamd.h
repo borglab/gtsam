@@ -5,8 +5,6 @@
 /* ----------------------------------------------------------------------------
  * CCOLAMD Copyright (C), Univ. of Florida.  Authors: Timothy A. Davis,
  * Sivasankaran Rajamanickam, and Stefan Larimore
- * See License.txt for the Version 2.1 of the GNU Lesser General Public License
- * http://www.cise.ufl.edu/research/sparse
  * -------------------------------------------------------------------------- */
 
 /*
@@ -32,24 +30,24 @@ extern "C" {
 /* All versions of CCOLAMD will include the following definitions.
  * As an example, to test if the version you are using is 1.3 or later:
  *
- *  if (CCOLAMD_VERSION >= CCOLAMD_VERSION_CODE (1,3)) ...
+ *	if (CCOLAMD_VERSION >= CCOLAMD_VERSION_CODE (1,3)) ...
  *
  * This also works during compile-time:
  *
- *  #if CCOLAMD_VERSION >= CCOLAMD_VERSION_CODE (1,3)
- *      printf ("This is version 1.3 or later\n") ;
- *  #else
- *      printf ("This is an early version\n") ;
- *  #endif
+ *	#if CCOLAMD_VERSION >= CCOLAMD_VERSION_CODE (1,3)
+ *	    printf ("This is version 1.3 or later\n") ;
+ *	#else
+ *	    printf ("This is an early version\n") ;
+ *	#endif
  */
 
-#define CCOLAMD_DATE "Jan 25, 2011"
+#define CCOLAMD_DATE "Apr 1, 2016"
 #define CCOLAMD_VERSION_CODE(main,sub) ((main) * 1000 + (sub))
 #define CCOLAMD_MAIN_VERSION 2
-#define CCOLAMD_SUB_VERSION 7
-#define CCOLAMD_SUBSUB_VERSION 3
+#define CCOLAMD_SUB_VERSION 9
+#define CCOLAMD_SUBSUB_VERSION 5
 #define CCOLAMD_VERSION \
-  CCOLAMD_VERSION_CODE(CCOLAMD_MAIN_VERSION,CCOLAMD_SUB_VERSION)
+	CCOLAMD_VERSION_CODE(CCOLAMD_MAIN_VERSION,CCOLAMD_SUB_VERSION)
 
 /* ========================================================================== */
 /* === Knob and statistics definitions ====================================== */
@@ -94,106 +92,105 @@ extern "C" {
 #define CCOLAMD_NEWLY_EMPTY_COL 10
 
 /* error codes returned in stats [3]: */
-#define CCOLAMD_OK        (0)
-#define CCOLAMD_OK_BUT_JUMBLED      (1)
-#define CCOLAMD_ERROR_A_not_present    (-1)
-#define CCOLAMD_ERROR_p_not_present    (-2)
-#define CCOLAMD_ERROR_nrow_negative    (-3)
-#define CCOLAMD_ERROR_ncol_negative    (-4)
-#define CCOLAMD_ERROR_nnz_negative    (-5)
-#define CCOLAMD_ERROR_p0_nonzero    (-6)
-#define CCOLAMD_ERROR_A_too_small    (-7)
-#define CCOLAMD_ERROR_col_length_negative  (-8)
-#define CCOLAMD_ERROR_row_index_out_of_bounds  (-9)
-#define CCOLAMD_ERROR_out_of_memory    (-10)
-#define CCOLAMD_ERROR_invalid_cmember    (-11)
-#define CCOLAMD_ERROR_internal_error    (-999)
+#define CCOLAMD_OK				(0)
+#define CCOLAMD_OK_BUT_JUMBLED			(1)
+#define CCOLAMD_ERROR_A_not_present		(-1)
+#define CCOLAMD_ERROR_p_not_present		(-2)
+#define CCOLAMD_ERROR_nrow_negative		(-3)
+#define CCOLAMD_ERROR_ncol_negative		(-4)
+#define CCOLAMD_ERROR_nnz_negative		(-5)
+#define CCOLAMD_ERROR_p0_nonzero		(-6)
+#define CCOLAMD_ERROR_A_too_small		(-7)
+#define CCOLAMD_ERROR_col_length_negative	(-8)
+#define CCOLAMD_ERROR_row_index_out_of_bounds	(-9)
+#define CCOLAMD_ERROR_out_of_memory		(-10)
+#define CCOLAMD_ERROR_invalid_cmember		(-11)
+#define CCOLAMD_ERROR_internal_error		(-999)
 
 /* ========================================================================== */
 /* === Prototypes of user-callable routines ================================= */
 /* ========================================================================== */
 
-/* define UF_long */
-#include "UFconfig.h"
+#include "SuiteSparse_config.h"
 
-size_t ccolamd_recommended  /* returns recommended value of Alen, */
-        /* or 0 if input arguments are erroneous */
+size_t ccolamd_recommended	/* returns recommended value of Alen, */
+				/* or 0 if input arguments are erroneous */
 (
-    int nnz,      /* nonzeros in A */
-    int n_row,      /* number of rows in A */
-    int n_col      /* number of columns in A */
+    int nnz,			/* nonzeros in A */
+    int n_row,			/* number of rows in A */
+    int n_col			/* number of columns in A */
 ) ;
 
-size_t ccolamd_l_recommended  /* returns recommended value of Alen, */
-        /* or 0 if input arguments are erroneous */
+size_t ccolamd_l_recommended	/* returns recommended value of Alen, */
+				/* or 0 if input arguments are erroneous */
 (
-    UF_long nnz,    /* nonzeros in A */
-    UF_long n_row,    /* number of rows in A */
-    UF_long n_col    /* number of columns in A */
+    SuiteSparse_long nnz,		/* nonzeros in A */
+    SuiteSparse_long n_row,		/* number of rows in A */
+    SuiteSparse_long n_col		/* number of columns in A */
 ) ;
 
-void ccolamd_set_defaults  /* sets default parameters */
-(        /* knobs argument is modified on output */
-    double knobs [CCOLAMD_KNOBS]  /* parameter settings for ccolamd */
+void ccolamd_set_defaults	/* sets default parameters */
+(				/* knobs argument is modified on output */
+    double knobs [CCOLAMD_KNOBS]	/* parameter settings for ccolamd */
 ) ;
 
-void ccolamd_l_set_defaults  /* sets default parameters */
-(        /* knobs argument is modified on output */
-    double knobs [CCOLAMD_KNOBS]  /* parameter settings for ccolamd */
+void ccolamd_l_set_defaults	/* sets default parameters */
+(				/* knobs argument is modified on output */
+    double knobs [CCOLAMD_KNOBS]	/* parameter settings for ccolamd */
 ) ;
 
-int ccolamd      /* returns (1) if successful, (0) otherwise*/
-(        /* A and p arguments are modified on output */
-    int n_row,      /* number of rows in A */
-    int n_col,      /* number of columns in A */
-    int Alen,      /* size of the array A */
-    int A [ ],      /* row indices of A, of size Alen */
-    int p [ ],      /* column pointers of A, of size n_col+1 */
+int ccolamd			/* returns (1) if successful, (0) otherwise*/
+(				/* A and p arguments are modified on output */
+    int n_row,			/* number of rows in A */
+    int n_col,			/* number of columns in A */
+    int Alen,			/* size of the array A */
+    int A [ ],			/* row indices of A, of size Alen */
+    int p [ ],			/* column pointers of A, of size n_col+1 */
     double knobs [CCOLAMD_KNOBS],/* parameter settings for ccolamd */
-    int stats [CCOLAMD_STATS],  /* ccolamd output statistics and error codes */
-    int cmember [ ]    /* Constraint set of A, of size n_col */
+    int stats [CCOLAMD_STATS],	/* ccolamd output statistics and error codes */
+    int cmember [ ]		/* Constraint set of A, of size n_col */
 ) ;
 
-UF_long ccolamd_l    /* same as ccolamd, but with UF_long integers */
+SuiteSparse_long ccolamd_l      /* as ccolamd w/ SuiteSparse_long integers */
 (
-    UF_long n_row,
-    UF_long n_col,
-    UF_long Alen,
-    UF_long A [ ],
-    UF_long p [ ],
+    SuiteSparse_long n_row,
+    SuiteSparse_long n_col,
+    SuiteSparse_long Alen,
+    SuiteSparse_long A [ ],
+    SuiteSparse_long p [ ],
     double knobs [CCOLAMD_KNOBS],
-    UF_long stats [CCOLAMD_STATS],
-    UF_long cmember [ ]
+    SuiteSparse_long stats [CCOLAMD_STATS],
+    SuiteSparse_long cmember [ ]
 ) ;
 
-int csymamd      /* return (1) if OK, (0) otherwise */
+int csymamd			/* return (1) if OK, (0) otherwise */
 (
-    int n,      /* number of rows and columns of A */
-    int A [ ],      /* row indices of A */
-    int p [ ],      /* column pointers of A */
-    int perm [ ],    /* output permutation, size n_col+1 */
+    int n,			/* number of rows and columns of A */
+    int A [ ],			/* row indices of A */
+    int p [ ],			/* column pointers of A */
+    int perm [ ],		/* output permutation, size n_col+1 */
     double knobs [CCOLAMD_KNOBS],/* parameters (uses defaults if NULL) */
-    int stats [CCOLAMD_STATS],  /* output statistics and error codes */
+    int stats [CCOLAMD_STATS],	/* output statistics and error codes */
     void * (*allocate) (size_t, size_t), /* pointer to calloc (ANSI C) or */
-        /* mxCalloc (for MATLAB mexFunction) */
-    void (*release) (void *),  /* pointer to free (ANSI C) or */
-            /* mxFree (for MATLAB mexFunction) */
-    int cmember [ ],    /* Constraint set of A */
-    int stype      /* 0: use both parts, >0: upper, <0: lower */
+				/* mxCalloc (for MATLAB mexFunction) */
+    void (*release) (void *),	/* pointer to free (ANSI C) or */
+    				/* mxFree (for MATLAB mexFunction) */
+    int cmember [ ],		/* Constraint set of A */
+    int stype			/* 0: use both parts, >0: upper, <0: lower */
 ) ;
 
-UF_long csymamd_l    /* same as csymamd, but with UF_long integers */
+SuiteSparse_long csymamd_l      /* as csymamd, w/ SuiteSparse_long integers */
 (
-    UF_long n,
-    UF_long A [ ],
-    UF_long p [ ],
-    UF_long perm [ ],
+    SuiteSparse_long n,
+    SuiteSparse_long A [ ],
+    SuiteSparse_long p [ ],
+    SuiteSparse_long perm [ ],
     double knobs [CCOLAMD_KNOBS],
-    UF_long stats [CCOLAMD_STATS],
+    SuiteSparse_long stats [CCOLAMD_STATS],
     void * (*allocate) (size_t, size_t),
     void (*release) (void *),
-    UF_long cmember [ ],
-    UF_long stype
+    SuiteSparse_long cmember [ ],
+    SuiteSparse_long stype
 ) ;
 
 void ccolamd_report
@@ -203,7 +200,7 @@ void ccolamd_report
 
 void ccolamd_l_report
 (
-    UF_long stats [CCOLAMD_STATS]
+    SuiteSparse_long stats [CCOLAMD_STATS]
 ) ;
 
 void csymamd_report
@@ -213,7 +210,7 @@ void csymamd_report
 
 void csymamd_l_report
 (
-    UF_long stats [CCOLAMD_STATS]
+    SuiteSparse_long stats [CCOLAMD_STATS]
 ) ;
 
 
@@ -227,42 +224,42 @@ void csymamd_l_report
  */
 
 int ccolamd2
-(        /* A and p arguments are modified on output */
-    int n_row,      /* number of rows in A */
-    int n_col,      /* number of columns in A */
-    int Alen,      /* size of the array A */
-    int A [ ],      /* row indices of A, of size Alen */
-    int p [ ],      /* column pointers of A, of size n_col+1 */
+(				/* A and p arguments are modified on output */
+    int n_row,			/* number of rows in A */
+    int n_col,			/* number of columns in A */
+    int Alen,			/* size of the array A */
+    int A [ ],			/* row indices of A, of size Alen */
+    int p [ ],			/* column pointers of A, of size n_col+1 */
     double knobs [CCOLAMD_KNOBS],/* parameter settings for ccolamd */
-    int stats [CCOLAMD_STATS],  /* ccolamd output statistics and error codes */
+    int stats [CCOLAMD_STATS],	/* ccolamd output statistics and error codes */
     /* each Front_ array is of size n_col+1: */
-    int Front_npivcol [ ],  /* # pivot cols in each front */
-    int Front_nrows [ ],  /* # of rows in each front (incl. pivot rows) */
-    int Front_ncols [ ],  /* # of cols in each front (incl. pivot cols) */
-    int Front_parent [ ],  /* parent of each front */
-    int Front_cols [ ],    /* link list of pivot columns for each front */
-    int *p_nfr,      /* total number of frontal matrices */
-    int InFront [ ],    /* InFront [row] = f if row in front f */
-    int cmember [ ]    /* Constraint set of A */
+    int Front_npivcol [ ],	/* # pivot cols in each front */
+    int Front_nrows [ ],	/* # of rows in each front (incl. pivot rows) */
+    int Front_ncols [ ],	/* # of cols in each front (incl. pivot cols) */
+    int Front_parent [ ],	/* parent of each front */
+    int Front_cols [ ],		/* link list of pivot columns for each front */
+    int *p_nfr,			/* total number of frontal matrices */
+    int InFront [ ],		/* InFront [row] = f if row in front f */
+    int cmember [ ]		/* Constraint set of A */
 ) ;
 
-UF_long ccolamd2_l      /* same as ccolamd2, but with UF_long integers */
+SuiteSparse_long ccolamd2_l     /* as ccolamd2, w/ SuiteSparse_long integers */
 (
-    UF_long n_row,
-    UF_long n_col,
-    UF_long Alen,
-    UF_long A [ ],
-    UF_long p [ ],
+    SuiteSparse_long n_row,
+    SuiteSparse_long n_col,
+    SuiteSparse_long Alen,
+    SuiteSparse_long A [ ],
+    SuiteSparse_long p [ ],
     double knobs [CCOLAMD_KNOBS],
-    UF_long stats [CCOLAMD_STATS],
-    UF_long Front_npivcol [ ],
-    UF_long Front_nrows [ ],
-    UF_long Front_ncols [ ],
-    UF_long Front_parent [ ],
-    UF_long Front_cols [ ],
-    UF_long *p_nfr,
-    UF_long InFront [ ],
-    UF_long cmember [ ]
+    SuiteSparse_long stats [CCOLAMD_STATS],
+    SuiteSparse_long Front_npivcol [ ],
+    SuiteSparse_long Front_nrows [ ],
+    SuiteSparse_long Front_ncols [ ],
+    SuiteSparse_long Front_parent [ ],
+    SuiteSparse_long Front_cols [ ],
+    SuiteSparse_long *p_nfr,
+    SuiteSparse_long InFront [ ],
+    SuiteSparse_long cmember [ ]
 ) ;
 
 void ccolamd_apply_order
@@ -276,11 +273,11 @@ void ccolamd_apply_order
 
 void ccolamd_l_apply_order
 (
-    UF_long Front [ ],
-    const UF_long Order [ ],
-    UF_long Temp [ ],
-    UF_long nn,
-    UF_long nfr
+    SuiteSparse_long Front [ ],
+    const SuiteSparse_long Order [ ],
+    SuiteSparse_long Temp [ ],
+    SuiteSparse_long nn,
+    SuiteSparse_long nfr
 ) ;
 
 
@@ -296,12 +293,12 @@ void ccolamd_fsize
 
 void ccolamd_l_fsize
 (
-    UF_long nn,
-    UF_long MaxFsize [ ],
-    UF_long Fnrows [ ],
-    UF_long Fncols [ ],
-    UF_long Parent [ ],
-    UF_long Npiv [ ]
+    SuiteSparse_long nn,
+    SuiteSparse_long MaxFsize [ ],
+    SuiteSparse_long Fnrows [ ],
+    SuiteSparse_long Fncols [ ],
+    SuiteSparse_long Parent [ ],
+    SuiteSparse_long Npiv [ ]
 ) ;
 
 void ccolamd_postorder
@@ -320,16 +317,16 @@ void ccolamd_postorder
 
 void ccolamd_l_postorder
 (
-    UF_long nn,
-    UF_long Parent [ ],
-    UF_long Npiv [ ],
-    UF_long Fsize [ ],
-    UF_long Order [ ],
-    UF_long Child [ ],
-    UF_long Sibling [ ],
-    UF_long Stack [ ],
-    UF_long Front_cols [ ],
-    UF_long cmember [ ]
+    SuiteSparse_long nn,
+    SuiteSparse_long Parent [ ],
+    SuiteSparse_long Npiv [ ],
+    SuiteSparse_long Fsize [ ],
+    SuiteSparse_long Order [ ],
+    SuiteSparse_long Child [ ],
+    SuiteSparse_long Sibling [ ],
+    SuiteSparse_long Stack [ ],
+    SuiteSparse_long Front_cols [ ],
+    SuiteSparse_long cmember [ ]
 ) ;
 
 int ccolamd_post_tree
@@ -342,21 +339,15 @@ int ccolamd_post_tree
     int Stack [ ]
 ) ;
 
-UF_long ccolamd_l_post_tree
+SuiteSparse_long ccolamd_l_post_tree
 (
-    UF_long root,
-    UF_long k,
-    UF_long Child [ ],
-    const UF_long Sibling [ ],
-    UF_long Order [ ],
-    UF_long Stack [ ]
+    SuiteSparse_long root,
+    SuiteSparse_long k,
+    SuiteSparse_long Child [ ],
+    const SuiteSparse_long Sibling [ ],
+    SuiteSparse_long Order [ ],
+    SuiteSparse_long Stack [ ]
 ) ;
-
-#ifndef EXTERN
-#define EXTERN extern
-#endif
-
-EXTERN int (*ccolamd_printf) (const char *, ...) ;
 
 #ifdef __cplusplus
 }

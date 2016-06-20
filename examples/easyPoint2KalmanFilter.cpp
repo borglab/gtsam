@@ -37,7 +37,7 @@ int main() {
 
   // Create the Kalman Filter initialization point
   Point2 x_initial(0.0, 0.0);
-  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
+  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
 
   // Create Key for initial pose
   Symbol x0('x',0);
@@ -57,8 +57,8 @@ int main() {
   // For the purposes of this example, let us assume we are using a constant-position model and
   // the controls are driving the point to the right at 1 m/s. Then, F = [1 0 ; 0 1], B = [1 0 ; 0 1]
   // and u = [1 ; 0]. Let us also assume that the process noise Q = [0.1 0 ; 0 0.1].
-  Vector u = (Vector(2) << 1.0, 0.0);
-  SharedDiagonal Q = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1), true);
+  Vector u = Vector2(1.0, 0.0);
+  SharedDiagonal Q = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1), true);
 
   // This simple motion can be modeled with a BetweenFactor
   // Create Key for next pose
@@ -70,7 +70,7 @@ int main() {
 
   // Predict the new value with the EKF class
   Point2 x1_predict = ekf.predict(factor1);
-  x1_predict.print("X1 Predict");
+  traits<Point2>::Print(x1_predict, "X1 Predict");
 
 
 
@@ -83,7 +83,7 @@ int main() {
   // For the purposes of this example, let us assume we have something like a GPS that returns
   // the current position of the robot. Then H = [1 0 ; 0 1]. Let us also assume that the measurement noise
   // R = [0.25 0 ; 0 0.25].
-  SharedDiagonal R = noiseModel::Diagonal::Sigmas((Vector(2) << 0.25, 0.25), true);
+  SharedDiagonal R = noiseModel::Diagonal::Sigmas(Vector2(0.25, 0.25), true);
 
   // This simple measurement can be modeled with a PriorFactor
   Point2 z1(1.0, 0.0);
@@ -91,7 +91,7 @@ int main() {
 
   // Update the Kalman Filter with the measurement
   Point2 x1_update = ekf.update(factor2);
-  x1_update.print("X1 Update");
+  traits<Point2>::Print(x1_update, "X1 Update");
 
 
 
@@ -101,13 +101,13 @@ int main() {
   difference = Point2(1,0);
   BetweenFactor<Point2> factor3(x1, x2, difference, Q);
   Point2 x2_predict = ekf.predict(factor1);
-  x2_predict.print("X2 Predict");
+  traits<Point2>::Print(x2_predict, "X2 Predict");
 
   // Update
   Point2 z2(2.0, 0.0);
   PriorFactor<Point2> factor4(x2, z2, R);
   Point2 x2_update = ekf.update(factor4);
-  x2_update.print("X2 Update");
+  traits<Point2>::Print(x2_update, "X2 Update");
 
 
 
@@ -117,13 +117,13 @@ int main() {
   difference = Point2(1,0);
   BetweenFactor<Point2> factor5(x2, x3, difference, Q);
   Point2 x3_predict = ekf.predict(factor5);
-  x3_predict.print("X3 Predict");
+  traits<Point2>::Print(x3_predict, "X3 Predict");
 
   // Update
   Point2 z3(3.0, 0.0);
   PriorFactor<Point2> factor6(x3, z3, R);
   Point2 x3_update = ekf.update(factor6);
-  x3_update.print("X3 Update");
+  traits<Point2>::Print(x3_update, "X3 Update");
 
   return 0;
 }

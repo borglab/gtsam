@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -25,22 +25,25 @@
 #define GTSAM_VERSION_STRING "@GTSAM_VERSION_STRING@"
 
 // Paths to example datasets distributed with GTSAM
-#define GTSAM_SOURCE_TREE_DATASET_DIR "@CMAKE_SOURCE_DIR@/examples/Data"
+#define GTSAM_SOURCE_TREE_DATASET_DIR "@PROJECT_SOURCE_DIR@/examples/Data"
 #define GTSAM_INSTALLED_DATASET_DIR "@GTSAM_TOOLBOX_INSTALL_PATH@/gtsam_examples/Data"
 
 // Whether GTSAM is compiled to use quaternions for Rot3 (otherwise uses rotation matrices)
 #cmakedefine GTSAM_USE_QUATERNIONS
 
 // Whether GTSAM is compiled to use Pose3::EXPMAP as the default coordinates mode for Pose3's retract and localCoordinates (otherwise, Pose3::FIRST_ORDER will be used)
-#cmakedefine GTSAM_POSE3_EXPMAP 
+#cmakedefine GTSAM_POSE3_EXPMAP
 
 // Whether GTSAM is compiled to use Rot3::EXPMAP as the default coordinates mode for Rot3's retract and localCoordinates (otherwise, Pose3::CAYLEY will be used)
 #ifndef GTSAM_USE_QUATERNIONS
-	#cmakedefine GTSAM_ROT3_EXPMAP 
+	#cmakedefine GTSAM_ROT3_EXPMAP
 #endif
 
 // Whether we are using TBB (if TBB was found and GTSAM_WITH_TBB is enabled in CMake)
 #cmakedefine GTSAM_USE_TBB
+
+// Whether we are using system-Eigen or our own patched version
+#cmakedefine GTSAM_USE_SYSTEM_EIGEN
 
 // Whether Eigen will use MKL (if MKL was found and GTSAM_WITH_EIGEN_MKL is enabled in CMake)
 #cmakedefine GTSAM_USE_EIGEN_MKL
@@ -57,4 +60,14 @@
 // Option for not throwing the CheiralityException for points that are behind a camera
 #cmakedefine GTSAM_THROW_CHEIRALITY_EXCEPTION
 
+// Make sure dependent projects that want it can see deprecated functions
+#cmakedefine GTSAM_ALLOW_DEPRECATED_SINCE_V4
 
+// Publish flag about Eigen typedef
+#cmakedefine GTSAM_TYPEDEF_POINTS_TO_VECTORS
+
+// Support Metis-based nested dissection
+#cmakedefine GTSAM_SUPPORT_NESTED_DISSECTION
+
+// Support Metis-based nested dissection
+#cmakedefine GTSAM_TANGENT_PREINTEGRATION

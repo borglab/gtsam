@@ -23,7 +23,6 @@
 #pragma once
 
 #include <gtsam/geometry/Cal3DS2_Base.h>
-#include <gtsam/base/DerivedValue.h>
 
 namespace gtsam {
 
@@ -40,7 +39,7 @@ namespace gtsam {
  *                      k3 (rr + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
  * pi = K*pn
  */
-class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base, public DerivedValue<Cal3Unified> {
+class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
 
   typedef Cal3Unified This;
   typedef Cal3DS2_Base Base;
@@ -50,9 +49,8 @@ private:
   double xi_;  // mirror parameter
 
 public:
-  //Matrix K() const ;
-  //Eigen::Vector4d k() const { return Base::k(); }
-  Vector vector() const ;
+
+  enum { dimension = 10 };
 
   /// @name Standard Constructors
   /// @{
@@ -63,6 +61,8 @@ public:
   Cal3Unified(double fx, double fy, double s, double u0, double v0,
       double k1, double k2, double p1 = 0.0, double p2 = 0.0, double xi = 0.0) :
         Base(fx, fy, s, u0, v0, k1, k2, p1, p2), xi_(xi) {}
+
+  virtual ~Cal3Unified() {}
 
   /// @}
   /// @name Advanced Constructors
@@ -75,7 +75,7 @@ public:
   /// @{
 
   /// print with optional string
-  void print(const std::string& s = "") const ;
+  virtual void print(const std::string& s = "") const ;
 
   /// assert equality up to a tolerance
   bool equals(const Cal3Unified& K, double tol = 10e-9) const;
@@ -95,8 +95,8 @@ public:
    * @return point in image coordinates
    */
   Point2 uncalibrate(const Point2& p,
-      boost::optional<Matrix&> Dcal = boost::none,
-      boost::optional<Matrix&> Dp = boost::none) const ;
+      OptionalJacobian<2,10> Dcal = boost::none,
+      OptionalJacobian<2,2> Dp = boost::none) const ;
 
   /// Conver a pixel coordinate to ideal coordinate
   Point2 calibrate(const Point2& p, const double tol=1e-5) const;
@@ -115,7 +115,7 @@ public:
   Cal3Unified retract(const Vector& d) const ;
 
   /// Given a different calibration, calculate update to obtain it
-  Vector localCoordinates(const Cal3Unified& T2) const ;
+  Vector10 localCoordinates(const Cal3Unified& T2) const ;
 
   /// Return dimensions of calibration manifold object
   virtual size_t dim() const { return 10 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)
@@ -123,27 +123,30 @@ public:
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return 10; }  //TODO: make a final dimension variable
 
-private:
+  /// Return all parameters as a vector
+  Vector10 vector() const ;
 
   /// @}
-  /// @name Advanced Interface
-  /// @{
+
+private:
 
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version)
+  void serialize(Archive & ar, const unsigned int /*version*/)
   {
-    ar & boost::serialization::make_nvp("Cal3Unified",
-        boost::serialization::base_object<Value>(*this));
     ar & boost::serialization::make_nvp("Cal3Unified",
         boost::serialization::base_object<Cal3DS2_Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(xi_);
   }
 
-  /// @}
-
 };
+
+template<>
+struct traits<Cal3Unified> : public internal::Manifold<Cal3Unified> {};
+
+template<>
+struct traits<const Cal3Unified> : public internal::Manifold<Cal3Unified> {};
 
 }
 

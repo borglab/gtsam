@@ -1,4 +1,4 @@
-function covarianceEllipse3D(c,P)
+function sc = covarianceEllipse3D(c,P,scale)
 % covarianceEllipse3D plots a Gaussian as an uncertainty ellipse
 % Based on Maybeck Vol 1, page 366
 % k=2.296 corresponds to 1 std, 68.26% of all probability
@@ -6,9 +6,15 @@ function covarianceEllipse3D(c,P)
 %
 % Modified from http://www.mathworks.com/matlabcentral/newsreader/view_thread/42966
 
+hold on
+
 [e,s] = svd(P);
 k = 11.82; 
 radii = k*sqrt(diag(s));
+
+if exist('scale', 'var')
+    radii = radii * scale;
+end
 
 % generate data for "unrotated" ellipsoid
 [xc,yc,zc] = ellipsoid(0,0,0,radii(1),radii(2),radii(3),8);

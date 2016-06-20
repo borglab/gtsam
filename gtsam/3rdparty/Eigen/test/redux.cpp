@@ -53,6 +53,14 @@ template<typename MatrixType> void matrixRedux(const MatrixType& m)
   VERIFY_IS_APPROX(m1_for_prod.block(r0,c0,r1,c1).prod(), m1_for_prod.block(r0,c0,r1,c1).eval().prod());
   VERIFY_IS_APPROX(m1.block(r0,c0,r1,c1).real().minCoeff(), m1.block(r0,c0,r1,c1).real().eval().minCoeff());
   VERIFY_IS_APPROX(m1.block(r0,c0,r1,c1).real().maxCoeff(), m1.block(r0,c0,r1,c1).real().eval().maxCoeff());
+
+  // regression for bug 1090
+  const int R1 = MatrixType::RowsAtCompileTime>=2 ? MatrixType::RowsAtCompileTime/2 : 6;
+  const int C1 = MatrixType::ColsAtCompileTime>=2 ? MatrixType::ColsAtCompileTime/2 : 6;
+  if(R1<=rows-r0 && C1<=cols-c0)
+  {
+    VERIFY_IS_APPROX( (m1.template block<R1,C1>(r0,c0).sum()), m1.block(r0,c0,R1,C1).sum() );
+  }
   
   // test empty objects
   VERIFY_IS_APPROX(m1.block(r0,c0,0,0).sum(),   Scalar(0));

@@ -62,26 +62,27 @@ public:
   Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const {
     const Translation& newTrans = pose.translation();
     const Rotation& R = pose.rotation();
-    const size_t tDim = newTrans.dim(), xDim = pose.dim();
+    const int tDim = traits<Translation>::GetDimension(newTrans);
+    const int xDim = traits<Pose>::GetDimension(pose);
     if (H) {
-      *H = gtsam::zeros(tDim, xDim);
+      *H = Matrix::Zero(tDim, xDim);
       std::pair<size_t, size_t> transInterval = POSE::translationInterval();
       (*H).middleCols(transInterval.first, tDim) = R.matrix();
     }
 
-    return newTrans.vector() - measured_.vector();
+    return traits<Translation>::Local(measured_, newTrans);
   }
 
   /** equals specialized to this factor */
   virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
     const This *e = dynamic_cast<const This*> (&expected);
-    return e != NULL && Base::equals(*e, tol) && measured_.equals(e->measured_, tol);
+    return e != NULL && Base::equals(*e, tol) && traits<Translation>::Equals(measured_, e->measured_, tol);
   }
 
   /** print contents */
   void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s + "PoseTranslationPrior", keyFormatter);
-    measured_.print("Measured Translation");
+    traits<Translation>::Print(measured_, "Measured Translation");
   }
 
 private:
@@ -89,7 +90,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NoiseModelFactor1",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);

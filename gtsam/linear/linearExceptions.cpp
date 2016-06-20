@@ -17,24 +17,28 @@
  */
 
 #include <gtsam/linear/linearExceptions.h>
-
+#include <gtsam/inference/Symbol.h>
 #include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace gtsam {
 
   /* ************************************************************************* */
   const char* IndeterminantLinearSystemException::what() const throw()
   {
-    if(!description_)
+    if(!description_) {
       description_ = String(
           "\nIndeterminant linear system detected while working near variable\n"
-          + boost::lexical_cast<String>(j_) + ".\n"
+          + boost::lexical_cast<String>(j_) +
+          + " (Symbol: " + boost::lexical_cast<String>(
+              gtsam::DefaultKeyFormatter(gtsam::Symbol(j_))) + ").\n"
           "\n\
 Thrown when a linear system is ill-posed.  The most common cause for this\n\
 error is having underconstrained variables.  Mathematically, the system is\n\
 underdetermined.  See the GTSAM Doxygen documentation at\n\
 http://borg.cc.gatech.edu/ on gtsam::IndeterminantLinearSystemException for\n\
 more information.");
+    }
     return description_->c_str();
   }
 

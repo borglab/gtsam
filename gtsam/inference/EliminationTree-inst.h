@@ -17,7 +17,6 @@
 */
 #pragma once
 
-#include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/bind.hpp>
 #include <stack>
@@ -66,7 +65,7 @@ namespace gtsam {
     const std::string& str, const KeyFormatter& keyFormatter) const
   {
     std::cout << str << "(" << keyFormatter(key) << ")\n";
-    BOOST_FOREACH(const sharedFactor& factor, factors) {
+    for(const sharedFactor& factor: factors) {
       if(factor)
         factor->print(str);
       else
@@ -101,11 +100,13 @@ namespace gtsam {
       {
         // Retrieve the factors involving this variable and create the current node
         const VariableIndex::Factors& factors = structure[order[j]];
-        nodes[j] = boost::make_shared<Node>();
-        nodes[j]->key = order[j];
+        const sharedNode node = boost::make_shared<Node>();
+        node->key = order[j];
 
         // for row i \in Struct[A*j] do
-        BOOST_FOREACH(const size_t i, factors) {
+        node->children.reserve(factors.size());
+        node->factors.reserve(factors.size());
+        for(const size_t i: factors) {
           // If we already hit a variable in this factor, make the subtree containing the previous
           // variable in this factor a child of the current node.  This means that the variables
           // eliminated earlier in the factor depend on the later variables in the factor.  If we
@@ -123,16 +124,16 @@ namespace gtsam {
             if (r != j) {
               // Now that we found the root, hook up parent and child pointers in the nodes.
               parents[r] = j;
-              nodes[j]->children.push_back(nodes[r]);
+              node->children.push_back(nodes[r]);
             }
           } else {
-            // Add the current factor to the current node since we are at the first variable in this
-            // factor.
-            nodes[j]->factors.push_back(graph[i]);
+            // Add the factor to the current node since we are at the first variable in this factor.
+            node->factors.push_back(graph[i]);
             factorUsed[i] = true;
           }
           prevCol[i] = j;
         }
+        nodes[j] = node;
       }
     } catch(std::invalid_argument& e) {
       // If this is thrown from structure[order[j]] above, it means that it was requested to
@@ -220,15 +221,15 @@ namespace gtsam {
     // Add roots in sorted order
     {
       FastMap<Key,sharedNode> keys;
-      BOOST_FOREACH(const sharedNode& root, this->roots_) { keys.insert(std::make_pair(root->key, root)); }
+      for(const sharedNode& root: this->roots_) { keys.insert(std::make_pair(root->key, root)); }
       typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
-      BOOST_FOREACH(const Key_Node& key_node, keys) { stack1.push(key_node.second); }
+      for(const Key_Node& key_node: keys) { stack1.push(key_node.second); }
     }
     {
       FastMap<Key,sharedNode> keys;
-      BOOST_FOREACH(const sharedNode& root, expected.roots_) { keys.insert(std::make_pair(root->key, root)); }
+      for(const sharedNode& root: expected.roots_) { keys.insert(std::make_pair(root->key, root)); }
       typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
-      BOOST_FOREACH(const Key_Node& key_node, keys) { stack2.push(key_node.second); }
+      for(const Key_Node& key_node: keys) { stack2.push(key_node.second); }
     }
 
     // Traverse, adding children in sorted order
@@ -260,15 +261,15 @@ namespace gtsam {
       // Add children in sorted order
       {
         FastMap<Key,sharedNode> keys;
-        BOOST_FOREACH(const sharedNode& node, node1->children) { keys.insert(std::make_pair(node->key, node)); }
+        for(const sharedNode& node: node1->children) { keys.insert(std::make_pair(node->key, node)); }
         typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
-        BOOST_FOREACH(const Key_Node& key_node, keys) { stack1.push(key_node.second); }
+        for(const Key_Node& key_node: keys) { stack1.push(key_node.second); }
       }
       {
         FastMap<Key,sharedNode> keys;
-        BOOST_FOREACH(const sharedNode& node, node2->children) { keys.insert(std::make_pair(node->key, node)); }
+        for(const sharedNode& node: node2->children) { keys.insert(std::make_pair(node->key, node)); }
         typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
-        BOOST_FOREACH(const Key_Node& key_node, keys) { stack2.push(key_node.second); }
+        for(const Key_Node& key_node: keys) { stack2.push(key_node.second); }
       }
     }
 

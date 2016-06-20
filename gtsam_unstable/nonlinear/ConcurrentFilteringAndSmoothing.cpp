@@ -52,16 +52,16 @@ namespace internal {
 
 /* ************************************************************************* */
 NonlinearFactorGraph calculateMarginalFactors(const NonlinearFactorGraph& graph, const Values& theta,
-    const FastSet<Key>& remainingKeys, const GaussianFactorGraph::Eliminate& eliminateFunction) {
+    const KeySet& remainingKeys, const GaussianFactorGraph::Eliminate& eliminateFunction) {
 
 
   // Calculate the set of RootKeys = AllKeys \Intersect RemainingKeys
-  FastSet<Key> rootKeys;
-  FastSet<Key> allKeys(graph.keys());
+  KeySet rootKeys;
+  KeySet allKeys(graph.keys());
   std::set_intersection(allKeys.begin(), allKeys.end(), remainingKeys.begin(), remainingKeys.end(), std::inserter(rootKeys, rootKeys.end()));
 
   // Calculate the set of MarginalizeKeys = AllKeys - RemainingKeys
-  FastSet<Key> marginalizeKeys;
+  KeySet marginalizeKeys;
   std::set_difference(allKeys.begin(), allKeys.end(), remainingKeys.begin(), remainingKeys.end(), std::inserter(marginalizeKeys, marginalizeKeys.end()));
 
   if(marginalizeKeys.size() == 0) {
@@ -77,7 +77,7 @@ NonlinearFactorGraph calculateMarginalFactors(const NonlinearFactorGraph& graph,
     // Wrap in nonlinear container factors
     NonlinearFactorGraph marginalFactors;
     marginalFactors.reserve(marginalLinearFactors.size());
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& gaussianFactor, marginalLinearFactors) {
+    for(const GaussianFactor::shared_ptr& gaussianFactor: marginalLinearFactors) {
       marginalFactors += boost::make_shared<LinearContainerFactor>(gaussianFactor, theta);
     }
 

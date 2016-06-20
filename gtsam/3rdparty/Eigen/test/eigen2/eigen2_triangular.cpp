@@ -13,7 +13,6 @@ template<typename MatrixType> void triangular(const MatrixType& m)
 {
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
-  typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
 
   RealScalar largerEps = 10*test_precision<RealScalar>();
 
@@ -25,16 +24,7 @@ template<typename MatrixType> void triangular(const MatrixType& m)
              m3(rows, cols),
              m4(rows, cols),
              r1(rows, cols),
-             r2(rows, cols),
-             mzero = MatrixType::Zero(rows, cols),
-             mones = MatrixType::Ones(rows, cols),
-             identity = Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime>
-                              ::Identity(rows, rows),
-             square = Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime>
-                              ::Random(rows, rows);
-  VectorType v1 = VectorType::Random(rows),
-             v2 = VectorType::Random(rows),
-             vzero = VectorType::Zero(rows);
+             r2(rows, cols);
 
   MatrixType m1up = m1.template part<Eigen::UpperTriangular>();
   MatrixType m2up = m2.template part<Eigen::UpperTriangular>();

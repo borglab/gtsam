@@ -1,3 +1,7 @@
+% Simulation for concurrent IMU, camera, IMU-camera transform estimation during flight with known landmarks
+% author: Chris Beall
+% date: July 2014
+
 clear all;
 clf;
 
@@ -24,12 +28,18 @@ if(write_video)
     open(videoObj);
 end
 
-% IMU parameters
+%% IMU parameters
 IMU_metadata.AccelerometerSigma = 1e-2;    
 IMU_metadata.GyroscopeSigma = 1e-2;
 IMU_metadata.AccelerometerBiasSigma = 1e-6;
 IMU_metadata.GyroscopeBiasSigma = 1e-6;
 IMU_metadata.IntegrationSigma = 1e-1;
+
+n_gravity = [0;0;-9.8];
+IMU_params = PreintegrationParams(n_gravity);
+IMU_params.setAccelerometerCovariance(IMU_metadata.AccelerometerSigma.^2 * eye(3));
+IMU_params.setGyroscopeCovariance(IMU_metadata.GyroscopeSigma.^2 * eye(3));
+IMU_params.setIntegrationCovariance(IMU_metadata.IntegrationSigma.^2 * eye(3));
 
 transformKey = 1000;
 calibrationKey = 2000;
@@ -52,18 +62,17 @@ K = Cal3_S2(20,1280,960);
 % initialize K incorrectly
 K_corrupt = Cal3_S2(K.fx()+10,K.fy()+10,0,K.px(),K.py());
 
-isamParams = gtsam.ISAM2Params;
+isamParams = ISAM2Params;
 isamParams.setFactorization('QR');
 isam = ISAM2(isamParams);
 
 %% Get initial conditions for the estimated trajectory
-currentVelocityGlobal = LieVector([10;0;0]);    % (This is slightly wrong!)
+currentVelocityGlobal = [10;0;0];    % (This is slightly wrong!) Zhaoyang: Fixed
 currentBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
 
 sigma_init_v = noiseModel.Isotropic.Sigma(3, 1.0);
 sigma_init_b = noiseModel.Isotropic.Sigmas([ 0.100; 0.100; 0.100; 5.00e-05; 5.00e-05; 5.00e-05 ]);
 sigma_between_b = [ IMU_metadata.AccelerometerBiasSigma * ones(3,1); IMU_metadata.GyroscopeBiasSigma * ones(3,1) ];
-g = [0;0;-9.8];
 w_coriolis = [0;0;0];
 
 %% generate trajectory and landmarks
@@ -99,9 +108,11 @@ zlabel('z');
 title('Estimated vs. actual IMU-cam transform');
 axis equal;
 
+%% Main loop
 for i=1:size(trajectory)-1
+    %% Preliminaries
     xKey = symbol('x',i);
-    pose = trajectory.at(xKey);     % GT pose
+    pose = trajectory.atPose3(xKey);     % GT pose
     pose_t = pose.translation();    % GT pose-translation
     
     if exist('h_cursor','var')
@@ -134,6 +145,7 @@ for i=1:size(trajectory)-1
     gps_pose = pose.retract([0; 0; 0; normrnd(0,gps_noise,3,1)]);
     fg.add(PoseTranslationPrior3D(xKey, gps_pose, GPS_trans_cov));
     
+    %% First-time initialization
     if i==1
         % camera transform
         if use_camera_transform_noise
@@ -153,25 +165,23 @@ for i=1:size(trajectory)-1
         result = initial;
     end
     
-    % priors on first two poses
+    %% priors on first two poses
     if i < 3        
-%         fg.add(PriorFactorLieVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
+        % fg.add(PriorFactorLieVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
         fg.add(PriorFactorConstantBias(currentBiasKey, currentBias, sigma_init_b));
-        
-        
     end
    
     %% the 'normal' case
     if i > 1
      
         xKey_prev = symbol('x',i-1);
-        pose_prev = trajectory.at(xKey_prev);
+        pose_prev = trajectory.atPose3(xKey_prev);
         
         step = pose_prev.between(pose);
                 
         % insert estimate for current pose with some normal noise on
         % translation
-        initial.insert(xKey,result.at(xKey_prev).compose(step.retract([0; 0; 0; normrnd(0,0.2,3,1)])));
+        initial.insert(xKey,result.atPose3(xKey_prev).compose(step.retract([0; 0; 0; normrnd(0,0.2,3,1)])));
         
         % visual measurements
         if measurements.size > 0 && use_camera
@@ -181,12 +191,14 @@ for i=1:size(trajectory)-1
                 zKey = measurementKeys.at(zz);
                 lKey = symbol('l',symbolIndex(zKey));
 
-                fg.add(TransformCalProjectionFactorCal3_S2(measurements.at(zKey), ...
+                fg.add(ProjectionFactorPPPCCal3_S2(measurements.atPoint2(zKey), ...
                     z_cov, xKey, transformKey, lKey, calibrationKey, false, true));
 
                 % only add landmark to values if doesn't exist yet
                 if ~result.exists(lKey)
-                    noisy_landmark = landmarks.at(lKey).compose(Point3(normrnd(0,landmark_noise,3,1)));
+                    p = landmarks.atPoint3(lKey);
+                    n = normrnd(0,landmark_noise,3,1);
+                    noisy_landmark = Point3(p.x()+n(1),p.y()+n(2),p.z()+n(3));
                     initial.insert(lKey, noisy_landmark);
 
                     % and add a prior since its position is known
@@ -195,13 +207,11 @@ for i=1:size(trajectory)-1
             end
         end % end landmark observations 
         
-
         %% IMU
         deltaT = 1;
         logmap = Pose3.Logmap(step);
         omega = logmap(1:3);
         velocity = logmap(4:6);
-       
        
         % Simulate IMU measurements, considering Coriolis effect 
         % (in this simple example we neglect gravity and there are no other forces acting on the body)
@@ -211,11 +221,9 @@ for i=1:size(trajectory)-1
 %         [ currentIMUPoseGlobal, currentVelocityGlobal ] = imuSimulator.integrateTrajectory( ...
 %     currentIMUPoseGlobal, omega, velocity, velocity, deltaT);
 
-        currentSummarizedMeasurement = gtsam.ImuFactorPreintegratedMeasurements( ...
-        currentBias, IMU_metadata.AccelerometerSigma.^2 * eye(3), ...
-        IMU_metadata.GyroscopeSigma.^2 * eye(3), IMU_metadata.IntegrationSigma.^2 * eye(3));
+        currentSummarizedMeasurement = PreintegratedImuMeasurements(IMU_params,currentBias);
     
-        accMeas = acc_omega(1:3)-g;
+        accMeas = acc_omega(1:3)-n_gravity;
         omegaMeas = acc_omega(4:6);
         currentSummarizedMeasurement.integrateMeasurement(accMeas, omegaMeas, deltaT);
 
@@ -223,13 +231,13 @@ for i=1:size(trajectory)-1
         fg.add(ImuFactor( ...
         xKey_prev, currentVelKey-1, ...
         xKey, currentVelKey, ...
-        currentBiasKey, currentSummarizedMeasurement, g, w_coriolis));
+        currentBiasKey, currentSummarizedMeasurement));
     
         % Bias evolution as given in the IMU metadata
         fg.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, imuBias.ConstantBias(zeros(3,1), zeros(3,1)), ...
         noiseModel.Diagonal.Sigmas(sqrt(10) * sigma_between_b)));
     
-        % ISAM update
+        %% ISAM update
         isam.update(fg, initial);
         result = isam.calculateEstimate();
         
@@ -295,10 +303,8 @@ for i=1:size(trajectory)-1
     
 end
 
-% print out final camera transform
+%% print out final camera transform and write video
 result.at(transformKey);
-
-
 if(write_video)
     close(videoObj);
 end

@@ -2,7 +2,8 @@
  * Preconditioner.h
  *
  *  Created on: Jun 2, 2014
- *      Author: ydjian
+ *      Author: Yong-Dian Jian
+ *      Author: Sungtae An
  */
 
 #pragma once
@@ -57,7 +58,8 @@ struct GTSAM_EXPORT PreconditionerParameters {
  };
 
 /* PCG aims to solve the problem: A x = b by reparametrizing it as
- * S^t A S y = S^t b   or   M A x = M b, where A \approx S S, or A \approx M
+ * L^{-1} A L^{-T} y = L^{-1} b   or   M^{-1} A x = M^{-1} b,
+ * where A \approx L L^{T}, or A \approx M
  * The goal of this class is to provide a general interface to all preconditioners */
 class GTSAM_EXPORT Preconditioner {
 public:
@@ -70,15 +72,15 @@ public:
 
   /* Computation Interfaces */
 
-  /* implement x = S^{-1} y */
+  /* implement x = L^{-1} y */
   virtual void solve(const Vector& y, Vector &x) const = 0;
 //  virtual void solve(const VectorValues& y, VectorValues &x) const = 0;
 
-  /* implement x = S^{-T} y */
+  /* implement x = L^{-T} y */
   virtual void transposeSolve(const Vector& y, Vector& x) const = 0;
 //  virtual void transposeSolve(const VectorValues& y, VectorValues &x) const = 0;
 
-//  /* implement x = S^{-1} S^{-T} y */
+//  /* implement x = L^{-1} L^{-T} y */
 //  virtual void fullSolve(const Vector& y, Vector &x) const = 0;
 //  virtual void fullSolve(const VectorValues& y, VectorValues &x) const = 0;
 

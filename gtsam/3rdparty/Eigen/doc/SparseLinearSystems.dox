@@ -35,17 +35,17 @@ They are summarized in the following table:
     <td>Requires the <a href="http://pastix.gforge.inria.fr">PaStiX</a> package, \b CeCILL-C </td>
     <td>optimized for tough problems and symmetric patterns</td></tr>
 <tr><td>CholmodSupernodalLLT</td><td>\link CholmodSupport_Module CholmodSupport \endlink</td><td>Direct LLt factorization</td><td>SPD</td><td>Fill-in reducing, Leverage fast dense algebra</td>
-    <td>Requires the <a href="http://www.cise.ufl.edu/research/sparse/SuiteSparse/">SuiteSparse</a> package, \b GPL </td>
+    <td>Requires the <a href="http://www.suitesparse.com">SuiteSparse</a> package, \b GPL </td>
     <td></td></tr>
 <tr><td>UmfPackLU</td><td>\link UmfPackSupport_Module UmfPackSupport \endlink</td><td>Direct LU factorization</td><td>Square</td><td>Fill-in reducing, Leverage fast dense algebra</td>
-    <td>Requires the <a href="http://www.cise.ufl.edu/research/sparse/SuiteSparse/">SuiteSparse</a> package, \b GPL </td>
+    <td>Requires the <a href="http://www.suitesparse.com">SuiteSparse</a> package, \b GPL </td>
     <td></td></tr>
 <tr><td>SuperLU</td><td>\link SuperLUSupport_Module SuperLUSupport \endlink</td><td>Direct LU factorization</td><td>Square</td><td>Fill-in reducing, Leverage fast dense algebra</td>
     <td>Requires the <a href="http://crd-legacy.lbl.gov/~xiaoye/SuperLU/">SuperLU</a> library, (BSD-like)</td>
     <td></td></tr>
 <tr><td>SPQR</td><td>\link SPQRSupport_Module SPQRSupport \endlink  </td> <td> QR factorization </td> 
     <td> Any, rectangular</td><td>fill-in reducing, multithreaded, fast dense algebra</td>
-    <td> requires the <a href="http://www.cise.ufl.edu/research/sparse/SuiteSparse/">SuiteSparse</a> package, \b GPL </td><td>recommended for linear least-squares problems, has a rank-revealing feature</tr>
+    <td> requires the <a href="http://www.suitesparse.com">SuiteSparse</a> package, \b GPL </td><td>recommended for linear least-squares problems, has a rank-revealing feature</tr>
 </table>
 
 Here \c SPD means symmetric positive definite.

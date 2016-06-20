@@ -115,7 +115,7 @@ KalmanFilter::State KalmanFilter::predictQ(const State& p, const Matrix& F,
   // f2(x_{t},x_{t+1}) = (F*x_{t} + B*u - x_{t+1}) * Q^-1 * (F*x_{t} + B*u - x_{t+1})^T
   // See documentation in HessianFactor, we have A1 = -F,  A2 = I_, b = B*u:
   // TODO: starts to seem more elaborate than straight-up KF equations?
-  Matrix M = inverse(Q), Ft = trans(F);
+  Matrix M = Q.inverse(), Ft = trans(F);
   Matrix G12 = -Ft * M, G11 = -G12 * F, G22 = M;
   Vector b = B * u, g2 = M * b, g1 = -Ft * g2;
   double f = dot(b, g2);
@@ -147,7 +147,7 @@ KalmanFilter::State KalmanFilter::update(const State& p, const Matrix& H,
 KalmanFilter::State KalmanFilter::updateQ(const State& p, const Matrix& H,
     const Vector& z, const Matrix& Q) const {
   Key k = step(p);
-  Matrix M = inverse(Q), Ht = trans(H);
+  Matrix M = Q.inverse(), Ht = trans(H);
   Matrix G = Ht * M * H;
   Vector g = Ht * M * z;
   double f = dot(z, M * z);

@@ -31,7 +31,7 @@
 // add in headers for specific factors
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 
 #include <gtsam/nonlinear/Marginals.h>
 
@@ -51,13 +51,13 @@ TEST(Marginals, planarSLAMmarginals) {
 
   /* add prior  */
   // gaussian for prior
-  SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.3, 0.3, 0.1));
+  SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
   graph += PriorFactor<Pose2>(x1, priorMean, priorNoise);  // add the factor to the graph
 
   /* add odometry */
   // general noisemodel for odometry
-  SharedDiagonal odometryNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.1));
+  SharedDiagonal odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
   Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
   // create between factors to represent odometry
   graph += BetweenFactor<Pose2>(x1, x2, odometry, odometryNoise);
@@ -65,7 +65,7 @@ TEST(Marginals, planarSLAMmarginals) {
 
   /* add measurements */
   // general noisemodel for measurements
-  SharedDiagonal measurementNoise = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.2));
+  SharedDiagonal measurementNoise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.2));
 
   // create the measurement values - indices are (pose id, landmark id)
   Rot2 bearing11 = Rot2::fromDegrees(45),
@@ -226,7 +226,8 @@ TEST(Marginals, order) {
     vals.at<Pose2>(3).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2));
 
   Marginals marginals(fg, vals);
-  FastVector<Key> keys(fg.keys());
+  KeySet set = fg.keys();
+  FastVector<Key> keys(set.begin(), set.end());
   JointMarginal joint = marginals.jointMarginalCovariance(keys);
 
   LONGS_EQUAL(3, (long)joint(0,0).rows());

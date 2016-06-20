@@ -120,7 +120,7 @@ public:
   }
 
   /** Return the set of variables involved in the factors (set union) */
-  FastSet<Key> keys() const;
+  KeySet keys() const;
 
   /** return product of all factors as a single factor */
   DecisionTreeFactor product() const;
@@ -144,7 +144,10 @@ public:
 //
 //  /** Apply a reduction, which is a remapping of variable indices. */
 //  GTSAM_EXPORT void reduceWithInverse(const internal::Reduction& inverseReduction);
-};
-// DiscreteFactorGraph
 
-} // namespace gtsam
+}; // \ DiscreteFactorGraph
+
+/// traits
+template<> struct traits<DiscreteFactorGraph> : public Testable<DiscreteFactorGraph> {};
+
+} // \ namespace gtsam

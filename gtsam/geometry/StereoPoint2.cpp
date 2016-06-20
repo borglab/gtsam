@@ -19,10 +19,18 @@
 #include <gtsam/geometry/StereoPoint2.h>
 
 using namespace std;
-using namespace gtsam;
+
+namespace gtsam {
 
 /* ************************************************************************* */
 void StereoPoint2::print(const string& s) const {
   cout << s << "(" << uL_ << ", " << uR_ << ", " << v_ << ")"  << endl;
 }
+
 /* ************************************************************************* */
+ostream &operator<<(ostream &os, const StereoPoint2& p) {
+  os << '(' << p.uL() << ", " << p.uR() << ", " << p.v() << ')';
+  return os;
+}
+
+} // namespace gtsam

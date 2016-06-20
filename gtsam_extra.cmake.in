@@ -13,6 +13,10 @@ if("@GTSAM_USE_TBB@")
   list(APPEND GTSAM_INCLUDE_DIR "@TBB_INCLUDE_DIRS@")
 endif()
 
+# Append Eigen include path, set in top-level CMakeLists.txt to either
+# system-eigen, or GTSAM eigen path
+list(APPEND GTSAM_INCLUDE_DIR "@GTSAM_EIGEN_INCLUDE_PREFIX@")
+
 if("@GTSAM_USE_EIGEN_MKL@")
   list(APPEND GTSAM_INCLUDE_DIR "@MKL_INCLUDE_DIR@")
 endif()

@@ -1,0 +1,286 @@
+
+metis-5.1.0
+------------------------------------------------------------------------
+r13937 | karypis | 2013-03-29 23:08:21 -0500 (Fri, 29 Mar 2013) 
+
+- Further extended the 2-hop coarsening scheme introduced in 5.0.2 for
+  for graphs with highly variable degree distribution (e.g., power-law). 
+  This coarsening scheme is automatically used when the standard 
+  1-hop-based scheme leaves a large fraction of the vertices of the 
+  graph unmatched. It leads to better quality partitionings, lower 
+  memory utilization, and faster execution time. In principle, this 
+  scheme will never be triggered for graphs/matrices appearing in 
+  scientific computations derived from FE meshes. However, if you 
+  notice that the quality of the solutions is significantly worse, 
+  this 2-hop matching can be turned off by using the '-no2hop' command 
+  line option and the associated options[] parameter (as described 
+  in the manual).
+- Fixed 0/1 numbering issue with mesh partitioning routines (flyspray 
+   issue #109)
+
+
+metis-5.0.3
+------------------------------------------------------------------------
+r13822 | karypis | 2013-03-11 14:40:11 -0500 (Mon, 11 Mar 2013)
+
+- Fixed the bug that was introduced in 5.x for creating nodal graphs
+  from meshes (flyspray issue #107).
+- Changed the license to Apache Version 2.
+
+
+metis-5.0.2
+------------------------------------------------------------------------
+r10974 | karypis | 2011-10-29 18:24:32 -0500 (Sat, 29 Oct 2011)
+
+- Fixed issue with high-degree vertices and mask-based compression.
+- Fixed issue with wrong COARSENING_FRACTION.
+- Modified coarsening schemes to better support non FE graphs.
+
+
+metis-5.0.1
+------------------------------------------------------------------------
+r10709 | karypis | 2011-08-31 16:07:57 -0500 (Wed, 31 Aug 2011)
+
+- Fixed critical bug in the mesh partitioning routines.
+
+
+metis-5.0
+------------------------------------------------------------------------
+r10667 | karypis | 2011-08-04 00:35:30 -0500 (Thu, 04 Aug 2011) 
+
+- Updated/corrected error messages.
+- Addressed some build issues.
+
+
+metis-5.0rc3
+------------------------------------------------------------------------
+r10560 | karypis | 2011-07-13 08:19:10 -0500 (Wed, 13 Jul 2011)
+
+- Fixed various bugs that were identified by testers.
+- Some minor performance and quality improvements.
+- Addressed some build issues.
+
+
+metis-5.0rc2
+------------------------------------------------------------------------
+r10496 | karypis | 2011-07-06 11:04:45 -0500 (Wed, 06 Jul 2011)
+
+- Various run-time and quality optimizations.
+- Option error-checking.
+- Signal-based heap cleanup on error. Metis API routines will not
+  return nicely and cleanup all memory that may have allocated.
+- Reduced memory requirements.
+- Fixed various bugs identified in rc1.
+- Added back Fortran support in the form of alternate API names
+  (see libmetis/frename.h).
+- Minor code changes to accommodate ParMetis 4.0.
+
+
+metis-5.0rc1
+------------------------------------------------------------------------
+r10227 | karypis | 2011-06-13 23:35:05 -0500 (Mon, 13 Jun 2011)
+
+- A nearly complete re-write of Metis' code-based that changed expanded
+  the functionality of the command-line programs and API routines.
+- Multi-constraint partitioning can be used in conjunction with
+  minimization of the total communication volume.
+- All graph and mesh partitioning routines take as input the target
+  sizes of the partitions, which among others, allow them to compute
+  partitioning solutions that are well-suited for parallel architectures
+  with heterogeneous computing capabilities.
+- When multi-constraint partitioning is used, the target sizes of the
+  partitions are specified on a per partition-constraint pair.
+- The multilevel k-way partitioning algorithms can compute a
+  partitioning solution in which each partition is contiguous.
+- All partitioning and ordering routines can compute multiple different
+  solutions and select the best as the final solution.
+- The mesh partitioning and mesh-to-graph conversion routines can
+  operate on mixed element meshes.
+- The command-line programs provide full access to the entire set of
+  capabilities provided by Metis' API.
+- Re-written the memory management subsystem to reduce overall memory
+  requirements.
+
+
+
+metis-5.0pre2
+------------------------------------------------------------------------
+r1437 | karypis | 2007-04-07 23:16:16 -0500 (Sat, 07 Apr 2007)  
+
+- Added installation instructions and change-logs.
+- Tested 32bit & 64bit on 64bit architectures and passed tests.
+- Tested 32bit on 32bit architectures and passed tests.
+- strtoidx() addition for portable input file parsing
+- Restructured the internal memory allocation schemes for graph and
+  refinement data. This should enhance portability and make the code
+  easier to maintain.
+- Fixed some bad memory allocation calls (i.e., sizeof(x)/sizeof(idxtype). 
+  However, there are tons of those and need to be corrected once and for
+  all by eliminating workspace and the associated mallocs.
+- Added mprint/mscanf family of functions for portable formated I/O
+  of the idxtype datatype. The specifier for this datatype is %D.
+  All library routines use this function for printing. 
+  The implementation of these routines is not very efficient, but
+  that should do for now (in principle these routines should not be
+  used unless debugging).
+- Incorporated GKlib into METIS, which replaced many of its internal
+  functions. GKlib's malloc interface will enable graceful and clean
+  aborts (i.e., free all internally allocated memory) on fatal errors.
+  This will probably be available in the next pre-release.
+- Fixed the problems associated with metis.h that were identified by
+  David (flyspray Issue #9).
+
+
+METIS 4.0.2, 3/10/04
+------------------------------------------------------------------------------
+- Fixed a problem with weighted graphs and ometis.c
+
+
+METIS 4.0.1, 11/29/98
+------------------------------------------------------------------------------
+This is mostly a bug-fix release
+
+  - Fixed some bugs in the multi-constraint partitioning routines
+  - Fixed some bugs in the volume-minimization routines
+
+
+
+METIS 4.0.0, 9/20/98
+------------------------------------------------------------------------------
+METIS 4.0 contains a number of changes over the previous major release (ver 
+3.0.x). Most of these changes are concentrated on the graph and mesh 
+partitioning routines and they do not affect the sparse matrix re-ordering 
+routines. Here is a list of the major changes:
+
+  Multi-Constraint Partitioning
+  -----------------------------
+  METIS now includes partitioning routines that can be used to a partition
+  a graph in the presence of multiple balancing constraints.
+
+  Minimizing the Total Communication Volume
+  -----------------------------------------
+  METIS now includes partitioning routines whose objective is to minimize
+  the total communication volume (as opposed to minimizing the edge-cut).
+
+  Minimizing the Maximum Connectivity of the Subdomains
+  -----------------------------------------------------
+  The k-way partitioning routines in METIS can now directly minimize the number
+  of adjacent subdomains. For most graphs corresponding to finite element 
+  meshes, METIS is able to significantly reduce the maximum (and total) number of 
+  adjacent subdomains.
+
+
+
+
+METIS 3.0.6, 1/28/98
+-------------------------------------------------------------------------------
+  - Fixed some problems when too many partitions were asked, and each partition
+    end up having 0 vertices
+  - Fixed some bugs in the I/O routines
+  - Added support for the g77 compiler under Linux
+
+
+METIS 3.0.5, 12/22/97
+-------------------------------------------------------------------------------
+  - Fixed problems on 64-bit architectures (eg., -64 option on SGIs).
+  - Added some options in Makefile.in
+
+
+METIS 3.0.4, 12/1/97
+-------------------------------------------------------------------------------
+  Fixed a memory leak in the ordering code.
+
+
+METIS 3.0.3, 11/5/97
+-------------------------------------------------------------------------------
+  This is mostly a bug-fix release with just a few additions
+
+  Added functionality
+    - Added support for quadrilateral elements.
+    - Added a routine METIS_EstimateMemory that estimates the amount of
+      memory that will be allocated by METIS. This is useful in determining
+      if a problem can run on your system.
+    - Added hooks to allow PARMETIS to use the orderings produced by METIS.
+      This is hidden from the user but it will be used in the next release
+      of PARMETIS.
+
+  Bug-fixes
+    - Fixed a bug related to memory allocation. This should somewhat reduce the 
+      overall memory used by METIS.
+    - Fixed some bugs in the 'graphchk' program in the case of weighted graphs.
+    - Removed some code corresponding to unused options.
+    - Fixed some minor bugs in the node-refinement code
+      
+
+
+-------------------------------------------------------------------------------
+METIS 3.0 contains a number of changes over METIS 2.0.
+The major changes are the following:
+
+  General Changes
+  ---------------
+    1.  Added code to directly partition finite element meshes.
+
+    2.  Added code to convert finite element meshes into graphs so they
+        can be used by METIS.
+
+    1.  The names, calling sequences, and options  of the routines in 
+        METISlib have been changed.
+
+    2.  Better support has been added for Fortran programs.
+
+    3.  Eliminated the 'metis' program. The only way to tune METIS's
+        behavior is to use METISlib.
+
+    4.  Improved memory management. METIS should now only abort if truly
+        there is no more memory left in the system.
+
+
+  Graph Partitioning
+  ------------------
+    1.  Added partitioning routines that can be used to compute a partition 
+        with prescribed partition weights. For example, they can be used to 
+        compute a 3-way partition such that partition 1 has 50% of the weight, 
+        partition 2 has 20% of the way, and partition 3 has 30% of the weight. 
+
+    2.  Improved the speed of the k-way partitioning algorithm (kmetis). The
+        new code has better cache locality which dramatically improves the 
+        speed for large graphs. A factor of 4 speedup can be obtained for
+        certain graphs. METIS can now partition a 4 million node graph
+        in well under a minute on a MIPS R10000.
+
+    3.  Eliminated some of the options that were seldom used. 
+  
+
+  Fill-Reducing Orderings
+  ----------------------
+    1.  Added a node based ordering code `onmetis' that greatly improves 
+        ordering quality.
+
+    2.  Improved the quality of the orderings produced by the original
+        edge-based ordering code (it is now called 'oemetis').
+
+    3.  METIS can now analyze the graph and try to compress together 
+        nodes with identical sparsity pattern. For some problems, this 
+        significantly reduces ordering time 
+
+    4.  METIS can now prune dense columns prior to ordering. This can be
+        helpful for LP matrices.
+        
+
+  Mesh Partitioning
+  -----------------
+    1.  METIS can now directly partition the element node array of finite
+        element meshes. It produces two partitioning vectors. One for the
+        elements and one for the nodes. METIS supports the following 
+        elements: triangles, tetrahedra, hexahedra
+
+
+  Mesh-To-Graph Conversion Routines
+  ---------------------------------
+    1.  METIS now includes a number of mesh conversion functions that can 
+        be used to create the dual and nodal graphs directly from the 
+        element connectivity arrays. These are highly optimized routines. 
+
+
+
