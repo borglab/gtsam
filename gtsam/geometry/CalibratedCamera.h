@@ -261,6 +261,14 @@ public:
   /// @name Named Constructors
   /// @{
 
+  // Create CalibratedCamera, with derivatives
+  static CalibratedCamera Create(const Pose3& pose,
+                                 OptionalJacobian<dimension, 6> H1 = boost::none) {
+    if (H1)
+      *H1 << I_6x6;
+    return CalibratedCamera(pose);
+  }
+
   /**
    * Create a level camera at the given 2D pose and height
    * @param pose2 specifies the location and viewing direction

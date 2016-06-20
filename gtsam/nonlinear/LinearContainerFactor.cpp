@@ -11,14 +11,13 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
-
 namespace gtsam {
 
 /* ************************************************************************* */
 void LinearContainerFactor::initializeLinearizationPoint(const Values& linearizationPoint) {
   if (!linearizationPoint.empty()) {
     linearizationPoint_ = Values();
-    for(const gtsam::Key& key: this->keys()) {
+    for (Key key : keys()) {
       linearizationPoint_->insert(key, linearizationPoint.at(key));
     }
   } else {
@@ -81,7 +80,7 @@ double LinearContainerFactor::error(const Values& c) const {
 
   // Extract subset of values for comparison
   Values csub;
-  for(const gtsam::Key& key: keys())
+  for (Key key : keys())
     csub.insert(key, c.at(key));
 
   // create dummy ordering for evaluation
@@ -110,7 +109,7 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) con
 
   // Extract subset of values
   Values subsetC;
-  for(const gtsam::Key& key: this->keys())
+  for (Key key : keys())
     subsetC.insert(key, c.at(key));
 
   // Determine delta between linearization points using new ordering
@@ -122,10 +121,11 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) con
     jacFactor->getb() = -jacFactor->unweighted_error(delta);
   } else {
     HessianFactor::shared_ptr hesFactor = boost::dynamic_pointer_cast<HessianFactor>(linFactor);
-    SymmetricBlockMatrix::constBlock Gview = hesFactor->matrixObject().range(0, hesFactor->size(), 0, hesFactor->size());
+
+    const auto view = hesFactor->informationView();
     Vector deltaVector = delta.vector(keys());
-    Vector G_delta = Gview.selfadjointView() * deltaVector;
-    hesFactor->constantTerm() += deltaVector.dot(G_delta) - 2.0 * deltaVector.dot(hesFactor->linearTerm());
+    Vector G_delta = view * deltaVector;
+    hesFactor->constantTerm() += deltaVector.dot(G_delta) - 2.0 * deltaVector.dot(hesFactor->linearTerm().col(0));
     hesFactor->linearTerm() -= G_delta;
   }
 
@@ -165,14 +165,13 @@ NonlinearFactor::shared_ptr LinearContainerFactor::negateToNonlinear() const {
 }
 
 /* ************************************************************************* */
-NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
-    const GaussianFactorGraph& linear_graph, const Values& linearizationPoint)
-{
+NonlinearFactorGraph LinearContainerFactor::ConvertLinearGraph(
+    const GaussianFactorGraph& linear_graph, const Values& linearizationPoint) {
   NonlinearFactorGraph result;
-  for(const GaussianFactor::shared_ptr& f: linear_graph)
+  result.reserve(linear_graph.size());
+  for (const auto& f : linear_graph)
     if (f)
-      result.push_back(NonlinearFactorGraph::sharedFactor(
-          new LinearContainerFactor(f, linearizationPoint)));
+      result += boost::make_shared<LinearContainerFactor>(f, linearizationPoint);
   return result;
 }
 

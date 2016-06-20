@@ -320,8 +320,8 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative41(
 /**
  * Compute numerical derivative in argument 2 of 4-argument function
  * @param h ternary function yielding m-vector
- * @param x1 n-dimensional first argument value
- * @param x2 second argument value
+ * @param x1 first argument value
+ * @param x2 n-dimensional second argument value
  * @param x3 third argument value
  * @param x4 fourth argument value
  * @param delta increment for numerical derivative
@@ -333,9 +333,51 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative42(
     const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
-      "Template argument X1 must be a manifold type.");
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X2>::structure_category>::value),
+      "Template argument X2 must be a manifold type.");
   return numericalDerivative11<Y, X2>(boost::bind(h, x1, _1, x3, x4), x2, delta);
+}
+
+/**
+ * Compute numerical derivative in argument 3 of 4-argument function
+ * @param h ternary function yielding m-vector
+ * @param x1 first argument value
+ * @param x2 second argument value
+ * @param x3 n-dimensional third argument value
+ * @param x4 fourth argument value
+ * @param delta increment for numerical derivative
+ * @return m*n Jacobian computed via central differencing
+ */
+template<class Y, class X1, class X2, class X3, class X4>
+typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative43(
+    boost::function<Y(const X1&, const X2&, const X3&, const X4&)> h, const X1& x1,
+    const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+      "Template argument Y must be a manifold type.");
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X3>::structure_category>::value),
+      "Template argument X3 must be a manifold type.");
+  return numericalDerivative11<Y, X3>(boost::bind(h, x1, x2, _1, x4), x3, delta);
+}
+
+/**
+ * Compute numerical derivative in argument 4 of 4-argument function
+ * @param h ternary function yielding m-vector
+ * @param x1 first argument value
+ * @param x2 second argument value
+ * @param x3 third argument value
+ * @param x4 n-dimensional fourth argument value
+ * @param delta increment for numerical derivative
+ * @return m*n Jacobian computed via central differencing
+ */
+template<class Y, class X1, class X2, class X3, class X4>
+typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative44(
+    boost::function<Y(const X1&, const X2&, const X3&, const X4&)> h, const X1& x1,
+    const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+      "Template argument Y must be a manifold type.");
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X4>::structure_category>::value),
+      "Template argument X4 must be a manifold type.");
+  return numericalDerivative11<Y, X4>(boost::bind(h, x1, x2, x3, _1), x4, delta);
 }
 
 /**

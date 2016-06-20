@@ -40,58 +40,41 @@ TEST(SymmetricBlockMatrix, ReadBlocks)
   Matrix expected1 = (Matrix(2, 2) <<
     22, 23,
     23, 29).finished();
-  Matrix actual1 = testBlockMatrix(1, 1);
-  // Test only writing the upper triangle for efficiency
-  Matrix actual1t = Z_2x2;
-  actual1t.triangularView<Eigen::Upper>() = testBlockMatrix(1, 1).triangularView();
+  Matrix actual1 = testBlockMatrix.diagonalBlock(1);
   EXPECT(assert_equal(expected1, actual1));
-  EXPECT(assert_equal(Matrix(expected1.triangularView<Eigen::Upper>()), actual1t));
 
   // Above the diagonal
   Matrix expected2 = (Matrix(3, 2) <<
     4, 5,
     10, 11,
     16, 17).finished();
-  Matrix actual2 = testBlockMatrix(0, 1);
+  Matrix actual2 = testBlockMatrix.aboveDiagonalBlock(0, 1);
   EXPECT(assert_equal(expected2, actual2));
-
-  // Below the diagonal
-  Matrix expected3 = (Matrix(2, 3) <<
-    4, 10, 16,
-    5, 11, 17).finished();
-  Matrix actual3 = testBlockMatrix(1, 0);
-  EXPECT(assert_equal(expected3, actual3));
 }
 
 /* ************************************************************************* */
 TEST(SymmetricBlockMatrix, WriteBlocks)
 {
   // On the diagonal
-  Matrix expected1 = testBlockMatrix(1, 1);
+  Matrix expected1 = testBlockMatrix.diagonalBlock(1);
   SymmetricBlockMatrix bm1 = SymmetricBlockMatrix::LikeActiveViewOf(testBlockMatrix);
-  bm1(1, 1) = expected1.selfadjointView<Eigen::Upper>(); // Verified with debugger that this only writes the upper triangle
-  Matrix actual1 = bm1(1, 1);
+
+  bm1.setDiagonalBlock(1, expected1);
+  Matrix actual1 = bm1.diagonalBlock(1);
   EXPECT(assert_equal(expected1, actual1));
 
-  // On the diagonal
-  Matrix expected1p = testBlockMatrix(1, 1);
-  SymmetricBlockMatrix bm1p = SymmetricBlockMatrix::LikeActiveViewOf(testBlockMatrix);
-  bm1p(1, 1) = expected1p; // Verified with debugger that this only writes the upper triangle
-  Matrix actual1p = bm1p(1, 1);
-  EXPECT(assert_equal(expected1p, actual1p));
-
   // Above the diagonal
-  Matrix expected2 = testBlockMatrix(0, 1);
+  Matrix expected2 = testBlockMatrix.aboveDiagonalBlock(0, 1);
   SymmetricBlockMatrix bm2 = SymmetricBlockMatrix::LikeActiveViewOf(testBlockMatrix);
-  bm2(0, 1) = expected2;
-  Matrix actual2 = bm2(0, 1);
+  bm2.setOffDiagonalBlock(0, 1, expected2);
+  Matrix actual2 = bm2.aboveDiagonalBlock(0, 1);
   EXPECT(assert_equal(expected2, actual2));
 
   // Below the diagonal
-  Matrix expected3 = testBlockMatrix(1, 0);
+  Matrix expected3 = testBlockMatrix.aboveDiagonalBlock(0, 1).transpose();
   SymmetricBlockMatrix bm3 = SymmetricBlockMatrix::LikeActiveViewOf(testBlockMatrix);
-  bm3(1, 0) = expected3;
-  Matrix actual3 = bm3(1, 0);
+  bm3.setOffDiagonalBlock(1, 0, expected3);
+  Matrix actual3 = bm3.aboveDiagonalBlock(0, 1).transpose();
   EXPECT(assert_equal(expected3, actual3));
 }
 
@@ -103,30 +86,16 @@ TEST(SymmetricBlockMatrix, Ranges)
     22, 23, 24,
     23, 29, 30,
     24, 30, 36).finished();
-  Matrix actual1 = testBlockMatrix.range(1, 3, 1, 3).selfadjointView();
-  Matrix actual1a = testBlockMatrix.range(1, 3, 1, 3);
+  Matrix actual1 = testBlockMatrix.selfadjointView(1, 3);
   EXPECT(assert_equal(expected1, actual1));
-  EXPECT(assert_equal(expected1, actual1a));
 
   // Above the diagonal
-  Matrix expected2 = (Matrix(3, 1) <<
-    24,
-    30,
-    36).finished();
-  Matrix actual2 = testBlockMatrix.range(1, 3, 2, 3).knownOffDiagonal();
-  Matrix actual2a = testBlockMatrix.range(1, 3, 2, 3);
+  Matrix expected2 = (Matrix(3, 3) <<
+    4, 5, 6,
+    10, 11, 12,
+    16, 17, 18).finished();
+  Matrix actual2 = testBlockMatrix.aboveDiagonalRange(0, 1, 1, 3);
   EXPECT(assert_equal(expected2, actual2));
-  EXPECT(assert_equal(expected2, actual2a));
-
-  // Below the diagonal
-  Matrix expected3 = (Matrix(3, 3) <<
-    4, 10, 16,
-    5, 11, 17,
-    6, 12, 18).finished();
-  Matrix actual3 = testBlockMatrix.range(1, 3, 0, 1).knownOffDiagonal();
-  Matrix actual3a = testBlockMatrix.range(1, 3, 0, 1);
-  EXPECT(assert_equal(expected3, actual3));
-  EXPECT(assert_equal(expected3, actual3a));
 }
 
 /* ************************************************************************* */
@@ -152,34 +121,51 @@ TEST(SymmetricBlockMatrix, expressions)
   Matrix b = (Matrix(1, 2) << 5, 6).finished();
 
   SymmetricBlockMatrix bm1(list_of(2)(3)(1));
-  bm1.full().triangularView().setZero();
-  bm1(1, 1).selfadjointView().rankUpdate(a.transpose());
-  EXPECT(assert_equal(Matrix(expected1.full().selfadjointView()), bm1.full().selfadjointView()));
+  bm1.setZero();
+  bm1.diagonalBlock(1).rankUpdate(a.transpose());
+  EXPECT(assert_equal(Matrix(expected1.selfadjointView()), bm1.selfadjointView()));
 
   SymmetricBlockMatrix bm2(list_of(2)(3)(1));
-  bm2.full().triangularView().setZero();
-  bm2(0, 1).knownOffDiagonal() += b.transpose() * a;
-  EXPECT(assert_equal(Matrix(expected2.full().selfadjointView()), bm2.full().selfadjointView()));
+  bm2.setZero();
+  bm2.updateOffDiagonalBlock(0, 1, b.transpose() * a);
+  EXPECT(assert_equal(Matrix(expected2.selfadjointView()), bm2.selfadjointView()));
 
   SymmetricBlockMatrix bm3(list_of(2)(3)(1));
-  bm3.full().triangularView().setZero();
-  bm3(1, 0).knownOffDiagonal() += a.transpose() * b;
-  EXPECT(assert_equal(Matrix(expected2.full().selfadjointView()), bm3.full().selfadjointView()));
+  bm3.setZero();
+  bm3.updateOffDiagonalBlock(1, 0, a.transpose() * b);
+  EXPECT(assert_equal(Matrix(expected2.selfadjointView()), bm3.selfadjointView()));
 
   SymmetricBlockMatrix bm4(list_of(2)(3)(1));
-  bm4.full().triangularView().setZero();
-  bm4(1, 1) += expected1(1, 1);
-  EXPECT(assert_equal(Matrix(expected1.full().selfadjointView()), bm4.full().selfadjointView()));
+  bm4.setZero();
+  bm4.updateDiagonalBlock(1, expected1.diagonalBlock(1));
+  EXPECT(assert_equal(Matrix(expected1.selfadjointView()), bm4.selfadjointView()));
 
   SymmetricBlockMatrix bm5(list_of(2)(3)(1));
-  bm5.full().triangularView().setZero();
-  bm5(0, 1) += expected2(0, 1);
-  EXPECT(assert_equal(Matrix(expected2.full().selfadjointView()), bm5.full().selfadjointView()));
+  bm5.setZero();
+  bm5.updateOffDiagonalBlock(0, 1, expected2.aboveDiagonalBlock(0, 1));
+  EXPECT(assert_equal(Matrix(expected2.selfadjointView()), bm5.selfadjointView()));
 
   SymmetricBlockMatrix bm6(list_of(2)(3)(1));
-  bm6.full().triangularView().setZero();
-  bm6(1, 0) += expected2(1, 0);
-  EXPECT(assert_equal(Matrix(expected2.full().selfadjointView()), bm6.full().selfadjointView()));
+  bm6.setZero();
+  bm6.updateOffDiagonalBlock(1, 0, expected2.aboveDiagonalBlock(0, 1).transpose());
+  EXPECT(assert_equal(Matrix(expected2.selfadjointView()), bm6.selfadjointView()));
+}
+
+/* ************************************************************************* */
+TEST(SymmetricBlockMatrix, inverseInPlace) {
+  // generate an invertible matrix
+  const Vector3 a(1.0, 0.2, 2.0), b(0.3, 0.8, -1.0), c(0.1, 0.2, 0.7);
+  Matrix inputMatrix(3, 3);
+  inputMatrix.setZero();
+  inputMatrix += a * a.transpose();
+  inputMatrix += b * b.transpose();
+  inputMatrix += c * c.transpose();
+  const Matrix expectedInverse = inputMatrix.inverse();
+
+  SymmetricBlockMatrix symmMatrix(list_of(2)(1), inputMatrix);
+  // invert in place
+  symmMatrix.invertInPlace();
+  EXPECT(assert_equal(expectedInverse, symmMatrix.selfadjointView()));
 }
 
 /* ************************************************************************* */

@@ -115,7 +115,7 @@ int main(int argc, char** argv){
   params.verbosity = NonlinearOptimizerParams::ERROR;
 
   //create Levenberg-Marquardt optimizer to optimize the factor graph
-  LevenbergMarquardtOptimizer optimizer = LevenbergMarquardtOptimizer(graph, initial_estimate,params);
+  LevenbergMarquardtOptimizer optimizer(graph, initial_estimate,params);
 //  Values result = optimizer.optimize();
 
   string K_values_file = "K_values.txt";

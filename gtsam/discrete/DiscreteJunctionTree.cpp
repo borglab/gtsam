@@ -23,7 +23,7 @@
 namespace gtsam {
 
   // Instantiate base classes
-  template class ClusterTree<DiscreteBayesTree, DiscreteFactorGraph>;
+  template class EliminatableClusterTree<DiscreteBayesTree, DiscreteFactorGraph>;
   template class JunctionTree<DiscreteBayesTree, DiscreteFactorGraph>;
 
   /* ************************************************************************* */

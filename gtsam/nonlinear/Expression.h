@@ -174,6 +174,9 @@ public:
   /// Return size needed for memory buffer in traceExecution
   size_t traceSize() const;
 
+  /// Add another expression to this expression
+  Expression<T>& operator+=(const Expression<T>& e);
+
 protected:
 
   /// Default constructor, for serialization
@@ -217,23 +220,18 @@ class ScalarMultiplyExpression : public Expression<T> {
 };
 
 /**
- *  A SumExpression is a specialization of Expression that just sums the arguments
+ *  A BinarySumExpression is a specialization of Expression that adds two expressions together
  *  It optimizes the Jacobian calculation for this specific case
  */
 template <typename T>
-class SumExpression : public Expression<T> {
+class BinarySumExpression : public Expression<T> {
   // Check that T is a vector space
   BOOST_CONCEPT_ASSERT((gtsam::IsVectorSpace<T>));
 
  public:
-  explicit SumExpression(const std::vector<Expression<T>>& expressions);
-
-  // Syntactic sugar to allow e1 + e2 + e3...
-  SumExpression operator+(const Expression<T>& e) const;
-  SumExpression& operator+=(const Expression<T>& e);
-
-  size_t nrTerms() const;
+  explicit BinarySumExpression(const Expression<T>& e1, const Expression<T>& e2);
 };
+
 
 /**
  * Create an expression out of a linear function f:T->A with (constant) Jacobian dTdA
@@ -272,13 +270,14 @@ ScalarMultiplyExpression<T> operator*(double s, const Expression<T>& e) {
  *    Expression<Point2> a(0), b(1), c = a + b;
  */
 template <typename T>
-SumExpression<T> operator+(const Expression<T>& e1, const Expression<T>& e2) {
-  return SumExpression<T>({e1, e2});
+BinarySumExpression<T> operator+(const Expression<T>& e1, const Expression<T>& e2) {
+  return BinarySumExpression<T>(e1, e2);
 }
 
 /// Construct an expression that subtracts one expression from another
 template <typename T>
-SumExpression<T> operator-(const Expression<T>& e1, const Expression<T>& e2) {
+BinarySumExpression<T> operator-(const Expression<T>& e1, const Expression<T>& e2) {
+  // TODO(frank, abe): Implement an actual negate operator instead of multiplying by -1
   return e1 + (-1.0) * e2;
 }
 

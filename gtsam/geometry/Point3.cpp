@@ -57,7 +57,7 @@ double Point3::dot(const Point3 &q, OptionalJacobian<1, 3> H1,
 
 /* ************************************************************************* */
 ostream &operator<<(ostream &os, const Point3& p) {
-  os << '[' << p.x() << ", " << p.y() << ", " << p.z() << "]\';";
+  os << '[' << p.x() << ", " << p.y() << ", " << p.z() << "]'";
   return os;
 }
 

@@ -263,26 +263,15 @@ template <typename T>
 ScalarMultiplyExpression<T>::ScalarMultiplyExpression(double s, const Expression<T>& e)
     : Expression<T>(boost::make_shared<internal::ScalarMultiplyNode<T>>(s, e)) {}
 
-template <typename T>
-SumExpression<T>::SumExpression(const std::vector<Expression<T>>& expressions)
-    : Expression<T>(boost::make_shared<internal::SumExpressionNode<T>>(expressions)) {}
 
 template <typename T>
-SumExpression<T> SumExpression<T>::operator+(const Expression<T>& e) const {
-  SumExpression<T> copy = *this;
-  boost::static_pointer_cast<internal::SumExpressionNode<T>>(copy.root_)->add(e);
-  return copy;
-}
+BinarySumExpression<T>::BinarySumExpression(const Expression<T>& e1, const Expression<T>& e2)
+    : Expression<T>(boost::make_shared<internal::BinarySumNode<T>>(e1, e2)) {}
 
 template <typename T>
-SumExpression<T>& SumExpression<T>::operator+=(const Expression<T>& e) {
-  boost::static_pointer_cast<internal::SumExpressionNode<T>>(this->root_)->add(e);
+Expression<T>& Expression<T>::operator+=(const Expression<T>& e) {
+  root_ = boost::make_shared<internal::BinarySumNode<T>>(*this, e);
   return *this;
-}
-
-template <typename T>
-size_t SumExpression<T>::nrTerms() const {
-  return boost::static_pointer_cast<internal::SumExpressionNode<T>>(this->root_)->nrTerms();
 }
 
 } // namespace gtsam

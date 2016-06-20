@@ -55,10 +55,12 @@ GTSAM_EXPORT std::pair<size_t,bool> choleskyCareful(Matrix& ATA, int order = -1)
  * nFrontal determines the split between A, B, and C, with A being of size
  * nFrontal x nFrontal.
  *
+ * if non-zero, factorization proceeds in bottom-right corner starting at topleft
+ *
  * @return \c true if the decomposition is successful, \c false if \c A was
  * not positive-definite.
  */
-GTSAM_EXPORT bool choleskyPartial(Matrix& ABC, size_t nFrontal);
+GTSAM_EXPORT bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft=0);
 
 }
 

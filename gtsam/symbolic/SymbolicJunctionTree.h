@@ -26,7 +26,7 @@ namespace gtsam {
   class SymbolicEliminationTree;
 
   /**
-   * A ClusterTree, i.e., a set of variable clusters with factors, arranged in a tree, with
+   * A EliminatableClusterTree, i.e., a set of variable clusters with factors, arranged in a tree, with
    * the additional property that it represents the clique tree associated with a Bayes net.
    *
    * In GTSAM a junction tree is an intermediate data structure in multifrontal
