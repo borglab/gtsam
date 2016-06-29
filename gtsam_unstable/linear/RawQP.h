@@ -45,6 +45,7 @@ private:
   constraint_v IL;
   unsigned int varNumber;
   std::unordered_map<std::string, double> b;
+  std::unordered_map<std::string, double> ranges;
   std::unordered_map<Key, Vector1> g;
   std::unordered_map<std::string, Key> varname_to_key;
   std::unordered_map<Key, std::unordered_map<Key, Matrix11> > H;
@@ -58,9 +59,9 @@ private:
 
 public:
   RawQP() :
-      row_to_constraint_v(), E(), IG(), IL(), varNumber(1), b(), g(), varname_to_key(), H(), f(), obj_name(), name_(), up(), lo(), Free() {
+      row_to_constraint_v(), E(), IG(), IL(), varNumber(1), b(), ranges(), g(), varname_to_key(), H(), f(), obj_name(), name_(), up(), lo(), Free() {
   }
-  
+
   void setName(
       boost::fusion::vector<std::vector<char>, std::vector<char>,
           std::vector<char>> const & name);

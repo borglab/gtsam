@@ -82,12 +82,29 @@ void RawQP::addRangeSingle(
         std::vector<char>, std::vector<char>, std::vector<char>, double,
         std::vector<char>> const & vars) {
   std::cout << "SINGLE RANGE ADDED" << std::endl;
+  std::string var_(at_c < 1 > (vars).begin(), at_c < 1 > (vars).end());
+  std::string row_(at_c < 3 > (vars).begin(), at_c < 3 > (vars).end());
+  double range = at_c < 5 > (vars);
+  ranges[row_] = range;
+  std::cout << "VAR:" << var_ << " ROW: " << row_ << " RANGE: " << range
+      << std::endl;
+  
 }
 void RawQP::addRangeDouble(
     boost::fusion::vector<std::vector<char>, std::vector<char>,
         std::vector<char>, std::vector<char>, std::vector<char>, double,
         std::vector<char>, std::vector<char>, std::vector<char>, double> const & vars) {
   std::cout << "DOUBLE RANGE ADDED" << std::endl;
+  std::string var_(at_c < 1 > (vars).begin(), at_c < 1 > (vars).end());
+  std::string row1_(at_c < 3 > (vars).begin(), at_c < 3 > (vars).end());
+  std::string row2_(at_c < 7 > (vars).begin(), at_c < 7 > (vars).end());
+  double range1 = at_c < 5 > (vars);
+  double range2 = at_c < 9 > (vars);
+  ranges[row1_] = range1;
+  ranges[row2_] = range2;
+  std::cout << "VAR: " << var_ << " ROW1: " << row1_ << " RANGE1: " << range1
+      << " ROW2: " << row2_ << " RANGE2: " << range2 << std::endl;
+  
 }
 
 void RawQP::addRHS(
@@ -235,13 +252,39 @@ QP RawQP::makeQP() {
     g_value = -g[key1];
     gs.push_back(g_value.hasNaN() ? Z_1x1 : g_value);
   }
-  int dual_key_num = keys.size() + 1;
+  size_t dual_key_num = keys.size() + 1;
   QP madeQP;
   auto obj = HessianFactor(keys, Gs, gs, 2 * f);
 
   madeQP.cost.push_back(obj);
 
   for (auto kv : E) {
+    std::map < Key, Matrix11 > keyMatrixMapPos;
+    std::map < Key, Matrix11 > keyMatrixMapNeg;
+    if (ranges.count(kv.first) == 1) {
+      for (auto km : kv.second) {
+        keyMatrixMapPos.insert(km);
+        km.second = -km.second;
+        keyMatrixMapNeg.insert(km);
+      }
+      if (ranges[kv.first] > 0) {
+        madeQP.inequalities.push_back(
+            LinearInequality(keyMatrixMapNeg, -b[kv.first], dual_key_num++));
+        madeQP.inequalities.push_back(
+            LinearInequality(keyMatrixMapPos, b[kv.first] + ranges[kv.first],
+                dual_key_num++));
+      } else if (ranges[kv.first] < 0) {
+        madeQP.inequalities.push_back(
+            LinearInequality(keyMatrixMapPos, b[kv.first], dual_key_num++));
+        madeQP.inequalities.push_back(
+            LinearInequality(keyMatrixMapNeg, ranges[kv.first] - b[kv.first],
+                dual_key_num++));
+      } else {
+        std::cerr << "ERROR: CANNOT ADD A RANGE OF ZERO" << std::endl;
+        throw;
+      }
+      continue;
+    }
     std::map < Key, Matrix11 > keyMatrixMap;
     for (auto km : kv.second) {
       keyMatrixMap.insert(km);
@@ -251,22 +294,37 @@ QP RawQP::makeQP() {
   }
 
   for (auto kv : IG) {
-    std::map < Key, Matrix11 > keyMatrixMap;
+    std::map < Key, Matrix11 > keyMatrixMapNeg;
+    std::map < Key, Matrix11 > keyMatrixMapPos;
     for (auto km : kv.second) {
+      keyMatrixMapPos.insert(km);
       km.second = -km.second;
-      keyMatrixMap.insert(km);
+      keyMatrixMapNeg.insert(km);
     }
     madeQP.inequalities.push_back(
-        LinearInequality(keyMatrixMap, -b[kv.first], dual_key_num++));
+        LinearInequality(keyMatrixMapNeg, -b[kv.first], dual_key_num++));
+    if (ranges.count(kv.first) == 1) {
+      madeQP.inequalities.push_back(
+          LinearInequality(keyMatrixMapPos, b[kv.first] + ranges[kv.first],
+              dual_key_num++));
+    }
   }
 
   for (auto kv : IL) {
-    std::map < Key, Matrix11 > keyMatrixMap;
+    std::map < Key, Matrix11 > keyMatrixMapPos;
+    std::map < Key, Matrix11 > keyMatrixMapNeg;
     for (auto km : kv.second) {
-      keyMatrixMap.insert(km);
+      keyMatrixMapPos.insert(km);
+      km.second = -km.second;
+      keyMatrixMapNeg.insert(km);
     }
     madeQP.inequalities.push_back(
-        LinearInequality(keyMatrixMap, b[kv.first], dual_key_num++));
+        LinearInequality(keyMatrixMapPos, b[kv.first], dual_key_num++));
+    if (ranges.count(kv.first) == 1) {
+      madeQP.inequalities.push_back(
+          LinearInequality(keyMatrixMapNeg, ranges[kv.first] - b[kv.first],
+              dual_key_num++));
+    }
   }
 
   for (Key k : keys) {
