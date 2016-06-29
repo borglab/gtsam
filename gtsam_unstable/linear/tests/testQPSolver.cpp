@@ -281,6 +281,18 @@ TEST(QPSolver, HS21) {
   CHECK(assert_equal(expectedSolution, actualSolution))
 }
 
+TEST(QPSolver, HS118) {
+  QP problem = QPSParser("HS118.QPS").Parse();
+  VectorValues actualSolution;
+  VectorValues expectedSolution;
+//  expectedSolution.insert(Symbol('X',1), 2.0*I_1x1);
+//  expectedSolution.insert(Symbol('X',2), 0.0*I_1x1);
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(6.64820452e2,error_actual, 1e-7))
+//  CHECK(assert_equal(expectedSolution, actualSolution))
+}
+
 /* ************************************************************************* */
 // Create Matlab's test graph as in http://www.mathworks.com/help/optim/ug/quadprog.html
 QP createTestMatlabQPEx() {

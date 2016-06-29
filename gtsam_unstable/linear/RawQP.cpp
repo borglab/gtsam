@@ -77,6 +77,19 @@ void RawQP::addColumnDouble(
     (*row_to_constraint_v[row2_])[row2_][varname_to_key[var_]] = coefficient2;
 }
 
+void RawQP::addRangeSingle(
+    boost::fusion::vector<std::vector<char>, std::vector<char>,
+        std::vector<char>, std::vector<char>, std::vector<char>, double,
+        std::vector<char>> const & vars) {
+  std::cout << "SINGLE RANGE ADDED" << std::endl;
+}
+void RawQP::addRangeDouble(
+    boost::fusion::vector<std::vector<char>, std::vector<char>,
+        std::vector<char>, std::vector<char>, std::vector<char>, double,
+        std::vector<char>, std::vector<char>, std::vector<char>, double> const & vars) {
+  std::cout << "DOUBLE RANGE ADDED" << std::endl;
+}
+
 void RawQP::addRHS(
     boost::fusion::vector<std::vector<char>, std::vector<char>,
         std::vector<char>, std::vector<char>, std::vector<char>, double,

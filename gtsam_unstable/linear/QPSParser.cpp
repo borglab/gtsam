@@ -44,6 +44,12 @@ struct QPSParser::MPSGrammar: base_grammar {
           bf::vector<Chars, Chars, Chars, Chars, Chars, double, Chars, Chars,
               Chars, double>)> rhsDouble;
   boost::function<
+      void(bf::vector<Chars, Chars, Chars, Chars, Chars, double, Chars> const &)> rangeSingle;
+  boost::function<
+      void(
+          bf::vector<Chars, Chars, Chars, Chars, Chars, double, Chars, Chars,
+              Chars, double>)> rangeDouble;
+  boost::function<
       void(bf::vector<Chars, Chars, Chars, Chars, Chars, double, Chars>)> colSingle;
   boost::function<
       void(
@@ -61,7 +67,9 @@ struct QPSParser::MPSGrammar: base_grammar {
           boost::bind(&RawQP::setName, rqp, ::_1)), addRow(
           boost::bind(&RawQP::addRow, rqp, ::_1)), rhsSingle(
           boost::bind(&RawQP::addRHS, rqp, ::_1)), rhsDouble(
-          boost::bind(&RawQP::addRHSDouble, rqp, ::_1)), colSingle(
+          boost::bind(&RawQP::addRHSDouble, rqp, ::_1)), rangeSingle(
+          boost::bind(&RawQP::addRangeSingle, rqp, ::_1)), rangeDouble(
+          boost::bind(&RawQP::addRangeDouble, rqp, ::_1)), colSingle(
           boost::bind(&RawQP::addColumn, rqp, ::_1)), colDouble(
           boost::bind(&RawQP::addColumnDouble, rqp, ::_1)), addQuadTerm(
           boost::bind(&RawQP::addQuadTerm, rqp, ::_1)), addBound(
@@ -78,6 +86,10 @@ struct QPSParser::MPSGrammar: base_grammar {
         >> *blank][rhsSingle];
     rhs_double = lexeme[(*blank >> word >> +blank >> word >> +blank >> double_
         >> +blank >> word >> +blank >> double_)[rhsDouble] >> *blank];
+    range_single = lexeme[*blank >> word >> +blank >> word >> +blank >> double_
+        >> *blank][rangeSingle];
+    range_double = lexeme[(*blank >> word >> +blank >> word >> +blank >> double_
+        >> +blank >> word >> +blank >> double_)[rangeDouble] >> *blank];
     col_single = lexeme[*blank >> word >> +blank >> word >> +blank >> double_
         >> *blank][colSingle];
     col_double = lexeme[*blank
@@ -96,7 +108,8 @@ struct QPSParser::MPSGrammar: base_grammar {
         >> +((col_double | col_single) >> eol)];
     quad = lexeme[lit("QUADOBJ") >> *blank >> eol >> +(quad_l >> eol)];
     bounds = lexeme[lit("BOUNDS") >> +space >> +((bound | bound_fr) >> eol)];
-    ranges = lexeme[lit("RANGES") >> +space];
+    ranges = lexeme[lit("RANGES") >> +space
+        >> *((range_double | range_single) >> eol)];
     end = lexeme[lit("ENDATA") >> *space];
     start = lexeme[name >> rows >> cols >> rhs >> -ranges >> bounds >> quad
         >> end];
@@ -105,8 +118,8 @@ struct QPSParser::MPSGrammar: base_grammar {
   qi::rule<boost::spirit::basic_istream_iterator<char>, char()> character;
   qi::rule<boost::spirit::basic_istream_iterator<char>, Chars()> word, title;
   qi::rule<boost::spirit::basic_istream_iterator<char> > row, end, col_single,
-      col_double, rhs_single, rhs_double, ranges, bound, bound_fr, bounds, quad,
-      quad_l, rows, cols, rhs, name, start;
+      col_double, rhs_single, rhs_double, range_single, range_double, ranges,
+      bound, bound_fr, bounds, quad, quad_l, rows, cols, rhs, name, start;
 };
 
 QP QPSParser::Parse() {

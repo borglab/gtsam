@@ -30,6 +30,10 @@
 #include <boost/fusion/include/vector.hpp>
 
 namespace gtsam {
+/**
+ * This class is responsible for collecting a QP problem as the parser parses a QPS file
+ * and then generating a QP problem.
+ */
 class RawQP {
 private:
   typedef std::unordered_map<Key, Matrix11> coefficient_v;
@@ -56,7 +60,7 @@ public:
   RawQP() :
       row_to_constraint_v(), E(), IG(), IL(), varNumber(1), b(), g(), varname_to_key(), H(), f(), obj_name(), name_(), up(), lo(), Free() {
   }
-
+  
   void setName(
       boost::fusion::vector<std::vector<char>, std::vector<char>,
           std::vector<char>> const & name);
@@ -77,6 +81,16 @@ public:
           std::vector<char>> const & vars);
 
   void addRHSDouble(
+      boost::fusion::vector<std::vector<char>, std::vector<char>,
+          std::vector<char>, std::vector<char>, std::vector<char>, double,
+          std::vector<char>, std::vector<char>, std::vector<char>, double> const & vars);
+
+  void addRangeSingle(
+      boost::fusion::vector<std::vector<char>, std::vector<char>,
+          std::vector<char>, std::vector<char>, std::vector<char>, double,
+          std::vector<char>> const & vars);
+
+  void addRangeDouble(
       boost::fusion::vector<std::vector<char>, std::vector<char>,
           std::vector<char>, std::vector<char>, std::vector<char>, double,
           std::vector<char>, std::vector<char>, std::vector<char>, double> const & vars);
