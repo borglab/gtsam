@@ -321,6 +321,7 @@ Point3 triangulatePoint3(
 struct TriangulationParameters {
 
   double rankTolerance; ///< threshold to decide whether triangulation is result.degenerate
+  ///< (the rank is the number of singular values of the triangulation matrix which are larger than rankTolerance)
   bool enableEPI; ///< if set to true, will refine triangulation using LM
 
   /**
