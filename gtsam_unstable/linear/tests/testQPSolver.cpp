@@ -303,6 +303,15 @@ TEST(QPSolver, HS35) {
   CHECK(assert_equal(1.11111111e-01,error_actual, 1e-7))
 }
 
+TEST(QPSolver, HS35MOD) {
+  QP problem = QPSParser("HS35MOD.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(2.50000001e-01,error_actual, 1e-7))
+}
+
+
 /* ************************************************************************* */
 // Create Matlab's test graph as in http://www.mathworks.com/help/optim/ug/quadprog.html
 QP createTestMatlabQPEx() {

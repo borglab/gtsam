@@ -198,6 +198,8 @@ void RawQP::addBound(
     up[varname_to_key[var_]] = number;
   else if (type_.compare(std::string("LO")) == 0)
     lo[varname_to_key[var_]] = number;
+  else if (type_.compare(std::string("FX")) == 0)
+    fx[varname_to_key[var_]] = number;
   else
     std::cout << "Invalid Bound Type: " << type_ << std::endl;
 
@@ -334,6 +336,9 @@ QP RawQP::makeQP() {
   for (Key k : keys) {
     if (std::find(Free.begin(), Free.end(), k) != Free.end())
       continue;
+    if (fx.count(k) == 1)
+      madeQP.equalities.push_back(
+          LinearEquality(k, I_1x1, fx[k] * I_1x1, dual_key_num++));
     if (up.count(k) == 1)
       madeQP.inequalities.push_back(
           LinearInequality(k, I_1x1, up[k], dual_key_num++));

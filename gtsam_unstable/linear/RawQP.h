@@ -54,12 +54,13 @@ private:
   std::string name_;
   std::unordered_map<Key, double> up;
   std::unordered_map<Key, double> lo;
+  std::unordered_map<Key, double> fx;
   std::vector<Key> Free;
   const bool debug = false;
 
 public:
   RawQP() :
-      row_to_constraint_v(), E(), IG(), IL(), varNumber(1), b(), ranges(), g(), varname_to_key(), H(), f(), obj_name(), name_(), up(), lo(), Free() {
+      row_to_constraint_v(), E(), IG(), IL(), varNumber(1), b(), ranges(), g(), varname_to_key(), H(), f(), obj_name(), name_(), up(), lo(), fx(), Free() {
   }
 
   void setName(
