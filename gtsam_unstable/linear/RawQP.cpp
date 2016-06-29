@@ -210,22 +210,26 @@ QP RawQP::makeQP() {
     keys.push_back(kv.second);
   }
   std::sort(keys.begin(), keys.end());
+  Matrix11 G_value;
   for (unsigned int i = 0; i < keys.size(); ++i) {
     for (unsigned int j = i; j < keys.size(); ++j) {
-      Gs.push_back(H[keys[i]][keys[j]]);
+      G_value = H[keys[i]][keys[j]];
+      Gs.push_back(G_value.hasNaN() ? Z_1x1 : G_value);
     }
   }
+  Matrix11 g_value;
   for (Key key1 : keys) {
-    gs.push_back(-g[key1]);
+    g_value = -g[key1];
+    gs.push_back(g_value.hasNaN() ? Z_1x1 : g_value);
   }
   int dual_key_num = keys.size() + 1;
   QP madeQP;
-  auto obj = HessianFactor(keys, Gs, gs, f);
+  auto obj = HessianFactor(keys, Gs, gs, 2 * f);
 
   madeQP.cost.push_back(obj);
 
   for (auto kv : E) {
-    std::map<Key, Matrix11> keyMatrixMap;
+    std::map < Key, Matrix11 > keyMatrixMap;
     for (auto km : kv.second) {
       keyMatrixMap.insert(km);
     }
@@ -234,7 +238,7 @@ QP RawQP::makeQP() {
   }
 
   for (auto kv : IG) {
-    std::map<Key, Matrix11> keyMatrixMap;
+    std::map < Key, Matrix11 > keyMatrixMap;
     for (auto km : kv.second) {
       km.second = -km.second;
       keyMatrixMap.insert(km);
@@ -244,7 +248,7 @@ QP RawQP::makeQP() {
   }
 
   for (auto kv : IL) {
-    std::map<Key, Matrix11> keyMatrixMap;
+    std::map < Key, Matrix11 > keyMatrixMap;
     for (auto km : kv.second) {
       keyMatrixMap.insert(km);
     }
@@ -260,7 +264,7 @@ QP RawQP::makeQP() {
           LinearInequality(k, I_1x1, up[k], dual_key_num++));
     if (lo.count(k) == 1)
       madeQP.inequalities.push_back(
-          LinearInequality(k, -I_1x1, lo[k], dual_key_num++));
+          LinearInequality(k, -I_1x1, -lo[k], dual_key_num++));
     else
       madeQP.inequalities.push_back(
           LinearInequality(k, -I_1x1, 0, dual_key_num++));
