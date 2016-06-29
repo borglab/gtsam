@@ -287,7 +287,7 @@ TEST(QPSolver, HS118) {
   VectorValues expectedSolution;
   double solutionValues[15] = {8,49,3,1,56,0,1,63,6,3,70,12,5,77,18};
   for (int index = 0; index < 15; ++index) {
-    expectedSolution.insert(Symbol('X',index+1), solutionValues[index]);
+    expectedSolution.insert(Symbol('X',index+1), solutionValues[index]*I_1x1);
   }
   boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
   double error_actual = problem.cost.error(actualSolution);
