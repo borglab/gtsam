@@ -81,20 +81,21 @@ void RawQP::addRangeSingle(
     boost::fusion::vector<std::vector<char>, std::vector<char>,
         std::vector<char>, std::vector<char>, std::vector<char>, double,
         std::vector<char>> const & vars) {
-  std::cout << "SINGLE RANGE ADDED" << std::endl;
   std::string var_(at_c < 1 > (vars).begin(), at_c < 1 > (vars).end());
   std::string row_(at_c < 3 > (vars).begin(), at_c < 3 > (vars).end());
   double range = at_c < 5 > (vars);
   ranges[row_] = range;
-  std::cout << "VAR:" << var_ << " ROW: " << row_ << " RANGE: " << range
-      << std::endl;
+  if (debug) {
+    std::cout << "SINGLE RANGE ADDED" << std::endl;
+    std::cout << "VAR:" << var_ << " ROW: " << row_ << " RANGE: " << range
+        << std::endl;
+  }
   
 }
 void RawQP::addRangeDouble(
     boost::fusion::vector<std::vector<char>, std::vector<char>,
         std::vector<char>, std::vector<char>, std::vector<char>, double,
         std::vector<char>, std::vector<char>, std::vector<char>, double> const & vars) {
-  std::cout << "DOUBLE RANGE ADDED" << std::endl;
   std::string var_(at_c < 1 > (vars).begin(), at_c < 1 > (vars).end());
   std::string row1_(at_c < 3 > (vars).begin(), at_c < 3 > (vars).end());
   std::string row2_(at_c < 7 > (vars).begin(), at_c < 7 > (vars).end());
@@ -102,8 +103,11 @@ void RawQP::addRangeDouble(
   double range2 = at_c < 9 > (vars);
   ranges[row1_] = range1;
   ranges[row2_] = range2;
-  std::cout << "VAR: " << var_ << " ROW1: " << row1_ << " RANGE1: " << range1
-      << " ROW2: " << row2_ << " RANGE2: " << range2 << std::endl;
+  if (debug) {
+    std::cout << "DOUBLE RANGE ADDED" << std::endl;
+    std::cout << "VAR: " << var_ << " ROW1: " << row1_ << " RANGE1: " << range1
+        << " ROW2: " << row2_ << " RANGE2: " << range2 << std::endl;
+  }
   
 }
 
