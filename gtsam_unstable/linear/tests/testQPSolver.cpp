@@ -281,7 +281,7 @@ TEST(QPSolver, HS21) {
   CHECK(assert_equal(expectedSolution, actualSolution))
 }
 
-TEST(QPSolver, HS118) {
+TEST_DISABLED(QPSolver, HS118) {
   QP problem = QPSParser("HS118.QPS").Parse();
   VectorValues actualSolution;
   VectorValues expectedSolution;
@@ -293,6 +293,14 @@ TEST(QPSolver, HS118) {
   double error_actual = problem.cost.error(actualSolution);
   CHECK(assert_equal(6.64820452e2,error_actual, 1e-7))
   CHECK(assert_equal(expectedSolution, actualSolution))
+}
+
+TEST(QPSolver, HS35) {
+  QP problem = QPSParser("HS35.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(1.11111111e-01,error_actual, 1e-7))
 }
 
 /* ************************************************************************* */

@@ -107,7 +107,7 @@ struct QPSParser::MPSGrammar: base_grammar {
     cols = lexeme[lit("COLUMNS") >> *blank >> eol
         >> +((col_double | col_single) >> eol)];
     quad = lexeme[lit("QUADOBJ") >> *blank >> eol >> +(quad_l >> eol)];
-    bounds = lexeme[lit("BOUNDS") >> +space >> +((bound | bound_fr) >> eol)];
+    bounds = lexeme[lit("BOUNDS") >> +space >> *((bound | bound_fr) >> eol)];
     ranges = lexeme[lit("RANGES") >> +space
         >> *((range_double | range_single) >> eol)];
     end = lexeme[lit("ENDATA") >> *space];
