@@ -886,6 +886,30 @@ DCS::shared_ptr DCS::Create(double c, const ReweightScheme reweight) {
   return shared_ptr(new DCS(c, reweight));
 }
 
+/* ************************************************************************* */
+// L2WithDeadZone
+/* ************************************************************************* */
+
+L2WithDeadZone::L2WithDeadZone(double k, const ReweightScheme reweight) : Base(reweight), k_(k) {
+  if (k_ <= 0) {
+    throw runtime_error("mEstimator L2WithDeadZone takes only positive double in constructor.");
+  }
+}
+
+void L2WithDeadZone::print(const std::string &s="") const {
+  std::cout << s << ": L2WithDeadZone (" << k_ << ")" << std::endl;
+}
+
+bool L2WithDeadZone::equals(const Base &expected, double tol) const {
+  const L2WithDeadZone* p = dynamic_cast<const L2WithDeadZone*>(&expected);
+  if (p == NULL) return false;
+  return fabs(k_ - p->k_) < tol;
+}
+
+L2WithDeadZone::shared_ptr L2WithDeadZone::Create(double k, const ReweightScheme reweight) {
+  return shared_ptr(new L2WithDeadZone(k, reweight));
+}
+
 } // namespace mEstimator
 
 /* ************************************************************************* */

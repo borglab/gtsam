@@ -96,8 +96,9 @@ void PreintegratedImuMeasurements::integrateMeasurements(
 void PreintegratedImuMeasurements::mergeWith(const PreintegratedImuMeasurements& pim12, //
     Matrix9* H1, Matrix9* H2) {
   PreintegrationType::mergeWith(pim12, H1, H2);
-  preintMeasCov_ =
-  *H1 * preintMeasCov_ * H1->transpose() + *H2 * pim12.preintMeasCov_ * H2->transpose();
+  // NOTE(gareth): Temporary P is needed as of Eigen 3.3
+  const Matrix9 P = *H1 * preintMeasCov_ * H1->transpose();
+  preintMeasCov_ = P + *H2 * pim12.preintMeasCov_ * H2->transpose();
 }
 #endif
 //------------------------------------------------------------------------------

@@ -102,6 +102,7 @@ void exportNoiseModels(){
   class_<BaseCallback,boost::noncopyable>("Base")
     .def("print", pure_virtual(&Base::print))
   ;
+  register_ptr_to_python< boost::shared_ptr<Base> >();
   
   // NOTE: We should use "Base" in "bases<...>", and not "BaseCallback" (it was not clear at the begining)
   class_<Gaussian, boost::shared_ptr<Gaussian>, bases<Base> >("Gaussian", no_init)

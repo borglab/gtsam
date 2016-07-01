@@ -29,7 +29,6 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/bind.hpp>
 
 namespace gtsam {
 
@@ -158,7 +157,6 @@ void DepthFirstForestParallel(FOREST& forest, DATA& rootData,
 #ifdef GTSAM_USE_TBB
   // Typedefs
   typedef typename FOREST::Node Node;
-  typedef boost::shared_ptr<Node> sharedNode;
 
   tbb::task::spawn_root_and_wait(
       internal::CreateRootTask<Node>(forest.roots(), rootData, visitorPre,

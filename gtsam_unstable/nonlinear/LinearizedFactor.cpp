@@ -139,21 +139,7 @@ LinearizedHessianFactor::LinearizedHessianFactor() {
 /* ************************************************************************* */
 LinearizedHessianFactor::LinearizedHessianFactor(
     const HessianFactor::shared_ptr& hessian, const Values& lin_points)
-: Base(hessian, lin_points) {
-
-  // Create the dims array
-  size_t *dims = (size_t*)alloca(sizeof(size_t)*(hessian->size() + 1));
-  size_t index = 0;
-  for(HessianFactor::const_iterator iter = hessian->begin(); iter != hessian->end(); ++iter) {
-    dims[index++] = hessian->getDim(iter);
-  }
-  dims[index] = 1;
-
-  // Update the BlockInfo accessor
-  info_ = SymmetricBlockMatrix(dims, dims+hessian->size()+1);
-  // Copy the augmented matrix holding G, g, and f
-  info_.full() = hessian->info();
-}
+    : Base(hessian, lin_points), info_(hessian->info()) {}
 
 /* ************************************************************************* */
 void LinearizedHessianFactor::print(const std::string& s, const KeyFormatter& keyFormatter) const {
@@ -165,7 +151,7 @@ void LinearizedHessianFactor::print(const std::string& s, const KeyFormatter& ke
     std::cout << keyFormatter(key) << " ";
   std::cout << std::endl;
 
-  gtsam::print(Matrix(info_.full()), "Ab^T * Ab: ");
+  gtsam::print(Matrix(info_.selfadjointView()), "Ab^T * Ab: ");
 
   lin_points_.print("Linearization Point: ");
 }
@@ -176,9 +162,9 @@ bool LinearizedHessianFactor::equals(const NonlinearFactor& expected, double tol
   const This *e = dynamic_cast<const This*> (&expected);
   if (e) {
 
-    Matrix thisMatrix = this->info_.full();
+    Matrix thisMatrix = this->info_.selfadjointView();
     thisMatrix(thisMatrix.rows()-1, thisMatrix.cols()-1) = 0.0;
-    Matrix rhsMatrix = e->info_.full();
+    Matrix rhsMatrix = e->info_.selfadjointView();
     rhsMatrix(rhsMatrix.rows()-1, rhsMatrix.cols()-1) = 0.0;
 
     return Base::equals(expected, tol)
@@ -234,16 +220,20 @@ LinearizedHessianFactor::linearize(const Values& c) const {
   //newInfo.rangeColumn(0, this->size(), this->size(), 0) -= squaredTerm().selfadjointView<Eigen::Upper>() * dx;
   Vector g = linearTerm() - squaredTerm() * dx;
   std::vector<Vector> gs;
+  std::size_t offset = 0;
   for(DenseIndex i = 0; i < info_.nBlocks()-1; ++i) {
-    gs.push_back(g.segment(info_.offset(i), info_.offset(i+1) - info_.offset(i)));
+    const std::size_t dim = info_.getDim(i);
+    gs.push_back(g.segment(offset, dim));
+    offset += dim;
   }
 
   // G2 = G1
   // Do Nothing
   std::vector<Matrix> Gs;
   for(DenseIndex i = 0; i < info_.nBlocks()-1; ++i) {
-    for(DenseIndex j = i; j < info_.nBlocks()-1; ++j) {
-      Gs.push_back(info_(i,j));
+    Gs.push_back(info_.diagonalBlock(i));
+    for(DenseIndex j = i + 1; j < info_.nBlocks()-1; ++j) {
+      Gs.push_back(info_.aboveDiagonalBlock(i, j));
     }
   }
 

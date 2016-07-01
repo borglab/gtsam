@@ -1357,7 +1357,7 @@ virtual class HessianFactor : gtsam::GaussianFactor {
 
   //Standard Interface
   size_t rows() const;
-  Matrix info() const;
+  Matrix information() const;
   double constantTerm() const;
   Vector linearTerm() const;
 
@@ -1930,10 +1930,10 @@ virtual class LinearContainerFactor : gtsam::NonlinearFactor {
   gtsam::JacobianFactor* toJacobian() const;
   gtsam::HessianFactor* toHessian() const;
 
-  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
+  static gtsam::NonlinearFactorGraph ConvertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
       const gtsam::Values& linearizationPoint);
 
-  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph);
+  static gtsam::NonlinearFactorGraph ConvertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph);
 
   // enabling serialization functionality
   void serializable() const;

@@ -90,7 +90,7 @@ TEST(CameraSet, Pinhole) {
   Vector v = Ft * (b - E * P * Et * b);
   schur << Ft * F - Ft * E * P * Et * F, v, v.transpose(), 30;
   SymmetricBlockMatrix actualReduced = Set::SchurComplement(Fs, E, P, b);
-  EXPECT(assert_equal(schur, actualReduced.matrix()));
+  EXPECT(assert_equal(schur, actualReduced.selfadjointView()));
 
   // Check Schur complement update, same order, should just double
   FastVector<Key> allKeys, keys;
@@ -99,7 +99,7 @@ TEST(CameraSet, Pinhole) {
   keys.push_back(1);
   keys.push_back(2);
   Set::UpdateSchurComplement(Fs, E, P, b, allKeys, keys, actualReduced);
-  EXPECT(assert_equal((Matrix )(2.0 * schur), actualReduced.matrix()));
+  EXPECT(assert_equal((Matrix )(2.0 * schur), actualReduced.selfadjointView()));
 
   // Check Schur complement update, keys reversed
   FastVector<Key> keys2;
@@ -111,7 +111,7 @@ TEST(CameraSet, Pinhole) {
   Vector reverse_v = Ft * (reverse_b - E * P * Et * reverse_b);
   Matrix A(19, 19);
   A << Ft * F - Ft * E * P * Et * F, reverse_v, reverse_v.transpose(), 30;
-  EXPECT(assert_equal((Matrix )(2.0 * schur + A), actualReduced.matrix()));
+  EXPECT(assert_equal((Matrix )(2.0 * schur + A), actualReduced.selfadjointView()));
 
   // reprojectionErrorAtInfinity
   Unit3 pointAtInfinity(0, 0, 1000);

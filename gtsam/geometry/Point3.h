@@ -51,8 +51,8 @@ class GTSAM_EXPORT Point3 : public Vector3 {
     /// @name Standard Constructors
     /// @{
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     // Deprecated default constructor initializes to zero, in contrast to new behavior below
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     Point3() { setZero(); }
 #endif
 
@@ -179,10 +179,6 @@ Point3 cross(const Point3& p, const Point3& q,
 double dot(const Point3& p, const Point3& q,
            OptionalJacobian<1, 3> H_p = boost::none,
            OptionalJacobian<1, 3> H_q = boost::none);
-
-// Convenience typedef
-typedef std::pair<Point3, Point3> Point3Pair;
-std::ostream &operator<<(std::ostream &os, const gtsam::Point3Pair &p);
 
 template <typename A1, typename A2>
 struct Range;

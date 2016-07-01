@@ -311,7 +311,7 @@ struct traits<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > :
   typedef Eigen::Matrix<double, dimension, dimension> Jacobian;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 
-  static TangentVector Local(Fixed origin, Fixed other,
+  static TangentVector Local(const Fixed& origin, const Fixed& other,
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
     if (H1) (*H1) = -Jacobian::Identity();
     if (H2) (*H2) =  Jacobian::Identity();
@@ -320,7 +320,7 @@ struct traits<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > :
     return result;
   }
 
-  static Fixed Retract(Fixed origin, const TangentVector& v,
+  static Fixed Retract(const Fixed& origin, const TangentVector& v,
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
     if (H1) (*H1) = Jacobian::Identity();
     if (H2) (*H2) = Jacobian::Identity();

@@ -231,9 +231,9 @@ TEST(Rot3, retract_localCoordinates)
 /* ************************************************************************* */
 TEST(Rot3, expmap_logmap)
 {
-  Vector3 d12 = Vector3::Constant(0.1);
+  Vector d12 = Vector3::Constant(0.1);
   Rot3 R2 = R.expmap(d12);
-  EXPECT(assert_equal(d12, (Vector) R.logmap(R2)));
+  EXPECT(assert_equal(d12, R.logmap(R2)));
 }
 
 /* ************************************************************************* */
