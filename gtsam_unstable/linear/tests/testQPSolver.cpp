@@ -367,6 +367,17 @@ TEST_DISABLED(QPSolver, CONT_050) { // Fails with Indeterminant Linear System er
   CHECK(assert_equal(-4.56385090,error_actual, 1e-7))
 }
 
+TEST(QPSolver, QPTEST) { // Fails with Indeterminant Linear System error
+  QP problem = QPSParser("QPTEST.QPS").Parse();
+  GTSAM_PRINT(problem.cost);
+  GTSAM_PRINT(problem.equalities);
+  GTSAM_PRINT(problem.inequalities);
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(0.437187500e01,error_actual, 1e-7))
+}
+
 /* ************************************************************************* */
 // Create Matlab's test graph as in http://www.mathworks.com/help/optim/ug/quadprog.html
 QP createTestMatlabQPEx() {
