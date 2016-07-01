@@ -281,7 +281,7 @@ TEST(QPSolver, HS21) {
   CHECK(assert_equal(expectedSolution, actualSolution))
 }
 
-TEST_DISABLED(QPSolver, HS118) {
+TEST_DISABLED(QPSolver, HS118) { //Fails because of the GTSAM linear system error
   QP problem = QPSParser("HS118.QPS").Parse();
   VectorValues actualSolution;
   VectorValues expectedSolution;
@@ -311,6 +311,61 @@ TEST(QPSolver, HS35MOD) {
   CHECK(assert_equal(2.50000001e-01,error_actual, 1e-7))
 }
 
+TEST(QPSolver, HS51) {
+  QP problem = QPSParser("HS51.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(8.88178420e-16,error_actual, 1e-7))
+}
+
+TEST(QPSolver, HS52) { //Fails on release but not debug
+  QP problem = QPSParser("HS52.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(5.32664756,error_actual, 1e-7))
+}
+
+TEST_DISABLED(QPSolver, HS53) { //Fails because of the GTSAM indeterminant linear system error
+  QP problem = QPSParser("HS53.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(4.09302326,error_actual, 1e-7))
+}
+
+TEST_DISABLED(QPSolver, HS76) { //Fails because of the GTSAM indeterminant linear system
+  QP problem = QPSParser("HS76.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(-4.68181818,error_actual, 1e-7))
+}
+
+TEST_DISABLED(QPSolver, HS268) { // Fails with a very small error
+  QP problem = QPSParser("HS268.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(5.73107049e-07,error_actual, 1e-7))
+}
+
+TEST_DISABLED(QPSolver, AUG2D) { //Fails with Indeterminant Linear System error.
+  QP problem = QPSParser("AUG2D.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(0.168741175e+07,error_actual, 1e-7))
+}
+
+TEST_DISABLED(QPSolver, CONT_050) { // Fails with Indeterminant Linear System error
+  QP problem = QPSParser("CONT-050.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(-4.56385090,error_actual, 1e-7))
+}
 
 /* ************************************************************************* */
 // Create Matlab's test graph as in http://www.mathworks.com/help/optim/ug/quadprog.html

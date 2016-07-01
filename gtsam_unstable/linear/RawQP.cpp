@@ -40,7 +40,10 @@ void RawQP::addColumn(
   std::string var_(at_c < 1 > (vars).begin(), at_c < 1 > (vars).end());
   std::string row_(at_c < 3 > (vars).begin(), at_c < 3 > (vars).end());
   Matrix11 coefficient = at_c < 5 > (vars) * I_1x1;
-
+  if (debug) {
+    std::cout << "Added Column for Var: " << var_ << " Row: " << row_
+        << " Coefficient: " << coefficient << std::endl;
+  }
   if (!varname_to_key.count(var_))
     varname_to_key[var_] = Symbol('X', varNumber++);
   if (row_ == obj_name) {
@@ -48,11 +51,6 @@ void RawQP::addColumn(
     return;
   }
   (*row_to_constraint_v[row_])[row_][varname_to_key[var_]] = coefficient;
-  if (debug) {
-    std::cout << "Added Column for Var: " << var_ << " Row: " << row_
-        << " Coefficient: " << coefficient << std::endl;
-  }
-
 }
 
 void RawQP::addColumnDouble(
