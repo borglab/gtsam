@@ -469,7 +469,7 @@ TriangulationResult triangulateSafe(const std::vector<CAMERA>& cameras,
 
       // Check landmark distance and re-projection errors to avoid outliers
       size_t i = 0;
-      double totalReprojError = 0.0;
+      double maxReprojError = 0.0;
       for(const CAMERA& camera: cameras) {
         const Pose3& pose = camera.pose();
         if (params.landmarkDistanceThreshold > 0
@@ -487,13 +487,13 @@ TriangulationResult triangulateSafe(const std::vector<CAMERA>& cameras,
         if (params.dynamicOutlierRejectionThreshold > 0) {
           const Point2& zi = measured.at(i);
           Point2 reprojectionError(camera.project(point) - zi);
-          totalReprojError += reprojectionError.vector().norm();
+          maxReprojError = std::max(maxReprojError, reprojectionError.vector().norm());
         }
         i += 1;
       }
       // Flag as degenerate if average reprojection error is too large
       if (params.dynamicOutlierRejectionThreshold > 0
-          && totalReprojError / m > params.dynamicOutlierRejectionThreshold)
+          && maxReprojError > params.dynamicOutlierRejectionThreshold)
         return TriangulationResult::Outlier();
 
       // all good!
