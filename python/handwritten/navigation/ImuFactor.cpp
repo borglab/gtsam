@@ -80,15 +80,19 @@ void exportImuFactor() {
   // NOTE(frank): https://mail.python.org/pipermail/cplusplus-sig/2016-January/017362.html
   register_ptr_to_python< boost::shared_ptr<PreintegrationParams> >();
 
-  class_<PreintegrationBase>(
-      "PreintegrationBase",
+  class_<PreintegrationType>(
+#ifdef GTSAM_TANGENT_PREINTEGRATION
+      "TangentPreintegration",
+#else
+      "ManifoldPreintegration",
+#endif
       init<const boost::shared_ptr<PreintegrationParams>&, const imuBias::ConstantBias&>())
-      .def("predict", &PreintegrationBase::predict, predict_overloads())
-      .def("computeError", &PreintegrationBase::computeError)
-      .def("resetIntegration", &PreintegrationBase::resetIntegration)
-      .def("deltaTij", &PreintegrationBase::deltaTij);
+      .def("predict", &PreintegrationType::predict, predict_overloads())
+      .def("computeError", &PreintegrationType::computeError)
+      .def("resetIntegration", &PreintegrationType::resetIntegration)
+      .def("deltaTij", &PreintegrationType::deltaTij);
 
-  class_<PreintegratedImuMeasurements, bases<PreintegrationBase>>(
+  class_<PreintegratedImuMeasurements, bases<PreintegrationType>>(
       "PreintegratedImuMeasurements",
       init<const boost::shared_ptr<PreintegrationParams>&, const imuBias::ConstantBias&>())
       .def(repr(self))

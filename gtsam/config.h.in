@@ -68,3 +68,6 @@
 
 // Support Metis-based nested dissection
 #cmakedefine GTSAM_SUPPORT_NESTED_DISSECTION
+
+// Support Metis-based nested dissection
+#cmakedefine GTSAM_TANGENT_PREINTEGRATION

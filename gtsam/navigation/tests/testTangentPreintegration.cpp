@@ -10,12 +10,12 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testPreintegrationBase.cpp
+ * @file    testTangentPreintegration.cpp
  * @brief   Unit test for the InertialNavFactor
  * @author  Frank Dellaert
  */
 
-#include <gtsam/navigation/PreintegrationBase.h>
+#include <gtsam/navigation/TangentPreintegration.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/nonlinear/expressions.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
@@ -29,7 +29,7 @@
 static const double kDt = 0.1;
 
 Vector9 f(const Vector9& zeta, const Vector3& a, const Vector3& w) {
-  return PreintegrationBase::UpdatePreintegrated(a, w, kDt, zeta);
+  return TangentPreintegration::UpdatePreintegrated(a, w, kDt, zeta);
 }
 
 namespace testing {
@@ -44,8 +44,8 @@ static boost::shared_ptr<PreintegrationParams> Params() {
 }
 
 /* ************************************************************************* */
-TEST(PreintegrationBase, UpdateEstimate1) {
-  PreintegrationBase pim(testing::Params());
+TEST(TangentPreintegration, UpdateEstimate1) {
+  TangentPreintegration pim(testing::Params());
   const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
   Vector9 zeta;
   zeta.setZero();
@@ -58,8 +58,8 @@ TEST(PreintegrationBase, UpdateEstimate1) {
 }
 
 /* ************************************************************************* */
-TEST(PreintegrationBase, UpdateEstimate2) {
-  PreintegrationBase pim(testing::Params());
+TEST(TangentPreintegration, UpdateEstimate2) {
+  TangentPreintegration pim(testing::Params());
   const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
   Vector9 zeta;
   zeta << 0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3;
@@ -73,8 +73,31 @@ TEST(PreintegrationBase, UpdateEstimate2) {
 }
 
 /* ************************************************************************* */
-TEST(PreintegrationBase, computeError) {
-  PreintegrationBase pim(testing::Params());
+TEST(ImuFactor, BiasCorrectionJacobians) {
+  testing::SomeMeasurements measurements;
+
+  boost::function<Vector9(const Vector3&, const Vector3&)> preintegrated =
+      [=](const Vector3& a, const Vector3& w) {
+        TangentPreintegration pim(testing::Params(), Bias(a, w));
+        testing::integrateMeasurements(measurements, &pim);
+        return pim.preintegrated();
+      };
+
+  // Actual pre-integrated values
+  TangentPreintegration pim(testing::Params());
+  testing::integrateMeasurements(measurements, &pim);
+
+  EXPECT(
+      assert_equal(numericalDerivative21(preintegrated, kZero, kZero),
+          pim.preintegrated_H_biasAcc()));
+  EXPECT(
+      assert_equal(numericalDerivative22(preintegrated, kZero, kZero),
+          pim.preintegrated_H_biasOmega(), 1e-3));
+}
+
+/* ************************************************************************* */
+TEST(TangentPreintegration, computeError) {
+  TangentPreintegration pim(testing::Params());
   NavState x1, x2;
   imuBias::ConstantBias bias;
   Matrix9 aH1, aH2;
@@ -82,7 +105,7 @@ TEST(PreintegrationBase, computeError) {
   pim.computeError(x1, x2, bias, aH1, aH2, aH3);
   boost::function<Vector9(const NavState&, const NavState&,
                           const imuBias::ConstantBias&)> f =
-      boost::bind(&PreintegrationBase::computeError, pim, _1, _2, _3,
+      boost::bind(&TangentPreintegration::computeError, pim, _1, _2, _3,
                   boost::none, boost::none, boost::none);
   // NOTE(frank): tolerance of 1e-3 on H1 because approximate away from 0
   EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
@@ -91,47 +114,47 @@ TEST(PreintegrationBase, computeError) {
 }
 
 /* ************************************************************************* */
-TEST(PreintegrationBase, Compose) {
+TEST(TangentPreintegration, Compose) {
   testing::SomeMeasurements measurements;
-  PreintegrationBase pim(testing::Params());
+  TangentPreintegration pim(testing::Params());
   testing::integrateMeasurements(measurements, &pim);
 
   boost::function<Vector9(const Vector9&, const Vector9&)> f =
       [pim](const Vector9& zeta01, const Vector9& zeta12) {
-        return PreintegrationBase::Compose(zeta01, zeta12, pim.deltaTij());
+        return TangentPreintegration::Compose(zeta01, zeta12, pim.deltaTij());
       };
 
   // Expected merge result
-  PreintegrationBase expected_pim02(testing::Params());
+  TangentPreintegration expected_pim02(testing::Params());
   testing::integrateMeasurements(measurements, &expected_pim02);
   testing::integrateMeasurements(measurements, &expected_pim02);
 
   // Actual result
   Matrix9 H1, H2;
-  PreintegrationBase actual_pim02 = pim;
+  TangentPreintegration actual_pim02 = pim;
   actual_pim02.mergeWith(pim, &H1, &H2);
 
   const Vector9 zeta = pim.preintegrated();
   const Vector9 actual_zeta =
-      PreintegrationBase::Compose(zeta, zeta, pim.deltaTij());
+      TangentPreintegration::Compose(zeta, zeta, pim.deltaTij());
   EXPECT(assert_equal(expected_pim02.preintegrated(), actual_zeta, 1e-7));
   EXPECT(assert_equal(numericalDerivative21(f, zeta, zeta), H1, 1e-7));
   EXPECT(assert_equal(numericalDerivative22(f, zeta, zeta), H2, 1e-7));
 }
 
 /* ************************************************************************* */
-TEST(PreintegrationBase, MergedBiasDerivatives) {
+TEST(TangentPreintegration, MergedBiasDerivatives) {
   testing::SomeMeasurements measurements;
 
   auto f = [=](const Vector3& a, const Vector3& w) {
-    PreintegrationBase pim02(testing::Params(), Bias(a, w));
+    TangentPreintegration pim02(testing::Params(), Bias(a, w));
     testing::integrateMeasurements(measurements, &pim02);
     testing::integrateMeasurements(measurements, &pim02);
     return pim02.preintegrated();
   };
 
   // Expected merge result
-  PreintegrationBase expected_pim02(testing::Params());
+  TangentPreintegration expected_pim02(testing::Params());
   testing::integrateMeasurements(measurements, &expected_pim02);
   testing::integrateMeasurements(measurements, &expected_pim02);
 
