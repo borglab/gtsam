@@ -230,7 +230,6 @@ public:
         Z z3 = measured_.at(i);
         if(isnan(z3.vector()[1])){ // .. and the right pixel is invalid
           // delete influence of right point on jacobian Fs
-          std::cout << "unwhitenedError:: isnan(z3->uR()" << z3.vector() << std::endl;
           MatrixZD& Fi = Fs->at(i);
           for(size_t ii=0; ii<Dim; ii++)
             Fi(1,ii) = 0.0;
