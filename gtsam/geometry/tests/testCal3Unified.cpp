@@ -59,7 +59,7 @@ TEST( Cal3Unified, calibrate)
 {
   Point2 pi = K.uncalibrate(p);
   Point2 pn_hat = K.calibrate(pi);
-  CHECK( p.equals(pn_hat, 1e-8));
+  CHECK( traits<Point2>::Equals(p, pn_hat, 1e-8));
 }
 
 Point2 uncalibrate_(const Cal3Unified& k, const Point2& pt) { return k.uncalibrate(pt); }

@@ -13,13 +13,16 @@
  * @file DSFVector.h
  * @date Jun 25, 2010
  * @author Kai Ni
- * @brief A faster implementation for DSF, which uses vector rather than btree. As a result, the size of the forest is prefixed.
+ * @brief A faster implementation for DSF, which uses vector rather than btree.
  */
 
 #pragma once
 
+#include <gtsam/dllexport.h>
 #include <gtsam/global_includes.h>
+
 #include <boost/shared_ptr.hpp>
+
 #include <vector>
 #include <set>
 #include <map>
@@ -41,27 +44,26 @@ private:
   boost::shared_ptr<V> v_;///< Stores parent pointers, representative iff v[i]==i
 
 public:
-  /// constructor that allocate new memory, allows for keys 0...numNodes-1
+  /// Constructor that allocates new memory, allows for keys 0...numNodes-1.
   DSFBase(const size_t numNodes);
 
-  /// constructor that uses the existing memory
+  /// Constructor that uses an existing, pre-allocated vector.
   DSFBase(const boost::shared_ptr<V>& v_in);
 
-  /// find the label of the set in which {key} lives
+  /// Find the label of the set in which {key} lives.
   size_t find(size_t key) const;
 
-  /// Merge two sets
+  /// Merge the sets containing i1 and i2. Does nothing if i1 and i2 are already in the same set.
   void merge(const size_t& i1, const size_t& i2);
 
-  /// @deprecated old name
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   inline size_t findSet(size_t key) const {return find(key);}
-
-  /// @deprecated old name
   inline void makeUnionInPlace(const size_t& i1, const size_t& i2) {return merge(i1,i2);}
+#endif
 };
 
 /**
- * DSFVector additionaly keeps a vector of keys to support more expensive operations
+ * DSFVector additionally keeps a vector of keys to support more expensive operations
  * @addtogroup base
  */
 class GTSAM_EXPORT DSFVector: public DSFBase {
@@ -70,27 +72,27 @@ private:
   std::vector<size_t> keys_; ///< stores keys to support more expensive operations
 
 public:
-  /// constructor that allocate new memory, uses sequential keys 0...numNodes-1
+  /// Constructor that allocates new memory, uses sequential keys 0...numNodes-1.
   DSFVector(const size_t numNodes);
 
-  /// constructor that allocates memory, uses given keys
+  /// Constructor that allocates memory, uses given keys.
   DSFVector(const std::vector<size_t>& keys);
 
-  /// constructor that uses the existing memory
+  /// Constructor that uses existing vectors.
   DSFVector(const boost::shared_ptr<V>& v_in, const std::vector<size_t>& keys);
 
-  // all operations below loop over all keys and hence are *at least* O(n)
+  // All operations below loop over all keys and hence are *at least* O(n)
 
-  /// find whether there is one and only one occurrence for the given {label}
+  /// Find whether there is one and only one occurrence for the given {label}.
   bool isSingleton(const size_t& label) const;
 
-  /// get the nodes in the tree with the given label
+  /// Get the nodes in the tree with the given label
   std::set<size_t> set(const size_t& label) const;
 
-  /// return all sets, i.e. a partition of all elements
+  /// Return all sets, i.e. a partition of all elements.
   std::map<size_t, std::set<size_t> > sets() const;
 
-  /// return all sets, i.e. a partition of all elements
+  /// Return all sets, i.e. a partition of all elements.
   std::map<size_t, std::vector<size_t> > arrays() const;
 };
 

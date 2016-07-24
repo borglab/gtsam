@@ -64,19 +64,14 @@ TEST( AntiFactor, NegativeHessian)
   GaussianFactor::shared_ptr antiGaussian = antiFactor->linearize(values);
   HessianFactor::shared_ptr antiHessian = boost::dynamic_pointer_cast<HessianFactor>(antiGaussian);
 
+  Matrix expected_information = -originalHessian->information();
+  Matrix actual_information = antiHessian->information();
+  EXPECT(assert_equal(expected_information, actual_information));
 
-  // Compare Hessian blocks
-  size_t variable_count = originalFactor->size();
-  for(size_t i = 0; i < variable_count; ++i){
-    for(size_t j = i; j < variable_count; ++j){
-      Matrix expected_G = -Matrix(originalHessian->info(originalHessian->begin()+i, originalHessian->begin()+j));
-      Matrix actual_G = antiHessian->info(antiHessian->begin()+i, antiHessian->begin()+j);
-      CHECK(assert_equal(expected_G, actual_G, 1e-5));
-    }
-    Vector expected_g = -originalHessian->linearTerm(originalHessian->begin()+i);
-    Vector actual_g = antiHessian->linearTerm(antiHessian->begin()+i);
-    CHECK(assert_equal(expected_g, actual_g, 1e-5));
-  }
+  Vector expected_linear = -originalHessian->linearTerm();
+  Vector actual_linear = antiHessian->linearTerm();
+  EXPECT(assert_equal(expected_linear, actual_linear));
+
   double expected_f = -originalHessian->constantTerm();
   double actual_f = antiHessian->constantTerm();
   EXPECT_DOUBLES_EQUAL(expected_f, actual_f, 1e-5);

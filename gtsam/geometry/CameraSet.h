@@ -56,8 +56,7 @@ protected:
     // Project and fill error vector
     Vector b(ZDim * m);
     for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
-      Z e = predicted[i] - measured[i];
-      b.segment<ZDim>(row) = e.vector();
+      b.segment<ZDim>(row) = traits<Z>::Local(measured[i], predicted[i]);
     }
     return b;
   }
@@ -107,7 +106,8 @@ public:
 
     // Allocate result
     size_t m = this->size();
-    std::vector<Z> z(m);
+    std::vector<Z> z;
+    z.reserve(m);
 
     // Allocate derivatives
     if (E) E->resize(ZDim * m, N);
@@ -117,7 +117,7 @@ public:
     for (size_t i = 0; i < m; i++) {
       MatrixZD Fi;
       Eigen::Matrix<double, ZDim, N> Ei;
-      z[i] = this->at(i).project2(point, Fs ? &Fi : 0, E ? &Ei : 0);
+      z.emplace_back(this->at(i).project2(point, Fs ? &Fi : 0, E ? &Ei : 0));
       if (Fs) (*Fs)[i] = Fi;
       if (E) E->block<ZDim, N>(ZDim * i, 0) = Ei;
     }
@@ -157,28 +157,29 @@ public:
     for (size_t i = 0; i < m; i++) { // for each camera
 
       const MatrixZD& Fi = Fs[i];
+      const auto FiT = Fi.transpose();
       const Eigen::Matrix<double, ZDim, N> Ei_P = //
           E.block(ZDim * i, 0, ZDim, N) * P;
 
       // D = (Dx2) * ZDim
-      augmentedHessian(i, m) = Fi.transpose() * b.segment<ZDim>(ZDim * i) // F' * b
-      - Fi.transpose() * (Ei_P * (E.transpose() * b)); // D = (DxZDim) * (ZDimx3) * (N*ZDimm) * (ZDimm x 1)
+      augmentedHessian.setOffDiagonalBlock(i, m, FiT * b.segment<ZDim>(ZDim * i) // F' * b
+      - FiT * (Ei_P * (E.transpose() * b))); // D = (DxZDim) * (ZDimx3) * (N*ZDimm) * (ZDimm x 1)
 
       // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
-      augmentedHessian(i, i) = Fi.transpose()
-          * (Fi - Ei_P * E.block(ZDim * i, 0, ZDim, N).transpose() * Fi);
+      augmentedHessian.setDiagonalBlock(i, FiT
+          * (Fi - Ei_P * E.block(ZDim * i, 0, ZDim, N).transpose() * Fi));
 
       // upper triangular part of the hessian
       for (size_t j = i + 1; j < m; j++) { // for each camera
         const MatrixZD& Fj = Fs[j];
 
         // (DxD) = (Dx2) * ( (2x2) * (2xD) )
-        augmentedHessian(i, j) = -Fi.transpose()
-            * (Ei_P * E.block(ZDim * j, 0, ZDim, N).transpose() * Fj);
+        augmentedHessian.setOffDiagonalBlock(i, j, -FiT
+            * (Ei_P * E.block(ZDim * j, 0, ZDim, N).transpose() * Fj));
       }
     } // end of for over cameras
 
-    augmentedHessian(m, m)(0, 0) += b.squaredNorm();
+    augmentedHessian.diagonalBlock(m)(0, 0) += b.squaredNorm();
     return augmentedHessian;
   }
 
@@ -252,8 +253,6 @@ public:
     // G = F' * F - F' * E * P * E' * F
     // g = F' * (b - E * P * E' * b)
 
-    Eigen::Matrix<double, D, D> matrixBlock;
-
     // a single point is observed in m cameras
     size_t m = Fs.size(); // cameras observing current point
     size_t M = (augmentedHessian.rows() - 1) / D; // all cameras in the group
@@ -263,6 +262,7 @@ public:
     for (size_t i = 0; i < m; i++) { // for each camera in the current factor
 
       const MatrixZD& Fi = Fs[i];
+      const auto FiT = Fi.transpose();
       const Eigen::Matrix<double, 2, N> Ei_P = E.template block<ZDim, N>(
           ZDim * i, 0) * P;
 
@@ -275,17 +275,15 @@ public:
       // information vector - store previous vector
       // vectorBlock = augmentedHessian(aug_i, aug_m).knownOffDiagonal();
       // add contribution of current factor
-      augmentedHessian(aug_i, M) = augmentedHessian(aug_i, M).knownOffDiagonal()
-          + Fi.transpose() * b.segment<ZDim>(ZDim * i) // F' * b
-      - Fi.transpose() * (Ei_P * (E.transpose() * b)); // D = (DxZDim) * (ZDimx3) * (N*ZDimm) * (ZDimm x 1)
+      augmentedHessian.updateOffDiagonalBlock(aug_i, M,
+          FiT * b.segment<ZDim>(ZDim * i)      // F' * b
+        - FiT * (Ei_P * (E.transpose() * b))); // D = (DxZDim) * (ZDimx3) * (N*ZDimm) * (ZDimm x 1)
 
-      // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
-      // main block diagonal - store previous block
-      matrixBlock = augmentedHessian(aug_i, aug_i);
+      // (DxD) += (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
       // add contribution of current factor
-      augmentedHessian(aug_i, aug_i) = matrixBlock
-          + (Fi.transpose()
-              * (Fi - Ei_P * E.template block<ZDim, N>(ZDim * i, 0).transpose() * Fi));
+      // TODO(gareth): Eigen doesn't let us pass the expression. Call eval() for now...
+      augmentedHessian.updateDiagonalBlock(aug_i,
+         ((FiT * (Fi - Ei_P * E.template block<ZDim, N>(ZDim * i, 0).transpose() * Fi))).eval());
 
       // upper triangular part of the hessian
       for (size_t j = i + 1; j < m; j++) { // for each camera
@@ -297,14 +295,12 @@ public:
         // off diagonal block - store previous block
         // matrixBlock = augmentedHessian(aug_i, aug_j).knownOffDiagonal();
         // add contribution of current factor
-        augmentedHessian(aug_i, aug_j) =
-            augmentedHessian(aug_i, aug_j).knownOffDiagonal()
-                - Fi.transpose()
-                    * (Ei_P * E.template block<ZDim, N>(ZDim * j, 0).transpose() * Fj);
+        augmentedHessian.updateOffDiagonalBlock(aug_i, aug_j,
+                -FiT * (Ei_P * E.template block<ZDim, N>(ZDim * j, 0).transpose() * Fj));
       }
     } // end of for over cameras
 
-    augmentedHessian(M, M)(0, 0) += b.squaredNorm();
+    augmentedHessian.diagonalBlock(M)(0, 0) += b.squaredNorm();
   }
 
 private:

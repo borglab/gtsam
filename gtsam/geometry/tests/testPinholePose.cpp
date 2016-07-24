@@ -124,12 +124,12 @@ TEST( PinholePose, backproject2)
   Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera1 looking down
   Camera camera(Pose3(rot, origin), K);
 
-  Point3 actual = camera.backproject(Point2(), 1.);
+  Point3 actual = camera.backproject(Point2(0,0), 1.);
   Point3 expected(0., 1., 0.);
   pair<Point2, bool> x = camera.projectSafe(expected);
 
   EXPECT(assert_equal(expected, actual));
-  EXPECT(assert_equal(Point2(), x.first));
+  EXPECT(assert_equal(Point2(0,0), x.first));
   EXPECT(x.second);
 }
 
@@ -212,7 +212,7 @@ TEST( PinholePose, range0) {
   double result = camera.range(point1, D1, D2);
   Matrix expectedDcamera = numericalDerivative21(range0, camera, point1);
   Matrix expectedDpoint = numericalDerivative22(range0, camera, point1);
-  EXPECT_DOUBLES_EQUAL(distance(point1, camera.pose().translation()), result, 1e-9);
+  EXPECT_DOUBLES_EQUAL(distance3(point1, camera.pose().translation()), result, 1e-9);
   EXPECT(assert_equal(expectedDcamera, D1, 1e-7));
   EXPECT(assert_equal(expectedDpoint, D2, 1e-7));
 }

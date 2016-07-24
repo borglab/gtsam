@@ -189,7 +189,7 @@ public:
 
     bool areMeasurementsEqual = true;
     for (size_t i = 0; i < measured_.size(); i++) {
-      if (this->measured_.at(i).equals(e->measured_.at(i), tol) == false)
+      if (traits<Z>::Equals(this->measured_.at(i), e->measured_.at(i), tol) == false)
         areMeasurementsEqual = false;
       break;
     }

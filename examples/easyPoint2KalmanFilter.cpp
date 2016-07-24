@@ -70,7 +70,7 @@ int main() {
 
   // Predict the new value with the EKF class
   Point2 x1_predict = ekf.predict(factor1);
-  x1_predict.print("X1 Predict");
+  traits<Point2>::Print(x1_predict, "X1 Predict");
 
 
 
@@ -91,7 +91,7 @@ int main() {
 
   // Update the Kalman Filter with the measurement
   Point2 x1_update = ekf.update(factor2);
-  x1_update.print("X1 Update");
+  traits<Point2>::Print(x1_update, "X1 Update");
 
 
 
@@ -101,13 +101,13 @@ int main() {
   difference = Point2(1,0);
   BetweenFactor<Point2> factor3(x1, x2, difference, Q);
   Point2 x2_predict = ekf.predict(factor1);
-  x2_predict.print("X2 Predict");
+  traits<Point2>::Print(x2_predict, "X2 Predict");
 
   // Update
   Point2 z2(2.0, 0.0);
   PriorFactor<Point2> factor4(x2, z2, R);
   Point2 x2_update = ekf.update(factor4);
-  x2_update.print("X2 Update");
+  traits<Point2>::Print(x2_update, "X2 Update");
 
 
 
@@ -117,13 +117,13 @@ int main() {
   difference = Point2(1,0);
   BetweenFactor<Point2> factor5(x2, x3, difference, Q);
   Point2 x3_predict = ekf.predict(factor5);
-  x3_predict.print("X3 Predict");
+  traits<Point2>::Print(x3_predict, "X3 Predict");
 
   // Update
   Point2 z3(3.0, 0.0);
   PriorFactor<Point2> factor6(x3, z3, R);
   Point2 x3_update = ekf.update(factor6);
-  x3_update.print("X3 Update");
+  traits<Point2>::Print(x3_update, "X3 Update");
 
   return 0;
 }

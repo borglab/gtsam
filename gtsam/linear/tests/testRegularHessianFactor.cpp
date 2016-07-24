@@ -128,9 +128,8 @@ TEST(RegularHessianFactor, Constructors)
   EXPECT(assert_equal(2*expected_y, fast_y));
 
   // check some expressions
-  EXPECT(assert_equal(G12,factor.info(i1,i2).knownOffDiagonal()));
-  EXPECT(assert_equal(G22,factor.info(i2,i2).selfadjointView()));
-  EXPECT(assert_equal((Matrix)G12.transpose(),factor.info(i2,i1).knownOffDiagonal()));
+  EXPECT(assert_equal(G12,factor.info().aboveDiagonalBlock(i1 - factor.begin(), i2 - factor.begin())));
+  EXPECT(assert_equal(G22,factor.info().diagonalBlock(i2 - factor.begin())));
   }
 }
 

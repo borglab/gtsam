@@ -51,32 +51,42 @@ SymmetricBlockMatrix SymmetricBlockMatrix::LikeActiveViewOf(
 }
 
 /* ************************************************************************* */
-VerticalBlockMatrix SymmetricBlockMatrix::choleskyPartial(
-    DenseIndex nFrontals) {
-  // Do dense elimination
-  if (blockStart() != 0)
-    throw std::invalid_argument(
-        "Can only do Cholesky when the SymmetricBlockMatrix is not a restricted view, i.e. when blockStart == 0.");
-  if (!gtsam::choleskyPartial(matrix_, offset(nFrontals)))
+Matrix SymmetricBlockMatrix::block(DenseIndex I, DenseIndex J) const {
+  if (I == J) {
+    return diagonalBlock(I);
+  } else if (I < J) {
+    return aboveDiagonalBlock(I, J);
+  } else {
+    return aboveDiagonalBlock(J, I).transpose();
+  }
+}
+
+/* ************************************************************************* */
+void SymmetricBlockMatrix::choleskyPartial(DenseIndex nFrontals) {
+  gttic(VerticalBlockMatrix_choleskyPartial);
+  DenseIndex topleft = variableColOffsets_[blockStart_];
+  if (!gtsam::choleskyPartial(matrix_, offset(nFrontals) - topleft, topleft))
     throw CholeskyFailed();
+}
 
-  // Split conditional
+/* ************************************************************************* */
+VerticalBlockMatrix SymmetricBlockMatrix::split(DenseIndex nFrontals) {
+  gttic(VerticalBlockMatrix_split);
 
-  // Create one big conditionals with many frontal variables.
-  gttic(Construct_conditional);
-  const size_t varDim = offset(nFrontals);
-  VerticalBlockMatrix Ab = VerticalBlockMatrix::LikeActiveViewOf(*this, varDim);
-  Ab.full() = matrix_.topRows(varDim);
-  Ab.full().triangularView<Eigen::StrictlyLower>().setZero();
-  gttoc(Construct_conditional);
+  // Construct a VerticalBlockMatrix that contains [R Sd]
+  const size_t n1 = offset(nFrontals);
+  VerticalBlockMatrix RSd = VerticalBlockMatrix::LikeActiveViewOf(*this, n1);
 
-  gttic(Remaining_factor);
+  // Copy into it.
+  RSd.full() = matrix_.topRows(n1);
+  RSd.full().triangularView<Eigen::StrictlyLower>().setZero();
+
   // Take lower-right block of Ab_ to get the remaining factor
   blockStart() = nFrontals;
-  gttoc(Remaining_factor);
 
-  return Ab;
+  return RSd;
 }
+
 /* ************************************************************************* */
 
 } //\ namespace gtsam

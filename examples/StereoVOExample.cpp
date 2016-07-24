@@ -67,7 +67,7 @@ int main(int argc, char** argv){
   initial_estimate.insert(5, Point3(0, -0.5, 5));
 
   //create Levenberg-Marquardt optimizer for resulting factor graph, optimize
-  LevenbergMarquardtOptimizer optimizer = LevenbergMarquardtOptimizer(graph, initial_estimate);
+  LevenbergMarquardtOptimizer optimizer(graph, initial_estimate);
   Values result = optimizer.optimize();
 
   result.print("Final result:\n");

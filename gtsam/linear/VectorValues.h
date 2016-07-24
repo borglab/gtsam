@@ -17,11 +17,12 @@
 
 #pragma once
 
+#include <gtsam/linear/Scatter.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/ConcurrentMap.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/global_includes.h>
-#include <gtsam/inference/Ordering.h>
 
 #include <boost/shared_ptr.hpp>
 
@@ -124,8 +125,11 @@ namespace gtsam {
     template<typename ITERATOR>
     VectorValues(ITERATOR first, ITERATOR last) : values_(first, last) {}
 
-    /** Constructor from Vector. */
+    /// Constructor from Vector, with Dims
     VectorValues(const Vector& c, const Dims& dims);
+
+    /// Constructor from Vector, with Scatter
+    VectorValues(const Vector& c, const Scatter& scatter);
 
     /** Create a VectorValues with the same structure as \c other, but filled with zeros. */
     static VectorValues Zero(const VectorValues& other);

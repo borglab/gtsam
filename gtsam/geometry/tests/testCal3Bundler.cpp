@@ -52,7 +52,7 @@ TEST( Cal3Bundler, calibrate )
   Point2 pn(0.5, 0.5);
   Point2 pi = K.uncalibrate(pn);
   Point2 pn_hat = K.calibrate(pi);
-  CHECK( pn.equals(pn_hat, 1e-5));
+  CHECK( traits<Point2>::Equals(pn, pn_hat, 1e-5));
 }
 
 /* ************************************************************************* */

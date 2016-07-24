@@ -50,9 +50,15 @@ struct GTSAM_EXPORT SlotEntry {
  */
 class Scatter : public FastVector<SlotEntry> {
  public:
-  /// Constructor
+  /// Default Constructor
+  Scatter() {}
+
+  /// Construct from gaussian factor graph, with optional (partial or complete) ordering
   Scatter(const GaussianFactorGraph& gfg,
           boost::optional<const Ordering&> ordering = boost::none);
+
+  /// Add a key/dim pair
+  void add(Key key, size_t dim);
 
  private:
 

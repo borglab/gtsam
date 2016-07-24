@@ -15,7 +15,7 @@ void exportLevenbergMarquardtOptimizer() {
       .def_readwrite("maxIterations", &GaussNewtonParams::maxIterations)
       .def_readwrite("relativeErrorTol", &GaussNewtonParams::relativeErrorTol);
 
-  class_<GaussNewtonOptimizer>(
+  class_<GaussNewtonOptimizer, boost::noncopyable>(
       "GaussNewtonOptimizer",
       init<const NonlinearFactorGraph&, const Values&, const GaussNewtonParams&>())
       .def("optimize", &GaussNewtonOptimizer::optimize,
@@ -31,7 +31,7 @@ void exportLevenbergMarquardtOptimizer() {
       .def("setUseFixedLambdaFactor", &LevenbergMarquardtParams::setUseFixedLambdaFactor)
       .def("setVerbosityLM", &LevenbergMarquardtParams::setVerbosityLM);
 
-  class_<LevenbergMarquardtOptimizer>(
+  class_<LevenbergMarquardtOptimizer, boost::noncopyable>(
       "LevenbergMarquardtOptimizer",
       init<const NonlinearFactorGraph&, const Values&, const LevenbergMarquardtParams&>())
       .def("optimize", &LevenbergMarquardtOptimizer::optimize,

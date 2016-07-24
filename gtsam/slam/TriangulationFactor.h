@@ -78,12 +78,11 @@ public:
       bool verboseCheirality = false) :
       Base(model, pointKey), camera_(camera), measured_(measured), throwCheirality_(
           throwCheirality), verboseCheirality_(verboseCheirality) {
-    if (model && model->dim() != Measurement::dimension)
+    if (model && model->dim() != traits<Measurement>::dimension)
       throw std::invalid_argument(
           "TriangulationFactor must be created with "
-              + boost::lexical_cast<std::string>((int) Measurement::dimension)
+              + boost::lexical_cast<std::string>((int) traits<Measurement>::dimension)
               + "-dimensional noise model.");
-
   }
 
   /** Virtual destructor */
@@ -105,7 +104,7 @@ public:
       DefaultKeyFormatter) const {
     std::cout << s << "TriangulationFactor,";
     camera_.print("camera");
-    measured_.print("z");
+    traits<Measurement>::Print(measured_, "z");
     Base::print("", keyFormatter);
   }
 
@@ -113,25 +112,24 @@ public:
   virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*>(&p);
     return e && Base::equals(p, tol) && this->camera_.equals(e->camera_, tol)
-        && this->measured_.equals(e->measured_, tol);
+        && traits<Measurement>::Equals(this->measured_, e->measured_, tol);
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(const Point3& point, boost::optional<Matrix&> H2 =
       boost::none) const {
     try {
-      Measurement error(camera_.project2(point, boost::none, H2) - measured_);
-      return error.vector();
+      return traits<Measurement>::Local(measured_, camera_.project2(point, boost::none, H2));
     } catch (CheiralityException& e) {
       if (H2)
-        *H2 = Matrix::Zero(Measurement::dimension, 3);
+        *H2 = Matrix::Zero(traits<Measurement>::dimension, 3);
       if (verboseCheirality_)
         std::cout << e.what() << ": Landmark "
             << DefaultKeyFormatter(this->key()) << " moved behind camera"
             << std::endl;
       if (throwCheirality_)
         throw e;
-      return Eigen::Matrix<double,Measurement::dimension,1>::Constant(2.0 * camera_.calibration().fx());
+      return Eigen::Matrix<double,traits<Measurement>::dimension,1>::Constant(2.0 * camera_.calibration().fx());
     }
   }
 
@@ -153,14 +151,14 @@ public:
     // Allocate memory for Jacobian factor, do only once
     if (Ab.rows() == 0) {
       std::vector<size_t> dimensions(1, 3);
-      Ab = VerticalBlockMatrix(dimensions, Measurement::dimension, true);
-      A.resize(Measurement::dimension,3);
-      b.resize(Measurement::dimension);
+      Ab = VerticalBlockMatrix(dimensions, traits<Measurement>::dimension, true);
+      A.resize(traits<Measurement>::dimension,3);
+      b.resize(traits<Measurement>::dimension);
     }
 
     // Would be even better if we could pass blocks to project
     const Point3& point = x.at<Point3>(key());
-    b = -(camera_.project2(point, boost::none, A) - measured_).vector();
+    b = traits<Measurement>::Local(camera_.project2(point, boost::none, A), measured_);
     if (noiseModel_)
       this->noiseModel_->WhitenSystem(A, b);
 

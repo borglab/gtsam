@@ -30,10 +30,10 @@ using namespace gtsam;
 GTSAM_CONCEPT_MANIFOLD_INST(CalibratedCamera)
 
 // Camera situated at 0.5 meters high, looking down
-static const Pose3 pose1(Rot3(Vector3(1, -1, -1).asDiagonal()),
+static const Pose3 kDefaultPose(Rot3(Vector3(1, -1, -1).asDiagonal()),
                          Point3(0, 0, 0.5));
 
-static const CalibratedCamera camera(pose1);
+static const CalibratedCamera camera(kDefaultPose);
 
 static const Point3 point1(-0.08,-0.08, 0.0);
 static const Point3 point2(-0.08, 0.08, 0.0);
@@ -43,7 +43,19 @@ static const Point3 point4( 0.08,-0.08, 0.0);
 /* ************************************************************************* */
 TEST( CalibratedCamera, constructor)
 {
-  CHECK(assert_equal( camera.pose(), pose1));
+  CHECK(assert_equal( camera.pose(), kDefaultPose));
+}
+
+//******************************************************************************
+TEST(CalibratedCamera, Create) {
+  Matrix actualH;
+  EXPECT(assert_equal(camera, CalibratedCamera::Create(kDefaultPose, actualH)));
+
+  // Check derivative
+  boost::function<CalibratedCamera(Pose3)> f =  //
+      boost::bind(CalibratedCamera::Create, _1, boost::none);
+  Matrix numericalH = numericalDerivative11<CalibratedCamera, Pose3>(f, kDefaultPose);
+  EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }
 
 /* ************************************************************************* */
@@ -131,8 +143,8 @@ TEST( CalibratedCamera, Dproject_point_pose)
 // Add a test with more arbitrary rotation
 TEST( CalibratedCamera, Dproject_point_pose2)
 {
-  static const Pose3 pose1(Rot3::Ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
-  static const CalibratedCamera camera(pose1);
+  static const Pose3 kDefaultPose(Rot3::Ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
+  static const CalibratedCamera camera(kDefaultPose);
   Matrix Dpose, Dpoint;
   camera.project(point1, Dpose, Dpoint);
   Matrix numerical_pose  = numericalDerivative21(project2, camera, point1);
@@ -152,7 +164,7 @@ TEST( CalibratedCamera, Dproject_point_pose_infinity)
   Point2 result = camera.project2(pointAtInfinity, Dpose, Dpoint);
   Matrix numerical_pose  = numericalDerivative21(projectAtInfinity, camera, pointAtInfinity);
   Matrix numerical_point = numericalDerivative22(projectAtInfinity, camera, pointAtInfinity);
-  CHECK(assert_equal(Point2(), result));
+  CHECK(assert_equal(Point2(0,0), result));
   CHECK(assert_equal(numerical_pose,  Dpose, 1e-7));
   CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
 }
@@ -161,8 +173,8 @@ TEST( CalibratedCamera, Dproject_point_pose_infinity)
 // Add a test with more arbitrary rotation
 TEST( CalibratedCamera, Dproject_point_pose2_infinity)
 {
-  static const Pose3 pose1(Rot3::Ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
-  static const CalibratedCamera camera(pose1);
+  static const Pose3 pose(Rot3::Ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
+  static const CalibratedCamera camera(pose);
   Matrix Dpose, Dpoint;
   camera.project2(pointAtInfinity, Dpose, Dpoint);
   Matrix numerical_pose  = numericalDerivative21(projectAtInfinity, camera, pointAtInfinity);

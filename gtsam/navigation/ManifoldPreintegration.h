@@ -75,7 +75,7 @@ public:
   /// @{
   NavState deltaXij() const override { return deltaXij_; }
   Rot3     deltaRij() const override { return deltaXij_.attitude(); }
-  Vector3  deltaPij() const override { return deltaXij_.position().vector(); }
+  Vector3  deltaPij() const override { return deltaXij_.position(); }
   Vector3  deltaVij() const override { return deltaXij_.velocity(); }
 
   Matrix3  delRdelBiasOmega() const { return delRdelBiasOmega_; }

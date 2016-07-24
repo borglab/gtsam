@@ -222,8 +222,7 @@ TEST (EssentialMatrixFactor2, factor) {
     // Check evaluation
     Point3 P1 = data.tracks[i].p, P2 = data.cameras[1].pose().transform_to(P1);
     const Point2 pi = PinholeBase::Project(P2);
-    Point2 reprojectionError(pi - pB(i));
-    Vector expected = reprojectionError.vector();
+    Point2 expected(pi - pB(i));
 
     Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());
@@ -296,8 +295,7 @@ TEST (EssentialMatrixFactor3, factor) {
     // Check evaluation
     Point3 P1 = data.tracks[i].p;
     const Point2 pi = camera2.project(P1);
-    Point2 reprojectionError(pi - pB(i));
-    Vector expected = reprojectionError.vector();
+    Point2 expected(pi - pB(i));
 
     Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());
@@ -438,8 +436,7 @@ TEST (EssentialMatrixFactor2, extraTest) {
     // Check evaluation
     Point3 P1 = data.tracks[i].p;
     const Point2 pi = camera2.project(P1);
-    Point2 reprojectionError(pi - pB(i));
-    Vector expected = reprojectionError.vector();
+    Point2 expected(pi - pB(i));
 
     Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());
@@ -507,8 +504,7 @@ TEST (EssentialMatrixFactor3, extraTest) {
     // Check evaluation
     Point3 P1 = data.tracks[i].p;
     const Point2 pi = camera2.project(P1);
-    Point2 reprojectionError(pi - pB(i));
-    Vector expected = reprojectionError.vector();
+    Point2 expected(pi - pB(i));
 
     Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());

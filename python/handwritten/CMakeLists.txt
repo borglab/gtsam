@@ -18,6 +18,13 @@ set_target_properties(gtsam_python PROPERTIES
 	SKIP_BUILD_RPATH              TRUE
 	CLEAN_DIRECT_OUTPUT           1
 )
+
+target_include_directories(gtsam_python SYSTEM PUBLIC ${EIGEN3_INCLUDE_DIR})
+target_include_directories(gtsam_python SYSTEM PUBLIC ${NUMPY_INCLUDE_DIRS})
+target_include_directories(gtsam_python SYSTEM PUBLIC ${PYTHON_INCLUDE_DIRS})
+target_include_directories(gtsam_python SYSTEM PUBLIC ${Boost_INCLUDE_DIRS})
+target_include_directories(gtsam_python SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/)
+
 target_link_libraries(gtsam_python
                       ${Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_LIBRARY}
                       ${PYTHON_LIBRARY} gtsam)

@@ -180,7 +180,7 @@ inline boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph(
       new NonlinearFactorGraph);
 
   // prior on x1
-  Point2 mu;
+  Point2 mu(0,0);
   shared_nlf f1(new simulated2D::Prior(mu, sigma0_1, X(1)));
   nlfg->push_back(f1);
 
@@ -337,7 +337,7 @@ struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
 
   Vector evaluateError(const Point2& x, boost::optional<Matrix&> A = boost::none) const {
     if (A) *A = H(x);
-    return (h(x) - z_).vector();
+    return (h(x) - z_);
   }
 
 };
@@ -593,11 +593,11 @@ inline boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
   Values zeros;
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)
-      zeros.insert(key(x, y), Point2());
+      zeros.insert(key(x, y), Point2(0,0));
   VectorValues xtrue;
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)
-      xtrue.insert(key(x, y), Point2((double)x, (double)y).vector());
+      xtrue.insert(key(x, y), Point2((double)x, (double)y));
 
   // linearize around zero
   boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros);

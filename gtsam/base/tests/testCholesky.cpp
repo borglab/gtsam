@@ -23,10 +23,23 @@ using namespace gtsam;
 using namespace std;
 
 /* ************************************************************************* */
-TEST(cholesky, choleskyPartial) {
+TEST(cholesky, choleskyPartial0) {
 
   // choleskyPartial should only use the upper triangle, so this represents a
   // symmetric matrix.
+  Matrix ABC(3,3);
+  ABC <<  4.0375,   3.4584,   3.5735,
+          0.,       4.7267,   3.8423,
+          0.,       0.,       5.1600;
+
+  // Test passing 0 frontals to partialCholesky
+  Matrix RSL(ABC);
+  choleskyPartial(RSL, 0);
+  EXPECT(assert_equal(ABC, RSL, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(cholesky, choleskyPartial) {
   Matrix ABC = (Matrix(7,7) <<
                       4.0375,   3.4584,   3.5735,   2.4815,   2.1471,   2.7400,   2.2063,
                           0.,   4.7267,   3.8423,   2.3624,   2.8091,   2.9579,   2.5914,

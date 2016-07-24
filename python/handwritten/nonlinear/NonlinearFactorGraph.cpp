@@ -40,12 +40,15 @@ void exportNonlinearFactorGraph(){
   typedef NonlinearFactorGraph::sharedFactor sharedFactor;
 
   void (NonlinearFactorGraph::*push_back1)(const sharedFactor&) = &NonlinearFactorGraph::push_back;
+  void (NonlinearFactorGraph::*push_back2)(const NonlinearFactorGraph&) = &NonlinearFactorGraph::push_back;
   void (NonlinearFactorGraph::*add1)(const sharedFactor&) = &NonlinearFactorGraph::add;
 
   class_<NonlinearFactorGraph>("NonlinearFactorGraph", init<>())
     .def("size",&NonlinearFactorGraph::size)
     .def("push_back", push_back1)
+    .def("push_back", push_back2)
     .def("add", add1)
+    .def("error",  &NonlinearFactorGraph::error)
     .def("resize", &NonlinearFactorGraph::resize)
     .def("empty", &NonlinearFactorGraph::empty)
     .def("print", &NonlinearFactorGraph::print, print_overloads(args("s")))
