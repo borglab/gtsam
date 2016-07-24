@@ -27,6 +27,7 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/RegularHessianFactor.h>
 #include <gtsam/geometry/CameraSet.h>
+#include <gtsam/geometry/StereoPoint2.h>
 
 #include <boost/optional.hpp>
 #include <boost/serialization/optional.hpp>
@@ -208,6 +209,27 @@ public:
         Matrix J(6, 6);
         Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
         Fs->at(i) = Fs->at(i) * J;
+      }
+    }
+
+    static const int Np = FixedDimension<POINT>::value; // 2 (Unit3) or 3 (Point3)
+
+    // when using stereo cameras, some of the measurements might be missing:
+    for(size_t i=0; i < Fs->size(); i++){
+      if(ZDim == 3){ // it's a stereo point ..
+        Z z3 = measured_.at(i);
+        if(isnan(z3.vector()[1])){ // .. and the right pixel is invalid
+          // delete influence of right point on jacobian Fs
+          std::cout << "unwhitenedError:: isnan(z3->uR()" << z3.vector() << std::endl;
+          MatrixZD& Fi = Fs->at(i);
+          for(size_t ii=0; ii<Dim; ii++)
+            Fi(1,ii) = 0.0;
+
+          // delete influence of right point on jacobian E
+          E->block<1, Np>(ZDim * i + 1, 0) = Matrix::Zero(1, Np);
+          // set to zero entry from vector ue
+          ue(ZDim * i + 1) = 0.0; // this should not matter anyway
+        }
       }
     }
     return ue;

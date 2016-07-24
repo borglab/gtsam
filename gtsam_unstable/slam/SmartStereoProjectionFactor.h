@@ -257,8 +257,10 @@ public:
       const StereoPoint2 zi = measured_[i];
       monoCameras.push_back(leftCamera_i);
       monoMeasured.push_back(Point2(zi.uL(),zi.v()));
-      monoCameras.push_back(rightCamera_i);
-      monoMeasured.push_back(Point2(zi.uR(),zi.v()));
+      if(!isnan(zi.uR())){ // if right point is valid
+        monoCameras.push_back(rightCamera_i);
+        monoMeasured.push_back(Point2(zi.uR(),zi.v()));
+      }
     }
     if (retriangulate)
       result_ = gtsam::triangulateSafe(monoCameras, monoMeasured,
