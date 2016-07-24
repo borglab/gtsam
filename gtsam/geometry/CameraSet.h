@@ -56,7 +56,11 @@ protected:
     // Project and fill error vector
     Vector b(ZDim * m);
     for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
-      b.segment<ZDim>(row) = traits<Z>::Local(measured[i], predicted[i]);
+      Vector bi = traits<Z>::Local(measured[i], predicted[i]);
+      if(ZDim==3 && std::isnan(bi(1))){ // compensate for the case in which the right pixel in a stereoPoint is missing (nan)
+        bi(1) = 0;
+      }
+      b.segment<ZDim>(row) = bi;
     }
     return b;
   }

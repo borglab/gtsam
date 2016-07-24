@@ -150,6 +150,61 @@ TEST_UNSAFE( SmartStereoProjectionPoseFactor, noiseless ) {
 }
 
 /* *************************************************************************/
+TEST( SmartProjectionPoseFactor, noiselessWithMissingMeasurements ) {
+
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+   Pose3 level_pose = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
+       Point3(0, 0, 1));
+   StereoCamera level_camera(level_pose, K2);
+
+   // create second camera 1 meter to the right of first camera
+   Pose3 level_pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
+   StereoCamera level_camera_right(level_pose_right, K2);
+
+   // landmark ~5 meters in front of camera
+   Point3 landmark(5, 0.5, 1.2);
+
+   // 1. Project two landmarks into two cameras and triangulate
+   StereoPoint2 level_uv = level_camera.project(landmark);
+   StereoPoint2 level_uv_right = level_camera_right.project(landmark);
+   double missing_uR = std::numeric_limits<double>::quiet_NaN();
+   StereoPoint2 level_uv_right_missing(level_uv_right.uL(),missing_uR,level_uv_right.v());
+
+   Values values;
+   values.insert(x1, level_pose);
+   values.insert(x2, level_pose_right);
+
+   SmartStereoProjectionPoseFactor factor1(model);
+   factor1.add(level_uv, x1, K2);
+   factor1.add(level_uv_right_missing, x2, K2);
+
+   double actualError = factor1.error(values);
+   double expectedError = 0.0;
+   EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
+
+   // TEST TRIANGULATION WITH MISSING VALUES: i) right pixel of second camera is missing:
+   SmartStereoProjectionPoseFactor::Cameras cameras = factor1.cameras(values);
+   double actualError2 = factor1.totalReprojectionError(cameras);
+   EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
+
+   CameraSet<StereoCamera> cams;
+   cams += level_camera;
+   cams += level_camera_right;
+   TriangulationResult result = factor1.triangulateSafe(cams);
+   CHECK(result);
+   EXPECT(assert_equal(landmark, *result, 1e-7));
+
+   // TEST TRIANGULATION WITH MISSING VALUES: ii) right pixels of both cameras are missing:
+   SmartStereoProjectionPoseFactor factor2(model);
+   StereoPoint2 level_uv_missing(level_uv.uL(),missing_uR,level_uv.v());
+   factor2.add(level_uv_missing, x1, K2);
+   factor2.add(level_uv_right_missing, x2, K2);
+   result = factor2.triangulateSafe(cams);
+   CHECK(result);
+   EXPECT(assert_equal(landmark, *result, 1e-7));
+}
+
+/* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, noisy ) {
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 level_pose = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
