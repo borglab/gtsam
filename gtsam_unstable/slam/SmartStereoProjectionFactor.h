@@ -155,6 +155,11 @@ public:
   /// Vector of cameras
   typedef CameraSet<StereoCamera> Cameras;
 
+  /// Vector of monocular cameras (stereo treated as 2 monocular)
+  typedef PinholeCamera<Cal3_S2> MonoCamera;
+  typedef CameraSet<MonoCamera> MonoCameras;
+  typedef std::vector<Point2> MonoMeasurements;
+
   /**
    * Constructor
    * @param params internal parameters of the smart factors
@@ -240,75 +245,25 @@ public:
     size_t m = cameras.size();
     bool retriangulate = decideIfTriangulate(cameras);
 
-//    if(!retriangulate)
-//      std::cout << "retriangulate = false" << std::endl;
-//
-//    bool retriangulate = true;
-
-    if (retriangulate) {
-//      std::cout << "Retriangulate " << std::endl;
-      std::vector<Point3> reprojections;
-      reprojections.reserve(m);
-      for(size_t i = 0; i < m; i++) {
-        reprojections.push_back(cameras[i].backproject(measured_[i]));
-      }
-
-      Point3 pw_sum(0,0,0);
-      for(const Point3& pw: reprojections) {
-        pw_sum = pw_sum + pw;
-      }
-      // average reprojected landmark
-      Point3 pw_avg = pw_sum / double(m);
-
-      double totalReprojError = 0;
-
-      // check if it lies in front of all cameras
-      for(size_t i = 0; i < m; i++) {
-        const Pose3& pose = cameras[i].pose();
-        const Point3& pl = pose.transform_to(pw_avg);
-        if (pl.z() <= 0) {
-          result_ = TriangulationResult::BehindCamera();
-          return result_;
-        }
-
-        // check landmark distance
-        if (params_.triangulation.landmarkDistanceThreshold > 0 &&
-            pl.norm() > params_.triangulation.landmarkDistanceThreshold) {
-          result_ = TriangulationResult::Degenerate();
-          return result_;
-        }
-
-        if (params_.triangulation.dynamicOutlierRejectionThreshold > 0) {
-          const StereoPoint2& zi = measured_[i];
-          StereoPoint2 reprojectionError(cameras[i].project(pw_avg) - zi);
-          totalReprojError += reprojectionError.vector().norm();
-        }
-      } // for
-
-      if (params_.triangulation.dynamicOutlierRejectionThreshold > 0
-          && totalReprojError / m > params_.triangulation.dynamicOutlierRejectionThreshold) {
-        result_ = TriangulationResult::Degenerate();
-        return result_;
-      }
-
-      if(params_.triangulation.enableEPI) {
-        try {
-         pw_avg = triangulateNonlinear(cameras, measured_, pw_avg);
-        } catch(StereoCheiralityException& e) {
-          if(params_.verboseCheirality)
-            std::cout << "Cheirality Exception in SmartStereoProjectionFactor" << std::endl;
-          if(params_.throwCheirality)
-            throw;
-          result_ = TriangulationResult::BehindCamera();
-          return TriangulationResult::BehindCamera();
-        }
-      }
-
-      result_ = TriangulationResult(pw_avg);
-
-    } // if retriangulate
+    MonoCameras monoCameras;
+    MonoMeasurements monoMeasured;
+    for(size_t i = 0; i < m; i++) {
+      Pose3 leftPose = cameras[i].pose();
+      Cal3_S2 monoCal = cameras[i].calibration().calibration();
+      MonoCamera leftCamera_i(leftPose,monoCal);
+      Pose3 left_Pose_right = Pose3(Rot3(),Point3(cameras[i].baseline(),0.0,0.0));
+      Pose3 rightPose = leftPose.compose( left_Pose_right );
+      MonoCamera rightCamera_i(rightPose,monoCal);
+      const StereoPoint2 zi = measured_[i];
+      monoCameras.push_back(leftCamera_i);
+      monoMeasured.push_back(Point2(zi.uL(),zi.v()));
+      monoCameras.push_back(rightCamera_i);
+      monoMeasured.push_back(Point2(zi.uR(),zi.v()));
+    }
+    if (retriangulate)
+      result_ = gtsam::triangulateSafe(monoCameras, monoMeasured,
+          params_.triangulation);
     return result_;
-
   }
 
   /// triangulate

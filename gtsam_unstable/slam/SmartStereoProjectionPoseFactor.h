@@ -102,7 +102,7 @@ public:
 
   /**
    * Variant of the previous one in which we include a set of measurements with the same noise and calibration
-   * @param mmeasurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
+   * @param measurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
    * @param poseKeys vector of keys corresponding to the camera observing the same landmark
    * @param K the (known) camera calibration (same for all measurements)
    */
