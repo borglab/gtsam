@@ -35,17 +35,7 @@
 
 namespace gtsam {
 
-/// Linearization mode: what factor to linearize to
- enum LinearizationMode {
-   HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
- };
-
-/// How to manage degeneracy
-enum DegeneracyMode {
-   IGNORE_DEGENERACY, ZERO_ON_DEGENERACY, HANDLE_INFINITY
- };
-
- /*
+  /*
   *  Parameters for the smart stereo projection factors
   */
  struct GTSAM_EXPORT SmartStereoProjectionParams {
@@ -257,7 +247,7 @@ public:
       const StereoPoint2 zi = measured_[i];
       monoCameras.push_back(leftCamera_i);
       monoMeasured.push_back(Point2(zi.uL(),zi.v()));
-      if(!isnan(zi.uR())){ // if right point is valid
+      if(!std::isnan(zi.uR())){ // if right point is valid
         monoCameras.push_back(rightCamera_i);
         monoMeasured.push_back(Point2(zi.uR(),zi.v()));
       }

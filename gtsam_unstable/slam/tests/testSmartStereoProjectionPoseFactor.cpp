@@ -18,7 +18,7 @@
  *  @date   Sept 2013
  */
 
-// TODO #include <gtsam/slam/tests/smartFactorScenarios.h>
+#include <gtsam/slam/tests/smartFactorScenarios.h>
 #include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/PoseTranslationPrior.h>
@@ -33,8 +33,6 @@ using namespace boost::assign;
 using namespace gtsam;
 
 // make a realistic calibration matrix
-static double fov = 60; // degrees
-static size_t w = 640, h = 480;
 static double b = 1;
 
 static Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(fov, w, h, b));

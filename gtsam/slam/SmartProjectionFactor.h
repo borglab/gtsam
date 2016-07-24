@@ -31,16 +31,6 @@
 
 namespace gtsam {
 
-/// Linearization mode: what factor to linearize to
-enum LinearizationMode {
-  HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
-};
-
-/// How to manage degeneracy
-enum DegeneracyMode {
-  IGNORE_DEGENERACY, ZERO_ON_DEGENERACY, HANDLE_INFINITY
-};
-
 /*
  *  Parameters for the smart projection factors
  */
