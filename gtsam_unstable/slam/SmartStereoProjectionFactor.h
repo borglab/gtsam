@@ -109,8 +109,6 @@ namespace gtsam {
    }
  };
 
-
-
 /**
  * SmartStereoProjectionFactor: triangulates point and keeps an estimate of it around.
  * This factor operates with StereoCamera. This factor requires that values
@@ -155,9 +153,9 @@ public:
    * @param params internal parameters of the smart factors
    */
   SmartStereoProjectionFactor(const SharedNoiseModel& sharedNoiseModel,
-      const SmartStereoProjectionParams& params =
-      SmartStereoProjectionParams()) :
-      Base(sharedNoiseModel), //
+      const SmartStereoProjectionParams& params = SmartStereoProjectionParams(),
+      const boost::optional<Pose3> body_P_sensor = boost::none) :
+      Base(sharedNoiseModel, body_P_sensor), //
       params_(params), //
       result_(TriangulationResult::Degenerate()) {
   }

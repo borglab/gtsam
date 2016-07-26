@@ -66,9 +66,9 @@ public:
    * @param params internal parameters of the smart factors
    */
   SmartStereoProjectionPoseFactor(const SharedNoiseModel& sharedNoiseModel,
-      const SmartStereoProjectionParams& params =
-      SmartStereoProjectionParams()) :
-      Base(sharedNoiseModel, params) {
+      const SmartStereoProjectionParams& params = SmartStereoProjectionParams(),
+      const boost::optional<Pose3> body_P_sensor = boost::none) :
+      Base(sharedNoiseModel, params, body_P_sensor) {
   }
 
   /** Virtual destructor */
@@ -161,7 +161,11 @@ public:
     Base::Cameras cameras;
     size_t i=0;
     for(const Key& k: this->keys_) {
-      const Pose3& pose = values.at<Pose3>(k);
+      Pose3 pose = values.at<Pose3>(k);
+
+      if (Base::body_P_sensor_)
+    	  pose = pose.compose(*(Base::body_P_sensor_));
+
       StereoCamera camera(pose, K_all_[i++]);
       cameras.push_back(camera);
     }

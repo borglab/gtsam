@@ -396,7 +396,96 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
 //  cout << std::setprecision(10) << "StereoFactor graph optimized error: " << graph2.error(result2) << endl;
 
 }
+/* *************************************************************************/
+TEST( SmartStereoProjectionPoseFactor, body_P_sensor ) {
 
+  // camera has some displacement
+  Pose3 body_P_sensor = Pose3(Rot3::Ypr(-0.01, 0., -0.05), Point3(0.1, 0, 0.1));
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+  StereoCamera cam1(pose1.compose(body_P_sensor), K2);
+
+  // create second camera 1 meter to the right of first camera
+  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
+  StereoCamera cam2(pose2.compose(body_P_sensor), K2);
+
+  // create third camera 1 meter above the first camera
+  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
+  StereoCamera cam3(pose3.compose(body_P_sensor), K2);
+
+  // three landmarks ~5 meters infront of camera
+  Point3 landmark1(5, 0.5, 1.2);
+  Point3 landmark2(5, -0.5, 1.2);
+  Point3 landmark3(3, 0, 3.0);
+
+  // 1. Project three landmarks into three cameras and triangulate
+  vector<StereoPoint2> measurements_l1 = stereo_projectToMultipleCameras(cam1,
+      cam2, cam3, landmark1);
+  vector<StereoPoint2> measurements_l2 = stereo_projectToMultipleCameras(cam1,
+      cam2, cam3, landmark2);
+  vector<StereoPoint2> measurements_l3 = stereo_projectToMultipleCameras(cam1,
+      cam2, cam3, landmark3);
+
+  vector<Key> views;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
+
+  SmartStereoProjectionParams smart_params;
+  smart_params.triangulation.enableEPI = true;
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor1(new SmartStereoProjectionPoseFactor(model, smart_params, body_P_sensor));
+  smartFactor1->add(measurements_l1, views, K2);
+
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor2(new SmartStereoProjectionPoseFactor(model, smart_params, body_P_sensor));
+  smartFactor2->add(measurements_l2, views, K2);
+
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor3(new SmartStereoProjectionPoseFactor(model, smart_params, body_P_sensor));
+  smartFactor3->add(measurements_l3, views, K2);
+
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+  graph.push_back(smartFactor2);
+  graph.push_back(smartFactor3);
+  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
+      Point3(0.1, 0.1, 0.1)); // smaller noise
+  Values values;
+  values.insert(x1, pose1);
+  values.insert(x2, pose2);
+  // initialize third pose with some noise, we expect it to move back to original pose3
+  values.insert(x3, pose3 * noise_pose);
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(0, -0.0314107591, 0.99950656, -0.99950656, -0.0313952598,
+                  -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
+              Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
+
+  //  cout << std::setprecision(10) << "\n----SmartStereoFactor graph initial error: " << graph.error(values) << endl;
+  EXPECT_DOUBLES_EQUAL(953392.32838422502, graph.error(values), 1e-7); // initial error
+
+  // get triangulated landmarks from smart factors
+  Point3 landmark1_smart = *smartFactor1->point();
+  Point3 landmark2_smart = *smartFactor2->point();
+  Point3 landmark3_smart = *smartFactor3->point();
+
+  Values result;
+  gttic_(SmartStereoProjectionPoseFactor);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  result = optimizer.optimize();
+  gttoc_(SmartStereoProjectionPoseFactor);
+  tictoc_finishedIteration_();
+
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
+
+  // result.print("results of 3 camera, 3 landmark optimization \n");
+  EXPECT(assert_equal(pose3, result.at<Pose3>(x3)));
+}
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
 
