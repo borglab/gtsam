@@ -487,6 +487,107 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor ) {
   EXPECT(assert_equal(pose3, result.at<Pose3>(x3)));
 }
 /* *************************************************************************/
+TEST( SmartStereoProjectionPoseFactor, body_P_sensor_monocular ){
+  // make a realistic calibration matrix
+  double fov = 60; // degrees
+  size_t w=640,h=480;
+
+  Cal3_S2::shared_ptr K(new Cal3_S2(fov,w,h));
+
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 cameraPose1 = Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1)); // body poses
+  Pose3 cameraPose2 = cameraPose1 * Pose3(Rot3(), Point3(1,0,0));
+  Pose3 cameraPose3 = cameraPose1 * Pose3(Rot3(), Point3(0,-1,0));
+
+  SimpleCamera cam1(cameraPose1, *K); // with camera poses
+  SimpleCamera cam2(cameraPose2, *K);
+  SimpleCamera cam3(cameraPose3, *K);
+
+  // create arbitrary body_Pose_sensor (transforms from sensor to body)
+  Pose3 sensor_to_body =  Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(1, 1, 1)); // Pose3(); //
+
+  // These are the poses we want to estimate, from camera measurements
+  Pose3 bodyPose1 = cameraPose1.compose(sensor_to_body.inverse());
+  Pose3 bodyPose2 = cameraPose2.compose(sensor_to_body.inverse());
+  Pose3 bodyPose3 = cameraPose3.compose(sensor_to_body.inverse());
+
+  // three landmarks ~5 meters infront of camera
+  Point3 landmark1(5, 0.5, 1.2);
+  Point3 landmark2(5, -0.5, 1.2);
+  Point3 landmark3(5, 0, 3.0);
+
+  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+
+  // Project three landmarks into three cameras
+  projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
+
+  // Create smart factors
+  std::vector<Key> views;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
+
+  // convert measurement to (degenerate) stereoPoint2 (with right pixel being NaN)
+  vector<StereoPoint2> measurements_cam1_stereo, measurements_cam2_stereo, measurements_cam3_stereo;
+  for(size_t k=0; k<measurements_cam1.size();k++)
+	  measurements_cam1_stereo.push_back(StereoPoint2(measurements_cam1[k].x() , missing_uR , measurements_cam1[k].y()));
+
+  for(size_t k=0; k<measurements_cam2.size();k++)
+	  measurements_cam2_stereo.push_back(StereoPoint2(measurements_cam2[k].x() , missing_uR , measurements_cam2[k].y()));
+
+  for(size_t k=0; k<measurements_cam3.size();k++)
+	  measurements_cam3_stereo.push_back(StereoPoint2(measurements_cam3[k].x() , missing_uR , measurements_cam3[k].y()));
+
+  SmartStereoProjectionParams params;
+  params.setRankTolerance(1.0);
+  params.setDegeneracyMode(gtsam::IGNORE_DEGENERACY);
+  params.setEnableEPI(false);
+
+  Cal3_S2Stereo::shared_ptr Kmono(new Cal3_S2Stereo(fov,w,h,b));
+  SmartStereoProjectionPoseFactor smartFactor1(model, params, sensor_to_body);
+  smartFactor1.add(measurements_cam1_stereo, views, Kmono);
+
+  SmartStereoProjectionPoseFactor smartFactor2(model, params, sensor_to_body);
+  smartFactor2.add(measurements_cam2_stereo, views, Kmono);
+
+  SmartStereoProjectionPoseFactor smartFactor3(model, params, sensor_to_body);
+  smartFactor3.add(measurements_cam3_stereo, views, Kmono);
+
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+
+  // Put all factors in factor graph, adding priors
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+  graph.push_back(smartFactor2);
+  graph.push_back(smartFactor3);
+  graph.push_back(PriorFactor<Pose3>(x1, bodyPose1, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, bodyPose2, noisePrior));
+
+  // Check errors at ground truth poses
+  Values gtValues;
+  gtValues.insert(x1, bodyPose1);
+  gtValues.insert(x2, bodyPose2);
+  gtValues.insert(x3, bodyPose3);
+  double actualError = graph.error(gtValues);
+  double expectedError = 0.0;
+  DOUBLES_EQUAL(expectedError, actualError, 1e-7)
+
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1));
+  Values values;
+  values.insert(x1, bodyPose1);
+  values.insert(x2, bodyPose2);
+  // initialize third pose with some noise, we expect it to move back to original pose3
+  values.insert(x3, bodyPose3*noise_pose);
+
+  LevenbergMarquardtParams lmParams;
+  Values result;
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  result = optimizer.optimize();
+  EXPECT(assert_equal(bodyPose3,result.at<Pose3>(x3)));
+}
+/* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
 
   vector<Key> views;
