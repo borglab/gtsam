@@ -228,7 +228,7 @@ public:
     for(size_t i=0; i < Fs->size(); i++){
       if(ZDim == 3){ // it's a stereo point ..
         Z z3 = measured_.at(i);
-        if(isnan(z3.vector()[1])){ // .. and the right pixel is invalid
+        if(std::isnan(z3.vector()[1])){ // .. and the right pixel is invalid
           // delete influence of right point on jacobian Fs
           MatrixZD& Fi = Fs->at(i);
           for(size_t ii=0; ii<Dim; ii++)
