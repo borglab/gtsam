@@ -213,7 +213,7 @@ public:
       boost::optional<typename Cameras::FBlocks&> Fs = boost::none, //
       boost::optional<Matrix&> E = boost::none) const {
     Vector ue = cameras.reprojectionError(point, measured_, Fs, E);
-    if(body_P_sensor_){
+    if(body_P_sensor_ && Fs){
       for(size_t i=0; i < Fs->size(); i++){
         Pose3 w_Pose_body = (cameras[i].pose()).compose(body_P_sensor_->inverse());
         Matrix J(6, 6);
@@ -225,17 +225,17 @@ public:
     static const int Np = FixedDimension<POINT>::value; // 2 (Unit3) or 3 (Point3)
 
     // when using stereo cameras, some of the measurements might be missing:
-    for(size_t i=0; i < Fs->size(); i++){
+    for(size_t i=0; i < cameras.size(); i++){
       const StereoPoint2 * z3 = reinterpret_cast<const StereoPoint2*>(&measured_.at(i));
-      if(z3 && std::isnan(z3->uR())) // if it's a stereo point and the right pixel is invalid
+      if(ZDim==3 && z3 && std::isnan(z3->uR())) // if it's a stereo point and the right pixel is invalid
       {
-        // delete influence of right point on jacobian Fs
-        MatrixZD& Fi = Fs->at(i);
-        for(size_t ii=0; ii<Dim; ii++)
-          Fi(1,ii) = 0.0;
-
-        // delete influence of right point on jacobian E
-        E->block<1, Np>(ZDim * i + 1, 0) = Matrix::Zero(1, Np);
+        if(Fs){ // delete influence of right point on jacobian Fs
+          MatrixZD& Fi = Fs->at(i);
+          for(size_t ii=0; ii<Dim; ii++)
+            Fi(1,ii) = 0.0;
+        }
+        if(E) // delete influence of right point on jacobian E
+          E->block<1, Np>(ZDim * i + 1, 0) = Matrix::Zero(1, Np);
 
         // set to zero entry from vector ue
         ue(ZDim * i + 1) = 0.0;
