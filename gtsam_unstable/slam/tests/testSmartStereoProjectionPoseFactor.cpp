@@ -469,11 +469,6 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor ) {
   //  cout << std::setprecision(10) << "\n----SmartStereoFactor graph initial error: " << graph.error(values) << endl;
   EXPECT_DOUBLES_EQUAL(953392.32838422502, graph.error(values), 1e-7); // initial error
 
-  // get triangulated landmarks from smart factors
-  Point3 landmark1_smart = *smartFactor1->point();
-  Point3 landmark2_smart = *smartFactor2->point();
-  Point3 landmark3_smart = *smartFactor3->point();
-
   Values result;
   gttic_(SmartStereoProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
