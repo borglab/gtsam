@@ -226,19 +226,19 @@ public:
 
     // when using stereo cameras, some of the measurements might be missing:
     for(size_t i=0; i < Fs->size(); i++){
-      if(ZDim == 3){ // it's a stereo point ..
-        Z z3 = measured_.at(i);
-        if(std::isnan(z3.vector()[1])){ // .. and the right pixel is invalid
-          // delete influence of right point on jacobian Fs
-          MatrixZD& Fi = Fs->at(i);
-          for(size_t ii=0; ii<Dim; ii++)
-            Fi(1,ii) = 0.0;
+      const StereoPoint2 * z3 = reinterpret_cast<const StereoPoint2*>(&measured_.at(i));
+      if(z3 && std::isnan(z3->uR())) // if it's a stereo point and the right pixel is invalid
+      {
+        // delete influence of right point on jacobian Fs
+        MatrixZD& Fi = Fs->at(i);
+        for(size_t ii=0; ii<Dim; ii++)
+          Fi(1,ii) = 0.0;
 
-          // delete influence of right point on jacobian E
-          E->block<1, Np>(ZDim * i + 1, 0) = Matrix::Zero(1, Np);
-          // set to zero entry from vector ue
-          ue(ZDim * i + 1) = 0.0; // this should not matter anyway
-        }
+        // delete influence of right point on jacobian E
+        E->block<1, Np>(ZDim * i + 1, 0) = Matrix::Zero(1, Np);
+
+        // set to zero entry from vector ue
+        ue(ZDim * i + 1) = 0.0;
       }
     }
     return ue;
