@@ -274,7 +274,7 @@ public:
         // check landmark distance
         if (params_.triangulation.landmarkDistanceThreshold > 0 &&
             pl.norm() > params_.triangulation.landmarkDistanceThreshold) {
-          result_ = TriangulationResult::Degenerate();
+          result_ = TriangulationResult::FarPoint();
           return result_;
         }
 
@@ -287,7 +287,7 @@ public:
 
       if (params_.triangulation.dynamicOutlierRejectionThreshold > 0
           && totalReprojError / m > params_.triangulation.dynamicOutlierRejectionThreshold) {
-        result_ = TriangulationResult::Degenerate();
+        result_ = TriangulationResult::Outlier();
         return result_;
       }
 
