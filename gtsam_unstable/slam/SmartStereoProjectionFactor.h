@@ -582,19 +582,19 @@ public:
     }
 
     /// Is result valid?
-    bool isValid() const {
-      return bool(result_);
-    }
+    bool isValid() const { return result_.valid(); }
 
     /** return the degenerate state */
-    bool isDegenerate() const {
-      return result_.degenerate();
-    }
+    bool isDegenerate() const { return result_.degenerate(); }
 
     /** return the cheirality status flag */
-    bool isPointBehindCamera() const {
-      return result_.behindCamera();
-    }
+    bool isPointBehindCamera() const { return result_.behindCamera(); }
+
+    /** return the outlier state */
+    bool isOutlier() const { return result_.outlier(); }
+
+    /** return the farPoint state */
+    bool isFarPoint() const { return result_.farPoint(); }
 
 private:
 
