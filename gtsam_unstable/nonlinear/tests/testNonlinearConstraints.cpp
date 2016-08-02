@@ -29,8 +29,7 @@ TEST(Vector, vectorize) {
  * Test 3-way equality nonlinear constraint
  *  x(1)      + x(2)^2 + x(3)^3                 = 3
  */
-class Constraint: public NonlinearEqualityConstraint3<double, double,
-    double> {
+class Constraint: public NonlinearEqualityConstraint3<double, double, double> {
   typedef NonlinearEqualityConstraint3<double, double, double> Base;
 
 public:
@@ -38,10 +37,9 @@ public:
       Base(key1, key2, key3, dualKey, 1) {
   }
 
-  Vector evaluateError(const double& x1, const double& x2,
-      const double& x3, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 =
-          boost::none) const {
+  Vector evaluateError(const double& x1, const double& x2, const double& x3,
+      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+          boost::none, boost::optional<Matrix&> H3 = boost::none) const {
     if (H1) {
       *H1 = (Matrix(1, 1) << 1.0).finished();
     }
@@ -52,13 +50,11 @@ public:
       *H3 = (Matrix(1, 1) << 3.0 * x3 * x3).finished();
     }
 
-    return (Vector(1) <<
-        x1 + x2 * x2
-            + x3 * x3 * x3 - 3.0).finished();
+    return (Vector(1) << x1 + x2 * x2 + x3 * x3 * x3 - 3.0).finished();
   }
 
-  void expectedHessians(const double& x1, const double& x2,
-      const double& x3, std::vector<Matrix>& G11, std::vector<Matrix>& G12,
+  void expectedHessians(const double& x1, const double& x2, const double& x3,
+      std::vector<Matrix>& G11, std::vector<Matrix>& G12,
       std::vector<Matrix>& G13, std::vector<Matrix>& G22,
       std::vector<Matrix>& G23, std::vector<Matrix>& G33) const {
     G11.push_back(zeros(1, 1));
@@ -77,7 +73,7 @@ TEST(NonlinearConstraint3, Hessian) {
   Constraint constraint(X(1), X(2), X(3), 0);
 
   std::vector<Matrix> expectedG11, expectedG12, expectedG13, expectedG22,
-      expectedG23, expectedG33;
+  expectedG23, expectedG33;
   constraint.expectedHessians(x1, x2, x3, expectedG11, expectedG12, expectedG13,
       expectedG22, expectedG23, expectedG33);
   std::vector<Matrix> G11, G12, G13, G22, G23, G33;
@@ -114,11 +110,13 @@ public:
       *H2 = (Matrix(2, 2) << 2.0 * p2.x(), 0.0, 0.0, 1.0).finished();
     }
     if (H3) {
-      *H3 = (Matrix(2, 2) << 0.0, 3.0 * p3.y() * p3.y(), 3.0 * p3.x() * p3.x(), 0.0).finished();
+      *H3 =
+          (Matrix(2, 2) << 0.0, 3.0 * p3.y() * p3.y(), 3.0 * p3.x() * p3.x(), 0.0).finished();
     }
 
-    return (Vector(2) << p1.x() + p2.x() * p2.x() + p3.y() * p3.y() * p3.y() - 3.0,
-                     p1.x() * p1.x() + p2.y() + p3.x() * p3.x() * p3.x() - 5.0).finished();
+    return (Vector(2)
+        << p1.x() + p2.x() * p2.x() + p3.y() * p3.y() * p3.y() - 3.0, p1.x()
+        * p1.x() + p2.y() + p3.x() * p3.x() * p3.x() - 5.0).finished();
   }
 
   void expectedHessians(const Point2& x1, const Point2& x2, const Point2& x3,
@@ -126,22 +124,22 @@ public:
       std::vector<Matrix>& G13, std::vector<Matrix>& G22,
       std::vector<Matrix>& G23, std::vector<Matrix>& G33) const {
     G11.push_back(zeros(2, 2));
-    G11.push_back((Matrix(2,2) << 2.0, 0.0, 0.0, 0.0).finished());
+    G11.push_back((Matrix(2, 2) << 2.0, 0.0, 0.0, 0.0).finished());
 
-    G12.push_back(zeros(2,2));
-    G12.push_back(zeros(2,2));
+    G12.push_back(zeros(2, 2));
+    G12.push_back(zeros(2, 2));
 
-    G13.push_back(zeros(2,2));
-    G13.push_back(zeros(2,2));
+    G13.push_back(zeros(2, 2));
+    G13.push_back(zeros(2, 2));
 
-    G22.push_back((Matrix(2,2) << 2.0, 0.0, 0.0, 0.0).finished());
-    G22.push_back(zeros(2,2));
+    G22.push_back((Matrix(2, 2) << 2.0, 0.0, 0.0, 0.0).finished());
+    G22.push_back(zeros(2, 2));
 
     G23.push_back(zeros(2, 2));
     G23.push_back(zeros(2, 2));
 
-    G33.push_back((Matrix(2, 2) << 0.0, 0.0, 0.0, 6.0 * x3.y() ).finished());
-    G33.push_back((Matrix(2, 2) << 6.0 * x3.x(), 0.0, 0.0, 0.0 ).finished());
+    G33.push_back((Matrix(2, 2) << 0.0, 0.0, 0.0, 6.0 * x3.y()).finished());
+    G33.push_back((Matrix(2, 2) << 6.0 * x3.x(), 0.0, 0.0, 0.0).finished());
   }
 };
 
@@ -152,7 +150,7 @@ TEST(NonlinearConstraint3, Hessian2) {
   Constraint2d constraint(X(1), X(2), X(3), 0);
 
   std::vector<Matrix> expectedG11, expectedG12, expectedG13, expectedG22,
-      expectedG23, expectedG33;
+  expectedG23, expectedG33;
   constraint.expectedHessians(x1, x2, x3, expectedG11, expectedG12, expectedG13,
       expectedG22, expectedG23, expectedG33);
   std::vector<Matrix> G11, G12, G13, G22, G23, G33;

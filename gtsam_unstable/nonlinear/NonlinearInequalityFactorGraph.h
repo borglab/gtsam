@@ -19,26 +19,26 @@
 
 #pragma once
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam_unstable/linear/LinearInequalityFactorGraph.h>
-#include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
+#include <gtsam_unstable/linear/InequalityFactorGraph.h>
+#include <gtsam_unstable/nonlinear/NonlinearEqualityConstraint.h>
 
 namespace gtsam {
-class NonlinearInequalityFactorGraph : public FactorGraph<NonlinearFactor> {
+class NonlinearInequalityFactorGraph: public FactorGraph<NonlinearFactor> {
 
 public:
   /// Default constructor
   NonlinearInequalityFactorGraph() {
   }
 
-  /// Linearize to a LinearInequalityFactorGraph
-  LinearInequalityFactorGraph::shared_ptr linearize(
+  /// Linearize to a InequalityFactorGraph
+  InequalityFactorGraph::shared_ptr linearize(
       const Values& linearizationPoint) const {
-    LinearInequalityFactorGraph::shared_ptr linearGraph(
-        new LinearInequalityFactorGraph());
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
-      JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast<JacobianFactor>(
-          factor->linearize(linearizationPoint));
-      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
+    InequalityFactorGraph::shared_ptr linearGraph(new InequalityFactorGraph());
+    for (const NonlinearFactor::shared_ptr& factor : *this) {
+      JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast
+          < JacobianFactor > (factor->linearize(linearizationPoint));
+      NonlinearEqualityConstraint::shared_ptr constraint =
+          boost::dynamic_pointer_cast < NonlinearEqualityConstraint > (factor);
       linearGraph->add(LinearInequality(*jacobian, constraint->dualKey()));
     }
     return linearGraph;
@@ -47,10 +47,11 @@ public:
   /**
    * Return true if the all errors are <= 0.0
    */
-  bool checkFeasibilityAndComplimentary(const Values& values, const VectorValues& duals, double tol) const {
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
-      NoiseModelFactor::shared_ptr noiseModelFactor = boost::dynamic_pointer_cast<NoiseModelFactor>(
-          factor);
+  bool checkFeasibilityAndComplimentary(const Values& values,
+      const VectorValues& duals, double tol) const {
+    for (const NonlinearFactor::shared_ptr& factor : *this) {
+      NoiseModelFactor::shared_ptr noiseModelFactor =
+          boost::dynamic_pointer_cast < NoiseModelFactor > (factor);
       Vector error = noiseModelFactor->unwhitenedError(values);
 
       // Primal feasibility condition: all constraints need to be <= 0.0
@@ -59,10 +60,11 @@ public:
       }
 
       // Complimentary condition: errors of active constraints need to be 0.0
-      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(
-          factor);
+      NonlinearEqualityConstraint::shared_ptr constraint =
+          boost::dynamic_pointer_cast < NonlinearEqualityConstraint > (factor);
       Key dualKey = constraint->dualKey();
-      if (!duals.exists(dualKey)) continue;  // if dualKey doesn't exist, it is an inactive constraint!
+      if (!duals.exists(dualKey))
+        continue; // if dualKey doesn't exist, it is an inactive constraint!
       if (fabs(error[0]) > tol) // for active constraint, the error should be 0.0
         return false;
 

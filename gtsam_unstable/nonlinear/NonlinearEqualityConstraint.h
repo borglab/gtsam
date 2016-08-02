@@ -26,16 +26,27 @@
 
 namespace gtsam {
 
-class NonlinearConstraint {
+class NonlinearEqualityConstraint {
 
 protected:
   Key dualKey_;
+  bool active_;
+  
+public:
+  virtual bool isActive_() const {
+    return true; // equality constraints are always active
+  }
 
-public:
-  typedef boost::shared_ptr<NonlinearConstraint> shared_ptr;
-public:
+  void setActive_(bool active_) {
+    NonlinearEqualityConstraint::active_ = active_;
+  }
+
+  typedef boost::shared_ptr<NonlinearEqualityConstraint> shared_ptr;
+
   /// Construct with dual key
-  NonlinearConstraint(Key dualKey) : dualKey_(dualKey) {}
+  NonlinearEqualityConstraint(Key dualKey) :
+      dualKey_(dualKey) {
+  }
 
   /**
    * compute the HessianFactor of the (-dual * constraintHessian) for the qp subproblem's objective function
@@ -44,14 +55,17 @@ public:
       const VectorValues& duals) const = 0;
 
   /// return the dual key
-  Key dualKey() const { return dualKey_; }
+  Key dualKey() const {
+    return dualKey_;
+  }
 };
 
 /* ************************************************************************* */
 /** A convenient base class for creating a nonlinear equality constraint with 1
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE>
-class NonlinearConstraint1: public NoiseModelFactor1<VALUE>, public NonlinearConstraint {
+class NonlinearEqualityConstraint1: public NoiseModelFactor1<VALUE>,
+    public NonlinearEqualityConstraint {
 
 public:
 
@@ -61,12 +75,12 @@ public:
 protected:
 
   typedef NoiseModelFactor1<VALUE> Base;
-  typedef NonlinearConstraint1<VALUE> This;
+  typedef NonlinearEqualityConstraint1<VALUE> This;
 
 private:
-  
-  static const int X1Dim = traits<VALUE>::dimension;
-  
+
+  static const int X1Dim = traits < VALUE > ::dimension;
+
 public:
 
   /**
@@ -74,11 +88,12 @@ public:
    * @param j key of the variable
    * @param constraintDim number of dimensions of the constraint error function
    */
-  NonlinearConstraint1(Key key, Key dualKey, size_t constraintDim = 1) :
-    Base(noiseModel::Constrained::All(constraintDim), key), NonlinearConstraint(dualKey) {
+  NonlinearEqualityConstraint1(Key key, Key dualKey, size_t constraintDim = 1) :
+      Base(noiseModel::Constrained::All(constraintDim), key), NonlinearEqualityConstraint(
+          dualKey) {
   }
 
-  virtual ~NonlinearConstraint1() {
+  virtual ~NonlinearEqualityConstraint1() {
   }
 
   /**
@@ -99,7 +114,7 @@ public:
     const X& x1 = x.at < X > (Base::key());
     const Vector& lambda = duals.at(this->dualKey());
 
-    std::vector<Matrix> G11;
+    std::vector < Matrix > G11;
     evaluateHessians(x1, G11);
 
     if (dim(lambda) != G11.size()) {
@@ -109,12 +124,12 @@ public:
 
     // Combine the Lagrange-multiplier part into this constraint factor
     Matrix lG11sum = zeros(G11[0].rows(), G11[0].cols());
-    for (size_t i = 0; i < lambda.rows(); ++i) {
+    for (int i = 0; i < lambda.rows(); ++i) {
       lG11sum += -lambda[i] * G11[i];
     }
 
-    HessianFactor::shared_ptr hf(new HessianFactor(Base::key(), lG11sum,
-        zero(X1Dim), 100.0));
+    HessianFactor::shared_ptr hf(
+        new HessianFactor(Base::key(), lG11sum, zero(X1Dim), 100.0));
     return hf;
   }
 
@@ -155,17 +170,18 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar
-    & boost::serialization::make_nvp("NoiseModelFactor",
-        boost::serialization::base_object<Base>(*this));
+        & boost::serialization::make_nvp("NoiseModelFactor",
+            boost::serialization::base_object < Base > (*this));
   }
 };
-// \class NonlinearConstraint1
+// \class NonlinearEqualityConstraint1
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NonlinearConstraint with 2
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2>
-class NonlinearConstraint2: public NoiseModelFactor2<VALUE1, VALUE2>, public NonlinearConstraint {
+class NonlinearEqualityConstraint2: public NoiseModelFactor2<VALUE1, VALUE2>,
+    public NonlinearEqualityConstraint {
 
 public:
 
@@ -176,14 +192,13 @@ public:
 protected:
 
   typedef NoiseModelFactor2<VALUE1, VALUE2> Base;
-  typedef NonlinearConstraint2<VALUE1, VALUE2> This;
+  typedef NonlinearEqualityConstraint2<VALUE1, VALUE2> This;
 
 private:
-  static const int X1Dim = traits<VALUE1>::dimension;
-  static const int X2Dim = traits<VALUE2>::dimension;
+  static const int X1Dim = traits < VALUE1 > ::dimension;
+  static const int X2Dim = traits < VALUE2 > ::dimension;
 
 public:
-
 
   /**
    * Constructor
@@ -191,11 +206,13 @@ public:
    * @param j2 key of the second variable
    * @param constraintDim number of dimensions of the constraint error function
    */
-  NonlinearConstraint2(Key j1, Key j2, Key dualKey, size_t constraintDim = 1) :
-    Base(noiseModel::Constrained::All(constraintDim), j1, j2), NonlinearConstraint(dualKey) {
+  NonlinearEqualityConstraint2(Key j1, Key j2, Key dualKey,
+      size_t constraintDim = 1) :
+      Base(noiseModel::Constrained::All(constraintDim), j1, j2), NonlinearEqualityConstraint(
+          dualKey) {
   }
 
-  virtual ~NonlinearConstraint2() {
+  virtual ~NonlinearEqualityConstraint2() {
   }
 
   /**
@@ -230,15 +247,16 @@ public:
     // Combine the Lagrange-multiplier part into this constraint factor
     Matrix lG11sum = zeros(G11[0].rows(), G11[0].cols()), lG12sum = zeros(
         G12[0].rows(), G12[0].cols()), lG22sum = zeros(G22[0].rows(),
-            G22[0].cols());
-    for (size_t i = 0; i < lambda.rows(); ++i) {
+        G22[0].cols());
+    for (int i = 0; i < lambda.rows(); ++i) {
       lG11sum += -lambda[i] * G11[i];
       lG12sum += -lambda[i] * G12[i];
       lG22sum += -lambda[i] * G22[i];
     }
 
-    return boost::make_shared<HessianFactor>(Base::key1(), Base::key2(),
-        lG11sum, lG12sum, zero(X1Dim), lG22sum, zero(X2Dim), 0.0);
+    return boost::make_shared < HessianFactor
+        > (Base::key1(), Base::key2(), lG11sum, lG12sum, zero(X1Dim), lG22sum, zero(
+            X2Dim), 0.0);
   }
 
   /** evaluate Hessians for lambda factors */
@@ -250,7 +268,7 @@ public:
 
     boost::function<Vector(const X1&, const X2&)> vecH1(
         boost::bind(&This::vectorizeH1t, this, _1, _2)), vecH2(
-            boost::bind(&This::vectorizeH2t, this, _1, _2));
+        boost::bind(&This::vectorizeH2t, this, _1, _2));
 
     Matrix G11all = numericalDerivative21(vecH1, x1, x2, 1e-5);
     Matrix G12all = numericalDerivative22(vecH1, x1, x2, 1e-5);
@@ -260,8 +278,8 @@ public:
       gtsam::print(G11all, "G11all: ");
       gtsam::print(G12all, "G12all: ");
       gtsam::print(G22all, "G22all: ");
-      std::cout << "x1dim: " << traits<VALUE1>::dimension << std::endl;
-      std::cout << "x2dim: " << traits<VALUE2>::dimension << std::endl;
+      std::cout << "x1dim: " << traits < VALUE1 > ::dimension << std::endl;
+      std::cout << "x2dim: " << traits < VALUE2 > ::dimension << std::endl;
     }
 
     for (size_t i = 0; i < Base::get_noiseModel()->dim(); ++i) {
@@ -303,17 +321,18 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar
-    & boost::serialization::make_nvp("NoiseModelFactor",
-        boost::serialization::base_object<Base>(*this));
+        & boost::serialization::make_nvp("NoiseModelFactor",
+            boost::serialization::base_object < Base > (*this));
   }
 };
-// \class NonlinearConstraint2
+// \class NonlinearEqualityConstraint2
 
 /* ************************************************************************* */
 /** A convenient base class for creating your own NonlinearConstraint with 3
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2, class VALUE3>
-class NonlinearConstraint3: public NoiseModelFactor3<VALUE1, VALUE2, VALUE3>, public NonlinearConstraint {
+class NonlinearEqualityConstraint3: public NoiseModelFactor3<VALUE1, VALUE2,
+    VALUE3>, public NonlinearEqualityConstraint {
 
 public:
 
@@ -325,12 +344,12 @@ public:
 protected:
 
   typedef NoiseModelFactor3<VALUE1, VALUE2, VALUE3> Base;
-  typedef NonlinearConstraint3<VALUE1, VALUE2, VALUE3> This;
+  typedef NonlinearEqualityConstraint3<VALUE1, VALUE2, VALUE3> This;
 
 private:
-  static const int X1Dim = traits<VALUE1>::dimension;
-  static const int X2Dim = traits<VALUE2>::dimension;
-  static const int X3Dim = traits<VALUE3>::dimension;
+  static const int X1Dim = traits < VALUE1 > ::dimension;
+  static const int X2Dim = traits < VALUE2 > ::dimension;
+  static const int X3Dim = traits < VALUE3 > ::dimension;
 
 public:
 
@@ -340,11 +359,13 @@ public:
    * @param j2 key of the second variable
    * @param constraintDim number of dimensions of the constraint error function
    */
-  NonlinearConstraint3(Key j1, Key j2, Key j3, Key dualKey, size_t constraintDim = 1) :
-    Base(noiseModel::Constrained::All(constraintDim), j1, j2, j3), NonlinearConstraint(dualKey) {
+  NonlinearEqualityConstraint3(Key j1, Key j2, Key j3, Key dualKey,
+      size_t constraintDim = 1) :
+      Base(noiseModel::Constrained::All(constraintDim), j1, j2, j3), NonlinearEqualityConstraint(
+          dualKey) {
   }
 
-  virtual ~NonlinearConstraint3() {
+  virtual ~NonlinearEqualityConstraint3() {
   }
 
   /**
@@ -359,8 +380,8 @@ public:
 
   /** produce a Gaussian factor graph containing all Hessian Factors, scaled by lambda,
    * corresponding to this constraint */
-  virtual GaussianFactor::shared_ptr multipliedHessian(
-      const Values& x, const VectorValues& duals) const {
+  virtual GaussianFactor::shared_ptr multipliedHessian(const Values& x,
+      const VectorValues& duals) const {
     if (!this->active(x)) {
       return GaussianFactor::shared_ptr();
     }
@@ -382,9 +403,9 @@ public:
     // Combine the Lagrange-multiplier part into this constraint factor
     Matrix lG11sum = zeros(G11[0].rows(), G11[0].cols()), lG12sum = zeros(
         G12[0].rows(), G12[0].cols()), lG13sum = zeros(G13[0].rows(),
-            G13[0].cols()), lG22sum = zeros(G22[0].rows(), G22[0].cols()), lG23sum =
-                zeros(G23[0].rows(), G23[0].cols()), lG33sum = zeros(G33[0].rows(),
-                    G33[0].cols());
+        G13[0].cols()), lG22sum = zeros(G22[0].rows(), G22[0].cols()), lG23sum =
+        zeros(G23[0].rows(), G23[0].cols()), lG33sum = zeros(G33[0].rows(),
+        G33[0].cols());
     for (int i = 0; i < lambda.rows(); ++i) {
       lG11sum += -lambda[i] * G11[i];
       lG12sum += -lambda[i] * G12[i];
@@ -394,10 +415,10 @@ public:
       lG33sum += -lambda[i] * G33[i];
     }
 
-    return boost::shared_ptr<HessianFactor>(
-        new HessianFactor(Base::key2(), Base::key2(), Base::key3(),
-            lG11sum, lG12sum, lG13sum, zero(X1Dim), lG22sum, lG23sum,
-            zero(X2Dim), lG33sum, zero(X3Dim), 0.0));
+    return boost::shared_ptr < HessianFactor
+        > (new HessianFactor(Base::key2(), Base::key2(), Base::key3(), lG11sum,
+            lG12sum, lG13sum, zero(X1Dim), lG22sum, lG23sum, zero(X2Dim),
+            lG33sum, zero(X3Dim), 0.0));
   }
 
   /**
@@ -462,8 +483,8 @@ public:
 
     boost::function<Vector(const X1&, const X2&, const X3&)> vecH1(
         boost::bind(&This::vectorizeH1t, this, _1, _2, _3)), vecH2(
-            boost::bind(&This::vectorizeH2t, this, _1, _2, _3)), vecH3(
-                boost::bind(&This::vectorizeH3t, this, _1, _2, _3));
+        boost::bind(&This::vectorizeH2t, this, _1, _2, _3)), vecH3(
+        boost::bind(&This::vectorizeH3t, this, _1, _2, _3));
 
     Matrix G11all = numericalDerivative31(vecH1, x1, x2, x3, 1e-5);
     Matrix G12all = numericalDerivative32(vecH1, x1, x2, x3, 1e-5);
@@ -544,10 +565,10 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar
-    & boost::serialization::make_nvp("NoiseModelFactor",
-        boost::serialization::base_object<Base>(*this));
+        & boost::serialization::make_nvp("NoiseModelFactor",
+            boost::serialization::base_object < Base > (*this));
   }
 };
-// \class NonlinearConstraint3
+// \class NonlinearEqualityConstraint3
 
 } /* namespace gtsam */

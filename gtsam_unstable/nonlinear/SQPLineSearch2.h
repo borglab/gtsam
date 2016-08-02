@@ -22,9 +22,7 @@ class MeritFunction2;
  * This class implements line search method following Betts10book
  */
 class SQPLineSearch2 {
-  const NonlinearFactorGraph& graph_;
-  NonlinearFactorGraph unconstrained_, constrained_;
-
+  NP program_;
 public:
 
   /// State of each iteration
@@ -44,18 +42,6 @@ public:
         solution(_solution), lambdas(_lambdas), mu(_mu), tau(_tau), converged(_converged) {
     }
 
-    State makeConverged() const {
-      State newState = *this;
-      newState.converged = true;
-      return newState;
-    }
-
-    State newDamping(double newTau) const {
-      State newState = *this;
-      newState.tau = newTau;
-      return newState;
-    }
-
     void print(const std::string& s = "State") const {
       std::cout << s << ": " << std::endl;
       solution.print("\tSolution: ");
@@ -69,14 +55,9 @@ public:
 public:
 
   /// Constructor
-  SQPLineSearch2(const NonlinearFactorGraph& graph) :
-      graph_(graph) {
-    boost::tie(unconstrained_, constrained_) = split(graph);
+  SQPLineSearch2(const NP& program) :
+      program_(program) {
   }
-
-  /// Split a Nonlinear factor graph to unconstrained and constrained parts
-  std::pair<NonlinearFactorGraph, NonlinearFactorGraph> split(
-      const NonlinearFactorGraph& graph) const;
 
   /// Create alpha*\sum lambda_i*constrainedHessian_i
   GaussianFactorGraph::shared_ptr multiplyConstrainedHessians(
@@ -97,24 +78,7 @@ public:
 
   /// Full optimization
   Values optimize(const Values& initials) const;
-
-public:
-  /// Try to cast a nonlinear factor to a nonlinear constraint. Return empty shared_ptr if failed.
-  static NonlinearEqualityConstraint::shared_ptr toConstraint(
-      const NonlinearFactor::shared_ptr& factor) {
-    NonlinearEqualityConstraint::shared_ptr constrained = boost::dynamic_pointer_cast<
-        NonlinearEqualityConstraint>(factor);
-    return constrained;
-  }
-
-  /// Try to cast a nonlinear factor to a nonlinear constraint. Return empty shared_ptr if failed.
-  static NoiseModelFactor::shared_ptr toNoiseModel(
-      const NonlinearFactor::shared_ptr& factor) {
-    NoiseModelFactor::shared_ptr noiseFactor = boost::dynamic_pointer_cast<
-        NoiseModelFactor>(factor);
-    return noiseFactor;
-  }
-
+  
 };
 
 /* ************************************************************************* */
@@ -124,7 +88,7 @@ public:
  */
 class MeritFunction2 {
 private:
-  NonlinearFactorGraph unconstrained_, constrained_;
+  NP program_;
   GaussianFactorGraph::shared_ptr linearUnconstrained_, lagrangianGraph_;
   Values x_;
   VectorValues p_, gradf_;
@@ -132,8 +96,7 @@ private:
 public:
 
   /// Constructor
-  MeritFunction2(const NonlinearFactorGraph& unconstrained,
-      const NonlinearFactorGraph& constrained,
+  MeritFunction2(const NP & program,
       const GaussianFactorGraph::shared_ptr& linearUnconstrained,
       const GaussianFactorGraph::shared_ptr& lagrangianGraph, const Values& x,
       const VectorValues& p);
