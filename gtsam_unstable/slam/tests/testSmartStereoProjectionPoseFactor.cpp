@@ -1348,7 +1348,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotation ) {
 }
 
 /* *************************************************************************/
-TEST( SmartStereoProjectionPoseFactor, HessianWithRotationDegenerate ) {
+TEST( SmartStereoProjectionPoseFactor, HessianWithRotationNonDegenerate ) {
 
   vector<Key> views;
   views.push_back(x1);
@@ -1381,6 +1381,9 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationDegenerate ) {
   boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor->linearize(
       values);
 
+  // check that it is non degenerate
+  EXPECT(smartFactor->isValid());
+
   Pose3 poseDrift = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
   Values rotValues;
@@ -1390,6 +1393,9 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationDegenerate ) {
 
   boost::shared_ptr<GaussianFactor> hessianFactorRot = smartFactor->linearize(
       rotValues);
+
+  // check that it is non degenerate
+  EXPECT(smartFactor->isValid());
 
   // Hessian is invariant to rotations in the nondegenerate case
   EXPECT(
@@ -1407,10 +1413,14 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationDegenerate ) {
   boost::shared_ptr<GaussianFactor> hessianFactorRotTran =
       smartFactor->linearize(tranValues);
 
-  // Hessian is invariant to rotations and translations in the nondegenerate case
+  // Hessian is invariant to rotations and translations in the degenerate case
   EXPECT(
       assert_equal(hessianFactor->information(),
+#ifdef GTSAM_USE_EIGEN_MKL
+          hessianFactorRotTran->information(), 1e-5));
+#else
           hessianFactorRotTran->information(), 1e-6));
+#endif
 }
 
 /* ************************************************************************* */

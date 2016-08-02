@@ -233,15 +233,16 @@ public:
     size_t m = cameras.size();
     bool retriangulate = decideIfTriangulate(cameras);
 
+    // triangulate stereo measurements by treating each stereocamera as a pair of monocular cameras
     MonoCameras monoCameras;
     MonoMeasurements monoMeasured;
     for(size_t i = 0; i < m; i++) {
-      Pose3 leftPose = cameras[i].pose();
-      Cal3_S2 monoCal = cameras[i].calibration().calibration();
-      MonoCamera leftCamera_i(leftPose,monoCal);
-      Pose3 left_Pose_right = Pose3(Rot3(),Point3(cameras[i].baseline(),0.0,0.0));
-      Pose3 rightPose = leftPose.compose( left_Pose_right );
-      MonoCamera rightCamera_i(rightPose,monoCal);
+      const Pose3 leftPose = cameras[i].pose();
+      const Cal3_S2 monoCal = cameras[i].calibration().calibration();
+      const MonoCamera leftCamera_i(leftPose,monoCal);
+      const Pose3 left_Pose_right = Pose3(Rot3(),Point3(cameras[i].baseline(),0.0,0.0));
+      const Pose3 rightPose = leftPose.compose( left_Pose_right );
+      const MonoCamera rightCamera_i(rightPose,monoCal);
       const StereoPoint2 zi = measured_[i];
       monoCameras.push_back(leftCamera_i);
       monoMeasured.push_back(Point2(zi.uL(),zi.v()));
