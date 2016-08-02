@@ -82,6 +82,17 @@ TEST( SmartProjectionPoseFactor, Constructor4) {
 }
 
 /* ************************************************************************* */
+TEST( SmartProjectionPoseFactor, params) {
+  using namespace vanillaPose;
+  SmartProjectionParams params;
+  double rt = params.getRetriangulationThreshold();
+  EXPECT_DOUBLES_EQUAL(1e-5, rt, 1e-7);
+  params.setRetriangulationThreshold(1e-3);
+  rt = params.getRetriangulationThreshold();
+  EXPECT_DOUBLES_EQUAL(1e-3, rt, 1e-7);
+}
+
+/* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Equals ) {
   using namespace vanillaPose;
   SmartFactor::shared_ptr factor1(new SmartFactor(model, sharedK));
