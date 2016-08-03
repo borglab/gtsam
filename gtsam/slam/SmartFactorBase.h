@@ -27,7 +27,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/RegularHessianFactor.h>
 #include <gtsam/geometry/CameraSet.h>
-#include <gtsam/geometry/StereoPoint2.h>
 
 #include <boost/optional.hpp>
 #include <boost/serialization/optional.hpp>
@@ -221,28 +220,16 @@ public:
         Fs->at(i) = Fs->at(i) * J;
       }
     }
-
-    static const int Np = FixedDimension<POINT>::value; // 2 (Unit3) or 3 (Point3)
-
-    // when using stereo cameras, some of the measurements might be missing:
-    for(size_t i=0; i < cameras.size(); i++){
-      const StereoPoint2 * z3 = reinterpret_cast<const StereoPoint2*>(&measured_.at(i));
-      if(ZDim==3 && z3 && std::isnan(z3->uR())) // if it's a stereo point and the right pixel is invalid
-      {
-        if(Fs){ // delete influence of right point on jacobian Fs
-          MatrixZD& Fi = Fs->at(i);
-          for(size_t ii=0; ii<Dim; ii++)
-            Fi(1,ii) = 0.0;
-        }
-        if(E) // delete influence of right point on jacobian E
-          E->block<1, Np>(ZDim * i + 1, 0) = Matrix::Zero(1, Np);
-
-        // set to zero entry from vector ue
-        ue(ZDim * i + 1) = 0.0;
-      }
-    }
+    correctForMissingMeasurements(cameras, ue, Fs, E);
     return ue;
   }
+
+  /**
+   * This corrects the Jacobians for the case in which some pixel measurement is missing (nan)
+   * In practice, this does not do anything in the monocular case, but it is implemented in the stereo version
+   */
+  virtual void correctForMissingMeasurements(const Cameras& cameras, Vector& ue, boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
+		  boost::optional<Matrix&> E = boost::none) const {}
 
   /**
    * Calculate vector of re-projection errors [h(x)-z] = [cameras.project(p) - z]
