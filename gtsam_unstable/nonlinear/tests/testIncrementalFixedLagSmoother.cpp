@@ -71,8 +71,6 @@ TEST( IncrementalFixedLagSmoother, Example )
   Values fullinit;
   NonlinearFactorGraph fullgraph;
 
-
-
   // i keeps track of the time step
   size_t i = 0;
 
@@ -177,6 +175,64 @@ TEST( IncrementalFixedLagSmoother, Example )
     ++i;
   }
 
+  // add/remove an extra factor
+  {
+	  Key key1 = MakeKey(i-1);
+	  Key key2 = MakeKey(i);
+
+	  NonlinearFactorGraph newFactors;
+	  Values newValues;
+	  Timestamps newTimestamps;
+
+	  // add 2 odometry factors
+	  newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
+	  newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
+	  newValues.insert(key2, Point2(double(i)+0.1, -0.1));
+	  newTimestamps[key2] = double(i);
+
+	  fullgraph.push_back(newFactors);
+	  fullinit.insert(newValues);
+
+	  // Update the smoother
+	  smoother.update(newFactors, newValues, newTimestamps);
+
+	  // Check
+	  CHECK(check_smoother(fullgraph, fullinit, smoother, key2));
+
+	  // now remove one of the two and try again
+	  size_t factorIndex = fullgraph.size()-2; // any index that does not break connectivity of the graph
+	  FastVector<size_t> factorToRemove;
+	  factorToRemove.push_back(factorIndex);
+
+	  NonlinearFactorGraph emptyNewFactors;
+	  Values emptyNewValues;
+	  Timestamps emptyNewTimestamps;
+
+	  //smoother.getFactors().print();
+
+	  const NonlinearFactorGraph& allFactors = smoother.getFactors();
+	  size_t nrFactorsBeforeRemoval = allFactors.size();
+	  NonlinearFactorGraph expected;
+	  for(size_t i=0; i< allFactors.size(); i++){
+		 // if(i != factorIndex)
+		//	  expected.push_back( allFactors[i] );
+		 // else
+		  std::cout << "ind: " << i << std::endl;
+			  allFactors[i]->print();
+	  }
+
+	  // remove factor
+	  smoother.update(emptyNewFactors, emptyNewValues, emptyNewTimestamps, factorToRemove);
+	  size_t nrFactorsAfterRemoval = smoother.getFactors().size();
+
+	  // check that the number of factors is right
+	  DOUBLES_EQUAL(nrFactorsBeforeRemoval-1, nrFactorsAfterRemoval, 1e-5);
+
+	  // check that the factors in the smoother are right
+	  // NonlinearFactorGraph actual = smoother.getFactors();
+	  //CHECK(assert_equal(expected,actual));
+	  //smoother.getFactors().print();
+  }
 }
 
 /* ************************************************************************* */

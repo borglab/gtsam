@@ -65,7 +65,7 @@ bool IncrementalFixedLagSmoother::equals(const FixedLagSmoother& rhs,
 /* ************************************************************************* */
 FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const KeyTimestampMap& timestamps) {
+    const KeyTimestampMap& timestamps, const FastVector<size_t>& factorToRemove) {
 
   const bool debug = ISDEBUG("IncrementalFixedLagSmoother update");
 
@@ -126,7 +126,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
 
   // Update iSAM2
   ISAM2Result isamResult = isam_.update(newFactors, newTheta,
-      FactorIndices(), constrainedKeys, boost::none, additionalMarkedKeys);
+		  factorToRemove, constrainedKeys, boost::none, additionalMarkedKeys);
 
   if (debug) {
     PrintSymbolicTree(isam_,

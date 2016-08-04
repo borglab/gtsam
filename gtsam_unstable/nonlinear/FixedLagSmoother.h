@@ -91,7 +91,7 @@ public:
 
   /** Add new factors, updating the solution and relinearizing as needed. */
   virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const KeyTimestampMap& timestamps = KeyTimestampMap()) = 0;
+      const KeyTimestampMap& timestamps = KeyTimestampMap(), const FastVector<size_t>& factorToRemove = FastVector<size_t>()) = 0;
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
