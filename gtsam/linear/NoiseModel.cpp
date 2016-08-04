@@ -833,11 +833,10 @@ GemanMcClure::GemanMcClure(double c, const ReweightScheme reweight)
   : Base(reweight), c_(c) {
 }
 
-double GemanMcClure::weight(double error) const {
+double GemanMcClure::sqrtWeight(double error) const {
   const double c2 = c_*c_;
-  const double c4 = c2*c2;
   const double c2error = c2 + error*error;
-  return c4/(c2error*c2error);
+  return c2/c2error;
 }
 
 void GemanMcClure::print(const std::string &s="") const {
@@ -861,12 +860,12 @@ DCS::DCS(double c, const ReweightScheme reweight)
   : Base(reweight), c_(c) {
 }
 
-double DCS::weight(double error) const {
+double DCS::sqrtWeight(double error) const {
   const double e2 = error*error;
   if (e2 > c_)
   {
     const double w = 2.0*c_/(c_ + e2);
-    return w*w;
+    return w;
   }
 
   return 1.0;
