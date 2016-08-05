@@ -35,6 +35,16 @@
 
 namespace gtsam {
 
+/// Linearization mode: what factor to linearize to
+enum LinearizationMode {
+  HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
+};
+
+/// How to manage degeneracy
+enum DegeneracyMode {
+  IGNORE_DEGENERACY, ZERO_ON_DEGENERACY, HANDLE_INFINITY
+};
+
 /**
  * @brief  Base class for smart factors
  * This base class has no internal point, but it has a measurement, noise model
@@ -202,7 +212,7 @@ public:
       boost::optional<typename Cameras::FBlocks&> Fs = boost::none, //
       boost::optional<Matrix&> E = boost::none) const {
     Vector ue = cameras.reprojectionError(point, measured_, Fs, E);
-    if(body_P_sensor_){
+    if(body_P_sensor_ && Fs){
       for(size_t i=0; i < Fs->size(); i++){
         Pose3 w_Pose_body = (cameras[i].pose()).compose(body_P_sensor_->inverse());
         Matrix J(6, 6);
@@ -210,8 +220,16 @@ public:
         Fs->at(i) = Fs->at(i) * J;
       }
     }
+    correctForMissingMeasurements(cameras, ue, Fs, E);
     return ue;
   }
+
+  /**
+   * This corrects the Jacobians for the case in which some pixel measurement is missing (nan)
+   * In practice, this does not do anything in the monocular case, but it is implemented in the stereo version
+   */
+  virtual void correctForMissingMeasurements(const Cameras& cameras, Vector& ue, boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
+		  boost::optional<Matrix&> E = boost::none) const {}
 
   /**
    * Calculate vector of re-projection errors [h(x)-z] = [cameras.project(p) - z]

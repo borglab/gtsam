@@ -35,17 +35,7 @@
 
 namespace gtsam {
 
-/// Linearization mode: what factor to linearize to
- enum LinearizationMode {
-   HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
- };
-
-/// How to manage degeneracy
-enum DegeneracyMode {
-   IGNORE_DEGENERACY, ZERO_ON_DEGENERACY, HANDLE_INFINITY
- };
-
- /*
+  /*
   *  Parameters for the smart stereo projection factors
   */
  struct GTSAM_EXPORT SmartStereoProjectionParams {
@@ -119,8 +109,6 @@ enum DegeneracyMode {
    }
  };
 
-
-
 /**
  * SmartStereoProjectionFactor: triangulates point and keeps an estimate of it around.
  * This factor operates with StereoCamera. This factor requires that values
@@ -155,14 +143,19 @@ public:
   /// Vector of cameras
   typedef CameraSet<StereoCamera> Cameras;
 
+  /// Vector of monocular cameras (stereo treated as 2 monocular)
+  typedef PinholeCamera<Cal3_S2> MonoCamera;
+  typedef CameraSet<MonoCamera> MonoCameras;
+  typedef std::vector<Point2> MonoMeasurements;
+
   /**
    * Constructor
    * @param params internal parameters of the smart factors
    */
   SmartStereoProjectionFactor(const SharedNoiseModel& sharedNoiseModel,
-      const SmartStereoProjectionParams& params =
-      SmartStereoProjectionParams()) :
-      Base(sharedNoiseModel), //
+      const SmartStereoProjectionParams& params = SmartStereoProjectionParams(),
+      const boost::optional<Pose3> body_P_sensor = boost::none) :
+      Base(sharedNoiseModel, body_P_sensor), //
       params_(params), //
       result_(TriangulationResult::Degenerate()) {
   }
@@ -240,75 +233,28 @@ public:
     size_t m = cameras.size();
     bool retriangulate = decideIfTriangulate(cameras);
 
-//    if(!retriangulate)
-//      std::cout << "retriangulate = false" << std::endl;
-//
-//    bool retriangulate = true;
-
-    if (retriangulate) {
-//      std::cout << "Retriangulate " << std::endl;
-      std::vector<Point3> reprojections;
-      reprojections.reserve(m);
-      for(size_t i = 0; i < m; i++) {
-        reprojections.push_back(cameras[i].backproject(measured_[i]));
+    // triangulate stereo measurements by treating each stereocamera as a pair of monocular cameras
+    MonoCameras monoCameras;
+    MonoMeasurements monoMeasured;
+    for(size_t i = 0; i < m; i++) {
+      const Pose3 leftPose = cameras[i].pose();
+      const Cal3_S2 monoCal = cameras[i].calibration().calibration();
+      const MonoCamera leftCamera_i(leftPose,monoCal);
+      const Pose3 left_Pose_right = Pose3(Rot3(),Point3(cameras[i].baseline(),0.0,0.0));
+      const Pose3 rightPose = leftPose.compose( left_Pose_right );
+      const MonoCamera rightCamera_i(rightPose,monoCal);
+      const StereoPoint2 zi = measured_[i];
+      monoCameras.push_back(leftCamera_i);
+      monoMeasured.push_back(Point2(zi.uL(),zi.v()));
+      if(!std::isnan(zi.uR())){ // if right point is valid
+        monoCameras.push_back(rightCamera_i);
+        monoMeasured.push_back(Point2(zi.uR(),zi.v()));
       }
-
-      Point3 pw_sum(0,0,0);
-      for(const Point3& pw: reprojections) {
-        pw_sum = pw_sum + pw;
-      }
-      // average reprojected landmark
-      Point3 pw_avg = pw_sum / double(m);
-
-      double totalReprojError = 0;
-
-      // check if it lies in front of all cameras
-      for(size_t i = 0; i < m; i++) {
-        const Pose3& pose = cameras[i].pose();
-        const Point3& pl = pose.transform_to(pw_avg);
-        if (pl.z() <= 0) {
-          result_ = TriangulationResult::BehindCamera();
-          return result_;
-        }
-
-        // check landmark distance
-        if (params_.triangulation.landmarkDistanceThreshold > 0 &&
-            pl.norm() > params_.triangulation.landmarkDistanceThreshold) {
-          result_ = TriangulationResult::FarPoint();
-          return result_;
-        }
-
-        if (params_.triangulation.dynamicOutlierRejectionThreshold > 0) {
-          const StereoPoint2& zi = measured_[i];
-          StereoPoint2 reprojectionError(cameras[i].project(pw_avg) - zi);
-          totalReprojError += reprojectionError.vector().norm();
-        }
-      } // for
-
-      if (params_.triangulation.dynamicOutlierRejectionThreshold > 0
-          && totalReprojError / m > params_.triangulation.dynamicOutlierRejectionThreshold) {
-        result_ = TriangulationResult::Outlier();
-        return result_;
-      }
-
-      if(params_.triangulation.enableEPI) {
-        try {
-         pw_avg = triangulateNonlinear(cameras, measured_, pw_avg);
-        } catch(StereoCheiralityException& e) {
-          if(params_.verboseCheirality)
-            std::cout << "Cheirality Exception in SmartStereoProjectionFactor" << std::endl;
-          if(params_.throwCheirality)
-            throw;
-          result_ = TriangulationResult::BehindCamera();
-          return TriangulationResult::BehindCamera();
-        }
-      }
-
-      result_ = TriangulationResult(pw_avg);
-
-    } // if retriangulate
+    }
+    if (retriangulate)
+      result_ = gtsam::triangulateSafe(monoCameras, monoMeasured,
+          params_.triangulation);
     return result_;
-
   }
 
   /// triangulate
@@ -567,6 +513,32 @@ public:
       return totalReprojectionError(Base::cameras(values));
     } else { // else of active flag
       return 0.0;
+    }
+  }
+
+  /**
+   * This corrects the Jacobians and error vector for the case in which the right pixel in the monocular camera is missing (nan)
+   */
+  virtual void correctForMissingMeasurements(const Cameras& cameras, Vector& ue,
+      boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
+      boost::optional<Matrix&> E = boost::none) const
+  {
+    // when using stereo cameras, some of the measurements might be missing:
+    for(size_t i=0; i < cameras.size(); i++){
+      const StereoPoint2& z = measured_.at(i);
+      if(std::isnan(z.uR())) // if the right pixel is invalid
+      {
+        if(Fs){ // delete influence of right point on jacobian Fs
+          MatrixZD& Fi = Fs->at(i);
+          for(size_t ii=0; ii<Dim; ii++)
+            Fi(1,ii) = 0.0;
+        }
+        if(E) // delete influence of right point on jacobian E
+          E->row(ZDim * i + 1) = Matrix::Zero(1, E->cols());
+
+        // set the corresponding entry of vector ue to zero
+        ue(ZDim * i + 1) = 0.0;
+      }
     }
   }
 
