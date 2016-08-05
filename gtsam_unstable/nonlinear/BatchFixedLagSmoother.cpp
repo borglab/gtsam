@@ -69,6 +69,12 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   insertFactors(newFactors);
   gttoc(augment_system);
 
+  // remove factors in factorToRemove
+  for(const size_t i : factorToRemove){
+    if(factors_[i])
+      factors_[i].reset();
+  }
+
   // Update the Timestamps associated with the factor keys
   updateKeyTimestampMap(timestamps);
 
