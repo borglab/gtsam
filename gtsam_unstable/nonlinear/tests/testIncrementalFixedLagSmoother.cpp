@@ -200,38 +200,37 @@ TEST( IncrementalFixedLagSmoother, Example )
 	  CHECK(check_smoother(fullgraph, fullinit, smoother, key2));
 
 	  // now remove one of the two and try again
-	  size_t factorIndex = fullgraph.size()-2; // any index that does not break connectivity of the graph
-	  FastVector<size_t> factorToRemove;
-	  factorToRemove.push_back(factorIndex);
-
+	  // empty values and new factors for fake update in which we only remove factors
 	  NonlinearFactorGraph emptyNewFactors;
 	  Values emptyNewValues;
 	  Timestamps emptyNewTimestamps;
 
-	  //smoother.getFactors().print();
+	  size_t factorIndex = 25; // any index that does not break connectivity of the graph
+	  FastVector<size_t> factorToRemove;
+	  factorToRemove.push_back(factorIndex);
 
-	  const NonlinearFactorGraph& allFactors = smoother.getFactors();
-	  size_t nrFactorsBeforeRemoval = allFactors.size();
-	  NonlinearFactorGraph expected;
-	  for(size_t i=0; i< allFactors.size(); i++){
-		 // if(i != factorIndex)
-		//	  expected.push_back( allFactors[i] );
-		 // else
-		  std::cout << "ind: " << i << std::endl;
-			  allFactors[i]->print();
-	  }
+	  const NonlinearFactorGraph smootherFactorsBeforeRemove = smoother.getFactors();
 
 	  // remove factor
-	  smoother.update(emptyNewFactors, emptyNewValues, emptyNewTimestamps, factorToRemove);
-	  size_t nrFactorsAfterRemoval = smoother.getFactors().size();
+	  smoother.update(emptyNewFactors, emptyNewValues, emptyNewTimestamps,factorToRemove);
 
-	  // check that the number of factors is right
-	  DOUBLES_EQUAL(nrFactorsBeforeRemoval-1, nrFactorsAfterRemoval, 1e-5);
+	  // Note: the following test (checking that the number of factor is reduced by 1)
+	  // fails  since we are not reusing slots, hence also when removing a factor we do not change
+	  // the size of the factor graph
+	  // size_t nrFactorsAfterRemoval = smoother.getFactors().size();
+	  // DOUBLES_EQUAL(nrFactorsBeforeRemoval-1, nrFactorsAfterRemoval, 1e-5);
 
 	  // check that the factors in the smoother are right
-	  // NonlinearFactorGraph actual = smoother.getFactors();
-	  //CHECK(assert_equal(expected,actual));
-	  //smoother.getFactors().print();
+	  NonlinearFactorGraph actual = smoother.getFactors();
+	  for(size_t i=0; i< smootherFactorsBeforeRemove.size(); i++){
+	    // check that the factors that were not removed are there
+	    if(smootherFactorsBeforeRemove[i] && i != factorIndex){
+	      EXPECT(smootherFactorsBeforeRemove[i]->equals(*actual[i]));
+	    }
+	    else{ // while the factors that were not there or were removed are no longer there
+	      EXPECT(!actual[i]);
+	    }
+	  }
   }
 }
 
