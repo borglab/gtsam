@@ -59,6 +59,13 @@ public:
     size_t getNonlinearVariables() const { return nonlinearVariables; }
     size_t getLinearVariables() const { return linearVariables; }
     double getError() const { return error; }
+    void print() const{
+      std::cout << "Nr iterations: " << iterations << std::endl;
+      std::cout << "Nr intermediateSteps: " << intermediateSteps << std::endl;
+      std::cout << "Nr nonlinear variables: " << nonlinearVariables << std::endl;
+      std::cout << "Nr linear variables: " << linearVariables << std::endl;
+      std::cout << "error: " << error << std::endl;
+    }
   };
 
 
