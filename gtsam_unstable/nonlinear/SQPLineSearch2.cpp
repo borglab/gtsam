@@ -13,6 +13,17 @@ using namespace std;
 
 namespace gtsam {
 
+bool SQPLineSearch2::checkFeasibility(const Values &x) const {
+  for (const auto equality : program_.equalities) {
+
+  }
+  return false;
+}
+
+Values SQPLineSearch2::getFeasiblePoint() const {
+  return Values();
+}
+  
 /* ************************************************************************* */
 GaussianFactorGraph::shared_ptr SQPLineSearch2::multiplyConstrainedHessians(
     const NonlinearFactorGraph& constrainedGraph, const Values& x,

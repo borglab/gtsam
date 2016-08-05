@@ -71,6 +71,12 @@ public:
   /// Check convergence
   bool checkConvergence(const Values& x, const VectorValues& lambdas) const;
 
+  /// Check if a point is feasible
+  bool checkFeasibility(const Values &x) const;
+
+  /// Gets a feasible point
+  Values getFeasiblePoint() const;
+  
   /// Iterate 1 step
   State iterate(const State& currentState) const;
 
