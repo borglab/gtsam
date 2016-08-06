@@ -28,6 +28,7 @@
 #include <cmath>
 #include <iosfwd>
 #include <typeinfo> // operator typeid
+#include <iostream>
 
 namespace gtsam {
 

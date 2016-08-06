@@ -17,6 +17,7 @@
 
 #include <gtsam/geometry/Point2.h>
 #include <cmath>
+#include <iostream>
 
 using namespace std;
 

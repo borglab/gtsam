@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/geometry/Cal3_S2.h>
+#include <iostream>
 
 namespace gtsam {
 

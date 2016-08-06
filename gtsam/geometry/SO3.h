@@ -24,6 +24,7 @@
 #include <gtsam/base/Lie.h>
 
 #include <cmath>
+#include <iostream>
 
 namespace gtsam {
 
