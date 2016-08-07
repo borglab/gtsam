@@ -80,6 +80,35 @@ vector<StereoPoint2> stereo_projectToMultipleCameras(const StereoCamera& cam1,
 LevenbergMarquardtParams lm_params;
 
 /* ************************************************************************* */
+TEST( SmartStereoProjectionPoseFactor, params) {
+  SmartStereoProjectionParams p;
+
+  // check default values and "get"
+  EXPECT(p.getLinearizationMode() == HESSIAN);
+  EXPECT(p.getDegeneracyMode() == IGNORE_DEGENERACY);
+  EXPECT_DOUBLES_EQUAL(p.getRetriangulationThreshold(), 1e-5, 1e-9);
+  EXPECT(p.getVerboseCheirality() == false);
+  EXPECT(p.getThrowCheirality() == false);
+
+  // check "set"
+  p.setLinearizationMode(JACOBIAN_SVD);
+  p.setDegeneracyMode(ZERO_ON_DEGENERACY);
+  p.setRankTolerance(100);
+  p.setEnableEPI(true);
+  p.setLandmarkDistanceThreshold(200);
+  p.setDynamicOutlierRejectionThreshold(3);
+  p.setRetriangulationThreshold(1e-2);
+
+  EXPECT(p.getLinearizationMode() == JACOBIAN_SVD);
+  EXPECT(p.getDegeneracyMode() == ZERO_ON_DEGENERACY);
+  EXPECT_DOUBLES_EQUAL(p.getTriangulationParameters().rankTolerance, 100, 1e-5);
+  EXPECT(p.getTriangulationParameters().enableEPI == true);
+  EXPECT_DOUBLES_EQUAL(p.getTriangulationParameters().landmarkDistanceThreshold, 200, 1e-5);
+  EXPECT_DOUBLES_EQUAL(p.getTriangulationParameters().dynamicOutlierRejectionThreshold, 3, 1e-5);
+  EXPECT_DOUBLES_EQUAL(p.getRetriangulationThreshold(), 1e-2, 1e-5);
+}
+
+/* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, Constructor) {
   SmartStereoProjectionPoseFactor::shared_ptr factor1(new SmartStereoProjectionPoseFactor(model));
 }
