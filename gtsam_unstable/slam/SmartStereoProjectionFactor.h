@@ -74,6 +74,7 @@ namespace gtsam {
      std::cout << triangulation << std::endl;
    }
 
+   // get class variables
    LinearizationMode getLinearizationMode() const {
      return linearizationMode;
    }
@@ -89,11 +90,18 @@ namespace gtsam {
    bool getThrowCheirality() const {
      return throwCheirality;
    }
+   double getRetriangulationThreshold() const {
+     return retriangulationThreshold;
+   }
+   // set class variables
    void setLinearizationMode(LinearizationMode linMode) {
      linearizationMode = linMode;
    }
    void setDegeneracyMode(DegeneracyMode degMode) {
      degeneracyMode = degMode;
+   }
+   void setRetriangulationThreshold(double retriangulationTh) {
+     retriangulationThreshold = retriangulationTh;
    }
    void setRankTolerance(double rankTol) {
      triangulation.rankTolerance = rankTol;
