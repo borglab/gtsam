@@ -3,6 +3,7 @@
  * @brief:
  * @date: Apr 29, 2014
  * @author: Duy-Nguyen Ta
+ * @author: Ivan Dario Jimenez
  */
 
 #pragma once

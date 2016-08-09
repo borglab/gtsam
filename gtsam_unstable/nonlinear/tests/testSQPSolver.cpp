@@ -1,3 +1,10 @@
+/**
+ * @file 	 testSQPSolver.cpp
+ * @brief
+ * @author Ivan Dario Jimenez
+ * @date 	 Oct 26, 2013
+ */
+
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/nonlinear/SQPLineSearch2.h>
 #include <gtsam_unstable/nonlinear/NonlinearEqualityConstraint.h>

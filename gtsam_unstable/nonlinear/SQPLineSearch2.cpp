@@ -1,8 +1,8 @@
 /*
  * SQPLineSearch2.cpp
  * @brief:
- * @date: Apr 29, 2014
  * @author: Duy-Nguyen Ta
+ * @author: Ivan Dario Jimenez
  */
 
 #include <boost/range/adaptor/map.hpp>
