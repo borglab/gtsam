@@ -33,6 +33,8 @@
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Key.h>
 
+#include <utility>
+
 namespace gtsam {
 
   // Forward declarations
@@ -158,6 +160,12 @@ namespace gtsam {
     /** Add a factor directly using a shared_ptr */
     void push_back(const sharedFactor& factor) {
       factors_.push_back(factor); }
+
+    /** Emplace a factor */
+    template<class DERIVEDFACTOR, class... Args>
+    void emplace_shared(Args&&... args) {
+        factors_.push_back(boost::make_shared<DERIVEDFACTOR>(std::forward<Args>(args)...));
+    }
 
     /** push back many factors with an iterator over shared_ptr (factors are not copied) */
     template<typename ITERATOR>
