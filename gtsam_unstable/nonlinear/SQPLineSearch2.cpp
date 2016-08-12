@@ -14,10 +14,8 @@ using namespace std;
 namespace gtsam {
 
 bool SQPLineSearch2::checkFeasibility(const Values &x) const {
-  for (const auto equality : program_.equalities) {
-
-  }
-  return false;
+  //TODO: Add Inequalities
+  return program_.equalities.checkFeasibility(x, 1e-9);
 }
 
 Values SQPLineSearch2::getFeasiblePoint() const {
@@ -124,9 +122,49 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::buildDampedSystem(
 
 
 /* ************************************************************************* */
+  
+  SQPLineSearch2::State SQPLineSearch2::iterate(const State &currentState) const {
+    State newState = currentState;
+    newState.k += 1;
+    // We start at feasible point x with k = 1
+    // 1. Gradient Evaluation: Evaluate gradient information g and G then:
+    //   a. evaluate the error in the gradient of the Lagrangian from equation:
+    //      θ = g - G'λ - v
+    //   b. terminate if the KKT conditions are satisfied
+    //   c. Compute HL from equation HL = ∇²ₓF - Σ^{m}_{i=1}λ∇²ₓci
+    //      if this is the first iteration go to step 2
+    //      else continue
+    //  d. Levenberg Modification
+    //      i. compute the rate of change in the norm of the gradient of the Lagrangian from
+    //          Q3 =  || Θ^K ||∞ ÷ || Θ^{K-2} || ∞
+    //      ii. if Q1 <= 0.25Q2 set τ^k ← min(2τ^{k-1},1)
+    //      iii. else if Q1 >= 0.75 Q2 set τ^k= τ^(k-1)min(0.5,Q3)
+    //2. Search Direction. Construct the optimization search direction:
+    //   a. compute H from H = HL + τ(|σ|+1)I
+    //   b. compute p by solving the QP subproblem 2.14-2.15
+    //   c. Inertia control: if inertia K is incorrect and...
+    //   d. compute Δλ and Δv from 2.31 and 2.32
+    //   e. compute Δs and Δt from 2.34 and 2.35
+    //   f. compute penalty parameters to satisfy 2.6 and
+    //   g. initialize α = 1
+    // 3. Prediction
+    //    a. compute the predicted point for the variables, the multipliers, and the slacks from 2.30
+    //    b. evaluate the constraints cbar = c(xbar)
+    // 4. Line Search. Evaluate the merit function M(xbar, λbar, vbar, sbar, tbar) = Mbar and
+    //    a. if the merit function is sufficiently less than M, the xbar is an improved point
+    //       Terminate the line search and go to step 5
+    //    b. else change the steplength α to reduce M and return to step 3
+    // 5. Update. Update all quantities and set k = k + 1;
+    //    a. compute the actual reduction from 2.42;
+    //    b. compute the predicted reduction from 2.43 where Mbar^k is the predicted value of the merid function
+    //    c. return to step 1
+    return newState;
+  }
+  
+/* ************************************************************************* */
 /**
- * Iterate 1 step
- * Given x, lambdas
+  * Iteration Strategy
+ * Given a point x and lambdas
  * 0. Check convergence
  * 1. Build the linear graph of the QP subproblem
  * 2. Solve QP --> p, lambdasHat --> p, dLambdas
@@ -134,18 +172,18 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::buildDampedSystem(
  * 4. Line search, find the best steplength alpha
  * 5. Update solution --> new x, new lambdas
  */
-SQPLineSearch2::State SQPLineSearch2::iterate(
-    const SQPLineSearch2::State& currentState) const {
-  static const bool debug = false;
-  static const bool useDamping = false;
-
-  // Don't do anything if it's already converged!
-  if (currentState.converged)
-    return currentState;
-
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //1. Build the linear graph
-  QP fullQP;
+//SQPLineSearch2::State SQPLineSearch2::iterate(
+//    const SQPLineSearch2::State& currentState) const {
+//  static const bool debug = false;
+//  static const bool useDamping = false;
+//
+//  // Don't do anything if it's already converged!
+//  if (currentState.converged)
+//    return currentState;
+//
+//  //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//  //1. Build the linear graph
+//  QP fullQP;
 
   // Add linearized constraints first, since we want nonlinear lambdas and
   // QP's linear lambdas have the same indices, based on the constraints' indices
@@ -217,7 +255,7 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //3. Choose a new penalty weight mu
-//  MeritFunction2 merit(unconstrained_, constrained_, linearUnconstraints,
+//  MeritFunction merit(unconstrained_, constrained_, linearUnconstraints,
 //                       lagrangianGraph, currentState.solution, p);
 //  double newMu = merit.computeNewMu(currentState.mu);
 //  if (debug) cout << "newMu: " << newMu << endl;
@@ -244,46 +282,43 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
 //  bool newConvergence = (currentState.converged || checkConvergence(currentState.solution, currentState.lambdas));
 //  if (debug) cout << "newConvergence: " << (int)newConvergence << endl;
 //  return State(newSolution, newLambdas, newMu, newTau, newConvergence);
-  return State();
-}
+//  return State();
+//}
 
 /* ************************************************************************* */
 VectorValues SQPLineSearch2::zeroFromConstraints(
-    const NonlinearFactorGraph& constrained) const {
+    const NP& nonlinearProgram) const {
   VectorValues lambdas;
-  for (size_t iFactor = 0; iFactor < constrained.size(); ++iFactor) {
-    //TODO: Update this for neww  types of constraints
-//    NoiseModelFactor::shared_ptr factorC = toNoiseModel(constrained.at(iFactor));
-//    lambdas.insert(iFactor, zero(factorC->get_noiseModel()->dim()));
+  for (size_t iFactor = 0; iFactor < nonlinearProgram.equalities.size(); ++iFactor) {
+    lambdas.insert(iFactor,
+        zero(nonlinearProgram.equalities.at(iFactor)->dim()));
+  }
+  size_t offset = nonlinearProgram.equalities.size();
+  for (size_t iFactor = 0; iFactor < nonlinearProgram.inequalities.size(); ++iFactor) {
+    lambdas.insert(iFactor + offset,
+        zero(nonlinearProgram.inequalities.at(iFactor)->dim()));
   }
   return lambdas;
 }
 
 /* ************************************************************************* */
-Values SQPLineSearch2::optimize(const Values& initials) const {
-  return initials;
-    
-  SQPLineSearch2::State currentState;
-//  currentState.solution = initials;
-//  currentState.lambdas = zeroFromConstraints(constrained_);
-//  currentState.mu = 0.0;
-//  currentState.tau = 1e-5;
-  int iter = 0;
-  int maxIter = 200;
-  while (!currentState.converged && iter < maxIter) {
-    if (iter >= maxIter) {
-      cout << "Not converged within " << maxIter << " iterations." << endl;
-      break;
+Values SQPLineSearch2::optimize(const Values& initials, unsigned int max_iter) const {
+    // mu = 0, tau = 1e-5, k = 1
+    State currentState(initials, zeroFromConstraints(program_), 0.0, 1e-5, false, 1);
+//    std::cout << "STARTING STATE: " << std::endl;
+//    GTSAM_PRINT(currentState);
+    while(!currentState.converged && currentState.k < max_iter){
+      currentState = iterate(currentState);
+//      std::cout << "ITERATION:" << std::endl;
+//      GTSAM_PRINT(currentState);
     }
-    iter++;
-    cout << "Iteration: " << iter << endl;
-    currentState = iterate(currentState);
-  }
-  return currentState.solution;
+    if(currentState.k >= max_iter)
+      cout << "Not converged within " << max_iter << " iterations." << endl;
+    return currentState.solution;
 }
 
 /* ************************************************************************* */
-MeritFunction2::MeritFunction2(const NP & program,
+MeritFunction::MeritFunction(const NP & program,
                                const GaussianFactorGraph::shared_ptr& linearUnconstrained,
     const GaussianFactorGraph::shared_ptr& lagrangianGraph, const Values& x,
                                const VectorValues& p) :
@@ -300,7 +335,7 @@ MeritFunction2::MeritFunction2(const NP & program,
 }
 
 /* ************************************************************************* */
-double MeritFunction2::constraintNorm1(const Values x) const {
+double MeritFunction::constraintNorm1(const Values x) const {
   double norm1 = 0.0;
 //  for (size_t iFactor = 0; iFactor<constrained_.size(); ++iFactor) {
 //    //TODO: update this for current version
@@ -313,7 +348,7 @@ double MeritFunction2::constraintNorm1(const Values x) const {
 }
 
 /* ************************************************************************* */
-double MeritFunction2::phi(double alpha, double mu) const {
+double MeritFunction::phi(double alpha, double mu) const {
   static const bool debug = false;
   Values x2 = (fabs(alpha)>1e-5) ? x_.retract(alpha*p_) : x_;
   double c2 = constraintNorm1(x2);
@@ -324,7 +359,7 @@ double MeritFunction2::phi(double alpha, double mu) const {
 }
 
 /* ************************************************************************* */
-double MeritFunction2::D(double mu) const {
+double MeritFunction::D(double mu) const {
   static const bool debug = false;
   double result = p_.dot(gradf_) - mu*constraintNorm1(x_);
   if (debug) cout << "D() = " << result << endl;
@@ -332,7 +367,7 @@ double MeritFunction2::D(double mu) const {
 }
 
 /* ************************************************************************* */
-double MeritFunction2::computeNewMu(double currentMu) const {
+double MeritFunction::computeNewMu(double currentMu) const {
   static const bool debug = false;
   static const double rho = 0.7;
   double muLowerBound = (p_.dot(gradf_)
@@ -350,7 +385,7 @@ double MeritFunction2::computeNewMu(double currentMu) const {
 }
 
 /* ************************************************************************* */
-double MeritFunction2::ptHp(const GaussianFactorGraph& linear,
+double MeritFunction::ptHp(const GaussianFactorGraph& linear,
                             const VectorValues& p) const {
   double result = 0.0;
   for(const GaussianFactor::shared_ptr& factor: linear) {

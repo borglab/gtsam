@@ -17,7 +17,7 @@
 namespace gtsam {
 
 /// Forward declaration
-class MeritFunction2;
+class MeritFunction;
 
 /**
  * This class implements line search method following Betts10book
@@ -33,14 +33,16 @@ public:
     double mu; //!< Penalty weights for the merit function
     double tau; //!< Hessian damping term
     bool converged; //!< Convergence flag
+    unsigned int k; //!< iteration number first iteration is 1
 
     State() :
-        converged(false) {
+        converged(false), k(1){
     }
 
-    State(const Values& _solution, const VectorValues& _lambdas,
-        double _mu, double _tau, bool _converged = false) :
-        solution(_solution), lambdas(_lambdas), mu(_mu), tau(_tau), converged(_converged) {
+    State(const Values& _solution, const VectorValues& _lambdas, double _mu,
+        double _tau, bool _converged, unsigned int _k) :
+        solution(_solution), lambdas(_lambdas), mu(_mu), tau(_tau),
+        converged(_converged), k(_k) {
     }
 
     void print(const std::string& s = "State") const {
@@ -49,6 +51,7 @@ public:
       lambdas.print("\tLambdas: ");
       std::cout << "mu: " << mu << std::endl;
       std::cout << "tau: " << tau << std::endl;
+      std::cout << "k: " << k << std::endl;
       std::cout << "\tConverged: " << converged << std::endl;
     }
   };
@@ -80,11 +83,16 @@ public:
   
   /// Iterate 1 step
   State iterate(const State& currentState) const;
-
-  VectorValues zeroFromConstraints(const NonlinearFactorGraph& constrained) const;
+  
+  /**
+   * Zero initializes lambdas for all constraints in a NonlinearProgram
+   * @param nonlinearProgram
+   * @return Zero Initialized Vector Value with vectors of the size of the constraint.
+   */
+  VectorValues zeroFromConstraints(const NP& nonlinearProgram) const;
 
   /// Full optimization
-  Values optimize(const Values& initials) const;
+  Values optimize(const Values& initials, unsigned int max_iter = 200) const;
   
 };
 
@@ -93,7 +101,7 @@ public:
  * Merit function goes with Betts' line search SQP implementation
  * Betts10book 2.27
  */
-class MeritFunction2 {
+class MeritFunction {
 private:
   NP program_;
   GaussianFactorGraph::shared_ptr linearUnconstrained_, lagrangianGraph_;
@@ -103,7 +111,7 @@ private:
 public:
 
   /// Constructor
-  MeritFunction2(const NP & program,
+  MeritFunction(const NP & program,
       const GaussianFactorGraph::shared_ptr& linearUnconstrained,
       const GaussianFactorGraph::shared_ptr& lagrangianGraph, const Values& x,
       const VectorValues& p);

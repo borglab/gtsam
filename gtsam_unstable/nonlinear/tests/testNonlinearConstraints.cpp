@@ -1,7 +1,8 @@
 /**
  * @file 	 testNonlinearConstraints.cpp
- * @brief  
+ * @brief  Tests Nonlinear Equality and Inequality Constraints
  * @author Duy-Nguyen Ta
+ * @author Ivan Dario Jimenez
  * @date 	 Oct 26, 2013
  */
 
@@ -10,10 +11,31 @@
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam_unstable/nonlinear/NonlinearEqualityConstraint.h>
+#include <gtsam_unstable/nonlinear/NonlinearInequalityConstraint.h>
 
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 using namespace std;
+
+/**
+ * 2x1 <= 33
+ */
+class TrivialInequality : public NonlinearInequalityConstraint1<double> {
+public:
+  TrivialInequality(Key key, Key dualKey) : NonlinearInequalityConstraint1(key, dualKey) {}
+  
+  virtual double computeError(const X &x, boost::optional<Matrix &> H1) const override {
+    return 2*x - 33;
+  }
+};
+
+TEST(NonlinearINequalityConstraint, TrivialInequality){
+  Key X(Symbol('X',1)), D(Symbol('D', 1));
+  
+  TrivialInequality inequality(X,D);
+  CHECK(0.0 == inequality.evaluateError(2.0)[0]);
+//  CHECK(-29 == static_cast<NonlinearEqualityConstraint1>(inequality).evaluateError(2.0)[0]);
+}
 
 TEST(Vector, vectorize) {
   Matrix m = (Matrix(4,3) << 1,2,3,4,5,6,7,8,9,10,11,12).finished();

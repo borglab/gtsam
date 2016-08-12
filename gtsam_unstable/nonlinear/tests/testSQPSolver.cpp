@@ -49,7 +49,7 @@ private:
 };
 }
 
-TEST(SQPLineSearch2, TrivialNonlinearConstraintWithEqualities) {
+TEST_DISABLED(SQPLineSearch2, TrivialNonlinearConstraintWithEqualities) {
   Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
   NP problem;
   problem.cost.push_back(Nocedal152::cost(X,Y,D));
@@ -66,6 +66,7 @@ TEST(SQPLineSearch2, TrivialNonlinearConstraintWithEqualities) {
  * Nocedal06 Problem 18.3 page 562
  * F(X) = e^(x1x2x3x4x5) + 0.5(x1^3 + x2^3 + 1)^2
  * s.t
+ *  
  * x1^2 + x2^2 + x3^2 + x4^2 + x5^2 − 10 = 0
  * x2x3 − 5x4x5 = 0
  * x1^3 + x2^3 + 1 = 0
@@ -147,6 +148,21 @@ TEST(SQPLineSearch2, NonlinearConstraintWithEqualities) {
   CHECK(assert_equal(expected,actuals, 1e-7));
 }
 
+TEST(SQPLineSearch2, FeasabilityEqualities){
+  Key X(Symbol('X',1)), D(Symbol('D',1));
+  NP problem;
+  problem.cost.push_back(Nocedal183::cost(X,D));
+  problem.equalities.push_back(Nocedal183::constraint1(X,D));
+  problem.equalities.push_back(Nocedal183::constraint2(X,D));
+  problem.equalities.push_back(Nocedal183::constraint3(X,D));
+  SQPLineSearch2 solver(problem);
+  Values initial;
+  Vector5 initialVector;
+  initialVector << -1.71, 1.59, 1.82, -0.763, -0.763;
+  initial.insert(X, initialVector);
+  CHECK(solver.checkFeasibility(initial));
+}
+
 /**
  * Betts10 sample problem page 30:
  * F(X) = x1^2 + x2^2 + log(x1*x2)
@@ -210,7 +226,7 @@ private:
   }
 };
 
-TEST(SQPLineSearch2, NonlinearConstraintWithInequalities) {
+TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithInequalities) {
   Key X(Symbol('X',1)), Y(Symbol('Y',1)), dk(Symbol('D', 1));
   NP problem;
   problem.cost.push_back(cost(X, Y, dk));
@@ -277,7 +293,7 @@ public:
     return x1 + (2.0 / 3.0) * x2 - 4;
   }
 };
-TEST(SQPLineSearch2, NonlinearConstraintWithEqualitiesOnly) {
+TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithEqualitiesOnly) {
   Key X(Symbol('X',1)), Y(Symbol('Y', 1)), D(Symbol('D',1));
   NP problem;
   problem.cost.push_back(cost2(X,Y,D));
