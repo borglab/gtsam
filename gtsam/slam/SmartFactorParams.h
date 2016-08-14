@@ -68,7 +68,7 @@ struct GTSAM_EXPORT SmartProjectionParams {
   virtual ~SmartProjectionParams() {
   }
 
-  void print(const std::string& str) const {
+  void print(const std::string& str = "") const {
     std::cout << "linearizationMode: " << linearizationMode << "\n";
     std::cout << "   degeneracyMode: " << degeneracyMode << "\n";
     std::cout << triangulation << std::endl;
