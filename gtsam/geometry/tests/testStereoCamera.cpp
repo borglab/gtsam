@@ -105,6 +105,20 @@ TEST( StereoCamera, Dproject)
 }
 
 /* ************************************************************************* */
+TEST( StereoCamera, projectCheirality)
+{
+  // create a Stereo camera
+  Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));
+  StereoCamera stereoCam(Pose3(), K);
+
+  // point behind the camera
+  Point3 p(0, 0, -5);
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+  CHECK_EXCEPTION(stereoCam.project2(p), StereoCheiralityException);
+#endif
+}
+
+/* ************************************************************************* */
 TEST( StereoCamera, backproject_case1)
 {
   Cal3_S2Stereo::shared_ptr K2(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));
