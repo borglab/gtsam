@@ -1022,6 +1022,7 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) {
 
+  // this test considers a condition in which the cheirality constraint is triggered
   using namespace vanillaPose;
 
   vector<Key> views;
@@ -1096,8 +1097,14 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
 
   // Since we do not do anything on degenerate instances (ZERO_ON_DEGENERACY)
   // rotation remains the same as the initial guess, but position is fixed by PoseTranslationPrior
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   EXPECT(assert_equal(Pose3(values.at<Pose3>(x3).rotation(),
       Point3(0,0,1)), result.at<Pose3>(x3)));
+#else
+  // if the check is disabled, no cheirality exception if thrown and the pose converges to the right rotation
+  // with modest accuracy since the configuration is essentially degenerate without the translation due to noise (noise_pose)
+  EXPECT(assert_equal(pose3, result.at<Pose3>(x3),1e-3));
+#endif
 }
 
 /* *************************************************************************/

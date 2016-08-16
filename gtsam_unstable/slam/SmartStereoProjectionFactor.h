@@ -21,6 +21,7 @@
 #pragma once
 
 #include <gtsam/slam/SmartFactorBase.h>
+#include <gtsam/slam/SmartFactorParams.h>
 
 #include <gtsam/geometry/triangulation.h>
 #include <gtsam/geometry/Pose3.h>
@@ -35,87 +36,10 @@
 
 namespace gtsam {
 
-  /*
-  *  Parameters for the smart stereo projection factors
-  */
- struct GTSAM_EXPORT SmartStereoProjectionParams {
-
-   LinearizationMode linearizationMode; ///< How to linearize the factor
-   DegeneracyMode degeneracyMode; ///< How to linearize the factor
-
-   /// @name Parameters governing the triangulation
-   /// @{
-   TriangulationParameters triangulation;
-   double retriangulationThreshold; ///< threshold to decide whether to re-triangulate
-   /// @}
-
-   /// @name Parameters governing how triangulation result is treated
-   /// @{
-   bool throwCheirality; ///< If true, re-throws Cheirality exceptions (default: false)
-   bool verboseCheirality; ///< If true, prints text for Cheirality exceptions (default: false)
-   /// @}
-
-
-   /// Constructor
-   SmartStereoProjectionParams(LinearizationMode linMode = HESSIAN,
-       DegeneracyMode degMode = IGNORE_DEGENERACY, bool throwCheirality = false,
-       bool verboseCheirality = false) :
-       linearizationMode(linMode), degeneracyMode(degMode), retriangulationThreshold(
-           1e-5), throwCheirality(throwCheirality), verboseCheirality(
-           verboseCheirality) {
-   }
-
-   virtual ~SmartStereoProjectionParams() {
-   }
-
-   void print(const std::string& str) const {
-     std::cout << "linearizationMode: " << linearizationMode << "\n";
-     std::cout << "   degeneracyMode: " << degeneracyMode << "\n";
-     std::cout << triangulation << std::endl;
-   }
-
-   // get class variables
-   LinearizationMode getLinearizationMode() const {
-     return linearizationMode;
-   }
-   DegeneracyMode getDegeneracyMode() const {
-     return degeneracyMode;
-   }
-   TriangulationParameters getTriangulationParameters() const {
-     return triangulation;
-   }
-   bool getVerboseCheirality() const {
-     return verboseCheirality;
-   }
-   bool getThrowCheirality() const {
-     return throwCheirality;
-   }
-   double getRetriangulationThreshold() const {
-     return retriangulationThreshold;
-   }
-   // set class variables
-   void setLinearizationMode(LinearizationMode linMode) {
-     linearizationMode = linMode;
-   }
-   void setDegeneracyMode(DegeneracyMode degMode) {
-     degeneracyMode = degMode;
-   }
-   void setRetriangulationThreshold(double retriangulationTh) {
-     retriangulationThreshold = retriangulationTh;
-   }
-   void setRankTolerance(double rankTol) {
-     triangulation.rankTolerance = rankTol;
-   }
-   void setEnableEPI(bool enableEPI) {
-     triangulation.enableEPI = enableEPI;
-   }
-   void setLandmarkDistanceThreshold(double landmarkDistanceThreshold) {
-     triangulation.landmarkDistanceThreshold = landmarkDistanceThreshold;
-   }
-   void setDynamicOutlierRejectionThreshold(double dynOutRejectionThreshold) {
-     triangulation.dynamicOutlierRejectionThreshold = dynOutRejectionThreshold;
-   }
- };
+/*
+ *  Parameters for the smart stereo projection factors (identical to the SmartProjectionParams)
+ */
+typedef SmartProjectionParams SmartStereoProjectionParams;
 
 /**
  * SmartStereoProjectionFactor: triangulates point and keeps an estimate of it around.
