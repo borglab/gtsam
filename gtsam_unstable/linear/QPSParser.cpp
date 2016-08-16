@@ -85,8 +85,8 @@ struct QPSParser::MPSGrammar: base_grammar {
             >> +blank >> double_)[colDouble] >> *blank];
     quad_l = lexeme[*blank >> word >> +blank >> word >> +blank >> double_
         >> *blank][addQuadTerm];
-    bound = lexeme[*blank >> word >> +blank >> word >> +blank >> word >> +blank
-        >> double_ >> *blank][addBound];
+    bound = lexeme[(*blank >> word >> +blank >> word >> +blank >> word >> +blank
+        >> double_)[addBound] >> *blank];
     bound_fr = lexeme[*blank >> word >> +blank >> word >> +blank >> word
         >> *blank][addBoundFr];
     rows = lexeme[lit("ROWS") >> *blank >> eol >> +(row >> eol)];
