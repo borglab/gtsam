@@ -26,22 +26,21 @@
 //   class __declspec(dllexport) MyClass { ... };
 // When included while compiling other code against GTSAM:
 //   class __declspec(dllimport) MyClass { ... };
-
-// mnaranjo: we don't want dllexport on msys2
-//#ifdef _WIN32
-//#  ifdef @library_name@_EXPORTS
-//#    define @library_name@_EXPORT __declspec(dllexport)
-//#    define @library_name@_EXTERN_EXPORT __declspec(dllexport) extern
-//#  else
-//#    ifndef @library_name@_IMPORT_STATIC
-//#      define @library_name@_EXPORT __declspec(dllimport)
-//#      define @library_name@_EXTERN_EXPORT __declspec(dllimport)
-//#    else /* @library_name@_IMPORT_STATIC */
-//#      define @library_name@_EXPORT
-//#      define @library_name@_EXTERN_EXPORT extern
-//#    endif /* @library_name@_IMPORT_STATIC */
-//#  endif /* @library_name@_EXPORTS */
-//#else /* _WIN32 */
+#ifdef _WIN32
+#  ifdef @library_name@_EXPORTS
+#    define @library_name@_EXPORT __declspec(dllexport)
+#    define @library_name@_EXTERN_EXPORT __declspec(dllexport) extern
+#  else
+#    ifndef @library_name@_IMPORT_STATIC
+#      define @library_name@_EXPORT __declspec(dllimport)
+#      define @library_name@_EXTERN_EXPORT __declspec(dllimport)
+#    else /* @library_name@_IMPORT_STATIC */
+#      define @library_name@_EXPORT
+#      define @library_name@_EXTERN_EXPORT extern
+#    endif /* @library_name@_IMPORT_STATIC */
+#  endif /* @library_name@_EXPORTS */
+#else /* _WIN32 */
 #  define @library_name@_EXPORT
 #  define @library_name@_EXTERN_EXPORT extern
-//#endif
+#endif
+
