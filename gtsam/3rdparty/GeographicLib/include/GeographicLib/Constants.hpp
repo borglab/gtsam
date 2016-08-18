@@ -39,19 +39,18 @@
 #  endif
 #endif
 
-// mnaranjo: disable dllexport on msys2
-//#if defined(_MSC_VER) && defined(GEOGRAPHICLIB_SHARED_LIB) && \
-//  GEOGRAPHICLIB_SHARED_LIB
-//#  if GEOGRAPHICLIB_SHARED_LIB > 1
-//#    error GEOGRAPHICLIB_SHARED_LIB must be 0 or 1
-//#  elif defined(GeographicLib_EXPORTS)
-//#    define GEOGRAPHICLIB_EXPORT __declspec(dllexport)
-//#  else
-//#    define GEOGRAPHICLIB_EXPORT __declspec(dllimport)
-//#  endif
-//#else
+#if defined(_MSC_VER) && defined(GEOGRAPHICLIB_SHARED_LIB) && \
+  GEOGRAPHICLIB_SHARED_LIB
+#  if GEOGRAPHICLIB_SHARED_LIB > 1
+#    error GEOGRAPHICLIB_SHARED_LIB must be 0 or 1
+#  elif defined(GeographicLib_EXPORTS)
+#    define GEOGRAPHICLIB_EXPORT __declspec(dllexport)
+#  else
+#    define GEOGRAPHICLIB_EXPORT __declspec(dllimport)
+#  endif
+#else
 #  define GEOGRAPHICLIB_EXPORT
-//#endif
+#endif
 
 #include <stdexcept>
 #include <string>
