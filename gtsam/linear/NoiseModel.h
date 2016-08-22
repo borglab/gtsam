@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/linear/M-Estimators.h>
+#include <gtsam/linear/MEstimators.h>
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
