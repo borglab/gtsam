@@ -125,7 +125,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   KeyList additionalMarkedKeys(additionalKeys.begin(), additionalKeys.end());
 
   // Update iSAM2
-  ISAM2Result isamResult = isam_.update(newFactors, newTheta,
+  isamResult_ = isam_.update(newFactors, newTheta,
 		  factorToRemove, constrainedKeys, boost::none, additionalMarkedKeys);
 
   if (debug) {

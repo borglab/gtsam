@@ -68,7 +68,6 @@ public:
     }
   };
 
-
   /** default constructor */
   FixedLagSmoother(double smootherLag = 0.0) : smootherLag_(smootherLag) { }
 
