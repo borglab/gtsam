@@ -29,7 +29,7 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::multiplyConstrainedHessians(
   GaussianFactorGraph::shared_ptr multipliedConstrainedHessians(
         new GaussianFactorGraph());
   for (size_t iFactor = 0; iFactor < constrainedGraph.size(); ++iFactor) {
-//    NonlinearEqualityConstraint::shared_ptr constraint = toConstraint(
+//    NonlinearConstraint::shared_ptr constraint = toConstraint(
 //          constrainedGraph.at(iFactor));
     //TODO: figure out was Duy is trying to do here.
 //    VectorValues multipliedLambdas = lambdas.at(iFactor) * alpha;
@@ -122,7 +122,17 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::buildDampedSystem(
 
 
 /* ************************************************************************* */
-  
+  /**
+  * Iteration Strategy
+ * Given a point x and lambdas
+ * 0. Check convergence
+ * 1. Build the linear graph of the QP subproblem
+ * 2. Solve QP --> p, lambdasHat --> p, dLambdas
+ * 3. Update penalty weights mu
+
+ * 4. Line search, find the best steplength alpha
+ * 5. Update solution --> new x, new lambdas
+ */
   SQPLineSearch2::State SQPLineSearch2::iterate(const State &currentState) const {
     State newState = currentState;
     newState.k += 1;
@@ -130,6 +140,10 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::buildDampedSystem(
     // 1. Gradient Evaluation: Evaluate gradient information g and G then:
     //   a. evaluate the error in the gradient of the Lagrangian from equation:
     //      θ = g - G'λ - v
+    //   g is the gradient of the cost function
+    //   G is the Jacobian Matrix of the constraints
+    //   H is the Hessian Matrix
+    //
     //   b. terminate if the KKT conditions are satisfied
     //   c. Compute HL from equation HL = ∇²ₓF - Σ^{m}_{i=1}λ∇²ₓci
     //      if this is the first iteration go to step 2
@@ -162,16 +176,6 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::buildDampedSystem(
   }
   
 /* ************************************************************************* */
-/**
-  * Iteration Strategy
- * Given a point x and lambdas
- * 0. Check convergence
- * 1. Build the linear graph of the QP subproblem
- * 2. Solve QP --> p, lambdasHat --> p, dLambdas
- * 3. Update penalty weights mu
- * 4. Line search, find the best steplength alpha
- * 5. Update solution --> new x, new lambdas
- */
 //SQPLineSearch2::State SQPLineSearch2::iterate(
 //    const SQPLineSearch2::State& currentState) const {
 //  static const bool debug = false;

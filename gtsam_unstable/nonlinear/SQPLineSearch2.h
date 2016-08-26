@@ -11,7 +11,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam_unstable/nonlinear/NonlinearEqualityConstraint.h>
+#include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
 #include <gtsam_unstable/nonlinear/NP.h>
 
 namespace gtsam {

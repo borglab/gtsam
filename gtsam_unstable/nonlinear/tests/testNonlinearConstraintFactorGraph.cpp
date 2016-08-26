@@ -30,29 +30,19 @@ using namespace gtsam::symbol_shorthand;
 using namespace gtsam;
 const double tol = 1e-10;
 
-class Constraint1: public NonlinearEqualityConstraint1<double> {
-public:
-  Constraint1(Key key, Key dualKey) :
-      NonlinearEqualityConstraint1(key, dualKey, 1) {
-  }
 
-  Vector evaluateError(const X &x, boost::optional<Matrix &> H1) const
-      override {
-    return Vector1(exp(x) - std::pow(x, 2));
+struct Constraint1Error {
+  Vector operator() (const double &x, boost::optional<Matrix &> H1) const {
+    return I_1x1 * (exp(x) - std::pow(x, 2));
   }
 };
 
-class Constraint2: public NonlinearEqualityConstraint1<double> {
-public:
-  Constraint2(Key key, Key dualKey) :
-      NonlinearEqualityConstraint1(key, dualKey, 1) {
-  }
-
-  Vector evaluateError(const X &x, boost::optional<Matrix &> H1) const
-      override {
-    return Vector1(sin(x));
+struct Constraint2Error {
+  Vector operator() (const double &x, boost::optional<Matrix &> H1) const {
+    return I_1x1 * (sin(x));
   }
 };
+
 
 //******************************************************************************
 TEST(NonlinearInequalityFactorGraph, constructor) {
@@ -61,6 +51,9 @@ TEST(NonlinearInequalityFactorGraph, constructor) {
 }
 
 TEST(NonlinearEqualityFactorGraph, equationSolvingWorks) {
+  typedef NonlinearEqualityConstraint1<double, Constraint1Error> Constraint1;
+  typedef NonlinearEqualityConstraint1<double, Constraint2Error> Constraint2;
+  
   NonlinearEqualityFactorGraph solver;
   Key X1(Symbol('X',1)), X2(Symbol('X', 2));
   Constraint1 c1(X1, X2);

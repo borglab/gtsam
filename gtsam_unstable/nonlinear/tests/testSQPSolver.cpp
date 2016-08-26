@@ -7,7 +7,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/nonlinear/SQPLineSearch2.h>
-#include <gtsam_unstable/nonlinear/NonlinearEqualityConstraint.h>
+#include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
 #include <gtsam_unstable/nonlinear/NonlinearInequalityConstraint.h>
 #include <gtsam/inference/Symbol.h>
 
@@ -20,33 +20,24 @@ using namespace gtsam;
  */
 
 namespace Nocedal152 {
-class cost: public NonlinearEqualityConstraint2<double, double> {
-public:
-  cost(Key j1, Key j2, Key dualKey) :
-      NonlinearEqualityConstraint2(j1, j2, dualKey) {
-  }
-
-private:
-  virtual Vector evaluateError(const X1 &x1, const X2 &x2,
-      boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const
-          override {
-    return Vector1(std::pow(x1, 2) + std::pow(x2, 2));
-  }
-};
-
-class constraint: public NonlinearEqualityConstraint2<double, double> {
-public:
-  constraint(Key j1, Key j2, Key dualKey) :
-      NonlinearEqualityConstraint2(j1, j2, dualKey) {
-  }
-
-private:
-  virtual Vector evaluateError(const X1 &x1, const X2 &x2,
-      boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const
-          override {
-    return Vector1(std::pow(x1 - 1, 2) + std::pow(x2, 2));
-  }
-};
+  
+  struct costError{
+    Vector operator() (const double &x1, const double &x2,
+                                 boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const {
+      return I_1x1 * (std::pow(x1, 2) + std::pow(x2, 2));
+    }
+  };
+  
+  struct constraintError{
+    Vector operator() (const double &x1, const double &x2,
+                                 boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const{
+      return I_1x1 * (std::pow(x1 - 1, 2) + std::pow(x2, 2));
+    }
+  };
+  
+  typedef NonlinearEqualityConstraint2<double, double, costError> cost;
+  typedef NonlinearEqualityConstraint2<double, double, constraintError> constraint;
+  
 }
 
 TEST_DISABLED(SQPLineSearch2, TrivialNonlinearConstraintWithEqualities) {
@@ -75,59 +66,32 @@ TEST_DISABLED(SQPLineSearch2, TrivialNonlinearConstraintWithEqualities) {
  */
 
 namespace Nocedal183 {
-class cost: public NonlinearEqualityConstraint1<Vector5> {
-public:
-  cost(Key key, Key dualKey) :
-      NonlinearEqualityConstraint1(key, dualKey) {
-  }
-
-private:
-  virtual Vector evaluateError(const X &x, boost::optional<Matrix &> H1) const
-      override {
-    return Vector1(
-        std::exp(x[0] * x[1] * x[2] * x[3] * x[4])
-            + 0.5 * std::pow(std::pow(x[0], 3) + std::pow(x[1], 3) + 1, 2));
-  }
-};
-
-class constraint1: public NonlinearEqualityConstraint1<Vector5> {
-public:
-  constraint1(Key key, Key dualKey) :
-      NonlinearEqualityConstraint1(key, dualKey) {
-  }
-
-private:
-  virtual Vector evaluateError(const X &x, boost::optional<Matrix &> H1) const
-      override {
-    return Vector1(x.cwiseProduct(x).sum() - 10);
-  }
-};
-
-class constraint2: public NonlinearEqualityConstraint1<Vector5> {
-public:
-  constraint2(Key key, Key dualKey) :
-      NonlinearEqualityConstraint1(key, dualKey) {
-  }
-
-private:
-  virtual Vector evaluateError(const X &x, boost::optional<Matrix &> H1) const
-      override {
-    return Vector1(x[1] * x[2] - 5 * x[3] * x[4]);
-  }
-};
-
-class constraint3: public NonlinearEqualityConstraint1<Vector5> {
-public:
-  constraint3(Key key, Key dualKey) :
-      NonlinearEqualityConstraint1(key, dualKey) {
-  }
-
-private:
-  virtual Vector evaluateError(const X &x, boost::optional<Matrix &> H1) const
-      override {
-    return Vector1(std::pow(x[0], 3) + std::pow(x[1], 3) + 1);
-  }
-};
+  
+  struct costError{
+    Vector operator()(const Vector5 &x, boost::optional<Matrix &> H1) const {
+      return I_1x1 * (std::exp(x[0] * x[1] * x[2] * x[3] * x[4])
+        + 0.5 * std::pow(std::pow(x[0], 3) + std::pow(x[1], 3) + 1, 2));
+    }};
+  struct constraint1Error{
+    Vector operator() (const Vector5 &x, boost::optional<Matrix &> H1) const {
+      return I_1x1 * (x.cwiseProduct(x).sum() - 10);
+    }};
+  struct constraint2Error{
+    Vector operator() (const Vector5 &x, boost::optional<Matrix &> H1) const {
+      return I_1x1 * (x[1] * x[2] - 5 * x[3] * x[4]);
+    }
+  };
+  struct constraint3Error{
+    Vector operator() (const Vector5 &x, boost::optional<Matrix &> H1) const {
+      return I_1x1 * (std::pow(x[0], 3) + std::pow(x[1], 3) + 1);
+    }
+  };
+  
+  typedef NonlinearEqualityConstraint1<Vector5, costError> cost;
+  typedef NonlinearEqualityConstraint1<Vector5, constraint1Error> constraint1;
+  typedef NonlinearEqualityConstraint1<Vector5, constraint2Error> constraint2;
+  typedef NonlinearEqualityConstraint1<Vector5, constraint3Error> constraint3;
+  
 }
 
 TEST(SQPLineSearch2, NonlinearConstraintWithEqualities) {
@@ -172,59 +136,37 @@ TEST(SQPLineSearch2, FeasabilityEqualities){
  * starting point on (0.5,2) with solution at (1,1)
  */
 
-class cost: public NonlinearEqualityConstraint2<double, double> {
-public:
-  cost(Key j1, Key j2, Key dualKey) :
-      NonlinearEqualityConstraint2(j1, j2, dualKey, 1) {
-  }
-
-private:
-  virtual Vector evaluateError(const X1 &x1, const X2 &x2,
-      boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const
-          override {
-    return Vector1(std::pow(x1, 2) + std::pow(x2, 2) + std::log(x1 * x2));
+struct costError {
+  Vector operator() (const double &x1, const double &x2,
+                               boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const{
+    return I_1x1 * (std::pow(x1, 2) + std::pow(x2, 2) + std::log(x1 * x2));
   }
 };
 
-class constraint: public NonlinearInequalityConstraint2<double, double> {
-public:
-  constraint(Key j1, Key j2, Key dualKey) :
-      NonlinearInequalityConstraint2(j1, j2, dualKey) {
-  }
-
-private:
-  virtual double computeError(const X1 &x1, const X2 &x2,
-      boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const
-          override {
-    return 1 - x1 * x2;
+struct constraintError {
+  Vector operator() (const double &x1, const double &x2,
+                                    boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const {
+    return I_1x1 * (1 - x1 * x2);
   }
 };
 
-class lowerBoundX: public NonlinearInequalityConstraint1<double> {
-public:
-  lowerBoundX(Key key, Key dualKey) :
-      NonlinearInequalityConstraint1(key, dualKey) {
-  }
-
-private:
-  virtual double computeError(const X &x, boost::optional<Matrix &> H1) const
-      override {
-    return -x;
+struct lowerBoundXError {
+  Vector operator() (const double &x, boost::optional<Matrix &> H1) const {
+    return I_1x1 * (-x);
   }
 };
 
-class upperBoundX: public NonlinearInequalityConstraint1<double> {
-public:
-  upperBoundX(Key key, Key dualKey) :
-      NonlinearInequalityConstraint1(key, dualKey) {
-  }
-
-private:
-  virtual double computeError(const X &x, boost::optional<Matrix &> H1) const
-      override {
-    return x - 10;
+struct upperBoundXError {
+  Vector operator() (const double &x, boost::optional<Matrix &> H1) const {
+    return I_1x1 * (x - 10);
   }
 };
+
+typedef NonlinearEqualityConstraint2<double, double, costError> cost;
+typedef NonlinearInequalityConstraint2<double, double, constraintError> constraint;
+typedef NonlinearInequalityConstraint1<double, lowerBoundXError> lowerBoundX;
+typedef NonlinearInequalityConstraint1<double, upperBoundXError> upperBoundX;
+
 
 TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithInequalities) {
   Key X(Symbol('X',1)), Y(Symbol('Y',1)), dk(Symbol('D', 1));
@@ -255,44 +197,30 @@ TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithInequalities) {
  * starting point on (4,0) solution (1,1) and optimal lambda of (2,0)
  * Optimal active set is {c1}
  */
-class cost2: public NonlinearEqualityConstraint2<double, double> {
-public:
-  cost2(Key j1, Key j2, Key dualKey) :
-      NonlinearEqualityConstraint2(j1, j2, dualKey, 1) {
-  }
 
-  virtual Vector evaluateError(const X1 &x1, const X2 &x2,
-      boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const
-          override {
-    return Vector1(std::pow(x1, 2) + std::pow(x2, 2));
+struct cost2Error{
+  Vector operator() (const double &x1, const double &x2,
+                               boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const {
+    return I_1x1 * (std::pow(x1, 2) + std::pow(x2, 2));
+  }
+};
+struct c1Error{
+  Vector operator() (const double &x1, const double &x2,
+                                    boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const {
+    return I_1x1 * (2 - x1 - x2);
+  }
+};
+struct c2Error{
+  Vector operator() (const double &x1, const double &x2,
+                                    boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const {
+    return I_1x1 * (x1 + (2.0 / 3.0) * x2 - 4);
   }
 };
 
-class c1: public NonlinearInequalityConstraint2<double, double> {
-public:
-  c1(Key j1, Key j2, Key dualKey) :
-      NonlinearInequalityConstraint2(j1, j2, dualKey) {
-  }
+typedef NonlinearEqualityConstraint2<double, double, cost2Error> cost2;
+typedef NonlinearInequalityConstraint2<double, double, c1Error> c1;
+typedef NonlinearInequalityConstraint2<double, double, c2Error> c2;
 
-  virtual double computeError(const X1 &x1, const X2 &x2,
-      boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const
-          override {
-    return 2 - x1 - x2;
-  }
-};
-
-class c2: public NonlinearInequalityConstraint2<double, double> {
-public:
-  c2(Key j1, Key j2, Key dualKey) :
-      NonlinearInequalityConstraint2(j1, j2, dualKey) {
-  }
-
-  virtual double computeError(const X1 &x1, const X2 &x2,
-      boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const
-          override {
-    return x1 + (2.0 / 3.0) * x2 - 4;
-  }
-};
 TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithEqualitiesOnly) {
   Key X(Symbol('X',1)), Y(Symbol('Y', 1)), D(Symbol('D',1));
   NP problem;

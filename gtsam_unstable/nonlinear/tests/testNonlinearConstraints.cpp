@@ -10,7 +10,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam_unstable/nonlinear/NonlinearEqualityConstraint.h>
+#include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
 #include <gtsam_unstable/nonlinear/NonlinearInequalityConstraint.h>
 
 using namespace gtsam;
@@ -20,21 +20,86 @@ using namespace std;
 /**
  * 2x1 <= 33
  */
-class TrivialInequality : public NonlinearInequalityConstraint1<double> {
-public:
-  TrivialInequality(Key key, Key dualKey) : NonlinearInequalityConstraint1(key, dualKey) {}
-  
-  virtual double computeError(const X &x, boost::optional<Matrix &> H1) const override {
-    return 2*x - 33;
+struct TrivialInequalityError1 {
+  Vector operator() (const double &x, boost::optional<Matrix &> H1) const{
+    if(H1){
+      *H1 = (Matrix(1,1) << 2.0).finished();
+    }
+    return I_1x1 * (2 * x - 33);
   }
 };
 
-TEST(NonlinearINequalityConstraint, TrivialInequality){
+typedef NonlinearInequalityConstraint1<double, TrivialInequalityError1> TrivialInequality1;
+
+TEST(NonlinearINequalityConstraint, TrivialInequality1){
   Key X(Symbol('X',1)), D(Symbol('D', 1));
   
-  TrivialInequality inequality(X,D);
+  TrivialInequality1 inequality(X,D);
   CHECK(0.0 == inequality.evaluateError(2.0)[0]);
-//  CHECK(-29 == static_cast<NonlinearEqualityConstraint1>(inequality).evaluateError(2.0)[0]);
+  CHECK(-29 == inequality.equality_.evaluateError(2.0)[0]);
+}
+
+
+/**
+ * 2x1 + sin(x2) <= 11
+ */
+
+struct TrivialInequalityError2{
+  Vector operator() (const double &x1, const double &x2, boost::optional<Matrix &> H1, boost::optional<Matrix &> H2){
+    if(H1){
+      *H1 = (Matrix(1,1) << 2.0).finished();
+    }
+    
+    if(H2){
+      *H2 = (Matrix(1,1) << std::cos(x2)).finished();
+    }
+    
+    return I_1x1 * (2*x1 + std::sin(x2) - 11);
+  }
+};
+
+typedef NonlinearInequalityConstraint2<double, double, TrivialInequalityError2> TrivialInequality2;
+
+TEST(NonlinearInequalityConstraint, TrivialInequality2){
+  Key X1(Symbol('X',1)), X2(Symbol('X',2)), D(Symbol('D', 1));
+  
+  TrivialInequality2 inequality(X1, X2, D);
+  CHECK(0.0 == inequality.evaluateError(5.5,0)[0]);
+  CHECK(0.0 == inequality.equality_.evaluateError(5.5,0)[0]);
+}
+
+/**
+ * 2x1 + 3x2^2 + x3^3 <= 123
+ */
+
+struct TrivialInequalityError3{
+  Vector operator()(const double &x1, const double &x2, const double &x3,
+      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
+      boost::optional<Matrix&> H3) {
+    if(H1){
+      *H1 = (Matrix(1,1) << 2).finished();
+    }
+    
+    if(H2){
+      *H2 = (Matrix(1,1) << 6 * x2).finished();
+    }
+    
+    if(H3){
+      *H3 = (Matrix(1,1) << 3 * x3 * x3).finished();
+    }
+    
+    return I_1x1 * (2*x1 + 3*std::pow(x2,2) + std::pow(x3,3) - 123);
+  }
+};
+
+typedef NonlinearInequalityConstraint3<double, double, double, TrivialInequalityError3> TrivialInequality3;
+
+TEST(NonlinearInequalityConstraint, TrivialInequality3){
+  Key X1(Symbol('X',1)), X2(Symbol('X',2)), X3(Symbol('X',3)), D(Symbol('D', 1));
+   
+  TrivialInequality3 inequality(X1, X2, X3, D);
+  CHECK(666 == inequality.evaluateError(6.0, 4.0, 9.0)[0]);
+  CHECK(666 == inequality.equality_.evaluateError(6.0, 4.0, 9.0)[0]);
 }
 
 TEST(Vector, vectorize) {
@@ -51,17 +116,10 @@ TEST(Vector, vectorize) {
  * Test 3-way equality nonlinear constraint
  *  x(1)      + x(2)^2 + x(3)^3                 = 3
  */
-class Constraint: public NonlinearEqualityConstraint3<double, double, double> {
-  typedef NonlinearEqualityConstraint3<double, double, double> Base;
-
-public:
-  Constraint(Key key1, Key key2, Key key3, Key dualKey) :
-      Base(key1, key2, key3, dualKey, 1) {
-  }
-
-  Vector evaluateError(const double& x1, const double& x2, const double& x3,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none, boost::optional<Matrix&> H3 = boost::none) const {
+struct ConstraintError{
+  Vector operator() (const double& x1, const double& x2, const double& x3,
+                       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+  boost::none, boost::optional<Matrix&> H3 = boost::none) const {
     if (H1) {
       *H1 = (Matrix(1, 1) << 1.0).finished();
     }
@@ -71,8 +129,16 @@ public:
     if (H3) {
       *H3 = (Matrix(1, 1) << 3.0 * x3 * x3).finished();
     }
-
+    
     return (Vector(1) << x1 + x2 * x2 + x3 * x3 * x3 - 3.0).finished();
+  }
+};
+
+class Constraint: public NonlinearEqualityConstraint3<double, double, double, ConstraintError> {
+  typedef NonlinearEqualityConstraint3<double, double, double, ConstraintError> Base;
+public:
+  Constraint(Key key1, Key key2, Key key3, Key dualKey) :
+      Base(key1, key2, key3, dualKey, 1) {
   }
 
   void expectedHessians(const double& x1, const double& x2, const double& x3,
@@ -114,17 +180,10 @@ TEST(NonlinearConstraint3, Hessian) {
  *  p(1).x      + p(2).x^2 + p(3).y^3                 = 3
  *  p(1).x^2    + p(2).y   + p(3).x^3                 = 5
  */
-class Constraint2d: public NonlinearEqualityConstraint3<Point2, Point2, Point2> {
-  typedef NonlinearEqualityConstraint3<Point2, Point2, Point2> Base;
-
-public:
-  Constraint2d(Key key1, Key key2, Key key3, Key dualKey) :
-      Base(key1, key2, key3, dualKey, 1) {
-  }
-
-  Vector evaluateError(const Point2& p1, const Point2& p2, const Point2& p3,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none, boost::optional<Matrix&> H3 = boost::none) const {
+struct Constraint2dError{
+  Vector operator() (const Point2& p1, const Point2& p2, const Point2& p3,
+                       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+  boost::none, boost::optional<Matrix&> H3 = boost::none) const {
     if (H1) {
       *H1 = (Matrix(2, 2) << 1.0, 0.0, 2 * p1.x(), 0.0).finished();
     }
@@ -133,12 +192,21 @@ public:
     }
     if (H3) {
       *H3 =
-          (Matrix(2, 2) << 0.0, 3.0 * p3.y() * p3.y(), 3.0 * p3.x() * p3.x(), 0.0).finished();
+        (Matrix(2, 2) << 0.0, 3.0 * p3.y() * p3.y(), 3.0 * p3.x() * p3.x(), 0.0).finished();
     }
-
+    
     return (Vector(2)
-        << p1.x() + p2.x() * p2.x() + p3.y() * p3.y() * p3.y() - 3.0, p1.x()
-        * p1.x() + p2.y() + p3.x() * p3.x() * p3.x() - 5.0).finished();
+      << p1.x() + p2.x() * p2.x() + p3.y() * p3.y() * p3.y() - 3.0, p1.x()
+                                                                    * p1.x() + p2.y() + p3.x() * p3.x() * p3.x() - 5.0).finished();
+  }
+};
+
+class Constraint2d: public NonlinearEqualityConstraint3<Point2, Point2, Point2, Constraint2dError> {
+  typedef NonlinearEqualityConstraint3<Point2, Point2, Point2, Constraint2dError> Base;
+
+public:
+  Constraint2d(Key key1, Key key2, Key key3, Key dualKey) :
+      Base(key1, key2, key3, dualKey, 1) {
   }
 
   void expectedHessians(const Point2& x1, const Point2& x2, const Point2& x3,

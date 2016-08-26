@@ -19,7 +19,7 @@
 
 #pragma once
 #include <gtsam_unstable/linear/EqualityFactorGraph.h>
-#include <gtsam_unstable/nonlinear/NonlinearEqualityConstraint.h>
+#include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
 
 namespace gtsam {
 
@@ -36,8 +36,8 @@ public:
     for (const NonlinearFactor::shared_ptr& factor : *this) {
       JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast
           < JacobianFactor > (factor->linearize(linearizationPoint));
-      NonlinearEqualityConstraint::shared_ptr constraint =
-          boost::dynamic_pointer_cast < NonlinearEqualityConstraint > (factor);
+      NonlinearConstraint::shared_ptr constraint =
+          boost::dynamic_pointer_cast < NonlinearConstraint > (factor);
       linearGraph->add(LinearEquality(*jacobian, constraint->dualKey()));
     }
     return linearGraph;
@@ -64,7 +64,7 @@ public:
 //  GaussianFactorGraph::shared_ptr multipliedHessians(const Values& values, const VectorValues& duals) const {
 //    GaussianFactorGraph::shared_ptr constrainedHessians(new GaussianFactorGraph());
 //    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this) {
-//      NonlinearEqualityConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearEqualityConstraint>(factor);
+//      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
 //      constrainedHessians->push_back(constraint->multipliedHessian(values, duals));
 //    }
 //    return constrainedHessians;

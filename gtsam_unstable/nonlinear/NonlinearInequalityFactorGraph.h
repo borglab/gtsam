@@ -20,7 +20,7 @@
 #pragma once
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam_unstable/linear/InequalityFactorGraph.h>
-#include <gtsam_unstable/nonlinear/NonlinearEqualityConstraint.h>
+#include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
 
 namespace gtsam {
 class NonlinearInequalityFactorGraph: public FactorGraph<NonlinearFactor> {
@@ -37,8 +37,8 @@ public:
     for (const NonlinearFactor::shared_ptr& factor : *this) {
       JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast
           < JacobianFactor > (factor->linearize(linearizationPoint));
-      NonlinearEqualityConstraint::shared_ptr constraint =
-          boost::dynamic_pointer_cast < NonlinearEqualityConstraint > (factor);
+      NonlinearConstraint::shared_ptr constraint =
+          boost::dynamic_pointer_cast < NonlinearConstraint > (factor);
       linearGraph->add(LinearInequality(*jacobian, constraint->dualKey()));
     }
     return linearGraph;
@@ -60,8 +60,8 @@ public:
       }
 
       // Complimentary condition: errors of active constraints need to be 0.0
-      NonlinearEqualityConstraint::shared_ptr constraint =
-          boost::dynamic_pointer_cast < NonlinearEqualityConstraint > (factor);
+      NonlinearConstraint::shared_ptr constraint =
+          boost::dynamic_pointer_cast < NonlinearConstraint > (factor);
       Key dualKey = constraint->dualKey();
       if (!duals.exists(dualKey))
         continue; // if dualKey doesn't exist, it is an inactive constraint!
