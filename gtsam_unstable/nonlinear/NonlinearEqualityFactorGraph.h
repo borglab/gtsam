@@ -19,11 +19,11 @@
 
 #pragma once
 #include <gtsam_unstable/linear/EqualityFactorGraph.h>
-#include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
+#include <gtsam_unstable/nonlinear/NonlinearEqualityConstraint.h>
 
 namespace gtsam {
 
-class NonlinearEqualityFactorGraph: public FactorGraph<NonlinearFactor> {
+class NonlinearEqualityFactorGraph: public FactorGraph<NonlinearConstraint> {
 public:
   /// Default constructor
   NonlinearEqualityFactorGraph() {

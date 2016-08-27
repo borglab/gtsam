@@ -27,12 +27,13 @@
 
 namespace gtsam {
 
-class NonlinearConstraint {
+class NonlinearConstraint: public NoiseModelFactor {
 
 protected:
   Key dualKey_;
   bool active_;
-  
+  typedef NoiseModelFactor Base;
+
 public:
   virtual bool isActive_() const {
     return active_; // equality constraints are always active
@@ -45,8 +46,10 @@ public:
   typedef boost::shared_ptr<NonlinearConstraint> shared_ptr;
 
   /// Construct with dual key
-  NonlinearConstraint(Key dualKey, bool isActive = true) :
-      dualKey_(dualKey), active_(isActive) {
+  template<typename CONTAINER>
+  NonlinearConstraint(const SharedNoiseModel& noiseModel, const CONTAINER& keys,
+      Key dualKey, bool isActive = true) :
+      Base(noiseModel, keys), dualKey_(dualKey), active_(isActive) {
   }
 
   /**
@@ -60,5 +63,5 @@ public:
     return dualKey_;
   }
 };
-  
+
 } /* namespace gtsam */

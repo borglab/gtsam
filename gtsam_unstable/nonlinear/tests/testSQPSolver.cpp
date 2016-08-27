@@ -10,6 +10,7 @@
 #include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
 #include <gtsam_unstable/nonlinear/NonlinearInequalityConstraint.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam_unstable/nonlinear/LocalSQP.h>
 
 using namespace gtsam;
 /**
@@ -23,14 +24,14 @@ namespace Nocedal152 {
   
   struct costError{
     Vector operator() (const double &x1, const double &x2,
-                                 boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const {
+                                 boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const {
       return I_1x1 * (std::pow(x1, 2) + std::pow(x2, 2));
     }
   };
   
   struct constraintError{
     Vector operator() (const double &x1, const double &x2,
-                                 boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const{
+                                 boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const{
       return I_1x1 * (std::pow(x1 - 1, 2) + std::pow(x2, 2));
     }
   };
@@ -68,21 +69,21 @@ TEST_DISABLED(SQPLineSearch2, TrivialNonlinearConstraintWithEqualities) {
 namespace Nocedal183 {
   
   struct costError{
-    Vector operator()(const Vector5 &x, boost::optional<Matrix &> H1) const {
+    Vector operator()(const Vector5 &x, boost::optional<Matrix &> H1 = boost::none) const {
       return I_1x1 * (std::exp(x[0] * x[1] * x[2] * x[3] * x[4])
         + 0.5 * std::pow(std::pow(x[0], 3) + std::pow(x[1], 3) + 1, 2));
     }};
   struct constraint1Error{
-    Vector operator() (const Vector5 &x, boost::optional<Matrix &> H1) const {
+    Vector operator() (const Vector5 &x, boost::optional<Matrix &> H1 = boost::none) const {
       return I_1x1 * (x.cwiseProduct(x).sum() - 10);
     }};
   struct constraint2Error{
-    Vector operator() (const Vector5 &x, boost::optional<Matrix &> H1) const {
+    Vector operator() (const Vector5 &x, boost::optional<Matrix &> H1 = boost::none) const {
       return I_1x1 * (x[1] * x[2] - 5 * x[3] * x[4]);
     }
   };
   struct constraint3Error{
-    Vector operator() (const Vector5 &x, boost::optional<Matrix &> H1) const {
+    Vector operator() (const Vector5 &x, boost::optional<Matrix &> H1 = boost::none) const {
       return I_1x1 * (std::pow(x[0], 3) + std::pow(x[1], 3) + 1);
     }
   };
@@ -94,7 +95,7 @@ namespace Nocedal183 {
   
 }
 
-TEST(SQPLineSearch2, NonlinearConstraintWithEqualities) {
+TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithEqualities) {
   Key X(Symbol('X',1)), D(Symbol('D',1));
   NP problem;
   problem.cost.push_back(Nocedal183::cost(X,D));
@@ -112,7 +113,7 @@ TEST(SQPLineSearch2, NonlinearConstraintWithEqualities) {
   CHECK(assert_equal(expected,actuals, 1e-7));
 }
 
-TEST(SQPLineSearch2, FeasabilityEqualities){
+TEST_DISABLED(SQPLineSearch2, FeasabilityEqualities){
   Key X(Symbol('X',1)), D(Symbol('D',1));
   NP problem;
   problem.cost.push_back(Nocedal183::cost(X,D));
@@ -127,6 +128,24 @@ TEST(SQPLineSearch2, FeasabilityEqualities){
   CHECK(solver.checkFeasibility(initial));
 }
 
+TEST(LocalSQP, NonlinearConstraintWithEqualities) {
+  Key X(Symbol('X',1)), D(Symbol('D',1));
+  NP problem;
+  problem.cost.push_back(Nocedal183::cost(X,D));
+  problem.equalities.push_back(Nocedal183::constraint1(X,D));
+  problem.equalities.push_back(Nocedal183::constraint2(X,D));
+  problem.equalities.push_back(Nocedal183::constraint3(X,D));
+  LocalSQP solver(problem);
+  Values expected, initial;
+  Vector5 expectedVector, initialVector;
+  expectedVector << -1.8 , 1.7, 1.9 , -0.8 , -0.8;
+  initialVector << -1.71, 1.59, 1.82, -0.763, -0.763;
+  expected.insert(X, expectedVector);
+  initial.insert(X, initialVector);
+  Values actuals = solver.optimize(initial);
+  CHECK(assert_equal(expected,actuals, 1e-7));
+}
+
 /**
  * Betts10 sample problem page 30:
  * F(X) = x1^2 + x2^2 + log(x1*x2)
@@ -138,26 +157,26 @@ TEST(SQPLineSearch2, FeasabilityEqualities){
 
 struct costError {
   Vector operator() (const double &x1, const double &x2,
-                               boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const{
+                               boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const{
     return I_1x1 * (std::pow(x1, 2) + std::pow(x2, 2) + std::log(x1 * x2));
   }
 };
 
 struct constraintError {
   Vector operator() (const double &x1, const double &x2,
-                                    boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const {
+                                    boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const {
     return I_1x1 * (1 - x1 * x2);
   }
 };
 
 struct lowerBoundXError {
-  Vector operator() (const double &x, boost::optional<Matrix &> H1) const {
+  Vector operator() (const double &x, boost::optional<Matrix &> H1 = boost::none) const {
     return I_1x1 * (-x);
   }
 };
 
 struct upperBoundXError {
-  Vector operator() (const double &x, boost::optional<Matrix &> H1) const {
+  Vector operator() (const double &x, boost::optional<Matrix &> H1 = boost::none) const {
     return I_1x1 * (x - 10);
   }
 };
@@ -200,19 +219,19 @@ TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithInequalities) {
 
 struct cost2Error{
   Vector operator() (const double &x1, const double &x2,
-                               boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const {
+                               boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const {
     return I_1x1 * (std::pow(x1, 2) + std::pow(x2, 2));
   }
 };
 struct c1Error{
   Vector operator() (const double &x1, const double &x2,
-                                    boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const {
+                                    boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const {
     return I_1x1 * (2 - x1 - x2);
   }
 };
 struct c2Error{
   Vector operator() (const double &x1, const double &x2,
-                                    boost::optional<Matrix &> H1, boost::optional<Matrix &> H2) const {
+                                    boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const {
     return I_1x1 * (x1 + (2.0 / 3.0) * x2 - 4);
   }
 };

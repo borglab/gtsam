@@ -32,13 +32,13 @@ const double tol = 1e-10;
 
 
 struct Constraint1Error {
-  Vector operator() (const double &x, boost::optional<Matrix &> H1) const {
+  Vector operator() (const double &x, boost::optional<Matrix &> H1 = boost::none) const {
     return I_1x1 * (exp(x) - std::pow(x, 2));
   }
 };
 
 struct Constraint2Error {
-  Vector operator() (const double &x, boost::optional<Matrix &> H1) const {
+  Vector operator() (const double &x, boost::optional<Matrix &> H1 = boost::none) const {
     return I_1x1 * (sin(x));
   }
 };

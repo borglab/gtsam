@@ -20,10 +20,10 @@
 #pragma once
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam_unstable/linear/InequalityFactorGraph.h>
-#include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
+#include <gtsam_unstable/nonlinear/NonlinearInequalityConstraint.h>
 
 namespace gtsam {
-class NonlinearInequalityFactorGraph: public FactorGraph<NonlinearFactor> {
+class NonlinearInequalityFactorGraph: public FactorGraph<NonlinearInequalityConstraint> {
 
 public:
   /// Default constructor
