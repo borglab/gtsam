@@ -23,7 +23,8 @@
 #include <gtsam_unstable/nonlinear/NonlinearInequalityConstraint.h>
 
 namespace gtsam {
-class NonlinearInequalityFactorGraph: public FactorGraph<NonlinearInequalityConstraint> {
+class NonlinearInequalityFactorGraph: public FactorGraph<
+    NonlinearInequalityConstraint> {
 
 public:
   /// Default constructor
@@ -37,8 +38,8 @@ public:
     for (const NonlinearFactor::shared_ptr& factor : *this) {
       JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast
           < JacobianFactor > (factor->linearize(linearizationPoint));
-      NonlinearConstraint::shared_ptr constraint =
-          boost::dynamic_pointer_cast < NonlinearConstraint > (factor);
+      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast
+          < NonlinearConstraint > (factor);
       linearGraph->add(LinearInequality(*jacobian, constraint->dualKey()));
     }
     return linearGraph;
@@ -60,8 +61,8 @@ public:
       }
 
       // Complimentary condition: errors of active constraints need to be 0.0
-      NonlinearConstraint::shared_ptr constraint =
-          boost::dynamic_pointer_cast < NonlinearConstraint > (factor);
+      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast
+          < NonlinearConstraint > (factor);
       Key dualKey = constraint->dualKey();
       if (!duals.exists(dualKey))
         continue; // if dualKey doesn't exist, it is an inactive constraint!
@@ -70,6 +71,16 @@ public:
 
     }
     return true;
+  }
+
+  double error(const Values& values) const {
+    double total_error(0.0);
+    for (const sharedFactor& factor : *this) {
+      if (factor) {
+        total_error += factor->error(values);
+      }
+    }
+    return total_error;
   }
 };
 }

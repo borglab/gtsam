@@ -57,7 +57,24 @@ public:
     }
     return true;
   }
-
+  
+  double error(const Values& values) const {
+    double total_error(0.0);
+    for(const sharedFactor & factor: *this){
+      if(factor)
+        total_error += factor->error(values);
+    }
+    return total_error;
+  }
+  
+  double cost(const Values& values) const {
+    double total_cost(0.0);
+    for(const sharedFactor& factor: *this){
+      if(factor)
+        total_cost += factor->unwhitenedError(values).sum();
+    }
+    return total_cost;
+  }
 //  /**
 //   * Additional cost for -lambda*ConstraintHessian for SQP
 //   */

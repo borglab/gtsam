@@ -16,7 +16,7 @@ namespace gtsam {
  * Struct contains factor graphs for a Nonlinear Programming problem.
  */
 struct NP {
-  NonlinearFactorGraph cost; //!< Nonlinear cost factors
+  NonlinearEqualityFactorGraph cost; //!< Nonlinear cost factors
   NonlinearEqualityFactorGraph equalities; //!< Nonlinear equality constraints cE(X) = 0
   NonlinearInequalityFactorGraph inequalities; //!< Nonlinear inequality constriants cE(X) <= 0
 
@@ -26,7 +26,7 @@ struct NP {
   }
 
   /** Constructor */
-  NP(const NonlinearFactorGraph & _cost,
+  NP(const NonlinearEqualityFactorGraph & _cost,
       const NonlinearEqualityFactorGraph & _equalities,
       const NonlinearInequalityFactorGraph & _inequalities) :
       cost(_cost), equalities(_equalities), inequalities(_inequalities) {

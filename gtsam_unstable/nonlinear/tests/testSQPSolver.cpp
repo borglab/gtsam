@@ -75,18 +75,19 @@ struct costError {
       boost::optional<Matrix &> H1 = boost::none) const {
     if (H1) {
       /** Jacobian
-       [
-       (x1^3+x2^3+1) x1^2+e^(x1 x2 x3 x4 x5) x2 x3 x4 x5,
-       (x1^3+x2^3+1) x2^2+e^(x1 x2 x3 x4 x5) x1 x3 x4 x5,
-       e^(x1 x2 x3 x4 x5) x1 x2 x4 x5,
-       e^(x1 x2 x3 x4 x5) x1 x2 x3 x5,
-       e^(x1 x2 x3 x4 x5) x1 x2 x3 x4,
-       ]
+       * [
+       * 3*x1^2*(x1^3 + x2^3 + 1) + x2*x3*x4*x5*exp(x1*x2*x3*x4*x5),
+       * 3*x2^2*(x1^3 + x2^3 + 1) + x1*x3*x4*x5*exp(x1*x2*x3*x4*x5),
+       * x1*x2*x4*x5*exp(x1*x2*x3*x4*x5),
+       * x1*x2*x3*x5*exp(x1*x2*x3*x4*x5),
+       * x1*x2*x3*x4*exp(x1*x2*x3*x4*x5)
+       * ]
        */
     *H1 = (Matrix(1,5) <<
-        (std::pow(x[0],3)+std::pow(x[1],3)+1)*std::pow(x[0],2) + std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[1] * x[2] * x[3] * x[4],
-      (std::pow(x[0],3) + std::pow(x[1],3) + 1)*std::pow(x[1],2) + std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[0] * x[2] * x[3] * x[4],
+      3*std::pow(x[0],2)*(std::pow(x[0],3) + std::pow(x[1],3) + 1) + std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[1] * x[2] * x[3] * x[4],
+      3*std::pow(x[1],2)*(std::pow(x[0],3) + std::pow(x[1],3) + 1) + std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[0] * x[2] * x[3] * x[4],
       std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[0] * x[1] * x[2] * x[4],
+      std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[0] * x[1] * x[3] * x[4],
       std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[0] * x[1] * x[2] * x[3]
     ).finished();
   }
@@ -178,13 +179,41 @@ TEST_DISABLED(SQPLineSearch2, FeasabilityEqualities) {
   CHECK(solver.checkFeasibility(initial));
 }
 
-TEST(LocalSQP, NonlinearConstraintWithEqualities) {
+TEST(LocalSQP, testGradientOfCost){
   Key X(Symbol('X',1)), D(Symbol('D',1));
   NP problem;
   problem.cost.push_back(Nocedal183::cost(X,D));
   problem.equalities.push_back(Nocedal183::constraint1(X,D));
   problem.equalities.push_back(Nocedal183::constraint2(X,D));
   problem.equalities.push_back(Nocedal183::constraint3(X,D));
+  LocalSQP solver(problem);
+  Values linearizationPoint;
+  Vector5 linearizationVector;
+  linearizationVector << 1.0, 1.0, 1.0, 1.0, 1.0;
+  linearizationPoint.insert(X, linearizationVector);
+  Matrix actualJacobian = solver.getGradientOfCostAt(linearizationPoint);
+  Matrix expectedJacobian =
+    (Matrix(1,5) <<
+      11.7182818284590,
+      11.7182818284590,
+      2.71828182845904,
+      2.71828182845904,
+      2.71828182845904).finished();
+  CHECK(assert_equal(expectedJacobian, actualJacobian));
+}
+
+TEST(LocalSQP, NonlinearConstraintWithEqualities) {
+  Key
+    X(Symbol('X',1)),
+    D(Symbol('D',0)),
+    D1(Symbol('D',1)),
+    D2(Symbol('D',2)),
+    D3(Symbol('D',3));
+  NP problem;
+  problem.cost.push_back(Nocedal183::cost(X,D));
+  problem.equalities.push_back(Nocedal183::constraint1(X,D1));
+  problem.equalities.push_back(Nocedal183::constraint2(X,D2));
+  problem.equalities.push_back(Nocedal183::constraint3(X,D3));
   LocalSQP solver(problem);
   Values expected, initial;
   Vector5 expectedVector, initialVector;

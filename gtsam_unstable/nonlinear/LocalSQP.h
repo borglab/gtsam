@@ -16,20 +16,20 @@ class LocalSQP {
 public:
   struct State {
     unsigned int k;
-    Values x_star;
-    VectorValues lambda_star;
+    Values current_solution;
+    VectorValues current_lambda;
     bool converged;
     State(
       const Values& x = Values(),
       const VectorValues& lambda = VectorValues(),
       const unsigned int k0 = 1,
       const bool converged0 = false    ) :
-        k(k0), x_star(x), lambda_star(lambda), converged(converged0) {
+        k(k0), current_solution(x), current_lambda(lambda), converged(converged0) {
     }
     void print(const std::string& s = "State") const {
       std::cout << s << ": " << std::endl;
-      x_star.print("\tSolution: ");
-      lambda_star.print("\tLambdas: ");
+      current_solution.print("\tSolution: ");
+      current_lambda.print("\tLambdas: ");
       std::cout << "k: " << k << std::endl;
       std::cout << "\tConverged: " << converged << std::endl;
     }
@@ -42,7 +42,10 @@ public:
   State iterate(const State& currentState) const;
 
   Values optimize(const Values& initials, unsigned int max_iter = 100) const;
+  
+  Matrix getGradientOfCostAt(const Values& linearizationPoint) const;
 
+  Matrix makeHessianOfLagrangian(const State & currentState) const;
 };
 
 }
