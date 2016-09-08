@@ -74,6 +74,7 @@ public:
   Constructor constructor; ///< Class constructors
   Deconstructor deconstructor; ///< Deconstructor to deallocate C++ object
   bool verbose_; ///< verbose flag
+  std::string includeFile;
 
   /// Constructor creates an empty class
   Class(bool verbose = true) :
@@ -140,6 +141,9 @@ public:
 
   // emit python wrapper
   void python_wrapper(FileWriter& wrapperFile) const;
+
+  // emit cython wrapper
+  void cython_wrapper(FileWriter& pxdFile, FileWriter& pyxFile) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Class& cls) {
     os << "class " << cls.name() << "{\n";

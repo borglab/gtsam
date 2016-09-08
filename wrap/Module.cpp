@@ -100,6 +100,7 @@ void Module::parseMarkup(const std::string& data) {
   BasicRules<phrase_scanner_t> basic;
 
   vector<string> namespaces; // current namespace tag
+  string currentInclude;
 
   // parse a full class
   Class cls0(verbose),cls(verbose);
@@ -107,6 +108,7 @@ void Module::parseMarkup(const std::string& data) {
   ClassGrammar class_g(cls,classTemplate);
   Rule class_p = class_g //
       [assign_a(cls.namespaces_, namespaces)]
+      [assign_a(cls.includeFile, currentInclude)]
       [bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls),
           bl::var(classTemplate))]
           [clear_a(classTemplate)] //
@@ -129,8 +131,11 @@ void Module::parseMarkup(const std::string& data) {
  
   // Create grammar for global functions
   GlobalFunctionGrammar global_function_g(global_functions,namespaces);
- 
-  Rule include_p = str_p("#include") >> ch_p('<') >> (*(anychar_p - '>'))[push_back_a(includes)] >> ch_p('>');
+
+  Rule include_p = str_p("#include") >> ch_p('<') >>
+                   (*(anychar_p - '>'))[push_back_a(includes)]
+                   [assign_a(currentInclude)] >>
+                   ch_p('>');
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -160,7 +165,7 @@ void Module::parseMarkup(const std::string& data) {
       [assign_a(cls,cls0)] // also clear class to avoid partial parse
       [assign_a(fwDec, fwDec0)]; 
  
-  Rule module_content_p = basic.comments_p | include_p | class_p
+  Rule module_content_p = basic.comments_p | class_p
       | templateSingleInstantiation_p | forward_declaration_p
       | global_function_g | namespace_def_p;
  
@@ -271,6 +276,28 @@ void Module::matlab_code(const string& toolboxPath) const {
   finish_wrapper(wrapperFile, functionNames);
 
   wrapperFile.emit(true);
+}
+
+/* ************************************************************************* */ 
+void Module::cython_code(const string& toolboxPath) const {
+
+  fs::create_directories(toolboxPath);
+
+  // create the unified .cpp switch file
+  string pxdFileName = toolboxPath + "/" + name + "_wrapper" + ".pxd";
+  string pyxFileName = toolboxPath + "/" + name + ".pyx";
+  FileWriter pxdFile(pxdFileName, verbose, "#");
+  FileWriter pyxFile(pyxFileName, verbose, "#");
+
+  // create proxy class and wrapper code
+  for(const Class& cls: expandedClasses)
+    cls.cython_wrapper(pxdFile, pyxFile);
+
+  // finish wrapper file
+  pxdFile.oss << "\n";
+  pxdFile.emit(true);
+  pyxFile.oss << "\n";
+  pyxFile.emit(true);
 }
 
 /* ************************************************************************* */ 

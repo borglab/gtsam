@@ -128,6 +128,14 @@ public:
     return Qualified("void", VOID);
   }
 
+  /// Return a qualified namespace using given delimiter
+  std::string qualifiedNamespaces(const std::string& delimiter = "") const {
+    std::string result;
+    for (std::size_t i = 0; i < namespaces_.size(); ++i)
+      result += (namespaces_[i] + ((i<namespaces_.size()-1)?delimiter:""));
+    return result;
+  }
+
   /// Return a qualified string using given delimiter
   std::string qualifiedName(const std::string& delimiter = "") const {
     std::string result;

@@ -106,6 +106,21 @@ void Argument::proxy_check(FileWriter& proxyFile, const string& s) const {
 }
 
 /* ************************************************************************* */
+void Argument::emit_cython_pxd(FileWriter& file) const {
+  string typeName = type.qualifiedName("_");
+  string cythonType = typeName;
+  if (typeName=="Vector" || typeName == "Matrix") {
+    cythonType = "Map[" + typeName + "Xd]&";
+  } else {
+    if (is_ptr) cythonType = "shared_ptr[" + typeName + "]&";
+    if (is_ref) cythonType = cythonType + "&";
+    if (is_const) cythonType = "const " + cythonType;
+  }
+
+  file.oss << cythonType << " " << name;
+}
+
+/* ************************************************************************* */
 string ArgumentList::types() const {
   string str;
   bool first = true;
@@ -182,6 +197,14 @@ void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
     first = false;
   }
   file.oss << ")";
+}
+
+/* ************************************************************************* */
+void ArgumentList::emit_cython_pxd(FileWriter& file) const {
+  for (size_t j = 0; j<size(); ++j) {
+    at(j).emit_cython_pxd(file);
+    if (j<size()-1) file.oss << ", ";
+  }
 }
 
 /* ************************************************************************* */

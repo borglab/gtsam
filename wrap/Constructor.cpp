@@ -121,3 +121,13 @@ void Constructor::python_wrapper(FileWriter& wrapperFile, Str className) const {
 }
 
 /* ************************************************************************* */
+void Constructor::cython_wrapper(FileWriter& pxdFile, FileWriter& pyxFile, Str className) const {
+  for (size_t i = 0; i < nrOverloads(); i++) {
+    ArgumentList args = argumentList(i);
+    pxdFile.oss << "\t\t" << className << "(";
+    args.emit_cython_pxd(pxdFile);
+    pxdFile.oss << ") " << "except +\n";
+  }
+}
+
+/* ************************************************************************* */

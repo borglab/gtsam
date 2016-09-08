@@ -62,6 +62,12 @@ struct Argument {
    */
   void proxy_check(FileWriter& proxyFile, const std::string& s) const;
 
+  /**
+   * emit arguments for cython pxd
+   * @param file output stream
+   */
+  void emit_cython_pxd(FileWriter& file) const;
+
   friend std::ostream& operator<<(std::ostream& os, const Argument& arg) {
     os << (arg.is_const ? "const " : "") << arg.type << (arg.is_ptr ? "*" : "")
         << (arg.is_ref ? "&" : "");
@@ -102,6 +108,12 @@ struct ArgumentList: public std::vector<Argument> {
    * @param name of method or function
    */
   void emit_prototype(FileWriter& file, const std::string& name) const;
+
+  /**
+   * emit arguments for cython pxd
+   * @param file output stream
+   */
+  void emit_cython_pxd(FileWriter& file) const;
 
   /**
    * emit checking arguments to MATLAB proxy

@@ -78,6 +78,9 @@ struct Constructor: public OverloadedFunction {
   // emit python wrapper
   void python_wrapper(FileWriter& wrapperFile, Str className) const;
 
+  // emit cython wrapper
+  void cython_wrapper(FileWriter& pxdFile, FileWriter& pyxFile, Str className) const;
+
   friend std::ostream& operator<<(std::ostream& os, const Constructor& m) {
     for (size_t i = 0; i < m.nrOverloads(); i++)
       os << m.name_ << m.argLists_[i];
