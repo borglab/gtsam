@@ -47,6 +47,8 @@ struct ReturnType: public Qualified {
       throw DependencyMissing(key, "checking return type of " + s);
   }
 
+  void emit_cython_pxd(FileWriter& file) const;
+
 private:
 
   friend struct ReturnValue;

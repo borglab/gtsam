@@ -66,4 +66,16 @@ void ReturnType::wrapTypeUnwrap(FileWriter& wrapperFile) const {
 }
 
 /* ************************************************************************* */
+void ReturnType::emit_cython_pxd(FileWriter& file) const {
+  string typeName = qualifiedName("_");
+  string cythonType = typeName;
+  if (typeName=="Vector" || typeName == "Matrix") {
+    cythonType = typeName + "Xd";
+  } else {
+    if (isPtr) cythonType = "shared_ptr[" + typeName + "]";
+  }
+  file.oss << cythonType << " ";
+}
+
+/* ************************************************************************* */
 
