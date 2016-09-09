@@ -137,8 +137,8 @@ void Constructor::emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const {
   for (size_t i = 0; i < nrOverloads(); i++) {
     ArgumentList args = argumentList(i);
     pyxFile.oss << "\t@staticmethod\n";
-    pyxFile.oss << "\tdef " << cls.cythonClassName()
-                << ((i > 0) ? "_" + to_string(i) : "") << "(";
+    pyxFile.oss << "\tdef __Create" 
+                << ((i > 0) ? to_string(i) : "") << "__(";
     args.emit_cython_pyx(pyxFile);
     pyxFile.oss << "): \n";
     pyxFile.oss << "\t\treturn " << cls.cythonClassName() << ".cyCreate(" 
