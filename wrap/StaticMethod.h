@@ -34,6 +34,8 @@ struct StaticMethod: public MethodBase {
     return os;
   }
 
+  void emit_cython_pxd(FileWriter& file) const;
+
 protected:
 
   virtual void proxy_header(FileWriter& proxyFile) const;
