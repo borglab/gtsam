@@ -59,7 +59,7 @@ private:
 
   boost::optional<Qualified> parentClass; ///< The *single* parent
   Methods methods_; ///< Class methods
-  Method& mutableMethod(Str key);
+  // Method& mutableMethod(Str key);
 
 public:
 

@@ -58,14 +58,14 @@ static void handleException(const out_of_range& oor,
 }
 
 /* ************************************************************************* */
-Method& Class::mutableMethod(Str key) {
-  try {
-    return methods_.at(key);
-  } catch (const out_of_range& oor) {
-    handleException(oor, methods_);
-    throw runtime_error("Internal error in wrap");
-  }
-}
+// Method& Class::mutableMethod(Str key) {
+//   try {
+//     return methods_.at(key);
+//   } catch (const out_of_range& oor) {
+//     handleException(oor, methods_);
+//     throw runtime_error("Internal error in wrap");
+//   }
+// }
 
 /* ************************************************************************* */
 const Method& Class::method(Str key) const {
