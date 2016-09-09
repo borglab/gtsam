@@ -68,4 +68,17 @@ void ReturnValue::emit_matlab(FileWriter& proxyFile) const {
 }
 
 /* ************************************************************************* */
+void ReturnValue::emit_cython_pxd(FileWriter& file) const {
+  string output;
+  if (isPair) {
+    file.oss << "pair[";
+    type1.emit_cython_pxd(file);
+    file.oss << ",";
+    type1.emit_cython_pxd(file);
+    "] ";
+  }
+  else type1.emit_cython_pxd(file);
+}
+
+/* ************************************************************************* */
 
