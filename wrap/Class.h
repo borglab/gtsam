@@ -25,6 +25,7 @@
 #include "Deconstructor.h"
 #include "Method.h"
 #include "StaticMethod.h"
+#include "TemplateMethod.h"
 #include "TypeAttributesTable.h"
 
 #ifdef __GNUC__
@@ -54,11 +55,14 @@ public:
   typedef const std::string& Str;
   typedef std::map<std::string, Method> Methods;
   typedef std::map<std::string, StaticMethod> StaticMethods;
+  typedef std::map<std::string, TemplateMethod> TemplateMethods;
 
 private:
 
   boost::optional<Qualified> parentClass; ///< The *single* parent
   Methods methods_; ///< Class methods
+  TemplateMethods templateMethods_;
+  Methods expandedTemplateMethods_;
   // Method& mutableMethod(Str key);
 
 public:
@@ -87,13 +91,15 @@ public:
   boost::optional<std::string> qualifiedParent() const;
 
   size_t nrMethods() const {
-    return methods_.size();
+    return methods_.size() + expandedTemplateMethods_.size();
   }
 
   const Method& method(Str key) const;
 
   bool exists(Str name) const {
-    return methods_.find(name) != methods_.end();
+      return methods_.find(name) != methods_.end() ||
+             expandedTemplateMethods_.find(name) !=
+                 expandedTemplateMethods_.end();
   }
 
   // And finally MATLAB code is emitted, methods below called by Module::matlab_code
@@ -151,6 +157,8 @@ public:
     for(const StaticMethod& m: cls.static_methods | boost::adaptors::map_values)
       os << m << ";\n";
     for(const Method& m: cls.methods_ | boost::adaptors::map_values)
+      os << m << ";\n";
+    for(const Method& m: cls.expandedTemplateMethods_ | boost::adaptors::map_values)
       os << m << ";\n";
     os << "};" << std::endl;
     return os;

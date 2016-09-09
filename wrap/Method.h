@@ -25,6 +25,7 @@ namespace wrap {
 /// Method class
 class Method: public MethodBase {
 
+protected:
   bool is_const_;
 
 public:
@@ -49,6 +50,8 @@ public:
       os << m.returnVals_[i] << " " << m.name_ << m.argLists_[i];
     return os;
   }
+
+  void emit_cython_pxd(FileWriter& file) const;
 
 private:
 

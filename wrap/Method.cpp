@@ -76,3 +76,17 @@ string Method::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
 }
 
 /* ************************************************************************* */
+void Method::emit_cython_pxd(FileWriter& file) const {
+  for(size_t i = 0; i < nrOverloads(); ++i) {
+    file.oss << "\t\t";
+    returnVals_[i].emit_cython_pxd(file);
+    file.oss << name_ << "(";
+    argumentList(i).emit_cython_pxd(file);
+    file.oss << ")";
+    if (is_const_) file.oss << " const";
+    file.oss << "\n";
+  }
+
+}
+
+/* ************************************************************************* */
