@@ -82,6 +82,7 @@ int main (int argc, char* argv[]) {
 
   /** ---------------  COMPARISON  -----------------------**/
   /** ----------------------------------------------------**/
+M\]
 
   LevenbergMarquardtParams params_using_COLAMD, params_using_METIS;
   try {
