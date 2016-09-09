@@ -37,9 +37,6 @@ struct QPPolicy {
     GaussianFactorGraph no_constant_factor;
     for (auto factor : qp.cost) {
       HessianFactor hf = static_cast<HessianFactor>(*factor);
-      //a trick to ensure  that the augmented matrix is always symmetric. Should only be an issue when dealing
-      // with the manifold.
-      hf.augmentedInformation() = (hf.augmentedInformation() + hf.augmentedInformation().transpose())/2;
       if (hf.constantTerm() < 0) // Hessian Factors cannot deal
         // with negative constant terms replace with zero in this case
         //TODO: Perhaps there is a smarter way to set the constant term such that the resulting matrix is almost always
