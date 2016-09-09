@@ -74,10 +74,12 @@ void ReturnValue::emit_cython_pxd(FileWriter& file) const {
     file.oss << "pair[";
     type1.emit_cython_pxd(file);
     file.oss << ",";
-    type1.emit_cython_pxd(file);
-    "] ";
+    type2.emit_cython_pxd(file);
+    file.oss << "] ";
+  } else {
+      type1.emit_cython_pxd(file);
+      file.oss << " ";
   }
-  else type1.emit_cython_pxd(file);
 }
 
 /* ************************************************************************* */

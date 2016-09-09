@@ -74,7 +74,7 @@ void ReturnType::emit_cython_pxd(FileWriter& file) const {
   } else {
     if (isPtr) cythonType = "shared_ptr[" + typeName + "]";
   }
-  file.oss << cythonType << " ";
+  file.oss << cythonType;
 }
 
 /* ************************************************************************* */
