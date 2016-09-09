@@ -148,7 +148,8 @@ public:
   void python_wrapper(FileWriter& wrapperFile) const;
 
   // emit cython wrapper
-  void cython_wrapper(FileWriter& pxdFile, FileWriter& pyxFile) const;
+  void emit_cython_pxd(FileWriter& pxdFile) const;
+  void emit_cython_pyx(FileWriter& pyxFile) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Class& cls) {
     os << "class " << cls.name() << "{\n";

@@ -137,9 +137,9 @@ public:
   }
 
   /// Return a qualified string using given delimiter
-  std::string qualifiedName(const std::string& delimiter = "") const {
+  std::string qualifiedName(const std::string& delimiter = "", size_t fromLevel = 0) const {
     std::string result;
-    for (std::size_t i = 0; i < namespaces_.size(); ++i)
+    for (std::size_t i = fromLevel; i < namespaces_.size(); ++i)
       result += (namespaces_[i] + delimiter);
     result += name_;
     return result;

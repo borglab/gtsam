@@ -672,8 +672,8 @@ void Class::python_wrapper(FileWriter& wrapperFile) const {
 }
 
 /* ************************************************************************* */
-void Class::cython_wrapper(FileWriter& pxdFile, FileWriter& pyxFile) const {
-  string cythonClassName = qualifiedName("_");
+void Class::emit_cython_pxd(FileWriter& pxdFile) const {
+  string cythonClassName = qualifiedName("_", 1);
   pxdFile.oss << "cdef extern from \"" << includeFile << "\" namespace \""
                 << qualifiedNamespaces("::") << "\":" << endl;
   pxdFile.oss << "\tcdef cppclass " << cythonClassName << " \"" << qualifiedName("::") << "\"";
@@ -688,13 +688,7 @@ void Class::cython_wrapper(FileWriter& pxdFile, FileWriter& pyxFile) const {
   if (parentClass) pxdFile.oss << "(" <<  parentClass->qualifiedName("_") << ")";
   pxdFile.oss << ":\n";
 
-  pyxFile.oss << "cdef class " << name();
-  if (parentClass) pyxFile.oss << "(" <<  parentClass->name() << ")";
-  pyxFile.oss << ":\n";
-  pyxFile.oss << "\tcdef shared_ptr[" << cythonClassName << "] "
-              << "gt" << name() << "_\n";
-
-  constructor.cython_wrapper(pxdFile, pyxFile, cythonClassName);
+  constructor.emit_cython_pxd(pxdFile, cythonClassName);
   if (constructor.nrOverloads()>0) pxdFile.oss << "\n";
 
   for(const StaticMethod& m: static_methods | boost::adaptors::map_values)
@@ -710,6 +704,17 @@ void Class::cython_wrapper(FileWriter& pxdFile, FileWriter& pyxFile) const {
   if (numMethods == 0)
       pxdFile.oss << "\t\tpass";
   pxdFile.oss << "\n\n";  
+}
+
+void Class::emit_cython_pyx(FileWriter& pyxFile) const {
+  string cythonClassName = qualifiedName("_", 1);
+  pyxFile.oss << "cdef class " << name();
+  if (parentClass) pyxFile.oss << "(" <<  parentClass->name() << ")";
+  pyxFile.oss << ":\n";
+  pyxFile.oss << "\tcdef shared_ptr[" << cythonClassName << "] "
+              << "gt" << name() << "_\n";
+
+  constructor.emit_cython_pyx(pyxFile, cythonClassName);
 
   pyxFile.oss << "\n";
 }

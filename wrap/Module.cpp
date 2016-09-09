@@ -294,13 +294,16 @@ void Module::cython_code(const string& toolboxPath) const {
   FileWriter pxdFile(pxdFileName, verbose, "#");
   FileWriter pyxFile(pyxFileName, verbose, "#");
 
-  // create proxy class and wrapper code
+  // create cython pxd file
   for(const Class& cls: uninstantiatedClasses)
-    cls.cython_wrapper(pxdFile, pyxFile);
-
+    cls.emit_cython_pxd(pxdFile);
   // finish wrapper file
   pxdFile.oss << "\n";
   pxdFile.emit(true);
+
+  // create cython pyx file
+  for(const Class& cls: uninstantiatedClasses)
+    cls.emit_cython_pyx(pyxFile);
   pyxFile.oss << "\n";
   pyxFile.emit(true);
 }
