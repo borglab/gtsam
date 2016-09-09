@@ -736,7 +736,6 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
                  "\t\tself." << pyxCythonObj() << " = " 
                  << pyxSharedCythonClass() << "(new " << pyxCythonClass() << "())\n";
   pyxInitParentObj(pyxFile, "\t\tself", "self." + pyxCythonObj(), allClasses);
-  pyxFile.oss << "\n";
 
   pyxFile.oss << "\t@staticmethod\n";
   pyxFile.oss << "\tcdef " << pythonClassName() << " cyCreate(" << pyxSharedCythonClass() << " other):\n"
@@ -744,13 +743,14 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
               << "\t\tret." << pyxCythonObj() << " = other\n";
   pyxInitParentObj(pyxFile, "\t\tret", "other", allClasses);
   pyxFile.oss << "\t\treturn ret" << "\n";
+  pyxFile.oss << "\n";
 
   constructor.emit_cython_pyx(pyxFile, *this);
-  // if (constructor.nrOverloads()>0) pyxFile.oss << "\n";
+  if (constructor.nrOverloads()>0) pyxFile.oss << "\n";
 
-  // for(const StaticMethod& m: static_methods | boost::adaptors::map_values)
-  //   m.emit_cython_pxd(pyxFile);
-  // if (static_methods.size()>0) pyxFile.oss << "\n";
+  for(const StaticMethod& m: static_methods | boost::adaptors::map_values)
+    m.emit_cython_pyx(pyxFile, *this);
+  if (static_methods.size()>0) pyxFile.oss << "\n";
 
   // for(const Method& m: nontemplateMethods_ | boost::adaptors::map_values)
   //   m.emit_cython_pxd(pyxFile);

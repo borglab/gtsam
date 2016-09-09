@@ -23,6 +23,9 @@
 
 namespace wrap {
 
+// Forward declaration
+class Class;
+
 /// StaticMethod class
 struct StaticMethod: public MethodBase {
 
@@ -35,6 +38,7 @@ struct StaticMethod: public MethodBase {
   }
 
   void emit_cython_pxd(FileWriter& file) const;
+  void emit_cython_pyx(FileWriter& file, const Class& cls) const;
 
 protected:
 

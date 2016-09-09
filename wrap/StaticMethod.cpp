@@ -18,6 +18,7 @@
 
 #include "StaticMethod.h"
 #include "utilities.h"
+#include "Class.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
@@ -59,14 +60,30 @@ string StaticMethod::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
 void StaticMethod::emit_cython_pxd(FileWriter& file) const {
   // don't support overloads for static method :-(
   for(size_t i = 0; i < nrOverloads(); ++i) {
-    if (i>0) file.oss << "# ";
     file.oss << "\t\t@staticmethod\n";
-    if (i>0) file.oss << "# ";
     file.oss << "\t\t";
     returnVals_[i].emit_cython_pxd(file);
-    file.oss << name_ << "(";
+    file.oss << name_ << ((i>0)?to_string(i):"") << "(";
     argumentList(i).emit_cython_pxd(file);
     file.oss << ")\n";
+  }
+}
+
+/* ************************************************************************* */
+void StaticMethod::emit_cython_pyx(FileWriter& file, const Class& cls) const {
+  // don't support overloads for static method :-(
+  for(size_t i = 0; i < nrOverloads(); ++i) {
+    file.oss << "\t@staticmethod\n";
+    file.oss << "\tdef " << name_ << "(";
+    argumentList(i).emit_cython_pyx(file);
+    file.oss << "):\n";
+    file.oss << "\t\t";
+    if (!returnVals_[i].isVoid()) file.oss << "return ";
+    file.oss << cls.pythonClassName() << ".cyCreate(" 
+             << cls.pyxCythonClass() << "." << name_
+             << "(";
+    argumentList(i).emit_cython_pyx_asParams(file);
+    file.oss << "))\n";
   }
 }
 

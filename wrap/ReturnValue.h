@@ -48,6 +48,10 @@ struct ReturnValue {
     isPair = false;
   }
 
+  bool isVoid() const {
+    return !isPair && !type1.isPtr && (type1.name() == "void");
+  }
+
   bool operator==(const ReturnValue& other) const {
     return isPair == other.isPair && type1 == other.type1
         && type2 == other.type2;
