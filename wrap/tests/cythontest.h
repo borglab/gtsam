@@ -203,6 +203,51 @@ virtual class GaussianFactor {
   bool empty() const;
 };
 
+#include <gtsam/linear/JacobianFactor.h>
+virtual class JacobianFactor : gtsam::GaussianFactor {
+  //Constructors
+  JacobianFactor();
+  JacobianFactor(const gtsam::GaussianFactor& factor);
+  JacobianFactor(Vector b_in);
+  JacobianFactor(size_t i1, Matrix A1, Vector b,
+      const gtsam::noiseModel::Diagonal* model);
+  JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, Vector b,
+      const gtsam::noiseModel::Diagonal* model);
+  JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3,
+      Vector b, const gtsam::noiseModel::Diagonal* model);
+  JacobianFactor(const gtsam::GaussianFactorGraph& graph);
+
+  //Testable
+  void print(string s) const;
+  void printKeys(string s) const;
+  bool equals(const gtsam::GaussianFactor& lf, double tol) const;
+  size_t size() const;
+  Vector unweighted_error(const gtsam::VectorValues& c) const;
+  Vector error_vector(const gtsam::VectorValues& c) const;
+  double error(const gtsam::VectorValues& c) const;
+
+  //Standard Interface
+  Matrix getA() const;
+  Vector getb() const;
+  size_t rows() const;
+  size_t cols() const;
+  bool isConstrained() const;
+  pair<Matrix, Vector> jacobianUnweighted() const;
+  Matrix augmentedJacobianUnweighted() const;
+
+  void transposeMultiplyAdd(double alpha, const Vector& e, gtsam::VectorValues& x) const;
+  gtsam::JacobianFactor whiten() const;
+
+  // pair<gtsam::GaussianConditional*, gtsam::JacobianFactor*> eliminate(const gtsam::Ordering& keys) const;
+
+  void setModel(bool anyConstrained, const Vector& sigmas);
+
+  gtsam::noiseModel::Diagonal* get_model() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
 #include <gtsam/nonlinear/Values.h>
 class Values {
   Values();
