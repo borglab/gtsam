@@ -187,6 +187,22 @@ virtual class Robust : gtsam::noiseModel::Base {
 };
 } // namespace noiseModel
 
+#include <gtsam/linear/GaussianFactor.h>
+virtual class GaussianFactor {
+  // gtsam::KeyVector keys() const;
+  void print(string s) const;
+  bool equals(const gtsam::GaussianFactor& lf, double tol) const;
+  double error(const gtsam::VectorValues& c) const;
+  gtsam::GaussianFactor* clone() const;
+  gtsam::GaussianFactor* negate() const;
+  Matrix augmentedInformation() const;
+  Matrix information() const;
+  Matrix augmentedJacobian() const;
+  pair<Matrix, Vector> jacobian() const;
+  size_t size() const;
+  bool empty() const;
+};
+
 #include <gtsam/nonlinear/Values.h>
 class Values {
   Values();
