@@ -45,8 +45,10 @@ namespace fs = boost::filesystem;
 /* ************************************************************************* */ 
 // If a number of template arguments were given, generate a number of expanded
 // class names, e.g., PriorFactor -> PriorFactorPose2, and add those classes
-static void handle_possible_template(vector<Class>& classes, const Class& cls,
-    const Template& t) {
+static void handle_possible_template(vector<Class>& classes,
+                                     vector<Class>& uninstantiatedClasses,
+                                     const Class& cls, const Template& t) {
+  uninstantiatedClasses.push_back(cls);
   if (cls.templateArgs.empty() || t.empty()) {
     classes.push_back(cls);
   } else {
@@ -106,13 +108,13 @@ void Module::parseMarkup(const std::string& data) {
   Class cls0(verbose),cls(verbose);
   Template classTemplate;
   ClassGrammar class_g(cls,classTemplate);
-  Rule class_p = class_g //
+  Rule class_p = class_g  //
       [assign_a(cls.namespaces_, namespaces)]
-      [assign_a(cls.includeFile, currentInclude)]
-      [bl::bind(&handle_possible_template, bl::var(classes), bl::var(cls),
-          bl::var(classTemplate))]
-          [clear_a(classTemplate)] //
-      [assign_a(cls,cls0)];
+      [assign_a(cls.includeFile, currentInclude)][bl::bind(
+          &handle_possible_template, bl::var(classes),
+          bl::var(uninstantiatedClasses), bl::var(cls),
+          bl::var(classTemplate))][clear_a(classTemplate)]  //
+      [assign_a(cls, cls0)];
 
   // parse "gtsam::Pose2" and add to singleInstantiation.typeList
   TemplateInstantiationTypedef singleInstantiation, singleInstantiation0;
@@ -182,6 +184,9 @@ void Module::parseMarkup(const std::string& data) {
 
   // Post-process classes for serialization markers
   for(Class& cls: classes)
+    cls.erase_serialization();
+
+  for(Class& cls: uninstantiatedClasses)
     cls.erase_serialization();
 
   // Explicitly add methods to the classes from parents so it shows in documentation
@@ -290,7 +295,7 @@ void Module::cython_code(const string& toolboxPath) const {
   FileWriter pyxFile(pyxFileName, verbose, "#");
 
   // create proxy class and wrapper code
-  for(const Class& cls: expandedClasses)
+  for(const Class& cls: uninstantiatedClasses)
     cls.cython_wrapper(pxdFile, pyxFile);
 
   // finish wrapper file
@@ -483,8 +488,10 @@ void Module::python_wrapper(const string& toolboxPath) const {
   wrapperFile.oss << "{\n";
 
   // write out classes
-  for(const Class& cls: expandedClasses)
+  for(const Class& cls: classes) {
+    cout << "tmpl args:" << cls.templateArgs.size() << endl;
     cls.python_wrapper(wrapperFile);
+  }
 
   // write out global functions
   for(const GlobalFunctions::value_type& p: global_functions)

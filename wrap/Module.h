@@ -38,6 +38,7 @@ struct Module {
   std::string name; ///< module name
   bool verbose; ///< verbose flag
   std::vector<Class> classes; ///< list of classes
+  std::vector<Class> uninstantiatedClasses; ///< list of template classes after instantiated
   std::vector<TemplateInstantiationTypedef> templateInstantiationTypedefs; ///< list of template instantiations
   std::vector<ForwardDeclaration> forward_declarations;
   std::vector<std::string> includes; ///< Include statements

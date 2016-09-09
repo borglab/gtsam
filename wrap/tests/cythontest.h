@@ -320,6 +320,16 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+#include <gtsam/sam/BearingFactor.h>
+template<POSE, POINT, BEARING>
+virtual class BearingFactor : gtsam::NoiseModelFactor {
+  BearingFactor(size_t key1, size_t key2, const BEARING& measured, const gtsam::noiseModel::Base* noiseModel);
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
+typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
 
 
 }
