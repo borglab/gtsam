@@ -60,9 +60,9 @@ public:
 private:
 
   boost::optional<Qualified> parentClass; ///< The *single* parent
-  Methods methods_; ///< Class methods
+  Methods methods_; ///< Class methods, including all expanded/instantiated template methods
+  Methods nontemplateMethods_;
   TemplateMethods templateMethods_;
-  Methods expandedTemplateMethods_;
   // Method& mutableMethod(Str key);
 
 public:
@@ -91,15 +91,13 @@ public:
   boost::optional<std::string> qualifiedParent() const;
 
   size_t nrMethods() const {
-    return methods_.size() + expandedTemplateMethods_.size();
+    return methods_.size();
   }
 
   const Method& method(Str key) const;
 
   bool exists(Str name) const {
-      return methods_.find(name) != methods_.end() ||
-             expandedTemplateMethods_.find(name) !=
-                 expandedTemplateMethods_.end();
+      return methods_.find(name) != methods_.end();
   }
 
   // And finally MATLAB code is emitted, methods below called by Module::matlab_code
@@ -123,6 +121,7 @@ public:
 
   /// Post-process classes for serialization markers
   void erase_serialization(); // non-const !
+  void erase_serialization(Methods& methods); // non-const !
 
   /// verify all of the function arguments
   void verifyAll(std::vector<std::string>& functionNames,
@@ -157,8 +156,6 @@ public:
     for(const StaticMethod& m: cls.static_methods | boost::adaptors::map_values)
       os << m << ";\n";
     for(const Method& m: cls.methods_ | boost::adaptors::map_values)
-      os << m << ";\n";
-    for(const Method& m: cls.expandedTemplateMethods_ | boost::adaptors::map_values)
       os << m << ";\n";
     os << "};" << std::endl;
     return os;

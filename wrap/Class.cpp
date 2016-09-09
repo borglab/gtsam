@@ -23,7 +23,6 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/copy.hpp>
-#include <boost/range/join.hpp>
 
 #include <vector> 
 #include <iostream> 
@@ -71,13 +70,9 @@ static void handleException(const out_of_range& oor,
 /* ************************************************************************* */
 const Method& Class::method(Str key) const {
   try {
-    if (methods_.find(key) != methods_.end())
-      return methods_.at(key);
-    else
-      return expandedTemplateMethods_.at(key);
+    return methods_.at(key);
   } catch (const out_of_range& oor) {
     handleException(oor, methods_);
-    handleException(oor, expandedTemplateMethods_);
     throw runtime_error("Internal error in wrap");
   }
 }
@@ -161,7 +156,7 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
       << "    function disp(obj), obj.display; end\n    %DISP Calls print on the object\n";
 
   // Methods 
-  for(const Methods::value_type& name_m: boost::join(methods_, expandedTemplateMethods_)) {
+  for(const Methods::value_type& name_m: methods_) {
     const Method& m = name_m.second;
     m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName,
         matlabUniqueName, wrapperName, typeAttributes, functionNames);
@@ -344,11 +339,11 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
     const Template& tmplate) {
   // Check if templated
   if (tmplate.valid()) {
-      templateMethods_[methodName].addOverload(methodName, argumentList,
-                                               returnValue, is_const,
-                                               tmplate.argName(), verbose);
-      // Create method to expand
-      // For all values of the template argument, create a new method
+    templateMethods_[methodName].addOverload(methodName, argumentList,
+                                             returnValue, is_const,
+                                             tmplate.argName(), verbose);
+    // Create method to expand
+    // For all values of the template argument, create a new method
     for(const Qualified& instName: tmplate.argValues()) {
 
       const TemplateSubstitution ts(tmplate.argName(), instName, *this);
@@ -359,37 +354,45 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
       // Now stick in new overload stack with expandedMethodName key
       // but note we use the same, unexpanded methodName in overload
       string expandedMethodName = methodName + instName.name();
-      expandedTemplateMethods_[expandedMethodName].addOverload(methodName, expandedArgs,
+      methods_[expandedMethodName].addOverload(methodName, expandedArgs,
           expandedRetVal, is_const, instName, verbose);
     }
-  } else
+  } else {
     // just add overload
     methods_[methodName].addOverload(methodName, argumentList, returnValue,
         is_const, boost::none, verbose);
+    nontemplateMethods_[methodName].addOverload(methodName, argumentList, returnValue,
+        is_const, boost::none, verbose);
+  }
 }
 
 /* ************************************************************************* */
-void Class::erase_serialization() {
-  Methods::iterator it = methods_.find("serializable");
-  if (it != methods_.end()) {
+void Class::erase_serialization(Methods& methods) {
+  Methods::iterator it = methods.find("serializable");
+  if (it != methods.end()) {
 #ifndef WRAP_DISABLE_SERIALIZE
     isSerializable = true;
 #else
     // cout << "Ignoring serializable() flag in class " << name << endl;
 #endif
-    methods_.erase(it);
+    methods.erase(it);
   }
 
-  it = methods_.find("serialize");
-  if (it != methods_.end()) {
+  it = methods.find("serialize");
+  if (it != methods.end()) {
 #ifndef WRAP_DISABLE_SERIALIZE
     isSerializable = true;
     hasSerialization = true;
 #else
     // cout << "Ignoring serialize() flag in class " << name << endl;
 #endif
-    methods_.erase(it);
+    methods.erase(it);
   }
+}
+
+void Class::erase_serialization() {
+  erase_serialization(methods_);
+  erase_serialization(nontemplateMethods_);
 }
 
 /* ************************************************************************* */
@@ -401,12 +404,10 @@ void Class::verifyAll(vector<string>& validTypes, bool& hasSerialiable) const {
   //TODO:verifyArguments<ArgumentList>(validTypes, constructor.args_list);
   verifyArguments<StaticMethod>(validTypes, static_methods);
   verifyArguments<Method>(validTypes, methods_);
-  verifyArguments<Method>(validTypes, expandedTemplateMethods_);
 
   // verify function return types
   verifyReturnTypes<StaticMethod>(validTypes, static_methods);
   verifyReturnTypes<Method>(validTypes, methods_);
-  verifyReturnTypes<Method>(validTypes, expandedTemplateMethods_);
 
   // verify parents
   boost::optional<string> parent = qualifiedParent();
@@ -427,8 +428,6 @@ void Class::appendInheritedMethods(const Class& cls,
       // We found a parent class for our parent, TODO improve !
       if (parent.name() == cls.parentClass->name()) {
         methods_.insert(parent.methods_.begin(), parent.methods_.end());
-        expandedTemplateMethods_.insert(parent.expandedTemplateMethods_.begin(),
-                                        parent.expandedTemplateMethods_.end());
         appendInheritedMethods(parent, classes);
       }
     }
@@ -456,9 +455,9 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
 
   constructor.comment_fragment(proxyFile);
 
-  if (!methods_.empty() || !expandedTemplateMethods_.empty())
+  if (!methods_.empty())
     proxyFile.oss << "%\n%-------Methods-------\n";
-  for(const Methods::value_type& name_m: boost::join(methods_, expandedTemplateMethods_))
+  for(const Methods::value_type& name_m: methods_)
     name_m.second.comment_fragment(proxyFile);
 
   if (!static_methods.empty())
@@ -669,8 +668,6 @@ void Class::python_wrapper(FileWriter& wrapperFile) const {
     m.python_wrapper(wrapperFile, name());
   for(const Method& m: methods_ | boost::adaptors::map_values)
     m.python_wrapper(wrapperFile, name());
-  for(const Method& m: expandedTemplateMethods_ | boost::adaptors::map_values)
-    m.python_wrapper(wrapperFile, name());
   wrapperFile.oss << ";\n\n";
 }
 
@@ -704,7 +701,7 @@ void Class::cython_wrapper(FileWriter& pxdFile, FileWriter& pyxFile) const {
     m.emit_cython_pxd(pxdFile);
   if (static_methods.size()>0) pxdFile.oss << "\n";
 
-  for(const Method& m: methods_ | boost::adaptors::map_values)
+  for(const Method& m: nontemplateMethods_ | boost::adaptors::map_values)
     m.emit_cython_pxd(pxdFile);
   for(const TemplateMethod& m: templateMethods_ | boost::adaptors::map_values)
     m.emit_cython_pxd(pxdFile);
