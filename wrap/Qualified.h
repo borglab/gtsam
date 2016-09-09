@@ -154,6 +154,30 @@ public:
     return result;
   }
 
+  /// the Cython class in pxd
+  std::string cythonClassName() const {
+    return qualifiedName("_", 1);
+  }
+
+  /// the Python class in pyx
+  std::string pythonClassName() const {
+    return cythonClassName();
+  }
+
+  /// return the Cython class in pxd corresponding to a Python class in pyx
+  std::string pyxCythonClass() const {
+    return namespaces_[0] + "." + cythonClassName();
+  }
+
+  /// the internal Cython shared obj in a Python class wrappper
+  std::string pyxCythonObj() const {
+    return "gt" + cythonClassName() + "_";
+  }
+
+  std::string pyxSharedCythonClass() const {
+    return "shared_ptr[" + pyxCythonClass() + "]";
+  }
+
   friend std::ostream& operator<<(std::ostream& os, const Qualified& q) {
     os << q.qualifiedName("::");
     return os;

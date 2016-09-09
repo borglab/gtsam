@@ -67,6 +67,8 @@ struct Argument {
    * @param file output stream
    */
   void emit_cython_pxd(FileWriter& file) const;
+  void emit_cython_pyx(FileWriter& file) const;
+  void emit_cython_pyx_asParam(FileWriter& file) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Argument& arg) {
     os << (arg.is_const ? "const " : "") << arg.type << (arg.is_ptr ? "*" : "")
@@ -114,6 +116,8 @@ struct ArgumentList: public std::vector<Argument> {
    * @param file output stream
    */
   void emit_cython_pxd(FileWriter& file) const;
+  void emit_cython_pyx(FileWriter& file) const;
+  void emit_cython_pyx_asParams(FileWriter& file) const;
 
   /**
    * emit checking arguments to MATLAB proxy

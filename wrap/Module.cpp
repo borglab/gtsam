@@ -302,8 +302,8 @@ void Module::cython_code(const string& toolboxPath) const {
   pxdFile.emit(true);
 
   // create cython pyx file
-  for(const Class& cls: uninstantiatedClasses)
-    cls.emit_cython_pyx(pyxFile);
+  for(const Class& cls: expandedClasses)
+    cls.emit_cython_pyx(pyxFile, expandedClasses);
   pyxFile.oss << "\n";
   pyxFile.emit(true);
 }

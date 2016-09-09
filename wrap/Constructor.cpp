@@ -24,6 +24,7 @@
 
 #include "utilities.h"
 #include "Constructor.h"
+#include "Class.h"
 
 using namespace std;
 using namespace wrap;
@@ -131,7 +132,23 @@ void Constructor::emit_cython_pxd(FileWriter& pxdFile, Str className) const {
 }
 
 /* ************************************************************************* */
-void Constructor::emit_cython_pyx(FileWriter& pyxFile, Str className) const {
+void Constructor::emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const {
+  // FIXME: handle overloads properly! This is lazy...
+  for (size_t i = 0; i < nrOverloads(); i++) {
+    ArgumentList args = argumentList(i);
+    pyxFile.oss << "\t@staticmethod\n";
+    pyxFile.oss << "\tdef " << cls.cythonClassName()
+                << ((i > 0) ? "_" + to_string(i) : "") << "(";
+    args.emit_cython_pyx(pyxFile);
+    pyxFile.oss << "): \n";
+    pyxFile.oss << "\t\treturn " << cls.cythonClassName() << ".cyCreate(" 
+              // shared_ptr[gtsam.Values](new gtsam.Values(deref(other.gtValues_))))
+                << cls.pyxSharedCythonClass() << "(new " 
+                << cls.pyxCythonClass() << "(";
+    args.emit_cython_pyx_asParams(pyxFile);
+    pyxFile.oss << "))"
+                << ")\n";
+  }
 }
 
 /* ************************************************************************* */

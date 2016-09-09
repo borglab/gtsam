@@ -121,6 +121,29 @@ void Argument::emit_cython_pxd(FileWriter& file) const {
 }
 
 /* ************************************************************************* */
+void Argument::emit_cython_pyx(FileWriter& file) const {
+  string typeName = type.pythonClassName();
+  string cythonType = typeName;
+  // use numpy for Vector and Matrix
+  if (typeName=="Vector" || typeName == "Matrix")
+    cythonType = "np.ndarray";
+  file.oss << cythonType << " " << name;
+}
+
+/* ************************************************************************* */
+void Argument::emit_cython_pyx_asParam(FileWriter& file) const {
+  string cythonType = type.cythonClassName();
+  string cythonVar;
+  if (cythonType == "Vector" || cythonType == "Matrix") {
+    cythonVar = "Map[" + cythonType + "Xd](" + name + ")";
+  } else {
+      cythonVar = name + "." + type.pyxCythonObj();
+      if (!is_ptr) cythonVar = "deref(" + cythonVar + ")";
+  }
+  file.oss << cythonVar; 
+}
+
+/* ************************************************************************* */
 string ArgumentList::types() const {
   string str;
   bool first = true;
@@ -204,6 +227,22 @@ void ArgumentList::emit_cython_pxd(FileWriter& file) const {
   for (size_t j = 0; j<size(); ++j) {
     at(j).emit_cython_pxd(file);
     if (j<size()-1) file.oss << ", ";
+  }
+}
+
+/* ************************************************************************* */
+void ArgumentList::emit_cython_pyx(FileWriter& file) const {
+  for (size_t j = 0; j < size(); ++j) {
+    at(j).emit_cython_pyx(file);
+    if (j < size() - 1) file.oss << ", ";
+  }
+}
+
+/* ************************************************************************* */
+void ArgumentList::emit_cython_pyx_asParams(FileWriter& file) const {
+    for (size_t j = 0; j < size(); ++j) {
+    at(j).emit_cython_pyx_asParam(file);
+    if (j < size() - 1) file.oss << ", ";
   }
 }
 

@@ -673,10 +673,9 @@ void Class::python_wrapper(FileWriter& wrapperFile) const {
 
 /* ************************************************************************* */
 void Class::emit_cython_pxd(FileWriter& pxdFile) const {
-  string cythonClassName = qualifiedName("_", 1);
   pxdFile.oss << "cdef extern from \"" << includeFile << "\" namespace \""
                 << qualifiedNamespaces("::") << "\":" << endl;
-  pxdFile.oss << "\tcdef cppclass " << cythonClassName << " \"" << qualifiedName("::") << "\"";
+  pxdFile.oss << "\tcdef cppclass " << cythonClassName() << " \"" << qualifiedName("::") << "\"";
   if (templateArgs.size()>0) {
     pxdFile.oss << "[";
     for(size_t i = 0; i<templateArgs.size(); ++i) {
@@ -688,7 +687,7 @@ void Class::emit_cython_pxd(FileWriter& pxdFile) const {
   if (parentClass) pxdFile.oss << "(" <<  parentClass->qualifiedName("_") << ")";
   pxdFile.oss << ":\n";
 
-  constructor.emit_cython_pxd(pxdFile, cythonClassName);
+  constructor.emit_cython_pxd(pxdFile, cythonClassName());
   if (constructor.nrOverloads()>0) pxdFile.oss << "\n";
 
   for(const StaticMethod& m: static_methods | boost::adaptors::map_values)
@@ -706,17 +705,62 @@ void Class::emit_cython_pxd(FileWriter& pxdFile) const {
   pxdFile.oss << "\n\n";  
 }
 
-void Class::emit_cython_pyx(FileWriter& pyxFile) const {
-  string cythonClassName = qualifiedName("_", 1);
-  pyxFile.oss << "cdef class " << name();
-  if (parentClass) pyxFile.oss << "(" <<  parentClass->name() << ")";
+void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj, const std::string& cySharedObj, const std::vector<Class>& allClasses) const {
+  if (parentClass) {
+      pyxFile.oss << pyObj << "." << parentClass->pyxCythonObj() << " = "
+                  << "<" << parentClass->pyxSharedCythonClass() << ">("
+                  << cySharedObj << ")\n";
+      // Find the parent class with name "parentClass" and point its cython obj to the same pointer
+      // TODO: This search is not efficient. :-(
+      auto parent_it = find_if(allClasses.begin(), allClasses.end(),
+                               [this](const Class& cls) {
+                                   return cls.cythonClassName() ==
+                                          this->parentClass->cythonClassName();
+                               });
+      if (parent_it == allClasses.end()) {
+          cerr << "Can't find parent class: " << parentClass->cythonClassName();
+        throw std::runtime_error("Parent class not found!");
+      }
+      parent_it->pyxInitParentObj(pyxFile, pyObj, cySharedObj, allClasses);
+  }
+}
+
+void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allClasses) const {
+  pyxFile.oss << "cdef class " << pythonClassName();
+  if (parentClass) pyxFile.oss << "(" <<  parentClass->pythonClassName() << ")";
   pyxFile.oss << ":\n";
-  pyxFile.oss << "\tcdef shared_ptr[" << cythonClassName << "] "
-              << "gt" << name() << "_\n";
 
-  constructor.emit_cython_pyx(pyxFile, cythonClassName);
+  pyxFile.oss << "\tcdef " << pyxSharedCythonClass() << " " << pyxCythonObj() << "\n";
 
+  pyxFile.oss << "\tdef __cinit__(self):\n"
+                 "\t\tself." << pyxCythonObj() << " = " 
+                 << pyxSharedCythonClass() << "(new " << pyxCythonClass() << "())\n";
+  pyxInitParentObj(pyxFile, "\t\tself", "self." + pyxCythonObj(), allClasses);
   pyxFile.oss << "\n";
+
+  pyxFile.oss << "\t@staticmethod\n";
+  pyxFile.oss << "\tcdef " << pythonClassName() << " cyCreate(" << pyxSharedCythonClass() << " other):\n"
+              << "\t\tcdef " << pythonClassName() << " ret = " << pythonClassName() << "()\n"
+              << "\t\tret." << pyxCythonObj() << " = other\n";
+  pyxInitParentObj(pyxFile, "\t\tret", "other", allClasses);
+  pyxFile.oss << "\t\treturn ret" << "\n";
+
+  constructor.emit_cython_pyx(pyxFile, *this);
+  // if (constructor.nrOverloads()>0) pyxFile.oss << "\n";
+
+  // for(const StaticMethod& m: static_methods | boost::adaptors::map_values)
+  //   m.emit_cython_pxd(pyxFile);
+  // if (static_methods.size()>0) pyxFile.oss << "\n";
+
+  // for(const Method& m: nontemplateMethods_ | boost::adaptors::map_values)
+  //   m.emit_cython_pxd(pyxFile);
+  // for(const TemplateMethod& m: templateMethods_ | boost::adaptors::map_values)
+  //   m.emit_cython_pxd(pyxFile);
+  // size_t numMethods = constructor.nrOverloads() + static_methods.size() +
+  //                     methods_.size() + templateMethods_.size();
+  // if (numMethods == 0)
+  //     pyxFile.oss << "\t\tpass";
+  pyxFile.oss << "\n\n"; 
 }
 
 /* ************************************************************************* */

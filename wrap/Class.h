@@ -149,7 +149,11 @@ public:
 
   // emit cython wrapper
   void emit_cython_pxd(FileWriter& pxdFile) const;
-  void emit_cython_pyx(FileWriter& pyxFile) const;
+  void emit_cython_pyx(FileWriter& pyxFile,
+                       const std::vector<Class>& allClasses) const;
+  void pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj,
+                        const std::string& cySharedObj,
+                        const std::vector<Class>& allClasses) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Class& cls) {
     os << "class " << cls.name() << "{\n";

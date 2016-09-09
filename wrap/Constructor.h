@@ -25,6 +25,9 @@
 
 namespace wrap {
 
+// Forward declaration
+class Class;
+
 // Constructor class
 struct Constructor: public OverloadedFunction {
 
@@ -80,7 +83,7 @@ struct Constructor: public OverloadedFunction {
 
   // emit cython wrapper
   void emit_cython_pxd(FileWriter& pxdFile, Str className) const;
-  void emit_cython_pyx(FileWriter& pyxFile, Str className) const;
+  void emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Constructor& m) {
     for (size_t i = 0; i < m.nrOverloads(); i++)
