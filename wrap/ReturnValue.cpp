@@ -83,4 +83,18 @@ void ReturnValue::emit_cython_pxd(FileWriter& file) const {
 }
 
 /* ************************************************************************* */
+void ReturnValue::emit_cython_pyx_casting(FileWriter& file) const {
+  if (isVoid()) return;
+  if (isPair) {
+    file.oss << "(";
+    type1.emit_cython_pyx_casting(file);
+    file.oss << ",";
+    type2.emit_cython_pyx_casting(file);
+    file.oss << ")";
+  } else {
+    type1.emit_cython_pyx_casting(file);
+  }
+}
+
+/* ************************************************************************* */
 

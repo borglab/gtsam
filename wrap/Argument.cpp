@@ -64,13 +64,6 @@ string Argument::matlabClass(const string& delim) const {
 }
 
 /* ************************************************************************* */
-bool Argument::isScalar() const {
-  return (type.name() == "bool" || type.name() == "char"
-      || type.name() == "unsigned char" || type.name() == "int"
-      || type.name() == "size_t" || type.name() == "double");
-}
-
-/* ************************************************************************* */
 void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
   file.oss << "  ";
 
@@ -109,7 +102,7 @@ void Argument::proxy_check(FileWriter& proxyFile, const string& s) const {
 void Argument::emit_cython_pxd(FileWriter& file) const {
   string typeName = type.qualifiedName("_");
   string cythonType = typeName;
-  if (typeName=="Vector" || typeName == "Matrix") {
+  if (type.isEigen()) {
     cythonType = "Map[" + typeName + "Xd]&";
   } else {
     if (is_ptr) cythonType = "shared_ptr[" + typeName + "]&";
@@ -125,8 +118,7 @@ void Argument::emit_cython_pyx(FileWriter& file) const {
   string typeName = type.pythonClassName();
   string cythonType = typeName;
   // use numpy for Vector and Matrix
-  if (typeName=="Vector" || typeName == "Matrix")
-    cythonType = "np.ndarray";
+  if (type.isEigen()) cythonType = "np.ndarray";
   file.oss << cythonType << " " << name;
 }
 
@@ -134,11 +126,13 @@ void Argument::emit_cython_pyx(FileWriter& file) const {
 void Argument::emit_cython_pyx_asParam(FileWriter& file) const {
   string cythonType = type.cythonClassName();
   string cythonVar;
-  if (cythonType == "Vector" || cythonType == "Matrix") {
+  if (type.isNonBasicType()) {
+    cythonVar = name + "." + type.pyxCythonObj();
+    if (!is_ptr) cythonVar = "deref(" + cythonVar + ")";
+  } else if (type.isEigen()) {
     cythonVar = "Map[" + cythonType + "Xd](" + name + ")";
   } else {
-      cythonVar = name + "." + type.pyxCythonObj();
-      if (!is_ptr) cythonVar = "deref(" + cythonVar + ")";
+    cythonVar = name;
   }
   file.oss << cythonVar; 
 }
@@ -193,7 +187,7 @@ string ArgumentList::names() const {
 /* ************************************************************************* */
 bool ArgumentList::allScalar() const {
   for(Argument arg: *this)
-    if (!arg.isScalar())
+    if (!arg.type.isScalar())
       return false;
   return true;
 }

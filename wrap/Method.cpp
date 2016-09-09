@@ -16,6 +16,7 @@
  **/
 
 #include "Method.h"
+#include "Class.h"
 #include "utilities.h"
 
 #include <boost/lexical_cast.hpp>
@@ -89,4 +90,33 @@ void Method::emit_cython_pxd(FileWriter& file) const {
 
 }
 
+/* ************************************************************************* */
+void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
+  string funcName = ((name_ == "print") ? "_print" : name_);
+  // don't support overloads for static method :-(
+  size_t N = nrOverloads();
+  for(size_t i = 0; i < N; ++i) {
+    file.oss << "\tdef " << funcName;
+    if (templateArgValue_) file.oss << templateArgValue_->name();
+    file.oss << "(self";
+    if (argumentList(i).size() > 0) file.oss << ", ";
+    argumentList(i).emit_cython_pyx(file);
+    file.oss << "):\n";
+
+    /// Return part
+    file.oss << "\t\t";
+    if (!returnVals_[i].isVoid()) file.oss << "return ";
+    // ... casting return value
+    returnVals_[i].emit_cython_pyx_casting(file);
+    if (!returnVals_[i].isVoid()) file.oss << "(";
+    file.oss << "self." << cls.pyxCythonObj() << "." << funcName;
+    // if (templateArgValue_) file.oss << "[" << templateArgValue_->pyxCythonClass() << "]";
+
+    // ... argument list
+    file.oss << "(";
+    argumentList(i).emit_cython_pyx_asParams(file);
+    if (!returnVals_[i].isVoid()) file.oss << ")";
+    file.oss << ")\n";
+  }
+}
 /* ************************************************************************* */

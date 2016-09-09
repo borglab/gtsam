@@ -78,4 +78,17 @@ void ReturnType::emit_cython_pxd(FileWriter& file) const {
 }
 
 /* ************************************************************************* */
+void ReturnType::emit_cython_pyx_casting(FileWriter& file) const {
+  if (isEigen())
+    file.oss << "ndarray_copy";
+  else if (isNonBasicType()){
+    if (isPtr) 
+      file.oss << pythonClassName() << ".cyCreateFromShared";
+    else {
+      file.oss << pythonClassName() << ".cyCreateFromValue";
+    }
+  }
+}
+
+/* ************************************************************************* */
 

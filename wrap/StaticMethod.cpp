@@ -63,7 +63,7 @@ void StaticMethod::emit_cython_pxd(FileWriter& file) const {
     file.oss << "\t\t@staticmethod\n";
     file.oss << "\t\t";
     returnVals_[i].emit_cython_pxd(file);
-    file.oss << name_ << ((i>0)?to_string(i):"") << "(";
+    file.oss << name_ << ((i>0)?"_"+to_string(i):"") << "(";
     argumentList(i).emit_cython_pxd(file);
     file.oss << ")\n";
   }
@@ -74,13 +74,14 @@ void StaticMethod::emit_cython_pyx(FileWriter& file, const Class& cls) const {
   // don't support overloads for static method :-(
   for(size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "\t@staticmethod\n";
-    file.oss << "\tdef " << name_ << "(";
+    file.oss << "\tdef " << name_ <<  ((i>0)? "_" + to_string(i):"") << "(";
     argumentList(i).emit_cython_pyx(file);
     file.oss << "):\n";
     file.oss << "\t\t";
     if (!returnVals_[i].isVoid()) file.oss << "return ";
     file.oss << cls.pythonClassName() << ".cyCreate(" 
-             << cls.pyxCythonClass() << "." << name_
+             << cls.pyxCythonClass() << "." 
+             << name_ << ((i>0)? "_" + to_string(i):"") 
              << "(";
     argumentList(i).emit_cython_pyx_asParams(file);
     file.oss << "))\n";

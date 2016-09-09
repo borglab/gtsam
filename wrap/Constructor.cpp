@@ -141,12 +141,10 @@ void Constructor::emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const {
                 << ((i > 0) ? to_string(i) : "") << "__(";
     args.emit_cython_pyx(pyxFile);
     pyxFile.oss << "): \n";
-    pyxFile.oss << "\t\treturn " << cls.cythonClassName() << ".cyCreate(" 
-              // shared_ptr[gtsam.Values](new gtsam.Values(deref(other.gtValues_))))
-                << cls.pyxSharedCythonClass() << "(new " 
-                << cls.pyxCythonClass() << "(";
+    pyxFile.oss << "\t\treturn " << cls.cythonClassName() 
+                << ".cyCreateFromValue(" << cls.pyxCythonClass() << "(";
     args.emit_cython_pyx_asParams(pyxFile);
-    pyxFile.oss << "))"
+    pyxFile.oss << ")"
                 << ")\n";
   }
 }

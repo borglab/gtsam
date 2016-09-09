@@ -730,21 +730,37 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
   if (parentClass) pyxFile.oss << "(" <<  parentClass->pythonClassName() << ")";
   pyxFile.oss << ":\n";
 
+  // shared variable of the corresponding cython object 
   pyxFile.oss << "\tcdef " << pyxSharedCythonClass() << " " << pyxCythonObj() << "\n";
 
+  // __cinit___
   pyxFile.oss << "\tdef __cinit__(self):\n"
                  "\t\tself." << pyxCythonObj() << " = " 
                  << pyxSharedCythonClass() << "(new " << pyxCythonClass() << "())\n";
   pyxInitParentObj(pyxFile, "\t\tself", "self." + pyxCythonObj(), allClasses);
 
+  // cyCreateFromShared
   pyxFile.oss << "\t@staticmethod\n";
-  pyxFile.oss << "\tcdef " << pythonClassName() << " cyCreate(" << pyxSharedCythonClass() << " other):\n"
+  pyxFile.oss << "\tcdef " << pythonClassName() << " cyCreateFromShared(const " 
+              << pyxSharedCythonClass() << "& other):\n"
               << "\t\tcdef " << pythonClassName() << " ret = " << pythonClassName() << "()\n"
               << "\t\tret." << pyxCythonObj() << " = other\n";
   pyxInitParentObj(pyxFile, "\t\tret", "other", allClasses);
   pyxFile.oss << "\t\treturn ret" << "\n";
+
+  // cyCreateFromValue
+  pyxFile.oss << "\t@staticmethod\n";
+  pyxFile.oss << "\tcdef " << pythonClassName() << " cyCreateFromValue(const "
+              << pyxCythonClass() << "& value):\n"
+              << "\t\tcdef " << pythonClassName()
+              << " ret = " << pythonClassName() << "()\n"
+              << "\t\tret." << pyxCythonObj() << " = " << pyxSharedCythonClass()
+              << "(new " << pyxCythonClass() << "(value))\n";
+  pyxInitParentObj(pyxFile, "\t\tret", "ret." + pyxCythonObj(), allClasses);
+  pyxFile.oss << "\t\treturn ret" << "\n";
   pyxFile.oss << "\n";
 
+  // Constructors
   constructor.emit_cython_pyx(pyxFile, *this);
   if (constructor.nrOverloads()>0) pyxFile.oss << "\n";
 
@@ -752,14 +768,8 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
     m.emit_cython_pyx(pyxFile, *this);
   if (static_methods.size()>0) pyxFile.oss << "\n";
 
-  // for(const Method& m: nontemplateMethods_ | boost::adaptors::map_values)
-  //   m.emit_cython_pxd(pyxFile);
-  // for(const TemplateMethod& m: templateMethods_ | boost::adaptors::map_values)
-  //   m.emit_cython_pxd(pyxFile);
-  // size_t numMethods = constructor.nrOverloads() + static_methods.size() +
-  //                     methods_.size() + templateMethods_.size();
-  // if (numMethods == 0)
-  //     pyxFile.oss << "\t\tpass";
+  for(const Method& m: methods_ | boost::adaptors::map_values)
+    m.emit_cython_pyx(pyxFile, *this);
   pyxFile.oss << "\n\n"; 
 }
 

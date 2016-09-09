@@ -22,6 +22,9 @@
 
 namespace wrap {
 
+// Forward declaration
+class Class;
+
 /// Method class
 class Method: public MethodBase {
 
@@ -52,6 +55,7 @@ public:
   }
 
   void emit_cython_pxd(FileWriter& file) const;
+  void emit_cython_pyx(FileWriter& file, const Class& cls) const;
 
 private:
 

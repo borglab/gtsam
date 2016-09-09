@@ -21,7 +21,8 @@
 #include <wrap/spirit.h>
 #include <string>
 #include <vector>
-
+#include <iostream>
+ 
 namespace wrap {
 
 /**
@@ -109,6 +110,24 @@ public:
     category = VOID;
   }
 
+  bool isScalar() const {
+    return (name() == "bool" || name() == "char"
+        || name() == "unsigned char" || name() == "int"
+        || name() == "size_t" || name() == "double");
+  }
+
+  bool isString() const {
+    return name() == "string";
+  }
+
+  bool isEigen() const {
+    return name() == "Vector" || name() == "Matrix";
+  }
+
+  bool isNonBasicType() const {
+    return !isString() && !isScalar() && !isEigen();
+  }
+
 public:
 
   static Qualified MakeClass(std::vector<std::string> namespaces,
@@ -166,7 +185,17 @@ public:
 
   /// return the Cython class in pxd corresponding to a Python class in pyx
   std::string pyxCythonClass() const {
-    return namespaces_[0] + "." + cythonClassName();
+      if (isNonBasicType())
+        if (namespaces_.size() > 0)
+          return namespaces_[0] + "." + cythonClassName();
+        else {
+          std::cerr << "Class without namespace: " << cythonClassName() << std::endl;
+          throw std::runtime_error("Error: User type without namespace!!");
+        }
+      else if (isEigen()) {
+        return name_ + "Xd";
+      } else
+        return name_;
   }
 
   /// the internal Cython shared obj in a Python class wrappper
