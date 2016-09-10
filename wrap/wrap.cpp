@@ -54,7 +54,7 @@ void generate_toolbox(
   // Then emit MATLAB code
     module.matlab_code(toolboxPath);
   else if (language == "--cython") {
-    module.cython_code(toolboxPath);
+    module.cython_wrapper(toolboxPath);
   }
   else {
       cerr << "First argument invalid" << endl;
