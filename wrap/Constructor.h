@@ -45,6 +45,9 @@ struct Constructor: public OverloadedFunction {
     return inst;
   }
 
+  /// return true if the default constructor exists
+  bool hasDefaultConstructor() const;
+
   // MATLAB code generation
   // toolboxPath is main toolbox directory, e.g., ../matlab
   // classFile is class proxy file, e.g., ../matlab/@Point2/Point2.m
