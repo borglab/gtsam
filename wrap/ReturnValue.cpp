@@ -86,11 +86,17 @@ void ReturnValue::emit_cython_pxd(FileWriter& file) const {
 void ReturnValue::emit_cython_pyx_casting(FileWriter& file) const {
   if (isVoid()) return;
   if (isPair) {
-    file.oss << "(";
-    type1.emit_cython_pyx_casting(file);
-    file.oss << ",";
-    type2.emit_cython_pyx_casting(file);
-    file.oss << ")";
+    // file.oss << "cdef pair[" << type1.pyxCythonClass() << "," << type2.pyxCythonClass() << "]"
+    //          << "ret = ";
+    // file.oss << "(";
+    // type1.emit_cython_pyx_casting(file);
+    // file.oss << "(";
+    // file.oss << type1.pyxCythonClass();
+    // file.oss << "),";
+    // type2.emit_cython_pyx_casting(file);
+    // file.oss << "(";
+    // file.oss << type2.pyxCythonClass();
+    // file.oss << "))";
   } else {
     type1.emit_cython_pyx_casting(file);
   }

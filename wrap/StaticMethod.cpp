@@ -63,7 +63,9 @@ void StaticMethod::emit_cython_pxd(FileWriter& file) const {
     file.oss << "\t\t@staticmethod\n";
     file.oss << "\t\t";
     returnVals_[i].emit_cython_pxd(file);
-    file.oss << name_ << ((i>0)?"_"+to_string(i):"") << "(";
+    file.oss << name_ << ((i > 0) ? "_" + to_string(i) : "") << " \"" << name_
+             << "\""
+             << "(";
     argumentList(i).emit_cython_pxd(file);
     file.oss << ")\n";
   }
@@ -74,17 +76,23 @@ void StaticMethod::emit_cython_pyx(FileWriter& file, const Class& cls) const {
   // don't support overloads for static method :-(
   for(size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "\t@staticmethod\n";
-    file.oss << "\tdef " << name_ <<  ((i>0)? "_" + to_string(i):"") << "(";
+    file.oss << "\tdef " << name_ << ((i > 0) ? "_" + to_string(i) : "")
+             << "(";
     argumentList(i).emit_cython_pyx(file);
     file.oss << "):\n";
     file.oss << "\t\t";
     if (!returnVals_[i].isVoid()) file.oss << "return ";
-    file.oss << cls.pythonClassName() << ".cyCreate(" 
-             << cls.pyxCythonClass() << "." 
-             << name_ << ((i>0)? "_" + to_string(i):"") 
-             << "(";
+    //... casting return value
+    returnVals_[i].emit_cython_pyx_casting(file);
+    if (!returnVals_[i].isVoid()) file.oss << "(";
+
+    file.oss << cls.pyxCythonClass() << "." 
+             << name_ << ((i>0)? "_" + to_string(i):"");
+    if (templateArgValue_) file.oss << "[" << templateArgValue_->pyxCythonClass() << "]"; 
+    file.oss << "(";
     argumentList(i).emit_cython_pyx_asParams(file);
-    file.oss << "))\n";
+    if (!returnVals_[i].isVoid()) file.oss << ")";
+    file.oss << ")\n";
   }
 }
 

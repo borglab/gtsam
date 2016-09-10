@@ -100,7 +100,7 @@ void Argument::proxy_check(FileWriter& proxyFile, const string& s) const {
 
 /* ************************************************************************* */
 void Argument::emit_cython_pxd(FileWriter& file) const {
-  string typeName = type.qualifiedName("_");
+  string typeName = type.cythonClassName();
   string cythonType = typeName;
   if (type.isEigen()) {
     cythonType = "Map[" + typeName + "Xd]&";

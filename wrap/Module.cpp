@@ -334,9 +334,11 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
 void Module::emit_cython_pyx(FileWriter& pyxFile) const {
   // headers...
   pyxFile.oss << "cimport numpy as np\n"
-                 "cimport gtsam_wrapper as gtsam\n"
-                 "from gtsam_wrapper cimport shared_ptr\n"
+                 "cimport cythontest_wrapper as gtsam\n"
+                 "from cythontest_wrapper cimport shared_ptr\n"
                  "from eigency.core cimport *\n"
+                 "from libcpp cimport bool\n\n"
+                 "from libcpp.pair cimport pair\n"
                  "from libcpp.string cimport string\n"
                  "from cython.operator cimport dereference as deref\n\n\n";
   for(const Class& cls: expandedClasses)

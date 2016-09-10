@@ -686,7 +686,7 @@ void Class::emit_cython_pxd(FileWriter& pxdFile) const {
     }
     pxdFile.oss << "]";
   }
-  if (parentClass) pxdFile.oss << "(" <<  parentClass->qualifiedName("_") << ")";
+  if (parentClass) pxdFile.oss << "(" <<  parentClass->cythonClassName() << ")";
   pxdFile.oss << ":\n";
 
   constructor.emit_cython_pxd(pxdFile, cythonClassName());
@@ -741,7 +741,10 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
   // __cinit___
   pyxFile.oss << "\tdef __cinit__(self):\n"
                  "\t\tself." << pyxCythonObj() << " = " 
-                 << pyxSharedCythonClass() << "(new " << pyxCythonClass() << "())\n";
+                 << pyxSharedCythonClass() << "(";
+  if (constructor.hasDefaultConstructor())
+    pyxFile.oss << "new " << pyxCythonClass() << "()";
+  pyxFile.oss << ")\n";
   pyxInitParentObj(pyxFile, "\t\tself", "self." + pyxCythonObj(), allClasses);
 
   // cyCreateFromShared
@@ -753,17 +756,23 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
   pyxInitParentObj(pyxFile, "\t\tret", "other", allClasses);
   pyxFile.oss << "\t\treturn ret" << "\n";
 
-  // cyCreateFromValue
-  pyxFile.oss << "\t@staticmethod\n";
-  pyxFile.oss << "\tcdef " << pythonClassName() << " cyCreateFromValue(const "
-              << pyxCythonClass() << "& value):\n"
-              << "\t\tcdef " << pythonClassName()
-              << " ret = " << pythonClassName() << "()\n"
-              << "\t\tret." << pyxCythonObj() << " = " << pyxSharedCythonClass()
-              << "(new " << pyxCythonClass() << "(value))\n";
-  pyxInitParentObj(pyxFile, "\t\tret", "ret." + pyxCythonObj(), allClasses);
-  pyxFile.oss << "\t\treturn ret" << "\n";
-  pyxFile.oss << "\n";
+  // Generate cyCreateFromValue by default, although for some classes it can't be used
+  // It's only usable if its copy constructor AND its copy assignment operator exist
+  // Copy assignment operator is needed because Cython might assign the obj to its temp variable.
+  // Some class (e.g. noiseModel::Robust) have copy constructor but no copy assignment operator
+  if (constructor.nrOverloads() >= 1) { 
+    // cyCreateFromValue
+    pyxFile.oss << "\t@staticmethod\n";
+    pyxFile.oss << "\tcdef " << pythonClassName() << " cyCreateFromValue(const "
+                << pyxCythonClass() << "& value):\n"
+                << "\t\tcdef " << pythonClassName()
+                << " ret = " << pythonClassName() << "()\n"
+                << "\t\tret." << pyxCythonObj() << " = " << pyxSharedCythonClass()
+                << "(new " << pyxCythonClass() << "(value))\n";
+    pyxInitParentObj(pyxFile, "\t\tret", "ret." + pyxCythonObj(), allClasses);
+    pyxFile.oss << "\t\treturn ret" << "\n";
+    pyxFile.oss << "\n";
+  }
 
   // Constructors
   constructor.emit_cython_pyx(pyxFile, *this);

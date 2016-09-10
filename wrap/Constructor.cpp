@@ -160,10 +160,17 @@ void Constructor::emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const {
                 << ((i > 0) ? to_string(i) : "") << "__(";
     args.emit_cython_pyx(pyxFile);
     pyxFile.oss << "): \n";
+
+    // Don't use cyCreateFromValue because the class might not have 
+    // copy constructor and copy assignment operator!!
+    // For example: noiseModel::Robust doesn't have the copy assignment operator
+    // because its members are shared_ptr to abstract base classes. That fails
+    // Cython to generate the object as it assigns the new obj to a temp variable.
     pyxFile.oss << "\t\treturn " << cls.cythonClassName() 
-                << ".cyCreateFromValue(" << cls.pyxCythonClass() << "(";
+                << ".cyCreateFromShared(" << cls.pyxSharedCythonClass() 
+                << "(new " << cls.pyxCythonClass() << "(";
     args.emit_cython_pyx_asParams(pyxFile);
-    pyxFile.oss << ")"
+    pyxFile.oss << "))"
                 << ")\n";
   }
 }

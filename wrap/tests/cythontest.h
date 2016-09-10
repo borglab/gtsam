@@ -15,10 +15,129 @@ typedef gtsam::FastSet<size_t> KeySet;
 #include <gtsam/base/FastMap.h>
 template<K,V> class FastMap{};
 
+#include <gtsam/geometry/Point2.h>
+class Point2 {
+  // Standard Constructors
+  Point2();
+  Point2(double x, double y);
+  // Point2(Vector v);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::Point2& pose, double tol) const;
+
+  // Group
+  static gtsam::Point2 identity();
+
+  // Standard Interface
+  double x() const;
+  double y() const;
+  Vector vector() const;
+  double distance(const gtsam::Point2& p2) const;
+  double norm() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
+#include <gtsam/geometry/Rot2.h>
+class Rot2 {
+  // Standard Constructors and Named Constructors
+  Rot2();
+  Rot2(double theta);
+  static gtsam::Rot2 fromAngle(double theta);
+  static gtsam::Rot2 fromDegrees(double theta);
+  static gtsam::Rot2 fromCosSin(double c, double s);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::Rot2& rot, double tol) const;
+
+  // Group
+  static gtsam::Rot2 identity();
+  gtsam::Rot2 inverse();
+  gtsam::Rot2 compose(const gtsam::Rot2& p2) const;
+  gtsam::Rot2 between(const gtsam::Rot2& p2) const;
+
+  // Manifold
+  gtsam::Rot2 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Rot2& p) const;
+
+  // Lie Group
+  static gtsam::Rot2 Expmap(Vector v);
+  static Vector Logmap(const gtsam::Rot2& p);
+
+  // Group Action on Point2
+  gtsam::Point2 rotate(const gtsam::Point2& point) const;
+  gtsam::Point2 unrotate(const gtsam::Point2& point) const;
+
+  // Standard Interface
+  static gtsam::Rot2 relativeBearing(const gtsam::Point2& d); // Ignoring derivative
+  static gtsam::Rot2 atan2(double y, double x);
+  double theta() const;
+  double degrees() const;
+  double c() const;
+  double s() const;
+  Matrix matrix() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
+#include <gtsam/geometry/Pose2.h>
+class Pose2 {
+  // Standard Constructor
+  Pose2();
+  Pose2(const gtsam::Pose2& pose);
+  Pose2(double x, double y, double theta);
+  Pose2(double theta, const gtsam::Point2& t);
+  Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
+  // Pose2(Vector v);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::Pose2& pose, double tol) const;
+
+  // Group
+  static gtsam::Pose2 identity();
+  gtsam::Pose2 inverse() const;
+  gtsam::Pose2 compose(const gtsam::Pose2& p2) const;
+  gtsam::Pose2 between(const gtsam::Pose2& p2) const;
+
+  // Manifold
+  gtsam::Pose2 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Pose2& p) const;
+
+  // Lie Group
+  static gtsam::Pose2 Expmap(Vector v);
+  static Vector Logmap(const gtsam::Pose2& p);
+  Matrix AdjointMap() const;
+  Vector Adjoint(const Vector& xi) const;
+  static Matrix wedge(double vx, double vy, double w);
+
+  // Group Actions on Point2
+  gtsam::Point2 transform_from(const gtsam::Point2& p) const;
+  gtsam::Point2 transform_to(const gtsam::Point2& p) const;
+
+  // Standard Interface
+  double x() const;
+  double y() const;
+  double theta() const;
+  gtsam::Rot2 bearing(const gtsam::Point2& point) const;
+  double range(const gtsam::Point2& point) const;
+  gtsam::Point2 translation() const;
+  gtsam::Rot2 rotation() const;
+  Matrix matrix() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
 #include <gtsam/geometry/Point3.h>
 class Point3 {
   // Standard Constructors
   Point3();
+  Point3(const Point3& p);
   Point3(double x, double y, double z);
   Point3(Vector v);
 
@@ -43,6 +162,7 @@ class Point3 {
 class Rot3 {
   // Standard Constructors and Named Constructors
   Rot3();
+  Rot3(const Rot3& R);
   Rot3(Matrix R);
   static gtsam::Rot3 Rx(double t);
   static gtsam::Rot3 Ry(double t);
@@ -62,7 +182,7 @@ class Rot3 {
 
   // Group
   static gtsam::Rot3 identity();
-    gtsam::Rot3 inverse() const;
+  gtsam::Rot3 inverse() const;
   gtsam::Rot3 compose(const gtsam::Rot3& p2) const;
   gtsam::Rot3 between(const gtsam::Rot3& p2) const;
 
@@ -94,6 +214,54 @@ class Rot3 {
   void serialize() const;
 };
 
+#include <gtsam/geometry/Pose3.h>
+class Pose3 {
+  // Standard Constructors
+  Pose3();
+  Pose3(const gtsam::Pose3& pose);
+  Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
+  Pose3(const gtsam::Pose2& pose2); // FIXME: shadows Pose3(Pose3 pose)
+  Pose3(Matrix t);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::Pose3& pose, double tol) const;
+
+  // Group
+  static gtsam::Pose3 identity();
+  gtsam::Pose3 inverse() const;
+  gtsam::Pose3 compose(const gtsam::Pose3& p2) const;
+  gtsam::Pose3 between(const gtsam::Pose3& p2) const;
+
+  // Manifold
+  gtsam::Pose3 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Pose3& T2) const;
+
+  // Lie Group
+  static gtsam::Pose3 Expmap(Vector v);
+  static Vector Logmap(const gtsam::Pose3& p);
+  Matrix AdjointMap() const;
+  Vector Adjoint(Vector xi) const;
+  static Matrix wedge(double wx, double wy, double wz, double vx, double vy, double vz);
+
+  // Group Action on Point3
+  gtsam::Point3 transform_from(const gtsam::Point3& p) const;
+  gtsam::Point3 transform_to(const gtsam::Point3& p) const;
+
+  // Standard Interface
+  gtsam::Rot3 rotation() const;
+  gtsam::Point3 translation() const;
+  double x() const;
+  double y() const;
+  double z() const;
+  Matrix matrix() const;
+  gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const; // FIXME: shadows other transform_to()
+  double range(const gtsam::Point3& point);
+  double range(const gtsam::Pose3& pose);
+
+  // enabling serialization functionality
+  void serialize() const;
+};
 
 #include <gtsam/linear/VectorValues.h>
 class VectorValues {
@@ -153,8 +321,6 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
   static gtsam::noiseModel::Diagonal* Sigmas(Vector sigmas);
   static gtsam::noiseModel::Diagonal* Variances(Vector variances);
   static gtsam::noiseModel::Diagonal* Precisions(Vector precisions);
-  Matrix R() const;
-  void print(string s) const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -213,7 +379,7 @@ virtual class GaussianFactor {
   Matrix augmentedInformation() const;
   Matrix information() const;
   Matrix augmentedJacobian() const;
-  pair<Matrix, Vector> jacobian() const;
+  // pair<Matrix, Vector> jacobian() const;
   size_t size() const;
   bool empty() const;
 };
@@ -230,24 +396,20 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
       const gtsam::noiseModel::Diagonal* model);
   JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3,
       Vector b, const gtsam::noiseModel::Diagonal* model);
-  JacobianFactor(const gtsam::GaussianFactorGraph& graph);
+  // JacobianFactor(const gtsam::GaussianFactorGraph& graph);
 
   //Testable
-  void print(string s) const;
   void printKeys(string s) const;
-  bool equals(const gtsam::GaussianFactor& lf, double tol) const;
-  size_t size() const;
   Vector unweighted_error(const gtsam::VectorValues& c) const;
   Vector error_vector(const gtsam::VectorValues& c) const;
-  double error(const gtsam::VectorValues& c) const;
 
   //Standard Interface
-  Matrix getA() const;
-  Vector getb() const;
+  Matrix py_getA() const;
+  Vector py_getb() const;
   size_t rows() const;
   size_t cols() const;
   bool isConstrained() const;
-  pair<Matrix, Vector> jacobianUnweighted() const;
+  // pair<Matrix, Vector> jacobianUnweighted() const;
   Matrix augmentedJacobianUnweighted() const;
 
   void transposeMultiplyAdd(double alpha, const Vector& e, gtsam::VectorValues& x) const;
@@ -298,10 +460,10 @@ class Values {
   // void update(size_t j, const gtsam::Value& val);
   // gtsam::Value at(size_t j) const;
 
-  template<T = {gtsam::Point3, gtsam::Rot3, Vector, Matrix}>
+  template<T = {gtsam::Point3, gtsam::Rot3}>
   void insert(size_t j, const T& t);
 
-  template<T = {gtsam::Point3, gtsam::Rot3, Vector, Matrix}>
+  template<T = {gtsam::Point3, gtsam::Rot3}>
   void update(size_t j, const T& t);
 
   template<T = {gtsam::Point3, gtsam::Rot3, Vector, Matrix}>

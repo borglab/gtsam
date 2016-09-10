@@ -185,16 +185,17 @@ public:
 
   /// return the Cython class in pxd corresponding to a Python class in pyx
   std::string pyxCythonClass() const {
-      if (isNonBasicType())
+      if (isNonBasicType()) {
         if (namespaces_.size() > 0)
           return namespaces_[0] + "." + cythonClassName();
         else {
           std::cerr << "Class without namespace: " << cythonClassName() << std::endl;
           throw std::runtime_error("Error: User type without namespace!!");
         }
+      }
       else if (isEigen()) {
         return name_ + "Xd";
-      } else
+      } else // basic types and not Eigen
         return name_;
   }
 

@@ -81,7 +81,7 @@ void Method::emit_cython_pxd(FileWriter& file) const {
   for(size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "\t\t";
     returnVals_[i].emit_cython_pxd(file);
-    file.oss << name_ << "(";
+    file.oss << ((name_ == "print") ? "_print \"print\"" : name_) << "(";
     argumentList(i).emit_cython_pxd(file);
     file.oss << ")";
     if (is_const_) file.oss << " const";
@@ -93,11 +93,17 @@ void Method::emit_cython_pxd(FileWriter& file) const {
 /* ************************************************************************* */
 void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
   string funcName = ((name_ == "print") ? "_print" : name_);
-  // don't support overloads for static method :-(
   size_t N = nrOverloads();
   for(size_t i = 0; i < N; ++i) {
     file.oss << "\tdef " << funcName;
+    // modify name of function instantiation as python doesn't allow overloads
+    // e.g. template<T={A,B,C}> funcName(...) --> funcNameA, funcNameB, funcNameC
+    // TODO: handle overloading properly!! This is lazy...
     if (templateArgValue_) file.oss << templateArgValue_->name();
+    // change function overload's name: funcName(...) --> funcName_1, funcName_2
+    // TODO: handle overloading properly!! This is lazy...
+    file.oss <<  ((i>0)? "_" + to_string(i):"");
+    // funtion arguments
     file.oss << "(self";
     if (argumentList(i).size() > 0) file.oss << ", ";
     argumentList(i).emit_cython_pyx(file);
@@ -109,8 +115,8 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
     // ... casting return value
     returnVals_[i].emit_cython_pyx_casting(file);
     if (!returnVals_[i].isVoid()) file.oss << "(";
-    file.oss << "self." << cls.pyxCythonObj() << "." << funcName;
-    // if (templateArgValue_) file.oss << "[" << templateArgValue_->pyxCythonClass() << "]";
+    file.oss << "self." << cls.pyxCythonObj() << ".get()." << funcName;
+    if (templateArgValue_) file.oss << "[" << templateArgValue_->pyxCythonClass() << "]";
 
     // ... argument list
     file.oss << "(";

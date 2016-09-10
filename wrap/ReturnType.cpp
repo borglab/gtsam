@@ -67,13 +67,11 @@ void ReturnType::wrapTypeUnwrap(FileWriter& wrapperFile) const {
 
 /* ************************************************************************* */
 void ReturnType::emit_cython_pxd(FileWriter& file) const {
-  string typeName = qualifiedName("_");
-  string cythonType = typeName;
-  if (typeName=="Vector" || typeName == "Matrix") {
-    cythonType = typeName + "Xd";
-  } else {
-    if (isPtr) cythonType = "shared_ptr[" + typeName + "]";
-  }
+  string typeName = cythonClassName();
+  string cythonType;
+  if (isEigen()) cythonType = typeName + "Xd";
+  else if (isPtr) cythonType = "shared_ptr[" + typeName + "]";
+  else cythonType = typeName;
   file.oss << cythonType;
 }
 
@@ -85,6 +83,8 @@ void ReturnType::emit_cython_pyx_casting(FileWriter& file) const {
     if (isPtr) 
       file.oss << pythonClassName() << ".cyCreateFromShared";
     else {
+      // if the function return an object, it must be copy constructible and copy assignable
+      // so it's safe to use cyCreateFromValue
       file.oss << pythonClassName() << ".cyCreateFromValue";
     }
   }
