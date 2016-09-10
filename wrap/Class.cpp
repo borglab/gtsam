@@ -309,6 +309,8 @@ vector<Class> Class::expandTemplate(Str templateArg,
     inst.templateArgs.clear();
     inst.typedefName = qualifiedName("::") + "<" + instName.qualifiedName("::")
         + ">";
+    inst.templateInstTypeList.push_back(instName);
+    inst.templateClass = *this;
     result.push_back(inst);
   }
   return result;
@@ -702,9 +704,11 @@ void Class::emit_cython_pxd(FileWriter& pxdFile) const {
                       methods_.size() + templateMethods_.size();
   if (numMethods == 0)
       pxdFile.oss << "\t\tpass";
-  pxdFile.oss << "\n\n";  
+
+  pxdFile.oss << "\n\n";
 }
 
+/* ************************************************************************* */
 void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj, const std::string& cySharedObj, const std::vector<Class>& allClasses) const {
   if (parentClass) {
       pyxFile.oss << pyObj << "." << parentClass->pyxCythonObj() << " = "
@@ -725,6 +729,7 @@ void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj, cons
   }
 }
 
+/* ************************************************************************* */
 void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allClasses) const {
   pyxFile.oss << "cdef class " << pythonClassName();
   if (parentClass) pyxFile.oss << "(" <<  parentClass->pythonClassName() << ")";

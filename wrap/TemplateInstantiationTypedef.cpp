@@ -60,6 +60,8 @@ Class TemplateInstantiationTypedef::findAndExpand(
   for (size_t i = 1; i < typeList.size(); ++i)
     classInst.typedefName += (", " + typeList[i].qualifiedName("::"));
   classInst.typedefName += ">";
+  classInst.templateClass = *matchedClass;
+  classInst.templateInstTypeList = typeList;
 
   return classInst;
 }

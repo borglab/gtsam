@@ -288,20 +288,29 @@ void Module::cython_code(const string& toolboxPath) const {
 
   fs::create_directories(toolboxPath);
 
-  // create the unified .cpp switch file
+  /// Create cython pxd file
   string pxdFileName = toolboxPath + "/" + name + "_wrapper" + ".pxd";
-  string pyxFileName = toolboxPath + "/" + name + ".pyx";
   FileWriter pxdFile(pxdFileName, verbose, "#");
-  FileWriter pyxFile(pyxFileName, verbose, "#");
-
-  // create cython pxd file
+  //... wrap all classes
   for(const Class& cls: uninstantiatedClasses)
     cls.emit_cython_pxd(pxdFile);
-  // finish wrapper file
+  //... ctypedef for template instantiations
+  for(const Class& cls: expandedClasses) {
+    if (cls.templateClass) {
+      pxdFile.oss << "ctypedef " << cls.templateClass->cythonClassName() << "[";
+      for (size_t i = 0; i<cls.templateInstTypeList.size(); ++i)
+        pxdFile.oss << cls.templateInstTypeList[i].cythonClassName() 
+                    << ((i==cls.templateInstTypeList.size()-1)?"":", ");
+      pxdFile.oss << "] " << cls.cythonClassName() << "\n";
+    }
+  }
+  // finish pxd wrapper file
   pxdFile.oss << "\n";
   pxdFile.emit(true);
 
-  // create cython pyx file
+  /// Create cython pyx file
+  string pyxFileName = toolboxPath + "/" + name + ".pyx";
+  FileWriter pyxFile(pyxFileName, verbose, "#");
   for(const Class& cls: expandedClasses)
     cls.emit_cython_pyx(pyxFile, expandedClasses);
   pyxFile.oss << "\n";
@@ -361,11 +370,11 @@ vector<Class> Module::ExpandTypedefInstantiations(const vector<Class>& classes, 
  
   // Remove all template classes 
   for(size_t i = 0; i < expandedClasses.size(); ++i) 
-    if(!expandedClasses[size_t(i)].templateArgs.empty()) { 
+    if(!expandedClasses[i].templateArgs.empty()) { 
       expandedClasses.erase(expandedClasses.begin() + size_t(i)); 
       -- i; 
     } 
- 
+
   return expandedClasses; 
 } 
  

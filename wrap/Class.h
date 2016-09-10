@@ -61,8 +61,8 @@ private:
 
   boost::optional<Qualified> parentClass; ///< The *single* parent
   Methods methods_; ///< Class methods, including all expanded/instantiated template methods
-  Methods nontemplateMethods_;
-  TemplateMethods templateMethods_;
+  Methods nontemplateMethods_; ///< only nontemplate methods
+  TemplateMethods templateMethods_; ///< only template methods
   // Method& mutableMethod(Str key);
 
 public:
@@ -72,6 +72,10 @@ public:
   // Then the instance variables are set directly by the Module constructor
   std::vector<std::string> templateArgs; ///< Template arguments
   std::string typedefName; ///< The name to typedef *from*, if this class is actually a typedef, i.e. typedef [typedefName] [name]
+  std::vector<Qualified> templateInstTypeList; ///< the original typelist used to instantiate this class from a template. 
+                                               ///< Empty if it's not an instantiation
+  boost::optional<Qualified> templateClass = boost::none; ///< qualified name of the original template class from which this class was instantiated. 
+                                                          ///< boost::none if not an instantiation
   bool isVirtual; ///< Whether the class is part of a virtual inheritance chain
   bool isSerializable; ///< Whether we can use boost.serialization to serialize the class - creates exports
   bool hasSerialization; ///< Whether we should create the serialization functions
