@@ -51,7 +51,7 @@ TEST( wrap, cython_code_geometry ) {
 
   // emit MATLAB code
   // make_geometry will not compile, use make testwrap to generate real make
-  module.cython_code("actual-cython");
+  module.cython_wrapper("actual-cython");
 }
 
 /* ************************************************************************* */

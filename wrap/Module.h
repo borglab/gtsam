@@ -64,7 +64,9 @@ struct Module {
   void matlab_code(const std::string& path) const;
 
   /// Cython code generation:
-  void cython_code(const std::string& path) const;
+  void cython_wrapper(const std::string& path) const;
+  void emit_cython_pxd(FileWriter& file) const;
+  void emit_cython_pyx(FileWriter& file) const;
 
   void generateIncludes(FileWriter& file) const;
 

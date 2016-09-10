@@ -1,5 +1,20 @@
 namespace gtsam {
 
+#include <gtsam/base/FastVector.h>
+template<T> class FastVector{};
+typedef gtsam::FastVector<Point3> KeyVector;
+
+#include <gtsam/base/FastList.h>
+template<T> class FastList{};
+typedef gtsam::FastList<size_t> KeyList;
+
+#include <gtsam/base/FastSet.h>
+template<T> class FastSet{};
+typedef gtsam::FastSet<size_t> KeySet;
+
+#include <gtsam/base/FastMap.h>
+template<K,V> class FastMap{};
+
 #include <gtsam/geometry/Point3.h>
 class Point3 {
   // Standard Constructors

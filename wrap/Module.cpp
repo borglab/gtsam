@@ -284,13 +284,35 @@ void Module::matlab_code(const string& toolboxPath) const {
 }
 
 /* ************************************************************************* */ 
-void Module::cython_code(const string& toolboxPath) const {
-
+void Module::cython_wrapper(const string& toolboxPath) const {
   fs::create_directories(toolboxPath);
-
-  /// Create cython pxd file
   string pxdFileName = toolboxPath + "/" + name + "_wrapper" + ".pxd";
   FileWriter pxdFile(pxdFileName, verbose, "#");
+  emit_cython_pxd(pxdFile);
+  string pyxFileName = toolboxPath + "/" + name + ".pyx";
+  FileWriter pyxFile(pyxFileName, verbose, "#");
+  emit_cython_pyx(pyxFile);
+}
+
+/* ************************************************************************* */ 
+void Module::emit_cython_pxd(FileWriter& pxdFile) const {
+  // headers
+  pxdFile.oss << "from eigency.core cimport *\n"
+                 "from libcpp.string cimport string\n"
+                 "from libcpp.vector cimport vector\n"
+                 "from libcpp.pair cimport pair\n"
+                 "from libcpp.set cimport set\n"
+                 "from libcpp.map cimport map\n"
+                 "from libcpp cimport bool\n\n";
+
+  // boost shared_ptr
+  pxdFile.oss << "cdef extern from \"boost/shared_ptr.hpp\" namespace \"boost\":\n"
+                 "\tcppclass shared_ptr[T]:\n"
+                 "\t\tshared_ptr()\n"
+                 "\t\tshared_ptr(T*)\n"
+                 "\t\tT* get()\n"
+                 "\t\tT& operator*()\n\n";
+
   //... wrap all classes
   for(const Class& cls: uninstantiatedClasses)
     cls.emit_cython_pxd(pxdFile);
@@ -304,13 +326,19 @@ void Module::cython_code(const string& toolboxPath) const {
       pxdFile.oss << "] " << cls.cythonClassName() << "\n";
     }
   }
-  // finish pxd wrapper file
   pxdFile.oss << "\n";
   pxdFile.emit(true);
+}
 
-  /// Create cython pyx file
-  string pyxFileName = toolboxPath + "/" + name + ".pyx";
-  FileWriter pyxFile(pyxFileName, verbose, "#");
+/* ************************************************************************* */ 
+void Module::emit_cython_pyx(FileWriter& pyxFile) const {
+  // headers...
+  pyxFile.oss << "cimport numpy as np\n"
+                 "cimport gtsam_wrapper as gtsam\n"
+                 "from gtsam_wrapper cimport shared_ptr\n"
+                 "from eigency.core cimport *\n"
+                 "from libcpp.string cimport string\n"
+                 "from cython.operator cimport dereference as deref\n\n\n";
   for(const Class& cls: expandedClasses)
     cls.emit_cython_pyx(pyxFile, expandedClasses);
   pyxFile.oss << "\n";
