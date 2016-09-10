@@ -64,8 +64,7 @@ public:
   }
 
   /// Create alpha*\sum lambda_i*constrainedHessian_i
-  GaussianFactorGraph::shared_ptr multiplyConstrainedHessians(
-      const NonlinearFactorGraph& constrainedGraph, const Values& x,
+  GaussianFactorGraph::shared_ptr multiplyConstrainedHessians(const Values& x,
       VectorValues lambdas, double alpha) const;
 
   /// Build a damped system to overcome negative Hessian
@@ -102,9 +101,9 @@ public:
  * Betts10book 2.27
  */
 class MeritFunction {
-private:
-  NP program_;
-  GaussianFactorGraph::shared_ptr linearUnconstrained_, lagrangianGraph_;
+  const NP &program_;
+  const GaussianFactorGraph &linearizedCost_;
+  const GaussianFactorGraph &lagrangianGraph_;
   Values x_;
   VectorValues p_, gradf_;
 
@@ -112,8 +111,8 @@ public:
 
   /// Constructor
   MeritFunction(const NP & program,
-      const GaussianFactorGraph::shared_ptr& linearUnconstrained,
-      const GaussianFactorGraph::shared_ptr& lagrangianGraph, const Values& x,
+      const GaussianFactorGraph & linearizedCost,
+      const GaussianFactorGraph & lagrangianGraph, const Values& x,
       const VectorValues& p);
 
   /// Update predicted solution, Betts10book, 2.30
