@@ -167,7 +167,7 @@ void Module::parseMarkup(const std::string& data) {
       [assign_a(cls,cls0)] // also clear class to avoid partial parse
       [assign_a(fwDec, fwDec0)]; 
  
-  Rule module_content_p = basic.comments_p | class_p
+  Rule module_content_p = basic.comments_p | include_p | class_p
       | templateSingleInstantiation_p | forward_declaration_p
       | global_function_g | namespace_def_p;
  
@@ -530,8 +530,7 @@ void Module::python_wrapper(const string& toolboxPath) const {
   wrapperFile.oss << "{\n";
 
   // write out classes
-  for(const Class& cls: classes) {
-    cout << "tmpl args:" << cls.templateArgs.size() << endl;
+  for(const Class& cls: expandedClasses) {
     cls.python_wrapper(wrapperFile);
   }
 

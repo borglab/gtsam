@@ -478,25 +478,5 @@ TEST( wrap, python_code_geometry ) {
 }
 
 /* ************************************************************************* */
-TEST( wrap, cython_code_geometry ) {
-  // Parse into class object
-  string header_path = topdir + "/wrap/tests";
-  Module module(header_path,"geometry",enable_verbose);
-  string path = topdir + "/wrap";
-
-  // clean out previous generated code
-  fs::remove_all("actual-cython");
-
-  // emit MATLAB code
-  // make_geometry will not compile, use make testwrap to generate real make
-  module.cython_wrapper("actual-cython");
-  string epath = path + "/tests/expected-cython/";
-  string apath = "actual-cython/";
-
-  EXPECT(files_equal(epath + "geometry_cython.pxd", apath + "geometry_cython.pxd" ));
-  EXPECT(files_equal(epath + "geometry.pyx", apath + "geometry.pyx" ));
-}
-
-/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
