@@ -174,22 +174,22 @@ public:
   }
 
   /// the Cython class in pxd
-  std::string cythonClassName() const {
+  std::string cythonClass() const {
     return qualifiedName("_", 1);
   }
 
   /// the Python class in pyx
-  std::string pythonClassName() const {
-    return cythonClassName();
+  std::string pythonClass() const {
+    return cythonClass();
   }
 
   /// return the Cython class in pxd corresponding to a Python class in pyx
   std::string pyxCythonClass() const {
       if (isNonBasicType()) {
         if (namespaces_.size() > 0)
-          return namespaces_[0] + "." + cythonClassName();
+          return namespaces_[0] + "." + cythonClass();
         else {
-          std::cerr << "Class without namespace: " << cythonClassName() << std::endl;
+          std::cerr << "Class without namespace: " << cythonClass() << std::endl;
           throw std::runtime_error("Error: User type without namespace!!");
         }
       }
@@ -201,7 +201,7 @@ public:
 
   /// the internal Cython shared obj in a Python class wrappper
   std::string pyxCythonObj() const {
-    return "gt" + cythonClassName() + "_";
+    return "gt" + cythonClass() + "_";
   }
 
   std::string pyxSharedCythonClass() const {

@@ -25,6 +25,7 @@ namespace wrap {
 struct TemplateMethod: public Method {
   std::string argName; // name of template argument
 
+  void emit_cython_pxd(FileWriter& file, const Class& cls) const;
   bool addOverload(Str name, const ArgumentList& args,
                    const ReturnValue& retVal, bool is_const,
                    std::string argName, bool verbose = false);

@@ -319,11 +319,11 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
   //... ctypedef for template instantiations
   for(const Class& cls: expandedClasses) {
     if (cls.templateClass) {
-      pxdFile.oss << "ctypedef " << cls.templateClass->cythonClassName() << "[";
+      pxdFile.oss << "ctypedef " << cls.templateClass->cythonClass() << "[";
       for (size_t i = 0; i<cls.templateInstTypeList.size(); ++i)
-        pxdFile.oss << cls.templateInstTypeList[i].cythonClassName() 
+        pxdFile.oss << cls.templateInstTypeList[i].cythonClass() 
                     << ((i==cls.templateInstTypeList.size()-1)?"":", ");
-      pxdFile.oss << "] " << cls.cythonClassName() << "\n";
+      pxdFile.oss << "] " << cls.cythonClass() << "\n";
     }
   }
   pxdFile.oss << "\n";

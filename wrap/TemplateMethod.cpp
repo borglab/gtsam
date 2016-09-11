@@ -15,17 +15,18 @@
  **/
 
 #include "TemplateMethod.h"
-
+#include "Class.h"
+ 
 using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void TemplateMethod::emit_cython_pxd(FileWriter& file) const {
+void TemplateMethod::emit_cython_pxd(FileWriter& file, const Class& cls) const {
   for(size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "\t\t";
-    returnVals_[i].emit_cython_pxd(file);
+    returnVals_[i].emit_cython_pxd(file, cls.cythonClass());
     file.oss << name_ << "[" << argName << "]" << "(";
-    argumentList(i).emit_cython_pxd(file);
+    argumentList(i).emit_cython_pxd(file, cls.cythonClass());
     file.oss << ")\n";
   }
 }

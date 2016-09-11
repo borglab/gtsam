@@ -77,12 +77,12 @@ string Method::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
 }
 
 /* ************************************************************************* */
-void Method::emit_cython_pxd(FileWriter& file) const {
+void Method::emit_cython_pxd(FileWriter& file, const Class& cls) const {
   for(size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "\t\t";
-    returnVals_[i].emit_cython_pxd(file);
+    returnVals_[i].emit_cython_pxd(file, cls.cythonClass());
     file.oss << ((name_ == "print") ? "_print \"print\"" : name_) << "(";
-    argumentList(i).emit_cython_pxd(file);
+    argumentList(i).emit_cython_pxd(file, cls.cythonClass());
     file.oss << ")";
     if (is_const_) file.oss << " const";
     file.oss << "\n";

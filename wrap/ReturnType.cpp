@@ -5,6 +5,7 @@
  */
 
 #include "ReturnType.h"
+#include "Class.h"
 #include "utilities.h"
 #include <iostream>
 
@@ -66,12 +67,13 @@ void ReturnType::wrapTypeUnwrap(FileWriter& wrapperFile) const {
 }
 
 /* ************************************************************************* */
-void ReturnType::emit_cython_pxd(FileWriter& file) const {
-  string typeName = cythonClassName();
+void ReturnType::emit_cython_pxd(FileWriter& file, const std::string& className) const {
+  string typeName = cythonClass();
   string cythonType;
   if (isEigen()) cythonType = typeName + "Xd";
   else if (isPtr) cythonType = "shared_ptr[" + typeName + "]";
   else cythonType = typeName;
+  if (typeName == "This") cythonType = className;
   file.oss << cythonType;
 }
 
@@ -88,11 +90,11 @@ void ReturnType::emit_cython_pyx_casting(FileWriter& file, const std::string& va
     file.oss << "ndarray_copy";
   else if (isNonBasicType()){
     if (isPtr) 
-      file.oss << pythonClassName() << ".cyCreateFromShared";
+      file.oss << pythonClass() << ".cyCreateFromShared";
     else {
       // if the function return an object, it must be copy constructible and copy assignable
       // so it's safe to use cyCreateFromValue
-      file.oss << pythonClassName() << ".cyCreateFromValue";
+      file.oss << pythonClass() << ".cyCreateFromValue";
     }
   }
   file.oss << "(" << var << ")";

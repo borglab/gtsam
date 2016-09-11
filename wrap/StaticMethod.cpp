@@ -57,16 +57,16 @@ string StaticMethod::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
 }
 
 /* ************************************************************************* */
-void StaticMethod::emit_cython_pxd(FileWriter& file) const {
+void StaticMethod::emit_cython_pxd(FileWriter& file, const Class& cls) const {
   // don't support overloads for static method :-(
   for(size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "\t\t@staticmethod\n";
     file.oss << "\t\t";
-    returnVals_[i].emit_cython_pxd(file);
+    returnVals_[i].emit_cython_pxd(file, cls.cythonClass());
     file.oss << name_ << ((i > 0) ? "_" + to_string(i) : "") << " \"" << name_
              << "\""
              << "(";
-    argumentList(i).emit_cython_pxd(file);
+    argumentList(i).emit_cython_pxd(file, cls.cythonClass());
     file.oss << ")\n";
   }
 }

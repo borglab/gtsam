@@ -34,7 +34,7 @@ struct StaticMethod: public MethodBase {
     return os;
   }
 
-  void emit_cython_pxd(FileWriter& file) const;
+  void emit_cython_pxd(FileWriter& file, const Class& cls) const;
   void emit_cython_pyx(FileWriter& file, const Class& cls) const;
 
 protected:

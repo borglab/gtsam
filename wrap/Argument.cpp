@@ -99,8 +99,10 @@ void Argument::proxy_check(FileWriter& proxyFile, const string& s) const {
 }
 
 /* ************************************************************************* */
-void Argument::emit_cython_pxd(FileWriter& file) const {
-  string typeName = type.cythonClassName();
+void Argument::emit_cython_pxd(FileWriter& file, const std::string& className) const {
+  string typeName = type.cythonClass();
+  if (typeName == "This") typeName = className;
+
   string cythonType = typeName;
   if (type.isEigen()) {
     cythonType = "const " + typeName + "Xd&";
@@ -115,7 +117,7 @@ void Argument::emit_cython_pxd(FileWriter& file) const {
 
 /* ************************************************************************* */
 void Argument::emit_cython_pyx(FileWriter& file) const {
-  string typeName = type.pythonClassName();
+  string typeName = type.pythonClass();
   string cythonType = typeName;
   // use numpy for Vector and Matrix
   if (type.isEigen()) cythonType = "np.ndarray";
@@ -124,7 +126,7 @@ void Argument::emit_cython_pyx(FileWriter& file) const {
 
 /* ************************************************************************* */
 void Argument::emit_cython_pyx_asParam(FileWriter& file) const {
-  string cythonType = type.cythonClassName();
+  string cythonType = type.cythonClass();
   string cythonVar;
   if (type.isNonBasicType()) {
     cythonVar = name + "." + type.pyxCythonObj();
@@ -217,9 +219,9 @@ void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
 }
 
 /* ************************************************************************* */
-void ArgumentList::emit_cython_pxd(FileWriter& file) const {
+void ArgumentList::emit_cython_pxd(FileWriter& file, const std::string& className) const {
   for (size_t j = 0; j<size(); ++j) {
-    at(j).emit_cython_pxd(file);
+    at(j).emit_cython_pxd(file, className);
     if (j<size()-1) file.oss << ", ";
   }
 }

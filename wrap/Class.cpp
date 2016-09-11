@@ -677,7 +677,7 @@ void Class::python_wrapper(FileWriter& wrapperFile) const {
 void Class::emit_cython_pxd(FileWriter& pxdFile) const {
   pxdFile.oss << "cdef extern from \"" << includeFile << "\" namespace \""
                 << qualifiedNamespaces("::") << "\":" << endl;
-  pxdFile.oss << "\tcdef cppclass " << cythonClassName() << " \"" << qualifiedName("::") << "\"";
+  pxdFile.oss << "\tcdef cppclass " << cythonClass() << " \"" << qualifiedName("::") << "\"";
   if (templateArgs.size()>0) {
     pxdFile.oss << "[";
     for(size_t i = 0; i<templateArgs.size(); ++i) {
@@ -686,20 +686,20 @@ void Class::emit_cython_pxd(FileWriter& pxdFile) const {
     }
     pxdFile.oss << "]";
   }
-  if (parentClass) pxdFile.oss << "(" <<  parentClass->cythonClassName() << ")";
+  if (parentClass) pxdFile.oss << "(" <<  parentClass->cythonClass() << ")";
   pxdFile.oss << ":\n";
 
-  constructor.emit_cython_pxd(pxdFile, cythonClassName());
+  constructor.emit_cython_pxd(pxdFile, cythonClass());
   if (constructor.nrOverloads()>0) pxdFile.oss << "\n";
 
   for(const StaticMethod& m: static_methods | boost::adaptors::map_values)
-    m.emit_cython_pxd(pxdFile);
+    m.emit_cython_pxd(pxdFile, *this);
   if (static_methods.size()>0) pxdFile.oss << "\n";
 
   for(const Method& m: nontemplateMethods_ | boost::adaptors::map_values)
-    m.emit_cython_pxd(pxdFile);
+    m.emit_cython_pxd(pxdFile, *this);
   for(const TemplateMethod& m: templateMethods_ | boost::adaptors::map_values)
-    m.emit_cython_pxd(pxdFile);
+    m.emit_cython_pxd(pxdFile, *this);
   size_t numMethods = constructor.nrOverloads() + static_methods.size() +
                       methods_.size() + templateMethods_.size();
   if (numMethods == 0)
@@ -718,11 +718,11 @@ void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj, cons
       // TODO: This search is not efficient. :-(
       auto parent_it = find_if(allClasses.begin(), allClasses.end(),
                                [this](const Class& cls) {
-                                   return cls.cythonClassName() ==
-                                          this->parentClass->cythonClassName();
+                                   return cls.cythonClass() ==
+                                          this->parentClass->cythonClass();
                                });
       if (parent_it == allClasses.end()) {
-          cerr << "Can't find parent class: " << parentClass->cythonClassName();
+          cerr << "Can't find parent class: " << parentClass->cythonClass();
         throw std::runtime_error("Parent class not found!");
       }
       parent_it->pyxInitParentObj(pyxFile, pyObj, cySharedObj, allClasses);
@@ -731,8 +731,8 @@ void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj, cons
 
 /* ************************************************************************* */
 void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allClasses) const {
-  pyxFile.oss << "cdef class " << pythonClassName();
-  if (parentClass) pyxFile.oss << "(" <<  parentClass->pythonClassName() << ")";
+  pyxFile.oss << "cdef class " << pythonClass();
+  if (parentClass) pyxFile.oss << "(" <<  parentClass->pythonClass() << ")";
   pyxFile.oss << ":\n";
 
   // shared variable of the corresponding cython object 
@@ -749,9 +749,9 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
 
   // cyCreateFromShared
   pyxFile.oss << "\t@staticmethod\n";
-  pyxFile.oss << "\tcdef " << pythonClassName() << " cyCreateFromShared(const " 
+  pyxFile.oss << "\tcdef " << pythonClass() << " cyCreateFromShared(const " 
               << pyxSharedCythonClass() << "& other):\n"
-              << "\t\tcdef " << pythonClassName() << " ret = " << pythonClassName() << "()\n"
+              << "\t\tcdef " << pythonClass() << " ret = " << pythonClass() << "()\n"
               << "\t\tret." << pyxCythonObj() << " = other\n";
   pyxInitParentObj(pyxFile, "\t\tret", "other", allClasses);
   pyxFile.oss << "\t\treturn ret" << "\n";
@@ -763,10 +763,10 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
   if (constructor.nrOverloads() >= 1) { 
     // cyCreateFromValue
     pyxFile.oss << "\t@staticmethod\n";
-    pyxFile.oss << "\tcdef " << pythonClassName() << " cyCreateFromValue(const "
+    pyxFile.oss << "\tcdef " << pythonClass() << " cyCreateFromValue(const "
                 << pyxCythonClass() << "& value):\n"
-                << "\t\tcdef " << pythonClassName()
-                << " ret = " << pythonClassName() << "()\n"
+                << "\t\tcdef " << pythonClass()
+                << " ret = " << pythonClass() << "()\n"
                 << "\t\tret." << pyxCythonObj() << " = " << pyxSharedCythonClass()
                 << "(new " << pyxCythonClass() << "(value))\n";
     pyxInitParentObj(pyxFile, "\t\tret", "ret." + pyxCythonObj(), allClasses);
