@@ -111,18 +111,23 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
 
     /// Return part
     file.oss << "\t\t";
-    if (!returnVals_[i].isVoid()) file.oss << "return ";
-    // ... casting return value
-    returnVals_[i].emit_cython_pyx_casting(file);
-    if (!returnVals_[i].isVoid()) file.oss << "(";
+    if (!returnVals_[i].isVoid()) {
+      file.oss << "cdef ";
+      returnVals_[i].emit_cython_pyx_return_type(file);
+      file.oss << " ret = ";
+    }
+    //... function call
     file.oss << "self." << cls.pyxCythonObj() << ".get()." << funcName;
     if (templateArgValue_) file.oss << "[" << templateArgValue_->pyxCythonClass() << "]";
-
-    // ... argument list
     file.oss << "(";
     argumentList(i).emit_cython_pyx_asParams(file);
-    if (!returnVals_[i].isVoid()) file.oss << ")";
     file.oss << ")\n";
+
+    file.oss << "\t\t";
+    if (!returnVals_[i].isVoid()) file.oss << "return ";
+    // ... casting return value
+    returnVals_[i].emit_cython_pyx_casting(file, "ret");    
+    file.oss << "\n";
   }
 }
 /* ************************************************************************* */

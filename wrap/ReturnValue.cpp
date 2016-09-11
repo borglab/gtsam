@@ -83,22 +83,30 @@ void ReturnValue::emit_cython_pxd(FileWriter& file) const {
 }
 
 /* ************************************************************************* */
-void ReturnValue::emit_cython_pyx_casting(FileWriter& file) const {
+void ReturnValue::emit_cython_pyx_return_type(FileWriter& file) const {
   if (isVoid()) return;
   if (isPair) {
-    // file.oss << "cdef pair[" << type1.pyxCythonClass() << "," << type2.pyxCythonClass() << "]"
-    //          << "ret = ";
-    // file.oss << "(";
-    // type1.emit_cython_pyx_casting(file);
-    // file.oss << "(";
-    // file.oss << type1.pyxCythonClass();
-    // file.oss << "),";
-    // type2.emit_cython_pyx_casting(file);
-    // file.oss << "(";
-    // file.oss << type2.pyxCythonClass();
-    // file.oss << "))";
+    file.oss << "pair [";
+    type1.emit_cython_pyx_return_type(file);
+    file.oss << ",";
+    type2.emit_cython_pyx_return_type(file);
+    file.oss << "]";
   } else {
-    type1.emit_cython_pyx_casting(file);
+    type1.emit_cython_pyx_return_type(file);
+  }
+}
+
+/* ************************************************************************* */
+void ReturnValue::emit_cython_pyx_casting(FileWriter& file, const std::string& var) const {
+  if (isVoid()) return;
+  if (isPair) {
+    file.oss << "(";
+    type1.emit_cython_pyx_casting(file, var + ".first");
+    file.oss << ",";
+    type2.emit_cython_pyx_casting(file, var + ".second");
+    file.oss << ")";
+  } else {
+    type1.emit_cython_pyx_casting(file, var);
   }
 }
 

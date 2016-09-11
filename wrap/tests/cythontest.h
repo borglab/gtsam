@@ -380,7 +380,7 @@ virtual class GaussianFactor {
   Matrix augmentedInformation() const;
   Matrix information() const;
   Matrix augmentedJacobian() const;
-  // pair<Matrix, Vector> jacobian() const;
+  pair<Matrix, Vector> jacobian() const;
   size_t size() const;
   bool empty() const;
 };

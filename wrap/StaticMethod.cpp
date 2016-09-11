@@ -81,18 +81,21 @@ void StaticMethod::emit_cython_pyx(FileWriter& file, const Class& cls) const {
     argumentList(i).emit_cython_pyx(file);
     file.oss << "):\n";
     file.oss << "\t\t";
-    if (!returnVals_[i].isVoid()) file.oss << "return ";
-    //... casting return value
-    returnVals_[i].emit_cython_pyx_casting(file);
-    if (!returnVals_[i].isVoid()) file.oss << "(";
-
+    //... function call
+    if (!returnVals_[i].isVoid()) file.oss << "ret = ";
     file.oss << cls.pyxCythonClass() << "." 
              << name_ << ((i>0)? "_" + to_string(i):"");
     if (templateArgValue_) file.oss << "[" << templateArgValue_->pyxCythonClass() << "]"; 
     file.oss << "(";
     argumentList(i).emit_cython_pyx_asParams(file);
-    if (!returnVals_[i].isVoid()) file.oss << ")";
     file.oss << ")\n";
+
+    //... casting return value
+    if (!returnVals_[i].isVoid()) {
+      file.oss << "\t\treturn ";
+      returnVals_[i].emit_cython_pyx_casting(file, "ret");
+    }
+    file.oss << "\n";
   }
 }
 

@@ -76,7 +76,14 @@ void ReturnType::emit_cython_pxd(FileWriter& file) const {
 }
 
 /* ************************************************************************* */
-void ReturnType::emit_cython_pyx_casting(FileWriter& file) const {
+void ReturnType::emit_cython_pyx_return_type(FileWriter& file) const {
+  string retType = pyxCythonClass();
+  if (isPtr) retType = "shared_ptr[" + retType + "]";
+  file.oss << retType;
+}
+
+/* ************************************************************************* */
+void ReturnType::emit_cython_pyx_casting(FileWriter& file, const std::string& var) const {
   if (isEigen())
     file.oss << "ndarray_copy";
   else if (isNonBasicType()){
@@ -88,6 +95,7 @@ void ReturnType::emit_cython_pyx_casting(FileWriter& file) const {
       file.oss << pythonClassName() << ".cyCreateFromValue";
     }
   }
+  file.oss << "(" << var << ")";
 }
 
 /* ************************************************************************* */
