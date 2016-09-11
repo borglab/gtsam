@@ -2,7 +2,7 @@ namespace gtsam {
 
 #include <gtsam/base/FastVector.h>
 template<T> class FastVector{};
-typedef gtsam::FastVector<Point3> KeyVector;
+typedef gtsam::FastVector<size_t> KeyVector;
 
 #include <gtsam/base/FastList.h>
 template<T> class FastList{};
@@ -20,7 +20,7 @@ class Point2 {
   // Standard Constructors
   Point2();
   Point2(double x, double y);
-  // Point2(Vector v);
+  Point2(Vector v);
 
   // Testable
   void print(string s) const;
@@ -92,7 +92,8 @@ class Pose2 {
   Pose2(double x, double y, double theta);
   Pose2(double theta, const gtsam::Point2& t);
   Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
-  // Pose2(Vector v);
+  Pose2(Vector v);
+  Pose2(Matrix T);
 
   // Testable
   void print(string s) const;
@@ -460,10 +461,10 @@ class Values {
   // void update(size_t j, const gtsam::Value& val);
   // gtsam::Value at(size_t j) const;
 
-  template<T = {gtsam::Point3, gtsam::Rot3}>
+  template<T = {gtsam::Point3, gtsam::Rot3, Matrix, Vector}>
   void insert(size_t j, const T& t);
 
-  template<T = {gtsam::Point3, gtsam::Rot3}>
+  template<T = {gtsam::Point3, gtsam::Rot3, Matrix, Vector}>
   void update(size_t j, const T& t);
 
   template<T = {gtsam::Point3, gtsam::Rot3, Vector, Matrix}>
