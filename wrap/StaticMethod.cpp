@@ -75,26 +75,14 @@ void StaticMethod::emit_cython_pxd(FileWriter& file) const {
 void StaticMethod::emit_cython_pyx(FileWriter& file, const Class& cls) const {
   // don't support overloads for static method :-(
   for(size_t i = 0; i < nrOverloads(); ++i) {
+    string funcName = name_ + ((i>0)? "_" + to_string(i):"");
     file.oss << "\t@staticmethod\n";
-    file.oss << "\tdef " << name_ << ((i > 0) ? "_" + to_string(i) : "")
-             << "(";
+    file.oss << "\tdef " << funcName << "(";
     argumentList(i).emit_cython_pyx(file);
     file.oss << "):\n";
-    file.oss << "\t\t";
-    //... function call
-    if (!returnVals_[i].isVoid()) file.oss << "ret = ";
-    file.oss << cls.pyxCythonClass() << "." 
-             << name_ << ((i>0)? "_" + to_string(i):"");
-    if (templateArgValue_) file.oss << "[" << templateArgValue_->pyxCythonClass() << "]"; 
-    file.oss << "(";
-    argumentList(i).emit_cython_pyx_asParams(file);
-    file.oss << ")\n";
 
-    //... casting return value
-    if (!returnVals_[i].isVoid()) {
-      file.oss << "\t\treturn ";
-      returnVals_[i].emit_cython_pyx_casting(file, "ret");
-    }
+    /// Call cython corresponding function and return
+    emit_cython_pyx_function_call(file, "\t\t", cls.pyxCythonClass(), funcName, i, cls);
     file.oss << "\n";
   }
 }

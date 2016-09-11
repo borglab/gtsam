@@ -23,9 +23,6 @@
 
 namespace wrap {
 
-// Forward declaration
-class Class;
-
 /// StaticMethod class
 struct StaticMethod: public MethodBase {
 

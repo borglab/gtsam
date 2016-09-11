@@ -17,6 +17,7 @@
  **/
 
 #include "Method.h"
+#include "Class.h"
 #include "utilities.h"
 
 #include <boost/lexical_cast.hpp>
@@ -135,6 +136,35 @@ string MethodBase::wrapper_fragment(FileWriter& wrapperFile, Str cppClassName,
 void MethodBase::python_wrapper(FileWriter& wrapperFile, Str className) const {
   wrapperFile.oss << "  .def(\"" << name_ << "\", &" << className << "::"
       << name_ << ");\n";
+}
+
+/* ************************************************************************* */
+void MethodBase::emit_cython_pyx_function_call(FileWriter& file,
+                                               const std::string& indent,
+                                               const std::string& caller,
+                                               const std::string& funcName,
+                                               size_t iOverload,
+                                               const Class& cls) const {
+  file.oss << indent;
+  if (!returnVals_[iOverload].isVoid()) {
+    file.oss << "cdef ";
+    returnVals_[iOverload].emit_cython_pyx_return_type(file);
+    file.oss << " ret = ";
+  }
+  //... function call
+  file.oss << caller << "." << funcName;
+  if (templateArgValue_) file.oss << "[" << templateArgValue_->pyxCythonClass() << "]";
+  file.oss << "(";
+  argumentList(iOverload).emit_cython_pyx_asParams(file);
+  file.oss << ")\n";
+
+  // ... casting return value
+  if (!returnVals_[iOverload].isVoid()) {
+    file.oss << indent;
+    file.oss << "return ";
+    returnVals_[iOverload].emit_cython_pyx_casting(file, "ret");
+  }
+  file.oss << "\n";
 }
 
 /* ************************************************************************* */

@@ -23,6 +23,9 @@
 
 namespace wrap {
 
+// Forward declaration
+class Class;
+
 /// MethodBase class
 struct MethodBase: public FullyOverloadedFunction {
 
@@ -50,6 +53,14 @@ struct MethodBase: public FullyOverloadedFunction {
 
   // emit python wrapper
   void python_wrapper(FileWriter& wrapperFile, Str className) const;
+
+  // emit cython pyx function call
+  void emit_cython_pyx_function_call(FileWriter& file,
+                                     const std::string& indent,
+                                     const std::string& caller,
+                                     const std::string& funcName,
+                                     size_t iOverload,
+                                     const Class& cls) const;
 
 protected:
 

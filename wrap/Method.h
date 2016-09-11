@@ -22,9 +22,6 @@
 
 namespace wrap {
 
-// Forward declaration
-class Class;
-
 /// Method class
 class Method: public MethodBase {
 
