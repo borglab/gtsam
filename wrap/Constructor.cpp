@@ -131,11 +131,9 @@ bool Constructor::hasDefaultConstructor() const {
 
 /* ************************************************************************* */
 void Constructor::emit_cython_pxd(FileWriter& pxdFile, Str className) const {
-  // if it can ever be constructed, add the default copy constructor by default
-  if (nrOverloads() > 0) {
-      pxdFile.oss << "\t\t" << className << "(const " << className
-                  << "&) except +\n";
-  }
+  // HACK HACK: always add the default copy constructor by default
+  pxdFile.oss << "\t\t" << className << "(const " << className
+              << "&) except +\n";
 
   for (size_t i = 0; i < nrOverloads(); i++) {
     ArgumentList args = argumentList(i);
