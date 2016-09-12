@@ -568,7 +568,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
   EXPECT(smartFactor1->point());
   EXPECT(smartFactor2->point());
   EXPECT(smartFactor3->point());
-  EXPECT(smartFactor4->point().degenerate());
+  EXPECT(smartFactor4->point().outlier());
   EXPECT(smartFactor4b->point());
 
   // Factor 4 is disabled, pose 3 stays put

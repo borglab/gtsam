@@ -247,6 +247,59 @@ TEST( triangulation, fourPoses_distinct_Ks) {
 }
 
 //******************************************************************************
+TEST( triangulation, outliersAndFarLandmarks) {
+  Cal3_S2 K1(1500, 1200, 0, 640, 480);
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  SimpleCamera camera1(pose1, K1);
+
+  // create second camera 1 meter to the right of first camera
+  Cal3_S2 K2(1600, 1300, 0, 650, 440);
+  SimpleCamera camera2(pose2, K2);
+
+  // 1. Project two landmarks into two cameras and triangulate
+  Point2 z1 = camera1.project(landmark);
+  Point2 z2 = camera2.project(landmark);
+
+  vector<SimpleCamera> cameras;
+  vector<Point2> measurements;
+
+  cameras += camera1, camera2;
+  measurements += z1, z2;
+
+  double landmarkDistanceThreshold = 10; // landmark is closer than that
+  TriangulationParameters params(1.0, false, landmarkDistanceThreshold); // all default except landmarkDistanceThreshold
+  TriangulationResult actual = triangulateSafe(cameras,measurements,params);
+  EXPECT(assert_equal(landmark, *actual, 1e-2));
+  EXPECT(actual.valid());
+
+  landmarkDistanceThreshold = 4; // landmark is farther than that
+  TriangulationParameters params2(1.0, false, landmarkDistanceThreshold); // all default except landmarkDistanceThreshold
+  actual = triangulateSafe(cameras,measurements,params2);
+  EXPECT(actual.farPoint());
+
+  // 3. Add a slightly rotated third camera above with a wrong measurement (OUTLIER)
+  Pose3 pose3 = pose1 * Pose3(Rot3::Ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
+  Cal3_S2 K3(700, 500, 0, 640, 480);
+  SimpleCamera camera3(pose3, K3);
+  Point2 z3 = camera3.project(landmark);
+
+  cameras += camera3;
+  measurements += z3 + Point2(10, -10);
+
+  landmarkDistanceThreshold = 10; // landmark is closer than that
+  double outlierThreshold = 100; // loose, the outlier is going to pass
+  TriangulationParameters params3(1.0, false, landmarkDistanceThreshold,outlierThreshold);
+  actual = triangulateSafe(cameras,measurements,params3);
+  EXPECT(actual.valid());
+
+  // now set stricter threshold for outlier rejection
+  outlierThreshold = 5; // tighter, the outlier is not going to pass
+  TriangulationParameters params4(1.0, false, landmarkDistanceThreshold,outlierThreshold);
+  actual = triangulateSafe(cameras,measurements,params4);
+  EXPECT(actual.outlier());
+}
+
+//******************************************************************************
 TEST( triangulation, twoIdenticalPoses) {
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   SimpleCamera camera1(pose1, *sharedCal);
