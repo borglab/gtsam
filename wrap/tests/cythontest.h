@@ -12,15 +12,24 @@ template<T> class FastVector {
 typedef gtsam::FastVector<gtsam::Key> KeyVector;
 
 #include <gtsam/base/FastList.h>
-template<T> class FastList{};
+template<T> class FastList {
+  FastList();
+  FastList(const This& f);
+};
 typedef gtsam::FastList<gtsam::Key> KeyList;
 
 #include <gtsam/base/FastSet.h>
-template<T> class FastSet{};
+template<T> class FastSet {
+  FastSet();
+  FastSet(const This& f);
+};
 typedef gtsam::FastSet<gtsam::Key> KeySet;
 
 #include <gtsam/base/FastMap.h>
-template<K,V> class FastMap{};
+template<K,V> class FastMap {
+  FastMap();
+  FastMap(const This& f);
+};
 
 #include <gtsam/base/Value.h>
 virtual class Value {
@@ -874,7 +883,7 @@ virtual class SymbolicFactorGraph {
   bool exists(size_t idx) const;
 
   // Standard interface
-  // gtsam::KeySet keys() const;
+  gtsam::KeySet keys() const;
   // void push_back(gtsam::SymbolicFactor* factor);
   void push_back(const gtsam::SymbolicFactorGraph& graph);
   void push_back(const gtsam::SymbolicBayesNet& bayesNet);
@@ -1191,7 +1200,7 @@ class VectorValues {
 
 #include <gtsam/linear/GaussianFactor.h>
 virtual class GaussianFactor {
-  // gtsam::KeyVector keys() const;
+  gtsam::KeyVector keys() const;
   void print(string s) const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
   double error(const gtsam::VectorValues& c) const;
@@ -1292,7 +1301,7 @@ class GaussianFactorGraph {
   bool equals(const gtsam::GaussianFactorGraph& lfgraph, double tol) const;
   size_t size() const;
   gtsam::GaussianFactor* at(size_t idx) const;
-  // gtsam::KeySet keys() const;
+  gtsam::KeySet keys() const;
   bool exists(size_t idx) const;
 
   // Building the graph
@@ -1330,19 +1339,19 @@ class GaussianFactorGraph {
   gtsam::GaussianBayesTree* eliminateMultifrontal(const gtsam::Ordering& ordering);
   pair<gtsam::GaussianBayesNet*, gtsam::GaussianFactorGraph*> eliminatePartialSequential(
     const gtsam::Ordering& ordering);
-  // pair<gtsam::GaussianBayesNet*, gtsam::GaussianFactorGraph*> eliminatePartialSequential(
-  //   const gtsam::KeyVector& keys);
+  pair<gtsam::GaussianBayesNet*, gtsam::GaussianFactorGraph*> eliminatePartialSequential(
+    const gtsam::KeyVector& keys);
   pair<gtsam::GaussianBayesTree*, gtsam::GaussianFactorGraph*> eliminatePartialMultifrontal(
     const gtsam::Ordering& ordering);
-  // pair<gtsam::GaussianBayesTree*, gtsam::GaussianFactorGraph*> eliminatePartialMultifrontal(
-  //   const gtsam::KeyVector& keys);
+  pair<gtsam::GaussianBayesTree*, gtsam::GaussianFactorGraph*> eliminatePartialMultifrontal(
+    const gtsam::KeyVector& keys);
   gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& variables);
-  // gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables);
+  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables);
   gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& variables,
     const gtsam::Ordering& marginalizedVariableOrdering);
-  // gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables,
-  //   const gtsam::Ordering& marginalizedVariableOrdering);
-  // gtsam::GaussianFactorGraph* marginal(const gtsam::KeyVector& variables);
+  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables,
+    const gtsam::Ordering& marginalizedVariableOrdering);
+  gtsam::GaussianFactorGraph* marginal(const gtsam::KeyVector& variables);
 
   // Conversion to matrices
   Matrix sparseJacobian_() const;
@@ -1414,7 +1423,7 @@ virtual class GaussianBayesNet {
   // FactorGraph derived interface
   // size_t size() const;
   gtsam::GaussianConditional* at(size_t idx) const;
-  // gtsam::KeySet keys() const;
+  gtsam::KeySet keys() const;
   bool exists(size_t idx) const;
 
   gtsam::GaussianConditional* front() const;
