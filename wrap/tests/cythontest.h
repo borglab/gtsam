@@ -1,16 +1,23 @@
 namespace gtsam {
 
+#include <gtsam/inference/Key.h>
+typedef size_t Key;
+
 #include <gtsam/base/FastVector.h>
-template<T> class FastVector{};
-typedef gtsam::FastVector<size_t> KeyVector;
+template<T> class FastVector {
+  FastVector();
+  FastVector(const This& f);
+};
+
+typedef gtsam::FastVector<gtsam::Key> KeyVector;
 
 #include <gtsam/base/FastList.h>
 template<T> class FastList{};
-typedef gtsam::FastList<size_t> KeyList;
+typedef gtsam::FastList<gtsam::Key> KeyList;
 
 #include <gtsam/base/FastSet.h>
 template<T> class FastSet{};
-typedef gtsam::FastSet<size_t> KeySet;
+typedef gtsam::FastSet<gtsam::Key> KeySet;
 
 #include <gtsam/base/FastMap.h>
 template<K,V> class FastMap{};
@@ -687,6 +694,7 @@ template<CALIBRATION>
 class PinholeCamera {
   // Standard Constructors and Named Constructors
   PinholeCamera();
+  PinholeCamera(const This& cam);
   PinholeCamera(const gtsam::Pose3& pose);
   PinholeCamera(const gtsam::Pose3& pose, const CALIBRATION& K);
   static This Level(const CALIBRATION& K, const gtsam::Pose2& pose, double height);
@@ -843,13 +851,13 @@ virtual class SymbolicFactor {
   SymbolicFactor(size_t j1, size_t j2, size_t j3, size_t j4);
   SymbolicFactor(size_t j1, size_t j2, size_t j3, size_t j4, size_t j5);
   SymbolicFactor(size_t j1, size_t j2, size_t j3, size_t j4, size_t j5, size_t j6);
-  // static gtsam::SymbolicFactor FromKeys(const gtsam::KeyVector& js);
+  static gtsam::SymbolicFactor FromKeys(const gtsam::KeyVector& js);
 
   // From Factor
   size_t size() const;
   void print(string s) const;
   bool equals(const gtsam::SymbolicFactor& other, double tol) const;
-  // gtsam::KeyVector keys();
+  gtsam::KeyVector keys();
 };
 
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
@@ -884,19 +892,19 @@ virtual class SymbolicFactorGraph {
   gtsam::SymbolicBayesTree* eliminateMultifrontal(const gtsam::Ordering& ordering);
   pair<gtsam::SymbolicBayesNet*, gtsam::SymbolicFactorGraph*> eliminatePartialSequential(
       const gtsam::Ordering& ordering);
-  // pair<gtsam::SymbolicBayesNet*, gtsam::SymbolicFactorGraph*> eliminatePartialSequential(
-  //     const gtsam::KeyVector& keys);
+  pair<gtsam::SymbolicBayesNet*, gtsam::SymbolicFactorGraph*> eliminatePartialSequential(
+      const gtsam::KeyVector& keys);
   pair<gtsam::SymbolicBayesTree*, gtsam::SymbolicFactorGraph*> eliminatePartialMultifrontal(
       const gtsam::Ordering& ordering);
-  // pair<gtsam::SymbolicBayesTree*, gtsam::SymbolicFactorGraph*> eliminatePartialMultifrontal(
-  //     const gtsam::KeyVector& keys);
+  pair<gtsam::SymbolicBayesTree*, gtsam::SymbolicFactorGraph*> eliminatePartialMultifrontal(
+      const gtsam::KeyVector& keys);
   gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& variables);
-  // gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables);
+  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables);
   gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& variables,
       const gtsam::Ordering& marginalizedVariableOrdering);
-  // gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables,
-  //     const gtsam::Ordering& marginalizedVariableOrdering);
-  // gtsam::SymbolicFactorGraph* marginal(const gtsam::KeyVector& variables);
+  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables,
+      const gtsam::Ordering& marginalizedVariableOrdering);
+  gtsam::SymbolicFactorGraph* marginal(const gtsam::KeyVector& variables);
 };
 
 #include <gtsam/symbolic/SymbolicConditional.h>
@@ -908,7 +916,7 @@ virtual class SymbolicConditional : gtsam::SymbolicFactor {
   SymbolicConditional(size_t key, size_t parent);
   SymbolicConditional(size_t key, size_t parent1, size_t parent2);
   SymbolicConditional(size_t key, size_t parent1, size_t parent2, size_t parent3);
-  // static gtsam::SymbolicConditional FromKeys(const gtsam::KeyVector& keys, size_t nrFrontals);
+  static gtsam::SymbolicConditional FromKeys(const gtsam::KeyVector& keys, size_t nrFrontals);
 
   // Testable
   void print(string s) const;

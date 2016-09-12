@@ -64,6 +64,13 @@ static void handle_possible_template(vector<Class>& classes,
   }
 }
 
+static void push_typedef_pair(vector<TypedefPair>& typedefs,
+                              const Qualified& oldType,
+                              const Qualified& newType,
+                              const string& includeFile) {
+    typedefs.push_back(TypedefPair(oldType, newType, includeFile));
+}
+
 /* ************************************************************************* */
 Module::Module(const std::string& moduleName, bool enable_verbose)
 : name(moduleName), verbose(enable_verbose)
@@ -130,7 +137,17 @@ void Module::parseMarkup(const std::string& data) {
     [assign_a(singleInstantiation.namespaces_, namespaces)]
     [push_back_a(templateInstantiationTypedefs, singleInstantiation)] 
     [assign_a(singleInstantiation, singleInstantiation0)]; 
- 
+
+  Qualified oldType, newType;
+  TypeGrammar typedefOldClass_g(oldType), typedefNewClass_g(newType);
+  Rule typedef_p =
+      (str_p("typedef") >> typedefOldClass_g >> typedefNewClass_g >>
+       ';')
+      [assign_a(oldType.namespaces_, namespaces)]
+      [assign_a(newType.namespaces_, namespaces)]
+      [bl::bind(&push_typedef_pair, bl::var(typedefs), bl::var(oldType),
+                     bl::var(newType), bl::var(currentInclude))];
+
   // Create grammar for global functions
   GlobalFunctionGrammar global_function_g(global_functions,namespaces);
 
@@ -148,7 +165,7 @@ void Module::parseMarkup(const std::string& data) {
       (str_p("namespace")
       >> basic.namespace_p[push_back_a(namespaces)]
       >> ch_p('{')
-      >> *(include_p | class_p | templateSingleInstantiation_p | global_function_g | namespace_def_p | basic.comments_p)
+      >> *(include_p | class_p | templateSingleInstantiation_p | typedef_p | global_function_g | namespace_def_p | basic.comments_p)
       >> ch_p('}'))
       [pop_a(namespaces)];
 
@@ -323,11 +340,15 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
                  "\t\tT* get()\n"
                  "\t\tT& operator*()\n\n";
 
+  for(const TypedefPair& types: typedefs)
+    types.emit_cython_pxd(pxdFile);
+
   //... wrap all classes
   for(const Class& cls: uninstantiatedClasses)
     cls.emit_cython_pxd(pxdFile, uninstantiatedClasses);
+
   //... ctypedef for template instantiations
-  // TODO: put them in the correct place!
+  // TODO: put them in the correct place!!!
   for(const Class& cls: expandedClasses) {
     if (cls.templateClass) {
       pxdFile.oss << "ctypedef " << cls.templateClass->cythonClass() << "[";

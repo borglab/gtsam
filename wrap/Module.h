@@ -22,6 +22,7 @@
 #include "GlobalFunction.h"
 #include "TemplateInstantiationTypedef.h"
 #include "ForwardDeclaration.h"
+#include "TypedefPair.h"
 
 #include <string>
 #include <vector>
@@ -43,6 +44,7 @@ struct Module {
   std::vector<ForwardDeclaration> forward_declarations;
   std::vector<std::string> includes; ///< Include statements
   GlobalFunctions global_functions;
+  std::vector<TypedefPair> typedefs;
 
   // After parsing:
   std::vector<Class> expandedClasses;
