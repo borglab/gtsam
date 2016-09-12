@@ -134,6 +134,8 @@ public:
   void appendInheritedMethods(const Class& cls,
       const std::vector<Class>& classes);
 
+  void removeInheritedMethods(std::vector<Class>& classes);
+
   /// The typedef line for this class, if this class is a typedef, otherwise returns an empty string.
   std::string getTypedef() const;
 
@@ -152,7 +154,7 @@ public:
   void python_wrapper(FileWriter& wrapperFile) const;
 
   // emit cython wrapper
-  void emit_cython_pxd(FileWriter& pxdFile) const;
+  void emit_cython_pxd(FileWriter& pxdFile, const std::vector<Class>& allClasses) const;
   void emit_cython_pyx(FileWriter& pyxFile,
                        const std::vector<Class>& allClasses) const;
   void pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj,

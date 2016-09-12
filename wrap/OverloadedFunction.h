@@ -28,7 +28,7 @@ namespace wrap {
  */
 class ArgumentOverloads {
 
-protected:
+public:
 
   std::vector<ArgumentList> argLists_;
 

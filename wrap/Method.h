@@ -45,6 +45,12 @@ public:
     return is_const_;
   }
 
+  bool isSameModifiers(const Method& other) const {
+      return is_const_ == other.is_const_ &&
+             ((templateArgValue_ && other.templateArgValue_) ||
+              (!templateArgValue_ && !other.templateArgValue_));
+  }
+
   friend std::ostream& operator<<(std::ostream& os, const Method& m) {
     for (size_t i = 0; i < m.nrOverloads(); i++)
       os << m.returnVals_[i] << " " << m.name_ << m.argLists_[i];

@@ -193,6 +193,10 @@ void Module::parseMarkup(const std::string& data) {
   for(Class& cls: classes)
     cls.appendInheritedMethods(cls, classes);
 
+  for(Class& cls: uninstantiatedClasses) {
+      cls.removeInheritedMethods(uninstantiatedClasses);
+  }
+
   // Expand templates - This is done first so that template instantiations are
   // counted in the list of valid types, have their attributes and dependencies
   // checked, etc.
@@ -315,8 +319,9 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
 
   //... wrap all classes
   for(const Class& cls: uninstantiatedClasses)
-    cls.emit_cython_pxd(pxdFile);
+    cls.emit_cython_pxd(pxdFile, uninstantiatedClasses);
   //... ctypedef for template instantiations
+  // TODO: put them in the correct place!
   for(const Class& cls: expandedClasses) {
     if (cls.templateClass) {
       pxdFile.oss << "ctypedef " << cls.templateClass->cythonClass() << "[";

@@ -23,6 +23,10 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/copy.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/iterator/zip_iterator.hpp>
+#include <boost/range/combine.hpp>
+#include <boost/range/algorithm/remove_if.hpp>
 
 #include <vector> 
 #include <iostream> 
@@ -437,6 +441,75 @@ void Class::appendInheritedMethods(const Class& cls,
 }
 
 /* ************************************************************************* */
+void Class::removeInheritedMethods(vector<Class>& classes) {
+  if (parentClass) {
+    // Find parent
+    for(Class& parent: classes) {
+      // We found a parent class for our parent, TODO So complicated! Improve !
+      if (parent.name() == parentClass->name()) {
+        // make sure parent is clean (no inherited method from grand-parent)
+        parent.removeInheritedMethods(classes);
+
+        // check each method
+        for(const string& methodName: nontemplateMethods_ | boost::adaptors::map_keys) {
+          cout << methodName << endl;
+        }
+        for(const string& methodName: nontemplateMethods_ | boost::adaptors::map_keys) {
+          // Check if the method exists in its parent
+          auto it = parent.nontemplateMethods_.find(methodName);
+          if (it == parent.nontemplateMethods_.end()) continue; // if not: ignore!
+
+          cout << "Duplicate method name: " << methodName << endl;
+
+          Method& parentMethod = it->second;
+          Method& method = nontemplateMethods_[methodName];
+          // check if they have the same modifiers (const/static/templateArgs)
+          if (!method.isSameModifiers(parentMethod)) continue; // if not: ignore
+
+          cout << "same modifiers!" << endl;
+
+          // check and remove duplicate overloads
+          auto methodOverloads = boost::combine(method.returnVals_, method.argLists_);
+          auto parentMethodOverloads = boost::combine(parentMethod.returnVals_, parentMethod.argLists_);
+          auto result = boost::remove_if(
+              methodOverloads,
+              [&](boost::tuple<ReturnValue, ArgumentList> const& overload) {
+                  bool found = std::find_if(
+                             parentMethodOverloads.begin(),
+                             parentMethodOverloads.end(),
+                             [&](boost::tuple<ReturnValue, ArgumentList> const&
+                                     parentOverload) {
+                                 cout << "checking overload of " << name() << ": " << overload.get<0>() << " vs " << parentOverload.get<0>() << endl;
+                                 cout << "  argslist 1:" << overload.get<1>();
+                                 cout << endl;
+                                 cout << "  argslist 2:" << parentOverload.get<1>();
+                                 cout << endl;
+                                 return overload.get<0>() == parentOverload.get<0>() &&
+                                        overload.get<1>() == parentOverload.get<1>();
+                             }) != parentMethodOverloads.end();
+                  cout << "SAME: " << found << endl;
+                  return found;
+              });
+
+          method.returnVals_.erase(boost::get<0>(result.get_iterator_tuple()),
+                                   method.returnVals_.end());
+          method.argLists_.erase(boost::get<1>(result.get_iterator_tuple()),
+                                     method.argLists_.end());
+        }
+        for (auto it = nontemplateMethods_.begin(),
+                  ite = nontemplateMethods_.end();
+             it != ite;) {
+            if (it->second.nrOverloads() == 0)
+                it = nontemplateMethods_.erase(it);
+            else
+                ++it;
+        }
+      }
+    }
+  }
+}
+
+/* ************************************************************************* */
 string Class::getTypedef() const {
   string result;
   for(Str namesp: namespaces()) {
@@ -674,7 +747,7 @@ void Class::python_wrapper(FileWriter& wrapperFile) const {
 }
 
 /* ************************************************************************* */
-void Class::emit_cython_pxd(FileWriter& pxdFile) const {
+void Class::emit_cython_pxd(FileWriter& pxdFile, const std::vector<Class>& allClasses) const {
   pxdFile.oss << "cdef extern from \"" << includeFile << "\" namespace \""
                 << qualifiedNamespaces("::") << "\":" << endl;
   pxdFile.oss << "\tcdef cppclass " << cythonClass() << " \"" << qualifiedName("::") << "\"";
@@ -698,6 +771,7 @@ void Class::emit_cython_pxd(FileWriter& pxdFile) const {
 
   for(const Method& m: nontemplateMethods_ | boost::adaptors::map_values)
     m.emit_cython_pxd(pxdFile, *this);
+
   for(const TemplateMethod& m: templateMethods_ | boost::adaptors::map_values)
     m.emit_cython_pxd(pxdFile, *this);
   size_t numMethods = constructor.nrOverloads() + static_methods.size() +
@@ -709,8 +783,10 @@ void Class::emit_cython_pxd(FileWriter& pxdFile) const {
 }
 
 /* ************************************************************************* */
-void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj, const std::string& cySharedObj, const std::vector<Class>& allClasses) const {
-  if (parentClass) {
+void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj,
+                             const std::string& cySharedObj,
+                             const std::vector<Class>& allClasses) const {
+    if (parentClass) {
       pyxFile.oss << pyObj << "." << parentClass->pyxCythonObj() << " = "
                   << "<" << parentClass->pyxSharedCythonClass() << ">("
                   << cySharedObj << ")\n";

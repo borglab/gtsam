@@ -27,7 +27,7 @@ namespace wrap {
  */
 class SignatureOverloads: public ArgumentOverloads {
 
-protected:
+public:
 
   std::vector<ReturnValue> returnVals_;
 
