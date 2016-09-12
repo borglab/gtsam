@@ -759,8 +759,6 @@ void Class::emit_cython_pxd(FileWriter& pxdFile, const std::vector<Class>& allCl
                       methods_.size() + templateMethods_.size();
   if (numMethods == 0)
       pxdFile.oss << "\t\tpass";
-
-  pxdFile.oss << "\n\n";
 }
 
 /* ************************************************************************* */

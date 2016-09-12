@@ -141,12 +141,9 @@ void Constructor::emit_cython_pxd(FileWriter& pxdFile, Str className) const {
     ArgumentList args = argumentList(i);
     // ignore copy constructor, it's generated above by default
     if (args.size() == 1 && args[0].is_const && args[0].is_ref &&
-        !args[0].is_ptr) {
-        cout << args[0].type.cythonClass() << " vs " << className << endl;
-        if (args[0].type.cythonClass() == className ||
-            args[0].type.cythonClass() == "This")
+        !args[0].is_ptr && (args[0].type.cythonClass() == className ||
+                            args[0].type.cythonClass() == "This"))
             continue;
-    }
 
     // generate the constructor
     pxdFile.oss << "\t\t" << className << "(";

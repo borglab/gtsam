@@ -344,21 +344,25 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
     types.emit_cython_pxd(pxdFile);
 
   //... wrap all classes
-  for(const Class& cls: uninstantiatedClasses)
-    cls.emit_cython_pxd(pxdFile, uninstantiatedClasses);
-
-  //... ctypedef for template instantiations
-  // TODO: put them in the correct place!!!
-  for(const Class& cls: expandedClasses) {
-    if (cls.templateClass) {
-      pxdFile.oss << "ctypedef " << cls.templateClass->cythonClass() << "[";
-      for (size_t i = 0; i<cls.templateInstTypeList.size(); ++i)
-        pxdFile.oss << cls.templateInstTypeList[i].cythonClass() 
-                    << ((i==cls.templateInstTypeList.size()-1)?"":", ");
-      pxdFile.oss << "] " << cls.cythonClass() << "\n";
-    }
+  for (const Class& cls : uninstantiatedClasses) {
+      cls.emit_cython_pxd(pxdFile, uninstantiatedClasses);
+      pxdFile.oss << "\n";
+      
+      //... ctypedef for template instantiations
+      for (const Class& expCls : expandedClasses) {
+          if (!expCls.templateClass || expCls.templateClass->name_ != cls.name_)
+              continue;
+          pxdFile.oss << "ctypedef " << expCls.templateClass->cythonClass()
+                      << "[";
+          for (size_t i = 0; i < expCls.templateInstTypeList.size(); ++i)
+              pxdFile.oss << expCls.templateInstTypeList[i].cythonClass()
+                          << ((i == expCls.templateInstTypeList.size() - 1)
+                                  ? ""
+                                  : ", ");
+          pxdFile.oss << "] " << expCls.cythonClass() << "\n";
+      }
+      pxdFile.oss << "\n\n";
   }
-  pxdFile.oss << "\n";
   pxdFile.emit(true);
 }
 
