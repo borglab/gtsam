@@ -60,9 +60,9 @@ public:
 private:
 
   boost::optional<Qualified> parentClass; ///< The *single* parent
-  Methods methods_; ///< Class methods, including all expanded/instantiated template methods
-  Methods nontemplateMethods_; ///< only nontemplate methods
-  TemplateMethods templateMethods_; ///< only template methods
+  Methods methods_; ///< Class methods, including all expanded/instantiated template methods -- to be serialized to matlab and Python classes in Cython pyx
+  Methods nontemplateMethods_; ///< only nontemplate methods -- to be serialized into Cython pxd
+  TemplateMethods templateMethods_; ///< only template methods -- to be serialized into Cython pxd
   // Method& mutableMethod(Str key);
 
 public:
@@ -73,9 +73,9 @@ public:
   std::vector<std::string> templateArgs; ///< Template arguments
   std::string typedefName; ///< The name to typedef *from*, if this class is actually a typedef, i.e. typedef [typedefName] [name]
   std::vector<Qualified> templateInstTypeList; ///< the original typelist used to instantiate this class from a template. 
-                                               ///< Empty if it's not an instantiation
+                                               ///< Empty if it's not an instantiation. Needed for template classes in Cython pxd.
   boost::optional<Qualified> templateClass = boost::none; ///< qualified name of the original template class from which this class was instantiated. 
-                                                          ///< boost::none if not an instantiation
+                                                          ///< boost::none if not an instantiation. Needed for template classes in Cython pxd.
   bool isVirtual; ///< Whether the class is part of a virtual inheritance chain
   bool isSerializable; ///< Whether we can use boost.serialization to serialize the class - creates exports
   bool hasSerialization; ///< Whether we should create the serialization functions
@@ -134,7 +134,7 @@ public:
   void appendInheritedMethods(const Class& cls,
       const std::vector<Class>& classes);
 
-  void removeInheritedMethods(std::vector<Class>& classes);
+  void removeInheritedNontemplateMethods(std::vector<Class>& classes);
 
   /// The typedef line for this class, if this class is a typedef, otherwise returns an empty string.
   std::string getTypedef() const;

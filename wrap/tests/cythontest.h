@@ -911,7 +911,7 @@ virtual class SymbolicConditional : gtsam::SymbolicFactor {
   // static gtsam::SymbolicConditional FromKeys(const gtsam::KeyVector& keys, size_t nrFrontals);
 
   // Testable
-  // void print(string s) const;
+  void print(string s) const;
   bool equals(const gtsam::SymbolicConditional& other, double tol) const;
 
   // Standard interface
@@ -1033,8 +1033,8 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
   static gtsam::noiseModel::Diagonal* Sigmas(Vector sigmas);
   static gtsam::noiseModel::Diagonal* Variances(Vector variances);
   static gtsam::noiseModel::Diagonal* Precisions(Vector precisions);
-  // Matrix R() const;
-  // void print(string s) const;
+  Matrix R() const;
+  void print(string s) const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1061,7 +1061,7 @@ virtual class Isotropic : gtsam::noiseModel::Diagonal {
   static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma);
   static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace);
   static gtsam::noiseModel::Isotropic* Precision(size_t dim, double precision);
-  // void print(string s) const;
+  void print(string s) const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1069,7 +1069,7 @@ virtual class Isotropic : gtsam::noiseModel::Diagonal {
 
 virtual class Unit : gtsam::noiseModel::Isotropic {
   static gtsam::noiseModel::Unit* Create(size_t dim);
-  // void print(string s) const;
+  void print(string s) const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1081,7 +1081,7 @@ virtual class Base {
 
 virtual class Null: gtsam::noiseModel::mEstimator::Base {
   Null();
-  // void print(string s) const;
+  void print(string s) const;
   static gtsam::noiseModel::mEstimator::Null* Create();
 
   // enabling serialization functionality
@@ -1090,7 +1090,7 @@ virtual class Null: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Fair: gtsam::noiseModel::mEstimator::Base {
   Fair(double c);
-  // void print(string s) const;
+  void print(string s) const;
   static gtsam::noiseModel::mEstimator::Fair* Create(double c);
 
   // enabling serialization functionality
@@ -1099,7 +1099,7 @@ virtual class Fair: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Huber: gtsam::noiseModel::mEstimator::Base {
   Huber(double k);
-  // void print(string s) const;
+  void print(string s) const;
   static gtsam::noiseModel::mEstimator::Huber* Create(double k);
 
   // enabling serialization functionality
@@ -1108,7 +1108,7 @@ virtual class Huber: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
   Tukey(double k);
-  // void print(string s) const;
+  void print(string s) const;
   static gtsam::noiseModel::mEstimator::Tukey* Create(double k);
 
   // enabling serialization functionality
@@ -1120,7 +1120,7 @@ virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
 virtual class Robust : gtsam::noiseModel::Base {
   Robust(const gtsam::noiseModel::mEstimator::Base* robust, const gtsam::noiseModel::Base* noise);
   static gtsam::noiseModel::Robust* Create(const gtsam::noiseModel::mEstimator::Base* robust, const gtsam::noiseModel::Base* noise);
-  // void print(string s) const;
+  void print(string s) const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1212,13 +1212,13 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   JacobianFactor(const gtsam::GaussianFactorGraph& graph);
 
   //Testable
-  // void print(string s) const;
+  void print(string s) const;
   void printKeys(string s) const;
-  // bool equals(const gtsam::GaussianFactor& lf, double tol) const;
-  // size_t size() const;
+  bool equals(const gtsam::GaussianFactor& lf, double tol) const;
+  size_t size() const;
   Vector unweighted_error(const gtsam::VectorValues& c) const;
   Vector error_vector(const gtsam::VectorValues& c) const;
-  // double error(const gtsam::VectorValues& c) const;
+  double error(const gtsam::VectorValues& c) const;
 
   //Standard Interface
   Matrix py_getA() const;
@@ -1265,7 +1265,7 @@ virtual class HessianFactor : gtsam::GaussianFactor {
 
   //Standard Interface
   size_t rows() const;
-  // Matrix information() const;
+  Matrix information() const;
   double constantTerm() const;
   Vector linearTerm() const;
 
@@ -1367,7 +1367,7 @@ virtual class GaussianConditional : gtsam::GaussianFactor {
         size_t name2, Matrix T);
 
   //Standard Interface
-  // void print(string s) const;
+  void print(string s) const;
   bool equals(const gtsam::GaussianConditional &cg, double tol) const;
 
   //Advanced Interface
@@ -1386,7 +1386,7 @@ virtual class GaussianDensity : gtsam::GaussianConditional {
   GaussianDensity(size_t key, Vector d, Matrix R, const gtsam::noiseModel::Diagonal* sigmas);
 
   //Standard Interface
-  // void print(string s) const;
+  void print(string s) const;
   bool equals(const gtsam::GaussianDensity &cg, double tol) const;
   Vector mean() const;
   Matrix covariance() const;
@@ -1499,13 +1499,13 @@ virtual class ConjugateGradientParameters : gtsam::IterativeOptimizationParamete
   void setReset(int value);
   void setEpsilon_rel(double value);
   void setEpsilon_abs(double value);
-  // void print();
+  void print() const;
 };
 
 #include <gtsam/linear/SubgraphSolver.h>
 virtual class SubgraphSolverParameters : gtsam::ConjugateGradientParameters {
   SubgraphSolverParameters();
-  // void print() const;
+  void print() const;
 };
 
 virtual class SubgraphSolver  {
@@ -1543,12 +1543,12 @@ class KalmanFilter {
 // size_t symbolIndex(size_t key);
 
 // // Default keyformatter
-// // void PrintKeyList  (const gtsam::KeyList& keys);
-// // void PrintKeyList  (const gtsam::KeyList& keys, string s);
-// // void PrintKeyVector(const gtsam::KeyVector& keys);
-// // void PrintKeyVector(const gtsam::KeyVector& keys, string s);
-// // void PrintKeySet   (const gtsam::KeySet& keys);
-// // void PrintKeySet   (const gtsam::KeySet& keys, string s);
+// void PrintKeyList  (const gtsam::KeyList& keys);
+// void PrintKeyList  (const gtsam::KeyList& keys, string s);
+// void PrintKeyVector(const gtsam::KeyVector& keys);
+// void PrintKeyVector(const gtsam::KeyVector& keys, string s);
+// void PrintKeySet   (const gtsam::KeySet& keys);
+// void PrintKeySet   (const gtsam::KeySet& keys, string s);
 
 // #include <gtsam/inference/LabeledSymbol.h>
 // class LabeledSymbol {
@@ -1793,7 +1793,7 @@ class KalmanFilter {
 //   Matrix at(size_t iVariable, size_t jVariable) const;
 //   Matrix fullMatrix() const;
 //   void print(string s) const;
-//   // void print() const;
+//   void print() const;
 // };
 
 // #include <gtsam/nonlinear/LinearContainerFactor.h>

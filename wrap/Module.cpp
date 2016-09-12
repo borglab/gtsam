@@ -193,9 +193,15 @@ void Module::parseMarkup(const std::string& data) {
   for(Class& cls: classes)
     cls.appendInheritedMethods(cls, classes);
 
-  for(Class& cls: uninstantiatedClasses) {
-      cls.removeInheritedMethods(uninstantiatedClasses);
-  }
+  // - Remove inherited methods for Cython classes in the pxd, otherwise Cython can't decide which one to call.
+  // - Only inherited nontemplateMethods_ in uninstantiatedClasses need to be removed
+  // because that what we serialized to the pxd.
+  // - However, we check against the class parent's *methods_* to avoid looking into
+  // its grand parent and grand-grand parent, etc., because all those are already 
+  // added in its direct parent.
+  // - So this must be called *after* the above code appendInheritedMethods!!
+  for(Class& cls: uninstantiatedClasses) 
+      cls.removeInheritedNontemplateMethods(uninstantiatedClasses);
 
   // Expand templates - This is done first so that template instantiations are
   // counted in the list of valid types, have their attributes and dependencies

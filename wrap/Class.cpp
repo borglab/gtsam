@@ -441,72 +441,53 @@ void Class::appendInheritedMethods(const Class& cls,
 }
 
 /* ************************************************************************* */
-void Class::removeInheritedMethods(vector<Class>& classes) {
-  if (parentClass) {
-    // Find parent
-    for(Class& parent: classes) {
-      // We found a parent class for our parent, TODO So complicated! Improve !
-      if (parent.name() == parentClass->name()) {
-        // make sure parent is clean (no inherited method from grand-parent)
-        parent.removeInheritedMethods(classes);
+void Class::removeInheritedNontemplateMethods(vector<Class>& classes) {
+  if (!parentClass) return;
+  // Find parent
+  auto parentIt = std::find_if(classes.begin(), classes.end(),
+      [&](const Class& cls) { return cls.name() == parentClass->name(); });
+  if (parentIt == classes.end()) return; // ignore if parent not found
+  Class& parent = *parentIt;
 
-        // check each method
-        for(const string& methodName: nontemplateMethods_ | boost::adaptors::map_keys) {
-          cout << methodName << endl;
-        }
-        for(const string& methodName: nontemplateMethods_ | boost::adaptors::map_keys) {
-          // Check if the method exists in its parent
-          auto it = parent.nontemplateMethods_.find(methodName);
-          if (it == parent.nontemplateMethods_.end()) continue; // if not: ignore!
+  // Only check nontemplateMethods_
+  for(const string& methodName: nontemplateMethods_ | boost::adaptors::map_keys) {
+    // check if the method exists in its parent
+    // Check against parent's methods_ because all the methods of grand
+    // parent and grand-grand-parent, etc. are already included there
+    // This is to avoid looking into higher level grand parents...
+    auto it = parent.methods_.find(methodName);
+    if (it == parent.methods_.end()) continue; // if not: ignore!
 
-          cout << "Duplicate method name: " << methodName << endl;
+    Method& parentMethod = it->second;
+    Method& method = nontemplateMethods_[methodName];
+    // check if they have the same modifiers (const/static/templateArgs)
+    if (!method.isSameModifiers(parentMethod)) continue; // if not: ignore
 
-          Method& parentMethod = it->second;
-          Method& method = nontemplateMethods_[methodName];
-          // check if they have the same modifiers (const/static/templateArgs)
-          if (!method.isSameModifiers(parentMethod)) continue; // if not: ignore
-
-          cout << "same modifiers!" << endl;
-
-          // check and remove duplicate overloads
-          auto methodOverloads = boost::combine(method.returnVals_, method.argLists_);
-          auto parentMethodOverloads = boost::combine(parentMethod.returnVals_, parentMethod.argLists_);
-          auto result = boost::remove_if(
-              methodOverloads,
-              [&](boost::tuple<ReturnValue, ArgumentList> const& overload) {
-                  bool found = std::find_if(
-                             parentMethodOverloads.begin(),
-                             parentMethodOverloads.end(),
-                             [&](boost::tuple<ReturnValue, ArgumentList> const&
-                                     parentOverload) {
-                                 cout << "checking overload of " << name() << ": " << overload.get<0>() << " vs " << parentOverload.get<0>() << endl;
-                                 cout << "  argslist 1:" << overload.get<1>();
-                                 cout << endl;
-                                 cout << "  argslist 2:" << parentOverload.get<1>();
-                                 cout << endl;
-                                 return overload.get<0>() == parentOverload.get<0>() &&
-                                        overload.get<1>() == parentOverload.get<1>();
-                             }) != parentMethodOverloads.end();
-                  cout << "SAME: " << found << endl;
-                  return found;
-              });
-
-          method.returnVals_.erase(boost::get<0>(result.get_iterator_tuple()),
-                                   method.returnVals_.end());
-          method.argLists_.erase(boost::get<1>(result.get_iterator_tuple()),
-                                     method.argLists_.end());
-        }
-        for (auto it = nontemplateMethods_.begin(),
-                  ite = nontemplateMethods_.end();
-             it != ite;) {
-            if (it->second.nrOverloads() == 0)
-                it = nontemplateMethods_.erase(it);
-            else
-                ++it;
-        }
-      }
-    }
+    // check and remove duplicate overloads
+    auto methodOverloads = boost::combine(method.returnVals_, method.argLists_);
+    auto parentMethodOverloads = boost::combine(parentMethod.returnVals_, parentMethod.argLists_);
+    auto result = boost::remove_if(
+        methodOverloads,
+        [&](boost::tuple<ReturnValue, ArgumentList> const& overload) {
+            bool found = std::find_if(
+                       parentMethodOverloads.begin(),
+                       parentMethodOverloads.end(),
+                       [&](boost::tuple<ReturnValue, ArgumentList> const&
+                               parentOverload) {
+                           return overload.get<0>() == parentOverload.get<0>() &&
+                                  overload.get<1>() == parentOverload.get<1>();
+                       }) != parentMethodOverloads.end();
+            return found;
+        });
+    // remove all duplicate overloads
+    method.returnVals_.erase(boost::get<0>(result.get_iterator_tuple()),
+                             method.returnVals_.end());
+    method.argLists_.erase(boost::get<1>(result.get_iterator_tuple()),
+                               method.argLists_.end());
   }
+  // [Optional] remove the entire method if it has no overload
+  for (auto it = nontemplateMethods_.begin(), ite = nontemplateMethods_.end(); it != ite;)
+      if (it->second.nrOverloads() == 0) it = nontemplateMethods_.erase(it); else ++it;
 }
 
 /* ************************************************************************* */
