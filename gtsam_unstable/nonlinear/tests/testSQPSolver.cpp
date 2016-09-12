@@ -146,13 +146,13 @@ typedef NonlinearEqualityConstraint1<Vector5, constraint3Error> constraint3;
 
 }
 
-TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithEqualities) {
-  Key X(Symbol('X',1)), D(Symbol('D',1));
+TEST(SQPLineSearch2, NonlinearConstraintWithEqualities) {
+  Key X(Symbol('X',1)), D(Symbol('D',0)), D1(Symbol('D',1)), D2(Symbol('D',2)), D3(Symbol('D',3));
   NP problem;
   problem.cost.push_back(Nocedal183::cost(X,D));
-  problem.equalities.push_back(Nocedal183::constraint1(X,D));
-  problem.equalities.push_back(Nocedal183::constraint2(X,D));
-  problem.equalities.push_back(Nocedal183::constraint3(X,D));
+  problem.equalities.push_back(Nocedal183::constraint1(X,D1));
+  problem.equalities.push_back(Nocedal183::constraint2(X,D2));
+  problem.equalities.push_back(Nocedal183::constraint3(X,D3));
   SQPLineSearch2 solver(problem);
   Values expected, initial;
   Vector5 expectedVector, initialVector;
@@ -202,7 +202,7 @@ TEST(LocalSQP, testGradientOfCost){
   CHECK(assert_equal(expectedJacobian, actualJacobian));
 }
 
-TEST(LocalSQP, NonlinearConstraintWithEqualities) {
+TEST_DISABLED(LocalSQP, NonlinearConstraintWithEqualities) {
   Key
     X(Symbol('X',1)),
     D(Symbol('D',0)),

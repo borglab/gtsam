@@ -82,7 +82,9 @@ bool SQPLineSearch2::checkConvergence(const Values& x,
    *    (2) lambda <=0, for all ineq.
    *    (3) lambda = 0, for inactive ineq
    */
-  for (NonlinearInequalityConstraint::shared_ptr factor : program_.inequalities) {
+  NonlinearEqualityFactorGraph allConstraints = program_.equalities;
+  allConstraints += program_.inequalities;
+  for (NonlinearConstraint::shared_ptr factor : allConstraints) {
     Vector lambda = lambdas.at(factor->dualKey());
     double maxLambda = lambda.maxCoeff();
     // For active constraints: gradf = lambda*gradc,
@@ -316,16 +318,10 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
 VectorValues SQPLineSearch2::zeroFromConstraints(
     const NP& nonlinearProgram) const {
   VectorValues lambdas;
-  for (size_t iFactor = 0; iFactor < nonlinearProgram.equalities.size();
-      ++iFactor) {
-    lambdas.insert(iFactor,
-        zero(nonlinearProgram.equalities.at(iFactor)->dim()));
-  }
-  size_t offset = nonlinearProgram.equalities.size();
-  for (size_t iFactor = 0; iFactor < nonlinearProgram.inequalities.size();
-      ++iFactor) {
-    lambdas.insert(iFactor + offset,
-        zero(nonlinearProgram.inequalities.at(iFactor)->dim()));
+  NonlinearEqualityFactorGraph allConstraints = nonlinearProgram.equalities;
+  allConstraints += nonlinearProgram.inequalities;
+  for (NonlinearConstraint::shared_ptr factor : allConstraints) {
+    lambdas.insert(factor->dualKey(), zero(factor->dim()));
   }
   return lambdas;
 }
