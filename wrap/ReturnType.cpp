@@ -77,27 +77,49 @@ void ReturnType::emit_cython_pxd(FileWriter& file, const std::string& className)
   file.oss << cythonType;
 }
 
-/* ************************************************************************* */
-void ReturnType::emit_cython_pyx_return_type(FileWriter& file) const {
+void ReturnType::emit_cython_pyx_return_type_noshared(FileWriter& file) const {
   string retType = pyxCythonClass();
   if (isPtr) retType = "shared_ptr[" + retType + "]";
   file.oss << retType;
 }
 
+
+/* ************************************************************************* */
+void ReturnType::emit_cython_pyx_return_type(FileWriter& file) const {
+  string retType = pyxCythonClass();
+  if (isPtr || isNonBasicType()) retType = "shared_ptr[" + retType + "]";
+  file.oss << retType;
+}
+
+void ReturnType::emit_cython_pyx_casting_noshared(FileWriter& file, const std::string& var) const {
+  if (isEigen())
+    file.oss << "ndarray_copy" << "(" << var << ")";
+  else if (isNonBasicType()) {
+    if (isPtr) 
+      file.oss << pythonClass() << ".cyCreateFromShared" << "(" << var << ")";
+    else {
+      file.oss << pythonClass() << ".cyCreateFromShared("
+      << pyxSharedCythonClass()
+                << "(new " << pyxCythonClass() << "(" << var << ")))";
+    }
+  } else file.oss << var;
+}
+
 /* ************************************************************************* */
 void ReturnType::emit_cython_pyx_casting(FileWriter& file, const std::string& var) const {
   if (isEigen())
-    file.oss << "ndarray_copy";
-  else if (isNonBasicType()){
-    if (isPtr) 
-      file.oss << pythonClass() << ".cyCreateFromShared";
-    else {
-      // if the function return an object, it must be copy constructible and copy assignable
-      // so it's safe to use cyCreateFromValue
-      file.oss << pythonClass() << ".cyCreateFromValue";
-    }
-  }
-  file.oss << "(" << var << ")";
+    file.oss << "ndarray_copy" << "(" << var << ")";
+  else if (isNonBasicType()) {
+    // if (isPtr) 
+      file.oss << pythonClass() << ".cyCreateFromShared" << "(" << var << ")";
+    // else {
+    //   // if the function return an object, it must be copy constructible and copy assignable
+    //   // so it's safe to use cyCreateFromValue
+    //   file.oss << pythonClass() << ".cyCreateFromShared("
+    //   << pyxSharedCythonClass()
+    //             << "(new " << pyxCythonClass() << "(" << var << ")))";
+    // }
+  } else file.oss << var;
 }
 
 /* ************************************************************************* */

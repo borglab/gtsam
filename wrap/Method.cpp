@@ -29,6 +29,16 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
+static const std::array<std::string,2> pythonKeywords{{"print", "lambda"}};
+static std::string pyRename(const std::string& name) {
+    if (std::find(pythonKeywords.begin(), pythonKeywords.end(), name) ==
+        pythonKeywords.end())
+        return name;
+    else
+        return "_" + name;
+}
+
+/* ************************************************************************* */
 bool Method::addOverload(Str name, const ArgumentList& args,
     const ReturnValue& retVal, bool is_const,
     boost::optional<const Qualified> instName, bool verbose) {
@@ -81,18 +91,18 @@ void Method::emit_cython_pxd(FileWriter& file, const Class& cls) const {
   for(size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "\t\t";
     returnVals_[i].emit_cython_pxd(file, cls.cythonClass());
-    file.oss << ((name_ == "print") ? "_print \"print\"" : name_) << "(";
+    file.oss << pyRename(name_) + " \"" + name_ + "\"" << "(";
+    // ((name_ == "print") ? "_print \"print\"" : name_) << "(";
     argumentList(i).emit_cython_pxd(file, cls.cythonClass());
     file.oss << ")";
     if (is_const_) file.oss << " const";
     file.oss << "\n";
   }
-
 }
 
 /* ************************************************************************* */
 void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
-  string funcName = ((name_ == "print") ? "_print" : name_);
+  string funcName = pyRename(name_);
   size_t N = nrOverloads();
   for(size_t i = 0; i < N; ++i) {
     // Function definition

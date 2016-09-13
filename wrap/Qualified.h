@@ -116,6 +116,10 @@ public:
         || name() == "size_t" || name() == "double");
   }
 
+  bool isVoid() const {
+    return name() == "void";
+  }
+
   bool isString() const {
     return name() == "string";
   }
@@ -125,7 +129,7 @@ public:
   }
 
   bool isNonBasicType() const {
-    return !isString() && !isScalar() && !isEigen();
+    return !isString() && !isScalar() && !isEigen() && !isVoid();
   }
 
 public:

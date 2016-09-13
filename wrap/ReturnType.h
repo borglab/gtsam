@@ -50,6 +50,8 @@ struct ReturnType: public Qualified {
   void emit_cython_pxd(FileWriter& file, const std::string& className) const;
   void emit_cython_pyx_return_type(FileWriter& file) const;
   void emit_cython_pyx_casting(FileWriter& file, const std::string& var) const;
+  void emit_cython_pyx_return_type_noshared(FileWriter& file) const;
+  void emit_cython_pyx_casting_noshared(FileWriter& file, const std::string& var) const;
 
 private:
 

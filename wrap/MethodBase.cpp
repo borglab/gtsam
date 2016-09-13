@@ -151,12 +151,20 @@ void MethodBase::emit_cython_pyx_function_call(FileWriter& file,
     returnVals_[iOverload].emit_cython_pyx_return_type(file);
     file.oss << " ret = ";
   }
+  if (!returnVals_[iOverload].isPair && !returnVals_[iOverload].type1.isPtr && returnVals_[iOverload].type1.isNonBasicType())
+    file.oss << returnVals_[iOverload].type1.pyxSharedCythonClass() << "(new "
+  << returnVals_[iOverload].type1.pyxCythonClass() << "(";
+
   //... function call
   file.oss << caller << "." << funcName;
   if (templateArgValue_) file.oss << "[" << templateArgValue_->pyxCythonClass() << "]";
   file.oss << "(";
   argumentList(iOverload).emit_cython_pyx_asParams(file);
-  file.oss << ")\n";
+  file.oss << ")";
+
+  if (!returnVals_[iOverload].isPair && !returnVals_[iOverload].type1.isPtr && returnVals_[iOverload].type1.isNonBasicType())
+    file.oss << "))";
+  file.oss << "\n";
 
   // ... casting return value
   if (!returnVals_[iOverload].isVoid()) {

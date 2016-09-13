@@ -475,7 +475,7 @@ void Class::removeInheritedNontemplateMethods(vector<Class>& classes) {
                        [&](boost::tuple<ReturnValue, ArgumentList> const&
                                parentOverload) {
                            return overload.get<0>() == parentOverload.get<0>() &&
-                                  overload.get<1>() == parentOverload.get<1>();
+                                  overload.get<1>().typesEqual(parentOverload.get<1>());
                        }) != parentMethodOverloads.end();
             return found;
         });
@@ -810,24 +810,6 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
               << "\t\tret." << pyxCythonObj() << " = other\n";
   pyxInitParentObj(pyxFile, "\t\tret", "other", allClasses);
   pyxFile.oss << "\t\treturn ret" << "\n";
-
-  // Generate cyCreateFromValue by default, although for some classes it can't be used
-  // It's only usable if its copy constructor AND its copy assignment operator exist
-  // Copy assignment operator is needed because Cython might assign the obj to its temp variable.
-  // Some class (e.g. noiseModel::Robust) have copy constructor but no copy assignment operator
-  if (constructor.nrOverloads() >= 1) { 
-    // cyCreateFromValue
-    pyxFile.oss << "\t@staticmethod\n";
-    pyxFile.oss << "\tcdef " << pythonClass() << " cyCreateFromValue(const "
-                << pyxCythonClass() << "& value):\n"
-                << "\t\tcdef " << pythonClass()
-                << " ret = " << pythonClass() << "()\n"
-                << "\t\tret." << pyxCythonObj() << " = " << pyxSharedCythonClass()
-                << "(new " << pyxCythonClass() << "(value))\n";
-    pyxInitParentObj(pyxFile, "\t\tret", "ret." + pyxCythonObj(), allClasses);
-    pyxFile.oss << "\t\treturn ret" << "\n";
-    pyxFile.oss << "\n";
-  }
 
   // Constructors
   constructor.emit_cython_pyx(pyxFile, *this);

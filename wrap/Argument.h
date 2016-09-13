@@ -39,6 +39,12 @@ struct Argument {
       type(t), name(n), is_const(false), is_ref(false), is_ptr(false) {
   }
 
+  bool typesEqual(const Argument& other) const {
+    return type == other.type
+        && is_const == other.is_const && is_ref == other.is_ref
+        && is_ptr == other.is_ptr;
+  }
+
   bool operator==(const Argument& other) const {
     return type == other.type && name == other.name
         && is_const == other.is_const && is_ref == other.is_ref
@@ -97,6 +103,12 @@ struct ArgumentList: public std::vector<Argument> {
   bool allScalar() const;
 
   ArgumentList expandTemplate(const TemplateSubstitution& ts) const;
+
+  bool typesEqual(const ArgumentList& other) const {
+    for(size_t i = 0; i<size(); ++i) 
+      if (!at(i).typesEqual(other[i])) return false;
+    return true;
+  }
 
   // MATLAB code generation:
 

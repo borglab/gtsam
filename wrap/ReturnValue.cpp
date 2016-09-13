@@ -86,9 +86,9 @@ void ReturnValue::emit_cython_pyx_return_type(FileWriter& file) const {
   if (isVoid()) return;
   if (isPair) {
     file.oss << "pair [";
-    type1.emit_cython_pyx_return_type(file);
+    type1.emit_cython_pyx_return_type_noshared(file);
     file.oss << ",";
-    type2.emit_cython_pyx_return_type(file);
+    type2.emit_cython_pyx_return_type_noshared(file);
     file.oss << "]";
   } else {
     type1.emit_cython_pyx_return_type(file);
@@ -100,9 +100,9 @@ void ReturnValue::emit_cython_pyx_casting(FileWriter& file, const std::string& v
   if (isVoid()) return;
   if (isPair) {
     file.oss << "(";
-    type1.emit_cython_pyx_casting(file, var + ".first");
+    type1.emit_cython_pyx_casting_noshared(file, var + ".first");
     file.oss << ",";
-    type2.emit_cython_pyx_casting(file, var + ".second");
+    type2.emit_cython_pyx_casting_noshared(file, var + ".second");
     file.oss << ")";
   } else {
     type1.emit_cython_pyx_casting(file, var);
