@@ -57,6 +57,60 @@ TEST_DISABLED(SQPLineSearch2, TrivialNonlinearConstraintWithEqualities) {
 }
 
 /**
+ * Circle Example From AR-DRONE MPC
+ * min x^2 + y^2
+ * s.t (x-2)^2 + y^2 - 1 = 0
+ * Start point x=2, y=1
+ * With Solution x=1 y = 0
+ */
+namespace CircleExample {
+struct costError {
+  Vector operator()(const double & x1, const double & x2,
+      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+          boost::none) {
+    if(H1){
+      *H1 = I_1x1 * 2*x1;
+    }
+    if(H2){
+      *H2 = I_1x1 * 2*x2;
+    }
+    return I_1x1 * (x1*x1 + x2*x2);
+  }
+};
+  
+  struct constraintError {
+    Vector operator()(const double & x1, const double & x2,
+                      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+    boost::none){
+      if(H1){
+        *H1 = I_1x1 * 2*(x1-2);
+      }
+      if(H2){
+        *H2 = I_1x1 * 2*x2;
+      }
+      return I_1x1 * (std::pow((x1-2),2) + x2*x2 -1);
+    }
+  };
+  typedef NonlinearEqualityConstraint2<double, double, costError> cost;
+  typedef NonlinearEqualityConstraint2<double, double, constraintError> constraint;
+}
+
+TEST(SQPLineSearch2, CircleTest){
+  Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
+  NP problem;
+  problem.cost.push_back(CircleExample::cost(noiseModel::Unit::Create(1), X,Y,D));
+  problem.equalities.push_back(CircleExample::constraint(X,Y,D));
+  Values initial, expected;
+  initial.insert(X, 2.0);
+  initial.insert(Y, 1.0);
+  expected.insert(X, 1.0);
+  expected.insert(Y, 0.0);
+  SQPLineSearch2 solver(problem);
+  Values actual = solver.optimize(initial);
+  CHECK(assert_equal(expected, actual, 1e-7))
+}
+
+/**
  * Nocedal06 Problem 18.3 page 562
  * F(X) = e^(x1x2x3x4x5) + 0.5(x1^3 + x2^3 + 1)^2
  * s.t
@@ -83,29 +137,31 @@ struct costError {
        * x1*x2*x3*x4*exp(x1*x2*x3*x4*x5)
        * ]
        */
-    *H1 = (Matrix(1,5) <<
-      3*std::pow(x[0],2)*(std::pow(x[0],3) + std::pow(x[1],3) + 1) + std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[1] * x[2] * x[3] * x[4],
-      3*std::pow(x[1],2)*(std::pow(x[0],3) + std::pow(x[1],3) + 1) + std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[0] * x[2] * x[3] * x[4],
-      std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[0] * x[1] * x[2] * x[4],
-      std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[0] * x[1] * x[3] * x[4],
-      std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[0] * x[1] * x[2] * x[3]
-    ).finished();
+      *H1 = (Matrix(1, 5)
+          << 3 * std::pow(x[0], 2) * (std::pow(x[0], 3) + std::pow(x[1], 3) + 1)
+              + std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[1] * x[2] * x[3]
+                  * x[4], 3 * std::pow(x[1], 2)
+          * (std::pow(x[0], 3) + std::pow(x[1], 3) + 1)
+          + std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[0] * x[2] * x[3]
+              * x[4], std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[0] * x[1]
+          * x[2] * x[4], std::exp(x[0] * x[1] * x[2] * x[3] * x[4]) * x[0]
+          * x[1] * x[3] * x[4], std::exp(x[0] * x[1] * x[2] * x[3] * x[4])
+          * x[0] * x[1] * x[2] * x[3]).finished();
+    }
+    return I_1x1
+        * (std::exp(x[0] * x[1] * x[2] * x[3] * x[4])
+            + 0.5 * std::pow(std::pow(x[0], 3) + std::pow(x[1], 3) + 1, 2));
   }
-  return I_1x1
-      * (std::exp(x[0] * x[1] * x[2] * x[3] * x[4])
-          + 0.5 * std::pow(std::pow(x[0], 3) + std::pow(x[1], 3) + 1, 2));
-}
 };
 struct constraint1Error {
   Vector operator()(const Vector5 &x,
       boost::optional<Matrix &> H1 = boost::none) const {
-    if(H1){
+    if (H1) {
       /**
        * [2x1, 2x2, 2x3, 2x4, 2x5]
        */
-      *H1 = (Matrix(1,5) <<
-        2*x[0], 2*x[1], 2*x[2], 2*x[3], 2*x[4]
-      ).finished();
+      *H1 =
+          (Matrix(1, 5) << 2 * x[0], 2 * x[1], 2 * x[2], 2 * x[3], 2 * x[4]).finished();
     }
     return I_1x1 * (x.cwiseProduct(x).sum() - 10);
   }
@@ -113,13 +169,11 @@ struct constraint1Error {
 struct constraint2Error {
   Vector operator()(const Vector5 &x,
       boost::optional<Matrix &> H1 = boost::none) const {
-    if(H1){
+    if (H1) {
       /**
        * [0, x3, x2, -5x5, -5x4]
        */
-      *H1 = (Matrix(1,5) <<
-        0, x[2], x[1], -5*x[4], -5*x[3]
-      ).finished();
+      *H1 = (Matrix(1, 5) << 0, x[2], x[1], -5 * x[4], -5 * x[3]).finished();
     }
     return I_1x1 * (x[1] * x[2] - 5 * x[3] * x[4]);
   }
@@ -127,13 +181,12 @@ struct constraint2Error {
 struct constraint3Error {
   Vector operator()(const Vector5 &x,
       boost::optional<Matrix &> H1 = boost::none) const {
-    if(H1){
+    if (H1) {
       /**
        * [2x1^2, 2x2^2, 0, 0, 0]
        */
-      *H1 = (Matrix(1,5) <<
-        3*x[0]*x[0], 3*x[1]*x[1], 0, 0, 0
-      ).finished();
+      *H1 =
+          (Matrix(1, 5) << 3 * x[0] * x[0], 3 * x[1] * x[1], 0, 0, 0).finished();
     }
     return I_1x1 * (std::pow(x[0], 3) + std::pow(x[1], 3) + 1);
   }
@@ -146,10 +199,27 @@ typedef NonlinearEqualityConstraint1<Vector5, constraint3Error> constraint3;
 
 }
 
+TEST(SQPLineSearch2, CheckErrorMargin) {
+  Key X(Symbol('X',1)), D(Symbol('D',0)), D1(Symbol('D',1)), D2(Symbol('D',2)), D3(Symbol('D',3));
+  Values validValues;
+  Vector5 validVector;
+  validVector << -1.71, 1.59, 1.82, -0.763, -0.763;
+  validValues.insert(X, validVector);
+  CHECK(assert_equal(-0.071062, Nocedal183::constraint1(X,D1).unwhitenedError(validValues).sum()));
+  CHECK(assert_equal(-0.017045, Nocedal183::constraint2(X,D2).unwhitenedError(validValues).sum()));
+  CHECK(assert_equal(0.019467999999999999, Nocedal183::constraint3(X,D3).unwhitenedError(validValues).sum()));
+  NonlinearCostFactorGraph fg;
+  fg.push_back(Nocedal183::constraint1(X,D1));
+  fg.push_back(Nocedal183::constraint2(X,D2));
+  fg.push_back(Nocedal183::constraint3(X,D3));
+  CHECK(assert_equal(0.107575, fg.error(validValues)));
+
+}
+
 TEST(SQPLineSearch2, NonlinearConstraintWithEqualities) {
   Key X(Symbol('X',1)), D(Symbol('D',0)), D1(Symbol('D',1)), D2(Symbol('D',2)), D3(Symbol('D',3));
   NP problem;
-  problem.cost.push_back(Nocedal183::cost(X,D));
+  problem.cost.push_back(Nocedal183::cost(noiseModel::Diagonal::Sigmas(Vector::Ones(1)),X,D));
   problem.equalities.push_back(Nocedal183::constraint1(X,D1));
   problem.equalities.push_back(Nocedal183::constraint2(X,D2));
   problem.equalities.push_back(Nocedal183::constraint3(X,D3));
@@ -160,6 +230,9 @@ TEST(SQPLineSearch2, NonlinearConstraintWithEqualities) {
   initialVector << -1.71, 1.59, 1.82, -0.763, -0.763;
   expected.insert(X, expectedVector);
   initial.insert(X, initialVector);
+  double equalityError;
+  CHECK(!solver.checkFeasibility(initial, equalityError));
+  std::cout << "Equality Error: " << equalityError << std::endl;
   Values actuals = solver.optimize(initial);
   CHECK(assert_equal(expected,actuals, 1e-7));
 }
@@ -179,7 +252,7 @@ TEST_DISABLED(SQPLineSearch2, FeasabilityEqualities) {
   CHECK(solver.checkFeasibility(initial));
 }
 
-TEST(LocalSQP, testGradientOfCost){
+TEST(LocalSQP, testGradientOfCost) {
   Key X(Symbol('X',1)), D(Symbol('D',1));
   NP problem;
   problem.cost.push_back(Nocedal183::cost(X,D));
@@ -193,7 +266,7 @@ TEST(LocalSQP, testGradientOfCost){
   linearizationPoint.insert(X, linearizationVector);
   Matrix actualJacobian = solver.getGradientOfCostAt(linearizationPoint);
   Matrix expectedJacobian =
-    (Matrix(1,5) <<
+  (Matrix(1,5) <<
       11.7182818284590,
       11.7182818284590,
       2.71828182845904,
@@ -204,11 +277,11 @@ TEST(LocalSQP, testGradientOfCost){
 
 TEST_DISABLED(LocalSQP, NonlinearConstraintWithEqualities) {
   Key
-    X(Symbol('X',1)),
-    D(Symbol('D',0)),
-    D1(Symbol('D',1)),
-    D2(Symbol('D',2)),
-    D3(Symbol('D',3));
+  X(Symbol('X',1)),
+  D(Symbol('D',0)),
+  D1(Symbol('D',1)),
+  D2(Symbol('D',2)),
+  D3(Symbol('D',3));
   NP problem;
   problem.cost.push_back(Nocedal183::cost(X,D));
   problem.equalities.push_back(Nocedal183::constraint1(X,D1));

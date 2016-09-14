@@ -13,9 +13,23 @@ using namespace std;
 
 namespace gtsam {
 
-bool SQPLineSearch2::checkFeasibility(const Values &x) const {
-  //TODO: Add Inequalities
-  return program_.equalities.checkFeasibility(x, 1e-9);
+bool SQPLineSearch2::checkFeasibility(
+  const Values &x, 
+  boost::optional<double &> equalityError,
+  boost::optional<double &> inequalityError) const {
+  
+  double eqError = program_.equalities.error(x);
+  double ineqError = program_.inequalities.error(x);
+  
+  if(equalityError){
+    *equalityError = eqError;
+  }
+  if(inequalityError){
+    *inequalityError = ineqError;
+  }
+  
+  return eqError < 1e-9 &&
+         ineqError < 1e-9;
 }
 
 Values SQPLineSearch2::getFeasiblePoint() const {
@@ -226,7 +240,7 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
   // Combine to a Lagrangian graph and add constraints' Hessian factors with multipliers
   linearizedProblem.cost += *multiplyConstrainedHessians(currentState.solution,
       currentState.lambdas, -1.0);
-
+    GTSAM_PRINT(linearizedProblem);
   // Try to solve the damped Lagrangian graph. Increase the damping factor if not ok.
   double newTau = currentState.tau;
   if (useDamping) {

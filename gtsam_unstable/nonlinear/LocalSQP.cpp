@@ -34,7 +34,7 @@ Matrix LocalSQP::makeHessianOfLagrangian(const State& currentState) const {
   
 LocalSQP::State LocalSQP::iterate(const State& currentState) const {
   //1. Evaluate cost function at current solution
-  double currentCost = program_.cost.cost(currentState.current_solution);
+  double currentCost = program_.cost.error(currentState.current_solution);
   //2. Evaluate gradient of cost function at current solution
   Matrix gradient = getGradientOfCostAt(currentState.current_solution);
 
@@ -42,7 +42,7 @@ LocalSQP::State LocalSQP::iterate(const State& currentState) const {
   Matrix HessianOfLagrangian = makeHessianOfLagrangian(currentState);
   //=  hessianOfCost - currentState.current_lambda * hessianOfConstraints;
   //4. Evaluate constraint error for all constraints on current solution
-  double constraintError = program_.equalities.cost(
+  double constraintError = program_.equalities.error(
       currentState.current_solution);
   //5. Evaluate Jacobian of Constraints at current error
   Matrix jacobianOfConstraints =

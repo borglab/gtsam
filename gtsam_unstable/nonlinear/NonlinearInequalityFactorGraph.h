@@ -74,13 +74,12 @@ public:
   }
 
   double error(const Values& values) const {
-    double total_error(0.0);
+    double total_cost(0.0);
     for (const sharedFactor& factor : *this) {
-      if (factor) {
-        total_error += factor->error(values);
-      }
+      if (factor)
+        total_cost += std::abs(factor->unwhitenedError(values).sum());
     }
-    return total_error;
+    return total_cost;
   }
 };
 }

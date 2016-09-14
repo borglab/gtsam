@@ -75,7 +75,8 @@ public:
   bool checkConvergence(const Values& x, const VectorValues& lambdas) const;
 
   /// Check if a point is feasible
-  bool checkFeasibility(const Values &x) const;
+  bool checkFeasibility(const Values &x,  boost::optional<double &> equalityError = boost::none,
+                        boost::optional<double &> inequalityError = boost::none) const;
 
   /// Gets a feasible point
   Values getFeasiblePoint() const;

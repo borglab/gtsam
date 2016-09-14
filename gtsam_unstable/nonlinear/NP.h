@@ -10,13 +10,14 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam_unstable/nonlinear/NonlinearInequalityFactorGraph.h>
 #include <gtsam_unstable/nonlinear/NonlinearEqualityFactorGraph.h>
+#include <gtsam_unstable/nonlinear/NonlinearCostFactorGraph.h>
 
 namespace gtsam {
 /**
  * Struct contains factor graphs for a Nonlinear Programming problem.
  */
 struct NP {
-  NonlinearEqualityFactorGraph cost; //!< Nonlinear cost factors
+  NonlinearCostFactorGraph cost; //!< Nonlinear cost factors
   NonlinearEqualityFactorGraph equalities; //!< Nonlinear equality constraints cE(X) = 0
   NonlinearInequalityFactorGraph inequalities; //!< Nonlinear inequality constriants cE(X) <= 0
 
@@ -26,7 +27,7 @@ struct NP {
   }
 
   /** Constructor */
-  NP(const NonlinearEqualityFactorGraph & _cost,
+  NP(const NonlinearCostFactorGraph & _cost,
       const NonlinearEqualityFactorGraph & _equalities,
       const NonlinearInequalityFactorGraph & _inequalities) :
       cost(_cost), equalities(_equalities), inequalities(_inequalities) {

@@ -58,6 +58,18 @@ public:
           cref_list_of < 1 > (key), dualKey) {
   }
 
+  /**
+   * Constructor that allows to pass a noise model. To use for cost functions.
+   * @param noiseModel
+   * @param key
+   * @param dualKey
+   * @param constraintDim
+   */
+  NonlinearEqualityConstraint1(const SharedNoiseModel & noiseModel, Key key,
+      Key dualKey) :
+      NonlinearConstraint(noiseModel, cref_list_of < 1 > (key), dualKey) {
+  }
+
   virtual ~NonlinearEqualityConstraint1() {
   }
 
@@ -196,6 +208,18 @@ public:
       size_t constraintDim = 1) :
       NonlinearConstraint(noiseModel::Constrained::All(constraintDim),
           cref_list_of < 2 > (j1)(j2), dualKey) {
+  }
+
+  /**
+   * Constructor with noise model parameter. To use for cost functions.
+   * @param noiseModel
+   * @param j1
+   * @param j2
+   * @param dualKey
+   */
+  NonlinearEqualityConstraint2(const SharedNoiseModel &noiseModel, Key j1,
+      Key j2, Key dualKey) :
+      NonlinearConstraint(noiseModel, cref_list_of < 2 > (j1)(j2), dualKey) {
   }
 
   virtual ~NonlinearEqualityConstraint2() {
@@ -372,6 +396,11 @@ public:
           cref_list_of < 3 > (j1)(j2)(j3), dualKey) {
   }
 
+  NonlinearEqualityConstraint3(const SharedNoiseModel &noiseModel, Key j1,
+      Key j2, Key j3, Key dualKey) :
+      NonlinearConstraint(noiseModel, cref_list_of < 3 > (j1)(j2)(j3), dualKey) {
+  }
+
   virtual ~NonlinearEqualityConstraint3() {
   }
 
@@ -385,9 +414,11 @@ public:
     if (this->active(x)) {
       ERROR_FUNCTOR f;
       if (H) {
-        return f(x.at < X1 > (keys_[0]), x.at < X2 > (keys_[1]), x.at < X3 > (keys_[2]), (*H)[0], (*H)[1], (*H)[2]);
+        return f(x.at < X1 > (keys_[0]), x.at < X2 > (keys_[1]),
+            x.at < X3 > (keys_[2]), (*H)[0], (*H)[1], (*H)[2]);
       } else {
-        return f(x.at < X1 > (keys_[0]), x.at < X2 > (keys_[1]), x.at < X3 > (keys_[2]));
+        return f(x.at < X1 > (keys_[0]), x.at < X2 > (keys_[1]),
+            x.at < X3 > (keys_[2]));
       }
     } else {
       return Vector::Zero(this->dim());
@@ -410,7 +441,7 @@ public:
 
     std::vector<Matrix> G11, G12, G13, G22, G23, G33;
     evaluateHessians(x1, x2, x3, G11, G12, G13, G22, G23, G33);
-    
+
     if (lambda.size() != G11.size() || lambda.size() != G12.size()
         || lambda.size() != G13.size() || lambda.size() != G22.size()
         || lambda.size() != G23.size() || lambda.size() != G33.size()) {
