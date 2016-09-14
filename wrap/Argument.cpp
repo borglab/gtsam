@@ -105,7 +105,7 @@ void Argument::emit_cython_pxd(FileWriter& file, const std::string& className) c
 
   string cythonType = typeName;
   if (type.isEigen()) {
-    cythonType = "const " + typeName + "Xd&";
+    cythonType = "const " + typeName + "&";
   } else {
     if (is_ptr) cythonType = "shared_ptr[" + typeName + "]&";
     if (is_ref) cythonType = cythonType + "&";
@@ -132,7 +132,7 @@ void Argument::emit_cython_pyx_asParam(FileWriter& file) const {
     cythonVar = name + "." + type.pyxCythonObj();
     if (!is_ptr) cythonVar = "deref(" + cythonVar + ")";
   } else if (type.isEigen()) {
-    cythonVar = "<" + cythonType + "Xd>" + "(Map[" + cythonType + "Xd](" + name + "))";
+    cythonVar = "<" + cythonType + ">" + "(Map[" + cythonType + "](" + name + "))";
   } else {
     cythonVar = name;
   }
