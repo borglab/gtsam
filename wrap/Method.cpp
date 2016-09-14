@@ -29,6 +29,7 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
+/// Cython: Rename functions which names are python keywords
 static const std::array<std::string,2> pythonKeywords{{"print", "lambda"}};
 static std::string pyRename(const std::string& name) {
     if (std::find(pythonKeywords.begin(), pythonKeywords.end(), name) ==
