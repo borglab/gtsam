@@ -179,7 +179,10 @@ public:
 
   /// the Cython class in pxd
   std::string cythonClass() const {
-    return qualifiedName("_", 1);
+    if (isEigen())
+      return name_ + "Xd";
+    else
+      return qualifiedName("_", 1);
   }
 
   /// the Python class in pyx
