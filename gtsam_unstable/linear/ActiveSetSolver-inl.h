@@ -197,7 +197,15 @@ Template typename This::State This::iterate(
   // solve for x
   GaussianFactorGraph workingGraph =
       buildWorkingGraph(state.workingSet, state.values);
-  VectorValues newValues = workingGraph.optimize();
+  VectorValues newValues;
+  try {
+    newValues = workingGraph.optimize();
+  }
+  catch (const IndeterminantLinearSystemException& e){
+    std::cout << "Failed to optimize working graph: " << std::endl;
+    GTSAM_PRINT(workingGraph);
+    throw(e);
+  }
   // If we CAN'T move further
   // if p_k = 0 is the original condition, modified by Duy to say that the state
   // update is zero.
@@ -251,7 +259,7 @@ Template InequalityFactorGraph This::identifyActiveConstraints(
     } else {
       double error = workingFactor->error(initialValues);
       // Safety guard. This should not happen unless users provide a bad init
-      if (error > 0) throw InfeasibleInitialValues();
+      if (error > 0) throw InfeasibleInitialValues("Infeasible Initial Values when Identifying Active Constraints");
       if (fabs(error) < 1e-7)
         workingFactor->activate();
       else

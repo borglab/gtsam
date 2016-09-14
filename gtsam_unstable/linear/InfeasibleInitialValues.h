@@ -25,9 +25,10 @@ namespace gtsam {
  * JacobianFactor has a different dimensionality than the factor. */
 class InfeasibleInitialValues: public ThreadsafeException<
     InfeasibleInitialValues> {
+  
 public:
-  InfeasibleInitialValues() {
-  }
+  InfeasibleInitialValues(std::string appendix = "") :
+  appendix_(appendix){}
 
   virtual ~InfeasibleInitialValues() throw () {
   }
@@ -36,10 +37,12 @@ public:
     if (description_.empty())
       description_ =
           "An infeasible initial value was provided for the solver.\n";
+    std::string result = description_ + appendix_ + "\n";
     return description_.c_str();
   }
 
 private:
   mutable std::string description_;
+  mutable std::string appendix_;
 };
 }
