@@ -3,6 +3,8 @@ from distutils.extension import Extension
 from Cython.Build import cythonize
 import eigency
 
+
+
 setup(
   ext_modules = cythonize(Extension(
     "gtsam",
@@ -13,5 +15,6 @@ setup(
 
     libraries = ['gtsam'],
     library_dirs = ["/Users/dta-huynh/install/lib"],
-    language="c++")),
+    language="c++",
+    extra_compile_args=["-std=c++11"])),
 )

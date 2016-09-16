@@ -23,24 +23,25 @@ Rmat = np.array([
     [0.104218,  0.990074, -0.0942928], 
     [-0.0942928, 0.104218, 0.990074]
     ])
-r5 = Rot3.ctor(Rmat)
+r5 = Rot3.ctor1(Rmat)
 r5._print(b"r5: ")
 
 l = Rot3.Logmap(r5)
 print("l = ", l)
 
 
-noise = Gaussian.Covariance(Rmat)
+noise = noiseModel_Gaussian.Covariance(Rmat)
 noise._print(b"noise:")
 
 D = np.array([1.,2.,3.])
-diag = Diagonal.Variances(D)
+diag = noiseModel_Diagonal.Variances(D)
 print("diag:", diag)
 diag._print(b"diag:")
 print("diag R:", diag.R())
 
 p = Point3()
-factor = BetweenFactorPoint3(1,2,p, noise)
+p._print("p:")
+factor = BetweenFactorPoint3.ctor(1,2,p, noise)
 factor._print(b"factor:")
 
 vv = VectorValues()
@@ -50,7 +51,7 @@ vv.insert(2, np.array([3.,4.]))
 vv.insert(3, np.array([5.,6.,7.,8.]))
 vv._print(b"vv:")
 
-vv2 = VectorValues.ctor2(vv)
+vv2 = VectorValues.ctor1(vv)
 vv2.insert(4, np.array([4.,2.,1]))
 vv2._print(b"vv2:")
 vv._print(b"vv:")
