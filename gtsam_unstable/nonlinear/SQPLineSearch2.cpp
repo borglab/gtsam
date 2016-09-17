@@ -8,28 +8,27 @@
 #include <boost/range/adaptor/map.hpp>
 #include <gtsam_unstable/linear/QPSolver.h>
 #include <gtsam_unstable/nonlinear/SQPLineSearch2.h>
+#include <gtsam/inference/Symbol.h>
 
 using namespace std;
 
 namespace gtsam {
 
-bool SQPLineSearch2::checkFeasibility(
-  const Values &x, 
-  boost::optional<double &> equalityError,
-  boost::optional<double &> inequalityError) const {
-  
+bool SQPLineSearch2::checkFeasibility(const Values &x,
+    boost::optional<double &> equalityError,
+    boost::optional<double &> inequalityError) const {
+
   double eqError = program_.equalities.error(x);
   double ineqError = program_.inequalities.error(x);
-  
-  if(equalityError){
+
+  if (equalityError) {
     *equalityError = eqError;
   }
-  if(inequalityError){
+  if (inequalityError) {
     *inequalityError = ineqError;
   }
-  
-  return eqError < 1e-9 &&
-         ineqError < 1e-9;
+
+  return eqError < 1e-9 && ineqError < 1e-9;
 }
 
 Values SQPLineSearch2::getFeasiblePoint() const {
@@ -51,6 +50,29 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::multiplyConstrainedHessians(
         factor->multipliedHessian(x, multipliedLambdas));
   }
   return multipliedConstrainedHessians;
+}
+
+GaussianFactorGraph::shared_ptr SQPLineSearch2::makeIterateCostFunction(
+    const Key & key,
+    const GaussianFactorGraph::shared_ptr multipliedConstraintHessians,
+    const GaussianFactorGraph::shared_ptr costTaylorApproximation) const {
+
+  Matrix hessianOfCost = costTaylorApproximation->hessian().first;
+  Matrix multipliedHessians = multipliedConstraintHessians->hessian().first;
+  GTSAM_PRINT(program_.cost);
+  GTSAM_PRINT(*costTaylorApproximation);
+  std::cout << "Augmented Cost Matrix: " << costTaylorApproximation->augmentedHessian();
+  std::cout << "Jacobian of cost: " << costTaylorApproximation->jacobian().first << std::endl;
+  std::cout << "Hessian of cost: " << hessianOfCost << std::endl;
+  std::cout << "Multiplied Hessians: " << multipliedHessians << std::endl;
+  Matrix HessianOfLagrangian = costTaylorApproximation->hessian().first
+      - multipliedConstraintHessians->hessian().first;
+  Vector JacobianOfCost = costTaylorApproximation->jacobian().second;
+  std::cout << "Jacobian of Cost: " << JacobianOfCost << std::endl;
+  HessianFactor costFactor(key, HessianOfLagrangian, JacobianOfCost, 100);
+  GaussianFactorGraph::shared_ptr returns(new GaussianFactorGraph);
+  returns->push_back(costFactor);
+  return returns;
 }
 
 /* ************************************************************************* */
@@ -162,48 +184,49 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::buildDampedSystem(
 
  * 4. Line search, find the best steplength alpha
  * 5. Update solution --> new x, new lambdas
+ *
+ *  SQPLineSearch2::State SQPLineSearch2::iterate(const State &currentState) const {
+ *    State newState = currentState;
+ *    newState.k += 1;
+ * We start at feasible point x with k = 1
+ * 1. Gradient Evaluation: Evaluate gradient information g and G then:
+ *   a. evaluate the error in the gradient of the Lagrangian from equation:
+ *      θ = g - G'λ - v
+ *   g is the gradient of the cost function
+ *   G is the Jacobian Matrix of the constraints
+ *   H is the Hessian Matrix
+ *
+ *   b. terminate if the KKT conditions are satisfied
+ *   c. Compute HL from equation HL = ∇²ₓF - Σ^{m}_{i=1}λ∇²ₓci
+ *      if this is the first iteration go to step 2
+ *      else continue
+ *  d. Levenberg Modification
+ *      i. compute the rate of change in the norm of the gradient of the Lagrangian from
+ *          Q3 =  || Θ^K ||∞ ÷ || Θ^{K-2} || ∞
+ *      ii. if Q1 <= 0.25Q2 set τ^k ← min(2τ^{k-1},1)
+ *      iii. else if Q1 >= 0.75 Q2 set τ^k= τ^(k-1)min(0.5,Q3)
+ *2. Search Direction. Construct the optimization search direction:
+ *   a. compute H from H = HL + τ(|σ|+1)I
+ *   b. compute p by solving the QP subproblem 2.14-2.15
+ *   c. Inertia control: if inertia K is incorrect and...
+ *   d. compute Δλ and Δv from 2.31 and 2.32
+ *   e. compute Δs and Δt from 2.34 and 2.35
+ *   f. compute penalty parameters to satisfy 2.6 and
+ *   g. initialize α = 1
+ * 3. Prediction
+ *    a. compute the predicted point for the variables, the multipliers, and the slacks from 2.30
+ *    b. evaluate the constraints cbar = c(xbar)
+ * 4. Line Search. Evaluate the merit function M(xbar, λbar, vbar, sbar, tbar) = Mbar and
+ *    a. if the merit function is sufficiently less than M, the xbar is an improved point
+ *       Terminate the line search and go to step 5
+ *    b. else change the steplength α to reduce M and return to step 3
+ * 5. Update. Update all quantities and set k = k + 1;
+ *    a. compute the actual reduction from 2.42;
+ *    b. compute the predicted reduction from 2.43 where Mbar^k is the predicted value of the merid function
+ *    c. return to step 1
+ *    return newState;
+ *  }
  */
-//  SQPLineSearch2::State SQPLineSearch2::iterate(const State &currentState) const {
-//    State newState = currentState;
-//    newState.k += 1;
-// We start at feasible point x with k = 1
-// 1. Gradient Evaluation: Evaluate gradient information g and G then:
-//   a. evaluate the error in the gradient of the Lagrangian from equation:
-//      θ = g - G'λ - v
-//   g is the gradient of the cost function
-//   G is the Jacobian Matrix of the constraints
-//   H is the Hessian Matrix
-//
-//   b. terminate if the KKT conditions are satisfied
-//   c. Compute HL from equation HL = ∇²ₓF - Σ^{m}_{i=1}λ∇²ₓci
-//      if this is the first iteration go to step 2
-//      else continue
-//  d. Levenberg Modification
-//      i. compute the rate of change in the norm of the gradient of the Lagrangian from
-//          Q3 =  || Θ^K ||∞ ÷ || Θ^{K-2} || ∞
-//      ii. if Q1 <= 0.25Q2 set τ^k ← min(2τ^{k-1},1)
-//      iii. else if Q1 >= 0.75 Q2 set τ^k= τ^(k-1)min(0.5,Q3)
-//2. Search Direction. Construct the optimization search direction:
-//   a. compute H from H = HL + τ(|σ|+1)I
-//   b. compute p by solving the QP subproblem 2.14-2.15
-//   c. Inertia control: if inertia K is incorrect and...
-//   d. compute Δλ and Δv from 2.31 and 2.32
-//   e. compute Δs and Δt from 2.34 and 2.35
-//   f. compute penalty parameters to satisfy 2.6 and
-//   g. initialize α = 1
-// 3. Prediction
-//    a. compute the predicted point for the variables, the multipliers, and the slacks from 2.30
-//    b. evaluate the constraints cbar = c(xbar)
-// 4. Line Search. Evaluate the merit function M(xbar, λbar, vbar, sbar, tbar) = Mbar and
-//    a. if the merit function is sufficiently less than M, the xbar is an improved point
-//       Terminate the line search and go to step 5
-//    b. else change the steplength α to reduce M and return to step 3
-// 5. Update. Update all quantities and set k = k + 1;
-//    a. compute the actual reduction from 2.42;
-//    b. compute the predicted reduction from 2.43 where Mbar^k is the predicted value of the merid function
-//    c. return to step 1
-//    return newState;
-//  }
 /* ************************************************************************* */
 SQPLineSearch2::State SQPLineSearch2::iterate(
     const SQPLineSearch2::State& currentState) const {
@@ -235,12 +258,16 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
    * Hence, the objective function of the SQP subproblem is the following:
    *   0.5 p'*(\hessian f - \sum_j lambda_j* (\hessian c_j(x)) )*p + \gradf'*x
    */
-  linearizedProblem.cost = *program_.cost.linearize(currentState.solution);
-  GaussianFactorGraph linearizedCost = linearizedProblem.cost;
+  GaussianFactorGraph::shared_ptr linearizedCost = program_.cost.linearize(
+      currentState.solution);
+  GaussianFactorGraph::shared_ptr multConstraintHessians =
+      multiplyConstrainedHessians(currentState.solution, currentState.lambdas,
+          -1.0);
+    Key pk(Symbol('P',0));
+  linearizedProblem.cost = *makeIterateCostFunction(pk, linearizedCost, multConstraintHessians);
   // Combine to a Lagrangian graph and add constraints' Hessian factors with multipliers
-  linearizedProblem.cost += *multiplyConstrainedHessians(currentState.solution,
-      currentState.lambdas, -1.0);
-    GTSAM_PRINT(linearizedProblem);
+
+  GTSAM_PRINT(linearizedProblem);
   // Try to solve the damped Lagrangian graph. Increase the damping factor if not ok.
   double newTau = currentState.tau;
   if (useDamping) {
@@ -289,7 +316,7 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //3. Choose a new penalty weight mu
-  MeritFunction merit(program_, linearizedCost, linearizedProblem.cost,
+  MeritFunction merit(program_, *linearizedCost, linearizedProblem.cost,
       currentState.solution, p);
   double newMu = merit.computeNewMu(currentState.mu);
   if (debug)

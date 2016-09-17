@@ -77,7 +77,13 @@ public:
   /// Check if a point is feasible
   bool checkFeasibility(const Values &x,  boost::optional<double &> equalityError = boost::none,
                         boost::optional<double &> inequalityError = boost::none) const;
-
+  
+  GaussianFactorGraph::shared_ptr makeIterateCostFunction(
+    const Key & key,
+    const GaussianFactorGraph::shared_ptr multipliedConstraintHessians,
+    const GaussianFactorGraph::shared_ptr costTaylorApproximation
+  ) const;
+  
   /// Gets a feasible point
   Values getFeasiblePoint() const;
   

@@ -95,7 +95,7 @@ struct costError {
   typedef NonlinearEqualityConstraint2<double, double, constraintError> constraint;
 }
 
-TEST(SQPLineSearch2, CircleTest){
+TEST_DISABLED(SQPLineSearch2, CircleTest){
   Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
   NP problem;
   problem.cost.push_back(CircleExample::cost(noiseModel::Unit::Create(1), X,Y,D));
@@ -110,6 +110,33 @@ TEST(SQPLineSearch2, CircleTest){
   CHECK(assert_equal(expected, actual, 1e-7))
 }
 
+TEST(HessianFactorgraph, PostiveDefiniteMinusZero){
+  std::cout << "FIRST TEST FACTORGRAPH:" << std::endl;
+  Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
+  HessianFactor positiveDefinite(Y, (Matrix22() << 8, 0, 0, 2).finished(),Vector2(3,4), 3);
+  HessianFactor negativeDefinite(Y, (Matrix22() << -1, 0, 0, -1).finished(), Vector2(0,0), -100);
+  GaussianFactorGraph fg;
+  fg.push_back(positiveDefinite);
+  fg.push_back(negativeDefinite);
+  GTSAM_PRINT(positiveDefinite);
+  GTSAM_PRINT(negativeDefinite);
+  VectorValues solution = fg.optimize();
+  std::cout << "Solution: " << solution.at(Y) << std::endl;
+}
+
+TEST(HessianFactorgraph, NegativeDefinitePlusJacobian){
+  std::cout << "SECOND TEST FACTORGRAPH:" << std::endl;
+  Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
+  HessianFactor negativeDef(Y, (Matrix22() << -1, 0, 0, -1).finished(), Vector2(0,0), -100);
+  JacobianFactor positiveDefinite(Y, (Matrix22() << 2, 0, 0, 2).finished(), Vector2(3, 4));
+  GaussianFactorGraph fg;
+  fg.push_back(negativeDef);
+  fg.push_back(positiveDefinite);
+  GTSAM_PRINT(negativeDef);
+  GTSAM_PRINT(positiveDefinite);
+  VectorValues solution = fg.optimize();
+  std::cout << "Solution: " << solution.at(Y) << std::endl;
+}
 /**
  * Nocedal06 Problem 18.3 page 562
  * F(X) = e^(x1x2x3x4x5) + 0.5(x1^3 + x2^3 + 1)^2
@@ -216,7 +243,7 @@ TEST(SQPLineSearch2, CheckErrorMargin) {
 
 }
 
-TEST(SQPLineSearch2, NonlinearConstraintWithEqualities) {
+TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithEqualities) {
   Key X(Symbol('X',1)), D(Symbol('D',0)), D1(Symbol('D',1)), D2(Symbol('D',2)), D3(Symbol('D',3));
   NP problem;
   problem.cost.push_back(Nocedal183::cost(noiseModel::Diagonal::Sigmas(Vector::Ones(1)),X,D));
