@@ -25,6 +25,7 @@ namespace gtsam {
 
 class NonlinearEqualityFactorGraph: public FactorGraph<NonlinearConstraint> {
 public:
+  typedef boost::shared_ptr<NonlinearEqualityFactorGraph> shared_ptr;
   /// Default constructor
   NonlinearEqualityFactorGraph() {
   }

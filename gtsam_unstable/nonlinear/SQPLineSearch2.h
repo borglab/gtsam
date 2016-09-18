@@ -69,7 +69,7 @@ public:
 
   /// Build a damped system to overcome negative Hessian
   GaussianFactorGraph::shared_ptr buildDampedSystem(
-      const GaussianFactorGraph& linear, const State& state) const ;
+      const GaussianFactorGraph::shared_ptr linear, const State& state) const ;
 
   /// Check convergence
   bool checkConvergence(const Values& x, const VectorValues& lambdas) const;
@@ -108,9 +108,9 @@ public:
  * Betts10book 2.27
  */
 class MeritFunction {
-  const NP &program_;
-  const GaussianFactorGraph &linearizedCost_;
-  const GaussianFactorGraph &lagrangianGraph_;
+  const NP & program_;
+  const GaussianFactorGraph::shared_ptr linearizedCost_;
+  const GaussianFactorGraph::shared_ptr lagrangianGraph_;
   Values x_;
   VectorValues p_, gradf_;
 
@@ -118,8 +118,8 @@ public:
 
   /// Constructor
   MeritFunction(const NP & program,
-      const GaussianFactorGraph & linearizedCost,
-      const GaussianFactorGraph & lagrangianGraph, const Values& x,
+      const GaussianFactorGraph::shared_ptr linearizedCost,
+      const GaussianFactorGraph::shared_ptr lagrangianGraph, const Values& x,
       const VectorValues& p);
 
   /// Update predicted solution, Betts10book, 2.30
@@ -137,7 +137,7 @@ public:
   /// Nocedal06book, 18.36
   double computeNewMu(double currentMu) const;
 
-  double ptHp(const GaussianFactorGraph& linear, const VectorValues& p) const;
+  double ptHp(const GaussianFactorGraph::shared_ptr linear, const VectorValues& p) const;
 
 };
 

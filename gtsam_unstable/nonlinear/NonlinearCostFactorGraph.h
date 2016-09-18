@@ -19,15 +19,18 @@
 #include <gtsam_unstable/nonlinear/NonlinearEqualityConstraint.h>
 
 namespace gtsam {
+  
 class NonlinearCostFactorGraph: public FactorGraph<NonlinearConstraint> {
 public:
-
+  
+  typedef boost::shared_ptr<NonlinearCostFactorGraph> shared_ptr;
+  
   NonlinearCostFactorGraph() {
   }
 
   GaussianFactorGraph::shared_ptr linearize(const Values& linearizationPoint) const {
     GaussianFactorGraph::shared_ptr linearizedGraph(new GaussianFactorGraph());
-
+    
     for (const NonlinearFactor::shared_ptr & factor : *this) {
       JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast
         < JacobianFactor > (factor->linearize(linearizationPoint));

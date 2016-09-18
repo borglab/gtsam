@@ -17,28 +17,30 @@ namespace gtsam {
  * Struct contains factor graphs for a Nonlinear Programming problem.
  */
 struct NP {
-  NonlinearCostFactorGraph cost; //!< Nonlinear cost factors
-  NonlinearEqualityFactorGraph equalities; //!< Nonlinear equality constraints cE(X) = 0
-  NonlinearInequalityFactorGraph inequalities; //!< Nonlinear inequality constriants cE(X) <= 0
+  NonlinearCostFactorGraph::shared_ptr cost; //!< Nonlinear cost factors
+  NonlinearEqualityFactorGraph::shared_ptr equalities; //!< Nonlinear equality constraints cE(X) = 0
+  NonlinearInequalityFactorGraph::shared_ptr inequalities; //!< Nonlinear inequality constriants cE(X) <= 0
 
   /** Default Constructor  */
   NP() :
-      cost(), equalities(), inequalities() {
+      cost(new NonlinearCostFactorGraph()),
+      equalities(new NonlinearEqualityFactorGraph()),
+      inequalities(new NonlinearInequalityFactorGraph()) {
   }
 
   /** Constructor */
-  NP(const NonlinearCostFactorGraph & _cost,
-      const NonlinearEqualityFactorGraph & _equalities,
-      const NonlinearInequalityFactorGraph & _inequalities) :
+  NP(const NonlinearCostFactorGraph::shared_ptr _cost,
+      const NonlinearEqualityFactorGraph::shared_ptr _equalities,
+      const NonlinearInequalityFactorGraph::shared_ptr _inequalities) :
       cost(_cost), equalities(_equalities), inequalities(_inequalities) {
   }
 
   /** print */
   void print(const std::string & s = "") {
     std::cout << s << std::endl;
-    cost.print("Nonlinear Cost Factors: ");
-    equalities.print("Nonlinear Equality Cost Factors: ");
-    inequalities.print("Nonlinear Inequality Cost Factors: ");
+    cost->print("Nonlinear Cost Factors: ");
+    equalities->print("Nonlinear Equality Cost Factors: ");
+    inequalities->print("Nonlinear Inequality Cost Factors: ");
   }
 };
 

@@ -18,8 +18,8 @@ bool SQPLineSearch2::checkFeasibility(const Values &x,
     boost::optional<double &> equalityError,
     boost::optional<double &> inequalityError) const {
 
-  double eqError = program_.equalities.error(x);
-  double ineqError = program_.inequalities.error(x);
+  double eqError = program_.equalities->error(x);
+  double ineqError = program_.inequalities->error(x);
 
   if (equalityError) {
     *equalityError = eqError;
@@ -41,11 +41,11 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::multiplyConstrainedHessians(
   GaussianFactorGraph::shared_ptr multipliedConstrainedHessians(
       new GaussianFactorGraph());
   VectorValues multipliedLambdas = alpha * lambdas;
-  for (NonlinearConstraint::shared_ptr factor : program_.equalities) {
+  for (NonlinearConstraint::shared_ptr factor : *program_.equalities) {
     multipliedConstrainedHessians->push_back(
         factor->multipliedHessian(x, multipliedLambdas));
   }
-  for (NonlinearInequalityConstraint::shared_ptr factor : program_.inequalities) {
+  for (NonlinearInequalityConstraint::shared_ptr factor : *program_.inequalities) {
     multipliedConstrainedHessians->push_back(
         factor->multipliedHessian(x, multipliedLambdas));
   }
@@ -59,19 +59,13 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::makeIterateCostFunction(
 
   Matrix hessianOfCost = costTaylorApproximation->hessian().first;
   Matrix multipliedHessians = multipliedConstraintHessians->hessian().first;
-  GTSAM_PRINT(program_.cost);
+  GTSAM_PRINT(*program_.cost);
   GTSAM_PRINT(*costTaylorApproximation);
-  std::cout << "Augmented Cost Matrix: " << costTaylorApproximation->augmentedHessian();
+  std::cout << "Augmented Cost Matrix: " << costTaylorApproximation->augmentedHessian() << std::endl;
   std::cout << "Jacobian of cost: " << costTaylorApproximation->jacobian().first << std::endl;
   std::cout << "Hessian of cost: " << hessianOfCost << std::endl;
   std::cout << "Multiplied Hessians: " << multipliedHessians << std::endl;
-  Matrix HessianOfLagrangian = costTaylorApproximation->hessian().first
-      - multipliedConstraintHessians->hessian().first;
-  Vector JacobianOfCost = costTaylorApproximation->jacobian().second;
-  std::cout << "Jacobian of Cost: " << JacobianOfCost << std::endl;
-  HessianFactor costFactor(key, HessianOfLagrangian, JacobianOfCost, 100);
   GaussianFactorGraph::shared_ptr returns(new GaussianFactorGraph);
-  returns->push_back(costFactor);
   return returns;
 }
 
@@ -84,7 +78,7 @@ bool SQPLineSearch2::checkConvergence(const Values& x,
 
   // Check constraints
   double maxError = 0.0;
-  for (NonlinearConstraint::shared_ptr factor : program_.equalities) {
+  for (NonlinearConstraint::shared_ptr factor : *program_.equalities) {
     Vector constrainedError = factor->unwhitenedError(x);
     maxError = constrainedError.maxCoeff();
     if (maxError > 1e-5) {
@@ -94,7 +88,7 @@ bool SQPLineSearch2::checkConvergence(const Values& x,
       return false;
     }
   }
-  for (NonlinearInequalityConstraint::shared_ptr factor : program_.inequalities) {
+  for (NonlinearInequalityConstraint::shared_ptr factor : *program_.inequalities) {
     Vector constrainedError = factor->unwhitenedError(x);
     maxError = constrainedError.maxCoeff();
     if (maxError > 1e-5) {
@@ -118,8 +112,8 @@ bool SQPLineSearch2::checkConvergence(const Values& x,
    *    (2) lambda <=0, for all ineq.
    *    (3) lambda = 0, for inactive ineq
    */
-  NonlinearEqualityFactorGraph allConstraints = program_.equalities;
-  allConstraints += program_.inequalities;
+  NonlinearEqualityFactorGraph allConstraints = *program_.equalities;
+  allConstraints += *program_.inequalities;
   for (NonlinearConstraint::shared_ptr factor : allConstraints) {
     Vector lambda = lambdas.at(factor->dualKey());
     double maxLambda = lambda.maxCoeff();
@@ -157,7 +151,7 @@ bool SQPLineSearch2::checkConvergence(const Values& x,
 
 /* ************************************************************************* */
 GaussianFactorGraph::shared_ptr SQPLineSearch2::buildDampedSystem(
-    const GaussianFactorGraph& linear,
+    const GaussianFactorGraph::shared_ptr linear,
     const SQPLineSearch2::State& state) const {
   GaussianFactorGraph::shared_ptr damped(new GaussianFactorGraph());
   double sigma = 1.0 / std::sqrt(state.tau);
@@ -242,9 +236,9 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
   QP linearizedProblem;
   // Add linearized constraints first, since we want nonlinear lambdas and
   // QP's linear lambdas have the same indices, based on the constraints' indices
-  linearizedProblem.equalities = *program_.equalities.linearize(
+  linearizedProblem.equalities = *program_.equalities->linearize(
       currentState.solution);
-  linearizedProblem.inequalities = *program_.inequalities.linearize(
+  linearizedProblem.inequalities = *program_.inequalities->linearize(
       currentState.solution);
 
   if (debug) {
@@ -258,12 +252,13 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
    * Hence, the objective function of the SQP subproblem is the following:
    *   0.5 p'*(\hessian f - \sum_j lambda_j* (\hessian c_j(x)) )*p + \gradf'*x
    */
-  GaussianFactorGraph::shared_ptr linearizedCost = program_.cost.linearize(
+  GaussianFactorGraph::shared_ptr linearizedCost = program_.cost->linearize(
       currentState.solution);
   GaussianFactorGraph::shared_ptr multConstraintHessians =
       multiplyConstrainedHessians(currentState.solution, currentState.lambdas,
           -1.0);
     Key pk(Symbol('P',0));
+    GTSAM_PRINT(*program_.cost->linearize(currentState.solution));
   linearizedProblem.cost = *makeIterateCostFunction(pk, linearizedCost, multConstraintHessians);
   // Combine to a Lagrangian graph and add constraints' Hessian factors with multipliers
 
@@ -273,7 +268,7 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
   if (useDamping) {
     // Add damping factors
     GaussianFactorGraph::shared_ptr dampedSystem = buildDampedSystem(
-        linearizedProblem.cost, currentState);
+        GaussianFactorGraph::shared_ptr(&linearizedProblem.cost), currentState);
     *dampedSystem += linearizedProblem.cost;
     double dampingFactor = 10.0;
     try {
@@ -316,7 +311,9 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //3. Choose a new penalty weight mu
-  MeritFunction merit(program_, *linearizedCost, linearizedProblem.cost,
+  MeritFunction merit(
+    program_, linearizedCost,
+    GaussianFactorGraph::shared_ptr(&linearizedProblem.cost),
       currentState.solution, p);
   double newMu = merit.computeNewMu(currentState.mu);
   if (debug)
@@ -359,8 +356,8 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
 VectorValues SQPLineSearch2::zeroFromConstraints(
     const NP& nonlinearProgram) const {
   VectorValues lambdas;
-  NonlinearEqualityFactorGraph allConstraints = nonlinearProgram.equalities;
-  allConstraints += nonlinearProgram.inequalities;
+  NonlinearEqualityFactorGraph allConstraints = *nonlinearProgram.equalities;
+  allConstraints += *nonlinearProgram.inequalities;
   for (NonlinearConstraint::shared_ptr factor : allConstraints) {
     lambdas.insert(factor->dualKey(), zero(factor->dim()));
   }
@@ -387,12 +384,12 @@ Values SQPLineSearch2::optimize(const Values& initials,
 
 /* ************************************************************************* */
 MeritFunction::MeritFunction(const NP & program,
-    const GaussianFactorGraph & linearizedCost,
-    const GaussianFactorGraph & lagrangianGraph, const Values& x,
+    const GaussianFactorGraph::shared_ptr linearizedCost,
+    const GaussianFactorGraph::shared_ptr lagrangianGraph, const Values& x,
     const VectorValues& p) :
     program_(program), linearizedCost_(linearizedCost), lagrangianGraph_(
         lagrangianGraph), x_(x), p_(p) {
-  gradf_ = linearizedCost_.gradientAtZero();
+  gradf_ = linearizedCost_->gradientAtZero();
   if (gradf_.size() < p_.size()) {
     for (Key key : p_ | boost::adaptors::map_keys) {
       if (!gradf_.exists(key)) {
@@ -405,11 +402,11 @@ MeritFunction::MeritFunction(const NP & program,
 /* ************************************************************************* */
 double MeritFunction::constraintNorm1(const Values x) const {
   double norm1 = 0.0;
-  for (NonlinearInequalityConstraint::shared_ptr factor : program_.inequalities) {
+  for (NonlinearInequalityConstraint::shared_ptr factor : *program_.inequalities) {
     Vector error = factor->unwhitenedError(x);
     norm1 += error.cwiseAbs().sum();
   }
-  for (NonlinearConstraint::shared_ptr factor : program_.equalities) {
+  for (NonlinearConstraint::shared_ptr factor : *program_.equalities) {
     Vector error = factor->unwhitenedError(x);
     norm1 += error.cwiseAbs().sum();
   }
@@ -422,7 +419,7 @@ double MeritFunction::phi(double alpha, double mu) const {
   Values x2 = (fabs(alpha) > 1e-5) ? x_.retract(alpha * p_) : x_;
   double c2 = constraintNorm1(x2);
 
-  double result = program_.cost.error(x2) + mu * c2;
+  double result = program_.cost->error(x2) + mu * c2;
   if (debug)
     cout << "phi(" << alpha << ") = " << result << endl;
   return result;
@@ -460,10 +457,10 @@ double MeritFunction::computeNewMu(double currentMu) const {
 }
 
 /* ************************************************************************* */
-double MeritFunction::ptHp(const GaussianFactorGraph& linear,
+double MeritFunction::ptHp(const GaussianFactorGraph::shared_ptr linear,
     const VectorValues& p) const {
   double result = 0.0;
-  for (const GaussianFactor::shared_ptr& factor : linear) {
+  for (const GaussianFactor::shared_ptr& factor : *linear) {
     VectorValues y = VectorValues::Zero(p);
     factor->multiplyHessianAdd(1.0, p, y); // y = Hx
     result += p.dot(y); // x'y = x'Hx

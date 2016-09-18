@@ -10,7 +10,6 @@
 #include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
 #include <gtsam_unstable/nonlinear/NonlinearInequalityConstraint.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam_unstable/nonlinear/LocalSQP.h>
 
 using namespace gtsam;
 /**
@@ -46,8 +45,8 @@ typedef NonlinearEqualityConstraint2<double, double, constraintError> constraint
 TEST_DISABLED(SQPLineSearch2, TrivialNonlinearConstraintWithEqualities) {
   Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
   NP problem;
-  problem.cost.push_back(Nocedal152::cost(X,Y,D));
-  problem.equalities.push_back(Nocedal152::constraint(X,Y,D));
+  problem.cost->push_back(Nocedal152::cost(X,Y,D));
+  problem.equalities->push_back(Nocedal152::constraint(X,Y,D));
   Values expected;
   expected.insert(X, 1.0);
   expected.insert(Y, 0.0);
@@ -95,11 +94,11 @@ struct costError {
   typedef NonlinearEqualityConstraint2<double, double, constraintError> constraint;
 }
 
-TEST_DISABLED(SQPLineSearch2, CircleTest){
+TEST(SQPLineSearch2, CircleTest){
   Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
   NP problem;
-  problem.cost.push_back(CircleExample::cost(noiseModel::Unit::Create(1), X,Y,D));
-  problem.equalities.push_back(CircleExample::constraint(X,Y,D));
+  problem.cost->push_back(CircleExample::cost(noiseModel::Unit::Create(1), X,Y,D));
+  problem.equalities->push_back(CircleExample::constraint(X,Y,D));
   Values initial, expected;
   initial.insert(X, 2.0);
   initial.insert(Y, 1.0);
@@ -246,10 +245,10 @@ TEST(SQPLineSearch2, CheckErrorMargin) {
 TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithEqualities) {
   Key X(Symbol('X',1)), D(Symbol('D',0)), D1(Symbol('D',1)), D2(Symbol('D',2)), D3(Symbol('D',3));
   NP problem;
-  problem.cost.push_back(Nocedal183::cost(noiseModel::Diagonal::Sigmas(Vector::Ones(1)),X,D));
-  problem.equalities.push_back(Nocedal183::constraint1(X,D1));
-  problem.equalities.push_back(Nocedal183::constraint2(X,D2));
-  problem.equalities.push_back(Nocedal183::constraint3(X,D3));
+  problem.cost->push_back(Nocedal183::cost(noiseModel::Diagonal::Sigmas(Vector::Ones(1)),X,D));
+  problem.equalities->push_back(Nocedal183::constraint1(X,D1));
+  problem.equalities->push_back(Nocedal183::constraint2(X,D2));
+  problem.equalities->push_back(Nocedal183::constraint3(X,D3));
   SQPLineSearch2 solver(problem);
   Values expected, initial;
   Vector5 expectedVector, initialVector;
@@ -267,62 +266,16 @@ TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithEqualities) {
 TEST_DISABLED(SQPLineSearch2, FeasabilityEqualities) {
   Key X(Symbol('X',1)), D(Symbol('D',1));
   NP problem;
-  problem.cost.push_back(Nocedal183::cost(X,D));
-  problem.equalities.push_back(Nocedal183::constraint1(X,D));
-  problem.equalities.push_back(Nocedal183::constraint2(X,D));
-  problem.equalities.push_back(Nocedal183::constraint3(X,D));
+  problem.cost->push_back(Nocedal183::cost(X,D));
+  problem.equalities->push_back(Nocedal183::constraint1(X,D));
+  problem.equalities->push_back(Nocedal183::constraint2(X,D));
+  problem.equalities->push_back(Nocedal183::constraint3(X,D));
   SQPLineSearch2 solver(problem);
   Values initial;
   Vector5 initialVector;
   initialVector << -1.71, 1.59, 1.82, -0.763, -0.763;
   initial.insert(X, initialVector);
   CHECK(solver.checkFeasibility(initial));
-}
-
-TEST(LocalSQP, testGradientOfCost) {
-  Key X(Symbol('X',1)), D(Symbol('D',1));
-  NP problem;
-  problem.cost.push_back(Nocedal183::cost(X,D));
-  problem.equalities.push_back(Nocedal183::constraint1(X,D));
-  problem.equalities.push_back(Nocedal183::constraint2(X,D));
-  problem.equalities.push_back(Nocedal183::constraint3(X,D));
-  LocalSQP solver(problem);
-  Values linearizationPoint;
-  Vector5 linearizationVector;
-  linearizationVector << 1.0, 1.0, 1.0, 1.0, 1.0;
-  linearizationPoint.insert(X, linearizationVector);
-  Matrix actualJacobian = solver.getGradientOfCostAt(linearizationPoint);
-  Matrix expectedJacobian =
-  (Matrix(1,5) <<
-      11.7182818284590,
-      11.7182818284590,
-      2.71828182845904,
-      2.71828182845904,
-      2.71828182845904).finished();
-  CHECK(assert_equal(expectedJacobian, actualJacobian));
-}
-
-TEST_DISABLED(LocalSQP, NonlinearConstraintWithEqualities) {
-  Key
-  X(Symbol('X',1)),
-  D(Symbol('D',0)),
-  D1(Symbol('D',1)),
-  D2(Symbol('D',2)),
-  D3(Symbol('D',3));
-  NP problem;
-  problem.cost.push_back(Nocedal183::cost(X,D));
-  problem.equalities.push_back(Nocedal183::constraint1(X,D1));
-  problem.equalities.push_back(Nocedal183::constraint2(X,D2));
-  problem.equalities.push_back(Nocedal183::constraint3(X,D3));
-  LocalSQP solver(problem);
-  Values expected, initial;
-  Vector5 expectedVector, initialVector;
-  expectedVector << -1.8 , 1.7, 1.9 , -0.8 , -0.8;
-  initialVector << -1.71, 1.59, 1.82, -0.763, -0.763;
-  expected.insert(X, expectedVector);
-  initial.insert(X, initialVector);
-  Values actuals = solver.optimize(initial);
-  CHECK(assert_equal(expected,actuals, 1e-7));
 }
 
 /**
@@ -372,12 +325,12 @@ typedef NonlinearInequalityConstraint1<double, upperBoundXError> upperBoundX;
 TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithInequalities) {
   Key X(Symbol('X',1)), Y(Symbol('Y',1)), dk(Symbol('D', 1));
   NP problem;
-  problem.cost.push_back(cost(X, Y, dk));
-  problem.inequalities.push_back(constraint(X,Y,dk));
-  problem.inequalities.push_back(lowerBoundX(X, dk));
-  problem.inequalities.push_back(lowerBoundX(Y, dk));
-  problem.inequalities.push_back(upperBoundX(X, dk));
-  problem.inequalities.push_back(upperBoundX(Y, dk));
+  problem.cost->push_back(cost(X, Y, dk));
+  problem.inequalities->push_back(constraint(X,Y,dk));
+  problem.inequalities->push_back(lowerBoundX(X, dk));
+  problem.inequalities->push_back(lowerBoundX(Y, dk));
+  problem.inequalities->push_back(upperBoundX(X, dk));
+  problem.inequalities->push_back(upperBoundX(Y, dk));
   SQPLineSearch2 solver(problem);
   Values vals;
   vals.insert(X, 0.5);
@@ -428,9 +381,9 @@ typedef NonlinearInequalityConstraint2<double, double, c2Error> c2;
 TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithEqualitiesOnly) {
   Key X(Symbol('X',1)), Y(Symbol('Y', 1)), D(Symbol('D',1));
   NP problem;
-  problem.cost.push_back(cost2(X,Y,D));
-  problem.inequalities.push_back(c1(X,Y,D));
-  problem.inequalities.push_back(c2(X,Y,D));
+  problem.cost->push_back(cost2(X,Y,D));
+  problem.inequalities->push_back(c1(X,Y,D));
+  problem.inequalities->push_back(c2(X,Y,D));
 
   SQPLineSearch2 solver(problem);
   Values inits;

@@ -27,6 +27,8 @@ class NonlinearInequalityFactorGraph: public FactorGraph<
     NonlinearInequalityConstraint> {
 
 public:
+  typedef boost::shared_ptr<NonlinearInequalityFactorGraph> shared_ptr;
+  
   /// Default constructor
   NonlinearInequalityFactorGraph() {
   }

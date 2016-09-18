@@ -107,7 +107,7 @@ public:
     std::vector < Matrix > G11;
     evaluateHessians(x1, G11);
 
-    if (lambda.size() != G11.size()) {
+    if (static_cast<unsigned long>(lambda.size()) != G11.size()) {
       throw std::runtime_error(
           "Error in evaluateHessians: the number of returned Gij matrices must be the same as the constraint dimension!");
     }
@@ -259,9 +259,11 @@ public:
 
     std::vector<Matrix> G11, G12, G22;
     evaluateHessians(x1, x2, G11, G12, G22);
-
-    if (lambda.size() != G11.size() || lambda.size() != G12.size()
-        || lambda.size() != G22.size()) {
+  
+    unsigned long lambda_size = static_cast<unsigned long>(lambda.size());
+    
+    if (lambda_size != G11.size() || lambda_size != G12.size()
+        || lambda_size != G22.size()) {
       throw std::runtime_error(
           "Error in evaluateHessians: the number of returned Gij matrices must be the same as the constraint dimension!");
     }
