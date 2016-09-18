@@ -224,12 +224,7 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::buildDampedSystem(
 /* ************************************************************************* */
 SQPLineSearch2::State SQPLineSearch2::iterate(
     const SQPLineSearch2::State& currentState) const {
-  static const bool debug = false;
   static const bool useDamping = false;
-
-  // Don't do anything if it's already converged!
-  if (currentState.converged)
-    return currentState;
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //1. Build the linearized graph
@@ -241,10 +236,6 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
   linearizedProblem.inequalities = *program_.inequalities->linearize(
       currentState.solution);
 
-  if (debug) {
-    linearizedProblem.equalities.print("Linearized Equalities.");
-    linearizedProblem.inequalities.print("Linearized Inequalities");
-  }
   /*
    * Add unconstrained factors and Lagrangian-multiplied Hessian constraints
    * The Lagrange function is:
@@ -257,12 +248,9 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
   GaussianFactorGraph::shared_ptr multConstraintHessians =
       multiplyConstrainedHessians(currentState.solution, currentState.lambdas,
           -1.0);
-    Key pk(Symbol('P',0));
-    GTSAM_PRINT(*program_.cost->linearize(currentState.solution));
+  Key pk(Symbol('P',0));
   linearizedProblem.cost = *makeIterateCostFunction(pk, linearizedCost, multConstraintHessians);
   // Combine to a Lagrangian graph and add constraints' Hessian factors with multipliers
-
-  GTSAM_PRINT(linearizedProblem);
   // Try to solve the damped Lagrangian graph. Increase the damping factor if not ok.
   double newTau = currentState.tau;
   if (useDamping) {
@@ -276,39 +264,22 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
       // Optimization succeeded: decrease damping factor
       if (newTau > 1e-10) {
         newTau /= dampingFactor;
-        if (debug)
-          cout << "Decrease tau: " << newTau << endl;
       }
     } catch (IndeterminantLinearSystemException& e) {
       // Optimization failed: increase damping factor
       newTau *= dampingFactor;
-      if (debug)
-        cout << "Increase tau: " << newTau << endl;
       return State(currentState.solution, currentState.lambdas, currentState.mu,
           newTau, currentState.converged, currentState.k + 1);
     }
   }
-  if (debug)
-    GTSAM_PRINT(linearizedProblem);
-
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //2. Solve the QP subproblem and compute dLambdas
-  if (debug)
-    cout << "Solving QP subproblem: " << endl;
   QPSolver qpSolver(linearizedProblem);
   VectorValues p;
   VectorValues lambdasHat;
   boost::tie(p, lambdasHat) = qpSolver.optimize();
-  if (debug)
-    p.print("p =  ");
-  if (debug)
-    lambdasHat.print("lambdasHat = ");
-
   //compute dLambdas
   VectorValues dLambdas = lambdasHat - currentState.lambdas;
-  if (debug)
-    dLambdas.print("dLambdas = ");
-
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //3. Choose a new penalty weight mu
   MeritFunction merit(
@@ -316,9 +287,6 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
     GaussianFactorGraph::shared_ptr(&linearizedProblem.cost),
       currentState.solution, p);
   double newMu = merit.computeNewMu(currentState.mu);
-  if (debug)
-    cout << "newMu: " << newMu << endl;
-
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //4. Line search: find the steplength alpha
   double tau = 0.9, eta = 0.3;
@@ -331,23 +299,13 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //5. Update solution
-  if (debug)
-    cout << "Final alpha: " << alpha << endl;
   Values newSolution = currentState.solution.retract(alpha * p);
-  if (debug)
-    newSolution.print("newSolution: ");
   VectorValues newLambdas = currentState.lambdas + alpha * dLambdas;
-  if (debug)
-    newLambdas.print("newLambdas: ");
 
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //6. Check convergence
-  if (debug)
-    currentState.print("currentState: ");
   bool newConvergence = (currentState.converged
       || checkConvergence(currentState.solution, currentState.lambdas));
-  if (debug)
-    cout << "newConvergence: " << (int) newConvergence << endl;
   return State(newSolution, newLambdas, newMu, newTau, newConvergence,
       currentState.k + 1);
 }

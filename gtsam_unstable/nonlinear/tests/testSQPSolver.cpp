@@ -67,34 +67,34 @@ struct costError {
   Vector operator()(const double & x1, const double & x2,
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
           boost::none) {
-    if(H1){
-      *H1 = I_1x1 * 2*x1;
+    if (H1) {
+      *H1 = I_1x1 * 2 * x1;
     }
-    if(H2){
-      *H2 = I_1x1 * 2*x2;
+    if (H2) {
+      *H2 = I_1x1 * 2 * x2;
     }
-    return I_1x1 * (x1*x1 + x2*x2);
+    return I_1x1 * (x1 * x1 + x2 * x2);
   }
 };
-  
-  struct constraintError {
-    Vector operator()(const double & x1, const double & x2,
-                      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-    boost::none){
-      if(H1){
-        *H1 = I_1x1 * 2*(x1-2);
-      }
-      if(H2){
-        *H2 = I_1x1 * 2*x2;
-      }
-      return I_1x1 * (std::pow((x1-2),2) + x2*x2 -1);
+
+struct constraintError {
+  Vector operator()(const double & x1, const double & x2,
+      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+          boost::none) {
+    if (H1) {
+      *H1 = I_1x1 * 2 * (x1 - 2);
     }
-  };
-  typedef NonlinearEqualityConstraint2<double, double, costError> cost;
-  typedef NonlinearEqualityConstraint2<double, double, constraintError> constraint;
+    if (H2) {
+      *H2 = I_1x1 * 2 * x2;
+    }
+    return I_1x1 * (std::pow((x1 - 2), 2) + x2 * x2 - 1);
+  }
+};
+typedef NonlinearEqualityConstraint2<double, double, costError> cost;
+typedef NonlinearEqualityConstraint2<double, double, constraintError> constraint;
 }
 
-TEST(SQPLineSearch2, CircleTest){
+TEST(SQPLineSearch2, CircleTest) {
   Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
   NP problem;
   problem.cost->push_back(CircleExample::cost(noiseModel::Unit::Create(1), X,Y,D));
@@ -109,32 +109,32 @@ TEST(SQPLineSearch2, CircleTest){
   CHECK(assert_equal(expected, actual, 1e-7))
 }
 
-TEST(HessianFactorgraph, PostiveDefiniteMinusZero){
-  std::cout << "FIRST TEST FACTORGRAPH:" << std::endl;
+TEST(HessianFactorgraph, PostiveDefiniteMinusZero) {
+//  std::cout << "FIRST TEST FACTORGRAPH:" << std::endl;
   Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
   HessianFactor positiveDefinite(Y, (Matrix22() << 8, 0, 0, 2).finished(),Vector2(3,4), 3);
   HessianFactor negativeDefinite(Y, (Matrix22() << -1, 0, 0, -1).finished(), Vector2(0,0), -100);
   GaussianFactorGraph fg;
   fg.push_back(positiveDefinite);
   fg.push_back(negativeDefinite);
-  GTSAM_PRINT(positiveDefinite);
-  GTSAM_PRINT(negativeDefinite);
+//  GTSAM_PRINT(positiveDefinite);
+//  GTSAM_PRINT(negativeDefinite);
   VectorValues solution = fg.optimize();
-  std::cout << "Solution: " << solution.at(Y) << std::endl;
+//  std::cout << "Solution: " << solution.at(Y) << std::endl;
 }
 
-TEST(HessianFactorgraph, NegativeDefinitePlusJacobian){
-  std::cout << "SECOND TEST FACTORGRAPH:" << std::endl;
+TEST(HessianFactorgraph, NegativeDefinitePlusJacobian) {
+//  std::cout << "SECOND TEST FACTORGRAPH:" << std::endl;
   Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
   HessianFactor negativeDef(Y, (Matrix22() << -1, 0, 0, -1).finished(), Vector2(0,0), -100);
   JacobianFactor positiveDefinite(Y, (Matrix22() << 2, 0, 0, 2).finished(), Vector2(3, 4));
   GaussianFactorGraph fg;
   fg.push_back(negativeDef);
   fg.push_back(positiveDefinite);
-  GTSAM_PRINT(negativeDef);
-  GTSAM_PRINT(positiveDefinite);
+//  GTSAM_PRINT(negativeDef);
+//  GTSAM_PRINT(positiveDefinite);
   VectorValues solution = fg.optimize();
-  std::cout << "Solution: " << solution.at(Y) << std::endl;
+//  std::cout << "Solution: " << solution.at(Y) << std::endl;
 }
 /**
  * Nocedal06 Problem 18.3 page 562
@@ -287,6 +287,7 @@ TEST_DISABLED(SQPLineSearch2, FeasabilityEqualities) {
  * starting point on (0.5,2) with solution at (1,1)
  */
 
+namespace Betts10_30 {
 struct costError {
   Vector operator()(const double &x1, const double &x2,
       boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 =
@@ -321,16 +322,17 @@ typedef NonlinearEqualityConstraint2<double, double, costError> cost;
 typedef NonlinearInequalityConstraint2<double, double, constraintError> constraint;
 typedef NonlinearInequalityConstraint1<double, lowerBoundXError> lowerBoundX;
 typedef NonlinearInequalityConstraint1<double, upperBoundXError> upperBoundX;
+}
 
 TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithInequalities) {
   Key X(Symbol('X',1)), Y(Symbol('Y',1)), dk(Symbol('D', 1));
   NP problem;
-  problem.cost->push_back(cost(X, Y, dk));
-  problem.inequalities->push_back(constraint(X,Y,dk));
-  problem.inequalities->push_back(lowerBoundX(X, dk));
-  problem.inequalities->push_back(lowerBoundX(Y, dk));
-  problem.inequalities->push_back(upperBoundX(X, dk));
-  problem.inequalities->push_back(upperBoundX(Y, dk));
+  problem.cost->push_back(Betts10_30::cost(X, Y, dk));
+  problem.inequalities->push_back(Betts10_30::constraint(X,Y,dk));
+  problem.inequalities->push_back(Betts10_30::lowerBoundX(X, dk));
+  problem.inequalities->push_back(Betts10_30::lowerBoundX(Y, dk));
+  problem.inequalities->push_back(Betts10_30::upperBoundX(X, dk));
+  problem.inequalities->push_back(Betts10_30::upperBoundX(Y, dk));
   SQPLineSearch2 solver(problem);
   Values vals;
   vals.insert(X, 0.5);
@@ -352,21 +354,22 @@ TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithInequalities) {
  * Optimal active set is {c1}
  */
 
-struct cost2Error {
+namespace Betts10_32 {
+struct costError {
   Vector operator()(const double &x1, const double &x2,
       boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 =
           boost::none) const {
     return I_1x1 * (std::pow(x1, 2) + std::pow(x2, 2));
   }
 };
-struct c1Error {
+struct constraint1Error {
   Vector operator()(const double &x1, const double &x2,
       boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 =
           boost::none) const {
     return I_1x1 * (2 - x1 - x2);
   }
 };
-struct c2Error {
+struct constraint2Error {
   Vector operator()(const double &x1, const double &x2,
       boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 =
           boost::none) const {
@@ -374,16 +377,17 @@ struct c2Error {
   }
 };
 
-typedef NonlinearEqualityConstraint2<double, double, cost2Error> cost2;
-typedef NonlinearInequalityConstraint2<double, double, c1Error> c1;
-typedef NonlinearInequalityConstraint2<double, double, c2Error> c2;
+typedef NonlinearEqualityConstraint2<double, double, costError> cost;
+typedef NonlinearInequalityConstraint2<double, double, constraint1Error> constraint1;
+typedef NonlinearInequalityConstraint2<double, double, constraint2Error> constraint2;
+}
 
 TEST_DISABLED(SQPLineSearch2, NonlinearConstraintWithEqualitiesOnly) {
   Key X(Symbol('X',1)), Y(Symbol('Y', 1)), D(Symbol('D',1));
   NP problem;
-  problem.cost->push_back(cost2(X,Y,D));
-  problem.inequalities->push_back(c1(X,Y,D));
-  problem.inequalities->push_back(c2(X,Y,D));
+  problem.cost->push_back(Betts10_32::cost(X,Y,D));
+  problem.inequalities->push_back(Betts10_32::constraint1(X,Y,D));
+  problem.inequalities->push_back(Betts10_32::constraint2(X,Y,D));
 
   SQPLineSearch2 solver(problem);
   Values inits;
