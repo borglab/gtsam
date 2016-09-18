@@ -152,7 +152,7 @@ void Module::parseMarkup(const std::string& data) {
   // parse forward declaration
   ForwardDeclaration fwDec0, fwDec;
   Rule forward_declaration_p =
-      !(str_p("virtual")[assign_a(fwDec.isVirtual, true)]) 
+      !(str_p("virtual")[assign_a(fwDec.isVirtual, T)])
       >> str_p("class") 
       >> (*(basic.namespace_p >> str_p("::")) >> basic.className_p)[assign_a(fwDec.name)]
       >> ch_p(';') 
