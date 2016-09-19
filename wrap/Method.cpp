@@ -36,7 +36,7 @@ static std::string pyRename(const std::string& name) {
         pythonKeywords.end())
         return name;
     else
-        return "_" + name;
+        return name + "_";
 }
 
 /* ************************************************************************* */
@@ -93,7 +93,6 @@ void Method::emit_cython_pxd(FileWriter& file, const Class& cls) const {
     file.oss << "\t\t";
     returnVals_[i].emit_cython_pxd(file, cls.cythonClass());
     file.oss << pyRename(name_) + " \"" + name_ + "\"" << "(";
-    // ((name_ == "print") ? "_print \"print\"" : name_) << "(";
     argumentList(i).emit_cython_pxd(file, cls.cythonClass());
     file.oss << ")";
     if (is_const_) file.oss << " const";
