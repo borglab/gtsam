@@ -243,7 +243,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         stay = false;
       }
     }
-    gttoc(adjust_Delta);
+    gttoc(adjust_delta);
   }
 
   // dx_d and f_error have already been filled in during the loop
