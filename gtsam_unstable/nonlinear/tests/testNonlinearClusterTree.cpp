@@ -27,22 +27,22 @@ NonlinearFactorGraph planarSLAMGraph() {
   // Prior on pose x1 at the origin.
   Pose2 prior(0.0, 0.0, 0.0);
   auto priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-  graph.add(PriorFactor<Pose2>(x1, prior, priorNoise));
+  graph.emplace_shared<PriorFactor<Pose2> >(x1, prior, priorNoise);
 
   // Two odometry factors
   Pose2 odometry(2.0, 0.0, 0.0);
   auto odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
-  graph.add(BetweenFactor<Pose2>(x1, x2, odometry, odometryNoise));
-  graph.add(BetweenFactor<Pose2>(x2, x3, odometry, odometryNoise));
+  graph.emplace_shared<BetweenFactor<Pose2> >(x1, x2, odometry, odometryNoise);
+  graph.emplace_shared<BetweenFactor<Pose2> >(x2, x3, odometry, odometryNoise);
 
   // Add Range-Bearing measurements to two different landmarks
   auto measurementNoise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.2));
   Rot2 bearing11 = Rot2::fromDegrees(45), bearing21 = Rot2::fromDegrees(90),
        bearing32 = Rot2::fromDegrees(90);
   double range11 = std::sqrt(4.0 + 4.0), range21 = 2.0, range32 = 2.0;
-  graph.add(BearingRangeFactor<Pose2, Point2>(x1, l1, bearing11, range11, measurementNoise));
-  graph.add(BearingRangeFactor<Pose2, Point2>(x2, l1, bearing21, range21, measurementNoise));
-  graph.add(BearingRangeFactor<Pose2, Point2>(x3, l2, bearing32, range32, measurementNoise));
+  graph.emplace_shared<BearingRangeFactor<Pose2, Point2> >(x1, l1, bearing11, range11, measurementNoise);
+  graph.emplace_shared<BearingRangeFactor<Pose2, Point2> >(x2, l1, bearing21, range21, measurementNoise);
+  graph.emplace_shared<BearingRangeFactor<Pose2, Point2> >(x3, l2, bearing32, range32, measurementNoise);
 
   return graph;
 }
