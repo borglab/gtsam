@@ -89,8 +89,8 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     const Pose3& pose_i = poses[i];
     typedef PinholePose<CALIBRATION> Camera;
     Camera camera_i(pose_i, sharedCal);
-    graph.push_back(TriangulationFactor<Camera> //
-        (camera_i, measurements[i], unit2, landmarkKey));
+    graph.emplace_shared<TriangulationFactor<Camera> > //
+        (camera_i, measurements[i], unit2, landmarkKey);
   }
   return std::make_pair(graph, values);
 }
@@ -116,8 +116,8 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
       traits<typename CAMERA::Measurement>::dimension));
   for (size_t i = 0; i < measurements.size(); i++) {
     const CAMERA& camera_i = cameras[i];
-    graph.push_back(TriangulationFactor<CAMERA> //
-        (camera_i, measurements[i], unit, landmarkKey));
+    graph.emplace_shared<TriangulationFactor<CAMERA> > //
+        (camera_i, measurements[i], unit, landmarkKey);
   }
   return std::make_pair(graph, values);
 }
