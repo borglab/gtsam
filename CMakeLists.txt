@@ -116,11 +116,11 @@ if(MSVC)
 	endif()
 endif()
 
-find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time regex timer chrono)
+find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time timer chrono)
 
 # Required components
 if(NOT Boost_SERIALIZATION_LIBRARY OR NOT Boost_SYSTEM_LIBRARY OR NOT Boost_FILESYSTEM_LIBRARY OR
-    NOT Boost_THREAD_LIBRARY OR NOT Boost_DATE_TIME_LIBRARY OR NOT Boost_REGEX_LIBRARY)
+    NOT Boost_THREAD_LIBRARY OR NOT Boost_DATE_TIME_LIBRARY)
   message(FATAL_ERROR "Missing required Boost components >= v1.43, please install/upgrade Boost or configure your search paths.")
 endif()
 
@@ -128,7 +128,7 @@ option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
 # Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 set(GTSAM_BOOST_LIBRARIES
     ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY}
-	${Boost_THREAD_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_REGEX_LIBRARY})
+	${Boost_THREAD_LIBRARY} ${Boost_DATE_TIME_LIBRARY})
 if (GTSAM_DISABLE_NEW_TIMERS)
     message("WARNING:  GTSAM timing instrumentation manually disabled")
     add_definitions(-DGTSAM_DISABLE_NEW_TIMERS)

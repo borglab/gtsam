@@ -128,8 +128,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
     ## This needs to be fixed!!
     if(UNIX AND NOT APPLE)
       list(APPEND automaticDependencies ${Boost_SERIALIZATION_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-        ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE} ${Boost_DATE_TIME_LIBRARY_RELEASE}
-        ${Boost_REGEX_LIBRARY_RELEASE})
+        ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE} ${Boost_DATE_TIME_LIBRARY_RELEASE})
       if(Boost_TIMER_LIBRARY_RELEASE AND NOT GTSAM_DISABLE_NEW_TIMERS) # Only present in Boost >= 1.48.0
         list(APPEND automaticDependencies ${Boost_TIMER_LIBRARY_RELEASE} ${Boost_CHRONO_LIBRARY_RELEASE})
         if(GTSAM_MEX_BUILD_STATIC_MODULE)

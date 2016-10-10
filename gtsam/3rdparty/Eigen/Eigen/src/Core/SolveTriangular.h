@@ -243,7 +243,8 @@ template<int Side, typename TriangularType, typename Rhs> struct triangular_solv
 
   template<typename Dest> inline void evalTo(Dest& dst) const
   {
-    if(!(is_same<RhsNestedCleaned,Dest>::value && extract_data(dst) == extract_data(m_rhs)))
+    const typename Dest::Scalar *dst_data = internal::extract_data(dst);
+    if(!(is_same<RhsNestedCleaned,Dest>::value && dst_data!=0 && extract_data(dst) == extract_data(m_rhs)))
       dst = m_rhs;
     m_triangularMatrix.template solveInPlace<Side>(dst);
   }
