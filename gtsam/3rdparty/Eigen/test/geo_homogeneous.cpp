@@ -54,6 +54,8 @@ template<typename Scalar,int Size> void homogeneous(void)
   T2MatrixType t2 = T2MatrixType::Random();
   VERIFY_IS_APPROX(t2 * (v0.homogeneous().eval()), t2 * v0.homogeneous());
   VERIFY_IS_APPROX(t2 * (m0.colwise().homogeneous().eval()), t2 * m0.colwise().homogeneous());
+  VERIFY_IS_APPROX(t2 * (v0.homogeneous().asDiagonal()), t2 * hv0.asDiagonal());
+  VERIFY_IS_APPROX((v0.homogeneous().asDiagonal()) * t2, hv0.asDiagonal() * t2);
 
   VERIFY_IS_APPROX((v0.transpose().rowwise().homogeneous().eval()) * t2,
                     v0.transpose().rowwise().homogeneous() * t2);

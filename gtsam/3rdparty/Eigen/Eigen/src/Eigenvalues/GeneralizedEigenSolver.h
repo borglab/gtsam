@@ -327,13 +327,33 @@ GeneralizedEigenSolver<MatrixType>::compute(const MatrixType& A, const MatrixTyp
       }
       else
       {
-        Scalar p = Scalar(0.5) * (m_matS.coeff(i, i) - m_matS.coeff(i+1, i+1));
-        Scalar z = sqrt(abs(p * p + m_matS.coeff(i+1, i) * m_matS.coeff(i, i+1)));
-        m_alphas.coeffRef(i)   = ComplexScalar(m_matS.coeff(i+1, i+1) + p, z);
-        m_alphas.coeffRef(i+1) = ComplexScalar(m_matS.coeff(i+1, i+1) + p, -z);
+        // We need to extract the generalized eigenvalues of the pair of a general 2x2 block S and a triangular 2x2 block T
+        // From the eigen decomposition of T = U * E * U^-1,
+        // we can extract the eigenvalues of (U^-1 * S * U) / E
+        // Here, we can take advantage that E = diag(T), and U = [ 1 T_01 ; 0 T_11-T_00], and U^-1 = [1 -T_11/(T_11-T_00) ; 0 1/(T_11-T_00)].
+        // Then taking beta=T_00*T_11*(T_11-T_00), we can avoid any division, and alpha is the eigenvalues of A = (U^-1 * S * U) * diag(T_11,T_00) * (T_11-T_00):
 
-        m_betas.coeffRef(i)   = m_realQZ.matrixT().coeff(i,i);
-        m_betas.coeffRef(i+1) = m_realQZ.matrixT().coeff(i,i);
+        // T =  [a b ; 0 c]
+        // S =  [e f ; g h]
+        RealScalar a = m_realQZ.matrixT().coeff(i, i), b = m_realQZ.matrixT().coeff(i, i+1), c = m_realQZ.matrixT().coeff(i+1, i+1);
+        RealScalar e = m_matS.coeff(i, i), f = m_matS.coeff(i, i+1), g = m_matS.coeff(i+1, i), h = m_matS.coeff(i+1, i+1);
+        RealScalar d = c-a;
+        RealScalar gb = g*b;
+        Matrix<RealScalar,2,2> A;
+        A <<  (e*d-gb)*c,  ((e*b+f*d-h*b)*d-gb*b)*a,
+              g*c       ,  (gb+h*d)*a;
+
+        // NOTE, we could also compute the SVD of T's block during the QZ factorization so that the respective T block is guaranteed to be diagonal,
+        // and then we could directly apply the formula below (while taking care of scaling S columns by T11,T00):
+
+        Scalar p = Scalar(0.5) * (A.coeff(i, i) - A.coeff(i+1, i+1));
+        Scalar z = sqrt(abs(p * p + A.coeff(i+1, i) * A.coeff(i, i+1)));
+        m_alphas.coeffRef(i)   = ComplexScalar(A.coeff(i+1, i+1) + p, z);
+        m_alphas.coeffRef(i+1) = ComplexScalar(A.coeff(i+1, i+1) + p, -z);
+
+        m_betas.coeffRef(i)   =
+        m_betas.coeffRef(i+1) = a*c*d;
+
         i += 2;
       }
     }

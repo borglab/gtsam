@@ -101,6 +101,9 @@ mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
 # Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
 if(GTSAM_BUILD_TESTS)
     add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
+    
+    # Add target to build tests without running
+	add_custom_target(all.tests)
 endif()
 
 # Add examples target
@@ -109,8 +112,6 @@ add_custom_target(examples)
 # Add timing target
 add_custom_target(timing)
 
-# Add target to build tests without running
-add_custom_target(all.tests)
 
 # Implementations of this file's macros:
 

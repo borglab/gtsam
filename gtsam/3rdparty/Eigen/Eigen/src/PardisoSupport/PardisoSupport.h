@@ -221,11 +221,11 @@ class PardisoImpl
       m_type = type;
       bool symmetric = std::abs(m_type) < 10;
       m_iparm[0] = 1;   // No solver default
-      m_iparm[1] = 3;   // use Metis for the ordering
-      m_iparm[2] = 1;   // Numbers of processors, value of OMP_NUM_THREADS
+      m_iparm[1] = 2;   // use Metis for the ordering
+      m_iparm[2] = 0;   // Reserved. Set to zero. (??Numbers of processors, value of OMP_NUM_THREADS??)
       m_iparm[3] = 0;   // No iterative-direct algorithm
       m_iparm[4] = 0;   // No user fill-in reducing permutation
-      m_iparm[5] = 0;   // Write solution into x
+      m_iparm[5] = 0;   // Write solution into x, b is left unchanged
       m_iparm[6] = 0;   // Not in use
       m_iparm[7] = 2;   // Max numbers of iterative refinement steps
       m_iparm[8] = 0;   // Not in use
@@ -246,7 +246,10 @@ class PardisoImpl
       m_iparm[26] = 0;  // No matrix checker
       m_iparm[27] = (sizeof(RealScalar) == 4) ? 1 : 0;
       m_iparm[34] = 1;  // C indexing
-      m_iparm[59] = 1;  // Automatic switch between In-Core and Out-of-Core modes
+      m_iparm[36] = 0;  // CSR
+      m_iparm[59] = 0;  // 0 - In-Core ; 1 - Automatic switch between In-Core and Out-of-Core modes ; 2 - Out-of-Core
+      
+      memset(m_pt, 0, sizeof(m_pt));
     }
 
   protected:
@@ -384,7 +387,6 @@ bool PardisoImpl<Base>::_solve(const MatrixBase<BDerived> &b, MatrixBase<XDerive
                                                      m_matrix.valuePtr(), m_matrix.outerIndexPtr(), m_matrix.innerIndexPtr(),
                                                      m_perm.data(), nrhs, m_iparm.data(), m_msglvl,
                                                      rhs_ptr, x.derived().data());
-
   return error==0;
 }
 
@@ -396,6 +398,9 @@ bool PardisoImpl<Base>::_solve(const MatrixBase<BDerived> &b, MatrixBase<XDerive
   * This class allows to solve for A.X = B sparse linear problems via a direct LU factorization
   * using the Intel MKL PARDISO library. The sparse matrix A must be squared and invertible.
   * The vectors or matrices X and B can be either dense or sparse.
+  *
+  * By default, it runs in in-core mode. To enable PARDISO's out-of-core feature, set:
+  * \code solver.pardisoParameterArray()[59] = 1; \endcode
   *
   * \tparam _MatrixType the type of the sparse matrix A, it must be a SparseMatrix<>
   *
@@ -446,6 +451,9 @@ class PardisoLU : public PardisoImpl< PardisoLU<MatrixType> >
   * This class allows to solve for A.X = B sparse linear problems via a LL^T Cholesky factorization
   * using the Intel MKL PARDISO library. The sparse matrix A must be selfajoint and positive definite.
   * The vectors or matrices X and B can be either dense or sparse.
+  *
+  * By default, it runs in in-core mode. To enable PARDISO's out-of-core feature, set:
+  * \code solver.pardisoParameterArray()[59] = 1; \endcode
   *
   * \tparam MatrixType the type of the sparse matrix A, it must be a SparseMatrix<>
   * \tparam UpLo can be any bitwise combination of Upper, Lower. The default is Upper, meaning only the upper triangular part has to be used.
@@ -506,6 +514,9 @@ class PardisoLLT : public PardisoImpl< PardisoLLT<MatrixType,_UpLo> >
   * using the Intel MKL PARDISO library. The sparse matrix A is assumed to be selfajoint and positive definite.
   * For complex matrices, A can also be symmetric only, see the \a Options template parameter.
   * The vectors or matrices X and B can be either dense or sparse.
+  *
+  * By default, it runs in in-core mode. To enable PARDISO's out-of-core feature, set:
+  * \code solver.pardisoParameterArray()[59] = 1; \endcode
   *
   * \tparam MatrixType the type of the sparse matrix A, it must be a SparseMatrix<>
   * \tparam Options can be any bitwise combination of Upper, Lower, and Symmetric. The default is Upper, meaning only the upper triangular part has to be used.

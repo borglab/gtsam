@@ -327,6 +327,7 @@ template<typename Scalar,bool ConjLhs,bool ConjRhs> void test_conj_helper(Scalar
     ref[i] += cj0(data1[i]) * cj1(data2[i]);
     VERIFY(internal::isApprox(ref[i], cj.pmadd(data1[i],data2[i],tmp)) && "conj_helper pmadd");
   }
+  *pval += 0; // Workaround msvc 2013 issue (bad code generation)
   internal::pstore(pval,pcj.pmadd(internal::pload<Packet>(data1),internal::pload<Packet>(data2),internal::pload<Packet>(pval)));
   VERIFY(areApprox(ref, pval, PacketSize) && "conj_helper pmadd");
 }

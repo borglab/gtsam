@@ -162,6 +162,15 @@ void test_autodiff_jacobian()
   CALL_SUBTEST(( forward_jacobian(TestFunc1<double>(3,3)) ));
 }
 
+double bug_1222() {
+  typedef Eigen::AutoDiffScalar<Eigen::Vector3d> AD;
+  const double _cv1_3 = 1.0;
+  const AD chi_3 = 1.0;
+  // this line did not work, because operator+ returns ADS<DerType&>, which then cannot be converted to ADS<DerType>
+  const AD denom = chi_3 + _cv1_3;
+  return denom.value();
+}
+
 void test_autodiff()
 {
   for(int i = 0; i < g_repeat; i++) {
@@ -169,5 +178,7 @@ void test_autodiff()
     CALL_SUBTEST_2( test_autodiff_vector() );
     CALL_SUBTEST_3( test_autodiff_jacobian() );
   }
+
+  bug_1222();
 }
 
