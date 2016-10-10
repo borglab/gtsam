@@ -46,6 +46,9 @@ They are summarized in the following table:
 <tr><td>SPQR</td><td>\link SPQRSupport_Module SPQRSupport \endlink  </td> <td> QR factorization </td> 
     <td> Any, rectangular</td><td>fill-in reducing, multithreaded, fast dense algebra</td>
     <td> requires the <a href="http://www.suitesparse.com">SuiteSparse</a> package, \b GPL </td><td>recommended for linear least-squares problems, has a rank-revealing feature</tr>
+<tr><td>PardisoLLT \n PardisoLDLT \n PardisoLU</td><td>\link PardisoSupport_Module PardisoSupport \endlink</td><td>Direct LLt, LDLt, LU factorizations</td><td>SPD \n SPD \n Square</td><td>Fill-in reducing, Leverage fast dense algebra, Multithreading</td>
+    <td>Requires the <a href="http://eigen.tuxfamily.org/Counter/redirect_to_mkl.php">Intel MKL</a> package, \b Proprietary </td>
+    <td>optimized for tough problems patterns, see also \link TopicUsingIntelMKL using MKL with Eigen \endlink</td></tr>
 </table>
 
 Here \c SPD means symmetric positive definite.

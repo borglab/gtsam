@@ -183,8 +183,8 @@ template<typename Scalar, typename Packet> inline void pstoreu(Scalar* to, const
 /** \internal tries to do cache prefetching of \a addr */
 template<typename Scalar> inline void prefetch(const Scalar* addr)
 {
-#if !defined(_MSC_VER)
-__builtin_prefetch(addr);
+#if (!EIGEN_COMP_MSVC) && (EIGEN_COMP_GNUC || EIGEN_COMP_CLANG || EIGEN_COMP_ICC)
+  __builtin_prefetch(addr);
 #endif
 }
 

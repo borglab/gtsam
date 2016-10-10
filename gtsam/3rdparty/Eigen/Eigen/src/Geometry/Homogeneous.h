@@ -75,7 +75,7 @@ template<typename MatrixType,int _Direction> class Homogeneous
     inline Index rows() const { return m_matrix.rows() + (int(Direction)==Vertical   ? 1 : 0); }
     inline Index cols() const { return m_matrix.cols() + (int(Direction)==Horizontal ? 1 : 0); }
 
-    inline Scalar coeff(Index row, Index col) const
+    inline Scalar coeff(Index row, Index col=0) const
     {
       if(  (int(Direction)==Vertical   && row==m_matrix.rows())
         || (int(Direction)==Horizontal && col==m_matrix.cols()))

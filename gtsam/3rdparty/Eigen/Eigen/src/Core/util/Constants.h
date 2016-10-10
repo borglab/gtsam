@@ -162,7 +162,7 @@ const unsigned int HereditaryBits = RowMajorBit
 /** \ingroup enums
   * Enum containing possible values for the \p Mode parameter of 
   * MatrixBase::selfadjointView() and MatrixBase::triangularView(). */
-enum {
+enum UpLoType {
   /** View matrix as a lower triangular matrix. */
   Lower=0x1,                      
   /** View matrix as an upper triangular matrix. */
@@ -187,7 +187,7 @@ enum {
 
 /** \ingroup enums
   * Enum for indicating whether an object is aligned or not. */
-enum { 
+enum AlignmentType {
   /** Object is not correctly aligned for vectorization. */
   Unaligned=0, 
   /** Object is aligned for vectorization. */
@@ -217,7 +217,7 @@ enum DirectionType {
 
 /** \internal \ingroup enums
   * Enum to specify how to traverse the entries of a matrix. */
-enum {
+enum TraversalType {
   /** \internal Default traversal, no vectorization, no index-based access */
   DefaultTraversal,
   /** \internal No vectorization, use index-based access to have only one for loop instead of 2 nested loops */
@@ -239,7 +239,7 @@ enum {
 
 /** \internal \ingroup enums
   * Enum to specify whether to unroll loops when traversing over the entries of a matrix. */
-enum {
+enum UnrollingType {
   /** \internal Do not unroll loops. */
   NoUnrolling,
   /** \internal Unroll only the inner loop, but not the outer loop. */
@@ -251,7 +251,7 @@ enum {
 
 /** \internal \ingroup enums
   * Enum to specify whether to use the default (built-in) implementation or the specialization. */
-enum {
+enum SpecializedType {
   Specialized,
   BuiltIn
 };
@@ -259,7 +259,7 @@ enum {
 /** \ingroup enums
   * Enum containing possible values for the \p _Options template parameter of
   * Matrix, Array and BandMatrix. */
-enum {
+enum StorageOptions {
   /** Storage order is column major (see \ref TopicStorageOrders). */
   ColMajor = 0,
   /** Storage order is row major (see \ref TopicStorageOrders). */
@@ -272,7 +272,7 @@ enum {
 
 /** \ingroup enums
   * Enum for specifying whether to apply or solve on the left or right. */
-enum {
+enum SideType {
   /** Apply transformation on the left. */
   OnTheLeft = 1,  
   /** Apply transformation on the right. */
@@ -418,7 +418,7 @@ namespace Architecture
 
 /** \internal \ingroup enums
   * Enum used as template parameter in GeneralProduct. */
-enum { CoeffBasedProductMode, LazyCoeffBasedProductMode, OuterProduct, InnerProduct, GemvProduct, GemmProduct };
+enum ProductImplType { CoeffBasedProductMode, LazyCoeffBasedProductMode, OuterProduct, InnerProduct, GemvProduct, GemmProduct };
 
 /** \internal \ingroup enums
   * Enum used in experimental parallel implementation. */

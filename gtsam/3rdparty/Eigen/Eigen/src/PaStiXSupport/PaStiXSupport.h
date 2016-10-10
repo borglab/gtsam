@@ -10,6 +10,14 @@
 #ifndef EIGEN_PASTIXSUPPORT_H
 #define EIGEN_PASTIXSUPPORT_H
 
+#if defined(DCOMPLEX)
+  #define PASTIX_COMPLEX  COMPLEX
+  #define PASTIX_DCOMPLEX DCOMPLEX
+#else
+  #define PASTIX_COMPLEX  std::complex<float>
+  #define PASTIX_DCOMPLEX std::complex<double>
+#endif
+
 namespace Eigen { 
 
 /** \ingroup PaStiXSupport_Module
@@ -74,14 +82,14 @@ namespace internal
   {
     if (n == 0) { ptr = NULL; idx = NULL; vals = NULL; }
     if (nbrhs == 0) {x = NULL; nbrhs=1;}
-    c_pastix(pastix_data, pastix_comm, n, ptr, idx, reinterpret_cast<COMPLEX*>(vals), perm, invp, reinterpret_cast<COMPLEX*>(x), nbrhs, iparm, dparm); 
+    c_pastix(pastix_data, pastix_comm, n, ptr, idx, reinterpret_cast<PASTIX_COMPLEX*>(vals), perm, invp, reinterpret_cast<PASTIX_COMPLEX*>(x), nbrhs, iparm, dparm);
   }
   
   void eigen_pastix(pastix_data_t **pastix_data, int pastix_comm, int n, int *ptr, int *idx, std::complex<double> *vals, int *perm, int * invp, std::complex<double> *x, int nbrhs, int *iparm, double *dparm)
   {
     if (n == 0) { ptr = NULL; idx = NULL; vals = NULL; }
     if (nbrhs == 0) {x = NULL; nbrhs=1;}
-    z_pastix(pastix_data, pastix_comm, n, ptr, idx, reinterpret_cast<DCOMPLEX*>(vals), perm, invp, reinterpret_cast<DCOMPLEX*>(x), nbrhs, iparm, dparm); 
+    z_pastix(pastix_data, pastix_comm, n, ptr, idx, reinterpret_cast<PASTIX_DCOMPLEX*>(vals), perm, invp, reinterpret_cast<PASTIX_DCOMPLEX*>(x), nbrhs, iparm, dparm);
   }
 
   // Convert the matrix  to Fortran-style Numbering
