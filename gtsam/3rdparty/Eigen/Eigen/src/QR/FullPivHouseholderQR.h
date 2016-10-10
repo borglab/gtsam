@@ -134,9 +134,6 @@ template<typename _MatrixType> class FullPivHouseholderQR
       * \returns the exact or least-square solution if the rank is greater or equal to the number of columns of A,
       * and an arbitrary solution otherwise.
       *
-      * \note The case where b is a matrix is not yet implemented. Also, this
-      *       code is space inefficient.
-      *
       * \note_about_checking_solutions
       *
       * \note_about_arbitrary_choice_of_solution

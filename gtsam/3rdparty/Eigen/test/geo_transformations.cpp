@@ -320,6 +320,9 @@ template<typename Scalar, int Mode, int Options> void transformations()
   t0.scale(v0);
   t1 *= AlignedScaling3(v0);
   VERIFY_IS_APPROX(t0.matrix(), t1.matrix());
+  t1 = AlignedScaling3(v0) * (Translation3(v0) * Transform3(q1));
+  t1 = t1 * v0.asDiagonal();
+  VERIFY_IS_APPROX(t0.matrix(), t1.matrix());
   // transformation * translation
   t0.translate(v0);
   t1 = t1 * Translation3(v0);
@@ -437,6 +440,79 @@ template<typename Scalar, int Mode, int Options> void transformations()
     Rotation2D<Scalar> r2(r1);       // copy ctor
     VERIFY_IS_APPROX(r2.angle(),s0);
   }
+
+  {
+    Transform3 t32(Matrix4::Random()), t33, t34;
+    t34 = t33 = t32;
+    t32.scale(v0);
+    t33*=AlignedScaling3(v0);
+    VERIFY_IS_APPROX(t32.matrix(), t33.matrix());
+    t33 = t34 * AlignedScaling3(v0);
+    VERIFY_IS_APPROX(t32.matrix(), t33.matrix());
+  }
+
+}
+
+template<typename A1, typename A2, typename P, typename Q, typename V, typename H>
+void transform_associativity_left(const A1& a1, const A2& a2, const P& p, const Q& q, const V& v, const H& h)
+{
+  VERIFY_IS_APPROX( q*(a1*v), (q*a1)*v );
+  VERIFY_IS_APPROX( q*(a2*v), (q*a2)*v );
+  VERIFY_IS_APPROX( q*(p*h).hnormalized(),  ((q*p)*h).hnormalized() );
+}
+
+template<typename A1, typename A2, typename P, typename Q, typename V, typename H>
+void transform_associativity2(const A1& a1, const A2& a2, const P& p, const Q& q, const V& v, const H& h)
+{
+  VERIFY_IS_APPROX( a1*(q*v), (a1*q)*v );
+  VERIFY_IS_APPROX( a2*(q*v), (a2*q)*v );
+  VERIFY_IS_APPROX( p *(q*v).homogeneous(), (p *q)*v.homogeneous() );
+
+  transform_associativity_left(a1, a2,p, q, v, h);
+}
+
+template<typename Scalar, int Dim, int Options,typename RotationType>
+void transform_associativity(const RotationType& R)
+{
+  typedef Matrix<Scalar,Dim,1> VectorType;
+  typedef Matrix<Scalar,Dim+1,1> HVectorType;
+  typedef Matrix<Scalar,Dim,Dim> LinearType;
+  typedef Matrix<Scalar,Dim+1,Dim+1> MatrixType;
+  typedef Transform<Scalar,Dim,AffineCompact,Options> AffineCompactType;
+  typedef Transform<Scalar,Dim,Affine,Options> AffineType;
+  typedef Transform<Scalar,Dim,Projective,Options> ProjectiveType;
+  typedef DiagonalMatrix<Scalar,Dim> ScalingType;
+  typedef Translation<Scalar,Dim> TranslationType;
+
+  AffineCompactType A1c; A1c.matrix().setRandom();
+  AffineCompactType A2c; A2c.matrix().setRandom();
+  AffineType A1(A1c);
+  AffineType A2(A2c);
+  ProjectiveType P1; P1.matrix().setRandom();
+  VectorType v1 = VectorType::Random();
+  VectorType v2 = VectorType::Random();
+  HVectorType h1 = HVectorType::Random();
+  Scalar s1 = internal::random<Scalar>();
+  LinearType L = LinearType::Random();
+  MatrixType M = MatrixType::Random();
+
+  CALL_SUBTEST( transform_associativity2(A1c, A1, P1, A2, v2, h1) );
+  CALL_SUBTEST( transform_associativity2(A1c, A1, P1, A2c, v2, h1) );
+  CALL_SUBTEST( transform_associativity2(A1c, A1, P1, v1.asDiagonal(), v2, h1) );
+  CALL_SUBTEST( transform_associativity2(A1c, A1, P1, ScalingType(v1), v2, h1) );
+  CALL_SUBTEST( transform_associativity2(A1c, A1, P1, Scaling(v1), v2, h1) );
+  CALL_SUBTEST( transform_associativity2(A1c, A1, P1, Scaling(s1), v2, h1) );
+  CALL_SUBTEST( transform_associativity2(A1c, A1, P1, TranslationType(v1), v2, h1) );
+  CALL_SUBTEST( transform_associativity_left(A1c, A1, P1, L, v2, h1) );
+  CALL_SUBTEST( transform_associativity2(A1c, A1, P1, R, v2, h1) );
+
+  VERIFY_IS_APPROX( A1*(M*h1), (A1*M)*h1 );
+  VERIFY_IS_APPROX( A1c*(M*h1), (A1c*M)*h1 );
+  VERIFY_IS_APPROX( P1*(M*h1), (P1*M)*h1 );
+
+  VERIFY_IS_APPROX( M*(A1*h1), (M*A1)*h1 );
+  VERIFY_IS_APPROX( M*(A1c*h1), (M*A1c)*h1 );
+  VERIFY_IS_APPROX( M*(P1*h1),  ((M*P1)*h1) );
 }
 
 template<typename Scalar> void transform_alignment()
@@ -517,5 +593,8 @@ void test_geo_transformations()
 
     CALL_SUBTEST_7(( transform_products<double,3,RowMajor|AutoAlign>() ));
     CALL_SUBTEST_7(( transform_products<float,2,AutoAlign>() ));
+
+    CALL_SUBTEST_8(( transform_associativity<double,2,ColMajor>(Rotation2D<double>(internal::random<double>()*double(3.14))) ));
+    CALL_SUBTEST_8(( transform_associativity<double,3,ColMajor>(Quaterniond(Vector4d::Random().normalized())) ));
   }
 }

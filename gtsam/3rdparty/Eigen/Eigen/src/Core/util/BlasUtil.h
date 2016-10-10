@@ -42,16 +42,29 @@ template<bool Conjugate> struct conj_if;
 
 template<> struct conj_if<true> {
   template<typename T>
-  inline T operator()(const T& x) { return numext::conj(x); }
+  inline T operator()(const T& x) const { return numext::conj(x); }
   template<typename T>
-  inline T pconj(const T& x) { return internal::pconj(x); }
+  inline T pconj(const T& x) const { return internal::pconj(x); }
 };
 
 template<> struct conj_if<false> {
   template<typename T>
-  inline const T& operator()(const T& x) { return x; }
+  inline const T& operator()(const T& x) const { return x; }
   template<typename T>
-  inline const T& pconj(const T& x) { return x; }
+  inline const T& pconj(const T& x) const { return x; }
+};
+
+// Generic implementation for custom complex types.
+template<typename LhsScalar, typename RhsScalar, bool ConjLhs, bool ConjRhs>
+struct conj_helper
+{
+  typedef typename scalar_product_traits<LhsScalar,RhsScalar>::ReturnType Scalar;
+
+  EIGEN_STRONG_INLINE Scalar pmadd(const LhsScalar& x, const RhsScalar& y, const Scalar& c) const
+  { return padd(c, pmul(x,y)); }
+
+  EIGEN_STRONG_INLINE Scalar pmul(const LhsScalar& x, const RhsScalar& y) const
+  { return conj_if<ConjLhs>()(x) *  conj_if<ConjRhs>()(y); }
 };
 
 template<typename Scalar> struct conj_helper<Scalar,Scalar,false,false>
@@ -171,12 +184,13 @@ template<typename XprType> struct blas_traits
 };
 
 // pop conjugate
-template<typename Scalar, typename NestedXpr>
-struct blas_traits<CwiseUnaryOp<scalar_conjugate_op<Scalar>, NestedXpr> >
- : blas_traits<NestedXpr>
+template<typename Scalar, typename Xpr>
+struct blas_traits<CwiseUnaryOp<scalar_conjugate_op<Scalar>, Xpr> >
+ : blas_traits<typename internal::remove_all<typename Xpr::Nested>::type>
 {
+  typedef typename internal::remove_all<typename Xpr::Nested>::type NestedXpr;
   typedef blas_traits<NestedXpr> Base;
-  typedef CwiseUnaryOp<scalar_conjugate_op<Scalar>, NestedXpr> XprType;
+  typedef CwiseUnaryOp<scalar_conjugate_op<Scalar>, Xpr> XprType;
   typedef typename Base::ExtractType ExtractType;
 
   enum {
@@ -188,12 +202,13 @@ struct blas_traits<CwiseUnaryOp<scalar_conjugate_op<Scalar>, NestedXpr> >
 };
 
 // pop scalar multiple
-template<typename Scalar, typename NestedXpr>
-struct blas_traits<CwiseUnaryOp<scalar_multiple_op<Scalar>, NestedXpr> >
- : blas_traits<NestedXpr>
+template<typename Scalar, typename Xpr>
+struct blas_traits<CwiseUnaryOp<scalar_multiple_op<Scalar>, Xpr> >
+ : blas_traits<typename internal::remove_all<typename Xpr::Nested>::type>
 {
+  typedef typename internal::remove_all<typename Xpr::Nested>::type NestedXpr;
   typedef blas_traits<NestedXpr> Base;
-  typedef CwiseUnaryOp<scalar_multiple_op<Scalar>, NestedXpr> XprType;
+  typedef CwiseUnaryOp<scalar_multiple_op<Scalar>, Xpr> XprType;
   typedef typename Base::ExtractType ExtractType;
   static inline ExtractType extract(const XprType& x) { return Base::extract(x.nestedExpression()); }
   static inline Scalar extractScalarFactor(const XprType& x)
@@ -201,12 +216,13 @@ struct blas_traits<CwiseUnaryOp<scalar_multiple_op<Scalar>, NestedXpr> >
 };
 
 // pop opposite
-template<typename Scalar, typename NestedXpr>
-struct blas_traits<CwiseUnaryOp<scalar_opposite_op<Scalar>, NestedXpr> >
- : blas_traits<NestedXpr>
+template<typename Scalar, typename Xpr>
+struct blas_traits<CwiseUnaryOp<scalar_opposite_op<Scalar>, Xpr> >
+ : blas_traits<typename internal::remove_all<typename Xpr::Nested>::type>
 {
+  typedef typename internal::remove_all<typename Xpr::Nested>::type NestedXpr;
   typedef blas_traits<NestedXpr> Base;
-  typedef CwiseUnaryOp<scalar_opposite_op<Scalar>, NestedXpr> XprType;
+  typedef CwiseUnaryOp<scalar_opposite_op<Scalar>, Xpr> XprType;
   typedef typename Base::ExtractType ExtractType;
   static inline ExtractType extract(const XprType& x) { return Base::extract(x.nestedExpression()); }
   static inline Scalar extractScalarFactor(const XprType& x)
@@ -214,13 +230,14 @@ struct blas_traits<CwiseUnaryOp<scalar_opposite_op<Scalar>, NestedXpr> >
 };
 
 // pop/push transpose
-template<typename NestedXpr>
-struct blas_traits<Transpose<NestedXpr> >
- : blas_traits<NestedXpr>
+template<typename Xpr>
+struct blas_traits<Transpose<Xpr> >
+ : blas_traits<typename internal::remove_all<typename Xpr::Nested>::type>
 {
+  typedef typename internal::remove_all<typename Xpr::Nested>::type NestedXpr;
   typedef typename NestedXpr::Scalar Scalar;
   typedef blas_traits<NestedXpr> Base;
-  typedef Transpose<NestedXpr> XprType;
+  typedef Transpose<Xpr> XprType;
   typedef Transpose<const typename Base::_ExtractType>  ExtractType; // const to get rid of a compile error; anyway blas traits are only used on the RHS
   typedef Transpose<const typename Base::_ExtractType> _ExtractType;
   typedef typename conditional<bool(Base::HasUsableDirectAccess),

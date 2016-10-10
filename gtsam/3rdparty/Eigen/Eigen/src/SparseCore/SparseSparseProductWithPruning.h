@@ -48,7 +48,7 @@ static void sparse_sparse_product_with_pruning_impl(const Lhs& lhs, const Rhs& r
     res.resize(rows, cols);
 
   res.reserve(estimated_nnz_prod);
-  double ratioColRes = double(estimated_nnz_prod)/double(lhs.rows()*rhs.cols());
+  double ratioColRes = double(estimated_nnz_prod)/(double(lhs.rows())*double(rhs.cols()));
   for (Index j=0; j<cols; ++j)
   {
     // FIXME:

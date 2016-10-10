@@ -102,9 +102,19 @@ TEST( spirit, constMethod_p ) {
   EXPECT(parse("double norm() const;", constMethod_p, space_p).full);
 }
 
+
 /* ************************************************************************* */
+/* See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=56665 
+   GCC compiler issues with -O2 and -fno-strict-aliasing results in undefined
+   behaviour when spirit uses assign_a with a literal.  
+   GCC versions 4.7.2 -> 5.4 inclusive */
+
 TEST( spirit, return_value_p ) {
-  bool isEigen = true;
+  static const bool T = true;
+  static const bool F = false;
+
+  bool isEigen = T;
+
   string actual_return_type;
   string actual_function_name;
 
@@ -119,9 +129,9 @@ TEST( spirit, return_value_p ) {
   Rule funcName_p  = lexeme_d[lower_p >> *(alnum_p | '_')];
 
   Rule returnType_p =
-      (basisType_p[assign_a(actual_return_type)][assign_a(isEigen, true)]) |
-      (className_p[assign_a(actual_return_type)][assign_a(isEigen,false)]) |
-      (eigenType_p[assign_a(actual_return_type)][assign_a(isEigen, true)]);
+      (basisType_p[assign_a(actual_return_type)][assign_a(isEigen, T)]) |
+      (className_p[assign_a(actual_return_type)][assign_a(isEigen, F)]) |
+      (eigenType_p[assign_a(actual_return_type)][assign_a(isEigen, T)]);
 
   Rule testFunc_p = returnType_p >> funcName_p[assign_a(actual_function_name)] >> str_p("();");
 
