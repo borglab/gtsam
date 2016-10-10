@@ -290,7 +290,7 @@ struct inverse_impl : public ReturnByValue<inverse_impl<MatrixType> >
   {
     const int Size = EIGEN_PLAIN_ENUM_MIN(MatrixType::ColsAtCompileTime,Dest::ColsAtCompileTime);
     EIGEN_ONLY_USED_FOR_DEBUG(Size);
-    eigen_assert(( (Size<=1) || (Size>4) || (extract_data(m_matrix)!=extract_data(dst)))
+    eigen_assert(( (Size<=1) || (Size>4) || (extract_data(m_matrix)!=0 && extract_data(m_matrix)!=extract_data(dst)))
               && "Aliasing problem detected in inverse(), you need to do inverse().eval() here.");
 
     compute_inverse<MatrixTypeNestedCleaned, Dest>::run(m_matrix, dst);

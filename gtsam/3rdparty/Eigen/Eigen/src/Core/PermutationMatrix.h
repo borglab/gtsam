@@ -584,10 +584,11 @@ struct permut_matrix_product_retval
       const Index n = Side==OnTheLeft ? rows() : cols();
       // FIXME we need an is_same for expression that is not sensitive to constness. For instance
       // is_same_xpr<Block<const Matrix>, Block<Matrix> >::value should be true.
+      const typename Dest::Scalar *dst_data = internal::extract_data(dst);
       if(    is_same<MatrixTypeNestedCleaned,Dest>::value
           && blas_traits<MatrixTypeNestedCleaned>::HasUsableDirectAccess
           && blas_traits<Dest>::HasUsableDirectAccess
-          && extract_data(dst) == extract_data(m_matrix))
+          && dst_data!=0 && dst_data == extract_data(m_matrix))
       {
         // apply the permutation inplace
         Matrix<bool,PermutationType::RowsAtCompileTime,1,0,PermutationType::MaxRowsAtCompileTime> mask(m_permutation.size());

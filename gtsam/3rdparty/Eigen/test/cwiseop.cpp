@@ -164,9 +164,12 @@ template<typename MatrixType> void cwiseops(const MatrixType& m)
   VERIFY( (m1.cwise().min(m2).cwise() < (m1+mones)).all() );
   VERIFY( (m1.cwise().max(m2).cwise() > (m1-mones)).all() );
 
+#if(__cplusplus < 201103L)
+// std::binder* are deprecated since c++11 and will be removed in c++17
   VERIFY( (m1.cwise()<m1.unaryExpr(bind2nd(plus<Scalar>(), Scalar(1)))).all() );
   VERIFY( !(m1.cwise()<m1bis.unaryExpr(bind2nd(minus<Scalar>(), Scalar(1)))).all() );
   VERIFY( !(m1.cwise()>m1bis.unaryExpr(bind2nd(plus<Scalar>(), Scalar(1)))).any() );
+#endif
   
   cwiseops_real_only(m1, m2, m3, mones);
 }

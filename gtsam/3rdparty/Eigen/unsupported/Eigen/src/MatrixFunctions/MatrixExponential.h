@@ -293,7 +293,7 @@ void MatrixExponential<MatrixType>::computeUV(float)
     const float maxnorm = 3.925724783138660f;
     frexp(m_l1norm / maxnorm, &m_squarings);
     if (m_squarings < 0) m_squarings = 0;
-    MatrixType A = m_M / pow(Scalar(2), m_squarings);
+    MatrixType A = m_M / Scalar(pow(2, m_squarings));
     pade7(A);
   }
 }
@@ -315,7 +315,7 @@ void MatrixExponential<MatrixType>::computeUV(double)
     const double maxnorm = 5.371920351148152;
     frexp(m_l1norm / maxnorm, &m_squarings);
     if (m_squarings < 0) m_squarings = 0;
-    MatrixType A = m_M / pow(Scalar(2), m_squarings);
+    MatrixType A = m_M / Scalar(pow(2, m_squarings));
     pade13(A);
   }
 }
@@ -340,7 +340,7 @@ void MatrixExponential<MatrixType>::computeUV(long double)
     const long double maxnorm = 4.0246098906697353063L;
     frexp(m_l1norm / maxnorm, &m_squarings);
     if (m_squarings < 0) m_squarings = 0;
-    MatrixType A = m_M / pow(Scalar(2), m_squarings);
+    MatrixType A = m_M / Scalar(pow(2, m_squarings));
     pade13(A);
   }
 #elif LDBL_MANT_DIG <= 106  // double-double
@@ -376,7 +376,7 @@ void MatrixExponential<MatrixType>::computeUV(long double)
     const long double maxnorm = 2.884233277829519311757165057717815L;
     frexp(m_l1norm / maxnorm, &m_squarings);
     if (m_squarings < 0) m_squarings = 0;
-    MatrixType A = m_M / pow(Scalar(2), m_squarings);
+    MatrixType A = m_M / Scalar(pow(2, m_squarings));
     pade17(A);
   }
 #else

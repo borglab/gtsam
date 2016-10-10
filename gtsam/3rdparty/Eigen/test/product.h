@@ -178,4 +178,12 @@ template<typename MatrixType> void product(const MatrixType& m)
     // CwiseUnaryOp
     VERIFY_IS_APPROX(x = Scalar(1.)*(A*x), A*z);
   }
+
+  // regression for blas_trais
+  {
+    VERIFY_IS_APPROX(square * (square*square).transpose(), square * square.transpose() * square.transpose());
+    VERIFY_IS_APPROX(square * (-(square*square)), -square * square * square);
+    VERIFY_IS_APPROX(square * (s1*(square*square)), s1 * square * square * square);
+    VERIFY_IS_APPROX(square * (square*square).conjugate(), square * square.conjugate() * square.conjugate());
+  }
 }
