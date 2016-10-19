@@ -188,7 +188,7 @@ namespace gtsam {
       bayesTree.addFactorsToGraph(*this);
     }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+//#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     /** Add a factor by value, will be copy-constructed (use push_back with a shared_ptr to avoid
     *  the copy). */
     template<class DERIVEDFACTOR>
@@ -196,7 +196,7 @@ namespace gtsam {
       push_back(const DERIVEDFACTOR& factor) {
         factors_.push_back(boost::make_shared<DERIVEDFACTOR>(factor));
     }
-#endif
+//#endif
 
     /** push back many factors with an iterator over plain factors (factors are copied) */
     template<typename ITERATOR>
