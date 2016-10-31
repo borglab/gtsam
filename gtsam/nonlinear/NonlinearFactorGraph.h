@@ -21,7 +21,6 @@
 
 #pragma once
 
-#include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/inference/FactorGraph.h>
 
@@ -39,31 +38,6 @@ namespace gtsam {
   class Expression;
   template<typename T>
   class ExpressionFactor;
-
-  /**
-   * Formatting options when saving in GraphViz format using
-   * NonlinearFactorGraph::saveGraph.
-   */
-  struct GTSAM_EXPORT GraphvizFormatting {
-    enum Axis { X, Y, Z, NEGX, NEGY, NEGZ }; ///< World axes to be assigned to paper axes
-    Axis paperHorizontalAxis; ///< The world axis assigned to the horizontal paper axis
-    Axis paperVerticalAxis; ///< The world axis assigned to the vertical paper axis
-    double figureWidthInches; ///< The figure width on paper in inches
-    double figureHeightInches; ///< The figure height on paper in inches
-    double scale; ///< Scale all positions to reduce / increase density
-    bool mergeSimilarFactors; ///< Merge multiple factors that have the same connectivity
-    bool plotFactorPoints; ///< Plots each factor as a dot between the variables
-    bool connectKeysToFactor; ///< Draw a line from each key within a factor to the dot of the factor
-    bool binaryEdges; ///< just use non-dotted edges for binary factors
-    std::map<size_t, Point2> factorPositions; ///< (optional for each factor) Manually specify factor "dot" positions.
-    /// Default constructor sets up robot coordinates.  Paper horizontal is robot Y,
-    /// paper vertical is robot X.  Default figure size of 5x5 in.
-    GraphvizFormatting() :
-      paperHorizontalAxis(Y), paperVerticalAxis(X),
-      figureWidthInches(5), figureHeightInches(5), scale(1),
-      mergeSimilarFactors(false), plotFactorPoints(true),
-      connectKeysToFactor(true), binaryEdges(true) {}
-  };
 
 
   /**
@@ -107,11 +81,6 @@ namespace gtsam {
 
     /** Test equality */
     bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;
-
-    /** Write the graph in GraphViz format for visualization */
-    void saveGraph(std::ostream& stm, const Values& values = Values(),
-      const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** unnormalized error, \f$ 0.5 \sum_i (h_i(X_i)-z)^2/\sigma^2 \f$ in the most common case */
     double error(const Values& values) const;
