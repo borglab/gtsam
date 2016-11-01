@@ -25,6 +25,7 @@
 #include <boost/type_traits/aligned_storage.hpp>
 
 #include <Eigen/Core>
+#include <iostream>
 
 namespace gtsam {
 namespace internal {
