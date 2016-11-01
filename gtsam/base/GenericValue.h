@@ -26,9 +26,8 @@
 #include <boost/pool/pool_alloc.hpp>
 
 #include <cmath>
-#include <iosfwd>
-#include <typeinfo> // operator typeid
 #include <iostream>
+#include <typeinfo> // operator typeid
 
 namespace gtsam {
 

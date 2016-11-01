@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -10,29 +10,30 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  Event
- *  @brief Space-time event
- *  @author Frank Dellaert
- *  @author Jay Chakravarty
- *  @date December 2014
+ * @file   Cal3_S2Stereo.cpp
+ * @brief  The most common 5DOF 3D->2D calibration + Stereo baseline
+ * @author Chris Beall
  */
 
-#include <gtsam_unstable/geometry/Event.h>
+#include <gtsam/geometry/Cal3_S2Stereo.h>
+
 #include <iostream>
 
 namespace gtsam {
+using namespace std;
 
 /* ************************************************************************* */
-void Event::print(const std::string& s) const {
-  std::cout << s << "time = " << time_ << "location = " << location_.transpose();
+void Cal3_S2Stereo::print(const std::string& s) const {
+     K_.print(s+"K: ");
+     std::cout << s << "Baseline: " << b_ << std::endl;
+   }
+
+/* ************************************************************************* */
+bool Cal3_S2Stereo::equals(const Cal3_S2Stereo& other, double tol) const {
+  if (fabs(b_ - other.b_) > tol) return false;
+  return K_.equals(other.K_,tol);
 }
 
 /* ************************************************************************* */
-bool Event::equals(const Event& other, double tol) const {
-  return std::abs(time_ - other.time_) < tol
-      && traits<Point3>::Equals(location_, other.location_, tol);
-}
 
-/* ************************************************************************* */
-
-} //\ namespace gtsam
+} // namespace gtsam

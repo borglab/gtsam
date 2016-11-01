@@ -24,7 +24,7 @@
 #include <gtsam/base/Lie.h>
 
 #include <cmath>
-#include <iostream>
+#include <iosfwd>
 
 namespace gtsam {
 
@@ -68,9 +68,7 @@ public:
   /// @name Testable
   /// @{
 
-  void print(const std::string& s) const {
-    std::cout << s << *this << std::endl;
-  }
+  void print(const std::string& s) const;
 
   bool equals(const SO3 & R, double tol) const {
     return equal_with_abs_tol(*this, R, tol);
