@@ -84,7 +84,8 @@ private:
       const std::vector<TemplateInstantiationTypedef> instantiations);
   static std::vector<std::string> GenerateValidTypes(
       const std::vector<Class>& classes,
-      const std::vector<ForwardDeclaration> forwardDeclarations);
+      const std::vector<ForwardDeclaration>& forwardDeclarations, 
+      const std::vector<TypedefPair>& typedefs);
   static void WriteCollectorsAndCleanupFcn(FileWriter& wrapperFile,
       const std::string& moduleName, const std::vector<Class>& classes);
   static void WriteRTTIRegistry(FileWriter& wrapperFile,

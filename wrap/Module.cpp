@@ -228,7 +228,7 @@ void Module::parseMarkup(const std::string& data) {
 
   // Dependency check list
   vector<string> validTypes = GenerateValidTypes(expandedClasses,
-      forward_declarations);
+      forward_declarations, typedefs);
 
   // Check that all classes have been defined somewhere
   verifyArguments<GlobalFunction>(validTypes, global_functions);
@@ -446,7 +446,7 @@ vector<Class> Module::ExpandTypedefInstantiations(const vector<Class>& classes, 
 } 
  
 /* ************************************************************************* */ 
-vector<string> Module::GenerateValidTypes(const vector<Class>& classes, const vector<ForwardDeclaration> forwardDeclarations) { 
+vector<string> Module::GenerateValidTypes(const vector<Class>& classes, const vector<ForwardDeclaration>& forwardDeclarations, const vector<TypedefPair>& typedefs) { 
   vector<string> validTypes; 
   for(const ForwardDeclaration& fwDec: forwardDeclarations) {
     validTypes.push_back(fwDec.name);
@@ -465,6 +465,9 @@ vector<string> Module::GenerateValidTypes(const vector<Class>& classes, const ve
   for(const Class& cls: classes) {
     validTypes.push_back(cls.qualifiedName("::")); 
   } 
+  for(const TypedefPair& p: typedefs) {
+    validTypes.push_back(p.newType.qualifiedName("::"));
+  }
  
   return validTypes; 
 } 
