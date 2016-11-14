@@ -56,12 +56,6 @@ struct Argument {
   /// return MATLAB class for use in isa(x,class)
   std::string matlabClass(const std::string& delim = "") const;
 
-  /// Check if will be unwrapped using scalar login in wrap/matlab.h
-  bool isScalar() const;
-  bool isString() const;
-  bool isEigen() const;
-  bool isNonBasicType() const;
-
   /// MATLAB code generation, MATLAB to C++
   void matlab_unwrap(FileWriter& file, const std::string& matlabName) const;
 
