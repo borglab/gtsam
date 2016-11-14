@@ -209,7 +209,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 		OUTPUT ${generated_cpp_file}
 		DEPENDS ${interfaceHeader} wrap ${module_library_target} ${otherLibraryTargets} ${otherSourcesAndObjects}
         COMMAND 
-            wrap
+            wrap --matlab
             ${modulePath}
             ${moduleName} 
             ${generated_files_path} 
