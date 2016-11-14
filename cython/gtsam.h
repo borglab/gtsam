@@ -7,6 +7,9 @@ typedef size_t Key;
 template<T> class FastVector {
   FastVector();
   FastVector(const This& f);
+  void push_back(const T& e);
+  //T& operator[](int);
+  T at(int i);
 };
 
 typedef gtsam::FastVector<gtsam::Key> KeyVector;
