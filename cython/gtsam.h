@@ -1705,7 +1705,7 @@ class Values {
 virtual class NonlinearFactor {
   // Factor base class
   size_t size() const;
-  // gtsam::KeyVector keys() const;
+  gtsam::KeyVector keys() const;
   void print(string s) const;
   void printKeys(string s) const;
   // NonlinearFactor
