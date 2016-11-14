@@ -1,5 +1,9 @@
 
 TODO:
+☐ methods for FastVector: at, [], ...
+☐ Casting from parent and grandparents 
+☐ Allow overloading constructors and methods. The current solution is annoying!!!
+☐ Support "print obj"
 ☐ forward declaration?
 ☐ Global functions
 ☐ wrap VariableIndex: why is it in inference? If need to, shouldn't have constructors to specific FactorGraphs
@@ -44,3 +48,5 @@ Known issues:
   ☐ Doesn't work with python3 installed from homebrew
     - size-related issue: can only wrap up to a certain number of classes: up to mEstimator!
     - Guess: 64 vs 32b? disutils Compiler flags?
+  ☐ Bug with Cython 0.24: instantiated factor classes return FastVector<size_t> for keys(), which can't be casted to FastVector<Key>
+    - Upgrading to 0.25 solves the problem 
