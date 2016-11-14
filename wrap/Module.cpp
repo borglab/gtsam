@@ -372,8 +372,12 @@ void Module::emit_cython_pyx(FileWriter& pyxFile) const {
   string pxdHeader = name + "_wrapper";
   pyxFile.oss << "cimport numpy as np\n"
                  "cimport " << pxdHeader << " as " << name << "\n"
-                 "from "<< pxdHeader << " cimport shared_ptr\n"
-                 "from eigency.core cimport *\n"
+                 "from "<< pxdHeader << " cimport shared_ptr\n";
+  // import all typedefs, e.g. from gtsam cimport Key, so we don't need to say gtsam.Key
+  for(const Qualified& q: Qualified::BasicTypedefs) {
+    pyxFile.oss << "from " << pxdHeader << " cimport " << q.cythonClass() << "\n";
+  }
+  pyxFile.oss << "from eigency.core cimport *\n"
                  "from libcpp cimport bool\n\n"
                  "from libcpp.pair cimport pair\n"
                  "from libcpp.string cimport string\n"

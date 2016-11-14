@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
- 
+
 namespace wrap {
 
 /**
@@ -35,6 +35,7 @@ public:
 
   std::vector<std::string> namespaces_; ///< Stack of namespaces
   std::string name_; ///< type name
+  static std::vector<Qualified> BasicTypedefs;
 
   friend struct TypeGrammar;
   friend class TemplateSubstitution;
@@ -128,8 +129,15 @@ public:
     return name() == "Vector" || name() == "Matrix";
   }
 
+  bool isBasicTypedef() const {
+    return std::find(Qualified::BasicTypedefs.begin(),
+                     Qualified::BasicTypedefs.end(),
+                     *this) != Qualified::BasicTypedefs.end();
+  }
+
   bool isNonBasicType() const {
-    return !isString() && !isScalar() && !isEigen() && !isVoid();
+    return !isString() && !isScalar() && !isEigen() && !isVoid() &&
+           !isBasicTypedef();
   }
 
 public:
@@ -219,7 +227,6 @@ public:
     os << q.qualifiedName("::");
     return os;
   }
-
 };
 
 /* ************************************************************************* */
