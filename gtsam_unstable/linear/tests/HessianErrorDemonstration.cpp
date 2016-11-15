@@ -46,7 +46,16 @@ TEST(HessianFactor, TestFailsOnPostiveDefinite){
   GaussianFactorGraph fg1;
   //THIS SHOULD EQUAL x1^2 + x2^2 + x1x2 - x1 - x2 + 10
   // THE HESSIAN IS POSITIVE DEFINITE AND IT HAS A UNIQUE MINIMUM
-  HessianFactor factor2d(X(1), X(3), 2*I_1x1, 0*I_1x1, I_1x1, 2*I_1x1, I_1x1, -20);
+  HessianFactor factor2d(X(1), X(2), 8*I_1x1, 2*I_1x1, -1.5*I_1x1, 10*I_1x1, 2*I_1x1, 0);
+  GTSAM_PRINT(factor2d);
+  fg1.push_back(factor2d);
+  fg1.optimize();
+}
+TEST(HessianFactor, TestSuccedsOnPostiveDefinite){
+  GaussianFactorGraph fg1;
+  //THIS SHOULD EQUAL x1^2 + x2^2 + x1x2 - x1 - x2 + 10
+  // THE HESSIAN IS POSITIVE DEFINITE AND IT HAS A UNIQUE MINIMUM
+  HessianFactor factor2d(X(1), X(2), 8*I_1x1, 2*I_1x1, -1.5*I_1x1, 10*I_1x1, 2*I_1x1, 100);
   GTSAM_PRINT(factor2d);
   fg1.push_back(factor2d);
   fg1.optimize();
