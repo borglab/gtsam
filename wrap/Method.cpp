@@ -103,10 +103,14 @@ void Method::emit_cython_pxd(FileWriter& file, const Class& cls) const {
 /* ************************************************************************* */
 void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
   string funcName = pyRename(name_);
+  if (funcName == "print_")
+    file.oss << "\tdef __str__(self):\n\t\tself.print_('')\n\t\treturn ''\n";
   size_t N = nrOverloads();
+  bool hasPrint = false;
   for(size_t i = 0; i < N; ++i) {
     // Function definition
     file.oss << "\tdef " << funcName;
+    if (funcName == "print_") hasPrint = true;
     // modify name of function instantiation as python doesn't allow overloads
     // e.g. template<T={A,B,C}> funcName(...) --> funcNameA, funcNameB, funcNameC
     // TODO: handle overloading properly!! This is lazy...
