@@ -1,9 +1,7 @@
 
 TODO:
-☐ methods for FastVector: at, [], ...
 ☐ Casting from parent and grandparents 
-☐ Allow overloading constructors and methods. The current solution is annoying!!!
-☐ Support "print obj"
+☐ Allow overloading methods. The current solution is annoying!!!
 ☐ forward declaration?
 ☐ Global functions
 ☐ wrap VariableIndex: why is it in inference? If need to, shouldn't have constructors to specific FactorGraphs
@@ -14,6 +12,9 @@ TODO:
 ☐ CMake install script
 
 Completed/Cancelled:
+✔ Allow overloading constructors. The current solution is annoying!!! @done (16-11-16 17:00)
+✔ Support "print obj" @done (16-11-16 17:00)
+✔ methods for FastVector: at, [], ...  @done (16-11-16 17:00)
 ✔ Cython: Key and size_t: traits<size_t> doesn't exist @done (16-09-12 18:34)
 ✔ KeyVector, KeyList, KeySet... @done (16-09-13 17:19)
 ✔ [Nice to have] parse typedef @done (16-09-13 17:19)
