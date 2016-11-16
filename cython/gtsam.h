@@ -10,6 +10,7 @@ template<T> class FastVector {
   void push_back(const T& e);
   //T& operator[](int);
   T at(int i);
+  size_t size() const;
 };
 
 typedef gtsam::FastVector<gtsam::Key> KeyVector;

@@ -23,7 +23,7 @@ Rmat = np.array([
     [0.104218,  0.990074, -0.0942928], 
     [-0.0942928, 0.104218, 0.990074]
     ])
-r5 = Rot3.Rot3_1(Rmat)
+r5 = Rot3(R=Rmat)
 r5.print_(b"r5: ")
 
 l = Rot3.Logmap(r5)
@@ -41,7 +41,7 @@ print("diag R:", diag.R())
 
 p = Point3()
 p.print_("p:")
-factor = BetweenFactorPoint3.BetweenFactorPoint3(1,2,p, noise)
+factor = BetweenFactorPoint3(1,2,p, noise)
 factor.print_(b"factor:")
 
 vv = VectorValues()
@@ -51,7 +51,7 @@ vv.insert(2, np.array([3.,4.]))
 vv.insert(3, np.array([5.,6.,7.,8.]))
 vv.print_(b"vv:")
 
-vv2 = VectorValues.VectorValues_1(vv)
+vv2 = VectorValues(vv)
 vv2.insert(4, np.array([4.,2.,1]))
 vv2.print_(b"vv2:")
 vv.print_(b"vv:")
@@ -67,5 +67,5 @@ values.insertPoint3(1, Point3())
 values.insertRot3(2, Rot3())
 values.print_(b"values:")
 
-factor = PriorFactorVector.PriorFactorVector(1, np.array([1.,2.,3.]), diag)
-factor.print_("Prior factor vector: ")
+factor = PriorFactorVector(1, np.array([1.,2.,3.]), diag)
+print "Prior factor vector: ", factor

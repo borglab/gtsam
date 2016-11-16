@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -125,7 +125,7 @@ void Constructor::python_wrapper(FileWriter& wrapperFile, Str className) const {
 bool Constructor::hasDefaultConstructor() const {
   for (size_t i = 0; i < nrOverloads(); i++) {
     if (argumentList(i).size() == 0) return true;
-  }  
+  }
   return false;
 }
 
@@ -143,26 +143,30 @@ void Constructor::emit_cython_pxd(FileWriter& pxdFile, Str className) const {
 
 /* ************************************************************************* */
 void Constructor::emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const {
-  // FIXME: handle overloads properly! This is lazy...
   for (size_t i = 0; i < nrOverloads(); i++) {
     ArgumentList args = argumentList(i);
-    pyxFile.oss << "\t@staticmethod\n";
-    pyxFile.oss << "\tdef " << name_ 
-                << ((i > 0) ? "_" + to_string(i) : "") << "(";
-    args.emit_cython_pyx(pyxFile);
-    pyxFile.oss << "): \n";
+    pyxFile.oss << "\tdef " << name_ <<  "_" + to_string(i) << "(self, *args, **kwargs):\n";
+    pyxFile.oss << "\t\tif len(args)+len(kwargs) !=" << args.size() << ":\n";
+    pyxFile.oss << "\t\t\treturn False\n";
+    if (args.size() > 0) {
+      pyxFile.oss << "\t\t__params = kwargs.copy()\n"
+                     "\t\t__names = [";
+      args.emit_cython_pyx_params_list(pyxFile);
+      pyxFile.oss << "]\n";
+      pyxFile.oss << "\t\tfor i in range(len(args)):\n"
+                     "\t\t\t__params[__names[i]] = args[i]\n";
+      pyxFile.oss << "\t\ttry:\n";
+      args.emit_cython_pyx_cast_params_to_python_type(pyxFile);
+      pyxFile.oss << "\t\texcept:\n"
+                     "\t\t\treturn False\n";
+    }
 
-    // Don't use cyCreateFromValue because the class might not have 
-    // copy constructor and copy assignment operator!!
-    // For example: noiseModel::Robust doesn't have the copy assignment operator
-    // because its members are shared_ptr to abstract base classes. That fails
-    // Cython to generate the object as it assigns the new obj to a temp variable.
-    pyxFile.oss << "\t\treturn " << cls.cythonClass() 
-                << ".cyCreateFromShared(" << cls.pyxSharedCythonClass() 
-                << "(new " << cls.pyxCythonClass() << "(";
+    pyxFile.oss << "\t\tself." << cls.pyxCythonObj() << " = "
+                << cls.pyxSharedCythonClass() << "(new " << cls.pyxCythonClass()
+                << "(";
     args.emit_cython_pyx_asParams(pyxFile);
-    pyxFile.oss << "))"
-                << ")\n";
+    pyxFile.oss << "))\n";
+    pyxFile.oss << "\t\treturn True\n\n";
   }
 }
 

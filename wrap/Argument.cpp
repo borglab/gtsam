@@ -117,11 +117,7 @@ void Argument::emit_cython_pxd(FileWriter& file, const std::string& className) c
 
 /* ************************************************************************* */
 void Argument::emit_cython_pyx(FileWriter& file) const {
-  string typeName = type.pythonClass();
-  string cythonType = typeName;
-  // use numpy for Vector and Matrix
-  if (type.isEigen()) cythonType = "np.ndarray";
-  file.oss << cythonType << " " << name;
+  file.oss << type.pythonArgumentType() << " " << name;
 }
 
 /* ************************************************************************* */
@@ -236,9 +232,31 @@ void ArgumentList::emit_cython_pyx(FileWriter& file) const {
 
 /* ************************************************************************* */
 void ArgumentList::emit_cython_pyx_asParams(FileWriter& file) const {
-    for (size_t j = 0; j < size(); ++j) {
+  for (size_t j = 0; j < size(); ++j) {
     at(j).emit_cython_pyx_asParam(file);
     if (j < size() - 1) file.oss << ", ";
+  }
+}
+
+/* ************************************************************************* */
+void ArgumentList::emit_cython_pyx_params_list(FileWriter& file) const {
+  for (size_t j = 0; j < size(); ++j) {
+    file.oss << "'" << at(j).name << "'";
+    if (j < size() - 1) file.oss << ", ";
+  }
+}
+
+/* ************************************************************************* */
+void ArgumentList::emit_cython_pyx_cast_params_to_python_type(FileWriter& file) const {
+  if (size() == 0) {
+    file.oss << "\t\t\tpass\n";
+    return;
+  }
+
+  // cast params to their correct python argument type to pass in the function call later
+  for (size_t j = 0; j < size(); ++j) {
+    file.oss << "\t\t\t" << at(j).name << " = <" << at(j).type.pythonArgumentType()
+             << ">(__params['" << at(j).name << "'])\n";
   }
 }
 

@@ -19,6 +19,7 @@
 #include "Class.h"
 #include "utilities.h"
 #include "Argument.h"
+#include <unordered_set>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/range/adaptor/map.hpp>
@@ -794,13 +795,48 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
   pyxFile.oss << "\tcdef " << pyxSharedCythonClass() << " " << pyxCythonObj() << "\n";
 
   // __cinit___
-  pyxFile.oss << "\tdef __cinit__(self):\n"
+  pyxFile.oss << "\tdef __cinit__(self, *args, **kwargs):\n"
                  "\t\tself." << pyxCythonObj() << " = " 
-                 << pyxSharedCythonClass() << "(";
-  if (constructor.hasDefaultConstructor())
-    pyxFile.oss << "new " << pyxCythonClass() << "()";
-  pyxFile.oss << ")\n";
+                 << pyxSharedCythonClass() << "()\n";
+
+  std::unordered_set<size_t> nargsSet;
+  std::vector<size_t> nargsDuplicates;
+  for (size_t i = 0; i < constructor.nrOverloads(); ++i) {
+    size_t nargs = constructor.argumentList(i).size();
+    if (nargsSet.find(nargs) != nargsSet.end())
+      nargsDuplicates.push_back(nargs);
+    else
+      nargsSet.insert(nargs);
+  }
+
+  if (nargsDuplicates.size() > 0) {
+    pyxFile.oss << "\t\tif len(kwargs)==0 and len(args)+len(kwargs) in [";
+    for (size_t i = 0; i<nargsDuplicates.size(); ++i) {
+      pyxFile.oss << nargsDuplicates[i];
+      if (i < nargsDuplicates.size()-1) pyxFile.oss << ",";
+    }
+    pyxFile.oss << "]:\n"
+                << "\t\t\traise TypeError('Overloads with the same number of "
+                   "arguments exist. Please use keyword arguments to "
+                   "differentiate them!')\n";
+  }
+
+
+  for (size_t i = 0; i<constructor.nrOverloads(); ++i) {
+    pyxFile.oss << "\t\t" << (i == 0 ? "if" : "elif") << " self."
+                << pythonClass() << "_" << i
+                << "(*args, **kwargs):\n\t\t\tpass\n";
+  }
+  if (constructor.nrOverloads()>0)
+    pyxFile.oss << "\t\telse:\n\t\t\traise TypeError('" << pythonClass()
+                << " construction failed!')\n";
+
   pyxInitParentObj(pyxFile, "\t\tself", "self." + pyxCythonObj(), allClasses);
+  pyxFile.oss << "\n";
+
+  // Constructors
+  constructor.emit_cython_pyx(pyxFile, *this);
+  if (constructor.nrOverloads()>0) pyxFile.oss << "\n";
 
   // cyCreateFromShared
   pyxFile.oss << "\t@staticmethod\n";
@@ -810,10 +846,6 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
               << "\t\tret." << pyxCythonObj() << " = other\n";
   pyxInitParentObj(pyxFile, "\t\tret", "other", allClasses);
   pyxFile.oss << "\t\treturn ret" << "\n";
-
-  // Constructors
-  constructor.emit_cython_pyx(pyxFile, *this);
-  if (constructor.nrOverloads()>0) pyxFile.oss << "\n";
 
   for(const StaticMethod& m: static_methods | boost::adaptors::map_values)
     m.emit_cython_pyx(pyxFile, *this);

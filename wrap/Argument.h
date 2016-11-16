@@ -127,6 +127,8 @@ struct ArgumentList: public std::vector<Argument> {
   void emit_cython_pxd(FileWriter& file, const std::string& className) const;
   void emit_cython_pyx(FileWriter& file) const;
   void emit_cython_pyx_asParams(FileWriter& file) const;
+  void emit_cython_pyx_params_list(FileWriter& file) const;
+  void emit_cython_pyx_cast_params_to_python_type(FileWriter& file) const;
 
   /**
    * emit checking arguments to MATLAB proxy
