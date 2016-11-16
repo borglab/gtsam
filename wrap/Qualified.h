@@ -185,7 +185,9 @@ public:
     return result;
   }
 
-  /// the Cython class in pxd
+  /// name of the Cython class in pxd
+  /// Normal classes: innerNamespace_ClassName, e.g. GaussianFactor, noiseModel_Gaussian
+  /// Eigen type: Vector --> VectorXd, Matrix --> MatrixXd
   std::string cythonClass() const {
     if (isEigen())
       return name_ + "Xd";
@@ -193,9 +195,24 @@ public:
       return qualifiedName("_", 1);
   }
 
-  /// the Python class in pyx
+  /// name of Python classes in pyx
+  /// They have the same name with the corresponding Cython classes in pxd
+  /// But note that they are different: These are Python classes in the pyx file
+  /// To refer to a Cython class in pyx, we need to add "gtsam.", e.g. gtsam.noiseModel_Gaussian
+  /// see the other function pyxCythoClass for that purpose.
   std::string pythonClass() const {
     return cythonClass();
+  }
+
+  /// Python type of function arguments in pyx to interface with normal python scripts
+  /// Eigen types become np.ndarray (There's no Eigen types, e.g. VectorXd, in
+  /// Python. We have to pass in numpy array in the arguments, which will then be
+  /// converted to Eigen types in Cython)
+  std::string pythonArgumentType() const {
+    if (isEigen())
+      return "np.ndarray";
+    else
+      return qualifiedName("_", 1);
   }
 
   /// return the Cython class in pxd corresponding to a Python class in pyx
