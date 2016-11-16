@@ -35,7 +35,7 @@ TEST_DISABLED(HessianFactor, ExampleThatShouldWork){
   GaussianFactorGraph fg1;
   //THIS SHOULD EQUAL x1^2 + x2^2 + x1x2 - x1 - x2 + 10
   // In this case the hessian is indefinite(one negative and one positive eigen vale.
-  // Still the problem has a solution
+  // Still, the problem has a solution
   HessianFactor factor2d(X(1), X(2), 2*I_1x1, 2*I_1x1, I_1x1, 2*I_1x1, I_1x1, 10);
   GTSAM_PRINT(factor2d);
   fg1.push_back(factor2d);
@@ -47,8 +47,10 @@ TEST(HessianFactor, TestFailsOnPostiveDefinite){
   //THIS SHOULD EQUAL x1^2 + x2^2 + x1x2 - x1 - x2 + 10
   // THE HESSIAN IS POSITIVE DEFINITE AND IT HAS A UNIQUE MINIMUM
   HessianFactor factor2d(X(1), X(2), 8*I_1x1, 2*I_1x1, -1.5*I_1x1, 10*I_1x1, 2*I_1x1, 0);
-  GTSAM_PRINT(factor2d);
+  JacobianFactor jacobianFactor(X(1), -2*I_1x1, X(2), -1*I_1x1, -2.0* I_1x1);
   fg1.push_back(factor2d);
+  fg1.push_back(jacobianFactor);
+  GTSAM_PRINT(fg1);
   fg1.optimize();
 }
 TEST(HessianFactor, TestSuccedsOnPostiveDefinite){
