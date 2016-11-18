@@ -160,6 +160,8 @@ public:
   void pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj,
                         const std::string& cySharedObj,
                         const std::vector<Class>& allClasses) const;
+  void pyxDynamicCast(FileWriter& pyxFile, const Class& curLevel,
+                           const std::vector<Class>& allClasses) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Class& cls) {
     os << "class " << cls.name() << "{\n";

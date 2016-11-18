@@ -1,6 +1,5 @@
 
 TODO:
-☐ Casting from parent and grandparents 
 ☐ Allow overloading methods. The current solution is annoying!!!
 ☐ forward declaration?
 ☐ Global functions
@@ -12,6 +11,7 @@ TODO:
 ☐ CMake install script
 
 Completed/Cancelled:
+✔ Casting from parent and grandparents 
 ✔ Allow overloading constructors. The current solution is annoying!!! @done (16-11-16 17:00)
 ✔ Support "print obj" @done (16-11-16 17:00)
 ✔ methods for FastVector: at, [], ...  @done (16-11-16 17:00)

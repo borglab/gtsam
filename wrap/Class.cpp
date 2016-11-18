@@ -770,8 +770,8 @@ void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj,
       pyxFile.oss << pyObj << "." << parentClass->pyxCythonObj() << " = "
                   << "<" << parentClass->pyxSharedCythonClass() << ">("
                   << cySharedObj << ")\n";
-      // Find the parent class with name "parentClass" and point its cython obj to the same pointer
-      // TODO: This search is not efficient. :-(
+      // Find the parent class with name "parentClass" and point its cython obj
+      // to the same pointer
       auto parent_it = find_if(allClasses.begin(), allClasses.end(),
                                [this](const Class& cls) {
                                    return cls.cythonClass() ==
@@ -782,6 +782,42 @@ void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj,
         throw std::runtime_error("Parent class not found!");
       }
       parent_it->pyxInitParentObj(pyxFile, pyObj, cySharedObj, allClasses);
+  }
+}
+
+/* ************************************************************************* */
+/*
+  @staticmethod
+  def dynamic_cast(noiseModel_Base base):
+          cdef noiseModel_Gaussian ret = noiseModel_Gaussian()
+          ret.gtnoiseModel_Gaussian_ = <shared_ptr[gtsam.noiseModel_Gaussian]>dynamic_pointer_cast[gtsam.noiseModel_Gaussian, gtsam.noiseModel_Base](base.gtnoiseModel_Base_)
+          ret.gtnoiseModel_Base_ = <shared_ptr[gtsam.noiseModel_Base]>(ret.gtnoiseModel_Gaussian_)
+          return ret
+ */
+void Class::pyxDynamicCast(FileWriter& pyxFile, const Class& curLevel,
+                           const std::vector<Class>& allClasses) const {
+  std::string me = this->pythonClass(), sharedMe = this->pyxSharedCythonClass();
+  if (curLevel.parentClass) {
+    std::string parent = curLevel.parentClass->pythonClass(),
+                parentObj = curLevel.parentClass->pyxCythonObj(),
+                parentCythonClass = curLevel.parentClass->pyxCythonClass();
+    pyxFile.oss << "def dynamic_cast_" << me << "_" << parent << "(" << parent
+                << " parent):\n";
+    pyxFile.oss << "\treturn " << me << ".cyCreateFromShared(<" << sharedMe
+                << ">dynamic_pointer_cast[" << pyxCythonClass() << ","
+                << parentCythonClass << "](parent." << parentObj
+                << "))\n";
+    // Move up higher to one level: Find the parent class with name "parentClass"
+    auto parent_it = find_if(allClasses.begin(), allClasses.end(),
+                             [&curLevel](const Class& cls) {
+                                 return cls.cythonClass() ==
+                                        curLevel.parentClass->cythonClass();
+                             });
+    if (parent_it == allClasses.end()) {
+        cerr << "Can't find parent class: " << parentClass->cythonClass();
+      throw std::runtime_error("Parent class not found!");
+    }
+    pyxDynamicCast(pyxFile, *parent_it, allClasses);
   }
 }
 
@@ -853,6 +889,9 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
 
   for(const Method& m: methods_ | boost::adaptors::map_values)
     m.emit_cython_pyx(pyxFile, *this);
+
+  pyxDynamicCast(pyxFile, *this, allClasses);
+
   pyxFile.oss << "\n\n"; 
 }
 
