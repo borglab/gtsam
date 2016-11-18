@@ -1,48 +1,48 @@
-/* ---------------------------------------------------------------------------- 
- 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,  
- * Atlanta, Georgia 30332-0415 
- * All Rights Reserved 
- * Authors: Frank Dellaert, et al. (see THANKS for the full author list) 
- 
- * See LICENSE for the license information 
- 
- * -------------------------------------------------------------------------- */ 
- 
-/** 
- * @file Module.ccp 
- * @author Frank Dellaert 
- * @author Alex Cunningham 
- * @author Andrew Melim 
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file Module.ccp
+ * @author Frank Dellaert
+ * @author Alex Cunningham
+ * @author Andrew Melim
  * @author Richard Roberts
- **/ 
- 
-#include "Module.h" 
-#include "FileWriter.h" 
-#include "TypeAttributesTable.h" 
+ **/
+
+#include "Module.h"
+#include "FileWriter.h"
+#include "TypeAttributesTable.h"
 #include "utilities.h"
 
-#include <boost/filesystem.hpp> 
-#include <boost/lexical_cast.hpp> 
- 
-#include <iostream> 
-#include <algorithm> 
- 
-using namespace std; 
-using namespace wrap; 
-using namespace BOOST_SPIRIT_CLASSIC_NS; 
-namespace bl = boost::lambda; 
-namespace fs = boost::filesystem; 
- 
-/* ************************************************************************* */ 
-// We parse an interface file into a Module object. 
-// The grammar is defined using the boost/spirit combinatorial parser. 
-// For example, str_p("const") parses the string "const", and the >> 
-// operator creates a sequence parser. The grammar below, composed of rules 
-// and with start rule [class_p], doubles as the specs for our interface files. 
-/* ************************************************************************* */ 
- 
-/* ************************************************************************* */ 
+#include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
+
+#include <iostream>
+#include <algorithm>
+
+using namespace std;
+using namespace wrap;
+using namespace BOOST_SPIRIT_CLASSIC_NS;
+namespace bl = boost::lambda;
+namespace fs = boost::filesystem;
+
+/* ************************************************************************* */
+// We parse an interface file into a Module object.
+// The grammar is defined using the boost/spirit combinatorial parser.
+// For example, str_p("const") parses the string "const", and the >>
+// operator creates a sequence parser. The grammar below, composed of rules
+// and with start rule [class_p], doubles as the specs for our interface files.
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 // If a number of template arguments were given, generate a number of expanded
 // class names, e.g., PriorFactor -> PriorFactorPose2, and add those classes
 static void handle_possible_template(vector<Class>& classes,
@@ -77,11 +77,11 @@ Module::Module(const std::string& moduleName, bool enable_verbose)
 {
 }
 
-/* ************************************************************************* */ 
-Module::Module(const string& interfacePath, 
+/* ************************************************************************* */
+Module::Module(const string& interfacePath,
          const string& moduleName, bool enable_verbose)
 : name(moduleName), verbose(enable_verbose)
-{ 
+{
   // read interface file
   string interfaceFile = interfacePath + "/" + moduleName + ".h";
   string contents = file_contents(interfaceFile);
@@ -93,17 +93,17 @@ Module::Module(const string& interfacePath,
 /* ************************************************************************* */
 void Module::parseMarkup(const std::string& data) {
   // The parse imperatively :-( updates variables gradually during parse
-  // The one with postfix 0 are used to reset the variables after parse. 
- 
-  //---------------------------------------------------------------------------- 
-  // Grammar with actions that build the Class object. Actions are 
-  // defined within the square brackets [] and are executed whenever a 
-  // rule is successfully parsed. Define BOOST_SPIRIT_DEBUG to debug. 
-  // The grammar is allows a very restricted C++ header 
-  // lexeme_d turns off white space skipping 
-  // http://www.boost.org/doc/libs/1_37_0/libs/spirit/classic/doc/directives.html 
-  // ---------------------------------------------------------------------------- 
- 
+  // The one with postfix 0 are used to reset the variables after parse.
+
+  //----------------------------------------------------------------------------
+  // Grammar with actions that build the Class object. Actions are
+  // defined within the square brackets [] and are executed whenever a
+  // rule is successfully parsed. Define BOOST_SPIRIT_DEBUG to debug.
+  // The grammar is allows a very restricted C++ header
+  // lexeme_d turns off white space skipping
+  // http://www.boost.org/doc/libs/1_37_0/libs/spirit/classic/doc/directives.html
+  // ----------------------------------------------------------------------------
+
   // Define Rule and instantiate basic rules
   typedef rule<phrase_scanner_t> Rule;
   BasicRules<phrase_scanner_t> basic;
@@ -126,17 +126,17 @@ void Module::parseMarkup(const std::string& data) {
   // parse "gtsam::Pose2" and add to singleInstantiation.typeList
   TemplateInstantiationTypedef singleInstantiation, singleInstantiation0;
   TypeListGrammar<'<','>'> typelist_g(singleInstantiation.typeList);
- 
+
   // typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
   TypeGrammar instantiationClass_g(singleInstantiation.class_);
-  Rule templateSingleInstantiation_p = 
+  Rule templateSingleInstantiation_p =
     (str_p("typedef") >> instantiationClass_g >>
     typelist_g >>
     basic.className_p[assign_a(singleInstantiation.name_)] >>
-    ';') 
+    ';')
     [assign_a(singleInstantiation.namespaces_, namespaces)]
-    [push_back_a(templateInstantiationTypedefs, singleInstantiation)] 
-    [assign_a(singleInstantiation, singleInstantiation0)]; 
+    [push_back_a(templateInstantiationTypedefs, singleInstantiation)]
+    [assign_a(singleInstantiation, singleInstantiation0)];
 
   Qualified oldType, newType;
   TypeGrammar typedefOldClass_g(oldType), typedefNewClass_g(newType);
@@ -176,20 +176,20 @@ void Module::parseMarkup(const std::string& data) {
   // parse forward declaration
   ForwardDeclaration fwDec0, fwDec;
   Rule forward_declaration_p =
-      !(str_p("virtual")[assign_a(fwDec.isVirtual, true)]) 
-      >> str_p("class") 
+      !(str_p("virtual")[assign_a(fwDec.isVirtual, true)])
+      >> str_p("class")
       >> (*(basic.namespace_p >> str_p("::")) >> basic.className_p)[assign_a(fwDec.name)]
-      >> ch_p(';') 
-      [push_back_a(forward_declarations, fwDec)] 
+      >> ch_p(';')
+      [push_back_a(forward_declarations, fwDec)]
       [assign_a(cls,cls0)] // also clear class to avoid partial parse
-      [assign_a(fwDec, fwDec0)]; 
- 
+      [assign_a(fwDec, fwDec0)];
+
   Rule module_content_p = basic.comments_p | include_p | class_p
       | templateSingleInstantiation_p | forward_declaration_p
       | global_function_g | namespace_def_p;
- 
-  Rule module_p = *module_content_p >> !end_p; 
- 
+
+  Rule module_p = *module_content_p >> !end_p;
+
   // and parse contents
   parse_info<const char*> info = parse(data.c_str(), module_p, space_p);
   if(!info.full) {
@@ -214,10 +214,10 @@ void Module::parseMarkup(const std::string& data) {
   // - Only inherited nontemplateMethods_ in uninstantiatedClasses need to be removed
   // because that what we serialized to the pxd.
   // - However, we check against the class parent's *methods_* to avoid looking into
-  // its grand parent and grand-grand parent, etc., because all those are already 
+  // its grand parent and grand-grand parent, etc., because all those are already
   // added in its direct parent.
   // - So this must be called *after* the above code appendInheritedMethods!!
-  for(Class& cls: uninstantiatedClasses) 
+  for(Class& cls: uninstantiatedClasses)
       cls.removeInheritedNontemplateMethods(uninstantiatedClasses);
 
   // Expand templates - This is done first so that template instantiations are
@@ -247,9 +247,9 @@ void Module::parseMarkup(const std::string& data) {
   eigen.push_back(ForwardDeclaration("Matrix"));
   typeAttributes.addForwardDeclarations(eigen);
   typeAttributes.checkValidity(expandedClasses);
-} 
- 
-/* ************************************************************************* */ 
+}
+
+/* ************************************************************************* */
 void Module::matlab_code(const string& toolboxPath) const {
 
   fs::create_directories(toolboxPath);
@@ -310,7 +310,7 @@ void Module::matlab_code(const string& toolboxPath) const {
   wrapperFile.emit(true);
 }
 
-/* ************************************************************************* */ 
+/* ************************************************************************* */
 void Module::cython_wrapper(const string& toolboxPath) const {
   fs::create_directories(toolboxPath);
   string pxdFileName = toolboxPath + "/" + name + "_wrapper" + ".pxd";
@@ -321,7 +321,7 @@ void Module::cython_wrapper(const string& toolboxPath) const {
   emit_cython_pyx(pyxFile);
 }
 
-/* ************************************************************************* */ 
+/* ************************************************************************* */
 void Module::emit_cython_pxd(FileWriter& pxdFile) const {
   // headers
   pxdFile.oss << "from eigency.core cimport *\n"
@@ -348,7 +348,7 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
   for (const Class& cls : uninstantiatedClasses) {
       cls.emit_cython_pxd(pxdFile, uninstantiatedClasses);
       pxdFile.oss << "\n";
-      
+
       //... ctypedef for template instantiations
       for (const Class& expCls : expandedClasses) {
           if (!expCls.templateClass || expCls.templateClass->name_ != cls.name_)
@@ -390,7 +390,7 @@ void Module::emit_cython_pyx(FileWriter& pyxFile) const {
   pyxFile.emit(true);
 }
 
-/* ************************************************************************* */ 
+/* ************************************************************************* */
 void Module::generateIncludes(FileWriter& file) const {
 
   // collect includes
@@ -408,160 +408,160 @@ void Module::generateIncludes(FileWriter& file) const {
 
 
 /* ************************************************************************* */
-  void Module::finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const { 
-    file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n"; 
-    file.oss << "{\n"; 
-    file.oss << "  mstream mout;\n"; // Send stdout to MATLAB console 
-    file.oss << "  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n"; 
-    file.oss << "  _" << name << "_RTTIRegister();\n\n"; 
-    file.oss << "  int id = unwrap<int>(in[0]);\n\n"; 
-    file.oss << "  try {\n"; 
-    file.oss << "    switch(id) {\n"; 
-    for(size_t id = 0; id < functionNames.size(); ++id) { 
-      file.oss << "    case " << id << ":\n"; 
-      file.oss << "      " << functionNames[id] << "(nargout, out, nargin-1, in+1);\n"; 
-      file.oss << "      break;\n"; 
-    } 
-    file.oss << "    }\n"; 
-    file.oss << "  } catch(const std::exception& e) {\n"; 
-    file.oss << "    mexErrMsgTxt((\"Exception from gtsam:\\n\" + std::string(e.what()) + \"\\n\").c_str());\n"; 
-    file.oss << "  }\n"; 
-    file.oss << "\n"; 
-    file.oss << "  std::cout.rdbuf(outbuf);\n"; // Restore cout 
-    file.oss << "}\n"; 
-  } 
- 
-/* ************************************************************************* */ 
-vector<Class> Module::ExpandTypedefInstantiations(const vector<Class>& classes, const vector<TemplateInstantiationTypedef> instantiations) { 
- 
-  vector<Class> expandedClasses = classes; 
- 
-  for(const TemplateInstantiationTypedef& inst: instantiations) {
-    // Add the new class to the list 
-    expandedClasses.push_back(inst.findAndExpand(classes)); 
-  } 
- 
-  // Remove all template classes 
-  for(size_t i = 0; i < expandedClasses.size(); ++i) 
-    if(!expandedClasses[i].templateArgs.empty()) { 
-      expandedClasses.erase(expandedClasses.begin() + size_t(i)); 
-      -- i; 
-    } 
+  void Module::finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const {
+    file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
+    file.oss << "{\n";
+    file.oss << "  mstream mout;\n"; // Send stdout to MATLAB console
+    file.oss << "  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n";
+    file.oss << "  _" << name << "_RTTIRegister();\n\n";
+    file.oss << "  int id = unwrap<int>(in[0]);\n\n";
+    file.oss << "  try {\n";
+    file.oss << "    switch(id) {\n";
+    for(size_t id = 0; id < functionNames.size(); ++id) {
+      file.oss << "    case " << id << ":\n";
+      file.oss << "      " << functionNames[id] << "(nargout, out, nargin-1, in+1);\n";
+      file.oss << "      break;\n";
+    }
+    file.oss << "    }\n";
+    file.oss << "  } catch(const std::exception& e) {\n";
+    file.oss << "    mexErrMsgTxt((\"Exception from gtsam:\\n\" + std::string(e.what()) + \"\\n\").c_str());\n";
+    file.oss << "  }\n";
+    file.oss << "\n";
+    file.oss << "  std::cout.rdbuf(outbuf);\n"; // Restore cout
+    file.oss << "}\n";
+  }
 
-  return expandedClasses; 
-} 
- 
-/* ************************************************************************* */ 
-vector<string> Module::GenerateValidTypes(const vector<Class>& classes, const vector<ForwardDeclaration>& forwardDeclarations, const vector<TypedefPair>& typedefs) { 
-  vector<string> validTypes; 
+/* ************************************************************************* */
+vector<Class> Module::ExpandTypedefInstantiations(const vector<Class>& classes, const vector<TemplateInstantiationTypedef> instantiations) {
+
+  vector<Class> expandedClasses = classes;
+
+  for(const TemplateInstantiationTypedef& inst: instantiations) {
+    // Add the new class to the list
+    expandedClasses.push_back(inst.findAndExpand(classes));
+  }
+
+  // Remove all template classes
+  for(size_t i = 0; i < expandedClasses.size(); ++i)
+    if(!expandedClasses[i].templateArgs.empty()) {
+      expandedClasses.erase(expandedClasses.begin() + size_t(i));
+      -- i;
+    }
+
+  return expandedClasses;
+}
+
+/* ************************************************************************* */
+vector<string> Module::GenerateValidTypes(const vector<Class>& classes, const vector<ForwardDeclaration>& forwardDeclarations, const vector<TypedefPair>& typedefs) {
+  vector<string> validTypes;
   for(const ForwardDeclaration& fwDec: forwardDeclarations) {
     validTypes.push_back(fwDec.name);
-  } 
-  validTypes.push_back("void"); 
-  validTypes.push_back("string"); 
-  validTypes.push_back("int"); 
-  validTypes.push_back("bool"); 
-  validTypes.push_back("char"); 
-  validTypes.push_back("unsigned char"); 
-  validTypes.push_back("size_t"); 
-  validTypes.push_back("double"); 
-  validTypes.push_back("Vector"); 
-  validTypes.push_back("Matrix"); 
-  //Create a list of parsed classes for dependency checking 
+  }
+  validTypes.push_back("void");
+  validTypes.push_back("string");
+  validTypes.push_back("int");
+  validTypes.push_back("bool");
+  validTypes.push_back("char");
+  validTypes.push_back("unsigned char");
+  validTypes.push_back("size_t");
+  validTypes.push_back("double");
+  validTypes.push_back("Vector");
+  validTypes.push_back("Matrix");
+  //Create a list of parsed classes for dependency checking
   for(const Class& cls: classes) {
-    validTypes.push_back(cls.qualifiedName("::")); 
-  } 
+    validTypes.push_back(cls.qualifiedName("::"));
+  }
   for(const TypedefPair& p: typedefs) {
     validTypes.push_back(p.newType.qualifiedName("::"));
   }
- 
-  return validTypes; 
-} 
- 
-/* ************************************************************************* */ 
-void Module::WriteCollectorsAndCleanupFcn(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes) { 
-  // Generate all collectors 
+
+  return validTypes;
+}
+
+/* ************************************************************************* */
+void Module::WriteCollectorsAndCleanupFcn(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes) {
+  // Generate all collectors
   for(const Class& cls: classes) {
-    const string matlabUniqueName = cls.qualifiedName(), 
-      cppName = cls.qualifiedName("::"); 
-    wrapperFile.oss << "typedef std::set<boost::shared_ptr<" << cppName << ">*> " 
-      << "Collector_" << matlabUniqueName << ";\n"; 
-    wrapperFile.oss << "static Collector_" << matlabUniqueName << 
-      " collector_" << matlabUniqueName << ";\n"; 
-  } 
- 
-  // generate mexAtExit cleanup function 
-  wrapperFile.oss << 
-    "\nvoid _deleteAllObjects()\n" 
-    "{\n" 
-    "  mstream mout;\n" // Send stdout to MATLAB console 
-    "  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n" 
-    "  bool anyDeleted = false;\n"; 
+    const string matlabUniqueName = cls.qualifiedName(),
+      cppName = cls.qualifiedName("::");
+    wrapperFile.oss << "typedef std::set<boost::shared_ptr<" << cppName << ">*> "
+      << "Collector_" << matlabUniqueName << ";\n";
+    wrapperFile.oss << "static Collector_" << matlabUniqueName <<
+      " collector_" << matlabUniqueName << ";\n";
+  }
+
+  // generate mexAtExit cleanup function
+  wrapperFile.oss <<
+    "\nvoid _deleteAllObjects()\n"
+    "{\n"
+    "  mstream mout;\n" // Send stdout to MATLAB console
+    "  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n"
+    "  bool anyDeleted = false;\n";
   for(const Class& cls: classes) {
-    const string matlabUniqueName = cls.qualifiedName(); 
-    const string cppName = cls.qualifiedName("::"); 
-    const string collectorType = "Collector_" + matlabUniqueName; 
-    const string collectorName = "collector_" + matlabUniqueName; 
-    // The extra curly-braces around the for loops work around a limitation in MSVC (existing 
-    // since 2005!) preventing more than 248 blocks. 
-    wrapperFile.oss << 
-      "  { for(" << collectorType << "::iterator iter = " << collectorName << ".begin();\n" 
-      "      iter != " << collectorName << ".end(); ) {\n" 
-      "    delete *iter;\n" 
-      "    " << collectorName << ".erase(iter++);\n" 
-      "    anyDeleted = true;\n" 
-      "  } }\n"; 
-  } 
-  wrapperFile.oss << 
-    "  if(anyDeleted)\n" 
-    "    cout <<\n" 
-    "      \"WARNING:  Wrap modules with variables in the workspace have been reloaded due to\\n\"\n" 
-    "      \"calling destructors, call 'clear all' again if you plan to now recompile a wrap\\n\"\n" 
-    "      \"module, so that your recompiled module is used instead of the old one.\" << endl;\n" 
-    "  std::cout.rdbuf(outbuf);\n" // Restore cout 
-    "}\n\n"; 
-} 
- 
-/* ************************************************************************* */ 
-void Module::WriteRTTIRegistry(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes) { 
-  wrapperFile.oss << 
-    "void _" << moduleName << "_RTTIRegister() {\n" 
-    "  const mxArray *alreadyCreated = mexGetVariablePtr(\"global\", \"gtsam_" + moduleName + "_rttiRegistry_created\");\n" 
-    "  if(!alreadyCreated) {\n" 
-    "    std::map<std::string, std::string> types;\n"; 
+    const string matlabUniqueName = cls.qualifiedName();
+    const string cppName = cls.qualifiedName("::");
+    const string collectorType = "Collector_" + matlabUniqueName;
+    const string collectorName = "collector_" + matlabUniqueName;
+    // The extra curly-braces around the for loops work around a limitation in MSVC (existing
+    // since 2005!) preventing more than 248 blocks.
+    wrapperFile.oss <<
+      "  { for(" << collectorType << "::iterator iter = " << collectorName << ".begin();\n"
+      "      iter != " << collectorName << ".end(); ) {\n"
+      "    delete *iter;\n"
+      "    " << collectorName << ".erase(iter++);\n"
+      "    anyDeleted = true;\n"
+      "  } }\n";
+  }
+  wrapperFile.oss <<
+    "  if(anyDeleted)\n"
+    "    cout <<\n"
+    "      \"WARNING:  Wrap modules with variables in the workspace have been reloaded due to\\n\"\n"
+    "      \"calling destructors, call 'clear all' again if you plan to now recompile a wrap\\n\"\n"
+    "      \"module, so that your recompiled module is used instead of the old one.\" << endl;\n"
+    "  std::cout.rdbuf(outbuf);\n" // Restore cout
+    "}\n\n";
+}
+
+/* ************************************************************************* */
+void Module::WriteRTTIRegistry(FileWriter& wrapperFile, const std::string& moduleName, const std::vector<Class>& classes) {
+  wrapperFile.oss <<
+    "void _" << moduleName << "_RTTIRegister() {\n"
+    "  const mxArray *alreadyCreated = mexGetVariablePtr(\"global\", \"gtsam_" + moduleName + "_rttiRegistry_created\");\n"
+    "  if(!alreadyCreated) {\n"
+    "    std::map<std::string, std::string> types;\n";
   for(const Class& cls: classes) {
-    if(cls.isVirtual) 
-      wrapperFile.oss << 
-      "    types.insert(std::make_pair(typeid(" << cls.qualifiedName("::") << ").name(), \"" << cls.qualifiedName(".") << "\"));\n"; 
-  } 
-  wrapperFile.oss << "\n"; 
- 
-  wrapperFile.oss << 
-    "    mxArray *registry = mexGetVariable(\"global\", \"gtsamwrap_rttiRegistry\");\n" 
-    "    if(!registry)\n" 
-    "      registry = mxCreateStructMatrix(1, 1, 0, NULL);\n" 
-    "    typedef std::pair<std::string, std::string> StringPair;\n" 
+    if(cls.isVirtual)
+      wrapperFile.oss <<
+      "    types.insert(std::make_pair(typeid(" << cls.qualifiedName("::") << ").name(), \"" << cls.qualifiedName(".") << "\"));\n";
+  }
+  wrapperFile.oss << "\n";
+
+  wrapperFile.oss <<
+    "    mxArray *registry = mexGetVariable(\"global\", \"gtsamwrap_rttiRegistry\");\n"
+    "    if(!registry)\n"
+    "      registry = mxCreateStructMatrix(1, 1, 0, NULL);\n"
+    "    typedef std::pair<std::string, std::string> StringPair;\n"
     "    for(const StringPair& rtti_matlab: types) {\n"
-    "      int fieldId = mxAddField(registry, rtti_matlab.first.c_str());\n" 
-    "      if(fieldId < 0)\n" 
-    "        mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n" 
-    "      mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());\n" 
-    "      mxSetFieldByNumber(registry, 0, fieldId, matlabName);\n" 
-    "    }\n" 
-    "    if(mexPutVariable(\"global\", \"gtsamwrap_rttiRegistry\", registry) != 0)\n" 
-    "      mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n" 
-    "    mxDestroyArray(registry);\n" 
-    "    \n" 
-    "    mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);\n" 
-    "    if(mexPutVariable(\"global\", \"gtsam_" + moduleName + "_rttiRegistry_created\", newAlreadyCreated) != 0)\n" 
-    "      mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n" 
-    "    mxDestroyArray(newAlreadyCreated);\n" 
-    "  }\n" 
-    "}\n" 
-    "\n"; 
-} 
- 
-/* ************************************************************************* */ 
+    "      int fieldId = mxAddField(registry, rtti_matlab.first.c_str());\n"
+    "      if(fieldId < 0)\n"
+    "        mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
+    "      mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());\n"
+    "      mxSetFieldByNumber(registry, 0, fieldId, matlabName);\n"
+    "    }\n"
+    "    if(mexPutVariable(\"global\", \"gtsamwrap_rttiRegistry\", registry) != 0)\n"
+    "      mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
+    "    mxDestroyArray(registry);\n"
+    "    \n"
+    "    mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);\n"
+    "    if(mexPutVariable(\"global\", \"gtsam_" + moduleName + "_rttiRegistry_created\", newAlreadyCreated) != 0)\n"
+    "      mexErrMsgTxt(\"gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly\");\n"
+    "    mxDestroyArray(newAlreadyCreated);\n"
+    "  }\n"
+    "}\n"
+    "\n";
+}
+
+/* ************************************************************************* */
 void Module::python_wrapper(const string& toolboxPath) const {
 
   fs::create_directories(toolboxPath);
