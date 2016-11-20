@@ -37,20 +37,18 @@ string Constructor::matlab_wrapper_name(Str className) const {
 
 /* ************************************************************************* */
 void Constructor::proxy_fragment(FileWriter& file,
-    const std::string& wrapperName, bool hasParent, const int id,
-    const ArgumentList args) const {
+                                 const std::string& wrapperName, bool hasParent,
+                                 const int id, const ArgumentList args) const {
   size_t nrArgs = args.size();
   // check for number of arguments...
   file.oss << "      elseif nargin == " << nrArgs;
-  if (nrArgs > 0)
-    file.oss << " && ";
+  if (nrArgs > 0) file.oss << " && ";
   // ...and their types
   bool first = true;
   for (size_t i = 0; i < nrArgs; i++) {
-    if (!first)
-      file.oss << " && ";
+    if (!first) file.oss << " && ";
     file.oss << "isa(varargin{" << i + 1 << "},'" << args[i].matlabClass(".")
-        << "')";
+             << "')";
     first = false;
   }
   // emit code for calling constructor
@@ -69,26 +67,25 @@ void Constructor::proxy_fragment(FileWriter& file,
 
 /* ************************************************************************* */
 string Constructor::wrapper_fragment(FileWriter& file, Str cppClassName,
-    Str matlabUniqueName, boost::optional<string> cppBaseClassName, int id,
-    const ArgumentList& al) const {
-
-  const string wrapFunctionName = matlabUniqueName + "_constructor_"
-      + boost::lexical_cast<string>(id);
+                                     Str matlabUniqueName,
+                                     boost::optional<string> cppBaseClassName,
+                                     int id, const ArgumentList& al) const {
+  const string wrapFunctionName =
+      matlabUniqueName + "_constructor_" + boost::lexical_cast<string>(id);
 
   file.oss << "void " << wrapFunctionName
-      << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])"
-      << endl;
+           << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])"
+           << endl;
   file.oss << "{\n";
   file.oss << "  mexAtExit(&_deleteAllObjects);\n";
-  //Typedef boost::shared_ptr
+  // Typedef boost::shared_ptr
   file.oss << "  typedef boost::shared_ptr<" << cppClassName << "> Shared;\n";
   file.oss << "\n";
 
-  //Check to see if there will be any arguments and remove {} for consiseness
-  if (al.size() > 0)
-    al.matlab_unwrap(file); // unwrap arguments
+  // Check to see if there will be any arguments and remove {} for consiseness
+  if (al.size() > 0) al.matlab_unwrap(file);  // unwrap arguments
   file.oss << "  Shared *self = new Shared(new " << cppClassName << "("
-      << al.names() << "));" << endl;
+           << al.names() << "));" << endl;
   file.oss << "  collector_" << matlabUniqueName << ".insert(self);\n";
 
   if (verbose_)
@@ -97,17 +94,19 @@ string Constructor::wrapper_fragment(FileWriter& file, Str cppClassName,
       << "  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);"
       << endl;
   file.oss << "  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;"
-      << endl;
+           << endl;
 
-  // If we have a base class, return the base class pointer (MATLAB will call the base class collectorInsertAndMakeBase to add this to the collector and recurse the heirarchy)
+  // If we have a base class, return the base class pointer (MATLAB will call
+  // the base class collectorInsertAndMakeBase to add this to the collector and
+  // recurse the heirarchy)
   if (cppBaseClassName) {
     file.oss << "\n";
     file.oss << "  typedef boost::shared_ptr<" << *cppBaseClassName
-        << "> SharedBase;\n";
-    file.oss
-        << "  out[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);\n";
-    file.oss
-        << "  *reinterpret_cast<SharedBase**>(mxGetData(out[1])) = new SharedBase(*self);\n";
+             << "> SharedBase;\n";
+    file.oss << "  out[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, "
+                "mxREAL);\n";
+    file.oss << "  *reinterpret_cast<SharedBase**>(mxGetData(out[1])) = new "
+                "SharedBase(*self);\n";
   }
 
   file.oss << "}" << endl;
@@ -117,8 +116,8 @@ string Constructor::wrapper_fragment(FileWriter& file, Str cppClassName,
 
 /* ************************************************************************* */
 void Constructor::python_wrapper(FileWriter& wrapperFile, Str className) const {
-  wrapperFile.oss << "  .def(\"" << name_ << "\", &" << className << "::" << name_
-      << ");\n";
+  wrapperFile.oss << "  .def(\"" << name_ << "\", &" << className
+                  << "::" << name_ << ");\n";
 }
 
 /* ************************************************************************* */
@@ -137,7 +136,8 @@ void Constructor::emit_cython_pxd(FileWriter& pxdFile, Str className) const {
     // generate the constructor
     pxdFile.oss << "\t\t" << className << "(";
     args.emit_cython_pxd(pxdFile, className);
-    pxdFile.oss << ") " << "except +\n";
+    pxdFile.oss << ") "
+                << "except +\n";
   }
 }
 
@@ -145,27 +145,13 @@ void Constructor::emit_cython_pxd(FileWriter& pxdFile, Str className) const {
 void Constructor::emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const {
   for (size_t i = 0; i < nrOverloads(); i++) {
     ArgumentList args = argumentList(i);
-    pyxFile.oss << "\tdef " << name_ <<  "_" + to_string(i) << "(self, *args, **kwargs):\n";
-    pyxFile.oss << "\t\tif len(args)+len(kwargs) !=" << args.size() << ":\n";
-    pyxFile.oss << "\t\t\treturn False\n";
-    if (args.size() > 0) {
-      pyxFile.oss << "\t\t__params = kwargs.copy()\n"
-                     "\t\t__names = [";
-      args.emit_cython_pyx_params_list(pyxFile);
-      pyxFile.oss << "]\n";
-      pyxFile.oss << "\t\tfor i in range(len(args)):\n"
-                     "\t\t\t__params[__names[i]] = args[i]\n";
-      pyxFile.oss << "\t\ttry:\n";
-      args.emit_cython_pyx_cast_params_to_python_type(pyxFile);
-      pyxFile.oss << "\t\texcept:\n"
-                     "\t\t\treturn False\n";
-    }
+    pyxFile.oss << "\tdef " + name_ + "_" + to_string(i) +
+                    "(self, *args, **kwargs):\n";
+    pyxFile.oss << pyx_resolveOverloadParams(args);
 
     pyxFile.oss << "\t\tself." << cls.pyxCythonObj() << " = "
                 << cls.pyxSharedCythonClass() << "(new " << cls.pyxCythonClass()
-                << "(";
-    args.emit_cython_pyx_asParams(pyxFile);
-    pyxFile.oss << "))\n";
+                << "(" << args.pyx_asParams() << "))\n";
     pyxFile.oss << "\t\treturn True\n\n";
   }
 }

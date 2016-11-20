@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -30,12 +30,11 @@ using namespace std;
 using namespace wrap;
 
 /* ************************************************************************* */
-void MethodBase::proxy_wrapper_fragments(FileWriter& proxyFile,
-    FileWriter& wrapperFile, Str cppClassName, Str matlabQualName,
-    Str matlabUniqueName, Str wrapperName,
+void MethodBase::proxy_wrapper_fragments(
+    FileWriter& proxyFile, FileWriter& wrapperFile, Str cppClassName,
+    Str matlabQualName, Str matlabUniqueName, Str wrapperName,
     const TypeAttributesTable& typeAttributes,
     vector<string>& functionNames) const {
-
   // emit header, e.g., function varargout = templatedMethod(this, varargin)
   proxy_header(proxyFile);
 
@@ -46,36 +45,36 @@ void MethodBase::proxy_wrapper_fragments(FileWriter& proxyFile,
 
   // Emit URL to Doxygen page
   proxyFile.oss << "      % "
-      << "Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html"
-      << endl;
+                << "Doxygen can be found at "
+                   "http://research.cc.gatech.edu/borg/sites/edu.borg/html/"
+                   "index.html" << endl;
 
   // Handle special case of single overload with all numeric arguments
   if (nrOverloads() == 1 && argumentList(0).allScalar()) {
     // Output proxy matlab code
     // TODO: document why is it OK to not check arguments in this case
     proxyFile.oss << "      ";
-    const int id = (int) functionNames.size();
+    const int id = (int)functionNames.size();
     emit_call(proxyFile, returnValue(0), wrapperName, id);
 
     // Output C++ wrapper code
-    const string wrapFunctionName = wrapper_fragment(wrapperFile, cppClassName,
-        matlabUniqueName, 0, id, typeAttributes);
+    const string wrapFunctionName = wrapper_fragment(
+        wrapperFile, cppClassName, matlabUniqueName, 0, id, typeAttributes);
 
     // Add to function list
     functionNames.push_back(wrapFunctionName);
   } else {
     // Check arguments for all overloads
     for (size_t i = 0; i < nrOverloads(); ++i) {
-
       // Output proxy matlab code
       proxyFile.oss << "      " << (i == 0 ? "" : "else");
-      const int id = (int) functionNames.size();
+      const int id = (int)functionNames.size();
       emit_conditional_call(proxyFile, returnValue(i), argumentList(i),
-          wrapperName, id);
+                            wrapperName, id);
 
       // Output C++ wrapper code
-      const string wrapFunctionName = wrapper_fragment(wrapperFile,
-          cppClassName, matlabUniqueName, i, id, typeAttributes);
+      const string wrapFunctionName = wrapper_fragment(
+          wrapperFile, cppClassName, matlabUniqueName, i, id, typeAttributes);
 
       // Add to function list
       functionNames.push_back(wrapFunctionName);
@@ -91,20 +90,20 @@ void MethodBase::proxy_wrapper_fragments(FileWriter& proxyFile,
 }
 
 /* ************************************************************************* */
-string MethodBase::wrapper_fragment(FileWriter& wrapperFile, Str cppClassName,
-    Str matlabUniqueName, int overload, int id,
-    const TypeAttributesTable& typeAttributes) const {
-
+string MethodBase::wrapper_fragment(
+    FileWriter& wrapperFile, Str cppClassName, Str matlabUniqueName,
+    int overload, int id, const TypeAttributesTable& typeAttributes) const {
   // generate code
 
-  const string wrapFunctionName = matlabUniqueName + "_" + name_ + "_"
-      + boost::lexical_cast<string>(id);
+  const string wrapFunctionName =
+      matlabUniqueName + "_" + name_ + "_" + boost::lexical_cast<string>(id);
 
   const ArgumentList& args = argumentList(overload);
   const ReturnValue& returnVal = returnValue(overload);
 
   // call
-  wrapperFile.oss << "void " << wrapFunctionName
+  wrapperFile.oss
+      << "void " << wrapFunctionName
       << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
   // start
   wrapperFile.oss << "{\n";
@@ -112,13 +111,13 @@ string MethodBase::wrapper_fragment(FileWriter& wrapperFile, Str cppClassName,
   returnVal.wrapTypeUnwrap(wrapperFile);
 
   wrapperFile.oss << "  typedef boost::shared_ptr<" << cppClassName
-      << "> Shared;" << endl;
+                  << "> Shared;" << endl;
 
   // get call
   // for static methods: cppClassName::staticMethod<TemplateVal>
   // for instance methods: obj->instanceMethod<TemplateVal>
-  string expanded = wrapper_call(wrapperFile, cppClassName, matlabUniqueName,
-      args);
+  string expanded =
+      wrapper_call(wrapperFile, cppClassName, matlabUniqueName, args);
 
   expanded += ("(" + args.names() + ")");
   if (returnVal.type1.name() != "void")
@@ -134,48 +133,33 @@ string MethodBase::wrapper_fragment(FileWriter& wrapperFile, Str cppClassName,
 
 /* ************************************************************************* */
 void MethodBase::python_wrapper(FileWriter& wrapperFile, Str className) const {
-  wrapperFile.oss << "  .def(\"" << name_ << "\", &" << className << "::"
-      << name_ << ");\n";
+  wrapperFile.oss << "  .def(\"" << name_ << "\", &" << className
+                  << "::" << name_ << ");\n";
 }
 
 /* ************************************************************************* */
-void MethodBase::emit_cython_pyx_function_call(FileWriter& file,
-                                               const std::string& indent,
-                                               const std::string& caller,
-                                               const std::string& funcName,
-                                               size_t iOverload,
-                                               const Class& cls) const {
-  file.oss << indent;
-  if (!returnVals_[iOverload].isVoid()) {
-    file.oss << "cdef ";
-    returnVals_[iOverload].emit_cython_pyx_return_type(file);
-    file.oss << " ret = ";
-  }
+std::string MethodBase::pyx_functionCall(
+    const std::string& caller,
+    const std::string& funcName, size_t iOverload) const {
+
+  string ret;
   if (!returnVals_[iOverload].isPair && !returnVals_[iOverload].type1.isPtr &&
       returnVals_[iOverload].type1.isNonBasicType()) {
-    file.oss << returnVals_[iOverload].type1.pyxSharedCythonClass() << "(new "
-             << returnVals_[iOverload].type1.pyxCythonClass() << "(";
+    ret = returnVals_[iOverload].type1.pyxSharedCythonClass() + "(new " +
+          returnVals_[iOverload].type1.pyxCythonClass() + "(";
   }
 
-  //... function call
-  file.oss << caller << "." << funcName;
-  if (templateArgValue_) file.oss << "[" << templateArgValue_->pyxCythonClass() << "]";
-  file.oss << "(";
-  argumentList(iOverload).emit_cython_pyx_asParams(file);
-  file.oss << ")";
+  // actual function call ...
+  ret += caller + "." + funcName;
+  if (templateArgValue_) ret += "[" + templateArgValue_->pyxCythonClass() + "]";
+  //... with argument list
+  ret += "(" + argumentList(iOverload).pyx_asParams() + ")";
 
   if (!returnVals_[iOverload].isPair && !returnVals_[iOverload].type1.isPtr &&
       returnVals_[iOverload].type1.isNonBasicType())
-    file.oss << "))";
-  file.oss << "\n";
+    ret += "))";
 
-  // ... casting return value
-  if (!returnVals_[iOverload].isVoid()) {
-    file.oss << indent;
-    file.oss << "return ";
-    returnVals_[iOverload].emit_cython_pyx_casting(file, "ret");
-  }
-  file.oss << "\n";
+  return ret;
 }
 
 /* ************************************************************************* */

@@ -786,14 +786,6 @@ void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj,
 }
 
 /* ************************************************************************* */
-/*
-  @staticmethod
-  def dynamic_cast(noiseModel_Base base):
-          cdef noiseModel_Gaussian ret = noiseModel_Gaussian()
-          ret.gtnoiseModel_Gaussian_ = <shared_ptr[gtsam.noiseModel_Gaussian]>dynamic_pointer_cast[gtsam.noiseModel_Gaussian, gtsam.noiseModel_Base](base.gtnoiseModel_Base_)
-          ret.gtnoiseModel_Base_ = <shared_ptr[gtsam.noiseModel_Base]>(ret.gtnoiseModel_Gaussian_)
-          return ret
- */
 void Class::pyxDynamicCast(FileWriter& pyxFile, const Class& curLevel,
                            const std::vector<Class>& allClasses) const {
   std::string me = this->pythonClass(), sharedMe = this->pyxSharedCythonClass();
@@ -835,29 +827,7 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
                  "\t\tself." << pyxCythonObj() << " = " 
                  << pyxSharedCythonClass() << "()\n";
 
-  std::unordered_set<size_t> nargsSet;
-  std::vector<size_t> nargsDuplicates;
-  for (size_t i = 0; i < constructor.nrOverloads(); ++i) {
-    size_t nargs = constructor.argumentList(i).size();
-    if (nargsSet.find(nargs) != nargsSet.end())
-      nargsDuplicates.push_back(nargs);
-    else
-      nargsSet.insert(nargs);
-  }
-
-  if (nargsDuplicates.size() > 0) {
-    pyxFile.oss << "\t\tif len(kwargs)==0 and len(args)+len(kwargs) in [";
-    for (size_t i = 0; i<nargsDuplicates.size(); ++i) {
-      pyxFile.oss << nargsDuplicates[i];
-      if (i < nargsDuplicates.size()-1) pyxFile.oss << ",";
-    }
-    pyxFile.oss << "]:\n"
-                << "\t\t\traise TypeError('Overloads with the same number of "
-                   "arguments exist. Please use keyword arguments to "
-                   "differentiate them!')\n";
-  }
-
-
+  pyxFile.oss << constructor.pyx_checkDuplicateNargsKwArgs();
   for (size_t i = 0; i<constructor.nrOverloads(); ++i) {
     pyxFile.oss << "\t\t" << (i == 0 ? "if" : "elif") << " self."
                 << pythonClass() << "_" << i

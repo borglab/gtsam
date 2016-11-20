@@ -121,7 +121,7 @@ void Argument::emit_cython_pyx(FileWriter& file) const {
 }
 
 /* ************************************************************************* */
-void Argument::emit_cython_pyx_asParam(FileWriter& file) const {
+std::string Argument::pyx_asParam() const {
   string cythonType = type.cythonClass();
   string cythonVar;
   if (type.isNonBasicType()) {
@@ -132,7 +132,7 @@ void Argument::emit_cython_pyx_asParam(FileWriter& file) const {
   } else {
     cythonVar = name;
   }
-  file.oss << cythonVar; 
+  return cythonVar; 
 }
 
 /* ************************************************************************* */
@@ -231,33 +231,36 @@ void ArgumentList::emit_cython_pyx(FileWriter& file) const {
 }
 
 /* ************************************************************************* */
-void ArgumentList::emit_cython_pyx_asParams(FileWriter& file) const {
+std::string ArgumentList::pyx_asParams() const {
+  string ret;
   for (size_t j = 0; j < size(); ++j) {
-    at(j).emit_cython_pyx_asParam(file);
-    if (j < size() - 1) file.oss << ", ";
+    ret += at(j).pyx_asParam();
+    if (j < size() - 1) ret += ", ";
   }
+  return ret;
 }
 
 /* ************************************************************************* */
-void ArgumentList::emit_cython_pyx_params_list(FileWriter& file) const {
+std::string ArgumentList::pyx_paramsList() const {
+  string s;
   for (size_t j = 0; j < size(); ++j) {
-    file.oss << "'" << at(j).name << "'";
-    if (j < size() - 1) file.oss << ", ";
+    s += "'" + at(j).name + "'";
+    if (j < size() - 1) s += ", ";
   }
+  return s;
 }
 
 /* ************************************************************************* */
-void ArgumentList::emit_cython_pyx_cast_params_to_python_type(FileWriter& file) const {
-  if (size() == 0) {
-    file.oss << "\t\t\tpass\n";
-    return;
-  }
+std::string ArgumentList::pyx_castParamsToPythonType() const {
+  if (size() == 0) 
+    return "\t\t\tpass\n";
 
   // cast params to their correct python argument type to pass in the function call later
-  for (size_t j = 0; j < size(); ++j) {
-    file.oss << "\t\t\t" << at(j).name << " = <" << at(j).type.pythonArgumentType()
-             << ">(__params['" << at(j).name << "'])\n";
-  }
+  string s;
+  for (size_t j = 0; j < size(); ++j)
+    s += "\t\t\t" + at(j).name + " = <" + at(j).type.pythonArgumentType()
+             + ">(__params['" + at(j).name + "'])\n";
+  return s;
 }
 
 /* ************************************************************************* */

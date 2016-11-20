@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -27,8 +27,7 @@ namespace wrap {
 class Class;
 
 /// MethodBase class
-struct MethodBase: public FullyOverloadedFunction {
-
+struct MethodBase : public FullyOverloadedFunction {
   typedef const std::string& Str;
 
   // emit a list of comments, one for each overload
@@ -47,32 +46,29 @@ struct MethodBase: public FullyOverloadedFunction {
   // MATLAB code generation
   // classPath is class directory, e.g., ../matlab/@Point2
   void proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
-      Str cppClassName, Str matlabQualName, Str matlabUniqueName,
-      Str wrapperName, const TypeAttributesTable& typeAttributes,
-      std::vector<std::string>& functionNames) const;
+                               Str cppClassName, Str matlabQualName,
+                               Str matlabUniqueName, Str wrapperName,
+                               const TypeAttributesTable& typeAttributes,
+                               std::vector<std::string>& functionNames) const;
 
   // emit python wrapper
   void python_wrapper(FileWriter& wrapperFile, Str className) const;
 
   // emit cython pyx function call
-  void emit_cython_pyx_function_call(FileWriter& file,
-                                     const std::string& indent,
-                                     const std::string& caller,
-                                     const std::string& funcName,
-                                     size_t iOverload,
-                                     const Class& cls) const;
+  std::string pyx_functionCall(const std::string& caller, const std::string& funcName,
+                        size_t iOverload) const;
 
 protected:
-
   virtual void proxy_header(FileWriter& proxyFile) const = 0;
 
-  std::string wrapper_fragment(FileWriter& wrapperFile, Str cppClassName,
-      Str matlabUniqueName, int overload, int id,
-      const TypeAttributesTable& typeAttributes) const; ///< cpp wrapper
+  std::string wrapper_fragment(
+      FileWriter& wrapperFile, Str cppClassName, Str matlabUniqueName,
+      int overload, int id,
+      const TypeAttributesTable& typeAttributes) const;  ///< cpp wrapper
 
   virtual std::string wrapper_call(FileWriter& wrapperFile, Str cppClassName,
-      Str matlabUniqueName, const ArgumentList& args) const = 0;
+                                   Str matlabUniqueName,
+                                   const ArgumentList& args) const = 0;
 };
 
-} // \namespace wrap
-
+}  // \namespace wrap
