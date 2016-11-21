@@ -166,13 +166,13 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
     ArgumentList args = argumentList(i);
     file.oss << "\tdef " + instantiatedName + "_" + to_string(i) +
                     "(self, *args, **kwargs):\n";
-    file.oss << pyx_resolveOverloadParams(args);
+    file.oss << pyx_resolveOverloadParams(args, false); // lazy: always return None even if it's a void function
 
     /// Call cython corresponding function
     string caller = "self." + cls.pyxCythonObj() + ".get()";
 
     string ret = pyx_functionCall(caller, funcName, i);
-    if (!returnVals_[0].isVoid()) {
+    if (!returnVals_[i].isVoid()) {
       file.oss << "\t\tcdef " << returnVals_[i].pyx_returnType()
               << " ret = " << ret << "\n";
       file.oss << "\t\treturn True, " << returnVals_[i].pyx_casting("ret") << "\n";

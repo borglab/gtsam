@@ -147,7 +147,7 @@ void Constructor::emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const {
     ArgumentList args = argumentList(i);
     pyxFile.oss << "\tdef " + name_ + "_" + to_string(i) +
                     "(self, *args, **kwargs):\n";
-    pyxFile.oss << pyx_resolveOverloadParams(args);
+    pyxFile.oss << pyx_resolveOverloadParams(args, true);
 
     pyxFile.oss << "\t\tself." << cls.pyxCythonObj() << " = "
                 << cls.pyxSharedCythonClass() << "(new " << cls.pyxCythonClass()

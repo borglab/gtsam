@@ -115,7 +115,7 @@ void StaticMethod::emit_cython_pyx(FileWriter& file, const Class& cls) const {
     string pxdFuncName = name_ + ((i>0)?"_" + to_string(i):"");
     ArgumentList args = argumentList(i);
     file.oss << "\tdef " + funcName + "(*args, **kwargs):\n";
-    file.oss << pyx_resolveOverloadParams(args);
+    file.oss << pyx_resolveOverloadParams(args, false); // lazy: always return None even if it's a void function
 
     /// Call cython corresponding function and return
     string ret = pyx_functionCall(cls.pyxCythonClass(), pxdFuncName, i);

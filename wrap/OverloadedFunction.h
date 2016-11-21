@@ -71,10 +71,11 @@ public:
     return os;
   }
 
-  std::string pyx_resolveOverloadParams(const ArgumentList& args) const {
+  std::string pyx_resolveOverloadParams(const ArgumentList& args, bool isVoid) const {
     std::string s;
     s += "\t\tif len(args)+len(kwargs) !=" + std::to_string(args.size()) + ":\n";
-    s += "\t\t\treturn False\n";
+    s += "\t\t\treturn False";
+    s += (!isVoid) ? ", None\n" : "\n";
     if (args.size() > 0) {
       s += "\t\t__params = kwargs.copy()\n";
       s += "\t\t__names = [" + args.pyx_paramsList() + "]\n";
@@ -83,7 +84,8 @@ public:
       s += "\t\ttry:\n";
       s += args.pyx_castParamsToPythonType();
       s += "\t\texcept:\n";
-      s += "\t\t\treturn False\n";
+      s += "\t\t\treturn False";
+      s += (!isVoid) ? ", None\n" : "\n";
     }
     return s;
   }

@@ -1756,7 +1756,7 @@ class NonlinearFactorGraph {
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 virtual class NoiseModelFactor: gtsam::NonlinearFactor {
-  void equals(const gtsam::NoiseModelFactor& other, double tol) const;
+  bool equals(const gtsam::NoiseModelFactor& other, double tol) const;
   gtsam::noiseModel::Base* get_noiseModel() const; // deprecated by below
   gtsam::noiseModel::Base* noiseModel() const;
   Vector unwhitenedError(const gtsam::Values& x) const;
