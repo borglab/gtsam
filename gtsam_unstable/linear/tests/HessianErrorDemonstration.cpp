@@ -31,46 +31,50 @@ using namespace gtsam::symbol_shorthand;
  * FROM THE HESSIAN FACTOR IMPLEMENTATION
  */
 
-TEST_DISABLED(HessianFactor, ExampleThatShouldWork){
-  GaussianFactorGraph fg1;
-  //THIS SHOULD EQUAL x1^2 + x2^2 + x1x2 - x1 - x2 + 10
-  // In this case the hessian is indefinite(one negative and one positive eigen vale.
-  // Still, the problem has a solution
-  HessianFactor factor2d(X(1), X(2), 2*I_1x1, 2*I_1x1, I_1x1, 2*I_1x1, I_1x1, 10);
-  GTSAM_PRINT(factor2d);
-  fg1.push_back(factor2d);
-  fg1.optimize();
-}
+HessianFactor factor2d(X(1), X(2), 8*I_1x1, 2*I_1x1, -1.5*I_1x1, 10*I_1x1, 2*I_1x1, 0);
+HessianFactor factor2dRaised(X(1), X(2), 8*I_1x1, 2*I_1x1, -1.5*I_1x1, 10*I_1x1, 2*I_1x1, 100);
+LinearEquality jacobianFactorWithNoiseModel(X(1), -2*I_1x1, X(2), -1*I_1x1, -2.0* I_1x1, 0);
+JacobianFactor jacobianFactor(X(1), -2*I_1x1, X(2), -1*I_1x1, -2.0* I_1x1, 0);
 
 TEST(HessianFactor, TestFailsOnPostiveDefinite){
   GaussianFactorGraph fg1;
-  //THIS SHOULD EQUAL x1^2 + x2^2 + x1x2 - x1 - x2 + 10
-  // THE HESSIAN IS POSITIVE DEFINITE AND IT HAS A UNIQUE MINIMUM
-  HessianFactor factor2d(X(1), X(2), 8*I_1x1, 2*I_1x1, -1.5*I_1x1, 10*I_1x1, 2*I_1x1, 0);
-  JacobianFactor jacobianFactor(X(1), -2*I_1x1, X(2), -1*I_1x1, -2.0* I_1x1);
   fg1.push_back(factor2d);
-  fg1.push_back(jacobianFactor);
-  GTSAM_PRINT(fg1);
-  fg1.optimize();
+  fg1.push_back(jacobianFactorWithNoiseModel);
+//  GTSAM_PRINT(fg1);
+  VectorValues actual = fg1.optimize();
+  VectorValues expected;
+  expected.insert(X(1), 0.327586207*I_1x1);
+  expected.insert(X(2), 0.099137931*I_1x1);
+//  GTSAM_PRINT(actual);
+  CHECK(assert_equal(expected, actual, 1e-7))
 }
 TEST(HessianFactor, TestSuccedsOnPostiveDefinite){
   GaussianFactorGraph fg1;
-  //THIS SHOULD EQUAL x1^2 + x2^2 + x1x2 - x1 - x2 + 10
-  // THE HESSIAN IS POSITIVE DEFINITE AND IT HAS A UNIQUE MINIMUM
-  HessianFactor factor2d(X(1), X(2), 8*I_1x1, 2*I_1x1, -1.5*I_1x1, 10*I_1x1, 2*I_1x1, 100);
-  GTSAM_PRINT(factor2d);
   fg1.push_back(factor2d);
-  fg1.optimize();
+  fg1.push_back(jacobianFactor);
+  VectorValues actual = fg1.optimize();
+  VectorValues expected;
+  expected.insert(X(2), 0.327586207*I_1x1);
+  expected.insert(X(1), 0.099137931*I_1x1);
+//  GTSAM_PRINT(actual);
+  CHECK(assert_equal(expected, actual, 1e-7))
 }
 
-TEST(HessianFactor, TestFailsOnPositiveDefine1) {
-  GaussianFactorGraph fg;
-  const HessianFactor &factor = HessianFactor(X(1), 2*I_1x1, -I_1x1, 2*-20);
-  GTSAM_PRINT(factor);
-  fg.push_back(factor);
-  VectorValues solution  = fg.optimize();
-  CHECK(assert_equal(-0.5*I_1x1, solution.at(X(1)), 1e-9));
+TEST(HessianFactor, TestSuccedsWithAddedConstant){
+  GaussianFactorGraph fg1;
+  fg1.push_back(factor2dRaised);
+  fg1.push_back(jacobianFactorWithNoiseModel);
+  VectorValues actual = fg1.optimize();
+  VectorValues expected;
+  expected.insert(X(2), 0.327586207*I_1x1);
+  expected.insert(X(1), 0.099137931*I_1x1);
+  GTSAM_PRINT(fg1);
+  GTSAM_PRINT(HessianFactor(jacobianFactor));
+//  GTSAM_PRINT(actual);
+  CHECK(assert_equal(expected, actual, 1e-7))
 }
+
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
