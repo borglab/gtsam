@@ -1,16 +1,16 @@
 
 TODO:
-☐ Allow overloading methods. The current solution is annoying!!!
 ☐ forward declaration?
 ☐ Global functions
 ☐ wrap VariableIndex: why is it in inference? If need to, shouldn't have constructors to specific FactorGraphs
 ☐ [REFACTOR] better name for uninstantiateClass: very vague!!
 ☐ [REFACTOR] typesEqual --> equalSignature
 ☐ Unify cython/gtsam.h and the original gtsam.h
-☐ Proper overloads (constructors, static methods, methods)
 ☐ CMake install script
 
 Completed/Cancelled:
+✔ Proper overloads (constructors, static methods, methods)
+✔ Allow overloading methods. The current solution is annoying!!! @done (20-11-16 21:00)
 ✔ Casting from parent and grandparents 
 ✔ Allow overloading constructors. The current solution is annoying!!! @done (16-11-16 17:00)
 ✔ Support "print obj" @done (16-11-16 17:00)
