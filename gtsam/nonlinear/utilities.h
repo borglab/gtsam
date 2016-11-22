@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -43,7 +44,7 @@ FastList<Key> createKeyList(const Vector& I) {
 }
 
 // Create a KeyList from indices using symbol
-FastList<Key> createKeyList(string s, const Vector& I) {
+FastList<Key> createKeyList(std::string s, const Vector& I) {
   FastList<Key> set;
   char c = s[0];
   for (int i = 0; i < I.size(); i++)
@@ -60,7 +61,7 @@ FastVector<Key> createKeyVector(const Vector& I) {
 }
 
 // Create a KeyVector from indices using symbol
-FastVector<Key> createKeyVector(string s, const Vector& I) {
+FastVector<Key> createKeyVector(std::string s, const Vector& I) {
   FastVector<Key> set;
   char c = s[0];
   for (int i = 0; i < I.size(); i++)
@@ -77,7 +78,7 @@ KeySet createKeySet(const Vector& I) {
 }
 
 // Create a KeySet from indices using symbol
-KeySet createKeySet(string s, const Vector& I) {
+KeySet createKeySet(std::string s, const Vector& I) {
   KeySet set;
   char c = s[0];
   for (int i = 0; i < I.size(); i++)
