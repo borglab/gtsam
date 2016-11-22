@@ -149,7 +149,8 @@ void Module::parseMarkup(const std::string& data) {
                      bl::var(newType), bl::var(currentInclude))];
 
   // Create grammar for global functions
-  GlobalFunctionGrammar global_function_g(global_functions,namespaces);
+  GlobalFunctionGrammar global_function_g(global_functions, namespaces,
+                                          currentInclude);
 
   Rule include_p = str_p("#include") >> ch_p('<') >>
                    (*(anychar_p - '>'))[push_back_a(includes)]
@@ -364,6 +365,11 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
       }
       pxdFile.oss << "\n\n";
   }
+
+  //... wrap global functions
+  for(const GlobalFunctions::value_type& p: global_functions)
+    p.second.emit_cython_pxd(pxdFile);
+
   pxdFile.emit(true);
 }
 
@@ -387,6 +393,9 @@ void Module::emit_cython_pyx(FileWriter& pyxFile) const {
   for(const Class& cls: expandedClasses)
     cls.emit_cython_pyx(pyxFile, expandedClasses);
   pyxFile.oss << "\n";
+  //... wrap global functions
+  for(const GlobalFunctions::value_type& p: global_functions)
+    p.second.emit_cython_pyx(pyxFile);
   pyxFile.emit(true);
 }
 

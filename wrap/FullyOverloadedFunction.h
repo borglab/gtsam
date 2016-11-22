@@ -19,6 +19,7 @@
 #pragma once
 
 #include "OverloadedFunction.h"
+#include <array>
 
 namespace wrap {
 
@@ -116,6 +117,19 @@ public:
     return first;
   }
 
+  // emit cython pyx function call
+  std::string pyx_functionCall(const std::string& caller, const std::string& funcName,
+                        size_t iOverload) const;
+
+  /// Cython: Rename functions which names are python keywords
+  static const std::array<std::string, 2> pythonKeywords;
+  static std::string pyRename(const std::string& name) {
+    if (std::find(pythonKeywords.begin(), pythonKeywords.end(), name) ==
+        pythonKeywords.end())
+      return name;
+    else
+      return name + "_";
+  }
 };
 
 // Templated checking functions

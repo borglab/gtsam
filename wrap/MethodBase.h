@@ -54,10 +54,6 @@ struct MethodBase : public FullyOverloadedFunction {
   // emit python wrapper
   void python_wrapper(FileWriter& wrapperFile, Str className) const;
 
-  // emit cython pyx function call
-  std::string pyx_functionCall(const std::string& caller, const std::string& funcName,
-                        size_t iOverload) const;
-
 protected:
   virtual void proxy_header(FileWriter& proxyFile) const = 0;
 

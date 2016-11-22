@@ -16,11 +16,12 @@ using namespace std;
 
 /* ************************************************************************* */
 void GlobalFunction::addOverload(const Qualified& overload,
-    const ArgumentList& args, const ReturnValue& retVal,
+    const ArgumentList& args, const ReturnValue& retVal, const std::string& _includeFile,
     boost::optional<const Qualified> instName, bool verbose) {
   FullyOverloadedFunction::addOverload(overload.name(), args, retVal, instName,
       verbose);
   overloads.push_back(overload);
+  includeFile = _includeFile;
 }
 
 /* ************************************************************************* */
@@ -129,6 +130,47 @@ void GlobalFunction::generateSingleFunction(const string& toolboxPath,
 /* ************************************************************************* */
 void GlobalFunction::python_wrapper(FileWriter& wrapperFile) const {
   wrapperFile.oss << "def(\"" << name_ << "\", " << name_ << ");\n";
+}
+
+/* ************************************************************************* */
+void GlobalFunction::emit_cython_pxd(FileWriter& file) const {
+  file.oss << "cdef extern from \"" << includeFile << "\" namespace \""
+                << overloads[0].qualifiedNamespaces("::") 
+                << "\":" << endl;
+  for (size_t i = 0; i < nrOverloads(); ++i) {
+    file.oss << "\t\t";
+    returnVals_[i].emit_cython_pxd(file, "");
+    file.oss << pyRename(name_) + " \"" + overloads[0].qualifiedName("::") +
+                    "\"(";
+    argumentList(i).emit_cython_pxd(file, "");
+    file.oss << ")";
+    file.oss << "\n";
+  }
+}
+
+/* ************************************************************************* */
+void GlobalFunction::emit_cython_pyx(FileWriter& file) const {
+  string funcName = pyRename(name_);
+
+  // Function definition
+  file.oss << "def " << funcName;
+  // modify name of function instantiation as python doesn't allow overloads
+  // e.g. template<T={A,B,C}> funcName(...) --> funcNameA, funcNameB, funcNameC
+  if (templateArgValue_) file.oss << templateArgValue_->name();
+  // funtion arguments
+  file.oss << "(";
+  argumentList(0).emit_cython_pyx(file);
+  file.oss << "):\n";
+
+  /// Call cython corresponding function and return
+  string ret = pyx_functionCall("pxd", funcName, 0);
+  if (!returnVals_[0].isVoid()) {
+    file.oss << "\tcdef " << returnVals_[0].pyx_returnType()
+             << " ret = " << ret << "\n";
+    file.oss << "\treturn " << returnVals_[0].pyx_casting("ret") << "\n";
+  } else {
+    file.oss << "\t" << ret << "\n";
+  }
 }
 
 /* ************************************************************************* */

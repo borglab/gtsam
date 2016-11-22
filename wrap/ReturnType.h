@@ -43,7 +43,9 @@ struct ReturnType : public Qualified {
       throw DependencyMissing(key, "checking return type of " + s);
   }
 
+  /// @param className the actual class name to use when "This" is specified
   void emit_cython_pxd(FileWriter& file, const std::string& className) const;
+
   std::string pyx_returnType(bool addShared = true) const;
   std::string pyx_casting(const std::string& var,
                           bool isSharedVar = true) const;

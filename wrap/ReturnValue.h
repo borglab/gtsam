@@ -71,6 +71,7 @@ struct ReturnValue {
 
   void emit_matlab(FileWriter& proxyFile) const;
 
+  /// @param className the actual class name to use when "This" is specified
   void emit_cython_pxd(FileWriter& file, const std::string& className) const;
   std::string pyx_returnType() const;
   std::string pyx_casting(const std::string& var) const;
