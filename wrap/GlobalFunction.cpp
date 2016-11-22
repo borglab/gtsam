@@ -149,7 +149,7 @@ void GlobalFunction::emit_cython_pxd(FileWriter& file) const {
 }
 
 /* ************************************************************************* */
-void GlobalFunction::emit_cython_pyx(FileWriter& file) const {
+void GlobalFunction::emit_cython_pyx_no_overload(FileWriter& file) const {
   string funcName = pyRename(name_);
 
   // Function definition
@@ -173,6 +173,44 @@ void GlobalFunction::emit_cython_pyx(FileWriter& file) const {
   }
 }
 
+/* ************************************************************************* */
+void GlobalFunction::emit_cython_pyx(FileWriter& file) const {
+  string funcName = pyRename(name_);
+
+  size_t N = nrOverloads();
+  if (N == 1) {
+    emit_cython_pyx_no_overload(file);
+    return;
+  }
+
+  // Dealing with overloads..
+  file.oss << "def " << funcName << "(*args, **kwargs):\n";
+  file.oss << pyx_checkDuplicateNargsKwArgs(1);
+  for (size_t i = 0; i < N; ++i) {
+    file.oss << "\tsuccess, results = " << funcName << "_" << i
+             << "(*args, **kwargs)\n";
+    file.oss << "\tif success:\n\t\t\treturn results\n";
+  }
+  file.oss << "\traise TypeError('Could not find the correct overload')\n";
+
+  for (size_t i = 0; i < N; ++i) {
+    ArgumentList args = argumentList(i);
+    file.oss << "def " + funcName + "_" + to_string(i) +
+                    "(*args, **kwargs):\n";
+    file.oss << pyx_resolveOverloadParams(args, false, 1); // lazy: always return None even if it's a void function
+
+    /// Call cython corresponding function
+    string ret = pyx_functionCall("pxd", funcName, i);
+    if (!returnVals_[i].isVoid()) {
+      file.oss << "\tcdef " << returnVals_[i].pyx_returnType()
+              << " ret = " << ret << "\n";
+      file.oss << "\treturn True, " << returnVals_[i].pyx_casting("ret") << "\n";
+    } else {
+      file.oss << "\t" << ret << "\n";
+      file.oss << "\treturn True, None\n";
+    }
+  }
+}
 /* ************************************************************************* */
 
 } // \namespace wrap

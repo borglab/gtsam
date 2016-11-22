@@ -71,20 +71,22 @@ public:
     return os;
   }
 
-  std::string pyx_resolveOverloadParams(const ArgumentList& args, bool isVoid) const {
+  std::string pyx_resolveOverloadParams(const ArgumentList& args, bool isVoid, size_t indentLevel = 2) const {
+    std::string indent;
+    for (size_t i = 0; i<indentLevel; ++i) indent += "\t";
     std::string s;
-    s += "\t\tif len(args)+len(kwargs) !=" + std::to_string(args.size()) + ":\n";
-    s += "\t\t\treturn False";
+    s += indent + "if len(args)+len(kwargs) !=" + std::to_string(args.size()) + ":\n";
+    s += indent + "\treturn False";
     s += (!isVoid) ? ", None\n" : "\n";
     if (args.size() > 0) {
-      s += "\t\t__params = kwargs.copy()\n";
-      s += "\t\t__names = [" + args.pyx_paramsList() + "]\n";
-      s += "\t\tfor i in range(len(args)):\n"; 
-      s += "\t\t\t__params[__names[i]] = args[i]\n";
-      s += "\t\ttry:\n";
+      s += indent + "__params = kwargs.copy()\n";
+      s += indent + "__names = [" + args.pyx_paramsList() + "]\n";
+      s += indent + "for i in range(len(args)):\n"; 
+      s += indent + "\t__params[__names[i]] = args[i]\n";
+      s += indent + "try:\n";
       s += args.pyx_castParamsToPythonType();
-      s += "\t\texcept:\n";
-      s += "\t\t\treturn False";
+      s += indent + "except:\n";
+      s += indent + "\treturn False";
       s += (!isVoid) ? ", None\n" : "\n";
     }
     return s;
@@ -92,7 +94,9 @@ public:
 
   /// if two overloading methods have the same number of arguments, they have
   /// to be resolved via keyword args
-  std::string pyx_checkDuplicateNargsKwArgs() const {
+  std::string pyx_checkDuplicateNargsKwArgs(size_t indentLevel = 2) const {
+    std::string indent;
+    for (size_t i = 0; i<indentLevel; ++i) indent += "\t";
     std::unordered_set<size_t> nargsSet;
     std::vector<size_t> nargsDuplicates;
     for (size_t i = 0; i < nrOverloads(); ++i) {
@@ -105,13 +109,13 @@ public:
 
     std::string s;
     if (nargsDuplicates.size() > 0) {
-      s += "\t\tif len(kwargs)==0 and len(args)+len(kwargs) in [";
+      s += indent + "if len(kwargs)==0 and len(args)+len(kwargs) in [";
       for (size_t i = 0; i < nargsDuplicates.size(); ++i) {
         s += std::to_string(nargsDuplicates[i]);
         if (i < nargsDuplicates.size() - 1) s += ",";
       }
       s += "]:\n";
-      s += "\t\t\traise TypeError('Overloads with the same number of " 
+      s += indent + "\traise TypeError('Overloads with the same number of " 
            "arguments exist. Please use keyword arguments to " 
            "differentiate them!')\n";
     }

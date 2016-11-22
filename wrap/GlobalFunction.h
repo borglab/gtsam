@@ -54,6 +54,7 @@ struct GlobalFunction: public FullyOverloadedFunction {
   // emit cython wrapper
   void emit_cython_pxd(FileWriter& pxdFile) const;
   void emit_cython_pyx(FileWriter& pyxFile) const;
+  void emit_cython_pyx_no_overload(FileWriter& pyxFile) const;
 
 private:
 
