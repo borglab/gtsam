@@ -21,8 +21,8 @@ struct TypedefPair {
     void emit_cython_pxd(FileWriter& file) const {
         file.oss << "cdef extern from \"" << includeFile << "\" namespace \""
                  << oldType.qualifiedNamespaces("::") << "\":\n";
-        file.oss << "\tctypedef " << oldType.cythonClass() << " "
-                 << newType.cythonClass() << "\n";
+        file.oss << "\tctypedef " << oldType.pxdClassName() << " "
+                 << newType.pxdClassName() << "\n";
     }
 };
 }

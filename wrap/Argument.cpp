@@ -100,7 +100,7 @@ void Argument::proxy_check(FileWriter& proxyFile, const string& s) const {
 
 /* ************************************************************************* */
 void Argument::emit_cython_pxd(FileWriter& file, const std::string& className) const {
-  string typeName = type.cythonClass();
+  string typeName = type.pxdClassName();
   if (typeName == "This") typeName = className;
 
   string cythonType = typeName;
@@ -117,15 +117,15 @@ void Argument::emit_cython_pxd(FileWriter& file, const std::string& className) c
 
 /* ************************************************************************* */
 void Argument::emit_cython_pyx(FileWriter& file) const {
-  file.oss << type.pythonArgumentType() << " " << name;
+  file.oss << type.pyxArgumentType() << " " << name;
 }
 
 /* ************************************************************************* */
 std::string Argument::pyx_asParam() const {
-  string cythonType = type.cythonClass();
+  string cythonType = type.pxdClassName();
   string cythonVar;
   if (type.isNonBasicType()) {
-    cythonVar = name + "." + type.pyxCythonObj();
+    cythonVar = name + "." + type.shared_pxd_obj_in_pyx();
     if (!is_ptr) cythonVar = "deref(" + cythonVar + ")";
   } else if (type.isEigen()) {
     cythonVar = "<" + cythonType + ">" + "(Map[" + cythonType + "](" + name + "))";
@@ -258,7 +258,7 @@ std::string ArgumentList::pyx_castParamsToPythonType() const {
   // cast params to their correct python argument type to pass in the function call later
   string s;
   for (size_t j = 0; j < size(); ++j)
-    s += "\t\t\t" + at(j).name + " = <" + at(j).type.pythonArgumentType()
+    s += "\t\t\t" + at(j).name + " = <" + at(j).type.pyxArgumentType()
              + ">(__params['" + at(j).name + "'])\n";
   return s;
 }

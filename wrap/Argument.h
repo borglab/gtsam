@@ -39,7 +39,7 @@ struct Argument {
       type(t), name(n), is_const(false), is_ref(false), is_ptr(false) {
   }
 
-  bool typesEqual(const Argument& other) const {
+  bool isSameSignature(const Argument& other) const {
     return type == other.type
         && is_const == other.is_const && is_ref == other.is_ref
         && is_ptr == other.is_ptr;
@@ -98,9 +98,9 @@ struct ArgumentList: public std::vector<Argument> {
 
   ArgumentList expandTemplate(const TemplateSubstitution& ts) const;
 
-  bool typesEqual(const ArgumentList& other) const {
+  bool isSameSignature(const ArgumentList& other) const {
     for(size_t i = 0; i<size(); ++i) 
-      if (!at(i).typesEqual(other[i])) return false;
+      if (!at(i).isSameSignature(other[i])) return false;
     return true;
   }
 

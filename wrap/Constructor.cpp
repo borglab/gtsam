@@ -149,8 +149,8 @@ void Constructor::emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const {
                     "(self, *args, **kwargs):\n";
     pyxFile.oss << pyx_resolveOverloadParams(args, true);
 
-    pyxFile.oss << "\t\tself." << cls.pyxCythonObj() << " = "
-                << cls.pyxSharedCythonClass() << "(new " << cls.pyxCythonClass()
+    pyxFile.oss << "\t\tself." << cls.shared_pxd_obj_in_pyx() << " = "
+                << cls.shared_pxd_class_in_pyx() << "(new " << cls.pxd_class_in_pyx()
                 << "(" << args.pyx_asParams() << "))\n";
     pyxFile.oss << "\t\treturn True\n\n";
   }

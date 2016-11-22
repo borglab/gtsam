@@ -4,14 +4,14 @@ TODO:
 ☐ Global functions
 ☐ wrap VariableIndex: why is it in inference? If need to, shouldn't have constructors to specific FactorGraphs
 ☐ [REFACTOR] better name for uninstantiateClass: very vague!!
-☐ [REFACTOR] typesEqual --> equalSignature
 ☐ Unify cython/gtsam.h and the original gtsam.h
 ☐ CMake install script
 
 Completed/Cancelled:
-✔ Proper overloads (constructors, static methods, methods)
+✔ [REFACTOR] typesEqual --> isSameSignature @done (22-11-16 21:00)
+✔ Proper overloads (constructors, static methods, methods) @done (20-11-16 21:00)
 ✔ Allow overloading methods. The current solution is annoying!!! @done (20-11-16 21:00)
-✔ Casting from parent and grandparents 
+✔ Casting from parent and grandparents @done (16-11-16 17:00)
 ✔ Allow overloading constructors. The current solution is annoying!!! @done (16-11-16 17:00)
 ✔ Support "print obj" @done (16-11-16 17:00)
 ✔ methods for FastVector: at, [], ...  @done (16-11-16 17:00)
@@ -36,7 +36,7 @@ Completed/Cancelled:
 
 - inference before symbolic/linear
 - what's the purpose of "virtual" ??
-- Need default constructor and default copy constructor for almost every class... :(
+- Need default constructor and default copy constructor for almost every classes... :(
   ☐ support these constructors by default and declare "delete" for special classes?
 
 Installation:

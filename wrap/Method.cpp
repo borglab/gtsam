@@ -95,10 +95,10 @@ string Method::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
 void Method::emit_cython_pxd(FileWriter& file, const Class& cls) const {
   for (size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "\t\t";
-    returnVals_[i].emit_cython_pxd(file, cls.cythonClass());
+    returnVals_[i].emit_cython_pxd(file, cls.pxdClassName());
     file.oss << pyRename(name_) + " \"" + name_ + "\""
              << "(";
-    argumentList(i).emit_cython_pxd(file, cls.cythonClass());
+    argumentList(i).emit_cython_pxd(file, cls.pxdClassName());
     file.oss << ")";
     if (is_const_) file.oss << " const";
     file.oss << "\n";
@@ -125,7 +125,7 @@ void Method::emit_cython_pyx_no_overload(FileWriter& file,
   file.oss << "):\n";
 
   /// Call cython corresponding function and return
-  string caller = "self." + cls.pyxCythonObj() + ".get()";
+  string caller = "self." + cls.shared_pxd_obj_in_pyx() + ".get()";
   string ret = pyx_functionCall(caller, funcName, 0);
   if (!returnVals_[0].isVoid()) {
     file.oss << "\t\tcdef " << returnVals_[0].pyx_returnType()
@@ -169,7 +169,7 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
     file.oss << pyx_resolveOverloadParams(args, false); // lazy: always return None even if it's a void function
 
     /// Call cython corresponding function
-    string caller = "self." + cls.pyxCythonObj() + ".get()";
+    string caller = "self." + cls.shared_pxd_obj_in_pyx() + ".get()";
 
     string ret = pyx_functionCall(caller, funcName, i);
     if (!returnVals_[i].isVoid()) {

@@ -353,14 +353,14 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
       for (const Class& expCls : expandedClasses) {
           if (!expCls.templateClass || expCls.templateClass->name_ != cls.name_)
               continue;
-          pxdFile.oss << "ctypedef " << expCls.templateClass->cythonClass()
+          pxdFile.oss << "ctypedef " << expCls.templateClass->pxdClassName()
                       << "[";
           for (size_t i = 0; i < expCls.templateInstTypeList.size(); ++i)
-              pxdFile.oss << expCls.templateInstTypeList[i].cythonClass()
+              pxdFile.oss << expCls.templateInstTypeList[i].pxdClassName()
                           << ((i == expCls.templateInstTypeList.size() - 1)
                                   ? ""
                                   : ", ");
-          pxdFile.oss << "] " << expCls.cythonClass() << "\n";
+          pxdFile.oss << "] " << expCls.pxdClassName() << "\n";
       }
       pxdFile.oss << "\n\n";
   }
@@ -372,12 +372,12 @@ void Module::emit_cython_pyx(FileWriter& pyxFile) const {
   // headers...
   string pxdHeader = name + "_wrapper";
   pyxFile.oss << "cimport numpy as np\n"
-                 "cimport " << pxdHeader << " as " << name << "\n"
+                 "cimport " << pxdHeader << " as " << "pxd" << "\n"
                  "from "<< pxdHeader << " cimport shared_ptr\n"
                  "from "<< pxdHeader << " cimport dynamic_pointer_cast\n";
-  // import all typedefs, e.g. from gtsam cimport Key, so we don't need to say gtsam.Key
+  // import all typedefs, e.g. from gtsam_wrapper cimport Key, so we don't need to say gtsam.Key
   for(const Qualified& q: Qualified::BasicTypedefs) {
-    pyxFile.oss << "from " << pxdHeader << " cimport " << q.cythonClass() << "\n";
+    pyxFile.oss << "from " << pxdHeader << " cimport " << q.pxdClassName() << "\n";
   }
   pyxFile.oss << "from eigency.core cimport *\n"
                  "from libcpp cimport bool\n\n"

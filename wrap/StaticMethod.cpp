@@ -62,9 +62,9 @@ void StaticMethod::emit_cython_pxd(FileWriter& file, const Class& cls) const {
   for(size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "\t\t@staticmethod\n";
     file.oss << "\t\t";
-    returnVals_[i].emit_cython_pxd(file, cls.cythonClass());
+    returnVals_[i].emit_cython_pxd(file, cls.pxdClassName());
     file.oss << name_ + ((i>0)?"_" + to_string(i):"") << " \"" << name_ << "\"" << "(";
-    argumentList(i).emit_cython_pxd(file, cls.cythonClass());
+    argumentList(i).emit_cython_pxd(file, cls.pxdClassName());
     file.oss << ")\n";
   }
 }
@@ -79,7 +79,7 @@ void StaticMethod::emit_cython_pyx_no_overload(FileWriter& file,
   file.oss << "):\n";
 
   /// Call cython corresponding function and return
-  string ret = pyx_functionCall(cls.pyxCythonClass(), name_, 0);
+  string ret = pyx_functionCall(cls.pxd_class_in_pyx(), name_, 0);
   file.oss << "\t\t";
   if (!returnVals_[0].isVoid()) {
     file.oss << "return " << returnVals_[0].pyx_casting(ret) << "\n";
@@ -102,7 +102,7 @@ void StaticMethod::emit_cython_pyx(FileWriter& file, const Class& cls) const {
   file.oss << pyx_checkDuplicateNargsKwArgs();
   for (size_t i = 0; i < N; ++i) {
     string funcName = name_ + "_" + to_string(i);
-    file.oss << "\t\tsuccess, results = " << cls.pythonClass() << "."
+    file.oss << "\t\tsuccess, results = " << cls.pyxClassName() << "."
              << funcName << "(*args, **kwargs)\n";
     file.oss << "\t\tif success:\n\t\t\treturn results\n";
   }
@@ -118,7 +118,7 @@ void StaticMethod::emit_cython_pyx(FileWriter& file, const Class& cls) const {
     file.oss << pyx_resolveOverloadParams(args, false); // lazy: always return None even if it's a void function
 
     /// Call cython corresponding function and return
-    string ret = pyx_functionCall(cls.pyxCythonClass(), pxdFuncName, i);
+    string ret = pyx_functionCall(cls.pxd_class_in_pyx(), pxdFuncName, i);
     if (!returnVals_[i].isVoid()) {
       file.oss << "\t\tcdef " << returnVals_[i].pyx_returnType()
               << " ret = " << ret << "\n";

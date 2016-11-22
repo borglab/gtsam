@@ -476,7 +476,7 @@ void Class::removeInheritedNontemplateMethods(vector<Class>& classes) {
                        [&](boost::tuple<ReturnValue, ArgumentList> const&
                                parentOverload) {
                            return overload.get<0>() == parentOverload.get<0>() &&
-                                  overload.get<1>().typesEqual(parentOverload.get<1>());
+                                  overload.get<1>().isSameSignature(parentOverload.get<1>());
                        }) != parentMethodOverloads.end();
             return found;
         });
@@ -732,7 +732,7 @@ void Class::python_wrapper(FileWriter& wrapperFile) const {
 void Class::emit_cython_pxd(FileWriter& pxdFile, const std::vector<Class>& allClasses) const {
   pxdFile.oss << "cdef extern from \"" << includeFile << "\" namespace \""
                 << qualifiedNamespaces("::") << "\":" << endl;
-  pxdFile.oss << "\tcdef cppclass " << cythonClass() << " \"" << qualifiedName("::") << "\"";
+  pxdFile.oss << "\tcdef cppclass " << pxdClassName() << " \"" << qualifiedName("::") << "\"";
   if (templateArgs.size()>0) {
     pxdFile.oss << "[";
     for(size_t i = 0; i<templateArgs.size(); ++i) {
@@ -741,10 +741,10 @@ void Class::emit_cython_pxd(FileWriter& pxdFile, const std::vector<Class>& allCl
     }
     pxdFile.oss << "]";
   }
-  if (parentClass) pxdFile.oss << "(" <<  parentClass->cythonClass() << ")";
+  if (parentClass) pxdFile.oss << "(" <<  parentClass->pxdClassName() << ")";
   pxdFile.oss << ":\n";
 
-  constructor.emit_cython_pxd(pxdFile, cythonClass());
+  constructor.emit_cython_pxd(pxdFile, pxdClassName());
   if (constructor.nrOverloads()>0) pxdFile.oss << "\n";
 
   for(const StaticMethod& m: static_methods | boost::adaptors::map_values)
@@ -767,18 +767,18 @@ void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj,
                              const std::string& cySharedObj,
                              const std::vector<Class>& allClasses) const {
     if (parentClass) {
-      pyxFile.oss << pyObj << "." << parentClass->pyxCythonObj() << " = "
-                  << "<" << parentClass->pyxSharedCythonClass() << ">("
+      pyxFile.oss << pyObj << "." << parentClass->shared_pxd_obj_in_pyx() << " = "
+                  << "<" << parentClass->shared_pxd_class_in_pyx() << ">("
                   << cySharedObj << ")\n";
       // Find the parent class with name "parentClass" and point its cython obj
       // to the same pointer
       auto parent_it = find_if(allClasses.begin(), allClasses.end(),
                                [this](const Class& cls) {
-                                   return cls.cythonClass() ==
-                                          this->parentClass->cythonClass();
+                                   return cls.pxdClassName() ==
+                                          this->parentClass->pxdClassName();
                                });
       if (parent_it == allClasses.end()) {
-          cerr << "Can't find parent class: " << parentClass->cythonClass();
+          cerr << "Can't find parent class: " << parentClass->pxdClassName();
         throw std::runtime_error("Parent class not found!");
       }
       parent_it->pyxInitParentObj(pyxFile, pyObj, cySharedObj, allClasses);
@@ -788,25 +788,25 @@ void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj,
 /* ************************************************************************* */
 void Class::pyxDynamicCast(FileWriter& pyxFile, const Class& curLevel,
                            const std::vector<Class>& allClasses) const {
-  std::string me = this->pythonClass(), sharedMe = this->pyxSharedCythonClass();
+  std::string me = this->pyxClassName(), sharedMe = this->shared_pxd_class_in_pyx();
   if (curLevel.parentClass) {
-    std::string parent = curLevel.parentClass->pythonClass(),
-                parentObj = curLevel.parentClass->pyxCythonObj(),
-                parentCythonClass = curLevel.parentClass->pyxCythonClass();
+    std::string parent = curLevel.parentClass->pyxClassName(),
+                parentObj = curLevel.parentClass->shared_pxd_obj_in_pyx(),
+                parentCythonClass = curLevel.parentClass->pxd_class_in_pyx();
     pyxFile.oss << "def dynamic_cast_" << me << "_" << parent << "(" << parent
                 << " parent):\n";
     pyxFile.oss << "\treturn " << me << ".cyCreateFromShared(<" << sharedMe
-                << ">dynamic_pointer_cast[" << pyxCythonClass() << ","
+                << ">dynamic_pointer_cast[" << pxd_class_in_pyx() << ","
                 << parentCythonClass << "](parent." << parentObj
                 << "))\n";
     // Move up higher to one level: Find the parent class with name "parentClass"
     auto parent_it = find_if(allClasses.begin(), allClasses.end(),
                              [&curLevel](const Class& cls) {
-                                 return cls.cythonClass() ==
-                                        curLevel.parentClass->cythonClass();
+                                 return cls.pxdClassName() ==
+                                        curLevel.parentClass->pxdClassName();
                              });
     if (parent_it == allClasses.end()) {
-        cerr << "Can't find parent class: " << parentClass->cythonClass();
+        cerr << "Can't find parent class: " << parentClass->pxdClassName();
       throw std::runtime_error("Parent class not found!");
     }
     pyxDynamicCast(pyxFile, *parent_it, allClasses);
@@ -815,29 +815,29 @@ void Class::pyxDynamicCast(FileWriter& pyxFile, const Class& curLevel,
 
 /* ************************************************************************* */
 void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allClasses) const {
-  pyxFile.oss << "cdef class " << pythonClass();
-  if (parentClass) pyxFile.oss << "(" <<  parentClass->pythonClass() << ")";
+  pyxFile.oss << "cdef class " << pyxClassName();
+  if (parentClass) pyxFile.oss << "(" <<  parentClass->pyxClassName() << ")";
   pyxFile.oss << ":\n";
 
   // shared variable of the corresponding cython object 
-  pyxFile.oss << "\tcdef " << pyxSharedCythonClass() << " " << pyxCythonObj() << "\n";
+  pyxFile.oss << "\tcdef " << shared_pxd_class_in_pyx() << " " << shared_pxd_obj_in_pyx() << "\n";
 
   // __cinit___
   pyxFile.oss << "\tdef __cinit__(self, *args, **kwargs):\n"
-                 "\t\tself." << pyxCythonObj() << " = " 
-                 << pyxSharedCythonClass() << "()\n";
+                 "\t\tself." << shared_pxd_obj_in_pyx() << " = " 
+                 << shared_pxd_class_in_pyx() << "()\n";
 
   pyxFile.oss << constructor.pyx_checkDuplicateNargsKwArgs();
   for (size_t i = 0; i<constructor.nrOverloads(); ++i) {
     pyxFile.oss << "\t\t" << (i == 0 ? "if" : "elif") << " self."
-                << pythonClass() << "_" << i
+                << pyxClassName() << "_" << i
                 << "(*args, **kwargs):\n\t\t\tpass\n";
   }
   if (constructor.nrOverloads()>0)
-    pyxFile.oss << "\t\telse:\n\t\t\traise TypeError('" << pythonClass()
+    pyxFile.oss << "\t\telse:\n\t\t\traise TypeError('" << pyxClassName()
                 << " construction failed!')\n";
 
-  pyxInitParentObj(pyxFile, "\t\tself", "self." + pyxCythonObj(), allClasses);
+  pyxInitParentObj(pyxFile, "\t\tself", "self." + shared_pxd_obj_in_pyx(), allClasses);
   pyxFile.oss << "\n";
 
   // Constructors
@@ -846,10 +846,10 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
 
   // cyCreateFromShared
   pyxFile.oss << "\t@staticmethod\n";
-  pyxFile.oss << "\tcdef " << pythonClass() << " cyCreateFromShared(const " 
-              << pyxSharedCythonClass() << "& other):\n"
-              << "\t\tcdef " << pythonClass() << " ret = " << pythonClass() << "()\n"
-              << "\t\tret." << pyxCythonObj() << " = other\n";
+  pyxFile.oss << "\tcdef " << pyxClassName() << " cyCreateFromShared(const " 
+              << shared_pxd_class_in_pyx() << "& other):\n"
+              << "\t\tcdef " << pyxClassName() << " ret = " << pyxClassName() << "()\n"
+              << "\t\tret." << shared_pxd_obj_in_pyx() << " = other\n";
   pyxInitParentObj(pyxFile, "\t\tret", "other", allClasses);
   pyxFile.oss << "\t\treturn ret" << "\n";
 

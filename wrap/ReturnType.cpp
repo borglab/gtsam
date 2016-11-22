@@ -68,7 +68,7 @@ void ReturnType::wrapTypeUnwrap(FileWriter& wrapperFile) const {
 /* ************************************************************************* */
 void ReturnType::emit_cython_pxd(FileWriter& file,
                                  const std::string& className) const {
-  string typeName = cythonClass();
+  string typeName = pxdClassName();
   string cythonType;
   if (isPtr)
     cythonType = "shared_ptr[" + typeName + "]";
@@ -80,7 +80,7 @@ void ReturnType::emit_cython_pxd(FileWriter& file,
 
 /* ************************************************************************* */
 std::string ReturnType::pyx_returnType(bool addShared) const {
-  string retType = pyxCythonClass();
+  string retType = pxd_class_in_pyx();
   if (isPtr || (isNonBasicType() && addShared))
     retType = "shared_ptr[" + retType + "]";
   return retType;
@@ -93,11 +93,11 @@ std::string ReturnType::pyx_casting(const std::string& var,
     return "ndarray_copy(" + var + ")";
   else if (isNonBasicType()) {
     if (isPtr || isSharedVar)
-      return pythonClass() + ".cyCreateFromShared(" + var + ")";
+      return pyxClassName() + ".cyCreateFromShared(" + var + ")";
     else {
       // construct a shared_ptr if var is not a shared ptr
-      return pythonClass() + ".cyCreateFromShared(" + pyxSharedCythonClass() +
-             "(new " + pyxCythonClass() + "(" + var + ")))";
+      return pyxClassName() + ".cyCreateFromShared(" + shared_pxd_class_in_pyx() +
+             "(new " + pxd_class_in_pyx() + "(" + var + ")))";
     }
   } else
     return var;

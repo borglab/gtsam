@@ -185,10 +185,10 @@ public:
     return result;
   }
 
-  /// name of the Cython class in pxd
+  /// name of Cython classes in pxd
   /// Normal classes: innerNamespace_ClassName, e.g. GaussianFactor, noiseModel_Gaussian
   /// Eigen type: Vector --> VectorXd, Matrix --> MatrixXd
-  std::string cythonClass() const {
+  std::string pxdClassName() const {
     if (isEigen())
       return name_ + "Xd";
     else
@@ -198,17 +198,17 @@ public:
   /// name of Python classes in pyx
   /// They have the same name with the corresponding Cython classes in pxd
   /// But note that they are different: These are Python classes in the pyx file
-  /// To refer to a Cython class in pyx, we need to add "gtsam.", e.g. gtsam.noiseModel_Gaussian
-  /// see the other function pyxCythoClass for that purpose.
-  std::string pythonClass() const {
-    return cythonClass();
+  /// To refer to a Cython class in pyx, we need to add "pxd.", e.g. pxd.noiseModel_Gaussian
+  /// see the other function pxd_class_in_pyx for that purpose.
+  std::string pyxClassName() const {
+    return pxdClassName();
   }
 
   /// Python type of function arguments in pyx to interface with normal python scripts
   /// Eigen types become np.ndarray (There's no Eigen types, e.g. VectorXd, in
   /// Python. We have to pass in numpy array in the arguments, which will then be
   /// converted to Eigen types in Cython)
-  std::string pythonArgumentType() const {
+  std::string pyxArgumentType() const {
     if (isEigen())
       return "np.ndarray";
     else
@@ -216,12 +216,12 @@ public:
   }
 
   /// return the Cython class in pxd corresponding to a Python class in pyx
-  std::string pyxCythonClass() const {
+  std::string pxd_class_in_pyx() const {
       if (isNonBasicType()) {
         if (namespaces_.size() > 0)
-          return namespaces_[0] + "." + cythonClass();
+          return "pxd." + pxdClassName();
         else {
-          std::cerr << "Class without namespace: " << cythonClass() << std::endl;
+          std::cerr << "Class without namespace: " << pxdClassName() << std::endl;
           throw std::runtime_error("Error: User type without namespace!!");
         }
       }
@@ -232,12 +232,12 @@ public:
   }
 
   /// the internal Cython shared obj in a Python class wrappper
-  std::string pyxCythonObj() const {
-    return "gt" + cythonClass() + "_";
+  std::string shared_pxd_obj_in_pyx() const {
+    return "shared_pxd_" + pxdClassName() + "_";
   }
 
-  std::string pyxSharedCythonClass() const {
-    return "shared_ptr[" + pyxCythonClass() + "]";
+  std::string shared_pxd_class_in_pyx() const {
+    return "shared_ptr[" + pxd_class_in_pyx() + "]";
   }
 
   friend std::ostream& operator<<(std::ostream& os, const Qualified& q) {

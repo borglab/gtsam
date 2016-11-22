@@ -145,13 +145,13 @@ std::string MethodBase::pyx_functionCall(
   string ret;
   if (!returnVals_[iOverload].isPair && !returnVals_[iOverload].type1.isPtr &&
       returnVals_[iOverload].type1.isNonBasicType()) {
-    ret = returnVals_[iOverload].type1.pyxSharedCythonClass() + "(new " +
-          returnVals_[iOverload].type1.pyxCythonClass() + "(";
+    ret = returnVals_[iOverload].type1.shared_pxd_class_in_pyx() + "(new " +
+          returnVals_[iOverload].type1.pxd_class_in_pyx() + "(";
   }
 
   // actual function call ...
   ret += caller + "." + funcName;
-  if (templateArgValue_) ret += "[" + templateArgValue_->pyxCythonClass() + "]";
+  if (templateArgValue_) ret += "[" + templateArgValue_->pxd_class_in_pyx() + "]";
   //... with argument list
   ret += "(" + argumentList(iOverload).pyx_asParams() + ")";
 
