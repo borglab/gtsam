@@ -1,3 +1,107 @@
+/**
+
+ * GTSAM Wrap Module Definition
+ *
+ * These are the current classes available through the matlab toolbox interface,
+ * add more functions/classes as they are available.
+ *
+ * Requirements:
+ *   Classes must start with an uppercase letter
+ *      - Can wrap a typedef
+ *   Only one Method/Constructor per line, though methods/constructors can extend across multiple lines
+ *   Methods can return
+ *     - Eigen types:       Matrix, Vector
+ *     - C/C++ basic types: string, bool, size_t, int, double, char, unsigned char
+ *     - void
+ *     - Any class with which be copied with boost::make_shared()
+ *     - boost::shared_ptr of any object type
+ *   Constructors
+ *     - Overloads are supported
+ *     - A class with no constructors can be returned from other functions but not allocated directly in MATLAB
+ *   Methods
+ *     - Constness has no effect
+ *     - Specify by-value (not reference) return types, even if C++ method returns reference
+ *     - Must start with a letter (upper or lowercase)
+ *     - Overloads are supported
+ *   Static methods
+ *     - Must start with a letter (upper or lowercase) and use the "static" keyword
+ *     - The first letter will be made uppercase in the generated MATLAB interface
+ *     - Overloads are supported
+ *   Arguments to functions any of
+ *      - Eigen types:       Matrix, Vector
+ *      - Eigen types and classes as an optionally const reference
+ *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
+ *     - Any class with which be copied with boost::make_shared() (except Eigen)
+ *     - boost::shared_ptr of any object type (except Eigen)
+ *   Comments can use either C++ or C style, with multiple lines
+ *   Namespace definitions
+ *     - Names of namespaces must start with a lowercase letter
+ *      - start a namespace with "namespace {"
+ *      - end a namespace with exactly "}"
+ *      - Namespaces can be nested
+ *   Namespace usage
+ *      - Namespaces can be specified for classes in arguments and return values
+ *      - In each case, the namespace must be fully specified, e.g., "namespace1::namespace2::ClassName"
+ *   Includes in C++ wrappers
+ *     - All includes will be collected and added in a single file
+ *     - All namespaces must have angle brackets: <path>
+ *     - No default includes will be added
+ *   Global/Namespace functions
+ *     - Functions specified outside of a class are global
+ *     - Can be overloaded with different arguments
+ *     - Can have multiple functions of the same name in different namespaces
+ *   Using classes defined in other modules
+ *     - If you are using a class 'OtherClass' not wrapped in this definition file, add "class OtherClass;" to avoid a dependency error
+ *   Virtual inheritance
+ *     - Specify fully-qualified base classes, i.e. "virtual class Derived : ns::Base {" where "ns" is the namespace
+ *     - Mark with 'virtual' keyword, e.g. "virtual class Base {", and also "virtual class Derived : ns::Base {"
+ *     - Forward declarations must also be marked virtual, e.g. "virtual class ns::Base;" and
+ *       also "virtual class ns::Derived;"
+ *     - Pure virtual (abstract) classes should list no constructors in this interface file
+ *     - Virtual classes must have a clone() function in C++ (though it does not have to be included
+ *       in the MATLAB interface).  clone() will be called whenever an object copy is needed, instead
+ *       of using the copy constructor (which is used for non-virtual objects).
+ *     - Signature of clone function - will be called virtually, so must appear at least at the top of the inheritance tree
+ *           virtual boost::shared_ptr<CLASS_NAME> clone() const;
+ *   Class Templates
+ *     - Basic templates are supported either with an explicit list of types to instantiate,
+ *       e.g. template<T = {gtsam::Pose2, gtsam::Rot2, gtsam::Point3}> class Class1 { ... };
+ *       or with typedefs, e.g.
+ *       template<T, U> class Class2 { ... };
+ *       typedef Class2<Type1, Type2> MyInstantiatedClass;
+ *     - In the class definition, appearances of the template argument(s) will be replaced with their
+ *       instantiated types, e.g. 'void setValue(const T& value);'.
+ *     - To refer to the instantiation of the template class itself, use 'This', i.e. 'static This Create();'
+ *     - To create new instantiations in other modules, you must copy-and-paste the whole class definition
+ *       into the new module, but use only your new instantiation types.
+ *     - When forward-declaring template instantiations, use the generated/typedefed name, e.g.
+ *       class gtsam::Class1Pose2;
+ *       class gtsam::MyInstantiatedClass;
+ *   Boost.serialization within Matlab:
+ *     - you need to mark classes as being serializable in the markup file (see this file for an example).
+ *     - There are two options currently, depending on the class.  To "mark" a class as serializable,
+ *       add a function with a particular signature so that wrap will catch it.
+ *        - Add "void serialize()" to a class to create serialization functions for a class.
+ *          Adding this flag subsumes the serializable() flag below. Requirements:
+ *             - A default constructor must be publicly accessible
+ *             - Must not be an abstract base class
+ *             - The class must have an actual boost.serialization serialize() function.
+ *        - Add "void serializable()" to a class if you only want the class to be serialized as a
+ *          part of a container (such as noisemodel). This version does not require a publicly
+ *          accessible default constructor.
+ */
+
+/**
+ * Status:
+ *  - TODO: default values for arguments
+ *    - WORKAROUND: make multiple versions of the same function for different configurations of default arguments
+ *  - TODO: Handle gtsam::Rot3M conversions to quaternions
+ *  - TODO: Parse return of const ref arguments
+ *  - TODO: Parse std::string variants and convert directly to special string
+ *  - TODO: Add enum support
+ *  - TODO: Add generalized serialization support via boost.serialization with hooks to matlab save/load
+ */
+
 namespace gtsam {
 
 #include <gtsam/inference/Key.h>
@@ -34,6 +138,14 @@ template<K,V> class FastMap {
   FastMap();
   FastMap(const This& f);
 };
+
+//*************************************************************************
+// base
+//*************************************************************************
+
+/** gtsam namespace functions */
+#include <gtsam/base/Matrix.h>
+bool linear_independent(Matrix A, Matrix B, double tol);
 
 #include <gtsam/base/Value.h>
 virtual class Value {
@@ -578,7 +690,6 @@ virtual class Cal3DS2_Base {
   // Action on Point2
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
   gtsam::Point2 calibrate(const gtsam::Point2& p, double tol) const;
-  // gtsam::Point2 calibrate(const gtsam::Point2& p) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -674,7 +785,6 @@ class Cal3Bundler {
 
   // Action on Point2
   gtsam::Point2 calibrate(const gtsam::Point2& p, double tol) const;
-  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
 
   // Standard Interface
@@ -849,30 +959,6 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
     double rank_tol, bool optimize);
 
 //*************************************************************************
-// Inference
-//*************************************************************************
-
-#include <gtsam/inference/Ordering.h>
-class Ordering {
-  // Standard Constructors and Named Constructors
-  Ordering();
-  Ordering(const gtsam::Ordering& other);
-
-  // Testable
-  void print(string s) const;
-  bool equals(const gtsam::Ordering& ord, double tol) const;
-
-  // Standard interface
-  size_t size() const;
-  size_t at(size_t key) const;
-  void push_back(size_t key);
-
-  // enabling serialization functionality
-  void serialize() const;
-};
-
-
-//*************************************************************************
 // Symbolic
 //*************************************************************************
 
@@ -912,7 +998,6 @@ virtual class SymbolicFactorGraph {
 
   // Standard interface
   gtsam::KeySet keys() const;
-  // void push_back(gtsam::SymbolicFactor* factor);
   void push_back(const gtsam::SymbolicFactorGraph& graph);
   void push_back(const gtsam::SymbolicBayesNet& bayesNet);
   void push_back(const gtsam::SymbolicBayesTree& bayesTree);
@@ -1031,28 +1116,28 @@ class SymbolicBayesTree {
 //   void deleteCachedShortcuts();
 // };
 
-// #include <gtsam/inference/VariableIndex.h>
-// class VariableIndex {
-//   // Standard Constructors and Named Constructors
-//   VariableIndex();
-//   // TODO: Templetize constructor when wrap supports it
-//   //template<T = {gtsam::FactorGraph}>
-//   //VariableIndex(const T& factorGraph, size_t nVariables);
-//   //VariableIndex(const T& factorGraph);
-//   VariableIndex(const gtsam::SymbolicFactorGraph& factorGraph);
-//   VariableIndex(const gtsam::GaussianFactorGraph& factorGraph);
-//   VariableIndex(const gtsam::NonlinearFactorGraph& factorGraph);
-//   VariableIndex(const gtsam::VariableIndex& other);
+#include <gtsam/inference/VariableIndex.h>
+class VariableIndex {
+  // Standard Constructors and Named Constructors
+  VariableIndex();
+  // TODO: Templetize constructor when wrap supports it
+  //template<T = {gtsam::FactorGraph}>
+  //VariableIndex(const T& factorGraph, size_t nVariables);
+  //VariableIndex(const T& factorGraph);
+  VariableIndex(const gtsam::SymbolicFactorGraph& factorGraph);
+  VariableIndex(const gtsam::GaussianFactorGraph& factorGraph);
+  VariableIndex(const gtsam::NonlinearFactorGraph& factorGraph);
+  VariableIndex(const gtsam::VariableIndex& other);
 
-//   // Testable
-//   bool equals(const gtsam::VariableIndex& other, double tol) const;
-//   void print(string s) const;
+  // Testable
+  bool equals(const gtsam::VariableIndex& other, double tol) const;
+  void print(string s) const;
 
-//   // Standard interface
-//   size_t size() const;
-//   size_t nFactors() const;
-//   size_t nEntries() const;
-// };
+  // Standard interface
+  size_t size() const;
+  size_t nFactors() const;
+  size_t nEntries() const;
+};
 
 //*************************************************************************
 // linear
@@ -1277,8 +1362,8 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   double error(const gtsam::VectorValues& c) const;
 
   //Standard Interface
-  Matrix py_getA() const;
-  Vector py_getb() const;
+  Matrix getA() const;
+  Vector getb() const;
   size_t rows() const;
   size_t cols() const;
   bool isConstrained() const;
@@ -1646,6 +1731,82 @@ unsigned char mrsymbolChr(size_t key);
 unsigned char mrsymbolLabel(size_t key);
 size_t mrsymbolIndex(size_t key);
 
+#include <gtsam/inference/Ordering.h>
+class Ordering {
+  // Standard Constructors and Named Constructors
+  Ordering();
+  Ordering(const gtsam::Ordering& other);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::Ordering& ord, double tol) const;
+
+  // Standard interface
+  size_t size() const;
+  size_t at(size_t key) const;
+  void push_back(size_t key);
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+class NonlinearFactorGraph {
+  NonlinearFactorGraph();
+  NonlinearFactorGraph(const gtsam::NonlinearFactorGraph& graph);
+
+  // FactorGraph
+  void print(string s) const;
+  bool equals(const gtsam::NonlinearFactorGraph& fg, double tol) const;
+  size_t size() const;
+  bool empty() const;
+  void remove(size_t i);
+  size_t nrFactors() const;
+  gtsam::NonlinearFactor* at(size_t idx) const;
+  void push_back(const gtsam::NonlinearFactorGraph& factors);
+  void push_back(gtsam::NonlinearFactor* factor);
+  void add(gtsam::NonlinearFactor* factor);
+  bool exists(size_t idx) const;
+  gtsam::KeySet keys() const;
+
+  // NonlinearFactorGraph
+  double error(const gtsam::Values& values) const;
+  double probPrime(const gtsam::Values& values) const;
+  gtsam::Ordering orderingCOLAMD() const;
+  // Ordering* orderingCOLAMDConstrained(const gtsam::Values& c, const std::map<gtsam::Key,int>& constraints) const;
+  gtsam::GaussianFactorGraph* linearize(const gtsam::Values& values) const;
+  gtsam::NonlinearFactorGraph clone() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
+#include <gtsam/nonlinear/NonlinearFactor.h>
+virtual class NonlinearFactor {
+  // Factor base class
+  size_t size() const;
+  gtsam::KeyVector keys() const;
+  void print(string s) const;
+  void printKeys(string s) const;
+  // NonlinearFactor
+  bool equals(const gtsam::NonlinearFactor& other, double tol) const;
+  double error(const gtsam::Values& c) const;
+  size_t dim() const;
+  bool active(const gtsam::Values& c) const;
+  gtsam::GaussianFactor* linearize(const gtsam::Values& c) const;
+  gtsam::NonlinearFactor* clone() const;
+  // gtsam::NonlinearFactor* rekey(const gtsam::KeyVector& newKeys) const; //FIXME: Conversion from KeyVector to std::vector does not happen
+};
+
+#include <gtsam/nonlinear/NonlinearFactor.h>
+virtual class NoiseModelFactor: gtsam::NonlinearFactor {
+  bool equals(const gtsam::NoiseModelFactor& other, double tol) const;
+  gtsam::noiseModel::Base* get_noiseModel() const; // deprecated by below
+  gtsam::noiseModel::Base* noiseModel() const;
+  Vector unwhitenedError(const gtsam::Values& x) const;
+  Vector whitenedError(const gtsam::Values& x) const;
+};
+
 #include <gtsam/nonlinear/Values.h>
 class Values {
   Values();
@@ -1703,64 +1864,6 @@ class Values {
   /// version for double
   void insertDouble(size_t j, double c);
   double atDouble(size_t j) const;
-};
-
-#include <gtsam/nonlinear/NonlinearFactor.h>
-virtual class NonlinearFactor {
-  // Factor base class
-  size_t size() const;
-  gtsam::KeyVector keys() const;
-  void print(string s) const;
-  void printKeys(string s) const;
-  // NonlinearFactor
-  bool equals(const gtsam::NonlinearFactor& other, double tol) const;
-
-  double error(const gtsam::Values& c) const;
-  size_t dim() const;
-  bool active(const gtsam::Values& c) const;
-  gtsam::GaussianFactor* linearize(const gtsam::Values& c) const;
-  gtsam::NonlinearFactor* clone() const;
-  // gtsam::NonlinearFactor* rekey(const gtsam::KeyVector& newKeys) const; //FIXME: Conversion from KeyVector to std::vector does not happen
-};
-
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-class NonlinearFactorGraph {
-  NonlinearFactorGraph();
-  NonlinearFactorGraph(const gtsam::NonlinearFactorGraph& graph);
-
-  // FactorGraph
-  void print(string s) const;
-  bool equals(const gtsam::NonlinearFactorGraph& fg, double tol) const;
-  size_t size() const;
-  bool empty() const;
-  void remove(size_t i);
-  size_t nrFactors() const;
-  gtsam::NonlinearFactor* at(size_t idx) const;
-  void push_back(const gtsam::NonlinearFactorGraph& factors);
-  void push_back(gtsam::NonlinearFactor* factor);
-  void add(gtsam::NonlinearFactor* factor);
-  bool exists(size_t idx) const;
-  // gtsam::KeySet keys() const;
-
-  // NonlinearFactorGraph
-  double error(const gtsam::Values& values) const;
-  double probPrime(const gtsam::Values& values) const;
-  gtsam::Ordering orderingCOLAMD() const;
-  // Ordering* orderingCOLAMDConstrained(const gtsam::Values& c, const std::map<gtsam::Key,int>& constraints) const;
-  gtsam::GaussianFactorGraph* linearize(const gtsam::Values& values) const;
-  gtsam::NonlinearFactorGraph clone() const;
-
-  // enabling serialization functionality
-  void serialize() const;
-};
-
-#include <gtsam/nonlinear/NonlinearFactor.h>
-virtual class NoiseModelFactor: gtsam::NonlinearFactor {
-  bool equals(const gtsam::NoiseModelFactor& other, double tol) const;
-  gtsam::noiseModel::Base* get_noiseModel() const; // deprecated by below
-  gtsam::noiseModel::Base* noiseModel() const;
-  Vector unwhitenedError(const gtsam::Values& x) const;
-  Vector whitenedError(const gtsam::Values& x) const;
 };
 
 // // Actually a FastList<Key>
@@ -1855,14 +1958,6 @@ virtual class NoiseModelFactor: gtsam::NonlinearFactor {
 typedef gtsam::FastMap<gtsam::Key,int> KeyGroupMap;
 
 #include <gtsam/nonlinear/Marginals.h>
-class JointMarginal {
-  JointMarginal(const JointMarginal& j);
-  Matrix at(size_t iVariable, size_t jVariable) const;
-  Matrix fullMatrix() const;
-  void print(string s) const;
-  void print() const;
-};
-
 class Marginals {
   Marginals(const gtsam::NonlinearFactorGraph& graph,
       const gtsam::Values& solution);
@@ -1875,7 +1970,13 @@ class Marginals {
   gtsam::JointMarginal jointMarginalInformation(const gtsam::KeyVector& variables) const;
 };
 
-
+class JointMarginal {
+  JointMarginal(const JointMarginal& j);
+  Matrix at(size_t iVariable, size_t jVariable) const;
+  Matrix fullMatrix() const;
+  void print(string s) const;
+  void print() const;
+};
 
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 virtual class LinearContainerFactor : gtsam::NonlinearFactor {
