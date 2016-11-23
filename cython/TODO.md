@@ -1,13 +1,13 @@
 
 TODO:
-☐ forward declaration?
-☐ Global functions
-☐ wrap VariableIndex: why is it in inference? If need to, shouldn't have constructors to specific FactorGraphs
 ☐ [REFACTOR] better name for uninstantiateClass: very vague!!
 ☐ Unify cython/gtsam.h and the original gtsam.h
 ☐ CMake install script
 
 Completed/Cancelled:
+✘ forward declaration? @cancelled (23-11-16 13:00) - nothing to do, seem to work?
+✔ wrap VariableIndex: why is it in inference? If need to, shouldn't have constructors to specific FactorGraphs @done (23-11-16 13:00)
+✔ Global functions @done (22-11-16 21:00)
 ✔ [REFACTOR] typesEqual --> isSameSignature @done (22-11-16 21:00)
 ✔ Proper overloads (constructors, static methods, methods) @done (20-11-16 21:00)
 ✔ Allow overloading methods. The current solution is annoying!!! @done (20-11-16 21:00)
