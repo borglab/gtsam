@@ -154,7 +154,7 @@ namespace gtsam {
     explicit JacobianFactor(
       const GaussianFactorGraph& graph,
       boost::optional<const Ordering&> ordering = boost::none,
-      boost::optional<const VariableSlots&> variableSlots = boost::none);
+      boost::optional<const VariableSlots&> p_variableSlots = boost::none);
 
     /** Virtual destructor */
     virtual ~JacobianFactor() {}

@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <cstdarg>
 #include <limits>
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <iomanip>

@@ -76,9 +76,7 @@ struct CommaInitializer
   template<typename OtherDerived>
   CommaInitializer& operator,(const DenseBase<OtherDerived>& other)
   {
-    if(other.cols()==0 || other.rows()==0)
-      return *this;
-    if (m_col==m_xpr.cols())
+    if (m_col==m_xpr.cols() && (other.cols()!=0 || other.rows()!=m_currentBlockRows))
     {
       m_row+=m_currentBlockRows;
       m_col = 0;
@@ -86,24 +84,18 @@ struct CommaInitializer
       eigen_assert(m_row+m_currentBlockRows<=m_xpr.rows()
         && "Too many rows passed to comma initializer (operator<<)");
     }
-    eigen_assert(m_col<m_xpr.cols()
+    eigen_assert((m_col + other.cols() <= m_xpr.cols())
       && "Too many coefficients passed to comma initializer (operator<<)");
     eigen_assert(m_currentBlockRows==other.rows());
-    if (OtherDerived::SizeAtCompileTime != Dynamic)
-      m_xpr.template block<OtherDerived::RowsAtCompileTime != Dynamic ? OtherDerived::RowsAtCompileTime : 1,
-                              OtherDerived::ColsAtCompileTime != Dynamic ? OtherDerived::ColsAtCompileTime : 1>
-                    (m_row, m_col) = other;
-    else
-      m_xpr.block(m_row, m_col, other.rows(), other.cols()) = other;
+    m_xpr.template block<OtherDerived::RowsAtCompileTime, OtherDerived::ColsAtCompileTime>
+                    (m_row, m_col, other.rows(), other.cols()) = other;
     m_col += other.cols();
     return *this;
   }
 
   inline ~CommaInitializer()
   {
-    eigen_assert((m_row+m_currentBlockRows) == m_xpr.rows()
-         && m_col == m_xpr.cols()
-         && "Too few coefficients passed to comma initializer (operator<<)");
+      finished();
   }
 
   /** \returns the built matrix once all its coefficients have been set.
@@ -113,7 +105,12 @@ struct CommaInitializer
     * quaternion.fromRotationMatrix((Matrix3f() << axis0, axis1, axis2).finished());
     * \endcode
     */
-  inline XprType& finished() { return m_xpr; }
+  inline XprType& finished() {
+      eigen_assert(((m_row+m_currentBlockRows) == m_xpr.rows() || m_xpr.cols() == 0)
+           && m_col == m_xpr.cols()
+           && "Too few coefficients passed to comma initializer (operator<<)");
+      return m_xpr;
+  }
 
   XprType& m_xpr;   // target expression
   Index m_row;              // current row id

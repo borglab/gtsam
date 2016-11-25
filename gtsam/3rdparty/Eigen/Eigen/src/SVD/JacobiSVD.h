@@ -359,29 +359,42 @@ struct svd_precondition_2x2_block_to_be_real<MatrixType, QRPreconditioner, false
 {
   typedef JacobiSVD<MatrixType, QRPreconditioner> SVD;
   typedef typename SVD::Index Index;
-  static void run(typename SVD::WorkMatrixType&, SVD&, Index, Index) {}
+  typedef typename MatrixType::RealScalar RealScalar;
+  static bool run(typename SVD::WorkMatrixType&, SVD&, Index, Index, RealScalar&) { return true; }
 };
 
 template<typename MatrixType, int QRPreconditioner>
 struct svd_precondition_2x2_block_to_be_real<MatrixType, QRPreconditioner, true>
 {
   typedef JacobiSVD<MatrixType, QRPreconditioner> SVD;
+  typedef typename SVD::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::RealScalar RealScalar;
-  typedef typename SVD::Index Index;
-  static void run(typename SVD::WorkMatrixType& work_matrix, SVD& svd, Index p, Index q)
+  static bool run(typename SVD::WorkMatrixType& work_matrix, SVD& svd, Index p, Index q, RealScalar& maxDiagEntry)
   {
     using std::sqrt;
+    using std::abs;
+    using std::max;
     Scalar z;
     JacobiRotation<Scalar> rot;
     RealScalar n = sqrt(numext::abs2(work_matrix.coeff(p,p)) + numext::abs2(work_matrix.coeff(q,p)));
-    
+
+    const RealScalar considerAsZero = (std::numeric_limits<RealScalar>::min)();
+    const RealScalar precision = NumTraits<Scalar>::epsilon();
+
     if(n==0)
     {
-      z = abs(work_matrix.coeff(p,q)) / work_matrix.coeff(p,q);
-      work_matrix.row(p) *= z;
-      if(svd.computeU()) svd.m_matrixU.col(p) *= conj(z);
-      if(work_matrix.coeff(q,q)!=Scalar(0))
+      // make sure first column is zero
+      work_matrix.coeffRef(p,p) = work_matrix.coeffRef(q,p) = Scalar(0);
+
+      if(abs(numext::imag(work_matrix.coeff(p,q)))>considerAsZero)
+      {
+        // work_matrix.coeff(p,q) can be zero if work_matrix.coeff(q,p) is not zero but small enough to underflow when computing n
+        z = abs(work_matrix.coeff(p,q)) / work_matrix.coeff(p,q);
+        work_matrix.row(p) *= z;
+        if(svd.computeU()) svd.m_matrixU.col(p) *= conj(z);
+      }
+      if(abs(numext::imag(work_matrix.coeff(q,q)))>considerAsZero)
       {
         z = abs(work_matrix.coeff(q,q)) / work_matrix.coeff(q,q);
         work_matrix.row(q) *= z;
@@ -395,19 +408,25 @@ struct svd_precondition_2x2_block_to_be_real<MatrixType, QRPreconditioner, true>
       rot.s() = work_matrix.coeff(q,p) / n;
       work_matrix.applyOnTheLeft(p,q,rot);
       if(svd.computeU()) svd.m_matrixU.applyOnTheRight(p,q,rot.adjoint());
-      if(work_matrix.coeff(p,q) != Scalar(0))
+      if(abs(numext::imag(work_matrix.coeff(p,q)))>considerAsZero)
       {
-        Scalar z = abs(work_matrix.coeff(p,q)) / work_matrix.coeff(p,q);
+        z = abs(work_matrix.coeff(p,q)) / work_matrix.coeff(p,q);
         work_matrix.col(q) *= z;
         if(svd.computeV()) svd.m_matrixV.col(q) *= z;
       }
-      if(work_matrix.coeff(q,q) != Scalar(0))
+      if(abs(numext::imag(work_matrix.coeff(q,q)))>considerAsZero)
       {
         z = abs(work_matrix.coeff(q,q)) / work_matrix.coeff(q,q);
         work_matrix.row(q) *= z;
         if(svd.computeU()) svd.m_matrixU.col(q) *= conj(z);
       }
     }
+
+    // update largest diagonal entry
+    maxDiagEntry = max EIGEN_EMPTY (maxDiagEntry,max EIGEN_EMPTY (abs(work_matrix.coeff(p,p)), abs(work_matrix.coeff(q,q))));
+    // and check whether the 2x2 block is already diagonal
+    RealScalar threshold = max EIGEN_EMPTY (considerAsZero, precision * maxDiagEntry);
+    return abs(work_matrix.coeff(p,q))>threshold || abs(work_matrix.coeff(q,p)) > threshold;
   }
 };
 
@@ -424,22 +443,23 @@ void real_2x2_jacobi_svd(const MatrixType& matrix, Index p, Index q,
   JacobiRotation<RealScalar> rot1;
   RealScalar t = m.coeff(0,0) + m.coeff(1,1);
   RealScalar d = m.coeff(1,0) - m.coeff(0,1);
-  if(t == RealScalar(0))
+  if(d == RealScalar(0))
   {
-    rot1.c() = RealScalar(0);
-    rot1.s() = d > RealScalar(0) ? RealScalar(1) : RealScalar(-1);
+    rot1.s() = RealScalar(0);
+    rot1.c() = RealScalar(1);
   }
   else
   {
-    RealScalar t2d2 = numext::hypot(t,d);
-    rot1.c() = abs(t)/t2d2;
-    rot1.s() = d/t2d2;
-    if(t<RealScalar(0))
-      rot1.s() = -rot1.s();
+    // If d!=0, then t/d cannot overflow because the magnitude of the
+    // entries forming d are not too small compared to the ones forming t.
+    RealScalar u = t / d;
+    RealScalar tmp = sqrt(RealScalar(1) + numext::abs2(u));
+    rot1.s() = RealScalar(1) / tmp;
+    rot1.c() = u / tmp;
   }
   m.applyOnTheLeft(0,1,rot1);
   j_right->makeJacobi(m,0,1);
-  *j_left  = rot1 * j_right->transpose();
+  *j_left = rot1 * j_right->transpose();
 }
 
 } // end namespace internal
@@ -826,6 +846,7 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
   check_template_parameters();
   
   using std::abs;
+  using std::max;
   allocate(matrix.rows(), matrix.cols(), computationOptions);
 
   // currently we stop when we reach precision 2*epsilon as the last bit of precision can require an unreasonable number of iterations,
@@ -857,6 +878,7 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
   }
 
   /*** step 2. The main Jacobi SVD iteration. ***/
+  RealScalar maxDiagEntry = m_workMatrix.cwiseAbs().diagonal().maxCoeff();
 
   bool finished = false;
   while(!finished)
@@ -872,25 +894,27 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
         // if this 2x2 sub-matrix is not diagonal already...
         // notice that this comparison will evaluate to false if any NaN is involved, ensuring that NaN's don't
         // keep us iterating forever. Similarly, small denormal numbers are considered zero.
-        using std::max;
-        RealScalar threshold = (max)(considerAsZero, precision * (max)(abs(m_workMatrix.coeff(p,p)),
-                                                                       abs(m_workMatrix.coeff(q,q))));
-        // We compare both values to threshold instead of calling max to be robust to NaN (See bug 791)
+        RealScalar threshold = max EIGEN_EMPTY (considerAsZero, precision * maxDiagEntry);
         if(abs(m_workMatrix.coeff(p,q))>threshold || abs(m_workMatrix.coeff(q,p)) > threshold)
         {
           finished = false;
-
           // perform SVD decomposition of 2x2 sub-matrix corresponding to indices p,q to make it diagonal
-          internal::svd_precondition_2x2_block_to_be_real<MatrixType, QRPreconditioner>::run(m_workMatrix, *this, p, q);
-          JacobiRotation<RealScalar> j_left, j_right;
-          internal::real_2x2_jacobi_svd(m_workMatrix, p, q, &j_left, &j_right);
+          // the complex to real operation returns true is the updated 2x2 block is not already diagonal
+          if(internal::svd_precondition_2x2_block_to_be_real<MatrixType, QRPreconditioner>::run(m_workMatrix, *this, p, q, maxDiagEntry))
+          {
+            JacobiRotation<RealScalar> j_left, j_right;
+            internal::real_2x2_jacobi_svd(m_workMatrix, p, q, &j_left, &j_right);
 
-          // accumulate resulting Jacobi rotations
-          m_workMatrix.applyOnTheLeft(p,q,j_left);
-          if(computeU()) m_matrixU.applyOnTheRight(p,q,j_left.transpose());
+            // accumulate resulting Jacobi rotations
+            m_workMatrix.applyOnTheLeft(p,q,j_left);
+            if(computeU()) m_matrixU.applyOnTheRight(p,q,j_left.transpose());
 
-          m_workMatrix.applyOnTheRight(p,q,j_right);
-          if(computeV()) m_matrixV.applyOnTheRight(p,q,j_right);
+            m_workMatrix.applyOnTheRight(p,q,j_right);
+            if(computeV()) m_matrixV.applyOnTheRight(p,q,j_right);
+
+            // keep track of the largest diagonal coefficient
+            maxDiagEntry = max EIGEN_EMPTY (maxDiagEntry,max EIGEN_EMPTY (abs(m_workMatrix.coeff(p,p)), abs(m_workMatrix.coeff(q,q))));
+          }
         }
       }
     }

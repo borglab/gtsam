@@ -18,7 +18,6 @@
 
 #include "Argument.h"
 
-#include <boost/regex.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <iostream>

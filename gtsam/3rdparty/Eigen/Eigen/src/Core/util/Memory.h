@@ -507,14 +507,18 @@ template<typename T> void smart_copy(const T* start, const T* end, T* target)
 
 template<typename T> struct smart_copy_helper<T,true> {
   static inline void run(const T* start, const T* end, T* target)
-  { memcpy(target, start, std::ptrdiff_t(end)-std::ptrdiff_t(start)); }
+  {
+    std::ptrdiff_t size = std::ptrdiff_t(end)-std::ptrdiff_t(start);
+    if(size==0) return;
+    eigen_internal_assert(start!=0 && end!=0 && target!=0);
+    memcpy(target, start, size);
+  }
 };
 
 template<typename T> struct smart_copy_helper<T,false> {
   static inline void run(const T* start, const T* end, T* target)
   { std::copy(start, end, target); }
 };
-
 
 /*****************************************************************************
 *** Implementation of runtime stack allocation (falling back to malloc)    ***
@@ -655,99 +659,60 @@ template<typename T> class aligned_stack_memory_handler
 
 /****************************************************************************/
 
+
 /** \class aligned_allocator
-* \ingroup Core_Module
-*
-* \brief STL compatible allocator to use with with 16 byte aligned types
-*
-* Example:
-* \code
-* // Matrix4f requires 16 bytes alignment:
-* std::map< int, Matrix4f, std::less<int>, 
-*           aligned_allocator<std::pair<const int, Matrix4f> > > my_map_mat4;
-* // Vector3f does not require 16 bytes alignment, no need to use Eigen's allocator:
-* std::map< int, Vector3f > my_map_vec3;
-* \endcode
-*
-* \sa \ref TopicStlContainers.
-*/
+  * \ingroup Core_Module
+  *
+  * \brief STL compatible allocator to use with with 16 byte aligned types
+  *
+  * Example:
+  * \code
+  * // Matrix4f requires 16 bytes alignment:
+  * std::map< int, Matrix4f, std::less<int>,
+  *           aligned_allocator<std::pair<const int, Matrix4f> > > my_map_mat4;
+  * // Vector3f does not require 16 bytes alignment, no need to use Eigen's allocator:
+  * std::map< int, Vector3f > my_map_vec3;
+  * \endcode
+  *
+  * \sa \blank \ref TopicStlContainers.
+  */
 template<class T>
-class aligned_allocator
+class aligned_allocator : public std::allocator<T>
 {
 public:
-    typedef size_t    size_type;
-    typedef std::ptrdiff_t difference_type;
-    typedef T*        pointer;
-    typedef const T*  const_pointer;
-    typedef T&        reference;
-    typedef const T&  const_reference;
-    typedef T         value_type;
+  typedef size_t          size_type;
+  typedef std::ptrdiff_t  difference_type;
+  typedef T*              pointer;
+  typedef const T*        const_pointer;
+  typedef T&              reference;
+  typedef const T&        const_reference;
+  typedef T               value_type;
 
-    template<class U>
-    struct rebind
-    {
-        typedef aligned_allocator<U> other;
-    };
+  template<class U>
+  struct rebind
+  {
+    typedef aligned_allocator<U> other;
+  };
 
-    pointer address( reference value ) const
-    {
-        return &value;
-    }
+  aligned_allocator() : std::allocator<T>() {}
 
-    const_pointer address( const_reference value ) const
-    {
-        return &value;
-    }
+  aligned_allocator(const aligned_allocator& other) : std::allocator<T>(other) {}
 
-    aligned_allocator()
-    {
-    }
+  template<class U>
+  aligned_allocator(const aligned_allocator<U>& other) : std::allocator<T>(other) {}
 
-    aligned_allocator( const aligned_allocator& )
-    {
-    }
+  ~aligned_allocator() {}
 
-    template<class U>
-    aligned_allocator( const aligned_allocator<U>& )
-    {
-    }
+  pointer allocate(size_type num, const void* /*hint*/ = 0)
+  {
+    internal::check_size_for_overflow<T>(num);
+    return static_cast<pointer>( internal::aligned_malloc(num * sizeof(T)) );
+  }
 
-    ~aligned_allocator()
-    {
-    }
-
-    size_type max_size() const
-    {
-        return (std::numeric_limits<size_type>::max)();
-    }
-
-    pointer allocate( size_type num, const void* hint = 0 )
-    {
-        EIGEN_UNUSED_VARIABLE(hint);
-        internal::check_size_for_overflow<T>(num);
-        return static_cast<pointer>( internal::aligned_malloc( num * sizeof(T) ) );
-    }
-
-    void construct( pointer p, const T& value )
-    {
-        ::new( p ) T( value );
-    }
-
-    void destroy( pointer p )
-    {
-        p->~T();
-    }
-
-    void deallocate( pointer p, size_type /*num*/ )
-    {
-        internal::aligned_free( p );
-    }
-
-    bool operator!=(const aligned_allocator<T>& ) const
-    { return false; }
-
-    bool operator==(const aligned_allocator<T>& ) const
-    { return true; }
+  void deallocate(pointer p, size_type /*num*/)
+  {
+    internal::aligned_free(p);
+  }
 };
 
 //---------- Cache sizes ----------

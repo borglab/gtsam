@@ -76,9 +76,23 @@ template<typename MatrixType, int Direction> class Reverse
     EIGEN_DENSE_PUBLIC_INTERFACE(Reverse)
     using Base::IsRowMajor;
 
-    // next line is necessary because otherwise const version of operator()
-    // is hidden by non-const version defined in this file
-    using Base::operator(); 
+    // The following two operators are provided to worarkound
+    // a MSVC 2013 issue. In theory, we could simply do:
+    //   using Base::operator(); 
+    // to make const version of operator() visible.
+    // Otheriwse, they would be hidden by the non-const versions defined in this file
+    
+    inline CoeffReturnType operator()(Index row, Index col) const
+    {
+      eigen_assert(row >= 0 && row < rows() && col >= 0 && col < cols());
+      return coeff(row, col);
+    }
+
+    inline CoeffReturnType operator()(Index index) const
+    {
+      eigen_assert(index >= 0 && index < m_matrix.size());
+      return coeff(index);
+    }
 
   protected:
     enum {

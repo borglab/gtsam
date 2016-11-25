@@ -443,7 +443,7 @@ public:
     operator * (const DiagonalBase<DiagonalDerived> &b) const
   {
     TransformTimeDiagonalReturnType res(*this);
-    res.linear() *= b;
+    res.linearExt() *= b;
     return res;
   }
 
@@ -557,7 +557,7 @@ public:
     return res;
   }
 
-  inline Transform& operator*=(const DiagonalMatrix<Scalar,Dim>& s) { linear() *= s; return *this; }
+  inline Transform& operator*=(const DiagonalMatrix<Scalar,Dim>& s) { linearExt() *= s; return *this; }
 
   template<typename Derived>
   inline Transform& operator=(const RotationBase<Derived,Dim>& r);
@@ -828,7 +828,7 @@ Transform<Scalar,Dim,Mode,Options>::prescale(const MatrixBase<OtherDerived> &oth
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,int(Dim))
   EIGEN_STATIC_ASSERT(Mode!=int(Isometry), THIS_METHOD_IS_ONLY_FOR_SPECIFIC_TRANSFORMATIONS)
-  m_matrix.template block<Dim,HDim>(0,0).noalias() = (other.asDiagonal() * m_matrix.template block<Dim,HDim>(0,0));
+  affine().noalias() = (other.asDiagonal() * affine());
   return *this;
 }
 
@@ -1048,7 +1048,7 @@ void Transform<Scalar,Dim,Mode,Options>::computeRotationScaling(RotationMatrixTy
   }
 }
 
-/** decomposes the linear part of the transformation as a product rotation x scaling, the scaling being
+/** decomposes the linear part of the transformation as a product scaling x rotation, the scaling being
   * not necessarily positive.
   *
   * If either pointer is zero, the corresponding computation is skipped.
