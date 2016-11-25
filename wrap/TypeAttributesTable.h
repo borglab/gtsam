@@ -28,6 +28,7 @@
 namespace wrap {
 
 // Forward declarations
+class Qualified;
 class Class;
 
 /** Attributes about valid classes, both for classes defined in this module and
@@ -57,6 +58,7 @@ public:
   }
 
   void addClasses(const std::vector<Class>& classes);
+  void addType(const Qualified& types);
   void addForwardDeclarations(
       const std::vector<ForwardDeclaration>& forwardDecls);
 

@@ -43,6 +43,13 @@ const TypeAttributes& TypeAttributesTable::attributes(const string& key) const {
 }
 
 /* ************************************************************************* */
+void TypeAttributesTable::addType(const Qualified& cls) {
+  if (!table_.insert(make_pair(cls.qualifiedName("::"), TypeAttributes(false)))
+           .second)
+    throw DuplicateDefinition("types " + cls.qualifiedName("::"));
+}
+
+/* ************************************************************************* */
 void TypeAttributesTable::addClasses(const vector<Class>& classes) {
   for(const Class& cls: classes) {
     if (!table_.insert(
