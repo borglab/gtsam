@@ -106,7 +106,7 @@ void Method::emit_cython_pyx_no_overload(FileWriter& file,
   file.oss << "\tdef " << funcName;
   // modify name of function instantiation as python doesn't allow overloads
   // e.g. template<T={A,B,C}> funcName(...) --> funcNameA, funcNameB, funcNameC
-  if (templateArgValue_) file.oss << templateArgValue_->name();
+  if (templateArgValue_) file.oss << templateArgValue_->pyxClassName();
   // funtion arguments
   file.oss << "(self";
   if (argumentList(0).size() > 0) file.oss << ", ";
@@ -132,7 +132,7 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
   // doesn't allow overloads
   // e.g. template<T={A,B,C}> funcName(...) --> funcNameA, funcNameB, funcNameC
   string instantiatedName =
-      (templateArgValue_) ? funcName + templateArgValue_->name() : funcName;
+      (templateArgValue_) ? funcName + templateArgValue_->pyxClassName() : funcName;
 
   size_t N = nrOverloads();
   // It's easy if there's no overload

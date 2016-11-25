@@ -156,7 +156,7 @@ void GlobalFunction::emit_cython_pyx_no_overload(FileWriter& file) const {
   file.oss << "def " << funcName;
   // modify name of function instantiation as python doesn't allow overloads
   // e.g. template<T={A,B,C}> funcName(...) --> funcNameA, funcNameB, funcNameC
-  if (templateArgValue_) file.oss << templateArgValue_->name();
+  if (templateArgValue_) file.oss << templateArgValue_->pyxClassName();
   // funtion arguments
   file.oss << "(";
   argumentList(0).emit_cython_pyx(file);

@@ -145,7 +145,7 @@ void Constructor::emit_cython_pxd(FileWriter& pxdFile, Str className) const {
 void Constructor::emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const {
   for (size_t i = 0; i < nrOverloads(); i++) {
     ArgumentList args = argumentList(i);
-    pyxFile.oss << "\tdef " + name_ + "_" + to_string(i) +
+    pyxFile.oss << "\tdef " + cls.pyxClassName() + "_" + to_string(i) +
                     "(self, *args, **kwargs):\n";
     pyxFile.oss << pyx_resolveOverloadParams(args, true);
 

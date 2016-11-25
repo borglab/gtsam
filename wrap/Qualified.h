@@ -201,7 +201,10 @@ public:
   /// To refer to a Cython class in pyx, we need to add "pxd.", e.g. pxd.noiseModel_Gaussian
   /// see the other function pxd_class_in_pyx for that purpose.
   std::string pyxClassName() const {
-    return pxdClassName();
+    if (isEigen())
+      return name_;
+    else
+      return qualifiedName("_", 1);
   }
 
   /// Python type of function arguments in pyx to interface with normal python scripts
