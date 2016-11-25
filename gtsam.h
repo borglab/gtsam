@@ -2636,7 +2636,7 @@ virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor{
 
 namespace utilities {
 
-  #include <matlab.h>
+  #include <gtsam/nonlinear/utilities.h>
   gtsam::KeyList createKeyList(Vector I);
   gtsam::KeyList createKeyList(string s, Vector I);
   gtsam::KeyVector createKeyVector(Vector I);
