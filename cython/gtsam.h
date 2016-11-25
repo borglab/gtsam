@@ -638,7 +638,7 @@ class Cal3_S2 {
   Cal3_S2(double fx, double fy, double s, double u0, double v0);
   Cal3_S2(Vector v);
   Cal3_S2(double fov, int w, int h);
-  Cal3_S2(const gtsam::Cal3_S2& pose);
+  Cal3_S2(const gtsam::Cal3_S2& other);
 
   // Testable
   void print(string s) const;
@@ -1497,6 +1497,7 @@ class GaussianFactorGraph {
 #include <gtsam/linear/GaussianConditional.h>
 virtual class GaussianConditional : gtsam::GaussianFactor {
   //Constructors
+  GaussianConditional();
   GaussianConditional(size_t key, Vector d, Matrix R, const gtsam::noiseModel::Diagonal* sigmas);
   GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
       const gtsam::noiseModel::Diagonal* sigmas);
@@ -1505,9 +1506,9 @@ virtual class GaussianConditional : gtsam::GaussianFactor {
 
   //Constructors with no noise model
   GaussianConditional(size_t key, Vector d, Matrix R);
-    GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S);
-    GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
-        size_t name2, Matrix T);
+  GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S);
+  GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
+                      size_t name2, Matrix T);
   GaussianConditional(const gtsam::GaussianConditional& other);
 
   //Standard Interface
@@ -1527,8 +1528,9 @@ virtual class GaussianConditional : gtsam::GaussianFactor {
 #include <gtsam/linear/GaussianDensity.h>
 virtual class GaussianDensity : gtsam::GaussianConditional {
     //Constructors
-  GaussianDensity(size_t key, Vector d, Matrix R, const gtsam::noiseModel::Diagonal* sigmas);
+  GaussianDensity();
   GaussianDensity(const gtsam::GaussianDensity& other);
+  GaussianDensity(size_t key, Vector d, Matrix R, const gtsam::noiseModel::Diagonal* sigmas);
 
   //Standard Interface
   void print(string s) const;
@@ -1541,8 +1543,8 @@ virtual class GaussianDensity : gtsam::GaussianConditional {
 virtual class GaussianBayesNet {
     //Constructors
   GaussianBayesNet();
-  GaussianBayesNet(const gtsam::GaussianConditional* conditional);
   GaussianBayesNet(const gtsam::GaussianBayesNet& other);
+  GaussianBayesNet(const gtsam::GaussianConditional* conditional);
 
   // Testable
   void print(string s) const;
@@ -1601,8 +1603,8 @@ virtual class GaussianBayesTree {
 class Errors {
     //Constructors
     Errors();
-    Errors(const gtsam::VectorValues& V);
     Errors(const gtsam::Errors& other);
+    Errors(const gtsam::VectorValues& V);
 
     //Testable
     void print(string s);
@@ -1709,8 +1711,8 @@ void PrintKeySet   (const gtsam::KeySet& keys, string s);
 #include <gtsam/inference/LabeledSymbol.h>
 class LabeledSymbol {
   LabeledSymbol();
-  LabeledSymbol(size_t full_key);
   LabeledSymbol(const gtsam::LabeledSymbol& key);
+  LabeledSymbol(size_t full_key);
   LabeledSymbol(unsigned char valType, unsigned char label, size_t j);
 
   size_t key() const;
@@ -1836,6 +1838,8 @@ class Values {
   // enabling serialization functionality
   void serialize() const;
 
+  // void insert(size_t j, const gtsam::Value& v);
+
   // New in 4.0, we have to specialize every insert/update/at to generate wrappers
   // Instead of the old:
   // void insert(size_t j, const gtsam::Value& value);
@@ -1845,20 +1849,51 @@ class Values {
   template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                  gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
                  gtsam::Cal3Bundler, gtsam::EssentialMatrix,
-                 gtsam::SimpleCamera,
+                 gtsam::SimpleCamera, gtsam::imuBias::ConstantBias,
                  Vector, Matrix}>
   void insert(size_t j, const T& t);
 
   template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                  gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
                  gtsam::Cal3Bundler, gtsam::EssentialMatrix,
-                 gtsam::SimpleCamera,
+                 gtsam::SimpleCamera, gtsam::imuBias::ConstantBias,
                  Vector, Matrix}>
   void update(size_t j, const T& t);
 
-  template <T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2,
+  // void insert(size_t j, const gtsam::Point2& t);
+  // void insert(size_t j, const gtsam::Point3& t);
+  // void insert(size_t j, const gtsam::Rot2& t);
+  // void insert(size_t j, const gtsam::Pose2& t);
+  // void insert(size_t j, const gtsam::Rot3& t);
+  // void insert(size_t j, const gtsam::Pose3& t);
+  // void insert(size_t j, const gtsam::Cal3_S2& t);
+  // void insert(size_t j, const gtsam::Cal3DS2& t);
+  // void insert(size_t j, const gtsam::Cal3Bundler& t);
+  // void insert(size_t j, const gtsam::EssentialMatrix& t);
+  // void insert(size_t j, const gtsam::SimpleCamera& t);
+  // void insert(size_t j, const gtsam::imuBias::ConstantBias& t);
+  // void insert(size_t j, Vector t);
+  // void insert(size_t j, Matrix t);
+
+  // void update(size_t j, const gtsam::Point2& t);
+  // void update(size_t j, const gtsam::Point3& t);
+  // void update(size_t j, const gtsam::Rot2& t);
+  // void update(size_t j, const gtsam::Pose2& t);
+  // void update(size_t j, const gtsam::Rot3& t);
+  // void update(size_t j, const gtsam::Pose3& t);
+  // void update(size_t j, const gtsam::Cal3_S2& t);
+  // void update(size_t j, const gtsam::Cal3DS2& t);
+  // void update(size_t j, const gtsam::Cal3Bundler& t);
+  // void update(size_t j, const gtsam::EssentialMatrix& t);
+  // void update(size_t j, const gtsam::imuBias::ConstantBias& t);
+  // void update(size_t j, Vector t);
+  // void update(size_t j, Matrix t);
+
+  template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                  gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
-                 gtsam::Cal3Bundler, gtsam::EssentialMatrix, Vector, Matrix}>
+                 gtsam::Cal3Bundler, gtsam::EssentialMatrix,
+                 gtsam::SimpleCamera, gtsam::imuBias::ConstantBias,
+                 Vector, Matrix}>
   T at(size_t j);
 
   /// version for double
