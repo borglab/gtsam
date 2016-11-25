@@ -3,12 +3,10 @@ from distutils.extension import Extension
 from Cython.Build import cythonize
 import eigency
 
-
-
 setup(
   ext_modules = cythonize(Extension(
     "gtsam",
-    sources=["gtsam.pyx"],
+    sources=["gtsam/gtsam.pyx"],
     include_dirs = ["/Users/dta-huynh/install/include",
                     "/Users/dta-huynh/install/include/gtsam/3rdparty/Eigen",
                     "/usr/local/include"] + eigency.get_includes(include_eigen=False),
