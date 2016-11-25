@@ -5,15 +5,17 @@ INSTALL
 - This wrapper needs Cython(>=0.25), numpy and eigency, which can be installed 
 as follows:
 
->> cd <gtsam_folder>/cython
->> pip install -r requirements.txt
->> pip install eigency
+```bash
+ cd <gtsam_folder>/cython
+ pip install -r requirements.txt
+ pip install eigency
+```
 
 Note: Currently there's some issue with including eigency in requirements.txt
 
-- Build and install gtsam using cmake with GTSAM\_INSTALL\_CYTHON_TOOLBOX enabled
+- Build and install gtsam using cmake with GTSAM_INSTALL_CYTHON_TOOLBOX enabled
 Note: By default, the wrapped module will be installed in 
-<your_installation_folder>/gtsam\_cython. Change that in GTSAM\_CYTHON\_TOOLBOX\_PATH
+<your_installation_folder>/gtsam_cython. Change that in GTSAM_CYTHON_TOOLBOX_PATH
 
 
 UNIT TESTS
@@ -21,9 +23,10 @@ UNIT TESTS
 The Cython toolbox also has a small set of unit tests located in the
 test directory. To run them:
 
->> cd /Users/yourname/gtsam_cython  # Change to wherever you installed the toolbox
->> python -m unittest discover
-
+```bash
+ cd /Users/yourname/gtsam_cython  # Change to wherever you installed the toolbox
+ python -m unittest discover
+```
 
 WRITING YOUR OWN SCRIPTS
 ========================
@@ -33,13 +36,13 @@ See the tests for examples.
 
 - Vector/Matrix: Due to a design choice of eigency, numpy.array matrices with the default order='A'
 will always be transposed in C++ no matter how you transpose it in Python. Use order='F', or use
-two functions Vector and Matrix in gtsam\_utils/np\_utils.py for your conveniences. These two functions
+two functions Vector and Matrix in gtsam_utils/np_utils.py for your conveniences. These two functions
 also help to avoid a common but very subtle bug of using integers when creating numpy arrays, 
 e.g. np.array([1,2,3]). These can't be an input for gtsam functions as they only accept floating-point arrays.
 For more details, see: https://github.com/wouterboomsma/eigency#storage-layout---why-arrays-are-sometimes-transposed
 
 - Inner namespace: Classes in inner namespace will be prefixed by <innerNamespace>_ in Python.
-Examples: noiseModel\_Gaussian, noiseModeli\_mEstimator\_Tukey
+Examples: noiseModel_Gaussian, noiseModel_mEstimator_Tukey
 
 - Use keyword arguments to differentiate overloads with the same number of arguments. 
 This applies for all constructors, methods and static methods.
@@ -52,8 +55,10 @@ Examples: values.insertPose3(1, Pose3()), values.insertRot3(2, Rot3()), values.i
 
 - Casting from a base class to a derive class must be done explicitly.
 Examples: 
-      noiseBase = factor.get\_noiseModel()
-      noiseGaussian = dynamic\_cast\_noiseModel\_Gaussian\_noiseModel\_Base(noiseBase)       
+```Python
+      noiseBase = factor.get_noiseModel()
+      noiseGaussian = dynamic_cast_noiseModel_Gaussian_noiseModel_Base(noiseBase)       
+```
 
 
 
