@@ -1,0 +1,17 @@
+from distutils.core import setup
+from distutils.extension import Extension
+from Cython.Build import cythonize
+import eigency
+
+setup(
+  ext_modules = cythonize(Extension(
+    "gtsam",
+    sources=["gtsam.pyx"],
+    include_dirs = ["${CMAKE_SOURCE_DIR}",
+                    "${CMAKE_SOURCE_DIR}/gtsam/3rdparty/Eigen"
+                    ] + eigency.get_includes(include_eigen=False),
+    libraries = ['gtsam'],
+    library_dirs = ["${CMAKE_BINARY_DIR}/gtsam"],
+    language="c++",
+    extra_compile_args=["-std=c++11"])),
+)

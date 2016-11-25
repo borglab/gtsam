@@ -73,11 +73,12 @@ option(GTSAM_TANGENT_PREINTEGRATION      "Use new ImuFactor with integration on 
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
-option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
+option(GTSAM_INSTALL_CYTHON_TOOLBOX      "Enable/Disable installation of Cython toolbox"  OFF)
+option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab/cython wrap utility (necessary for matlab/cython interface)" ON)
 
 # Check / set dependent variables for MATLAB wrapper
-if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT GTSAM_BUILD_WRAP)
-	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX is enabled, please also enable GTSAM_BUILD_WRAP")
+if((GTSAM_INSTALL_MATLAB_TOOLBOX OR GTSAM_INSTALL_CYTHON_TOOLBOX) AND NOT GTSAM_BUILD_WRAP)
+	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX or GTSAM_INSTALL_CYTHON_TOOLBOX is enabled, please also enable GTSAM_BUILD_WRAP")
 endif()
 if(GTSAM_INSTALL_WRAP AND NOT GTSAM_BUILD_WRAP)
 	message(FATAL_ERROR "GTSAM_INSTALL_WRAP is enabled, please also enable GTSAM_BUILD_WRAP")
@@ -378,6 +379,11 @@ if (GTSAM_BUILD_PYTHON)
 
 endif()
 
+# Cython wrap
+if (GTSAM_INSTALL_CYTHON_TOOLBOX)
+	add_subdirectory(cython)
+endif()
+
 # Build gtsam_unstable
 if (GTSAM_BUILD_UNSTABLE)
     add_subdirectory(gtsam_unstable)
@@ -509,6 +515,10 @@ endif()
 if(GTSAM_BUILD_PYTHON)
 	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
 endif()
+
+message(STATUS "Cython toolbox flags                                      ")
+print_config_flag(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox         ")
+print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
 message(STATUS "===============================================================")
 
 # Print warnings at the end

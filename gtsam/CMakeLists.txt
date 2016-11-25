@@ -165,3 +165,12 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Wrap
     wrap_and_install_library(../gtsam.h "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
 endif ()
+
+# Create the matlab toolbox for the gtsam library
+if (GTSAM_INSTALL_CYTHON_TOOLBOX)
+    # Set up codegen
+    include(GtsamCythonWrap)
+
+    # Wrap
+    wrap_and_install_library_cython(../cython/gtsam.h "${GTSAM_ADDITIONAL_LIBRARIES}" "")
+endif ()
