@@ -268,7 +268,7 @@ class Point2 {
 
   // Testable
   void print(string s) const;
-  bool equals(const gtsam::Point2& pose, double tol) const;
+  bool equals(const gtsam::Point2& point, double tol) const;
 
   // Group
   static gtsam::Point2 identity();
@@ -478,7 +478,7 @@ class Rot3 {
 class Pose2 {
   // Standard Constructor
   Pose2();
-  Pose2(const gtsam::Pose2& pose);
+  Pose2(const gtsam::Pose2& other);
   Pose2(double x, double y, double theta);
   Pose2(double theta, const gtsam::Point2& t);
   Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
@@ -527,7 +527,7 @@ class Pose2 {
 class Pose3 {
   // Standard Constructors
   Pose3();
-  Pose3(const gtsam::Pose3& pose);
+  Pose3(const gtsam::Pose3& other);
   Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
   Pose3(const gtsam::Pose2& pose2); // FIXME: shadows Pose3(Pose3 pose)
   Pose3(Matrix t);
@@ -589,8 +589,8 @@ class Pose3Vector
 class Unit3 {
   // Standard Constructors
   Unit3();
-  Unit3(const gtsam::Point3& pose);
-  Unit3(const gtsam::Unit3& pose);
+  Unit3(const gtsam::Point3& p);
+  Unit3(const gtsam::Unit3& other);
 
   // Testable
   void print(string s) const;
@@ -612,7 +612,7 @@ class EssentialMatrix {
   EssentialMatrix();
   // Standard Constructors
   EssentialMatrix(const gtsam::Rot3& aRb, const gtsam::Unit3& aTb);
-  EssentialMatrix(const gtsam::EssentialMatrix& pose);
+  EssentialMatrix(const gtsam::EssentialMatrix& other);
 
   // Testable
   void print(string s) const;
@@ -673,7 +673,7 @@ class Cal3_S2 {
 virtual class Cal3DS2_Base {
   // Standard Constructors
   Cal3DS2_Base();
-  Cal3DS2_Base(const gtsam::Cal3DS2_Base& pose);
+  Cal3DS2_Base(const gtsam::Cal3DS2_Base& other);
 
   // Testable
   void print(string s) const;
@@ -702,7 +702,7 @@ virtual class Cal3DS2 : gtsam::Cal3DS2_Base {
   Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2);
   Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2, double p1, double p2);
   Cal3DS2(Vector v);
-  Cal3DS2(const gtsam::Cal3DS2& pose);
+  Cal3DS2(const gtsam::Cal3DS2& other);
 
   // Testable
   bool equals(const gtsam::Cal3DS2& rhs, double tol) const;
@@ -724,7 +724,7 @@ virtual class Cal3Unified : gtsam::Cal3DS2_Base {
   Cal3Unified(double fx, double fy, double s, double u0, double v0, double k1, double k2);
   Cal3Unified(double fx, double fy, double s, double u0, double v0, double k1, double k2, double p1, double p2, double xi);
   Cal3Unified(Vector v);
-  Cal3Unified(const gtsam::Cal3Unified& pose);
+  Cal3Unified(const gtsam::Cal3Unified& other);
 
   // Testable
   bool equals(const gtsam::Cal3Unified& rhs, double tol) const;
@@ -750,7 +750,7 @@ class Cal3_S2Stereo {
   Cal3_S2Stereo();
   Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0, double b);
   Cal3_S2Stereo(Vector v);
-  Cal3_S2Stereo(const gtsam::Cal3_S2Stereo& pose);
+  Cal3_S2Stereo(const gtsam::Cal3_S2Stereo& other);
 
   // Testable
   void print(string s) const;
@@ -771,7 +771,7 @@ class Cal3Bundler {
   // Standard Constructors
   Cal3Bundler();
   Cal3Bundler(double fx, double k1, double k2, double u0, double v0);
-  Cal3Bundler(const gtsam::Cal3Bundler& pose);
+  Cal3Bundler(const gtsam::Cal3Bundler& other);
 
   // Testable
   void print(string s) const;
@@ -809,7 +809,7 @@ class CalibratedCamera {
   CalibratedCamera(const gtsam::Pose3& pose);
   CalibratedCamera(const Vector& v);
   static gtsam::CalibratedCamera Level(const gtsam::Pose2& pose2, double height);
-  CalibratedCamera(const gtsam::CalibratedCamera& pose);
+  CalibratedCamera(const gtsam::CalibratedCamera& other);
 
   // Testable
   void print(string s) const;
