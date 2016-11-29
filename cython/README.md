@@ -44,22 +44,12 @@ For more details, see: https://github.com/wouterboomsma/eigency#storage-layout--
 - Inner namespace: Classes in inner namespace will be prefixed by <innerNamespace>_ in Python.
 Examples: noiseModel_Gaussian, noiseModel_mEstimator_Tukey
 
-- Use keyword arguments to differentiate overloads with the same number of arguments. 
-This applies for all constructors, methods and static methods.
-Now the variable names become important in these cases!!!
-Examples: Pose3(t=Matrix([...])), Pose3(pose2=Pose2()), Pose3(other=Pose3())
-Pose2(v=Vector([1,2,3])), Pose2(other=otherPose2)
-
-- Values::insert and update are now templated functions. Their python versions have the corresponding instantiated types added. 
-Examples: values.insertPose3(1, Pose3()), values.insertRot3(2, Rot3()), values.insertimuBias_ConstantBias(3, bias)
-
 - Casting from a base class to a derive class must be done explicitly.
 Examples: 
 ```Python
       noiseBase = factor.get_noiseModel()
       noiseGaussian = dynamic_cast_noiseModel_Gaussian_noiseModel_Base(noiseBase)       
 ```
-
 
 
 KNOWN ISSUES
