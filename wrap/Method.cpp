@@ -143,7 +143,6 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
 
   // Dealing with overloads..
   file.oss << "\tdef " << instantiatedName << "(self, *args, **kwargs):\n";
-  file.oss << pyx_checkDuplicateNargsKwArgs();
   for (size_t i = 0; i < N; ++i) {
     file.oss << "\t\tsuccess, results = self." << instantiatedName << "_" << i
              << "(*args, **kwargs)\n";

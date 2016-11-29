@@ -1,5 +1,6 @@
 import unittest
 from gtsam import *
+from gtsam_utils import *
 from math import *
 import numpy as np
 
@@ -21,18 +22,18 @@ class TestLocalizationExample(unittest.TestCase):
         # Add three "GPS" measurements
         # We use Pose2 Priors here with high variance on theta
         groundTruth = Values()
-        groundTruth.insertPose2(0, Pose2(0.0, 0.0, 0.0))
-        groundTruth.insertPose2(1, Pose2(2.0, 0.0, 0.0))
-        groundTruth.insertPose2(2, Pose2(4.0, 0.0, 0.0))
+        groundTruth.insert(0, Pose2(0.0, 0.0, 0.0))
+        groundTruth.insert(1, Pose2(2.0, 0.0, 0.0))
+        groundTruth.insert(2, Pose2(4.0, 0.0, 0.0))
         model = noiseModel_Diagonal.Sigmas(np.array([0.1, 0.1, 10.]))
         for i in range(3):
             graph.add(PriorFactorPose2(i, groundTruth.atPose2(i), model))
 
         # Initialize to noisy points
         initialEstimate = Values()
-        initialEstimate.insertPose2(0, Pose2(0.5, 0.0, 0.2))
-        initialEstimate.insertPose2(1, Pose2(2.3, 0.1, -0.2))
-        initialEstimate.insertPose2(2, Pose2(4.1, 0.1, 0.1))
+        initialEstimate.insert(0, Pose2(0.5, 0.0, 0.2))
+        initialEstimate.insert(1, Pose2(2.3, 0.1, -0.2))
+        initialEstimate.insert(2, Pose2(4.1, 0.1, 0.1))
 
         # Optimize using Levenberg-Marquardt optimization with an ordering from
         # colamd

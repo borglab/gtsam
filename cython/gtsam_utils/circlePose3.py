@@ -23,12 +23,12 @@ def circlePose3(numPoses = 8, radius = 1.0, symbolChar = 0):
     values = gtsam.Values()
     theta = 0.0
     dtheta = 2*pi/numPoses
-    gRo = gtsam.Rot3(R = Matrix([[0., 1., 0.], [1., 0., 0.], [0., 0., -1.]]))
+    gRo = gtsam.Rot3(Matrix([0., 1., 0.], [1., 0., 0.], [0., 0., -1.]))
     for i in range(numPoses):
         key = gtsam.symbol(symbolChar, i)
         gti = gtsam.Point3(radius*cos(theta), radius*sin(theta), 0)
         oRi = gtsam.Rot3.Yaw(-theta)   # negative yaw goes counterclockwise, with Z down !
         gTi = gtsam.Pose3(gRo.compose(oRi), gti)
-        values.insertPose3(key, gTi)
+        values.insert(key, gTi)
         theta = theta + dtheta
     return values

@@ -83,41 +83,23 @@ public:
       s += indent + "__names = [" + args.pyx_paramsList() + "]\n";
       s += indent + "for i in range(len(args)):\n"; 
       s += indent + "\t__params[__names[i]] = args[i]\n";
+      for (size_t i = 0; i<args.size(); ++i) {
+        if (args[i].type.isNonBasicType() || args[i].type.isEigen()) {
+          std::string param = "__params[__names[" + std::to_string(i) + "]]";
+          s += indent + "if not isinstance(" + param + ", " +
+               args[i].type.pyxArgumentType() + ")";
+          if (args[i].type.isEigen())
+            s += " or not " + param + ".ndim == " +
+                 ((args[i].type.pyxClassName() == "Vector") ? "1" : "2");
+          s +=  ":\n";
+          s += indent + "\treturn False" + ((isVoid) ? "" : ", None") + "\n";
+        }
+      }
       s += indent + "try:\n";
       s += args.pyx_castParamsToPythonType();
       s += indent + "except:\n";
       s += indent + "\treturn False";
       s += (!isVoid) ? ", None\n" : "\n";
-    }
-    return s;
-  }
-
-  /// if two overloading methods have the same number of arguments, they have
-  /// to be resolved via keyword args
-  std::string pyx_checkDuplicateNargsKwArgs(size_t indentLevel = 2) const {
-    std::string indent;
-    for (size_t i = 0; i<indentLevel; ++i) indent += "\t";
-    std::unordered_set<size_t> nargsSet;
-    std::vector<size_t> nargsDuplicates;
-    for (size_t i = 0; i < nrOverloads(); ++i) {
-      size_t nargs = argumentList(i).size();
-      if (nargsSet.find(nargs) != nargsSet.end())
-        nargsDuplicates.push_back(nargs);
-      else
-        nargsSet.insert(nargs);
-    }
-
-    std::string s;
-    if (nargsDuplicates.size() > 0) {
-      s += indent + "if len(kwargs)==0 and len(args)+len(kwargs) in [";
-      for (size_t i = 0; i < nargsDuplicates.size(); ++i) {
-        s += std::to_string(nargsDuplicates[i]);
-        if (i < nargsDuplicates.size() - 1) s += ",";
-      }
-      s += "]:\n";
-      s += indent + "\traise TypeError('Overloads with the same number of " 
-           "arguments exist. Please use keyword arguments to " 
-           "differentiate them!')\n";
     }
     return s;
   }

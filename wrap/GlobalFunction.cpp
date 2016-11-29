@@ -185,7 +185,6 @@ void GlobalFunction::emit_cython_pyx(FileWriter& file) const {
 
   // Dealing with overloads..
   file.oss << "def " << funcName << "(*args, **kwargs):\n";
-  file.oss << pyx_checkDuplicateNargsKwArgs(1);
   for (size_t i = 0; i < N; ++i) {
     file.oss << "\tsuccess, results = " << funcName << "_" << i
              << "(*args, **kwargs)\n";

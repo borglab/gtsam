@@ -827,7 +827,6 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
                  "\t\tself." << shared_pxd_obj_in_pyx() << " = " 
                  << shared_pxd_class_in_pyx() << "()\n";
 
-  pyxFile.oss << constructor.pyx_checkDuplicateNargsKwArgs();
   for (size_t i = 0; i<constructor.nrOverloads(); ++i) {
     pyxFile.oss << "\t\t" << (i == 0 ? "if" : "elif") << " self."
                 << pyxClassName() << "_" << i

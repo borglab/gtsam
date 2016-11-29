@@ -28,12 +28,12 @@ class TestPose3SLAMExample(unittest.TestCase):
         # Create initial config
         initial = Values()
         s = 0.10
-        initial.insertPose3(0, p0)
-        initial.insertPose3(1, hexagon.atPose3(1).retract(s * np.random.randn(6, 1)))
-        initial.insertPose3(2, hexagon.atPose3(2).retract(s * np.random.randn(6, 1)))
-        initial.insertPose3(3, hexagon.atPose3(3).retract(s * np.random.randn(6, 1)))
-        initial.insertPose3(4, hexagon.atPose3(4).retract(s * np.random.randn(6, 1)))
-        initial.insertPose3(5, hexagon.atPose3(5).retract(s * np.random.randn(6, 1)))
+        initial.insert(0, p0)
+        initial.insert(1, hexagon.atPose3(1).retract(s * np.random.randn(6, 1)))
+        initial.insert(2, hexagon.atPose3(2).retract(s * np.random.randn(6, 1)))
+        initial.insert(3, hexagon.atPose3(3).retract(s * np.random.randn(6, 1)))
+        initial.insert(4, hexagon.atPose3(4).retract(s * np.random.randn(6, 1)))
+        initial.insert(5, hexagon.atPose3(5).retract(s * np.random.randn(6, 1)))
 
         # optimize
         optimizer = LevenbergMarquardtOptimizer(fg, initial)

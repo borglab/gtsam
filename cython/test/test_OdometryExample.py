@@ -27,9 +27,9 @@ class TestOdometryExample(unittest.TestCase):
 
         # Initialize to noisy points
         initialEstimate = Values()
-        initialEstimate.insertPose2(1, Pose2(0.5, 0.0, 0.2))
-        initialEstimate.insertPose2(2, Pose2(2.3, 0.1, -0.2))
-        initialEstimate.insertPose2(3, Pose2(4.1, 0.1, 0.1))
+        initialEstimate.insert(1, Pose2(0.5, 0.0, 0.2))
+        initialEstimate.insert(2, Pose2(2.3, 0.1, -0.2))
+        initialEstimate.insert(3, Pose2(4.1, 0.1, 0.1))
 
         # Optimize using Levenberg-Marquardt optimization with an ordering from
         # colamd

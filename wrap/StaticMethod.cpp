@@ -99,7 +99,6 @@ void StaticMethod::emit_cython_pyx(FileWriter& file, const Class& cls) const {
   // Dealing with overloads..
   file.oss << "\t@staticmethod\n";
   file.oss << "\tdef " << name_ << "(*args, **kwargs):\n";
-  file.oss << pyx_checkDuplicateNargsKwArgs();
   for (size_t i = 0; i < N; ++i) {
     string funcName = name_ + "_" + to_string(i);
     file.oss << "\t\tsuccess, results = " << cls.pyxClassName() << "."

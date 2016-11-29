@@ -47,13 +47,13 @@ class TestStereoVOExample(unittest.TestCase):
 
         ## Create initial estimate for camera poses and landmarks
         initialEstimate = Values()
-        initialEstimate.insertPose3(x1, first_pose)
+        initialEstimate.insert(x1, first_pose)
         # noisy estimate for pose 2
-        initialEstimate.insertPose3(x2, Pose3(Rot3(), Point3(0.1,-.1,1.1)))
+        initialEstimate.insert(x2, Pose3(Rot3(), Point3(0.1,-.1,1.1)))
         expected_l1 = Point3( 1,  1, 5)
-        initialEstimate.insertPoint3(l1, expected_l1)
-        initialEstimate.insertPoint3(l2, Point3(-1,  1, 5))
-        initialEstimate.insertPoint3(l3, Point3( 0,-.5, 5))
+        initialEstimate.insert(l1, expected_l1)
+        initialEstimate.insert(l2, Point3(-1,  1, 5))
+        initialEstimate.insert(l3, Point3( 0,-.5, 5))
 
         ## optimize
         optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate)

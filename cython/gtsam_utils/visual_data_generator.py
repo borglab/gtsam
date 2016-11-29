@@ -87,23 +87,23 @@ def generate_data(options):
             truth.points[j] = Point3(
                 v=Vector([r * cos(theta), r * sin(theta), 0]))
     else:  # 3D landmarks as vertices of a cube
-        truth.points = [Point3(v=Vector([10, 10, 10])),
-                        Point3(v=Vector([-10, 10, 10])),
-                        Point3(v=Vector([-10, -10, 10])),
-                        Point3(v=Vector([10, -10, 10])),
-                        Point3(v=Vector([10, 10, -10])),
-                        Point3(v=Vector([-10, 10, -10])),
-                        Point3(v=Vector([-10, -10, -10])),
-                        Point3(v=Vector([10, -10, -10]))]
+        truth.points = [Point3(10, 10, 10),
+                        Point3(-10, 10, 10),
+                        Point3(-10, -10, 10),
+                        Point3(10, -10, 10),
+                        Point3(10, 10, -10),
+                        Point3(-10, 10, -10),
+                        Point3(-10, -10, -10),
+                        Point3(10, -10, -10)]
 
     # Create camera cameras on a circle around the triangle
     height = 10
     r = 40
     for i in range(options.nrCameras):
         theta = i * 2 * pi / options.nrCameras
-        t = Point3(v=Vector([r * cos(theta), r * sin(theta), height]))
+        t = Point3(Vector(r * cos(theta), r * sin(theta), height))
         truth.cameras[i] = SimpleCamera.Lookat(
-            t, Point3(), Point3(v=Vector([0, 0, 1])), truth.K)
+            t, Point3(), Point3(Vector(0, 0, 1)), truth.K)
         # Create measurements
         for j in range(nrPoints):
             # All landmarks seen in every frame

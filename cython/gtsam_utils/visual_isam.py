@@ -35,7 +35,7 @@ def initialize(data, truth, options):
             else:
                 newFactors.add(PriorFactorPose3(
                     ii, truth.cameras[i].pose(), data.noiseModels.posePrior))
-        initialEstimates.insertPose3(ii, truth.cameras[i].pose())
+        initialEstimates.insert(ii, truth.cameras[i].pose())
 
     nextPoseIndex = 2
 
@@ -50,7 +50,7 @@ def initialize(data, truth, options):
                 data.Z[i][k], data.noiseModels.measurement, ii, jj, data.K))
             # TODO: initial estimates should not be from ground truth!
             if not initialEstimates.exists(jj):
-                initialEstimates.insertPoint3(jj, truth.points[j])
+                initialEstimates.insert(jj, truth.points[j])
             if options.pointPriors:  # add point priors
                 newFactors.add(PriorFactorPoint3(
                     jj, truth.points[j], data.noiseModels.pointPrior))
@@ -112,7 +112,7 @@ def step(data, isam, result, truth, currPoseIndex):
 
     # Initial estimates for the new pose.
     prevPose = result.atPose3(symbol(ord('x'), prevPoseIndex))
-    initialEstimates.insertPose3(symbol(ord('x'), currPoseIndex),
+    initialEstimates.insert(symbol(ord('x'), currPoseIndex),
                             prevPose.compose(odometry))
 
     # Update ISAM

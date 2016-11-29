@@ -41,10 +41,10 @@ class TestSFMExample(unittest.TestCase):
         initialEstimate = Values()
         for i in range(len(truth.cameras)):
             pose_i = truth.cameras[i].pose()
-            initialEstimate.insertPose3(symbol(ord('x'), i), pose_i)
+            initialEstimate.insert(symbol(ord('x'), i), pose_i)
         for j in range(len(truth.points)):
             point_j = truth.points[j]
-            initialEstimate.insertPoint3(symbol(ord('p'), j), point_j)
+            initialEstimate.insert(symbol(ord('p'), j), point_j)
 
         # Optimization
         optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate)
