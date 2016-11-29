@@ -495,8 +495,8 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   double error(const gtsam::VectorValues& c) const;
 
   //Standard Interface
-  Matrix py_getA() const;
-  Vector py_getb() const;
+  Matrix getA() const;
+  Vector getb() const;
   size_t rows() const;
   size_t cols() const;
   bool isConstrained() const;
