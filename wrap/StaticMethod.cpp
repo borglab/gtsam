@@ -60,8 +60,8 @@ string StaticMethod::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
 void StaticMethod::emit_cython_pxd(FileWriter& file, const Class& cls) const {
   // don't support overloads for static method :-(
   for(size_t i = 0; i < nrOverloads(); ++i) {
-    file.oss << "\t\t@staticmethod\n";
-    file.oss << "\t\t";
+    file.oss << "        @staticmethod\n";
+    file.oss << "        ";
     returnVals_[i].emit_cython_pxd(file, cls.pxdClassName());
     file.oss << name_ + ((i>0)?"_" + to_string(i):"") << " \"" << name_ << "\"" << "(";
     argumentList(i).emit_cython_pxd(file, cls.pxdClassName());
@@ -73,14 +73,14 @@ void StaticMethod::emit_cython_pxd(FileWriter& file, const Class& cls) const {
 void StaticMethod::emit_cython_pyx_no_overload(FileWriter& file,
                                                const Class& cls) const {
   assert(nrOverloads() == 1);
-  file.oss << "\t@staticmethod\n";
-  file.oss << "\tdef " << name_ << "(";
+  file.oss << "    @staticmethod\n";
+  file.oss << "    def " << name_ << "(";
   argumentList(0).emit_cython_pyx(file);
   file.oss << "):\n";
 
   /// Call cython corresponding function and return
   string ret = pyx_functionCall(cls.pxd_class_in_pyx(), name_, 0);
-  file.oss << "\t\t";
+  file.oss << "        ";
   if (!returnVals_[0].isVoid()) {
     file.oss << "return " << returnVals_[0].pyx_casting(ret) << "\n";
   } else
@@ -97,35 +97,35 @@ void StaticMethod::emit_cython_pyx(FileWriter& file, const Class& cls) const {
   }
 
   // Dealing with overloads..
-  file.oss << "\t@staticmethod\n";
-  file.oss << "\tdef " << name_ << "(*args, **kwargs):\n";
+  file.oss << "    @staticmethod\n";
+  file.oss << "    def " << name_ << "(*args, **kwargs):\n";
   for (size_t i = 0; i < N; ++i) {
     string funcName = name_ + "_" + to_string(i);
-    file.oss << "\t\tsuccess, results = " << cls.pyxClassName() << "."
+    file.oss << "        success, results = " << cls.pyxClassName() << "."
              << funcName << "(*args, **kwargs)\n";
-    file.oss << "\t\tif success:\n\t\t\treturn results\n";
+    file.oss << "        if success:\n            return results\n";
   }
-  file.oss << "\t\traise TypeError('Could not find the correct overload')\n";
+  file.oss << "        raise TypeError('Could not find the correct overload')\n";
 
   for(size_t i = 0; i < N; ++i) {
-    file.oss << "\t@staticmethod\n";
+    file.oss << "    @staticmethod\n";
 
     string funcName = name_ + "_" + to_string(i);
     string pxdFuncName = name_ + ((i>0)?"_" + to_string(i):"");
     ArgumentList args = argumentList(i);
-    file.oss << "\tdef " + funcName + "(*args, **kwargs):\n";
+    file.oss << "    def " + funcName + "(*args, **kwargs):\n";
     file.oss << pyx_resolveOverloadParams(args, false); // lazy: always return None even if it's a void function
 
     /// Call cython corresponding function and return
     string ret = pyx_functionCall(cls.pxd_class_in_pyx(), pxdFuncName, i);
     if (!returnVals_[i].isVoid()) {
-      file.oss << "\t\tcdef " << returnVals_[i].pyx_returnType()
+      file.oss << "        cdef " << returnVals_[i].pyx_returnType()
               << " ret = " << ret << "\n";
-      file.oss << "\t\treturn True, " << returnVals_[i].pyx_casting("ret") << "\n";
+      file.oss << "        return True, " << returnVals_[i].pyx_casting("ret") << "\n";
     }
     else {
-      file.oss << "\t\t" << ret << "\n";
-      file.oss << "\t\treturn True, None\n";
+      file.oss << "        " << ret << "\n";
+      file.oss << "        return True, None\n";
     } 
     file.oss << "\n";
   }

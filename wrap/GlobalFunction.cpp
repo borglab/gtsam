@@ -138,7 +138,7 @@ void GlobalFunction::emit_cython_pxd(FileWriter& file) const {
                 << overloads[0].qualifiedNamespaces("::") 
                 << "\":" << endl;
   for (size_t i = 0; i < nrOverloads(); ++i) {
-    file.oss << "\t\t";
+    file.oss << "        ";
     returnVals_[i].emit_cython_pxd(file, "");
     file.oss << pyRename(name_) + " \"" + overloads[0].qualifiedName("::") +
                     "\"(";
@@ -165,11 +165,11 @@ void GlobalFunction::emit_cython_pyx_no_overload(FileWriter& file) const {
   /// Call cython corresponding function and return
   string ret = pyx_functionCall("pxd", funcName, 0);
   if (!returnVals_[0].isVoid()) {
-    file.oss << "\tcdef " << returnVals_[0].pyx_returnType()
+    file.oss << "    cdef " << returnVals_[0].pyx_returnType()
              << " ret = " << ret << "\n";
-    file.oss << "\treturn " << returnVals_[0].pyx_casting("ret") << "\n";
+    file.oss << "    return " << returnVals_[0].pyx_casting("ret") << "\n";
   } else {
-    file.oss << "\t" << ret << "\n";
+    file.oss << "    " << ret << "\n";
   }
 }
 
@@ -186,11 +186,11 @@ void GlobalFunction::emit_cython_pyx(FileWriter& file) const {
   // Dealing with overloads..
   file.oss << "def " << funcName << "(*args, **kwargs):\n";
   for (size_t i = 0; i < N; ++i) {
-    file.oss << "\tsuccess, results = " << funcName << "_" << i
+    file.oss << "    success, results = " << funcName << "_" << i
              << "(*args, **kwargs)\n";
-    file.oss << "\tif success:\n\t\t\treturn results\n";
+    file.oss << "    if success:\n            return results\n";
   }
-  file.oss << "\traise TypeError('Could not find the correct overload')\n";
+  file.oss << "    raise TypeError('Could not find the correct overload')\n";
 
   for (size_t i = 0; i < N; ++i) {
     ArgumentList args = argumentList(i);
@@ -201,12 +201,12 @@ void GlobalFunction::emit_cython_pyx(FileWriter& file) const {
     /// Call cython corresponding function
     string ret = pyx_functionCall("pxd", funcName, i);
     if (!returnVals_[i].isVoid()) {
-      file.oss << "\tcdef " << returnVals_[i].pyx_returnType()
+      file.oss << "    cdef " << returnVals_[i].pyx_returnType()
               << " ret = " << ret << "\n";
-      file.oss << "\treturn True, " << returnVals_[i].pyx_casting("ret") << "\n";
+      file.oss << "    return True, " << returnVals_[i].pyx_casting("ret") << "\n";
     } else {
-      file.oss << "\t" << ret << "\n";
-      file.oss << "\treturn True, None\n";
+      file.oss << "    " << ret << "\n";
+      file.oss << "    return True, None\n";
     }
   }
 }

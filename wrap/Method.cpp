@@ -83,7 +83,7 @@ string Method::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
 /* ************************************************************************* */
 void Method::emit_cython_pxd(FileWriter& file, const Class& cls) const {
   for (size_t i = 0; i < nrOverloads(); ++i) {
-    file.oss << "\t\t";
+    file.oss << "        ";
     returnVals_[i].emit_cython_pxd(file, cls.pxdClassName());
     file.oss << pyRename(name_) + " \"" + name_ + "\""
              << "(";
@@ -100,10 +100,10 @@ void Method::emit_cython_pyx_no_overload(FileWriter& file,
   string funcName = pyRename(name_);
   // leverage python's special treatment for print
   if (funcName == "print_")
-    file.oss << "\tdef __str__(self):\n\t\tself.print_('')\n\t\treturn ''\n";
+    file.oss << "    def __str__(self):\n        self.print_('')\n        return ''\n";
 
   // Function definition
-  file.oss << "\tdef " << funcName;
+  file.oss << "    def " << funcName;
   // modify name of function instantiation as python doesn't allow overloads
   // e.g. template<T={A,B,C}> funcName(...) --> funcNameA, funcNameB, funcNameC
   if (templateArgValue_) file.oss << templateArgValue_->pyxClassName();
@@ -117,11 +117,11 @@ void Method::emit_cython_pyx_no_overload(FileWriter& file,
   string caller = "self." + cls.shared_pxd_obj_in_pyx() + ".get()";
   string ret = pyx_functionCall(caller, funcName, 0);
   if (!returnVals_[0].isVoid()) {
-    file.oss << "\t\tcdef " << returnVals_[0].pyx_returnType()
+    file.oss << "        cdef " << returnVals_[0].pyx_returnType()
              << " ret = " << ret << "\n";
-    file.oss << "\t\treturn " << returnVals_[0].pyx_casting("ret") << "\n";
+    file.oss << "        return " << returnVals_[0].pyx_casting("ret") << "\n";
   } else {
-    file.oss << "\t\t" << ret << "\n";
+    file.oss << "        " << ret << "\n";
   }
 }
 
@@ -142,17 +142,17 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
   }
 
   // Dealing with overloads..
-  file.oss << "\tdef " << instantiatedName << "(self, *args, **kwargs):\n";
+  file.oss << "    def " << instantiatedName << "(self, *args, **kwargs):\n";
   for (size_t i = 0; i < N; ++i) {
-    file.oss << "\t\tsuccess, results = self." << instantiatedName << "_" << i
+    file.oss << "        success, results = self." << instantiatedName << "_" << i
              << "(*args, **kwargs)\n";
-    file.oss << "\t\tif success:\n\t\t\treturn results\n";
+    file.oss << "        if success:\n            return results\n";
   }
-  file.oss << "\t\traise TypeError('Could not find the correct overload')\n";
+  file.oss << "        raise TypeError('Could not find the correct overload')\n";
 
   for (size_t i = 0; i < N; ++i) {
     ArgumentList args = argumentList(i);
-    file.oss << "\tdef " + instantiatedName + "_" + to_string(i) +
+    file.oss << "    def " + instantiatedName + "_" + to_string(i) +
                     "(self, *args, **kwargs):\n";
     file.oss << pyx_resolveOverloadParams(args, false); // lazy: always return None even if it's a void function
 
@@ -161,12 +161,12 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
 
     string ret = pyx_functionCall(caller, funcName, i);
     if (!returnVals_[i].isVoid()) {
-      file.oss << "\t\tcdef " << returnVals_[i].pyx_returnType()
+      file.oss << "        cdef " << returnVals_[i].pyx_returnType()
               << " ret = " << ret << "\n";
-      file.oss << "\t\treturn True, " << returnVals_[i].pyx_casting("ret") << "\n";
+      file.oss << "        return True, " << returnVals_[i].pyx_casting("ret") << "\n";
     } else {
-      file.oss << "\t\t" << ret << "\n";
-      file.oss << "\t\treturn True, None\n";
+      file.oss << "        " << ret << "\n";
+      file.oss << "        return True, None\n";
     }
   }
 }

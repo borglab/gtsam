@@ -252,12 +252,12 @@ std::string ArgumentList::pyx_paramsList() const {
 /* ************************************************************************* */
 std::string ArgumentList::pyx_castParamsToPythonType() const {
   if (size() == 0) 
-    return "\t\t\tpass\n";
+    return "            pass\n";
 
   // cast params to their correct python argument type to pass in the function call later
   string s;
   for (size_t j = 0; j < size(); ++j)
-    s += "\t\t\t" + at(j).name + " = <" + at(j).type.pyxArgumentType()
+    s += "            " + at(j).name + " = <" + at(j).type.pyxArgumentType()
              + ">(__params['" + at(j).name + "'])\n";
   return s;
 }

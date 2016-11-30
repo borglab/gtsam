@@ -337,12 +337,12 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
 
   // boost shared_ptr
   pxdFile.oss << "cdef extern from \"boost/shared_ptr.hpp\" namespace \"boost\":\n"
-                 "\tcppclass shared_ptr[T]:\n"
-                 "\t\tshared_ptr()\n"
-                 "\t\tshared_ptr(T*)\n"
-                 "\t\tT* get()\n"
-                 "\t\tT& operator*()\n\n"
-                 "\tcdef shared_ptr[T] dynamic_pointer_cast[T,U](const shared_ptr[U]& r)\n";
+                 "    cppclass shared_ptr[T]:\n"
+                 "        shared_ptr()\n"
+                 "        shared_ptr(T*)\n"
+                 "        T* get()\n"
+                 "        T& operator*()\n\n"
+                 "    cdef shared_ptr[T] dynamic_pointer_cast[T,U](const shared_ptr[U]& r)\n";
 
   for(const TypedefPair& types: typedefs)
     types.emit_cython_pxd(pxdFile);

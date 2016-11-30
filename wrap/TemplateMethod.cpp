@@ -23,7 +23,7 @@ using namespace wrap;
 /* ************************************************************************* */
 void TemplateMethod::emit_cython_pxd(FileWriter& file, const Class& cls) const {
   for(size_t i = 0; i < nrOverloads(); ++i) {
-    file.oss << "\t\t";
+    file.oss << "        ";
     returnVals_[i].emit_cython_pxd(file, cls.pxdClassName());
     file.oss << name_ << "[" << argName << "]" << "(";
     argumentList(i).emit_cython_pxd(file, cls.pxdClassName());

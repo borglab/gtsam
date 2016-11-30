@@ -73,16 +73,16 @@ public:
 
   std::string pyx_resolveOverloadParams(const ArgumentList& args, bool isVoid, size_t indentLevel = 2) const {
     std::string indent;
-    for (size_t i = 0; i<indentLevel; ++i) indent += "\t";
+    for (size_t i = 0; i<indentLevel; ++i) indent += "    ";
     std::string s;
     s += indent + "if len(args)+len(kwargs) !=" + std::to_string(args.size()) + ":\n";
-    s += indent + "\treturn False";
+    s += indent + "    return False";
     s += (!isVoid) ? ", None\n" : "\n";
     if (args.size() > 0) {
       s += indent + "__params = kwargs.copy()\n";
       s += indent + "__names = [" + args.pyx_paramsList() + "]\n";
       s += indent + "for i in range(len(args)):\n"; 
-      s += indent + "\t__params[__names[i]] = args[i]\n";
+      s += indent + "    __params[__names[i]] = args[i]\n";
       for (size_t i = 0; i<args.size(); ++i) {
         if (args[i].type.isNonBasicType() || args[i].type.isEigen()) {
           std::string param = "__params[__names[" + std::to_string(i) + "]]";
@@ -92,13 +92,13 @@ public:
             s += " or not " + param + ".ndim == " +
                  ((args[i].type.pyxClassName() == "Vector") ? "1" : "2");
           s +=  ":\n";
-          s += indent + "\treturn False" + ((isVoid) ? "" : ", None") + "\n";
+          s += indent + "    return False" + ((isVoid) ? "" : ", None") + "\n";
         }
       }
       s += indent + "try:\n";
       s += args.pyx_castParamsToPythonType();
       s += indent + "except:\n";
-      s += indent + "\treturn False";
+      s += indent + "    return False";
       s += (!isVoid) ? ", None\n" : "\n";
     }
     return s;

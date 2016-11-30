@@ -134,7 +134,7 @@ void Constructor::emit_cython_pxd(FileWriter& pxdFile, Str className) const {
     ArgumentList args = argumentList(i);
 
     // generate the constructor
-    pxdFile.oss << "\t\t" << className << "(";
+    pxdFile.oss << "        " << className << "(";
     args.emit_cython_pxd(pxdFile, className);
     pxdFile.oss << ") "
                 << "except +\n";
@@ -145,14 +145,14 @@ void Constructor::emit_cython_pxd(FileWriter& pxdFile, Str className) const {
 void Constructor::emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const {
   for (size_t i = 0; i < nrOverloads(); i++) {
     ArgumentList args = argumentList(i);
-    pyxFile.oss << "\tdef " + cls.pyxClassName() + "_" + to_string(i) +
+    pyxFile.oss << "    def " + cls.pyxClassName() + "_" + to_string(i) +
                     "(self, *args, **kwargs):\n";
     pyxFile.oss << pyx_resolveOverloadParams(args, true);
 
-    pyxFile.oss << "\t\tself." << cls.shared_pxd_obj_in_pyx() << " = "
+    pyxFile.oss << "        self." << cls.shared_pxd_obj_in_pyx() << " = "
                 << cls.shared_pxd_class_in_pyx() << "(new " << cls.pxd_class_in_pyx()
                 << "(" << args.pyx_asParams() << "))\n";
-    pyxFile.oss << "\t\treturn True\n\n";
+    pyxFile.oss << "        return True\n\n";
   }
 }
 
