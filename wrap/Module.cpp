@@ -380,6 +380,7 @@ void Module::emit_cython_pyx(FileWriter& pyxFile) const {
   // headers...
   string pxdHeader = name + "_wrapper";
   pyxFile.oss << "cimport numpy as np\n"
+                 "import numpy as npp\n"
                  "cimport " << pxdHeader << " as " << "pxd" << "\n"
                  "from "<< pxdHeader << " cimport shared_ptr\n"
                  "from "<< pxdHeader << " cimport dynamic_pointer_cast\n";
@@ -392,6 +393,13 @@ void Module::emit_cython_pyx(FileWriter& pyxFile) const {
                  "from libcpp.pair cimport pair\n"
                  "from libcpp.string cimport string\n"
                  "from cython.operator cimport dereference as deref\n\n\n";
+  pyxFile.oss << 
+R"rawstr(def Vectorize(*args):
+    ret = npp.squeeze(npp.asarray(args, dtype='float'))
+    if ret.ndim == 0: ret = npp.expand_dims(ret, axis=0)
+    return ret
+)rawstr";
+
   for(const Class& cls: expandedClasses)
     cls.emit_cython_pyx(pyxFile, expandedClasses);
   pyxFile.oss << "\n";

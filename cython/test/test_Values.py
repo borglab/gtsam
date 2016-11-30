@@ -43,7 +43,7 @@ class TestValues(unittest.TestCase):
 
         # special cases for Vector and Matrix:
         actualVector = values.atVector(11)
-        self.assertTrue(np.allclose(vec, actualVector.ravel(), tol))
+        self.assertTrue(np.allclose(vec, actualVector, tol))
         actualMatrix = values.atMatrix(12)
         self.assertTrue(np.allclose(mat, actualMatrix, tol))
 

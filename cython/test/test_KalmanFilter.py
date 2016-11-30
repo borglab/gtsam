@@ -48,23 +48,23 @@ class TestKalmanFilter(unittest.TestCase):
 
         # Run iteration 1
         state = KF.predict(state, F, B, u, modelQ)
-        self.assertTrue(np.allclose(expected1, state.mean().ravel()))
+        self.assertTrue(np.allclose(expected1, state.mean()))
         self.assertTrue(np.allclose(P01, state.covariance()))
         state = KF.update(state, H, z1, modelR)
-        self.assertTrue(np.allclose(expected1, state.mean().ravel()))
+        self.assertTrue(np.allclose(expected1, state.mean()))
         self.assertTrue(np.allclose(I11, state.information()))
 
         # Run iteration 2
         state = KF.predict(state, F, B, u, modelQ)
-        self.assertTrue(np.allclose(expected2, state.mean().ravel()))
+        self.assertTrue(np.allclose(expected2, state.mean()))
         state = KF.update(state, H, z2, modelR)
-        self.assertTrue(np.allclose(expected2, state.mean().ravel()))
+        self.assertTrue(np.allclose(expected2, state.mean()))
 
         # Run iteration 3
         state = KF.predict(state, F, B, u, modelQ)
-        self.assertTrue(np.allclose(expected3, state.mean().ravel()))
+        self.assertTrue(np.allclose(expected3, state.mean()))
         state = KF.update(state, H, z3, modelR)
-        self.assertTrue(np.allclose(expected3, state.mean().ravel()))
+        self.assertTrue(np.allclose(expected3, state.mean()))
 
 if __name__ == "__main__":
     unittest.main()
