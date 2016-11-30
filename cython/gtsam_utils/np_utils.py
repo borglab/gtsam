@@ -6,9 +6,9 @@ def Vector(*args):
     Convenient function to create numpy vector to use with gtsam cython wrapper
     Usage: Vector(1), Vector(1,2,3), Vector(3,2,4)
     """
-    ret = np.asarray(args, dtype='float')
-    while ret.ndim >= 2:
-        ret = ret[0, :]
+    ret = np.squeeze(np.asarray(args, dtype='float'))
+    if ret.ndim == 0:
+        ret = np.expand_dims(ret, axis=0)
     return ret
 
 
