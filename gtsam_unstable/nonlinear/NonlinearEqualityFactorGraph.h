@@ -11,6 +11,7 @@
 
 /**
  * @file    NonlinearEqualityFactorGraph.h
+ * @author Ivan Dario Jimenez
  * @author  Duy-Nguyen Ta
  * @author  Krunal Chande
  * @author  Luca Carlone
@@ -52,18 +53,16 @@ public:
     }
     return total_cost;
   }
-//  /**
-//   * Additional cost for -lambda*ConstraintHessian for SQP
-//   */
-//  GaussianFactorGraph::shared_ptr multipliedHessians(const Values& values, const VectorValues& duals) const {
-//    GaussianFactorGraph::shared_ptr constrainedHessians(new GaussianFactorGraph());
-//    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this) {
-//      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
-//      constrainedHessians->push_back(constraint->multipliedHessian(values, duals));
-//    }
-//    return constrainedHessians;
-//  }
-
+ /**
+  * Additional cost for -lambda*ConstraintHessian for SQP
+  */
+  GaussianFactorGraph::shared_ptr multipliedHessians(const Values & values, const VectorValues & duals) const{
+    GaussianFactorGraph::shared_ptr constrainedHessians(new GaussianFactorGraph());
+    for(const NonlinearConstraint::shared_ptr& factor: *this){
+      constrainedHessians->push_back(factor->multipliedHessian(values, duals));
+    }
+    return constrainedHessians;
+  }
 };
 
 }

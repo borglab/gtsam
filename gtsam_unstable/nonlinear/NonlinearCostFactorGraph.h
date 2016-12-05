@@ -49,5 +49,17 @@ public:
 
     return total_error;
   }
+  
+  GaussianFactorGraph::shared_ptr hessian(const Values & values) const {
+    GaussianFactorGraph::shared_ptr hessians(new GaussianFactorGraph);
+    for(NonlinearConstraint::shared_ptr factor: *this){
+      VectorValues duals;
+      duals.insert(factor->dualKey(), -Vector::Ones(factor->dim()));
+      GaussianFactor::shared_ptr mH = factor->multipliedHessian(values, duals);
+      hessians->push_back(mH);
+    }
+    return hessians;
+  }
+  
 };
 }

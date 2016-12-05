@@ -56,6 +56,59 @@ TEST_DISABLED(SQPLineSearch2, TrivialNonlinearConstraintWithEqualities) {
 }
 
 /**
+ * min (x-1)^4 + (y-1)^4
+ * s.t.  y - (x-1)^3 -1 = 0
+ * start at (3,9) end at (1,1)
+ */
+namespace TrivialExample{
+  
+  struct costError{
+    Vector operator()(const double & x1, const double & x2,
+                      boost::optional<Matrix&> H1 = boost::none,
+                      boost::optional<Matrix&> H2 = boost::none){
+      if(H1){
+        *H1 = 4*std::pow((x1 -1),3)*I_1x1;
+      }
+      if(H2){
+        *H2 = 4*std::pow((x2 -1),3)*I_1x1;
+      }
+      return (std::pow(x1 -1, 4) + std::pow(x2-1, 4))*I_1x1;
+    }
+  };
+  
+  struct constraintError{
+    Vector operator()(const double & x1, const double & x2,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none){
+      if(H1){
+        *H1 = (-3*std::pow(x1-1,2))*I_1x1;
+      }
+      if(H2){
+        *H2 = I_1x1;
+      }
+      return (x2 - std::pow(x1 - 1, 3) -1)*I_1x1;
+    }
+  };
+  typedef NonlinearEqualityConstraint2<double,double, costError> cost;
+  typedef NonlinearEqualityConstraint2<double,double, constraintError> constraint;
+}
+
+TEST_DISABLED(SQPLineSearch2, TrivialTest){
+  Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
+  NP problem;
+  problem.cost->push_back(TrivialExample::cost(noiseModel::Unit::Create(1), X, Y, D));
+  problem.equalities->push_back(TrivialExample::constraint(X,Y,D));
+  Values initial, expected;
+  initial.insert(X, 3.0);
+  initial.insert(Y, 9.0);
+  expected.insert(X, 1.0);
+  expected.insert(Y, 1.0);
+  SQPLineSearch2 solver(problem);
+  Values actual = solver.optimize(initial);
+  CHECK(assert_equal(expected, actual, 1e-7));
+}
+
+/**
  * Circle Example From AR-DRONE MPC
  * min x^2 + y^2
  * s.t (x-2)^2 + y^2 - 1 = 0
@@ -94,7 +147,7 @@ typedef NonlinearEqualityConstraint2<double, double, costError> cost;
 typedef NonlinearEqualityConstraint2<double, double, constraintError> constraint;
 }
 
-TEST(SQPLineSearch2, CircleTest) {
+TEST_DISABLED(SQPLineSearch2, CircleTest) {
   Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
   NP problem;
   problem.cost->push_back(CircleExample::cost(noiseModel::Unit::Create(1), X,Y,D));
@@ -109,33 +162,25 @@ TEST(SQPLineSearch2, CircleTest) {
   CHECK(assert_equal(expected, actual, 1e-7))
 }
 
-TEST(HessianFactorgraph, PostiveDefiniteMinusZero) {
-//  std::cout << "FIRST TEST FACTORGRAPH:" << std::endl;
-  Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
-  HessianFactor positiveDefinite(Y, (Matrix22() << 8, 0, 0, 2).finished(),Vector2(3,4), 3);
-  HessianFactor negativeDefinite(Y, (Matrix22() << -1, 0, 0, -1).finished(), Vector2(0,0), -100);
-  GaussianFactorGraph fg;
-  fg.push_back(positiveDefinite);
-  fg.push_back(negativeDefinite);
-//  GTSAM_PRINT(positiveDefinite);
-//  GTSAM_PRINT(negativeDefinite);
-  VectorValues solution = fg.optimize();
-//  std::cout << "Solution: " << solution.at(Y) << std::endl;
+/**
+ * Trivial Equality Example
+ * min x ^4 + y^4 - x^3 - 10*y^3 - 10*x^2 - y^2 - x - y
+ * s.t.
+ * y >= 1
+ * y <= Exp[x]
+ * x  <= 2
+ *
+ * Start point (1, 1.5) Solution at (2., 7.38906)
+ */
+
+namespace EasyEasyExample{
+  
 }
 
-TEST(HessianFactorgraph, NegativeDefinitePlusJacobian) {
-//  std::cout << "SECOND TEST FACTORGRAPH:" << std::endl;
-  Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
-  HessianFactor negativeDef(Y, (Matrix22() << -1, 0, 0, -1).finished(), Vector2(0,0), -100);
-  JacobianFactor positiveDefinite(Y, (Matrix22() << 2, 0, 0, 2).finished(), Vector2(3, 4));
-  GaussianFactorGraph fg;
-  fg.push_back(negativeDef);
-  fg.push_back(positiveDefinite);
-//  GTSAM_PRINT(negativeDef);
-//  GTSAM_PRINT(positiveDefinite);
-  VectorValues solution = fg.optimize();
-//  std::cout << "Solution: " << solution.at(Y) << std::endl;
+TEST_DISABLED(SQPLineSearch2, EasyEasyTest){
+  
 }
+
 /**
  * Nocedal06 Problem 18.3 page 562
  * F(X) = e^(x1x2x3x4x5) + 0.5(x1^3 + x2^3 + 1)^2
