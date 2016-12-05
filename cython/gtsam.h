@@ -2626,6 +2626,7 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   Matrix getAccelerometerCovariance() const;
   Matrix getIntegrationCovariance()   const;
   bool   getUse2ndOrderCoriolis()     const;
+  void print(string s) const;
 };
 
 #include <gtsam/navigation/ImuFactor.h>
