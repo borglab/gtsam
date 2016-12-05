@@ -823,7 +823,7 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
   pyxFile.oss << "    cdef " << shared_pxd_class_in_pyx() << " " << shared_pxd_obj_in_pyx() << "\n";
 
   // __cinit___
-  pyxFile.oss << "    def __cinit__(self, *args, **kwargs):\n"
+  pyxFile.oss << "    def __init__(self, *args, **kwargs):\n"
                  "        self." << shared_pxd_obj_in_pyx() << " = " 
                  << shared_pxd_class_in_pyx() << "()\n";
 
