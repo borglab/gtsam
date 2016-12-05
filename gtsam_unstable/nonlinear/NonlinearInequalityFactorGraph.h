@@ -74,7 +74,17 @@ public:
     }
     return true;
   }
-
+  /**
+   * Additional cost for -lambda*ConstraintHessian for SQP
+   */
+  GaussianFactorGraph::shared_ptr multipliedHessians(const Values & values, const VectorValues & duals) const{
+    GaussianFactorGraph::shared_ptr constrainedHessians(new GaussianFactorGraph());
+    for(const NonlinearConstraint::shared_ptr& factor: *this){
+      constrainedHessians->push_back(factor->multipliedHessian(values, duals));
+    }
+    return constrainedHessians;
+  }
+  
   double error(const Values& values) const {
     double total_cost(0.0);
     for (const sharedFactor& factor : *this) {

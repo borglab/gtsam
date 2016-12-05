@@ -38,17 +38,9 @@ Values SQPLineSearch2::getFeasiblePoint() const {
 /* ************************************************************************* */
 GaussianFactorGraph::shared_ptr SQPLineSearch2::multiplyConstrainedHessians(
     const Values& x, VectorValues lambdas, double alpha) const {
-  GaussianFactorGraph::shared_ptr multipliedConstrainedHessians(
-      new GaussianFactorGraph());
   VectorValues multipliedLambdas = alpha * lambdas;
-  for (NonlinearConstraint::shared_ptr factor : *program_.equalities) {
-    multipliedConstrainedHessians->push_back(
-        factor->multipliedHessian(x, multipliedLambdas));
-  }
-  for (NonlinearInequalityConstraint::shared_ptr factor : *program_.inequalities) {
-    multipliedConstrainedHessians->push_back(
-        factor->multipliedHessian(x, multipliedLambdas));
-  }
+  GaussianFactorGraph::shared_ptr multipliedConstrainedHessians = program_.equalities->multipliedHessians(x, multipliedLambdas);
+  multipliedConstrainedHessians->push_back(program_.inequalities->multipliedHessians(x, multipliedLambdas));
   return multipliedConstrainedHessians;
 }
 
