@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/geometry/Rot2.h>
+#include <iostream>
 
 using namespace std;
 

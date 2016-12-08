@@ -16,7 +16,7 @@ Both eigen_assert and eigen_plain_assert are defined in Macros.h. Defining eigen
 #include <stdexcept>
 #undef eigen_assert
 #define eigen_assert(x) \
-  if (!x) { throw (std::runtime_error("Put your message here")); }
+  if (!(x)) { throw (std::runtime_error("Put your message here")); }
 \endcode
 
 \subsection DisableAssert Disabling assertions

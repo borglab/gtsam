@@ -21,6 +21,7 @@
 #include <gtsam/base/concepts.h>
 #include <gtsam/geometry/SO3.h> // Logmap/Expmap derivatives
 #include <limits>
+#include <iostream>
 
 #define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>
 

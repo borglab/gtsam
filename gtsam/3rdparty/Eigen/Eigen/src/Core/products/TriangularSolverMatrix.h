@@ -81,7 +81,7 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conju
     // coherence when accessing the rhs elements
     std::ptrdiff_t l1, l2;
     manage_caching_sizes(GetAction, &l1, &l2);
-    Index subcols = cols>0 ? l2/(4 * sizeof(Scalar) * otherStride) : 0;
+    Index subcols = cols>0 ? l2/(4 * sizeof(Scalar) *  std::max<Index>(otherStride,size)) : 0;
     subcols = std::max<Index>((subcols/Traits::nr)*Traits::nr, Traits::nr);
 
     for(Index k2=IsLower ? 0 : size;

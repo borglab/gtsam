@@ -219,15 +219,13 @@ FastVector<JacobianFactor::shared_ptr> _convertOrCastToJacobians(
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
     boost::optional<const Ordering&> ordering,
-    boost::optional<const VariableSlots&> variableSlots) {
+    boost::optional<const VariableSlots&> p_variableSlots) {
   gttic(JacobianFactor_combine_constructor);
 
   // Compute VariableSlots if one was not provided
-  boost::optional<VariableSlots> computedVariableSlots;
-  if (!variableSlots) {
-    computedVariableSlots = VariableSlots(graph);
-    variableSlots = computedVariableSlots; // Binds reference, does not copy VariableSlots
-  }
+  // Binds reference, does not copy VariableSlots
+  const VariableSlots & variableSlots =
+      p_variableSlots ? p_variableSlots.get() : VariableSlots(graph);
 
   // Cast or convert to Jacobians
   FastVector<JacobianFactor::shared_ptr> jacobians = _convertOrCastToJacobians(
@@ -238,15 +236,15 @@ JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
   // 'unorderedSlots' of any variables discovered that are not in the ordering.  Those will then
   // be added after all of the ordered variables.
   FastVector<VariableSlots::const_iterator> orderedSlots;
-  orderedSlots.reserve(variableSlots->size());
+  orderedSlots.reserve(variableSlots.size());
   if (ordering) {
     // If an ordering is provided, arrange the slots first that ordering
     FastList<VariableSlots::const_iterator> unorderedSlots;
     size_t nOrderingSlotsUsed = 0;
     orderedSlots.resize(ordering->size());
     FastMap<Key, size_t> inverseOrdering = ordering->invert();
-    for (VariableSlots::const_iterator item = variableSlots->begin();
-        item != variableSlots->end(); ++item) {
+    for (VariableSlots::const_iterator item = variableSlots.begin();
+        item != variableSlots.end(); ++item) {
       FastMap<Key, size_t>::const_iterator orderingPosition =
           inverseOrdering.find(item->first);
       if (orderingPosition == inverseOrdering.end()) {
@@ -267,8 +265,8 @@ JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
   } else {
     // If no ordering is provided, arrange the slots as they were, which will be sorted
     // numerically since VariableSlots uses a map sorting on Key.
-    for (VariableSlots::const_iterator item = variableSlots->begin();
-        item != variableSlots->end(); ++item)
+    for (VariableSlots::const_iterator item = variableSlots.begin();
+        item != variableSlots.end(); ++item)
       orderedSlots.push_back(item);
   }
   gttoc(Order_slots);

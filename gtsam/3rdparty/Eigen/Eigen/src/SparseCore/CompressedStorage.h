@@ -102,6 +102,11 @@ class CompressedStorage
     inline size_t allocatedSize() const { return m_allocatedSize; }
     inline void clear() { m_size = 0; }
 
+    const Scalar* valuePtr() const { return m_values; }
+    Scalar* valuePtr() { return m_values; }
+    const Index* indexPtr() const { return m_indices; }
+    Index* indexPtr() { return m_indices; }
+
     inline Scalar& value(size_t i) { return m_values[i]; }
     inline const Scalar& value(size_t i) const { return m_values[i]; }
 
@@ -208,8 +213,10 @@ class CompressedStorage
       Index* newIndices = new Index[size];
       size_t copySize = (std::min)(size, m_size);
       // copy
-      internal::smart_copy(m_values, m_values+copySize, newValues);
-      internal::smart_copy(m_indices, m_indices+copySize, newIndices);
+      if (copySize>0) {
+        internal::smart_copy(m_values, m_values+copySize, newValues);
+        internal::smart_copy(m_indices, m_indices+copySize, newIndices);
+      }
       // delete old stuff
       delete[] m_values;
       delete[] m_indices;
