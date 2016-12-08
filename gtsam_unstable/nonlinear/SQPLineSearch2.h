@@ -78,12 +78,6 @@ public:
   bool checkFeasibility(const Values &x,  boost::optional<double &> equalityError = boost::none,
                         boost::optional<double &> inequalityError = boost::none) const;
   
-  GaussianFactorGraph::shared_ptr makeIterateCostFunction(
-    const Key & key,
-    const GaussianFactorGraph::shared_ptr multipliedConstraintHessians,
-    const GaussianFactorGraph::shared_ptr costTaylorApproximation
-  ) const;
-  
   /// Gets a feasible point
   Values getFeasiblePoint() const;
   
@@ -100,45 +94,6 @@ public:
   /// Full optimization
   Values optimize(const Values& initials, unsigned int max_iter = 200) const;
   
-};
-
-/* ************************************************************************* */
-/**
- * Merit function goes with Betts' line search SQP implementation
- * Betts10book 2.27
- */
-class MeritFunction {
-  const NP & program_;
-  const GaussianFactorGraph::shared_ptr linearizedCost_;
-  const GaussianFactorGraph::shared_ptr lagrangianGraph_;
-  Values x_;
-  VectorValues p_, gradf_;
-
-public:
-
-  /// Constructor
-  MeritFunction(const NP & program,
-      const GaussianFactorGraph::shared_ptr linearizedCost,
-      const GaussianFactorGraph::shared_ptr lagrangianGraph, const Values& x,
-      const VectorValues& p);
-
-  /// Update predicted solution, Betts10book, 2.30
-  boost::tuple<Values, VectorValues, VectorValues> update(double alpha) const;
-
-  /// Compute 1-norm of the constraints ||c(x)||_1
-  double constraintNorm1(const Values x) const;
-
-  /// phi(alpha,mu)
-  double phi(double alpha, double mu) const;
-
-  /// Dk(mu)
-  double D(double mu) const;
-
-  /// Nocedal06book, 18.36
-  double computeNewMu(double currentMu) const;
-
-  double ptHp(const GaussianFactorGraph::shared_ptr linear, const VectorValues& p) const;
-
 };
 
 } /* namespace gtsam */

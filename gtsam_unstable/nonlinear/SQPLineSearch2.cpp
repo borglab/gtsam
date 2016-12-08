@@ -9,6 +9,7 @@
 #include <gtsam_unstable/linear/QPSolver.h>
 #include <gtsam_unstable/nonlinear/SQPLineSearch2.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam_unstable/nonlinear/MeritFunction.h>
 
 using namespace std;
 
@@ -40,25 +41,8 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::multiplyConstrainedHessians(
     const Values& x, VectorValues lambdas, double alpha) const {
   VectorValues multipliedLambdas = alpha * lambdas;
   GaussianFactorGraph::shared_ptr multipliedConstrainedHessians = program_.equalities->multipliedHessians(x, multipliedLambdas);
-  multipliedConstrainedHessians->push_back(program_.inequalities->multipliedHessians(x, multipliedLambdas));
+  multipliedConstrainedHessians->push_back(*(program_.inequalities->multipliedHessians(x, multipliedLambdas)));
   return multipliedConstrainedHessians;
-}
-
-GaussianFactorGraph::shared_ptr SQPLineSearch2::makeIterateCostFunction(
-    const Key & key,
-    const GaussianFactorGraph::shared_ptr multipliedConstraintHessians,
-    const GaussianFactorGraph::shared_ptr costTaylorApproximation) const {
-
-  Matrix hessianOfCost = costTaylorApproximation->hessian().first;
-  Matrix multipliedHessians = multipliedConstraintHessians->hessian().first;
-  GTSAM_PRINT(*program_.cost);
-  GTSAM_PRINT(*costTaylorApproximation);
-  std::cout << "Augmented Cost Matrix: " << costTaylorApproximation->augmentedHessian() << std::endl;
-  std::cout << "Jacobian of cost: " << costTaylorApproximation->jacobian().first << std::endl;
-  std::cout << "Hessian of cost: " << hessianOfCost << std::endl;
-  std::cout << "Multiplied Hessians: " << multipliedHessians << std::endl;
-  GaussianFactorGraph::shared_ptr returns(new GaussianFactorGraph);
-  return returns;
 }
 
 /* ************************************************************************* */
@@ -160,64 +144,10 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::buildDampedSystem(
 }
 
 /* ************************************************************************* */
-/**
- * Iteration Strategy
- * Given a point x and lambdas
- * 0. Check convergence
- * 1. Build the linear graph of the QP subproblem
- * 2. Solve QP --> p, lambdasHat --> p, dLambdas
- * 3. Update penalty weights mu
-
- * 4. Line search, find the best steplength alpha
- * 5. Update solution --> new x, new lambdas
- *
- *  SQPLineSearch2::State SQPLineSearch2::iterate(const State &currentState) const {
- *    State newState = currentState;
- *    newState.k += 1;
- * We start at feasible point x with k = 1
- * 1. Gradient Evaluation: Evaluate gradient information g and G then:
- *   a. evaluate the error in the gradient of the Lagrangian from equation:
- *      θ = g - G'λ - v
- *   g is the gradient of the cost function
- *   G is the Jacobian Matrix of the constraints
- *   H is the Hessian Matrix
- *
- *   b. terminate if the KKT conditions are satisfied
- *   c. Compute HL from equation HL = ∇²ₓF - Σ^{m}_{i=1}λ∇²ₓci
- *      if this is the first iteration go to step 2
- *      else continue
- *  d. Levenberg Modification
- *      i. compute the rate of change in the norm of the gradient of the Lagrangian from
- *          Q3 =  || Θ^K ||∞ ÷ || Θ^{K-2} || ∞
- *      ii. if Q1 <= 0.25Q2 set τ^k ← min(2τ^{k-1},1)
- *      iii. else if Q1 >= 0.75 Q2 set τ^k= τ^(k-1)min(0.5,Q3)
- *2. Search Direction. Construct the optimization search direction:
- *   a. compute H from H = HL + τ(|σ|+1)I
- *   b. compute p by solving the QP subproblem 2.14-2.15
- *   c. Inertia control: if inertia K is incorrect and...
- *   d. compute Δλ and Δv from 2.31 and 2.32
- *   e. compute Δs and Δt from 2.34 and 2.35
- *   f. compute penalty parameters to satisfy 2.6 and
- *   g. initialize α = 1
- * 3. Prediction
- *    a. compute the predicted point for the variables, the multipliers, and the slacks from 2.30
- *    b. evaluate the constraints cbar = c(xbar)
- * 4. Line Search. Evaluate the merit function M(xbar, λbar, vbar, sbar, tbar) = Mbar and
- *    a. if the merit function is sufficiently less than M, the xbar is an improved point
- *       Terminate the line search and go to step 5
- *    b. else change the steplength α to reduce M and return to step 3
- * 5. Update. Update all quantities and set k = k + 1;
- *    a. compute the actual reduction from 2.42;
- *    b. compute the predicted reduction from 2.43 where Mbar^k is the predicted value of the merid function
- *    c. return to step 1
- *    return newState;
- *  }
- */
-/* ************************************************************************* */
 SQPLineSearch2::State SQPLineSearch2::iterate(
     const SQPLineSearch2::State& currentState) const {
   static const bool useDamping = false;
-
+    GTSAM_PRINT(currentState.solution);
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //1. Build the linearized graph
   QP linearizedProblem;
@@ -227,7 +157,6 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
       currentState.solution);
   linearizedProblem.inequalities = *program_.inequalities->linearize(
       currentState.solution);
-
   /*
    * Add unconstrained factors and Lagrangian-multiplied Hessian constraints
    * The Lagrange function is:
@@ -235,13 +164,13 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
    * Hence, the objective function of the SQP subproblem is the following:
    *   0.5 p'*(\hessian f - \sum_j lambda_j* (\hessian c_j(x)) )*p + \gradf'*x
    */
-  GaussianFactorGraph::shared_ptr linearizedCost = program_.cost->linearize(
-      currentState.solution);
-  GaussianFactorGraph::shared_ptr multConstraintHessians =
-      multiplyConstrainedHessians(currentState.solution, currentState.lambdas,
-          -1.0);
+  GaussianFactorGraph::shared_ptr linearizedCost = program_.cost->linearize(currentState.solution);
+  GaussianFactorGraph::shared_ptr subproblemcost = program_.cost->secondOrderApproximation(currentState.solution);
+  subproblemcost->push_back(*(program_.equalities->multipliedHessians(currentState.solution, currentState.lambdas)));
+  subproblemcost->push_back(*(program_.inequalities->multipliedHessians(currentState.solution, currentState.lambdas)));
+  linearizedProblem.cost = *subproblemcost;
+  
   Key pk(Symbol('P',0));
-  linearizedProblem.cost = *makeIterateCostFunction(pk, linearizedCost, multConstraintHessians);
   // Combine to a Lagrangian graph and add constraints' Hessian factors with multipliers
   // Try to solve the damped Lagrangian graph. Increase the damping factor if not ok.
   double newTau = currentState.tau;
@@ -274,15 +203,19 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
   VectorValues dLambdas = lambdasHat - currentState.lambdas;
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //3. Choose a new penalty weight mu
+  GaussianFactorGraph::shared_ptr hessianOfLagrangain = program_.cost->hessian(currentState.solution);
+  hessianOfLagrangain->push_back(*(program_.equalities->multipliedHessians(currentState.solution, currentState.lambdas)));
+  hessianOfLagrangain->push_back(*(program_.inequalities->multipliedHessians(currentState.solution, currentState.lambdas)));
   MeritFunction merit(
     program_, linearizedCost,
-    GaussianFactorGraph::shared_ptr(&linearizedProblem.cost),
+    hessianOfLagrangain,
       currentState.solution, p);
   double newMu = merit.computeNewMu(currentState.mu);
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //4. Line search: find the steplength alpha
   double tau = 0.9, eta = 0.3;
   double alpha = 1.0;
+  
   while (alpha > 1e-2
       && merit.phi(alpha, newMu)
           > merit.phi(0.0, newMu) + eta * alpha * merit.D(newMu)) {
@@ -330,92 +263,6 @@ Values SQPLineSearch2::optimize(const Values& initials,
   if (currentState.k >= max_iter)
     cout << "Not converged within " << max_iter << " iterations." << endl;
   return currentState.solution;
-}
-
-/* ************************************************************************* */
-MeritFunction::MeritFunction(const NP & program,
-    const GaussianFactorGraph::shared_ptr linearizedCost,
-    const GaussianFactorGraph::shared_ptr lagrangianGraph, const Values& x,
-    const VectorValues& p) :
-    program_(program), linearizedCost_(linearizedCost), lagrangianGraph_(
-        lagrangianGraph), x_(x), p_(p) {
-  gradf_ = linearizedCost_->gradientAtZero();
-  if (gradf_.size() < p_.size()) {
-    for (Key key : p_ | boost::adaptors::map_keys) {
-      if (!gradf_.exists(key)) {
-        gradf_.insert(key, zero(p_.at(key).size()));
-      }
-    }
-  }
-}
-
-/* ************************************************************************* */
-double MeritFunction::constraintNorm1(const Values x) const {
-  double norm1 = 0.0;
-  for (NonlinearInequalityConstraint::shared_ptr factor : *program_.inequalities) {
-    Vector error = factor->unwhitenedError(x);
-    norm1 += error.cwiseAbs().sum();
-  }
-  for (NonlinearConstraint::shared_ptr factor : *program_.equalities) {
-    Vector error = factor->unwhitenedError(x);
-    norm1 += error.cwiseAbs().sum();
-  }
-  return norm1;
-}
-
-/* ************************************************************************* */
-double MeritFunction::phi(double alpha, double mu) const {
-  static const bool debug = false;
-  Values x2 = (fabs(alpha) > 1e-5) ? x_.retract(alpha * p_) : x_;
-  double c2 = constraintNorm1(x2);
-
-  double result = program_.cost->error(x2) + mu * c2;
-  if (debug)
-    cout << "phi(" << alpha << ") = " << result << endl;
-  return result;
-}
-
-/* ************************************************************************* */
-double MeritFunction::D(double mu) const {
-  static const bool debug = false;
-  double result = p_.dot(gradf_) - mu * constraintNorm1(x_);
-  if (debug)
-    cout << "D() = " << result << endl;
-  return result;
-}
-
-/* ************************************************************************* */
-double MeritFunction::computeNewMu(double currentMu) const {
-  static const bool debug = false;
-  static const double rho = 0.7;
-  double muLowerBound = (p_.dot(gradf_) + 0.5 * ptHp(lagrangianGraph_, p_))
-      / ((1 - rho) * constraintNorm1(x_));
-
-  if (debug)
-    cout << "gradfk'p = " << (p_.dot(gradf_)) << endl;
-  if (debug)
-    cout << "ptHp = " << ptHp(lagrangianGraph_, p_) << endl;
-  if (debug)
-    cout << "||c||_1 = " << constraintNorm1(x_) << endl;
-  if (debug)
-    cout << "mu lower bound = " << muLowerBound << endl;
-
-  if (currentMu > muLowerBound)
-    return currentMu;
-  else
-    return muLowerBound * 1.1;
-}
-
-/* ************************************************************************* */
-double MeritFunction::ptHp(const GaussianFactorGraph::shared_ptr linear,
-    const VectorValues& p) const {
-  double result = 0.0;
-  for (const GaussianFactor::shared_ptr& factor : *linear) {
-    VectorValues y = VectorValues::Zero(p);
-    factor->multiplyHessianAdd(1.0, p, y); // y = Hx
-    result += p.dot(y); // x'y = x'Hx
-  }
-  return result;
 }
 
 } /* namespace gtsam */

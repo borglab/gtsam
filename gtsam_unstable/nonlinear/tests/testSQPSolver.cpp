@@ -12,6 +12,22 @@
 #include <gtsam/inference/Symbol.h>
 
 using namespace gtsam;
+
+TEST(SQPLineSearch2, FailingQPWorkingGraph){
+  Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
+  GaussianFactorGraph::shared_ptr workingGraph(new GaussianFactorGraph());
+  workingGraph->push_back(HessianFactor(X, Y, 37.9117*I_1x1, Z_1x1, -22.4673*I_1x1, 341.037*I_1x1, I_1x1*-606.025,1e6));
+  workingGraph->push_back(HessianFactor(X, Y, -37.9054 *I_1x1, Z_1x1, Z_1x1, Z_1x1, Z_1x1,1e6));
+//  workingGraph->push_back(JacobianFactor(X, -9.47942*I_1x1, Y, I_1x1, 0.285808*I_1x1));
+  workingGraph->push_back(JacobianFactor(X, -9.47942*I_1x1, Y, I_1x1, 0.285808*I_1x1, noiseModel::Unit::Create(1)));
+//  workingGraph->push_back(JacobianFactor(X, -9.47942*I_1x1, Y, I_1x1, 0.285808*I_1x1, noiseModel::Constrained::All(1)));
+//  workingGraph->push_back(LinearEquality(X, -9.47942*I_1x1, Y, I_1x1, 0.285808*I_1x1,D));
+  VectorValues result = workingGraph->optimize();
+  GTSAM_PRINT(result);
+  std::cout << JacobianFactor(X, -9.47942*I_1x1, Y, I_1x1, 0.285808*I_1x1, noiseModel::Unit::Create(1)).error(result) << std::endl;
+}
+
+
 /**
  * Nocedal06 Example 15.2 page 427
  * F(X) = x^2 + y^2
@@ -42,7 +58,7 @@ typedef NonlinearEqualityConstraint2<double, double, constraintError> constraint
 
 }
 
-TEST_DISABLED(SQPLineSearch2, TrivialNonlinearConstraintWithEqualities) {
+TEST(SQPLineSearch2, TrivialNonlinearConstraintWithEqualities) {
   Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
   NP problem;
   problem.cost->push_back(Nocedal152::cost(X,Y,D));
@@ -93,7 +109,7 @@ namespace TrivialExample{
   typedef NonlinearEqualityConstraint2<double,double, constraintError> constraint;
 }
 
-TEST_DISABLED(SQPLineSearch2, TrivialTest){
+TEST(SQPLineSearch2, TrivialTest){
   Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
   NP problem;
   problem.cost->push_back(TrivialExample::cost(noiseModel::Unit::Create(1), X, Y, D));
@@ -147,7 +163,7 @@ typedef NonlinearEqualityConstraint2<double, double, costError> cost;
 typedef NonlinearEqualityConstraint2<double, double, constraintError> constraint;
 }
 
-TEST_DISABLED(SQPLineSearch2, CircleTest) {
+TEST(SQPLineSearch2, CircleTest) {
   Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
   NP problem;
   problem.cost->push_back(CircleExample::cost(noiseModel::Unit::Create(1), X,Y,D));

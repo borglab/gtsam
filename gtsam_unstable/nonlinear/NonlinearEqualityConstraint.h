@@ -273,9 +273,9 @@ public:
         G12[0].rows(), G12[0].cols()), lG22sum = zeros(G22[0].rows(),
         G22[0].cols());
     for (int i = 0; i < lambda.rows(); ++i) {
-      lG11sum += -lambda[i] * G11[i];
-      lG12sum += -lambda[i] * G12[i];
-      lG22sum += -lambda[i] * G22[i];
+      lG11sum += -lambda[i] * G11[i] * 2;
+      lG12sum += -lambda[i] * G12[i] * 2;
+      lG22sum += -lambda[i] * G22[i] * 2;
     }
 
     return boost::make_shared < HessianFactor
