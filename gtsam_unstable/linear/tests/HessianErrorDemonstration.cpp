@@ -33,6 +33,7 @@ using namespace gtsam::symbol_shorthand;
 
 HessianFactor factor2d(X(1), X(2), 8*I_1x1, 2*I_1x1, -1.5*I_1x1, 10*I_1x1, 2*I_1x1, 0);
 HessianFactor factor2dRaised(X(1), X(2), 8*I_1x1, 2*I_1x1, -1.5*I_1x1, 10*I_1x1, 2*I_1x1, 100);
+HessianFactor factor2dRaisedMore(X(1), X(2), 8*I_1x1, 2*I_1x1, -1.5*I_1x1, 10*I_1x1, 2*I_1x1, 1000);
 LinearEquality jacobianFactorWithNoiseModel(X(1), -2*I_1x1, X(2), -1*I_1x1, -2.0* I_1x1, 0);
 JacobianFactor jacobianFactor(X(1), -2*I_1x1, X(2), -1*I_1x1, -2.0* I_1x1, 0);
 
@@ -40,12 +41,10 @@ TEST(HessianFactor, TestFailsOnPostiveDefinite){
   GaussianFactorGraph fg1;
   fg1.push_back(factor2d);
   fg1.push_back(jacobianFactorWithNoiseModel);
-//  GTSAM_PRINT(fg1);
   VectorValues actual = fg1.optimize();
   VectorValues expected;
   expected.insert(X(1), 0.327586207*I_1x1);
   expected.insert(X(2), 0.099137931*I_1x1);
-//  GTSAM_PRINT(actual);
   CHECK(assert_equal(expected, actual, 1e-7))
 }
 TEST(HessianFactor, TestSuccedsOnPostiveDefinite){
@@ -56,7 +55,6 @@ TEST(HessianFactor, TestSuccedsOnPostiveDefinite){
   VectorValues expected;
   expected.insert(X(2), 0.327586207*I_1x1);
   expected.insert(X(1), 0.099137931*I_1x1);
-//  GTSAM_PRINT(actual);
   CHECK(assert_equal(expected, actual, 1e-7))
 }
 
@@ -68,9 +66,6 @@ TEST(HessianFactor, TestSuccedsWithAddedConstant){
   VectorValues expected;
   expected.insert(X(2), 0.327586207*I_1x1);
   expected.insert(X(1), 0.099137931*I_1x1);
-  GTSAM_PRINT(fg1);
-  GTSAM_PRINT(HessianFactor(jacobianFactor));
-//  GTSAM_PRINT(actual);
   CHECK(assert_equal(expected, actual, 1e-7))
 }
 
