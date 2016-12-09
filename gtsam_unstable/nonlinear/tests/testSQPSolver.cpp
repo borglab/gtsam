@@ -40,6 +40,12 @@ struct costError {
   Vector operator()(const double &x1, const double &x2,
       boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 =
           boost::none) const {
+    if(H1){
+      *H1 = 2*x1*I_1x1;
+    }
+    if(H2){
+      *H2 = 2*x2*I_1x1;
+    }
     return I_1x1 * (std::pow(x1, 2) + std::pow(x2, 2));
   }
 };
@@ -48,20 +54,54 @@ struct constraintError {
   Vector operator()(const double &x1, const double &x2,
       boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 =
           boost::none) const {
+    if(H1){
+      *H1 = 3*std::pow(x1-1,2)*I_1x1;
+    }
+    if(H2){
+      *H2 = -2*x2*I_1x1;
+    }
     return I_1x1 * (std::pow(x1 - 1, 2) + std::pow(x2, 2));
   }
 };
 
 typedef NonlinearEqualityConstraint2<double, double, costError> cost;
+class TrueHessianCost: public cost {
+public:
+  TrueHessianCost(const SharedNoiseModel &noiseModel, Key j1, Key j2,
+      Key dualKey) :
+      NonlinearEqualityConstraint2(noiseModel, j1, j2, dualKey) {
+  }
+
+  void evaluateHessians(const X1 &x1, const X2 &x2, std::vector<Matrix> &G11,
+      std::vector<Matrix> &G12, std::vector<Matrix> &G22) const override {
+    G11.push_back(2 * I_1x1);
+    G12.push_back(Z_1x1);
+    G22.push_back(2 * I_1x1);
+  }
+};
 typedef NonlinearEqualityConstraint2<double, double, constraintError> constraint;
+
+class TrueHessianConstraint: public constraint {
+public:
+  TrueHessianConstraint(Key j1, Key j2, Key dualKey, size_t constraintDim = 1) :
+      NonlinearEqualityConstraint2(j1, j2, dualKey, constraintDim) {
+  }
+  
+  void evaluateHessians(const X1 &x1, const X2 &x2, std::vector<Matrix> &G11, std::vector<Matrix> &G12,
+                        std::vector<Matrix> &G22) const override {
+    G11.push_back((6*x1 -6) * I_1x1);
+    G12.push_back(Z_1x1);
+    G22.push_back(-2 * I_1x1);
+  }
+};
 
 }
 
 TEST_DISABLED(SQPLineSearch2, TrivialNonlinearConstraintWithEqualities) {
   Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
   NP problem;
-  problem.cost->push_back(Nocedal152::cost(X,Y,D));
-  problem.equalities->push_back(Nocedal152::constraint(X,Y,D));
+  problem.cost->push_back(Nocedal152::TrueHessianCost(noiseModel::Unit::Create(1),X,Y,D));
+  problem.equalities->push_back(Nocedal152::TrueHessianConstraint(X,Y,D));
   Values expected;
   expected.insert(X, 1.0);
   expected.insert(Y, 0.0);
@@ -116,11 +156,12 @@ public:
   TrueHessianCost(Key k1, Key k2, Key dualKey) :
       cost(k1, k2, dualKey) {
   }
-  virtual void evaluateHessians(const X1 &x1, const X2 &x2, std::vector<Matrix> &G11,
-      std::vector<Matrix> &G12, std::vector<Matrix> &G22) const override {
-    G11.push_back(I_1x1*12*std::pow(x1 -1,2));
+  virtual void evaluateHessians(const X1 &x1, const X2 &x2,
+      std::vector<Matrix> &G11, std::vector<Matrix> &G12,
+      std::vector<Matrix> &G22) const override {
+    G11.push_back(I_1x1 * 12 * std::pow(x1 - 1, 2));
     G12.push_back(Z_1x1);
-    G22.push_back(I_1x1*12*std::pow(x2 -1,2));
+    G22.push_back(I_1x1 * 12 * std::pow(x2 - 1, 2));
   }
 };
 
@@ -128,13 +169,14 @@ typedef NonlinearEqualityConstraint2<double, double, constraintError> constraint
 
 class TrueHessianConstraint: public constraint {
 public:
-  TrueHessianConstraint(Key j1, Key j2, Key dualKey, size_t constraintDim) :
+  TrueHessianConstraint(Key j1, Key j2, Key dualKey, size_t constraintDim =1 ) :
       NonlinearEqualityConstraint2(j1, j2, dualKey, constraintDim) {
   }
 
-  virtual void evaluateHessians(const X1 &x1, const X2 &x2, std::vector<Matrix> &G11,
-      std::vector<Matrix> &G12, std::vector<Matrix> &G22) const override {
-    G11.push_back((6-6*x1)*I_1x1);
+  virtual void evaluateHessians(const X1 &x1, const X2 &x2,
+      std::vector<Matrix> &G11, std::vector<Matrix> &G12,
+      std::vector<Matrix> &G22) const override {
+    G11.push_back((6 - 6 * x1) * I_1x1);
     G12.push_back(Z_1x1);
     G22.push_back(Z_1x1);
   }
@@ -192,14 +234,50 @@ struct constraintError {
   }
 };
 typedef NonlinearEqualityConstraint2<double, double, costError> cost;
+
+class TrueHessianCost: public cost {
+public:
+  TrueHessianCost(const SharedNoiseModel &noiseModel, Key j1, Key j2,
+      Key dualKey) :
+      NonlinearEqualityConstraint2(noiseModel, j1, j2, dualKey) {
+  }
+
+  void evaluateHessians(const X1 &x1, const X2 &x2, std::vector<Matrix> &G11,
+      std::vector<Matrix> &G12, std::vector<Matrix> &G22) const override {
+    G11.push_back(2 * I_1x1);
+    G12.push_back(Z_1x1);
+    G22.push_back(2 * I_1x1);
+  }
+};
+
 typedef NonlinearEqualityConstraint2<double, double, constraintError> constraint;
+
+class TrueHessianConstraint: public constraint {
+public:
+
+  TrueHessianConstraint(Key j1, Key j2, Key dualKey, size_t constraintDim = 1) :
+      NonlinearEqualityConstraint2(j1, j2, dualKey, constraintDim) {
+  }
+
+  TrueHessianConstraint(const SharedNoiseModel &noiseModel, Key j1, Key j2,
+      Key dualKey) :
+      NonlinearEqualityConstraint2(noiseModel, j1, j2, dualKey) {
+  }
+
+  void evaluateHessians(const X1 &x1, const X2 &x2, std::vector<Matrix> &G11,
+      std::vector<Matrix> &G12, std::vector<Matrix> &G22) const override {
+    G11.push_back(2 * I_1x1);
+    G12.push_back(Z_1x1);
+    G22.push_back(2 * I_1x1);
+  }
+};
 }
 
-TEST_DISABLED(SQPLineSearch2, CircleTest) {
+TEST_DISABLED(SQPLineSearch2, CircleTest) { // Fails due to Degeneracy
   Key X(Symbol('X',1)) , Y(Symbol('Y',1)), D(Symbol('D',1));
   NP problem;
-  problem.cost->push_back(CircleExample::cost(noiseModel::Unit::Create(1), X,Y,D));
-  problem.equalities->push_back(CircleExample::constraint(X,Y,D));
+  problem.cost->push_back(CircleExample::TrueHessianCost(noiseModel::Unit::Create(1), X,Y,D));
+  problem.equalities->push_back(CircleExample::TrueHessianConstraint(X,Y,D));
   Values initial, expected;
   initial.insert(X, 2.0);
   initial.insert(Y, 1.0);
