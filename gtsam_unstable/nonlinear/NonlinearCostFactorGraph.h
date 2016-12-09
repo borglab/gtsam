@@ -41,7 +41,7 @@ public:
     GaussianFactorGraph::shared_ptr linearizedGraph(new GaussianFactorGraph());
     for (const NonlinearConstraint::shared_ptr & factor : *this) {
       VectorValues fakeDuals;
-      fakeDuals.insert(factor->dualKey(), -0.5*Vector::Ones(factor->dim()));
+      fakeDuals.insert(factor->dualKey(), -Vector::Ones(factor->dim()));
       HessianFactor::shared_ptr actualLinearization(new HessianFactor(*factor->linearize(linearizationPoint)));
       HessianFactor::shared_ptr Hessian = boost::dynamic_pointer_cast<HessianFactor>(factor->multipliedHessian(linearizationPoint, fakeDuals));
       Hessian->linearTerm() = actualLinearization->linearTerm()/std::sqrt(actualLinearization->constantTerm());
@@ -66,7 +66,7 @@ public:
     GaussianFactorGraph::shared_ptr hessians(new GaussianFactorGraph);
     for(NonlinearConstraint::shared_ptr factor: *this){
       VectorValues duals;
-      duals.insert(factor->dualKey(), -0.5*Vector::Ones(factor->dim()));
+      duals.insert(factor->dualKey(), -Vector::Ones(factor->dim()));
       GaussianFactor::shared_ptr mH = factor->multipliedHessian(values, duals);
       hessians->push_back(mH);
     }

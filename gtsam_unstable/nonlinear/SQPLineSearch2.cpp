@@ -40,8 +40,10 @@ Values SQPLineSearch2::getFeasiblePoint() const {
 GaussianFactorGraph::shared_ptr SQPLineSearch2::multiplyConstrainedHessians(
     const Values& x, VectorValues lambdas, double alpha) const {
   VectorValues multipliedLambdas = alpha * lambdas;
-  GaussianFactorGraph::shared_ptr multipliedConstrainedHessians = program_.equalities->multipliedHessians(x, multipliedLambdas);
-  multipliedConstrainedHessians->push_back(*(program_.inequalities->multipliedHessians(x, multipliedLambdas)));
+  GaussianFactorGraph::shared_ptr multipliedConstrainedHessians =
+      program_.equalities->multipliedHessians(x, multipliedLambdas);
+  multipliedConstrainedHessians->push_back(
+      *(program_.inequalities->multipliedHessians(x, multipliedLambdas)));
   return multipliedConstrainedHessians;
 }
 
@@ -64,6 +66,7 @@ bool SQPLineSearch2::checkConvergence(const Values& x,
       return false;
     }
   }
+    
   for (NonlinearInequalityConstraint::shared_ptr factor : *program_.inequalities) {
     Vector constrainedError = factor->unwhitenedError(x);
     maxError = constrainedError.maxCoeff();
@@ -97,7 +100,7 @@ bool SQPLineSearch2::checkConvergence(const Values& x,
     if (fabs(maxError) < 1e-5) {
       // For active ineq, we want lambda <= 0 (see explaination in QPSolver)
       // so lambda > 0 is are bad
-      if (fabs(maxLambda) < 1e-5) {
+      if (fabs(maxLambda) > 1e-5) {
         if (debug)
           cout << "Violating constraint: with maxlambda:" << maxLambda << endl;
         return false;
@@ -112,7 +115,22 @@ bool SQPLineSearch2::checkConvergence(const Values& x,
         return false;
       }
     }
+    std::cout << "CHECKING 1st KKT Condition" << std::endl;
+    QP problem;
+    problem.cost = *program_.cost->linearize(x);
+    problem.equalities = *program_.equalities->linearize(x);
+    problem.inequalities = *program_.inequalities->linearize(x);
+    GaussianFactorGraph::shared_ptr dualGraph = QPSolver(problem).buildDualGraph(problem.inequalities, x.localCoordinates(x));
+    
+    GTSAM_PRINT(*dualGraph);
 
+    
+    if (fabs(dualGraph->error(lambdas)) > 1e-5) {
+      std::cout << "Failed First KKT Condition" << std::endl;
+      return false;
+    }
+    
+    
     if (debug)
       factor->print("Satisfied constraint: ");
     if (debug)
@@ -131,7 +149,7 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::buildDampedSystem(
     const SQPLineSearch2::State& state) const {
   GaussianFactorGraph::shared_ptr damped(new GaussianFactorGraph());
   double sigma = 1.0 / std::sqrt(state.tau);
-  // Straightforward damping:
+// Straightforward damping:
   for (const Values::ConstKeyValuePair& key_value : state.solution) {
     size_t dim = key_value.value.dim();
     Matrix A = Matrix::Identity(dim, dim);
@@ -147,12 +165,15 @@ GaussianFactorGraph::shared_ptr SQPLineSearch2::buildDampedSystem(
 SQPLineSearch2::State SQPLineSearch2::iterate(
     const SQPLineSearch2::State& currentState) const {
   static const bool useDamping = false;
-    GTSAM_PRINT(currentState.solution);
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //1. Build the linearized graph
+  GTSAM_PRINT(currentState.solution);
+  GTSAM_PRINT(currentState.lambdas);
+  std::cout << "Current Iteration: " << currentState.k << std::endl;
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//1. Build the linearized graph
   QP linearizedProblem;
-  // Add linearized constraints first, since we want nonlinear lambdas and
-  // QP's linear lambdas have the same indices, based on the constraints' indices
+// Add linearized constraints first, since we want nonlinear lambdas and
+// QP's linear lambdas have the same indices, based on the constraints' indices
   linearizedProblem.equalities = *program_.equalities->linearize(
       currentState.solution);
   linearizedProblem.inequalities = *program_.inequalities->linearize(
@@ -164,15 +185,21 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
    * Hence, the objective function of the SQP subproblem is the following:
    *   0.5 p'*(\hessian f - \sum_j lambda_j* (\hessian c_j(x)) )*p + \gradf'*x
    */
-  GaussianFactorGraph::shared_ptr linearizedCost = program_.cost->linearize(currentState.solution);
-  GaussianFactorGraph::shared_ptr subproblemcost = program_.cost->secondOrderApproximation(currentState.solution);
-  subproblemcost->push_back(*(program_.equalities->multipliedHessians(currentState.solution, currentState.lambdas)));
-  subproblemcost->push_back(*(program_.inequalities->multipliedHessians(currentState.solution, currentState.lambdas)));
+  GaussianFactorGraph::shared_ptr linearizedCost = program_.cost->linearize(
+      currentState.solution);
+  GaussianFactorGraph::shared_ptr subproblemcost =
+      program_.cost->secondOrderApproximation(currentState.solution);
+  subproblemcost->push_back(
+      *(program_.equalities->multipliedHessians(currentState.solution,
+          currentState.lambdas)));
+  subproblemcost->push_back(
+      *(program_.inequalities->multipliedHessians(currentState.solution,
+          currentState.lambdas)));
   linearizedProblem.cost = *subproblemcost;
-  
-  Key pk(Symbol('P',0));
-  // Combine to a Lagrangian graph and add constraints' Hessian factors with multipliers
-  // Try to solve the damped Lagrangian graph. Increase the damping factor if not ok.
+
+  Key pk(Symbol('P', 0));
+// Combine to a Lagrangian graph and add constraints' Hessian factors with multipliers
+// Try to solve the damped Lagrangian graph. Increase the damping factor if not ok.
   double newTau = currentState.tau;
   if (useDamping) {
     // Add damping factors
@@ -193,42 +220,46 @@ SQPLineSearch2::State SQPLineSearch2::iterate(
           newTau, currentState.converged, currentState.k + 1);
     }
   }
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //2. Solve the QP subproblem and compute dLambdas
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//2. Solve the QP subproblem and compute dLambdas
+  GTSAM_PRINT(linearizedProblem);
   QPSolver qpSolver(linearizedProblem);
   VectorValues p;
   VectorValues lambdasHat;
   boost::tie(p, lambdasHat) = qpSolver.optimize();
-  //compute dLambdas
+//compute dLambdas
   VectorValues dLambdas = lambdasHat - currentState.lambdas;
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //3. Choose a new penalty weight mu
-  GaussianFactorGraph::shared_ptr hessianOfLagrangain = program_.cost->hessian(currentState.solution);
-  hessianOfLagrangain->push_back(*(program_.equalities->multipliedHessians(currentState.solution, currentState.lambdas)));
-  hessianOfLagrangain->push_back(*(program_.inequalities->multipliedHessians(currentState.solution, currentState.lambdas)));
-  MeritFunction merit(
-    program_, linearizedCost,
-    hessianOfLagrangain,
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//3. Choose a new penalty weight mu
+  GaussianFactorGraph::shared_ptr hessianOfLagrangain = program_.cost->hessian(
+      currentState.solution);
+  hessianOfLagrangain->push_back(
+      *(program_.equalities->multipliedHessians(currentState.solution,
+          currentState.lambdas)));
+  hessianOfLagrangain->push_back(
+      *(program_.inequalities->multipliedHessians(currentState.solution,
+          currentState.lambdas)));
+  MeritFunction merit(program_, linearizedCost, hessianOfLagrangain,
       currentState.solution, p);
   double newMu = merit.computeNewMu(currentState.mu);
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //4. Line search: find the steplength alpha
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//4. Line search: find the steplength alpha
   double tau = 0.9, eta = 0.3;
   double alpha = 1.0;
-  
+
   while (alpha > 1e-2
       && merit.phi(alpha, newMu)
           > merit.phi(0.0, newMu) + eta * alpha * merit.D(newMu)) {
     alpha = tau * alpha;
   }
 
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //5. Update solution
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//5. Update solution
   Values newSolution = currentState.solution.retract(alpha * p);
   VectorValues newLambdas = currentState.lambdas + alpha * dLambdas;
 
-  //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //6. Check convergence
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//6. Check convergence
   bool newConvergence = (currentState.converged
       || checkConvergence(currentState.solution, currentState.lambdas));
   return State(newSolution, newLambdas, newMu, newTau, newConvergence,
@@ -250,9 +281,9 @@ VectorValues SQPLineSearch2::zeroFromConstraints(
 /* ************************************************************************* */
 Values SQPLineSearch2::optimize(const Values& initials,
     unsigned int max_iter) const {
-  // mu = 0, tau = 1e-5, k = 1
+// mu = 0, tau = 1e-5, k = 1
   State currentState(initials, zeroFromConstraints(program_), 0.0, 1e-5, false,
-      1);
+      0);
 //    std::cout << "STARTING STATE: " << std::endl;
 //    GTSAM_PRINT(currentState);
   while (!currentState.converged && currentState.k < max_iter) {
