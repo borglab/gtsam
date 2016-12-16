@@ -62,9 +62,9 @@ void StaticMethod::emit_cython_pxd(FileWriter& file, const Class& cls) const {
   for(size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "        @staticmethod\n";
     file.oss << "        ";
-    returnVals_[i].emit_cython_pxd(file, cls.pxdClassName());
+    returnVals_[i].emit_cython_pxd(file, cls.pxdClassName(), cls.templateArgs);
     file.oss << name_ + ((i>0)?"_" + to_string(i):"") << " \"" << name_ << "\"" << "(";
-    argumentList(i).emit_cython_pxd(file, cls.pxdClassName());
+    argumentList(i).emit_cython_pxd(file, cls.pxdClassName(), cls.templateArgs);
     file.oss << ")\n";
   }
 }

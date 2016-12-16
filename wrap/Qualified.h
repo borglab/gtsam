@@ -86,6 +86,12 @@ public:
     return (name_ == templateArg && namespaces_.empty()); //TODO && category == CLASS);
   }
 
+  bool match(const std::vector<std::string>& templateArgs) const {
+    for(const std::string& s: templateArgs) 
+      if (match(s)) return true;
+    return false;
+  }
+
   void rename(const Qualified& q) {
     namespaces_ = q.namespaces_;
     name_ = q.name_;
@@ -136,8 +142,8 @@ public:
   }
 
   bool isNonBasicType() const {
-    return !isString() && !isScalar() && !isEigen() && !isVoid() &&
-           !isBasicTypedef();
+    return name() != "This" && !isString() && !isScalar() && !isEigen() &&
+           !isVoid() && !isBasicTypedef();
   }
 
 public:
@@ -191,8 +197,9 @@ public:
   std::string pxdClassName() const {
     if (isEigen())
       return name_ + "Xd";
-    else
-      return qualifiedName("_", 1);
+    else if (isNonBasicType())
+      return "C" + qualifiedName("_", 1);
+    else return name_;
   }
 
   /// name of Python classes in pyx
@@ -222,7 +229,7 @@ public:
   std::string pxd_class_in_pyx() const {
       if (isNonBasicType()) {
         if (namespaces_.size() > 0)
-          return "pxd." + pxdClassName();
+          return pxdClassName();
         else {
           std::cerr << "Class without namespace: " << pxdClassName() << std::endl;
           throw std::runtime_error("Error: User type without namespace!!");
@@ -236,7 +243,7 @@ public:
 
   /// the internal Cython shared obj in a Python class wrappper
   std::string shared_pxd_obj_in_pyx() const {
-    return "shared_pxd_" + pxdClassName() + "_";
+    return "shared_" + pxdClassName() + "_";
   }
 
   std::string shared_pxd_class_in_pyx() const {

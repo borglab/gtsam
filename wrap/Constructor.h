@@ -85,7 +85,7 @@ struct Constructor: public OverloadedFunction {
   void python_wrapper(FileWriter& wrapperFile, Str className) const;
 
   // emit cython wrapper
-  void emit_cython_pxd(FileWriter& pxdFile, Str className) const;
+  void emit_cython_pxd(FileWriter& pxdFile, const Class& cls) const;
   void emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Constructor& m) {

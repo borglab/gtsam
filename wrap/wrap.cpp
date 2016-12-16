@@ -24,12 +24,12 @@ using namespace std;
 
 /** Displays usage information */
 void usage() {
-  cerr << "wrap parses an interface file and produces a MATLAB toolbox" << endl;
-  cerr << "usage: wrap [--matlab|--cython] interfacePath moduleName toolboxPath headerPath" << endl;
-  cerr << "  interfacePath : *absolute* path to directory of module interface file" << endl;
+  cerr << "wrap parses an interface file and produces a MATLAB or Cython toolbox" << endl;
+  cerr << "usage: wrap [--matlab|--cython] interfacePath moduleName toolboxPath cythonImports" << endl;
+  cerr << "  interfacePath : path to directory of module interface file" << endl;
   cerr << "  moduleName    : the name of the module, interface file must be called moduleName.h" << endl;
   cerr << "  toolboxPath   : the directory in which to generate the wrappers" << endl;
-  cerr << "  headerPath    : path to matlab.h" << endl;
+  cerr << "  cythonImports : extra imports for Cython pxd header file" << endl;
 }
 
 /**
@@ -44,7 +44,7 @@ void generate_toolbox(
            const string& interfacePath,
            const string& moduleName,
            const string& toolboxPath,
-           const string& headerPath)
+           const string& cythonImports)
 {
   // Parse interface file into class object
   // This recursively creates Class objects, Method objects, etc...
@@ -54,7 +54,7 @@ void generate_toolbox(
   // Then emit MATLAB code
     module.matlab_code(toolboxPath);
   else if (language == "--cython") {
-    module.cython_wrapper(toolboxPath);
+    module.cython_wrapper(toolboxPath, cythonImports);
   }
   else {
       cerr << "First argument invalid" << endl;

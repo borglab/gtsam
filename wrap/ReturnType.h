@@ -44,7 +44,8 @@ struct ReturnType : public Qualified {
   }
 
   /// @param className the actual class name to use when "This" is specified
-  void emit_cython_pxd(FileWriter& file, const std::string& className) const;
+  void emit_cython_pxd(FileWriter& file, const std::string& className,
+                       const std::vector<std::string>& templateArgs) const;
 
   std::string pyx_returnType(bool addShared = true) const;
   std::string pyx_casting(const std::string& var,

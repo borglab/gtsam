@@ -69,7 +69,8 @@ struct Argument {
    * emit arguments for cython pxd
    * @param file output stream
    */
-  void emit_cython_pxd(FileWriter& file, const std::string& className) const;
+  void emit_cython_pxd(FileWriter& file, const std::string& className,
+                       const std::vector<std::string>& templateArgs) const;
   void emit_cython_pyx(FileWriter& file) const;
   std::string pyx_asParam() const;
 
@@ -124,7 +125,8 @@ struct ArgumentList: public std::vector<Argument> {
    * emit arguments for cython pxd
    * @param file output stream
    */
-  void emit_cython_pxd(FileWriter& file, const std::string& className) const;
+  void emit_cython_pxd(FileWriter& file, const std::string& className,
+                       const std::vector<std::string>& templateArgs) const;
   void emit_cython_pyx(FileWriter& file) const;
   std::string pyx_asParams() const;
   std::string pyx_paramsList() const;

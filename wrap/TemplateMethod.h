@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file StaticMethod.h
- * @brief describes and generates code for static methods
+ * @file TemplateMethod.h
+ * @brief describes and generates code for template methods
  * @author Duy-Nguyen Ta
  **/
 
@@ -35,8 +35,6 @@ struct TemplateMethod: public Method {
       os << "template <" << m.argName << "> " << m.returnVals_[i] << " " << m.name_ << m.argLists_[i];
     return os;
   }
-
-  void emit_cython_pxd(FileWriter& file) const;
 
 };
 

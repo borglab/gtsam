@@ -6,6 +6,7 @@
  */
 
 #include "GlobalFunction.h"
+#include "Class.h"
 #include "utilities.h"
 
 #include <boost/lexical_cast.hpp>
@@ -139,10 +140,10 @@ void GlobalFunction::emit_cython_pxd(FileWriter& file) const {
                 << "\":" << endl;
   for (size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "        ";
-    returnVals_[i].emit_cython_pxd(file, "");
-    file.oss << pyRename(name_) + " \"" + overloads[0].qualifiedName("::") +
+    returnVals_[i].emit_cython_pxd(file, "", vector<string>());
+    file.oss << pxdName() + " \"" + overloads[0].qualifiedName("::") +
                     "\"(";
-    argumentList(i).emit_cython_pxd(file, "");
+    argumentList(i).emit_cython_pxd(file, "", vector<string>());
     file.oss << ")";
     file.oss << "\n";
   }
@@ -150,7 +151,7 @@ void GlobalFunction::emit_cython_pxd(FileWriter& file) const {
 
 /* ************************************************************************* */
 void GlobalFunction::emit_cython_pyx_no_overload(FileWriter& file) const {
-  string funcName = pyRename(name_);
+  string funcName = pyxName();
 
   // Function definition
   file.oss << "def " << funcName;
@@ -163,7 +164,7 @@ void GlobalFunction::emit_cython_pyx_no_overload(FileWriter& file) const {
   file.oss << "):\n";
 
   /// Call cython corresponding function and return
-  string ret = pyx_functionCall("pxd", funcName, 0);
+  string ret = pyx_functionCall("", pxdName(), 0);
   if (!returnVals_[0].isVoid()) {
     file.oss << "    cdef " << returnVals_[0].pyx_returnType()
              << " ret = " << ret << "\n";
@@ -175,7 +176,7 @@ void GlobalFunction::emit_cython_pyx_no_overload(FileWriter& file) const {
 
 /* ************************************************************************* */
 void GlobalFunction::emit_cython_pyx(FileWriter& file) const {
-  string funcName = pyRename(name_);
+  string funcName = pyxName();
 
   size_t N = nrOverloads();
   if (N == 1) {
@@ -199,7 +200,7 @@ void GlobalFunction::emit_cython_pyx(FileWriter& file) const {
     file.oss << pyx_resolveOverloadParams(args, false, 1); // lazy: always return None even if it's a void function
 
     /// Call cython corresponding function
-    string ret = pyx_functionCall("pxd", funcName, i);
+    string ret = pyx_functionCall("", pxdName(), i);
     if (!returnVals_[i].isVoid()) {
       file.oss << "    cdef " << returnVals_[i].pyx_returnType()
               << " ret = " << ret << "\n";

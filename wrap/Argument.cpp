@@ -17,6 +17,7 @@
  **/
 
 #include "Argument.h"
+#include "Class.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -98,15 +99,19 @@ void Argument::proxy_check(FileWriter& proxyFile, const string& s) const {
 }
 
 /* ************************************************************************* */
-void Argument::emit_cython_pxd(FileWriter& file, const std::string& className) const {
-  string typeName = type.pxdClassName();
-  if (typeName == "This") typeName = className;
+void Argument::emit_cython_pxd(
+    FileWriter& file, const std::string& className,
+    const std::vector<std::string>& templateArgs) const {
+  string cythonType = type.pxdClassName();
+  if (cythonType == "This") cythonType = className;
+  else if (type.isEigen())
+    cythonType = "const " + cythonType + "&";
+  else if (type.match(templateArgs))
+    cythonType = type.name();
 
-  string cythonType = typeName;
-  if (type.isEigen()) {
-    cythonType = "const " + typeName + "&";
-  } else {
-    if (is_ptr) cythonType = "shared_ptr[" + typeName + "]&";
+  // add modifier
+  if (!type.isEigen()) {
+    if (is_ptr) cythonType = "shared_ptr[" + cythonType + "]&";
     if (is_ref) cythonType = cythonType + "&";
     if (is_const) cythonType = "const " + cythonType;
   }
@@ -214,9 +219,11 @@ void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
 }
 
 /* ************************************************************************* */
-void ArgumentList::emit_cython_pxd(FileWriter& file, const std::string& className) const {
+void ArgumentList::emit_cython_pxd(
+    FileWriter& file, const std::string& className,
+    const std::vector<std::string>& templateArgs) const {
   for (size_t j = 0; j<size(); ++j) {
-    at(j).emit_cython_pxd(file, className);
+    at(j).emit_cython_pxd(file, className, templateArgs);
     if (j<size()-1) file.oss << ", ";
   }
 }

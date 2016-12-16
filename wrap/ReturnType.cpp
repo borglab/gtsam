@@ -66,15 +66,17 @@ void ReturnType::wrapTypeUnwrap(FileWriter& wrapperFile) const {
 }
 
 /* ************************************************************************* */
-void ReturnType::emit_cython_pxd(FileWriter& file,
-                                 const std::string& className) const {
-  string typeName = pxdClassName();
+void ReturnType::emit_cython_pxd(
+    FileWriter& file, const std::string& className,
+    const std::vector<std::string>& templateArgs) const {
   string cythonType;
-  if (isPtr)
-    cythonType = "shared_ptr[" + typeName + "]";
+  if (name() == "This")
+    cythonType = className;
+  else if (match(templateArgs))
+    cythonType = name();
   else
-    cythonType = typeName;
-  if (typeName == "This") cythonType = className;
+    cythonType = pxdClassName();
+  if (isPtr) cythonType = "shared_ptr[" + cythonType + "]";
   file.oss << cythonType;
 }
 

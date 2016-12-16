@@ -129,13 +129,13 @@ bool Constructor::hasDefaultConstructor() const {
 }
 
 /* ************************************************************************* */
-void Constructor::emit_cython_pxd(FileWriter& pxdFile, Str className) const {
+void Constructor::emit_cython_pxd(FileWriter& pxdFile, const Class& cls) const {
   for (size_t i = 0; i < nrOverloads(); i++) {
     ArgumentList args = argumentList(i);
 
     // generate the constructor
-    pxdFile.oss << "        " << className << "(";
-    args.emit_cython_pxd(pxdFile, className);
+    pxdFile.oss << "        " << cls.pxdClassName() << "(";
+    args.emit_cython_pxd(pxdFile, cls.pxdClassName(), cls.templateArgs);
     pxdFile.oss << ") "
                 << "except +\n";
   }

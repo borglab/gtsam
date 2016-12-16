@@ -314,10 +314,11 @@ void Module::matlab_code(const string& toolboxPath) const {
 }
 
 /* ************************************************************************* */
-void Module::cython_wrapper(const string& toolboxPath) const {
+void Module::cython_wrapper(const string& toolboxPath, const std::string& pxdImports) const {
   fs::create_directories(toolboxPath);
-  string pxdFileName = toolboxPath + "/" + name + "_wrapper" + ".pxd";
+  string pxdFileName = toolboxPath + "/" + name + ".pxd";
   FileWriter pxdFile(pxdFileName, verbose, "#");
+  pxdFile.oss << pxdImports << "\n";
   emit_cython_pxd(pxdFile);
   string pyxFileName = toolboxPath + "/" + name + ".pyx";
   FileWriter pyxFile(pyxFileName, verbose, "#");
@@ -350,20 +351,38 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
   //... wrap all classes
   for (const Class& cls : uninstantiatedClasses) {
       cls.emit_cython_pxd(pxdFile, uninstantiatedClasses);
-      pxdFile.oss << "\n";
 
-      //... ctypedef for template instantiations
       for (const Class& expCls : expandedClasses) {
-          if (!expCls.templateClass || expCls.templateClass->name_ != cls.name_)
-              continue;
+        //... ctypedef for template instantiations
+        if (expCls.templateClass &&
+            expCls.templateClass->pxdClassName() == cls.pxdClassName()) {
           pxdFile.oss << "ctypedef " << expCls.templateClass->pxdClassName()
                       << "[";
           for (size_t i = 0; i < expCls.templateInstTypeList.size(); ++i)
-              pxdFile.oss << expCls.templateInstTypeList[i].pxdClassName()
-                          << ((i == expCls.templateInstTypeList.size() - 1)
-                                  ? ""
-                                  : ", ");
+            pxdFile.oss << expCls.templateInstTypeList[i].pxdClassName()
+                        << ((i == expCls.templateInstTypeList.size() - 1)
+                                ? ""
+                                : ", ");
           pxdFile.oss << "] " << expCls.pxdClassName() << "\n";
+        }
+
+        if ((!expCls.templateClass &&
+             expCls.pxdClassName() == cls.pxdClassName()) ||
+            (expCls.templateClass &&
+             expCls.templateClass->pxdClassName() == cls.pxdClassName())) {
+            pxdFile.oss << "\n";
+            pxdFile.oss << "cdef class " << expCls.pyxClassName();
+            if (expCls.getParent())
+              pxdFile.oss << "(" << expCls.getParent()->pyxClassName() << ")";
+            pxdFile.oss << ":\n";
+            pxdFile.oss << "    cdef " << expCls.shared_pxd_class_in_pyx()
+                        << " " << expCls.shared_pxd_obj_in_pyx() << "\n";
+            // cyCreateFromShared
+            pxdFile.oss << "    @staticmethod\n";
+            pxdFile.oss << "    cdef " << expCls.pyxClassName()
+                        << " cyCreateFromShared(const "
+                        << expCls.shared_pxd_class_in_pyx() << "& other)\n";
+          }
       }
       pxdFile.oss << "\n\n";
   }
@@ -378,10 +397,10 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
 /* ************************************************************************* */
 void Module::emit_cython_pyx(FileWriter& pyxFile) const {
   // headers...
-  string pxdHeader = name + "_wrapper";
+  string pxdHeader = name;
   pyxFile.oss << "cimport numpy as np\n"
                  "import numpy as npp\n"
-                 "cimport " << pxdHeader << " as " << "pxd" << "\n"
+                 "cimport " << pxdHeader << "\n"
                  "from "<< pxdHeader << " cimport shared_ptr\n"
                  "from "<< pxdHeader << " cimport dynamic_pointer_cast\n";
   // import all typedefs, e.g. from gtsam_wrapper cimport Key, so we don't need to say gtsam.Key

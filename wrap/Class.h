@@ -93,6 +93,7 @@ public:
   void assignParent(const Qualified& parent);
 
   boost::optional<std::string> qualifiedParent() const;
+  boost::optional<Qualified> getParent() const { return parentClass; }
 
   size_t nrMethods() const {
     return methods_.size();

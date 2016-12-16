@@ -744,7 +744,7 @@ void Class::emit_cython_pxd(FileWriter& pxdFile, const std::vector<Class>& allCl
   if (parentClass) pxdFile.oss << "(" <<  parentClass->pxdClassName() << ")";
   pxdFile.oss << ":\n";
 
-  constructor.emit_cython_pxd(pxdFile, pxdClassName());
+  constructor.emit_cython_pxd(pxdFile, *this);
   if (constructor.nrOverloads()>0) pxdFile.oss << "\n";
 
   for(const StaticMethod& m: static_methods | boost::adaptors::map_values)
@@ -759,7 +759,7 @@ void Class::emit_cython_pxd(FileWriter& pxdFile, const std::vector<Class>& allCl
   size_t numMethods = constructor.nrOverloads() + static_methods.size() +
                       methods_.size() + templateMethods_.size();
   if (numMethods == 0)
-      pxdFile.oss << "        pass";
+      pxdFile.oss << "        pass\n";
 }
 
 /* ************************************************************************* */
@@ -820,7 +820,7 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
   pyxFile.oss << ":\n";
 
   // shared variable of the corresponding cython object 
-  pyxFile.oss << "    cdef " << shared_pxd_class_in_pyx() << " " << shared_pxd_obj_in_pyx() << "\n";
+  // pyxFile.oss << "    cdef " << shared_pxd_class_in_pyx() << " " << shared_pxd_obj_in_pyx() << "\n";
 
   // __cinit___
   pyxFile.oss << "    def __init__(self, *args, **kwargs):\n"

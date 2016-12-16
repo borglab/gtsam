@@ -22,11 +22,13 @@ using namespace wrap;
 
 /* ************************************************************************* */
 void TemplateMethod::emit_cython_pxd(FileWriter& file, const Class& cls) const {
+  std::vector<std::string> templateArgs = cls.templateArgs;
+  templateArgs.push_back(argName);
   for(size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "        ";
-    returnVals_[i].emit_cython_pxd(file, cls.pxdClassName());
+    returnVals_[i].emit_cython_pxd(file, cls.pxdClassName(), templateArgs);
     file.oss << name_ << "[" << argName << "]" << "(";
-    argumentList(i).emit_cython_pxd(file, cls.pxdClassName());
+    argumentList(i).emit_cython_pxd(file, cls.pxdClassName(), templateArgs);
     file.oss << ")\n";
   }
 }

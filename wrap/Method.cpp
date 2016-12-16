@@ -84,10 +84,10 @@ string Method::wrapper_call(FileWriter& wrapperFile, Str cppClassName,
 void Method::emit_cython_pxd(FileWriter& file, const Class& cls) const {
   for (size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "        ";
-    returnVals_[i].emit_cython_pxd(file, cls.pxdClassName());
+    returnVals_[i].emit_cython_pxd(file, cls.pxdClassName(), cls.templateArgs);
     file.oss << pyRename(name_) + " \"" + name_ + "\""
              << "(";
-    argumentList(i).emit_cython_pxd(file, cls.pxdClassName());
+    argumentList(i).emit_cython_pxd(file, cls.pxdClassName(), cls.templateArgs);
     file.oss << ")";
     if (is_const_) file.oss << " const";
     file.oss << "\n";
