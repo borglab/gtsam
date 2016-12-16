@@ -172,5 +172,9 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
     include(GtsamCythonWrap)
 
     # Wrap
-    wrap_and_install_library_cython(../cython/gtsam.h "${GTSAM_ADDITIONAL_LIBRARIES}" "")
+    wrap_and_install_library_cython("../cython/gtsam.h" # interface_header
+                                    ""                  # extra imports  
+                                    "../cython"         # path to setup.py.in 
+                                    "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" # install path
+                                    )
 endif ()
