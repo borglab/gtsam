@@ -14,8 +14,8 @@ as follows:
 Note: Currently there's some issue with including eigency in requirements.txt
 
 - Build and install gtsam using cmake with GTSAM_INSTALL_CYTHON_TOOLBOX enabled
-Note: By default, the wrapped module will be installed in 
-<your_installation_folder>/gtsam_cython. Change that in GTSAM_CYTHON_TOOLBOX_PATH
+Note: The wrapped module will be installed to GTSAM_CYTHON_INSTALL_PATH, which is
+by default: <your CMAKE_INSTALL_PREFIX>/cython
 
 
 UNIT TESTS
@@ -24,7 +24,7 @@ The Cython toolbox also has a small set of unit tests located in the
 test directory. To run them:
 
 ```bash
- cd /Users/yourname/gtsam_cython  # Change to wherever you installed the toolbox
+ cd <your GTSAM_CYTHON_INSTALL_PATH>
  python -m unittest discover
 ```
 
@@ -36,7 +36,7 @@ See the tests for examples.
 
 - Vector/Matrix: Due to a design choice of eigency, numpy.array matrices with the default order='A'
 will always be transposed in C++ no matter how you transpose it in Python. Use order='F', or use
-two functions Vector and Matrix in gtsam_utils/np_utils.py for your conveniences. These two functions
+two functions Vector and Matrix in cython/gtsam/utils/np_utils.py for your conveniences. These two functions
 also help to avoid a common but very subtle bug of using integers when creating numpy arrays, 
 e.g. np.array([1,2,3]). These can't be an input for gtsam functions as they only accept floating-point arrays.
 For more details, see: https://github.com/wouterboomsma/eigency#storage-layout---why-arrays-are-sometimes-transposed
@@ -54,7 +54,7 @@ Examples:
 WRAPPING YOUR OWN PROJECT THAT USES GTSAM
 =========================================
 
-- Set PYTHONPATH to include ${GTSAM_CYTHON_TOOLBOX_PATH}
+- Set PYTHONPATH to include ${GTSAM_CYTHON_INSTALL_PATH}
   + so that it can find gtsam Cython header: gtsam/gtsam.pxd
 
 - Create your setup.py.in as follows:
