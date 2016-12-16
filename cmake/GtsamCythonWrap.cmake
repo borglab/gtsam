@@ -32,6 +32,7 @@ endfunction()
 function(wrap_library_cython interface_header generated_files_path extra_imports setup_py_in_path)
 	# Wrap codegen interface
 	# Extract module path and name from interface header file name
+	# wrap requires interfacePath to be *absolute*
 	get_filename_component(interface_header "${interface_header}" ABSOLUTE)
 	get_filename_component(module_path "${interface_header}" PATH)
 	get_filename_component(module_name "${interface_header}" NAME_WE)

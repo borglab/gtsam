@@ -26,7 +26,7 @@ using namespace std;
 void usage() {
   cerr << "wrap parses an interface file and produces a MATLAB or Cython toolbox" << endl;
   cerr << "usage: wrap [--matlab|--cython] interfacePath moduleName toolboxPath cythonImports" << endl;
-  cerr << "  interfacePath : path to directory of module interface file" << endl;
+  cerr << "  interfacePath : *absolute* path to directory of module interface file" << endl;
   cerr << "  moduleName    : the name of the module, interface file must be called moduleName.h" << endl;
   cerr << "  toolboxPath   : the directory in which to generate the wrappers" << endl;
   cerr << "  cythonImports : extra imports for Cython pxd header file" << endl;
