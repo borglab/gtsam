@@ -583,13 +583,30 @@ class Values {
   // void update(size_t j, const gtsam::Value& val);
   // gtsam::Value at(size_t j) const;
 
-  template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
-                 gtsam::Rot3, gtsam::Pose3}>
-  void insert(size_t j, const T& t);
+  // template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
+  //                gtsam::Rot3, gtsam::Pose3}>
+  // void insert(size_t j, const T& t);
 
-  template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
-                 gtsam::Rot3, gtsam::Pose3}>
-  void update(size_t j, const T& t);
+  // template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
+  //                gtsam::Rot3, gtsam::Pose3}>
+  // void update(size_t j, const T& t);
+  void insert(size_t j, const gtsam::Point2& t);
+  void insert(size_t j, const gtsam::Point3& t);
+  void insert(size_t j, const gtsam::Rot2& t);
+  void insert(size_t j, const gtsam::Pose2& t);
+  void insert(size_t j, const gtsam::Rot3& t);
+  void insert(size_t j, const gtsam::Pose3& t);
+  void insert(size_t j, Vector t);
+  void insert(size_t j, Matrix t);
+
+  void update(size_t j, const gtsam::Point2& t);
+  void update(size_t j, const gtsam::Point3& t);
+  void update(size_t j, const gtsam::Rot2& t);
+  void update(size_t j, const gtsam::Pose2& t);
+  void update(size_t j, const gtsam::Rot3& t);
+  void update(size_t j, const gtsam::Pose3& t);
+  void update(size_t j, Vector t);
+  void update(size_t j, Matrix t);
 
   template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                  gtsam::Rot3, gtsam::Pose3}>
