@@ -2,8 +2,8 @@ import unittest
 from gtsam import *
 from math import *
 import numpy as np
-from gtsam_utils import Vector, Matrix
-import gtsam_utils.visual_data_generator as generator
+from gtsam.utils import Vector, Matrix
+import gtsam.utils.visual_data_generator as generator
 
 
 class TestSFMExample(unittest.TestCase):

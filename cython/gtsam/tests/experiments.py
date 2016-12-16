@@ -5,7 +5,7 @@ won't be discovered.
 """
 from gtsam.gtsam import *
 import numpy as np
-from gtsam_utils import Vector, Matrix
+from gtsam.utils import Vector, Matrix
 
 r = Rot3()
 print(r)

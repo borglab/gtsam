@@ -2,7 +2,7 @@ import unittest
 from gtsam import *
 from math import *
 import numpy as np
-from gtsam_utils import Matrix, Vector
+from gtsam.utils import Matrix, Vector
 
 class TestJacobianFactor(unittest.TestCase):
 

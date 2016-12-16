@@ -2,7 +2,7 @@ import unittest
 from gtsam import *
 from math import *
 import numpy as np
-from gtsam_utils.circlePose3 import * 
+from gtsam.utils.circlePose3 import * 
 
 class TestPose3SLAMExample(unittest.TestCase):
 

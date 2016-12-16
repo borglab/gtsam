@@ -2,7 +2,7 @@ import unittest
 from gtsam import *
 from math import *
 import numpy as np
-from gtsam_utils import Vector, Matrix
+from gtsam.utils import Vector, Matrix
 
 
 class TestStereoVOExample(unittest.TestCase):

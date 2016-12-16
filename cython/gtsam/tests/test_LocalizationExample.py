@@ -1,6 +1,6 @@
 import unittest
 from gtsam import *
-from gtsam_utils import *
+from gtsam.utils import *
 from math import *
 import numpy as np
 

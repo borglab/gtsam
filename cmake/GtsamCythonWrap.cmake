@@ -1,7 +1,7 @@
 # Set up cache options
 set(GTSAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/gtsam_cython")
 if(NOT GTSAM_CYTHON_INSTALL_PATH)
-	set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/gtsam_cython")
+	set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython")
 endif()
 
 # User-friendly Cython wrapping and installing function.  
@@ -70,7 +70,6 @@ function(install_cython_wrapped_library interface_header generated_files_path in
     # NOTE: only installs .pxd and .pyx and binary files (not .cpp) - the trailing slash on the directory name
 	# here prevents creating the top-level module name directory in the destination.
 	message(STATUS "Installing Cython Toolbox to ${install_path}") #${GTSAM_CYTHON_INSTALL_PATH}")
-	message(generated_files_path: "${generated_files_path}")
 	if(GTSAM_BUILD_TYPE_POSTFIXES)
 		foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
 			string(TOUPPER "${build_type}" build_type_upper)
