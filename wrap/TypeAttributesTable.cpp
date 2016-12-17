@@ -18,6 +18,7 @@
 
 #include "TypeAttributesTable.h"
 #include "Class.h"
+#include "ForwardDeclaration.h"
 #include "utilities.h"
 
 #include <boost/range/adaptor/map.hpp>
