@@ -155,7 +155,7 @@ public:
   void python_wrapper(FileWriter& wrapperFile) const;
 
   // emit cython wrapper
-  void emit_cython_pxd(FileWriter& pxdFile, const std::vector<Class>& allClasses) const;
+  void emit_cython_pxd(FileWriter& pxdFile) const;
   void emit_cython_pyx(FileWriter& pyxFile,
                        const std::vector<Class>& allClasses) const;
   void pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj,
