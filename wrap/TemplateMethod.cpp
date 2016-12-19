@@ -29,7 +29,7 @@ void TemplateMethod::emit_cython_pxd(FileWriter& file, const Class& cls) const {
     returnVals_[i].emit_cython_pxd(file, cls.pxdClassName(), templateArgs);
     file.oss << name_ << "[" << argName << "]" << "(";
     argumentList(i).emit_cython_pxd(file, cls.pxdClassName(), templateArgs);
-    file.oss << ")\n";
+    file.oss << ") except +\n";
   }
 }
 

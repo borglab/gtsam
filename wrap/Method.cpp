@@ -89,7 +89,8 @@ void Method::emit_cython_pxd(FileWriter& file, const Class& cls) const {
              << "(";
     argumentList(i).emit_cython_pxd(file, cls.pxdClassName(), cls.templateArgs);
     file.oss << ")";
-    if (is_const_) file.oss << " const";
+    // if (is_const_) file.oss << " const";
+    file.oss << " except +";
     file.oss << "\n";
   }
 }
