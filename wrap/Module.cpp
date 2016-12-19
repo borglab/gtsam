@@ -350,7 +350,7 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
 
   //... wrap all classes
   for (const Class& cls : uninstantiatedClasses) {
-      cls.emit_cython_pxd(pxdFile, uninstantiatedClasses);
+      cls.emit_cython_pxd(pxdFile);
 
       for (const Class& expCls : expandedClasses) {
         //... ctypedef for template instantiations
