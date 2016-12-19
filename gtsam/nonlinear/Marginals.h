@@ -48,6 +48,10 @@ protected:
 
 public:
 
+  /// Default constructor only for Cython wrapper
+  Marginals(){}
+
+  /// Copy constructor
   Marginals(const Marginals&) = default;
 
   /** Construct a marginals class.
@@ -93,6 +97,10 @@ protected:
   FastMap<Key, size_t> indices_;
 
 public:
+  /// Default constructor only for Cython wrapper
+  JointMarginal() {}
+
+  /// Copy constructor
   JointMarginal(const JointMarginal&) = default;
 
   /** Access a block, corresponding to a pair of variables, of the joint
