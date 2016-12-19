@@ -63,8 +63,8 @@ void TypeAttributesTable::addClasses(const vector<Class>& classes) {
 void TypeAttributesTable::addForwardDeclarations(
     const vector<ForwardDeclaration>& forwardDecls) {
   for(const ForwardDeclaration& fwDec: forwardDecls) {
-    if (!table_.insert(make_pair(fwDec.name, TypeAttributes(fwDec.isVirtual))).second)
-      throw DuplicateDefinition("class " + fwDec.name);
+    if (!table_.insert(make_pair(fwDec.name(), TypeAttributes(fwDec.isVirtual))).second)
+      throw DuplicateDefinition("forward defined class " + fwDec.name());
   }
 }
 

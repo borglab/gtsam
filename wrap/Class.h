@@ -90,6 +90,15 @@ public:
           false), deconstructor(verbose), verbose_(verbose) {
   }
 
+  Class(const std::string& name, bool verbose = true)
+      : Qualified(name, Qualified::Category::CLASS),
+        parentClass(boost::none),
+        isVirtual(false),
+        isSerializable(false),
+        hasSerialization(false),
+        deconstructor(verbose),
+        verbose_(verbose) {}
+
   void assignParent(const Qualified& parent);
 
   boost::optional<std::string> qualifiedParent() const;

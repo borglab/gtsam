@@ -176,11 +176,17 @@ void Module::parseMarkup(const std::string& data) {
 
   // parse forward declaration
   ForwardDeclaration fwDec0, fwDec;
+  Class fwParentClass;
+  TypeGrammar className_g(fwDec.cls);
+  TypeGrammar classParent_g(fwParentClass);
+  Rule classParent_p = (':' >> classParent_g >> ';') //
+         [bl::bind(&Class::assignParent, bl::var(fwDec.cls),
+              bl::var(fwParentClass))][clear_a(fwParentClass)];
+
   Rule forward_declaration_p =
       !(str_p("virtual")[assign_a(fwDec.isVirtual, T)])
-      >> str_p("class") 
-      >> (*(basic.namespace_p >> str_p("::")) >> basic.className_p)[assign_a(fwDec.name)]
-      >> ch_p(';')
+      >> str_p("class") >> className_g
+      >> (classParent_p | ';')
       [push_back_a(forward_declarations, fwDec)]
       [assign_a(cls,cls0)] // also clear class to avoid partial parse
       [assign_a(fwDec, fwDec0)];
@@ -419,8 +425,13 @@ R"rawstr(def Vectorize(*args):
     return ret
 )rawstr";
 
+  // all classes include all forward declarations
+  std::vector<Class> allClasses = expandedClasses;
+  for(const ForwardDeclaration& fd: forward_declarations)
+    allClasses.push_back(fd.cls);
+
   for(const Class& cls: expandedClasses)
-    cls.emit_cython_pyx(pyxFile, expandedClasses);
+    cls.emit_cython_pyx(pyxFile, allClasses);
   pyxFile.oss << "\n";
   //... wrap global functions
   for(const GlobalFunctions::value_type& p: global_functions)
@@ -493,7 +504,7 @@ vector<Class> Module::ExpandTypedefInstantiations(const vector<Class>& classes, 
 vector<string> Module::GenerateValidTypes(const vector<Class>& classes, const vector<ForwardDeclaration>& forwardDeclarations, const vector<TypedefPair>& typedefs) {
   vector<string> validTypes;
   for(const ForwardDeclaration& fwDec: forwardDeclarations) {
-    validTypes.push_back(fwDec.name);
+    validTypes.push_back(fwDec.name());
   }
   validTypes.push_back("void");
   validTypes.push_back("string");

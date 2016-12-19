@@ -89,6 +89,18 @@
  *        - Add "void serializable()" to a class if you only want the class to be serialized as a
  *          part of a container (such as noisemodel). This version does not require a publicly
  *          accessible default constructor.
+ *   Forward declarations and class definitions for Cython:
+ *     - Need to specify the base class (both this forward class and base class are declared in an external cython header)
+ *       This is so Cython can generate proper inheritance.
+ *       Example when wrapping a gtsam-based project:
+ *          // forward declarations
+ *          virtual class gtsam::NonlinearFactor
+ *          virtual class gtsam::NoiseModelFactor : gtsam::NonlinearFactor
+ *          // class definition
+ *          #include <MyFactor.h>
+ *          virtual class MyFactor : gtsam::NoiseModelFactor {...};
+ *    - *DO NOT* re-define overriden function already declared in the external (forward-declared) base class
+ *        - This will cause an ambiguity problem in Cython pxd header file
  */
 
 /**
