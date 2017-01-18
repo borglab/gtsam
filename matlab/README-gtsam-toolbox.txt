@@ -7,8 +7,12 @@ http://borg.cc.gatech.edu/projects/gtsam
 ================================================================================
 
 This is the GTSAM MATLAB toolbox, a MATLAB wrapper around the GTSAM C++
-library.
+library. To build it, enable GTSAM_INSTALL_MATLAB_TOOLBOX in CMake.
 
+The interface is created automatically by the wrap tool, which
+directly parses C++ header files and generates matlab proxy objects
+and wrapping and unwrapping code. The wrap tool also redirects the
+standard "cout" stream to matlab's console.
 
 ----------------------------------------
 Note about newer Ubuntu versions unsupported by MATLAB (later than 10.04)
