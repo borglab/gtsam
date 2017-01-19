@@ -77,6 +77,12 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
   string matlabUniqueType = type.qualifiedName();
   bool isNotScalar = !Argument::isScalar();
 
+  // We cannot handle scalar non const references
+  if (!isNotScalar && is_ref && !is_const) {
+    cerr << "Cannot wrap a scalar non-const reference" << endl;
+    exit(-1);
+  }
+
   if (is_ptr && type.category != Qualified::EIGEN)
     // A pointer: emit an "unwrap_shared_ptr" call which returns a pointer
     file.oss << "boost::shared_ptr<" << cppType << "> " << name
