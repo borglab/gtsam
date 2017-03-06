@@ -246,6 +246,10 @@ public:
     return "shared_" + pxdClassName() + "_";
   }
 
+  std::string make_shared_pxd_class_in_pyx() const {
+    return "make_shared[" + pxd_class_in_pyx() + "]";
+  }
+
   std::string shared_pxd_class_in_pyx() const {
     return "shared_ptr[" + pxd_class_in_pyx() + "]";
   }

@@ -102,8 +102,8 @@ std::string ReturnType::pyx_casting(const std::string& var,
       return pyxClassName() + ".cyCreateFromShared(" + var + ")";
     else {
       // construct a shared_ptr if var is not a shared ptr
-      return pyxClassName() + ".cyCreateFromShared(" + shared_pxd_class_in_pyx() +
-             "(new " + pxd_class_in_pyx() + "(" + var + ")))";
+      return pyxClassName() + ".cyCreateFromShared(" + make_shared_pxd_class_in_pyx() +
+             + "(" + var + "))";
     }
   } else
     return var;

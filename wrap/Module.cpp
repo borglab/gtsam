@@ -349,7 +349,8 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
                  "        shared_ptr(T*)\n"
                  "        T* get()\n"
                  "        T& operator*()\n\n"
-                 "    cdef shared_ptr[T] dynamic_pointer_cast[T,U](const shared_ptr[U]& r)\n";
+                 "    cdef shared_ptr[T] dynamic_pointer_cast[T,U](const shared_ptr[U]& r)\n"
+                 "    cdef shared_ptr[T] make_shared[T](const T& r)\n";
 
   for(const TypedefPair& types: typedefs)
     types.emit_cython_pxd(pxdFile);
@@ -408,7 +409,8 @@ void Module::emit_cython_pyx(FileWriter& pyxFile) const {
                  "import numpy as npp\n"
                  "cimport " << pxdHeader << "\n"
                  "from "<< pxdHeader << " cimport shared_ptr\n"
-                 "from "<< pxdHeader << " cimport dynamic_pointer_cast\n";
+                 "from "<< pxdHeader << " cimport dynamic_pointer_cast\n"
+                 "from "<< pxdHeader << " cimport make_shared\n";
   // import all typedefs, e.g. from gtsam_wrapper cimport Key, so we don't need to say gtsam.Key
   for(const Qualified& q: Qualified::BasicTypedefs) {
     pyxFile.oss << "from " << pxdHeader << " cimport " << q.pxdClassName() << "\n";
