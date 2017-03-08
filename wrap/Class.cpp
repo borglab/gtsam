@@ -827,13 +827,13 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
                  "        self." << shared_pxd_obj_in_pyx() << " = " 
                  << shared_pxd_class_in_pyx() << "()\n";
 
+  pyxFile.oss << "        if len(args)==0 and len(kwargs)==1 and kwargs.has_key('cyCreateFromShared'):\n            return\n";
   for (size_t i = 0; i<constructor.nrOverloads(); ++i) {
-    pyxFile.oss << "        " << (i == 0 ? "if" : "elif") << " self."
+    pyxFile.oss << "        " << "elif" << " self."
                 << pyxClassName() << "_" << i
                 << "(*args, **kwargs):\n            pass\n";
   }
   if (constructor.nrOverloads()>0) {
-    pyxFile.oss << "        elif len(args)+len(kwargs)==0:\n            return\n";
     pyxFile.oss << "        else:\n            raise TypeError('" << pyxClassName()
                 << " construction failed!')\n";
   }
@@ -849,7 +849,7 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
   pyxFile.oss << "    @staticmethod\n";
   pyxFile.oss << "    cdef " << pyxClassName() << " cyCreateFromShared(const " 
               << shared_pxd_class_in_pyx() << "& other):\n"
-              << "        cdef " << pyxClassName() << " ret = " << pyxClassName() << "()\n"
+              << "        cdef " << pyxClassName() << " ret = " << pyxClassName() << "(cyCreateFromShared=True)\n"
               << "        ret." << shared_pxd_obj_in_pyx() << " = other\n";
   pyxInitParentObj(pyxFile, "        ret", "other", allClasses);
   pyxFile.oss << "        return ret" << "\n";
