@@ -69,7 +69,7 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
 
   string cppType = type.qualifiedName("::");
   string matlabUniqueType = type.qualifiedName();
-  bool isNotScalar = !Argument::isScalar();
+  bool isNotScalar = !type.isScalar();
 
   // We cannot handle scalar non const references
   if (!isNotScalar && is_ref && !is_const) {
