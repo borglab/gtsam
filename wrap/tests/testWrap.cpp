@@ -148,8 +148,8 @@ TEST( wrap, Geometry ) {
 
   // forward declarations
   LONGS_EQUAL(2, module.forward_declarations.size());
-  EXPECT(assert_equal("VectorNotEigen", module.forward_declarations[0].name));
-  EXPECT(assert_equal("ns::OtherClass", module.forward_declarations[1].name));
+  EXPECT(assert_equal("VectorNotEigen", module.forward_declarations[0].name()));
+  EXPECT(assert_equal("ns::OtherClass", module.forward_declarations[1].name()));
 
   // includes
   strvec exp_includes; exp_includes += "folder/path/to/Test.h";
