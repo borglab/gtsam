@@ -7,7 +7,8 @@ as follows:
 
 ```bash
  cd <gtsam_folder>/cython
- pip install -r requirements.txt
+ pip install numpy>=1.11.1
+ pip install Cython>=0.25.1
  pip install eigency
 ```
 
