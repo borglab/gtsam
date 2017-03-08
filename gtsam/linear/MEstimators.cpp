@@ -197,22 +197,22 @@ Tukey::shared_ptr Tukey::Create(double c, const ReweightScheme reweight) {
 }
 
 /* ************************************************************************* */
-// Welsch
+// Welsh
 /* ************************************************************************* */
-Welsch::Welsch(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
+Welsh::Welsh(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
 
-void Welsch::print(const std::string &s="") const {
-  std::cout << s << ": Welsch (" << c_ << ")" << std::endl;
+void Welsh::print(const std::string &s="") const {
+  std::cout << s << ": Welsh (" << c_ << ")" << std::endl;
 }
 
-bool Welsch::equals(const Base &expected, double tol) const {
-  const Welsch* p = dynamic_cast<const Welsch*>(&expected);
+bool Welsh::equals(const Base &expected, double tol) const {
+  const Welsh* p = dynamic_cast<const Welsh*>(&expected);
   if (p == NULL) return false;
   return std::abs(c_ - p->c_) < tol;
 }
 
-Welsch::shared_ptr Welsch::Create(double c, const ReweightScheme reweight) {
-  return shared_ptr(new Welsch(c, reweight));
+Welsh::shared_ptr Welsh::Create(double c, const ReweightScheme reweight) {
+  return shared_ptr(new Welsh(c, reweight));
 }
 
 /* ************************************************************************* */
