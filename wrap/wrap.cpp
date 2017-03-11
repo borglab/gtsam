@@ -34,10 +34,12 @@ void usage() {
 
 /**
  * Top-level function to wrap a module
+ * @param language can be "--matlab" or "--cython"
  * @param interfacePath path to where interface file lives, e.g., borg/gtsam
  * @param moduleName name of the module to be generated e.g. gtsam
  * @param toolboxPath path where the toolbox should be generated, e.g. borg/gtsam/build
  * @param headerPath is the path to matlab.h
+ * @param cythonImports additional imports to include in the generated Cython pxd header file
  */
 void generate_toolbox(
            const string& language,
