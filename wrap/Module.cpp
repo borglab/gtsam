@@ -420,12 +420,6 @@ void Module::emit_cython_pyx(FileWriter& pyxFile) const {
                  "from libcpp.pair cimport pair\n"
                  "from libcpp.string cimport string\n"
                  "from cython.operator cimport dereference as deref\n\n\n";
-  pyxFile.oss << 
-R"rawstr(def Vectorize(*args):
-    ret = npp.squeeze(npp.asarray(args, dtype='float'))
-    if ret.ndim == 0: ret = npp.expand_dims(ret, axis=0)
-    return ret
-)rawstr";
 
   // all classes include all forward declarations
   std::vector<Class> allClasses = expandedClasses;

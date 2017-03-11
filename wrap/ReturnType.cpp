@@ -94,7 +94,7 @@ std::string ReturnType::pyx_casting(const std::string& var,
   if (isEigen()) { 
     string s = "ndarray_copy(" + var + ")";
     if (pyxClassName() == "Vector")
-      return "Vectorize(" + s + ")";
+      return s + ".squeeze()";
     else return s;
   }
   else if (isNonBasicType()) {
