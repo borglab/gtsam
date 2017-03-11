@@ -259,7 +259,7 @@ void Module::parseMarkup(const std::string& data) {
 }
 
 /* ************************************************************************* */
-void Module::matlab_code(const string& toolboxPath) const {
+void Module::generate_matlab_wrapper(const string& toolboxPath) const {
 
   fs::create_directories(toolboxPath);
 
@@ -320,7 +320,7 @@ void Module::matlab_code(const string& toolboxPath) const {
 }
 
 /* ************************************************************************* */
-void Module::cython_wrapper(const string& toolboxPath, const std::string& pxdImports) const {
+void Module::generate_cython_wrapper(const string& toolboxPath, const std::string& pxdImports) const {
   fs::create_directories(toolboxPath);
   string pxdFileName = toolboxPath + "/" + name + ".pxd";
   FileWriter pxdFile(pxdFileName, verbose, "#");
@@ -613,7 +613,7 @@ void Module::WriteRTTIRegistry(FileWriter& wrapperFile, const std::string& modul
 }
 
 /* ************************************************************************* */
-void Module::python_wrapper(const string& toolboxPath) const {
+void Module::generate_python_wrapper(const string& toolboxPath) const {
 
   fs::create_directories(toolboxPath);
 

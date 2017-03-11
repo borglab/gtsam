@@ -52,9 +52,9 @@ void generate_toolbox(
 
   if (language == "--matlab")
   // Then emit MATLAB code
-    module.matlab_code(toolboxPath);
+    module.generate_matlab_wrapper(toolboxPath);
   else if (language == "--cython") {
-    module.cython_wrapper(toolboxPath, cythonImports);
+    module.generate_cython_wrapper(toolboxPath, cythonImports);
   }
   else {
       cerr << "First argument invalid" << endl;
