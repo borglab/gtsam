@@ -82,13 +82,13 @@ int main(int argc, char* argv[]) {
   // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
   noiseModel::Diagonal::shared_ptr noise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
-  graph.push_back(PriorFactor<Pose3>(0, poses[0], noise));
+  graph.emplace_shared<PriorFactor<Pose3> >(0, poses[0], noise);
 
   // Because the structure-from-motion problem has a scale ambiguity, the problem is
   // still under-constrained. Here we add a prior on the second pose x1, so this will
   // fix the scale by indicating the distance between x0 and x1.
   // Because these two are fixed, the rest of the poses will be also be fixed.
-  graph.push_back(PriorFactor<Pose3>(1, poses[1], noise)); // add directly to graph
+  graph.emplace_shared<PriorFactor<Pose3> >(1, poses[1], noise); // add directly to graph
 
   graph.print("Factor Graph:\n");
 

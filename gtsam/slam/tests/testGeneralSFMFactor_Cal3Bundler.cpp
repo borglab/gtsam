@@ -369,9 +369,9 @@ TEST( GeneralSFMFactor_Cal3Bundler, optimize_varK_BA ) {
   graph.addCameraConstraint(0, cameras[0]);
 
   // Constrain the scale of the problem with a soft range factor of 1m between the cameras
-  graph.push_back(
-      RangeFactor<GeneralCamera, GeneralCamera>(X(0), X(1), 2.,
-          noiseModel::Isotropic::Sigma(1, 10.)));
+  graph.emplace_shared<
+      RangeFactor<GeneralCamera, GeneralCamera> >(X(0), X(1), 2.,
+          noiseModel::Isotropic::Sigma(1, 10.));
 
   const double reproj_error = 1e-5;
 

@@ -378,12 +378,12 @@ TEST( triangulation, StereotriangulateNonlinear ) {
 
     NonlinearFactorGraph graph;
     static SharedNoiseModel unit(noiseModel::Unit::Create(3));
-    graph.push_back(StereoFactor::shared_ptr(new StereoFactor(measurements[0], unit, Symbol('x',1), Symbol('l',1), stereoK)));
-    graph.push_back(StereoFactor::shared_ptr(new StereoFactor(measurements[1], unit, Symbol('x',2), Symbol('l',1), stereoK)));
+    graph.emplace_shared<StereoFactor>(measurements[0], unit, Symbol('x',1), Symbol('l',1), stereoK);
+    graph.emplace_shared<StereoFactor>(measurements[1], unit, Symbol('x',2), Symbol('l',1), stereoK);
 
     const SharedDiagonal posePrior = noiseModel::Isotropic::Sigma(6, 1e-9);
-    graph.push_back(PriorFactor<Pose3>(Symbol('x',1), Pose3(m1), posePrior));
-    graph.push_back(PriorFactor<Pose3>(Symbol('x',2), Pose3(m2), posePrior));
+    graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x',1), Pose3(m1), posePrior);
+    graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x',2), Pose3(m2), posePrior);
 
     LevenbergMarquardtOptimizer optimizer(graph, values);
     Values result = optimizer.optimize();
@@ -399,8 +399,8 @@ TEST( triangulation, StereotriangulateNonlinear ) {
     NonlinearFactorGraph graph;
     static SharedNoiseModel unit(noiseModel::Unit::Create(3));
 
-    graph.push_back(TriangulationFactor<StereoCamera>(cameras[0], measurements[0], unit, Symbol('l',1)));
-    graph.push_back(TriangulationFactor<StereoCamera>(cameras[1], measurements[1], unit, Symbol('l',1)));
+    graph.emplace_shared<TriangulationFactor<StereoCamera> >(cameras[0], measurements[0], unit, Symbol('l',1));
+    graph.emplace_shared<TriangulationFactor<StereoCamera> >(cameras[1], measurements[1], unit, Symbol('l',1));
 
     LevenbergMarquardtOptimizer optimizer(graph, values);
     Values result = optimizer.optimize();

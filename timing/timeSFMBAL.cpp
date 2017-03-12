@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     for (const SfM_Measurement& m: db.tracks[j].measurements) {
       size_t i = m.first;
       Point2 z = m.second;
-      graph.push_back(SfmFactor(z, gNoiseModel, C(i), P(j)));
+      graph.emplace_shared<SfmFactor>(z, gNoiseModel, C(i), P(j));
     }
   }
 
