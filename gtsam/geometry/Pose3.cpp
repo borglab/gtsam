@@ -382,6 +382,7 @@ Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> H1,
 Unit3 Pose3::bearing(const Pose3& point, OptionalJacobian<2, 6> H1,
                      OptionalJacobian<2, 6> H2) const {
   if (H2) {
+    H2->setZero();
     return bearing(point.translation(), H1, H2.cols<3>(3));
   }
   return bearing(point.translation(), H1, boost::none);
