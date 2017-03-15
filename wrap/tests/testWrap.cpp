@@ -60,11 +60,11 @@ TEST( wrap, check_exception ) {
   THROWS_EXCEPTION(Module("/notarealpath", "geometry",enable_verbose));
   CHECK_EXCEPTION(Module("/alsonotarealpath", "geometry",enable_verbose), CantOpenFile);
 
-//  // TODO: matlab_code does not throw this anymore, so check constructor
+//  // TODO: generate_matlab_wrapper does not throw this anymore, so check constructor
 //  fs::remove_all("actual_deps"); // clean out previous generated code
 //  string path = topdir + "/wrap/tests";
 //  Module module(path.c_str(), "testDependencies",enable_verbose);
-//  CHECK_EXCEPTION(module.matlab_code("actual_deps"), DependencyMissing);
+//  CHECK_EXCEPTION(module.generate_matlab_wrapper("actual_deps"), DependencyMissing);
 }
 
 /* ************************************************************************* */
@@ -408,7 +408,7 @@ TEST( wrap, matlab_code_namespaces ) {
   // emit MATLAB code
   string exp_path = path + "/tests/expected_namespaces/";
   string act_path = "actual_namespaces/";
-  module.matlab_code("actual_namespaces");
+  module.generate_matlab_wrapper("actual_namespaces");
 
 
   EXPECT(files_equal(exp_path + "ClassD.m", act_path + "ClassD.m" ));
@@ -436,7 +436,7 @@ TEST( wrap, matlab_code_geometry ) {
 
   // emit MATLAB code
   // make_geometry will not compile, use make testwrap to generate real make
-  module.matlab_code("actual");
+  module.generate_matlab_wrapper("actual");
 #ifndef WRAP_DISABLE_SERIALIZE
   string epath = path + "/tests/expected/";
 #else
@@ -470,7 +470,7 @@ TEST( wrap, python_code_geometry ) {
 
   // emit MATLAB code
   // make_geometry will not compile, use make testwrap to generate real make
-  module.python_wrapper("actual-python");
+  module.generate_python_wrapper("actual-python");
   string epath = path + "/tests/expected-python/";
   string apath = "actual-python/";
 
