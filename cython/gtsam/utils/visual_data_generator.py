@@ -59,11 +59,11 @@ class Data:
         # Set Noise parameters
         self.noiseModels = Data.NoiseModels()
         self.noiseModels.posePrior = noiseModel_Diagonal.Sigmas(
-            Vector([0.001, 0.001, 0.001, 0.1, 0.1, 0.1]))
+            np.array([0.001, 0.001, 0.001, 0.1, 0.1, 0.1]))
         # noiseModels.odometry = noiseModel_Diagonal.Sigmas(
-        #    Vector([0.001,0.001,0.001,0.1,0.1,0.1]))
+        #    np.array([0.001,0.001,0.001,0.1,0.1,0.1]))
         self.noiseModels.odometry = noiseModel_Diagonal.Sigmas(
-            Vector([0.05, 0.05, 0.05, 0.2, 0.2, 0.2]))
+            np.array([0.05, 0.05, 0.05, 0.2, 0.2, 0.2]))
         self.noiseModels.pointPrior = noiseModel_Isotropic.Sigma(3, 0.1)
         self.noiseModels.measurement = noiseModel_Isotropic.Sigma(2, 1.0)
 
@@ -84,8 +84,7 @@ def generate_data(options):
         r = 10
         for j in range(len(truth.points)):
             theta = j * 2 * pi / nrPoints
-            truth.points[j] = Point3(
-                v=Vector([r * cos(theta), r * sin(theta), 0]))
+            truth.points[j] = Point3(r * cos(theta), r * sin(theta), 0)
     else:  # 3D landmarks as vertices of a cube
         truth.points = [Point3(10, 10, 10),
                         Point3(-10, 10, 10),
@@ -101,9 +100,9 @@ def generate_data(options):
     r = 40
     for i in range(options.nrCameras):
         theta = i * 2 * pi / options.nrCameras
-        t = Point3(Vector(r * cos(theta), r * sin(theta), height))
+        t = Point3(r * cos(theta), r * sin(theta), height)
         truth.cameras[i] = SimpleCamera.Lookat(
-            t, Point3(), Point3(Vector(0, 0, 1)), truth.K)
+            t, Point3(), Point3(0, 0, 1), truth.K)
         # Create measurements
         for j in range(nrPoints):
             # All landmarks seen in every frame

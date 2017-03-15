@@ -2,7 +2,6 @@ import unittest
 from gtsam import *
 from math import *
 import numpy as np
-from gtsam.utils import Vector, Matrix
 
 
 class TestStereoVOExample(unittest.TestCase):
@@ -32,7 +31,7 @@ class TestStereoVOExample(unittest.TestCase):
         ## Create realistic calibration and measurement noise model
         # format: fx fy skew cx cy baseline
         K = Cal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2)
-        stereo_model = noiseModel_Diagonal.Sigmas(Vector([1.0, 1.0, 1.0]))
+        stereo_model = noiseModel_Diagonal.Sigmas(np.array([1.0, 1.0, 1.0]))
 
         ## Add measurements
         # pose 1

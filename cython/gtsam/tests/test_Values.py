@@ -22,11 +22,25 @@ class TestValues(unittest.TestCase):
         values.insert(9, E)
         values.insert(10, imuBias_ConstantBias())
 
-        # special cases for Vector and Matrix:
-        vec = np.array([1., 2., 3.])
+        # Special cases for Vectors and Matrices
+        # Note that gtsam's Eigen Vectors and Matrices requires double-precision
+        # floating point numbers in column-major (Fortran style) storage order,
+        # whereas by default, numpy.array is in row-major order and the type is
+        # in whatever the number input type is, e.g. np.array([1,2,3])
+        # will have 'int' type.
+        #
+        # The wrapper will automatically fix the type and storage order for you,
+        # but for performace reasons, it's recommended to specify the correct
+        # type and storage order.
+        vec = np.array([1., 2., 3.]) # for vectors, the order is not important, but dtype still is
         values.insert(11, vec)
         mat = np.array([[1., 2.], [3., 4.]], order='F')
         values.insert(12, mat)
+        # Test with dtype int and the default order='C'
+        # This still works as the wrapper converts to the correct type and order for you
+        # but is nornally not recommended!
+        mat2 = np.array([[1,2,],[3,5]])
+        values.insert(13, mat2)
 
         self.assertTrue(values.atPoint2(0).equals(Point2(), tol))
         self.assertTrue(values.atPoint3(1).equals(Point3(), tol))
@@ -46,6 +60,8 @@ class TestValues(unittest.TestCase):
         self.assertTrue(np.allclose(vec, actualVector, tol))
         actualMatrix = values.atMatrix(12)
         self.assertTrue(np.allclose(mat, actualMatrix, tol))
+        actualMatrix2 = values.atMatrix(13)
+        self.assertTrue(np.allclose(mat2, actualMatrix2, tol))
 
 if __name__ == "__main__":
     unittest.main()

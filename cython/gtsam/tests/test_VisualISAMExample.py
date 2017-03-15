@@ -2,7 +2,6 @@ import unittest
 from gtsam import *
 from math import *
 import numpy as np
-from gtsam.utils import Vector, Matrix
 import gtsam.utils.visual_data_generator as generator
 import gtsam.utils.visual_isam as visual_isam
 

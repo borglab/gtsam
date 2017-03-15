@@ -2,7 +2,7 @@ This is the Cython/Python wrapper around the GTSAM C++ library.
 
 INSTALL
 =======
-- This wrapper needs Cython(>=0.25), numpy and eigency, which can be installed 
+- This wrapper needs Cython(>=0.25), numpy and eigency, which can be installed
 as follows:
 
 ```bash
@@ -35,21 +35,27 @@ See the tests for examples.
 
 ## Some important notes:
 
-- Vector/Matrix: Due to a design choice of eigency, numpy.array matrices with the default order='A'
-will always be transposed in C++ no matter how you transpose it in Python. Use order='F', or use
-two functions Vector and Matrix in cython/gtsam/utils/np_utils.py for your conveniences. These two functions
-also help to avoid a common but very subtle bug of using integers when creating numpy arrays, 
-e.g. np.array([1,2,3]). These can't be an input for gtsam functions as they only accept floating-point arrays.
-For more details, see: https://github.com/wouterboomsma/eigency#storage-layout---why-arrays-are-sometimes-transposed
+- Vector/Matrix:
+  + GTSAM expects double-precision floating point vectors and matrices.
+    Hence, you should pass numpy matrices with dtype=float, or 'float64'.
+  + Also, GTSAM expects *column-major* matrices, unlike the default storage
+    scheme in numpy. Hence, you should pass column-major matrices to gtsam using
+    the flag order='F'. And you always get column-major matrices back.
+    For more details, see: https://github.com/wouterboomsma/eigency#storage-layout---why-arrays-are-sometimes-transposed
+  + Passing row-major matrices of different dtype, e.g. 'int', will also work
+    as the wrapper converts them to column-major and dtype float for you,
+    using numpy.array.astype(float, order='F', copy=False).
+    However, this will result a copy if your matrix is not in the expected type
+    and storage order.
 
 - Inner namespace: Classes in inner namespace will be prefixed by <innerNamespace>_ in Python.
 Examples: noiseModel_Gaussian, noiseModel_mEstimator_Tukey
 
 - Casting from a base class to a derive class must be done explicitly.
-Examples: 
+Examples:
 ```Python
       noiseBase = factor.get_noiseModel()
-      noiseGaussian = dynamic_cast_noiseModel_Gaussian_noiseModel_Base(noiseBase)       
+      noiseGaussian = dynamic_cast_noiseModel_Gaussian_noiseModel_Base(noiseBase)
 ```
 
 WRAPPING YOUR OWN PROJECT THAT USES GTSAM
@@ -102,7 +108,7 @@ KNOWN ISSUES
     - size-related issue: can only wrap up to a certain number of classes: up to mEstimator!
     - Guess: 64 vs 32b? disutils Compiler flags?
   - Bug with Cython 0.24: instantiated factor classes return FastVector<size_t> for keys(), which can't be casted to FastVector<Key>
-    - Upgrading to 0.25 solves the problem 
+    - Upgrading to 0.25 solves the problem
   - Need default constructor and default copy constructor for almost every classes... :(
     - support these constructors by default and declare "delete" for special classes?
 
@@ -110,12 +116,20 @@ KNOWN ISSUES
 TODO
 =====
 ☐ Unify cython/gtsam.h and the original gtsam.h
+  ✔ 06-03-17: manage to remove the requirements for default and copy constructors
   - 25-11-16:
-    Try to unify but failed. Main reasons are: Key/size_t, std containers, KeyVector/KeyList/KeySet. 
+    Try to unify but failed. Main reasons are: Key/size_t, std containers, KeyVector/KeyList/KeySet.
     Matlab doesn't need to know about Key, but I can't make Cython to ignore Key as it couldn't cast KeyVector, i.e. FastVector<Key>,
-    to FastVector<size_t>. 
+    to FastVector<size_t>.
+☐ Unit tests for cython wrappers
+☐ Fix Python tests: don't use " import <package> * ": Bad style!!!
+☐ Marginal and JointMarginal: revert changes
+- add doc for generate
+- matlab 6 arguments?
 
 Completed/Cancelled:
+✔ Convert input numpy Matrix/Vector to float dtype and storage order 'F' automatically, cannot crash! @done (15-03-17 13:00)
+✔ Remove requirements.txt - Frank: don't bother with only 2 packages and a special case for eigency! @done (08-03-17 10:30)
 ✔ CMake install script @done (25-11-16 02:30)
 ✘ [REFACTOR] better name for uninstantiateClass: very vague!! @cancelled (25-11-16 02:30) -- lazy
 ✘ forward declaration? @cancelled (23-11-16 13:00) - nothing to do, seem to work?
@@ -150,7 +164,7 @@ Completed/Cancelled:
 - what's the purpose of "virtual" ??
 
 Installation:
-  ☐ Prerequisite: 
+  ☐ Prerequisite:
     - Users create venv and pip install requirements before compiling
     - Wrap cython script in gtsam/cython folder
   ☐ Install built module into venv?

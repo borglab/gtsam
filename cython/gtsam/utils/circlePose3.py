@@ -1,6 +1,6 @@
 from gtsam import *
 from math import *
-from np_utils import *
+import numpy as np
 
 def circlePose3(numPoses = 8, radius = 1.0, symbolChar = 0):
     """
@@ -23,7 +23,7 @@ def circlePose3(numPoses = 8, radius = 1.0, symbolChar = 0):
     values = gtsam.Values()
     theta = 0.0
     dtheta = 2*pi/numPoses
-    gRo = gtsam.Rot3(Matrix([0., 1., 0.], [1., 0., 0.], [0., 0., -1.]))
+    gRo = gtsam.Rot3(np.array([[0., 1., 0.], [1., 0., 0.], [0., 0., -1.]], order='F'))
     for i in range(numPoses):
         key = gtsam.symbol(symbolChar, i)
         gti = gtsam.Point3(radius*cos(theta), radius*sin(theta), 0)

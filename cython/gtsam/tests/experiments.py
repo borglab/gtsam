@@ -3,9 +3,9 @@ This file contains small experiments to test the wrapper with gtsam_short,
 not real unittests. Its name convention is different from other tests so it
 won't be discovered.
 """
-from gtsam.gtsam import *
+from gtsam import *
 import numpy as np
-from gtsam.utils import Vector, Matrix
+from utils import Vector, Matrix
 
 r = Rot3()
 print(r)

@@ -2,7 +2,6 @@ import unittest
 from gtsam import *
 from math import *
 import numpy as np
-from gtsam.utils import Vector, Matrix
 import gtsam.utils.visual_data_generator as generator
 
 
@@ -17,7 +16,7 @@ class TestSFMExample(unittest.TestCase):
 
         measurementNoiseSigma = 1.0
         pointNoiseSigma = 0.1
-        poseNoiseSigmas = Vector([0.001, 0.001, 0.001, 0.1, 0.1, 0.1])
+        poseNoiseSigmas = np.array([0.001, 0.001, 0.001, 0.1, 0.1, 0.1])
 
         graph = NonlinearFactorGraph()
 
