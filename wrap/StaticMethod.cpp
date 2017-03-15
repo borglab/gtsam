@@ -79,6 +79,7 @@ void StaticMethod::emit_cython_pyx_no_overload(FileWriter& file,
   file.oss << "):\n";
 
   /// Call cython corresponding function and return
+  file.oss << argumentList(0).pyx_convertEigenTypeAndStorageOrder("        ");
   string ret = pyx_functionCall(cls.pxd_class_in_pyx(), name_, 0);
   file.oss << "        ";
   if (!returnVals_[0].isVoid()) {
@@ -117,6 +118,7 @@ void StaticMethod::emit_cython_pyx(FileWriter& file, const Class& cls) const {
     file.oss << pyx_resolveOverloadParams(args, false); // lazy: always return None even if it's a void function
 
     /// Call cython corresponding function and return
+    file.oss << argumentList(i).pyx_convertEigenTypeAndStorageOrder("        ");
     string ret = pyx_functionCall(cls.pxd_class_in_pyx(), pxdFuncName, i);
     if (!returnVals_[i].isVoid()) {
       file.oss << "        cdef " << returnVals_[i].pyx_returnType()

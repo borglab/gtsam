@@ -164,6 +164,7 @@ void GlobalFunction::emit_cython_pyx_no_overload(FileWriter& file) const {
   file.oss << "):\n";
 
   /// Call cython corresponding function and return
+  file.oss << argumentList(0).pyx_convertEigenTypeAndStorageOrder("    ");
   string ret = pyx_functionCall("", pxdName(), 0);
   if (!returnVals_[0].isVoid()) {
     file.oss << "    cdef " << returnVals_[0].pyx_returnType()
@@ -200,6 +201,7 @@ void GlobalFunction::emit_cython_pyx(FileWriter& file) const {
     file.oss << pyx_resolveOverloadParams(args, false, 1); // lazy: always return None even if it's a void function
 
     /// Call cython corresponding function
+    file.oss << argumentList(i).pyx_convertEigenTypeAndStorageOrder("    ");
     string ret = pyx_functionCall("", pxdName(), i);
     if (!returnVals_[i].isVoid()) {
       file.oss << "    cdef " << returnVals_[i].pyx_returnType()

@@ -131,6 +131,13 @@ void Argument::emit_cython_pyx(FileWriter& file) const {
 }
 
 /* ************************************************************************* */
+std::string Argument::pyx_convertEigenTypeAndStorageOrder() const {
+  if (!type.isEigen())
+    return "";
+  return name + " = " + name + ".astype(float, order=\'F\', copy=False)";
+}
+
+/* ************************************************************************* */
 std::string Argument::pyx_asParam() const {
   string cythonType = type.pxdClassName();
   string cythonVar;
@@ -142,7 +149,7 @@ std::string Argument::pyx_asParam() const {
   } else {
     cythonVar = name;
   }
-  return cythonVar; 
+  return cythonVar;
 }
 
 /* ************************************************************************* */
@@ -240,6 +247,14 @@ void ArgumentList::emit_cython_pyx(FileWriter& file) const {
     at(j).emit_cython_pyx(file);
     if (j < size() - 1) file.oss << ", ";
   }
+}
+
+/* ************************************************************************* */
+std::string ArgumentList::pyx_convertEigenTypeAndStorageOrder(const std::string& indent) const {
+  string ret;
+  for (size_t j = 0; j < size(); ++j)
+    ret += indent + at(j).pyx_convertEigenTypeAndStorageOrder() + "\n";
+  return ret;
 }
 
 /* ************************************************************************* */

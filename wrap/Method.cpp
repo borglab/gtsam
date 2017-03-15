@@ -115,6 +115,7 @@ void Method::emit_cython_pyx_no_overload(FileWriter& file,
   file.oss << "):\n";
 
   /// Call cython corresponding function and return
+  file.oss << argumentList(0).pyx_convertEigenTypeAndStorageOrder("        ");
   string caller = "self." + cls.shared_pxd_obj_in_pyx() + ".get()";
   string ret = pyx_functionCall(caller, funcName, 0);
   if (!returnVals_[0].isVoid()) {
@@ -158,6 +159,7 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
     file.oss << pyx_resolveOverloadParams(args, false); // lazy: always return None even if it's a void function
 
     /// Call cython corresponding function
+    file.oss << argumentList(i).pyx_convertEigenTypeAndStorageOrder("        ");
     string caller = "self." + cls.shared_pxd_obj_in_pyx() + ".get()";
 
     string ret = pyx_functionCall(caller, funcName, i);

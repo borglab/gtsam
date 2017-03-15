@@ -73,6 +73,7 @@ struct Argument {
                        const std::vector<std::string>& templateArgs) const;
   void emit_cython_pyx(FileWriter& file) const;
   std::string pyx_asParam() const;
+  std::string pyx_convertEigenTypeAndStorageOrder() const;
 
   friend std::ostream& operator<<(std::ostream& os, const Argument& arg) {
     os << (arg.is_const ? "const " : "") << arg.type << (arg.is_ptr ? "*" : "")
@@ -131,6 +132,7 @@ struct ArgumentList: public std::vector<Argument> {
   std::string pyx_asParams() const;
   std::string pyx_paramsList() const;
   std::string pyx_castParamsToPythonType() const;
+  std::string pyx_convertEigenTypeAndStorageOrder(const std::string& indent) const;
 
   /**
    * emit checking arguments to MATLAB proxy
