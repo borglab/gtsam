@@ -609,7 +609,7 @@ class Values {
   void update(size_t j, Matrix t);
 
   template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
-                 gtsam::Rot3, gtsam::Pose3}>
+                 gtsam::Rot3, gtsam::Pose3, Vector, Matrix}>
   T at(size_t j);
 
   /// version for double
