@@ -251,9 +251,12 @@ void ArgumentList::emit_cython_pyx(FileWriter& file) const {
 
 /* ************************************************************************* */
 std::string ArgumentList::pyx_convertEigenTypeAndStorageOrder(const std::string& indent) const {
-  string ret;
-  for (size_t j = 0; j < size(); ++j)
-    ret += indent + at(j).pyx_convertEigenTypeAndStorageOrder() + "\n";
+  string ret, conversion;
+  for (size_t j = 0; j < size(); ++j) {
+    conversion = at(j).pyx_convertEigenTypeAndStorageOrder();
+    if (!conversion.empty())
+      ret += indent + conversion + "\n";
+  }
   return ret;
 }
 
