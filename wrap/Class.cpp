@@ -833,10 +833,8 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
                 << pyxClassName() << "_" << i
                 << "(*args, **kwargs):\n            pass\n";
   }
-  if (constructor.nrOverloads()>0) {
-    pyxFile.oss << "        else:\n            raise TypeError('" << pyxClassName()
-                << " construction failed!')\n";
-  }
+  pyxFile.oss << "        else:\n            raise TypeError('" << pyxClassName()
+              << " construction failed!')\n";
 
   pyxInitParentObj(pyxFile, "        self", "self." + shared_pxd_obj_in_pyx(), allClasses);
   pyxFile.oss << "\n";
