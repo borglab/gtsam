@@ -368,9 +368,9 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
   graph.addCameraConstraint(0, cameras[0]);
 
   // Constrain the scale of the problem with a soft range factor of 1m between the cameras
-  graph.push_back(
-      RangeFactor<GeneralCamera, GeneralCamera>(X(0), X(1), 2.,
-          noiseModel::Isotropic::Sigma(1, 10.)));
+  graph.emplace_shared<
+      RangeFactor<GeneralCamera, GeneralCamera> >(X(0), X(1), 2.,
+          noiseModel::Isotropic::Sigma(1, 10.));
 
   const double reproj_error = 1e-5;
 
@@ -385,12 +385,12 @@ TEST(GeneralSFMFactor, GeneralCameraPoseRange) {
   // Tests range factor between a GeneralCamera and a Pose3
   Graph graph;
   graph.addCameraConstraint(0, GeneralCamera());
-  graph.push_back(
-      RangeFactor<GeneralCamera, Pose3>(X(0), X(1), 2.,
-          noiseModel::Isotropic::Sigma(1, 1.)));
-  graph.push_back(
-      PriorFactor<Pose3>(X(1), Pose3(Rot3(), Point3(1., 0., 0.)),
-          noiseModel::Isotropic::Sigma(6, 1.)));
+  graph.emplace_shared<
+      RangeFactor<GeneralCamera, Pose3> >(X(0), X(1), 2.,
+          noiseModel::Isotropic::Sigma(1, 1.));
+  graph.emplace_shared<
+      PriorFactor<Pose3> >(X(1), Pose3(Rot3(), Point3(1., 0., 0.)),
+          noiseModel::Isotropic::Sigma(6, 1.));
 
   Values init;
   init.insert(X(0), GeneralCamera());
@@ -413,15 +413,15 @@ TEST(GeneralSFMFactor, GeneralCameraPoseRange) {
 TEST(GeneralSFMFactor, CalibratedCameraPoseRange) {
   // Tests range factor between a CalibratedCamera and a Pose3
   NonlinearFactorGraph graph;
-  graph.push_back(
-      PriorFactor<CalibratedCamera>(X(0), CalibratedCamera(),
-          noiseModel::Isotropic::Sigma(6, 1.)));
-  graph.push_back(
-      RangeFactor<CalibratedCamera, Pose3>(X(0), X(1), 2.,
-          noiseModel::Isotropic::Sigma(1, 1.)));
-  graph.push_back(
-      PriorFactor<Pose3>(X(1), Pose3(Rot3(), Point3(1., 0., 0.)),
-          noiseModel::Isotropic::Sigma(6, 1.)));
+  graph.emplace_shared<
+      PriorFactor<CalibratedCamera> >(X(0), CalibratedCamera(),
+          noiseModel::Isotropic::Sigma(6, 1.));
+  graph.emplace_shared<
+      RangeFactor<CalibratedCamera, Pose3> >(X(0), X(1), 2.,
+          noiseModel::Isotropic::Sigma(1, 1.));
+  graph.emplace_shared<
+      PriorFactor<Pose3> >(X(1), Pose3(Rot3(), Point3(1., 0., 0.)),
+          noiseModel::Isotropic::Sigma(6, 1.));
 
   Values init;
   init.insert(X(0), CalibratedCamera());

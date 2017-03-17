@@ -112,18 +112,18 @@ TEST( dataSet, readG2o)
 
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Precisions(Vector3(44.721360, 44.721360, 30.901699));
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.add(BetweenFactor<Pose2>(0, 1, Pose2(1.030390, 0.011350, -0.081596), model));
-  expectedGraph.add(BetweenFactor<Pose2>(1, 2, Pose2(1.013900, -0.058639, -0.220291), model));
-  expectedGraph.add(BetweenFactor<Pose2>(2, 3, Pose2(1.027650, -0.007456, -0.043627), model));
-  expectedGraph.add(BetweenFactor<Pose2>(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model));
-  expectedGraph.add(BetweenFactor<Pose2>(4, 5, Pose2(1.016030, 0.014565, -0.030930), model));
-  expectedGraph.add(BetweenFactor<Pose2>(5, 6, Pose2(1.023890, 0.006808, -0.007452), model));
-  expectedGraph.add(BetweenFactor<Pose2>(6, 7, Pose2(0.957734, 0.003159, 0.082836), model));
-  expectedGraph.add(BetweenFactor<Pose2>(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model));
-  expectedGraph.add(BetweenFactor<Pose2>(8, 9, Pose2(1.023440, 0.013984, -0.127624), model));
-  expectedGraph.add(BetweenFactor<Pose2>(9,10, Pose2(1.003350, 0.022250, -0.195918), model));
-  expectedGraph.add(BetweenFactor<Pose2>(5, 9, Pose2(0.033943, 0.032439, 3.073637), model));
-  expectedGraph.add(BetweenFactor<Pose2>(3,10, Pose2(0.044020, 0.988477, -1.553511), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(0, 1, Pose2(1.030390, 0.011350, -0.081596), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(1.013900, -0.058639, -0.220291), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(2, 3, Pose2(1.027650, -0.007456, -0.043627), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(4, 5, Pose2(1.016030, 0.014565, -0.030930), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 6, Pose2(1.023890, 0.006808, -0.007452), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(6, 7, Pose2(0.957734, 0.003159, 0.082836), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(8, 9, Pose2(1.023440, 0.013984, -0.127624), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(9,10, Pose2(1.003350, 0.022250, -0.195918), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 9, Pose2(0.033943, 0.032439, 3.073637), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3,10, Pose2(0.044020, 0.988477, -1.553511), model);
   EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
 }
 
@@ -164,27 +164,27 @@ TEST( dataSet, readG2o3D)
 
   Point3 p01 = Point3(1.001367, 0.015390, 0.004948);
   Rot3 R01 = Rot3::Quaternion(0.854230, 0.190253, 0.283162, -0.392318 );
-  expectedGraph.add(BetweenFactor<Pose3>(0, 1, Pose3(R01,p01), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(0, 1, Pose3(R01,p01), model);
 
   Point3 p12 = Point3(0.523923, 0.776654, 0.326659);
   Rot3 R12 = Rot3::Quaternion(0.105373 , 0.311512, 0.656877, -0.678505 );
-  expectedGraph.add(BetweenFactor<Pose3>(1, 2, Pose3(R12,p12), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, Pose3(R12,p12), model);
 
   Point3 p23 = Point3(0.910927, 0.055169, -0.411761);
   Rot3 R23 = Rot3::Quaternion(0.568551 , 0.595795, -0.561677, 0.079353 );
-  expectedGraph.add(BetweenFactor<Pose3>(2, 3, Pose3(R23,p23), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(2, 3, Pose3(R23,p23), model);
 
   Point3 p34 = Point3(0.775288, 0.228798, -0.596923);
   Rot3 R34 = Rot3::Quaternion(0.542221 , -0.592077, 0.303380, -0.513226 );
-  expectedGraph.add(BetweenFactor<Pose3>(3, 4, Pose3(R34,p34), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(3, 4, Pose3(R34,p34), model);
 
   Point3 p14 = Point3(-0.577841, 0.628016, -0.543592);
   Rot3 R14 = Rot3::Quaternion(0.327419 , -0.125250, -0.534379, 0.769122  );
-  expectedGraph.add(BetweenFactor<Pose3>(1, 4, Pose3(R14,p14), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 4, Pose3(R14,p14), model);
 
   Point3 p30 = Point3(-0.623267, 0.086928, 0.773222);
   Rot3 R30 = Rot3::Quaternion(0.083672 ,  0.104639, 0.627755, 0.766795  );
-  expectedGraph.add(BetweenFactor<Pose3>(3, 0, Pose3(R30,p30), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(3, 0, Pose3(R30,p30), model);
 
   EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
 }
@@ -224,7 +224,7 @@ TEST( dataSet, readG2o3DNonDiagonalNoise)
   NonlinearFactorGraph expectedGraph;
   Point3 p01 = Point3(1.001367, 0.015390, 0.004948);
   Rot3 R01 = Rot3::Quaternion(0.854230, 0.190253, 0.283162, -0.392318 );
-  expectedGraph.add(BetweenFactor<Pose3>(0, 1, Pose3(R01,p01), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(0, 1, Pose3(R01,p01), model);
 
   EXPECT(assert_equal(expectedGraph,*actualGraph,1e-2));
 }
@@ -242,18 +242,18 @@ TEST( dataSet, readG2oHuber)
   SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345), baseModel);
 
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.add(BetweenFactor<Pose2>(0, 1, Pose2(1.030390, 0.011350, -0.081596), model));
-  expectedGraph.add(BetweenFactor<Pose2>(1, 2, Pose2(1.013900, -0.058639, -0.220291), model));
-  expectedGraph.add(BetweenFactor<Pose2>(2, 3, Pose2(1.027650, -0.007456, -0.043627), model));
-  expectedGraph.add(BetweenFactor<Pose2>(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model));
-  expectedGraph.add(BetweenFactor<Pose2>(4, 5, Pose2(1.016030, 0.014565, -0.030930), model));
-  expectedGraph.add(BetweenFactor<Pose2>(5, 6, Pose2(1.023890, 0.006808, -0.007452), model));
-  expectedGraph.add(BetweenFactor<Pose2>(6, 7, Pose2(0.957734, 0.003159, 0.082836), model));
-  expectedGraph.add(BetweenFactor<Pose2>(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model));
-  expectedGraph.add(BetweenFactor<Pose2>(8, 9, Pose2(1.023440, 0.013984, -0.127624), model));
-  expectedGraph.add(BetweenFactor<Pose2>(9,10, Pose2(1.003350, 0.022250, -0.195918), model));
-  expectedGraph.add(BetweenFactor<Pose2>(5, 9, Pose2(0.033943, 0.032439, 3.073637), model));
-  expectedGraph.add(BetweenFactor<Pose2>(3,10, Pose2(0.044020, 0.988477, -1.553511), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(0, 1, Pose2(1.030390, 0.011350, -0.081596), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(1.013900, -0.058639, -0.220291), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(2, 3, Pose2(1.027650, -0.007456, -0.043627), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(4, 5, Pose2(1.016030, 0.014565, -0.030930), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 6, Pose2(1.023890, 0.006808, -0.007452), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(6, 7, Pose2(0.957734, 0.003159, 0.082836), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(8, 9, Pose2(1.023440, 0.013984, -0.127624), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(9,10, Pose2(1.003350, 0.022250, -0.195918), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 9, Pose2(0.033943, 0.032439, 3.073637), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3,10, Pose2(0.044020, 0.988477, -1.553511), model);
   EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
 }
 
@@ -270,18 +270,18 @@ TEST( dataSet, readG2oTukey)
   SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Tukey::Create(4.6851), baseModel);
 
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.add(BetweenFactor<Pose2>(0, 1, Pose2(1.030390, 0.011350, -0.081596), model));
-  expectedGraph.add(BetweenFactor<Pose2>(1, 2, Pose2(1.013900, -0.058639, -0.220291), model));
-  expectedGraph.add(BetweenFactor<Pose2>(2, 3, Pose2(1.027650, -0.007456, -0.043627), model));
-  expectedGraph.add(BetweenFactor<Pose2>(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model));
-  expectedGraph.add(BetweenFactor<Pose2>(4, 5, Pose2(1.016030, 0.014565, -0.030930), model));
-  expectedGraph.add(BetweenFactor<Pose2>(5, 6, Pose2(1.023890, 0.006808, -0.007452), model));
-  expectedGraph.add(BetweenFactor<Pose2>(6, 7, Pose2(0.957734, 0.003159, 0.082836), model));
-  expectedGraph.add(BetweenFactor<Pose2>(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model));
-  expectedGraph.add(BetweenFactor<Pose2>(8, 9, Pose2(1.023440, 0.013984, -0.127624), model));
-  expectedGraph.add(BetweenFactor<Pose2>(9,10, Pose2(1.003350, 0.022250, -0.195918), model));
-  expectedGraph.add(BetweenFactor<Pose2>(5, 9, Pose2(0.033943, 0.032439, 3.073637), model));
-  expectedGraph.add(BetweenFactor<Pose2>(3,10, Pose2(0.044020, 0.988477, -1.553511), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(0, 1, Pose2(1.030390, 0.011350, -0.081596), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(1.013900, -0.058639, -0.220291), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(2, 3, Pose2(1.027650, -0.007456, -0.043627), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(4, 5, Pose2(1.016030, 0.014565, -0.030930), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 6, Pose2(1.023890, 0.006808, -0.007452), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(6, 7, Pose2(0.957734, 0.003159, 0.082836), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(8, 9, Pose2(1.023440, 0.013984, -0.127624), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(9,10, Pose2(1.003350, 0.022250, -0.195918), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 9, Pose2(0.033943, 0.032439, 3.073637), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3,10, Pose2(0.044020, 0.988477, -1.553511), model);
   EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
 }
 
