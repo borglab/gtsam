@@ -123,11 +123,11 @@ TODO
     to FastVector<size_t>.
 ☐ Unit tests for cython wrappers
 ☐ Fix Python tests: don't use " import <package> * ": Bad style!!!
-☐ Marginal and JointMarginal: revert changes
 - add doc for generate
 - matlab 6 arguments?
 
 Completed/Cancelled:
+✘ Marginal and JointMarginal: revert changes @failed (17-03-17 11:00) -- Cython does need a default constructor! It produces cpp code like this: ```gtsam::JointMarginal __pyx_t_1;```  Users don't have to wrap this constructor, however.
 ✔ Convert input numpy Matrix/Vector to float dtype and storage order 'F' automatically, cannot crash! @done (15-03-17 13:00)
 ✔ Remove requirements.txt - Frank: don't bother with only 2 packages and a special case for eigency! @done (08-03-17 10:30)
 ✔ CMake install script @done (25-11-16 02:30)
