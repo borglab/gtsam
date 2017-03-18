@@ -1,6 +1,5 @@
 import unittest
-from gtsam import *
-from math import *
+import gtsam
 import numpy as np
 
 class TestJacobianFactor(unittest.TestCase):
@@ -35,12 +34,12 @@ class TestJacobianFactor(unittest.TestCase):
         # the RHS
         b2 = np.array([-1., 1.5, 2., -1.])
         sigmas = np.array([1., 1., 1., 1.])
-        model4 = noiseModel_Diagonal.Sigmas(sigmas)
-        combined = JacobianFactor(x2, Ax2, l1, Al1, x1, Ax1, b2, model4)
+        model4 = gtsam.noiseModel_Diagonal.Sigmas(sigmas)
+        combined = gtsam.JacobianFactor(x2, Ax2, l1, Al1, x1, Ax1, b2, model4)
 
         # eliminate the first variable (x2) in the combined factor, destructive
         # !
-        ord = Ordering()
+        ord = gtsam.Ordering()
         ord.push_back(x2)
         actualCG, lf = combined.eliminate(ord)
 
@@ -52,8 +51,8 @@ class TestJacobianFactor(unittest.TestCase):
         S13 = np.array([[-8.94427, 0.00],
                         [+0.00, -8.94427]])
         d = np.array([2.23607, -1.56525])
-        expectedCG = GaussianConditional(
-            x2, d, R11, l1, S12, x1, S13, noiseModel_Unit.Create(2))
+        expectedCG = gtsam.GaussianConditional(
+            x2, d, R11, l1, S12, x1, S13, gtsam.noiseModel_Unit.Create(2))
         # check if the result matches
         self.assertTrue(actualCG.equals(expectedCG, 1e-4))
 
@@ -69,8 +68,8 @@ class TestJacobianFactor(unittest.TestCase):
         # the RHS
         b1 = np.array([0.0, 0.894427])
 
-        model2 = noiseModel_Diagonal.Sigmas(np.array([1., 1.]))
-        expectedLF = JacobianFactor(l1, Bl1, x1, Bx1, b1, model2)
+        model2 = gtsam.noiseModel_Diagonal.Sigmas(np.array([1., 1.]))
+        expectedLF = gtsam.JacobianFactor(l1, Bl1, x1, Bx1, b1, model2)
 
         # check if the result matches the combined (reduced) factor
         self.assertTrue(lf.equals(expectedLF, 1e-4))

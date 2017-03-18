@@ -1,6 +1,6 @@
 import unittest
-from gtsam import *
-from math import *
+import gtsam
+from gtsam import symbol
 import numpy as np
 
 
@@ -22,40 +22,40 @@ class TestStereoVOExample(unittest.TestCase):
         l3 = symbol(ord('l'),3)
 
         ## Create graph container and add factors to it
-        graph = NonlinearFactorGraph()
+        graph = gtsam.NonlinearFactorGraph()
 
         ## add a constraint on the starting pose
-        first_pose = Pose3()
-        graph.add(NonlinearEqualityPose3(x1, first_pose))
+        first_pose = gtsam.Pose3()
+        graph.add(gtsam.NonlinearEqualityPose3(x1, first_pose))
 
         ## Create realistic calibration and measurement noise model
         # format: fx fy skew cx cy baseline
-        K = Cal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2)
-        stereo_model = noiseModel_Diagonal.Sigmas(np.array([1.0, 1.0, 1.0]))
+        K = gtsam.Cal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2)
+        stereo_model = gtsam.noiseModel_Diagonal.Sigmas(np.array([1.0, 1.0, 1.0]))
 
         ## Add measurements
         # pose 1
-        graph.add(GenericStereoFactor3D(StereoPoint2(520, 480, 440), stereo_model, x1, l1, K))
-        graph.add(GenericStereoFactor3D(StereoPoint2(120,  80, 440), stereo_model, x1, l2, K))
-        graph.add(GenericStereoFactor3D(StereoPoint2(320, 280, 140), stereo_model, x1, l3, K))
+        graph.add(gtsam.GenericStereoFactor3D(gtsam.StereoPoint2(520, 480, 440), stereo_model, x1, l1, K))
+        graph.add(gtsam.GenericStereoFactor3D(gtsam.StereoPoint2(120,  80, 440), stereo_model, x1, l2, K))
+        graph.add(gtsam.GenericStereoFactor3D(gtsam.StereoPoint2(320, 280, 140), stereo_model, x1, l3, K))
 
         #pose 2
-        graph.add(GenericStereoFactor3D(StereoPoint2(570, 520, 490), stereo_model, x2, l1, K))
-        graph.add(GenericStereoFactor3D(StereoPoint2( 70,  20, 490), stereo_model, x2, l2, K))
-        graph.add(GenericStereoFactor3D(StereoPoint2(320, 270, 115), stereo_model, x2, l3, K))
+        graph.add(gtsam.GenericStereoFactor3D(gtsam.StereoPoint2(570, 520, 490), stereo_model, x2, l1, K))
+        graph.add(gtsam.GenericStereoFactor3D(gtsam.StereoPoint2( 70,  20, 490), stereo_model, x2, l2, K))
+        graph.add(gtsam.GenericStereoFactor3D(gtsam.StereoPoint2(320, 270, 115), stereo_model, x2, l3, K))
 
         ## Create initial estimate for camera poses and landmarks
-        initialEstimate = Values()
+        initialEstimate = gtsam.Values()
         initialEstimate.insert(x1, first_pose)
         # noisy estimate for pose 2
-        initialEstimate.insert(x2, Pose3(Rot3(), Point3(0.1,-.1,1.1)))
-        expected_l1 = Point3( 1,  1, 5)
+        initialEstimate.insert(x2, gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(0.1,-.1,1.1)))
+        expected_l1 = gtsam.Point3( 1,  1, 5)
         initialEstimate.insert(l1, expected_l1)
-        initialEstimate.insert(l2, Point3(-1,  1, 5))
-        initialEstimate.insert(l3, Point3( 0,-.5, 5))
+        initialEstimate.insert(l2, gtsam.Point3(-1,  1, 5))
+        initialEstimate.insert(l3, gtsam.Point3( 0,-.5, 5))
 
         ## optimize
-        optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate)
+        optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initialEstimate)
         result = optimizer.optimize()
 
         ## check equality for the first pose and point

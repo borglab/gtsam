@@ -1,5 +1,5 @@
 import unittest
-from gtsam import *
+import gtsam
 from math import *
 import numpy as np
 
@@ -7,7 +7,7 @@ import numpy as np
 class TestCal3Unified(unittest.TestCase):
 
     def test_Cal3Unified(self):
-        K = Cal3Unified()
+        K = gtsam.Cal3Unified()
         self.assertEqual(K.fx(), 1.)
         self.assertEqual(K.fx(), 1.)
 

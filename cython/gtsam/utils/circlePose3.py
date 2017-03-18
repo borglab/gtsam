@@ -1,6 +1,6 @@
-from gtsam import *
-from math import *
+import gtsam
 import numpy as np
+from math import pi, cos, sin
 
 def circlePose3(numPoses = 8, radius = 1.0, symbolChar = 0):
     """

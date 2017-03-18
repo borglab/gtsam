@@ -1,6 +1,5 @@
 import unittest
-from gtsam import *
-from math import *
+import gtsam
 import numpy as np
 
 class TestKalmanFilter(unittest.TestCase):
@@ -9,13 +8,13 @@ class TestKalmanFilter(unittest.TestCase):
         F = np.eye(2)
         B = np.eye(2)
         u = np.array([1.0, 0.0])
-        modelQ = noiseModel_Diagonal.Sigmas(np.array([0.1, 0.1]))
+        modelQ = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.1, 0.1]))
         Q = 0.01 * np.eye(2)
         H = np.eye(2)
         z1 = np.array([1.0, 0.0])
         z2 = np.array([2.0, 0.0])
         z3 = np.array([3.0, 0.0])
-        modelR = noiseModel_Diagonal.Sigmas(np.array([0.1, 0.1]))
+        modelR = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.1, 0.1]))
         R = 0.01 * np.eye(2)
 
         # Create the set of expected output TestValues
@@ -35,7 +34,7 @@ class TestKalmanFilter(unittest.TestCase):
         I33 = np.linalg.inv(P23) + np.linalg.inv(R)
 
         # Create an KalmanFilter object
-        KF = KalmanFilter(n=2)
+        KF = gtsam.KalmanFilter(n=2)
 
         # Create the Kalman Filter initialization point
         x_initial = np.array([0.0, 0.0])
