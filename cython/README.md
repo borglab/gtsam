@@ -115,18 +115,20 @@ KNOWN ISSUES
 
 TODO
 =====
-☐ Unify cython/gtsam.h and the original gtsam.h
-  ✔ 06-03-17: manage to remove the requirements for default and copy constructors
-  - 25-11-16:
-    Try to unify but failed. Main reasons are: Key/size_t, std containers, KeyVector/KeyList/KeySet.
-    Matlab doesn't need to know about Key, but I can't make Cython to ignore Key as it couldn't cast KeyVector, i.e. FastVector<Key>,
-    to FastVector<size_t>.
 ☐ Unit tests for cython wrappers
 ☐ Fix Python tests: don't use " import <package> * ": Bad style!!!
-- add doc for generate
-- matlab 6 arguments?
+☐ Wrap fixed-size Matrices/Vectors?
+
 
 Completed/Cancelled:
+=====
+✔ Wrap unstable @done (18-03-17 15:30)
+✔ Unify cython/gtsam.h and the original gtsam.h @done (18-03-17 15:30)
+  ✔ 18-03-17: manage to unify the two versions by removing std container stubs from the matlab version,and keeping KeyList/KeyVector/KeySet as in the matlab version. Probably Cython 0.25 fixes the casting problem.
+  ✔ 06-03-17: manage to remove the requirements for default and copy constructors
+  ✘ 25-11-16:
+    Try to unify but failed. Main reasons are: Key/size_t, std containers, KeyVector/KeyList/KeySet.
+    Matlab doesn't need to know about Key, but I can't make Cython to ignore Key as it couldn't cast KeyVector, i.e. FastVector<Key>, to FastVector<size_t>.
 ✘ Marginal and JointMarginal: revert changes @failed (17-03-17 11:00) -- Cython does need a default constructor! It produces cpp code like this: ```gtsam::JointMarginal __pyx_t_1;```  Users don't have to wrap this constructor, however.
 ✔ Convert input numpy Matrix/Vector to float dtype and storage order 'F' automatically, cannot crash! @done (15-03-17 13:00)
 ✔ Remove requirements.txt - Frank: don't bother with only 2 packages and a special case for eigency! @done (08-03-17 10:30)
