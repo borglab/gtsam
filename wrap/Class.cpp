@@ -730,8 +730,11 @@ void Class::python_wrapper(FileWriter& wrapperFile) const {
 
 /* ************************************************************************* */
 void Class::emit_cython_pxd(FileWriter& pxdFile) const {
-  pxdFile.oss << "cdef extern from \"" << includeFile << "\" namespace \""
-                << qualifiedNamespaces("::") << "\":" << endl;
+  pxdFile.oss << "cdef extern from \"" << includeFile << "\"";
+  string ns = qualifiedNamespaces("::");
+  if (!ns.empty())
+    pxdFile.oss << " namespace \"" << ns << "\"";
+  pxdFile.oss << ":" << endl;
   pxdFile.oss << "    cdef cppclass " << pxdClassName() << " \"" << qualifiedName("::") << "\"";
   if (templateArgs.size()>0) {
     pxdFile.oss << "[";
