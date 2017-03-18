@@ -152,7 +152,10 @@ TEST( wrap, Geometry ) {
   EXPECT(assert_equal("ns::OtherClass", module.forward_declarations[1].name()));
 
   // includes
-  strvec exp_includes; exp_includes += "folder/path/to/Test.h";
+  strvec exp_includes;
+  exp_includes += "gtsam/geometry/Point2.h";
+  exp_includes += "gtsam/geometry/Point3.h";
+  exp_includes += "folder/path/to/Test.h";
   EXPECT(assert_equal(exp_includes, module.includes));
 
   LONGS_EQUAL(9, module.classes.size());

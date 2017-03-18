@@ -2,6 +2,8 @@
 #include <map>
 
 #include <folder/path/to/Test.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
 
 typedef MyTemplate<gtsam::Point2> MyTemplatePoint2;
 typedef MyTemplate<Matrix> MyTemplateMatrix;
