@@ -25,7 +25,7 @@ class Point2 {
   Point2();
   Point2(double x, double y);
   Point2(Vector v);
-  Point2(const gtsam::Point2& l);
+  //Point2(const gtsam::Point2& l);
 
   // Testable
   void print(string s) const;
@@ -51,7 +51,7 @@ class Point3 {
   Point3();
   Point3(double x, double y, double z);
   Point3(Vector v);
-  Point3(const gtsam::Point3& l);
+  //Point3(const gtsam::Point3& l);
 
   // Testable
   void print(string s) const;
@@ -75,7 +75,7 @@ class Rot2 {
   // Standard Constructors and Named Constructors
   Rot2();
   Rot2(double theta);
-  Rot2(const gtsam::Rot2& l);
+  //Rot2(const gtsam::Rot2& l);
 
   static gtsam::Rot2 fromAngle(double theta);
   static gtsam::Rot2 fromDegrees(double theta);
@@ -121,7 +121,7 @@ class Rot3 {
   // Standard Constructors and Named Constructors
   Rot3();
   Rot3(Matrix R);
-  Rot3(const gtsam::Rot3& l);
+  //Rot3(const gtsam::Rot3& l);
 
   static gtsam::Rot3 Rx(double t);
   static gtsam::Rot3 Ry(double t);
@@ -177,7 +177,7 @@ class Rot3 {
 class Pose2 {
   // Standard Constructor
   Pose2();
-  Pose2(const gtsam::Pose2& pose);
+  //Pose2(const gtsam::Pose2& pose);
   Pose2(double x, double y, double theta);
   Pose2(double theta, const gtsam::Point2& t);
   Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
@@ -227,7 +227,7 @@ class Pose2 {
 class Pose3 {
   // Standard Constructors
   Pose3();
-  Pose3(const gtsam::Pose3& pose);
+  //Pose3(const gtsam::Pose3& pose);
   Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
   Pose3(const gtsam::Pose2& pose2); // FIXME: shadows Pose3(Pose3 pose)
   Pose3(Matrix t);
@@ -344,7 +344,7 @@ virtual class Base {
 
 virtual class Null: gtsam::noiseModel::mEstimator::Base {
   Null();
-  Null(const gtsam::noiseModel::mEstimator::Null& other);
+  //Null(const gtsam::noiseModel::mEstimator::Null& other);
   void print(string s) const;
   static gtsam::noiseModel::mEstimator::Null* Create();
 
@@ -354,7 +354,7 @@ virtual class Null: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Fair: gtsam::noiseModel::mEstimator::Base {
   Fair(double c);
-  Fair(const gtsam::noiseModel::mEstimator::Fair& other);
+  //Fair(const gtsam::noiseModel::mEstimator::Fair& other);
   void print(string s) const;
   static gtsam::noiseModel::mEstimator::Fair* Create(double c);
 
@@ -364,7 +364,7 @@ virtual class Fair: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Huber: gtsam::noiseModel::mEstimator::Base {
   Huber(double k);
-  Huber(const gtsam::noiseModel::mEstimator::Huber& other);
+  //Huber(const gtsam::noiseModel::mEstimator::Huber& other);
 
   void print(string s) const;
   static gtsam::noiseModel::mEstimator::Huber* Create(double k);
@@ -375,7 +375,7 @@ virtual class Huber: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
   Tukey(double k);
-  Tukey(const gtsam::noiseModel::mEstimator::Tukey& other);
+  //Tukey(const gtsam::noiseModel::mEstimator::Tukey& other);
 
   void print(string s) const;
   static gtsam::noiseModel::mEstimator::Tukey* Create(double k);
@@ -388,7 +388,7 @@ virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Robust : gtsam::noiseModel::Base {
   Robust(const gtsam::noiseModel::mEstimator::Base* robust, const gtsam::noiseModel::Base* noise);
-  Robust(const gtsam::noiseModel::Robust& other);
+  //Robust(const gtsam::noiseModel::Robust& other);
 
   static gtsam::noiseModel::Robust* Create(const gtsam::noiseModel::mEstimator::Base* robust, const gtsam::noiseModel::Base* noise);
   void print(string s) const;
@@ -405,7 +405,7 @@ class Sampler {
   Sampler(gtsam::noiseModel::Diagonal* model, int seed);
   Sampler(Vector sigmas, int seed);
   Sampler(int seed);
-  Sampler(const gtsam::Sampler& other);
+  //Sampler(const gtsam::Sampler& other);
 
 
     //Standard Interface
@@ -483,7 +483,7 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3,
       Vector b, const gtsam::noiseModel::Diagonal* model);
   //JacobianFactor(const gtsam::GaussianFactorGraph& graph);
-  JacobianFactor(const gtsam::JacobianFactor& other);
+  //JacobianFactor(const gtsam::JacobianFactor& other);
 
   //Testable
   void print(string s) const;
@@ -529,7 +529,7 @@ virtual class HessianFactor : gtsam::GaussianFactor {
       Vector g1, Matrix G22, Matrix G23, Vector g2, Matrix G33, Vector g3,
       double f);
   //HessianFactor(const gtsam::GaussianFactorGraph& factors);
-  HessianFactor(const gtsam::HessianFactor& other);
+  //HessianFactor(const gtsam::HessianFactor& other);
 
   //Testable
   size_t size() const;
@@ -551,7 +551,7 @@ virtual class HessianFactor : gtsam::GaussianFactor {
 #include <gtsam/nonlinear/Values.h>
 class Values {
   Values();
-  Values(const gtsam::Values& other);
+  //Values(const gtsam::Values& other);
 
   size_t size() const;
   bool empty() const;
@@ -638,7 +638,7 @@ virtual class NonlinearFactor {
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 class NonlinearFactorGraph {
   NonlinearFactorGraph();
-  NonlinearFactorGraph(const gtsam::NonlinearFactorGraph& graph);
+  //NonlinearFactorGraph(const gtsam::NonlinearFactorGraph& graph);
 
   // FactorGraph
   void print(string s) const;
@@ -679,7 +679,7 @@ virtual class NoiseModelFactor: gtsam::NonlinearFactor {
 template<T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
-  PriorFactor(const This& other);
+  //PriorFactor(const This& other);
   T prior() const;
 
   // enabling serialization functionality
@@ -691,7 +691,7 @@ virtual class PriorFactor : gtsam::NoiseModelFactor {
 template<T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
-  BetweenFactor(const This& other);
+  //BetweenFactor(const This& other);
   T measured() const;
 
   // enabling serialization functionality
