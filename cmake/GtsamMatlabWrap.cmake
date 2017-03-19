@@ -93,7 +93,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	
 	# Paths for generated files
 	set(generated_files_path "${PROJECT_BINARY_DIR}/wrap/${moduleName}")
-	set(generated_cpp_file "${generated_files_path}/${moduleName}_matlab_wrapper.cpp")
+	set(generated_cpp_file "${generated_files_path}/${moduleName}_wrapper.cpp")
 	set(compiled_mex_modules_root "${PROJECT_BINARY_DIR}/wrap/${moduleName}_mex")
 	
 	message(STATUS "Building wrap module ${moduleName}")
@@ -222,7 +222,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	add_library(${moduleName}_matlab_wrapper MODULE ${generated_cpp_file} ${interfaceHeader} ${otherSourcesAndObjects})
 	target_link_libraries(${moduleName}_matlab_wrapper ${correctedOtherLibraries})
 	set_target_properties(${moduleName}_matlab_wrapper PROPERTIES
-		OUTPUT_NAME              "${moduleName}_matlab_wrapper"
+		OUTPUT_NAME              "${moduleName}_wrapper"
 		PREFIX                   ""
 		SUFFIX                   ".${mexModuleExt}"
 		LIBRARY_OUTPUT_DIRECTORY "${compiled_mex_modules_root}"
