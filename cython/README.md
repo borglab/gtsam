@@ -115,12 +115,12 @@ KNOWN ISSUES
 
 TODO
 =====
-☐ Fix Python tests: don't use " import <package> * ": Bad style!!!
 ☐ Wrap fixed-size Matrices/Vectors?
 
 
 Completed/Cancelled:
 =====
+✔ Fix Python tests: don't use " import <package> * ": Bad style!!! @done (18-03-17 19:50)
 ✔ Unit tests for cython wrappers @done (18-03-17 18:45) -- simply compare generated files
 ✔ Wrap unstable @done (18-03-17 15:30)
 ✔ Unify cython/gtsam.h and the original gtsam.h @done (18-03-17 15:30)
