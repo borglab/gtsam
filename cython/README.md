@@ -115,6 +115,9 @@ KNOWN ISSUES
 
 TODO
 =====
+☐ allow duplication of parent' functions in child classes. Not allowed for now due to conflicts in Cython.
+☐ a common header for boost shared_ptr? (Or wait until everything is switched to std::shared_ptr in gtsam?)
+☐ inner namespaces ==> inner packages?
 ☐ Wrap fixed-size Matrices/Vectors?
 
 
