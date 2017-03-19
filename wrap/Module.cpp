@@ -264,7 +264,7 @@ void Module::generate_matlab_wrapper(const string& toolboxPath) const {
   fs::create_directories(toolboxPath);
 
   // create the unified .cpp switch file
-  const string wrapperName = name + "_wrapper";
+  const string wrapperName = name + "_matlab_wrapper";
   string wrapperFileName = toolboxPath + "/" + wrapperName + ".cpp";
   FileWriter wrapperFile(wrapperFileName, verbose, "//");
   wrapperFile.oss << "#include <wrap/matlab.h>\n";
