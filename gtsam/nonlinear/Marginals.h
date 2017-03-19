@@ -51,9 +51,6 @@ public:
   /// Default constructor only for Cython wrapper
   Marginals(){}
 
-  /// Copy constructor
-  Marginals(const Marginals&) = default;
-
   /** Construct a marginals class.
    * @param graph The factor graph defining the full joint density on all variables.
    * @param solution The linearization point about which to compute Gaussian marginals (usually the MLE as obtained from a NonlinearOptimizer).
@@ -99,9 +96,6 @@ protected:
 public:
   /// Default constructor only for Cython wrapper
   JointMarginal() {}
-
-  /// Copy constructor
-  JointMarginal(const JointMarginal&) = default;
 
   /** Access a block, corresponding to a pair of variables, of the joint
    * marginal.  Each block is accessed by its "vertical position",
