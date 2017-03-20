@@ -2,6 +2,10 @@ from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize
 import eigency
+import sys
+
+# so that it can find the wrapped gtsam package
+sys.path.append("..")
 
 setup(
     ext_modules=cythonize(Extension(
