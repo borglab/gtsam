@@ -12,7 +12,14 @@ as follows:
  pip install eigency
 ```
 
-Note: Currently there's some issue with including eigency in requirements.txt
+Note: If your eigency fails to install via pip, try to install it from source as below:
+
+```bash
+git clone https://github.com/wouterboomsma/eigency.git
+cd eigency
+python setup.py -v build
+python setup.py install
+```
 
 - Build and install gtsam using cmake with GTSAM_INSTALL_CYTHON_TOOLBOX enabled
 Note: The wrapped module will be installed to GTSAM_CYTHON_INSTALL_PATH, which is
