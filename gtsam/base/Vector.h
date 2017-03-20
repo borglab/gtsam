@@ -41,6 +41,9 @@ typedef Eigen::Matrix<double, 1, 1> Vector1;
 typedef Eigen::Vector2d Vector2;
 typedef Eigen::Vector3d Vector3;
 
+// Disable alignment because the allocator we use cannot handle aligned types
+typedef Eigen::Matrix<double,2,1,Eigen::DontAlign> Vector2Unaligned;
+
 static const Eigen::MatrixBase<Vector2>::ConstantReturnType Z_2x1 = Vector2::Zero();
 static const Eigen::MatrixBase<Vector3>::ConstantReturnType Z_3x1 = Vector3::Zero();
 
@@ -286,6 +289,17 @@ namespace boost {
       ar >> make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
     }
 
+    // split version for unaligned vectors- copies into an STL vector for serialization
+    template<class Archive, int D>
+    void save(Archive & ar, const Eigen::Matrix<double,D,1, Eigen::DontAlign> & v, unsigned int /*version*/) {
+      ar << make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
+    }
+
+    template<class Archive, int D>
+    void load(Archive & ar, Eigen::Matrix<double,D,1, Eigen::DontAlign> & v, unsigned int /*version*/) {
+      ar >> make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
+    }
+
   } // namespace serialization
 } // namespace boost
 
@@ -293,3 +307,5 @@ BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector)
 BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector2)
 BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector3)
 BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector6)
+
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector2Unaligned)

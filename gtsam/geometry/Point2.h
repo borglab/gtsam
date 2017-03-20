@@ -26,7 +26,7 @@ namespace gtsam {
 
   /// As of GTSAM 4, in order to make GTSAM more lean,
   /// it is now possible to just typedef Point2 to Vector2
-  typedef Vector2 Point2;
+  typedef Vector2Unaligned Point2;
 
 #else
 
@@ -37,7 +37,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Point2 : public Vector2 {
+class GTSAM_EXPORT Point2 : public Vector2Unaligned {
 private:
 
 public:
@@ -53,14 +53,14 @@ public:
     Point2() {}
 #endif
 
-  using Vector2::Vector2;
+  using Vector2Unaligned::Vector2Unaligned;
 
   /// @}
   /// @name Advanced Constructors
   /// @{
 
   /// construct from 2D vector
-  explicit Point2(const Vector2& v):Vector2(v) {}
+  explicit Point2(const Vector2& v):Vector2Unaligned(v) {}
   /// @}
   /// @name Testable
   /// @{
@@ -106,7 +106,7 @@ public:
   inline double y() const {return (*this)[1];}
 
   /// return vectorized form (column-wise).
-  const Vector2& vector() const { return *this; }
+  const Vector2Unaligned& vector() const { return *this; }
 
   /// @}
 
@@ -140,7 +140,7 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/)
   {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Vector2);}
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Vector2Unaligned);}
 
  /// @}
 };
