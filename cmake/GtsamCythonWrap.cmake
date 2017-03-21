@@ -1,3 +1,10 @@
+# Check Cython version, need to be >=0.25.2
+# Unset these cached variables to avoid surprises when the python/cython
+# in the current environment are different from the cached!
+unset(PYTHON_EXECUTABLE CACHE)
+unset(CYTHON_EXECUTABLE CACHE)
+find_package(Cython 0.25.2 REQUIRED)
+
 # Set up cache options
 set(GTSAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/gtsam_cython")
 if(NOT GTSAM_CYTHON_INSTALL_PATH)
