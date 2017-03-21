@@ -7,6 +7,10 @@ import sys
 # so that it can find the wrapped gtsam package
 sys.path.append("..")
 
+libc_flag = []
+if sys.platform == "darwin":
+    libc_flag = ["-stdlib=libc++"]
+
 setup(
     ext_modules=cythonize(Extension(
         "gtsam_unstable",
@@ -17,6 +21,7 @@ setup(
         libraries=['gtsam', 'gtsam_unstable'],
         library_dirs=["${GTSAM_DIR}/../../"],
         language="c++",
-        extra_compile_args=["-std=c++11"])),
+        extra_compile_args=["-std=c++11"] + libc_flag,
+        extra_link_args=libc_flag)),
 )
 
