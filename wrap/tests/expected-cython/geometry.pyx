@@ -48,6 +48,8 @@ cdef class Point2:
 
     @staticmethod
     cdef Point2 cyCreateFromShared(const shared_ptr[CPoint2]& other):
+        if other.get() == NULL:
+            raise RuntimeError('Cannot create object from a nullptr!')
         cdef Point2 ret = Point2(cyCreateFromShared=True)
         ret.shared_CPoint2_ = other
         return ret
@@ -105,6 +107,8 @@ cdef class Point3:
 
     @staticmethod
     cdef Point3 cyCreateFromShared(const shared_ptr[CPoint3]& other):
+        if other.get() == NULL:
+            raise RuntimeError('Cannot create object from a nullptr!')
         cdef Point3 ret = Point3(cyCreateFromShared=True)
         ret.shared_CPoint3_ = other
         return ret
@@ -161,6 +165,8 @@ cdef class Test:
 
     @staticmethod
     cdef Test cyCreateFromShared(const shared_ptr[CTest]& other):
+        if other.get() == NULL:
+            raise RuntimeError('Cannot create object from a nullptr!')
         cdef Test ret = Test(cyCreateFromShared=True)
         ret.shared_CTest_ = other
         return ret
@@ -241,6 +247,8 @@ cdef class MyBase:
 
     @staticmethod
     cdef MyBase cyCreateFromShared(const shared_ptr[CMyBase]& other):
+        if other.get() == NULL:
+            raise RuntimeError('Cannot create object from a nullptr!')
         cdef MyBase ret = MyBase(cyCreateFromShared=True)
         ret.shared_CMyBase_ = other
         return ret
@@ -266,6 +274,8 @@ cdef class MyTemplatePoint2(MyBase):
 
     @staticmethod
     cdef MyTemplatePoint2 cyCreateFromShared(const shared_ptr[CMyTemplatePoint2]& other):
+        if other.get() == NULL:
+            raise RuntimeError('Cannot create object from a nullptr!')
         cdef MyTemplatePoint2 ret = MyTemplatePoint2(cyCreateFromShared=True)
         ret.shared_CMyTemplatePoint2_ = other
         ret.shared_CMyBase_ = <shared_ptr[CMyBase]>(other)
@@ -304,7 +314,10 @@ cdef class MyTemplatePoint2(MyBase):
         cdef VectorXd ret = self.shared_CMyTemplatePoint2_.get().templatedMethod[VectorXd](<VectorXd>(Map[VectorXd](t)))
         return ndarray_copy(ret).squeeze()
 def dynamic_cast_MyTemplatePoint2_MyBase(MyBase parent):
-    return MyTemplatePoint2.cyCreateFromShared(<shared_ptr[CMyTemplatePoint2]>dynamic_pointer_cast[CMyTemplatePoint2,CMyBase](parent.shared_CMyBase_))
+    try:
+        return MyTemplatePoint2.cyCreateFromShared(<shared_ptr[CMyTemplatePoint2]>dynamic_pointer_cast[CMyTemplatePoint2,CMyBase](parent.shared_CMyBase_))
+    except:
+        raise TypeError('dynamic cast failed!')
 
 
 cdef class MyTemplateMatrix(MyBase):
@@ -327,6 +340,8 @@ cdef class MyTemplateMatrix(MyBase):
 
     @staticmethod
     cdef MyTemplateMatrix cyCreateFromShared(const shared_ptr[CMyTemplateMatrix]& other):
+        if other.get() == NULL:
+            raise RuntimeError('Cannot create object from a nullptr!')
         cdef MyTemplateMatrix ret = MyTemplateMatrix(cyCreateFromShared=True)
         ret.shared_CMyTemplateMatrix_ = other
         ret.shared_CMyBase_ = <shared_ptr[CMyBase]>(other)
@@ -371,7 +386,10 @@ cdef class MyTemplateMatrix(MyBase):
         cdef VectorXd ret = self.shared_CMyTemplateMatrix_.get().templatedMethod[VectorXd](<VectorXd>(Map[VectorXd](t)))
         return ndarray_copy(ret).squeeze()
 def dynamic_cast_MyTemplateMatrix_MyBase(MyBase parent):
-    return MyTemplateMatrix.cyCreateFromShared(<shared_ptr[CMyTemplateMatrix]>dynamic_pointer_cast[CMyTemplateMatrix,CMyBase](parent.shared_CMyBase_))
+    try:
+        return MyTemplateMatrix.cyCreateFromShared(<shared_ptr[CMyTemplateMatrix]>dynamic_pointer_cast[CMyTemplateMatrix,CMyBase](parent.shared_CMyBase_))
+    except:
+        raise TypeError('dynamic cast failed!')
 
 
 cdef class MyVector3:
@@ -393,6 +411,8 @@ cdef class MyVector3:
 
     @staticmethod
     cdef MyVector3 cyCreateFromShared(const shared_ptr[CMyVector3]& other):
+        if other.get() == NULL:
+            raise RuntimeError('Cannot create object from a nullptr!')
         cdef MyVector3 ret = MyVector3(cyCreateFromShared=True)
         ret.shared_CMyVector3_ = other
         return ret
@@ -417,6 +437,8 @@ cdef class MyVector12:
 
     @staticmethod
     cdef MyVector12 cyCreateFromShared(const shared_ptr[CMyVector12]& other):
+        if other.get() == NULL:
+            raise RuntimeError('Cannot create object from a nullptr!')
         cdef MyVector12 ret = MyVector12(cyCreateFromShared=True)
         ret.shared_CMyVector12_ = other
         return ret
@@ -454,6 +476,8 @@ cdef class MyFactorPosePoint2:
 
     @staticmethod
     cdef MyFactorPosePoint2 cyCreateFromShared(const shared_ptr[CMyFactorPosePoint2]& other):
+        if other.get() == NULL:
+            raise RuntimeError('Cannot create object from a nullptr!')
         cdef MyFactorPosePoint2 ret = MyFactorPosePoint2(cyCreateFromShared=True)
         ret.shared_CMyFactorPosePoint2_ = other
         return ret
