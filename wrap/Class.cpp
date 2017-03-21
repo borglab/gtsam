@@ -798,10 +798,13 @@ void Class::pyxDynamicCast(FileWriter& pyxFile, const Class& curLevel,
                 parentCythonClass = curLevel.parentClass->pxd_class_in_pyx();
     pyxFile.oss << "def dynamic_cast_" << me << "_" << parent << "(" << parent
                 << " parent):\n";
-    pyxFile.oss << "    return " << me << ".cyCreateFromShared(<" << sharedMe
+    pyxFile.oss << "    try:\n";
+    pyxFile.oss << "        return " << me << ".cyCreateFromShared(<" << sharedMe
                 << ">dynamic_pointer_cast[" << pxd_class_in_pyx() << ","
                 << parentCythonClass << "](parent." << parentObj
                 << "))\n";
+    pyxFile.oss << "    except:\n";
+    pyxFile.oss << "        raise TypeError('dynamic cast failed!')\n";
     // Move up higher to one level: Find the parent class with name "parentClass"
     auto parent_it = find_if(allClasses.begin(), allClasses.end(),
                              [&curLevel](const Class& cls) {
@@ -850,6 +853,8 @@ void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allCl
   pyxFile.oss << "    @staticmethod\n";
   pyxFile.oss << "    cdef " << pyxClassName() << " cyCreateFromShared(const " 
               << shared_pxd_class_in_pyx() << "& other):\n"
+              << "        if other.get() == NULL:\n"
+              << "            raise RuntimeError('Cannot create object from a nullptr!')\n"
               << "        cdef " << pyxClassName() << " ret = " << pyxClassName() << "(cyCreateFromShared=True)\n"
               << "        ret." << shared_pxd_obj_in_pyx() << " = other\n";
   pyxInitParentObj(pyxFile, "        ret", "other", allClasses);
