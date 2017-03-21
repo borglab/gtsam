@@ -3,13 +3,13 @@ from distutils.extension import Extension
 from Cython.Build import cythonize
 import eigency
 import sys
+import os
 
 # so that it can find the wrapped gtsam package
 sys.path.append("..")
 
-libc_flag = []
-if sys.platform == "darwin":
-    libc_flag = ["-stdlib=libc++"]
+os.environ["CXX"] = "${CMAKE_CXX_COMPILER}"
+os.environ["CC"] = "${CMAKE_C_COMPILER}"
 
 setup(
     ext_modules=cythonize(Extension(
@@ -21,7 +21,7 @@ setup(
         libraries=['gtsam', 'gtsam_unstable'],
         library_dirs=["${GTSAM_DIR}/../../"],
         language="c++",
-        extra_compile_args=["-std=c++11"] + libc_flag,
-        extra_link_args=libc_flag)),
+        extra_compile_args="${CMAKE_CXX_FLAGS}".split(),
+        extra_link_args="${CMAKE_SHARED_LINKER_FLAGS}".split()))
 )
 

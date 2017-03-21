@@ -2,12 +2,11 @@ from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize
 import eigency
-from sys import platform
+import sys
+import os
 
-# force clang use libc++ instead of the default libstdc++ shipped with MacOSX, which doesn't support c++11
-libc_flag = []
-if platform == "darwin":
-    libc_flag = ["-stdlib=libc++"]
+os.environ["CXX"] = "${CMAKE_CXX_COMPILER}"
+os.environ["CC"] = "${CMAKE_C_COMPILER}"
 
 setup(
   ext_modules = cythonize(Extension(
@@ -19,6 +18,6 @@ setup(
     libraries = ['gtsam'],
     library_dirs = ["${CMAKE_BINARY_DIR}/gtsam"],
     language="c++",
-    extra_compile_args=["-std=c++11"] + libc_flag,
-    extra_link_args=libc_flag)),
+    extra_compile_args="${CMAKE_CXX_FLAGS}".split(),
+    extra_link_args="${CMAKE_SHARED_LINKER_FLAGS}".split()))
 )
