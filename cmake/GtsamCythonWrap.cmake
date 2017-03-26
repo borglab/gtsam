@@ -6,9 +6,9 @@ unset(CYTHON_EXECUTABLE CACHE)
 find_package(Cython 0.25.2 REQUIRED)
 
 # Set up cache options
-set(GTSAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/gtsam_cython")
+set(GTSAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
 if(NOT GTSAM_CYTHON_INSTALL_PATH)
-	set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython")
+  set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython")
 endif()
 
 # User-friendly Cython wrapping and installing function.  
@@ -110,7 +110,15 @@ endfunction()
 
 # Helper function to install Cython scripts and handle multiple build types where the scripts
 # should be installed to all build type toolboxes
-function(install_cython_scripts source_directory patterns)
+#
+# Arguments:
+#  source_directory: The source directory to be installed. "The last component of each directory
+#                    name is appended to the destination directory but a trailing slash may be
+#                    used to avoid this because it leaves the last component empty."
+#                    (https://cmake.org/cmake/help/v3.3/command/install.html?highlight=install#installing-directories)
+#  dest_directory: The destination directory to install to.
+#  patterns: list of file patterns to install
+function(install_cython_scripts source_directory dest_directory patterns)
 	set(patterns_args "")
 	set(exclude_patterns "")
 
@@ -126,13 +134,13 @@ function(install_cython_scripts source_directory patterns)
 				set(build_type_tag "${build_type}")
 			endif()
 			# Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if there is one
-			get_filename_component(location "${GTSAM_CYTHON_INSTALL_PATH}" PATH)
-			get_filename_component(name "${GTSAM_CYTHON_INSTALL_PATH}" NAME)
+			get_filename_component(location "${dest_directory}" PATH)
+			get_filename_component(name "${dest_directory}" NAME)
 			install(DIRECTORY "${source_directory}" DESTINATION "${location}/${name}${build_type_tag}" CONFIGURATIONS "${build_type}"
 				    FILES_MATCHING ${patterns_args} PATTERN "${exclude_patterns}" EXCLUDE)
 		endforeach()
 	else()
-		install(DIRECTORY "${source_directory}" DESTINATION "${GTSAM_CYTHON_INSTALL_PATH}" FILES_MATCHING ${patterns_args} PATTERN "${exclude_patterns}" EXCLUDE)
+		install(DIRECTORY "${source_directory}" DESTINATION "${dest_directory}" FILES_MATCHING ${patterns_args} PATTERN "${exclude_patterns}" EXCLUDE)
 	endif()
 
 endfunction()
