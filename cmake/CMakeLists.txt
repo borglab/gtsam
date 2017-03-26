@@ -20,6 +20,7 @@ install(FILES
   GtsamPythonWrap.cmake
   GtsamCythonWrap.cmake
   GtsamTesting.cmake
+  FindCython.cmake
   README.html
   DESTINATION "${SCRIPT_INSTALL_DIR}/GTSAMCMakeTools")
 
