@@ -2,17 +2,15 @@ This is the Cython/Python wrapper around the GTSAM C++ library.
 
 INSTALL
 =======
-- This wrapper needs Cython(>=0.25), numpy and eigency, which can be installed
+- This wrapper needs Cython(>=0.25.2), backports_abc>=0.5, numpy, which can be installed
 as follows:
 
 ```bash
- cd <gtsam_folder>/cython
- pip install numpy>=1.11.1
- pip install Cython>=0.25.1
- pip install eigency
+ pip install -r <gtsam_folder>/cython/requirements.txt
 ```
 
-Note: If your eigency fails to install via pip, try to install it from source as below:
+- It also needs Eigency, a package that interfaces between C++'s Eigen and Python's numpy.
+You can try to install via pip: "pip install eigency". If that fails, install it from source as follows:
 
 ```bash
 git clone https://github.com/wouterboomsma/eigency.git
