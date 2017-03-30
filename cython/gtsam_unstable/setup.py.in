@@ -16,7 +16,8 @@ setup(
         "gtsam_unstable",
         sources=["gtsam_unstable.pyx"],
         include_dirs = ["${CMAKE_SOURCE_DIR}", "${CMAKE_BINARY_DIR}",
-                        "${CMAKE_SOURCE_DIR}/gtsam/3rdparty/Eigen"
+                        "${CMAKE_SOURCE_DIR}/gtsam/3rdparty/Eigen",
+                        "${Boost_INCLUDE_DIR}"
                        ] + eigency.get_includes(include_eigen=False),
         libraries=['gtsam', 'gtsam_unstable'],
         library_dirs=["${GTSAM_DIR}/../../"],

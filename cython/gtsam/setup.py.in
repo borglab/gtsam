@@ -13,7 +13,8 @@ setup(
     "gtsam",
     sources=["gtsam.pyx"],
     include_dirs = ["${CMAKE_SOURCE_DIR}", "${CMAKE_BINARY_DIR}",
-                    "${CMAKE_SOURCE_DIR}/gtsam/3rdparty/Eigen"
+                    "${CMAKE_SOURCE_DIR}/gtsam/3rdparty/Eigen",
+                    "${Boost_INCLUDE_DIR}"
                     ] + eigency.get_includes(include_eigen=False),
     libraries = ['gtsam'],
     library_dirs = ["${CMAKE_BINARY_DIR}/gtsam"],
