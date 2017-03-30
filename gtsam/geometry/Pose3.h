@@ -288,7 +288,7 @@ public:
    * information is ignored.
    * @return bearing (Unit3)
    */
-  Unit3 bearing(const Pose3& point, OptionalJacobian<2, 6> H1 = boost::none,
+  Unit3 bearing(const Pose3& pose, OptionalJacobian<2, 6> H1 = boost::none,
       OptionalJacobian<2, 6> H2 = boost::none) const;
 
   /// @}
