@@ -37,8 +37,6 @@ QP createTestCase() {
   // Note the Hessian encodes:
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence, we have G11=2, G12 = -1, g1 = +3, G22 = 2, g2 = 0, f = 10
-  //TODO:  THIS TEST MIGHT BE WRONG : the last parameter  might be 5 instead of 10 because the form of the equation
-  // Should be 0.5x'Gx + gx + f : Nocedal 449
   qp.cost.push_back(
       HessianFactor(X(1), X(2), 2.0 * I_1x1, -I_1x1, 3.0 * I_1x1, 2.0 * I_1x1,
           Z_1x1, 10.0));
