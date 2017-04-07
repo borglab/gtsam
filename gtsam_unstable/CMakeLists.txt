@@ -131,9 +131,6 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
                                     "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" # install path
                                     )
     add_dependencies(gtsam_unstable_cython_wrapper gtsam_cython_wrapper)
-    # making the build/cython/gtsam folder a python package, so gtsam can be found while wrapping gtsam_unstable
-    add_custom_target(copy_gtsam_init COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/cython/gtsam/__init__.py" "${CMAKE_BINARY_DIR}/cython/gtsam")
-    add_dependencies(gtsam_unstable_cython_wrapper copy_gtsam_init)
 endif ()
 
 # Build examples
