@@ -39,6 +39,7 @@ class gtsam::KeyVector;
 class gtsam::LevenbergMarquardtParams;
 class gtsam::ISAM2Params;
 class gtsam::GaussianDensity;
+class gtsam::VariableIndex;
 
 namespace gtsam {
 
@@ -761,4 +762,74 @@ virtual class ProjectionFactorPPPC : gtsam::NoiseModelFactor {
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> ProjectionFactorPPPCCal3_S2;
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> ProjectionFactorPPPCCal3DS2;
 
-} //\namespace gtsam
+#include <gtsam_unstable/linear/LinearEquality.h>
+virtual class LinearEquality: gtsam::JacobianFactor {
+  LinearEquality(size_t i1, Matrix A1, Vector b, size_t dualKey);
+  LinearEquality(size_t i1, Matrix A1, size_t i2, Matrix A2, Vector b, size_t dualKey);
+  LinearEquality(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3, Vector b, size_t dualKey);
+  size_t dualKey() const;
+  bool active() const;
+};
+
+#include <gtsam_unstable/linear/EqualityFactorGraph.h>
+class EqualityFactorGraph {
+  EqualityFactorGraph();
+  void push_back(gtsam::LinearEquality* factor);
+  void print(string s) const;
+  size_t size() const;
+  bool empty() const;
+  size_t nrFactors() const;
+  gtsam::LinearEquality* at(size_t idx) const;
+};
+
+#include <gtsam_unstable/linear/LinearInequality.h>
+virtual class LinearInequality: gtsam::JacobianFactor {
+  LinearInequality(size_t i1, Vector A1, double b, size_t dualKey);
+  LinearInequality(size_t i1, Vector A1, size_t i2, Vector A2, double b, size_t dualKey);
+  LinearInequality(size_t i1, Vector A1, size_t i2, Vector A2, size_t i3, Vector A3, double b, size_t dualKey);
+  size_t dualKey() const;
+  bool active() const;
+};
+
+#include <gtsam_unstable/linear/InequalityFactorGraph.h>
+class InequalityFactorGraph {
+  InequalityFactorGraph();
+  void push_back(gtsam::LinearInequality* factor);
+  void print(string s) const;
+  size_t size() const;
+  bool empty() const;
+  size_t nrFactors() const;
+  gtsam::LinearInequality* at(size_t idx) const;
+};
+
+#include <gtsam_unstable/linear/QP.h>
+class QP {
+  QP();
+  QP(const gtsam::GaussianFactorGraph& cost,
+     const gtsam::EqualityFactorGraph& linearEqualities,
+     const gtsam::InequalityFactorGraph& linearInequalities);
+  void print(string s) const;
+  gtsam::VariableIndex costVariableIndex() const;
+  Vector costGradient(size_t key, const gtsam::VectorValues& delta) const;
+  void add_cost(gtsam::GaussianFactor* f);
+  void add_equality(size_t i1, Matrix A1, Vector b);
+  void add_equality(size_t i1, Matrix A1, size_t i2, Matrix A2, Vector b);
+  void add_equality(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3, Vector b);
+  void add_inequality(size_t i1, Vector A1, double b);
+  void add_inequality(size_t i1, Vector A1, size_t i2, Vector A2, double b);
+  void add_inequality(size_t i1, Vector A1, size_t i2, Vector A2, size_t i3, Vector A3, double b);
+  gtsam::GaussianFactorGraph getCost() const;
+  gtsam::EqualityFactorGraph getEqualities() const;
+  gtsam::InequalityFactorGraph getInequalities() const;
+};
+
+#include <gtsam_unstable/linear/QPSolver.h>
+class QPSolver {
+  QPSolver(const gtsam::QP& qp);
+  pair<gtsam::VectorValues, gtsam::VectorValues> optimize(
+      const gtsam::VectorValues& initials, const gtsam::VectorValues& duals,
+      bool useWarmStart) const;
+  pair<gtsam::VectorValues, gtsam::VectorValues> optimize() const;
+};
+
+} // namespace gtsam
