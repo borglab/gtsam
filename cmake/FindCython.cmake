@@ -30,21 +30,18 @@
 # if it is a local installation.
 find_package( PythonInterp )
 if ( PYTHONINTERP_FOUND )
-  get_filename_component( _python_path ${PYTHON_EXECUTABLE} PATH )
-  find_program( CYTHON_EXECUTABLE
-      NAMES cython cython.bat cython3
-      PATHS ${_python_path}
-      NO_DEFAULT_PATH
-      )
-else ()
-  find_program( CYTHON_EXECUTABLE
-      NAMES cython cython.bat cython3
-      )
+  execute_process( COMMAND "${PYTHON_EXECUTABLE}" "-c"
+      "import Cython; print Cython.__path__"
+      RESULT_VARIABLE RESULT
+      OUTPUT_VARIABLE CYTHON_PATH
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
 endif ()
 
-if ( NOT CYTHON_EXECUTABLE STREQUAL "CYTHON_EXECUTABLE-NOTFOUND" )
-  execute_process(
-      COMMAND ${CYTHON_EXECUTABLE} --version
+# RESULT=0 means ok
+if ( NOT RESULT )
+  execute_process( COMMAND "${PYTHON_EXECUTABLE}" "-c"
+      "import Cython; print Cython.__version__"
       RESULT_VARIABLE RESULT
       OUTPUT_VARIABLE CYTHON_VAR_OUTPUT
       ERROR_VARIABLE CYTHON_VAR_OUTPUT
@@ -61,9 +58,8 @@ find_package_handle_standard_args( Cython
   FOUND_VAR
     CYTHON_FOUND
   REQUIRED_VARS
-    CYTHON_EXECUTABLE
+    CYTHON_PATH
   VERSION_VAR
     CYTHON_VERSION
     )
 
-mark_as_advanced( CYTHON_EXECUTABLE )
