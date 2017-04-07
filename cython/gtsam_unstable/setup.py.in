@@ -20,7 +20,8 @@ setup(
                         "${Boost_INCLUDE_DIR}"
                        ] + eigency.get_includes(include_eigen=False),
         libraries=['gtsam', 'gtsam_unstable'],
-        library_dirs=["${GTSAM_DIR}/../../"],
+        library_dirs = ["${CMAKE_BINARY_DIR}/gtsam",
+                        "${CMAKE_BINARY_DIR}/gtsam_unstable"],
         language="c++",
         extra_compile_args="${CMAKE_CXX_FLAGS}".split(),
         extra_link_args="${CMAKE_SHARED_LINKER_FLAGS}".split()))
