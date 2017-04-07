@@ -12,4 +12,4 @@ endif()
 configure_file(${CMAKE_SOURCE_DIR}/cython/gtsam/__init__.py.in ${PROJECT_BINARY_DIR}/cython/gtsam/__init__.py)
 
 # Install the custom-generated __init__.py
-install_cython_files("${PROJECT_BINARY_DIR}/cython/gtsam/__init__.py" "${GTSAM_CYTHON_INSTALL_PATH}/gtsam")
+install_cython_scripts("${PROJECT_BINARY_DIR}/cython/gtsam/" "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" "__init__.py")
