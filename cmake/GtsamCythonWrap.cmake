@@ -48,6 +48,14 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
 	
 	message(STATUS "Building wrap module ${module_name}")
 	
+	# Get build type postfix - gtsam_library_postfix is used in setup.py.in
+	# to link cythonized library to appropriate version of gtsam library
+	set(gtsam_library_postfix "")
+	if(GTSAM_BUILD_TYPE_POSTFIXES)
+		string(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
+		set(gtsam_library_postfix ${CMAKE_${build_type_upper}_POSTFIX})
+	endif()
+
 	# Set up generation of module source file
 	file(MAKE_DIRECTORY "${generated_files_path}")
 	configure_file(${setup_py_in_path}/setup.py.in ${generated_files_path}/setup.py)
