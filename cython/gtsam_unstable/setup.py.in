@@ -19,7 +19,7 @@ setup(
                         "${CMAKE_SOURCE_DIR}/gtsam/3rdparty/Eigen",
                         "${Boost_INCLUDE_DIR}"
                        ] + eigency.get_includes(include_eigen=False),
-        libraries=['gtsam', 'gtsam_unstable'],
+        libraries=['gtsam${gtsam_library_postfix}', 'gtsam_unstable${gtsam_library_postfix}'],
         library_dirs = ["${CMAKE_BINARY_DIR}/gtsam",
                         "${CMAKE_BINARY_DIR}/gtsam_unstable"],
         language="c++",
