@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/TriangulationFactor.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -53,7 +54,7 @@ public:
  */
 GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
     const std::vector<Matrix34>& projection_matrices,
-    const std::vector<Point2>& measurements, double rank_tol = 1e-9);
+    const Point2Vector& measurements, double rank_tol = 1e-9);
 
 /**
  * DLT triangulation: See Hartley and Zisserman, 2nd Ed., page 312
@@ -64,7 +65,8 @@ GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
  */
 GTSAM_EXPORT Point3 triangulateDLT(
     const std::vector<Matrix34>& projection_matrices,
-    const std::vector<Point2>& measurements, double rank_tol = 1e-9);
+    const Point2Vector& measurements, 
+    double rank_tol = 1e-9);
 
 /**
  * Create a factor graph with projection factors from poses and one calibration
@@ -78,7 +80,7 @@ GTSAM_EXPORT Point3 triangulateDLT(
 template<class CALIBRATION>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     const std::vector<Pose3>& poses, boost::shared_ptr<CALIBRATION> sharedCal,
-    const std::vector<Point2>& measurements, Key landmarkKey,
+    const Point2Vector& measurements, Key landmarkKey,
     const Point3& initialEstimate) {
   Values values;
   values.insert(landmarkKey, initialEstimate); // Initial landmark value
@@ -106,8 +108,8 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
  */
 template<class CAMERA>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
-    const std::vector<CAMERA>& cameras,
-    const std::vector<typename CAMERA::Measurement>& measurements, Key landmarkKey,
+    const CameraSet<CAMERA>& cameras,
+    const typename CAMERA::MeasurementVector& measurements, Key landmarkKey,
     const Point3& initialEstimate) {
   Values values;
   values.insert(landmarkKey, initialEstimate); // Initial landmark value
@@ -125,8 +127,8 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
 /// PinholeCamera specific version // TODO: (chris) why does this exist?
 template<class CALIBRATION>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
-    const std::vector<PinholeCamera<CALIBRATION> >& cameras,
-    const std::vector<Point2>& measurements, Key landmarkKey,
+    const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
+    const Point2Vector& measurements, Key landmarkKey,
     const Point3& initialEstimate) {
   return triangulationGraph<PinholeCamera<CALIBRATION> > //
   (cameras, measurements, landmarkKey, initialEstimate);
@@ -153,7 +155,7 @@ GTSAM_EXPORT Point3 optimize(const NonlinearFactorGraph& graph,
 template<class CALIBRATION>
 Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
     boost::shared_ptr<CALIBRATION> sharedCal,
-    const std::vector<Point2>& measurements, const Point3& initialEstimate) {
+    const Point2Vector& measurements, const Point3& initialEstimate) {
 
   // Create a factor graph and initial values
   Values values;
@@ -173,8 +175,8 @@ Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
  */
 template<class CAMERA>
 Point3 triangulateNonlinear(
-    const std::vector<CAMERA>& cameras,
-    const std::vector<typename CAMERA::Measurement>& measurements, const Point3& initialEstimate) {
+    const CameraSet<CAMERA>& cameras,
+    const typename CAMERA::MeasurementVector& measurements, const Point3& initialEstimate) {
 
   // Create a factor graph and initial values
   Values values;
@@ -188,8 +190,8 @@ Point3 triangulateNonlinear(
 /// PinholeCamera specific version  // TODO: (chris) why does this exist?
 template<class CALIBRATION>
 Point3 triangulateNonlinear(
-    const std::vector<PinholeCamera<CALIBRATION> >& cameras,
-    const std::vector<Point2>& measurements, const Point3& initialEstimate) {
+    const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
+    const Point2Vector& measurements, const Point3& initialEstimate) {
   return triangulateNonlinear<PinholeCamera<CALIBRATION> > //
   (cameras, measurements, initialEstimate);
 }
@@ -228,7 +230,7 @@ private:
 template<class CALIBRATION>
 Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     boost::shared_ptr<CALIBRATION> sharedCal,
-    const std::vector<Point2>& measurements, double rank_tol = 1e-9,
+    const Point2Vector& measurements, double rank_tol = 1e-9,
     bool optimize = false) {
 
   assert(poses.size() == measurements.size());
@@ -275,8 +277,8 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
  */
 template<class CAMERA>
 Point3 triangulatePoint3(
-    const std::vector<CAMERA>& cameras,
-    const std::vector<Point2>& measurements, double rank_tol = 1e-9,
+    const CameraSet<CAMERA>& cameras,
+    const typename CAMERA::MeasurementVector& measurements, double rank_tol = 1e-9,
     bool optimize = false) {
 
   size_t m = cameras.size();
@@ -312,8 +314,8 @@ Point3 triangulatePoint3(
 /// Pinhole-specific version
 template<class CALIBRATION>
 Point3 triangulatePoint3(
-    const std::vector<PinholeCamera<CALIBRATION> >& cameras,
-    const std::vector<Point2>& measurements, double rank_tol = 1e-9,
+    const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
+    const Point2Vector& measurements, double rank_tol = 1e-9,
     bool optimize = false) {
   return triangulatePoint3<PinholeCamera<CALIBRATION> > //
   (cameras, measurements, rank_tol, optimize);
@@ -453,8 +455,8 @@ private:
 
 /// triangulateSafe: extensive checking of the outcome
 template<class CAMERA>
-TriangulationResult triangulateSafe(const std::vector<CAMERA>& cameras,
-    const std::vector<Point2>& measured,
+TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
+    const typename CAMERA::MeasurementVector& measured,
     const TriangulationParameters& params) {
 
   size_t m = cameras.size();

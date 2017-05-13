@@ -78,7 +78,7 @@ public:
   /// Vector of monocular cameras (stereo treated as 2 monocular)
   typedef PinholeCamera<Cal3_S2> MonoCamera;
   typedef CameraSet<MonoCamera> MonoCameras;
-  typedef std::vector<Point2> MonoMeasurements;
+  typedef MonoCamera::MeasurementVector MonoMeasurements;
 
   /**
    * Constructor
@@ -226,17 +226,17 @@ public:
     }
 
     // Jacobian could be 3D Point3 OR 2D Unit3, difference is E.cols().
-    std::vector<Base::MatrixZD> Fblocks;
+    Base::FBlocks Fs;
     Matrix F, E;
     Vector b;
-    computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
+    computeJacobiansWithTriangulatedPoint(Fs, E, b, cameras);
 
     // Whiten using noise model
-    Base::whitenJacobians(Fblocks, E, b);
+    Base::whitenJacobians(Fs, E, b);
 
     // build augmented hessian
     SymmetricBlockMatrix augmentedHessian = //
-        Cameras::SchurComplement(Fblocks, E, b, lambda, diagonalDamping);
+        Cameras::SchurComplement(Fs, E, b, lambda, diagonalDamping);
 
     return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
         augmentedHessian);
@@ -360,7 +360,8 @@ public:
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
   void computeJacobiansWithTriangulatedPoint(
-      std::vector<Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
+      FBlocks& Fs, 
+      Matrix& E, Vector& b,
       const Cameras& cameras) const {
 
     if (!result_) {
@@ -370,32 +371,32 @@ public:
 //      Unit3 backProjected; /* = cameras[0].backprojectPointAtInfinity(
 //          this->measured_.at(0)); */
 //
-//      Base::computeJacobians(Fblocks, E, b, cameras, backProjected);
+//      Base::computeJacobians(Fs, E, b, cameras, backProjected);
     } else {
       // valid result: just return Base version
-      Base::computeJacobians(Fblocks, E, b, cameras, *result_);
+      Base::computeJacobians(Fs, E, b, cameras, *result_);
     }
   }
 
   /// Version that takes values, and creates the point
   bool triangulateAndComputeJacobians(
-      std::vector<Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
+      FBlocks& Fs, Matrix& E, Vector& b,
       const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
     if (nonDegenerate)
-      computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
+      computeJacobiansWithTriangulatedPoint(Fs, E, b, cameras);
     return nonDegenerate;
   }
 
   /// takes values
   bool triangulateAndComputeJacobiansSVD(
-      std::vector<Base::MatrixZD>& Fblocks, Matrix& Enull, Vector& b,
+      FBlocks& Fs, Matrix& Enull, Vector& b,
       const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
     if (nonDegenerate)
-      Base::computeJacobiansSVD(Fblocks, Enull, b, cameras, *result_);
+      Base::computeJacobiansSVD(Fs, Enull, b, cameras, *result_);
     return nonDegenerate;
   }
 

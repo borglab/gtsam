@@ -540,7 +540,7 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor_monocular ){
   Point3 landmark2(5, -0.5, 1.2);
   Point3 landmark3(5, 0, 3.0);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);

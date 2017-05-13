@@ -508,6 +508,9 @@ namespace gtsam {
 #endif
     }
 
+   public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   };
 
   /**

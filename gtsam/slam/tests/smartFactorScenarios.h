@@ -132,7 +132,7 @@ CAMERA perturbCameraPose(const CAMERA& camera) {
 
 template<class CAMERA>
 void projectToMultipleCameras(const CAMERA& cam1, const CAMERA& cam2,
-    const CAMERA& cam3, Point3 landmark, vector<Point2>& measurements_cam) {
+    const CAMERA& cam3, Point3 landmark, typename CAMERA::MeasurementVector& measurements_cam) {
   Point2 cam1_uv1 = cam1.project(landmark);
   Point2 cam2_uv1 = cam2.project(landmark);
   Point2 cam3_uv1 = cam3.project(landmark);

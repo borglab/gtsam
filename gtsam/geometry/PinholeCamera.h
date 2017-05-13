@@ -39,6 +39,7 @@ public:
    *  and this typedef informs those classes what "project" returns.
    */
   typedef Point2 Measurement;
+  typedef Point2Vector MeasurementVector;
 
 private:
 
