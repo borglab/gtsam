@@ -1455,6 +1455,7 @@ class GaussianFactorGraph {
   size_t size() const;
   gtsam::GaussianFactor* at(size_t idx) const;
   gtsam::KeySet keys() const;
+  gtsam::KeyVector keyVector() const;
   bool exists(size_t idx) const;
 
   // Building the graph
@@ -1774,6 +1775,8 @@ class NonlinearFactorGraph {
   size_t size() const;
   bool empty() const;
   void remove(size_t i);
+  void replace(size_t i, gtsam::NonlinearFactor* factors);
+  void resize(size_t size);
   size_t nrFactors() const;
   gtsam::NonlinearFactor* at(size_t idx) const;
   void push_back(const gtsam::NonlinearFactorGraph& factors);
@@ -1781,6 +1784,7 @@ class NonlinearFactorGraph {
   void add(gtsam::NonlinearFactor* factor);
   bool exists(size_t idx) const;
   gtsam::KeySet keys() const;
+  gtsam::KeyVector keyVector() const;
 
   // NonlinearFactorGraph
   double error(const gtsam::Values& values) const;
