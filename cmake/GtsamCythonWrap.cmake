@@ -172,7 +172,7 @@ function(install_cython_files source_files dest_directory)
 			# Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if there is one
 			get_filename_component(location "${dest_directory}" PATH)
 			get_filename_component(name "${dest_directory}" NAME)
-			install(FILES "${source_files}" DESTINATION "${location}/${name}${build_type_tag}")
+      install(FILES "${source_files}" DESTINATION "${location}/${name}${build_type_tag}" CONFIGURATIONS "${build_type}")
 		endforeach()
 	else()
 		install(FILES "${source_files}" DESTINATION "${dest_directory}")
