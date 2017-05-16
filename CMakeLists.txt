@@ -116,7 +116,7 @@ if(MSVC)
 	endif()
 endif()
 
-find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time timer chrono)
+find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time timer chrono regex)
 
 # Required components
 if(NOT Boost_SERIALIZATION_LIBRARY OR NOT Boost_SYSTEM_LIBRARY OR NOT Boost_FILESYSTEM_LIBRARY OR
