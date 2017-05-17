@@ -251,6 +251,9 @@ else()
 
 endif()
 
+# tmp mute eigen static assert to avoid errors in shared lib
+add_definitions(-DEIGEN_NO_STATIC_ASSERT)
+
 ###############################################################################
 # Global compile options
 
