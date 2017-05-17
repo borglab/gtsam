@@ -167,10 +167,10 @@ public:
     // implicit assignment operator for (const GenericValue& rhs) works fine here
     /// Assignment operator, protected because only the Value or DERIVED
     /// assignment operators should be used.
-    //  DerivedValue<DERIVED>& operator=(const DerivedValue<DERIVED>& rhs) {
-    //    // Nothing to do, do not call base class assignment operator
-    //    return *this;
-    //  }
+    GenericValue<T>& operator=(const GenericValue<T>& rhs) {
+      // Nothing to do, do not call base class assignment operator
+      return *this;
+    }
 
   private:
 
