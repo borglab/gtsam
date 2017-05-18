@@ -135,7 +135,7 @@ public:
 namespace so3 {
 
 /// Functor implementing Exponential map
-class ExpmapFunctor {
+class GTSAM_EXPORT ExpmapFunctor {
  protected:
   const double theta2;
   Matrix3 W, K, KK;
@@ -156,7 +156,7 @@ class ExpmapFunctor {
 };
 
 /// Functor that implements Exponential map *and* its derivatives
-class DexpFunctor : public ExpmapFunctor {
+class GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   const Vector3 omega;
   double a, b;
   Matrix3 dexp_;
