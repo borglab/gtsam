@@ -28,7 +28,7 @@
 namespace gtsam {
 
 /// Exception thrown by triangulateDLT when SVD returns rank < 3
-class TriangulationUnderconstrainedException: public std::runtime_error {
+class GTSAM_EXPORT TriangulationUnderconstrainedException: public std::runtime_error {
 public:
   TriangulationUnderconstrainedException() :
       std::runtime_error("Triangulation Underconstrained Exception.") {
@@ -36,7 +36,7 @@ public:
 };
 
 /// Exception thrown by triangulateDLT when landmark is behind one or more of the cameras
-class TriangulationCheiralityException: public std::runtime_error {
+class GTSAM_EXPORT TriangulationCheiralityException: public std::runtime_error {
 public:
   TriangulationCheiralityException() :
       std::runtime_error(
@@ -319,7 +319,7 @@ Point3 triangulatePoint3(
   (cameras, measurements, rank_tol, optimize);
 }
 
-struct TriangulationParameters {
+struct GTSAM_EXPORT TriangulationParameters {
 
   double rankTolerance; ///< threshold to decide whether triangulation is result.degenerate
   ///< (the rank is the number of singular values of the triangulation matrix which are larger than rankTolerance)
@@ -382,7 +382,7 @@ private:
 /**
  * TriangulationResult is an optional point, along with the reasons why it is invalid.
  */
-class TriangulationResult: public boost::optional<Point3> {
+class GTSAM_EXPORT TriangulationResult: public boost::optional<Point3> {
   enum Status {
     VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT
   };
