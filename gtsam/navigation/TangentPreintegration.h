@@ -25,7 +25,7 @@ namespace gtsam {
  * Integrate on the 9D tangent space of the NavState manifold.
  * See extensive discussion in ImuFactor.lyx
  */
-class TangentPreintegration : public PreintegrationBase {
+class GTSAM_EXPORT TangentPreintegration : public PreintegrationBase {
  protected:
 
   /**

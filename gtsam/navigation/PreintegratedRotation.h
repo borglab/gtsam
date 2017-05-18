@@ -28,7 +28,7 @@ namespace gtsam {
 
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
-struct PreintegratedRotationParams {
+struct GTSAM_EXPORT PreintegratedRotationParams {
   Matrix3 gyroscopeCovariance;  ///< continuous-time "Covariance" of gyroscope measurements
   boost::optional<Vector3> omegaCoriolis;  ///< Coriolis constant
   boost::optional<Pose3> body_P_sensor;    ///< The pose of the sensor in the body frame
@@ -63,7 +63,7 @@ struct PreintegratedRotationParams {
  * classes (in AHRSFactor, ImuFactor, and CombinedImuFactor).
  * It includes the definitions of the preintegrated rotation.
  */
-class PreintegratedRotation {
+class GTSAM_EXPORT PreintegratedRotation {
  public:
   typedef PreintegratedRotationParams Params;
 
