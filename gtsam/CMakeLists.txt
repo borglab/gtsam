@@ -110,8 +110,8 @@ if (GTSAM_BUILD_STATIC_LIBRARY)
      	SOVERSION           ${gtsam_soversion})
 	if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
 		set_target_properties(gtsam PROPERTIES
-			PREFIX "lib"
-			COMPILE_DEFINITIONS GTSAM_IMPORT_STATIC)
+			PREFIX "lib")
+			#COMPILE_DEFINITIONS GTSAM_IMPORT_STATIC)
 	endif()
     install(TARGETS gtsam EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
     list(APPEND GTSAM_EXPORTED_TARGETS gtsam)
