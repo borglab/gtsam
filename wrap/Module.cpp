@@ -411,6 +411,7 @@ void Module::emit_cython_pyx(FileWriter& pyxFile) const {
                  "from "<< pxdHeader << " cimport shared_ptr\n"
                  "from "<< pxdHeader << " cimport dynamic_pointer_cast\n"
                  "from "<< pxdHeader << " cimport make_shared\n";
+
   // import all typedefs, e.g. from gtsam_wrapper cimport Key, so we don't need to say gtsam.Key
   for(const Qualified& q: Qualified::BasicTypedefs) {
     pyxFile.oss << "from " << pxdHeader << " cimport " << q.pxdClassName() << "\n";
@@ -429,6 +430,7 @@ void Module::emit_cython_pyx(FileWriter& pyxFile) const {
   for(const Class& cls: expandedClasses)
     cls.emit_cython_pyx(pyxFile, allClasses);
   pyxFile.oss << "\n";
+
   //... wrap global functions
   for(const GlobalFunctions::value_type& p: global_functions)
     p.second.emit_cython_pyx(pyxFile);
