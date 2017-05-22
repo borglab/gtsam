@@ -26,17 +26,18 @@ endif()
 #                   to setup.py file by cmake and used to compile the Cython module
 #                   by invoking "python setup.py build_ext --inplace"
 # install_path: destination to install the library
-function(wrap_and_install_library_cython interface_header extra_imports setup_py_in_path install_path)
+# dependencies: Dependencies which need to be built before the wrapper
+function(wrap_and_install_library_cython interface_header extra_imports setup_py_in_path install_path dependencies)
   # Paths for generated files
   get_filename_component(module_name "${interface_header}" NAME_WE)
   set(generated_files_path "${PROJECT_BINARY_DIR}/cython/${module_name}")
-  wrap_library_cython("${interface_header}" "${generated_files_path}" "${extra_imports}" "${setup_py_in_path}")
+  wrap_library_cython("${interface_header}" "${generated_files_path}" "${extra_imports}" "${setup_py_in_path}" "${dependencies}")
   install_cython_wrapped_library("${interface_header}" "${generated_files_path}" "${install_path}")
 endfunction()
 
 
 # Internal function that wraps a library and compiles the wrapper
-function(wrap_library_cython interface_header generated_files_path extra_imports setup_py_in_path)
+function(wrap_library_cython interface_header generated_files_path extra_imports setup_py_in_path dependencies)
   # Wrap codegen interface
   # Extract module path and name from interface header file name
   # wrap requires interfacePath to be *absolute*
@@ -73,8 +74,8 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
     WORKING_DIRECTORY ${generated_files_path})
     
   # Set up building of mex module
-  add_custom_target(${module_name}_cython_wrapper ALL DEPENDS ${generated_cpp_file} ${interface_header})
-    add_custom_target(wrap_${module_name}_cython_distclean 
+  add_custom_target(${module_name}_cython_wrapper ALL DEPENDS ${generated_cpp_file} ${interface_header} ${dependencies})
+  add_custom_target(wrap_${module_name}_cython_distclean 
       COMMAND cmake -E remove_directory ${generated_files_path})
 endfunction()
 

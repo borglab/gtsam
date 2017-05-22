@@ -129,6 +129,7 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
                                     "from gtsam.gtsam cimport *"                  # extra imports  
                                     "../cython/gtsam_unstable"         # path to setup.py.in 
                                     "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" # install path
+                                    gtsam_unstable  # dependencies which need to be built before the wrapper
                                     )
     add_dependencies(gtsam_unstable_cython_wrapper gtsam_cython_wrapper)
 endif ()

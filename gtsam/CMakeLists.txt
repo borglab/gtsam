@@ -176,5 +176,6 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
                                     ""                  # extra imports  
                                     "../cython/gtsam"         # path to setup.py.in 
                                     "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" # install path
+                                    gtsam  # dependencies which need to be built before the wrapper
                                     )
 endif ()
