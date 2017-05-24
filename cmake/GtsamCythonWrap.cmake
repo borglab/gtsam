@@ -11,16 +11,16 @@ if(NOT GTSAM_CYTHON_INSTALL_PATH)
   set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython")
 endif()
 
-# User-friendly Cython wrapping and installing function.  
-# Builds a Cython module from the provided interface_header.  
+# User-friendly Cython wrapping and installing function.
+# Builds a Cython module from the provided interface_header.
 # For example, for the interface header gtsam.h,
 # this will build the wrap module 'gtsam'.
 #
 # Arguments:
 #
 # interface_header:  The relative path to the wrapper interface definition file.
-# extra_imports: extra header to import in the Cython pxd file. 
-#                For example, to use Cython gtsam.pxd in your own module, 
+# extra_imports: extra header to import in the Cython pxd file.
+#                For example, to use Cython gtsam.pxd in your own module,
 #        use "from gtsam cimport *"
 # setup_py_in_path: Path to the setup.py.in config file, which will be converted
 #                   to setup.py file by cmake and used to compile the Cython module
@@ -46,7 +46,7 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
   get_filename_component(module_name "${interface_header}" NAME_WE)
 
   set(generated_cpp_file "${generated_files_path}/${module_name}.cpp")
-  
+
   message(STATUS "Building wrap module ${module_name}")
   
   # Get build type postfix - gtsam_library_postfix is used in setup.py.in
@@ -97,8 +97,8 @@ function(install_cython_wrapped_library interface_header generated_files_path in
       # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if there is one
       get_filename_component(location "${install_path}" PATH)
       get_filename_component(name "${install_path}" NAME)
-      install(DIRECTORY "${generated_files_path}/" DESTINATION "${location}/${name}${build_type_tag}" 
-          CONFIGURATIONS "${build_type}" 
+      install(DIRECTORY "${generated_files_path}/" DESTINATION "${location}/${name}${build_type_tag}"
+          CONFIGURATIONS "${build_type}"
           PATTERN "build" EXCLUDE
           PATTERN "CMakeFiles" EXCLUDE
           PATTERN "Makefile" EXCLUDE
@@ -107,7 +107,7 @@ function(install_cython_wrapped_library interface_header generated_files_path in
           PATTERN "*.py" EXCLUDE)
     endforeach()
   else()
-    install(DIRECTORY "${generated_files_path}/" DESTINATION ${install_path} 
+    install(DIRECTORY "${generated_files_path}/" DESTINATION ${install_path}
         PATTERN "build" EXCLUDE
         PATTERN "CMakeFiles" EXCLUDE
         PATTERN "Makefile" EXCLUDE
@@ -158,7 +158,7 @@ endfunction()
 # should be installed to all build type toolboxes
 #
 # Arguments:
-#  source_files: The source files to be installed. 
+#  source_files: The source files to be installed.
 #  dest_directory: The destination directory to install to.
 function(install_cython_files source_files dest_directory)
 
