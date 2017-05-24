@@ -22,22 +22,19 @@ endif()
 # extra_imports: extra header to import in the Cython pxd file.
 #                For example, to use Cython gtsam.pxd in your own module,
 #        use "from gtsam cimport *"
-# setup_py_in_path: Path to the setup.py.in config file, which will be converted
-#                   to setup.py file by cmake and used to compile the Cython module
-#                   by invoking "python setup.py build_ext --inplace"
 # install_path: destination to install the library
 # dependencies: Dependencies which need to be built before the wrapper
-function(wrap_and_install_library_cython interface_header extra_imports setup_py_in_path install_path dependencies)
+function(wrap_and_install_library_cython interface_header extra_imports install_path dependencies)
   # Paths for generated files
   get_filename_component(module_name "${interface_header}" NAME_WE)
   set(generated_files_path "${PROJECT_BINARY_DIR}/cython/${module_name}")
-  wrap_library_cython("${interface_header}" "${generated_files_path}" "${extra_imports}" "${setup_py_in_path}" "${dependencies}")
+  wrap_library_cython("${interface_header}" "${generated_files_path}" "${extra_imports}" "${dependencies}")
   install_cython_wrapped_library("${interface_header}" "${generated_files_path}" "${install_path}")
 endfunction()
 
 
 # Internal function that wraps a library and compiles the wrapper
-function(wrap_library_cython interface_header generated_files_path extra_imports setup_py_in_path dependencies)
+function(wrap_library_cython interface_header generated_files_path extra_imports dependencies)
   # Wrap codegen interface
   # Extract module path and name from interface header file name
   # wrap requires interfacePath to be *absolute*
@@ -48,34 +45,37 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
   set(generated_cpp_file "${generated_files_path}/${module_name}.cpp")
 
   message(STATUS "Building wrap module ${module_name}")
-  
-  # Get build type postfix - gtsam_library_postfix is used in setup.py.in
-  # to link cythonized library to appropriate version of gtsam library
-  set(gtsam_library_postfix "")
-  if(GTSAM_BUILD_TYPE_POSTFIXES)
-    string(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
-    set(gtsam_library_postfix ${CMAKE_${build_type_upper}_POSTFIX})
-  endif()
 
   # Set up generation of module source file
   file(MAKE_DIRECTORY "${generated_files_path}")
-  configure_file(${setup_py_in_path}/setup.py.in ${generated_files_path}/setup.py)
   add_custom_command(
     OUTPUT ${generated_cpp_file}
-    DEPENDS ${interface_header} wrap 
-        COMMAND 
+    DEPENDS ${interface_header} wrap
+        COMMAND
             wrap --cython
             ${module_path}
-            ${module_name} 
-            ${generated_files_path} 
+            ${module_name}
+            ${generated_files_path}
       "${extra_imports}"
-      && python setup.py build_ext --inplace
+      && cython --cplus -I. "${generated_files_path}/${module_name}.pyx"
     VERBATIM
-    WORKING_DIRECTORY ${generated_files_path})
-    
-  # Set up building of mex module
+    WORKING_DIRECTORY ${generated_files_path}/../)
   add_custom_target(${module_name}_cython_wrapper ALL DEPENDS ${generated_cpp_file} ${interface_header} ${dependencies})
-  add_custom_target(wrap_${module_name}_cython_distclean 
+
+  # Set up building of cython module
+  find_package(PythonLibs 2.7 REQUIRED)
+  include_directories(${PYTHON_INCLUDE_DIRS})
+  find_package(Eigency REQUIRED)
+  include_directories(${EIGENCY_INCLUDE_DIRS})
+
+  add_library(${module_name}_cython MODULE ${generated_cpp_file})
+  set_target_properties(${module_name}_cython PROPERTIES LINK_FLAGS "-undefined dynamic_lookup"
+    OUTPUT_NAME ${module_name} PREFIX "" LIBRARY_OUTPUT_DIRECTORY ${generated_files_path})
+  target_link_libraries(${module_name}_cython ${module_name})
+  add_dependencies(${module_name}_cython ${module_name}_cython_wrapper)
+
+  # distclean
+  add_custom_target(wrap_${module_name}_cython_distclean
       COMMAND cmake -E remove_directory ${generated_files_path})
 endfunction()
 
