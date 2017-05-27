@@ -67,6 +67,8 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
   include_directories(${PYTHON_INCLUDE_DIRS})
   find_package(Eigency REQUIRED)
   include_directories(${EIGENCY_INCLUDE_DIRS})
+  find_package(NumPy REQUIRED)
+  include_directories(${NUMPY_INCLUDE_DIRS})
 
   add_library(${module_name}_cython MODULE ${generated_cpp_file})
   set_target_properties(${module_name}_cython PROPERTIES LINK_FLAGS "-undefined dynamic_lookup"
