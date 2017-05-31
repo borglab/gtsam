@@ -23,18 +23,19 @@ endif()
 #                For example, to use Cython gtsam.pxd in your own module,
 #        use "from gtsam cimport *"
 # install_path: destination to install the library
+# libs: libraries to link with
 # dependencies: Dependencies which need to be built before the wrapper
-function(wrap_and_install_library_cython interface_header extra_imports install_path dependencies)
+function(wrap_and_install_library_cython interface_header extra_imports install_path libs dependencies)
   # Paths for generated files
   get_filename_component(module_name "${interface_header}" NAME_WE)
   set(generated_files_path "${PROJECT_BINARY_DIR}/cython/${module_name}")
-  wrap_library_cython("${interface_header}" "${generated_files_path}" "${extra_imports}" "${dependencies}")
+  wrap_library_cython("${interface_header}" "${generated_files_path}" "${extra_imports}" "${libs}" "${dependencies}")
   install_cython_wrapped_library("${interface_header}" "${generated_files_path}" "${install_path}")
 endfunction()
 
 
 # Internal function that wraps a library and compiles the wrapper
-function(wrap_library_cython interface_header generated_files_path extra_imports dependencies)
+function(wrap_library_cython interface_header generated_files_path extra_imports libs dependencies)
   # Wrap codegen interface
   # Extract module path and name from interface header file name
   # wrap requires interfacePath to be *absolute*
@@ -73,7 +74,7 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
   add_library(${module_name}_cython MODULE ${generated_cpp_file})
   set_target_properties(${module_name}_cython PROPERTIES LINK_FLAGS "-undefined dynamic_lookup"
     OUTPUT_NAME ${module_name} PREFIX "" LIBRARY_OUTPUT_DIRECTORY ${generated_files_path})
-  target_link_libraries(${module_name}_cython ${module_name})
+  target_link_libraries(${module_name}_cython ${libs})
   add_dependencies(${module_name}_cython ${module_name}_cython_wrapper)
 
   # distclean

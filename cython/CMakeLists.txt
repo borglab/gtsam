@@ -6,6 +6,7 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   wrap_and_install_library_cython("../gtsam.h" # interface_header
                                   ""                  # extra imports
                                   "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" # install path
+                                  gtsam  # library to link with
                                   gtsam  # dependencies which need to be built before the wrapper
                                   )
 
@@ -15,6 +16,7 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
     wrap_and_install_library_cython("../gtsam_unstable/gtsam_unstable.h" # interface_header
                                     "from gtsam.gtsam cimport *"                  # extra imports
                                     "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" # install path
+                                    gtsam_unstable  # library to link with
                                     gtsam_unstable  # dependencies which need to be built before the wrapper
                                     )
     add_dependencies(gtsam_unstable_cython_wrapper gtsam_cython_wrapper)
