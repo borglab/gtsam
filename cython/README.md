@@ -72,40 +72,20 @@ WRAPPING YOUR OWN PROJECT THAT USES GTSAM
 - Set PYTHONPATH to include ${GTSAM_CYTHON_INSTALL_PATH}
   + so that it can find gtsam Cython header: gtsam/gtsam.pxd
 
-- Create your setup.py.in as follows:
-```python
-from distutils.core import setup
-from distutils.extension import Extension
-from Cython.Build import cythonize
-import eigency
-
-include_dirs = ["${CMAKE_SOURCE_DIR}/cpp", "${CMAKE_BINARY_DIR}"]
-include_dirs += "${GTSAM_INCLUDE_DIR}".split(";")
-include_dirs += eigency.get_includes(include_eigen=False)
-
-setup(
-    ext_modules=cythonize(Extension(
-        "your_module_name",
-        sources=["your_module_name.pyx"],
-        include_dirs= include_dirs,
-        libraries=['gtsam'],
-        library_dirs=["${GTSAM_DIR}/../../"],
-        language="c++",
-        extra_compile_args=["-std=c++11"])),
-)
-
-```
-
 - In your CMakeList.txt
 ```cmake
 find_package(GTSAM REQUIRED) # Make sure gtsam's install folder is in your PATH
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${GTSAM_DIR}/../GTSAMCMakeTools")
+
 # Wrap
 include(GtsamCythonWrap)
 wrap_and_install_library_cython("your_project_interface.h"
                                 "from gtsam.gtsam cimport *" # extra import of gtsam/gtsam.pxd Cython header
-                                "path_to_your_setup.py.in"
                                 "your_install_path"
+                                "libraries_to_link_with_the_cython_module"
+                                "dependencies_which_need_to_be_built_before_the_wrapper"
+                                )
+#Optional: install_cython_scripts and install_cython_files. See GtsamCythonWrap.cmake.
 ```
 
 
