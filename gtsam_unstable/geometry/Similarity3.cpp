@@ -19,6 +19,8 @@
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/Matrix.h>
+
 
 namespace gtsam {
 
@@ -83,6 +85,32 @@ Point3 Similarity3::transform_from(const Point3& p, //
   if (H2)
     *H2 = s_ * R_.matrix(); // just 3*3 sub-block of matrix()
   return s_ * q;
+}
+
+Pose3 Similarity3::transform_from(const Pose3& p, //
+    OptionalJacobian<6, 7> H1, OptionalJacobian<6, 6> H2) const {
+  Matrix37 H1q;
+  Matrix3 H2q, H1R, H2R;
+  const Point3 q = transform_from(p.translation(), 
+      H1 ? &H1q : 0, H2 ? &H2q : 0);
+  const Rot3 R = R_.compose(p.rotation(), 
+      H1 ? &H1R : 0, H2 ? &H2R : 0);
+
+  if (H1 || H2) {
+    Matrix63 HR, Hq;
+    const Pose3 p = Pose3::Create(R, q, HR, Hq);
+    if (H1)
+      *H1 = HR * (Matrix37() << H1R, Matrix34::Zero()).finished()
+          + Hq * H1q;
+    if (H2) 
+      // TODO: the second line is different from chain rule
+      *H2 = HR * (Matrix36() << H2R, Matrix3::Zero()).finished()
+          + s_ * (Matrix6() << Matrix36::Zero(), Matrix3::Zero(), Matrix3::Identity()).finished(); 
+    return p;
+
+  } else {
+    return Pose3(R, q);
+  }
 }
 
 Point3 Similarity3::operator*(const Point3& p) const {

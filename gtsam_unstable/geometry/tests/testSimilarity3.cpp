@@ -216,6 +216,14 @@ TEST(Similarity3, ExpLogMap) {
 }
 
 //******************************************************************************
+// derivative helper functions
+Point3 sim3_transfrom_point(const Similarity3& T, const Point3 p) {
+  return T.transform_from(p);
+}
+Pose3 sim3_transfrom_pose(const Similarity3& T, const Pose3 p) {
+  return T.transform_from(p);
+}
+
 // Group action on Point3 (with simpler transform)
 TEST(Similarity3, GroupAction) {
   EXPECT(assert_equal(Point3(2, 2, 0), T6 * Point3(0, 0, 0)));
@@ -241,18 +249,24 @@ TEST(Similarity3, GroupAction) {
   EXPECT(assert_equal(Point3(2, 6, 6), Td.transform_from(pa)));
 
   // Test derivative
-  boost::function<Point3(Similarity3, Point3)> f = boost::bind(
-      &Similarity3::transform_from, _1, _2, boost::none, boost::none);
-
   Point3 q(1, 2, 3);
   for (const auto T : { T1, T2, T3, T4, T5, T6 }) {
-    Point3 q(1, 0, 0);
-    Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(f, T, q);
-    Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(f, T, q);
+    Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(sim3_transfrom_point, T, q);
+    Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(sim3_transfrom_point, T, q);
     Matrix actualH1, actualH2;
     T.transform_from(q, actualH1, actualH2);
     EXPECT(assert_equal(H1, actualH1));
     EXPECT(assert_equal(H2, actualH2));
+  }
+
+  Pose3 qpose(Rot3::Ypr(1, 2, 3), Point3(4, 5, 6));
+  for (const auto T : { T1, T2, T3, T4, T5, T6 }) {
+    Matrix H1 = numericalDerivative21<Pose3, Similarity3, Pose3>(sim3_transfrom_pose, T, qpose);
+    Matrix H2 = numericalDerivative22<Pose3, Similarity3, Pose3>(sim3_transfrom_pose, T, qpose);
+    Matrix actualH1, actualH2;
+    T.transform_from(qpose, actualH1, actualH2);
+    EXPECT(assert_equal(H1, actualH1, 1e-6));
+    EXPECT(assert_equal(H2, actualH2, 1e-6));
   }
 }
 

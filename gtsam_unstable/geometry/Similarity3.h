@@ -100,6 +100,11 @@ public:
       OptionalJacobian<3, 7> H1 = boost::none, //
       OptionalJacobian<3, 3> H2 = boost::none) const;
 
+  /// Action on a pose p is (R * p.R, s * (R * p.t + t))
+  Pose3 transform_from(const Pose3& p,
+  	  OptionalJacobian<6, 7> H1 = boost::none,
+  	  OptionalJacobian<6, 6> H2 = boost::none) const;
+
   /** syntactic sugar for transform_from */
   Point3 operator*(const Point3& p) const;
 
