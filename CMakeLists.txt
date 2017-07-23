@@ -360,6 +360,11 @@ add_subdirectory(examples)
 # Build timing
 add_subdirectory(timing)
 
+# Build gtsam_unstable
+if (GTSAM_BUILD_UNSTABLE)
+    add_subdirectory(gtsam_unstable)
+endif(GTSAM_BUILD_UNSTABLE)
+
 # Matlab toolbox
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	add_subdirectory(matlab)
@@ -384,10 +389,6 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
 	add_subdirectory(cython)
 endif()
 
-# Build gtsam_unstable
-if (GTSAM_BUILD_UNSTABLE)
-    add_subdirectory(gtsam_unstable)
-endif(GTSAM_BUILD_UNSTABLE)
 
 # Install config and export files
 GtsamMakeConfigFile(GTSAM "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")
