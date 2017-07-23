@@ -3,6 +3,9 @@ include(GtsamCythonWrap)
 
 # Create the cython toolbox for the gtsam library
 if (GTSAM_INSTALL_CYTHON_TOOLBOX)
+  add_subdirectory(eigency)
+
+  # wrap gtsam
   wrap_and_install_library_cython("../gtsam.h" # interface_header
                                   ""                  # extra imports
                                   "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" # install path
