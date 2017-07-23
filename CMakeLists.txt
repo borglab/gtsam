@@ -387,6 +387,8 @@ endif()
 # Cython wrap
 if (GTSAM_INSTALL_CYTHON_TOOLBOX)
 	add_subdirectory(cython)
+  # Option for using system Eigency or GTSAM-bundled Eigency
+  option(GTSAM_USE_SYSTEM_EIGENCY "Find and use system-installed Eigency. If 'off', use the one bundled with GTSAM" OFF)
 endif()
 
 
@@ -520,6 +522,13 @@ endif()
 message(STATUS "Cython toolbox flags                                      ")
 print_config_flag(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox         ")
 print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
+if (GTSAM_INSTALL_CYTHON_TOOLBOX)
+  if(GTSAM_USE_SYSTEM_EIGENCY)
+    message(STATUS "  Use System Eigency             : Yes")
+  else()
+    message(STATUS "  Use System Eigency             : No")
+  endif()
+endif()
 message(STATUS "===============================================================")
 
 # Print warnings at the end

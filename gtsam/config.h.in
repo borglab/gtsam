@@ -71,3 +71,6 @@
 
 // Support Metis-based nested dissection
 #cmakedefine GTSAM_TANGENT_PREINTEGRATION
+
+// For Cython wrapper: Whether we are using system-Eigency or our own copied version
+#cmakedefine GTSAM_USE_SYSTEM_EIGENCY
