@@ -115,39 +115,24 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
   get_filename_component(module_path "${interface_header}" PATH)
   get_filename_component(module_name "${interface_header}" NAME_WE)
 
-  set(generated_cpp_file "${generated_files_path}/${module_name}.cpp")
-
-  message(STATUS "Building wrap module ${module_name}")
-
-  # Set up generation of module source file
+  # Wrap module to Cython pyx
+  message(STATUS "Cython wrapper generating ${module_name}.pyx")
+  set(generated_pyx "${generated_files_path}/${module_name}.pyx")
   file(MAKE_DIRECTORY "${generated_files_path}")
   add_custom_command(
-    OUTPUT ${generated_cpp_file}
+    OUTPUT ${generated_pyx}
     DEPENDS ${interface_header} wrap
-        COMMAND
-            wrap --cython
-            ${module_path}
-            ${module_name}
-            ${generated_files_path}
-      "${extra_imports}"
-      && cython --cplus -I. "${generated_files_path}/${module_name}.pyx"
+    COMMAND
+        wrap --cython ${module_path} ${module_name} ${generated_files_path} "${extra_imports}"
     VERBATIM
     WORKING_DIRECTORY ${generated_files_path}/../)
-  add_custom_target(${module_name}_cython_wrapper ALL DEPENDS ${generated_cpp_file} ${interface_header} ${dependencies})
+  add_custom_target(cython_wrap_${module_name}_pyx ALL DEPENDS ${generated_pyx})
+  add_dependencies(cython_wrap_${module_name}_pyx ${dependencies})
 
-  # Set up building of cython module
-  find_package(PythonLibs 2.7 REQUIRED)
-  include_directories(${PYTHON_INCLUDE_DIRS})
-  find_package(Eigency REQUIRED)
-  include_directories(${EIGENCY_INCLUDE_DIRS})
-  find_package(NumPy REQUIRED)
-  include_directories(${NUMPY_INCLUDE_DIRS})
-
-  add_library(${module_name}_cython MODULE ${generated_cpp_file})
-  set_target_properties(${module_name}_cython PROPERTIES LINK_FLAGS "-undefined dynamic_lookup"
-    OUTPUT_NAME ${module_name} PREFIX "" LIBRARY_OUTPUT_DIRECTORY ${generated_files_path})
-  target_link_libraries(${module_name}_cython ${libs})
-  add_dependencies(${module_name}_cython ${module_name}_cython_wrapper)
+  message(STATUS "Cythonize and build ${module_name}.pyx")
+  get_property(include_dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+  cythonize(${module_name}_cython ${generated_pyx} ${module_name}
+    ${generated_files_path} "${include_dirs}" "${libs}" cython_wrap_${module_name}_pyx)
 
   # distclean
   add_custom_target(wrap_${module_name}_cython_distclean
