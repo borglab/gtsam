@@ -51,10 +51,14 @@ endfunction()
 #    - generated_cpp:   The output cpp file in full absolute path
 #    - include_dirs:   Directories to include when executing cython
 function(pyx_to_cpp target pyx_file generated_cpp include_dirs)
+  foreach(dir ${include_dirs})
+    set(includes_for_cython ${includes_for_cython}  -I ${dir})
+  endforeach()
+
   add_custom_command(
     OUTPUT ${generated_cpp}
     COMMAND
-      cython --cplus -I ${include_dirs} ${pyx_file} -o ${generated_cpp}
+      cython --cplus ${includes_for_cython} ${pyx_file} -o ${generated_cpp}
     VERBATIM)
   add_custom_target(${target} ALL DEPENDS ${generated_cpp})
 endfunction()
@@ -77,19 +81,20 @@ endfunction()
 # Cythonize a pyx from the command line as described at
 # http://cython.readthedocs.io/en/latest/src/reference/compilation.html
 # Arguments:
-#    - target:  The specified target
-#    - pyx_file:   The input pyx_file in full *absolute* path
-#    - output_lib_we:   The output lib filename only (without extension)
-#    - output_dir:   The output directory
-#    - include_dirs:   Directories to include when executing cython
-#    - libs: libraries to link with
-#    - dependencies: other target dependencies
+#    - target:        The specified target
+#    - pyx_file:      The input pyx_file in full *absolute* path
+#    - output_lib_we: The output lib filename only (without extension)
+#    - output_dir:    The output directory
+#    - include_dirs:  Directories to include when executing cython
+#    - libs:          Libraries to link with
+#    - dependencies:  Other target dependencies
 function(cythonize target pyx_file output_lib_we output_dir include_dirs libs dependencies)
   get_filename_component(pyx_path "${pyx_file}" DIRECTORY)
   get_filename_component(pyx_name "${pyx_file}" NAME_WE)
   set(generated_cpp "${output_dir}/${pyx_name}.cpp")
-  message("generated_cpp:" ${generated_cpp})
-  pyx_to_cpp(${target}_pyx2cpp ${pyx_file} ${generated_cpp} ${include_dirs})
+
+  set_up_required_cython_packages()
+  pyx_to_cpp(${target}_pyx2cpp ${pyx_file} ${generated_cpp} "${include_dirs}")
   if (NOT "${dependencies}" STREQUAL "")
     add_dependencies(${target}_pyx2cpp "${dependencies}")
   endif()
