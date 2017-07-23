@@ -24,13 +24,13 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   # wrap gtsam_unstable
   if(GTSAM_BUILD_UNSTABLE)
     set(GTSAM_UNSTABLE_IMPORT "from gtsam_unstable import *")
+    set(gtsam_unstable_cython_dependencies gtsam_unstable gtsam_cython)
     wrap_and_install_library_cython("../gtsam_unstable/gtsam_unstable.h" # interface_header
                                     "from gtsam.gtsam cimport *"                  # extra imports
                                     "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" # install path
                                     gtsam_unstable  # library to link with
-                                    gtsam_unstable  # dependencies which need to be built before the wrapper
+                                    "${gtsam_unstable_cython_dependencies}"  # dependencies which need to be built before the wrapper
                                     )
-    add_dependencies(gtsam_unstable_cython_wrapper gtsam_cython_wrapper)
   endif()
 
   # Install the custom-generated __init__.py with gtsam_unstable disabled
