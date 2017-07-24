@@ -8,24 +8,22 @@ INSTALL
  pip install -r <gtsam_folder>/cython/requirements.txt
 ```
 
-- It also needs Eigency, a package that interfaces between C++'s Eigen and Python's numpy.
-You can try to install via pip: "pip install eigency". If that fails, please install it from source as follows:
+- It also needs [Eigency](https://github.com/wouterboomsma/eigency.git), a package that interfaces between C++'s Eigen and Python's numpy.
+For compatiblity with gtsam's Eigen version, it contains its own version of eigency.
 
-```bash
-git clone https://github.com/wouterboomsma/eigency.git
-cd eigency
-python setup.py -v build
-python setup.py install
-```
+If you have eigency installed in your system and insist on using it,
+make sure your eigency's Eigen version and gtsam's Eigen version are the same
+and set the option GTSAM_USE_SYSTEM_EIGENCY in CMake to ON (OFF by default) before building.
 
-- Build and install gtsam using cmake with GTSAM_INSTALL_CYTHON_TOOLBOX enabled. The wrapped module will be installed to GTSAM_CYTHON_INSTALL_PATH, which is
+- Build and install gtsam using cmake with GTSAM_INSTALL_CYTHON_TOOLBOX enabled.
+The wrapped module will be installed to GTSAM_CYTHON_INSTALL_PATH, which is
 by default: <your CMAKE_INSTALL_PREFIX>/cython
+If GTSAM_USE_SYSTEM_EIGENCY is OFF, the included version of eigency will also be built and installed in that folder.
 
 - Modify your PYTHONPATH to include the GTSAM_CYTHON_INSTALL_PATH:
 ```bash
 export PYTHONPATH = $PYTHONPATH:<GTSAM_CYTHON_INSTALL_PATH>
 ```
-
 
 UNIT TESTS
 ==========
@@ -68,6 +66,7 @@ Examples:
 
 WRAPPING YOUR OWN PROJECT THAT USES GTSAM
 =========================================
+(_TO BE UPDATED_)
 
 - Set PYTHONPATH to include ${GTSAM_CYTHON_INSTALL_PATH}
   + so that it can find gtsam Cython header: gtsam/gtsam.pxd
@@ -87,8 +86,6 @@ wrap_and_install_library_cython("your_project_interface.h"
                                 )
 #Optional: install_cython_scripts and install_cython_files. See GtsamCythonWrap.cmake.
 ```
-
-
 
 KNOWN ISSUES
 ============
