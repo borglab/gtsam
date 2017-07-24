@@ -127,7 +127,7 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
     VERBATIM
     WORKING_DIRECTORY ${generated_files_path}/../)
   add_custom_target(cython_wrap_${module_name}_pyx ALL DEPENDS ${generated_pyx})
-  if(NOT ${dependencies} STREQUAL "")
+  if(NOT "${dependencies}" STREQUAL "")
     add_dependencies(cython_wrap_${module_name}_pyx ${dependencies})
   endif()
 
