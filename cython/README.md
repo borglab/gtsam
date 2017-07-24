@@ -66,8 +66,6 @@ Examples:
 
 WRAPPING YOUR OWN PROJECT THAT USES GTSAM
 =========================================
-(_TO BE UPDATED_)
-
 - Set PYTHONPATH to include ${GTSAM_CYTHON_INSTALL_PATH}
   + so that it can find gtsam Cython header: gtsam/gtsam.pxd
 
@@ -78,6 +76,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${GTSAM_DIR}/../GTSAMCMakeTools")
 
 # Wrap
 include(GtsamCythonWrap)
+find_package(eigency REQUIRED)
+include_directories(${EIGENCY_INCLUDE_DIRS})
 wrap_and_install_library_cython("your_project_interface.h"
                                 "from gtsam.gtsam cimport *" # extra import of gtsam/gtsam.pxd Cython header
                                 "your_install_path"
