@@ -2664,4 +2664,10 @@ namespace utilities {
 
 } //\namespace utilities
 
+#include <gtsam/nonlinear/utilities.h>
+class RedirectCout {
+  RedirectCout();
+  string str();
+};
+
 }

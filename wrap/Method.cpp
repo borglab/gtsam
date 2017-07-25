@@ -100,9 +100,13 @@ void Method::emit_cython_pyx_no_overload(FileWriter& file,
                                          const Class& cls) const {
   string funcName = pyRename(name_);
   // leverage python's special treatment for print
-  if (funcName == "print_")
-    file.oss << "    def __str__(self):\n        self.print_('')\n        return ''\n";
-
+  if (funcName == "print_") {
+    //file.oss << "    def __str__(self):\n        self.print_('')\n        return ''\n";
+    file.oss << "    def __str__(self):\n";
+    file.oss << "      strBuf = RedirectCout()\n";
+    file.oss << "      self.print_('')\n";
+    file.oss << "      return strBuf.str()\n";
+  }
   // Function definition
   file.oss << "    def " << funcName;
   // modify name of function instantiation as python doesn't allow overloads
