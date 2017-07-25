@@ -14,22 +14,23 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   endif()
 
   # wrap gtsam
+  add_custom_target(gtsam_header DEPENDS "../gtsam.h")
   wrap_and_install_library_cython("../gtsam.h" # interface_header
                                   ""                  # extra imports
                                   "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" # install path
                                   gtsam  # library to link with
-                                  gtsam  # dependencies which need to be built before the wrapper
+                                  "wrap;gtsam;gtsam_header"  # dependencies which need to be built before wrapping
                                   )
 
   # wrap gtsam_unstable
   if(GTSAM_BUILD_UNSTABLE)
+    add_custom_target(gtsam_unstable_header DEPENDS "../gtsam_unstable/gtsam_unstable.h")
     set(GTSAM_UNSTABLE_IMPORT "from gtsam_unstable import *")
-    set(gtsam_unstable_cython_dependencies gtsam_unstable gtsam_cython)
     wrap_and_install_library_cython("../gtsam_unstable/gtsam_unstable.h" # interface_header
                                     "from gtsam.gtsam cimport *"                  # extra imports
                                     "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" # install path
                                     gtsam_unstable  # library to link with
-                                    "${gtsam_unstable_cython_dependencies}"  # dependencies which need to be built before the wrapper
+                                    "gtsam_unstable;gtsam_unstable_header;gtsam_cython"  # dependencies to be built before wrapping
                                     )
   endif()
 
