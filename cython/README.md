@@ -9,16 +9,12 @@ INSTALL
 ```
 
 - It also needs [Eigency](https://github.com/wouterboomsma/eigency.git), a package that interfaces between C++'s Eigen and Python's numpy.
-For compatiblity with gtsam's Eigen version, it contains its own version of eigency.
-
-If you have eigency installed in your system and insist on using it,
-make sure your eigency's Eigen version and gtsam's Eigen version are the same
-and set the option GTSAM_USE_SYSTEM_EIGENCY in CMake to ON (OFF by default) before building.
+For compatiblity with gtsam's Eigen version, it will build and install its own version of Eigency.
+If you have eigency installed in your system, please uninstall it to avoid conflicts.
 
 - Build and install gtsam using cmake with GTSAM_INSTALL_CYTHON_TOOLBOX enabled.
 The wrapped module will be installed to GTSAM_CYTHON_INSTALL_PATH, which is
 by default: <your CMAKE_INSTALL_PREFIX>/cython
-If GTSAM_USE_SYSTEM_EIGENCY is OFF, the included version of eigency will also be built and installed in that folder.
 
 - Modify your PYTHONPATH to include the GTSAM_CYTHON_INSTALL_PATH:
 ```bash
