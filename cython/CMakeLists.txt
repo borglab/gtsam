@@ -4,14 +4,9 @@ include(GtsamCythonWrap)
 # Create the cython toolbox for the gtsam library
 if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   # build and include eigency
-  if (GTSAM_USE_SYSTEM_EIGENCY)
-    find_package(Eigency REQUIRED)
-    include_directories(${EIGENCY_INCLUDE_DIRS})
-  else()
-    add_subdirectory(eigency)
-    include_directories(eigency)
-    file(COPY eigency DESTINATION ".")
-  endif()
+  add_subdirectory(eigency)
+  include_directories(eigency)
+  file(COPY eigency DESTINATION ".") # so eigency's cython headers can be found when cythonizing gtsam
 
   # wrap gtsam
   add_custom_target(gtsam_header DEPENDS "../gtsam.h")
