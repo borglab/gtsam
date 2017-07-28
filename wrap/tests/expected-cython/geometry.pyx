@@ -180,8 +180,9 @@ cdef class Test:
         cdef pair [shared_ptr[CTest],shared_ptr[CTest]] ret = self.shared_CTest_.get().create_ptrs()
         return (Test.cyCreateFromShared(ret.first),Test.cyCreateFromShared(ret.second))
     def __str__(self):
+        strBuf = RedirectCout()
         self.print_('')
-        return ''
+        return strBuf.str()
     def print_(self):
         self.shared_CTest_.get().print_()
     def return_Point2Ptr(self, bool value):
