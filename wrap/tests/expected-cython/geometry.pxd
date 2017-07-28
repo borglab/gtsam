@@ -1,5 +1,5 @@
 
-from clonedEigency.core cimport *
+from gtsam_eigency.core cimport *
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp.pair cimport pair

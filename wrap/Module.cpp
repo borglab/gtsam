@@ -334,7 +334,7 @@ void Module::generate_cython_wrapper(const string& toolboxPath, const std::strin
 /* ************************************************************************* */
 void Module::emit_cython_pxd(FileWriter& pxdFile) const {
   // headers
-  pxdFile.oss << "from clonedEigency.core cimport *\n"
+  pxdFile.oss << "from gtsam_eigency.core cimport *\n"
                  "from libcpp.string cimport string\n"
                  "from libcpp.vector cimport vector\n"
                  "from libcpp.pair cimport pair\n"
@@ -416,7 +416,7 @@ void Module::emit_cython_pyx(FileWriter& pyxFile) const {
   for(const Qualified& q: Qualified::BasicTypedefs) {
     pyxFile.oss << "from " << pxdHeader << " cimport " << q.pxdClassName() << "\n";
   }
-  pyxFile.oss << "from clonedEigency.core cimport *\n"
+  pyxFile.oss << "from gtsam_eigency.core cimport *\n"
                  "from libcpp cimport bool\n\n"
                  "from libcpp.pair cimport pair\n"
                  "from libcpp.string cimport string\n"
