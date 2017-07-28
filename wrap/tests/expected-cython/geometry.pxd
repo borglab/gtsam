@@ -1,5 +1,5 @@
 
-from eigency.core cimport *
+from clonedEigency.core cimport *
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp.pair cimport pair

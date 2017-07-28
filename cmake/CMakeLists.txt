@@ -21,7 +21,7 @@ install(FILES
   GtsamCythonWrap.cmake
   GtsamTesting.cmake
   FindCython.cmake
-  FindEigency.cmake
+  FindClonedEigency.cmake
   FindNumPy.cmake
   README.html
   DESTINATION "${SCRIPT_INSTALL_DIR}/GTSAMCMakeTools")

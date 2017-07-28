@@ -4,7 +4,7 @@ cimport geometry
 from geometry cimport shared_ptr
 from geometry cimport dynamic_pointer_cast
 from geometry cimport make_shared
-from eigency.core cimport *
+from clonedEigency.core cimport *
 from libcpp cimport bool
 
 from libcpp.pair cimport pair

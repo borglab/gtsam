@@ -215,7 +215,7 @@ inline PyArrayObject *_ndarray_copy<std::complex<float> >(const std::complex<flo
 
 template <typename Derived>
 inline PyArrayObject *ndarray(Eigen::PlainObjectBase<Derived> &m) {
-    import_eigency__conversions();
+    import_clonedEigency__conversions();
     return _ndarray_view(m.data(), m.rows(), m.cols(), m.IsRowMajor);
 }
 // If C++11 is available, check if m is an r-value reference, in
@@ -223,56 +223,56 @@ inline PyArrayObject *ndarray(Eigen::PlainObjectBase<Derived> &m) {
 #if __cplusplus >= 201103L
 template <typename Derived>
 inline PyArrayObject *ndarray(Eigen::PlainObjectBase<Derived> &&m) {
-    import_eigency__conversions();
+    import_clonedEigency__conversions();
     return _ndarray_copy(m.data(), m.rows(), m.cols(), m.IsRowMajor);
 }
 #endif
 template <typename Derived>
 inline PyArrayObject *ndarray(const Eigen::PlainObjectBase<Derived> &m) {
-    import_eigency__conversions();
+    import_clonedEigency__conversions();
     return _ndarray_copy(m.data(), m.rows(), m.cols(), m.IsRowMajor);
 }
 template <typename Derived>
 inline PyArrayObject *ndarray_view(Eigen::PlainObjectBase<Derived> &m) {
-    import_eigency__conversions();
+    import_clonedEigency__conversions();
     return _ndarray_view(m.data(), m.rows(), m.cols(), m.IsRowMajor);
 }
 template <typename Derived>
 inline PyArrayObject *ndarray_view(const Eigen::PlainObjectBase<Derived> &m) {
-    import_eigency__conversions();
+    import_clonedEigency__conversions();
     return _ndarray_view(const_cast<typename Derived::Scalar*>(m.data()), m.rows(), m.cols(), m.IsRowMajor);
 }
 template <typename Derived>
 inline PyArrayObject *ndarray_copy(const Eigen::PlainObjectBase<Derived> &m) {
-    import_eigency__conversions();
+    import_clonedEigency__conversions();
     return _ndarray_copy(m.data(), m.rows(), m.cols(), m.IsRowMajor);
 }
 
 template <typename Derived, int MapOptions, typename Stride>
 inline PyArrayObject *ndarray(Eigen::Map<Derived, MapOptions, Stride> &m) {
-    import_eigency__conversions();
+    import_clonedEigency__conversions();
     return _ndarray_view(m.data(), m.rows(), m.cols(), m.IsRowMajor, m.outerStride(), m.innerStride());
 }
 template <typename Derived, int MapOptions, typename Stride>
 inline PyArrayObject *ndarray(const Eigen::Map<Derived, MapOptions, Stride> &m) {
-    import_eigency__conversions();
+    import_clonedEigency__conversions();
     // Since this is a map, we assume that ownership is correctly taken care
     // of, and we avoid taking a copy
     return _ndarray_view(const_cast<typename Derived::Scalar*>(m.data()), m.rows(), m.cols(), m.IsRowMajor, m.outerStride(), m.innerStride());
 }
 template <typename Derived, int MapOptions, typename Stride>
 inline PyArrayObject *ndarray_view(Eigen::Map<Derived, MapOptions, Stride> &m) {
-    import_eigency__conversions();
+    import_clonedEigency__conversions();
     return _ndarray_view(m.data(), m.rows(), m.cols(), m.IsRowMajor, m.outerStride(), m.innerStride());
 }
 template <typename Derived, int MapOptions, typename Stride>
 inline PyArrayObject *ndarray_view(const Eigen::Map<Derived, MapOptions, Stride> &m) {
-    import_eigency__conversions();
+    import_clonedEigency__conversions();
     return _ndarray_view(const_cast<typename Derived::Scalar*>(m.data()), m.rows(), m.cols(), m.IsRowMajor, m.outerStride(), m.innerStride());
 }
 template <typename Derived, int MapOptions, typename Stride>
 inline PyArrayObject *ndarray_copy(const Eigen::Map<Derived, MapOptions, Stride> &m) {
-    import_eigency__conversions();
+    import_clonedEigency__conversions();
     return _ndarray_copy(m.data(), m.rows(), m.cols(), m.IsRowMajor, m.outerStride(), m.innerStride());
 }
 

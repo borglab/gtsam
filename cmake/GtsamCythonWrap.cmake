@@ -58,7 +58,7 @@ function(pyx_to_cpp target pyx_file generated_cpp include_dirs)
   add_custom_command(
     OUTPUT ${generated_cpp}
     COMMAND
-      cython --cplus ${includes_for_cython} ${pyx_file} -o ${generated_cpp}
+      cython -v --cplus ${includes_for_cython} ${pyx_file} -o ${generated_cpp}
     VERBATIM)
   add_custom_target(${target} ALL DEPENDS ${generated_cpp})
 endfunction()
