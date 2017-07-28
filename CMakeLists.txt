@@ -386,7 +386,16 @@ endif()
 
 # Cython wrap
 if (GTSAM_INSTALL_CYTHON_TOOLBOX)
-	add_subdirectory(cython)
+  set(GTSAM_INSTALL_CYTHON_TOOLBOX 1)
+  # Set up cache options
+  set(GTSAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
+  if(NOT GTSAM_CYTHON_INSTALL_PATH)
+    set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython")
+  endif()
+  set(GTSAM_EIGENCY_INSTALL_PATH ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency)
+  add_subdirectory(cython)
+else()
+  set(GTSAM_INSTALL_CYTHON_TOOLBOX 0) # This will go into config.h
 endif()
 
 

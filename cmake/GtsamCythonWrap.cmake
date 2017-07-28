@@ -5,12 +5,6 @@ unset(PYTHON_EXECUTABLE CACHE)
 unset(CYTHON_EXECUTABLE CACHE)
 find_package(Cython 0.25.2 REQUIRED)
 
-# Set up cache options
-set(GTSAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
-if(NOT GTSAM_CYTHON_INSTALL_PATH)
-  set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython")
-endif()
-
 # User-friendly Cython wrapping and installing function.
 # Builds a Cython module from the provided interface_header.
 # For example, for the interface header gtsam.h,
