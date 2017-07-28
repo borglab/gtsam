@@ -103,9 +103,9 @@ void Method::emit_cython_pyx_no_overload(FileWriter& file,
   if (funcName == "print_") {
     //file.oss << "    def __str__(self):\n        self.print_('')\n        return ''\n";
     file.oss << "    def __str__(self):\n";
-    file.oss << "      strBuf = RedirectCout()\n";
-    file.oss << "      self.print_('')\n";
-    file.oss << "      return strBuf.str()\n";
+    file.oss << "        strBuf = RedirectCout()\n";
+    file.oss << "        self.print_('')\n";
+    file.oss << "        return strBuf.str()\n";
   }
   // Function definition
   file.oss << "    def " << funcName;
