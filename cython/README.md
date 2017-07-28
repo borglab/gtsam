@@ -8,9 +8,8 @@ INSTALL
  pip install -r <gtsam_folder>/cython/requirements.txt
 ```
 
-- It also needs [Eigency](https://github.com/wouterboomsma/eigency.git), a package that interfaces between C++'s Eigen and Python's numpy.
-For compatiblity with gtsam's Eigen version, it will build and install its own version of Eigency.
-If you have eigency installed in your system, please uninstall it to avoid conflicts.
+- For compatiblity with gtsam's Eigen version, it contains its own cloned version of [Eigency](https://github.com/wouterboomsma/eigency.git),
+named **clonedEigency**, to interface between C++'s Eigen and Python's numpy.
 
 - Build and install gtsam using cmake with GTSAM_INSTALL_CYTHON_TOOLBOX enabled.
 The wrapped module will be installed to GTSAM_CYTHON_INSTALL_PATH, which is
@@ -72,8 +71,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${GTSAM_DIR}/../GTSAMCMakeTools")
 
 # Wrap
 include(GtsamCythonWrap)
-find_package(eigency REQUIRED)
-include_directories(${EIGENCY_INCLUDE_DIRS})
+find_package(clonedEigency REQUIRED)
+include_directories(${CLONEDEIGENCY_INCLUDE_DIRS})
 wrap_and_install_library_cython("your_project_interface.h"
                                 "from gtsam.gtsam cimport *" # extra import of gtsam/gtsam.pxd Cython header
                                 "your_install_path"
