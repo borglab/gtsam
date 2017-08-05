@@ -4,8 +4,9 @@
 #
 # This code sets the following variables:
 #
-#  CYTHON_EXECUTABLE
 #  CYTHON_FOUND
+#  CYTHON_PATH
+#  CYTHON_EXECUTABLE
 #  CYTHON_VERSION
 #
 # See also UseCython.cmake
@@ -40,6 +41,15 @@ endif ()
 
 # RESULT=0 means ok
 if ( NOT RESULT )
+  get_filename_component( _python_path ${PYTHON_EXECUTABLE} PATH )
+  find_program( CYTHON_EXECUTABLE
+      NAMES cython cython.bat cython3
+      HINTS ${_python_path}
+   )
+endif ()
+
+# RESULT=0 means ok
+if ( NOT RESULT )
   execute_process( COMMAND "${PYTHON_EXECUTABLE}" "-c"
       "import Cython; print Cython.__version__"
       RESULT_VARIABLE RESULT
@@ -59,6 +69,7 @@ find_package_handle_standard_args( Cython
     CYTHON_FOUND
   REQUIRED_VARS
     CYTHON_PATH
+    CYTHON_EXECUTABLE
   VERSION_VAR
     CYTHON_VERSION
     )
