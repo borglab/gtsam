@@ -16,7 +16,7 @@
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type
  *   Constructors
- *     - Overloads are supported
+ *     - Overloads are supported, but arguments *have* to have different names
  *     - A class with no constructors can be returned from other functions but not allocated directly in MATLAB
  *   Methods
  *     - Constness has no effect
@@ -145,9 +145,9 @@ class KeyList {
 // Actually a FastSet<Key>
 class KeySet {
   KeySet();
-  KeySet(const gtsam::KeySet& other);
-  KeySet(const gtsam::KeyVector& other);
-  KeySet(const gtsam::KeyList& other);
+  KeySet(const gtsam::KeySet& set);
+  KeySet(const gtsam::KeyVector& vector);
+  KeySet(const gtsam::KeyList& list);
 
   // Testable
   void print(string s) const;
@@ -591,7 +591,7 @@ class Pose3 {
   Pose3(const gtsam::Pose3& other);
   Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
   Pose3(const gtsam::Pose2& pose2); // FIXME: shadows Pose3(Pose3 pose)
-  Pose3(Matrix t);
+  Pose3(Matrix mat);
 
   // Testable
   void print(string s) const;
@@ -1169,9 +1169,9 @@ class VariableIndex {
   //template<T = {gtsam::FactorGraph}>
   //VariableIndex(const T& factorGraph, size_t nVariables);
   //VariableIndex(const T& factorGraph);
-  VariableIndex(const gtsam::SymbolicFactorGraph& factorGraph);
-  VariableIndex(const gtsam::GaussianFactorGraph& factorGraph);
-  VariableIndex(const gtsam::NonlinearFactorGraph& factorGraph);
+  VariableIndex(const gtsam::SymbolicFactorGraph& sfg);
+  VariableIndex(const gtsam::GaussianFactorGraph& gfg);
+  VariableIndex(const gtsam::NonlinearFactorGraph& fg);
   VariableIndex(const gtsam::VariableIndex& other);
 
   // Testable
