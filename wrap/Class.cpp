@@ -764,6 +764,19 @@ void Class::emit_cython_pxd(FileWriter& pxdFile) const {
   if (numMethods == 0)
       pxdFile.oss << "        pass\n";
 }
+/* ************************************************************************* */
+void Class::emit_cython_wrapper_pxd(FileWriter& pxdFile) const {
+  pxdFile.oss << "cdef class " << pyxClassName();
+  if (getParent())
+    pxdFile.oss << "(" << getParent()->pyxClassName() << ")";
+  pxdFile.oss << ":\n";
+  pxdFile.oss << "    cdef " << shared_pxd_class_in_pyx() << " "
+      << shared_pxd_obj_in_pyx() << "\n";
+  // cyCreateFromShared
+  pxdFile.oss << "    @staticmethod\n";
+  pxdFile.oss << "    cdef " << pyxClassName() << " cyCreateFromShared(const "
+      << shared_pxd_class_in_pyx() << "& other)\n";
+}
 
 /* ************************************************************************* */
 void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj,
