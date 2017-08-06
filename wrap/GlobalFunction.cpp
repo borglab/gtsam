@@ -155,9 +155,11 @@ void GlobalFunction::emit_cython_pyx_no_overload(FileWriter& file) const {
 
   // Function definition
   file.oss << "def " << funcName;
+
   // modify name of function instantiation as python doesn't allow overloads
   // e.g. template<T={A,B,C}> funcName(...) --> funcNameA, funcNameB, funcNameC
   if (templateArgValue_) file.oss << templateArgValue_->pyxClassName();
+
   // funtion arguments
   file.oss << "(";
   argumentList(0).emit_cython_pyx(file);
@@ -189,28 +191,33 @@ void GlobalFunction::emit_cython_pyx(FileWriter& file) const {
   file.oss << "def " << funcName << "(*args, **kwargs):\n";
   for (size_t i = 0; i < N; ++i) {
     file.oss << "    success, results = " << funcName << "_" << i
-             << "(*args, **kwargs)\n";
+             << "(args, kwargs)\n";
     file.oss << "    if success:\n            return results\n";
   }
   file.oss << "    raise TypeError('Could not find the correct overload')\n";
 
   for (size_t i = 0; i < N; ++i) {
     ArgumentList args = argumentList(i);
-    file.oss << "def " + funcName + "_" + to_string(i) +
-                    "(*args, **kwargs):\n";
-    file.oss << pyx_resolveOverloadParams(args, false, 1); // lazy: always return None even if it's a void function
-
-    /// Call cython corresponding function
-    file.oss << argumentList(i).pyx_convertEigenTypeAndStorageOrder("    ");
-    string ret = pyx_functionCall("", pxdName(), i);
+    file.oss << "def " + funcName + "_" + to_string(i) + "(args, kwargs):\n";
+    file.oss << "    cdef list __params\n";
     if (!returnVals_[i].isVoid()) {
-      file.oss << "    cdef " << returnVals_[i].pyx_returnType()
-              << " ret = " << ret << "\n";
-      file.oss << "    return True, " << returnVals_[i].pyx_casting("ret") << "\n";
-    } else {
-      file.oss << "    " << ret << "\n";
-      file.oss << "    return True, None\n";
+      file.oss << "    cdef " << returnVals_[i].pyx_returnType() << " return_value\n";
     }
+    file.oss << "    try:\n";
+    file.oss << pyx_resolveOverloadParams(args, false, 2); // lazy: always return None even if it's a void function
+
+    /// Call corresponding cython function
+    file.oss << argumentList(i).pyx_convertEigenTypeAndStorageOrder("        ");
+    string call = pyx_functionCall("", pxdName(), i);
+    if (!returnVals_[i].isVoid()) {
+      file.oss << "        return_value = " << call << "\n";
+      file.oss << "        return True, " << returnVals_[i].pyx_casting("return_value") << "\n";
+    } else {
+      file.oss << "        " << call << "\n";
+      file.oss << "        return True, None\n";
+    }
+    file.oss << "    except:\n";
+    file.oss << "        return False, None\n\n";
   }
 }
 /* ************************************************************************* */

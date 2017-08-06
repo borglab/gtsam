@@ -80,12 +80,12 @@ void StaticMethod::emit_cython_pyx_no_overload(FileWriter& file,
 
   /// Call cython corresponding function and return
   file.oss << argumentList(0).pyx_convertEigenTypeAndStorageOrder("        ");
-  string ret = pyx_functionCall(cls.pxd_class_in_pyx(), name_, 0);
+  string call = pyx_functionCall(cls.pxd_class_in_pyx(), name_, 0);
   file.oss << "        ";
   if (!returnVals_[0].isVoid()) {
-    file.oss << "return " << returnVals_[0].pyx_casting(ret) << "\n";
+    file.oss << "return " << returnVals_[0].pyx_casting(call) << "\n";
   } else
-    file.oss << ret << "\n";
+    file.oss << call << "\n";
   file.oss << "\n";
 }
 
@@ -98,15 +98,15 @@ void StaticMethod::emit_cython_pyx(FileWriter& file, const Class& cls) const {
   }
 
   // Dealing with overloads..
-  file.oss << "    @staticmethod\n";
+  file.oss << "    @staticmethod # overloaded\n";
   file.oss << "    def " << name_ << "(*args, **kwargs):\n";
   for (size_t i = 0; i < N; ++i) {
     string funcName = name_ + "_" + to_string(i);
     file.oss << "        success, results = " << cls.pyxClassName() << "."
-             << funcName << "(*args, **kwargs)\n";
+             << funcName << "(args, kwargs)\n";
     file.oss << "        if success:\n            return results\n";
   }
-  file.oss << "        raise TypeError('Could not find the correct overload')\n";
+  file.oss << "        raise TypeError('Could not find the correct overload')\n\n";
 
   for(size_t i = 0; i < N; ++i) {
     file.oss << "    @staticmethod\n";
@@ -114,22 +114,26 @@ void StaticMethod::emit_cython_pyx(FileWriter& file, const Class& cls) const {
     string funcName = name_ + "_" + to_string(i);
     string pxdFuncName = name_ + ((i>0)?"_" + to_string(i):"");
     ArgumentList args = argumentList(i);
-    file.oss << "    def " + funcName + "(*args, **kwargs):\n";
-    file.oss << pyx_resolveOverloadParams(args, false); // lazy: always return None even if it's a void function
+    file.oss << "    def " + funcName + "(args, kwargs):\n";
+    file.oss << "        cdef list __params\n";
+    if (!returnVals_[i].isVoid()) {
+      file.oss << "        cdef " << returnVals_[i].pyx_returnType() << " return_value\n";
+    }
+    file.oss << "        try:\n";
+    file.oss << pyx_resolveOverloadParams(args, false, 3); // lazy: always return None even if it's a void function
 
     /// Call cython corresponding function and return
-    file.oss << argumentList(i).pyx_convertEigenTypeAndStorageOrder("        ");
-    string ret = pyx_functionCall(cls.pxd_class_in_pyx(), pxdFuncName, i);
+    file.oss << argumentList(i).pyx_convertEigenTypeAndStorageOrder("            ");
+    string call = pyx_functionCall(cls.pxd_class_in_pyx(), pxdFuncName, i);
     if (!returnVals_[i].isVoid()) {
-      file.oss << "        cdef " << returnVals_[i].pyx_returnType()
-              << " ret = " << ret << "\n";
-      file.oss << "        return True, " << returnVals_[i].pyx_casting("ret") << "\n";
+      file.oss << "            return_value = " << call << "\n";
+      file.oss << "            return True, " << returnVals_[i].pyx_casting("return_value") << "\n";
+    } else {
+      file.oss << "            " << call << "\n";
+      file.oss << "            return True, None\n";
     }
-    else {
-      file.oss << "        " << ret << "\n";
-      file.oss << "        return True, None\n";
-    } 
-    file.oss << "\n";
+    file.oss << "        except:\n";
+    file.oss << "            return False, None\n\n";
   }
 }
 

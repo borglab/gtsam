@@ -412,6 +412,17 @@ void Module::emit_cython_pyx(FileWriter& pyxFile) const {
                  "from "<< pxdHeader << " cimport dynamic_pointer_cast\n"
                  "from "<< pxdHeader << " cimport make_shared\n";
 
+  pyxFile.oss << "# C helper function that copies all arguments into a positional list.\n"
+                 "cdef list process_args(list keywords, tuple args, dict kwargs):\n"
+                 "   cdef str keyword\n"
+                 "   cdef int n = len(args), m = len(keywords)\n"
+                 "   cdef list params = list(args)\n"
+                 "   assert len(args)+len(kwargs) == m, 'Expected {} arguments'.format(m)\n"
+                 "   try:\n"
+                 "       return params + [kwargs[keyword] for keyword in keywords[n:]]\n"
+                 "   except:\n"
+                 "       raise ValueError('Epected arguments ' + str(keywords))\n";
+
   // import all typedefs, e.g. from gtsam_wrapper cimport Key, so we don't need to say gtsam.Key
   for(const Qualified& q: Qualified::BasicTypedefs) {
     pyxFile.oss << "from " << pxdHeader << " cimport " << q.pxdClassName() << "\n";

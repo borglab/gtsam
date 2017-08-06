@@ -145,15 +145,21 @@ void Constructor::emit_cython_pxd(FileWriter& pxdFile, const Class& cls) const {
 void Constructor::emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const {
   for (size_t i = 0; i < nrOverloads(); i++) {
     ArgumentList args = argumentList(i);
-    pyxFile.oss << "    def " + cls.pyxClassName() + "_" + to_string(i) +
-                    "(self, *args, **kwargs):\n";
-    pyxFile.oss << pyx_resolveOverloadParams(args, true);
-    pyxFile.oss << argumentList(i).pyx_convertEigenTypeAndStorageOrder("        ");
+    pyxFile.oss
+        << "    def " + cls.pyxClassName() + "_" + to_string(i)
+            + "(self, args, kwargs):\n";
+    pyxFile.oss << "        cdef list __params\n";
+    pyxFile.oss << "        try:\n";
+    pyxFile.oss << pyx_resolveOverloadParams(args, true, 3);
+    pyxFile.oss
+        << argumentList(i).pyx_convertEigenTypeAndStorageOrder("            ");
 
-    pyxFile.oss << "        self." << cls.shared_pxd_obj_in_pyx() << " = "
-                << cls.shared_pxd_class_in_pyx() << "(new " << cls.pxd_class_in_pyx()
-                << "(" << args.pyx_asParams() << "))\n";
-    pyxFile.oss << "        return True\n\n";
+    pyxFile.oss << "            self." << cls.shared_pxd_obj_in_pyx() << " = "
+        << cls.shared_pxd_class_in_pyx() << "(new " << cls.pxd_class_in_pyx()
+        << "(" << args.pyx_asParams() << "))\n";
+    pyxFile.oss << "            return True\n";
+    pyxFile.oss << "        except:\n";
+    pyxFile.oss << "            return False\n\n";
   }
 }
 
