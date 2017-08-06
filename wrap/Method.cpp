@@ -141,7 +141,8 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
   // doesn't allow overloads
   // e.g. template<T={A,B,C}> funcName(...) --> funcNameA, funcNameB, funcNameC
   string instantiatedName =
-      (templateArgValue_) ? funcName + templateArgValue_->pyxClassName() : funcName;
+      (templateArgValue_) ? funcName + templateArgValue_->pyxClassName() :
+          funcName;
 
   size_t N = nrOverloads();
   // It's easy if there's no overload
@@ -152,38 +153,38 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
 
   // Dealing with overloads..
   file.oss << "    def " << instantiatedName << "(self, *args, **kwargs):\n";
-  for (size_t i = 0; i < N; ++i) {
-    file.oss << "        success, results = self." << instantiatedName << "_" << i
-             << "(args, kwargs)\n";
-    file.oss << "        if success:\n            return results\n";
-  }
-  file.oss << "        raise TypeError('Could not find the correct overload')\n";
+  file.oss << "        cdef list __params\n";
 
-  for (size_t i = 0; i < N; ++i) {
-    ArgumentList args = argumentList(i);
-    file.oss << "    def " + instantiatedName + "_" + to_string(i) +
-                    "(self, args, kwargs):\n";
-    file.oss << "        cdef list __params\n";
+  // Define return values for all possible overloads
+  vector<string> return_value;
+  for (size_t i = 0; i < nrOverloads(); ++i) {
+    return_value.push_back("return_value_" + to_string(i));
     if (!returnVals_[i].isVoid()) {
-      file.oss << "        cdef " << returnVals_[i].pyx_returnType() << " return_value\n";
+      file.oss << "        cdef " << returnVals_[i].pyx_returnType() << " "
+          << return_value[i] << "\n";
     }
+  }
+  for (size_t i = 0; i < nrOverloads(); ++i) {
+    ArgumentList args = argumentList(i);
     file.oss << "        try:\n";
     file.oss << pyx_resolveOverloadParams(args, false, 3); // lazy: always return None even if it's a void function
 
     /// Call corresponding cython function
-    file.oss << argumentList(i).pyx_convertEigenTypeAndStorageOrder("            ");
+    file.oss << args.pyx_convertEigenTypeAndStorageOrder("            ");
     string caller = "self." + cls.shared_pxd_obj_in_pyx() + ".get()";
-
     string call = pyx_functionCall(caller, funcName, i);
     if (!returnVals_[i].isVoid()) {
-      file.oss << "            return_value = " << call << "\n";
-      file.oss << "            return True, " << returnVals_[i].pyx_casting("return_value") << "\n";
+      file.oss << "            " << return_value[i] << " = " << call << "\n";
+      file.oss << "            return "
+          << returnVals_[i].pyx_casting(return_value[i]) << "\n";
     } else {
       file.oss << "            " << call << "\n";
-      file.oss << "            return True, None\n";
+      file.oss << "            return\n";
     }
     file.oss << "        except:\n";
-    file.oss << "            return False, None\n\n";
+    file.oss << "            pass\n";
   }
+  file.oss
+      << "        raise TypeError('Incorrect arguments for method call.')\n\n";
 }
 /* ************************************************************************* */
