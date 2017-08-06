@@ -6,7 +6,7 @@ from gtsam import Pose2, Point3, Rot3, Pose3, Cal3_S2, SimpleCamera
 
 K = Cal3_S2(625, 625, 0, 0, 0)
 
-class TestCal3Unified(unittest.TestCase):
+class TestSimpleCamera(unittest.TestCase):
 
     def test_constructor(self):
         pose1 = Pose3(Rot3(np.diag([1, -1, -1])), Point3(0, 0, 0.5))
