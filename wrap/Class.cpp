@@ -841,29 +841,19 @@ void Class::emit_cython_pyx(FileWriter& file, const std::vector<Class>& allClass
   if (parentClass) file.oss << "(" <<  parentClass->pyxClassName() << ")";
   file.oss << ":\n";
 
-  // shared variable of the corresponding cython object 
-  // file.oss << "    cdef " << shared_pxd_class_in_pyx() << " " << shared_pxd_obj_in_pyx() << "\n";
-
-  // __cinit___
-  file.oss << "    def __init__(self, *args, **kwargs):\n"
-                 "        self." << shared_pxd_obj_in_pyx() << " = " 
-                 << shared_pxd_class_in_pyx() << "()\n";
-
+  // __init___
+  file.oss << "    def __init__(self, *args, **kwargs):\n";
+  file.oss << "        cdef list __params\n";
+  file.oss << "        self." << shared_pxd_obj_in_pyx() << " = " << shared_pxd_class_in_pyx() << "()\n";
   file.oss << "        if len(args)==0 and len(kwargs)==1 and kwargs.has_key('cyCreateFromShared'):\n            return\n";
-  for (size_t i = 0; i<constructor.nrOverloads(); ++i) {
-    file.oss << "        " << "elif" << " self."
-                << pyxClassName() << "_" << i
-                << "(args, kwargs):\n            pass\n";
-  }
-  file.oss << "        else:\n            raise TypeError('" << pyxClassName()
-              << " construction failed!')\n";
-
-  pyxInitParentObj(file, "        self", "self." + shared_pxd_obj_in_pyx(), allClasses);
-  file.oss << "\n";
 
   // Constructors
   constructor.emit_cython_pyx(file, *this);
-  if (constructor.nrOverloads()>0) file.oss << "\n";
+  file.oss << "        if (self." << shared_pxd_obj_in_pyx() << ".use_count()==0):\n";
+  file.oss << "            raise TypeError('" << pyxClassName()
+      << " construction failed!')\n";
+  pyxInitParentObj(file, "        self", "self." + shared_pxd_obj_in_pyx(), allClasses);
+  file.oss << "\n";
 
   // cyCreateFromShared
   file.oss << "    @staticmethod\n";
