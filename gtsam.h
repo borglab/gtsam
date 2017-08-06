@@ -480,6 +480,11 @@ class Rot3 {
   // Standard Constructors and Named Constructors
   Rot3();
   Rot3(Matrix R);
+  Rot3(const Point3& col1, const Point3& col2, const Point3& col3);
+  Rot3(double R11, double R12, double R13,
+      double R21, double R22, double R23,
+      double R31, double R32, double R33);
+
   static gtsam::Rot3 Rx(double t);
   static gtsam::Rot3 Ry(double t);
   static gtsam::Rot3 Rz(double t);
