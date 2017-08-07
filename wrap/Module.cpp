@@ -360,26 +360,26 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
   for (const Class& cls : uninstantiatedClasses) {
     cls.emit_cython_pxd(pxdFile);
 
-    for (const Class& expanded : expandedClasses) {
-      bool matchingNonTemplated = !expanded.templateClass
-          && expanded.pxdClassName() == cls.pxdClassName();
-      bool isTemplatedFromCls = expanded.templateClass
-          && expanded.templateClass->pxdClassName() == cls.pxdClassName();
+    for (const Class& expCls : expandedClasses) {
+      bool matchingNonTemplated = !expCls.templateClass
+          && expCls.pxdClassName() == cls.pxdClassName();
+      bool isTemplatedFromCls = expCls.templateClass
+          && expCls.templateClass->pxdClassName() == cls.pxdClassName();
 
       // ctypedef for template instantiations
       if (isTemplatedFromCls) {
         pxdFile.oss << "\n";
-        pxdFile.oss << "ctypedef " << expanded.templateClass->pxdClassName()
+        pxdFile.oss << "ctypedef " << expCls.templateClass->pxdClassName()
             << "[";
-        for (size_t i = 0; i < expanded.templateInstTypeList.size(); ++i)
-          pxdFile.oss << expanded.templateInstTypeList[i].pxdClassName()
-              << ((i == expanded.templateInstTypeList.size() - 1) ? "" : ", ");
-        pxdFile.oss << "] " << expanded.pxdClassName() << "\n";
+        for (size_t i = 0; i < expCls.templateInstTypeList.size(); ++i)
+          pxdFile.oss << expCls.templateInstTypeList[i].pxdClassName()
+              << ((i == expCls.templateInstTypeList.size() - 1) ? "" : ", ");
+        pxdFile.oss << "] " << expCls.pxdClassName() << "\n";
       }
 
       // Python wrapper class
       if (isTemplatedFromCls || matchingNonTemplated) {
-        expanded.emit_cython_wrapper_pxd(pxdFile);
+        expCls.emit_cython_wrapper_pxd(pxdFile);
       }
     }
     pxdFile.oss << "\n\n";

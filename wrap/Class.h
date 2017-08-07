@@ -67,7 +67,7 @@ private:
 
 public:
 
-  StaticMethods static_methods_; ///< Static methods
+  StaticMethods static_methods; ///< Static methods
 
   // Then the instance variables are set directly by the Module constructor
   std::vector<std::string> templateArgs; ///< Template arguments
@@ -177,7 +177,7 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const Class& cls) {
     os << "class " << cls.name() << "{\n";
     os << cls.constructor << ";\n";
-    for(const StaticMethod& m: cls.static_methods_ | boost::adaptors::map_values)
+    for(const StaticMethod& m: cls.static_methods | boost::adaptors::map_values)
       os << m << ";\n";
     for(const Method& m: cls.methods_ | boost::adaptors::map_values)
       os << m << ";\n";
@@ -272,7 +272,7 @@ struct ClassGrammar: public classic::grammar<ClassGrammar> {
           >> staticMethodName_p[assign_a(methodName)] >> argumentList_g >> ';'
           >> *comments_p) //
           [bl::bind(&StaticMethod::addOverload,
-              bl::var(self.cls_.static_methods_)[bl::var(methodName)],
+              bl::var(self.cls_.static_methods)[bl::var(methodName)],
               bl::var(methodName), bl::var(args), bl::var(retVal), boost::none,
               verbose)] //
           [assign_a(retVal, retVal0)][clear_a(args)];
