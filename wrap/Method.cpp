@@ -85,8 +85,12 @@ void Method::emit_cython_pxd(FileWriter& file, const Class& cls) const {
   for (size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "        ";
     returnVals_[i].emit_cython_pxd(file, cls.pxdClassName(), cls.templateArgs);
-    file.oss << pyRename(name_) + " \"" + name_ + "\""
-             << "(";
+    const string renamed = pyRename(name_);
+    if (renamed != name_) {
+      file.oss << pyRename(name_) + " \"" + name_ + "\"" << "(";
+    } else {
+      file.oss << name_ << "(";
+    }
     argumentList(i).emit_cython_pxd(file, cls.pxdClassName(), cls.templateArgs);
     file.oss << ")";
     // if (is_const_) file.oss << " const";
