@@ -156,14 +156,23 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
   file.oss << "        cdef list __params\n";
 
   // Define return values for all possible overloads
-  vector<string> return_value;
+  vector<string> return_type; // every overload has a return type, possibly void
+  map<string, string> return_value; // we only define one return value for every distinct type
+  size_t j = 1;
   for (size_t i = 0; i < nrOverloads(); ++i) {
-    return_value.push_back("return_value_" + to_string(i));
-    if (!returnVals_[i].isVoid()) {
-      file.oss << "        cdef " << returnVals_[i].pyx_returnType() << " "
-          << return_value[i] << "\n";
+    if (returnVals_[i].isVoid()) {
+      return_type.push_back("void");
+    } else {
+      const string type = returnVals_[i].pyx_returnType();
+      return_type.push_back(type);
+      if (return_value.count(type) == 0) {
+        const string value = "return_value_" + to_string(j++);
+        return_value[type] = value;
+        file.oss << "        cdef " << type << " " << value << "\n";
+      }
     }
   }
+
   for (size_t i = 0; i < nrOverloads(); ++i) {
     ArgumentList args = argumentList(i);
     file.oss << "        try:\n";
@@ -174,9 +183,11 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
     string caller = "self." + cls.shared_pxd_obj_in_pyx() + ".get()";
     string call = pyx_functionCall(caller, funcName, i);
     if (!returnVals_[i].isVoid()) {
-      file.oss << "            " << return_value[i] << " = " << call << "\n";
-      file.oss << "            return "
-          << returnVals_[i].pyx_casting(return_value[i]) << "\n";
+      const string type = return_type[i];
+      const string value = return_value[type];
+      file.oss << "            " << value << " = " << call << "\n";
+      file.oss << "            return " << returnVals_[i].pyx_casting(value)
+          << "\n";
     } else {
       file.oss << "            " << call << "\n";
       file.oss << "            return\n";
