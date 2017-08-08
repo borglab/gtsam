@@ -196,6 +196,33 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
 }
 
 /* ************************************************************************* */
+boost::optional<pair<Key, Pose2> > parseVertex(istream& is, const string& tag) {
+  if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {
+    Key id;
+    double x, y, yaw;
+    is >> id >> x >> y >> yaw;
+    return pair<Key, Pose2>(id, Pose2(x, y, yaw));
+  } else {
+    return boost::none;
+  }
+}
+
+/* ************************************************************************* */
+boost::optional<pair<pair<Key, Key>, Pose2> > parseEdge(istream& is, const string& tag) {
+  if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "EDGE_SE2")
+      || (tag == "ODOMETRY")) {
+
+    Key id1, id2;
+    double x, y, yaw;
+    is >> id1 >> id2 >> x >> y >> yaw;
+    return pair<pair<Key, Key>, Pose2>(pair<Key, Key>(id1, id2),
+        Pose2(x, y, yaw));
+  } else {
+    return boost::none;
+  }
+}
+
+/* ************************************************************************* */
 GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
     bool addNoise, bool smart, NoiseFormat noiseFormat,
     KernelFunctionType kernelFunctionType) {
@@ -214,16 +241,15 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
     if (!(is >> tag))
       break;
 
-    if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {
-      Key id;
-      double x, y, yaw;
-      is >> id >> x >> y >> yaw;
+    const auto indexed_pose = parseVertex(is, tag);
+    if (indexed_pose) {
+      Key id = indexed_pose->first;
 
       // optional filter
       if (maxID && id >= maxID)
         continue;
 
-      initial->insert(id, Pose2(x, y, yaw));
+      initial->insert(id, indexed_pose->second);
     }
     is.ignore(LINESIZE, '\n');
   }
@@ -251,13 +277,10 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
     if (!(is >> tag))
       break;
 
-    if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "EDGE_SE2")
-        || (tag == "ODOMETRY")) {
-
-      // Read transform
-      double x, y, yaw;
-      is >> id1 >> id2 >> x >> y >> yaw;
-      Pose2 l1Xl2(x, y, yaw);
+    auto between_pose = parseEdge(is, tag);
+    if (between_pose) {
+      std::tie(id1, id2) = between_pose->first;
+      Pose2& l1Xl2 = between_pose->second;
 
       // read noise model
       SharedNoiseModel modelInFile = readNoiseModel(is, smart, noiseFormat,
