@@ -52,7 +52,7 @@ function(pyx_to_cpp target pyx_file generated_cpp include_dirs)
   add_custom_command(
     OUTPUT ${generated_cpp}
     COMMAND
-      ${CYTHON_EXECUTABLE} -X boundscheck=False -a -v --cplus ${includes_for_cython} ${pyx_file} -o ${generated_cpp}
+      ${CYTHON_EXECUTABLE} -X boundscheck=False -a -v --fast-fail --cplus ${includes_for_cython} ${pyx_file} -o ${generated_cpp}
     VERBATIM)
   add_custom_target(${target} ALL DEPENDS ${generated_cpp})
 endfunction()
