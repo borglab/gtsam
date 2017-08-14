@@ -68,7 +68,7 @@ endfunction()
 #    - output_dir:   The output directory
 function(build_cythonized_cpp target cpp_file output_lib_we output_dir)
   add_library(${target} MODULE ${cpp_file})
-  set_target_properties(${target} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup"
+  set_target_properties(${target} PROPERTIES COMPILE_FLAGS "-w" LINK_FLAGS "-undefined dynamic_lookup"
     OUTPUT_NAME ${output_lib_we} PREFIX "" LIBRARY_OUTPUT_DIRECTORY ${output_dir})
 endfunction()
 
