@@ -71,35 +71,29 @@ public:
     return os;
   }
 
-  std::string pyx_resolveOverloadParams(const ArgumentList& args, bool isVoid, size_t indentLevel = 2) const {
+  std::string pyx_resolveOverloadParams(const ArgumentList& args, bool isVoid,
+      size_t indentLevel = 2) const {
     std::string indent;
-    for (size_t i = 0; i<indentLevel; ++i) indent += "    ";
+    for (size_t i = 0; i < indentLevel; ++i)
+      indent += "    ";
     std::string s;
-    s += indent + "if len(args)+len(kwargs) !=" + std::to_string(args.size()) + ":\n";
-    s += indent + "    return False";
-    s += (!isVoid) ? ", None\n" : "\n";
+    s += indent + "__params = process_args([" + args.pyx_paramsList()
+        + "], args, kwargs)\n";
+    s += args.pyx_castParamsToPythonType(indent);
     if (args.size() > 0) {
-      s += indent + "__params = kwargs.copy()\n";
-      s += indent + "__names = [" + args.pyx_paramsList() + "]\n";
-      s += indent + "for i in range(len(args)):\n"; 
-      s += indent + "    __params[__names[i]] = args[i]\n";
-      for (size_t i = 0; i<args.size(); ++i) {
+      for (size_t i = 0; i < args.size(); ++i) {
+        // For python types we can do the assert after the assignment and save list accesses
         if (args[i].type.isNonBasicType() || args[i].type.isEigen()) {
-          std::string param = "__params[__names[" + std::to_string(i) + "]]";
-          s += indent + "if not isinstance(" + param + ", " +
-               args[i].type.pyxArgumentType() + ")";
-          if (args[i].type.isEigen())
-            s += " or not " + param + ".ndim == " +
-                 ((args[i].type.pyxClassName() == "Vector") ? "1" : "2");
-          s +=  ":\n";
-          s += indent + "    return False" + ((isVoid) ? "" : ", None") + "\n";
+          std::string param = args[i].name;
+          s += indent + "assert isinstance(" + param + ", "
+              + args[i].type.pyxArgumentType() + ")";
+          if (args[i].type.isEigen()) {
+            s += " and " + param + ".ndim == "
+                + ((args[i].type.pyxClassName() == "Vector") ? "1" : "2");
+          }
+          s += "\n";
         }
       }
-      s += indent + "try:\n";
-      s += args.pyx_castParamsToPythonType();
-      s += indent + "except:\n";
-      s += indent + "    return False";
-      s += (!isVoid) ? ", None\n" : "\n";
     }
     return s;
   }

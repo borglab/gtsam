@@ -26,9 +26,11 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
                                     gtsam_unstable  # library to link with
                                     "gtsam_unstable;gtsam_unstable_header;gtsam_cython"  # dependencies to be built before wrapping
                                     )
+    # for some reasons cython gtsam_unstable can't find gtsam/gtsam.pxd without doing this
+    file(WRITE ${PROJECT_BINARY_DIR}/cython/gtsam_unstable/__init__.py "")
   endif()
 
-  # Install the custom-generated __init__.py with gtsam_unstable disabled
+  # Install the custom-generated __init__.py
   # This is to make the build/cython/gtsam folder a python package, so gtsam can be found while wrapping gtsam_unstable
   configure_file(${PROJECT_SOURCE_DIR}/cython/gtsam/__init__.py.in ${PROJECT_BINARY_DIR}/cython/gtsam/__init__.py)
   install_cython_files("${PROJECT_BINARY_DIR}/cython/gtsam/__init__.py" "${GTSAM_CYTHON_INSTALL_PATH}/gtsam")

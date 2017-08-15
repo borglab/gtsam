@@ -131,7 +131,7 @@ struct ArgumentList: public std::vector<Argument> {
   void emit_cython_pyx(FileWriter& file) const;
   std::string pyx_asParams() const;
   std::string pyx_paramsList() const;
-  std::string pyx_castParamsToPythonType() const;
+  std::string pyx_castParamsToPythonType(const std::string& indent) const;
   std::string pyx_convertEigenTypeAndStorageOrder(const std::string& indent) const;
 
   /**

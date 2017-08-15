@@ -281,15 +281,16 @@ std::string ArgumentList::pyx_paramsList() const {
 }
 
 /* ************************************************************************* */
-std::string ArgumentList::pyx_castParamsToPythonType() const {
-  if (size() == 0) 
-    return "            pass\n";
+std::string ArgumentList::pyx_castParamsToPythonType(
+    const std::string& indent) const {
+  if (size() == 0)
+    return "";
 
   // cast params to their correct python argument type to pass in the function call later
   string s;
   for (size_t j = 0; j < size(); ++j)
-    s += "            " + at(j).name + " = <" + at(j).type.pyxArgumentType()
-             + ">(__params['" + at(j).name + "'])\n";
+    s += indent + at(j).name + " = <" + at(j).type.pyxArgumentType()
+        + ">(__params[" + std::to_string(j) + "])\n";
   return s;
 }
 
