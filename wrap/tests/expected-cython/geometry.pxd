@@ -12,26 +12,28 @@ cdef extern from "boost/shared_ptr.hpp" namespace "boost":
         shared_ptr()
         shared_ptr(T*)
         T* get()
+        long use_count() const
         T& operator*()
 
     cdef shared_ptr[T] dynamic_pointer_cast[T,U](const shared_ptr[U]& r)
     cdef shared_ptr[T] make_shared[T](const T& r)
+
 cdef extern from "gtsam/geometry/Point2.h" namespace "gtsam":
     cdef cppclass CPoint2 "gtsam::Point2":
         CPoint2() except +
         CPoint2(double x, double y) except +
 
-        void argChar "argChar"(char a) except +
-        void argUChar "argUChar"(unsigned char a) except +
-        int dim "dim"() except +
-        void eigenArguments "eigenArguments"(const VectorXd& v, const MatrixXd& m) except +
-        char returnChar "returnChar"() except +
-        CVectorNotEigen vectorConfusion "vectorConfusion"() except +
-        double x "x"() except +
-        double y "y"() except +
+        void argChar(char a) except +
+        void argUChar(unsigned char a) except +
+        int dim() except +
+        void eigenArguments(const VectorXd& v, const MatrixXd& m) except +
+        char returnChar() except +
+        CVectorNotEigen vectorConfusion() except +
+        double x() except +
+        double y() except +
 
 cdef class Point2:
-    cdef shared_ptr[CPoint2] shared_CPoint2_
+    cdef shared_ptr[CPoint2] CPoint2_
     @staticmethod
     cdef Point2 cyCreateFromShared(const shared_ptr[CPoint2]& other)
 
@@ -45,12 +47,13 @@ cdef extern from "gtsam/geometry/Point3.h" namespace "gtsam":
         @staticmethod
         double staticFunction "staticFunction"() except +
 
-        double norm "norm"() except +
+        double norm() except +
 
 cdef class Point3:
-    cdef shared_ptr[CPoint3] shared_CPoint3_
+    cdef shared_ptr[CPoint3] CPoint3_
     @staticmethod
     cdef Point3 cyCreateFromShared(const shared_ptr[CPoint3]& other)
+
 
 
 cdef extern from "folder/path/to/Test.h":
@@ -58,28 +61,28 @@ cdef extern from "folder/path/to/Test.h":
         CTest() except +
         CTest(double a, const MatrixXd& b) except +
 
-        void arg_EigenConstRef "arg_EigenConstRef"(const MatrixXd& value) except +
-        pair[CTest,shared_ptr[CTest]] create_MixedPtrs "create_MixedPtrs"() except +
-        pair[shared_ptr[CTest],shared_ptr[CTest]] create_ptrs "create_ptrs"() except +
+        void arg_EigenConstRef(const MatrixXd& value) except +
+        pair[CTest,shared_ptr[CTest]] create_MixedPtrs() except +
+        pair[shared_ptr[CTest],shared_ptr[CTest]] create_ptrs() except +
         void print_ "print"() except +
-        shared_ptr[CPoint2] return_Point2Ptr "return_Point2Ptr"(bool value) except +
-        CTest return_Test "return_Test"(shared_ptr[CTest]& value) except +
-        shared_ptr[CTest] return_TestPtr "return_TestPtr"(shared_ptr[CTest]& value) except +
-        bool return_bool "return_bool"(bool value) except +
-        double return_double "return_double"(double value) except +
-        bool return_field "return_field"(const CTest& t) except +
-        int return_int "return_int"(int value) except +
-        MatrixXd return_matrix1 "return_matrix1"(const MatrixXd& value) except +
-        MatrixXd return_matrix2 "return_matrix2"(const MatrixXd& value) except +
-        pair[VectorXd,MatrixXd] return_pair "return_pair"(const VectorXd& v, const MatrixXd& A) except +
-        pair[shared_ptr[CTest],shared_ptr[CTest]] return_ptrs "return_ptrs"(shared_ptr[CTest]& p1, shared_ptr[CTest]& p2) except +
-        size_t return_size_t "return_size_t"(size_t value) except +
-        string return_string "return_string"(string value) except +
-        VectorXd return_vector1 "return_vector1"(const VectorXd& value) except +
-        VectorXd return_vector2 "return_vector2"(const VectorXd& value) except +
+        shared_ptr[CPoint2] return_Point2Ptr(bool value) except +
+        CTest return_Test(shared_ptr[CTest]& value) except +
+        shared_ptr[CTest] return_TestPtr(shared_ptr[CTest]& value) except +
+        bool return_bool(bool value) except +
+        double return_double(double value) except +
+        bool return_field(const CTest& t) except +
+        int return_int(int value) except +
+        MatrixXd return_matrix1(const MatrixXd& value) except +
+        MatrixXd return_matrix2(const MatrixXd& value) except +
+        pair[VectorXd,MatrixXd] return_pair(const VectorXd& v, const MatrixXd& A) except +
+        pair[shared_ptr[CTest],shared_ptr[CTest]] return_ptrs(shared_ptr[CTest]& p1, shared_ptr[CTest]& p2) except +
+        size_t return_size_t(size_t value) except +
+        string return_string(string value) except +
+        VectorXd return_vector1(const VectorXd& value) except +
+        VectorXd return_vector2(const VectorXd& value) except +
 
 cdef class Test:
-    cdef shared_ptr[CTest] shared_CTest_
+    cdef shared_ptr[CTest] CTest_
     @staticmethod
     cdef Test cyCreateFromShared(const shared_ptr[CTest]& other)
 
@@ -89,7 +92,7 @@ cdef extern from "folder/path/to/Test.h":
         pass
 
 cdef class MyBase:
-    cdef shared_ptr[CMyBase] shared_CMyBase_
+    cdef shared_ptr[CMyBase] CMyBase_
     @staticmethod
     cdef MyBase cyCreateFromShared(const shared_ptr[CMyBase]& other)
 
@@ -98,24 +101,26 @@ cdef extern from "folder/path/to/Test.h":
     cdef cppclass CMyTemplate "MyTemplate"[T](CMyBase):
         CMyTemplate() except +
 
-        void accept_T "accept_T"(const T& value) except +
-        void accept_Tptr "accept_Tptr"(shared_ptr[T]& value) except +
-        pair[T,shared_ptr[T]] create_MixedPtrs "create_MixedPtrs"() except +
-        pair[shared_ptr[T],shared_ptr[T]] create_ptrs "create_ptrs"() except +
-        T return_T "return_T"(shared_ptr[T]& value) except +
-        shared_ptr[T] return_Tptr "return_Tptr"(shared_ptr[T]& value) except +
-        pair[shared_ptr[T],shared_ptr[T]] return_ptrs "return_ptrs"(shared_ptr[T]& p1, shared_ptr[T]& p2) except +
+        void accept_T(const T& value) except +
+        void accept_Tptr(shared_ptr[T]& value) except +
+        pair[T,shared_ptr[T]] create_MixedPtrs() except +
+        pair[shared_ptr[T],shared_ptr[T]] create_ptrs() except +
+        T return_T(shared_ptr[T]& value) except +
+        shared_ptr[T] return_Tptr(shared_ptr[T]& value) except +
+        pair[shared_ptr[T],shared_ptr[T]] return_ptrs(shared_ptr[T]& p1, shared_ptr[T]& p2) except +
         ARG templatedMethod[ARG](const ARG& t) except +
+
 ctypedef CMyTemplate[CPoint2] CMyTemplatePoint2
 
 cdef class MyTemplatePoint2(MyBase):
-    cdef shared_ptr[CMyTemplatePoint2] shared_CMyTemplatePoint2_
+    cdef shared_ptr[CMyTemplatePoint2] CMyTemplatePoint2_
     @staticmethod
     cdef MyTemplatePoint2 cyCreateFromShared(const shared_ptr[CMyTemplatePoint2]& other)
+
 ctypedef CMyTemplate[MatrixXd] CMyTemplateMatrix
 
 cdef class MyTemplateMatrix(MyBase):
-    cdef shared_ptr[CMyTemplateMatrix] shared_CMyTemplateMatrix_
+    cdef shared_ptr[CMyTemplateMatrix] CMyTemplateMatrix_
     @staticmethod
     cdef MyTemplateMatrix cyCreateFromShared(const shared_ptr[CMyTemplateMatrix]& other)
 
@@ -124,10 +129,11 @@ cdef extern from "folder/path/to/Test.h":
     cdef cppclass CMyFactor "MyFactor"[POSE,POINT]:
         CMyFactor(size_t key1, size_t key2, double measured, const shared_ptr[CnoiseModel_Base]& noiseModel) except +
 
+
 ctypedef CMyFactor[CPose2, MatrixXd] CMyFactorPosePoint2
 
 cdef class MyFactorPosePoint2:
-    cdef shared_ptr[CMyFactorPosePoint2] shared_CMyFactorPosePoint2_
+    cdef shared_ptr[CMyFactorPosePoint2] CMyFactorPosePoint2_
     @staticmethod
     cdef MyFactorPosePoint2 cyCreateFromShared(const shared_ptr[CMyFactorPosePoint2]& other)
 
