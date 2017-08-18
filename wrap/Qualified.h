@@ -237,7 +237,7 @@ public:
 
   /// the internal Cython shared obj in a Python class wrappper
   std::string shared_pxd_obj_in_pyx() const {
-    return "shared_" + pxdClassName() + "_";
+    return pxdClassName() + "_";
   }
 
   std::string make_shared_pxd_class_in_pyx() const {

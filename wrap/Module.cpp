@@ -334,7 +334,7 @@ void Module::generate_cython_wrapper(const string& toolboxPath, const std::strin
 /* ************************************************************************* */
 void Module::emit_cython_pxd(FileWriter& pxdFile) const {
   // headers
-  pxdFile.oss << "from eigency.core cimport *\n"
+  pxdFile.oss << "from gtsam_eigency.core cimport *\n"
                  "from libcpp.string cimport string\n"
                  "from libcpp.vector cimport vector\n"
                  "from libcpp.pair cimport pair\n"
@@ -348,50 +348,41 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
                  "        shared_ptr()\n"
                  "        shared_ptr(T*)\n"
                  "        T* get()\n"
+                 "        long use_count() const\n"
                  "        T& operator*()\n\n"
                  "    cdef shared_ptr[T] dynamic_pointer_cast[T,U](const shared_ptr[U]& r)\n"
-                 "    cdef shared_ptr[T] make_shared[T](const T& r)\n";
+                 "    cdef shared_ptr[T] make_shared[T](const T& r)\n\n";
 
   for(const TypedefPair& types: typedefs)
     types.emit_cython_pxd(pxdFile);
 
   //... wrap all classes
   for (const Class& cls : uninstantiatedClasses) {
-      cls.emit_cython_pxd(pxdFile);
+    cls.emit_cython_pxd(pxdFile);
 
-      for (const Class& expCls : expandedClasses) {
-        //... ctypedef for template instantiations
-        if (expCls.templateClass &&
-            expCls.templateClass->pxdClassName() == cls.pxdClassName()) {
-          pxdFile.oss << "ctypedef " << expCls.templateClass->pxdClassName()
-                      << "[";
-          for (size_t i = 0; i < expCls.templateInstTypeList.size(); ++i)
-            pxdFile.oss << expCls.templateInstTypeList[i].pxdClassName()
-                        << ((i == expCls.templateInstTypeList.size() - 1)
-                                ? ""
-                                : ", ");
-          pxdFile.oss << "] " << expCls.pxdClassName() << "\n";
-        }
+    for (const Class& expCls : expandedClasses) {
+      bool matchingNonTemplated = !expCls.templateClass
+          && expCls.pxdClassName() == cls.pxdClassName();
+      bool isTemplatedFromCls = expCls.templateClass
+          && expCls.templateClass->pxdClassName() == cls.pxdClassName();
 
-        if ((!expCls.templateClass &&
-             expCls.pxdClassName() == cls.pxdClassName()) ||
-            (expCls.templateClass &&
-             expCls.templateClass->pxdClassName() == cls.pxdClassName())) {
-            pxdFile.oss << "\n";
-            pxdFile.oss << "cdef class " << expCls.pyxClassName();
-            if (expCls.getParent())
-              pxdFile.oss << "(" << expCls.getParent()->pyxClassName() << ")";
-            pxdFile.oss << ":\n";
-            pxdFile.oss << "    cdef " << expCls.shared_pxd_class_in_pyx()
-                        << " " << expCls.shared_pxd_obj_in_pyx() << "\n";
-            // cyCreateFromShared
-            pxdFile.oss << "    @staticmethod\n";
-            pxdFile.oss << "    cdef " << expCls.pyxClassName()
-                        << " cyCreateFromShared(const "
-                        << expCls.shared_pxd_class_in_pyx() << "& other)\n";
-          }
+      // ctypedef for template instantiations
+      if (isTemplatedFromCls) {
+        pxdFile.oss << "\n";
+        pxdFile.oss << "ctypedef " << expCls.templateClass->pxdClassName()
+            << "[";
+        for (size_t i = 0; i < expCls.templateInstTypeList.size(); ++i)
+          pxdFile.oss << expCls.templateInstTypeList[i].pxdClassName()
+              << ((i == expCls.templateInstTypeList.size() - 1) ? "" : ", ");
+        pxdFile.oss << "] " << expCls.pxdClassName() << "\n";
       }
-      pxdFile.oss << "\n\n";
+
+      // Python wrapper class
+      if (isTemplatedFromCls || matchingNonTemplated) {
+        expCls.emit_cython_wrapper_pxd(pxdFile);
+      }
+    }
+    pxdFile.oss << "\n\n";
   }
 
   //... wrap global functions
@@ -412,11 +403,22 @@ void Module::emit_cython_pyx(FileWriter& pyxFile) const {
                  "from "<< pxdHeader << " cimport dynamic_pointer_cast\n"
                  "from "<< pxdHeader << " cimport make_shared\n";
 
+  pyxFile.oss << "# C helper function that copies all arguments into a positional list.\n"
+                 "cdef list process_args(list keywords, tuple args, dict kwargs):\n"
+                 "   cdef str keyword\n"
+                 "   cdef int n = len(args), m = len(keywords)\n"
+                 "   cdef list params = list(args)\n"
+                 "   assert len(args)+len(kwargs) == m, 'Expected {} arguments'.format(m)\n"
+                 "   try:\n"
+                 "       return params + [kwargs[keyword] for keyword in keywords[n:]]\n"
+                 "   except:\n"
+                 "       raise ValueError('Epected arguments ' + str(keywords))\n";
+
   // import all typedefs, e.g. from gtsam_wrapper cimport Key, so we don't need to say gtsam.Key
   for(const Qualified& q: Qualified::BasicTypedefs) {
     pyxFile.oss << "from " << pxdHeader << " cimport " << q.pxdClassName() << "\n";
   }
-  pyxFile.oss << "from eigency.core cimport *\n"
+  pyxFile.oss << "from gtsam_eigency.core cimport *\n"
                  "from libcpp cimport bool\n\n"
                  "from libcpp.pair cimport pair\n"
                  "from libcpp.string cimport string\n"

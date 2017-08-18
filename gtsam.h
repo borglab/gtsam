@@ -2,8 +2,12 @@
 
  * GTSAM Wrap Module Definition
  *
- * These are the current classes available through the matlab toolbox interface,
+ * These are the current classes available through the matlab and python wrappers,
  * add more functions/classes as they are available.
+ *
+ * IMPORTANT: the python wrapper supports keyword arguments for functions/methods. Hence, the
+ *            argument names matter. An implementation restriction is that in overloaded methods
+ *            or functions, arguments of different types *have* to have different names.
  *
  * Requirements:
  *   Classes must start with an uppercase letter
@@ -16,7 +20,7 @@
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type
  *   Constructors
- *     - Overloads are supported
+ *     - Overloads are supported, but arguments of different types *have* to have different names
  *     - A class with no constructors can be returned from other functions but not allocated directly in MATLAB
  *   Methods
  *     - Constness has no effect
@@ -26,7 +30,7 @@
  *   Static methods
  *     - Must start with a letter (upper or lowercase) and use the "static" keyword
  *     - The first letter will be made uppercase in the generated MATLAB interface
- *     - Overloads are supported
+ *     - Overloads are supported, but arguments of different types *have* to have different names
  *   Arguments to functions any of
  *      - Eigen types:       Matrix, Vector
  *      - Eigen types and classes as an optionally const reference
@@ -145,9 +149,9 @@ class KeyList {
 // Actually a FastSet<Key>
 class KeySet {
   KeySet();
-  KeySet(const gtsam::KeySet& other);
-  KeySet(const gtsam::KeyVector& other);
-  KeySet(const gtsam::KeyList& other);
+  KeySet(const gtsam::KeySet& set);
+  KeySet(const gtsam::KeyVector& vector);
+  KeySet(const gtsam::KeyList& list);
 
   // Testable
   void print(string s) const;
@@ -480,6 +484,11 @@ class Rot3 {
   // Standard Constructors and Named Constructors
   Rot3();
   Rot3(Matrix R);
+  Rot3(const gtsam::Point3& col1, const gtsam::Point3& col2, const gtsam::Point3& col3);
+  Rot3(double R11, double R12, double R13,
+      double R21, double R22, double R23,
+      double R31, double R32, double R33);
+
   static gtsam::Rot3 Rx(double t);
   static gtsam::Rot3 Ry(double t);
   static gtsam::Rot3 Rz(double t);
@@ -491,6 +500,7 @@ class Rot3 {
   static gtsam::Rot3 Ypr(double y, double p, double r);
   static gtsam::Rot3 Quaternion(double w, double x, double y, double z);
   static gtsam::Rot3 Rodrigues(Vector v);
+  static gtsam::Rot3 Rodrigues(double wx, double wy, double wz);
 
   // Testable
   void print(string s) const;
@@ -586,7 +596,7 @@ class Pose3 {
   Pose3(const gtsam::Pose3& other);
   Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
   Pose3(const gtsam::Pose2& pose2); // FIXME: shadows Pose3(Pose3 pose)
-  Pose3(Matrix t);
+  Pose3(Matrix mat);
 
   // Testable
   void print(string s) const;
@@ -595,23 +605,23 @@ class Pose3 {
   // Group
   static gtsam::Pose3 identity();
   gtsam::Pose3 inverse() const;
-  gtsam::Pose3 compose(const gtsam::Pose3& p2) const;
-  gtsam::Pose3 between(const gtsam::Pose3& p2) const;
+  gtsam::Pose3 compose(const gtsam::Pose3& pose) const;
+  gtsam::Pose3 between(const gtsam::Pose3& pose) const;
 
   // Manifold
   gtsam::Pose3 retract(Vector v) const;
-  Vector localCoordinates(const gtsam::Pose3& T2) const;
+  Vector localCoordinates(const gtsam::Pose3& pose) const;
 
   // Lie Group
   static gtsam::Pose3 Expmap(Vector v);
-  static Vector Logmap(const gtsam::Pose3& p);
+  static Vector Logmap(const gtsam::Pose3& pose);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
   static Matrix wedge(double wx, double wy, double wz, double vx, double vy, double vz);
 
   // Group Action on Point3
-  gtsam::Point3 transform_from(const gtsam::Point3& p) const;
-  gtsam::Point3 transform_to(const gtsam::Point3& p) const;
+  gtsam::Point3 transform_from(const gtsam::Point3& point) const;
+  gtsam::Point3 transform_to(const gtsam::Point3& point) const;
 
   // Standard Interface
   gtsam::Rot3 rotation() const;
@@ -636,7 +646,7 @@ class Pose3Vector
   size_t size() const;
   bool empty() const;
   gtsam::Pose3 at(size_t n) const;
-  void push_back(const gtsam::Pose3& x);
+  void push_back(const gtsam::Pose3& pose);
 };
 
 #include <gtsam/geometry/Unit3.h>
@@ -909,7 +919,7 @@ class PinholeCamera {
   gtsam::Point2 project(const gtsam::Point3& point);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
   double range(const gtsam::Point3& point);
-  double range(const gtsam::Pose3& point);
+  double range(const gtsam::Pose3& pose);
 
   // enabling serialization functionality
   void serialize() const;
@@ -946,7 +956,7 @@ virtual class SimpleCamera {
   gtsam::Point2 project(const gtsam::Point3& point);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
   double range(const gtsam::Point3& point);
-  double range(const gtsam::Pose3& point);
+  double range(const gtsam::Pose3& pose);
 
   // enabling serialization functionality
   void serialize() const;
@@ -1060,13 +1070,13 @@ virtual class SymbolicFactorGraph {
       const gtsam::Ordering& ordering);
   pair<gtsam::SymbolicBayesTree*, gtsam::SymbolicFactorGraph*> eliminatePartialMultifrontal(
       const gtsam::KeyVector& keys);
-  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& variables);
-  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables);
-  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& variables,
+  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& ordering);
+  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& key_vector);
+  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& ordering,
       const gtsam::Ordering& marginalizedVariableOrdering);
-  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables,
+  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& key_vector,
       const gtsam::Ordering& marginalizedVariableOrdering);
-  gtsam::SymbolicFactorGraph* marginal(const gtsam::KeyVector& variables);
+  gtsam::SymbolicFactorGraph* marginal(const gtsam::KeyVector& key_vector);
 };
 
 #include <gtsam/symbolic/SymbolicConditional.h>
@@ -1164,9 +1174,9 @@ class VariableIndex {
   //template<T = {gtsam::FactorGraph}>
   //VariableIndex(const T& factorGraph, size_t nVariables);
   //VariableIndex(const T& factorGraph);
-  VariableIndex(const gtsam::SymbolicFactorGraph& factorGraph);
-  VariableIndex(const gtsam::GaussianFactorGraph& factorGraph);
-  VariableIndex(const gtsam::NonlinearFactorGraph& factorGraph);
+  VariableIndex(const gtsam::SymbolicFactorGraph& sfg);
+  VariableIndex(const gtsam::GaussianFactorGraph& gfg);
+  VariableIndex(const gtsam::NonlinearFactorGraph& fg);
   VariableIndex(const gtsam::VariableIndex& other);
 
   // Testable
@@ -1460,7 +1470,7 @@ class GaussianFactorGraph {
 
   // Building the graph
   void push_back(const gtsam::GaussianFactor* factor);
-  void push_back(const gtsam::GaussianConditional* factor);
+  void push_back(const gtsam::GaussianConditional* conditional);
   void push_back(const gtsam::GaussianFactorGraph& graph);
   void push_back(const gtsam::GaussianBayesNet& bayesNet);
   void push_back(const gtsam::GaussianBayesTree& bayesTree);
@@ -1499,13 +1509,13 @@ class GaussianFactorGraph {
     const gtsam::Ordering& ordering);
   pair<gtsam::GaussianBayesTree*, gtsam::GaussianFactorGraph*> eliminatePartialMultifrontal(
     const gtsam::KeyVector& keys);
-  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& variables);
-  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables);
-  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& variables,
+  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& ordering);
+  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& key_vector);
+  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& ordering,
     const gtsam::Ordering& marginalizedVariableOrdering);
-  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& variables,
+  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& key_vector,
     const gtsam::Ordering& marginalizedVariableOrdering);
-  gtsam::GaussianFactorGraph* marginal(const gtsam::KeyVector& variables);
+  gtsam::GaussianFactorGraph* marginal(const gtsam::KeyVector& key_vector);
 
   // Conversion to matrices
   Matrix sparseJacobian_() const;
@@ -1859,34 +1869,34 @@ class Values {
   // void update(size_t j, const gtsam::Value& val);
   // gtsam::Value at(size_t j) const;
 
-  void insert(size_t j, const gtsam::Point2& t);
-  void insert(size_t j, const gtsam::Point3& t);
-  void insert(size_t j, const gtsam::Rot2& t);
-  void insert(size_t j, const gtsam::Pose2& t);
-  void insert(size_t j, const gtsam::Rot3& t);
-  void insert(size_t j, const gtsam::Pose3& t);
-  void insert(size_t j, const gtsam::Cal3_S2& t);
-  void insert(size_t j, const gtsam::Cal3DS2& t);
-  void insert(size_t j, const gtsam::Cal3Bundler& t);
-  void insert(size_t j, const gtsam::EssentialMatrix& t);
-  void insert(size_t j, const gtsam::SimpleCamera& t);
-  void insert(size_t j, const gtsam::imuBias::ConstantBias& t);
-  void insert(size_t j, Vector t);
-  void insert(size_t j, Matrix t);
+  void insert(size_t j, const gtsam::Point2& point2);
+  void insert(size_t j, const gtsam::Point3& point3);
+  void insert(size_t j, const gtsam::Rot2& rot2);
+  void insert(size_t j, const gtsam::Pose2& pose2);
+  void insert(size_t j, const gtsam::Rot3& rot3);
+  void insert(size_t j, const gtsam::Pose3& pose3);
+  void insert(size_t j, const gtsam::Cal3_S2& cal3_s2);
+  void insert(size_t j, const gtsam::Cal3DS2& cal3ds2);
+  void insert(size_t j, const gtsam::Cal3Bundler& cal3bundler);
+  void insert(size_t j, const gtsam::EssentialMatrix& essential_matrix);
+  void insert(size_t j, const gtsam::SimpleCamera& simpel_camera);
+  void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
+  void insert(size_t j, Vector vector);
+  void insert(size_t j, Matrix matrix);
 
-  void update(size_t j, const gtsam::Point2& t);
-  void update(size_t j, const gtsam::Point3& t);
-  void update(size_t j, const gtsam::Rot2& t);
-  void update(size_t j, const gtsam::Pose2& t);
-  void update(size_t j, const gtsam::Rot3& t);
-  void update(size_t j, const gtsam::Pose3& t);
-  void update(size_t j, const gtsam::Cal3_S2& t);
-  void update(size_t j, const gtsam::Cal3DS2& t);
-  void update(size_t j, const gtsam::Cal3Bundler& t);
-  void update(size_t j, const gtsam::EssentialMatrix& t);
-  void update(size_t j, const gtsam::imuBias::ConstantBias& t);
-  void update(size_t j, Vector t);
-  void update(size_t j, Matrix t);
+  void update(size_t j, const gtsam::Point2& point2);
+  void update(size_t j, const gtsam::Point3& point3);
+  void update(size_t j, const gtsam::Rot2& rot2);
+  void update(size_t j, const gtsam::Pose2& pose2);
+  void update(size_t j, const gtsam::Rot3& rot3);
+  void update(size_t j, const gtsam::Pose3& pose3);
+  void update(size_t j, const gtsam::Cal3_S2& cal3_s2);
+  void update(size_t j, const gtsam::Cal3DS2& cal3ds2);
+  void update(size_t j, const gtsam::Cal3Bundler& cal3bundler);
+  void update(size_t j, const gtsam::EssentialMatrix& essential_matrix);
+  void update(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
+  void update(size_t j, Vector vector);
+  void update(size_t j, Matrix matrix);
 
   template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias, Vector, Matrix}>
   T at(size_t j);
@@ -2100,10 +2110,10 @@ class ISAM2Params {
   void print(string str) const;
 
   /** Getters and Setters for all properties */
-  void setOptimizationParams(const gtsam::ISAM2GaussNewtonParams& params);
-  void setOptimizationParams(const gtsam::ISAM2DoglegParams& params);
-  void setRelinearizeThreshold(double relinearizeThreshold);
-  void setRelinearizeThreshold(const gtsam::ISAM2ThresholdMap& relinearizeThreshold);
+  void setOptimizationParams(const gtsam::ISAM2GaussNewtonParams& gauss_newton__params);
+  void setOptimizationParams(const gtsam::ISAM2DoglegParams& dogleg_params);
+  void setRelinearizeThreshold(double threshold);
+  void setRelinearizeThreshold(const gtsam::ISAM2ThresholdMap& threshold_map);
   int getRelinearizeSkip() const;
   void setRelinearizeSkip(int relinearizeSkip);
   bool isEnableRelinearization() const;
@@ -2663,5 +2673,11 @@ namespace utilities {
   gtsam::Values localToWorld(const gtsam::Values& local, const gtsam::Pose2& base, const gtsam::KeyVector& keys);
 
 } //\namespace utilities
+
+#include <gtsam/nonlinear/utilities.h>
+class RedirectCout {
+  RedirectCout();
+  string str();
+};
 
 }

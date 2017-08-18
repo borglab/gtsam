@@ -103,7 +103,7 @@ class PoseRTV {
 #include <gtsam_unstable/geometry/Pose3Upright.h>
 class Pose3Upright {
   Pose3Upright();
-  Pose3Upright(const gtsam::Pose3Upright& x);
+  Pose3Upright(const gtsam::Pose3Upright& other);
   Pose3Upright(const gtsam::Rot2& bearing, const gtsam::Point3& t);
   Pose3Upright(double x, double y, double z, double theta);
   Pose3Upright(const gtsam::Pose2& pose, double z);
@@ -141,7 +141,7 @@ class Pose3Upright {
 #include <gtsam_unstable/geometry/BearingS2.h>
 class BearingS2 {
   BearingS2();
-  BearingS2(double azimuth, double elevation);
+  BearingS2(double azimuth_double, double elevation_double);
   BearingS2(const gtsam::Rot2& azimuth, const gtsam::Rot2& elevation);
 
   gtsam::Rot2 azimuth() const;

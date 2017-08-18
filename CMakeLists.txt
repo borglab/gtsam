@@ -96,6 +96,10 @@ if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
     message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the MATLAB toolbox cannot deal with this yet.  Please turn one of the two options off.")
 endif()
 
+if(GTSAM_INSTALL_CYTHON_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
+    message(FATAL_ERROR "GTSAM_INSTALL_CYTHON_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the CYTHON toolbox cannot deal with this yet.  Please turn one of the two options off.")
+endif()
+
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
 set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
@@ -360,6 +364,11 @@ add_subdirectory(examples)
 # Build timing
 add_subdirectory(timing)
 
+# Build gtsam_unstable
+if (GTSAM_BUILD_UNSTABLE)
+    add_subdirectory(gtsam_unstable)
+endif(GTSAM_BUILD_UNSTABLE)
+
 # Matlab toolbox
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	add_subdirectory(matlab)
@@ -381,13 +390,18 @@ endif()
 
 # Cython wrap
 if (GTSAM_INSTALL_CYTHON_TOOLBOX)
-	add_subdirectory(cython)
+  set(GTSAM_INSTALL_CYTHON_TOOLBOX 1)
+  # Set up cache options
+  set(GTSAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
+  if(NOT GTSAM_CYTHON_INSTALL_PATH)
+    set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython")
+  endif()
+  set(GTSAM_EIGENCY_INSTALL_PATH ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency)
+  add_subdirectory(cython)
+else()
+  set(GTSAM_INSTALL_CYTHON_TOOLBOX 0) # This will go into config.h
 endif()
 
-# Build gtsam_unstable
-if (GTSAM_BUILD_UNSTABLE)
-    add_subdirectory(gtsam_unstable)
-endif(GTSAM_BUILD_UNSTABLE)
 
 # Install config and export files
 GtsamMakeConfigFile(GTSAM "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")

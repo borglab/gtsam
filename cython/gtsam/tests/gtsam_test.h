@@ -762,4 +762,11 @@ namespace utilities {
   gtsam::Values localToWorld(const gtsam::Values& local, const gtsam::Pose2& base, const gtsam::KeyVector& keys);
 
 } //\namespace utilities
+
+#include <gtsam/nonlinear/utilities.h>
+class RedirectCout {
+  RedirectCout();
+  string str();
+};
+
 } //\namespace gtsam
