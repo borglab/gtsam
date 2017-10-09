@@ -19,9 +19,9 @@ message(STATUS "Cythonize and build eigency")
 # a part of the gtsam_eigency package and generate the function call import_gtsam_igency__conversions()
 # in conversions_api.h correctly!!!
 cythonize(cythonize_eigency_conversions "../gtsam_eigency/conversions.pyx" "conversions"
-  "${OUTPUT_DIR}" "${EIGENCY_INCLUDE_DIR}" "" "")
+  "${OUTPUT_DIR}" "${EIGENCY_INCLUDE_DIR}" "" "" "")
 cythonize(cythonize_eigency_core "../gtsam_eigency/core.pyx" "core"
-  ${OUTPUT_DIR} "${EIGENCY_INCLUDE_DIR}" "" "")
+  ${OUTPUT_DIR} "${EIGENCY_INCLUDE_DIR}" "" "" "")
 add_dependencies(cythonize_eigency_core cythonize_eigency_conversions)
 add_custom_target(cythonize_eigency)
 add_dependencies(cythonize_eigency cythonize_eigency_conversions cythonize_eigency_core)

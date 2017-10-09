@@ -84,14 +84,18 @@ endfunction()
 #    - output_dir:    The output directory
 #    - include_dirs:  Directories to include when executing cython
 #    - libs:          Libraries to link with
-#    - dependencies:  Other target dependencies
-function(cythonize target pyx_file output_lib_we output_dir include_dirs libs dependencies)
+#    - interface_header: For dependency. Any update in interface header will re-trigger cythonize
+function(cythonize target pyx_file output_lib_we output_dir include_dirs libs interface_header dependencies)
   get_filename_component(pyx_path "${pyx_file}" DIRECTORY)
   get_filename_component(pyx_name "${pyx_file}" NAME_WE)
   set(generated_cpp "${output_dir}/${pyx_name}.cpp")
 
   set_up_required_cython_packages()
   pyx_to_cpp(${target}_pyx2cpp ${pyx_file} ${generated_cpp} "${include_dirs}")
+
+  # Late dependency injection, to make sure this gets called whenever the interface header is updated
+  # See: https://stackoverflow.com/questions/40032593/cmake-does-not-rebuild-dependent-after-prerequisite-changes
+  add_custom_command(OUTPUT ${generated_cpp} DEPENDS ${interface_header} APPEND)
   if (NOT "${dependencies}" STREQUAL "")
     add_dependencies(${target}_pyx2cpp "${dependencies}")
   endif()
@@ -130,8 +134,8 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
 
   message(STATUS "Cythonize and build ${module_name}.pyx")
   get_property(include_dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-  cythonize(${module_name}_cython ${generated_pyx} ${module_name}
-    ${generated_files_path} "${include_dirs}" "${libs}" cython_wrap_${module_name}_pyx)
+  cythonize(cythonize_${module_name} ${generated_pyx} ${module_name}
+    ${generated_files_path} "${include_dirs}" "${libs}" ${interface_header} cython_wrap_${module_name}_pyx)
 
   # distclean
   add_custom_target(wrap_${module_name}_cython_distclean

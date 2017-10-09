@@ -24,7 +24,7 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
                                     "from gtsam.gtsam cimport *"                  # extra imports
                                     "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" # install path
                                     gtsam_unstable  # library to link with
-                                    "gtsam_unstable;gtsam_unstable_header;gtsam_cython"  # dependencies to be built before wrapping
+                                    "gtsam_unstable;gtsam_unstable_header;cythonize_gtsam"  # dependencies to be built before wrapping
                                     )
     # for some reasons cython gtsam_unstable can't find gtsam/gtsam.pxd without doing this
     file(WRITE ${PROJECT_BINARY_DIR}/cython/gtsam_unstable/__init__.py "")
