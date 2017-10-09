@@ -2265,6 +2265,17 @@ typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::CalibratedCamera> Ran
 typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactorSimpleCamera;
 
 
+#include <gtsam/sam/RangeFactor.h>
+template<POSE, POINT>
+virtual class RangeFactorWithTransform : gtsam::NoiseModelFactor {
+  RangeFactorWithTransform(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel, const POSE& body_T_sensor);
+};
+
+typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Point2> RangeFactorWithTransformPosePoint2;
+typedef gtsam::RangeFactorWithTransform<gtsam::Pose3, gtsam::Point3> RangeFactorWithTransformPosePoint3;
+typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Pose2> RangeFactorWithTransformPose2;
+typedef gtsam::RangeFactorWithTransform<gtsam::Pose3, gtsam::Pose3> RangeFactorWithTransformPose3;
+
 #include <gtsam/sam/BearingFactor.h>
 template<POSE, POINT, BEARING>
 virtual class BearingFactor : gtsam::NoiseModelFactor {
