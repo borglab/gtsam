@@ -130,8 +130,10 @@ public:
   }
 
   /** Applies translation to vector */
-  inline VectorType operator* (const VectorType& other) const
-  { return m_coeffs + other; }
+  template<typename Derived>
+  inline typename internal::enable_if<Derived::IsVectorAtCompileTime,VectorType>::type
+  operator* (const MatrixBase<Derived>& vec) const
+  { return m_coeffs + vec.derived(); }
 
   /** \returns the inverse translation (opposite) */
   Translation inverse() const { return Translation(-m_coeffs); }

@@ -335,8 +335,8 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, pose1, noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, pose2, noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -660,8 +660,8 @@ TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, pose1, noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, pose2, noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -801,8 +801,8 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, pose1, noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, pose2, noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -883,8 +883,8 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
   graph.push_back(smartFactor4);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, pose1, noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, pose2, noisePrior);
 
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise

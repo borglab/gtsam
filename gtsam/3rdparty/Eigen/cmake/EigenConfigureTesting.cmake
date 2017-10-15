@@ -1,7 +1,7 @@
 include(EigenTesting)
 include(CheckCXXSourceCompiles)
 
-# configure the "site" and "buildname" 
+# configure the "site" and "buildname"
 ei_set_sitename()
 
 # retrieve and store the build string
@@ -14,17 +14,10 @@ add_dependencies(check buildtests)
 # check whether /bin/bash exists
 find_file(EIGEN_BIN_BASH_EXISTS "/bin/bash" PATHS "/" NO_DEFAULT_PATH)
 
-# CMake/Ctest does not allow us to change the build command,
-# so we have to workaround by directly editing the generated DartConfiguration.tcl file
-# save CMAKE_MAKE_PROGRAM
-set(CMAKE_MAKE_PROGRAM_SAVE ${CMAKE_MAKE_PROGRAM})
-# and set a fake one
-set(CMAKE_MAKE_PROGRAM "@EIGEN_MAKECOMMAND_PLACEHOLDER@")
-
 # This call activates testing and generates the DartConfiguration.tcl
 include(CTest)
 
-set(EIGEN_TEST_BUILD_FLAGS " " CACHE STRING "Options passed to the build command of unit tests")
+set(EIGEN_TEST_BUILD_FLAGS "" CACHE STRING "Options passed to the build command of unit tests")
 
 # Overwrite default DartConfiguration.tcl such that ctest can build our unit tests.
 # Recall that our unit tests are not in the "all" target, so we have to explicitely ask ctest to build our custom 'buildtests' target.

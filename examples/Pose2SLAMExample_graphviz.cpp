@@ -33,19 +33,19 @@ int main (int argc, char** argv) {
 
   // 2a. Add a prior on the first pose, setting it to the origin
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-  graph.push_back(PriorFactor<Pose2>(1, Pose2(0, 0, 0), priorNoise));
+  graph.emplace_shared<PriorFactor<Pose2> >(1, Pose2(0, 0, 0), priorNoise);
 
   // For simplicity, we will use the same noise model for odometry and loop closures
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
 
   // 2b. Add odometry factors
-  graph.push_back(BetweenFactor<Pose2>(1, 2, Pose2(2, 0, 0     ), model));
-  graph.push_back(BetweenFactor<Pose2>(2, 3, Pose2(2, 0, M_PI_2), model));
-  graph.push_back(BetweenFactor<Pose2>(3, 4, Pose2(2, 0, M_PI_2), model));
-  graph.push_back(BetweenFactor<Pose2>(4, 5, Pose2(2, 0, M_PI_2), model));
+  graph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(2, 0, 0     ), model);
+  graph.emplace_shared<BetweenFactor<Pose2> >(2, 3, Pose2(2, 0, M_PI_2), model);
+  graph.emplace_shared<BetweenFactor<Pose2> >(3, 4, Pose2(2, 0, M_PI_2), model);
+  graph.emplace_shared<BetweenFactor<Pose2> >(4, 5, Pose2(2, 0, M_PI_2), model);
 
   // 2c. Add the loop closure constraint
-  graph.push_back(BetweenFactor<Pose2>(5, 2, Pose2(2, 0, M_PI_2), model));
+  graph.emplace_shared<BetweenFactor<Pose2> >(5, 2, Pose2(2, 0, M_PI_2), model);
 
   // 3. Create the data structure to hold the initial estimate to the solution
   // For illustrative purposes, these have been deliberately set to incorrect values

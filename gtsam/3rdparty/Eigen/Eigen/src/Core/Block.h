@@ -66,9 +66,8 @@ struct traits<Block<XprType, BlockRows, BlockCols, InnerPanel> > : traits<XprTyp
                          : ColsAtCompileTime != Dynamic ? int(ColsAtCompileTime)
                          : int(traits<XprType>::MaxColsAtCompileTime),
     XprTypeIsRowMajor = (int(traits<XprType>::Flags)&RowMajorBit) != 0,
-    IsDense = is_same<StorageKind,Dense>::value,
-    IsRowMajor = (IsDense&&MaxRowsAtCompileTime==1&&MaxColsAtCompileTime!=1) ? 1
-               : (IsDense&&MaxColsAtCompileTime==1&&MaxRowsAtCompileTime!=1) ? 0
+    IsRowMajor = (MaxRowsAtCompileTime==1&&MaxColsAtCompileTime!=1) ? 1
+               : (MaxColsAtCompileTime==1&&MaxRowsAtCompileTime!=1) ? 0
                : XprTypeIsRowMajor,
     HasSameStorageOrderAsXprType = (IsRowMajor == XprTypeIsRowMajor),
     InnerSize = IsRowMajor ? int(ColsAtCompileTime) : int(RowsAtCompileTime),

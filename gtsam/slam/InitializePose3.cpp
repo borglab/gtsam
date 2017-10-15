@@ -120,9 +120,8 @@ NonlinearFactorGraph buildPose3graph(const NonlinearFactorGraph& graph) {
     boost::shared_ptr<PriorFactor<Pose3> > pose3Prior =
         boost::dynamic_pointer_cast<PriorFactor<Pose3> >(factor);
     if (pose3Prior)
-      pose3Graph.add(
-          BetweenFactor<Pose3>(keyAnchor, pose3Prior->keys()[0],
-              pose3Prior->prior(), pose3Prior->noiseModel()));
+      pose3Graph.emplace_shared<BetweenFactor<Pose3> >(keyAnchor, pose3Prior->keys()[0],
+              pose3Prior->prior(), pose3Prior->noiseModel());
   }
   return pose3Graph;
 }
@@ -330,7 +329,7 @@ Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
   // add prior
   noiseModel::Unit::shared_ptr priorModel = noiseModel::Unit::Create(6);
   initialPose.insert(keyAnchor, Pose3());
-  pose3graph.add(PriorFactor<Pose3>(keyAnchor, Pose3(), priorModel));
+  pose3graph.emplace_shared<PriorFactor<Pose3> >(keyAnchor, Pose3(), priorModel);
 
   // Create optimizer
   GaussNewtonParams params;

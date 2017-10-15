@@ -83,9 +83,9 @@ int main(int argc, char** argv){
   cout << "Reading stereo factors" << endl;
   //read stereo measurement details from file and use to create and add GenericStereoFactor objects to the graph representation
   while (factor_file >> x >> l >> uL >> uR >> v >> X >> Y >> Z) {
-    graph.push_back(
-        GenericStereoFactor<Pose3, Point3>(StereoPoint2(uL, uR, v), model,
-            Symbol('x', x), Symbol('l', l), K));
+    graph.emplace_shared<
+        GenericStereoFactor<Pose3, Point3> >(StereoPoint2(uL, uR, v), model,
+            Symbol('x', x), Symbol('l', l), K);
     //if the landmark variable included in this factor has not yet been added to the initial variable value estimate, add it
     if (!initial_estimate.exists(Symbol('l', l))) {
       Pose3 camPose = initial_estimate.at<Pose3>(Symbol('x', x));
@@ -99,7 +99,7 @@ int main(int argc, char** argv){
   //constrain the first pose such that it cannot change from its original value during optimization
   // NOTE: NonlinearEquality forces the optimizer to use QR rather than Cholesky
   // QR is much slower than Cholesky, but numerically more stable
-  graph.push_back(NonlinearEquality<Pose3>(Symbol('x',1),first_pose));
+  graph.emplace_shared<NonlinearEquality<Pose3> >(Symbol('x',1),first_pose);
 
   cout << "Optimizing" << endl;
   //create Levenberg-Marquardt optimizer to optimize the factor graph

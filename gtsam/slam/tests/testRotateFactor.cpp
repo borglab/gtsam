@@ -89,9 +89,9 @@ TEST (RotateFactor, minimization) {
   // Let's try to recover the correct iRc by minimizing
   NonlinearFactorGraph graph;
   Model model = noiseModel::Isotropic::Sigma(3, 0.01);
-  graph.add(RotateFactor(1, i1Ri2, c1Zc2, model));
-  graph.add(RotateFactor(1, i2Ri3, c2Zc3, model));
-  graph.add(RotateFactor(1, i3Ri4, c3Zc4, model));
+  graph.emplace_shared<RotateFactor>(1, i1Ri2, c1Zc2, model);
+  graph.emplace_shared<RotateFactor>(1, i2Ri3, c2Zc3, model);
+  graph.emplace_shared<RotateFactor>(1, i3Ri4, c3Zc4, model);
 
   // Check error at ground truth
   Values truth;
@@ -162,9 +162,9 @@ TEST (RotateDirectionsFactor, minimization) {
   // Let's try to recover the correct iRc by minimizing
   NonlinearFactorGraph graph;
   Model model = noiseModel::Isotropic::Sigma(2, 0.01);
-  graph.add(RotateDirectionsFactor(1, p1, z1, model));
-  graph.add(RotateDirectionsFactor(1, p2, z2, model));
-  graph.add(RotateDirectionsFactor(1, p3, z3, model));
+  graph.emplace_shared<RotateDirectionsFactor>(1, p1, z1, model);
+  graph.emplace_shared<RotateDirectionsFactor>(1, p2, z2, model);
+  graph.emplace_shared<RotateDirectionsFactor>(1, p3, z3, model);
 
   // Check error at ground truth
   Values truth;

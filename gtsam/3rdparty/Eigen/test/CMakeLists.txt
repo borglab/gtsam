@@ -125,6 +125,7 @@ endif(TEST_LIB)
 set_property(GLOBAL PROPERTY EIGEN_CURRENT_SUBPROJECT "Official")
 add_custom_target(BuildOfficial)
 
+ei_add_test(rand)
 ei_add_test(meta)
 ei_add_test(sizeof)
 ei_add_test(dynalloc)
