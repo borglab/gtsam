@@ -184,24 +184,24 @@ int SuiteSparse_divcomplex
  *
  * SuiteSparse contains the following packages:
  *
- *  SuiteSparse_config version 4.5.2 (version always the same as SuiteSparse)
- *  AMD             version 2.4.5
- *  BTF             version 1.2.5
- *  CAMD            version 2.4.5
- *  CCOLAMD         version 2.9.5
- *  CHOLMOD         version 3.0.10
- *  COLAMD          version 2.9.5
- *  CSparse         version 3.1.8
- *  CXSparse        version 3.1.8
- *  GPUQREngine     version 1.0.4
- *  KLU             version 1.3.7
- *  LDL             version 2.2.5
- *  RBio            version 2.2.5
- *  SPQR            version 2.0.6
- *  SuiteSparse_GPURuntime  version 1.0.4
- *  UMFPACK         version 5.7.5
+ *  SuiteSparse_config version 4.5.6 (version always the same as SuiteSparse)
+ *  AMD             version 2.4.6
+ *  BTF             version 1.2.6
+ *  CAMD            version 2.4.6
+ *  CCOLAMD         version 2.9.6
+ *  CHOLMOD         version 3.0.11
+ *  COLAMD          version 2.9.6
+ *  CSparse         version 3.1.9
+ *  CXSparse        version 3.1.9
+ *  GPUQREngine     version 1.0.5
+ *  KLU             version 1.3.8
+ *  LDL             version 2.2.6
+ *  RBio            version 2.2.6
+ *  SPQR            version 2.0.8
+ *  SuiteSparse_GPURuntime  version 1.0.5
+ *  UMFPACK         version 5.7.6
  *  MATLAB_Tools    various packages & M-files
- *  xerbla          version 1.0.2
+ *  xerbla          version 1.0.3
  *
  * Other package dependencies:
  *  BLAS            required by CHOLMOD and UMFPACK
@@ -210,7 +210,6 @@ int SuiteSparse_divcomplex
  *  CUBLAS, CUDART  NVIDIA libraries required by CHOLMOD and SPQR when
  *                  they are compiled with GPU acceleration.
  */
-
 
 int SuiteSparse_version     /* returns SUITESPARSE_VERSION */
 (
@@ -234,11 +233,11 @@ int SuiteSparse_version     /* returns SUITESPARSE_VERSION */
 */
 #define SUITESPARSE_HAS_VERSION_FUNCTION
 
-#define SUITESPARSE_DATE "Apr 1, 2016"
+#define SUITESPARSE_DATE "Oct 3, 2017"
 #define SUITESPARSE_VER_CODE(main,sub) ((main) * 1000 + (sub))
 #define SUITESPARSE_MAIN_VERSION 4
 #define SUITESPARSE_SUB_VERSION 5
-#define SUITESPARSE_SUBSUB_VERSION 2
+#define SUITESPARSE_SUBSUB_VERSION 6
 #define SUITESPARSE_VERSION \
     SUITESPARSE_VER_CODE(SUITESPARSE_MAIN_VERSION,SUITESPARSE_SUB_VERSION)
 
