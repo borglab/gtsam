@@ -20,6 +20,10 @@ all:
 library:
 	( cd Lib    ; $(MAKE) )
 
+# compile the static libraries only
+static:
+	( cd Lib    ; $(MAKE) static )
+
 # remove object files, but keep the compiled programs and library archives
 clean:
 	( cd Lib    ; $(MAKE) clean )
