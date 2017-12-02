@@ -35,6 +35,8 @@ struct PreintegratedRotationParams {
 
   PreintegratedRotationParams() : gyroscopeCovariance(I_3x3) {}
 
+  virtual ~PreintegratedRotationParams() {}
+
   virtual void print(const std::string& s) const;
   virtual bool equals(const PreintegratedRotationParams& other, double tol=1e-9) const;
 

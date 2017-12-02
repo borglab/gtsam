@@ -20,7 +20,6 @@
 #include <boost/timer.hpp>
 #include <boost/format.hpp>
 #include <boost/lambda/lambda.hpp>
-#include <boost/foreach.hpp>
 
 #include <gtsam/base/Matrix.h>
 
@@ -173,29 +172,29 @@ int main(int argc, char* argv[]) {
       // Do a few initial assignments to let any cache effects stabilize
       for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni(),rnj()));
       for(size_t rep=0; rep<1000; ++rep)
-        BOOST_FOREACH(const ij_t& ij, ijs) { mat(ij.first, ij.second) = rng(); }
+        for(const ij_t& ij: ijs) { mat(ij.first, ij.second) = rng(); }
 
       for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni(),rnj()));
       for(size_t rep=0; rep<1000; ++rep)
-        BOOST_FOREACH(const ij_t& ij, ijs) { mat(ij.first, ij.second) = rng(); }
+        for(const ij_t& ij: ijs) { mat(ij.first, ij.second) = rng(); }
       basicTime = tim.elapsed();
       cout << format("  Basic: %1% mus/element") % double(1000000 * basicTime / double(ijs.size()*nReps)) << endl;
 
       for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni(),rnj()));
       for(size_t rep=0; rep<1000; ++rep)
-        BOOST_FOREACH(const ij_t& ij, ijs) { full(ij.first, ij.second) = rng(); }
+        for(const ij_t& ij: ijs) { full(ij.first, ij.second) = rng(); }
       fullTime = tim.elapsed();
       cout << format("  Full:  %1% mus/element") % double(1000000 * fullTime / double(ijs.size()*nReps)) << endl;
 
       for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni()%top.rows(),rnj()));
       for(size_t rep=0; rep<1000; ++rep)
-        BOOST_FOREACH(const ij_t& ij, ijs) { top(ij.first, ij.second) = rng(); }
+        for(const ij_t& ij: ijs) { top(ij.first, ij.second) = rng(); }
       topTime = tim.elapsed();
       cout << format("  Top:   %1% mus/element") % double(1000000 * topTime / double(ijs.size()*nReps)) << endl;
 
       for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni()%block.rows(),rnj()%block.cols()));
       for(size_t rep=0; rep<1000; ++rep)
-        BOOST_FOREACH(const ij_t& ij, ijs) { block(ij.first, ij.second) = rng(); }
+        for(const ij_t& ij: ijs) { block(ij.first, ij.second) = rng(); }
       blockTime = tim.elapsed();
       cout << format("  Block: %1% mus/element") % double(1000000 * blockTime / double(ijs.size()*nReps)) << endl;
 

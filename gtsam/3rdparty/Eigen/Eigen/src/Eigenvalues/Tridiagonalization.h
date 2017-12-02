@@ -367,10 +367,10 @@ void tridiagonalization_inplace(MatrixType& matA, CoeffVectorType& hCoeffs)
     hCoeffs.tail(n-i-1).noalias() = (matA.bottomRightCorner(remainingSize,remainingSize).template selfadjointView<Lower>()
                                   * (conj(h) * matA.col(i).tail(remainingSize)));
 
-    hCoeffs.tail(n-i-1) += (conj(h)*Scalar(-0.5)*(hCoeffs.tail(remainingSize).dot(matA.col(i).tail(remainingSize)))) * matA.col(i).tail(n-i-1);
+    hCoeffs.tail(n-i-1) += (conj(h)*RealScalar(-0.5)*(hCoeffs.tail(remainingSize).dot(matA.col(i).tail(remainingSize)))) * matA.col(i).tail(n-i-1);
 
     matA.bottomRightCorner(remainingSize, remainingSize).template selfadjointView<Lower>()
-      .rankUpdate(matA.col(i).tail(remainingSize), hCoeffs.tail(remainingSize), -1);
+      .rankUpdate(matA.col(i).tail(remainingSize), hCoeffs.tail(remainingSize), Scalar(-1));
 
     matA.col(i).coeffRef(i+1) = beta;
     hCoeffs.coeffRef(i) = h;

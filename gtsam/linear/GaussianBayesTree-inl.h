@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include <boost/foreach.hpp>
-
 #include <gtsam/linear/GaussianBayesTree.h> // Only to help Eclipse
 
 #include <stdarg.h>
@@ -35,7 +33,7 @@ void optimizeInPlace(const typename BAYESTREE::sharedClique& clique, VectorValue
   clique->conditional()->solveInPlace(result);
 
   // starting from the root, call optimize on each conditional
-  BOOST_FOREACH(const typename BAYESTREE::sharedClique& child, clique->children_)
+  for(const typename BAYESTREE::sharedClique& child: clique->children_)
     optimizeInPlace<BAYESTREE>(child, result);
 }
 
@@ -48,7 +46,7 @@ double logDeterminant(const typename BAYESTREE::sharedClique& clique) {
   result += clique->conditional()->get_R().diagonal().unaryExpr(std::ptr_fun<double,double>(log)).sum();
 
   // sum of children
-  BOOST_FOREACH(const typename BAYESTREE::sharedClique& child, clique->children_)
+  for(const typename BAYESTREE::sharedClique& child: clique->children_)
     result += logDeterminant<BAYESTREE>(child);
 
   return result;

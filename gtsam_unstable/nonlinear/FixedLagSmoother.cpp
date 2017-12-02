@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -36,7 +36,7 @@ bool FixedLagSmoother::equals(const FixedLagSmoother& rhs, double tol) const {
 /* ************************************************************************* */
 void FixedLagSmoother::updateKeyTimestampMap(const KeyTimestampMap& timestamps) {
   // Loop through each key and add/update it in the map
-  BOOST_FOREACH(const KeyTimestampMap::value_type& key_timestamp, timestamps) {
+  for(const auto& key_timestamp: timestamps) {
     // Check to see if this key already exists in the database
     KeyTimestampMap::iterator keyIter = keyTimestampMap_.find(key_timestamp.first);
 
@@ -64,8 +64,8 @@ void FixedLagSmoother::updateKeyTimestampMap(const KeyTimestampMap& timestamps) 
 }
 
 /* ************************************************************************* */
-void FixedLagSmoother::eraseKeyTimestampMap(const std::set<Key>& keys) {
-  BOOST_FOREACH(Key key, keys) {
+void FixedLagSmoother::eraseKeyTimestampMap(const KeyVector& keys) {
+  for(Key key: keys) {
     // Erase the key from the Timestamp->Key map
     double timestamp = keyTimestampMap_.at(key);
 
@@ -92,21 +92,21 @@ double FixedLagSmoother::getCurrentTimestamp() const {
 }
 
 /* ************************************************************************* */
-std::set<Key> FixedLagSmoother::findKeysBefore(double timestamp) const {
-  std::set<Key> keys;
+KeyVector FixedLagSmoother::findKeysBefore(double timestamp) const {
+  KeyVector keys;
   TimestampKeyMap::const_iterator end = timestampKeyMap_.lower_bound(timestamp);
   for(TimestampKeyMap::const_iterator iter = timestampKeyMap_.begin(); iter != end; ++iter) {
-    keys.insert(iter->second);
+    keys.push_back(iter->second);
   }
   return keys;
 }
 
 /* ************************************************************************* */
-std::set<Key> FixedLagSmoother::findKeysAfter(double timestamp) const {
-  std::set<Key> keys;
+KeyVector FixedLagSmoother::findKeysAfter(double timestamp) const {
+  KeyVector keys;
   TimestampKeyMap::const_iterator begin = timestampKeyMap_.upper_bound(timestamp);
   for(TimestampKeyMap::const_iterator iter = begin; iter != timestampKeyMap_.end(); ++iter) {
-    keys.insert(iter->second);
+    keys.push_back(iter->second);
   }
   return keys;
 }

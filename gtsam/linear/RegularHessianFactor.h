@@ -20,7 +20,6 @@
 
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/RegularJacobianFactor.h>
-#include <boost/foreach.hpp>
 #include <vector>
 
 namespace gtsam {
@@ -114,7 +113,7 @@ public:
       double* yvalues) const {
     // Create a vector of temporary y_ values, corresponding to rows i
     y_.resize(size());
-    BOOST_FOREACH(VectorD & yi, y_)
+    for(VectorD & yi: y_)
       yi.setZero();
 
     // Accessing the VectorValues one by one is expensive
@@ -126,12 +125,12 @@ public:
       const double* xj = x + key * D;
       DenseIndex i = 0;
       for (; i < j; ++i)
-        y_[i] += info_(i, j).knownOffDiagonal() * ConstDMap(xj);
+        y_[i] += info_.aboveDiagonalBlock(i, j) * ConstDMap(xj);
       // blocks on the diagonal are only half
-      y_[i] += info_(j, j).selfadjointView() * ConstDMap(xj);
+      y_[i] += info_.diagonalBlock(j) * ConstDMap(xj);
       // for below diagonal, we take transpose block from upper triangular part
       for (i = j + 1; i < (DenseIndex) size(); ++i)
-        y_[i] += info_(i, j).knownOffDiagonal() * ConstDMap(xj);
+        y_[i] += info_.aboveDiagonalBlock(j, i).transpose() * ConstDMap(xj);
     }
 
     // copy to yvalues
@@ -147,7 +146,7 @@ public:
 
     // Create a vector of temporary y_ values, corresponding to rows i
     y_.resize(size());
-    BOOST_FOREACH(VectorD & yi, y_)
+    for(VectorD & yi: y_)
       yi.setZero();
 
     // Accessing the VectorValues one by one is expensive
@@ -156,16 +155,16 @@ public:
     for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
       DenseIndex i = 0;
       for (; i < j; ++i)
-        y_[i] += info_(i, j).knownOffDiagonal()
+        y_[i] += info_.aboveDiagonalBlock(i, j)
             * ConstDMap(x + offsets[keys_[j]],
                 offsets[keys_[j] + 1] - offsets[keys_[j]]);
       // blocks on the diagonal are only half
-      y_[i] += info_(j, j).selfadjointView()
+      y_[i] += info_.diagonalBlock(j)
           * ConstDMap(x + offsets[keys_[j]],
               offsets[keys_[j] + 1] - offsets[keys_[j]]);
       // for below diagonal, we take transpose block from upper triangular part
       for (i = j + 1; i < (DenseIndex) size(); ++i)
-        y_[i] += info_(i, j).knownOffDiagonal()
+        y_[i] += info_.aboveDiagonalBlock(j, i).transpose()
             * ConstDMap(x + offsets[keys_[j]],
                 offsets[keys_[j] + 1] - offsets[keys_[j]]);
     }
@@ -183,8 +182,7 @@ public:
     for (DenseIndex pos = 0; pos < (DenseIndex) size(); ++pos) {
       Key j = keys_[pos];
       // Get the diagonal block, and insert its diagonal
-      const Matrix& B = info_(pos, pos).selfadjointView();
-      DMap(d + D * j) += B.diagonal();
+      DMap(d + D * j) += info_.diagonal(pos);
     }
   }
 
@@ -195,8 +193,7 @@ public:
     for (DenseIndex pos = 0; pos < (DenseIndex) size(); ++pos) {
       Key j = keys_[pos];
       // Get the diagonal block, and insert its diagonal
-      VectorD dj = -info_(pos, size()).knownOffDiagonal();
-      DMap(d + D * j) += dj;
+      DMap(d + D * j) -= info_.aboveDiagonalBlock(pos, size());;
     }
   }
 

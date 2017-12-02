@@ -24,7 +24,6 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Testable.h>
 
-#include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
 #include <iostream>
@@ -99,10 +98,10 @@ VariableSlots::VariableSlots(const FG& factorGraph)
   // removed factors.  The slot number is the max integer value if the
   // factor does not involve that variable.
   size_t jointFactorPos = 0;
-  BOOST_FOREACH(const typename FG::sharedFactor& factor, factorGraph) {
+  for(const typename FG::sharedFactor& factor: factorGraph) {
     assert(factor);
     size_t factorVarSlot = 0;
-    BOOST_FOREACH(const Key involvedVariable, *factor) {
+    for(const Key involvedVariable: *factor) {
       // Set the slot in this factor for this variable.  If the
       // variable was not already discovered, create an array for it
       // that we'll fill with the slot indices for each factor that

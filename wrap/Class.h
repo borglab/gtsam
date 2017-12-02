@@ -39,7 +39,6 @@
 
 namespace bl = boost::lambda;
 
-#include <boost/foreach.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <boost/optional.hpp>
 
@@ -145,9 +144,9 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const Class& cls) {
     os << "class " << cls.name() << "{\n";
     os << cls.constructor << ";\n";
-    BOOST_FOREACH(const StaticMethod& m, cls.static_methods | boost::adaptors::map_values)
+    for(const StaticMethod& m: cls.static_methods | boost::adaptors::map_values)
       os << m << ";\n";
-    BOOST_FOREACH(const Method& m, cls.methods_ | boost::adaptors::map_values)
+    for(const Method& m: cls.methods_ | boost::adaptors::map_values)
       os << m << ";\n";
     os << "};" << std::endl;
     return os;

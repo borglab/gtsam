@@ -18,10 +18,11 @@
 
 #pragma once
 
+#include <gtsam/config.h>      // Configuration from CMake
+
 #include <gtsam/base/Vector.h>
 #include <boost/serialization/assume_abstract.hpp>
 #include <memory>
-
 
 namespace gtsam {
 
@@ -37,7 +38,7 @@ namespace gtsam {
    * Values can operate generically on Value objects, retracting or computing
    * local coordinates for many Value objects of different types.
    *
-   * Inheriting from the DerivedValue class templated provides a generic implementation of
+   * Inheriting from the DerivedValue class template provides a generic implementation of
    * the pure virtual functions retract_(), localCoordinates_(), and equals_(), eliminating
    * the need to implement these functions in your class. Note that you must inherit from
    * DerivedValue templated on the class you are defining. For example you cannot define

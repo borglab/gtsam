@@ -1,4 +1,5 @@
 /build*
+.idea
 *.pyc
 *.DS_Store
 /examples/Data/dubrovnik-3-7-pre-rewritten.txt

@@ -45,7 +45,7 @@ public:
     Vector zeroVector = Vector::Zero(0);
     std::vector<KeyMatrix> QF;
     QF.reserve(keys.size());
-    BOOST_FOREACH(const Key& key, keys)
+    for(const Key& key: keys)
       QF.push_back(KeyMatrix(key, zeroMatrix));
     JacobianFactor::fillTerms(QF, zeroVector, model);
   }
@@ -67,7 +67,7 @@ public:
     size_t m2 = ZDim * numKeys - 3; // TODO: is this not just Enull.rows()?
     // PLAIN NULL SPACE TRICK
     // Matrix Q = Enull * Enull.transpose();
-    // BOOST_FOREACH(const KeyMatrixZD& it, Fblocks)
+    // for(const KeyMatrixZD& it: Fblocks)
     //   QF.push_back(KeyMatrix(it.first, Q.block(0, 2 * j++, m2, 2) * it.second));
     // JacobianFactor factor(QF, Q * b);
     std::vector<KeyMatrix> QF;

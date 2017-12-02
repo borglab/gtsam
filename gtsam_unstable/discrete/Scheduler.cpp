@@ -11,7 +11,6 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/tokenizer.hpp>
-#include <boost/foreach.hpp>
 
 #include <fstream>
 #include <iomanip>
@@ -163,7 +162,7 @@ namespace gtsam {
 
     if (!mutexBound) {
       DiscreteKeys dkeys;
-      BOOST_FOREACH(const Student& s, students_)
+      for(const Student& s: students_)
         dkeys.push_back(s.key_);
       addAllDiff(dkeys);
     } else {
@@ -182,30 +181,30 @@ namespace gtsam {
   void Scheduler::print(const string& s) const {
 
     cout << s << " Faculty:" << endl;
-    BOOST_FOREACH(const string& name, facultyName_)
+    for(const string& name: facultyName_)
             cout << name << '\n';
     cout << endl;
 
     cout << s << " Slots:\n";
     size_t i = 0;
-    BOOST_FOREACH(const string& name, slotName_)
+    for(const string& name: slotName_)
             cout << i++ << " " << name << endl;
     cout << endl;
 
     cout << "Availability:\n" << available_ << '\n';
 
     cout << s << " Area constraints:\n";
-    BOOST_FOREACH(const FacultyInArea::value_type& it, facultyInArea_)
+    for(const FacultyInArea::value_type& it: facultyInArea_)
           {
             cout << setw(12) << it.first << ": ";
-            BOOST_FOREACH(double v, it.second)
+            for(double v: it.second)
                     cout << v << " ";
             cout << '\n';
           }
     cout << endl;
 
     cout << s << " Students:\n";
-    BOOST_FOREACH (const Student& student, students_)
+    for (const Student& student: students_)
             student.print();
     cout << endl;
 

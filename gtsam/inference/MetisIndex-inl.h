@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <boost/foreach.hpp>
 #include <map>
 #include <vector>
 
@@ -42,7 +41,7 @@ void MetisIndex::augment(const FactorGraph<FACTOR>& factors) {
   // key to integer mapping. This is referenced during the adjaceny step
   for (size_t i = 0; i < factors.size(); i++) {
     if (factors[i]) {
-      BOOST_FOREACH(const Key& key, *factors[i]) {
+      for(const Key& key: *factors[i]) {
         keySet.insert(keySet.end(), key); // Keep a track of all unique keys
         if (intKeyBMap_.left.find(key) == intKeyBMap_.left.end()) {
           intKeyBMap_.insert(bm_type::value_type(key, keyCounter));
@@ -55,8 +54,8 @@ void MetisIndex::augment(const FactorGraph<FACTOR>& factors) {
   // Create an adjacency mapping that stores the set of all adjacent keys for every key
   for (size_t i = 0; i < factors.size(); i++) {
     if (factors[i]) {
-      BOOST_FOREACH(const Key& k1, *factors[i])
-        BOOST_FOREACH(const Key& k2, *factors[i])
+      for(const Key& k1: *factors[i])
+        for(const Key& k2: *factors[i])
           if (k1 != k2) {
             // Store both in Key and int32_t format
             int i = intKeyBMap_.left.at(k1);

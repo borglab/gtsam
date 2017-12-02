@@ -54,7 +54,9 @@ namespace gtsam {
     typedef boost::shared_ptr<This> shared_ptr;
 
     /// Default constructor
-    ProjectionFactorPPP() : throwCheirality_(false), verboseCheirality_(false) {}
+  ProjectionFactorPPP() :
+      measured_(0.0, 0.0), throwCheirality_(false), verboseCheirality_(false) {
+  }
 
     /**
      * Constructor
@@ -94,9 +96,9 @@ namespace gtsam {
     virtual ~ProjectionFactorPPP() {}
 
     /// @return a deep copy of this factor
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+    virtual NonlinearFactor::shared_ptr clone() const {
+      return boost::static_pointer_cast<NonlinearFactor>(
+          NonlinearFactor::shared_ptr(new This(*this))); }
 
     /**
      * print
@@ -105,7 +107,7 @@ namespace gtsam {
      */
     void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       std::cout << s << "ProjectionFactorPPP, z = ";
-      measured_.print();
+      traits<Point2>::Print(measured_);
       Base::print("", keyFormatter);
     }
 
@@ -114,7 +116,7 @@ namespace gtsam {
       const This *e = dynamic_cast<const This*>(&p);
       return e
           && Base::equals(p, tol)
-          && this->measured_.equals(e->measured_, tol)
+          && traits<Point2>::Equals(this->measured_, e->measured_, tol)
           && this->K_->equals(*e->K_, tol);
     }
 
@@ -125,16 +127,15 @@ namespace gtsam {
         boost::optional<Matrix&> H3 = boost::none) const {
       try {
           if(H1 || H2 || H3) {
-            gtsam::Matrix H0, H02;
+            Matrix H0, H02;
             PinholeCamera<CALIBRATION> camera(pose.compose(transform, H0, H02), *K_);
             Point2 reprojectionError(camera.project(point, H1, H3, boost::none) - measured_);
             *H2 = *H1 * H02;
             *H1 = *H1 * H0;
-            return reprojectionError.vector();
+            return reprojectionError;
           } else {
             PinholeCamera<CALIBRATION> camera(pose.compose(transform), *K_);
-            Point2 reprojectionError(camera.project(point, H1, H3, boost::none) - measured_);
-            return reprojectionError.vector();
+            return camera.project(point, H1, H3, boost::none) - measured_;
           }
       } catch( CheiralityException& e) {
         if (H1) *H1 = Matrix::Zero(2,6);

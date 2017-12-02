@@ -91,7 +91,7 @@ Matrix extractPoint2(const Values& values) {
   Values::ConstFiltered<Point2> points = values.filter<Point2>();
   Matrix result(points.size(), 2);
   for(const auto& key_value: points)
-    result.row(j++) = key_value.value.vector();
+    result.row(j++) = key_value.value;
   return result;
 }
 

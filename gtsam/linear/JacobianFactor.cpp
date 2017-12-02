@@ -32,7 +32,6 @@
 #include <gtsam/base/cholesky.h>
 
 #include <boost/assign/list_of.hpp>
-#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/array.hpp>
@@ -105,10 +104,10 @@ JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const HessianFactor& factor) :
     Base(factor), Ab_(
-        VerticalBlockMatrix::LikeActiveViewOf(factor.matrixObject(),
+        VerticalBlockMatrix::LikeActiveViewOf(factor.info(),
             factor.rows())) {
   // Copy Hessian into our matrix and then do in-place Cholesky
-  Ab_.full() = factor.matrixObject().full();
+  Ab_.full() = factor.info().selfadjointView();
 
   // Do Cholesky to get a Jacobian
   size_t maxrank;
@@ -185,12 +184,12 @@ boost::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
           "Unable to determine dimensionality for all variables");
   }
 
-  BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, factors) {
+  for(const JacobianFactor::shared_ptr& factor: factors) {
     m += factor->rows();
   }
 
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-  BOOST_FOREACH(DenseIndex d, varDims) {
+  for(DenseIndex d: varDims) {
     assert(d != numeric_limits<DenseIndex>::max());
   }
 #endif
@@ -204,7 +203,7 @@ FastVector<JacobianFactor::shared_ptr> _convertOrCastToJacobians(
   gttic(Convert_to_Jacobians);
   FastVector<JacobianFactor::shared_ptr> jacobians;
   jacobians.reserve(factors.size());
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+  for(const GaussianFactor::shared_ptr& factor: factors) {
     if (factor) {
       if (JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<
           JacobianFactor>(factor))
@@ -220,15 +219,13 @@ FastVector<JacobianFactor::shared_ptr> _convertOrCastToJacobians(
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
     boost::optional<const Ordering&> ordering,
-    boost::optional<const VariableSlots&> variableSlots) {
+    boost::optional<const VariableSlots&> p_variableSlots) {
   gttic(JacobianFactor_combine_constructor);
 
   // Compute VariableSlots if one was not provided
-  boost::optional<VariableSlots> computedVariableSlots;
-  if (!variableSlots) {
-    computedVariableSlots = VariableSlots(graph);
-    variableSlots = computedVariableSlots; // Binds reference, does not copy VariableSlots
-  }
+  // Binds reference, does not copy VariableSlots
+  const VariableSlots & variableSlots =
+      p_variableSlots ? p_variableSlots.get() : VariableSlots(graph);
 
   // Cast or convert to Jacobians
   FastVector<JacobianFactor::shared_ptr> jacobians = _convertOrCastToJacobians(
@@ -239,15 +236,15 @@ JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
   // 'unorderedSlots' of any variables discovered that are not in the ordering.  Those will then
   // be added after all of the ordered variables.
   FastVector<VariableSlots::const_iterator> orderedSlots;
-  orderedSlots.reserve(variableSlots->size());
+  orderedSlots.reserve(variableSlots.size());
   if (ordering) {
     // If an ordering is provided, arrange the slots first that ordering
     FastList<VariableSlots::const_iterator> unorderedSlots;
     size_t nOrderingSlotsUsed = 0;
     orderedSlots.resize(ordering->size());
     FastMap<Key, size_t> inverseOrdering = ordering->invert();
-    for (VariableSlots::const_iterator item = variableSlots->begin();
-        item != variableSlots->end(); ++item) {
+    for (VariableSlots::const_iterator item = variableSlots.begin();
+        item != variableSlots.end(); ++item) {
       FastMap<Key, size_t>::const_iterator orderingPosition =
           inverseOrdering.find(item->first);
       if (orderingPosition == inverseOrdering.end()) {
@@ -262,14 +259,14 @@ JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
           "The ordering provided to the JacobianFactor combine constructor\n"
               "contained extra variables that did not appear in the factors to combine.");
     // Add the remaining slots
-    BOOST_FOREACH(VariableSlots::const_iterator item, unorderedSlots) {
+    for(VariableSlots::const_iterator item: unorderedSlots) {
       orderedSlots.push_back(item);
     }
   } else {
     // If no ordering is provided, arrange the slots as they were, which will be sorted
     // numerically since VariableSlots uses a map sorting on Key.
-    for (VariableSlots::const_iterator item = variableSlots->begin();
-        item != variableSlots->end(); ++item)
+    for (VariableSlots::const_iterator item = variableSlots.begin();
+        item != variableSlots.end(); ++item)
       orderedSlots.push_back(item);
   }
   gttoc(Order_slots);
@@ -292,7 +289,7 @@ JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
   // Loop over slots in combined factor and copy blocks from source factors
   gttic(copy_blocks);
   size_t combinedSlot = 0;
-  BOOST_FOREACH(VariableSlots::const_iterator varslot, orderedSlots) {
+  for(VariableSlots::const_iterator varslot: orderedSlots) {
     JacobianFactor::ABlock destSlot(this->getA(this->begin() + combinedSlot));
     // Loop over source jacobians
     DenseIndex nextRow = 0;
@@ -533,10 +530,10 @@ void JacobianFactor::updateHessian(const FastVector<Key>& infoKeys,
       // Fill off-diagonal blocks with Ai'*Aj
       for (DenseIndex i = 0; i < j; ++i) {
         const DenseIndex I = slots[i];  // because i<j, slots[i] is valid.
-        (*info)(I, J).knownOffDiagonal() += Ab_(i).transpose() * Ab_j;
+        info->updateOffDiagonalBlock(I, J, Ab_(i).transpose() * Ab_j);
       }
       // Fill diagonal block with Aj'*Aj
-      (*info)(J, J).selfadjointView().rankUpdate(Ab_j.transpose());
+      info->diagonalBlock(J).rankUpdate(Ab_j.transpose());
     }
   }
 }

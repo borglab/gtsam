@@ -15,7 +15,6 @@
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/std/map.hpp>
 #include <boost/optional.hpp>
-#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
 #include <algorithm>
@@ -303,7 +302,7 @@ void accomodateStudent() {
   vector<size_t> slots;
   slots += 16, 17, 11, 2, 0, 5, 9, 14;
   vector<double> slotsAvailable(scheduler.nrTimeSlots(), 1.0);
-  BOOST_FOREACH(size_t s, slots)
+  for(size_t s: slots)
   slotsAvailable[s] = 0;
   scheduler.setSlotsAvailable(slotsAvailable);
 

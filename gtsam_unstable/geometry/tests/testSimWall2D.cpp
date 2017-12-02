@@ -24,7 +24,7 @@ TEST(testSimWall2D2D, construction ) {
 
 /* ************************************************************************* */
 TEST(testSimWall2D2D, equals ) {
-  Point2 p1(1.0, 0.0), p2(1.0, 2.0), p3;
+  Point2 p1(1.0, 0.0), p2(1.0, 2.0), p3(0,0);
   SimWall2D w1(p1, p2), w2(p1, p3);
   EXPECT(assert_equal(w1, w1));
   EXPECT(assert_inequal(w1, w2));
@@ -34,7 +34,7 @@ TEST(testSimWall2D2D, equals ) {
 /* ************************************************************************* */
 TEST(testSimWall2D2D, intersection1 ) {
   SimWall2D w1(2.0, 2.0, 6.0, 2.0), w2(4.0, 4.0, 4.0, 0.0);
-  Point2 pt;
+  Point2 pt(0,0);
   EXPECT(w1.intersects(w2));
   EXPECT(w2.intersects(w1));
   w1.intersects(w2, pt);

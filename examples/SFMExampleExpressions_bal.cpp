@@ -78,10 +78,10 @@ int main(int argc, char* argv[]) {
 
   // Simulated measurements from each camera pose, adding them to the factor graph
   size_t j = 0;
-  BOOST_FOREACH(const SfM_Track& track, mydata.tracks) {
+  for(const SfM_Track& track: mydata.tracks) {
     // Leaf expression for j^th point
     Point3_ point_('p', j);
-    BOOST_FOREACH(const SfM_Measurement& m, track.measurements) {
+    for(const SfM_Measurement& m: track.measurements) {
       size_t i = m.first;
       Point2 uv = m.second;
       // Leaf expression for i^th camera
@@ -98,9 +98,9 @@ int main(int argc, char* argv[]) {
   Values initial;
   size_t i = 0;
   j = 0;
-  BOOST_FOREACH(const SfM_Camera& camera, mydata.cameras)
+  for(const SfM_Camera& camera: mydata.cameras)
     initial.insert(C(i++), camera);
-  BOOST_FOREACH(const SfM_Track& track, mydata.tracks)
+  for(const SfM_Track& track: mydata.tracks)
     initial.insert(P(j++), track.p);
 
   /* Optimize the graph and print results */

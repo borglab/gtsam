@@ -13,7 +13,6 @@
 #include <stdexcept>
 #include <iostream>
 #include <boost/tuple/tuple.hpp>
-#include <boost/foreach.hpp>
 #include <boost/shared_array.hpp>
 #include <boost/timer.hpp>
 
@@ -193,7 +192,7 @@ namespace gtsam { namespace partition {
     std::cout << "Number of nodes: " << adjacencyMap.size() << std::endl;
     int index1, index2;
 
-    BOOST_FOREACH(const typename GenericGraph::value_type& factor, graph){
+    for(const typename GenericGraph::value_type& factor: graph){
       index1 = dictionary[factor->key1.index];
       index2 = dictionary[factor->key2.index];
       std::cout << "index1: " << index1 << std::endl;
@@ -222,7 +221,7 @@ namespace gtsam { namespace partition {
     sharedInts& adjncy = *ptr_adjncy;
     sharedInts& adjwgt = *ptr_adjwgt;
     int ind_xadj = 0, ind_adjncy = 0;
-    BOOST_FOREACH(const NeighborsInfo& info, adjacencyMap) {
+    for(const NeighborsInfo& info: adjacencyMap) {
       *(xadj.get() + ind_xadj) = ind_adjncy;
       std::copy(info.first .begin(), info.first .end(), adjncy.get() + ind_adjncy);
       std::copy(info.second.begin(), info.second.end(), adjwgt.get() + ind_adjncy);
@@ -334,7 +333,7 @@ namespace gtsam { namespace partition {
         << " " << result.B.size() << std::endl;
       int edgeCut = 0;
 
-      BOOST_FOREACH(const typename GenericGraph::value_type& factor, graph){
+      for(const typename GenericGraph::value_type& factor: graph){
         int key1 = factor->key1.index;
         int key2 = factor->key2.index;
         // print keys and their subgraph assignment
@@ -372,19 +371,19 @@ namespace gtsam { namespace partition {
   // debug functions
   void printIsland(const std::vector<size_t>& island) {
     std::cout << "island: ";
-    BOOST_FOREACH(const size_t key, island)
+    for(const size_t key: island)
       std::cout << key << " ";
     std::cout << std::endl;
   }
 
   void printIslands(const std::list<std::vector<size_t> >& islands) {
-    BOOST_FOREACH(const std::vector<std::size_t>& island, islands)
+    for(const std::vector<std::size_t>& island: islands)
         printIsland(island);
   }
 
   void printNumCamerasLandmarks(const std::vector<size_t>& keys, const std::vector<Symbol>& int2symbol) {
     int numCamera = 0, numLandmark = 0;
-    BOOST_FOREACH(const size_t key, keys)
+    for(const size_t key: keys)
     if (int2symbol[key].chr() == 'x')
       numCamera++;
     else
@@ -403,16 +402,16 @@ namespace gtsam { namespace partition {
     std::vector<size_t>& C = partitionResult.C;
     std::vector<int>& dictionary = workspace.dictionary;
     std::fill(dictionary.begin(), dictionary.end(), -1);
-    BOOST_FOREACH(const size_t a, A)
+    for(const size_t a: A)
       dictionary[a] = 1;
-    BOOST_FOREACH(const size_t b, B)
+    for(const size_t b: B)
       dictionary[b] = 2;
     if (!C.empty())
       throw std::runtime_error("addLandmarkToPartitionResult: C is not empty");
 
     // set up landmarks
     size_t i,j;
-    BOOST_FOREACH(const typename GenericGraph::value_type& factor, graph) {
+    for(const typename GenericGraph::value_type& factor: graph) {
       i = factor->key1.index;
       j = factor->key2.index;
       if (dictionary[j] == 0) // if the landmark is already in the separator, continue
@@ -427,7 +426,7 @@ namespace gtsam { namespace partition {
 //        std::cout << "dictionary[67980]" << dictionary[j] << std::endl;
     }
 
-    BOOST_FOREACH(const size_t j, landmarkKeys) {
+    for(const size_t j: landmarkKeys) {
       switch(dictionary[j]) {
       case 0: C.push_back(j); break;
       case 1: A.push_back(j); break;
@@ -456,7 +455,7 @@ namespace gtsam { namespace partition {
       // find out all the landmark keys, which are to be eliminated
       cameraKeys.reserve(keys.size());
       landmarkKeys.reserve(keys.size());
-      BOOST_FOREACH(const size_t key, keys) {
+      for(const size_t key: keys) {
         if((*int2symbol)[key].chr() == 'x')
           cameraKeys.push_back(key);
         else
@@ -518,11 +517,11 @@ namespace gtsam { namespace partition {
 //    printNumCamerasLandmarks(result->C, *int2symbol);
 //    std::cout << "no. of island: " << islands.size() << "; ";
 //    std::cout << "island size: ";
-//    BOOST_FOREACH(const Island& island, islands)
+//    for(const Island& island: islands)
 //      std::cout << island.size() << " ";
 //    std::cout << std::endl;
 
-//    BOOST_FOREACH(const Island& island, islands) {
+//    for(const Island& island: islands) {
 //      printNumCamerasLandmarks(island, int2symbol);
 //    }
 #endif
@@ -550,12 +549,12 @@ namespace gtsam { namespace partition {
     // generate the node map
     std::vector<int>& partitionTable = workspace.partitionTable;
     std::fill(partitionTable.begin(), partitionTable.end(), -1);
-    BOOST_FOREACH(const size_t key, result->C)
+    for(const size_t key: result->C)
       partitionTable[key] = 0;
     int idx = 0;
-    BOOST_FOREACH(const Island& island, islands) {
+    for(const Island& island: islands) {
       idx++;
-      BOOST_FOREACH(const size_t key, island) {
+      for(const size_t key: island) {
         partitionTable[key] = idx;
       }
     }

@@ -84,7 +84,7 @@ public:
    * each degree of freedom.
    */
   ReferenceFrameFactor(Key globalKey, Key transKey, Key localKey, double sigma = 1e-2)
-  : Base(noiseModel::Isotropic::Sigma(POINT::dimension, sigma),
+  : Base(noiseModel::Isotropic::Sigma(traits<POINT>::dimension, sigma),
       globalKey, transKey, localKey) {}
 
   virtual ~ReferenceFrameFactor(){}
@@ -100,7 +100,7 @@ public:
         boost::optional<Matrix&> Dlocal = boost::none) const  {
     Point newlocal = transform_point<Transform,Point>(trans, global, Dtrans, Dforeign);
     if (Dlocal)
-      *Dlocal = -1* Matrix::Identity(Point::dimension,Point::dimension);
+      *Dlocal = -1* Matrix::Identity(traits<Point>::dimension, traits<Point>::dimension);
     return traits<Point>::Local(local,newlocal);
   }
 

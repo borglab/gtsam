@@ -44,7 +44,7 @@ public:
     Vector zeroVector = Vector::Zero(0);
     std::vector<KeyMatrix> QF;
     QF.reserve(keys.size());
-    BOOST_FOREACH(const Key& key, keys)
+    for(const Key& key: keys)
       QF.push_back(KeyMatrix(key, zeroMatrix));
     JacobianFactor::fillTerms(QF, zeroVector, model);
   }

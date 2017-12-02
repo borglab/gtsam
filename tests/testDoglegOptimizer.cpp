@@ -139,7 +139,7 @@ TEST(DoglegOptimizer, Iterate) {
     VectorValues dx_u = gbn.optimizeGradientSearch();
     VectorValues dx_n = gbn.optimize();
     DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(Delta, DoglegOptimizerImpl::SEARCH_EACH_ITERATION, dx_u, dx_n, gbn, fg, config, fg.error(config));
-    Delta = result.Delta;
+    Delta = result.delta;
     EXPECT(result.f_error < fg.error(config)); // Check that error decreases
     Values newConfig(config.retract(result.dx_d));
     config = newConfig;

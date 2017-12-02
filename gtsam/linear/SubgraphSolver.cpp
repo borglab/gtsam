@@ -131,7 +131,7 @@ SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
   GaussianFactorGraph::shared_ptr Ac(new GaussianFactorGraph());
 
   size_t t = 0;
-  BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, jfg ) {
+  for ( const GaussianFactor::shared_ptr &gf: jfg ) {
 
     if (gf->keys().size() > 2) {
       throw runtime_error(
@@ -144,12 +144,12 @@ SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
     if (gf->keys().size() == 1)
       augment = true;
     else {
-      const Key u = gf->keys()[0], v = gf->keys()[1], u_root = D.findSet(u),
-          v_root = D.findSet(v);
+      const Key u = gf->keys()[0], v = gf->keys()[1], u_root = D.find(u),
+          v_root = D.find(v);
       if (u_root != v_root) {
         t++;
         augment = true;
-        D.makeUnionInPlace(u_root, v_root);
+        D.merge(u_root, v_root);
       }
     }
     if (augment)

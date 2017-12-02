@@ -61,16 +61,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class VALUE>
-  ExtendedKalmanFilter<VALUE>::ExtendedKalmanFilter(Key key_initial, T x_initial,
-      noiseModel::Gaussian::shared_ptr P_initial) {
-
-    // Set the initial linearization point to the provided mean
-    x_ = x_initial;
-
+  template <class VALUE>
+  ExtendedKalmanFilter<VALUE>::ExtendedKalmanFilter(
+      Key key_initial, T x_initial, noiseModel::Gaussian::shared_ptr P_initial)
+      : x_(x_initial)  // Set the initial linearization point
+  {
     // Create a Jacobian Prior Factor directly P_initial.
     // Since x0 is set to the provided mean, the b vector in the prior will be zero
-    // TODO Frank asks: is there a reason why noiseModel is not simply P_initial ?
+    // TODO(Frank): is there a reason why noiseModel is not simply P_initial?
     int n = traits<T>::GetDimension(x_initial);
     priorFactor_ = JacobianFactor::shared_ptr(
         new JacobianFactor(key_initial, P_initial->R(), Vector::Zero(n),

@@ -15,14 +15,13 @@
  * @author  Michael Kaess
  */
 
-#include <boost/foreach.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
+#include <gtsam/symbolic/SymbolicISAM.h>
+#include <gtsam/symbolic/tests/symbolicExampleGraphs.h>
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/symbolic/SymbolicISAM.h>
-#include <gtsam/symbolic/tests/symbolicExampleGraphs.h>
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
 
 using namespace std;
 using namespace gtsam;

@@ -20,7 +20,6 @@
 #include <fstream>
 #include <algorithm>
 
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include "utilities.h"

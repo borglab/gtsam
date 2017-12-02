@@ -20,7 +20,6 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/LabeledSymbol.h>
 
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <iostream>
 
@@ -63,7 +62,7 @@ static void Print(const CONTAINER& keys, const string& s,
   if (keys.empty())
     cout << "(none)" << endl;
   else {
-    BOOST_FOREACH(const Key& key, keys)
+    for(const Key& key: keys)
       cout << keyFormatter(key) << " ";
     cout << endl;
   }

@@ -66,9 +66,9 @@ public:
    * @param params internal parameters of the smart factors
    */
   SmartStereoProjectionPoseFactor(const SharedNoiseModel& sharedNoiseModel,
-      const SmartStereoProjectionParams& params =
-      SmartStereoProjectionParams()) :
-      Base(sharedNoiseModel, params) {
+      const SmartStereoProjectionParams& params = SmartStereoProjectionParams(),
+      const boost::optional<Pose3> body_P_sensor = boost::none) :
+      Base(sharedNoiseModel, params, body_P_sensor) {
   }
 
   /** Virtual destructor */
@@ -102,7 +102,7 @@ public:
 
   /**
    * Variant of the previous one in which we include a set of measurements with the same noise and calibration
-   * @param mmeasurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
+   * @param measurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
    * @param poseKeys vector of keys corresponding to the camera observing the same landmark
    * @param K the (known) camera calibration (same for all measurements)
    */
@@ -122,7 +122,7 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
     std::cout << s << "SmartStereoProjectionPoseFactor, z = \n ";
-    BOOST_FOREACH(const boost::shared_ptr<Cal3_S2Stereo>& K, K_all_)
+    for(const boost::shared_ptr<Cal3_S2Stereo>& K: K_all_)
     K->print("calibration = ");
     Base::print("", keyFormatter);
   }
@@ -160,8 +160,12 @@ public:
    Base::Cameras cameras(const Values& values) const {
     Base::Cameras cameras;
     size_t i=0;
-    BOOST_FOREACH(const Key& k, this->keys_) {
-      const Pose3& pose = values.at<Pose3>(k);
+    for(const Key& k: this->keys_) {
+      Pose3 pose = values.at<Pose3>(k);
+
+      if (Base::body_P_sensor_)
+    	  pose = pose.compose(*(Base::body_P_sensor_));
+
       StereoCamera camera(pose, K_all_[i++]);
       cameras.push_back(camera);
     }

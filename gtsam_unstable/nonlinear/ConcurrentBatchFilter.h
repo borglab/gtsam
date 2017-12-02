@@ -244,7 +244,7 @@ private:
 template<class Container>
 void ConcurrentBatchFilter::PrintKeys(const Container& keys, const std::string& indent, const std::string& title, const KeyFormatter& keyFormatter) {
   std::cout << indent << title;
-  BOOST_FOREACH(Key key, keys) {
+  for(Key key: keys) {
     std::cout << " " << keyFormatter(key);
   }
   std::cout << std::endl;

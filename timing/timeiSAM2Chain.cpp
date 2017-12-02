@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 
   // Write times
   ofstream timesFile("times.txt");
-  BOOST_FOREACH(double t, times) {
+  for(double t: times) {
     timesFile << t << "\n"; }
 
   return 0;

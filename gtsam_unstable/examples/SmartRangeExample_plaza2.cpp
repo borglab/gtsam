@@ -42,7 +42,6 @@
 #include <gtsam/sam/RangeFactor.h>
 
 // Standard headers, added last, so we know headers above work on their own
-#include <boost/foreach.hpp>
 #include <fstream>
 #include <iostream>
 
@@ -143,7 +142,7 @@ int main(int argc, char** argv) {
 
   // Loop over odometry
   gttic_(iSAM);
-  BOOST_FOREACH(const TimedOdometry& timedOdometry, odometry) {
+  for(const TimedOdometry& timedOdometry: odometry) {
     //--------------------------------- odometry loop -----------------------------------------
     double t;
     Pose2 odometry;
@@ -194,7 +193,7 @@ int main(int argc, char** argv) {
     }
     i += 1;
     //--------------------------------- odometry loop -----------------------------------------
-  } // BOOST_FOREACH
+  } // end for
   gttoc_(iSAM);
 
   // Print timings
@@ -204,12 +203,12 @@ int main(int argc, char** argv) {
   Values result = isam.calculateEstimate();
   ofstream os2(
       "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResultLM.txt");
-  BOOST_FOREACH(const Values::ConstFiltered<Point2>::KeyValuePair& it, result.filter<Point2>())
+  for(const Values::ConstFiltered<Point2>::KeyValuePair& it: result.filter<Point2>())
     os2 << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t1"
         << endl;
   ofstream os(
       "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResult.txt");
-  BOOST_FOREACH(const Values::ConstFiltered<Pose2>::KeyValuePair& it, result.filter<Pose2>())
+  for(const Values::ConstFiltered<Pose2>::KeyValuePair& it: result.filter<Pose2>())
     os << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t"
         << it.value.theta() << endl;
   exit(0);

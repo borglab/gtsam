@@ -25,7 +25,6 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <boost/foreach.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -37,6 +36,7 @@
 #include <boost/iterator/transform_iterator.hpp>
 
 #include <list>
+#include <memory>
 #include <sstream>
 
 using namespace std;
@@ -49,11 +49,31 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Values::Values(Values&& other) : values_(std::move(other.values_)) {
+  }
+
+  /* ************************************************************************* */
+  Values::Values(const Values& other, const VectorValues& delta) {
+    for (const_iterator key_value = other.begin(); key_value != other.end(); ++key_value) {
+      VectorValues::const_iterator it = delta.find(key_value->key);
+      Key key = key_value->key;  // Non-const duplicate to deal with non-const insert argument
+      if (it != delta.end()) {
+        const Vector& v = it->second;
+        Value* retractedValue(key_value->value.retract_(v));  // Retract
+        values_.insert(key, retractedValue);  // Add retracted result directly to result values
+      } else {
+        values_.insert(key, key_value->value.clone_());  // Add original version to result values
+      }
+    }
+  }
+
+  /* ************************************************************************* */
   void Values::print(const string& str, const KeyFormatter& keyFormatter) const {
     cout << str << "Values with " << size() << " values:" << endl;
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
       cout << "Value " << keyFormatter(key_value->key) << ": ";
       key_value->value.print("");
+      cout << "\n";
     }
   }
 
@@ -79,23 +99,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Values Values::retract(const VectorValues& delta) const
-  {
-    Values result;
-
-    for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
-      VectorValues::const_iterator vector_item = delta.find(key_value->key);
-      Key key = key_value->key;  // Non-const duplicate to deal with non-const insert argument
-      if(vector_item != delta.end()) {
-        const Vector& singleDelta = vector_item->second;
-        Value* retractedValue(key_value->value.retract_(singleDelta)); // Retract
-        result.values_.insert(key, retractedValue); // Add retracted result directly to result values
-      } else {
-        result.values_.insert(key, key_value->value.clone_()); // Add original version to result values
-      }
-    }
-
-    return result;
+  Values Values::retract(const VectorValues& delta) const {
+    return Values(*this, delta);
   }
 
   /* ************************************************************************* */
@@ -194,7 +199,7 @@ namespace gtsam {
   /* ************************************************************************* */
   size_t Values::dim() const {
     size_t result = 0;
-    BOOST_FOREACH(const ConstKeyValuePair& key_value, *this) {
+    for(const ConstKeyValuePair& key_value: *this) {
       result += key_value.value.dim();
     }
     return result;
@@ -203,7 +208,7 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues Values::zeroVectors() const {
     VectorValues result;
-    BOOST_FOREACH(const ConstKeyValuePair& key_value, *this)
+    for(const ConstKeyValuePair& key_value: *this)
       result.insert(key_value.key, Vector::Zero(key_value.value.dim()));
     return result;
   }

@@ -107,9 +107,6 @@ template<typename _MatrixType> class HouseholderQR
       *
       * \returns a solution.
       *
-      * \note The case where b is a matrix is not yet implemented. Also, this
-      *       code is space inefficient.
-      *
       * \note_about_checking_solutions
       *
       * \note_about_arbitrary_choice_of_solution

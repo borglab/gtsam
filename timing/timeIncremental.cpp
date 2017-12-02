@@ -28,6 +28,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/export.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -60,7 +61,7 @@ double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& c
   // the factor graph already includes a factor for the prior/equality constraint.
   //  double dof = graph.size() - config.size();
   int graph_dim = 0;
-  BOOST_FOREACH(const boost::shared_ptr<gtsam::NonlinearFactor>& nlf, graph) {
+  for(const boost::shared_ptr<gtsam::NonlinearFactor>& nlf: graph) {
     graph_dim += nlf->dim();
   }
   double dof = graph_dim - config.dim(); // kaess: changed to dim
@@ -225,9 +226,9 @@ int main(int argc, char *argv[]) {
   try {
     Marginals marginals(graph, values);
     int i=0;
-    BOOST_REVERSE_FOREACH(Key key1, values.keys()) {
+    for (Key key1: boost::adaptors::reverse(values.keys())) {
       int j=0;
-      BOOST_REVERSE_FOREACH(Key key2, values.keys()) {
+      for (Key key2: boost::adaptors::reverse(values.keys())) {
         if(i != j) {
           gttic_(jointMarginalInformation);
           std::vector<Key> keys(2);
@@ -246,7 +247,7 @@ int main(int argc, char *argv[]) {
         break;
     }
     tictoc_print_();
-    BOOST_FOREACH(Key key, values.keys()) {
+    for(Key key: values.keys()) {
       gttic_(marginalInformation);
       Matrix info = marginals.marginalInformation(key);
       gttoc_(marginalInformation);

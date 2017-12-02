@@ -26,7 +26,7 @@ namespace gtsam {
 void NonlinearFactor::print(const std::string& s,
     const KeyFormatter& keyFormatter) const {
   std::cout << s << "  keys = { ";
-  BOOST_FOREACH(Key key, keys()) {
+  for(Key key: keys()) {
     std::cout << keyFormatter(key) << " ";
   }
   std::cout << "}" << std::endl;

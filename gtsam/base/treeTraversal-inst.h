@@ -29,8 +29,6 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/foreach.hpp>
-#include <boost/bind.hpp>
 
 namespace gtsam {
 
@@ -91,7 +89,7 @@ void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre,
   // Add roots to stack (insert such that they are visited and processed in order
   {
     typename Stack::iterator insertLocation = stack.begin();
-    BOOST_FOREACH(const sharedNode& root, forest.roots())
+    for(const sharedNode& root: forest.roots())
       stack.insert(insertLocation, TraversalNode(root, rootData));
   }
 
@@ -112,7 +110,7 @@ void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre,
       node.dataPointer = dataList.insert(dataList.end(),
           visitorPre(node.treeNode, node.parentData));
       typename Stack::iterator insertLocation = stack.begin();
-      BOOST_FOREACH(const sharedNode& child, node.treeNode->children)
+      for(const sharedNode& child: node.treeNode->children)
         stack.insert(insertLocation, TraversalNode(child, *node.dataPointer));
       node.expanded = true;
     }
@@ -159,7 +157,6 @@ void DepthFirstForestParallel(FOREST& forest, DATA& rootData,
 #ifdef GTSAM_USE_TBB
   // Typedefs
   typedef typename FOREST::Node Node;
-  typedef boost::shared_ptr<Node> sharedNode;
 
   tbb::task::spawn_root_and_wait(
       internal::CreateRootTask<Node>(forest.roots(), rootData, visitorPre,

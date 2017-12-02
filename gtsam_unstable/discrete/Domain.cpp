@@ -19,9 +19,9 @@ namespace gtsam {
       const KeyFormatter& formatter) const {
 //    cout << s << ": Domain on " << formatter(keys_[0]) << " (j=" <<
 //    formatter(keys_[0]) << ") with values";
-//    BOOST_FOREACH (size_t v,values_) cout << " " << v;
+//    for (size_t v: values_) cout << " " << v;
 //    cout << endl;
-    BOOST_FOREACH (size_t v,values_) cout << v;
+    for (size_t v: values_) cout << v;
   }
 
   /* ************************************************************************* */
@@ -50,7 +50,7 @@ namespace gtsam {
   bool Domain::ensureArcConsistency(size_t j, vector<Domain>& domains) const {
     if (j != keys_[0]) throw invalid_argument("Domain check on wrong domain");
     Domain& D = domains[j];
-    BOOST_FOREACH(size_t value, values_)
+    for(size_t value: values_)
       if (!D.contains(value)) throw runtime_error("Unsatisfiable");
     D = *this;
     return true;
@@ -60,9 +60,9 @@ namespace gtsam {
   bool Domain::checkAllDiff(const vector<Key> keys, vector<Domain>& domains) {
     Key j = keys_[0];
     // for all values in this domain
-    BOOST_FOREACH(size_t value, values_) {
+    for(size_t value: values_) {
       // for all connected domains
-      BOOST_FOREACH(Key k, keys)
+      for(Key k: keys)
         // if any domain contains the value we cannot make this domain singleton
         if (k!=j && domains[k].contains(value))
           goto found;

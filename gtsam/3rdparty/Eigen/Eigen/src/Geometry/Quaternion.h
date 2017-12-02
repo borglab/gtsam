@@ -276,7 +276,7 @@ public:
   inline Coefficients& coeffs() { return m_coeffs;}
   inline const Coefficients& coeffs() const { return m_coeffs;}
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(IsAligned)
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(bool(IsAligned))
 
 protected:
   Coefficients m_coeffs;

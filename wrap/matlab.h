@@ -34,7 +34,6 @@ extern "C" {
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/foreach.hpp>
 
 #include <list>
 #include <string>
@@ -61,15 +60,15 @@ using namespace boost; // not usual, but for conciseness of generated code
 // "Unique" key to signal calling the matlab object constructor with a raw pointer
 // to a shared pointer of the same C++ object type as the MATLAB type.
 // Also present in utilities.h
-static const uint64_t ptr_constructor_key =
-  (uint64_t('G') << 56) |
-  (uint64_t('T') << 48) |
-  (uint64_t('S') << 40) |
-  (uint64_t('A') << 32) |
-  (uint64_t('M') << 24) |
-  (uint64_t('p') << 16) |
-  (uint64_t('t') << 8) |
-  (uint64_t('r'));
+static const boost::uint64_t ptr_constructor_key =
+  (boost::uint64_t('G') << 56) |
+  (boost::uint64_t('T') << 48) |
+  (boost::uint64_t('S') << 40) |
+  (boost::uint64_t('A') << 32) |
+  (boost::uint64_t('M') << 24) |
+  (boost::uint64_t('p') << 16) |
+  (boost::uint64_t('t') << 8) |
+  (boost::uint64_t('r'));
 
 //*****************************************************************************
 // Utilities
@@ -245,9 +244,9 @@ template <typename T>
 T myGetScalar(const mxArray* array) {
   switch (mxGetClassID(array)) {
     case mxINT64_CLASS:
-      return (T) *(int64_t*) mxGetData(array);
+      return (T) *(boost::int64_t*) mxGetData(array);
     case mxUINT64_CLASS:
-      return (T) *(uint64_t*) mxGetData(array);
+      return (T) *(boost::uint64_t*) mxGetData(array);
     default:
       // hope for the best!
       return (T) mxGetScalar(array);
@@ -350,7 +349,7 @@ mxArray* create_object(const std::string& classname, void *pointer, bool isVirtu
   int nargin = 2;
   // First input argument is pointer constructor key
   input[0] = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
-  *reinterpret_cast<uint64_t*>(mxGetData(input[0])) = ptr_constructor_key;
+  *reinterpret_cast<boost::uint64_t*>(mxGetData(input[0])) = ptr_constructor_key;
   // Second input argument is the pointer
   input[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
   *reinterpret_cast<void**>(mxGetData(input[1])) = pointer;

@@ -15,7 +15,6 @@
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/std/map.hpp>
 #include <boost/optional.hpp>
-#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
 #include <algorithm>

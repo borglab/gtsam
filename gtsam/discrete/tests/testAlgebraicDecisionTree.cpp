@@ -25,7 +25,6 @@
 #define DISABLE_TIMING
 
 #include <boost/timer.hpp>
-#include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/assign/std/map.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -66,7 +65,7 @@ void dot(const T&f, const string& filename) {
  typename DecisionTree<L, double>::Node::Ptr DecisionTree<L, double>::Choice::apply_fC_op_gL(
  Cache& cache, const Leaf& gL, Mul op) const {
  Ptr h(new Choice(label(), cardinality()));
- BOOST_FOREACH(const NodePtr& branch, branches_)
+ for(const NodePtr& branch: branches_)
  h->push_back(branch->apply_f_op_g(cache, gL, op));
  return Unique(cache, h);
  }
@@ -401,7 +400,7 @@ TEST(ADT, constructor)
   DiscreteKey z0(0,5), z1(1,4), z2(2,3), z3(3,2);
   vector<double> table(5 * 4 * 3 * 2);
   double x = 0;
-  BOOST_FOREACH(double& t, table)
+  for(double& t: table)
   t = x++;
   ADT f3(z0 & z1 & z2 & z3, table);
   Assignment<Key> assignment;

@@ -29,7 +29,6 @@
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/TestRegistry.h>
 #include <CppUnitLite/TestResult.h>
-#include <boost/foreach.hpp>
 #include <stddef.h>
 #include <stdexcept>
 #include <string>
@@ -51,8 +50,8 @@ TEST(PinholeCamera, BAL) {
   NonlinearFactorGraph graph;
 
   for (size_t j = 0; j < db.number_tracks(); j++) {
-    BOOST_FOREACH (const SfM_Measurement& m, db.tracks[j].measurements)
-      graph.push_back(sfmFactor(m.second, unit2, m.first, P(j)));
+    for (const SfM_Measurement& m: db.tracks[j].measurements)
+      graph.emplace_shared<sfmFactor>(m.second, unit2, m.first, P(j));
   }
 
   Values initial = initialCamerasAndPointsEstimate(db);

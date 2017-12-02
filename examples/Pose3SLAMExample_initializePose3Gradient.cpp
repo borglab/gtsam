@@ -45,7 +45,7 @@ int main(const int argc, const char *argv[]) {
   noiseModel::Diagonal::shared_ptr priorModel = //
       noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
   Key firstKey = 0;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, *initial) {
+  for(const Values::ConstKeyValuePair& key_value: *initial) {
     std::cout << "Adding prior to g2o file " << std::endl;
     firstKey = key_value.key;
     graphWithPrior.add(PriorFactor<Pose3>(firstKey, Pose3(), priorModel));

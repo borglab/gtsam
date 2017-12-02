@@ -87,7 +87,7 @@ bool DiscreteConditional::equals(const DiscreteFactor& other,
 Potentials::ADT DiscreteConditional::choose(const Values& parentsValues) const {
   ADT pFS(*this);
   Key j; size_t value;
-  BOOST_FOREACH(Key key, parents())
+  for(Key key: parents())
   try {
     j = (key);
     value = parentsValues.at(j);
@@ -111,7 +111,7 @@ void DiscreteConditional::solveInPlace(Values& values) const {
   double maxP = 0;
 
   DiscreteKeys keys;
-  BOOST_FOREACH(Key idx, frontals()) {
+  for(Key idx: frontals()) {
     DiscreteKey dk(idx, cardinality(idx));
     keys & dk;
   }
@@ -119,7 +119,7 @@ void DiscreteConditional::solveInPlace(Values& values) const {
   vector<Values> allPosbValues = cartesianProduct(keys);
 
   // Find the MPE
-  BOOST_FOREACH(Values& frontalVals, allPosbValues) {
+  for(Values& frontalVals: allPosbValues) {
     double pValueS = pFS(frontalVals); // P(F=value|S=parentsValues)
     // Update MPE solution if better
     if (pValueS > maxP) {
@@ -129,7 +129,7 @@ void DiscreteConditional::solveInPlace(Values& values) const {
   }
 
   //set values (inPlace) to mpe
-  BOOST_FOREACH(Key j, frontals()) {
+  for(Key j: frontals()) {
     values[j] = mpe[j];
   }
 }

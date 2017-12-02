@@ -55,25 +55,25 @@ int main (int argc, char* argv[]) {
 
   // Add measurements to the factor graph
   size_t j = 0;
-  BOOST_FOREACH(const SfM_Track& track, mydata.tracks) {
-    BOOST_FOREACH(const SfM_Measurement& m, track.measurements) {
+  for(const SfM_Track& track: mydata.tracks) {
+    for(const SfM_Measurement& m: track.measurements) {
       size_t i = m.first;
       Point2 uv = m.second;
-      graph.push_back(MyFactor(uv, noise, C(i), P(j))); // note use of shorthand symbols C and P
+      graph.emplace_shared<MyFactor>(uv, noise, C(i), P(j)); // note use of shorthand symbols C and P
     }
     j += 1;
   }
 
   // Add a prior on pose x1. This indirectly specifies where the origin is.
   // and a prior on the position of the first landmark to fix the scale
-  graph.push_back(PriorFactor<SfM_Camera>(C(0), mydata.cameras[0],  noiseModel::Isotropic::Sigma(9, 0.1)));
-  graph.push_back(PriorFactor<Point3>    (P(0), mydata.tracks[0].p, noiseModel::Isotropic::Sigma(3, 0.1)));
+  graph.emplace_shared<PriorFactor<SfM_Camera> >(C(0), mydata.cameras[0],  noiseModel::Isotropic::Sigma(9, 0.1));
+  graph.emplace_shared<PriorFactor<Point3> >    (P(0), mydata.tracks[0].p, noiseModel::Isotropic::Sigma(3, 0.1));
 
   // Create initial estimate
   Values initial;
   size_t i = 0; j = 0;
-  BOOST_FOREACH(const SfM_Camera& camera, mydata.cameras) initial.insert(C(i++), camera);
-  BOOST_FOREACH(const SfM_Track& track, mydata.tracks)    initial.insert(P(j++), track.p);
+  for(const SfM_Camera& camera: mydata.cameras) initial.insert(C(i++), camera);
+  for(const SfM_Track& track: mydata.tracks)    initial.insert(P(j++), track.p);
 
   /* Optimize the graph and print results */
   Values result;

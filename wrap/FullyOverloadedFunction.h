@@ -44,7 +44,7 @@ public:
 
   void verifyReturnTypes(const std::vector<std::string>& validtypes,
       const std::string& s) const {
-    BOOST_FOREACH(const ReturnValue& retval, returnVals_) {
+    for(const ReturnValue& retval: returnVals_) {
       retval.type1.verify(validtypes, s);
       if (retval.isPair)
         retval.type2.verify(validtypes, s);
@@ -55,7 +55,7 @@ public:
   std::vector<ReturnValue> expandReturnValuesTemplate(
       const TemplateSubstitution& ts) const {
     std::vector<ReturnValue> result;
-    BOOST_FOREACH(const ReturnValue& retVal, returnVals_) {
+    for(const ReturnValue& retVal: returnVals_) {
       ReturnValue instRetVal = retVal.expandTemplate(ts);
       result.push_back(instRetVal);
     }
@@ -73,7 +73,7 @@ public:
   // emit a list of comments, one for each overload
   void usage_fragment(FileWriter& proxyFile, const std::string& name) const {
     unsigned int argLCount = 0;
-    BOOST_FOREACH(ArgumentList argList, argLists_) {
+    for(ArgumentList argList: argLists_) {
       argList.emit_prototype(proxyFile, name);
       if (argLCount != nrOverloads() - 1)
         proxyFile.oss << ", ";
@@ -87,7 +87,7 @@ public:
   // emit a list of comments, one for each overload
   void comment_fragment(FileWriter& proxyFile, const std::string& name) const {
     size_t i = 0;
-    BOOST_FOREACH(ArgumentList argList, argLists_) {
+    for(ArgumentList argList: argLists_) {
       proxyFile.oss << "%";
       argList.emit_prototype(proxyFile, name);
       proxyFile.oss << " : returns " << returnVals_[i++].return_type(false)
@@ -125,7 +125,7 @@ template<class F>
 inline void verifyReturnTypes(const std::vector<std::string>& validTypes,
     const std::map<std::string, F>& vt) {
   typedef typename std::map<std::string, F>::value_type NamedMethod;
-  BOOST_FOREACH(const NamedMethod& namedMethod, vt)
+  for(const NamedMethod& namedMethod: vt)
     namedMethod.second.verifyReturnTypes(validTypes);
 }
 

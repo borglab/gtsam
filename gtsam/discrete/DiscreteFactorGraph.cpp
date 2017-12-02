@@ -41,7 +41,7 @@ namespace gtsam {
   /* ************************************************************************* */
   KeySet DiscreteFactorGraph::keys() const {
     KeySet keys;
-    BOOST_FOREACH(const sharedFactor& factor, *this)
+    for(const sharedFactor& factor: *this)
     if (factor) keys.insert(factor->begin(), factor->end());
     return keys;
   }
@@ -49,7 +49,7 @@ namespace gtsam {
   /* ************************************************************************* */
   DecisionTreeFactor DiscreteFactorGraph::product() const {
     DecisionTreeFactor result;
-    BOOST_FOREACH(const sharedFactor& factor, *this)
+    for(const sharedFactor& factor: *this)
       if (factor) result = (*factor) * result;
     return result;
   }
@@ -58,7 +58,7 @@ namespace gtsam {
   double DiscreteFactorGraph::operator()(
       const DiscreteFactor::Values &values) const {
     double product = 1.0;
-    BOOST_FOREACH( const sharedFactor& factor, factors_ )
+    for( const sharedFactor& factor: factors_ )
       product *= (*factor)(values);
     return product;
   }
@@ -78,7 +78,7 @@ namespace gtsam {
 //  /* ************************************************************************* */
 //  void DiscreteFactorGraph::permuteWithInverse(
 //    const Permutation& inversePermutation) {
-//      BOOST_FOREACH(const sharedFactor& factor, factors_) {
+//      for(const sharedFactor& factor: factors_) {
 //        if(factor)
 //          factor->permuteWithInverse(inversePermutation);
 //      }
@@ -87,7 +87,7 @@ namespace gtsam {
 //  /* ************************************************************************* */
 //  void DiscreteFactorGraph::reduceWithInverse(
 //    const internal::Reduction& inverseReduction) {
-//      BOOST_FOREACH(const sharedFactor& factor, factors_) {
+//      for(const sharedFactor& factor: factors_) {
 //        if(factor)
 //          factor->reduceWithInverse(inverseReduction);
 //      }
@@ -107,7 +107,7 @@ namespace gtsam {
     // PRODUCT: multiply all factors
     gttic(product);
     DecisionTreeFactor product;
-    BOOST_FOREACH(const DiscreteFactor::shared_ptr& factor, factors)
+    for(const DiscreteFactor::shared_ptr& factor: factors)
       product = (*factor) * product;
     gttoc(product);
 

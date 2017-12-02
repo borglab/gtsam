@@ -38,7 +38,7 @@ public:
     SILENT, TERMINATION, ERROR, VALUES, DELTA, LINEAR
   };
 
-  int maxIterations; ///< The maximum iterations to stop iterating (default 100)
+  size_t maxIterations; ///< The maximum iterations to stop iterating (default 100)
   double relativeErrorTol; ///< The maximum relative error decrease to stop iterating (default 1e-5)
   double absoluteErrorTol; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
   double errorTol; ///< The maximum total error to stop iterating (default 0.0)
@@ -54,7 +54,7 @@ public:
   }
   virtual void print(const std::string& str = "") const;
 
-  int getMaxIterations() const {
+  size_t getMaxIterations() const {
     return maxIterations;
   }
   double getRelativeErrorTol() const {

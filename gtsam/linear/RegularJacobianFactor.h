@@ -20,7 +20,6 @@
 
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
-#include <boost/foreach.hpp>
 
 namespace gtsam {
 

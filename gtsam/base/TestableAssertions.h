@@ -20,7 +20,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/global_includes.h>
 
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <map>
 #include <iostream>
@@ -91,7 +90,7 @@ bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, 
     match = false;
   if(match) {
     size_t i = 0;
-    BOOST_FOREACH(const V& a, expected) {
+    for(const V& a: expected) {
       if (!assert_equal(a, actual[i++], tol)) {
         match = false;
         break;
@@ -100,9 +99,9 @@ bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, 
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const V& a, expected) { std::cout << a << " "; }
+    for(const V& a: expected) { std::cout << a << " "; }
     std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const V& a, actual) { std::cout << a << " "; }
+    for(const V& a: actual) { std::cout << a << " "; }
     std::cout << std::endl;
     return false;
   }
@@ -133,12 +132,12 @@ bool assert_container_equal(const std::map<V1,V2>& expected, const std::map<V1,V
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const typename Map::value_type& a, expected) {
+    for(const typename Map::value_type& a: expected) {
       a.first.print("key");
       a.second.print("    value");
     }
     std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const typename Map::value_type& a, actual)  {
+    for(const typename Map::value_type& a: actual)  {
       a.first.print("key");
       a.second.print("    value");
     }
@@ -171,12 +170,12 @@ bool assert_container_equal(const std::map<size_t,V2>& expected, const std::map<
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const typename Map::value_type& a, expected) {
+    for(const typename Map::value_type& a: expected) {
       std::cout << "Key: " << a.first << std::endl;
       a.second.print("    value");
     }
     std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const typename Map::value_type& a, actual)  {
+    for(const typename Map::value_type& a: actual)  {
       std::cout << "Key: " << a.first << std::endl;
       a.second.print("    value");
     }
@@ -210,12 +209,12 @@ bool assert_container_equal(const std::vector<std::pair<V1,V2> >& expected,
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const typename VectorPair::value_type& a, expected) {
+    for(const typename VectorPair::value_type& a: expected) {
       a.first.print( "    first ");
       a.second.print("    second");
     }
     std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const typename VectorPair::value_type& a, actual)  {
+    for(const typename VectorPair::value_type& a: actual)  {
       a.first.print( "    first ");
       a.second.print("    second");
     }
@@ -247,9 +246,9 @@ bool assert_container_equal(const V& expected, const V& actual, double tol = 1e-
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const typename V::value_type& a, expected) { a.print("  "); }
+    for(const typename V::value_type& a: expected) { a.print("  "); }
     std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const typename V::value_type& a, actual) { a.print("  "); }
+    for(const typename V::value_type& a: actual) { a.print("  "); }
     std::cout << std::endl;
     return false;
   }
@@ -279,12 +278,12 @@ bool assert_container_equality(const std::map<size_t,V2>& expected, const std::m
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const typename Map::value_type& a, expected) {
+    for(const typename Map::value_type& a: expected) {
       std::cout << "Key:   " << a.first << std::endl;
       std::cout << "Value: " << a.second << std::endl;
     }
     std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const typename Map::value_type& a, actual)  {
+    for(const typename Map::value_type& a: actual)  {
       std::cout << "Key:   " << a.first << std::endl;
       std::cout << "Value: " << a.second << std::endl;
     }
@@ -316,9 +315,9 @@ bool assert_container_equality(const V& expected, const V& actual) {
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const typename V::value_type& a, expected) { std::cout << a << " "; }
+    for(const typename V::value_type& a: expected) { std::cout << a << " "; }
     std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const typename V::value_type& a, actual) { std::cout << a << " "; }
+    for(const typename V::value_type& a: actual) { std::cout << a << " "; }
     std::cout << std::endl;
     return false;
   }

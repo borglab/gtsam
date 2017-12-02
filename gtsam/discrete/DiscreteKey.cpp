@@ -18,7 +18,6 @@
 
 #include <iostream>
 #include <boost/format.hpp> // for key names
-#include <boost/foreach.hpp> // FOREACH
 #include "DiscreteKey.h"
 
 namespace gtsam {
@@ -34,7 +33,7 @@ namespace gtsam {
 
   vector<Key> DiscreteKeys::indices() const {
     vector < Key > js;
-    BOOST_FOREACH(const DiscreteKey& key, *this)
+    for(const DiscreteKey& key: *this)
       js.push_back(key.first);
     return js;
   }
@@ -42,7 +41,7 @@ namespace gtsam {
   map<Key,size_t> DiscreteKeys::cardinalities() const {
     map<Key,size_t> cs;
     cs.insert(begin(),end());
-//    BOOST_FOREACH(const DiscreteKey& key, *this)
+//    for(const DiscreteKey& key: *this)
 //      cs.insert(key);
     return cs;
   }

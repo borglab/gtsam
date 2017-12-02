@@ -19,7 +19,6 @@
 #include <iostream>
 #include <cstdlib>
 
-#include <boost/foreach.hpp>
 #include <boost/filesystem.hpp>
 
 #include "utilities.h"
@@ -71,9 +70,9 @@ bool assert_equal(const vector<string>& expected, const vector<string>& actual) 
   }
   if(!match) {
     cout << "expected: " << endl;
-    BOOST_FOREACH(const vector<string>::value_type& a, expected) { cout << "["  << a << "] "; }
+    for(const vector<string>::value_type& a: expected) { cout << "["  << a << "] "; }
     cout << "\nactual: " << endl;
-    BOOST_FOREACH(const vector<string>::value_type& a, actual) { cout << "["  << a << "] "; }
+    for(const vector<string>::value_type& a: actual) { cout << "["  << a << "] "; }
     cout << endl;
     return false;
   }
@@ -132,7 +131,7 @@ void createNamespaceStructure(const std::vector<std::string>& namespaces,
     const std::string& toolboxPath) {
   using namespace boost::filesystem;
   path curPath = toolboxPath;
-  BOOST_FOREACH(const string& subdir, namespaces) {
+  for(const string& subdir: namespaces) {
 //    curPath /= "+" + subdir; // original - resulted in valgrind error
     curPath = curPath / string(string("+") + subdir);
     if(!is_directory(curPath)) {

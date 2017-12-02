@@ -21,6 +21,7 @@
 
 #include <gtsam/geometry/Point3.h>
 #include <cmath>
+#include <iosfwd>
 
 namespace gtsam {
 
@@ -59,15 +60,10 @@ public:
   }
 
   /** print with optional string */
-  void print(const std::string& s = "") const {
-    std::cout << s << "time = " << time_ << "location = " << location_.transpose();
-  }
+  void print(const std::string& s = "") const;
 
   /** equals with an tolerance */
-  bool equals(const Event& other, double tol = 1e-9) const {
-    return std::abs(time_ - other.time_) < tol
-        && traits<Point3>::Equals(location_, other.location_, tol);
-  }
+  bool equals(const Event& other, double tol = 1e-9) const;
 
   /// Updates a with tangent space delta
   inline Event retract(const Vector4& v) const {
@@ -85,7 +81,7 @@ public:
       OptionalJacobian<1, 3> H2 = boost::none) const {
     static const double Speed = 330;
     Matrix13 D1, D2;
-    double distance = gtsam::distance(location_, microphone, D1, D2);
+    double distance = gtsam::distance3(location_, microphone, D1, D2);
     if (H1)
       // derivative of toa with respect to event
       *H1 << 1.0, D1 / Speed;

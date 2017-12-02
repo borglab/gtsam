@@ -376,7 +376,8 @@ struct transposition_matrix_product_retval
       const int size = m_transpositions.size();
       Index j = 0;
 
-      if(!(is_same<MatrixTypeNestedCleaned,Dest>::value && extract_data(dst) == extract_data(m_matrix)))
+      const typename Dest::Scalar *dst_data = internal::extract_data(dst);
+      if(!(is_same<MatrixTypeNestedCleaned,Dest>::value && dst_data!=0 && dst_data == extract_data(m_matrix)))
         dst = m_matrix;
 
       for(int k=(Transposed?size-1:0) ; Transposed?k>=0:k<size ; Transposed?--k:++k)

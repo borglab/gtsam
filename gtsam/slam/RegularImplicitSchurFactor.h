@@ -10,7 +10,6 @@
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
-#include <boost/foreach.hpp>
 #include <iosfwd>
 
 namespace gtsam {
@@ -131,7 +130,7 @@ public:
     // Do the Schur complement
     SymmetricBlockMatrix augmentedHessian = //
         Set::SchurComplement(FBlocks_, E_, b_);
-    return augmentedHessian.matrix();
+    return augmentedHessian.selfadjointView();
   }
 
   /// *Compute* full information matrix

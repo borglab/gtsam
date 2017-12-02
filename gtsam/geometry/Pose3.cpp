@@ -19,7 +19,6 @@
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/base/concepts.h>
 
-#include <boost/foreach.hpp>
 #include <iostream>
 #include <cmath>
 
@@ -346,7 +345,7 @@ double Pose3::range(const Point3& point, OptionalJacobian<1, 6> H1,
     return local.norm();
   } else {
     Matrix13 D_r_local;
-    const double r = norm(local, D_r_local);
+    const double r = norm3(local, D_r_local);
     if (H1) *H1 = D_r_local * D_local_pose;
     if (H2) *H2 = D_r_local * D_local_point;
     return r;
@@ -377,6 +376,16 @@ Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> H1,
     if (H2) *H2 = D_b_local * D_local_point;
     return b;
   }
+}
+
+/* ************************************************************************* */
+Unit3 Pose3::bearing(const Pose3& pose, OptionalJacobian<2, 6> H1,
+                     OptionalJacobian<2, 6> H2) const {
+  if (H2) {
+    H2->setZero();
+    return bearing(pose.translation(), H1, H2.cols<3>(3));
+  }
+  return bearing(pose.translation(), H1, boost::none);
 }
 
 /* ************************************************************************* */
@@ -424,7 +433,7 @@ boost::optional<Pose3> Pose3::Align(const std::vector<Point3Pair>& abPointPairs)
 
 boost::optional<Pose3> align(const vector<Point3Pair>& baPointPairs) {
   vector<Point3Pair> abPointPairs;
-  BOOST_FOREACH (const Point3Pair& baPair, baPointPairs) {
+  for (const Point3Pair& baPair: baPointPairs) {
     abPointPairs.push_back(make_pair(baPair.second, baPair.first));
   }
   return Pose3::Align(abPointPairs);

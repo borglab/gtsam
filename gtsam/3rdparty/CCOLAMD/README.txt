@@ -1,8 +1,8 @@
 CCOLAMD: constrained column approximate minimum degree ordering
-Copyright (C) 2005-2011, Univ. of Florida.  Authors: Timothy A. Davis,
+Copyright (C) 2005-2016, Univ. of Florida.  Authors: Timothy A. Davis,
 Sivasankaran Rajamanickam, and Stefan Larimore.  Closely based on COLAMD by
 Davis, Stefan Larimore, in collaboration with Esmond Ng, and John Gilbert.
-http://www.cise.ufl.edu/research/sparse
+http://www.suitesparse.com
 -------------------------------------------------------------------------------
 
 The CCOLAMD column approximate minimum degree ordering algorithm computes
@@ -14,7 +14,8 @@ available as a MATLAB-callable function.  It constructs a matrix M such
 that M'*M has the same pattern as A, and then uses CCOLAMD to compute a column
 ordering of M.
 
-Requires UFconfig, in the ../UFconfig directory relative to this directory.
+Requires SuiteSparse_config, in the ../SuiteSparse_config directory relative to
+this directory.
 
 To compile and install the ccolamd m-files and mexFunctions, just cd to
 CCOLAMD/MATLAB and type ccolamd_install in the MATLAB command window.
@@ -22,46 +23,26 @@ A short demo will run.  Optionally, type ccolamd_test to run an extensive tests.
 Type "make" in Unix in the CCOLAMD directory to compile the C-callable
 library and to run a short demo.
 
-If you have MATLAB 7.2 or earlier, you must first edit UFconfig/UFconfig.h to
-remove the "-largeArrayDims" option from the MEX command (or just use
-ccolamd_install.m inside MATLAB).
-
 Other "make" targets:
 
-    make mex		compiles MATLAB mexFunctions only
-    make libccolamd.a	compiles a C-callable library containing ccolamd
-    make clean		removes all files not in the distribution, except for
-			libccolamd.a
+    make library	compiles a C-callable library containing ccolamd
+    make clean		removes all files not in the distribution
+                            but keeps the compiled libraries.
     make distclean	removes all files not in the distribution
+    make install        installs the library in /usr/local/lib and
+                            /usr/local/include
+    make uninstall      uninstalls the library from /usr/local/lib and
+                            /usr/local/include
 
 To use ccolamd and csymamd within an application written in C, all you need are
 ccolamd.c and ccolamd.h, which are the C-callable ccolamd/csymamd codes.
 See ccolamd.c for more information on how to call ccolamd from a C program.
 It contains a complete description of the C-interface to CCOLAMD and CSYMAMD.
 
-	Copyright (c) 1998-2007 by the University of Florida.
-	All Rights Reserved.
 
-	Licensed under the GNU LESSER GENERAL PUBLIC LICENSE.
+See CCOLAMD/Doc/License.txt for the license.
 
 -------------------------------------------------------------------------------
-
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) any later version.
-
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with this library; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
--------------------------------------------------------------------------------
-
 
 Related papers:
 
@@ -86,21 +67,18 @@ Related papers:
 	"An approximate minimum degree column ordering algorithm",
 	S. I. Larimore, MS Thesis, Dept. of Computer and Information
 	Science and Engineering, University of Florida, Gainesville, FL,
-	1998.  CISE Tech Report TR-98-016.  Available at 
-	ftp://ftp.cise.ufl.edu/cis/tech-reports/tr98/tr98-016.ps
-	via anonymous ftp.
+	1998.  CISE Tech Report TR-98-016.
 
 	Approximate Deficiency for Ordering the Columns of a Matrix,
 	J. L. Kern, Senior Thesis, Dept. of Computer and Information
 	Science and Engineering, University of Florida, Gainesville, FL,
-	1999.  Available at http://www.cise.ufl.edu/~davis/Kern/kern.ps 
+	1999.
 
 Authors:  Timothy A. Davis, Sivasankaran Rajamanickam, and Stefan Larimore.
 	Closely based on COLAMD by Stefan I. Larimore and Timothy A. Davis,
-	University of Florida, in collaboration with John Gilbert, Xerox PARC
-	(now at UC Santa Barbara), and Esmong Ng, Lawrence Berkeley National
-	Laboratory (much of this work he did while at Oak Ridge National
-	Laboratory). 
+        in collaboration with John Gilbert, Xerox PARC (now at UC Santa
+        Barbara), and Esmong Ng, Lawrence Berkeley National Laboratory (much of
+        this work he did while at Oak Ridge National Laboratory). 
 
 CCOLAMD files:
 
@@ -122,7 +100,6 @@ CCOLAMD files:
 
     ./Doc:
     ChangeLog	    change log
-    lesser.txt	    license
 
     ./Include:
     ccolamd.h	    include file
@@ -147,4 +124,3 @@ CCOLAMD files:
 
     ./Source:
     ccolamd.c		primary source code
-    ccolamd_global.c	globally defined function pointers (malloc, free, ...)

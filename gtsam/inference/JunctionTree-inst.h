@@ -54,7 +54,7 @@ struct ConstructorTraversalData {
     // pointer in its parent.
     ConstructorTraversalData myData = ConstructorTraversalData(&parentData);
     myData.myJTNode = boost::make_shared<Node>(node->key, node->factors);
-    parentData.myJTNode->children.push_back(myData.myJTNode);
+    parentData.myJTNode->addChild(myData.myJTNode);
     return myData;
   }
 
@@ -99,20 +99,20 @@ struct ConstructorTraversalData {
     // Merge our children if they are in our clique - if our conditional has
     // exactly one fewer parent than our child's conditional.
     const size_t myNrParents = myConditional->nrParents();
-    const size_t nrChildren = node->children.size();
+    const size_t nrChildren = node->nrChildren();
     assert(childConditionals.size() == nrChildren);
 
     // decide which children to merge, as index into children
+    std::vector<size_t> nrFrontals = node->nrFrontalsOfChildren();
     std::vector<bool> merge(nrChildren, false);
-    size_t myNrFrontals = 1, i = 0;
-    BOOST_FOREACH(const sharedNode& child, node->children) {
+    size_t myNrFrontals = 1;
+    for (size_t i = 0;i<nrChildren;i++){
       // Check if we should merge the i^th child
       if (myNrParents + myNrFrontals == childConditionals[i]->nrParents()) {
         // Increment number of frontal variables
-        myNrFrontals += child->orderedFrontalKeys.size();
+        myNrFrontals += nrFrontals[i];
         merge[i] = true;
       }
-      ++i;
     }
 
     // now really merge
@@ -145,10 +145,7 @@ JunctionTree<BAYESTREE, GRAPH>::JunctionTree(
       Data::ConstructorTraversalVisitorPostAlg2);
 
   // Assign roots from the dummy node
-  typedef typename JunctionTree<BAYESTREE, GRAPH>::Node Node;
-  const typename Node::Children& children = rootData.myJTNode->children;
-  Base::roots_.reserve(children.size());
-  Base::roots_.insert(Base::roots_.begin(), children.begin(), children.end());
+  this->addChildrenAsRoots(rootData.myJTNode);
 
   // Transfer remaining factors from elimination tree
   Base::remainingFactors_ = eliminationTree.remainingFactors();

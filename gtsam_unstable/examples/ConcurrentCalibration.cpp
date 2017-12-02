@@ -61,7 +61,7 @@ int main(int argc, char** argv){
   initial_estimate.insert(Symbol('K', 0), *noisy_K);
 
   noiseModel::Diagonal::shared_ptr calNoise = noiseModel::Diagonal::Sigmas((Vector(5) << 500, 500, 1e-5, 100, 100).finished());
-  graph.push_back(PriorFactor<Cal3_S2>(Symbol('K', 0), *noisy_K, calNoise));
+  graph.emplace_shared<PriorFactor<Cal3_S2> >(Symbol('K', 0), *noisy_K, calNoise);
 
 
   ifstream pose_file(pose_loc.c_str());
@@ -77,7 +77,7 @@ int main(int argc, char** argv){
   }
   
   noiseModel::Isotropic::shared_ptr poseNoise = noiseModel::Isotropic::Sigma(6, 0.01);
-  graph.push_back(PriorFactor<Pose3>(Symbol('x', pose_id), Pose3(m), poseNoise));
+  graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x', pose_id), Pose3(m), poseNoise);
 
   // camera and landmark keys
   size_t x, l;
@@ -89,9 +89,9 @@ int main(int argc, char** argv){
   cout << "Reading stereo factors" << endl;
   //read stereo measurement details from file and use to create and add GenericStereoFactor objects to the graph representation
   while (factor_file >> x >> l >> uL >> uR >> v >> X >> Y >> Z) {
-//    graph.push_back( GenericStereoFactor<Pose3, Point3>(StereoPoint2(uL, uR, v), model, Symbol('x', x), Symbol('l', l), K));
+//    graph.emplace_shared<GenericStereoFactor<Pose3, Point3> >(StereoPoint2(uL, uR, v), model, Symbol('x', x), Symbol('l', l), K);
 
-    graph.push_back(GeneralSFMFactor2<Cal3_S2>(Point2(uL,v), model, Symbol('x', x), Symbol('l', l), Symbol('K', 0)));
+    graph.emplace_shared<GeneralSFMFactor2<Cal3_S2> >(Point2(uL,v), model, Symbol('x', x), Symbol('l', l), Symbol('K', 0));
 
 
     //if the landmark variable included in this factor has not yet been added to the initial variable value estimate, add it
@@ -107,7 +107,7 @@ int main(int argc, char** argv){
   //constrain the first pose such that it cannot change from its original value during optimization
   // NOTE: NonlinearEquality forces the optimizer to use QR rather than Cholesky
   // QR is much slower than Cholesky, but numerically more stable
-  graph.push_back(NonlinearEquality<Pose3>(Symbol('x',1),first_pose));
+  graph.emplace_shared<NonlinearEquality<Pose3> >(Symbol('x',1),first_pose);
 
   cout << "Optimizing" << endl;
   LevenbergMarquardtParams params;
@@ -115,7 +115,7 @@ int main(int argc, char** argv){
   params.verbosity = NonlinearOptimizerParams::ERROR;
 
   //create Levenberg-Marquardt optimizer to optimize the factor graph
-  LevenbergMarquardtOptimizer optimizer = LevenbergMarquardtOptimizer(graph, initial_estimate,params);
+  LevenbergMarquardtOptimizer optimizer(graph, initial_estimate,params);
 //  Values result = optimizer.optimize();
 
   string K_values_file = "K_values.txt";

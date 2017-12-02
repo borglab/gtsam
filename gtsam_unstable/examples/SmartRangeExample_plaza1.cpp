@@ -43,7 +43,6 @@
 #include <gtsam_unstable/slam/SmartRangeFactor.h>
 
 // Standard headers, added last, so we know headers above work on their own
-#include <boost/foreach.hpp>
 #include <fstream>
 #include <iostream>
 
@@ -152,7 +151,7 @@ int main(int argc, char** argv) {
   typedef boost::shared_ptr<SmartRangeFactor> SmartPtr;
   map<size_t, SmartPtr> smartFactors;
   if (smart) {
-    BOOST_FOREACH(size_t jj,ids) {
+    for(size_t jj: ids) {
       smartFactors[jj] = SmartPtr(new SmartRangeFactor(sigmaR));
       newFactors.push_back(smartFactors[jj]);
     }
@@ -166,7 +165,7 @@ int main(int argc, char** argv) {
 
   // Loop over odometry
   gttic_(iSAM);
-  BOOST_FOREACH(const TimedOdometry& timedOdometry, odometry) {
+  for(const TimedOdometry& timedOdometry: odometry) {
     //--------------------------------- odometry loop -----------------------------------------
     double t;
     Pose2 odometry;
@@ -219,25 +218,25 @@ int main(int argc, char** argv) {
       if (hasLandmarks) {
         // update landmark estimates
         landmarkEstimates = Values();
-        BOOST_FOREACH(size_t jj,ids)
+        for(size_t jj: ids)
           landmarkEstimates.insert(symbol('L', jj), result.at(symbol('L', jj)));
       }
       newFactors = NonlinearFactorGraph();
       initial = Values();
       if (smart && !hasLandmarks) {
         cout << "initialize from smart landmarks" << endl;
-        BOOST_FOREACH(size_t jj,ids) {
+        for(size_t jj: ids) {
           Point2 landmark = smartFactors[jj]->triangulate(result);
           initial.insert(symbol('L', jj), landmark);
           landmarkEstimates.insert(symbol('L', jj), landmark);
         }
       }
       countK = 0;
-      BOOST_FOREACH(const Values::ConstFiltered<Point2>::KeyValuePair& it, result.filter<Point2>())
+      for(const Values::ConstFiltered<Point2>::KeyValuePair& it: result.filter<Point2>())
         os2 << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t1"
             << endl;
       if (smart) {
-        BOOST_FOREACH(size_t jj,ids) {
+        for(size_t jj: ids) {
           Point2 landmark = smartFactors[jj]->triangulate(result);
           os3 << jj << "\t" << landmark.x() << "\t" << landmark.y() << "\t1"
               << endl;
@@ -247,7 +246,7 @@ int main(int argc, char** argv) {
     i += 1;
     if (i>end) break;
     //--------------------------------- odometry loop -----------------------------------------
-  } // BOOST_FOREACH
+  } // end for
   gttoc_(iSAM);
 
   // Print timings
@@ -257,7 +256,7 @@ int main(int argc, char** argv) {
   Values result = isam.calculateEstimate();
   ofstream os(
       "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResult.txt");
-  BOOST_FOREACH(const Values::ConstFiltered<Pose2>::KeyValuePair& it, result.filter<Pose2>())
+  for(const Values::ConstFiltered<Pose2>::KeyValuePair& it: result.filter<Pose2>())
     os << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t"
         << it.value.theta() << endl;
   exit(0);

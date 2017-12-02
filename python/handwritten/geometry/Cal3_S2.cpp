@@ -19,7 +19,7 @@
 #define NO_IMPORT_ARRAY
 #include <numpy_eigen/NumpyEigenConverter.hpp>
 
-#include "gtsam/geometry/Cal3_S2.h"
+#include <gtsam/geometry/Cal3_S2.h>
 
 using namespace boost::python;
 using namespace gtsam;
@@ -36,11 +36,12 @@ Vector3 (Cal3_S2::*calibrate2)(const Vector3 &) const = &Cal3_S2::calibrate;
 
 void exportCal3_S2(){
 
-class_<Cal3_S2>("Cal3_S2", init<>())
+class_<Cal3_S2, boost::shared_ptr<Cal3_S2> >("Cal3_S2", init<>())
   .def(init<double,double,double,double,double>())
   .def(init<const Vector &>())
-  .def(init<double,int,int>())
+  .def(init<double,int,int>(args("fov","w","h")))
   .def(init<std::string>())
+  .def(repr(self))
   .def("print", &Cal3_S2::print, print_overloads(args("s")))
   .def("equals", &Cal3_S2::equals, equals_overloads(args("q","tol")))
   .def("fx",&Cal3_S2::fx)
@@ -58,5 +59,6 @@ class_<Cal3_S2>("Cal3_S2", init<>())
   .def("calibrate",calibrate2)
   .def("between",&Cal3_S2::between, between_overloads())
 ;
+register_ptr_to_python< boost::shared_ptr<Cal3_S2> >();
 
 }

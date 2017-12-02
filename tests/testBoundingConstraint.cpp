@@ -181,7 +181,7 @@ TEST( testBoundingConstraint, unary_simple_optimization2) {
 /* ************************************************************************* */
 TEST( testBoundingConstraint, MaxDistance_basics) {
   gtsam::Key key1 = 1, key2 = 2;
-  Point2 pt1, pt2(1.0, 0.0), pt3(2.0, 0.0), pt4(3.0, 0.0);
+  Point2 pt1(0,0), pt2(1.0, 0.0), pt3(2.0, 0.0), pt4(3.0, 0.0);
   iq2D::PoseMaxDistConstraint rangeBound(key1, key2, 2.0, mu);
   EXPECT_DOUBLES_EQUAL(2.0, rangeBound.threshold(), tol);
   EXPECT(!rangeBound.isGreaterThan());
@@ -220,7 +220,7 @@ TEST( testBoundingConstraint, MaxDistance_basics) {
 /* ************************************************************************* */
 TEST( testBoundingConstraint, MaxDistance_simple_optimization) {
 
-  Point2 pt1, pt2_init(5.0, 0.0), pt2_goal(2.0, 0.0);
+  Point2 pt1(0,0), pt2_init(5.0, 0.0), pt2_goal(2.0, 0.0);
   Symbol x1('x',1), x2('x',2);
 
   NonlinearFactorGraph graph;
@@ -246,7 +246,7 @@ TEST( testBoundingConstraint, avoid_demo) {
 
   Symbol x1('x',1), x2('x',2), x3('x',3), l1('l',1);
   double radius = 1.0;
-  Point2 x1_pt, x2_init(2.0, 0.5), x2_goal(2.0, 1.0), x3_pt(4.0, 0.0), l1_pt(2.0, 0.0);
+  Point2 x1_pt(0,0), x2_init(2.0, 0.5), x2_goal(2.0, 1.0), x3_pt(4.0, 0.0), l1_pt(2.0, 0.0);
   Point2 odo(2.0, 0.0);
 
   NonlinearFactorGraph graph;

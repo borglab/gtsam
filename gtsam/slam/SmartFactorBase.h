@@ -161,7 +161,7 @@ public:
   /// Collect all cameras: important that in key order
   virtual Cameras cameras(const Values& values) const {
     Cameras cameras;
-    BOOST_FOREACH(const Key& k, this->keys_)
+    for(const Key& k: this->keys_)
       cameras.push_back(values.at<CAMERA>(k));
     return cameras;
   }
@@ -189,7 +189,7 @@ public:
 
     bool areMeasurementsEqual = true;
     for (size_t i = 0; i < measured_.size(); i++) {
-      if (this->measured_.at(i).equals(e->measured_.at(i), tol) == false)
+      if (traits<Z>::Equals(this->measured_.at(i), e->measured_.at(i), tol) == false)
         areMeasurementsEqual = false;
       break;
     }
@@ -202,7 +202,7 @@ public:
       boost::optional<typename Cameras::FBlocks&> Fs = boost::none, //
       boost::optional<Matrix&> E = boost::none) const {
     Vector ue = cameras.reprojectionError(point, measured_, Fs, E);
-    if(body_P_sensor_){
+    if(body_P_sensor_ && Fs){
       for(size_t i=0; i < Fs->size(); i++){
         Pose3 w_Pose_body = (cameras[i].pose()).compose(body_P_sensor_->inverse());
         Matrix J(6, 6);
@@ -210,8 +210,16 @@ public:
         Fs->at(i) = Fs->at(i) * J;
       }
     }
+    correctForMissingMeasurements(cameras, ue, Fs, E);
     return ue;
   }
+
+  /**
+   * This corrects the Jacobians for the case in which some pixel measurement is missing (nan)
+   * In practice, this does not do anything in the monocular case, but it is implemented in the stereo version
+   */
+  virtual void correctForMissingMeasurements(const Cameras& cameras, Vector& ue, boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
+		  boost::optional<Matrix&> E = boost::none) const {}
 
   /**
    * Calculate vector of re-projection errors [h(x)-z] = [cameras.project(p) - z]

@@ -27,7 +27,6 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/list.hpp>
 using namespace boost::assign;
@@ -57,7 +56,7 @@ TEST( SubgraphPreconditioner, planarOrdering ) {
 /** unnormalized error */
 static double error(const GaussianFactorGraph& fg, const VectorValues& x) {
   double total_error = 0.;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, fg)
+  for(const GaussianFactor::shared_ptr& factor: fg)
     total_error += factor->error(x);
   return total_error;
 }

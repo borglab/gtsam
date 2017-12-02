@@ -37,6 +37,11 @@ namespace gtsam {
   class Ordering;
   class JacobianFactor;
 
+  /**
+   * Multiply all factors and eliminate the given keys from the resulting factor using a QR
+   * variant that handles constraints (zero sigmas). Computation happens in noiseModel::Gaussian::QR
+   * Returns a conditional on those keys, and a new factor on the separator.
+   */
   GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<JacobianFactor> >
     EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys);
 
@@ -149,7 +154,7 @@ namespace gtsam {
     explicit JacobianFactor(
       const GaussianFactorGraph& graph,
       boost::optional<const Ordering&> ordering = boost::none,
-      boost::optional<const VariableSlots&> variableSlots = boost::none);
+      boost::optional<const VariableSlots&> p_variableSlots = boost::none);
 
     /** Virtual destructor */
     virtual ~JacobianFactor() {}
@@ -178,12 +183,12 @@ namespace gtsam {
      * which in fact stores an augmented information matrix.
      */
     virtual Matrix augmentedInformation() const;
-    
+
     /** Return the non-augmented information matrix represented by this
      * GaussianFactor.
      */
     virtual Matrix information() const;
-    
+
     /// Return the diagonal of the Hessian for this factor
     virtual VectorValues hessianDiagonal() const;
 
@@ -197,7 +202,7 @@ namespace gtsam {
      * @brief Returns (dense) A,b pair associated with factor, bakes in the weights
      */
     virtual std::pair<Matrix, Vector> jacobian() const;
-    
+
     /**
      * @brief Returns (dense) A,b pair associated with factor, does not bake in weights
      */
@@ -319,7 +324,7 @@ namespace gtsam {
 
     /** set noiseModel correctly */
     void setModel(bool anyConstrained, const Vector& sigmas);
-    
+
     /**
      * Densely partially eliminate with QR factorization, this is usually provided as an argument to
      * one of the factor graph elimination functions (see EliminateableFactorGraph).  HessianFactors
@@ -348,7 +353,7 @@ namespace gtsam {
     /// Internal function to fill blocks and set dimensions
     template<typename TERMS>
     void fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel);
-    
+
   private:
 
     /** Unsafe Constructor that creates an uninitialized Jacobian of right size

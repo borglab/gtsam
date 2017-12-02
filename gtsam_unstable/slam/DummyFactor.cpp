@@ -8,7 +8,6 @@
 #include <gtsam_unstable/slam/DummyFactor.h>
 
 #include <boost/assign/list_of.hpp>
-#include <boost/foreach.hpp>
 
 using namespace boost::assign;
 
@@ -29,7 +28,7 @@ DummyFactor::DummyFactor(const Key& key1, size_t dim1, const Key& key2, size_t d
 /* ************************************************************************* */
 void DummyFactor::print(const std::string& s, const KeyFormatter& keyFormatter) const {
   std::cout << s << "  DummyFactor dim = " << rowDim_ << ", keys = { ";
-  BOOST_FOREACH(Key key, this->keys()) { std::cout << keyFormatter(key) << " "; }
+  for(Key key: this->keys()) { std::cout << keyFormatter(key) << " "; }
   std::cout << "}" << std::endl;
 }
 

@@ -19,7 +19,6 @@
 #include "Method.h"
 #include "utilities.h"
 
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 

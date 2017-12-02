@@ -19,7 +19,6 @@
 
 // \callgraph
 
-#include <boost/foreach.hpp>
 #include <iostream>
 
 #include <gtsam/inference/Factor.h>
@@ -35,7 +34,7 @@ namespace gtsam {
   /* ************************************************************************* */
   void Factor::printKeys(const std::string& s, const KeyFormatter& formatter) const {
     std::cout << s << " ";
-    BOOST_FOREACH(Key key, keys_) std::cout << " " << formatter(key);
+    for(Key key: keys_) std::cout << " " << formatter(key);
     std::cout << std::endl;
   }
 

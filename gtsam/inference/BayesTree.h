@@ -30,7 +30,7 @@ namespace gtsam {
 
   // Forward declarations
   template<class FACTOR> class FactorGraph;
-  template<class BAYESTREE, class GRAPH> class ClusterTree;
+  template<class BAYESTREE, class GRAPH> class EliminatableClusterTree;
 
   /* ************************************************************************* */
   /** clique statistics */
@@ -247,7 +247,7 @@ namespace gtsam {
     void fillNodesIndex(const sharedClique& subtree);
 
     // Friend JunctionTree because it directly fills roots and nodes index.
-    template<class BAYESRTEE, class GRAPH> friend class ClusterTree;
+    template<class BAYESRTEE, class GRAPH> friend class EliminatableClusterTree;
 
   private:
     /** Serialization function */

@@ -26,7 +26,6 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/optional.hpp>
-#include <boost/foreach.hpp>
 #include <boost/assign/list_of.hpp>
 #include <fstream>
 
@@ -38,7 +37,7 @@ namespace gtsam {
   template<class CLIQUE>
   BayesTreeCliqueData BayesTree<CLIQUE>::getCliqueData() const {
     BayesTreeCliqueData data;
-    BOOST_FOREACH(const sharedClique& root, roots_)
+    for(const sharedClique& root: roots_)
       getCliqueData(data, root);
     return data;
   }
@@ -48,7 +47,7 @@ namespace gtsam {
   void BayesTree<CLIQUE>::getCliqueData(BayesTreeCliqueData& data, sharedClique clique) const {
     data.conditionalSizes.push_back(clique->conditional()->nrFrontals());
     data.separatorSizes.push_back(clique->conditional()->nrParents());
-    BOOST_FOREACH(sharedClique c, clique->children) {
+    for(sharedClique c: clique->children) {
       getCliqueData(data, c);
     }
   }
@@ -57,7 +56,7 @@ namespace gtsam {
   template<class CLIQUE>
   size_t BayesTree<CLIQUE>::numCachedSeparatorMarginals() const {
     size_t count = 0;
-    BOOST_FOREACH(const sharedClique& root, roots_)
+    for(const sharedClique& root: roots_)
       count += root->numCachedSeparatorMarginals();
     return count;
   }
@@ -68,7 +67,7 @@ namespace gtsam {
     if (roots_.empty()) throw std::invalid_argument("the root of Bayes tree has not been initialized!");
     std::ofstream of(s.c_str());
     of<< "digraph G{\n";
-    BOOST_FOREACH(const sharedClique& root, roots_)
+    for(const sharedClique& root: roots_)
       saveGraph(of, root, keyFormatter);
     of<<"}";
     of.close();
@@ -84,7 +83,7 @@ namespace gtsam {
     std::string parent = out.str();
     parent += "[label=\"";
 
-    BOOST_FOREACH(Key index, clique->conditional_->frontals()) {
+    for(Key index: clique->conditional_->frontals()) {
       if(!first) parent += ","; first = false;
       parent += indexFormatter(index);
     }
@@ -95,7 +94,7 @@ namespace gtsam {
     }
 
     first = true;
-    BOOST_FOREACH(Key sep, clique->conditional_->parents()) {
+    for(Key sep: clique->conditional_->parents()) {
       if(!first) parent += ","; first = false;
       parent += indexFormatter(sep);
     }
@@ -103,7 +102,7 @@ namespace gtsam {
     s << parent;
     parentnum = num;
 
-    BOOST_FOREACH(sharedClique c, clique->children) {
+    for(sharedClique c: clique->children) {
       num++;
       saveGraph(s, c, indexFormatter, parentnum);
     }
@@ -113,7 +112,7 @@ namespace gtsam {
   template<class CLIQUE>
   size_t BayesTree<CLIQUE>::size() const {
     size_t size = 0;
-    BOOST_FOREACH(const sharedClique& clique, roots_)
+    for(const sharedClique& clique: roots_)
       size += clique->treeSize();
     return size;
   }
@@ -121,7 +120,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CLIQUE>
   void BayesTree<CLIQUE>::addClique(const sharedClique& clique, const sharedClique& parent_clique) {
-    BOOST_FOREACH(Key j, clique->conditional()->frontals())
+    for(Key j: clique->conditional()->frontals())
       nodes_[j] = clique;
     if (parent_clique != NULL) {
       clique->parent_ = parent_clique;
@@ -189,7 +188,7 @@ namespace gtsam {
     this->clear();
     boost::shared_ptr<Clique> rootContainer = boost::make_shared<Clique>();
     treeTraversal::DepthFirstForest(other, rootContainer, BayesTreeCloneForestVisitorPre<Clique>);
-    BOOST_FOREACH(const sharedClique& root, rootContainer->children) {
+    for(const sharedClique& root: rootContainer->children) {
       root->parent_ = typename Clique::weak_ptr(); // Reset the parent since it's set to the dummy clique
       insertRoot(root);
     }
@@ -234,13 +233,13 @@ namespace gtsam {
   template<class CLIQUE>
   void BayesTree<CLIQUE>::fillNodesIndex(const sharedClique& subtree) {
     // Add each frontal variable of this root node
-    BOOST_FOREACH(const Key& j, subtree->conditional()->frontals()) {
+    for(const Key& j: subtree->conditional()->frontals()) {
       bool inserted = nodes_.insert(std::make_pair(j, subtree)).second;
       assert(inserted); (void)inserted;
     }
     // Fill index for each child
     typedef typename BayesTree<CLIQUE>::sharedClique sharedClique;
-    BOOST_FOREACH(const sharedClique& child, subtree->children) {
+    for(const sharedClique& child: subtree->children) {
       fillNodesIndex(child); }
   }
 
@@ -345,7 +344,7 @@ namespace gtsam {
       boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
         FastVector<Key> C1_minus_B; {
           KeySet C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
-          BOOST_FOREACH(const Key j, *B->conditional()) {
+          for(const Key j: *B->conditional()) {
             C1_minus_B_set.erase(j); }
           C1_minus_B.assign(C1_minus_B_set.begin(), C1_minus_B_set.end());
         }
@@ -357,7 +356,7 @@ namespace gtsam {
       boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
         FastVector<Key> C2_minus_B; {
           KeySet C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
-          BOOST_FOREACH(const Key j, *B->conditional()) {
+          for(const Key j: *B->conditional()) {
             C2_minus_B_set.erase(j); }
           C2_minus_B.assign(C2_minus_B_set.begin(), C2_minus_B_set.end());
         }
@@ -403,7 +402,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CLIQUE>
   void BayesTree<CLIQUE>::deleteCachedShortcuts() {
-    BOOST_FOREACH(const sharedClique& root, roots_) {
+    for(const sharedClique& root: roots_) {
       root->deleteCachedShortcuts();
     }
   }
@@ -424,10 +423,10 @@ namespace gtsam {
     }
 
     // orphan my children
-    BOOST_FOREACH(sharedClique child, clique->children)
+    for(sharedClique child: clique->children)
       child->parent_ = typename Clique::weak_ptr();
 
-    BOOST_FOREACH(Key j, clique->conditional()->frontals()) {
+    for(Key j: clique->conditional()->frontals()) {
       nodes_.unsafe_erase(j);
     }
   }
@@ -462,7 +461,7 @@ namespace gtsam {
   void BayesTree<CLIQUE>::removeTop(const FastVector<Key>& keys, BayesNetType& bn, Cliques& orphans)
   {
     // process each key of the new factor
-    BOOST_FOREACH(const Key& j, keys)
+    for(const Key& j: keys)
     {
       // get the clique
       // TODO: Nodes will be searched again in removeClique
@@ -475,7 +474,7 @@ namespace gtsam {
 
     // Delete cachedShortcuts for each orphan subtree
     //TODO: Consider Improving
-    BOOST_FOREACH(sharedClique& orphan, orphans)
+    for(sharedClique& orphan: orphans)
       orphan->deleteCachedShortcuts();
   }
 
@@ -499,14 +498,14 @@ namespace gtsam {
     for(typename Cliques::iterator clique = cliques.begin(); clique != cliques.end(); ++clique)
     {
       // Add children
-      BOOST_FOREACH(const sharedClique& child, (*clique)->children) {
+      for(const sharedClique& child: (*clique)->children) {
         cliques.push_back(child); }
 
       // Delete cached shortcuts
       (*clique)->deleteCachedShortcutsNonRecursive();
 
       // Remove this node from the nodes index
-      BOOST_FOREACH(Key j, (*clique)->conditional()->frontals()) {
+      for(Key j: (*clique)->conditional()->frontals()) {
         nodes_.unsafe_erase(j); }
 
       // Erase the parent and children pointers

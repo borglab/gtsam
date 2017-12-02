@@ -22,7 +22,6 @@
 #include <gtsam/discrete/Potentials.h>
 #include <gtsam/inference/Ordering.h>
 
-#include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <vector>

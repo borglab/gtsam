@@ -1,1 +1,1 @@
-from gtsampy import *
+from _gtsampy import *
