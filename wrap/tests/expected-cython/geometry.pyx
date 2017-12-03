@@ -478,3 +478,4 @@ def overloadedGlobalFunction_1(args, kwargs):
         return True, ndarray_copy(return_value).squeeze()
     except:
         return False, None
+
