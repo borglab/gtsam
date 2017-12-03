@@ -708,6 +708,27 @@ TEST(Pose3, Bearing2) {
   EXPECT(assert_equal(expectedH2, actualH2));
 }
 
+TEST(Pose3, PoseToPoseBearing) {
+  Matrix expectedH1, actualH1, expectedH2, actualH2, H2block;
+  EXPECT(assert_equal(Unit3(0,1,0), xl1.bearing(xl2, actualH1, actualH2), 1e-9));
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(bearing_proxy, xl1, l2);
+
+  // Since the second pose is treated as a point, the value calculated by
+  // numericalDerivative22 only depends on the position of the pose. Here, we
+  // calculate the Jacobian w.r.t. the second pose's position, and then augment
+  // that with zeroes in the block that is w.r.t. the second pose's
+  // orientation.
+  H2block = numericalDerivative22(bearing_proxy, xl1, l2);
+  expectedH2 = Matrix(2, 6);
+  expectedH2.setZero();
+  expectedH2.block<2, 3>(0, 3) = H2block;
+
+  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH2, actualH2));
+}
+
 /* ************************************************************************* */
 TEST( Pose3, unicycle )
 {
