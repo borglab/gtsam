@@ -152,7 +152,7 @@ void Constructor::emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const {
     pyxFile.oss << "            self." << cls.shared_pxd_obj_in_pyx() << " = "
         << cls.shared_pxd_class_in_pyx() << "(new " << cls.pxd_class_in_pyx()
         << "(" << args.pyx_asParams() << "))\n";
-    pyxFile.oss << "        except AssertionError:\n";
+    pyxFile.oss << "        except (AssertionError, ValueError):\n";
     pyxFile.oss << "            pass\n";
   }
 }

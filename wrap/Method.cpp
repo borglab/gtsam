@@ -196,7 +196,7 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
       file.oss << "            " << call << "\n";
       file.oss << "            return\n";
     }
-    file.oss << "        except AssertionError:\n";
+    file.oss << "        except (AssertionError, ValueError):\n";
     file.oss << "            pass\n";
   }
   file.oss

@@ -1,7 +1,9 @@
+from __future__ import print_function
+
 import numpy as np
 from math import pi, cos, sin
 import gtsam
-from gtsam import symbol
+
 
 class Options:
     """
@@ -31,14 +33,14 @@ class GroundTruth:
         self.points = [gtsam.Point3()] * nrPoints
 
     def print_(self, s=""):
-        print s
-        print "K = ", self.K
-        print "Cameras: ", len(self.cameras)
+        print(s)
+        print("K = ", self.K)
+        print("Cameras: ", len(self.cameras))
         for camera in self.cameras:
-            print "\t", camera
-        print "Points: ", len(self.points)
+            print("\t", camera)
+        print("Points: ", len(self.points))
         for point in self.points:
-            print "\t", point
+            print("\t", point)
         pass
 
 
@@ -69,9 +71,7 @@ class Data:
 
 
 def generate_data(options):
-    """
-    Generate ground-truth and measurement data
-    """
+    """ Generate ground-truth and measurement data. """
 
     K = gtsam.Cal3_S2(500, 500, 0, 640. / 2., 480. / 2.)
     nrPoints = 3 if options.triangle else 8
@@ -86,14 +86,12 @@ def generate_data(options):
             theta = j * 2 * pi / nrPoints
             truth.points[j] = gtsam.Point3(r * cos(theta), r * sin(theta), 0)
     else:  # 3D landmarks as vertices of a cube
-        truth.points = [gtsam.Point3(10, 10, 10),
-                        gtsam.Point3(-10, 10, 10),
-                        gtsam.Point3(-10, -10, 10),
-                        gtsam.Point3(10, -10, 10),
-                        gtsam.Point3(10, 10, -10),
-                        gtsam.Point3(-10, 10, -10),
-                        gtsam.Point3(-10, -10, -10),
-                        gtsam.Point3(10, -10, -10)]
+        truth.points = [
+            gtsam.Point3(10, 10, 10), gtsam.Point3(-10, 10, 10),
+            gtsam.Point3(-10, -10, 10), gtsam.Point3(10, -10, 10),
+            gtsam.Point3(10, 10, -10), gtsam.Point3(-10, 10, -10),
+            gtsam.Point3(-10, -10, -10), gtsam.Point3(10, -10, -10)
+        ]
 
     # Create camera cameras on a circle around the triangle
     height = 10
@@ -101,8 +99,10 @@ def generate_data(options):
     for i in range(options.nrCameras):
         theta = i * 2 * pi / options.nrCameras
         t = gtsam.Point3(r * cos(theta), r * sin(theta), height)
-        truth.cameras[i] = gtsam.SimpleCamera.Lookat(
-            t, gtsam.Point3(), gtsam.Point3(0, 0, 1), truth.K)
+        truth.cameras[i] = gtsam.SimpleCamera.Lookat(t,
+                                                     gtsam.Point3(),
+                                                     gtsam.Point3(0, 0, 1),
+                                                     truth.K)
         # Create measurements
         for j in range(nrPoints):
             # All landmarks seen in every frame
@@ -111,7 +111,7 @@ def generate_data(options):
 
     # Calculate odometry between cameras
     for i in range(1, options.nrCameras):
-        data.odometry[i] = truth.cameras[
-            i - 1].pose().between(truth.cameras[i].pose())
+        data.odometry[i] = truth.cameras[i - 1].pose().between(
+            truth.cameras[i].pose())
 
     return data, truth

@@ -31,14 +31,14 @@ cdef class Point2:
         try:
             __params = process_args([], args, kwargs)
             self.CPoint2_ = shared_ptr[CPoint2](new CPoint2())
-        except AssertionError:
+        except (AssertionError, ValueError):
             pass
         try:
             __params = process_args(['x', 'y'], args, kwargs)
             x = <double>(__params[0])
             y = <double>(__params[1])
             self.CPoint2_ = shared_ptr[CPoint2](new CPoint2(x, y))
-        except AssertionError:
+        except (AssertionError, ValueError):
             pass
         if (self.CPoint2_.use_count()==0):
             raise TypeError('Point2 construction failed!')
@@ -88,7 +88,7 @@ cdef class Point3:
             y = <double>(__params[1])
             z = <double>(__params[2])
             self.CPoint3_ = shared_ptr[CPoint3](new CPoint3(x, y, z))
-        except AssertionError:
+        except (AssertionError, ValueError):
             pass
         if (self.CPoint3_.use_count()==0):
             raise TypeError('Point3 construction failed!')
@@ -124,7 +124,7 @@ cdef class Test:
         try:
             __params = process_args([], args, kwargs)
             self.CTest_ = shared_ptr[CTest](new CTest())
-        except AssertionError:
+        except (AssertionError, ValueError):
             pass
         try:
             __params = process_args(['a', 'b'], args, kwargs)
@@ -133,7 +133,7 @@ cdef class Test:
             assert isinstance(b, np.ndarray) and b.ndim == 2
             b = b.astype(float, order='F', copy=False)
             self.CTest_ = shared_ptr[CTest](new CTest(a, <MatrixXd>(Map[MatrixXd](b))))
-        except AssertionError:
+        except (AssertionError, ValueError):
             pass
         if (self.CTest_.use_count()==0):
             raise TypeError('Test construction failed!')
@@ -242,7 +242,7 @@ cdef class MyTemplatePoint2(MyBase):
         try:
             __params = process_args([], args, kwargs)
             self.CMyTemplatePoint2_ = shared_ptr[CMyTemplatePoint2](new CMyTemplatePoint2())
-        except AssertionError:
+        except (AssertionError, ValueError):
             pass
         if (self.CMyTemplatePoint2_.use_count()==0):
             raise TypeError('MyTemplatePoint2 construction failed!')
@@ -306,7 +306,7 @@ cdef class MyTemplateMatrix(MyBase):
         try:
             __params = process_args([], args, kwargs)
             self.CMyTemplateMatrix_ = shared_ptr[CMyTemplateMatrix](new CMyTemplateMatrix())
-        except AssertionError:
+        except (AssertionError, ValueError):
             pass
         if (self.CMyTemplateMatrix_.use_count()==0):
             raise TypeError('MyTemplateMatrix construction failed!')
@@ -376,7 +376,7 @@ cdef class MyVector3:
         try:
             __params = process_args([], args, kwargs)
             self.CMyVector3_ = shared_ptr[CMyVector3](new CMyVector3())
-        except AssertionError:
+        except (AssertionError, ValueError):
             pass
         if (self.CMyVector3_.use_count()==0):
             raise TypeError('MyVector3 construction failed!')
@@ -400,7 +400,7 @@ cdef class MyVector12:
         try:
             __params = process_args([], args, kwargs)
             self.CMyVector12_ = shared_ptr[CMyVector12](new CMyVector12())
-        except AssertionError:
+        except (AssertionError, ValueError):
             pass
         if (self.CMyVector12_.use_count()==0):
             raise TypeError('MyVector12 construction failed!')
@@ -429,7 +429,7 @@ cdef class MyFactorPosePoint2:
             noiseModel = <noiseModel_Base>(__params[3])
             assert isinstance(noiseModel, noiseModel_Base)
             self.CMyFactorPosePoint2_ = shared_ptr[CMyFactorPosePoint2](new CMyFactorPosePoint2(key1, key2, measured, noiseModel.CnoiseModel_Base_))
-        except AssertionError:
+        except (AssertionError, ValueError):
             pass
         if (self.CMyFactorPosePoint2_.use_count()==0):
             raise TypeError('MyFactorPosePoint2 construction failed!')
@@ -478,4 +478,3 @@ def overloadedGlobalFunction_1(args, kwargs):
         return True, ndarray_copy(return_value).squeeze()
     except:
         return False, None
-

@@ -1,10 +1,10 @@
 import gtsam
 from gtsam import symbol
 
+
 class Options:
-    """
-    Options for visual isam example
-    """
+    """ Options for visual isam example. """
+
     def __init__(self):
         self.hardConstraint = False
         self.pointPriors = False
@@ -18,7 +18,7 @@ def initialize(data, truth, options):
     params = gtsam.ISAM2Params()
     if options.alwaysRelinearize:
         params.setRelinearizeSkip(1)
-    isam = gtsam.ISAM2(params = params)
+    isam = gtsam.ISAM2(params=params)
 
     # Add constraints/priors
     # TODO: should not be from ground truth!
@@ -28,11 +28,12 @@ def initialize(data, truth, options):
         ii = symbol(ord('x'), i)
         if i == 0:
             if options.hardConstraint:  # add hard constraint
-                newFactors.add(gtsam.NonlinearEqualityPose3(
-                    ii, truth.cameras[0].pose()))
+                newFactors.add(
+                    gtsam.NonlinearEqualityPose3(ii, truth.cameras[0].pose()))
             else:
-                newFactors.add(gtsam.PriorFactorPose3(
-                    ii, truth.cameras[i].pose(), data.noiseModels.posePrior))
+                newFactors.add(
+                    gtsam.PriorFactorPose3(ii, truth.cameras[i].pose(),
+                                           data.noiseModels.posePrior))
         initialEstimates.insert(ii, truth.cameras[i].pose())
 
     nextPoseIndex = 2
@@ -44,23 +45,27 @@ def initialize(data, truth, options):
         for k in range(len(data.Z[i])):
             j = data.J[i][k]
             jj = symbol(ord('l'), j)
-            newFactors.add(gtsam.GenericProjectionFactorCal3_S2(
-                data.Z[i][k], data.noiseModels.measurement, ii, jj, data.K))
+            newFactors.add(
+                gtsam.GenericProjectionFactorCal3_S2(data.Z[i][
+                    k], data.noiseModels.measurement, ii, jj, data.K))
             # TODO: initial estimates should not be from ground truth!
             if not initialEstimates.exists(jj):
                 initialEstimates.insert(jj, truth.points[j])
             if options.pointPriors:  # add point priors
-                newFactors.add(gtsam.PriorFactorPoint3(
-                    jj, truth.points[j], data.noiseModels.pointPrior))
+                newFactors.add(
+                    gtsam.PriorFactorPoint3(jj, truth.points[j],
+                                            data.noiseModels.pointPrior))
 
     # Add odometry between frames 0 and 1
-    newFactors.add(gtsam.BetweenFactorPose3(symbol(ord('x'), 0), symbol(
-        ord('x'), 1), data.odometry[1], data.noiseModels.odometry))
+    newFactors.add(
+        gtsam.BetweenFactorPose3(
+            symbol(ord('x'), 0),
+            symbol(ord('x'), 1), data.odometry[1], data.noiseModels.odometry))
 
     # Update ISAM
     if options.batchInitialization:  # Do a full optimize for first two poses
-        batchOptimizer = gtsam.LevenbergMarquardtOptimizer(
-            newFactors, initialEstimates)
+        batchOptimizer = gtsam.LevenbergMarquardtOptimizer(newFactors,
+                                                           initialEstimates)
         fullyOptimized = batchOptimizer.optimize()
         isam.update(newFactors, fullyOptimized)
     else:
@@ -71,18 +76,18 @@ def initialize(data, truth, options):
     result = isam.calculateEstimate()
     # t=toc plot(frame_i,t,'g.')
 
-    return isam, result, nextPoseIndex 
+    return isam, result, nextPoseIndex
 
 
 def step(data, isam, result, truth, currPoseIndex):
-    """
+    '''
     Do one step isam update
     @param[in] data: measurement data (odometry and visual measurements and their noiseModels)
     @param[in/out] isam: current isam object, will be updated
     @param[in/out] result: current result object, will be updated
     @param[in] truth: ground truth data, used to initialize new variables
     @param[currPoseIndex]: index of the current pose
-    """
+    '''
     # iSAM expects us to give it a new set of factors
     # along with initial estimates for any new variables introduced.
     newFactors = gtsam.NonlinearFactorGraph()
@@ -91,18 +96,21 @@ def step(data, isam, result, truth, currPoseIndex):
     # Add odometry
     prevPoseIndex = currPoseIndex - 1
     odometry = data.odometry[prevPoseIndex]
-    newFactors.add(gtsam.BetweenFactorPose3(symbol(ord('x'), prevPoseIndex),
-                                            symbol(ord('x'), currPoseIndex),
-                                            odometry, data.noiseModels.odometry))
+    newFactors.add(
+        gtsam.BetweenFactorPose3(
+            symbol(ord('x'), prevPoseIndex),
+            symbol(ord('x'), currPoseIndex), odometry,
+            data.noiseModels.odometry))
 
     # Add visual measurement factors and initializations as necessary
     for k in range(len(data.Z[currPoseIndex])):
         zij = data.Z[currPoseIndex][k]
         j = data.J[currPoseIndex][k]
         jj = symbol(ord('l'), j)
-        newFactors.add(gtsam.GenericProjectionFactorCal3_S2(
-            zij, data.noiseModels.measurement,
-            symbol(ord('x'), currPoseIndex), jj, data.K))
+        newFactors.add(
+            gtsam.GenericProjectionFactorCal3_S2(
+                zij, data.noiseModels.measurement,
+                symbol(ord('x'), currPoseIndex), jj, data.K))
         # TODO: initialize with something other than truth
         if not result.exists(jj) and not initialEstimates.exists(jj):
             lmInit = truth.points[j]
@@ -110,8 +118,8 @@ def step(data, isam, result, truth, currPoseIndex):
 
     # Initial estimates for the new pose.
     prevPose = result.atPose3(symbol(ord('x'), prevPoseIndex))
-    initialEstimates.insert(symbol(ord('x'), currPoseIndex),
-                            prevPose.compose(odometry))
+    initialEstimates.insert(
+        symbol(ord('x'), currPoseIndex), prevPose.compose(odometry))
 
     # Update ISAM
     # figure(1)tic
