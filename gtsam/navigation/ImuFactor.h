@@ -78,12 +78,12 @@ protected:
   Matrix9 preintMeasCov_; ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION]
   ///< (first-order propagation from *measurementCovariance*).
 
-  /// Default constructor for serialization
+public:
+
+  /// Default constructor for serialization and Cython wrapper
   PreintegratedImuMeasurements() {
     preintMeasCov_.setZero();
   }
-
-public:
 
  /**
    *  Constructor, initializes the class with no measurements

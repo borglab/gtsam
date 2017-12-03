@@ -18,7 +18,10 @@ install(FILES
   GtsamMakeConfigFile.cmake
   GtsamMatlabWrap.cmake
   GtsamPythonWrap.cmake
+  GtsamCythonWrap.cmake
   GtsamTesting.cmake
+  FindCython.cmake
+  FindNumPy.cmake
   README.html
   DESTINATION "${SCRIPT_INSTALL_DIR}/GTSAMCMakeTools")
 

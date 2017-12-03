@@ -164,3 +164,4 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Wrap
     wrap_and_install_library(../gtsam.h "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
 endif ()
+

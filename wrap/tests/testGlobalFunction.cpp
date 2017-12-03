@@ -37,7 +37,8 @@ TEST( GlobalFunction, Grammar ) {
   // Create type grammar that will place result in actual
   GlobalFunctions actual;
   vector<string> namespaces;
-  GlobalFunctionGrammar g(actual,namespaces);
+  std::string includeFile;
+  GlobalFunctionGrammar g(actual,namespaces,includeFile);
 
   // a class type with namespaces
   EXPECT(parse("Vector aGlobalFunction();", g, space_p).full);
