@@ -745,6 +745,9 @@ virtual class Cal3DS2_Base {
   double py() const;
   double k1() const;
   double k2() const;
+  Matrix K() const;
+  Vector k() const;
+  Vector vector() const;
 
   // Action on Point2
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
