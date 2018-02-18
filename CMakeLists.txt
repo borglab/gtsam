@@ -73,11 +73,12 @@ option(GTSAM_TANGENT_PREINTEGRATION      "Use new ImuFactor with integration on 
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
-option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
+option(GTSAM_INSTALL_CYTHON_TOOLBOX      "Enable/Disable installation of Cython toolbox"  OFF)
+option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab/cython wrap utility (necessary for matlab/cython interface)" ON)
 
 # Check / set dependent variables for MATLAB wrapper
-if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT GTSAM_BUILD_WRAP)
-	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX is enabled, please also enable GTSAM_BUILD_WRAP")
+if((GTSAM_INSTALL_MATLAB_TOOLBOX OR GTSAM_INSTALL_CYTHON_TOOLBOX) AND NOT GTSAM_BUILD_WRAP)
+	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX or GTSAM_INSTALL_CYTHON_TOOLBOX is enabled, please also enable GTSAM_BUILD_WRAP")
 endif()
 if(GTSAM_INSTALL_WRAP AND NOT GTSAM_BUILD_WRAP)
 	message(FATAL_ERROR "GTSAM_INSTALL_WRAP is enabled, please also enable GTSAM_BUILD_WRAP")
@@ -93,6 +94,10 @@ endif()
 
 if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
     message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the MATLAB toolbox cannot deal with this yet.  Please turn one of the two options off.")
+endif()
+
+if(GTSAM_INSTALL_CYTHON_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
+    message(FATAL_ERROR "GTSAM_INSTALL_CYTHON_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the CYTHON toolbox cannot deal with this yet.  Please turn one of the two options off.")
 endif()
 
 # Flags for choosing default packaging tools
@@ -359,6 +364,11 @@ add_subdirectory(examples)
 # Build timing
 add_subdirectory(timing)
 
+# Build gtsam_unstable
+if (GTSAM_BUILD_UNSTABLE)
+    add_subdirectory(gtsam_unstable)
+endif(GTSAM_BUILD_UNSTABLE)
+
 # Matlab toolbox
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	add_subdirectory(matlab)
@@ -378,10 +388,20 @@ if (GTSAM_BUILD_PYTHON)
 
 endif()
 
-# Build gtsam_unstable
-if (GTSAM_BUILD_UNSTABLE)
-    add_subdirectory(gtsam_unstable)
-endif(GTSAM_BUILD_UNSTABLE)
+# Cython wrap
+if (GTSAM_INSTALL_CYTHON_TOOLBOX)
+  set(GTSAM_INSTALL_CYTHON_TOOLBOX 1)
+  # Set up cache options
+  set(GTSAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
+  if(NOT GTSAM_CYTHON_INSTALL_PATH)
+    set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython")
+  endif()
+  set(GTSAM_EIGENCY_INSTALL_PATH ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency)
+  add_subdirectory(cython)
+else()
+  set(GTSAM_INSTALL_CYTHON_TOOLBOX 0) # This will go into config.h
+endif()
+
 
 # Install config and export files
 GtsamMakeConfigFile(GTSAM "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")
@@ -509,6 +529,10 @@ endif()
 if(GTSAM_BUILD_PYTHON)
 	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
 endif()
+
+message(STATUS "Cython toolbox flags                                      ")
+print_config_flag(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox         ")
+print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
 message(STATUS "===============================================================")
 
 # Print warnings at the end

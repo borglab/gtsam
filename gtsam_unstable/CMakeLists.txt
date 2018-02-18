@@ -118,6 +118,7 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     wrap_and_install_library(gtsam_unstable.h "gtsam" "" "${mexFlags}")
 endif(GTSAM_INSTALL_MATLAB_TOOLBOX)
 
+
 # Build examples
 add_subdirectory(examples)
 
