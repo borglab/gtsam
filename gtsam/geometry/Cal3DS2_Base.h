@@ -32,9 +32,9 @@ namespace gtsam {
  * but using only k1,k2,p1, and p2 coefficients.
  * K = [ fx s u0 ; 0 fy v0 ; 0 0 1 ]
  * rr = Pn.x^2 + Pn.y^2
- * \hat{pn} = (1 + k1*rr + k2*rr^2 ) pn + [ 2*k3 pn.x pn.y + k4 (rr + 2 Pn.x^2) ;
- *                      k3 (rr + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
- * pi = K*pn
+ * \hat{Pn} = (1 + k1*rr + k2*rr^2 ) Pn + [ 2*p1 Pn.x Pn.y + p2 (rr + 2 Pn.x^2) ;
+ *                      p1 (rr + 2 Pn.y^2) + 2*p2 Pn.x Pn.y  ]
+ * pi = K*Pn
  */
 class GTSAM_EXPORT Cal3DS2_Base {
 
