@@ -72,6 +72,26 @@ enum KernelFunctionType {
   KernelFunctionTypeNONE, KernelFunctionTypeHUBER, KernelFunctionTypeTUKEY
 };
 
+/// Return type for auxiliary functions
+typedef std::pair<Key, Pose2> IndexedPose;
+typedef std::pair<std::pair<Key, Key>, Pose2> IndexedEdge;
+
+/**
+ * Parse TORO/G2O vertex "id x y yaw"
+ * @param is input stream
+ * @param tag string parsed from input stream, will only parse if vertex type
+ */
+GTSAM_EXPORT boost::optional<IndexedPose> parseVertex(std::istream& is,
+    const std::string& tag);
+
+/**
+ * Parse TORO/G2O edge "id1 id2 x y yaw"
+ * @param is input stream
+ * @param tag string parsed from input stream, will only parse if edge type
+ */
+GTSAM_EXPORT boost::optional<IndexedEdge> parseEdge(std::istream& is,
+    const std::string& tag);
+
 /// Return type for load functions
 typedef std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> GraphAndValues;
 
@@ -88,22 +108,6 @@ GTSAM_EXPORT GraphAndValues load2D(
     bool smart = true, //
     NoiseFormat noiseFormat = NoiseFormatAUTO,
     KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
-
-/**
- * Parse TORO/G2O vertex "id x y yaw"
- * @param is input stream
- * @param tag string parsed from input stream, will only parse if vertex type
- */
-boost::optional<std::pair<Key, Pose2> > parseVertex(std::istream& is,
-    const std::string& tag);
-
-/**
- * Parse TORO/G2O edge "id1 id2 x y yaw"
- * @param is input stream
- * @param tag string parsed from input stream, will only parse if edge type
- */
-boost::optional<std::pair<std::pair<Key, Key>, Pose2> > parseEdge(
-    std::istream& is, const std::string& tag);
 
 /**
  * Load TORO/G2O style graph files

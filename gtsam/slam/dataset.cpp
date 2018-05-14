@@ -11,7 +11,7 @@
 /**
  * @file dataset.cpp
  * @date Jan 22, 2010
- * @author nikai, Luca Carlone
+ * @author Kai Ni, Luca Carlone, Frank Dellaert
  * @brief utility functions for loading datasets
  */
 
@@ -56,8 +56,10 @@ namespace gtsam {
 string findExampleDataFile(const string& name) {
   // Search source tree and installed location
   vector<string> rootsToSearch;
-  rootsToSearch.push_back(GTSAM_SOURCE_TREE_DATASET_DIR); // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
-  rootsToSearch.push_back(GTSAM_INSTALLED_DATASET_DIR); // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
+
+  // Constants below are defined by CMake, see gtsam/gtsam/CMakeLists.txt
+  rootsToSearch.push_back(GTSAM_SOURCE_TREE_DATASET_DIR);
+  rootsToSearch.push_back(GTSAM_INSTALLED_DATASET_DIR);
 
   // Search for filename as given, and with .graph and .txt extensions
   vector<string> namesToSearch;
@@ -75,12 +77,11 @@ string findExampleDataFile(const string& name) {
   }
 
   // If we did not return already, then we did not find the file
-  throw
-invalid_argument(
-    "gtsam::findExampleDataFile could not find a matching file in\n"
-    GTSAM_SOURCE_TREE_DATASET_DIR " or\n"
-    GTSAM_INSTALLED_DATASET_DIR " named\n" +
-    name + ", " + name + ".graph, or " + name + ".txt");
+  throw invalid_argument(
+      "gtsam::findExampleDataFile could not find a matching file in\n"
+      GTSAM_SOURCE_TREE_DATASET_DIR " or\n"
+      GTSAM_INSTALLED_DATASET_DIR " named\n" + name + ", " + name
+          + ".graph, or " + name + ".txt");
 }
 
 /* ************************************************************************* */
@@ -98,6 +99,7 @@ string createRewrittenFileName(const string& name) {
 
   return newpath.string();
 }
+
 /* ************************************************************************* */
 #endif
 
@@ -116,23 +118,20 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
   double v1, v2, v3, v4, v5, v6;
   is >> v1 >> v2 >> v3 >> v4 >> v5 >> v6;
 
-   if (noiseFormat == NoiseFormatAUTO)
-   {
-     // Try to guess covariance matrix layout
-     if(v1 != 0.0 && v2 == 0.0 && v3 != 0.0 && v4 != 0.0 && v5 == 0.0 && v6 == 0.0)
-     {
-       // NoiseFormatGRAPH
-       noiseFormat = NoiseFormatGRAPH;
-     }
-     else if(v1 != 0.0 && v2 == 0.0 && v3 == 0.0 && v4 != 0.0 && v5 == 0.0 && v6 != 0.0)
-     {
-       // NoiseFormatCOV
-       noiseFormat = NoiseFormatCOV;
-     }
-     else
-     {
-       throw std::invalid_argument("load2D: unrecognized covariance matrix format in dataset file. Please specify the noise format.");
-     }
+  if (noiseFormat == NoiseFormatAUTO) {
+    // Try to guess covariance matrix layout
+    if (v1 != 0.0 && v2 == 0.0 && v3 != 0.0 && v4 != 0.0 && v5 == 0.0
+        && v6 == 0.0) {
+      // NoiseFormatGRAPH
+      noiseFormat = NoiseFormatGRAPH;
+    } else if (v1 != 0.0 && v2 == 0.0 && v3 == 0.0 && v4 != 0.0 && v5 == 0.0
+        && v6 != 0.0) {
+      // NoiseFormatCOV
+      noiseFormat = NoiseFormatCOV;
+    } else {
+      throw std::invalid_argument(
+          "load2D: unrecognized covariance matrix format in dataset file. Please specify the noise format.");
+    }
   }
 
   // Read matrix and check that diagonal entries are non-zero
@@ -196,27 +195,26 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
 }
 
 /* ************************************************************************* */
-boost::optional<pair<Key, Pose2> > parseVertex(istream& is, const string& tag) {
+boost::optional<IndexedPose> parseVertex(istream& is, const string& tag) {
   if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {
     Key id;
     double x, y, yaw;
     is >> id >> x >> y >> yaw;
-    return pair<Key, Pose2>(id, Pose2(x, y, yaw));
+    return IndexedPose(id, Pose2(x, y, yaw));
   } else {
     return boost::none;
   }
 }
 
 /* ************************************************************************* */
-boost::optional<pair<pair<Key, Key>, Pose2> > parseEdge(istream& is, const string& tag) {
+boost::optional<IndexedEdge> parseEdge(istream& is, const string& tag) {
   if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "EDGE_SE2")
       || (tag == "ODOMETRY")) {
 
     Key id1, id2;
     double x, y, yaw;
     is >> id1 >> id2 >> x >> y >> yaw;
-    return pair<pair<Key, Key>, Pose2>(pair<Key, Key>(id1, id2),
-        Pose2(x, y, yaw));
+    return IndexedEdge(pair<Key, Key>(id1, id2), Pose2(x, y, yaw));
   } else {
     return boost::none;
   }
