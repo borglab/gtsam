@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 LIBRARY = libccolamd
-VERSION = 2.9.5
+VERSION = 2.9.6
 SO_VERSION = 2
 
 default: library
@@ -32,6 +32,8 @@ ccolamd_l.o: $(SRC) $(INC)
 	$(CC) $(CF) $(I) -c ../Source/ccolamd.c -DDLONG -o ccolamd_l.o
 
 # creates libccolamd.a, a C-callable CCOLAMD library
+static: $(AR_TARGET)
+
 $(AR_TARGET):  $(OBJ)
 	$(ARCHIVE)  $@ $^
 	- $(RANLIB) $@ 

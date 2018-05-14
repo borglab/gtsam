@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -21,6 +21,7 @@
 #include <wrap/spirit.h>
 #include <string>
 #include <vector>
+#include <iostream>
 
 namespace wrap {
 
@@ -34,6 +35,7 @@ public:
 
   std::vector<std::string> namespaces_; ///< Stack of namespaces
   std::string name_; ///< type name
+  static std::vector<Qualified> BasicTypedefs;
 
   friend struct TypeGrammar;
   friend class TemplateSubstitution;
@@ -84,6 +86,12 @@ public:
     return (name_ == templateArg && namespaces_.empty()); //TODO && category == CLASS);
   }
 
+  bool match(const std::vector<std::string>& templateArgs) const {
+    for(const std::string& s: templateArgs) 
+      if (match(s)) return true;
+    return false;
+  }
+
   void rename(const Qualified& q) {
     namespaces_ = q.namespaces_;
     name_ = q.name_;
@@ -109,6 +117,35 @@ public:
     category = VOID;
   }
 
+  bool isScalar() const {
+    return (name() == "bool" || name() == "char"
+        || name() == "unsigned char" || name() == "int"
+        || name() == "size_t" || name() == "double");
+  }
+
+  bool isVoid() const {
+    return name() == "void";
+  }
+
+  bool isString() const {
+    return name() == "string";
+  }
+
+  bool isEigen() const {
+    return name() == "Vector" || name() == "Matrix";
+  }
+
+  bool isBasicTypedef() const {
+    return std::find(Qualified::BasicTypedefs.begin(),
+                     Qualified::BasicTypedefs.end(),
+                     *this) != Qualified::BasicTypedefs.end();
+  }
+
+  bool isNonBasicType() const {
+    return name() != "This" && !isString() && !isScalar() && !isEigen() &&
+           !isVoid() && !isBasicTypedef();
+  }
+
 public:
 
   static Qualified MakeClass(std::vector<std::string> namespaces,
@@ -128,10 +165,18 @@ public:
     return Qualified("void", VOID);
   }
 
-  /// Return a qualified string using given delimiter
-  std::string qualifiedName(const std::string& delimiter = "") const {
+  /// Return a qualified namespace using given delimiter
+  std::string qualifiedNamespaces(const std::string& delimiter = "") const {
     std::string result;
     for (std::size_t i = 0; i < namespaces_.size(); ++i)
+      result += (namespaces_[i] + ((i<namespaces_.size()-1)?delimiter:""));
+    return result;
+  }
+
+  /// Return a qualified string using given delimiter
+  std::string qualifiedName(const std::string& delimiter = "", size_t fromLevel = 0) const {
+    std::string result;
+    for (std::size_t i = fromLevel; i < namespaces_.size(); ++i)
       result += (namespaces_[i] + delimiter);
     result += name_;
     return result;
@@ -146,11 +191,67 @@ public:
     return result;
   }
 
+  /// name of Cython classes in pxd
+  /// Normal classes: innerNamespace_ClassName, e.g. GaussianFactor, noiseModel_Gaussian
+  /// Eigen type: Vector --> VectorXd, Matrix --> MatrixXd
+  std::string pxdClassName() const {
+    if (isEigen())
+      return name_ + "Xd";
+    else if (isNonBasicType())
+      return "C" + qualifiedName("_", 1);
+    else return name_;
+  }
+
+  /// name of Python classes in pyx
+  /// They have the same name with the corresponding Cython classes in pxd
+  /// But note that they are different: These are Python classes in the pyx file
+  /// To refer to a Cython class in pyx, we need to add "pxd.", e.g. pxd.noiseModel_Gaussian
+  /// see the other function pxd_class_in_pyx for that purpose.
+  std::string pyxClassName() const {
+    if (isEigen())
+      return name_;
+    else
+      return qualifiedName("_", 1);
+  }
+
+  /// Python type of function arguments in pyx to interface with normal python scripts
+  /// Eigen types become np.ndarray (There's no Eigen types, e.g. VectorXd, in
+  /// Python. We have to pass in numpy array in the arguments, which will then be
+  /// converted to Eigen types in Cython)
+  std::string pyxArgumentType() const {
+    if (isEigen())
+      return "np.ndarray";
+    else
+      return qualifiedName("_", 1);
+  }
+
+  /// return the Cython class in pxd corresponding to a Python class in pyx
+  std::string pxd_class_in_pyx() const {
+    if (isNonBasicType()) {
+      return pxdClassName();
+    } else if (isEigen()) {
+      return name_ + "Xd";
+    } else  // basic types and not Eigen
+      return name_;
+  }
+
+  /// the internal Cython shared obj in a Python class wrappper
+  std::string shared_pxd_obj_in_pyx() const {
+    return pxdClassName() + "_";
+  }
+
+  std::string make_shared_pxd_class_in_pyx() const {
+    return "make_shared[" + pxd_class_in_pyx() + "]";
+  }
+
+  std::string shared_pxd_class_in_pyx() const {
+    return "shared_ptr[" + pxd_class_in_pyx() + "]";
+  }
+
   friend std::ostream& operator<<(std::ostream& os, const Qualified& q) {
     os << q.qualifiedName("::");
     return os;
   }
-
 };
 
 /* ************************************************************************* */

@@ -5,6 +5,7 @@ virtual class ns::OtherClass;
 
 namespace gtsam {
 
+#include <gtsam/geometry/Point2.h>
 class Point2 {
  Point2();
  Point2(double x, double y);
@@ -20,6 +21,7 @@ class Point2 {
  void serializable() const; // Sets flag and creates export, but does not make serialization functions
 };
 
+#include <gtsam/geometry/Point3.h>
 class Point3 {
   Point3(double x, double y, double z);
   double norm() const;
