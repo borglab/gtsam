@@ -118,7 +118,7 @@ namespace gtsam {
      * @param q The quaternion
      */
     Rot3(const Quaternion& q);
-    Rot3(double x, double y, double z, double w) : Rot3(Quaternion(x, y, z, w)) {}
+    Rot3(double w, double x, double y, double z) : Rot3(Quaternion(w, x, y, z)) {}
 
     /// Random, generates a random axis, then random angle \in [-p,pi]
     static Rot3 Random(boost::mt19937 & rng);
