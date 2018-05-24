@@ -32,9 +32,17 @@ namespace gtsam {
 class GTSAM_EXPORT CheiralityException: public ThreadsafeException<
     CheiralityException> {
 public:
-  CheiralityException() :
-      ThreadsafeException<CheiralityException>("Cheirality Exception") {
-  }
+  CheiralityException()
+    : CheiralityException(std::numeric_limits<Key>::max()) {}
+
+  CheiralityException(Key j)
+    : ThreadsafeException<CheiralityException>("CheiralityException"),
+      j_(j) {}
+
+  Key nearbyVariable() const {return j_;}
+
+private:
+  Key j_;
 };
 
 /**
