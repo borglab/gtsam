@@ -25,7 +25,6 @@ add_subdirectory(3rdparty)
 set (3rdparty_srcs
  ${eigen_headers} # Set by 3rdparty/CMakeLists.txt
  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd.c
- ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd_global.c
  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SuiteSparse_config/SuiteSparse_config.c)
 gtsam_assign_source_folders("${3rdparty_srcs}") # Create MSVC structure
 
@@ -138,7 +137,7 @@ endif()
 
 # make sure that ccolamd compiles even in face of warnings
 if(WIN32)
-    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "/w")
+    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w")
 else()
     set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-Wno-error")
 endif()
@@ -165,3 +164,4 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Wrap
     wrap_and_install_library(../gtsam.h "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
 endif ()
+

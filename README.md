@@ -66,7 +66,9 @@ In GTSAM 4 a new and more efficient implementation, based on integrating on the 
 Additional Information
 ----------------------
 
-Read about important [`GTSAM-Concepts`](GTSAM-Concepts.md) here.
+Read about important [`GTSAM-Concepts`](GTSAM-Concepts.md) here. A primer on GTSAM Expressions, 
+which support (superfast) automatic differentiation, 
+can be found on the [GTSAM wiki on BitBucket](https://bitbucket.org/gtborg/gtsam/wiki/Home).
 
 See the [`INSTALL`](INSTALL) file for more detailed installation instructions.
 

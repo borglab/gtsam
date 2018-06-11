@@ -115,13 +115,15 @@ public:
    */
   Eigen::Matrix<double, 15, 15> preintMeasCov_;
 
-  PreintegratedCombinedMeasurements() {}
 
   friend class CombinedImuFactor;
 
  public:
   /// @name Constructors
   /// @{
+
+  /// Default constructor only for serialization and Cython wrapper
+  PreintegratedCombinedMeasurements() {}
 
   /**
    *  Default constructor, initializes the class with no measurements

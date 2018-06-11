@@ -95,7 +95,7 @@ namespace gtsam {
       typename traits<T>::ChartJacobian::Jacobian Hlocal;
       Vector rval = traits<T>::Local(measured_, hx, boost::none, (H1 || H2) ? &Hlocal : 0);
       if (H1) *H1 = Hlocal * (*H1);
-      if (H1) *H2 = Hlocal * (*H2);
+      if (H2) *H2 = Hlocal * (*H2);
       return rval;
 #else
       return traits<T>::Local(measured_, hx);

@@ -5,7 +5,7 @@
 # This file contains all configuration settings for all packages in SuiteSparse,
 # except for CSparse (which is stand-alone) and the packages in MATLAB_Tools.
 
-SUITESPARSE_VERSION = 4.5.2
+SUITESPARSE_VERSION = 4.5.6
 
 #===============================================================================
 # Options you can change without editing this file:
@@ -115,6 +115,7 @@ SUITESPARSE_VERSION = 4.5.2
             CC = icc -D_GNU_SOURCE
             CXX = $(CC)
             CFOPENMP = -qopenmp -I$(MKLROOT)/include
+	    LDFLAGS += -openmp
         endif
         ifneq ($(shell which ifort 2>/dev/null),)
             # use the Intel ifort compiler for Fortran codes
@@ -123,7 +124,7 @@ SUITESPARSE_VERSION = 4.5.2
     endif
 
     #---------------------------------------------------------------------------
-    # code formatting (for Tcov only)
+    # code formatting (for Tcov on Linux only)
     #---------------------------------------------------------------------------
 
     PRETTY ?= grep -v "^\#" | indent -bl -nce -bli0 -i4 -sob -l120
@@ -224,7 +225,6 @@ SUITESPARSE_VERSION = 4.5.2
         CUDA_INC      = -I$(CUDA_INC_PATH)
         NVCC          = $(CUDA_PATH)/bin/nvcc
         NVCCFLAGS     = -Xcompiler -fPIC -O3 \
-                            -gencode=arch=compute_20,code=sm_20 \
                             -gencode=arch=compute_30,code=sm_30 \
                             -gencode=arch=compute_35,code=sm_35 \
                             -gencode=arch=compute_50,code=sm_50 \
@@ -305,8 +305,9 @@ SUITESPARSE_VERSION = 4.5.2
 
     SPQR_CONFIG ?= $(GPU_CONFIG)
 
-    # to compile with Intel's TBB, use TBB=-ltbb SPQR_CONFIG=-DHAVE_TBB
+    # to compile with Intel's TBB, use TBB=-ltbb -DSPQR_CONFIG=-DHAVE_TBB
     TBB ?=
+    # TBB = -ltbb -DSPQR_CONFIG=-DHAVE_TBB
 
     # TODO: this *mk file should auto-detect the presence of Intel's TBB,
     # and set the compiler flags accordingly.
