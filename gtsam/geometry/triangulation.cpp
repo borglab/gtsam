@@ -24,7 +24,7 @@
 namespace gtsam {
 
 Vector4 triangulateHomogeneousDLT(
-    const std::vector<Matrix34>& projection_matrices,
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
     const Point2Vector& measurements, double rank_tol) {
 
   // number of cameras
@@ -53,7 +53,7 @@ Vector4 triangulateHomogeneousDLT(
   return v;
 }
 
-Point3 triangulateDLT(const std::vector<Matrix34>& projection_matrices,
+Point3 triangulateDLT(const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
     const Point2Vector& measurements, double rank_tol) {
 
   Vector4 v = triangulateHomogeneousDLT(projection_matrices, measurements, rank_tol);

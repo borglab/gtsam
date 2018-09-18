@@ -252,7 +252,7 @@ public:
     y += F.transpose() * e3;
   }
 
-  typedef std::vector<Vector2> Error2s;
+  typedef std::vector<Vector2, Eigen::aligned_allocator<Vector2>> Error2s;
 
   /**
    * @brief Calculate corrected error Q*(e-ZDim*b) = (I - E*P*E')*(e-ZDim*b)

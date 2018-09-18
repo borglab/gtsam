@@ -53,7 +53,7 @@ public:
  * @return Triangulated point, in homogeneous coordinates
  */
 GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
-    const std::vector<Matrix34>& projection_matrices,
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
     const Point2Vector& measurements, double rank_tol = 1e-9);
 
 /**
@@ -64,7 +64,7 @@ GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
  * @return Triangulated Point3
  */
 GTSAM_EXPORT Point3 triangulateDLT(
-    const std::vector<Matrix34>& projection_matrices,
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
     const Point2Vector& measurements, 
     double rank_tol = 1e-9);
 
@@ -213,6 +213,8 @@ struct CameraProjectionMatrix {
   }
 private:
   const Matrix3 K_;
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -238,7 +240,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     throw(TriangulationUnderconstrainedException());
 
   // construct projection matrices from poses & calibration
-  std::vector<Matrix34> projection_matrices;
+  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
   CameraProjectionMatrix<CALIBRATION> createP(*sharedCal); // partially apply
   for(const Pose3& pose: poses)
     projection_matrices.push_back(createP(pose));
@@ -288,7 +290,7 @@ Point3 triangulatePoint3(
     throw(TriangulationUnderconstrainedException());
 
   // construct projection matrices from poses & calibration
-  std::vector<Matrix34> projection_matrices;
+  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
   for(const CAMERA& camera: cameras)
     projection_matrices.push_back(
         CameraProjectionMatrix<typename CAMERA::CalibrationType>(camera.calibration())(
