@@ -231,14 +231,22 @@ TEST(AdaptAutoDiff, AdaptAutoDiff) {
 /* ************************************************************************* */
 // Test AutoDiff wrapper in an expression
 TEST(AdaptAutoDiff, SnavelyExpression) {
+  typedef AdaptAutoDiff<SnavelyProjection, 2, 9, 3> Adaptor;
+
   Expression<Vector9> P(1);
   Expression<Vector3> X(2);
-  typedef AdaptAutoDiff<SnavelyProjection, 2, 9, 3> Adaptor;
+
   Expression<Vector2> expression(Adaptor(), P, X);
+
+  std::size_t RecordSize =
+    sizeof(internal::BinaryExpression<Vector2, Vector9, Vector3>::Record);
+
   EXPECT_LONGS_EQUAL(
-      sizeof(internal::BinaryExpression<Vector2, Vector9, Vector3>::Record),
-      expression.traceSize());
+    internal::upAligned(RecordSize) + P.traceSize() + X.traceSize(),
+    expression.traceSize());
+
   set<Key> expected = list_of(1)(2);
+
   EXPECT(expected == expression.keys());
 }
 
