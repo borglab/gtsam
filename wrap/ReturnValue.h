@@ -27,20 +27,23 @@ struct ReturnValue {
 
   friend struct ReturnValueGrammar;
 
-  /// Constructor
+  /// Default constructor
   ReturnValue() :
       isPair(false) {
   }
 
-  /// Constructor
+  /// Construct from type
   ReturnValue(const ReturnType& type) :
       isPair(false), type1(type) {
   }
 
-  /// Constructor
+  /// Construct from pair type arguments
   ReturnValue(const ReturnType& t1, const ReturnType& t2) :
       isPair(true), type1(t1), type2(t2) {
   }
+
+  /// Destructor
+  virtual ~ReturnValue() {}
 
   virtual void clear() {
     type1.clear();
