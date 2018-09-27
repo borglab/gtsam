@@ -36,7 +36,7 @@ protected:
   typedef Eigen::Matrix<double, ZDim, D> MatrixZD; ///< type of an F block
   typedef Eigen::Matrix<double, D, D> MatrixDD; ///< camera hessian
 
-  const std::vector<MatrixZD> FBlocks_; ///< All ZDim*D F blocks (one for each camera)
+  const std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks_; ///< All ZDim*D F blocks (one for each camera)
   const Matrix PointCovariance_; ///< the 3*3 matrix P = inv(E'E) (2*2 if degenerate)
   const Matrix E_; ///< The 2m*3 E Jacobian with respect to the point
   const Vector b_; ///< 2m-dimensional RHS vector
@@ -49,7 +49,7 @@ public:
 
   /// Construct from blocks of F, E, inv(E'*E), and RHS vector b
   RegularImplicitSchurFactor(const FastVector<Key>& keys,
-      const std::vector<MatrixZD>& FBlocks, const Matrix& E, const Matrix& P,
+      const std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> >& FBlocks, const Matrix& E, const Matrix& P,
       const Vector& b) :
       GaussianFactor(keys), FBlocks_(FBlocks), PointCovariance_(P), E_(E), b_(b) {
   }
@@ -58,7 +58,7 @@ public:
   virtual ~RegularImplicitSchurFactor() {
   }
 
-  std::vector<MatrixZD>& FBlocks() const {
+  std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> >& FBlocks() const {
     return FBlocks_;
   }
 
@@ -252,7 +252,7 @@ public:
     y += F.transpose() * e3;
   }
 
-  typedef std::vector<Vector2> Error2s;
+  typedef std::vector<Vector2, Eigen::aligned_allocator<Vector2>> Error2s;
 
   /**
    * @brief Calculate corrected error Q*(e-ZDim*b) = (I - E*P*E')*(e-ZDim*b)

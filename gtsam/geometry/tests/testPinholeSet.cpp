@@ -28,7 +28,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 #include <gtsam/geometry/CalibratedCamera.h>
 TEST(PinholeSet, Stereo) {
-  typedef vector<Point2> ZZ;
+  typedef Point2Vector ZZ;
   PinholeSet<CalibratedCamera> set;
   CalibratedCamera camera;
   set.push_back(camera);
@@ -72,7 +72,7 @@ TEST(PinholeSet, Stereo) {
 #include <gtsam/geometry/Cal3Bundler.h>
 TEST(PinholeSet, Pinhole) {
   typedef PinholeCamera<Cal3Bundler> Camera;
-  typedef vector<Point2> ZZ;
+  typedef Point2Vector ZZ;
   PinholeSet<Camera> set;
   Camera camera;
   set.push_back(camera);

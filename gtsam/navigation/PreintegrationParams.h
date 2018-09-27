@@ -39,12 +39,12 @@ struct PreintegrationParams: PreintegratedRotationParams {
 
   // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
   static boost::shared_ptr<PreintegrationParams> MakeSharedD(double g = 9.81) {
-    return boost::make_shared<PreintegrationParams>(Vector3(0, 0, g));
+    return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, g)));
   }
 
   // Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
   static boost::shared_ptr<PreintegrationParams> MakeSharedU(double g = 9.81) {
-    return boost::make_shared<PreintegrationParams>(Vector3(0, 0, -g));
+    return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, -g)));
   }
 
   void print(const std::string& s) const;
@@ -74,6 +74,9 @@ protected:
     ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
     ar & BOOST_SERIALIZATION_NVP(n_gravity);
   }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } // namespace gtsam

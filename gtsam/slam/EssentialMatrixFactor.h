@@ -80,6 +80,8 @@ public:
     return error;
   }
 
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -198,6 +200,8 @@ public:
     return f_ * reprojectionError;
   }
 
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor2
 
@@ -281,6 +285,8 @@ public:
     }
   }
 
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor3
 

@@ -50,12 +50,14 @@ private:
   typedef NonlinearFactor Base;
   typedef SmartFactorBase<CAMERA> This;
   typedef typename CAMERA::Measurement Z;
+  typedef typename CAMERA::MeasurementVector ZVector;
 
 public:
 
   static const int Dim = traits<CAMERA>::dimension; ///< Camera dimension
   static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
   typedef Eigen::Matrix<double, ZDim, Dim> MatrixZD; // F blocks (derivatives wrpt camera)
+  typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks; // vector of F blocks
 
 protected:
   /**
@@ -71,14 +73,14 @@ protected:
    * We keep a copy of measurements for I/O and computing the error.
    * The order is kept the same as the keys that we use to create the factor.
    */
-  std::vector<Z> measured_;
+  ZVector measured_;
 
   /// @name Pose of the camera in the body frame
   boost::optional<Pose3> body_P_sensor_; ///< Pose of the camera in the body frame
   /// @}
 
   // Cache for Fblocks, to avoid a malloc ever time we re-linearize
-  mutable std::vector<MatrixZD> Fblocks;
+  mutable FBlocks Fs;
 
 public:
 
@@ -97,7 +99,7 @@ public:
   SmartFactorBase(const SharedNoiseModel& sharedNoiseModel,
                   boost::optional<Pose3> body_P_sensor = boost::none,
                   size_t expectedNumberCameras = 10)
-      : body_P_sensor_(body_P_sensor), Fblocks(expectedNumberCameras) {
+      : body_P_sensor_(body_P_sensor), Fs(expectedNumberCameras) {
 
     if (!sharedNoiseModel)
       throw std::runtime_error("SmartFactorBase: sharedNoiseModel is required");
@@ -129,7 +131,7 @@ public:
   /**
    * Add a bunch of measurements, together with the camera keys
    */
-  void add(std::vector<Z>& measurements, std::vector<Key>& cameraKeys) {
+  void add(ZVector& measurements, std::vector<Key>& cameraKeys) {
     for (size_t i = 0; i < measurements.size(); i++) {
       this->measured_.push_back(measurements.at(i));
       this->keys_.push_back(cameraKeys.at(i));
@@ -154,7 +156,7 @@ public:
   }
 
   /** return the measurements */
-  const std::vector<Z>& measured() const {
+  const ZVector& measured() const {
     return measured_;
   }
 
@@ -258,22 +260,22 @@ public:
    *  TODO: Kill this obsolete method
    */
   template<class POINT>
-  void computeJacobians(std::vector<MatrixZD>& Fblocks, Matrix& E, Vector& b,
+  void computeJacobians(FBlocks& Fs, Matrix& E, Vector& b,
       const Cameras& cameras, const POINT& point) const {
     // Project into Camera set and calculate derivatives
     // As in expressionFactor, RHS vector b = - (h(x_bar) - z) = z-h(x_bar)
     // Indeed, nonlinear error |h(x_bar+dx)-z| ~ |h(x_bar) + A*dx - z|
     //                                         = |A*dx - (z-h(x_bar))|
-    b = -unwhitenedError(cameras, point, Fblocks, E);
+    b = -unwhitenedError(cameras, point, Fs, E);
   }
 
   /// SVD version
   template<class POINT>
-  void computeJacobiansSVD(std::vector<MatrixZD>& Fblocks, Matrix& Enull,
+  void computeJacobiansSVD(FBlocks& Fs, Matrix& Enull,
       Vector& b, const Cameras& cameras, const POINT& point) const {
 
     Matrix E;
-    computeJacobians(Fblocks, E, b, cameras, point);
+    computeJacobians(Fs, E, b, cameras, point);
 
     static const int N = FixedDimension<POINT>::value; // 2 (Unit3) or 3 (Point3)
 
@@ -291,10 +293,10 @@ public:
 
     Matrix E;
     Vector b;
-    computeJacobians(Fblocks, E, b, cameras, point);
+    computeJacobians(Fs, E, b, cameras, point);
 
     // build augmented hessian
-    SymmetricBlockMatrix augmentedHessian = Cameras::SchurComplement(Fblocks, E, b);
+    SymmetricBlockMatrix augmentedHessian = Cameras::SchurComplement(Fs, E, b);
 
     return boost::make_shared<RegularHessianFactor<Dim> >(keys_,
         augmentedHessian);
@@ -311,12 +313,12 @@ public:
       const FastVector<Key> allKeys) const {
     Matrix E;
     Vector b;
-    computeJacobians(Fblocks, E, b, cameras, point);
-    Cameras::UpdateSchurComplement(Fblocks, E, b, allKeys, keys_, augmentedHessian);
+    computeJacobians(Fs, E, b, cameras, point);
+    Cameras::UpdateSchurComplement(Fs, E, b, allKeys, keys_, augmentedHessian);
   }
 
   /// Whiten the Jacobians computed by computeJacobians using noiseModel_
-  void whitenJacobians(std::vector<MatrixZD>& F, Matrix& E, Vector& b) const {
+  void whitenJacobians(FBlocks& F, Matrix& E, Vector& b) const {
     noiseModel_->WhitenSystem(E, b);
     // TODO make WhitenInPlace work with any dense matrix type
     for (size_t i = 0; i < F.size(); i++)
@@ -329,7 +331,7 @@ public:
       double lambda = 0.0, bool diagonalDamping = false) const {
     Matrix E;
     Vector b;
-    std::vector<MatrixZD> F;
+    FBlocks F;
     computeJacobians(F, E, b, cameras, point);
     whitenJacobians(F, E, b);
     Matrix P = Cameras::PointCov(E, lambda, diagonalDamping);
@@ -345,7 +347,7 @@ public:
       bool diagonalDamping = false) const {
     Matrix E;
     Vector b;
-    std::vector<MatrixZD> F;
+    FBlocks F;
     computeJacobians(F, E, b, cameras, point);
     const size_t M = b.size();
     Matrix P = Cameras::PointCov(E, lambda, diagonalDamping);
@@ -360,7 +362,7 @@ public:
   boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0) const {
     size_t m = this->keys_.size();
-    std::vector<MatrixZD> F;
+    FBlocks F;
     Vector b;
     const size_t M = ZDim * m;
     Matrix E0(M, M - 3);
@@ -371,12 +373,12 @@ public:
   }
 
   /// Create BIG block-diagonal matrix F from Fblocks
-  static void FillDiagonalF(const std::vector<MatrixZD>& Fblocks, Matrix& F) {
-    size_t m = Fblocks.size();
+  static void FillDiagonalF(const FBlocks& Fs, Matrix& F) {
+    size_t m = Fs.size();
     F.resize(ZDim * m, Dim * m);
     F.setZero();
     for (size_t i = 0; i < m; ++i)
-      F.block<ZDim, Dim>(ZDim * i, Dim * i) = Fblocks.at(i);
+      F.block<ZDim, Dim>(ZDim * i, Dim * i) = Fs.at(i);
   }
 
 

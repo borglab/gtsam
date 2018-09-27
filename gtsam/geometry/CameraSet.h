@@ -31,7 +31,7 @@ namespace gtsam {
  * @brief A set of cameras, all with their own calibration
  */
 template<class CAMERA>
-class CameraSet: public std::vector<CAMERA> {
+class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA> > {
 
 protected:
 
@@ -40,13 +40,14 @@ protected:
    * The order is kept the same as the keys that we use to create the factor.
    */
   typedef typename CAMERA::Measurement Z;
+  typedef typename CAMERA::MeasurementVector ZVector;
 
   static const int D = traits<CAMERA>::dimension; ///< Camera dimension
   static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
 
   /// Make a vector of re-projection errors
-  static Vector ErrorVector(const std::vector<Z>& predicted,
-      const std::vector<Z>& measured) {
+  static Vector ErrorVector(const ZVector& predicted,
+      const ZVector& measured) {
 
     // Check size
     size_t m = predicted.size();
@@ -69,7 +70,7 @@ public:
 
   /// Definitions for blocks of F
   typedef Eigen::Matrix<double, ZDim, D> MatrixZD;
-  typedef std::vector<MatrixZD> FBlocks;
+  typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;
 
   /**
    * print
@@ -102,7 +103,7 @@ public:
    * throws CheiralityException
    */
   template<class POINT>
-  std::vector<Z> project2(const POINT& point, //
+  ZVector project2(const POINT& point, //
       boost::optional<FBlocks&> Fs = boost::none, //
       boost::optional<Matrix&> E = boost::none) const {
 
@@ -110,7 +111,7 @@ public:
 
     // Allocate result
     size_t m = this->size();
-    std::vector<Z> z;
+    ZVector z;
     z.reserve(m);
 
     // Allocate derivatives
@@ -131,7 +132,7 @@ public:
 
   /// Calculate vector [project2(point)-z] of re-projection errors
   template<class POINT>
-  Vector reprojectionError(const POINT& point, const std::vector<Z>& measured,
+  Vector reprojectionError(const POINT& point, const ZVector& measured,
       boost::optional<FBlocks&> Fs = boost::none, //
       boost::optional<Matrix&> E = boost::none) const {
     return ErrorVector(project2(point, Fs, E), measured);
@@ -315,6 +316,9 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & (*this);
   }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template<class CAMERA>
