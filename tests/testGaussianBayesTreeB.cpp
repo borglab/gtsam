@@ -317,7 +317,24 @@ TEST(GaussianBayesTree, shortcut_overlapping_separator)
     5, 0, 6,
     0, -11, -12
     ).finished();
+
   Matrix actualJointJ = joint.augmentedJacobian();
+
+  bool Row0RhsSignsEqual =
+    signbit(expectedJointJ(0, 2)) == signbit(actualJointJ(0, 2));
+
+  if (!Row0RhsSignsEqual)
+  {
+    expectedJointJ.row(0) = -expectedJointJ.row(0);
+  }
+
+  bool Row1RhsSignsEqual =
+    signbit(expectedJointJ(1, 2)) == signbit(actualJointJ(1, 2));
+
+  if (!Row1RhsSignsEqual)
+  {
+    expectedJointJ.row(1) = -expectedJointJ.row(1);
+  }
 
   EXPECT(assert_equal(expectedJointJ, actualJointJ));
 }
