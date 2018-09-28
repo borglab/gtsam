@@ -29,7 +29,7 @@ public:
    * Constructor
    */
   JacobianFactorQR(const FastVector<Key>& keys,
-      const std::vector<MatrixZD>& FBlocks, const Matrix& E, const Matrix3& P,
+      const std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> >& FBlocks, const Matrix& E, const Matrix3& P,
       const Vector& b, //
       const SharedDiagonal& model = SharedDiagonal()) :
       Base() {

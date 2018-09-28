@@ -55,6 +55,7 @@ public:
    *  and this typedef informs those classes what "project" returns.
    */
   typedef Point2 Measurement;
+  typedef Point2Vector MeasurementVector;
 
 private:
 
@@ -228,6 +229,9 @@ private:
   void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(pose_);
   }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 };
 // end of class PinholeBase
@@ -412,6 +416,9 @@ private:
   }
 
   /// @}
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // manifold traits

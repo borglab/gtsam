@@ -48,14 +48,23 @@ public:
   } Category;
   Category category;
 
+  /// Default constructor
   Qualified() :
       category(VOID) {
   }
 
+  /// Construct from name and optional category
   Qualified(const std::string& n, Category c = CLASS) :
       name_(n), category(c) {
   }
 
+  /// Construct from scoped name and optional category
+  Qualified(const std::string& ns1, const std::string& n, Category c = CLASS) :
+      name_(n), category(c) {
+    namespaces_.push_back(ns1);
+  }
+
+  /// Construct from doubly scoped name and optional category
   Qualified(const std::string& ns1, const std::string& ns2,
       const std::string& n, Category c = CLASS) :
       name_(n), category(c) {
@@ -63,14 +72,13 @@ public:
     namespaces_.push_back(ns2);
   }
 
-  Qualified(const std::string& ns1, const std::string& n, Category c = CLASS) :
-      name_(n), category(c) {
-    namespaces_.push_back(ns1);
-  }
-
+  /// Construct from arbitrarily scoped name
   Qualified(std::vector<std::string> ns, const std::string& name) :
       namespaces_(ns), name_(name), category(CLASS) {
   }
+
+  // Destructor
+  virtual ~Qualified() {}
 
   std::string name() const {
     return name_;

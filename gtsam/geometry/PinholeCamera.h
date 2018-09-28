@@ -39,6 +39,7 @@ public:
    *  and this typedef informs those classes what "project" returns.
    */
   typedef Point2 Measurement;
+  typedef Point2Vector MeasurementVector;
 
 private:
 
@@ -323,6 +324,8 @@ private:
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
 
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // manifold traits

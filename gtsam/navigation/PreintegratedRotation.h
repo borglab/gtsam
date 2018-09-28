@@ -58,6 +58,9 @@ struct PreintegratedRotationParams {
     ar & BOOST_SERIALIZATION_NVP(omegaCoriolis);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor);
   }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -165,6 +168,9 @@ class PreintegratedRotation {
     ar& BOOST_SERIALIZATION_NVP(deltaRij_);
     ar& BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
   }
+
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template <>
