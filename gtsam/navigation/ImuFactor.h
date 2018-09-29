@@ -106,6 +106,10 @@ public:
        preintMeasCov_(preintMeasCov) {
   }
 
+  /// Virtual destructor
+  virtual ~PreintegratedImuMeasurements() {
+  }
+
   /// print
   void print(const std::string& s = "Preintegrated Measurements:") const override;
 

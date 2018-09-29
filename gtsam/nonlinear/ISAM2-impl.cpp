@@ -291,9 +291,10 @@ size_t ISAM2::Impl::UpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>
       lastBacksubVariableCount += optimizeWildfireNonRecursive(
       root, wildfireThreshold, replacedKeys, delta); // modifies delta
 
-#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-    for(size_t j=0; j<delta.size(); ++j)
-      assert(delta[j].unaryExpr(ptr_fun(isfinite<double>)).all());
+#if !defined(NDEBUG) && defined(GTSAM_EXTRA_CONSISTENCY_CHECKS)
+    for (VectorValues::const_iterator key_delta = delta.begin(); key_delta != delta.end(); ++key_delta) {
+        assert(delta[key_delta->first].allFinite());
+    }
 #endif
   }
 
