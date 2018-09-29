@@ -5,10 +5,9 @@
  */
 
 #include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
-
-#include <gtsam/nonlinear/ISAM2.h>
 
 #include <iostream>
 #include <vector>
@@ -56,26 +55,31 @@ int main(int argc, char* argv[]) {
 
   vector<Pose3> poses = {pose1, pose2, pose3, pose4, pose5};
 
-  SmartFactor::shared_ptr smartFactor(new SmartFactor(measurementNoise, K));
-  graph.push_back(smartFactor);
-
+  // Add first pose
   graph.emplace_shared<PriorFactor<Pose3>>(X(0), poses[0], noise);
   initialEstimate.insert(X(0), poses[0].compose(delta));
-  smartFactor->add(PinholePose<Cal3_S2>(poses[0], K).project(point), X(0));
 
+  // Create smart factor with measurement from first pose only
+  SmartFactor::shared_ptr smartFactor(new SmartFactor(measurementNoise, K));
+  smartFactor->add(PinholePose<Cal3_S2>(poses[0], K).project(point), X(0));
+  graph.push_back(smartFactor);
+
+  // loop over remaining poses
   for (size_t i = 1; i < 5; i++) {
     cout << "****************************************************" << endl;
     cout << "i = " << i << endl;
 
-    // Add measurement to smart factor
-    PinholePose<Cal3_S2> camera(poses[i], K);
-    Point2 measurement = camera.project(point);
-    smartFactor->add(measurement, X(i));
-    cout << "Measurement " << i << "" << measurement << endl;
-
     // Add prior on new pose
     graph.emplace_shared<PriorFactor<Pose3>>(X(i), poses[i], noise);
     initialEstimate.insert(X(i), poses[i].compose(delta));
+
+    // "Simulate" measurement from this pose
+    PinholePose<Cal3_S2> camera(poses[i], K);
+    Point2 measurement = camera.project(point);
+    cout << "Measurement " << i << "" << measurement << endl;
+
+    // Add measurement to smart factor
+    smartFactor->add(measurement, X(i));
 
     // Update iSAM2
     ISAM2Result result = isam.update(graph, initialEstimate);
@@ -84,7 +88,8 @@ int main(int argc, char* argv[]) {
     cout << "Detailed results:" << endl;
     for (auto keyedStatus : result.detail->variableStatus) {
       const auto& status = keyedStatus.second;
-      cout << keyedStatus.first << " {" << endl;
+      PrintKey(keyedStatus.first);
+      cout << " {" << endl;
       cout << "reeliminated: " << status.isReeliminated << endl;
       cout << "relinearized above thresh: " << status.isAboveRelinThreshold
            << endl;
