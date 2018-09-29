@@ -1,5 +1,8 @@
-#include <iostream>
-#include <vector>
+/**
+ * @file ISAM2Example_SmartFactor.cpp
+ * @brief test of iSAM with smart factors, led to bitbucket issue #367
+ * @author Alexander (pumaking on BitBucket)
+ */
 
 #include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -7,7 +10,13 @@
 
 #include <gtsam/nonlinear/ISAM2.h>
 
+#include <iostream>
+#include <vector>
+
+using namespace std;
 using namespace gtsam;
+using symbol_shorthand::P;
+using symbol_shorthand::X;
 
 // Make the typename short so it looks much cleaner
 typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
@@ -15,11 +24,12 @@ typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 int main(int argc, char* argv[]) {
   Cal3_S2::shared_ptr K(new Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0));
 
-  noiseModel::Isotropic::shared_ptr measurement_noise = noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
+  auto measurementNoise =
+      noiseModel::Isotropic::Sigma(2, 1.0);  // one pixel in u and v
 
-  noiseModel::Diagonal::shared_ptr noise = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
-  noiseModel::Isotropic::shared_ptr large_noise = noiseModel::Isotropic::Sigma(6, 100);
+  Vector6 sigmas;
+  sigmas << Vector3::Constant(0.3), Vector3::Constant(0.1);
+  auto noise = noiseModel::Diagonal::Sigmas(sigmas);
 
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0.01;
@@ -31,7 +41,7 @@ int main(int argc, char* argv[]) {
 
   // Create a factor graph
   NonlinearFactorGraph graph;
-  Values initial_estimate;
+  Values initialEstimate;
 
   Point3 point(0.0, 0.0, 1.0);
 
@@ -44,62 +54,61 @@ int main(int argc, char* argv[]) {
   Pose3 pose4(Rot3(), Point3(0.0, 0.5, 0.0));
   Pose3 pose5(Rot3(), Point3(0.0, 0.6, 0.0));
 
-  std::vector<Pose3> pose_list = { pose1, pose2, pose3, pose4, pose5 };
+  vector<Pose3> poses = {pose1, pose2, pose3, pose4, pose5};
 
-  SmartFactor::shared_ptr smart_factor(new SmartFactor(measurement_noise, K));
-  graph.push_back(smart_factor);
+  SmartFactor::shared_ptr smartFactor(new SmartFactor(measurementNoise, K));
+  graph.push_back(smartFactor);
 
-  graph.emplace_shared<PriorFactor<Pose3>>(0, pose_list[0], noise);
-  initial_estimate.insert(0, pose_list[0].compose(delta));
-  smart_factor->add(PinholePose<Cal3_S2>(pose_list[0], K).project(point), 0);
+  graph.emplace_shared<PriorFactor<Pose3>>(X(0), poses[0], noise);
+  initialEstimate.insert(X(0), poses[0].compose(delta));
+  smartFactor->add(PinholePose<Cal3_S2>(poses[0], K).project(point), X(0));
 
-  for (int i = 1; i < 5; i++) {
-    PinholePose<Cal3_S2> camera(pose_list[i], K);
+  for (size_t i = 1; i < 5; i++) {
+    cout << "****************************************************" << endl;
+    cout << "i = " << i << endl;
+
+    // Add measurement to smart factor
+    PinholePose<Cal3_S2> camera(poses[i], K);
     Point2 measurement = camera.project(point);
+    smartFactor->add(measurement, X(i));
+    cout << "Measurement " << i << "" << measurement << endl;
 
-    std::cout << "****************************************************" << std::endl;
-    std::cout << "i = " << i << std::endl;
-    std::cout << "Measurement " << i << " is " << measurement << std::endl;
+    // Add prior on new pose
+    graph.emplace_shared<PriorFactor<Pose3>>(X(i), poses[i], noise);
+    initialEstimate.insert(X(i), poses[i].compose(delta));
 
-    graph.emplace_shared<PriorFactor<Pose3>>(i, pose_list[i], noise);
-    //graph.emplace_shared<BetweenFactor<Pose3>>(i - 1, i, Pose3(), large_noise);
-    initial_estimate.insert(i, pose_list[i].compose(delta));
-    smart_factor->add(measurement, i);
-
-    ISAM2Result result = isam.update(graph, initial_estimate);
-    graph.resize(0);
-    initial_estimate.clear();
-
+    // Update iSAM2
+    ISAM2Result result = isam.update(graph, initialEstimate);
     result.print();
 
-    const auto& var_map = (*(result.detail)).variableStatus;
-
-    std::cout << "Detailed results:" << std::endl;
-    for (int j = 0; j < 3; j++) {
-      if (var_map.exists(j)) {
-        std::cout << j << " is reeliminated: " << var_map.at(j).isReeliminated << std::endl;
-        std::cout << j << " is relinearized above thresh: " << var_map.at(j).isAboveRelinThreshold << std::endl;
-        std::cout << j << " is relinearized involved: " << var_map.at(j).isRelinearizeInvolved << std::endl;
-        std::cout << j << " is relinearized: " << var_map.at(j).isRelinearized << std::endl;
-        std::cout << j << " is observed: " << var_map.at(j).isObserved << std::endl;
-        std::cout << j << " is new: " << var_map.at(j).isNew << std::endl;
-        std::cout << j << " is in the root clique: " << var_map.at(j).inRootClique << std::endl;
-      }
-      else {
-        std::cout << j << " does not exist in the detailed results map." << std::endl;
-      }
+    cout << "Detailed results:" << endl;
+    for (auto keyedStatus : result.detail->variableStatus) {
+      const auto& status = keyedStatus.second;
+      cout << keyedStatus.first << " {" << endl;
+      cout << "reeliminated: " << status.isReeliminated << endl;
+      cout << "relinearized above thresh: " << status.isAboveRelinThreshold
+           << endl;
+      cout << "relinearized involved: " << status.isRelinearizeInvolved << endl;
+      cout << "relinearized: " << status.isRelinearized << endl;
+      cout << "observed: " << status.isObserved << endl;
+      cout << "new: " << status.isNew << endl;
+      cout << "in the root clique: " << status.inRootClique << endl;
+      cout << "}" << endl;
     }
 
-    Values current_estimate = isam.calculateEstimate();
-    current_estimate.print("Current estimate: ");
+    Values currentEstimate = isam.calculateEstimate();
+    currentEstimate.print("Current estimate: ");
 
-    boost::optional<Point3> point_res = smart_factor->point(current_estimate);
-    if (point_res) {
-      std::cout << *point_res << std::endl;
+    boost::optional<Point3> pointEstimate = smartFactor->point(currentEstimate);
+    if (pointEstimate) {
+      cout << *pointEstimate << endl;
+    } else {
+      cout << "Point degenerate." << endl;
     }
-    else {
-      std::cout << "Point is degenerate." << std::endl;
-    }
+
+    // Reset graph and initial estimate for next iteration
+    graph.resize(0);
+    initialEstimate.clear();
   }
 
   return 0;
