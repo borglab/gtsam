@@ -509,7 +509,7 @@ class GTSAM_EXPORT ISAM2Clique
 
   Base::FactorType::shared_ptr cachedFactor_;
   Vector gradientContribution_;
-  FastMap<Key, VectorValues::iterator> solnPointers_;
+  mutable FastMap<Key, VectorValues::iterator> solnPointers_;
 
   /// Default constructor
   ISAM2Clique() : Base() {}
@@ -545,6 +545,45 @@ class GTSAM_EXPORT ISAM2Clique
   /** print this node */
   void print(const std::string& s = "",
              const KeyFormatter& formatter = DefaultKeyFormatter) const;
+
+  /**
+   * Check if clique was replaced, or if any parents were changed above the
+   * threshold or themselves replaced.
+   */
+  bool isDirty(const KeySet& replaced, const KeySet& changed) const;
+
+  /// Copy values in delta pertaining to this clique.
+  FastVector<Vector> copyRelevantValues(const VectorValues& delta) const;
+
+  /*
+   * Check whether the values changed above a threshold, or always true if the
+   * clique was replaced.
+   */
+  bool valuesChanged(const KeySet& replaced,
+                     const FastVector<Vector>& originalValues,
+                     const VectorValues& delta, double threshold) const;
+
+  /// Set changed flag for each frontal variable
+  void markFrontalsAsChanged(KeySet* changed) const;
+
+  /// Restore delta to original values, guided by frontal keys.
+  void restoreFromOriginals(const FastVector<Vector>& originalValues,
+                            VectorValues* delta) const;
+
+  void optimizeWildfire(const KeySet& replaced, double threshold, KeySet* changed,
+                        VectorValues* delta,
+                        size_t* count) const;
+
+  bool optimizeWildfireNode(const KeySet& replaced, double threshold, KeySet* changed,
+                            VectorValues* delta,
+                            size_t* count) const;
+
+  /**
+   * Starting from the root, add up entries of frontal and conditional matrices
+   * of each conditional
+   */
+  void nnz_internal(size_t* result) const;
+  size_t calculate_nnz() const;
 
  private:
   /** Serialization function */
@@ -810,30 +849,23 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
 template <>
 struct traits<ISAM2> : public Testable<ISAM2> {};
 
-/// Optimize the BayesTree, starting from the root.
-/// @param replaced Needs to contain
-/// all variables that are contained in the top of the Bayes tree that has been
-/// redone.
-/// @param delta The current solution, an offset from the linearization
-/// point.
-/// @param threshold The maximum change against the PREVIOUS delta for
-/// non-replaced variables that can be ignored, ie. the old delta entry is kept
-/// and recursive backsubstitution might eventually stop if none of the changed
-/// variables are contained in the subtree.
-/// @return The number of variables that were solved for
-template <class CLIQUE>
-size_t optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold,
-                        const KeySet& replaced, VectorValues& delta);
+/**
+ * Optimize the BayesTree, starting from the root.
+ * @param threshold The maximum change against the PREVIOUS delta for
+ * non-replaced variables that can be ignored, ie. the old delta entry is kept
+ * and recursive backsubstitution might eventually stop if none of the changed
+ * variables are contained in the subtree.
+ * @param replaced Needs to contain all variables that are contained in the top
+ * of the Bayes tree that has been redone.
+ * @return The number of variables that were solved for.
+ * @param delta The current solution, an offset from the linearization point.
+ */
+size_t optimizeWildfire(const ISAM2::sharedClique& root, double threshold,
+                        const KeySet& replaced, VectorValues* delta);
 
-template <class CLIQUE>
-size_t optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root,
+size_t optimizeWildfireNonRecursive(const ISAM2::sharedClique& root,
                                     double threshold, const KeySet& replaced,
-                                    VectorValues& delta);
-
-/// calculate the number of non-zero entries for the tree starting at clique
-/// (use root for complete matrix)
-template <class CLIQUE>
-int calculate_nnz(const boost::shared_ptr<CLIQUE>& clique);
+                                    VectorValues* delta);
 
 }  // namespace gtsam
 

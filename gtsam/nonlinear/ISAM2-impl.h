@@ -108,18 +108,17 @@ struct GTSAM_EXPORT ISAM2::Impl {
   /**
    * Apply expmap to the given values, but only for indices appearing in
    * \c markedRelinMask.  Values are expmapped in-place.
-   * \param [in, out] values The value to expmap in-place
    * \param delta The linear delta with which to expmap
-   * \param ordering The ordering
    * \param mask Mask on linear indices, only \c true entries are expmapped
+   * \param [in, out] values The value to expmap in-place
    * \param invalidateIfDebug If this is true, *and* NDEBUG is not defined,
    * expmapped deltas will be set to an invalid value (infinity) to catch bugs
    * where we might expmap something twice, or expmap it but then not
    * recalculate its delta.
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
-  static void ExpmapMasked(Values& values, const VectorValues& delta,
-      const KeySet& mask,
+  static void ExpmapMasked(
+      const VectorValues& delta, const KeySet& mask, Values* values,
       boost::optional<VectorValues&> invalidateIfDebug = boost::none,
       const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
@@ -127,14 +126,14 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * Update the Newton's method step point, using wildfire
    */
   static size_t UpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>& roots,
-      const KeySet& replacedKeys, VectorValues& delta, double wildfireThreshold);
+      const KeySet& replacedKeys, double wildfireThreshold, VectorValues* delta);
 
   /**
    * Update the RgProd (R*g) incrementally taking into account which variables
    * have been recalculated in \c replacedKeys.  Only used in Dogleg.
    */
   static size_t UpdateRgProd(const ISAM2::Roots& roots, const KeySet& replacedKeys,
-      const VectorValues& gradAtZero, VectorValues& RgProd);
+      const VectorValues& gradAtZero, VectorValues* RgProd);
   
   /**
    * Compute the gradient-search point.  Only used in Dogleg.
