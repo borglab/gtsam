@@ -15,10 +15,10 @@
  * @author  Michael Kaess, Richard Roberts, Frank Dellaert
  */
 
-#include <gtsam/nonlinear/ISAM2Clique.h>
+#include <gtsam/inference/BayesTreeCliqueBase-inst.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/linearAlgorithms-inst.h>
-#include <gtsam/inference/BayesTreeCliqueBase-inst.h>
+#include <gtsam/nonlinear/ISAM2Clique.h>
 #include <stack>
 
 using namespace std;
@@ -299,4 +299,27 @@ size_t ISAM2Clique::calculate_nnz() const {
   return result;
 }
 
+/* ************************************************************************* */
+void ISAM2Clique::findAll(const KeySet& markedMask, KeySet* keys) const {
+  static const bool debug = false;
+  // does the separator contain any of the variables?
+  bool found = false;
+  for (Key key : conditional()->parents()) {
+    if (markedMask.exists(key)) {
+      found = true;
+      break;
+    }
+  }
+  if (found) {
+    // then add this clique
+    keys->insert(conditional()->beginFrontals(), conditional()->endFrontals());
+    if (debug) print("Key(s) marked in clique ");
+    if (debug) cout << "so marking key " << conditional()->front() << endl;
+  }
+  for (const auto& child : children) {
+    child->findAll(markedMask, keys);
+  }
+}
+
+/* ************************************************************************* */
 }  // namespace gtsam

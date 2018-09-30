@@ -32,26 +32,11 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-void ISAM2::Impl::AddVariables(const Values& newTheta, Values& theta,
-                               VectorValues& delta, VectorValues& deltaNewton,
-                               VectorValues& RgProd,
-                               const KeyFormatter& keyFormatter) {
-  const bool debug = ISDEBUG("ISAM2 AddVariables");
-
-  theta.insert(newTheta);
-  if (debug) newTheta.print("The new variables are: ");
-  // Add zeros into the VectorValues
-  delta.insert(newTheta.zeroVectors());
-  deltaNewton.insert(newTheta.zeroVectors());
-  RgProd.insert(newTheta.zeroVectors());
-}
-
-/* ************************************************************************* */
 void ISAM2::Impl::AddFactorsStep1(const NonlinearFactorGraph& newFactors,
                                   bool useUnusedSlots,
-                                  NonlinearFactorGraph& nonlinearFactors,
-                                  FactorIndices& newFactorIndices) {
-  newFactorIndices.resize(newFactors.size());
+                                  NonlinearFactorGraph* nonlinearFactors,
+                                  FactorIndices* newFactorIndices) {
+  newFactorIndices->resize(newFactors.size());
 
   if (useUnusedSlots) {
     size_t globalFactorIndex = 0;
@@ -65,44 +50,24 @@ void ISAM2::Impl::AddFactorsStep1(const NonlinearFactorGraph& newFactors,
         // if so, increase globalFactorIndex.  If the current factor in
         // nonlinearFactors is unused, break out of the loop and use the current
         // slot.
-        if (globalFactorIndex >= nonlinearFactors.size())
-          nonlinearFactors.resize(nonlinearFactors.size() + newFactors.size() -
-                                  newFactorIndex);
-        else if (nonlinearFactors[globalFactorIndex])
+        if (globalFactorIndex >= nonlinearFactors->size())
+          nonlinearFactors->resize(nonlinearFactors->size() +
+                                   newFactors.size() - newFactorIndex);
+        else if ((*nonlinearFactors)[globalFactorIndex])
           ++globalFactorIndex;
         else
           break;
       } while (true);
 
       // Use the current slot, updating nonlinearFactors and newFactorSlots.
-      nonlinearFactors[globalFactorIndex] = newFactors[newFactorIndex];
-      newFactorIndices[newFactorIndex] = globalFactorIndex;
+      (*nonlinearFactors)[globalFactorIndex] = newFactors[newFactorIndex];
+      (*newFactorIndices)[newFactorIndex] = globalFactorIndex;
     }
   } else {
     // We're not looking for unused slots, so just add the factors at the end.
     for (size_t i = 0; i < newFactors.size(); ++i)
-      newFactorIndices[i] = i + nonlinearFactors.size();
-    nonlinearFactors.push_back(newFactors);
-  }
-}
-
-/* ************************************************************************* */
-void ISAM2::Impl::RemoveVariables(const KeySet& unusedKeys,
-                                  const FastVector<ISAM2::sharedClique>& roots,
-                                  Values& theta, VariableIndex& variableIndex,
-                                  VectorValues& delta,
-                                  VectorValues& deltaNewton,
-                                  VectorValues& RgProd, KeySet& replacedKeys,
-                                  Base::Nodes& nodes, KeySet& fixedVariables) {
-  variableIndex.removeUnusedVariables(unusedKeys.begin(), unusedKeys.end());
-  for (Key key : unusedKeys) {
-    delta.erase(key);
-    deltaNewton.erase(key);
-    RgProd.erase(key);
-    replacedKeys.erase(key);
-    nodes.unsafe_erase(key);
-    theta.erase(key);
-    fixedVariables.erase(key);
+      (*newFactorIndices)[i] = i + nonlinearFactors->size();
+    nonlinearFactors->push_back(newFactors);
   }
 }
 
@@ -195,7 +160,7 @@ static void CheckRelinearizationRecursiveMap(
 
 /* ************************************************************************* */
 KeySet ISAM2::Impl::CheckRelinearizationPartial(
-    const FastVector<ISAM2::sharedClique>& roots, const VectorValues& delta,
+    const ISAM2::Roots& roots, const VectorValues& delta,
     const ISAM2Params::RelinearizationThreshold& relinearizeThreshold) {
   KeySet relinKeys;
   for (const ISAM2::sharedClique& root : roots) {
@@ -208,71 +173,6 @@ KeySet ISAM2::Impl::CheckRelinearizationPartial(
           &relinKeys);
   }
   return relinKeys;
-}
-
-/* ************************************************************************* */
-void ISAM2::Impl::FindAll(ISAM2::sharedClique clique, KeySet& keys,
-                          const KeySet& markedMask) {
-  static const bool debug = false;
-  // does the separator contain any of the variables?
-  bool found = false;
-  for (Key key : clique->conditional()->parents()) {
-    if (markedMask.exists(key)) {
-      found = true;
-      break;
-    }
-  }
-  if (found) {
-    // then add this clique
-    keys.insert(clique->conditional()->beginFrontals(),
-                clique->conditional()->endFrontals());
-    if (debug) clique->print("Key(s) marked in clique ");
-    if (debug)
-      cout << "so marking key " << clique->conditional()->front() << endl;
-  }
-  for (const ISAM2::sharedClique& child : clique->children) {
-    FindAll(child, keys, markedMask);
-  }
-}
-
-/* ************************************************************************* */
-void ISAM2::Impl::ExpmapMasked(const VectorValues& delta, const KeySet& mask,
-                               Values* values,
-                               boost::optional<VectorValues&> invalidateIfDebug,
-                               const KeyFormatter& keyFormatter) {
-  // If debugging, invalidate if requested, otherwise do not invalidate.
-  // Invalidating means setting expmapped entries to Inf, to trigger assertions
-  // if we try to re-use them.
-#ifdef NDEBUG
-  invalidateIfDebug = boost::none;
-#endif
-
-  assert(values->size() == delta.size());
-  Values::iterator key_value;
-  VectorValues::const_iterator key_delta;
-#ifdef GTSAM_USE_TBB
-  for (key_value = values->begin(); key_value != values->end(); ++key_value) {
-    key_delta = delta.find(key_value->key);
-#else
-  for (key_value = values->begin(), key_delta = delta.begin();
-       key_value != values->end(); ++key_value, ++key_delta) {
-    assert(key_value->key == key_delta->first);
-#endif
-    Key var = key_value->key;
-    assert(static_cast<size_t>(delta[var].size()) == key_value->value.dim());
-    assert(delta[var].allFinite());
-    if (mask.exists(var)) {
-      Value* retracted = key_value->value.retract_(delta[var]);
-      key_value->value = *retracted;
-      retracted->deallocate_();
-      if (invalidateIfDebug)
-        (*invalidateIfDebug)[var].operator=(Vector::Constant(
-            delta[var].rows(),
-            numeric_limits<double>::infinity()));  // Strange syntax to work
-                                                   // with clang++ (bug in
-                                                   // clang?)
-    }
-  }
 }
 
 /* ************************************************************************* */
@@ -289,9 +189,10 @@ inline static void optimizeInPlace(const ISAM2::sharedClique& clique,
 }  // namespace internal
 
 /* ************************************************************************* */
-size_t ISAM2::Impl::UpdateGaussNewtonDelta(
-    const FastVector<ISAM2::sharedClique>& roots, const KeySet& replacedKeys,
-    double wildfireThreshold, VectorValues* delta) {
+size_t ISAM2::Impl::UpdateGaussNewtonDelta(const ISAM2::Roots& roots,
+                                           const KeySet& replacedKeys,
+                                           double wildfireThreshold,
+                                           VectorValues* delta) {
   size_t lastBacksubVariableCount;
 
   if (wildfireThreshold <= 0.0) {

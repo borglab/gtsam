@@ -269,6 +269,29 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   /// @}
 
  protected:
+  /**
+   * Add new variables to the ISAM2 system.
+   * @param newTheta Initial values for new variables
+   * @param theta Current solution to be augmented with new initialization
+   * @param delta Current linear delta to be augmented with zeros
+   * @param deltaNewton 
+   * @param RgProd
+   * @param keyFormatter Formatter for printing nonlinear keys during debugging
+   */
+  void addVariables(const Values& newTheta);
+
+  /**
+   * Remove variables from the ISAM2 system.
+   */
+  void removeVariables(const KeySet& unusedKeys);
+
+  /**
+   * Apply expmap to the given values, but only for indices appearing in
+   * \c mask.  Values are expmapped in-place.
+   * \param mask Mask on linear indices, only \c true entries are expmapped
+   */
+  void expmapMasked(const KeySet& mask);
+
   FastSet<Key> getAffectedFactors(const FastList<Key>& keys) const;
   GaussianFactorGraph::shared_ptr relinearizeAffectedFactors(
       const FastList<Key>& affectedKeys, const KeySet& relinKeys) const;
@@ -279,6 +302,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
       const std::vector<Key>& observedKeys, const KeySet& unusedIndices,
       const boost::optional<FastMap<Key, int> >& constrainKeys,
       ISAM2Result& result);
+
   void updateDelta(bool forceFullSolve = false) const;
 };  // ISAM2
 

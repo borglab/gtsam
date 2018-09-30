@@ -33,6 +33,7 @@ using namespace boost::adaptors;
 }  // namespace br
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <utility>
 
@@ -485,6 +486,62 @@ boost::shared_ptr<KeySet> ISAM2::recalculate(
 }
 
 /* ************************************************************************* */
+void ISAM2::addVariables(const Values& newTheta) {
+  const bool debug = ISDEBUG("ISAM2 AddVariables");
+
+  theta_.insert(newTheta);
+  if (debug) newTheta.print("The new variables are: ");
+  // Add zeros into the VectorValues
+  delta_.insert(newTheta.zeroVectors());
+  deltaNewton_.insert(newTheta.zeroVectors());
+  RgProd_.insert(newTheta.zeroVectors());
+}
+
+/* ************************************************************************* */
+void ISAM2::removeVariables(const KeySet& unusedKeys) {
+  variableIndex_.removeUnusedVariables(unusedKeys.begin(), unusedKeys.end());
+  for (Key key : unusedKeys) {
+    delta_.erase(key);
+    deltaNewton_.erase(key);
+    RgProd_.erase(key);
+    deltaReplacedMask_.erase(key);
+    Base::nodes_.unsafe_erase(key);
+    theta_.erase(key);
+    fixedVariables_.erase(key);
+  }
+}
+
+/* ************************************************************************* */
+void ISAM2::expmapMasked(const KeySet& mask) {
+  assert(theta_.size() == delta_.size());
+  Values::iterator key_value;
+  VectorValues::const_iterator key_delta;
+#ifdef GTSAM_USE_TBB
+  for (key_value = theta_.begin(); key_value != theta_.end(); ++key_value) {
+    key_delta = delta_.find(key_value->key);
+#else
+  for (key_value = theta_.begin(), key_delta = delta_.begin();
+       key_value != theta_.end(); ++key_value, ++key_delta) {
+    assert(key_value->key == key_delta->first);
+#endif
+    Key var = key_value->key;
+    assert(static_cast<size_t>(delta_[var].size()) == key_value->value.dim());
+    assert(delta_[var].allFinite());
+    if (mask.exists(var)) {
+      Value* retracted = key_value->value.retract_(delta_[var]);
+      key_value->value = *retracted;
+      retracted->deallocate_();
+#ifndef NDEBUG
+      // If debugging, invalidate delta_ entries to Inf, to trigger assertions
+      // if we try to re-use them.
+      delta_[var] = Vector::Constant(delta_[var].rows(),
+                                     numeric_limits<double>::infinity());
+#endif
+    }
+  }
+}
+
+/* ************************************************************************* */
 ISAM2Result ISAM2::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta,
     const FactorIndices& removeFactorIndices,
@@ -529,7 +586,7 @@ ISAM2Result ISAM2::update(
   // Add the new factor indices to the result struct
   if (debug || verbose) newFactors.print("The new factors are: ");
   Impl::AddFactorsStep1(newFactors, params_.findUnusedFactorSlots,
-                        nonlinearFactors_, result.newFactorsIndices);
+                        &nonlinearFactors_, &result.newFactorsIndices);
 
   // Remove the removed factors
   NonlinearFactorGraph removeFactors;
@@ -571,7 +628,7 @@ ISAM2Result ISAM2::update(
   gttic(add_new_variables);
   // 2. Initialize any new variables \Theta_{new} and add
   // \Theta:=\Theta\cup\Theta_{new}.
-  Impl::AddVariables(newTheta, theta_, delta_, deltaNewton_, RgProd_);
+  addVariables(newTheta);
   // New keys for detailed results
   if (params_.enableDetailedResults) {
     for (Key key : newTheta.keys()) {
@@ -669,13 +726,13 @@ ISAM2Result ISAM2::update(
     if (!relinKeys.empty()) {
       for (const sharedClique& root : roots_)
         // add other cliques that have the marked ones in the separator
-        Impl::FindAll(root, markedKeys, markedRelinMask);
+        root->findAll(markedRelinMask, &markedKeys);
 
       // Relin involved keys for detailed results
       if (params_.enableDetailedResults) {
         KeySet involvedRelinKeys;
         for (const sharedClique& root : roots_)
-          Impl::FindAll(root, involvedRelinKeys, markedRelinMask);
+          root->findAll(markedRelinMask, &involvedRelinKeys);
         for (Key key : involvedRelinKeys) {
           if (!result.detail->variableStatus[key].isAboveRelinThreshold) {
             result.detail->variableStatus[key].isRelinearizeInvolved = true;
@@ -689,8 +746,7 @@ ISAM2Result ISAM2::update(
     gttic(expmap);
     // 6. Update linearization point for marked variables:
     // \Theta_{J}:=\Theta_{J}+\Delta_{J}.
-    if (!relinKeys.empty())
-      Impl::ExpmapMasked(delta_, markedRelinMask, &theta_, delta_);
+    if (!relinKeys.empty()) expmapMasked(markedRelinMask);
     gttoc(expmap);
 
     result.variablesRelinearized = markedKeys.size();
@@ -740,9 +796,7 @@ ISAM2Result ISAM2::update(
   // Update data structures to remove unused keys
   if (!unusedKeys.empty()) {
     gttic(remove_variables);
-    Impl::RemoveVariables(unusedKeys, roots_, theta_, variableIndex_, delta_,
-                          deltaNewton_, RgProd_, deltaReplacedMask_,
-                          Base::nodes_, fixedVariables_);
+    removeVariables(unusedKeys);
     gttoc(remove_variables);
   }
   result.cliques = this->nodes().size();
@@ -998,9 +1052,7 @@ void ISAM2::marginalizeLeaves(
                                   factorIndicesToRemove.end());
 
   // Remove the marginalized variables
-  Impl::RemoveVariables(KeySet(leafKeys.begin(), leafKeys.end()), roots_,
-                        theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
-                        deltaReplacedMask_, nodes_, fixedVariables_);
+  removeVariables(KeySet(leafKeys.begin(), leafKeys.end()));
 }
 
 /* ************************************************************************* */

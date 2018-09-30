@@ -19,11 +19,11 @@
 
 #pragma once
 
+#include <gtsam/inference/BayesTreeCliqueBase.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/BayesTreeCliqueBase.h>
-#include <gtsam/inference/Key.h>
 #include <string>
 
 namespace gtsam {
@@ -98,6 +98,23 @@ class GTSAM_EXPORT ISAM2Clique
    */
   void nnz_internal(size_t* result) const;
   size_t calculate_nnz() const;
+
+  /**
+   * Recursively search this clique and its children for marked keys appearing
+   * in the separator, and add the *frontal* keys of any cliques whose
+   * separator contains any marked keys to the set \c keys.  The purpose of
+   * this is to discover the cliques that need to be redone due to information
+   * propagating to them from cliques that directly contain factors being
+   * relinearized.
+   *
+   * The original comment says this finds all variables directly connected to
+   * the marked ones by measurements.  Is this true, because it seems like this
+   * would also pull in variables indirectly connected through other frontal or
+   * separator variables?
+   *
+   * Alternatively could we trace up towards the root for each variable here?
+   */
+  void findAll(const KeySet& markedMask, KeySet* keys) const;
 
  private:
   /**
