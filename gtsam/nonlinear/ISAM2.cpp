@@ -943,8 +943,8 @@ void ISAM2::marginalizeLeaves(
 
         // Reeliminate the linear graph to get the marginal and discard the
         // conditional
-        const KeySet cliqueFrontals(clique->conditional()->beginFrontals(),
-                                    clique->conditional()->endFrontals());
+        auto cg = clique->conditional();
+        const KeySet cliqueFrontals(cg->beginFrontals(), cg->endFrontals());
         FastVector<Key> cliqueFrontalsToEliminate;
         std::set_intersection(cliqueFrontals.begin(), cliqueFrontals.end(),
                               leafKeys.begin(), leafKeys.end(),
@@ -954,27 +954,23 @@ void ISAM2::marginalizeLeaves(
 
         // Add the resulting marginal
         if (eliminationResult1.second)
-          marginalFactors[clique->conditional()->front()].push_back(
-              eliminationResult1.second);
+          marginalFactors[cg->front()].push_back(eliminationResult1.second);
 
         // Split the current clique
         // Find the position of the last leaf key in this clique
         DenseIndex nToRemove = 0;
-        while (leafKeys.exists(clique->conditional()->keys()[nToRemove]))
-          ++nToRemove;
+        while (leafKeys.exists(cg->keys()[nToRemove])) ++nToRemove;
 
         // Make the clique's matrix appear as a subset
-        const DenseIndex dimToRemove =
-            clique->conditional()->matrixObject().offset(nToRemove);
-        clique->conditional()->matrixObject().firstBlock() = nToRemove;
-        clique->conditional()->matrixObject().rowStart() = dimToRemove;
+        const DenseIndex dimToRemove = cg->matrixObject().offset(nToRemove);
+        cg->matrixObject().firstBlock() = nToRemove;
+        cg->matrixObject().rowStart() = dimToRemove;
 
         // Change the keys in the clique
         FastVector<Key> originalKeys;
-        originalKeys.swap(clique->conditional()->keys());
-        clique->conditional()->keys().assign(originalKeys.begin() + nToRemove,
-                                             originalKeys.end());
-        clique->conditional()->nrFrontals() -= nToRemove;
+        originalKeys.swap(cg->keys());
+        cg->keys().assign(originalKeys.begin() + nToRemove, originalKeys.end());
+        cg->nrFrontals() -= nToRemove;
 
         // Add to factorIndicesToRemove any factors involved in frontals of
         // current clique
