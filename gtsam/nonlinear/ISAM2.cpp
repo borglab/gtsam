@@ -141,8 +141,7 @@ GaussianFactorGraph::shared_ptr ISAM2::relinearizeAffectedFactors(
   gttoc(affectedKeysSet);
 
   gttic(check_candidates_and_linearize);
-  GaussianFactorGraph::shared_ptr linearized =
-      boost::make_shared<GaussianFactorGraph>();
+  auto linearized = boost::make_shared<GaussianFactorGraph>();
   for (Key idx : candidates) {
     bool inside = true;
     bool useCachedLinear = params_.cacheLinearizedFactors;
@@ -162,8 +161,7 @@ GaussianFactorGraph::shared_ptr ISAM2::relinearizeAffectedFactors(
 #endif
         linearized->push_back(linearFactors_[idx]);
       } else {
-        GaussianFactor::shared_ptr linearFactor =
-            nonlinearFactors_[idx]->linearize(theta_);
+        auto linearFactor = nonlinearFactors_[idx]->linearize(theta_);
         linearized->push_back(linearFactor);
         if (params_.cacheLinearizedFactors) {
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
@@ -268,7 +266,7 @@ boost::shared_ptr<KeySet> ISAM2::recalculate(
   // path to root included
   gttic(affectedKeys);
   FastList<Key> affectedKeys;
-  for (const ConditionalType::shared_ptr& conditional : affectedBayesNet)
+  for (const auto& conditional : affectedBayesNet)
     affectedKeys.insert(affectedKeys.end(), conditional->beginFrontals(),
                         conditional->endFrontals());
   gttoc(affectedKeys);
@@ -758,8 +756,7 @@ ISAM2Result ISAM2::update(
   // 7. Linearize new factors
   if (params_.cacheLinearizedFactors) {
     gttic(linearize);
-    GaussianFactorGraph::shared_ptr linearFactors =
-        newFactors.linearize(theta_);
+    auto linearFactors = newFactors.linearize(theta_);
     if (params_.findUnusedFactorSlots) {
       linearFactors_.resize(nonlinearFactors_.size());
       for (size_t newFactorI = 0; newFactorI < newFactors.size(); ++newFactorI)
@@ -822,11 +819,35 @@ void ISAM2::marginalizeLeaves(
   //  multimap<sharedClique, GaussianFactor::shared_ptr> marginalFactors;
   map<Key, vector<GaussianFactor::shared_ptr> > marginalFactors;
 
+  // Keep track of variables removed in subtrees
+  KeySet leafKeysRemoved;
+
   // Keep track of factors that get summarized by removing cliques
   KeySet factorIndicesToRemove;
 
-  // Keep track of variables removed in subtrees
-  KeySet leafKeysRemoved;
+  // Remove the subtree and throw away the cliques
+  auto trackingRemoveSubtree = [&](const sharedClique& subtreeRoot) {
+    const Cliques removedCliques = this->removeSubtree(subtreeRoot);
+    for (const sharedClique& removedClique : removedCliques) {
+      auto cg = removedClique->conditional();
+      marginalFactors.erase(cg->front());
+      leafKeysRemoved.insert(cg->beginFrontals(), cg->endFrontals());
+      for (Key frontal : cg->frontals()) {
+        // Add to factors to remove
+        const auto& involved = variableIndex_[frontal];
+        factorIndicesToRemove.insert(involved.begin(), involved.end());
+#if !defined(NDEBUG)
+        // Check for non-leaf keys
+        if (!leafKeys.exists(frontal))
+          throw std::runtime_error(
+              "Requesting to marginalize variables that are not leaves, "
+              "the ISAM2 object is now in an inconsistent state so should "
+              "no longer be used.");
+#endif
+      }
+    }
+    return removedCliques;
+  };
 
   // Remove each variable and its subtrees
   for (Key j : leafKeys) {
@@ -858,7 +879,7 @@ void ISAM2::marginalizeLeaves(
       if (marginalizeEntireClique) {
         // Remove the whole clique and its subtree, and keep the marginal
         // factor.
-        GaussianFactor::shared_ptr marginalFactor = clique->cachedFactor();
+        auto marginalFactor = clique->cachedFactor();
         // We do not need the marginal factors associated with this clique
         // because their information is already incorporated in the new
         // marginal factor.  So, now associate this marginal factor with the
@@ -867,27 +888,7 @@ void ISAM2::marginalizeLeaves(
             marginalFactor);
         // Now remove this clique and its subtree - all of its marginal
         // information has been stored in marginalFactors.
-        const Cliques removedCliques = this->removeSubtree(
-            clique);  // Remove the subtree and throw away the cliques
-        for (const sharedClique& removedClique : removedCliques) {
-          marginalFactors.erase(removedClique->conditional()->front());
-          leafKeysRemoved.insert(removedClique->conditional()->beginFrontals(),
-                                 removedClique->conditional()->endFrontals());
-          for (Key frontal : removedClique->conditional()->frontals()) {
-            // Add to factors to remove
-            const VariableIndex::Factors& involvedFactors =
-                variableIndex_[frontal];
-            factorIndicesToRemove.insert(involvedFactors.begin(),
-                                         involvedFactors.end());
-
-            // Check for non-leaf keys
-            if (!leafKeys.exists(frontal))
-              throw runtime_error(
-                  "Requesting to marginalize variables that are not leaves, "
-                  "the ISAM2 object is now in an inconsistent state so should "
-                  "no longer be used.");
-          }
-        }
+        trackingRemoveSubtree(clique);
       } else {
         // Reeliminate the current clique and the marginals from its children,
         // then keep only the marginal on the non-marginalized variables.  We
@@ -910,31 +911,10 @@ void ISAM2::marginalizeLeaves(
           }
         }
         Cliques childrenRemoved;
-        for (const sharedClique& childToRemove : subtreesToRemove) {
-          const Cliques removedCliques = this->removeSubtree(
-              childToRemove);  // Remove the subtree and throw away the cliques
-          childrenRemoved.insert(childrenRemoved.end(), removedCliques.begin(),
-                                 removedCliques.end());
-          for (const sharedClique& removedClique : removedCliques) {
-            marginalFactors.erase(removedClique->conditional()->front());
-            leafKeysRemoved.insert(
-                removedClique->conditional()->beginFrontals(),
-                removedClique->conditional()->endFrontals());
-            for (Key frontal : removedClique->conditional()->frontals()) {
-              // Add to factors to remove
-              const VariableIndex::Factors& involvedFactors =
-                  variableIndex_[frontal];
-              factorIndicesToRemove.insert(involvedFactors.begin(),
-                                           involvedFactors.end());
-
-              // Check for non-leaf keys
-              if (!leafKeys.exists(frontal))
-                throw runtime_error(
-                    "Requesting to marginalize variables that are not leaves, "
-                    "the ISAM2 object is now in an inconsistent state so "
-                    "should no longer be used.");
-            }
-          }
+        for (const sharedClique& subtree : subtreesToRemove) {
+          const Cliques removed = trackingRemoveSubtree(subtree);
+          childrenRemoved.insert(childrenRemoved.end(), removed.begin(),
+                                 removed.end());
         }
 
         // Add the factors that are pulled into the current clique by the
@@ -969,9 +949,8 @@ void ISAM2::marginalizeLeaves(
         std::set_intersection(cliqueFrontals.begin(), cliqueFrontals.end(),
                               leafKeys.begin(), leafKeys.end(),
                               std::back_inserter(cliqueFrontalsToEliminate));
-        pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
-            eliminationResult1 = params_.getEliminationFunction()(
-                graph, Ordering(cliqueFrontalsToEliminate));
+        auto eliminationResult1 = params_.getEliminationFunction()(
+            graph, Ordering(cliqueFrontalsToEliminate));
 
         // Add the resulting marginal
         if (eliminationResult1.second)
@@ -997,13 +976,11 @@ void ISAM2::marginalizeLeaves(
                                              originalKeys.end());
         clique->conditional()->nrFrontals() -= nToRemove;
 
-        // Add to factors to remove factors involved in frontals of current
-        // clique
+        // Add to factorIndicesToRemove any factors involved in frontals of
+        // current clique
         for (Key frontal : cliqueFrontalsToEliminate) {
-          const VariableIndex::Factors& involvedFactors =
-              variableIndex_[frontal];
-          factorIndicesToRemove.insert(involvedFactors.begin(),
-                                       involvedFactors.end());
+          const auto& involved = variableIndex_[frontal];
+          factorIndicesToRemove.insert(involved.begin(), involved.end());
         }
 
         // Add removed keys
@@ -1018,9 +995,8 @@ void ISAM2::marginalizeLeaves(
 
   // Gather factors to add - the new marginal factors
   GaussianFactorGraph factorsToAdd;
-  typedef pair<Key, vector<GaussianFactor::shared_ptr> > Key_Factors;
-  for (const Key_Factors& key_factors : marginalFactors) {
-    for (const GaussianFactor::shared_ptr& factor : key_factors.second) {
+  for (const auto& key_factors : marginalFactors) {
+    for (const auto& factor : key_factors.second) {
       if (factor) {
         factorsToAdd.push_back(factor);
         if (marginalFactorsIndices)
