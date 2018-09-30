@@ -213,6 +213,7 @@ bool ISAM2Clique::isDirty(const KeySet& replaced, const KeySet& changed) const {
  * fast access.
  */
 void ISAM2Clique::fastBackSubstitute(VectorValues* delta) const {
+#ifdef USE_BROKEN_FAST_BACKSUBSTITUTE
   // TODO(gareth): This code shares a lot of logic w/ linearAlgorithms-inst,
   // potentially refactor
 
@@ -279,6 +280,9 @@ void ISAM2Clique::fastBackSubstitute(VectorValues* delta) const {
     // Just call plain solve because we couldn't use solution pointers.
     delta->update(conditional_->solve(*delta));
   }
+#else
+  delta->update(conditional_->solve(*delta));
+#endif
 }
 
 /* ************************************************************************* */
@@ -312,6 +316,7 @@ void ISAM2Clique::restoreFromOriginals(const Vector& originalValues,
 }
 
 /* ************************************************************************* */
+// Note: not being used right now in favor of non-recursive version below.
 void ISAM2Clique::optimizeWildfire(const KeySet& replaced, double threshold,
                                    KeySet* changed, VectorValues* delta,
                                    size_t* count) const {
@@ -320,7 +325,7 @@ void ISAM2Clique::optimizeWildfire(const KeySet& replaced, double threshold,
     auto originalValues = delta->vector(conditional_->frontals());
 
     // Back-substitute
-    delta->update(conditional_->solve(*delta));
+    fastBackSubstitute(delta);
     count += conditional_->nrFrontals();
 
     if (valuesChanged(replaced, originalValues, *delta, threshold)) {
@@ -336,6 +341,15 @@ void ISAM2Clique::optimizeWildfire(const KeySet& replaced, double threshold,
   }
 }
 
+size_t optimizeWildfire(const ISAM2::sharedClique& root, double threshold,
+                        const KeySet& keys, VectorValues* delta) {
+  KeySet changed;
+  size_t count = 0;
+  // starting from the root, call optimize on each conditional
+  if (root) root->optimizeWildfire(keys, threshold, &changed, delta, &count);
+  return count;
+}
+
 /* ************************************************************************* */
 bool ISAM2Clique::optimizeWildfireNode(const KeySet& replaced, double threshold,
                                        KeySet* changed, VectorValues* delta,
@@ -347,6 +361,7 @@ bool ISAM2Clique::optimizeWildfireNode(const KeySet& replaced, double threshold,
     // Temporary copy of the original values, to check how much they change
     auto originalValues = delta->vector(conditional_->frontals());
 
+    // Back-substitute
     fastBackSubstitute(delta);
     count += conditional_->nrFrontals();
 
@@ -360,37 +375,6 @@ bool ISAM2Clique::optimizeWildfireNode(const KeySet& replaced, double threshold,
   return dirty;
 }
 
-/* ************************************************************************* */
-void ISAM2Clique::nnz_internal(size_t* result) const {
-  size_t dimR = conditional_->rows();
-  size_t dimSep = conditional_->get_S().cols();
-  *result += ((dimR + 1) * dimR) / 2 + dimSep * dimR;
-  // traverse the children
-  for (const auto& child : children) {
-    child->nnz_internal(result);
-  }
-}
-
-/* ************************************************************************* */
-size_t ISAM2Clique::calculate_nnz() const {
-  size_t result = 0;
-  nnz_internal(&result);
-  return result;
-}
-
-/* ************************************************************************* */
-size_t optimizeWildfire(const ISAM2::sharedClique& root, double threshold,
-                        const KeySet& keys, VectorValues* delta) {
-  KeySet changed;
-  size_t count = 0;
-  // starting from the root, call optimize on each conditional
-  if (root) root->optimizeWildfire(keys, threshold, &changed, delta, &count);
-  return count;
-}
-
-/* ************************************************************************* */
-// This version is non-recursive version, but seems to have
-// a bug, as was diagnosed with ISAM2Example_SmartFactor. Disabled for now.
 size_t optimizeWildfireNonRecursive(const ISAM2::sharedClique& root,
                                     double threshold, const KeySet& keys,
                                     VectorValues* delta) {
@@ -415,6 +399,24 @@ size_t optimizeWildfireNonRecursive(const ISAM2::sharedClique& root,
   }
 
   return count;
+}
+
+/* ************************************************************************* */
+void ISAM2Clique::nnz_internal(size_t* result) const {
+  size_t dimR = conditional_->rows();
+  size_t dimSep = conditional_->get_S().cols();
+  *result += ((dimR + 1) * dimR) / 2 + dimSep * dimR;
+  // traverse the children
+  for (const auto& child : children) {
+    child->nnz_internal(result);
+  }
+}
+
+/* ************************************************************************* */
+size_t ISAM2Clique::calculate_nnz() const {
+  size_t result = 0;
+  nnz_internal(&result);
+  return result;
 }
 
 /* ************************************************************************* */

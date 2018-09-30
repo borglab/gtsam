@@ -304,7 +304,7 @@ size_t ISAM2::Impl::UpdateGaussNewtonDelta(
     // Optimize with wildfire
     lastBacksubVariableCount = 0;
     for (const ISAM2::sharedClique& root : roots)
-      lastBacksubVariableCount += optimizeWildfire(
+      lastBacksubVariableCount += optimizeWildfireNonRecursive(
           root, wildfireThreshold, replacedKeys, delta);  // modifies delta
 
 #if !defined(NDEBUG) && defined(GTSAM_EXTRA_CONSISTENCY_CHECKS)
