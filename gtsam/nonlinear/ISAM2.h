@@ -568,6 +568,12 @@ class GTSAM_EXPORT ISAM2Clique
    */
   bool isDirty(const KeySet& replaced, const KeySet& changed) const;
 
+  /**
+   * Back-substitute - special version stores solution pointers in cliques for
+   * fast access.
+   */
+  void fastBackSubstitute(VectorValues* delta) const;
+
   /*
    * Check whether the values changed above a threshold, or always true if the
    * clique was replaced.

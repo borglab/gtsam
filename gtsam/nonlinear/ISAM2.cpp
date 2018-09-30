@@ -208,6 +208,80 @@ bool ISAM2Clique::isDirty(const KeySet& replaced, const KeySet& changed) const {
 }
 
 /* ************************************************************************* */
+/**
+ * Back-substitute - special version stores solution pointers in cliques for
+ * fast access.
+ */
+void ISAM2Clique::fastBackSubstitute(VectorValues* delta) const {
+  // TODO(gareth): This code shares a lot of logic w/ linearAlgorithms-inst,
+  // potentially refactor
+
+  // Create solution part pointers if necessary and possible - necessary if
+  // solnPointers_ is empty, and possible if either we're a root, or we have
+  // a parent with valid solnPointers_.
+  ISAM2::sharedClique parent = parent_.lock();
+  if (solnPointers_.empty() && (isRoot() || !parent->solnPointers_.empty())) {
+    for (Key frontal : conditional_->frontals())
+      solnPointers_.emplace(frontal, delta->find(frontal));
+    for (Key parentKey : conditional_->parents()) {
+      assert(parent->solnPointers_.exists(parentKey));
+      solnPointers_.emplace(parentKey, parent->solnPointers_.at(parentKey));
+    }
+  }
+
+  // See if we can use solution part pointers - we can if they either
+  // already existed or were created above.
+  if (!solnPointers_.empty()) {
+    GaussianConditional& c = *conditional_;
+    // Solve matrix
+    Vector xS;
+    {
+      // Count dimensions of vector
+      DenseIndex dim = 0;
+      FastVector<VectorValues::const_iterator> parentPointers;
+      parentPointers.reserve(conditional_->nrParents());
+      for (Key parent : conditional_->parents()) {
+        parentPointers.push_back(solnPointers_.at(parent));
+        dim += parentPointers.back()->second.size();
+      }
+
+      // Fill parent vector
+      xS.resize(dim);
+      DenseIndex vectorPos = 0;
+      for (const VectorValues::const_iterator& parentPointer : parentPointers) {
+        const Vector& parentVector = parentPointer->second;
+        xS.block(vectorPos, 0, parentVector.size(), 1) =
+            parentVector.block(0, 0, parentVector.size(), 1);
+        vectorPos += parentVector.size();
+      }
+    }
+
+    // NOTE(gareth): We can no longer write: xS = b - S * xS
+    // This is because Eigen (as of 3.3) no longer evaluates S * xS into
+    // a temporary, and the operation trashes valus in xS.
+    // See: http://eigen.tuxfamily.org/index.php?title=3.3
+    const Vector rhs = c.getb() - c.get_S() * xS;
+    const Vector solution = c.get_R().triangularView<Eigen::Upper>().solve(rhs);
+
+    // Check for indeterminant solution
+    if (solution.hasNaN())
+      throw IndeterminantLinearSystemException(c.keys().front());
+
+    // Insert solution into a VectorValues
+    DenseIndex vectorPosition = 0;
+    for (GaussianConditional::const_iterator frontal = c.beginFrontals();
+         frontal != c.endFrontals(); ++frontal) {
+      solnPointers_.at(*frontal)->second =
+          solution.segment(vectorPosition, c.getDim(frontal));
+      vectorPosition += c.getDim(frontal);
+    }
+  } else {
+    // Just call plain solve because we couldn't use solution pointers.
+    delta->update(conditional_->solve(*delta));
+  }
+}
+
+/* ************************************************************************* */
 bool ISAM2Clique::valuesChanged(const KeySet& replaced,
                                 const Vector& originalValues,
                                 const VectorValues& delta,
@@ -273,76 +347,7 @@ bool ISAM2Clique::optimizeWildfireNode(const KeySet& replaced, double threshold,
     // Temporary copy of the original values, to check how much they change
     auto originalValues = delta->vector(conditional_->frontals());
 
-    // Back-substitute - special version stores solution pointers in cliques for
-    // fast access.
-    {
-      // Create solution part pointers if necessary and possible - necessary if
-      // solnPointers_ is empty, and possible if either we're a root, or we have
-      // a parent with valid solnPointers_.
-      ISAM2::sharedClique parent = parent_.lock();
-      if (solnPointers_.empty() &&
-          (isRoot() || !parent->solnPointers_.empty())) {
-        for (Key frontal : conditional_->frontals())
-          solnPointers_.emplace(frontal, delta->find(frontal));
-        for (Key parentKey : conditional_->parents()) {
-          assert(parent->solnPointers_.exists(parentKey));
-          solnPointers_.emplace(parentKey, parent->solnPointers_.at(parentKey));
-        }
-      }
-
-      // See if we can use solution part pointers - we can if they either
-      // already existed or were created above.
-      if (!solnPointers_.empty()) {
-        GaussianConditional& c = *conditional_;
-        // Solve matrix
-        Vector xS;
-        {
-          // Count dimensions of vector
-          DenseIndex dim = 0;
-          FastVector<VectorValues::const_iterator> parentPointers;
-          parentPointers.reserve(conditional_->nrParents());
-          for (Key parent : conditional_->parents()) {
-            parentPointers.push_back(solnPointers_.at(parent));
-            dim += parentPointers.back()->second.size();
-          }
-
-          // Fill parent vector
-          xS.resize(dim);
-          DenseIndex vectorPos = 0;
-          for (const VectorValues::const_iterator& parentPointer :
-               parentPointers) {
-            const Vector& parentVector = parentPointer->second;
-            xS.block(vectorPos, 0, parentVector.size(), 1) =
-                parentVector.block(0, 0, parentVector.size(), 1);
-            vectorPos += parentVector.size();
-          }
-        }
-
-        // NOTE(gareth): We can no longer write: xS = b - S * xS
-        // This is because Eigen (as of 3.3) no longer evaluates S * xS into
-        // a temporary, and the operation trashes valus in xS.
-        // See: http://eigen.tuxfamily.org/index.php?title=3.3
-        const Vector rhs = c.getb() - c.get_S() * xS;
-        const Vector solution =
-            c.get_R().triangularView<Eigen::Upper>().solve(rhs);
-
-        // Check for indeterminant solution
-        if (solution.hasNaN())
-          throw IndeterminantLinearSystemException(c.keys().front());
-
-        // Insert solution into a VectorValues
-        DenseIndex vectorPosition = 0;
-        for (GaussianConditional::const_iterator frontal = c.beginFrontals();
-             frontal != c.endFrontals(); ++frontal) {
-          solnPointers_.at(*frontal)->second =
-              solution.segment(vectorPosition, c.getDim(frontal));
-          vectorPosition += c.getDim(frontal);
-        }
-      } else {
-        // Just call plain solve because we couldn't use solution pointers.
-        delta->update(conditional_->solve(*delta));
-      }
-    }
+    fastBackSubstitute(delta);
     count += conditional_->nrFrontals();
 
     if (valuesChanged(replaced, originalValues, *delta, threshold)) {
