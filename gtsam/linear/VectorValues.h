@@ -244,7 +244,26 @@ namespace gtsam {
     Vector vector() const;
 
     /** Access a vector that is a subset of relevant keys. */
-    Vector vector(const FastVector<Key>& keys) const;
+    template <typename CONTAINER>
+    Vector vector(const CONTAINER& keys) const {
+      DenseIndex totalDim = 0;
+      FastVector<const Vector*> items;
+      items.reserve(keys.end() - keys.begin());
+      for (Key key : keys) {
+        const Vector* v = &at(key);
+        totalDim += v->size();
+        items.push_back(v);
+      }
+
+      Vector result(totalDim);
+      DenseIndex pos = 0;
+      for (const Vector* v : items) {
+        result.segment(pos, v->size()) = *v;
+        pos += v->size();
+      }
+
+      return result;
+    }
 
     /** Access a vector that is a subset of relevant keys, dims version. */
     Vector vector(const Dims& dims) const;
