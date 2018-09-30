@@ -17,9 +17,13 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastVector.h>
+#include <boost/optional.hpp>
+
+#include <string>
 
 namespace gtsam {
 
