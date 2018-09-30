@@ -85,10 +85,10 @@ class ISAM2JunctionTree
 };
 
 /* ************************************************************************* */
-std::string ISAM2DoglegParams::adaptationModeTranslator(
+string ISAM2DoglegParams::adaptationModeTranslator(
     const DoglegOptimizerImpl::TrustRegionAdaptationMode& adaptationMode)
     const {
-  std::string s;
+  string s;
   switch (adaptationMode) {
     case DoglegOptimizerImpl::SEARCH_EACH_ITERATION:
       s = "SEARCH_EACH_ITERATION";
@@ -106,8 +106,8 @@ std::string ISAM2DoglegParams::adaptationModeTranslator(
 /* ************************************************************************* */
 DoglegOptimizerImpl::TrustRegionAdaptationMode
 ISAM2DoglegParams::adaptationModeTranslator(
-    const std::string& adaptationMode) const {
-  std::string s = adaptationMode;
+    const string& adaptationMode) const {
+  string s = adaptationMode;
   boost::algorithm::to_upper(s);
   if (s == "SEARCH_EACH_ITERATION")
     return DoglegOptimizerImpl::SEARCH_EACH_ITERATION;
@@ -120,8 +120,8 @@ ISAM2DoglegParams::adaptationModeTranslator(
 
 /* ************************************************************************* */
 ISAM2Params::Factorization ISAM2Params::factorizationTranslator(
-    const std::string& str) {
-  std::string s = str;
+    const string& str) {
+  string s = str;
   boost::algorithm::to_upper(s);
   if (s == "QR") return ISAM2Params::QR;
   if (s == "CHOLESKY") return ISAM2Params::CHOLESKY;
@@ -131,9 +131,9 @@ ISAM2Params::Factorization ISAM2Params::factorizationTranslator(
 }
 
 /* ************************************************************************* */
-std::string ISAM2Params::factorizationTranslator(
+string ISAM2Params::factorizationTranslator(
     const ISAM2Params::Factorization& value) {
-  std::string s;
+  string s;
   switch (value) {
     case ISAM2Params::QR:
       s = "QR";
@@ -171,13 +171,12 @@ bool ISAM2Clique::equals(const This& other, double tol) const {
 }
 
 /* ************************************************************************* */
-void ISAM2Clique::print(const std::string& s,
-                        const KeyFormatter& formatter) const {
+void ISAM2Clique::print(const string& s, const KeyFormatter& formatter) const {
   Base::print(s, formatter);
   if (cachedFactor_)
     cachedFactor_->print(s + "Cached: ", formatter);
   else
-    std::cout << s << "Cached empty" << std::endl;
+    cout << s << "Cached empty" << endl;
   if (gradientContribution_.rows() != 0)
     gtsam::print(gradientContribution_, "Gradient contribution: ");
 }
@@ -207,31 +206,16 @@ bool ISAM2Clique::isDirty(const KeySet& replaced, const KeySet& changed) const {
   }
   return dirty;
 }
-/* ************************************************************************* */
-FastVector<Vector> ISAM2Clique::copyRelevantValues(
-    const VectorValues& delta) const {
-  FastVector<Vector> values;
-  values.reserve(conditional_->nrFrontals());
-  for (Key frontal : conditional_->frontals()) {
-    values.push_back(delta[frontal]);
-  }
-  return values;
-}
 
 /* ************************************************************************* */
 bool ISAM2Clique::valuesChanged(const KeySet& replaced,
-                                const FastVector<Vector>& originalValues,
+                                const Vector& originalValues,
                                 const VectorValues& delta,
                                 double threshold) const {
-  if (replaced.exists(conditional_->frontals().front())) return true;
-  size_t i = 0;
-  for (Key frontal : conditional_->frontals()) {
-    const Vector diff = originalValues[i++] - delta[frontal];
-    if (diff.lpNorm<Eigen::Infinity>() >= threshold) {
-      return true;
-    }
-  }
-  return false;
+  auto frontals = conditional_->frontals();
+  if (replaced.exists(frontals.front())) return true;
+  auto diff = originalValues - delta.vector(frontals);
+  return diff.lpNorm<Eigen::Infinity>() >= threshold;
 }
 
 /* ************************************************************************* */
@@ -243,11 +227,13 @@ void ISAM2Clique::markFrontalsAsChanged(KeySet* changed) const {
 }
 
 /* ************************************************************************* */
-void ISAM2Clique::restoreFromOriginals(const FastVector<Vector>& originalValues,
+void ISAM2Clique::restoreFromOriginals(const Vector& originalValues,
                                        VectorValues* delta) const {
-  size_t i = 0;
+  size_t pos = 0;
   for (Key frontal : conditional_->frontals()) {
-    delta->at(frontal) = originalValues[i++];
+    auto v = delta->at(frontal);
+    v = originalValues.segment(pos, v.size());
+    pos += v.size();
   }
 }
 
@@ -257,7 +243,7 @@ void ISAM2Clique::optimizeWildfire(const KeySet& replaced, double threshold,
                                    size_t* count) const {
   if (isDirty(replaced, *changed)) {
     // Temporary copy of the original values, to check how much they change
-    auto originalValues = copyRelevantValues(*delta);
+    auto originalValues = delta->vector(conditional_->frontals());
 
     // Back-substitute
     delta->update(conditional_->solve(*delta));
@@ -285,7 +271,7 @@ bool ISAM2Clique::optimizeWildfireNode(const KeySet& replaced, double threshold,
   bool dirty = isDirty(replaced, *changed);
   if (dirty) {
     // Temporary copy of the original values, to check how much they change
-    auto originalValues = copyRelevantValues(*delta);
+    auto originalValues = delta->vector(conditional_->frontals());
 
     // Back-substitute - special version stores solution pointers in cliques for
     // fast access.

@@ -546,36 +546,12 @@ class GTSAM_EXPORT ISAM2Clique
   void print(const std::string& s = "",
              const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
-  /**
-   * Check if clique was replaced, or if any parents were changed above the
-   * threshold or themselves replaced.
-   */
-  bool isDirty(const KeySet& replaced, const KeySet& changed) const;
-
-  /// Copy values in delta pertaining to this clique.
-  FastVector<Vector> copyRelevantValues(const VectorValues& delta) const;
-
-  /*
-   * Check whether the values changed above a threshold, or always true if the
-   * clique was replaced.
-   */
-  bool valuesChanged(const KeySet& replaced,
-                     const FastVector<Vector>& originalValues,
-                     const VectorValues& delta, double threshold) const;
-
-  /// Set changed flag for each frontal variable
-  void markFrontalsAsChanged(KeySet* changed) const;
-
-  /// Restore delta to original values, guided by frontal keys.
-  void restoreFromOriginals(const FastVector<Vector>& originalValues,
-                            VectorValues* delta) const;
-
-  void optimizeWildfire(const KeySet& replaced, double threshold, KeySet* changed,
-                        VectorValues* delta,
+  void optimizeWildfire(const KeySet& replaced, double threshold,
+                        KeySet* changed, VectorValues* delta,
                         size_t* count) const;
 
-  bool optimizeWildfireNode(const KeySet& replaced, double threshold, KeySet* changed,
-                            VectorValues* delta,
+  bool optimizeWildfireNode(const KeySet& replaced, double threshold,
+                            KeySet* changed, VectorValues* delta,
                             size_t* count) const;
 
   /**
@@ -586,6 +562,26 @@ class GTSAM_EXPORT ISAM2Clique
   size_t calculate_nnz() const;
 
  private:
+  /**
+   * Check if clique was replaced, or if any parents were changed above the
+   * threshold or themselves replaced.
+   */
+  bool isDirty(const KeySet& replaced, const KeySet& changed) const;
+
+  /*
+   * Check whether the values changed above a threshold, or always true if the
+   * clique was replaced.
+   */
+  bool valuesChanged(const KeySet& replaced, const Vector& originalValues,
+                     const VectorValues& delta, double threshold) const;
+
+  /// Set changed flag for each frontal variable
+  void markFrontalsAsChanged(KeySet* changed) const;
+
+  /// Restore delta to original values, guided by frontal keys.
+  void restoreFromOriginals(const Vector& originalValues,
+                            VectorValues* delta) const;
+
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
