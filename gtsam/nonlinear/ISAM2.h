@@ -301,7 +301,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
       const KeySet& markedKeys, const KeySet& relinKeys,
       const std::vector<Key>& observedKeys, const KeySet& unusedIndices,
       const boost::optional<FastMap<Key, int> >& constrainKeys,
-      ISAM2Result& result);
+      ISAM2Result* result);
 
   void updateDelta(bool forceFullSolve = false) const;
 };  // ISAM2

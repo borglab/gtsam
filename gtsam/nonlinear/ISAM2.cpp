@@ -199,7 +199,7 @@ boost::shared_ptr<KeySet> ISAM2::recalculate(
     const KeySet& markedKeys, const KeySet& relinKeys,
     const vector<Key>& observedKeys, const KeySet& unusedIndices,
     const boost::optional<FastMap<Key, int> >& constrainKeys,
-    ISAM2Result& result) {
+    ISAM2Result* result) {
   // TODO(dellaert):  new factors are linearized twice,
   // the newFactors passed in are not used.
 
@@ -333,8 +333,8 @@ boost::shared_ptr<KeySet> ISAM2::recalculate(
     this->nodes_.insert(bayesTree->nodes().begin(), bayesTree->nodes().end());
     gttoc(insert);
 
-    result.variablesReeliminated = affectedKeysSet->size();
-    result.factorsRecalculated = nonlinearFactors_.size();
+    result->variablesReeliminated = affectedKeysSet->size();
+    result->factorsRecalculated = nonlinearFactors_.size();
 
     lastAffectedMarkedCount = markedKeys.size();
     lastAffectedVariableCount = affectedKeysSet->size();
@@ -343,7 +343,7 @@ boost::shared_ptr<KeySet> ISAM2::recalculate(
     // Reeliminated keys for detailed results
     if (params_.enableDetailedResults) {
       for (Key key : theta_.keys()) {
-        result.detail->variableStatus[key].isReeliminated = true;
+        result->detail->variableStatus[key].isReeliminated = true;
       }
     }
 
@@ -375,12 +375,12 @@ boost::shared_ptr<KeySet> ISAM2::recalculate(
     // Reeliminated keys for detailed results
     if (params_.enableDetailedResults) {
       for (Key key : affectedAndNewKeys) {
-        result.detail->variableStatus[key].isReeliminated = true;
+        result->detail->variableStatus[key].isReeliminated = true;
       }
     }
 
-    result.variablesReeliminated = affectedAndNewKeys.size();
-    result.factorsRecalculated = factors.size();
+    result->variablesReeliminated = affectedAndNewKeys.size();
+    result->factorsRecalculated = factors.size();
     lastAffectedMarkedCount = markedKeys.size();
     lastAffectedVariableCount = affectedKeys.size();
     lastAffectedFactorCount = factors.size();
@@ -479,7 +479,7 @@ boost::shared_ptr<KeySet> ISAM2::recalculate(
   if (params_.enableDetailedResults) {
     for (const sharedNode& root : this->roots())
       for (Key var : *root->conditional())
-        result.detail->variableStatus[var].inRootClique = true;
+        result->detail->variableStatus[var].inRootClique = true;
   }
 
   return affectedKeysSet;
@@ -786,7 +786,7 @@ ISAM2Result ISAM2::update(
   boost::shared_ptr<KeySet> replacedKeys;
   if (!markedKeys.empty() || !observedKeys.empty())
     replacedKeys = recalculate(markedKeys, relinKeys, observedKeys,
-                               unusedIndices, constrainedKeys, result);
+                               unusedIndices, constrainedKeys, &result);
 
   // Update replaced keys mask (accumulates until back-substitution takes place)
   if (replacedKeys)
