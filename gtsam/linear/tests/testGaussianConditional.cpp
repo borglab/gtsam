@@ -128,37 +128,28 @@ TEST( GaussianConditional, equals )
 }
 
 /* ************************************************************************* */
-TEST( GaussianConditional, solve )
-{
-  //expected solution
+TEST(GaussianConditional, solve) {
+  // expected solution
   Vector expectedX(2);
-  expectedX(0) = 20-3-11 ; expectedX(1) = 40-7-15;
+  expectedX(0) = 20 - 3 - 11;
+  expectedX(1) = 40 - 7 - 15;
 
   // create a conditional Gaussian node
-  Matrix R = (Matrix(2, 2) <<  1., 0.,
-                            0., 1.).finished();
+  Matrix R = (Matrix(2, 2) << 1., 0., 0., 1.).finished();
+  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  Matrix A2 = (Matrix(2, 2) << 5., 6., 7., 8.).finished();
 
-  Matrix A1 = (Matrix(2, 2) << 1., 2.,
-                            3., 4.).finished();
-
-  Matrix A2 = (Matrix(2, 2) << 5., 6.,
-                            7., 8.).finished();
-
-  Vector d(2); d << 20.0, 40.0;
+  Vector d(2);
+  d << 20.0, 40.0;
 
   GaussianConditional cg(1, d, R, 2, A1, 10, A2);
 
-  Vector sx1(2); sx1 << 1.0, 1.0;
-  Vector sl1(2); sl1 << 1.0, 1.0;
+  Vector2 sx1(1, 1), sl1(1, 1);
 
-  VectorValues expected = map_list_of
-    (1, expectedX)
-    (2, sx1)
-    (10, sl1);
+  VectorValues expected = map_list_of(1, expectedX)(2, sx1)(10, sl1);
 
-  VectorValues solution = map_list_of
-    (2, sx1) // parents
-    (10, sl1);
+  VectorValues solution = map_list_of(2, sx1)  // parents
+      (10, sl1);
   solution.insert(cg.solve(solution));
 
   EXPECT(assert_equal(expected, solution, tol));
