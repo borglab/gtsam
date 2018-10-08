@@ -70,8 +70,8 @@ bool ISAM2Clique::isDirty(const KeySet& replaced, const KeySet& changed) const {
   // Are any clique variables part of the tree that has been redone?
   bool dirty = replaced.exists(conditional_->frontals().front());
 #if !defined(NDEBUG) && defined(GTSAM_EXTRA_CONSISTENCY_CHECKS)
-  for (Key frontal : conditional_->frontals()) {
-    assert(dirty == replaced.exists(frontal));
+  for (Key frontalKey : conditional_->frontals()) {
+    assert(dirty == replaced.exists(frontalKey));
   }
 #endif
 
@@ -93,44 +93,47 @@ bool ISAM2Clique::isDirty(const KeySet& replaced, const KeySet& changed) const {
  * fast access.
  */
 void ISAM2Clique::fastBackSubstitute(VectorValues* delta) const {
-#ifdef USE_BROKEN_FAST_BACKSUBSTITUTE
+#ifndef USE_SLOW_BACKSUBSTITUTE
   // TODO(gareth): This code shares a lot of logic w/ linearAlgorithms-inst,
   // potentially refactor
 
   // Create solution part pointers if necessary and possible - necessary if
   // solnPointers_ is empty, and possible if either we're a root, or we have
   // a parent with valid solnPointers_.
+  const GaussianConditional& cg = *conditional_;
   ISAM2Clique::shared_ptr parent = parent_.lock();
   if (solnPointers_.empty() && (isRoot() || !parent->solnPointers_.empty())) {
-    for (Key frontal : conditional_->frontals())
-      solnPointers_.emplace(frontal, delta->find(frontal));
-    for (Key parentKey : conditional_->parents()) {
+    for (Key frontalKey : cg.frontals())
+      solnPointers_.emplace(frontalKey, delta->find(frontalKey));
+    for (Key parentKey : cg.parents()) {
       assert(parent->solnPointers_.exists(parentKey));
-      solnPointers_.emplace(parentKey, parent->solnPointers_.at(parentKey));
+      solnPointers_.emplace(parentKey, parent->solnPointers_[parentKey]);
     }
   }
 
   // See if we can use solution part pointers - we can if they either
   // already existed or were created above.
-  if (!solnPointers_.empty()) {
-    GaussianConditional& c = *conditional_;
+  if (solnPointers_.empty()) {
+    // Just call plain solve because we couldn't use solution pointers.
+    delta->update(cg.solve(*delta));
+  } else {
     // Solve matrix
     Vector xS;
     {
       // Count dimensions of vector
       DenseIndex dim = 0;
-      FastVector<VectorValues::const_iterator> parentPointers;
-      parentPointers.reserve(conditional_->nrParents());
-      for (Key parent : conditional_->parents()) {
-        parentPointers.push_back(solnPointers_.at(parent));
-        dim += parentPointers.back()->second.size();
+      FastVector<VectorValues::const_iterator> its;
+      its.reserve(cg.nrParents());
+      for (Key parent : cg.parents()) {
+        its.push_back(solnPointers_.at(parent));
+        dim += its.back()->second.size();
       }
 
       // Fill parent vector
       xS.resize(dim);
       DenseIndex vectorPos = 0;
-      for (const VectorValues::const_iterator& parentPointer : parentPointers) {
-        const Vector& parentVector = parentPointer->second;
+      for (const auto& it : its) {
+        const Vector& parentVector = it->second;
         xS.block(vectorPos, 0, parentVector.size(), 1) =
             parentVector.block(0, 0, parentVector.size(), 1);
         vectorPos += parentVector.size();
@@ -141,27 +144,25 @@ void ISAM2Clique::fastBackSubstitute(VectorValues* delta) const {
     // This is because Eigen (as of 3.3) no longer evaluates S * xS into
     // a temporary, and the operation trashes valus in xS.
     // See: http://eigen.tuxfamily.org/index.php?title=3.3
-    const Vector rhs = c.getb() - c.get_S() * xS;
-    const Vector solution = c.get_R().triangularView<Eigen::Upper>().solve(rhs);
+    const Vector rhs = cg.getb() - cg.get_S() * xS;
+    const Vector solution =
+        cg.get_R().triangularView<Eigen::Upper>().solve(rhs);
 
     // Check for indeterminant solution
     if (solution.hasNaN())
-      throw IndeterminantLinearSystemException(c.keys().front());
+      throw IndeterminantLinearSystemException(cg.keys().front());
 
     // Insert solution into a VectorValues
     DenseIndex vectorPosition = 0;
-    for (GaussianConditional::const_iterator frontal = c.beginFrontals();
-         frontal != c.endFrontals(); ++frontal) {
-      solnPointers_.at(*frontal)->second =
-          solution.segment(vectorPosition, c.getDim(frontal));
-      vectorPosition += c.getDim(frontal);
+    for (GaussianConditional::const_iterator it = cg.beginFrontals();
+         it != cg.endFrontals(); ++it) {
+      const auto dim = cg.getDim(it);
+      solnPointers_.at(*it)->second = solution.segment(vectorPosition, dim);
+      vectorPosition += dim;
     }
-  } else {
-    // Just call plain solve because we couldn't use solution pointers.
-    delta->update(conditional_->solve(*delta));
   }
 #else
-  delta->update(conditional_->solve(*delta));
+  delta->update(cg.solve(*delta));
 #endif
 }
 
@@ -179,8 +180,8 @@ bool ISAM2Clique::valuesChanged(const KeySet& replaced,
 /* ************************************************************************* */
 /// Set changed flag for each frontal variable
 void ISAM2Clique::markFrontalsAsChanged(KeySet* changed) const {
-  for (Key frontal : conditional_->frontals()) {
-    changed->insert(frontal);
+  for (Key frontalKey : conditional_->frontals()) {
+    changed->insert(frontalKey);
   }
 }
 
@@ -188,8 +189,8 @@ void ISAM2Clique::markFrontalsAsChanged(KeySet* changed) const {
 void ISAM2Clique::restoreFromOriginals(const Vector& originalValues,
                                        VectorValues* delta) const {
   size_t pos = 0;
-  for (Key frontal : conditional_->frontals()) {
-    auto v = delta->at(frontal);
+  for (Key frontalKey : conditional_->frontals()) {
+    auto v = delta->at(frontalKey);
     v = originalValues.segment(pos, v.size());
     pos += v.size();
   }
@@ -234,8 +235,6 @@ size_t optimizeWildfire(const ISAM2Clique::shared_ptr& root, double threshold,
 bool ISAM2Clique::optimizeWildfireNode(const KeySet& replaced, double threshold,
                                        KeySet* changed, VectorValues* delta,
                                        size_t* count) const {
-  // TODO(gareth): This code shares a lot of logic w/ linearAlgorithms-inst,
-  // potentially refactor
   bool dirty = isDirty(replaced, *changed);
   if (dirty) {
     // Temporary copy of the original values, to check how much they change

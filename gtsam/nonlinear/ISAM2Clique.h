@@ -45,7 +45,7 @@ class GTSAM_EXPORT ISAM2Clique
 
   Base::FactorType::shared_ptr cachedFactor_;
   Vector gradientContribution_;
-#ifdef USE_BROKEN_FAST_BACKSUBSTITUTE
+#ifndef USE_SLOW_BACKSUBSTITUTE
   mutable FastMap<Key, VectorValues::iterator> solnPointers_;
 #endif
 
