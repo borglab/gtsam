@@ -3,14 +3,16 @@
 # Only use spaces to indent your .yml configuration.
 # -----
 # You can specify a custom docker image from Docker Hub as your build environment.
-image: ilssim/cmake-boost-qt5
+image: dellaert/ubuntu-boost-tbb-eigen3:latest
 
 pipelines:
   default:
     - step:
+        caches:
+          - docker
         script: # Modify the commands below to build your repository.
           - mkdir build
           - cd build
-          - cmake .. 
+          - cmake -DGTSAM_USE_SYSTEM_EIGEN=ON -DGTSAM_USE_EIGEN_MKL=OFF .. 
           - make
           - make check
