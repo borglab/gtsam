@@ -2,7 +2,7 @@
 # Check https://confluence.atlassian.com/x/5Q4SMw for more examples.
 # -----
 # Our custom docker image from Docker Hub as the build environment.
-image: dellaert/ubuntu-boost-tbb-eigen3:xenial
+image: dellaert/ubuntu-boost-tbb-eigen3:bionic
 
 pipelines:
   default:
@@ -11,5 +11,5 @@ pipelines:
           - mkdir build
           - cd build
           - cmake -DGTSAM_USE_SYSTEM_EIGEN=ON -DGTSAM_USE_EIGEN_MKL=OFF .. 
-          - make -j4
-          - make -j4 check
+          - make -j2
+          - make -j2 check
