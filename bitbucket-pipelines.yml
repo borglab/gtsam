@@ -1,15 +1,12 @@
-# This is a sample build configuration for C++ – Make.
-# Check our guides at https://confluence.atlassian.com/x/5Q4SMw for more examples.
-# Only use spaces to indent your .yml configuration.
+# Built from sample configuration for C++ – Make.
+# Check https://confluence.atlassian.com/x/5Q4SMw for more examples.
 # -----
-# You can specify a custom docker image from Docker Hub as your build environment.
+# Our custom docker image from Docker Hub as the build environment.
 image: dellaert/ubuntu-boost-tbb-eigen3:latest
 
 pipelines:
   default:
     - step:
-        caches:
-          - docker
         script: # Modify the commands below to build your repository.
           - mkdir build
           - cd build
