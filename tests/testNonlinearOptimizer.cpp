@@ -20,13 +20,12 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Matrix.h>
 
@@ -394,19 +393,20 @@ class IterativeLM: public LevenbergMarquardtOptimizer {
 
   /// Solver specific parameters
   ConjugateGradientParameters cgParams_;
+  Values initial_;
 
 public:
   /// Constructor
   IterativeLM(const NonlinearFactorGraph& graph, const Values& initialValues,
       const ConjugateGradientParameters &p,
       const LevenbergMarquardtParams& params = LevenbergMarquardtParams::LegacyDefaults()) :
-      LevenbergMarquardtOptimizer(graph, initialValues, params), cgParams_(p) {
+      LevenbergMarquardtOptimizer(graph, initialValues, params), cgParams_(p), initial_(initialValues) {
   }
 
   /// Solve that uses conjugate gradient
   virtual VectorValues solve(const GaussianFactorGraph &gfg,
-      const Values& initial, const NonlinearOptimizerParams& params) const {
-    VectorValues zeros = initial.zeroVectors();
+      const NonlinearOptimizerParams& params) const {
+    VectorValues zeros = initial_.zeroVectors();
     return conjugateGradientDescent(gfg, zeros, cgParams_);
   }
 };
