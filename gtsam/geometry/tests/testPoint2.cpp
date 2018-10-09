@@ -100,12 +100,12 @@ TEST( Point2, expmap) {
 
 /* ************************************************************************* */
 TEST( Point2, arithmetic) {
-  EXPECT(assert_equal<Point2>( Point2(-5,-6), -Point2(5,6) ));
-  EXPECT(assert_equal<Point2>( Point2(5,6), Point2(4,5)+Point2(1,1)));
-  EXPECT(assert_equal<Point2>( Point2(3,4), Point2(4,5)-Point2(1,1) ));
-  EXPECT(assert_equal<Point2>( Point2(8,6), Point2(4,3)*2));
-  EXPECT(assert_equal<Point2>( Point2(4,6), 2*Point2(2,3)));
-  EXPECT(assert_equal<Point2>( Point2(2,3), Point2(4,6)/2));
+  EXPECT(assert_equal<Point2>(Point2(-5, -6), -Point2(5, 6)));
+  EXPECT(assert_equal<Point2>(Point2(5, 6), Point2(4, 5) + Point2(1, 1)));
+  EXPECT(assert_equal<Point2>(Point2(3, 4), Point2(4, 5) - Point2(1, 1)));
+  EXPECT(assert_equal<Point2>(Point2(8, 6), Point2(4, 3) * 2));
+  EXPECT(assert_equal<Point2>(Point2(4, 6), 2.0 * Point2(2, 3)));
+  EXPECT(assert_equal<Point2>(Point2(2, 3), Point2(4, 6) / 2));
 }
 
 /* ************************************************************************* */
