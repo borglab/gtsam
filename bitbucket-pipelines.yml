@@ -11,5 +11,5 @@ pipelines:
           - mkdir build
           - cd build
           - cmake -DGTSAM_USE_SYSTEM_EIGEN=ON -DGTSAM_USE_EIGEN_MKL=OFF .. 
-          - make
-          - make check
+          - make -j4
+          - make -j4 check
