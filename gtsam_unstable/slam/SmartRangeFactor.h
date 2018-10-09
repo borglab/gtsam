@@ -14,7 +14,12 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/timing.h>
+
+#include <list>
 #include <map>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace gtsam {
 
@@ -83,6 +88,7 @@ public:
   /**
    * Triangulate a point from at least three pose-range pairs
    * Checks for best pair that includes first point
+   * Raise runtime_error if not well defined.
    */
   Point2 triangulate(const Values& x) const {
     //gttic_(triangulate);
@@ -96,7 +102,7 @@ public:
 
     Circle2 circle1 = circles.front();
     boost::optional<Point2> best_fh;
-    boost::optional<Circle2> best_circle;
+    boost::optional<Circle2> bestCircle2;
 
     // loop over all circles
     for(const Circle2& it: circles) {
@@ -111,13 +117,14 @@ public:
       // if h is large, the intersections are well defined.
       if (fh && (!best_fh || fh->y() > best_fh->y())) {
         best_fh = fh;
-        best_circle = it;
+        bestCircle2 = it;
       }
     }
 
     // use best fh to find actual intersection points
+    if (bestCircle2 && best_fh) {
     std::list<Point2> intersections = circleCircleIntersection(
-        circle1.center, best_circle->center, best_fh);
+        circle1.center, bestCircle2->center, best_fh);
 
     // pick winner based on other measurements
     double error1 = 0, error2 = 0;
@@ -127,7 +134,10 @@ public:
       error2 += distance2(it.center, p2);
     }
     return (error1 < error2) ? p1 : p2;
-    //gttoc_(triangulate);
+    } else {
+      throw std::runtime_error("triangulate failed");
+    }
+    // gttoc_(triangulate);
   }
 
   /**
