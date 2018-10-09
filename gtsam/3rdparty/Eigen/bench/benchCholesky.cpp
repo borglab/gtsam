@@ -31,7 +31,7 @@ __attribute__ ((noinline)) void benchLLT(const MatrixType& m)
   int rows = m.rows();
   int cols = m.cols();
 
-  int cost = 0;
+  double cost = 0;
   for (int j=0; j<rows; ++j)
   {
     int r = std::max(rows - j -1,0);
@@ -78,10 +78,10 @@ __attribute__ ((noinline)) void benchLLT(const MatrixType& m)
   else
     std::cout << "fixed ";
   std::cout << covMat.rows() << " \t"
-            << (timerNoSqrt.value() * REPEAT) / repeats << "s "
-            << "(" << 1e-6 * cost*repeats/timerNoSqrt.value() << " MFLOPS)\t"
-            << (timerSqrt.value() * REPEAT) / repeats << "s "
-            << "(" << 1e-6 * cost*repeats/timerSqrt.value() << " MFLOPS)\n";
+            << (timerNoSqrt.best()) / repeats << "s "
+            << "(" << 1e-9 * cost*repeats/timerNoSqrt.best() << " GFLOPS)\t"
+            << (timerSqrt.best()) / repeats << "s "
+            << "(" << 1e-9 * cost*repeats/timerSqrt.best() << " GFLOPS)\n";
 
 
   #ifdef BENCH_GSL
@@ -119,13 +119,13 @@ __attribute__ ((noinline)) void benchLLT(const MatrixType& m)
 
 int main(int argc, char* argv[])
 {
-  const int dynsizes[] = {4,6,8,16,24,32,49,64,128,256,512,900,0};
-  std::cout << "size            no sqrt                           standard";
+  const int dynsizes[] = {4,6,8,16,24,32,49,64,128,256,512,900,1500,0};
+  std::cout << "size            LDLT                            LLT";
 //   #ifdef BENCH_GSL
 //   std::cout << "       GSL (standard + double + ATLAS)  ";
 //   #endif
   std::cout << "\n";
-  for (uint i=0; dynsizes[i]>0; ++i)
+  for (int i=0; dynsizes[i]>0; ++i)
     benchLLT(Matrix<Scalar,Dynamic,Dynamic>(dynsizes[i],dynsizes[i]));
 
   benchLLT(Matrix<Scalar,2,2>());

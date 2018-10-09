@@ -40,14 +40,16 @@ depending on your matrix and the trade-off you want to make:
     <tr>
         <th>Decomposition</th>
         <th>Method</th>
-        <th>Requirements on the matrix</th>
-        <th>Speed</th>
+        <th>Requirements<br/>on the matrix</th>
+        <th>Speed<br/> (small-to-medium)</th>
+        <th>Speed<br/> (large)</th>
         <th>Accuracy</th>
     </tr>
     <tr>
         <td>PartialPivLU</td>
         <td>partialPivLu()</td>
         <td>Invertible</td>
+        <td>++</td>
         <td>++</td>
         <td>+</td>
     </tr>
@@ -56,6 +58,7 @@ depending on your matrix and the trade-off you want to make:
         <td>fullPivLu()</td>
         <td>None</td>
         <td>-</td>
+        <td>- -</td>
         <td>+++</td>
     </tr>
     <tr>
@@ -63,20 +66,23 @@ depending on your matrix and the trade-off you want to make:
         <td>householderQr()</td>
         <td>None</td>
         <td>++</td>
+        <td>++</td>
         <td>+</td>
     </tr>
     <tr class="alt">
         <td>ColPivHouseholderQR</td>
         <td>colPivHouseholderQr()</td>
         <td>None</td>
-        <td>+</td>
         <td>++</td>
+        <td>-</td>
+        <td>+++</td>
     </tr>
     <tr>
         <td>FullPivHouseholderQR</td>
         <td>fullPivHouseholderQr()</td>
         <td>None</td>
         <td>-</td>
+        <td>- -</td>
         <td>+++</td>
     </tr>
     <tr class="alt">
@@ -84,21 +90,31 @@ depending on your matrix and the trade-off you want to make:
         <td>llt()</td>
         <td>Positive definite</td>
         <td>+++</td>
+        <td>+++</td>
         <td>+</td>
     </tr>
     <tr>
         <td>LDLT</td>
         <td>ldlt()</td>
-        <td>Positive or negative semidefinite</td>
+        <td>Positive or negative<br/> semidefinite</td>
         <td>+++</td>
+        <td>+</td>
         <td>++</td>
+    </tr>
+    <tr class="alt">
+        <td>JacobiSVD</td>
+        <td>jacobiSvd()</td>
+        <td>None</td>
+        <td>- -</td>
+        <td>- - -</td>
+        <td>+++</td>
     </tr>
 </table>
 
 All of these decompositions offer a solve() method that works as in the above example.
 
 For example, if your matrix is positive definite, the above table says that a very good
-choice is then the LDLT decomposition. Here's an example, also demonstrating that using a general
+choice is then the LLT or LDLT decomposition. Here's an example, also demonstrating that using a general
 matrix (not a vector) as right hand side is possible.
 
 <table class="example">
@@ -167,8 +183,8 @@ Here is an example:
 
 \section TutorialLinAlgLeastsquares Least squares solving
 
-The best way to do least squares solving is with a SVD decomposition. Eigen provides one as the JacobiSVD class, and its solve()
-is doing least-squares solving.
+The most accurate method to do least squares solving is with a SVD decomposition. Eigen provides one
+as the JacobiSVD class, and its solve() is doing least-squares solving.
 
 Here is an example:
 <table class="example">
@@ -179,9 +195,10 @@ Here is an example:
 </tr>
 </table>
 
-Another way, potentially faster but less reliable, is to use a LDLT decomposition
-of the normal matrix. In any case, just read any reference text on least squares, and it will be very easy for you
-to implement any linear least squares computation on top of Eigen.
+Another methods, potentially faster but less reliable, are to use a Cholesky decomposition of the
+normal matrix or a QR decomposition. Our page on \link LeastSquares least squares solving \endlink
+has more details.
+
 
 \section TutorialLinAlgSeparateComputation Separating the computation from the construction
 

@@ -26,16 +26,16 @@ void verify_euler(const Matrix<Scalar,3,1>& ea, int i, int j, int k)
   VERIFY_IS_APPROX(m,  mbis); 
   /* If I==K, and ea[1]==0, then there no unique solution. */ 
   /* The remark apply in the case where I!=K, and |ea[1]| is close to pi/2. */ 
-  if( (i!=k || ea[1]!=0) && (i==k || !internal::isApprox(abs(ea[1]),Scalar(M_PI/2),test_precision<Scalar>())) ) 
+  if( (i!=k || ea[1]!=0) && (i==k || !internal::isApprox(abs(ea[1]),Scalar(EIGEN_PI/2),test_precision<Scalar>())) ) 
     VERIFY((ea-eabis).norm() <= test_precision<Scalar>());
   
   // approx_or_less_than does not work for 0
   VERIFY(0 < eabis[0] || test_isMuchSmallerThan(eabis[0], Scalar(1)));
-  VERIFY_IS_APPROX_OR_LESS_THAN(eabis[0], Scalar(M_PI));
-  VERIFY_IS_APPROX_OR_LESS_THAN(-Scalar(M_PI), eabis[1]);
-  VERIFY_IS_APPROX_OR_LESS_THAN(eabis[1], Scalar(M_PI));
-  VERIFY_IS_APPROX_OR_LESS_THAN(-Scalar(M_PI), eabis[2]);
-  VERIFY_IS_APPROX_OR_LESS_THAN(eabis[2], Scalar(M_PI));
+  VERIFY_IS_APPROX_OR_LESS_THAN(eabis[0], Scalar(EIGEN_PI));
+  VERIFY_IS_APPROX_OR_LESS_THAN(-Scalar(EIGEN_PI), eabis[1]);
+  VERIFY_IS_APPROX_OR_LESS_THAN(eabis[1], Scalar(EIGEN_PI));
+  VERIFY_IS_APPROX_OR_LESS_THAN(-Scalar(EIGEN_PI), eabis[2]);
+  VERIFY_IS_APPROX_OR_LESS_THAN(eabis[2], Scalar(EIGEN_PI));
 }
 
 template<typename Scalar> void check_all_var(const Matrix<Scalar,3,1>& ea)
@@ -64,7 +64,7 @@ template<typename Scalar> void eulerangles()
   typedef Quaternion<Scalar> Quaternionx;
   typedef AngleAxis<Scalar> AngleAxisx;
 
-  Scalar a = internal::random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
+  Scalar a = internal::random<Scalar>(-Scalar(EIGEN_PI), Scalar(EIGEN_PI));
   Quaternionx q1;
   q1 = AngleAxisx(a, Vector3::Random().normalized());
   Matrix3 m;
@@ -84,13 +84,13 @@ template<typename Scalar> void eulerangles()
   check_all_var(ea);
   
   // Check with random angles in range [0:pi]x[-pi:pi]x[-pi:pi].
-  ea = (Array3::Random() + Array3(1,0,0))*Scalar(M_PI)*Array3(0.5,1,1);
+  ea = (Array3::Random() + Array3(1,0,0))*Scalar(EIGEN_PI)*Array3(0.5,1,1);
   check_all_var(ea);
   
-  ea[2] = ea[0] = internal::random<Scalar>(0,Scalar(M_PI));
+  ea[2] = ea[0] = internal::random<Scalar>(0,Scalar(EIGEN_PI));
   check_all_var(ea);
   
-  ea[0] = ea[1] = internal::random<Scalar>(0,Scalar(M_PI));
+  ea[0] = ea[1] = internal::random<Scalar>(0,Scalar(EIGEN_PI));
   check_all_var(ea);
   
   ea[1] = 0;

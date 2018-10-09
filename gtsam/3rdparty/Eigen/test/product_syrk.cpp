@@ -125,11 +125,12 @@ void test_product_syrk()
     int s;
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
     CALL_SUBTEST_1( syrk(MatrixXf(s, s)) );
-    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
     CALL_SUBTEST_2( syrk(MatrixXd(s, s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
+    
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2);
     CALL_SUBTEST_3( syrk(MatrixXcf(s, s)) );
-    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2);
     CALL_SUBTEST_4( syrk(MatrixXcd(s, s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
   }
 }

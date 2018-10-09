@@ -1,7 +1,7 @@
 include(EigenTesting)
 include(CheckCXXSourceCompiles)
 
-# configure the "site" and "buildname"
+# configure the "site" and "buildname" 
 ei_set_sitename()
 
 # retrieve and store the build string
@@ -46,18 +46,16 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   if(EIGEN_COVERAGE_TESTING)
     set(COVERAGE_FLAGS "-fprofile-arcs -ftest-coverage")
     set(CTEST_CUSTOM_COVERAGE_EXCLUDE "/test/")
-  else(EIGEN_COVERAGE_TESTING)
-    set(COVERAGE_FLAGS "")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COVERAGE_FLAGS}")
   endif(EIGEN_COVERAGE_TESTING)
-  if(EIGEN_TEST_C++0x)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
-  endif(EIGEN_TEST_C++0x)
-  if(CMAKE_SYSTEM_NAME MATCHES Linux)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COVERAGE_FLAGS} -g2")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${COVERAGE_FLAGS} -O2 -g2")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${COVERAGE_FLAGS} -fno-inline-functions")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${COVERAGE_FLAGS} -O0 -g3")
-  endif(CMAKE_SYSTEM_NAME MATCHES Linux)
+  
 elseif(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_CRT_SECURE_NO_WARNINGS /D_SCL_SECURE_NO_WARNINGS")
 endif(CMAKE_COMPILER_IS_GNUCXX)
+
+
+check_cxx_compiler_flag("-std=c++11" EIGEN_COMPILER_SUPPORT_CXX11)
+
+if(EIGEN_TEST_CXX11 AND EIGEN_COMPILER_SUPPORT_CXX11)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+endif()

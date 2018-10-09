@@ -35,7 +35,7 @@ public :
 
   // Ctor
 
-  Action_axpy( int size ):_size(size),_coef(1.0)
+  Action_axpy( int size ):_coef(1.0),_size(size)
   {
     MESSAGE("Action_axpy Ctor");
 

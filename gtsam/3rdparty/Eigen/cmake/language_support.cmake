@@ -43,7 +43,7 @@ function(workaround_9220 language language_works)
   if(return_code EQUAL 0)
     # Second run
     execute_process (
-      COMMAND ${CMAKE_COMMAND} .
+      COMMAND ${CMAKE_COMMAND} . -G "${CMAKE_GENERATOR}"
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/language_tests/${language}
       RESULT_VARIABLE return_code
       OUTPUT_QUIET
@@ -64,3 +64,4 @@ endfunction(workaround_9220)
 #message("CXX_language_works = ${CXX_language_works}")
 #workaround_9220(CXXp CXXp_language_works)
 #message("CXXp_language_works = ${CXXp_language_works}")
+

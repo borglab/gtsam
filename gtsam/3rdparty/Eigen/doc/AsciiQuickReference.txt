@@ -32,17 +32,19 @@ A << 1, 2, 3,     // Initialize A. The elements can also be
 B << A, A, A;     // B is three horizontally stacked A's.
 A.fill(10);       // Fill A with all 10's.
 
-// Eigen                            // Matlab
-MatrixXd::Identity(rows,cols)       // eye(rows,cols)
-C.setIdentity(rows,cols)            // C = eye(rows,cols)
-MatrixXd::Zero(rows,cols)           // zeros(rows,cols)
-C.setZero(rows,cols)                // C = ones(rows,cols)
-MatrixXd::Ones(rows,cols)           // ones(rows,cols)
-C.setOnes(rows,cols)                // C = ones(rows,cols)
-MatrixXd::Random(rows,cols)         // rand(rows,cols)*2-1        // MatrixXd::Random returns uniform random numbers in (-1, 1).
-C.setRandom(rows,cols)              // C = rand(rows,cols)*2-1
-VectorXd::LinSpaced(size,low,high)   // linspace(low,high,size)'
-v.setLinSpaced(size,low,high)        // v = linspace(low,high,size)'
+// Eigen                                    // Matlab
+MatrixXd::Identity(rows,cols)               // eye(rows,cols)
+C.setIdentity(rows,cols)                    // C = eye(rows,cols)
+MatrixXd::Zero(rows,cols)                   // zeros(rows,cols)
+C.setZero(rows,cols)                        // C = zeros(rows,cols)
+MatrixXd::Ones(rows,cols)                   // ones(rows,cols)
+C.setOnes(rows,cols)                        // C = ones(rows,cols)
+MatrixXd::Random(rows,cols)                 // rand(rows,cols)*2-1            // MatrixXd::Random returns uniform random numbers in (-1, 1).
+C.setRandom(rows,cols)                      // C = rand(rows,cols)*2-1
+VectorXd::LinSpaced(size,low,high)          // linspace(low,high,size)'
+v.setLinSpaced(size,low,high)               // v = linspace(low,high,size)'
+VectorXi::LinSpaced(((hi-low)/step)+1,      // low:step:hi
+                    low,low+step*(size-1))  //
 
 
 // Matrix slicing and blocks. All expressions listed here are read/write.
@@ -82,17 +84,20 @@ P.bottomRightCorner<rows,cols>()   // P(end-rows+1:end, end-cols+1:end)
 
 // Of particular note is Eigen's swap function which is highly optimized.
 // Eigen                           // Matlab
-R.row(i) = P.col(j);               // R(i, :) = P(:, i)
+R.row(i) = P.col(j);               // R(i, :) = P(:, j)
 R.col(j1).swap(mat1.col(j2));      // R(:, [j1 j2]) = R(:, [j2, j1])
 
-// Views, transpose, etc; all read-write except for .adjoint().
+// Views, transpose, etc;
 // Eigen                           // Matlab
 R.adjoint()                        // R'
-R.transpose()                      // R.' or conj(R')
-R.diagonal()                       // diag(R)
+R.transpose()                      // R.' or conj(R')       // Read-write
+R.diagonal()                       // diag(R)               // Read-write
 x.asDiagonal()                     // diag(x)
-R.transpose().colwise().reverse(); // rot90(R)
-R.conjugate()                      // conj(R)
+R.transpose().colwise().reverse()  // rot90(R)              // Read-write
+R.rowwise().reverse()              // fliplr(R)
+R.colwise().reverse()              // flipud(R)
+R.replicate(i,j)                   // repmat(P,i,j)
+
 
 // All the same as Matlab, but matlab doesn't have *= style operators.
 // Matrix-vector.  Matrix-matrix.   Matrix-scalar.
@@ -104,37 +109,40 @@ a *= M;            R  = P + Q;      R  = P/s;
                    R -= Q;          R /= s;
 
 // Vectorized operations on each element independently
-// Eigen                  // Matlab
-R = P.cwiseProduct(Q);    // R = P .* Q
-R = P.array() * s.array();// R = P .* s
-R = P.cwiseQuotient(Q);   // R = P ./ Q
-R = P.array() / Q.array();// R = P ./ Q
-R = P.array() + s.array();// R = P + s
-R = P.array() - s.array();// R = P - s
-R.array() += s;           // R = R + s
-R.array() -= s;           // R = R - s
-R.array() < Q.array();    // R < Q
-R.array() <= Q.array();   // R <= Q
-R.cwiseInverse();         // 1 ./ P
-R.array().inverse();      // 1 ./ P
-R.array().sin()           // sin(P)
-R.array().cos()           // cos(P)
-R.array().pow(s)          // P .^ s
-R.array().square()        // P .^ 2
-R.array().cube()          // P .^ 3
-R.cwiseSqrt()             // sqrt(P)
-R.array().sqrt()          // sqrt(P)
-R.array().exp()           // exp(P)
-R.array().log()           // log(P)
-R.cwiseMax(P)             // max(R, P)
-R.array().max(P.array())  // max(R, P)
-R.cwiseMin(P)             // min(R, P)
-R.array().min(P.array())  // min(R, P)
-R.cwiseAbs()              // abs(P)
-R.array().abs()           // abs(P)
-R.cwiseAbs2()             // abs(P.^2)
-R.array().abs2()          // abs(P.^2)
-(R.array() < s).select(P,Q);  // (R < s ? P : Q)
+// Eigen                       // Matlab
+R = P.cwiseProduct(Q);         // R = P .* Q
+R = P.array() * s.array();     // R = P .* s
+R = P.cwiseQuotient(Q);        // R = P ./ Q
+R = P.array() / Q.array();     // R = P ./ Q
+R = P.array() + s.array();     // R = P + s
+R = P.array() - s.array();     // R = P - s
+R.array() += s;                // R = R + s
+R.array() -= s;                // R = R - s
+R.array() < Q.array();         // R < Q
+R.array() <= Q.array();        // R <= Q
+R.cwiseInverse();              // 1 ./ P
+R.array().inverse();           // 1 ./ P
+R.array().sin()                // sin(P)
+R.array().cos()                // cos(P)
+R.array().pow(s)               // P .^ s
+R.array().square()             // P .^ 2
+R.array().cube()               // P .^ 3
+R.cwiseSqrt()                  // sqrt(P)
+R.array().sqrt()               // sqrt(P)
+R.array().exp()                // exp(P)
+R.array().log()                // log(P)
+R.cwiseMax(P)                  // max(R, P)
+R.array().max(P.array())       // max(R, P)
+R.cwiseMin(P)                  // min(R, P)
+R.array().min(P.array())       // min(R, P)
+R.cwiseAbs()                   // abs(P)
+R.array().abs()                // abs(P)
+R.cwiseAbs2()                  // abs(P.^2)
+R.array().abs2()               // abs(P.^2)
+(R.array() < s).select(P,Q );  // (R < s ? P : Q)
+R = (Q.array()==0).select(P,R) // R(Q==0) = P(Q==0)
+R = P.unaryExpr(ptr_fun(func)) // R = arrayfun(func, P)   // with: scalar func(const scalar &x);
+
 
 // Reductions.
 int r, c;
@@ -165,12 +173,12 @@ x.dot(y)                  // dot(x, y)
 x.cross(y)                // cross(x, y) Requires #include <Eigen/Geometry>
 
 //// Type conversion
-// Eigen                           // Matlab
-A.cast<double>();                  // double(A)
-A.cast<float>();                   // single(A)
-A.cast<int>();                     // int32(A)
-A.real();                          // real(A)
-A.imag();                          // imag(A)
+// Eigen                  // Matlab
+A.cast<double>();         // double(A)
+A.cast<float>();          // single(A)
+A.cast<int>();            // int32(A)
+A.real();                 // real(A)
+A.imag();                 // imag(A)
 // if the original type equals destination type, no work is done
 
 // Note that for most operations Eigen requires all operands to have the same type:

@@ -102,7 +102,7 @@ void testMatrixExponential(const MatrixType& A)
   typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef std::complex<RealScalar> ComplexScalar;
 
-  VERIFY_IS_APPROX(A.exp(), A.matrixFunction(StdStemFunctions<ComplexScalar>::exp));
+  VERIFY_IS_APPROX(A.exp(), A.matrixFunction(internal::stem_function_exp<ComplexScalar>));
 }
 
 template<typename MatrixType>
@@ -113,8 +113,8 @@ void testMatrixLogarithm(const MatrixType& A)
 
   MatrixType scaledA;
   RealScalar maxImagPartOfSpectrum = A.eigenvalues().imag().cwiseAbs().maxCoeff();
-  if (maxImagPartOfSpectrum >= 0.9 * M_PI)
-    scaledA = A * 0.9 * M_PI / maxImagPartOfSpectrum;
+  if (maxImagPartOfSpectrum >= RealScalar(0.9L * EIGEN_PI))
+    scaledA = A * RealScalar(0.9L * EIGEN_PI) / maxImagPartOfSpectrum;
   else
     scaledA = A;
 
