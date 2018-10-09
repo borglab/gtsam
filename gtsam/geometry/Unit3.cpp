@@ -74,61 +74,59 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
   tbb::mutex::scoped_lock lock(B_mutex_);
 #endif
 
-  // Return cached basis if available and the Jacobian isn't needed.
   if (B_ && !H) {
+    // Return cached basis if available and the Jacobian isn't needed.
     return *B_;
-  }
-
-  // Return cached basis and derivatives if available.
-  if (B_ && H && H_B_) {
+  } else if (B_ && H && H_B_) {
+    // Return cached basis and derivatives if available.
     *H = *H_B_;
     return *B_;
+  } else {
+    B_.reset(Matrix32());
+    // Get the unit vector and derivative wrt this.
+    // NOTE(hayk): We can't call point3(), because it would recursively call basis().
+    const Point3 n(p_);
+
+    // Get the axis of rotation with the minimum projected length of the point
+    Point3 axis(0, 0, 1);
+    double mx = fabs(n.x()), my = fabs(n.y()), mz = fabs(n.z());
+    if ((mx <= my) && (mx <= mz)) {
+      axis = Point3(1.0, 0.0, 0.0);
+    } else if ((my <= mx) && (my <= mz)) {
+      axis = Point3(0.0, 1.0, 0.0);
+    }
+
+    // Choose the direction of the first basis vector b1 in the tangent plane by crossing n with
+    // the chosen axis.
+    Matrix33 H_B1_n;
+    Point3 B1 = gtsam::cross(n, axis, H ? &H_B1_n : nullptr);
+
+    // Normalize result to get a unit vector: b1 = B1 / |B1|.
+    Matrix33 H_b1_B1;
+    Point3 b1 = normalize(B1, H ? &H_b1_B1 : nullptr);
+
+    // Get the second basis vector b2, which is orthogonal to n and b1, by crossing them.
+    // No need to normalize this, p and b1 are orthogonal unit vectors.
+    Matrix33 H_b2_n, H_b2_b1;
+    Point3 b2 = gtsam::cross(n, b1, H ? &H_b2_n : nullptr, H ? &H_b2_b1 : nullptr);
+
+    // Create the basis by stacking b1 and b2.
+    (*B_) << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
+
+    if (H) {
+      // Chain rule tomfoolery to compute the derivative.
+      const Matrix32& H_n_p = *B_;
+      const Matrix32 H_b1_p = H_b1_B1 * H_B1_n * H_n_p;
+      const Matrix32 H_b2_p = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
+
+      // Cache the derivative and fill the result.
+      H_B_.reset(Matrix62());
+      (*H_B_) << H_b1_p, H_b2_p;
+      *H = *H_B_;
+    }
+
+    return *B_;
   }
-
-  // Get the unit vector and derivative wrt this.
-  // NOTE(hayk): We can't call point3(), because it would recursively call basis().
-  const Point3 n(p_);
-
-  // Get the axis of rotation with the minimum projected length of the point
-  Point3 axis(0, 0, 1);
-  double mx = fabs(n.x()), my = fabs(n.y()), mz = fabs(n.z());
-  if ((mx <= my) && (mx <= mz)) {
-    axis = Point3(1.0, 0.0, 0.0);
-  } else if ((my <= mx) && (my <= mz)) {
-    axis = Point3(0.0, 1.0, 0.0);
-  }
-
-  // Choose the direction of the first basis vector b1 in the tangent plane by crossing n with
-  // the chosen axis.
-  Matrix33 H_B1_n;
-  Point3 B1 = gtsam::cross(n, axis, H ? &H_B1_n : nullptr);
-
-  // Normalize result to get a unit vector: b1 = B1 / |B1|.
-  Matrix33 H_b1_B1;
-  Point3 b1 = normalize(B1, H ? &H_b1_B1 : nullptr);
-
-  // Get the second basis vector b2, which is orthogonal to n and b1, by crossing them.
-  // No need to normalize this, p and b1 are orthogonal unit vectors.
-  Matrix33 H_b2_n, H_b2_b1;
-  Point3 b2 = gtsam::cross(n, b1, H ? &H_b2_n : nullptr, H ? &H_b2_b1 : nullptr);
-
-  // Create the basis by stacking b1 and b2.
-  B_.reset(Matrix32());
-  (*B_) << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
-
-  if (H) {
-    // Chain rule tomfoolery to compute the derivative.
-    const Matrix32& H_n_p = *B_;
-    const Matrix32 H_b1_p = H_b1_B1 * H_B1_n * H_n_p;
-    const Matrix32 H_b2_p = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
-
-    // Cache the derivative and fill the result.
-    H_B_.reset(Matrix62());
-    (*H_B_) << H_b1_p, H_b2_p;
-    *H = *H_B_;
-  }
-
-  return *B_;
 }
 
 /* ************************************************************************* */
@@ -257,7 +255,7 @@ Unit3 Unit3::retract(const Vector2& v) const {
       std::cos(theta) * p_ + xi_hat * (sin(theta) / theta);
   return Unit3(exp_p_xi_hat);
 }
- 
+
 /* ************************************************************************* */
 Vector2 Unit3::localCoordinates(const Unit3& other) const {
   const double x = p_.dot(other.p_);
