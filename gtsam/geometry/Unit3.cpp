@@ -21,7 +21,7 @@
 
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/config.h> // for GTSAM_USE_TBB
+#include <gtsam/config.h>  // for GTSAM_USE_TBB
 
 #ifdef __clang__
 #  pragma clang diagnostic push
@@ -36,13 +36,14 @@
 #include <iostream>
 #include <limits>
 #include <cmath>
+#include <vector>
 
 using namespace std;
 
 namespace gtsam {
 
 /* ************************************************************************* */
-Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2,3> H) {
+Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2, 3> H) {
   // 3*3 Derivative of representation with respect to point is 3*3:
   Matrix3 D_p_point;
   Unit3 direction;
@@ -54,7 +55,7 @@ Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2,3> H) {
 
 /* ************************************************************************* */
 Unit3 Unit3::Random(boost::mt19937 & rng) {
-  // TODO allow any engine without including all of boost :-(
+  // TODO(dellaert): allow any engine without including all of boost :-(
   boost::uniform_on_sphere<double> randomDirection(3);
   // This variate_generator object is required for versions of boost somewhere
   // around 1.46, instead of drawing directly using boost::uniform_on_sphere(rng).
@@ -161,7 +162,8 @@ Matrix3 Unit3::skew() const {
 }
 
 /* ************************************************************************* */
-double Unit3::dot(const Unit3& q, OptionalJacobian<1,2> H_p, OptionalJacobian<1,2> H_q) const {
+double Unit3::dot(const Unit3& q, OptionalJacobian<1, 2> H_p,
+                  OptionalJacobian<1, 2> H_q) const {
   // Get the unit vectors of each, and the derivative.
   Matrix32 H_pn_p;
   Point3 pn = point3(H_p ? &H_pn_p : nullptr);
@@ -185,7 +187,7 @@ double Unit3::dot(const Unit3& q, OptionalJacobian<1,2> H_p, OptionalJacobian<1,
 }
 
 /* ************************************************************************* */
-Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H_q) const {
+Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2, 2> H_q) const {
   // 2D error is equal to B'*q, as B is 3x2 matrix and q is 3x1
   const Vector2 xi = basis().transpose() * q.p_;
   if (H_q) {
@@ -195,7 +197,8 @@ Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H_q) const {
 }
 
 /* ************************************************************************* */
-Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p, OptionalJacobian<2, 2> H_q) const {
+Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p,
+                           OptionalJacobian<2, 2> H_q) const {
   // Get the point3 of this, and the derivative.
   Matrix32 H_qn_q;
   const Point3 qn = q.point3(H_q ? &H_qn_q : nullptr);
@@ -230,7 +233,7 @@ Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p, OptionalJ
 }
 
 /* ************************************************************************* */
-double Unit3::distance(const Unit3& q, OptionalJacobian<1,2> H) const {
+double Unit3::distance(const Unit3& q, OptionalJacobian<1, 2> H) const {
   Matrix2 H_xi_q;
   const Vector2 xi = error(q, H ? &H_xi_q : nullptr);
   const double theta = xi.norm();
@@ -277,4 +280,4 @@ Vector2 Unit3::localCoordinates(const Unit3& other) const {
 }
 /* ************************************************************************* */
 
-}
+}  // namespace gtsam
