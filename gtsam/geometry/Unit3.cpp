@@ -257,7 +257,7 @@ Unit3 Unit3::retract(const Vector2& v) const {
       std::cos(theta) * p_ + xi_hat * (sin(theta) / theta);
   return Unit3(exp_p_xi_hat);
 }
-
+ 
 /* ************************************************************************* */
 Vector2 Unit3::localCoordinates(const Unit3& other) const {
   const double x = p_.dot(other.p_);
