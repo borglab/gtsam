@@ -2,7 +2,7 @@
 # Check https://confluence.atlassian.com/x/5Q4SMw for more examples.
 # -----
 # Our custom docker image from Docker Hub as the build environment.
-image: dellaert/ubuntu-boost-tbb-eigen3:latest
+image: dellaert/ubuntu-boost-tbb-eigen3:xenial
 
 pipelines:
   default:
