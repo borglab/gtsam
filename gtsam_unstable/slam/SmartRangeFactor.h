@@ -28,8 +28,7 @@ namespace gtsam {
  * @addtogroup SLAM
  */
 class SmartRangeFactor: public NoiseModelFactor {
-protected:
-
+ protected:
   struct Circle2 {
     Circle2(const Point2& p, double r) :
         center(p), radius(r) {
@@ -40,11 +39,10 @@ protected:
 
   typedef SmartRangeFactor This;
 
-  std::vector<double> measurements_; ///< Range measurements
-  double variance_; ///< variance on noise
+  std::vector<double> measurements_;  ///< Range measurements
+  double variance_;  ///< variance on noise
 
-public:
-
+ public:
   /** Default constructor: don't use directly */
   SmartRangeFactor() {
   }
@@ -53,7 +51,7 @@ public:
    * Constructor
    * @param s standard deviation of range measurement noise
    */
-  SmartRangeFactor(double s) :
+  explicit SmartRangeFactor(double s) :
       NoiseModelFactor(noiseModel::Isotropic::Sigma(1, s)), variance_(s * s) {
   }
 
@@ -91,7 +89,7 @@ public:
    * Raise runtime_error if not well defined.
    */
   Point2 triangulate(const Values& x) const {
-    //gttic_(triangulate);
+    // gttic_(triangulate);
     // create n circles corresponding to measured range around each pose
     std::list<Circle2> circles;
     size_t n = size();
@@ -105,11 +103,11 @@ public:
     boost::optional<Circle2> bestCircle2;
 
     // loop over all circles
-    for(const Circle2& it: circles) {
+    for (const Circle2& it : circles) {
       // distance between circle centers.
       double d = distance2(circle1.center, it.center);
       if (d < 1e-9)
-        continue; // skip circles that are in the same location
+        continue;  // skip circles that are in the same location
       // Find f and h, the intersection points in normalized circles
       boost::optional<Point2> fh = circleCircleIntersection(
           circle1.radius / d, it.radius / d);
@@ -129,7 +127,7 @@ public:
     // pick winner based on other measurements
     double error1 = 0, error2 = 0;
     Point2 p1 = intersections.front(), p2 = intersections.back();
-    for(const Circle2& it: circles) {
+    for (const Circle2& it : circles) {
       error1 += distance2(it.center, p1);
       error2 += distance2(it.center, p2);
     }
@@ -147,19 +145,20 @@ public:
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
     size_t n = size();
     if (n < 3) {
-      if (H)
+      if (H) {
         // set Jacobians to zero for n<3
         for (size_t j = 0; j < n; j++)
           (*H)[j] = Matrix::Zero(3, 1);
+      }
       return Z_1x1;
     } else {
       Vector error = Z_1x1;
 
       // triangulate to get the optimized point
-      // TODO: Should we have a (better?) variant that does this in relative coordinates ?
+      // TODO(dellaert): Should we have a (better?) variant that does this in relative coordinates ?
       Point2 optimizedPoint = triangulate(x);
 
-      // TODO: triangulation should be followed by an optimization given poses
+      // TODO(dellaert): triangulation should be followed by an optimization given poses
       // now evaluate the errors between predicted and measured range
       for (size_t j = 0; j < n; j++) {
         const Pose2& pose = x.at<Pose2>(keys_[j]);
@@ -178,8 +177,6 @@ public:
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
-
 };
-
-} // \namespace gtsam
+}  // \namespace gtsam
 
