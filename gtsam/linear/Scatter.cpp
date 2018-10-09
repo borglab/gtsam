@@ -70,9 +70,6 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
   iterator first = begin();
   if (ordering) first += ordering->size();
   if (first != end()) std::sort(first, end());
-
-  // Filter out keys with zero dimensions (if ordering had more keys)
-  erase(std::remove_if(begin(), end(), SlotEntry::Zero), end());
 }
 
 /* ************************************************************************* */
