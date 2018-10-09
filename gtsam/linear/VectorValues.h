@@ -26,6 +26,9 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <map>
+#include <string>
+
 namespace gtsam {
 
   /**
@@ -43,10 +46,6 @@ namespace gtsam {
    *  - \ref exists (Key) to check if a variable is present
    *  - Other facilities like iterators, size(), dim(), etc.
    *
-   * Indices can be non-consecutive and inserted out-of-order, but you should not
-   * use indices that are larger than a reasonable array size because the indices
-   * correspond to positions in an internal array.
-   *
    * Example:
    * \code
      VectorValues values;
@@ -63,12 +62,6 @@ namespace gtsam {
      \endcode
    *
    * <h2>Advanced Interface and Performance Information</h2>
-   *
-   * Internally, all vector values are stored as part of one large vector.  In
-   * gtsam this vector is always pre-allocated for efficiency, using the
-   * advanced interface described below.  Accessing and modifying already-allocated
-   * values is \f$ O(1) \f$.  Using the insert() function of the standard interface
-   * is slow because it requires re-allocating the internal vector.
    *
    * For advanced usage, or where speed is important:
    *  - Allocate space ahead of time using a pre-allocating constructor
@@ -88,20 +81,18 @@ namespace gtsam {
    * \nosubgrouping
    */
   class GTSAM_EXPORT VectorValues {
-  protected:
+   protected:
     typedef VectorValues This;
-    typedef ConcurrentMap<Key, Vector> Values; ///< Typedef for the collection of Vectors making up a VectorValues
-    Values values_; ///< Collection of Vectors making up this VectorValues
+    typedef ConcurrentMap<Key, Vector> Values;  ///< Collection of Vectors making up a VectorValues
+    Values values_;                             ///< Vectors making up this VectorValues
 
-  public:
-    typedef Values::iterator iterator; ///< Iterator over vector values
-    typedef Values::const_iterator const_iterator; ///< Const iterator over vector values
-    //typedef Values::reverse_iterator reverse_iterator; ///< Reverse iterator over vector values
-    //typedef Values::const_reverse_iterator const_reverse_iterator; ///< Const reverse iterator over vector values
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
-    typedef Values::value_type value_type; ///< Typedef to pair<Key, Vector>, a key-value pair
-    typedef value_type KeyValuePair; ///< Typedef to pair<Key, Vector>, a key-value pair
-    typedef std::map<Key,size_t> Dims;
+   public:
+    typedef Values::iterator iterator;              ///< Iterator over vector values
+    typedef Values::const_iterator const_iterator;  ///< Const iterator over vector values
+    typedef boost::shared_ptr<This> shared_ptr;     ///< shared_ptr to this class
+    typedef Values::value_type value_type;          ///< Typedef to pair<Key, Vector>
+    typedef value_type KeyValuePair;                ///< Typedef to pair<Key, Vector>
+    typedef std::map<Key, size_t> Dims;             ///< Keyed vector dimensions
 
     /// @name Standard Constructors
     /// @{
@@ -111,7 +102,8 @@ namespace gtsam {
      */
     VectorValues() {}
 
-    /** Merge two VectorValues into one, this is more efficient than inserting elements one by one. */
+    /** Merge two VectorValues into one, this is more efficient than inserting
+     * elements one by one. */
     VectorValues(const VectorValues& first, const VectorValues& second);
 
     /** Create from another container holding pair<Key,Vector>. */
@@ -147,20 +139,26 @@ namespace gtsam {
     /** Check whether a variable with key \c j exists. */
     bool exists(Key j) const { return find(j) != end(); }
 
-    /** Read/write access to the vector value with key \c j, throws std::out_of_range if \c j does not exist, identical to operator[](Key). */
+    /** 
+     * Read/write access to the vector value with key \c j, throws
+     * std::out_of_range if \c j does not exist, identical to operator[](Key).
+     */
     Vector& at(Key j) {
       iterator item = find(j);
-      if(item == end())
+      if (item == end())
         throw std::out_of_range(
         "Requested variable '" + DefaultKeyFormatter(j) + "' is not in this VectorValues.");
       else
         return item->second;
     }
 
-    /** Access the vector value with key \c j (const version), throws std::out_of_range if \c j does not exist, identical to operator[](Key). */
+    /** 
+     * Access the vector value with key \c j (const version), throws
+     * std::out_of_range if \c j does not exist, identical to operator[](Key).
+     */
     const Vector& at(Key j) const {
       const_iterator item = find(j);
-      if(item == end())
+      if (item == end())
         throw std::out_of_range(
         "Requested variable '" + DefaultKeyFormatter(j) + "' is not in this VectorValues.");
       else
@@ -207,26 +205,30 @@ namespace gtsam {
 
     /** Erase the vector with the given key, or throw std::out_of_range if it does not exist */
     void erase(Key var) {
-      if(values_.unsafe_erase(var) == 0)
-        throw std::invalid_argument("Requested variable '" + DefaultKeyFormatter(var) + "', is not in this VectorValues.");
+      if (values_.unsafe_erase(var) == 0)
+        throw std::invalid_argument("Requested variable '" +
+                                    DefaultKeyFormatter(var) +
+                                    "', is not in this VectorValues.");
     }
 
     /** Set all values to zero vectors. */
     void setZero();
 
-    iterator begin()                      { return values_.begin(); }  ///< Iterator over variables
-    const_iterator begin() const          { return values_.begin(); }  ///< Iterator over variables
-    iterator end()                        { return values_.end(); }    ///< Iterator over variables
-    const_iterator end() const            { return values_.end(); }    ///< Iterator over variables
-    //reverse_iterator rbegin()             { return values_.rbegin(); } ///< Reverse iterator over variables
-    //const_reverse_iterator rbegin() const { return values_.rbegin(); } ///< Reverse iterator over variables
-    //reverse_iterator rend()               { return values_.rend(); }   ///< Reverse iterator over variables
-    //const_reverse_iterator rend() const   { return values_.rend(); }   ///< Reverse iterator over variables
+    iterator begin()             { return values_.begin(); }  ///< Iterator over variables
+    const_iterator begin() const { return values_.begin(); }  ///< Iterator over variables
+    iterator end()               { return values_.end(); }    ///< Iterator over variables
+    const_iterator end() const   { return values_.end(); }    ///< Iterator over variables
 
-    /** Return the iterator corresponding to the requested key, or end() if no variable is present with this key. */
+    /** 
+     * Return the iterator corresponding to the requested key, or end() if no
+     * variable is present with this key. 
+     */
     iterator find(Key j) { return values_.find(j); }
 
-    /** Return the iterator corresponding to the requested key, or end() if no variable is present with this key. */
+    /** 
+     * Return the iterator corresponding to the requested key, or end() if no
+     * variable is present with this key. 
+     */
     const_iterator find(Key j) const { return values_.find(j); }
 
     /** print required by Testable for unit testing */
@@ -244,7 +246,26 @@ namespace gtsam {
     Vector vector() const;
 
     /** Access a vector that is a subset of relevant keys. */
-    Vector vector(const FastVector<Key>& keys) const;
+    template <typename CONTAINER>
+    Vector vector(const CONTAINER& keys) const {
+      DenseIndex totalDim = 0;
+      FastVector<const Vector*> items;
+      items.reserve(keys.end() - keys.begin());
+      for (Key key : keys) {
+        const Vector* v = &at(key);
+        totalDim += v->size();
+        items.push_back(v);
+      }
+
+      Vector result(totalDim);
+      DenseIndex pos = 0;
+      for (const Vector* v : items) {
+        result.segment(pos, v->size()) = *v;
+        pos += v->size();
+      }
+
+      return result;
+    }
 
     /** Access a vector that is a subset of relevant keys, dims version. */
     Vector vector(const Dims& dims) const;
@@ -318,54 +339,6 @@ namespace gtsam {
     //inline VectorValues scale(const double a, const VectorValues& c) const { return a * (*this); }
 
     /// @}
-
-    /**
-     * scale a vector by a scalar
-     */
-    //friend VectorValues operator*(const double a, const VectorValues &v) {
-    //  VectorValues result = VectorValues::SameStructure(v);
-    //  for(Key j = 0; j < v.size(); ++j)
-    //    result.values_[j] = a * v.values_[j];
-    //  return result;
-    //}
-
-    //// TODO: linear algebra interface seems to have been added for SPCG.
-    //friend void axpy(double alpha, const VectorValues& x, VectorValues& y) {
-    //  if(x.size() != y.size())
-    //    throw std::invalid_argument("axpy(VectorValues) called with different vector sizes");
-    //  for(Key j = 0; j < x.size(); ++j)
-    //    if(x.values_[j].size() == y.values_[j].size())
-    //      y.values_[j] += alpha * x.values_[j];
-    //    else
-    //      throw std::invalid_argument("axpy(VectorValues) called with different vector sizes");
-    //}
-    //// TODO: linear algebra interface seems to have been added for SPCG.
-    //friend void sqrt(VectorValues &x) {
-    //  for(Key j = 0; j < x.size(); ++j)
-    //    x.values_[j] = x.values_[j].cwiseSqrt();
-    //}
-
-    //// TODO: linear algebra interface seems to have been added for SPCG.
-    //friend void ediv(const VectorValues& numerator, const VectorValues& denominator, VectorValues &result) {
-    //  if(numerator.size() != denominator.size() || numerator.size() != result.size())
-    //    throw std::invalid_argument("ediv(VectorValues) called with different vector sizes");
-    //  for(Key j = 0; j < numerator.size(); ++j)
-    //    if(numerator.values_[j].size() == denominator.values_[j].size() && numerator.values_[j].size() == result.values_[j].size())
-    //      result.values_[j] = numerator.values_[j].cwiseQuotient(denominator.values_[j]);
-    //    else
-    //      throw std::invalid_argument("ediv(VectorValues) called with different vector sizes");
-    //}
-
-    //// TODO: linear algebra interface seems to have been added for SPCG.
-    //friend void edivInPlace(VectorValues& x, const VectorValues& y) {
-    //  if(x.size() != y.size())
-    //    throw std::invalid_argument("edivInPlace(VectorValues) called with different vector sizes");
-    //  for(Key j = 0; j < x.size(); ++j)
-    //    if(x.values_[j].size() == y.values_[j].size())
-    //      x.values_[j].array() /= y.values_[j].array();
-    //    else
-    //      throw std::invalid_argument("edivInPlace(VectorValues) called with different vector sizes");
-    //}
 
   private:
     /** Serialization function */
