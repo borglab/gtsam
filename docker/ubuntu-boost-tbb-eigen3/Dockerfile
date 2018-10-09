@@ -1,5 +1,5 @@
 # Get the base Ubuntu image from Docker Hub
-FROM ubuntu:latest
+FROM ubuntu:cosmic
 
 # Update apps on the base image
 RUN apt-get -y update && apt-get install -y
