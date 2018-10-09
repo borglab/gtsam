@@ -10,6 +10,6 @@ pipelines:
         script: # Modify the commands below to build your repository.
           - mkdir build
           - cd build
-          - cmake -DCMAKE_BUILD_TYPE=Debug -DGTSAM_USE_SYSTEM_EIGEN=ON -DGTSAM_USE_EIGEN_MKL=OFF .. 
+          - cmake -DGTSAM_USE_SYSTEM_EIGEN=OFF -DGTSAM_USE_EIGEN_MKL=OFF .. 
           - make -j2
           - make -j2 check
