@@ -111,8 +111,9 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
     return true;
 
   assert(ABC.cols() == ABC.rows());
-  const Eigen::DenseIndex n = ABC.rows() - topleft;
-  assert(n >= 0 && nFrontal <= size_t(n));
+  assert(ABC.rows() >= topleft);
+  const size_t n = static_cast<size_t>(ABC.rows() - topleft);
+  assert(nFrontal <= size_t(n));
 
   // Create views on blocks
   auto A = ABC.block(topleft, topleft, nFrontal, nFrontal);

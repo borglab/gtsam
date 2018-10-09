@@ -1349,27 +1349,26 @@ void gk_csr_Normalize(gk_csr_t *mat, int what, int norm)
     }
   }
 
-  if (what&GK_CSR_COL && mat->colval) {
-    n   = mat->ncols;
+  if (what & GK_CSR_COL && mat->colval) {
+    n = mat->ncols;
     ptr = mat->colptr;
     val = mat->colval;
 
-    #pragma omp parallel if (ptr[n] > OMPMINOPS)
+#pragma omp parallel if (ptr[n] > OMPMINOPS)
     {
-    #pragma omp for private(j,sum) schedule(static)
-      for (i=0; i<n; i++) {
-        for (sum=0.0, j=ptr[i]; j<ptr[i+1]; j++)
-  	if (norm == 2)
-  	  sum += val[j]*val[j];
-  	else if (norm == 1)
-  	  sum += val[j]; 
+#pragma omp for private(j, sum) schedule(static)
+      for (i = 0; i < n; i++) {
+        for (sum = 0.0, j = ptr[i]; j < ptr[i + 1]; j++)
+          if (norm == 2)
+            sum += val[j] * val[j];
+          else if (norm == 1)
+            sum += val[j];
         if (sum > 0) {
-  	if (norm == 2)
-  	  sum=1.0/sqrt(sum); 
-  	else if (norm == 1)
-  	  sum=1.0/sum; 
-          for (j=ptr[i]; j<ptr[i+1]; j++)
-            val[j] *= sum;
+          if (norm == 2)
+            sum = 1.0 / sqrt(sum);
+          else if (norm == 1)
+            sum = 1.0 / sum;
+          for (j = ptr[i]; j < ptr[i + 1]; j++) val[j] *= sum;
         }
       }
     }
