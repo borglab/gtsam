@@ -16,3 +16,4 @@ cython/gtsam.pyx
 cython/gtsam.so
 cython/gtsam_wrapper.pxd
 .vscode
+.env

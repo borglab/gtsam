@@ -206,7 +206,7 @@ int main(int argc, char *argv[]) {
   }
 
 #ifdef GTSAM_USE_TBB
-  std::auto_ptr<tbb::task_scheduler_init> init;
+  std::unique_ptr<tbb::task_scheduler_init> init;
   if(nThreads > 0) {
     cout << "Using " << nThreads << " threads" << endl;
     init.reset(new tbb::task_scheduler_init(nThreads));

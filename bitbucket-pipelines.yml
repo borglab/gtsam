@@ -1,9 +1,8 @@
-# This is a sample build configuration for C++ – Make.
-# Check our guides at https://confluence.atlassian.com/x/5Q4SMw for more examples.
-# Only use spaces to indent your .yml configuration.
+# Built from sample configuration for C++ – Make.
+# Check https://confluence.atlassian.com/x/5Q4SMw for more examples.
 # -----
-# You can specify a custom docker image from Docker Hub as your build environment.
-image: ilssim/cmake-boost-qt5
+# Our custom docker image from Docker Hub as the build environment.
+image: dellaert/ubuntu-boost-tbb-eigen3:bionic
 
 pipelines:
   default:
@@ -11,6 +10,6 @@ pipelines:
         script: # Modify the commands below to build your repository.
           - mkdir build
           - cd build
-          - cmake .. 
-          - make
-          - make check
+          - cmake -DGTSAM_USE_SYSTEM_EIGEN=ON -DGTSAM_USE_EIGEN_MKL=OFF .. 
+          - make -j2
+          - make -j2 check
