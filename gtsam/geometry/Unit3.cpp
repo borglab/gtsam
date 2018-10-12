@@ -82,7 +82,6 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
     *H = *H_B_;
     return *B_;
   } else {
-    B_.reset(Matrix32());
     // Get the unit vector and derivative wrt this.
     // NOTE(hayk): We can't call point3(), because it would recursively call basis().
     const Point3 n(p_);
@@ -111,7 +110,9 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
     Point3 b2 = gtsam::cross(n, b1, H ? &H_b2_n : nullptr, H ? &H_b2_b1 : nullptr);
 
     // Create the basis by stacking b1 and b2.
-    (*B_) << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
+    Matrix32 stacked;
+    stacked << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
+    B_.reset(stacked);
 
     if (H) {
       // Chain rule tomfoolery to compute the derivative.
@@ -120,8 +121,9 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
       const Matrix32 H_b2_p = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
 
       // Cache the derivative and fill the result.
-      H_B_.reset(Matrix62());
-      (*H_B_) << H_b1_p, H_b2_p;
+      Matrix62 derivative;
+      derivative << H_b1_p, H_b2_p;
+      H_B_.reset(derivative);
       *H = *H_B_;
     }
 
