@@ -66,6 +66,19 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
 }
 
 /* ************************************************************************* */
+// Get the axis of rotation with the minimum projected length of the point
+static Point3 CalculateBestAxis(const Point3& n) {
+  double mx = fabs(n.x()), my = fabs(n.y()), mz = fabs(n.z());
+  if ((mx <= my) && (mx <= mz)) {
+    return Point3(1.0, 0.0, 0.0);
+  } else if ((my <= mx) && (my <= mz)) {
+    return Point3(0.0, 1.0, 0.0);
+  } else {
+    return Point3(0, 0, 1);
+  }
+}
+
+/* ************************************************************************* */
 const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
 #ifdef GTSAM_USE_TBB
   // NOTE(hayk): At some point it seemed like this reproducably resulted in
@@ -74,56 +87,52 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
   tbb::mutex::scoped_lock lock(B_mutex_);
 #endif
 
-  bool cachedBasis = static_cast<bool>(B_);
-  Matrix33 H_B1_n, H_b1_B1, H_b2_n, H_b2_b1;
-
-  if (!cachedBasis) {
-    // Get the unit vector
-    // NOTE(hayk): We can't call point3(), due to the recursive call of basis().
-    const Point3 n(p_);
-
-    // Get the axis of rotation with the minimum projected length of the point
-    Point3 axis(0, 0, 1);
-    double mx = fabs(n.x()), my = fabs(n.y()), mz = fabs(n.z());
-    if ((mx <= my) && (mx <= mz)) {
-      axis = Point3(1.0, 0.0, 0.0);
-    } else if ((my <= mx) && (my <= mz)) {
-      axis = Point3(0.0, 1.0, 0.0);
-    }
-
-    // Choose the direction of the first basis vector b1 in the tangent plane
-    // by crossing n with the chosen axis.
-    Point3 B1 = gtsam::cross(n, axis, H ? &H_B1_n : nullptr);
-
-    // Normalize result to get a unit vector: b1 = B1 / |B1|.
-    Point3 b1 = normalize(B1, H ? &H_b1_B1 : nullptr);
-
-    // Get the second basis vector b2, through the cross-product of n and b1.
-    // No need to normalize this, p and b1 are orthogonal unit vectors.
-    Point3 b2 =
-        gtsam::cross(n, b1, H ? &H_b2_n : nullptr, H ? &H_b2_b1 : nullptr);
-
-    // Create the basis by stacking b1 and b2.
-    Matrix32 stacked;
-    stacked << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
-    B_.reset(stacked);
-  }
+  const bool cachedBasis = static_cast<bool>(B_);
+  const bool cachedJacobian = static_cast<bool>(H_B_);
 
   if (H) {
-    if (!cachedBasis || !H_B_) {
-      // If Jacobian not cached or the basis was not cached, recompute it.
-      // Chain rule tomfoolery to compute the derivative.
-      const Matrix32& H_n_p = *B_;
-      const Matrix32 H_b1_p = H_b1_B1 * H_B1_n * H_n_p;
-      const Matrix32 H_b2_p = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
+    if (!cachedJacobian) {
+      // Compute Jacobian. Recomputes B_
+      Matrix32 B;
+      Matrix62 jacobian;
+      Matrix33 H_B1_n, H_b1_B1, H_b2_n, H_b2_b1;
 
-      // Cache the derivative and fill the result.
-      Matrix62 derivative;
-      derivative << H_b1_p, H_b2_p;
-      H_B_.reset(derivative);
+      // Choose the direction of the first basis vector b1 in the tangent plane
+      // by crossing n with the chosen axis.
+      const Point3 n(p_), axis = CalculateBestAxis(n);
+      const Point3 B1 = gtsam::cross(n, axis, &H_B1_n);
+
+      // Normalize result to get a unit vector: b1 = B1 / |B1|.
+      B.col(0) = normalize(B1, &H_b1_B1);
+
+      // Get the second basis vector b2, which is orthogonal to n and b1.
+      B.col(1) = gtsam::cross(n, B.col(0), &H_b2_n, &H_b2_b1);
+
+      // Chain rule tomfoolery to compute the jacobian.
+      const Matrix32& H_n_p = B;
+      jacobian.block<3, 2>(0, 0) = H_b1_B1 * H_B1_n * H_n_p;
+      auto H_b1_p = jacobian.block<3, 2>(0, 0);
+      jacobian.block<3, 2>(3, 0) = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
+
+      // Cache the result and jacobian
+      H_B_.reset(jacobian);
+      B_.reset(B);
     }
 
+    // Return cached jacobian, possibly computed just above
     *H = *H_B_;
+  }
+
+  if (!cachedBasis) {
+    // Same calculation as above, without derivatives.
+    // Done after H block, as that possibly computes B_ for the first time
+    Matrix32 B;
+
+    const Point3 n(p_), axis = CalculateBestAxis(n);
+    const Point3 B1 = gtsam::cross(n, axis);
+    B.col(0) = normalize(B1);
+    B.col(1) = gtsam::cross(n, B.col(0));
+    B_.reset(B);
   }
 
   return *B_;
