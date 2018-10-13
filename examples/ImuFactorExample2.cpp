@@ -18,12 +18,9 @@ using namespace gtsam;
 vector<Pose3> createPoses() {
   // Create the set of ground-truth poses
   vector<Pose3> poses;
-  double radius = 30.0;
-  int i = 0;
-  double theta = 0.0;
-  Point3 up(0, 0, 1);
-  Point3 target(0, 0, 0);
-  for (; i < 80; ++i, theta += 2 * M_PI / 8) {
+  double radius = 30.0, theta = 0.0;
+  Point3 up(0, 0, 1), target(0, 0, 0);
+  for (size_t i = 0; i < 80; ++i, theta += 2 * M_PI / 8) {
     Point3 position(radius * cos(theta), radius * sin(theta), 0.0);
     SimpleCamera camera = SimpleCamera::Lookat(position, target, up);
     poses.push_back(camera.pose());
@@ -33,6 +30,10 @@ vector<Pose3> createPoses() {
 
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
+  // Shorthand for velocity and pose variables
+  using symbol_shorthand::V;
+  using symbol_shorthand::X;
+
   // Create the set of ground-truth landmarks and poses
   vector<Pose3> poses = createPoses();
 
@@ -50,37 +51,38 @@ int main(int argc, char* argv[]) {
   // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
   auto noise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
-  newgraph.push_back(PriorFactor<Pose3>(0, poses[0], noise));
-  totalgraph.push_back(PriorFactor<Pose3>(0, poses[0], noise));
+  newgraph.push_back(PriorFactor<Pose3>(X(0), poses[0], noise));
+  totalgraph.push_back(PriorFactor<Pose3>(X(0), poses[0], noise));
 
   // Add imu priors
-  int biasidx = 1000;
+  Key biasKey = Symbol('b', 0);
   auto biasnoise = noiseModel::Diagonal::Sigmas(Vector6::Constant(0.1));
-  PriorFactor<imuBias::ConstantBias> biasprior(biasidx, imuBias::ConstantBias(),
+  PriorFactor<imuBias::ConstantBias> biasprior(biasKey, imuBias::ConstantBias(),
                                                biasnoise);
   newgraph.push_back(biasprior);
   totalgraph.push_back(biasprior);
-  initialEstimate.insert(biasidx, imuBias::ConstantBias());
-  totalEstimate.insert(biasidx, imuBias::ConstantBias());
+  initialEstimate.insert(biasKey, imuBias::ConstantBias());
+  totalEstimate.insert(biasKey, imuBias::ConstantBias());
   auto velnoise = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.1));
 
-  Vector gravity(3), zero(3);
+  Vector gravity(3), zero(3), velocity(3);
   gravity << 0, 0, -9.8;
   zero << 0, 0, 0;
+  velocity << 0, 0, 0;
 #ifdef GTSAM4
-  PriorFactor<Vector> velprior(100, zero, velnoise);
+  PriorFactor<Vector> velprior(V(0), zero, velnoise);
 #else
-  PriorFactor<LieVector> velprior(100, zero, velnoise);
+  PriorFactor<LieVector> velprior(V(0), zero, velnoise);
 #endif
   newgraph.push_back(velprior);
   totalgraph.push_back(velprior);
 
 #ifdef GTSAM4
-  initialEstimate.insert(100, zero);
-  totalEstimate.insert(100, zero);
+  initialEstimate.insert(V(0), zero);
+  totalEstimate.insert(V(0), zero);
 #else
-  initialEstimate.insert(100, LieVector(zero));
-  totalEstimate.insert(100, LieVector(zero));
+  initialEstimate.insert(V(0), LieVector(zero));
+  totalEstimate.insert(V(0), LieVector(zero));
 #endif
 
   Matrix3 I;
@@ -110,21 +112,21 @@ int main(int argc, char* argv[]) {
     Pose3 delta(Rot3::ypr(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
 #endif
     if (i == 0) {  // First time add two poses
-      initialEstimate.insert(0, poses[0].compose(delta));
-      initialEstimate.insert(1, poses[1].compose(delta));
-      totalEstimate.insert(0, poses[0].compose(delta));
-      totalEstimate.insert(1, poses[1].compose(delta));
+      initialEstimate.insert(X(0), poses[0].compose(delta));
+      initialEstimate.insert(X(1), poses[1].compose(delta));
+      totalEstimate.insert(X(0), poses[0].compose(delta));
+      totalEstimate.insert(X(1), poses[1].compose(delta));
     } else if (i >= 2) {  // Add more poses as necessary
-      initialEstimate.insert(i, poses[i].compose(delta));
-      totalEstimate.insert(i, poses[i].compose(delta));
+      initialEstimate.insert(X(i), poses[i].compose(delta));
+      totalEstimate.insert(X(i), poses[i].compose(delta));
     }
 
     if (i > 0) {
       // Add Bias variables periodically
       if (i % 5 == 0) {
-        biasidx++;
-        Symbol b1 = biasidx - 1;
-        Symbol b2 = biasidx;
+        biasKey++;
+        Symbol b1 = biasKey - 1;
+        Symbol b2 = biasKey;
         Vector6 covvec;
         covvec << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
         auto cov = noiseModel::Diagonal::Variances(covvec);
@@ -134,28 +136,27 @@ int main(int argc, char* argv[]) {
             b1, b2, imuBias::ConstantBias(), cov);
         newgraph.add(f);
         totalgraph.add(f);
-        initialEstimate.insert(biasidx, imuBias::ConstantBias());
-        totalEstimate.insert(biasidx, imuBias::ConstantBias());
+        initialEstimate.insert(biasKey, imuBias::ConstantBias());
+        totalEstimate.insert(biasKey, imuBias::ConstantBias());
       }
       // Add Imu Factor
       accum.integrateMeasurement(gravity, zero, 0.5);
 #ifdef GTSAM4
-      ImuFactor imufac(i - 1, 100 + i - 1, i, 100 + i, biasidx, accum);
+      ImuFactor imufac(X(i - 1), V(i - 1), X(i), V(i), biasKey, accum);
 #else
-      ImuFactor imufac(i - 1, 100 + i - 1, i, 100 + i, biasidx, accum, gravity,
+      ImuFactor imufac(X(i - 1), V(i - 1), X(i), V(i), biasKey, accum, gravity,
                        zero);
 #endif
-
       newgraph.add(imufac);
       totalgraph.add(imufac);
 
       // insert new velocity
 #ifdef GTSAM4
-      initialEstimate.insert(100 + i, gravity);
-      totalEstimate.insert(100 + i, gravity);
+      initialEstimate.insert(V(i), velocity);
+      totalEstimate.insert(V(i), velocity);
 #else
-      initialEstimate.insert(100 + i, LieVector(gravity));
-      totalEstimate.insert(100 + i, LieVector(gravity));
+      initialEstimate.insert(V(i), LieVector(velocity));
+      totalEstimate.insert(V(i), LieVector(velocity));
 #endif
       accum.resetIntegration();
     }
