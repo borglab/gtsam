@@ -68,67 +68,72 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
 /* ************************************************************************* */
 const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
 #ifdef GTSAM_USE_TBB
-  // NOTE(hayk): At some point it seemed like this reproducably resulted in deadlock. However, I
-  // can't see the reason why and I can no longer reproduce it. It may have been a red herring, or
-  // there is still a latent bug to watch out for.
+  // NOTE(hayk): At some point it seemed like this reproducably resulted in
+  // deadlock. However, I can't see reason why and I can no longer reproduce it.
+  // It may have been a red herring, or there is still a latent bug.
   tbb::mutex::scoped_lock lock(B_mutex_);
 #endif
-
-  if (B_ && !H) {
-    // Return cached basis if available and the Jacobian isn't needed.
-    return *B_;
-  } else if (B_ && H && H_B_) {
-    // Return cached basis and derivatives if available.
-    *H = *H_B_;
-    return *B_;
-  } else {
-    // Get the unit vector and derivative wrt this.
-    // NOTE(hayk): We can't call point3(), because it would recursively call basis().
-    const Point3 n(p_);
+  Point3 n, axis;
+  if (!B_ || (H && !H_B_)) {
+    // Get the unit vector
+    // NOTE(hayk): can't call point3(), because would recursively call basis().
+    n = Point3(p_);
 
     // Get the axis of rotation with the minimum projected length of the point
-    Point3 axis(0, 0, 1);
+    axis = Point3(0, 0, 1);
     double mx = fabs(n.x()), my = fabs(n.y()), mz = fabs(n.z());
     if ((mx <= my) && (mx <= mz)) {
       axis = Point3(1.0, 0.0, 0.0);
     } else if ((my <= mx) && (my <= mz)) {
       axis = Point3(0.0, 1.0, 0.0);
     }
+  }
 
-    // Choose the direction of the first basis vector b1 in the tangent plane by crossing n with
-    // the chosen axis.
-    Matrix33 H_B1_n;
-    Point3 B1 = gtsam::cross(n, axis, H ? &H_B1_n : nullptr);
+  if (H) {
+    if (!H_B_) {
+      // Compute Jacobian. Possibly recomputes B_
 
-    // Normalize result to get a unit vector: b1 = B1 / |B1|.
-    Matrix33 H_b1_B1;
-    Point3 b1 = normalize(B1, H ? &H_b1_B1 : nullptr);
+      // Choose the direction of the first basis vector b1 in the tangent plane
+      // by crossing n with the chosen axis.
+      Matrix33 H_B1_n;
+      const Point3 B1 = gtsam::cross(n, axis, &H_B1_n);
 
-    // Get the second basis vector b2, which is orthogonal to n and b1, by crossing them.
-    // No need to normalize this, p and b1 are orthogonal unit vectors.
-    Matrix33 H_b2_n, H_b2_b1;
-    Point3 b2 = gtsam::cross(n, b1, H ? &H_b2_n : nullptr, H ? &H_b2_b1 : nullptr);
+      // Normalize result to get a unit vector: b1 = B1 / |B1|.
+      Matrix32 B;
+      Matrix33 H_b1_B1;
+      B.col(0) = normalize(B1, &H_b1_B1);
 
-    // Create the basis by stacking b1 and b2.
-    Matrix32 stacked;
-    stacked << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
-    B_.reset(stacked);
+      // Get the second basis vector b2, which is orthogonal to n and b1.
+      Matrix33 H_b2_n, H_b2_b1;
+      B.col(1) = gtsam::cross(n, B.col(0), &H_b2_n, &H_b2_b1);
 
-    if (H) {
-      // Chain rule tomfoolery to compute the derivative.
-      const Matrix32& H_n_p = *B_;
-      const Matrix32 H_b1_p = H_b1_B1 * H_B1_n * H_n_p;
-      const Matrix32 H_b2_p = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
+      // Chain rule tomfoolery to compute the jacobian.
+      Matrix62 jacobian;
+      const Matrix32& H_n_p = B;
+      jacobian.block<3, 2>(0, 0) = H_b1_B1 * H_B1_n * H_n_p;
+      auto H_b1_p = jacobian.block<3, 2>(0, 0);
+      jacobian.block<3, 2>(3, 0) = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
 
-      // Cache the derivative and fill the result.
-      Matrix62 derivative;
-      derivative << H_b1_p, H_b2_p;
-      H_B_.reset(derivative);
-      *H = *H_B_;
+      // Cache the result and jacobian
+      B_.reset(B);
+      H_B_.reset(jacobian);
     }
 
-    return *B_;
+    // Return cached jacobian, possibly computed just above
+    *H = *H_B_;
   }
+
+  if (!B_) {
+    // Same calculation as above, without derivatives.
+    // Done after H block, as that possibly computes B_ for the first time
+    Matrix32 B;
+    const Point3 B1 = gtsam::cross(n, axis);
+    B.col(0) = normalize(B1);
+    B.col(1) = gtsam::cross(n, B.col(0));
+    B_.reset(B);
+  }
+
+  return *B_;
 }
 
 /* ************************************************************************* */
