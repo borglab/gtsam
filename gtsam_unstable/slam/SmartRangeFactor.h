@@ -122,8 +122,8 @@ class SmartRangeFactor: public NoiseModelFactor {
     // use best fh to find actual intersection points
     if (bestCircle2 && best_fh) {
       auto bestCircleCenter = bestCircle2->center;
-      std::list<Point2> intersections = circleCircleIntersection(
-          circle1.center, bestCircleCenter, best_fh);
+      std::list<Point2> intersections =
+          circleCircleIntersection(circle1.center, bestCircleCenter, best_fh);
 
       // pick winner based on other measurements
       double error1 = 0, error2 = 0;
