@@ -121,17 +121,18 @@ class SmartRangeFactor: public NoiseModelFactor {
 
     // use best fh to find actual intersection points
     if (bestCircle2 && best_fh) {
-    std::list<Point2> intersections = circleCircleIntersection(
-        circle1.center, bestCircle2->center, best_fh);
+      auto bestCircleCenter = bestCircle2->center;
+      std::list<Point2> intersections =
+          circleCircleIntersection(circle1.center, bestCircleCenter, best_fh);
 
-    // pick winner based on other measurements
-    double error1 = 0, error2 = 0;
-    Point2 p1 = intersections.front(), p2 = intersections.back();
-    for (const Circle2& it : circles) {
-      error1 += distance2(it.center, p1);
-      error2 += distance2(it.center, p2);
-    }
-    return (error1 < error2) ? p1 : p2;
+      // pick winner based on other measurements
+      double error1 = 0, error2 = 0;
+      Point2 p1 = intersections.front(), p2 = intersections.back();
+      for (const Circle2& it : circles) {
+        error1 += distance2(it.center, p1);
+        error2 += distance2(it.center, p2);
+      }
+      return (error1 < error2) ? p1 : p2;
     } else {
       throw std::runtime_error("triangulate failed");
     }
