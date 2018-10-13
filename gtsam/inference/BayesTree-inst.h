@@ -83,26 +83,28 @@ namespace gtsam {
     std::string parent = out.str();
     parent += "[label=\"";
 
-    for(Key index: clique->conditional_->frontals()) {
-      if(!first) parent += ","; first = false;
+    for (Key index : clique->conditional_->frontals()) {
+      if (!first) parent += ",";
+      first = false;
       parent += indexFormatter(index);
     }
 
-    if(clique->parent()){
+    if (clique->parent()) {
       parent += " : ";
       s << parentnum << "->" << num << "\n";
     }
 
     first = true;
-    for(Key sep: clique->conditional_->parents()) {
-      if(!first) parent += ","; first = false;
+    for (Key sep : clique->conditional_->parents()) {
+      if (!first) parent += ",";
+      first = false;
       parent += indexFormatter(sep);
     }
     parent += "\"];\n";
     s << parent;
     parentnum = num;
 
-    for(sharedClique c: clique->children) {
+    for (sharedClique c : clique->children) {
       num++;
       saveGraph(s, c, indexFormatter, parentnum);
     }

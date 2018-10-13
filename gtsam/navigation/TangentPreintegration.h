@@ -42,7 +42,7 @@ class TangentPreintegration : public PreintegrationBase {
   }
 
 public:
-  /// @name Constructors
+  /// @name Constructors/destructors
   /// @{
 
   /**
@@ -52,6 +52,10 @@ public:
    */
   TangentPreintegration(const boost::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
+
+  /// Virtual destructor
+  virtual ~TangentPreintegration() {
+  }
 
   /// @}
 

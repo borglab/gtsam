@@ -21,7 +21,7 @@
 
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/config.h> // for GTSAM_USE_TBB
+#include <gtsam/config.h>  // for GTSAM_USE_TBB
 
 #ifdef __clang__
 #  pragma clang diagnostic push
@@ -36,13 +36,14 @@
 #include <iostream>
 #include <limits>
 #include <cmath>
+#include <vector>
 
 using namespace std;
 
 namespace gtsam {
 
 /* ************************************************************************* */
-Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2,3> H) {
+Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2, 3> H) {
   // 3*3 Derivative of representation with respect to point is 3*3:
   Matrix3 D_p_point;
   Unit3 direction;
@@ -54,7 +55,7 @@ Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2,3> H) {
 
 /* ************************************************************************* */
 Unit3 Unit3::Random(boost::mt19937 & rng) {
-  // TODO allow any engine without including all of boost :-(
+  // TODO(dellaert): allow any engine without including all of boost :-(
   boost::uniform_on_sphere<double> randomDirection(3);
   // This variate_generator object is required for versions of boost somewhere
   // around 1.46, instead of drawing directly using boost::uniform_on_sphere(rng).
@@ -65,66 +66,73 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
 }
 
 /* ************************************************************************* */
+// Get the axis of rotation with the minimum projected length of the point
+static Point3 CalculateBestAxis(const Point3& n) {
+  double mx = fabs(n.x()), my = fabs(n.y()), mz = fabs(n.z());
+  if ((mx <= my) && (mx <= mz)) {
+    return Point3(1.0, 0.0, 0.0);
+  } else if ((my <= mx) && (my <= mz)) {
+    return Point3(0.0, 1.0, 0.0);
+  } else {
+    return Point3(0, 0, 1);
+  }
+}
+
+/* ************************************************************************* */
 const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
 #ifdef GTSAM_USE_TBB
-  // NOTE(hayk): At some point it seemed like this reproducably resulted in deadlock. However, I
-  // can't see the reason why and I can no longer reproduce it. It may have been a red herring, or
-  // there is still a latent bug to watch out for.
+  // NOTE(hayk): At some point it seemed like this reproducably resulted in
+  // deadlock. However, I don't know why and I can no longer reproduce it.
+  // It either was a red herring or there is still a latent bug left to debug.
   tbb::mutex::scoped_lock lock(B_mutex_);
 #endif
 
-  // Return cached basis if available and the Jacobian isn't needed.
-  if (B_ && !H) {
-    return *B_;
-  }
-
-  // Return cached basis and derivatives if available.
-  if (B_ && H && H_B_) {
-    *H = *H_B_;
-    return *B_;
-  }
-
-  // Get the unit vector and derivative wrt this.
-  // NOTE(hayk): We can't call point3(), because it would recursively call basis().
-  const Point3 n(p_);
-
-  // Get the axis of rotation with the minimum projected length of the point
-  Point3 axis(0, 0, 1);
-  double mx = fabs(n.x()), my = fabs(n.y()), mz = fabs(n.z());
-  if ((mx <= my) && (mx <= mz)) {
-    axis = Point3(1.0, 0.0, 0.0);
-  } else if ((my <= mx) && (my <= mz)) {
-    axis = Point3(0.0, 1.0, 0.0);
-  }
-
-  // Choose the direction of the first basis vector b1 in the tangent plane by crossing n with
-  // the chosen axis.
-  Matrix33 H_B1_n;
-  Point3 B1 = gtsam::cross(n, axis, H ? &H_B1_n : nullptr);
-
-  // Normalize result to get a unit vector: b1 = B1 / |B1|.
-  Matrix33 H_b1_B1;
-  Point3 b1 = normalize(B1, H ? &H_b1_B1 : nullptr);
-
-  // Get the second basis vector b2, which is orthogonal to n and b1, by crossing them.
-  // No need to normalize this, p and b1 are orthogonal unit vectors.
-  Matrix33 H_b2_n, H_b2_b1;
-  Point3 b2 = gtsam::cross(n, b1, H ? &H_b2_n : nullptr, H ? &H_b2_b1 : nullptr);
-
-  // Create the basis by stacking b1 and b2.
-  B_.reset(Matrix32());
-  (*B_) << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
+  const bool cachedBasis = static_cast<bool>(B_);
+  const bool cachedJacobian = static_cast<bool>(H_B_);
 
   if (H) {
-    // Chain rule tomfoolery to compute the derivative.
-    const Matrix32& H_n_p = *B_;
-    const Matrix32 H_b1_p = H_b1_B1 * H_B1_n * H_n_p;
-    const Matrix32 H_b2_p = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
+    if (!cachedJacobian) {
+      // Compute Jacobian. Recomputes B_
+      Matrix32 B;
+      Matrix62 jacobian;
+      Matrix33 H_B1_n, H_b1_B1, H_b2_n, H_b2_b1;
 
-    // Cache the derivative and fill the result.
-    H_B_.reset(Matrix62());
-    (*H_B_) << H_b1_p, H_b2_p;
+      // Choose the direction of the first basis vector b1 in the tangent plane
+      // by crossing n with the chosen axis.
+      const Point3 n(p_), axis = CalculateBestAxis(n);
+      const Point3 B1 = gtsam::cross(n, axis, &H_B1_n);
+
+      // Normalize result to get a unit vector: b1 = B1 / |B1|.
+      B.col(0) = normalize(B1, &H_b1_B1);
+
+      // Get the second basis vector b2, which is orthogonal to n and b1.
+      B.col(1) = gtsam::cross(n, B.col(0), &H_b2_n, &H_b2_b1);
+
+      // Chain rule tomfoolery to compute the jacobian.
+      const Matrix32& H_n_p = B;
+      jacobian.block<3, 2>(0, 0) = H_b1_B1 * H_B1_n * H_n_p;
+      auto H_b1_p = jacobian.block<3, 2>(0, 0);
+      jacobian.block<3, 2>(3, 0) = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
+
+      // Cache the result and jacobian
+      H_B_.reset(jacobian);
+      B_.reset(B);
+    }
+
+    // Return cached jacobian, possibly computed just above
     *H = *H_B_;
+  }
+
+  if (!cachedBasis) {
+    // Same calculation as above, without derivatives.
+    // Done after H block, as that possibly computes B_ for the first time
+    Matrix32 B;
+
+    const Point3 n(p_), axis = CalculateBestAxis(n);
+    const Point3 B1 = gtsam::cross(n, axis);
+    B.col(0) = normalize(B1);
+    B.col(1) = gtsam::cross(n, B.col(0));
+    B_.reset(B);
   }
 
   return *B_;
@@ -161,7 +169,8 @@ Matrix3 Unit3::skew() const {
 }
 
 /* ************************************************************************* */
-double Unit3::dot(const Unit3& q, OptionalJacobian<1,2> H_p, OptionalJacobian<1,2> H_q) const {
+double Unit3::dot(const Unit3& q, OptionalJacobian<1, 2> H_p,
+                  OptionalJacobian<1, 2> H_q) const {
   // Get the unit vectors of each, and the derivative.
   Matrix32 H_pn_p;
   Point3 pn = point3(H_p ? &H_pn_p : nullptr);
@@ -185,7 +194,7 @@ double Unit3::dot(const Unit3& q, OptionalJacobian<1,2> H_p, OptionalJacobian<1,
 }
 
 /* ************************************************************************* */
-Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H_q) const {
+Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2, 2> H_q) const {
   // 2D error is equal to B'*q, as B is 3x2 matrix and q is 3x1
   const Vector2 xi = basis().transpose() * q.p_;
   if (H_q) {
@@ -195,7 +204,8 @@ Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H_q) const {
 }
 
 /* ************************************************************************* */
-Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p, OptionalJacobian<2, 2> H_q) const {
+Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p,
+                           OptionalJacobian<2, 2> H_q) const {
   // Get the point3 of this, and the derivative.
   Matrix32 H_qn_q;
   const Point3 qn = q.point3(H_q ? &H_qn_q : nullptr);
@@ -230,7 +240,7 @@ Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p, OptionalJ
 }
 
 /* ************************************************************************* */
-double Unit3::distance(const Unit3& q, OptionalJacobian<1,2> H) const {
+double Unit3::distance(const Unit3& q, OptionalJacobian<1, 2> H) const {
   Matrix2 H_xi_q;
   const Vector2 xi = error(q, H ? &H_xi_q : nullptr);
   const double theta = xi.norm();
@@ -277,4 +287,4 @@ Vector2 Unit3::localCoordinates(const Unit3& other) const {
 }
 /* ************************************************************************* */
 
-}
+}  // namespace gtsam
