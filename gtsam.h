@@ -938,6 +938,8 @@ virtual class SimpleCamera {
   static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height);
   static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
       const gtsam::Point3& upVector, const gtsam::Cal3_S2& K);
+  static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
+      const gtsam::Point3& upVector);
 
   // Testable
   void print(string s) const;
