@@ -306,10 +306,17 @@ public:
                   : cols),
                stride
             )  {}
+
+    MapBase &operator=(const MatrixType &other) {
+        Base::operator=(other);
+        return *this;
+    }
+
+    virtual ~MapBase() { }
 };
 
 
-template <template<class,int,int,int,int,int> class DenseBase,
+template <template<class,int,int,int,int,int> class EigencyDenseBase,
           typename Scalar,
           int _Rows, int _Cols,
           int _Options = Eigen::AutoAlign |
@@ -341,16 +348,18 @@ template <template<class,int,int,int,int,int> class DenseBase,
           int _StrideOuter=0, int _StrideInner=0,
           int _MaxRows = _Rows,
           int _MaxCols = _Cols>
-class FlattenedMap: public MapBase<DenseBase<Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>, _MapOptions, Eigen::Stride<_StrideOuter, _StrideInner> >  {
+class FlattenedMap: public MapBase<EigencyDenseBase<Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>, _MapOptions, Eigen::Stride<_StrideOuter, _StrideInner> >  {
 public:
-    typedef MapBase<DenseBase<Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>, _MapOptions, Eigen::Stride<_StrideOuter, _StrideInner> > Base;
+    typedef MapBase<EigencyDenseBase<Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>, _MapOptions, Eigen::Stride<_StrideOuter, _StrideInner> > Base;
 
     FlattenedMap()
-        : Base(NULL, 0, 0) {}
+        : Base(NULL, 0, 0),
+          object_(NULL) {}
     
     FlattenedMap(Scalar *data, long rows, long cols, long outer_stride=0, long inner_stride=0)
         : Base(data, rows, cols,
-               Eigen::Stride<_StrideOuter, _StrideInner>(outer_stride, inner_stride)) {
+               Eigen::Stride<_StrideOuter, _StrideInner>(outer_stride, inner_stride)),
+          object_(NULL) {
     }
 
     FlattenedMap(PyArrayObject *object)
@@ -359,18 +368,26 @@ public:
                (((PyArrayObject*)object)->nd == 2) ? ((PyArrayObject*)object)->dimensions[0] : 1,
                (((PyArrayObject*)object)->nd == 2) ? ((PyArrayObject*)object)->dimensions[1] : ((PyArrayObject*)object)->dimensions[0],
                Eigen::Stride<_StrideOuter, _StrideInner>(_StrideOuter != Eigen::Dynamic ? _StrideOuter : (((PyArrayObject*)object)->nd == 2) ? ((PyArrayObject*)object)->dimensions[0] : 1,
-                                                         _StrideInner != Eigen::Dynamic ? _StrideInner : (((PyArrayObject*)object)->nd == 2) ? ((PyArrayObject*)object)->dimensions[1] : ((PyArrayObject*)object)->dimensions[0])) {
+                                                         _StrideInner != Eigen::Dynamic ? _StrideInner : (((PyArrayObject*)object)->nd == 2) ? ((PyArrayObject*)object)->dimensions[1] : ((PyArrayObject*)object)->dimensions[0])),
+          object_(object) {
 
         if (((PyObject*)object != Py_None) && !PyArray_ISONESEGMENT(object))
             throw std::invalid_argument("Numpy array must be a in one contiguous segment to be able to be transferred to a Eigen Map.");
+
+        Py_XINCREF(object_);
     }
     FlattenedMap &operator=(const FlattenedMap &other) {
-        // Replace the memory that we point to (not a memory allocation)
-        new (this) FlattenedMap(const_cast<Scalar*>(other.data()),
-                                other.rows(),
-                                other.cols(),
-                                other.outerStride(),
-                                other.innerStride());
+        if (other.object_) {
+            new (this) FlattenedMap(other.object_);
+        } else {
+            // Replace the memory that we point to (not a memory allocation)
+            new (this) FlattenedMap(const_cast<Scalar*>(other.data()),
+                                    other.rows(),
+                                    other.cols(),
+                                    other.outerStride(),
+                                    other.innerStride());
+        }
+
         return *this;
     }
     
@@ -382,9 +399,16 @@ public:
         return static_cast<Base&>(*this);
     }
 
-    operator DenseBase<Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>() const {
-        return DenseBase<Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>(static_cast<Base>(*this));
+    operator EigencyDenseBase<Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>() const {
+        return EigencyDenseBase<Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>(static_cast<Base>(*this));
     }
+
+    virtual ~FlattenedMap() {
+        Py_XDECREF(object_);
+    }
+
+private:
+    PyArrayObject * const object_;
 };
 
 
@@ -394,39 +418,60 @@ public:
     typedef MapBase<MatrixType> Base;
     typedef typename MatrixType::Scalar Scalar;
 
+    enum {
+        RowsAtCompileTime = Base::Base::RowsAtCompileTime,
+        ColsAtCompileTime = Base::Base::ColsAtCompileTime
+    };
+
     Map()
-        : Base(NULL, 0, 0) {
+        : Base(NULL,
+               (RowsAtCompileTime == Eigen::Dynamic) ? 0 : RowsAtCompileTime,
+               (ColsAtCompileTime == Eigen::Dynamic) ? 0 : ColsAtCompileTime),
+          object_(NULL) {
     }
     
     Map(Scalar *data, long rows, long cols)
-        : Base(data, rows, cols) {}
+        : Base(data, rows, cols),
+          object_(NULL) {}
 
     Map(PyArrayObject *object)
         : Base((PyObject*)object == Py_None? NULL: (Scalar *)object->data,
                // ROW: If array is in row-major order, transpose (see README)
                (PyObject*)object == Py_None? 0 :
-               (PyArray_IS_C_CONTIGUOUS(object)
+               (!PyArray_IS_F_CONTIGUOUS(object)
                 ? ((object->nd == 1)
                    ? 1  // ROW: If 1D row-major numpy array, set to 1 (row vector)
                    : object->dimensions[1])
                 : object->dimensions[0]),
                // COLUMN: If array is in row-major order: transpose (see README)
                (PyObject*)object == Py_None? 0 :
-               (PyArray_IS_C_CONTIGUOUS(object)
+               (!PyArray_IS_F_CONTIGUOUS(object)
                 ? object->dimensions[0]
                 : ((object->nd == 1)
                    ? 1  // COLUMN: If 1D col-major numpy array, set to length (column vector)
-                   : object->dimensions[1]))) {
+                   : object->dimensions[1]))),
+          object_(object) {
 
         if (((PyObject*)object != Py_None) && !PyArray_ISONESEGMENT(object))
             throw std::invalid_argument("Numpy array must be a in one contiguous segment to be able to be transferred to a Eigen Map.");
+        Py_XINCREF(object_);
     }
     
     Map &operator=(const Map &other) {
-        // Replace the memory that we point to (not a memory allocation)
-        new (this) Map(const_cast<Scalar*>(other.data()),
-                       other.rows(),
-                       other.cols());
+        if (other.object_) {
+            new (this) Map(other.object_);
+        } else {
+            // Replace the memory that we point to (not a memory allocation)
+            new (this) Map(const_cast<Scalar*>(other.data()),
+                          other.rows(),
+                          other.cols());
+        }
+
+        return *this;
+    }
+
+    Map &operator=(const MatrixType &other) {
+        MapBase<MatrixType>::operator=(other);
         return *this;
     }
     
@@ -440,7 +485,14 @@ public:
 
     operator MatrixType() const {
         return MatrixType(static_cast<Base>(*this));
-    }    
+    }
+
+    virtual ~Map() {
+        Py_XDECREF(object_);
+    }
+
+private:
+    PyArrayObject * const object_;
 };
 
 

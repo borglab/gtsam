@@ -938,6 +938,8 @@ virtual class SimpleCamera {
   static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height);
   static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
       const gtsam::Point3& upVector, const gtsam::Cal3_S2& K);
+  static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
+      const gtsam::Point3& upVector);
 
   // Testable
   void print(string s) const;
@@ -2502,6 +2504,11 @@ class NavState {
 #include <gtsam/navigation/PreintegratedRotation.h>
 virtual class PreintegratedRotationParams {
   PreintegratedRotationParams();
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::PreintegratedRotationParams& expected, double tol);
+
   void setGyroscopeCovariance(Matrix cov);
   void setOmegaCoriolis(Vector omega);
   void setBodyPSensor(const gtsam::Pose3& pose);
@@ -2509,13 +2516,23 @@ virtual class PreintegratedRotationParams {
   Matrix getGyroscopeCovariance() const;
 
   // TODO(frank): allow optional
-  //  boost::optional<Vector3> getOmegaCoriolis() const;
+  //  boost::optional<Vector> getOmegaCoriolis() const;
   //  boost::optional<Pose3>   getBodyPSensor()   const;
 };
 
 #include <gtsam/navigation/PreintegrationParams.h>
 virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   PreintegrationParams(Vector n_gravity);
+
+  static gtsam::PreintegrationParams* MakeSharedD(double g);
+  static gtsam::PreintegrationParams* MakeSharedU(double g);
+  static gtsam::PreintegrationParams* MakeSharedD();  // default g = 9.81
+  static gtsam::PreintegrationParams* MakeSharedU();  // default g = 9.81
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::PreintegrationParams& expected, double tol);
+
   void setAccelerometerCovariance(Matrix cov);
   void setIntegrationCovariance(Matrix cov);
   void setUse2ndOrderCoriolis(bool flag);
@@ -2523,7 +2540,6 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   Matrix getAccelerometerCovariance() const;
   Matrix getIntegrationCovariance()   const;
   bool   getUse2ndOrderCoriolis()     const;
-  void print(string s) const;
 };
 
 #include <gtsam/navigation/ImuFactor.h>
@@ -2658,6 +2674,27 @@ virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor{
   bool equals(const gtsam::NonlinearFactor& expected, double tol) const;
   gtsam::Unit3 nZ() const;
   gtsam::Unit3 bRef() const;
+};
+
+#include <gtsam/navigation/Scenario.h>
+virtual class Scenario {};
+
+virtual class ConstantTwistScenario : gtsam::Scenario {
+  ConstantTwistScenario(const Vector& w, const Vector& v);
+  gtsam::Pose3 pose(double t) const;
+  Vector omega_b(double t) const;
+  Vector velocity_n(double t) const;
+  Vector acceleration_n(double t) const;
+};
+
+virtual class AcceleratingScenario : gtsam::Scenario {
+  AcceleratingScenario(const gtsam::Rot3& nRb, const gtsam::Point3& p0,
+                       const Vector& v0, const Vector& a_n,
+                       const Vector& omega_b);
+  gtsam::Pose3 pose(double t) const;
+  Vector omega_b(double t) const;
+  Vector velocity_n(double t) const;
+  Vector acceleration_n(double t) const;
 };
 
 //*************************************************************************

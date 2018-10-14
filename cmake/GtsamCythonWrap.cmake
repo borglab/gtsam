@@ -52,7 +52,7 @@ function(pyx_to_cpp target pyx_file generated_cpp include_dirs)
   add_custom_command(
     OUTPUT ${generated_cpp}
     COMMAND
-      ${CYTHON_EXECUTABLE} -X boundscheck=False -a -v --fast-fail --cplus ${includes_for_cython} ${pyx_file} -o ${generated_cpp}
+      ${CYTHON_EXECUTABLE} -X boundscheck=False -v --fast-fail --cplus ${includes_for_cython} ${pyx_file} -o ${generated_cpp}
     VERBATIM)
   add_custom_target(${target} ALL DEPENDS ${generated_cpp})
 endfunction()
@@ -95,7 +95,7 @@ function(cythonize target pyx_file output_lib_we output_dir include_dirs libs in
 
   # Late dependency injection, to make sure this gets called whenever the interface header is updated
   # See: https://stackoverflow.com/questions/40032593/cmake-does-not-rebuild-dependent-after-prerequisite-changes
-  add_custom_command(OUTPUT ${generated_cpp} DEPENDS ${interface_header} APPEND)
+  add_custom_command(OUTPUT ${generated_cpp} DEPENDS ${interface_header} ${pyx_file} APPEND)
   if (NOT "${dependencies}" STREQUAL "")
     add_dependencies(${target}_pyx2cpp "${dependencies}")
   endif()
