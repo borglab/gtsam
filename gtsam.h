@@ -2502,6 +2502,11 @@ class NavState {
 #include <gtsam/navigation/PreintegratedRotation.h>
 virtual class PreintegratedRotationParams {
   PreintegratedRotationParams();
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::PreintegratedRotationParams& expected, double tol);
+
   void setGyroscopeCovariance(Matrix cov);
   void setOmegaCoriolis(Vector omega);
   void setBodyPSensor(const gtsam::Pose3& pose);
@@ -2516,6 +2521,16 @@ virtual class PreintegratedRotationParams {
 #include <gtsam/navigation/PreintegrationParams.h>
 virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   PreintegrationParams(Vector n_gravity);
+
+  static gtsam::PreintegrationParams* MakeSharedD(double g);
+  static gtsam::PreintegrationParams* MakeSharedU(double g);
+  static gtsam::PreintegrationParams* MakeSharedD();  // default g = 9.81
+  static gtsam::PreintegrationParams* MakeSharedU();  // default g = 9.81
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::PreintegrationParams& expected, double tol);
+
   void setAccelerometerCovariance(Matrix cov);
   void setIntegrationCovariance(Matrix cov);
   void setUse2ndOrderCoriolis(bool flag);
@@ -2523,7 +2538,6 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   Matrix getAccelerometerCovariance() const;
   Matrix getIntegrationCovariance()   const;
   bool   getUse2ndOrderCoriolis()     const;
-  void print(string s) const;
 };
 
 #include <gtsam/navigation/ImuFactor.h>
