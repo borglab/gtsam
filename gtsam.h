@@ -2509,7 +2509,7 @@ virtual class PreintegratedRotationParams {
   Matrix getGyroscopeCovariance() const;
 
   // TODO(frank): allow optional
-  //  boost::optional<Vector3> getOmegaCoriolis() const;
+  //  boost::optional<Vector> getOmegaCoriolis() const;
   //  boost::optional<Pose3>   getBodyPSensor()   const;
 };
 
@@ -2658,6 +2658,27 @@ virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor{
   bool equals(const gtsam::NonlinearFactor& expected, double tol) const;
   gtsam::Unit3 nZ() const;
   gtsam::Unit3 bRef() const;
+};
+
+#include <gtsam/navigation/Scenario.h>
+virtual class Scenario {};
+
+virtual class ConstantTwistScenario : gtsam::Scenario {
+  ConstantTwistScenario(const Vector& w, const Vector& v);
+  gtsam::Pose3 pose(double t) const;
+  Vector omega_b(double t) const;
+  Vector velocity_n(double t) const;
+  Vector acceleration_n(double t) const;
+};
+
+virtual class AcceleratingScenario : gtsam::Scenario {
+  AcceleratingScenario(const gtsam::Rot3& nRb, const gtsam::Point3& p0,
+                       const Vector& v0, const Vector& a_n,
+                       const Vector& omega_b);
+  gtsam::Pose3 pose(double t) const;
+  Vector omega_b(double t) const;
+  Vector velocity_n(double t) const;
+  Vector acceleration_n(double t) const;
 };
 
 //*************************************************************************
