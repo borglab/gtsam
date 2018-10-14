@@ -95,7 +95,7 @@ function(cythonize target pyx_file output_lib_we output_dir include_dirs libs in
 
   # Late dependency injection, to make sure this gets called whenever the interface header is updated
   # See: https://stackoverflow.com/questions/40032593/cmake-does-not-rebuild-dependent-after-prerequisite-changes
-  add_custom_command(OUTPUT ${generated_cpp} DEPENDS ${interface_header} APPEND)
+  add_custom_command(OUTPUT ${generated_cpp} DEPENDS ${interface_header} ${pyx_file} APPEND)
   if (NOT "${dependencies}" STREQUAL "")
     add_dependencies(${target}_pyx2cpp "${dependencies}")
   endif()
