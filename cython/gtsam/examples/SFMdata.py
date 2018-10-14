@@ -3,6 +3,7 @@ A structure-from-motion example with landmarks
  - The landmarks form a 10 meter cube
  - The robot rotates around the landmarks, always facing towards the cube
 """
+# pylint: disable=invalid-name, E1101
 
 import numpy as np
 

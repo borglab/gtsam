@@ -1,3 +1,16 @@
+"""
+GTSAM Copyright 2010, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+See LICENSE for the license information
+
+Simple robotics example using odometry measurements and bearing-range (laser) measurements
+Author: Alex Cunningham (C++), Kevin Deng & Frank Dellaert (Python)
+"""
+# pylint: disable=invalid-name, E1101
+
 from __future__ import print_function
 
 import math
@@ -7,36 +20,38 @@ import numpy as np
 import gtsam
 
 
-def Vector3(x, y, z): return np.array([x, y, z])
+def Vector3(x, y, z):
+    """Create 3d double numpy array."""
+    return np.array([x, y, z], dtype=np.float)
 
+
+# Create noise models
+PRIOR_NOISE = gtsam.noiseModel_Diagonal.Sigmas(Vector3(0.3, 0.3, 0.1))
+ODOMETRY_NOISE = gtsam.noiseModel_Diagonal.Sigmas(Vector3(0.2, 0.2, 0.1))
 
 # 1. Create a factor graph container and add factors to it
 graph = gtsam.NonlinearFactorGraph()
 
 # 2a. Add a prior on the first pose, setting it to the origin
-# A prior factor consists of a mean and a noise model (covariance matrix)
-priorNoise = gtsam.noiseModel_Diagonal.Sigmas(Vector3(0.3, 0.3, 0.1))
-graph.add(gtsam.PriorFactorPose2(1, gtsam.Pose2(0, 0, 0), priorNoise))
-
-# For simplicity, we will use the same noise model for odometry and loop closures
-model = gtsam.noiseModel_Diagonal.Sigmas(Vector3(0.2, 0.2, 0.1))
+# A prior factor consists of a mean and a noise ODOMETRY_NOISE (covariance matrix)
+graph.add(gtsam.PriorFactorPose2(1, gtsam.Pose2(0, 0, 0), PRIOR_NOISE))
 
 # 2b. Add odometry factors
 # Create odometry (Between) factors between consecutive poses
-graph.add(gtsam.BetweenFactorPose2(1, 2, gtsam.Pose2(2, 0, 0), model))
+graph.add(gtsam.BetweenFactorPose2(1, 2, gtsam.Pose2(2, 0, 0), ODOMETRY_NOISE))
 graph.add(gtsam.BetweenFactorPose2(
-    2, 3, gtsam.Pose2(2, 0, math.pi / 2), model))
+    2, 3, gtsam.Pose2(2, 0, math.pi / 2), ODOMETRY_NOISE))
 graph.add(gtsam.BetweenFactorPose2(
-    3, 4, gtsam.Pose2(2, 0, math.pi / 2), model))
+    3, 4, gtsam.Pose2(2, 0, math.pi / 2), ODOMETRY_NOISE))
 graph.add(gtsam.BetweenFactorPose2(
-    4, 5, gtsam.Pose2(2, 0, math.pi / 2), model))
+    4, 5, gtsam.Pose2(2, 0, math.pi / 2), ODOMETRY_NOISE))
 
 # 2c. Add the loop closure constraint
 # This factor encodes the fact that we have returned to the same pose. In real
 # systems, these constraints may be identified in many ways, such as appearance-based
 # techniques with camera images. We will use another Between Factor to enforce this constraint:
 graph.add(gtsam.BetweenFactorPose2(
-    5, 2, gtsam.Pose2(2, 0, math.pi / 2), model))
+    5, 2, gtsam.Pose2(2, 0, math.pi / 2), ODOMETRY_NOISE))
 graph.print_("\nFactor Graph:\n")  # print
 
 # 3. Create the data structure to hold the initial_estimate estimate to the
@@ -68,8 +83,5 @@ result.print_("Final Result:\n")
 
 # 5. Calculate and print marginal covariances for all variables
 marginals = gtsam.Marginals(graph, result)
-print("x1 covariance:\n", marginals.marginalCovariance(1))
-print("x2 covariance:\n", marginals.marginalCovariance(2))
-print("x3 covariance:\n", marginals.marginalCovariance(3))
-print("x4 covariance:\n", marginals.marginalCovariance(4))
-print("x5 covariance:\n", marginals.marginalCovariance(5))
+for i in range(1, 6):
+    print("X{} covariance:\n{}\n".format(i, marginals.marginalCovariance(i)))

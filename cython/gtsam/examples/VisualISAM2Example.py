@@ -1,5 +1,15 @@
-"""An example of running visual SLAM using iSAM2."""
-# pylint: disable=invalid-name
+"""
+GTSAM Copyright 2010, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+See LICENSE for the license information
+
+An example of running visual SLAM using iSAM2.
+Author: Duy-Nguyen Ta (C++), Frank Dellaert (Python)
+"""
+# pylint: disable=invalid-name, E1101
 
 from __future__ import print_function
 

@@ -1,9 +1,25 @@
-#!/usr/bin/env python
+"""
+GTSAM Copyright 2010, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+See LICENSE for the license information
+
+Simple robot motion example, with prior and two odometry measurements
+Author: Frank Dellaert
+"""
+# pylint: disable=invalid-name, E1101
+
 from __future__ import print_function
 
 import numpy as np
 
 import gtsam
+
+# Create noise models
+ODOMETRY_NOISE = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
+PRIOR_NOISE = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
 
 # Create an empty nonlinear factor graph
 graph = gtsam.NonlinearFactorGraph()
@@ -11,16 +27,14 @@ graph = gtsam.NonlinearFactorGraph()
 # Add a prior on the first pose, setting it to the origin
 # A prior factor consists of a mean and a noise model (covariance matrix)
 priorMean = gtsam.Pose2(0.0, 0.0, 0.0)  # prior at origin
-priorNoise = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
-graph.add(gtsam.PriorFactorPose2(1, priorMean, priorNoise))
+graph.add(gtsam.PriorFactorPose2(1, priorMean, PRIOR_NOISE))
 
 # Add odometry factors
 odometry = gtsam.Pose2(2.0, 0.0, 0.0)
 # For simplicity, we will use the same noise model for each odometry factor
-odometryNoise = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
 # Create odometry (Between) factors between consecutive poses
-graph.add(gtsam.BetweenFactorPose2(1, 2, odometry, odometryNoise))
-graph.add(gtsam.BetweenFactorPose2(2, 3, odometry, odometryNoise))
+graph.add(gtsam.BetweenFactorPose2(1, 2, odometry, ODOMETRY_NOISE))
+graph.add(gtsam.BetweenFactorPose2(2, 3, odometry, ODOMETRY_NOISE))
 graph.print_("\nFactor Graph:\n")
 
 # Create the data structure to hold the initialEstimate estimate to the solution
