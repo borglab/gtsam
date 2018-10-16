@@ -33,7 +33,7 @@ def vector3(x, y, z):
 
 def create_poses(angular_velocity=np.pi,
                  delta_t=0.01, radius=30.0):
-    # Create the set of ground-truth poses
+    """Create the set of ground-truth poses."""
     poses = []
     theta = 0.0
     up = gtsam.Point3(0, 0, 1)
@@ -74,21 +74,18 @@ def ISAM2_plot(values, fignum=0):
     plt.pause(1)
 
 
-I = np.eye(3)
-accCov = I * 0.1
-gyroCov = I * 0.1
-intCov = I * 0.1
-secOrder = False
-
 # IMU preintegration parameters
 # Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
 g = 9.81
-PARAMS = gtsam.PreintegrationParams.MakeSharedU()
-PARAMS.setAccelerometerCovariance(accCov)
-PARAMS.setGyroscopeCovariance(gyroCov)
-PARAMS.setIntegrationCovariance(intCov)
-PARAMS.setUse2ndOrderCoriolis(secOrder)
+I = np.eye(3)
+PARAMS = gtsam.PreintegrationParams.MakeSharedU(g)
+PARAMS.setAccelerometerCovariance(I * 0.1)
+PARAMS.setGyroscopeCovariance(I * 0.1)
+PARAMS.setIntegrationCovariance(I * 0.1)
+PARAMS.setUse2ndOrderCoriolis(False)
 PARAMS.setOmegaCoriolis(vector3(0, 0, 0))
+
+BIAS_COVARIANCE = gtsam.noiseModel_Isotropic.Variance(6, 0.1)
 
 
 def IMU_example():
@@ -102,7 +99,6 @@ def IMU_example():
 
     # Create a factor graph
     newgraph = gtsam.NonlinearFactorGraph()
-    totalgraph = gtsam.NonlinearFactorGraph()
 
     # Create (incremental) ISAM2 solver
     isam = gtsam.ISAM2()
@@ -110,14 +106,12 @@ def IMU_example():
     # Create the initial estimate to the solution
     # Intentionally initialize the variables off from the ground truth
     initialEstimate = gtsam.Values()
-    totalEstimate = gtsam.Values()
 
     # Add a prior on pose x0. This indirectly specifies where the origin is.
     # 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
     noise = gtsam.noiseModel_Diagonal.Sigmas(
         np.array([0.3, 0.3, 0.3, 0.1, 0.1, 0.1]))
     newgraph.push_back(gtsam.PriorFactorPose3(X(0), poses[0], noise))
-    totalgraph.push_back(gtsam.PriorFactorPose3(X(0), poses[0], noise))
 
     # Add imu priors
     biasKey = gtsam.symbol(ord('b'), 0)
@@ -125,18 +119,14 @@ def IMU_example():
     biasprior = gtsam.PriorFactorConstantBias(biasKey, gtsam.imuBias_ConstantBias(),
                                               biasnoise)
     newgraph.push_back(biasprior)
-    totalgraph.push_back(biasprior)
     initialEstimate.insert(biasKey, gtsam.imuBias_ConstantBias())
-    totalEstimate.insert(biasKey, gtsam.imuBias_ConstantBias())
     velnoise = gtsam.noiseModel_Isotropic.Sigma(3, 0.1)
 
     # Calculate with correct initial velocity
     velocity = vector3(0, angular_velocity * radius, 0)
     velprior = gtsam.PriorFactorVector(V(0), velocity, velnoise)
     newgraph.push_back(velprior)
-    totalgraph.push_back(velprior)
     initialEstimate.insert(V(0), velocity)
-    totalEstimate.insert(V(0), velocity)
 
     accum = gtsam.PreintegratedImuMeasurements(PARAMS)
 
@@ -147,25 +137,17 @@ def IMU_example():
         if i == 0:  # First time add two poses
             initialEstimate.insert(X(0), poses[0].compose(delta))
             initialEstimate.insert(X(1), poses[1].compose(delta))
-            totalEstimate.insert(X(0), poses[0].compose(delta))
-            totalEstimate.insert(X(1), poses[1].compose(delta))
         elif i >= 2:  # Add more poses as necessary
             initialEstimate.insert(X(i), pose_i.compose(delta))
-            totalEstimate.insert(X(i), pose_i.compose(delta))
 
         if i > 0:
             # Add Bias variables periodically
             if i % 5 == 0:
                 biasKey += 1
-                b1 = biasKey - 1
-                b2 = biasKey
-                cov = gtsam.noiseModel_Isotropic.Variance(6, 0.1)
-                f = gtsam.BetweenFactorConstantBias(
-                    b1, b2, gtsam.imuBias_ConstantBias(), cov)
-                newgraph.add(f)
-                totalgraph.add(f)
+                factor = gtsam.BetweenFactorConstantBias(
+                    biasKey - 1, biasKey, gtsam.imuBias_ConstantBias(), BIAS_COVARIANCE)
+                newgraph.add(factor)
                 initialEstimate.insert(biasKey, gtsam.imuBias_ConstantBias())
-                totalEstimate.insert(biasKey, gtsam.imuBias_ConstantBias())
 
             # Predict acceleration and gyro measurements in (actual) body frame
             nRb = pose_i.rotation().matrix()
@@ -179,28 +161,19 @@ def IMU_example():
             imufac = gtsam.ImuFactor(
                 X(i - 1), V(i - 1), X(i), V(i), biasKey, accum)
             newgraph.add(imufac)
-            totalgraph.add(imufac)
 
             # insert new velocity
             initialEstimate.insert(V(i), velocity)
-            totalEstimate.insert(V(i), velocity)
             accum.resetIntegration()
-
-        # Batch solution
-        isam_full = gtsam.ISAM2()
-        isam_full.update(totalgraph, totalEstimate)
-        result = isam_full.calculateEstimate()
-
-        ISAM2_plot(totalEstimate,0)
-        ISAM2_plot(result,1)
 
         # Incremental solution
         isam.update(newgraph, initialEstimate)
         result = isam.calculateEstimate()
+        ISAM2_plot(result)
+
+        # reset
         newgraph = gtsam.NonlinearFactorGraph()
         initialEstimate.clear()
-
-        ISAM2_plot(result,2)
 
 
 if __name__ == '__main__':
