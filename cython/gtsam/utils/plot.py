@@ -60,7 +60,8 @@ def plot_pose3_on_axes(axes, pose, axis_length=0.1):
     line = np.append(origin[np.newaxis], z_axis[np.newaxis], axis=0)
     axes.plot(line[:, 0], line[:, 1], line[:, 2], 'b-')
 
-    # # plot the covariance
+    # plot the covariance
+    # TODO (dellaert): make this work
     # if (nargin>2) && (~isempty(P))
     #     pPp = P(4:6,4:6); % covariance matrix in pose coordinate frame
     #     gPp = gRp*pPp*gRp'; % convert the covariance matrix to global coordinate frame
