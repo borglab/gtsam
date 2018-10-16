@@ -49,12 +49,8 @@ def create_poses(angular_velocity=np.pi,
     return poses
 
 
-def ISAM2_plot(values):
+def ISAM2_plot(values, fignum=0):
     """Plot poses."""
-
-    # Declare an id for the figure
-    fignum = 0
-
     fig = plt.figure(fignum)
     axes = fig.gca(projection='3d')
     plt.cla()
@@ -101,6 +97,7 @@ def IMU_example():
     angular_velocity = math.radians(180)  # rad/sec
     delta_t = 1.0/18  # makes for 10 degrees per step
     radius = 30
+    acceleration = radius * angular_velocity**2
     poses = create_poses(angular_velocity, delta_t, radius)
 
     # Create a factor graph
@@ -171,10 +168,10 @@ def IMU_example():
                 totalEstimate.insert(biasKey, gtsam.imuBias_ConstantBias())
 
             # Predict acceleration and gyro measurements in (actual) body frame
-            # TODO: calculate correct acceleration due to circular trajectory
             nRb = pose_i.rotation().matrix()
             bRn = np.transpose(nRb)
-            measuredAcc = - np.dot(bRn, vector3(0, 0, -g))
+            measuredAcc = - np.dot(bRn, vector3(0, 0, -g)) + \
+                vector3(0, 0, acceleration)  # in body
             measuredOmega = np.dot(bRn, vector3(0, 0, angular_velocity))
             accum.integrateMeasurement(measuredAcc, measuredOmega, delta_t)
 
@@ -194,13 +191,16 @@ def IMU_example():
         isam_full.update(totalgraph, totalEstimate)
         result = isam_full.calculateEstimate()
 
+        ISAM2_plot(totalEstimate,0)
+        ISAM2_plot(result,1)
+
         # Incremental solution
         isam.update(newgraph, initialEstimate)
         result = isam.calculateEstimate()
         newgraph = gtsam.NonlinearFactorGraph()
         initialEstimate.clear()
 
-        # ISAM2_plot(result)
+        ISAM2_plot(result,2)
 
 
 if __name__ == '__main__':
