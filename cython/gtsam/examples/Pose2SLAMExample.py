@@ -52,7 +52,7 @@ graph.add(gtsam.BetweenFactorPose2(
 # techniques with camera images. We will use another Between Factor to enforce this constraint:
 graph.add(gtsam.BetweenFactorPose2(
     5, 2, gtsam.Pose2(2, 0, math.pi / 2), ODOMETRY_NOISE))
-graph.print_("\nFactor Graph:\n")  # print
+print("\nFactor Graph:\n{}".format(graph))  # print
 
 # 3. Create the data structure to hold the initial_estimate estimate to the
 # solution. For illustrative purposes, these have been deliberately set to incorrect values
@@ -62,7 +62,7 @@ initial_estimate.insert(2, gtsam.Pose2(2.3, 0.1, -0.2))
 initial_estimate.insert(3, gtsam.Pose2(4.1, 0.1, math.pi / 2))
 initial_estimate.insert(4, gtsam.Pose2(4.0, 2.0, math.pi))
 initial_estimate.insert(5, gtsam.Pose2(2.1, 2.1, -math.pi / 2))
-initial_estimate.print_("\nInitial Estimate:\n")  # print
+print("\nInitial Estimate:\n{}".format(initial_estimate))  # print
 
 # 4. Optimize the initial values using a Gauss-Newton nonlinear optimizer
 # The optimizer accepts an optional set of configuration parameters,
@@ -79,7 +79,7 @@ parameters.setMaxIterations(100)
 optimizer = gtsam.GaussNewtonOptimizer(graph, initial_estimate, parameters)
 # ... and optimize
 result = optimizer.optimize()
-result.print_("Final Result:\n")
+print("Final Result:\n{}".format(result))
 
 # 5. Calculate and print marginal covariances for all variables
 marginals = gtsam.Marginals(graph, result)
