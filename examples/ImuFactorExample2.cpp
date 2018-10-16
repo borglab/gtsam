@@ -3,42 +3,51 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/Scenario.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 
 #include <vector>
 
-#define GTSAM4
-
 using namespace std;
 using namespace gtsam;
 
-/* ************************************************************************* */
-vector<Pose3> createPoses() {
-  // Create the set of ground-truth poses
-  vector<Pose3> poses;
-  double radius = 30.0, theta = 0.0;
-  Point3 up(0, 0, 1), target(0, 0, 0);
-  for (size_t i = 0; i < 80; ++i, theta += 2 * M_PI / 8) {
-    Point3 position(radius * cos(theta), radius * sin(theta), 0.0);
-    SimpleCamera camera = SimpleCamera::Lookat(position, target, up);
-    poses.push_back(camera.pose());
-  }
-  return poses;
-}
+// Shorthand for velocity and pose variables
+using symbol_shorthand::V;
+using symbol_shorthand::X;
+
+const double kGravity = 9.81;
 
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
-  // Shorthand for velocity and pose variables
-  using symbol_shorthand::V;
-  using symbol_shorthand::X;
+  auto params = PreintegrationParams::MakeSharedU(kGravity);
+  params->setAccelerometerCovariance(I_3x3 * 0.1);
+  params->setGyroscopeCovariance(I_3x3 * 0.1);
+  params->setIntegrationCovariance(I_3x3 * 0.1);
+  params->setUse2ndOrderCoriolis(false);
+  params->setOmegaCoriolis(Vector3(0, 0, 0));
 
-  // Create the set of ground-truth landmarks and poses
-  vector<Pose3> poses = createPoses();
+  Pose3 delta(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
+
+  // Start with a camera on x-axis looking at origin
+  double radius = 30;
+  const Point3 up(0, 0, 1), target(0, 0, 0);
+  const Point3 position(radius, 0, 0);
+  const SimpleCamera camera = SimpleCamera::Lookat(position, target, up);
+  const auto pose_0 = camera.pose();
+
+  // Now, create a constant-twist scenario that makes the camera orbit the
+  // origin
+  double angular_velocity = M_PI,  // rad/sec
+      delta_t = 1.0 / 18;          // makes for 10 degrees per step
+  Vector3 angular_velocity_vector(0, -angular_velocity, 0);
+  Vector3 linear_velocity_vector(radius * angular_velocity, 0, 0);
+  auto scenario = ConstantTwistScenario(angular_velocity_vector,
+                                        linear_velocity_vector, pose_0);
 
   // Create a factor graph
-  NonlinearFactorGraph newgraph, totalgraph;
+  NonlinearFactorGraph newgraph;
 
   // Create (incremental) ISAM2 solver
   ISAM2 isam;
@@ -51,8 +60,7 @@ int main(int argc, char* argv[]) {
   // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
   auto noise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
-  newgraph.push_back(PriorFactor<Pose3>(X(0), poses[0], noise));
-  totalgraph.push_back(PriorFactor<Pose3>(X(0), poses[0], noise));
+  newgraph.push_back(PriorFactor<Pose3>(X(0), pose_0, noise));
 
   // Add imu priors
   Key biasKey = Symbol('b', 0);
@@ -60,65 +68,29 @@ int main(int argc, char* argv[]) {
   PriorFactor<imuBias::ConstantBias> biasprior(biasKey, imuBias::ConstantBias(),
                                                biasnoise);
   newgraph.push_back(biasprior);
-  totalgraph.push_back(biasprior);
   initialEstimate.insert(biasKey, imuBias::ConstantBias());
-  totalEstimate.insert(biasKey, imuBias::ConstantBias());
   auto velnoise = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.1));
 
-  Vector gravity(3), zero(3), velocity(3);
-  gravity << 0, 0, -9.8;
-  zero << 0, 0, 0;
-  velocity << 0, 0, 0;
-#ifdef GTSAM4
-  PriorFactor<Vector> velprior(V(0), zero, velnoise);
-#else
-  PriorFactor<LieVector> velprior(V(0), zero, velnoise);
-#endif
+  Vector n_velocity(3);
+  n_velocity << 0, angular_velocity * radius, 0;
+  PriorFactor<Vector> velprior(V(0), n_velocity, velnoise);
   newgraph.push_back(velprior);
-  totalgraph.push_back(velprior);
 
-#ifdef GTSAM4
-  initialEstimate.insert(V(0), zero);
-  totalEstimate.insert(V(0), zero);
-#else
-  initialEstimate.insert(V(0), LieVector(zero));
-  totalEstimate.insert(V(0), LieVector(zero));
-#endif
+  initialEstimate.insert(V(0), n_velocity);
 
-  Matrix3 I;
-  I << 1, 0, 0, 0, 1, 0, 0, 0, 1;
-  Matrix3 accCov = I * 0.1;
-  Matrix3 gyroCov = I * 0.1;
-  Matrix3 intCov = I * 0.1;
-  bool secOrder = false;
-#ifdef GTSAM4
   // IMU preintegrator
-  PreintegratedImuMeasurements accum(PreintegrationParams::MakeSharedD());
-  accum.params()->setAccelerometerCovariance(accCov);
-  accum.params()->setGyroscopeCovariance(gyroCov);
-  accum.params()->setIntegrationCovariance(intCov);
-  accum.params()->setUse2ndOrderCoriolis(secOrder);
-  accum.params()->setOmegaCoriolis(Vector3(0, 0, 0));
-#else
-  ImuFactor::PreintegratedMeasurements accum(imuBias::ConstantBias(), accCov,
-                                             gyroCov, intCov, secOrder);
-#endif
+  PreintegratedImuMeasurements accum(params);
 
   // Simulate poses and imu measurements, adding them to the factor graph
-  for (size_t i = 0; i < poses.size(); ++i) {
-#ifdef GTSAM4
-    Pose3 delta(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
-#else
-    Pose3 delta(Rot3::ypr(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
-#endif
+  for (size_t i = 0; i < 36; ++i) {
+    double t = i * delta_t;
     if (i == 0) {  // First time add two poses
-      initialEstimate.insert(X(0), poses[0].compose(delta));
-      initialEstimate.insert(X(1), poses[1].compose(delta));
-      totalEstimate.insert(X(0), poses[0].compose(delta));
-      totalEstimate.insert(X(1), poses[1].compose(delta));
+      auto pose_1 = scenario.pose(delta_t);
+      initialEstimate.insert(X(0), pose_0.compose(delta));
+      initialEstimate.insert(X(1), pose_1.compose(delta));
     } else if (i >= 2) {  // Add more poses as necessary
-      initialEstimate.insert(X(i), poses[i].compose(delta));
-      totalEstimate.insert(X(i), poses[i].compose(delta));
+      auto pose_i = scenario.pose(t);
+      initialEstimate.insert(X(i), pose_i.compose(delta));
     }
 
     if (i > 0) {
@@ -135,36 +107,22 @@ int main(int argc, char* argv[]) {
         auto f = boost::make_shared<BetweenFactor<imuBias::ConstantBias> >(
             b1, b2, imuBias::ConstantBias(), cov);
         newgraph.add(f);
-        totalgraph.add(f);
         initialEstimate.insert(biasKey, imuBias::ConstantBias());
-        totalEstimate.insert(biasKey, imuBias::ConstantBias());
       }
-      // Add Imu Factor
-      accum.integrateMeasurement(gravity, zero, 0.5);
-#ifdef GTSAM4
-      ImuFactor imufac(X(i - 1), V(i - 1), X(i), V(i), biasKey, accum);
-#else
-      ImuFactor imufac(X(i - 1), V(i - 1), X(i), V(i), biasKey, accum, gravity,
-                       zero);
-#endif
-      newgraph.add(imufac);
-      totalgraph.add(imufac);
+      // Predict acceleration and gyro measurements in (actual) body frame
+      auto measuredAcc = scenario.acceleration_b(t) -
+                         scenario.rotation(t).transpose() * params->n_gravity;
+      auto measuredOmega = scenario.omega_b(t);
+      accum.integrateMeasurement(measuredAcc, measuredOmega, delta_t);
 
-      // insert new velocity
-#ifdef GTSAM4
-      initialEstimate.insert(V(i), velocity);
-      totalEstimate.insert(V(i), velocity);
-#else
-      initialEstimate.insert(V(i), LieVector(velocity));
-      totalEstimate.insert(V(i), LieVector(velocity));
-#endif
+      // Add Imu Factor
+      ImuFactor imufac(X(i - 1), V(i - 1), X(i), V(i), biasKey, accum);
+      newgraph.add(imufac);
+
+      // insert new velocity, which is wrong
+      initialEstimate.insert(V(i), n_velocity);
       accum.resetIntegration();
     }
-
-    // Batch solution
-    ISAM2 isam_full;
-    isam_full.update(totalgraph, totalEstimate);
-    result = isam_full.calculateEstimate();
 
     // Incremental solution
     isam.update(newgraph, initialEstimate);
@@ -172,7 +130,7 @@ int main(int argc, char* argv[]) {
     newgraph = NonlinearFactorGraph();
     initialEstimate.clear();
   }
-
+  GTSAM_PRINT(result);
   return 0;
 }
 /* ************************************************************************* */
