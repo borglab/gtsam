@@ -2665,10 +2665,12 @@ virtual class Rot3AttitudeFactor : gtsam::NonlinearFactor{
   gtsam::Unit3 bRef() const;
 };
 
-virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor{
-  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nZ, const gtsam::noiseModel::Diagonal* model,
-      const gtsam::Unit3& bRef);
-  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nZ, const gtsam::noiseModel::Diagonal* model);
+virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor {
+  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nZ,
+                      const gtsam::noiseModel::Diagonal* model,
+                      const gtsam::Unit3& bRef);
+  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nZ,
+                      const gtsam::noiseModel::Diagonal* model);
   Pose3AttitudeFactor();
   void print(string s) const;
   bool equals(const gtsam::NonlinearFactor& expected, double tol) const;
@@ -2677,24 +2679,27 @@ virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor{
 };
 
 #include <gtsam/navigation/Scenario.h>
-virtual class Scenario {};
-
-virtual class ConstantTwistScenario : gtsam::Scenario {
-  ConstantTwistScenario(const Vector& w, const Vector& v);
+virtual class Scenario {
   gtsam::Pose3 pose(double t) const;
   Vector omega_b(double t) const;
   Vector velocity_n(double t) const;
   Vector acceleration_n(double t) const;
+  gtsam::Rot3 rotation(double t) const;
+  gtsam::NavState navState(double t) const;
+  Vector velocity_b(double t) const;
+  Vector acceleration_b(double t) const;
+};
+
+virtual class ConstantTwistScenario : gtsam::Scenario {
+  ConstantTwistScenario(const Vector& w, const Vector& v);
+  ConstantTwistScenario(const Vector& w, const Vector& v,
+                        const Pose3& nTb0);
 };
 
 virtual class AcceleratingScenario : gtsam::Scenario {
   AcceleratingScenario(const gtsam::Rot3& nRb, const gtsam::Point3& p0,
                        const Vector& v0, const Vector& a_n,
                        const Vector& omega_b);
-  gtsam::Pose3 pose(double t) const;
-  Vector omega_b(double t) const;
-  Vector velocity_n(double t) const;
-  Vector acceleration_n(double t) const;
 };
 
 //*************************************************************************
