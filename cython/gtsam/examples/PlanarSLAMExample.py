@@ -50,7 +50,7 @@ graph.add(gtsam.BearingRangeFactor2D(
     X3, L2, gtsam.Rot2.fromDegrees(90), 2.0, MEASUREMENT_NOISE))
 
 # Print graph
-graph.print_("Factor Graph:\n")
+print("Factor Graph:\n{}".format(graph))
 
 # Create (deliberately inaccurate) initial estimate
 initial_estimate = gtsam.Values()
@@ -61,7 +61,7 @@ initial_estimate.insert(L1, gtsam.Point2(1.80, 2.10))
 initial_estimate.insert(L2, gtsam.Point2(4.10, 1.80))
 
 # Print
-initial_estimate.print_("Initial Estimate:\n")
+print("Initial Estimate:\n{}".format(initial_estimate))
 
 # Optimize using Levenberg-Marquardt optimization. The optimizer
 # accepts an optional set of configuration parameters, controlling
@@ -72,7 +72,7 @@ initial_estimate.print_("Initial Estimate:\n")
 params = gtsam.LevenbergMarquardtParams()
 optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)
 result = optimizer.optimize()
-result.print_("\nFinal Result:\n")
+print("\nFinal Result:\n{}".format(result))
 
 # Calculate and print marginal covariances for all variables
 marginals = gtsam.Marginals(graph, result)

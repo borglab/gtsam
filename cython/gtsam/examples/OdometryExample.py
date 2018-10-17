@@ -35,7 +35,7 @@ odometry = gtsam.Pose2(2.0, 0.0, 0.0)
 # Create odometry (Between) factors between consecutive poses
 graph.add(gtsam.BetweenFactorPose2(1, 2, odometry, ODOMETRY_NOISE))
 graph.add(gtsam.BetweenFactorPose2(2, 3, odometry, ODOMETRY_NOISE))
-graph.print_("\nFactor Graph:\n")
+print("\nFactor Graph:\n{}".format(graph))
 
 # Create the data structure to hold the initialEstimate estimate to the solution
 # For illustrative purposes, these have been deliberately set to incorrect values
@@ -43,10 +43,10 @@ initial = gtsam.Values()
 initial.insert(1, gtsam.Pose2(0.5, 0.0, 0.2))
 initial.insert(2, gtsam.Pose2(2.3, 0.1, -0.2))
 initial.insert(3, gtsam.Pose2(4.1, 0.1, 0.1))
-initial.print_("\nInitial Estimate:\n")
+print("\nInitial Estimate:\n{}".format(initial))
 
 # optimize using Levenberg-Marquardt optimization
 params = gtsam.LevenbergMarquardtParams()
 optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial, params)
 result = optimizer.optimize()
-result.print_("\nFinal Result:\n")
+print("\nFinal Result:\n{}".format(result))
