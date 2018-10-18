@@ -15,8 +15,8 @@
  * @author  Frank Dellaert
  */
 
-#include <gtsam/navigation/Scenario.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/navigation/Scenario.h>
 
 #include <CppUnitLite/TestHarness.h>
 #include <boost/bind.hpp>
@@ -96,7 +96,31 @@ TEST(Scenario, Loop) {
   const double R = v / w;
   const Pose3 T30 = scenario.pose(30);
   EXPECT(assert_equal(Rot3::Rodrigues(0, M_PI, 0), T30.rotation(), 1e-9));
+  EXPECT(assert_equal(Vector3(M_PI, 0, M_PI), T30.rotation().xyz()));
   EXPECT(assert_equal(Point3(0, 0, 2 * R), T30.translation(), 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(Scenario, LoopWithInitialPose) {
+  // Forward velocity 2m/s
+  // Pitch up with angular velocity 6 kDegree/sec (negative in FLU)
+  const double v = 2, w = 6 * kDegree;
+  const Vector3 W(0, -w, 0), V(v, 0, 0);
+  const Rot3 nRb0 = Rot3::yaw(M_PI);
+  const Pose3 nTb0(nRb0, Point3(1, 2, 3));
+  const ConstantTwistScenario scenario(W, V, nTb0);
+
+  const double T = 30;
+  EXPECT(assert_equal(W, scenario.omega_b(T), 1e-9));
+  EXPECT(assert_equal(V, scenario.velocity_b(T), 1e-9));
+  EXPECT(assert_equal(W.cross(V), scenario.acceleration_b(T), 1e-9));
+
+  // R = v/w, so test if loop crests at 2*R
+  const double R = v / w;
+  const Pose3 T30 = scenario.pose(30);
+  EXPECT(
+      assert_equal(nRb0 * Rot3::Rodrigues(0, M_PI, 0), T30.rotation(), 1e-9));
+  EXPECT(assert_equal(Point3(1, 2, 3 + 2 * R), T30.translation(), 1e-9));
 }
 
 /* ************************************************************************* */
