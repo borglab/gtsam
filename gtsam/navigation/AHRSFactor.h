@@ -38,12 +38,12 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
   Vector3 biasHat_; ///< Angular rate bias values used during preintegration.
   Matrix3 preintMeasCov_; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
 
-  /// Default constructor, only for serialization
-  PreintegratedAhrsMeasurements() {}
-
   friend class AHRSFactor;
 
  public:
+
+  /// Default constructor, only for serialization and Cython wrapper
+  PreintegratedAhrsMeasurements() {}
 
   /**
    *  Default constructor, initialize with no measurements

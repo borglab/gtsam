@@ -317,7 +317,15 @@ TEST(GaussianBayesTree, shortcut_overlapping_separator)
     5, 0, 6,
     0, -11, -12
     ).finished();
+
   Matrix actualJointJ = joint.augmentedJacobian();
+
+  // PR 315: sign of rows in joint are immaterial
+  if (signbit(expectedJointJ(0, 2)) != signbit(actualJointJ(0, 2)))
+    expectedJointJ.row(0) = -expectedJointJ.row(0);
+
+  if (signbit(expectedJointJ(1, 2)) != signbit(actualJointJ(1, 2)))
+    expectedJointJ.row(1) = -expectedJointJ.row(1);
 
   EXPECT(assert_equal(expectedJointJ, actualJointJ));
 }

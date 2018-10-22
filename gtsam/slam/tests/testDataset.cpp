@@ -26,6 +26,9 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <iostream>
+#include <sstream>
+
 using namespace gtsam::symbol_shorthand;
 using namespace std;
 using namespace gtsam;
@@ -37,6 +40,37 @@ TEST(dataSet, findExampleDataFile) {
   string actual_end = actual.substr(actual.size() - expected_end.size(), expected_end.size());
   boost::replace_all(actual_end, "\\", "/"); // Convert directory separators to forward-slash
   EXPECT(assert_equal(expected_end, actual_end));
+}
+
+/* ************************************************************************* */
+TEST( dataSet, parseVertex)
+{
+  const string str = "VERTEX2 1 2.000000 3.000000 4.000000";
+  istringstream is(str);
+  string tag;
+  EXPECT(is >> tag);
+  const auto actual = parseVertex(is, tag);
+  EXPECT(actual);
+  if (actual) {
+    EXPECT_LONGS_EQUAL(1, actual->first);
+    EXPECT(assert_equal(Pose2(2, 3, 4), actual->second));
+  }
+}
+
+/* ************************************************************************* */
+TEST( dataSet, parseEdge)
+{
+  const string str = "EDGE2 0 1 2.000000 3.000000 4.000000";
+  istringstream is(str);
+  string tag;
+  EXPECT(is >> tag);
+  const auto actual = parseEdge(is, tag);
+  EXPECT(actual);
+  if (actual) {
+    pair<Key, Key> expected(0, 1);
+    EXPECT(expected == actual->first);
+    EXPECT(assert_equal(Pose2(2, 3, 4), actual->second));
+  }
 }
 
 /* ************************************************************************* */

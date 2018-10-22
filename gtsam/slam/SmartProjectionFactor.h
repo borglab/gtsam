@@ -61,7 +61,7 @@ protected:
   /// @name Caching triangulation
   /// @{
   mutable TriangulationResult result_; ///< result from triangulateSafe
-  mutable std::vector<Pose3> cameraPosesTriangulation_; ///< current triangulation poses
+  mutable std::vector<Pose3, Eigen::aligned_allocator<Pose3> > cameraPosesTriangulation_; ///< current triangulation poses
   /// @}
 
 public:
@@ -203,7 +203,7 @@ public:
     }
 
     // Jacobian could be 3D Point3 OR 2D Unit3, difference is E.cols().
-    std::vector<typename Base::MatrixZD> Fblocks;
+    std::vector<typename Base::MatrixZD, Eigen::aligned_allocator<typename Base::MatrixZD> > Fblocks;
     Matrix E;
     Vector b;
     computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
@@ -337,7 +337,7 @@ public:
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
   void computeJacobiansWithTriangulatedPoint(
-      std::vector<typename Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
+      std::vector<typename Base::MatrixZD, Eigen::aligned_allocator<typename Base::MatrixZD> >& Fblocks, Matrix& E, Vector& b,
       const Cameras& cameras) const {
 
     if (!result_) {
@@ -354,7 +354,7 @@ public:
 
   /// Version that takes values, and creates the point
   bool triangulateAndComputeJacobians(
-      std::vector<typename Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
+      std::vector<typename Base::MatrixZD, Eigen::aligned_allocator<typename Base::MatrixZD> >& Fblocks, Matrix& E, Vector& b,
       const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
@@ -365,7 +365,7 @@ public:
 
   /// takes values
   bool triangulateAndComputeJacobiansSVD(
-      std::vector<typename Base::MatrixZD>& Fblocks, Matrix& Enull, Vector& b,
+      std::vector<typename Base::MatrixZD, Eigen::aligned_allocator<typename Base::MatrixZD> >& Fblocks, Matrix& Enull, Vector& b,
       const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);

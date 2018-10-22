@@ -18,7 +18,7 @@ fi
 
 echo "Platform is ${platform}"
 
-# Check for empty directory
+# Check for empty diectory
 if [ ! -z "`ls`" ]; then
 	echo "Please run this script from an empty build directory"
 	exit 1

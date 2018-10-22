@@ -35,6 +35,8 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
 
   PreintegratedRotationParams() : gyroscopeCovariance(I_3x3) {}
 
+  virtual ~PreintegratedRotationParams() {}
+
   virtual void print(const std::string& s) const;
   virtual bool equals(const PreintegratedRotationParams& other, double tol=1e-9) const;
 
@@ -56,6 +58,9 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
     ar & BOOST_SERIALIZATION_NVP(omegaCoriolis);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor);
   }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -163,6 +168,9 @@ class GTSAM_EXPORT PreintegratedRotation {
     ar& BOOST_SERIALIZATION_NVP(deltaRij_);
     ar& BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
   }
+
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template <>

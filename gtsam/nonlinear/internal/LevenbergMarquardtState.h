@@ -113,9 +113,9 @@ struct LevenbergMarquardtState : public NonlinearOptimizerState {
   // Small cache of A|b|model indexed by dimension. Can save many mallocs.
   mutable std::vector<CachedModel> noiseModelCache;
   CachedModel* getCachedModel(size_t dim) const {
-    if (dim > noiseModelCache.size())
-      noiseModelCache.resize(dim);
-    CachedModel* item = &noiseModelCache[dim - 1];
+    if (dim >= noiseModelCache.size())
+      noiseModelCache.resize(dim+1);
+    CachedModel* item = &noiseModelCache[dim];
     if (!item->model)
       *item = CachedModel(dim, 1.0 / std::sqrt(lambda));
     return item;

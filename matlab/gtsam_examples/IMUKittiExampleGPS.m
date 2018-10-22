@@ -42,6 +42,13 @@ sigma_between_b = [ IMU_metadata.AccelerometerBiasSigma * ones(3,1); IMU_metadat
 g = [0;0;-9.8];
 w_coriolis = [0;0;0];
 
+IMU_params = PreintegrationParams(g);
+
+IMU_params.setAccelerometerCovariance(IMU_metadata.AccelerometerSigma.^2 * eye(3));
+IMU_params.setGyroscopeCovariance(IMU_metadata.GyroscopeSigma.^2 * eye(3));
+IMU_params.setIntegrationCovariance(IMU_metadata.IntegrationSigma.^2 * eye(3));
+IMU_params.setOmegaCoriolis(w_coriolis);
+
 %% Solver object
 isamParams = ISAM2Params;
 isamParams.setFactorization('CHOLESKY');
@@ -65,7 +72,7 @@ for measurementIndex = firstGPSPose:length(GPS_data)
   currentVelKey =  symbol('v',measurementIndex);
   currentBiasKey = symbol('b',measurementIndex);
   t = GPS_data(measurementIndex, 1).Time;
-  
+     
   if measurementIndex == firstGPSPose
     %% Create initial estimate and prior on initial pose, velocity, and biases
     newValues.insert(currentPoseKey, currentPoseGlobal);
@@ -78,10 +85,8 @@ for measurementIndex = firstGPSPose:length(GPS_data)
     t_previous = GPS_data(measurementIndex-1, 1).Time;
     %% Summarize IMU data between the previous GPS measurement and now
     IMUindices = find(IMUtimes >= t_previous & IMUtimes <= t);
-    
-    currentSummarizedMeasurement = gtsam.ImuFactorPreintegratedMeasurements( ...
-      currentBias, IMU_metadata.AccelerometerSigma.^2 * eye(3), ...
-      IMU_metadata.GyroscopeSigma.^2 * eye(3), IMU_metadata.IntegrationSigma.^2 * eye(3));
+        
+    currentSummarizedMeasurement = PreintegratedImuMeasurements(IMU_params,currentBias);
     
     for imuIndex = IMUindices
       accMeas = [ IMU_data(imuIndex).accelX; IMU_data(imuIndex).accelY; IMU_data(imuIndex).accelZ ];
@@ -94,8 +99,8 @@ for measurementIndex = firstGPSPose:length(GPS_data)
     newFactors.add(ImuFactor( ...
       currentPoseKey-1, currentVelKey-1, ...
       currentPoseKey, currentVelKey, ...
-      currentBiasKey, currentSummarizedMeasurement, g, w_coriolis));
-    
+      currentBiasKey, currentSummarizedMeasurement));
+
     % Bias evolution as given in the IMU metadata
     newFactors.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, imuBias.ConstantBias(zeros(3,1), zeros(3,1)), ...
       noiseModel.Diagonal.Sigmas(sqrt(numel(IMUindices)) * sigma_between_b)));
@@ -119,10 +124,13 @@ for measurementIndex = firstGPSPose:length(GPS_data)
       isam.update(newFactors, newValues);
       newFactors = NonlinearFactorGraph;
       newValues = Values;
+
+      result = isam.calculateEstimate();
       
       if rem(measurementIndex,10)==0 % plot every 10 time steps
         cla;
-        plot3DTrajectory(isam.calculateEstimate, 'g-');
+        
+        plot3DTrajectory(result, 'g-');
         title('Estimated trajectory using ISAM2 (IMU+GPS)')
         xlabel('[m]')
         ylabel('[m]')
@@ -131,12 +139,13 @@ for measurementIndex = firstGPSPose:length(GPS_data)
         drawnow;
       end
       % =======================================================================
-      currentPoseGlobal = isam.calculateEstimate(currentPoseKey);
-      currentVelocityGlobal = isam.calculateEstimate(currentVelKey);
-      currentBias = isam.calculateEstimate(currentBiasKey);
+
+      currentPoseGlobal = result.atPose3(currentPoseKey);
+      currentVelocityGlobal = result.atVector(currentVelKey);
+      currentBias = result.atConstantBias(currentBiasKey);
     end
   end
-   
+     
 end % end main loop
 
 disp('-- Reached end of sensor data')

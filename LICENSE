@@ -4,11 +4,11 @@ LICENSE.BSD in this directory.
 GTSAM contains two third party libraries, with documentation of licensing and 
 modifications as follows:
 
-- CCOLAMD 2.73: Tim Davis' constrained column approximate minimum degree 
+- CCOLAMD 2.9.3: Tim Davis' constrained column approximate minimum degree 
 ordering library
     - Included unmodified in gtsam/3rdparty/CCOLAMD and gtsam/3rdparty/UFconfig
-    - http://www.cise.ufl.edu/research/sparse
-    - Licenced under LGPL v2.1, provided in gtsam/3rdparty/CCOLAMD/Doc/lesser.txt
+    - http://faculty.cse.tamu.edu/davis/suitesparse.html
+    - Licenced under BSD-3, provided in gtsam/3rdparty/CCOLAMD/Doc/License.txt
 - Eigen 3.2:  General C++ matrix and linear algebra library
     - Modified with 3 patches that have been contributed back to the Eigen team:
         - http://eigen.tuxfamily.org/bz/show_bug.cgi?id=704 (Householder QR MKL selection)

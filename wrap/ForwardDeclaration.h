@@ -23,11 +23,14 @@
 
 namespace wrap {
 
+  class Class;
+
   struct ForwardDeclaration {
-    std::string name;
+    Class cls;
     bool isVirtual;
     ForwardDeclaration() : isVirtual(false) {}
-    ForwardDeclaration(const std::string& s) : name(s), isVirtual(false) {}
+    explicit ForwardDeclaration(const std::string& s) : cls(s), isVirtual(false) {}
+    std::string name() const { return cls.qualifiedName("::"); }
   };
 
 }

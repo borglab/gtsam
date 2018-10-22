@@ -304,7 +304,7 @@ TEST(ISAM2, AddFactorsStep1)
 
   FactorIndices actualNewFactorIndices;
 
-  ISAM2::Impl::AddFactorsStep1(newFactors, true, nonlinearFactors, actualNewFactorIndices);
+  ISAM2::Impl::AddFactorsStep1(newFactors, true, &nonlinearFactors, &actualNewFactorIndices);
 
   EXPECT(assert_equal(expectedNonlinearFactors, nonlinearFactors));
   EXPECT(assert_container_equality(expectedNewFactorIndices, actualNewFactorIndices));
@@ -843,7 +843,7 @@ TEST(ISAM2, calculate_nnz)
 {
   ISAM2 isam = createSlamlikeISAM2();
   int expected = 241;
-  int actual = calculate_nnz(isam.roots().front());
+  int actual = isam.roots().front()->calculate_nnz();
 
   EXPECT_LONGS_EQUAL(expected, actual);
 }

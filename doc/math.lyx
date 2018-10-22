@@ -5189,7 +5189,7 @@ R_{2}^{T}\left[t_{2}-t_{1}\right]_{\times}R_{1} & -R_{2}^{T}R_{1}
 and in its second argument,
 \begin_inset Formula 
 \begin{eqnarray*}
-\frac{\partial\left(T_{1}^{^{-1}}T_{2}\right)}{\partial\xi_{1}} & = & I_{6}
+\frac{\partial\left(T_{1}^{^{-1}}T_{2}\right)}{\partial\xi_{2}} & = & I_{6}
 \end{eqnarray*}
 
 \end_inset

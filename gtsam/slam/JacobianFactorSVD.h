@@ -59,7 +59,7 @@ public:
    * @Fblocks:
    */
   JacobianFactorSVD(const FastVector<Key>& keys,
-      const std::vector<MatrixZD>& Fblocks, const Matrix& Enull,
+      const std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> >& Fblocks, const Matrix& Enull,
       const Vector& b, //
       const SharedDiagonal& model = SharedDiagonal()) :
       Base() {

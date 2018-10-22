@@ -17,6 +17,7 @@
  **/
 
 #include "Argument.h"
+#include "Class.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -63,19 +64,12 @@ string Argument::matlabClass(const string& delim) const {
 }
 
 /* ************************************************************************* */
-bool Argument::isScalar() const {
-  return (type.name() == "bool" || type.name() == "char"
-      || type.name() == "unsigned char" || type.name() == "int"
-      || type.name() == "size_t" || type.name() == "double");
-}
-
-/* ************************************************************************* */
 void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
   file.oss << "  ";
 
   string cppType = type.qualifiedName("::");
   string matlabUniqueType = type.qualifiedName();
-  bool isNotScalar = !Argument::isScalar();
+  bool isNotScalar = !type.isScalar();
 
   // We cannot handle scalar non const references
   if (!isNotScalar && is_ref && !is_const) {
@@ -108,6 +102,54 @@ void Argument::proxy_check(FileWriter& proxyFile, const string& s) const {
   proxyFile.oss << "isa(" << s << ",'" << matlabClass(".") << "')";
   if (type.name() == "Vector")
     proxyFile.oss << " && size(" << s << ",2)==1";
+}
+
+/* ************************************************************************* */
+void Argument::emit_cython_pxd(
+    FileWriter& file, const std::string& className,
+    const std::vector<std::string>& templateArgs) const {
+  string cythonType = type.pxdClassName();
+  if (cythonType == "This") cythonType = className;
+  else if (type.isEigen())
+    cythonType = "const " + cythonType + "&";
+  else if (type.match(templateArgs))
+    cythonType = type.name();
+
+  // add modifier
+  if (!type.isEigen()) {
+    if (is_ptr) cythonType = "shared_ptr[" + cythonType + "]&";
+    if (is_ref) cythonType = cythonType + "&";
+    if (is_const) cythonType = "const " + cythonType;
+  }
+
+  file.oss << cythonType << " " << name;
+}
+
+/* ************************************************************************* */
+void Argument::emit_cython_pyx(FileWriter& file) const {
+  file.oss << type.pyxArgumentType() << " " << name;
+}
+
+/* ************************************************************************* */
+std::string Argument::pyx_convertEigenTypeAndStorageOrder() const {
+  if (!type.isEigen())
+    return "";
+  return name + " = " + name + ".astype(float, order=\'F\', copy=False)";
+}
+
+/* ************************************************************************* */
+std::string Argument::pyx_asParam() const {
+  string cythonType = type.pxdClassName();
+  string cythonVar;
+  if (type.isNonBasicType()) {
+    cythonVar = name + "." + type.shared_pxd_obj_in_pyx();
+    if (!is_ptr) cythonVar = "deref(" + cythonVar + ")";
+  } else if (type.isEigen()) {
+    cythonVar = "<" + cythonType + ">" + "(Map[" + cythonType + "](" + name + "))";
+  } else {
+    cythonVar = name;
+  }
+  return cythonVar;
 }
 
 /* ************************************************************************* */
@@ -160,7 +202,7 @@ string ArgumentList::names() const {
 /* ************************************************************************* */
 bool ArgumentList::allScalar() const {
   for(Argument arg: *this)
-    if (!arg.isScalar())
+    if (!arg.type.isScalar())
       return false;
   return true;
 }
@@ -187,6 +229,69 @@ void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
     first = false;
   }
   file.oss << ")";
+}
+
+/* ************************************************************************* */
+void ArgumentList::emit_cython_pxd(
+    FileWriter& file, const std::string& className,
+    const std::vector<std::string>& templateArgs) const {
+  for (size_t j = 0; j<size(); ++j) {
+    at(j).emit_cython_pxd(file, className, templateArgs);
+    if (j<size()-1) file.oss << ", ";
+  }
+}
+
+/* ************************************************************************* */
+void ArgumentList::emit_cython_pyx(FileWriter& file) const {
+  for (size_t j = 0; j < size(); ++j) {
+    at(j).emit_cython_pyx(file);
+    if (j < size() - 1) file.oss << ", ";
+  }
+}
+
+/* ************************************************************************* */
+std::string ArgumentList::pyx_convertEigenTypeAndStorageOrder(const std::string& indent) const {
+  string ret, conversion;
+  for (size_t j = 0; j < size(); ++j) {
+    conversion = at(j).pyx_convertEigenTypeAndStorageOrder();
+    if (!conversion.empty())
+      ret += indent + conversion + "\n";
+  }
+  return ret;
+}
+
+/* ************************************************************************* */
+std::string ArgumentList::pyx_asParams() const {
+  string ret;
+  for (size_t j = 0; j < size(); ++j) {
+    ret += at(j).pyx_asParam();
+    if (j < size() - 1) ret += ", ";
+  }
+  return ret;
+}
+
+/* ************************************************************************* */
+std::string ArgumentList::pyx_paramsList() const {
+  string s;
+  for (size_t j = 0; j < size(); ++j) {
+    s += "'" + at(j).name + "'";
+    if (j < size() - 1) s += ", ";
+  }
+  return s;
+}
+
+/* ************************************************************************* */
+std::string ArgumentList::pyx_castParamsToPythonType(
+    const std::string& indent) const {
+  if (size() == 0)
+    return "";
+
+  // cast params to their correct python argument type to pass in the function call later
+  string s;
+  for (size_t j = 0; j < size(); ++j)
+    s += indent + at(j).name + " = <" + at(j).type.pyxArgumentType()
+        + ">(__params[" + std::to_string(j) + "])\n";
+  return s;
 }
 
 /* ************************************************************************* */

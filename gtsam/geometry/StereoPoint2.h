@@ -159,6 +159,8 @@ private:
 
 };
 
+typedef std::vector<StereoPoint2> StereoPoint2Vector;
+
 template<>
 struct traits<StereoPoint2> : public internal::VectorSpace<StereoPoint2> {};
 

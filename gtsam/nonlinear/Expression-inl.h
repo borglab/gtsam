@@ -134,8 +134,10 @@ T Expression<T>::value(const Values& values,
 
   if (H) {
     // Call private version that returns derivatives in H
-    KeysAndDims pair = keysAndDims();
-    return valueAndDerivatives(values, pair.first, pair.second, *H);
+    KeyVector keys;
+    FastVector<int> dims;
+    boost::tie(keys, dims) = keysAndDims();
+    return valueAndDerivatives(values, keys, dims, *H);
   } else
     // no derivatives needed, just return value
     return root_->value(values);

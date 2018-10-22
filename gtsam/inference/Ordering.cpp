@@ -53,8 +53,19 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
   gttic(Ordering_COLAMDConstrained);
 
   gttic(Prepare);
+  const size_t nVars = variableIndex.size();
+  if (nVars == 0)
+  {
+    return Ordering();
+  }
+
+  if (nVars == 1)
+  {
+    return Ordering(std::vector<Key>(1, variableIndex.begin()->first));
+  }
+
   const size_t nEntries = variableIndex.nEntries(), nFactors =
-      variableIndex.nFactors(), nVars = variableIndex.size();
+      variableIndex.nFactors();
   // Convert to compressed column major format colamd wants it in (== MATLAB format!)
   const size_t Alen = ccolamd_recommended((int) nEntries, (int) nFactors,
       (int) nVars); /* colamd arg 3: size of the array A */
