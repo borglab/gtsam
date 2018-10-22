@@ -108,6 +108,7 @@ set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
 
 # If using Boost shared libs, disable auto linking
 if(MSVC)
+	set(Boost_USE_STATIC_LIBS        ON)  # only find static libs
 	# Some libraries, at least Boost Program Options, rely on this to export DLL symbols
 	# Disable autolinking
 	if(NOT Boost_USE_STATIC_LIBS)
@@ -319,6 +320,8 @@ include_directories(BEFORE
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661 /wd4344 /wd4503) # Disable non-DLL-exported base class and other warnings
+	add_definitions(/wd4244) # Disable loss of precision which is thrown all over our Eigen
+	add_definitions(/bigobj) # Allow large object files for template-based code
 endif()
 
 # GCC 4.8+ complains about local typedefs which we use for shared_ptr etc.

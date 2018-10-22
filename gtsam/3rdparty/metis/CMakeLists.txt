@@ -23,7 +23,7 @@ set(GKLIB_PATH ${PROJECT_SOURCE_DIR}/GKlib CACHE PATH "path to GKlib")
 set(METIS_SHARED TRUE CACHE BOOL "build a shared library")
 
 if(MSVC)
-  set(METIS_INSTALL FALSE)
+  set(METIS_INSTALL TRUE)
 else()
   set(METIS_INSTALL FALSE)
 endif()
