@@ -158,4 +158,12 @@ void test_integer_types()
 
     CALL_SUBTEST_8( integer_type_tests(Matrix<unsigned long long, Dynamic, 5>(1, 5)) );
   }
+#ifdef EIGEN_TEST_PART_9
+  VERIFY_IS_EQUAL(internal::scalar_div_cost<int>::value, 8);
+  VERIFY_IS_EQUAL(internal::scalar_div_cost<unsigned int>::value, 8);
+  if(sizeof(long)>sizeof(int)) {
+    VERIFY(internal::scalar_div_cost<long>::value > internal::scalar_div_cost<int>::value);
+    VERIFY(internal::scalar_div_cost<unsigned long>::value > internal::scalar_div_cost<int>::value);
+  }
+#endif
 }

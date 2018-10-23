@@ -4,7 +4,7 @@ namespace Eigen {
 
 \eigenAutoToc
 
-\section summary Summary
+\section Experimental_summary Summary
 
 With the 2.0 release, Eigen's API is, to a large extent, stable. However, we wish to retain the freedom to make API incompatible changes. To that effect, we call many parts of Eigen "experimental" which means that they are not subject to API stability guarantee.
 
@@ -17,7 +17,7 @@ Experimental features may at any time:
 \li be subject to an API incompatible change;
 \li introduce API or ABI incompatible changes in your own code if you let them affect your API or ABI.
 
-\section modules Experimental modules
+\section Experimental_modules Experimental modules
 
 The following modules are considered entirely experimental, and we make no firm API stability guarantee about them for the time being:
 \li SVD
@@ -26,7 +26,7 @@ The following modules are considered entirely experimental, and we make no firm 
 \li Sparse
 \li Geometry (this one should be mostly stable, but it's a little too early to make a formal guarantee)
 
-\section core Experimental parts of the Core module
+\section Experimental_core Experimental parts of the Core module
 
 In the Core module, the only classes subject to ABI stability guarantee (meaning that you can use it for data members in your public ABI) is:
 \li Matrix

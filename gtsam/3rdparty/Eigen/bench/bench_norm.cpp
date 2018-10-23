@@ -6,19 +6,25 @@ using namespace Eigen;
 using namespace std;
 
 template<typename T>
-EIGEN_DONT_INLINE typename T::Scalar sqsumNorm(const T& v)
+EIGEN_DONT_INLINE typename T::Scalar sqsumNorm(T& v)
 {
   return v.norm();
 }
 
 template<typename T>
-EIGEN_DONT_INLINE typename T::Scalar hypotNorm(const T& v)
+EIGEN_DONT_INLINE typename T::Scalar stableNorm(T& v)
+{
+  return v.stableNorm();
+}
+
+template<typename T>
+EIGEN_DONT_INLINE typename T::Scalar hypotNorm(T& v)
 {
   return v.hypotNorm();
 }
 
 template<typename T>
-EIGEN_DONT_INLINE typename T::Scalar blueNorm(const T& v)
+EIGEN_DONT_INLINE typename T::Scalar blueNorm(T& v)
 {
   return v.blueNorm();
 }
@@ -32,25 +38,25 @@ EIGEN_DONT_INLINE typename T::Scalar lapackNorm(T& v)
   Scalar ssq = 1;
   for (int i=0;i<n;++i)
   {
-    Scalar ax = internal::abs(v.coeff(i));
+    Scalar ax = std::abs(v.coeff(i));
     if (scale >= ax)
     {
-      ssq += internal::abs2(ax/scale);
+      ssq += numext::abs2(ax/scale);
     }
     else
     {
-      ssq = Scalar(1) + ssq * internal::abs2(scale/ax);
+      ssq = Scalar(1) + ssq * numext::abs2(scale/ax);
       scale = ax;
     }
   }
-  return scale * internal::sqrt(ssq);
+  return scale * std::sqrt(ssq);
 }
 
 template<typename T>
 EIGEN_DONT_INLINE typename T::Scalar twopassNorm(T& v)
 {
   typedef typename T::Scalar Scalar;
-  Scalar s = v.cwise().abs().maxCoeff();
+  Scalar s = v.array().abs().maxCoeff();
   return s*(v/s).norm();
 }
 
@@ -73,16 +79,20 @@ EIGEN_DONT_INLINE typename T::Scalar divacNorm(T& v)
       v(i) = v(2*i) + v(2*i+1);
     n = n/2;
   }
-  return internal::sqrt(v(0));
+  return std::sqrt(v(0));
 }
 
+namespace Eigen {
+namespace internal {
 #ifdef EIGEN_VECTORIZE
-Packet4f internal::plt(const Packet4f& a, Packet4f& b) { return _mm_cmplt_ps(a,b); }
-Packet2d internal::plt(const Packet2d& a, Packet2d& b) { return _mm_cmplt_pd(a,b); }
+Packet4f plt(const Packet4f& a, Packet4f& b) { return _mm_cmplt_ps(a,b); }
+Packet2d plt(const Packet2d& a, Packet2d& b) { return _mm_cmplt_pd(a,b); }
 
-Packet4f internal::pandnot(const Packet4f& a, Packet4f& b) { return _mm_andnot_ps(a,b); }
-Packet2d internal::pandnot(const Packet2d& a, Packet2d& b) { return _mm_andnot_pd(a,b); }
+Packet4f pandnot(const Packet4f& a, Packet4f& b) { return _mm_andnot_ps(a,b); }
+Packet2d pandnot(const Packet2d& a, Packet2d& b) { return _mm_andnot_pd(a,b); }
 #endif
+}
+}
 
 template<typename T>
 EIGEN_DONT_INLINE typename T::Scalar pblueNorm(const T& v)
@@ -126,7 +136,7 @@ EIGEN_DONT_INLINE typename T::Scalar pblueNorm(const T& v)
 
     overfl  = rbig*s2m;          // overfow boundary for abig
     eps     = std::pow(ibeta, 1-it);
-    relerr  = internal::sqrt(eps);      // tolerance for neglecting asml
+    relerr  = std::sqrt(eps);      // tolerance for neglecting asml
     abig    = 1.0/eps - 1.0;
     if (Scalar(nbig)>abig)  nmax = abig;  // largest safe n
     else                    nmax = nbig;
@@ -134,13 +144,13 @@ EIGEN_DONT_INLINE typename T::Scalar pblueNorm(const T& v)
 
   typedef typename internal::packet_traits<Scalar>::type Packet;
   const int ps = internal::packet_traits<Scalar>::size;
-  Packet pasml = internal::pset1(Scalar(0));
-  Packet pamed = internal::pset1(Scalar(0));
-  Packet pabig = internal::pset1(Scalar(0));
-  Packet ps2m = internal::pset1(s2m);
-  Packet ps1m = internal::pset1(s1m);
-  Packet pb2  = internal::pset1(b2);
-  Packet pb1  = internal::pset1(b1);
+  Packet pasml = internal::pset1<Packet>(Scalar(0));
+  Packet pamed = internal::pset1<Packet>(Scalar(0));
+  Packet pabig = internal::pset1<Packet>(Scalar(0));
+  Packet ps2m = internal::pset1<Packet>(s2m);
+  Packet ps1m = internal::pset1<Packet>(s1m);
+  Packet pb2  = internal::pset1<Packet>(b2);
+  Packet pb1  = internal::pset1<Packet>(b1);
   for(int j=0; j<v.size(); j+=ps)
   {
     Packet ax = internal::pabs(v.template packet<Aligned>(j));
@@ -170,7 +180,7 @@ EIGEN_DONT_INLINE typename T::Scalar pblueNorm(const T& v)
   Scalar amed = internal::predux(pamed);
   if(abig > Scalar(0))
   {
-    abig = internal::sqrt(abig);
+    abig = std::sqrt(abig);
     if(abig > overfl)
     {
       eigen_assert(false && "overflow");
@@ -179,7 +189,7 @@ EIGEN_DONT_INLINE typename T::Scalar pblueNorm(const T& v)
     if(amed > Scalar(0))
     {
       abig = abig/s2m;
-      amed = internal::sqrt(amed);
+      amed = std::sqrt(amed);
     }
     else
     {
@@ -191,55 +201,56 @@ EIGEN_DONT_INLINE typename T::Scalar pblueNorm(const T& v)
   {
     if (amed > Scalar(0))
     {
-      abig = internal::sqrt(amed);
-      amed = internal::sqrt(asml) / s1m;
+      abig = std::sqrt(amed);
+      amed = std::sqrt(asml) / s1m;
     }
     else
     {
-      return internal::sqrt(asml)/s1m;
+      return std::sqrt(asml)/s1m;
     }
   }
   else
   {
-    return internal::sqrt(amed);
+    return std::sqrt(amed);
   }
   asml = std::min(abig, amed);
   abig = std::max(abig, amed);
   if(asml <= abig*relerr)
     return abig;
   else
-    return abig * internal::sqrt(Scalar(1) + internal::abs2(asml/abig));
+    return abig * std::sqrt(Scalar(1) + numext::abs2(asml/abig));
   #endif
 }
 
 #define BENCH_PERF(NRM) { \
+  float af = 0; double ad = 0; std::complex<float> ac = 0; \
   Eigen::BenchTimer tf, td, tcf; tf.reset(); td.reset(); tcf.reset();\
   for (int k=0; k<tries; ++k) { \
     tf.start(); \
-    for (int i=0; i<iters; ++i) NRM(vf); \
+    for (int i=0; i<iters; ++i) { af += NRM(vf); } \
     tf.stop(); \
   } \
   for (int k=0; k<tries; ++k) { \
     td.start(); \
-    for (int i=0; i<iters; ++i) NRM(vd); \
+    for (int i=0; i<iters; ++i) { ad += NRM(vd); } \
     td.stop(); \
   } \
-  for (int k=0; k<std::max(1,tries/3); ++k) { \
+  /*for (int k=0; k<std::max(1,tries/3); ++k) { \
     tcf.start(); \
-    for (int i=0; i<iters; ++i) NRM(vcf); \
+    for (int i=0; i<iters; ++i) { ac += NRM(vcf); } \
     tcf.stop(); \
-  } \
+  } */\
   std::cout << #NRM << "\t" << tf.value() << "   " << td.value() <<  "    " << tcf.value() << "\n"; \
 }
 
 void check_accuracy(double basef, double based, int s)
 {
-  double yf = basef * internal::abs(internal::random<double>());
-  double yd = based * internal::abs(internal::random<double>());
+  double yf = basef * std::abs(internal::random<double>());
+  double yd = based * std::abs(internal::random<double>());
   VectorXf vf = VectorXf::Ones(s) * yf;
   VectorXd vd = VectorXd::Ones(s) * yd;
 
-  std::cout << "reference\t" << internal::sqrt(double(s))*yf << "\t" << internal::sqrt(double(s))*yd << "\n";
+  std::cout << "reference\t" << std::sqrt(double(s))*yf << "\t" << std::sqrt(double(s))*yd << "\n";
   std::cout << "sqsumNorm\t" << sqsumNorm(vf) << "\t" << sqsumNorm(vd) << "\n";
   std::cout << "hypotNorm\t" << hypotNorm(vf) << "\t" << hypotNorm(vd) << "\n";
   std::cout << "blueNorm\t" << blueNorm(vf) << "\t" << blueNorm(vd) << "\n";
@@ -255,8 +266,8 @@ void check_accuracy_var(int ef0, int ef1, int ed0, int ed1, int s)
   VectorXd vd(s);
   for (int i=0; i<s; ++i)
   {
-    vf[i] = internal::abs(internal::random<double>()) * std::pow(double(10), internal::random<int>(ef0,ef1));
-    vd[i] = internal::abs(internal::random<double>()) * std::pow(double(10), internal::random<int>(ed0,ed1));
+    vf[i] = std::abs(internal::random<double>()) * std::pow(double(10), internal::random<int>(ef0,ef1));
+    vd[i] = std::abs(internal::random<double>()) * std::pow(double(10), internal::random<int>(ed0,ed1));
   }
 
   //std::cout << "reference\t" << internal::sqrt(double(s))*yf << "\t" << internal::sqrt(double(s))*yd << "\n";
@@ -312,34 +323,38 @@ int main(int argc, char** argv)
     std::cout << "\n";
   }
 
+  y = 1;
   std::cout.precision(4);
-  std::cerr << "Performance (out of cache):\n";
+  int s1 = 1024*1024*32;
+  std::cerr << "Performance (out of cache, " << s1 << "):\n";
   {
     int iters = 1;
-    VectorXf vf = VectorXf::Random(1024*1024*32) * y;
-    VectorXd vd = VectorXd::Random(1024*1024*32) * y;
-    VectorXcf vcf = VectorXcf::Random(1024*1024*32) * y;
+    VectorXf vf = VectorXf::Random(s1) * y;
+    VectorXd vd = VectorXd::Random(s1) * y;
+    VectorXcf vcf = VectorXcf::Random(s1) * y;
     BENCH_PERF(sqsumNorm);
+    BENCH_PERF(stableNorm);
     BENCH_PERF(blueNorm);
-//     BENCH_PERF(pblueNorm);
-//     BENCH_PERF(lapackNorm);
-//     BENCH_PERF(hypotNorm);
-//     BENCH_PERF(twopassNorm);
+    BENCH_PERF(pblueNorm);
+    BENCH_PERF(lapackNorm);
+    BENCH_PERF(hypotNorm);
+    BENCH_PERF(twopassNorm);
     BENCH_PERF(bl2passNorm);
   }
 
-  std::cerr << "\nPerformance (in cache):\n";
+  std::cerr << "\nPerformance (in cache, " << 512 << "):\n";
   {
     int iters = 100000;
     VectorXf vf = VectorXf::Random(512) * y;
     VectorXd vd = VectorXd::Random(512) * y;
     VectorXcf vcf = VectorXcf::Random(512) * y;
     BENCH_PERF(sqsumNorm);
+    BENCH_PERF(stableNorm);
     BENCH_PERF(blueNorm);
-//     BENCH_PERF(pblueNorm);
-//     BENCH_PERF(lapackNorm);
-//     BENCH_PERF(hypotNorm);
-//     BENCH_PERF(twopassNorm);
+    BENCH_PERF(pblueNorm);
+    BENCH_PERF(lapackNorm);
+    BENCH_PERF(hypotNorm);
+    BENCH_PERF(twopassNorm);
     BENCH_PERF(bl2passNorm);
   }
 }

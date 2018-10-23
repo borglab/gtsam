@@ -4,7 +4,7 @@ namespace Eigen {
 
 The goal of this page is to explain what we mean by "fixed-size vectorizable".
 
-\section summary Executive Summary
+\section FixedSizeVectorizable_summary Executive Summary
 
 An Eigen object is called "fixed-size vectorizable" if it has fixed size and that size is a multiple of 16 bytes.
 
@@ -21,7 +21,7 @@ Examples include:
 \li Eigen::Quaterniond
 \li Eigen::Quaternionf
 
-\section explanation Explanation
+\section FixedSizeVectorizable_explanation Explanation
 
 First, "fixed-size" should be clear: an Eigen object has fixed size if its number of rows and its number of columns are fixed at compile-time. So for example Matrix3f has fixed size, but MatrixXf doesn't (the opposite of fixed-size is dynamic-size).
 

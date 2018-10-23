@@ -1,19 +1,48 @@
 
 macro(ei_add_property prop value)
-  get_property(previous GLOBAL PROPERTY ${prop})  
+  get_property(previous GLOBAL PROPERTY ${prop})
   if ((NOT previous) OR (previous STREQUAL ""))
     set_property(GLOBAL PROPERTY ${prop} "${value}")
   else()
     set_property(GLOBAL PROPERTY ${prop} "${previous} ${value}")
-  endif()  
+  endif()
 endmacro(ei_add_property)
 
 #internal. See documentation of ei_add_test for details.
 macro(ei_add_test_internal testname testname_with_suffix)
   set(targetname ${testname_with_suffix})
 
-  set(filename ${testname}.cpp)
-  add_executable(${targetname} ${filename})
+  if(EIGEN_ADD_TEST_FILENAME_EXTENSION)
+    set(filename ${testname}.${EIGEN_ADD_TEST_FILENAME_EXTENSION})
+  else()
+    set(filename ${testname}.cpp)
+  endif()
+
+  if(EIGEN_ADD_TEST_FILENAME_EXTENSION STREQUAL cu)
+    if(EIGEN_TEST_CUDA_CLANG)
+      set_source_files_properties(${filename} PROPERTIES LANGUAGE CXX)
+      if(CUDA_64_BIT_DEVICE_CODE)
+        link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib64")
+      else()
+        link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib")
+      endif()
+      if (${ARGC} GREATER 2)
+        add_executable(${targetname} ${filename})
+      else()
+        add_executable(${targetname} ${filename} OPTIONS ${ARGV2})
+      endif()
+      target_link_libraries(${targetname} "cudart_static" "cuda" "dl" "rt" "pthread")
+    else()
+      if (${ARGC} GREATER 2)
+        cuda_add_executable(${targetname} ${filename} OPTIONS ${ARGV2})
+      else()
+        cuda_add_executable(${targetname} ${filename})
+      endif()
+    endif()
+  else()
+    add_executable(${targetname} ${filename})
+  endif()
+
   if (targetname MATCHES "^eigen2_")
     add_dependencies(eigen2_buildtests ${targetname})
   else()
@@ -27,20 +56,20 @@ macro(ei_add_test_internal testname testname_with_suffix)
       ei_add_target_property(${targetname} COMPILE_FLAGS "-DEIGEN_DEBUG_ASSERTS=1")
     endif(EIGEN_DEBUG_ASSERTS)
   endif(EIGEN_NO_ASSERTION_CHECKING)
-  
+
   ei_add_target_property(${targetname} COMPILE_FLAGS "-DEIGEN_TEST_MAX_SIZE=${EIGEN_TEST_MAX_SIZE}")
 
   ei_add_target_property(${targetname} COMPILE_FLAGS "-DEIGEN_TEST_FUNC=${testname}")
-  
-  if(MSVC AND NOT EIGEN_SPLIT_LARGE_TESTS)
+
+  if(MSVC)
     ei_add_target_property(${targetname} COMPILE_FLAGS "/bigobj")
-  endif()  
+  endif()
 
   # let the user pass flags.
   if(${ARGC} GREATER 2)
     ei_add_target_property(${targetname} COMPILE_FLAGS "${ARGV2}")
   endif(${ARGC} GREATER 2)
-  
+
   if(EIGEN_TEST_CUSTOM_CXX_FLAGS)
     ei_add_target_property(${targetname} COMPILE_FLAGS "${EIGEN_TEST_CUSTOM_CXX_FLAGS}")
   endif()
@@ -66,16 +95,12 @@ macro(ei_add_test_internal testname testname_with_suffix)
       # notice: no double quotes around ${libs_to_link} here. It may be a list.
       target_link_libraries(${targetname} ${libs_to_link})
     endif()
-  endif() 
-
-  if(EIGEN_BIN_BASH_EXISTS)
-    add_test(${testname_with_suffix} "${Eigen_SOURCE_DIR}/test/runtest.sh" "${testname_with_suffix}")
-  else()
-    add_test(${testname_with_suffix} "${targetname}")
   endif()
-  
+
+  add_test(${testname_with_suffix} "${targetname}")
+
   # Specify target and test labels accoirding to EIGEN_CURRENT_SUBPROJECT
-  get_property(current_subproject GLOBAL PROPERTY EIGEN_CURRENT_SUBPROJECT)  
+  get_property(current_subproject GLOBAL PROPERTY EIGEN_CURRENT_SUBPROJECT)
   if ((current_subproject) AND (NOT (current_subproject STREQUAL "")))
     set_property(TARGET ${targetname} PROPERTY LABELS "Build${current_subproject}")
     add_dependencies("Build${current_subproject}" ${targetname})
@@ -83,6 +108,103 @@ macro(ei_add_test_internal testname testname_with_suffix)
   endif()
 
 endmacro(ei_add_test_internal)
+
+# SYCL
+macro(ei_add_test_internal_sycl testname testname_with_suffix)
+  include_directories( SYSTEM ${COMPUTECPP_PACKAGE_ROOT_DIR}/include)
+  set(targetname ${testname_with_suffix})
+
+  if(EIGEN_ADD_TEST_FILENAME_EXTENSION)
+    set(filename ${testname}.${EIGEN_ADD_TEST_FILENAME_EXTENSION})
+  else()
+    set(filename ${testname}.cpp)
+  endif()
+
+  set( include_file ${CMAKE_CURRENT_BINARY_DIR}/inc_${filename})
+  set( bc_file ${CMAKE_CURRENT_BINARY_DIR}/${filename})
+  set( host_file ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
+
+  ADD_CUSTOM_COMMAND(
+    OUTPUT ${include_file}
+    COMMAND ${CMAKE_COMMAND} -E echo "\\#include \\\"${host_file}\\\"" > ${include_file}
+    COMMAND ${CMAKE_COMMAND} -E echo "\\#include \\\"${bc_file}.sycl\\\"" >> ${include_file}
+    DEPENDS ${filename} ${bc_file}.sycl
+    COMMENT "Building ComputeCpp integration header file ${include_file}"
+  )
+  # Add a custom target for the generated integration header
+  add_custom_target(${testname}_integration_header_sycl DEPENDS ${include_file})
+
+  add_executable(${targetname} ${include_file})
+  add_dependencies(${targetname} ${testname}_integration_header_sycl)
+  add_sycl_to_target(${targetname} ${filename} ${CMAKE_CURRENT_BINARY_DIR})
+
+  if (targetname MATCHES "^eigen2_")
+    add_dependencies(eigen2_buildtests ${targetname})
+  else()
+    add_dependencies(buildtests ${targetname})
+  endif()
+
+  if(EIGEN_NO_ASSERTION_CHECKING)
+    ei_add_target_property(${targetname} COMPILE_FLAGS "-DEIGEN_NO_ASSERTION_CHECKING=1")
+  else(EIGEN_NO_ASSERTION_CHECKING)
+    if(EIGEN_DEBUG_ASSERTS)
+      ei_add_target_property(${targetname} COMPILE_FLAGS "-DEIGEN_DEBUG_ASSERTS=1")
+    endif(EIGEN_DEBUG_ASSERTS)
+  endif(EIGEN_NO_ASSERTION_CHECKING)
+
+  ei_add_target_property(${targetname} COMPILE_FLAGS "-DEIGEN_TEST_MAX_SIZE=${EIGEN_TEST_MAX_SIZE}")
+
+  ei_add_target_property(${targetname} COMPILE_FLAGS "-DEIGEN_TEST_FUNC=${testname}")
+
+  if(MSVC AND NOT EIGEN_SPLIT_LARGE_TESTS)
+    ei_add_target_property(${targetname} COMPILE_FLAGS "/bigobj")
+  endif()
+
+  # let the user pass flags.
+  if(${ARGC} GREATER 2)
+    ei_add_target_property(${targetname} COMPILE_FLAGS "${ARGV2}")
+  endif(${ARGC} GREATER 2)
+
+  if(EIGEN_TEST_CUSTOM_CXX_FLAGS)
+    ei_add_target_property(${targetname} COMPILE_FLAGS "${EIGEN_TEST_CUSTOM_CXX_FLAGS}")
+  endif()
+
+  if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
+    target_link_libraries(${targetname} ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
+  endif()
+  if(EXTERNAL_LIBS)
+    target_link_libraries(${targetname} ${EXTERNAL_LIBS})
+  endif()
+  if(EIGEN_TEST_CUSTOM_LINKER_FLAGS)
+    target_link_libraries(${targetname} ${EIGEN_TEST_CUSTOM_LINKER_FLAGS})
+  endif()
+
+  if(${ARGC} GREATER 3)
+    set(libs_to_link ${ARGV3})
+    # it could be that some cmake module provides a bad library string " "  (just spaces),
+    # and that severely breaks target_link_libraries ("can't link to -l-lstdc++" errors).
+    # so we check for strings containing only spaces.
+    string(STRIP "${libs_to_link}" libs_to_link_stripped)
+    string(LENGTH "${libs_to_link_stripped}" libs_to_link_stripped_length)
+    if(${libs_to_link_stripped_length} GREATER 0)
+      # notice: no double quotes around ${libs_to_link} here. It may be a list.
+      target_link_libraries(${targetname} ${libs_to_link})
+    endif()
+  endif()
+
+  add_test(${testname_with_suffix} "${targetname}")
+
+  # Specify target and test labels according to EIGEN_CURRENT_SUBPROJECT
+  get_property(current_subproject GLOBAL PROPERTY EIGEN_CURRENT_SUBPROJECT)
+  if ((current_subproject) AND (NOT (current_subproject STREQUAL "")))
+    set_property(TARGET ${targetname} PROPERTY LABELS "Build${current_subproject}")
+    add_dependencies("Build${current_subproject}" ${targetname})
+    set_property(TEST ${testname_with_suffix} PROPERTY LABELS "${current_subproject}")
+  endif()
+
+
+endmacro(ei_add_test_internal_sycl)
+
 
 # Macro to add a test
 #
@@ -131,7 +253,13 @@ macro(ei_add_test testname)
   set(EIGEN_TESTS_LIST "${EIGEN_TESTS_LIST}${testname}\n")
   set_property(GLOBAL PROPERTY EIGEN_TESTS_LIST "${EIGEN_TESTS_LIST}")
 
-  file(READ "${testname}.cpp" test_source)
+  if(EIGEN_ADD_TEST_FILENAME_EXTENSION)
+    set(filename ${testname}.${EIGEN_ADD_TEST_FILENAME_EXTENSION})
+  else()
+    set(filename ${testname}.cpp)
+  endif()
+
+  file(READ "${filename}" test_source)
   set(parts 0)
   string(REGEX MATCHALL "CALL_SUBTEST_[0-9]+|EIGEN_TEST_PART_[0-9]+|EIGEN_SUFFIXES(;[0-9]+)+"
          occurences "${test_source}")
@@ -154,6 +282,39 @@ macro(ei_add_test testname)
   endif(EIGEN_SPLIT_LARGE_TESTS AND suffixes)
 endmacro(ei_add_test)
 
+macro(ei_add_test_sycl testname)
+  get_property(EIGEN_TESTS_LIST GLOBAL PROPERTY EIGEN_TESTS_LIST)
+  set(EIGEN_TESTS_LIST "${EIGEN_TESTS_LIST}${testname}\n")
+  set_property(GLOBAL PROPERTY EIGEN_TESTS_LIST "${EIGEN_TESTS_LIST}")
+
+  if(EIGEN_ADD_TEST_FILENAME_EXTENSION)
+    set(filename ${testname}.${EIGEN_ADD_TEST_FILENAME_EXTENSION})
+  else()
+    set(filename ${testname}.cpp)
+  endif()
+
+  file(READ "${filename}" test_source)
+  set(parts 0)
+  string(REGEX MATCHALL "CALL_SUBTEST_[0-9]+|EIGEN_TEST_PART_[0-9]+|EIGEN_SUFFIXES(;[0-9]+)+"
+         occurences "${test_source}")
+  string(REGEX REPLACE "CALL_SUBTEST_|EIGEN_TEST_PART_|EIGEN_SUFFIXES" "" suffixes "${occurences}")
+  list(REMOVE_DUPLICATES suffixes)
+  if(EIGEN_SPLIT_LARGE_TESTS AND suffixes)
+    add_custom_target(${testname})
+    foreach(suffix ${suffixes})
+      ei_add_test_internal_sycl(${testname} ${testname}_${suffix}
+        "${ARGV1} -DEIGEN_TEST_PART_${suffix}=1" "${ARGV2}")
+      add_dependencies(${testname} ${testname}_${suffix})
+    endforeach(suffix)
+  else(EIGEN_SPLIT_LARGE_TESTS AND suffixes)
+    set(symbols_to_enable_all_parts "")
+    foreach(suffix ${suffixes})
+      set(symbols_to_enable_all_parts
+        "${symbols_to_enable_all_parts} -DEIGEN_TEST_PART_${suffix}=1")
+    endforeach(suffix)
+    ei_add_test_internal_sycl(${testname} ${testname} "${ARGV1} ${symbols_to_enable_all_parts}" "${ARGV2}")
+  endif(EIGEN_SPLIT_LARGE_TESTS AND suffixes)
+endmacro(ei_add_test_sycl)
 
 # adds a failtest, i.e. a test that succeed if the program fails to compile
 # note that the test runner for these is CMake itself, when passed -DEIGEN_FAILTEST=ON
@@ -218,7 +379,7 @@ macro(ei_testing_print_summary)
   elseif(EIGEN_TEST_NO_EXPLICIT_VECTORIZATION)
     message(STATUS "Explicit vectorization disabled (alignment kept enabled)")
   else()
-  
+
   message(STATUS "Maximal matrix/vector size: ${EIGEN_TEST_MAX_SIZE}")
 
     if(EIGEN_TEST_SSE2)
@@ -251,16 +412,73 @@ macro(ei_testing_print_summary)
       message(STATUS "SSE4.2:            Using architecture defaults")
     endif()
 
+    if(EIGEN_TEST_AVX)
+      message(STATUS "AVX:               ON")
+    else()
+      message(STATUS "AVX:               Using architecture defaults")
+    endif()
+
+    if(EIGEN_TEST_FMA)
+      message(STATUS "FMA:               ON")
+    else()
+      message(STATUS "FMA:               Using architecture defaults")
+    endif()
+
+    if(EIGEN_TEST_AVX512)
+      message(STATUS "AVX512:            ON")
+    else()
+      message(STATUS "AVX512:            Using architecture defaults")
+    endif()
+
     if(EIGEN_TEST_ALTIVEC)
       message(STATUS "Altivec:           ON")
     else()
       message(STATUS "Altivec:           Using architecture defaults")
     endif()
 
+    if(EIGEN_TEST_VSX)
+      message(STATUS "VSX:               ON")
+    else()
+      message(STATUS "VSX:               Using architecture defaults")
+    endif()
+
     if(EIGEN_TEST_NEON)
       message(STATUS "ARM NEON:          ON")
     else()
       message(STATUS "ARM NEON:          Using architecture defaults")
+    endif()
+
+    if(EIGEN_TEST_NEON64)
+      message(STATUS "ARMv8 NEON:        ON")
+    else()
+      message(STATUS "ARMv8 NEON:        Using architecture defaults")
+    endif()
+
+    if(EIGEN_TEST_ZVECTOR)
+      message(STATUS "S390X ZVECTOR:     ON")
+    else()
+      message(STATUS "S390X ZVECTOR:     Using architecture defaults")
+    endif()
+
+    if(EIGEN_TEST_CXX11)
+      message(STATUS "C++11:             ON")
+    else()
+      message(STATUS "C++11:             OFF")
+    endif()
+
+    if(EIGEN_TEST_SYCL)
+      message(STATUS "SYCL:              ON")
+    else()
+      message(STATUS "SYCL:              OFF")
+    endif()
+    if(EIGEN_TEST_CUDA)
+      if(EIGEN_TEST_CUDA_CLANG)
+        message(STATUS "CUDA:              ON (using clang)")
+      else()
+        message(STATUS "CUDA:              ON (using nvcc)")
+      endif()
+    else()
+      message(STATUS "CUDA:              OFF")
     endif()
 
   endif() # vectorization / alignment options
@@ -287,7 +505,7 @@ macro(ei_init_testing)
 
   set_property(GLOBAL PROPERTY EIGEN_FAILTEST_FAILURE_COUNT "0")
   set_property(GLOBAL PROPERTY EIGEN_FAILTEST_COUNT "0")
-  
+
   # uncomment anytime you change the ei_get_compilerver_from_cxx_version_string macro
   # ei_test_get_compilerver_from_cxx_version_string()
 endmacro(ei_init_testing)
@@ -296,47 +514,47 @@ macro(ei_set_sitename)
   # if the sitename is not yet set, try to set it
   if(NOT ${SITE} OR ${SITE} STREQUAL "")
     set(eigen_computername $ENV{COMPUTERNAME})
-	set(eigen_hostname $ENV{HOSTNAME})
+    set(eigen_hostname $ENV{HOSTNAME})
     if(eigen_hostname)
       set(SITE ${eigen_hostname})
-	elseif(eigen_computername)
-	  set(SITE ${eigen_computername})
+    elseif(eigen_computername)
+      set(SITE ${eigen_computername})
     endif()
   endif()
   # in case it is already set, enforce lower case
   if(SITE)
     string(TOLOWER ${SITE} SITE)
-  endif()  
+  endif()
 endmacro(ei_set_sitename)
 
 macro(ei_get_compilerver VAR)
-  if(MSVC)
-    # on windows system, we use a modified CMake script  
-    include(EigenDetermineVSServicePack)
-    EigenDetermineVSServicePack( my_service_pack )
+    if(MSVC)
+      # on windows system, we use a modified CMake script
+      include(EigenDetermineVSServicePack)
+      EigenDetermineVSServicePack( my_service_pack )
 
-    if( my_service_pack )
-      set(${VAR} ${my_service_pack})
+      if( my_service_pack )
+        set(${VAR} ${my_service_pack})
+      else()
+        set(${VAR} "na")
+      endif()
     else()
-      set(${VAR} "na")
-    endif()
-  else()
     # on all other system we rely on ${CMAKE_CXX_COMPILER}
     # supporting a "--version" or "/version" flag
-    
+
     if(WIN32 AND ${CMAKE_CXX_COMPILER_ID} EQUAL "Intel")
       set(EIGEN_CXX_FLAG_VERSION "/version")
     else()
       set(EIGEN_CXX_FLAG_VERSION "--version")
     endif()
-    
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER}  ${EIGEN_CXX_FLAG_VERSION}
+
+    execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${EIGEN_CXX_FLAG_VERSION}
                     OUTPUT_VARIABLE eigen_cxx_compiler_version_string OUTPUT_STRIP_TRAILING_WHITESPACE)
     string(REGEX REPLACE "[\n\r].*"  ""  eigen_cxx_compiler_version_string  ${eigen_cxx_compiler_version_string})
-    
+
     ei_get_compilerver_from_cxx_version_string("${eigen_cxx_compiler_version_string}" CNAME CVER)
     set(${VAR} "${CNAME}-${CVER}")
-    
+
   endif()
 endmacro(ei_get_compilerver)
 
@@ -345,18 +563,20 @@ endmacro(ei_get_compilerver)
 # the testing macro call in ei_init_testing() of the EigenTesting.cmake file.
 # See also the ei_test_get_compilerver_from_cxx_version_string macro at the end of the file
 macro(ei_get_compilerver_from_cxx_version_string VERSTRING CNAME CVER)
-  # extract possible compiler names  
+  # extract possible compiler names
   string(REGEX MATCH "g\\+\\+"      ei_has_gpp    ${VERSTRING})
   string(REGEX MATCH "llvm|LLVM"    ei_has_llvm   ${VERSTRING})
   string(REGEX MATCH "gcc|GCC"      ei_has_gcc    ${VERSTRING})
   string(REGEX MATCH "icpc|ICC"     ei_has_icpc   ${VERSTRING})
   string(REGEX MATCH "clang|CLANG"  ei_has_clang  ${VERSTRING})
-  
+
   # combine them
   if((ei_has_llvm) AND (ei_has_gpp OR ei_has_gcc))
     set(${CNAME} "llvm-g++")
   elseif((ei_has_llvm) AND (ei_has_clang))
     set(${CNAME} "llvm-clang++")
+  elseif(ei_has_clang)
+    set(${CNAME} "clang++")
   elseif(ei_has_icpc)
     set(${CNAME} "icpc")
   elseif(ei_has_gpp OR ei_has_gcc)
@@ -364,7 +584,7 @@ macro(ei_get_compilerver_from_cxx_version_string VERSTRING CNAME CVER)
   else()
     set(${CNAME} "_")
   endif()
-  
+
   # extract possible version numbers
   # first try to extract 3 isolated numbers:
   string(REGEX MATCH " [0-9]+\\.[0-9]+\\.[0-9]+" eicver ${VERSTRING})
@@ -382,9 +602,9 @@ macro(ei_get_compilerver_from_cxx_version_string VERSTRING CNAME CVER)
       endif()
     endif()
   endif()
-  
+
   string(REGEX REPLACE ".(.*)" "\\1" ${CVER} ${eicver})
-  
+
 endmacro(ei_get_compilerver_from_cxx_version_string)
 
 macro(ei_get_cxxflags VAR)
@@ -392,8 +612,18 @@ macro(ei_get_cxxflags VAR)
   ei_is_64bit_env(IS_64BIT_ENV)
   if(EIGEN_TEST_NEON)
     set(${VAR} NEON)
+  elseif(EIGEN_TEST_NEON64)
+    set(${VAR} NEON)
+  elseif(EIGEN_TEST_ZVECTOR)
+    set(${VAR} ZVECTOR)
+  elseif(EIGEN_TEST_VSX)
+    set(${VAR} VSX)
   elseif(EIGEN_TEST_ALTIVEC)
     set(${VAR} ALVEC)
+  elseif(EIGEN_TEST_FMA)
+    set(${VAR} FMA)
+  elseif(EIGEN_TEST_AVX)
+    set(${VAR} AVX)
   elseif(EIGEN_TEST_SSE4_2)
     set(${VAR} SSE42)
   elseif(EIGEN_TEST_SSE4_1)
@@ -403,30 +633,30 @@ macro(ei_get_cxxflags VAR)
   elseif(EIGEN_TEST_SSE3)
     set(${VAR} SSE3)
   elseif(EIGEN_TEST_SSE2 OR IS_64BIT_ENV)
-    set(${VAR} SSE2)  
+    set(${VAR} SSE2)
   endif()
 
   if(EIGEN_TEST_OPENMP)
     if (${VAR} STREQUAL "")
-	  set(${VAR} OMP)
-	else()
-	  set(${VAR} ${${VAR}}-OMP)
-	endif()
+      set(${VAR} OMP)
+    else()
+      set(${VAR} ${${VAR}}-OMP)
+    endif()
   endif()
-  
+
   if(EIGEN_DEFAULT_TO_ROW_MAJOR)
     if (${VAR} STREQUAL "")
-	  set(${VAR} ROW)
-	else()
-	  set(${VAR} ${${VAR}}-ROWMAJ)
-	endif()  
+      set(${VAR} ROW)
+    else()
+      set(${VAR} ${${VAR}}-ROWMAJ)
+    endif()
   endif()
 endmacro(ei_get_cxxflags)
 
 macro(ei_set_build_string)
   ei_get_compilerver(LOCAL_COMPILER_VERSION)
   ei_get_cxxflags(LOCAL_COMPILER_FLAGS)
-  
+
   include(EigenDetermineOSVersion)
   DetermineOSVersion(OS_VERSION)
 
@@ -442,7 +672,11 @@ macro(ei_set_build_string)
   else()
     set(TMP_BUILD_STRING ${TMP_BUILD_STRING}-64bit)
   endif()
-  
+
+  if(EIGEN_TEST_CXX11)
+    set(TMP_BUILD_STRING ${TMP_BUILD_STRING}-cxx11)
+  endif()
+
   if(EIGEN_BUILD_STRING_SUFFIX)
     set(TMP_BUILD_STRING ${TMP_BUILD_STRING}-${EIGEN_BUILD_STRING_SUFFIX})
   endif()

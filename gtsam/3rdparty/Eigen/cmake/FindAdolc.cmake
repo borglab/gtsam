@@ -5,7 +5,7 @@ endif (ADOLC_INCLUDES AND ADOLC_LIBRARIES)
 
 find_path(ADOLC_INCLUDES
   NAMES
-  adolc/adouble.h
+  adolc/adtl.h
   PATHS
   $ENV{ADOLCDIR}
   ${INCLUDE_INSTALL_DIR}

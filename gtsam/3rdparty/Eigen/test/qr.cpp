@@ -54,6 +54,8 @@ template<typename MatrixType> void qr_invertible()
 {
   using std::log;
   using std::abs;
+  using std::pow;
+  using std::max;
   typedef typename NumTraits<typename MatrixType::Scalar>::Real RealScalar;
   typedef typename MatrixType::Scalar Scalar;
 
@@ -65,7 +67,7 @@ template<typename MatrixType> void qr_invertible()
   if (internal::is_same<RealScalar,float>::value)
   {
     // let's build a matrix more stable to inverse
-    MatrixType a = MatrixType::Random(size,size*2);
+    MatrixType a = MatrixType::Random(size,size*4);
     m1 += a * a.adjoint();
   }
 
@@ -81,8 +83,11 @@ template<typename MatrixType> void qr_invertible()
   m3 = qr.householderQ(); // get a unitary
   m1 = m3 * m1 * m3;
   qr.compute(m1);
-  VERIFY_IS_APPROX(absdet, qr.absDeterminant());
   VERIFY_IS_APPROX(log(absdet), qr.logAbsDeterminant());
+  // This test is tricky if the determinant becomes too small.
+  // Since we generate random numbers with magnitude rrange [0,1], the average determinant is 0.5^size
+  VERIFY_IS_MUCH_SMALLER_THAN( abs(absdet-qr.absDeterminant()), numext::maxi(RealScalar(pow(0.5,size)),numext::maxi<RealScalar>(abs(absdet),abs(qr.absDeterminant()))) );
+  
 }
 
 template<typename MatrixType> void qr_verify_assert()

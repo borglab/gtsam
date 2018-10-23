@@ -49,7 +49,7 @@ class EigenMatrixPrinter:
 		regex = re.compile('\<.*\>')
 		m = regex.findall(tag)[0][1:-1]
 		template_params = m.split(',')
-		template_params = map(lambda x:x.replace(" ", ""), template_params)
+		template_params = [x.replace(" ", "") for x in template_params]
 		
 		if template_params[1] == '-0x00000000000000001' or template_params[1] == '-0x000000001' or template_params[1] == '-1':
 			self.rows = val['m_storage']['m_rows']
@@ -88,8 +88,11 @@ class EigenMatrixPrinter:
 			
 		def __iter__ (self):
 			return self
-			
+
 		def next(self):
+                        return self.__next__()  # Python 2.x compatibility
+
+		def __next__(self):
 			
 			row = self.currentRow
 			col = self.currentCol
@@ -151,8 +154,11 @@ class EigenQuaternionPrinter:
 			
 		def __iter__ (self):
 			return self
-			
+	
 		def next(self):
+                        return self.__next__()  # Python 2.x compatibility
+
+		def __next__(self):
 			element = self.currentElement
 			
 			if self.currentElement >= 4: #there are 4 elements in a quanternion

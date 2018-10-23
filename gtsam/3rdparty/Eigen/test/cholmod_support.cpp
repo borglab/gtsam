@@ -7,6 +7,7 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#define EIGEN_NO_DEBUG_SMALL_PRODUCT_BLOCKS
 #include "sparse_solver.h"
 
 #include <Eigen/CholmodSupport>
@@ -40,13 +41,13 @@ template<typename T> void test_cholmod_T()
   check_sparse_spd_solving(llt_colmajor_upper);
   check_sparse_spd_solving(ldlt_colmajor_lower);
   check_sparse_spd_solving(ldlt_colmajor_upper);
-  
-//  check_sparse_spd_determinant(chol_colmajor_lower);
-//  check_sparse_spd_determinant(chol_colmajor_upper);
-//  check_sparse_spd_determinant(llt_colmajor_lower);
-//  check_sparse_spd_determinant(llt_colmajor_upper);
-//  check_sparse_spd_determinant(ldlt_colmajor_lower);
-//  check_sparse_spd_determinant(ldlt_colmajor_upper);
+
+  check_sparse_spd_determinant(chol_colmajor_lower);
+  check_sparse_spd_determinant(chol_colmajor_upper);
+  check_sparse_spd_determinant(llt_colmajor_lower);
+  check_sparse_spd_determinant(llt_colmajor_upper);
+  check_sparse_spd_determinant(ldlt_colmajor_lower);
+  check_sparse_spd_determinant(ldlt_colmajor_upper);
 }
 
 void test_cholmod_support()
