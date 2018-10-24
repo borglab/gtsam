@@ -187,7 +187,14 @@ public:
       ar & boost::serialization::make_nvp("GenericValue",
               boost::serialization::base_object<Value>(*this));
       ar & boost::serialization::make_nvp("value", value_);
-    }
+
+	 // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+	 enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
+
+  public:
+
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+	}
 
 /// use this macro instead of BOOST_CLASS_EXPORT for GenericValues
 #define GTSAM_VALUE_EXPORT(Type) BOOST_CLASS_EXPORT(gtsam::GenericValue<Type>)
