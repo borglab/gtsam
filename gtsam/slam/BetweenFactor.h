@@ -122,6 +122,9 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
+  
+  public:
+	  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   }; // \class BetweenFactor
 
   /// traits

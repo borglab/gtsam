@@ -104,6 +104,9 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);
     }
+  
+  public:
+	  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
 } /// namespace gtsam

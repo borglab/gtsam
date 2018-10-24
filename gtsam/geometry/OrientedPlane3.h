@@ -156,6 +156,9 @@ public:
   }
 
   /// @}
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template<> struct traits<OrientedPlane3> : public internal::Manifold<
