@@ -26,10 +26,9 @@
 namespace gtsam {
 
 /**
- * Character and index key used in VectorValues, GaussianFactorGraph,
- * GaussianFactor, etc.  These keys are generated at runtime from TypedSymbol
- * keys when linearizing a nonlinear factor graph.  This key is not type
- * safe, so cannot be used with any Nonlinear* classes.
+ * Character and index key used to refer to variables. Will simply cast to a Key,
+ * i.e., a large integer. Keys are used to retrieve values from Values, 
+ * specify what variables factors depend on, etc.
  */
 class GTSAM_EXPORT Symbol {
 protected:
