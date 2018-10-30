@@ -2693,7 +2693,7 @@ virtual class Scenario {
 virtual class ConstantTwistScenario : gtsam::Scenario {
   ConstantTwistScenario(Vector w, Vector v);
   ConstantTwistScenario(Vector w, Vector v,
-                        const Pose3& nTb0);
+                        const gtsam::Pose3& nTb0);
 };
 
 virtual class AcceleratingScenario : gtsam::Scenario {
