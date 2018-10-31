@@ -57,9 +57,9 @@ int main(int argc, char* argv[]) {
   Values initialEstimate, totalEstimate, result;
 
   // Add a prior on pose x0. This indirectly specifies where the origin is.
-  // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
+  // 0.1 rad std on roll, pitch, yaw, 30cm std on x,y,z.
   auto noise = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
+      (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3)).finished());
   newgraph.push_back(PriorFactor<Pose3>(X(0), pose_0, noise));
 
   // Add imu priors
@@ -102,8 +102,6 @@ int main(int argc, char* argv[]) {
         Vector6 covvec;
         covvec << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
         auto cov = noiseModel::Diagonal::Variances(covvec);
-        Vector6 zerovec;
-        zerovec << 0, 0, 0, 0, 0, 0;
         auto f = boost::make_shared<BetweenFactor<imuBias::ConstantBias> >(
             b1, b2, imuBias::ConstantBias(), cov);
         newgraph.add(f);
