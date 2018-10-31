@@ -155,7 +155,7 @@ cdef class Test:
     def create_ptrs(self):
         cdef pair [shared_ptr[CTest],shared_ptr[CTest]] ret = self.CTest_.get().create_ptrs()
         return (Test.cyCreateFromShared(ret.first),Test.cyCreateFromShared(ret.second))
-    def __str__(self):
+    def __repr__(self):
         strBuf = RedirectCout()
         self.print_('')
         return strBuf.str()
