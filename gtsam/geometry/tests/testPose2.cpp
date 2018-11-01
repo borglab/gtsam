@@ -743,7 +743,7 @@ namespace {
   /* ************************************************************************* */
   struct Triangle { size_t i_,j_,k_;};
 
-  boost::optional<Pose2> align2(const vector<Point2>& ps, const vector<Point2>& qs,
+  boost::optional<Pose2> align2(const Point2Vector& ps, const Point2Vector& qs,
     const pair<Triangle, Triangle>& trianglePair) {
       const Triangle& t1 = trianglePair.first, t2 = trianglePair.second;
       vector<Point2Pair> correspondences;
@@ -755,7 +755,7 @@ namespace {
 TEST(Pose2, align_4) {
   using namespace align_3;
 
-  vector<Point2> ps,qs;
+  Point2Vector ps,qs;
   ps += p1, p2, p3;
   qs += q3, q1, q2; // note in 3,1,2 order !
 

@@ -51,7 +51,7 @@ TEST(PinholeCamera, BAL) {
 
   for (size_t j = 0; j < db.number_tracks(); j++) {
     for (const SfM_Measurement& m: db.tracks[j].measurements)
-      graph.push_back(sfmFactor(m.second, unit2, m.first, P(j)));
+      graph.emplace_shared<sfmFactor>(m.second, unit2, m.first, P(j));
   }
 
   Values initial = initialCamerasAndPointsEstimate(db);

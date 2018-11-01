@@ -4,7 +4,7 @@
   USE_FORTRAN = 0
 # USE_FORTRAN = 1
 
-VERSION = 1.0.2
+VERSION = 1.0.3
 SO_VERSION = 1
 
 default: library
@@ -34,6 +34,8 @@ endif
 ccode: all
 
 fortran: all
+
+static: $(AR_TARGET)
 
 $(AR_TARGET): $(DEPENDS)
 	$(COMPILE)

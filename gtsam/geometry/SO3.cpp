@@ -22,6 +22,7 @@
 #include <gtsam/base/concepts.h>
 #include <cmath>
 #include <limits>
+#include <iostream>
 
 namespace gtsam {
 
@@ -116,6 +117,12 @@ SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
   return so3::ExpmapFunctor(axis, theta).expmap();
 }
 
+/* ************************************************************************* */
+void SO3::print(const std::string& s) const {
+   std::cout << s << *this << std::endl;
+ }
+
+/* ************************************************************************* */
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
   if (H) {
     so3::DexpFunctor impl(omega);

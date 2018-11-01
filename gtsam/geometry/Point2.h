@@ -164,7 +164,7 @@ typedef std::pair<Point2, Point2> Point2Pair;
 std::ostream &operator<<(std::ostream &os, const gtsam::Point2Pair &p);
 
 // For MATLAB wrapper
-typedef std::vector<Point2> Point2Vector;
+typedef std::vector<Point2, Eigen::aligned_allocator<Point2> > Point2Vector;
 
 /// multiply with scalar
 inline Point2 operator*(double s, const Point2& p) {

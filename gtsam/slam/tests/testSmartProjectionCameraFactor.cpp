@@ -166,7 +166,7 @@ TEST( SmartProjectionCameraFactor, noisy ) {
   EXPECT(assert_equal(expected, actual, 1));
 
   SmartFactor::shared_ptr factor2(new SmartFactor(unit2));
-  vector<Point2> measurements;
+  Point2Vector measurements;
   measurements.push_back(level_uv);
   measurements.push_back(level_uv_right);
 
@@ -186,7 +186,7 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
   using namespace vanilla;
 
   // Project three landmarks into three cameras
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -209,8 +209,8 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6 + 5, 1e-5);
-  graph.push_back(PriorFactor<Camera>(c1, cam1, noisePrior));
-  graph.push_back(PriorFactor<Camera>(c2, cam2, noisePrior));
+  graph.emplace_shared<PriorFactor<Camera> >(c1, cam1, noisePrior);
+  graph.emplace_shared<PriorFactor<Camera> >(c2, cam2, noisePrior);
 
   // Create initial estimate
   Values initial;
@@ -288,7 +288,7 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
   using namespace vanilla;
 
   // Project three landmarks into three cameras
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -321,8 +321,8 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Camera>(c1, cam1, noisePrior));
-  graph.push_back(PriorFactor<Camera>(c2, cam2, noisePrior));
+  graph.emplace_shared<PriorFactor<Camera> >(c1, cam1, noisePrior);
+  graph.emplace_shared<PriorFactor<Camera> >(c2, cam2, noisePrior);
 
   Values values;
   values.insert(c1, cam1);
@@ -360,7 +360,7 @@ TEST( SmartProjectionCameraFactor, perturbCamerasAndOptimize ) {
 
   using namespace vanilla;
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3,
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3,
       measurements_cam4, measurements_cam5;
 
   // 1. Project three landmarks into three cameras and triangulate
@@ -398,8 +398,8 @@ TEST( SmartProjectionCameraFactor, perturbCamerasAndOptimize ) {
   graph.push_back(smartFactor3);
   graph.push_back(smartFactor4);
   graph.push_back(smartFactor5);
-  graph.push_back(PriorFactor<Camera>(c1, cam1, noisePrior));
-  graph.push_back(PriorFactor<Camera>(c2, cam2, noisePrior));
+  graph.emplace_shared<PriorFactor<Camera> >(c1, cam1, noisePrior);
+  graph.emplace_shared<PriorFactor<Camera> >(c2, cam2, noisePrior);
 
   Values values;
   values.insert(c1, cam1);
@@ -440,7 +440,7 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler ) {
 
   using namespace bundler;
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3,
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3,
       measurements_cam4, measurements_cam5;
 
   // 1. Project three landmarks into three cameras and triangulate
@@ -476,8 +476,8 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Camera>(c1, cam1, noisePrior));
-  graph.push_back(PriorFactor<Camera>(c2, cam2, noisePrior));
+  graph.emplace_shared<PriorFactor<Camera> >(c1, cam1, noisePrior);
+  graph.emplace_shared<PriorFactor<Camera> >(c2, cam2, noisePrior);
 
   Values values;
   values.insert(c1, cam1);
@@ -516,7 +516,7 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler2 ) {
 
   using namespace bundler;
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3,
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3,
       measurements_cam4, measurements_cam5;
 
   // 1. Project three landmarks into three cameras and triangulate
@@ -552,8 +552,8 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler2 ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Camera>(c1, cam1, noisePrior));
-  graph.push_back(PriorFactor<Camera>(c2, cam2, noisePrior));
+  graph.emplace_shared<PriorFactor<Camera> >(c1, cam1, noisePrior);
+  graph.emplace_shared<PriorFactor<Camera> >(c2, cam2, noisePrior);
 
   Values values;
   values.insert(c1, cam1);
@@ -768,8 +768,8 @@ TEST( SmartProjectionCameraFactor, computeImplicitJacobian ) {
   Point3 point(0,0,0);
   if (factor1->point())
     point = *(factor1->point());
-  vector<Matrix29> Fblocks;
-  factor1->computeJacobians(Fblocks, expectedE, expectedb, cameras, point);
+  SmartFactor::FBlocks Fs;
+  factor1->computeJacobians(Fs, expectedE, expectedb, cameras, point);
 
   NonlinearFactorGraph generalGraph;
   SFMFactor sfm1(level_uv, unit2, c1, l1);

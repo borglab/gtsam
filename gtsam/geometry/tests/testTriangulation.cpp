@@ -60,7 +60,7 @@ Point2 z2 = camera2.project(landmark);
 TEST( triangulation, twoPoses) {
 
   vector<Pose3> poses;
-  vector<Point2> measurements;
+  Point2Vector measurements;
 
   poses += pose1, pose2;
   measurements += z1, z2;
@@ -108,7 +108,7 @@ TEST( triangulation, twoPosesBundler) {
   Point2 z2 = camera2.project(landmark);
 
   vector<Pose3> poses;
-  vector<Point2> measurements;
+  Point2Vector measurements;
 
   poses += pose1, pose2;
   measurements += z1, z2;
@@ -132,7 +132,7 @@ TEST( triangulation, twoPosesBundler) {
 //******************************************************************************
 TEST( triangulation, fourPoses) {
   vector<Pose3> poses;
-  vector<Point2> measurements;
+  Point2Vector measurements;
 
   poses += pose1, pose2;
   measurements += z1, z2;
@@ -195,8 +195,8 @@ TEST( triangulation, fourPoses_distinct_Ks) {
   Point2 z1 = camera1.project(landmark);
   Point2 z2 = camera2.project(landmark);
 
-  vector<SimpleCamera> cameras;
-  vector<Point2> measurements;
+  CameraSet<SimpleCamera> cameras;
+  Point2Vector measurements;
 
   cameras += camera1, camera2;
   measurements += z1, z2;
@@ -260,8 +260,8 @@ TEST( triangulation, outliersAndFarLandmarks) {
   Point2 z1 = camera1.project(landmark);
   Point2 z2 = camera2.project(landmark);
 
-  vector<SimpleCamera> cameras;
-  vector<Point2> measurements;
+  CameraSet<SimpleCamera> cameras;
+  Point2Vector measurements;
 
   cameras += camera1, camera2;
   measurements += z1, z2;
@@ -308,7 +308,7 @@ TEST( triangulation, twoIdenticalPoses) {
   Point2 z1 = camera1.project(landmark);
 
   vector<Pose3> poses;
-  vector<Point2> measurements;
+  Point2Vector measurements;
 
   poses += pose1, pose1;
   measurements += z1, z1;
@@ -323,7 +323,7 @@ TEST( triangulation, onePose) {
   // because there's only one camera observation
 
   vector<Pose3> poses;
-  vector<Point2> measurements;
+  Point2Vector measurements;
 
   poses += Pose3();
   measurements += Point2(0,0);
@@ -354,7 +354,7 @@ TEST( triangulation, StereotriangulateNonlinear ) {
   cameras.push_back(StereoCamera(Pose3(m1), stereoK));
   cameras.push_back(StereoCamera(Pose3(m2), stereoK));
 
-  vector<StereoPoint2> measurements;
+  StereoPoint2Vector measurements;
   measurements += StereoPoint2(226.936, 175.212, 424.469);
   measurements += StereoPoint2(339.571, 285.547, 669.973);
 
@@ -378,12 +378,12 @@ TEST( triangulation, StereotriangulateNonlinear ) {
 
     NonlinearFactorGraph graph;
     static SharedNoiseModel unit(noiseModel::Unit::Create(3));
-    graph.push_back(StereoFactor::shared_ptr(new StereoFactor(measurements[0], unit, Symbol('x',1), Symbol('l',1), stereoK)));
-    graph.push_back(StereoFactor::shared_ptr(new StereoFactor(measurements[1], unit, Symbol('x',2), Symbol('l',1), stereoK)));
+    graph.emplace_shared<StereoFactor>(measurements[0], unit, Symbol('x',1), Symbol('l',1), stereoK);
+    graph.emplace_shared<StereoFactor>(measurements[1], unit, Symbol('x',2), Symbol('l',1), stereoK);
 
     const SharedDiagonal posePrior = noiseModel::Isotropic::Sigma(6, 1e-9);
-    graph.push_back(PriorFactor<Pose3>(Symbol('x',1), Pose3(m1), posePrior));
-    graph.push_back(PriorFactor<Pose3>(Symbol('x',2), Pose3(m2), posePrior));
+    graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x',1), Pose3(m1), posePrior);
+    graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x',2), Pose3(m2), posePrior);
 
     LevenbergMarquardtOptimizer optimizer(graph, values);
     Values result = optimizer.optimize();
@@ -399,8 +399,8 @@ TEST( triangulation, StereotriangulateNonlinear ) {
     NonlinearFactorGraph graph;
     static SharedNoiseModel unit(noiseModel::Unit::Create(3));
 
-    graph.push_back(TriangulationFactor<StereoCamera>(cameras[0], measurements[0], unit, Symbol('l',1)));
-    graph.push_back(TriangulationFactor<StereoCamera>(cameras[1], measurements[1], unit, Symbol('l',1)));
+    graph.emplace_shared<TriangulationFactor<StereoCamera> >(cameras[0], measurements[0], unit, Symbol('l',1));
+    graph.emplace_shared<TriangulationFactor<StereoCamera> >(cameras[1], measurements[1], unit, Symbol('l',1));
 
     LevenbergMarquardtOptimizer optimizer(graph, values);
     Values result = optimizer.optimize();

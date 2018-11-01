@@ -55,6 +55,7 @@ public:
    *  and this typedef informs those classes what "project" returns.
    */
   typedef Point2 Measurement;
+  typedef Point2Vector MeasurementVector;
 
 private:
 
@@ -201,7 +202,9 @@ public:
       OptionalJacobian<2, 2> Dpoint = boost::none) const;
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
-  static Point3 backproject_from_camera(const Point2& p, const double depth);
+  static Point3 BackprojectFromCamera(const Point2& p, const double depth,
+                                      OptionalJacobian<3, 2> Dpoint = boost::none,
+                                      OptionalJacobian<3, 1> Ddepth = boost::none);
 
   /// @}
   /// @name Advanced interface
@@ -226,6 +229,9 @@ private:
   void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(pose_);
   }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 };
 // end of class PinholeBase
@@ -337,8 +343,28 @@ public:
       boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
-  Point3 backproject(const Point2& pn, double depth) const {
-    return pose().transform_from(backproject_from_camera(pn, depth));
+  Point3 backproject(const Point2& pn, double depth,
+                     OptionalJacobian<3, 6> Dresult_dpose = boost::none,
+                     OptionalJacobian<3, 2> Dresult_dp = boost::none,
+                     OptionalJacobian<3, 1> Dresult_ddepth = boost::none) const {
+
+    Matrix32 Dpoint_dpn;
+    Matrix31 Dpoint_ddepth;
+    const Point3 point = BackprojectFromCamera(pn, depth,
+                                                 Dresult_dp ? &Dpoint_dpn : 0,
+                                                 Dresult_ddepth ? &Dpoint_ddepth : 0);
+
+    Matrix33 Dresult_dpoint;
+    const Point3 result = pose().transform_from(point, Dresult_dpose,
+                                                       (Dresult_ddepth ||
+                                                        Dresult_dp) ? &Dresult_dpoint : 0);
+
+    if (Dresult_dp)
+      *Dresult_dp = Dresult_dpoint * Dpoint_dpn;
+    if (Dresult_ddepth)
+      *Dresult_ddepth = Dresult_dpoint * Dpoint_ddepth;
+
+    return result;
   }
 
   /**
@@ -390,6 +416,9 @@ private:
   }
 
   /// @}
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // manifold traits
@@ -404,4 +433,3 @@ template <typename T>
 struct Range<CalibratedCamera, T> : HasRange<CalibratedCamera, T, double> {};
 
 }  // namespace gtsam
-

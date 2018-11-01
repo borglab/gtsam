@@ -1560,8 +1560,9 @@ PUBLIC Int CCOLAMD_2	    /* returns TRUE if successful, FALSE otherwise */
     Int *dead_cols ;
     Int set1 ;
     Int set2 ;
+#ifndef NDEBUG
     Int cs ;
-
+#endif
     int ok ;
 
 #ifndef NDEBUG
@@ -1909,8 +1910,10 @@ PUBLIC Int CCOLAMD_2	    /* returns TRUE if successful, FALSE otherwise */
             p [k] = col ;
             ASSERT (A [col] == EMPTY) ;
 
-	    cs = CMEMBER (col) ;
+#ifndef NDEBUG
+	    	cs = CMEMBER (col) ;
             ASSERT (k >= cset_start [cs] && k < cset_start [cs+1]) ;
+#endif
 
             A [col] = k ;
             k++ ;
@@ -1926,11 +1929,11 @@ PUBLIC Int CCOLAMD_2	    /* returns TRUE if successful, FALSE otherwise */
             if (A [col] == EMPTY)
             {
                 k = Col [col].shared2.order ;
-		cs = CMEMBER (col) ;
 #ifndef NDEBUG
+				cs = CMEMBER (col) ;
                 dead_cols [cs]-- ;
-#endif
                 ASSERT (k >= cset_start [cs] && k < cset_start [cs+1]) ;
+#endif
                 DEBUG1 (("ccolamd output ordering: k "ID" col "ID
                     " (dense or null col)\n", k, col)) ;
                 p [k] = col ;

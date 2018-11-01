@@ -48,6 +48,9 @@ protected:
 
 public:
 
+  /// Default constructor only for Cython wrapper
+  Marginals(){}
+
   /** Construct a marginals class.
    * @param graph The factor graph defining the full joint density on all variables.
    * @param solution The linearization point about which to compute Gaussian marginals (usually the MLE as obtained from a NonlinearOptimizer).
@@ -91,6 +94,9 @@ protected:
   FastMap<Key, size_t> indices_;
 
 public:
+  /// Default constructor only for Cython wrapper
+  JointMarginal() {}
+
   /** Access a block, corresponding to a pair of variables, of the joint
    * marginal.  Each block is accessed by its "vertical position",
    * corresponding to the variable with nonlinear Key \c iVariable and

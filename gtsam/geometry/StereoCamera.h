@@ -43,6 +43,7 @@ public:
    *  and this typedef informs those classes what "project" returns.
    */
   typedef StereoPoint2 Measurement;
+  typedef StereoPoint2Vector MeasurementVector;
 
 private:
   Pose3 leftCamPose_;

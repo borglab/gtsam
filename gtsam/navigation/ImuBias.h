@@ -169,6 +169,9 @@ private:
     ar & BOOST_SERIALIZATION_NVP(biasGyro_);
   }
 
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   /// @}
 
 }; // ConstantBias class

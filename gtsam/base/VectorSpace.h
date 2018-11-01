@@ -138,14 +138,14 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
   }
 
   static Class Compose(const Class& v1, const Class& v2, ChartJacobian H1,
-      ChartJacobian H2) {
+      ChartJacobian H2 = boost::none) {
     if (H1) *H1 = Eye(v1);
     if (H2) *H2 = Eye(v2);
     return v1 + v2;
   }
 
   static Class Between(const Class& v1, const Class& v2, ChartJacobian H1,
-      ChartJacobian H2) {
+      ChartJacobian H2 = boost::none) {
     if (H1) *H1 = - Eye(v1);
     if (H2) *H2 =   Eye(v2);
     return v2 - v1;

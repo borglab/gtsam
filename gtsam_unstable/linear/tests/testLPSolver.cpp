@@ -189,12 +189,12 @@ TEST(LPSolver, overConstrainedLinearSystem) {
 
 TEST(LPSolver, overConstrainedLinearSystem2) {
   GaussianFactorGraph graph;
-  graph.push_back(JacobianFactor(1, I_1x1, 2, I_1x1, kOne,
-                                 noiseModel::Constrained::All(1)));
-  graph.push_back(JacobianFactor(1, I_1x1, 2, -I_1x1, 5 * kOne,
-                                 noiseModel::Constrained::All(1)));
-  graph.push_back(JacobianFactor(1, I_1x1, 2, 2 * I_1x1, 6 * kOne,
-                                 noiseModel::Constrained::All(1)));
+  graph.emplace_shared<JacobianFactor>(1, I_1x1, 2, I_1x1, kOne,
+                                 noiseModel::Constrained::All(1));
+  graph.emplace_shared<JacobianFactor>(1, I_1x1, 2, -I_1x1, 5 * kOne,
+                                 noiseModel::Constrained::All(1));
+  graph.emplace_shared<JacobianFactor>(1, I_1x1, 2, 2 * I_1x1, 6 * kOne,
+                                 noiseModel::Constrained::All(1));
   VectorValues x = graph.optimize();
   // This check confirms that gtsam linear constraint solver can't handle
   // over-constrained system

@@ -26,7 +26,7 @@
 #include <boost/pool/pool_alloc.hpp>
 
 #include <cmath>
-#include <iosfwd>
+#include <iostream>
 #include <typeinfo> // operator typeid
 
 namespace gtsam {
@@ -190,7 +190,7 @@ public:
     }
 
 /// use this macro instead of BOOST_CLASS_EXPORT for GenericValues
-#define GTSAM_VALUE_EXPORT(Type) BOOST_CLASS_EXPORT(GenericValue<Type>)
+#define GTSAM_VALUE_EXPORT(Type) BOOST_CLASS_EXPORT(gtsam::GenericValue<Type>)
 
 };
 

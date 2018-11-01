@@ -21,14 +21,14 @@
 #include <string>
 #include <vector>
 
-#include "ForwardDeclaration.h"
-
 #pragma once
 
 namespace wrap {
 
 // Forward declarations
+class Qualified;
 class Class;
+struct ForwardDeclaration;
 
 /** Attributes about valid classes, both for classes defined in this module and
  * also those forward-declared from others.  At the moment this only contains
@@ -57,6 +57,7 @@ public:
   }
 
   void addClasses(const std::vector<Class>& classes);
+  void addType(const Qualified& types);
   void addForwardDeclarations(
       const std::vector<ForwardDeclaration>& forwardDecls);
 

@@ -85,25 +85,9 @@ public:
     return pn;
   }
 
-  /** project a point from world coordinate to the image
-   *  @param pw is a point in the world coordinates
-   */
-  Point2 project(const Point3& pw) const {
-    const Point2 pn = PinholeBase::project2(pw); // project to normalized coordinates
-    return calibration().uncalibrate(pn); // uncalibrate to pixel coordinates
-  }
-
-  /** project a point from world coordinate to the image
-   *  @param pw is a point at infinity in the world coordinates
-   */
-  Point2 project(const Unit3& pw) const {
-    const Unit3 pc = pose().rotation().unrotate(pw); // convert to camera frame
-    const Point2 pn = PinholeBase::Project(pc); // project to normalized coordinates
-    return calibration().uncalibrate(pn);  // uncalibrate to pixel coordinates
-  }
 
   /** Templated projection of a point (possibly at infinity) from world coordinate to the image
-   *  @param pw is a 3D point or aUnit3 (point at infinity) in world coordinates
+   *  @param pw is a 3D point or a Unit3 (point at infinity) in world coordinates
    *  @param Dpose is the Jacobian w.r.t. pose3
    *  @param Dpoint is the Jacobian w.r.t. point3
    *  @param Dcal is the Jacobian w.r.t. calibration
@@ -131,24 +115,50 @@ public:
   }
 
   /// project a 3D point from world coordinates into the image
-  Point2 project(const Point3& pw, OptionalJacobian<2, 6> Dpose,
+  Point2 project(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
       OptionalJacobian<2, 3> Dpoint = boost::none,
       OptionalJacobian<2, DimK> Dcal = boost::none) const {
     return _project(pw, Dpose, Dpoint, Dcal);
   }
 
   /// project a point at infinity from world coordinates into the image
-  Point2 project(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
+  Point2 project(const Unit3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
       OptionalJacobian<2, 2> Dpoint = boost::none,
       OptionalJacobian<2, DimK> Dcal = boost::none) const {
     return _project(pw, Dpose, Dpoint, Dcal);
   }
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
-  Point3 backproject(const Point2& p, double depth) const {
-    const Point2 pn = calibration().calibrate(p);
-    return pose().transform_from(backproject_from_camera(pn, depth));
+  Point3 backproject(const Point2& p, double depth,
+                     OptionalJacobian<3, 6> Dresult_dpose = boost::none,
+                     OptionalJacobian<3, 2> Dresult_dp = boost::none,
+                     OptionalJacobian<3, 1> Dresult_ddepth = boost::none,
+                     OptionalJacobian<3, DimK> Dresult_dcal = boost::none) const {
+    typedef Eigen::Matrix<double, 2, DimK> Matrix2K;
+    Matrix2K Dpn_dcal;
+    Matrix22 Dpn_dp;
+    const Point2 pn = calibration().calibrate(p, Dresult_dcal ? &Dpn_dcal : 0,
+                                                 Dresult_dp ? &Dpn_dp : 0);
+    Matrix32 Dpoint_dpn;
+    Matrix31 Dpoint_ddepth;
+    const Point3 point = BackprojectFromCamera(pn, depth,
+                                               (Dresult_dp || Dresult_dcal) ? &Dpoint_dpn : 0,
+                                               Dresult_ddepth ? &Dpoint_ddepth : 0);
+    Matrix33 Dresult_dpoint;
+    const Point3 result = pose().transform_from(point, Dresult_dpose,
+                                                    (Dresult_ddepth ||
+                                                     Dresult_dp     ||
+                                                     Dresult_dcal) ? &Dresult_dpoint : 0);
+    if (Dresult_dcal)
+       *Dresult_dcal = Dresult_dpoint * Dpoint_dpn * Dpn_dcal;  // (3x3)*(3x2)*(2xDimK)
+    if (Dresult_dp)
+       *Dresult_dp =   Dresult_dpoint * Dpoint_dpn * Dpn_dp;    // (3x3)*(3x2)*(2x2)
+    if (Dresult_ddepth)
+       *Dresult_ddepth = Dresult_dpoint * Dpoint_ddepth;        // (3x3)*(3x1)
+
+    return result;
   }
+
 
   /// backproject a 2-dimensional point to a 3-dimensional point at infinity
   Unit3 backprojectPointAtInfinity(const Point2& p) const {
@@ -210,7 +220,9 @@ private:
     & boost::serialization::make_nvp("PinholeBase",
         boost::serialization::base_object<PinholeBase>(*this));
   }
-
+  
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 // end of class PinholeBaseK
 
@@ -300,6 +312,11 @@ public:
   /// Init from Vector and calibration
   PinholePose(const Vector &v, const Vector &K) :
       Base(v), K_(new CALIBRATION(K)) {
+  }
+
+  // Init from Pose3 and calibration
+  PinholePose(const Pose3 &pose, const Vector &K) :
+      Base(pose), K_(new CALIBRATION(K)) {
   }
 
   /// @}
@@ -407,6 +424,8 @@ private:
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
 
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 // end of class PinholePose
 

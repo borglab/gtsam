@@ -62,7 +62,7 @@ void registerNumpyEigenConversions();
 
 //-----------------------------------//
 
-BOOST_PYTHON_MODULE(gtsampy){
+BOOST_PYTHON_MODULE(_gtsampy){
 
   // NOTE: We need to call import_array1() instead of import_array() to support both python 2
   //       and 3. The reason is that BOOST_PYTHON_MODULE puts all its contents in a function
