@@ -17,6 +17,7 @@ template<typename MatrixType> void diagonalmatrices(const MatrixType& m)
   typedef Matrix<Scalar, Rows, 1> VectorType;
   typedef Matrix<Scalar, 1, Cols> RowVectorType;
   typedef Matrix<Scalar, Rows, Rows> SquareMatrixType;
+  typedef Matrix<Scalar, Dynamic, Dynamic> DynMatrixType;
   typedef DiagonalMatrix<Scalar, Rows> LeftDiagonalMatrix;
   typedef DiagonalMatrix<Scalar, Cols> RightDiagonalMatrix;
   typedef Matrix<Scalar, Rows==Dynamic?Dynamic:2*Rows, Cols==Dynamic?Dynamic:2*Cols> BigMatrix;
@@ -64,6 +65,13 @@ template<typename MatrixType> void diagonalmatrices(const MatrixType& m)
   VERIFY_IS_APPROX( (((v1+v2).asDiagonal() * (m1+m2))(i,j))  , (v1+v2)(i) * (m1+m2)(i,j) );
   VERIFY_IS_APPROX( ((m1 * (rv1+rv2).asDiagonal())(i,j))  , (rv1+rv2)(j) * m1(i,j) );
   VERIFY_IS_APPROX( (((m1+m2) * (rv1+rv2).asDiagonal())(i,j))  , (rv1+rv2)(j) * (m1+m2)(i,j) );
+  
+  if(rows>1)
+  {
+    DynMatrixType tmp = m1.topRows(rows/2), res;
+    VERIFY_IS_APPROX( (res = m1.topRows(rows/2) * rv1.asDiagonal()), tmp * rv1.asDiagonal() );
+    VERIFY_IS_APPROX( (res = v1.head(rows/2).asDiagonal()*m1.topRows(rows/2)), v1.head(rows/2).asDiagonal()*tmp );
+  }
 
   BigMatrix big;
   big.setZero(2*rows, 2*cols);
@@ -84,6 +92,24 @@ template<typename MatrixType> void diagonalmatrices(const MatrixType& m)
   
   VERIFY_IS_APPROX(m1 * (rdm1 * s1), (m1 * rdm1) * s1);
   VERIFY_IS_APPROX(m1 * (s1 * rdm1), (m1 * rdm1) * s1);
+  
+  // Diagonal to dense
+  sq_m1.setRandom();
+  sq_m2 = sq_m1;
+  VERIFY_IS_APPROX( (sq_m1 += (s1*v1).asDiagonal()), sq_m2 += (s1*v1).asDiagonal().toDenseMatrix() );
+  VERIFY_IS_APPROX( (sq_m1 -= (s1*v1).asDiagonal()), sq_m2 -= (s1*v1).asDiagonal().toDenseMatrix() );
+  VERIFY_IS_APPROX( (sq_m1 = (s1*v1).asDiagonal()), (s1*v1).asDiagonal().toDenseMatrix() );
+}
+
+template<int>
+void bug987()
+{
+  Matrix3Xd points = Matrix3Xd::Random(3, 3);
+  Vector2d diag = Vector2d::Random();
+  Matrix2Xd tmp1 = points.topRows<2>(), res1, res2;
+  VERIFY_IS_APPROX( res1 = diag.asDiagonal() * points.topRows<2>(), res2 = diag.asDiagonal() * tmp1 );
+  Matrix2d tmp2 = points.topLeftCorner<2,2>();
+  VERIFY_IS_APPROX(( res1 = points.topLeftCorner<2,2>()*diag.asDiagonal()) , res2 = tmp2*diag.asDiagonal() );
 }
 
 void test_diagonalmatrices()
@@ -99,4 +125,5 @@ void test_diagonalmatrices()
     CALL_SUBTEST_8( diagonalmatrices(Matrix<double,Dynamic,Dynamic,RowMajor>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_9( diagonalmatrices(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
   }
+  CALL_SUBTEST_10( bug987<0>() );
 }

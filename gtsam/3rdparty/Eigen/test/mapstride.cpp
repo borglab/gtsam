@@ -23,7 +23,7 @@ template<int Alignment,typename VectorType> void map_class_vector(const VectorTy
   Scalar* a_array = internal::aligned_new<Scalar>(arraysize+1);
   Scalar* array = a_array;
   if(Alignment!=Aligned)
-    array = (Scalar*)(ptrdiff_t(a_array) + (internal::packet_traits<Scalar>::AlignedOnScalar?sizeof(Scalar):sizeof(typename NumTraits<Scalar>::Real)));
+    array = (Scalar*)(internal::IntPtr(a_array) + (internal::packet_traits<Scalar>::AlignedOnScalar?sizeof(Scalar):sizeof(typename NumTraits<Scalar>::Real)));
 
   {
     Map<VectorType, Alignment, InnerStride<3> > map(array, size);
@@ -56,16 +56,30 @@ template<int Alignment,typename MatrixType> void map_class_matrix(const MatrixTy
   Index rows = _m.rows(), cols = _m.cols();
 
   MatrixType m = MatrixType::Random(rows,cols);
+  Scalar s1 = internal::random<Scalar>();
 
   Index arraysize = 2*(rows+4)*(cols+4);
 
-  Scalar* a_array = internal::aligned_new<Scalar>(arraysize+1);
-  Scalar* array = a_array;
+  Scalar* a_array1 = internal::aligned_new<Scalar>(arraysize+1);
+  Scalar* array1 = a_array1;
   if(Alignment!=Aligned)
-    array = (Scalar*)(ptrdiff_t(a_array) + (internal::packet_traits<Scalar>::AlignedOnScalar?sizeof(Scalar):sizeof(typename NumTraits<Scalar>::Real)));
+    array1 = (Scalar*)(internal::IntPtr(a_array1) + (internal::packet_traits<Scalar>::AlignedOnScalar?sizeof(Scalar):sizeof(typename NumTraits<Scalar>::Real)));
 
+  Scalar a_array2[256];
+  Scalar* array2 = a_array2;
+  if(Alignment!=Aligned)
+    array2 = (Scalar*)(internal::IntPtr(a_array2) + (internal::packet_traits<Scalar>::AlignedOnScalar?sizeof(Scalar):sizeof(typename NumTraits<Scalar>::Real)));
+  else
+    array2 = (Scalar*)(((internal::UIntPtr(a_array2)+EIGEN_MAX_ALIGN_BYTES-1)/EIGEN_MAX_ALIGN_BYTES)*EIGEN_MAX_ALIGN_BYTES);
+  Index maxsize2 = a_array2 - array2 + 256;
+  
   // test no inner stride and some dynamic outer stride
+  for(int k=0; k<2; ++k)
   {
+    if(k==1 && (m.innerSize()+1)*m.outerSize() > maxsize2)
+      break;
+    Scalar* array = (k==0 ? array1 : array2);
+    
     Map<MatrixType, Alignment, OuterStride<Dynamic> > map(array, rows, cols, OuterStride<Dynamic>(m.innerSize()+1));
     map = m;
     VERIFY(map.outerStride() == map.innerSize()+1);
@@ -75,11 +89,19 @@ template<int Alignment,typename MatrixType> void map_class_matrix(const MatrixTy
         VERIFY(array[map.outerStride()*i+j] == m.coeffByOuterInner(i,j));
         VERIFY(map.coeffByOuterInner(i,j) == m.coeffByOuterInner(i,j));
       }
+    VERIFY_IS_APPROX(s1*map,s1*m);
+    map *= s1;
+    VERIFY_IS_APPROX(map,s1*m);
   }
 
   // test no inner stride and an outer stride of +4. This is quite important as for fixed-size matrices,
   // this allows to hit the special case where it's vectorizable.
+  for(int k=0; k<2; ++k)
   {
+    if(k==1 && (m.innerSize()+4)*m.outerSize() > maxsize2)
+      break;
+    Scalar* array = (k==0 ? array1 : array2);
+    
     enum {
       InnerSize = MatrixType::InnerSizeAtCompileTime,
       OuterStrideAtCompileTime = InnerSize==Dynamic ? Dynamic : InnerSize+4
@@ -94,10 +116,18 @@ template<int Alignment,typename MatrixType> void map_class_matrix(const MatrixTy
         VERIFY(array[map.outerStride()*i+j] == m.coeffByOuterInner(i,j));
         VERIFY(map.coeffByOuterInner(i,j) == m.coeffByOuterInner(i,j));
       }
+    VERIFY_IS_APPROX(s1*map,s1*m);
+    map *= s1;
+    VERIFY_IS_APPROX(map,s1*m);
   }
 
   // test both inner stride and outer stride
+  for(int k=0; k<2; ++k)
   {
+    if(k==1 && (2*m.innerSize()+1)*(m.outerSize()*2) > maxsize2)
+      break;
+    Scalar* array = (k==0 ? array1 : array2);
+    
     Map<MatrixType, Alignment, Stride<Dynamic,Dynamic> > map(array, rows, cols, Stride<Dynamic,Dynamic>(2*m.innerSize()+1, 2));
     map = m;
     VERIFY(map.outerStride() == 2*map.innerSize()+1);
@@ -108,9 +138,12 @@ template<int Alignment,typename MatrixType> void map_class_matrix(const MatrixTy
         VERIFY(array[map.outerStride()*i+map.innerStride()*j] == m.coeffByOuterInner(i,j));
         VERIFY(map.coeffByOuterInner(i,j) == m.coeffByOuterInner(i,j));
       }
+    VERIFY_IS_APPROX(s1*map,s1*m);
+    map *= s1;
+    VERIFY_IS_APPROX(map,s1*m);
   }
 
-  internal::aligned_delete(a_array, arraysize+1);
+  internal::aligned_delete(a_array1, arraysize+1);
 }
 
 void test_mapstride()

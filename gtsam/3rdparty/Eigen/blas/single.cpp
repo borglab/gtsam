@@ -19,4 +19,4 @@
 #include "level3_impl.h"
 
 float BLASFUNC(sdsdot)(int* n, float* alpha, float* x, int* incx, float* y, int* incy)
-{ return *alpha + BLASFUNC(dsdot)(n, x, incx, y, incy); }
+{ return double(*alpha) + BLASFUNC(dsdot)(n, x, incx, y, incy); }

@@ -18,11 +18,11 @@ using namespace Eigen;
 
 
 template < typename T>
-complex<long double>  promote(complex<T> x) { return complex<long double>(x.real(),x.imag()); }
+complex<long double>  promote(complex<T> x) { return complex<long double>((long double)x.real(),(long double)x.imag()); }
 
-complex<long double>  promote(float x) { return complex<long double>( x); }
-complex<long double>  promote(double x) { return complex<long double>( x); }
-complex<long double>  promote(long double x) { return complex<long double>( x); }
+complex<long double>  promote(float x) { return complex<long double>((long double)x); }
+complex<long double>  promote(double x) { return complex<long double>((long double)x); }
+complex<long double>  promote(long double x) { return complex<long double>((long double)x); }
     
 
     template <typename VT1,typename VT2>
@@ -33,7 +33,7 @@ complex<long double>  promote(long double x) { return complex<long double>( x); 
         long double pi = acos((long double)-1 );
         for (size_t k0=0;k0<(size_t)fftbuf.size();++k0) {
             complex<long double> acc = 0;
-            long double phinc = -2.*k0* pi / timebuf.size();
+            long double phinc = (long double)(-2.)*k0* pi / timebuf.size();
             for (size_t k1=0;k1<(size_t)timebuf.size();++k1) {
                 acc +=  promote( timebuf[k1] ) * exp( complex<long double>(0,k1*phinc) );
             }
@@ -54,8 +54,8 @@ complex<long double>  promote(long double x) { return complex<long double>( x); 
         long double difpower=0;
         size_t n = (min)( buf1.size(),buf2.size() );
         for (size_t k=0;k<n;++k) {
-            totalpower += (numext::abs2( buf1[k] ) + numext::abs2(buf2[k]) )/2.;
-            difpower += numext::abs2(buf1[k] - buf2[k]);
+            totalpower += (long double)((numext::abs2( buf1[k] ) + numext::abs2(buf2[k]) )/2);
+            difpower += (long double)(numext::abs2(buf1[k] - buf2[k]));
         }
         return sqrt(difpower/totalpower);
     }
@@ -93,19 +93,19 @@ void test_scalar_generic(int nfft)
     fft.SetFlag(fft.HalfSpectrum );
     fft.fwd( freqBuf,tbuf);
     VERIFY((size_t)freqBuf.size() == (size_t)( (nfft>>1)+1) );
-    VERIFY( fft_rmse(freqBuf,tbuf) < test_precision<T>()  );// gross check
+    VERIFY( T(fft_rmse(freqBuf,tbuf)) < test_precision<T>()  );// gross check
 
     fft.ClearFlag(fft.HalfSpectrum );
     fft.fwd( freqBuf,tbuf);
     VERIFY( (size_t)freqBuf.size() == (size_t)nfft);
-    VERIFY( fft_rmse(freqBuf,tbuf) < test_precision<T>()  );// gross check
+    VERIFY( T(fft_rmse(freqBuf,tbuf)) < test_precision<T>()  );// gross check
 
     if (nfft&1)
         return; // odd FFTs get the wrong size inverse FFT
 
     ScalarVector tbuf2;
     fft.inv( tbuf2 , freqBuf);
-    VERIFY( dif_rmse(tbuf,tbuf2) < test_precision<T>()  );// gross check
+    VERIFY( T(dif_rmse(tbuf,tbuf2)) < test_precision<T>()  );// gross check
 
 
     // verify that the Unscaled flag takes effect
@@ -121,12 +121,12 @@ void test_scalar_generic(int nfft)
     //for (size_t i=0;i<(size_t) tbuf.size();++i)
     //    cout << "freqBuf=" << freqBuf[i] << " in2=" << tbuf3[i] << " -  in=" << tbuf[i] << " => " << (tbuf3[i] - tbuf[i] ) <<  endl;
 
-    VERIFY( dif_rmse(tbuf,tbuf3) < test_precision<T>()  );// gross check
+    VERIFY( T(dif_rmse(tbuf,tbuf3)) < test_precision<T>()  );// gross check
 
     // verify that ClearFlag works
     fft.ClearFlag(fft.Unscaled);
     fft.inv( tbuf2 , freqBuf);
-    VERIFY( dif_rmse(tbuf,tbuf2) < test_precision<T>()  );// gross check
+    VERIFY( T(dif_rmse(tbuf,tbuf2)) < test_precision<T>()  );// gross check
 }
 
 template <typename T>
@@ -152,10 +152,10 @@ void test_complex_generic(int nfft)
         inbuf[k]= Complex( (T)(rand()/(double)RAND_MAX - .5), (T)(rand()/(double)RAND_MAX - .5) );
     fft.fwd( outbuf , inbuf);
 
-    VERIFY( fft_rmse(outbuf,inbuf) < test_precision<T>()  );// gross check
+    VERIFY( T(fft_rmse(outbuf,inbuf)) < test_precision<T>()  );// gross check
     fft.inv( buf3 , outbuf);
 
-    VERIFY( dif_rmse(inbuf,buf3) < test_precision<T>()  );// gross check
+    VERIFY( T(dif_rmse(inbuf,buf3)) < test_precision<T>()  );// gross check
 
     // verify that the Unscaled flag takes effect
     ComplexVector buf4;
@@ -163,12 +163,12 @@ void test_complex_generic(int nfft)
     fft.inv( buf4 , outbuf);
     for (int k=0;k<nfft;++k)
         buf4[k] *= T(1./nfft);
-    VERIFY( dif_rmse(inbuf,buf4) < test_precision<T>()  );// gross check
+    VERIFY( T(dif_rmse(inbuf,buf4)) < test_precision<T>()  );// gross check
 
     // verify that ClearFlag works
     fft.ClearFlag(fft.Unscaled);
     fft.inv( buf3 , outbuf);
-    VERIFY( dif_rmse(inbuf,buf3) < test_precision<T>()  );// gross check
+    VERIFY( T(dif_rmse(inbuf,buf3)) < test_precision<T>()  );// gross check
 }
 
 template <typename T>

@@ -66,9 +66,9 @@ template<typename Scalar> void parametrizedline_alignment()
   typedef ParametrizedLine<Scalar,4,AutoAlign> Line4a;
   typedef ParametrizedLine<Scalar,4,DontAlign> Line4u;
 
-  EIGEN_ALIGN16 Scalar array1[8];
-  EIGEN_ALIGN16 Scalar array2[8];
-  EIGEN_ALIGN16 Scalar array3[8+1];
+  EIGEN_ALIGN_MAX Scalar array1[16];
+  EIGEN_ALIGN_MAX Scalar array2[16];
+  EIGEN_ALIGN_MAX Scalar array3[16+1];
   Scalar* array3u = array3+1;
 
   Line4a *p1 = ::new(reinterpret_cast<void*>(array1)) Line4a;
@@ -85,8 +85,8 @@ template<typename Scalar> void parametrizedline_alignment()
   VERIFY_IS_APPROX(p1->direction(), p2->direction());
   VERIFY_IS_APPROX(p1->direction(), p3->direction());
   
-  #if defined(EIGEN_VECTORIZE) && EIGEN_ALIGN_STATICALLY
-  if(internal::packet_traits<Scalar>::Vectorizable)
+  #if defined(EIGEN_VECTORIZE) && EIGEN_MAX_STATIC_ALIGN_BYTES>0
+  if(internal::packet_traits<Scalar>::Vectorizable && internal::packet_traits<Scalar>::size<=4)
     VERIFY_RAISES_ASSERT((::new(reinterpret_cast<void*>(array3u)) Line4a));
   #endif
 }

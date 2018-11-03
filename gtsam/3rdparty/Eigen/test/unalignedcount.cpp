@@ -30,7 +30,14 @@ static int nb_storeu;
 
 void test_unalignedcount()
 {
-  #ifdef EIGEN_VECTORIZE_SSE
+  #if defined(EIGEN_VECTORIZE_AVX)
+  VectorXf a(40), b(40);
+  VERIFY_ALIGNED_UNALIGNED_COUNT(a += b, 10, 0, 5, 0);
+  VERIFY_ALIGNED_UNALIGNED_COUNT(a.segment(0,40) += b.segment(0,40), 5, 5, 5, 0);
+  VERIFY_ALIGNED_UNALIGNED_COUNT(a.segment(0,40) -= b.segment(0,40), 5, 5, 5, 0);
+  VERIFY_ALIGNED_UNALIGNED_COUNT(a.segment(0,40) *= 3.5, 5, 0, 5, 0);
+  VERIFY_ALIGNED_UNALIGNED_COUNT(a.segment(0,40) /= 3.5, 5, 0, 5, 0);
+  #elif defined(EIGEN_VECTORIZE_SSE)
   VectorXf a(40), b(40);
   VERIFY_ALIGNED_UNALIGNED_COUNT(a += b, 20, 0, 10, 0);
   VERIFY_ALIGNED_UNALIGNED_COUNT(a.segment(0,40) += b.segment(0,40), 10, 10, 10, 0);

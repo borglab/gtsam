@@ -32,107 +32,45 @@
 
 namespace Eigen {
 
-/** \page TopicUsingIntelMKL Using Intel® Math Kernel Library from Eigen
+/** \page TopicUsingIntelMKL Using Intel® MKL from %Eigen
 
-\section TopicUsingIntelMKL_Intro Eigen and Intel® Math Kernel Library (Intel® MKL)
+<!-- \section TopicUsingIntelMKL_Intro Eigen and Intel® Math Kernel Library (Intel® MKL) -->
 
-Since Eigen version 3.1 and later, users can benefit from built-in Intel MKL optimizations with an installed copy of Intel MKL 10.3 (or later).
+Since %Eigen version 3.1 and later, users can benefit from built-in Intel® Math Kernel Library (MKL) optimizations with an installed copy of Intel MKL 10.3 (or later).
+
 <a href="http://eigen.tuxfamily.org/Counter/redirect_to_mkl.php"> Intel MKL </a> provides highly optimized multi-threaded mathematical routines for x86-compatible architectures.
 Intel MKL is available on Linux, Mac and Windows for both Intel64 and IA32 architectures.
 
 \note
 Intel® MKL is a proprietary software and it is the responsibility of users to buy or register for community (free) Intel MKL licenses for their products. Moreover, the license of the user product has to allow linking to proprietary software that excludes any unmodified versions of the GPL.
 
-Using Intel MKL through Eigen is easy:
--# define the \c EIGEN_USE_MKL_ALL macro before including any Eigen's header
+Using Intel MKL through %Eigen is easy:
+-# define the \c EIGEN_USE_MKL_ALL macro before including any %Eigen's header
 -# link your program to MKL libraries (see the <a href="http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/">MKL linking advisor</a>)
 -# on a 64bits system, you must use the LP64 interface (not the ILP64 one)
 
-When doing so, a number of Eigen's algorithms are silently substituted with calls to Intel MKL routines.
+When doing so, a number of %Eigen's algorithms are silently substituted with calls to Intel MKL routines.
 These substitutions apply only for \b Dynamic \b or \b large enough objects with one of the following four standard scalar types: \c float, \c double, \c complex<float>, and \c complex<double>.
 Operations on other scalar types or mixing reals and complexes will continue to use the built-in algorithms.
 
-In addition you can coarsely select choose which parts will be substituted by defining one or multiple of the following macros:
+In addition you can choose which parts will be substituted by defining one or multiple of the following macros:
 
 <table class="manual">
-<tr><td>\c EIGEN_USE_BLAS </td><td>Enables the use of external BLAS level 2 and 3 routines (currently works with Intel MKL only)</td></tr>
-<tr class="alt"><td>\c EIGEN_USE_LAPACKE </td><td>Enables the use of external Lapack routines via the <a href="http://www.netlib.org/lapack/lapacke.html">Intel Lapacke</a> C interface to Lapack (currently works with Intel MKL only)</td></tr>
-<tr><td>\c EIGEN_USE_LAPACKE_STRICT </td><td>Same as \c EIGEN_USE_LAPACKE but algorithm of lower robustness are disabled. This currently concerns only JacobiSVD which otherwise would be replaced by \c gesvd that is less robust than Jacobi rotations.</td></tr>
+<tr><td>\c EIGEN_USE_BLAS </td><td>Enables the use of external BLAS level 2 and 3 routines</td></tr>
+<tr class="alt"><td>\c EIGEN_USE_LAPACKE </td><td>Enables the use of external Lapack routines via the <a href="http://www.netlib.org/lapack/lapacke.html">Lapacke</a> C interface to Lapack</td></tr>
+<tr><td>\c EIGEN_USE_LAPACKE_STRICT </td><td>Same as \c EIGEN_USE_LAPACKE but algorithm of lower robustness are disabled. \n This currently concerns only JacobiSVD which otherwise would be replaced by \c gesvd that is less robust than Jacobi rotations.</td></tr>
 <tr class="alt"><td>\c EIGEN_USE_MKL_VML </td><td>Enables the use of Intel VML (vector operations)</td></tr>
 <tr><td>\c EIGEN_USE_MKL_ALL </td><td>Defines \c EIGEN_USE_BLAS, \c EIGEN_USE_LAPACKE, and \c EIGEN_USE_MKL_VML </td></tr>
 </table>
 
+Note that the BLAS and LAPACKE backends can be enabled for any F77 compatible BLAS and LAPACK libraries. See this \link TopicUsingBlasLapack page \endlink for the details.
+
 Finally, the PARDISO sparse solver shipped with Intel MKL can be used through the \ref PardisoLU, \ref PardisoLLT and \ref PardisoLDLT classes of the \ref PardisoSupport_Module.
 
-
-\section TopicUsingIntelMKL_SupportedFeatures List of supported features
-
-The breadth of Eigen functionality covered by Intel MKL is listed in the table below.
+The following table summarizes the list of functions covered by \c EIGEN_USE_MKL_VML:
 <table class="manual">
-<tr><th>Functional domain</th><th>Code example</th><th>MKL routines</th></tr>
-<tr><td>Matrix-matrix operations \n \c EIGEN_USE_BLAS </td><td>\code
-m1*m2.transpose();
-m1.selfadjointView<Lower>()*m2;
-m1*m2.triangularView<Upper>();
-m1.selfadjointView<Lower>().rankUpdate(m2,1.0);
-\endcode</td><td>\code
-?gemm
-?symm/?hemm
-?trmm
-dsyrk/ssyrk
-\endcode</td></tr>
-<tr class="alt"><td>Matrix-vector operations \n \c EIGEN_USE_BLAS </td><td>\code
-m1.adjoint()*b;
-m1.selfadjointView<Lower>()*b;
-m1.triangularView<Upper>()*b;
-\endcode</td><td>\code
-?gemv
-?symv/?hemv
-?trmv
-\endcode</td></tr>
-<tr><td>LU decomposition \n \c EIGEN_USE_LAPACKE \n \c EIGEN_USE_LAPACKE_STRICT </td><td>\code
-v1 = m1.lu().solve(v2);
-\endcode</td><td>\code
-?getrf
-\endcode</td></tr>
-<tr class="alt"><td>Cholesky decomposition \n \c EIGEN_USE_LAPACKE \n \c EIGEN_USE_LAPACKE_STRICT </td><td>\code
-v1 = m2.selfadjointView<Upper>().llt().solve(v2);
-\endcode</td><td>\code
-?potrf
-\endcode</td></tr>
-<tr><td>QR decomposition \n \c EIGEN_USE_LAPACKE \n \c EIGEN_USE_LAPACKE_STRICT </td><td>\code
-m1.householderQr();
-m1.colPivHouseholderQr();
-\endcode</td><td>\code
-?geqrf
-?geqp3
-\endcode</td></tr>
-<tr class="alt"><td>Singular value decomposition \n \c EIGEN_USE_LAPACKE </td><td>\code
-JacobiSVD<MatrixXd> svd;
-svd.compute(m1, ComputeThinV);
-\endcode</td><td>\code
-?gesvd
-\endcode</td></tr>
-<tr><td>Eigen-value decompositions \n \c EIGEN_USE_LAPACKE \n \c EIGEN_USE_LAPACKE_STRICT </td><td>\code
-EigenSolver<MatrixXd> es(m1);
-ComplexEigenSolver<MatrixXcd> ces(m1);
-SelfAdjointEigenSolver<MatrixXd> saes(m1+m1.transpose());
-GeneralizedSelfAdjointEigenSolver<MatrixXd>
-    gsaes(m1+m1.transpose(),m2+m2.transpose());
-\endcode</td><td>\code
-?gees
-?gees
-?syev/?heev
-?syev/?heev,
-?potrf
-\endcode</td></tr>
-<tr class="alt"><td>Schur decomposition \n \c EIGEN_USE_LAPACKE \n \c EIGEN_USE_LAPACKE_STRICT </td><td>\code
-RealSchur<MatrixXd> schurR(m1);
-ComplexSchur<MatrixXcd> schurC(m1);
-\endcode</td><td>\code
-?gees
-\endcode</td></tr>
-<tr><td>Vector Math \n \c EIGEN_USE_MKL_VML </td><td>\code
+<tr><th>Code example</th><th>MKL routines</th></tr>
+<tr><td>\code
 v2=v1.array().sin();
 v2=v1.array().asin();
 v2=v1.array().cos();
@@ -156,7 +94,7 @@ v?Sqr
 v?Powx
 \endcode</td></tr>
 </table>
-In the examples, m1 and m2 are dense matrices and v1 and v2 are dense vectors.
+In the examples, v1 and v2 are dense vectors.
 
 
 \section TopicUsingIntelMKL_Links Links

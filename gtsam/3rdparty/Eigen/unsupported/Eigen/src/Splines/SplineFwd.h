@@ -48,6 +48,9 @@ namespace Eigen
       
       /** \brief The data type used to store knot vectors. */
       typedef Array<Scalar,1,Dynamic> KnotVectorType;
+
+      /** \brief The data type used to store parameter vectors. */
+      typedef Array<Scalar,1,Dynamic> ParameterVectorType;
       
       /** \brief The data type representing the spline's control points. */
       typedef Array<Scalar,Dimension,Dynamic> ControlPointVectorType;

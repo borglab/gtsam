@@ -42,6 +42,17 @@ template<> struct adjoint_specific<false> {
     VERIFY_IS_APPROX(v1, v1.norm() * v3);
     VERIFY_IS_APPROX(v3, v1.normalized());
     VERIFY_IS_APPROX(v3.norm(), RealScalar(1));
+
+    // check null inputs
+    VERIFY_IS_APPROX((v1*0).normalized(), (v1*0));
+#if (!EIGEN_ARCH_i386) || defined(EIGEN_VECTORIZE)
+    RealScalar very_small = (std::numeric_limits<RealScalar>::min)();
+    VERIFY( (v1*very_small).norm() == 0 );
+    VERIFY_IS_APPROX((v1*very_small).normalized(), (v1*very_small));
+    v3 = v1*very_small;
+    v3.normalize();
+    VERIFY_IS_APPROX(v3, (v1*very_small));
+#endif
     
     // check compatibility of dot and adjoint
     ref = NumTraits<Scalar>::IsInteger ? 0 : (std::max)((std::max)(v1.norm(),v2.norm()),(std::max)((square * v2).norm(),(square.adjoint() * v1).norm()));
@@ -64,6 +75,7 @@ template<typename MatrixType> void adjoint(const MatrixType& m)
   typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime> SquareMatrixType;
+  const Index PacketSize = internal::packet_traits<Scalar>::size;
   
   Index rows = m.rows();
   Index cols = m.cols();
@@ -108,6 +120,17 @@ template<typename MatrixType> void adjoint(const MatrixType& m)
   VERIFY_IS_APPROX(m3,m1.transpose());
   m3.transposeInPlace();
   VERIFY_IS_APPROX(m3,m1);
+  
+  if(PacketSize<m3.rows() && PacketSize<m3.cols())
+  {
+    m3 = m1;
+    Index i = internal::random<Index>(0,m3.rows()-PacketSize);
+    Index j = internal::random<Index>(0,m3.cols()-PacketSize);
+    m3.template block<PacketSize,PacketSize>(i,j).transposeInPlace();
+    VERIFY_IS_APPROX( (m3.template block<PacketSize,PacketSize>(i,j)), (m1.template block<PacketSize,PacketSize>(i,j).transpose()) );
+    m3.template block<PacketSize,PacketSize>(i,j).transposeInPlace();
+    VERIFY_IS_APPROX(m3,m1);
+  }
 
   // check inplace adjoint
   m3 = m1;
@@ -129,14 +152,24 @@ void test_adjoint()
     CALL_SUBTEST_1( adjoint(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( adjoint(Matrix3d()) );
     CALL_SUBTEST_3( adjoint(Matrix4f()) );
+    
     CALL_SUBTEST_4( adjoint(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
     CALL_SUBTEST_5( adjoint(MatrixXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_6( adjoint(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    
+    // Complement for 128 bits vectorization:
+    CALL_SUBTEST_8( adjoint(Matrix2d()) );
+    CALL_SUBTEST_9( adjoint(Matrix<int,4,4>()) );
+    
+    // 256 bits vectorization:
+    CALL_SUBTEST_10( adjoint(Matrix<float,8,8>()) );
+    CALL_SUBTEST_11( adjoint(Matrix<double,4,4>()) );
+    CALL_SUBTEST_12( adjoint(Matrix<int,8,8>()) );
   }
   // test a large static matrix only once
   CALL_SUBTEST_7( adjoint(Matrix<float, 100, 100>()) );
 
-#ifdef EIGEN_TEST_PART_4
+#ifdef EIGEN_TEST_PART_13
   {
     MatrixXcf a(10,10), b(10,10);
     VERIFY_RAISES_ASSERT(a = a.transpose());
@@ -154,6 +187,13 @@ void test_adjoint()
     a.transpose() = a.adjoint();
     a.transpose() += a.adjoint();
     a.transpose() += a.adjoint() + b;
+
+    // regression tests for check_for_aliasing
+    MatrixXd c(10,10);
+    c = 1.0 * MatrixXd::Ones(10,10) + c;
+    c = MatrixXd::Ones(10,10) * 1.0 + c;
+    c = c + MatrixXd::Ones(10,10) .cwiseProduct( MatrixXd::Zero(10,10) );
+    c = MatrixXd::Ones(10,10) * MatrixXd::Zero(10,10);
   }
 #endif
 }
