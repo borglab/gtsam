@@ -84,11 +84,11 @@ class GTSAM_EXPORT ISAM2Clique
   void print(const std::string& s = "",
              const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
-  void optimizeWildfire(const KeySet& replaced, double threshold,
+  void optimizeWildfire(const KeySet& replacedKeys, double threshold,
                         KeySet* changed, VectorValues* delta,
                         size_t* count) const;
 
-  bool optimizeWildfireNode(const KeySet& replaced, double threshold,
+  bool optimizeWildfireNode(const KeySet& replacedKeys, double threshold,
                             KeySet* changed, VectorValues* delta,
                             size_t* count) const;
 
@@ -121,7 +121,7 @@ class GTSAM_EXPORT ISAM2Clique
    * Check if clique was replaced, or if any parents were changed above the
    * threshold or themselves replaced.
    */
-  bool isDirty(const KeySet& replaced, const KeySet& changed) const;
+  bool isDirty(const KeySet& replacedKeys, const KeySet& changed) const;
 
   /**
    * Back-substitute - special version stores solution pointers in cliques for
@@ -133,7 +133,7 @@ class GTSAM_EXPORT ISAM2Clique
    * Check whether the values changed above a threshold, or always true if the
    * clique was replaced.
    */
-  bool valuesChanged(const KeySet& replaced, const Vector& originalValues,
+  bool valuesChanged(const KeySet& replacedKeys, const Vector& originalValues,
                      const VectorValues& delta, double threshold) const;
 
   /// Set changed flag for each frontal variable
@@ -159,16 +159,16 @@ class GTSAM_EXPORT ISAM2Clique
  * non-replaced variables that can be ignored, ie. the old delta entry is kept
  * and recursive backsubstitution might eventually stop if none of the changed
  * variables are contained in the subtree.
- * @param replaced Needs to contain all variables that are contained in the top
+ * @param replacedKeys Needs to contain all variables that are contained in the top
  * of the Bayes tree that has been redone.
  * @return The number of variables that were solved for.
  * @param delta The current solution, an offset from the linearization point.
  */
 size_t optimizeWildfire(const ISAM2Clique::shared_ptr& root, double threshold,
-                        const KeySet& replaced, VectorValues* delta);
+                        const KeySet& replacedKeys, VectorValues* delta);
 
 size_t optimizeWildfireNonRecursive(const ISAM2Clique::shared_ptr& root,
-                                    double threshold, const KeySet& replaced,
+                                    double threshold, const KeySet& replacedKeys,
                                     VectorValues* delta);
 
 }  // namespace gtsam

@@ -62,16 +62,16 @@ void ISAM2Clique::print(const string& s, const KeyFormatter& formatter) const {
 }
 
 /* ************************************************************************* */
-bool ISAM2Clique::isDirty(const KeySet& replaced, const KeySet& changed) const {
+bool ISAM2Clique::isDirty(const KeySet& replacedKeys, const KeySet& changed) const {
   // if none of the variables in this clique (frontal and separator!) changed
   // significantly, then by the running intersection property, none of the
   // cliques in the children need to be processed
 
   // Are any clique variables part of the tree that has been redone?
-  bool dirty = replaced.exists(conditional_->frontals().front());
+  bool dirty = replacedKeys.exists(conditional_->frontals().front());
 #if !defined(NDEBUG) && defined(GTSAM_EXTRA_CONSISTENCY_CHECKS)
   for (Key frontalKey : conditional_->frontals()) {
-    assert(dirty == replaced.exists(frontalKey));
+    assert(dirty == replacedKeys.exists(frontalKey));
   }
 #endif
 
@@ -167,12 +167,12 @@ void ISAM2Clique::fastBackSubstitute(VectorValues* delta) const {
 }
 
 /* ************************************************************************* */
-bool ISAM2Clique::valuesChanged(const KeySet& replaced,
+bool ISAM2Clique::valuesChanged(const KeySet& replacedKeys,
                                 const Vector& originalValues,
                                 const VectorValues& delta,
                                 double threshold) const {
   auto frontals = conditional_->frontals();
-  if (replaced.exists(frontals.front())) return true;
+  if (replacedKeys.exists(frontals.front())) return true;
   auto diff = originalValues - delta.vector(frontals);
   return diff.lpNorm<Eigen::Infinity>() >= threshold;
 }
@@ -198,10 +198,10 @@ void ISAM2Clique::restoreFromOriginals(const Vector& originalValues,
 
 /* ************************************************************************* */
 // Note: not being used right now in favor of non-recursive version below.
-void ISAM2Clique::optimizeWildfire(const KeySet& replaced, double threshold,
+void ISAM2Clique::optimizeWildfire(const KeySet& replacedKeys, double threshold,
                                    KeySet* changed, VectorValues* delta,
                                    size_t* count) const {
-  if (isDirty(replaced, *changed)) {
+  if (isDirty(replacedKeys, *changed)) {
     // Temporary copy of the original values, to check how much they change
     auto originalValues = delta->vector(conditional_->frontals());
 
@@ -209,7 +209,7 @@ void ISAM2Clique::optimizeWildfire(const KeySet& replaced, double threshold,
     fastBackSubstitute(delta);
     count += conditional_->nrFrontals();
 
-    if (valuesChanged(replaced, originalValues, *delta, threshold)) {
+    if (valuesChanged(replacedKeys, originalValues, *delta, threshold)) {
       markFrontalsAsChanged(changed);
     } else {
       restoreFromOriginals(originalValues, delta);
@@ -217,25 +217,27 @@ void ISAM2Clique::optimizeWildfire(const KeySet& replaced, double threshold,
 
     // Recurse to children
     for (const auto& child : children) {
-      child->optimizeWildfire(replaced, threshold, changed, delta, count);
+      child->optimizeWildfire(replacedKeys, threshold, changed, delta, count);
     }
   }
 }
 
 size_t optimizeWildfire(const ISAM2Clique::shared_ptr& root, double threshold,
-                        const KeySet& keys, VectorValues* delta) {
+                        const KeySet& replacedKeys, VectorValues* delta) {
   KeySet changed;
   size_t count = 0;
   // starting from the root, call optimize on each conditional
-  if (root) root->optimizeWildfire(keys, threshold, &changed, delta, &count);
+  if (root) root->optimizeWildfire(replacedKeys, threshold, &changed, delta, &count);
   return count;
 }
 
 /* ************************************************************************* */
-bool ISAM2Clique::optimizeWildfireNode(const KeySet& replaced, double threshold,
+bool ISAM2Clique::optimizeWildfireNode(const KeySet& replacedKeys, double threshold,
                                        KeySet* changed, VectorValues* delta,
                                        size_t* count) const {
-  bool dirty = isDirty(replaced, *changed);
+  // TODO(gareth): This code shares a lot of logic w/ linearAlgorithms-inst,
+  // potentially refactor
+  bool dirty = isDirty(replacedKeys, *changed);
   if (dirty) {
     // Temporary copy of the original values, to check how much they change
     auto originalValues = delta->vector(conditional_->frontals());
@@ -244,7 +246,7 @@ bool ISAM2Clique::optimizeWildfireNode(const KeySet& replaced, double threshold,
     fastBackSubstitute(delta);
     count += conditional_->nrFrontals();
 
-    if (valuesChanged(replaced, originalValues, *delta, threshold)) {
+    if (valuesChanged(replacedKeys, originalValues, *delta, threshold)) {
       markFrontalsAsChanged(changed);
     } else {
       restoreFromOriginals(originalValues, delta);
@@ -255,7 +257,7 @@ bool ISAM2Clique::optimizeWildfireNode(const KeySet& replaced, double threshold,
 }
 
 size_t optimizeWildfireNonRecursive(const ISAM2Clique::shared_ptr& root,
-                                    double threshold, const KeySet& keys,
+                                    double threshold, const KeySet& replacedKeysKeys,
                                     VectorValues* delta) {
   KeySet changed;
   size_t count = 0;
@@ -267,7 +269,7 @@ size_t optimizeWildfireNonRecursive(const ISAM2Clique::shared_ptr& root,
     while (!travStack.empty()) {
       currentNode = travStack.top();
       travStack.pop();
-      bool dirty = currentNode->optimizeWildfireNode(keys, threshold, &changed,
+      bool dirty = currentNode->optimizeWildfireNode(replacedKeysKeys, threshold, &changed,
                                                      delta, &count);
       if (dirty) {
         for (const auto& child : currentNode->children) {
