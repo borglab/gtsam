@@ -94,9 +94,6 @@ struct BearingRange
   }
 
   friend class boost::serialization::access;
-
-public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // Declare this to be both Testable and a Manifold

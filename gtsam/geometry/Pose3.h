@@ -326,10 +326,6 @@ public:
     ar & BOOST_SERIALIZATION_NVP(t_);
   }
   /// @}
-
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
 };
 // Pose3 class
 
