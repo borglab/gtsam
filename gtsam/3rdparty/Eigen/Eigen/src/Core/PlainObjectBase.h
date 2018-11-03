@@ -431,7 +431,7 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
     EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE void conservativeResize(Index size)
     {
-      internal::conservative_resize_like_impl<Derived>::run(*this, size, 1);
+      internal::conservative_resize_like_impl<Derived>::run(*this, size);
     }
 
     /** Resizes the matrix to \a rows x \a cols of \c other, while leaving old values untouched.
