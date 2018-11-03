@@ -5,7 +5,8 @@ namespace Eigen {
 There are two uses for the \c template and \c typename keywords in C++. One of them is fairly well known
 amongst programmers: to define templates. The other use is more obscure: to specify that an expression refers
 to a template function or a type. This regularly trips up programmers that use the %Eigen library, often
-leading to error messages from the compiler that are difficult to understand.
+leading to error messages from the compiler that are difficult to understand, such as "expected expression" or
+"no match for operator<".
 
 \eigenAutoToc
 
@@ -72,23 +73,23 @@ for operator<".
 The reason that the \c template keyword is necessary in the last example has to do with the rules for how
 templates are supposed to be compiled in C++. The compiler has to check the code for correct syntax at the
 point where the template is defined, without knowing the actual value of the template arguments (\c Derived1
-and \c Derived2 in the example). That means that the compiler cannot know that <tt>dst.triangularPart</tt> is
+and \c Derived2 in the example). That means that the compiler cannot know that <tt>dst.triangularView</tt> is
 a member template and that the following &lt; symbol is part of the delimiter for the template
-parameter. Another possibility would be that <tt>dst.triangularPart</tt> is a member variable with the &lt;
+parameter. Another possibility would be that <tt>dst.triangularView</tt> is a member variable with the &lt;
 symbol refering to the <tt>operator&lt;()</tt> function. In fact, the compiler should choose the second
-possibility, according to the standard. If <tt>dst.triangularPart</tt> is a member template (as in our case),
+possibility, according to the standard. If <tt>dst.triangularView</tt> is a member template (as in our case),
 the programmer should specify this explicitly with the \c template keyword and write <tt>dst.template
-triangularPart</tt>.
+triangularView</tt>.
 
 The precise rules are rather complicated, but ignoring some subtleties we can summarize them as follows:
 - A <em>dependent name</em> is name that depends (directly or indirectly) on a template parameter. In the
   example, \c dst is a dependent name because it is of type <tt>MatrixBase&lt;Derived1&gt;</tt> which depends
   on the template parameter \c Derived1.
-- If the code contains either one of the contructions <tt>xxx.yyy</tt> or <tt>xxx-&gt;yyy</tt> and \c xxx is a
+- If the code contains either one of the constructs <tt>xxx.yyy</tt> or <tt>xxx-&gt;yyy</tt> and \c xxx is a
   dependent name and \c yyy refers to a member template, then the \c template keyword must be used before 
   \c yyy, leading to <tt>xxx.template yyy</tt> or <tt>xxx-&gt;template yyy</tt>.
-- If the code contains the contruction <tt>xxx::yyy</tt> and \c xxx is a dependent name and \c yyy refers to a
-  member typedef, then the \c typename keyword must be used before the whole construction, leading to
+- If the code contains the construct <tt>xxx::yyy</tt> and \c xxx is a dependent name and \c yyy refers to a
+  member typedef, then the \c typename keyword must be used before the whole construct, leading to
   <tt>typename xxx::yyy</tt>.
 
 As an example where the \c typename keyword is required, consider the following code in \ref TutorialSparse

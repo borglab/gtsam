@@ -18,10 +18,12 @@ template<typename HyperplaneType> void hyperplane(const HyperplaneType& _plane)
   /* this test covers the following files:
      Hyperplane.h
   */
+  using std::abs;
   typedef typename HyperplaneType::Index Index;
   const Index dim = _plane.dim();
   enum { Options = HyperplaneType::Options };
   typedef typename HyperplaneType::Scalar Scalar;
+  typedef typename HyperplaneType::RealScalar RealScalar;
   typedef Matrix<Scalar, HyperplaneType::AmbientDimAtCompileTime, 1> VectorType;
   typedef Matrix<Scalar, HyperplaneType::AmbientDimAtCompileTime,
                          HyperplaneType::AmbientDimAtCompileTime> MatrixType;
@@ -42,7 +44,10 @@ template<typename HyperplaneType> void hyperplane(const HyperplaneType& _plane)
   VERIFY_IS_APPROX( n1.dot(n1), Scalar(1) );
 
   VERIFY_IS_MUCH_SMALLER_THAN( pl0.absDistance(p0), Scalar(1) );
-  VERIFY_IS_APPROX( pl1.signedDistance(p1 + n1 * s0), s0 );
+  if(numext::abs2(s0)>RealScalar(1e-6))
+    VERIFY_IS_APPROX( pl1.signedDistance(p1 + n1 * s0), s0);
+  else
+    VERIFY_IS_MUCH_SMALLER_THAN( abs(pl1.signedDistance(p1 + n1 * s0) - s0), Scalar(1) );
   VERIFY_IS_MUCH_SMALLER_THAN( pl1.signedDistance(pl1.projection(p0)), Scalar(1) );
   VERIFY_IS_MUCH_SMALLER_THAN( pl1.absDistance(p1 +  pl1.normal().unitOrthogonal() * s1), Scalar(1) );
 
@@ -52,6 +57,8 @@ template<typename HyperplaneType> void hyperplane(const HyperplaneType& _plane)
     MatrixType rot = MatrixType::Random(dim,dim).householderQr().householderQ();
     DiagonalMatrix<Scalar,HyperplaneType::AmbientDimAtCompileTime> scaling(VectorType::Random());
     Translation<Scalar,HyperplaneType::AmbientDimAtCompileTime> translation(VectorType::Random());
+    
+    while(scaling.diagonal().cwiseAbs().minCoeff()<RealScalar(1e-4)) scaling.diagonal() = VectorType::Random();
 
     pl2 = pl1;
     VERIFY_IS_MUCH_SMALLER_THAN( pl2.transform(rot).absDistance(rot * p1), Scalar(1) );
@@ -59,12 +66,15 @@ template<typename HyperplaneType> void hyperplane(const HyperplaneType& _plane)
     VERIFY_IS_MUCH_SMALLER_THAN( pl2.transform(rot,Isometry).absDistance(rot * p1), Scalar(1) );
     pl2 = pl1;
     VERIFY_IS_MUCH_SMALLER_THAN( pl2.transform(rot*scaling).absDistance((rot*scaling) * p1), Scalar(1) );
+    VERIFY_IS_APPROX( pl2.normal().norm(), RealScalar(1) );
     pl2 = pl1;
     VERIFY_IS_MUCH_SMALLER_THAN( pl2.transform(rot*scaling*translation)
-                                 .absDistance((rot*scaling*translation) * p1), Scalar(1) );
+                                  .absDistance((rot*scaling*translation) * p1), Scalar(1) );
+    VERIFY_IS_APPROX( pl2.normal().norm(), RealScalar(1) );
     pl2 = pl1;
     VERIFY_IS_MUCH_SMALLER_THAN( pl2.transform(rot*translation,Isometry)
                                  .absDistance((rot*translation) * p1), Scalar(1) );
+    VERIFY_IS_APPROX( pl2.normal().norm(), RealScalar(1) );
   }
 
   // casting
@@ -90,9 +100,9 @@ template<typename Scalar> void lines()
     Vector u = Vector::Random();
     Vector v = Vector::Random();
     Scalar a = internal::random<Scalar>();
-    while (abs(a-1) < 1e-4) a = internal::random<Scalar>();
-    while (u.norm() < 1e-4) u = Vector::Random();
-    while (v.norm() < 1e-4) v = Vector::Random();
+    while (abs(a-1) < Scalar(1e-4)) a = internal::random<Scalar>();
+    while (u.norm() < Scalar(1e-4)) u = Vector::Random();
+    while (v.norm() < Scalar(1e-4)) v = Vector::Random();
 
     HLine line_u = HLine::Through(center + u, center + a*u);
     HLine line_v = HLine::Through(center + v, center + a*v);
@@ -104,12 +114,15 @@ template<typename Scalar> void lines()
     Vector result = line_u.intersection(line_v);
 
     // the lines should intersect at the point we called "center"
-    VERIFY_IS_APPROX(result, center);
+    if(abs(a-1) > Scalar(1e-2) && abs(v.normalized().dot(u.normalized()))<Scalar(0.9))
+      VERIFY_IS_APPROX(result, center);
 
     // check conversions between two types of lines
     PLine pl(line_u); // gcc 3.3 will commit suicide if we don't name this variable
-    CoeffsType converted_coeffs = HLine(pl).coeffs();
-    converted_coeffs *= (line_u.coeffs()[0])/(converted_coeffs[0]);
+    HLine line_u2(pl);
+    CoeffsType converted_coeffs = line_u2.coeffs();
+    if(line_u2.normal().dot(line_u.normal())<Scalar(0))
+      converted_coeffs = -line_u2.coeffs();
     VERIFY(line_u.coeffs().isApprox(converted_coeffs));
   }
 }
@@ -145,9 +158,9 @@ template<typename Scalar> void hyperplane_alignment()
   typedef Hyperplane<Scalar,3,AutoAlign> Plane3a;
   typedef Hyperplane<Scalar,3,DontAlign> Plane3u;
 
-  EIGEN_ALIGN16 Scalar array1[4];
-  EIGEN_ALIGN16 Scalar array2[4];
-  EIGEN_ALIGN16 Scalar array3[4+1];
+  EIGEN_ALIGN_MAX Scalar array1[4];
+  EIGEN_ALIGN_MAX Scalar array2[4];
+  EIGEN_ALIGN_MAX Scalar array3[4+1];
   Scalar* array3u = array3+1;
 
   Plane3a *p1 = ::new(reinterpret_cast<void*>(array1)) Plane3a;
@@ -161,8 +174,8 @@ template<typename Scalar> void hyperplane_alignment()
   VERIFY_IS_APPROX(p1->coeffs(), p2->coeffs());
   VERIFY_IS_APPROX(p1->coeffs(), p3->coeffs());
   
-  #if defined(EIGEN_VECTORIZE) && EIGEN_ALIGN_STATICALLY
-  if(internal::packet_traits<Scalar>::Vectorizable)
+  #if defined(EIGEN_VECTORIZE) && EIGEN_MAX_STATIC_ALIGN_BYTES > 0
+  if(internal::packet_traits<Scalar>::Vectorizable && internal::packet_traits<Scalar>::size<=4)
     VERIFY_RAISES_ASSERT((::new(reinterpret_cast<void*>(array3u)) Plane3a));
   #endif
 }

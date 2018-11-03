@@ -68,6 +68,15 @@ template<typename MatrixType> void inverse(const MatrixType& m)
   VERIFY_IS_MUCH_SMALLER_THAN(abs(det-m3.determinant()), RealScalar(1));
   m3.computeInverseWithCheck(m4, invertible);
   VERIFY( rows==1 ? invertible : !invertible );
+  
+  // check with submatrices
+  {
+    Matrix<Scalar, MatrixType::RowsAtCompileTime+1, MatrixType::RowsAtCompileTime+1, MatrixType::Options> m5;
+    m5.setRandom();
+    m5.topLeftCorner(rows,rows) = m1;
+    m2 = m5.template topLeftCorner<MatrixType::RowsAtCompileTime,MatrixType::ColsAtCompileTime>().inverse();
+    VERIFY_IS_APPROX( (m5.template topLeftCorner<MatrixType::RowsAtCompileTime,MatrixType::ColsAtCompileTime>()), m2.inverse() );
+  }
 #endif
 
   // check in-place inversion
@@ -93,12 +102,16 @@ void test_inverse()
     CALL_SUBTEST_3( inverse(Matrix3f()) );
     CALL_SUBTEST_4( inverse(Matrix4f()) );
     CALL_SUBTEST_4( inverse(Matrix<float,4,4,DontAlign>()) );
+    
     s = internal::random<int>(50,320); 
     CALL_SUBTEST_5( inverse(MatrixXf(s,s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
+    
     s = internal::random<int>(25,100);
     CALL_SUBTEST_6( inverse(MatrixXcd(s,s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
+    
     CALL_SUBTEST_7( inverse(Matrix4d()) );
     CALL_SUBTEST_7( inverse(Matrix<double,4,4,DontAlign>()) );
   }
-  TEST_SET_BUT_UNUSED_VARIABLE(s)
 }

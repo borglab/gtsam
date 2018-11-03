@@ -65,7 +65,7 @@ template<typename MatrixType> void triangular_square(const MatrixType& m)
 
   m1 = MatrixType::Random(rows, cols);
   for (int i=0; i<rows; ++i)
-    while (numext::abs2(m1(i,i))<1e-1) m1(i,i) = internal::random<Scalar>();
+    while (numext::abs2(m1(i,i))<RealScalar(1e-1)) m1(i,i) = internal::random<Scalar>();
 
   Transpose<MatrixType> trm4(m4);
   // test back and forward subsitution with a vector as the rhs
@@ -78,7 +78,7 @@ template<typename MatrixType> void triangular_square(const MatrixType& m)
   m3 = m1.template triangularView<Lower>();
   VERIFY(v2.isApprox(m3.conjugate() * (m1.conjugate().template triangularView<Lower>().solve(v2)), largerEps));
 
-  // test back and forward subsitution with a matrix as the rhs
+  // test back and forward substitution with a matrix as the rhs
   m3 = m1.template triangularView<Upper>();
   VERIFY(m2.isApprox(m3.adjoint() * (m1.adjoint().template triangularView<Lower>().solve(m2)), largerEps));
   m3 = m1.template triangularView<Lower>();
@@ -113,6 +113,21 @@ template<typename MatrixType> void triangular_square(const MatrixType& m)
   m3.setZero();
   m3.template triangularView<Upper>().setOnes();
   VERIFY_IS_APPROX(m2,m3);
+  
+  m1.setRandom();
+  m3 = m1.template triangularView<Upper>();
+  Matrix<Scalar, MatrixType::ColsAtCompileTime, Dynamic> m5(cols, internal::random<int>(1,20));  m5.setRandom();
+  Matrix<Scalar, Dynamic, MatrixType::RowsAtCompileTime> m6(internal::random<int>(1,20), rows);  m6.setRandom();
+  VERIFY_IS_APPROX(m1.template triangularView<Upper>() * m5, m3*m5);
+  VERIFY_IS_APPROX(m6*m1.template triangularView<Upper>(), m6*m3);
+
+  m1up = m1.template triangularView<Upper>();
+  VERIFY_IS_APPROX(m1.template selfadjointView<Upper>().template triangularView<Upper>().toDenseMatrix(), m1up);
+  VERIFY_IS_APPROX(m1up.template selfadjointView<Upper>().template triangularView<Upper>().toDenseMatrix(), m1up);
+  VERIFY_IS_APPROX(m1.template selfadjointView<Upper>().template triangularView<Lower>().toDenseMatrix(), m1up.adjoint());
+  VERIFY_IS_APPROX(m1up.template selfadjointView<Upper>().template triangularView<Lower>().toDenseMatrix(), m1up.adjoint());
+
+  VERIFY_IS_APPROX(m1.template selfadjointView<Upper>().diagonal(), m1.diagonal());
 
 }
 

@@ -9,10 +9,18 @@
 
 #include "main.h"
 
+template<typename T>
+int get_random_size()
+{
+  const int factor = NumTraits<T>::ReadCost;
+  const int max_test_size = EIGEN_TEST_MAX_SIZE>2*factor ? EIGEN_TEST_MAX_SIZE/factor : EIGEN_TEST_MAX_SIZE;
+  return internal::random<int>(1,max_test_size);
+}
+
 template<typename Scalar, int Mode, int TriOrder, int OtherOrder, int ResOrder, int OtherCols>
-void trmm(int rows=internal::random<int>(1,EIGEN_TEST_MAX_SIZE),
-          int cols=internal::random<int>(1,EIGEN_TEST_MAX_SIZE),
-          int otherCols = OtherCols==Dynamic?internal::random<int>(1,EIGEN_TEST_MAX_SIZE):OtherCols)
+void trmm(int rows=get_random_size<Scalar>(),
+          int cols=get_random_size<Scalar>(),
+          int otherCols = OtherCols==Dynamic?get_random_size<Scalar>():OtherCols)
 {
   typedef Matrix<Scalar,Dynamic,Dynamic,TriOrder> TriMatrix;
   typedef Matrix<Scalar,Dynamic,OtherCols,OtherCols==1?ColMajor:OtherOrder> OnTheRight;
@@ -42,13 +50,13 @@ void trmm(int rows=internal::random<int>(1,EIGEN_TEST_MAX_SIZE),
   
   VERIFY_IS_APPROX( ge_xs.noalias() = mat.template triangularView<Mode>() * ge_right, tri * ge_right);
   VERIFY_IS_APPROX( ge_sx.noalias() = ge_left * mat.template triangularView<Mode>(), ge_left * tri);
-  
+
   VERIFY_IS_APPROX( ge_xs.noalias() = (s1*mat.adjoint()).template triangularView<Mode>() * (s2*ge_left.transpose()), s1*triTr.conjugate() * (s2*ge_left.transpose()));
   VERIFY_IS_APPROX( ge_sx.noalias() = ge_right.transpose() * mat.adjoint().template triangularView<Mode>(), ge_right.transpose() * triTr.conjugate());
   
   VERIFY_IS_APPROX( ge_xs.noalias() = (s1*mat.adjoint()).template triangularView<Mode>() * (s2*ge_left.adjoint()), s1*triTr.conjugate() * (s2*ge_left.adjoint()));
   VERIFY_IS_APPROX( ge_sx.noalias() = ge_right.adjoint() * mat.adjoint().template triangularView<Mode>(), ge_right.adjoint() * triTr.conjugate());
-  
+
   ge_xs_save = ge_xs;
   VERIFY_IS_APPROX( (ge_xs_save + s1*triTr.conjugate() * (s2*ge_left.adjoint())).eval(), ge_xs.noalias() += (s1*mat.adjoint()).template triangularView<Mode>() * (s2*ge_left.adjoint()) );
   ge_sx.setRandom();
@@ -61,13 +69,13 @@ void trmm(int rows=internal::random<int>(1,EIGEN_TEST_MAX_SIZE),
 }
 
 template<typename Scalar, int Mode, int TriOrder>
-void trmv(int rows=internal::random<int>(1,EIGEN_TEST_MAX_SIZE), int cols=internal::random<int>(1,EIGEN_TEST_MAX_SIZE))
+void trmv(int rows=get_random_size<Scalar>(), int cols=get_random_size<Scalar>())
 {
   trmm<Scalar,Mode,TriOrder,ColMajor,ColMajor,1>(rows,cols,1);
 }
 
 template<typename Scalar, int Mode, int TriOrder, int OtherOrder, int ResOrder>
-void trmm(int rows=internal::random<int>(1,EIGEN_TEST_MAX_SIZE), int cols=internal::random<int>(1,EIGEN_TEST_MAX_SIZE), int otherCols = internal::random<int>(1,EIGEN_TEST_MAX_SIZE))
+void trmm(int rows=get_random_size<Scalar>(), int cols=get_random_size<Scalar>(), int otherCols = get_random_size<Scalar>())
 {
   trmm<Scalar,Mode,TriOrder,OtherOrder,ResOrder,Dynamic>(rows,cols,otherCols);
 }

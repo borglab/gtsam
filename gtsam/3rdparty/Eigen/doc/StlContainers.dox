@@ -4,7 +4,7 @@ namespace Eigen {
 
 \eigenAutoToc
 
-\section summary Executive summary
+\section StlContainers_summary Executive summary
 
 Using STL containers on \ref TopicFixedSizeVectorizable "fixed-size vectorizable Eigen types", or classes having members of such types, requires taking the following two steps:
 
@@ -28,7 +28,7 @@ std::map<int, Eigen::Vector4f, std::less<int>,
 \endcode
 Note that the third parameter "std::less<int>" is just the default value, but we have to include it because we want to specify the fourth parameter, which is the allocator type.
 
-\section vector The case of std::vector
+\section StlContainers_vector The case of std::vector
 
 The situation with std::vector was even worse (explanation below) so we had to specialize it for the Eigen::aligned_allocator type. In practice you \b must use the Eigen::aligned_allocator (not another aligned allocator), \b and \#include <Eigen/StdVector>.
 

@@ -9,6 +9,12 @@
 
 #include "main.h"
 
+template<typename From, typename To>
+bool check_is_convertible(const From&, const To&)
+{
+  return internal::is_convertible<From,To>::value;
+}
+
 void test_meta()
 {
   VERIFY((internal::conditional<(3<4),internal::true_type, internal::false_type>::type::value));
@@ -51,6 +57,24 @@ void test_meta()
   VERIFY(( internal::is_same<float,internal::remove_pointer<float*>::type >::value));
   VERIFY(( internal::is_same<const float,internal::remove_pointer<const float*>::type >::value));
   VERIFY(( internal::is_same<float,internal::remove_pointer<float* const >::type >::value));
+  
+  VERIFY(( internal::is_convertible<float,double>::value ));
+  VERIFY(( internal::is_convertible<int,double>::value ));
+  VERIFY(( internal::is_convertible<double,int>::value ));
+  VERIFY((!internal::is_convertible<std::complex<double>,double>::value ));
+  VERIFY(( internal::is_convertible<Array33f,Matrix3f>::value ));
+//   VERIFY((!internal::is_convertible<Matrix3f,Matrix3d>::value )); //does not work because the conversion is prevented by a static assertion
+  VERIFY((!internal::is_convertible<Array33f,int>::value ));
+  VERIFY((!internal::is_convertible<MatrixXf,float>::value ));
+  {
+    float f;
+    MatrixXf A, B;
+    VectorXf a, b;
+    VERIFY(( check_is_convertible(a.dot(b), f) ));
+    VERIFY(( check_is_convertible(a.transpose()*b, f) ));
+    VERIFY((!check_is_convertible(A*B, f) ));
+    VERIFY(( check_is_convertible(A*B, A) ));
+  }
   
   VERIFY(internal::meta_sqrt<1>::ret == 1);
   #define VERIFY_META_SQRT(X) VERIFY(internal::meta_sqrt<X>::ret == int(std::sqrt(double(X))))

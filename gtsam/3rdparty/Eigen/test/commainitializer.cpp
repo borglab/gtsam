@@ -70,8 +70,9 @@ void test_commainitializer()
   Matrix3d m3;
   Matrix4d m4;
 
-  #ifndef _MSC_VER
   VERIFY_RAISES_ASSERT( (m3 << 1, 2, 3, 4, 5, 6, 7, 8) );
+  
+  #ifndef _MSC_VER
   VERIFY_RAISES_ASSERT( (m3 << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10) );
   #endif
 
@@ -98,6 +99,7 @@ void test_commainitializer()
         4, 5, 6,
         vec[2].transpose();
   VERIFY_IS_APPROX(m3, ref);
+
 
   // recursively test all block-sizes from 0 to 3:
   test_block_recursion<(1<<8) - 1>();

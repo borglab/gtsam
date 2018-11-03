@@ -568,7 +568,7 @@ class Pose2 {
   static gtsam::Pose2 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose2& p);
   Matrix AdjointMap() const;
-  Vector Adjoint(const Vector& xi) const;
+  Vector Adjoint(Vector xi) const;
   static Matrix wedge(double vx, double vy, double w);
 
   // Group Actions on Point2
@@ -865,7 +865,7 @@ class CalibratedCamera {
   // Standard Constructors and Named Constructors
   CalibratedCamera();
   CalibratedCamera(const gtsam::Pose3& pose);
-  CalibratedCamera(const Vector& v);
+  CalibratedCamera(Vector v);
   static gtsam::CalibratedCamera Level(const gtsam::Pose2& pose2, double height);
 
   // Testable
@@ -875,7 +875,7 @@ class CalibratedCamera {
   // Manifold
   static size_t Dim();
   size_t dim() const;
-  gtsam::CalibratedCamera retract(const Vector& d) const;
+  gtsam::CalibratedCamera retract(Vector d) const;
   Vector localCoordinates(const gtsam::CalibratedCamera& T2) const;
 
   // Action on Point3
@@ -911,7 +911,7 @@ class PinholeCamera {
   CALIBRATION calibration() const;
 
   // Manifold
-  This retract(const Vector& d) const;
+  This retract(Vector d) const;
   Vector localCoordinates(const This& T2) const;
   size_t dim() const;
   static size_t Dim();
@@ -938,6 +938,8 @@ virtual class SimpleCamera {
   static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height);
   static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
       const gtsam::Point3& upVector, const gtsam::Cal3_S2& K);
+  static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
+      const gtsam::Point3& upVector);
 
   // Testable
   void print(string s) const;
@@ -948,7 +950,7 @@ virtual class SimpleCamera {
   gtsam::Cal3_S2 calibration() const;
 
   // Manifold
-  gtsam::SimpleCamera retract(const Vector& d) const;
+  gtsam::SimpleCamera retract(Vector d) const;
   Vector localCoordinates(const gtsam::SimpleCamera& T2) const;
   size_t dim() const;
   static size_t Dim();
@@ -990,7 +992,7 @@ class StereoCamera {
   gtsam::Cal3_S2Stereo calibration() const;
 
   // Manifold
-  gtsam::StereoCamera retract(const Vector& d) const;
+  gtsam::StereoCamera retract(Vector d) const;
   Vector localCoordinates(const gtsam::StereoCamera& T2) const;
   size_t dim() const;
   static size_t Dim();
@@ -1225,12 +1227,12 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
 };
 
 virtual class Constrained : gtsam::noiseModel::Diagonal {
-    static gtsam::noiseModel::Constrained* MixedSigmas(const Vector& mu, const Vector& sigmas);
-    static gtsam::noiseModel::Constrained* MixedSigmas(double m, const Vector& sigmas);
-    static gtsam::noiseModel::Constrained* MixedVariances(const Vector& mu, const Vector& variances);
-    static gtsam::noiseModel::Constrained* MixedVariances(const Vector& variances);
-    static gtsam::noiseModel::Constrained* MixedPrecisions(const Vector& mu, const Vector& precisions);
-    static gtsam::noiseModel::Constrained* MixedPrecisions(const Vector& precisions);
+    static gtsam::noiseModel::Constrained* MixedSigmas(Vector mu, Vector sigmas);
+    static gtsam::noiseModel::Constrained* MixedSigmas(double m, Vector sigmas);
+    static gtsam::noiseModel::Constrained* MixedVariances(Vector mu, Vector variances);
+    static gtsam::noiseModel::Constrained* MixedVariances(Vector variances);
+    static gtsam::noiseModel::Constrained* MixedPrecisions(Vector mu, Vector precisions);
+    static gtsam::noiseModel::Constrained* MixedPrecisions(Vector precisions);
 
     static gtsam::noiseModel::Constrained* All(size_t dim);
     static gtsam::noiseModel::Constrained* All(size_t dim, double mu);
@@ -1413,12 +1415,12 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   pair<Matrix, Vector> jacobianUnweighted() const;
   Matrix augmentedJacobianUnweighted() const;
 
-  void transposeMultiplyAdd(double alpha, const Vector& e, gtsam::VectorValues& x) const;
+  void transposeMultiplyAdd(double alpha, Vector e, gtsam::VectorValues& x) const;
   gtsam::JacobianFactor whiten() const;
 
   pair<gtsam::GaussianConditional*, gtsam::JacobianFactor*> eliminate(const gtsam::Ordering& keys) const;
 
-  void setModel(bool anyConstrained, const Vector& sigmas);
+  void setModel(bool anyConstrained, Vector sigmas);
 
   gtsam::noiseModel::Diagonal* get_model() const;
 
@@ -2502,6 +2504,11 @@ class NavState {
 #include <gtsam/navigation/PreintegratedRotation.h>
 virtual class PreintegratedRotationParams {
   PreintegratedRotationParams();
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::PreintegratedRotationParams& expected, double tol);
+
   void setGyroscopeCovariance(Matrix cov);
   void setOmegaCoriolis(Vector omega);
   void setBodyPSensor(const gtsam::Pose3& pose);
@@ -2509,13 +2516,23 @@ virtual class PreintegratedRotationParams {
   Matrix getGyroscopeCovariance() const;
 
   // TODO(frank): allow optional
-  //  boost::optional<Vector3> getOmegaCoriolis() const;
+  //  boost::optional<Vector> getOmegaCoriolis() const;
   //  boost::optional<Pose3>   getBodyPSensor()   const;
 };
 
 #include <gtsam/navigation/PreintegrationParams.h>
 virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   PreintegrationParams(Vector n_gravity);
+
+  static gtsam::PreintegrationParams* MakeSharedD(double g);
+  static gtsam::PreintegrationParams* MakeSharedU(double g);
+  static gtsam::PreintegrationParams* MakeSharedD();  // default g = 9.81
+  static gtsam::PreintegrationParams* MakeSharedU();  // default g = 9.81
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::PreintegrationParams& expected, double tol);
+
   void setAccelerometerCovariance(Matrix cov);
   void setIntegrationCovariance(Matrix cov);
   void setUse2ndOrderCoriolis(bool flag);
@@ -2523,7 +2540,6 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   Matrix getAccelerometerCovariance() const;
   Matrix getIntegrationCovariance()   const;
   bool   getUse2ndOrderCoriolis()     const;
-  void print(string s) const;
 };
 
 #include <gtsam/navigation/ImuFactor.h>
@@ -2649,15 +2665,41 @@ virtual class Rot3AttitudeFactor : gtsam::NonlinearFactor{
   gtsam::Unit3 bRef() const;
 };
 
-virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor{
-  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nZ, const gtsam::noiseModel::Diagonal* model,
-      const gtsam::Unit3& bRef);
-  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nZ, const gtsam::noiseModel::Diagonal* model);
+virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor {
+  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nZ,
+                      const gtsam::noiseModel::Diagonal* model,
+                      const gtsam::Unit3& bRef);
+  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nZ,
+                      const gtsam::noiseModel::Diagonal* model);
   Pose3AttitudeFactor();
   void print(string s) const;
   bool equals(const gtsam::NonlinearFactor& expected, double tol) const;
   gtsam::Unit3 nZ() const;
   gtsam::Unit3 bRef() const;
+};
+
+#include <gtsam/navigation/Scenario.h>
+virtual class Scenario {
+  gtsam::Pose3 pose(double t) const;
+  Vector omega_b(double t) const;
+  Vector velocity_n(double t) const;
+  Vector acceleration_n(double t) const;
+  gtsam::Rot3 rotation(double t) const;
+  gtsam::NavState navState(double t) const;
+  Vector velocity_b(double t) const;
+  Vector acceleration_b(double t) const;
+};
+
+virtual class ConstantTwistScenario : gtsam::Scenario {
+  ConstantTwistScenario(Vector w, Vector v);
+  ConstantTwistScenario(Vector w, Vector v,
+                        const gtsam::Pose3& nTb0);
+};
+
+virtual class AcceleratingScenario : gtsam::Scenario {
+  AcceleratingScenario(const gtsam::Rot3& nRb, const gtsam::Point3& p0,
+                       Vector v0, Vector a_n,
+                       Vector omega_b);
 };
 
 //*************************************************************************

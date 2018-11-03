@@ -125,7 +125,7 @@ ALWAYS_DETAILED_SEC    = NO
 # members were ordinary class members. Constructors, destructors and assignment
 # operators of the base classes will not be shown.
 
-INLINE_INHERITED_MEMB  = YES
+INLINE_INHERITED_MEMB  = NO
 
 # If the FULL_PATH_NAMES tag is set to YES then Doxygen will prepend the full
 # path before files name in the file list and in the header files. If set
@@ -206,6 +206,7 @@ TAB_SIZE               = 8
 # You can put \n's in the value part of an alias to insert newlines.
 
 ALIASES                = "only_for_vectors=This is only for vectors (either row-vectors or column-vectors), i.e. matrices which are known at compile-time to have either one row or one column." \
+                         "not_reentrant=\warning This function is not re-entrant." \
                          "array_module=This is defined in the %Array module. \code #include <Eigen/Array> \endcode" \
                          "cholesky_module=This is defined in the %Cholesky module. \code #include <Eigen/Cholesky> \endcode" \
                          "eigenvalues_module=This is defined in the %Eigenvalues module. \code #include <Eigen/Eigenvalues> \endcode" \
@@ -215,6 +216,7 @@ ALIASES                = "only_for_vectors=This is only for vectors (either row-
                          "lu_module=This is defined in the %LU module. \code #include <Eigen/LU> \endcode" \
                          "qr_module=This is defined in the %QR module. \code #include <Eigen/QR> \endcode" \
                          "svd_module=This is defined in the %SVD module. \code #include <Eigen/SVD> \endcode" \
+                         "specialfunctions_module=This is defined in the \b unsupported SpecialFunctions module. \code #include <Eigen/SpecialFunctions> \endcode" \
                          "label=\bug" \
                          "matrixworld=<a href='#matrixonly' style='color:green;text-decoration: none;'>*</a>" \
                          "arrayworld=<a href='#arrayonly' style='color:blue;text-decoration: none;'>*</a>" \
@@ -222,7 +224,13 @@ ALIASES                = "only_for_vectors=This is only for vectors (either row-
                          "note_about_using_kernel_to_study_multiple_solutions=If you need a complete analysis of the space of solutions, take the one solution obtained by this method and add to it elements of the kernel, as determined by kernel()." \
                          "note_about_checking_solutions=This method just tries to find as good a solution as possible. If you want to check whether a solution exists or if it is accurate, just call this function to get a result and then compute the error of this result, or use MatrixBase::isApprox() directly, for instance like this: \code bool a_solution_exists = (A*result).isApprox(b, precision); \endcode This method avoids dividing by zero, so that the non-existence of a solution doesn't by itself mean that you'll get \c inf or \c nan values." \
                          "note_try_to_help_rvo=This function returns the result by value. In order to make that efficient, it is implemented as just a return statement using a special constructor, hopefully allowing the compiler to perform a RVO (return value optimization)." \
-                         "nonstableyet=\warning This is not considered to be part of the stable public API yet. Changes may happen in future releases. See \ref Experimental \"Experimental parts of Eigen\""
+                         "nonstableyet=\warning This is not considered to be part of the stable public API yet. Changes may happen in future releases. See \ref Experimental \"Experimental parts of Eigen\"" \
+                         "implsparsesolverconcept=This class follows the \link TutorialSparseSolverConcept sparse solver concept \endlink." \
+                         "blank= " \
+                         "cpp11=<span class='cpp11'>[c++11]</span>" \
+                         "cpp14=<span class='cpp14'>[c++14]</span>" \
+                         "cpp17=<span class='cpp17'>[c++17]</span>"
+                         
 
 ALIASES += "eigenAutoToc=  "
 ALIASES += "eigenManualPage=\defgroup"
@@ -270,7 +278,7 @@ OPTIMIZE_OUTPUT_VHDL   = NO
 # (default is Fortran), use: inc=Fortran f=C. Note that for custom extensions
 # you also need to set FILE_PATTERNS otherwise the files are not read by doxygen.
 
-EXTENSION_MAPPING      =
+EXTENSION_MAPPING      = .h=C++ no_extension=C++
 
 # If MARKDOWN_SUPPORT is enabled (the default) then doxygen pre-processes all
 # comments according to the Markdown format, which allows for more readable
@@ -458,7 +466,7 @@ HIDE_IN_BODY_DOCS      = NO
 # to NO (the default) then the documentation will be excluded.
 # Set it to YES to include the internal documentation.
 
-INTERNAL_DOCS          = NO
+INTERNAL_DOCS          = ${EIGEN_DOXY_INTERNAL}
 
 # If the CASE_SENSE_NAMES tag is set to NO then Doxygen will only generate
 # file names in lower-case letters. If set to YES upper-case letters are also
@@ -472,13 +480,13 @@ CASE_SENSE_NAMES       = YES
 # will show members with their full class and namespace scopes in the
 # documentation. If set to YES the scope will be hidden.
 
-HIDE_SCOPE_NAMES       = YES
+HIDE_SCOPE_NAMES       = NO
 
 # If the SHOW_INCLUDE_FILES tag is set to YES (the default) then Doxygen
 # will put a list of the files that are included by a file in the documentation
 # of that file.
 
-SHOW_INCLUDE_FILES     = NO
+SHOW_INCLUDE_FILES     = ${EIGEN_DOXY_INTERNAL}
 
 # If the FORCE_LOCAL_INCLUDES tag is set to YES then Doxygen
 # will list include files with double quotes in the documentation
@@ -544,7 +552,7 @@ STRICT_PROTO_MATCHING  = NO
 # disable (NO) the todo list. This list is created by putting \todo
 # commands in the documentation.
 
-GENERATE_TODOLIST      = NO
+GENERATE_TODOLIST      = ${EIGEN_DOXY_INTERNAL}
 
 # The GENERATE_TESTLIST tag can be used to enable (YES) or
 # disable (NO) the test list. This list is created by putting \test
@@ -556,7 +564,7 @@ GENERATE_TESTLIST      = NO
 # disable (NO) the bug list. This list is created by putting \bug
 # commands in the documentation.
 
-GENERATE_BUGLIST       = NO
+GENERATE_BUGLIST       = ${EIGEN_DOXY_INTERNAL}
 
 # The GENERATE_DEPRECATEDLIST tag can be used to enable (YES) or
 # disable (NO) the deprecated list. This list is created by putting
@@ -719,7 +727,8 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-EXCLUDE                = "${Eigen_SOURCE_DIR}/Eigen/Eigen2Support" \
+EXCLUDE                = "${Eigen_SOURCE_DIR}/Eigen/src/Core/products" \
+                         "${Eigen_SOURCE_DIR}/Eigen/Eigen2Support" \
                          "${Eigen_SOURCE_DIR}/Eigen/src/Eigen2Support" \
                          "${Eigen_SOURCE_DIR}/doc/examples" \
                          "${Eigen_SOURCE_DIR}/doc/special_examples" \
@@ -800,7 +809,7 @@ EXAMPLE_RECURSIVE      = NO
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             =
+IMAGE_PATH             = ${Eigen_BINARY_DIR}/doc/html
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program
@@ -864,13 +873,13 @@ STRIP_CODE_COMMENTS    = YES
 # then for each documented function all documented
 # functions referencing it will be listed.
 
-REFERENCED_BY_RELATION = YES
+REFERENCED_BY_RELATION = NO
 
 # If the REFERENCES_RELATION tag is set to YES
 # then for each documented function all documented entities
 # called/used by that function will be listed.
 
-REFERENCES_RELATION    = YES
+REFERENCES_RELATION    = NO
 
 # If the REFERENCES_LINK_SOURCE tag is set to YES (the default)
 # and SOURCE_BROWSER tag is set to YES, then the hyperlinks from
@@ -1581,9 +1590,14 @@ PREDEFINED             = EIGEN_EMPTY_STRUCT \
                          EIGEN_VECTORIZE \
                          EIGEN_QT_SUPPORT \
                          EIGEN_STRONG_INLINE=inline \
-                         "EIGEN2_SUPPORT_STAGE=99" \
+                         EIGEN_DEVICE_FUNC= \
                          "EIGEN_MAKE_CWISE_BINARY_OP(METHOD,FUNCTOR)=template<typename OtherDerived> const CwiseBinaryOp<FUNCTOR<Scalar>, const Derived, const OtherDerived> METHOD(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const;" \
-                         "EIGEN_CWISE_PRODUCT_RETURN_TYPE(LHS,RHS)=CwiseBinaryOp<internal::scalar_product_op<typename LHS::Scalar, typename RHS::Scalar >, const LHS, const RHS>"
+                         "EIGEN_CWISE_PRODUCT_RETURN_TYPE(LHS,RHS)=CwiseBinaryOp<internal::scalar_product_op<LHS::Scalar,RHS::Scalar>, const LHS, const RHS>"\
+                         "EIGEN_CAT2(a,b)= a ## b"\
+                         "EIGEN_CAT(a,b)=EIGEN_CAT2(a,b)"\
+                         "EIGEN_CWISE_BINARY_RETURN_TYPE(LHS,RHS,OPNAME)=CwiseBinaryOp<EIGEN_CAT(EIGEN_CAT(internal::scalar_,OPNAME),_op)<LHS::Scalar, RHS::Scalar>, const LHS, const RHS>"\
+                         DOXCOMMA=,
+
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then
 # this tag can be used to specify a list of macro names that should be expanded.
@@ -1599,7 +1613,15 @@ EXPAND_AS_DEFINED      = EIGEN_MAKE_TYPEDEFS \
                          EIGEN_CURRENT_STORAGE_BASE_CLASS \
                          EIGEN_MATHFUNC_IMPL \
                          _EIGEN_GENERIC_PUBLIC_INTERFACE \
-                         EIGEN2_SUPPORT
+                         EIGEN_ARRAY_DECLARE_GLOBAL_UNARY \
+                         EIGEN_EMPTY \
+                         EIGEN_EULER_ANGLES_TYPEDEFS \
+                         EIGEN_EULER_ANGLES_SINGLE_TYPEDEF \
+                         EIGEN_EULER_SYSTEM_TYPEDEF \
+                         EIGEN_DOC_UNARY_ADDONS \
+                         EIGEN_DOC_BLOCK_ADDONS_NOT_INNER_PANEL \
+                         EIGEN_DOC_BLOCK_ADDONS_INNER_PANEL_IF
+
 
 # If the SKIP_FUNCTION_MACROS tag is set to YES (the default) then
 # doxygen's preprocessor will remove all references to function-like macros
