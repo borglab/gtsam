@@ -4,6 +4,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def plot_pose2_on_axes(axes, pose, axis_length=0.1):
+    """Plot a 2D pose on given axis 'axes' with given 'axis_length'."""
+    # get rotation and translation (center)
+    gRp = pose.rotation().matrix()  # rotation from pose to global
+    t = pose.translation()
+    origin = np.array([t.x(), t.y()])
+
+    # draw the camera axes
+    x_axis = origin + gRp[:, 0] * axis_length
+    line = np.append(origin[np.newaxis], x_axis[np.newaxis], axis=0)
+    axes.plot(line[:, 0], line[:, 1], 'r-')
+
+    y_axis = origin + gRp[:, 1] * axis_length
+    line = np.append(origin[np.newaxis], y_axis[np.newaxis], axis=0)
+    axes.plot(line[:, 0], line[:, 1], 'g-')
+
+
+def plot_pose2(fignum, pose, axis_length=0.1):
+    """Plot a 2D pose on given figure with given 'axis_length'."""
+    # get figure object
+    fig = plt.figure(fignum)
+    axes = fig.gca()
+    plot_pose2_on_axes(axes, pose, axis_length)
+
+
 def plot_point3_on_axes(axes, point, linespec):
     """Plot a 3D point on given axis 'axes' with given 'linespec'."""
     axes.plot([point.x()], [point.y()], [point.z()], linespec)
