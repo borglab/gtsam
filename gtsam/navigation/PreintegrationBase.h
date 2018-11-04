@@ -55,7 +55,7 @@ struct PoseVelocityBias {
  * It includes the definitions of the preintegrated variables and the methods
  * to access, print, and compare them.
  */
-class PreintegrationBase {
+class GTSAM_EXPORT PreintegrationBase {
  public:
   typedef imuBias::ConstantBias Bias;
   typedef PreintegrationParams Params;
