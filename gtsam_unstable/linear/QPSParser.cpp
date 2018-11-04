@@ -19,7 +19,7 @@
 
 #include <gtsam_unstable/linear/QPSParser.h>
 #include <gtsam_unstable/linear/QPSParserException.h>
-#include <gtsam_unstable/linear/RawQP.h>
+#include <gtsam_unstable/linear/QPSVisitor.h>
 
 #include <boost/spirit/include/qi.hpp>
 #include <boost/lambda/lambda.hpp>
@@ -34,7 +34,7 @@ typedef qi::grammar<boost::spirit::basic_istream_iterator<char>> base_grammar;
 
 struct QPSParser::MPSGrammar: base_grammar {
   typedef std::vector<char> Chars;
-  RawQP * rqp_;
+  QPSVisitor * rqp_;
   boost::function<void(bf::vector<Chars, Chars, Chars> const&)> setName;
   boost::function<void(bf::vector<Chars, char, Chars, Chars, Chars> const &)> addRow;
   boost::function<
@@ -62,19 +62,19 @@ struct QPSParser::MPSGrammar: base_grammar {
           bf::vector<Chars, Chars, Chars, Chars, Chars, Chars, Chars, double> const &)> addBound;
   boost::function<
       void(bf::vector<Chars, Chars, Chars, Chars, Chars, Chars, Chars> const &)> addBoundFr;
-  MPSGrammar(RawQP * rqp) :
+  MPSGrammar(QPSVisitor * rqp) :
       base_grammar(start), rqp_(rqp), setName(
-          boost::bind(&RawQP::setName, rqp, ::_1)), addRow(
-          boost::bind(&RawQP::addRow, rqp, ::_1)), rhsSingle(
-          boost::bind(&RawQP::addRHS, rqp, ::_1)), rhsDouble(
-          boost::bind(&RawQP::addRHSDouble, rqp, ::_1)), rangeSingle(
-          boost::bind(&RawQP::addRangeSingle, rqp, ::_1)), rangeDouble(
-          boost::bind(&RawQP::addRangeDouble, rqp, ::_1)), colSingle(
-          boost::bind(&RawQP::addColumn, rqp, ::_1)), colDouble(
-          boost::bind(&RawQP::addColumnDouble, rqp, ::_1)), addQuadTerm(
-          boost::bind(&RawQP::addQuadTerm, rqp, ::_1)), addBound(
-          boost::bind(&RawQP::addBound, rqp, ::_1)), addBoundFr(
-          boost::bind(&RawQP::addBoundFr, rqp, ::_1)) {
+          boost::bind(&QPSVisitor::setName, rqp, ::_1)), addRow(
+          boost::bind(&QPSVisitor::addRow, rqp, ::_1)), rhsSingle(
+          boost::bind(&QPSVisitor::addRHS, rqp, ::_1)), rhsDouble(
+          boost::bind(&QPSVisitor::addRHSDouble, rqp, ::_1)), rangeSingle(
+          boost::bind(&QPSVisitor::addRangeSingle, rqp, ::_1)), rangeDouble(
+          boost::bind(&QPSVisitor::addRangeDouble, rqp, ::_1)), colSingle(
+          boost::bind(&QPSVisitor::addColumn, rqp, ::_1)), colDouble(
+          boost::bind(&QPSVisitor::addColumnDouble, rqp, ::_1)), addQuadTerm(
+          boost::bind(&QPSVisitor::addQuadTerm, rqp, ::_1)), addBound(
+          boost::bind(&QPSVisitor::addBound, rqp, ::_1)), addBoundFr(
+          boost::bind(&QPSVisitor::addBoundFr, rqp, ::_1)) {
     using namespace boost::spirit;
     using namespace boost::spirit::qi;
     character = lexeme[alnum | '_' | '-' | '.'];
@@ -123,7 +123,7 @@ struct QPSParser::MPSGrammar: base_grammar {
 };
 
 QP QPSParser::Parse() {
-  RawQP rawData;
+  QPSVisitor rawData;
   std::fstream stream(fileName_.c_str());
   stream.unsetf(std::ios::skipws);
   boost::spirit::basic_istream_iterator<char> begin(stream);

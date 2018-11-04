@@ -13,7 +13,8 @@
  * @file testQPSolver.cpp
  * @brief Test simple QP solver for a linear inequality constraint
  * @date Apr 10, 2014
- * @author Duy-Nguyen Ta, Ivan Dario Jimenez
+ * @author Duy-Nguyen Ta
+ * @author Ivan Dario Jimenez
  */
 
 #include <gtsam/base/Testable.h>

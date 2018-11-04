@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file     RawQP.h
+ * @file     QPSVisitor.h
  * @brief    
  * @author   Ivan Dario Jimenez
  * @date     3/5/16
@@ -19,48 +19,46 @@
 #pragma once
 
 #include <gtsam_unstable/linear/QP.h>
-#include <gtsam/base/Matrix.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/inference/Key.h>
-
+#include <gtsam/base/Matrix.h>
+#include <boost/fusion/include/vector.hpp>
+#include <boost/fusion/sequence.hpp>
+#include <unordered_map>
 #include <string>
 #include <vector>
-#include <unordered_map>
-#include <gtsam/inference/Symbol.h>
-#include <boost/fusion/sequence.hpp>
-#include <boost/fusion/include/vector.hpp>
 
 namespace gtsam {
 /**
- * This class is responsible for collecting a QP problem as the parser parses a QPS file
- * and then generating a QP problem.
+ * As the parser reads a file, it call functions in this visitor. This visitor in turn stores what the parser has read
+ * in a way that can be later used to build the full QP problem in the file.
  */
-class RawQP {
+class QPSVisitor {
 private:
   typedef std::unordered_map<Key, Matrix11> coefficient_v;
   typedef std::unordered_map<std::string, coefficient_v> constraint_v;
 
-  std::unordered_map<std::string, constraint_v*> row_to_constraint_v;
-  constraint_v E;
-  constraint_v IG;
-  constraint_v IL;
-  unsigned int varNumber;
-  std::unordered_map<std::string, double> b;
-  std::unordered_map<std::string, double> ranges;
-  std::unordered_map<Key, Vector1> g;
-  std::unordered_map<std::string, Key> varname_to_key;
-  std::unordered_map<Key, std::unordered_map<Key, Matrix11> > H;
-  double f;
-  std::string obj_name;
-  std::string name_;
-  std::unordered_map<Key, double> up;
-  std::unordered_map<Key, double> lo;
-  std::unordered_map<Key, double> fx;
-  std::vector<Key> Free;
+  std::unordered_map<std::string, constraint_v*> row_to_constraint_v; // Maps QPS ROWS to Variable-Matrix pairs
+  constraint_v E; // Equalities
+  constraint_v IG;// Inequalities >=
+  constraint_v IL;// Inequalities <=
+  unsigned int numVariables;
+  std::unordered_map<std::string, double> b; // maps from constraint name to b value for Ax = b equality constraints
+  std::unordered_map<std::string, double> ranges; // Inequalities can be specified as ranges on a variable
+  std::unordered_map<Key, Vector1> g; // linear term of quadratic cost
+  std::unordered_map<std::string, Key> varname_to_key; // Variable QPS string name to key
+  std::unordered_map<Key, std::unordered_map<Key, Matrix11> > H; // H from hessian
+  double f; // Constant term of quadratic cost
+  std::string obj_name; // the objective function has a name in the QPS
+  std::string name_; // the quadratic program has a name in the QPS
+  std::unordered_map<Key, double> up; // Upper Bound constraints on variable where X < MAX
+  std::unordered_map<Key, double> lo; // Lower Bound constraints on variable where MIN < X
+  std::unordered_map<Key, double> fx; // Equalities specified as FX in BOUNDS part of QPS
+  std::vector<Key> Free; // Variables can be specified as Free (to which no constraints apply)
   const bool debug = false;
 
 public:
-  RawQP() :
-      row_to_constraint_v(), E(), IG(), IL(), varNumber(1), b(), ranges(), g(), varname_to_key(), H(), f(), obj_name(), name_(), up(), lo(), fx(), Free() {
+  QPSVisitor() : numVariables(1) {
   }
 
   void setName(
