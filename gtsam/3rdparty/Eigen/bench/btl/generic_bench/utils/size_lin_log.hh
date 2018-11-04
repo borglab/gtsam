@@ -23,7 +23,7 @@
 #include "size_log.hh"
 
 template<class Vector>
-void size_lin_log(const int nb_point, const int size_min, const int size_max, Vector & X)
+void size_lin_log(const int nb_point, const int /*size_min*/, const int size_max, Vector & X)
 {
   int ten=10;
   int nine=9;

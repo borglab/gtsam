@@ -11,7 +11,6 @@
 
 template<typename MatrixType> void bandmatrix(const MatrixType& _m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar,Dynamic,Dynamic> DenseMatrixType;
@@ -62,8 +61,6 @@ using Eigen::internal::BandMatrix;
 
 void test_bandmatrix()
 {
-  typedef BandMatrix<float>::Index Index;
-
   for(int i = 0; i < 10*g_repeat ; i++) {
     Index rows = internal::random<Index>(1,10);
     Index cols = internal::random<Index>(1,10);

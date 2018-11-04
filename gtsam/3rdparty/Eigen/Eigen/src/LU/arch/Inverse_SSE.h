@@ -35,13 +35,15 @@ template<typename MatrixType, typename ResultType>
 struct compute_inverse_size4<Architecture::SSE, float, MatrixType, ResultType>
 {
   enum {
-    MatrixAlignment     = bool(MatrixType::Flags&AlignedBit),
-    ResultAlignment     = bool(ResultType::Flags&AlignedBit),
+    MatrixAlignment     = traits<MatrixType>::Alignment,
+    ResultAlignment     = traits<ResultType>::Alignment,
     StorageOrdersMatch  = (MatrixType::Flags&RowMajorBit) == (ResultType::Flags&RowMajorBit)
   };
+  typedef typename conditional<(MatrixType::Flags&LinearAccessBit),MatrixType const &,typename MatrixType::PlainObject>::type ActualMatrixType;
   
-  static void run(const MatrixType& matrix, ResultType& result)
+  static void run(const MatrixType& mat, ResultType& result)
   {
+    ActualMatrixType matrix(mat);
     EIGEN_ALIGN16 const unsigned int _Sign_PNNP[4] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };
 
     // Load the full matrix into registers
@@ -151,7 +153,7 @@ struct compute_inverse_size4<Architecture::SSE, float, MatrixType, ResultType>
     iC = _mm_mul_ps(rd,iC);
     iD = _mm_mul_ps(rd,iD);
 
-    DenseIndex res_stride = result.outerStride();
+    Index res_stride = result.outerStride();
     float* res = result.data();
     pstoret<float, Packet4f, ResultAlignment>(res+0,            _mm_shuffle_ps(iA,iB,0x77));
     pstoret<float, Packet4f, ResultAlignment>(res+res_stride,   _mm_shuffle_ps(iA,iB,0x22));
@@ -165,18 +167,21 @@ template<typename MatrixType, typename ResultType>
 struct compute_inverse_size4<Architecture::SSE, double, MatrixType, ResultType>
 {
   enum {
-    MatrixAlignment = bool(MatrixType::Flags&AlignedBit),
-    ResultAlignment = bool(ResultType::Flags&AlignedBit),
+    MatrixAlignment     = traits<MatrixType>::Alignment,
+    ResultAlignment     = traits<ResultType>::Alignment,
     StorageOrdersMatch  = (MatrixType::Flags&RowMajorBit) == (ResultType::Flags&RowMajorBit)
   };
-  static void run(const MatrixType& matrix, ResultType& result)
+  typedef typename conditional<(MatrixType::Flags&LinearAccessBit),MatrixType const &,typename MatrixType::PlainObject>::type ActualMatrixType;
+  
+  static void run(const MatrixType& mat, ResultType& result)
   {
+    ActualMatrixType matrix(mat);
     const __m128d _Sign_NP = _mm_castsi128_pd(_mm_set_epi32(0x0,0x0,0x80000000,0x0));
     const __m128d _Sign_PN = _mm_castsi128_pd(_mm_set_epi32(0x80000000,0x0,0x0,0x0));
 
     // The inverse is calculated using "Divide and Conquer" technique. The
     // original matrix is divide into four 2x2 sub-matrices. Since each
-    // register of the matrix holds two element, the smaller matrices are
+    // register of the matrix holds two elements, the smaller matrices are
     // consisted of two registers. Hence we get a better locality of the
     // calculations.
 
@@ -313,7 +318,7 @@ struct compute_inverse_size4<Architecture::SSE, double, MatrixType, ResultType>
     iC1 = _mm_sub_pd(_mm_mul_pd(B1, dC), iC1);
     iC2 = _mm_sub_pd(_mm_mul_pd(B2, dC), iC2);
 
-    DenseIndex res_stride = result.outerStride();
+    Index res_stride = result.outerStride();
     double* res = result.data();
     pstoret<double, Packet2d, ResultAlignment>(res+0,             _mm_mul_pd(_mm_shuffle_pd(iA2, iA1, 3), d1));
     pstoret<double, Packet2d, ResultAlignment>(res+res_stride,    _mm_mul_pd(_mm_shuffle_pd(iA2, iA1, 0), d2));

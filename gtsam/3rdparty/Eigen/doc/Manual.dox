@@ -3,19 +3,32 @@
 
 namespace Eigen {
 
+/** \page UserManual_CustomizingEigen Extending/Customizing Eigen
+  %Eigen can be extended in several ways, for instance, by defining global methods, by inserting custom methods within main %Eigen's classes through the \ref TopicCustomizing_Plugins "plugin" mechanism, by adding support to \ref TopicCustomizing_CustomScalar "custom scalar types" etc. See below for the respective sub-topics.
+  - \subpage TopicCustomizing_Plugins
+  - \subpage TopicCustomizing_InheritingMatrix
+  - \subpage TopicCustomizing_CustomScalar
+  - \subpage TopicCustomizing_NullaryExpr
+  - \subpage TopicNewExpressionType
+  \sa \ref TopicPreprocessorDirectives
+*/
+
+
 /** \page UserManual_Generalities General topics
   - \subpage Eigen2ToEigen3
   - \subpage TopicFunctionTakingEigenTypes
   - \subpage TopicPreprocessorDirectives
   - \subpage TopicAssertions
-  - \subpage TopicCustomizingEigen
   - \subpage TopicMultiThreading
+  - \subpage TopicUsingBlasLapack
   - \subpage TopicUsingIntelMKL
+  - \subpage TopicCUDA
   - \subpage TopicPitfalls
   - \subpage TopicTemplateKeyword
   - \subpage UserManual_UnderstandingEigen
+  - \subpage TopicCMakeGuide
 */
-  
+
 /** \page UserManual_UnderstandingEigen Understanding Eigen
   - \subpage TopicInsideEigenExample
   - \subpage TopicClassHierarchy
@@ -57,6 +70,8 @@ namespace Eigen {
     \ingroup DenseMatrixManipulation_chapter */
 /** \addtogroup TutorialMapClass
     \ingroup DenseMatrixManipulation_chapter */
+/** \addtogroup TutorialReshapeSlicing
+    \ingroup DenseMatrixManipulation_chapter */
 /** \addtogroup TopicAliasing
     \ingroup DenseMatrixManipulation_chapter */
 /** \addtogroup TopicStorageOrders
@@ -86,6 +101,9 @@ namespace Eigen {
 /** \addtogroup Householder_Module
     \ingroup DenseMatrixManipulation_Reference */ 
 
+/** \addtogroup CoeffwiseMathFunctions
+    \ingroup DenseMatrixManipulation_chapter */
+
 /** \addtogroup QuickRefPage
     \ingroup DenseMatrixManipulation_chapter */
 
@@ -96,6 +114,12 @@ namespace Eigen {
 /** \addtogroup TutorialLinearAlgebra
     \ingroup DenseLinearSolvers_chapter */
 /** \addtogroup TopicLinearAlgebraDecompositions
+    \ingroup DenseLinearSolvers_chapter */
+/** \addtogroup LeastSquares 
+    \ingroup DenseLinearSolvers_chapter */
+/** \addtogroup InplaceDecomposition
+    \ingroup DenseLinearSolvers_chapter */
+/** \addtogroup DenseDecompositionBenchmark
     \ingroup DenseLinearSolvers_chapter */
 
 /** \addtogroup DenseLinearSolvers_Reference
@@ -159,4 +183,7 @@ namespace Eigen {
     \ingroup Geometry_Reference */
 /** \addtogroup Splines_Module
     \ingroup Geometry_Reference */
+
+/** \internal \brief Namespace containing low-level routines from the %Eigen library. */
+namespace internal {}
 }

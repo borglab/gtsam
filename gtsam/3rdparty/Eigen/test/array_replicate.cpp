@@ -44,6 +44,19 @@ template<typename MatrixType> void replicate(const MatrixType& m)
   x2 << m2, m2, m2,
         m2, m2, m2;
   VERIFY_IS_APPROX(x2, (m2.template replicate<2,3>()));
+  
+  x2.resize(rows,3*cols);
+  x2 << m2, m2, m2;
+  VERIFY_IS_APPROX(x2, (m2.template replicate<1,3>()));
+  
+  vx1.resize(3*rows,cols);
+  vx1 << m2, m2, m2;
+  VERIFY_IS_APPROX(vx1+vx1, vx1+(m2.template replicate<3,1>()));
+  
+  vx1=m2+(m2.colwise().replicate(1));
+  
+  if(m2.cols()==1)
+    VERIFY_IS_APPROX(m2.coeff(0), (m2.template replicate<3,1>().coeff(m2.rows())));
 
   x2.resize(rows,f1);
   for (int j=0; j<f1; ++j)

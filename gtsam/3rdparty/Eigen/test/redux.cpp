@@ -2,10 +2,13 @@
 // for linear algebra.
 //
 // Copyright (C) 2008 Benoit Jacob <jacob.benoit.1@gmail.com>
+// Copyright (C) 2015 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+#define TEST_ENABLE_TEMPORARY_TRACKING
 
 #include "main.h"
 
@@ -21,7 +24,7 @@ template<typename MatrixType> void matrixRedux(const MatrixType& m)
   MatrixType m1 = MatrixType::Random(rows, cols);
 
   // The entries of m1 are uniformly distributed in [0,1], so m1.prod() is very small. This may lead to test
-  // failures if we underflow into denormals. Thus, we scale so that entires are close to 1.
+  // failures if we underflow into denormals. Thus, we scale so that entries are close to 1.
   MatrixType m1_for_prod = MatrixType::Ones(rows, cols) + RealScalar(0.2) * m1;
 
   VERIFY_IS_MUCH_SMALLER_THAN(MatrixType::Zero(rows, cols).sum(), Scalar(1));
@@ -65,6 +68,12 @@ template<typename MatrixType> void matrixRedux(const MatrixType& m)
   // test empty objects
   VERIFY_IS_APPROX(m1.block(r0,c0,0,0).sum(),   Scalar(0));
   VERIFY_IS_APPROX(m1.block(r0,c0,0,0).prod(),  Scalar(1));
+
+  // test nesting complex expression
+  VERIFY_EVALUATION_COUNT( (m1.matrix()*m1.matrix().transpose()).sum(), (MatrixType::IsVectorAtCompileTime && MatrixType::SizeAtCompileTime!=1 ? 0 : 1) );
+  Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime> m2(rows,rows);
+  m2.setRandom();
+  VERIFY_EVALUATION_COUNT( ((m1.matrix()*m1.matrix().transpose())+m2).sum(),(MatrixType::IsVectorAtCompileTime && MatrixType::SizeAtCompileTime!=1 ? 0 : 1));
 }
 
 template<typename VectorType> void vectorRedux(const VectorType& w)
@@ -147,8 +156,10 @@ void test_redux()
     CALL_SUBTEST_1( matrixRedux(Array<float, 1, 1>()) );
     CALL_SUBTEST_2( matrixRedux(Matrix2f()) );
     CALL_SUBTEST_2( matrixRedux(Array2f()) );
+    CALL_SUBTEST_2( matrixRedux(Array22f()) );
     CALL_SUBTEST_3( matrixRedux(Matrix4d()) );
     CALL_SUBTEST_3( matrixRedux(Array4d()) );
+    CALL_SUBTEST_3( matrixRedux(Array44d()) );
     CALL_SUBTEST_4( matrixRedux(MatrixXcf(internal::random<int>(1,maxsize), internal::random<int>(1,maxsize))) );
     CALL_SUBTEST_4( matrixRedux(ArrayXXcf(internal::random<int>(1,maxsize), internal::random<int>(1,maxsize))) );
     CALL_SUBTEST_5( matrixRedux(MatrixXd (internal::random<int>(1,maxsize), internal::random<int>(1,maxsize))) );
