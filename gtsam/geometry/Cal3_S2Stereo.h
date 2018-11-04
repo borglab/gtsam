@@ -27,7 +27,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class Cal3_S2Stereo {
+  class GTSAM_EXPORT Cal3_S2Stereo {
   private:
 
     Cal3_S2 K_;

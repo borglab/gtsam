@@ -27,7 +27,7 @@ namespace gtsam {
  * we can directly add double, Vector, and Matrix into values now, because of
  * gtsam::traits.
  */
-struct LieVector : public Vector {
+struct GTSAM_EXPORT LieVector : public Vector {
 
   enum { dimension = Eigen::Dynamic };
 
@@ -51,13 +51,13 @@ struct LieVector : public Vector {
   LieVector(double d) : Vector((Vector(1) << d).finished()) {}
 
   /** constructor with size and initial data, row order ! */
-  GTSAM_EXPORT LieVector(size_t m, const double* const data) : Vector(m) {
+  LieVector(size_t m, const double* const data) : Vector(m) {
     for (size_t i = 0; i < m; i++) (*this)(i) = data[i];
   }
 
   /// @name Testable
   /// @{
-  GTSAM_EXPORT void print(const std::string& name="") const {
+  void print(const std::string& name="") const {
     gtsam::print(vector(), name);
   }
   bool equals(const LieVector& expected, double tol=1e-5) const {
