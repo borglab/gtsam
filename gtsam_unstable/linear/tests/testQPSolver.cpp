@@ -13,7 +13,7 @@
  * @file testQPSolver.cpp
  * @brief Test simple QP solver for a linear inequality constraint
  * @date Apr 10, 2014
- * @author Duy-Nguyen Ta
+ * @author Duy-Nguyen Ta, Ivan Dario Jimenez
  */
 
 #include <gtsam/base/Testable.h>
@@ -281,7 +281,7 @@ TEST(QPSolver, HS21) {
   CHECK(assert_equal(expectedSolution, actualSolution))
 }
 
-TEST_DISABLED(QPSolver, HS118) { //Fails because of the GTSAM linear system error
+TEST_DISABLED(QPSolver, HS118) { // TOO LARGE
   QP problem = QPSParser("HS118.QPS").Parse();
   VectorValues actualSolution;
   VectorValues expectedSolution;
@@ -319,7 +319,7 @@ TEST(QPSolver, HS51) {
   CHECK(assert_equal(8.88178420e-16,error_actual, 1e-7))
 }
 
-TEST(QPSolver, HS52) { //Fails on release but not debug
+TEST(QPSolver, HS52) {
   QP problem = QPSParser("HS52.QPS").Parse();
   VectorValues actualSolution;
   boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
@@ -327,7 +327,7 @@ TEST(QPSolver, HS52) { //Fails on release but not debug
   CHECK(assert_equal(5.32664756,error_actual, 1e-7))
 }
 
-TEST_DISABLED(QPSolver, HS53) { //Fails because of the GTSAM indeterminant linear system error
+TEST_DISABLED(QPSolver, HS53) { // TOO LARGE
   QP problem = QPSParser("HS53.QPS").Parse();
   VectorValues actualSolution;
   boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
@@ -335,7 +335,7 @@ TEST_DISABLED(QPSolver, HS53) { //Fails because of the GTSAM indeterminant linea
   CHECK(assert_equal(4.09302326,error_actual, 1e-7))
 }
 
-TEST_DISABLED(QPSolver, HS76) { //Fails because of the GTSAM indeterminant linear system
+TEST_DISABLED(QPSolver, HS76) { //TOO LARGE
   QP problem = QPSParser("HS76.QPS").Parse();
   VectorValues actualSolution;
   boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
@@ -351,7 +351,7 @@ TEST(QPSolver, HS268) { // This test needs an extra order of magnitude of tolera
   CHECK(assert_equal(5.73107049e-07,error_actual, 1e-6))
 }
 
-TEST_DISABLED(QPSolver, AUG2D) { //Fails with Indeterminant Linear System error.
+TEST_DISABLED(QPSolver, AUG2D) { //TOO LARGE
   QP problem = QPSParser("AUG2D.QPS").Parse();
   VectorValues actualSolution;
   boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
@@ -359,7 +359,7 @@ TEST_DISABLED(QPSolver, AUG2D) { //Fails with Indeterminant Linear System error.
   CHECK(assert_equal(0.168741175e+07,error_actual, 1e-7))
 }
 
-TEST_DISABLED(QPSolver, CONT_050) { // Fails with Indeterminant Linear System error
+TEST_DISABLED(QPSolver, CONT_050) { //TOO LARGE
   QP problem = QPSParser("CONT-050.QPS").Parse();
   VectorValues actualSolution;
   boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
@@ -367,11 +367,8 @@ TEST_DISABLED(QPSolver, CONT_050) { // Fails with Indeterminant Linear System er
   CHECK(assert_equal(-4.56385090,error_actual, 1e-7))
 }
 
-TEST_DISABLED(QPSolver, QPTEST) { // Fails with Indeterminant Linear System error
+TEST_DISABLED(QPSolver, QPTEST) { // REQUIRES Jacobian Fix
   QP problem = QPSParser("QPTEST.QPS").Parse();
-  GTSAM_PRINT(problem.cost);
-  GTSAM_PRINT(problem.equalities);
-  GTSAM_PRINT(problem.inequalities);
   VectorValues actualSolution;
   boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
   double error_actual = problem.cost.error(actualSolution);

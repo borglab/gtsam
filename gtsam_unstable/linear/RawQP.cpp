@@ -244,17 +244,23 @@ QP RawQP::makeQP() {
     keys.push_back(kv.second);
   }
   std::sort(keys.begin(), keys.end());
-  Matrix11 G_value;
   for (unsigned int i = 0; i < keys.size(); ++i) {
     for (unsigned int j = i; j < keys.size(); ++j) {
-      G_value = H[keys[i]][keys[j]];
-      Gs.push_back(G_value.hasNaN() ? Z_1x1 : G_value);
+      if (H.count(keys[i]) > 0 and H[keys[i]].count(keys[j]) > 0){
+        Gs.emplace_back(H[keys[i]][keys[j]]);
+      }
+      else{
+        Gs.emplace_back(Z_1x1);
+      }
     }
   }
-  Matrix11 g_value;
   for (Key key1 : keys) {
-    g_value = -g[key1];
-    gs.push_back(g_value.hasNaN() ? Z_1x1 : g_value);
+    if(g.count(key1) > 0){
+      gs.emplace_back(-g[key1]);
+    }
+    else{
+      gs.emplace_back(Z_1x1);
+    }
   }
   size_t dual_key_num = keys.size() + 1;
   QP madeQP;
