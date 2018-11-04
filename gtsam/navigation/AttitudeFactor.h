@@ -129,6 +129,9 @@ private:
     ar & BOOST_SERIALIZATION_NVP(nZ_);
     ar & BOOST_SERIALIZATION_NVP(bRef_);
   }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// traits
@@ -213,6 +216,9 @@ private:
     ar & BOOST_SERIALIZATION_NVP(nZ_);
     ar & BOOST_SERIALIZATION_NVP(bRef_);
   }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// traits

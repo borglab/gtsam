@@ -209,6 +209,12 @@ public:
     v << v1, v2;
     return v;
   }
+
+  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+  enum { NeedsToAlign = (sizeof(M1) % 16) == 0 || (sizeof(M2) % 16) == 0
+  };
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 // Define any direct product group to be a model of the multiplicative Group concept
