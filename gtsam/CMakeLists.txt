@@ -65,20 +65,19 @@ foreach(subdir ${gtsam_subdirs})
 endforeach(subdir)
 
 # To add additional sources to gtsam when building the full library (static or shared)
-# Add the subfolder with _srcs appended to the end to this list
-set(gtsam_srcs
-    ${3rdparty_srcs}
-    ${base_srcs}
-    ${geometry_srcs}
-    ${inference_srcs}
-    ${symbolic_srcs}
-    ${discrete_srcs}
-    ${linear_srcs}
-    ${nonlinear_srcs}
-    ${slam_srcs}
-    ${navigation_srcs}
-	${gtsam_core_headers}
-)
+# append the subfolder with _srcs appended to the end to this list
+set(gtsam_srcs ${3rdparty_srcs})
+foreach(subdir ${gtsam_subdirs})
+	list(APPEND gtsam_srcs ${${subdir}_srcs})
+endforeach(subdir)
+list(APPEND gtsam_srcs ${gtsam_core_headers})
+
+IF(MSVC)
+	# Add precompiled header to sources
+	include(gtsamAddPch)
+	gtsamAddPch("precompiled_header.h" "precompiled_header.cpp" ${gtsam_srcs})
+	list(INSERT gtsam_srcs 0 "precompiled_header.cpp")
+ENDIF(MSVC)
 
 # Generate and install config and dllexport files
 configure_file(config.h.in config.h)
@@ -154,6 +153,7 @@ if(MSVC)
 		"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ISAM2.cpp"
 		APPEND PROPERTY COMPILE_FLAGS "/bigobj")
 endif()
+
 
 # Create the matlab toolbox for the gtsam library
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
