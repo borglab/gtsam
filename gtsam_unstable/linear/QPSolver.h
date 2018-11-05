@@ -37,11 +37,6 @@ struct QPPolicy {
     GaussianFactorGraph no_constant_factor;
     for (auto factor : qp.cost) {
       HessianFactor hf = static_cast<HessianFactor>(*factor);
-      if (hf.constantTerm() < 0) // Hessian Factors cannot deal
-        // with negative constant terms replace with zero in this case
-        //TODO: Perhaps there is a smarter way to set the constant term such that the resulting matrix is almost always
-        // Positive definite.
-        hf.constantTerm() = 0.0;
       no_constant_factor.push_back(hf);
     }
     return no_constant_factor;
