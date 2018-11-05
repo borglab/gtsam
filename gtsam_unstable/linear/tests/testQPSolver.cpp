@@ -282,20 +282,6 @@ TEST(QPSolver, HS21) {
   CHECK(assert_equal(expectedSolution, actualSolution))
 }
 
-TEST_DISABLED(QPSolver, HS118) { // TOO LARGE
-  QP problem = QPSParser("HS118.QPS").Parse();
-  VectorValues actualSolution;
-  VectorValues expectedSolution;
-  double solutionValues[15] = {8,49,3,1,56,0,1,63,6,3,70,12,5,77,18};
-  for (int index = 0; index < 15; ++index) {
-    expectedSolution.insert(Symbol('X',index+1), solutionValues[index]*I_1x1);
-  }
-  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
-  double error_actual = problem.cost.error(actualSolution);
-  CHECK(assert_equal(6.64820452e2,error_actual, 1e-7))
-  CHECK(assert_equal(expectedSolution, actualSolution))
-}
-
 TEST(QPSolver, HS35) {
   QP problem = QPSParser("HS35.QPS").Parse();
   VectorValues actualSolution;
@@ -328,44 +314,12 @@ TEST(QPSolver, HS52) {
   CHECK(assert_equal(5.32664756,error_actual, 1e-7))
 }
 
-TEST_DISABLED(QPSolver, HS53) { // TOO LARGE
-  QP problem = QPSParser("HS53.QPS").Parse();
-  VectorValues actualSolution;
-  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
-  double error_actual = problem.cost.error(actualSolution);
-  CHECK(assert_equal(4.09302326,error_actual, 1e-7))
-}
-
-TEST_DISABLED(QPSolver, HS76) { //TOO LARGE
-  QP problem = QPSParser("HS76.QPS").Parse();
-  VectorValues actualSolution;
-  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
-  double error_actual = problem.cost.error(actualSolution);
-  CHECK(assert_equal(-4.68181818,error_actual, 1e-7))
-}
-
 TEST(QPSolver, HS268) { // This test needs an extra order of magnitude of tolerance than the rest
   QP problem = QPSParser("HS268.QPS").Parse();
   VectorValues actualSolution;
   boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
   double error_actual = problem.cost.error(actualSolution);
   CHECK(assert_equal(5.73107049e-07,error_actual, 1e-6))
-}
-
-TEST_DISABLED(QPSolver, AUG2D) { //TOO LARGE
-  QP problem = QPSParser("AUG2D.QPS").Parse();
-  VectorValues actualSolution;
-  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
-  double error_actual = problem.cost.error(actualSolution);
-  CHECK(assert_equal(0.168741175e+07,error_actual, 1e-7))
-}
-
-TEST_DISABLED(QPSolver, CONT_050) { //TOO LARGE
-  QP problem = QPSParser("CONT-050.QPS").Parse();
-  VectorValues actualSolution;
-  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
-  double error_actual = problem.cost.error(actualSolution);
-  CHECK(assert_equal(-4.56385090,error_actual, 1e-7))
 }
 
 TEST_DISABLED(QPSolver, QPTEST) { // REQUIRES Jacobian Fix
