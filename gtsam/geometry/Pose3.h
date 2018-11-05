@@ -326,7 +326,7 @@ public:
     ar & BOOST_SERIALIZATION_NVP(t_);
   }
   /// @}
- 
+
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions
   public:
