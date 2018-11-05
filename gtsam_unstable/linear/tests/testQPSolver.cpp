@@ -322,7 +322,7 @@ TEST(QPSolver, HS268) { // This test needs an extra order of magnitude of tolera
   CHECK(assert_equal(5.73107049e-07,error_actual, 1e-6))
 }
 
-TEST_DISABLED(QPSolver, QPTEST) { // REQUIRES Jacobian Fix
+TEST(QPSolver, QPTEST) { // REQUIRES Jacobian Fix
   QP problem = QPSParser("QPTEST.QPS").Parse();
   VectorValues actualSolution;
   boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();

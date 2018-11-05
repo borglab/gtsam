@@ -115,7 +115,7 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor) :
   boost::tie(maxrank, success) = choleskyCareful(Ab_.matrix());
 
   // Check for indefinite system
-  if (!success)
+  if (!success and maxrank < factor.rows() - 1)
     throw IndeterminantLinearSystemException(factor.keys().front());
 
   // Zero out lower triangle
