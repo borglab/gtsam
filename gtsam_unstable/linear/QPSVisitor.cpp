@@ -211,7 +211,7 @@ void QPSVisitor::addBound(
   }
 }
 
-void QPSVisitor::addBoundFr(
+void QPSVisitor::addFreeBound(
     boost::fusion::vector<vector<char>, vector<char>,
         vector<char>, vector<char>, vector<char>,
         vector<char>, vector<char>> const &vars) {
@@ -241,12 +241,15 @@ void QPSVisitor::addQuadTerm(
 }
 
 QP QPSVisitor::makeQP() {
+  // Create the keys from the variable names
   vector < Key > keys;
-  vector < Matrix > Gs;
-  vector < Vector > gs;
   for (auto kv : varname_to_key) {
     keys.push_back(kv.second);
   }
+
+  // Fill the G matrices and g vectors from 
+  vector < Matrix > Gs;
+  vector < Vector > gs;
   sort(keys.begin(), keys.end());
   for (unsigned int i = 0; i < keys.size(); ++i) {
     for (unsigned int j = i; j < keys.size(); ++j) {
@@ -266,12 +269,14 @@ QP QPSVisitor::makeQP() {
       gs.emplace_back(Z_1x1);
     }
   }
-  size_t dual_key_num = keys.size() + 1;
+
+  // Construct the quadratic program
   QP madeQP;
   auto obj = HessianFactor(keys, Gs, gs, 2 * f);
-
   madeQP.cost.push_back(obj);
 
+  // Add equality and inequality constraints into the QP
+  size_t dual_key_num = keys.size() + 1;
   for (auto kv : E) {
     map < Key, Matrix11 > keyMatrixMapPos;
     map < Key, Matrix11 > keyMatrixMapNeg;

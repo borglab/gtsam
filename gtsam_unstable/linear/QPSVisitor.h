@@ -104,7 +104,7 @@ public:
           std::vector<char>, std::vector<char>, std::vector<char>,
           std::vector<char>, std::vector<char>, double> const & vars);
 
-  void addBoundFr(
+  void addFreeBound(
       boost::fusion::vector<std::vector<char>, std::vector<char>,
           std::vector<char>, std::vector<char>, std::vector<char>,
           std::vector<char>, std::vector<char>> const & vars);

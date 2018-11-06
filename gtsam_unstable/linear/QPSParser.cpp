@@ -61,7 +61,7 @@ struct QPSParser::MPSGrammar: base_grammar {
       void(
           bf::vector<Chars, Chars, Chars, Chars, Chars, Chars, Chars, double> const &)> addBound;
   boost::function<
-      void(bf::vector<Chars, Chars, Chars, Chars, Chars, Chars, Chars> const &)> addBoundFr;
+      void(bf::vector<Chars, Chars, Chars, Chars, Chars, Chars, Chars> const &)> addFreeBound;
   MPSGrammar(QPSVisitor * rqp) :
       base_grammar(start), rqp_(rqp), setName(
           boost::bind(&QPSVisitor::setName, rqp, ::_1)), addRow(
@@ -73,8 +73,8 @@ struct QPSParser::MPSGrammar: base_grammar {
           boost::bind(&QPSVisitor::addColumn, rqp, ::_1)), colDouble(
           boost::bind(&QPSVisitor::addColumnDouble, rqp, ::_1)), addQuadTerm(
           boost::bind(&QPSVisitor::addQuadTerm, rqp, ::_1)), addBound(
-          boost::bind(&QPSVisitor::addBound, rqp, ::_1)), addBoundFr(
-          boost::bind(&QPSVisitor::addBoundFr, rqp, ::_1)) {
+          boost::bind(&QPSVisitor::addBound, rqp, ::_1)), addFreeBound(
+          boost::bind(&QPSVisitor::addFreeBound, rqp, ::_1)) {
     using namespace boost::spirit;
     using namespace boost::spirit::qi;
     character = lexeme[alnum | '_' | '-' | '.'];
@@ -100,7 +100,7 @@ struct QPSParser::MPSGrammar: base_grammar {
     bound = lexeme[(*blank >> word >> +blank >> word >> +blank >> word >> +blank
         >> double_)[addBound] >> *blank];
     bound_fr = lexeme[*blank >> word >> +blank >> word >> +blank >> word
-        >> *blank][addBoundFr];
+        >> *blank][addFreeBound];
     rows = lexeme[lit("ROWS") >> *blank >> eol >> +(row >> eol)];
     rhs = lexeme[lit("RHS") >> *blank >> eol
         >> +((rhs_double | rhs_single) >> eol)];
