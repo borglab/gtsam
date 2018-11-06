@@ -45,23 +45,33 @@ struct Range;
  * and BearingRange<Pose3,Point3>(pose,point) will return pair<Unit3,double>
  */
 template <typename A1, typename A2>
-struct BearingRange
-    : public ProductManifold<typename Bearing<A1, A2>::result_type,
-                             typename Range<A1, A2>::result_type> {
+struct BearingRange {
+private:
   typedef typename Bearing<A1, A2>::result_type B;
   typedef typename Range<A1, A2>::result_type R;
-  typedef ProductManifold<B, R> Base;
+  B bearing_;
+  R range_;
+
+public:
+  enum { dimB = traits<B>::dimension };
+  enum { dimR = traits<R>::dimension };
+  enum { dimension = dimB + dimR };
+
+  /// @name Standard Constructors
+  /// @{
 
   BearingRange() {}
-  BearingRange(const ProductManifold<B, R>& br) : Base(br) {}
-  BearingRange(const B& b, const R& r) : Base(b, r) {}
+  BearingRange(const B& b, const R& r) : bearing_(b), range_(r) {}
+
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
   /// Prediction function that stacks measurements
   static BearingRange Measure(
-      const A1& a1, const A2& a2,
-      OptionalJacobian<Base::dimension, traits<A1>::dimension> H1 = boost::none,
-      OptionalJacobian<Base::dimension, traits<A2>::dimension> H2 =
-          boost::none) {
+    const A1& a1, const A2& a2,
+    OptionalJacobian<dimension, traits<A1>::dimension> H1 = boost::none,
+    OptionalJacobian<dimension, traits<A2>::dimension> H2 = boost::none) {
     typename MakeJacobian<B, A1>::type HB1;
     typename MakeJacobian<B, A2>::type HB2;
     typename MakeJacobian<R, A1>::type HR1;
@@ -75,32 +85,75 @@ struct BearingRange
     return BearingRange(b, r);
   }
 
+  /// @}
+  /// @name Testable
+  /// @{
+
   void print(const std::string& str = "") const {
     std::cout << str;
-    traits<B>::Print(this->first, "bearing ");
-    traits<R>::Print(this->second, "range ");
+    traits<B>::Print(bearing_, "bearing ");
+    traits<R>::Print(range_, "range ");
   }
   bool equals(const BearingRange<A1, A2>& m2, double tol = 1e-8) const {
-    return traits<B>::Equals(this->first, m2.first, tol) &&
-           traits<R>::Equals(this->second, m2.second, tol);
+    return traits<B>::Equals(bearing_, m2.bearing_, tol) &&
+      traits<R>::Equals(range_, m2.range_, tol);
   }
 
- private:
+  /// @}
+  /// @name Manifold
+  /// @{
+
+  inline static size_t Dim() { return dimension; }
+  inline size_t dim() const { return dimension; }
+
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+
+  /// Retract delta to manifold
+  BearingRange retract(const TangentVector& xi) const {
+    B m1 = traits<B>::Retract(bearing_, xi.template head<dimB>());
+    R m2 = traits<R>::Retract(range_, xi.template tail<dimR>());
+    return BearingRange(m1, m2);
+  }
+
+  /// Compute the coordinates in the tangent space
+  TangentVector localCoordinates(const BearingRange& other) const {
+    typename traits<B>::TangentVector v1 = traits<B>::Local(bearing_, other.bearing_);
+    typename traits<R>::TangentVector v2 = traits<R>::Local(range_, other.range_);
+    TangentVector v;
+    v << v1, v2;
+    return v;
+  }
+
+  /// @}
+  /// @name Advanced Interface
+  /// @{
+
+private:
   /// Serialization function
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp("bearing", this->first);
-    ar& boost::serialization::make_nvp("range", this->second);
+    ar& boost::serialization::make_nvp("bearing", bearing_);
+    ar& boost::serialization::make_nvp("range", range_);
   }
 
   friend class boost::serialization::access;
+
+  /// @}
+
+  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+  enum {
+    NeedsToAlign = (sizeof(B) % 16) == 0 || (sizeof(R) % 16) == 0
+  };
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 // Declare this to be both Testable and a Manifold
 template <typename A1, typename A2>
 struct traits<BearingRange<A1, A2> >
-    : Testable<BearingRange<A1, A2> >,
-      internal::ManifoldTraits<BearingRange<A1, A2> > {};
+  : Testable<BearingRange<A1, A2> >,
+  internal::ManifoldTraits<BearingRange<A1, A2> > {};
 
 // Helper class for to implement Range traits for classes with a bearing method
 // For example, to specialize Bearing to Pose3 and Point3, using Pose3::bearing, it suffices to say

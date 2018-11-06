@@ -168,9 +168,9 @@ struct FixedDimension {
       "FixedDimension instantiated for dymanically-sized type.");
 };
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 /// Helper class to construct the product manifold of two other manifolds, M1 and M2
-/// Assumes nothing except manifold structure for M1 and M2, and the existence
-/// of default constructor for those types
+/// Deprecated because of limited usefulness, maximum obfuscation 
 template<typename M1, typename M2>
 class ProductManifold: public std::pair<M1, M2> {
   BOOST_CONCEPT_ASSERT((IsManifold<M1>));
@@ -221,6 +221,7 @@ public:
 template<typename M1, typename M2>
 struct traits<ProductManifold<M1, M2> > : internal::Manifold<ProductManifold<M1, M2> > {
 };
+#endif
 
 } // \ namespace gtsam
 
