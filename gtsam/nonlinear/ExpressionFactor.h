@@ -205,6 +205,11 @@ private:
  BOOST_SERIALIZATION_SPLIT_MEMBER()
 
  friend class boost::serialization::access;
+
+ // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+ enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
+  public:
+	  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 // ExpressionFactor
 
