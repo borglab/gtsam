@@ -110,7 +110,7 @@ public:
      * Clone this value (normal clone on the heap, delete with 'delete' operator)
      */
     virtual boost::shared_ptr<Value> clone() const {
-      return boost::make_shared<GenericValue>(*this);
+		return boost::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
     }
 
     /// Generic Value interface version of retract
