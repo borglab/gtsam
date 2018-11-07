@@ -186,7 +186,10 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
-  };
+
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
 
   /// traits
   template<class POSE, class LANDMARK, class CALIBRATION>

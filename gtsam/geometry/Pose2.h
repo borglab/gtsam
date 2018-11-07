@@ -278,6 +278,12 @@ private:
     ar & BOOST_SERIALIZATION_NVP(t_);
     ar & BOOST_SERIALIZATION_NVP(r_);
   }
+
+#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
+public:
+  // Make sure Pose2 is aligned if it contains a Vector2
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 }; // Pose2
 
 /** specialization for pose2 wedge function (generic template in Lie.h) */

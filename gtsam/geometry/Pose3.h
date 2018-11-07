@@ -327,9 +327,11 @@ public:
   }
   /// @}
 
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
+#ifdef GTSAM_USE_QUATERNIONS
+  // Align if we are using Quaternions
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 // Pose3 class
 

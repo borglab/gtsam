@@ -26,6 +26,8 @@
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Key.h>
 
+#include <Eigen/Core>  // for Eigen::aligned_allocator
+
 #include <boost/serialization/nvp.hpp>
 #include <boost/assign/list_inserter.hpp>
 #include <boost/bind.hpp>
@@ -161,11 +163,11 @@ namespace gtsam {
       factors_.push_back(factor); }
 
     /** Emplace a factor */
-    template<class DERIVEDFACTOR, class... Args>
-    typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
-    emplace_shared(Args&&... args) {
-        factors_.push_back(boost::make_shared<DERIVEDFACTOR>(std::forward<Args>(args)...));
-    }
+	template<class DERIVEDFACTOR, class... Args>
+	typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
+		emplace_shared(Args&&... args) {
+		factors_.push_back(boost::allocate_shared<DERIVEDFACTOR>(Eigen::aligned_allocator<DERIVEDFACTOR>(), std::forward<Args>(args)...));
+	}
 
     /** push back many factors with an iterator over shared_ptr (factors are not copied) */
     template<typename ITERATOR>
@@ -194,7 +196,7 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
       push_back(const DERIVEDFACTOR& factor) {
-        factors_.push_back(boost::make_shared<DERIVEDFACTOR>(factor));
+        factors_.push_back(boost::allocate_shared<DERIVEDFACTOR>(Eigen::aligned_allocator<DERIVEDFACTOR>(), factor));
     }
 //#endif
 

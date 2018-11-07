@@ -320,6 +320,9 @@ private:
          boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(_PIM_);
   }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 // class CombinedImuFactor
 
