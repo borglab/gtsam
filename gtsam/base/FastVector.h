@@ -64,13 +64,13 @@ class FastVector: public std::vector<VALUE,
   }
 
   /** Copy constructor from the base class */
-  explicit FastVector(const Base& x) :
+  FastVector(const Base& x) :
       Base(x) {
   }
 
   /** Copy constructor from a standard STL container */
   template<typename ALLOCATOR>
-  explicit FastVector(const std::vector<VALUE, ALLOCATOR>& x) {
+  FastVector(const std::vector<VALUE, ALLOCATOR>& x) {
     // This if statement works around a bug in boost pool allocator and/or
     // STL vector where if the size is zero, the pool allocator will allocate
     // huge amounts of memory.
