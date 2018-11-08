@@ -111,11 +111,12 @@ set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
 # BOOST_ROOT: path to install prefix for boost
 # Boost_NO_SYSTEM_PATHS: set to true to keep the find script from ignoring BOOST_ROOT
 
-# If using Boost shared libs, disable auto linking
 if(MSVC)
-	set(Boost_USE_STATIC_LIBS        ON)  # only find static libs
-	# Some libraries, at least Boost Program Options, rely on this to export DLL symbols
-	# Disable autolinking
+	# By default, boost only builds static libraries on windows
+	set(Boost_USE_STATIC_LIBS ON)  # only find static libs
+	# If we ever reset above on windows and, ...
+	# If we use Boost shared libs, disable auto linking.
+	# Some libraries, at least Boost Program Options, rely on this to export DLL symbols.
 	if(NOT Boost_USE_STATIC_LIBS)
 		add_definitions(-DBOOST_ALL_NO_LIB)
 	  add_definitions(-DBOOST_ALL_DYN_LINK)
@@ -257,8 +258,13 @@ else()
 
 endif()
 
-# tmp mute eigen static assert to avoid errors in shared lib
-add_definitions(-DEIGEN_NO_STATIC_ASSERT)
+if (MSVC)
+	if (NOT GTSAM_BUILD_STATIC_LIBRARY)
+		# mute eigen static assert to avoid errors in shared lib
+		add_definitions(-DEIGEN_NO_STATIC_ASSERT)
+	endif()
+	add_definitions(/wd4244) # Disable loss of precision which is thrown all over our Eigen
+endif()
 
 ###############################################################################
 # Global compile options
@@ -325,7 +331,6 @@ include_directories(BEFORE
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661 /wd4344 /wd4503) # Disable non-DLL-exported base class and other warnings
-	add_definitions(/wd4244) # Disable loss of precision which is thrown all over our Eigen
 	add_definitions(/bigobj) # Allow large object files for template-based code
 endif()
 
