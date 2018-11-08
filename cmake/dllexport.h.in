@@ -31,23 +31,22 @@
 
 // Whether GTSAM is compiled as static or DLL in windows. 
 // This will be used to decide whether include __declspec(dllimport) or not in headers
-// TODO: replace GTSAM by @library_name@
 #cmakedefine GTSAM_BUILD_STATIC_LIBRARY
 
 #ifdef _WIN32
 #  ifdef @library_name@_BUILD_STATIC_LIBRARY
 #    define @library_name@_EXPORT
 #    define @library_name@_EXTERN_EXPORT extern
-#  else /* @library_name@_BUILD_STATIC_LIBRARY */
+#  else
 #    ifdef @library_name@_EXPORTS
 #      define @library_name@_EXPORT __declspec(dllexport)
 #      define @library_name@_EXTERN_EXPORT __declspec(dllexport) extern
-#    else /* @library_name@_EXPORTS */
+#    else
 #      define @library_name@_EXPORT __declspec(dllimport)
 #      define @library_name@_EXTERN_EXPORT __declspec(dllimport)
-#    endif /* @library_name@_EXPORTS */
-#  endif /* @library_name@_BUILD_STATIC_LIBRARY */
-#else /* _WIN32 */
+#    endif
+#  endif
+#else
 #  define @library_name@_EXPORT
 #  define @library_name@_EXTERN_EXPORT extern
 #endif
