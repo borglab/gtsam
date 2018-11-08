@@ -231,7 +231,7 @@ int main(int argc, char *argv[]) {
       for (Key key2: boost::adaptors::reverse(values.keys())) {
         if(i != j) {
           gttic_(jointMarginalInformation);
-          std::vector<Key> keys(2);
+          KeyVector keys(2);
           keys[0] = key1;
           keys[1] = key2;
           JointMarginal info = marginals.jointMarginalInformation(keys);
