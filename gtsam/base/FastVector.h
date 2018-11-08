@@ -19,11 +19,19 @@
 #pragma once
 
 #include <gtsam/base/FastDefaultAllocator.h>
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/vector.hpp>
 #include <vector>
 
 namespace gtsam {
+
+#ifndef GTSAM_USE_OLD_FAST_VECTOR
+
+template <typename T>
+using FastVector = std::vector<T, typename internal::FastDefaultVectorAllocator<T>::type>;
+
+#else
+
+#include <boost/serialization/nvp.hpp>
+#include <boost/serialization/vector.hpp>
 
 /**
  * FastVector is a thin wrapper around std::vector that uses the boost
@@ -91,4 +99,6 @@ class FastVector: public std::vector<VALUE,
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
 };
+#endif
+
 }  // namespace gtsam
