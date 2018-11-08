@@ -42,7 +42,7 @@ const Matrix26 F0 = Matrix26::Ones();
 const Matrix26 F1 = 2 * Matrix26::Ones();
 const Matrix26 F3 = 3 * Matrix26::Ones();
 const vector<Matrix26, Eigen::aligned_allocator<Matrix26> > FBlocks = list_of<Matrix26>(F0)(F1)(F3);
-const FastVector<Key> keys = list_of<Key>(0)(1)(3);
+const KeyVector keys = list_of<Key>(0)(1)(3);
 // RHS and sigmas
 const Vector b = (Vector(6) << 1., 2., 3., 4., 5., 6.).finished();
 
@@ -86,7 +86,7 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   F << F0, Matrix::Zero(2, d * 3), Matrix::Zero(2, d), F1, Matrix::Zero(2, d*2), Matrix::Zero(2, d * 3), F3;
 
   // Calculate expected result F'*alpha*(I - E*P*E')*F*x
-  FastVector<Key> keys2;
+  KeyVector keys2;
   keys2 += 0,1,2,3;
   Vector x = xvalues.vector(keys2);
   Vector expected = Vector::Zero(24);

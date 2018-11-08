@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/global_includes.h>
+#include <gtsam/inference/Key.h>
 
 #include <map>
 #include <string>
@@ -53,7 +54,7 @@ namespace gtsam {
     GTSAM_EXPORT DiscreteKeys(const std::vector<int>& cs);
 
     /// Return a vector of indices
-    GTSAM_EXPORT std::vector<Key> indices() const;
+    GTSAM_EXPORT KeyVector indices() const;
 
     /// Return a map from index to cardinality
     GTSAM_EXPORT std::map<Key,size_t> cardinalities() const;

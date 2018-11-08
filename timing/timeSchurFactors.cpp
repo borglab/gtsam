@@ -39,7 +39,7 @@ void timeAll(size_t m, size_t N) {
   // create F
   static const int D = CAMERA::dimension;
   typedef Eigen::Matrix<double, 2, D> Matrix2D;
-  FastVector<Key> keys;
+  KeyVector keys;
   vector <Matrix2D> Fblocks;
   for (size_t i = 0; i < m; i++) {
     keys.push_back(i);

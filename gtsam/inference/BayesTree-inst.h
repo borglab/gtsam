@@ -344,7 +344,7 @@ namespace gtsam {
       // Get the set of variables to eliminate, which is C1\B.
       gttic(Full_root_factoring);
       boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
-        FastVector<Key> C1_minus_B; {
+        KeyVector C1_minus_B; {
           KeySet C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
           for(const Key j: *B->conditional()) {
             C1_minus_B_set.erase(j); }
@@ -356,7 +356,7 @@ namespace gtsam {
           FactorGraphType(p_C1_Bred).eliminatePartialMultifrontal(Ordering(C1_minus_B), function);
       }
       boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
-        FastVector<Key> C2_minus_B; {
+        KeyVector C2_minus_B; {
           KeySet C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
           for(const Key j: *B->conditional()) {
             C2_minus_B_set.erase(j); }
@@ -460,7 +460,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CLIQUE>
-  void BayesTree<CLIQUE>::removeTop(const FastVector<Key>& keys, BayesNetType& bn, Cliques& orphans)
+  void BayesTree<CLIQUE>::removeTop(const KeyVector& keys, BayesNetType& bn, Cliques& orphans)
   {
     // process each key of the new factor
     for(const Key& j: keys)

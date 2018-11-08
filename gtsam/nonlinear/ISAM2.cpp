@@ -195,7 +195,7 @@ GaussianFactorGraph ISAM2::getCachedBoundaryFactors(const Cliques& orphans) {
 /* ************************************************************************* */
 boost::shared_ptr<KeySet> ISAM2::recalculate(
     const KeySet& markedKeys, const KeySet& relinKeys,
-    const vector<Key>& observedKeys, const KeySet& unusedIndices,
+    const KeyVector& observedKeys, const KeySet& unusedIndices,
     const boost::optional<FastMap<Key, int> >& constrainKeys,
     ISAM2Result* result) {
   // TODO(dellaert):  new factors are linearized twice,
@@ -243,7 +243,7 @@ boost::shared_ptr<KeySet> ISAM2::recalculate(
   gttic(removetop);
   Cliques orphans;
   GaussianBayesNet affectedBayesNet;
-  this->removeTop(FastVector<Key>(markedKeys.begin(), markedKeys.end()),
+  this->removeTop(KeyVector(markedKeys.begin(), markedKeys.end()),
                   affectedBayesNet, orphans);
   gttoc(removetop);
 
@@ -667,7 +667,7 @@ ISAM2Result ISAM2::update(
   // NOTE: we use assign instead of the iterator constructor here because this
   // is a vector of size_t, so the constructor unintentionally resolves to
   // vector(size_t count, Key value) instead of the iterator constructor.
-  FastVector<Key> observedKeys;
+  KeyVector observedKeys;
   observedKeys.reserve(markedKeys.size());
   for (Key index : markedKeys) {
     if (unusedIndices.find(index) ==
@@ -945,7 +945,7 @@ void ISAM2::marginalizeLeaves(
         // conditional
         auto cg = clique->conditional();
         const KeySet cliqueFrontals(cg->beginFrontals(), cg->endFrontals());
-        FastVector<Key> cliqueFrontalsToEliminate;
+        KeyVector cliqueFrontalsToEliminate;
         std::set_intersection(cliqueFrontals.begin(), cliqueFrontals.end(),
                               leafKeys.begin(), leafKeys.end(),
                               std::back_inserter(cliqueFrontalsToEliminate));
@@ -967,7 +967,7 @@ void ISAM2::marginalizeLeaves(
         cg->matrixObject().rowStart() = dimToRemove;
 
         // Change the keys in the clique
-        FastVector<Key> originalKeys;
+        KeyVector originalKeys;
         originalKeys.swap(cg->keys());
         cg->keys().assign(originalKeys.begin() + nToRemove, originalKeys.end());
         cg->nrFrontals() -= nToRemove;

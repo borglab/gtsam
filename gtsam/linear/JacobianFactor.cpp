@@ -501,7 +501,7 @@ map<Key, Matrix> JacobianFactor::hessianBlockDiagonal() const {
 }
 
 /* ************************************************************************* */
-void JacobianFactor::updateHessian(const FastVector<Key>& infoKeys,
+void JacobianFactor::updateHessian(const KeyVector& infoKeys,
                                    SymmetricBlockMatrix* info) const {
   gttic(updateHessian_JacobianFactor);
 

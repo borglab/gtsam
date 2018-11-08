@@ -98,7 +98,7 @@ NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph,
 
   GaussianFactorGraph linearGraph = *factorGraph.linearize(linPoint);
 
-  GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMarginalize.begin(), keysToMarginalize.end()), EliminateCholesky).second;
+  GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(KeyVector(keysToMarginalize.begin(), keysToMarginalize.end()), EliminateCholesky).second;
 
   NonlinearFactorGraph LinearContainerForGaussianMarginals;
   for(const GaussianFactor::shared_ptr& factor: marginal) {
@@ -429,7 +429,7 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_1 )
 
   GaussianFactorGraph linearGraph = *partialGraph.linearize(newValues);
 
-  GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMove.begin(), keysToMove.end()), EliminateCholesky).second;
+  GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(KeyVector(keysToMove.begin(), keysToMove.end()), EliminateCholesky).second;
 
   NonlinearFactorGraph expectedGraph;
 
@@ -513,7 +513,7 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_2 )
 
   GaussianFactorGraph linearGraph = *partialGraph.linearize(optimalValues);
 
-    GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMove.begin(), keysToMove.end()), EliminateCholesky).second;
+    GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(KeyVector(keysToMove.begin(), keysToMove.end()), EliminateCholesky).second;
 
     NonlinearFactorGraph expectedGraph;
 
@@ -1108,12 +1108,12 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_1 )
   newValues.insert(3, value3);
 
   // Create the set of marginalizable variables
-  std::vector<Key> linearIndices;
+  KeyVector linearIndices;
   linearIndices.push_back(1);
 
   GaussianFactorGraph linearGraph = *factorGraph.linearize(newValues);
 
-    GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(linearIndices.begin(), linearIndices.end()), EliminateCholesky).second;
+    GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(KeyVector(linearIndices.begin(), linearIndices.end()), EliminateCholesky).second;
 
     NonlinearFactorGraph expectedMarginals;
     for(const GaussianFactor::shared_ptr& factor: marginal) {
@@ -1157,14 +1157,14 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_2 )
 
 
     // Create the set of marginalizable variables
-  std::vector<Key> linearIndices;
+  KeyVector linearIndices;
   linearIndices.push_back(1);
   linearIndices.push_back(2);
 
 
   GaussianFactorGraph linearGraph = *factorGraph.linearize(newValues);
 
-  GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(linearIndices.begin(), linearIndices.end()), EliminateCholesky).second;
+  GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(KeyVector(linearIndices.begin(), linearIndices.end()), EliminateCholesky).second;
 
   NonlinearFactorGraph expectedMarginals;
   for(const GaussianFactor::shared_ptr& factor: marginal) {

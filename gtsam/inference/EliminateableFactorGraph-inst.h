@@ -129,7 +129,7 @@ namespace gtsam {
   template<class FACTORGRAPH>
   std::pair<boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>, boost::shared_ptr<FACTORGRAPH> >
     EliminateableFactorGraph<FACTORGRAPH>::eliminatePartialSequential(
-    const std::vector<Key>& variables, const Eliminate& function, OptionalVariableIndex variableIndex) const
+    const KeyVector& variables, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
     if(variableIndex) {
       gttic(eliminatePartialSequential);
@@ -169,7 +169,7 @@ namespace gtsam {
   template<class FACTORGRAPH>
   std::pair<boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>, boost::shared_ptr<FACTORGRAPH> >
     EliminateableFactorGraph<FACTORGRAPH>::eliminatePartialMultifrontal(
-    const std::vector<Key>& variables, const Eliminate& function, OptionalVariableIndex variableIndex) const
+    const KeyVector& variables, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
     if(variableIndex) {
       gttic(eliminatePartialMultifrontal);
@@ -190,7 +190,7 @@ namespace gtsam {
   template<class FACTORGRAPH>
   boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
     EliminateableFactorGraph<FACTORGRAPH>::marginalMultifrontalBayesNet(
-    boost::variant<const Ordering&, const std::vector<Key>&> variables,
+    boost::variant<const Ordering&, const KeyVector&> variables,
     OptionalOrdering marginalizedVariableOrdering,
     const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
@@ -223,9 +223,9 @@ namespace gtsam {
         // No ordering was provided for the marginalized variables, so order them using constrained
         // COLAMD.
         bool unmarginalizedAreOrdered = (boost::get<const Ordering&>(&variables) != 0);
-        const std::vector<Key>* variablesOrOrdering =
+        const KeyVector* variablesOrOrdering =
           unmarginalizedAreOrdered ?
-          boost::get<const Ordering&>(&variables) : boost::get<const std::vector<Key>&>(&variables);
+          boost::get<const Ordering&>(&variables) : boost::get<const KeyVector&>(&variables);
 
         Ordering totalOrdering =
           Ordering::ColamdConstrainedLast(*variableIndex, *variablesOrOrdering, unmarginalizedAreOrdered);
@@ -249,7 +249,7 @@ namespace gtsam {
   template<class FACTORGRAPH>
   boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
     EliminateableFactorGraph<FACTORGRAPH>::marginalMultifrontalBayesTree(
-    boost::variant<const Ordering&, const std::vector<Key>&> variables,
+    boost::variant<const Ordering&, const KeyVector&> variables,
     OptionalOrdering marginalizedVariableOrdering,
     const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
@@ -282,9 +282,9 @@ namespace gtsam {
         // No ordering was provided for the marginalized variables, so order them using constrained
         // COLAMD.
         bool unmarginalizedAreOrdered = (boost::get<const Ordering&>(&variables) != 0);
-        const std::vector<Key>* variablesOrOrdering =
+        const KeyVector* variablesOrOrdering =
           unmarginalizedAreOrdered ?
-          boost::get<const Ordering&>(&variables) : boost::get<const std::vector<Key>&>(&variables);
+          boost::get<const Ordering&>(&variables) : boost::get<const KeyVector&>(&variables);
 
         Ordering totalOrdering =
           Ordering::ColamdConstrainedLast(*variableIndex, *variablesOrOrdering, unmarginalizedAreOrdered);
@@ -308,7 +308,7 @@ namespace gtsam {
   template<class FACTORGRAPH>
   boost::shared_ptr<FACTORGRAPH>
     EliminateableFactorGraph<FACTORGRAPH>::marginal(
-    const std::vector<Key>& variables,
+    const KeyVector& variables,
     const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
     if(variableIndex)

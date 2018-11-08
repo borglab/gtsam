@@ -53,7 +53,7 @@ GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
     else
       std::cout << "Error in buildLinearOrientationGraph" << std::endl;
 
-    const FastVector<Key>& keys = factor->keys();
+    const KeyVector& keys = factor->keys();
     Key key1 = keys[0], key2 = keys[1];
     Matrix M9 = Z_9x9;
     M9.block(0,0,3,3) = Rij;

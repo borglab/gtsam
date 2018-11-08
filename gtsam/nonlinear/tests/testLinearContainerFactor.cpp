@@ -47,7 +47,7 @@ TEST( testLinearContainerFactor, generic_jacobian_factor ) {
   EXPECT(!actFactor.isHessian());
 
   // check keys
-  FastVector<Key> expKeys; expKeys += l1, l2;
+  KeyVector expKeys; expKeys += l1, l2;
   EXPECT(assert_container_equality(expKeys, actFactor.keys()));
 
   Values values;
@@ -246,7 +246,7 @@ TEST( testLinearContainerFactor, creation ) {
   LinearContainerFactor actual(linear_factor, full_values);
 
   // Verify the keys
-  FastVector<Key> expKeys;
+  KeyVector expKeys;
   expKeys += l3, l5;
   EXPECT(assert_container_equality(expKeys, actual.keys()));
 

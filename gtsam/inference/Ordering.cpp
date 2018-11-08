@@ -61,7 +61,7 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
 
   if (nVars == 1)
   {
-    return Ordering(std::vector<Key>(1, variableIndex.begin()->first));
+    return Ordering(KeyVector(1, variableIndex.begin()->first));
   }
 
   const size_t nEntries = variableIndex.nEntries(), nFactors =
@@ -75,7 +75,7 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
   // Fill in input data for COLAMD
   p[0] = 0;
   int count = 0;
-  vector<Key> keys(nVars); // Array to store the keys in the order we add them so we can retrieve them in permuted order
+  KeyVector keys(nVars); // Array to store the keys in the order we add them so we can retrieve them in permuted order
   size_t index = 0;
   for (auto key_factors: variableIndex) {
     // Arrange factor indices into COLAMD format
@@ -127,7 +127,7 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
 
 /* ************************************************************************* */
 Ordering Ordering::ColamdConstrainedLast(const VariableIndex& variableIndex,
-    const std::vector<Key>& constrainLast, bool forceOrder) {
+    const KeyVector& constrainLast, bool forceOrder) {
   gttic(Ordering_COLAMDConstrainedLast);
 
   size_t n = variableIndex.size();
@@ -154,7 +154,7 @@ Ordering Ordering::ColamdConstrainedLast(const VariableIndex& variableIndex,
 
 /* ************************************************************************* */
 Ordering Ordering::ColamdConstrainedFirst(const VariableIndex& variableIndex,
-    const std::vector<Key>& constrainFirst, bool forceOrder) {
+    const KeyVector& constrainFirst, bool forceOrder) {
   gttic(Ordering_COLAMDConstrainedFirst);
 
   const int none = -1;

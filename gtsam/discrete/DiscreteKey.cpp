@@ -31,8 +31,8 @@ namespace gtsam {
     }
   }
 
-  vector<Key> DiscreteKeys::indices() const {
-    vector < Key > js;
+  KeyVector DiscreteKeys::indices() const {
+    KeyVector js;
     for(const DiscreteKey& key: *this)
       js.push_back(key.first);
     return js;

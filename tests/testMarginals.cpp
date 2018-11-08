@@ -139,7 +139,7 @@ TEST(Marginals, planarSLAMmarginals) {
       0.151935669757191,   0.007741936219615,   0.090000180000270,  -0.000000000000000,   0.000000000000000,   0.160967924878730,   0.007741936219615,   0.004516127560770,
      -0.104516127560770,   0.351935664055174,   0.000000000000000,   0.090000180000270,   0.040000000000000,   0.007741936219615,   0.351935664055174,   0.056129031890193,
      -0.050967744878460,   0.056129031890193,   0.000000000000000,   0.000000000000000,   0.010000000000000,   0.004516127560770,   0.056129031890193,   0.027741936219615;
-  vector<Key> variables(3);
+  KeyVector variables(3);
   variables[0] = x1;
   variables[1] = l2;
   variables[2] = x3;
@@ -227,7 +227,7 @@ TEST(Marginals, order) {
 
   Marginals marginals(fg, vals);
   KeySet set = fg.keys();
-  FastVector<Key> keys(set.begin(), set.end());
+  KeyVector keys(set.begin(), set.end());
   JointMarginal joint = marginals.jointMarginalCovariance(keys);
 
   LONGS_EQUAL(3, (long)joint(0,0).rows());

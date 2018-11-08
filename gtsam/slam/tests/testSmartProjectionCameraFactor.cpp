@@ -170,7 +170,7 @@ TEST( SmartProjectionCameraFactor, noisy ) {
   measurements.push_back(level_uv);
   measurements.push_back(level_uv_right);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(c1);
   views.push_back(c2);
 
@@ -195,7 +195,7 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(unit2));
   SmartFactor::shared_ptr smartFactor2(new SmartFactor(unit2));
   SmartFactor::shared_ptr smartFactor3(new SmartFactor(unit2));
-  vector<Key> views;
+  KeyVector views;
   views.push_back(c1);
   views.push_back(c2);
   views.push_back(c3);
@@ -293,7 +293,7 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(c1);
   views.push_back(c2);
   views.push_back(c3);
@@ -370,7 +370,7 @@ TEST( SmartProjectionCameraFactor, perturbCamerasAndOptimize ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark4, measurements_cam4);
   projectToMultipleCameras(cam1, cam2, cam3, landmark5, measurements_cam5);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(c1);
   views.push_back(c2);
   views.push_back(c3);
@@ -450,7 +450,7 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark4, measurements_cam4);
   projectToMultipleCameras(cam1, cam2, cam3, landmark5, measurements_cam5);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(c1);
   views.push_back(c2);
   views.push_back(c3);
@@ -526,7 +526,7 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler2 ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark4, measurements_cam4);
   projectToMultipleCameras(cam1, cam2, cam3, landmark5, measurements_cam5);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(c1);
   views.push_back(c2);
   views.push_back(c3);
