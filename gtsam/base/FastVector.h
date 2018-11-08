@@ -35,9 +35,7 @@ namespace gtsam {
 template<typename VALUE>
 class FastVector: public std::vector<VALUE,
     typename internal::FastDefaultVectorAllocator<VALUE>::type> {
-
-public:
-
+ public:
   typedef std::vector<VALUE,
       typename internal::FastDefaultVectorAllocator<VALUE>::type> Base;
 
@@ -66,13 +64,13 @@ public:
   }
 
   /** Copy constructor from the base class */
-  FastVector(const Base& x) :
+  explicit FastVector(const Base& x) :
       Base(x) {
   }
 
   /** Copy constructor from a standard STL container */
   template<typename ALLOCATOR>
-  FastVector(const std::vector<VALUE, ALLOCATOR>& x) {
+  explicit FastVector(const std::vector<VALUE, ALLOCATOR>& x) {
     // This if statement works around a bug in boost pool allocator and/or
     // STL vector where if the size is zero, the pool allocator will allocate
     // huge amounts of memory.
@@ -85,14 +83,12 @@ public:
     return std::vector<VALUE>(this->begin(), this->end());
   }
 
-private:
+ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
-
 };
-
-}
+}  // namespace gtsam
