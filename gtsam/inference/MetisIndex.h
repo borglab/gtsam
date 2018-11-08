@@ -19,7 +19,6 @@
 
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/base/FastVector.h>
 #include <gtsam/base/types.h>
 #include <gtsam/base/timing.h>
 
@@ -49,8 +48,8 @@ public:
   typedef boost::bimap<Key, int32_t> bm_type;
 
 private:
-  FastVector<int32_t> xadj_; // Index of node's adjacency list in adj
-  FastVector<int32_t> adj_; // Stores ajacency lists of all nodes, appended into a single vector
+  std::vector<int32_t> xadj_; // Index of node's adjacency list in adj
+  std::vector<int32_t> adj_; // Stores ajacency lists of all nodes, appended into a single vector
   boost::bimap<Key, int32_t> intKeyBMap_; // Stores Key <-> integer value relationship
   size_t nKeys_;
 
@@ -82,10 +81,10 @@ public:
   template<class FACTOR>
   void augment(const FactorGraph<FACTOR>& factors);
 
-  const FastVector<int32_t>& xadj() const {
+  const std::vector<int32_t>& xadj() const {
     return xadj_;
   }
-  const FastVector<int32_t>& adj() const {
+  const std::vector<int32_t>& adj() const {
     return adj_;
   }
   size_t nValues() const {
