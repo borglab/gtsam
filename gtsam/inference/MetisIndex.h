@@ -51,7 +51,6 @@ public:
 private:
   FastVector<int32_t> xadj_; // Index of node's adjacency list in adj
   FastVector<int32_t> adj_; // Stores ajacency lists of all nodes, appended into a single vector
-  FastVector<int32_t> iadj_; // Integer keys for passing into metis. One to one mapping with adj_;
   boost::bimap<Key, int32_t> intKeyBMap_; // Stores Key <-> integer value relationship
   size_t nKeys_;
 
@@ -83,10 +82,10 @@ public:
   template<class FACTOR>
   void augment(const FactorGraph<FACTOR>& factors);
 
-  std::vector<int32_t> xadj() const {
+  const FastVector<int32_t>& xadj() const {
     return xadj_;
   }
-  std::vector<int32_t> adj() const {
+  const FastVector<int32_t>& adj() const {
     return adj_;
   }
   size_t nValues() const {
