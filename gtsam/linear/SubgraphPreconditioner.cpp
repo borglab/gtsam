@@ -571,14 +571,14 @@ void SubgraphPreconditioner::solve(const Vector& y, Vector &x) const
   /* in place back substitute */
   for (auto cg: boost::adaptors::reverse(*Rc1_)) {
     /* collect a subvector of x that consists of the parents of cg (S) */
-    const Vector xParent = getSubvector(x, keyInfo_, FastVector<Key>(cg->beginParents(), cg->endParents()));
-    const Vector rhsFrontal = getSubvector(x, keyInfo_, FastVector<Key>(cg->beginFrontals(), cg->endFrontals()));
+    const Vector xParent = getSubvector(x, keyInfo_, KeyVector(cg->beginParents(), cg->endParents()));
+    const Vector rhsFrontal = getSubvector(x, keyInfo_, KeyVector(cg->beginFrontals(), cg->endFrontals()));
 
     /* compute the solution for the current pivot */
     const Vector solFrontal = cg->get_R().triangularView<Eigen::Upper>().solve(rhsFrontal - cg->get_S() * xParent);
 
     /* assign subvector of sol to the frontal variables */
-    setSubvector(solFrontal, keyInfo_, FastVector<Key>(cg->beginFrontals(), cg->endFrontals()), x);
+    setSubvector(solFrontal, keyInfo_, KeyVector(cg->beginFrontals(), cg->endFrontals()), x);
   }
 }
 
@@ -590,7 +590,7 @@ void SubgraphPreconditioner::transposeSolve(const Vector& y, Vector& x) const
 
   /* in place back substitute */
   for(const boost::shared_ptr<GaussianConditional> & cg: *Rc1_) {
-    const Vector rhsFrontal = getSubvector(x, keyInfo_, FastVector<Key>(cg->beginFrontals(), cg->endFrontals()));
+    const Vector rhsFrontal = getSubvector(x, keyInfo_, KeyVector(cg->beginFrontals(), cg->endFrontals()));
 //    const Vector solFrontal = cg->get_R().triangularView<Eigen::Upper>().transpose().solve(rhsFrontal);
     const Vector solFrontal = cg->get_R().transpose().triangularView<Eigen::Lower>().solve(rhsFrontal);
 
@@ -598,7 +598,7 @@ void SubgraphPreconditioner::transposeSolve(const Vector& y, Vector& x) const
     if ( solFrontal.hasNaN()) throw IndeterminantLinearSystemException(cg->keys().front());
 
     /* assign subvector of sol to the frontal variables */
-    setSubvector(solFrontal, keyInfo_, FastVector<Key>(cg->beginFrontals(), cg->endFrontals()), x);
+    setSubvector(solFrontal, keyInfo_, KeyVector(cg->beginFrontals(), cg->endFrontals()), x);
 
     /* substract from parent variables */
     for (GaussianConditional::const_iterator it = cg->beginParents(); it != cg->endParents(); it++) {
@@ -626,7 +626,7 @@ void SubgraphPreconditioner::build(const GaussianFactorGraph &gfg, const KeyInfo
 }
 
 /*****************************************************************************/
-Vector getSubvector(const Vector &src, const KeyInfo &keyInfo, const FastVector<Key> &keys) {
+Vector getSubvector(const Vector &src, const KeyInfo &keyInfo, const KeyVector &keys) {
 
   /* a cache of starting index and dim */
   typedef vector<pair<size_t, size_t> > Cache;
@@ -652,7 +652,7 @@ Vector getSubvector(const Vector &src, const KeyInfo &keyInfo, const FastVector<
 }
 
 /*****************************************************************************/
-void setSubvector(const Vector &src, const KeyInfo &keyInfo, const FastVector<Key> &keys, Vector &dst) {
+void setSubvector(const Vector &src, const KeyInfo &keyInfo, const KeyVector &keys, Vector &dst) {
   /* use the cache  */
   size_t idx = 0;
   for ( const Key &key: keys ) {

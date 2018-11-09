@@ -74,10 +74,10 @@ public:
   Matrix marginalCovariance(Key variable) const;
 
   /** Compute the joint marginal covariance of several variables */
-  JointMarginal jointMarginalCovariance(const std::vector<Key>& variables) const;
+  JointMarginal jointMarginalCovariance(const KeyVector& variables) const;
 
   /** Compute the joint marginal information of several variables */
-  JointMarginal jointMarginalInformation(const std::vector<Key>& variables) const;
+  JointMarginal jointMarginalInformation(const KeyVector& variables) const;
 
   /** Optimize the bayes tree */
   VectorValues optimize() const;
@@ -130,7 +130,7 @@ public:
   void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
 protected:
-  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const std::vector<Key>& keys) :
+  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const KeyVector& keys) :
     blockMatrix_(dims, fullMatrix), keys_(keys), indices_(Ordering(keys).invert()) {}
 
   friend class Marginals;

@@ -52,7 +52,7 @@ NonlinearFactor::shared_ptr NonlinearFactor::rekey(
 
 /* ************************************************************************* */
 NonlinearFactor::shared_ptr NonlinearFactor::rekey(
-    const std::vector<Key>& new_keys) const {
+    const KeyVector& new_keys) const {
   assert(new_keys.size() == keys().size());
   shared_ptr new_factor = clone();
   new_factor->keys() = new_keys;

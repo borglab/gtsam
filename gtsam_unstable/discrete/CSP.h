@@ -22,7 +22,7 @@ namespace gtsam {
   public:
 
     /** A map from keys to values */
-    typedef std::vector<Key> Indices;
+    typedef KeyVector Indices;
     typedef Assignment<Key> Values;
     typedef boost::shared_ptr<Values> sharedValues;
 

@@ -19,10 +19,11 @@
 #pragma once
 
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/CalibratedCamera.h> // for Cheirality exception
+#include <gtsam/geometry/CalibratedCamera.h>  // for Cheirality exception
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastMap.h>
+#include <gtsam/inference/Key.h>
 #include <vector>
 
 namespace gtsam {
@@ -244,7 +245,7 @@ public:
   template<int N> // N = 2 or 3
   static void UpdateSchurComplement(const FBlocks& Fs, const Matrix& E,
       const Eigen::Matrix<double, N, N>& P, const Vector& b,
-      const FastVector<Key>& allKeys, const FastVector<Key>& keys,
+      const KeyVector& allKeys, const KeyVector& keys,
       /*output ->*/SymmetricBlockMatrix& augmentedHessian) {
 
     assert(keys.size()==Fs.size());

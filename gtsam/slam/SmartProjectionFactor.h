@@ -179,7 +179,7 @@ public:
 
     size_t numKeys = this->keys_.size();
     // Create structures for Hessian Factors
-    std::vector<Key> js;
+    KeyVector js;
     std::vector<Matrix> Gs(numKeys * (numKeys + 1) / 2);
     std::vector<Vector> gs(numKeys);
 

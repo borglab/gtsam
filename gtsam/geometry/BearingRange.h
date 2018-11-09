@@ -67,6 +67,12 @@ public:
   /// @name Standard Interface
   /// @{
 
+  /// Return bearing measurement
+  const B& bearing() const { return bearing_; }
+
+  /// Return range measurement
+  const R& range() const { return range_; }
+
   /// Prediction function that stacks measurements
   static BearingRange Measure(
     const A1& a1, const A2& a2,

@@ -58,15 +58,15 @@ namespace gtsam {
 
   public:
     /// Iterator over keys
-    typedef FastVector<Key>::iterator iterator;
+    typedef KeyVector::iterator iterator;
 
     /// Const iterator over keys
-    typedef FastVector<Key>::const_iterator const_iterator;
+    typedef KeyVector::const_iterator const_iterator;
 
   protected:
 
     /// The keys involved in this factor
-    FastVector<Key> keys_;
+    KeyVector keys_;
 
     /// @name Standard Constructors
     /// @{
@@ -112,7 +112,7 @@ namespace gtsam {
     const_iterator find(Key key) const { return std::find(begin(), end(), key); }
 
     /// Access the factor's involved variable keys
-    const FastVector<Key>& keys() const { return keys_; }
+    const KeyVector& keys() const { return keys_; }
 
     /** Iterator at beginning of involved variable keys */
     const_iterator begin() const { return keys_.begin(); }
@@ -148,7 +148,7 @@ namespace gtsam {
     /// @{
 
     /** @return keys involved in this factor */
-    FastVector<Key>& keys() { return keys_; }
+    KeyVector& keys() { return keys_; }
 
     /** Iterator at beginning of involved variable keys */
     iterator begin() { return keys_.begin(); }

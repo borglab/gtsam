@@ -584,7 +584,7 @@ TEST( ConcurrentIncrementalSmootherGN, synchronize_3 )
   KeySet allkeys = LinFactorGraph->keys();
   for(const Values::ConstKeyValuePair& key_value: filterSeparatorValues)
     allkeys.erase(key_value.key);
-  std::vector<Key> variables(allkeys.begin(), allkeys.end());
+  KeyVector variables(allkeys.begin(), allkeys.end());
   std::pair<GaussianBayesNet::shared_ptr, GaussianFactorGraph::shared_ptr> result = LinFactorGraph->eliminatePartialSequential(variables, EliminateCholesky);
 
   expectedSmootherSummarization.resize(0);

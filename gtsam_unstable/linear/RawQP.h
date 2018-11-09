@@ -49,7 +49,7 @@ private:
   std::string name_;
   std::unordered_map<Key, double> up;
   std::unordered_map<Key, double> lo;
-  std::vector<Key> Free;
+  KeyVector Free;
   const bool debug = false;
 
 public:

@@ -283,7 +283,7 @@ namespace gtsam {
      * @param scatter A mapping from variable index to slot index in this HessianFactor
      * @param info The information matrix to be updated
      */
-    void updateHessian(const FastVector<Key>& keys, SymmetricBlockMatrix* info) const;
+    void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info) const;
 
     /** Return A*x */
     Vector operator*(const VectorValues& x) const;
