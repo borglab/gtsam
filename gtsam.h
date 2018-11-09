@@ -126,14 +126,10 @@ class KeyList {
   KeyList();
   KeyList(const gtsam::KeyList& other);
 
-  // Note: no print function
-
   // common STL methods
   size_t size() const;
   bool empty() const;
   void clear();
-
-  // structure specific methods
   size_t front() const;
   size_t back() const;
   void push_back(size_t key);
@@ -142,8 +138,6 @@ class KeyList {
   void pop_front();
   void sort();
   void remove(size_t key);
-
-  void serialize() const;
 };
 
 // Actually a FastSet<Key>
@@ -153,60 +147,41 @@ class KeySet {
   KeySet(const gtsam::KeyVector& vector);
   KeySet(const gtsam::KeyList& list);
 
-  // Testable
-  void print(string s) const;
-  bool equals(const gtsam::KeySet& other) const;
-
   // common STL methods
   size_t size() const;
   bool empty() const;
   void clear();
-
-  // structure specific methods
   void insert(size_t key);
   void merge(const gtsam::KeySet& other);
   bool erase(size_t key); // returns true if value was removed
   bool count(size_t key) const; // returns true if value exists
-
-  void serialize() const;
 };
 
-// Actually a vector<Key>
+// Actually a FastVector<Key>
 class KeyVector {
   KeyVector();
   KeyVector(const gtsam::KeyVector& other);
-
-  // Note: no print function
 
   // common STL methods
   size_t size() const;
   bool empty() const;
   void clear();
-
-  // structure specific methods
   size_t at(size_t i) const;
   size_t front() const;
   size_t back() const;
   void push_back(size_t key) const;
-
-  void serialize() const;
 };
 
 // Actually a FastMap<Key,int>
 class KeyGroupMap {
   KeyGroupMap();
 
-  // Note: no print function
-
   // common STL methods
   size_t size() const;
   bool empty() const;
   void clear();
-
-  // structure specific methods
   size_t at(size_t key) const;
   int erase(size_t key);
-  bool insert2(size_t key, int val);
 };
 
 //*************************************************************************
