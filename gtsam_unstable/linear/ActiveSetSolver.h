@@ -78,7 +78,7 @@ public:
     equalityVariableIndex_ = VariableIndex(problem_.equalities);
     inequalityVariableIndex_ = VariableIndex(problem_.inequalities);
     constrainedKeys_ = problem_.equalities.keys();
-    const auto& iKeys = problem_.inequalities.keys();
+    const auto iKeys = problem_.inequalities.keys();
     constrainedKeys_.insert(iKeys.begin(), iKeys.end());
   }
 
