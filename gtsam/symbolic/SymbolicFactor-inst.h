@@ -21,6 +21,7 @@
 #include <gtsam/symbolic/SymbolicConditional.h>
 #include <gtsam/inference/Factor.h>
 #include <gtsam/inference/Key.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/timing.h>
 
 #include <boost/shared_ptr.hpp>
@@ -53,7 +54,7 @@ namespace gtsam
       }
 
       // Sort frontal keys
-      KeySet frontals(keys);
+      KeySet frontals(keys.begin(), keys.end());
       const size_t nFrontals = keys.size();
 
       // Build a key vector with the frontals followed by the separator

@@ -13,7 +13,7 @@
  * @file    FastList.h
  * @brief   A thin wrapper around std::list that uses a custom allocator.
  * @author  Richard Roberts
- * @author  Frank Dellaert * @author  Richard Roberts
+ * @author  Frank Dellaert
  * @date    Oct 22, 2010
  */
 
