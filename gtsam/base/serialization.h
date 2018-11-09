@@ -93,8 +93,12 @@ std::string serializeXML(const T& input, const std::string& name="data") {
 template<class T>
 void deserializeXML(const std::string& serialized, T& output, const std::string& name="data") {
   std::istringstream in_archive_stream(serialized);
-  boost::archive::xml_iarchive in_archive(in_archive_stream);
-  in_archive >> boost::serialization::make_nvp(name.c_str(), output);
+  auto in_archive = new boost::archive::xml_iarchive(in_archive_stream);
+  *in_archive >> boost::serialization::make_nvp(name.c_str(), output);
+#ifndef __APPLE__
+  // TODO(dellaert): find out why this crashes on mac. Leaks a tiny amount of memory.
+  delete in_archive;
+#endif
 }
 
 template<class T>
