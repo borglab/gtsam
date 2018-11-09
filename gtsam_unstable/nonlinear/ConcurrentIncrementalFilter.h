@@ -180,7 +180,7 @@ protected:
 private:
 
   /** Traverse the iSAM2 Bayes Tree, inserting all descendants of the provided index/key into 'additionalKeys' */
-  static void RecursiveMarkAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& clique, std::set<Key>& additionalKeys);
+  static void RecursiveMarkAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& clique, KeySet& additionalKeys);
 
   /** Find the set of iSAM2 factors adjacent to 'keys' */
   static FactorIndices FindAdjacentFactors(const ISAM2& isam2, const KeyList& keys, const FactorIndices& factorsToIgnore);

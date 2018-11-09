@@ -91,7 +91,7 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
   // Mark additional keys between the 'keys to move' and the leaves
   boost::optional<KeyList> additionalKeys = boost::none;
   if(keysToMove && keysToMove->size() > 0) {
-    std::set<Key> markedKeys;
+    KeySet markedKeys;
     for(Key key: *keysToMove) {
       if(isam2_.getLinearizationPoint().exists(key)) {
         ISAM2Clique::shared_ptr clique = isam2_[key];
@@ -265,7 +265,7 @@ void ConcurrentIncrementalFilter::postsync() {
 
 
 /* ************************************************************************* */
-void ConcurrentIncrementalFilter::RecursiveMarkAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& clique, std::set<Key>& additionalKeys) {
+void ConcurrentIncrementalFilter::RecursiveMarkAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& clique, KeySet& additionalKeys) {
 
   // Check if the separator keys of the current clique contain the specified key
   if(std::find(clique->conditional()->beginParents(), clique->conditional()->endParents(), key) != clique->conditional()->endParents()) {
@@ -367,7 +367,7 @@ NonlinearFactorGraph ConcurrentIncrementalFilter::calculateFilterSummarization()
     for(size_t slot: isam2_.getVariableIndex()[key]) {
       const NonlinearFactor::shared_ptr& factor = isam2_.getFactorsUnsafe().at(slot);
       if(factor) {
-        std::set<Key> factorKeys(factor->begin(), factor->end());
+        KeySet factorKeys(factor->begin(), factor->end());
         if(std::includes(cliqueKeys.begin(), cliqueKeys.end(), factorKeys.begin(), factorKeys.end())) {
           cliqueFactorSlots.insert(slot);
         }

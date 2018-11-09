@@ -143,7 +143,7 @@ public:
   }
 
   /// Return keys that play in this expression
-  std::set<Key> keys() const;
+  KeySet keys() const;
 
   /// Return dimensions for each argument, as a map
   void dims(std::map<Key, int>& map) const;

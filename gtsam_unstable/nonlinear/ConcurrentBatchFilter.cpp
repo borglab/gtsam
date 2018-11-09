@@ -209,8 +209,8 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& smootherSumm
   if(debug) { PrintNonlinearFactorGraph(smootherSummarization_, "ConcurrentBatchFilter::synchronize  ", "Previous Smoother Summarization:", DefaultKeyFormatter); }
 
 #ifndef NDEBUG
-  std::set<Key> oldKeys = smootherSummarization_.keys();
-  std::set<Key> newKeys = smootherSummarization.keys();
+  KeySet oldKeys = smootherSummarization_.keys();
+  KeySet newKeys = smootherSummarization.keys();
   assert(oldKeys.size() == newKeys.size());
   assert(std::equal(oldKeys.begin(), oldKeys.end(), newKeys.begin()));
 #endif

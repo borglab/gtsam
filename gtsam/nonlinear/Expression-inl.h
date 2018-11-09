@@ -114,7 +114,7 @@ Expression<T>::Expression(const Expression<A1>& expression1,
 }
 
 template<typename T>
-std::set<Key> Expression<T>::keys() const {
+KeySet Expression<T>::keys() const {
   return root_->keys();
 }
 

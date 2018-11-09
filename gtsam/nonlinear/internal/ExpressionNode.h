@@ -91,8 +91,8 @@ public:
   }
 
   /// Return keys that play in this expression as a set
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys;
+  virtual KeySet keys() const {
+    KeySet keys;
     return keys;
   }
 
@@ -179,8 +179,8 @@ public:
   }
 
   /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys;
+  virtual KeySet keys() const {
+    KeySet keys;
     keys.insert(key_);
     return keys;
   }
@@ -257,7 +257,7 @@ public:
   }
 
   /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
+  virtual KeySet keys() const {
     return expression1_->keys();
   }
 
@@ -369,9 +369,9 @@ public:
   }
 
   /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys = expression1_->keys();
-    std::set<Key> myKeys = expression2_->keys();
+  virtual KeySet keys() const {
+    KeySet keys = expression1_->keys();
+    KeySet myKeys = expression2_->keys();
     keys.insert(myKeys.begin(), myKeys.end());
     return keys;
   }
@@ -477,9 +477,9 @@ public:
   }
 
   /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys = expression1_->keys();
-    std::set<Key> myKeys = expression2_->keys();
+  virtual KeySet keys() const {
+    KeySet keys = expression1_->keys();
+    KeySet myKeys = expression2_->keys();
     keys.insert(myKeys.begin(), myKeys.end());
     myKeys = expression3_->keys();
     keys.insert(myKeys.begin(), myKeys.end());
@@ -583,7 +583,7 @@ class ScalarMultiplyNode : public ExpressionNode<T> {
   }
 
   /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
+  virtual KeySet keys() const {
     return expression_->keys();
   }
 
@@ -672,9 +672,9 @@ class BinarySumNode : public ExpressionNode<T> {
   }
 
   /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys = expression1_->keys();
-    std::set<Key> myKeys = expression2_->keys();
+  virtual KeySet keys() const {
+    KeySet keys = expression1_->keys();
+    KeySet myKeys = expression2_->keys();
     keys.insert(myKeys.begin(), myKeys.end());
     return keys;
   }

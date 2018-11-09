@@ -122,7 +122,7 @@ protected:
 
 private:
   /** Private methods for printing debug information */
-  static void PrintKeySet(const std::set<Key>& keys, const std::string& label =
+  static void PrintKeySet(const KeySet& keys, const std::string& label =
       "Keys:");
   static void PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor);
   static void PrintSymbolicGraph(const GaussianFactorGraph& graph,

@@ -117,7 +117,7 @@ public:
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   static NonlinearFactorGraph calculateMarginalFactors(
-      const NonlinearFactorGraph& graph, const Values& theta, const std::set<Key>& keys,
+      const NonlinearFactorGraph& graph, const Values& theta, const KeySet& keys,
       const GaussianFactorGraph::Eliminate& eliminateFunction = EliminatePreferCholesky) {
     KeyVector keyVector(keys.begin(), keys.end());
     return CalculateMarginalFactors(graph, theta, keyVector, eliminateFunction);
@@ -127,7 +127,7 @@ public:
 protected:
 
   /** A typedef defining an Key-Factor mapping **/
-  typedef std::map<Key, std::set<Key> > FactorIndex;
+  typedef std::map<Key, KeySet> FactorIndex;
 
   /** The L-M optimization parameters **/
   LevenbergMarquardtParams parameters_;

@@ -26,7 +26,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 void recursiveMarkAffectedKeys(const Key& key,
-    const ISAM2Clique::shared_ptr& clique, std::set<Key>& additionalKeys) {
+    const ISAM2Clique::shared_ptr& clique, KeySet& additionalKeys) {
 
   // Check if the separator keys of the current clique contain the specified key
   if (std::find(clique->conditional()->beginParents(),
@@ -115,7 +115,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   }
 
   // Mark additional keys between the marginalized keys and the leaves
-  std::set<Key> additionalKeys;
+  KeySet additionalKeys;
   for(Key key: marginalizableKeys) {
     ISAM2Clique::shared_ptr clique = isam_[key];
     for(const ISAM2Clique::shared_ptr& child: clique->children) {
@@ -191,7 +191,7 @@ void IncrementalFixedLagSmoother::createOrderingConstraints(
 }
 
 /* ************************************************************************* */
-void IncrementalFixedLagSmoother::PrintKeySet(const std::set<Key>& keys,
+void IncrementalFixedLagSmoother::PrintKeySet(const KeySet& keys,
     const std::string& label) {
   std::cout << label;
   for(Key key: keys) {
