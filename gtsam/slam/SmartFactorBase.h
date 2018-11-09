@@ -131,7 +131,7 @@ public:
   /**
    * Add a bunch of measurements, together with the camera keys
    */
-  void add(ZVector& measurements, std::vector<Key>& cameraKeys) {
+  void add(ZVector& measurements, KeyVector& cameraKeys) {
     for (size_t i = 0; i < measurements.size(); i++) {
       this->measured_.push_back(measurements.at(i));
       this->keys_.push_back(cameraKeys.at(i));
@@ -310,7 +310,7 @@ public:
   void updateAugmentedHessian(const Cameras& cameras, const Point3& point,
       const double lambda, bool diagonalDamping,
       SymmetricBlockMatrix& augmentedHessian,
-      const FastVector<Key> allKeys) const {
+      const KeyVector allKeys) const {
     Matrix E;
     Vector b;
     computeJacobians(Fs, E, b, cameras, point);

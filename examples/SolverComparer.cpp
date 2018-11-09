@@ -429,7 +429,7 @@ void runIncremental()
   //    for (Key key12: boost::adaptors::reverse(values.keys())) {
   //      if(i != j) {
   //        gttic_(jointMarginalInformation);
-  //        std::vector<Key> keys(2);
+  //        KeyVector keys(2);
   //        keys[0] = key1;
   //        keys[1] = key2;
   //        JointMarginal info = marginals.jointMarginalInformation(keys);
@@ -524,7 +524,7 @@ void runCompare()
 
   // Check solution for equality
   cout << "Comparing solutions..." << endl;
-  vector<Key> missingKeys;
+  KeyVector missingKeys;
   br::set_symmetric_difference(soln1.keys(), soln2.keys(), std::back_inserter(missingKeys));
   if(!missingKeys.empty()) {
     cout << "  Keys unique to one solution file: ";
@@ -535,7 +535,7 @@ void runCompare()
     }
     cout << endl;
   }
-  vector<Key> commonKeys;
+  KeyVector commonKeys;
   br::set_intersection(soln1.keys(), soln2.keys(), std::back_inserter(commonKeys));
   double maxDiff = 0.0;
   for(Key j: commonKeys)

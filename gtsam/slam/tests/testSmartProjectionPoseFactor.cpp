@@ -189,7 +189,7 @@ TEST( SmartProjectionPoseFactor, noisy ) {
   measurements.push_back(level_uv);
   measurements.push_back(level_uv_right);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
 
@@ -236,7 +236,7 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ){
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   // Create smart factors
-  std::vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -299,7 +299,7 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -370,7 +370,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
   measurements_cam1.push_back(cam2.project(landmark1));
 
   // Create smart factors
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
 
@@ -459,7 +459,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     b.setZero();
 
     // Create smart factors
-    FastVector<Key> keys;
+    KeyVector keys;
     keys.push_back(x1);
     keys.push_back(x2);
 
@@ -520,7 +520,7 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
 
   using namespace vanillaPose;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -577,7 +577,7 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
 
   using namespace vanillaPose;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -638,7 +638,7 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
 
   double excludeLandmarksFutherThanDist = 2;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -701,7 +701,7 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   double excludeLandmarksFutherThanDist = 1e10;
   double dynamicOutlierRejectionThreshold = 1; // max 1 pixel of average reprojection error
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -767,7 +767,7 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
 
   using namespace vanillaPose;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -821,7 +821,7 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
 
   using namespace vanillaPose2;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -869,7 +869,7 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, CheckHessian) {
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -955,7 +955,7 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
 TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_factor ) {
   using namespace vanillaPose2;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1014,7 +1014,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   // this test considers a condition in which the cheirality constraint is triggered
   using namespace vanillaPose;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1099,7 +1099,7 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
 
   using namespace vanillaPose2;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
 
@@ -1133,7 +1133,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
 
   using namespace vanillaPose;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1186,7 +1186,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
 
   using namespace vanillaPose2;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1260,7 +1260,7 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1309,7 +1309,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
 
   using namespace bundlerPose;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1421,7 +1421,7 @@ TEST(SmartProjectionPoseFactor, serialize2) {
   SmartFactor factor(model, sharedK, bts, params);
 
   // insert some measurments
-  vector<Key> key_view;
+  KeyVector key_view;
   Point2Vector meas_view;
   key_view.push_back(Symbol('x', 1));
   meas_view.push_back(Point2(10, 10));

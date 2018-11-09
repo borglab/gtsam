@@ -159,7 +159,7 @@ namespace gtsam {
      * quadratic term (the Hessian matrix) provided in row-order, gs the pieces
      * of the linear vector term, and f the constant term.
      */
-    HessianFactor(const std::vector<Key>& js, const std::vector<Matrix>& Gs,
+    HessianFactor(const KeyVector& js, const std::vector<Matrix>& Gs,
         const std::vector<Vector>& gs, double f);
 
     /** Constructor with an arbitrary number of keys and with the augmented information matrix
@@ -310,7 +310,7 @@ namespace gtsam {
      * @param keys THe ordered vector of keys for the information matrix to be updated
      * @param info The information matrix to be updated
      */
-    void updateHessian(const FastVector<Key>& keys, SymmetricBlockMatrix* info) const;
+    void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info) const;
 
     /** Update another Hessian factor
      * @param other the HessianFactor to be updated

@@ -93,18 +93,12 @@ TEST(CameraSet, Pinhole) {
   EXPECT(assert_equal(schur, actualReduced.selfadjointView()));
 
   // Check Schur complement update, same order, should just double
-  FastVector<Key> allKeys, keys;
-  allKeys.push_back(1);
-  allKeys.push_back(2);
-  keys.push_back(1);
-  keys.push_back(2);
+  KeyVector allKeys {1, 2}, keys {1, 2};
   Set::UpdateSchurComplement(Fs, E, P, b, allKeys, keys, actualReduced);
   EXPECT(assert_equal((Matrix )(2.0 * schur), actualReduced.selfadjointView()));
 
   // Check Schur complement update, keys reversed
-  FastVector<Key> keys2;
-  keys2.push_back(2);
-  keys2.push_back(1);
+  KeyVector keys2 {2, 1};
   Set::UpdateSchurComplement(Fs, E, P, b, allKeys, keys2, actualReduced);
   Vector4 reverse_b;
   reverse_b << b.tail<2>(), b.head<2>();

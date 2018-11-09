@@ -28,7 +28,7 @@ public:
   /**
    * Constructor
    */
-  JacobianFactorQR(const FastVector<Key>& keys,
+  JacobianFactorQR(const KeyVector& keys,
       const std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> >& FBlocks, const Matrix& E, const Matrix3& P,
       const Vector& b, //
       const SharedDiagonal& model = SharedDiagonal()) :
@@ -46,7 +46,7 @@ public:
     // eliminate the point
     boost::shared_ptr<GaussianBayesNet> bn;
     GaussianFactorGraph::shared_ptr fg;
-    std::vector<Key> variables;
+    KeyVector variables;
     variables.push_back(pointKey);
     boost::tie(bn, fg) = gfg.eliminatePartialSequential(variables, EliminateQR);
     //fg->print("fg");

@@ -126,7 +126,7 @@ namespace gtsam {
      * @param scatter A mapping from variable index to slot index in this HessianFactor
      * @param info The information matrix to be updated
      */
-    virtual void updateHessian(const FastVector<Key>& keys,
+    virtual void updateHessian(const KeyVector& keys,
                            SymmetricBlockMatrix* info) const = 0;
 
     /// y += alpha * A'*A*x

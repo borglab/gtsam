@@ -38,7 +38,7 @@ namespace gtsam {
   protected:
 
     /// Construct n-way factor
-    Constraint(const std::vector<Key>& js) :
+    Constraint(const KeyVector& js) :
       DiscreteFactor(js) {
     }
 

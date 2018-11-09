@@ -90,7 +90,7 @@ namespace gtsam {
     DiscreteKeys discreteKeysParentsFirst() const;
 
     /** All key indices, with variable key first */
-    std::vector<Key> indices() const;
+    KeyVector indices() const;
 
     // the CPT as parsed, if successful
     const boost::optional<Table>& table() const {

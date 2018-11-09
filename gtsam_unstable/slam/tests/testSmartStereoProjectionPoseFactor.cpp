@@ -274,7 +274,7 @@ TEST( SmartStereoProjectionPoseFactor, noisy ) {
   Ks.push_back(K);
   Ks.push_back(K);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
 
@@ -313,7 +313,7 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   vector<StereoPoint2> measurements_l3 = stereo_projectToMultipleCameras(cam1,
       cam2, cam3, landmark3);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -455,7 +455,7 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor ) {
   vector<StereoPoint2> measurements_l3 = stereo_projectToMultipleCameras(cam1,
       cam2, cam3, landmark3);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -548,7 +548,7 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor_monocular ){
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   // Create smart factors
-  std::vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -614,7 +614,7 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor_monocular ){
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -680,7 +680,7 @@ TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, jacobianSVDwithMissingValues ) {
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -754,7 +754,7 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
 
 //  double excludeLandmarksFutherThanDist = 2;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -822,7 +822,7 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -919,7 +919,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, jacobianQ ){
 //
-//  vector<Key> views;
+//  KeyVector views;
 //  views.push_back(x1);
 //  views.push_back(x2);
 //  views.push_back(x3);
@@ -980,7 +980,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, 3poses_projection_factor ){
 //
-//  vector<Key> views;
+//  KeyVector views;
 //  views.push_back(x1);
 //  views.push_back(x2);
 //  views.push_back(x3);
@@ -1040,7 +1040,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1128,7 +1128,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_factor ){
 //
-//  vector<Key> views;
+//  KeyVector views;
 //  views.push_back(x1);
 //  views.push_back(x2);
 //  views.push_back(x3);
@@ -1194,7 +1194,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ){
 //
-//  vector<Key> views;
+//  KeyVector views;
 //  views.push_back(x1);
 //  views.push_back(x2);
 //  views.push_back(x3);
@@ -1268,7 +1268,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, Hessian ){
 //
-//  vector<Key> views;
+//  KeyVector views;
 //  views.push_back(x1);
 //  views.push_back(x2);
 //
@@ -1309,7 +1309,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, HessianWithRotation ) {
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1379,7 +1379,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotation ) {
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, HessianWithRotationNonDegenerate ) {
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);

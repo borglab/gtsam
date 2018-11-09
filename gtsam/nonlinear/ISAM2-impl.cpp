@@ -239,10 +239,10 @@ void updateRgProd(const ISAM2::sharedClique& clique, const KeySet& replacedKeys,
     // Update the current variable
     // Get VectorValues slice corresponding to current variables
     Vector gR =
-        grad.vector(FastVector<Key>(clique->conditional()->beginFrontals(),
+        grad.vector(KeyVector(clique->conditional()->beginFrontals(),
                                     clique->conditional()->endFrontals()));
     Vector gS =
-        grad.vector(FastVector<Key>(clique->conditional()->beginParents(),
+        grad.vector(KeyVector(clique->conditional()->beginParents(),
                                     clique->conditional()->endParents()));
 
     // Compute R*g and S*g for this clique

@@ -299,7 +299,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
 
   virtual boost::shared_ptr<KeySet> recalculate(
       const KeySet& markedKeys, const KeySet& relinKeys,
-      const std::vector<Key>& observedKeys, const KeySet& unusedIndices,
+      const KeyVector& observedKeys, const KeySet& unusedIndices,
       const boost::optional<FastMap<Key, int> >& constrainKeys,
       ISAM2Result* result);
 
