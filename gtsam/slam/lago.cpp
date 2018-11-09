@@ -168,14 +168,14 @@ GaussianFactorGraph buildLinearOrientationGraph(
 
   // put original measurements in the spanning tree
   for(const size_t& factorId: spanningTreeIds) {
-    const FastVector<Key>& keys = g[factorId]->keys();
+    const KeyVector& keys = g[factorId]->keys();
     Key key1 = keys[0], key2 = keys[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
     lagoGraph.add(key1, -I, key2, I, deltaTheta, model_deltaTheta);
   }
   // put regularized measurements in the chordsIds
   for(const size_t& factorId: chordsIds) {
-    const FastVector<Key>& keys = g[factorId]->keys();
+    const KeyVector& keys = g[factorId]->keys();
     Key key1 = keys[0], key2 = keys[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
     double key1_DeltaTheta_key2 = deltaTheta(0);

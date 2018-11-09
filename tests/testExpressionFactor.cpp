@@ -231,7 +231,7 @@ TEST(ExpressionFactor, Shallow) {
   Point2_ expression = project(transform_to(x_, p_));
 
   // Get and check keys and dims
-  FastVector<Key> keys;
+  KeyVector keys;
   FastVector<int> dims;
   boost::tie(keys, dims) = expression.keysAndDims();
   LONGS_EQUAL(2,keys.size());

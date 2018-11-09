@@ -214,7 +214,7 @@ namespace gtsam {
      * Given a list of indices, turn "contaminated" part of the tree back into a factor graph.
      * Factors and orphans are added to the in/out arguments.
      */
-    void removeTop(const FastVector<Key>& keys, BayesNetType& bn, Cliques& orphans);
+    void removeTop(const KeyVector& keys, BayesNetType& bn, Cliques& orphans);
 
     /**
      * Remove the requested subtree. */

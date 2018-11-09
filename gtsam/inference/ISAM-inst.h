@@ -30,7 +30,7 @@ void ISAM<BAYESTREE>::update_internal(const FactorGraphType& newFactors,
   BayesNetType bn;
   const KeySet newFactorKeys = newFactors.keys();
   if (!this->empty()) {
-    std::vector<Key> keyVector(newFactorKeys.begin(), newFactorKeys.end());
+    KeyVector keyVector(newFactorKeys.begin(), newFactorKeys.end());
     this->removeTop(keyVector, bn, orphans);
   }
 
@@ -46,7 +46,7 @@ void ISAM<BAYESTREE>::update_internal(const FactorGraphType& newFactors,
   // Get an ordering where the new keys are eliminated last
   const VariableIndex index(factors);
   const Ordering ordering = Ordering::ColamdConstrainedLast(index,
-      std::vector<Key>(newFactorKeys.begin(), newFactorKeys.end()));
+      KeyVector(newFactorKeys.begin(), newFactorKeys.end()));
 
   // eliminate all factors (top, added, orphans) into a new Bayes tree
   auto bayesTree = factors.eliminateMultifrontal(ordering, function, index);

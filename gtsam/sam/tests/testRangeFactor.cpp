@@ -102,9 +102,7 @@ TEST( RangeFactor, ConstructorWithTransform) {
 
   RangeFactorWithTransform2D factor2D(poseKey, pointKey, measurement, model,
       body_P_sensor_2D);
-  KeyVector expected;
-  expected.push_back(2);
-  expected.push_back(1);
+  KeyVector expected {2, 1};
   CHECK(factor2D.keys() == expected);
   RangeFactorWithTransform3D factor3D(poseKey, pointKey, measurement, model,
       body_P_sensor_3D);

@@ -64,7 +64,7 @@ TEST(RegularHessianFactor, Constructors)
   EXPECT(assert_equal(factor,factor2));
 
   // Test n-way constructor
-  vector<Key> keys; keys += 0, 1, 3;
+  KeyVector keys {0, 1, 3};
   vector<Matrix> Gs; Gs += G11, G12, G13, G22, G23, G33;
   vector<Vector> gs; gs += g1, g2, g3;
   RegularHessianFactor<2> factor3(keys, Gs, gs, f);

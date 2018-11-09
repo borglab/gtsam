@@ -40,12 +40,12 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class DERIVED, class FACTORGRAPH>
-  FastVector<Key>
+  KeyVector
     BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::separator_setminus_B(const derived_ptr& B) const
   {
     KeySet p_F_S_parents(this->conditional()->beginParents(), this->conditional()->endParents());
     KeySet indicesB(B->conditional()->begin(), B->conditional()->end());
-    FastVector<Key> S_setminus_B;
+    KeyVector S_setminus_B;
     std::set_difference(p_F_S_parents.begin(), p_F_S_parents.end(),
       indicesB.begin(), indicesB.end(), back_inserter(S_setminus_B));
     return S_setminus_B;
@@ -53,14 +53,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class DERIVED, class FACTORGRAPH>
-  FastVector<Key> BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::shortcut_indices(
+  KeyVector BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::shortcut_indices(
     const derived_ptr& B, const FactorGraphType& p_Cp_B) const
   {
     gttic(shortcut_indices);
     KeySet allKeys = p_Cp_B.keys();
     KeySet indicesB(B->conditional()->begin(), B->conditional()->end());
-    FastVector<Key> S_setminus_B = separator_setminus_B(B);
-    FastVector<Key> keep;
+    KeyVector S_setminus_B = separator_setminus_B(B);
+    KeyVector keep;
     // keep = S\B intersect allKeys (S_setminus_B is already sorted)
     std::set_intersection(S_setminus_B.begin(), S_setminus_B.end(), //
       allKeys.begin(), allKeys.end(), back_inserter(keep));
@@ -113,7 +113,7 @@ namespace gtsam {
     gttic(BayesTreeCliqueBase_shortcut);
     // We only calculate the shortcut when this clique is not B
     // and when the S\B is not empty
-    FastVector<Key> S_setminus_B = separator_setminus_B(B);
+    KeyVector S_setminus_B = separator_setminus_B(B);
     if (!parent_.expired() /*(if we're not the root)*/ && !S_setminus_B.empty())
     {
       // Obtain P(Cp||B) = P(Fp|Sp) * P(Sp||B) as a factor graph
@@ -124,7 +124,7 @@ namespace gtsam {
       p_Cp_B += parent->conditional_; // P(Fp|Sp)
 
       // Determine the variables we want to keepSet, S union B
-      FastVector<Key> keep = shortcut_indices(B, p_Cp_B);
+      KeyVector keep = shortcut_indices(B, p_Cp_B);
 
       // Marginalize out everything except S union B
       boost::shared_ptr<FactorGraphType> p_S_B = p_Cp_B.marginal(keep, function);
@@ -170,7 +170,7 @@ namespace gtsam {
         p_Cp += parent->conditional_; // P(Fp|Sp)
 
         // The variables we want to keepSet are exactly the ones in S
-        FastVector<Key> indicesS(this->conditional()->beginParents(), this->conditional()->endParents());
+        KeyVector indicesS(this->conditional()->beginParents(), this->conditional()->endParents());
         cachedSeparatorMarginal_ = *p_Cp.marginalMultifrontalBayesNet(Ordering(indicesS), boost::none, function);
       }
     }
