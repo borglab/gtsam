@@ -47,14 +47,14 @@ TEST ( Ordering, predecessorMap2Keys ) {
   p_map.insert(4,3);
   p_map.insert(5,1);
 
-  list<Key> expected;
+  KeyList expected;
   expected += 4,5,3,2,1;
 
-  list<Key> actual = predecessorMap2Keys<Key>(p_map);
+  KeyList actual = predecessorMap2Keys<Key>(p_map);
   LONGS_EQUAL((long)expected.size(), (long)actual.size());
 
-  list<Key>::const_iterator it1 = expected.begin();
-  list<Key>::const_iterator it2 = actual.begin();
+  KeyList::const_iterator it1 = expected.begin();
+  KeyList::const_iterator it2 = actual.begin();
   for(; it1!=expected.end(); it1++, it2++)
     CHECK(*it1 == *it2)
 }

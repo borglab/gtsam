@@ -123,7 +123,7 @@ public:
    * @param removeFactorIndices An optional set of indices corresponding to the factors you want to remove from the graph
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const boost::optional<FastList<Key> >& keysToMove = boost::none,
+      const boost::optional<KeyList>& keysToMove = boost::none,
       const boost::optional< FactorIndices >& removeFactorIndices = boost::none);
 
   /**
@@ -183,7 +183,7 @@ private:
   static void RecursiveMarkAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& clique, std::set<Key>& additionalKeys);
 
   /** Find the set of iSAM2 factors adjacent to 'keys' */
-  static FactorIndices FindAdjacentFactors(const ISAM2& isam2, const FastList<Key>& keys, const FactorIndices& factorsToIgnore);
+  static FactorIndices FindAdjacentFactors(const ISAM2& isam2, const KeyList& keys, const FactorIndices& factorsToIgnore);
 
   /** Update the shortcut marginal between the current separator keys and the previous separator keys */
   // TODO: Make this a static function

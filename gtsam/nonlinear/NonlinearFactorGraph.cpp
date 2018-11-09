@@ -165,7 +165,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
 
   if (formatting.mergeSimilarFactors) {
     // Remove duplicate factors
-    std::set<KeyVector > structure;
+    std::set<KeyVector> structure;
     for (const sharedFactor& factor : factors_) {
       if (factor) {
         KeyVector factorKeys = factor->keys();

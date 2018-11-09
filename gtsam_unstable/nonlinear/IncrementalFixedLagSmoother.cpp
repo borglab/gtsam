@@ -136,7 +136,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
 
   // Marginalize out any needed variables
   if (marginalizableKeys.size() > 0) {
-    FastList<Key> leafKeys(marginalizableKeys.begin(),
+    KeyList leafKeys(marginalizableKeys.begin(),
         marginalizableKeys.end());
     isam_.marginalizeLeaves(leafKeys);
   }

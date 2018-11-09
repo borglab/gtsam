@@ -43,7 +43,7 @@ bool ConcurrentIncrementalFilter::equals(const ConcurrentFilter& rhs, double tol
 
 /* ************************************************************************* */
 ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const boost::optional<FastList<Key> >& keysToMove, const boost::optional< FactorIndices >& removeFactorIndices) {
+    const boost::optional<KeyList>& keysToMove, const boost::optional< FactorIndices >& removeFactorIndices) {
 
   gttic(update);
 
@@ -86,10 +86,10 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
 
   // Create the set of linear keys that iSAM2 should hold constant
   // iSAM2 takes care of this for us; no need to specify additional noRelin keys
-  boost::optional<FastList<Key> > noRelinKeys = boost::none;
+  boost::optional<KeyList> noRelinKeys = boost::none;
 
   // Mark additional keys between the 'keys to move' and the leaves
-  boost::optional<FastList<Key> > additionalKeys = boost::none;
+  boost::optional<KeyList> additionalKeys = boost::none;
   if(keysToMove && keysToMove->size() > 0) {
     std::set<Key> markedKeys;
     for(Key key: *keysToMove) {
@@ -105,7 +105,7 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
         }
       }
     }
-    additionalKeys = FastList<Key>(markedKeys.begin(), markedKeys.end());
+    additionalKeys = KeyList(markedKeys.begin(), markedKeys.end());
   }
 
   // Update the system using iSAM2
@@ -200,7 +200,7 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
   }
 
   // Force iSAM2 not to relinearize anything during this iteration
-  FastList<Key> noRelinKeys;
+  KeyList noRelinKeys;
   for(const Values::ConstKeyValuePair& key_value: isam2_.getLinearizationPoint()) {
     noRelinKeys.push_back(key_value.key);
   }
@@ -285,7 +285,7 @@ void ConcurrentIncrementalFilter::RecursiveMarkAffectedKeys(const Key& key, cons
 }
 
 /* ************************************************************************* */
-FactorIndices ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2& isam2, const FastList<Key>& keys, const FactorIndices& factorsToIgnore) {
+FactorIndices ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2& isam2, const KeyList& keys, const FactorIndices& factorsToIgnore) {
 
   // Identify any new factors to be sent to the smoother (i.e. any factor involving keysToMove)
   FactorIndices removedFactorSlots;

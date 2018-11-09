@@ -124,7 +124,7 @@ public:
    * @param removeFactorIndices An optional set of indices corresponding to the factors you want to remove from the graph
    */
   virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const boost::optional<FastList<Key> >& keysToMove = boost::none, const boost::optional< std::vector<size_t> >& removeFactorIndices = boost::none);
+      const boost::optional<KeyList>& keysToMove = boost::none, const boost::optional< std::vector<size_t> >& removeFactorIndices = boost::none);
 
   /**
    * Perform any required operations before the synchronization process starts.
@@ -200,14 +200,14 @@ private:
   void removeFactors(const std::vector<size_t>& slots);
 
   /** Use colamd to update into an efficient ordering */
-  void reorder(const boost::optional<FastList<Key> >& keysToMove = boost::none);
+  void reorder(const boost::optional<KeyList>& keysToMove = boost::none);
 
   /** Marginalize out the set of requested variables from the filter, caching them for the smoother
    *  This effectively moves the separator.
    *
    * @param keysToMove The set of keys to move from the filter to the smoother
    */
-  void moveSeparator(const FastList<Key>& keysToMove);
+  void moveSeparator(const KeyList& keysToMove);
 
   /** Use a modified version of L-M to update the linearization point and delta */
   static void optimize(const NonlinearFactorGraph& factors, Values& theta, const Ordering& ordering,

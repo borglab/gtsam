@@ -646,7 +646,7 @@ TEST(ISAM2, slamlike_solution_partial_relinearization_check)
 }
 
 namespace {
-  bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
+  bool checkMarginalizeLeaves(ISAM2& isam, const KeyList& leafKeys) {
     Matrix expectedAugmentedHessian, expected3AugmentedHessian;
     KeyVector toKeep;
     for(Key j: isam.getDelta() | br::map_keys)
@@ -714,7 +714,7 @@ TEST(ISAM2, marginalizeLeaves1)
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
-  FastList<Key> leafKeys = list_of(0);
+  KeyList leafKeys = list_of(0);
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
@@ -745,7 +745,7 @@ TEST(ISAM2, marginalizeLeaves2)
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
-  FastList<Key> leafKeys = list_of(0);
+  KeyList leafKeys = list_of(0);
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
@@ -785,7 +785,7 @@ TEST(ISAM2, marginalizeLeaves3)
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
-  FastList<Key> leafKeys = list_of(0);
+  KeyList leafKeys = list_of(0);
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
@@ -811,7 +811,7 @@ TEST(ISAM2, marginalizeLeaves4)
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
-  FastList<Key> leafKeys = list_of(1);
+  KeyList leafKeys = list_of(1);
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
@@ -822,7 +822,7 @@ TEST(ISAM2, marginalizeLeaves5)
   ISAM2 isam = createSlamlikeISAM2();
 
   // Marginalize
-  FastList<Key> marginalizeKeys = list_of(0);
+  KeyList marginalizeKeys = list_of(0);
   EXPECT(checkMarginalizeLeaves(isam, marginalizeKeys));
 }
 

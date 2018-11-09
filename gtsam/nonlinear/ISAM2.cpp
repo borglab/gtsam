@@ -127,7 +127,7 @@ KeySet ISAM2::getAffectedFactors(const KeyList& keys) const {
 // (note that the remaining stuff is summarized in the cached factors)
 
 GaussianFactorGraph::shared_ptr ISAM2::relinearizeAffectedFactors(
-    const FastList<Key>& affectedKeys, const KeySet& relinKeys) const {
+    const KeyList& affectedKeys, const KeySet& relinKeys) const {
   gttic(getAffectedFactors);
   KeySet candidates = getAffectedFactors(affectedKeys);
   gttoc(getAffectedFactors);
@@ -265,7 +265,7 @@ boost::shared_ptr<KeySet> ISAM2::recalculate(
   // ordering provides all keys in conditionals, there cannot be others because
   // path to root included
   gttic(affectedKeys);
-  FastList<Key> affectedKeys;
+  KeyList affectedKeys;
   for (const auto& conditional : affectedBayesNet)
     affectedKeys.insert(affectedKeys.end(), conditional->beginFrontals(),
                         conditional->endFrontals());
@@ -351,7 +351,7 @@ boost::shared_ptr<KeySet> ISAM2::recalculate(
     gttic(incremental);
 
     // 2. Add the new factors \Factors' into the resulting factor graph
-    FastList<Key> affectedAndNewKeys;
+    KeyList affectedAndNewKeys;
     affectedAndNewKeys.insert(affectedAndNewKeys.end(), affectedKeys.begin(),
                               affectedKeys.end());
     affectedAndNewKeys.insert(affectedAndNewKeys.end(), observedKeys.begin(),
@@ -544,8 +544,8 @@ ISAM2Result ISAM2::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta,
     const FactorIndices& removeFactorIndices,
     const boost::optional<FastMap<Key, int> >& constrainedKeys,
-    const boost::optional<FastList<Key> >& noRelinKeys,
-    const boost::optional<FastList<Key> >& extraReelimKeys,
+    const boost::optional<KeyList>& noRelinKeys,
+    const boost::optional<KeyList>& extraReelimKeys,
     bool force_relinearize) {
   const bool debug = ISDEBUG("ISAM2 update");
   const bool verbose = ISDEBUG("ISAM2 update verbose");
@@ -808,7 +808,7 @@ ISAM2Result ISAM2::update(
 
 /* ************************************************************************* */
 void ISAM2::marginalizeLeaves(
-    const FastList<Key>& leafKeysList,
+    const KeyList& leafKeysList,
     boost::optional<FactorIndices&> marginalFactorsIndices,
     boost::optional<FactorIndices&> deletedFactorsIndices) {
   // Convert to ordered set

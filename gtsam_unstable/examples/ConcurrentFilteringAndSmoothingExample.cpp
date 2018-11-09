@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
 
     // Unlike the fixed-lag versions, the concurrent filter implementation
     // requires the user to supply the specify which keys to move to the smoother
-    FastList<Key> oldKeys;
+    KeyList oldKeys;
     if(time >= lag+deltaT) {
       oldKeys.push_back(1000 * (time-lag-deltaT));
     }
@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
 
     // Unlike the fixed-lag versions, the concurrent filter implementation
     // requires the user to supply the specify which keys to marginalize
-    FastList<Key> oldKeys;
+    KeyList oldKeys;
     if(time >= lag+deltaT) {
       oldKeys.push_back(1000 * (time-lag-deltaT));
     }
@@ -271,7 +271,7 @@ int main(int argc, char** argv) {
 
     // Unlike the fixed-lag versions, the concurrent filter implementation
     // requires the user to supply the specify which keys to marginalize
-    FastList<Key> oldKeys;
+    KeyList oldKeys;
     if(time >= lag+deltaT) {
       oldKeys.push_back(1000 * (time-lag-deltaT));
     }

@@ -119,7 +119,7 @@ bool ConcurrentBatchFilter::equals(const ConcurrentFilter& rhs, double tol) cons
 
 /* ************************************************************************* */
 ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const boost::optional<FastList<Key> >& keysToMove, const boost::optional< std::vector<size_t> >& removeFactorIndices) {
+    const boost::optional<KeyList>& keysToMove, const boost::optional< std::vector<size_t> >& removeFactorIndices) {
 
   gttic(update);
 
@@ -358,7 +358,7 @@ void ConcurrentBatchFilter::removeFactors(const std::vector<size_t>& slots) {
 }
 
 /* ************************************************************************* */
-void ConcurrentBatchFilter::reorder(const boost::optional<FastList<Key> >& keysToMove) {
+void ConcurrentBatchFilter::reorder(const boost::optional<KeyList>& keysToMove) {
 
   // COLAMD groups will be used to place marginalize keys in Group 0, and everything else in Group 1
   if(keysToMove && keysToMove->size() > 0) {
@@ -510,7 +510,7 @@ void ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values
 }
 
 /* ************************************************************************* */
-void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
+void ConcurrentBatchFilter::moveSeparator(const KeyList& keysToMove) {
   // In order to move the separator, we need to calculate the marginal information on the new
   // separator from all of the factors on the smoother side (both the factors actually in the
   // smoother and the ones to be transitioned to the smoother but stored in the filter).

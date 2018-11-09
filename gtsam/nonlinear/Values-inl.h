@@ -192,8 +192,8 @@ namespace gtsam {
       return i;
     }
 
-    FastList<Key> keys() const {
-      FastList<Key> result;
+    KeyList keys() const {
+      KeyList result;
       for(const_iterator it = begin(); it != end(); ++it)
         result.push_back(it->key);
       return result;

@@ -60,7 +60,7 @@ Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int
 }
 
 /* ************************************************************************* */
-NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph, const Values& linPoint, const FastList<Key>& keysToMarginalize){
+NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph, const Values& linPoint, const KeyList& keysToMarginalize){
 
 
   std::set<Key> KeysToKeep;
@@ -391,7 +391,7 @@ TEST( ConcurrentBatchFilter, update_and_marginalize )
   newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
 
   // Specify a subset of variables to marginalize/move to the smoother
-  FastList<Key> keysToMove;
+  KeyList keysToMove;
   keysToMove.push_back(1);
   keysToMove.push_back(2);
 
@@ -558,7 +558,7 @@ TEST( ConcurrentBatchFilter, synchronize_2 )
   Pose3 value2 = value1.compose(poseOdometry).compose(poseError);
   newValues.insert(1, value1);
   newValues.insert(2, value2);
-  FastList<Key> keysToMove;
+  KeyList keysToMove;
   keysToMove.push_back(1);
   filter.update(newFactors, newValues, keysToMove);
   // this will not work, as in the filter only remains node 2, while 1 was marginalized out
@@ -632,7 +632,7 @@ TEST( ConcurrentBatchFilter, synchronize_3 )
   newValues.insert(2, value2);
   newValues.insert(3, value3);
 
-  FastList<Key> keysToMove;
+  KeyList keysToMove;
   keysToMove.push_back(1);
   // we add factors to the filter while marginalizing node 1
   filter.update(newFactors, newValues, keysToMove);
@@ -667,7 +667,7 @@ TEST( ConcurrentBatchFilter, synchronize_3 )
   partialValues.insert(2, optimalValues.at<Pose3>(2));
   partialValues.insert(3, optimalValues.at<Pose3>(3));
 
-  FastList<Key> keysToMarginalize;
+  KeyList keysToMarginalize;
   keysToMarginalize.push_back(3);
 
   expectedFilterSummarization = CalculateMarginals(partialGraph, partialValues, keysToMarginalize);
@@ -716,7 +716,7 @@ TEST( ConcurrentBatchFilter, synchronize_4 )
   newValues.insert(2, value2);
   newValues.insert(3, value3);
 
-  FastList<Key> keysToMove;
+  KeyList keysToMove;
   keysToMove.push_back(1);
   // we add factors to the filter while marginalizing node 1
   filter.update(newFactors, newValues, keysToMove);
@@ -757,7 +757,7 @@ TEST( ConcurrentBatchFilter, synchronize_4 )
   orderingFilter.push_back(3);
   orderingFilter.push_back(2);
 
-  FastList<Key> keysToMarginalize;
+  KeyList keysToMarginalize;
   keysToMarginalize.push_back(3);
 
   expectedFilterSummarization = CalculateMarginals(partialGraphFilter, partialValuesFilter, keysToMarginalize);
@@ -817,7 +817,7 @@ TEST( ConcurrentBatchFilter, synchronize_5 )
   newValues.insert(3, value3);
   newValues.insert(4, value4);
 
-  FastList<Key> keysToMove;
+  KeyList keysToMove;
   keysToMove.push_back(1);
   // we add factors to the filter while marginalizing node 1
   filter.update(newFactors, newValues, keysToMove);
@@ -853,7 +853,7 @@ TEST( ConcurrentBatchFilter, synchronize_5 )
   // at this point the filter contains: nodes 2 3 4 and factors 3 4 5 + marginal on 2
   Values optimalValues2 = BatchOptimize(filter.getFactors(),filter.getLinearizationPoint(),1);
 
-  FastList<Key> keysToMove2;
+  KeyList keysToMove2;
   keysToMove2.push_back(2);
   newFactors.resize(0);
   newValues.clear();
@@ -885,7 +885,7 @@ TEST( ConcurrentBatchFilter, synchronize_5 )
   // we are artificially setting that to something different to what was in the filter
   partialValues.insert(1, Pose3().compose(poseError.inverse()));
 
-  FastList<Key> keysToMarginalize;
+  KeyList keysToMarginalize;
   keysToMarginalize.push_back(1);
 
   smootherSummarization2 = CalculateMarginals(partialGraph, partialValues, keysToMarginalize);
@@ -926,7 +926,7 @@ TEST( ConcurrentBatchFilter, synchronize_5 )
   partialValuesFilter.insert(3, optimalValues2.at(3));
   partialValuesFilter.insert(4, optimalValues2.at(4));
 
-  FastList<Key> keysToMarginalize2;
+  KeyList keysToMarginalize2;
   keysToMarginalize2.push_back(4);
 
   NonlinearFactorGraph expectedFilterSummarization2 = CalculateMarginals(partialGraphFilter, partialValuesFilter, keysToMarginalize2);
@@ -947,7 +947,7 @@ TEST( ConcurrentBatchFilter, synchronize_5 )
   partialValuesTransition.insert(2,optimalValues.at(2));
   partialValuesTransition.insert(3,optimalValues2.at(3));
 
-  FastList<Key> keysToMarginalize3;
+  KeyList keysToMarginalize3;
   keysToMarginalize3.push_back(2);
 
   NonlinearFactorGraph expectedFilterGraph;
@@ -1016,7 +1016,7 @@ TEST( ConcurrentBatchFilter, CalculateMarginals_1 )
 
   }
 
-  FastList<Key> keysToMarginalize;
+  KeyList keysToMarginalize;
   keysToMarginalize.push_back(1);
   NonlinearFactorGraph actualMarginals;
   actualMarginals = CalculateMarginals(factorGraph, newValues, keysToMarginalize);
@@ -1069,7 +1069,7 @@ TEST( ConcurrentBatchFilter, CalculateMarginals_2 )
 
   }
 
-  FastList<Key> keysToMarginalize;
+  KeyList keysToMarginalize;
   keysToMarginalize.push_back(1);
   keysToMarginalize.push_back(2);
   NonlinearFactorGraph actualMarginals;
@@ -1103,7 +1103,7 @@ TEST( ConcurrentBatchFilter, removeFactors_topology_1 )
   newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
 
   // Specify a subset of variables to marginalize/move to the smoother
-  FastList<Key> keysToMove;
+  KeyList keysToMove;
 
   // Update the filter: add all factors
   filter.update(newFactors, newValues, keysToMove);
@@ -1158,7 +1158,7 @@ TEST( ConcurrentBatchFilter, removeFactors_topology_2 )
   newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
 
   // Specify a subset of variables to marginalize/move to the smoother
-  FastList<Key> keysToMove;
+  KeyList keysToMove;
 
   // Update the filter: add all factors
   filter.update(newFactors, newValues, keysToMove);
@@ -1213,7 +1213,7 @@ TEST( ConcurrentBatchFilter, removeFactors_topology_3 )
   newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
 
   // Specify a subset of variables to marginalize/move to the smoother
-  FastList<Key> keysToMove;
+  KeyList keysToMove;
 
   // Update the filter: add all factors
   filter.update(newFactors, newValues, keysToMove);
@@ -1266,7 +1266,7 @@ TEST( ConcurrentBatchFilter, removeFactors_values )
   newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
 
   // Specify a subset of variables to marginalize/move to the smoother
-  FastList<Key> keysToMove;
+  KeyList keysToMove;
 
   // Update the filter: add all factors
   filter.update(newFactors, newValues, keysToMove);

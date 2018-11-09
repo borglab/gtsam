@@ -65,7 +65,7 @@ ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(cons
   // Constrain the separator keys to remain in the root
   // Also, mark the separator keys as fixed linearization points
   FastMap<Key,int> constrainedKeys;
-  FastList<Key> noRelinKeys;
+  KeyList noRelinKeys;
   for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
     constrainedKeys[key_value.key] = 1;
     noRelinKeys.push_back(key_value.key);

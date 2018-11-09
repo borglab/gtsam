@@ -152,8 +152,8 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
       const Values& newTheta = Values(),
       const FactorIndices& removeFactorIndices = FactorIndices(),
       const boost::optional<FastMap<Key, int> >& constrainedKeys = boost::none,
-      const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
-      const boost::optional<FastList<Key> >& extraReelimKeys = boost::none,
+      const boost::optional<KeyList>& noRelinKeys = boost::none,
+      const boost::optional<KeyList>& extraReelimKeys = boost::none,
       bool force_relinearize = false);
 
   /** Marginalize out variables listed in leafKeys.  These keys must be leaves
@@ -174,7 +174,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    * call
    */
   void marginalizeLeaves(
-      const FastList<Key>& leafKeys,
+      const KeyList& leafKeys,
       boost::optional<FactorIndices&> marginalFactorsIndices = boost::none,
       boost::optional<FactorIndices&> deletedFactorsIndices = boost::none);
 
@@ -292,9 +292,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    */
   void expmapMasked(const KeySet& mask);
 
-  FastSet<Key> getAffectedFactors(const FastList<Key>& keys) const;
+  FastSet<Key> getAffectedFactors(const KeyList& keys) const;
   GaussianFactorGraph::shared_ptr relinearizeAffectedFactors(
-      const FastList<Key>& affectedKeys, const KeySet& relinKeys) const;
+      const KeyList& affectedKeys, const KeySet& relinKeys) const;
   GaussianFactorGraph getCachedBoundaryFactors(const Cliques& orphans);
 
   virtual boost::shared_ptr<KeySet> recalculate(

@@ -37,16 +37,16 @@ namespace gtsam {
 namespace utilities {
 
 // Create a KeyList from indices
-FastList<Key> createKeyList(const Vector& I) {
-  FastList<Key> set;
+KeyList createKeyList(const Vector& I) {
+  KeyList set;
   for (int i = 0; i < I.size(); i++)
     set.push_back(I[i]);
   return set;
 }
 
 // Create a KeyList from indices using symbol
-FastList<Key> createKeyList(std::string s, const Vector& I) {
-  FastList<Key> set;
+KeyList createKeyList(std::string s, const Vector& I) {
+  KeyList set;
   char c = s[0];
   for (int i = 0; i < I.size(); i++)
     set.push_back(Symbol(c, I[i]));
