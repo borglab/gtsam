@@ -54,9 +54,9 @@ struct LPPolicy {
       graph.emplace_shared<JacobianFactor>(*it, Matrix::Identity(dim, dim), b);
     }
 
-    KeySet allKeys = lp.inequalities.keys();
-    allKeys.merge(lp.equalities.keys());
-    allKeys.merge(KeySet(lp.cost.keys()));
+    KeySet allKeys = lp.inequalities.keys(); // not cheap !
+    allKeys.insert(lp.equalities.keys().begin(), lp.equalities.keys().end());
+    allKeys.insert(lp.cost.keys().begin(), lp.cost.keys().end());
     // Add corresponding factors for all variables that are not explicitly in
     // the cost function. Gradients of the cost function wrt to these variables 
     // are zero (g=0), so b=xk

@@ -336,16 +336,6 @@ void BatchFixedLagSmoother::marginalize(const KeyVector& marginalizeKeys) {
 }
 
 /* ************************************************************************* */
-void BatchFixedLagSmoother::PrintKeySet(const set<Key>& keys,
-    const string& label) {
-  cout << label;
-  for(Key key: keys) {
-    cout << " " << DefaultKeyFormatter(key);
-  }
-  cout << endl;
-}
-
-/* ************************************************************************* */
 void BatchFixedLagSmoother::PrintKeySet(const KeySet& keys,
     const string& label) {
   cout << label;

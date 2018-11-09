@@ -440,8 +440,8 @@ boost::shared_ptr<KeySet> ISAM2::recalculate(
     for (FastMap<Key, int>::iterator iter = constraintGroups.begin();
          iter != constraintGroups.end();
          /*Incremented in loop ++iter*/) {
-      if (unusedIndices.exists(iter->first) ||
-          !affectedKeysSet->exists(iter->first))
+      if (unusedIndices.count(iter->first) ||
+          !affectedKeysSet->count(iter->first))
         constraintGroups.erase(iter++);
       else
         ++iter;
@@ -525,7 +525,7 @@ void ISAM2::expmapMasked(const KeySet& mask) {
     Key var = key_value->key;
     assert(static_cast<size_t>(delta_[var].size()) == key_value->value.dim());
     assert(delta_[var].allFinite());
-    if (mask.exists(var)) {
+    if (mask.count(var)) {
       Value* retracted = key_value->value.retract_(delta_[var]);
       key_value->value = *retracted;
       retracted->deallocate_();
@@ -838,7 +838,7 @@ void ISAM2::marginalizeLeaves(
         factorIndicesToRemove.insert(involved.begin(), involved.end());
 #if !defined(NDEBUG)
         // Check for non-leaf keys
-        if (!leafKeys.exists(frontal))
+        if (!leafKeys.count(frontal))
           throw std::runtime_error(
               "Requesting to marginalize variables that are not leaves, "
               "the ISAM2 object is now in an inconsistent state so should "
@@ -851,7 +851,7 @@ void ISAM2::marginalizeLeaves(
 
   // Remove each variable and its subtrees
   for (Key j : leafKeys) {
-    if (!leafKeysRemoved.exists(j)) {  // If the index was not already removed
+    if (!leafKeysRemoved.count(j)) {  // If the index was not already removed
                                        // by removing another subtree
 
       // Traverse up the tree to find the root of the marginalized subtree
@@ -860,7 +860,7 @@ void ISAM2::marginalizeLeaves(
         // Check if parent contains a marginalized leaf variable.  Only need to
         // check the first variable because it is the closest to the leaves.
         sharedClique parent = clique->parent();
-        if (leafKeys.exists(parent->conditional()->front()))
+        if (leafKeys.count(parent->conditional()->front()))
           clique = parent;
         else
           break;
@@ -869,7 +869,7 @@ void ISAM2::marginalizeLeaves(
       // See if we should remove the whole clique
       bool marginalizeEntireClique = true;
       for (Key frontal : clique->conditional()->frontals()) {
-        if (!leafKeys.exists(frontal)) {
+        if (!leafKeys.count(frontal)) {
           marginalizeEntireClique = false;
           break;
         }
@@ -903,7 +903,7 @@ void ISAM2::marginalizeLeaves(
         for (const sharedClique& child : clique->children) {
           // Remove subtree if child depends on any marginalized keys
           for (Key parent : child->conditional()->parents()) {
-            if (leafKeys.exists(parent)) {
+            if (leafKeys.count(parent)) {
               subtreesToRemove.push_back(child);
               graph.push_back(child->cachedFactor());  // Add child marginal
               break;
@@ -924,7 +924,7 @@ void ISAM2::marginalizeLeaves(
         // TODO(dellaert): reuse cached linear factors
         KeySet factorsFromMarginalizedInClique_step1;
         for (Key frontal : clique->conditional()->frontals()) {
-          if (leafKeys.exists(frontal))
+          if (leafKeys.count(frontal))
             factorsFromMarginalizedInClique_step1.insert(
                 variableIndex_[frontal].begin(), variableIndex_[frontal].end());
         }
@@ -959,7 +959,7 @@ void ISAM2::marginalizeLeaves(
         // Split the current clique
         // Find the position of the last leaf key in this clique
         DenseIndex nToRemove = 0;
-        while (leafKeys.exists(cg->keys()[nToRemove])) ++nToRemove;
+        while (leafKeys.count(cg->keys()[nToRemove])) ++nToRemove;
 
         // Make the clique's matrix appear as a subset
         const DenseIndex dimToRemove = cg->matrixObject().offset(nToRemove);

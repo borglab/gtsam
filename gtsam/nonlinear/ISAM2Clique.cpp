@@ -68,17 +68,17 @@ bool ISAM2Clique::isDirty(const KeySet& replaced, const KeySet& changed) const {
   // cliques in the children need to be processed
 
   // Are any clique variables part of the tree that has been redone?
-  bool dirty = replaced.exists(conditional_->frontals().front());
+  bool dirty = replaced.count(conditional_->frontals().front());
 #if !defined(NDEBUG) && defined(GTSAM_EXTRA_CONSISTENCY_CHECKS)
   for (Key frontal : conditional_->frontals()) {
-    assert(dirty == replaced.exists(frontal));
+    assert(dirty == replaced.count(frontal));
   }
 #endif
 
   // If not, then has one of the separator variables changed significantly?
   if (!dirty) {
     for (Key parent : conditional_->parents()) {
-      if (changed.exists(parent)) {
+      if (changed.count(parent)) {
         dirty = true;
         break;
       }
@@ -105,7 +105,7 @@ void ISAM2Clique::fastBackSubstitute(VectorValues* delta) const {
     for (Key frontal : conditional_->frontals())
       solnPointers_.emplace(frontal, delta->find(frontal));
     for (Key parentKey : conditional_->parents()) {
-      assert(parent->solnPointers_.exists(parentKey));
+      assert(parent->solnPointers_.count(parentKey));
       solnPointers_.emplace(parentKey, parent->solnPointers_.at(parentKey));
     }
   }
@@ -171,7 +171,7 @@ bool ISAM2Clique::valuesChanged(const KeySet& replaced,
                                 const VectorValues& delta,
                                 double threshold) const {
   auto frontals = conditional_->frontals();
-  if (replaced.exists(frontals.front())) return true;
+  if (replaced.count(frontals.front())) return true;
   auto diff = originalValues - delta.vector(frontals);
   return diff.lpNorm<Eigen::Infinity>() >= threshold;
 }
@@ -305,7 +305,7 @@ void ISAM2Clique::findAll(const KeySet& markedMask, KeySet* keys) const {
   // does the separator contain any of the variables?
   bool found = false;
   for (Key key : conditional()->parents()) {
-    if (markedMask.exists(key)) {
+    if (markedMask.count(key)) {
       found = true;
       break;
     }

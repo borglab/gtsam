@@ -229,7 +229,7 @@ void updateRgProd(const ISAM2::sharedClique& clique, const KeySet& replacedKeys,
   // recurse further because of the running separator property.
   bool anyReplaced = false;
   for (Key j : *clique->conditional()) {
-    if (replacedKeys.exists(j)) {
+    if (replacedKeys.count(j)) {
       anyReplaced = true;
       break;
     }
