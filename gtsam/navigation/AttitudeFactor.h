@@ -55,6 +55,14 @@ public:
   /** vector of errors */
   Vector attitudeError(const Rot3& p,
       OptionalJacobian<2,3> H = boost::none) const;
+
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    ar & boost::serialization::make_nvp("nZ_", const_cast<Unit3&>(nZ_));
+    ar & boost::serialization::make_nvp("bRef_", const_cast<Unit3&>(bRef_));
+  }
 };
 
 /**
@@ -123,11 +131,10 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar
-        & boost::serialization::make_nvp("NoiseModelFactor1",
-            boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(nZ_);
-    ar & BOOST_SERIALIZATION_NVP(bRef_);
+    ar & boost::serialization::make_nvp("NoiseModelFactor1",
+        boost::serialization::base_object<Base>(*this));
+    ar & boost::serialization::make_nvp("AttitudeFactor",
+        boost::serialization::base_object<AttitudeFactor>(*this));
   }
 
 public:
@@ -210,11 +217,10 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar
-        & boost::serialization::make_nvp("NoiseModelFactor1",
-            boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(nZ_);
-    ar & BOOST_SERIALIZATION_NVP(bRef_);
+    ar & boost::serialization::make_nvp("NoiseModelFactor1",
+        boost::serialization::base_object<Base>(*this));
+    ar & boost::serialization::make_nvp("AttitudeFactor",
+        boost::serialization::base_object<AttitudeFactor>(*this));
   }
 
 public:
