@@ -89,17 +89,17 @@ TEST(CameraSet, Pinhole) {
   Vector4 b = actualV;
   Vector v = Ft * (b - E * P * Et * b);
   schur << Ft * F - Ft * E * P * Et * F, v, v.transpose(), 30;
-  SymmetricBlockMatrix actualReduced = Set::SchurComplement(Fs, E, P, b);
+  SymmetricBlockMatrix actualReduced = Set::SchurComplement<3>(Fs, E, P, b);
   EXPECT(assert_equal(schur, actualReduced.selfadjointView()));
 
   // Check Schur complement update, same order, should just double
   KeyVector allKeys {1, 2}, keys {1, 2};
-  Set::UpdateSchurComplement(Fs, E, P, b, allKeys, keys, actualReduced);
+  Set::UpdateSchurComplement<3>(Fs, E, P, b, allKeys, keys, actualReduced);
   EXPECT(assert_equal((Matrix )(2.0 * schur), actualReduced.selfadjointView()));
 
   // Check Schur complement update, keys reversed
   KeyVector keys2 {2, 1};
-  Set::UpdateSchurComplement(Fs, E, P, b, allKeys, keys2, actualReduced);
+  Set::UpdateSchurComplement<3>(Fs, E, P, b, allKeys, keys2, actualReduced);
   Vector4 reverse_b;
   reverse_b << b.tail<2>(), b.head<2>();
   Vector reverse_v = Ft * (reverse_b - E * P * Et * reverse_b);

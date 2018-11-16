@@ -148,7 +148,7 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
     // ============ Solve is where most computation happens !! =================
     delta = solve(dampedSystem, params_);
     systemSolvedSuccessfully = true;
-  } catch (const IndeterminantLinearSystemException& e) {
+  } catch (const IndeterminantLinearSystemException&) {
     systemSolvedSuccessfully = false;
   }
 

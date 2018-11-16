@@ -18,7 +18,10 @@
 
 #pragma once
 
-// All headers in base:
+// All headers in base, except:
+// treeTraversal-inst.h: very specific to only a few compilation units
+// numericalDerivative.h : includes things in linear, nonlinear :-(
+// testLie.h: includes numericalDerivative
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/chartTesting.h>
 #include <gtsam/base/cholesky.h>
@@ -38,7 +41,6 @@
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/ProductLieGroup.h>
 #include <gtsam/base/serialization.h>
@@ -46,10 +48,8 @@
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam/base/testLie.h>
 #include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/base/treeTraversal-inst.h>
 #include <gtsam/base/types.h>
 #include <gtsam/base/Value.h>
 #include <gtsam/base/Vector.h>

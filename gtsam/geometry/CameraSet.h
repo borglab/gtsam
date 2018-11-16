@@ -211,11 +211,11 @@ public:
       bool diagonalDamping = false) {
     if (E.cols() == 2) {
       Matrix2 P2;
-      ComputePointCovariance(P2, E, lambda, diagonalDamping);
+      ComputePointCovariance<2>(P2, E, lambda, diagonalDamping);
       return P2;
     } else {
       Matrix3 P3;
-      ComputePointCovariance(P3, E, lambda, diagonalDamping);
+      ComputePointCovariance<3>(P3, E, lambda, diagonalDamping);
       return P3;
     }
   }
@@ -229,12 +229,12 @@ public:
       bool diagonalDamping = false) {
     if (E.cols() == 2) {
       Matrix2 P;
-      ComputePointCovariance(P, E, lambda, diagonalDamping);
-      return SchurComplement(Fblocks, E, P, b);
+      ComputePointCovariance<2>(P, E, lambda, diagonalDamping);
+      return SchurComplement<2>(Fblocks, E, P, b);
     } else {
       Matrix3 P;
-      ComputePointCovariance(P, E, lambda, diagonalDamping);
-      return SchurComplement(Fblocks, E, P, b);
+      ComputePointCovariance<3>(P, E, lambda, diagonalDamping);
+      return SchurComplement<3>(Fblocks, E, P, b);
     }
   }
 
