@@ -75,7 +75,7 @@ list(APPEND gtsam_srcs ${gtsam_core_headers})
 IF(MSVC)
 	# Add precompiled header to sources
 	include(gtsamAddPch)
-	gtsamAddPch("precompiled_header.h" "precompiled_header.cpp" ${gtsam_srcs})
+	gtsamAddPch("precompiled_header.h" "precompiled_header.cpp" "${gtsam_srcs}")
 	list(INSERT gtsam_srcs 0 "precompiled_header.cpp")
 ENDIF(MSVC)
 
