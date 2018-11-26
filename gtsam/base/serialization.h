@@ -84,8 +84,13 @@ bool deserializeFromFile(const std::string& filename, T& output) {
 template<class T>
 std::string serializeXML(const T& input, const std::string& name="data") {
   std::ostringstream out_archive_stream;
-  boost::archive::xml_oarchive out_archive(out_archive_stream);
-  out_archive << boost::serialization::make_nvp(name.c_str(), input);
+  // braces to flush out_archive as it goes out of scope before taking str()
+  // fixes crash with boost 1.66-1.68
+  // see https://github.com/boostorg/serialization/issues/82
+  {
+    boost::archive::xml_oarchive out_archive(out_archive_stream);
+    out_archive << boost::serialization::make_nvp(name.c_str(), input);
+  }
   return out_archive_stream.str();
 }
 
