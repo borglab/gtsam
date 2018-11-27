@@ -146,15 +146,6 @@ else()
     set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-Wno-error")
 endif()
 
-# Special cases
-if(MSVC)
-	set_property(SOURCE
-		"${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ISAM2.cpp"
-		APPEND PROPERTY COMPILE_FLAGS "/bigobj")
-endif()
-
-
 # Create the matlab toolbox for the gtsam library
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Set up codegen
