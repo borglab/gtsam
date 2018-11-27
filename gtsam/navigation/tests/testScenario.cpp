@@ -106,7 +106,7 @@ TEST(Scenario, LoopWithInitialPose) {
   // Pitch up with angular velocity 6 kDegree/sec (negative in FLU)
   const double v = 2, w = 6 * kDegree;
   const Vector3 W(0, -w, 0), V(v, 0, 0);
-  const Rot3 nRb0 = Rot3::yaw(M_PI);
+  const Rot3 nRb0 = Rot3::Yaw(M_PI);
   const Pose3 nTb0(nRb0, Point3(1, 2, 3));
   const ConstantTwistScenario scenario(W, V, nTb0);
 
