@@ -121,6 +121,10 @@ if(MSVC)
 		add_definitions(-DBOOST_ALL_NO_LIB)
 	  add_definitions(-DBOOST_ALL_DYN_LINK)
 	endif()
+	# Virtual memory range for PCH exceeded on VS2015
+	if(MSVC_VERSION LESS 1910) # older than VS2017
+	  add_definitions(-Zm295)
+	endif()
 endif()
 
 find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time timer chrono regex)
