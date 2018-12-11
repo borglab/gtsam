@@ -306,6 +306,8 @@ double bug_1222() {
   return denom.value();
 }
 
+#ifdef EIGEN_TEST_PART_5
+
 double bug_1223() {
   using std::min;
   typedef Eigen::AutoDiffScalar<Eigen::Vector3d> AD;
@@ -326,8 +328,8 @@ double bug_1223() {
 
 // regression test for some compilation issues with specializations of ScalarBinaryOpTraits
 void bug_1260() {
-  Matrix4d A;
-  Vector4d v;
+  Matrix4d A = Matrix4d::Ones();
+  Vector4d v = Vector4d::Ones();
   A*v;
 }
 
@@ -336,7 +338,7 @@ double bug_1261() {
   typedef AutoDiffScalar<Matrix2d> AD;
   typedef Matrix<AD,2,1> VectorAD;
 
-  VectorAD v;
+  VectorAD v(0.,0.);
   const AD maxVal = v.maxCoeff();
   const AD minVal = v.minCoeff();
   return maxVal.value() + minVal.value();
@@ -344,11 +346,13 @@ double bug_1261() {
 
 double bug_1264() {
   typedef AutoDiffScalar<Vector2d> AD;
-  const AD s;
-  const Matrix<AD, 3, 1> v1;
+  const AD s = 0.;
+  const Matrix<AD, 3, 1> v1(0.,0.,0.);
   const Matrix<AD, 3, 1> v2 = (s + 3.0) * v1;
   return v2(0).value();
 }
+
+#endif
 
 void test_autodiff()
 {
@@ -359,9 +363,9 @@ void test_autodiff()
     CALL_SUBTEST_4( test_autodiff_hessian<1>() );
   }
 
-  bug_1222();
-  bug_1223();
-  bug_1260();
-  bug_1261();
+  CALL_SUBTEST_5( bug_1222() );
+  CALL_SUBTEST_5( bug_1223() );
+  CALL_SUBTEST_5( bug_1260() );
+  CALL_SUBTEST_5( bug_1261() );
 }
 

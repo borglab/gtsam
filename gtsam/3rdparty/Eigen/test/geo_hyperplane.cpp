@@ -19,7 +19,6 @@ template<typename HyperplaneType> void hyperplane(const HyperplaneType& _plane)
      Hyperplane.h
   */
   using std::abs;
-  typedef typename HyperplaneType::Index Index;
   const Index dim = _plane.dim();
   enum { Options = HyperplaneType::Options };
   typedef typename HyperplaneType::Scalar Scalar;

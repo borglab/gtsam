@@ -19,7 +19,6 @@ template<typename LineType> void parametrizedline(const LineType& _line)
      ParametrizedLine.h
   */
   using std::abs;
-  typedef typename LineType::Index Index;
   const Index dim = _line.dim();
   typedef typename LineType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;

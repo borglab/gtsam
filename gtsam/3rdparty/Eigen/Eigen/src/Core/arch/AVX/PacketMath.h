@@ -159,11 +159,12 @@ template<> EIGEN_STRONG_INLINE Packet8i pdiv<Packet8i>(const Packet8i& /*a*/, co
 
 #ifdef __FMA__
 template<> EIGEN_STRONG_INLINE Packet8f pmadd(const Packet8f& a, const Packet8f& b, const Packet8f& c) {
-#if ( EIGEN_COMP_GNUC_STRICT || (EIGEN_COMP_CLANG && (EIGEN_COMP_CLANG<308)) )
-  // clang stupidly generates a vfmadd213ps instruction plus some vmovaps on registers,
-  // and gcc stupidly generates a vfmadd132ps instruction,
-  // so let's enforce it to generate a vfmadd231ps instruction since the most common use case is to accumulate
-  // the result of the product.
+#if ( (EIGEN_COMP_GNUC_STRICT && EIGEN_COMP_GNUC<80) || (EIGEN_COMP_CLANG) )
+  // Clang stupidly generates a vfmadd213ps instruction plus some vmovaps on registers,
+  //  and even register spilling with clang>=6.0 (bug 1637).
+  // Gcc stupidly generates a vfmadd132ps instruction.
+  // So let's enforce it to generate a vfmadd231ps instruction since the most common use
+  //  case is to accumulate the result of the product.
   Packet8f res = c;
   __asm__("vfmadd231ps %[a], %[b], %[c]" : [c] "+x" (res) : [a] "x" (a), [b] "x" (b));
   return res;
@@ -172,7 +173,7 @@ template<> EIGEN_STRONG_INLINE Packet8f pmadd(const Packet8f& a, const Packet8f&
 #endif
 }
 template<> EIGEN_STRONG_INLINE Packet4d pmadd(const Packet4d& a, const Packet4d& b, const Packet4d& c) {
-#if ( EIGEN_COMP_GNUC_STRICT || (EIGEN_COMP_CLANG && (EIGEN_COMP_CLANG<308)) )
+#if ( (EIGEN_COMP_GNUC_STRICT && EIGEN_COMP_GNUC<80) || (EIGEN_COMP_CLANG) )
   // see above
   Packet4d res = c;
   __asm__("vfmadd231pd %[a], %[b], %[c]" : [c] "+x" (res) : [a] "x" (a), [b] "x" (b));
@@ -308,9 +309,9 @@ template<> EIGEN_STRONG_INLINE void pstore1<Packet8i>(int* to, const int& a)
 }
 
 #ifndef EIGEN_VECTORIZE_AVX512
-template<> EIGEN_STRONG_INLINE void prefetch<float>(const float*   addr) { _mm_prefetch((const char*)(addr), _MM_HINT_T0); }
-template<> EIGEN_STRONG_INLINE void prefetch<double>(const double* addr) { _mm_prefetch((const char*)(addr), _MM_HINT_T0); }
-template<> EIGEN_STRONG_INLINE void prefetch<int>(const int*       addr) { _mm_prefetch((const char*)(addr), _MM_HINT_T0); }
+template<> EIGEN_STRONG_INLINE void prefetch<float>(const float*   addr) { _mm_prefetch((SsePrefetchPtrType)(addr), _MM_HINT_T0); }
+template<> EIGEN_STRONG_INLINE void prefetch<double>(const double* addr) { _mm_prefetch((SsePrefetchPtrType)(addr), _MM_HINT_T0); }
+template<> EIGEN_STRONG_INLINE void prefetch<int>(const int*       addr) { _mm_prefetch((SsePrefetchPtrType)(addr), _MM_HINT_T0); }
 #endif
 
 template<> EIGEN_STRONG_INLINE float  pfirst<Packet8f>(const Packet8f& a) {
@@ -333,9 +334,12 @@ template<> EIGEN_STRONG_INLINE Packet4d preverse(const Packet4d& a)
 {
    __m256d tmp = _mm256_shuffle_pd(a,a,5);
   return _mm256_permute2f128_pd(tmp, tmp, 1);
-
+  #if 0
+  // This version is unlikely to be faster as _mm256_shuffle_ps and _mm256_permute_pd
+  // exhibit the same latency/throughput, but it is here for future reference/benchmarking...
   __m256d swap_halves = _mm256_permute2f128_pd(a,a,1);
     return _mm256_permute_pd(swap_halves,5);
+  #endif
 }
 
 // pabs should be ok

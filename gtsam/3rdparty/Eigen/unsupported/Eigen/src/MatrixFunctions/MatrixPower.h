@@ -57,8 +57,8 @@ class MatrixPowerParenthesesReturnValue : public ReturnByValue< MatrixPowerParen
      * \param[out] result
      */
     template<typename ResultType>
-    inline void evalTo(ResultType& res) const
-    { m_pow.compute(res, m_p); }
+    inline void evalTo(ResultType& result) const
+    { m_pow.compute(result, m_p); }
 
     Index rows() const { return m_pow.rows(); }
     Index cols() const { return m_pow.cols(); }
@@ -618,8 +618,8 @@ class MatrixPowerReturnValue : public ReturnByValue< MatrixPowerReturnValue<Deri
      * constructor.
      */
     template<typename ResultType>
-    inline void evalTo(ResultType& res) const
-    { MatrixPower<PlainObject>(m_A.eval()).compute(res, m_p); }
+    inline void evalTo(ResultType& result) const
+    { MatrixPower<PlainObject>(m_A.eval()).compute(result, m_p); }
 
     Index rows() const { return m_A.rows(); }
     Index cols() const { return m_A.cols(); }
@@ -669,8 +669,8 @@ class MatrixComplexPowerReturnValue : public ReturnByValue< MatrixComplexPowerRe
      * constructor.
      */
     template<typename ResultType>
-    inline void evalTo(ResultType& res) const
-    { res = (m_p * m_A.log()).exp(); }
+    inline void evalTo(ResultType& result) const
+    { result = (m_p * m_A.log()).exp(); }
 
     Index rows() const { return m_A.rows(); }
     Index cols() const { return m_A.cols(); }

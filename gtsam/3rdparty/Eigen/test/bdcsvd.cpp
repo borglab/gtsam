@@ -104,7 +104,8 @@ void test_bdcsvd()
   CALL_SUBTEST_7( BDCSVD<MatrixXf>(10,10) );
 
   // Check that preallocation avoids subsequent mallocs
-  CALL_SUBTEST_9( svd_preallocate<void>() );
+  // Disbaled because not supported by BDCSVD
+  // CALL_SUBTEST_9( svd_preallocate<void>() );
 
   CALL_SUBTEST_2( svd_underoverflow<void>() );
 }

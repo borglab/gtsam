@@ -15,7 +15,6 @@
 
 template<typename ArrayType> void vectorwiseop_array(const ArrayType& m)
 {
-  typedef typename ArrayType::Index Index;
   typedef typename ArrayType::Scalar Scalar;
   typedef Array<Scalar, ArrayType::RowsAtCompileTime, 1> ColVectorType;
   typedef Array<Scalar, 1, ArrayType::ColsAtCompileTime> RowVectorType;
@@ -129,7 +128,6 @@ template<typename ArrayType> void vectorwiseop_array(const ArrayType& m)
 
 template<typename MatrixType> void vectorwiseop_matrix(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> ColVectorType;

@@ -15,7 +15,6 @@
 
 template<typename MatrixType> void generalized_eigensolver_real(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   /* this test covers the following files:
      GeneralizedEigenSolver.h
   */
@@ -76,6 +75,13 @@ template<typename MatrixType> void generalized_eigensolver_real(const MatrixType
     eig1.compute(a.adjoint() * a,b.adjoint() * b);
     GeneralizedEigenSolver<MatrixType> eig2(a.adjoint() * a,b.adjoint() * b);
     eig2.compute(a.adjoint() * a,b.adjoint() * b);
+  }
+
+  // check without eigenvectors
+  {
+    GeneralizedEigenSolver<MatrixType> eig1(spdA, spdB, true);
+    GeneralizedEigenSolver<MatrixType> eig2(spdA, spdB, false);
+    VERIFY_IS_APPROX(eig1.eigenvalues(), eig2.eigenvalues());
   }
 }
 

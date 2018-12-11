@@ -73,7 +73,7 @@ depending on your matrix and the trade-off you want to make:
         <td>ColPivHouseholderQR</td>
         <td>colPivHouseholderQr()</td>
         <td>None</td>
-        <td>++</td>
+        <td>+</td>
         <td>-</td>
         <td>+++</td>
     </tr>
@@ -83,6 +83,14 @@ depending on your matrix and the trade-off you want to make:
         <td>None</td>
         <td>-</td>
         <td>- -</td>
+        <td>+++</td>
+    </tr>
+    <tr class="alt">
+        <td>CompleteOrthogonalDecomposition</td>
+        <td>completeOrthogonalDecomposition()</td>
+        <td>None</td>
+        <td>+</td>
+        <td>-</td>
         <td>+++</td>
     </tr>
     <tr class="alt">
@@ -102,14 +110,23 @@ depending on your matrix and the trade-off you want to make:
         <td>++</td>
     </tr>
     <tr class="alt">
+        <td>BDCSVD</td>
+        <td>bdcSvd()</td>
+        <td>None</td>
+        <td>-</td>
+        <td>-</td>
+        <td>+++</td>
+    </tr>
+    <tr class="alt">
         <td>JacobiSVD</td>
         <td>jacobiSvd()</td>
         <td>None</td>
-        <td>- -</td>
+        <td>-</td>
         <td>- - -</td>
         <td>+++</td>
     </tr>
 </table>
+To get an overview of the true relative speed of the different decompositions, check this \link DenseDecompositionBenchmark benchmark \endlink.
 
 All of these decompositions offer a solve() method that works as in the above example.
 
@@ -183,8 +200,11 @@ Here is an example:
 
 \section TutorialLinAlgLeastsquares Least squares solving
 
-The most accurate method to do least squares solving is with a SVD decomposition. Eigen provides one
-as the JacobiSVD class, and its solve() is doing least-squares solving.
+The most accurate method to do least squares solving is with a SVD decomposition.
+Eigen provides two implementations.
+The recommended one is the BDCSVD class, which scale well for large problems
+and automatically fall-back to the JacobiSVD class for smaller problems.
+For both classes, their solve() method is doing least-squares solving.
 
 Here is an example:
 <table class="example">

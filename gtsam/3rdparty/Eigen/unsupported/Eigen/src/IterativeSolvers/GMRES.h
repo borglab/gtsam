@@ -21,7 +21,7 @@ namespace internal {
 *
 * Parameters:
 *  \param mat       matrix of linear system of equations
-*  \param Rhs       right hand side vector of linear system of equations
+*  \param rhs       right hand side vector of linear system of equations
 *  \param x         on input: initial guess, on output: solution
 *  \param precond   preconditioner used
 *  \param iters     on input: maximum number of iterations to perform

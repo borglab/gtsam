@@ -11,13 +11,15 @@ add_custom_target(buildtests)
 add_custom_target(check COMMAND "ctest")
 add_dependencies(check buildtests)
 
-# check whether /bin/bash exists
-find_file(EIGEN_BIN_BASH_EXISTS "/bin/bash" PATHS "/" NO_DEFAULT_PATH)
+# check whether /bin/bash exists (disabled as not used anymore)
+# find_file(EIGEN_BIN_BASH_EXISTS "/bin/bash" PATHS "/" NO_DEFAULT_PATH)
 
 # This call activates testing and generates the DartConfiguration.tcl
 include(CTest)
 
 set(EIGEN_TEST_BUILD_FLAGS "" CACHE STRING "Options passed to the build command of unit tests")
+set(EIGEN_DASHBOARD_BUILD_TARGET "buildtests" CACHE STRING "Target to be built in dashboard mode, default is buildtests")
+set(EIGEN_CTEST_ERROR_EXCEPTION "" CACHE STRING "Regular expression for build error messages to be filtered out")
 
 # Overwrite default DartConfiguration.tcl such that ctest can build our unit tests.
 # Recall that our unit tests are not in the "all" target, so we have to explicitely ask ctest to build our custom 'buildtests' target.
@@ -28,7 +30,7 @@ string(REGEX MATCH "MakeCommand:.*-- (.*)\nDefaultCTestConfigurationType" EIGEN_
 if(NOT CMAKE_MATCH_1)
 string(REGEX MATCH "MakeCommand:.*[^c]make (.*)\nDefaultCTestConfigurationType" EIGEN_DUMMY ${EIGEN_DART_CONFIG_FILE})
 endif()
-string(REGEX REPLACE "MakeCommand:.*DefaultCTestConfigurationType" "MakeCommand: ${CMAKE_COMMAND} --build . --target buildtests --config \"\${CTEST_CONFIGURATION_TYPE}\" -- ${CMAKE_MATCH_1} ${EIGEN_TEST_BUILD_FLAGS}\nDefaultCTestConfigurationType"
+string(REGEX REPLACE "MakeCommand:.*DefaultCTestConfigurationType" "MakeCommand: ${CMAKE_COMMAND} --build . --target ${EIGEN_DASHBOARD_BUILD_TARGET} --config \"\${CTEST_CONFIGURATION_TYPE}\" -- ${CMAKE_MATCH_1} ${EIGEN_TEST_BUILD_FLAGS}\nDefaultCTestConfigurationType"
        EIGEN_DART_CONFIG_FILE2 ${EIGEN_DART_CONFIG_FILE})
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/DartConfiguration.tcl" ${EIGEN_DART_CONFIG_FILE2})
 
@@ -54,8 +56,3 @@ elseif(MSVC)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 
-check_cxx_compiler_flag("-std=c++11" EIGEN_COMPILER_SUPPORT_CXX11)
-
-if(EIGEN_TEST_CXX11 AND EIGEN_COMPILER_SUPPORT_CXX11)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-endif()

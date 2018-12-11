@@ -11,7 +11,6 @@
 
 template<typename MatrixType> void product_extra(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef Matrix<Scalar, 1, Dynamic> RowVectorType;
   typedef Matrix<Scalar, Dynamic, 1> ColVectorType;

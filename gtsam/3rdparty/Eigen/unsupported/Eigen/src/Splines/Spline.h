@@ -249,8 +249,6 @@ namespace Eigen
     DenseIndex degree,
     const typename Spline<_Scalar, _Dim, _Degree>::KnotVectorType& knots)
   {
-    typedef typename Spline<_Scalar, _Dim, _Degree>::BasisVectorType BasisVectorType;
-
     const DenseIndex p = degree;
     const DenseIndex i = Spline::Span(u, degree, knots);
 
@@ -380,9 +378,6 @@ namespace Eigen
     typedef Spline<_Scalar, _Dim, _Degree> SplineType;
     enum { Order = SplineTraits<SplineType>::OrderAtCompileTime };
 
-    typedef typename SplineTraits<SplineType>::Scalar Scalar;
-    typedef typename SplineTraits<SplineType>::BasisVectorType BasisVectorType;
-  
     const DenseIndex span = SplineType::Span(u, p, U);
 
     const DenseIndex n = (std::min)(p, order);

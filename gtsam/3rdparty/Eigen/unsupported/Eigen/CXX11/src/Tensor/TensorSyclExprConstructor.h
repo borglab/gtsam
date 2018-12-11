@@ -33,7 +33,7 @@ struct EvalToLHSConstructor {
   EvalToLHSConstructor(const utility::tuple::Tuple<Params...> &t): expr((&(*(utility::tuple::get<N>(t).get_pointer())))) {}
 };
 
-/// \struct ExprConstructor is used to reconstruct the expression on the device and
+/// struct ExprConstructor is used to reconstruct the expression on the device and
 /// recreate the expression with MakeGlobalPointer containing the device address
 /// space for the TensorMap pointers used in eval function.
 /// It receives the original expression type, the functor of the node, the tuple

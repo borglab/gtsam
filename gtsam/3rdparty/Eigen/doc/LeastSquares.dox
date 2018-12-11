@@ -16,7 +16,7 @@ equations is the fastest but least accurate, and the QR decomposition is in betw
 
 \section LeastSquaresSVD Using the SVD decomposition
 
-The \link JacobiSVD::solve() solve() \endlink method in the JacobiSVD class can be directly used to
+The \link BDCSVD::solve() solve() \endlink method in the BDCSVD class can be directly used to
 solve linear squares systems. It is not enough to compute only the singular values (the default for
 this class); you also need the singular vectors but the thin SVD decomposition suffices for
 computing least squares solutions:

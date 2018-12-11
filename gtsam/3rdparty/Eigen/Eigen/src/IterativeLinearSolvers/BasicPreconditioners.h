@@ -168,7 +168,7 @@ class LeastSquareDiagonalPreconditioner : public DiagonalPreconditioner<_Scalar>
       {
         for(Index j=0; j<mat.outerSize(); ++j)
         {
-          RealScalar sum = mat.innerVector(j).squaredNorm();
+          RealScalar sum = mat.col(j).squaredNorm();
           if(sum>RealScalar(0))
             m_invdiag(j) = RealScalar(1)/sum;
           else

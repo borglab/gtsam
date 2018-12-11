@@ -117,6 +117,16 @@ void check_stdvector_quaternion(const QuaternionType&)
   }
 }
 
+// the code below triggered an invalid warning with gcc >= 7
+// eigen/Eigen/src/Core/util/Memory.h:189:12: warning: argument 1 value '18446744073709551612' exceeds maximum object size 9223372036854775807
+// This has been reported to gcc there: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=87544
+void std_vector_gcc_warning()
+{
+  typedef Eigen::Vector3f T;
+  std::vector<T, Eigen::aligned_allocator<T> > v;
+  v.push_back(T());
+}
+
 void test_stdvector()
 {
   // some non vectorizable fixed sizes

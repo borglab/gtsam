@@ -14,7 +14,6 @@
 template<typename MatrixType, typename JacobiScalar>
 void jacobi(const MatrixType& m = MatrixType())
 {
-  typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
 

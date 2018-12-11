@@ -65,11 +65,11 @@ template<typename Scalar> class JacobiRotation
     bool makeJacobi(const MatrixBase<Derived>&, Index p, Index q);
     bool makeJacobi(const RealScalar& x, const Scalar& y, const RealScalar& z);
 
-    void makeGivens(const Scalar& p, const Scalar& q, Scalar* z=0);
+    void makeGivens(const Scalar& p, const Scalar& q, Scalar* r=0);
 
   protected:
-    void makeGivens(const Scalar& p, const Scalar& q, Scalar* z, internal::true_type);
-    void makeGivens(const Scalar& p, const Scalar& q, Scalar* z, internal::false_type);
+    void makeGivens(const Scalar& p, const Scalar& q, Scalar* r, internal::true_type);
+    void makeGivens(const Scalar& p, const Scalar& q, Scalar* r, internal::false_type);
 
     Scalar m_c, m_s;
 };
@@ -84,7 +84,6 @@ bool JacobiRotation<Scalar>::makeJacobi(const RealScalar& x, const Scalar& y, co
 {
   using std::sqrt;
   using std::abs;
-  typedef typename NumTraits<Scalar>::Real RealScalar;
   RealScalar deno = RealScalar(2)*abs(y);
   if(deno < (std::numeric_limits<RealScalar>::min)())
   {
@@ -133,7 +132,7 @@ inline bool JacobiRotation<Scalar>::makeJacobi(const MatrixBase<Derived>& m, Ind
   * \f$ V = \left ( \begin{array}{c} p \\ q \end{array} \right )\f$ yields:
   * \f$ G^* V = \left ( \begin{array}{c} r \\ 0 \end{array} \right )\f$.
   *
-  * The value of \a z is returned if \a z is not null (the default is null).
+  * The value of \a r is returned if \a r is not null (the default is null).
   * Also note that G is built such that the cosine is always real.
   *
   * Example: \include Jacobi_makeGivens.cpp
@@ -146,9 +145,9 @@ inline bool JacobiRotation<Scalar>::makeJacobi(const MatrixBase<Derived>& m, Ind
   * \sa MatrixBase::applyOnTheLeft(), MatrixBase::applyOnTheRight()
   */
 template<typename Scalar>
-void JacobiRotation<Scalar>::makeGivens(const Scalar& p, const Scalar& q, Scalar* z)
+void JacobiRotation<Scalar>::makeGivens(const Scalar& p, const Scalar& q, Scalar* r)
 {
-  makeGivens(p, q, z, typename internal::conditional<NumTraits<Scalar>::IsComplex, internal::true_type, internal::false_type>::type());
+  makeGivens(p, q, r, typename internal::conditional<NumTraits<Scalar>::IsComplex, internal::true_type, internal::false_type>::type());
 }
 
 
@@ -298,16 +297,144 @@ inline void MatrixBase<Derived>::applyOnTheRight(Index p, Index q, const JacobiR
 }
 
 namespace internal {
+
+template<typename Scalar, typename OtherScalar,
+         int SizeAtCompileTime, int MinAlignment, bool Vectorizable>
+struct apply_rotation_in_the_plane_selector
+{
+  static inline void run(Scalar *x, Index incrx, Scalar *y, Index incry, Index size, OtherScalar c, OtherScalar s)
+  {
+    for(Index i=0; i<size; ++i)
+    {
+      Scalar xi = *x;
+      Scalar yi = *y;
+      *x =  c * xi + numext::conj(s) * yi;
+      *y = -s * xi + numext::conj(c) * yi;
+      x += incrx;
+      y += incry;
+    }
+  }
+};
+
+template<typename Scalar, typename OtherScalar,
+         int SizeAtCompileTime, int MinAlignment>
+struct apply_rotation_in_the_plane_selector<Scalar,OtherScalar,SizeAtCompileTime,MinAlignment,true /* vectorizable */>
+{
+  static inline void run(Scalar *x, Index incrx, Scalar *y, Index incry, Index size, OtherScalar c, OtherScalar s)
+  {
+    enum {
+      PacketSize = packet_traits<Scalar>::size,
+      OtherPacketSize = packet_traits<OtherScalar>::size
+    };
+    typedef typename packet_traits<Scalar>::type Packet;
+    typedef typename packet_traits<OtherScalar>::type OtherPacket;
+
+    /*** dynamic-size vectorized paths ***/
+    if(SizeAtCompileTime == Dynamic && ((incrx==1 && incry==1) || PacketSize == 1))
+    {
+      // both vectors are sequentially stored in memory => vectorization
+      enum { Peeling = 2 };
+
+      Index alignedStart = internal::first_default_aligned(y, size);
+      Index alignedEnd = alignedStart + ((size-alignedStart)/PacketSize)*PacketSize;
+
+      const OtherPacket pc = pset1<OtherPacket>(c);
+      const OtherPacket ps = pset1<OtherPacket>(s);
+      conj_helper<OtherPacket,Packet,NumTraits<OtherScalar>::IsComplex,false> pcj;
+      conj_helper<OtherPacket,Packet,false,false> pm;
+
+      for(Index i=0; i<alignedStart; ++i)
+      {
+        Scalar xi = x[i];
+        Scalar yi = y[i];
+        x[i] =  c * xi + numext::conj(s) * yi;
+        y[i] = -s * xi + numext::conj(c) * yi;
+      }
+
+      Scalar* EIGEN_RESTRICT px = x + alignedStart;
+      Scalar* EIGEN_RESTRICT py = y + alignedStart;
+
+      if(internal::first_default_aligned(x, size)==alignedStart)
+      {
+        for(Index i=alignedStart; i<alignedEnd; i+=PacketSize)
+        {
+          Packet xi = pload<Packet>(px);
+          Packet yi = pload<Packet>(py);
+          pstore(px, padd(pm.pmul(pc,xi),pcj.pmul(ps,yi)));
+          pstore(py, psub(pcj.pmul(pc,yi),pm.pmul(ps,xi)));
+          px += PacketSize;
+          py += PacketSize;
+        }
+      }
+      else
+      {
+        Index peelingEnd = alignedStart + ((size-alignedStart)/(Peeling*PacketSize))*(Peeling*PacketSize);
+        for(Index i=alignedStart; i<peelingEnd; i+=Peeling*PacketSize)
+        {
+          Packet xi   = ploadu<Packet>(px);
+          Packet xi1  = ploadu<Packet>(px+PacketSize);
+          Packet yi   = pload <Packet>(py);
+          Packet yi1  = pload <Packet>(py+PacketSize);
+          pstoreu(px, padd(pm.pmul(pc,xi),pcj.pmul(ps,yi)));
+          pstoreu(px+PacketSize, padd(pm.pmul(pc,xi1),pcj.pmul(ps,yi1)));
+          pstore (py, psub(pcj.pmul(pc,yi),pm.pmul(ps,xi)));
+          pstore (py+PacketSize, psub(pcj.pmul(pc,yi1),pm.pmul(ps,xi1)));
+          px += Peeling*PacketSize;
+          py += Peeling*PacketSize;
+        }
+        if(alignedEnd!=peelingEnd)
+        {
+          Packet xi = ploadu<Packet>(x+peelingEnd);
+          Packet yi = pload <Packet>(y+peelingEnd);
+          pstoreu(x+peelingEnd, padd(pm.pmul(pc,xi),pcj.pmul(ps,yi)));
+          pstore (y+peelingEnd, psub(pcj.pmul(pc,yi),pm.pmul(ps,xi)));
+        }
+      }
+
+      for(Index i=alignedEnd; i<size; ++i)
+      {
+        Scalar xi = x[i];
+        Scalar yi = y[i];
+        x[i] =  c * xi + numext::conj(s) * yi;
+        y[i] = -s * xi + numext::conj(c) * yi;
+      }
+    }
+
+    /*** fixed-size vectorized path ***/
+    else if(SizeAtCompileTime != Dynamic && MinAlignment>0) // FIXME should be compared to the required alignment
+    {
+      const OtherPacket pc = pset1<OtherPacket>(c);
+      const OtherPacket ps = pset1<OtherPacket>(s);
+      conj_helper<OtherPacket,Packet,NumTraits<OtherPacket>::IsComplex,false> pcj;
+      conj_helper<OtherPacket,Packet,false,false> pm;
+      Scalar* EIGEN_RESTRICT px = x;
+      Scalar* EIGEN_RESTRICT py = y;
+      for(Index i=0; i<size; i+=PacketSize)
+      {
+        Packet xi = pload<Packet>(px);
+        Packet yi = pload<Packet>(py);
+        pstore(px, padd(pm.pmul(pc,xi),pcj.pmul(ps,yi)));
+        pstore(py, psub(pcj.pmul(pc,yi),pm.pmul(ps,xi)));
+        px += PacketSize;
+        py += PacketSize;
+      }
+    }
+
+    /*** non-vectorized path ***/
+    else
+    {
+      apply_rotation_in_the_plane_selector<Scalar,OtherScalar,SizeAtCompileTime,MinAlignment,false>::run(x,incrx,y,incry,size,c,s);
+    }
+  }
+};
+
 template<typename VectorX, typename VectorY, typename OtherScalar>
 void /*EIGEN_DONT_INLINE*/ apply_rotation_in_the_plane(DenseBase<VectorX>& xpr_x, DenseBase<VectorY>& xpr_y, const JacobiRotation<OtherScalar>& j)
 {
   typedef typename VectorX::Scalar Scalar;
-  enum {
-    PacketSize = packet_traits<Scalar>::size,
-    OtherPacketSize = packet_traits<OtherScalar>::size
-  };
-  typedef typename packet_traits<Scalar>::type Packet;
-  typedef typename packet_traits<OtherScalar>::type OtherPacket;
+  const bool Vectorizable =    (VectorX::Flags & VectorY::Flags & PacketAccessBit)
+                            && (int(packet_traits<Scalar>::size) == int(packet_traits<OtherScalar>::size));
+
   eigen_assert(xpr_x.size() == xpr_y.size());
   Index size = xpr_x.size();
   Index incrx = xpr_x.derived().innerStride();
@@ -321,117 +448,11 @@ void /*EIGEN_DONT_INLINE*/ apply_rotation_in_the_plane(DenseBase<VectorX>& xpr_x
   if (c==OtherScalar(1) && s==OtherScalar(0))
     return;
 
-  /*** dynamic-size vectorized paths ***/
-
-  if(VectorX::SizeAtCompileTime == Dynamic &&
-    (VectorX::Flags & VectorY::Flags & PacketAccessBit) &&
-    (PacketSize == OtherPacketSize) &&
-    ((incrx==1 && incry==1) || PacketSize == 1))
-  {
-    // both vectors are sequentially stored in memory => vectorization
-    enum { Peeling = 2 };
-
-    Index alignedStart = internal::first_default_aligned(y, size);
-    Index alignedEnd = alignedStart + ((size-alignedStart)/PacketSize)*PacketSize;
-
-    const OtherPacket pc = pset1<OtherPacket>(c);
-    const OtherPacket ps = pset1<OtherPacket>(s);
-    conj_helper<OtherPacket,Packet,NumTraits<OtherScalar>::IsComplex,false> pcj;
-    conj_helper<OtherPacket,Packet,false,false> pm;
-
-    for(Index i=0; i<alignedStart; ++i)
-    {
-      Scalar xi = x[i];
-      Scalar yi = y[i];
-      x[i] =  c * xi + numext::conj(s) * yi;
-      y[i] = -s * xi + numext::conj(c) * yi;
-    }
-
-    Scalar* EIGEN_RESTRICT px = x + alignedStart;
-    Scalar* EIGEN_RESTRICT py = y + alignedStart;
-
-    if(internal::first_default_aligned(x, size)==alignedStart)
-    {
-      for(Index i=alignedStart; i<alignedEnd; i+=PacketSize)
-      {
-        Packet xi = pload<Packet>(px);
-        Packet yi = pload<Packet>(py);
-        pstore(px, padd(pm.pmul(pc,xi),pcj.pmul(ps,yi)));
-        pstore(py, psub(pcj.pmul(pc,yi),pm.pmul(ps,xi)));
-        px += PacketSize;
-        py += PacketSize;
-      }
-    }
-    else
-    {
-      Index peelingEnd = alignedStart + ((size-alignedStart)/(Peeling*PacketSize))*(Peeling*PacketSize);
-      for(Index i=alignedStart; i<peelingEnd; i+=Peeling*PacketSize)
-      {
-        Packet xi   = ploadu<Packet>(px);
-        Packet xi1  = ploadu<Packet>(px+PacketSize);
-        Packet yi   = pload <Packet>(py);
-        Packet yi1  = pload <Packet>(py+PacketSize);
-        pstoreu(px, padd(pm.pmul(pc,xi),pcj.pmul(ps,yi)));
-        pstoreu(px+PacketSize, padd(pm.pmul(pc,xi1),pcj.pmul(ps,yi1)));
-        pstore (py, psub(pcj.pmul(pc,yi),pm.pmul(ps,xi)));
-        pstore (py+PacketSize, psub(pcj.pmul(pc,yi1),pm.pmul(ps,xi1)));
-        px += Peeling*PacketSize;
-        py += Peeling*PacketSize;
-      }
-      if(alignedEnd!=peelingEnd)
-      {
-        Packet xi = ploadu<Packet>(x+peelingEnd);
-        Packet yi = pload <Packet>(y+peelingEnd);
-        pstoreu(x+peelingEnd, padd(pm.pmul(pc,xi),pcj.pmul(ps,yi)));
-        pstore (y+peelingEnd, psub(pcj.pmul(pc,yi),pm.pmul(ps,xi)));
-      }
-    }
-
-    for(Index i=alignedEnd; i<size; ++i)
-    {
-      Scalar xi = x[i];
-      Scalar yi = y[i];
-      x[i] =  c * xi + numext::conj(s) * yi;
-      y[i] = -s * xi + numext::conj(c) * yi;
-    }
-  }
-
-  /*** fixed-size vectorized path ***/
-  else if(VectorX::SizeAtCompileTime != Dynamic &&
-          (VectorX::Flags & VectorY::Flags & PacketAccessBit) &&
-          (PacketSize == OtherPacketSize) &&
-          (EIGEN_PLAIN_ENUM_MIN(evaluator<VectorX>::Alignment, evaluator<VectorY>::Alignment)>0)) // FIXME should be compared to the required alignment
-  {
-    const OtherPacket pc = pset1<OtherPacket>(c);
-    const OtherPacket ps = pset1<OtherPacket>(s);
-    conj_helper<OtherPacket,Packet,NumTraits<OtherPacket>::IsComplex,false> pcj;
-    conj_helper<OtherPacket,Packet,false,false> pm;
-    Scalar* EIGEN_RESTRICT px = x;
-    Scalar* EIGEN_RESTRICT py = y;
-    for(Index i=0; i<size; i+=PacketSize)
-    {
-      Packet xi = pload<Packet>(px);
-      Packet yi = pload<Packet>(py);
-      pstore(px, padd(pm.pmul(pc,xi),pcj.pmul(ps,yi)));
-      pstore(py, psub(pcj.pmul(pc,yi),pm.pmul(ps,xi)));
-      px += PacketSize;
-      py += PacketSize;
-    }
-  }
-
-  /*** non-vectorized path ***/
-  else
-  {
-    for(Index i=0; i<size; ++i)
-    {
-      Scalar xi = *x;
-      Scalar yi = *y;
-      *x =  c * xi + numext::conj(s) * yi;
-      *y = -s * xi + numext::conj(c) * yi;
-      x += incrx;
-      y += incry;
-    }
-  }
+  apply_rotation_in_the_plane_selector<
+    Scalar,OtherScalar,
+    VectorX::SizeAtCompileTime,
+    EIGEN_PLAIN_ENUM_MIN(evaluator<VectorX>::Alignment, evaluator<VectorY>::Alignment),
+    Vectorizable>::run(x,incrx,y,incry,size,c,s);
 }
 
 } // end namespace internal

@@ -11,7 +11,6 @@
 
 template<typename MatrixType> void syrk(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::ColsAtCompileTime, RowMajor> RMatrixType;
   typedef Matrix<Scalar, MatrixType::ColsAtCompileTime, Dynamic> Rhs1;

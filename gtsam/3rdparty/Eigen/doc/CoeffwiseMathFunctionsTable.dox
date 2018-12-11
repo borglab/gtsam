@@ -63,7 +63,7 @@ This also means that, unless specified, if the function \c std::foo is available
   \anchor cwisetable_conj
   a.\link ArrayBase::conjugate conjugate\endlink(); \n
   \link Eigen::conj conj\endlink(a); \n
-  m.\link MatrixBase::conjugate conjugate();
+  m.\link MatrixBase::conjugate conjugate\endlink();
   </td>
   <td><a href="https://en.wikipedia.org/wiki/Complex_conjugate">complex conjugate</a> (\f$ \bar{a_i} \f$),\n
   no-op for real </td>
@@ -133,8 +133,9 @@ This also means that, unless specified, if the function \c std::foo is available
   <td class="code">
   \anchor cwisetable_pow
   a.\link ArrayBase::pow pow\endlink(b); \n
-  \link Eigen::pow pow\endlink(a,b);
+  \link ArrayBase::pow(const Eigen::ArrayBase< Derived > &x, const Eigen::ArrayBase< ExponentDerived > &exponents) pow\endlink(a,b);
   </td>
+  <!-- For some reason Doxygen thinks that pow is in ArrayBase namespace -->
   <td>raises a number to the given power (\f$ a_i ^ {b_i} \f$) \n \c a and \c b can be either an array or scalar.</td>
   <td class="code">
   using <a href="http://en.cppreference.com/w/cpp/numeric/math/pow">std::pow</a>; \n
@@ -271,7 +272,7 @@ This also means that, unless specified, if the function \c std::foo is available
 <tr>
   <td class="code">
   \anchor cwisetable_atan
-  a.\link ArrayBase::atan tan\endlink(); \n
+  a.\link ArrayBase::atan atan\endlink(); \n
   \link Eigen::atan atan\endlink(a);
   </td>
   <td>computes arc tangent (\f$ \tan^{-1} a_i \f$)</td>

@@ -246,6 +246,13 @@ if(GTSAM_USE_SYSTEM_EIGEN)
 	if(EIGEN_USE_MKL_ALL AND (EIGEN3_VERSION VERSION_LESS 3.2.5))
 	  message(FATAL_ERROR "MKL requires at least Eigen 3.2.5, and your system appears to have an older version. Disable GTSAM_USE_SYSTEM_EIGEN to use GTSAM's copy of Eigen, or disable GTSAM_WITH_EIGEN_MKL")
 	endif()
+
+	# Check for Eigen version which doesn't work with MKL
+	# See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1527 for details.
+	if(EIGEN_USE_MKL_ALL AND (EIGEN3_VERSION VERSION_EQUAL 3.3.4))
+		message(FATAL_ERROR "MKL does not work with Eigen 3.3.4 because of a bug in Eigen. See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1527. Disable GTSAM_USE_SYSTEM_EIGEN to use GTSAM's copy of Eigen, disable GTSAM_WITH_EIGEN_MKL, or upgrade/patch your installation of Eigen.")
+	endif()
+
 else()
 	# Use bundled Eigen include path.
 	# Clear any variables set by FindEigen3
