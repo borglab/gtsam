@@ -45,10 +45,12 @@ install(TARGETS eigen_blas eigen_blas_static
 
 if(EIGEN_Fortran_COMPILER_WORKS)
 
-if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
-  add_subdirectory(testing) # can't do EXCLUDE_FROM_ALL here, breaks CTest
-else()
-  add_subdirectory(testing EXCLUDE_FROM_ALL)
+if(BUILD_TESTING)
+  if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
+    add_subdirectory(testing) # can't do EXCLUDE_FROM_ALL here, breaks CTest
+  else()
+    add_subdirectory(testing EXCLUDE_FROM_ALL)
+  endif()
 endif()
 
 endif()

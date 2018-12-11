@@ -30,7 +30,6 @@ struct increment_if_fixed_size
 template<int Deg, typename POLYNOMIAL, typename SOLVER>
 bool aux_evalSolver( const POLYNOMIAL& pols, SOLVER& psolve )
 {
-  typedef typename POLYNOMIAL::Index Index;
   typedef typename POLYNOMIAL::Scalar Scalar;
 
   typedef typename SOLVER::RootsType    RootsType;
@@ -107,7 +106,6 @@ void evalSolverSugarFunction( const POLYNOMIAL& pols, const ROOTS& roots, const 
     // 1) the roots found are correct
     // 2) the roots have distinct moduli
 
-    typedef typename POLYNOMIAL::Scalar                 Scalar;
     typedef typename REAL_ROOTS::Scalar                 Real;
 
     //Test realRoots

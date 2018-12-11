@@ -9,12 +9,13 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #define TEST_ENABLE_TEMPORARY_TRACKING
+#define EIGEN_CACHEFRIENDLY_PRODUCT_THRESHOLD 8
+// ^^ see bug 1449
 
 #include "main.h"
 
 template<typename MatrixType> void matrixRedux(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::RealScalar RealScalar;
 
@@ -79,7 +80,6 @@ template<typename MatrixType> void matrixRedux(const MatrixType& m)
 template<typename VectorType> void vectorRedux(const VectorType& w)
 {
   using std::abs;
-  typedef typename VectorType::Index Index;
   typedef typename VectorType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
   Index size = w.size();

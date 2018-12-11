@@ -4,7 +4,7 @@ namespace Eigen {
 
 This page presents a catalogue of the dense matrix decompositions offered by Eigen.
 For an introduction on linear solvers and decompositions, check this \link TutorialLinearAlgebra page \endlink.
-To get an overview of the true relative speed of the different decomposition, check this \link DenseDecompositionBenchmark benchmark \endlink.
+To get an overview of the true relative speed of the different decompositions, check this \link DenseDecompositionBenchmark benchmark \endlink.
 
 \section TopicLinAlgBigTable Catalogue of decompositions offered by Eigen
 
@@ -112,6 +112,18 @@ To get an overview of the true relative speed of the different decomposition, ch
     </tr>
 
     <tr><th class="inter" colspan="9">\n Singular values and eigenvalues decompositions</th></tr>
+
+    <tr>
+        <td>BDCSVD (divide \& conquer)</td>
+        <td>-</td>
+        <td>One of the fastest SVD algorithms</td>
+        <td>Excellent</td>
+        <td>Yes</td>
+        <td>Singular values/vectors, least squares</td>
+        <td>Yes (and does least squares)</td>
+        <td>Excellent</td>
+        <td>Blocked bidiagonalization</td>
+    </tr>
 
     <tr>
         <td>JacobiSVD (two-sided)</td>

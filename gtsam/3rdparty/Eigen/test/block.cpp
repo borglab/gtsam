@@ -32,12 +32,11 @@ block_real_only(const MatrixType &, Index, Index, Index, Index, const Scalar&) {
 
 template<typename MatrixType> void block(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::RealScalar RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
   typedef Matrix<Scalar, 1, MatrixType::ColsAtCompileTime> RowVectorType;
-  typedef Matrix<Scalar, Dynamic, Dynamic> DynamicMatrixType;
+  typedef Matrix<Scalar, Dynamic, Dynamic, MatrixType::IsRowMajor?RowMajor:ColMajor> DynamicMatrixType;
   typedef Matrix<Scalar, Dynamic, 1> DynamicVectorType;
   
   Index rows = m.rows();
@@ -131,7 +130,7 @@ template<typename MatrixType> void block(const MatrixType& m)
   VERIFY(numext::real(ones.col(c1).dot(ones.col(c2))) == RealScalar(rows));
   VERIFY(numext::real(ones.row(r1).dot(ones.row(r2))) == RealScalar(cols));
   
-  // chekc that linear acccessors works on blocks
+  // check that linear acccessors works on blocks
   m1 = m1_copy;
   if((MatrixType::Flags&RowMajorBit)==0)
     VERIFY_IS_EQUAL(m1.leftCols(c1).coeff(r1+c1*rows), m1(r1,c1));
@@ -154,6 +153,13 @@ template<typename MatrixType> void block(const MatrixType& m)
   VERIFY_IS_APPROX( ((m1+m2).block(r1,c1,r2-r1+1,c2-c1+1).col(0)) , ((m1+m2).col(c1).segment(r1,r2-r1+1)) );
   VERIFY_IS_APPROX( ((m1+m2).block(r1,c1,r2-r1+1,c2-c1+1).transpose().col(0)) , ((m1+m2).row(r1).segment(c1,c2-c1+1)).transpose() );
   VERIFY_IS_APPROX( ((m1+m2).transpose().block(c1,r1,c2-c1+1,r2-r1+1).col(0)) , ((m1+m2).row(r1).segment(c1,c2-c1+1)).transpose() );
+
+  VERIFY_IS_APPROX( (m1*1).topRows(r1),  m1.topRows(r1) );
+  VERIFY_IS_APPROX( (m1*1).leftCols(c1), m1.leftCols(c1) );
+  VERIFY_IS_APPROX( (m1*1).transpose().topRows(c1), m1.transpose().topRows(c1) );
+  VERIFY_IS_APPROX( (m1*1).transpose().leftCols(r1), m1.transpose().leftCols(r1) );
+  VERIFY_IS_APPROX( (m1*1).transpose().middleRows(c1,c2-c1+1), m1.transpose().middleRows(c1,c2-c1+1) );
+  VERIFY_IS_APPROX( (m1*1).transpose().middleCols(r1,r2-r1+1), m1.transpose().middleCols(r1,r2-r1+1) );
 
   // evaluation into plain matrices from expressions with direct access (stress MapBase)
   DynamicMatrixType dm;
@@ -200,7 +206,6 @@ template<typename MatrixType> void block(const MatrixType& m)
 template<typename MatrixType>
 void compare_using_data_and_stride(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
   Index size = m.size();
@@ -234,7 +239,6 @@ void compare_using_data_and_stride(const MatrixType& m)
 template<typename MatrixType>
 void data_and_stride(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
 

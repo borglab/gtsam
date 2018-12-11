@@ -11,7 +11,6 @@
 
 template<typename MatrixType> void array_for_matrix(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> ColVectorType;
   typedef Matrix<Scalar, 1, MatrixType::ColsAtCompileTime> RowVectorType; 
@@ -83,7 +82,6 @@ template<typename MatrixType> void array_for_matrix(const MatrixType& m)
 template<typename MatrixType> void comparisons(const MatrixType& m)
 {
   using std::abs;
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
 
@@ -172,7 +170,6 @@ template<typename VectorType> void lpNorm(const VectorType& v)
 
 template<typename MatrixType> void cwise_min_max(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
 
   Index rows = m.rows();
@@ -211,7 +208,6 @@ template<typename MatrixType> void cwise_min_max(const MatrixType& m)
 
 template<typename MatrixTraits> void resize(const MatrixTraits& t)
 {
-  typedef typename MatrixTraits::Index Index;
   typedef typename MatrixTraits::Scalar Scalar;
   typedef Matrix<Scalar,Dynamic,Dynamic> MatrixType;
   typedef Array<Scalar,Dynamic,Dynamic> Array2DType;

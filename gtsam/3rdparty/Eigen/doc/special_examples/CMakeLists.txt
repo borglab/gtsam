@@ -19,7 +19,6 @@ if(QT4_FOUND)
   add_dependencies(all_examples Tutorial_sparse_example)
 endif(QT4_FOUND)
 
-check_cxx_compiler_flag("-std=c++11" EIGEN_COMPILER_SUPPORT_CPP11)
 if(EIGEN_COMPILER_SUPPORT_CPP11)
   add_executable(random_cpp11 random_cpp11.cpp)
   target_link_libraries(random_cpp11 ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})

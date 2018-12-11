@@ -116,15 +116,6 @@ struct TensorEvaluator<const TensorContractionOp<Indices, LeftArgType, RightArgT
   template <bool lhs_inner_dim_contiguous, bool rhs_inner_dim_contiguous,
             bool rhs_inner_dim_reordered, int Alignment>
   void evalProduct(Scalar* buffer) const {
-    typedef
-        typename internal::remove_const<typename EvalLeftArgType::Scalar>::type
-            LhsScalar;
-    typedef
-        typename internal::remove_const<typename EvalRightArgType::Scalar>::type
-            RhsScalar;
-    typedef typename internal::gebp_traits<LhsScalar, RhsScalar> Traits;
-    typedef TensorEvaluator<EvalLeftArgType, Device> LeftEvaluator;
-    typedef TensorEvaluator<EvalRightArgType, Device> RightEvaluator;
     typedef internal::TensorContractionInputMapper<
         LhsScalar, Index, internal::Lhs, LeftEvaluator, left_nocontract_t,
         contract_t, internal::packet_traits<LhsScalar>::size,

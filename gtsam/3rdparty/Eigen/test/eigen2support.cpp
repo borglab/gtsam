@@ -13,7 +13,6 @@
 
 template<typename MatrixType> void eigen2support(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
 
   Index rows = m.rows();

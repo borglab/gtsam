@@ -36,7 +36,6 @@ void jacobisvd(const MatrixType& a = MatrixType(), bool pickrandom = true)
 template<typename MatrixType> void jacobisvd_verify_assert(const MatrixType& m)
 {
   svd_verify_assert<JacobiSVD<MatrixType> >(m);
-  typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
 
@@ -68,6 +67,21 @@ void jacobisvd_method()
   VERIFY_RAISES_ASSERT(m.jacobiSvd().matrixU());
   VERIFY_RAISES_ASSERT(m.jacobiSvd().matrixV());
   VERIFY_IS_APPROX(m.jacobiSvd(ComputeFullU|ComputeFullV).solve(m), m);
+}
+
+namespace Foo {
+// older compiler require a default constructor for Bar
+// cf: https://stackoverflow.com/questions/7411515/
+class Bar {public: Bar() {}};
+bool operator<(const Bar&, const Bar&) { return true; }
+}
+// regression test for a very strange MSVC issue for which simply
+// including SVDBase.h messes up with std::max and custom scalar type
+void msvc_workaround()
+{
+  const Foo::Bar a;
+  const Foo::Bar b;
+  std::max EIGEN_NOT_A_MACRO (a,b);
 }
 
 void test_jacobisvd()
@@ -123,4 +137,6 @@ void test_jacobisvd()
   CALL_SUBTEST_9( svd_preallocate<void>() );
 
   CALL_SUBTEST_2( svd_underoverflow<void>() );
+
+  msvc_workaround();
 }

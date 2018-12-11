@@ -19,7 +19,6 @@ template<typename MatrixType> void linearStructure(const MatrixType& m)
   /* this test covers the following files:
      CwiseUnaryOp.h, CwiseBinaryOp.h, SelfCwiseBinaryOp.h 
   */
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::RealScalar RealScalar;
 

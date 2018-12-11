@@ -12,7 +12,7 @@
 
 namespace Eigen {
 
-/** \class TensorGenerator
+/** \class TensorGeneratorOp
   * \ingroup CXX11_Tensor_Module
   *
   * \brief Tensor generator class.

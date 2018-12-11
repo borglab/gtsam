@@ -70,7 +70,7 @@ inline void throw_std_bad_alloc()
     throw std::bad_alloc();
   #else
     std::size_t huge = static_cast<std::size_t>(-1);
-    new int[huge];
+    ::operator new(huge);
   #endif
 }
 
@@ -493,7 +493,7 @@ template<typename T> struct smart_copy_helper<T,true> {
     IntPtr size = IntPtr(end)-IntPtr(start);
     if(size==0) return;
     eigen_internal_assert(start!=0 && end!=0 && target!=0);
-    memcpy(target, start, size);
+    std::memcpy(target, start, size);
   }
 };
 
@@ -696,7 +696,15 @@ template<typename T> void swap(scoped_array<T> &a,scoped_array<T> &b)
 /** \class aligned_allocator
 * \ingroup Core_Module
 *
-* \brief STL compatible allocator to use with with 16 byte aligned types
+* \brief STL compatible allocator to use with types requiring a non standrad alignment.
+*
+* The memory is aligned as for dynamically aligned matrix/array types such as MatrixXd.
+* By default, it will thus provide at least 16 bytes alignment and more in following cases:
+*  - 32 bytes alignment if AVX is enabled.
+*  - 64 bytes alignment if AVX512 is enabled.
+*
+* This can be controled using the \c EIGEN_MAX_ALIGN_BYTES macro as documented
+* \link TopicPreprocessorDirectivesPerformance there \endlink.
 *
 * Example:
 * \code
@@ -739,7 +747,15 @@ public:
   pointer allocate(size_type num, const void* /*hint*/ = 0)
   {
     internal::check_size_for_overflow<T>(num);
-    return static_cast<pointer>( internal::aligned_malloc(num * sizeof(T)) );
+    size_type size = num * sizeof(T);
+#if EIGEN_COMP_GNUC_STRICT && EIGEN_GNUC_AT_LEAST(7,0)
+    // workaround gcc bug https://gcc.gnu.org/bugzilla/show_bug.cgi?id=87544
+    // It triggered eigen/Eigen/src/Core/util/Memory.h:189:12: warning: argument 1 value '18446744073709551612' exceeds maximum object size 9223372036854775807
+    if(size>=std::size_t((std::numeric_limits<std::ptrdiff_t>::max)()))
+      return 0;
+    else
+#endif
+      return static_cast<pointer>( internal::aligned_malloc(size) );
   }
 
   void deallocate(pointer p, size_type /*num*/)

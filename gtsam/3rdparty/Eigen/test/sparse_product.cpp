@@ -7,6 +7,12 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#if defined(_MSC_VER) && (_MSC_VER==1800)
+// This unit test takes forever to compile in Release mode with MSVC 2013,
+// multiple hours. So let's switch off optimization for this one.
+#pragma optimize("",off)
+#endif
+
 static long int nb_temporaries;
 
 inline void on_temporary_creation() {
@@ -371,6 +377,88 @@ void bug_942()
   VERIFY_IS_APPROX( ( d.asDiagonal()*cmA ).eval().coeff(0,0), res );
 }
 
+template<typename Real>
+void test_mixing_types()
+{
+  typedef std::complex<Real> Cplx;
+  typedef SparseMatrix<Real> SpMatReal;
+  typedef SparseMatrix<Cplx> SpMatCplx;
+  typedef SparseMatrix<Cplx,RowMajor> SpRowMatCplx;
+  typedef Matrix<Real,Dynamic,Dynamic> DenseMatReal;
+  typedef Matrix<Cplx,Dynamic,Dynamic> DenseMatCplx;
+
+  Index n = internal::random<Index>(1,100);
+  double density = (std::max)(8./(n*n), 0.2);
+
+  SpMatReal sR1(n,n);
+  SpMatCplx sC1(n,n), sC2(n,n), sC3(n,n);
+  SpRowMatCplx sCR(n,n);
+  DenseMatReal dR1(n,n);
+  DenseMatCplx dC1(n,n), dC2(n,n), dC3(n,n);
+
+  initSparse<Real>(density, dR1, sR1);
+  initSparse<Cplx>(density, dC1, sC1);
+  initSparse<Cplx>(density, dC2, sC2);
+
+  VERIFY_IS_APPROX( sC2 = (sR1 * sC1),                         dC3 = dR1.template cast<Cplx>() * dC1 );
+  VERIFY_IS_APPROX( sC2 = (sC1 * sR1),                         dC3 = dC1 * dR1.template cast<Cplx>() );
+  VERIFY_IS_APPROX( sC2 = (sR1.transpose() * sC1),             dC3 = dR1.template cast<Cplx>().transpose() * dC1 );
+  VERIFY_IS_APPROX( sC2 = (sC1.transpose() * sR1),             dC3 = dC1.transpose() * dR1.template cast<Cplx>() );
+  VERIFY_IS_APPROX( sC2 = (sR1 * sC1.transpose()),             dC3 = dR1.template cast<Cplx>() * dC1.transpose() );
+  VERIFY_IS_APPROX( sC2 = (sC1 * sR1.transpose()),             dC3 = dC1 * dR1.template cast<Cplx>().transpose() );
+  VERIFY_IS_APPROX( sC2 = (sR1.transpose() * sC1.transpose()), dC3 = dR1.template cast<Cplx>().transpose() * dC1.transpose() );
+  VERIFY_IS_APPROX( sC2 = (sC1.transpose() * sR1.transpose()), dC3 = dC1.transpose() * dR1.template cast<Cplx>().transpose() );
+
+  VERIFY_IS_APPROX( sCR = (sR1 * sC1),                         dC3 = dR1.template cast<Cplx>() * dC1 );
+  VERIFY_IS_APPROX( sCR = (sC1 * sR1),                         dC3 = dC1 * dR1.template cast<Cplx>() );
+  VERIFY_IS_APPROX( sCR = (sR1.transpose() * sC1),             dC3 = dR1.template cast<Cplx>().transpose() * dC1 );
+  VERIFY_IS_APPROX( sCR = (sC1.transpose() * sR1),             dC3 = dC1.transpose() * dR1.template cast<Cplx>() );
+  VERIFY_IS_APPROX( sCR = (sR1 * sC1.transpose()),             dC3 = dR1.template cast<Cplx>() * dC1.transpose() );
+  VERIFY_IS_APPROX( sCR = (sC1 * sR1.transpose()),             dC3 = dC1 * dR1.template cast<Cplx>().transpose() );
+  VERIFY_IS_APPROX( sCR = (sR1.transpose() * sC1.transpose()), dC3 = dR1.template cast<Cplx>().transpose() * dC1.transpose() );
+  VERIFY_IS_APPROX( sCR = (sC1.transpose() * sR1.transpose()), dC3 = dC1.transpose() * dR1.template cast<Cplx>().transpose() );
+
+
+  VERIFY_IS_APPROX( sC2 = (sR1 * sC1).pruned(),                         dC3 = dR1.template cast<Cplx>() * dC1 );
+  VERIFY_IS_APPROX( sC2 = (sC1 * sR1).pruned(),                         dC3 = dC1 * dR1.template cast<Cplx>() );
+  VERIFY_IS_APPROX( sC2 = (sR1.transpose() * sC1).pruned(),             dC3 = dR1.template cast<Cplx>().transpose() * dC1 );
+  VERIFY_IS_APPROX( sC2 = (sC1.transpose() * sR1).pruned(),             dC3 = dC1.transpose() * dR1.template cast<Cplx>() );
+  VERIFY_IS_APPROX( sC2 = (sR1 * sC1.transpose()).pruned(),             dC3 = dR1.template cast<Cplx>() * dC1.transpose() );
+  VERIFY_IS_APPROX( sC2 = (sC1 * sR1.transpose()).pruned(),             dC3 = dC1 * dR1.template cast<Cplx>().transpose() );
+  VERIFY_IS_APPROX( sC2 = (sR1.transpose() * sC1.transpose()).pruned(), dC3 = dR1.template cast<Cplx>().transpose() * dC1.transpose() );
+  VERIFY_IS_APPROX( sC2 = (sC1.transpose() * sR1.transpose()).pruned(), dC3 = dC1.transpose() * dR1.template cast<Cplx>().transpose() );
+
+  VERIFY_IS_APPROX( sCR = (sR1 * sC1).pruned(),                         dC3 = dR1.template cast<Cplx>() * dC1 );
+  VERIFY_IS_APPROX( sCR = (sC1 * sR1).pruned(),                         dC3 = dC1 * dR1.template cast<Cplx>() );
+  VERIFY_IS_APPROX( sCR = (sR1.transpose() * sC1).pruned(),             dC3 = dR1.template cast<Cplx>().transpose() * dC1 );
+  VERIFY_IS_APPROX( sCR = (sC1.transpose() * sR1).pruned(),             dC3 = dC1.transpose() * dR1.template cast<Cplx>() );
+  VERIFY_IS_APPROX( sCR = (sR1 * sC1.transpose()).pruned(),             dC3 = dR1.template cast<Cplx>() * dC1.transpose() );
+  VERIFY_IS_APPROX( sCR = (sC1 * sR1.transpose()).pruned(),             dC3 = dC1 * dR1.template cast<Cplx>().transpose() );
+  VERIFY_IS_APPROX( sCR = (sR1.transpose() * sC1.transpose()).pruned(), dC3 = dR1.template cast<Cplx>().transpose() * dC1.transpose() );
+  VERIFY_IS_APPROX( sCR = (sC1.transpose() * sR1.transpose()).pruned(), dC3 = dC1.transpose() * dR1.template cast<Cplx>().transpose() );
+
+
+  VERIFY_IS_APPROX( dC2 = (sR1 * sC1),                         dC3 = dR1.template cast<Cplx>() * dC1 );
+  VERIFY_IS_APPROX( dC2 = (sC1 * sR1),                         dC3 = dC1 * dR1.template cast<Cplx>() );
+  VERIFY_IS_APPROX( dC2 = (sR1.transpose() * sC1),             dC3 = dR1.template cast<Cplx>().transpose() * dC1 );
+  VERIFY_IS_APPROX( dC2 = (sC1.transpose() * sR1),             dC3 = dC1.transpose() * dR1.template cast<Cplx>() );
+  VERIFY_IS_APPROX( dC2 = (sR1 * sC1.transpose()),             dC3 = dR1.template cast<Cplx>() * dC1.transpose() );
+  VERIFY_IS_APPROX( dC2 = (sC1 * sR1.transpose()),             dC3 = dC1 * dR1.template cast<Cplx>().transpose() );
+  VERIFY_IS_APPROX( dC2 = (sR1.transpose() * sC1.transpose()), dC3 = dR1.template cast<Cplx>().transpose() * dC1.transpose() );
+  VERIFY_IS_APPROX( dC2 = (sC1.transpose() * sR1.transpose()), dC3 = dC1.transpose() * dR1.template cast<Cplx>().transpose() );
+
+
+  VERIFY_IS_APPROX( dC2 = dR1 * sC1, dC3 = dR1.template cast<Cplx>() * sC1 );
+  VERIFY_IS_APPROX( dC2 = sR1 * dC1, dC3 = sR1.template cast<Cplx>() * dC1 );
+  VERIFY_IS_APPROX( dC2 = dC1 * sR1, dC3 = dC1 * sR1.template cast<Cplx>() );
+  VERIFY_IS_APPROX( dC2 = sC1 * dR1, dC3 = sC1 * dR1.template cast<Cplx>() );
+
+  VERIFY_IS_APPROX( dC2 = dR1.row(0) * sC1, dC3 = dR1.template cast<Cplx>().row(0) * sC1 );
+  VERIFY_IS_APPROX( dC2 = sR1 * dC1.col(0), dC3 = sR1.template cast<Cplx>() * dC1.col(0) );
+  VERIFY_IS_APPROX( dC2 = dC1.row(0) * sR1, dC3 = dC1.row(0) * sR1.template cast<Cplx>() );
+  VERIFY_IS_APPROX( dC2 = sC1 * dR1.col(0), dC3 = sC1 * dR1.template cast<Cplx>().col(0) );
+}
+
 void test_sparse_product()
 {
   for(int i = 0; i < g_repeat; i++) {
@@ -381,5 +469,7 @@ void test_sparse_product()
     CALL_SUBTEST_2( (sparse_product<SparseMatrix<std::complex<double>, RowMajor > >()) );
     CALL_SUBTEST_3( (sparse_product<SparseMatrix<float,ColMajor,long int> >()) );
     CALL_SUBTEST_4( (sparse_product_regression_test<SparseMatrix<double,RowMajor>, Matrix<double, Dynamic, Dynamic, RowMajor> >()) );
+
+    CALL_SUBTEST_5( (test_mixing_types<float>()) );
   }
 }

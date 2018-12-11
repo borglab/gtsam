@@ -109,6 +109,28 @@ template<> struct is_integral<unsigned int>    { enum { value = true }; };
 template<> struct is_integral<signed long>     { enum { value = true }; };
 template<> struct is_integral<unsigned long>   { enum { value = true }; };
 
+#if EIGEN_HAS_CXX11
+using std::make_unsigned;
+#else
+// TODO: Possibly improve this implementation of make_unsigned.
+// It is currently used only by
+// template<typename Scalar> struct random_default_impl<Scalar, false, true>.
+template<typename> struct make_unsigned;
+template<> struct make_unsigned<char>             { typedef unsigned char type; };
+template<> struct make_unsigned<signed char>      { typedef unsigned char type; };
+template<> struct make_unsigned<unsigned char>    { typedef unsigned char type; };
+template<> struct make_unsigned<signed short>     { typedef unsigned short type; };
+template<> struct make_unsigned<unsigned short>   { typedef unsigned short type; };
+template<> struct make_unsigned<signed int>       { typedef unsigned int type; };
+template<> struct make_unsigned<unsigned int>     { typedef unsigned int type; };
+template<> struct make_unsigned<signed long>      { typedef unsigned long type; };
+template<> struct make_unsigned<unsigned long>    { typedef unsigned long type; };
+#if EIGEN_COMP_MSVC
+template<> struct make_unsigned<signed __int64>   { typedef unsigned __int64 type; };
+template<> struct make_unsigned<unsigned __int64> { typedef unsigned __int64 type; };
+#endif
+#endif
+
 template <typename T> struct add_const { typedef const T type; };
 template <typename T> struct add_const<T&> { typedef T& type; };
 
@@ -484,6 +506,26 @@ T div_ceil(const T &a, const T &b)
 {
   return (a+b-1) / b;
 }
+
+// The aim of the following functions is to bypass -Wfloat-equal warnings
+// when we really want a strict equality comparison on floating points.
+template<typename X, typename Y> EIGEN_STRONG_INLINE
+bool equal_strict(const X& x,const Y& y) { return x == y; }
+
+template<> EIGEN_STRONG_INLINE
+bool equal_strict(const float& x,const float& y) { return std::equal_to<float>()(x,y); }
+
+template<> EIGEN_STRONG_INLINE
+bool equal_strict(const double& x,const double& y) { return std::equal_to<double>()(x,y); }
+
+template<typename X, typename Y> EIGEN_STRONG_INLINE
+bool not_equal_strict(const X& x,const Y& y) { return x != y; }
+
+template<> EIGEN_STRONG_INLINE
+bool not_equal_strict(const float& x,const float& y) { return std::not_equal_to<float>()(x,y); }
+
+template<> EIGEN_STRONG_INLINE
+bool not_equal_strict(const double& x,const double& y) { return std::not_equal_to<double>()(x,y); }
 
 } // end namespace numext
 

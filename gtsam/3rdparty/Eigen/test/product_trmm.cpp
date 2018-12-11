@@ -29,7 +29,7 @@ void trmm(int rows=get_random_size<Scalar>(),
   typedef Matrix<Scalar,Dynamic,OtherCols,OtherCols==1?ColMajor:ResOrder> ResXS;
   typedef Matrix<Scalar,OtherCols,Dynamic,OtherCols==1?RowMajor:ResOrder> ResSX;
 
-  TriMatrix  mat(rows,cols), tri(rows,cols), triTr(cols,rows);
+  TriMatrix  mat(rows,cols), tri(rows,cols), triTr(cols,rows), s1tri(rows,cols), s1triTr(cols,rows);
   
   OnTheRight  ge_right(cols,otherCols);
   OnTheLeft   ge_left(otherCols,rows);
@@ -42,6 +42,8 @@ void trmm(int rows=get_random_size<Scalar>(),
   mat.setRandom();
   tri = mat.template triangularView<Mode>();
   triTr = mat.transpose().template triangularView<Mode>();
+  s1tri = (s1*mat).template triangularView<Mode>();
+  s1triTr = (s1*mat).transpose().template triangularView<Mode>();
   ge_right.setRandom();
   ge_left.setRandom();
 
@@ -51,19 +53,29 @@ void trmm(int rows=get_random_size<Scalar>(),
   VERIFY_IS_APPROX( ge_xs.noalias() = mat.template triangularView<Mode>() * ge_right, tri * ge_right);
   VERIFY_IS_APPROX( ge_sx.noalias() = ge_left * mat.template triangularView<Mode>(), ge_left * tri);
 
-  VERIFY_IS_APPROX( ge_xs.noalias() = (s1*mat.adjoint()).template triangularView<Mode>() * (s2*ge_left.transpose()), s1*triTr.conjugate() * (s2*ge_left.transpose()));
-  VERIFY_IS_APPROX( ge_sx.noalias() = ge_right.transpose() * mat.adjoint().template triangularView<Mode>(), ge_right.transpose() * triTr.conjugate());
+  if((Mode&UnitDiag)==0)
+    VERIFY_IS_APPROX( ge_xs.noalias() = (s1*mat.adjoint()).template triangularView<Mode>() * (s2*ge_left.transpose()), s1*triTr.conjugate() * (s2*ge_left.transpose()));
   
-  VERIFY_IS_APPROX( ge_xs.noalias() = (s1*mat.adjoint()).template triangularView<Mode>() * (s2*ge_left.adjoint()), s1*triTr.conjugate() * (s2*ge_left.adjoint()));
-  VERIFY_IS_APPROX( ge_sx.noalias() = ge_right.adjoint() * mat.adjoint().template triangularView<Mode>(), ge_right.adjoint() * triTr.conjugate());
+  VERIFY_IS_APPROX( ge_xs.noalias() = (s1*mat.transpose()).template triangularView<Mode>() * (s2*ge_left.transpose()), s1triTr * (s2*ge_left.transpose()));
+  VERIFY_IS_APPROX( ge_sx.noalias() = (s2*ge_left) * (s1*mat).template triangularView<Mode>(), (s2*ge_left)*s1tri);
 
+  VERIFY_IS_APPROX( ge_sx.noalias() = ge_right.transpose() * mat.adjoint().template triangularView<Mode>(), ge_right.transpose() * triTr.conjugate());
+  VERIFY_IS_APPROX( ge_sx.noalias() = ge_right.adjoint() * mat.adjoint().template triangularView<Mode>(), ge_right.adjoint() * triTr.conjugate());
+  
   ge_xs_save = ge_xs;
-  VERIFY_IS_APPROX( (ge_xs_save + s1*triTr.conjugate() * (s2*ge_left.adjoint())).eval(), ge_xs.noalias() += (s1*mat.adjoint()).template triangularView<Mode>() * (s2*ge_left.adjoint()) );
+  if((Mode&UnitDiag)==0)
+    VERIFY_IS_APPROX( (ge_xs_save + s1*triTr.conjugate() * (s2*ge_left.adjoint())).eval(), ge_xs.noalias() += (s1*mat.adjoint()).template triangularView<Mode>() * (s2*ge_left.adjoint()) );
+  ge_xs_save = ge_xs;
+  VERIFY_IS_APPROX( (ge_xs_save + s1triTr * (s2*ge_left.adjoint())).eval(), ge_xs.noalias() += (s1*mat.transpose()).template triangularView<Mode>() * (s2*ge_left.adjoint()) );
   ge_sx.setRandom();
   ge_sx_save = ge_sx;
-  VERIFY_IS_APPROX( ge_sx_save - (ge_right.adjoint() * (-s1 * triTr).conjugate()).eval(), ge_sx.noalias() -= (ge_right.adjoint() * (-s1 * mat).adjoint().template triangularView<Mode>()).eval());
+  if((Mode&UnitDiag)==0)
+    VERIFY_IS_APPROX( ge_sx_save - (ge_right.adjoint() * (-s1 * triTr).conjugate()).eval(), ge_sx.noalias() -= (ge_right.adjoint() * (-s1 * mat).adjoint().template triangularView<Mode>()).eval());
   
-  VERIFY_IS_APPROX( ge_xs = (s1*mat).adjoint().template triangularView<Mode>() * ge_left.adjoint(), numext::conj(s1) * triTr.conjugate() * ge_left.adjoint());
+  if((Mode&UnitDiag)==0)
+    VERIFY_IS_APPROX( ge_xs = (s1*mat).adjoint().template triangularView<Mode>() * ge_left.adjoint(), numext::conj(s1) * triTr.conjugate() * ge_left.adjoint());
+  VERIFY_IS_APPROX( ge_xs = (s1*mat).transpose().template triangularView<Mode>() * ge_left.adjoint(), s1triTr * ge_left.adjoint());
+
   
   // TODO check with sub-matrix expressions ?
 }

@@ -11,7 +11,7 @@
 // Copyright (C) 2013 Jean Ceccato <jean.ceccato@ensimag.fr>
 // Copyright (C) 2013 Pierre Zoppitelli <pierre.zoppitelli@ensimag.fr>
 // Copyright (C) 2013 Jitse Niesen <jitse@maths.leeds.ac.uk>
-// Copyright (C) 2014-2016 Gael Guennebaud <gael.guennebaud@inria.fr>
+// Copyright (C) 2014-2017 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
 // Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -696,7 +696,9 @@ typename BDCSVD<MatrixType>::RealScalar BDCSVD<MatrixType>::secularEq(RealScalar
   for(Index i=0; i<m; ++i)
   {
     Index j = perm(i);
-    res += numext::abs2(col0(j)) / ((diagShifted(j) - mu) * (diag(j) + shift + mu));
+    // The following expression could be rewritten to involve only a single division,
+    // but this would make the expression more sensitive to overflow.
+    res += (col0(j) / (diagShifted(j) - mu)) * (col0(j) / (diag(j) + shift + mu));
   }
   return res;
 
@@ -708,9 +710,12 @@ void BDCSVD<MatrixType>::computeSingVals(const ArrayRef& col0, const ArrayRef& d
 {
   using std::abs;
   using std::swap;
+  using std::sqrt;
 
   Index n = col0.size();
   Index actual_n = n;
+  // Note that here actual_n is computed based on col0(i)==0 instead of diag(i)==0 as above
+  // because 1) we have diag(i)==0 => col0(i)==0 and 2) if col0(i)==0, then diag(i) is already a singular value.
   while(actual_n>1 && col0(actual_n-1)==Literal(0)) --actual_n;
 
   for (Index k = 0; k < n; ++k)
@@ -732,7 +737,9 @@ void BDCSVD<MatrixType>::computeSingVals(const ArrayRef& col0, const ArrayRef& d
       right = (diag(actual_n-1) + col0.matrix().norm());
     else
     {
-      // Skip deflated singular values
+      // Skip deflated singular values,
+      // recall that at this stage we assume that z[j]!=0 and all entries for which z[j]==0 have been put aside.
+      // This should be equivalent to using perm[]
       Index l = k+1;
       while(col0(l)==Literal(0)) { ++l; eigen_internal_assert(l<actual_n); }
       right = diag(l);
@@ -818,15 +825,23 @@ void BDCSVD<MatrixType>::computeSingVals(const ArrayRef& col0, const ArrayRef& d
       RealScalar leftShifted, rightShifted;
       if (shift == left)
       {
-        leftShifted = (std::numeric_limits<RealScalar>::min)();
+        // to avoid overflow, we must have mu > max(real_min, |z(k)|/sqrt(real_max)),
+        // the factor 2 is to be more conservative
+        leftShifted = numext::maxi<RealScalar>( (std::numeric_limits<RealScalar>::min)(), Literal(2) * abs(col0(k)) / sqrt((std::numeric_limits<RealScalar>::max)()) );
+
+        // check that we did it right:
+        eigen_internal_assert( (numext::isfinite)( (col0(k)/leftShifted)*(col0(k)/(diag(k)+shift+leftShifted)) ) );
         // I don't understand why the case k==0 would be special there:
-        // if (k == 0) rightShifted = right - left; else 
-        rightShifted = (k==actual_n-1) ? right : ((right - left) * RealScalar(0.6)); // theoretically we can take 0.5, but let's be safe
+        // if (k == 0) rightShifted = right - left; else
+        rightShifted = (k==actual_n-1) ? right : ((right - left) * RealScalar(0.51)); // theoretically we can take 0.5, but let's be safe
       }
       else
       {
-        leftShifted = -(right - left) * RealScalar(0.6);
-        rightShifted = -(std::numeric_limits<RealScalar>::min)();
+        leftShifted = -(right - left) * RealScalar(0.51);
+        if(k+1<n)
+          rightShifted = -numext::maxi<RealScalar>( (std::numeric_limits<RealScalar>::min)(), abs(col0(k+1)) / sqrt((std::numeric_limits<RealScalar>::max)()) );
+        else
+          rightShifted = -(std::numeric_limits<RealScalar>::min)();
       }
       
       RealScalar fLeft = secularEq(leftShifted, col0, diag, perm, diagShifted, shift);
@@ -980,7 +995,7 @@ void BDCSVD<MatrixType>::deflation43(Index firstCol, Index shift, Index i, Index
   Index start = firstCol + shift;
   RealScalar c = m_computed(start, start);
   RealScalar s = m_computed(start+i, start);
-  RealScalar r = sqrt(numext::abs2(c) + numext::abs2(s));
+  RealScalar r = numext::hypot(c,s);
   if (r == Literal(0))
   {
     m_computed(start+i, start+i) = Literal(0);

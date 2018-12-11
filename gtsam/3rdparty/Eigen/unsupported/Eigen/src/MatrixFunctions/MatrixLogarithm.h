@@ -324,7 +324,7 @@ public:
   
   /** \brief Compute the matrix logarithm.
     *
-    * \param[out]  result  Logarithm of \p A, where \A is as specified in the constructor.
+    * \param[out]  result  Logarithm of \c A, where \c A is as specified in the constructor.
     */
   template <typename ResultType>
   inline void evalTo(ResultType& result) const

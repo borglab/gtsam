@@ -41,10 +41,13 @@ string(REGEX MATCH "define[ \t]+EIGEN_MINOR_VERSION[ \t]+([0-9]+)" _eigen_minor_
 set(EIGEN_MINOR_VERSION "${CMAKE_MATCH_1}")
 set(EIGEN_VERSION_NUMBER ${EIGEN_WORLD_VERSION}.${EIGEN_MAJOR_VERSION}.${EIGEN_MINOR_VERSION})
 
-# if the mercurial program is absent, this will leave the EIGEN_HG_CHANGESET string empty,
-# but won't stop CMake.
-execute_process(COMMAND hg tip -R ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE EIGEN_HGTIP_OUTPUT)
-execute_process(COMMAND hg branch -R ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE EIGEN_BRANCH_OUTPUT)
+# if we are not in a mercurial clone
+if(IS_DIRECTORY ${CMAKE_SOURCE_DIR}/.hg)
+  # if the mercurial program is absent or this will leave the EIGEN_HG_CHANGESET string empty,
+  # but won't stop CMake.
+  execute_process(COMMAND hg tip -R ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE EIGEN_HGTIP_OUTPUT)
+  execute_process(COMMAND hg branch -R ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE EIGEN_BRANCH_OUTPUT)
+endif()
 
 # if this is the default (aka development) branch, extract the mercurial changeset number from the hg tip output...
 if(EIGEN_BRANCH_OUTPUT MATCHES "default")
@@ -63,6 +66,33 @@ include(CheckCXXCompilerFlag)
 include(GNUInstallDirs)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+
+option(EIGEN_TEST_CXX11 "Enable testing with C++11 and C++11 features (e.g. Tensor module)." OFF)
+
+
+macro(ei_add_cxx_compiler_flag FLAG)
+  string(REGEX REPLACE "-" "" SFLAG1 ${FLAG})
+  string(REGEX REPLACE "\\+" "p" SFLAG ${SFLAG1})
+  check_cxx_compiler_flag(${FLAG} COMPILER_SUPPORT_${SFLAG})
+  if(COMPILER_SUPPORT_${SFLAG})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAG}")
+  endif()
+endmacro(ei_add_cxx_compiler_flag)
+
+check_cxx_compiler_flag("-std=c++11" EIGEN_COMPILER_SUPPORT_CPP11)
+
+if(EIGEN_TEST_CXX11)
+  set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_CXX_EXTENSIONS OFF)
+  if(EIGEN_COMPILER_SUPPORT_CPP11)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  endif()
+else()
+  #set(CMAKE_CXX_STANDARD 03)
+  #set(CMAKE_CXX_EXTENSIONS OFF)
+  ei_add_cxx_compiler_flag("-std=c++03")
+endif()
 
 #############################################################################
 # find how to link to the standard libraries                                #
@@ -114,15 +144,6 @@ if(EIGEN_DEFAULT_TO_ROW_MAJOR)
 endif()
 
 set(EIGEN_TEST_MAX_SIZE "320" CACHE STRING "Maximal matrix/vector size, default is 320")
-
-macro(ei_add_cxx_compiler_flag FLAG)
-  string(REGEX REPLACE "-" "" SFLAG1 ${FLAG})
-  string(REGEX REPLACE "\\+" "p" SFLAG ${SFLAG1})
-  check_cxx_compiler_flag(${FLAG} COMPILER_SUPPORT_${SFLAG})
-  if(COMPILER_SUPPORT_${SFLAG})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAG}")
-  endif()
-endmacro(ei_add_cxx_compiler_flag)
 
 if(NOT MSVC)
   # We assume that other compilers are partly compatible with GNUCC
@@ -359,8 +380,6 @@ if(EIGEN_TEST_NO_EXCEPTIONS)
   message(STATUS "Disabling exceptions in tests/examples")
 endif()
 
-option(EIGEN_TEST_CXX11 "Enable testing with C++11 and C++11 features (e.g. Tensor module)." OFF)
-
 set(EIGEN_CUDA_COMPUTE_ARCH 30 CACHE STRING "The CUDA compute architecture level to target when compiling CUDA code")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
@@ -416,16 +435,15 @@ add_subdirectory(Eigen)
 
 add_subdirectory(doc EXCLUDE_FROM_ALL)
 
-include(EigenConfigureTesting)
+option(BUILD_TESTING "Enable creation of Eigen tests." ON)
+if(BUILD_TESTING)
+  include(EigenConfigureTesting)
 
-# fixme, not sure this line is still needed:
-enable_testing() # must be called from the root CMakeLists, see man page
-
-
-if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
-  add_subdirectory(test) # can't do EXCLUDE_FROM_ALL here, breaks CTest
-else()
-  add_subdirectory(test EXCLUDE_FROM_ALL)
+  if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
+    add_subdirectory(test) # can't do EXCLUDE_FROM_ALL here, breaks CTest
+  else()
+    add_subdirectory(test EXCLUDE_FROM_ALL)
+  endif()
 endif()
 
 if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
@@ -461,7 +479,9 @@ endif(NOT WIN32)
 
 configure_file(scripts/cdashtesting.cmake.in cdashtesting.cmake @ONLY)
 
-ei_testing_print_summary()
+if(BUILD_TESTING)
+  ei_testing_print_summary()
+endif()
 
 message(STATUS "")
 message(STATUS "Configured Eigen ${EIGEN_VERSION_NUMBER}")
