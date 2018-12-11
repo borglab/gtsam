@@ -28,7 +28,6 @@
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/ConcurrentMap.h>
 #include <gtsam/base/debug.h>
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/DSFVector.h>
 #include <gtsam/base/FastDefaultAllocator.h>
 #include <gtsam/base/FastList.h>
