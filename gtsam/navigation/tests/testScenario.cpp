@@ -96,7 +96,11 @@ TEST(Scenario, Loop) {
   const double R = v / w;
   const Pose3 T30 = scenario.pose(30);
   EXPECT(assert_equal(Rot3::Rodrigues(0, M_PI, 0), T30.rotation(), 1e-9));
+#ifdef GTSAM_USE_QUATERNIONS
+  EXPECT(assert_equal(Vector3(-M_PI, 0, -M_PI), T30.rotation().xyz()));
+#else
   EXPECT(assert_equal(Vector3(M_PI, 0, M_PI), T30.rotation().xyz()));
+#endif
   EXPECT(assert_equal(Point3(0, 0, 2 * R), T30.translation(), 1e-9));
 }
 
