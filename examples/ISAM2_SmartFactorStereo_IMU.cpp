@@ -96,7 +96,7 @@ struct IMUHelper {
 
 int main(int argc, char* argv[]) {
   if (argc != 2) {
-    cout << "./main [data.txt]\n";
+    cout << "./ISAM2_SmartFactorStereo_IMU [data.txt]\n";
     return 0;
   }
 
