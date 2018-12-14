@@ -172,7 +172,7 @@ bool ISAM2Clique::valuesChanged(const KeySet& replaced,
                                 double threshold) const {
   auto frontals = conditional_->frontals();
   if (replaced.exists(frontals.front())) return true;
-  auto diff = originalValues - delta.vector(frontals);
+  Vector diff = originalValues - delta.vector(frontals);
   return diff.lpNorm<Eigen::Infinity>() >= threshold;
 }
 
