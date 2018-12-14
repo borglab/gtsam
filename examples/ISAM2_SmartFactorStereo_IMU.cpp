@@ -29,7 +29,6 @@ struct IMUHelper {
       auto gaussian = noiseModel::Diagonal::Sigmas(
           (Vector(6) << Vector3::Constant(5.0e-2), Vector3::Constant(5.0e-3))
               .finished());
-
       auto huber = noiseModel::Robust::Create(
           noiseModel::mEstimator::Huber::Create(1.345), gaussian);
 
@@ -62,7 +61,7 @@ struct IMUHelper {
     // body to IMU rotation
     Rot3 iRb(
        0.036129, -0.998727,  0.035207,
-       0.045417, -0.033553, -0.99840,4
+       0.045417, -0.033553, -0.998404,
        0.998315,  0.037670,  0.044147);
 
     // body to IMU translation (meters)
