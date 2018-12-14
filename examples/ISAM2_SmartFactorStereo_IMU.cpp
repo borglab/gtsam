@@ -59,10 +59,9 @@ struct IMUHelper {
     p->biasAccOmegaInt = Matrix::Identity(6, 6) * 1e-5;
 
     // body to IMU rotation
-    Rot3 iRb(
-       0.036129, -0.998727,  0.035207,
-       0.045417, -0.033553, -0.998404,
-       0.998315,  0.037670,  0.044147);
+    Rot3 iRb(0.036129, -0.998727, 0.035207,
+             0.045417, -0.033553, -0.998404,
+             0.998315, 0.037670, 0.044147);
 
     // body to IMU translation (meters)
     Point3 iTb(0.03, -0.025, -0.06);
@@ -112,7 +111,7 @@ int main(int argc, char* argv[]) {
   double fy = 822.37;
   double cx = 538.73;
   double cy = 579.10;
-  double baseline = 0.372; // meters
+  double baseline = 0.372;  // meters
 
   Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(fx, fy, 0.0, cx, cy, baseline));
 
