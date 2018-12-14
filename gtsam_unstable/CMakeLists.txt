@@ -10,9 +10,9 @@ set (gtsam_unstable_subdirs
     slam
 )
 
-if(GTSAM_BUILD_METIS) # Only build partition if metis is built
+if(GTSAM_SUPPORT_NESTED_DISSECTION) # Only build partition if metis is built
     set (gtsam_unstable_subdirs ${gtsam_unstable_subdirs} partition)
-endif(GTSAM_BUILD_METIS)
+endif(GTSAM_SUPPORT_NESTED_DISSECTION)
 
 set(GTSAM_UNSTABLE_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES})
 
@@ -55,9 +55,9 @@ set(gtsam_unstable_srcs
     ${slam_srcs}
 )
 
-if(GTSAM_BUILD_METIS) # Only build partition if metis is built
+if(GTSAM_SUPPORT_NESTED_DISSECTION) # Only build partition if metis is built
     set (gtsam_unstable_srcs ${gtsam_unstable_srcs} ${partition_srcs})
-endif(GTSAM_BUILD_METIS)
+endif(GTSAM_SUPPORT_NESTED_DISSECTION)
 
 # Versions - same as core gtsam library
 set(gtsam_unstable_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})

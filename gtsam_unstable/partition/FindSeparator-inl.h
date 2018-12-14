@@ -474,7 +474,7 @@ namespace gtsam { namespace partition {
 
     if (!result.is_initialized()) {
       std::cout << "metis failed!" << std::endl;
-      return 0;
+      return boost::none;
     }
 
     if (reduceGraph) {
