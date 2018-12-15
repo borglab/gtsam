@@ -284,7 +284,7 @@ namespace gtsam { namespace partition {
       throw std::runtime_error("separatorPartitionByMetis: invalid sepsize from Metis ND!");
     }
 
-    return boost::make_optional<MetisResult >(result);
+    return result;
   }
 
   /* *************************************************************************/ 
@@ -359,7 +359,7 @@ namespace gtsam { namespace partition {
       std::cout << "edgeCut: " << edgeCut << std::endl;
     }
 
-    return boost::make_optional<MetisResult >(result);
+    return result;
   }
 
   /* ************************************************************************* */
