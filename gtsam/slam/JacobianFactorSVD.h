@@ -38,7 +38,7 @@ public:
   }
 
   /// Empty constructor with keys
-  JacobianFactorSVD(const FastVector<Key>& keys, //
+  JacobianFactorSVD(const KeyVector& keys, //
       const SharedDiagonal& model = SharedDiagonal()) :
       Base() {
     Matrix zeroMatrix = Matrix::Zero(0, D);
@@ -58,8 +58,8 @@ public:
    *
    * @Fblocks:
    */
-  JacobianFactorSVD(const FastVector<Key>& keys,
-      const std::vector<MatrixZD>& Fblocks, const Matrix& Enull,
+  JacobianFactorSVD(const KeyVector& keys,
+      const std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> >& Fblocks, const Matrix& Enull,
       const Vector& b, //
       const SharedDiagonal& model = SharedDiagonal()) :
       Base() {

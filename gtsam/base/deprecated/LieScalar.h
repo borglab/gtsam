@@ -19,6 +19,7 @@
 
 #include <gtsam/dllexport.h>
 #include <gtsam/base/VectorSpace.h>
+#include <iostream>
 
 namespace gtsam {
 

@@ -23,18 +23,11 @@
 namespace gtsam {
 
 /**
- * @brief Calibration of a camera with radial distortion
+ * @brief Calibration of a camera with radial distortion that also supports
+ * Lie-group behaviors for optimization.
+ * \sa Cal3DS2_Base
  * @addtogroup geometry
  * \nosubgrouping
- *
- * Uses same distortionmodel as OpenCV, with
- * http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html
- * but using only k1,k2,p1, and p2 coefficients.
- * K = [ fx s u0 ; 0 fy v0 ; 0 0 1 ]
- * rr = Pn.x^2 + Pn.y^2
- * \hat{pn} = (1 + k1*rr + k2*rr^2 ) pn + [ 2*k3 pn.x pn.y + k4 (rr + 2 Pn.x^2) ;
- *                      k3 (rr + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
- * pi = K*pn
  */
 class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
 

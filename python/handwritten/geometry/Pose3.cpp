@@ -53,6 +53,9 @@ void exportPose3(){
   // function pointers to desambiguate range() calls
   double (Pose3::*range1)(const Point3 &, OptionalJacobian<1,6>, OptionalJacobian<1,3>) const  = &Pose3::range;
   double (Pose3::*range2)(const Pose3 &,  OptionalJacobian<1,6>, OptionalJacobian<1,6>) const  = &Pose3::range;
+  // function pointers to desambiguate bearing() calls
+  Unit3 (Pose3::*bearing1)(const Point3 &, OptionalJacobian<2,6>, OptionalJacobian<2,3>) const  = &Pose3::bearing;
+  Unit3 (Pose3::*bearing2)(const Pose3 &,  OptionalJacobian<2,6>, OptionalJacobian<2,6>) const  = &Pose3::bearing;
 
   class_<Pose3>("Pose3")
       .def(init<>())
@@ -65,7 +68,6 @@ void exportPose3(){
       .def("equals", &Pose3::equals, equals_overloads(args("pose", "tol")))
       .def("identity", &Pose3::identity)
       .staticmethod("identity")
-      .def("bearing", &Pose3::bearing)
       .def("matrix", &Pose3::matrix)
       .def("transform_from", &Pose3::transform_from,
            transform_from_overloads(args("point", "H1", "H2")))
@@ -88,5 +90,6 @@ void exportPose3(){
       .def("between", between2, between_overloads())
       .def("range", range1, range_overloads())
       .def("range", range2, range_overloads())
-      .def("bearing", &Pose3::bearing, bearing_overloads());
+      .def("bearing", bearing1, bearing_overloads())
+      .def("bearing", bearing2, bearing_overloads());
 }

@@ -27,25 +27,32 @@ struct ReturnValue {
 
   friend struct ReturnValueGrammar;
 
-  /// Constructor
+  /// Default constructor
   ReturnValue() :
       isPair(false) {
   }
 
-  /// Constructor
+  /// Construct from type
   ReturnValue(const ReturnType& type) :
       isPair(false), type1(type) {
   }
 
-  /// Constructor
+  /// Construct from pair type arguments
   ReturnValue(const ReturnType& t1, const ReturnType& t2) :
       isPair(true), type1(t1), type2(t2) {
   }
+
+  /// Destructor
+  virtual ~ReturnValue() {}
 
   virtual void clear() {
     type1.clear();
     type2.clear();
     isPair = false;
+  }
+
+  bool isVoid() const {
+    return !isPair && !type1.isPtr && (type1.name() == "void");
   }
 
   bool operator==(const ReturnValue& other) const {
@@ -66,6 +73,12 @@ struct ReturnValue {
   void wrapTypeUnwrap(FileWriter& wrapperFile) const;
 
   void emit_matlab(FileWriter& proxyFile) const;
+
+  /// @param className the actual class name to use when "This" is specified
+  void emit_cython_pxd(FileWriter& file, const std::string& className,
+                       const std::vector<std::string>& templateArgs) const;
+  std::string pyx_returnType() const;
+  std::string pyx_casting(const std::string& var) const;
 
   friend std::ostream& operator<<(std::ostream& os, const ReturnValue& r) {
     if (!r.isPair && r.type1.category == ReturnType::VOID)

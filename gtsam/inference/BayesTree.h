@@ -30,7 +30,7 @@ namespace gtsam {
 
   // Forward declarations
   template<class FACTOR> class FactorGraph;
-  template<class BAYESTREE, class GRAPH> class ClusterTree;
+  template<class BAYESTREE, class GRAPH> class EliminatableClusterTree;
 
   /* ************************************************************************* */
   /** clique statistics */
@@ -214,7 +214,7 @@ namespace gtsam {
      * Given a list of indices, turn "contaminated" part of the tree back into a factor graph.
      * Factors and orphans are added to the in/out arguments.
      */
-    void removeTop(const FastVector<Key>& keys, BayesNetType& bn, Cliques& orphans);
+    void removeTop(const KeyVector& keys, BayesNetType& bn, Cliques& orphans);
 
     /**
      * Remove the requested subtree. */
@@ -247,7 +247,7 @@ namespace gtsam {
     void fillNodesIndex(const sharedClique& subtree);
 
     // Friend JunctionTree because it directly fills roots and nodes index.
-    template<class BAYESRTEE, class GRAPH> friend class ClusterTree;
+    template<class BAYESRTEE, class GRAPH> friend class EliminatableClusterTree;
 
   private:
     /** Serialization function */

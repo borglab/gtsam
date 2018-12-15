@@ -25,7 +25,6 @@ add_subdirectory(3rdparty)
 set (3rdparty_srcs
  ${eigen_headers} # Set by 3rdparty/CMakeLists.txt
  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd.c
- ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd_global.c
  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SuiteSparse_config/SuiteSparse_config.c)
 gtsam_assign_source_folders("${3rdparty_srcs}") # Create MSVC structure
 
@@ -66,20 +65,19 @@ foreach(subdir ${gtsam_subdirs})
 endforeach(subdir)
 
 # To add additional sources to gtsam when building the full library (static or shared)
-# Add the subfolder with _srcs appended to the end to this list
-set(gtsam_srcs
-    ${3rdparty_srcs}
-    ${base_srcs}
-    ${geometry_srcs}
-    ${inference_srcs}
-    ${symbolic_srcs}
-    ${discrete_srcs}
-    ${linear_srcs}
-    ${nonlinear_srcs}
-    ${slam_srcs}
-    ${navigation_srcs}
-	${gtsam_core_headers}
-)
+# append the subfolder with _srcs appended to the end to this list
+set(gtsam_srcs ${3rdparty_srcs})
+foreach(subdir ${gtsam_subdirs})
+	list(APPEND gtsam_srcs ${${subdir}_srcs})
+endforeach(subdir)
+list(APPEND gtsam_srcs ${gtsam_core_headers})
+
+IF(MSVC)
+	# Add precompiled header to sources
+	include(gtsamAddPch)
+	gtsamAddPch("precompiled_header.h" "precompiled_header.cpp" "${gtsam_srcs}")
+	list(INSERT gtsam_srcs 0 "precompiled_header.cpp")
+ENDIF(MSVC)
 
 # Generate and install config and dllexport files
 configure_file(config.h.in config.h)
@@ -131,17 +129,21 @@ else()
 			DEFINE_SYMBOL GTSAM_EXPORTS
 			RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 	endif()
+	if (APPLE)
+		set_target_properties(gtsam PROPERTIES
+			INSTALL_NAME_DIR
+			"${CMAKE_INSTALL_PREFIX}/lib")
+	endif()
     install(TARGETS gtsam EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
     list(APPEND GTSAM_EXPORTED_TARGETS gtsam)
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 endif()
 
-# Special cases
-if(MSVC)
-	set_property(SOURCE
-		"${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/ISAM2.cpp"
-		APPEND PROPERTY COMPILE_FLAGS "/bigobj")
+# make sure that ccolamd compiles even in face of warnings
+if(WIN32)
+    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w")
+else()
+    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-Wno-error")
 endif()
 
 # Create the matlab toolbox for the gtsam library
@@ -158,3 +160,4 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Wrap
     wrap_and_install_library(../gtsam.h "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
 endif ()
+

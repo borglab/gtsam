@@ -130,8 +130,8 @@ namespace gtsam {
     return keys;
   }
 
-  vector<Key> Signature::indices() const {
-    vector<Key> js;
+  KeyVector Signature::indices() const {
+    KeyVector js;
     js.push_back(key_.first);
     for(const DiscreteKey& key: parents_)
       js.push_back(key.first);

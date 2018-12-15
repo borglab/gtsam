@@ -298,10 +298,10 @@ namespace gtsam {
   };
 
   /* get subvectors */
-  Vector getSubvector(const Vector &src, const KeyInfo &keyInfo, const FastVector<Key> &keys);
+  Vector getSubvector(const Vector &src, const KeyInfo &keyInfo, const KeyVector &keys);
 
   /* set subvectors */
-  void setSubvector(const Vector &src, const KeyInfo &keyInfo, const FastVector<Key> &keys, Vector &dst);
+  void setSubvector(const Vector &src, const KeyInfo &keyInfo, const KeyVector &keys, Vector &dst);
 
 
   /* build a factor subgraph, which is defined as a set of weighted edges (factors) */

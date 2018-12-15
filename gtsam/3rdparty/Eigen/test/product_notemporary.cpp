@@ -7,30 +7,14 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-static int nb_temporaries;
-
-inline void on_temporary_creation(int size) {
-  // here's a great place to set a breakpoint when debugging failures in this test!
-  if(size!=0) nb_temporaries++;
-}
-  
-
-#define EIGEN_DENSE_STORAGE_CTOR_PLUGIN { on_temporary_creation(size); }
+#define TEST_ENABLE_TEMPORARY_TRACKING
 
 #include "main.h"
-
-#define VERIFY_EVALUATION_COUNT(XPR,N) {\
-    nb_temporaries = 0; \
-    XPR; \
-    if(nb_temporaries!=N) std::cerr << "nb_temporaries == " << nb_temporaries << "\n"; \
-    VERIFY( (#XPR) && nb_temporaries==N ); \
-  }
 
 template<typename MatrixType> void product_notemporary(const MatrixType& m)
 {
   /* This test checks the number of temporaries created
    * during the evaluation of a complex expression */
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::RealScalar RealScalar;
   typedef Matrix<Scalar, 1, Dynamic> RowVectorType;
@@ -62,14 +46,19 @@ template<typename MatrixType> void product_notemporary(const MatrixType& m)
   VERIFY_EVALUATION_COUNT( m3.noalias() = m1 * m2.adjoint(), 0);
 
   VERIFY_EVALUATION_COUNT( m3 = s1 * (m1 * m2.transpose()), 1);
-  VERIFY_EVALUATION_COUNT( m3 = m3 + s1 * (m1 * m2.transpose()), 1);
+//   VERIFY_EVALUATION_COUNT( m3 = m3 + s1 * (m1 * m2.transpose()), 1);
   VERIFY_EVALUATION_COUNT( m3.noalias() = s1 * (m1 * m2.transpose()), 0);
 
   VERIFY_EVALUATION_COUNT( m3 = m3 + (m1 * m2.adjoint()), 1);
+  VERIFY_EVALUATION_COUNT( m3 = m3 - (m1 * m2.adjoint()), 1);
+
   VERIFY_EVALUATION_COUNT( m3 = m3 + (m1 * m2.adjoint()).transpose(), 1);
-  VERIFY_EVALUATION_COUNT( m3.noalias() = m3 + m1 * m2.transpose(), 1);   // 0 in 3.3
-  VERIFY_EVALUATION_COUNT( m3.noalias() += m3 + m1 * m2.transpose(), 1);  // 0 in 3.3
-  VERIFY_EVALUATION_COUNT( m3.noalias() -= m3 + m1 * m2.transpose(), 1);  // 0 in 3.3
+  VERIFY_EVALUATION_COUNT( m3.noalias() = m3 + m1 * m2.transpose(), 0);
+  VERIFY_EVALUATION_COUNT( m3.noalias() += m3 + m1 * m2.transpose(), 0);
+  VERIFY_EVALUATION_COUNT( m3.noalias() -= m3 + m1 * m2.transpose(), 0);
+  VERIFY_EVALUATION_COUNT( m3.noalias() =  m3 - m1 * m2.transpose(), 0);
+  VERIFY_EVALUATION_COUNT( m3.noalias() += m3 - m1 * m2.transpose(), 0);
+  VERIFY_EVALUATION_COUNT( m3.noalias() -= m3 - m1 * m2.transpose(), 0);
 
   VERIFY_EVALUATION_COUNT( m3.noalias() = s1 * m1 * s2 * m2.adjoint(), 0);
   VERIFY_EVALUATION_COUNT( m3.noalias() = s1 * m1 * s2 * (m1*s3+m2*s2).adjoint(), 1);
@@ -86,7 +75,7 @@ template<typename MatrixType> void product_notemporary(const MatrixType& m)
   VERIFY_EVALUATION_COUNT( m3.noalias() -= (s1 * m1).template triangularView<Lower>() * m2, 0);
   VERIFY_EVALUATION_COUNT( rm3.noalias() = (s1 * m1.adjoint()).template triangularView<Upper>() * (m2+m2), 1);
   VERIFY_EVALUATION_COUNT( rm3.noalias() = (s1 * m1.adjoint()).template triangularView<UnitUpper>() * m2.adjoint(), 0);
-  
+
   VERIFY_EVALUATION_COUNT( m3.template triangularView<Upper>() = (m1 * m2.adjoint()), 0);
   VERIFY_EVALUATION_COUNT( m3.template triangularView<Upper>() -= (m1 * m2.adjoint()), 0);
 
@@ -123,8 +112,7 @@ template<typename MatrixType> void product_notemporary(const MatrixType& m)
   VERIFY_EVALUATION_COUNT( Scalar tmp = 0; tmp += Scalar(RealScalar(1)) /  (m3.transpose() * m3).diagonal().array().abs().sum(), 0 );
 
   // Zero temporaries for ... CoeffBasedProductMode
-  // - does not work with GCC because of the <..>, we'ld need variadic macros ...
-  //VERIFY_EVALUATION_COUNT( m3.col(0).head<5>() * m3.col(0).transpose() + m3.col(0).head<5>() * m3.col(0).transpose(), 0 );
+  VERIFY_EVALUATION_COUNT( m3.col(0).template head<5>() * m3.col(0).transpose() + m3.col(0).template head<5>() * m3.col(0).transpose(), 0 );
 
   // Check matrix * vectors
   VERIFY_EVALUATION_COUNT( cvres.noalias() = m1 * cv1, 0 );
@@ -132,6 +120,26 @@ template<typename MatrixType> void product_notemporary(const MatrixType& m)
   VERIFY_EVALUATION_COUNT( cvres.noalias() -= m1 * m2.col(0), 0 );
   VERIFY_EVALUATION_COUNT( cvres.noalias() -= m1 * rv1.adjoint(), 0 );
   VERIFY_EVALUATION_COUNT( cvres.noalias() -= m1 * m2.row(0).transpose(), 0 );
+
+  VERIFY_EVALUATION_COUNT( cvres.noalias() = (m1+m1) * cv1, 0 );
+  VERIFY_EVALUATION_COUNT( cvres.noalias() = (rm3+rm3) * cv1, 0 );
+  VERIFY_EVALUATION_COUNT( cvres.noalias() = (m1+m1) * (m1*cv1), 1 );
+  VERIFY_EVALUATION_COUNT( cvres.noalias() = (rm3+rm3) * (m1*cv1), 1 );
+
+  // Check outer products
+  m3 = cv1 * rv1;
+  VERIFY_EVALUATION_COUNT( m3.noalias() = cv1 * rv1, 0 );
+  VERIFY_EVALUATION_COUNT( m3.noalias() = (cv1+cv1) * (rv1+rv1), 1 );
+  VERIFY_EVALUATION_COUNT( m3.noalias() = (m1*cv1) * (rv1), 1 );
+  VERIFY_EVALUATION_COUNT( m3.noalias() += (m1*cv1) * (rv1), 1 );
+  VERIFY_EVALUATION_COUNT( rm3.noalias() = (cv1) * (rv1 * m1), 1 );
+  VERIFY_EVALUATION_COUNT( rm3.noalias() -= (cv1) * (rv1 * m1), 1 );
+  VERIFY_EVALUATION_COUNT( rm3.noalias() = (m1*cv1) * (rv1 * m1), 2 );
+  VERIFY_EVALUATION_COUNT( rm3.noalias() += (m1*cv1) * (rv1 * m1), 2 );
+
+  // Check nested products
+  VERIFY_EVALUATION_COUNT( cvres.noalias() = m1.adjoint() * m1 * cv1, 1 );
+  VERIFY_EVALUATION_COUNT( rvres.noalias() = rv1 * (m1 * m2.adjoint()), 1 );
 }
 
 void test_product_notemporary()
@@ -140,11 +148,12 @@ void test_product_notemporary()
   for(int i = 0; i < g_repeat; i++) {
     s = internal::random<int>(16,EIGEN_TEST_MAX_SIZE);
     CALL_SUBTEST_1( product_notemporary(MatrixXf(s, s)) );
-    s = internal::random<int>(16,EIGEN_TEST_MAX_SIZE);
     CALL_SUBTEST_2( product_notemporary(MatrixXd(s, s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
+    
     s = internal::random<int>(16,EIGEN_TEST_MAX_SIZE/2);
     CALL_SUBTEST_3( product_notemporary(MatrixXcf(s,s)) );
-    s = internal::random<int>(16,EIGEN_TEST_MAX_SIZE/2);
     CALL_SUBTEST_4( product_notemporary(MatrixXcd(s,s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
   }
 }

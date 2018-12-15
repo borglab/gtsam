@@ -118,6 +118,7 @@ namespace gtsam {
      * @param q The quaternion
      */
     Rot3(const Quaternion& q);
+    Rot3(double w, double x, double y, double z) : Rot3(Quaternion(w, x, y, z)) {}
 
     /// Random, generates a random axis, then random angle \in [-p,pi]
     static Rot3 Random(boost::mt19937 & rng);
@@ -156,12 +157,17 @@ namespace gtsam {
 
     /**
      * Returns rotation nRb from body to nav frame.
+     * For vehicle coordinate frame X forward, Y right, Z down:
      * Positive yaw is to right (as in aircraft heading).
      * Positive pitch is up (increasing aircraft altitude).
      * Positive roll is to right (increasing yaw in aircraft).
      * Tait-Bryan system from Spatial Reference Model (SRM) (x,y,z) = (roll,pitch,yaw)
      * as described in http://www.sedris.org/wg8home/Documents/WG80462.pdf.
-     * Assumes vehicle coordinate frame X forward, Y right, Z down.
+     *
+     * For vehicle coordinate frame X forward, Y left, Z up:
+     * Positive yaw is to left (as in aircraft heading).
+     * Positive pitch is down (decreasing aircraft altitude).
+     * Positive roll is to right (decreasing yaw in aircraft).
      */
     static Rot3 Ypr(double y, double p, double r) { return RzRyRx(r,p,y);}
 
@@ -179,7 +185,7 @@ namespace gtsam {
      */
     static Rot3 AxisAngle(const Point3& axis, double angle) {
 #ifdef GTSAM_USE_QUATERNIONS
-      return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, axis.vector()));
+      return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, axis));
 #else
       return Rot3(SO3::AxisAngle(axis,angle));
 #endif
@@ -502,6 +508,11 @@ namespace gtsam {
 #endif
     }
 
+#ifdef GTSAM_USE_QUATERNIONS
+  // only align if quaternion, Matrix3 has no alignment requirements
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
   };
 
   /**

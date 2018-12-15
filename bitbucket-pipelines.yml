@@ -1,0 +1,15 @@
+# Built from sample configuration for C++ – Make.
+# Check https://confluence.atlassian.com/x/5Q4SMw for more examples.
+# -----
+# Our custom docker image from Docker Hub as the build environment.
+image: dellaert/ubuntu-boost-tbb-eigen3:bionic
+
+pipelines:
+  default:
+    - step:
+        script: # Modify the commands below to build your repository.
+          - mkdir build
+          - cd build
+          - cmake -DGTSAM_USE_SYSTEM_EIGEN=OFF -DGTSAM_USE_EIGEN_MKL=OFF .. 
+          - make -j2
+          - make -j2 check

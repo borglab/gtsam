@@ -53,8 +53,19 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
   gttic(Ordering_COLAMDConstrained);
 
   gttic(Prepare);
+  const size_t nVars = variableIndex.size();
+  if (nVars == 0)
+  {
+    return Ordering();
+  }
+
+  if (nVars == 1)
+  {
+    return Ordering(KeyVector(1, variableIndex.begin()->first));
+  }
+
   const size_t nEntries = variableIndex.nEntries(), nFactors =
-      variableIndex.nFactors(), nVars = variableIndex.size();
+      variableIndex.nFactors();
   // Convert to compressed column major format colamd wants it in (== MATLAB format!)
   const size_t Alen = ccolamd_recommended((int) nEntries, (int) nFactors,
       (int) nVars); /* colamd arg 3: size of the array A */
@@ -64,7 +75,7 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
   // Fill in input data for COLAMD
   p[0] = 0;
   int count = 0;
-  vector<Key> keys(nVars); // Array to store the keys in the order we add them so we can retrieve them in permuted order
+  KeyVector keys(nVars); // Array to store the keys in the order we add them so we can retrieve them in permuted order
   size_t index = 0;
   for (auto key_factors: variableIndex) {
     // Arrange factor indices into COLAMD format
@@ -72,7 +83,7 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
     for(size_t factorIndex: column) {
       A[count++] = (int) factorIndex; // copy sparse column
     }
-    p[index + 1] = count; // column j (base 1) goes from A[j-1] to A[j]-1
+    p[index + 1] = count;  // column j (base 1) goes from A[j-1] to A[j]-1
     // Store key in array and increment index
     keys[index] = key_factors.first;
     ++index;
@@ -116,13 +127,14 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
 
 /* ************************************************************************* */
 Ordering Ordering::ColamdConstrainedLast(const VariableIndex& variableIndex,
-    const std::vector<Key>& constrainLast, bool forceOrder) {
+    const KeyVector& constrainLast, bool forceOrder) {
   gttic(Ordering_COLAMDConstrainedLast);
 
   size_t n = variableIndex.size();
   std::vector<int> cmember(n, 0);
 
   // Build a mapping to look up sorted Key indices by Key
+  // TODO(frank): think of a way to not build this
   FastMap<Key, size_t> keyIndices;
   size_t j = 0;
   for (auto key_factors: variableIndex)
@@ -142,7 +154,7 @@ Ordering Ordering::ColamdConstrainedLast(const VariableIndex& variableIndex,
 
 /* ************************************************************************* */
 Ordering Ordering::ColamdConstrainedFirst(const VariableIndex& variableIndex,
-    const std::vector<Key>& constrainFirst, bool forceOrder) {
+    const KeyVector& constrainFirst, bool forceOrder) {
   gttic(Ordering_COLAMDConstrainedFirst);
 
   const int none = -1;

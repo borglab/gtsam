@@ -28,7 +28,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 #include <gtsam/geometry/CalibratedCamera.h>
 TEST(PinholeSet, Stereo) {
-  typedef vector<Point2> ZZ;
+  typedef Point2Vector ZZ;
   PinholeSet<CalibratedCamera> set;
   CalibratedCamera camera;
   set.push_back(camera);
@@ -72,7 +72,7 @@ TEST(PinholeSet, Stereo) {
 #include <gtsam/geometry/Cal3Bundler.h>
 TEST(PinholeSet, Pinhole) {
   typedef PinholeCamera<Cal3Bundler> Camera;
-  typedef vector<Point2> ZZ;
+  typedef Point2Vector ZZ;
   PinholeSet<Camera> set;
   Camera camera;
   set.push_back(camera);
@@ -84,7 +84,7 @@ TEST(PinholeSet, Pinhole) {
   EXPECT(!set.equals(set2));
 
   // Check measurements
-  Point2 expected;
+  Point2 expected(0,0);
   ZZ z = set.project2(p);
   EXPECT(assert_equal(expected, z[0]));
   EXPECT(assert_equal(expected, z[1]));
@@ -131,7 +131,7 @@ TEST(PinholeSet, Pinhole) {
   }
   EXPECT(
       assert_equal(pointAtInfinity,
-          camera.backprojectPointAtInfinity(Point2())));
+          camera.backprojectPointAtInfinity(Point2(0,0))));
   {
     PinholeSet<Camera>::FBlocks Fs;
     Matrix E;

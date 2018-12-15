@@ -11,7 +11,6 @@
 
 template<typename MatrixType> void trmv(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
@@ -78,12 +77,14 @@ void test_product_trmv()
     CALL_SUBTEST_1( trmv(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( trmv(Matrix<float, 2, 2>()) );
     CALL_SUBTEST_3( trmv(Matrix3d()) );
+    
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2);
     CALL_SUBTEST_4( trmv(MatrixXcf(s,s)) );
-    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2);
     CALL_SUBTEST_5( trmv(MatrixXcd(s,s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
+    
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
     CALL_SUBTEST_6( trmv(Matrix<float,Dynamic,Dynamic,RowMajor>(s, s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
   }
-  TEST_SET_BUT_UNUSED_VARIABLE(s);
 }

@@ -31,7 +31,7 @@ typedef Vector3 Velocity3;
  * Navigation state: Pose (rotation, translation) + velocity
  * NOTE(frank): it does not make sense to make this a Lie group, but it is a 9D manifold
  */
-class NavState {
+class GTSAM_EXPORT NavState {
 private:
 
   // TODO(frank):

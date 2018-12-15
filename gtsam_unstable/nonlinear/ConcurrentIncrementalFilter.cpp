@@ -353,7 +353,7 @@ NonlinearFactorGraph ConcurrentIncrementalFilter::calculateFilterSummarization()
   }
 
   // Create the set of clique keys LC:
-  std::vector<Key> cliqueKeys;
+  KeyVector cliqueKeys;
   for(const ISAM2Clique::shared_ptr& clique: separatorCliques) {
     for(Key key: clique->conditional()->frontals()) {
       cliqueKeys.push_back(key);

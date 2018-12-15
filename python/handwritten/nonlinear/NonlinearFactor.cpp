@@ -28,7 +28,7 @@ using namespace gtsam;
 // All pure virtual methods should be wrapped. Non-pure may be wrapped if we want to mimic the 
 // overloading through inheritance in Python.
 // See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/exposing.html#python.class_virtual_functions
-struct NonlinearFactorCallback : NonlinearFactor, wrapper<NonlinearFactor>
+struct NonlinearFactorWrap : NonlinearFactor, wrapper<NonlinearFactor>
 {
   double error (const Values & values) const {
     return this->get_override("error")(values);
@@ -41,9 +41,35 @@ struct NonlinearFactorCallback : NonlinearFactor, wrapper<NonlinearFactor>
   }
 };
 
-void exportNonlinearFactor(){
+// Similarly for NoiseModelFactor:
+struct NoiseModelFactorWrap : NoiseModelFactor, wrapper<NoiseModelFactor> {
+  // NOTE(frank): Add all these again as I can't figure out how to derive
+  double error (const Values & values) const {
+    return this->get_override("error")(values);
+  }
+  size_t dim () const {
+    return this->get_override("dim")();
+  }
+  boost::shared_ptr<GaussianFactor> linearize(const Values & values) const {
+    return this->get_override("linearize")(values);
+  }
+  Vector unwhitenedError(const Values& x,
+                         boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    return this->get_override("unwhitenedError")(x, H);
+  }
+};
 
-  class_<NonlinearFactorCallback,boost::noncopyable>("NonlinearFactor")
-  ;
+void exportNonlinearFactor() {
+  class_<NonlinearFactorWrap, boost::noncopyable>("NonlinearFactor")
+      .def("error", pure_virtual(&NonlinearFactor::error))
+      .def("dim", pure_virtual(&NonlinearFactor::dim))
+      .def("linearize", pure_virtual(&NonlinearFactor::linearize));
+  register_ptr_to_python<boost::shared_ptr<NonlinearFactor> >();
 
+  class_<NoiseModelFactorWrap, boost::noncopyable>("NoiseModelFactor")
+      .def("error", pure_virtual(&NoiseModelFactor::error))
+      .def("dim", pure_virtual(&NoiseModelFactor::dim))
+      .def("linearize", pure_virtual(&NoiseModelFactor::linearize))
+      .def("unwhitenedError", pure_virtual(&NoiseModelFactor::unwhitenedError));
+  register_ptr_to_python<boost::shared_ptr<NoiseModelFactor> >();
 }

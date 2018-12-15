@@ -47,7 +47,7 @@ public :
   {
     #if defined(EIGEN_VECTORIZE_SSE)
     if (SIZE==Dynamic) return "eigen2"; else return "tiny_eigen2";
-    #elif defined(EIGEN_VECTORIZE_ALTIVEC)
+    #elif defined(EIGEN_VECTORIZE_ALTIVEC) || defined(EIGEN_VECTORIZE_VSX)
     if (SIZE==Dynamic) return "eigen2"; else return "tiny_eigen2";
     #else
     if (SIZE==Dynamic) return "eigen2_novec"; else return "tiny_eigen2_novec";

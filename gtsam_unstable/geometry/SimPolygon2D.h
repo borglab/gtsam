@@ -18,7 +18,7 @@ namespace gtsam {
  */
 class GTSAM_UNSTABLE_EXPORT SimPolygon2D {
 protected:
-  std::vector<Point2> landmarks_;
+  Point2Vector landmarks_;
   static boost::minstd_rand rng;
 
 public:
@@ -57,7 +57,7 @@ public:
   // access to underlying points
   const Point2& landmark(size_t i) const { return landmarks_[i]; }
   size_t size() const { return landmarks_.size(); }
-  const std::vector<Point2>& vertices() const { return landmarks_; }
+  const Point2Vector& vertices() const { return landmarks_; }
 
   // testable requirements
   bool equals(const SimPolygon2D& p, double tol=1e-5) const;
@@ -91,7 +91,7 @@ public:
   static bool insideBox(double s, const Point2& p);
 
   /** returns true iff p is within threshold of any point in S */
-  static bool nearExisting(const std::vector<Point2>& S,
+  static bool nearExisting(const Point2Vector& S,
       const Point2& p, double threshold);
 
   /** pick a random point uniformly over a box of side s */
@@ -105,11 +105,11 @@ public:
 
   /** pick a random point within a box that is further than dist d away from existing landmarks */
   static Point2 randomBoundedPoint2(double boundary_size,
-      const std::vector<Point2>& landmarks, double min_landmark_dist);
+      const Point2Vector& landmarks, double min_landmark_dist);
 
   /** pick a random point within a box that meets above requirements, as well as staying out of obstacles */
   static Point2 randomBoundedPoint2(double boundary_size,
-      const std::vector<Point2>& landmarks,
+      const Point2Vector& landmarks,
       const std::vector<SimPolygon2D>& obstacles, double min_landmark_dist);
 
   /** pick a random point that only avoid obstacles */
@@ -119,7 +119,7 @@ public:
   /** pick a random point in box defined by lower left and upper right corners */
   static Point2 randomBoundedPoint2(
       const Point2& LL_corner, const Point2& UR_corner,
-      const std::vector<Point2>& landmarks,
+      const Point2Vector& landmarks,
       const std::vector<SimPolygon2D>& obstacles, double min_landmark_dist);
 
   /** pick a random pose in a bounded area that is not in an obstacle */

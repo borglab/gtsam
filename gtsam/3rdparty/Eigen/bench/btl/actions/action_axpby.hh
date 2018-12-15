@@ -33,7 +33,7 @@ class Action_axpby {
 public :
 
   // Ctor
-  Action_axpby( int size ):_size(size),_alpha(0.5),_beta(0.95)
+  Action_axpby( int size ):_alpha(0.5),_beta(0.95),_size(size)
   {
     MESSAGE("Action_axpby Ctor");
 

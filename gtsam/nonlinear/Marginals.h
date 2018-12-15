@@ -48,6 +48,9 @@ protected:
 
 public:
 
+  /// Default constructor only for Cython wrapper
+  Marginals(){}
+
   /** Construct a marginals class.
    * @param graph The factor graph defining the full joint density on all variables.
    * @param solution The linearization point about which to compute Gaussian marginals (usually the MLE as obtained from a NonlinearOptimizer).
@@ -71,10 +74,10 @@ public:
   Matrix marginalCovariance(Key variable) const;
 
   /** Compute the joint marginal covariance of several variables */
-  JointMarginal jointMarginalCovariance(const std::vector<Key>& variables) const;
+  JointMarginal jointMarginalCovariance(const KeyVector& variables) const;
 
   /** Compute the joint marginal information of several variables */
-  JointMarginal jointMarginalInformation(const std::vector<Key>& variables) const;
+  JointMarginal jointMarginalInformation(const KeyVector& variables) const;
 
   /** Optimize the bayes tree */
   VectorValues optimize() const;
@@ -91,12 +94,8 @@ protected:
   FastMap<Key, size_t> indices_;
 
 public:
-  /** A block view of the joint marginal - this stores a reference to the
-   * JointMarginal object, so the JointMarginal object must be kept in scope
-   * while this block view is needed, otherwise assign this block object to a
-   * Matrix to store it.
-   */
-  typedef SymmetricBlockMatrix::constBlock Block;
+  /// Default constructor only for Cython wrapper
+  JointMarginal() {}
 
   /** Access a block, corresponding to a pair of variables, of the joint
    * marginal.  Each block is accessed by its "vertical position",
@@ -111,25 +110,27 @@ public:
    * @param iVariable The nonlinear Key specifying the "vertical position" of the requested block
    * @param jVariable The nonlinear Key specifying the "horizontal position" of the requested block
    */
-  Block operator()(Key iVariable, Key jVariable) const {
-    return blockMatrix_(indices_.at(iVariable), indices_.at(jVariable)); }
+  Matrix operator()(Key iVariable, Key jVariable) const {
+    const auto indexI = indices_.at(iVariable);
+    const auto indexJ = indices_.at(jVariable);
+    return blockMatrix_.block(indexI, indexJ);
+  }
 
   /** Synonym for operator() */
-  Block at(Key iVariable, Key jVariable) const {
-    return (*this)(iVariable, jVariable); }
+  Matrix at(Key iVariable, Key jVariable) const {
+    return (*this)(iVariable, jVariable);
+  }
 
-  /** The full, dense covariance/information matrix of the joint marginal. This returns
-   * a reference to the JointMarginal object, so the JointMarginal object must be kept
-   * in scope while this view is needed. Otherwise assign this block object to a Matrix
-   * to store it.
-   */
-  Eigen::SelfAdjointView<const Matrix, Eigen::Upper> fullMatrix() const { return blockMatrix_.matrix(); }
+  /** The full, dense covariance/information matrix of the joint marginal. */
+  Matrix fullMatrix() const {
+    return blockMatrix_.selfadjointView();
+  }
 
   /** Print */
   void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
 protected:
-  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const std::vector<Key>& keys) :
+  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const KeyVector& keys) :
     blockMatrix_(dims, fullMatrix), keys_(keys), indices_(Ordering(keys).invert()) {}
 
   friend class Marginals;

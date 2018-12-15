@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -62,7 +62,7 @@ TEST(VectorValues, basics)
   EXPECT(assert_equal(Vector2(2, 3), actual[1]));
   EXPECT(assert_equal(Vector2(4, 5), actual[2]));
   EXPECT(assert_equal(Vector2(6, 7), actual[5]));
-  FastVector<Key> keys = list_of(0)(1)(2)(5);
+  KeyVector keys {0, 1, 2, 5};
   EXPECT(assert_equal((Vector(7) << 1, 2, 3, 4, 5, 6, 7).finished(), actual.vector(keys)));
 
   // Check exceptions
@@ -101,8 +101,7 @@ TEST(VectorValues, subvector)
   init.insert(12, Vector2(4, 5));
   init.insert(13, Vector2(6, 7));
 
-  std::vector<Key> keys;
-  keys += 10, 12, 13;
+  KeyVector keys {10, 12, 13};
   Vector expSubVector = (Vector(5) << 1, 4, 5, 6, 7).finished();
   EXPECT(assert_equal(expSubVector, init.vector(keys)));
 }
@@ -188,8 +187,16 @@ TEST(VectorValues, convert)
   VectorValues actual(x,dims);
   EXPECT(assert_equal(expected, actual));
 
+  Scatter scatter;
+  scatter.emplace_back(0,1);
+  scatter.emplace_back(1,2);
+  scatter.emplace_back(2,2);
+  scatter.emplace_back(5,2);
+  VectorValues actual2(x,scatter);
+  EXPECT(assert_equal(expected, actual2));
+
   // Test other direction, note vector() is not guaranteed to give right result
-  FastVector<Key> keys = list_of(0)(1)(2)(5);
+  KeyVector keys {0, 1, 2, 5};
   EXPECT(assert_equal(x, actual.vector(keys)));
 
   // Test version with dims argument
@@ -214,7 +221,7 @@ TEST(VectorValues, vector_sub)
   expected << 1, 6, 7;
 
   // Test FastVector version
-  FastVector<Key> keys = list_of(0)(5);
+  KeyVector keys {0, 5};
   EXPECT(assert_equal(expected, vv.vector(keys)));
 
   // Test version with dims argument

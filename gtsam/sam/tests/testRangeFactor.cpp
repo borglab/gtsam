@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -38,8 +38,9 @@ typedef RangeFactor<Pose3, Point3> RangeFactor3D;
 typedef RangeFactorWithTransform<Pose2, Point2> RangeFactorWithTransform2D;
 typedef RangeFactorWithTransform<Pose3, Point3> RangeFactorWithTransform3D;
 
-Key poseKey(1);
-Key pointKey(2);
+// Keys are deliberately *not* in sorted order to test that case.
+Key poseKey(2);
+Key pointKey(1);
 double measurement(10.0);
 
 /* ************************************************************************* */
@@ -101,8 +102,11 @@ TEST( RangeFactor, ConstructorWithTransform) {
 
   RangeFactorWithTransform2D factor2D(poseKey, pointKey, measurement, model,
       body_P_sensor_2D);
+  KeyVector expected {2, 1};
+  CHECK(factor2D.keys() == expected);
   RangeFactorWithTransform3D factor3D(poseKey, pointKey, measurement, model,
       body_P_sensor_3D);
+  CHECK(factor3D.keys() == expected);
 }
 
 /* ************************************************************************* */
@@ -395,4 +399,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

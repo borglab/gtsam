@@ -41,7 +41,7 @@ const double tol = 1e-5;
 /* ************************************************************************* */
 TEST(HessianFactor, Slot)
 {
-  FastVector<Key> keys = list_of(2)(4)(1);
+  KeyVector keys {2, 4, 1};
   EXPECT_LONGS_EQUAL(0, GaussianFactor::Slot(keys,2));
   EXPECT_LONGS_EQUAL(1, GaussianFactor::Slot(keys,4));
   EXPECT_LONGS_EQUAL(2, GaussianFactor::Slot(keys,1));
@@ -53,8 +53,8 @@ TEST(HessianFactor, emptyConstructor)
 {
   HessianFactor f;
   DOUBLES_EQUAL(0.0, f.constantTerm(), 1e-9);        // Constant term should be zero
-  EXPECT(assert_equal(Vector(), f.linearTerm()));    // Linear term should be empty
-  EXPECT(assert_equal((Matrix) Z_1x1, f.info()));        // Full matrix should be 1-by-1 zero matrix
+  //EXPECT(assert_equal(Vector(), f.linearTerm()));    // Linear term should be empty
+  EXPECT(assert_equal((Matrix) Z_1x1, f.info().selfadjointView())); // Full matrix should be 1-by-1 zero matrix
   DOUBLES_EQUAL(0.0, f.error(VectorValues()), 1e-9); // Should have zero error
 }
 
@@ -103,7 +103,7 @@ TEST(HessianFactor, Constructor1)
   HessianFactor factor(0, G, g, f);
 
   // extract underlying parts
-  EXPECT(assert_equal(G, Matrix(factor.info(factor.begin(), factor.begin()))));
+  EXPECT(assert_equal(G, Matrix(factor.info().diagonalBlock(0))));
   EXPECT_DOUBLES_EQUAL(f, factor.constantTerm(), 1e-10);
   EXPECT(assert_equal(g, Vector(factor.linearTerm())));
   EXPECT_LONGS_EQUAL(1, (long)factor.size());
@@ -118,7 +118,6 @@ TEST(HessianFactor, Constructor1)
   EXPECT_DOUBLES_EQUAL(expected, actual, 1e-10);
 }
 
-
 /* ************************************************************************* */
 TEST(HessianFactor, Constructor1b)
 {
@@ -132,7 +131,7 @@ TEST(HessianFactor, Constructor1b)
   double f = dot(g,mu);
 
   // Check
-  EXPECT(assert_equal(G, Matrix(factor.info(factor.begin(), factor.begin()))));
+  EXPECT(assert_equal(G, Matrix(factor.info().diagonalBlock(0))));
   EXPECT_DOUBLES_EQUAL(f, factor.constantTerm(), 1e-10);
   EXPECT(assert_equal(g, Vector(factor.linearTerm())));
   EXPECT_LONGS_EQUAL(1, (long)factor.size());
@@ -167,9 +166,9 @@ TEST(HessianFactor, Constructor2)
   Vector linearExpected(3);  linearExpected << g1, g2;
   EXPECT(assert_equal(linearExpected, factor.linearTerm()));
 
-  EXPECT(assert_equal(G11, factor.info(factor.begin(), factor.begin())));
-  EXPECT(assert_equal(G12, factor.info(factor.begin(), factor.begin()+1)));
-  EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
+  EXPECT(assert_equal(G11, factor.info().diagonalBlock(0)));
+  EXPECT(assert_equal(G12, factor.info().aboveDiagonalBlock(0, 1)));
+  EXPECT(assert_equal(G22, factor.info().diagonalBlock(1)));
 
   // Check case when vector values is larger than factor
   VectorValues dxLarge = pair_list_of<Key, Vector>
@@ -218,12 +217,12 @@ TEST(HessianFactor, Constructor3)
   Vector linearExpected(6);  linearExpected << g1, g2, g3;
   EXPECT(assert_equal(linearExpected, factor.linearTerm()));
 
-  EXPECT(assert_equal(G11, factor.info(factor.begin()+0, factor.begin()+0)));
-  EXPECT(assert_equal(G12, factor.info(factor.begin()+0, factor.begin()+1)));
-  EXPECT(assert_equal(G13, factor.info(factor.begin()+0, factor.begin()+2)));
-  EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
-  EXPECT(assert_equal(G23, factor.info(factor.begin()+1, factor.begin()+2)));
-  EXPECT(assert_equal(G33, factor.info(factor.begin()+2, factor.begin()+2)));
+  EXPECT(assert_equal(G11, factor.info().diagonalBlock(0)));
+  EXPECT(assert_equal(G12, factor.info().aboveDiagonalBlock(0, 1)));
+  EXPECT(assert_equal(G13, factor.info().aboveDiagonalBlock(0, 2)));
+  EXPECT(assert_equal(G22, factor.info().diagonalBlock(1)));
+  EXPECT(assert_equal(G23, factor.info().aboveDiagonalBlock(1, 2)));
+  EXPECT(assert_equal(G33, factor.info().diagonalBlock(2)));
 }
 
 /* ************************************************************************* */
@@ -253,8 +252,7 @@ TEST(HessianFactor, ConstructorNWay)
     (1, dx1)
     (2, dx2);
 
-  std::vector<Key> js;
-  js.push_back(0); js.push_back(1); js.push_back(2);
+  KeyVector js {0, 1, 2};
   std::vector<Matrix> Gs;
   Gs.push_back(G11); Gs.push_back(G12); Gs.push_back(G13); Gs.push_back(G22); Gs.push_back(G23); Gs.push_back(G33);
   std::vector<Vector> gs;
@@ -271,12 +269,12 @@ TEST(HessianFactor, ConstructorNWay)
   Vector linearExpected(6);  linearExpected << g1, g2, g3;
   EXPECT(assert_equal(linearExpected, factor.linearTerm()));
 
-  EXPECT(assert_equal(G11, factor.info(factor.begin()+0, factor.begin()+0)));
-  EXPECT(assert_equal(G12, factor.info(factor.begin()+0, factor.begin()+1)));
-  EXPECT(assert_equal(G13, factor.info(factor.begin()+0, factor.begin()+2)));
-  EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
-  EXPECT(assert_equal(G23, factor.info(factor.begin()+1, factor.begin()+2)));
-  EXPECT(assert_equal(G33, factor.info(factor.begin()+2, factor.begin()+2)));
+  EXPECT(assert_equal(G11, factor.info().diagonalBlock(0)));
+  EXPECT(assert_equal(G12, factor.info().aboveDiagonalBlock(0, 1)));
+  EXPECT(assert_equal(G13, factor.info().aboveDiagonalBlock(0, 2)));
+  EXPECT(assert_equal(G22, factor.info().diagonalBlock(1)));
+  EXPECT(assert_equal(G23, factor.info().aboveDiagonalBlock(1, 2)));
+  EXPECT(assert_equal(G33, factor.info().diagonalBlock(2)));
 }
 
 /* ************************************************************************* */
@@ -499,7 +497,7 @@ TEST(HessianFactor, combine) {
  -100.0000,       0.0,   20.0000,       0.0,   80.0000,       0.0,  -20.0000,
        0.0, -100.0000,       0.0,   20.0000,       0.0,   80.0000,   14.0000,
    25.0000,  -17.5000,   -5.0000,    3.5000,  -20.0000,   14.0000,    7.4500).finished();
-  EXPECT(assert_equal(expected, Matrix(actual.matrixObject().full()), tol));
+  EXPECT(assert_equal(expected, Matrix(actual.info().selfadjointView()), tol));
 
 }
 
@@ -518,7 +516,7 @@ TEST(HessianFactor, gradientAtZero)
   // test gradient at zero
   VectorValues expectedG = pair_list_of<Key, Vector>(0, -g1) (1, -g2);
   Matrix A; Vector b; boost::tie(A,b) = factor.jacobian();
-  FastVector<Key> keys; keys += 0,1;
+  KeyVector keys {0, 1};
   EXPECT(assert_equal(-A.transpose()*b, expectedG.vector(keys)));
   VectorValues actualG = factor.gradientAtZero();
   EXPECT(assert_equal(expectedG, actualG));
@@ -573,6 +571,23 @@ TEST(HessianFactor, hessianDiagonal)
   LONGS_EQUAL(2,actualBD.size());
   EXPECT(assert_equal(G11,actualBD[0]));
   EXPECT(assert_equal(G22,actualBD[1]));
+}
+
+/* ************************************************************************* */
+TEST(HessianFactor, Solve)
+{
+  Matrix2 A;
+  A << 1, 2, 3, 4;
+  Matrix2 G = A.transpose() * A;
+  Vector2 b(5, 6);
+  Vector2 g = A.transpose() * b;
+  double f = 0;
+  Key key(55);
+  HessianFactor factor(key, G, g, f);
+
+  VectorValues expected;
+  expected.insert(key, A.inverse() * b);
+  EXPECT(assert_equal(expected, factor.solve()));
 }
 
 /* ************************************************************************* */

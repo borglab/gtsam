@@ -178,7 +178,7 @@ TEST (EssentialMatrixFactor, minimization) {
   // Noise sigma is 1cm, assuming metric measurements
   NonlinearFactorGraph graph;
   for (size_t i = 0; i < 5; i++)
-    graph.add(EssentialMatrixFactor(1, pA(i), pB(i), model1));
+    graph.emplace_shared<EssentialMatrixFactor>(1, pA(i), pB(i), model1);
 
   // Check error at ground truth
   Values truth;
@@ -222,8 +222,7 @@ TEST (EssentialMatrixFactor2, factor) {
     // Check evaluation
     Point3 P1 = data.tracks[i].p, P2 = data.cameras[1].pose().transform_to(P1);
     const Point2 pi = PinholeBase::Project(P2);
-    Point2 reprojectionError(pi - pB(i));
-    Vector expected = reprojectionError.vector();
+    Point2 expected(pi - pB(i));
 
     Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());
@@ -252,7 +251,7 @@ TEST (EssentialMatrixFactor2, minimization) {
   // Noise sigma is 1cm, assuming metric measurements
   NonlinearFactorGraph graph;
   for (size_t i = 0; i < 5; i++)
-    graph.add(EssentialMatrixFactor2(100, i, pA(i), pB(i), model2));
+    graph.emplace_shared<EssentialMatrixFactor2>(100, i, pA(i), pB(i), model2);
 
   // Check error at ground truth
   Values truth;
@@ -296,8 +295,7 @@ TEST (EssentialMatrixFactor3, factor) {
     // Check evaluation
     Point3 P1 = data.tracks[i].p;
     const Point2 pi = camera2.project(P1);
-    Point2 reprojectionError(pi - pB(i));
-    Vector expected = reprojectionError.vector();
+    Point2 expected(pi - pB(i));
 
     Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());
@@ -325,7 +323,7 @@ TEST (EssentialMatrixFactor3, minimization) {
   NonlinearFactorGraph graph;
   for (size_t i = 0; i < 5; i++)
     // but now we specify the rotation bRc
-    graph.add(EssentialMatrixFactor3(100, i, pA(i), pB(i), cRb, model2));
+    graph.emplace_shared<EssentialMatrixFactor3>(100, i, pA(i), pB(i), cRb, model2);
 
   // Check error at ground truth
   Values truth;
@@ -393,7 +391,7 @@ TEST (EssentialMatrixFactor, extraMinimization) {
 
   NonlinearFactorGraph graph;
   for (size_t i = 0; i < 5; i++)
-    graph.add(EssentialMatrixFactor(1, pA(i), pB(i), model1, K));
+    graph.emplace_shared<EssentialMatrixFactor>(1, pA(i), pB(i), model1, K);
 
   // Check error at ground truth
   Values truth;
@@ -438,8 +436,7 @@ TEST (EssentialMatrixFactor2, extraTest) {
     // Check evaluation
     Point3 P1 = data.tracks[i].p;
     const Point2 pi = camera2.project(P1);
-    Point2 reprojectionError(pi - pB(i));
-    Vector expected = reprojectionError.vector();
+    Point2 expected(pi - pB(i));
 
     Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());
@@ -468,7 +465,7 @@ TEST (EssentialMatrixFactor2, extraMinimization) {
   // Noise sigma is 1, assuming pixel measurements
   NonlinearFactorGraph graph;
   for (size_t i = 0; i < data.number_tracks(); i++)
-    graph.add(EssentialMatrixFactor2(100, i, pA(i), pB(i), model2, K));
+    graph.emplace_shared<EssentialMatrixFactor2>(100, i, pA(i), pB(i), model2, K);
 
   // Check error at ground truth
   Values truth;
@@ -507,8 +504,7 @@ TEST (EssentialMatrixFactor3, extraTest) {
     // Check evaluation
     Point3 P1 = data.tracks[i].p;
     const Point2 pi = camera2.project(P1);
-    Point2 reprojectionError(pi - pB(i));
-    Vector expected = reprojectionError.vector();
+    Point2 expected(pi - pB(i));
 
     Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());

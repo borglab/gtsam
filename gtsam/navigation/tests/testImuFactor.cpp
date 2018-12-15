@@ -781,8 +781,8 @@ TEST(ImuFactor, bodyPSensorWithBias) {
       pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
     // Create factors
-    graph.add(ImuFactor(X(i - 1), V(i - 1), X(i), V(i), B(i - 1), pim));
-    graph.add(BetweenFactor<Bias>(B(i - 1), B(i), zeroBias, biasNoiseModel));
+    graph.emplace_shared<ImuFactor>(X(i - 1), V(i - 1), X(i), V(i), B(i - 1), pim);
+    graph.emplace_shared<BetweenFactor<Bias> >(B(i - 1), B(i), zeroBias, biasNoiseModel);
 
     values.insert(X(i), Pose3());
     values.insert(V(i), zeroVel);

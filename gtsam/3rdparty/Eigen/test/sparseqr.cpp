@@ -10,11 +10,12 @@
 #include <Eigen/SparseQR>
 
 template<typename MatrixType,typename DenseMat>
-int generate_sparse_rectangular_problem(MatrixType& A, DenseMat& dA, int maxRows = 300)
+int generate_sparse_rectangular_problem(MatrixType& A, DenseMat& dA, int maxRows = 300, int maxCols = 150)
 {
+  eigen_assert(maxRows >= maxCols);
   typedef typename MatrixType::Scalar Scalar;
   int rows = internal::random<int>(1,maxRows);
-  int cols = internal::random<int>(1,rows);
+  int cols = internal::random<int>(1,maxCols);
   double density = (std::max)(8./(rows*cols), 0.01);
   
   A.resize(rows,cols);
@@ -53,7 +54,29 @@ template<typename Scalar> void test_sparseqr_scalar()
   
   b = dA * DenseVector::Random(A.cols());
   solver.compute(A);
-  if(internal::random<float>(0,1)>0.5)
+
+  // Q should be MxM
+  VERIFY_IS_EQUAL(solver.matrixQ().rows(), A.rows());
+  VERIFY_IS_EQUAL(solver.matrixQ().cols(), A.rows());
+
+  // R should be MxN
+  VERIFY_IS_EQUAL(solver.matrixR().rows(), A.rows());
+  VERIFY_IS_EQUAL(solver.matrixR().cols(), A.cols());
+
+  // Q and R can be multiplied
+  DenseMat recoveredA = solver.matrixQ()
+                      * DenseMat(solver.matrixR().template triangularView<Upper>())
+                      * solver.colsPermutation().transpose();
+  VERIFY_IS_EQUAL(recoveredA.rows(), A.rows());
+  VERIFY_IS_EQUAL(recoveredA.cols(), A.cols());
+
+  // and in the full rank case the original matrix is recovered
+  if (solver.rank() == A.cols())
+  {
+      VERIFY_IS_APPROX(A, recoveredA);
+  }
+
+  if(internal::random<float>(0,1)>0.5f)
     solver.factorize(A);  // this checks that calling analyzePattern is not needed if the pattern do not change.
   if (solver.info() != Success)
   {
@@ -88,6 +111,11 @@ template<typename Scalar> void test_sparseqr_scalar()
   QtQ = Q * Q.adjoint();
   idM.resize(Q.rows(), Q.rows()); idM.setIdentity();
   VERIFY(idM.isApprox(QtQ));
+  
+  // Q to dense
+  DenseMat dQ;
+  dQ = solver.matrixQ();
+  VERIFY_IS_APPROX(Q, dQ);
 }
 void test_sparseqr()
 {

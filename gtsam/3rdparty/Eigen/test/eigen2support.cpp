@@ -8,13 +8,11 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #define EIGEN2_SUPPORT
-#define EIGEN_NO_EIGEN2_DEPRECATED_WARNING
 
 #include "main.h"
 
 template<typename MatrixType> void eigen2support(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
 
   Index rows = m.rows();

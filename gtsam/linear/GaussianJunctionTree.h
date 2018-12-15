@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -26,21 +26,9 @@ namespace gtsam {
   class GaussianEliminationTree;
 
   /**
-   * A ClusterTree, i.e., a set of variable clusters with factors, arranged in a tree, with
-   * the additional property that it represents the clique tree associated with a Bayes net.
-   *
-   * In GTSAM a junction tree is an intermediate data structure in multifrontal
-   * variable elimination.  Each node is a cluster of factors, along with a
-   * clique of variables that are eliminated all at once. In detail, every node k represents
-   * a clique (maximal fully connected subset) of an associated chordal graph, such as a
-   * chordal Bayes net resulting from elimination.
-   *
-   * The difference with the BayesTree is that a JunctionTree stores factors, whereas a
-   * BayesTree stores conditionals, that are the product of eliminating the factors in the
-   * corresponding JunctionTree cliques.
-   *
-   * The tree structure and elimination method are exactly analagous to the EliminationTree,
-   * except that in the JunctionTree, at each node multiple variables are eliminated at a time.
+   * A junction tree specialized to Gaussian factors, i.e., it is a cluster tree with Gaussian
+   * factors stored in each cluster. It can be eliminated into a Gaussian Bayes tree with the same
+   * structure, which is essentially doing multifrontal sparse matrix factorization.
    *
    * \addtogroup Multifrontal
    * \nosubgrouping
@@ -51,7 +39,7 @@ namespace gtsam {
     typedef JunctionTree<GaussianBayesTree, GaussianFactorGraph> Base; ///< Base class
     typedef GaussianJunctionTree This; ///< This class
     typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
-    
+
     /**
     * Build the elimination tree of a factor graph using pre-computed column structure.
     * @param factorGraph The factor graph for which to build the elimination tree

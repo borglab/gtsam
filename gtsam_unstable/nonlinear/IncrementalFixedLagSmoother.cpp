@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -88,7 +88,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
     std::cout << "Current Timestamp: " << current_timestamp << std::endl;
 
   // Find the set of variables to be marginalized out
-  std::set<Key> marginalizableKeys = findKeysBefore(
+  KeyVector marginalizableKeys = findKeysBefore(
       current_timestamp - smootherLag_);
 
   if (debug) {
@@ -174,7 +174,7 @@ void IncrementalFixedLagSmoother::eraseKeysBefore(double timestamp) {
 
 /* ************************************************************************* */
 void IncrementalFixedLagSmoother::createOrderingConstraints(
-    const std::set<Key>& marginalizableKeys,
+    const KeyVector& marginalizableKeys,
     boost::optional<FastMap<Key, int> >& constrainedKeys) const {
   if (marginalizableKeys.size() > 0) {
     constrainedKeys = FastMap<Key, int>();

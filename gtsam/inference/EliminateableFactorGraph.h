@@ -170,7 +170,7 @@ namespace gtsam {
      *  factor graph, and \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BayesNetType>, boost::shared_ptr<FactorGraphType> >
       eliminatePartialSequential(
-      const std::vector<Key>& variables,
+      const KeyVector& variables,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
@@ -190,14 +190,14 @@ namespace gtsam {
      *  factor graph, and \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> >
       eliminatePartialMultifrontal(
-      const std::vector<Key>& variables,
+      const KeyVector& variables,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
     /** Compute the marginal of the requested variables and return the result as a Bayes net.
      *  @param variables Determines the variables whose marginal to compute, if provided as an
      *         Ordering they will be ordered in the returned BayesNet as specified, and if provided
-     *         as a vector<Key> they will be ordered using constrained COLAMD.
+     *         as a KeyVector they will be ordered using constrained COLAMD.
      *  @param marginalizedVariableOrdering Optional ordering for the variables being marginalized
      *         out, i.e. all variables not in \c variables.  If this is boost::none, the ordering
      *         will be computed with COLAMD.
@@ -206,7 +206,7 @@ namespace gtsam {
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
     boost::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
-      boost::variant<const Ordering&, const std::vector<Key>&> variables,
+      boost::variant<const Ordering&, const KeyVector&> variables,
       OptionalOrdering marginalizedVariableOrdering = boost::none,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
@@ -214,7 +214,7 @@ namespace gtsam {
     /** Compute the marginal of the requested variables and return the result as a Bayes tree.
      *  @param variables Determines the variables whose marginal to compute, if provided as an
      *         Ordering they will be ordered in the returned BayesNet as specified, and if provided
-     *         as a vector<Key> they will be ordered using constrained COLAMD.
+     *         as a KeyVector they will be ordered using constrained COLAMD.
      *  @param marginalizedVariableOrdering Optional ordering for the variables being marginalized
      *         out, i.e. all variables not in \c variables.  If this is boost::none, the ordering
      *         will be computed with COLAMD.
@@ -223,14 +223,14 @@ namespace gtsam {
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
     boost::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
-      boost::variant<const Ordering&, const std::vector<Key>&> variables,
+      boost::variant<const Ordering&, const KeyVector&> variables,
       OptionalOrdering marginalizedVariableOrdering = boost::none,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
     /** Compute the marginal factor graph of the requested variables. */
     boost::shared_ptr<FactorGraphType> marginal(
-      const std::vector<Key>& variables,
+      const KeyVector& variables,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 

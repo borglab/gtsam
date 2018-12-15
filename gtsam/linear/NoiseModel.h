@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -662,7 +662,29 @@ namespace gtsam {
         Base(const ReweightScheme reweight = Block):reweight_(reweight) {}
         virtual ~Base() {}
 
-        /// robust error function to implement
+        /*
+         * This method is responsible for returning the total penalty for a given amount of error.
+         * For example, this method is responsible for implementing the quadratic function for an
+         * L2 penalty, the absolute value function for an L1 penalty, etc.
+         *
+         * TODO(mike): There is currently a bug in GTSAM, where none of the mEstimator classes
+         * implement a residual function, and GTSAM calls the weight function to evaluate the
+         * total penalty, rather than calling the residual function. The weight function should be
+         * used during iteratively reweighted least squares optimization, but should not be used to
+         * evaluate the total penalty. The long-term solution is for all mEstimators to implement
+         * both a weight and a residual function, and for GTSAM to call the residual function when
+         * evaluating the total penalty. But for now, I'm leaving this residual method as pure
+         * virtual, so the existing mEstimators can inherit this default fallback behavior.
+         */
+        virtual double residual(double error) const { return 0; };
+
+        /*
+         * This method is responsible for returning the weight function for a given amount of error.
+         * The weight function is related to the analytic derivative of the residual function. See
+         *  http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
+         * for details. This method is required when optimizing cost functions with robust penalties
+         * using iteratively re-weighted least squares.
+         */
         virtual double weight(double error) const = 0;
 
         virtual void print(const std::string &s) const = 0;
@@ -916,6 +938,45 @@ namespace gtsam {
         }
       };
 
+      /// L2WithDeadZone implements a standard L2 penalty, but with a dead zone of width 2*k,
+      /// centered at the origin. The resulting penalty within the dead zone is always zero, and
+      /// grows quadratically outside the dead zone. In this sense, the L2WithDeadZone penalty is
+      /// "robust to inliers", rather than being robust to outliers. This penalty can be used to
+      /// create barrier functions in a general way.
+      class GTSAM_EXPORT L2WithDeadZone : public Base {
+      protected:
+          double k_;
+
+      public:
+          typedef boost::shared_ptr<L2WithDeadZone> shared_ptr;
+
+          L2WithDeadZone(double k, const ReweightScheme reweight = Block);
+          double residual(double error) const {
+            const double abs_error = fabs(error);
+            return (abs_error < k_) ? 0.0 : 0.5*(k_-abs_error)*(k_-abs_error);
+          }
+          double weight(double error) const {
+            // note that this code is slightly uglier than above, because there are three distinct
+            // cases to handle (left of deadzone, deadzone, right of deadzone) instead of the two
+            // cases (deadzone, non-deadzone) above.
+            if (fabs(error) <= k_) return 0.0;
+            else if (error > k_) return (-k_+error)/error;
+            else return (k_+error)/error;
+          }
+          void print(const std::string &s) const;
+          bool equals(const Base& expected, double tol=1e-8) const;
+          static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+
+      private:
+          /** Serialization function */
+          friend class boost::serialization::access;
+          template<class ARCHIVE>
+          void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+            ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+            ar & BOOST_SERIALIZATION_NVP(k_);
+          }
+      };
+
     } ///\namespace mEstimator
 
     /**
@@ -976,7 +1037,9 @@ namespace gtsam {
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
       inline virtual double distance(const Vector& v) const
       { return this->whiten(v).squaredNorm(); }
-
+      // TODO(mike): fold the use of the m-estimator residual(...) function into distance(...)
+      inline virtual double distance_non_whitened(const Vector& v) const
+      { return robust_->residual(v.norm()); }
       // TODO: these are really robust iterated re-weighting support functions
       virtual void WhitenSystem(Vector& b) const;
       virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const;
@@ -997,7 +1060,7 @@ namespace gtsam {
         ar & boost::serialization::make_nvp("noise_", const_cast<NoiseModel::shared_ptr&>(noise_));
       }
     };
-    
+
     // Helper function
     GTSAM_EXPORT boost::optional<Vector> checkIfDiagonal(const Matrix M);
 

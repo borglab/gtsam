@@ -104,7 +104,7 @@ int main(int argc, char** argv){
   //constrain the first pose such that it cannot change from its original value during optimization
   // NOTE: NonlinearEquality forces the optimizer to use QR rather than Cholesky
   // QR is much slower than Cholesky, but numerically more stable
-  graph.push_back(NonlinearEquality<Pose3>(1,firstPose));
+  graph.emplace_shared<NonlinearEquality<Pose3> >(1,firstPose);
 
   LevenbergMarquardtParams params;
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
@@ -112,7 +112,7 @@ int main(int argc, char** argv){
 
   cout << "Optimizing" << endl;
   //create Levenberg-Marquardt optimizer to optimize the factor graph
-  LevenbergMarquardtOptimizer optimizer = LevenbergMarquardtOptimizer(graph, initial_estimate, params);
+  LevenbergMarquardtOptimizer optimizer(graph, initial_estimate, params);
   Values result = optimizer.optimize();
 
   cout << "Final result sample:" << endl;

@@ -234,7 +234,7 @@ void RenderingWidget::drawScene()
   gpu.drawVector(Vector3f::Zero(), length*Vector3f::UnitZ(), Color(0,0,1,1));
 
   // draw the fractal object
-  float sqrt3 = internal::sqrt(3.);
+  float sqrt3 = std::sqrt(3.);
   glLightfv(GL_LIGHT0, GL_AMBIENT, Vector4f(0.5,0.5,0.5,1).data());
   glLightfv(GL_LIGHT0, GL_DIFFUSE, Vector4f(0.5,1,0.5,1).data());
   glLightfv(GL_LIGHT0, GL_SPECULAR, Vector4f(1,1,1,1).data());

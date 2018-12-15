@@ -83,10 +83,20 @@ FIND_PATH(MKL_FFTW_INCLUDE_DIR
   NO_DEFAULT_PATH
 )
 
-IF(WIN32)
+IF(WIN32 AND MKL_ROOT_DIR)
         SET(MKL_LIB_SEARCHPATH $ENV{ICC_LIB_DIR} $ENV{MKL_LIB_DIR} "${MKL_ROOT_DIR}/lib/${MKL_ARCH_DIR}" "${MKL_ROOT_DIR}/../compiler" "${MKL_ROOT_DIR}/../compiler/lib/${MKL_ARCH_DIR}")
-        
-        IF (MKL_INCLUDE_DIR MATCHES "10.")
+        IF(MKL_INCLUDE_DIR MATCHES "2017" OR MKL_INCLUDE_DIR MATCHES "2018")
+                IF(CMAKE_CL_64)
+                        SET(MKL_LIBS mkl_core mkl_intel_lp64 mkl_lapack95_lp64 mkl_blas95_lp64)
+                ELSE()
+                        SET(MKL_LIBS mkl_core mkl_intel_s mkl_lapack95 mkl_blas95)
+                ENDIF()
+                IF(TBB_FOUND AND GTSAM_WITH_TBB)
+                        SET(MKL_LIBS ${MKL_LIBS} mkl_tbb_thread)
+                ELSE()
+                        SET(MKL_LIBS ${MKL_LIBS} mkl_intel_thread libiomp5md)
+                ENDIF()
+        ELSEIF(MKL_INCLUDE_DIR MATCHES "10.")
                 IF(CMAKE_CL_64)
                         SET(MKL_LIBS mkl_solver_lp64 mkl_core mkl_intel_lp64 mkl_intel_thread libguide mkl_lapack95_lp64 mkl_blas95_lp64)
                 ELSE()
@@ -115,7 +125,7 @@ IF(WIN32)
                 ENDIF()
         ENDFOREACH()
         SET(MKL_FOUND ON)
-ELSE() # UNIX and macOS
+ELSEIF(MKL_ROOT_DIR) # UNIX and macOS
         FIND_LIBRARY(MKL_CORE_LIBRARY
           mkl_core
           PATHS

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -92,7 +92,7 @@ namespace gtsam {
     const Matrix3 R = matrix();
     if (H1) *H1 = R * skewSymmetric(-p.x(), -p.y(), -p.z());
     if (H2) *H2 = R;
-    const Vector3 r = R * p.vector();
+    const Vector3 r = R * p;
     return Point3(r.x(), r.y(), r.z());
   }
 

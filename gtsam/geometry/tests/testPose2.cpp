@@ -43,7 +43,7 @@ TEST(Pose2 , Concept) {
 
 /* ************************************************************************* */
 TEST(Pose2, constructors) {
-  Point2 p;
+  Point2 p(0,0);
   Pose2 pose(0,p);
   Pose2 origin;
   assert_equal(pose,origin);
@@ -170,6 +170,35 @@ TEST(Pose2, expmap_c_full)
   EXPECT(assert_equal(expected, expm<Pose2>(xi),1e-6));
   EXPECT(assert_equal(expected, Pose2::Expmap(xi),1e-6));
   EXPECT(assert_equal(xi, Pose2::Logmap(expected),1e-6));
+}
+
+/* ************************************************************************* */
+// assert that T*exp(xi)*T^-1 is equal to exp(Ad_T(xi))
+TEST(Pose2, Adjoint_full) {
+  Pose2 T(1, 2, 3);
+  Pose2 expected = T * Pose2::Expmap(screwPose2::xi) * T.inverse();
+  Vector xiprime = T.Adjoint(screwPose2::xi);
+  EXPECT(assert_equal(expected, Pose2::Expmap(xiprime), 1e-6));
+
+  Vector3 xi2(4, 5, 6);
+  Pose2 expected2 = T * Pose2::Expmap(xi2) * T.inverse();
+  Vector xiprime2 = T.Adjoint(xi2);
+  EXPECT(assert_equal(expected2, Pose2::Expmap(xiprime2), 1e-6));
+}
+
+/* ************************************************************************* */
+// assert that T*wedge(xi)*T^-1 is equal to wedge(Ad_T(xi))
+TEST(Pose2, Adjoint_hat) {
+  Pose2 T(1, 2, 3);
+  auto hat = [](const Vector& xi) { return ::wedge<Pose2>(xi); };
+  Matrix3 expected = T.matrix() * hat(screwPose2::xi) * T.matrix().inverse();
+  Matrix3 xiprime = hat(T.Adjoint(screwPose2::xi));
+  EXPECT(assert_equal(expected, xiprime, 1e-6));
+
+  Vector3 xi2(4, 5, 6);
+  Matrix3 expected2 = T.matrix() * hat(xi2) * T.matrix().inverse();
+  Matrix3 xiprime2 = hat(T.Adjoint(xi2));
+  EXPECT(assert_equal(expected2, xiprime2, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -371,7 +400,7 @@ TEST(Pose2, compose_c)
 /* ************************************************************************* */
 TEST(Pose2, inverse )
 {
-  Point2 origin, t(1,2);
+  Point2 origin(0,0), t(1,2);
   Pose2 gTl(M_PI/2.0, t); // robot at (1,2) looking towards y
 
   Pose2 identity, lTg = gTl.inverse();
@@ -409,7 +438,7 @@ namespace {
 /* ************************************************************************* */
 TEST( Pose2, matrix )
 {
-  Point2 origin, t(1,2);
+  Point2 origin(0,0), t(1,2);
   Pose2 gTl(M_PI/2.0, t); // robot at (1,2) looking towards y
   Matrix gMl = matrix(gTl);
   EXPECT(assert_equal((Matrix(3,3) <<
@@ -743,7 +772,7 @@ namespace {
   /* ************************************************************************* */
   struct Triangle { size_t i_,j_,k_;};
 
-  boost::optional<Pose2> align(const vector<Point2>& ps, const vector<Point2>& qs,
+  boost::optional<Pose2> align2(const Point2Vector& ps, const Point2Vector& qs,
     const pair<Triangle, Triangle>& trianglePair) {
       const Triangle& t1 = trianglePair.first, t2 = trianglePair.second;
       vector<Point2Pair> correspondences;
@@ -755,14 +784,14 @@ namespace {
 TEST(Pose2, align_4) {
   using namespace align_3;
 
-  vector<Point2> ps,qs;
+  Point2Vector ps,qs;
   ps += p1, p2, p3;
   qs += q3, q1, q2; // note in 3,1,2 order !
 
   Triangle t1; t1.i_=0; t1.j_=1; t1.k_=2;
   Triangle t2; t2.i_=1; t2.j_=2; t2.k_=0;
 
-  boost::optional<Pose2> actual = align(ps, qs, make_pair(t1,t2));
+  boost::optional<Pose2> actual = align2(ps, qs, make_pair(t1,t2));
   EXPECT(assert_equal(expected, *actual));
 }
 

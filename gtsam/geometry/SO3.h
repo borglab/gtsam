@@ -24,6 +24,7 @@
 #include <gtsam/base/Lie.h>
 
 #include <cmath>
+#include <iosfwd>
 
 namespace gtsam {
 
@@ -32,7 +33,7 @@ namespace gtsam {
  *  We guarantee (all but first) constructors only generate from sub-manifold.
  *  However, round-off errors in repeated composition could move off it...
  */
-class GTSAM_EXPORT SO3: public Matrix3, public LieGroup<SO3, 3> {
+class SO3: public Matrix3, public LieGroup<SO3, 3> {
 
 protected:
 
@@ -67,9 +68,7 @@ public:
   /// @name Testable
   /// @{
 
-  void print(const std::string& s) const {
-    std::cout << s << *this << std::endl;
-  }
+  void print(const std::string& s) const;
 
   bool equals(const SO3 & R, double tol) const {
     return equal_with_abs_tol(*this, R, tol);
@@ -136,7 +135,7 @@ public:
 namespace so3 {
 
 /// Functor implementing Exponential map
-class ExpmapFunctor {
+class GTSAM_EXPORT ExpmapFunctor {
  protected:
   const double theta2;
   Matrix3 W, K, KK;
@@ -157,7 +156,7 @@ class ExpmapFunctor {
 };
 
 /// Functor that implements Exponential map *and* its derivatives
-class DexpFunctor : public ExpmapFunctor {
+class GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   const Vector3 omega;
   double a, b;
   Matrix3 dexp_;

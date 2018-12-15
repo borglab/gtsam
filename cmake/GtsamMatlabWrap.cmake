@@ -128,8 +128,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
     ## This needs to be fixed!!
     if(UNIX AND NOT APPLE)
       list(APPEND automaticDependencies ${Boost_SERIALIZATION_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-        ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE} ${Boost_DATE_TIME_LIBRARY_RELEASE}
-        ${Boost_REGEX_LIBRARY_RELEASE})
+        ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE} ${Boost_DATE_TIME_LIBRARY_RELEASE})
       if(Boost_TIMER_LIBRARY_RELEASE AND NOT GTSAM_DISABLE_NEW_TIMERS) # Only present in Boost >= 1.48.0
         list(APPEND automaticDependencies ${Boost_TIMER_LIBRARY_RELEASE} ${Boost_CHRONO_LIBRARY_RELEASE})
         if(GTSAM_MEX_BUILD_STATIC_MODULE)
@@ -209,7 +208,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 		OUTPUT ${generated_cpp_file}
 		DEPENDS ${interfaceHeader} wrap ${module_library_target} ${otherLibraryTargets} ${otherSourcesAndObjects}
         COMMAND 
-            wrap
+            wrap --matlab
             ${modulePath}
             ${moduleName} 
             ${generated_files_path} 
@@ -220,9 +219,9 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	# Set up building of mex module
 	string(REPLACE ";" " " extraMexFlagsSpaced "${extraMexFlags}")
 	string(REPLACE ";" " " mexFlagsSpaced "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-	add_library(${moduleName}_wrapper MODULE ${generated_cpp_file} ${interfaceHeader} ${otherSourcesAndObjects})
-	target_link_libraries(${moduleName}_wrapper ${correctedOtherLibraries})
-	set_target_properties(${moduleName}_wrapper PROPERTIES
+	add_library(${moduleName}_matlab_wrapper MODULE ${generated_cpp_file} ${interfaceHeader} ${otherSourcesAndObjects})
+	target_link_libraries(${moduleName}_matlab_wrapper ${correctedOtherLibraries})
+	set_target_properties(${moduleName}_matlab_wrapper PROPERTIES
 		OUTPUT_NAME              "${moduleName}_wrapper"
 		PREFIX                   ""
 		SUFFIX                   ".${mexModuleExt}"
@@ -230,12 +229,12 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 		ARCHIVE_OUTPUT_DIRECTORY "${compiled_mex_modules_root}"
 		RUNTIME_OUTPUT_DIRECTORY "${compiled_mex_modules_root}"
 		CLEAN_DIRECT_OUTPUT 1)
-	set_property(TARGET ${moduleName}_wrapper APPEND_STRING PROPERTY COMPILE_FLAGS " ${extraMexFlagsSpaced} ${mexFlagsSpaced} \"-I${MATLAB_ROOT}/extern/include\" -DMATLAB_MEX_FILE -DMX_COMPAT_32")
-	set_property(TARGET ${moduleName}_wrapper APPEND PROPERTY INCLUDE_DIRECTORIES ${extraIncludeDirs})
+	set_property(TARGET ${moduleName}_matlab_wrapper APPEND_STRING PROPERTY COMPILE_FLAGS " ${extraMexFlagsSpaced} ${mexFlagsSpaced} \"-I${MATLAB_ROOT}/extern/include\" -DMATLAB_MEX_FILE -DMX_COMPAT_32")
+	set_property(TARGET ${moduleName}_matlab_wrapper APPEND PROPERTY INCLUDE_DIRECTORIES ${extraIncludeDirs})
 	# Disable build type postfixes for the mex module - we install in different directories for each build type instead
 	foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
 		string(TOUPPER "${build_type}" build_type_upper)
-		set_target_properties(${moduleName}_wrapper PROPERTIES ${build_type_upper}_POSTFIX "")
+		set_target_properties(${moduleName}_matlab_wrapper PROPERTIES ${build_type_upper}_POSTFIX "")
 	endforeach()
 	# Set up platform-specific flags
 	if(MSVC)
@@ -244,17 +243,17 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 		else()
 			set(mxLibPath "${MATLAB_ROOT}/extern/lib/win32/microsoft")
 		endif()
-		target_link_libraries(${moduleName}_wrapper "${mxLibPath}/libmex.lib" "${mxLibPath}/libmx.lib" "${mxLibPath}/libmat.lib")
-		set_target_properties(${moduleName}_wrapper PROPERTIES LINK_FLAGS "/export:mexFunction")
+		target_link_libraries(${moduleName}_matlab_wrapper "${mxLibPath}/libmex.lib" "${mxLibPath}/libmx.lib" "${mxLibPath}/libmat.lib")
+		set_target_properties(${moduleName}_matlab_wrapper PROPERTIES LINK_FLAGS "/export:mexFunction")
 		set_property(SOURCE "${generated_cpp_file}" APPEND PROPERTY COMPILE_FLAGS "/bigobj")
 	elseif(APPLE)
 		set(mxLibPath "${MATLAB_ROOT}/bin/maci64")
-		target_link_libraries(${moduleName}_wrapper "${mxLibPath}/libmex.dylib" "${mxLibPath}/libmx.dylib" "${mxLibPath}/libmat.dylib")
+		target_link_libraries(${moduleName}_matlab_wrapper "${mxLibPath}/libmex.dylib" "${mxLibPath}/libmx.dylib" "${mxLibPath}/libmat.dylib")
 	endif()
 
     # Hacking around output issue with custom command
     # Deletes generated build folder 
-    add_custom_target(wrap_${moduleName}_distclean 
+    add_custom_target(wrap_${moduleName}_matlab_distclean 
 	    COMMAND cmake -E remove_directory ${generated_files_path}
 		COMMAND cmake -E remove_directory ${compiled_mex_modules_root})
 endfunction()
@@ -279,13 +278,13 @@ function(install_wrapped_library_internal interfaceHeader)
 			get_filename_component(location "${GTSAM_TOOLBOX_INSTALL_PATH}" PATH)
 			get_filename_component(name "${GTSAM_TOOLBOX_INSTALL_PATH}" NAME)
 			install(DIRECTORY "${generated_files_path}/" DESTINATION "${location}/${name}${build_type_tag}" CONFIGURATIONS "${build_type}" FILES_MATCHING PATTERN "*.m")
-			install(TARGETS ${moduleName}_wrapper
+			install(TARGETS ${moduleName}_matlab_wrapper
 				LIBRARY DESTINATION "${location}/${name}${build_type_tag}" CONFIGURATIONS "${build_type}"
 				RUNTIME DESTINATION "${location}/${name}${build_type_tag}" CONFIGURATIONS "${build_type}")
 		endforeach()
 	else()
 		install(DIRECTORY "${generated_files_path}/" DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH} FILES_MATCHING PATTERN "*.m")
-		install(TARGETS ${moduleName}_wrapper
+		install(TARGETS ${moduleName}_matlab_wrapper
 			LIBRARY DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}
 			RUNTIME DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH})
 	endif()

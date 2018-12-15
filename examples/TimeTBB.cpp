@@ -20,6 +20,7 @@
 
 #include <boost/assign/list_of.hpp>
 #include <map>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;

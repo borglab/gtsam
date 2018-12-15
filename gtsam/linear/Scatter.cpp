@@ -40,14 +40,15 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
 
   // If we have an ordering, pre-fill the ordered variables first
   if (ordering) {
-    for (Key key: *ordering) {
-      push_back(SlotEntry(key, 0));
+    for (Key key : *ordering) {
+      add(key, 0);
     }
   }
 
   // Now, find dimensions of variables and/or extend
-  for (const GaussianFactor::shared_ptr& factor: gfg) {
-    if (!factor) continue;
+  for (const auto& factor : gfg) {
+    if (!factor)
+      continue;
 
     // TODO: Fix this hack to cope with zero-row Jacobians that come from BayesTreeOrphanWrappers
     const JacobianFactor* asJacobian = dynamic_cast<const JacobianFactor*>(factor.get());
@@ -61,7 +62,7 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
       if (it!=end())
         it->dimension = factor->getDim(variable);
       else
-        push_back(SlotEntry(key, factor->getDim(variable)));
+        add(key, factor->getDim(variable));
     }
   }
 
@@ -69,9 +70,11 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
   iterator first = begin();
   if (ordering) first += ordering->size();
   if (first != end()) std::sort(first, end());
+}
 
-  // Filter out keys with zero dimensions (if ordering had more keys)
-  erase(std::remove_if(begin(), end(), SlotEntry::Zero), end());
+/* ************************************************************************* */
+void Scatter::add(Key key, size_t dim) {
+  emplace_back(SlotEntry(key, dim));
 }
 
 /* ************************************************************************* */

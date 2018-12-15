@@ -144,6 +144,24 @@ TEST(Pose3, Adjoint_full)
 }
 
 /* ************************************************************************* */
+// assert that T*wedge(xi)*T^-1 is equal to wedge(Ad_T(xi))
+TEST(Pose3, Adjoint_hat)
+{
+  auto hat = [](const Vector& xi) { return ::wedge<Pose3>(xi); };
+  Matrix4 expected = T.matrix() * hat(screwPose3::xi) * T.matrix().inverse();
+  Matrix4 xiprime = hat(T.Adjoint(screwPose3::xi));
+  EXPECT(assert_equal(expected, xiprime, 1e-6));
+
+  Matrix4 expected2 = T2.matrix() * hat(screwPose3::xi) * T2.matrix().inverse();
+  Matrix4 xiprime2 = hat(T2.Adjoint(screwPose3::xi));
+  EXPECT(assert_equal(expected2, xiprime2, 1e-6));
+
+  Matrix4 expected3 = T3.matrix() * hat(screwPose3::xi) * T3.matrix().inverse();
+  Matrix4 xiprime3 = hat(T3.Adjoint(screwPose3::xi));
+  EXPECT(assert_equal(expected3, xiprime3, 1e-6));
+}
+
+/* ************************************************************************* */
 /** Agrawal06iros version of exponential map */
 Pose3 Agrawal06iros(const Vector& xi) {
   Vector w = xi.head(3);
@@ -704,6 +722,27 @@ TEST(Pose3, Bearing2) {
   // Check numerical derivatives
   expectedH1 = numericalDerivative21(bearing_proxy, x2, l4);
   expectedH2 = numericalDerivative22(bearing_proxy, x2, l4);
+  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH2, actualH2));
+}
+
+TEST(Pose3, PoseToPoseBearing) {
+  Matrix expectedH1, actualH1, expectedH2, actualH2, H2block;
+  EXPECT(assert_equal(Unit3(0,1,0), xl1.bearing(xl2, actualH1, actualH2), 1e-9));
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(bearing_proxy, xl1, l2);
+
+  // Since the second pose is treated as a point, the value calculated by
+  // numericalDerivative22 only depends on the position of the pose. Here, we
+  // calculate the Jacobian w.r.t. the second pose's position, and then augment
+  // that with zeroes in the block that is w.r.t. the second pose's
+  // orientation.
+  H2block = numericalDerivative22(bearing_proxy, xl1, l2);
+  expectedH2 = Matrix(2, 6);
+  expectedH2.setZero();
+  expectedH2.block<2, 3>(0, 3) = H2block;
+
   EXPECT(assert_equal(expectedH1, actualH1));
   EXPECT(assert_equal(expectedH2, actualH2));
 }

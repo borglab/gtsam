@@ -40,8 +40,8 @@ struct TestNode {
 struct TestForest {
   typedef TestNode Node;
   typedef Node::shared_ptr sharedNode;
-  vector<sharedNode> roots_;
-  const vector<sharedNode>& roots() const { return roots_; }
+  FastVector<sharedNode> roots_;
+  const FastVector<sharedNode>& roots() const { return roots_; }
 };
 
 TestForest makeTestForest() {

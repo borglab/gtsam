@@ -58,7 +58,7 @@ public:
 
   /// triangulateSafe
   TriangulationResult triangulateSafe(
-      const std::vector<Point2>& measured,
+      const typename CAMERA::MeasurementVector& measured,
       const TriangulationParameters& params) const {
     return gtsam::triangulateSafe(*this, measured, params);
   }

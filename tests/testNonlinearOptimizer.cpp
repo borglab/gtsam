@@ -20,21 +20,22 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Matrix.h>
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/range/adaptor/map.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
+using boost::adaptors::map_values;
 
 #include <iostream>
 #include <fstream>
@@ -263,13 +264,6 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
   // Try LM and Dogleg
   LevenbergMarquardtParams params = LevenbergMarquardtParams::LegacyDefaults();
-  //  params.setVerbosityLM("TRYDELTA");
-  //  params.setVerbosity("TERMINATION");
-  params.lambdaUpperBound = 1e9;
-//  params.relativeErrorTol = 0;
-//  params.absoluteErrorTol = 0;
-  //params.lambdaInitial = 10;
-
   {
     LevenbergMarquardtOptimizer optimizer(fg, init, params);
 
@@ -297,9 +291,11 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
     // test the diagonal
     GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
-    GaussianFactorGraph damped = *optimizer.buildDampedSystem(*linear);
-    VectorValues d = linear->hessianDiagonal(), //
-    expectedDiagonal = d + params.lambdaInitial * d;
+    VectorValues d = linear->hessianDiagonal();
+    VectorValues sqrtHessianDiagonal = d;
+    for (Vector& v : sqrtHessianDiagonal | map_values) v = v.cwiseSqrt();
+    GaussianFactorGraph damped = optimizer.buildDampedSystem(*linear, sqrtHessianDiagonal);
+    VectorValues  expectedDiagonal = d + params.lambdaInitial * d;
     EXPECT(assert_equal(expectedDiagonal, damped.hessianDiagonal()));
 
     // test convergence (does not!)
@@ -311,7 +307,7 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
     EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
 
     // Check that the gradient is zero for damped system (it is not!)
-    damped = *optimizer.buildDampedSystem(*linear);
+    damped = optimizer.buildDampedSystem(*linear, sqrtHessianDiagonal);
     VectorValues actualGradient = damped.gradientAtZero();
     EXPECT(assert_equal(expectedGradient,actualGradient));
 
@@ -364,8 +360,9 @@ TEST(NonlinearOptimizer, MoreOptimizationWithHuber) {
   expected.insert(1, Pose2(1,0,M_PI/2));
   expected.insert(2, Pose2(1,1,M_PI));
 
+  LevenbergMarquardtParams params;
   EXPECT(assert_equal(expected, GaussNewtonOptimizer(fg, init).optimize()));
-  EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(fg, init).optimize()));
+  EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(fg, init, params).optimize()));
   EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
 }
 
@@ -396,19 +393,20 @@ class IterativeLM: public LevenbergMarquardtOptimizer {
 
   /// Solver specific parameters
   ConjugateGradientParameters cgParams_;
+  Values initial_;
 
 public:
   /// Constructor
   IterativeLM(const NonlinearFactorGraph& graph, const Values& initialValues,
       const ConjugateGradientParameters &p,
       const LevenbergMarquardtParams& params = LevenbergMarquardtParams::LegacyDefaults()) :
-      LevenbergMarquardtOptimizer(graph, initialValues, params), cgParams_(p) {
+      LevenbergMarquardtOptimizer(graph, initialValues, params), cgParams_(p), initial_(initialValues) {
   }
 
   /// Solve that uses conjugate gradient
   virtual VectorValues solve(const GaussianFactorGraph &gfg,
-      const Values& initial, const NonlinearOptimizerParams& params) const {
-    VectorValues zeros = initial.zeroVectors();
+      const NonlinearOptimizerParams& params) const {
+    VectorValues zeros = initial_.zeroVectors();
     return conjugateGradientDescent(gfg, zeros, cgParams_);
   }
 };
@@ -463,7 +461,7 @@ TEST( NonlinearOptimizer, logfile )
 }
 
 /* ************************************************************************* */
-// Minimal traits example
+//// Minimal traits example
 struct MyType : public Vector3 {
   using Vector3::Vector3;
 };
@@ -471,11 +469,13 @@ struct MyType : public Vector3 {
 namespace gtsam {
 template <>
 struct traits<MyType> {
-  static bool Equals(const MyType&, const MyType&, double tol) {return true;}
+  static bool Equals(const MyType& a, const MyType& b, double tol) {
+    return (a - b).array().abs().maxCoeff() < tol;
+  }
   static void Print(const MyType&, const string&) {}
-  static int GetDimension(const MyType&) { return 3;}
-  static MyType Retract(const MyType&, const Vector3&) {return MyType();}
-  static Vector3 Local(const MyType&, const MyType&) {return Vector3();}
+  static int GetDimension(const MyType&) { return 3; }
+  static MyType Retract(const MyType& a, const Vector3& b) { return a + b; }
+  static Vector3 Local(const MyType& a, const MyType& b) { return b - a; }
 };
 }
 

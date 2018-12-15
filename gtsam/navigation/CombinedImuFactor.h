@@ -83,12 +83,12 @@ public:
 
     // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
     static boost::shared_ptr<Params> MakeSharedD(double g = 9.81) {
-      return boost::make_shared<Params>(Vector3(0, 0, g));
+      return boost::shared_ptr<Params>(new Params(Vector3(0, 0, g)));
     }
 
     // Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
     static boost::shared_ptr<Params> MakeSharedU(double g = 9.81) {
-      return boost::make_shared<Params>(Vector3(0, 0, -g));
+      return boost::shared_ptr<Params>(new Params(Vector3(0, 0, -g)));
     }
 
    private:
@@ -104,24 +104,29 @@ public:
       ar& BOOST_SERIALIZATION_NVP(biasOmegaCovariance);
       ar& BOOST_SERIALIZATION_NVP(biasAccOmegaInt);
     }
+
+   public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
  protected:
   /* Covariance matrix of the preintegrated measurements
-   * COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION BiasAcc BiasOmega]
+   * COVARIANCE OF: [PreintROTATION PreintPOSITION PreintVELOCITY BiasAcc BiasOmega]
    * (first-order propagation from *measurementCovariance*).
    * PreintegratedCombinedMeasurements also include the biases and keep the correlation
    * between the preintegrated measurements and the biases
    */
   Eigen::Matrix<double, 15, 15> preintMeasCov_;
 
-  PreintegratedCombinedMeasurements() {}
 
   friend class CombinedImuFactor;
 
  public:
   /// @name Constructors
   /// @{
+
+  /// Default constructor only for serialization and Cython wrapper
+  PreintegratedCombinedMeasurements() {}
 
   /**
    *  Default constructor, initializes the class with no measurements
@@ -193,6 +198,9 @@ public:
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
     ar& BOOST_SERIALIZATION_NVP(preintMeasCov_);
   }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -312,6 +320,9 @@ private:
          boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(_PIM_);
   }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 // class CombinedImuFactor
 

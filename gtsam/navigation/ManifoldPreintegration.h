@@ -30,7 +30,7 @@ namespace gtsam {
  * IMU pre-integration on NavSatet manifold.
  * This corresponds to the original RSS paper (with one difference: V is rotated)
  */
-class ManifoldPreintegration : public PreintegrationBase {
+class GTSAM_EXPORT ManifoldPreintegration : public PreintegrationBase {
  protected:
 
   /**
@@ -73,7 +73,7 @@ public:
   /// @{
   NavState deltaXij() const override { return deltaXij_; }
   Rot3     deltaRij() const override { return deltaXij_.attitude(); }
-  Vector3  deltaPij() const override { return deltaXij_.position().vector(); }
+  Vector3  deltaPij() const override { return deltaXij_.position(); }
   Vector3  deltaVij() const override { return deltaXij_.velocity(); }
 
   const Matrix93 preintegrated_H_biasAcc() const {

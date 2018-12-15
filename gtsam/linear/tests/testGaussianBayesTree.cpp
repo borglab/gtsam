@@ -130,7 +130,7 @@ TEST(GaussianBayesTree, complicatedMarginal) {
   // Create the conditionals to go in the BayesTree
   GaussianBayesTree bt;
   bt.insertRoot(
-    MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (11, (Matrix(3,1) << 0.0971, 0, 0).finished()) 
+    MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (11, (Matrix(3,1) << 0.0971, 0, 0).finished())
                                                          (12, (Matrix(3,2) << 0.3171, 0.4387,  0.9502, 0.3816,  0, 0.7655).finished()),
                                             2, Vector3(0.2638, 0.1455, 0.1361)), list_of
       (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (9, (Matrix(3,1) << 0.7952, 0, 0).finished())
@@ -287,7 +287,7 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
   VectorValues actual = bt.optimizeGradientSearch();
 
   // Check that points agree
-  FastVector<Key> keys = list_of(0)(1)(2)(3)(4);
+  KeyVector keys {0, 1, 2, 3, 4};
   EXPECT(assert_equal(expected, actual.vector(keys), 1e-5));
   EXPECT(assert_equal(expectedFromBN, actual, 1e-5));
 

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -52,7 +52,9 @@ public:
   /// @{
 
   /** default constructor = origin */
-  Pose2() {} // default is origin
+  Pose2() :
+      r_(traits<Rot2>::Identity()), t_(traits<Point2>::Identity()) {
+  }
 
   /** copy constructor */
   Pose2(const Pose2& pose) : r_(pose.r_), t_(pose.t_) {}
@@ -86,7 +88,7 @@ public:
   /// @{
 
   /** Construct from canonical coordinates \f$ [T_x,T_y,\theta] \f$ (Lie algebra) */
-  Pose2(const Vector& v) {
+  Pose2(const Vector& v) : Pose2() {
     *this = Expmap(v);
   }
 
@@ -276,6 +278,12 @@ private:
     ar & BOOST_SERIALIZATION_NVP(t_);
     ar & BOOST_SERIALIZATION_NVP(r_);
   }
+
+#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
+public:
+  // Make sure Pose2 is aligned if it contains a Vector2
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 }; // Pose2
 
 /** specialization for pose2 wedge function (generic template in Lie.h) */

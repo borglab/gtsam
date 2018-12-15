@@ -29,7 +29,7 @@
 
 namespace gtsam {
 
-#ifdef GTSAM_USE_VECTOR3_POINTS
+#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
 
   /// As of GTSAM 4, in order to make GTSAM more lean,
   /// it is now possible to just typedef Point3 to Vector3
@@ -51,8 +51,8 @@ class GTSAM_EXPORT Point3 : public Vector3 {
     /// @name Standard Constructors
     /// @{
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     // Deprecated default constructor initializes to zero, in contrast to new behavior below
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     Point3() { setZero(); }
 #endif
 
@@ -124,9 +124,9 @@ class GTSAM_EXPORT Point3 : public Vector3 {
     Point3 inverse() const { return -(*this);}
     Point3 compose(const Point3& q) const { return (*this)+q;}
     Point3 between(const Point3& q) const { return q-(*this);}
-    Vector3 localCoordinates(const Point3& q) const { return between(q).vector();}
+    Vector3 localCoordinates(const Point3& q) const { return between(q);}
     Point3 retract(const Vector3& v) const { return compose(Point3(v));}
-    static Vector3 Logmap(const Point3& p) { return p.vector();}
+    static Vector3 Logmap(const Point3& p) { return p;}
     static Point3 Expmap(const Vector3& v) { return Point3(v);}
     inline double dist(const Point3& q) const { return (q - *this).norm(); }
     Point3 normalize(OptionalJacobian<3, 3> H = boost::none) const { return normalized(H);}
@@ -153,36 +153,32 @@ struct traits<Point3> : public internal::VectorSpace<Point3> {};
 template<>
 struct traits<const Point3> : public internal::VectorSpace<Point3> {};
 
-#endif
+#endif // GTSAM_TYPEDEF_POINTS_TO_VECTORS
 
 // Convenience typedef
 typedef std::pair<Point3, Point3> Point3Pair;
-std::ostream &operator<<(std::ostream &os, const gtsam::Point3Pair &p);
+GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const gtsam::Point3Pair &p);
 
 /// distance between two points
-double distance(const Point3& p1, const Point3& q,
-                OptionalJacobian<1, 3> H1 = boost::none,
-                OptionalJacobian<1, 3> H2 = boost::none);
+GTSAM_EXPORT double distance3(const Point3& p1, const Point3& q,
+	                          OptionalJacobian<1, 3> H1 = boost::none,
+                              OptionalJacobian<1, 3> H2 = boost::none);
 
 /// Distance of the point from the origin, with Jacobian
-double norm(const Point3& p, OptionalJacobian<1, 3> H = boost::none);
+GTSAM_EXPORT double norm3(const Point3& p, OptionalJacobian<1, 3> H = boost::none);
 
 /// normalize, with optional Jacobian
-Point3 normalize(const Point3& p, OptionalJacobian<3, 3> H = boost::none);
+GTSAM_EXPORT Point3 normalize(const Point3& p, OptionalJacobian<3, 3> H = boost::none);
 
 /// cross product @return this x q
-Point3 cross(const Point3& p, const Point3& q,
-             OptionalJacobian<3, 3> H_p = boost::none,
-             OptionalJacobian<3, 3> H_q = boost::none);
+GTSAM_EXPORT Point3 cross(const Point3& p, const Point3& q,
+                          OptionalJacobian<3, 3> H_p = boost::none,
+                          OptionalJacobian<3, 3> H_q = boost::none);
 
 /// dot product
-double dot(const Point3& p, const Point3& q,
-           OptionalJacobian<1, 3> H_p = boost::none,
-           OptionalJacobian<1, 3> H_q = boost::none);
-
-// Convenience typedef
-typedef std::pair<Point3, Point3> Point3Pair;
-std::ostream &operator<<(std::ostream &os, const gtsam::Point3Pair &p);
+GTSAM_EXPORT double dot(const Point3& p, const Point3& q,
+                        OptionalJacobian<1, 3> H_p = boost::none,
+                        OptionalJacobian<1, 3> H_q = boost::none);
 
 template <typename A1, typename A2>
 struct Range;
@@ -193,7 +189,7 @@ struct Range<Point3, Point3> {
   double operator()(const Point3& p, const Point3& q,
                     OptionalJacobian<1, 3> H1 = boost::none,
                     OptionalJacobian<1, 3> H2 = boost::none) {
-    return distance(p, q, H1, H2);
+    return distance3(p, q, H1, H2);
   }
 };
 

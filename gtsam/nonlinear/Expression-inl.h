@@ -134,8 +134,10 @@ T Expression<T>::value(const Values& values,
 
   if (H) {
     // Call private version that returns derivatives in H
-    KeysAndDims pair = keysAndDims();
-    return valueAndDerivatives(values, pair.first, pair.second, *H);
+    KeyVector keys;
+    FastVector<int> dims;
+    boost::tie(keys, dims) = keysAndDims();
+    return valueAndDerivatives(values, keys, dims, *H);
   } else
     // no derivatives needed, just return value
     return root_->value(values);
@@ -198,7 +200,7 @@ T Expression<T>::valueAndJacobianMap(const Values& values,
   // allocated on Visual Studio. For more information see the issue below
   // https://bitbucket.org/gtborg/gtsam/issue/178/vlas-unsupported-in-visual-studio
 #ifdef _MSC_VER
-  internal::ExecutionTraceStorage* traceStorage = new internal::ExecutionTraceStorage[size];
+  auto traceStorage = static_cast<internal::ExecutionTraceStorage*>(_aligned_malloc(size, internal::TraceAlignment));
 #else
   internal::ExecutionTraceStorage traceStorage[size];
 #endif
@@ -208,7 +210,7 @@ T Expression<T>::valueAndJacobianMap(const Values& values,
   trace.startReverseAD1(jacobians);
 
 #ifdef _MSC_VER
-  delete[] traceStorage;
+  _aligned_free(traceStorage);
 #endif
 
   return value;
@@ -263,26 +265,15 @@ template <typename T>
 ScalarMultiplyExpression<T>::ScalarMultiplyExpression(double s, const Expression<T>& e)
     : Expression<T>(boost::make_shared<internal::ScalarMultiplyNode<T>>(s, e)) {}
 
-template <typename T>
-SumExpression<T>::SumExpression(const std::vector<Expression<T>>& expressions)
-    : Expression<T>(boost::make_shared<internal::SumExpressionNode<T>>(expressions)) {}
 
 template <typename T>
-SumExpression<T> SumExpression<T>::operator+(const Expression<T>& e) const {
-  SumExpression<T> copy = *this;
-  boost::static_pointer_cast<internal::SumExpressionNode<T>>(copy.root_)->add(e);
-  return copy;
-}
+BinarySumExpression<T>::BinarySumExpression(const Expression<T>& e1, const Expression<T>& e2)
+    : Expression<T>(boost::make_shared<internal::BinarySumNode<T>>(e1, e2)) {}
 
 template <typename T>
-SumExpression<T>& SumExpression<T>::operator+=(const Expression<T>& e) {
-  boost::static_pointer_cast<internal::SumExpressionNode<T>>(this->root_)->add(e);
+Expression<T>& Expression<T>::operator+=(const Expression<T>& e) {
+  root_ = boost::make_shared<internal::BinarySumNode<T>>(*this, e);
   return *this;
-}
-
-template <typename T>
-size_t SumExpression<T>::nrTerms() const {
-  return boost::static_pointer_cast<internal::SumExpressionNode<T>>(this->root_)->nrTerms();
 }
 
 } // namespace gtsam

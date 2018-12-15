@@ -12,7 +12,6 @@
 
 template<typename MatrixType> void householder(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   static bool even = true;
   even = !even;
   /* this test covers the following files:

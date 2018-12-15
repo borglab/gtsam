@@ -120,8 +120,6 @@ TEST(OrientedPlane3, localCoordinates_retract) {
   maxXiLimit << M_PI, M_PI, 10.0;
   for (size_t i = 0; i < numIterations; i++) {
 
-    sleep(0);
-
     // Create a Plane
     OrientedPlane3 p1(randomVector(minPlaneLimit, maxPlaneLimit));
     Vector v12 = randomVector(minXiLimit, maxXiLimit);

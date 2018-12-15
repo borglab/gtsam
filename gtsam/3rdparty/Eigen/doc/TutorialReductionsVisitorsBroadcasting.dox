@@ -32,7 +32,7 @@ Eigen also provides the \link MatrixBase::norm() norm() \endlink method, which r
 
 These operations can also operate on matrices; in that case, a n-by-p matrix is seen as a vector of size (n*p), so for example the \link MatrixBase::norm() norm() \endlink method returns the "Frobenius" or "Hilbert-Schmidt" norm. We refrain from speaking of the \f$\ell^2\f$ norm of a matrix because that can mean different things.
 
-If you want other \f$\ell^p\f$ norms, use the \link MatrixBase::lpNorm() lpNnorm<p>() \endlink method. The template parameter \a p can take the special value \a Infinity if you want the \f$\ell^\infty\f$ norm, which is the maximum of the absolute values of the coefficients.
+If you want other coefficient-wise \f$\ell^p\f$ norms, use the \link MatrixBase::lpNorm lpNorm<p>() \endlink method. The template parameter \a p can take the special value \a Infinity if you want the \f$\ell^\infty\f$ norm, which is the maximum of the absolute values of the coefficients.
 
 The following example demonstrates these methods.
 
@@ -44,6 +44,17 @@ The following example demonstrates these methods.
 <td>
 \verbinclude Tutorial_ReductionsVisitorsBroadcasting_reductions_norm.out
 </td></tr></table>
+
+\b Operator \b norm: The 1-norm and \f$\infty\f$-norm <a href="https://en.wikipedia.org/wiki/Operator_norm">matrix operator norms</a> can easily be computed as follows:
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr><td>
+\include Tutorial_ReductionsVisitorsBroadcasting_reductions_operatornorm.cpp
+</td>
+<td>
+\verbinclude Tutorial_ReductionsVisitorsBroadcasting_reductions_operatornorm.out
+</td></tr></table>
+See below for more explanations on the syntax of these expressions.
 
 \subsection TutorialReductionsVisitorsBroadcastingReductionsBool Boolean reductions
 
@@ -79,7 +90,7 @@ Array.
 
 The arguments passed to a visitor are pointers to the variables where the
 row and column position are to be stored. These variables should be of type
-\link DenseBase::Index Index \endlink, as shown below:
+\link Eigen::Index Index \endlink, as shown below:
 
 <table class="example">
 <tr><th>Example:</th><th>Output:</th></tr>
@@ -90,17 +101,16 @@ row and column position are to be stored. These variables should be of type
 \verbinclude Tutorial_ReductionsVisitorsBroadcasting_visitors.out
 </td></tr></table>
 
-Note that both functions also return the value of the minimum or maximum coefficient if needed,
-as if it was a typical reduction operation.
+Both functions also return the value of the minimum or maximum coefficient.
 
 \section TutorialReductionsVisitorsBroadcastingPartialReductions Partial reductions
 Partial reductions are reductions that can operate column- or row-wise on a Matrix or 
 Array, applying the reduction operation on each column or row and 
-returning a column or row-vector with the corresponding values. Partial reductions are applied 
+returning a column or row vector with the corresponding values. Partial reductions are applied 
 with \link DenseBase::colwise() colwise() \endlink or \link DenseBase::rowwise() rowwise() \endlink.
 
 A simple example is obtaining the maximum of the elements 
-in each column in a given matrix, storing the result in a row-vector:
+in each column in a given matrix, storing the result in a row vector:
 
 <table class="example">
 <tr><th>Example:</th><th>Output:</th></tr>
@@ -122,8 +132,7 @@ The same operation can be performed row-wise:
 \verbinclude Tutorial_ReductionsVisitorsBroadcasting_rowwise.out
 </td></tr></table>
 
-<b>Note that column-wise operations return a 'row-vector' while row-wise operations
-return a 'column-vector'</b>
+<b>Note that column-wise operations return a row vector, while row-wise operations return a column vector.</b>
 
 \subsection TutorialReductionsVisitorsBroadcastingPartialReductionsCombined Combining partial reductions with other operations
 It is also possible to use the result of a partial reduction to do further processing.
@@ -165,7 +174,7 @@ The concept behind broadcasting is similar to partial reductions, with the diffe
 constructs an expression where a vector (column or row) is interpreted as a matrix by replicating it in 
 one direction.
 
-A simple example is to add a certain column-vector to each column in a matrix. 
+A simple example is to add a certain column vector to each column in a matrix. 
 This can be accomplished with:
 
 <table class="example">
@@ -242,7 +251,7 @@ is a new matrix whose size is the same as matrix <tt>m</tt>: \f[
 \f]
 
   - <tt>(m.colwise() - v).colwise().squaredNorm()</tt> is a partial reduction, computing the squared norm column-wise. The result of
-this operation is a row-vector where each coefficient is the squared Euclidean distance between each column in <tt>m</tt> and <tt>v</tt>: \f[
+this operation is a row vector where each coefficient is the squared Euclidean distance between each column in <tt>m</tt> and <tt>v</tt>: \f[
   \mbox{(m.colwise() - v).colwise().squaredNorm()} =
   \begin{bmatrix}
      1 & 505 & 32 & 50

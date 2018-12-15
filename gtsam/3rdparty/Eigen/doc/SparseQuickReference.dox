@@ -206,7 +206,7 @@ See \ref TutorialSparse_SubMatrices and below for read-write sub-matrices.
   sm1.innerVectors(start, size);    // RW
   sm1.leftCols(size);               // RW
   sm2.rightCols(size);              // RO because sm2 is row-major
-  sm1.middleRows(start, numRows);   // RO becasue sm1 is column-major
+  sm1.middleRows(start, numRows);   // RO because sm1 is column-major
   sm1.middleCols(start, numCols);   // RW
   sm1.col(j);                       // RW
 \endcode
@@ -252,6 +252,20 @@ sm1.outerIndexPtr(); // Pointer to the beginning of each inner vector
 If the matrix is not in compressed form, makeCompressed() should be called before.\n
 Note that these functions are mostly provided for interoperability purposes with external libraries.\n
 A better access to the values of the matrix is done by using the InnerIterator class as described in \link TutorialSparse the Tutorial Sparse \endlink section</td>
+</tr>
+<tr class="alt"><td colspan="2">Mapping external buffers</td></tr>
+<tr class="alt">
+<td>
+\code
+int outerIndexPtr[cols+1];
+int innerIndices[nnz];
+double values[nnz];
+Map<SparseMatrix<double> > sm1(rows,cols,nnz,outerIndexPtr, // read-write
+                               innerIndices,values);
+Map<const SparseMatrix<double> > sm2(...);                  // read-only
+\endcode
+</td>
+<td>As for dense matrices, class Map<SparseMatrixType> can be used to see external buffers as an %Eigen's SparseMatrix object. </td>
 </tr>
 </table>
 */

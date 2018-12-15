@@ -17,9 +17,13 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastVector.h>
+#include <boost/optional.hpp>
+
+#include <string>
 
 namespace gtsam {
 
@@ -145,12 +149,12 @@ namespace gtsam {
   protected:
 
     /// Calculate set \f$ S \setminus B \f$ for shortcut calculations
-    FastVector<Key> separator_setminus_B(const derived_ptr& B) const;
+    KeyVector separator_setminus_B(const derived_ptr& B) const;
 
     /** Determine variable indices to keep in recursive separator shortcut calculation The factor
      *  graph p_Cp_B has keys from the parent clique Cp and from B. But we only keep the variables
      *  not in S union B. */
-    FastVector<Key> shortcut_indices(const derived_ptr& B, const FactorGraphType& p_Cp_B) const;
+    KeyVector shortcut_indices(const derived_ptr& B, const FactorGraphType& p_Cp_B) const;
 
     /** Non-recursive delete cached shortcuts and marginals - internal only. */
     void deleteCachedShortcutsNonRecursive() { cachedSeparatorMarginal_ = boost::none; }

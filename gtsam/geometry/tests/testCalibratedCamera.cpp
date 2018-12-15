@@ -30,10 +30,10 @@ using namespace gtsam;
 GTSAM_CONCEPT_MANIFOLD_INST(CalibratedCamera)
 
 // Camera situated at 0.5 meters high, looking down
-static const Pose3 pose1(Rot3(Vector3(1, -1, -1).asDiagonal()),
+static const Pose3 kDefaultPose(Rot3(Vector3(1, -1, -1).asDiagonal()),
                          Point3(0, 0, 0.5));
 
-static const CalibratedCamera camera(pose1);
+static const CalibratedCamera camera(kDefaultPose);
 
 static const Point3 point1(-0.08,-0.08, 0.0);
 static const Point3 point2(-0.08, 0.08, 0.0);
@@ -43,7 +43,19 @@ static const Point3 point4( 0.08,-0.08, 0.0);
 /* ************************************************************************* */
 TEST( CalibratedCamera, constructor)
 {
-  CHECK(assert_equal( camera.pose(), pose1));
+  CHECK(assert_equal( camera.pose(), kDefaultPose));
+}
+
+//******************************************************************************
+TEST(CalibratedCamera, Create) {
+  Matrix actualH;
+  EXPECT(assert_equal(camera, CalibratedCamera::Create(kDefaultPose, actualH)));
+
+  // Check derivative
+  boost::function<CalibratedCamera(Pose3)> f =  //
+      boost::bind(CalibratedCamera::Create, _1, boost::none);
+  Matrix numericalH = numericalDerivative11<CalibratedCamera, Pose3>(f, kDefaultPose);
+  EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }
 
 /* ************************************************************************* */
@@ -101,7 +113,7 @@ static Point2 Project2(const Unit3& point) {
   return PinholeBase::Project(point);
 }
 
-Unit3 pointAtInfinity(0, 0, 1000);
+Unit3 pointAtInfinity(0, 0, -1000);
 TEST( CalibratedCamera, DProjectInfinity) {
   Matrix test1;
   CalibratedCamera::Project(pointAtInfinity, test1);
@@ -114,6 +126,7 @@ TEST( CalibratedCamera, DProjectInfinity) {
 static Point2 project2(const CalibratedCamera& camera, const Point3& point) {
   return camera.project(point);
 }
+
 
 TEST( CalibratedCamera, Dproject_point_pose)
 {
@@ -131,8 +144,8 @@ TEST( CalibratedCamera, Dproject_point_pose)
 // Add a test with more arbitrary rotation
 TEST( CalibratedCamera, Dproject_point_pose2)
 {
-  static const Pose3 pose1(Rot3::Ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
-  static const CalibratedCamera camera(pose1);
+  static const Pose3 kDefaultPose(Rot3::Ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
+  static const CalibratedCamera camera(kDefaultPose);
   Matrix Dpose, Dpoint;
   camera.project(point1, Dpose, Dpoint);
   Matrix numerical_pose  = numericalDerivative21(project2, camera, point1);
@@ -152,7 +165,7 @@ TEST( CalibratedCamera, Dproject_point_pose_infinity)
   Point2 result = camera.project2(pointAtInfinity, Dpose, Dpoint);
   Matrix numerical_pose  = numericalDerivative21(projectAtInfinity, camera, pointAtInfinity);
   Matrix numerical_point = numericalDerivative22(projectAtInfinity, camera, pointAtInfinity);
-  CHECK(assert_equal(Point2(), result));
+  CHECK(assert_equal(Point2(0,0), result));
   CHECK(assert_equal(numerical_pose,  Dpose, 1e-7));
   CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
 }
@@ -161,8 +174,8 @@ TEST( CalibratedCamera, Dproject_point_pose_infinity)
 // Add a test with more arbitrary rotation
 TEST( CalibratedCamera, Dproject_point_pose2_infinity)
 {
-  static const Pose3 pose1(Rot3::Ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
-  static const CalibratedCamera camera(pose1);
+  static const Pose3 pose(Rot3::Ypr(-M_PI/4.0, M_PI + M_PI/9.5, M_PI/8.0), Point3(0, 0, -10));
+  static const CalibratedCamera camera(pose);
   Matrix Dpose, Dpoint;
   camera.project2(pointAtInfinity, Dpose, Dpoint);
   Matrix numerical_pose  = numericalDerivative21(projectAtInfinity, camera, pointAtInfinity);
@@ -171,7 +184,48 @@ TEST( CalibratedCamera, Dproject_point_pose2_infinity)
   CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
 }
 
+static Point3 BackprojectFromCamera(const CalibratedCamera& camera, const Point2& point,
+                          const double& depth) {
+  return camera.BackprojectFromCamera(point, depth);
+}
+TEST( CalibratedCamera, DBackprojectFromCamera)
+{
+  static const Pose3 pose(Rot3::Ypr(-M_PI/4.0, M_PI + M_PI/9.5, M_PI/8.0), Point3(0, 0, -10));
+  static const CalibratedCamera camera(pose);
+  static const double depth = 5.4;
+  static const Point2 point(10.1, 50.3);
+  Matrix Dpoint, Ddepth;
+  camera.BackprojectFromCamera(point, depth, Dpoint, Ddepth);
+  Matrix numerical_point = numericalDerivative32(BackprojectFromCamera, camera, point, depth);
+  Matrix numerical_depth  = numericalDerivative33(BackprojectFromCamera, camera, point, depth);
+  CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
+  CHECK(assert_equal(numerical_depth,  Ddepth, 1e-7));
+}
+
+
+static Point3 backproject(const Pose3& pose, const Point2& point, const double& depth) {
+  return CalibratedCamera(pose).backproject(point, depth);
+}
+TEST( PinholePose, Dbackproject)
+{
+  Matrix36 Dpose;
+  Matrix31 Ddepth;
+  Matrix32 Dpoint;
+  const Point2 point(-100, 100);
+  const double depth(10);
+  static const Pose3 pose(Rot3::Ypr(-M_PI/4.0, M_PI + M_PI/9.5, M_PI/8.0), Point3(0, 0, -10));
+  static const CalibratedCamera camera(pose);
+  camera.backproject(point, depth, Dpose, Dpoint, Ddepth);
+  Matrix expectedDpose = numericalDerivative31(backproject, pose, point, depth);
+  Matrix expectedDpoint = numericalDerivative32(backproject, pose, point, depth);
+  Matrix expectedDdepth = numericalDerivative33(backproject, pose,point, depth);
+
+  EXPECT(assert_equal(expectedDpose,   Dpose,   1e-7));
+  EXPECT(assert_equal(expectedDpoint,  Dpoint,  1e-7));
+  EXPECT(assert_equal(expectedDdepth,  Ddepth,  1e-7));
+}
+
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
-

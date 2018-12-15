@@ -1,5 +1,5 @@
 
-#include <iostream>
+#include <stdio.h>
 
 #if (defined __GNUC__) && (!defined __MINGW32__) && (!defined __CYGWIN__)
 #define EIGEN_WEAK_LINKING __attribute__ ((weak))
@@ -14,7 +14,7 @@ extern "C"
 
 EIGEN_WEAK_LINKING int xerbla_(const char * msg, int *info, int)
 {
-  std::cerr << "Eigen BLAS ERROR #" << *info << ": " << msg << "\n";
+  printf("Eigen BLAS ERROR #%i: %s\n", *info, msg );
   return 0;
 }
 

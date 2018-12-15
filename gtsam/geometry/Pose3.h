@@ -282,6 +282,15 @@ public:
   Unit3 bearing(const Point3& point, OptionalJacobian<2, 6> H1 = boost::none,
       OptionalJacobian<2, 3> H2 = boost::none) const;
 
+  /**
+   * Calculate bearing to another pose
+   * @param other 3D location and orientation of other body. The orientation
+   * information is ignored.
+   * @return bearing (Unit3)
+   */
+  Unit3 bearing(const Pose3& pose, OptionalJacobian<2, 6> H1 = boost::none,
+      OptionalJacobian<2, 6> H2 = boost::none) const;
+
   /// @}
   /// @name Advanced Interface
   /// @{
@@ -318,6 +327,11 @@ public:
   }
   /// @}
 
+#ifdef GTSAM_USE_QUATERNIONS
+  // Align if we are using Quaternions
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 // Pose3 class
 
@@ -352,6 +366,9 @@ struct traits<const Pose3> : public internal::LieGroup<Pose3> {};
 // bearing and range traits, used in RangeFactor
 template <>
 struct Bearing<Pose3, Point3> : HasBearing<Pose3, Point3, Unit3> {};
+
+template<>
+struct Bearing<Pose3, Pose3> : HasBearing<Pose3, Pose3, Unit3> {};
 
 template <typename T>
 struct Range<Pose3, T> : HasRange<Pose3, T, double> {};
