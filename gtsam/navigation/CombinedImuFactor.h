@@ -111,7 +111,7 @@ public:
 
  protected:
   /* Covariance matrix of the preintegrated measurements
-   * COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION BiasAcc BiasOmega]
+   * COVARIANCE OF: [PreintROTATION PreintPOSITION PreintVELOCITY BiasAcc BiasOmega]
    * (first-order propagation from *measurementCovariance*).
    * PreintegratedCombinedMeasurements also include the biases and keep the correlation
    * between the preintegrated measurements and the biases
