@@ -108,9 +108,9 @@ int main(int argc, char* argv[]) {
         initialEstimate.insert(biasKey, imuBias::ConstantBias());
       }
       // Predict acceleration and gyro measurements in (actual) body frame
-      auto measuredAcc = scenario.acceleration_b(t) -
-                         scenario.rotation(t).transpose() * params->n_gravity;
-      auto measuredOmega = scenario.omega_b(t);
+      Vector3 measuredAcc = scenario.acceleration_b(t) -
+                            scenario.rotation(t).transpose() * params->n_gravity;
+      Vector3 measuredOmega = scenario.omega_b(t);
       accum.integrateMeasurement(measuredAcc, measuredOmega, delta_t);
 
       // Add Imu Factor
