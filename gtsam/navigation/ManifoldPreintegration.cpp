@@ -47,7 +47,9 @@ bool ManifoldPreintegration::equals(const ManifoldPreintegration& other,
   // TODO(Luca): check base
   return p_->equals(*other.p_, tol) && fabs(deltaTij_ - other.deltaTij_) < tol
       && biasHat_.equals(other.biasHat_, tol)
-      && deltaXij_.equals(other.deltaXij_, tol);
+      && deltaXij_.equals(other.deltaXij_, tol)
+      && equal_with_abs_tol(preintegrated_H_biasAcc_, other.preintegrated_H_biasAcc_, tol)
+      && equal_with_abs_tol(preintegrated_H_biasOmega_, other.preintegrated_H_biasOmega_, tol);
 }
 
 //------------------------------------------------------------------------------
