@@ -76,10 +76,10 @@ public:
   Vector3  deltaPij() const override { return deltaXij_.position(); }
   Vector3  deltaVij() const override { return deltaXij_.velocity(); }
 
-  const Matrix93 preintegrated_H_biasAcc() const {
+  const Matrix93& preintegrated_H_biasAcc() const {
     return preintegrated_H_biasAcc_;
   }
-  const Matrix93 preintegrated_H_biasOmega() const {
+  const Matrix93& preintegrated_H_biasOmega() const {
     return preintegrated_H_biasOmega_;
   }
 
@@ -121,7 +121,11 @@ private:
     ar & BOOST_SERIALIZATION_NVP(deltaTij_);
     ar & BOOST_SERIALIZATION_NVP(deltaXij_);
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
-    // TODO(Luca): 2 Jacobians, in base !
+    // TODO(Luca): Move to base !
+    ar & bs::make_nvp("preintegrated_H_biasAcc_",
+            bs::make_array(preintegrated_H_biasAcc_.data(), preintegrated_H_biasAcc_.size()));
+    ar & bs::make_nvp("preintegrated_H_biasOmega_",
+            bs::make_array(preintegrated_H_biasOmega_.data(), preintegrated_H_biasOmega_.size()));
   }
 };
 
