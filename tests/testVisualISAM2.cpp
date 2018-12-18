@@ -39,9 +39,8 @@ TEST(testVisualISAM2, all)
 
     auto measurementNoise = noiseModel::Isotropic::Sigma(2, 1.0);
 
+    // Create ground truth data
     vector<Point3> points = createPoints();
-
-    // Create the set of ground-truth poses
     vector<Pose3> poses = createPoses();
 
     // Set the parameters
@@ -97,6 +96,9 @@ TEST(testVisualISAM2, all)
         {
             // Update iSAM with the new factors
             isam.update(graph, initialEstimate);
+
+            // Do an extra update to converge withing these 8 iterations
+            isam.update();
 
             // Optimize
             Values currentEstimate = isam.calculateEstimate();
