@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -36,31 +36,38 @@ struct PinholeBaseKCal3_S2Callback : PinholeBaseKCal3_S2, wrapper<PinholeBaseKCa
   }
 };
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(project_overloads, PinholeBaseKCal3_S2::project, 2, 4)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(project_overloads, PinholeBaseKCal3_S2::project, 1, 4)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(range_overloads, PinholeBaseKCal3_S2::range, 1, 3)
 
-// Function pointers to desambiguate project() calls
-Point2  (PinholeBaseKCal3_S2::*project1) (const Point3 &pw) const = &PinholeBaseKCal3_S2::project;
-Point2  (PinholeBaseKCal3_S2::*project2) (const Point3 &pw, OptionalJacobian< 2, 6 > Dpose, OptionalJacobian< 2, 3 > Dpoint, OptionalJacobian< 2, FixedDimension<Cal3_S2>::value > Dcal) const = &PinholeBaseKCal3_S2::project;
-Point2  (PinholeBaseKCal3_S2::*project3) (const Unit3 &pw,  OptionalJacobian< 2, 6 > Dpose, OptionalJacobian< 2, 2 > Dpoint, OptionalJacobian< 2, FixedDimension<Cal3_S2>::value > Dcal) const = &PinholeBaseKCal3_S2::project;
+// Function pointers to disambiguate project() calls
+Point2  (PinholeBaseKCal3_S2::*project1) (const Point3 &pw, OptionalJacobian< 2, 6 > Dpose, OptionalJacobian< 2, 3 > Dpoint, OptionalJacobian< 2, FixedDimension<Cal3_S2>::value > Dcal) const = &PinholeBaseKCal3_S2::project;
+Point2  (PinholeBaseKCal3_S2::*project2) (const Unit3 &pw,  OptionalJacobian< 2, 6 > Dpose, OptionalJacobian< 2, 2 > Dpoint, OptionalJacobian< 2, FixedDimension<Cal3_S2>::value > Dcal) const = &PinholeBaseKCal3_S2::project;
 
-// function pointers to desambiguate range() calls
+// function pointers to disambiguate range() calls
 double (PinholeBaseKCal3_S2::*range1) (const Point3 &point, OptionalJacobian< 1, 6 > Dcamera, OptionalJacobian< 1, 3 > Dpoint) const = &PinholeBaseKCal3_S2::range;
 double (PinholeBaseKCal3_S2::*range2) (const Pose3 &pose,   OptionalJacobian< 1, 6 > Dcamera, OptionalJacobian< 1, 6 > Dpose)  const = &PinholeBaseKCal3_S2::range;
 double (PinholeBaseKCal3_S2::*range3) (const CalibratedCamera &camera, OptionalJacobian< 1, 6 > Dcamera, OptionalJacobian< 1, 6 > Dother) const = &PinholeBaseKCal3_S2::range;
 
-void exportPinholeBaseK(){
+// wrap projectSafe in a function that returns None or a tuple
+// TODO(frank): find out how to return an ndarray instead
+object project_safe(const PinholeBaseKCal3_S2& camera, const gtsam::Point3& p) {
+  auto result = camera.projectSafe(p);
+  if (result.second)
+    return make_tuple(result.first.x(), result.first.y());
+  else
+    return object();
+}
 
+void exportPinholeBaseK() {
   class_<PinholeBaseKCal3_S2Callback, boost::noncopyable>("PinholeBaseKCal3_S2", no_init)
-    .def("calibration", pure_virtual(&PinholeBaseKCal3_S2::calibration), return_value_policy<copy_const_reference>())
-    .def("project", project1)
-    .def("project", project2, project_overloads())
-    .def("project", project3, project_overloads())
-    .def("backproject", &PinholeBaseKCal3_S2::backproject)
-    .def("backproject_point_at_infinity", &PinholeBaseKCal3_S2::backprojectPointAtInfinity)
-    .def("range", range1, range_overloads())
-    .def("range", range2, range_overloads())
-    .def("range", range3, range_overloads())
-  ;
-
+      .def("calibration", pure_virtual(&PinholeBaseKCal3_S2::calibration),
+           return_value_policy<copy_const_reference>())
+      .def("project_safe", make_function(project_safe))
+      .def("project", project1, project_overloads())
+      .def("project", project2, project_overloads())
+      .def("backproject", &PinholeBaseKCal3_S2::backproject)
+      .def("backproject_point_at_infinity", &PinholeBaseKCal3_S2::backprojectPointAtInfinity)
+      .def("range", range1, range_overloads())
+      .def("range", range2, range_overloads())
+      .def("range", range3, range_overloads());
 }

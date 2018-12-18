@@ -200,7 +200,7 @@ T Expression<T>::valueAndJacobianMap(const Values& values,
   // allocated on Visual Studio. For more information see the issue below
   // https://bitbucket.org/gtborg/gtsam/issue/178/vlas-unsupported-in-visual-studio
 #ifdef _MSC_VER
-  internal::ExecutionTraceStorage* traceStorage = new internal::ExecutionTraceStorage[size];
+  auto traceStorage = static_cast<internal::ExecutionTraceStorage*>(_aligned_malloc(size, internal::TraceAlignment));
 #else
   internal::ExecutionTraceStorage traceStorage[size];
 #endif
@@ -210,7 +210,7 @@ T Expression<T>::valueAndJacobianMap(const Values& values,
   trace.startReverseAD1(jacobians);
 
 #ifdef _MSC_VER
-  delete[] traceStorage;
+  _aligned_free(traceStorage);
 #endif
 
   return value;

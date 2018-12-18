@@ -102,8 +102,8 @@ BTL_DONT_INLINE void bench( int size_min, int size_max, int nb_point )
       // merge the two data
       std::vector<int> newSizes;
       std::vector<double> newFlops;
-      int i=0;
-      int j=0;
+      unsigned int i=0;
+      unsigned int j=0;
       while (i<tab_sizes.size() && j<oldSizes.size())
       {
         if (tab_sizes[i] == oldSizes[j])

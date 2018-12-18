@@ -401,11 +401,7 @@ TEST( NonlinearFactor, clone_rekey )
   EXPECT(assert_equal(*init, *actClone));
 
   // Re-key factor - clones with different keys
-  std::vector<Key> new_keys(4);
-  new_keys[0] = X(5);
-  new_keys[1] = X(6);
-  new_keys[2] = X(7);
-  new_keys[3] = X(8);
+  KeyVector new_keys {X(5),X(6),X(7),X(8)};
   shared_nlf actRekey = init->rekey(new_keys);
   EXPECT(actRekey.get() != init.get()); // Ensure different pointers
 

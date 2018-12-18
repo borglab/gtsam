@@ -15,8 +15,6 @@
 template<typename MatrixType>
 void check_stddeque_matrix(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
-  
   Index rows = m.rows();
   Index cols = m.cols();
   MatrixType x = MatrixType::Random(rows,cols), y = MatrixType::Random(rows,cols);

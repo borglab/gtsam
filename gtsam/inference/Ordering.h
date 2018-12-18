@@ -11,8 +11,10 @@
 
 /**
  * @file    Ordering.h
+ * @brief   Variable ordering for the elimination algorithm
  * @author  Richard Roberts
  * @author  Andrew Melim
+ * @author  Frank Dellaert
  * @date    Sep 2, 2010
  */
 
@@ -21,7 +23,6 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/MetisIndex.h>
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/FastSet.h>
 
 #include <boost/assign/list_inserter.hpp>
@@ -30,9 +31,9 @@
 
 namespace gtsam {
 
-class Ordering: public std::vector<Key> {
+class Ordering: public KeyVector {
 protected:
-  typedef std::vector<Key> Base;
+  typedef KeyVector Base;
 
 public:
 
@@ -77,8 +78,8 @@ public:
   /// Compute a fill-reducing ordering using COLAMD from a factor graph (see details for note on
   /// performance). This internally builds a VariableIndex so if you already have a VariableIndex,
   /// it is faster to use COLAMD(const VariableIndex&)
-  template<class FACTOR>
-  static Ordering Colamd(const FactorGraph<FACTOR>& graph) {
+  template<class FACTOR_GRAPH>
+  static Ordering Colamd(const FACTOR_GRAPH& graph) {
     if (graph.empty())
       return Ordering();
     else
@@ -93,12 +94,12 @@ public:
   /// VariableIndex, it is faster to use COLAMD(const VariableIndex&).  This function constrains
   /// the variables in \c constrainLast to the end of the ordering, and orders all other variables
   /// before in a fill-reducing ordering.  If \c forceOrder is true, the variables in \c
-  /// constrainLast will be ordered in the same order specified in the vector<Key> \c
+  /// constrainLast will be ordered in the same order specified in the KeyVector \c
   /// constrainLast.   If \c forceOrder is false, the variables in \c constrainLast will be
   /// ordered after all the others, but will be rearranged by CCOLAMD to reduce fill-in as well.
-  template<class FACTOR>
-  static Ordering ColamdConstrainedLast(const FactorGraph<FACTOR>& graph,
-      const std::vector<Key>& constrainLast, bool forceOrder = false) {
+  template<class FACTOR_GRAPH>
+  static Ordering ColamdConstrainedLast(const FACTOR_GRAPH& graph,
+      const KeyVector& constrainLast, bool forceOrder = false) {
     if (graph.empty())
       return Ordering();
     else
@@ -108,11 +109,11 @@ public:
   /// Compute a fill-reducing ordering using constrained COLAMD from a VariableIndex.  This
   /// function constrains the variables in \c constrainLast to the end of the ordering, and orders
   /// all other variables before in a fill-reducing ordering.  If \c forceOrder is true, the
-  /// variables in \c constrainLast will be ordered in the same order specified in the vector<Key>
+  /// variables in \c constrainLast will be ordered in the same order specified in the KeyVector
   /// \c constrainLast.   If \c forceOrder is false, the variables in \c constrainLast will be
   /// ordered after all the others, but will be rearranged by CCOLAMD to reduce fill-in as well.
   static GTSAM_EXPORT Ordering ColamdConstrainedLast(
-      const VariableIndex& variableIndex, const std::vector<Key>& constrainLast,
+      const VariableIndex& variableIndex, const KeyVector& constrainLast,
       bool forceOrder = false);
 
   /// Compute a fill-reducing ordering using constrained COLAMD from a factor graph (see details
@@ -120,12 +121,12 @@ public:
   /// VariableIndex, it is faster to use COLAMD(const VariableIndex&).  This function constrains
   /// the variables in \c constrainLast to the end of the ordering, and orders all other variables
   /// before in a fill-reducing ordering.  If \c forceOrder is true, the variables in \c
-  /// constrainFirst will be ordered in the same order specified in the vector<Key> \c
+  /// constrainFirst will be ordered in the same order specified in the KeyVector \c
   /// constrainFirst.   If \c forceOrder is false, the variables in \c constrainFirst will be
   /// ordered before all the others, but will be rearranged by CCOLAMD to reduce fill-in as well.
-  template<class FACTOR>
-  static Ordering ColamdConstrainedFirst(const FactorGraph<FACTOR>& graph,
-      const std::vector<Key>& constrainFirst, bool forceOrder = false) {
+  template<class FACTOR_GRAPH>
+  static Ordering ColamdConstrainedFirst(const FACTOR_GRAPH& graph,
+      const KeyVector& constrainFirst, bool forceOrder = false) {
     if (graph.empty())
       return Ordering();
     else
@@ -136,12 +137,12 @@ public:
   /// function constrains the variables in \c constrainFirst to the front of the ordering, and
   /// orders all other variables after in a fill-reducing ordering.  If \c forceOrder is true, the
   /// variables in \c constrainFirst will be ordered in the same order specified in the
-  /// vector<Key> \c constrainFirst.   If \c forceOrder is false, the variables in \c
+  /// KeyVector \c constrainFirst.   If \c forceOrder is false, the variables in \c
   /// constrainFirst will be ordered before all the others, but will be rearranged by CCOLAMD to
   /// reduce fill-in as well.
   static GTSAM_EXPORT Ordering ColamdConstrainedFirst(
       const VariableIndex& variableIndex,
-      const std::vector<Key>& constrainFirst, bool forceOrder = false);
+      const KeyVector& constrainFirst, bool forceOrder = false);
 
   /// Compute a fill-reducing ordering using constrained COLAMD from a factor graph (see details
   /// for note on performance).  This internally builds a VariableIndex so if you already have a
@@ -152,8 +153,8 @@ public:
   /// arbitrary order.  Any variables not present in \c groups will be assigned to group 0.  This
   /// function simply fills the \c cmember argument to CCOLAMD with the supplied indices, see the
   /// CCOLAMD documentation for more information.
-  template<class FACTOR>
-  static Ordering ColamdConstrained(const FactorGraph<FACTOR>& graph,
+  template<class FACTOR_GRAPH>
+  static Ordering ColamdConstrained(const FACTOR_GRAPH& graph,
       const FastMap<Key, int>& groups) {
     if (graph.empty())
       return Ordering();
@@ -172,24 +173,24 @@ public:
       const VariableIndex& variableIndex, const FastMap<Key, int>& groups);
 
   /// Return a natural Ordering. Typically used by iterative solvers
-  template<class FACTOR>
-  static Ordering Natural(const FactorGraph<FACTOR> &fg) {
+  template<class FACTOR_GRAPH>
+  static Ordering Natural(const FACTOR_GRAPH &fg) {
     KeySet src = fg.keys();
-    std::vector<Key> keys(src.begin(), src.end());
+    KeyVector keys(src.begin(), src.end());
     std::stable_sort(keys.begin(), keys.end());
     return Ordering(keys);
   }
 
   /// METIS Formatting function
-  template<class FACTOR>
+  template<class FACTOR_GRAPH>
   static GTSAM_EXPORT void CSRFormat(std::vector<int>& xadj,
-      std::vector<int>& adj, const FactorGraph<FACTOR>& graph);
+      std::vector<int>& adj, const FACTOR_GRAPH& graph);
 
   /// Compute an ordering determined by METIS from a VariableIndex
   static GTSAM_EXPORT Ordering Metis(const MetisIndex& met);
 
-  template<class FACTOR>
-  static Ordering Metis(const FactorGraph<FACTOR>& graph) {
+  template<class FACTOR_GRAPH>
+  static Ordering Metis(const FACTOR_GRAPH& graph) {
     return Metis(MetisIndex(graph));
   }
 
@@ -197,9 +198,9 @@ public:
 
   /// @name Named Constructors @{
 
-  template<class FACTOR>
+  template<class FACTOR_GRAPH>
   static Ordering Create(OrderingType orderingType,
-      const FactorGraph<FACTOR>& graph) {
+      const FACTOR_GRAPH& graph) {
     if (graph.empty())
       return Ordering();
 

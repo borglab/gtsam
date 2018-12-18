@@ -57,10 +57,13 @@ class Scenario {
 class ConstantTwistScenario : public Scenario {
  public:
   /// Construct scenario with constant twist [w,v]
-  ConstantTwistScenario(const Vector3& w, const Vector3& v)
-      : twist_((Vector6() << w, v).finished()), a_b_(w.cross(v)) {}
+  ConstantTwistScenario(const Vector3& w, const Vector3& v,
+                        const Pose3& nTb0 = Pose3())
+      : twist_((Vector6() << w, v).finished()), a_b_(w.cross(v)), nTb0_(nTb0) {}
 
-  Pose3 pose(double t) const override { return Pose3::Expmap(twist_ * t); }
+  Pose3 pose(double t) const override {
+    return nTb0_ * Pose3::Expmap(twist_ * t);
+  }
   Vector3 omega_b(double t) const override { return twist_.head<3>(); }
   Vector3 velocity_n(double t) const override {
     return rotation(t).matrix() * twist_.tail<3>();
@@ -70,6 +73,7 @@ class ConstantTwistScenario : public Scenario {
  private:
   const Vector6 twist_;
   const Vector3 a_b_;  // constant centripetal acceleration in body = w_b * v_b
+  const Pose3 nTb0_;
 };
 
 /// Accelerating from an arbitrary initial state, with optional rotation

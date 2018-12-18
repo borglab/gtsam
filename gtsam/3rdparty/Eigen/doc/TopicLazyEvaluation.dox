@@ -36,7 +36,7 @@ Here is now a more involved example:
 
 Eigen chooses lazy evaluation at every stage in that example, which is clearly the correct choice. In fact, lazy evaluation is the "default choice" and Eigen will choose it except in a few circumstances.
 
-<b>The first circumstance</b> in which Eigen chooses immediate evaluation, is when it sees an assignment <tt>a = b;</tt> and the expression \c b has the evaluate-before-assigning \link flags flag\endlink. The most important example of such an expression is the \link GeneralProduct matrix product expression\endlink. For example, when you do
+<b>The first circumstance</b> in which Eigen chooses immediate evaluation, is when it sees an assignment <tt>a = b;</tt> and the expression \c b has the evaluate-before-assigning \link flags flag\endlink. The most important example of such an expression is the \link Product matrix product expression\endlink. For example, when you do
 
 \code matrix = matrix * matrix; \endcode
 
@@ -48,7 +48,7 @@ What if you know that the result does no alias the operand of the product and wa
 
 Here, since we know that matrix2 is not the same matrix as matrix1, we know that lazy evaluation is not dangerous, so we may force lazy evaluation. Concretely, the effect of noalias() here is to bypass the evaluate-before-assigning \link flags flag\endlink.
 
-<b>The second circumstance</b> in which Eigen chooses immediate evaluation, is when it sees a nested expression such as <tt>a + b</tt> where \c b is already an expression having the evaluate-before-nesting \link flags flag\endlink. Again, the most important example of such an expression is the \link GeneralProduct matrix product expression\endlink. For example, when you do
+<b>The second circumstance</b> in which Eigen chooses immediate evaluation, is when it sees a nested expression such as <tt>a + b</tt> where \c b is already an expression having the evaluate-before-nesting \link flags flag\endlink. Again, the most important example of such an expression is the \link Product matrix product expression\endlink. For example, when you do
 
 \code matrix1 = matrix2 + matrix3 * matrix4; \endcode
 

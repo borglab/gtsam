@@ -203,9 +203,9 @@ void RawQP::addQuadTerm(
 }
 
 QP RawQP::makeQP() {
-  std::vector < Key > keys;
-  std::vector < Matrix > Gs;
-  std::vector < Vector > gs;
+  KeyVector keys;
+  std::vector<Matrix> Gs;
+  std::vector<Vector> gs;
   for (auto kv : varname_to_key) {
     keys.push_back(kv.second);
   }

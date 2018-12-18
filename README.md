@@ -62,9 +62,10 @@ If you are using the factor in academic work, please cite the publications above
 In GTSAM 4 a new and more efficient implementation, based on integrating on the NavState tangent space and detailed in docs/ImuFactor.pdf, is enabled by default. To switch to the RSS 2015 version, set the flag **GTSAM_TANGENT_PREINTEGRATION** to OFF.
 
 
-
 Additional Information
 ----------------------
+
+There is a [`GTSAM users Google group`](https://groups.google.com/forum/#!forum/gtsam-users) for general discussion.
 
 Read about important [`GTSAM-Concepts`](GTSAM-Concepts.md) here. A primer on GTSAM Expressions, 
 which support (superfast) automatic differentiation, 

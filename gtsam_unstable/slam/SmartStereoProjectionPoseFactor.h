@@ -92,7 +92,7 @@ public:
    * @param poseKeys vector of keys corresponding to the camera observing the same landmark
    * @param Ks vector of calibration objects
    */
-  void add(std::vector<StereoPoint2> measurements, std::vector<Key> poseKeys,
+  void add(std::vector<StereoPoint2> measurements, KeyVector poseKeys,
       std::vector<boost::shared_ptr<Cal3_S2Stereo> > Ks) {
     Base::add(measurements, poseKeys);
     for (size_t i = 0; i < measurements.size(); i++) {
@@ -106,7 +106,7 @@ public:
    * @param poseKeys vector of keys corresponding to the camera observing the same landmark
    * @param K the (known) camera calibration (same for all measurements)
    */
-  void add(std::vector<StereoPoint2> measurements, std::vector<Key> poseKeys,
+  void add(std::vector<StereoPoint2> measurements, KeyVector poseKeys,
       const boost::shared_ptr<Cal3_S2Stereo> K) {
     for (size_t i = 0; i < measurements.size(); i++) {
       Base::add(measurements.at(i), poseKeys.at(i));

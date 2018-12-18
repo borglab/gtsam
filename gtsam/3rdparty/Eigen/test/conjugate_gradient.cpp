@@ -10,13 +10,14 @@
 #include "sparse_solver.h"
 #include <Eigen/IterativeLinearSolvers>
 
-template<typename T> void test_conjugate_gradient_T()
+template<typename T, typename I> void test_conjugate_gradient_T()
 {
-  ConjugateGradient<SparseMatrix<T>, Lower      > cg_colmajor_lower_diag;
-  ConjugateGradient<SparseMatrix<T>, Upper      > cg_colmajor_upper_diag;
-  ConjugateGradient<SparseMatrix<T>, Lower|Upper> cg_colmajor_loup_diag;
-  ConjugateGradient<SparseMatrix<T>, Lower, IdentityPreconditioner> cg_colmajor_lower_I;
-  ConjugateGradient<SparseMatrix<T>, Upper, IdentityPreconditioner> cg_colmajor_upper_I;
+  typedef SparseMatrix<T,0,I> SparseMatrixType;
+  ConjugateGradient<SparseMatrixType, Lower      > cg_colmajor_lower_diag;
+  ConjugateGradient<SparseMatrixType, Upper      > cg_colmajor_upper_diag;
+  ConjugateGradient<SparseMatrixType, Lower|Upper> cg_colmajor_loup_diag;
+  ConjugateGradient<SparseMatrixType, Lower, IdentityPreconditioner> cg_colmajor_lower_I;
+  ConjugateGradient<SparseMatrixType, Upper, IdentityPreconditioner> cg_colmajor_upper_I;
 
   CALL_SUBTEST( check_sparse_spd_solving(cg_colmajor_lower_diag)  );
   CALL_SUBTEST( check_sparse_spd_solving(cg_colmajor_upper_diag)  );
@@ -27,6 +28,7 @@ template<typename T> void test_conjugate_gradient_T()
 
 void test_conjugate_gradient()
 {
-  CALL_SUBTEST_1(test_conjugate_gradient_T<double>());
-  CALL_SUBTEST_2(test_conjugate_gradient_T<std::complex<double> >());
+  CALL_SUBTEST_1(( test_conjugate_gradient_T<double,int>() ));
+  CALL_SUBTEST_2(( test_conjugate_gradient_T<std::complex<double>, int>() ));
+  CALL_SUBTEST_3(( test_conjugate_gradient_T<double,long int>() ));
 }

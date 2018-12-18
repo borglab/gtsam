@@ -25,7 +25,7 @@ template<typename MatrixType> void schur(int size = MatrixType::ColsAtCompileTim
     ComplexMatrixType T = schurOfA.matrixT();
     for(int row = 1; row < size; ++row) {
       for(int col = 0; col < row; ++col) {
-	VERIFY(T(row,col) == (typename MatrixType::Scalar)0);
+        VERIFY(T(row,col) == (typename MatrixType::Scalar)0);
       }
     }
     VERIFY_IS_APPROX(A.template cast<ComplexScalar>(), U * T * U.adjoint());
@@ -70,7 +70,7 @@ template<typename MatrixType> void schur(int size = MatrixType::ColsAtCompileTim
   VERIFY_IS_EQUAL(cs1.matrixT(), csOnlyT.matrixT());
   VERIFY_RAISES_ASSERT(csOnlyT.matrixU());
 
-  if (size > 1)
+  if (size > 1 && size < 20)
   {
     // Test matrix with NaN
     A(0,0) = std::numeric_limits<typename MatrixType::RealScalar>::quiet_NaN();

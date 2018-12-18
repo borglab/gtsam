@@ -2,12 +2,38 @@
 // for linear algebra.
 //
 // Copyright (C) 2008 Benoit Jacob <jacob.benoit.1@gmail.com>
+// Copyright (C) 2015 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#if defined(EIGEN_TEST_PART_1)
+  // default
+#elif defined(EIGEN_TEST_PART_2)
+  #define EIGEN_MAX_STATIC_ALIGN_BYTES 16
+  #define EIGEN_MAX_ALIGN_BYTES 16
+#elif defined(EIGEN_TEST_PART_3)
+  #define EIGEN_MAX_STATIC_ALIGN_BYTES 32
+  #define EIGEN_MAX_ALIGN_BYTES 32
+#elif defined(EIGEN_TEST_PART_4)
+  #define EIGEN_MAX_STATIC_ALIGN_BYTES 64
+  #define EIGEN_MAX_ALIGN_BYTES 64
+#endif
+
 #include "main.h"
+
+typedef Matrix<float,  6,1> Vector6f;
+typedef Matrix<float,  8,1> Vector8f;
+typedef Matrix<float, 12,1> Vector12f;
+
+typedef Matrix<double, 5,1> Vector5d;
+typedef Matrix<double, 6,1> Vector6d;
+typedef Matrix<double, 7,1> Vector7d;
+typedef Matrix<double, 8,1> Vector8d;
+typedef Matrix<double, 9,1> Vector9d;
+typedef Matrix<double,10,1> Vector10d;
+typedef Matrix<double,12,1> Vector12d;
 
 struct TestNew1
 {
@@ -36,7 +62,7 @@ struct TestNew4
 struct TestNew5
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  float f; // try the f at first -- the EIGEN_ALIGN16 attribute of m should make that still work
+  float f; // try the f at first -- the EIGEN_ALIGN_MAX attribute of m should make that still work
   Matrix4f m;
 };
 
@@ -63,13 +89,13 @@ void check_unalignedassert_good()
   delete[] y;
 }
 
-#if EIGEN_ALIGN_STATICALLY
+#if EIGEN_MAX_STATIC_ALIGN_BYTES>0
 template<typename T>
 void construct_at_boundary(int boundary)
 {
   char buf[sizeof(T)+256];
-  size_t _buf = reinterpret_cast<size_t>(buf);
-  _buf += (16 - (_buf % 16)); // make 16-byte aligned
+  size_t _buf = reinterpret_cast<internal::UIntPtr>(buf);
+  _buf += (EIGEN_MAX_ALIGN_BYTES - (_buf % EIGEN_MAX_ALIGN_BYTES)); // make 16/32/...-byte aligned
   _buf += boundary; // make exact boundary-aligned
   T *x = ::new(reinterpret_cast<void*>(_buf)) T;
   x[0].setZero(); // just in order to silence warnings
@@ -79,26 +105,36 @@ void construct_at_boundary(int boundary)
 
 void unalignedassert()
 {
-  #if EIGEN_ALIGN_STATICALLY
+#if EIGEN_MAX_STATIC_ALIGN_BYTES>0
   construct_at_boundary<Vector2f>(4);
   construct_at_boundary<Vector3f>(4);
   construct_at_boundary<Vector4f>(16);
+  construct_at_boundary<Vector6f>(4);
+  construct_at_boundary<Vector8f>(EIGEN_MAX_ALIGN_BYTES);
+  construct_at_boundary<Vector12f>(16);
   construct_at_boundary<Matrix2f>(16);
   construct_at_boundary<Matrix3f>(4);
-  construct_at_boundary<Matrix4f>(16);
+  construct_at_boundary<Matrix4f>(EIGEN_MAX_ALIGN_BYTES);
 
   construct_at_boundary<Vector2d>(16);
   construct_at_boundary<Vector3d>(4);
-  construct_at_boundary<Vector4d>(16);
-  construct_at_boundary<Matrix2d>(16);
+  construct_at_boundary<Vector4d>(EIGEN_MAX_ALIGN_BYTES);
+  construct_at_boundary<Vector5d>(4);
+  construct_at_boundary<Vector6d>(16);
+  construct_at_boundary<Vector7d>(4);
+  construct_at_boundary<Vector8d>(EIGEN_MAX_ALIGN_BYTES);
+  construct_at_boundary<Vector9d>(4);
+  construct_at_boundary<Vector10d>(16);
+  construct_at_boundary<Vector12d>(EIGEN_MAX_ALIGN_BYTES);
+  construct_at_boundary<Matrix2d>(EIGEN_MAX_ALIGN_BYTES);
   construct_at_boundary<Matrix3d>(4);
-  construct_at_boundary<Matrix4d>(16);
+  construct_at_boundary<Matrix4d>(EIGEN_MAX_ALIGN_BYTES);
 
   construct_at_boundary<Vector2cf>(16);
   construct_at_boundary<Vector3cf>(4);
-  construct_at_boundary<Vector2cd>(16);
+  construct_at_boundary<Vector2cd>(EIGEN_MAX_ALIGN_BYTES);
   construct_at_boundary<Vector3cd>(16);
-  #endif
+#endif
 
   check_unalignedassert_good<TestNew1>();
   check_unalignedassert_good<TestNew2>();
@@ -109,15 +145,32 @@ void unalignedassert()
   check_unalignedassert_good<TestNew6>();
   check_unalignedassert_good<Depends<true> >();
 
-#if EIGEN_ALIGN_STATICALLY
-  VERIFY_RAISES_ASSERT(construct_at_boundary<Vector4f>(8));
-  VERIFY_RAISES_ASSERT(construct_at_boundary<Matrix4f>(8));
-  VERIFY_RAISES_ASSERT(construct_at_boundary<Vector2d>(8));
-  VERIFY_RAISES_ASSERT(construct_at_boundary<Vector4d>(8));
-  VERIFY_RAISES_ASSERT(construct_at_boundary<Matrix2d>(8));
-  VERIFY_RAISES_ASSERT(construct_at_boundary<Matrix4d>(8));
-  VERIFY_RAISES_ASSERT(construct_at_boundary<Vector2cf>(8));
-  VERIFY_RAISES_ASSERT(construct_at_boundary<Vector2cd>(8));
+#if EIGEN_MAX_STATIC_ALIGN_BYTES>0
+  if(EIGEN_MAX_ALIGN_BYTES>=16)
+  {
+    VERIFY_RAISES_ASSERT(construct_at_boundary<Vector4f>(8));
+    VERIFY_RAISES_ASSERT(construct_at_boundary<Vector8f>(8));
+    VERIFY_RAISES_ASSERT(construct_at_boundary<Vector12f>(8));
+    VERIFY_RAISES_ASSERT(construct_at_boundary<Vector2d>(8));
+    VERIFY_RAISES_ASSERT(construct_at_boundary<Vector4d>(8));
+    VERIFY_RAISES_ASSERT(construct_at_boundary<Vector6d>(8));
+    VERIFY_RAISES_ASSERT(construct_at_boundary<Vector8d>(8));
+    VERIFY_RAISES_ASSERT(construct_at_boundary<Vector10d>(8));
+    VERIFY_RAISES_ASSERT(construct_at_boundary<Vector12d>(8));
+    // Complexes are disabled because the compiler might aggressively vectorize
+    // the initialization of complex coeffs to 0 before we can check for alignedness
+    //VERIFY_RAISES_ASSERT(construct_at_boundary<Vector2cf>(8));
+    VERIFY_RAISES_ASSERT(construct_at_boundary<Vector4i>(8));
+  }
+  for(int b=8; b<EIGEN_MAX_ALIGN_BYTES; b+=8)
+  {
+    if(b<32)  VERIFY_RAISES_ASSERT(construct_at_boundary<Vector8f>(b));
+    if(b<64)  VERIFY_RAISES_ASSERT(construct_at_boundary<Matrix4f>(b));
+    if(b<32)  VERIFY_RAISES_ASSERT(construct_at_boundary<Vector4d>(b));
+    if(b<32)  VERIFY_RAISES_ASSERT(construct_at_boundary<Matrix2d>(b));
+    if(b<128) VERIFY_RAISES_ASSERT(construct_at_boundary<Matrix4d>(b));
+    //if(b<32)  VERIFY_RAISES_ASSERT(construct_at_boundary<Vector2cd>(b));
+  }
 #endif
 }
 

@@ -25,6 +25,7 @@ template<typename MatrixType> void zeroReduction(const MatrixType& m) {
 template<typename MatrixType> void zeroSizedMatrix()
 {
   MatrixType t1;
+  typedef typename MatrixType::Scalar Scalar;
 
   if (MatrixType::SizeAtCompileTime == Dynamic || MatrixType::SizeAtCompileTime == 0)
   {
@@ -37,13 +38,30 @@ template<typename MatrixType> void zeroSizedMatrix()
     if (MatrixType::RowsAtCompileTime == Dynamic && MatrixType::ColsAtCompileTime == Dynamic)
     {
 
-      MatrixType t2(0, 0);
+      MatrixType t2(0, 0), t3(t1);
       VERIFY(t2.rows() == 0);
       VERIFY(t2.cols() == 0);
 
       zeroReduction(t2);
       VERIFY(t1==t2);
     }
+  }
+
+  if(MatrixType::MaxColsAtCompileTime!=0 && MatrixType::MaxRowsAtCompileTime!=0)
+  {
+    Index rows = MatrixType::RowsAtCompileTime==Dynamic ? internal::random<Index>(1,10) : Index(MatrixType::RowsAtCompileTime);
+    Index cols = MatrixType::ColsAtCompileTime==Dynamic ? internal::random<Index>(1,10) : Index(MatrixType::ColsAtCompileTime);
+    MatrixType m(rows,cols);
+    zeroReduction(m.template block<0,MatrixType::ColsAtCompileTime>(0,0,0,cols));
+    zeroReduction(m.template block<MatrixType::RowsAtCompileTime,0>(0,0,rows,0));
+    zeroReduction(m.template block<0,1>(0,0));
+    zeroReduction(m.template block<1,0>(0,0));
+    Matrix<Scalar,Dynamic,Dynamic> prod = m.template block<MatrixType::RowsAtCompileTime,0>(0,0,rows,0) * m.template block<0,MatrixType::ColsAtCompileTime>(0,0,0,cols);
+    VERIFY(prod.rows()==rows && prod.cols()==cols);
+    VERIFY(prod.isZero());
+    prod = m.template block<1,0>(0,0) * m.template block<0,1>(0,0);
+    VERIFY(prod.size()==1);
+    VERIFY(prod.isZero());
   }
 }
 

@@ -13,23 +13,23 @@
 
 namespace Eigen {
   
-// lets do some explicit instantiations and thus
-// force the compilation of all spline functions...
-template class Spline<double, 2, Dynamic>;
-template class Spline<double, 3, Dynamic>;
+  // lets do some explicit instantiations and thus
+  // force the compilation of all spline functions...
+  template class Spline<double, 2, Dynamic>;
+  template class Spline<double, 3, Dynamic>;
 
-template class Spline<double, 2, 2>;
-template class Spline<double, 2, 3>;
-template class Spline<double, 2, 4>;
-template class Spline<double, 2, 5>;
+  template class Spline<double, 2, 2>;
+  template class Spline<double, 2, 3>;
+  template class Spline<double, 2, 4>;
+  template class Spline<double, 2, 5>;
 
-template class Spline<float, 2, Dynamic>;
-template class Spline<float, 3, Dynamic>;
+  template class Spline<float, 2, Dynamic>;
+  template class Spline<float, 3, Dynamic>;
 
-template class Spline<float, 3, 2>;
-template class Spline<float, 3, 3>;
-template class Spline<float, 3, 4>;
-template class Spline<float, 3, 5>;
+  template class Spline<float, 3, 2>;
+  template class Spline<float, 3, 3>;
+  template class Spline<float, 3, 4>;
+  template class Spline<float, 3, 5>;
 
 }
 
@@ -234,11 +234,48 @@ void check_global_interpolation2d()
   }
 }
 
+void check_global_interpolation_with_derivatives2d()
+{
+  typedef Spline2d::PointType PointType;
+  typedef Spline2d::KnotVectorType KnotVectorType;
+
+  const Eigen::DenseIndex numPoints = 100;
+  const unsigned int dimension = 2;
+  const unsigned int degree = 3;
+
+  ArrayXXd points = ArrayXXd::Random(dimension, numPoints);
+
+  KnotVectorType knots;
+  Eigen::ChordLengths(points, knots);
+
+  ArrayXXd derivatives = ArrayXXd::Random(dimension, numPoints);
+  VectorXd derivativeIndices(numPoints);
+
+  for (Eigen::DenseIndex i = 0; i < numPoints; ++i)
+      derivativeIndices(i) = static_cast<double>(i);
+
+  const Spline2d spline = SplineFitting<Spline2d>::InterpolateWithDerivatives(
+    points, derivatives, derivativeIndices, degree);  
+    
+  for (Eigen::DenseIndex i = 0; i < points.cols(); ++i)
+  {
+    PointType point = spline(knots(i));
+    PointType referencePoint = points.col(i);
+    VERIFY_IS_APPROX(point, referencePoint);
+    PointType derivative = spline.derivatives(knots(i), 1).col(1);
+    PointType referenceDerivative = derivatives.col(i);
+    VERIFY_IS_APPROX(derivative, referenceDerivative);
+  }
+}
 
 void test_splines()
 {
-  CALL_SUBTEST( eval_spline3d() );
-  CALL_SUBTEST( eval_spline3d_onbrks() );
-  CALL_SUBTEST( eval_closed_spline2d() );
-  CALL_SUBTEST( check_global_interpolation2d() );
+  for (int i = 0; i < g_repeat; ++i)
+  {
+    CALL_SUBTEST( eval_spline3d() );
+    CALL_SUBTEST( eval_spline3d_onbrks() );
+    CALL_SUBTEST( eval_closed_spline2d() );
+    CALL_SUBTEST( check_global_interpolation2d() );
+    CALL_SUBTEST( check_global_interpolation_with_derivatives2d() );
+  }
 }

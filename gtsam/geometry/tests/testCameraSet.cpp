@@ -32,7 +32,7 @@ using namespace gtsam;
 TEST(CameraSet, Pinhole) {
   typedef PinholeCamera<Cal3Bundler> Camera;
   typedef CameraSet<Camera> Set;
-  typedef vector<Point2> ZZ;
+  typedef Point2Vector ZZ;
   Set set;
   Camera camera;
   set.push_back(camera);
@@ -89,23 +89,17 @@ TEST(CameraSet, Pinhole) {
   Vector4 b = actualV;
   Vector v = Ft * (b - E * P * Et * b);
   schur << Ft * F - Ft * E * P * Et * F, v, v.transpose(), 30;
-  SymmetricBlockMatrix actualReduced = Set::SchurComplement(Fs, E, P, b);
+  SymmetricBlockMatrix actualReduced = Set::SchurComplement<3>(Fs, E, P, b);
   EXPECT(assert_equal(schur, actualReduced.selfadjointView()));
 
   // Check Schur complement update, same order, should just double
-  FastVector<Key> allKeys, keys;
-  allKeys.push_back(1);
-  allKeys.push_back(2);
-  keys.push_back(1);
-  keys.push_back(2);
-  Set::UpdateSchurComplement(Fs, E, P, b, allKeys, keys, actualReduced);
+  KeyVector allKeys {1, 2}, keys {1, 2};
+  Set::UpdateSchurComplement<3>(Fs, E, P, b, allKeys, keys, actualReduced);
   EXPECT(assert_equal((Matrix )(2.0 * schur), actualReduced.selfadjointView()));
 
   // Check Schur complement update, keys reversed
-  FastVector<Key> keys2;
-  keys2.push_back(2);
-  keys2.push_back(1);
-  Set::UpdateSchurComplement(Fs, E, P, b, allKeys, keys2, actualReduced);
+  KeyVector keys2 {2, 1};
+  Set::UpdateSchurComplement<3>(Fs, E, P, b, allKeys, keys2, actualReduced);
   Vector4 reverse_b;
   reverse_b << b.tail<2>(), b.head<2>();
   Vector reverse_v = Ft * (reverse_b - E * P * Et * reverse_b);
@@ -135,8 +129,8 @@ TEST(CameraSet, Pinhole) {
 /* ************************************************************************* */
 #include <gtsam/geometry/StereoCamera.h>
 TEST(CameraSet, Stereo) {
-  typedef vector<StereoPoint2> ZZ;
   CameraSet<StereoCamera> set;
+  typedef StereoCamera::MeasurementVector ZZ;
   StereoCamera camera;
   set.push_back(camera);
   set.push_back(camera);

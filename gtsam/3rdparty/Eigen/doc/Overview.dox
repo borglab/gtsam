@@ -17,7 +17,9 @@ You're a MatLab user? There is also a <a href="AsciiQuickReference.txt">short AS
 The \b main \b documentation is organized into \em chapters covering different domains of features.
 They are themselves composed of \em user \em manual pages describing the different features in a comprehensive way, and \em reference pages that gives you access to the API documentation through the related Eigen's \em modules and \em classes.
 
-Under the  \subpage UserManual_Generalities section, you will find documentation on more general topics such as preprocessor directives, controlling assertions, multi-threading, MKL support, some Eigen's internal insights, and much more...
+Under the \subpage UserManual_CustomizingEigen section, you will find discussions and examples on extending %Eigen's features and supporting custom scalar types.
+
+Under the \subpage UserManual_Generalities section, you will find documentation on more general topics such as preprocessor directives, controlling assertions, multi-threading, MKL support, some Eigen's internal insights, and much more...
 
 Finally, do not miss the search engine, useful to quickly get to the documentation of a given class or function.
 

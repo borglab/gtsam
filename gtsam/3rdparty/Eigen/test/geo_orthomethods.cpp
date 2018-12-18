@@ -33,12 +33,16 @@ template<typename Scalar> void orthomethods_3()
   VERIFY_IS_MUCH_SMALLER_THAN(v1.dot(v1.cross(v2)), Scalar(1));
   VERIFY_IS_MUCH_SMALLER_THAN(v1.cross(v2).dot(v2), Scalar(1));
   VERIFY_IS_MUCH_SMALLER_THAN(v2.dot(v1.cross(v2)), Scalar(1));
+  VERIFY_IS_MUCH_SMALLER_THAN(v1.cross(Vector3::Random()).dot(v1), Scalar(1));
   Matrix3 mat3;
   mat3 << v0.normalized(),
          (v0.cross(v1)).normalized(),
          (v0.cross(v1).cross(v0)).normalized();
   VERIFY(mat3.isUnitary());
-
+  
+  mat3.setRandom();
+  VERIFY_IS_APPROX(v0.cross(mat3*v1), -(mat3*v1).cross(v0));
+  VERIFY_IS_APPROX(v0.cross(mat3.lazyProduct(v1)), -(mat3.lazyProduct(v1)).cross(v0));
 
   // colwise/rowwise cross product
   mat3.setRandom();
@@ -47,6 +51,13 @@ template<typename Scalar> void orthomethods_3()
   int i = internal::random<int>(0,2);
   mcross = mat3.colwise().cross(vec3);
   VERIFY_IS_APPROX(mcross.col(i), mat3.col(i).cross(vec3));
+  
+  VERIFY_IS_MUCH_SMALLER_THAN((mat3.adjoint() * mat3.colwise().cross(vec3)).diagonal().cwiseAbs().sum(), Scalar(1));
+  VERIFY_IS_MUCH_SMALLER_THAN((mat3.adjoint() * mat3.colwise().cross(Vector3::Random())).diagonal().cwiseAbs().sum(), Scalar(1));
+  
+  VERIFY_IS_MUCH_SMALLER_THAN((vec3.adjoint() * mat3.colwise().cross(vec3)).cwiseAbs().sum(), Scalar(1));
+  VERIFY_IS_MUCH_SMALLER_THAN((vec3.adjoint() * Matrix3::Random().colwise().cross(vec3)).cwiseAbs().sum(), Scalar(1));
+  
   mcross = mat3.rowwise().cross(vec3);
   VERIFY_IS_APPROX(mcross.row(i), mat3.row(i).cross(vec3));
 
@@ -57,6 +68,7 @@ template<typename Scalar> void orthomethods_3()
   v40.w() = v41.w() = v42.w() = 0;
   v42.template head<3>() = v40.template head<3>().cross(v41.template head<3>());
   VERIFY_IS_APPROX(v40.cross3(v41), v42);
+  VERIFY_IS_MUCH_SMALLER_THAN(v40.cross3(Vector4::Random()).dot(v40), Scalar(1));
   
   // check mixed product
   typedef Matrix<RealScalar, 3, 1> RealVector3;

@@ -59,7 +59,7 @@ namespace gtsam {
 
     /// Named constructor from angle in degrees
     static Rot2 fromDegrees(double theta) {
-      const double degree = M_PI / 180;
+      static const double degree = M_PI / 180;
       return fromAngle(theta * degree);
     }
 

@@ -34,7 +34,7 @@ void check_stdvector_matrix(const MatrixType& m)
   VERIFY_IS_APPROX(v[21], y);
   v.push_back(x);
   VERIFY_IS_APPROX(v[22], x);
-  VERIFY((size_t)&(v[22]) == (size_t)&(v[21]) + sizeof(MatrixType));
+  VERIFY((internal::UIntPtr)&(v[22]) == (internal::UIntPtr)&(v[21]) + sizeof(MatrixType));
 
   // do a lot of push_back such that the vector gets internally resized
   // (with memory reallocation)
@@ -69,7 +69,7 @@ void check_stdvector_transform(const TransformType&)
   VERIFY_IS_APPROX(v[21], y);
   v.push_back(x);
   VERIFY_IS_APPROX(v[22], x);
-  VERIFY((size_t)&(v[22]) == (size_t)&(v[21]) + sizeof(TransformType));
+  VERIFY((internal::UIntPtr)&(v[22]) == (internal::UIntPtr)&(v[21]) + sizeof(TransformType));
 
   // do a lot of push_back such that the vector gets internally resized
   // (with memory reallocation)
@@ -104,7 +104,7 @@ void check_stdvector_quaternion(const QuaternionType&)
   VERIFY_IS_APPROX(v[21], y);
   v.push_back(x);
   VERIFY_IS_APPROX(v[22], x);
-  VERIFY((size_t)&(v[22]) == (size_t)&(v[21]) + sizeof(QuaternionType));
+  VERIFY((internal::UIntPtr)&(v[22]) == (internal::UIntPtr)&(v[21]) + sizeof(QuaternionType));
 
   // do a lot of push_back such that the vector gets internally resized
   // (with memory reallocation)
@@ -115,6 +115,16 @@ void check_stdvector_quaternion(const QuaternionType&)
   {
     VERIFY(v[i].coeffs()==w[(i-23)%w.size()].coeffs());
   }
+}
+
+// the code below triggered an invalid warning with gcc >= 7
+// eigen/Eigen/src/Core/util/Memory.h:189:12: warning: argument 1 value '18446744073709551612' exceeds maximum object size 9223372036854775807
+// This has been reported to gcc there: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=87544
+void std_vector_gcc_warning()
+{
+  typedef Eigen::Vector3f T;
+  std::vector<T, Eigen::aligned_allocator<T> > v;
+  v.push_back(T());
 }
 
 void test_stdvector()

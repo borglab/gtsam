@@ -19,7 +19,7 @@ class NonlinearClusterTree : public ClusterTree<NonlinearFactorGraph> {
     // Given graph, index, add factors with specified keys into
     // Factors are erased in the graph
     // TODO(frank): fairly hacky and inefficient. Think about iterating the graph once instead
-    NonlinearCluster(const VariableIndex& variableIndex, const std::vector<Key>& keys,
+    NonlinearCluster(const VariableIndex& variableIndex, const KeyVector& keys,
                      NonlinearFactorGraph* graph) {
       for (const Key key : keys) {
         std::vector<NonlinearFactor::shared_ptr> factors;

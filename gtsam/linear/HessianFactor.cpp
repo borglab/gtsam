@@ -155,7 +155,7 @@ DenseIndex _getSizeHF(const Vector& m) {
 }
 
 /* ************************************************************************* */
-HessianFactor::HessianFactor(const std::vector<Key>& js,
+HessianFactor::HessianFactor(const KeyVector& js,
     const std::vector<Matrix>& Gs, const std::vector<Vector>& gs, double f) :
     GaussianFactor(js), info_(gs | br::transformed(&_getSizeHF), true) {
   // Get the number of variables
@@ -356,7 +356,7 @@ double HessianFactor::error(const VectorValues& c) const {
 }
 
 /* ************************************************************************* */
-void HessianFactor::updateHessian(const FastVector<Key>& infoKeys,
+void HessianFactor::updateHessian(const KeyVector& infoKeys,
                                   SymmetricBlockMatrix* info) const {
   gttic(updateHessian_HessianFactor);
   assert(info);
@@ -486,7 +486,7 @@ boost::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Or
 
     // Erase the eliminated keys in this factor
     keys_.erase(begin(), begin() + nFrontals);
-  } catch (const CholeskyFailed& e) {
+  } catch (const CholeskyFailed&) {
     throw IndeterminantLinearSystemException(keys.front());
   }
 

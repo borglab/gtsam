@@ -188,7 +188,7 @@ boost::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
     m += factor->rows();
   }
 
-#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
+#if !defined(NDEBUG) && defined(GTSAM_EXTRA_CONSISTENCY_CHECKS)
   for(DenseIndex d: varDims) {
     assert(d != numeric_limits<DenseIndex>::max());
   }
@@ -501,7 +501,7 @@ map<Key, Matrix> JacobianFactor::hessianBlockDiagonal() const {
 }
 
 /* ************************************************************************* */
-void JacobianFactor::updateHessian(const FastVector<Key>& infoKeys,
+void JacobianFactor::updateHessian(const KeyVector& infoKeys,
                                    SymmetricBlockMatrix* info) const {
   gttic(updateHessian_JacobianFactor);
 

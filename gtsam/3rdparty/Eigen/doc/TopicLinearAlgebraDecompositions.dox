@@ -4,6 +4,7 @@ namespace Eigen {
 
 This page presents a catalogue of the dense matrix decompositions offered by Eigen.
 For an introduction on linear solvers and decompositions, check this \link TutorialLinearAlgebra page \endlink.
+To get an overview of the true relative speed of the different decompositions, check this \link DenseDecompositionBenchmark benchmark \endlink.
 
 \section TopicLinAlgBigTable Catalogue of decompositions offered by Eigen
 
@@ -113,10 +114,22 @@ For an introduction on linear solvers and decompositions, check this \link Tutor
     <tr><th class="inter" colspan="9">\n Singular values and eigenvalues decompositions</th></tr>
 
     <tr>
+        <td>BDCSVD (divide \& conquer)</td>
+        <td>-</td>
+        <td>One of the fastest SVD algorithms</td>
+        <td>Excellent</td>
+        <td>Yes</td>
+        <td>Singular values/vectors, least squares</td>
+        <td>Yes (and does least squares)</td>
+        <td>Excellent</td>
+        <td>Blocked bidiagonalization</td>
+    </tr>
+
+    <tr>
         <td>JacobiSVD (two-sided)</td>
         <td>-</td>
         <td>Slow (but fast for small matrices)</td>
-        <td>Excellent-Proven<sup><a href="#note3">3</a></sup></td>
+        <td>Proven<sup><a href="#note3">3</a></sup></td>
         <td>Yes</td>
         <td>Singular values/vectors, least squares</td>
         <td>Yes (and does least squares)</td>
@@ -132,7 +145,7 @@ For an introduction on linear solvers and decompositions, check this \link Tutor
         <td>Yes</td>
         <td>Eigenvalues/vectors</td>
         <td>-</td>
-        <td>Good</td>
+        <td>Excellent</td>
         <td><em>Closed forms for 2x2 and 3x3</em></td>
     </tr>
 
@@ -249,12 +262,13 @@ For an introduction on linear solvers and decompositions, check this \link Tutor
   <dt><b>Implicit Multi Threading (MT)</b></dt>
     <dd>Means the algorithm can take advantage of multicore processors via OpenMP. "Implicit" means the algortihm itself is not parallelized, but that it relies on parallelized matrix-matrix product rountines.</dd>
   <dt><b>Explicit Multi Threading (MT)</b></dt>
-    <dd>Means the algorithm is explicitely parallelized to take advantage of multicore processors via OpenMP.</dd>
+    <dd>Means the algorithm is explicitly parallelized to take advantage of multicore processors via OpenMP.</dd>
   <dt><b>Meta-unroller</b></dt>
     <dd>Means the algorithm is automatically and explicitly unrolled for very small fixed size matrices.</dd>
   <dt><b></b></dt>
     <dd></dd>
 </dl>
+
 
 */
 

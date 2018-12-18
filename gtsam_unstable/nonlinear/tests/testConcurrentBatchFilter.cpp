@@ -81,7 +81,7 @@ NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph,
 
   GaussianFactorGraph linearGraph = *factorGraph.linearize(linPoint);
 
-  GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMarginalize.begin(), keysToMarginalize.end()), EliminateCholesky).second;
+  GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(KeyVector(keysToMarginalize.begin(), keysToMarginalize.end()), EliminateCholesky).second;
 
   NonlinearFactorGraph LinearContainerForGaussianMarginals;
   for(const GaussianFactor::shared_ptr& factor: marginal) {
@@ -419,9 +419,7 @@ TEST( ConcurrentBatchFilter, update_and_marginalize )
   ordering.push_back(3);
 
   // Create the set of marginalizable variables
-  std::vector<Key> linearIndices;
-  linearIndices.push_back(1);
-  linearIndices.push_back(2);
+  KeyVector linearIndices {1, 2};
 
   GaussianFactorGraph linearPartialGraph = *partialGraph.linearize(partialValues);
   GaussianFactorGraph result = *linearPartialGraph.eliminatePartialMultifrontal(linearIndices, EliminateCholesky).second;
@@ -1008,8 +1006,7 @@ TEST( ConcurrentBatchFilter, CalculateMarginals_1 )
   GaussianFactorGraph linearFactorGraph = *factorGraph.linearize(newValues);
 
   // Create the set of marginalizable variables
-  std::vector<Key> linearIndices;
-  linearIndices.push_back(1);
+  KeyVector linearIndices {1};
 
   GaussianFactorGraph result = *linearFactorGraph.eliminatePartialMultifrontal(linearIndices, EliminateCholesky).second;
 
@@ -1062,9 +1059,7 @@ TEST( ConcurrentBatchFilter, CalculateMarginals_2 )
   GaussianFactorGraph linearFactorGraph = *factorGraph.linearize(newValues);
 
   // Create the set of marginalizable variables
-  std::vector<Key> linearIndices;
-  linearIndices.push_back(1);
-  linearIndices.push_back(2);
+  KeyVector linearIndices {1, 2};
 
   GaussianFactorGraph result = *linearFactorGraph.eliminatePartialMultifrontal(linearIndices, EliminateCholesky).second;
 

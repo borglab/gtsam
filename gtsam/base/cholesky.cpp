@@ -111,8 +111,9 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
     return true;
 
   assert(ABC.cols() == ABC.rows());
-  const Eigen::DenseIndex n = ABC.rows() - topleft;
-  assert(n >= 0 && nFrontal <= size_t(n));
+  assert(ABC.rows() >= topleft);
+  const size_t n = static_cast<size_t>(ABC.rows() - topleft);
+  assert(nFrontal <= size_t(n));
 
   // Create views on blocks
   auto A = ABC.block(topleft, topleft, nFrontal, nFrontal);
@@ -144,8 +145,9 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
   // Check last diagonal element - Eigen does not check it
   if (nFrontal >= 2) {
     int exp2, exp1;
-    (void)frexp(R(topleft + nFrontal - 2, topleft + nFrontal - 2), &exp2);
-    (void)frexp(R(topleft + nFrontal - 1, topleft + nFrontal - 1), &exp1);
+    // NOTE(gareth): R is already the size of A, so we don't need to add topleft here.
+    (void)frexp(R(nFrontal - 2, nFrontal - 2), &exp2);
+    (void)frexp(R(nFrontal - 1, nFrontal - 1), &exp1);
     return (exp2 - exp1 < underconstrainedExponentDifference);
   } else if (nFrontal == 1) {
     int exp1;

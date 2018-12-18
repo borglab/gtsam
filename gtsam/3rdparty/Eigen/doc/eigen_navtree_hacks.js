@@ -64,14 +64,20 @@ function getNode(o, po)
 // Overloaded to adjust the size of the navtree wrt the toc
 function resizeHeight() 
 {
-  var toc = $("#nav-toc");
-  var tocHeight = toc.height();  // <- we added this line
-  var headerHeight = header.height();
-  var footerHeight = footer.height();
+  var header  = $("#top");
+  var sidenav = $("#side-nav");
+  var content = $("#doc-content");
+  var navtree = $("#nav-tree");
+  var footer  = $("#nav-path");
+  var toc     = $("#nav-toc");
+
+  var headerHeight = header.outerHeight();
+  var footerHeight = footer.outerHeight();
+  var tocHeight    = toc.height();
   var windowHeight = $(window).height() - headerHeight - footerHeight;
   content.css({height:windowHeight + "px"});
-  navtree.css({height:(windowHeight-tocHeight) + "px"}); // <- we modified this line
-  sidenav.css({height:(windowHeight) + "px",top: headerHeight+"px"});
+  navtree.css({height:(windowHeight-tocHeight) + "px"});
+  sidenav.css({height:windowHeight + "px"});
 }
 
 // Overloaded to save the root node into global_navtree_object
@@ -155,19 +161,18 @@ function createIndent(o,domNode,node,level)
   var level=-2; // <- we replaced level=-1 by level=-2
   var n = node;
   while (n.parentNode) { level++; n=n.parentNode; }
-  var imgNode = document.createElement("img");
-  imgNode.style.paddingLeft=(16*(level)).toString()+'px';
-  imgNode.width  = 16;
-  imgNode.height = 22;
-  imgNode.border = 0;
   if (checkChildrenData(node)) { // <- we modified this line to use checkChildrenData(node) instead of node.childrenData
+    var imgNode = document.createElement("span");
+    imgNode.className = 'arrow';
+    imgNode.style.paddingLeft=(16*level).toString()+'px';
+    imgNode.innerHTML=arrowRight;
     node.plus_img = imgNode;
     node.expandToggle = document.createElement("a");
     node.expandToggle.href = "javascript:void(0)";
     node.expandToggle.onclick = function() {
       if (node.expanded) {
         $(node.getChildrenUL()).slideUp("fast");
-        node.plus_img.src = node.relpath+"ftv2pnode.png";
+        node.plus_img.innerHTML=arrowRight;
         node.expanded = false;
       } else {
         expandNode(o, node, false, false);
@@ -175,11 +180,13 @@ function createIndent(o,domNode,node,level)
     }
     node.expandToggle.appendChild(imgNode);
     domNode.appendChild(node.expandToggle);
-    imgNode.src = node.relpath+"ftv2pnode.png";
   } else {
-    imgNode.src = node.relpath+"ftv2node.png";
-    domNode.appendChild(imgNode);
-  } 
+    var span = document.createElement("span");
+    span.className = 'arrow';
+    span.style.width   = 16*(level+1)+'px';
+    span.innerHTML = '&#160;';
+    domNode.appendChild(span);
+  }
 }
 
 // Overloaded to automatically expand the selected node
@@ -233,8 +240,7 @@ $(document).ready(function() {
       setTimeout(arguments.callee, 10);
     }
   })();
+
+  $(window).load(resizeHeight);
 });
 
-$(window).load(function() {
-  resizeHeight();
-});

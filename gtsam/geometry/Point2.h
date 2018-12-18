@@ -152,23 +152,23 @@ struct traits<Point2> : public internal::VectorSpace<Point2> {
 #endif // GTSAM_TYPEDEF_POINTS_TO_VECTORS
 
 /// Distance of the point from the origin, with Jacobian
-double norm2(const Point2& p, OptionalJacobian<1, 2> H = boost::none);
+GTSAM_EXPORT double norm2(const Point2& p, OptionalJacobian<1, 2> H = boost::none);
 
 /// distance between two points
-double distance2(const Point2& p1, const Point2& q,
+GTSAM_EXPORT double distance2(const Point2& p1, const Point2& q,
                  OptionalJacobian<1, 2> H1 = boost::none,
                  OptionalJacobian<1, 2> H2 = boost::none);
 
 // Convenience typedef
 typedef std::pair<Point2, Point2> Point2Pair;
-std::ostream &operator<<(std::ostream &os, const gtsam::Point2Pair &p);
+GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const gtsam::Point2Pair &p);
 
 // For MATLAB wrapper
-typedef std::vector<Point2> Point2Vector;
+typedef std::vector<Point2, Eigen::aligned_allocator<Point2> > Point2Vector;
 
 /// multiply with scalar
 inline Point2 operator*(double s, const Point2& p) {
-return p * s;
+  return p * s;
 }
 
 /*
@@ -185,7 +185,7 @@ return p * s;
  * @param tol: absolute tolerance below which we consider touching circles
  * @return optional Point2 with f and h, boost::none if no solution.
  */
-boost::optional<Point2> circleCircleIntersection(double R_d, double r_d, double tol = 1e-9);
+GTSAM_EXPORT boost::optional<Point2> circleCircleIntersection(double R_d, double r_d, double tol = 1e-9);
 
 /*
  * @brief Circle-circle intersection, from the normalized radii solution.
@@ -193,7 +193,7 @@ boost::optional<Point2> circleCircleIntersection(double R_d, double r_d, double 
  * @param c2 center of second circle
  * @return list of solutions (0,1, or 2). Identical circles will return empty list, as well.
  */
-std::list<Point2> circleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2> fh);
+GTSAM_EXPORT std::list<Point2> circleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2> fh);
 
 /**
  * @brief Intersect 2 circles
@@ -204,7 +204,7 @@ std::list<Point2> circleCircleIntersection(Point2 c1, Point2 c2, boost::optional
  * @param tol: absolute tolerance below which we consider touching circles
  * @return list of solutions (0,1, or 2). Identical circles will return empty list, as well.
  */
-std::list<Point2> circleCircleIntersection(Point2 c1, double r1,
+GTSAM_EXPORT std::list<Point2> circleCircleIntersection(Point2 c1, double r1,
     Point2 c2, double r2, double tol = 1e-9);
 
 } // \ namespace gtsam

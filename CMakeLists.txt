@@ -111,17 +111,23 @@ set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
 # BOOST_ROOT: path to install prefix for boost
 # Boost_NO_SYSTEM_PATHS: set to true to keep the find script from ignoring BOOST_ROOT
 
-# If using Boost shared libs, disable auto linking
 if(MSVC)
-	# Some libraries, at least Boost Program Options, rely on this to export DLL symbols
-	# Disable autolinking
+	# By default, boost only builds static libraries on windows
+	set(Boost_USE_STATIC_LIBS ON)  # only find static libs
+	# If we ever reset above on windows and, ...
+	# If we use Boost shared libs, disable auto linking.
+	# Some libraries, at least Boost Program Options, rely on this to export DLL symbols.
 	if(NOT Boost_USE_STATIC_LIBS)
 		add_definitions(-DBOOST_ALL_NO_LIB)
 	  add_definitions(-DBOOST_ALL_DYN_LINK)
 	endif()
+	# Virtual memory range for PCH exceeded on VS2015
+	if(MSVC_VERSION LESS 1910) # older than VS2017
+	  add_definitions(-Zm295)
+	endif()
 endif()
 
-find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time timer chrono)
+find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time timer chrono regex)
 
 # Required components
 if(NOT Boost_SERIALIZATION_LIBRARY OR NOT Boost_SYSTEM_LIBRARY OR NOT Boost_FILESYSTEM_LIBRARY OR
@@ -133,7 +139,7 @@ option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
 # Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 set(GTSAM_BOOST_LIBRARIES
     ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY}
-	${Boost_THREAD_LIBRARY} ${Boost_DATE_TIME_LIBRARY})
+	${Boost_THREAD_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_REGEX_LIBRARY})
 if (GTSAM_DISABLE_NEW_TIMERS)
     message("WARNING:  GTSAM timing instrumentation manually disabled")
     add_definitions(-DGTSAM_DISABLE_NEW_TIMERS)
@@ -240,6 +246,13 @@ if(GTSAM_USE_SYSTEM_EIGEN)
 	if(EIGEN_USE_MKL_ALL AND (EIGEN3_VERSION VERSION_LESS 3.2.5))
 	  message(FATAL_ERROR "MKL requires at least Eigen 3.2.5, and your system appears to have an older version. Disable GTSAM_USE_SYSTEM_EIGEN to use GTSAM's copy of Eigen, or disable GTSAM_WITH_EIGEN_MKL")
 	endif()
+
+	# Check for Eigen version which doesn't work with MKL
+	# See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1527 for details.
+	if(EIGEN_USE_MKL_ALL AND (EIGEN3_VERSION VERSION_EQUAL 3.3.4))
+		message(FATAL_ERROR "MKL does not work with Eigen 3.3.4 because of a bug in Eigen. See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1527. Disable GTSAM_USE_SYSTEM_EIGEN to use GTSAM's copy of Eigen, disable GTSAM_WITH_EIGEN_MKL, or upgrade/patch your installation of Eigen.")
+	endif()
+
 else()
 	# Use bundled Eigen include path.
 	# Clear any variables set by FindEigen3
@@ -254,6 +267,14 @@ else()
 	# this will be added to GTSAM_INCLUDE_DIR by gtsam_extra.cmake.in
 	set(GTSAM_EIGEN_INCLUDE_PREFIX "${CMAKE_INSTALL_PREFIX}/include/gtsam/3rdparty/Eigen/")
 
+endif()
+
+if (MSVC)
+	if (NOT GTSAM_BUILD_STATIC_LIBRARY)
+		# mute eigen static assert to avoid errors in shared lib
+		add_definitions(-DEIGEN_NO_STATIC_ASSERT)
+	endif()
+	add_definitions(/wd4244) # Disable loss of precision which is thrown all over our Eigen
 endif()
 
 ###############################################################################
@@ -321,6 +342,7 @@ include_directories(BEFORE
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661 /wd4344 /wd4503) # Disable non-DLL-exported base class and other warnings
+	add_definitions(/bigobj) # Allow large object files for template-based code
 endif()
 
 # GCC 4.8+ complains about local typedefs which we use for shared_ptr etc.

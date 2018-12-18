@@ -314,15 +314,24 @@ TEST(Unit3, basis) {
   Unit3 p(0.1, -0.2, 0.9);
 
   Matrix expected(3, 2);
-  expected << 0.0, -0.994169047, 0.97618706,
-             -0.0233922129, 0.216930458,  0.105264958;
+  expected << 0.0, -0.994169047, 0.97618706, -0.0233922129, 0.216930458, 0.105264958;
 
   Matrix62 actualH;
-  Matrix actual = p.basis(actualH);
-  EXPECT(assert_equal(expected, actual, 1e-6));
-
   Matrix62 expectedH = numericalDerivative11<Vector6, Unit3>(
-                         boost::bind(BasisTest, _1, boost::none), p);
+      boost::bind(BasisTest, _1, boost::none), p);
+
+  // without H, first time
+  EXPECT(assert_equal(expected, p.basis(), 1e-6));
+
+  // without H, cached
+  EXPECT(assert_equal(expected, p.basis(), 1e-6));
+
+  // with H, first time
+  EXPECT(assert_equal(expected, p.basis(actualH), 1e-6));
+  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+
+  // with H, cached
+  EXPECT(assert_equal(expected, p.basis(actualH), 1e-6));
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
@@ -432,7 +441,8 @@ TEST(Unit3, ErrorBetweenFactor) {
   // Add process factors using the dot product error function.
   SharedNoiseModel R_process = noiseModel::Isotropic::Sigma(2, 0.01);
   for (size_t i = 0; i < data.size() - 1; i++) {
-    Expression<Vector2> exp(Expression<Unit3>(U(i)), &Unit3::errorVector, Expression<Unit3>(U(i + 1)));
+    Expression<Vector2> exp(Expression<Unit3>(U(i)), &Unit3::errorVector,
+                            Expression<Unit3>(U(i + 1)));
     graph.addExpressionFactor<Vector2>(R_process, Vector2::Zero(), exp);
   }
 

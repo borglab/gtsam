@@ -13,17 +13,17 @@ The Eigen library is divided in a Core module and several additional modules. Ea
 
 <table class="manual">
 <tr><th>Module</th><th>Header file</th><th>Contents</th></tr>
-<tr><td>\link Core_Module Core \endlink</td><td>\code#include <Eigen/Core>\endcode</td><td>Matrix and Array classes, basic linear algebra (including triangular and selfadjoint products), array manipulation</td></tr>
+<tr            ><td>\link Core_Module Core \endlink</td><td>\code#include <Eigen/Core>\endcode</td><td>Matrix and Array classes, basic linear algebra (including triangular and selfadjoint products), array manipulation</td></tr>
 <tr class="alt"><td>\link Geometry_Module Geometry \endlink</td><td>\code#include <Eigen/Geometry>\endcode</td><td>Transform, Translation, Scaling, Rotation2D and 3D rotations (Quaternion, AngleAxis)</td></tr>
-<tr><td>\link LU_Module LU \endlink</td><td>\code#include <Eigen/LU>\endcode</td><td>Inverse, determinant, LU decompositions with solver (FullPivLU, PartialPivLU)</td></tr>
-<tr><td>\link Cholesky_Module Cholesky \endlink</td><td>\code#include <Eigen/Cholesky>\endcode</td><td>LLT and LDLT Cholesky factorization with solver</td></tr>
-<tr class="alt"><td>\link Householder_Module Householder \endlink</td><td>\code#include <Eigen/Householder>\endcode</td><td>Householder transformations; this module is used by several linear algebra modules</td></tr>
-<tr><td>\link SVD_Module SVD \endlink</td><td>\code#include <Eigen/SVD>\endcode</td><td>SVD decomposition with least-squares solver (JacobiSVD)</td></tr>
-<tr class="alt"><td>\link QR_Module QR \endlink</td><td>\code#include <Eigen/QR>\endcode</td><td>QR decomposition with solver (HouseholderQR, ColPivHouseholderQR, FullPivHouseholderQR)</td></tr>
-<tr><td>\link Eigenvalues_Module Eigenvalues \endlink</td><td>\code#include <Eigen/Eigenvalues>\endcode</td><td>Eigenvalue, eigenvector decompositions (EigenSolver, SelfAdjointEigenSolver, ComplexEigenSolver)</td></tr>
-<tr class="alt"><td>\link Sparse_modules Sparse \endlink</td><td>\code#include <Eigen/Sparse>\endcode</td><td>%Sparse matrix storage and related basic linear algebra (SparseMatrix, DynamicSparseMatrix, SparseVector)</td></tr>
-<tr><td></td><td>\code#include <Eigen/Dense>\endcode</td><td>Includes Core, Geometry, LU, Cholesky, SVD, QR, and Eigenvalues header files</td></tr>
-<tr class="alt"><td></td><td>\code#include <Eigen/Eigen>\endcode</td><td>Includes %Dense and %Sparse header files (the whole Eigen library)</td></tr>
+<tr            ><td>\link LU_Module LU \endlink</td><td>\code#include <Eigen/LU>\endcode</td><td>Inverse, determinant, LU decompositions with solver (FullPivLU, PartialPivLU)</td></tr>
+<tr class="alt"><td>\link Cholesky_Module Cholesky \endlink</td><td>\code#include <Eigen/Cholesky>\endcode</td><td>LLT and LDLT Cholesky factorization with solver</td></tr>
+<tr            ><td>\link Householder_Module Householder \endlink</td><td>\code#include <Eigen/Householder>\endcode</td><td>Householder transformations; this module is used by several linear algebra modules</td></tr>
+<tr class="alt"><td>\link SVD_Module SVD \endlink</td><td>\code#include <Eigen/SVD>\endcode</td><td>SVD decompositions with least-squares solver (JacobiSVD, BDCSVD)</td></tr>
+<tr            ><td>\link QR_Module QR \endlink</td><td>\code#include <Eigen/QR>\endcode</td><td>QR decomposition with solver (HouseholderQR, ColPivHouseholderQR, FullPivHouseholderQR)</td></tr>
+<tr class="alt"><td>\link Eigenvalues_Module Eigenvalues \endlink</td><td>\code#include <Eigen/Eigenvalues>\endcode</td><td>Eigenvalue, eigenvector decompositions (EigenSolver, SelfAdjointEigenSolver, ComplexEigenSolver)</td></tr>
+<tr            ><td>\link Sparse_Module Sparse \endlink</td><td>\code#include <Eigen/Sparse>\endcode</td><td>%Sparse matrix storage and related basic linear algebra (SparseMatrix, SparseVector) \n (see \ref SparseQuickRefPage for details on sparse modules)</td></tr>
+<tr class="alt"><td></td><td>\code#include <Eigen/Dense>\endcode</td><td>Includes Core, Geometry, LU, Cholesky, SVD, QR, and Eigenvalues header files</td></tr>
+<tr            ><td></td><td>\code#include <Eigen/Eigen>\endcode</td><td>Includes %Dense and %Sparse header files (the whole Eigen library)</td></tr>
 </table>
 
 <a href="#" class="top">top</a>
@@ -340,7 +340,7 @@ mat1 = mat2.adjoint();        mat1.adjointInPlace();
 \endcode
 </td></tr>
 <tr><td>
-\link MatrixBase::dot() dot \endlink product \n inner product \matrixworld</td><td>\code
+\link MatrixBase::dot dot \endlink product \n inner product \matrixworld</td><td>\code
 scalar = vec1.dot(vec2);
 scalar = col1.adjoint() * col2;
 scalar = (col1.adjoint() * col2).value();\endcode
@@ -364,32 +364,10 @@ vec3 = vec1.cross(vec2);\endcode</td></tr>
 
 <a href="#" class="top">top</a>
 \section QuickRef_Coeffwise Coefficient-wise \& Array operators
-Coefficient-wise operators for matrices and vectors:
-<table class="manual">
-<tr><th>Matrix API \matrixworld</th><th>Via Array conversions</th></tr>
-<tr><td>\code
-mat1.cwiseMin(mat2)
-mat1.cwiseMax(mat2)
-mat1.cwiseAbs2()
-mat1.cwiseAbs()
-mat1.cwiseSqrt()
-mat1.cwiseProduct(mat2)
-mat1.cwiseQuotient(mat2)\endcode
-</td><td>\code
-mat1.array().min(mat2.array())
-mat1.array().max(mat2.array())
-mat1.array().abs2()
-mat1.array().abs()
-mat1.array().sqrt()
-mat1.array() * mat2.array()
-mat1.array() / mat2.array()
-\endcode</td></tr>
-</table>
 
-It is also very simple to apply any user defined function \c foo using DenseBase::unaryExpr together with std::ptr_fun:
-\code mat1.unaryExpr(std::ptr_fun(foo))\endcode
-
-Array operators:\arrayworld
+In addition to the aforementioned operators, Eigen supports numerous coefficient-wise operator and functions.
+Most of them unambiguously makes sense in array-world\arrayworld. The following operators are readily available for arrays,
+or available through .array() for vectors and matrices:
 
 <table class="manual">
 <tr><td>Arithmetic operators</td><td>\code
@@ -400,27 +378,107 @@ array1 + scalar     array1 - scalar     array1 += scalar    array1 -= scalar
 array1 < array2     array1 > array2     array1 < scalar     array1 > scalar
 array1 <= array2    array1 >= array2    array1 <= scalar    array1 >= scalar
 array1 == array2    array1 != array2    array1 == scalar    array1 != scalar
+array1.min(array2)  array1.max(array2)  array1.min(scalar)  array1.max(scalar)
 \endcode</td></tr>
-<tr><td>Trigo, power, and \n misc functions \n and the STL variants</td><td>\code
-array1.min(array2)            
-array1.max(array2)            
+<tr><td>Trigo, power, and \n misc functions \n and the STL-like variants</td><td>\code
 array1.abs2()
 array1.abs()                  abs(array1)
 array1.sqrt()                 sqrt(array1)
 array1.log()                  log(array1)
+array1.log10()                log10(array1)
 array1.exp()                  exp(array1)
-array1.pow(exponent)          pow(array1,exponent)
+array1.pow(array2)            pow(array1,array2)
+array1.pow(scalar)            pow(array1,scalar)
+                              pow(scalar,array2)
 array1.square()
 array1.cube()
 array1.inverse()
+
 array1.sin()                  sin(array1)
 array1.cos()                  cos(array1)
 array1.tan()                  tan(array1)
 array1.asin()                 asin(array1)
 array1.acos()                 acos(array1)
+array1.atan()                 atan(array1)
+array1.sinh()                 sinh(array1)
+array1.cosh()                 cosh(array1)
+array1.tanh()                 tanh(array1)
+array1.arg()                  arg(array1)
+
+array1.floor()                floor(array1)
+array1.ceil()                 ceil(array1)
+array1.round()                round(aray1)
+
+array1.isFinite()             isfinite(array1)
+array1.isInf()                isinf(array1)
+array1.isNaN()                isnan(array1)
 \endcode
 </td></tr>
 </table>
+
+
+The following coefficient-wise operators are available for all kind of expressions (matrices, vectors, and arrays), and for both real or complex scalar types:
+
+<table class="manual">
+<tr><th>Eigen's API</th><th>STL-like APIs\arrayworld </th><th>Comments</th></tr>
+<tr><td>\code
+mat1.real()
+mat1.imag()
+mat1.conjugate()
+\endcode
+</td><td>\code
+real(array1)
+imag(array1)
+conj(array1)
+\endcode
+</td><td>
+\code
+ // read-write, no-op for real expressions
+ // read-only for real, read-write for complexes
+ // no-op for real expressions
+\endcode
+</td></tr>
+</table>
+
+Some coefficient-wise operators are readily available for for matrices and vectors through the following cwise* methods:
+<table class="manual">
+<tr><th>Matrix API \matrixworld</th><th>Via Array conversions</th></tr>
+<tr><td>\code
+mat1.cwiseMin(mat2)         mat1.cwiseMin(scalar)
+mat1.cwiseMax(mat2)         mat1.cwiseMax(scalar)
+mat1.cwiseAbs2()
+mat1.cwiseAbs()
+mat1.cwiseSqrt()
+mat1.cwiseInverse()
+mat1.cwiseProduct(mat2)
+mat1.cwiseQuotient(mat2)
+mat1.cwiseEqual(mat2)       mat1.cwiseEqual(scalar)
+mat1.cwiseNotEqual(mat2)
+\endcode
+</td><td>\code
+mat1.array().min(mat2.array())    mat1.array().min(scalar)
+mat1.array().max(mat2.array())    mat1.array().max(scalar)
+mat1.array().abs2()
+mat1.array().abs()
+mat1.array().sqrt()
+mat1.array().inverse()
+mat1.array() * mat2.array()
+mat1.array() / mat2.array()
+mat1.array() == mat2.array()      mat1.array() == scalar
+mat1.array() != mat2.array()
+\endcode</td></tr>
+</table>
+The main difference between the two API is that the one based on cwise* methods returns an expression in the matrix world,
+while the second one (based on .array()) returns an array expression.
+Recall that .array() has no cost, it only changes the available API and interpretation of the data.
+
+It is also very simple to apply any user defined function \c foo using DenseBase::unaryExpr together with <a href="http://en.cppreference.com/w/cpp/utility/functional/ptr_fun">std::ptr_fun</a> (c++03), <a href="http://en.cppreference.com/w/cpp/utility/functional/ref">std::ref</a> (c++11), or <a href="http://en.cppreference.com/w/cpp/language/lambda">lambdas</a> (c++11):
+\code
+mat1.unaryExpr(std::ptr_fun(foo));
+mat1.unaryExpr(std::ref(foo));
+mat1.unaryExpr([](double x) { return foo(x); });
+\endcode
+
 
 <a href="#" class="top">top</a>
 \section QuickRef_Reductions Reductions

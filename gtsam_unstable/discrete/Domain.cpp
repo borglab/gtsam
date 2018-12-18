@@ -57,7 +57,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  bool Domain::checkAllDiff(const vector<Key> keys, vector<Domain>& domains) {
+  bool Domain::checkAllDiff(const KeyVector keys, vector<Domain>& domains) {
     Key j = keys_[0];
     // for all values in this domain
     for(size_t value: values_) {

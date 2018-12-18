@@ -35,7 +35,7 @@ void test_upperbidiagonalization()
    CALL_SUBTEST_1( upperbidiag(MatrixXf(3,3)) );
    CALL_SUBTEST_2( upperbidiag(MatrixXd(17,12)) );
    CALL_SUBTEST_3( upperbidiag(MatrixXcf(20,20)) );
-   CALL_SUBTEST_4( upperbidiag(MatrixXcd(16,15)) );
+   CALL_SUBTEST_4( upperbidiag(Matrix<std::complex<double>,Dynamic,Dynamic,RowMajor>(16,15)) );
    CALL_SUBTEST_5( upperbidiag(Matrix<float,6,4>()) );
    CALL_SUBTEST_6( upperbidiag(Matrix<float,5,5>()) );
    CALL_SUBTEST_7( upperbidiag(Matrix<double,4,3>()) );

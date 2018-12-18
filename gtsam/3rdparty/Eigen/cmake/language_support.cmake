@@ -26,7 +26,7 @@ function(workaround_9220 language language_works)
     cmake_minimum_required(VERSION 2.8.0)
     set (CMAKE_Fortran_FLAGS \"${CMAKE_Fortran_FLAGS}\")
     set (CMAKE_EXE_LINKER_FLAGS \"${CMAKE_EXE_LINKER_FLAGS}\")
-    enable_language(${language} OPTIONAL)
+    enable_language(${language})
   ")
   file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/language_tests/${language})
   file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/language_tests/${language})
@@ -43,7 +43,7 @@ function(workaround_9220 language language_works)
   if(return_code EQUAL 0)
     # Second run
     execute_process (
-      COMMAND ${CMAKE_COMMAND} .
+      COMMAND ${CMAKE_COMMAND} . -G "${CMAKE_GENERATOR}"
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/language_tests/${language}
       RESULT_VARIABLE return_code
       OUTPUT_QUIET
@@ -64,3 +64,4 @@ endfunction(workaround_9220)
 #message("CXX_language_works = ${CXX_language_works}")
 #workaround_9220(CXXp CXXp_language_works)
 #message("CXXp_language_works = ${CXXp_language_works}")
+

@@ -289,6 +289,7 @@ class FFT
     void inv( MatrixBase<OutputDerived> & dst, const MatrixBase<ComplexDerived> & src, Index nfft=-1)
     {
       typedef typename ComplexDerived::Scalar src_type;
+      typedef typename ComplexDerived::RealScalar real_type;
       typedef typename OutputDerived::Scalar dst_type;
       const bool realfft= (NumTraits<dst_type>::IsComplex == 0);
       EIGEN_STATIC_ASSERT_VECTOR_ONLY(OutputDerived)
@@ -329,9 +330,9 @@ class FFT
             tmp.head(nhead) = src.head(nhead);
             tmp.tail(ntail) = src.tail(ntail);
             if (resize_input<0) { //shrinking -- create the Nyquist bin as the average of the two bins that fold into it
-              tmp(nhead) = ( src(nfft/2) + src( src.size() - nfft/2 ) )*src_type(.5);
+              tmp(nhead) = ( src(nfft/2) + src( src.size() - nfft/2 ) )*real_type(.5);
             }else{ // expanding -- split the old Nyquist bin into two halves
-              tmp(nhead) = src(nhead) * src_type(.5);
+              tmp(nhead) = src(nhead) * real_type(.5);
               tmp(tmp.size()-nhead) = tmp(nhead);
             }
           }

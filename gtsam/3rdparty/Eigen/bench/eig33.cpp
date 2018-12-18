@@ -50,7 +50,7 @@ inline void computeRoots(const Matrix& m, Roots& roots)
 {
   typedef typename Matrix::Scalar Scalar;
   const Scalar s_inv3 = 1.0/3.0;
-  const Scalar s_sqrt3 = internal::sqrt(Scalar(3.0));
+  const Scalar s_sqrt3 = std::sqrt(Scalar(3.0));
 
   // The characteristic equation is x^3 - c2*x^2 + c1*x - c0 = 0.  The
   // eigenvalues are the roots to this equation, all guaranteed to be
@@ -73,23 +73,13 @@ inline void computeRoots(const Matrix& m, Roots& roots)
     q = Scalar(0);
 
   // Compute the eigenvalues by solving for the roots of the polynomial.
-  Scalar rho = internal::sqrt(-a_over_3);
-  Scalar theta = std::atan2(internal::sqrt(-q),half_b)*s_inv3;
-  Scalar cos_theta = internal::cos(theta);
-  Scalar sin_theta = internal::sin(theta);
-  roots(0) = c2_over_3 + Scalar(2)*rho*cos_theta;
-  roots(1) = c2_over_3 - rho*(cos_theta + s_sqrt3*sin_theta);
-  roots(2) = c2_over_3 - rho*(cos_theta - s_sqrt3*sin_theta);
-
-  // Sort in increasing order.
-  if (roots(0) >= roots(1))
-    std::swap(roots(0),roots(1));
-  if (roots(1) >= roots(2))
-  {
-    std::swap(roots(1),roots(2));
-    if (roots(0) >= roots(1))
-      std::swap(roots(0),roots(1));
-  }
+  Scalar rho = std::sqrt(-a_over_3);
+  Scalar theta = std::atan2(std::sqrt(-q),half_b)*s_inv3;
+  Scalar cos_theta = std::cos(theta);
+  Scalar sin_theta = std::sin(theta);
+  roots(2) = c2_over_3 + Scalar(2)*rho*cos_theta;
+  roots(0) = c2_over_3 - rho*(cos_theta + s_sqrt3*sin_theta);
+  roots(1) = c2_over_3 - rho*(cos_theta - s_sqrt3*sin_theta);
 }
 
 template<typename Matrix, typename Vector>
@@ -99,9 +89,12 @@ void eigen33(const Matrix& mat, Matrix& evecs, Vector& evals)
   // Scale the matrix so its entries are in [-1,1].  The scaling is applied
   // only when at least one matrix entry has magnitude larger than 1.
 
-  Scalar scale = mat.cwiseAbs()/*.template triangularView<Lower>()*/.maxCoeff();
+  Scalar shift = mat.trace()/3;
+  Matrix scaledMat = mat;
+  scaledMat.diagonal().array() -= shift;
+  Scalar scale = scaledMat.cwiseAbs()/*.template triangularView<Lower>()*/.maxCoeff();
   scale = std::max(scale,Scalar(1));
-  Matrix scaledMat = mat / scale;
+  scaledMat/=scale;
 
   // Compute the eigenvalues
 //   scaledMat.setZero();
@@ -166,6 +159,7 @@ void eigen33(const Matrix& mat, Matrix& evecs, Vector& evals)
   
   // Rescale back to the original size.
   evals *= scale;
+  evals.array()+=shift;
 }
 
 int main()
@@ -173,24 +167,29 @@ int main()
   BenchTimer t;
   int tries = 10;
   int rep = 400000;
-  typedef Matrix3f Mat;
-  typedef Vector3f Vec;
+  typedef Matrix3d Mat;
+  typedef Vector3d Vec;
   Mat A = Mat::Random(3,3);
   A = A.adjoint() * A;
+//   Mat Q = A.householderQr().householderQ();
+//   A = Q * Vec(2.2424567,2.2424566,7.454353).asDiagonal() * Q.transpose();
 
   SelfAdjointEigenSolver<Mat> eig(A);
   BENCH(t, tries, rep, eig.compute(A));
-  std::cout << "Eigen:  " << t.best() << "s\n";
+  std::cout << "Eigen iterative:  " << t.best() << "s\n";
+  
+  BENCH(t, tries, rep, eig.computeDirect(A));
+  std::cout << "Eigen direct   :  " << t.best() << "s\n";
 
   Mat evecs;
   Vec evals;
   BENCH(t, tries, rep, eigen33(A,evecs,evals));
   std::cout << "Direct: " << t.best() << "s\n\n";
 
-  std::cerr << "Eigenvalue/eigenvector diffs:\n";
-  std::cerr << (evals - eig.eigenvalues()).transpose() << "\n";
-  for(int k=0;k<3;++k)
-    if(evecs.col(k).dot(eig.eigenvectors().col(k))<0)
-      evecs.col(k) = -evecs.col(k);
-  std::cerr << evecs - eig.eigenvectors() << "\n\n";
+//   std::cerr << "Eigenvalue/eigenvector diffs:\n";
+//   std::cerr << (evals - eig.eigenvalues()).transpose() << "\n";
+//   for(int k=0;k<3;++k)
+//     if(evecs.col(k).dot(eig.eigenvectors().col(k))<0)
+//       evecs.col(k) = -evecs.col(k);
+//   std::cerr << evecs - eig.eigenvectors() << "\n\n";
 }

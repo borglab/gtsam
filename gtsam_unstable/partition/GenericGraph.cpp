@@ -6,7 +6,6 @@
  *  Description: generic graph types used in partitioning
  */
 #include <iostream>
-#include <boost/tuple/tuple.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -105,9 +104,8 @@ namespace gtsam { namespace partition {
 
     list<vector<size_t> > islands;
     map<size_t, vector<size_t> > arrays = dsf.arrays();
-    size_t key; vector<size_t> array;
-    for(boost::tie(key, array): arrays)
-      islands.push_back(array);
+    for(const auto& kv : arrays)
+      islands.push_back(kv.second);
     return islands;
   }
 
@@ -305,7 +303,8 @@ namespace gtsam { namespace partition {
     // regenerating islands
     map<size_t, vector<size_t> > labelIslands = dsf.arrays();
     size_t label; vector<size_t> island;
-    for(boost::tie(label, island): labelIslands) {
+    for(const auto& li: labelIslands) {
+      tie(label, island) = li;
       vector<size_t> filteredIsland; // remove singular cameras from array
       filteredIsland.reserve(island.size());
       for(const size_t key: island) {

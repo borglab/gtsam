@@ -8,7 +8,7 @@ typedef Eigen::Triplet<double> T;
 void insertCoefficient(int id, int i, int j, double w, std::vector<T>& coeffs,
                        Eigen::VectorXd& b, const Eigen::VectorXd& boundary)
 {
-  int n = boundary.size();
+  int n = int(boundary.size());
   int id1 = i+j*n;
 
         if(i==-1 || i==n) b(id) -= w * boundary(j); // constrained coefficient

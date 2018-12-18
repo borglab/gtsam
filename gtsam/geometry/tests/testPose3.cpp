@@ -144,6 +144,24 @@ TEST(Pose3, Adjoint_full)
 }
 
 /* ************************************************************************* */
+// assert that T*wedge(xi)*T^-1 is equal to wedge(Ad_T(xi))
+TEST(Pose3, Adjoint_hat)
+{
+  auto hat = [](const Vector& xi) { return ::wedge<Pose3>(xi); };
+  Matrix4 expected = T.matrix() * hat(screwPose3::xi) * T.matrix().inverse();
+  Matrix4 xiprime = hat(T.Adjoint(screwPose3::xi));
+  EXPECT(assert_equal(expected, xiprime, 1e-6));
+
+  Matrix4 expected2 = T2.matrix() * hat(screwPose3::xi) * T2.matrix().inverse();
+  Matrix4 xiprime2 = hat(T2.Adjoint(screwPose3::xi));
+  EXPECT(assert_equal(expected2, xiprime2, 1e-6));
+
+  Matrix4 expected3 = T3.matrix() * hat(screwPose3::xi) * T3.matrix().inverse();
+  Matrix4 xiprime3 = hat(T3.Adjoint(screwPose3::xi));
+  EXPECT(assert_equal(expected3, xiprime3, 1e-6));
+}
+
+/* ************************************************************************* */
 /** Agrawal06iros version of exponential map */
 Pose3 Agrawal06iros(const Vector& xi) {
   Vector w = xi.head(3);
