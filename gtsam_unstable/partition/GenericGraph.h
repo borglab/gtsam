@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <set>
 #include <list>
 #include <vector>
 #include <stdexcept>
