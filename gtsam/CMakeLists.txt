@@ -97,47 +97,47 @@ message(STATUS "GTSAM Version: ${gtsam_version}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
 # build shared and static versions of the library
-if (GTSAM_BUILD_STATIC_LIBRARY)
-    message(STATUS "Building GTSAM - static")
-    add_library(gtsam STATIC ${gtsam_srcs})
-	target_link_libraries(gtsam ${GTSAM_BOOST_LIBRARIES} ${GTSAM_ADDITIONAL_LIBRARIES})
-    set_target_properties(gtsam PROPERTIES
-        OUTPUT_NAME         gtsam
-        CLEAN_DIRECT_OUTPUT 1
-    	VERSION             ${gtsam_version}
-     	SOVERSION           ${gtsam_soversion})
-	if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
+message(STATUS "Building GTSAM - shared: ${BUILD_SHARED_LIBS}")
+
+# BUILD_SHARED_LIBS automatically defines static/shared libs:
+add_library(gtsam ${gtsam_srcs})
+target_link_libraries(gtsam
+    PUBLIC
+    ${GTSAM_BOOST_LIBRARIES} ${GTSAM_ADDITIONAL_LIBRARIES})
+set_target_properties(gtsam PROPERTIES
+    OUTPUT_NAME         gtsam
+    CLEAN_DIRECT_OUTPUT 1
+    VERSION             ${gtsam_version}
+    SOVERSION           ${gtsam_soversion})
+
+if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
+	if (NOT BUILD_SHARED_LIBS)
 		set_target_properties(gtsam PROPERTIES
 			PREFIX "lib"
 			COMPILE_DEFINITIONS GTSAM_IMPORT_STATIC)
-	endif()
-    install(TARGETS gtsam EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
-    list(APPEND GTSAM_EXPORTED_TARGETS gtsam)
-    set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
-else()
-    message(STATUS "Building GTSAM - shared")
-    add_library(gtsam SHARED ${gtsam_srcs})
-    target_link_libraries(gtsam ${GTSAM_BOOST_LIBRARIES} ${GTSAM_ADDITIONAL_LIBRARIES})
-    set_target_properties(gtsam PROPERTIES
-        OUTPUT_NAME         gtsam
-        CLEAN_DIRECT_OUTPUT 1
-    	VERSION             ${gtsam_version}
-     	SOVERSION           ${gtsam_soversion})
-	if(WIN32)
+	else()
 		set_target_properties(gtsam PROPERTIES
 			PREFIX ""
 			DEFINE_SYMBOL GTSAM_EXPORTS
 			RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 	endif()
-	if (APPLE)
-		set_target_properties(gtsam PROPERTIES
-			INSTALL_NAME_DIR
-			"${CMAKE_INSTALL_PREFIX}/lib")
-	endif()
-    install(TARGETS gtsam EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
-    list(APPEND GTSAM_EXPORTED_TARGETS gtsam)
-    set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 endif()
+
+if (APPLE AND BUILD_SHARED_LIBS)
+	set_target_properties(gtsam PROPERTIES
+		INSTALL_NAME_DIR
+		"${CMAKE_INSTALL_PREFIX}/lib")
+endif()
+
+install(
+	TARGETS gtsam
+	EXPORT GTSAM-exports
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
+	RUNTIME DESTINATION bin)
+
+list(APPEND GTSAM_EXPORTED_TARGETS gtsam)
+set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 
 # make sure that ccolamd compiles even in face of warnings
 if(WIN32)
