@@ -880,7 +880,7 @@ bool writeBALfromValues(const string& filename, const SfM_data &data,
       }
     } else {
       cout
-          << "writeBALfromValues: different number of cameras in SfM_dataValues (#cameras= "
+          << "writeBALfromValues: different number of cameras in SfM_dataValues (#cameras "
           << dataValues.number_cameras() << ") and values (#cameras "
           << nrPoses << ", #poses " << nrCameras << ")!!"
           << endl;
