@@ -383,6 +383,7 @@ TEST(Values, filter) {
     ++ i;
   }
   EXPECT_LONGS_EQUAL(2, (long)i);
+  EXPECT_LONGS_EQUAL(2, (long)values.count<Pose3>());
 
   // construct a values with the view
   Values actualSubValues2(pose_filtered);

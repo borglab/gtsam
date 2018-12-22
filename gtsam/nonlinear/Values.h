@@ -385,6 +385,17 @@ namespace gtsam {
     ConstFiltered<ValueType>
     filter(const boost::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
 
+    // Count values of given type \c ValueType
+    template<class ValueType>
+    bool count() const {
+      size_t i = 0;
+      for (const auto& key_value : *this) {
+        if (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value))
+          ++i;
+      }
+      return i;
+    }
+
   private:
     // Filters based on ValueType (if not Value) and also based on the user-
     // supplied \c filter function.
