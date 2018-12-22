@@ -168,6 +168,7 @@ public:
     /// assignment operators should be used.
     GenericValue<T>& operator=(const GenericValue<T>& rhs) {
       Value::operator=(static_cast<Value const&>(rhs));
+      value_ = rhs.value_;
       return *this;
     }
 
