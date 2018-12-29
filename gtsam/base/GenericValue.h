@@ -164,11 +164,11 @@ public:
 
   protected:
 
-    // implicit assignment operator for (const GenericValue& rhs) works fine here
     /// Assignment operator, protected because only the Value or DERIVED
     /// assignment operators should be used.
     GenericValue<T>& operator=(const GenericValue<T>& rhs) {
-      // Nothing to do, do not call base class assignment operator
+      Value::operator=(static_cast<Value const&>(rhs));
+      value_ = rhs.value_;
       return *this;
     }
 
