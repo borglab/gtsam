@@ -432,17 +432,21 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
   fstream stream(filename.c_str(), fstream::out);
 
   // save 2D & 3D poses
-  const auto viewPose2 = estimate.filter<Pose2>();
-  for(const auto& key_value: viewPose2) {
-    stream << "VERTEX_SE2 " << key_value.key << " " << key_value.value.x() << " "
-        << key_value.value.y() << " " << key_value.value.theta() << endl;
+  for (const auto& key_value : estimate) {
+    auto p = dynamic_cast<const GenericValue<Pose2>*>(&key_value.value);
+    if (!p) continue;
+    const Pose2& pose = p->value();
+    stream << "VERTEX_SE2 " << key_value.key << " " << pose.x() << " "
+        << pose.y() << " " << pose.theta() << endl;
   }
 
-  const auto viewPose3 = estimate.filter<Pose3>();
-  for(const auto& key_value: viewPose3) {
-      Point3 p = key_value.value.translation();
-      Rot3 R = key_value.value.rotation();
-      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << p.x() << " "  << p.y() << " " << p.z()
+  for(const auto& key_value: estimate) {
+      auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
+      if (!p) continue;
+      const Pose3& pose = p->value();
+      Point3 t = pose.translation();
+      Rot3 R = pose.rotation();
+      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "  << t.y() << " " << t.z()
         << " " << R.toQuaternion().x() << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()
         << " " << R.toQuaternion().w() << endl;
   }
