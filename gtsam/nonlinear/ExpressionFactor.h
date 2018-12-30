@@ -266,6 +266,13 @@ class ExpressionFactor2 : public ExpressionFactor<T> {
   virtual Expression<T> expression() const {
     return expression(this->keys_[0], this->keys_[1]);
   }
+
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp(
+        "ExpressionFactor", boost::serialization::base_object<ExpressionFactor<T> >(*this));
+  }
 };
 // ExpressionFactor2
 
