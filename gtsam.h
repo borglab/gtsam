@@ -228,6 +228,12 @@ virtual class Value {
   size_t dim() const;
 };
 
+#include <gtsam/base/GenericValue.h>
+template<T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Pose2, gtsam::Pose3, gtsam::Rot2}>
+virtual class GenericValue : gtsam::Value {
+  void serializable() const;
+};
+
 #include <gtsam/base/deprecated/LieScalar.h>
 class LieScalar {
   // Standard constructors
