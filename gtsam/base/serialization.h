@@ -24,7 +24,6 @@
 #include <string>
 
 // includes for standard serialization types
-#include <boost/serialization/export.hpp>
 #include <boost/serialization/optional.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>
@@ -39,6 +38,7 @@
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/export.hpp>
 
 namespace gtsam {
 

@@ -273,9 +273,9 @@ void Module::generate_matlab_wrapper(const string& toolboxPath) const {
 
   // Include boost.serialization archive headers before other class headers
   if (hasSerialiable) {
-    wrapperFile.oss << "#include <boost/serialization/export.hpp>\n";
     wrapperFile.oss << "#include <boost/archive/text_iarchive.hpp>\n";
-    wrapperFile.oss << "#include <boost/archive/text_oarchive.hpp>\n\n";
+    wrapperFile.oss << "#include <boost/archive/text_oarchive.hpp>\n";
+    wrapperFile.oss << "#include <boost/serialization/export.hpp>\n\n";
   }
 
   // Generate includes while avoiding redundant includes
