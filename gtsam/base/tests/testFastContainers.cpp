@@ -11,6 +11,7 @@
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/std/set.hpp>
+#include <boost/serialization/serialization.hpp>
 
 #include <gtsam/base/FastSet.h>
 #include <gtsam/base/FastVector.h>
