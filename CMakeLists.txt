@@ -1,6 +1,6 @@
 
 project(GTSAM CXX C)
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.4)
 
 # new feature to Cmake Version > 2.8.12
 # Mac ONLY. Define Relative Path on Mac OS
@@ -69,6 +69,9 @@ option(GTSAM_ALLOW_DEPRECATED_SINCE_V4   "Allow use of methods/functions depreca
 option(GTSAM_TYPEDEF_POINTS_TO_VECTORS   "Typdef Point2 and Point3 to Eigen::Vector equivalents" OFF)
 option(GTSAM_SUPPORT_NESTED_DISSECTION   "Support Metis-based nested dissection" ON)
 option(GTSAM_TANGENT_PREINTEGRATION      "Use new ImuFactor with integration on tangent space" ON)
+if(NOT MSVC AND NOT XCODE_VERSION)
+    option(GTSAM_BUILD_WITH_CCACHE           "Use ccache compiler cache" ON)
+endif()
 
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
@@ -193,6 +196,20 @@ endif()
 # Find Google perftools
 find_package(GooglePerfTools)
 
+###############################################################################
+# Support ccache, if installed
+if(NOT MSVC AND NOT XCODE_VERSION)
+	find_program(CCACHE_FOUND ccache)
+	if(CCACHE_FOUND)
+		if(GTSAM_BUILD_WITH_CCACHE)
+			set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+			set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+		else()
+			set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "")
+			set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "")
+		endif()
+	endif(CCACHE_FOUND)
+endif()
 
 ###############################################################################
 # Find MKL
@@ -522,6 +539,15 @@ else()
 endif()
 message(STATUS "  Default allocator              : ${GTSAM_DEFAULT_ALLOCATOR}")
 
+if(NOT MSVC AND NOT XCODE_VERSION)
+	if(CCACHE_FOUND AND GTSAM_BUILD_WITH_CCACHE)
+		message(STATUS "  Build with ccache              : Yes")
+	elseif(CCACHE_FOUND)
+		message(STATUS "  Build with ccache              : ccache found but GTSAM_BUILD_WITH_CCACHE is disabled")
+	else()
+		message(STATUS "  Build with ccache              : No")
+	endif()
+endif()
 
 message(STATUS "Packaging flags                                               ")
 message(STATUS "  CPack Source Generator         : ${CPACK_SOURCE_GENERATOR}")
