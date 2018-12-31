@@ -69,15 +69,10 @@ void testGtsam(int numberNodes) {
   }
 
   LevenbergMarquardtParams params;
-  params.verbosity = NonlinearOptimizerParams::ERROR;
-  // params.setLinearSolverType("MULTIFRONTAL_QR");
+  params.setVerbosity("ERROR");
+  params.setOrderingType("METIS");
+  params.setLinearSolverType("MULTIFRONTAL_CHOLESKY");
   LevenbergMarquardtOptimizer optimizer(graph, initial, params);
-
-  // GaussNewtonParams params_gn;
-  // params_gn.setVerbosity("ERROR");
-  // params_gn.setMaxIterations(20);
-  // params_gn.setLinearSolverType("MULTIFRONTAL_QR");
-  // GaussNewtonOptimizer optimizer(graph, initial, params_gn );
   auto result = optimizer.optimize();
 }
 
