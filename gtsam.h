@@ -2270,8 +2270,8 @@ virtual class RangeFactor : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
-typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
-typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactorPosePoint3;
+typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactor2D;
+typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactor3D;
 typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Pose2> RangeFactorPose2;
 typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Pose3> RangeFactorPose3;
 typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::Point3> RangeFactorCalibratedCameraPoint;
@@ -2289,8 +2289,8 @@ virtual class RangeFactorWithTransform : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
-typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Point2> RangeFactorWithTransformPosePoint2;
-typedef gtsam::RangeFactorWithTransform<gtsam::Pose3, gtsam::Point3> RangeFactorWithTransformPosePoint3;
+typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Point2> RangeFactorWithTransform2D;
+typedef gtsam::RangeFactorWithTransform<gtsam::Pose3, gtsam::Point3> RangeFactorWithTransform3D;
 typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Pose2> RangeFactorWithTransformPose2;
 typedef gtsam::RangeFactorWithTransform<gtsam::Pose3, gtsam::Pose3> RangeFactorWithTransformPose3;
 
@@ -2304,6 +2304,7 @@ virtual class BearingFactor : gtsam::NoiseModelFactor {
 };
 
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
+typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Pose2, gtsam::Rot2> BearingFactorPose2;
 
 #include <gtsam/sam/BearingRangeFactor.h>
 template<POSE, POINT, BEARING, RANGE>
@@ -2317,6 +2318,7 @@ virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
 };
 
 typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2, double> BearingRangeFactor2D;
+typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Pose2, gtsam::Rot2, double> BearingRangeFactorPose2;
 
 
 #include <gtsam/slam/ProjectionFactor.h>
