@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <vector>
 
 using namespace std;
@@ -224,7 +225,7 @@ int main(int argc, char* argv[]) {
 
       smartFactors[landmark]->add(StereoPoint2(xl, xr, y), X(frame), K);
     } else {
-      throw runtime_error("unexpected data type: " + type);
+      throw runtime_error("unexpected data type: " + string(1, type));
     }
 
     lastFrame = frame;
