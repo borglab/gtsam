@@ -228,6 +228,12 @@ virtual class Value {
   size_t dim() const;
 };
 
+#include <gtsam/base/GenericValue.h>
+template<T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Pose2, gtsam::Pose3, gtsam::Rot2}>
+virtual class GenericValue : gtsam::Value {
+  void serializable() const;
+};
+
 #include <gtsam/base/deprecated/LieScalar.h>
 class LieScalar {
   // Standard constructors
@@ -2259,6 +2265,9 @@ virtual class NonlinearEquality : gtsam::NoiseModelFactor {
 template<POSE, POINT>
 virtual class RangeFactor : gtsam::NoiseModelFactor {
   RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
@@ -2275,6 +2284,9 @@ typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactor
 template<POSE, POINT>
 virtual class RangeFactorWithTransform : gtsam::NoiseModelFactor {
   RangeFactorWithTransform(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel, const POSE& body_T_sensor);
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Point2> RangeFactorWithTransformPosePoint2;
