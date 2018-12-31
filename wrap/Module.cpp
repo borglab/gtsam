@@ -127,7 +127,7 @@ void Module::parseMarkup(const std::string& data) {
   TemplateInstantiationTypedef singleInstantiation, singleInstantiation0;
   TypeListGrammar<'<','>'> typelist_g(singleInstantiation.typeList);
 
-  // typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
+  // typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactor2D;
   TypeGrammar instantiationClass_g(singleInstantiation.class_);
   Rule templateSingleInstantiation_p =
     (str_p("typedef") >> instantiationClass_g >>

@@ -60,9 +60,9 @@ graph.add(BetweenFactorPose2(i2, i3, odometry, odometryNoise));
  
 % Range Factors
 rNoise = noiseModel.Diagonal.Sigmas([0.2]);
-graph.add(RangeFactorPosePoint2(i1, j1, sqrt(4+4), rNoise));
-graph.add(RangeFactorPosePoint2(i2, j1, 2, rNoise));
-graph.add(RangeFactorPosePoint2(i3, j2, 2, rNoise));
+graph.add(RangeFactor2D(i1, j1, sqrt(4+4), rNoise));
+graph.add(RangeFactor2D(i2, j1, 2, rNoise));
+graph.add(RangeFactor2D(i3, j2, 2, rNoise));
 
 % Bearing Factors
 degrees = pi/180;
