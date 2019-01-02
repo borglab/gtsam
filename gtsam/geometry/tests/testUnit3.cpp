@@ -372,6 +372,41 @@ TEST(Unit3, retract) {
 }
 
 //*******************************************************************************
+// Wrapper to make retract return a Vector3 so we can test numerical derivatives.
+Vector3 RetractTest(const Unit3&p, const Vector2& v, OptionalJacobian<3, 2> H) {
+  Unit3 p_retract = p.retract(v, H);
+  return p_retract.point3();
+}
+
+//*******************************************************************************
+TEST (OrientedPlane3, jacobian_retract) {
+  Unit3 p;
+  {
+      Vector2 v (-0.2, 0.1);
+      Matrix32 H;
+      p.retract(v, H);
+
+      // Test that jacobian is numerically as expected.
+      boost::function<Vector3(const Unit3&, const Vector2&)> f =
+          boost::bind(RetractTest, _1, _2, boost::none);
+      Matrix32 H_expected_numerical = numericalDerivative22(f, p, v);
+      EXPECT(assert_equal(H_expected_numerical, H, 1e-9));
+  }
+  {
+      Vector2 v (0, 0);
+      Matrix32 H;
+      p.retract(v, H);
+
+      // Test that jacobian is numerically as expected.
+      boost::function<Vector3(const Unit3&, const Vector2&)> f =
+          boost::bind(RetractTest, _1, _2, boost::none);
+      Matrix32 H_expected_numerical = numericalDerivative22(f, p, v);
+      EXPECT(assert_equal(H_expected_numerical, H, 1e-9));
+
+  }
+}
+
+//*******************************************************************************
 TEST(Unit3, retract_expmap) {
   Unit3 p;
   Vector2 v((M_PI / 2.0), 0);
