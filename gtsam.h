@@ -229,7 +229,7 @@ virtual class Value {
 };
 
 #include <gtsam/base/GenericValue.h>
-template<T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Pose2, gtsam::Pose3, gtsam::Rot2}>
+template<T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
 virtual class GenericValue : gtsam::Value {
   void serializable() const;
 };
