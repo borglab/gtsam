@@ -257,8 +257,6 @@ Unit3 Unit3::retract(const Vector2& v, OptionalJacobian<3,2> H) const {
 
   // Treat case of very small v differently
   if (theta < std::numeric_limits<double>::epsilon()) {
-      // Jacobian
-      // TODO what happens if theta = 0 ? sin(theta)/theta -> 1 when theta -> 0.
       if (H) {
         *H = -p_ * xi_hat.transpose() * basis() +
             basis();
