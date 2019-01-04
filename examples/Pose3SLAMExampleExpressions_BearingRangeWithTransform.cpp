@@ -1,6 +1,6 @@
 /**
  * @file    Pose3SLAMExampleExpressions_BearingRangeWithTransform.cpp
- * @brief   A simultanious optimization of trajectory, landmarks and sensor-pose with respect to body-pose using bearing-range measurements done with Expressions
+ * @brief   A simultaneous optimization of trajectory, landmarks and sensor-pose with respect to body-pose using bearing-range measurements done with Expressions
  * @author  Thomas Horstink
  * @date    January 4th, 2019
  */
