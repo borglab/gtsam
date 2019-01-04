@@ -16,7 +16,7 @@ using namespace gtsam;
 
 typedef BearingRange<Pose3, Point3> BearingRange3D;
 
-// These functions are very similar to those in the SFM example, except that it you can give it a fixed delta in between poses.
+// These functions are very similar to those in the SFM example, except that you can give it a fixed delta in between poses for n steps.
 /* ************************************************************************* */
 std::vector<Point3> createPoints() {
 
