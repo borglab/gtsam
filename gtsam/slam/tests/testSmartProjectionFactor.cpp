@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  testSmartProjectionCameraFactor.cpp
- *  @brief Unit tests for SmartProjectionCameraFactor Class
+ *  @file  testSmartProjectionFactor.cpp
+ *  @brief Unit tests for SmartProjectionFactor Class
  *  @author Chris Beall
  *  @author Luca Carlone
  *  @author Zsolt Kira
@@ -29,19 +29,11 @@
 
 using namespace boost::assign;
 
-static bool isDebugTest = false;
-
-// Convenience for named keys
-using symbol_shorthand::X;
-using symbol_shorthand::L;
-
-static Key x1(1);
-Symbol l1('l', 1), l2('l', 2), l3('l', 3);
-Key c1 = 1, c2 = 2, c3 = 3;
-
-static Point2 measurement1(323.0, 240.0);
-
-static double rankTol = 1.0;
+static const bool isDebugTest = false;
+static const Symbol l1('l', 1), l2('l', 2), l3('l', 3);
+static const Key c1 = 1, c2 = 2, c3 = 3;
+static const Point2 measurement1(323.0, 240.0);
+static const double rankTol = 1.0;
 
 template<class CALIBRATION>
 PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
@@ -59,7 +51,7 @@ PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
 }
 
 /* ************************************************************************* */
-TEST( SmartProjectionCameraFactor, perturbCameraPose) {
+TEST(SmartProjectionFactor, perturbCameraPose) {
   using namespace vanilla;
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
@@ -71,45 +63,45 @@ TEST( SmartProjectionCameraFactor, perturbCameraPose) {
 }
 
 /* ************************************************************************* */
-TEST( SmartProjectionCameraFactor, Constructor) {
+TEST(SmartProjectionFactor, Constructor) {
   using namespace vanilla;
   SmartFactor::shared_ptr factor1(new SmartFactor(unit2));
 }
 
 /* ************************************************************************* */
-TEST( SmartProjectionCameraFactor, Constructor2) {
+TEST(SmartProjectionFactor, Constructor2) {
   using namespace vanilla;
   params.setRankTolerance(rankTol);
   SmartFactor factor1(unit2, boost::none, params);
 }
 
 /* ************************************************************************* */
-TEST( SmartProjectionCameraFactor, Constructor3) {
+TEST(SmartProjectionFactor, Constructor3) {
   using namespace vanilla;
   SmartFactor::shared_ptr factor1(new SmartFactor(unit2));
-  factor1->add(measurement1, x1);
+  factor1->add(measurement1, c1);
 }
 
 /* ************************************************************************* */
-TEST( SmartProjectionCameraFactor, Constructor4) {
+TEST(SmartProjectionFactor, Constructor4) {
   using namespace vanilla;
   params.setRankTolerance(rankTol);
   SmartFactor factor1(unit2, boost::none, params);
-  factor1.add(measurement1, x1);
+  factor1.add(measurement1, c1);
 }
 
 /* ************************************************************************* */
-TEST( SmartProjectionCameraFactor, Equals ) {
+TEST(SmartProjectionFactor, Equals ) {
   using namespace vanilla;
   SmartFactor::shared_ptr factor1(new SmartFactor(unit2));
-  factor1->add(measurement1, x1);
+  factor1->add(measurement1, c1);
 
   SmartFactor::shared_ptr factor2(new SmartFactor(unit2));
-  factor2->add(measurement1, x1);
+  factor2->add(measurement1, c1);
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionCameraFactor, noiseless ) {
+TEST(SmartProjectionFactor, noiseless ) {
   using namespace vanilla;
 
   Values values;
@@ -128,7 +120,7 @@ TEST( SmartProjectionCameraFactor, noiseless ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionCameraFactor, noisy ) {
+TEST(SmartProjectionFactor, noisy ) {
 
   using namespace vanilla;
 
@@ -179,7 +171,7 @@ TEST( SmartProjectionCameraFactor, noisy ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
+TEST(SmartProjectionFactor, perturbPoseAndOptimize ) {
 
   using namespace vanilla;
 
@@ -278,7 +270,7 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
+TEST(SmartProjectionFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
 
   using namespace vanilla;
 
@@ -348,7 +340,7 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionCameraFactor, perturbCamerasAndOptimize ) {
+TEST(SmartProjectionFactor, perturbCamerasAndOptimize ) {
 
   using namespace vanilla;
 
@@ -425,7 +417,7 @@ TEST( SmartProjectionCameraFactor, perturbCamerasAndOptimize ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionCameraFactor, Cal3Bundler ) {
+TEST(SmartProjectionFactor, Cal3Bundler ) {
 
   using namespace bundler;
 
@@ -498,7 +490,7 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionCameraFactor, Cal3Bundler2 ) {
+TEST(SmartProjectionFactor, Cal3Bundler2 ) {
 
   using namespace bundler;
 
@@ -571,7 +563,7 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler2 ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionCameraFactor, noiselessBundler ) {
+TEST(SmartProjectionFactor, noiselessBundler ) {
 
   using namespace bundler;
   Values values;
@@ -599,7 +591,7 @@ TEST( SmartProjectionCameraFactor, noiselessBundler ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor ) {
+TEST(SmartProjectionFactor, comparisonGeneralSfMFactor ) {
 
   using namespace bundler;
   Values values;
@@ -638,7 +630,7 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor1 ) {
+TEST(SmartProjectionFactor, comparisonGeneralSfMFactor1 ) {
 
   using namespace bundler;
   Values values;
@@ -682,7 +674,7 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor1 ) {
 
 /* *************************************************************************/
 // Have to think about how to compare multiplyHessianAdd in generalSfMFactor and smartFactors
-//TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor2 ){
+//TEST(SmartProjectionFactor, comparisonGeneralSfMFactor2 ){
 //
 //  Values values;
 //  values.insert(c1, level_camera);
@@ -730,7 +722,7 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor1 ) {
 //  EXPECT(assert_equal(yActual,yExpected, 1e-7));
 //}
 /* *************************************************************************/
-TEST( SmartProjectionCameraFactor, computeImplicitJacobian ) {
+TEST(SmartProjectionFactor, computeImplicitJacobian ) {
 
   using namespace bundler;
   Values values;
@@ -768,7 +760,7 @@ TEST( SmartProjectionCameraFactor, computeImplicitJacobian ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
+TEST(SmartProjectionFactor, implicitJacobianFactor ) {
 
   using namespace bundler;
 
@@ -829,7 +821,7 @@ BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropi
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 
-TEST( SmartProjectionCameraFactor, serialize) {
+TEST(SmartProjectionFactor, serialize) {
   using namespace vanilla;
   using namespace gtsam::serializationTestHelpers;
   SmartFactor factor(unit2);

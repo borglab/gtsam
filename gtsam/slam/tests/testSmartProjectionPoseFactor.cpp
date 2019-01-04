@@ -189,9 +189,7 @@ TEST( SmartProjectionPoseFactor, noisy ) {
   measurements.push_back(level_uv);
   measurements.push_back(level_uv_right);
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
+  KeyVector views {x1, x2};
 
   factor2->add(measurements, views);
   double actualError2 = factor2->error(values);
@@ -212,9 +210,7 @@ TEST(SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform) {
   Pose3 wTb3 = cam3.pose() * sensor_T_body;
 
   // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(5, 0, 3.0);
+  Point3 landmark1(5, 0.5, 1.2), landmark2(5, -0.5, 1.2), landmark3(5, 0, 3.0);
 
   Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -224,10 +220,7 @@ TEST(SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   // Create smart factors
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   SmartProjectionParams params;
   params.setRankTolerance(1.0);
@@ -360,9 +353,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
   measurements_cam1.push_back(cam2.project(landmark1));
 
   // Create smart factors
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
+  KeyVector views {x1, x2};
 
   SmartFactor::shared_ptr smartFactor1 = boost::make_shared<SmartFactor>(model, sharedK);
   smartFactor1->add(measurements_cam1, views);
@@ -510,10 +501,7 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
 
   using namespace vanillaPose;
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -567,10 +555,7 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
 
   using namespace vanillaPose;
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -628,10 +613,7 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
 
   double excludeLandmarksFutherThanDist = 2;
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -691,10 +673,7 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   double excludeLandmarksFutherThanDist = 1e10;
   double dynamicOutlierRejectionThreshold = 1; // max 1 pixel of average reprojection error
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   // add fourth landmark
   Point3 landmark4(5, -0.5, 1);
@@ -757,10 +736,7 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
 
   using namespace vanillaPose;
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -811,10 +787,7 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
 
   using namespace vanillaPose2;
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   typedef GenericProjectionFactor<Pose3, Point3> ProjectionFactor;
   NonlinearFactorGraph graph;
@@ -859,10 +832,7 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, CheckHessian) {
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   using namespace vanillaPose;
 
@@ -945,10 +915,7 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
 TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_factor ) {
   using namespace vanillaPose2;
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   // Two different cameras, at the same position, but different rotations
   Pose3 pose2 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0,0,0));
@@ -1004,10 +971,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   // this test considers a condition in which the cheirality constraint is triggered
   using namespace vanillaPose;
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   // Two different cameras, at the same position, but different rotations
   Pose3 pose2 = level_pose
@@ -1089,9 +1053,7 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
 
   using namespace vanillaPose2;
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
+  KeyVector views {x1, x2};
 
   // Project three landmarks into 2 cameras
   Point2 cam1_uv1 = cam1.project(landmark1);
@@ -1123,10 +1085,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
 
   using namespace vanillaPose;
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -1176,10 +1135,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
 
   using namespace vanillaPose2;
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   // All cameras have the same pose so will be degenerate !
   Camera cam2(level_pose, sharedK2);
@@ -1250,10 +1206,7 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(model, sharedBundlerK));
   smartFactor1->add(measurements_cam1, views);
@@ -1299,10 +1252,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
 
   using namespace bundlerPose;
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
+  KeyVector views {x1, x2, x3};
 
   // Two different cameras
   Pose3 pose2 = level_pose
