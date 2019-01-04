@@ -123,18 +123,16 @@ public:
    */
   typename Base::Cameras cameras(const Values& values) const {
     typename Base::Cameras cameras;
-    for(const Key& k: this->keys_) {
-      Pose3 pose = values.at<Pose3>(k);
-      if (Base::body_P_sensor_)
-        pose = pose.compose(*(Base::body_P_sensor_));
-
-      Camera camera(pose, K_);
-      cameras.push_back(camera);
+    for (const Key& k : this->keys_) {
+      const Pose3 world_P_sensor_k =
+          Base::body_P_sensor_ ? values.at<Pose3>(k) * *Base::body_P_sensor_
+                               : values.at<Pose3>(k);
+      cameras.emplace_back(world_P_sensor_k, K_);
     }
     return cameras;
   }
 
-private:
+ private:
 
   /// Serialization function
   friend class boost::serialization::access;
