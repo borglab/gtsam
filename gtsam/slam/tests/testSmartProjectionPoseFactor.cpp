@@ -199,29 +199,17 @@ TEST( SmartProjectionPoseFactor, noisy ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ){
-  // make a realistic calibration matrix
-  double fov = 60; // degrees
-  size_t w=640,h=480;
+TEST(SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform) {
+  using namespace vanillaPose;
 
-  Cal3_S2::shared_ptr K(new Cal3_S2(fov,w,h));
-
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 cameraPose1 = Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1)); // body poses
-  Pose3 cameraPose2 = cameraPose1 * Pose3(Rot3(), Point3(1,0,0));
-  Pose3 cameraPose3 = cameraPose1 * Pose3(Rot3(), Point3(0,-1,0));
-
-  SimpleCamera cam1(cameraPose1, *K); // with camera poses
-  SimpleCamera cam2(cameraPose2, *K);
-  SimpleCamera cam3(cameraPose3, *K);
-
-  // create arbitrary body_Pose_sensor (transforms from sensor to body)
-  Pose3 sensor_to_body =  Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(1, 1, 1)); // Pose3(); //
+  // create arbitrary body_T_sensor (transforms from sensor to body)
+  Pose3 body_T_sensor = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(1, 1, 1));
 
   // These are the poses we want to estimate, from camera measurements
-  Pose3 bodyPose1 = cameraPose1.compose(sensor_to_body.inverse());
-  Pose3 bodyPose2 = cameraPose2.compose(sensor_to_body.inverse());
-  Pose3 bodyPose3 = cameraPose3.compose(sensor_to_body.inverse());
+  const Pose3 sensor_T_body = body_T_sensor.inverse();
+  Pose3 wTb1 = cam1.pose() * sensor_T_body;
+  Pose3 wTb2 = cam2.pose() * sensor_T_body;
+  Pose3 wTb3 = cam3.pose() * sensor_T_body;
 
   // three landmarks ~5 meters infront of camera
   Point3 landmark1(5, 0.5, 1.2);
@@ -243,16 +231,16 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ){
 
   SmartProjectionParams params;
   params.setRankTolerance(1.0);
-  params.setDegeneracyMode(gtsam::IGNORE_DEGENERACY);
+  params.setDegeneracyMode(IGNORE_DEGENERACY);
   params.setEnableEPI(false);
 
-  SmartProjectionPoseFactor<Cal3_S2> smartFactor1(model, K, sensor_to_body, params);
+  SmartFactor smartFactor1(model, sharedK, body_T_sensor, params);
   smartFactor1.add(measurements_cam1, views);
 
-  SmartProjectionPoseFactor<Cal3_S2> smartFactor2(model, K, sensor_to_body, params);
+  SmartFactor smartFactor2(model, sharedK, body_T_sensor, params);
   smartFactor2.add(measurements_cam2, views);
 
-  SmartProjectionPoseFactor<Cal3_S2> smartFactor3(model, K, sensor_to_body, params);
+  SmartFactor smartFactor3(model, sharedK, body_T_sensor, params);
   smartFactor3.add(measurements_cam3, views);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -262,30 +250,32 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ){
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, bodyPose1, noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, bodyPose2, noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, wTb1, noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, wTb2, noisePrior);
 
   // Check errors at ground truth poses
   Values gtValues;
-  gtValues.insert(x1, bodyPose1);
-  gtValues.insert(x2, bodyPose2);
-  gtValues.insert(x3, bodyPose3);
+  gtValues.insert(x1, wTb1);
+  gtValues.insert(x2, wTb2);
+  gtValues.insert(x3, wTb3);
   double actualError = graph.error(gtValues);
   double expectedError = 0.0;
   DOUBLES_EQUAL(expectedError, actualError, 1e-7)
 
-  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1));
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
+                           Point3(0.1, 0.1, 0.1));
   Values values;
-  values.insert(x1, bodyPose1);
-  values.insert(x2, bodyPose2);
-  // initialize third pose with some noise, we expect it to move back to original pose3
-  values.insert(x3, bodyPose3*noise_pose);
+  values.insert(x1, wTb1);
+  values.insert(x2, wTb2);
+  // initialize third pose with some noise, we expect it to move back to
+  // original pose3
+  values.insert(x3, wTb3 * noise_pose);
 
   LevenbergMarquardtParams lmParams;
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
-  EXPECT(assert_equal(bodyPose3,result.at<Pose3>(x3)));
+  EXPECT(assert_equal(wTb3, result.at<Pose3>(x3)));
 }
 
 /* *************************************************************************/
