@@ -72,28 +72,29 @@ int main(int argc, char* argv[]) {
   // a graph
   ExpressionFactorGraph graph;
   // Specify uncertainty on first pose prior and also for between factor (simplicity reasons)
-  auto poseNoise = noiseModel::Diagonal::Sigmas((Vector(6)<<0.3,0.3,0.3,0.1,0.1,0.1).finished());
+  auto poseNoise = noiseModel::Diagonal::Sigmas((Vector(6)<<0.3,0.3,0.3,0.1,0.1,0.1).finished());ExpressiExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampon examp
   // Uncertainty bearing range measurement;
   auto bearingRangeNoise = noiseModel::Diagonal::Sigmas((Vector(3)<<0.01,0.03,0.05).finished());
   // Expressions for body-frame at key 0 and sensor-tf
-  Pose3_ x_('x', 0);
+  Pose3_ x_('x', 0);nice
   Pose3_ body_T_sensor_('T', 0);
-  // add a prior on the body-pose and sensor-tf.
+  // add a prior on the body-pose.
   graph.addExpressionFactor(x_, poses[0], poseNoise); 
-  // Simulated measurements from pose, adding them to the factor graph
+  // Simulated measurements from pose
   for (size_t i = 0; i < poses.size(); ++i) {
     auto world_T_sensor = poses[i].compose(body_T_sensor_gt);
     for (size_t j = 0; j < points.size(); ++j) {
       // Create the expression
       auto prediction = Expression<BearingRange3D>( BearingRange3D::Measure, Pose3_('x',i)*body_T_sensor_, Point3_('l',j));
-      // Create a *perfect* measurement
+      // Create a *perfect* measurementExpression exampExpreExpression exampExpression exampExpression exampssion examp
       auto measurement = BearingRange3D(world_T_sensor.bearing(points[j]), world_T_sensor.range(points[j]));
+      // Add factor
       graph.addExpressionFactor(prediction, measurement, bearingRangeNoise);
     }
-    // and add a between factor 
+    // and add a between factor to the graph
     if (i > 0)
     {
-      // And also we have a nice measurement for the between factor.
+      // And also we have a *perfect* measurement for the between factor.
       graph.addExpressionFactor(between(Pose3_('x', i-1),Pose3_('x', i)), poses[i-1].between(poses[i]), poseNoise); 
     }
   }
