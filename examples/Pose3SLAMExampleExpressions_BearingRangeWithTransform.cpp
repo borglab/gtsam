@@ -11,86 +11,65 @@
 #include <gtsam/nonlinear/ExpressionFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Values.h>
+#include <examples/SFMdata.h>
 
 using namespace gtsam;
 
 typedef BearingRange<Pose3, Point3> BearingRange3D;
 
-// These functions are very similar to those in the SFM example, except that you can give it a fixed delta in between poses for n steps.
-/* ************************************************************************* */
-std::vector<Point3> createPoints() {
-
-  // Create the set of ground-truth landmarks
-  std::vector<Point3> points;
-  points.push_back(Point3(10.0,10.0,10.0));
-  points.push_back(Point3(-10.0,10.0,10.0));
-  points.push_back(Point3(-10.0,-10.0,10.0));
-  points.push_back(Point3(10.0,-10.0,10.0));
-  points.push_back(Point3(10.0,10.0,-10.0));
-  points.push_back(Point3(-10.0,10.0,-10.0));
-  points.push_back(Point3(-10.0,-10.0,-10.0));
-  points.push_back(Point3(10.0,-10.0,-10.0));
-
-  return points;
-}
-
-/* ************************************************************************* */
-std::vector<Pose3> createPoses(Pose3 delta, int steps) {
-
-  // Create the set of ground-truth poses
-  std::vector<Pose3> poses;
-  Pose3 pose = Pose3();
-  int i = 0;
-  for(; i < steps; ++i) {
-    poses.push_back(pose);
-    pose = pose.compose(delta);
-  }
-  poses.push_back(pose);
-
-  return poses;
-}
-
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
+
   // Move around so the whole state (including the sensor tf) is observable
+  Pose3 init_pose = Pose3();
   Pose3 delta_pose1 = Pose3(Rot3().Yaw(2*M_PI/8).Pitch(M_PI/8), Point3(1, 0, 0));
   Pose3 delta_pose2 = Pose3(Rot3().Pitch(-M_PI/8), Point3(1, 0, 0));
   Pose3 delta_pose3 = Pose3(Rot3().Yaw(-2*M_PI/8), Point3(1, 0, 0));
 
   int steps = 4;
-  auto poses = createPoses(delta_pose1, steps);
-  auto poses2 = createPoses(delta_pose2, steps);
-  auto poses3 = createPoses(delta_pose3, steps);
+  auto poses  = createPoses(init_pose, delta_pose1, steps);
+  auto poses2 = createPoses(init_pose, delta_pose2, steps);
+  auto poses3 = createPoses(init_pose, delta_pose3, steps);
 
-  // concatenate poses to create trajectory
+  // Concatenate poses to create trajectory
   poses.insert( poses.end(), poses2.begin(), poses2.end() );
   poses.insert( poses.end(), poses3.begin(), poses3.end() );  // std::vector of Pose3
   auto points = createPoints();                               // std::vector of Point3 
 
   // (ground-truth) sensor pose in body frame, further an unknown variable
   Pose3 body_T_sensor_gt(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-  // a graph
+  
+  // The graph
   ExpressionFactorGraph graph;
+  
   // Specify uncertainty on first pose prior and also for between factor (simplicity reasons)
-  auto poseNoise = noiseModel::Diagonal::Sigmas((Vector(6)<<0.3,0.3,0.3,0.1,0.1,0.1).finished());ExpressiExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampExpression exampon examp
+  auto poseNoise = noiseModel::Diagonal::Sigmas((Vector(6)<<0.3,0.3,0.3,0.1,0.1,0.1).finished());
+  
   // Uncertainty bearing range measurement;
   auto bearingRangeNoise = noiseModel::Diagonal::Sigmas((Vector(3)<<0.01,0.03,0.05).finished());
+  
   // Expressions for body-frame at key 0 and sensor-tf
-  Pose3_ x_('x', 0);nice
+  Pose3_ x_('x', 0);
   Pose3_ body_T_sensor_('T', 0);
-  // add a prior on the body-pose.
+  
+  // Add a prior on the body-pose
   graph.addExpressionFactor(x_, poses[0], poseNoise); 
+  
   // Simulated measurements from pose
   for (size_t i = 0; i < poses.size(); ++i) {
     auto world_T_sensor = poses[i].compose(body_T_sensor_gt);
     for (size_t j = 0; j < points.size(); ++j) {
-      // Create the expression
-      auto prediction = Expression<BearingRange3D>( BearingRange3D::Measure, Pose3_('x',i)*body_T_sensor_, Point3_('l',j));
-      // Create a *perfect* measurementExpression exampExpreExpression exampExpression exampExpression exampssion examp
+      
+      // This expression is the key feature of this example: it creates a differentiable expression of the measurement after being displaced by sensor transform.
+      auto prediction_ = Expression<BearingRange3D>( BearingRange3D::Measure, Pose3_('x',i)*body_T_sensor_, Point3_('l',j));
+      
+      // Create a *perfect* measurement
       auto measurement = BearingRange3D(world_T_sensor.bearing(points[j]), world_T_sensor.range(points[j]));
+      
       // Add factor
-      graph.addExpressionFactor(prediction, measurement, bearingRangeNoise);
+      graph.addExpressionFactor(prediction_, measurement, bearingRangeNoise);
     }
+    
     // and add a between factor to the graph
     if (i > 0)
     {
@@ -107,7 +86,7 @@ int main(int argc, char* argv[]) {
   for (size_t j = 0; j < points.size(); ++j)
     initial.insert<Point3>(Symbol('l', j), points[j] + Point3(-0.25, 0.20, 0.15));
   
-  // initialize body_T_sensor wrongly (because we do not know!)
+  // Initialize body_T_sensor wrongly (because we do not know!)
   initial.insert<Pose3>(Symbol('T',0), Pose3()); 
 
   std::cout << "initial error: " << graph.error(initial) << std::endl;
