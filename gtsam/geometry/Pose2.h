@@ -132,6 +132,8 @@ public:
    * Ad_pose is 3*3 matrix that when applied to twist xi \f$ [T_x,T_y,\theta] \f$, returns Ad_pose(xi)
    */
   Matrix3 AdjointMap() const;
+
+  /// Apply AdjointMap to twist xi
   inline Vector3 Adjoint(const Vector3& xi) const {
     return AdjointMap()*xi;
   }
@@ -140,6 +142,20 @@ public:
    * Compute the [ad(w,v)] operator for SE2 as in [Kobilarov09siggraph], pg 19
    */
   static Matrix3 adjointMap(const Vector3& v);
+
+  /**
+   * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
+   */
+  Vector3 adjoint(const Vector3& xi, const Vector3& y) {
+    return adjointMap(xi) * y;
+  }
+
+  /**
+   * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
+   */
+  Vector3 adjointTranspose(const Vector3& xi, const Vector3& y) {
+    return adjointMap(xi).transpose() * y;
+  }
 
   /**
    * wedge for SE(2):

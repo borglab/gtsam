@@ -228,6 +228,12 @@ virtual class Value {
   size_t dim() const;
 };
 
+#include <gtsam/base/GenericValue.h>
+template<T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
+virtual class GenericValue : gtsam::Value {
+  void serializable() const;
+};
+
 #include <gtsam/base/deprecated/LieScalar.h>
 class LieScalar {
   // Standard constructors
@@ -567,8 +573,13 @@ class Pose2 {
   // Lie Group
   static gtsam::Pose2 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose2& p);
+  static Matrix ExpmapDerivative(Vector v);
+  static Matrix LogmapDerivative(const gtsam::Pose2& v);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
+  static Matrix adjointMap(Vector v);
+  Vector adjoint(Vector xi, Vector y);
+  Vector adjointTranspose(Vector xi, Vector y);
   static Matrix wedge(double vx, double vy, double w);
 
   // Group Actions on Point2
@@ -617,6 +628,11 @@ class Pose3 {
   static Vector Logmap(const gtsam::Pose3& pose);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
+  static Matrix adjointMap(Vector xi);
+  static Vector adjoint(Vector xi, Vector y);
+  static Vector adjointTranspose(Vector xi, Vector y);
+  static Matrix ExpmapDerivative(Vector xi);
+  static Matrix LogmapDerivative(const gtsam::Pose3& xi);
   static Matrix wedge(double wx, double wy, double wz, double vx, double vy, double vz);
 
   // Group Action on Point3
@@ -2259,10 +2275,13 @@ virtual class NonlinearEquality : gtsam::NoiseModelFactor {
 template<POSE, POINT>
 virtual class RangeFactor : gtsam::NoiseModelFactor {
   RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
-typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
-typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactorPosePoint3;
+typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactor2D;
+typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactor3D;
 typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Pose2> RangeFactorPose2;
 typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Pose3> RangeFactorPose3;
 typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::Point3> RangeFactorCalibratedCameraPoint;
@@ -2275,10 +2294,13 @@ typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactor
 template<POSE, POINT>
 virtual class RangeFactorWithTransform : gtsam::NoiseModelFactor {
   RangeFactorWithTransform(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel, const POSE& body_T_sensor);
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
-typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Point2> RangeFactorWithTransformPosePoint2;
-typedef gtsam::RangeFactorWithTransform<gtsam::Pose3, gtsam::Point3> RangeFactorWithTransformPosePoint3;
+typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Point2> RangeFactorWithTransform2D;
+typedef gtsam::RangeFactorWithTransform<gtsam::Pose3, gtsam::Point3> RangeFactorWithTransform3D;
 typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Pose2> RangeFactorWithTransformPose2;
 typedef gtsam::RangeFactorWithTransform<gtsam::Pose3, gtsam::Pose3> RangeFactorWithTransformPose3;
 
@@ -2292,6 +2314,7 @@ virtual class BearingFactor : gtsam::NoiseModelFactor {
 };
 
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
+typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Pose2, gtsam::Rot2> BearingFactorPose2;
 
 #include <gtsam/sam/BearingRangeFactor.h>
 template<POSE, POINT, BEARING, RANGE>
@@ -2305,6 +2328,7 @@ virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
 };
 
 typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2, double> BearingRangeFactor2D;
+typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Pose2, gtsam::Rot2, double> BearingRangeFactorPose2;
 
 
 #include <gtsam/slam/ProjectionFactor.h>

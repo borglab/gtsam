@@ -73,6 +73,14 @@ class BearingRangeFactor
     Base::print(s, kf);
   }
 
+
+ private:
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp(
+        "Base", boost::serialization::base_object<Base>(*this));
+  }
 };  // BearingRangeFactor
 
 /// traits
