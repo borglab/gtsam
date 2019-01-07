@@ -163,24 +163,14 @@ endif()
 
 ###############################################################################
 # Find TBB
-find_package(TBB)
+find_package(TBB COMPONENTS tbb tbbmalloc)
 
 # Set up variables if we're using TBB
 if(TBB_FOUND AND GTSAM_WITH_TBB)
 	set(GTSAM_USE_TBB 1)  # This will go into config.h
-	include_directories(BEFORE ${TBB_INCLUDE_DIRS})
-	set(GTSAM_TBB_LIBRARIES "")
-	if(TBB_DEBUG_LIBRARIES)
-		foreach(lib ${TBB_LIBRARIES})
-			list(APPEND GTSAM_TBB_LIBRARIES optimized "${lib}")
-		endforeach()
-		foreach(lib ${TBB_DEBUG_LIBRARIES})
-			list(APPEND GTSAM_TBB_LIBRARIES debug "${lib}")
-		endforeach()
-	else()
-		set(GTSAM_TBB_LIBRARIES ${TBB_LIBRARIES})
-	endif()
-	list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${GTSAM_TBB_LIBRARIES})
+  # all definitions and link requisites will go via imported targets:
+  # tbb & tbbmalloc
+  list(APPEND GTSAM_ADDITIONAL_LIBRARIES tbb tbbmalloc)
 else()
 	set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
