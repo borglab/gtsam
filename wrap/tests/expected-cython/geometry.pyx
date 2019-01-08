@@ -1,3 +1,5 @@
+# cython: c_string_type=str, c_string_encoding=ascii
+
 cimport numpy as np
 import numpy as npp
 cimport geometry

@@ -394,6 +394,10 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
 
 /* ************************************************************************* */
 void Module::emit_cython_pyx(FileWriter& pyxFile) const {
+  // directives...
+  // allow str to automatically coerce to std::string and back (for python3)
+  pyxFile.oss << "# cython: c_string_type=str, c_string_encoding=ascii\n\n";
+
   // headers...
   string pxdHeader = name;
   pyxFile.oss << "cimport numpy as np\n"
