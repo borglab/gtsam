@@ -196,6 +196,7 @@ TEST(Expression, BinaryDimensions) {
 TEST(Expression, BinaryTraceSize) {
   typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
   size_t expectedTraceSize = sizeof(Binary::Record);
+  internal::upAlign(expectedTraceSize);
   EXPECT_LONGS_EQUAL(expectedTraceSize, binary::p_cam.traceSize());
 }
 
