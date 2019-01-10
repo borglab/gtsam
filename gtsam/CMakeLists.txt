@@ -153,9 +153,9 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 
     # Generate, build and install toolbox
     set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-	if(GTSAM_BUILD_STATIC_LIBRARY)
-		list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
-	endif()
+        if(NOT BUILD_SHARED_LIBS)
+                list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
+        endif()
 
     # Wrap
     wrap_and_install_library(../gtsam.h "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
