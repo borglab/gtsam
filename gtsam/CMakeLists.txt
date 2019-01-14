@@ -101,9 +101,10 @@ message(STATUS "Building GTSAM - shared: ${BUILD_SHARED_LIBS}")
 
 # BUILD_SHARED_LIBS automatically defines static/shared libs:
 add_library(gtsam ${gtsam_srcs})
-target_link_libraries(gtsam
-    PUBLIC
-    ${GTSAM_BOOST_LIBRARIES} ${GTSAM_ADDITIONAL_LIBRARIES})
+target_link_libraries(gtsam PUBLIC ${GTSAM_BOOST_LIBRARIES})
+target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
+target_compile_definitions(gtsam PUBLIC ${GTSAM_COMPILE_DEFINITIONS})
+target_compile_options(gtsam PUBLIC ${GTSAM_COMPILE_OPTIONS})
 set_target_properties(gtsam PROPERTIES
     OUTPUT_NAME         gtsam
     CLEAN_DIRECT_OUTPUT 1

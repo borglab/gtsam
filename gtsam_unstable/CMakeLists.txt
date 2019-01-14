@@ -14,8 +14,6 @@ if(GTSAM_SUPPORT_NESTED_DISSECTION) # Only build partition if metis is built
     set (gtsam_unstable_subdirs ${gtsam_unstable_subdirs} partition)
 endif(GTSAM_SUPPORT_NESTED_DISSECTION)
 
-set(GTSAM_UNSTABLE_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES})
-
 add_custom_target(check.unstable COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
 
 # To exclude a source from the library build (in any subfolder)
@@ -72,10 +70,8 @@ set_target_properties(gtsam_unstable PROPERTIES
   CLEAN_DIRECT_OUTPUT 1
   VERSION             ${gtsam_unstable_version}
   SOVERSION           ${gtsam_unstable_soversion})
-target_link_libraries(gtsam_unstable
-    PUBLIC
-    gtsam
-    ${GTSAM_UNSTABLE_BOOST_LIBRARIES})
+target_link_libraries(gtsam_unstable PUBLIC gtsam)
+# No need to link against Boost here, it's inherited from gtsam PUBLIC interface
 
 if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
 	if (NOT BUILD_SHARED_LIBS)
