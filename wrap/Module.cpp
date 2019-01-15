@@ -127,7 +127,7 @@ void Module::parseMarkup(const std::string& data) {
   TemplateInstantiationTypedef singleInstantiation, singleInstantiation0;
   TypeListGrammar<'<','>'> typelist_g(singleInstantiation.typeList);
 
-  // typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
+  // typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactor2D;
   TypeGrammar instantiationClass_g(singleInstantiation.class_);
   Rule templateSingleInstantiation_p =
     (str_p("typedef") >> instantiationClass_g >>
@@ -273,9 +273,9 @@ void Module::generate_matlab_wrapper(const string& toolboxPath) const {
 
   // Include boost.serialization archive headers before other class headers
   if (hasSerialiable) {
-    wrapperFile.oss << "#include <boost/serialization/export.hpp>\n";
     wrapperFile.oss << "#include <boost/archive/text_iarchive.hpp>\n";
-    wrapperFile.oss << "#include <boost/archive/text_oarchive.hpp>\n\n";
+    wrapperFile.oss << "#include <boost/archive/text_oarchive.hpp>\n";
+    wrapperFile.oss << "#include <boost/serialization/export.hpp>\n\n";
   }
 
   // Generate includes while avoiding redundant includes

@@ -70,8 +70,8 @@ typedef NonlinearEquality<CalibratedCamera>  NonlinearEqualityCalibratedCamera;
 typedef NonlinearEquality<SimpleCamera>      NonlinearEqualitySimpleCamera;
 typedef NonlinearEquality<StereoCamera>      NonlinearEqualityStereoCamera;
 
-typedef RangeFactor<Pose2, Point2>                      RangeFactorPosePoint2;
-typedef RangeFactor<Pose3, Point3>                      RangeFactorPosePoint3;
+typedef RangeFactor<Pose2, Point2>                      RangeFactor2D;
+typedef RangeFactor<Pose3, Point3>                      RangeFactor3D;
 typedef RangeFactor<Pose2, Pose2>                       RangeFactorPose2;
 typedef RangeFactor<Pose3, Pose3>                       RangeFactorPose3;
 typedef RangeFactor<CalibratedCamera, Point3>           RangeFactorCalibratedCameraPoint;
@@ -172,8 +172,8 @@ BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCalibratedCamera, "gtsam::NonlinearEqua
 BOOST_CLASS_EXPORT_GUID(NonlinearEqualitySimpleCamera, "gtsam::NonlinearEqualitySimpleCamera");
 BOOST_CLASS_EXPORT_GUID(NonlinearEqualityStereoCamera, "gtsam::NonlinearEqualityStereoCamera");
 
-BOOST_CLASS_EXPORT_GUID(RangeFactorPosePoint2, "gtsam::RangeFactorPosePoint2");
-BOOST_CLASS_EXPORT_GUID(RangeFactorPosePoint3, "gtsam::RangeFactorPosePoint3");
+BOOST_CLASS_EXPORT_GUID(RangeFactor2D, "gtsam::RangeFactor2D");
+BOOST_CLASS_EXPORT_GUID(RangeFactor3D, "gtsam::RangeFactor3D");
 BOOST_CLASS_EXPORT_GUID(RangeFactorPose2, "gtsam::RangeFactorPose2");
 BOOST_CLASS_EXPORT_GUID(RangeFactorPose3, "gtsam::RangeFactorPose3");
 BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCameraPoint, "gtsam::RangeFactorCalibratedCameraPoint");

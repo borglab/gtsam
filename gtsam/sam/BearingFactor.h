@@ -60,6 +60,14 @@ struct BearingFactor : public ExpressionFactor2<T, A1, A2> {
     std::cout << s << "BearingFactor" << std::endl;
     Base::print(s, kf);
   }
+
+ private:
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp(
+        "Base", boost::serialization::base_object<Base>(*this));
+  }
 };  // BearingFactor
 
 /// traits

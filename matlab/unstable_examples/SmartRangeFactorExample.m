@@ -103,9 +103,9 @@ for ind_pose = 2:7
       r2 = curr_pose.range(lmk1); % range of lmk1 wrt x2
       srf1.addRange(key_curr, r2);
       
-      rangef1 = RangeFactorPosePoint2(key_prev, lmkKey(1), r1, noiseRange);
+      rangef1 = RangeFactor2D(key_prev, lmkKey(1), r1, noiseRange);
       fullGraph.add(rangef1); 
-      rangef2 = RangeFactorPosePoint2(key_curr, lmkKey(1), r2, noiseRange);
+      rangef2 = RangeFactor2D(key_curr, lmkKey(1), r2, noiseRange);
       fullGraph.add(rangef2); 
       
       if goodInitFlag_lmk1==1
@@ -123,9 +123,9 @@ for ind_pose = 2:7
       r4 = curr_pose.range(lmk2); % range of lmk2 wrt x3
       srf2.addRange(key_curr, r4);    
       
-      rangef3 = RangeFactorPosePoint2(key_curr, lmkKey(1), r3, noiseRange);
+      rangef3 = RangeFactor2D(key_curr, lmkKey(1), r3, noiseRange);
       fullGraph.add(rangef3); 
-      rangef4 = RangeFactorPosePoint2(key_curr, lmkKey(2), r4, noiseRange);
+      rangef4 = RangeFactor2D(key_curr, lmkKey(2), r4, noiseRange);
       % IF WE ADD FACTOR HERE IT CRASHES: fullGraph.add(rangef4);  
     %====================================================================  
     case 4
@@ -138,9 +138,9 @@ for ind_pose = 2:7
       
       % DELAYED INITIALIZATION: 
       fullGraph.add(rangef4); 
-      rangef5 = RangeFactorPosePoint2(key_curr, lmkKey(2), r5, noiseRange);
+      rangef5 = RangeFactor2D(key_curr, lmkKey(2), r5, noiseRange);
       fullGraph.add(rangef5); 
-      rangef6 = RangeFactorPosePoint2(key_curr, lmkKey(3), r6, noiseRange);
+      rangef6 = RangeFactor2D(key_curr, lmkKey(3), r6, noiseRange);
       % IF WE ADD FACTOR HERE IT CRASHES:  fullGraph.add(rangef6); 
       
       if goodInitFlag_lmk2==1
@@ -160,9 +160,9 @@ for ind_pose = 2:7
 
       % DELAYED INITIALIZATION: 
       fullGraph.add(rangef6); 
-      rangef7 = RangeFactorPosePoint2(key_curr, lmkKey(2), r7, noiseRange);
+      rangef7 = RangeFactor2D(key_curr, lmkKey(2), r7, noiseRange);
       fullGraph.add(rangef7); 
-      rangef8 = RangeFactorPosePoint2(key_curr, lmkKey(3), r8, noiseRange);
+      rangef8 = RangeFactor2D(key_curr, lmkKey(3), r8, noiseRange);
       fullGraph.add(rangef8); 
       
       if goodInitFlag_lmk3==1
@@ -176,7 +176,7 @@ for ind_pose = 2:7
       r9 = curr_pose.range(lmk3); % range of lmk3 wrt x6
       srf3.addRange(key_curr, r9);
       
-      rangef9 = RangeFactorPosePoint2(key_curr, lmkKey(3), r9, noiseRange);
+      rangef9 = RangeFactor2D(key_curr, lmkKey(3), r9, noiseRange);
       fullGraph.add(rangef9);
     case 7
       % x6-lmk3
@@ -184,7 +184,7 @@ for ind_pose = 2:7
       srf3.addRange(key_curr, r10);
       smartGraph.add(srf3);
       
-      rangef10 = RangeFactorPosePoint2(key_curr, lmkKey(3), r10, noiseRange);
+      rangef10 = RangeFactor2D(key_curr, lmkKey(3), r10, noiseRange);
       fullGraph.add(rangef10);
   end
   

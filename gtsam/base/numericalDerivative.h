@@ -177,7 +177,7 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative21(const boost
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X1>(boost::bind(h, _1, x2), x1, delta);
+  return numericalDerivative11<Y, X1>(boost::bind(h, _1, boost::cref(x2)), x1, delta);
 }
 
 /** use a raw C++ function pointer */
@@ -202,7 +202,7 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative22(boost::func
 //       "Template argument X1 must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X2>::structure_category>::value),
        "Template argument X2 must be a manifold type.");
-  return numericalDerivative11<Y, X2>(boost::bind(h, x1, _1), x2, delta);
+  return numericalDerivative11<Y, X2>(boost::bind(h, boost::cref(x1), _1), x2, delta);
 }
 
 /** use a raw C++ function pointer */
@@ -230,7 +230,7 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative31(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X1>(boost::bind(h, _1, x2, x3), x1, delta);
+  return numericalDerivative11<Y, X1>(boost::bind(h, _1, boost::cref(x2), boost::cref(x3)), x1, delta);
 }
 
 template<class Y, class X1, class X2, class X3>
@@ -258,7 +258,7 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative32(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X2>::structure_category>::value),
       "Template argument X2 must be a manifold type.");
-  return numericalDerivative11<Y, X2>(boost::bind(h, x1, _1, x3), x2, delta);
+  return numericalDerivative11<Y, X2>(boost::bind(h, boost::cref(x1), _1, boost::cref(x3)), x2, delta);
 }
 
 template<class Y, class X1, class X2, class X3>
@@ -286,7 +286,7 @@ typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative33(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X3>::structure_category>::value),
       "Template argument X3 must be a manifold type.");
-  return numericalDerivative11<Y, X3>(boost::bind(h, x1, x2, _1), x3, delta);
+  return numericalDerivative11<Y, X3>(boost::bind(h, boost::cref(x1), boost::cref(x2), _1), x3, delta);
 }
 
 template<class Y, class X1, class X2, class X3>
@@ -314,7 +314,7 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative41(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X1>(boost::bind(h, _1, x2, x3, x4), x1, delta);
+  return numericalDerivative11<Y, X1>(boost::bind(h, _1, boost::cref(x2), boost::cref(x3), boost::cref(x4)), x1, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4>
@@ -341,7 +341,7 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative42(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X2>::structure_category>::value),
       "Template argument X2 must be a manifold type.");
-  return numericalDerivative11<Y, X2>(boost::bind(h, x1, _1, x3, x4), x2, delta);
+  return numericalDerivative11<Y, X2>(boost::bind(h, boost::cref(x1), _1, boost::cref(x3), boost::cref(x4)), x2, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4>
@@ -368,7 +368,7 @@ typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative43(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X3>::structure_category>::value),
       "Template argument X3 must be a manifold type.");
-  return numericalDerivative11<Y, X3>(boost::bind(h, x1, x2, _1, x4), x3, delta);
+  return numericalDerivative11<Y, X3>(boost::bind(h, boost::cref(x1), boost::cref(x2), _1, boost::cref(x4)), x3, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4>
@@ -395,7 +395,7 @@ typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative44(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X4>::structure_category>::value),
       "Template argument X4 must be a manifold type.");
-  return numericalDerivative11<Y, X4>(boost::bind(h, x1, x2, x3, _1), x4, delta);
+  return numericalDerivative11<Y, X4>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), _1), x4, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4>
@@ -423,7 +423,7 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative51(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X1>(boost::bind(h, _1, x2, x3, x4, x5), x1, delta);
+  return numericalDerivative11<Y, X1>(boost::bind(h, _1, boost::cref(x2), boost::cref(x3), boost::cref(x4), boost::cref(x5)), x1, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5>
@@ -451,7 +451,7 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative52(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X2>(boost::bind(h, x1, _1, x3, x4, x5), x2, delta);
+  return numericalDerivative11<Y, X2>(boost::bind(h, boost::cref(x1), _1, boost::cref(x3), boost::cref(x4), boost::cref(x5)), x2, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5>
@@ -479,7 +479,7 @@ typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative53(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X3>(boost::bind(h, x1, x2, _1, x4, x5), x3, delta);
+  return numericalDerivative11<Y, X3>(boost::bind(h, boost::cref(x1), boost::cref(x2), _1, boost::cref(x4), boost::cref(x5)), x3, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5>
@@ -507,7 +507,7 @@ typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative54(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X4>(boost::bind(h, x1, x2, x3, _1, x5), x4, delta);
+  return numericalDerivative11<Y, X4>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), _1, boost::cref(x5)), x4, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5>
@@ -535,7 +535,7 @@ typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative55(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X5>(boost::bind(h, x1, x2, x3, x4, _1), x5, delta);
+  return numericalDerivative11<Y, X5>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), boost::cref(x4), _1), x5, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5>
@@ -587,7 +587,7 @@ public:
       f_(f), x1_(x1), delta_(delta) {
   }
   Vector operator()(const X2& x2) {
-    return numericalGradient<X1>(boost::bind(f_, _1, x2), x1_, delta_);
+    return numericalGradient<X1>(boost::bind(f_, _1, boost::cref(x2)), x1_, delta_);
   }
 };
 
@@ -618,7 +618,7 @@ inline typename internal::FixedSizeMatrix<X1,X1>::type numericalHessian211(
 
   Vector (*numGrad)(boost::function<double(const X1&)>, const X1&,
       double) = &numericalGradient<X1>;
-  boost::function<double(const X1&)> f2(boost::bind(f, _1, x2));
+  boost::function<double(const X1&)> f2(boost::bind(f, _1, boost::cref(x2)));
 
   return numericalDerivative11<Vector, X1>(
       boost::function<Vector(const X1&)>(boost::bind(numGrad, f2, _1, delta)),
@@ -639,7 +639,7 @@ inline typename internal::FixedSizeMatrix<X2,X2>::type numericalHessian222(
   typedef typename internal::FixedSizeMatrix<X2>::type Vector;
   Vector (*numGrad)(boost::function<double(const X2&)>, const X2&,
       double) = &numericalGradient<X2>;
-  boost::function<double(const X2&)> f2(boost::bind(f, x1, _1));
+  boost::function<double(const X2&)> f2(boost::bind(f, boost::cref(x1), _1));
 
   return numericalDerivative11<Vector, X2>(
       boost::function<Vector(const X2&)>(boost::bind(numGrad, f2, _1, delta)),
@@ -664,7 +664,7 @@ inline typename internal::FixedSizeMatrix<X1,X1>::type numericalHessian311(
   typedef typename internal::FixedSizeMatrix<X1>::type Vector;
   Vector (*numGrad)(boost::function<double(const X1&)>, const X1&,
       double) = &numericalGradient<X1>;
-  boost::function<double(const X1&)> f2(boost::bind(f, _1, x2, x3));
+  boost::function<double(const X1&)> f2(boost::bind(f, _1, boost::cref(x2), boost::cref(x3)));
 
   return numericalDerivative11<Vector, X1>(
       boost::function<Vector(const X1&)>(boost::bind(numGrad, f2, _1, delta)),
@@ -687,7 +687,7 @@ inline typename internal::FixedSizeMatrix<X2,X2>::type numericalHessian322(
   typedef typename internal::FixedSizeMatrix<X2>::type Vector;
   Vector (*numGrad)(boost::function<double(const X2&)>, const X2&,
       double) = &numericalGradient<X2>;
-  boost::function<double(const X2&)> f2(boost::bind(f, x1, _1, x3));
+  boost::function<double(const X2&)> f2(boost::bind(f, boost::cref(x1), _1, boost::cref(x3)));
 
   return numericalDerivative11<Vector, X2>(
       boost::function<Vector(const X2&)>(boost::bind(numGrad, f2, _1, delta)),
@@ -710,7 +710,7 @@ inline typename internal::FixedSizeMatrix<X3,X3>::type numericalHessian333(
   typedef typename internal::FixedSizeMatrix<X3>::type Vector;
   Vector (*numGrad)(boost::function<double(const X3&)>, const X3&,
       double) = &numericalGradient<X3>;
-  boost::function<double(const X3&)> f2(boost::bind(f, x1, x2, _1));
+  boost::function<double(const X3&)> f2(boost::bind(f, boost::cref(x1), boost::cref(x2), _1));
 
   return numericalDerivative11<Vector, X3>(
       boost::function<Vector(const X3&)>(boost::bind(numGrad, f2, _1, delta)),
@@ -731,7 +731,7 @@ inline typename internal::FixedSizeMatrix<X1,X2>::type numericalHessian312(
     boost::function<double(const X1&, const X2&, const X3&)> f, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
   return numericalHessian212<X1, X2>(
-      boost::function<double(const X1&, const X2&)>(boost::bind(f, _1, _2, x3)),
+      boost::function<double(const X1&, const X2&)>(boost::bind(f, _1, _2, boost::cref(x3))),
       x1, x2, delta);
 }
 
@@ -740,7 +740,7 @@ inline typename internal::FixedSizeMatrix<X1,X3>::type numericalHessian313(
     boost::function<double(const X1&, const X2&, const X3&)> f, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
   return numericalHessian212<X1, X3>(
-      boost::function<double(const X1&, const X3&)>(boost::bind(f, _1, x2, _2)),
+      boost::function<double(const X1&, const X3&)>(boost::bind(f, _1, boost::cref(x2), _2)),
       x1, x3, delta);
 }
 
@@ -749,7 +749,7 @@ inline typename internal::FixedSizeMatrix<X2,X3>::type numericalHessian323(
     boost::function<double(const X1&, const X2&, const X3&)> f, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
   return numericalHessian212<X2, X3>(
-      boost::function<double(const X2&, const X3&)>(boost::bind(f, x1, _1, _2)),
+      boost::function<double(const X2&, const X3&)>(boost::bind(f, boost::cref(x1), _1, _2)),
       x2, x3, delta);
 }
 

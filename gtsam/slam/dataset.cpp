@@ -432,23 +432,27 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
   fstream stream(filename.c_str(), fstream::out);
 
   // save 2D & 3D poses
-  Values::ConstFiltered<Pose2> viewPose2 = estimate.filter<Pose2>();
-  for(const Values::ConstFiltered<Pose2>::KeyValuePair& key_value: viewPose2) {
-    stream << "VERTEX_SE2 " << key_value.key << " " << key_value.value.x() << " "
-        << key_value.value.y() << " " << key_value.value.theta() << endl;
+  for (const auto& key_value : estimate) {
+    auto p = dynamic_cast<const GenericValue<Pose2>*>(&key_value.value);
+    if (!p) continue;
+    const Pose2& pose = p->value();
+    stream << "VERTEX_SE2 " << key_value.key << " " << pose.x() << " "
+        << pose.y() << " " << pose.theta() << endl;
   }
 
-  Values::ConstFiltered<Pose3> viewPose3 = estimate.filter<Pose3>();
-  for(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value: viewPose3) {
-      Point3 p = key_value.value.translation();
-      Rot3 R = key_value.value.rotation();
-      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << p.x() << " "  << p.y() << " " << p.z()
+  for(const auto& key_value: estimate) {
+      auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
+      if (!p) continue;
+      const Pose3& pose = p->value();
+      Point3 t = pose.translation();
+      Rot3 R = pose.rotation();
+      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "  << t.y() << " " << t.z()
         << " " << R.toQuaternion().x() << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()
         << " " << R.toQuaternion().w() << endl;
   }
 
   // save edges (2D or 3D)
-  for(boost::shared_ptr<NonlinearFactor> factor_: graph) {
+  for(const auto& factor_: graph) {
     boost::shared_ptr<BetweenFactor<Pose2> > factor =
         boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
     if (factor){
@@ -857,48 +861,47 @@ bool writeBAL(const string& filename, SfM_data &data) {
 
 bool writeBALfromValues(const string& filename, const SfM_data &data,
     Values& values) {
-
+  using Camera = PinholeCamera<Cal3Bundler>;
   SfM_data dataValues = data;
 
   // Store poses or cameras in SfM_data
-  Values valuesPoses = values.filter<Pose3>();
-  if (valuesPoses.size() == dataValues.number_cameras()) { // we only estimated camera poses
+  size_t nrPoses = values.count<Pose3>();
+  if (nrPoses == dataValues.number_cameras()) { // we only estimated camera poses
     for (size_t i = 0; i < dataValues.number_cameras(); i++) { // for each camera
       Key poseKey = symbol('x', i);
       Pose3 pose = values.at<Pose3>(poseKey);
       Cal3Bundler K = dataValues.cameras[i].calibration();
-      PinholeCamera<Cal3Bundler> camera(pose, K);
+      Camera camera(pose, K);
       dataValues.cameras[i] = camera;
     }
   } else {
-    Values valuesCameras = values.filter<PinholeCamera<Cal3Bundler> >();
-    if (valuesCameras.size() == dataValues.number_cameras()) { // we only estimated camera poses and calibration
-      for (size_t i = 0; i < dataValues.number_cameras(); i++) { // for each camera
+    size_t nrCameras = values.count<Camera>();
+    if (nrCameras == dataValues.number_cameras()) { // we only estimated camera poses and calibration
+      for (size_t i = 0; i < nrCameras; i++) { // for each camera
         Key cameraKey = i; // symbol('c',i);
-        PinholeCamera<Cal3Bundler> camera =
-            values.at<PinholeCamera<Cal3Bundler> >(cameraKey);
+        Camera camera = values.at<Camera>(cameraKey);
         dataValues.cameras[i] = camera;
       }
     } else {
       cout
-          << "writeBALfromValues: different number of cameras in SfM_dataValues (#cameras= "
+          << "writeBALfromValues: different number of cameras in SfM_dataValues (#cameras "
           << dataValues.number_cameras() << ") and values (#cameras "
-          << valuesPoses.size() << ", #poses " << valuesCameras.size() << ")!!"
+          << nrPoses << ", #poses " << nrCameras << ")!!"
           << endl;
       return false;
     }
   }
 
   // Store 3D points in SfM_data
-  Values valuesPoints = values.filter<Point3>();
-  if (valuesPoints.size() != dataValues.number_tracks()) {
+  size_t nrPoints = values.count<Point3>(), nrTracks = dataValues.number_tracks();
+  if (nrPoints != nrTracks) {
     cout
         << "writeBALfromValues: different number of points in SfM_dataValues (#points= "
-        << dataValues.number_tracks() << ") and values (#points "
-        << valuesPoints.size() << ")!!" << endl;
+        << nrTracks << ") and values (#points "
+        << nrPoints << ")!!" << endl;
   }
 
-  for (size_t j = 0; j < dataValues.number_tracks(); j++) { // for each point
+  for (size_t j = 0; j < nrTracks; j++) { // for each point
     Key pointKey = P(j);
     if (values.exists(pointKey)) {
       Point3 point = values.at<Point3>(pointKey);

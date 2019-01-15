@@ -19,3 +19,5 @@ cython/gtsam_wrapper.pxd
 .env
 /.vs/
 /CMakeSettings.json
+# for QtCreator:
+CMakeLists.txt.user*

@@ -1,6 +1,6 @@
 
 project(GTSAM CXX C)
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.4)
 
 # new feature to Cmake Version > 2.8.12
 # Mac ONLY. Define Relative Path on Mac OS
@@ -55,7 +55,7 @@ endif()
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 endif()
-option(GTSAM_BUILD_STATIC_LIBRARY        "Build a static gtsam library, instead of shared" OFF)
+option(BUILD_SHARED_LIBS                 "Build shared gtsam library, instead of static" ON)
 option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
 option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." OFF)
 option(GTSAM_ROT3_EXPMAP 			 	 "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." OFF)
@@ -69,6 +69,9 @@ option(GTSAM_ALLOW_DEPRECATED_SINCE_V4   "Allow use of methods/functions depreca
 option(GTSAM_TYPEDEF_POINTS_TO_VECTORS   "Typdef Point2 and Point3 to Eigen::Vector equivalents" OFF)
 option(GTSAM_SUPPORT_NESTED_DISSECTION   "Support Metis-based nested dissection" ON)
 option(GTSAM_TANGENT_PREINTEGRATION      "Use new ImuFactor with integration on tangent space" ON)
+if(NOT MSVC AND NOT XCODE_VERSION)
+    option(GTSAM_BUILD_WITH_CCACHE           "Use ccache compiler cache" ON)
+endif()
 
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
@@ -84,8 +87,8 @@ if(GTSAM_INSTALL_WRAP AND NOT GTSAM_BUILD_WRAP)
 	message(FATAL_ERROR "GTSAM_INSTALL_WRAP is enabled, please also enable GTSAM_BUILD_WRAP")
 endif()
 
-if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_BUILD_STATIC_LIBRARY)
-	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_BUILD_STATIC_LIBRARY are both enabled.  The MATLAB wrapper cannot be compiled with a static GTSAM library because mex modules are themselves shared libraries.  If you want a self-contained mex module, enable GTSAM_MEX_BUILD_STATIC_MODULE instead of GTSAM_BUILD_STATIC_LIBRARY.")
+if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT BUILD_SHARED_LIBS)
+	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and BUILD_SHARED_LIBS=OFF. The MATLAB wrapper cannot be compiled with a static GTSAM library because mex modules are themselves shared libraries.  If you want a self-contained mex module, enable GTSAM_MEX_BUILD_STATIC_MODULE instead of BUILD_SHARED_LIBS=OFF.")
 endif()
 
 if(GTSAM_BUILD_PYTHON AND GTSAM_ALLOW_DEPRECATED_SINCE_V4)
@@ -160,24 +163,14 @@ endif()
 
 ###############################################################################
 # Find TBB
-find_package(TBB)
+find_package(TBB COMPONENTS tbb tbbmalloc)
 
 # Set up variables if we're using TBB
 if(TBB_FOUND AND GTSAM_WITH_TBB)
 	set(GTSAM_USE_TBB 1)  # This will go into config.h
-	include_directories(BEFORE ${TBB_INCLUDE_DIRS})
-	set(GTSAM_TBB_LIBRARIES "")
-	if(TBB_DEBUG_LIBRARIES)
-		foreach(lib ${TBB_LIBRARIES})
-			list(APPEND GTSAM_TBB_LIBRARIES optimized "${lib}")
-		endforeach()
-		foreach(lib ${TBB_DEBUG_LIBRARIES})
-			list(APPEND GTSAM_TBB_LIBRARIES debug "${lib}")
-		endforeach()
-	else()
-		set(GTSAM_TBB_LIBRARIES ${TBB_LIBRARIES})
-	endif()
-	list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${GTSAM_TBB_LIBRARIES})
+  # all definitions and link requisites will go via imported targets:
+  # tbb & tbbmalloc
+  list(APPEND GTSAM_ADDITIONAL_LIBRARIES tbb tbbmalloc)
 else()
 	set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
@@ -193,6 +186,20 @@ endif()
 # Find Google perftools
 find_package(GooglePerfTools)
 
+###############################################################################
+# Support ccache, if installed
+if(NOT MSVC AND NOT XCODE_VERSION)
+	find_program(CCACHE_FOUND ccache)
+	if(CCACHE_FOUND)
+		if(GTSAM_BUILD_WITH_CCACHE)
+			set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+			set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+		else()
+			set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "")
+			set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "")
+		endif()
+	endif(CCACHE_FOUND)
+endif()
 
 ###############################################################################
 # Find MKL
@@ -270,7 +277,7 @@ else()
 endif()
 
 if (MSVC)
-	if (NOT GTSAM_BUILD_STATIC_LIBRARY)
+	if (BUILD_SHARED_LIBS)
 		# mute eigen static assert to avoid errors in shared lib
 		add_definitions(-DEIGEN_NO_STATIC_ASSERT)
 	endif()
@@ -479,7 +486,7 @@ print_config_flag(${GTSAM_BUILD_TIMING_ALWAYS}         "Build timing scripts wit
 if (DOXYGEN_FOUND)
     print_config_flag(${GTSAM_BUILD_DOCS}              "Build Docs                     ")
 endif()
-print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM library instead of shared")
+print_config_flag(${BUILD_SHARED_LIBS}                 "Build shared GTSAM libraries   ")
 print_config_flag(${GTSAM_BUILD_TYPE_POSTFIXES}        "Put build type in library name ")
 if(GTSAM_UNSTABLE_AVAILABLE)
     print_config_flag(${GTSAM_BUILD_UNSTABLE}          "Build libgtsam_unstable        ")
@@ -522,6 +529,15 @@ else()
 endif()
 message(STATUS "  Default allocator              : ${GTSAM_DEFAULT_ALLOCATOR}")
 
+if(NOT MSVC AND NOT XCODE_VERSION)
+	if(CCACHE_FOUND AND GTSAM_BUILD_WITH_CCACHE)
+		message(STATUS "  Build with ccache              : Yes")
+	elseif(CCACHE_FOUND)
+		message(STATUS "  Build with ccache              : ccache found but GTSAM_BUILD_WITH_CCACHE is disabled")
+	else()
+		message(STATUS "  Build with ccache              : No")
+	endif()
+endif()
 
 message(STATUS "Packaging flags                                               ")
 message(STATUS "  CPack Source Generator         : ${CPACK_SOURCE_GENERATOR}")
