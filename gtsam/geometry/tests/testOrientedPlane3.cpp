@@ -162,38 +162,22 @@ TEST (OrientedPlane3, error2) {
 }
 
 //*******************************************************************************
-// Wrapper to make retract return a Vector3 so we can test numerical derivatives.
-Vector4 RetractTest(const OrientedPlane3& plane, const Vector3& v,
-                    OptionalJacobian<4, 3> H) {
-  OrientedPlane3 plane_retract = plane.retract(v, H);
-  return Vector4(plane_retract.normal().point3().x(),
-                 plane_retract.normal().point3().y(),
-                 plane_retract.normal().point3().z(),
-                 plane_retract.distance());
-}
-
-//*******************************************************************************
 TEST (OrientedPlane3, jacobian_retract) {
   OrientedPlane3 plane(-1, 0.1, 0.2, 5);
-  Matrix43 H;
+  Matrix33 H_actual;
+  boost::function<OrientedPlane3(const Vector3&)> f =
+      boost::bind(&OrientedPlane3::retract, plane, _1, boost::none);
   {
       Vector3 v (-0.1, 0.2, 0.3);
-      plane.retract(v, H);
-      // Test that jacobian is numerically as expected.
-      boost::function<Vector4(const OrientedPlane3&, const Vector3&)> f =
-          boost::bind(RetractTest, _1, _2, boost::none);
-      Matrix43 H_expected_numerical = numericalDerivative22(f, plane, v);
-      EXPECT(assert_equal(H_expected_numerical, H, 1e-9));
+      plane.retract(v, H_actual);
+      Matrix H_expected_numerical = numericalDerivative11(f, v);
+      EXPECT(assert_equal(H_expected_numerical, H_actual, 1e-9));
   }
   {
-      Matrix43 H;
       Vector3 v (0, 0, 0);
-      plane.retract(v, H);
-      // Test that jacobian is numerically as expected.
-      boost::function<Vector4(const OrientedPlane3&, const Vector3&)> f =
-          boost::bind(RetractTest, _1, _2, boost::none);
-      Matrix43 H_expected_numerical = numericalDerivative22(f, plane, v);
-      EXPECT(assert_equal(H_expected_numerical, H, 1e-9));
+      plane.retract(v, H_actual);
+      Matrix H_expected_numerical = numericalDerivative11(f, v);
+      EXPECT(assert_equal(H_expected_numerical, H_actual, 1e-9));
   }
 }
 

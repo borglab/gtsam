@@ -83,11 +83,12 @@ Vector3 OrientedPlane3::errorVector(const OrientedPlane3& other, OptionalJacobia
 }
 
 /* ************************************************************************* */
-OrientedPlane3 OrientedPlane3::retract(const Vector3& v, OptionalJacobian<4,3> H) const {
-  Matrix32 H_n;
+OrientedPlane3 OrientedPlane3::retract(const Vector3& v,
+                                       OptionalJacobian<3,3> H) const {
+  Matrix22 H_n;
   Unit3 n_retract (n_.retract(Vector2(v(0), v(1)), H? &H_n : nullptr));
   if (H) {
-    *H << H_n, Vector3::Zero(), 0, 0, 1;
+    *H << H_n, Vector2::Zero(), 0, 0, 1;
   }
   return OrientedPlane3(n_retract, d_ + v(2));
 }
