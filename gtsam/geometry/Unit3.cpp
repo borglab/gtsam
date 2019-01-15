@@ -255,24 +255,21 @@ Unit3 Unit3::retract(const Vector2& v, OptionalJacobian<2,2> H) const {
   const Vector3 xi_hat = basis() * v;
   const double theta = xi_hat.norm();
 
-  // Treat case of very small v differently
+  // Treat case of very small v differently.
   Matrix23 H_from_point;
   if (theta < std::numeric_limits<double>::epsilon()) {
-    const Unit3 exp_p_xi_hat =
-        Unit3::FromPoint3(std::cos(theta) * p_ + xi_hat,
-                          H? &H_from_point : nullptr);
-    if (H) {
-      *H = H_from_point * (-p_ * xi_hat.transpose() * basis() +
-                           basis());
+    const Unit3 exp_p_xi_hat = Unit3::FromPoint3(std::cos(theta) * p_ + xi_hat,
+                                                 H? &H_from_point : nullptr);
+    if (H) { // Jacobian
+      *H = H_from_point * (-p_ * xi_hat.transpose() * basis() + basis());
     }
     return exp_p_xi_hat;
   }
 
-  const Unit3 exp_p_xi_hat =
-      Unit3::FromPoint3(std::cos(theta) * p_ + xi_hat * (sin(theta) / theta),
+  const Unit3 exp_p_xi_hat = Unit3::FromPoint3(
+        std::cos(theta) * p_ + xi_hat * (sin(theta) / theta),
                         H? &H_from_point : nullptr);
-  // Jacobian
-  if (H) {
+  if (H) { // Jacobian
     *H = H_from_point *
         (p_ * (-std::sin(theta)) * xi_hat.transpose() / theta * basis() +
         std::sin(theta) / theta * basis() +
