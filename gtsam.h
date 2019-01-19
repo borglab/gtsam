@@ -2449,6 +2449,7 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/dataset.h>
+string findExampleDataFile(string name);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
@@ -2465,6 +2466,7 @@ void save2D(const gtsam::NonlinearFactorGraph& graph,
     string filename);
 
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename, bool is3D);
 void writeG2o(const gtsam::NonlinearFactorGraph& graph,
     const gtsam::Values& estimate, string filename);
 
