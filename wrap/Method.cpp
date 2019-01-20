@@ -200,6 +200,6 @@ void Method::emit_cython_pyx(FileWriter& file, const Class& cls) const {
     file.oss << "            pass\n";
   }
   file.oss
-      << "        raise TypeError('Incorrect arguments for method call.')\n\n";
+      << "        raise TypeError('Incorrect arguments or types for method call.')\n\n";
 }
 /* ************************************************************************* */
