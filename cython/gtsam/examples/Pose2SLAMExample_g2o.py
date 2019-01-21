@@ -18,7 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import gtsam
-from utils import plot
+from gtsam.utils import plot
 
 
 def vector3(x, y, z):

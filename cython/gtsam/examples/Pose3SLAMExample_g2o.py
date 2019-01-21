@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 import gtsam
-from utils import plot
+from gtsam.utils import plot
 
 
 def vector6(x, y, z, a, b, c):
