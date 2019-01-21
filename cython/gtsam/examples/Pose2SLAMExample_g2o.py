@@ -6,66 +6,61 @@ Authors: Frank Dellaert, et al. (see THANKS for the full author list)
 
 See LICENSE for the license information
 
-A 2D Pose SLAM example that reads input from g2o, converts it to a factor graph and does the optimization. Output is written on a file, in g2o format 
-
-Syntax for the script is "python ./Pose2SLAMExample_g2o.py input.g2o output.g2o"
+A 2D Pose SLAM example that reads input from g2o, converts it to a factor graph
+and does the optimization. Output is written on a file, in g2o format
 """
 # pylint: disable=invalid-name, E1101
 
 from __future__ import print_function
+import argparse
 import math
 import numpy as np
+import matplotlib.pyplot as plt
+
 import gtsam
-import sys
+from utils import plot
 
 
 def vector3(x, y, z):
     """Create 3d double numpy array."""
     return np.array([x, y, z], dtype=np.float)
 
-kernelType = "none"
-maxIterations = 100 # default
-g2oFile = gtsam.findExampleDataFile("noisyToyGraph.txt") # default
 
-if len(sys.argv) > 1:
-    g2ofile = str(sys.argv[1])
-    print ("Input file: ",g2ofile)
-if len(sys.argv) > 3:
-    maxIterations = int(sys.argv[3])
-    print("Sepficied max iterations: ", maxIterations)
-if len(sys.argv) > 4:
-    kernelType = sys.argv[4]
+parser = argparse.ArgumentParser(
+    description="A 2D Pose SLAM example that reads input from g2o, "
+                "converts it to a factor graph and does the optimization. "
+                "Output is written on a file, in g2o format")
+parser.add_argument('-i', '--input', help='input file g2o format')
+parser.add_argument('-o', '--output',
+                    help="the path to the output file with optimized graph")
+parser.add_argument('-m', '--maxiter', type=int,
+                    help="maximum number of iterations for optimizer")
+parser.add_argument('-k', '--kernel', choices=['none', 'huber', 'tukey'],
+                    default="none", help="Type of kernel used")
+parser.add_argument("-p", "--plot", action="store_true",
+                    help="Flag to plot results")
+args = parser.parse_args()
 
-is3D = False # readG2o 3d parameter not available at time of this writing
+g2oFile = gtsam.findExampleDataFile("noisyToyGraph.txt") if args.input is None\
+    else args.input
 
-if kernelType is "none":
-    graph, initial = gtsam.readG2o(g2oFile)
-if kernelType is "huber":
-    print("Using robust kernel: huber - NOT CURRENTLY IMPLEMENTED IN PYTHON")
-    #graph, initial = gtsam.readG2o(g2oFile,is3D, KernelFunctionTypeHUBER)
-if kernelType is "tukey":
-    print("Using robust kernel: tukey - NOT CURRENTLY IMPLEMENTED IN PYTHON")
-    #graph, initial = gtsam.readG2o(g2oFile,is3D, KernelFunctionTypeTUKEY)
+maxIterations = 100 if args.maxiter is None else args.maxiter
+
+is3D = False
+
+graph, initial = gtsam.readG2o(g2oFile, is3D)
+
+assert args.kernel == "none", "Supplied kernel type is not yet implemented"
 
 # Add prior on the pose having index (key) = 0
 graphWithPrior = graph
 priorModel = gtsam.noiseModel_Diagonal.Variances(vector3(1e-6, 1e-6, 1e-8))
 graphWithPrior.add(gtsam.PriorFactorPose2(0, gtsam.Pose2(), priorModel))
-print("Adding prior on pose 0 ")
-
-print("\nFactor Graph:\n{}".format(graph)) 
-
-print("\nInitial Estimate:\n{}".format(initial))
 
 params = gtsam.GaussNewtonParams()
 params.setVerbosity("Termination")
-
-if (sys.argv > 3):
-    params.setMaxIterations(maxIterations)
-    print("User setting: required to perform maximum ", maxIterations," iterations ")
-
-#parameters.setRelativeErrorTol(1e-5)
-
+params.setMaxIterations(maxIterations)
+# parameters.setRelativeErrorTol(1e-5)
 # Create the optimizer ...
 optimizer = gtsam.GaussNewtonOptimizer(graphWithPrior, initial, params)
 # ... and optimize
@@ -75,11 +70,20 @@ print("Optimization complete")
 print("initial error = ", graph.error(initial))
 print("final error = ", graph.error(result))
 
-if len(sys.argv) < 3:
+
+if args.output is None:
+    print("\nFactor Graph:\n{}".format(graph))
+    print("\nInitial Estimate:\n{}".format(initial))
     print("Final Result:\n{}".format(result))
 else:
-    outputFile = sys.argv[2]
+    outputFile = args.output
     print("Writing results to file: ", outputFile)
-    graphNoKernel, initial2 = gtsam.readG2o(g2oFile)
+    graphNoKernel, _ = gtsam.readG2o(g2oFile, is3D)
     gtsam.writeG2o(graphNoKernel, result, outputFile)
     print ("Done!")
+
+if args.plot:
+    resultPoses = gtsam.extractPose2(result)
+    for i in range(resultPoses.shape[0]):
+        plot.plot_pose2(1, gtsam.Pose2(resultPoses[i, :]))
+    plt.show()
