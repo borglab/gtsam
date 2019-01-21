@@ -61,9 +61,9 @@ public:
    * @param timestamps an (optional) map from keys to real time stamps
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
-      const Values& newTheta = Values(), //
-      const KeyTimestampMap& timestamps = KeyTimestampMap(),
-      const FastVector<size_t>& factorToRemove = FactorIndices());
+                const Values& newTheta = Values(), //
+                const KeyTimestampMap& timestamps = KeyTimestampMap(),
+                const FastVector<size_t>& factorsToRemove = FactorIndices());
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only

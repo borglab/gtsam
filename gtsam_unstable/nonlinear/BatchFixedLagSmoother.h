@@ -47,8 +47,10 @@ public:
   virtual bool equals(const FixedLagSmoother& rhs, double tol = 1e-9) const;
 
   /** Add new factors, updating the solution and relinearizing as needed. */
-  Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const KeyTimestampMap& timestamps = KeyTimestampMap(), const FastVector<size_t>& factorToRemove = FastVector<size_t>());
+  Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
+                const Values& newTheta = Values(),
+                const KeyTimestampMap& timestamps = KeyTimestampMap(),
+                const FastVector<size_t>& factorsToRemove = FastVector<size_t>());
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
