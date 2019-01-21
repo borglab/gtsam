@@ -59,6 +59,7 @@ public:
    * @param newFactors new factors on old and/or new variables
    * @param newTheta new values for new variables only
    * @param timestamps an (optional) map from keys to real time stamps
+   * @param factorsToRemove an (optional) list of factors to remove.
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
                 const Values& newTheta = Values(), //
