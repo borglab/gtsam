@@ -118,7 +118,7 @@ protected:
   ISAM2 isam_;
 
   /** Store results of latest isam2 update */
-  ISAM2Result isamResult_;
+  struct ISAM2Result isamResult_;
 
   /** Erase any keys associated with timestamps before the provided time */
   void eraseKeysBefore(double timestamp);
