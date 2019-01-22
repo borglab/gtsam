@@ -295,17 +295,16 @@ private:
     ar & BOOST_SERIALIZATION_NVP(r_);
   }
 
-#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
 public:
-  // Make sure Pose2 is aligned if it contains a Vector2
+  // Align for Point2, which is either derived from, or is typedef, of Vector2
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 }; // Pose2
 
 /** specialization for pose2 wedge function (generic template in Lie.h) */
 template <>
 inline Matrix wedge<Pose2>(const Vector& xi) {
-  return Pose2::wedge(xi(0),xi(1),xi(2));
+  // NOTE(chris): Need eval() as workaround for Apple clang + avx2.
+  return Matrix(Pose2::wedge(xi(0),xi(1),xi(2))).eval();
 }
 
 /**
