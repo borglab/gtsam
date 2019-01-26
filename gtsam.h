@@ -2316,6 +2316,21 @@ virtual class BearingFactor : gtsam::NoiseModelFactor {
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Pose2, gtsam::Rot2> BearingFactorPose2;
 
+#include <gtsam/geometry/BearingRange.h>
+template <POSE, POINT, BEARING, RANGE>
+class BearingRange {
+  BearingRange(const BEARING& b, const RANGE& r);
+  BEARING bearing() const;
+  RANGE range() const;
+  // TODO(frank): can't class instance itself?
+  // static gtsam::BearingRange Measure(const POSE& pose, const POINT& point);
+  static BEARING MeasureBearing(const POSE& pose, const POINT& point);
+  static RANGE MeasureRange(const POSE& pose, const POINT& point);
+  void print(string s) const;
+};
+
+typedef gtsam::BearingRange<gtsam::Pose2, gtsam::Point2, gtsam::Rot2, double> BearingRange2D;
+
 #include <gtsam/sam/BearingRangeFactor.h>
 template<POSE, POINT, BEARING, RANGE>
 virtual class BearingRangeFactor : gtsam::NoiseModelFactor {

@@ -44,11 +44,11 @@ struct Range;
  * For example BearingRange<Pose2,Point2>(pose,point) will return pair<Rot2,double>
  * and BearingRange<Pose3,Point3>(pose,point) will return pair<Unit3,double>
  */
-template <typename A1, typename A2>
+template <typename A1, typename A2,
+          typename B = typename Bearing<A1, A2>::result_type,
+          typename R = typename Range<A1, A2>::result_type>
 struct BearingRange {
 private:
-  typedef typename Bearing<A1, A2>::result_type B;
-  typedef typename Range<A1, A2>::result_type R;
   B bearing_;
   R range_;
 
@@ -89,6 +89,16 @@ public:
     if (H1) *H1 << HB1, HR1;
     if (H2) *H2 << HB2, HR2;
     return BearingRange(b, r);
+  }
+
+  /// Predict bearing
+  static B MeasureBearing(const A1& a1, const A2& a2) {
+    return Bearing<A1, A2>()(a1, a2);
+  }
+
+  /// Predict range
+  static R MeasureRange(const A1& a1, const A2& a2) {
+    return Range<A1, A2>()(a1, a2);
   }
 
   /// @}
@@ -170,8 +180,8 @@ struct HasBearing {
   typedef RT result_type;
   RT operator()(
       const A1& a1, const A2& a2,
-      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1,
-      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2) {
+      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1=boost::none,
+      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2=boost::none) {
     return a1.bearing(a2, H1, H2);
   }
 };
@@ -184,8 +194,8 @@ struct HasRange {
   typedef RT result_type;
   RT operator()(
       const A1& a1, const A2& a2,
-      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1,
-      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2) {
+      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1=boost::none,
+      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2=boost::none) {
     return a1.range(a2, H1, H2);
   }
 };
