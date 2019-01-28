@@ -19,7 +19,7 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   # wrap gtsam_unstable
   if(GTSAM_BUILD_UNSTABLE)
     add_custom_target(gtsam_unstable_header DEPENDS "../gtsam_unstable/gtsam_unstable.h")
-    set(GTSAM_UNSTABLE_IMPORT "from gtsam_unstable import *")
+    set(GTSAM_UNSTABLE_IMPORT "from .gtsam_unstable import *")
     wrap_and_install_library_cython("../gtsam_unstable/gtsam_unstable.h" # interface_header
                                     "from gtsam.gtsam cimport *"                  # extra imports
                                     "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" # install path
