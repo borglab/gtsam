@@ -111,7 +111,7 @@ public:
   }
 
   /// Get results of latest isam2 update
-  const ISAM2Result& ISAM2Result() const {return isamResult_;}
+  const ISAM2Result& getISAM2Result() const{ return isamResult_; }
 
 protected:
   /** An iSAM2 object used to perform inference. The smoother lag is controlled
@@ -119,7 +119,7 @@ protected:
   ISAM2 isam_;
 
   /** Store results of latest isam2 update */
-  struct ISAM2Result isamResult_;
+  ISAM2Result isamResult_;
 
   /** Erase any keys associated with timestamps before the provided time */
   void eraseKeysBefore(double timestamp);
