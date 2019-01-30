@@ -35,6 +35,11 @@ function(set_up_required_cython_packages)
   include_directories(${NUMPY_INCLUDE_DIRS})
 endfunction()
 
+execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
+    "from __future__ import print_function;import sys;print(sys.version[0], end='')"
+    OUTPUT_VARIABLE PYTHON_MAJOR_VERSION
+)
+
 # Convert pyx to cpp by executing cython
 # This is the first step to compile cython from the command line
 # as described at: http://cython.readthedocs.io/en/latest/src/reference/compilation.html
@@ -52,7 +57,7 @@ function(pyx_to_cpp target pyx_file generated_cpp include_dirs)
   add_custom_command(
     OUTPUT ${generated_cpp}
     COMMAND
-      ${CYTHON_EXECUTABLE} -X boundscheck=False -v --fast-fail --cplus ${includes_for_cython} ${pyx_file} -o ${generated_cpp}
+    ${CYTHON_EXECUTABLE} -X boundscheck=False -v --fast-fail --cplus -${PYTHON_MAJOR_VERSION} ${includes_for_cython} ${pyx_file} -o ${generated_cpp}
     VERBATIM)
   add_custom_target(${target} ALL DEPENDS ${generated_cpp})
 endfunction()
