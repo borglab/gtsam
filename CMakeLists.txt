@@ -1,6 +1,6 @@
 
 project(GTSAM CXX C)
-cmake_minimum_required(VERSION 2.8.4)
+cmake_minimum_required(VERSION 3.0)
 
 # new feature to Cmake Version > 2.8.12
 # Mac ONLY. Define Relative Path on Mac OS
@@ -121,12 +121,11 @@ if(MSVC)
 	# If we use Boost shared libs, disable auto linking.
 	# Some libraries, at least Boost Program Options, rely on this to export DLL symbols.
 	if(NOT Boost_USE_STATIC_LIBS)
-		add_definitions(-DBOOST_ALL_NO_LIB)
-	  add_definitions(-DBOOST_ALL_DYN_LINK)
+		list(APPEND GTSAM_COMPILE_DEFINITIONS BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
 	endif()
 	# Virtual memory range for PCH exceeded on VS2015
 	if(MSVC_VERSION LESS 1910) # older than VS2017
-	  add_definitions(-Zm295)
+	  list(APPEND GTSAM_COMPILE_OPTIONS -Zm295)
 	endif()
 endif()
 
@@ -141,14 +140,19 @@ endif()
 option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
 # Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 set(GTSAM_BOOST_LIBRARIES
-    ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY}
-	${Boost_THREAD_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_REGEX_LIBRARY})
+  Boost::serialization
+  Boost::system
+  Boost::filesystem
+  Boost::thread
+  Boost::date_time
+  Boost::regex
+)
 if (GTSAM_DISABLE_NEW_TIMERS)
     message("WARNING:  GTSAM timing instrumentation manually disabled")
-    add_definitions(-DGTSAM_DISABLE_NEW_TIMERS)
+    list(APPEND GTSAM_COMPILE_DEFINITIONS DGTSAM_DISABLE_NEW_TIMERS)
 else()
     if(Boost_TIMER_LIBRARY)
-      list(APPEND GTSAM_BOOST_LIBRARIES ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
+      list(APPEND GTSAM_BOOST_LIBRARIES Boost::timer Boost::chrono)
     else()
       list(APPEND GTSAM_BOOST_LIBRARIES rt) # When using the header-only boost timer library, need -lrt
       message("WARNING:  GTSAM timing instrumentation will use the older, less accurate, Boost timer library because boost older than 1.48 was found.")
@@ -158,7 +162,7 @@ endif()
 
 if(NOT (${Boost_VERSION} LESS 105600))
 	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
-	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES -DBOOST_OPTIONAL_CONFIG_ALLOW_BINDING_TO_RVALUES)
+	list(APPEND GTSAM_COMPILE_DEFINITIONS BOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES BOOST_OPTIONAL_CONFIG_ALLOW_BINDING_TO_RVALUES)
 endif()
 
 ###############################################################################
@@ -279,9 +283,9 @@ endif()
 if (MSVC)
 	if (BUILD_SHARED_LIBS)
 		# mute eigen static assert to avoid errors in shared lib
-		add_definitions(-DEIGEN_NO_STATIC_ASSERT)
+		list(APPEND GTSAM_COMPILE_DEFINITIONS DEIGEN_NO_STATIC_ASSERT)
 	endif()
-	add_definitions(/wd4244) # Disable loss of precision which is thrown all over our Eigen
+	list(APPEND GTSAM_COMPILE_OPTIONS "/wd4244") # Disable loss of precision which is thrown all over our Eigen
 endif()
 
 ###############################################################################
@@ -347,27 +351,27 @@ include_directories(BEFORE
   CppUnitLite)
 
 if(MSVC)
-	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661 /wd4344 /wd4503) # Disable non-DLL-exported base class and other warnings
-	add_definitions(/bigobj) # Allow large object files for template-based code
+	list(APPEND GTSAM_COMPILE_DEFINITIONS _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
+	list(APPEND GTSAM_COMPILE_OPTIONS /wd4251 /wd4275 /wd4251 /wd4661 /wd4344 /wd4503) # Disable non-DLL-exported base class and other warnings
+	list(APPEND GTSAM_COMPILE_OPTIONS /bigobj) # Allow large object files for template-based code
 endif()
 
 # GCC 4.8+ complains about local typedefs which we use for shared_ptr etc.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
-    add_definitions(-Wno-unused-local-typedefs)
+    list(APPEND GTSAM_COMPILE_OPTIONS -Wno-unused-local-typedefs)
   endif()
 endif()
 
 # As of XCode 7, clang also complains about this
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
-    add_definitions(-Wno-unused-local-typedefs)
+    list(APPEND GTSAM_COMPILE_OPTIONS -Wno-unused-local-typedefs)
   endif()
 endif()
 
 if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
-  add_definitions(-DGTSAM_EXTRA_CONSISTENCY_CHECKS)
+  list(APPEND GTSAM_COMPILE_DEFINITIONS GTSAM_EXTRA_CONSISTENCY_CHECKS)
 endif()
 
 ###############################################################################
