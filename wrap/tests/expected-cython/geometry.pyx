@@ -3,9 +3,9 @@
 cimport numpy as np
 import numpy as npp
 cimport geometry
-from geometry cimport shared_ptr
-from geometry cimport dynamic_pointer_cast
-from geometry cimport make_shared
+from .geometry cimport shared_ptr
+from .geometry cimport dynamic_pointer_cast
+from .geometry cimport make_shared
 # C helper function that copies all arguments into a positional list.
 cdef list process_args(list keywords, tuple args, dict kwargs):
    cdef str keyword
