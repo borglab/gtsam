@@ -28,7 +28,7 @@ setup(
 
     packages=packages,
     package_data={package:
-        [f for f in os.listdir(package) if os.path.splitext(f)[1] == '.so']
+        [f for f in os.listdir(package.replace('.', os.path.sep)) if os.path.splitext(f)[1] == '.so']
         for package in packages
     },
     install_requires=open('${PROJECT_SOURCE_DIR}/cython/requirements.txt', 'r').read().splitlines()
