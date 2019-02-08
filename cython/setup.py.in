@@ -1,7 +1,14 @@
+import os
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
+
+
+packages = ['gtsam', 'gtsam_eigency']
+if ${GTSAM_BUILD_UNSTABLE}:
+    packages += 'gtsam_unstable'
+
 
 setup(
     name='gtsam',
@@ -23,6 +30,10 @@ setup(
         'Programming Language :: Python :: 3',
     ],
 
-    packages=['gtsam', 'gtsam_eigency'],
+    packages=packages,
+    package_data={package:
+        [f for f in os.listdir(package) if os.path.splitext(f)[1] == '.so']
+        for package in packages
+    },
     install_requires=open('${PROJECT_SOURCE_DIR}/cython/requirements.txt', 'r').read().splitlines()
 )
