@@ -17,10 +17,12 @@ named **gtsam_eigency**, to interface between C++'s Eigen and Python's numpy.
 The wrapped module will be installed to `GTSAM_CYTHON_INSTALL_PATH`, which is
 by default: `<your CMAKE_INSTALL_PREFIX>/cython`
 
-- Modify your `PYTHONPATH` to include the `GTSAM_CYTHON_INSTALL_PATH`:
+- To use the library without installing system-wide: modify your `PYTHONPATH` to include the `GTSAM_CYTHON_INSTALL_PATH`:
 ```bash
 export PYTHONPATH=$PYTHONPATH:<GTSAM_CYTHON_INSTALL_PATH>
 ```
+- To install system-wide: navigate to `GTSAM_CYTHON_INSTALL_PATH` and run `python setup.py install`
+    - (the same command can be used to install into a virtual environment if it is active)
 
 UNIT TESTS
 ==========
