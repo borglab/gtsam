@@ -31,7 +31,7 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   # Install the custom-generated __init__.py
   # This is to make the build/cython/gtsam folder a python package, so gtsam can be found while wrapping gtsam_unstable
   configure_file(${PROJECT_SOURCE_DIR}/cython/setup.py.in ${PROJECT_BINARY_DIR}/cython/setup.py)
-  install_cython_files("${PROJECT_BINARY_DIR}/cython/setup.py" "${GTSAM_CYTHON_INSTALL_PATH}/")
+  install_cython_files("${PROJECT_BINARY_DIR}/cython/setup.py" "${GTSAM_CYTHON_INSTALL_PATH}")
   # install scripts and tests
   install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
   install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam_unstable" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
