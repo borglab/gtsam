@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -244,7 +244,7 @@ namespace gtsam {
         else if (key < k) node = node->right.root_.get();
         else return node->value();
       }
-      
+
       throw std::invalid_argument("BTree::find: key not found");
     }
 

@@ -11,7 +11,7 @@
 
 /**
  * @file    DoglegOptimizer.cpp
- * @brief   
+ * @brief
  * @author  Richard Roberts
  * @date   Feb 26, 2012
  */

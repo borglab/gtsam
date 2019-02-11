@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -110,7 +110,7 @@ bool files_equal(const string& expected, const string& actual, bool skipheader) 
 /* ************************************************************************* */
 string maybe_shared_ptr(bool add, const string& qtype, const string& type) {
   string str = add? "Shared" : "";
-  if (add) str += type; 
+  if (add) str += type;
   else str += qtype;
   return str;
 }

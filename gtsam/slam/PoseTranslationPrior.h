@@ -2,7 +2,7 @@
  * @file PoseTranslationPrior.h
  *
  * @brief Implements a prior on the translation component of a pose
- * 
+ *
  * @date Jun 14, 2012
  * @author Alex Cunningham
  */

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -54,7 +54,7 @@ int main()
 {
   // create a linear factor
   Matrix Ax2 = (Matrix(8, 2) <<
-           // x2  
+           // x2
            -5., 0.,
            +0.,-5.,
            10., 0.,
@@ -64,9 +64,9 @@ int main()
            10., 0.,
            +0.,10.
            ).finished();
-                     
+
   Matrix Al1 = (Matrix(8, 10) <<
-           // l1     
+           // l1
            5., 0.,1.,2.,3.,4.,5.,6.,7.,8.,
            0., 5.,1.,2.,3.,4.,5.,6.,7.,8.,
            0., 0.,1.,2.,3.,4.,5.,6.,7.,8.,
@@ -76,7 +76,7 @@ int main()
            0., 0.,1.,2.,3.,4.,5.,6.,7.,8.,
            0., 0.,1.,2.,3.,4.,5.,6.,7.,8.
            ).finished();
-                     
+
   Matrix Ax1 = (Matrix(8, 2) <<
            // x1
            0.00,  0.,1.,2.,3.,4.,5.,6.,7.,8.,
@@ -99,7 +99,7 @@ int main()
   b2(5) = 1.5;
   b2(6) = 2;
   b2(7) = -1;
-  
+
   // time eliminate
   JacobianFactor combined(_x2_, Ax2,  _l1_, Al1, _x1_, Ax1, b2, noiseModel::Isotropic::Sigma(8,1));
   long timeLog = clock();

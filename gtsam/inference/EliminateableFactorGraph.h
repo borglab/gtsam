@@ -99,7 +99,7 @@ namespace gtsam {
 
     /** Do sequential elimination of all variables to produce a Bayes net.  If an ordering is not
      *  provided, the ordering provided by COLAMD will be used.
-     *  
+     *
      *  <b> Example - Full Cholesky elimination in COLAMD order: </b>
      *  \code
      *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(EliminateCholesky);
@@ -108,12 +108,12 @@ namespace gtsam {
      *  <b> Example - METIS ordering for elimination
      *  \code
      *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(OrderingType::METIS);
-     *  
+     *
      *  <b> Example - Full QR elimination in specified order:
      *  \code
      *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(EliminateQR, myOrdering);
      *  \endcode
-     *  
+     *
      *  <b> Example - Reusing an existing VariableIndex to improve performance, and using COLAMD ordering: </b>
      *  \code
      *  VariableIndex varIndex(graph); // Build variable index
@@ -130,17 +130,17 @@ namespace gtsam {
     /** Do multifrontal elimination of all variables to produce a Bayes tree.  If an ordering is not
      *  provided, the ordering will be computed using either COLAMD or METIS, dependeing on
      *  the parameter orderingType (Ordering::COLAMD or Ordering::METIS)
-     *  
+     *
      *  <b> Example - Full Cholesky elimination in COLAMD order: </b>
      *  \code
      *  boost::shared_ptr<GaussianBayesTree> result = graph.eliminateMultifrontal(EliminateCholesky);
      *  \endcode
-     *  
+     *
      *  <b> Example - Full QR elimination in specified order:
      *  \code
      *  boost::shared_ptr<GaussianBayesTree> result = graph.eliminateMultifrontal(EliminateQR, myOrdering);
      *  \endcode
-     *  
+     *
      *  <b> Example - Reusing an existing VariableIndex to improve performance, and using COLAMD ordering: </b>
      *  \code
      *  VariableIndex varIndex(graph); // Build variable index
@@ -183,7 +183,7 @@ namespace gtsam {
       const Ordering& ordering,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
-    
+
     /** Do multifrontal elimination of the given \c variables in an ordering computed by COLAMD to
      *  produce a Bayes net and a remaining factor graph.  This computes the factorization \f$ p(X)
      *  = p(A|B) p(B) \f$, where \f$ A = \f$ \c variables, \f$ X \f$ is all the variables in the

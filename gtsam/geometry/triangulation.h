@@ -65,7 +65,7 @@ GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
  */
 GTSAM_EXPORT Point3 triangulateDLT(
     const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
-    const Point2Vector& measurements, 
+    const Point2Vector& measurements,
     double rank_tol = 1e-9);
 
 /**

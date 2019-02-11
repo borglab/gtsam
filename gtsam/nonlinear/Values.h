@@ -415,7 +415,7 @@ namespace gtsam {
 
     static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
       return ConstKeyValuePair(key_value.first, *key_value.second); }
-    
+
     static KeyValuePair make_deref_pair(const KeyValueMap::iterator::value_type& key_value) {
       return KeyValuePair(key_value.first, *key_value.second); }
 

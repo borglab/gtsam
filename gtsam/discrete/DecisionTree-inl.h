@@ -355,7 +355,7 @@ namespace gtsam {
     NodePtr choose(const L& label, size_t index) const {
       if (label_ == label)
         return branches_[index]; // choose branch
-    
+
       // second case, not label of interest, just recurse
       boost::shared_ptr<Choice> r(new Choice(label_, branches_.size()));
       for(const NodePtr& branch: branches_)

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -110,7 +110,7 @@ protected:
 //*****************************************************************************
 
 void checkArguments(const string& name, int nargout, int nargin, int expected) {
-  stringstream err; 
+  stringstream err;
   err << name << " expects " << expected << " arguments, not " << nargin;
   if (nargin!=expected)
     error(err.str().c_str());

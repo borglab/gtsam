@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -12,7 +12,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 //
 // TEST.H
-// 
+//
 // This file contains the Test class along with the macros which make effective
 // in the harness.
 //
@@ -66,7 +66,7 @@ protected:
             virtual ~testGroup##testName##Test () {};\
             void run (TestResult& result_);} \
     testGroup##testName##Instance; \
-  void testGroup##testName##Test::run (TestResult& result_) 
+  void testGroup##testName##Test::run (TestResult& result_)
 
 /**
  * Declare friend in a class to test its private methods

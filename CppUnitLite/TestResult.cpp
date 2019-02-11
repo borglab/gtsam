@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -22,12 +22,12 @@ TestResult::TestResult ()
 }
 
 
-void TestResult::testsStarted () 
+void TestResult::testsStarted ()
 {
 }
 
 
-void TestResult::addFailure (const Failure& failure) 
+void TestResult::addFailure (const Failure& failure)
 {
   if (failure.lineNumber < 0) // allow for no line number
     fprintf (stdout, "%s%s%s%s\n",
@@ -48,7 +48,7 @@ void TestResult::addFailure (const Failure& failure)
 }
 
 
-void TestResult::testsEnded () 
+void TestResult::testsEnded ()
 {
   if (failureCount > 0)
     fprintf (stdout, "There were %d failures\n", failureCount);

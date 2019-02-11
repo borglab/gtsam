@@ -46,7 +46,7 @@ TEST( InvDepthFactorVariant3, optimize) {
   Vector3 expected((Vector(3) << theta, phi, rho).finished());
 
 
-  
+
   // Create a factor graph with two inverse depth factors and two pose priors
   Key poseKey1(1);
   Key poseKey2(2);
@@ -72,7 +72,7 @@ TEST( InvDepthFactorVariant3, optimize) {
   LevenbergMarquardtParams params;
   Values result = LevenbergMarquardtOptimizer(graph, values, params).optimize();
   Vector3 actual = result.at<Vector3>(landmarkKey);
-  
+
 
 
   // Test that the correct landmark parameters have been recovered

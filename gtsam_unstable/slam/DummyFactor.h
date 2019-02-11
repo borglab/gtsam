@@ -2,7 +2,7 @@
  * @file DummyFactor.h
  *
  * @brief A simple factor that can be used to trick gtsam solvers into believing a graph is connected.
- * 
+ *
  * @date Sep 10, 2012
  * @author Alex Cunningham
  */

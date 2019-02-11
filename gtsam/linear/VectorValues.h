@@ -140,7 +140,7 @@ namespace gtsam {
     /** Check whether a variable with key \c j exists. */
     bool exists(Key j) const { return find(j) != end(); }
 
-    /** 
+    /**
      * Read/write access to the vector value with key \c j, throws
      * std::out_of_range if \c j does not exist, identical to operator[](Key).
      */
@@ -153,7 +153,7 @@ namespace gtsam {
         return item->second;
     }
 
-    /** 
+    /**
      * Access the vector value with key \c j (const version), throws
      * std::out_of_range if \c j does not exist, identical to operator[](Key).
      */
@@ -220,15 +220,15 @@ namespace gtsam {
     iterator end()               { return values_.end(); }    ///< Iterator over variables
     const_iterator end() const   { return values_.end(); }    ///< Iterator over variables
 
-    /** 
+    /**
      * Return the iterator corresponding to the requested key, or end() if no
-     * variable is present with this key. 
+     * variable is present with this key.
      */
     iterator find(Key j) { return values_.find(j); }
 
-    /** 
+    /**
      * Return the iterator corresponding to the requested key, or end() if no
-     * variable is present with this key. 
+     * variable is present with this key.
      */
     const_iterator find(Key j) const { return values_.find(j); }
 

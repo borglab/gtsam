@@ -28,7 +28,7 @@ namespace gtsam {
  * This class implements the active set algorithm for solving convex
  * Programming problems.
  *
- * @tparam PROBLEM Type of the problem to solve, e.g. LP (linear program) or 
+ * @tparam PROBLEM Type of the problem to solve, e.g. LP (linear program) or
  *                 QP (quadratic program).
  * @tparam POLICY specific detail policy tailored for the particular program
  * @tparam INITSOLVER Solver for an initial feasible solution of this problem.
@@ -70,7 +70,7 @@ protected:
                                  dual graphs */
 
   /// Vector of key matrix pairs. Matrices are usually the A term for a factor.
-  typedef std::vector<std::pair<Key, Matrix> > TermsContainer; 
+  typedef std::vector<std::pair<Key, Matrix> > TermsContainer;
 
 public:
   /// Constructor
@@ -100,18 +100,18 @@ public:
 
 protected:
   /**
-   * Compute minimum step size alpha to move from the current point @p xk to the 
-   * next feasible point along a direction @p p:  x' = xk + alpha*p, 
-   * where alpha \in [0,maxAlpha]. 
-   * 
+   * Compute minimum step size alpha to move from the current point @p xk to the
+   * next feasible point along a direction @p p:  x' = xk + alpha*p,
+   * where alpha \in [0,maxAlpha].
+   *
    * For QP, maxAlpha = 1. For LP: maxAlpha = Inf.
    *
    * @return a tuple of (minAlpha, closestFactorIndex) where closestFactorIndex
-   * is the closest inactive inequality constraint that blocks xk to move 
-   * further and that has the minimum alpha, or (-1, maxAlpha) if there is no 
+   * is the closest inactive inequality constraint that blocks xk to move
+   * further and that has the minimum alpha, or (-1, maxAlpha) if there is no
    * such inactive blocking constraint.
-   * 
-   * If there is a blocking constraint, the closest one will be added to the 
+   *
+   * If there is a blocking constraint, the closest one will be added to the
    * working set and become active in the next iteration.
    */
   boost::tuple<double, int> computeStepSize(
@@ -119,15 +119,15 @@ protected:
       const VectorValues& p, const double& maxAlpha) const;
 
   /**
-   * Finds the active constraints in the given factor graph and returns the 
+   * Finds the active constraints in the given factor graph and returns the
    * Dual Jacobians used to build a dual factor graph.
    */
   template<typename FACTOR>
   TermsContainer collectDualJacobians(Key key, const FactorGraph<FACTOR>& graph,
       const VariableIndex& variableIndex) const {
     /*
-     * Iterates through each factor in the factor graph and checks 
-     * whether it's active. If the factor is active it reutrns the A 
+     * Iterates through each factor in the factor graph and checks
+     * whether it's active. If the factor is active it reutrns the A
      * term of the factor.
      */
     TermsContainer Aterms;
@@ -167,7 +167,7 @@ public: /// Just for testing...
   GaussianFactorGraph buildWorkingGraph(
       const InequalityFactorGraph& workingSet,
       const VectorValues& xk = VectorValues()) const;
-  
+
   /// Iterate 1 step, return a new state with a new workingSet and values
   State iterate(const State& state) const;
 
