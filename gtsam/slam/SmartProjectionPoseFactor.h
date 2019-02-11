@@ -52,12 +52,12 @@ private:
 
 protected:
 
-  boost::shared_ptr<CALIBRATION> K_; ///< calibration object (one for all cameras)
+  std::shared_ptr<CALIBRATION> K_; ///< calibration object (one for all cameras)
 
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /**
    * Default constructor, only for serialization
@@ -126,7 +126,7 @@ public:
   }
 
   /** return calibration shared pointers */
-  inline const boost::shared_ptr<CALIBRATION> calibration() const {
+  inline const std::shared_ptr<CALIBRATION> calibration() const {
     return K_;
   }
 

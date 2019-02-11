@@ -64,7 +64,7 @@ TEST( simulated2DOriented, constructor )
   simulated2DOriented::Values config;
   config.insert(X(1), Pose2(1., 0., 0.2));
   config.insert(X(2), Pose2(2., 0., 0.1));
-  boost::shared_ptr<GaussianFactor> lf = factor.linearize(config);
+  std::shared_ptr<GaussianFactor> lf = factor.linearize(config);
 }
 
 /* ************************************************************************* */

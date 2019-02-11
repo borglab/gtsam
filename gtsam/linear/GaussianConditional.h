@@ -39,7 +39,7 @@ namespace gtsam {
   {
   public:
     typedef GaussianConditional This; ///< Typedef to this class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
     typedef JacobianFactor BaseFactor; ///< Typedef to our factor base class
     typedef Conditional<BaseFactor, This> BaseConditional; ///< Typedef to our conditional base class
 

@@ -36,8 +36,8 @@ using namespace boost::assign;
 
 // Some common constants
 
-static const boost::shared_ptr<Cal3_S2> sharedCal = //
-    boost::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
+static const std::shared_ptr<Cal3_S2> sharedCal = //
+    std::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
 
 // Looking along X-axis, 1 meter above ground plane (x-y)
 static const Rot3 upright = Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2);
@@ -98,8 +98,8 @@ TEST( triangulation, twoPoses) {
 // Similar, but now with Bundler calibration
 TEST( triangulation, twoPosesBundler) {
 
-  boost::shared_ptr<Cal3Bundler> bundlerCal = //
-      boost::make_shared<Cal3Bundler>(1500, 0, 0, 640, 480);
+  std::shared_ptr<Cal3Bundler> bundlerCal = //
+      std::make_shared<Cal3Bundler>(1500, 0, 0, 640, 480);
   PinholeCamera<Cal3Bundler> camera1(pose1, *bundlerCal);
   PinholeCamera<Cal3Bundler> camera2(pose2, *bundlerCal);
 
@@ -335,7 +335,7 @@ TEST( triangulation, onePose) {
 //******************************************************************************
 TEST( triangulation, StereotriangulateNonlinear ) {
 
-  auto stereoK = boost::make_shared<Cal3_S2Stereo>(1733.75, 1733.75, 0, 689.645, 508.835, 0.0699612);
+  auto stereoK = std::make_shared<Cal3_S2Stereo>(1733.75, 1733.75, 0, 689.645, 508.835, 0.0699612);
 
   // two camera poses m1, m2
   Matrix4 m1, m2;

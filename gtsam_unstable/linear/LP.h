@@ -49,7 +49,7 @@ KeyDimMap collectKeyDim(const LinearGraph& linearGraph) {
  * Data structure of a Linear Program
  */
 struct LP {
-  using shared_ptr = boost::shared_ptr<LP>;
+  using shared_ptr = std::shared_ptr<LP>;
 
   LinearCost cost; //!< Linear cost factor
   EqualityFactorGraph equalities; //!< Linear equality constraints: cE(x) = 0

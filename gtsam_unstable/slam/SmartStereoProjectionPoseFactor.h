@@ -45,7 +45,7 @@ class SmartStereoProjectionPoseFactor: public SmartStereoProjectionFactor {
 
 protected:
 
-  std::vector<boost::shared_ptr<Cal3_S2Stereo> > K_all_; ///< shared pointer to calibration object (one for each camera)
+  std::vector<std::shared_ptr<Cal3_S2Stereo> > K_all_; ///< shared pointer to calibration object (one for each camera)
 
 public:
 
@@ -58,7 +58,7 @@ public:
   typedef SmartStereoProjectionPoseFactor This;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /**
    * Constructor
@@ -81,7 +81,7 @@ public:
    * @param K is the (fixed) camera calibration
    */
   void add(const StereoPoint2 measured, const Key poseKey,
-      const boost::shared_ptr<Cal3_S2Stereo> K) {
+      const std::shared_ptr<Cal3_S2Stereo> K) {
     Base::add(measured, poseKey);
     K_all_.push_back(K);
   }
@@ -93,7 +93,7 @@ public:
    * @param Ks vector of calibration objects
    */
   void add(std::vector<StereoPoint2> measurements, KeyVector poseKeys,
-      std::vector<boost::shared_ptr<Cal3_S2Stereo> > Ks) {
+      std::vector<std::shared_ptr<Cal3_S2Stereo> > Ks) {
     Base::add(measurements, poseKeys);
     for (size_t i = 0; i < measurements.size(); i++) {
       K_all_.push_back(Ks.at(i));
@@ -107,7 +107,7 @@ public:
    * @param K the (known) camera calibration (same for all measurements)
    */
   void add(std::vector<StereoPoint2> measurements, KeyVector poseKeys,
-      const boost::shared_ptr<Cal3_S2Stereo> K) {
+      const std::shared_ptr<Cal3_S2Stereo> K) {
     for (size_t i = 0; i < measurements.size(); i++) {
       Base::add(measurements.at(i), poseKeys.at(i));
       K_all_.push_back(K);
@@ -122,7 +122,7 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
     std::cout << s << "SmartStereoProjectionPoseFactor, z = \n ";
-    for(const boost::shared_ptr<Cal3_S2Stereo>& K: K_all_)
+    for(const std::shared_ptr<Cal3_S2Stereo>& K: K_all_)
     K->print("calibration = ");
     Base::print("", keyFormatter);
   }
@@ -147,7 +147,7 @@ public:
   }
 
   /** return the calibration object */
-  inline const std::vector<boost::shared_ptr<Cal3_S2Stereo> > calibration() const {
+  inline const std::vector<std::shared_ptr<Cal3_S2Stereo> > calibration() const {
     return K_all_;
   }
 

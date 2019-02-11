@@ -36,7 +36,7 @@ namespace gtsam {
   public:
 
     enum { dimension = 6 };
-    typedef boost::shared_ptr<Cal3_S2Stereo> shared_ptr;  ///< shared pointer to stereo calibration object
+    typedef std::shared_ptr<Cal3_S2Stereo> shared_ptr;  ///< shared pointer to stereo calibration object
 
     /// @name Standard Constructors
     /// @

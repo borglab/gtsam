@@ -22,7 +22,7 @@
 #include <gtsam/discrete/Potentials.h>
 #include <gtsam/inference/Ordering.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <vector>
 #include <exception>
@@ -42,7 +42,7 @@ namespace gtsam {
     // typedefs needed to play nice with gtsam
     typedef DecisionTreeFactor This;
     typedef DiscreteFactor Base; ///< Typedef to base class
-    typedef boost::shared_ptr<DecisionTreeFactor> shared_ptr;
+    typedef std::shared_ptr<DecisionTreeFactor> shared_ptr;
 
   public:
 

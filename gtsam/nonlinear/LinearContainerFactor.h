@@ -41,7 +41,7 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /** Primary constructor: store a linear factor with optional linearization point */
   GTSAM_EXPORT LinearContainerFactor(const JacobianFactor& factor, const Values& linearizationPoint = Values());

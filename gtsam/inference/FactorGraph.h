@@ -157,11 +157,11 @@ class FactorGraph {
    */
   void reserve(size_t size) { factors_.reserve(size); }
 
-  /// Add a factor directly using a shared_ptr.
-  template <class DERIVEDFACTOR>
-  IsDerived<DERIVEDFACTOR> push_back(boost::shared_ptr<DERIVEDFACTOR> factor) {
-    factors_.push_back(boost::shared_ptr<FACTOR>(factor));
-  }
+  /** Add a factor directly using a shared_ptr */
+  template<class DERIVEDFACTOR>
+  typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
+  push_back(std::shared_ptr<DERIVEDFACTOR> factor) {
+    factors_.push_back(std::shared_ptr<FACTOR>(factor));
 
   /// Emplace a shared pointer to factor of given type.
   template <class DERIVEDFACTOR, class... Args>

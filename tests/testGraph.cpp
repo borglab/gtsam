@@ -26,7 +26,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
@@ -96,7 +96,7 @@ TEST( Graph, composePoses )
 
   Pose2 rootPose = p2;
 
-  boost::shared_ptr<Values> actual = composePoses<NonlinearFactorGraph, BetweenFactor<Pose2>, Pose2, Key> (graph, tree, rootPose);
+  std::shared_ptr<Values> actual = composePoses<NonlinearFactorGraph, BetweenFactor<Pose2>, Pose2, Key> (graph, tree, rootPose);
 
   Values expected;
   expected.insert(1, p1);

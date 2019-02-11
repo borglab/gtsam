@@ -31,7 +31,7 @@ class DeltaFactor: public NoiseModelFactor2<Pose2, Point2> {
 public:
   typedef DeltaFactor This;
   typedef NoiseModelFactor2<Pose2, Point2> Base;
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
 private:
   Point2 measured_; ///< the measurement
@@ -60,7 +60,7 @@ class DeltaFactorBase: public NoiseModelFactor4<Pose2, Pose2, Pose2, Point2> {
 public:
   typedef DeltaFactorBase This;
   typedef NoiseModelFactor4<Pose2, Pose2, Pose2, Point2> Base;
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
 private:
   Point2 measured_; ///< the measurement
@@ -115,7 +115,7 @@ class OdometryFactorBase: public NoiseModelFactor4<Pose2, Pose2, Pose2, Pose2> {
 public:
   typedef OdometryFactorBase This;
   typedef NoiseModelFactor4<Pose2, Pose2, Pose2, Pose2> Base;
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
 private:
   Pose2 measured_; ///< the measurement

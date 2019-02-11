@@ -44,7 +44,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT MetisIndex {
 public:
-  typedef boost::shared_ptr<MetisIndex> shared_ptr;
+  typedef std::shared_ptr<MetisIndex> shared_ptr;
   typedef boost::bimap<Key, int32_t> bm_type;
 
 private:

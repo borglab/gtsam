@@ -39,7 +39,7 @@ namespace gtsam {
   {
   public:
     typedef GaussianFactor This; ///< This class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
     typedef Factor Base; ///< Our base class
 
     /** Default constructor creates empty factor */

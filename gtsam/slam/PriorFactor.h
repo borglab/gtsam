@@ -44,7 +44,7 @@ namespace gtsam {
   public:
 
     /// shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<PriorFactor<VALUE> > shared_ptr;
+    typedef typename std::shared_ptr<PriorFactor<VALUE> > shared_ptr;
 
     /// Typedef to this class
     typedef PriorFactor<VALUE> This;
@@ -66,7 +66,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */

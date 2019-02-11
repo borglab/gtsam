@@ -34,9 +34,9 @@
 namespace gtsam {
 namespace internal {
 
-GTSAM_EXPORT boost::shared_ptr<TimingOutline> gTimingRoot(
+GTSAM_EXPORT std::shared_ptr<TimingOutline> gTimingRoot(
     new TimingOutline("Total", getTicTocID("Total")));
-GTSAM_EXPORT boost::weak_ptr<TimingOutline> gCurrentTimer(gTimingRoot);
+GTSAM_EXPORT std::weak_ptr<TimingOutline> gCurrentTimer(gTimingRoot);
 
 /* ************************************************************************* */
 // Implementation of TimingOutline
@@ -83,7 +83,7 @@ void TimingOutline::print(const std::string& outline) const {
       << n_ << " times, " << wall() << " wall, " << secs() << " children, min: "
       << min() << " max: " << max() << ")\n";
   // Order children
-  typedef FastMap<size_t, boost::shared_ptr<TimingOutline> > ChildOrder;
+  typedef FastMap<size_t, std::shared_ptr<TimingOutline> > ChildOrder;
   ChildOrder childOrder;
   for(const ChildMap::value_type& child: children_) {
     childOrder[child.second->myOrder_] = child.second;
@@ -141,10 +141,10 @@ void TimingOutline::print2(const std::string& outline,
 }
 
 /* ************************************************************************* */
-const boost::shared_ptr<TimingOutline>& TimingOutline::child(size_t child,
-    const std::string& label, const boost::weak_ptr<TimingOutline>& thisPtr) {
+const std::shared_ptr<TimingOutline>& TimingOutline::child(size_t child,
+    const std::string& label, const std::weak_ptr<TimingOutline>& thisPtr) {
   assert(thisPtr.lock().get() == this);
-  boost::shared_ptr<TimingOutline>& result = children_[child];
+  std::shared_ptr<TimingOutline>& result = children_[child];
   if (!result) {
     // Create child if necessary
     result.reset(new TimingOutline(label, child));
@@ -236,7 +236,7 @@ size_t getTicTocID(const char *descriptionC) {
 /* ************************************************************************* */
 void tic(size_t id, const char *labelC) {
   const std::string label(labelC);
-  boost::shared_ptr<TimingOutline> node = //
+  std::shared_ptr<TimingOutline> node = //
       gCurrentTimer.lock()->child(id, label, gCurrentTimer);
   gCurrentTimer = node;
   node->tic();
@@ -244,7 +244,7 @@ void tic(size_t id, const char *labelC) {
 
 /* ************************************************************************* */
 void toc(size_t id, const char *label) {
-  boost::shared_ptr<TimingOutline> current(gCurrentTimer.lock());
+  std::shared_ptr<TimingOutline> current(gCurrentTimer.lock());
   if (id != current->id_) {
     gTimingRoot->print();
     throw std::invalid_argument(

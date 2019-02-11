@@ -27,7 +27,7 @@ namespace gtsam {
 
 //------------------------------------------------------------------------------
 ManifoldPreintegration::ManifoldPreintegration(
-    const boost::shared_ptr<Params>& p, const Bias& biasHat) :
+    const std::shared_ptr<Params>& p, const Bias& biasHat) :
     PreintegrationBase(p, biasHat) {
   resetIntegration();
 }

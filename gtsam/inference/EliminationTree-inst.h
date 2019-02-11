@@ -34,7 +34,7 @@ namespace gtsam {
   template<class BAYESNET, class GRAPH>
   typename EliminationTree<BAYESNET,GRAPH>::sharedFactor
     EliminationTree<BAYESNET,GRAPH>::Node::eliminate(
-    const boost::shared_ptr<BayesNetType>& output,
+    const std::shared_ptr<BayesNetType>& output,
     const Eliminate& function, const FastVector<sharedFactor>& childrenResults) const
   {
     // This function eliminates one node (Node::eliminate) - see below eliminate for the whole tree.
@@ -184,7 +184,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class BAYESNET, class GRAPH>
-  std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<GRAPH> >
+  std::pair<std::shared_ptr<BAYESNET>, std::shared_ptr<GRAPH> >
     EliminationTree<BAYESNET,GRAPH>::eliminate(Eliminate function) const
   {
     gttic(EliminationTree_eliminate);

@@ -61,7 +61,7 @@ double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& c
   // the factor graph already includes a factor for the prior/equality constraint.
   //  double dof = graph.size() - config.size();
   int graph_dim = 0;
-  for(const boost::shared_ptr<gtsam::NonlinearFactor>& nlf: graph) {
+  for(const std::shared_ptr<gtsam::NonlinearFactor>& nlf: graph) {
     graph_dim += nlf->dim();
   }
   double dof = graph_dim - config.dim(); // kaess: changed to dim
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
       NonlinearFactor::shared_ptr measurementf = measurements[nextMeasurement];
 
       if(BetweenFactor<Pose>::shared_ptr measurement =
-        boost::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
+        std::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
       {
         // Stop collecting measurements that are for future steps
         if(measurement->key1() > step || measurement->key2() > step)
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
         }
       }
       else if(BearingRangeFactor<Pose, Point2>::shared_ptr measurement =
-        boost::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
+        std::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
       {
         Key poseKey = measurement->keys()[0], lmKey = measurement->keys()[1];
 

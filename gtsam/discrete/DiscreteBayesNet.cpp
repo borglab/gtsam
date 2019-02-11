@@ -36,12 +36,12 @@ namespace gtsam {
 
   /* ************************************************************************* */
 //  void DiscreteBayesNet::add_front(const Signature& s) {
-//    push_front(boost::make_shared<DiscreteConditional>(s));
+//    push_front(std::make_shared<DiscreteConditional>(s));
 //  }
 
   /* ************************************************************************* */
   void DiscreteBayesNet::add(const Signature& s) {
-    push_back(boost::make_shared<DiscreteConditional>(s));
+    push_back(std::make_shared<DiscreteConditional>(s));
   }
 
   /* ************************************************************************* */

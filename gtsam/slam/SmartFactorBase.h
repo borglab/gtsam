@@ -84,7 +84,7 @@ protected:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// We use the new CameraSte data structure to refer to a set of cameras
   typedef CameraSet<CAMERA> Cameras;
@@ -101,7 +101,7 @@ protected:
     if (!sharedNoiseModel)
       throw std::runtime_error("SmartFactorBase: sharedNoiseModel is required");
 
-    SharedIsotropic sharedIsotropic = boost::dynamic_pointer_cast<
+    SharedIsotropic sharedIsotropic = std::dynamic_pointer_cast<
         noiseModel::Isotropic>(sharedNoiseModel);
 
     if (!sharedIsotropic)
@@ -289,7 +289,7 @@ protected:
   }
 
   /// Linearize to a Hessianfactor
-  boost::shared_ptr<RegularHessianFactor<Dim> > createHessianFactor(
+  std::shared_ptr<RegularHessianFactor<Dim> > createHessianFactor(
       const Cameras& cameras, const Point3& point, const double lambda = 0.0,
       bool diagonalDamping = false) const {
 
@@ -300,7 +300,7 @@ protected:
     // build augmented hessian
     SymmetricBlockMatrix augmentedHessian = Cameras::SchurComplement(Fs, E, b);
 
-    return boost::make_shared<RegularHessianFactor<Dim> >(keys_,
+    return std::make_shared<RegularHessianFactor<Dim> >(keys_,
         augmentedHessian);
   }
 
@@ -328,7 +328,7 @@ protected:
   }
 
   /// Return Jacobians as RegularImplicitSchurFactor with raw access
-  boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> > //
+  std::shared_ptr<RegularImplicitSchurFactor<CAMERA> > //
   createRegularImplicitSchurFactor(const Cameras& cameras, const Point3& point,
       double lambda = 0.0, bool diagonalDamping = false) const {
     Matrix E;
@@ -337,14 +337,14 @@ protected:
     computeJacobians(F, E, b, cameras, point);
     whitenJacobians(F, E, b);
     Matrix P = Cameras::PointCov(E, lambda, diagonalDamping);
-    return boost::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_, F, E,
+    return std::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_, F, E,
         P, b);
   }
 
   /**
    * Return Jacobians as JacobianFactorQ
    */
-  boost::shared_ptr<JacobianFactorQ<Dim, ZDim> > createJacobianQFactor(
+  std::shared_ptr<JacobianFactorQ<Dim, ZDim> > createJacobianQFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0,
       bool diagonalDamping = false) const {
     Matrix E;
@@ -354,14 +354,14 @@ protected:
     const size_t M = b.size();
     Matrix P = Cameras::PointCov(E, lambda, diagonalDamping);
     SharedIsotropic n = noiseModel::Isotropic::Sigma(M, noiseModel_->sigma());
-    return boost::make_shared<JacobianFactorQ<Dim, ZDim> >(keys_, F, E, P, b, n);
+    return std::make_shared<JacobianFactorQ<Dim, ZDim> >(keys_, F, E, P, b, n);
   }
 
   /**
    * Return Jacobians as JacobianFactorSVD
    * TODO lambda is currently ignored
    */
-  boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
+  std::shared_ptr<JacobianFactor> createJacobianSVDFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0) const {
     size_t m = this->keys_.size();
     FBlocks F;
@@ -371,7 +371,7 @@ protected:
     computeJacobiansSVD(F, E0, b, cameras, point);
     SharedIsotropic n = noiseModel::Isotropic::Sigma(M - 3,
         noiseModel_->sigma());
-    return boost::make_shared<JacobianFactorSVD<Dim, ZDim> >(keys_, F, E0, b, n);
+    return std::make_shared<JacobianFactorSVD<Dim, ZDim> >(keys_, F, E0, b, n);
   }
 
   /// Create BIG block-diagonal matrix F from Fblocks

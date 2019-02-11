@@ -199,10 +199,6 @@ void gtsamPoint2_dim_6(int nargout, mxArray *out[], int nargin, const mxArray *i
 
 void gtsamPoint2_eigenArguments_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("eigenArguments",nargout,nargin-1,2);
-  auto obj = unwrap_shared_ptr<gtsam::Point2>(in[0], "ptr_gtsamPoint2");
-  Vector v = unwrap< Vector >(in[1]);
-  Matrix m = unwrap< Matrix >(in[2]);
   obj->eigenArguments(v,m);
 }
 

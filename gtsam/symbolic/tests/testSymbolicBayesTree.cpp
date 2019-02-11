@@ -45,8 +45,8 @@ namespace {
   template<typename KEYS>
   SymbolicBayesTreeClique::shared_ptr MakeClique(const KEYS& keys, DenseIndex nrFrontals)
   {
-    return boost::make_shared<SymbolicBayesTreeClique>(
-      boost::make_shared<SymbolicConditional>(
+    return std::make_shared<SymbolicBayesTreeClique>(
+      std::make_shared<SymbolicConditional>(
       SymbolicConditional::FromKeys(keys, nrFrontals)));
   }
 
@@ -55,8 +55,8 @@ namespace {
     const KEYS& keys, DenseIndex nrFrontals, const CHILDREN& children)
   {
     SymbolicBayesTreeClique::shared_ptr clique =
-      boost::make_shared<SymbolicBayesTreeClique>(
-      boost::make_shared<SymbolicConditional>(
+      std::make_shared<SymbolicBayesTreeClique>(
+      std::make_shared<SymbolicConditional>(
       SymbolicConditional::FromKeys(keys, nrFrontals)));
     clique->children.assign(children.begin(), children.end());
     for(typename CHILDREN::const_iterator child = children.begin(); child != children.end(); ++child)
@@ -274,7 +274,7 @@ TEST( BayesTree, removeTop )
   SymbolicBayesTree bayesTree = asiaBayesTree;
 
   // create a new factor to be inserted
-  //boost::shared_ptr<IndexFactor> newFactor(new IndexFactor(_S_,_B_));
+  //std::shared_ptr<IndexFactor> newFactor(new IndexFactor(_S_,_B_));
 
   // Remove the contaminated part of the Bayes tree
   SymbolicBayesNet bn;
@@ -292,7 +292,7 @@ TEST( BayesTree, removeTop )
   CHECK(assert_container_equal(expectedOrphans|indirected, orphans|indirected));
 
   // Try removeTop again with a factor that should not change a thing
-  //boost::shared_ptr<IndexFactor> newFactor2(new IndexFactor(_B_));
+  //std::shared_ptr<IndexFactor> newFactor2(new IndexFactor(_B_));
   SymbolicBayesNet bn2;
   SymbolicBayesTree::Cliques orphans2;
   bayesTree.removeTop(list_of(_B_), &bn2, &orphans2);
@@ -404,25 +404,25 @@ TEST( SymbolicBayesTree, thinTree ) {
 
   // create a thin-tree Bayesnet, a la Jean-Guillaume
   SymbolicBayesNet bayesNet;
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(14));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(14));
 
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(13, 14));
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(12, 14));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(13, 14));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(12, 14));
 
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(11, 13, 14));
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(10, 13, 14));
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(9, 12, 14));
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(8, 12, 14));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(11, 13, 14));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(10, 13, 14));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(9, 12, 14));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(8, 12, 14));
 
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(7, 11, 13));
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(6, 11, 13));
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(5, 10, 13));
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(4, 10, 13));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(7, 11, 13));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(6, 11, 13));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(5, 10, 13));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(4, 10, 13));
 
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(3, 9, 12));
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(2, 9, 12));
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(1, 8, 12));
-  bayesNet.push_back(boost::make_shared<SymbolicConditional>(0, 8, 12));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(3, 9, 12));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(2, 9, 12));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(1, 8, 12));
+  bayesNet.push_back(std::make_shared<SymbolicConditional>(0, 8, 12));
 
   if (debug) {
     GTSAM_PRINT(bayesNet);
@@ -488,8 +488,8 @@ TEST( SymbolicBayesTree, thinTree ) {
   if (false) { // TODO, not disjoint
     actualJoint = bayesTree.jointBayesNet(8, 2);
     SymbolicBayesNet expected;
-    expected.push_back(boost::make_shared<SymbolicConditional>(8));
-    expected.push_back(boost::make_shared<SymbolicConditional>(2, 8));
+    expected.push_back(std::make_shared<SymbolicConditional>(8));
+    expected.push_back(std::make_shared<SymbolicConditional>(2, 8));
     EXPECT(assert_equal(expected, *actualJoint));
   }
 
@@ -497,8 +497,8 @@ TEST( SymbolicBayesTree, thinTree ) {
   if (false) { // TODO, not disjoint
     actualJoint = bayesTree.jointBayesNet(1, 2);
     SymbolicBayesNet expected;
-    expected.push_back(boost::make_shared<SymbolicConditional>(2));
-    expected.push_back(boost::make_shared<SymbolicConditional>(1, 2));
+    expected.push_back(std::make_shared<SymbolicConditional>(2));
+    expected.push_back(std::make_shared<SymbolicConditional>(1, 2));
     EXPECT(assert_equal(expected, *actualJoint));
   }
 
@@ -506,8 +506,8 @@ TEST( SymbolicBayesTree, thinTree ) {
   if (true) {
     actualJoint = bayesTree.jointBayesNet(2, 6);
     SymbolicBayesNet expected;
-    expected.push_back(boost::make_shared<SymbolicConditional>(2, 6));
-    expected.push_back(boost::make_shared<SymbolicConditional>(6));
+    expected.push_back(std::make_shared<SymbolicConditional>(2, 6));
+    expected.push_back(std::make_shared<SymbolicConditional>(6));
     EXPECT(assert_equal(expected, *actualJoint));
   }
 
@@ -515,8 +515,8 @@ TEST( SymbolicBayesTree, thinTree ) {
   if (false) { // TODO, not disjoint
     actualJoint = bayesTree.jointBayesNet(4, 6);
     SymbolicBayesNet expected;
-    expected.push_back(boost::make_shared<SymbolicConditional>(6));
-    expected.push_back(boost::make_shared<SymbolicConditional>(4, 6));
+    expected.push_back(std::make_shared<SymbolicConditional>(6));
+    expected.push_back(std::make_shared<SymbolicConditional>(4, 6));
     EXPECT(assert_equal(expected, *actualJoint));
   }
 }

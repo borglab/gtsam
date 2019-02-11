@@ -256,7 +256,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
   if (addNoise) {
     noiseModel::Diagonal::shared_ptr noise;
     if (model)
-      noise = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+      noise = std::dynamic_pointer_cast<noiseModel::Diagonal>(model);
     if (!noise)
       throw invalid_argument(
           "gtsam::load2D: invalid noise model for adding noise"
@@ -371,7 +371,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
 
 /* ************************************************************************* */
 GraphAndValues load2D_robust(const string& filename,
-    noiseModel::Base::shared_ptr& model, int maxID) {
+    const noiseModel::Base::shared_ptr& model, int maxID) {
   return load2D(filename, model, maxID);
 }
 
@@ -392,9 +392,9 @@ void save2D(const NonlinearFactorGraph& graph, const Values& config,
   // save edges
   Matrix R = model->R();
   Matrix RR = trans(R) * R; //prod(trans(R),R);
-  for(boost::shared_ptr<NonlinearFactor> factor_: graph) {
-    boost::shared_ptr<BetweenFactor<Pose2> > factor =
-        boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
+  for(std::shared_ptr<NonlinearFactor> factor_: graph) {
+    std::shared_ptr<BetweenFactor<Pose2> > factor =
+        std::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
     if (!factor)
       continue;
 
@@ -450,12 +450,12 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
 
   // save edges (2D or 3D)
   for(const auto& factor_: graph) {
-    boost::shared_ptr<BetweenFactor<Pose2> > factor =
-        boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
+    std::shared_ptr<BetweenFactor<Pose2> > factor =
+        std::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
     if (factor){
       SharedNoiseModel model = factor->noiseModel();
-      boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
-          boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+      std::shared_ptr<noiseModel::Gaussian> gaussianModel =
+          std::dynamic_pointer_cast<noiseModel::Gaussian>(model);
       if (!gaussianModel){
         model->print("model\n");
         throw invalid_argument("writeG2o: invalid noise model!");
@@ -472,14 +472,14 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
       stream << endl;
     }
 
-    boost::shared_ptr< BetweenFactor<Pose3> > factor3D =
-        boost::dynamic_pointer_cast< BetweenFactor<Pose3> >(factor_);
+    std::shared_ptr< BetweenFactor<Pose3> > factor3D =
+        std::dynamic_pointer_cast< BetweenFactor<Pose3> >(factor_);
 
     if (factor3D){
       SharedNoiseModel model = factor3D->noiseModel();
 
-      boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
-          boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+      std::shared_ptr<noiseModel::Gaussian> gaussianModel =
+          std::dynamic_pointer_cast<noiseModel::Gaussian>(model);
       if (!gaussianModel){
         model->print("model\n");
         throw invalid_argument("writeG2o: invalid noise model!");

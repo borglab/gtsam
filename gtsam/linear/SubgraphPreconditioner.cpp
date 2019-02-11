@@ -26,7 +26,6 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/reversed.hpp>
-
 #include <stdexcept>
 
 using std::cout;

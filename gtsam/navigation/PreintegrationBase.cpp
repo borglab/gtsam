@@ -28,7 +28,7 @@ using namespace std;
 namespace gtsam {
 
 //------------------------------------------------------------------------------
-PreintegrationBase::PreintegrationBase(const boost::shared_ptr<Params>& p,
+PreintegrationBase::PreintegrationBase(const std::shared_ptr<Params>& p,
                                        const Bias& biasHat)
     : p_(p), biasHat_(biasHat), deltaTij_(0.0) {
 }
@@ -199,7 +199,7 @@ PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
     const Vector3& n_gravity, const Vector3& omegaCoriolis,
     const bool use2ndOrderCoriolis) const {
 // NOTE(frank): parameters are supposed to be constant, below is only provided for compatibility
-  boost::shared_ptr<Params> q = boost::make_shared<Params>(p());
+  std::shared_ptr<Params> q = std::make_shared<Params>(p());
   q->n_gravity = n_gravity;
   q->omegaCoriolis = omegaCoriolis;
   q->use2ndOrderCoriolis = use2ndOrderCoriolis;

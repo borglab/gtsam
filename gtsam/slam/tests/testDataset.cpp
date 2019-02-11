@@ -85,7 +85,7 @@ TEST( dataSet, load2D)
   EXPECT_LONGS_EQUAL(100,initial->size());
   noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(3);
   BetweenFactor<Pose2> expected(1, 0, Pose2(-0.99879,0.0417574,-0.00818381), model);
-  BetweenFactor<Pose2>::shared_ptr actual = boost::dynamic_pointer_cast<
+  BetweenFactor<Pose2>::shared_ptr actual = std::dynamic_pointer_cast<
       BetweenFactor<Pose2> >(graph->at(0));
   EXPECT(assert_equal(expected, *actual));
 }

@@ -76,7 +76,7 @@ class GTSAM_EXPORT Rot3AttitudeFactor: public NoiseModelFactor1<Rot3>, public At
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<Rot3AttitudeFactor> shared_ptr;
+  typedef std::shared_ptr<Rot3AttitudeFactor> shared_ptr;
 
   /// Typedef to this class
   typedef Rot3AttitudeFactor This;
@@ -102,7 +102,7 @@ public:
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -156,7 +156,7 @@ class GTSAM_EXPORT Pose3AttitudeFactor: public NoiseModelFactor1<Pose3>,
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<Pose3AttitudeFactor> shared_ptr;
+  typedef std::shared_ptr<Pose3AttitudeFactor> shared_ptr;
 
   /// Typedef to this class
   typedef Pose3AttitudeFactor This;
@@ -182,7 +182,7 @@ public:
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
