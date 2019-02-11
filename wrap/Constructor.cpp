@@ -78,8 +78,8 @@ string Constructor::wrapper_fragment(FileWriter& file, Str cppClassName,
            << endl;
   file.oss << "{\n";
   file.oss << "  mexAtExit(&_deleteAllObjects);\n";
-  // Typedef boost::shared_ptr
-  file.oss << "  typedef boost::shared_ptr<" << cppClassName << "> Shared;\n";
+  // Typedef std::shared_ptr
+  file.oss << "  typedef std::shared_ptr<" << cppClassName << "> Shared;\n";
   file.oss << "\n";
 
   // Check to see if there will be any arguments and remove {} for consiseness
@@ -101,7 +101,7 @@ string Constructor::wrapper_fragment(FileWriter& file, Str cppClassName,
   // recurse the heirarchy)
   if (cppBaseClassName) {
     file.oss << "\n";
-    file.oss << "  typedef boost::shared_ptr<" << *cppBaseClassName
+    file.oss << "  typedef std::shared_ptr<" << *cppBaseClassName
              << "> SharedBase;\n";
     file.oss << "  out[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, "
                 "mxREAL);\n";

@@ -78,7 +78,7 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
 
   if (is_ptr && type.category != Qualified::EIGEN)
     // A pointer: emit an "unwrap_shared_ptr" call which returns a pointer
-    file.oss << "boost::shared_ptr<" << cppType << "> " << name
+    file.oss << "std::shared_ptr<" << cppType << "> " << name
         << " = unwrap_shared_ptr< ";
   else if (is_ref && isNotScalar && type.category != Qualified::EIGEN)
     // A reference: emit an "unwrap_shared_ptr" call and de-reference the pointer

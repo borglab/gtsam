@@ -18,7 +18,7 @@
 
 #include <gtsam/base/timing.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/intrusive_ptr.hpp>
 
 #include <iostream>

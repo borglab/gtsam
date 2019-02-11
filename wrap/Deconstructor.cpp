@@ -55,7 +55,7 @@ string Deconstructor::wrapper_fragment(FileWriter& file,
 
   file.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
   file.oss << "{" << endl;
-  file.oss << "  typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
+  file.oss << "  typedef std::shared_ptr<"  << cppClassName  << "> Shared;" << endl;
   //Deconstructor takes 1 arg, the mxArray obj
   file.oss << "  checkArguments(\"" << matlabName << "\",nargout,nargin," << "1" << ");" << endl;
   file.oss << "  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));\n";

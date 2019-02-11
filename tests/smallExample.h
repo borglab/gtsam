@@ -35,7 +35,7 @@ namespace example {
 /**
  * Create small example for non-linear factor graph
  */
-// inline boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph();
+// inline std::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph();
 // inline NonlinearFactorGraph createNonlinearFactorGraph();
 
 /**
@@ -50,7 +50,7 @@ namespace example {
 /**
  * create a noisy values structure for a nonlinear factor graph
  */
-// inline boost::shared_ptr<const Values> sharedNoisyValues();
+// inline std::shared_ptr<const Values> sharedNoisyValues();
 // inline Values createNoisyValues();
 
 /**
@@ -77,7 +77,7 @@ namespace example {
 /**
  * Create really non-linear factor graph (cos/sin)
  */
-// inline boost::shared_ptr<const NonlinearFactorGraph>
+// inline std::shared_ptr<const NonlinearFactorGraph>
 //sharedReallyNonlinearFactorGraph();
 // inline NonlinearFactorGraph createReallyNonlinearFactorGraph();
 
@@ -158,7 +158,7 @@ namespace example {
 //  using namespace gtsam::noiseModel;
 
 namespace impl {
-typedef boost::shared_ptr<NonlinearFactor> shared_nlf;
+typedef std::shared_ptr<NonlinearFactor> shared_nlf;
 
 static SharedDiagonal sigma1_0 = noiseModel::Isotropic::Sigma(2,1.0);
 static SharedDiagonal sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
@@ -171,12 +171,12 @@ static const Key _x_=0, _y_=1, _z_=2;
 
 
 /* ************************************************************************* */
-inline boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph() {
+inline std::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph() {
   using namespace impl;
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   // Create
-  boost::shared_ptr<NonlinearFactorGraph> nlfg(
+  std::shared_ptr<NonlinearFactorGraph> nlfg(
       new NonlinearFactorGraph);
 
   // prior on x1
@@ -229,10 +229,10 @@ inline VectorValues createVectorValues() {
 }
 
 /* ************************************************************************* */
-inline boost::shared_ptr<const Values> sharedNoisyValues() {
+inline std::shared_ptr<const Values> sharedNoisyValues() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
-  boost::shared_ptr<Values> c(new Values);
+  std::shared_ptr<Values> c(new Values);
   c->insert(X(1), Point2(0.1, 0.1));
   c->insert(X(2), Point2(1.4, 0.2));
   c->insert(L(1), Point2(0.1, -1.1));
@@ -345,13 +345,13 @@ struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
 }
 
 /* ************************************************************************* */
-inline boost::shared_ptr<const NonlinearFactorGraph> sharedReallyNonlinearFactorGraph() {
+inline std::shared_ptr<const NonlinearFactorGraph> sharedReallyNonlinearFactorGraph() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
-  boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
+  std::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
   Point2 z(1.0, 0.0);
   double sigma = 0.1;
-  boost::shared_ptr<smallOptimize::UnaryFactor> factor(
+  std::shared_ptr<smallOptimize::UnaryFactor> factor(
       new smallOptimize::UnaryFactor(z, noiseModel::Isotropic::Sigma(2,sigma), X(1)));
   fg->push_back(factor);
   return fg;
@@ -600,7 +600,7 @@ inline boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
       xtrue.insert(key(x, y), Point2((double)x, (double)y));
 
   // linearize around zero
-  boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros);
+  std::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros);
   return boost::make_tuple(*gfg, xtrue);
 }
 

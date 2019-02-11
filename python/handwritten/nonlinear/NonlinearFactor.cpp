@@ -36,7 +36,7 @@ struct NonlinearFactorWrap : NonlinearFactor, wrapper<NonlinearFactor>
   size_t dim () const {
     return this->get_override("dim")();
   }
-  boost::shared_ptr<GaussianFactor> linearize(const Values & values) const {
+  std::shared_ptr<GaussianFactor> linearize(const Values & values) const {
     return this->get_override("linearize")(values);
   }
 };
@@ -50,7 +50,7 @@ struct NoiseModelFactorWrap : NoiseModelFactor, wrapper<NoiseModelFactor> {
   size_t dim () const {
     return this->get_override("dim")();
   }
-  boost::shared_ptr<GaussianFactor> linearize(const Values & values) const {
+  std::shared_ptr<GaussianFactor> linearize(const Values & values) const {
     return this->get_override("linearize")(values);
   }
   Vector unwhitenedError(const Values& x,
@@ -64,12 +64,12 @@ void exportNonlinearFactor() {
       .def("error", pure_virtual(&NonlinearFactor::error))
       .def("dim", pure_virtual(&NonlinearFactor::dim))
       .def("linearize", pure_virtual(&NonlinearFactor::linearize));
-  register_ptr_to_python<boost::shared_ptr<NonlinearFactor> >();
+  register_ptr_to_python<std::shared_ptr<NonlinearFactor> >();
 
   class_<NoiseModelFactorWrap, boost::noncopyable>("NoiseModelFactor")
       .def("error", pure_virtual(&NoiseModelFactor::error))
       .def("dim", pure_virtual(&NoiseModelFactor::dim))
       .def("linearize", pure_virtual(&NoiseModelFactor::linearize))
       .def("unwhitenedError", pure_virtual(&NoiseModelFactor::unwhitenedError));
-  register_ptr_to_python<boost::shared_ptr<NoiseModelFactor> >();
+  register_ptr_to_python<std::shared_ptr<NoiseModelFactor> >();
 }

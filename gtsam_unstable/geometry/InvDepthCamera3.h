@@ -31,7 +31,7 @@ template <class CALIBRATION>
 class InvDepthCamera3 {
 private:
   Pose3 pose_;                        ///< The camera pose
-  boost::shared_ptr<CALIBRATION> k_;  ///< The fixed camera calibration
+  std::shared_ptr<CALIBRATION> k_;  ///< The fixed camera calibration
 
 public:
 
@@ -42,7 +42,7 @@ public:
   InvDepthCamera3() {}
 
   /** constructor with pose and calibration */
-  InvDepthCamera3(const Pose3& pose, const boost::shared_ptr<CALIBRATION>& k) :
+  InvDepthCamera3(const Pose3& pose, const std::shared_ptr<CALIBRATION>& k) :
     pose_(pose),k_(k) {}
 
   /// @}
@@ -55,7 +55,7 @@ public:
   inline Pose3& pose() {  return pose_; }
 
   /// return calibration
-  inline const boost::shared_ptr<CALIBRATION>& calibration() const {  return k_; }
+  inline const std::shared_ptr<CALIBRATION>& calibration() const {  return k_; }
 
   /// print
   void print(const std::string& s = "") const {

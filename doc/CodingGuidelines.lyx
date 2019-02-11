@@ -108,7 +108,7 @@ Templated classes are great for writing generic code for multiple types
  and additional runtime overhead).
  Depending on how they're used, though, templates can result in very slow
  compile times, large binary files, and hard-to-use code.
- This section describes the 
+ This section describes the
 \begin_inset Quotes eld
 \end_inset
 
@@ -125,7 +125,7 @@ If you need to write generic code or classes, here are several programming
 \end_layout
 
 \begin_layout Subsection
-The 
+The
 \begin_inset Quotes eld
 \end_inset
 
@@ -150,13 +150,13 @@ Basic Class Structure
 \end_layout
 
 \begin_layout Standard
-We'll use 
+We'll use
 \family typewriter
 FactorGraph
 \family default
  as an example.
  It is templated on the factor type stored in it and has several specializations.
- The templated base class 
+ The templated base class
 \family typewriter
 FactorGraph<class FACTOR>
 \family default
@@ -164,7 +164,7 @@ FactorGraph<class FACTOR>
 \family typewriter
 .h
 \family default
-) and an 
+) and an
 \begin_inset Quotes eld
 \end_inset
 
@@ -271,13 +271,13 @@ color{red}{// Make 'private' any typedefs that must be redefined in derived
 
 \begin_layout Plain Layout
 
-    typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer to
+    typedef std::shared_ptr<This> shared_ptr;  ///< Shared pointer to
  this
 \end_layout
 
 \begin_layout Plain Layout
 
-    
+
 \end_layout
 
 \begin_layout Plain Layout
@@ -304,7 +304,7 @@ color{red}{// Make 'public' the typedefs that will be valid in the derived
 
 \begin_layout Plain Layout
 
-    typedef boost::shared_ptr<FACTOR> sharedFactor; ///< Shared pointer
+    typedef std::shared_ptr<FACTOR> sharedFactor; ///< Shared pointer
  to a factor
 \end_layout
 

@@ -33,7 +33,7 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/range/adaptor/reversed.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <algorithm>
 #include <cmath>
@@ -60,9 +60,9 @@ namespace gtsam {
 static GaussianFactorGraph::shared_ptr convertToJacobianFactors(const GaussianFactorGraph &gfg) {
   GaussianFactorGraph::shared_ptr result(new GaussianFactorGraph());
   for(const GaussianFactor::shared_ptr &gf: gfg) {
-    JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(gf);
+    JacobianFactor::shared_ptr jf = std::dynamic_pointer_cast<JacobianFactor>(gf);
     if( !jf ) {
-      jf = boost::make_shared<JacobianFactor>(*gf); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+      jf = std::make_shared<JacobianFactor>(*gf); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
     }
     result->push_back(jf);
   }
@@ -410,7 +410,7 @@ Subgraph::shared_ptr SubgraphBuilder::operator() (const GaussianFactorGraph &gfg
   subgraph.insert(subgraph.end(), tree.begin(), tree.end());
   subgraph.insert(subgraph.end(), offTree.begin(), offTree.end());
 
-  return boost::make_shared<Subgraph>(subgraph);
+  return std::make_shared<Subgraph>(subgraph);
 }
 
 /****************************************************************/
@@ -426,20 +426,20 @@ SubgraphBuilder::Weights SubgraphBuilder::weights(const GaussianFactorGraph &gfg
       break;
     case SubgraphBuilderParameters::RHS_2NORM:
     {
-      if ( JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(gf) ) {
+      if ( JacobianFactor::shared_ptr jf = std::dynamic_pointer_cast<JacobianFactor>(gf) ) {
         weight.push_back(jf->getb().norm());
       }
-      else if ( HessianFactor::shared_ptr hf = boost::dynamic_pointer_cast<HessianFactor>(gf) ) {
+      else if ( HessianFactor::shared_ptr hf = std::dynamic_pointer_cast<HessianFactor>(gf) ) {
         weight.push_back(hf->linearTerm().norm());
       }
     }
       break;
     case SubgraphBuilderParameters::LHS_FNORM:
     {
-      if ( JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(gf) ) {
+      if ( JacobianFactor::shared_ptr jf = std::dynamic_pointer_cast<JacobianFactor>(gf) ) {
         weight.push_back(std::sqrt(jf->getA().squaredNorm()));
       }
-      else if ( HessianFactor::shared_ptr hf = boost::dynamic_pointer_cast<HessianFactor>(gf) ) {
+      else if ( HessianFactor::shared_ptr hf = std::dynamic_pointer_cast<HessianFactor>(gf) ) {
         weight.push_back(std::sqrt(hf->information().squaredNorm()));
       }
     }
@@ -589,7 +589,7 @@ void SubgraphPreconditioner::transposeSolve(const Vector& y, Vector& x) const
   std::copy(y.data(), y.data() + y.rows(), x.data());
 
   /* in place back substitute */
-  for(const boost::shared_ptr<GaussianConditional> & cg: *Rc1_) {
+  for(const std::shared_ptr<GaussianConditional> & cg: *Rc1_) {
     const Vector rhsFrontal = getSubvector(x, keyInfo_, KeyVector(cg->beginFrontals(), cg->endFrontals()));
 //    const Vector solFrontal = cg->get_R().triangularView<Eigen::Upper>().transpose().solve(rhsFrontal);
     const Vector solFrontal = cg->get_R().transpose().triangularView<Eigen::Lower>().solve(rhsFrontal);
@@ -663,7 +663,7 @@ void setSubvector(const Vector &src, const KeyInfo &keyInfo, const KeyVector &ke
 }
 
 /*****************************************************************************/
-boost::shared_ptr<GaussianFactorGraph>
+std::shared_ptr<GaussianFactorGraph>
 buildFactorSubgraph(const GaussianFactorGraph &gfg, const Subgraph &subgraph, const bool clone) {
 
   GaussianFactorGraph::shared_ptr result(new GaussianFactorGraph());

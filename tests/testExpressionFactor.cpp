@@ -66,7 +66,7 @@ TEST(ExpressionFactor, Leaf) {
   ExpressionFactor<Point2> f(model, Point2(0, 0), p);
   EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
-  boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
+  std::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
   EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
 }
 
@@ -86,7 +86,7 @@ TEST(ExpressionFactor, Model) {
   // Check values and derivatives
   EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
-  boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
+  std::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
   EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
   EXPECT_CORRECT_FACTOR_JACOBIANS(f, values, 1e-5, 1e-5); // another way
 }
@@ -105,7 +105,7 @@ TEST(ExpressionFactor, Constrained) {
   ExpressionFactor<Point2> f(model, Point2(0, 0), p);
   EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
-  boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
+  std::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
   EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
 }
 
@@ -127,9 +127,9 @@ TEST(ExpressionFactor, Unary) {
   // Concise version
   ExpressionFactor<Point2> f(model, measured, project(p));
   EXPECT_LONGS_EQUAL(2, f.dim());
-  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-  boost::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  std::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  std::shared_ptr<JacobianFactor> jf = //
+      std::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT( assert_equal(expected, *jf, 1e-9));
 }
 
@@ -219,7 +219,7 @@ TEST(ExpressionFactor, Shallow) {
 
   // Create old-style factor to create expected value and derivatives
   GenericProjectionFactor<Pose3, Point3> old(measured, model, 1, 2,
-      boost::make_shared<Cal3_S2>());
+      std::make_shared<Cal3_S2>());
   double expected_error = old.error(values);
   GaussianFactor::shared_ptr expected = old.linearize(values);
 
@@ -264,7 +264,7 @@ TEST(ExpressionFactor, Shallow) {
   ExpressionFactor<Point2> f2(model, measured, expression);
   EXPECT_DOUBLES_EQUAL(expected_error, f2.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f2.dim());
-  boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
+  std::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
   EXPECT( assert_equal(*expected, *gf2, 1e-9));
 }
 
@@ -297,7 +297,7 @@ TEST(ExpressionFactor, tree) {
   ExpressionFactor<Point2> f(model, measured, uv_hat);
   EXPECT_DOUBLES_EQUAL(expected_error, f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
-  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  std::shared_ptr<GaussianFactor> gf = f.linearize(values);
   EXPECT( assert_equal(*expected, *gf, 1e-9));
 
   // Concise version
@@ -305,14 +305,14 @@ TEST(ExpressionFactor, tree) {
       uncalibrate(K, project(transform_to(x, p))));
   EXPECT_DOUBLES_EQUAL(expected_error, f2.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f2.dim());
-  boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
+  std::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
   EXPECT( assert_equal(*expected, *gf2, 1e-9));
 
   // Try ternary version
   ExpressionFactor<Point2> f3(model, measured, project3(x, p, K));
   EXPECT_DOUBLES_EQUAL(expected_error, f3.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f3.dim());
-  boost::shared_ptr<GaussianFactor> gf3 = f3.linearize(values);
+  std::shared_ptr<GaussianFactor> gf3 = f3.linearize(values);
   EXPECT( assert_equal(*expected, *gf3, 1e-9));
 }
 
@@ -339,9 +339,9 @@ TEST(ExpressionFactor, Compose1) {
 
   // Check linearization
   JacobianFactor expected(1, I_3x3, 2, I_3x3, Z_3x1);
-  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-  boost::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  std::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  std::shared_ptr<JacobianFactor> jf = //
+      std::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT( assert_equal(expected, *jf,1e-9));
 }
 
@@ -368,9 +368,9 @@ TEST(ExpressionFactor, compose2) {
 
   // Check linearization
   JacobianFactor expected(1, 2 * I_3x3, Z_3x1);
-  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-  boost::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  std::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  std::shared_ptr<JacobianFactor> jf = //
+      std::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT( assert_equal(expected, *jf,1e-9));
 }
 
@@ -397,9 +397,9 @@ TEST(ExpressionFactor, compose3) {
 
   // Check linearization
   JacobianFactor expected(3, I_3x3, Z_3x1);
-  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-  boost::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  std::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  std::shared_ptr<JacobianFactor> jf = //
+      std::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT( assert_equal(expected, *jf,1e-9));
 }
 
@@ -442,9 +442,9 @@ TEST(ExpressionFactor, composeTernary) {
 
   // Check linearization
   JacobianFactor expected(1, I_3x3, 2, I_3x3, 3, I_3x3, Z_3x1);
-  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-  boost::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+  std::shared_ptr<GaussianFactor> gf = f.linearize(values);
+  std::shared_ptr<JacobianFactor> jf = //
+      std::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT( assert_equal(expected, *jf,1e-9));
 }
 

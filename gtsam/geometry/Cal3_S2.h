@@ -36,7 +36,7 @@ private:
 
 public:
   enum { dimension = 5 };
-  typedef boost::shared_ptr<Cal3_S2> shared_ptr; ///< shared pointer to calibration object
+  typedef std::shared_ptr<Cal3_S2> shared_ptr; ///< shared pointer to calibration object
 
   /// @name Standard Constructors
   /// @{

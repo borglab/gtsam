@@ -537,7 +537,7 @@ void Module::WriteCollectorsAndCleanupFcn(FileWriter& wrapperFile, const std::st
   for(const Class& cls: classes) {
     const string matlabUniqueName = cls.qualifiedName(),
       cppName = cls.qualifiedName("::");
-    wrapperFile.oss << "typedef std::set<boost::shared_ptr<" << cppName << ">*> "
+    wrapperFile.oss << "typedef std::set<std::shared_ptr<" << cppName << ">*> "
       << "Collector_" << matlabUniqueName << ";\n";
     wrapperFile.oss << "static Collector_" << matlabUniqueName <<
       " collector_" << matlabUniqueName << ";\n";

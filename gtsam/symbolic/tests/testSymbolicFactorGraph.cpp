@@ -108,9 +108,9 @@ TEST(SymbolicFactorGraph, eliminateFullMultifrontal)
 TEST(SymbolicFactorGraph, eliminatePartialMultifrontal)
 {
   SymbolicBayesTree expectedBayesTree;
-  SymbolicConditional::shared_ptr root = boost::make_shared<SymbolicConditional>(
+  SymbolicConditional::shared_ptr root = std::make_shared<SymbolicConditional>(
     SymbolicConditional::FromKeys(list_of(4)(5)(1), 2));
-  expectedBayesTree.insertRoot(boost::make_shared<SymbolicBayesTreeClique>(root));
+  expectedBayesTree.insertRoot(std::make_shared<SymbolicBayesTreeClique>(root));
 
   SymbolicFactorGraph expectedFactorGraph = list_of
     (SymbolicFactor(0,1))
@@ -128,10 +128,10 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal)
   EXPECT(assert_equal(expectedBayesTree, *actualBayesTree));
 
   SymbolicBayesTree expectedBayesTree2;
-  SymbolicBayesTreeClique::shared_ptr root2 = boost::make_shared<SymbolicBayesTreeClique>(
-    boost::make_shared<SymbolicConditional>(4,1));
-  root2->children.push_back(boost::make_shared<SymbolicBayesTreeClique>(
-    boost::make_shared<SymbolicConditional>(5,4)));
+  SymbolicBayesTreeClique::shared_ptr root2 = std::make_shared<SymbolicBayesTreeClique>(
+    std::make_shared<SymbolicConditional>(4,1));
+  root2->children.push_back(std::make_shared<SymbolicBayesTreeClique>(
+    std::make_shared<SymbolicConditional>(5,4)));
   expectedBayesTree2.insertRoot(root2);
 
   SymbolicBayesTree::shared_ptr actualBayesTree2;
@@ -167,11 +167,11 @@ TEST(SymbolicFactorGraph, eliminate_disconnected_graph) {
 
   // create expected Chordal bayes Net
   SymbolicBayesNet expected;
-  expected.push_back(boost::make_shared<SymbolicConditional>(0,1,2));
-  expected.push_back(boost::make_shared<SymbolicConditional>(1,2));
-  expected.push_back(boost::make_shared<SymbolicConditional>(2));
-  expected.push_back(boost::make_shared<SymbolicConditional>(3,4));
-  expected.push_back(boost::make_shared<SymbolicConditional>(4));
+  expected.push_back(std::make_shared<SymbolicConditional>(0,1,2));
+  expected.push_back(std::make_shared<SymbolicConditional>(1,2));
+  expected.push_back(std::make_shared<SymbolicConditional>(2));
+  expected.push_back(std::make_shared<SymbolicConditional>(3,4));
+  expected.push_back(std::make_shared<SymbolicConditional>(4));
 
   Ordering order;
   order += 0,1,2,3,4;
@@ -195,11 +195,11 @@ TEST(SymbolicFactorGraph, eliminate_disconnected_graph) {
 //  SymbolicSequentialSolver solver(fg);
 //  SymbolicBayesNet::shared_ptr actual = solver.eliminate();
 //  SymbolicBayesNet expected;
-//  expected.push_front(boost::make_shared<IndexConditional>(4));
-//  expected.push_front(boost::make_shared<IndexConditional>(3, 4));
-//  expected.push_front(boost::make_shared<IndexConditional>(2, 4));
-//  expected.push_front(boost::make_shared<IndexConditional>(1, 2, 4));
-//  expected.push_front(boost::make_shared<IndexConditional>(0, 1, 2));
+//  expected.push_front(std::make_shared<IndexConditional>(4));
+//  expected.push_front(std::make_shared<IndexConditional>(3, 4));
+//  expected.push_front(std::make_shared<IndexConditional>(2, 4));
+//  expected.push_front(std::make_shared<IndexConditional>(1, 2, 4));
+//  expected.push_front(std::make_shared<IndexConditional>(0, 1, 2));
 //  EXPECT(assert_equal(expected,*actual));
 //
 //  {
@@ -210,9 +210,9 @@ TEST(SymbolicFactorGraph, eliminate_disconnected_graph) {
 //    js.push_back(3);
 //    SymbolicBayesNet::shared_ptr actualBN = solver.jointBayesNet(js);
 //    SymbolicBayesNet expectedBN;
-//    expectedBN.push_front(boost::make_shared<IndexConditional>(3));
-//    expectedBN.push_front(boost::make_shared<IndexConditional>(4, 3));
-//    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 4));
+//    expectedBN.push_front(std::make_shared<IndexConditional>(3));
+//    expectedBN.push_front(std::make_shared<IndexConditional>(4, 3));
+//    expectedBN.push_front(std::make_shared<IndexConditional>(0, 4));
 //    EXPECT( assert_equal(expectedBN,*actualBN));
 //
 //    // jointFactorGraph
@@ -232,9 +232,9 @@ TEST(SymbolicFactorGraph, eliminate_disconnected_graph) {
 //    js.push_back(3);
 //    SymbolicBayesNet::shared_ptr actualBN = solver.jointBayesNet(js);
 //    SymbolicBayesNet expectedBN;
-//    expectedBN.push_front(boost::make_shared<IndexConditional>(2));
-//    expectedBN.push_front(boost::make_shared<IndexConditional>(3, 2));
-//    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 3, 2));
+//    expectedBN.push_front(std::make_shared<IndexConditional>(2));
+//    expectedBN.push_front(std::make_shared<IndexConditional>(3, 2));
+//    expectedBN.push_front(std::make_shared<IndexConditional>(0, 3, 2));
 //    EXPECT( assert_equal(expectedBN,*actualBN));
 //
 //    // jointFactorGraph
@@ -256,8 +256,8 @@ TEST(SymbolicFactorGraph, eliminate_disconnected_graph) {
 //    SymbolicBayesNet::shared_ptr actualBN = //
 //      solver.conditionalBayesNet(js, nrFrontals);
 //    SymbolicBayesNet expectedBN;
-//    expectedBN.push_front(boost::make_shared<IndexConditional>(2, 3));
-//    expectedBN.push_front(boost::make_shared<IndexConditional>(0, 2, 3));
+//    expectedBN.push_front(std::make_shared<IndexConditional>(2, 3));
+//    expectedBN.push_front(std::make_shared<IndexConditional>(0, 2, 3));
 //    EXPECT( assert_equal(expectedBN,*actualBN));
 //  }
 //}

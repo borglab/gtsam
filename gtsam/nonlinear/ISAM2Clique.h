@@ -38,8 +38,8 @@ class GTSAM_EXPORT ISAM2Clique
  public:
   typedef ISAM2Clique This;
   typedef BayesTreeCliqueBase<This, GaussianFactorGraph> Base;
-  typedef boost::shared_ptr<This> shared_ptr;
-  typedef boost::weak_ptr<This> weak_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
+  typedef std::weak_ptr<This> weak_ptr;
   typedef GaussianConditional ConditionalType;
   typedef ConditionalType::shared_ptr sharedConditional;
 

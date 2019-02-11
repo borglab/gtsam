@@ -28,7 +28,7 @@
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/base/Testable.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <CppUnitLite/TestHarness.h>
 
 #include <iostream>
@@ -51,16 +51,16 @@ class Graph: public NonlinearFactorGraph {
 public:
   void addMeasurement(const int& i, const int& j, const Point2& z,
       const SharedNoiseModel& model) {
-    push_back(boost::make_shared<Projection>(z, model, X(i), L(j)));
+    push_back(std::make_shared<Projection>(z, model, X(i), L(j)));
   }
 
   void addCameraConstraint(int j, const GeneralCamera& p) {
-    boost::shared_ptr<CameraConstraint> factor(new CameraConstraint(X(j), p));
+    std::shared_ptr<CameraConstraint> factor(new CameraConstraint(X(j), p));
     push_back(factor);
   }
 
   void addPoint3Constraint(int j, const Point3& p) {
-    boost::shared_ptr<Point3Constraint> factor(new Point3Constraint(L(j), p));
+    std::shared_ptr<Point3Constraint> factor(new Point3Constraint(L(j), p));
     push_back(factor);
   }
 
@@ -87,10 +87,10 @@ TEST( GeneralSFMFactor_Cal3Bundler, equals ) {
   Point2 z(323., 240.);
   const Symbol cameraFrameNumber('x', 1), landmarkNumber('l', 1);
   const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
-  boost::shared_ptr<Projection> factor1(
+  std::shared_ptr<Projection> factor1(
       new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
 
-  boost::shared_ptr<Projection> factor2(
+  std::shared_ptr<Projection> factor2(
       new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
 
   EXPECT(assert_equal(*factor1, *factor2));
@@ -100,7 +100,7 @@ TEST( GeneralSFMFactor_Cal3Bundler, equals ) {
 TEST( GeneralSFMFactor_Cal3Bundler, error ) {
   Point2 z(3., 0.);
   const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
-  boost::shared_ptr<Projection> factor(new Projection(z, sigma, X(1), L(1)));
+  std::shared_ptr<Projection> factor(new Projection(z, sigma, X(1), L(1)));
   // For the following configuration, the factor predicts 320,240
   Values values;
   Rot3 R;
@@ -152,10 +152,10 @@ static vector<GeneralCamera> genCameraVariableCalibration() {
   return cameras;
 }
 
-static boost::shared_ptr<Ordering> getOrdering(
+static std::shared_ptr<Ordering> getOrdering(
     const std::vector<GeneralCamera>& cameras,
     const std::vector<Point3>& landmarks) {
-  boost::shared_ptr<Ordering> ordering(new Ordering);
+  std::shared_ptr<Ordering> ordering(new Ordering);
   for (size_t i = 0; i < landmarks.size(); ++i)
     ordering->push_back(L(i));
   for (size_t i = 0; i < cameras.size(); ++i)

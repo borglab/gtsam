@@ -34,7 +34,7 @@ TEST( DiscreteConditional, constructors)
   DiscreteKey X(0, 2), Y(2, 3), Z(1, 2); // watch ordering !
 
   DiscreteConditional::shared_ptr expected1 = //
-      boost::make_shared<DiscreteConditional>(X | Y = "1/1 2/3 1/4");
+      std::make_shared<DiscreteConditional>(X | Y = "1/1 2/3 1/4");
   EXPECT(expected1);
   DecisionTreeFactor f1(X & Y, "0.5 0.4 0.2 0.5 0.6 0.8");
   DiscreteConditional actual1(1, f1);
@@ -57,7 +57,7 @@ TEST( DiscreteConditional, constructors_alt_interface)
   r1 += 1.0, 1.0; r2 += 2.0, 3.0; r3 += 1.0, 4.0;
   table += r1, r2, r3;
   DiscreteConditional::shared_ptr expected1 = //
-      boost::make_shared<DiscreteConditional>(X | Y = table);
+      std::make_shared<DiscreteConditional>(X | Y = table);
   EXPECT(expected1);
   DecisionTreeFactor f1(X & Y, "0.5 0.4 0.2 0.5 0.6 0.8");
   DiscreteConditional actual1(1, f1);
@@ -98,8 +98,8 @@ TEST( DiscreteConditional, constructors3)
 TEST( DiscreteConditional, Combine) {
   DiscreteKey A(0, 2), B(1, 2);
   vector<DiscreteConditional::shared_ptr> c;
-  c.push_back(boost::make_shared<DiscreteConditional>(A | B = "1/2 2/1"));
-  c.push_back(boost::make_shared<DiscreteConditional>(B % "1/2"));
+  c.push_back(std::make_shared<DiscreteConditional>(A | B = "1/2 2/1"));
+  c.push_back(std::make_shared<DiscreteConditional>(B % "1/2"));
   DecisionTreeFactor factor(A & B, "0.111111 0.444444 0.222222 0.222222");
   DiscreteConditional expected(2, factor);
   DiscreteConditional::shared_ptr actual = DiscreteConditional::Combine(

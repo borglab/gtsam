@@ -61,7 +61,7 @@ void ReturnType::wrap_result(const string& out, const string& result,
 /* ************************************************************************* */
 void ReturnType::wrapTypeUnwrap(FileWriter& wrapperFile) const {
   if (category == CLASS)
-    wrapperFile.oss << "  typedef boost::shared_ptr<" << qualifiedName("::")
+    wrapperFile.oss << "  typedef std::shared_ptr<" << qualifiedName("::")
                     << "> Shared" << name() << ";" << endl;
 }
 

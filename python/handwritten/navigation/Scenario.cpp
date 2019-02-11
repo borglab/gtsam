@@ -51,7 +51,7 @@ void exportScenario() {
 
   class_<ScenarioRunner>(
       "ScenarioRunner",
-      init<const Scenario*, const boost::shared_ptr<PreintegrationParams>&,
+      init<const Scenario*, const std::shared_ptr<PreintegrationParams>&,
            double, const imuBias::ConstantBias&>())
       .def("actualSpecificForce", &ScenarioRunner::actualSpecificForce)
       .def("measuredAngularVelocity", &ScenarioRunner::measuredAngularVelocity)

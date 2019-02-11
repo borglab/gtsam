@@ -110,7 +110,7 @@ string MethodBase::wrapper_fragment(
 
   returnVal.wrapTypeUnwrap(wrapperFile);
 
-  wrapperFile.oss << "  typedef boost::shared_ptr<" << cppClassName
+  wrapperFile.oss << "  typedef std::shared_ptr<" << cppClassName
                   << "> Shared;" << endl;
 
   // get call

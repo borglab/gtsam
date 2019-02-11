@@ -54,7 +54,7 @@ TEST(DiscreteBayesNet, Asia)
   asia.add(X | E = "95/5 2/98");
   // next lines are same as asia.add((D | E, B) = "9/1 2/8 3/7 1/9");
   DiscreteConditional::shared_ptr actual =
-      boost::make_shared<DiscreteConditional>((D | E, B) = "9/1 2/8 3/7 1/9");
+      std::make_shared<DiscreteConditional>((D | E, B) = "9/1 2/8 3/7 1/9");
   asia.push_back(actual);
   //  GTSAM_PRINT(asia);
 

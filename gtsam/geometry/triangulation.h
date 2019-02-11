@@ -79,7 +79,7 @@ GTSAM_EXPORT Point3 triangulateDLT(
  */
 template<class CALIBRATION>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
-    const std::vector<Pose3>& poses, boost::shared_ptr<CALIBRATION> sharedCal,
+    const std::vector<Pose3>& poses, std::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, Key landmarkKey,
     const Point3& initialEstimate) {
   Values values;
@@ -154,7 +154,7 @@ GTSAM_EXPORT Point3 optimize(const NonlinearFactorGraph& graph,
  */
 template<class CALIBRATION>
 Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
-    boost::shared_ptr<CALIBRATION> sharedCal,
+    std::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, const Point3& initialEstimate) {
 
   // Create a factor graph and initial values
@@ -231,7 +231,7 @@ public:
  */
 template<class CALIBRATION>
 Point3 triangulatePoint3(const std::vector<Pose3>& poses,
-    boost::shared_ptr<CALIBRATION> sharedCal,
+    std::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, double rank_tol = 1e-9,
     bool optimize = false) {
 

@@ -99,7 +99,7 @@ double LinearizedJacobianFactor::error(const Values& c) const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianFactor>
+std::shared_ptr<GaussianFactor>
 LinearizedJacobianFactor::linearize(const Values& c) const {
 
   // Create the 'terms' data structure for the Jacobian constructor
@@ -111,7 +111,7 @@ LinearizedJacobianFactor::linearize(const Values& c) const {
   // compute rhs
   Vector b = -error_vector(c);
 
-  return boost::shared_ptr<GaussianFactor>(new JacobianFactor(terms, b, noiseModel::Unit::Create(dim())));
+  return std::shared_ptr<GaussianFactor>(new JacobianFactor(terms, b, noiseModel::Unit::Create(dim())));
 }
 
 /* ************************************************************************* */
@@ -198,7 +198,7 @@ double LinearizedHessianFactor::error(const Values& c) const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianFactor>
+std::shared_ptr<GaussianFactor>
 LinearizedHessianFactor::linearize(const Values& c) const {
 
   // Construct an error vector in key-order from the Values
@@ -238,8 +238,8 @@ LinearizedHessianFactor::linearize(const Values& c) const {
   }
 
   // Create a Hessian Factor from the modified info matrix
-  //return boost::shared_ptr<GaussianFactor>(new HessianFactor(js, newInfo));
-  return boost::shared_ptr<GaussianFactor>(new HessianFactor(keys(), Gs, gs, f));
+  //return std::shared_ptr<GaussianFactor>(new HessianFactor(js, newInfo));
+  return std::shared_ptr<GaussianFactor>(new HessianFactor(keys(), Gs, gs, f));
 }
 
 } // \namespace aspn

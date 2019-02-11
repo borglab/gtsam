@@ -52,7 +52,7 @@ namespace gtsam {
   public:
 
     typedef JunctionTree<BAYESTREE, GRAPH> This; ///< This class
-    typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
     typedef EliminatableClusterTree<BAYESTREE, GRAPH> Base; ///< Our base class
 
   protected:

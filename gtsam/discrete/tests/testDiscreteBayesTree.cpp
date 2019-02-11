@@ -39,7 +39,7 @@
 ////public:
 ////
 ////  typedef BayesTreeCliqueBaseOrdered<Clique, DiscreteConditional> Base;
-////  typedef boost::shared_ptr<Clique> shared_ptr;
+////  typedef std::shared_ptr<Clique> shared_ptr;
 ////
 ////  // Constructors
 ////  Clique() {
@@ -63,7 +63,7 @@
 ////  double evaluate(const DiscreteConditional::Values & values) {
 ////    double result = (*(this->conditional_))(values);
 ////    // evaluate all children and multiply into result
-////    for(boost::shared_ptr<Clique> c: children_)
+////    for(std::shared_ptr<Clique> c: children_)
 ////      result *= c->evaluate(values);
 ////    return result;
 ////  }

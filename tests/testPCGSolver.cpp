@@ -26,7 +26,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
@@ -130,8 +130,8 @@ TEST( PCGSolver, dummy )
 {
   LevenbergMarquardtParams paramsPCG;
   paramsPCG.linearSolverType = LevenbergMarquardtParams::Iterative;
-  PCGSolverParameters::shared_ptr pcg = boost::make_shared<PCGSolverParameters>();
-  pcg->preconditioner_ = boost::make_shared<DummyPreconditionerParameters>();
+  PCGSolverParameters::shared_ptr pcg = std::make_shared<PCGSolverParameters>();
+  pcg->preconditioner_ = std::make_shared<DummyPreconditionerParameters>();
   paramsPCG.iterativeParams = pcg;
 
   NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
@@ -151,8 +151,8 @@ TEST( PCGSolver, blockjacobi )
 {
   LevenbergMarquardtParams paramsPCG;
   paramsPCG.linearSolverType = LevenbergMarquardtParams::Iterative;
-  PCGSolverParameters::shared_ptr pcg = boost::make_shared<PCGSolverParameters>();
-  pcg->preconditioner_ = boost::make_shared<BlockJacobiPreconditionerParameters>();
+  PCGSolverParameters::shared_ptr pcg = std::make_shared<PCGSolverParameters>();
+  pcg->preconditioner_ = std::make_shared<BlockJacobiPreconditionerParameters>();
   paramsPCG.iterativeParams = pcg;
 
   NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
@@ -172,8 +172,8 @@ TEST( PCGSolver, subgraph )
 {
   LevenbergMarquardtParams paramsPCG;
   paramsPCG.linearSolverType = LevenbergMarquardtParams::Iterative;
-  PCGSolverParameters::shared_ptr pcg = boost::make_shared<PCGSolverParameters>();
-  pcg->preconditioner_ = boost::make_shared<SubgraphPreconditionerParameters>();
+  PCGSolverParameters::shared_ptr pcg = std::make_shared<PCGSolverParameters>();
+  pcg->preconditioner_ = std::make_shared<SubgraphPreconditionerParameters>();
   paramsPCG.iterativeParams = pcg;
 
   NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();

@@ -37,7 +37,7 @@ public:
 
   // typedefs needed to play nice with gtsam
   typedef DiscreteFactor This; ///< This class
-  typedef boost::shared_ptr<DiscreteFactor> shared_ptr; ///< shared_ptr to this class
+  typedef std::shared_ptr<DiscreteFactor> shared_ptr; ///< shared_ptr to this class
   typedef Factor Base; ///< Our base class
 
   /** A map from keys to values
@@ -51,7 +51,7 @@ public:
    * the new class DiscreteValue, as the varible's type (domain)
    */
   typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
+  typedef std::shared_ptr<Values> sharedValues;
 
 public:
 

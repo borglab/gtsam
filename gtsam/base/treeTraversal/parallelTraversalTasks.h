@@ -18,7 +18,7 @@
 
 #include <gtsam/global_includes.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/make_shared.hpp>
 
 #ifdef GTSAM_USE_TBB
@@ -40,12 +40,12 @@ namespace gtsam {
       class PostOrderTask : public tbb::task
       {
       public:
-        const boost::shared_ptr<NODE>& treeNode;
-        boost::shared_ptr<DATA> myData;
+        const std::shared_ptr<NODE>& treeNode;
+        std::shared_ptr<DATA> myData;
         VISITOR_POST& visitorPost;
 
-        PostOrderTask(const boost::shared_ptr<NODE>& treeNode,
-                      const boost::shared_ptr<DATA>& myData, VISITOR_POST& visitorPost)
+        PostOrderTask(const std::shared_ptr<NODE>& treeNode,
+                      const std::shared_ptr<DATA>& myData, VISITOR_POST& visitorPost)
             : treeNode(treeNode), myData(myData), visitorPost(visitorPost) {}
 
         tbb::task* execute()
@@ -62,8 +62,8 @@ namespace gtsam {
       class PreOrderTask : public tbb::task
       {
       public:
-        const boost::shared_ptr<NODE>& treeNode;
-        boost::shared_ptr<DATA> myData;
+        const std::shared_ptr<NODE>& treeNode;
+        std::shared_ptr<DATA> myData;
         VISITOR_PRE& visitorPre;
         VISITOR_POST& visitorPost;
         int problemSizeThreshold;
@@ -71,7 +71,7 @@ namespace gtsam {
 
         bool isPostOrderPhase;
 
-        PreOrderTask(const boost::shared_ptr<NODE>& treeNode, const boost::shared_ptr<DATA>& myData,
+        PreOrderTask(const std::shared_ptr<NODE>& treeNode, const std::shared_ptr<DATA>& myData,
                      VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost, int problemSizeThreshold,
                      bool makeNewTasks = true)
             : treeNode(treeNode),
@@ -104,12 +104,12 @@ namespace gtsam {
 
                 tbb::task* firstChild = 0;
                 tbb::task_list childTasks;
-                for(const boost::shared_ptr<NODE>& child: treeNode->children)
+                for(const std::shared_ptr<NODE>& child: treeNode->children)
                 {
                   // Process child in a subtask.  Important:  Run visitorPre before calling
                   // allocate_child so that if visitorPre throws an exception, we will not have
                   // allocated an extra child, this causes a TBB error.
-                  boost::shared_ptr<DATA> childData = boost::allocate_shared<DATA>(
+                  std::shared_ptr<DATA> childData = std::allocate_shared<DATA>(
                       tbb::scalable_allocator<DATA>(), visitorPre(child, *myData));
                   tbb::task* childTask =
                       new (allocate_child()) PreOrderTask(child, childData, visitorPre, visitorPost,
@@ -141,9 +141,9 @@ namespace gtsam {
           }
         }
 
-        void processNodeRecursively(const boost::shared_ptr<NODE>& node, DATA& myData)
+        void processNodeRecursively(const std::shared_ptr<NODE>& node, DATA& myData)
         {
-          for(const boost::shared_ptr<NODE>& child: node->children)
+          for(const std::shared_ptr<NODE>& child: node->children)
           {
             DATA childData = visitorPre(child, myData);
             processNodeRecursively(child, childData);
@@ -174,9 +174,9 @@ namespace gtsam {
           typedef PreOrderTask<NODE, DATA, VISITOR_PRE, VISITOR_POST> PreOrderTask;
           // Create data and tasks for our children
           tbb::task_list tasks;
-          for(const boost::shared_ptr<NODE>& root: roots)
+          for(const std::shared_ptr<NODE>& root: roots)
           {
-            boost::shared_ptr<DATA> rootData = boost::allocate_shared<DATA>(tbb::scalable_allocator<DATA>(), visitorPre(root, myData));
+            std::shared_ptr<DATA> rootData = std::allocate_shared<DATA>(tbb::scalable_allocator<DATA>(), visitorPre(root, myData));
             tasks.push_back(*new(allocate_child())
               PreOrderTask(root, rootData, visitorPre, visitorPost, problemSizeThreshold));
           }
