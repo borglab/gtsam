@@ -51,7 +51,6 @@ using namespace gtsam::symbol_shorthand;
 
 namespace gtsam {
 
-#ifndef MATLAB_MEX_FILE
 /* ************************************************************************* */
 string findExampleDataFile(const string& name) {
   // Search source tree and installed location
@@ -99,9 +98,6 @@ string createRewrittenFileName(const string& name) {
 
   return newpath.string();
 }
-
-/* ************************************************************************* */
-#endif
 
 /* ************************************************************************* */
 GraphAndValues load2D(pair<string, SharedNoiseModel> dataset, int maxID,
