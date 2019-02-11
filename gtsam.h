@@ -578,8 +578,8 @@ class Pose2 {
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
   static Matrix adjointMap_(Vector v);
-  Vector adjoint_(Vector xi, Vector y);
-  Vector adjointTranspose(Vector xi, Vector y);
+  static Vector adjoint_(Vector xi, Vector y);
+  static Vector adjointTranspose(Vector xi, Vector y);
   static Matrix wedge(double vx, double vy, double w);
 
   // Group Actions on Point2
