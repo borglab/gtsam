@@ -220,7 +220,7 @@ private:
     & boost::serialization::make_nvp("PinholeBase",
         boost::serialization::base_object<PinholeBase>(*this));
   }
-  
+
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

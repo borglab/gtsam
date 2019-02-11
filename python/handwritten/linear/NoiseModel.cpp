@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -35,7 +35,7 @@ using namespace gtsam;
 using namespace gtsam::noiseModel;
 
 // Wrap around pure virtual class Base.
-// All pure virtual methods should be wrapped. Non-pure may be wrapped if we want to mimic the 
+// All pure virtual methods should be wrapped. Non-pure may be wrapped if we want to mimic the
 // overloading through inheritance in Python.
 // See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/exposing.html#python.class_virtual_functions
 struct BaseCallback : Base, wrapper<Base>
@@ -76,7 +76,7 @@ struct BaseCallback : Base, wrapper<Base>
 
 };
 
-// Overloads for named constructors. Named constructors are static, so we declare them 
+// Overloads for named constructors. Named constructors are static, so we declare them
 // using BOOST_PYTHON_FUNCTION_OVERLOADS instead of BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS
 // See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/functions.html#python.default_arguments
 BOOST_PYTHON_FUNCTION_OVERLOADS(Gaussian_SqrtInformation_overloads, Gaussian::SqrtInformation, 1, 2)
@@ -97,13 +97,13 @@ void exportNoiseModels(){
   object noiseModel_module(handle<>(borrowed(PyImport_AddModule(noiseModel_name.c_str()))));
   scope().attr("noiseModel") = noiseModel_module;
   scope noiseModel_scope = noiseModel_module;
-  
+
   // Then export our classes in the noiseModel scope
   class_<BaseCallback,boost::noncopyable>("Base")
     .def("print", pure_virtual(&Base::print))
   ;
   register_ptr_to_python< boost::shared_ptr<Base> >();
-  
+
   // NOTE: We should use "Base" in "bases<...>", and not "BaseCallback" (it was not clear at the begining)
   class_<Gaussian, boost::shared_ptr<Gaussian>, bases<Base> >("Gaussian", no_init)
     .def("SqrtInformation",&Gaussian::SqrtInformation, Gaussian_SqrtInformation_overloads())
@@ -114,7 +114,7 @@ void exportNoiseModels(){
     .staticmethod("Covariance")
   ;
   REGISTER_SHARED_PTR_TO_PYTHON(Gaussian);
-  
+
   class_<Diagonal, boost::shared_ptr<Diagonal>, bases<Gaussian> >("Diagonal", no_init)
     .def("Sigmas",&Diagonal::Sigmas, Diagonal_Sigmas_overloads())
     .staticmethod("Sigmas")
@@ -124,7 +124,7 @@ void exportNoiseModels(){
     .staticmethod("Precisions")
   ;
   REGISTER_SHARED_PTR_TO_PYTHON(Diagonal);
-  
+
   class_<Isotropic, boost::shared_ptr<Isotropic>, bases<Diagonal> >("Isotropic", no_init)
     .def("Sigma",&Isotropic::Sigma, Isotropic_Sigma_overloads())
     .staticmethod("Sigma")
@@ -134,7 +134,7 @@ void exportNoiseModels(){
     .staticmethod("Precision")
   ;
   REGISTER_SHARED_PTR_TO_PYTHON(Isotropic);
-  
+
   class_<Unit, boost::shared_ptr<Unit>, bases<Isotropic> >("Unit", no_init)
     .def("Create",&Unit::Create)
     .staticmethod("Create")

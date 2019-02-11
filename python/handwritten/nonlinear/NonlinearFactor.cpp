@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -25,7 +25,7 @@ using namespace boost::python;
 using namespace gtsam;
 
 // Wrap around pure virtual class NonlinearFactor.
-// All pure virtual methods should be wrapped. Non-pure may be wrapped if we want to mimic the 
+// All pure virtual methods should be wrapped. Non-pure may be wrapped if we want to mimic the
 // overloading through inheritance in Python.
 // See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/exposing.html#python.class_virtual_functions
 struct NonlinearFactorWrap : NonlinearFactor, wrapper<NonlinearFactor>

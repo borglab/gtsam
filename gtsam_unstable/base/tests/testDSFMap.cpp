@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -128,14 +128,14 @@ TEST(DSFMap, sets){
   set<size_t> s1, s2;
   s1 += 1,2,3;
   s2 += 4,5,6;
-  
+
   /*for(key_pair st: sets){
     cout << "Set " << st.first << " :{";
     for(const size_t s: st.second)
       cout << s << ", ";
     cout << "}" << endl;
   }*/
-    
+
   EXPECT(s1 == sets[1]);
   EXPECT(s2 == sets[4]);
 }

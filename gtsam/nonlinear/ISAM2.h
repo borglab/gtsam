@@ -274,7 +274,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    * @param newTheta Initial values for new variables
    * @param theta Current solution to be augmented with new initialization
    * @param delta Current linear delta to be augmented with zeros
-   * @param deltaNewton 
+   * @param deltaNewton
    * @param RgProd
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */

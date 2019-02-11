@@ -151,7 +151,7 @@ class GTSAM_EXPORT PreintegrationBase {
   /// @name Main functionality
   /// @{
 
-  /** 
+  /**
    * Subtract estimate and correct for sensor pose
    * Compute the derivatives due to non-identity body_P_sensor (rotation and centrifugal acc)
    * Ignore D_correctedOmega_measuredAcc as it is trivially zero
@@ -190,8 +190,8 @@ class GTSAM_EXPORT PreintegrationBase {
                        OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2,
                        OptionalJacobian<9, 6> H3) const;
 
-  /** 
-   * Compute errors w.r.t. preintegrated measurements and jacobians 
+  /**
+   * Compute errors w.r.t. preintegrated measurements and jacobians
    * wrt pose_i, vel_i, bias_i, pose_j, bias_j
    */
   Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,

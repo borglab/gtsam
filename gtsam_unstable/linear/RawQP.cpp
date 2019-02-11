@@ -11,7 +11,7 @@
 
 /**
  * @file     RawQP.cpp
- * @brief    
+ * @brief
  * @author   Ivan Dario Jimenez
  * @date     3/5/16
  */

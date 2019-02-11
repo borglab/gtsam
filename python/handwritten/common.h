@@ -17,7 +17,7 @@
 #pragma once
 
  /* Fix to avoid registration warnings */
-// Solution taken from https://github.com/BVLC/caffe/pull/4069/commits/673e8cfc0b8f05f9fa3ebbad7cc6202822e5d9c5 
+// Solution taken from https://github.com/BVLC/caffe/pull/4069/commits/673e8cfc0b8f05f9fa3ebbad7cc6202822e5d9c5
 #define REGISTER_SHARED_PTR_TO_PYTHON(PTR) do { \
   const boost::python::type_info info = \
     boost::python::type_id<boost::shared_ptr<PTR > >(); \

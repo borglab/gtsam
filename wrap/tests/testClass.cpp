@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -207,7 +207,7 @@ TEST( Class, TemplateSubstition ) {
   // check the number of new classes is four
   EXPECT_LONGS_EQUAL(4, classes.size());
 
-  // check return types 
+  // check return types
   EXPECT( classes[0].method("myMethod").returnValue(0).type1 == q_void);
   EXPECT( classes[1].method("myMethod").returnValue(0).type1 == q_double);
   EXPECT( classes[2].method("myMethod").returnValue(0).type1 == q_Matrix);

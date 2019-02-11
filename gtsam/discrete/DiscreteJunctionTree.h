@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -51,7 +51,7 @@ namespace gtsam {
     typedef JunctionTree<DiscreteBayesTree, DiscreteFactorGraph> Base; ///< Base class
     typedef DiscreteJunctionTree This; ///< This class
     typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
-    
+
     /**
     * Build the elimination tree of a factor graph using precomputed column structure.
     * @param factorGraph The factor graph for which to build the elimination tree

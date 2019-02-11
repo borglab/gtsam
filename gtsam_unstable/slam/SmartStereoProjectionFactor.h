@@ -360,7 +360,7 @@ public:
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
   void computeJacobiansWithTriangulatedPoint(
-      FBlocks& Fs, 
+      FBlocks& Fs,
       Matrix& E, Vector& b,
       const Cameras& cameras) const {
 
