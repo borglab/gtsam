@@ -37,7 +37,8 @@ Optional prerequisites - used automatically if findable by CMake:
 
 - [Intel Threaded Building Blocks (TBB)](http://www.threadingbuildingblocks.org/) (Ubuntu: `sudo apt-get install libtbb-dev`)
 - [Intel Math Kernel Library (MKL)](http://software.intel.com/en-us/intel-mkl) (Ubuntu: [installing using APT](https://software.intel.com/en-us/articles/installing-intel-free-libs-and-python-apt-repo))
-    - see the `INSTALL` document for more installation information
+    - See the `INSTALL` document for more installation information
+    - Note that MKL may not provide a speedup in all cases. Make sure to benchmark your problem with and without MKL.
 
 GTSAM 4 Compatibility
 ---------------------
