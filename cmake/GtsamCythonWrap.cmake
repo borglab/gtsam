@@ -3,6 +3,8 @@
 # in the current environment are different from the cached!
 unset(PYTHON_EXECUTABLE CACHE)
 unset(CYTHON_EXECUTABLE CACHE)
+unset(PYTHON_INCLUDE_DIR CACHE)
+unset(PYTHON_MAJOR_VERSION CACHE)
 find_package(Cython 0.25.2 REQUIRED)
 
 # User-friendly Cython wrapping and installing function.
