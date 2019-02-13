@@ -2,7 +2,7 @@ This is the Cython/Python wrapper around the GTSAM C++ library.
 
 INSTALL
 =======
-- if you want to build the gtsam python library for a specific python version, use the `-DPYTHON_EXECUTABLE:FILEPATH=/path/to/python_interpreter` option when running `cmake` otherwise the interpreter at `$ which python` will be used.
+- if you want to build the gtsam python library for python 3, use the `-DPython_ADDITIONAL_VERSIONS=3` option when running `cmake` otherwise the interpreter at `$ which python` will be used.
     - If the interpreter is inside an environment (such as an anaconda environment or virtualenv environment) then the environment should be active while building gtsam.
 - This wrapper needs Cython(>=0.25.2), backports_abc>=0.5, and numpy. These can be installed as follows:
 
