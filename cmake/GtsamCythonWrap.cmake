@@ -5,7 +5,18 @@ unset(PYTHON_EXECUTABLE CACHE)
 unset(CYTHON_EXECUTABLE CACHE)
 unset(PYTHON_INCLUDE_DIR CACHE)
 unset(PYTHON_MAJOR_VERSION CACHE)
+
+if(GTSAM_PYTHON_VERSION STREQUAL "Default")
+  find_package(PythonLibs REQUIRED)
+else()
+  find_package(PythonLibs ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
+endif()
 find_package(Cython 0.25.2 REQUIRED)
+
+execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
+    "from __future__ import print_function;import sys;print(sys.version[0], end='')"
+    OUTPUT_VARIABLE PYTHON_MAJOR_VERSION
+)
 
 # User-friendly Cython wrapping and installing function.
 # Builds a Cython module from the provided interface_header.
@@ -31,16 +42,16 @@ endfunction()
 
 function(set_up_required_cython_packages)
   # Set up building of cython module
-  find_package(PythonLibs REQUIRED)
+  if(GTSAM_PYTHON_VERSION STREQUAL "Default")
+    find_package(PythonLibs REQUIRED)
+  else()
+    find_package(PythonLibs ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
+  endif()
   include_directories(${PYTHON_INCLUDE_DIRS})
   find_package(NumPy REQUIRED)
   include_directories(${NUMPY_INCLUDE_DIRS})
 endfunction()
 
-execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
-    "from __future__ import print_function;import sys;print(sys.version[0], end='')"
-    OUTPUT_VARIABLE PYTHON_MAJOR_VERSION
-)
 
 # Convert pyx to cpp by executing cython
 # This is the first step to compile cython from the command line
