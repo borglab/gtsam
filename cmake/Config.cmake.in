@@ -1,7 +1,7 @@
 # - Config file for @CMAKE_PROJECT_NAME@
 # It defines the following variables
 #  @PACKAGE_NAME@_INCLUDE_DIR - include directories for @CMAKE_PROJECT_NAME@
- 
+
 # Compute paths
 get_filename_component(OUR_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 if(EXISTS "${OUR_CMAKE_DIR}/CMakeCache.txt")
@@ -11,7 +11,11 @@ else()
   # Find installed library
   set(@PACKAGE_NAME@_INCLUDE_DIR "${OUR_CMAKE_DIR}/@CONF_REL_INCLUDE_DIR@" CACHE PATH "@PACKAGE_NAME@ include directory")
 endif()
-  
+
+# Find dependencies, required by cmake exported targets:
+include(CMakeFindDependencyMacro)
+find_dependency(Boost @BOOST_FIND_MINIMUM_VERSION@ COMPONENTS @BOOST_FIND_MINIMUM_COMPONENTS@)
+
 # Load exports
 include(${OUR_CMAKE_DIR}/@PACKAGE_NAME@-exports.cmake)
 

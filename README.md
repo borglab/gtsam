@@ -30,7 +30,7 @@ $ make install
 Prerequisites:
 
 - [Boost](http://www.boost.org/users/download/) >= 1.43 (Ubuntu: `sudo apt-get install libboost-all-dev`)
-- [CMake](http://www.cmake.org/cmake/resources/software.html) >= 2.6 (Ubuntu: `sudo apt-get install cmake`)
+- [CMake](http://www.cmake.org/cmake/resources/software.html) >= 3.0 (Ubuntu: `sudo apt-get install cmake`)
 - A modern compiler, i.e., at least gcc 4.7.3 on Linux.
 
 Optional prerequisites - used automatically if findable by CMake:
@@ -54,7 +54,7 @@ GTSAM includes a state of the art IMU handling scheme based on
 
 Our implementation improves on this using integration on the manifold, as detailed in
 
-- Luca Carlone, Zsolt Kira, Chris Beall, Vadim Indelman, and Frank Dellaert, "Eliminating conditionally independent sets in factor graphs: a unifying perspective based on smart factors", Int. Conf. on Robotics and Automation (ICRA), 2014. 
+- Luca Carlone, Zsolt Kira, Chris Beall, Vadim Indelman, and Frank Dellaert, "Eliminating conditionally independent sets in factor graphs: a unifying perspective based on smart factors", Int. Conf. on Robotics and Automation (ICRA), 2014.
 - Christian Forster, Luca Carlone, Frank Dellaert, and Davide Scaramuzza, "IMU Preintegration on Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation", Robotics: Science and Systems (RSS), 2015.
 
 If you are using the factor in academic work, please cite the publications above.
@@ -67,8 +67,8 @@ Additional Information
 
 There is a [`GTSAM users Google group`](https://groups.google.com/forum/#!forum/gtsam-users) for general discussion.
 
-Read about important [`GTSAM-Concepts`](GTSAM-Concepts.md) here. A primer on GTSAM Expressions, 
-which support (superfast) automatic differentiation, 
+Read about important [`GTSAM-Concepts`](GTSAM-Concepts.md) here. A primer on GTSAM Expressions,
+which support (superfast) automatic differentiation,
 can be found on the [GTSAM wiki on BitBucket](https://bitbucket.org/gtborg/gtsam/wiki/Home).
 
 See the [`INSTALL`](INSTALL) file for more detailed installation instructions.
