@@ -252,7 +252,7 @@ if(GTSAM_USE_SYSTEM_EIGEN)
 	find_package(Eigen3 REQUIRED)
 
 	# Use generic Eigen include paths e.g. <Eigen/Core>
-	set(GTSAM_EIGEN_INCLUDE_PREFIX "${EIGEN3_INCLUDE_DIR}")
+	set(GTSAM_EIGEN_INCLUDE_FOR_INSTALL "${EIGEN3_INCLUDE_DIR}")
 
 	# check if MKL is also enabled - can have one or the other, but not both!
 	# Note: Eigen >= v3.2.5 includes our patches
@@ -266,6 +266,8 @@ if(GTSAM_USE_SYSTEM_EIGEN)
 		message(FATAL_ERROR "MKL does not work with Eigen 3.3.4 because of a bug in Eigen. See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1527. Disable GTSAM_USE_SYSTEM_EIGEN to use GTSAM's copy of Eigen, disable GTSAM_WITH_EIGEN_MKL, or upgrade/patch your installation of Eigen.")
 	endif()
 
+	# The actual include directory (for BUILD cmake target interface):
+	set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${EIGEN3_INCLUDE_DIR}")
 else()
 	# Use bundled Eigen include path.
 	# Clear any variables set by FindEigen3
@@ -275,8 +277,10 @@ else()
 
 	# set full path to be used by external projects
 	# this will be added to GTSAM_INCLUDE_DIR by gtsam_extra.cmake.in
-	set(GTSAM_EIGEN_INCLUDE_PREFIX "include/gtsam/3rdparty/Eigen/")
+	set(GTSAM_EIGEN_INCLUDE_FOR_INSTALL "include/gtsam/3rdparty/Eigen/")
 
+	# The actual include directory (for BUILD cmake target interface):
+	set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${CMAKE_SOURCE_DIR}/gtsam/3rdparty/Eigen/")
 endif()
 
 if (MSVC)
