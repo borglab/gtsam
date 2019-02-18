@@ -100,12 +100,28 @@ class Template2 {
  private:
   T1 t1_;
   T2 t2_;
+
+ public:
+  T1 property_t1{10};
 };
 
 class Ignore {
  public:
   explicit Ignore(int x) {}
 };
+
+namespace sub2 {
+class Point4 {
+ public:
+  Point4(const sub::Point2& p_in, double z_in, double w_in)
+      : p(p_in), z(z_in), w(w_in) {}
+  double sum() { return p.sum() + z + w; }
+
+  const anzu::sub::Point2 p;
+  double z;
+  double w;
+};
+}  // namespace sub2
 
 // A function on the base class.
 double global_func_on_base(const std::shared_ptr<PointBase>& point);

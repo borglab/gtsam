@@ -1,4 +1,4 @@
-#include <wrap_example.h>
+#include <tools/workspace/pybind_wrapper/test/pybind_wrapper_test.h>
 
 namespace anzu {
 
@@ -54,6 +54,7 @@ class Template2 {
   double sum_x(const T1& other1) const;
   double sum_x(T2* other2) const;
   double sum_x(const T1& other1, T2* other2) const;
+  T1 property_t1;
 };
 
 typedef anzu::Template2<anzu::sub::Point2, anzu::Point3>
@@ -62,6 +63,16 @@ typedef anzu::Template2<anzu::sub::Point2, anzu::Point3>
 class Ignore {
   Ignore(int x);
 };
+
+namespace sub2 {
+class Point4 {
+  Point4(const anzu::sub::Point2& p_in, double z_in, double w_in);
+  double sum();
+  const anzu::sub::Point2 p;
+  double z;
+  double w;
+};
+}  // namespace sub2
 
 double global_func_on_base(anzu::PointBase* point);
 

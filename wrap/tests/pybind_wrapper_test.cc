@@ -1,4 +1,4 @@
-#include "wrap_example.h"
+#include "tools/workspace/pybind_wrapper/test/pybind_wrapper_test.h"
 
 namespace anzu {
 

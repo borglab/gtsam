@@ -1,7 +1,6 @@
 # TODO(duy): make them proper tests!!!
-
 import unittest
-from wrap.python.interface_parser import *
+from interface_parser import *
 
 
 class TestPyparsing(unittest.TestCase):
@@ -10,17 +9,17 @@ class TestPyparsing(unittest.TestCase):
             "const C4 c4, const C5& c5,"\
             "const C6* c6"
         args = ArgumentList.rule.parseString(arg_string)
-        print ArgumentList(args)
+        print(ArgumentList(args))
 
 
 empty_args = ArgumentList.rule.parseString("")[0]
-print empty_args
+print(empty_args)
 
 arg_string = "int a, C1 c1, C2& c2, C3* c3, "\
     "const C4 c4, const C5& c5,"\
     "const C6* c6"
 args = ArgumentList.rule.parseString(arg_string)[0]
-print args
+print(args)
 
 # Test ReturnType
 ReturnType.rule.parseString("pair<fdsa, rewcds>")[0]
@@ -155,7 +154,7 @@ typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2>
 """)[0]
 
 include = Include.rule.parseString("#include <gtsam/slam/PriorFactor.h>")[0]
-print include
+print(include)
 
 fwd = ForwardDeclaration.rule.parseString(
     "virtual class Test:gtsam::Point3;")[0]
@@ -235,21 +234,21 @@ class Global{
 };
 """)
 
-print "module: ", module
+print("module: ", module)
 
 sub_namespace = find_sub_namespace(module, ['one', 'two', 'three'])
-print "Found namespace:", sub_namespace[0].namespace
-print find_sub_namespace(module, ['one', 'two_test', 'three'])
-print find_sub_namespace(module, ['one', 'two'])
+print("Found namespace:", sub_namespace[0].name)
+print(find_sub_namespace(module, ['one', 'two_test', 'three']))
+print(find_sub_namespace(module, ['one', 'two']))
 
 found_class = module.find_class(
     Typename(namespaces_name=['one', 'two', 'three', 'Class123']))
-print found_class
+print(found_class)
 
 found_class = module.find_class(
     Typename(namespaces_name=['one', 'two', 'Class12b']))
-print found_class.name
+print(found_class.name)
 
 found_class = module.find_class(
     Typename(namespaces_name=['one', 'two', 'Class12a']))
-print found_class.name
+print(found_class.name)
