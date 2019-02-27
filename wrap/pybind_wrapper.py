@@ -296,7 +296,7 @@ def main():
         "--ignore",
         nargs='*',
         type=str,
-        help="A space-separated string of classes to ignore. "
+        help="A space-separated list of classes to ignore. "
         "Class names must include their full namespaces.")
     args = arg_parser.parse_args()
 

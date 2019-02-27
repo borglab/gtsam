@@ -76,34 +76,20 @@ endif()
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
-option(GTSAM_INSTALL_CYTHON_TOOLBOX      "Enable/Disable installation of Cython toolbox"  OFF)
-option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab/cython wrap utility (necessary for matlab/cython interface)" ON)
-set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of python to build the cython wrapper or python module for (or Default)")
+option(GTSAM_INSTALL_PYTHON_TOOLBOX      "Enable/Disable installation of Python toolbox"  OFF)
 
 # Check / set dependent variables for MATLAB wrapper
-if((GTSAM_INSTALL_MATLAB_TOOLBOX OR GTSAM_INSTALL_CYTHON_TOOLBOX) AND NOT GTSAM_BUILD_WRAP)
-	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX or GTSAM_INSTALL_CYTHON_TOOLBOX is enabled, please also enable GTSAM_BUILD_WRAP")
-endif()
-if(GTSAM_INSTALL_WRAP AND NOT GTSAM_BUILD_WRAP)
-	message(FATAL_ERROR "GTSAM_INSTALL_WRAP is enabled, please also enable GTSAM_BUILD_WRAP")
-endif()
-
 if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT BUILD_SHARED_LIBS)
 	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and BUILD_SHARED_LIBS=OFF. The MATLAB wrapper cannot be compiled with a static GTSAM library because mex modules are themselves shared libraries.  If you want a self-contained mex module, enable GTSAM_MEX_BUILD_STATIC_MODULE instead of BUILD_SHARED_LIBS=OFF.")
-endif()
-
-if(GTSAM_BUILD_PYTHON AND GTSAM_ALLOW_DEPRECATED_SINCE_V4)
-    message(FATAL_ERROR "GTSAM_BUILD_PYTHON and GTSAM_ALLOW_DEPRECATED_SINCE_V4 are both enabled. The python module cannot be compiled with deprecated functions turned on. Turn one of the two options off.")
 endif()
 
 if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
     message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the MATLAB toolbox cannot deal with this yet.  Please turn one of the two options off.")
 endif()
 
-if(GTSAM_INSTALL_CYTHON_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
-    message(FATAL_ERROR "GTSAM_INSTALL_CYTHON_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the CYTHON toolbox cannot deal with this yet.  Please turn one of the two options off.")
+if(GTSAM_INSTALL_PYTHON_TOOLBOX AND NOT GTSAM_TYPEDEF_POINTS_TO_VECTORS)
+    message(FATAL_ERROR "GTSAM_INSTALL_PYTHON_TOOLBOX requires GTSAM_TYPEDEF_POINTS_TO_VECTORS to be enabled but it is not.")
 endif()
-
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
 set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
@@ -361,10 +347,7 @@ endif()
 # Build CppUnitLite
 add_subdirectory(CppUnitLite)
 
-# Build wrap
-if (GTSAM_BUILD_WRAP)
-    add_subdirectory(wrap)
-endif(GTSAM_BUILD_WRAP)
+add_subdirectory(wrap)
 
 # Build GTSAM library
 add_subdirectory(gtsam)
@@ -389,31 +372,15 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 endif()
 
 # Python wrap
-if (GTSAM_BUILD_PYTHON)
-	include(GtsamPythonWrap)
-
-	# NOTE: The automatic generation of python wrapper from the gtsampy.h interface is
-	#       not working yet, so we're using a handwritten wrapper files on python/handwritten.
-	#       Once the python wrapping from the interface file is working, you can _swap_ the
-	#       comments on the next lines
-
-	# wrap_and_install_python(gtsampy.h "${GTSAM_ADDITIONAL_LIBRARIES}" "")
-	add_subdirectory(python)
-
-endif()
-
-# Cython wrap
-if (GTSAM_INSTALL_CYTHON_TOOLBOX)
-  set(GTSAM_INSTALL_CYTHON_TOOLBOX 1)
+if (GTSAM_INSTALL_PYTHON_TOOLBOX)
+  set(GTSAM_INSTALL_PYTHON_TOOLBOX 1)
   # Set up cache options
-  set(GTSAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
-  if(NOT GTSAM_CYTHON_INSTALL_PATH)
-    set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython")
+  set(GTSAM_PYTHON_INSTALL_PATH "" CACHE PATH "Python toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/python")
+  if(NOT GTSAM_PYTHON_INSTALL_PATH)
+    set(GTSAM_PYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/python")
   endif()
-  set(GTSAM_EIGENCY_INSTALL_PATH ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency)
-  add_subdirectory(cython)
 else()
-  set(GTSAM_INSTALL_CYTHON_TOOLBOX 0) # This will go into config.h
+  set(GTSAM_INSTALL_PYTHON_TOOLBOX 0) # This will go into config.h
 endif()
 
 
@@ -540,7 +507,6 @@ print_config_flag(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space preint
 
 message(STATUS "MATLAB toolbox flags                                      ")
 print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox         ")
-print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
 
 message(STATUS "Python module flags                                       ")
 
@@ -553,10 +519,8 @@ if(GTSAM_BUILD_PYTHON)
 	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
 endif()
 
-message(STATUS "Cython toolbox flags                                      ")
-print_config_flag(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox         ")
-message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
-print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
+message(STATUS "Python toolbox flags                                      ")
+print_config_flag(${GTSAM_INSTALL_PYTHON_TOOLBOX}      "Install Python toolbox         ")
 message(STATUS "===============================================================")
 
 # Print warnings at the end
