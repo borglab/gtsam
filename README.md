@@ -71,7 +71,7 @@ Read about important [`GTSAM-Concepts`](GTSAM-Concepts.md) here. A primer on GTS
 which support (superfast) automatic differentiation,
 can be found on the [GTSAM wiki on BitBucket](https://bitbucket.org/gtborg/gtsam/wiki/Home).
 
-See the [`INSTALL`](INSTALL) file for more detailed installation instructions.
+See the [`INSTALL`](INSTALL.md) file for more detailed installation instructions.
 
 GTSAM is open source under the BSD license, see the [`LICENSE`](LICENSE) and [`LICENSE.BSD`](LICENSE.BSD) files.
 
