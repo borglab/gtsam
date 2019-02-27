@@ -209,6 +209,38 @@ class KeyGroupMap {
   bool insert2(size_t key, int val);
 };
 
+// Actually a FastSet<FactorIndex>
+class FactorIndexSet {
+  FactorIndexSet();
+  FactorIndexSet(const gtsam::FactorIndexSet& set);
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  void insert(size_t factorIdx);
+  bool erase(size_t factorIdx); // returns true if value was removed
+  bool count(size_t factorIdx) const; // returns true if value exists
+};
+
+// Actually a vector<FactorIndex>
+class FactorIndices {
+  FactorIndices();
+  FactorIndices(const gtsam::FactorIndices& other);
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  size_t at(size_t i) const;
+  size_t front() const;
+  size_t back() const;
+  void push_back(size_t factorIdx) const;
+};
 //*************************************************************************
 // base
 //*************************************************************************
@@ -1219,7 +1251,7 @@ namespace noiseModel {
 #include <gtsam/linear/NoiseModel.h>
 virtual class Base {
   void print(string s) const;
-  // Methods below are available for all noise models. However, can't add them 
+  // Methods below are available for all noise models. However, can't add them
   // because wrap (incorrectly) thinks robust classes derive from this Base as well.
   // bool isConstrained() const;
   // bool isUnit() const;
@@ -1257,7 +1289,7 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
   Vector sigmas() const;
   Vector invsigmas() const;
   Vector precisions() const;
-    
+
   // enabling serialization functionality
   void serializable() const;
 };
@@ -2053,7 +2085,7 @@ virtual class LevenbergMarquardtParams : gtsam::NonlinearOptimizerParams {
   bool getUseFixedLambdaFactor();
   string getLogFile() const;
   string getVerbosityLM() const;
-  
+
   void setDiagonalDamping(bool flag);
   void setlambdaFactor(double value);
   void setlambdaInitial(double value);

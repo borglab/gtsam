@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gtsam/inference/Factor.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/FastVector.h>
@@ -43,7 +44,7 @@ class GTSAM_EXPORT VariableIndex {
 public:
 
   typedef boost::shared_ptr<VariableIndex> shared_ptr;
-  typedef FastVector<size_t> Factors;
+  typedef FactorIndices Factors;
   typedef Factors::iterator Factor_iterator;
   typedef Factors::const_iterator Factor_const_iterator;
 
@@ -122,7 +123,7 @@ public:
    * solving problems incrementally.
    */
   template<class FG>
-  void augment(const FG& factors, boost::optional<const FastVector<size_t>&> newFactorIndices = boost::none);
+  void augment(const FG& factors, boost::optional<const FactorIndices&> newFactorIndices = boost::none);
 
   /**
    * Remove entries corresponding to the specified factors. NOTE: We intentionally do not decrement
