@@ -1,4 +1,11 @@
 """
+GTSAM Copyright 2010-2018, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+See LICENSE for the license information
+
 Demonstration of the fixed-lag smoothers using a planar robot example
 and multiple odometry-like sensors
 Author: Frank Dellaert (C++), Jeremy Aguilon (Python)
@@ -11,12 +18,21 @@ import gtsam_unstable
 
 
 def _timestamp_key_value(key, value):
+    """
+
+    """
     return gtsam_unstable.FixedLagSmootherKeyTimestampMapValue(
         key, value
     )
 
 
 def BatchFixedLagSmootherExample():
+    """
+    Runs a batch fixed smoother on an agent with two odometry
+    sensors that is simply moving along the x axis in constant
+    speed.
+    """
+
     # Define a batch fixed lag smoother, which uses
     # Levenberg-Marquardt to perform the nonlinear optimization
     lag = 2.0
@@ -41,6 +57,9 @@ def BatchFixedLagSmootherExample():
     delta_time = 0.25
     time = 0.25
 
+    # Iterates from 0.25s to 3.0s, adding 0.25s each loop
+    # In each iteration, the agent moves at a constant speed
+    # and its two odometers measure the change.
     while time <= 3.0:
         previous_key = 1000 * (time - delta_time)
         current_key = 1000 * time

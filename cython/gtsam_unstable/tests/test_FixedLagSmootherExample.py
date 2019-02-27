@@ -8,9 +8,16 @@ def _timestamp_key_value(key, value):
         key, value
     )
 class TestFixedLagSmootherExample(unittest.TestCase):
-    # Simple test that checks for equality between C++ example
-    # file and the Python implementation
+    '''
+    Tests the fixed lag smoother wrapper
+    '''
+
     def test_FixedLagSmootherExample(self):
+        '''
+        Simple test that checks for equality between C++ example
+        file and the Python implementation. See
+        gtsam_unstable/examples/FixedLagSmootherExample.cpp
+        '''
         # Define a batch fixed lag smoother, which uses
         # Levenberg-Marquardt to perform the nonlinear optimization
         lag = 2.0
@@ -81,7 +88,6 @@ class TestFixedLagSmootherExample(unittest.TestCase):
 
             estimate = smoother_batch.calculateEstimatePose2(current_key)
             self.assertTrue(estimate.equals(ground_truth[i], 1e-4))
-            print("PASS")
 
             new_timestamps.clear()
             new_values.clear()
