@@ -289,10 +289,6 @@ class Template(object):
         self.instantiations = [ti.instantiations for ti in ti_list]
 
 
-template = Template.rule.parseString(
-    "template< T = {gtsam::Point3, gtsam::noiseModel::Gaussian}, U>")[0]
-
-
 class Method(HasParent):
     rule = (
         Optional(Template.rule("template")) + ReturnType.rule("return_type") +
