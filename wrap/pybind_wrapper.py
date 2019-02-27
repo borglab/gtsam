@@ -269,8 +269,8 @@ def main():
         "--module_name",
         type=str,
         required=True,
-        help="Name of the Python module to be generated and " \
-             "used in the Python `import` statement.")
+        help="Name of the Python module to be generated and "
+        "used in the Python `import` statement.")
     arg_parser.add_argument(
         "--out",
         type=str,
@@ -291,14 +291,13 @@ def main():
         "For example, `import <module_name>` gives you access to the Python "
         "`<module_name>.Class` of the corresponding C++ `ns1::ns2::ns3::Class`,"
         " and `from <module_name> import ns4` gives you access to the Python "
-        "`ns4.Class` of the C++ `ns1::ns2::ns3::ns4::Class`. "
-    )
+        "`ns4.Class` of the C++ `ns1::ns2::ns3::ns4::Class`. ")
     arg_parser.add_argument(
         "--ignore",
         nargs='*',
         type=str,
-        help="A space-separated string of classes to ignore. " \
-             "Class names must include their full namespaces.")
+        help="A space-separated string of classes to ignore. "
+        "Class names must include their full namespaces.")
     args = arg_parser.parse_args()
 
     top_module_namespaces = args.top_module_namespaces.split("::")
