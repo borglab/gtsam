@@ -114,7 +114,7 @@ class PybindWrapper(object):
                 '&{cpp_class}::{property_name})'.format(
                     prefix=prefix,
                     property="readonly"
-                        if prop.ctype.is_const else "readwrite",
+                    if prop.ctype.is_const else "readwrite",
                     cpp_class=cpp_class,
                     property_name=prop.name,
                 )
@@ -183,8 +183,8 @@ class PybindWrapper(object):
                                                                '"').replace(
                                                                    '>', '"')
                 if isinstance(element, parser.Namespace):
-                    wrapped_namespace, includes_namespace = self.wrap_namespace(
-                        element)
+                    wrapped_namespace, includes_namespace = \
+                        self.wrap_namespace(element)
                     wrapped += wrapped_namespace
                     includes += includes_namespace
         else:
@@ -192,11 +192,12 @@ class PybindWrapper(object):
 
             if len(namespaces) > len(self.top_module_namespaces):
                 wrapped += ' '*4 + 'pybind11::module {module_var} = '\
-                    '{parent_module_var}.def_submodule("{namespace}", "{namespace} '\
-                    'submodule");\n'.format(
+                    '{parent_module_var}.def_submodule("{namespace}", "'\
+                    '{namespace} submodule");\n'.format(
                         module_var=module_var,
                         namespace=namespace.name,
-                        parent_module_var=self._gen_module_var(namespaces[:-1]))
+                        parent_module_var=self._gen_module_var(
+                            namespaces[:-1]))
 
             for element in namespace.content:
                 if isinstance(element, parser.Include):
@@ -204,8 +205,8 @@ class PybindWrapper(object):
                                                                '"').replace(
                                                                    '>', '"')
                 elif isinstance(element, parser.Namespace):
-                    wrapped_namespace, includes_namespace = self.wrap_namespace(
-                        element)
+                    wrapped_namespace, includes_namespace = \
+                        self.wrap_namespace(element)
                     wrapped += wrapped_namespace
                     includes += includes_namespace
                 elif isinstance(element, instantiator.InstantiatedClass):
@@ -229,8 +230,8 @@ class PybindWrapper(object):
         return """
 {include_boost}
 
-# include <pybind11/eigen.h>
-# include <pybind11/pybind11.h>
+#include <pybind11/eigen.h>
+#include <pybind11/pybind11.h>
 
 {includes}
 

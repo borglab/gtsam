@@ -63,7 +63,8 @@ def instantiate_return_type(return_type, template_typenames, instantiations,
         return_type.type1, template_typenames, instantiations, cpp_typename)
     if return_type.type2:
         new_type2 = instantiate_type(
-            return_type.type2, template_typenames, instantiations, cpp_typename)
+            return_type.type2, template_typenames, instantiations,
+            cpp_typename)
     else:
         new_type2 = ''
     return parser.ReturnType(new_type1, new_type2)
@@ -77,12 +78,12 @@ def instantiate_name(original_name, instantiations):
     namespaces, but I find that too verbose.
     """
     return "{}{}".format(original_name, "".join(
-        [inst.name for inst in instantiations]))
+        [inst.instantiated_name() for inst in instantiations]))
 
 
 class InstantiatedMethod(parser.Method):
     """
-    We can only instantiate single-template methods for now.
+    We can only instantiate template methods with a single template parameter.
     """
 
     def __init__(self, original, instantiation=''):
@@ -97,6 +98,9 @@ class InstantiatedMethod(parser.Method):
             self.return_type = original.return_type
             self.args = original.args
         else:
+            if len(self.original.template.typenames) > 1:
+                raise ValueError("Can only instantiate template method with "
+                                 "single template parameter.")
             self.name = instantiate_name(original.name, [self.instantiation])
             self.return_type = instantiate_return_type(
                 original.return_type,
@@ -174,8 +178,8 @@ class InstantiatedClass(parser.Class):
                     self.methods.append(InstantiatedMethod(method, inst))
 
     def __repr__(self):
-        return "{virtual} class {name} [{cpp_class}]: {parent_class} \n{ctors}"\
-            "\n{static_methods}\n{methods}".format(
+        return "{virtual} class {name} [{cpp_class}]: {parent_class}\n"\
+            "{ctors}\n{static_methods}\n{methods}".format(
                virtual="virtual" if self.is_virtual else '',
                name=self.name,
                cpp_class=self.cpp_class(),
@@ -257,11 +261,11 @@ class InstantiatedClass(parser.Class):
 
     def instantiate_properties(self):
         instantiated_properties = instantiate_args_list(
-                self.original.properties,
-                self.original.template.typenames,
-                self.instantiations,
-                self.cpp_typename(),
-            )
+            self.original.properties,
+            self.original.template.typenames,
+            self.instantiations,
+            self.cpp_typename(),
+        )
         return instantiated_properties
 
     def cpp_class(self):
@@ -299,7 +303,7 @@ def instantiate_namespace_inplace(namespace):
                 if (len(original_class.template.typenames) > 1
                         and original_class.template.instantiations[0]):
                     raise ValueError(
-                        "Can't instantiate multi-typenames template here. "
+                        "Can't instantiate multi-parameter templates here. "
                         "Please use typedef template instantiation."
                     )
                 for inst in original_class.template.instantiations[0]:
@@ -308,9 +312,10 @@ def instantiate_namespace_inplace(namespace):
         elif isinstance(element, parser.TypedefTemplateInstantiation):
             typedef_inst = element
             original_class = namespace.top_level().find_class(
-                typedef_inst.template_class)
+                typedef_inst.typename)
             instantiated_content.append(
-                InstantiatedClass(original_class, typedef_inst.instantiation,
+                InstantiatedClass(original_class,
+                                  typedef_inst.typename.instantiations,
                                   typedef_inst.new_name)
             )
         elif isinstance(element, parser.Namespace):
