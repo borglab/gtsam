@@ -261,12 +261,21 @@ PYBIND11_PLUGIN({module_name}) {{
 
 
 def main():
-    arg_parser = argparse.ArgumentParser()
+    arg_parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     arg_parser.add_argument(
         "--src", type=str, required=True, help="Input interface .h file")
-    arg_parser.add_argument("--module_name", type=str, required=True)
     arg_parser.add_argument(
-        "--out", type=str, required=True, help="Output pybind .cc file")
+        "--module_name",
+        type=str,
+        required=True,
+        help="Name of the Python module to be generated and " \
+             "used in the Python `import` statement.")
+    arg_parser.add_argument(
+        "--out",
+        type=str,
+        required=True,
+        help="Name of the output pybind .cc file")
     arg_parser.add_argument(
         "--use_boost",
         action="store_true",
@@ -274,11 +283,22 @@ def main():
     arg_parser.add_argument(
         "--top_module_namespaces",
         type=str,
-        required=True,
-        default='',
-        help="C++ namespace for the top module, e.g. ns1::ns2::ns3")
+        default="",
+        help="C++ namespace for the top module, e.g. `ns1::ns2::ns3`. "
+        "Only the content within this namespace and its sub-namespaces "
+        "will be wrapped. The content of this namespace will be available at "
+        "the top module level, and its sub-namespaces' in the submodules.\n"
+        "For example, `import <module_name>` gives you access to the Python "
+        "`<module_name>.Class` of the corresponding C++ `ns1::ns2::ns3::Class`,"
+        " and `from <module_name> import ns4` gives you access to the Python "
+        "`ns4.Class` of the C++ `ns1::ns2::ns3::ns4::Class`. "
+    )
     arg_parser.add_argument(
-        "--ignore", nargs='*', type=str, help="Ignore classes")
+        "--ignore",
+        nargs='*',
+        type=str,
+        help="A space-separated string of classes to ignore. " \
+             "Class names must include their full namespaces.")
     args = arg_parser.parse_args()
 
     top_module_namespaces = args.top_module_namespaces.split("::")
