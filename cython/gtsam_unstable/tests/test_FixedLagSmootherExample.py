@@ -58,6 +58,10 @@ class TestFixedLagSmootherExample(unittest.TestCase):
             gtsam.Pose2(5.4481, 0.49506, 0.165),
             gtsam.Pose2(5.9379, 0.5845, 0.18),
         ]
+        # Iterates from 0.25s to 3.0s, adding 0.25s each loop
+        # In each iteration, the agent moves at a constant speed
+        # and its two odometers measure the change. The smoothed
+        # result is then compared to the ground truth
         while time <= 3.0:
             previous_key = 1000 * (time - delta_time)
             current_key = 1000 * time
