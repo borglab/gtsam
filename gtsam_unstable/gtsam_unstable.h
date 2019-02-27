@@ -505,15 +505,9 @@ virtual class DiscreteEulerPoincareHelicopter : gtsam::NoiseModelFactor {
 //*************************************************************************
 // nonlinear
 //*************************************************************************
-#include <gtsam_unstable/nonlinear/sequentialSummarization.h>
-gtsam::GaussianFactorGraph* summarizeGraphSequential(
-    const gtsam::GaussianFactorGraph& full_graph, const gtsam::KeyVector& indices);
-gtsam::GaussianFactorGraph* summarizeGraphSequential(
-    const gtsam::GaussianFactorGraph& full_graph, const gtsam::Ordering& ordering, const gtsam::KeySet& saved_keys);
-
 #include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
 class FixedLagSmootherKeyTimestampMapValue {
-  FixedLagSmootherKeyTimestampMapValue(const gtsam::Key& key, double timestamp);
+  FixedLagSmootherKeyTimestampMapValue(size_t key, double timestamp);
   FixedLagSmootherKeyTimestampMapValue(const gtsam::FixedLagSmootherKeyTimestampMapValue& other);
 };
 
@@ -528,7 +522,7 @@ class FixedLagSmootherKeyTimestampMap {
   bool empty() const;
   void clear();
 
-  double at(const gtsam::Key& key) const;
+  double at(const size_t key) const;
   void insert(const gtsam::FixedLagSmootherKeyTimestampMapValue& value);
 };
 
@@ -558,6 +552,10 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
   BatchFixedLagSmoother(double smootherLag, const gtsam::LevenbergMarquardtParams& params);
 
   gtsam::LevenbergMarquardtParams params() const;
+  template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
+                     gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
+                     Vector, Matrix}>
+  VALUE calculateEstimate(size_t key) const;
 };
 
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
