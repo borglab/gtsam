@@ -19,7 +19,7 @@ import gtsam_unstable
 
 def _timestamp_key_value(key, value):
     """
-
+    Creates a key value pair for a FixedLagSmootherKeyTimeStampMap
     """
     return gtsam_unstable.FixedLagSmootherKeyTimestampMapValue(
         key, value
