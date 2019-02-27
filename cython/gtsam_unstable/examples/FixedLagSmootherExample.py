@@ -9,9 +9,6 @@ import numpy as np
 import gtsam
 import gtsam_unstable
 
-# Create noise models
-PRIOR_NOISE = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
-MEASUREMENT_NOISE = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.1, 0.2]))
 
 def _timestamp_key_value(key, value):
     return gtsam_unstable.FixedLagSmootherKeyTimestampMapValue(
@@ -35,8 +32,9 @@ def BatchFixedLagSmootherExample():
 
     # Create  a prior on the first pose, placing it at the origin
     prior_mean = gtsam.Pose2(0, 0, 0)
+    prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
     X1 = 0
-    new_factors.push_back(gtsam.PriorFactorPose2(X1, prior_mean, PRIOR_NOISE))
+    new_factors.push_back(gtsam.PriorFactorPose2(X1, prior_mean, prior_noise))
     new_values.insert(X1, prior_mean)
     new_timestamps.insert(_timestamp_key_value(X1, 0.0))
 
