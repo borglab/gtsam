@@ -22,7 +22,10 @@ include_directories(BEFORE "${PROJECT_SOURCE_DIR}")
 ###################################################################################
 # Find GTSAM components
 find_package(GTSAM REQUIRED) # Uses installed package
-include_directories(${GTSAM_INCLUDE_DIR})
+# Note: Since Jan-2019, GTSAMConfig.cmake defines exported CMake targets
+# that automatically do include the include_directories() without the need
+# to call include_directories(), just target_link_libraries(NAME gtsam)
+#include_directories(${GTSAM_INCLUDE_DIR})
 
 ###################################################################################
 # Build static library from common sources

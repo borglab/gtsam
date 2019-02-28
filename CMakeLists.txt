@@ -121,15 +121,19 @@ if(MSVC)
 	# If we use Boost shared libs, disable auto linking.
 	# Some libraries, at least Boost Program Options, rely on this to export DLL symbols.
 	if(NOT Boost_USE_STATIC_LIBS)
-		list(APPEND GTSAM_COMPILE_DEFINITIONS BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
+		list(APPEND GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
 	endif()
 	# Virtual memory range for PCH exceeded on VS2015
 	if(MSVC_VERSION LESS 1910) # older than VS2017
-	  list(APPEND GTSAM_COMPILE_OPTIONS -Zm295)
+	  list(APPEND GTSAM_COMPILE_OPTIONS_PRIVATE -Zm295)
 	endif()
 endif()
 
-find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time timer chrono regex)
+# Store these in variables so they are automatically replicated in GTSAMConfig.cmake and such.
+set(BOOST_FIND_MINIMUM_VERSION 1.43)
+set(BOOST_FIND_MINIMUM_COMPONENTS serialization system filesystem thread program_options date_time timer chrono regex)
+
+find_package(Boost ${BOOST_FIND_MINIMUM_VERSION} COMPONENTS ${BOOST_FIND_MINIMUM_COMPONENTS})
 
 # Required components
 if(NOT Boost_SERIALIZATION_LIBRARY OR NOT Boost_SYSTEM_LIBRARY OR NOT Boost_FILESYSTEM_LIBRARY OR
@@ -149,7 +153,7 @@ set(GTSAM_BOOST_LIBRARIES
 )
 if (GTSAM_DISABLE_NEW_TIMERS)
     message("WARNING:  GTSAM timing instrumentation manually disabled")
-    list(APPEND GTSAM_COMPILE_DEFINITIONS DGTSAM_DISABLE_NEW_TIMERS)
+    list(APPEND GTSAM_COMPILE_DEFINITIONS_PUBLIC DGTSAM_DISABLE_NEW_TIMERS)
 else()
     if(Boost_TIMER_LIBRARY)
       list(APPEND GTSAM_BOOST_LIBRARIES Boost::timer Boost::chrono)
@@ -162,7 +166,7 @@ endif()
 
 if(NOT (${Boost_VERSION} LESS 105600))
 	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
-	list(APPEND GTSAM_COMPILE_DEFINITIONS BOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES BOOST_OPTIONAL_CONFIG_ALLOW_BINDING_TO_RVALUES)
+	list(APPEND GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES BOOST_OPTIONAL_CONFIG_ALLOW_BINDING_TO_RVALUES)
 endif()
 
 ###############################################################################
@@ -212,7 +216,6 @@ find_package(MKL)
 if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
     set(GTSAM_USE_EIGEN_MKL 1) # This will go into config.h
     set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
-    include_directories(${MKL_INCLUDE_DIR})
     list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
 
     # --no-as-needed is required with gcc according to the MKL link advisor
@@ -247,10 +250,9 @@ option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', us
 # Switch for using system Eigen or GTSAM-bundled Eigen
 if(GTSAM_USE_SYSTEM_EIGEN)
 	find_package(Eigen3 REQUIRED)
-	include_directories(AFTER "${EIGEN3_INCLUDE_DIR}")
 
 	# Use generic Eigen include paths e.g. <Eigen/Core>
-    set(GTSAM_EIGEN_INCLUDE_PREFIX "${EIGEN3_INCLUDE_DIR}")
+	set(GTSAM_EIGEN_INCLUDE_FOR_INSTALL "${EIGEN3_INCLUDE_DIR}")
 
 	# check if MKL is also enabled - can have one or the other, but not both!
 	# Note: Eigen >= v3.2.5 includes our patches
@@ -264,28 +266,29 @@ if(GTSAM_USE_SYSTEM_EIGEN)
 		message(FATAL_ERROR "MKL does not work with Eigen 3.3.4 because of a bug in Eigen. See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1527. Disable GTSAM_USE_SYSTEM_EIGEN to use GTSAM's copy of Eigen, disable GTSAM_WITH_EIGEN_MKL, or upgrade/patch your installation of Eigen.")
 	endif()
 
+	# The actual include directory (for BUILD cmake target interface):
+	set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${EIGEN3_INCLUDE_DIR}")
 else()
 	# Use bundled Eigen include path.
 	# Clear any variables set by FindEigen3
 	if(EIGEN3_INCLUDE_DIR)
 		set(EIGEN3_INCLUDE_DIR NOTFOUND CACHE STRING "" FORCE)
 	endif()
-	# Add the bundled version of eigen to the include path so that it can still be included
-	# with  #include <Eigen/Core>
-	include_directories(BEFORE "gtsam/3rdparty/Eigen/")
 
 	# set full path to be used by external projects
 	# this will be added to GTSAM_INCLUDE_DIR by gtsam_extra.cmake.in
-	set(GTSAM_EIGEN_INCLUDE_PREFIX "${CMAKE_INSTALL_PREFIX}/include/gtsam/3rdparty/Eigen/")
+	set(GTSAM_EIGEN_INCLUDE_FOR_INSTALL "include/gtsam/3rdparty/Eigen/")
 
+	# The actual include directory (for BUILD cmake target interface):
+	set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${CMAKE_SOURCE_DIR}/gtsam/3rdparty/Eigen/")
 endif()
 
 if (MSVC)
 	if (BUILD_SHARED_LIBS)
 		# mute eigen static assert to avoid errors in shared lib
-		list(APPEND GTSAM_COMPILE_DEFINITIONS DEIGEN_NO_STATIC_ASSERT)
+		list(APPEND GTSAM_COMPILE_DEFINITIONS_PUBLIC DEIGEN_NO_STATIC_ASSERT)
 	endif()
-	list(APPEND GTSAM_COMPILE_OPTIONS "/wd4244") # Disable loss of precision which is thrown all over our Eigen
+	list(APPEND GTSAM_COMPILE_OPTIONS_PRIVATE "/wd4244") # Disable loss of precision which is thrown all over our Eigen
 endif()
 
 ###############################################################################
@@ -326,52 +329,29 @@ elseif("${GTSAM_DEFAULT_ALLOCATOR}" STREQUAL "tcmalloc")
 	list(APPEND GTSAM_ADDITIONAL_LIBRARIES "tcmalloc")
 endif()
 
-# Include boost - use 'BEFORE' so that a specific boost specified to CMake
-# takes precedence over a system-installed one.
-include_directories(BEFORE SYSTEM ${Boost_INCLUDE_DIR})
-
-if(GTSAM_SUPPORT_NESTED_DISSECTION)
-  set(METIS_INCLUDE_DIRECTORIES
-    gtsam/3rdparty/metis/include
-    gtsam/3rdparty/metis/libmetis
-    gtsam/3rdparty/metis/GKlib)
-else()
-  set(METIS_INCLUDE_DIRECTORIES)
-endif()
-
-# Add includes for source directories 'BEFORE' boost and any system include
-# paths so that the compiler uses GTSAM headers in our source directory instead
-# of any previously installed GTSAM headers.
-include_directories(BEFORE
-  gtsam/3rdparty/SuiteSparse_config
-  gtsam/3rdparty/CCOLAMD/Include
-  ${METIS_INCLUDE_DIRECTORIES}
-  ${PROJECT_SOURCE_DIR}
-  ${PROJECT_BINARY_DIR} # So we can include generated config header files
-  CppUnitLite)
-
 if(MSVC)
-	list(APPEND GTSAM_COMPILE_DEFINITIONS _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
-	list(APPEND GTSAM_COMPILE_OPTIONS /wd4251 /wd4275 /wd4251 /wd4661 /wd4344 /wd4503) # Disable non-DLL-exported base class and other warnings
-	list(APPEND GTSAM_COMPILE_OPTIONS /bigobj) # Allow large object files for template-based code
+	list(APPEND GTSAM_COMPILE_DEFINITIONS_PRIVATE _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
+	list(APPEND GTSAM_COMPILE_OPTIONS_PRIVATE /wd4251 /wd4275 /wd4251 /wd4661 /wd4344 /wd4503) # Disable non-DLL-exported base class and other warnings
+	list(APPEND GTSAM_COMPILE_OPTIONS_PRIVATE /bigobj) # Allow large object files for template-based code
 endif()
 
 # GCC 4.8+ complains about local typedefs which we use for shared_ptr etc.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
-    list(APPEND GTSAM_COMPILE_OPTIONS -Wno-unused-local-typedefs)
+    list(APPEND GTSAM_COMPILE_OPTIONS_PRIVATE -Wno-unused-local-typedefs)
   endif()
 endif()
 
 # As of XCode 7, clang also complains about this
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
-    list(APPEND GTSAM_COMPILE_OPTIONS -Wno-unused-local-typedefs)
+    list(APPEND GTSAM_COMPILE_OPTIONS_PRIVATE -Wno-unused-local-typedefs)
   endif()
 endif()
 
 if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
-  list(APPEND GTSAM_COMPILE_DEFINITIONS GTSAM_EXTRA_CONSISTENCY_CHECKS)
+  # This should be made PUBLIC if GTSAM_EXTRA_CONSISTENCY_CHECKS is someday used in a public .h
+  list(APPEND GTSAM_COMPILE_DEFINITIONS_PRIVATE GTSAM_EXTRA_CONSISTENCY_CHECKS)
 endif()
 
 ###############################################################################
