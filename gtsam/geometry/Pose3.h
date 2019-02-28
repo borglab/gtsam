@@ -160,6 +160,10 @@ public:
   static Vector6 adjoint(const Vector6 &xi, const Vector6 &y,
       OptionalJacobian<6, 6> = boost::none);
 
+  // temporary fix for wrappers until case issue is resolved
+  static Matrix6 adjointMap_(const Vector6 &xi) { return adjointMap(xi);}
+  static Vector6 adjoint_(const Vector6 &xi, const Vector6 &y) { return adjoint(xi, y);}
+
   /**
    * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
    */

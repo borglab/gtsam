@@ -49,8 +49,8 @@ class TestPose3(unittest.TestCase):
     def test_adjoint(self):
         """Test adjoint method."""
         xi = np.array([1, 2, 3, 4, 5, 6])
-        expected = np.dot(Pose3.adjointMap(xi), xi)
-        actual = Pose3.adjoint(xi, xi)
+        expected = np.dot(Pose3.adjointMap_(xi), xi)
+        actual = Pose3.adjoint_(xi, xi)
         np.testing.assert_array_equal(actual, expected)
 
 

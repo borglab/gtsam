@@ -37,7 +37,6 @@
 
 namespace gtsam {
 
-#ifndef MATLAB_MEX_FILE
 /**
  * Find the full path to an example dataset distributed with gtsam.  The name
  * may be specified with or without a file extension - if no extension is
@@ -56,7 +55,6 @@ GTSAM_EXPORT std::string findExampleDataFile(const std::string& name);
  * for checking read-write oprations
  */
 GTSAM_EXPORT std::string createRewrittenFileName(const std::string& name);
-#endif
 
 /// Indicates how noise parameters are stored in file
 enum NoiseFormat {

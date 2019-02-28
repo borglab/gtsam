@@ -577,9 +577,9 @@ class Pose2 {
   static Matrix LogmapDerivative(const gtsam::Pose2& v);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
-  static Matrix adjointMap(Vector v);
-  Vector adjoint(Vector xi, Vector y);
-  Vector adjointTranspose(Vector xi, Vector y);
+  static Matrix adjointMap_(Vector v);
+  static Vector adjoint_(Vector xi, Vector y);
+  static Vector adjointTranspose(Vector xi, Vector y);
   static Matrix wedge(double vx, double vy, double w);
 
   // Group Actions on Point2
@@ -628,8 +628,8 @@ class Pose3 {
   static Vector Logmap(const gtsam::Pose3& pose);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
-  static Matrix adjointMap(Vector xi);
-  static Vector adjoint(Vector xi, Vector y);
+  static Matrix adjointMap_(Vector xi);
+  static Vector adjoint_(Vector xi, Vector y);
   static Vector adjointTranspose(Vector xi, Vector y);
   static Matrix ExpmapDerivative(Vector xi);
   static Matrix LogmapDerivative(const gtsam::Pose3& xi);
