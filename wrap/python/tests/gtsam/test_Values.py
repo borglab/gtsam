@@ -68,6 +68,14 @@ class TestValues(unittest.TestCase):
         actualMatrix2 = values.atMatrix(13)
         self.assertTrue(np.allclose(mat2, actualMatrix2, tol))
 
+        # failure cases:
+        vec3 = np.array([1., 2., 3.])
+        values.insert(14, vec3)
+        values.atVector(14)  # won't work because gtsam thinks it's a Point3.
+
+        # failure cases:
+        values.serialize()  # serialize and serializable are not yet supported.
+
 
 if __name__ == "__main__":
     unittest.main()
