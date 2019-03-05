@@ -212,7 +212,7 @@ function(install_cython_scripts source_directory dest_directory patterns)
             FILES_MATCHING ${patterns_args} PATTERN "${exclude_patterns}" EXCLUDE)
     endforeach()
   else()
-    install(DIRECTORY "${source_directory}" DESTINATION "${dest_directory}" FILES_MATCHING ${patterns_args} PATTERN "${exclude_patterns}" EXCLUDE)
+    install(DIRECTORY "${source_directory}/" DESTINATION "${dest_directory}" FILES_MATCHING ${patterns_args} PATTERN "${exclude_patterns}" EXCLUDE)
   endif()
 
 endfunction()
