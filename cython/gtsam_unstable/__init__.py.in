@@ -1,1 +1,1 @@
-from gtsam_unstable import *
+${GTSAM_UNSTABLE_IMPORT}

@@ -22,14 +22,14 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
     set(GTSAM_UNSTABLE_IMPORT "from gtsam_unstable import *")
     wrap_and_install_library_cython("../gtsam_unstable/gtsam_unstable.h" # interface_header
                                     "from gtsam.gtsam cimport *"                  # extra imports
-                                    "${GTSAM_CYTHON_INSTALL_PATH}/gtsam" # install path
+                                    "${GTSAM_CYTHON_INSTALL_PATH}/gtsam_unstable" # install path
                                     gtsam_unstable  # library to link with
                                     "gtsam_unstable;gtsam_unstable_header;cythonize_gtsam"  # dependencies to be built before wrapping
                                     )
     configure_file(${PROJECT_SOURCE_DIR}/cython/gtsam_unstable/__init__.py.in ${PROJECT_BINARY_DIR}/cython/gtsam_unstable/__init__.py)
     install_cython_files("${PROJECT_BINARY_DIR}/cython/gtsam_unstable/__init__.py" "${GTSAM_CYTHON_INSTALL_PATH}/gtsam_unstable")
+    install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam_unstable/" "${GTSAM_CYTHON_INSTALL_PATH}/gtsam_unstable" "*.py")
   endif()
-    install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam_unstable" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
 
   # Install the custom-generated __init__.py
   # This is to make the build/cython/gtsam folder a python package, so gtsam can be found while wrapping gtsam_unstable
