@@ -111,23 +111,27 @@ int main(int argc, char** argv) {
     noiseModel::Diagonal::shared_ptr odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector3(0.05, 0.05, 0.05));
     newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
 
-    // Update the smoothers with the new factors
-    smootherBatch.update(newFactors, newValues, newTimestamps);
-    smootherISAM2.update(newFactors, newValues, newTimestamps);
-    for(size_t i = 1; i < 2; ++i) { // Optionally perform multiple iSAM2 iterations
-      smootherISAM2.update();
+    // Update the smoothers with the new factors.
+    // In this example, Levenberg-Marquadt needs one iteration
+    // to pass to accurately estimate.
+    if (time >= 0.50) {
+      smootherBatch.update(newFactors, newValues, newTimestamps);
+      smootherISAM2.update(newFactors, newValues, newTimestamps);
+      for(size_t i = 1; i < 2; ++i) { // Optionally perform multiple iSAM2 iterations
+          smootherISAM2.update();
+      }
+
+      // Print the optimized current pose
+      cout << setprecision(5) << "Timestamp = " << time << endl;
+      smootherBatch.calculateEstimate<Pose2>(currentKey).print("Batch Estimate:");
+      smootherISAM2.calculateEstimate<Pose2>(currentKey).print("iSAM2 Estimate:");
+      cout << endl;
+
+      // Clear contains for the next iteration
+      newTimestamps.clear();
+      newValues.clear();
+      newFactors.resize(0);
     }
-
-    // Print the optimized current pose
-    cout << setprecision(5) << "Timestamp = " << time << endl;
-    smootherBatch.calculateEstimate<Pose2>(currentKey).print("Batch Estimate:");
-    smootherISAM2.calculateEstimate<Pose2>(currentKey).print("iSAM2 Estimate:");
-    cout << endl;
-
-    // Clear contains for the next iteration
-    newTimestamps.clear();
-    newValues.clear();
-    newFactors.resize(0);
   }
 
   // And to demonstrate the fixed-lag aspect, print the keys contained in each smoother after 3.0 seconds
