@@ -29,7 +29,12 @@
 
 # Use the Cython executable that lives next to the Python executable
 # if it is a local installation.
-find_package( PythonInterp )
+if(GTSAM_PYTHON_VERSION STREQUAL "Default")
+  find_package(PythonInterp)
+else()
+  find_package(PythonInterp ${GTSAM_PYTHON_VERSION} EXACT)
+endif()
+
 if ( PYTHONINTERP_FOUND )
   execute_process( COMMAND "${PYTHON_EXECUTABLE}" "-c"
       "import Cython; print(Cython.__path__[0])"
