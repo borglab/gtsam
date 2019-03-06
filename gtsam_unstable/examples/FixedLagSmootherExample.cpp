@@ -111,9 +111,9 @@ int main(int argc, char** argv) {
     noiseModel::Diagonal::shared_ptr odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector3(0.05, 0.05, 0.05));
     newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
 
-    // Update the smoothers with the new factors.
-    // In this example, Levenberg-Marquadt needs one iteration
-    // to pass to accurately estimate.
+    // Update the smoothers with the new factors. In this example, batch smoother needs one iteration
+    // to accurately converge. The ISAM smoother doesn't, but we only start getting estiates when
+    // both are ready for simplicity.
     if (time >= 0.50) {
       smootherBatch.update(newFactors, newValues, newTimestamps);
       smootherISAM2.update(newFactors, newValues, newTimestamps);
