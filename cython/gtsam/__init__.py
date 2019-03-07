@@ -9,7 +9,7 @@ try:
             from warnings import warn
             message = ('importing the unstable item "{}" directly from gtsam is deprecated. '.format(name) +
                        'Please import it from gtsam_unstable.')
-            warn(message, category=DeprecationWarning)
+            warn(message)
             return item(*args, **kwargs)
         return wrapper
 
