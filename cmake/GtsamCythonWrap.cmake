@@ -44,11 +44,6 @@ endfunction()
 
 function(set_up_required_cython_packages)
   # Set up building of cython module
-  if(GTSAM_PYTHON_VERSION STREQUAL "Default")
-    find_package(PythonLibs REQUIRED)
-  else()
-    find_package(PythonLibs ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
-  endif()
   include_directories(${PYTHON_INCLUDE_DIRS})
   find_package(NumPy REQUIRED)
   include_directories(${NUMPY_INCLUDE_DIRS})
