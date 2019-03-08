@@ -78,6 +78,7 @@ endif()
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
 option(GTSAM_INSTALL_CYTHON_TOOLBOX      "Enable/Disable installation of Cython toolbox"  OFF)
 option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab/cython wrap utility (necessary for matlab/cython interface)" ON)
+set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of python to build the cython wrapper or python module for (or Default)")
 
 # Check / set dependent variables for MATLAB wrapper
 if((GTSAM_INSTALL_MATLAB_TOOLBOX OR GTSAM_INSTALL_CYTHON_TOOLBOX) AND NOT GTSAM_BUILD_WRAP)
@@ -554,6 +555,7 @@ endif()
 
 message(STATUS "Cython toolbox flags                                      ")
 print_config_flag(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox         ")
+message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
 print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
 message(STATUS "===============================================================")
 
