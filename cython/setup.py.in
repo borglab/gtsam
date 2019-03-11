@@ -1,8 +1,17 @@
 import os
+import sys
 try:
     from setuptools import setup, find_packages
 except ImportError:
     from distutils.core import setup, find_packages
+
+
+script_path = os.path.abspath(os.path.realpath(__file__))
+install_path = os.path.abspath(os.path.realpath(os.path.join('${GTSAM_CYTHON_INSTALL_PATH}', 'setup.py')))
+if script_path != install_path:
+    print('setup.py is being run from an unexpected location: "{script_path}"')
+    print('please run `make install` and run the script from there')
+    sys.exit(1)
 
 
 packages = find_packages()
