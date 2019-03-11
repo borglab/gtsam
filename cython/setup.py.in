@@ -13,7 +13,7 @@ setup(
     url='https://bitbucket.org/gtborg/gtsam',
     version='${GTSAM_VERSION_STRING}',  # https://www.python.org/dev/peps/pep-0440/
     license='Simplified BSD license',
-    keywords='slam sam',
+    keywords='slam sam robotics localization mapping optimization',
     long_description='''${README_CONTENTS}''',
     # https://pypi.org/pypi?%3Aaction=list_classifiers
     classifiers=[
