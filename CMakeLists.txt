@@ -107,6 +107,13 @@ endif()
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
 set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
 
+option(GTSAM_BUILD_WITH_MARCH_NATIVE     "Enable/Disable building with native architecture" ON)
+
+# Set march=native if enabled
+if(GTSAM_BUILD_WITH_MARCH_NATIVE)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+endif()
+
 ###############################################################################
 # Find boost
 
