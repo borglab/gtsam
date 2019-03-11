@@ -41,17 +41,26 @@ static const Key keyAnchor = symbol('Z', 9999999);
 GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
 
   GaussianFactorGraph linearGraph;
-  noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(9);
+  noiseModel::Diagonal::shared_ptr model;
 
   for(const boost::shared_ptr<NonlinearFactor>& factor: g) {
     Matrix3 Rij;
 
     boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
         boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
-    if (pose3Between)
+    if (pose3Between){
       Rij = pose3Between->measured().rotation().matrix();
-    else
+      // build vector [1 0 0 0 0 0]
+      Vector e1 = Vector::Zero(6); e1(0) = 1.0;
+      // build vector [1/sigma 0 0 0 0 0]
+      Vector precisions = pose3Between.noiseModel().whiten(e1);
+      double sqrt_precision = precisions(0);
+      for(size_t i=0; i<6;i++){ precision(i) = sqrt_precision*sqrt_precision; }
+      model = noiseModel::Diagonal::Precisions(precision);
+      std::cout << "sqrt_precision: " << sqrt_precision << std::endl;
+    }else{
       std::cout << "Error in buildLinearOrientationGraph" << std::endl;
+    }
 
     const FastVector<Key>& keys = factor->keys();
     Key key1 = keys[0], key2 = keys[1];
