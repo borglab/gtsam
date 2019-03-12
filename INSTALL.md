@@ -153,7 +153,7 @@ Here are some tips to get the best possible performance out of GTSAM.
     processor architecture.
     Also note that all dependent projects *must* be compiled with the same flag, or
     seg-faults and other undefined behavior may result.
-4. Enable MKL. Please note that our benchmarks have shown that this helps only
+4. Possibly enable MKL. Please note that our benchmarks have shown that this helps only
     in very limited cases, and actually hurts performance in the usual case. We therefore
     recommend that you do *not* enable MKL, unless you have benchmarked it on
     your problem and have verified that it improves performance.
