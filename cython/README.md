@@ -21,8 +21,9 @@ by default: `<your CMAKE_INSTALL_PREFIX>/cython`
 ```bash
 export PYTHONPATH=$PYTHONPATH:<GTSAM_CYTHON_INSTALL_PATH>
 ```
-- To install system-wide: navigate to `GTSAM_CYTHON_INSTALL_PATH` and run `python setup.py install`
+- To install system-wide: run `make install` then navigate to `GTSAM_CYTHON_INSTALL_PATH` and run `python setup.py install`
     - (the same command can be used to install into a virtual environment if it is active)
+    - note: if you don't want gtsam to install to a system directory such as `/usr/local`, pass `-DCMAKE_INSTALL_PREFIX="./install"` to install gtsam to a subdirectory of the build directory.
 
 UNIT TESTS
 ==========
