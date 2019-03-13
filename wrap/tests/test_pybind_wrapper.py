@@ -16,15 +16,15 @@ import interface_parser as parser
 import template_instantiator as instantiator
 
 
-TEST_DIR = "wrap/tests/"
-
-
 class TestWrap(unittest.TestCase):
     def test_geometry_python(self):
-        """ 
-        Check generation of python geometry wrapper. 
-        python3 ../pybind_wrapper.py --src geometry.h --module_name geometry_py --out output/geometry_py.cc"
         """
+        Check generation of python geometry wrapper.
+        python3 ../pybind_wrapper.py --src geometry.h --module_name
+            geometry_py --out output/geometry_py.cc"
+        """
+        TEST_DIR = "wrap/tests/"
+
         with open(TEST_DIR + 'geometry.h', 'r') as f:
             content = f.read()
 
@@ -37,7 +37,7 @@ class TestWrap(unittest.TestCase):
             module_name='geometry_py',
             use_boost=False,
             top_module_namespaces=[''],
-            ignore_classes=['']
+            ignore_classes=[''],
         )
 
         cc_content = wrapper.wrap()
@@ -50,8 +50,8 @@ class TestWrap(unittest.TestCase):
         with open(TEST_DIR + 'actual-python/geometry_py.cpp', 'w') as f:
             f.write(cc_content)
 
-        self.assertTrue(filecmp.cmp(output, TEST_DIR +
-                                    'expected-python/geometry_pybind.cpp'))
+        self.assertTrue(filecmp.cmp(
+            output, TEST_DIR + 'expected-python/geometry_pybind.cpp'))
 
 
 if __name__ == '__main__':
