@@ -16,18 +16,17 @@ from matlab_wrapper import MatlabWrapper
 
 
 class TestWrap(unittest.TestCase):
-    def test_geometry_matlab(self):
-        """ Check generation of matlab geometry wrapper """
-        TEST_DIR = "wrap/tests/"
-        MATLAB_TEST_DIR = TEST_DIR + "expected-matlab/"
-        MATLAB_ACTUAL_DIR = TEST_DIR + "actual-matlab/"
+    TEST_DIR = "wrap/tests/"
+    MATLAB_TEST_DIR = TEST_DIR + "expected-matlab/"
+    MATLAB_ACTUAL_DIR = TEST_DIR + "actual-matlab/"
 
-        """ Check generation of matlab geometry wrapper """
-        with open(TEST_DIR + 'geometry.h', 'r') as f:
+    def test_geometry_matlab(self):
+        """ Check generation of matlab geometry wrapper. """
+        with open(self.TEST_DIR + 'geometry.h', 'r') as f:
             content = f.read()
 
-        if not os.path.exists(MATLAB_ACTUAL_DIR):
-            os.mkdir(MATLAB_ACTUAL_DIR)
+        if not os.path.exists(self.MATLAB_ACTUAL_DIR):
+            os.mkdir(self.MATLAB_ACTUAL_DIR)
 
         module = parser.Module.parseString(content)
 
@@ -41,33 +40,37 @@ class TestWrap(unittest.TestCase):
         )
 
         cc_content = wrapper.wrap()
+
         for c in cc_content:
             if type(c) == list:
-                # TODO: Create folder with namespace then create files in namespace
+                # TODO: Create folder with namespace then create files in
+                # namespace
                 pass
             else:
-                with open(MATLAB_ACTUAL_DIR + c[0], 'w') as f:
+                with open(self.MATLAB_ACTUAL_DIR + c[0], 'w') as f:
                     f.write(c[1])
 
         self.assertTrue(filecmp.cmp(
-            MATLAB_ACTUAL_DIR + 'aGlobalFunction.m',
-            MATLAB_TEST_DIR + 'aGlobalFunction.m'))
+            self.MATLAB_ACTUAL_DIR + 'aGlobalFunction.m',
+            self.MATLAB_TEST_DIR + 'aGlobalFunction.m'))
         self.assertTrue(filecmp.cmp(
-            MATLAB_ACTUAL_DIR + 'overloadedGlobalFunction.m',
-            MATLAB_TEST_DIR + 'overloadedGlobalFunction.m'))
+            self.MATLAB_ACTUAL_DIR + 'overloadedGlobalFunction.m',
+            self.MATLAB_TEST_DIR + 'overloadedGlobalFunction.m'))
         self.assertTrue(filecmp.cmp(
-            MATLAB_ACTUAL_DIR + 'MyBase.m', MATLAB_TEST_DIR + 'MyBase.m'))
+            self.MATLAB_ACTUAL_DIR + 'MyBase.m',
+            self.MATLAB_TEST_DIR + 'MyBase.m'))
         self.assertTrue(filecmp.cmp(
-            MATLAB_ACTUAL_DIR + 'MyFactorPosePoint2.m',
-            MATLAB_TEST_DIR + 'MyFactorPose2.m'))
+            self.MATLAB_ACTUAL_DIR + 'MyFactorPosePoint2.m',
+            self.MATLAB_TEST_DIR + 'MyFactorPose2.m'))
         self.assertTrue(filecmp.cmp(
-            MATLAB_ACTUAL_DIR + 'MyTemplateMatrix.m',
-            MATLAB_TEST_DIR + 'MyTemplateMatrix.m'))
+            self.MATLAB_ACTUAL_DIR + 'MyTemplateMatrix.m',
+            self.MATLAB_TEST_DIR + 'MyTemplateMatrix.m'))
         self.assertTrue(filecmp.cmp(
-            MATLAB_ACTUAL_DIR + 'MyTemplatePoint2.m',
-            MATLAB_TEST_DIR + 'MyTemplatePoint2.m'))
+            self.MATLAB_ACTUAL_DIR + 'MyTemplatePoint2.m',
+            self.MATLAB_TEST_DIR + 'MyTemplatePoint2.m'))
         self.assertTrue(filecmp.cmp(
-            MATLAB_ACTUAL_DIR + 'Test.m', MATLAB_TEST_DIR + 'Test.m'))
+            self.MATLAB_ACTUAL_DIR + 'Test.m',
+            self.MATLAB_TEST_DIR + 'Test.m'))
 
 if __name__ == '__main__':
     unittest.main()

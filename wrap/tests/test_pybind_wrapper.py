@@ -17,15 +17,15 @@ import template_instantiator as instantiator
 
 
 class TestWrap(unittest.TestCase):
+    TEST_DIR = "wrap/tests/"
+
     def test_geometry_python(self):
         """
         Check generation of python geometry wrapper.
         python3 ../pybind_wrapper.py --src geometry.h --module_name
             geometry_py --out output/geometry_py.cc"
         """
-        TEST_DIR = "wrap/tests/"
-
-        with open(TEST_DIR + 'geometry.h', 'r') as f:
+        with open(self.TEST_DIR + 'geometry.h', 'r') as f:
             content = f.read()
 
         module = parser.Module.parseString(content)
@@ -42,16 +42,16 @@ class TestWrap(unittest.TestCase):
 
         cc_content = wrapper.wrap()
 
-        output = TEST_DIR + 'actual-python/geometry_py.cpp'
+        output = self.TEST_DIR + 'actual-python/geometry_py.cpp'
 
-        if not os.path.exists(TEST_DIR + 'actual-python'):
-            os.mkdir(TEST_DIR + 'actual-python')
+        if not os.path.exists(self.TEST_DIR + 'actual-python'):
+            os.mkdir(self.TEST_DIR + 'actual-python')
 
-        with open(TEST_DIR + 'actual-python/geometry_py.cpp', 'w') as f:
+        with open(self.TEST_DIR + 'actual-python/geometry_py.cpp', 'w') as f:
             f.write(cc_content)
 
         self.assertTrue(filecmp.cmp(
-            output, TEST_DIR + 'expected-python/geometry_pybind.cpp'))
+            output, self.TEST_DIR + 'expected-python/geometry_pybind.cpp'))
 
 
 if __name__ == '__main__':
