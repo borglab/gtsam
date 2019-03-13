@@ -55,15 +55,15 @@ class MatlabWrapper(object):
         return method_out
 
     def _clean_class_name(self, instantiated_class):
-        """ Reformated the C++ class name to fit Matlab defined naming
+        """ Reformatted the C++ class name to fit Matlab defined naming
         standards """
         if len(instantiated_class.ctors) != 0:
             return instantiated_class.ctors[0].name
 
-        """ TODO: May have to group together same name templates if they don't
-        have constructors. This would require another if statement if text
-        before < is a duplicate method
-        """
+        # TODO: May have to group together same name templates if they don't
+        # have constructors. This would require another if statement if text
+        # before < is a duplicate method
+
         return instantiated_class.cpp_class()
 
     def class_comment(self, class_name, ctors, methods):
@@ -127,15 +127,15 @@ class MatlabWrapper(object):
 
         return ''
 
-    def wrap_global_method(self, method):
-        """ Wrap the given global method """
-        if type(method) != list:
-            method = [method]
+    def wrap_global_function(self, function):
+        """ Wrap the given global function """
+        if type(function) != list:
+            function = [function]
 
-        m_method = method[0].name
+        m_method = function[0].name
 
         # Get all combinations of parameters
-        param_list = [m.args for m in method]
+        param_list = [m.args for m in function]
         param_check = ''
 
         for i, p in enumerate(param_list):
@@ -182,7 +182,7 @@ class MatlabWrapper(object):
 
         for method in methods:
             if globals:
-                method_text = self.wrap_global_method(method)
+                method_text = self.wrap_global_function(method)
                 self.content.append((method[0].name + '.m', method_text))
             else:
                 method_text = self.wrap_method(method)
