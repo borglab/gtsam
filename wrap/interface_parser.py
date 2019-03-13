@@ -1,8 +1,8 @@
 import os
 import pyparsing
 from pyparsing import (alphas, alphanums, cppStyleComment, delimitedList,
-                       empty, stringEnd, CharsNotIn, Keyword, Forward, Word,
-                       Literal, nums, OneOrMore, Optional, Or, Group, Suppress,
+                       empty, nums, stringEnd, CharsNotIn, Keyword, Forward, Word,
+                       Literal, OneOrMore, Optional, Or, Group, Suppress,
                        ZeroOrMore)
 from pyparsing import ParseException, ParserElement
 import sys
