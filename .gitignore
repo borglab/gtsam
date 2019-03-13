@@ -21,3 +21,5 @@ cython/gtsam_wrapper.pxd
 /CMakeSettings.json
 # for QtCreator:
 CMakeLists.txt.user*
+/wrap/tests/actual-matlab/
+/wrap/tests/actual-python/
