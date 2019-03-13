@@ -259,9 +259,8 @@ class Template(object):
     class TypenameAndInstantiations(object):
         rule = (
             IDENT("typename") +
-            Optional(EQUAL + LBRACE + (
-                (delimitedList(Typename.rule)("instantiations")) ^ delimitedList(Word(nums)))
-                + RBRACE)
+            Optional(EQUAL + LBRACE + ((delimitedList(Typename.rule)
+            ("instantiations")) ^ delimitedList(Word(nums))) + RBRACE)
         ).setParseAction(
             lambda t: Template.TypenameAndInstantiations(
                 t.typename,
