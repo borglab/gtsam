@@ -41,7 +41,7 @@ using namespace std;
 // }
 
 #define BETWEENFACTOR(T) \
-  class_< BetweenFactor<T>, bases<NonlinearFactor>, boost::shared_ptr< BetweenFactor<T> > >("BetweenFactor"#T) \
+  class_< BetweenFactor<T>, bases<NonlinearFactor>, std::shared_ptr< BetweenFactor<T> > >("BetweenFactor"#T) \
   .def(init<Key,Key,T,noiseModel::Base::shared_ptr>()) \
   .def("measured", &BetweenFactor<T>::measured, return_internal_reference<>()) \
 ;

@@ -274,7 +274,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    * @param newTheta Initial values for new variables
    * @param theta Current solution to be augmented with new initialization
    * @param delta Current linear delta to be augmented with zeros
-   * @param deltaNewton 
+   * @param deltaNewton
    * @param RgProd
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
@@ -297,7 +297,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
       const FastList<Key>& affectedKeys, const KeySet& relinKeys) const;
   GaussianFactorGraph getCachedBoundaryFactors(const Cliques& orphans);
 
-  virtual boost::shared_ptr<KeySet> recalculate(
+  virtual std::shared_ptr<KeySet> recalculate(
       const KeySet& markedKeys, const KeySet& relinKeys,
       const KeyVector& observedKeys, const KeySet& unusedIndices,
       const boost::optional<FastMap<Key, int> >& constrainKeys,

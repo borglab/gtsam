@@ -50,7 +50,7 @@ int main(int argc, char** argv){
   string calibration_loc = findExampleDataFile("VO_calibration.txt");
   string pose_loc = findExampleDataFile("VO_camera_poses_large.txt");
   string factor_loc = findExampleDataFile("VO_stereo_factors_large.txt");
-  
+
   //read camera calibration info from file
   // focal lengths fx, fy, skew s, principal point u0, v0, baseline b
   double fx, fy, s, u0, v0, b;
@@ -60,7 +60,7 @@ int main(int argc, char** argv){
 
   //create stereo camera calibration object
   const Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(fx,fy,s,u0,v0,b));
-  
+
   ifstream pose_file(pose_loc.c_str());
   cout << "Reading camera poses" << endl;
   int pose_id;
@@ -72,7 +72,7 @@ int main(int argc, char** argv){
     }
     initial_estimate.insert(Symbol('x', pose_id), Pose3(m));
   }
-  
+
   // camera and landmark keys
   size_t x, l;
 

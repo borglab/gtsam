@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -39,12 +39,12 @@ namespace gtsam {
   {
   public:
     typedef GaussianFactor This; ///< This class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
     typedef Factor Base; ///< Our base class
 
     /** Default constructor creates empty factor */
     GaussianFactor() {}
-    
+
     /** Construct from container of keys.  This constructor is used internally from derived factor
      *  constructors, either from a container of keys or from a boost::assign::list_of. */
     template<typename CONTAINER>

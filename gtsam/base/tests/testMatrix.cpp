@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -275,7 +275,7 @@ TEST(Matrix, stream_read ) {
     -0.3, -8e-2, 5.1, 9.0,
     1.2, 3.4, 4.5, 6.7).finished();
 
-  string matrixAsString = 
+  string matrixAsString =
     "1.1 2.3 4.2 7.6\n"
     "-0.3 -8e-2 5.1    9.0\n\r" // Test extra spaces and windows newlines
     "1.2 \t 3.4 4.5 6.7"; // Test tab as separator

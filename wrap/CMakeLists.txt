@@ -1,7 +1,13 @@
+<<<<<<< HEAD
 # Install cython components
 include(GtsamPybindWrap)
 
 # Create the cython toolbox for the gtsam library
+=======
+include(GtsamPybindWrap)
+
+# Create the python toolbox for the gtsam library
+>>>>>>> ae57188cea58849a06eccbb65ae223c55259e31e
 if(GTSAM_INSTALL_PYTHON_TOOLBOX)
   # wrap gtsam add_custom_target(gtsam_header DEPENDS "../gtsam.h")
   set(ignore

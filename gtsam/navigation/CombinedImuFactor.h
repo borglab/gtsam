@@ -82,13 +82,13 @@ public:
     }
 
     // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
-    static boost::shared_ptr<Params> MakeSharedD(double g = 9.81) {
-      return boost::shared_ptr<Params>(new Params(Vector3(0, 0, g)));
+    static std::shared_ptr<Params> MakeSharedD(double g = 9.81) {
+      return std::shared_ptr<Params>(new Params(Vector3(0, 0, g)));
     }
 
     // Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
-    static boost::shared_ptr<Params> MakeSharedU(double g = 9.81) {
-      return boost::shared_ptr<Params>(new Params(Vector3(0, 0, -g)));
+    static std::shared_ptr<Params> MakeSharedU(double g = 9.81) {
+      return std::shared_ptr<Params>(new Params(Vector3(0, 0, -g)));
     }
 
    private:
@@ -133,7 +133,7 @@ public:
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
   PreintegratedCombinedMeasurements(
-      const boost::shared_ptr<Params>& p,
+      const std::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias())
       : PreintegrationType(p, biasHat) {
     preintMeasCov_.setZero();
@@ -148,7 +148,7 @@ public:
   void resetIntegration() override;
 
   /// const reference to params, shadows definition in base class
-  Params& p() const { return *boost::static_pointer_cast<Params>(this->p_);}
+  Params& p() const { return *std::static_pointer_cast<Params>(this->p_);}
   /// @}
 
   /// @name Access instance variables
@@ -241,9 +241,9 @@ public:
 
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
-  typedef typename boost::shared_ptr<CombinedImuFactor> shared_ptr;
+  typedef typename std::shared_ptr<CombinedImuFactor> shared_ptr;
 #else
-  typedef boost::shared_ptr<CombinedImuFactor> shared_ptr;
+  typedef std::shared_ptr<CombinedImuFactor> shared_ptr;
 #endif
 
   /**

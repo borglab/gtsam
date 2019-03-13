@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -43,7 +43,7 @@ namespace gtsam {
     virtual void deallocate_() const = 0;
 
     /** Clone this value (normal clone on the heap, delete with 'delete' operator) */
-    virtual boost::shared_ptr<Value> clone() const = 0;
+    virtual std::shared_ptr<Value> clone() const = 0;
 
     /** Compare this Value with another for equality. */
     virtual bool equals_(const Value& other, double tol = 1e-9) const = 0;

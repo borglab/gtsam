@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -34,8 +34,8 @@ namespace gtsam {
     typedef FactorGraph<GaussianConditional> Base;
     typedef GaussianBayesNet This;
     typedef GaussianConditional ConditionalType;
-    typedef boost::shared_ptr<This> shared_ptr; 
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef std::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<ConditionalType> sharedConditional;
 
     /// @name Standard Constructors
     /// @{
@@ -78,7 +78,7 @@ namespace gtsam {
 
     ///@name Linear Algebra
     ///@{
-    
+
     /**
      * Return (dense) upper-triangular matrix representation
      */
@@ -113,7 +113,7 @@ namespace gtsam {
 
     /** Compute the gradient of the energy function, \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} R x -
      * d \right\Vert^2 \f$, centered around \f$ x = x_0 \f$. The gradient is \f$ R^T(Rx-d) \f$.
-     * 
+     *
      * @param x0 The center about which to compute the gradient
      * @return The gradient as a VectorValues */
     VectorValues gradient(const VectorValues& x0) const;
@@ -121,7 +121,7 @@ namespace gtsam {
     /** Compute the gradient of the energy function, \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} R x - d
      * \right\Vert^2 \f$, centered around zero. The gradient about zero is \f$ -R^T d \f$.  See also
      * gradient(const GaussianBayesNet&, const VectorValues&).
-     * 
+     *
      * @param [output] g A VectorValues to store the gradient, which must be preallocated, see
      *        allocateVectorValues */
     VectorValues gradientAtZero() const;

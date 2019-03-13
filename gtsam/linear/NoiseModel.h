@@ -51,7 +51,7 @@ namespace gtsam {
     class GTSAM_EXPORT Base {
 
     public:
-      typedef boost::shared_ptr<Base> shared_ptr;
+      typedef std::shared_ptr<Base> shared_ptr;
 
     protected:
 
@@ -165,7 +165,7 @@ namespace gtsam {
 
     public:
 
-      typedef boost::shared_ptr<Gaussian> shared_ptr;
+      typedef std::shared_ptr<Gaussian> shared_ptr;
 
       virtual ~Gaussian() {}
 
@@ -238,7 +238,7 @@ namespace gtsam {
        * @param Ab is the m*(n+1) augmented system matrix [A b]
        * @return Empty SharedDiagonal() noise model: R,d are whitened
        */
-      virtual boost::shared_ptr<Diagonal> QR(Matrix& Ab) const;
+      virtual std::shared_ptr<Diagonal> QR(Matrix& Ab) const;
 
       /// Return R itself, but note that Whiten(H) is cheaper than R*H
       virtual Matrix R() const { return thisR();}
@@ -286,7 +286,7 @@ namespace gtsam {
 
     public:
 
-      typedef boost::shared_ptr<Diagonal> shared_ptr;
+      typedef std::shared_ptr<Diagonal> shared_ptr;
 
       virtual ~Diagonal() {}
 
@@ -392,7 +392,7 @@ namespace gtsam {
 
     public:
 
-      typedef boost::shared_ptr<Constrained> shared_ptr;
+      typedef std::shared_ptr<Constrained> shared_ptr;
 
       virtual ~Constrained() {}
 
@@ -531,7 +531,7 @@ namespace gtsam {
 
       virtual ~Isotropic() {}
 
-      typedef boost::shared_ptr<Isotropic> shared_ptr;
+      typedef std::shared_ptr<Isotropic> shared_ptr;
 
       /**
        * An isotropic noise model created by specifying a standard devation sigma
@@ -591,7 +591,7 @@ namespace gtsam {
 
     public:
 
-      typedef boost::shared_ptr<Unit> shared_ptr;
+      typedef std::shared_ptr<Unit> shared_ptr;
 
       virtual ~Unit() {}
 
@@ -651,7 +651,7 @@ namespace gtsam {
       class GTSAM_EXPORT Base {
       public:
         enum ReweightScheme { Scalar, Block };
-        typedef boost::shared_ptr<Base> shared_ptr;
+        typedef std::shared_ptr<Base> shared_ptr;
 
       protected:
         /** the rows can be weighted independently according to the error
@@ -722,7 +722,7 @@ namespace gtsam {
       /// Null class is not robust so is a Gaussian ?
       class GTSAM_EXPORT Null : public Base {
       public:
-        typedef boost::shared_ptr<Null> shared_ptr;
+        typedef std::shared_ptr<Null> shared_ptr;
 
         Null(const ReweightScheme reweight = Block) : Base(reweight) {}
         virtual ~Null() {}
@@ -746,7 +746,7 @@ namespace gtsam {
         double c_;
 
       public:
-        typedef boost::shared_ptr<Fair> shared_ptr;
+        typedef std::shared_ptr<Fair> shared_ptr;
 
         Fair(double c = 1.3998, const ReweightScheme reweight = Block);
         double weight(double error) const {
@@ -772,7 +772,7 @@ namespace gtsam {
         double k_;
 
       public:
-        typedef boost::shared_ptr<Huber> shared_ptr;
+        typedef std::shared_ptr<Huber> shared_ptr;
 
         Huber(double k = 1.345, const ReweightScheme reweight = Block);
         double weight(double error) const {
@@ -802,7 +802,7 @@ namespace gtsam {
         double k_, ksquared_;
 
       public:
-        typedef boost::shared_ptr<Cauchy> shared_ptr;
+        typedef std::shared_ptr<Cauchy> shared_ptr;
 
         Cauchy(double k = 0.1, const ReweightScheme reweight = Block);
         double weight(double error) const {
@@ -828,7 +828,7 @@ namespace gtsam {
         double c_, csquared_;
 
       public:
-        typedef boost::shared_ptr<Tukey> shared_ptr;
+        typedef std::shared_ptr<Tukey> shared_ptr;
 
         Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
         double weight(double error) const {
@@ -858,7 +858,7 @@ namespace gtsam {
         double c_, csquared_;
 
       public:
-        typedef boost::shared_ptr<Welsh> shared_ptr;
+        typedef std::shared_ptr<Welsh> shared_ptr;
 
         Welsh(double c = 2.9846, const ReweightScheme reweight = Block);
         double weight(double error) const {
@@ -887,7 +887,7 @@ namespace gtsam {
       /// the generalized Geman-McClure from (Agarwal15phd).
       class GTSAM_EXPORT GemanMcClure : public Base {
       public:
-        typedef boost::shared_ptr<GemanMcClure> shared_ptr;
+        typedef std::shared_ptr<GemanMcClure> shared_ptr;
 
         GemanMcClure(double c = 1.0, const ReweightScheme reweight = Block);
         virtual ~GemanMcClure() {}
@@ -916,7 +916,7 @@ namespace gtsam {
       /// forcing the output weight s <= 1.0, DCS is similar to Geman-McClure.
       class GTSAM_EXPORT DCS : public Base {
       public:
-        typedef boost::shared_ptr<DCS> shared_ptr;
+        typedef std::shared_ptr<DCS> shared_ptr;
 
         DCS(double c = 1.0, const ReweightScheme reweight = Block);
         virtual ~DCS() {}
@@ -948,7 +948,7 @@ namespace gtsam {
           double k_;
 
       public:
-          typedef boost::shared_ptr<L2WithDeadZone> shared_ptr;
+          typedef std::shared_ptr<L2WithDeadZone> shared_ptr;
 
           L2WithDeadZone(double k, const ReweightScheme reweight = Block);
           double residual(double error) const {
@@ -998,7 +998,7 @@ namespace gtsam {
      */
     class GTSAM_EXPORT Robust : public Base {
     public:
-      typedef boost::shared_ptr<Robust> shared_ptr;
+      typedef std::shared_ptr<Robust> shared_ptr;
 
     protected:
       typedef mEstimator::Base RobustModel;

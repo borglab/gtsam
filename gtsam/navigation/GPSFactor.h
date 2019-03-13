@@ -43,7 +43,7 @@ private:
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<GPSFactor> shared_ptr;
+  typedef std::shared_ptr<GPSFactor> shared_ptr;
 
   /// Typedef to this class
   typedef GPSFactor This;
@@ -66,7 +66,7 @@ public:
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -121,7 +121,7 @@ private:
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<GPSFactor2> shared_ptr;
+  typedef std::shared_ptr<GPSFactor2> shared_ptr;
 
   /// Typedef to this class
   typedef GPSFactor2 This;
@@ -138,7 +138,7 @@ public:
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 

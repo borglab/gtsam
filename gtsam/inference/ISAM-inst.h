@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -41,7 +41,7 @@ void ISAM<BAYESTREE>::update_internal(const FactorGraphType& newFactors,
 
   // Add the orphaned subtrees
   for (const sharedClique& orphan : orphans)
-    factors += boost::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan);
+    factors += std::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan);
 
   // Get an ordering where the new keys are eliminated last
   const VariableIndex index(factors);

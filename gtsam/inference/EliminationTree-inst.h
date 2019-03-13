@@ -34,7 +34,7 @@ namespace gtsam {
   template<class BAYESNET, class GRAPH>
   typename EliminationTree<BAYESNET,GRAPH>::sharedFactor
     EliminationTree<BAYESNET,GRAPH>::Node::eliminate(
-    const boost::shared_ptr<BayesNetType>& output,
+    const std::shared_ptr<BayesNetType>& output,
     const Eliminate& function, const FastVector<sharedFactor>& childrenResults) const
   {
     // This function eliminates one node (Node::eliminate) - see below eliminate for the whole tree.
@@ -49,7 +49,7 @@ namespace gtsam {
 
     // Do dense elimination step
     KeyVector keyAsVector(1); keyAsVector[0] = key;
-    std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
+    std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType> > eliminationResult =
       function(gatheredFactors, Ordering(keyAsVector));
 
     // Add conditional to BayesNet
@@ -100,7 +100,7 @@ namespace gtsam {
       {
         // Retrieve the factors involving this variable and create the current node
         const VariableIndex::Factors& factors = structure[order[j]];
-        const sharedNode node = boost::make_shared<Node>();
+        const sharedNode node = std::make_shared<Node>();
         node->key = order[j];
 
         // for row i \in Struct[A*j] do
@@ -185,18 +185,18 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class BAYESNET, class GRAPH>
-  std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<GRAPH> >
+  std::pair<std::shared_ptr<BAYESNET>, std::shared_ptr<GRAPH> >
     EliminationTree<BAYESNET,GRAPH>::eliminate(Eliminate function) const
   {
     gttic(EliminationTree_eliminate);
     // Allocate result
-    boost::shared_ptr<BayesNetType> result = boost::make_shared<BayesNetType>();
+    std::shared_ptr<BayesNetType> result = std::make_shared<BayesNetType>();
 
     // Run tree elimination algorithm
     FastVector<sharedFactor> remainingFactors = inference::EliminateTree(result, *this, function);
 
     // Add remaining factors that were not involved with eliminated variables
-    boost::shared_ptr<FactorGraphType> allRemainingFactors = boost::make_shared<FactorGraphType>();
+    std::shared_ptr<FactorGraphType> allRemainingFactors = std::make_shared<FactorGraphType>();
     allRemainingFactors->push_back(remainingFactors_.begin(), remainingFactors_.end());
     allRemainingFactors->push_back(remainingFactors.begin(), remainingFactors.end());
 

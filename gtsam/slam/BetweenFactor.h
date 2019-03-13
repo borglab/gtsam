@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -49,7 +49,7 @@ namespace gtsam {
   public:
 
     // shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<BetweenFactor> shared_ptr;
+    typedef typename std::shared_ptr<BetweenFactor> shared_ptr;
 
     /** default constructor - only use for serialization */
     BetweenFactor() {}
@@ -64,7 +64,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
@@ -122,7 +122,7 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
-  
+
 	  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
 	  enum { NeedsToAlign = (sizeof(VALUE) % 16) == 0 };
     public:
@@ -141,7 +141,7 @@ namespace gtsam {
   template<class VALUE>
   class BetweenConstraint : public BetweenFactor<VALUE> {
   public:
-    typedef boost::shared_ptr<BetweenConstraint<VALUE> > shared_ptr;
+    typedef std::shared_ptr<BetweenConstraint<VALUE> > shared_ptr;
 
     /** Syntactic sugar for constrained version */
     BetweenConstraint(const VALUE& measured, Key key1, Key key2, double mu = 1000.0) :

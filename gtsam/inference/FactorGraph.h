@@ -85,14 +85,14 @@ namespace gtsam {
 
   public:
     typedef FACTOR FactorType;  ///< factor type
-    typedef boost::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
+    typedef std::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
     typedef sharedFactor value_type;
     typedef typename FastVector<sharedFactor>::iterator iterator;
     typedef typename FastVector<sharedFactor>::const_iterator const_iterator;
 
   private:
     typedef FactorGraph<FACTOR> This;  ///< Typedef for this class
-    typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer for this class
+    typedef std::shared_ptr<This> shared_ptr;  ///< Shared pointer for this class
 
   protected:
     /** concept check, makes sure FACTOR defines print and equals */
@@ -156,8 +156,8 @@ namespace gtsam {
     /** Add a factor directly using a shared_ptr */
     template<class DERIVEDFACTOR>
     typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
-    push_back(boost::shared_ptr<DERIVEDFACTOR> factor) {
-      factors_.push_back(boost::shared_ptr<FACTOR>(factor)); }
+    push_back(std::shared_ptr<DERIVEDFACTOR> factor) {
+      factors_.push_back(std::shared_ptr<FACTOR>(factor)); }
 
     /** Add a factor directly using a shared_ptr */
     void push_back(const sharedFactor& factor) {
@@ -167,7 +167,7 @@ namespace gtsam {
 	template<class DERIVEDFACTOR, class... Args>
 	typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
 		emplace_shared(Args&&... args) {
-		factors_.push_back(boost::allocate_shared<DERIVEDFACTOR>(Eigen::aligned_allocator<DERIVEDFACTOR>(), std::forward<Args>(args)...));
+		factors_.push_back(std::allocate_shared<DERIVEDFACTOR>(Eigen::aligned_allocator<DERIVEDFACTOR>(), std::forward<Args>(args)...));
 	}
 
     /** push back many factors with an iterator over shared_ptr (factors are not copied) */
@@ -197,7 +197,7 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
       push_back(const DERIVEDFACTOR& factor) {
-        factors_.push_back(boost::allocate_shared<DERIVEDFACTOR>(Eigen::aligned_allocator<DERIVEDFACTOR>(), factor));
+        factors_.push_back(std::allocate_shared<DERIVEDFACTOR>(Eigen::aligned_allocator<DERIVEDFACTOR>(), factor));
     }
 //#endif
 
@@ -220,7 +220,7 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value,
       boost::assign::list_inserter<RefCallPushBack<This> > >::type
-      operator+=(boost::shared_ptr<DERIVEDFACTOR> factor) {
+      operator+=(std::shared_ptr<DERIVEDFACTOR> factor) {
         return boost::assign::make_list_inserter(RefCallPushBack<This>(*this))(factor);
     }
 
@@ -240,7 +240,7 @@ namespace gtsam {
     /** Add a factor directly using a shared_ptr */
     template<class DERIVEDFACTOR>
     typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
-      add(boost::shared_ptr<DERIVEDFACTOR> factor) {
+      add(std::shared_ptr<DERIVEDFACTOR> factor) {
         push_back(factor);
     }
 

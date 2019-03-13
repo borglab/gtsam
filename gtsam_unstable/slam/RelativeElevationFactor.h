@@ -2,7 +2,7 @@
  * @file RelativeElevationFactor.h
  *
  * @brief Factor representing a known relative altitude in global frame
- * 
+ *
  * @date Aug 17, 2012
  * @author Alex Cunningham
  */
@@ -44,7 +44,7 @@ public:
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** h(x)-z */

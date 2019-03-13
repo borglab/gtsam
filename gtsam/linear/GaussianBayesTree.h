@@ -38,10 +38,10 @@ namespace gtsam {
   public:
     typedef GaussianBayesTreeClique This;
     typedef BayesTreeCliqueBase<GaussianBayesTreeClique, GaussianFactorGraph> Base;
-    typedef boost::shared_ptr<This> shared_ptr;
-    typedef boost::weak_ptr<This> weak_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
+    typedef std::weak_ptr<This> weak_ptr;
     GaussianBayesTreeClique() {}
-    GaussianBayesTreeClique(const boost::shared_ptr<GaussianConditional>& conditional) : Base(conditional) {}
+    GaussianBayesTreeClique(const std::shared_ptr<GaussianConditional>& conditional) : Base(conditional) {}
   };
 
   /* ************************************************************************* */
@@ -54,7 +54,7 @@ namespace gtsam {
 
   public:
     typedef GaussianBayesTree This;
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
 
     /** Default constructor, creates an empty Bayes tree */
     GaussianBayesTree() {}
@@ -94,7 +94,7 @@ namespace gtsam {
 
     /** Compute the gradient of the energy function, \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} R x -
      * d \right\Vert^2 \f$, centered around \f$ x = x_0 \f$. The gradient is \f$ R^T(Rx-d) \f$.
-     * 
+     *
      * @param x0 The center about which to compute the gradient
      * @return The gradient as a VectorValues */
     VectorValues gradient(const VectorValues& x0) const;
@@ -102,7 +102,7 @@ namespace gtsam {
     /** Compute the gradient of the energy function, \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} R x - d
      * \right\Vert^2 \f$, centered around zero. The gradient about zero is \f$ -R^T d \f$.  See also
      * gradient(const GaussianBayesNet&, const VectorValues&).
-     * 
+     *
      * @return A VectorValues storing the gradient. */
     VectorValues gradientAtZero() const;
 

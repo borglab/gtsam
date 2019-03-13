@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -31,7 +31,7 @@ class GTSAM_UNSTABLE_EXPORT ConcurrentIncrementalFilter : public virtual Concurr
 
 public:
 
-  typedef boost::shared_ptr<ConcurrentIncrementalFilter> shared_ptr;
+  typedef std::shared_ptr<ConcurrentIncrementalFilter> shared_ptr;
   typedef ConcurrentFilter Base; ///< typedef for base class
 
   /** Meta information returned about the update */

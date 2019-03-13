@@ -40,7 +40,7 @@ protected:
   boost::mt19937_64 generator_;
 
 public:
-  typedef boost::shared_ptr<Sampler> shared_ptr;
+  typedef std::shared_ptr<Sampler> shared_ptr;
 
   /**
    * Create a sampler for the distribution specified by a diagonal NoiseModel

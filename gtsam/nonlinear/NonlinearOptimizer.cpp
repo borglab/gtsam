@@ -28,7 +28,7 @@
 #include <gtsam/inference/Ordering.h>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <stdexcept>
 #include <iostream>
@@ -145,11 +145,11 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
     if (!params.iterativeParams)
       throw std::runtime_error("NonlinearOptimizer::solve: cg parameter has to be assigned ...");
 
-    if (boost::shared_ptr<PCGSolverParameters> pcg =
-            boost::dynamic_pointer_cast<PCGSolverParameters>(params.iterativeParams)) {
+    if (std::shared_ptr<PCGSolverParameters> pcg =
+            std::dynamic_pointer_cast<PCGSolverParameters>(params.iterativeParams)) {
       delta = PCGSolver(*pcg).optimize(gfg);
-    } else if (boost::shared_ptr<SubgraphSolverParameters> spcg =
-                   boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams)) {
+    } else if (std::shared_ptr<SubgraphSolverParameters> spcg =
+                   std::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams)) {
       if (!params.ordering)
         throw std::runtime_error("SubgraphSolver needs an ordering");
       delta = SubgraphSolver(gfg, *spcg, *params.ordering).optimize();

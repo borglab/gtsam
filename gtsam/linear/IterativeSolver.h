@@ -22,7 +22,7 @@
 #include <gtsam/base/Vector.h>
 
 #include <boost/tuple/tuple.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/optional.hpp>
 
 #include <iosfwd>
@@ -45,7 +45,7 @@ class GTSAM_EXPORT IterativeOptimizationParameters {
 
 public:
 
-  typedef boost::shared_ptr<IterativeOptimizationParameters> shared_ptr;
+  typedef std::shared_ptr<IterativeOptimizationParameters> shared_ptr;
   enum Verbosity {
     SILENT = 0, COMPLEXITY, ERROR
   } verbosity_;
@@ -85,7 +85,7 @@ public:
  */
 class GTSAM_EXPORT IterativeSolver {
 public:
-  typedef boost::shared_ptr<IterativeSolver> shared_ptr;
+  typedef std::shared_ptr<IterativeSolver> shared_ptr;
   IterativeSolver() {
   }
   virtual ~IterativeSolver() {

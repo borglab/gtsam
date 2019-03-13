@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -45,7 +45,7 @@ class_<ISAM2Params>("ISAM2Params")
   //     OptimizationParams 	getOptimizationParams () const
   //     void 	setKeyFormatter (KeyFormatter keyFormatter)
   //     KeyFormatter 	getKeyFormatter () const
-  //     GaussianFactorGraph::Eliminate 	getEliminationFunction () const 
+  //     GaussianFactorGraph::Eliminate 	getEliminationFunction () const
 ;
 
 // TODO(Ellon): Export useful methods/properties of ISAM2Result

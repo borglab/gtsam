@@ -42,7 +42,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/vector.hpp>
 
@@ -257,14 +257,14 @@ TEST( GaussianJunctionTreeB, constructor2 ) {
 //
 //  // Compute marginal directly from marginal factor
 //  GaussianFactor::shared_ptr marginalFactor = GaussianMultifrontalSolver(gfg).marginalFactor(1);
-//  JacobianFactor::shared_ptr marginalJacobian = boost::dynamic_pointer_cast<JacobianFactor>(marginalFactor);
+//  JacobianFactor::shared_ptr marginalJacobian = std::dynamic_pointer_cast<JacobianFactor>(marginalFactor);
 //  Matrix actual2 = inverse(marginalJacobian->getA(marginalJacobian->begin()).transpose() * marginalJacobian->getA(marginalJacobian->begin()));
 //
 //  // Compute marginal directly from BayesTree
 //  GaussianBayesTree gbt;
 //  gbt.insert(GaussianJunctionTree(gfg).eliminate(EliminateCholesky));
 //  marginalFactor = gbt.marginalFactor(1, EliminateCholesky);
-//  marginalJacobian = boost::dynamic_pointer_cast<JacobianFactor>(marginalFactor);
+//  marginalJacobian = std::dynamic_pointer_cast<JacobianFactor>(marginalFactor);
 //  Matrix actual3 = inverse(marginalJacobian->getA(marginalJacobian->begin()).transpose() * marginalJacobian->getA(marginalJacobian->begin()));
 //
 //  EXPECT(assert_equal(expected, actual1));

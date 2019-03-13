@@ -49,13 +49,13 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
    *  Default constructor, initialize with no measurements
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  PreintegratedAhrsMeasurements(const boost::shared_ptr<Params>& p,
+  PreintegratedAhrsMeasurements(const std::shared_ptr<Params>& p,
       const Vector3& biasHat) :
       PreintegratedRotation(p), biasHat_(biasHat) {
     resetIntegration();
   }
 
-  const Params& p() const { return *boost::static_pointer_cast<const Params>(p_);}
+  const Params& p() const { return *std::static_pointer_cast<const Params>(p_);}
   const Vector3& biasHat() const { return biasHat_; }
   const Matrix3& preintMeasCov() const { return preintMeasCov_; }
 
@@ -87,7 +87,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
   /// @deprecated constructor
   PreintegratedAhrsMeasurements(const Vector3& biasHat,
                                 const Matrix3& measuredOmegaCovariance)
-      : PreintegratedRotation(boost::make_shared<Params>()),
+      : PreintegratedRotation(std::make_shared<Params>()),
         biasHat_(biasHat) {
     p_->gyroscopeCovariance = measuredOmegaCovariance;
     resetIntegration();
@@ -119,9 +119,9 @@ public:
 
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
-  typedef typename boost::shared_ptr<AHRSFactor> shared_ptr;
+  typedef typename std::shared_ptr<AHRSFactor> shared_ptr;
 #else
-  typedef boost::shared_ptr<AHRSFactor> shared_ptr;
+  typedef std::shared_ptr<AHRSFactor> shared_ptr;
 #endif
 
   /**

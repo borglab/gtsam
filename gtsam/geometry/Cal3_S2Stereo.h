@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -36,7 +36,7 @@ namespace gtsam {
   public:
 
     enum { dimension = 6 };
-    typedef boost::shared_ptr<Cal3_S2Stereo> shared_ptr;  ///< shared pointer to stereo calibration object
+    typedef std::shared_ptr<Cal3_S2Stereo> shared_ptr;  ///< shared pointer to stereo calibration object
 
     /// @name Standard Constructors
     /// @

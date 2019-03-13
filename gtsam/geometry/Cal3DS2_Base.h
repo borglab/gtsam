@@ -139,8 +139,8 @@ public:
   /// @{
 
   /// @return a deep copy of this object
-  virtual boost::shared_ptr<Cal3DS2_Base> clone() const {
-    return boost::shared_ptr<Cal3DS2_Base>(new Cal3DS2_Base(*this));
+  virtual std::shared_ptr<Cal3DS2_Base> clone() const {
+    return std::shared_ptr<Cal3DS2_Base>(new Cal3DS2_Base(*this));
   }
 
   /// @}

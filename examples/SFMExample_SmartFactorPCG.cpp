@@ -95,9 +95,9 @@ int main(int argc, char* argv[]) {
   parameters.relativeErrorTol = 1e-10;
   parameters.maxIterations = 500;
   PCGSolverParameters::shared_ptr pcg =
-      boost::make_shared<PCGSolverParameters>();
+      std::make_shared<PCGSolverParameters>();
   pcg->preconditioner_ =
-      boost::make_shared<BlockJacobiPreconditionerParameters>();
+      std::make_shared<BlockJacobiPreconditionerParameters>();
   // Following is crucial:
   pcg->setEpsilon_abs(1e-10);
   pcg->setEpsilon_rel(1e-10);
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
   Values landmark_result;
   for (size_t j = 0; j < points.size(); ++j) {
     SmartFactor::shared_ptr smart = //
-        boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
+        std::dynamic_pointer_cast<SmartFactor>(graph[j]);
     if (smart) {
       boost::optional<Point3> point = smart->point(result);
       if (point) // ignore if boost::optional return NULL

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -45,7 +45,7 @@ TEST( ISAM, iSAM_smoother )
 
   // run iSAM for every factor
   GaussianISAM actual;
-  for(boost::shared_ptr<GaussianFactor> factor: smoother) {
+  for(std::shared_ptr<GaussianFactor> factor: smoother) {
     GaussianFactorGraph factorGraph;
     factorGraph.push_back(factor);
     actual.update(factorGraph);

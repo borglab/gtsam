@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -150,7 +150,7 @@ public:
     linearSolverType = linearSolverTranslator(solver);
   }
 
-  void setIterativeParams(const boost::shared_ptr<IterativeOptimizationParameters> params);
+  void setIterativeParams(const std::shared_ptr<IterativeOptimizationParameters> params);
 
   void setOrdering(const Ordering& ordering) {
     this->ordering = ordering;

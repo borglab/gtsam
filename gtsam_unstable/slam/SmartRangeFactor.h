@@ -2,7 +2,7 @@
  * @file SmartRangeFactor.h
  *
  * @brief A smart factor for range-only SLAM that does initialization and marginalization
- * 
+ *
  * @date Sep 10, 2012
  * @author Alex Cunningham
  */
@@ -175,7 +175,7 @@ class SmartRangeFactor: public NoiseModelFactor {
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 };

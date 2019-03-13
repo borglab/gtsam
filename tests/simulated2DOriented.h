@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -125,7 +125,7 @@ namespace simulated2DOriented {
 
     /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   };

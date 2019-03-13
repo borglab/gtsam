@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -46,7 +46,7 @@ int main() {
   // Oct 3, 2014, Macbook Air
   // 20.3 musecs/call
 //#define TERNARY
-  NonlinearFactor::shared_ptr f = boost::make_shared<ExpressionFactor<Point2> >
+  NonlinearFactor::shared_ptr f = std::make_shared<ExpressionFactor<Point2> >
 #ifdef TERNARY
       (model, z, project3(x, p, K));
 #else

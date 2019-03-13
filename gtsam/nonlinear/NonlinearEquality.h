@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -169,7 +169,7 @@ public:
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -222,7 +222,7 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<NonlinearEquality1<VALUE> > shared_ptr;
+  typedef std::shared_ptr<NonlinearEquality1<VALUE> > shared_ptr;
 
   /**
    * Constructor
@@ -241,7 +241,7 @@ public:
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -303,7 +303,7 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<NonlinearEquality2<VALUE> > shared_ptr;
+  typedef std::shared_ptr<NonlinearEquality2<VALUE> > shared_ptr;
 
   ///TODO: comment
   NonlinearEquality2(Key key1, Key key2, double mu = 1000.0) :
@@ -314,7 +314,7 @@ public:
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 

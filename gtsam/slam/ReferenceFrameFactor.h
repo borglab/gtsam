@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -90,7 +90,7 @@ public:
   virtual ~ReferenceFrameFactor(){}
 
   virtual NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** Combined cost and derivative function using boost::optional */

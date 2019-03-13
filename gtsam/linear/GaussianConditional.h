@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -39,7 +39,7 @@ namespace gtsam {
   {
   public:
     typedef GaussianConditional This; ///< Typedef to this class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
     typedef JacobianFactor BaseFactor; ///< Typedef to our factor base class
     typedef Conditional<BaseFactor, This> BaseConditional; ///< Typedef to our conditional base class
 

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -31,7 +31,7 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT ConcurrentBatchSmoother : public ConcurrentSmoother {
 
 public:
-  typedef boost::shared_ptr<ConcurrentBatchSmoother> shared_ptr;
+  typedef std::shared_ptr<ConcurrentBatchSmoother> shared_ptr;
   typedef ConcurrentSmoother Base; ///< typedef for base class
 
   /** Meta information returned about the update */

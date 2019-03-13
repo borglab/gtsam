@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -39,7 +39,7 @@ namespace gtsam {
   public:
 
     // shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<BiasedGPSFactor> shared_ptr;
+    typedef std::shared_ptr<BiasedGPSFactor> shared_ptr;
 
     /** default constructor - only use for serialization */
     BiasedGPSFactor() {}

@@ -37,7 +37,7 @@ std::vector<size_t> ClusterTree<GRAPH>::Cluster::nrFrontalsOfChildren() const {
 
 /* ************************************************************************* */
 template <class GRAPH>
-void ClusterTree<GRAPH>::Cluster::merge(const boost::shared_ptr<Cluster>& cluster) {
+void ClusterTree<GRAPH>::Cluster::merge(const std::shared_ptr<Cluster>& cluster) {
   // Merge keys. For efficiency, we add keys in reverse order at end, calling reverse after..
   orderedFrontalKeys.insert(orderedFrontalKeys.end(), cluster->orderedFrontalKeys.rbegin(),
                             cluster->orderedFrontalKeys.rend());
@@ -119,10 +119,10 @@ struct EliminationData {
   EliminationData* const parentData;
   size_t myIndexInParent;
   FastVector<sharedFactor> childFactors;
-  boost::shared_ptr<BTNode> bayesTreeNode;
+  std::shared_ptr<BTNode> bayesTreeNode;
 
   EliminationData(EliminationData* _parentData, size_t nChildren) :
-      parentData(_parentData), bayesTreeNode(boost::make_shared<BTNode>()) {
+      parentData(_parentData), bayesTreeNode(std::make_shared<BTNode>()) {
     if (parentData) {
       myIndexInParent = parentData->childFactors.size();
       parentData->childFactors.push_back(sharedFactor());
@@ -217,13 +217,13 @@ EliminatableClusterTree<BAYESTREE, GRAPH>& EliminatableClusterTree<BAYESTREE, GR
 
 /* ************************************************************************* */
 template <class BAYESTREE, class GRAPH>
-std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<GRAPH> >
+std::pair<std::shared_ptr<BAYESTREE>, std::shared_ptr<GRAPH> >
 EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) const {
   gttic(ClusterTree_eliminate);
   // Do elimination (depth-first traversal).  The rootsContainer stores a 'dummy' BayesTree node
   // that contains all of the roots as its children.  rootsContainer also stores the remaining
   // un-eliminated factors passed up from the roots.
-  boost::shared_ptr<BayesTreeType> result = boost::make_shared<BayesTreeType>();
+  std::shared_ptr<BayesTreeType> result = std::make_shared<BayesTreeType>();
 
   typedef EliminationData<This> Data;
   Data rootsContainer(0, this->nrRoots());
@@ -240,7 +240,7 @@ EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) 
                         rootsContainer.bayesTreeNode->children.end());
 
   // Add remaining factors that were not involved with eliminated variables
-  boost::shared_ptr<FactorGraphType> remaining = boost::make_shared<FactorGraphType>();
+  std::shared_ptr<FactorGraphType> remaining = std::make_shared<FactorGraphType>();
   remaining->reserve(remainingFactors_.size() + rootsContainer.childFactors.size());
   remaining->push_back(remainingFactors_.begin(), remainingFactors_.end());
   for (const sharedFactor& factor : rootsContainer.childFactors) {

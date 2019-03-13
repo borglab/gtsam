@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -43,7 +43,7 @@ namespace gtsam {
     typedef SymbolicBayesTree BayesTreeType;             ///< Type of Bayes tree
     typedef SymbolicJunctionTree JunctionTreeType;       ///< Type of Junction tree
     /// The default dense elimination function
-    static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
+    static std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType> >
       DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
         return EliminateSymbolic(factors, keys); }
   };
@@ -61,7 +61,7 @@ namespace gtsam {
     typedef SymbolicFactorGraph This; ///< Typedef to this class
     typedef FactorGraph<SymbolicFactor> Base; ///< Typedef to base factor graph type
     typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
     /// @name Standard Constructors
     /// @{
@@ -82,10 +82,10 @@ namespace gtsam {
     SymbolicFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
     /// @}
-    
+
     /// @name Testable
     /// @{
-    
+
     bool equals(const This& fg, double tol = 1e-9) const;
 
     /// @}

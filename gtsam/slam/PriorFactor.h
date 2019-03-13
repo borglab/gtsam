@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -42,7 +42,7 @@ namespace gtsam {
   public:
 
     /// shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<PriorFactor<VALUE> > shared_ptr;
+    typedef typename std::shared_ptr<PriorFactor<VALUE> > shared_ptr;
 
     /// Typedef to this class
     typedef PriorFactor<VALUE> This;
@@ -64,7 +64,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
@@ -104,7 +104,7 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);
     }
-  
+
 	// Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
 	enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
   public:

@@ -21,7 +21,7 @@
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/inference/Key.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <set>
 
 namespace gtsam {

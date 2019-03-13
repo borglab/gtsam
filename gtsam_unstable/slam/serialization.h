@@ -2,7 +2,7 @@
  * @file serialization.h
  *
  * @brief Global functions for performing serialization, designed for use with matlab
- * 
+ *
  * @date Jun 12, 2013
  * @author Alex Cunningham
  */

@@ -68,7 +68,7 @@ class GTSAM_EXPORT PreintegrationBase {
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   mutable
 #endif
-  boost::shared_ptr<Params> p_;
+  std::shared_ptr<Params> p_;
 
   /// Acceleration and gyro bias used for preintegration
   Bias biasHat_;
@@ -91,7 +91,7 @@ class GTSAM_EXPORT PreintegrationBase {
    *  @param p    Parameters, typically fixed in a single application
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  PreintegrationBase(const boost::shared_ptr<Params>& p,
+  PreintegrationBase(const std::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
   /// @}
@@ -112,13 +112,13 @@ class GTSAM_EXPORT PreintegrationBase {
   }
 
   /// shared pointer to params
-  const boost::shared_ptr<Params>& params() const {
+  const std::shared_ptr<Params>& params() const {
     return p_;
   }
 
   /// const reference to params
   const Params& p() const {
-    return *boost::static_pointer_cast<Params>(p_);
+    return *std::static_pointer_cast<Params>(p_);
   }
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
@@ -151,7 +151,7 @@ class GTSAM_EXPORT PreintegrationBase {
   /// @name Main functionality
   /// @{
 
-  /** 
+  /**
    * Subtract estimate and correct for sensor pose
    * Compute the derivatives due to non-identity body_P_sensor (rotation and centrifugal acc)
    * Ignore D_correctedOmega_measuredAcc as it is trivially zero
@@ -190,8 +190,8 @@ class GTSAM_EXPORT PreintegrationBase {
                        OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2,
                        OptionalJacobian<9, 6> H3) const;
 
-  /** 
-   * Compute errors w.r.t. preintegrated measurements and jacobians 
+  /**
+   * Compute errors w.r.t. preintegrated measurements and jacobians
    * wrt pose_i, vel_i, bias_i, pose_j, bias_j
    */
   Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,

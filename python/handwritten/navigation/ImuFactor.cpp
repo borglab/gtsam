@@ -60,7 +60,7 @@ void exportImuFactor() {
       .def(init<const Vector3&, const Vector3&>())
       .def(repr(self));
 
-  class_<PreintegrationParams, boost::shared_ptr<PreintegrationParams>>(
+  class_<PreintegrationParams, std::shared_ptr<PreintegrationParams>>(
       "PreintegrationParams", init<const Vector3&>())
       .def_readwrite("gyroscopeCovariance",
                      &PreintegrationParams::gyroscopeCovariance)
@@ -88,7 +88,7 @@ void exportImuFactor() {
 #else
       "ManifoldPreintegration",
 #endif
-      init<const boost::shared_ptr<PreintegrationParams>&, const imuBias::ConstantBias&>())
+      init<const std::shared_ptr<PreintegrationParams>&, const imuBias::ConstantBias&>())
       .def("predict", &PreintegrationType::predict, predict_overloads())
       .def("computeError", &PreintegrationType::computeError)
       .def("resetIntegration", &PreintegrationType::resetIntegration)
@@ -96,31 +96,31 @@ void exportImuFactor() {
 
   class_<PreintegratedImuMeasurements, bases<PreintegrationType>>(
       "PreintegratedImuMeasurements",
-      init<const boost::shared_ptr<PreintegrationParams>&, const imuBias::ConstantBias&>())
+      init<const std::shared_ptr<PreintegrationParams>&, const imuBias::ConstantBias&>())
       .def(repr(self))
       .def("equals", &PreintegratedImuMeasurements::equals, equals_overloads(args("other", "tol")))
       .def("integrateMeasurement", &PreintegratedImuMeasurements::integrateMeasurement)
       .def("integrateMeasurements", &PreintegratedImuMeasurements::integrateMeasurements)
       .def("preintMeasCov", &PreintegratedImuMeasurements::preintMeasCov);
 
-  class_<ImuFactor, bases<NonlinearFactor>, boost::shared_ptr<ImuFactor>>("ImuFactor")
+  class_<ImuFactor, bases<NonlinearFactor>, std::shared_ptr<ImuFactor>>("ImuFactor")
       .def("error", &ImuFactor::error)
       .def(init<Key, Key, Key, Key, Key, const PreintegratedImuMeasurements&>())
       .def(repr(self));
   REGISTER_SHARED_PTR_TO_PYTHON(ImuFactor);
 
-  class_<ImuFactor2, bases<NonlinearFactor>, boost::shared_ptr<ImuFactor2>>("ImuFactor2")
+  class_<ImuFactor2, bases<NonlinearFactor>, std::shared_ptr<ImuFactor2>>("ImuFactor2")
       .def("error", &ImuFactor2::error)
       .def(init<Key, Key, Key, const PreintegratedImuMeasurements&>())
       .def(repr(self));
   REGISTER_SHARED_PTR_TO_PYTHON(ImuFactor2);
 
-  class_<GPSFactor, bases<NonlinearFactor>, boost::shared_ptr<GPSFactor>>("GPSFactor")
+  class_<GPSFactor, bases<NonlinearFactor>, std::shared_ptr<GPSFactor>>("GPSFactor")
       .def("error", &GPSFactor::error)
       .def(init<Key, const Point3&, noiseModel::Base::shared_ptr>());
   REGISTER_SHARED_PTR_TO_PYTHON(GPSFactor);
 
-  class_<GPSFactor2, bases<NonlinearFactor>, boost::shared_ptr<GPSFactor2>>("GPSFactor2")
+  class_<GPSFactor2, bases<NonlinearFactor>, std::shared_ptr<GPSFactor2>>("GPSFactor2")
       .def("error", &GPSFactor2::error)
       .def(init<Key, const Point3&, noiseModel::Base::shared_ptr>());
   REGISTER_SHARED_PTR_TO_PYTHON(GPSFactor2);

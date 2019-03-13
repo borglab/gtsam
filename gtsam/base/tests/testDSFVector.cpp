@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -84,7 +84,7 @@ TEST(DSFBase, mergePairwiseMatches) {
 
 /* ************************************************************************* */
 TEST(DSFVector, merge2) {
-  boost::shared_ptr<DSFBase::V> v = boost::make_shared<DSFBase::V>(5);
+  std::shared_ptr<DSFBase::V> v = std::make_shared<DSFBase::V>(5);
   std::vector<size_t> keys; keys += 1, 3;
   DSFVector dsf(v, keys);
   dsf.merge(1,3);

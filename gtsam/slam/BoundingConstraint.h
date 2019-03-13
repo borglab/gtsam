@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -33,7 +33,7 @@ template<class VALUE>
 struct BoundingConstraint1: public NoiseModelFactor1<VALUE> {
   typedef VALUE X;
   typedef NoiseModelFactor1<VALUE> Base;
-  typedef boost::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
+  typedef std::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
 
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than
@@ -102,7 +102,7 @@ struct BoundingConstraint2: public NoiseModelFactor2<VALUE1, VALUE2> {
   typedef VALUE2 X2;
 
   typedef NoiseModelFactor2<VALUE1, VALUE2> Base;
-  typedef boost::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
+  typedef std::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
 
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than

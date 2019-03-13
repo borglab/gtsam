@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -79,7 +79,7 @@ TEST( SymbolicConditional, fourParents )
 TEST( SymbolicConditional, FromRange )
 {
   SymbolicConditional::shared_ptr c0 =
-    boost::make_shared<SymbolicConditional>(
+    std::make_shared<SymbolicConditional>(
     SymbolicConditional::FromKeys(list_of(1)(2)(3)(4)(5), 2));
   LONGS_EQUAL(2, (long)c0->nrFrontals());
   LONGS_EQUAL(3, (long)c0->nrParents());

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -20,7 +20,7 @@
 #include <gtsam/base/treeTraversal-inst.h>
 
 #include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace gtsam
 {
@@ -49,7 +49,7 @@ namespace gtsam
         VectorValues collectedResult;
 
         OptimizeData operator()(
-          const boost::shared_ptr<CLIQUE>& clique,
+          const std::shared_ptr<CLIQUE>& clique,
           OptimizeData& parentData)
         {
           OptimizeData myData;

@@ -11,7 +11,7 @@
 
 /**
  * @file    testSymbolicEliminationTree.cpp
- * @brief   
+ * @brief
  * @author  Richard Roberts
  * @date Oct 14, 2010
  */
@@ -79,7 +79,7 @@ public:
 template<typename FACTORS>
 static SymbolicEliminationTree::sharedNode MakeNode(Key key, const FACTORS& factors)
 {
-  SymbolicEliminationTree::sharedNode node = boost::make_shared<SymbolicEliminationTree::Node>();
+  SymbolicEliminationTree::sharedNode node = std::make_shared<SymbolicEliminationTree::Node>();
   node->key = key;
   SymbolicFactorGraph factorsAsGraph = factors;
   node->factors.assign(factorsAsGraph.begin(), factorsAsGraph.end());
@@ -89,7 +89,7 @@ static SymbolicEliminationTree::sharedNode MakeNode(Key key, const FACTORS& fact
 template<typename FACTORS, typename CHILDREN>
 static SymbolicEliminationTree::sharedNode MakeNode(Key key, const FACTORS& factors, const CHILDREN& children)
 {
-  SymbolicEliminationTree::sharedNode node = boost::make_shared<SymbolicEliminationTree::Node>();
+  SymbolicEliminationTree::sharedNode node = std::make_shared<SymbolicEliminationTree::Node>();
   node->key = key;
   SymbolicFactorGraph factorsAsGraph = factors;
   node->factors.assign(factorsAsGraph.begin(), factorsAsGraph.end());
@@ -145,7 +145,7 @@ TEST(EliminationTree, Create2)
   Ordering order = list_of(X(1)) (L(3)) (L(1)) (X(5)) (X(2)) (L(2)) (X(4)) (X(3));
 
   SymbolicEliminationTree actual(graph, order);
-  
+
   EXPECT(assert_equal(expected, actual));
 }
 

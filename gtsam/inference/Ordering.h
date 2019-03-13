@@ -43,7 +43,7 @@ public:
   };
 
   typedef Ordering This; ///< Typedef to this class
-  typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+  typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
   /// Create an empty ordering
   GTSAM_EXPORT
