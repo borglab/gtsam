@@ -16,7 +16,6 @@ class MatlabWrapper(object):
     """
 
     # TODO: Define more types
-    # TODO: May only need this for constructors
     data_type = {'int': 'numeric', 'double': 'double'}
 
     # TODO: Figure out what this number is
