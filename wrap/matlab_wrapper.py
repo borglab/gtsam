@@ -14,6 +14,7 @@ test_dir = "wrap/tests/"
 
 
 class MatlabWrapper(object):
+    # TODO: Store text instead of outputting it
     # TODO: Define more types
     # TODO: May only need this for constructors
     data_type = {'int': 'numeric', 'double': 'double'}

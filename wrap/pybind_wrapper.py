@@ -306,9 +306,7 @@ def main():
 
     with open(args.src, "r") as f:
         content = f.read()
-
-    module = parser.Module.parseString(content)        
-
+    module = parser.Module.parseString(content)
     instantiator.instantiate_namespace_inplace(module)
 
     wrapper = PybindWrapper(
