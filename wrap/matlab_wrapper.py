@@ -326,7 +326,7 @@ class MatlabWrapper(object):
         check_statement = ''
         arg_id = 1
 
-        for _, arg in enumerate(args.args_list):
+        for i, arg in enumerate(args.args_list):
             name = arg.ctype.typename.name
 
             if name in self.not_check_type:
