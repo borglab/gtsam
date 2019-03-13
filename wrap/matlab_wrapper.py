@@ -72,6 +72,8 @@ class MatlabWrapper(object):
     """Files and their content"""
     content = []
 
+    content = []
+
     def __init__(self, module, module_name, top_module_namespace='',
                  ignore_classes=[]):
         self.module = module
