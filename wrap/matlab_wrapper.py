@@ -66,6 +66,17 @@ class MatlabWrapper(object):
 
         return instantiated_class.cpp_class()
 
+    def _format_type_name(self, type_name):
+        """ Format the given type name """
+        formatted_type_name = ''
+
+        for namespace in type_name.namespaces:
+            formatted_type_name += namespace + '::'
+
+        formatted_type_name += type_name.name
+
+        return formatted_type_name
+
     def class_comment(self, class_name, ctors, methods):
         """ Generate comments for the given class in Matlab.
 
@@ -74,12 +85,12 @@ class MatlabWrapper(object):
         ctors -- a list of the constructors in the class
         methods -- a list of the methods in the class
         """
-
         comment = '%class {class_name}, see Doxygen page for details\n'\
-            '%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n'\
-            '%\n'\
-            '%-------Constructors-------\n'.format(
-                class_name=class_name)
+            '%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/'\
+            'index.html\n'.format(class_name=class_name)
+
+        if len(ctors) != 0:
+            comment += '%\n%-------Constructors-------\n'
 
         # Write constructors
         for ctor in ctors:
@@ -94,8 +105,11 @@ class MatlabWrapper(object):
 
             comment += ')\n'
 
-        comment += '%\n'\
-            '%-------Methods-------\n'
+        if len(methods) != 0:
+            comment += '%\n'\
+                '%-------Methods-------\n'
+
+        methods = sorted(methods, key=lambda name: name.name)
 
         # Write methods
         for method in methods:
@@ -108,8 +122,19 @@ class MatlabWrapper(object):
                 comment += '{type} {name}'.format(
                     type=arg.ctype.typename.name, name=arg.name)
 
+            # TODO: Determine when to include namespace
+            if method.return_type.type2 == '':
+                return_type = self._format_type_name(
+                    method.return_type.type1.typename)
+            else:
+                return_type = 'pair< {type1}, {type2} >'.format(
+                    type1=self._format_type_name(
+                        method.return_type.type1.typename),
+                    type2=self._format_type_name(
+                        method.return_type.type2.typename))
+
             comment += ') : returns {return_type}\n'.format(
-                return_type=method.return_type.type1.typename.name)
+                return_type=return_type)
 
         comment += '%\n'
 
@@ -239,8 +264,45 @@ class MatlabWrapper(object):
 
 
 if __name__ == "__main__":
-    TEST_DIR = "wrap/tests/"
-    with open(TEST_DIR + 'geometry.h', 'r') as f:
+    arg_parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    arg_parser.add_argument(
+        "--src", type=str, required=True, help="Input interface .h file.")
+    arg_parser.add_argument(
+        "--module_name",
+        type=str,
+        required=True,
+        help="Name of the C++ class being wrapped.")
+    arg_parser.add_argument(
+        "--out",
+        type=str,
+        required=True,
+        help="Name of the output folder.")
+    arg_parser.add_argument(
+        "--top_module_namespaces",
+        type=str,
+        default="",
+        help="C++ namespace for the top module, e.g. `ns1::ns2::ns3`. "
+        "Only the content within this namespace and its sub-namespaces "
+        "will be wrapped. The content of this namespace will be available at "
+        "the top module level, and its sub-namespaces' in the submodules.\n"
+        "For example, `import <module_name>` gives you access to a Python "
+        "`<module_name>.Class` of the corresponding C++ `ns1::ns2::ns3::Class`,"
+        " and `from <module_name> import ns4` gives you access to a Python "
+        "`ns4.Class` of the C++ `ns1::ns2::ns3::ns4::Class`. ")
+    arg_parser.add_argument(
+        "--ignore",
+        nargs='*',
+        type=str,
+        help="A space-separated list of classes to ignore. "
+        "Class names must include their full namespaces.")
+    args = arg_parser.parse_args()
+
+    top_module_namespaces = args.top_module_namespaces.split("::")
+    if top_module_namespaces[0]:
+        top_module_namespaces = [''] + top_module_namespaces
+
+    with open(args.src, 'r') as f:
         content = f.read()
 
     module = parser.Module.parseString(content)
@@ -255,3 +317,10 @@ if __name__ == "__main__":
     )
 
     cc_content = wrapper.wrap()
+
+    for c in cc_content:
+        if type(c) == list:
+            pass
+        else:
+            with open(args.out + '/' + c[0], 'w') as f:
+                f.write(c[1])
