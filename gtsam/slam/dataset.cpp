@@ -540,7 +540,7 @@ std::map<Key, Pose3> parse3DPoses(const string& filename) {
 }
 
 /* ************************************************************************* */
-std::vector<BetweenFactor<Pose3>::shared_ptr> parse3DFactors(const string& filename) {
+BetweenFactorPose3s parse3DFactors(const string& filename) {
   ifstream is(filename.c_str());
   if (!is) throw invalid_argument("parse3DFactors: can not find file " + filename);
 

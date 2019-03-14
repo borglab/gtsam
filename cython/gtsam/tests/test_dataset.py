@@ -8,25 +8,36 @@ See LICENSE for the license information
 Unit tests for testing dataset access.
 Author: Frank Dellaert
 """
-# pylint: disable=invalid-name, E1101
+# pylint: disable=invalid-name, no-name-in-module, no-member
 
 from __future__ import print_function
 
 import unittest
 
 import gtsam
+from gtsam import BetweenFactorPose3, BetweenFactorPose3s
 
 
 class TestDataset(unittest.TestCase):
-    def setUp(self):
-        pass
+    """Tests for datasets.h wrapper."""
 
-    def test_3d_graph(self):
+    def setUp(self):
+        """Get some common paths."""
+        self.pose3_example_g2o_file = gtsam.findExampleDataFile(
+            "pose3example.txt")
+
+    def test_readG2o3D(self):
+        """Test reading directly into factor graph."""
         is3D = True
-        g2o_file = gtsam.findExampleDataFile("pose3example.txt")
-        graph, initial = gtsam.readG2o(g2o_file, is3D)
+        graph, initial = gtsam.readG2o(self.pose3_example_g2o_file, is3D)
         self.assertEqual(graph.size(), 6)
         self.assertEqual(initial.size(), 5)
+
+    def test_parse3Dfactors(self):
+        """Test parsing into data structure."""
+        factors = gtsam.parse3DFactors(self.pose3_example_g2o_file)
+        self.assertEqual(factors.size(), 6)
+        self.assertIsInstance(factors.at(0), BetweenFactorPose3)
 
 
 if __name__ == '__main__':
