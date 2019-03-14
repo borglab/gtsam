@@ -97,11 +97,23 @@ Note that in the Lie group case, the usual valid expressions for Retract and Loc
 
 For Lie groups, the `exponential map` above is the most obvious mapping: it 
 associates straight lines in the tangent space with geodesics on the manifold 
-(and it's inverse, the log map). However, there are two cases in which we deviate from this:
+(and it's inverse, the log map). However, there are several cases in which we deviate from this:
 
 However, the exponential map is unnecessarily expensive for use in optimization. Hence, in GTSAM there is the option to provide a cheaper chart by means of the `ChartAtOrigin` struct in a class. This is done for *SE(2)*, *SO(3)* and *SE(3)* (see `Pose2`, `Rot3`, `Pose3`)
 
 Most Lie groups we care about are *Matrix groups*, continuous sub-groups of *GL(n)*, the group of *n x n* invertible matrices. In this case, a lot of the derivatives calculations needed can be standardized, and this is done by the `LieGroup` superclass. You only need to provide an `AdjointMap` method.
+
+A CRTP helper class `LieGroup` is available that can take a class and create some of the Lie group methods automatically. The class needs:
+
+* operator* : implements group operator
+* inverse: implements group inverse
+* AdjointMap: maps tangent vectors according to group element
+* Expmap/Logmap: exponential map and its inverse
+* ChartAtOrigin: struct where you define Retract/Local at origin
+
+To use, simply derive, but also say `using LieGroup<Class,N>::inverse` so you get an inverse with a derivative.
+
+Finally, to create the traits automatically you can use `internal::LieGroupTraits<Class>`
 
 Vector Space
 ------------
