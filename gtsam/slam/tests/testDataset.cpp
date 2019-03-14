@@ -162,33 +162,96 @@ TEST( dataSet, readG2o)
 }
 
 /* ************************************************************************* */
+using BetweenFactors = std::vector<BetweenFactor<Pose3>::shared_ptr>;
+using Poses = std::map<Key, Pose3>;
+std::pair<BetweenFactors, Poses> parseG2o3D(const std::string&);
+
+#include <fstream>
+#define LINESIZE 81920
+
+/* ************************************************************************* */
+std::pair<BetweenFactors, Poses> parseG2o3D(const string& filename) {
+  ifstream is(filename.c_str());
+  if (!is) throw invalid_argument("load3D: can not find file " + filename);
+
+  BetweenFactors factors;
+  Poses poses;
+
+  while (!is.eof()) {
+    char buf[LINESIZE];
+    is.getline(buf, LINESIZE);
+    istringstream ls(buf);
+    string tag;
+    ls >> tag;
+
+    if (tag == "VERTEX3") {
+      Key id;
+      double x, y, z, roll, pitch, yaw;
+      ls >> id >> x >> y >> z >> roll >> pitch >> yaw;
+      poses.emplace(id, Pose3(Rot3::Ypr(yaw, pitch, roll), {x, y, z}));
+    }
+    if (tag == "VERTEX_SE3:QUAT") {
+      Key id;
+      double x, y, z, qx, qy, qz, qw;
+      ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
+      poses.emplace(id, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}));
+    }
+  }
+  is.clear(); /* clears the end-of-file and error flags */
+  is.seekg(0, ios::beg);
+
+  while (!is.eof()) {
+    char buf[LINESIZE];
+    is.getline(buf, LINESIZE);
+    istringstream ls(buf);
+    string tag;
+    ls >> tag;
+
+    if (tag == "EDGE3") {
+      Key id1, id2;
+      double x, y, z, roll, pitch, yaw;
+      ls >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
+      Matrix m(6, 6);
+      for (size_t i = 0; i < 6; i++)
+        for (size_t j = i; j < 6; j++) ls >> m(i, j);
+      SharedNoiseModel model = noiseModel::Gaussian::Information(m);
+      factors.emplace_back(new BetweenFactor<Pose3>(
+          id1, id2, Pose3(Rot3::Ypr(yaw, pitch, roll), {x, y, z}), model));
+    }
+    if (tag == "EDGE_SE3:QUAT") {
+      Key id1, id2;
+      double x, y, z, qx, qy, qz, qw;
+      ls >> id1 >> id2 >> x >> y >> z >> qx >> qy >> qz >> qw;
+      Matrix m(6, 6);
+      for (size_t i = 0; i < 6; i++) {
+        for (size_t j = i; j < 6; j++) {
+          double mij;
+          ls >> mij;
+          m(i, j) = mij;
+          m(j, i) = mij;
+        }
+      }
+      Matrix mgtsam(6, 6);
+
+      mgtsam.block<3, 3>(0, 0) = m.block<3, 3>(3, 3);  // cov rotation
+      mgtsam.block<3, 3>(3, 3) = m.block<3, 3>(0, 0);  // cov translation
+      mgtsam.block<3, 3>(0, 3) = m.block<3, 3>(0, 3);  // off diagonal
+      mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0);  // off diagonal
+
+      SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
+      factors.emplace_back(new BetweenFactor<Pose3>(
+          id1, id2, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}), model));
+    }
+  }
+  return make_pair(factors, poses);
+}
+
 TEST(dataSet, readG2o3D) {
   const string g2oFile = findExampleDataFile("pose3example");
-  NonlinearFactorGraph::shared_ptr actualGraph;
-  Values::shared_ptr actualValues;
-  bool is3D = true;
-  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D);
-
-  // Initialize 5 poses with quaternion/point3 values:
-  const std::vector<Pose3> poses = {
-      {{1.000000, 0.000000, 0.000000, 0.000000}, {0, 0, 0}},
-      {{0.854230, 0.190253, 0.283162, -0.392318},
-       {1.001367, 0.015390, 0.004948}},
-      {{0.421446, -0.351729, -0.597838, 0.584174},
-       {1.993500, 0.023275, 0.003793}},
-      {{0.067024, 0.331798, -0.200659, 0.919323},
-       {2.004291, 1.024305, 0.018047}},
-      {{0.765488, -0.035697, -0.462490, 0.445933},
-       {0.999908, 1.055073, 0.020212}},
-  };
-
-  // Check values
-  for (size_t i : {0, 1, 2, 3, 4}) {
-    EXPECT(assert_equal(poses[i], actualValues->at<Pose3>(i), 1e-5));
-  }
+  auto model = noiseModel::Isotropic::Precision(6, 10000);
 
   // Initialize 6 relative measurements with quaternion/point3 values:
-  const std::vector<Pose3> measurements = {
+  const std::vector<Pose3> relative_poses = {
       {{0.854230, 0.190253, 0.283162, -0.392318},
        {1.001367, 0.015390, 0.004948}},
       {{0.105373, 0.311512, 0.656877, -0.678505},
@@ -203,21 +266,61 @@ TEST(dataSet, readG2o3D) {
        {-0.623267, 0.086928, 0.773222}},
   };
 
-  // Specify connectivity:
-  std::vector<pair<Key, Key>> pairs = {{0, 1}, {1, 2}, {2, 3},
-                                       {3, 4}, {1, 4}, {3, 0}};
+  // Initialize 5 poses with quaternion/point3 values:
+  const std::vector<Pose3> poses = {
+      {{1.000000, 0.000000, 0.000000, 0.000000}, {0, 0, 0}},
+      {{0.854230, 0.190253, 0.283162, -0.392318},
+       {1.001367, 0.015390, 0.004948}},
+      {{0.421446, -0.351729, -0.597838, 0.584174},
+       {1.993500, 0.023275, 0.003793}},
+      {{0.067024, 0.331798, -0.200659, 0.919323},
+       {2.004291, 1.024305, 0.018047}},
+      {{0.765488, -0.035697, -0.462490, 0.445933},
+       {0.999908, 1.055073, 0.020212}},
+  };
 
-  // Create expected factor graph
-  auto model = noiseModel::Isotropic::Precision(6, 10000);
-  NonlinearFactorGraph expectedGraph;
+  // Specify connectivity:
+  using KeyPair = pair<Key, Key>;
+  std::vector<KeyPair> edges = {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {1, 4}, {3, 0}};
+
+  // Created expected factor graph
   size_t i = 0;
-  for (const auto& keys : pairs) {
+  NonlinearFactorGraph expectedGraph;
+  for (const auto& keys : edges) {
     expectedGraph.emplace_shared<BetweenFactor<Pose3>>(
-        keys.first, keys.second, measurements[i++], model);
+        keys.first, keys.second, relative_poses[i++], model);
   }
 
-  // Check if actual graph is correct
+  // Call parse version
+  BetweenFactors actualFactors;
+  Poses actualPoses;
+  std::tie(actualFactors, actualPoses) = parseG2o3D(g2oFile);
+
+  // Check factors
+  for (size_t i : {0, 1, 2, 3, 4, 5}) {
+    EXPECT(assert_equal(
+        *boost::dynamic_pointer_cast<BetweenFactor<Pose3>>(expectedGraph[i]),
+        *actualFactors[i], 1e-5));
+  }
+
+  // Check poses
+  for (size_t j : {0, 1, 2, 3, 4}) {
+    EXPECT(assert_equal(poses[j], actualPoses.at(j), 1e-5));
+  }
+
+  // Call graph version
+  NonlinearFactorGraph::shared_ptr actualGraph;
+  Values::shared_ptr actualValues;
+  bool is3D = true;
+  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D);
+
+  // Check factor graph
   EXPECT(assert_equal(expectedGraph, *actualGraph, 1e-5));
+
+  // Check values
+  for (size_t j : {0, 1, 2, 3, 4}) {
+    EXPECT(assert_equal(poses[j], actualValues->at<Pose3>(j), 1e-5));
+  }
 }
 
 /* ************************************************************************* */
