@@ -239,8 +239,8 @@ class MatlabWrapper(object):
 
 
 if __name__ == "__main__":
-    test_dir = "wrap/tests/"
-    with open(test_dir + 'geometry.h', 'r') as f:
+    TEST_DIR = "wrap/tests/"
+    with open(TEST_DIR + 'geometry.h', 'r') as f:
         content = f.read()
 
     module = parser.Module.parseString(content)

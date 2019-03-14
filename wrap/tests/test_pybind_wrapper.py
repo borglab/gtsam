@@ -32,6 +32,7 @@ class TestWrap(unittest.TestCase):
 
         instantiator.instantiate_namespace_inplace(module)
 
+        # Create Pybind wrapper instance
         wrapper = PybindWrapper(
             module=module,
             module_name='geometry_py',

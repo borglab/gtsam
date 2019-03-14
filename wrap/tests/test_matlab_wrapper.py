@@ -32,6 +32,7 @@ class TestWrap(unittest.TestCase):
 
         instantiator.instantiate_namespace_inplace(module)
 
+        # Create MATLAB wrapper instance
         wrapper = MatlabWrapper(
             module=module,
             module_name='geometry',
