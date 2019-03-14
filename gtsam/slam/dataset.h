@@ -153,9 +153,13 @@ GTSAM_EXPORT GraphAndValues readG2o(const std::string& g2oFile, const bool is3D 
 GTSAM_EXPORT void writeG2o(const NonlinearFactorGraph& graph,
     const Values& estimate, const std::string& filename);
 
-/**
- * Load TORO 3D Graph
- */
+/// Parse edges in 3D TORO graph file into a set of BetweenFactors.
+GTSAM_EXPORT std::vector<BetweenFactor<Pose3>::shared_ptr> parse3DFactors(const std::string& filename);
+
+/// Parse vertices in 3D TORO graph file into a map of Pose3s.
+GTSAM_EXPORT std::map<Key, Pose3> parse3DPoses(const std::string& filename);
+
+/// Load TORO 3D Graph
 GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
 
 /// A measurement with its camera index

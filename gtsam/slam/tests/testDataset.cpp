@@ -162,90 +162,6 @@ TEST( dataSet, readG2o)
 }
 
 /* ************************************************************************* */
-using BetweenFactors = std::vector<BetweenFactor<Pose3>::shared_ptr>;
-using Poses = std::map<Key, Pose3>;
-std::pair<BetweenFactors, Poses> parseG2o3D(const std::string&);
-
-#include <fstream>
-#define LINESIZE 81920
-
-/* ************************************************************************* */
-std::pair<BetweenFactors, Poses> parseG2o3D(const string& filename) {
-  ifstream is(filename.c_str());
-  if (!is) throw invalid_argument("load3D: can not find file " + filename);
-
-  BetweenFactors factors;
-  Poses poses;
-
-  while (!is.eof()) {
-    char buf[LINESIZE];
-    is.getline(buf, LINESIZE);
-    istringstream ls(buf);
-    string tag;
-    ls >> tag;
-
-    if (tag == "VERTEX3") {
-      Key id;
-      double x, y, z, roll, pitch, yaw;
-      ls >> id >> x >> y >> z >> roll >> pitch >> yaw;
-      poses.emplace(id, Pose3(Rot3::Ypr(yaw, pitch, roll), {x, y, z}));
-    }
-    if (tag == "VERTEX_SE3:QUAT") {
-      Key id;
-      double x, y, z, qx, qy, qz, qw;
-      ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
-      poses.emplace(id, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}));
-    }
-  }
-  is.clear(); /* clears the end-of-file and error flags */
-  is.seekg(0, ios::beg);
-
-  while (!is.eof()) {
-    char buf[LINESIZE];
-    is.getline(buf, LINESIZE);
-    istringstream ls(buf);
-    string tag;
-    ls >> tag;
-
-    if (tag == "EDGE3") {
-      Key id1, id2;
-      double x, y, z, roll, pitch, yaw;
-      ls >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
-      Matrix m(6, 6);
-      for (size_t i = 0; i < 6; i++)
-        for (size_t j = i; j < 6; j++) ls >> m(i, j);
-      SharedNoiseModel model = noiseModel::Gaussian::Information(m);
-      factors.emplace_back(new BetweenFactor<Pose3>(
-          id1, id2, Pose3(Rot3::Ypr(yaw, pitch, roll), {x, y, z}), model));
-    }
-    if (tag == "EDGE_SE3:QUAT") {
-      Key id1, id2;
-      double x, y, z, qx, qy, qz, qw;
-      ls >> id1 >> id2 >> x >> y >> z >> qx >> qy >> qz >> qw;
-      Matrix m(6, 6);
-      for (size_t i = 0; i < 6; i++) {
-        for (size_t j = i; j < 6; j++) {
-          double mij;
-          ls >> mij;
-          m(i, j) = mij;
-          m(j, i) = mij;
-        }
-      }
-      Matrix mgtsam(6, 6);
-
-      mgtsam.block<3, 3>(0, 0) = m.block<3, 3>(3, 3);  // cov rotation
-      mgtsam.block<3, 3>(3, 3) = m.block<3, 3>(0, 0);  // cov translation
-      mgtsam.block<3, 3>(0, 3) = m.block<3, 3>(0, 3);  // off diagonal
-      mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0);  // off diagonal
-
-      SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
-      factors.emplace_back(new BetweenFactor<Pose3>(
-          id1, id2, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}), model));
-    }
-  }
-  return make_pair(factors, poses);
-}
-
 TEST(dataSet, readG2o3D) {
   const string g2oFile = findExampleDataFile("pose3example");
   auto model = noiseModel::Isotropic::Precision(6, 10000);
@@ -291,33 +207,26 @@ TEST(dataSet, readG2o3D) {
         keys.first, keys.second, relative_poses[i++], model);
   }
 
-  // Call parse version
-  BetweenFactors actualFactors;
-  Poses actualPoses;
-  std::tie(actualFactors, actualPoses) = parseG2o3D(g2oFile);
-
-  // Check factors
+  // Check factor parsing
+  const auto actualFactors = parse3DFactors(g2oFile);
   for (size_t i : {0, 1, 2, 3, 4, 5}) {
     EXPECT(assert_equal(
         *boost::dynamic_pointer_cast<BetweenFactor<Pose3>>(expectedGraph[i]),
         *actualFactors[i], 1e-5));
   }
 
-  // Check poses
+  // Check pose parsing
+  const auto actualPoses = parse3DPoses(g2oFile);
   for (size_t j : {0, 1, 2, 3, 4}) {
     EXPECT(assert_equal(poses[j], actualPoses.at(j), 1e-5));
   }
 
-  // Call graph version
+  // Check graph version
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
   bool is3D = true;
   boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D);
-
-  // Check factor graph
   EXPECT(assert_equal(expectedGraph, *actualGraph, 1e-5));
-
-  // Check values
   for (size_t j : {0, 1, 2, 3, 4}) {
     EXPECT(assert_equal(poses[j], actualValues->at<Pose3>(j), 1e-5));
   }
