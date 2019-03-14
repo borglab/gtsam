@@ -21,7 +21,10 @@ class TestWrap(unittest.TestCase):
     MATLAB_ACTUAL_DIR = TEST_DIR + "actual-matlab/"
 
     def test_geometry_matlab(self):
-        """ Check generation of matlab geometry wrapper. """
+        """ Check generation of matlab geometry wrapper.
+        python3 wrap/matlab_wrapper.py --src wrap/tests/geometry.h
+            --module_name geometry --out wrap/tests/actual-matlab
+        """
         with open(self.TEST_DIR + 'geometry.h', 'r') as f:
             content = f.read()
 
