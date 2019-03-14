@@ -1,7 +1,7 @@
 import os
 import pyparsing
 from pyparsing import (alphas, alphanums, cppStyleComment, delimitedList,
-                       empty, stringEnd, CharsNotIn, Keyword, Forward, Word,
+                       empty, nums, stringEnd, CharsNotIn, Keyword, Forward, Word,
                        Literal, OneOrMore, Optional, Or, Group, Suppress,
                        ZeroOrMore)
 from pyparsing import ParseException, ParserElement
@@ -259,8 +259,8 @@ class Template(object):
     class TypenameAndInstantiations(object):
         rule = (
             IDENT("typename") +
-            Optional(EQUAL + LBRACE + delimitedList(Typename.rule)
-                     ("instantiations") + RBRACE)
+            Optional(EQUAL + LBRACE + ((delimitedList(Typename.rule)
+            ("instantiations")) ^ delimitedList(Word(nums))) + RBRACE)
         ).setParseAction(
             lambda t: Template.TypenameAndInstantiations(
                 t.typename,
@@ -491,7 +491,7 @@ class Include(HasParent):
 
 class ForwardDeclaration(HasParent):
     rule = (
-        Optional(VIRTUAL("is_virtual")) + CLASS + IDENT("name") +
+        Optional(VIRTUAL("is_virtual")) + CLASS + Typename.rule("name") +
         Optional(COLON + Typename.rule("parent_type")) + SEMI_COLON
     ).setParseAction(
         lambda t: ForwardDeclaration(
