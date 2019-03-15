@@ -1218,6 +1218,13 @@ class VariableIndex {
 namespace noiseModel {
 #include <gtsam/linear/NoiseModel.h>
 virtual class Base {
+  void print(string s) const;
+  // Methods below are available for all noise models. However, can't add them 
+  // because wrap (incorrectly) thinks robust classes derive from this Base as well.
+  // bool isConstrained() const;
+  // bool isUnit() const;
+  // size_t dim() const;
+  // Vector sigmas() const;
 };
 
 virtual class Gaussian : gtsam::noiseModel::Base {
@@ -1225,7 +1232,6 @@ virtual class Gaussian : gtsam::noiseModel::Base {
   static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
   Matrix R() const;
   bool equals(gtsam::noiseModel::Base& expected, double tol);
-  void print(string s) const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1236,7 +1242,6 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
   static gtsam::noiseModel::Diagonal* Variances(Vector variances);
   static gtsam::noiseModel::Diagonal* Precisions(Vector precisions);
   Matrix R() const;
-  void print(string s) const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1263,7 +1268,6 @@ virtual class Isotropic : gtsam::noiseModel::Diagonal {
   static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma);
   static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace);
   static gtsam::noiseModel::Isotropic* Precision(size_t dim, double precision);
-  void print(string s) const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1271,7 +1275,6 @@ virtual class Isotropic : gtsam::noiseModel::Diagonal {
 
 virtual class Unit : gtsam::noiseModel::Isotropic {
   static gtsam::noiseModel::Unit* Create(size_t dim);
-  void print(string s) const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1279,11 +1282,11 @@ virtual class Unit : gtsam::noiseModel::Isotropic {
 
 namespace mEstimator {
 virtual class Base {
+  void print(string s) const;
 };
 
 virtual class Null: gtsam::noiseModel::mEstimator::Base {
   Null();
-  void print(string s) const;
   static gtsam::noiseModel::mEstimator::Null* Create();
 
   // enabling serialization functionality
@@ -1292,7 +1295,6 @@ virtual class Null: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Fair: gtsam::noiseModel::mEstimator::Base {
   Fair(double c);
-  void print(string s) const;
   static gtsam::noiseModel::mEstimator::Fair* Create(double c);
 
   // enabling serialization functionality
@@ -1301,7 +1303,6 @@ virtual class Fair: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Huber: gtsam::noiseModel::mEstimator::Base {
   Huber(double k);
-  void print(string s) const;
   static gtsam::noiseModel::mEstimator::Huber* Create(double k);
 
   // enabling serialization functionality
@@ -1310,7 +1311,6 @@ virtual class Huber: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
   Tukey(double k);
-  void print(string s) const;
   static gtsam::noiseModel::mEstimator::Tukey* Create(double k);
 
   // enabling serialization functionality
@@ -1322,7 +1322,6 @@ virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
 virtual class Robust : gtsam::noiseModel::Base {
   Robust(const gtsam::noiseModel::mEstimator::Base* robust, const gtsam::noiseModel::Base* noise);
   static gtsam::noiseModel::Robust* Create(const gtsam::noiseModel::mEstimator::Base* robust, const gtsam::noiseModel::Base* noise);
-  void print(string s) const;
 
   // enabling serialization functionality
   void serializable() const;
