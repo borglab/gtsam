@@ -29,12 +29,11 @@
 using namespace std;
 
 namespace gtsam {
-namespace initialize_pose3 {
 
 static const Key kAnchorKey = symbol('Z', 9999999);
 
 /* ************************************************************************* */
-GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
+GaussianFactorGraph InitializePose3::buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
 
   GaussianFactorGraph linearGraph;
   noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(9);
@@ -67,7 +66,8 @@ GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
 
 /* ************************************************************************* */
 // Transform VectorValues into valid Rot3
-Values normalizeRelaxedRotations(const VectorValues& relaxedRot3) {
+Values InitializePose3::normalizeRelaxedRotations(
+    const VectorValues& relaxedRot3) {
   gttic(InitializePose3_computeOrientationsChordal);
 
   Matrix ppm = Z_3x3; // plus plus minus
@@ -94,7 +94,7 @@ Values normalizeRelaxedRotations(const VectorValues& relaxedRot3) {
 }
 
 /* ************************************************************************* */
-NonlinearFactorGraph buildPose3graph(const NonlinearFactorGraph& graph) {
+NonlinearFactorGraph InitializePose3::buildPose3graph(const NonlinearFactorGraph& graph) {
   gttic(InitializePose3_buildPose3graph);
   NonlinearFactorGraph pose3Graph;
 
@@ -115,7 +115,8 @@ NonlinearFactorGraph buildPose3graph(const NonlinearFactorGraph& graph) {
 }
 
 /* ************************************************************************* */
-Values computeOrientationsChordal(const NonlinearFactorGraph& pose3Graph) {
+Values InitializePose3::computeOrientationsChordal(
+    const NonlinearFactorGraph& pose3Graph) {
   gttic(InitializePose3_computeOrientationsChordal);
 
   // regularize measurements and plug everything in a factor graph
@@ -129,10 +130,9 @@ Values computeOrientationsChordal(const NonlinearFactorGraph& pose3Graph) {
 }
 
 /* ************************************************************************* */
-Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph,
-                                   const Values& givenGuess,
-                                   const size_t maxIter,
-                                   const bool setRefFrame) {
+Values InitializePose3::computeOrientationsGradient(
+    const NonlinearFactorGraph& pose3Graph, const Values& givenGuess,
+    const size_t maxIter, const bool setRefFrame) {
   gttic(InitializePose3_computeOrientationsGradient);
 
   // this works on the inverse rotations, according to Tron&Vidal,2011
@@ -231,7 +231,7 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph,
 }
 
 /* ************************************************************************* */
-void createSymbolicGraph(KeyVectorMap& adjEdgesMap, KeyRotMap& factorId2RotMap,
+void InitializePose3::createSymbolicGraph(KeyVectorMap& adjEdgesMap, KeyRotMap& factorId2RotMap,
                          const NonlinearFactorGraph& pose3Graph) {
   size_t factorId = 0;
   for(const auto& factor: pose3Graph) {
@@ -264,7 +264,7 @@ void createSymbolicGraph(KeyVectorMap& adjEdgesMap, KeyRotMap& factorId2RotMap,
 }
 
 /* ************************************************************************* */
-Vector3 gradientTron(const Rot3& R1, const Rot3& R2, const double a, const double b) {
+Vector3 InitializePose3::gradientTron(const Rot3& R1, const Rot3& R2, const double a, const double b) {
   Vector3 logRot = Rot3::Logmap(R1.between(R2));
 
   double th = logRot.norm();
@@ -286,8 +286,7 @@ Vector3 gradientTron(const Rot3& R1, const Rot3& R2, const double a, const doubl
 }
 
 /* ************************************************************************* */
-Values initializeOrientations(const NonlinearFactorGraph& graph) {
-
+Values InitializePose3::initializeOrientations(const NonlinearFactorGraph& graph) {
   // We "extract" the Pose3 subgraph of the original graph: this
   // is done to properly model priors and avoiding operating on a larger graph
   NonlinearFactorGraph pose3Graph = buildPose3graph(graph);
@@ -297,7 +296,7 @@ Values initializeOrientations(const NonlinearFactorGraph& graph) {
 }
 
 ///* ************************************************************************* */
-Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
+Values InitializePose3::computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
   gttic(InitializePose3_computePoses);
 
   // put into Values structure
@@ -339,7 +338,7 @@ Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
 }
 
 /* ************************************************************************* */
-Values initialize(const NonlinearFactorGraph& graph, const Values& givenGuess,
+Values InitializePose3::initialize(const NonlinearFactorGraph& graph, const Values& givenGuess,
                   bool useGradient) {
   gttic(InitializePose3_initialize);
   Values initialValues;
@@ -360,9 +359,8 @@ Values initialize(const NonlinearFactorGraph& graph, const Values& givenGuess,
 }
 
 /* ************************************************************************* */
-Values initialize(const NonlinearFactorGraph& graph) {
+Values InitializePose3::initialize(const NonlinearFactorGraph& graph) {
   return initialize(graph, Values(), false);
 }
 
-} // namespace initialize_pose3
 } // namespace gtsam

@@ -74,15 +74,15 @@ NonlinearFactorGraph graph() {
 
 /* *************************************************************************** */
 TEST( InitializePose3, buildPose3graph ) {
-  NonlinearFactorGraph pose3graph = initialize_pose3::buildPose3graph(simple::graph());
+  NonlinearFactorGraph pose3graph = InitializePose3::buildPose3graph(simple::graph());
   // pose3graph.print("");
 }
 
 /* *************************************************************************** */
 TEST( InitializePose3, orientations ) {
-  NonlinearFactorGraph pose3Graph = initialize_pose3::buildPose3graph(simple::graph());
+  NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
 
-  Values initial = initialize_pose3::computeOrientationsChordal(pose3Graph);
+  Values initial = InitializePose3::computeOrientationsChordal(pose3Graph);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal(simple::R0, initial.at<Rot3>(x0), 1e-6));
@@ -93,12 +93,12 @@ TEST( InitializePose3, orientations ) {
 
 /* *************************************************************************** */
 TEST( InitializePose3, orientationsGradientSymbolicGraph ) {
-  NonlinearFactorGraph pose3Graph = initialize_pose3::buildPose3graph(simple::graph());
+  NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
 
   KeyVectorMap adjEdgesMap;
   KeyRotMap factorId2RotMap;
 
-  initialize_pose3::createSymbolicGraph(adjEdgesMap, factorId2RotMap, pose3Graph);
+  InitializePose3::createSymbolicGraph(adjEdgesMap, factorId2RotMap, pose3Graph);
 
   EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x0)[0], 0, 1e-9);
   EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x0)[1], 3, 1e-9);
@@ -132,7 +132,7 @@ TEST( InitializePose3, singleGradient ) {
   double a = 6.010534238540223;
   double b = 1.0;
 
-  Vector actual = initialize_pose3::gradientTron(R1, R2, a, b);
+  Vector actual = InitializePose3::gradientTron(R1, R2, a, b);
   Vector expected = Vector3::Zero();
   expected(2) = 1.962658662803917;
 
@@ -142,7 +142,7 @@ TEST( InitializePose3, singleGradient ) {
 
 /* *************************************************************************** */
 TEST( InitializePose3, iterationGradient ) {
-  NonlinearFactorGraph pose3Graph = initialize_pose3::buildPose3graph(simple::graph());
+  NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
 
   // Wrong initial guess - initialization should fix the rotations
   Rot3 Rpert = Rot3::Expmap(Vector3(0.01, 0.01, 0.01));
@@ -154,7 +154,7 @@ TEST( InitializePose3, iterationGradient ) {
 
   size_t maxIter = 1; // test gradient at the first iteration
   bool setRefFrame = false;
-  Values orientations = initialize_pose3::computeOrientationsGradient(pose3Graph, givenPoses, maxIter, setRefFrame);
+  Values orientations = InitializePose3::computeOrientationsGradient(pose3Graph, givenPoses, maxIter, setRefFrame);
 
   Matrix M0 = (Matrix(3,3) <<  0.999435813876064,  -0.033571481675497,   0.001004768630281,
       0.033572116359134,   0.999436104312325,  -0.000621610948719,
@@ -183,7 +183,7 @@ TEST( InitializePose3, iterationGradient ) {
 
 /* *************************************************************************** */
 TEST( InitializePose3, orientationsGradient ) {
-  NonlinearFactorGraph pose3Graph = initialize_pose3::buildPose3graph(simple::graph());
+  NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
 
   // Wrong initial guess - initialization should fix the rotations
   Rot3 Rpert = Rot3::Expmap(Vector3(0.01, 0.01, 0.01));
@@ -194,7 +194,7 @@ TEST( InitializePose3, orientationsGradient ) {
   givenPoses.insert(x3, (simple::pose0).compose( Pose3(Rpert,Point3(0,0,0)) ));
   // do 10 gradient iterations
   bool setRefFrame = false;
-  Values orientations = initialize_pose3::computeOrientationsGradient(pose3Graph, givenPoses, 10, setRefFrame);
+  Values orientations = InitializePose3::computeOrientationsGradient(pose3Graph, givenPoses, 10, setRefFrame);
 
   //  const Key keyAnchor = symbol('Z', 9999999);
   //  givenPoses.insert(keyAnchor,simple::pose0);
@@ -228,7 +228,7 @@ TEST( InitializePose3, posesWithGivenGuess ) {
   givenPoses.insert(x2,simple::pose2);
   givenPoses.insert(x3,simple::pose3);
 
-  Values initial = initialize_pose3::initialize(simple::graph(), givenPoses);
+  Values initial = InitializePose3::initialize(simple::graph(), givenPoses);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal(givenPoses, initial, 1e-6));
@@ -245,7 +245,7 @@ TEST( InitializePose3, initializePoses )
   noiseModel::Unit::shared_ptr priorModel = noiseModel::Unit::Create(6);
   inputGraph->add(PriorFactor<Pose3>(0, Pose3(), priorModel));
 
-  Values initial = initialize_pose3::initialize(*inputGraph);
+  Values initial = InitializePose3::initialize(*inputGraph);
   EXPECT(assert_equal(*expectedValues,initial,0.1));  // TODO(frank): very loose !!
 }
 
