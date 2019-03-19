@@ -70,8 +70,6 @@ struct ReturnValue {
   void wrap_result(const std::string& result, FileWriter& wrapperFile,
       const TypeAttributesTable& typeAttributes) const;
 
-  void wrapTypeUnwrap(FileWriter& wrapperFile) const;
-
   void emit_matlab(FileWriter& proxyFile) const;
 
   /// @param className the actual class name to use when "This" is specified

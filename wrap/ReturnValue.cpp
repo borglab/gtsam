@@ -40,7 +40,7 @@ void ReturnValue::wrap_result(const string& result, FileWriter& wrapperFile,
   if (isPair) {
     // For a pair, store the returned pair so we do not evaluate the function
     // twice
-    wrapperFile.oss << "  " << return_type(true) << " pairResult = " << result
+    wrapperFile.oss << "  auto pairResult = " << result
                     << ";\n";
     type1.wrap_result("  out[0]", "pairResult.first", wrapperFile,
                       typeAttributes);
@@ -49,12 +49,6 @@ void ReturnValue::wrap_result(const string& result, FileWriter& wrapperFile,
   } else {  // Not a pair
     type1.wrap_result("  out[0]", result, wrapperFile, typeAttributes);
   }
-}
-
-/* ************************************************************************* */
-void ReturnValue::wrapTypeUnwrap(FileWriter& wrapperFile) const {
-  type1.wrapTypeUnwrap(wrapperFile);
-  if (isPair) type2.wrapTypeUnwrap(wrapperFile);
 }
 
 /* ************************************************************************* */

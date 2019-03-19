@@ -60,9 +60,6 @@ private:
   void wrap_result(const std::string& out, const std::string& result,
                    FileWriter& wrapperFile,
                    const TypeAttributesTable& typeAttributes) const;
-
-  /// Creates typedef
-  void wrapTypeUnwrap(FileWriter& wrapperFile) const;
 };
 
 //******************************************************************************

@@ -23,6 +23,7 @@ void ReturnType::wrap_result(const string& out, const string& result,
                              const TypeAttributesTable& typeAttributes) const {
   string cppType = qualifiedName("::"), matlabType = qualifiedName(".");
 
+  const string sharedType = "Shared" + name();
   if (category == CLASS) {
     // Handle Classes
     string objCopy, ptrType;
@@ -35,9 +36,12 @@ void ReturnType::wrap_result(const string& out, const string& result,
         // A virtual class needs to be cloned, so the whole hierarchy is
         // returned
         objCopy = result + ".clone()";
-      else
+      else {
         // ...but a non-virtual class can just be copied
-        objCopy = "Shared" + name() + "(new " + cppType + "(" + result + "))";
+        wrapperFile.oss << "  typedef boost::shared_ptr<" << qualifiedName("::")
+                        << "> " << sharedType << ";" << endl;
+        objCopy = sharedType + "(new " + cppType + "(" + result + "))";
+      }
     }
     // e.g. out[1] = wrap_shared_ptr(pairResult.second,"gtsam.Point3", false);
     wrapperFile.oss << out << " = wrap_shared_ptr(" << objCopy << ",\""
@@ -46,8 +50,10 @@ void ReturnType::wrap_result(const string& out, const string& result,
 
   } else if (isPtr) {
     // Handle shared pointer case for BASIS/EIGEN/VOID
-    wrapperFile.oss << "  {\n  Shared" << name() << "* ret = new Shared"
-                    << name() << "(" << result << ");" << endl;
+    wrapperFile.oss << "  typedef boost::shared_ptr<" << qualifiedName("::")
+                    << "> " << sharedType << ";" << endl;
+    wrapperFile.oss << "  {\n  auto ret = new " << sharedType << "(" << result
+                    << ");" << endl;
     wrapperFile.oss << out << " = wrap_shared_ptr(ret,\"" << matlabType
                     << "\");\n  }\n";
 
@@ -56,13 +62,6 @@ void ReturnType::wrap_result(const string& out, const string& result,
     // Handle normal case case for BASIS/EIGEN
     wrapperFile.oss << out << " = wrap< " << str(false) << " >(" << result
                     << ");\n";
-}
-
-/* ************************************************************************* */
-void ReturnType::wrapTypeUnwrap(FileWriter& wrapperFile) const {
-  if (category == CLASS)
-    wrapperFile.oss << "  typedef boost::shared_ptr<" << qualifiedName("::")
-                    << "> Shared" << name() << ";" << endl;
 }
 
 /* ************************************************************************* */
