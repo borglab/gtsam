@@ -36,16 +36,21 @@ static const Key kAnchorKey = symbol('Z', 9999999);
 GaussianFactorGraph InitializePose3::buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
 
   GaussianFactorGraph linearGraph;
-  noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(9);
 
   for(const auto& factor: g) {
     Matrix3 Rij;
+    double rotationPrecision = 1.0;
 
     auto pose3Between = boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
-    if (pose3Between)
+    if (pose3Between){
       Rij = pose3Between->measured().rotation().matrix();
-    else
+      Vector precisions = Vector::Zero(6);
+      precisions[0] = 1.0; // vector of all zeros except first entry equal to 1
+      pose3Between->noiseModel()->whitenInPlace(precisions); // gets marginal precision of first variable
+      rotationPrecision = precisions[0]; // rotations first
+    }else{
       cout << "Error in buildLinearOrientationGraph" << endl;
+    }
 
     const auto& keys = factor->keys();
     Key key1 = keys[0], key2 = keys[1];
@@ -53,14 +58,14 @@ GaussianFactorGraph InitializePose3::buildLinearOrientationGraph(const Nonlinear
     M9.block(0,0,3,3) = Rij;
     M9.block(3,3,3,3) = Rij;
     M9.block(6,6,3,3) = Rij;
-    linearGraph.add(key1, -I_9x9, key2, M9, Z_9x1, model);
+    linearGraph.add(key1, -I_9x9, key2, M9, Z_9x1, noiseModel::Isotropic::Precision(9, rotationPrecision));
   }
   // prior on the anchor orientation
   linearGraph.add(
       kAnchorKey, I_9x9,
       (Vector(9) << 1.0, 0.0, 0.0, /*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0)
           .finished(),
-      model);
+          noiseModel::Isotropic::Precision(9, 1));
   return linearGraph;
 }
 
