@@ -63,7 +63,7 @@ struct ReturnValue {
   /// Substitute template argument
   ReturnValue expandTemplate(const TemplateSubstitution& ts) const;
 
-  std::string return_type(bool add_ptr) const;
+  std::string returnType() const;
 
   std::string matlab_returnType() const;
 
@@ -82,7 +82,7 @@ struct ReturnValue {
     if (!r.isPair && r.type1.category == ReturnType::VOID)
       os << "void";
     else
-      os << r.return_type(true);
+      os << r.returnType();
     return os;
   }
 

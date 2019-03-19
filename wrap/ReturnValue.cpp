@@ -22,11 +22,12 @@ ReturnValue ReturnValue::expandTemplate(const TemplateSubstitution& ts) const {
 }
 
 /* ************************************************************************* */
-string ReturnValue::return_type(bool add_ptr) const {
+string ReturnValue::returnType() const {
   if (isPair)
-    return "pair< " + type1.str(add_ptr) + ", " + type2.str(add_ptr) + " >";
+    return "pair< " + type1.qualifiedName("::") + ", " +
+           type2.qualifiedName("::") + " >";
   else
-    return type1.str(add_ptr);
+    return type1.qualifiedName("::");
 }
 
 /* ************************************************************************* */

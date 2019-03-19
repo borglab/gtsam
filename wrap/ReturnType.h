@@ -54,8 +54,6 @@ struct ReturnType : public Qualified {
 private:
   friend struct ReturnValue;
 
-  std::string str(bool add_ptr) const;
-
   /// Example: out[1] = wrap_shared_ptr(pairResult.second,"Test", false);
   void wrap_result(const std::string& out, const std::string& result,
                    FileWriter& wrapperFile,
