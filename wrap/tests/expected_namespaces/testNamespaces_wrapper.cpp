@@ -199,34 +199,29 @@ void ns2ClassA_deconstructor_8(int nargout, mxArray *out[], int nargin, const mx
 
 void ns2ClassA_memberFunction_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<ns2::ClassA> Shared;
   checkArguments("memberFunction",nargout,nargin-1,0);
-  Shared obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
+  auto obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
   out[0] = wrap< double >(obj->memberFunction());
 }
 
 void ns2ClassA_nsArg_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<ns2::ClassA> Shared;
   checkArguments("nsArg",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
+  auto obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
   ns1::ClassB& arg = *unwrap_shared_ptr< ns1::ClassB >(in[1], "ptr_ns1ClassB");
   out[0] = wrap< int >(obj->nsArg(arg));
 }
 
 void ns2ClassA_nsReturn_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<ns2::ns3::ClassB> SharedClassB;
-  typedef boost::shared_ptr<ns2::ClassA> Shared;
   checkArguments("nsReturn",nargout,nargin-1,1);
-  Shared obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
+  auto obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
   double q = unwrap< double >(in[1]);
-  out[0] = wrap_shared_ptr(SharedClassB(new ns2::ns3::ClassB(obj->nsReturn(q))),"ns2.ns3.ClassB", false);
+  out[0] = wrap_shared_ptr(boost::make_shared<ns2::ns3::ClassB>(obj->nsReturn(q)),"ns2.ns3.ClassB", false);
 }
 
 void ns2ClassA_afunction_12(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<ns2::ClassA> Shared;
   checkArguments("ns2ClassA.afunction",nargout,nargin,0);
   out[0] = wrap< double >(ns2::ClassA::afunction());
 }
@@ -343,18 +338,16 @@ void ns2aGlobalFunction_23(int nargout, mxArray *out[], int nargin, const mxArra
 }
 void ns2overloadedGlobalFunction_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<ns1::ClassA> SharedClassA;
   checkArguments("ns2overloadedGlobalFunction",nargout,nargin,1);
   ns1::ClassA& a = *unwrap_shared_ptr< ns1::ClassA >(in[0], "ptr_ns1ClassA");
-  out[0] = wrap_shared_ptr(SharedClassA(new ns1::ClassA(ns2::overloadedGlobalFunction(a))),"ns1.ClassA", false);
+  out[0] = wrap_shared_ptr(boost::make_shared<ns1::ClassA>(ns2::overloadedGlobalFunction(a)),"ns1.ClassA", false);
 }
 void ns2overloadedGlobalFunction_25(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<ns1::ClassA> SharedClassA;
   checkArguments("ns2overloadedGlobalFunction",nargout,nargin,2);
   ns1::ClassA& a = *unwrap_shared_ptr< ns1::ClassA >(in[0], "ptr_ns1ClassA");
   double b = unwrap< double >(in[1]);
-  out[0] = wrap_shared_ptr(SharedClassA(new ns1::ClassA(ns2::overloadedGlobalFunction(a,b))),"ns1.ClassA", false);
+  out[0] = wrap_shared_ptr(boost::make_shared<ns1::ClassA>(ns2::overloadedGlobalFunction(a,b)),"ns1.ClassA", false);
 }
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
