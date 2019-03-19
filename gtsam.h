@@ -1230,8 +1230,18 @@ virtual class Base {
 virtual class Gaussian : gtsam::noiseModel::Base {
   static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
   static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
-  Matrix R() const;
+
   bool equals(gtsam::noiseModel::Base& expected, double tol);
+
+  // access to noise model
+  Matrix R() const;
+  Matrix information() const;
+  Matrix covariance() const;
+
+  // Whitening operations
+  Vector whiten(Vector v) const;
+  Vector unwhiten(Vector v) const;
+  Matrix Whiten(Matrix H) const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1243,6 +1253,11 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
   static gtsam::noiseModel::Diagonal* Precisions(Vector precisions);
   Matrix R() const;
 
+  // access to noise model
+  Vector sigmas() const;
+  Vector invsigmas() const;
+  Vector precisions() const;
+    
   // enabling serialization functionality
   void serializable() const;
 };
@@ -1268,6 +1283,9 @@ virtual class Isotropic : gtsam::noiseModel::Diagonal {
   static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma);
   static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace);
   static gtsam::noiseModel::Isotropic* Precision(size_t dim, double precision);
+
+  // access to noise model
+  double sigma() const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -2001,10 +2019,12 @@ virtual class NonlinearOptimizerParams {
   void setVerbosity(string s);
 
   string getLinearSolverType() const;
-
   void setLinearSolverType(string solver);
-  void setOrdering(const gtsam::Ordering& ordering);
+
   void setIterativeParams(gtsam::IterativeOptimizationParameters* params);
+  void setOrdering(const gtsam::Ordering& ordering);
+  string getOrderingType() const;
+  void setOrderingType(string ordering);
 
   bool isMultifrontal() const;
   bool isSequential() const;
@@ -2025,15 +2045,32 @@ virtual class GaussNewtonParams : gtsam::NonlinearOptimizerParams {
 virtual class LevenbergMarquardtParams : gtsam::NonlinearOptimizerParams {
   LevenbergMarquardtParams();
 
-  double getlambdaInitial() const;
+  bool getDiagonalDamping() const;
   double getlambdaFactor() const;
+  double getlambdaInitial() const;
+  double getlambdaLowerBound() const;
   double getlambdaUpperBound() const;
+  bool getUseFixedLambdaFactor();
+  string getLogFile() const;
   string getVerbosityLM() const;
-
-  void setlambdaInitial(double value);
+  
+  void setDiagonalDamping(bool flag);
   void setlambdaFactor(double value);
+  void setlambdaInitial(double value);
+  void setlambdaLowerBound(double value);
   void setlambdaUpperBound(double value);
+  void setUseFixedLambdaFactor(bool flag);
+  void setLogFile(string s);
   void setVerbosityLM(string s);
+
+  static gtsam::LevenbergMarquardtParams LegacyDefaults();
+  static gtsam::LevenbergMarquardtParams CeresDefaults();
+
+  static gtsam::LevenbergMarquardtParams EnsureHasOrdering(
+      gtsam::LevenbergMarquardtParams params,
+      const gtsam::NonlinearFactorGraph& graph);
+  static gtsam::LevenbergMarquardtParams ReplaceOrdering(
+      gtsam::LevenbergMarquardtParams params, const gtsam::Ordering& ordering);
 };
 
 #include <gtsam/nonlinear/DoglegOptimizer.h>
