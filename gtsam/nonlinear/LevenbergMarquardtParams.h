@@ -142,6 +142,15 @@ public:
   void setLogFile(const std::string& s) { logFile = s; }
   void setVerbosityLM(const std::string& s) { verbosityLM = verbosityLMTranslator(s);}
   // @}
+  /// @name Clone
+  /// @{
+
+  /// @return a deep copy of this object
+  boost::shared_ptr<NonlinearOptimizerParams> clone() const {
+    return boost::shared_ptr<NonlinearOptimizerParams>(new LevenbergMarquardtParams(*this));
+  }
+
+  /// @}
 };
 
 }
