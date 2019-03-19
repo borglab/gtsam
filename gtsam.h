@@ -2019,10 +2019,12 @@ virtual class NonlinearOptimizerParams {
   void setVerbosity(string s);
 
   string getLinearSolverType() const;
-
   void setLinearSolverType(string solver);
-  void setOrdering(const gtsam::Ordering& ordering);
+
   void setIterativeParams(gtsam::IterativeOptimizationParameters* params);
+  void setOrdering(const gtsam::Ordering& ordering);
+  string getOrderingType() const;
+  void setOrderingType(string ordering);
 
   bool isMultifrontal() const;
   bool isSequential() const;
@@ -2043,15 +2045,32 @@ virtual class GaussNewtonParams : gtsam::NonlinearOptimizerParams {
 virtual class LevenbergMarquardtParams : gtsam::NonlinearOptimizerParams {
   LevenbergMarquardtParams();
 
-  double getlambdaInitial() const;
+  bool getDiagonalDamping() const;
   double getlambdaFactor() const;
+  double getlambdaInitial() const;
+  double getlambdaLowerBound() const;
   double getlambdaUpperBound() const;
+  bool getUseFixedLambdaFactor();
+  string getLogFile() const;
   string getVerbosityLM() const;
-
-  void setlambdaInitial(double value);
+  
+  void setDiagonalDamping(bool flag);
   void setlambdaFactor(double value);
+  void setlambdaInitial(double value);
+  void setlambdaLowerBound(double value);
   void setlambdaUpperBound(double value);
+  void setUseFixedLambdaFactor(bool flag);
+  void setLogFile(string s);
   void setVerbosityLM(string s);
+
+  static gtsam::LevenbergMarquardtParams LegacyDefaults();
+  static gtsam::LevenbergMarquardtParams CeresDefaults();
+
+  static gtsam::LevenbergMarquardtParams EnsureHasOrdering(
+      gtsam::LevenbergMarquardtParams params,
+      const gtsam::NonlinearFactorGraph& graph);
+  static gtsam::LevenbergMarquardtParams ReplaceOrdering(
+      gtsam::LevenbergMarquardtParams params, const gtsam::Ordering& ordering);
 };
 
 #include <gtsam/nonlinear/DoglegOptimizer.h>
@@ -2496,6 +2515,16 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D_robust(string filename
 void save2D(const gtsam::NonlinearFactorGraph& graph,
     const gtsam::Values& config, gtsam::noiseModel::Diagonal* model,
     string filename);
+
+// std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>
+class BetweenFactorPose3s
+{
+  size_t size() const;
+  gtsam::BetweenFactorPose3* at(size_t i) const;
+};
+
+gtsam::BetweenFactorPose3s parse3DFactors(string filename);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load3D(string filename);
 
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename, bool is3D);
