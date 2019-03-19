@@ -2523,6 +2523,26 @@ class BetweenFactorPose3s
   gtsam::BetweenFactorPose3* at(size_t i) const;
 };
 
+#include <gtsam/slam/InitializePose3.h>
+class InitializePose3 {
+  static gtsam::Values computeOrientationsChordal(
+      const gtsam::NonlinearFactorGraph& pose3Graph);
+  static gtsam::Values computeOrientationsGradient(
+      const gtsam::NonlinearFactorGraph& pose3Graph,
+      const gtsam::Values& givenGuess, size_t maxIter, const bool setRefFrame);
+  static gtsam::Values computeOrientationsGradient(
+      const gtsam::NonlinearFactorGraph& pose3Graph,
+      const gtsam::Values& givenGuess);
+  static gtsam::NonlinearFactorGraph buildPose3graph(
+      const gtsam::NonlinearFactorGraph& graph);
+  static gtsam::Values initializeOrientations(
+      const gtsam::NonlinearFactorGraph& graph);
+  static gtsam::Values initialize(const gtsam::NonlinearFactorGraph& graph,
+                                  const gtsam::Values& givenGuess,
+                                  bool useGradient);
+  static gtsam::Values initialize(const gtsam::NonlinearFactorGraph& graph);
+};
+
 gtsam::BetweenFactorPose3s parse3DFactors(string filename);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load3D(string filename);
 
