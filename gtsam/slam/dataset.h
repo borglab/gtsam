@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point2.h>
@@ -34,6 +35,7 @@
 #include <utility> // for pair
 #include <vector>
 #include <iosfwd>
+#include <map>
 
 namespace gtsam {
 
@@ -153,9 +155,14 @@ GTSAM_EXPORT GraphAndValues readG2o(const std::string& g2oFile, const bool is3D 
 GTSAM_EXPORT void writeG2o(const NonlinearFactorGraph& graph,
     const Values& estimate, const std::string& filename);
 
-/**
- * Load TORO 3D Graph
- */
+/// Parse edges in 3D TORO graph file into a set of BetweenFactors.
+using BetweenFactorPose3s = std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>;
+GTSAM_EXPORT BetweenFactorPose3s parse3DFactors(const std::string& filename);
+
+/// Parse vertices in 3D TORO graph file into a map of Pose3s.
+GTSAM_EXPORT std::map<Key, Pose3> parse3DPoses(const std::string& filename);
+
+/// Load TORO 3D Graph
 GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
 
 /// A measurement with its camera index

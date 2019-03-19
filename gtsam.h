@@ -2498,6 +2498,16 @@ void save2D(const gtsam::NonlinearFactorGraph& graph,
     const gtsam::Values& config, gtsam::noiseModel::Diagonal* model,
     string filename);
 
+// std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>
+class BetweenFactorPose3s
+{
+  size_t size() const;
+  gtsam::BetweenFactorPose3* at(size_t i) const;
+};
+
+gtsam::BetweenFactorPose3s parse3DFactors(string filename);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load3D(string filename);
+
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename, bool is3D);
 void writeG2o(const gtsam::NonlinearFactorGraph& graph,
