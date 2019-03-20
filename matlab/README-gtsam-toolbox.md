@@ -21,6 +21,38 @@ If you have a newer Ubuntu system, you must make a small modification to your MA
 
 To get started, first add the `toolbox` (or `gtsam_toolbox`) folder to your MATLAB path - in the MATLAB file browser, right-click on the folder and click 'Add to path -> This folder' (**do not add the subfolders to your path**).
 
+## Final setup on Linux
+
+MATLAB needs to know where the GTSAM shared object file (`libgtsam.so.4`) is so that it can link to it correctly.
+
+### System-wide
+
+If you installed GTSAM system-wide (e.g. with `sudo make install`), then simply run `sudo ldconfig`.
+
+### Custom Install
+
+If you have a custom install location, denoted by `<install-path>`, you need to update your `LD_LIBRARY_PATH` environment variable.
+
+```sh
+export LD_LIBRARY_PATH=<install-path>/gtsam:$LD_LIBRARY_PATH
+```
+
+### Linker issues
+
+If you compile the Matlab toolbox and everything compiles smoothly, but when you run any Matlab script, you get following error messages in Matlab
+```
+Invalid MEX-file '/usr/local/gtsam_toolbox/gtsam_wrapper.mexa64':
+Missing symbol 'mexAtExit' required by '/usr/local/gtsam_toolbox/gtsam_wrapper.mexa64'
+Missing symbol 'mexCallMATLABWithObject' required by '/usr/local/gtsam_toolbox/gtsam_wrapper.mexa64'
+...
+```
+run following shell line
+```sh
+export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6:/usr/lib/x86_64-linux-gnu/libprotobuf.so.9
+```
+before you run Matlab, or write this line in your `$HOME/.bashrc` so you don't have to type everytime before start Matlab. This mainly happens if you have GCC >= 5 and newer version Matlab like R2017a.
+
+
 ## Trying out the examples
 
 The examples are located in the 'gtsam_examples' subfolder.  You may either run them individually at the MATLAB command line, or open the GTSAM example GUI by running 'gtsamExamples'.  Example:
