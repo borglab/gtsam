@@ -39,7 +39,7 @@ export LD_LIBRARY_PATH=<install-path>/gtsam:$LD_LIBRARY_PATH
 
 ### Linker issues
 
-If you compile the Matlab toolbox and everything compiles smoothly, but when you run any Matlab script, you get following error messages in Matlab
+If you compile the MATLAB toolbox and everything compiles smoothly, but when you run any MATLAB script, you get following error messages in MATLAB
 ```
 Invalid MEX-file '/usr/local/gtsam_toolbox/gtsam_wrapper.mexa64':
 Missing symbol 'mexAtExit' required by '/usr/local/gtsam_toolbox/gtsam_wrapper.mexa64'
@@ -50,7 +50,9 @@ run following shell line
 ```sh
 export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6:/usr/lib/x86_64-linux-gnu/libprotobuf.so.9
 ```
-before you run Matlab, or write this line in your `$HOME/.bashrc` so you don't have to type everytime before start Matlab. This mainly happens if you have GCC >= 5 and newer version Matlab like R2017a.
+before you run MATLAB. 
+
+This mainly happens if you have GCC >= 5 and newer version MATLAB like R2017a.
 
 
 ## Trying out the examples
