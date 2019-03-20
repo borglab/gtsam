@@ -15,11 +15,12 @@ import numpy as np
 
 import gtsam
 from gtsam import NonlinearFactorGraph, Point3, Pose3, Rot3, Values
+from gtsam.utils.test_case import GtsamTestCase
 
 x0, x1, x2, x3 = 0, 1, 2, 3
 
 
-class TestValues(unittest.TestCase):
+class TestValues(GtsamTestCase):
 
     def setUp(self):
 
@@ -67,10 +68,10 @@ class TestValues(unittest.TestCase):
         initial = gtsam.InitializePose3.computeOrientationsChordal(pose3Graph)
 
         # comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-        self.assertTrue(initial.atRot3(x0).equals(self.R0, 1e-6))
-        self.assertTrue(initial.atRot3(x1).equals(self.R1, 1e-6))
-        self.assertTrue(initial.atRot3(x2).equals(self.R2, 1e-6))
-        self.assertTrue(initial.atRot3(x3).equals(self.R3, 1e-6))
+        self.gtsamAssertEquals(initial.atRot3(x0), self.R0, 1e-6)
+        self.gtsamAssertEquals(initial.atRot3(x1), self.R1, 1e-6)
+        self.gtsamAssertEquals(initial.atRot3(x2), self.R2, 1e-6)
+        self.gtsamAssertEquals(initial.atRot3(x3), self.R3, 1e-6)
 
     def test_initializePoses(self):
         g2oFile = gtsam.findExampleDataFile("pose3example-grid")
@@ -81,7 +82,7 @@ class TestValues(unittest.TestCase):
 
         initial = gtsam.InitializePose3.initialize(inputGraph)
         # TODO(frank): very loose !!
-        self.assertTrue(initial.equals(expectedValues, 0.1))
+        self.gtsamAssertEquals(initial, expectedValues, 0.1)
 
 
 if __name__ == "__main__":

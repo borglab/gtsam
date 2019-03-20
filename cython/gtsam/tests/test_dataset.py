@@ -6,7 +6,7 @@ All Rights Reserved
 See LICENSE for the license information
 
 Unit tests for testing dataset access.
-Author: Frank Dellaert
+Author: Frank Dellaert & Duy Nguyen Ta (Python)
 """
 # pylint: disable=invalid-name, no-name-in-module, no-member
 
@@ -16,9 +16,10 @@ import unittest
 
 import gtsam
 from gtsam import BetweenFactorPose3, BetweenFactorPose3s
+from gtsam.utils.test_case import GtsamTestCase
 
 
-class TestDataset(unittest.TestCase):
+class TestDataset(GtsamTestCase):
     """Tests for datasets.h wrapper."""
 
     def setUp(self):

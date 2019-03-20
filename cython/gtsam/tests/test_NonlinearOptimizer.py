@@ -19,12 +19,13 @@ from gtsam import (DoglegOptimizer, DoglegParams, GaussNewtonOptimizer,
                    GaussNewtonParams, LevenbergMarquardtOptimizer,
                    LevenbergMarquardtParams, NonlinearFactorGraph, Ordering,
                    Point2, PriorFactorPoint2, Values)
+from gtsam.utils.test_case import GtsamTestCase
 
 KEY1 = 1
 KEY2 = 2
 
 
-class TestScenario(unittest.TestCase):
+class TestScenario(GtsamTestCase):
     def test_optimize(self):
         """Do trivial test with three optimizer variants."""
         fg = NonlinearFactorGraph()

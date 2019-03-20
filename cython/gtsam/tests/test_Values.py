@@ -5,7 +5,7 @@ All Rights Reserved
 
 See LICENSE for the license information
 
-Unit tests for IMU testing scenarios.
+Values unit tests.
 Author: Frank Dellaert & Duy Nguyen Ta (Python)
 """
 # pylint: disable=invalid-name, E1101, E0611
@@ -13,12 +13,14 @@ import unittest
 
 import numpy as np
 
+import gtsam
 from gtsam import (Cal3_S2, Cal3Bundler, Cal3DS2, EssentialMatrix, Point2,
                    Point3, Pose2, Pose3, Rot2, Rot3, Unit3, Values,
                    imuBias_ConstantBias)
+from gtsam.utils.test_case import GtsamTestCase
 
 
-class TestValues(unittest.TestCase):
+class TestValues(GtsamTestCase):
 
     def test_values(self):
         values = Values()
@@ -58,26 +60,26 @@ class TestValues(unittest.TestCase):
         mat2 = np.array([[1, 2, ], [3, 5]])
         values.insert(13, mat2)
 
-        self.assertTrue(values.atPoint2(0).equals(Point2(0,0), tol))
-        self.assertTrue(values.atPoint3(1).equals(Point3(0,0,0), tol))
-        self.assertTrue(values.atRot2(2).equals(Rot2(), tol))
-        self.assertTrue(values.atPose2(3).equals(Pose2(), tol))
-        self.assertTrue(values.atRot3(4).equals(Rot3(), tol))
-        self.assertTrue(values.atPose3(5).equals(Pose3(), tol))
-        self.assertTrue(values.atCal3_S2(6).equals(Cal3_S2(), tol))
-        self.assertTrue(values.atCal3DS2(7).equals(Cal3DS2(), tol))
-        self.assertTrue(values.atCal3Bundler(8).equals(Cal3Bundler(), tol))
-        self.assertTrue(values.atEssentialMatrix(9).equals(E, tol))
-        self.assertTrue(values.atimuBias_ConstantBias(
-            10).equals(imuBias_ConstantBias(), tol))
+        self.gtsamAssertEquals(values.atPoint2(0), Point2(0,0), tol)
+        self.gtsamAssertEquals(values.atPoint3(1), Point3(0,0,0), tol)
+        self.gtsamAssertEquals(values.atRot2(2), Rot2(), tol)
+        self.gtsamAssertEquals(values.atPose2(3), Pose2(), tol)
+        self.gtsamAssertEquals(values.atRot3(4), Rot3(), tol)
+        self.gtsamAssertEquals(values.atPose3(5), Pose3(), tol)
+        self.gtsamAssertEquals(values.atCal3_S2(6), Cal3_S2(), tol)
+        self.gtsamAssertEquals(values.atCal3DS2(7), Cal3DS2(), tol)
+        self.gtsamAssertEquals(values.atCal3Bundler(8), Cal3Bundler(), tol)
+        self.gtsamAssertEquals(values.atEssentialMatrix(9), E, tol)
+        self.gtsamAssertEquals(values.atimuBias_ConstantBias(
+            10), imuBias_ConstantBias(), tol)
 
         # special cases for Vector and Matrix:
         actualVector = values.atVector(11)
-        self.assertTrue(np.allclose(vec, actualVector, tol))
+        np.testing.assert_allclose(vec, actualVector, tol)
         actualMatrix = values.atMatrix(12)
-        self.assertTrue(np.allclose(mat, actualMatrix, tol))
+        np.testing.assert_allclose(mat, actualMatrix, tol)
         actualMatrix2 = values.atMatrix(13)
-        self.assertTrue(np.allclose(mat2, actualMatrix2, tol))
+        np.testing.assert_allclose(mat2, actualMatrix2, tol)
 
 
 if __name__ == "__main__":

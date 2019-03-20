@@ -1,8 +1,22 @@
+"""
+GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+Localization unit tests.
+Author: Frank Dellaert & Duy Nguyen Ta (Python)
+"""
 import unittest
-import gtsam
+
 import numpy as np
 
-class TestLocalizationExample(unittest.TestCase):
+import gtsam
+from gtsam.utils.test_case import GtsamTestCase
+
+
+class TestLocalizationExample(GtsamTestCase):
 
     def test_LocalizationExample(self):
         # Create the graph (defined in pose2SLAM.h, derived from
@@ -43,7 +57,7 @@ class TestLocalizationExample(unittest.TestCase):
         P = [None] * result.size()
         for i in range(0, result.size()):
             pose_i = result.atPose2(i)
-            self.assertTrue(pose_i.equals(groundTruth.atPose2(i), 1e-4))
+            self.gtsamAssertEquals(pose_i, groundTruth.atPose2(i), 1e-4)
             P[i] = marginals.marginalCovariance(i)
 
 if __name__ == "__main__":
