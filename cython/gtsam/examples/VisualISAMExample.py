@@ -10,23 +10,29 @@ A visualSLAM example for the structure-from-motion problem on a simulated datase
 This version uses iSAM to solve the problem incrementally
 """
 
-# A structure-from-motion example with landmarks
-# - The landmarks form a 10 meter cube
-# - The robot rotates around the landmarks, always facing towards the cube
-
-import gtsam
-from gtsam.gtsam import Values, Cal3_S2, NonlinearISAM, NonlinearFactorGraph, SimpleCamera, Pose3, Rot3, Point3, \
-    PriorFactorPose3, PriorFactorPoint3, GenericProjectionFactorCal3_S2
+from __future__ import print_function
 
 import numpy as np
+import gtsam
 from gtsam.examples import SFMdata
+from gtsam.gtsam import (Cal3_S2, GenericProjectionFactorCal3_S2,
+                         NonlinearFactorGraph, NonlinearISAM, Point3, Pose3,
+                         PriorFactorPoint3, PriorFactorPose3, Rot3,
+                         SimpleCamera, Values)
 
 
-def symbol(name, index):
+def symbol(name: str, index: int) -> int:
+    """ helper for creating a symbol without explicitly casting 'name' from str to int """
     return gtsam.symbol(ord(name), index)
 
 
 def main():
+    """
+    A structure-from-motion example with landmarks
+    - The landmarks form a 10 meter cube
+    - The robot rotates around the landmarks, always facing towards the cube
+    """
+
     # Define the camera calibration parameters
     K = Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0)
 
@@ -67,7 +73,7 @@ def main():
         # Also, as iSAM solves incrementally, we must wait until each is observed at least twice before
         # adding it to iSAM.
         if i == 0:
-            # Add a prior on pose x0, with 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
+            # Add a prior on pose x0, with 0.3 rad std on roll,pitch,yaw and 0.1m x,y,z
             pose_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.3, 0.3, 0.3, 0.1, 0.1, 0.1]))
             factor = PriorFactorPose3(symbol('x', 0), poses[0], pose_noise)
             graph.push_back(factor)

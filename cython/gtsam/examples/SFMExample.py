@@ -8,45 +8,50 @@ See LICENSE for the license information
 
 A structure-from-motion problem on a simulated dataset
 """
+from __future__ import print_function
 
 import gtsam
 import numpy as np
 from gtsam.examples import SFMdata
-from gtsam.gtsam import Values, NonlinearFactorGraph, PriorFactorPose3, SimpleCamera, \
-    GenericProjectionFactorCal3_S2, \
-    PriorFactorPoint3, Pose3, Rot3, Point3, DoglegOptimizer, Cal3_S2
+from gtsam.gtsam import (Cal3_S2, DoglegOptimizer,
+                         GenericProjectionFactorCal3_S2, NonlinearFactorGraph,
+                         Point3, Pose3, PriorFactorPoint3, PriorFactorPose3,
+                         Rot3, SimpleCamera, Values)
 
 
-# Camera observations of landmarks (i.e. pixel coordinates) will be stored as Point2 (x, y).
-#
-# Each variable in the system (poses and landmarks) must be identified with a unique key.
-# We can either use simple integer keys (1, 2, 3, ...) or symbols (X1, X2, L1).
-# Here we will use Symbols
-#
-# In GTSAM, measurement functions are represented as 'factors'. Several common factors
-# have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.
-# Here we will use Projection factors to model the camera's landmark observations.
-# Also, we will initialize the robot at some location using a Prior factor.
-#
-# When the factors are created, we will add them to a Factor Graph. As the factors we are using
-# are nonlinear factors, we will need a Nonlinear Factor Graph.
-#
-# Finally, once all of the factors have been added to our factor graph, we will want to
-# solve/optimize to graph to find the best (Maximum A Posteriori) set of variable values.
-# GTSAM includes several nonlinear optimizers to perform this step. Here we will use a
-# trust-region method known as Powell's Degleg
-#
-# The nonlinear solvers within GTSAM are iterative solvers, meaning they linearize the
-# nonlinear functions around an initial linearization point, then solve the linear system
-# to update the linearization point. This happens repeatedly until the solver converges
-# to a consistent set of variable values. This requires us to specify an initial guess
-# for each variable, held in a Values container.
-
-def symbol(name, index):
+def symbol(name: str, index: int) -> int:
+    """ helper for creating a symbol without explicitly casting 'name' from str to int """
     return gtsam.symbol(ord(name), index)
 
 
 def main():
+    """
+    Camera observations of landmarks (i.e. pixel coordinates) will be stored as Point2 (x, y).
+
+    Each variable in the system (poses and landmarks) must be identified with a unique key.
+    We can either use simple integer keys (1, 2, 3, ...) or symbols (X1, X2, L1).
+    Here we will use Symbols
+
+    In GTSAM, measurement functions are represented as 'factors'. Several common factors
+    have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.
+    Here we will use Projection factors to model the camera's landmark observations.
+    Also, we will initialize the robot at some location using a Prior factor.
+
+    When the factors are created, we will add them to a Factor Graph. As the factors we are using
+    are nonlinear factors, we will need a Nonlinear Factor Graph.
+
+    Finally, once all of the factors have been added to our factor graph, we will want to
+    solve/optimize to graph to find the best (Maximum A Posteriori) set of variable values.
+    GTSAM includes several nonlinear optimizers to perform this step. Here we will use a
+    trust-region method known as Powell's Degleg
+
+    The nonlinear solvers within GTSAM are iterative solvers, meaning they linearize the
+    nonlinear functions around an initial linearization point, then solve the linear system
+    to update the linearization point. This happens repeatedly until the solver converges
+    to a consistent set of variable values. This requires us to specify an initial guess
+    for each variable, held in a Values container.
+    """
+
     # Define the camera calibration parameters
     K = Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0)
 
@@ -63,7 +68,7 @@ def main():
     graph = NonlinearFactorGraph()
 
     # Add a prior on pose x1. This indirectly specifies where the origin is.
-    # 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
+    # 0.3 rad std on roll,pitch,yaw and 0.1m on x,y,z
     pose_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.3, 0.3, 0.3, 0.1, 0.1, 0.1]))
     factor = PriorFactorPose3(symbol('x', 0), poses[0], pose_noise)
     graph.push_back(factor)

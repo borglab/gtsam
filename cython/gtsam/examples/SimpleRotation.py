@@ -10,9 +10,8 @@ This example will perform a relatively trivial optimization on
 a single variable with a single factor.
 """
 
-import gtsam
-
 import numpy as np
+import gtsam
 
 
 def main():
