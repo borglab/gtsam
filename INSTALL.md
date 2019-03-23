@@ -23,18 +23,22 @@ $ make install
        disable the CMake flag GTSAM_WITH_TBB (enabled by default).  On Ubuntu, TBB
        may be installed from the Ubuntu repositories, and for other platforms it
        may be downloaded from https://www.threadingbuildingblocks.org/
+     - GTSAM may be configured to use MKL by toggling `GTSAM_WITH_EIGEN_MKL` and
+       `GTSAM_WITH_EIGEN_MKL_OPENMP` to `ON`; however, best performance is usually
+       achieved with MKL disabled. We therefore advise you to benchmark your problem 
+       before using MKL.
 
     Tested compilers:
 
-    - GCC 4.2-4.7
-    - OSX Clang 2.9-5.0
-    - OSX GCC 4.2
-    - MSVC 2010, 2012
+    - GCC 4.2-7.3
+    - OS X Clang 2.9-10.0
+    - OS X GCC 4.2
+    - MSVC 2010, 2012, 2017
 
     Tested systems:
 
-    - Ubuntu 11.04 - 18.04
-    - MacOS 10.6 - 10.9
+    - Ubuntu 16.04 - 18.04
+    - MacOS 10.6 - 10.14
     - Windows 7, 8, 8.1, 10
 
     Known issues:
@@ -133,6 +137,27 @@ appending `.run` to the name of the test, for example, to run testMatrix, run
 MEX_COMMAND: Path to the mex compiler. Defaults to assume the path is included in your shell's PATH environment variable. mex is installed with matlab at `$MATLABROOT/bin/mex`
 
 $MATLABROOT can be found by executing the command `matlabroot` in MATLAB
+
+## Performance
+
+Here are some tips to get the best possible performance out of GTSAM.
+
+1. Build in `Release` mode. GTSAM will run up to 10x faster compared to `Debug` mode.
+2. Enable TBB. On modern processors with multiple cores, this can easily speed up
+    optimization by 30-50%. Please note that this may not be true for very small 
+    problems where the overhead of dispatching work to multiple threads outweighs
+    the benefit. We recommend that you benchmark your problem with/without TBB.
+3. Add `-march=native` to `GTSAM_CMAKE_CXX_FLAGS`. A performance gain of
+    25-30% can be expected on modern processors. Note that this affects the portability
+    of your executable. It may not run when copied to another system with older/different
+    processor architecture.
+    Also note that all dependent projects *must* be compiled with the same flag, or
+    seg-faults and other undefined behavior may result.
+4. Possibly enable MKL. Please note that our benchmarks have shown that this helps only
+    in very limited cases, and actually hurts performance in the usual case. We therefore
+    recommend that you do *not* enable MKL, unless you have benchmarked it on
+    your problem and have verified that it improves performance.
+
 
 ## Debugging tips
 

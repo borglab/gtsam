@@ -1,8 +1,22 @@
+"""
+GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+JacobianFactor unit tests.
+Author: Frank Dellaert & Duy Nguyen Ta (Python)
+"""
 import unittest
-import gtsam
+
 import numpy as np
 
-class TestJacobianFactor(unittest.TestCase):
+import gtsam
+from gtsam.utils.test_case import GtsamTestCase
+
+
+class TestJacobianFactor(GtsamTestCase):
 
     def test_eliminate(self):
         # Recommended way to specify a matrix (see cython/README)
@@ -54,7 +68,7 @@ class TestJacobianFactor(unittest.TestCase):
         expectedCG = gtsam.GaussianConditional(
             x2, d, R11, l1, S12, x1, S13, gtsam.noiseModel_Unit.Create(2))
         # check if the result matches
-        self.assertTrue(actualCG.equals(expectedCG, 1e-4))
+        self.gtsamAssertEquals(actualCG, expectedCG, 1e-4)
 
         # the expected linear factor
         Bl1 = np.array([[4.47214, 0.00],
@@ -72,7 +86,7 @@ class TestJacobianFactor(unittest.TestCase):
         expectedLF = gtsam.JacobianFactor(l1, Bl1, x1, Bx1, b1, model2)
 
         # check if the result matches the combined (reduced) factor
-        self.assertTrue(lf.equals(expectedLF, 1e-4))
+        self.gtsamAssertEquals(lf, expectedLF, 1e-4)
 
 if __name__ == "__main__":
     unittest.main()
