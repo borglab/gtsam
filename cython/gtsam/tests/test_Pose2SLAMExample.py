@@ -1,9 +1,23 @@
+"""
+GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+Pose2SLAM unit tests.
+Author: Frank Dellaert & Duy Nguyen Ta (Python)
+"""
 import unittest
-import gtsam
 from math import pi
+
 import numpy as np
 
-class TestPose2SLAMExample(unittest.TestCase):
+import gtsam
+from gtsam.utils.test_case import GtsamTestCase
+
+
+class TestPose2SLAMExample(GtsamTestCase):
 
     def test_Pose2SLAMExample(self):
         # Assumptions
@@ -56,7 +70,7 @@ class TestPose2SLAMExample(unittest.TestCase):
         P = marginals.marginalCovariance(1)
 
         pose_1 = result.atPose2(1)
-        self.assertTrue(pose_1.equals(gtsam.Pose2(), 1e-4))
+        self.gtsamAssertEquals(pose_1, gtsam.Pose2(), 1e-4)
 
 if __name__ == "__main__":
     unittest.main()

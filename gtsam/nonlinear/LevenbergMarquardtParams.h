@@ -122,24 +122,35 @@ public:
   virtual ~LevenbergMarquardtParams() {}
   void print(const std::string& str = "") const override;
 
-  /// @name Getters/Setters, mainly for MATLAB. Use fields above in C++.
+  /// @name Getters/Setters, mainly for wrappers. Use fields above in C++.
   /// @{
   bool getDiagonalDamping() const { return diagonalDamping; }
   double getlambdaFactor() const { return lambdaFactor; }
   double getlambdaInitial() const { return lambdaInitial; }
   double getlambdaLowerBound() const { return lambdaLowerBound; }
   double getlambdaUpperBound() const { return lambdaUpperBound; }
+  bool getUseFixedLambdaFactor() { return useFixedLambdaFactor; }
   std::string getLogFile() const { return logFile; }
   std::string getVerbosityLM() const { return verbosityLMTranslator(verbosityLM);}
+  
   void setDiagonalDamping(bool flag) { diagonalDamping = flag; }
   void setlambdaFactor(double value) { lambdaFactor = value; }
   void setlambdaInitial(double value) { lambdaInitial = value; }
   void setlambdaLowerBound(double value) { lambdaLowerBound = value; }
   void setlambdaUpperBound(double value) { lambdaUpperBound = value; }
-  void setLogFile(const std::string& s) { logFile = s; }
   void setUseFixedLambdaFactor(bool flag) { useFixedLambdaFactor = flag;}
+  void setLogFile(const std::string& s) { logFile = s; }
   void setVerbosityLM(const std::string& s) { verbosityLM = verbosityLMTranslator(s);}
   // @}
+  /// @name Clone
+  /// @{
+
+  /// @return a deep copy of this object
+  boost::shared_ptr<NonlinearOptimizerParams> clone() const {
+    return boost::shared_ptr<NonlinearOptimizerParams>(new LevenbergMarquardtParams(*this));
+  }
+
+  /// @}
 };
 
 }

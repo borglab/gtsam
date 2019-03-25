@@ -2,23 +2,30 @@ This is the Cython/Python wrapper around the GTSAM C++ library.
 
 INSTALL
 =======
+- if you want to build the gtsam python library for a specific python version (eg 2.7), use the `-DGTSAM_PYTHON_VERSION=2.7` option when running `cmake` otherwise the default interpreter will be used.
+    - If the interpreter is inside an environment (such as an anaconda environment or virtualenv environment) then the environment should be active while building gtsam.
 - This wrapper needs Cython(>=0.25.2), backports_abc>=0.5, and numpy. These can be installed as follows:
 
 ```bash
  pip install -r <gtsam_folder>/cython/requirements.txt
 ```
 
-- For compatiblity with gtsam's Eigen version, it contains its own cloned version of [Eigency](https://github.com/wouterboomsma/eigency.git),
+- For compatibility with gtsam's Eigen version, it contains its own cloned version of [Eigency](https://github.com/wouterboomsma/eigency.git),
 named **gtsam_eigency**, to interface between C++'s Eigen and Python's numpy.
 
-- Build and install gtsam using cmake with GTSAM_INSTALL_CYTHON_TOOLBOX enabled.
-The wrapped module will be installed to GTSAM_CYTHON_INSTALL_PATH, which is
-by default: <your CMAKE_INSTALL_PREFIX>/cython
+- Build and install gtsam using cmake with `GTSAM_INSTALL_CYTHON_TOOLBOX` enabled.
+The wrapped module will be installed to `GTSAM_CYTHON_INSTALL_PATH`, which is
+by default: `<your CMAKE_INSTALL_PREFIX>/cython`
 
-- Modify your PYTHONPATH to include the GTSAM_CYTHON_INSTALL_PATH:
+- To use the library without installing system-wide: modify your `PYTHONPATH` to include the `GTSAM_CYTHON_INSTALL_PATH`:
 ```bash
 export PYTHONPATH=$PYTHONPATH:<GTSAM_CYTHON_INSTALL_PATH>
 ```
+- To install system-wide: run `make install` then navigate to `GTSAM_CYTHON_INSTALL_PATH` and run `python setup.py install`
+    - (the same command can be used to install into a virtual environment if it is active)
+    - note: if you don't want gtsam to install to a system directory such as `/usr/local`, pass `-DCMAKE_INSTALL_PREFIX="./install"` to cmake to install gtsam to a subdirectory of the build directory.
+    - if you run `setup.py` from the build directory rather than the installation directory, the script will warn you with the message: `setup.py is being run from an unexpected location`.
+      Before `make install` is run, not all the components of the package have been copied across, so running `setup.py` from the build directory would result in an incomplete package.
 
 UNIT TESTS
 ==========

@@ -24,6 +24,7 @@ from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
 import gtsam
 import gtsam.utils.plot as gtsam_plot
 from gtsam import Pose2
+from gtsam.utils.test_case import GtsamTestCase
 
 
 def vector3(x, y, z):
@@ -202,7 +203,7 @@ Q1 = np.radians(vector3(-30, -45, -90))
 Q2 = np.radians(vector3(-90, 90, 0))
 
 
-class TestPose2SLAMExample(unittest.TestCase):
+class TestPose2SLAMExample(GtsamTestCase):
     """Unit tests for functions used below."""
 
     def setUp(self):

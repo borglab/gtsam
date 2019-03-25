@@ -146,16 +146,20 @@ public:
   /**
    * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
    */
-  Vector3 adjoint(const Vector3& xi, const Vector3& y) {
+  static Vector3 adjoint(const Vector3& xi, const Vector3& y) {
     return adjointMap(xi) * y;
   }
 
   /**
    * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
    */
-  Vector3 adjointTranspose(const Vector3& xi, const Vector3& y) {
+  static Vector3 adjointTranspose(const Vector3& xi, const Vector3& y) {
     return adjointMap(xi).transpose() * y;
   }
+
+  // temporary fix for wrappers until case issue is resolved
+  static Matrix3 adjointMap_(const Vector3 &xi) { return adjointMap(xi);}
+  static Vector3 adjoint_(const Vector3 &xi, const Vector3 &y) { return adjoint(xi, y);}
 
   /**
    * wedge for SE(2):
@@ -295,17 +299,16 @@ private:
     ar & BOOST_SERIALIZATION_NVP(r_);
   }
 
-#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
 public:
-  // Make sure Pose2 is aligned if it contains a Vector2
+  // Align for Point2, which is either derived from, or is typedef, of Vector2
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 }; // Pose2
 
 /** specialization for pose2 wedge function (generic template in Lie.h) */
 template <>
 inline Matrix wedge<Pose2>(const Vector& xi) {
-  return Pose2::wedge(xi(0),xi(1),xi(2));
+  // NOTE(chris): Need eval() as workaround for Apple clang + avx2.
+  return Matrix(Pose2::wedge(xi(0),xi(1),xi(2))).eval();
 }
 
 /**
