@@ -4,6 +4,8 @@ import argparse
 import interface_parser as parser
 import template_instantiator as instantiator
 
+from functools import reduce
+
 
 class MatlabWrapper(object):
     """ Wrap the given C++ code into Matlab.
@@ -15,11 +17,16 @@ class MatlabWrapper(object):
     ignore_classes -- A list of classes to ignore (default [])
     """
 
-    # TODO: Define more types
-    data_type = {'int': 'numeric', 'double': 'double'}
+    # TODO: Define more types and document this dict
+    data_type = {'int': 'numeric', 'double': 'double',
+                 'gtsam::Matrix': 'double', 'size_t': 'numeric',
+                 'gtsam::noiseModel::Base const*': 'gtsam.noiseModel.Base'}
 
-    # TODO: Figure out what this number is
-    val = 85
+    # TODO: Find out what to do with these methods
+    whitelist = ['serializable', 'eigenArguments']
+
+    # The amount of times the wrapper has created a call to geometry_wrapper
+    wrapper_count = 0
 
     content = []
 
@@ -77,6 +84,19 @@ class MatlabWrapper(object):
 
         return formatted_type_name
 
+    def _wrap_args(self, args):
+        """ Wrap an ArgumentList """
+        arg_text = ''
+
+        for i, arg in enumerate(args.args_list):
+            arg_text += '{c_type} {arg_name}'.format(
+                c_type=arg.ctype, arg_name=arg.name)
+
+            if i + 1 != len(args.args_list):
+                arg_text += ', '
+
+        return arg_text + ')'
+
     def class_comment(self, class_name, ctors, methods):
         """ Generate comments for the given class in Matlab.
 
@@ -113,6 +133,10 @@ class MatlabWrapper(object):
 
         # Write methods
         for method in methods:
+            # TODO: Remove this after figuring out how to handle these methods
+            if method.name in self.whitelist:
+                continue
+
             comment += '%{name}('.format(name=method.name)
 
             for i, arg in enumerate(method.args.args_list):
@@ -180,12 +204,11 @@ class MatlabWrapper(object):
 
                 param_check += '\n'
 
-            # TODO: Figure out what number to put at val
             param_check += '        varargout{open}1{close} = {module_name}'\
-                '_wrapper({val}, varargin{open}:{close});\n'.format(
+                '_wrapper({num}, varargin{open}:{close});\n'.format(
                     open='{', close='}', module_name=self.module_name,
-                    val=self.val)
-            self.val += 1
+                    num=self.wrapper_count)
+            self.wrapper_count += 1
 
         param_check += '      else\n'\
             "        error('Arguments do not match any overload of function "\
@@ -215,17 +238,156 @@ class MatlabWrapper(object):
 
         return output
 
+    def wrap_class_properties(self, class_name):
+        """ Generate properties of class """
+        return 'properties\n'\
+            '  ptr_{class_name} = 0\n'\
+            'end\n'.format(class_name=class_name)
+
+    def wrap_class_ctors(self, class_name, ctors):
+        """ Wrap class constructor """
+        if type(ctors) != list:
+            ctors = [ctors]
+
+        methods_text = 'methods\n'
+
+        methods_text += '  function obj = {class_name}(varargin)\n'\
+            "    if nargin == 2 && isa(varargin{open}1{close}, 'uint64')"\
+            ' && varargin{open}1{close} == uint64(5139824614673773682)\n'\
+            '      my_ptr = varargin{open}2{close};\n'\
+            '      geometry_wrapper({num}, my_ptr);\n'.format(
+                class_name=class_name, open='{', close='}',
+                num=self.wrapper_count)
+
+        self.wrapper_count += 1
+
+        for ctor in ctors:
+            methods_text += '    elseif nargin == {len}'.format(
+                len=len(ctor.args.args_list))
+
+            max = 0
+
+            for i, arg in enumerate(ctor.args.args_list):
+                max = i + 1
+
+                methods_text += " && isa(varargin{open}{num}{close},"\
+                    "'{data_type}')".format(
+                        num=i + 1,
+                        data_type=self.data_type[str(arg.ctype).strip()],
+                        open='{', close='}')
+
+            methods_text += '\n      my_ptr = geometry_wrapper({num}'.format(
+                num=self.wrapper_count)
+
+            self.wrapper_count += 1
+
+            for i in range(0, max):
+                methods_text += ', varargin{open}{num}{close}'.format(
+                    num=i + 1, open='{', close='}')
+
+            methods_text += ');\n'
+
+        methods_text += "    else\n      error('Arguments do not match any "\
+            "overload of {class_name} constructor');\n    end\n"\
+            '    obj.ptr_{class_name} = my_ptr;\n  end\n\n'.format(
+                class_name=class_name)
+
+        return methods_text
+
+    def wrap_class_delete(self, class_name):
+        """ Generate the delete function for the Matlab class """
+        methods_text = '  function delete(obj)\n'\
+            '    geometry_wrapper({num}, obj.ptr_{class_name});\n'\
+            '  end\n\n'.format(num=self.wrapper_count, class_name=class_name)
+
+        self.wrapper_count += 1
+
+        return methods_text
+
+    def wrap_class_display(self):
+        """ Generate the display function for the Matlab class """
+        return "  function display(obj), obj.print(''); end\n"\
+            '  %DISPLAY Calls print on the object\n'\
+            '  function disp(obj), obj.display; end\n'\
+            '  %DISP Calls print on the object\n'
+
+    def wrap_class_methods(self, methods):
+        """ Wrap the methods in the class """
+        method_text = ''
+
+        for method in methods:
+            # TODO: Remove this after figuring out how to handle these methods
+            if method.name in self.whitelist:
+                continue
+
+            method_text += ''\
+                'function varargout = {method_name}(this, varargin)\n'\
+                '  % {caps_name} usage: {method_name}('.format(
+                    caps_name=method.name.upper(),
+                    method_name=method.name)
+
+            method_text += '{method_args} : returns {return_type}\n'\
+                '  % Doxygen can be found at http://research.cc.gatech.edu/'\
+                'borg/sites/edu.borg/html/index.html\n'\
+                '  varargout{l}1{r} = geometry_wrapper({num}, this, '\
+                'varargin{l}:{r});\n'.format(
+                    method_args=self._wrap_args(method.args),
+                    return_type=method.return_type, num=self.wrapper_count,
+                    l='{', r='}')
+
+            self.wrapper_count += 1
+
+            method_text += 'end\n\n'
+
+        return method_text
+
     def wrap_instantiated_class(self, instantiated_class):
         """ Generate comments and code for given class """
         file_name = self._clean_class_name(instantiated_class)
 
+        # Class comment
         content_text = self.class_comment(
             file_name, instantiated_class.ctors, instantiated_class.methods)
         content_text += self.wrap_methods(instantiated_class.methods)
 
-        # TODO: Generate file code
+        # Class definition
+        content_text += 'classdef {class_name} < handle\n'.format(
+            class_name=file_name)
 
-        return (file_name + '.m', content_text)
+        # Class properties
+        content_text += '  ' + \
+            reduce(lambda x, y: x + '\n  ' + y,
+                   self.wrap_class_properties(file_name).splitlines()) + '\n'
+
+        # Class constructor
+        content_text += '  ' + \
+            reduce(lambda x, y: x + '\n  ' + y,
+                   self.wrap_class_ctors(file_name, instantiated_class.ctors)
+                       .splitlines()) + '\n'
+
+        # Delete function
+        content_text += '  ' + \
+            reduce(lambda x, y: x + '\n  ' + y,
+                   self.wrap_class_delete(file_name).splitlines()) + '\n'
+
+        # Display function
+        content_text += '  ' + \
+            reduce(lambda x, y: x + '\n  ' + y,
+                   self.wrap_class_display().splitlines()) + '\n'
+
+        # Class methods
+        if len(instantiated_class.methods) != 0:
+            methods = sorted(instantiated_class.methods,
+                             key=lambda name: name.name)
+
+            content_text += '    ' + \
+                reduce(lambda x, y: x + '\n    ' + y,
+                       self.wrap_class_methods(methods)
+                           .splitlines()) + '\n'
+
+        content_text += '  end\n\n  methods(Static = true)\n  end\nend\n'
+
+        return file_name + '.m', content_text
 
     def wrap_namespace(self, namespace):
         # TODO: Add documentation
@@ -287,8 +449,8 @@ if __name__ == "__main__":
         "will be wrapped. The content of this namespace will be available at "
         "the top module level, and its sub-namespaces' in the submodules.\n"
         "For example, `import <module_name>` gives you access to a Python "
-        "`<module_name>.Class` of the corresponding C++ `ns1::ns2::ns3::Class`,"
-        " and `from <module_name> import ns4` gives you access to a Python "
+        "`<module_name>.Class` of the corresponding C++ `ns1::ns2::ns3::Class`"
+        ", and `from <module_name> import ns4` gives you access to a Python "
         "`ns4.Class` of the C++ `ns1::ns2::ns3::ns4::Class`. ")
     arg_parser.add_argument(
         "--ignore",

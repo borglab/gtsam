@@ -55,6 +55,12 @@ class TestWrap(unittest.TestCase):
                     f.write(c[1])
 
         self.assertTrue(filecmp.cmp(
+            self.MATLAB_ACTUAL_DIR + 'Point2.m',
+            self.MATLAB_TEST_DIR + 'Point2.m'))
+        self.assertTrue(filecmp.cmp(
+            self.MATLAB_ACTUAL_DIR + 'Point3.m',
+            self.MATLAB_TEST_DIR + 'Point3.m'))
+        self.assertTrue(filecmp.cmp(
             self.MATLAB_ACTUAL_DIR + 'aGlobalFunction.m',
             self.MATLAB_TEST_DIR + 'aGlobalFunction.m'))
         self.assertTrue(filecmp.cmp(
