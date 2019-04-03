@@ -142,19 +142,25 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Vector VectorValues::vector() const
-  {
+  Vector VectorValues::vector(boost::optional<const Ordering&> ordering) const {
     // Count dimensions
     DenseIndex totalDim = 0;
-    for(const Vector& v: *this | map_values)
-      totalDim += v.size();
+    for (const Vector& v : *this | map_values) totalDim += v.size();
 
     // Copy vectors
     Vector result(totalDim);
     DenseIndex pos = 0;
-    for(const Vector& v: *this | map_values) {
-      result.segment(pos, v.size()) = v;
-      pos += v.size();
+    if (ordering) {
+      for (const auto& key : *ordering) {
+        const auto& v = (*this)[key];
+        result.segment(pos, v.size()) = v;
+        pos += v.size();
+      }
+    } else {
+      for (const Vector& v : *this | map_values) {
+        result.segment(pos, v.size()) = v;
+        pos += v.size();
+      }
     }
 
     return result;

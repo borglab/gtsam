@@ -244,7 +244,7 @@ namespace gtsam {
     /// @{
 
     /** Retrieve the entire solution as a single vector */
-    Vector vector() const;
+    Vector vector(boost::optional<const Ordering&> ordering = boost::none) const;
 
     /** Access a vector that is a subset of relevant keys. */
     template <typename CONTAINER>
