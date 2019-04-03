@@ -152,6 +152,34 @@ TEST( GaussianBayesNet, backSubstituteTranspose )
 
   VectorValues actual = smallBayesNet.backSubstituteTranspose(x);
   EXPECT(assert_equal(expected, actual));
+  
+  const auto ordering = noisyBayesNet.ordering();
+  const Matrix R = smallBayesNet.matrix(ordering).first;
+  const Vector expected_vector = R.transpose().inverse() * x.vector(ordering);
+  EXPECT(assert_equal(expected_vector, actual.vector(ordering)));
+}
+
+/* ************************************************************************* */
+TEST( GaussianBayesNet, backSubstituteTransposeNoisy )
+{
+  // x=R'*y, expected=inv(R')*x
+  // 2 = 1    2
+  // 5   1 1  3
+  VectorValues
+    x = map_list_of<Key, Vector>
+      (_x_, Vector1::Constant(2))
+      (_y_, Vector1::Constant(5)),
+    expected = map_list_of<Key, Vector>
+      (_x_, Vector1::Constant(4))
+      (_y_, Vector1::Constant(9));
+
+  VectorValues actual = noisyBayesNet.backSubstituteTranspose(x);
+  EXPECT(assert_equal(expected, actual));
+  
+  const auto ordering = noisyBayesNet.ordering();
+  const Matrix R = noisyBayesNet.matrix(ordering).first;
+  const Vector expected_vector = R.transpose().inverse() * x.vector(ordering);
+  EXPECT(assert_equal(expected_vector, actual.vector(ordering)));
 }
 
 /* ************************************************************************* */
