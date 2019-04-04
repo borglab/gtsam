@@ -101,17 +101,55 @@ class MatlabWrapper(object):
         return formatted_type_name
 
     def _wrap_args(self, args):
-        """ Wrap a interface_parsesr.ArgumentList """
-        arg_text = ''
+        """ Wrap an interface_parser.ArgumentList into a list of arguments
+        
+        Example:
+            int x, double y
+        """
+        arg_wrap = ''
 
-        for i, arg in enumerate(args.args_list):
-            arg_text += '{c_type} {arg_name}'.format(
-                c_type=arg.ctype.typename, arg_name=arg.name)
+        for i, arg in enumerate(args.args_list, 1):
+            arg_wrap += '{c_type} {arg_name}{comma}'.format(
+                c_type=arg.ctype.typename, arg_name=arg.name,
+                comma='' if i == len(args.args_list) else ', ')
 
-            if i + 1 != len(args.args_list):
-                arg_text += ', '
+        # TODO: Remove the ')' and implement it in the caller
+        return arg_wrap + ')'
 
-        return arg_text + ')'
+    def _wrap_variable_arguments(self, args):
+        """ Wrap an interface_parser.ArgumentList into a statement of argument
+        checks.
+
+        Example:
+             && isa(varargin{1},'double') && isa(varargin{2},'double')
+        """
+        var_arg_wrap = ''
+
+        for i, arg in enumerate(args.args_list, 1):
+            var_arg_wrap += " && isa(varargin{{{num}}},'{data_type}')".format(
+                num=i, data_type=self.data_type[str(arg.ctype).strip()]
+            )
+
+        return var_arg_wrap
+
+    def _wrap_list_variable_arguments(self, args):
+        """ Wrap an interface_parser.ArgumentList into a list of argument
+        variables.
+
+        Example:
+            varargin{1}, varargin{2}, varargin{3}
+        """
+        var_list_wrap = ''
+        first = True
+
+        for i in range(1, len(args.args_list) + 1):
+            if first:
+                var_list_wrap += 'varargin{{{num}}}'.format(num=i)
+                first = False
+            else:
+                var_list_wrap += ', varargin{{{num}}}'.format(num=i)
+
+        return var_list_wrap
 
     def _return_count(self, return_type):
         """ The amount of objects returned by the given ReturnType
@@ -237,20 +275,12 @@ class MatlabWrapper(object):
             if len(p.args_list) == 0:
                 param_check += '0\n'
             else:
-                param_check += str(len(p.args_list))
-
-                for num, arg in enumerate(p.args_list):
-                    param_check += " && isa(varargin{open}{num}{close},"\
-                        "'{data_type}')".format(
-                            open='{', num=num + 1, close='}',
-                            data_type=self.data_type[str(arg.ctype).strip()])
-
+                param_check += str(len(p.args_list)) + self._wrap_args(p)
                 param_check += '\n'
 
-            param_check += '        varargout{open}1{close} = {module_name}'\
-                '_wrapper({num}, varargin{open}:{close});\n'.format(
-                    open='{', close='}', module_name=self.module_name,
-                    num=self.wrapper_count)
+            param_check += '        varargout{{1}} = {module_name}'\
+                '_wrapper({num}, varargin{{:}});\n'.format(
+                    module_name=self.module_name, num=self.wrapper_count)
             self.wrapper_count += 1
 
         param_check += '      else\n'\
@@ -268,7 +298,6 @@ class MatlabWrapper(object):
         file.
         """
         output = ''
-
         methods = self._group_methods(methods)
 
         for method in methods:
@@ -292,43 +321,27 @@ class MatlabWrapper(object):
         if type(ctors) != list:
             ctors = [ctors]
 
-        methods_text = 'methods\n'
-
-        methods_text += '  function obj = {class_name}(varargin)\n'\
-            "    if nargin == 2 && isa(varargin{open}1{close}, 'uint64')"\
-            ' && varargin{open}1{close} == uint64(5139824614673773682)\n'\
-            '      my_ptr = varargin{open}2{close};\n'\
+        methods_text = 'methods\n  function obj = {class_name}(varargin)\n'\
+            "    if nargin == 2 && isa(varargin{{1}}, 'uint64')"\
+            ' && varargin{{1}} == uint64(5139824614673773682)\n'\
+            '      my_ptr = varargin{{2}};\n'\
             '      geometry_wrapper({num}, my_ptr);\n'.format(
-                class_name=class_name, open='{', close='}',
-                num=self.wrapper_count)
+                class_name=class_name, num=self.wrapper_count)
 
         self.wrapper_count += 1
 
         for ctor in ctors:
-            methods_text += '    elseif nargin == {len}'.format(
-                len=len(ctor.args.args_list))
-
-            max = 0
-
-            for i, arg in enumerate(ctor.args.args_list):
-                max = i + 1
-
-                methods_text += " && isa(varargin{open}{num}{close},"\
-                    "'{data_type}')".format(
-                        num=i + 1,
-                        data_type=self.data_type[str(arg.ctype).strip()],
-                        open='{', close='}')
-
-            methods_text += '\n      my_ptr = geometry_wrapper({num}'.format(
-                num=self.wrapper_count)
+            methods_text += '    elseif nargin == {len}{varargin}'\
+                '\n      my_ptr = geometry_wrapper({num}{comma}{var_arg})'\
+                ';\n'.format(
+                    len=len(ctor.args.args_list),
+                    varargin=self._wrap_variable_arguments(ctor.args),
+                    num=self.wrapper_count,
+                    comma='' if len(ctor.args.args_list) == 0 else ', ',
+                    var_arg=self._wrap_list_variable_arguments(ctor.args)
+                )
 
             self.wrapper_count += 1
-
-            for i in range(0, max):
-                methods_text += ', varargin{open}{num}{close}'.format(
-                    num=i + 1, open='{', close='}')
-
-            methods_text += ');\n'
 
         methods_text += "    else\n      error('Arguments do not match any "\
             "overload of {class_name} constructor');\n    end\n"\
@@ -361,8 +374,8 @@ class MatlabWrapper(object):
             '  % Doxygen can be found at '\
             'http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n'\
             '  if length(varargin) == 0\n'\
-            '    varargout{l}1{r} = geometry_wrapper({num}, this, '\
-            'varargin{l}:{r});\n'\
+            '    varargout{{1}} = geometry_wrapper({num}, this, '\
+            'varargin{{:}});\n'\
             '  else\n'\
             "    error('Arguments do not match any overload of function "\
             "Point3.string_serialize');\n"\
@@ -370,7 +383,7 @@ class MatlabWrapper(object):
             'function sobj = saveobj(obj)\n'\
             '  % SAVEOBJ Saves the object to a matlab-readable format\n'\
             '  sobj = obj.string_serialize();\nend\n'.format(
-                l='{', r='}', num=self.wrapper_count)
+                num=self.wrapper_count)
 
     def wrap_class_methods(self, methods, serialize=[False]):
         """ Wrap the methods in the class.
@@ -415,9 +428,9 @@ class MatlabWrapper(object):
                     '  % Doxygen can be found at http://research.cc.gatech'\
                     '.edu/borg/sites/edu.borg/html/index.html\n'\
                     '  {varargout}geometry_wrapper({num}, this, '\
-                    'varargin{l}:{r});\n'.format(
+                    'varargin{{:}});\n'.format(
                         method_args=self._wrap_args(method.args),
-                        return_type=return_type.strip(), l='{', r='}',
+                        return_type=return_type.strip(),
                         num=self.wrapper_count, varargout=varargout)
 
                 method_text += 'end\n\n'
@@ -472,7 +485,8 @@ class MatlabWrapper(object):
         method_text += '  function varargout = string_deserialize(varargin)\n'\
             '    % STRING_DESERIALIZE usage: string_deserialize() : '\
             'returns {class_name}\n'\
-            '    % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n'\
+            '    % Doxygen can be found at http://research.cc.gatech.edu/'\
+            'borg/sites/edu.borg/html/index.html\n'\
             '    if length(varargin) == 1\n'\
             '      varargout{{1}} = geometry_wrapper(18, varargin{{:}});\n'\
             '    else\n'\
