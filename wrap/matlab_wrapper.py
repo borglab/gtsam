@@ -37,6 +37,10 @@ class MatlabWrapper(object):
         self.top_module_namespace = top_module_namespace
         self.ignore_classe = ignore_classes
 
+    def _insert_spaces(self, x, y):
+        ''' Insert spaces at the beginning of each line '''
+        return x + '\n' + ('' if y == '' else '  ') + y
+
     def _partial_match(self, namespace1, namespace2):
         """ Return if one array of namespaces is a subset of the other """
         for i in range(min(len(namespace1), len(namespace2))):
@@ -244,7 +248,7 @@ class MatlabWrapper(object):
             '  ptr_{class_name} = 0\n'\
             'end\n'.format(class_name=class_name)
 
-    def wrap_class_ctors(self, class_name, ctors):
+    def wrap_class_constructors(self, class_name, ctors):
         """ Wrap class constructor """
         if type(ctors) != list:
             ctors = [ctors]
@@ -311,6 +315,24 @@ class MatlabWrapper(object):
             '  function disp(obj), obj.display; end\n'\
             '  %DISP Calls print on the object\n'
 
+    def wrap_serialize_method(self):
+        return 'function varargout = string_serialize(this, varargin)\n'\
+            '  % STRING_SERIALIZE usage: string_serialize() : returns '\
+            'string\n'\
+            '  % Doxygen can be found at '\
+            'http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n'\
+            '  if length(varargin) == 0\n'\
+            '    varargout{l}1{r} = geometry_wrapper({num}, this, '\
+            'varargin{l}:{r});\n'\
+            '  else\n'\
+            "    error('Arguments do not match any overload of function "\
+            "Point3.string_serialize');\n"\
+            'end\n\n'\
+            'function sobj = saveobj(obj)\n'\
+            '  % SAVEOBJ Saves the object to a matlab-readable format\n'\
+            '  sobj = obj.string_serialize();\nend\n'.format(
+                l='{', r='}', num=self.wrapper_count)
+
     def wrap_class_methods(self, methods):
         """ Wrap the methods in the class """
         method_text = ''
@@ -320,24 +342,29 @@ class MatlabWrapper(object):
             if method.name in self.whitelist:
                 continue
 
-            method_text += ''\
-                'function varargout = {method_name}(this, varargin)\n'\
-                '  % {caps_name} usage: {method_name}('.format(
-                    caps_name=method.name.upper(),
-                    method_name=method.name)
+            if method.name == 'serialize':
+                method_text = self.wrap_serialize_method()
+            else:
+                method_text += ''\
+                    'function varargout = {method_name}(this, varargin)\n'\
+                    '  % {caps_name} usage: {method_name}('.format(
+                        caps_name=method.name.upper(),
+                        method_name=method.name)
 
-            method_text += '{method_args} : returns {return_type}\n'\
-                '  % Doxygen can be found at http://research.cc.gatech.edu/'\
-                'borg/sites/edu.borg/html/index.html\n'\
-                '  varargout{l}1{r} = geometry_wrapper({num}, this, '\
-                'varargin{l}:{r});\n'.format(
-                    method_args=self._wrap_args(method.args),
-                    return_type=method.return_type, num=self.wrapper_count,
-                    l='{', r='}')
+                method_text += '{method_args} : returns {return_type}\n'\
+                    '  % Doxygen can be found at http://research.cc.gatech.edu/'\
+                    'borg/sites/edu.borg/html/index.html\n'\
+                    '  {varargout}geometry_wrapper({num}, this, '\
+                    'varargin{l}:{r});\n'.format(
+                        method_args=self._wrap_args(method.args),
+                        return_type=method.return_type.type1.typename.name
+                        .strip(), num=self.wrapper_count, varargout=''
+                        if method.return_type.type1.typename.name == 'void'
+                        else 'varargout{1} = ', l='{', r='}')
+
+                method_text += 'end\n\n'
 
             self.wrapper_count += 1
-
-            method_text += 'end\n\n'
 
         return method_text
 
@@ -356,23 +383,23 @@ class MatlabWrapper(object):
 
         # Class properties
         content_text += '  ' + \
-            reduce(lambda x, y: x + '\n  ' + y,
+            reduce(self._insert_spaces,
                    self.wrap_class_properties(file_name).splitlines()) + '\n'
 
         # Class constructor
         content_text += '  ' + \
-            reduce(lambda x, y: x + '\n  ' + y,
-                   self.wrap_class_ctors(file_name, instantiated_class.ctors)
-                       .splitlines()) + '\n'
+            reduce(self._insert_spaces,
+                   self.wrap_class_constructors(file_name, instantiated_class
+                                                .ctors).splitlines()) + '\n'
 
         # Delete function
         content_text += '  ' + \
-            reduce(lambda x, y: x + '\n  ' + y,
+            reduce(self._insert_spaces,
                    self.wrap_class_delete(file_name).splitlines()) + '\n'
 
         # Display function
         content_text += '  ' + \
-            reduce(lambda x, y: x + '\n  ' + y,
+            reduce(self._insert_spaces,
                    self.wrap_class_display().splitlines()) + '\n'
 
         # Class methods
@@ -381,7 +408,7 @@ class MatlabWrapper(object):
                              key=lambda name: name.name)
 
             content_text += '    ' + \
-                reduce(lambda x, y: x + '\n    ' + y,
+                reduce(lambda x, y: x + '\n' + ('' if y == '' else '    ') + y,
                        self.wrap_class_methods(methods)
                            .splitlines()) + '\n'
 
