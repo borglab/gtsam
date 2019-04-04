@@ -70,7 +70,6 @@ public:
 
 protected:
   Parameters parameters_;
-  Ordering ordering_;
   boost::shared_ptr<SubgraphPreconditioner> pc_; ///< preconditioner object
 
 public:
@@ -88,8 +87,8 @@ public:
       const Parameters &parameters, const Ordering& ordering);
 
   /**
-   * The user specify the subgraph part and the constraint part
-   * may throw exception if A1 is underdetermined
+   * The user specifies the subgraph part and the constraints part.
+   * May throw exception if A1 is underdetermined. An ordering is required to eliminate Ab1.
    */
   SubgraphSolver(const GaussianFactorGraph &Ab1, const GaussianFactorGraph &Ab2,
       const Parameters &parameters, const Ordering& ordering);
@@ -99,15 +98,14 @@ public:
       const boost::shared_ptr<GaussianFactorGraph> &Ab2,
       const Parameters &parameters, const Ordering& ordering);
 
-  /* The same as above, but the A1 is solved before */
+  /// The same as above, but we assume A1 was solved by caller
   SubgraphSolver(const boost::shared_ptr<GaussianBayesNet> &Rc1,
-      const GaussianFactorGraph &Ab2, const Parameters &parameters,
-      const Ordering& ordering);
+      const GaussianFactorGraph &Ab2, const Parameters &parameters);
 
   /// Shared pointer version
   SubgraphSolver(const boost::shared_ptr<GaussianBayesNet> &Rc1,
       const boost::shared_ptr<GaussianFactorGraph> &Ab2,
-      const Parameters &parameters, const Ordering& ordering);
+      const Parameters &parameters);
 
   /// Destructor
   virtual ~SubgraphSolver() {
@@ -125,13 +123,8 @@ public:
       const VectorValues &initial);
 
 protected:
-
-  void initialize(const GaussianFactorGraph &jfg);
-  void initialize(const boost::shared_ptr<GaussianBayesNet> &Rc1,
-      const boost::shared_ptr<GaussianFactorGraph> &Ab2);
-
-  boost::tuple<boost::shared_ptr<GaussianFactorGraph>,
-      boost::shared_ptr<GaussianFactorGraph> >
+  /// Split graph using Kruskal algorithm, treating binary factors as edges.
+  static boost::tuple<boost::shared_ptr<GaussianFactorGraph>, boost::shared_ptr<GaussianFactorGraph>>
   splitGraph(const GaussianFactorGraph &gfg);
 };
 
