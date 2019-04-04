@@ -63,14 +63,12 @@ struct ReturnValue {
   /// Substitute template argument
   ReturnValue expandTemplate(const TemplateSubstitution& ts) const;
 
-  std::string return_type(bool add_ptr) const;
+  std::string returnType() const;
 
   std::string matlab_returnType() const;
 
   void wrap_result(const std::string& result, FileWriter& wrapperFile,
       const TypeAttributesTable& typeAttributes) const;
-
-  void wrapTypeUnwrap(FileWriter& wrapperFile) const;
 
   void emit_matlab(FileWriter& proxyFile) const;
 
@@ -84,7 +82,7 @@ struct ReturnValue {
     if (!r.isPair && r.type1.category == ReturnType::VOID)
       os << "void";
     else
-      os << r.return_type(true);
+      os << r.returnType();
     return os;
   }
 
