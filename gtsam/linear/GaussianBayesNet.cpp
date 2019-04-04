@@ -163,7 +163,8 @@ namespace gtsam {
       return factorGraph.jacobian(ordering);
     } else {
       // recursively call with default ordering
-      return matrix(this->ordering());
+      const auto defaultOrdering = this->ordering();
+      return matrix(defaultOrdering);
     }
   }
 
