@@ -355,7 +355,7 @@ class MatlabWrapper(object):
             '  else\n'\
             "    error('Arguments do not match any overload of function "\
             "Point3.string_serialize');\n"\
-            'end\n\n'\
+            '  end\nend\n\n'\
             'function sobj = saveobj(obj)\n'\
             '  % SAVEOBJ Saves the object to a matlab-readable format\n'\
             '  sobj = obj.string_serialize();\nend\n'.format(
@@ -371,7 +371,7 @@ class MatlabWrapper(object):
                 continue
 
             if method.name == 'serialize':
-                method_text = self.wrap_serialize_method()
+                method_text += self.wrap_serialize_method()
             else:
                 method_text += ''\
                     'function varargout = {method_name}(this, varargin)\n'\
