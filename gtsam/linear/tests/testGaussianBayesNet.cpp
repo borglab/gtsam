@@ -137,6 +137,15 @@ TEST( GaussianBayesNet, optimize3 )
 }
 
 /* ************************************************************************* */
+TEST(GaussianBayesNet, ordering) 
+{
+  Ordering expected;
+  expected += 0, 1;
+  const auto actual = noisyBayesNet.ordering();
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
 TEST( GaussianBayesNet, backSubstituteTranspose )
 {
   // x=R'*y, expected=inv(R')*x
