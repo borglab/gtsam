@@ -142,17 +142,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Vector VectorValues::vector() const
-  {
+  Vector VectorValues::vector() const {
     // Count dimensions
     DenseIndex totalDim = 0;
-    for(const Vector& v: *this | map_values)
-      totalDim += v.size();
+    for (const Vector& v : *this | map_values) totalDim += v.size();
 
     // Copy vectors
     Vector result(totalDim);
     DenseIndex pos = 0;
-    for(const Vector& v: *this | map_values) {
+    for (const Vector& v : *this | map_values) {
       result.segment(pos, v.size()) = v;
       pos += v.size();
     }
