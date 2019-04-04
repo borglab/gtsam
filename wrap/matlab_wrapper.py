@@ -103,8 +103,23 @@ class MatlabWrapper(object):
         return arg_text + ')'
 
     def _return_count(self, return_type):
-        """ The amount of objects returned by the given ReturnType """
+        """ The amount of objects returned by the given ReturnType
+
+        Keyword arguments:
+        return_type -- the interface_parser.ReturnType being checked
+        """
         return 1 if str(return_type.type2) == '' else 2
+
+    def class_serialize_comment(self, class_name):
+        """ Generate comments for serialize methods """
+        return '%-------Static Methods-------\n'\
+            '%StaticFunctionRet(double z) : returns {class_name}\n'\
+            '%staticFunction() : returns double\n'\
+            '%\n'\
+            '%-------Serialization Interface-------\n'\
+            '%string_serialize() : returns string\n'\
+            '%string_deserialize(string serialized) : returns {class_name}'\
+            '\n%\n'.format(class_name=class_name)
 
     def class_comment(self, class_name, ctors, methods):
         """ Generate comments for the given class in Matlab.
@@ -114,6 +129,8 @@ class MatlabWrapper(object):
         ctors -- a list of the constructors in the class
         methods -- a list of the methods in the class
         """
+        serialize = False
+
         comment = '%class {class_name}, see Doxygen page for details\n'\
             '%at http://research.cc.gatech.edu/borg/sites/edu.borg/html/'\
             'index.html\n'.format(class_name=class_name)
@@ -142,8 +159,13 @@ class MatlabWrapper(object):
 
         # Write methods
         for method in methods:
-            # TODO: Remove this after figuring out how to handle these methods
+            # TODO: Figure out how to handle these methods
             if method.name in self.whitelist:
+                continue
+
+            if method.name == 'serialize':
+                serialize = True
+
                 continue
 
             comment += '%{name}('.format(name=method.name)
@@ -171,7 +193,8 @@ class MatlabWrapper(object):
 
         comment += '%\n'
 
-        # TODO: Support more method types
+        if serialize:
+            comment += self.class_serialize_comment(class_name)
 
         return comment
 
