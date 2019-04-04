@@ -28,6 +28,7 @@ class MatlabWrapper(object):
     # The amount of times the wrapper has created a call to geometry_wrapper
     wrapper_count = 0
 
+    """ Files and their content """
     content = []
 
     def __init__(self, module, module_name, top_module_namespace='',
@@ -94,12 +95,16 @@ class MatlabWrapper(object):
 
         for i, arg in enumerate(args.args_list):
             arg_text += '{c_type} {arg_name}'.format(
-                c_type=arg.ctype, arg_name=arg.name)
+                c_type=arg.ctype.typename, arg_name=arg.name)
 
             if i + 1 != len(args.args_list):
                 arg_text += ', '
 
         return arg_text + ')'
+
+    def _return_count(self, return_type):
+        """ The amount of objects returned by the given ReturnType """
+        return 1 if str(return_type.type2) == '' else 2
 
     def class_comment(self, class_name, ctors, methods):
         """ Generate comments for the given class in Matlab.
@@ -351,16 +356,27 @@ class MatlabWrapper(object):
                         caps_name=method.name.upper(),
                         method_name=method.name)
 
+                if self._return_count(method.return_type) == 1:
+                    return_type = method.return_type.type1.typename.name
+
+                    if method.return_type.type1.typename.name == 'void':
+                        varargout = ''
+                    else:
+                        varargout = 'varargout{1} = '
+                else:
+                    return_type = 'pair< {type1}, {type2} >'.format(
+                        type1=method.return_type.type1.typename.name,
+                        type2=method.return_type.type2.typename.name)
+                    varargout = '[ varargout{1} varargout{2} ] = '
+
                 method_text += '{method_args} : returns {return_type}\n'\
-                    '  % Doxygen can be found at http://research.cc.gatech.edu/'\
-                    'borg/sites/edu.borg/html/index.html\n'\
+                    '  % Doxygen can be found at http://research.cc.gatech'\
+                    '.edu/borg/sites/edu.borg/html/index.html\n'\
                     '  {varargout}geometry_wrapper({num}, this, '\
                     'varargin{l}:{r});\n'.format(
                         method_args=self._wrap_args(method.args),
-                        return_type=method.return_type.type1.typename.name
-                        .strip(), num=self.wrapper_count, varargout=''
-                        if method.return_type.type1.typename.name == 'void'
-                        else 'varargout{1} = ', l='{', r='}')
+                        return_type=return_type.strip(), l='{', r='}',
+                        num=self.wrapper_count, varargout=varargout)
 
                 method_text += 'end\n\n'
 
