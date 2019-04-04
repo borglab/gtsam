@@ -31,12 +31,12 @@ using namespace std;
 namespace gtsam {
 
 /**************************************************************************************************/
-SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &gfg,
+// Just taking system [A|b]
+SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab,
     const Parameters &parameters, const Ordering& ordering) :
     parameters_(parameters) {
-  
   GaussianFactorGraph::shared_ptr Ab1,Ab2;
-  boost::tie(Ab1, Ab2) = splitGraph(gfg);
+  boost::tie(Ab1, Ab2) = splitGraph(Ab);
   if (parameters_.verbosity())
     cout << "Split A into (A1) " << Ab1->size() << " and (A2) " << Ab2->size()
          << " factors" << endl;
@@ -46,12 +46,8 @@ SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &gfg,
   pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
-// delegate up
-SubgraphSolver::SubgraphSolver(const GaussianFactorGraph::shared_ptr &factorGraph,
-    const Parameters &parameters, const Ordering& ordering) :
-    SubgraphSolver(*factorGraph, parameters, ordering) {}
-
 /**************************************************************************************************/
+// Taking eliminated tree [R1|c] and constraint graph [A2|b2]
 SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1,
                                const GaussianFactorGraph::shared_ptr &Ab2,
                                const Parameters &parameters)
@@ -60,40 +56,38 @@ SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1,
   pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
+/**************************************************************************************************/
+// Taking subgraphs [A1|b1] and [A2|b2]
 // delegate up
+SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab1,
+                               const GaussianFactorGraph::shared_ptr &Ab2,
+                               const Parameters &parameters,
+                               const Ordering &ordering)
+    : SubgraphSolver(Ab1.eliminateSequential(ordering, EliminateQR), Ab2,
+                     parameters) {}
+
+/**************************************************************************************************/
+// deprecated variants
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1,
                                const GaussianFactorGraph &Ab2,
                                const Parameters &parameters)
     : SubgraphSolver(Rc1, boost::make_shared<GaussianFactorGraph>(Ab2),
-                     parameters_) {}
+                     parameters) {}
 
-// delegate up
 SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab1,
                                const GaussianFactorGraph &Ab2,
                                const Parameters &parameters,
                                const Ordering &ordering)
-    : SubgraphSolver(Ab1.eliminateSequential(ordering, EliminateQR),
-                     boost::make_shared<GaussianFactorGraph>(Ab2),
-                     parameters_) {}
-
-// delegate up
-SubgraphSolver::SubgraphSolver(const GaussianFactorGraph::shared_ptr &Ab1,
-                               const GaussianFactorGraph::shared_ptr &Ab2,
-                               const Parameters &parameters,
-                               const Ordering &ordering)
-    : SubgraphSolver(Ab1->eliminateSequential(ordering, EliminateQR), Ab2,
-                     parameters) {}
+    : SubgraphSolver(Ab1, boost::make_shared<GaussianFactorGraph>(Ab2),
+                     parameters, ordering) {}
+#endif
 
 /**************************************************************************************************/
-VectorValues SubgraphSolver::optimize() {
+VectorValues SubgraphSolver::optimize() const {
   VectorValues ybar = conjugateGradients<SubgraphPreconditioner, VectorValues,
       Errors>(*pc_, pc_->zero(), parameters_);
   return pc_->x(ybar);
-}
-
-VectorValues SubgraphSolver::optimize(const VectorValues &initial) {
-  // the initial is ignored in this case ...
-  return optimize();
 }
 
 VectorValues SubgraphSolver::optimize(const GaussianFactorGraph &gfg,
