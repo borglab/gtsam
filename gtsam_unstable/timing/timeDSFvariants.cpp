@@ -18,7 +18,7 @@
 
 #include <gtsam/base/DSFVector.h>
 #include <gtsam_unstable/base/DSF.h>
-#include <gtsam_unstable/base/DSFMap.h>
+#include <gtsam/base/DSFMap.h>
 
 #include <boost/random.hpp>
 #include <boost/timer.hpp>

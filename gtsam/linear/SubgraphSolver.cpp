@@ -22,7 +22,7 @@
 #include <gtsam/linear/iterative-inl.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
-#include <gtsam_unstable/base/DSFMap.h>
+#include <gtsam/base/DSFMap.h>
 
 #include <iostream>
 
