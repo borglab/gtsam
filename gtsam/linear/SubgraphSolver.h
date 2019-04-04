@@ -75,7 +75,11 @@ protected:
 
 public:
 
-  /// Given a gaussian factor graph, split it into a spanning tree (A1) + others (A2) for SPCG
+  /**
+   * Given a gaussian factor graph, split it into a spanning tree (A1) + others (A2) for SPCG
+   * Will throw exception if there are ternary factors or higher arity, as we use Kruskal's
+   * algorithm to split the graph, treating binary factors as edges.
+   */
   SubgraphSolver(const GaussianFactorGraph &A, const Parameters &parameters,
       const Ordering& ordering);
 

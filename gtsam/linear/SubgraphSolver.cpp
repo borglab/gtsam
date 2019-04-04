@@ -22,7 +22,9 @@
 #include <gtsam/linear/iterative-inl.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
-#include <gtsam/base/DSFVector.h>
+#include <gtsam_unstable/base/DSFMap.h>
+
+#include <iostream>
 
 using namespace std;
 
@@ -120,45 +122,44 @@ void SubgraphSolver::initialize(const GaussianBayesNet::shared_ptr &Rc1,
 }
 
 /**************************************************************************************************/
+// Run Kruskal algorithm to create a spanning tree of factor "edges".
+// Edges are not weighted, and will only work if factors are binary.
+// Unary factors are ignored for this purpose and added to tree graph.
 boost::tuple<GaussianFactorGraph::shared_ptr, GaussianFactorGraph::shared_ptr> //
-SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
+SubgraphSolver::splitGraph(const GaussianFactorGraph &factorGraph) {
 
-  const VariableIndex index(jfg);
-  const size_t n = index.size();
-  DSFVector D(n);
+  // Create disjoint set forest data structure for Kruskal algorithm
+  DSFMap<Key> dsf;
 
-  GaussianFactorGraph::shared_ptr At(new GaussianFactorGraph());
-  GaussianFactorGraph::shared_ptr Ac(new GaussianFactorGraph());
+  // Allocate two output graphs
+  auto tree = boost::make_shared<GaussianFactorGraph>();
+  auto constraints = boost::make_shared<GaussianFactorGraph>();
 
-  size_t t = 0;
-  for ( const GaussianFactor::shared_ptr &gf: jfg ) {
+  // Loop over all "edges"
+  for ( const auto &factor: factorGraph ) {
 
-    if (gf->keys().size() > 2) {
+    // Fail on > binary factors
+    const auto& keys = factor->keys();
+    if (keys.size() > 2) {
       throw runtime_error(
           "SubgraphSolver::splitGraph the graph is not simple, sanity check failed ");
     }
 
-    bool augment = false;
-
-    /* check whether this factor should be augmented to the "tree" graph */
-    if (gf->keys().size() == 1)
-      augment = true;
-    else {
-      const Key u = gf->keys()[0], v = gf->keys()[1], u_root = D.find(u),
-          v_root = D.find(v);
-      if (u_root != v_root) {
-        t++;
-        augment = true;
-        D.merge(u_root, v_root);
-      }
+    // check whether this factor should be augmented to the "tree" graph
+    if (keys.size() == 1)
+      tree->push_back(factor);
+    else if (dsf.find(keys[0]) != dsf.find(keys[1])) {
+      // We merge two trees joined by this edge if they are still disjoint
+      tree->push_back(factor);
+      // Record this fact in DSF
+      dsf.merge(keys[0], keys[1]);
+    } else {
+      // This factor would create a loop, so we add it to non-tree edges...
+      constraints->push_back(factor);
     }
-    if (augment)
-      At->push_back(gf);
-    else
-      Ac->push_back(gf);
   }
 
-  return boost::tie(At, Ac);
+  return boost::tie(tree, constraints);
 }
 
 /****************************************************************************/
