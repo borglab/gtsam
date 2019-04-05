@@ -285,15 +285,18 @@ namespace gtsam {
     /*****************************************************************************/
     /* implement virtual functions of Preconditioner */
 
-    /* Computation Interfaces for Vector */
-    virtual void solve(const Vector& y, Vector &x) const;
-    virtual void transposeSolve(const Vector& y, Vector& x) const ;
+    /// implement x = R^{-1} y
+    void solve(const Vector& y, Vector &x) const override;
 
-    virtual void build(
+    /// implement x = R^{-T} y
+    void transposeSolve(const Vector& y, Vector& x) const override;
+
+    /// build/factorize the preconditioner
+    void build(
       const GaussianFactorGraph &gfg,
       const KeyInfo &info,
       const std::map<Key,Vector> &lambda
-      ) ;
+      ) override;
     /*****************************************************************************/
   };
 
@@ -310,9 +313,9 @@ namespace gtsam {
 
 
   /* sort the container and return permutation index with default comparator */
-   template <typename Container>
-   std::vector<size_t> sort_idx(const Container &src)
-   {
+  template <typename Container>
+  std::vector<size_t> sort_idx(const Container &src)
+  {
      typedef typename Container::value_type T;
      const size_t n = src.size() ;
      std::vector<std::pair<size_t,T> > tmp;
@@ -329,6 +332,6 @@ namespace gtsam {
        idx.push_back(tmp[i].first) ;
      }
      return idx;
-   }
+  }
 
 } // namespace gtsam

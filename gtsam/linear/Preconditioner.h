@@ -70,21 +70,20 @@ public:
   Preconditioner() {}
   virtual ~Preconditioner() {}
 
-  /* Computation Interfaces */
+  /* 
+  * Abstract interface for raw vectors. VectorValues is a speed bottleneck
+  * and Yong-Dian has profiled preconditioners (outside GTSAM) with the the
+  * three methods below. In GTSAM, unfortunately, we are still using the
+  * VectorValues methods called in iterative-inl.h
+  */
 
-  /* implement x = L^{-1} y */
+  /// implement x = L^{-1} y
   virtual void solve(const Vector& y, Vector &x) const = 0;
-//  virtual void solve(const VectorValues& y, VectorValues &x) const = 0;
 
-  /* implement x = L^{-T} y */
+  /// implement x = L^{-T} y
   virtual void transposeSolve(const Vector& y, Vector& x) const = 0;
-//  virtual void transposeSolve(const VectorValues& y, VectorValues &x) const = 0;
 
-//  /* implement x = L^{-1} L^{-T} y */
-//  virtual void fullSolve(const Vector& y, Vector &x) const = 0;
-//  virtual void fullSolve(const VectorValues& y, VectorValues &x) const = 0;
-
-  /* build/factorize the preconditioner */
+  /// build/factorize the preconditioner
   virtual void build(
     const GaussianFactorGraph &gfg,
     const KeyInfo &info,
@@ -113,14 +112,7 @@ public:
 
   /* Computation Interfaces for raw vector */
   virtual void solve(const Vector& y, Vector &x) const { x = y; }
-//  virtual void solve(const VectorValues& y, VectorValues& x) const { x = y; }
-
   virtual void transposeSolve(const Vector& y, Vector& x) const { x = y; }
-//  virtual void transposeSolve(const VectorValues& y, VectorValues& x) const { x = y; }
-
-//  virtual void fullSolve(const Vector& y, Vector &x) const { x = y; }
-//  virtual void fullSolve(const VectorValues& y, VectorValues& x) const { x = y; }
-
   virtual void build(
     const GaussianFactorGraph &gfg,
     const KeyInfo &info,
@@ -145,8 +137,6 @@ public:
   /* Computation Interfaces for raw vector */
   virtual void solve(const Vector& y, Vector &x) const;
   virtual void transposeSolve(const Vector& y, Vector& x) const ;
-//  virtual void fullSolve(const Vector& y, Vector &x) const ;
-
   virtual void build(
     const GaussianFactorGraph &gfg,
     const KeyInfo &info,
