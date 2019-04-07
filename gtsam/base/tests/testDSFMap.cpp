@@ -16,7 +16,7 @@
  * @brief unit tests for DSFMap
  */
 
-#include <gtsam_unstable/base/DSFMap.h>
+#include <gtsam/base/DSFMap.h>
 
 #include <boost/assign/std/list.hpp>
 #include <boost/assign/std/set.hpp>
@@ -115,7 +115,6 @@ TEST(DSFMap, mergePairwiseMatches2) {
 TEST(DSFMap, sets){
   // Create some "matches"
   typedef pair<size_t,size_t> Match;
-  typedef pair<size_t, set<size_t> > key_pair;
   list<Match> matches;
   matches += Match(1,2), Match(2,3), Match(4,5), Match(4,6);
 
