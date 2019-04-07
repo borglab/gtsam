@@ -61,17 +61,11 @@ class TestWrap(unittest.TestCase):
             self.MATLAB_ACTUAL_DIR + 'Point3.m',
             self.MATLAB_TEST_DIR + 'Point3.m'))
         self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'aGlobalFunction.m',
-            self.MATLAB_TEST_DIR + 'aGlobalFunction.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'overloadedGlobalFunction.m',
-            self.MATLAB_TEST_DIR + 'overloadedGlobalFunction.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'MyBase.m',
-            self.MATLAB_TEST_DIR + 'MyBase.m'))
+            self.MATLAB_ACTUAL_DIR + 'Test.m',
+            self.MATLAB_TEST_DIR + 'Test.m'))
         self.assertTrue(filecmp.cmp(
             self.MATLAB_ACTUAL_DIR + 'MyFactorPosePoint2.m',
-            self.MATLAB_TEST_DIR + 'MyFactorPose2.m'))
+            self.MATLAB_TEST_DIR + 'MyFactorPosePoint2.m'))
         self.assertTrue(filecmp.cmp(
             self.MATLAB_ACTUAL_DIR + 'MyTemplateMatrix.m',
             self.MATLAB_TEST_DIR + 'MyTemplateMatrix.m'))
@@ -79,8 +73,14 @@ class TestWrap(unittest.TestCase):
             self.MATLAB_ACTUAL_DIR + 'MyTemplatePoint2.m',
             self.MATLAB_TEST_DIR + 'MyTemplatePoint2.m'))
         self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'Test.m',
-            self.MATLAB_TEST_DIR + 'Test.m'))
+            self.MATLAB_ACTUAL_DIR + 'MyBase.m',
+            self.MATLAB_TEST_DIR + 'MyBase.m'))
+        self.assertTrue(filecmp.cmp(
+            self.MATLAB_ACTUAL_DIR + 'aGlobalFunction.m',
+            self.MATLAB_TEST_DIR + 'aGlobalFunction.m'))
+        self.assertTrue(filecmp.cmp(
+            self.MATLAB_ACTUAL_DIR + 'overloadedGlobalFunction.m',
+            self.MATLAB_TEST_DIR + 'overloadedGlobalFunction.m'))
 
 if __name__ == '__main__':
     unittest.main()
