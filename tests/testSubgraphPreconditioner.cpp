@@ -219,19 +219,19 @@ TEST( SubgraphPreconditioner, RawVectorAPI )
   KeyInfo keyInfo(Ab);
   std::map<Key,Vector> lambda;
   system.build(Ab, keyInfo, lambda);
-  const auto ordering = system.Rc1()->ordering(); // build changed R1 !
+  const auto ordering = keyInfo.ordering(); // build changed R1 !
   const Matrix R1 = system.Rc1()->matrix(ordering).first;
 
   // Test that 'solve' does implement x = R^{-1} y
-  Vector y2 = Vector::Zero(18), x2(18), x3(18);
-  y2.head(2) << 100, -100;
-  system.solve(y2, x2);
-  EXPECT(assert_equal(R1.inverse() * y2, x2));
+  Vector vector_y = Vector::Zero(18), solve_x(18), solveT_x(18);
+  vector_y.head(2) << 100, -100;
+  system.solve(vector_y, solve_x);
+  EXPECT(assert_equal(R1.inverse() * vector_y, solve_x));
 
   // I can't get test below to pass!
   // Test that transposeSolve does implement x = R^{-T} y
-  // system.transposeSolve(y2, x3);
-  // EXPECT(assert_equal(R1.transpose().inverse() * y2, x3));
+  system.transposeSolve(vector_y, solveT_x);
+  EXPECT(assert_equal(R1.transpose().inverse() * vector_y, solveT_x));
 }
 
 /* ************************************************************************* */
@@ -257,23 +257,35 @@ TEST( SubgraphSolver, toy3D )
   system.build(Ab, keyInfo, lambda);
 
   // Solve the VectorValues way
-  const VectorValues xbar = system.Rc1()->optimize(); // merely for use in zero below
-  auto y = VectorValues::Zero(xbar);
-  y[12] = Vector3(100,200,-300);
-  auto values_x = system.Rc1()->backSubstitute(y);
+  const auto xbar = system.Rc1()->optimize();  // merely for use in zero below
+  auto values_y = VectorValues::Zero(xbar);
+  const size_t n = values_y.size();
+  values_y[0] = Vector3(100, 200, -300);
+  values_y[n - 1] = Vector3(10, 20, -100);
+  auto values_x = system.Rc1()->backSubstitute(values_y);
+
+  // Check YD's sub-vector machinery
+  const auto ordering = keyInfo.ordering();
+  auto vector_y = values_y.vector(ordering);
+  for (size_t j = 0; j < n; j++) {
+    EXPECT(assert_equal(values_y[j], getSubvector(vector_y, keyInfo, {j})));
+  }
 
   // Solve the matrix way, this really just checks BN::backSubstitute
-  const auto ordering = system.Rc1()->ordering();
   const Matrix R1 = system.Rc1()->matrix(ordering).first;
-  auto y2 = y.vector(ordering);
-  auto matrix_x = R1.inverse() * y2;
-  EXPECT(assert_equal(matrix_x, values_x.vector(ordering)));
+  auto vector_x = R1.inverse() * vector_y;
+  EXPECT(assert_equal(vector_x, values_x.vector(ordering)));
 
   // Test that 'solve' does implement x = R^{-1} y
   const size_t N = R1.cols();
+  EXPECT_LONGS_EQUAL(n * 3, N);
   Vector solve_x = Vector::Zero(N);
-  system.solve(y2, solve_x);
-  EXPECT(assert_equal(solve_x, matrix_x));
+  system.solve(vector_y, solve_x);
+  EXPECT(assert_equal(vector_x, solve_x));
+  for (size_t j = 0; j < n; j++) {
+    cout << j << endl;
+    EXPECT(assert_equal(values_x[j], getSubvector(vector_x, keyInfo, {j}), 1e-3));
+  }
 }
 
 /* ************************************************************************* */
