@@ -15,20 +15,28 @@
  *  @author Frank Dellaert
  **/
 
-#include <CppUnitLite/TestHarness.h>
 
 #include <tests/smallExample.h>
-#include <gtsam/inference/Symbol.h>
+
+#include <gtsam/slam/dataset.h>
 #include <gtsam/linear/iterative.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
+#include <gtsam/symbolic/SymbolicFactorGraph.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/tuple/tuple.hpp>
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/archive/xml_iarchive.hpp>
 #include <boost/assign/std/list.hpp>
+#include <boost/serialization/export.hpp>
+#include <boost/tuple/tuple.hpp>
 using namespace boost::assign;
+
+#include <fstream>
 
 using namespace std;
 using namespace gtsam;
@@ -139,14 +147,11 @@ TEST( SubgraphPreconditioner, system )
   // we eliminated the spanning tree.
   auto vec = [ordering](const VectorValues& x) { return x.vector(ordering);};
 
-  // Create zero config
-  const VectorValues zeros = VectorValues::Zero(xbar);
-
   // Set up y0 as all zeros
-  const VectorValues y0 = zeros;
+  const VectorValues y0 = system.zero();
 
   // y1 = perturbed y0
-  VectorValues y1 = zeros;
+  VectorValues y1 = system.zero();
   y1[key(3,3)] = Vector2(1.0, -1.0);
 
   // Check backSubstituteTranspose works with R1
@@ -181,13 +186,13 @@ TEST( SubgraphPreconditioner, system )
   ee2 << Vector::Zero(9*2), Vector::Ones(4*2);
 
   // Check transposeMultiplyAdd for e1
-  VectorValues y = zeros;
+  VectorValues y = system.zero();
   system.transposeMultiplyAdd(alpha, e1, y);
   Vector expected_y = alpha * Abar.transpose() * ee1;
   EXPECT(assert_equal(expected_y, vec(y)));
 
   // Check transposeMultiplyAdd for e2
-  y = zeros;
+  y = system.zero();
   system.transposeMultiplyAdd(alpha, e2, y);
   expected_y = alpha * Abar.transpose() * ee2;
   EXPECT(assert_equal(expected_y, vec(y)));
@@ -214,9 +219,8 @@ TEST( SubgraphPreconditioner, RawVectorAPI )
   KeyInfo keyInfo(Ab);
   std::map<Key,Vector> lambda;
   system.build(Ab, keyInfo, lambda);
-  const auto ordering1 = system.Rc1()->ordering(); // build changed R1 !
-  const auto ordering2 = keyInfo.ordering();
-  const Matrix R1 = system.Rc1()->matrix(ordering1).first;
+  const auto ordering = system.Rc1()->ordering(); // build changed R1 !
+  const Matrix R1 = system.Rc1()->matrix(ordering).first;
 
   // Test that 'solve' does implement x = R^{-1} y
   Vector y2 = Vector::Zero(18), x2(18), x3(18);
@@ -228,6 +232,48 @@ TEST( SubgraphPreconditioner, RawVectorAPI )
   // Test that transposeSolve does implement x = R^{-T} y
   // system.transposeSolve(y2, x3);
   // EXPECT(assert_equal(R1.transpose().inverse() * y2, x3));
+}
+
+/* ************************************************************************* */
+BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "JacobianFactor");
+
+TEST( SubgraphSolver, toy3D )
+{
+  // Read from file
+  string inputFile = findExampleDataFile("randomGrid3D");
+  ifstream is(inputFile);
+  if (!is.is_open())
+    throw runtime_error("Cannot find file " + inputFile);
+  boost::archive::xml_iarchive in_archive(is);
+  GaussianFactorGraph Ab;
+  in_archive >> boost::serialization::make_nvp("graph", Ab);
+
+  // Create solver, leaving splitting to constructor
+  SubgraphPreconditioner system;
+  
+  // Call build, a non-const method needed to make solve work :-(
+  KeyInfo keyInfo(Ab);
+  std::map<Key,Vector> lambda;
+  system.build(Ab, keyInfo, lambda);
+
+  // Solve the VectorValues way
+  const VectorValues xbar = system.Rc1()->optimize(); // merely for use in zero below
+  auto y = VectorValues::Zero(xbar);
+  y[12] = Vector3(100,200,-300);
+  auto values_x = system.Rc1()->backSubstitute(y);
+
+  // Solve the matrix way, this really just checks BN::backSubstitute
+  const auto ordering = system.Rc1()->ordering();
+  const Matrix R1 = system.Rc1()->matrix(ordering).first;
+  auto y2 = y.vector(ordering);
+  auto matrix_x = R1.inverse() * y2;
+  EXPECT(assert_equal(matrix_x, values_x.vector(ordering)));
+
+  // Test that 'solve' does implement x = R^{-1} y
+  const size_t N = R1.cols();
+  Vector solve_x = Vector::Zero(N);
+  system.solve(y2, solve_x);
+  EXPECT(assert_equal(solve_x, matrix_x));
 }
 
 /* ************************************************************************* */
