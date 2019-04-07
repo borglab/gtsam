@@ -164,9 +164,10 @@ boost::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
             n += vardim;
           } else {
             if(!(varDims[jointVarpos] == vardim)) {
-              cout << "Factor " << sourceFactorI << " variable " << DefaultKeyFormatter(sourceFactor.keys()[sourceVarpos]) <<
-              " has different dimensionality of " << vardim << " instead of " << varDims[jointVarpos] << endl;
-              exit(1);
+              std::stringstream ss;
+              ss << "Factor " << sourceFactorI << " variable " << DefaultKeyFormatter(sourceFactor.keys()[sourceVarpos]) <<
+              " has different dimensionality of " << vardim << " instead of " << varDims[jointVarpos];
+              throw std::runtime_error(ss.str());
             }
           }
 #else
