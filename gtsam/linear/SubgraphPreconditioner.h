@@ -129,11 +129,11 @@ namespace gtsam {
 
     enum AugmentationWeight {   /* how to weigh the graph edges */
       SKELETON = 0,             /* use the same weights in building the skeleton */
-//      STRETCH,                  /* stretch in the laplacian sense */
-//      GENERALIZED_STRETCH       /* the generalized stretch defined in jian2013iros */
+//      STRETCH,                /* stretch in the laplacian sense */
+//      GENERALIZED_STRETCH     /* the generalized stretch defined in jian2013iros */
     } augmentationWeight_ ;
 
-    double complexity_;
+    double complexity_; /* factor multiplied with n, yields number of extra edges. */
 
     SubgraphBuilderParameters()
       : skeleton_(KRUSKAL), skeletonWeight_(RANDOM), augmentationWeight_(SKELETON), complexity_(1.0) {}
@@ -145,7 +145,7 @@ namespace gtsam {
     friend std::ostream& operator<<(std::ostream &os, const PreconditionerParameters &p);
 
     static Skeleton skeletonTranslator(const std::string &s);
-    static std::string skeletonTranslator(Skeleton w);
+    static std::string skeletonTranslator(Skeleton s);
     static SkeletonWeight skeletonWeightTranslator(const std::string &s);
     static std::string skeletonWeightTranslator(SkeletonWeight w);
     static AugmentationWeight augmentationWeightTranslator(const std::string &s);
@@ -170,7 +170,7 @@ namespace gtsam {
     std::vector<size_t> unary(const GaussianFactorGraph &gfg) const ;
     std::vector<size_t> natural_chain(const GaussianFactorGraph &gfg) const ;
     std::vector<size_t> bfs(const GaussianFactorGraph &gfg) const ;
-    std::vector<size_t> kruskal(const GaussianFactorGraph &gfg, const FastMap<Key, size_t> &ordering, const std::vector<double> &w) const ;
+    std::vector<size_t> kruskal(const GaussianFactorGraph &gfg, const FastMap<Key, size_t> &ordering, const std::vector<double> &weights) const ;
     std::vector<size_t> sample(const std::vector<double> &weights, const size_t t) const ;
     Weights weights(const GaussianFactorGraph &gfg) const;
     SubgraphBuilderParameters parameters_;

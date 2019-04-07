@@ -78,16 +78,19 @@ static vector<size_t> iidSampler(const vector<double> &weight, const size_t n) {
 
   /* compute the sum of the weights */
   const double sum = std::accumulate(weight.begin(), weight.end(), 0.0);
+  if (sum==0.0) {
+    throw std::runtime_error("Weight vector has no non-zero weights");
+  }
 
   /* make a normalized and accumulated version of the weight vector */
   const size_t m = weight.size();
-  vector<double> w; w.reserve(m);
+  vector<double> cdf; cdf.reserve(m);
   for ( size_t i = 0 ; i < m ; ++i ) {
-    w.push_back(weight[i]/sum);
+    cdf.push_back(weight[i]/sum);
   }
 
   vector<double> acc(m);
-  std::partial_sum(w.begin(),w.end(),acc.begin());
+  std::partial_sum(cdf.begin(),cdf.end(),acc.begin());
 
   /* iid sample n times */
   vector<size_t> result; result.reserve(n);
@@ -95,18 +98,18 @@ static vector<size_t> iidSampler(const vector<double> &weight, const size_t n) {
   for ( size_t i = 0 ; i < n ; ++i ) {
     const double value = rand() / denominator;
     /* binary search the interval containing "value" */
-    vector<double>::iterator it = std::lower_bound(acc.begin(), acc.end(), value);
-    size_t idx = it - acc.begin();
+    const auto it = std::lower_bound(acc.begin(), acc.end(), value);
+    const size_t idx = it - acc.begin();
     result.push_back(idx);
   }
   return result;
 }
 
 /*****************************************************************************/
-vector<size_t> uniqueSampler(const vector<double> &weight, const size_t n) {
+static vector<size_t> UniqueSampler(const vector<double> &weight, const size_t n) {
 
   const size_t m = weight.size();
-  if ( n > m ) throw std::invalid_argument("uniqueSampler: invalid input size");
+  if ( n > m ) throw std::invalid_argument("UniqueSampler: invalid input size");
 
   vector<size_t> result;
 
@@ -221,11 +224,11 @@ SubgraphBuilderParameters::Skeleton SubgraphBuilderParameters::skeletonTranslato
 }
 
 /****************************************************************/
-std::string SubgraphBuilderParameters::skeletonTranslator(Skeleton w) {
-  if ( w == NATURALCHAIN )return "NATURALCHAIN";
-  else if ( w == BFS )    return "BFS";
-  else if ( w == KRUSKAL )return "KRUSKAL";
-  else                    return "UNKNOWN";
+std::string SubgraphBuilderParameters::skeletonTranslator(Skeleton s) {
+  if ( s == NATURALCHAIN ) return "NATURALCHAIN";
+  else if ( s == BFS )     return "BFS";
+  else if ( s == KRUSKAL ) return "KRUSKAL";
+  else                     return "UNKNOWN";
 }
 
 /****************************************************************/
@@ -271,7 +274,7 @@ std::string SubgraphBuilderParameters::augmentationWeightTranslator(Augmentation
 /****************************************************************/
 vector<size_t> SubgraphBuilder::buildTree(const GaussianFactorGraph &gfg,
                                           const FastMap<Key, size_t> &ordering,
-                                          const vector<double> &w) const {
+                                          const vector<double> &weights) const {
   const SubgraphBuilderParameters &p = parameters_;
   switch (p.skeleton_) {
   case SubgraphBuilderParameters::NATURALCHAIN:
@@ -281,7 +284,7 @@ vector<size_t> SubgraphBuilder::buildTree(const GaussianFactorGraph &gfg,
     return bfs(gfg);
     break;
   case SubgraphBuilderParameters::KRUSKAL:
-    return kruskal(gfg, ordering, w);
+    return kruskal(gfg, ordering, weights);
     break;
   default:
     std::cerr << "SubgraphBuilder::buildTree undefined skeleton type" << endl;
@@ -357,10 +360,10 @@ vector<size_t> SubgraphBuilder::bfs(const GaussianFactorGraph &gfg) const {
 /****************************************************************/
 vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
                                         const FastMap<Key, size_t> &ordering,
-                                        const vector<double> &w) const {
+                                        const vector<double> &weights) const {
   const VariableIndex variableIndex(gfg);
   const size_t n = variableIndex.size();
-  const vector<size_t> idx = sort_idx(w) ;
+  const vector<size_t> idx = sort_idx(weights) ;
 
   /* initialize buffer */
   vector<size_t> result;
@@ -379,7 +382,7 @@ vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
     if ( dsf.find(u) != dsf.find(v) ) {
       dsf.merge(u, v) ;
       result.push_back(id) ;
-      sum += w[id] ;
+      sum += weights[id] ;
       if ( ++count == n-1 ) break ;
     }
   }
@@ -388,14 +391,14 @@ vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
 
 /****************************************************************/
 vector<size_t> SubgraphBuilder::sample(const vector<double> &weights, const size_t t) const {
-  return uniqueSampler(weights, t);
+  return UniqueSampler(weights, t);
 }
 
 /****************************************************************/
 Subgraph::shared_ptr SubgraphBuilder::operator() (const GaussianFactorGraph &gfg) const {
 
-  const SubgraphBuilderParameters &p = parameters_;
-  const Ordering inverse_ordering = Ordering::Natural(gfg);
+  const auto &p = parameters_;
+  const auto inverse_ordering = Ordering::Natural(gfg);
   const FastMap<Key, size_t> forward_ordering = inverse_ordering.invert();
   const size_t n = inverse_ordering.size(), m = gfg.size();
 
@@ -411,7 +414,7 @@ Subgraph::shared_ptr SubgraphBuilder::operator() (const GaussianFactorGraph &gfg
   // Build spanning tree.
   const vector<size_t> tree = buildTree(gfg, forward_ordering, weights);
   if ( tree.size() != n-1 ) {
-    throw std::runtime_error("SubgraphBuilder::operator() tree.size() != n-1 failed ");
+    throw std::runtime_error("SubgraphBuilder::operator() failure: tree.size() != n-1");
   }
 
   // Downweight the tree edges to zero.
