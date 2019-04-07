@@ -133,7 +133,7 @@ TEST( SubgraphPreconditioner, system )
   Matrix R1 = Rc1->matrix(ordering).first;
   Matrix Abar(13 * 2, 9 * 2);
   Abar.topRows(9 * 2) = Matrix::Identity(9 * 2, 9 * 2);
-  Abar.bottomRows(4 * 2) = A2 * R1.inverse();
+  Abar.bottomRows(8) = A2.topRows(8) * R1.inverse();
 
   // Helper function to vectorize in correct order, which is the order in which
   // we eliminated the spanning tree.
