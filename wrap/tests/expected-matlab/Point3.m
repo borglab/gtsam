@@ -77,7 +77,7 @@ classdef Point3 < handle
     end
 
     function varargout = StaticFunction(varargin)
-      % STATICFUNCTION usage: staticFunction() : returns double
+      % STATICFUNCTION usage: StaticFunction() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
       % 
       % Usage
