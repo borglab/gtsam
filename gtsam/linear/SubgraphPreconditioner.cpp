@@ -397,23 +397,30 @@ Subgraph::shared_ptr SubgraphBuilder::operator() (const GaussianFactorGraph &gfg
   const SubgraphBuilderParameters &p = parameters_;
   const Ordering inverse_ordering = Ordering::Natural(gfg);
   const FastMap<Key, size_t> forward_ordering = inverse_ordering.invert();
-  const size_t n = inverse_ordering.size(), t = n * p.complexity_ ;
+  const size_t n = inverse_ordering.size(), m = gfg.size();
 
-  vector<double> w = weights(gfg);
-  const vector<size_t> tree = buildTree(gfg, forward_ordering, w);
+  // Make sure the subgraph preconditioner does not include more than half of
+  // the edges beyond the spanning tree, or we might as well solve the whole thing.
+  size_t numExtraEdges = n * p.complexity_;
+  const size_t numRemaining = m - (n - 1);
+  numExtraEdges = std::min(numExtraEdges, numRemaining/2);
 
-  /* sanity check */
+  // Calculate weights 
+  vector<double> weights = this->weights(gfg);
+
+  // Build spanning tree.
+  const vector<size_t> tree = buildTree(gfg, forward_ordering, weights);
   if ( tree.size() != n-1 ) {
     throw std::runtime_error("SubgraphBuilder::operator() tree.size() != n-1 failed ");
   }
 
-  /* down weight the tree edges to zero */
+  // Downweight the tree edges to zero.
   for ( const size_t id: tree ) {
-    w[id] = 0.0;
+    weights[id] = 0.0;
   }
 
   /* decide how many edges to augment */
-  vector<size_t> offTree = sample(w, t);
+  vector<size_t> offTree = sample(weights, numExtraEdges);
 
   vector<size_t> subgraph = unary(gfg);
   subgraph.insert(subgraph.end(), tree.begin(), tree.end());
