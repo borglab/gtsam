@@ -30,6 +30,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/range/adaptor/reversed.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/assign/std/list.hpp>
 #include <boost/serialization/export.hpp>
@@ -204,87 +205,70 @@ TEST( SubgraphPreconditioner, system )
 }
 
 /* ************************************************************************* */
-  // Test raw vector interface
-TEST( SubgraphPreconditioner, RawVectorAPI )
-{
-  // Build a planar graph
-  GaussianFactorGraph Ab;
-  VectorValues xtrue;
-  size_t N = 3;
-  boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
-
-  SubgraphPreconditioner system;
-  
-  // Call build, a non-const method needed to make solve work :-(
-  KeyInfo keyInfo(Ab);
-  std::map<Key,Vector> lambda;
-  system.build(Ab, keyInfo, lambda);
-  const auto ordering = keyInfo.ordering(); // build changed R1 !
-  const Matrix R1 = system.Rc1()->matrix(ordering).first;
-
-  // Test that 'solve' does implement x = R^{-1} y
-  Vector vector_y = Vector::Zero(18), solve_x(18), solveT_x(18);
-  vector_y.head(2) << 100, -100;
-  system.solve(vector_y, solve_x);
-  EXPECT(assert_equal(R1.inverse() * vector_y, solve_x));
-
-  // I can't get test below to pass!
-  // Test that transposeSolve does implement x = R^{-T} y
-  system.transposeSolve(vector_y, solveT_x);
-  EXPECT(assert_equal(R1.transpose().inverse() * vector_y, solveT_x));
-}
-
-/* ************************************************************************* */
 BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "JacobianFactor");
 
-TEST( SubgraphSolver, toy3D )
-{
-  // Read from file
-  string inputFile = findExampleDataFile("randomGrid3D");
+// Read from XML file
+static GaussianFactorGraph read(const string& name) {
+  auto inputFile = findExampleDataFile(name);
   ifstream is(inputFile);
   if (!is.is_open())
     throw runtime_error("Cannot find file " + inputFile);
   boost::archive::xml_iarchive in_archive(is);
   GaussianFactorGraph Ab;
   in_archive >> boost::serialization::make_nvp("graph", Ab);
+  return Ab;
+}
 
-  // Create solver, leaving splitting to constructor
+TEST(SubgraphSolver, Solves) {
+  // Create preconditioner
   SubgraphPreconditioner system;
-  
-  // Call build, a non-const method needed to make solve work :-(
-  KeyInfo keyInfo(Ab);
-  std::map<Key,Vector> lambda;
-  system.build(Ab, keyInfo, lambda);
 
-  // Solve the VectorValues way
-  const auto xbar = system.Rc1()->optimize();  // merely for use in zero below
-  auto values_y = VectorValues::Zero(xbar);
-  const size_t n = values_y.size();
-  values_y[0] = Vector3(100, 200, -300);
-  values_y[n - 1] = Vector3(10, 20, -100);
-  auto values_x = system.Rc1()->backSubstitute(values_y);
+  // We test on three different graphs
+  const auto Ab1 = planarGraph(3).get<0>();
+  const auto Ab2 = read("toy3D");
+  const auto Ab3 = read("randomGrid3D");
 
-  // Check YD's sub-vector machinery
-  const auto ordering = keyInfo.ordering();
-  auto vector_y = values_y.vector(ordering);
-  for (size_t j = 0; j < n; j++) {
-    EXPECT(assert_equal(values_y[j], getSubvector(vector_y, keyInfo, {j})));
-  }
+  // For all graphs, test solve and solveTranspose
+  for (const auto& Ab : {Ab1,Ab2,Ab3}) {
+    // Call build, a non-const method needed to make solve work :-(
+    KeyInfo keyInfo(Ab);
+    std::map<Key, Vector> lambda;
+    system.build(Ab, keyInfo, lambda);
 
-  // Solve the matrix way, this really just checks BN::backSubstitute
-  const Matrix R1 = system.Rc1()->matrix(ordering).first;
-  auto vector_x = R1.inverse() * vector_y;
-  EXPECT(assert_equal(vector_x, values_x.vector(ordering)));
+    // Create a perturbed (non-zero) RHS
+    const auto xbar = system.Rc1()->optimize();  // merely for use in zero below
+    auto values_y = VectorValues::Zero(xbar);
+    values_y.begin()->second.setConstant(100);
+    (--values_y.end())->second.setConstant(-100);
 
-  // Test that 'solve' does implement x = R^{-1} y
-  const size_t N = R1.cols();
-  EXPECT_LONGS_EQUAL(n * 3, N);
-  Vector solve_x = Vector::Zero(N);
-  system.solve(vector_y, solve_x);
-  EXPECT(assert_equal(vector_x, solve_x));
-  for (size_t j = 0; j < n; j++) {
-    cout << j << endl;
-    EXPECT(assert_equal(values_x[j], getSubvector(vector_x, keyInfo, {j}), 1e-3));
+    // Solve the VectorValues way
+    auto values_x = system.Rc1()->backSubstitute(values_y);
+
+    // Solve the matrix way, this really just checks BN::backSubstitute
+    // This only works with Rc1 ordering, not with keyInfo !
+    // TODO(frank): why does this not work with an arbitrary ordering?
+    const auto ord = system.Rc1()->ordering();
+    const Matrix R1 = system.Rc1()->matrix(ord).first;
+    auto ord_y = values_y.vector(ord);
+    auto vector_x = R1.inverse() * ord_y;
+    EXPECT(assert_equal(vector_x, values_x.vector(ord)));
+
+    // Test that 'solve' does implement x = R^{-1} y
+    // We do this by asserting it gives same answer as backSubstitute
+    // Only works with keyInfo ordering:
+    const auto ordering = keyInfo.ordering();
+    auto vector_y = values_y.vector(ordering);
+    const size_t N = R1.cols();
+    Vector solve_x = Vector::Zero(N);
+    system.solve(vector_y, solve_x);
+    EXPECT(assert_equal(values_x.vector(ordering), solve_x));
+
+    // Test that transposeSolve does implement x = R^{-T} y
+    // We do this by asserting it gives same answer as backSubstituteTranspose
+    auto values_x2 = system.Rc1()->backSubstituteTranspose(values_y);
+    Vector solveT_x = Vector::Zero(N);
+    system.transposeSolve(vector_y, solveT_x);
+    EXPECT(assert_equal(values_x2.vector(ordering), solveT_x));
   }
 }
 
