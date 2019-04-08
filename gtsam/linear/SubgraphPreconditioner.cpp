@@ -658,6 +658,7 @@ Vector getSubvector(const Vector &src, const KeyInfo &keyInfo,
                     const KeyVector &keys) {
   /* a cache of starting index and dim */
   vector<std::pair<size_t, size_t> > cache;
+  cache.reserve(3);
 
   /* figure out dimension by traversing the keys */
   size_t dim = 0;
