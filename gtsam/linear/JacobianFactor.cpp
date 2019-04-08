@@ -430,10 +430,9 @@ Vector JacobianFactor::unweighted_error(const VectorValues& c) const {
 
 /* ************************************************************************* */
 Vector JacobianFactor::error_vector(const VectorValues& c) const {
-  if (model_)
-    return model_->whiten(unweighted_error(c));
-  else
-    return unweighted_error(c);
+  Vector e = unweighted_error(c);
+  if (model_) model_->whitenInPlace(e);
+  return e;
 }
 
 /* ************************************************************************* */
@@ -474,10 +473,10 @@ VectorValues JacobianFactor::hessianDiagonal() const {
     for (size_t k = 0; k < nj; ++k) {
       Vector column_k = Ab_(pos).col(k);
       if (model_)
-        column_k = model_->whiten(column_k);
+        model_->whitenInPlace(column_k);
       dj(k) = dot(column_k, column_k);
     }
-    d.insert(j, dj);
+    d.emplace(j, dj);
   }
   return d;
 }
@@ -496,7 +495,7 @@ map<Key, Matrix> JacobianFactor::hessianBlockDiagonal() const {
     Matrix Aj = Ab_(pos);
     if (model_)
       Aj = model_->Whiten(Aj);
-    blocks.insert(make_pair(j, Aj.transpose() * Aj));
+    blocks.emplace(j, Aj.transpose() * Aj);
   }
   return blocks;
 }
@@ -541,29 +540,38 @@ void JacobianFactor::updateHessian(const KeyVector& infoKeys,
 
 /* ************************************************************************* */
 Vector JacobianFactor::operator*(const VectorValues& x) const {
-  Vector Ax = Vector::Zero(Ab_.rows());
+  Vector Ax(Ab_.rows());
+  Ax.setZero();
   if (empty())
     return Ax;
 
   // Just iterate over all A matrices and multiply in correct config part
-  for (size_t pos = 0; pos < size(); ++pos)
-    Ax += Ab_(pos) * x[keys_[pos]];
+  for (size_t pos = 0; pos < size(); ++pos) {
+    // http://eigen.tuxfamily.org/dox/TopicWritingEfficientProductExpression.html
+    Ax.noalias() += Ab_(pos) * x[keys_[pos]];
+  }
 
-  return model_ ? model_->whiten(Ax) : Ax;
+  if (model_) model_->whitenInPlace(Ax);
+  return Ax;
 }
 
 /* ************************************************************************* */
 void JacobianFactor::transposeMultiplyAdd(double alpha, const Vector& e,
-    VectorValues& x) const {
-  Vector E = alpha * (model_ ? model_->whiten(e) : e);
+                                          VectorValues& x) const {
+  Vector E(e.size());
+  E.noalias() = alpha * e;
+  if (model_) model_->whitenInPlace(E);
   // Just iterate over all A matrices and insert Ai^e into VectorValues
   for (size_t pos = 0; pos < size(); ++pos) {
-    Key j = keys_[pos];
-    // Create the value as a zero vector if it does not exist.
-    pair<VectorValues::iterator, bool> xi = x.tryInsert(j, Vector());
-    if (xi.second)
-      xi.first->second = Vector::Zero(getDim(begin() + pos));
-    xi.first->second += Ab_(pos).transpose()*E;
+    const Key j = keys_[pos];
+    // To avoid another malloc if key exists, we explicitly check
+    auto it = x.find(j);
+    if (it != x.end()) {
+      // http://eigen.tuxfamily.org/dox/TopicWritingEfficientProductExpression.html
+      it->second.noalias() += Ab_(pos).transpose() * E;
+    } else {
+      x.emplace(j, Ab_(pos).transpose() * E);
+    }
   }
 }
 
@@ -625,8 +633,8 @@ VectorValues JacobianFactor::gradientAtZero() const {
   Vector b = getb();
   // Gradient is really -A'*b / sigma^2
   // transposeMultiplyAdd will divide by sigma once, so we need one more
-  Vector b_sigma = model_ ? model_->whiten(b) : b;
-  this->transposeMultiplyAdd(-1.0, b_sigma, g); // g -= A'*b/sigma^2
+  if (model_) model_->whitenInPlace(b);
+  this->transposeMultiplyAdd(-1.0, b, g); // g -= A'*b/sigma^2
   return g;
 }
 
