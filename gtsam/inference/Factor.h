@@ -28,6 +28,9 @@
 #include <gtsam/inference/Key.h>
 
 namespace gtsam {
+/// Define collection types:
+typedef FastVector<FactorIndex> FactorIndices;
+typedef FastSet<FactorIndex> FactorIndexSet;
 
   /**
    * This is the base class for all factor types.  It is templated on a KEY type,
