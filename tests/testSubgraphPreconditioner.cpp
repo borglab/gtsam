@@ -232,8 +232,10 @@ TEST(SubgraphSolver, Solves) {
     // Create a perturbed (non-zero) RHS
     const auto xbar = system.Rc1()->optimize();  // merely for use in zero below
     auto values_y = VectorValues::Zero(xbar);
-    values_y.begin()->second.setConstant(100);
-    (--values_y.end())->second.setConstant(-100);
+    auto it = values_y.begin();
+    it->second.setConstant(100);
+    ++it;
+    it->second.setConstant(-100);
 
     // Solve the VectorValues way
     auto values_x = system.Rc1()->backSubstitute(values_y);
