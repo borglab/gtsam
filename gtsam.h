@@ -220,9 +220,9 @@ class FactorIndexSet {
   void clear();
 
   // structure specific methods
-  void insert(size_t factorIdx);
-  bool erase(size_t factorIdx); // returns true if value was removed
-  bool count(size_t factorIdx) const; // returns true if value exists
+  void insert(size_t factorIndex);
+  bool erase(size_t factorIndex); // returns true if value was removed
+  bool count(size_t factorIndex) const; // returns true if value exists
 };
 
 // Actually a vector<FactorIndex>
@@ -239,7 +239,7 @@ class FactorIndices {
   size_t at(size_t i) const;
   size_t front() const;
   size_t back() const;
-  void push_back(size_t factorIdx) const;
+  void push_back(size_t factorIndex) const;
 };
 //*************************************************************************
 // base
