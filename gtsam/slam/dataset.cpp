@@ -66,6 +66,7 @@ string findExampleDataFile(const string& name) {
   namesToSearch.push_back(name + ".graph");
   namesToSearch.push_back(name + ".txt");
   namesToSearch.push_back(name + ".out");
+  namesToSearch.push_back(name + ".xml");
 
   // Find first name that exists
   for(const fs::path& root: rootsToSearch) {

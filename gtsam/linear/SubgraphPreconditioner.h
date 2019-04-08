@@ -129,11 +129,11 @@ namespace gtsam {
 
     enum AugmentationWeight {   /* how to weigh the graph edges */
       SKELETON = 0,             /* use the same weights in building the skeleton */
-//      STRETCH,                  /* stretch in the laplacian sense */
-//      GENERALIZED_STRETCH       /* the generalized stretch defined in jian2013iros */
+//      STRETCH,                /* stretch in the laplacian sense */
+//      GENERALIZED_STRETCH     /* the generalized stretch defined in jian2013iros */
     } augmentationWeight_ ;
 
-    double complexity_;
+    double complexity_; /* factor multiplied with n, yields number of extra edges. */
 
     SubgraphBuilderParameters()
       : skeleton_(KRUSKAL), skeletonWeight_(RANDOM), augmentationWeight_(SKELETON), complexity_(1.0) {}
@@ -145,7 +145,7 @@ namespace gtsam {
     friend std::ostream& operator<<(std::ostream &os, const PreconditionerParameters &p);
 
     static Skeleton skeletonTranslator(const std::string &s);
-    static std::string skeletonTranslator(Skeleton w);
+    static std::string skeletonTranslator(Skeleton s);
     static SkeletonWeight skeletonWeightTranslator(const std::string &s);
     static std::string skeletonWeightTranslator(SkeletonWeight w);
     static AugmentationWeight augmentationWeightTranslator(const std::string &s);
@@ -170,7 +170,7 @@ namespace gtsam {
     std::vector<size_t> unary(const GaussianFactorGraph &gfg) const ;
     std::vector<size_t> natural_chain(const GaussianFactorGraph &gfg) const ;
     std::vector<size_t> bfs(const GaussianFactorGraph &gfg) const ;
-    std::vector<size_t> kruskal(const GaussianFactorGraph &gfg, const FastMap<Key, size_t> &ordering, const std::vector<double> &w) const ;
+    std::vector<size_t> kruskal(const GaussianFactorGraph &gfg, const FastMap<Key, size_t> &ordering, const std::vector<double> &weights) const ;
     std::vector<size_t> sample(const std::vector<double> &weights, const size_t t) const ;
     Weights weights(const GaussianFactorGraph &gfg) const;
     SubgraphBuilderParameters parameters_;
@@ -249,8 +249,8 @@ namespace gtsam {
 
     /* A zero VectorValues with the structure of xbar */
     VectorValues zero() const {
-      VectorValues V(VectorValues::Zero(*xbar_));
-      return V ;
+      assert(xbar_);
+      return VectorValues::Zero(*xbar_);
     }
 
     /**
@@ -285,15 +285,18 @@ namespace gtsam {
     /*****************************************************************************/
     /* implement virtual functions of Preconditioner */
 
-    /* Computation Interfaces for Vector */
-    virtual void solve(const Vector& y, Vector &x) const;
-    virtual void transposeSolve(const Vector& y, Vector& x) const ;
+    /// implement x = R^{-1} y
+    void solve(const Vector& y, Vector &x) const override;
 
-    virtual void build(
+    /// implement x = R^{-T} y
+    void transposeSolve(const Vector& y, Vector& x) const override;
+
+    /// build/factorize the preconditioner
+    void build(
       const GaussianFactorGraph &gfg,
       const KeyInfo &info,
       const std::map<Key,Vector> &lambda
-      ) ;
+      ) override;
     /*****************************************************************************/
   };
 
@@ -310,9 +313,9 @@ namespace gtsam {
 
 
   /* sort the container and return permutation index with default comparator */
-   template <typename Container>
-   std::vector<size_t> sort_idx(const Container &src)
-   {
+  template <typename Container>
+  std::vector<size_t> sort_idx(const Container &src)
+  {
      typedef typename Container::value_type T;
      const size_t n = src.size() ;
      std::vector<std::pair<size_t,T> > tmp;
@@ -329,6 +332,6 @@ namespace gtsam {
        idx.push_back(tmp[i].first) ;
      }
      return idx;
-   }
+  }
 
 } // namespace gtsam
