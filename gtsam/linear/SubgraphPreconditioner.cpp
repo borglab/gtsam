@@ -99,8 +99,8 @@ static vector<size_t> iidSampler(const vector<double> &weight, const size_t n) {
     const double value = rand() / denominator;
     /* binary search the interval containing "value" */
     const auto it = std::lower_bound(acc.begin(), acc.end(), value);
-    const size_t idx = it - acc.begin();
-    result.push_back(idx);
+    const size_t index = it - acc.begin();
+    result.push_back(index);
   }
   return result;
 }
@@ -129,10 +129,10 @@ static vector<size_t> UniqueSampler(const vector<double> &weight, const size_t n
 
     /* sampling and cache results */
     vector<size_t> samples = iidSampler(localWeights, n-count);
-    for ( const size_t &id: samples ) {
-      if ( touched[id] == false ) {
-        touched[id] = true ;
-        result.push_back(id);
+    for ( const size_t &index: samples ) {
+      if ( touched[index] == false ) {
+        touched[index] = true ;
+        result.push_back(index);
         if ( ++count >= n ) break;
       }
     }
@@ -143,8 +143,8 @@ static vector<size_t> UniqueSampler(const vector<double> &weight, const size_t n
 /****************************************************************************/
 Subgraph::Subgraph(const vector<size_t> &indices) {
   edges_.reserve(indices.size());
-  for ( const size_t &idx: indices ) {
-    edges_.emplace_back(idx, 1.0);
+  for ( const size_t &index: indices ) {
+    edges_.emplace_back(index, 1.0);
   }
 }
 
@@ -296,12 +296,12 @@ vector<size_t> SubgraphBuilder::buildTree(const GaussianFactorGraph &gfg,
 /****************************************************************/
 vector<size_t> SubgraphBuilder::unary(const GaussianFactorGraph &gfg) const {
   vector<size_t> result ;
-  size_t idx = 0;
+  size_t index = 0;
   for (const auto &factor : gfg) {
     if ( factor->size() == 1 ) {
-      result.push_back(idx);
+      result.push_back(index);
     }
-    idx++;
+    index++;
   }
   return result;
 }
@@ -309,14 +309,14 @@ vector<size_t> SubgraphBuilder::unary(const GaussianFactorGraph &gfg) const {
 /****************************************************************/
 vector<size_t> SubgraphBuilder::natural_chain(const GaussianFactorGraph &gfg) const {
   vector<size_t> result ;
-  size_t idx = 0;
+  size_t index = 0;
   for ( const GaussianFactor::shared_ptr &gf: gfg ) {
     if ( gf->size() == 2 ) {
       const Key k0 = gf->keys()[0], k1 = gf->keys()[1];
       if ( (k1-k0) == 1 || (k0-k1) == 1 )
-        result.push_back(idx);
+        result.push_back(index);
     }
-    idx++;
+    index++;
   }
   return result;
 }
@@ -343,13 +343,13 @@ vector<size_t> SubgraphBuilder::bfs(const GaussianFactorGraph &gfg) const {
   /* traversal */
   while ( !q.empty() ) {
     const size_t head = q.front(); q.pop();
-    for ( const size_t id: variableIndex[head] ) {
-      const GaussianFactor &gf = *gfg[id];
+    for ( const size_t index: variableIndex[head] ) {
+      const GaussianFactor &gf = *gfg[index];
       for ( const size_t key: gf.keys() ) {
         if ( flags.count(key) == 0 ) {
           q.push(key);
           flags.insert(key);
-          result.push_back(id);
+          result.push_back(index);
         }
       }
     }
@@ -363,7 +363,7 @@ vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
                                         const vector<double> &weights) const {
   const VariableIndex variableIndex(gfg);
   const size_t n = variableIndex.size();
-  const vector<size_t> idx = sort_idx(weights) ;
+  const vector<size_t> sortedIndices = sort_idx(weights) ;
 
   /* initialize buffer */
   vector<size_t> result;
@@ -373,16 +373,16 @@ vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
   DSFVector dsf(n);
 
   size_t count = 0 ; double sum = 0.0 ;
-  for (const size_t id: idx) {
-    const GaussianFactor &gf = *gfg[id];
+  for (const size_t index: sortedIndices) {
+    const GaussianFactor &gf = *gfg[index];
     const auto keys = gf.keys();
     if ( keys.size() != 2 ) continue;
     const size_t u = ordering.find(keys[0])->second,
                  v = ordering.find(keys[1])->second;
     if ( dsf.find(u) != dsf.find(v) ) {
       dsf.merge(u, v) ;
-      result.push_back(id) ;
-      sum += weights[id] ;
+      result.push_back(index) ;
+      sum += weights[index] ;
       if ( ++count == n-1 ) break ;
     }
   }
@@ -418,8 +418,8 @@ Subgraph::shared_ptr SubgraphBuilder::operator() (const GaussianFactorGraph &gfg
   }
 
   // Downweight the tree edges to zero.
-  for ( const size_t id: tree ) {
-    weights[id] = 0.0;
+  for ( const size_t index: tree ) {
+    weights[index] = 0.0;
   }
 
   /* decide how many edges to augment */
@@ -614,8 +614,8 @@ void SubgraphPreconditioner::transposeSolve(const Vector &y, Vector &x) const {
 
   /* in place back substitute */
   for (const auto &cg : *Rc1_) {
-    const Vector rhsFrontal = getSubvector(
-        x, keyInfo_, KeyVector(cg->beginFrontals(), cg->endFrontals()));
+    const KeyVector frontalKeys(cg->beginFrontals(), cg->endFrontals());
+    const Vector rhsFrontal = getSubvector(x, keyInfo_, frontalKeys);
     const Vector solFrontal =
         cg->get_R().transpose().triangularView<Eigen::Lower>().solve(
             rhsFrontal);
@@ -625,13 +625,12 @@ void SubgraphPreconditioner::transposeSolve(const Vector &y, Vector &x) const {
       throw IndeterminantLinearSystemException(cg->keys().front());
 
     /* assign subvector of sol to the frontal variables */
-    setSubvector(solFrontal, keyInfo_,
-                 KeyVector(cg->beginFrontals(), cg->endFrontals()), x);
+    setSubvector(solFrontal, keyInfo_, frontalKeys, x);
 
     /* substract from parent variables */
     for (auto it = cg->beginParents(); it != cg->endParents(); it++) {
-      const KeyInfoEntry &info = keyInfo_.find(*it)->second;
-      Eigen::Map<Vector> rhsParent(x.data() + info.colstart(), info.dim(), 1);
+      const KeyInfoEntry &entry = keyInfo_.find(*it)->second;
+      Eigen::Map<Vector> rhsParent(x.data() + entry.start, entry.dim, 1);
       rhsParent -= Matrix(cg->getA(it)).transpose() * solFrontal;
     }
   }
@@ -664,16 +663,16 @@ Vector getSubvector(const Vector &src, const KeyInfo &keyInfo,
   size_t dim = 0;
   for (const Key &key : keys) {
     const KeyInfoEntry &entry = keyInfo.find(key)->second;
-    cache.emplace_back(entry.colstart(), entry.dim());
-    dim += entry.dim();
+    cache.emplace_back(entry.start, entry.dim);
+    dim += entry.dim;
   }
 
   /* use the cache to fill the result */
-  Vector result = Vector::Zero(dim);
-  size_t idx = 0;
+  Vector result(dim);
+  size_t index = 0;
   for (const auto &p : cache) {
-    result.segment(idx, p.second) = src.segment(p.first, p.second);
-    idx += p.second;
+    result.segment(index, p.second) = src.segment(p.first, p.second);
+    index += p.second;
   }
 
   return result;
@@ -681,11 +680,12 @@ Vector getSubvector(const Vector &src, const KeyInfo &keyInfo,
 
 /*****************************************************************************/
 void setSubvector(const Vector &src, const KeyInfo &keyInfo, const KeyVector &keys, Vector &dst) {
-  size_t idx = 0;
+  size_t index = 0;
   for ( const Key &key: keys ) {
     const KeyInfoEntry &entry = keyInfo.find(key)->second;
-    dst.segment(entry.colstart(), entry.dim()) = src.segment(idx, entry.dim()) ;
-    idx += entry.dim();
+    const size_t keyDim = entry.dim;
+    dst.segment(entry.start, keyDim) = src.segment(index, keyDim) ;
+    index += keyDim;
   }
 }
 
@@ -696,9 +696,9 @@ GaussianFactorGraph::shared_ptr buildFactorSubgraph(
   auto result = boost::make_shared<GaussianFactorGraph>();
   result->reserve(subgraph.size());
   for ( const SubgraphEdge &e: subgraph ) {
-    const size_t idx = e.index();
-    if ( clone ) result->push_back(gfg[idx]->clone());
-    else result->push_back(gfg[idx]);
+    const size_t index = e.index();
+    if ( clone ) result->push_back(gfg[index]->clone());
+    else result->push_back(gfg[index]);
   }
   return result;
 }
