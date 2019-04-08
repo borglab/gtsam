@@ -322,27 +322,30 @@ TEST(JacobianFactor, matrices)
 /* ************************************************************************* */
 TEST(JacobianFactor, operators )
 {
-  SharedDiagonal  sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
+  const double sigma = 0.1;
+  SharedDiagonal sigma0_1 = noiseModel::Isotropic::Sigma(2, sigma);
 
   Matrix I = I_2x2;
   Vector b = Vector2(0.2,-0.1);
   JacobianFactor lf(1, -I, 2, I, b, sigma0_1);
 
-  VectorValues c;
-  c.insert(1, Vector2(10.,20.));
-  c.insert(2, Vector2(30.,60.));
+  VectorValues x;
+  Vector2 x1(10,20), x2(30,60);
+  x.insert(1, x1);
+  x.insert(2, x2);
 
   // test A*x
-  Vector expectedE = Vector2(200.,400.);
-  Vector actualE = lf * c;
+  Vector expectedE = (x2 - x1)/sigma;
+  Vector actualE = lf * x;
   EXPECT(assert_equal(expectedE, actualE));
 
   // test A^e
   VectorValues expectedX;
-  expectedX.insert(1, Vector2(-2000.,-4000.));
-  expectedX.insert(2, Vector2(2000., 4000.));
+  const double alpha = 0.5;
+  expectedX.insert(1, - alpha * expectedE /sigma);
+  expectedX.insert(2,   alpha * expectedE /sigma);
   VectorValues actualX = VectorValues::Zero(expectedX);
-  lf.transposeMultiplyAdd(1.0, actualE, actualX);
+  lf.transposeMultiplyAdd(alpha, actualE, actualX);
   EXPECT(assert_equal(expectedX, actualX));
 
   // test gradient at zero
