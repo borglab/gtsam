@@ -134,7 +134,7 @@ namespace gtsam {
     VectorValues result;
     DenseIndex vectorPosition = 0;
     for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
-      result.insert(*frontal, solution.segment(vectorPosition, getDim(frontal)));
+      result.emplace(*frontal, solution.segment(vectorPosition, getDim(frontal)));
       vectorPosition += getDim(frontal);
     }
 
@@ -162,7 +162,7 @@ namespace gtsam {
     VectorValues result;
     DenseIndex vectorPosition = 0;
     for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
-      result.insert(*frontal, soln.segment(vectorPosition, getDim(frontal)));
+      result.emplace(*frontal, soln.segment(vectorPosition, getDim(frontal)));
       vectorPosition += getDim(frontal);
     }
 
