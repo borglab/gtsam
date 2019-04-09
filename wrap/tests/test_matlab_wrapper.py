@@ -20,6 +20,36 @@ class TestWrap(unittest.TestCase):
     MATLAB_TEST_DIR = TEST_DIR + "expected-matlab/"
     MATLAB_ACTUAL_DIR = TEST_DIR + "actual-matlab/"
 
+    def _generate_content(self, cc_content, path=''):
+        """Generate files and folders from matlab wrapper content
+
+        Keyword arguments:
+        cc_content -- the content to generate formatted as
+            (file_name, file_content) or
+            (folder_name, [(file_name, file_content)])
+        path -- the path to the files parent folder within the main folder
+        """
+        for c in cc_content:
+            if type(c) == list:
+                path_to_folder = self.MATLAB_ACTUAL_DIR if path == '' else path
+                path_to_folder += c[0][0]
+
+                if not os.path.isdir(path_to_file):
+                    try:
+                        os.mkdir(path_to_folder)
+                    except OSError:
+                        print("Failed to create directory {path}".format(
+                            path=path_to_file))
+
+                for sub_content in c:
+                    self._generate_content(sub_content[1], path_to_folder)
+            else:
+                path_to_file = self.MATLAB_ACTUAL_DIR + c[0] if path == '' \
+                    else path + '/' + c[0]
+
+                with open(path_to_file, 'w') as f:
+                    f.write(c[1])
+
     def test_geometry_matlab(self):
         """ Check generation of matlab geometry wrapper.
         python3 wrap/matlab_wrapper.py --src wrap/tests/geometry.h
@@ -45,14 +75,7 @@ class TestWrap(unittest.TestCase):
 
         cc_content = wrapper.wrap()
 
-        for c in cc_content:
-            if type(c) == list:
-                # TODO: Create folder with namespace then create files in
-                # namespace
-                pass
-            else:
-                with open(self.MATLAB_ACTUAL_DIR + c[0], 'w') as f:
-                    f.write(c[1])
+        self._generate_content(cc_content)
 
         self.assertTrue(filecmp.cmp(
             self.MATLAB_ACTUAL_DIR + 'Point2.m',
@@ -60,6 +83,13 @@ class TestWrap(unittest.TestCase):
         self.assertTrue(filecmp.cmp(
             self.MATLAB_ACTUAL_DIR + 'Point3.m',
             self.MATLAB_TEST_DIR + 'Point3.m'))
+        self.assertTrue(os.path.isdir(self.MATLAB_ACTUAL_DIR + '+gtsam'))
+        self.assertTrue(filecmp.cmp(
+            self.MATLAB_ACTUAL_DIR + '+gtsam/Point2.m',
+            self.MATLAB_TEST_DIR + '+gtsam/Point2.m'))
+        self.assertTrue(filecmp.cmp(
+            self.MATLAB_ACTUAL_DIR + '+gtsam/Point3.m',
+            self.MATLAB_TEST_DIR + '+gtsam/Point3.m'))
         self.assertTrue(filecmp.cmp(
             self.MATLAB_ACTUAL_DIR + 'Test.m',
             self.MATLAB_TEST_DIR + 'Test.m'))
