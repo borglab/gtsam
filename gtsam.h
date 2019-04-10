@@ -2241,8 +2241,6 @@ class ISAM2Result {
   size_t getCliques() const;
 };
 
-class FactorIndices {};
-
 class ISAM2 {
   ISAM2();
   ISAM2(const gtsam::ISAM2Params& params);
