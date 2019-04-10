@@ -77,12 +77,6 @@ class TestWrap(unittest.TestCase):
 
         self._generate_content(cc_content)
 
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'Point2.m',
-            self.MATLAB_TEST_DIR + 'Point2.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'Point3.m',
-            self.MATLAB_TEST_DIR + 'Point3.m'))
         self.assertTrue(os.path.isdir(self.MATLAB_ACTUAL_DIR + '+gtsam'))
         self.assertTrue(filecmp.cmp(
             self.MATLAB_ACTUAL_DIR + '+gtsam/Point2.m',
