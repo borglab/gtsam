@@ -343,7 +343,8 @@ class MatlabWrapper(object):
 
             if check_type is None:
                 check_type = self._format_type_name(
-                    arg.ctype.typename, separator='.')
+                    arg.ctype.typename,
+                    separator='.')
 
             check_statement += " && isa(varargin{{{id}}},'{ctype}')".format(
                 id=arg_id, ctype=check_type)
@@ -854,6 +855,26 @@ class MatlabWrapper(object):
                 )), prefix='  ')
 
         return method_text
+
+    def wrap_class_serialize_method(self, class_name):
+        return 'function varargout = string_serialize(this, varargin)\n'\
+            '  % STRING_SERIALIZE usage: string_serialize() : returns '\
+            'string\n'\
+            '  % Doxygen can be found at '\
+            'http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n'\
+            '  if length(varargin) == 0\n'\
+            '    varargout{{1}} = {wrapper}({num}, this, '\
+            'varargin{{:}});\n'\
+            '  else\n'\
+            "    error('Arguments do not match any overload of function "\
+            "{class_name}.string_serialize');\n"\
+            '  end\nend\n\n'\
+            'function sobj = saveobj(obj)\n'\
+            '  % SAVEOBJ Saves the object to a matlab-readable format\n'\
+            '  sobj = obj.string_serialize();\nend\n'.format(
+                wrapper=self._wrapper_name(),
+                num=self._increment_wrapper_count(),
+                class_name=class_name)
 
     def wrap_instantiated_class(self, instantiated_class, namespace_name=''):
         """Generate comments and code for given class.
