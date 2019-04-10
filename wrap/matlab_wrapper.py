@@ -36,7 +36,7 @@ class MatlabWrapper(object):
     }
 
     # TODO: Find out what to do with these methods
-    whitelist = ['serializable', 'eigenArguments']
+    whitelist = ['serializable']
 
     """Datatypes that require their namespace"""
     namespace_type = ['Point2']
@@ -53,15 +53,8 @@ class MatlabWrapper(object):
     """
     wrapper_count = 0
 
-    # TODO: This is a temporary fix
-    """The highest value wrapper_count has been"""
-    max_wrapper_count = 0
-
     """Files and their content"""
     content = []
-
-    """Map classes that have been generated to their starting wrapper_count"""
-    start_wrapper_count_map = {}
 
     def __init__(self, module, module_name, top_module_namespace='',
                  ignore_classes=[]):
@@ -275,7 +268,8 @@ class MatlabWrapper(object):
             comment_wrap += '%{name}({args}) : returns {return_type}\n'.format(
                 name=static_method.name,
                 args=self._wrap_args(static_method.args),
-                return_type=self._format_return_type(static_method.return_type)
+                return_type=self._format_return_type(
+                    static_method.return_type, include_namespace=True)
             )
 
         comment_wrap += '%\n'\
@@ -320,7 +314,6 @@ class MatlabWrapper(object):
 
         # Write methods
         for method in methods:
-            # TODO: Figure out how to handle these methods
             if method.name in self.whitelist:
                 continue
 
@@ -526,7 +519,7 @@ class MatlabWrapper(object):
             '  function disp(obj), obj.display; end\n'\
             '  %DISP Calls print on the object\n'
 
-    def wrap_serialize_method(self):
+    def wrap_serialize_method(self, class_name):
         return 'function varargout = string_serialize(this, varargin)\n'\
             '  % STRING_SERIALIZE usage: string_serialize() : returns '\
             'string\n'\
@@ -537,13 +530,14 @@ class MatlabWrapper(object):
             'varargin{{:}});\n'\
             '  else\n'\
             "    error('Arguments do not match any overload of function "\
-            "Point3.string_serialize');\n"\
+            "{class_name}.string_serialize');\n"\
             '  end\nend\n\n'\
             'function sobj = saveobj(obj)\n'\
             '  % SAVEOBJ Saves the object to a matlab-readable format\n'\
             '  sobj = obj.string_serialize();\nend\n'.format(
                 wrapper=self._wrapper_name(),
-                num=self._increment_wrapper_count())
+                num=self._increment_wrapper_count(),
+                class_name=class_name)
 
     def wrap_class_methods(self, namespace_name, inst_class, methods,
                            serialize=[False]):
@@ -558,15 +552,12 @@ class MatlabWrapper(object):
         method_text = ''
 
         for method in methods:
-            # TODO: Remove this after figuring out how to handle these methods
             if method.name == 'serializable':
                 continue
 
-            if namespace_name == '' and method.name == 'eigenArguments':
-                continue
-
             if method.name == 'serialize':
-                method_text += self.wrap_serialize_method()
+                method_text += self.wrap_serialize_method(
+                    namespace_name + '.' + inst_class.name)
                 serialize[0] = True
             else:
                 # Generate method code
@@ -577,7 +568,8 @@ class MatlabWrapper(object):
                         method_name=method.name)
 
                 # Determine format of return and varargout statements
-                return_type = self._format_return_type(method.return_type)
+                return_type = self._format_return_type(
+                    method.return_type, include_namespace=True)
 
                 if self._return_count(method.return_type) == 1:
                     varargout = '' if return_type == 'void' \
@@ -605,7 +597,7 @@ class MatlabWrapper(object):
                     '{spacing}{varargout}{wrapper}({num}, this, '\
                     'varargin{{:}});\n{end_statement}'.format(
                         method_args=self._wrap_args(method.args),
-                        return_type=return_type.strip(),
+                        return_type=return_type,
                         num=self._increment_wrapper_count(),
                         check_statement=check_statement,
                         spacing='' if check_statement == '' else '    ',
@@ -617,33 +609,29 @@ class MatlabWrapper(object):
 
         return method_text
 
-    def wrap_static_methods(self, instantiated_class, serialize):
+    def wrap_static_methods(self, namespace_name, instantiated_class,
+                            serialize):
         method_text = 'methods(Static = true)\n'
         static_methods = sorted(
             instantiated_class.static_methods, key=lambda name: name.name)
 
         for static_method in static_methods:
+            format_name = list(static_method.name)
+            format_name[0] = format_name[0].upper()
+
             method_text += '  function varargout = {name}(varargin)\n' \
                 '    % {name_caps} usage: {name_upper_case}({args}) : ' \
                 'returns {return_type}\n' \
                 '    % Doxygen can be found at http://research.cc.gatech.edu' \
                 '/borg/sites/edu.borg/html/index.html\n' \
-                '    % \n' \
-                '    % Usage\n' \
-                '    % {name_caps}({args})\n' \
-                "    if length(varargin) == {length}{var_args_list}\n" \
-                '      varargout{{1}} = {wrapper}({id}, varargin{{:}});\n' \
-                '    else\n' \
-                "      error('Arguments do not match any overload of " \
-                "function {class_name}.{name_upper_case}');\n" \
-                '    end\n' \
-                '  end\n'.format(
-                    name=static_method.name,
+                '    varargout{{1}} = {wrapper}({id}, varargin{{:}});\n' \
+                '  end\n\n'.format(
+                    name=''.join(format_name),
                     name_caps=static_method.name.upper(),
-                    name_upper_case=static_method.name.capitalize(),
+                    name_upper_case=static_method.name,
                     args=self._wrap_args(static_method.args),
                     return_type=self._format_return_type(
-                        static_method.return_type),
+                        static_method.return_type, include_namespace=True),
                     length=len(static_method.args.args_list),
                     var_args_list=self._wrap_variable_arguments(
                         static_method.args),
@@ -659,7 +647,7 @@ class MatlabWrapper(object):
                 '    % Doxygen can be found at http://research.cc.gatech.edu/'\
                 'borg/sites/edu.borg/html/index.html\n'\
                 '    if length(varargin) == 1\n'\
-                '      varargout{{1}} = {wrapper}(18, varargin{{:}});\n'\
+                '      varargout{{1}} = {wrapper}({id}, varargin{{:}});\n'\
                 '    else\n'\
                 "      error('Arguments do not match any overload of function "\
                 "{class_name}.string_deserialize');\n"\
@@ -667,10 +655,11 @@ class MatlabWrapper(object):
                 '  end\n\n'\
                 '  function obj = loadobj(sobj)\n'\
                 '    % LOADOBJ Saves the object to a matlab-readable format\n'\
-                '    obj = Point3.string_deserialize(sobj);\n'\
+                '    obj = {class_name}.string_deserialize(sobj);\n'\
                 '  end\n'.format(
-                    class_name=instantiated_class.name,
-                    wrapper=self._wrapper_name())
+                    class_name=namespace_name + '.' + instantiated_class.name,
+                    wrapper=self._wrapper_name(),
+                    id=self._increment_wrapper_count())
 
         return method_text
 
@@ -684,13 +673,6 @@ class MatlabWrapper(object):
         """
         file_name = self._clean_class_name(instantiated_class)
         namespace_file_name = namespace_name + file_name
-
-        if self.start_wrapper_count_map.get(file_name) is None:
-            self.start_wrapper_count_map.update(
-                {file_name: self.wrapper_count}
-            )
-        else:
-            self.wrapper_count = self.start_wrapper_count_map[file_name]
 
         # Class comment
         content_text = self.class_comment(instantiated_class)
@@ -749,14 +731,14 @@ class MatlabWrapper(object):
         content_text += '  end\n\n  ' + reduce(
             self._insert_spaces,
             self.wrap_static_methods(
-                instantiated_class, serialize[0]).splitlines()
+                namespace_name, instantiated_class, serialize[0]).splitlines()
         ) + '\n'
 
         content_text += '  end\nend\n'
 
         return file_name + '.m', content_text
 
-    def wrap_namespace(self, namespace, nested=False):
+    def wrap_namespace(self, namespace):
         """Wrap a namespace by wrapping all of its components.
 
         Keyword Arguments:
@@ -775,12 +757,8 @@ class MatlabWrapper(object):
 
         for element in namespace.content:
             if isinstance(element, parser.Namespace):
-                self.wrap_namespace(element, nested=True)
+                self.wrap_namespace(element)
             elif isinstance(element, instantiator.InstantiatedClass):
-                print(element.name, self.wrapper_count)
-                class_text = self.wrap_instantiated_class(element)
-                current_scope.append((class_text[0], class_text[1]))
-
                 if inner_namespace:
                     class_text = self.wrap_instantiated_class(
                         element, namespace.name)
@@ -791,6 +769,9 @@ class MatlabWrapper(object):
                             [(class_text[0], class_text[1])]
                         )
                     )
+                else:
+                    class_text = self.wrap_instantiated_class(element)
+                    current_scope.append((class_text[0], class_text[1]))
 
         self.content.extend(current_scope)
 
