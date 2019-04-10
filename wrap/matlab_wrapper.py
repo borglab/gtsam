@@ -21,25 +21,26 @@ class MatlabWrapper(object):
     Found in Argument.cpp in old wrapper
     """
     data_type = {
-        'string': 'char', 'char': 'char', 'unsigned char': 'unsigned char',
-        'Vector': 'double', 'Matrix': 'double', 'int': 'numeric',
-        'size_t': 'numeric', 'bool': 'logical'
+        'string': 'char', 'char': 'char',
+        'unsigned char': 'unsigned char',
+        'Vector': 'double', 'Matrix': 'double',
+        'int': 'numeric', 'size_t': 'numeric',
+        'bool': 'logical'
     }
 
     """Map the data type into the type used in Matlab methods.
     Found in matlab.h in old wrapper
     """
     data_type_param = {
-        'string': 'char', 'char': 'char', 'unsigned char': 'unsigned char',
-        'bool': 'bool', 'size_t': 'int', 'int': 'int', 'double': 'double',
-        'Vector': 'double', 'Matrix': 'double'
+        'string': 'char', 'char': 'char',
+        'unsigned char': 'unsigned char',
+        'size_t': 'int', 'int': 'int',
+        'double': 'double', 'Vector': 'double', 'Matrix': 'double',
+        'bool': 'bool'
     }
 
-    # TODO: Find out what to do with these methods
-    whitelist = ['serializable']
-
-    """Datatypes that require their namespace"""
-    namespace_type = ['Point2']
+    """Methods that should not be wrapped directly"""
+    whitelist = ['serializable', 'serialize']
 
     # TODO: Look for this in OG code
     """Datatypes that do not need to be checked in methods"""
@@ -73,11 +74,16 @@ class MatlabWrapper(object):
         return 'handle' if names == '' else names
 
     def _insert_spaces(self, x, y):
-        ''' Insert spaces at the beginning of each line '''
+        """Insert spaces at the beginning of each line
+
+        Args:
+            x: the statement currently generated
+            y: the addition to add to the statement
+        """
         return x + '\n' + ('' if y == '' else '  ') + y
 
     def _group_methods(self, methods):
-        """ Group overloaded methods together """
+        """Group overloaded methods together"""
         method_map = {}
         method_out = []
 
@@ -93,23 +99,27 @@ class MatlabWrapper(object):
         return method_out
 
     def _clean_class_name(self, instantiated_class):
-        """ Reformatted the C++ class name to fit Matlab defined naming
-        standards """
+        """Reformatted the C++ class name to fit Matlab defined naming
+        standards
+        """
         if len(instantiated_class.ctors) != 0:
             return instantiated_class.ctors[0].name
-
-        # TODO: May have to group together same name templates if they don't
-        # have constructors. This would require another if statement if text
-        # before < is a duplicate method
 
         return instantiated_class.cpp_class()
 
     def _format_type_name(self, type_name, separator='::',
                           include_namespace=True, constructor=False,
                           method=False):
-        """Format the type name and change it if necessary.
+        """Format the type name.
 
-        Exceptions:
+        Args:
+            type_name: an interface_parser.Typename to reformat
+            separator: the statement to add between namespaces and typename
+            include_namespace: whether to include namespaces when reformatting
+            constructor: if the typename will be in a constructor
+            method: if the typename will be in a method
+
+        Raises:
             constructor and method cannot both be true
         """
         if constructor and method:
@@ -134,6 +144,12 @@ class MatlabWrapper(object):
         return formatted_type_name
 
     def _format_return_type(self, return_type, include_namespace=False):
+        """Format return_type.
+
+        Args:
+            return_type: an interface_parser.ReturnType to reformat
+            include_namespace: whether to include namespaces when reformatting
+        """
         return_wrap = ''
 
         if self._return_count(return_type) == 1:
@@ -152,10 +168,11 @@ class MatlabWrapper(object):
         return return_wrap
 
     def _wrap_args(self, args):
-        """ Wrap an interface_parser.ArgumentList into a list of arguments
+        """Wrap an interface_parser.ArgumentList into a list of arguments.
 
-        Example:
-            int x, double y
+        Returns:
+            A string representation of the arguments. For example:
+                'int x, double y'
         """
         arg_wrap = ''
 
@@ -172,8 +189,10 @@ class MatlabWrapper(object):
         """ Wrap an interface_parser.ArgumentList into a statement of argument
         checks.
 
-        Example:
-             && isa(varargin{1},'double') && isa(varargin{2},'numeric')
+        Returns:
+            A string representation of a variable arguments for an if
+            statement. For example:
+                ' && isa(varargin{1},'double') && isa(varargin{2},'numeric')'
         """
         var_arg_wrap = ''
 
@@ -192,8 +211,10 @@ class MatlabWrapper(object):
         """ Wrap an interface_parser.ArgumentList into a list of argument
         variables.
 
-        Example:
-            varargin{1}, varargin{2}, varargin{3}
+        Returns:
+            A string representation of a list of variable arguments.
+            For example:
+                'varargin{1}, varargin{2}, varargin{3}'
         """
         var_list_wrap = ''
         first = True
@@ -228,10 +249,12 @@ class MatlabWrapper(object):
 
             if check_type is None:
                 check_type = self._format_type_name(
-                    arg.ctype.typename, separator='.')
+                    arg.ctype.typename,
+                    separator='.')
 
             check_statement += " && isa(varargin{{{id}}},'{ctype}')".format(
-                id=id, ctype=check_type)
+                id=id,
+                ctype=check_type)
 
             if name == 'Vector':
                 check_statement += ' && size(varargin{1},2)==1'
@@ -241,23 +264,18 @@ class MatlabWrapper(object):
         return check_statement if check_statement == '' else check_statement \
             + '\n'
 
-    def _generate_includes(self):
-        pass
-
     def _return_count(self, return_type):
-        """ The amount of objects returned by the given ReturnType
-
-        Keyword arguments:
-        return_type -- the interface_parser.ReturnType being checked
+        """The amount of objects returned by the given
+        interface_parser.ReturnType.
         """
         return 1 if str(return_type.type2) == '' else 2
 
     def _wrapper_name(self):
-        """ Determine the name of wrapper function """
+        """Determine the name of wrapper function."""
         return self.module_name + '_wrapper'
 
     def class_serialize_comment(self, class_name, static_methods):
-        """Generate comments for serialize methods"""
+        """Generate comments for serialize methods."""
         comment_wrap = ''
         static_methods = sorted(static_methods, key=lambda name: name.name)
 
@@ -269,8 +287,8 @@ class MatlabWrapper(object):
                 name=static_method.name,
                 args=self._wrap_args(static_method.args),
                 return_type=self._format_return_type(
-                    static_method.return_type, include_namespace=True)
-            )
+                    static_method.return_type,
+                    include_namespace=True))
 
         comment_wrap += '%\n'\
             '%-------Serialization Interface-------\n'\
@@ -281,12 +299,12 @@ class MatlabWrapper(object):
         return comment_wrap
 
     def class_comment(self, instantiated_class):
-        """ Generate comments for the given class in Matlab.
+        """Generate comments for the given class in Matlab.
 
-        Keyword arguments:
-        instantiated_class -- the class being wrapped
-        ctors -- a list of the constructors in the class
-        methods -- a list of the methods in the class
+        Args
+            instantiated_class: the class being wrapped
+            ctors: a list of the constructors in the class
+            methods: a list of the methods in the class
         """
         class_name = instantiated_class.name
         ctors = instantiated_class.ctors
@@ -317,9 +335,6 @@ class MatlabWrapper(object):
             if method.name in self.whitelist:
                 continue
 
-            if method.name == 'serialize':
-                continue
-
             comment += '%{name}({args})'.format(
                 name=method.name,
                 args=self._wrap_args(method.args))
@@ -345,7 +360,7 @@ class MatlabWrapper(object):
         return comment
 
     def generate_matlab_wrapper(self):
-        """ Generate the C++ file for the wrapper """
+        """Generate the C++ file for the wrapper."""
         file_name = self._wrapper_name() + '.cpp'
 
         wrapper_file = '#include <wrap/matlab.h>\n' \
@@ -354,7 +369,7 @@ class MatlabWrapper(object):
         return file_name, wrapper_file
 
     def wrap_method(self, methods):
-        """ Wrap methods in the body of a class """
+        """Wrap methods in the body of a class."""
         if not isinstance(methods, list):
             methods = [methods]
 
@@ -363,8 +378,26 @@ class MatlabWrapper(object):
 
         return ''
 
+    def wrap_methods(self, methods, globals=False):
+        """Wrap a sequence of methods. Groups methods with the same names
+        together. If globals is True then output every method into its own
+        file.
+        """
+        output = ''
+        methods = self._group_methods(methods)
+
+        for method in methods:
+            if globals:
+                method_text = self.wrap_global_function(method)
+                self.content.append((method[0].name + '.m', method_text))
+            else:
+                method_text = self.wrap_method(method)
+                output += ''
+
+        return output
+
     def wrap_global_function(self, function):
-        """ Wrap the given global function """
+        """Wrap the given global function."""
         if not isinstance(function, list):
             function = [function]
 
@@ -397,35 +430,17 @@ class MatlabWrapper(object):
             '{statements}\n'\
             '      end\n'.format(m_method=m_method, statements=param_wrap)
 
-    def wrap_methods(self, methods, globals=False):
-        """
-        Wrap a sequence of methods. Groups methods with the same names
-        together. If globals is True then output every method into its own
-        file.
-        """
-        output = ''
-        methods = self._group_methods(methods)
-
-        for method in methods:
-            if globals:
-                method_text = self.wrap_global_function(method)
-                self.content.append((method[0].name + '.m', method_text))
-            else:
-                method_text = self.wrap_method(method)
-                output += ''
-
-        return output
-
     def wrap_class_constructors(self, namespace_name, class_name, parent_name,
                                 ctors, is_virtual):
-        """Wrap class constructor
+        """Wrap class constructor.
 
-        Keyword arguments:
-        namespace_name -- the name of the namespace ('' if it does not exist)
-        class_name -- the name of the class
-        parent_name -- the name of the parent class if it exists
-        ctors -- the interface_parser.Constructor in the class
-        is_virtual -- whether the class is part of a virtual inheritance chain
+        Args:
+            namespace_name: the name of the namespace ('' if it does not exist)
+            class_name: the name of the class
+            parent_name: the name of the parent class if it exists
+            ctors: the interface_parser.Constructor in the class
+            is_virtual: whether the class is part of a virtual inheritance
+                chain
         """
         has_parent = parent_name != ''
 
@@ -496,13 +511,13 @@ class MatlabWrapper(object):
         return methods_wrap
 
     def wrap_class_properties(self, class_name):
-        """ Generate properties of class """
+        """Generate properties of class."""
         return 'properties\n'\
             '  ptr_{class_name} = 0\n'\
             'end\n'.format(class_name=class_name)
 
     def wrap_class_delete(self, class_name):
-        """ Generate the delete function for the Matlab class """
+        """Generate the delete function for the Matlab class."""
         methods_text = '  function delete(obj)\n'\
             '    {wrapper}({num}, obj.ptr_{class_name});\n'\
             '  end\n\n'.format(
@@ -513,50 +528,30 @@ class MatlabWrapper(object):
         return methods_text
 
     def wrap_class_display(self):
-        """ Generate the display function for the Matlab class """
+        """Generate the display function for the Matlab class."""
         return "  function display(obj), obj.print(''); end\n"\
             '  %DISPLAY Calls print on the object\n'\
             '  function disp(obj), obj.display; end\n'\
             '  %DISP Calls print on the object\n'
 
-    def wrap_serialize_method(self, class_name):
-        return 'function varargout = string_serialize(this, varargin)\n'\
-            '  % STRING_SERIALIZE usage: string_serialize() : returns '\
-            'string\n'\
-            '  % Doxygen can be found at '\
-            'http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n'\
-            '  if length(varargin) == 0\n'\
-            '    varargout{{1}} = {wrapper}({num}, this, '\
-            'varargin{{:}});\n'\
-            '  else\n'\
-            "    error('Arguments do not match any overload of function "\
-            "{class_name}.string_serialize');\n"\
-            '  end\nend\n\n'\
-            'function sobj = saveobj(obj)\n'\
-            '  % SAVEOBJ Saves the object to a matlab-readable format\n'\
-            '  sobj = obj.string_serialize();\nend\n'.format(
-                wrapper=self._wrapper_name(),
-                num=self._increment_wrapper_count(),
-                class_name=class_name)
-
     def wrap_class_methods(self, namespace_name, inst_class, methods,
                            serialize=[False]):
-        """ Wrap the methods in the class.
+        """Wrap the methods in the class.
 
-        Keyword arguments:
-        namespace_name -- the name of the class's namespace
-        inst_class -- the instantiated class whose methods to wrap
-        methods -- the methods to wrap in the order to wrap them
-        serialize -- mutable param storing if one of the methods is serialize
+        Args:
+            namespace_name: the name of the class's namespace
+            inst_class: the instantiated class whose methods to wrap
+            methods: the methods to wrap in the order to wrap them
+            serialize: mutable param storing if one of the methods is serialize
         """
         method_text = ''
 
         for method in methods:
-            if method.name == 'serializable':
+            if method.name in self.whitelist and method.name != 'serialize':
                 continue
 
             if method.name == 'serialize':
-                method_text += self.wrap_serialize_method(
+                method_text += self.wrap_class_serialize_method(
                     namespace_name + '.' + inst_class.name)
                 serialize[0] = True
             else:
@@ -613,7 +608,8 @@ class MatlabWrapper(object):
                             serialize):
         method_text = 'methods(Static = true)\n'
         static_methods = sorted(
-            instantiated_class.static_methods, key=lambda name: name.name)
+            instantiated_class.static_methods,
+            key=lambda name: name.name)
 
         for static_method in static_methods:
             format_name = list(static_method.name)
@@ -631,7 +627,8 @@ class MatlabWrapper(object):
                     name_upper_case=static_method.name,
                     args=self._wrap_args(static_method.args),
                     return_type=self._format_return_type(
-                        static_method.return_type, include_namespace=True),
+                        static_method.return_type,
+                        include_namespace=True),
                     length=len(static_method.args.args_list),
                     var_args_list=self._wrap_variable_arguments(
                         static_method.args),
@@ -663,13 +660,33 @@ class MatlabWrapper(object):
 
         return method_text
 
-    def wrap_instantiated_class(self, instantiated_class, namespace_name=''):
-        """Generate comments and code for given class
+    def wrap_class_serialize_method(self, class_name):
+        return 'function varargout = string_serialize(this, varargin)\n'\
+            '  % STRING_SERIALIZE usage: string_serialize() : returns '\
+            'string\n'\
+            '  % Doxygen can be found at '\
+            'http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n'\
+            '  if length(varargin) == 0\n'\
+            '    varargout{{1}} = {wrapper}({num}, this, '\
+            'varargin{{:}});\n'\
+            '  else\n'\
+            "    error('Arguments do not match any overload of function "\
+            "{class_name}.string_serialize');\n"\
+            '  end\nend\n\n'\
+            'function sobj = saveobj(obj)\n'\
+            '  % SAVEOBJ Saves the object to a matlab-readable format\n'\
+            '  sobj = obj.string_serialize();\nend\n'.format(
+                wrapper=self._wrapper_name(),
+                num=self._increment_wrapper_count(),
+                class_name=class_name)
 
-        Keyword arguments:
-        instantiated_class -- template_instantiator.InstantiatedClass
-            instance storing the class to wrap
-        namespace_name -- the name of the namespace if there is one
+    def wrap_instantiated_class(self, instantiated_class, namespace_name=''):
+        """Generate comments and code for given class.
+
+        Args:
+            instantiated_class: template_instantiator.InstantiatedClass
+                instance storing the class to wrap
+            namespace_name: the name of the namespace if there is one
         """
         file_name = self._clean_class_name(instantiated_class)
         namespace_file_name = namespace_name + file_name
@@ -722,8 +739,11 @@ class MatlabWrapper(object):
 
             content_text += '    ' + reduce(
                 lambda x, y: x + '\n' + ('' if y == '' else '    ') + y,
-                self.wrap_class_methods(namespace_name, instantiated_class,
-                                        methods, serialize=serialize)
+                self.wrap_class_methods(
+                    namespace_name,
+                    instantiated_class,
+                    methods,
+                    serialize=serialize)
                 .splitlines()
             ) + '\n'
 
@@ -731,7 +751,9 @@ class MatlabWrapper(object):
         content_text += '  end\n\n  ' + reduce(
             self._insert_spaces,
             self.wrap_static_methods(
-                namespace_name, instantiated_class, serialize[0]).splitlines()
+                namespace_name,
+                instantiated_class,
+                serialize[0]).splitlines()
         ) + '\n'
 
         content_text += '  end\nend\n'
@@ -741,8 +763,8 @@ class MatlabWrapper(object):
     def wrap_namespace(self, namespace):
         """Wrap a namespace by wrapping all of its components.
 
-        Keyword Arguments:
-        namespace -- interface_parser.namespace instance of the namespace
+        Args:
+            namespace: the interface_parser.namespace instance of the namespace
         """
         test_output = ''
         namespaces = namespace.full_namespaces()
