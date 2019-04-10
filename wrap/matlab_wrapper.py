@@ -638,7 +638,8 @@ class MatlabWrapper(object):
                 )
 
         if serialize:
-            method_text += '  function varargout = string_deserialize(varargin)\n'\
+            method_text += '  function varargout = string_deserialize'\
+                '(varargin)\n'\
                 '    % STRING_DESERIALIZE usage: string_deserialize() : '\
                 'returns {class_name}\n'\
                 '    % Doxygen can be found at http://research.cc.gatech.edu/'\
@@ -646,8 +647,8 @@ class MatlabWrapper(object):
                 '    if length(varargin) == 1\n'\
                 '      varargout{{1}} = {wrapper}({id}, varargin{{:}});\n'\
                 '    else\n'\
-                "      error('Arguments do not match any overload of function "\
-                "{class_name}.string_deserialize');\n"\
+                "      error('Arguments do not match any overload of function"\
+                " {class_name}.string_deserialize');\n"\
                 '    end\n'\
                 '  end\n\n'\
                 '  function obj = loadobj(sobj)\n'\
