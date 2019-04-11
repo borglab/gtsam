@@ -309,7 +309,7 @@ void BatchFixedLagSmoother::marginalize(const KeyVector& marginalizeKeys) {
   set<size_t> removedFactorSlots;
   const VariableIndex variableIndex(factors_);
   for(Key key: marginalizeKeys) {
-    const FastVector<size_t>& slots = variableIndex[key];
+    const auto& slots = variableIndex[key];
     removedFactorSlots.insert(slots.begin(), slots.end());
   }
 
