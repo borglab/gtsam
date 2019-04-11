@@ -172,13 +172,13 @@ namespace gtsam {
   /* ************************************************************************* */
   void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const {
     Vector frontalVec = gy.vector(KeyVector(beginFrontals(), endFrontals()));
-    frontalVec = gtsam::backSubstituteUpper(frontalVec, Matrix(get_R()));
+    frontalVec = get_R().triangularView<Eigen::Upper>().solve<Eigen::OnTheLeft>(frontalVec);
 
     // Check for indeterminant solution
     if (frontalVec.hasNaN()) throw IndeterminantLinearSystemException(this->keys().front());
 
     for (const_iterator it = beginParents(); it!= endParents(); it++)
-      gy[*it] += -1.0 * Matrix(getA(it)).transpose() * frontalVec;
+      gy[*it].noalias() += -1.0 * getA(it).transpose() * frontalVec;
 
     // Scale by sigmas
     if (model_)
