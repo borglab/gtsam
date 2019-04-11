@@ -291,7 +291,7 @@ FactorIndices ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2& isam
   FactorIndices removedFactorSlots;
   const VariableIndex& variableIndex = isam2.getVariableIndex();
   for(Key key: keys) {
-    const FastVector<size_t>& slots = variableIndex[key];
+    const auto& slots = variableIndex[key];
     removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
   }
 
