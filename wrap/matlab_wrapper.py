@@ -492,14 +492,15 @@ class MatlabWrapper(object):
                 '        my_ptr = {wrapper_name}({id}, varargin{{2}});\n' \
                 '      end\n'.format(
                     wrapper_name=self._wrapper_name(),
-                    id=self._increment_wrapper_count())
+                    id=self._increment_wrapper_count() + 1)
         else:
             methods_wrap += '      my_ptr = varargin{2};\n'
 
         methods_wrap += '      {ptr}{wrapper_name}({id}, my_ptr);\n' \
             .format(ptr='base_ptr = ' if has_parent else '',
                     wrapper_name=self._wrapper_name(),
-                    id=self._increment_wrapper_count())
+                    id=self._increment_wrapper_count() - 1 if is_virtual
+                        else self._increment_wrapper_count())
 
         for ctor in ctors:
             wrapper_return = '[ my_ptr, base_ptr ] = ' if has_parent \
