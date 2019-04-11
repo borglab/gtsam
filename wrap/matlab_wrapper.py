@@ -10,11 +10,11 @@ from functools import reduce
 class MatlabWrapper(object):
     """ Wrap the given C++ code into Matlab.
 
-    Keyword arguments:
-    module -- the C++ module being wrapped
-    module_name -- name of the C++ module being wrapped
-    top_module_namespace -- C++ namespace for the top module (default '')
-    ignore_classes -- A list of classes to ignore (default [])
+    Attributes
+        module: the C++ module being wrapped
+        module_name: name of the C++ module being wrapped
+        top_module_namespace: C++ namespace for the top module (default '')
+        ignore_classes: A list of classes to ignore (default [])
     """
 
     """Map the data type to its Matlab class.
@@ -54,6 +54,13 @@ class MatlabWrapper(object):
     """
     wrapper_count = 0
 
+    """Set of all the includes in the namespace"""
+    includes = {}
+
+    """Set of all classes in the namespace"""
+    classes = []
+    classes_elems = {}
+
     """Files and their content"""
     content = []
 
@@ -63,6 +70,14 @@ class MatlabWrapper(object):
         self.module_name = module_name
         self.top_module_namespace = top_module_namespace
         self.ignore_classe = ignore_classes
+
+    def _add_include(self, include):
+        self.includes[include] = 0
+
+    def _add_class(self, instantiated_class):
+        if self.classes_elems.get(instantiated_class) is None:
+            self.classes_elems[instantiated_class] = 0
+            self.classes.append(instantiated_class)
 
     def _increment_wrapper_count(self):
         """Get and increment the wrapper count"""
@@ -110,8 +125,7 @@ class MatlabWrapper(object):
     def _format_type_name(self, type_name, separator='::',
                           include_namespace=True, constructor=False,
                           method=False):
-        """Format the type name.
-
+        """
         Args:
             type_name: an interface_parser.Typename to reformat
             separator: the statement to add between namespaces and typename
@@ -166,6 +180,17 @@ class MatlabWrapper(object):
                     include_namespace=include_namespace))
 
         return return_wrap
+
+    def _format_class_name(self, instantiated_class, separator=''):
+        """Format a template_instantiator.InstantiatedClass name."""
+        class_name = instantiated_class.parent.name
+
+        if class_name != '':
+            class_name += separator
+
+        class_name += instantiated_class.name
+
+        return class_name
 
     def _wrap_args(self, args):
         """Wrap an interface_parser.ArgumentList into a list of arguments.
@@ -779,9 +804,13 @@ class MatlabWrapper(object):
         namespace_scope = []
 
         for element in namespace.content:
-            if isinstance(element, parser.Namespace):
+            if isinstance(element, parser.Include):
+                self._add_include(element)
+            elif isinstance(element, parser.Namespace):
                 self.wrap_namespace(element)
             elif isinstance(element, instantiator.InstantiatedClass):
+                self._add_class(element)
+
                 if inner_namespace:
                     class_text = self.wrap_instantiated_class(
                         element, namespace.name)
@@ -811,8 +840,70 @@ class MatlabWrapper(object):
 
         return wrapped
 
+    def generate_wrapper(self, namespace):
+        """Generate the c++ wrapper."""
+        # Includes
+        wrapper_file = '#include <wrap/matlab.h>\n' \
+            '#include <map>\n\n' \
+            '#include <boost/archive/text_iarchive.hpp>\n' \
+            '#include <boost/archive/text_oarchive.hpp>\n' \
+            '#include <boost/serialization/export.hpp>\n\n'
+
+        includes_list = sorted(
+            list(self.includes.keys()),
+            key=lambda include: include.header)
+
+        wrapper_file += reduce(
+            lambda x, y: str(x) + '\n' + str(y),
+            includes_list) + '\n'
+
+        typedef = ''
+        delete_objs = 'void _deleteAllObjects()\n' \
+            '{\n' \
+            '  mstream mout;\n' \
+            '  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n' \
+            '  bool anyDeleted = false;\n'
+
+        for cls in self.classes:
+            class_name = self._format_class_name(cls, '::')
+            className = self._format_class_name(cls)
+
+            typedef += 'typedef std::set<std::shared_ptr<{class_name}>*' \
+                '> Collector_{className};\n' \
+                'static Collector_{className} collector_{className};\n'.format(
+                    class_name=class_name,
+                    className=className
+                )
+
+            delete_objs += '  {{ for(Collector_{className}::iterator iter = ' \
+                'collector_{className}.begin();\n' \
+                '      iter != collector_{className}.end(); ) {{\n' \
+                '    delete *iter;\n' \
+                '    collector_{className}.erase(iter++);\n' \
+                '    anyDeleted = true;\n' \
+                '  }} }}\n'.format(className=className)
+
+        wrapper_file += '{typedefs}\n' \
+            '{delete_objs}\n' \
+            '  if(anyDeleted)\n' \
+            '    cout <<\n' \
+            '      "WARNING:  Wrap modules with variables in the workspace ' \
+            'have been reloaded due to\\n"\n' \
+            '      "calling destructors, call \'clear all\' again if you ' \
+            'plan to now recompile a wrap\\n"\n' \
+            '      "module, so that your recompiled module is used instead ' \
+            'of the old one." << endl;' \
+            '  std::cout.rdbuf(outbuf);\n' \
+            '}}\n\n'.format(
+                typedefs=typedef,
+                delete_objs=delete_objs
+            )
+
+        self.content.append((self._wrapper_name() + '.cpp', wrapper_file))
+
     def wrap(self):
-        wrapped_namespace = self.wrap_namespace(self.module)
+        self.wrap_namespace(self.module)
+        self.generate_wrapper(self.module)
 
         return self.content
 
