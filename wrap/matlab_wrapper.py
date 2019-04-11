@@ -69,6 +69,13 @@ class MatlabWrapper(object):
     """Id for ordering global functions in the wrapper"""
     global_function_id = 0
 
+    """Set of all the includes in the namespace"""
+    includes = {}
+
+    """Set of all classes in the namespace"""
+    classes = []
+    classes_elems = {}
+
     """Files and their content"""
     content = []
 
@@ -84,10 +91,23 @@ class MatlabWrapper(object):
     def _add_include(self, include):
         self.includes[include] = 0
 
+<<<<<<< 4cbbf85714c959b8dfcf726782cf111aa381d4a2
+=======
+    def _add_include(self, include):
+        self.includes[include] = 0
+
+>>>>>>> Generate typedefs and delete method for wrapper
     def _add_class(self, instantiated_class):
         if self.classes_elems.get(instantiated_class) is None:
             self.classes_elems[instantiated_class] = 0
             self.classes.append(instantiated_class)
+<<<<<<< 4cbbf85714c959b8dfcf726782cf111aa381d4a2
+=======
+
+    def _increment_wrapper_count(self):
+        """Get and increment the wrapper count"""
+        self.wrapper_count += 1
+>>>>>>> Generate typedefs and delete method for wrapper
 
     def _update_wrapper_id(self, collector_function=None, id_diff=0):
         """Get and define wrapper ids.
