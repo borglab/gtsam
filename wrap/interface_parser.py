@@ -1,15 +1,15 @@
 import os
 import pyparsing
 from pyparsing import (alphas, alphanums, cppStyleComment, delimitedList,
-                       empty, nums, stringEnd, CharsNotIn, Keyword, Forward, Word,
-                       Literal, OneOrMore, Optional, Or, Group, Suppress,
+                       empty, nums, stringEnd, CharsNotIn, Keyword, Forward,
+                       Word, Literal, OneOrMore, Optional, Or, Group, Suppress,
                        ZeroOrMore)
 from pyparsing import ParseException, ParserElement
 import sys
 
 ParserElement.enablePackrat()
 
-IDENT = Word(alphas + '_', alphanums + '_')
+IDENT = Word(alphas + '_', alphanums + '_') ^ Word(nums)
 POINTER, REF = map(Literal, "*&")
 LPAREN, RPAREN, LBRACE, RBRACE, COLON, SEMI_COLON = map(Suppress, "(){}:;")
 LOPBRACK, ROPBRACK, COMMA, EQUAL = map(Suppress, "<>,=")
@@ -45,17 +45,21 @@ class Typename(object):
     namespaces_name_rule = delimitedList(IDENT, "::")
     instantiation_name_rule = delimitedList(IDENT, "::")
     rule = Forward()
+
     rule << (
         namespaces_name_rule("namespaces_name") +
-        Optional((LOPBRACK +
-                  delimitedList(rule, ",")(
-                      "instantiations") + ROPBRACK)
-                 )
+        Optional(
+            (
+                LOPBRACK + delimitedList(rule, ",")("instantiations") +
+                ROPBRACK
+            )
+        )
     ).setParseAction(lambda t: Typename(t.namespaces_name, t.instantiations))
 
     def __init__(self, namespaces_name, instantiations=''):
         self.namespaces = namespaces_name[:-1]
         self.name = namespaces_name[-1]
+
         if instantiations:
             self.instantiations = instantiations.asList()
         else:
@@ -106,9 +110,11 @@ class Type(object):
         Type with qualifiers.
         """
         rule = (
-            Optional(CONST("is_const")) + Typename.rule("typename") +
-            Optional(POINTER("is_ptr")
-                     | REF("is_ref"))
+            Optional(
+                CONST("is_const")
+            ) +
+            Typename.rule("typename") +
+            Optional(POINTER("is_ptr") | REF("is_ref"))
         ).setParseAction(
             lambda t: Type._QualifiedType(
                 Typename.from_parse_result(t.typename),
@@ -258,9 +264,11 @@ class ReturnType(object):
 class Template(object):
     class TypenameAndInstantiations(object):
         rule = (
-            IDENT("typename") +
-            Optional(EQUAL + LBRACE + ((delimitedList(Typename.rule)
-            ("instantiations")) ^ delimitedList(Word(nums))) + RBRACE)
+            IDENT("typename") + Optional(
+                EQUAL + LBRACE + (
+                    (delimitedList(Typename.rule)("instantiations"))
+                ) + RBRACE
+            )
         ).setParseAction(
             lambda t: Template.TypenameAndInstantiations(
                 t.typename,
@@ -270,6 +278,7 @@ class Template(object):
 
         def __init__(self, typename, instantiations):
             self.typename = typename
+
             if instantiations:
                 self.instantiations = instantiations.asList()
             else:

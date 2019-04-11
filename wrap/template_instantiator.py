@@ -77,6 +77,8 @@ def instantiate_name(original_name, instantiations):
     TODO(duy): To avoid conflicts, we should include the instantiation's
     namespaces, but I find that too verbose.
     """
+    inst_name = ''
+
     return "{}{}".format(original_name, "".join(
         [inst.instantiated_name() for inst in instantiations]))
 
