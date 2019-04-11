@@ -26,7 +26,6 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <boost/tuple/tuple.hpp>
 #include <boost/assign/list_of.hpp>
 
 namespace gtsam {
@@ -131,7 +130,7 @@ namespace example {
  * -x11-x21-x31
  * with x11 clamped at (1,1), and others related by 2D odometry.
  */
-// inline boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N);
+// inline std::pair<GaussianFactorGraph, VectorValues> planarGraph(size_t N);
 
 /*
  * Create canonical ordering for planar graph that also works for tree
@@ -399,7 +398,7 @@ inline std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T) {
 inline GaussianFactorGraph createSmoother(int T) {
   NonlinearFactorGraph nlfg;
   Values poses;
-  boost::tie(nlfg, poses) = createNonlinearSmoother(T);
+  std::tie(nlfg, poses) = createNonlinearSmoother(T);
 
   return *nlfg.linearize(poses);
 }
@@ -563,7 +562,7 @@ inline Symbol key(size_t x, size_t y) {
 } // \namespace impl
 
 /* ************************************************************************* */
-inline boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
+inline std::pair<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
   using namespace impl;
 
   // create empty graph
@@ -601,7 +600,7 @@ inline boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
 
   // linearize around zero
   boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros);
-  return boost::make_tuple(*gfg, xtrue);
+  return std::make_pair(*gfg, xtrue);
 }
 
 /* ************************************************************************* */

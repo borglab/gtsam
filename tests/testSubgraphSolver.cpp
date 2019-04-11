@@ -15,18 +15,19 @@
  *  @author Yong-Dian Jian
  **/
 
+#include <gtsam/linear/SubgraphSolver.h>
+
 #include <tests/smallExample.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/iterative.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/SubgraphSolver.h>
+#include <gtsam/linear/SubgraphBuilder.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/numericalDerivative.h>
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/list.hpp>
 using namespace boost::assign;
 
@@ -54,12 +55,32 @@ TEST( SubgraphSolver, Parameters )
 }
 
 /* ************************************************************************* */
+TEST( SubgraphSolver, splitFactorGraph )
+{
+  // Build a planar graph
+  GaussianFactorGraph Ab;
+  VectorValues xtrue;
+  std::tie(Ab, xtrue) = example::planarGraph(N); // A*x-b
+
+  SubgraphBuilderParameters params;
+  params.augmentationFactor = 0.0;
+  SubgraphBuilder builder(params);
+  auto subgraph = builder(Ab);
+  EXPECT_LONGS_EQUAL(9, subgraph.size());
+
+  GaussianFactorGraph::shared_ptr Ab1, Ab2;
+  std::tie(Ab1, Ab2) = splitFactorGraph(Ab, subgraph);
+  EXPECT_LONGS_EQUAL(9, Ab1->size());
+  EXPECT_LONGS_EQUAL(13, Ab2->size());
+}
+
+/* ************************************************************************* */
 TEST( SubgraphSolver, constructor1 )
 {
   // Build a planar graph
   GaussianFactorGraph Ab;
   VectorValues xtrue;
-  boost::tie(Ab, xtrue) = example::planarGraph(N); // A*x-b
+  std::tie(Ab, xtrue) = example::planarGraph(N); // A*x-b
 
   // The first constructor just takes a factor graph (and kParameters)
   // and it will split the graph into A1 and A2, where A1 is a spanning tree
@@ -75,11 +96,11 @@ TEST( SubgraphSolver, constructor2 )
   GaussianFactorGraph Ab;
   VectorValues xtrue;
   size_t N = 3;
-  boost::tie(Ab, xtrue) = example::planarGraph(N); // A*x-b
+  std::tie(Ab, xtrue) = example::planarGraph(N); // A*x-b
 
   // Get the spanning tree
   GaussianFactorGraph::shared_ptr Ab1, Ab2; // A1*x-b1 and A2*x-b2
-  boost::tie(Ab1, Ab2) = example::splitOffPlanarTree(N, Ab);
+  std::tie(Ab1, Ab2) = example::splitOffPlanarTree(N, Ab);
 
   // The second constructor takes two factor graphs, so the caller can specify
   // the preconditioner (Ab1) and the constraints that are left out (Ab2)
@@ -95,11 +116,11 @@ TEST( SubgraphSolver, constructor3 )
   GaussianFactorGraph Ab;
   VectorValues xtrue;
   size_t N = 3;
-  boost::tie(Ab, xtrue) = example::planarGraph(N); // A*x-b
+  std::tie(Ab, xtrue) = example::planarGraph(N); // A*x-b
 
   // Get the spanning tree and corresponding kOrdering
   GaussianFactorGraph::shared_ptr Ab1, Ab2; // A1*x-b1 and A2*x-b2
-  boost::tie(Ab1, Ab2) = example::splitOffPlanarTree(N, Ab);
+  std::tie(Ab1, Ab2) = example::splitOffPlanarTree(N, Ab);
 
   // The caller solves |A1*x-b1|^2 == |R1*x-c1|^2, where R1 is square UT
   auto Rc1 = Ab1->eliminateSequential();

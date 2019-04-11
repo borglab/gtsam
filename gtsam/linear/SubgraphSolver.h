@@ -20,6 +20,10 @@
 #pragma once
 
 #include <gtsam/linear/ConjugateGradientSolver.h>
+#include <gtsam/linear/SubgraphBuilder.h>
+
+#include <map>
+#include <utility>  // pair
 
 namespace gtsam {
 
@@ -28,13 +32,15 @@ class GaussianFactorGraph;
 class GaussianBayesNet;
 class SubgraphPreconditioner;
 
-class GTSAM_EXPORT SubgraphSolverParameters
+struct GTSAM_EXPORT SubgraphSolverParameters
     : public ConjugateGradientParameters {
- public:
-  typedef ConjugateGradientParameters Base;
-  SubgraphSolverParameters() : Base() {}
+  SubgraphBuilderParameters builderParams;
+  explicit SubgraphSolverParameters(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
+    : builderParams(p) {}
   void print() const { Base::print(); }
-  virtual void print(std::ostream &os) const { Base::print(os); }
+  virtual void print(std::ostream &os) const {
+    Base::print(os);
+  }
 };
 
 /**
@@ -115,10 +121,19 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
   VectorValues optimize() const;
 
   /// Interface that IterativeSolver subclasses have to implement
-  virtual VectorValues optimize(const GaussianFactorGraph &gfg,
-                                const KeyInfo &keyInfo,
-                                const std::map<Key, Vector> &lambda,
-                                const VectorValues &initial) override;
+  VectorValues optimize(const GaussianFactorGraph &gfg,
+                        const KeyInfo &keyInfo,
+                        const std::map<Key, Vector> &lambda,
+                        const VectorValues &initial) override;
+
+  /// @}
+  /// @name Implement interface
+  /// @{
+
+  /// Split graph using Kruskal algorithm, treating binary factors as edges.
+  std::pair < boost::shared_ptr<GaussianFactorGraph>,
+      boost::shared_ptr<GaussianFactorGraph> > splitGraph(
+          const GaussianFactorGraph &gfg);
 
   /// @}
 
@@ -127,7 +142,7 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
   /// @{
   SubgraphSolver(const boost::shared_ptr<GaussianFactorGraph> &A,
                  const Parameters &parameters, const Ordering &ordering)
-      : SubgraphSolver(*A, parameters, ordering){};
+      : SubgraphSolver(*A, parameters, ordering) {}
   SubgraphSolver(const GaussianFactorGraph &, const GaussianFactorGraph &,
                  const Parameters &, const Ordering &);
   SubgraphSolver(const boost::shared_ptr<GaussianFactorGraph> &Ab1,
@@ -138,12 +153,6 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
                  const GaussianFactorGraph &, const Parameters &);
   /// @}
 #endif
-
- protected:
-  /// Split graph using Kruskal algorithm, treating binary factors as edges.
-  static boost::tuple<boost::shared_ptr<GaussianFactorGraph>,
-                      boost::shared_ptr<GaussianFactorGraph>>
-  splitGraph(const GaussianFactorGraph &gfg);
 };
 
 }  // namespace gtsam

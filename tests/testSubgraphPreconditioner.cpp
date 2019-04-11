@@ -218,7 +218,7 @@ TEST(SubgraphSolver, Solves) {
   SubgraphPreconditioner system;
 
   // We test on three different graphs
-  const auto Ab1 = planarGraph(3).get<0>();
+  const auto Ab1 = planarGraph(3).first;
   const auto Ab2 = read("toy3D");
   const auto Ab3 = read("randomGrid3D");
 
