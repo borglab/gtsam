@@ -863,7 +863,9 @@ class MatlabWrapper(object):
 
         return method_text
 
-    def wrap_class_serialize_method(self, class_name):
+    def wrap_class_serialize_method(self, namespace_name, inst_class):
+        class_name = inst_class.name
+
         return 'function varargout = string_serialize(this, varargin)\n'\
             '  % STRING_SERIALIZE usage: string_serialize() : returns '\
             'string\n'\
@@ -881,9 +883,9 @@ class MatlabWrapper(object):
             '  sobj = obj.string_serialize();\nend\n'.format(
                 wrapper=self._wrapper_name(),
                 id=self._update_wrapper_id(
-                    class_name + '_string_serialize'
+                    (namespace_name, inst_class, 'string_serialize', None)
                 ),
-                class_name=class_name)
+                class_name=namespace_name + '.' + class_name)
 
     def wrap_instantiated_class(self, instantiated_class, namespace_name=''):
         """Generate comments and code for given class.
