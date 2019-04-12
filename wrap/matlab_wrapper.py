@@ -52,7 +52,10 @@ class MatlabWrapper(object):
     """The amount of times the wrapper has created a call to
     geometry_wrapper
     """
-    wrapper_count = 0
+    wrapper_id = 0
+
+    """Map each wrapper id to what it represents"""
+    wrapper_map = {}
 
     """Set of all the includes in the namespace"""
     includes = {}
@@ -79,11 +82,25 @@ class MatlabWrapper(object):
             self.classes_elems[instantiated_class] = 0
             self.classes.append(instantiated_class)
 
-    def _increment_wrapper_count(self):
-        """Get and increment the wrapper count"""
-        self.wrapper_count += 1
+    def _update_wrapper_id(self, collector_function_name='', id_diff=0):
+        """Get and define wrapper ids.
 
-        return self.wrapper_count - 1
+        Generates the map of id -> collector function.
+
+        Args:
+            collector_function_name: name of the collector function
+            id_diff: constant to add to the id in the map
+
+        Returns:
+            the current wrapper id
+        """
+        if collector_function_name != '':
+            self.wrapper_map[self.wrapper_id] = collector_function_name + \
+                '_' + str(self.wrapper_id + id_diff)
+
+        self.wrapper_id += 1
+
+        return self.wrapper_id - 1
 
     def _qualified_name(self, names):
         return 'handle' if names == '' else names
@@ -445,7 +462,7 @@ class MatlabWrapper(object):
             param_wrap += '        varargout{{1}} = {module_name}'\
                 '_wrapper({num}, varargin{{:}});\n'.format(
                     module_name=self.module_name,
-                    num=self._increment_wrapper_count())
+                    num=self._update_wrapper_id())
 
         param_wrap += '      else\n'\
             "        error('Arguments do not match any overload of function "\
@@ -468,6 +485,7 @@ class MatlabWrapper(object):
                 chain
         """
         has_parent = parent_name != ''
+        namespace_class_name = namespace_name + class_name
 
         if type(ctors) != list:
             ctors = [ctors]
@@ -492,15 +510,19 @@ class MatlabWrapper(object):
                 '        my_ptr = {wrapper_name}({id}, varargin{{2}});\n' \
                 '      end\n'.format(
                     wrapper_name=self._wrapper_name(),
-                    id=self._increment_wrapper_count() + 1)
+                    id=self._update_wrapper_id() + 1)
         else:
             methods_wrap += '      my_ptr = varargin{2};\n'
+
+        collector_base_id = self._update_wrapper_id(
+            namespace_class_name + '_collectorInsertAndMakeBase',
+            id_diff=-1 if is_virtual else 0
+        )
 
         methods_wrap += '      {ptr}{wrapper_name}({id}, my_ptr);\n' \
             .format(ptr='base_ptr = ' if has_parent else '',
                     wrapper_name=self._wrapper_name(),
-                    id=self._increment_wrapper_count() - 1 if is_virtual
-                        else self._increment_wrapper_count())
+                    id=collector_base_id - (1 if is_virtual else 0))
 
         for ctor in ctors:
             wrapper_return = '[ my_ptr, base_ptr ] = ' if has_parent \
@@ -512,7 +534,9 @@ class MatlabWrapper(object):
                     varargin=self._wrap_variable_arguments(ctor.args, False),
                     ptr=wrapper_return,
                     wrapper=self._wrapper_name(),
-                    num=self._increment_wrapper_count(),
+                    num=self._update_wrapper_id(
+                        namespace_class_name + '_constructor'
+                    ),
                     comma='' if len(ctor.args.args_list) == 0 else ', ',
                     var_arg=self._wrap_list_variable_arguments(ctor.args))
 
@@ -542,12 +566,12 @@ class MatlabWrapper(object):
             '  ptr_{class_name} = 0\n'\
             'end\n'.format(class_name=class_name)
 
-    def wrap_class_delete(self, class_name):
+    def wrap_class_deconstructor(self, class_name):
         """Generate the delete function for the Matlab class."""
         methods_text = '  function delete(obj)\n'\
             '    {wrapper}({num}, obj.ptr_{class_name});\n'\
             '  end\n\n'.format(
-                num=self._increment_wrapper_count(),
+                num=self._update_wrapper_id(class_name + '_deconstructor'),
                 wrapper=self._wrapper_name(),
                 class_name=class_name)
 
@@ -619,7 +643,10 @@ class MatlabWrapper(object):
                     'varargin{{:}});\n{end_statement}'.format(
                         method_args=self._wrap_args(method.args),
                         return_type=return_type,
-                        num=self._increment_wrapper_count(),
+                        num=self._update_wrapper_id(
+                            namespace_name + inst_class.name + '_' +
+                            method.name
+                        ),
                         check_statement=check_statement,
                         spacing='' if check_statement == '' else '    ',
                         varargout=varargout,
@@ -632,6 +659,8 @@ class MatlabWrapper(object):
 
     def wrap_static_methods(self, namespace_name, instantiated_class,
                             serialize):
+        namespace_class_name = namespace_name + instantiated_class.name
+        
         method_text = 'methods(Static = true)\n'
         static_methods = sorted(
             instantiated_class.static_methods,
@@ -659,7 +688,9 @@ class MatlabWrapper(object):
                     var_args_list=self._wrap_variable_arguments(
                         static_method.args),
                     wrapper=self._wrapper_name(),
-                    id=self._increment_wrapper_count(),
+                    id=self._update_wrapper_id(
+                        namespace_class_name + '_' + static_method.name
+                    ),
                     class_name=instantiated_class.name
                 )
 
@@ -683,7 +714,10 @@ class MatlabWrapper(object):
                 '  end\n'.format(
                     class_name=namespace_name + '.' + instantiated_class.name,
                     wrapper=self._wrapper_name(),
-                    id=self._increment_wrapper_count())
+                    id=self._update_wrapper_id(
+                        namespace_class_name + '_string_deserialize'
+                    )
+                )
 
         return method_text
 
@@ -694,7 +728,7 @@ class MatlabWrapper(object):
             '  % Doxygen can be found at '\
             'http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n'\
             '  if length(varargin) == 0\n'\
-            '    varargout{{1}} = {wrapper}({num}, this, '\
+            '    varargout{{1}} = {wrapper}({id}, this, '\
             'varargin{{:}});\n'\
             '  else\n'\
             "    error('Arguments do not match any overload of function "\
@@ -704,7 +738,9 @@ class MatlabWrapper(object):
             '  % SAVEOBJ Saves the object to a matlab-readable format\n'\
             '  sobj = obj.string_serialize();\nend\n'.format(
                 wrapper=self._wrapper_name(),
-                num=self._increment_wrapper_count(),
+                id=self._update_wrapper_id(
+                    class_name + '_string_serialize'
+                ),
                 class_name=class_name)
 
     def wrap_instantiated_class(self, instantiated_class, namespace_name=''):
@@ -748,7 +784,7 @@ class MatlabWrapper(object):
         # Delete function
         content_text += '  ' + reduce(
             self._insert_spaces,
-            self.wrap_class_delete(namespace_file_name).splitlines()
+            self.wrap_class_deconstructor(namespace_file_name).splitlines()
         ) + '\n'
 
         # Display function
@@ -859,23 +895,60 @@ class MatlabWrapper(object):
             includes_list) + '\n'
 
         typedef = ''
+        typedef_collectors = ''
         delete_objs = 'void _deleteAllObjects()\n' \
             '{\n' \
             '  mstream mout;\n' \
             '  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n' \
             '  bool anyDeleted = false;\n'
+        rtti_reg_start = 'void _geometry_RTTIRegister() {{\n' \
+            '  const mxArray *alreadyCreated = mexGetVariablePtr("global", ' \
+            '"gtsam_{module_name}_rttiRegistry_created");\n' \
+            '  if(!alreadyCreated) {{\n' \
+            '    std::map<std::string, std::string> types;\n'.format(
+                module_name=self.module_name)
+        rtti_reg_mid = ''
+        rtti_reg_end = '\n    mxArray *registry = mexGetVariable(' \
+            '"global", "gtsamwrap_rttiRegistry");\n' \
+            '    if(!registry)\n' \
+            '      registry = mxCreateStructMatrix(1, 1, 0, NULL);\n' \
+            '    typedef std::pair<std::string, std::string> StringPair;\n' \
+            '    for(const StringPair& rtti_matlab: types) {\n' \
+            '      int fieldId = mxAddField(registry, rtti_matlab.first.' \
+            'c_str());\n' \
+            '      if(fieldId < 0)\n' \
+            '        mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, ' \
+            'inheritance will not work correctly");\n' \
+            '      mxArray *matlabName = mxCreateString(rtti_matlab.second.' \
+            'c_str());\n' \
+            '      mxSetFieldByNumber(registry, 0, fieldId, matlabName);\n' \
+            '    }\n' \
+            '    if(mexPutVariable("global", "gtsamwrap_rttiRegistry", ' \
+            'registry) != 0)\n' \
+            '      mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, ' \
+            'inheritance will not work correctly");\n' \
+            '    mxDestroyArray(registry);\n    \n' \
+            '    mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, ' \
+            'mxINT8_CLASS, mxREAL);\n' \
+            '    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_' \
+            'created", newAlreadyCreated) != 0)\n' \
+            '      mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, ' \
+            'inheritance will not work correctly");\n' \
+            '    mxDestroyArray(newAlreadyCreated);\n' \
+            '  }\n}\n'
+        ptr_ctor_frag = ''
 
         for cls in self.classes:
             class_name = self._format_class_name(cls, '::')
             className = self._format_class_name(cls)
 
-            typedef += 'typedef std::set<std::shared_ptr<{class_name}>*' \
+            typedef_collectors += 'typedef std::set<std::shared_ptr' \
+                '<{class_name}>*' \
                 '> Collector_{className};\n' \
                 'static Collector_{className} collector_{className};\n'.format(
                     class_name=class_name,
                     className=className
                 )
-
             delete_objs += '  {{ for(Collector_{className}::iterator iter = ' \
                 'collector_{className}.begin();\n' \
                 '      iter != collector_{className}.end(); ) {{\n' \
@@ -884,8 +957,23 @@ class MatlabWrapper(object):
                 '    anyDeleted = true;\n' \
                 '  }} }}\n'.format(className=className)
 
-        wrapper_file += '{typedefs}\n' \
-            '{delete_objs}\n' \
+            if cls.is_virtual:
+                rtti_reg_mid += '    types.insert(std::make_pair(typeid({}).'\
+                    'name(), "{}"));\n'.format(class_name, className)
+
+        for id in range(self.wrapper_id):
+            if self.wrapper_map.get(id) is not None:
+                ptr_ctor_frag += 'void {collector_func_name}(int ' \
+                    'nargout, mxArray *out[], int nargin, const mxArray *in[])\n' \
+                    ''.format(
+                        className=className,
+                        collector_func_name=self.wrapper_map.get(id)
+                    )
+
+        wrapper_file += \
+            '{typedef}\n' \
+            '{typedefs_collectors}\n' \
+            '{delete_objs}' \
             '  if(anyDeleted)\n' \
             '    cout <<\n' \
             '      "WARNING:  Wrap modules with variables in the workspace ' \
@@ -893,11 +981,16 @@ class MatlabWrapper(object):
             '      "calling destructors, call \'clear all\' again if you ' \
             'plan to now recompile a wrap\\n"\n' \
             '      "module, so that your recompiled module is used instead ' \
-            'of the old one." << endl;' \
+            'of the old one." << endl;\n' \
             '  std::cout.rdbuf(outbuf);\n' \
-            '}}\n\n'.format(
-                typedefs=typedef,
-                delete_objs=delete_objs
+            '}}\n\n' \
+            '{rtti_register}\n' \
+            '{pointer_contstructor_fragment}'.format(
+                typedef=typedef,
+                typedefs_collectors=typedef_collectors,
+                delete_objs=delete_objs,
+                rtti_register=rtti_reg_start + rtti_reg_mid + rtti_reg_end,
+                pointer_contstructor_fragment=ptr_ctor_frag
             )
 
         self.content.append((self._wrapper_name() + '.cpp', wrapper_file))
