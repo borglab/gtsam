@@ -295,6 +295,8 @@ def instantiate_namespace_inplace(namespace):
         the instantiated content.
     """
     instantiated_content = []
+    typedef_content = []
+
     for element in namespace.content:
         if isinstance(element, parser.Class):
             original_class = element
@@ -315,14 +317,18 @@ def instantiate_namespace_inplace(namespace):
             typedef_inst = element
             original_class = namespace.top_level().find_class(
                 typedef_inst.typename)
-            instantiated_content.append(
-                InstantiatedClass(original_class,
-                                  typedef_inst.typename.instantiations,
-                                  typedef_inst.new_name)
+            typedef_content.append(
+                InstantiatedClass(
+                    original_class,
+                    typedef_inst.typename.instantiations,
+                    typedef_inst.new_name
+                )
             )
         elif isinstance(element, parser.Namespace):
             instantiate_namespace_inplace(element)
             instantiated_content.append(element)
         else:
             instantiated_content.append(element)
+
+    instantiated_content.extend(typedef_content)
     namespace.content = instantiated_content
