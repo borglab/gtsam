@@ -417,6 +417,30 @@ class MatlabWrapper(object):
 
         return params, body_args
 
+    def _wrapper_unwrap_arguments(self, args):
+        """Format the interface_parser.Arguments into the form
+        ((a), unsigned char a = unwrap< unsigned char >(in[1]);)
+        """
+        params = ''
+        body_args = ''
+        id = 0
+
+        for arg in args.args_list:
+            if params != '':
+                params += ','
+
+            params += arg.name
+
+            body_args += '  {ctype} {name} = unwrap< {ctype} >(in[' \
+                '{id}]);\n'.format(
+                    ctype=arg.ctype.typename.name,
+                    name=arg.name,
+                    id=id)
+
+            id += 1
+
+        return params, body_args
+
     def _return_count(self, return_type):
         """The amount of objects returned by the given
         interface_parser.ReturnType.
