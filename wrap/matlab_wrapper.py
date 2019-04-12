@@ -870,7 +870,7 @@ class MatlabWrapper(object):
             '  % Doxygen can be found at '\
             'http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n'\
             '  if length(varargin) == 0\n'\
-            '    varargout{{1}} = {wrapper}({num}, this, '\
+            '    varargout{{1}} = {wrapper}({id}, this, '\
             'varargin{{:}});\n'\
             '  else\n'\
             "    error('Arguments do not match any overload of function "\
@@ -880,7 +880,9 @@ class MatlabWrapper(object):
             '  % SAVEOBJ Saves the object to a matlab-readable format\n'\
             '  sobj = obj.string_serialize();\nend\n'.format(
                 wrapper=self._wrapper_name(),
-                num=self._increment_wrapper_count(),
+                id=self._update_wrapper_id(
+                    class_name + '_string_serialize'
+                ),
                 class_name=class_name)
 
     def wrap_instantiated_class(self, instantiated_class, namespace_name=''):
