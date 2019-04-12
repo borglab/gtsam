@@ -111,6 +111,10 @@ class TestWrap(unittest.TestCase):
         self.assertTrue(filecmp.cmp(
             self.MATLAB_ACTUAL_DIR + 'overloadedGlobalFunction.m',
             self.MATLAB_TEST_DIR + 'overloadedGlobalFunction.m'))
+        self.assertTrue(filecmp.cmp(
+            self.MATLAB_ACTUAL_DIR + 'geometry_wrapper.cpp',
+            self.MATLAB_TEST_DIR + 'geometry_wrapper.cpp'))
+
 
 if __name__ == '__main__':
     unittest.main()
