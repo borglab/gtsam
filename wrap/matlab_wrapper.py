@@ -54,7 +54,8 @@ class MatlabWrapper(object):
     """
     wrapper_id = 0
 
-    """Map each wrapper id to what it represents"""
+    """Map each wrapper id to what its collector function namespace, class,
+    type, and string format"""
     wrapper_map = {}
 
     """Set of all the includes in the namespace"""
@@ -72,7 +73,7 @@ class MatlabWrapper(object):
         self.module = module
         self.module_name = module_name
         self.top_module_namespace = top_module_namespace
-        self.ignore_classe = ignore_classes
+        self.ignore_classes = ignore_classes
 
     def _add_include(self, include):
         self.includes[include] = 0
@@ -82,21 +83,29 @@ class MatlabWrapper(object):
             self.classes_elems[instantiated_class] = 0
             self.classes.append(instantiated_class)
 
-    def _update_wrapper_id(self, collector_function_name='', id_diff=0):
+    def _update_wrapper_id(self, collector_function=None, id_diff=0):
         """Get and define wrapper ids.
 
         Generates the map of id -> collector function.
 
         Args:
-            collector_function_name: name of the collector function
+            collector_function: tuple storing info about the wrapper function
+                (namespace, class instance, function type, function name,
+                extra)
             id_diff: constant to add to the id in the map
 
         Returns:
             the current wrapper id
         """
-        if collector_function_name != '':
-            self.wrapper_map[self.wrapper_id] = collector_function_name + \
-                '_' + str(self.wrapper_id + id_diff)
+        if collector_function is not None:
+            self.wrapper_map[self.wrapper_id] = (
+                collector_function[0],
+                collector_function[1],
+                collector_function[2],
+                collector_function[0] + collector_function[1].name + '_' +
+                collector_function[2] + '_' + str(self.wrapper_id + id_diff),
+                collector_function[3]
+            )
 
         self.wrapper_id += 1
 
@@ -472,20 +481,20 @@ class MatlabWrapper(object):
             '{statements}\n'\
             '      end\n'.format(m_method=m_method, statements=param_wrap)
 
-    def wrap_class_constructors(self, namespace_name, class_name, parent_name,
+    def wrap_class_constructors(self, namespace_name, inst_class, parent_name,
                                 ctors, is_virtual):
         """Wrap class constructor.
 
         Args:
             namespace_name: the name of the namespace ('' if it does not exist)
-            class_name: the name of the class
+            inst_class: instance of the class
             parent_name: the name of the parent class if it exists
             ctors: the interface_parser.Constructor in the class
             is_virtual: whether the class is part of a virtual inheritance
                 chain
         """
         has_parent = parent_name != ''
-        namespace_class_name = namespace_name + class_name
+        class_name = inst_class.name
 
         if type(ctors) != list:
             ctors = [ctors]
@@ -515,7 +524,7 @@ class MatlabWrapper(object):
             methods_wrap += '      my_ptr = varargin{2};\n'
 
         collector_base_id = self._update_wrapper_id(
-            namespace_class_name + '_collectorInsertAndMakeBase',
+            (namespace_name, inst_class, 'collectorInsertAndMakeBase', None),
             id_diff=-1 if is_virtual else 0
         )
 
@@ -535,7 +544,7 @@ class MatlabWrapper(object):
                     ptr=wrapper_return,
                     wrapper=self._wrapper_name(),
                     num=self._update_wrapper_id(
-                        namespace_class_name + '_constructor'
+                        (namespace_name, inst_class, 'constructor', ctor)
                     ),
                     comma='' if len(ctor.args.args_list) == 0 else ', ',
                     var_arg=self._wrap_list_variable_arguments(ctor.args))
@@ -566,14 +575,17 @@ class MatlabWrapper(object):
             '  ptr_{class_name} = 0\n'\
             'end\n'.format(class_name=class_name)
 
-    def wrap_class_deconstructor(self, class_name):
+    def wrap_class_deconstructor(self, namespace_name, inst_class):
         """Generate the delete function for the Matlab class."""
+        class_name = inst_class.name
+
         methods_text = '  function delete(obj)\n'\
             '    {wrapper}({num}, obj.ptr_{class_name});\n'\
             '  end\n\n'.format(
-                num=self._update_wrapper_id(class_name + '_deconstructor'),
+                num=self._update_wrapper_id(
+                    (namespace_name, inst_class, 'deconstructor', None)),
                 wrapper=self._wrapper_name(),
-                class_name=class_name)
+                class_name=namespace_name + class_name)
 
         return methods_text
 
@@ -602,7 +614,7 @@ class MatlabWrapper(object):
 
             if method.name == 'serialize':
                 method_text += self.wrap_class_serialize_method(
-                    namespace_name + '.' + inst_class.name)
+                    namespace_name, inst_class)
                 serialize[0] = True
             else:
                 # Generate method code
@@ -644,8 +656,7 @@ class MatlabWrapper(object):
                         method_args=self._wrap_args(method.args),
                         return_type=return_type,
                         num=self._update_wrapper_id(
-                            namespace_name + inst_class.name + '_' +
-                            method.name
+                            (namespace_name, inst_class, method.name, method)
                         ),
                         check_statement=check_statement,
                         spacing='' if check_statement == '' else '    ',
@@ -659,8 +670,8 @@ class MatlabWrapper(object):
 
     def wrap_static_methods(self, namespace_name, instantiated_class,
                             serialize):
-        namespace_class_name = namespace_name + instantiated_class.name
-        
+        class_name = instantiated_class.name
+
         method_text = 'methods(Static = true)\n'
         static_methods = sorted(
             instantiated_class.static_methods,
@@ -688,9 +699,9 @@ class MatlabWrapper(object):
                     var_args_list=self._wrap_variable_arguments(
                         static_method.args),
                     wrapper=self._wrapper_name(),
-                    id=self._update_wrapper_id(
-                        namespace_class_name + '_' + static_method.name
-                    ),
+                    id=self._update_wrapper_id((
+                        namespace_name, instantiated_class, static_method.name,
+                        static_method)),
                     class_name=instantiated_class.name
                 )
 
@@ -715,13 +726,15 @@ class MatlabWrapper(object):
                     class_name=namespace_name + '.' + instantiated_class.name,
                     wrapper=self._wrapper_name(),
                     id=self._update_wrapper_id(
-                        namespace_class_name + '_string_deserialize'
-                    )
+                        (namespace_name, instantiated_class,
+                            'string_deserialize', None))
                 )
 
         return method_text
 
-    def wrap_class_serialize_method(self, class_name):
+    def wrap_class_serialize_method(self, namespace_name, inst_class):
+        class_name = inst_class.name
+
         return 'function varargout = string_serialize(this, varargin)\n'\
             '  % STRING_SERIALIZE usage: string_serialize() : returns '\
             'string\n'\
@@ -739,9 +752,9 @@ class MatlabWrapper(object):
             '  sobj = obj.string_serialize();\nend\n'.format(
                 wrapper=self._wrapper_name(),
                 id=self._update_wrapper_id(
-                    class_name + '_string_serialize'
+                    (namespace_name, inst_class, 'string_serialize', None)
                 ),
-                class_name=class_name)
+                class_name=namespace_name + '.' + class_name)
 
     def wrap_instantiated_class(self, instantiated_class, namespace_name=''):
         """Generate comments and code for given class.
@@ -774,7 +787,7 @@ class MatlabWrapper(object):
             self._insert_spaces,
             self.wrap_class_constructors(
                 namespace_name,
-                file_name,
+                instantiated_class,
                 instantiated_class.parent_class,
                 instantiated_class.ctors,
                 instantiated_class.is_virtual,
@@ -784,7 +797,8 @@ class MatlabWrapper(object):
         # Delete function
         content_text += '  ' + reduce(
             self._insert_spaces,
-            self.wrap_class_deconstructor(namespace_file_name).splitlines()
+            self.wrap_class_deconstructor(
+                namespace_name, instantiated_class).splitlines()
         ) + '\n'
 
         # Display function
@@ -877,6 +891,126 @@ class MatlabWrapper(object):
 
         return wrapped
 
+    def generate_collector_function(self, id):
+        if self.wrapper_map.get(id) is not None:
+            collector_func = self.wrapper_map.get(id)
+            body = '{\n'
+
+            class_name = collector_func[0] + collector_func[1].name
+            class_name_separated = collector_func[0]
+            if class_name_separated != '':
+                class_name_separated += '::'
+            class_name_separated += collector_func[1].name
+
+            if collector_func[2] == 'collectorInsertAndMakeBase':
+                body += '  mexAtExit(&_deleteAllObjects);\n' \
+                    '  typedef std::shared_ptr<{class_name_sep}> Shared;\n\n' \
+                    '  Shared *self = *reinterpret_cast<Shared**> ' \
+                    '(mxGetData(in[0]));\n' \
+                    '  collector_{class_name}.insert(self);\n'.format(
+                        class_name_sep=class_name_separated,
+                        class_name=class_name)
+            elif collector_func[2] == 'constructor':
+                body_args = ''
+                params = ''
+                id = 0
+
+                for arg in collector_func[4].args.args_list:
+                    if params != '':
+                        params += ','
+
+                    params += arg.name
+
+                    body_args += '  {ctype} {name} = unwrap< {ctype} >(in[' \
+                        '{id}]);\n'.format(
+                            ctype=arg.ctype.typename.name,
+                            name=arg.name,
+                            id=id)
+
+                    id += 1
+
+                body += '  mexAtExit(&_deleteAllObjects);\n' \
+                    '  typedef std::shared_ptr<{class_name_sep}> Shared;\n\n' \
+                    '{body_args}' \
+                    '  Shared *self = new Shared(new {class_name_sep}(' \
+                    '{params}));\n' \
+                    '  collector_{class_name}.insert(self);\n' \
+                    '  out[0] = mxCreateNumericMatrix(1, 1, ' \
+                    'mxUINT32OR64_CLASS, mxREAL);\n' \
+                    '  *reinterpret_cast<Shared**> (mxGetData(out[0])) = ' \
+                    'self;\n'.format(
+                        class_name_sep=class_name_separated,
+                        body_args=body_args,
+                        params=params,
+                        class_name=class_name)
+            elif collector_func[2] == 'deconstructor':
+                body += '  typedef std::shared_ptr<{class_name_sep}> Shared' \
+                    ';\n' \
+                    '  checkArguments("delete_{class_name}",nargout,nargin,1' \
+                    ');\n' \
+                    '  Shared *self = *reinterpret_cast<Shared**>(mxGetData(' \
+                    'in[0]));\n' \
+                    '  Collector_{class_name}::iterator item;\n' \
+                    '  item = collector_{class_name}.find(self);\n' \
+                    '  if(item != collector_{class_name}.end()) {{\n' \
+                    '    delete self;\n' \
+                    '    collector_{class_name}.erase(item);\n' \
+                    '  }}\n'.format(
+                        class_name_sep=class_name_separated,
+                        class_name=class_name)
+            else:
+                if collector_func[4] is not None:
+                    body += '  typedef std::shared_ptr<{class_name}> Shared;\n' \
+                        '  checkArguments("{method_name}",nargout,nargin-1,1);\n' \
+                        '  Shared obj = unwrap_shared_ptr<{class_name}>(in[0], ' \
+                        '"ptr_{class_name}");\n' \
+                        '{params}'.format(
+                            class_name=class_name,
+                            method_name=collector_func[4].name,
+                            params=''
+                        )
+
+            body += '}\n\n'
+
+            collector_function = 'void {collector_func_name}(int nargout, ' \
+                'mxArray *out[], int nargin, const mxArray *in[]' \
+                ')\n' \
+                '{body}'.format(
+                    collector_func_name=collector_func[3],
+                    body=body
+                )
+
+            return collector_function
+        return ''
+
+    def mex_function(self):
+        cases = ''
+
+        for id in range(self.wrapper_id):
+            id_val = self.wrapper_map.get(id)
+
+            if id_val is not None:
+                cases += '    case {}:\n' \
+                    '      {}(nargout, out, nargin-1, in+1);\n' \
+                    '      break;\n'.format(id, id_val[3])
+
+        return 'void mexFunction(int nargout, mxArray *out[], int nargin, ' \
+            'const mxArray *in[])\n{{\n' \
+            '  mstream mout;\n' \
+            '  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n' \
+            '  _{module_name}_RTTIRegister();\n\n' \
+            '  int id = unwrap<int>(in[0]);\n\n' \
+            '  try {{\n' \
+            '    switch(id) {{\n' \
+            '{cases}' \
+            '    }}\n' \
+            '  }} catch(const std::exception& e) {{\n' \
+            '    mexErrMsgTxt(("Exception from gtsam:\n" + std::string(' \
+            'e.what()) + "\\n").c_str());\n' \
+            '  }}\n\n' \
+            '  std::cout.rdbuf(outbuf);\n' \
+            '}}\n'.format(module_name=self.module_name, cases=cases)
+
     def generate_wrapper(self, namespace):
         """Generate the c++ wrapper."""
         # Includes
@@ -962,13 +1096,7 @@ class MatlabWrapper(object):
                     'name(), "{}"));\n'.format(class_name, className)
 
         for id in range(self.wrapper_id):
-            if self.wrapper_map.get(id) is not None:
-                ptr_ctor_frag += 'void {collector_func_name}(int ' \
-                    'nargout, mxArray *out[], int nargin, const mxArray *in[])\n' \
-                    ''.format(
-                        className=className,
-                        collector_func_name=self.wrapper_map.get(id)
-                    )
+            ptr_ctor_frag += self.generate_collector_function(id)
 
         wrapper_file += \
             '{typedef}\n' \
@@ -985,12 +1113,14 @@ class MatlabWrapper(object):
             '  std::cout.rdbuf(outbuf);\n' \
             '}}\n\n' \
             '{rtti_register}\n' \
-            '{pointer_contstructor_fragment}'.format(
+            '{pointer_contstructor_fragment}' \
+            '{mex_function}'.format(
                 typedef=typedef,
                 typedefs_collectors=typedef_collectors,
                 delete_objs=delete_objs,
                 rtti_register=rtti_reg_start + rtti_reg_mid + rtti_reg_end,
-                pointer_contstructor_fragment=ptr_ctor_frag
+                pointer_contstructor_fragment=ptr_ctor_frag,
+                mex_function=self.mex_function()
             )
 
         self.content.append((self._wrapper_name() + '.cpp', wrapper_file))
