@@ -315,6 +315,30 @@ class MatlabWrapper(object):
         return check_statement if check_statement == '' else check_statement \
             + '\n'
 
+    def _wrapper_unwrap_arguments(self, args):
+        """Format the interface_parser.Arguments into the form
+        ((a), unsigned char a = unwrap< unsigned char >(in[1]);)
+        """
+        params = ''
+        body_args = ''
+        id = 0
+
+        for arg in args.args_list:
+            if params != '':
+                params += ','
+
+            params += arg.name
+
+            body_args += '  {ctype} {name} = unwrap< {ctype} >(in[' \
+                '{id}]);\n'.format(
+                    ctype=arg.ctype.typename.name,
+                    name=arg.name,
+                    id=id)
+
+            id += 1
+
+        return params, body_args
+
     def _return_count(self, return_type):
         """The amount of objects returned by the given
         interface_parser.ReturnType.
@@ -656,7 +680,8 @@ class MatlabWrapper(object):
                         method_args=self._wrap_args(method.args),
                         return_type=return_type,
                         num=self._update_wrapper_id(
-                            (namespace_name, inst_class, method.name, method)
+                            (namespace_name, inst_class,
+                             method.original.name, method)
                         ),
                         check_statement=check_statement,
                         spacing='' if check_statement == '' else '    ',
@@ -898,6 +923,7 @@ class MatlabWrapper(object):
 
             class_name = collector_func[0] + collector_func[1].name
             class_name_separated = collector_func[0]
+
             if class_name_separated != '':
                 class_name_separated += '::'
             class_name_separated += collector_func[1].name
@@ -911,23 +937,18 @@ class MatlabWrapper(object):
                         class_name_sep=class_name_separated,
                         class_name=class_name)
             elif collector_func[2] == 'constructor':
-                body_args = ''
-                params = ''
-                id = 0
+                params, body_args = self._wrapper_unwrap_arguments(
+                    collector_func[4].args)
+                base = ''
 
-                for arg in collector_func[4].args.args_list:
-                    if params != '':
-                        params += ','
-
-                    params += arg.name
-
-                    body_args += '  {ctype} {name} = unwrap< {ctype} >(in[' \
-                        '{id}]);\n'.format(
-                            ctype=arg.ctype.typename.name,
-                            name=arg.name,
-                            id=id)
-
-                    id += 1
+                if collector_func[1].parent_class:
+                    base += '\n' \
+                        '  typedef std::shared_ptr<{}> SharedBase;\n' \
+                        '  out[1] = mxCreateNumericMatrix(1, 1, ' \
+                        'mxUINT32OR64_CLASS, mxREAL);\n' \
+                        '  *reinterpret_cast<SharedBase**>(mxGetData(out[1])' \
+                        ') = new SharedBase(*self);\n'.format(
+                            collector_func[1].parent_class)
 
                 body += '  mexAtExit(&_deleteAllObjects);\n' \
                     '  typedef std::shared_ptr<{class_name_sep}> Shared;\n\n' \
@@ -938,11 +959,13 @@ class MatlabWrapper(object):
                     '  out[0] = mxCreateNumericMatrix(1, 1, ' \
                     'mxUINT32OR64_CLASS, mxREAL);\n' \
                     '  *reinterpret_cast<Shared**> (mxGetData(out[0])) = ' \
-                    'self;\n'.format(
+                    'self;\n' \
+                    '{base}'.format(
                         class_name_sep=class_name_separated,
                         body_args=body_args,
                         params=params,
-                        class_name=class_name)
+                        class_name=class_name,
+                        base=base)
             elif collector_func[2] == 'deconstructor':
                 body += '  typedef std::shared_ptr<{class_name_sep}> Shared' \
                     ';\n' \
@@ -960,14 +983,22 @@ class MatlabWrapper(object):
                         class_name=class_name)
             else:
                 if collector_func[4] is not None:
-                    body += '  typedef std::shared_ptr<{class_name}> Shared;\n' \
+                    method_name = collector_func[4].name
+                    params, body_args = self._wrapper_unwrap_arguments(
+                        collector_func[4].args)
+                    expanded = '  obj->{}({})'.format(method_name, params)
+
+                    body += '  typedef std::shared_ptr<{class_name_sep}> Shared;\n' \
                         '  checkArguments("{method_name}",nargout,nargin-1,1);\n' \
                         '  Shared obj = unwrap_shared_ptr<{class_name}>(in[0], ' \
                         '"ptr_{class_name}");\n' \
-                        '{params}'.format(
+                        '{body_args}' \
+                        '{expanded}\n'.format(
+                            class_name_sep=class_name_separated,
+                            method_name=method_name,
                             class_name=class_name,
-                            method_name=collector_func[4].name,
-                            params=''
+                            body_args=body_args,
+                            expanded=expanded
                         )
 
             body += '}\n\n'
@@ -985,14 +1016,31 @@ class MatlabWrapper(object):
 
     def mex_function(self):
         cases = ''
+        next_case = None
 
         for id in range(self.wrapper_id):
             id_val = self.wrapper_map.get(id)
+            set_next_case = False
 
-            if id_val is not None:
-                cases += '    case {}:\n' \
-                    '      {}(nargout, out, nargin-1, in+1);\n' \
-                    '      break;\n'.format(id, id_val[3])
+            if id_val is None:
+                id_val = self.wrapper_map.get(id + 1)
+
+                if id_val is None:
+                    continue
+
+                set_next_case = True
+
+            cases += '    case {}:\n' \
+                '      {}(nargout, out, nargin-1, in+1);\n' \
+                '      break;\n'.format(
+                    id,
+                    next_case if next_case else id_val[3])
+
+            if set_next_case:
+                next_case = id_val[1].name + \
+                    '_upcastFromVoid' + '_' + str(id + 1)
+            else:
+                next_case = None
 
         return 'void mexFunction(int nargout, mxArray *out[], int nargin, ' \
             'const mxArray *in[])\n{{\n' \
