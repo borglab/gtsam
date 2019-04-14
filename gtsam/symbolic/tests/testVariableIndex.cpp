@@ -79,7 +79,7 @@ TEST(VariableIndex, augment2) {
 
   VariableIndex expected(fgCombined);
 
-  FastVector<size_t> newIndices = list_of(5)(6)(7)(8);
+  FactorIndices newIndices = list_of(5)(6)(7)(8);
   VariableIndex actual(fg1);
   actual.augment(fg2, newIndices);
 
