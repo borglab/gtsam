@@ -172,7 +172,7 @@ namespace gtsam {
   /* ************************************************************************* */
   void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const {
     Vector frontalVec = gy.vector(KeyVector(beginFrontals(), endFrontals()));
-    frontalVec = get_R().triangularView<Eigen::Upper>().solve<Eigen::OnTheLeft>(frontalVec);
+    frontalVec = get_R().transpose().triangularView<Eigen::Lower>().solve(frontalVec);
 
     // Check for indeterminant solution
     if (frontalVec.hasNaN()) throw IndeterminantLinearSystemException(this->keys().front());
