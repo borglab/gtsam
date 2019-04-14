@@ -305,7 +305,7 @@ Matrix HessianFactor::information() const {
 VectorValues HessianFactor::hessianDiagonal() const {
   VectorValues d;
   for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
-    d.insert(keys_[j], info_.diagonal(j));
+    d.emplace(keys_[j], info_.diagonal(j));
   }
   return d;
 }
@@ -436,7 +436,7 @@ VectorValues HessianFactor::gradientAtZero() const {
   VectorValues g;
   size_t n = size();
   for (size_t j = 0; j < n; ++j)
-    g.insert(keys_[j], -info_.aboveDiagonalBlock(j, n));
+    g.emplace(keys_[j], -info_.aboveDiagonalBlock(j, n));
   return g;
 }
 
@@ -513,7 +513,7 @@ VectorValues HessianFactor::solve() {
   std::size_t offset = 0;
   for (DenseIndex j = 0; j < (DenseIndex)n; ++j) {
     const DenseIndex dim = info_.getDim(j);
-    delta.insert(keys_[j], solution.segment(offset, dim));
+    delta.emplace(keys_[j], solution.segment(offset, dim));
     offset += dim;
   }
 

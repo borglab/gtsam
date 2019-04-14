@@ -56,7 +56,7 @@ namespace gtsam
           myData.parentData = parentData;
           // Take any ancestor results we'll need
           for(Key parent: clique->conditional_->parents())
-            myData.cliqueResults.insert(std::make_pair(parent, myData.parentData->cliqueResults.at(parent)));
+            myData.cliqueResults.emplace(parent, myData.parentData->cliqueResults.at(parent));
 
           // Solve and store in our results
           {
@@ -99,8 +99,8 @@ namespace gtsam
             DenseIndex vectorPosition = 0;
             for(GaussianConditional::const_iterator frontal = c.beginFrontals(); frontal != c.endFrontals(); ++frontal) {
               VectorValues::const_iterator r =
-                collectedResult.insert(*frontal, solution.segment(vectorPosition, c.getDim(frontal)));
-              myData.cliqueResults.insert(make_pair(r->first, r));
+                collectedResult.emplace(*frontal, solution.segment(vectorPosition, c.getDim(frontal)));
+              myData.cliqueResults.emplace(r->first, r);
               vectorPosition += c.getDim(frontal);
             }
           }
