@@ -42,9 +42,9 @@ class MatlabWrapper(object):
     """Methods that should not be wrapped directly"""
     whitelist = ['serializable', 'serialize']
 
-    # TODO: Look for this in OG code
     """Datatypes that do not need to be checked in methods"""
-    not_check_type = ['int', 'double', 'bool', 'char', 'size_t']
+    not_check_type = ['int', 'double', 'bool', 'char', 'unsigned char',
+                      'size_t', 'string']
 
     """Ignore the namespace for these datatypes"""
     ignore_namespace = ['Matrix', 'Vector']
@@ -64,6 +64,9 @@ class MatlabWrapper(object):
     """Set of all classes in the namespace"""
     classes = []
     classes_elems = {}
+
+    """Id for ordering global functions in the wrapper"""
+    global_function_id = 0
 
     """Files and their content"""
     content = []
@@ -98,12 +101,18 @@ class MatlabWrapper(object):
             the current wrapper id
         """
         if collector_function is not None:
+            if isinstance(collector_function[1],
+                          instantiator.InstantiatedClass):
+                function_name = collector_function[0] + \
+                    collector_function[1].name + '_' + collector_function[2]
+            else:
+                function_name = collector_function[1].name
+
             self.wrapper_map[self.wrapper_id] = (
                 collector_function[0],
                 collector_function[1],
                 collector_function[2],
-                collector_function[0] + collector_function[1].name + '_' +
-                collector_function[2] + '_' + str(self.wrapper_id + id_diff),
+                function_name + '_' + str(self.wrapper_id + id_diff),
                 collector_function[3]
             )
 
@@ -122,6 +131,21 @@ class MatlabWrapper(object):
             y: the addition to add to the statement
         """
         return x + '\n' + ('' if y == '' else '  ') + y
+
+    def _is_ptr(self, arg_type):
+        """Determine if the interface_parser.Type should be treated as a
+        pointer in the wrapper.
+        """
+        return arg_type.is_ptr or \
+            (arg_type.typename.name not in self.not_check_type and
+             arg_type.typename.name not in self.ignore_namespace)
+
+    def _is_ref(self, arg_type):
+        """Determine if the interface_parser.Type should be treated as a
+        reference in the wrapper.
+        """
+        return arg_type.typename.name not in self.ignore_namespace and \
+            arg_type.is_ref
 
     def _group_methods(self, methods):
         """Group overloaded methods together"""
@@ -315,13 +339,12 @@ class MatlabWrapper(object):
         return check_statement if check_statement == '' else check_statement \
             + '\n'
 
-    def _wrapper_unwrap_arguments(self, args):
+    def _wrapper_unwrap_arguments(self, args, id=0, constructor=False):
         """Format the interface_parser.Arguments into the form
         ((a), unsigned char a = unwrap< unsigned char >(in[1]);)
         """
         params = ''
         body_args = ''
-        id = 0
 
         for arg in args.args_list:
             if params != '':
@@ -329,11 +352,32 @@ class MatlabWrapper(object):
 
             params += arg.name
 
-            body_args += '  {ctype} {name} = unwrap< {ctype} >(in[' \
-                '{id}]);\n'.format(
-                    ctype=arg.ctype.typename.name,
-                    name=arg.name,
-                    id=id)
+            if self._is_ref(arg.ctype) and not constructor:
+                body_args += '  {ctype}& {name} = *unwrap_shared_ptr< ' \
+                    '{ctype} >(in[{id}], "ptr_{ctype_camel}");\n'.format(
+                        ctype=self._format_type_name(arg.ctype.typename),
+                        ctype_camel=self._format_type_name(
+                            arg.ctype.typename, separator=''),
+                        name=arg.name,
+                        id=id
+                    )
+            elif self._is_ptr(arg.ctype) and \
+                    arg.ctype.typename.name not in self.ignore_namespace:
+                body_args += '  std::shared_ptr<{ctype_sep}> {name} = unwrap' \
+                    '_shared_ptr< {ctype_sep} >(in[{id}], "ptr_{ctype}");' \
+                    '\n'.format(
+                        ctype_sep=self._format_type_name(arg.ctype.typename),
+                        ctype=self._format_type_name(
+                            arg.ctype.typename, separator=''),
+                        name=arg.name,
+                        id=id
+                    )
+            else:
+                body_args += '  {ctype} {name} = unwrap< {ctype} >(in[' \
+                    '{id}]);\n'.format(
+                        ctype=arg.ctype.typename.name,
+                        name=arg.name,
+                        id=id)
 
             id += 1
 
@@ -495,7 +539,15 @@ class MatlabWrapper(object):
             param_wrap += '        varargout{{1}} = {module_name}'\
                 '_wrapper({num}, varargin{{:}});\n'.format(
                     module_name=self.module_name,
-                    num=self._update_wrapper_id())
+                    num=self._update_wrapper_id(
+                        collector_function=(
+                            function[0].parent.name,
+                            function[i],
+                            'global_function',
+                            None
+                        )
+                    )
+                )
 
         param_wrap += '      else\n'\
             "        error('Arguments do not match any overload of function "\
@@ -752,7 +804,7 @@ class MatlabWrapper(object):
                     wrapper=self._wrapper_name(),
                     id=self._update_wrapper_id(
                         (namespace_name, instantiated_class,
-                            'string_deserialize', None))
+                            'string_deserialize', 'deserialize'))
                 )
 
         return method_text
@@ -777,7 +829,7 @@ class MatlabWrapper(object):
             '  sobj = obj.string_serialize();\nend\n'.format(
                 wrapper=self._wrapper_name(),
                 id=self._update_wrapper_id(
-                    (namespace_name, inst_class, 'string_serialize', None)
+                    (namespace_name, inst_class, 'string_serialize', 'serialize')
                 ),
                 class_name=namespace_name + '.' + class_name)
 
@@ -916,9 +968,213 @@ class MatlabWrapper(object):
 
         return wrapped
 
+    def wrap_collector_function_shared_return(self, return_type_name,
+                                              shared_obj, id, new_line=True):
+        new_line = '\n' if new_line else ''
+
+        return '  {{\n' \
+            '  Shared{name}* ret = new Shared{name}({shared_obj});\n' \
+            '  out[{id}] = wrap_shared_ptr(ret,"{name}");\n' \
+            '  }}{new_line}'.format(
+                name=self._format_type_name(
+                    return_type_name, include_namespace=False),
+                shared_obj=shared_obj,
+                id=id,
+                new_line=new_line
+            )
+
+    def wrap_collector_function_return_types(self, return_type, id):
+        return_type_text = '  out[' + str(id) + '] = '
+        pair_value = 'first' if id == 0 else 'second'
+        new_line = '\n' if id == 0 else ''
+
+        if len(return_type.typename.namespaces) > 0:
+            namespace = return_type.typename.namespaces[0]
+        else:
+            namespace = ''
+
+        if self._is_ptr(return_type):
+            shared_obj = 'pairResult.' + pair_value
+            if not return_type.is_ptr:
+                shared_obj = 'Shared{name}(new {name}({shared_obj}))'.format(
+                    name=return_type.typename.name,
+                    shared_obj='pairResult.' + pair_value
+                )
+
+            if return_type.typename.name in self.ignore_namespace:
+                return_type_text = self.wrap_collector_function_shared_return(
+                    return_type.typename,
+                    shared_obj,
+                    id,
+                    True if id == 0 else False
+                )
+            else:
+                return_type_text += 'wrap_shared_ptr({},"{}", false);'\
+                    '{new_line}'.format(
+                        shared_obj,
+                        self._format_type_name(
+                            return_type.typename, separator='.'),
+                        new_line=new_line
+                    )
+        else:
+            return_type_text += 'wrap< {} >(pairResult.{});{}'.format(
+                self._format_type_name(return_type.typename, separator='.'),
+                pair_value,
+                new_line
+            )
+
+        return return_type_text
+
+    def wrap_collector_function_return(self, method):
+        expanded = ''
+
+        params = self._wrapper_unwrap_arguments(method.args, id=1)[0]
+
+        return_1 = method.return_type.type1
+        return_count = self._return_count(method.return_type)
+        return_1_name = method.return_type.type1.typename.name
+        obj_start = ''
+
+        if isinstance(method, instantiator.InstantiatedMethod):
+            method_name = method.original.name
+            obj_start = 'obj->'
+
+            if method.instantiation:
+                method_name += '<{}>'.format(
+                    self._format_type_name(method.instantiation)
+                )
+        else:
+            method_name = method.name
+
+        obj = '  ' if return_1_name == 'void' else ''
+        obj += '{}{}({})'.format(obj_start, method_name, params)
+
+        if return_1_name != 'void':
+            if return_count == 1:
+                if self._is_ptr(return_1):
+                    if return_1.is_ptr:
+                        shared_obj = obj
+                    else:
+                        shared_obj = 'Shared{method_name}(new ' \
+                            '{method_name_sep}({obj}))'.format(
+                                method_name=return_1.typename.name,
+                                method_name_sep=self._format_type_name(
+                                    return_1.typename, include_namespace=True),
+                                obj=obj
+                            )
+
+                    if return_1.typename.name in self.ignore_namespace:
+                        expanded += self.wrap_collector_function_shared_return(
+                            return_1.typename,
+                            shared_obj,
+                            0,
+                            new_line=False
+                        )
+                    else:
+                        expanded += '  out[0] = wrap_shared_ptr({},"{}", ' \
+                            'false);'.format(
+                                shared_obj,
+                                self._format_type_name(
+                                    return_1.typename, separator='.'
+                                )
+                            )
+                else:
+                    expanded += '  out[0] = wrap< {} >({});'.format(
+                        return_1.typename.name,
+                        obj
+                    )
+            elif return_count == 2:
+                return_2 = method.return_type.type2
+
+                if self._is_ptr(return_1):
+                    if return_1.is_ptr:
+                        return_1_typename = 'Shared' + return_1.typename.name
+                    else:
+                        return_1_typename = self._format_type_name(
+                            return_1.typename)
+                else:
+                    return_1_typename = self._format_type_name(
+                        return_1.typename)
+
+                if self._is_ptr(return_2):
+                    if return_2.is_ptr:
+                        return_2_typename = 'Shared' + return_2.typename.name
+                    else:
+                        return_2_typename = self._format_type_name(
+                            return_2.typename)
+                else:
+                    return_2_typename = self._format_type_name(
+                        return_2.typename)
+
+                expanded += '  pair< {}, {} > pairResult = {};\n'.format(
+                    return_1_typename,
+                    return_2_typename,
+                    obj
+                )
+
+                expanded += self.wrap_collector_function_return_types(
+                    return_1, 0)
+                expanded += self.wrap_collector_function_return_types(
+                    return_2, 1)
+        else:
+            expanded += obj + ';'
+
+        return expanded
+
+    def wrap_collector_function_serialize(self, class_name, namespace=''):
+        return \
+            '  typedef std::shared_ptr<{namespace}::{class_name}> Shared;\n' \
+            '  checkArguments("string_serialize",nargout,nargin-1,0);\n' \
+            '  Shared obj = unwrap_shared_ptr<gtsam::Point3>(in[0], ' \
+            '"ptr_{namespace}{class_name}");\n' \
+            '  ostringstream out_archive_stream;\n' \
+            '  boost::archive::text_oarchive out_archive(out_archive_stream)' \
+            ';\n' \
+            '  out_archive << *obj;\n' \
+            '  out[0] = wrap< string >(out_archive_stream.str());\n'.format(
+                class_name=class_name,
+                namespace=namespace
+            )
+
+    def wrap_collector_function_deserialize(self, class_name, namespace=''):
+        return \
+            '  typedef std::shared_ptr<{namespace}::{class_name}> Shared;\n' \
+            '  checkArguments("{namespace}{class_name}.string_deserialize",' \
+            'nargout,nargin,1);\n' \
+            '  string serialized = unwrap< string >(in[0]);\n' \
+            '  istringstream in_archive_stream(serialized);\n' \
+            '  boost::archive::text_iarchive in_archive(in_archive_stream);' \
+            '\n' \
+            '  Shared output(new {namespace}::{class_name}());\n' \
+            '  in_archive >> *output;\n' \
+            '  out[0] = wrap_shared_ptr(output,"{namespace}.{class_name}", ' \
+            'false);\n'.format(class_name=class_name, namespace=namespace)
+
+    def wrap_collector_function_upcast_from_void(self, class_name, id):
+        return 'void {class_name}_upcastFromVoid_{id}(int nargout, mxArray ' \
+            '*out[], int nargin, const mxArray *in[]) {{\n' \
+            '  mexAtExit(&_deleteAllObjects);\n' \
+            '  typedef std::shared_ptr<{class_name}> Shared;\n' \
+            '  std::shared_ptr<void> *asVoid = *reinterpret_cast<std::' \
+            'shared_ptr<void>**> (mxGetData(in[0]));\n' \
+            '  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, ' \
+            'mxREAL);\n' \
+            '  Shared *self = new Shared(boost::static_pointer_cast<' \
+            '{class_name}>(*asVoid));\n' \
+            '  *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;\n' \
+            '}}\n\n'.format(class_name=class_name, id=id)
+
     def generate_collector_function(self, id):
-        if self.wrapper_map.get(id) is not None:
-            collector_func = self.wrapper_map.get(id)
+        collector_func = self.wrapper_map.get(id)
+
+        if collector_func is None:
+            return ''
+
+        collector_function = 'void {}(int nargout, ' \
+            'mxArray *out[], int nargin, const mxArray *in[]' \
+            ')\n'.format(collector_func[3])
+
+        if isinstance(collector_func[1], instantiator.InstantiatedClass):
             body = '{\n'
 
             class_name = collector_func[0] + collector_func[1].name
@@ -936,9 +1192,18 @@ class MatlabWrapper(object):
                     '  collector_{class_name}.insert(self);\n'.format(
                         class_name_sep=class_name_separated,
                         class_name=class_name)
+
+                if collector_func[1].parent_class:
+                    body += '\n' \
+                        '  typedef std::shared_ptr<{}> SharedBase;\n' \
+                        '  out[0] = mxCreateNumericMatrix(1, 1, ' \
+                        'mxUINT32OR64_CLASS, mxREAL);\n' \
+                        '  *reinterpret_cast<SharedBase**>(mxGetData(out[0])' \
+                        ') = new SharedBase(*self);\n'.format(
+                            collector_func[1].parent_class)
             elif collector_func[2] == 'constructor':
                 params, body_args = self._wrapper_unwrap_arguments(
-                    collector_func[4].args)
+                    collector_func[4].args, constructor=True)
                 base = ''
 
                 if collector_func[1].parent_class:
@@ -981,38 +1246,97 @@ class MatlabWrapper(object):
                     '  }}\n'.format(
                         class_name_sep=class_name_separated,
                         class_name=class_name)
-            else:
-                if collector_func[4] is not None:
-                    method_name = collector_func[4].name
-                    params, body_args = self._wrapper_unwrap_arguments(
-                        collector_func[4].args)
-                    expanded = '  obj->{}({})'.format(method_name, params)
+            elif collector_func[4] == 'serialize':
+                body += self.wrap_collector_function_serialize(
+                    collector_func[1].name,
+                    namespace=collector_func[0]
+                )
+            elif collector_func[4] == 'deserialize':
+                body += self.wrap_collector_function_deserialize(
+                    collector_func[1].name,
+                    namespace=collector_func[0]
+                )
+            elif isinstance(collector_func[4], parser.Method):
+                method_name = collector_func[4].name
+                return_type = collector_func[4].return_type
+                return_count = self._return_count(return_type)
 
-                    body += '  typedef std::shared_ptr<{class_name_sep}> Shared;\n' \
-                        '  checkArguments("{method_name}",nargout,nargin-1,1);\n' \
-                        '  Shared obj = unwrap_shared_ptr<{class_name}>(in[0], ' \
-                        '"ptr_{class_name}");\n' \
-                        '{body_args}' \
-                        '{expanded}\n'.format(
-                            class_name_sep=class_name_separated,
-                            method_name=method_name,
-                            class_name=class_name,
-                            body_args=body_args,
-                            expanded=expanded
+                params, body_args = self._wrapper_unwrap_arguments(
+                    collector_func[4].args, id=1)
+                expanded = self.wrap_collector_function_return(
+                    collector_func[4])
+
+                if return_count >= 1:
+                    return_1 = return_type.type1
+
+                    if return_1.typename.name != 'void' and \
+                            self._is_ptr(return_1) and return_1.typename.name \
+                            not in self.ignore_namespace:
+                        body += '  typedef std::shared_ptr<{}> {}\n'.format(
+                            self._format_type_name(return_1.typename),
+                            'Shared' + return_1.typename.name + ';'
                         )
 
-            body += '}\n\n'
+                if return_count == 2:
+                    return_2 = return_type.type2
 
-            collector_function = 'void {collector_func_name}(int nargout, ' \
-                'mxArray *out[], int nargin, const mxArray *in[]' \
-                ')\n' \
-                '{body}'.format(
-                    collector_func_name=collector_func[3],
-                    body=body
+                    if self._is_ptr(return_2) and return_2.typename.name \
+                            not in self.ignore_namespace:
+                        body += '  typedef std::shared_ptr<{}> {}\n'.format(
+                            self._format_type_name(return_2.typename),
+                            'Shared' + return_2.typename.name + ';'
+                        )
+
+                body += '  typedef std::shared_ptr<{class_name_sep}> Shared;' \
+                    '\n' \
+                    '  checkArguments("{method_name}",nargout,nargin-1,' \
+                    '{num_args});\n' \
+                    '  Shared obj = unwrap_shared_ptr<{class_name_sep}>(' \
+                    'in[0], ' \
+                    '"ptr_{class_name}");\n' \
+                    '{body_args}' \
+                    '{expanded}\n'.format(
+                        class_name_sep=class_name_separated,
+                        method_name=method_name,
+                        num_args=len(collector_func[4].args.args_list),
+                        class_name=class_name,
+                        body_args=body_args,
+                        expanded=expanded
+                    )
+            elif isinstance(collector_func[4], parser.StaticMethod):
+                body += '  typedef std::shared_ptr<{class_name_sep}> SharedP' \
+                    'oint3;\n' \
+                    '  checkArguments("{class_name}.StaticFunctionRet",nargo' \
+                    'ut,nargin,1);\n' \
+                    '{out}'.format(
+                        class_name_sep=class_name_separated,
+                        class_name=class_name,
+                        out=''
+                    )
+
+            body += '}\n'
+
+            if collector_func[4] != 'deserialize':
+                body += '\n'
+
+            collector_function += body
+        else:
+            body = '{{\n' \
+                '  checkArguments("{function_name}",nargout,nargin,{id});\n' \
+                ''.format(
+                    function_name=collector_func[1].name,
+                    id=self.global_function_id
                 )
 
-            return collector_function
-        return ''
+            body += self._wrapper_unwrap_arguments(collector_func[1].args)[1]
+            body += self.wrap_collector_function_return(
+                collector_func[1]) + '\n}\n'
+
+            collector_function += body
+
+            self.global_function_id += 1
+
+        return collector_function
 
     def mex_function(self):
         cases = ''
@@ -1042,7 +1366,7 @@ class MatlabWrapper(object):
             else:
                 next_case = None
 
-        return 'void mexFunction(int nargout, mxArray *out[], int nargin, ' \
+        return '\nvoid mexFunction(int nargout, mxArray *out[], int nargin, ' \
             'const mxArray *in[])\n{{\n' \
             '  mstream mout;\n' \
             '  std::streambuf *outbuf = std::cout.rdbuf(&mout);\n\n' \
@@ -1143,8 +1467,29 @@ class MatlabWrapper(object):
                 rtti_reg_mid += '    types.insert(std::make_pair(typeid({}).'\
                     'name(), "{}"));\n'.format(class_name, className)
 
+        set_next_case = False
+
         for id in range(self.wrapper_id):
+            id_val = self.wrapper_map.get(id)
+            queue_set_next_case = set_next_case
+
+            set_next_case = False
+
+            if id_val is None:
+                id_val = self.wrapper_map.get(id + 1)
+
+                if id_val is None:
+                    continue
+
+                set_next_case = True
+
             ptr_ctor_frag += self.generate_collector_function(id)
+
+            if queue_set_next_case:
+                ptr_ctor_frag += self.wrap_collector_function_upcast_from_void(
+                    id_val[1].name,
+                    id
+                )
 
         wrapper_file += \
             '{typedef}\n' \
