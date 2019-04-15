@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -12,45 +12,22 @@
 /**
  * @file SubgraphPreconditioner.cpp
  * @date Dec 31, 2009
- * @author: Frank Dellaert
+ * @author Frank Dellaert, Yong-Dian Jian
  */
 
 #include <gtsam/linear/SubgraphPreconditioner.h>
-#include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/HessianFactor.h>
+
+#include <gtsam/linear/SubgraphBuilder.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/GaussianEliminationTree.h>
-#include <gtsam/inference/Ordering.h>
-#include <gtsam/inference/VariableIndex.h>
-#include <gtsam/base/DSFVector.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/base/FastVector.h>
 #include <gtsam/base/types.h>
 #include <gtsam/base/Vector.h>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/serialization/vector.hpp>
 #include <boost/range/adaptor/reversed.hpp>
-#include <boost/shared_ptr.hpp>
 
-#include <algorithm>
-#include <cmath>
-#include <cstdlib>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <iterator>
-#include <list>
-#include <map>
-#include <numeric> // accumulate
-#include <queue>
-#include <set>
 #include <stdexcept>
-#include <string>
-#include <utility>
-#include <vector>
 
 using std::cout;
 using std::endl;
@@ -60,420 +37,58 @@ using std::ostream;
 namespace gtsam {
 
 /* ************************************************************************* */
-// Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
-static GaussianFactorGraph::shared_ptr convertToJacobianFactors(const GaussianFactorGraph &gfg) {
+static Vector getSubvector(const Vector &src, const KeyInfo &keyInfo,
+                           const KeyVector &keys) {
+  /* a cache of starting index and dim */
+  vector<std::pair<size_t, size_t> > cache;
+  cache.reserve(3);
+
+  /* figure out dimension by traversing the keys */
+  size_t dim = 0;
+  for (const Key &key : keys) {
+    const KeyInfoEntry &entry = keyInfo.find(key)->second;
+    cache.emplace_back(entry.start, entry.dim);
+    dim += entry.dim;
+  }
+
+  /* use the cache to fill the result */
+  Vector result(dim);
+  size_t index = 0;
+  for (const auto &p : cache) {
+    result.segment(index, p.second) = src.segment(p.first, p.second);
+    index += p.second;
+  }
+
+  return result;
+}
+
+/*****************************************************************************/
+static void setSubvector(const Vector &src, const KeyInfo &keyInfo,
+                         const KeyVector &keys, Vector &dst) {
+  size_t index = 0;
+  for (const Key &key : keys) {
+    const KeyInfoEntry &entry = keyInfo.find(key)->second;
+    const size_t keyDim = entry.dim;
+    dst.segment(entry.start, keyDim) = src.segment(index, keyDim);
+    index += keyDim;
+  }
+}
+
+/* ************************************************************************* */
+// Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with
+// Cholesky)
+static GaussianFactorGraph::shared_ptr convertToJacobianFactors(
+    const GaussianFactorGraph &gfg) {
   auto result = boost::make_shared<GaussianFactorGraph>();
-  for (const auto &factor : gfg) {
-    auto jf = boost::dynamic_pointer_cast<JacobianFactor>(factor);
-    if( !jf ) {
-      jf = boost::make_shared<JacobianFactor>(*factor); 
-    }
-    result->push_back(jf);
-  }
-  return result;
-}
-
-/*****************************************************************************/
-static vector<size_t> iidSampler(const vector<double> &weight, const size_t n) {
-
-  /* compute the sum of the weights */
-  const double sum = std::accumulate(weight.begin(), weight.end(), 0.0);
-  if (sum==0.0) {
-    throw std::runtime_error("Weight vector has no non-zero weights");
-  }
-
-  /* make a normalized and accumulated version of the weight vector */
-  const size_t m = weight.size();
-  vector<double> cdf; cdf.reserve(m);
-  for ( size_t i = 0 ; i < m ; ++i ) {
-    cdf.push_back(weight[i]/sum);
-  }
-
-  vector<double> acc(m);
-  std::partial_sum(cdf.begin(),cdf.end(),acc.begin());
-
-  /* iid sample n times */
-  vector<size_t> result; result.reserve(n);
-  const double denominator = (double)RAND_MAX;
-  for ( size_t i = 0 ; i < n ; ++i ) {
-    const double value = rand() / denominator;
-    /* binary search the interval containing "value" */
-    const auto it = std::lower_bound(acc.begin(), acc.end(), value);
-    const size_t index = it - acc.begin();
-    result.push_back(index);
-  }
-  return result;
-}
-
-/*****************************************************************************/
-static vector<size_t> UniqueSampler(const vector<double> &weight, const size_t n) {
-
-  const size_t m = weight.size();
-  if ( n > m ) throw std::invalid_argument("UniqueSampler: invalid input size");
-
-  vector<size_t> result;
-
-  size_t count = 0;
-  vector<bool> touched(m, false);
-  while ( count < n ) {
-    vector<size_t> localIndices; localIndices.reserve(n-count);
-    vector<double> localWeights; localWeights.reserve(n-count);
-
-    /* collect data */
-    for ( size_t i = 0 ; i < m ; ++i ) {
-      if ( !touched[i] ) {
-        localIndices.push_back(i);
-        localWeights.push_back(weight[i]);
+  for (const auto &factor : gfg) 
+    if (factor) {
+      auto jf = boost::dynamic_pointer_cast<JacobianFactor>(factor);
+      if (!jf) {
+        jf = boost::make_shared<JacobianFactor>(*factor);
       }
+      result->push_back(jf);
     }
-
-    /* sampling and cache results */
-    vector<size_t> samples = iidSampler(localWeights, n-count);
-    for ( const size_t &index: samples ) {
-      if ( touched[index] == false ) {
-        touched[index] = true ;
-        result.push_back(index);
-        if ( ++count >= n ) break;
-      }
-    }
-  }
   return result;
-}
-
-/****************************************************************************/
-Subgraph::Subgraph(const vector<size_t> &indices) {
-  edges_.reserve(indices.size());
-  for ( const size_t &index: indices ) {
-    edges_.emplace_back(index, 1.0);
-  }
-}
-
-/****************************************************************************/
-vector<size_t> Subgraph::edgeIndices() const {
-  vector<size_t> eid; eid.reserve(size());
-  for ( const SubgraphEdge &edge: edges_ ) {
-    eid.push_back(edge.index_);
-  }
-  return eid;
-}
-
-/****************************************************************************/
-void Subgraph::save(const std::string &fn) const {
-  std::ofstream os(fn.c_str());
-  boost::archive::text_oarchive oa(os);
-  oa << *this;
-  os.close();
-}
-
-/****************************************************************************/
-Subgraph::shared_ptr Subgraph::load(const std::string &fn) {
-  std::ifstream is(fn.c_str());
-  boost::archive::text_iarchive ia(is);
-  Subgraph::shared_ptr subgraph(new Subgraph());
-  ia >> *subgraph;
-  is.close();
-  return subgraph;
-}
-
-/****************************************************************************/
-ostream &operator<<(ostream &os, const SubgraphEdge &edge) {
-  if ( edge.weight() != 1.0 )
-    os << edge.index() << "(" << std::setprecision(2) << edge.weight() << ")";
-  else
-    os << edge.index() ;
-  return os;
-}
-
-/****************************************************************************/
-ostream &operator<<(ostream &os, const Subgraph &subgraph) {
-  os << "Subgraph" << endl;
-  for ( const SubgraphEdge &e: subgraph.edges() ) {
-    os << e << ", " ;
-  }
-  return os;
-}
-
-/*****************************************************************************/
-void SubgraphBuilderParameters::print() const {
-  print(cout);
-}
-
-/***************************************************************************************/
-void SubgraphBuilderParameters::print(ostream &os) const {
-  os << "SubgraphBuilderParameters" << endl
-      << "skeleton:            " << skeletonTranslator(skeleton_) << endl
-      << "skeleton weight:     " << skeletonWeightTranslator(skeletonWeight_) << endl
-      << "augmentation weight: " << augmentationWeightTranslator(augmentationWeight_) << endl
-      ;
-}
-
-/*****************************************************************************/
-ostream& operator<<(ostream &os, const SubgraphBuilderParameters &p) {
-  p.print(os);
-  return os;
-}
-
-/*****************************************************************************/
-SubgraphBuilderParameters::Skeleton SubgraphBuilderParameters::skeletonTranslator(const std::string &src){
-  std::string s = src;  boost::algorithm::to_upper(s);
-  if (s == "NATURALCHAIN")    return NATURALCHAIN;
-  else if (s == "BFS")        return BFS;
-  else if (s == "KRUSKAL")    return KRUSKAL;
-  throw std::invalid_argument("SubgraphBuilderParameters::skeletonTranslator undefined string " + s);
-  return KRUSKAL;
-}
-
-/****************************************************************/
-std::string SubgraphBuilderParameters::skeletonTranslator(Skeleton s) {
-  if ( s == NATURALCHAIN ) return "NATURALCHAIN";
-  else if ( s == BFS )     return "BFS";
-  else if ( s == KRUSKAL ) return "KRUSKAL";
-  else                     return "UNKNOWN";
-}
-
-/****************************************************************/
-SubgraphBuilderParameters::SkeletonWeight SubgraphBuilderParameters::skeletonWeightTranslator(const std::string &src) {
-  std::string s = src;  boost::algorithm::to_upper(s);
-  if (s == "EQUAL")       return EQUAL;
-  else if (s == "RHS")    return RHS_2NORM;
-  else if (s == "LHS")    return LHS_FNORM;
-  else if (s == "RANDOM") return RANDOM;
-  throw std::invalid_argument("SubgraphBuilderParameters::skeletonWeightTranslator undefined string " + s);
-  return EQUAL;
-}
-
-/****************************************************************/
-std::string SubgraphBuilderParameters::skeletonWeightTranslator(SkeletonWeight w) {
-  if ( w == EQUAL )           return "EQUAL";
-  else if ( w == RHS_2NORM )  return "RHS";
-  else if ( w == LHS_FNORM )  return "LHS";
-  else if ( w == RANDOM )     return "RANDOM";
-  else                        return "UNKNOWN";
-}
-
-/****************************************************************/
-SubgraphBuilderParameters::AugmentationWeight
-SubgraphBuilderParameters::augmentationWeightTranslator(
-    const std::string &src) {
-  std::string s = src;  boost::algorithm::to_upper(s);
-  if (s == "SKELETON")      return SKELETON;
-//  else if (s == "STRETCH")  return STRETCH;
-//  else if (s == "GENERALIZED_STRETCH")  return GENERALIZED_STRETCH;
-  throw std::invalid_argument("SubgraphBuilder::Parameters::augmentationWeightTranslator undefined string " + s);
-  return SKELETON;
-}
-
-/****************************************************************/
-std::string SubgraphBuilderParameters::augmentationWeightTranslator(AugmentationWeight w) {
-  if ( w == SKELETON )                  return "SKELETON";
-//  else if ( w == STRETCH )              return "STRETCH";
-//  else if ( w == GENERALIZED_STRETCH )  return "GENERALIZED_STRETCH";
-  else                                  return "UNKNOWN";
-}
-
-/****************************************************************/
-vector<size_t> SubgraphBuilder::buildTree(const GaussianFactorGraph &gfg,
-                                          const FastMap<Key, size_t> &ordering,
-                                          const vector<double> &weights) const {
-  const SubgraphBuilderParameters &p = parameters_;
-  switch (p.skeleton_) {
-  case SubgraphBuilderParameters::NATURALCHAIN:
-    return natural_chain(gfg);
-    break;
-  case SubgraphBuilderParameters::BFS:
-    return bfs(gfg);
-    break;
-  case SubgraphBuilderParameters::KRUSKAL:
-    return kruskal(gfg, ordering, weights);
-    break;
-  default:
-    std::cerr << "SubgraphBuilder::buildTree undefined skeleton type" << endl;
-    break;
-  }
-  return vector<size_t>();
-}
-
-/****************************************************************/
-vector<size_t> SubgraphBuilder::unary(const GaussianFactorGraph &gfg) const {
-  vector<size_t> result ;
-  size_t index = 0;
-  for (const auto &factor : gfg) {
-    if ( factor->size() == 1 ) {
-      result.push_back(index);
-    }
-    index++;
-  }
-  return result;
-}
-
-/****************************************************************/
-vector<size_t> SubgraphBuilder::natural_chain(const GaussianFactorGraph &gfg) const {
-  vector<size_t> result ;
-  size_t index = 0;
-  for ( const GaussianFactor::shared_ptr &gf: gfg ) {
-    if ( gf->size() == 2 ) {
-      const Key k0 = gf->keys()[0], k1 = gf->keys()[1];
-      if ( (k1-k0) == 1 || (k0-k1) == 1 )
-        result.push_back(index);
-    }
-    index++;
-  }
-  return result;
-}
-
-/****************************************************************/
-vector<size_t> SubgraphBuilder::bfs(const GaussianFactorGraph &gfg) const {
-  const VariableIndex variableIndex(gfg);
-  /* start from the first key of the first factor */
-  Key seed = gfg[0]->keys()[0];
-
-  const size_t n = variableIndex.size();
-
-  /* each vertex has self as the predecessor */
-  vector<size_t> result;
-  result.reserve(n-1);
-
-  /* Initialize */
-  std::queue<size_t> q;
-  q.push(seed);
-
-  std::set<size_t> flags;
-  flags.insert(seed);
-
-  /* traversal */
-  while ( !q.empty() ) {
-    const size_t head = q.front(); q.pop();
-    for ( const size_t index: variableIndex[head] ) {
-      const GaussianFactor &gf = *gfg[index];
-      for ( const size_t key: gf.keys() ) {
-        if ( flags.count(key) == 0 ) {
-          q.push(key);
-          flags.insert(key);
-          result.push_back(index);
-        }
-      }
-    }
-  }
-  return result;
-}
-
-/****************************************************************/
-vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
-                                        const FastMap<Key, size_t> &ordering,
-                                        const vector<double> &weights) const {
-  const VariableIndex variableIndex(gfg);
-  const size_t n = variableIndex.size();
-  const vector<size_t> sortedIndices = sort_idx(weights) ;
-
-  /* initialize buffer */
-  vector<size_t> result;
-  result.reserve(n-1);
-
-  // container for acsendingly sorted edges
-  DSFVector dsf(n);
-
-  size_t count = 0 ; double sum = 0.0 ;
-  for (const size_t index: sortedIndices) {
-    const GaussianFactor &gf = *gfg[index];
-    const auto keys = gf.keys();
-    if ( keys.size() != 2 ) continue;
-    const size_t u = ordering.find(keys[0])->second,
-                 v = ordering.find(keys[1])->second;
-    if ( dsf.find(u) != dsf.find(v) ) {
-      dsf.merge(u, v) ;
-      result.push_back(index) ;
-      sum += weights[index] ;
-      if ( ++count == n-1 ) break ;
-    }
-  }
-  return result;
-}
-
-/****************************************************************/
-vector<size_t> SubgraphBuilder::sample(const vector<double> &weights, const size_t t) const {
-  return UniqueSampler(weights, t);
-}
-
-/****************************************************************/
-Subgraph::shared_ptr SubgraphBuilder::operator() (const GaussianFactorGraph &gfg) const {
-
-  const auto &p = parameters_;
-  const auto inverse_ordering = Ordering::Natural(gfg);
-  const FastMap<Key, size_t> forward_ordering = inverse_ordering.invert();
-  const size_t n = inverse_ordering.size(), m = gfg.size();
-
-  // Make sure the subgraph preconditioner does not include more than half of
-  // the edges beyond the spanning tree, or we might as well solve the whole thing.
-  size_t numExtraEdges = n * p.complexity_;
-  const size_t numRemaining = m - (n - 1);
-  numExtraEdges = std::min(numExtraEdges, numRemaining/2);
-
-  // Calculate weights 
-  vector<double> weights = this->weights(gfg);
-
-  // Build spanning tree.
-  const vector<size_t> tree = buildTree(gfg, forward_ordering, weights);
-  if ( tree.size() != n-1 ) {
-    throw std::runtime_error("SubgraphBuilder::operator() failure: tree.size() != n-1");
-  }
-
-  // Downweight the tree edges to zero.
-  for ( const size_t index: tree ) {
-    weights[index] = 0.0;
-  }
-
-  /* decide how many edges to augment */
-  vector<size_t> offTree = sample(weights, numExtraEdges);
-
-  vector<size_t> subgraph = unary(gfg);
-  subgraph.insert(subgraph.end(), tree.begin(), tree.end());
-  subgraph.insert(subgraph.end(), offTree.begin(), offTree.end());
-
-  return boost::make_shared<Subgraph>(subgraph);
-}
-
-/****************************************************************/
-SubgraphBuilder::Weights SubgraphBuilder::weights(const GaussianFactorGraph &gfg) const
-{
-  const size_t m = gfg.size() ;
-  Weights weight; weight.reserve(m);
-
-  for(const GaussianFactor::shared_ptr &gf: gfg ) {
-    switch ( parameters_.skeletonWeight_ ) {
-    case SubgraphBuilderParameters::EQUAL:
-      weight.push_back(1.0);
-      break;
-    case SubgraphBuilderParameters::RHS_2NORM:
-    {
-      if ( JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(gf) ) {
-        weight.push_back(jf->getb().norm());
-      }
-      else if ( HessianFactor::shared_ptr hf = boost::dynamic_pointer_cast<HessianFactor>(gf) ) {
-        weight.push_back(hf->linearTerm().norm());
-      }
-    }
-      break;
-    case SubgraphBuilderParameters::LHS_FNORM:
-    {
-      if ( JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(gf) ) {
-        weight.push_back(std::sqrt(jf->getA().squaredNorm()));
-      }
-      else if ( HessianFactor::shared_ptr hf = boost::dynamic_pointer_cast<HessianFactor>(gf) ) {
-        weight.push_back(std::sqrt(hf->information().squaredNorm()));
-      }
-    }
-      break;
-
-    case SubgraphBuilderParameters::RANDOM:
-      weight.push_back(std::rand()%100 + 1.0);
-      break;
-
-    default:
-      throw std::invalid_argument("SubgraphBuilder::weights: undefined weight scheme ");
-      break;
-    }
-  }
-  return weight;
 }
 
 /* ************************************************************************* */
@@ -640,67 +255,18 @@ void SubgraphPreconditioner::transposeSolve(const Vector &y, Vector &x) const {
 void SubgraphPreconditioner::build(const GaussianFactorGraph &gfg, const KeyInfo &keyInfo, const std::map<Key,Vector> &lambda)
 {
   /* identify the subgraph structure */
-  const SubgraphBuilder builder(parameters_.builderParams_);
-  Subgraph::shared_ptr subgraph = builder(gfg);
+  const SubgraphBuilder builder(parameters_.builderParams);
+  auto subgraph = builder(gfg);
 
   keyInfo_ = keyInfo;
 
   /* build factor subgraph */
-  GaussianFactorGraph::shared_ptr gfg_subgraph = buildFactorSubgraph(gfg, *subgraph, true);
+  GaussianFactorGraph::shared_ptr gfg_subgraph = buildFactorSubgraph(gfg, subgraph, true);
 
   /* factorize and cache BayesNet */
   Rc1_ = gfg_subgraph->eliminateSequential();
 }
 
 /*****************************************************************************/
-Vector getSubvector(const Vector &src, const KeyInfo &keyInfo,
-                    const KeyVector &keys) {
-  /* a cache of starting index and dim */
-  vector<std::pair<size_t, size_t> > cache;
-  cache.reserve(3);
-
-  /* figure out dimension by traversing the keys */
-  size_t dim = 0;
-  for (const Key &key : keys) {
-    const KeyInfoEntry &entry = keyInfo.find(key)->second;
-    cache.emplace_back(entry.start, entry.dim);
-    dim += entry.dim;
-  }
-
-  /* use the cache to fill the result */
-  Vector result(dim);
-  size_t index = 0;
-  for (const auto &p : cache) {
-    result.segment(index, p.second) = src.segment(p.first, p.second);
-    index += p.second;
-  }
-
-  return result;
-}
-
-/*****************************************************************************/
-void setSubvector(const Vector &src, const KeyInfo &keyInfo, const KeyVector &keys, Vector &dst) {
-  size_t index = 0;
-  for ( const Key &key: keys ) {
-    const KeyInfoEntry &entry = keyInfo.find(key)->second;
-    const size_t keyDim = entry.dim;
-    dst.segment(entry.start, keyDim) = src.segment(index, keyDim) ;
-    index += keyDim;
-  }
-}
-
-/*****************************************************************************/
-GaussianFactorGraph::shared_ptr buildFactorSubgraph(
-    const GaussianFactorGraph &gfg, const Subgraph &subgraph,
-    const bool clone) {
-  auto result = boost::make_shared<GaussianFactorGraph>();
-  result->reserve(subgraph.size());
-  for ( const SubgraphEdge &e: subgraph ) {
-    const size_t index = e.index();
-    if ( clone ) result->push_back(gfg[index]->clone());
-    else result->push_back(gfg[index]);
-  }
-  return result;
-}
 
 } // nsamespace gtsam
