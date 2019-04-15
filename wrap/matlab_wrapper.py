@@ -44,7 +44,7 @@ class MatlabWrapper(object):
 
     """Datatypes that do not need to be checked in methods"""
     not_check_type = ['int', 'double', 'bool', 'char', 'unsigned char',
-                      'size_t', 'string']
+                      'size_t']
 
     """Ignore the namespace for these datatypes"""
     ignore_namespace = ['Matrix', 'Vector']
@@ -138,7 +138,8 @@ class MatlabWrapper(object):
         """
         return arg_type.is_ptr or \
             (arg_type.typename.name not in self.not_check_type and
-             arg_type.typename.name not in self.ignore_namespace)
+             arg_type.typename.name not in self.ignore_namespace and
+             arg_type.typename.name != 'string')
 
     def _is_ref(self, arg_type):
         """Determine if the interface_parser.Type should be treated as a
@@ -242,6 +243,19 @@ class MatlabWrapper(object):
 
         return class_name
 
+    def _format_static_method(self, static_method, separator=''):
+        """Example:
+
+                gtsamPoint3.staticFunction
+        """
+        method = ''
+
+        if isinstance(static_method, parser.StaticMethod):
+            method += static_method.parent.namespaces()[-1] + \
+                separator + static_method.parent.name + separator
+
+        return method
+
     def _wrap_args(self, args):
         """Wrap an interface_parser.ArgumentList into a list of arguments.
 
@@ -313,7 +327,7 @@ class MatlabWrapper(object):
         for i, arg in enumerate(args.args_list):
             name = arg.ctype.typename.name
 
-            if name in self.not_check_type or 'unsigned' in name:
+            if name in self.not_check_type:
                 continue
 
             if check_statement == '':
@@ -340,8 +354,13 @@ class MatlabWrapper(object):
             + '\n'
 
     def _wrapper_unwrap_arguments(self, args, id=0, constructor=False):
-        """Format the interface_parser.Arguments into the form
-        ((a), unsigned char a = unwrap< unsigned char >(in[1]);)
+        """Format the interface_parser.Arguments.
+
+        Examples:
+            ((a), unsigned char a = unwrap< unsigned char >(in[1]);),
+            ((a), Test& t = *unwrap_shared_ptr< Test >(in[1], "ptr_Test");),
+            ((a), std::shared_ptr<Test> p1 = unwrap_shared_ptr< Test >(in[1], 
+                "ptr_Test");)
         """
         params = ''
         body_args = ''
@@ -829,8 +848,8 @@ class MatlabWrapper(object):
             '  sobj = obj.string_serialize();\nend\n'.format(
                 wrapper=self._wrapper_name(),
                 id=self._update_wrapper_id(
-                    (namespace_name, inst_class, 'string_serialize', 'serialize')
-                ),
+                    (namespace_name, inst_class, 'string_serialize',
+                     'serialize')),
                 class_name=namespace_name + '.' + class_name)
 
     def wrap_instantiated_class(self, instantiated_class, namespace_name=''):
@@ -995,33 +1014,33 @@ class MatlabWrapper(object):
 
         if self._is_ptr(return_type):
             shared_obj = 'pairResult.' + pair_value
+
             if not return_type.is_ptr:
-                shared_obj = 'Shared{name}(new {name}({shared_obj}))'.format(
-                    name=return_type.typename.name,
-                    shared_obj='pairResult.' + pair_value
-                )
+                shared_obj = 'Shared{name}(new {formatted_name}({shared_obj}' \
+                    '))'.format(
+                        name=return_type.typename.name,
+                        formatted_name=self._format_type_name(
+                            return_type.typename),
+                        shared_obj='pairResult.' + pair_value)
 
             if return_type.typename.name in self.ignore_namespace:
                 return_type_text = self.wrap_collector_function_shared_return(
                     return_type.typename,
                     shared_obj,
                     id,
-                    True if id == 0 else False
-                )
+                    True if id == 0 else False)
             else:
                 return_type_text += 'wrap_shared_ptr({},"{}", false);'\
                     '{new_line}'.format(
                         shared_obj,
                         self._format_type_name(
                             return_type.typename, separator='.'),
-                        new_line=new_line
-                    )
+                        new_line=new_line)
         else:
             return_type_text += 'wrap< {} >(pairResult.{});{}'.format(
                 self._format_type_name(return_type.typename, separator='.'),
                 pair_value,
-                new_line
-            )
+                new_line)
 
         return return_type_text
 
@@ -1041,10 +1060,10 @@ class MatlabWrapper(object):
 
             if method.instantiation:
                 method_name += '<{}>'.format(
-                    self._format_type_name(method.instantiation)
-                )
+                    self._format_type_name(method.instantiation))
         else:
-            method_name = method.name
+            method_name = self._format_static_method(method, '::')
+            method_name += method.name
 
         obj = '  ' if return_1_name == 'void' else ''
         obj += '{}{}({})'.format(obj_start, method_name, params)
@@ -1060,29 +1079,24 @@ class MatlabWrapper(object):
                                 method_name=return_1.typename.name,
                                 method_name_sep=self._format_type_name(
                                     return_1.typename, include_namespace=True),
-                                obj=obj
-                            )
+                                obj=obj)
 
                     if return_1.typename.name in self.ignore_namespace:
                         expanded += self.wrap_collector_function_shared_return(
                             return_1.typename,
                             shared_obj,
                             0,
-                            new_line=False
-                        )
+                            new_line=False)
                     else:
                         expanded += '  out[0] = wrap_shared_ptr({},"{}", ' \
                             'false);'.format(
                                 shared_obj,
                                 self._format_type_name(
-                                    return_1.typename, separator='.'
-                                )
-                            )
+                                    return_1.typename, separator='.'))
                 else:
                     expanded += '  out[0] = wrap< {} >({});'.format(
                         return_1.typename.name,
-                        obj
-                    )
+                        obj)
             elif return_count == 2:
                 return_2 = method.return_type.type2
 
@@ -1109,8 +1123,7 @@ class MatlabWrapper(object):
                 expanded += '  pair< {}, {} > pairResult = {};\n'.format(
                     return_1_typename,
                     return_2_typename,
-                    obj
-                )
+                    obj)
 
                 expanded += self.wrap_collector_function_return_types(
                     return_1, 0)
@@ -1177,8 +1190,12 @@ class MatlabWrapper(object):
         if isinstance(collector_func[1], instantiator.InstantiatedClass):
             body = '{\n'
 
+            extra = collector_func[4]
+
             class_name = collector_func[0] + collector_func[1].name
             class_name_separated = collector_func[0]
+            is_method = isinstance(extra, parser.Method)
+            is_static_method = isinstance(extra, parser.StaticMethod)
 
             if class_name_separated != '':
                 class_name_separated += '::'
@@ -1203,7 +1220,7 @@ class MatlabWrapper(object):
                             collector_func[1].parent_class)
             elif collector_func[2] == 'constructor':
                 params, body_args = self._wrapper_unwrap_arguments(
-                    collector_func[4].args, constructor=True)
+                    extra.args, constructor=True)
                 base = ''
 
                 if collector_func[1].parent_class:
@@ -1246,25 +1263,40 @@ class MatlabWrapper(object):
                     '  }}\n'.format(
                         class_name_sep=class_name_separated,
                         class_name=class_name)
-            elif collector_func[4] == 'serialize':
+            elif extra == 'serialize':
                 body += self.wrap_collector_function_serialize(
                     collector_func[1].name,
                     namespace=collector_func[0]
                 )
-            elif collector_func[4] == 'deserialize':
+            elif extra == 'deserialize':
                 body += self.wrap_collector_function_deserialize(
                     collector_func[1].name,
                     namespace=collector_func[0]
                 )
-            elif isinstance(collector_func[4], parser.Method):
-                method_name = collector_func[4].name
-                return_type = collector_func[4].return_type
+            elif is_method or is_static_method:
+                method_name = ''
+
+                if is_static_method:
+                    method_name = self._format_static_method(extra) + '.'
+
+                method_name += extra.name
+
+                return_type = extra.return_type
                 return_count = self._return_count(return_type)
 
                 params, body_args = self._wrapper_unwrap_arguments(
-                    collector_func[4].args, id=1)
-                expanded = self.wrap_collector_function_return(
-                    collector_func[4])
+                    extra.args,
+                    id=1 if is_method else 0)
+                return_body = self.wrap_collector_function_return(extra)
+
+                shared_obj = ''
+
+                if is_method:
+                    shared_obj = '  Shared obj = unwrap_shared_ptr<' \
+                        '{class_name_sep}>(in[0], "ptr_{class_name}");' \
+                        '\n'.format(
+                            class_name_sep=class_name_separated,
+                            class_name=class_name)
 
                 if return_count >= 1:
                     return_1 = return_type.type1
@@ -1274,8 +1306,7 @@ class MatlabWrapper(object):
                             not in self.ignore_namespace:
                         body += '  typedef std::shared_ptr<{}> {}\n'.format(
                             self._format_type_name(return_1.typename),
-                            'Shared' + return_1.typename.name + ';'
-                        )
+                            'Shared' + return_1.typename.name + ';')
 
                 if return_count == 2:
                     return_2 = return_type.type2
@@ -1284,39 +1315,27 @@ class MatlabWrapper(object):
                             not in self.ignore_namespace:
                         body += '  typedef std::shared_ptr<{}> {}\n'.format(
                             self._format_type_name(return_2.typename),
-                            'Shared' + return_2.typename.name + ';'
-                        )
+                            'Shared' + return_2.typename.name + ';')
 
                 body += '  typedef std::shared_ptr<{class_name_sep}> Shared;' \
                     '\n' \
-                    '  checkArguments("{method_name}",nargout,nargin-1,' \
+                    '  checkArguments("{method_name}",nargout,nargin{min1},' \
                     '{num_args});\n' \
-                    '  Shared obj = unwrap_shared_ptr<{class_name_sep}>(' \
-                    'in[0], ' \
-                    '"ptr_{class_name}");\n' \
+                    '{shared_obj}' \
                     '{body_args}' \
-                    '{expanded}\n'.format(
+                    '{return_body}\n'.format(
                         class_name_sep=class_name_separated,
+                        min1='-1' if is_method else '',
+                        shared_obj=shared_obj,
                         method_name=method_name,
-                        num_args=len(collector_func[4].args.args_list),
+                        num_args=len(extra.args.args_list),
                         class_name=class_name,
                         body_args=body_args,
-                        expanded=expanded
-                    )
-            elif isinstance(collector_func[4], parser.StaticMethod):
-                body += '  typedef std::shared_ptr<{class_name_sep}> SharedP' \
-                    'oint3;\n' \
-                    '  checkArguments("{class_name}.StaticFunctionRet",nargo' \
-                    'ut,nargin,1);\n' \
-                    '{out}'.format(
-                        class_name_sep=class_name_separated,
-                        class_name=class_name,
-                        out=''
-                    )
+                        return_body=return_body)
 
             body += '}\n'
 
-            if collector_func[4] != 'deserialize':
+            if extra not in ['serialize', 'deserialize']:
                 body += '\n'
 
             collector_function += body
@@ -1377,7 +1396,7 @@ class MatlabWrapper(object):
             '{cases}' \
             '    }}\n' \
             '  }} catch(const std::exception& e) {{\n' \
-            '    mexErrMsgTxt(("Exception from gtsam:\n" + std::string(' \
+            '    mexErrMsgTxt(("Exception from gtsam:\\n" + std::string(' \
             'e.what()) + "\\n").c_str());\n' \
             '  }}\n\n' \
             '  std::cout.rdbuf(outbuf);\n' \
