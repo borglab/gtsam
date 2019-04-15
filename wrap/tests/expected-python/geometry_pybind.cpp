@@ -91,6 +91,12 @@ PYBIND11_PLUGIN(geometry_py) {
         .def("create_MixedPtrs",[](MyTemplate<gtsam::Matrix>* self){return self->create_MixedPtrs();})
         .def("return_ptrs",[](MyTemplate<gtsam::Matrix>* self,const std::shared_ptr<gtsam::Matrix>& p1,const std::shared_ptr<gtsam::Matrix>& p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"));
 
+    py::class_<MyVector<3>, std::shared_ptr<MyVector<3>>>(m_, "MyVector3")
+        .def(py::init<>());
+
+    py::class_<MyVector<12>, std::shared_ptr<MyVector<12>>>(m_, "MyVector12")
+        .def(py::init<>());
+
     py::class_<MyFactor<gtsam::Pose2, gtsam::Matrix>, std::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>>>(m_, "MyFactorPosePoint2")
         .def(py::init< size_t,  size_t,  double, const std::shared_ptr<gtsam::noiseModel::Base>&>(), py::arg("key1"), py::arg("key2"), py::arg("measured"), py::arg("noiseModel"));
 
