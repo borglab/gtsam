@@ -21,7 +21,7 @@ class TestWrap(unittest.TestCase):
     MATLAB_ACTUAL_DIR = TEST_DIR + "actual-matlab/"
 
     def _generate_content(self, cc_content, path=''):
-        """Generate files and folders from matlab wrapper content
+        """Generate files and folders from matlab wrapper content.
 
         Keyword arguments:
         cc_content -- the content to generate formatted as
@@ -34,7 +34,7 @@ class TestWrap(unittest.TestCase):
                 path_to_folder = self.MATLAB_ACTUAL_DIR if path == '' else path
                 path_to_folder += c[0][0]
 
-                if not os.path.isdir(path_to_file):
+                if not os.path.isdir(path_to_folder):
                     try:
                         os.mkdir(path_to_folder)
                     except OSError:
