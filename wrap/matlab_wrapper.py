@@ -1400,8 +1400,9 @@ class MatlabWrapper(object):
             lambda x, y: str(x) + '\n' + str(y),
             includes_list) + '\n'
 
-        typedef = ''
+        typedef_instances = '\n'
         typedef_collectors = ''
+        boost_class_export_guid = ''
         delete_objs = 'void _deleteAllObjects()\n' \
             '{\n' \
             '  mstream mout;\n' \
@@ -1445,8 +1446,28 @@ class MatlabWrapper(object):
         ptr_ctor_frag = ''
 
         for cls in self.classes:
+            if len(cls.instantiations):
+                cls_insts = ''
+
+                for i, inst in enumerate(cls.instantiations):
+                    if i != 0:
+                        cls_insts += ', '
+
+                    cls_insts += self._format_type_name(inst)
+
+                typedef_instances += 'typedef {original_class_name}<' \
+                    '{class_inst}> {class_name};\n'.format(
+                        original_class_name=cls.original.name,
+                        class_inst=cls_insts,
+                        class_name=cls.name
+                    )
+
             class_name = self._format_class_name(cls, '::')
             className = self._format_class_name(cls)
+
+            if len(cls.original.namespaces()) > 1:
+                boost_class_export_guid += 'BOOST_CLASS_EXPORT_GUID({}, ' \
+                    '"{}");\n'.format(class_name, className)
 
             typedef_collectors += 'typedef std::set<std::shared_ptr' \
                 '<{class_name}>*' \
@@ -1492,7 +1513,8 @@ class MatlabWrapper(object):
                 )
 
         wrapper_file += \
-            '{typedef}\n' \
+            '{typedef_instances}\n' \
+            '{boost_class_export_guid}\n' \
             '{typedefs_collectors}\n' \
             '{delete_objs}' \
             '  if(anyDeleted)\n' \
@@ -1508,7 +1530,8 @@ class MatlabWrapper(object):
             '{rtti_register}\n' \
             '{pointer_contstructor_fragment}' \
             '{mex_function}'.format(
-                typedef=typedef,
+                typedef_instances=typedef_instances,
+                boost_class_export_guid=boost_class_export_guid,
                 typedefs_collectors=typedef_collectors,
                 delete_objs=delete_objs,
                 rtti_register=rtti_reg_start + rtti_reg_mid + rtti_reg_end,
