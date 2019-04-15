@@ -417,13 +417,12 @@ class MatlabWrapper(object):
 
         return params, body_args
 
-    def _wrapper_unwrap_arguments(self, args):
+    def _wrapper_unwrap_arguments(self, args, id=0, constructor=False):
         """Format the interface_parser.Arguments into the form
         ((a), unsigned char a = unwrap< unsigned char >(in[1]);)
         """
         params = ''
         body_args = ''
-        id = 0
 
         for arg in args.args_list:
             if params != '':
@@ -431,11 +430,32 @@ class MatlabWrapper(object):
 
             params += arg.name
 
-            body_args += '  {ctype} {name} = unwrap< {ctype} >(in[' \
-                '{id}]);\n'.format(
-                    ctype=arg.ctype.typename.name,
-                    name=arg.name,
-                    id=id)
+            if self._is_ref(arg.ctype) and not constructor:
+                body_args += '  {ctype}& {name} = *unwrap_shared_ptr< ' \
+                    '{ctype} >(in[{id}], "ptr_{ctype_camel}");\n'.format(
+                        ctype=self._format_type_name(arg.ctype.typename),
+                        ctype_camel=self._format_type_name(
+                            arg.ctype.typename, separator=''),
+                        name=arg.name,
+                        id=id
+                    )
+            elif self._is_ptr(arg.ctype) and \
+                    arg.ctype.typename.name not in self.ignore_namespace:
+                body_args += '  std::shared_ptr<{ctype_sep}> {name} = unwrap' \
+                    '_shared_ptr< {ctype_sep} >(in[{id}], "ptr_{ctype}");' \
+                    '\n'.format(
+                        ctype_sep=self._format_type_name(arg.ctype.typename),
+                        ctype=self._format_type_name(
+                            arg.ctype.typename, separator=''),
+                        name=arg.name,
+                        id=id
+                    )
+            else:
+                body_args += '  {ctype} {name} = unwrap< {ctype} >(in[' \
+                    '{id}]);\n'.format(
+                        ctype=arg.ctype.typename.name,
+                        name=arg.name,
+                        id=id)
 
             id += 1
 
@@ -907,7 +927,7 @@ class MatlabWrapper(object):
             '  sobj = obj.string_serialize();\nend\n'.format(
                 wrapper=self._wrapper_name(),
                 id=self._update_wrapper_id(
-                    (namespace_name, inst_class, 'string_serialize', None)
+                    (namespace_name, inst_class, 'string_serialize', 'serialize')
                 ),
                 class_name=namespace_name + '.' + class_name)
 
@@ -1528,6 +1548,8 @@ class MatlabWrapper(object):
             if cls.is_virtual:
                 rtti_reg_mid += '    types.insert(std::make_pair(typeid({}).name(), "{}"));\n'.format(
                     class_name_sep, class_name)
+
+        set_next_case = False
 
         set_next_case = False
 
