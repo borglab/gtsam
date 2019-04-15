@@ -1,6 +1,14 @@
 Python Wrapper and Packaging
 ============================
 
+# Deprecation Notice
+
+We are in the process of deprecating the old Python bindings and Cython bindings in favor of the new Pybind11 binding system.
+
+As such, the examples in this directory are no longer guaranteed to work. Please refer to the [cython examples](https://bitbucket.org/gtborg/gtsam/src/develop/cython/gtsam/examples).
+
+---
+
 This directory contains the basic setup script and directory structure for the gtsam python module.
 During the build of gtsam, when GTSAM_BUILD_PYTHON is enabled, the following instructions will run.
 
