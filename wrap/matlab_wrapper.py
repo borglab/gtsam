@@ -828,30 +828,6 @@ class MatlabWrapper(object):
 
         return method_text
 
-    def wrap_class_serialize_method(self, namespace_name, inst_class):
-        class_name = inst_class.name
-
-        return 'function varargout = string_serialize(this, varargin)\n'\
-            '  % STRING_SERIALIZE usage: string_serialize() : returns '\
-            'string\n'\
-            '  % Doxygen can be found at '\
-            'http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n'\
-            '  if length(varargin) == 0\n'\
-            '    varargout{{1}} = {wrapper}({id}, this, '\
-            'varargin{{:}});\n'\
-            '  else\n'\
-            "    error('Arguments do not match any overload of function "\
-            "{class_name}.string_serialize');\n"\
-            '  end\nend\n\n'\
-            'function sobj = saveobj(obj)\n'\
-            '  % SAVEOBJ Saves the object to a matlab-readable format\n'\
-            '  sobj = obj.string_serialize();\nend\n'.format(
-                wrapper=self._wrapper_name(),
-                id=self._update_wrapper_id(
-                    (namespace_name, inst_class, 'string_serialize',
-                     'serialize')),
-                class_name=namespace_name + '.' + class_name)
-
     def wrap_instantiated_class(self, instantiated_class, namespace_name=''):
         """Generate comments and code for given class.
 
@@ -1133,35 +1109,6 @@ class MatlabWrapper(object):
             expanded += obj + ';'
 
         return expanded
-
-    def wrap_collector_function_serialize(self, class_name, namespace=''):
-        return \
-            '  typedef std::shared_ptr<{namespace}::{class_name}> Shared;\n' \
-            '  checkArguments("string_serialize",nargout,nargin-1,0);\n' \
-            '  Shared obj = unwrap_shared_ptr<gtsam::Point3>(in[0], ' \
-            '"ptr_{namespace}{class_name}");\n' \
-            '  ostringstream out_archive_stream;\n' \
-            '  boost::archive::text_oarchive out_archive(out_archive_stream)' \
-            ';\n' \
-            '  out_archive << *obj;\n' \
-            '  out[0] = wrap< string >(out_archive_stream.str());\n'.format(
-                class_name=class_name,
-                namespace=namespace
-            )
-
-    def wrap_collector_function_deserialize(self, class_name, namespace=''):
-        return \
-            '  typedef std::shared_ptr<{namespace}::{class_name}> Shared;\n' \
-            '  checkArguments("{namespace}{class_name}.string_deserialize",' \
-            'nargout,nargin,1);\n' \
-            '  string serialized = unwrap< string >(in[0]);\n' \
-            '  istringstream in_archive_stream(serialized);\n' \
-            '  boost::archive::text_iarchive in_archive(in_archive_stream);' \
-            '\n' \
-            '  Shared output(new {namespace}::{class_name}());\n' \
-            '  in_archive >> *output;\n' \
-            '  out[0] = wrap_shared_ptr(output,"{namespace}.{class_name}", ' \
-            'false);\n'.format(class_name=class_name, namespace=namespace)
 
     def wrap_collector_function_upcast_from_void(self, class_name, id):
         return 'void {class_name}_upcastFromVoid_{id}(int nargout, mxArray ' \
@@ -1560,11 +1507,97 @@ class MatlabWrapper(object):
 
         self.content.append((self._wrapper_name() + '.cpp', wrapper_file))
 
+    def wrap_class_serialize_method(self, namespace_name, inst_class):
+        class_name = inst_class.name
+
+        return 'function varargout = string_serialize(this, varargin)\n'\
+            '  % STRING_SERIALIZE usage: string_serialize() : returns '\
+            'string\n'\
+            '  % Doxygen can be found at '\
+            'http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n'\
+            '  if length(varargin) == 0\n'\
+            '    varargout{{1}} = {wrapper}({id}, this, '\
+            'varargin{{:}});\n'\
+            '  else\n'\
+            "    error('Arguments do not match any overload of function "\
+            "{class_name}.string_serialize');\n"\
+            '  end\nend\n\n'\
+            'function sobj = saveobj(obj)\n'\
+            '  % SAVEOBJ Saves the object to a matlab-readable format\n'\
+            '  sobj = obj.string_serialize();\nend\n'.format(
+                wrapper=self._wrapper_name(),
+                id=self._update_wrapper_id(
+                    (namespace_name, inst_class, 'string_serialize',
+                     'serialize')),
+                class_name=namespace_name + '.' + class_name)
+
+    def wrap_collector_function_serialize(self, class_name, namespace=''):
+        return \
+            '  typedef std::shared_ptr<{namespace}::{class_name}> Shared;\n' \
+            '  checkArguments("string_serialize",nargout,nargin-1,0);\n' \
+            '  Shared obj = unwrap_shared_ptr<gtsam::Point3>(in[0], ' \
+            '"ptr_{namespace}{class_name}");\n' \
+            '  ostringstream out_archive_stream;\n' \
+            '  boost::archive::text_oarchive out_archive(out_archive_stream)' \
+            ';\n' \
+            '  out_archive << *obj;\n' \
+            '  out[0] = wrap< string >(out_archive_stream.str());\n'.format(
+                class_name=class_name,
+                namespace=namespace)
+
+    def wrap_collector_function_deserialize(self, class_name, namespace=''):
+        return \
+            '  typedef std::shared_ptr<{namespace}::{class_name}> Shared;\n' \
+            '  checkArguments("{namespace}{class_name}.string_deserialize",' \
+            'nargout,nargin,1);\n' \
+            '  string serialized = unwrap< string >(in[0]);\n' \
+            '  istringstream in_archive_stream(serialized);\n' \
+            '  boost::archive::text_iarchive in_archive(in_archive_stream);' \
+            '\n' \
+            '  Shared output(new {namespace}::{class_name}());\n' \
+            '  in_archive >> *output;\n' \
+            '  out[0] = wrap_shared_ptr(output,"{namespace}.{class_name}", ' \
+            'false);\n'.format(class_name=class_name, namespace=namespace)
+
     def wrap(self):
         self.wrap_namespace(self.module)
         self.generate_wrapper(self.module)
 
         return self.content
+
+
+def _generate_content(cc_content, path):
+    """Generate files and folders from matlab wrapper content.
+
+    Keyword arguments:
+    cc_content -- the content to generate formatted as
+        (file_name, file_content) or
+        (folder_name, [(file_name, file_content)])
+    path -- the path to the files parent folder within the main folder
+    """
+    for c in cc_content:
+        if type(c) == list:
+            path_to_folder = path + '/' + c[0][0]
+
+            if not os.path.isdir(path_to_folder):
+                try:
+                    os.mkdir(path_to_folder)
+                except OSError:
+                    pass
+
+            for sub_content in c:
+                _generate_content(sub_content[1], path_to_folder)
+        else:
+            path_to_file = path + '/' + c[0]
+
+            if not os.path.isdir(path_to_file):
+                try:
+                    os.mkdir(path)
+                except OSError:
+                    pass
+
+            with open(path_to_file, 'w') as f:
+                f.write(c[1])
 
 
 if __name__ == "__main__":
@@ -1609,22 +1642,20 @@ if __name__ == "__main__":
     with open(args.src, 'r') as f:
         content = f.read()
 
+    if not os.path.exists(args.src):
+        os.mkdir(args.src)
+
     module = parser.Module.parseString(content)
 
     instantiator.instantiate_namespace_inplace(module)
 
     wrapper = MatlabWrapper(
         module=module,
-        module_name='geometry',
-        top_module_namespace=[''],
-        ignore_classes=['']
+        module_name=args.module_name,
+        top_module_namespace=top_module_namespaces,
+        ignore_classes=args.ignore
     )
 
     cc_content = wrapper.wrap()
 
-    for c in cc_content:
-        if isinstance(c, list):
-            pass
-        else:
-            with open(args.out + '/' + c[0], 'w') as f:
-                f.write(c[1])
+    _generate_content(cc_content, args.out)
