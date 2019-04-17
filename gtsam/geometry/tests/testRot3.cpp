@@ -646,6 +646,23 @@ TEST(Rot3 , ChartDerivatives) {
 }
 
 /* ************************************************************************* */
+TEST(Rot3, ClosestTo) {
+  // Example top-left of SO(4) matrix not quite on SO(3) manifold
+  Matrix3 M;
+  M << 0.79067393, 0.6051136, -0.0930814,   //
+      0.4155925, -0.64214347, -0.64324489,  //
+      -0.44948549, 0.47046326, -0.75917576;
+
+  Matrix expected(3, 3);
+  expected << 0.790687, 0.605096, -0.0931312,  //
+      0.415746, -0.642355, -0.643844,          //
+      -0.449411, 0.47036, -0.759468;
+
+  auto actual = Rot3::ClosestTo(3*M);
+  EXPECT(assert_equal(expected, actual.matrix(), 1e-6));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

@@ -228,6 +228,9 @@ namespace gtsam {
     static Rot3 AlignTwoPairs(const Unit3& a_p, const Unit3& b_p,  //
                               const Unit3& a_q, const Unit3& b_q);
 
+    /// Static, named constructor that finds Rot3 element closest to M in Frobenius norm.
+    static Rot3 ClosestTo(const Matrix3& M) { return Rot3(SO3::ClosestTo(M)); }
+
     /// @}
     /// @name Testable
     /// @{
