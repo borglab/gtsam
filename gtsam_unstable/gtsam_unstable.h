@@ -12,10 +12,13 @@ class gtsam::Point2Vector;
 class gtsam::Rot2;
 class gtsam::Pose2;
 class gtsam::Point3;
+class gtsam::SO3;
+class gtsam::SO4;
 class gtsam::Rot3;
 class gtsam::Pose3;
 virtual class gtsam::noiseModel::Base;
 virtual class gtsam::noiseModel::Gaussian;
+virtual class gtsam::noiseModel::Isotropic;
 virtual class gtsam::imuBias::ConstantBias;
 virtual class gtsam::NonlinearFactor;
 virtual class gtsam::NoiseModelFactor;
@@ -315,6 +318,65 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
   Matrix get_model_outlier_cov();
 
   void serializable() const; // enabling serialization functionality
+};
+
+#include <gtsam_unstable/slam/FrobeniusFactor.h>
+namespace noiseModel {
+virtual class FrobeniusNoiseModel9: gtsam::noiseModel::Isotropic {
+  static gtsam::noiseModel::Isotropic* FromPose3NoiseModel(gtsam::noiseModel::Base* model);
+};
+virtual class FrobeniusNoiseModel12: gtsam::noiseModel::Isotropic {
+  static gtsam::noiseModel::Isotropic* FromPose3NoiseModel(gtsam::noiseModel::Base* model);
+};
+virtual class FrobeniusNoiseModel16: gtsam::noiseModel::Isotropic {
+  static gtsam::noiseModel::Isotropic* FromPose3NoiseModel(gtsam::noiseModel::Base* model);
+};
+}
+
+template<T = {gtsam::SO3, gtsam::SO4}>
+virtual class FrobeniusFactor : gtsam::NonlinearFactor {
+  FrobeniusFactor(size_t key1, size_t key2);
+  FrobeniusFactor(size_t key1, size_t key2, gtsam::noiseModel::Base* model);
+
+  Vector evaluateError(const T& R1, const T& R2);
+};
+
+template<T = {gtsam::SO3, gtsam::SO4}>
+virtual class FrobeniusBetweenFactor : gtsam::NonlinearFactor {
+  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12);
+  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12, gtsam::noiseModel::Base* model);
+
+  Vector evaluateError(const T& R1, const T& R2);
+};
+
+// virtual class FrobeniusWormholeFactorTL : gtsam::NonlinearFactor {
+//   FrobeniusWormholeFactorTL(size_t key1, size_t key2, const gtsam::SO3& R12);
+//   FrobeniusWormholeFactorTL(size_t key1, size_t key2, const gtsam::SO3& R12, gtsam::noiseModel::Base* model);
+//   Vector evaluateError(const gtsam::SO4& R1, const gtsam::SO4& R2);
+// };
+
+virtual class FrobeniusWormholeFactorPi : gtsam::NonlinearFactor {
+  FrobeniusWormholeFactorPi(size_t key1, size_t key2, const gtsam::SO3& R12);
+  FrobeniusWormholeFactorPi(size_t key1, size_t key2, const gtsam::SO3& R12, gtsam::noiseModel::Base* model);
+  Vector evaluateError(const gtsam::SO4& R1, const gtsam::SO4& R2);
+};
+
+virtual class FrobeniusWormholeFactor : gtsam::NonlinearFactor {
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::SO3& R12);
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::SO3& R12, gtsam::noiseModel::Base* model);
+  Vector evaluateError(const gtsam::SO4& R1, const gtsam::SO4& R2);
+};
+
+#include <gtsam_unstable/slam/ShonanAveraging.h>
+class ShonanAveraging {
+  ShonanAveraging(string g2oFile);
+  gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
+  gtsam::Values initializeRandomlyAt(size_t p) const;
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& graph,
+                  const gtsam::Values& initial) const;
+  double cost(const gtsam::Values& values) const;
+  gtsam::Values tryOptimizingAt(size_t p) const;
+  void run() const;
 };
 
 #include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactorEM.h>
