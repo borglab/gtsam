@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   testQuaternion.cpp
+ * @file   testSO3.cpp
  * @brief  Unit tests for SO3, as a GTSAM-adapted Lie Group
  * @author Frank Dellaert
  **/
@@ -276,6 +276,35 @@ TEST(SO3, ApplyInvDexp) {
       }
     }
   }
+}
+
+/* ************************************************************************* */
+TEST(SO3, vec) {
+  const Vector9 expected = Eigen::Map<Vector9>(R2.data());
+  Matrix actualH;
+  const Vector9 actual = R2.vec(actualH);
+  CHECK(assert_equal(expected, actual));
+  boost::function<Vector9(const SO3&)> f = [](const SO3& Q) {
+    return Q.vec();
+  };
+  const Matrix numericalH = numericalDerivative11(f, R2, 1e-5);
+  CHECK(assert_equal(numericalH, actualH));
+}
+
+//******************************************************************************
+TEST(Matrix, compose) {
+  Matrix3 M;
+  M << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  SO3 R = SO3::Expmap(Vector3(1, 2, 3));
+  const Matrix3 expected = M * R.matrix();
+  Matrix actualH;
+  const Matrix3 actual = so3::compose(M, R, actualH);
+  CHECK(assert_equal(expected, actual));
+  boost::function<Matrix3(const Matrix3&)> f = [R](const Matrix3& M) {
+    return so3::compose(M, R);
+  };
+  Matrix numericalH = numericalDerivative11(f, M, 1e-2);
+  CHECK(assert_equal(numericalH, actualH));
 }
 
 //******************************************************************************
