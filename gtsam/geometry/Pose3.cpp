@@ -52,7 +52,6 @@ Pose3 Pose3::inverse() const {
 /* ************************************************************************* */
 // Calculate Adjoint map
 // Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
-// Experimental - unit tests of derivatives based on it do not check out yet
 Matrix6 Pose3::AdjointMap() const {
   const Matrix3 R = R_.matrix();
   Matrix3 A = skewSymmetric(t_.x(), t_.y(), t_.z()) * R;
@@ -418,24 +417,11 @@ boost::optional<Pose3> Pose3::Align(const std::vector<Point3Pair>& abPointPairs)
   for(const Point3Pair& abPair: abPointPairs) {
     Point3 da = abPair.first - aCentroid;
     Point3 db = abPair.second - bCentroid;
-    H += db * da.transpose();
+    H += da * db.transpose();
     }
 
-  // Compute SVD
-  Eigen::JacobiSVD<Matrix> svd(H, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  Matrix U = svd.matrixU();
-  Vector S = svd.singularValues();
-  Matrix V = svd.matrixV();
-
-  // Check rank
-  if (S[1] < 1e-10)
-    return boost::none;
-
-  // Recover transform with correction from Eggert97machinevisionandapplications
-  Matrix3 UVtranspose = U * V.transpose();
-  Matrix3 detWeighting = I_3x3;
-  detWeighting(2, 2) = UVtranspose.determinant();
-  Rot3 aRb(Matrix(V * detWeighting * U.transpose()));
+  // ClosestTo finds rotation matrix closest to H in Frobenius sense
+  Rot3 aRb = Rot3::ClosestTo(H);
   Point3 aTb = Point3(aCentroid) - aRb * Point3(bCentroid);
   return Pose3(aRb, aTb);
 }
