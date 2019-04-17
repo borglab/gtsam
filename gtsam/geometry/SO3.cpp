@@ -20,13 +20,31 @@
 
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/base/concepts.h>
+
+#include <Eigen/SVD>
+
 #include <cmath>
 #include <limits>
 #include <iostream>
 
 namespace gtsam {
 
+/* ************************************************************************* */
 namespace so3 {
+
+Matrix99 Dcompose(const SO3& R) {
+  Matrix99 H;
+  H << I_3x3 * R(0, 0), I_3x3 * R(1, 0), I_3x3 * R(2, 0),  //
+      I_3x3 * R(0, 1), I_3x3 * R(1, 1), I_3x3 * R(2, 1),   //
+      I_3x3 * R(0, 2), I_3x3 * R(1, 2), I_3x3 * R(2, 2);
+  return H;
+}
+
+Matrix3 compose(const Matrix3& M, const SO3& R, OptionalJacobian<9, 9> H) {
+  Matrix3 MR = M * R.matrix();
+  if (H) *H = Dcompose(R);
+  return MR;
+}
 
 void ExpmapFunctor::init(bool nearZeroApprox) {
   nearZero = nearZeroApprox || (theta2 <= std::numeric_limits<double>::epsilon());
@@ -117,9 +135,42 @@ SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
 }
 
 /* ************************************************************************* */
+SO3 SO3::ClosestTo(const Matrix3& M) {
+  Eigen::JacobiSVD<Matrix3> svd(M, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  const auto& U = svd.matrixU();
+  const auto& V = svd.matrixV();
+  const double det = (U * V.transpose()).determinant();
+  return U * Vector3(1, 1, det).asDiagonal() * V.transpose();
+}
+
+/* ************************************************************************* */
+SO3 SO3::ChordalMean(const std::vector<SO3>& rotations) {
+  //  See Hartley13ijcv:
+  //  Cost function C(R) = \sum sqr(|R-R_i|_F)
+  // Closed form solution = ClosestTo(C_e), where C_e = \sum R_i !!!!
+  Matrix3 C_e {Z_3x3};
+  for (const auto& R_i : rotations) {
+    C_e += R_i;
+  }
+  return ClosestTo(C_e);
+}
+
+/* ************************************************************************* */
 void SO3::print(const std::string& s) const {
    std::cout << s << *this << std::endl;
  }
+
+//******************************************************************************
+ Matrix3 SO3::Hat(const Vector3& xi) { return skewSymmetric(xi); }
+
+ /* ************************************************************************* */
+ Vector3 SO3::Vee(const Matrix3& X) {
+   Vector3 xi;
+   xi(0) = -X(1, 2);
+   xi(1) = X(0, 2);
+   xi(2) = -X(0, 1);
+   return xi;
+}
 
 /* ************************************************************************* */
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
@@ -198,6 +249,27 @@ Matrix3 SO3::LogmapDerivative(const Vector3& omega) {
          (1 / (theta * theta) - (1 + cos(theta)) / (2 * theta * sin(theta))) *
              W * W;
 }
+
+/* ************************************************************************* */
+static Vector9 vec(const SO3& R) { return Eigen::Map<const Vector9>(R.data()); }
+
+static const std::vector<const Matrix3> G({SO3::Hat(Vector3::Unit(0)),
+                                           SO3::Hat(Vector3::Unit(1)),
+                                           SO3::Hat(Vector3::Unit(2))});
+
+static const Matrix93 P =
+    (Matrix93() << vec(G[0]), vec(G[1]), vec(G[2])).finished();
+
+/* ************************************************************************* */
+Vector9 SO3::vec(OptionalJacobian<9, 3> H) const {
+  const SO3& R = *this;
+  if (H) {
+    // As Luca calculated (for SO4), this is (I3 \oplus R) * P
+    *H << R * P.block<3, 3>(0, 0), R * P.block<3, 3>(3, 0),
+        R * P.block<3, 3>(6, 0);
+  }
+  return gtsam::vec(R);
+};
 
 /* ************************************************************************* */
 
