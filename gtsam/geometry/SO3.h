@@ -38,14 +38,13 @@ class SO3: public Matrix3, public LieGroup<SO3, 3> {
 protected:
 
 public:
-  enum {
-    dimension = 3
-  };
+  enum { N = 3 };
+  enum { dimension = 3 };
 
   /// @name Constructors
   /// @{
 
-  /// Constructor from AngleAxisd
+  /// Default constructor creates identity
   SO3() :
       Matrix3(I_3x3) {
   }
@@ -61,8 +60,14 @@ public:
       Matrix3(angleAxis) {
   }
 
-  /// Static, named constructor TODO think about relation with above
+  /// Static, named constructor. TODO(dellaert): think about relation with above
   static SO3 AxisAngle(const Vector3& axis, double theta);
+
+  /// Static, named constructor that finds SO(3) matrix closest to M in Frobenius norm.
+  static SO3 ClosestTo(const Matrix3& M);
+
+  /// Static, named constructor that finds chordal mean = argmin_R \sum sqr(|R-R_i|_F).
+  static SO3 ChordalMean(const std::vector<SO3>& rotations);
 
   /// @}
   /// @name Testable
@@ -85,12 +90,15 @@ public:
 
   /// inverse of a rotation = transpose
   SO3 inverse() const {
-    return this->Matrix3::inverse();
+    return this->transpose();
   }
 
   /// @}
   /// @name Lie Group
   /// @{
+
+  static Matrix3 Hat(const Vector3 &xi); ///< make skew symmetric matrix
+  static Vector3 Vee(const Matrix3 &X);  ///< inverse of Hat
 
   /**
    * Exponential map at identity - create a rotation from canonical coordinates
@@ -127,12 +135,52 @@ public:
   using LieGroup<SO3, 3>::inverse;
 
   /// @}
+  /// @name Other methods
+  /// @{
+
+  /// Vectorize
+  Vector9 vec(OptionalJacobian<9, 3> H = boost::none) const;
+
+  /// Return matrix (for wrapper)
+  const Matrix3& matrix() const { return *this;}
+
+  /// @
+
+  private:
+
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/)
+    {
+       ar & boost::serialization::make_nvp("R11", (*this)(0,0));
+       ar & boost::serialization::make_nvp("R12", (*this)(0,1));
+       ar & boost::serialization::make_nvp("R13", (*this)(0,2));
+       ar & boost::serialization::make_nvp("R21", (*this)(1,0));
+       ar & boost::serialization::make_nvp("R22", (*this)(1,1));
+       ar & boost::serialization::make_nvp("R23", (*this)(1,2));
+       ar & boost::serialization::make_nvp("R31", (*this)(2,0));
+       ar & boost::serialization::make_nvp("R32", (*this)(2,1));
+       ar & boost::serialization::make_nvp("R33", (*this)(2,2));
+    }
+
 };
 
-// This namespace exposes two functors that allow for saving computation when
-// exponential map and its derivatives are needed at the same location in so<3>
-// The second functor also implements dedicated methods to apply dexp and/or inv(dexp)
 namespace so3 {
+
+/** 
+ * Compose general matrix with an SO(3) element. 
+ * We only provide the 9*9 derivative in the first argument M.
+ */
+Matrix3 compose(const Matrix3& M, const SO3& R,
+                OptionalJacobian<9, 9> H = boost::none);
+
+/// (constant) Jacobian of compose wrpt M
+Matrix99 Dcompose(const SO3& R);
+
+// Below are two functors that allow for saving computation when exponential map
+// and its derivatives are needed at the same location in so<3>. The second
+// functor also implements dedicated methods to apply dexp and/or inv(dexp).
 
 /// Functor implementing Exponential map
 class GTSAM_EXPORT ExpmapFunctor {
