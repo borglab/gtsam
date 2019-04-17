@@ -537,6 +537,60 @@ class Rot2 {
   void serialize() const;
 };
 
+#include <gtsam/geometry/SO3.h>
+class SO3 {
+  // Standard Constructors
+  SO3();
+  SO3(Matrix R);
+  static gtsam::SO3 AxisAngle(const Vector axis, double theta);
+  static gtsam::SO3 ClosestTo(const Matrix M);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::SO3& other, double tol) const;
+
+  // Group
+  static gtsam::SO3 identity();
+  gtsam::SO3 inverse() const;
+  gtsam::SO3 between(const gtsam::SO3& R) const;
+  gtsam::SO3 compose(const gtsam::SO3& R) const;
+
+  // Manifold
+  gtsam::SO3 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::SO3& R) const;
+  static gtsam::SO3 Expmap(Vector v);
+
+  // Other methods
+  Vector vec() const;
+  Matrix matrix() const;
+};
+
+#include <gtsam/geometry/SO4.h>
+class SO4 {
+  // Standard Constructors
+  SO4();
+  SO4(Matrix R);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::SO4& other, double tol) const;
+
+  // Group
+  static gtsam::SO4 identity();
+  gtsam::SO4 inverse() const;
+  gtsam::SO4 between(const gtsam::SO4& Q) const;
+  gtsam::SO4 compose(const gtsam::SO4& Q) const;
+
+  // Manifold
+  gtsam::SO4 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::SO4& Q) const;
+  static gtsam::SO4 Expmap(Vector v);
+
+  // Other methods
+  Vector vec() const;
+  Matrix matrix() const;
+};
+
 #include <gtsam/geometry/Rot3.h>
 class Rot3 {
   // Standard Constructors and Named Constructors
@@ -559,6 +613,7 @@ class Rot3 {
   static gtsam::Rot3 Quaternion(double w, double x, double y, double z);
   static gtsam::Rot3 Rodrigues(Vector v);
   static gtsam::Rot3 Rodrigues(double wx, double wy, double wz);
+  static gtsam::Rot3 ClosestTo(const Matrix M);
 
   // Testable
   void print(string s) const;
@@ -1974,6 +2029,8 @@ class Values {
   void insert(size_t j, const gtsam::Point3& point3);
   void insert(size_t j, const gtsam::Rot2& rot2);
   void insert(size_t j, const gtsam::Pose2& pose2);
+  void insert(size_t j, const gtsam::SO3& R);
+  void insert(size_t j, const gtsam::SO4& Q);
   void insert(size_t j, const gtsam::Rot3& rot3);
   void insert(size_t j, const gtsam::Pose3& pose3);
   void insert(size_t j, const gtsam::Cal3_S2& cal3_s2);
@@ -1989,6 +2046,8 @@ class Values {
   void update(size_t j, const gtsam::Point3& point3);
   void update(size_t j, const gtsam::Rot2& rot2);
   void update(size_t j, const gtsam::Pose2& pose2);
+  void update(size_t j, const gtsam::SO3& R);
+  void update(size_t j, const gtsam::SO4& Q);
   void update(size_t j, const gtsam::Rot3& rot3);
   void update(size_t j, const gtsam::Pose3& pose3);
   void update(size_t j, const gtsam::Cal3_S2& cal3_s2);
@@ -1999,7 +2058,7 @@ class Values {
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
 
-  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias, Vector, Matrix}>
+  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias, Vector, Matrix}>
   T at(size_t j);
 
   /// version for double
@@ -2332,7 +2391,7 @@ class NonlinearISAM {
 #include <gtsam/geometry/StereoPoint2.h>
 
 #include <gtsam/slam/PriorFactor.h>
-template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
+template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
@@ -2343,7 +2402,7 @@ virtual class PriorFactor : gtsam::NoiseModelFactor {
 
 
 #include <gtsam/slam/BetweenFactor.h>
-template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::imuBias::ConstantBias}>
+template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::imuBias::ConstantBias}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
   T measured() const;
@@ -2355,7 +2414,7 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
 
 
 #include <gtsam/nonlinear/NonlinearEquality.h>
-template<T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
+template<T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
 virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // Constructor - forces exact evaluation
   NonlinearEquality(size_t j, const T& feasible);
@@ -2613,6 +2672,12 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename, bool is3D);
 void writeG2o(const gtsam::NonlinearFactorGraph& graph,
     const gtsam::Values& estimate, string filename);
+
+#include <gtsam/slam/KarcherMeanFactor-inl.h>
+template<T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose3}>
+virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
+  KarcherMeanFactor(const gtsam::KeyVector& keys);
+};
 
 //*************************************************************************
 // Navigation
