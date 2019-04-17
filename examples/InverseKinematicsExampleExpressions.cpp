@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
   initial.print("\nInitial Estimate:\n");  // print
   GTSAM_PRINT(forward.value(initial));
 
-  // Optimize the initial values using a Gauss-Newton nonlinear optimizer
+  // Optimize the initial values using a Levenberg-Marquardt nonlinear optimizer
   LevenbergMarquardtParams params;
   params.setlambdaInitial(1e6);
   LevenbergMarquardtOptimizer optimizer(graph, initial, params);
