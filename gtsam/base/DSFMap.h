@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -18,9 +18,9 @@
 
 #pragma once
 
+#include <cstdlib>  // Provides size_t
 #include <map>
 #include <set>
-#include <cstdlib>        // Provides size_t
 
 namespace gtsam {
 
@@ -29,11 +29,9 @@ namespace gtsam {
  * Uses rank compression and union by rank, iterator version
  * @addtogroup base
  */
-template<class KEY>
+template <class KEY>
 class DSFMap {
-
-protected:
-
+ protected:
   /// We store the forest in an STL map, but parents are done with pointers
   struct Entry {
     typename std::map<KEY, Entry>::iterator parent_;
@@ -41,7 +39,7 @@ protected:
     Entry() {}
   };
 
-    typedef typename std::map<KEY, Entry> Map;
+  typedef typename std::map<KEY, Entry> Map;
   typedef typename Map::iterator iterator;
   mutable Map entries_;
 
@@ -62,8 +60,7 @@ protected:
   iterator find_(const iterator& it) const {
     // follow parent pointers until we reach set representative
     iterator& parent = it->second.parent_;
-    if (parent != it)
-      parent = find_(parent); // not yet, recurse!
+    if (parent != it) parent = find_(parent);  // not yet, recurse!
     return parent;
   }
 
@@ -73,13 +70,11 @@ protected:
     return find_(initial);
   }
 
-public:
-
+ public:
   typedef std::set<KEY> Set;
 
   /// constructor
-  DSFMap() {
-  }
+  DSFMap() {}
 
   /// Given key, find the representative key for the set in which it lives
   inline KEY find(const KEY& key) const {
@@ -89,12 +84,10 @@ public:
 
   /// Merge two sets
   void merge(const KEY& x, const KEY& y) {
-
     // straight from http://en.wikipedia.org/wiki/Disjoint-set_data_structure
     iterator xRoot = find_(x);
     iterator yRoot = find_(y);
-    if (xRoot == yRoot)
-      return;
+    if (xRoot == yRoot) return;
 
     // Merge sets
     if (xRoot->second.rank_ < yRoot->second.rank_)
@@ -117,7 +110,14 @@ public:
     }
     return sets;
   }
-
 };
 
-}
+/// Small utility class for representing a wrappable pairs of ints.
+class IndexPair : public std::pair<size_t,size_t> {
+ public:
+  IndexPair(): std::pair<size_t,size_t>(0,0) {}
+  IndexPair(size_t i, size_t j) : std::pair<size_t,size_t>(i,j) {}
+  inline size_t i() const { return first; };
+  inline size_t j() const { return second; };
+};
+}  // namespace gtsam

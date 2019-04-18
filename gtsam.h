@@ -241,11 +241,28 @@ class FactorIndices {
   size_t back() const;
   void push_back(size_t factorIndex) const;
 };
+
 //*************************************************************************
 // base
 //*************************************************************************
 
 /** gtsam namespace functions */
+
+#include <gtsam/base/DSFMap.h>
+class IndexPair { 
+  IndexPair(); 
+  IndexPair(size_t i, size_t j); 
+  size_t i() const;
+  size_t j() const;
+};
+
+template<KEY = {gtsam::IndexPair}>
+class DSFMap {
+  DSFMap();
+  KEY find(const KEY& key) const;
+  void merge(const KEY& x, const KEY& y);
+};
+
 #include <gtsam/base/Matrix.h>
 bool linear_independent(Matrix A, Matrix B, double tol);
 

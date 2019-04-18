@@ -140,6 +140,12 @@ TEST(DSFMap, sets){
 }
 
 /* ************************************************************************* */
+TEST(DSFMap, findIndexPair) {
+  DSFMap<IndexPair> dsf;
+  EXPECT(dsf.find(IndexPair(1,2))==IndexPair(1,2));
+  EXPECT(dsf.find(IndexPair(1,2)) != dsf.find(IndexPair(1,3)));
+}
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
 
