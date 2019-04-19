@@ -130,6 +130,14 @@ if(MSVC)
 	endif()
 endif()
 
+# If building DLLs in MSVC, we need to avoid EIGEN_STATIC_ASSERT() 
+# or explicit instantiation will generate build errors. 
+# See: https://bitbucket.org/gtborg/gtsam/issues/417/fail-to-build-on-msvc-2017
+#
+if(MSVC AND BUILD_SHARED_LIBS)
+	list(APPEND GTSAM_COMPILE_DEFINITIONS_PUBLIC EIGEN_NO_STATIC_ASSERT)
+endif()
+
 # Store these in variables so they are automatically replicated in GTSAMConfig.cmake and such.
 set(BOOST_FIND_MINIMUM_VERSION 1.43)
 set(BOOST_FIND_MINIMUM_COMPONENTS serialization system filesystem thread program_options date_time timer chrono regex)
