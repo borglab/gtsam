@@ -30,11 +30,15 @@
 
 namespace gtsam {
 
+static boost::mt19937 kRandomNumberGenerator(42);
+
+/* ************************************************************************* */
 ShonanAveraging::ShonanAveraging(const string& g2oFile) {
   factors_ = parse3DFactors(g2oFile);
   poses_ = parse3DPoses(g2oFile);
 }
 
+/* ************************************************************************* */
 NonlinearFactorGraph ShonanAveraging::buildGraphAt(size_t p) const {
   NonlinearFactorGraph graph;
   for (const auto& factor : factors_) {
@@ -49,17 +53,18 @@ NonlinearFactorGraph ShonanAveraging::buildGraphAt(size_t p) const {
   return graph;
 }
 
+/* ************************************************************************* */
 Values ShonanAveraging::initializeRandomlyAt(size_t p) const {
-  static boost::mt19937 rng(42);
   Values initial;
   for (size_t j = 0; j < poses_.size(); j++) {
-    initial.insert(j, SOn::Random(rng, p));
+    initial.insert(j, SOn::Random(kRandomNumberGenerator, p));
   }
   return initial;
 }
 
-Values ShonanAveraging::optimize(const NonlinearFactorGraph& graph,
-                                 const Values& initial) const {
+/* ************************************************************************* */
+static Values Optimize(const NonlinearFactorGraph& graph,
+                       const Values& initial) {
   // Set parameters to be similar to ceres
   LevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
@@ -79,7 +84,8 @@ Values ShonanAveraging::optimize(const NonlinearFactorGraph& graph,
   // boost::make_shared<BlockJacobiPreconditionerParameters>();
   params.iterativeParams = pcg;
 #else
-  params.iterativeParams = boost::make_shared<SubgraphSolverParameters>(builderParameters);
+  params.iterativeParams =
+      boost::make_shared<SubgraphSolverParameters>(builderParameters);
 #endif
   // Optimize
   LevenbergMarquardtOptimizer lm(graph, initial, params);
@@ -87,6 +93,35 @@ Values ShonanAveraging::optimize(const NonlinearFactorGraph& graph,
   return result;
 }
 
+/* ************************************************************************* */
+double ShonanAveraging::costAt(size_t p, const Values& values) const {
+  const NonlinearFactorGraph graph = buildGraphAt(p);
+  return graph.error(values);
+}
+
+/* ************************************************************************* */
+Values ShonanAveraging::tryOptimizingAt(
+    size_t p, const boost::optional<const Values&> initial) const {
+  // Build graph
+  auto graph = buildGraphAt(p);
+
+  // Optimize
+  return Optimize(graph, initial ? *initial : initializeRandomlyAt(p));
+}
+
+/* ************************************************************************* */
+Values ShonanAveraging::projectFrom(size_t p, const Values& values) const {
+  Values SO3_values;
+  for (size_t j = 0; j < poses_.size(); j++) {
+    const SOn Q = values.at<SOn>(j);
+    assert(Q.rows() == p);
+    const SO3 R = SO3::ClosestTo(Q.topLeftCorner(3, 3));
+    SO3_values.insert(j, R);
+  }
+  return SO3_values;
+}
+
+/* ************************************************************************* */
 double ShonanAveraging::cost(const Values& values) const {
   NonlinearFactorGraph graph;
   for (const auto& factor : factors_) {
@@ -99,30 +134,13 @@ double ShonanAveraging::cost(const Values& values) const {
   return graph.error(values);
 }
 
-Values ShonanAveraging::tryOptimizingAt(size_t p) const {
-  // Build graph
-  auto graph = buildGraphAt(p);
-
-  // Initialize
-  auto initial = initializeRandomlyAt(p);
-
-  // Optimize
-  auto result = optimize(graph, initial);
-
-  // Project down to SO(3)
-  Values SO3_values;
-  for (size_t j = 0; j < poses_.size(); j++) {
-    const SOn Q = result.at<SOn>(j);
-    const SO3 R = SO3::ClosestTo(Q.topLeftCorner(3, 3));
-    SO3_values.insert(j, R);
-  }
-  return SO3_values;
-}
-
-void ShonanAveraging::run() const {
-  for (const size_t p : {3, 4, 5}) {
+/* ************************************************************************* */
+void ShonanAveraging::run(size_t p_max) const {
+  // TODO(frank): check optimality and return optimal values
+  for (size_t p = 3; p <= p_max; p++) {
     tryOptimizingAt(p);
   }
 }
 
+/* ************************************************************************* */
 }  // namespace gtsam

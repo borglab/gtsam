@@ -26,8 +26,8 @@
 using namespace std;
 using namespace gtsam;
 
-// string g2oFile = findExampleDataFile("toyExample.g2o");
-string g2oFile = "/Users/dellaert/git/SE-Sync/data/smallGrid3D.g2o";
+string g2oFile = findExampleDataFile("toyExample.g2o");
+// string g2oFile = "/Users/dellaert/git/SE-Sync/data/toy3D.g2o";
 static const ShonanAveraging kShonan(g2oFile);
 
 /* ************************************************************************* */
@@ -38,24 +38,27 @@ TEST(ShonanAveraging, buildGraphAt) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging, tryOptimizingAt3) {
-  const Values result = kShonan.tryOptimizingAt(3);
-  EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result), 1e-4);
+  const Values initial = kShonan.initializeRandomlyAt(3);
+  const Values result = kShonan.tryOptimizingAt(3, initial);
+  EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(3, result), 1e-4);
 }
 
 /* ************************************************************************* */
 TEST(ShonanAveraging, tryOptimizingAt4) {
   const Values result = kShonan.tryOptimizingAt(4);
-  EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result), 1e-4);
+  EXPECT_DOUBLES_EQUAL(300, kShonan.costAt(4, result), 1e-3);
+  const Values SO3Values = kShonan.projectFrom(4, result);
+  EXPECT_DOUBLES_EQUAL(0, kShonan.cost(SO3Values), 1e-4);
 }
 
 /* ************************************************************************* */
 TEST(ShonanAveraging, tryOptimizingAt5) {
   const Values result = kShonan.tryOptimizingAt(5);
-  EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result), 1e-3);
+  EXPECT_DOUBLES_EQUAL(600, kShonan.costAt(5, result), 1e-3);
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, run) { kShonan.run(); }
+TEST(ShonanAveraging, run) { kShonan.run(5); }
 
 /* ************************************************************************* */
 int main() {
