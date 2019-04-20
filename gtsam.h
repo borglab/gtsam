@@ -591,6 +591,17 @@ class SO4 {
   Matrix matrix() const;
 };
 
+#include <gtsam/geometry/SOn.h>
+class SOn {
+  // Standard Constructors
+  SOn(size_t n);
+  SOn(Matrix R);
+
+  // Other methods
+  Vector vec() const;
+  Matrix matrix() const;
+};
+
 #include <gtsam/geometry/Rot3.h>
 class Rot3 {
   // Standard Constructors and Named Constructors
@@ -2031,6 +2042,7 @@ class Values {
   void insert(size_t j, const gtsam::Pose2& pose2);
   void insert(size_t j, const gtsam::SO3& R);
   void insert(size_t j, const gtsam::SO4& Q);
+  void insert(size_t j, const gtsam::SOn& P);
   void insert(size_t j, const gtsam::Rot3& rot3);
   void insert(size_t j, const gtsam::Pose3& pose3);
   void insert(size_t j, const gtsam::Cal3_S2& cal3_s2);
@@ -2048,6 +2060,7 @@ class Values {
   void update(size_t j, const gtsam::Pose2& pose2);
   void update(size_t j, const gtsam::SO3& R);
   void update(size_t j, const gtsam::SO4& Q);
+  void update(size_t j, const gtsam::SOn& P);
   void update(size_t j, const gtsam::Rot3& rot3);
   void update(size_t j, const gtsam::Pose3& pose3);
   void update(size_t j, const gtsam::Cal3_S2& cal3_s2);
@@ -2058,7 +2071,7 @@ class Values {
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
 
-  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias, Vector, Matrix}>
+  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias, Vector, Matrix}>
   T at(size_t j);
 
   /// version for double

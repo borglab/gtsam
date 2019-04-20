@@ -107,7 +107,7 @@ class SO4 : public Matrix4, public LieGroup<SO4, 6> {
   /// Return matrix (for wrapper)
   const Matrix4 &matrix() const { return *this; }
 
-  /// @
+  /// @}
 
  private:
   /** Serialization function */
