@@ -21,6 +21,7 @@
 #include <gtsam/slam/dataset.h>
 
 #include <map>
+#include <string>
 
 namespace gtsam {
 class NonlinearFactorGraph;
@@ -34,7 +35,7 @@ class ShonanAveraging {
   /**
    * Construct from a G2O file
    */
-  ShonanAveraging(const std::string& g2oFile);
+  explicit ShonanAveraging(const std::string& g2oFile);
 
   /// Build graph for SO(p)
   NonlinearFactorGraph buildGraphAt(size_t p) const;

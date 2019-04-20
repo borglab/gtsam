@@ -22,6 +22,7 @@
 #include <gtsam_unstable/slam/FrobeniusFactor.h>
 
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -68,7 +69,7 @@ FrobeniusWormholeFactorTL::FrobeniusWormholeFactorTL(
 }
 
 /* ************************************************************************* */
-// TODO make SO(3) and SO(4) \bar{G} available
+// TODO(frank): make SO(3) and SO(4) \bar{G} available
 static SO4::Vector16 vec(const SO4& Q) {
   return Eigen::Map<const SO4::Vector16>(Q.data());
 }
@@ -97,13 +98,15 @@ Vector FrobeniusWormholeFactorTL::evaluateError(
   Matrix G(n2, d);
   for (size_t j = 0; j < d; j++) {
     // TODO(frank): this can't be right. Think about fixed vs dynamic.
-    G.col(j) << SOn::Hat(n, Eigen::VectorXd::Unit(d, j));
+    const auto X = SOn::Hat(n, Eigen::VectorXd::Unit(d, j));
+    G.col(j) = Eigen::Map<const Matrix>(X.data(), n2, 1);
   }
 
   // << operator below implements vec
   Vector fQ2(n2), hQ1(n2);
   fQ2 = Q2.vec(H2);
-  hQ1 << (Q1.matrix() * M_);
+  const Matrix Q1M = Q1.matrix() * M_;
+  hQ1 << Eigen::Map<const Matrix>(Q1M.data(), n2, 1);
 
   // If asked, calculate Jacobian as (M \otimes Q1) * G
   if (H1) {
