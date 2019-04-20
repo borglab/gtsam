@@ -136,7 +136,7 @@ SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
 
 /* ************************************************************************* */
 SO3 SO3::ClosestTo(const Matrix3& M) {
-  Eigen::JacobiSVD<Matrix3> svd(M, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  Eigen::JacobiSVD<Matrix3> svd(M, Eigen::ComputeFullU | Eigen::ComputeFullV);
   const auto& U = svd.matrixU();
   const auto& V = svd.matrixV();
   const double det = (U * V.transpose()).determinant();

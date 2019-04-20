@@ -75,12 +75,13 @@ class SOnBase {
     Matrix G(n2, d);
     for (size_t j = 0; j < d; j++) {
       // TODO(frank): this can't be right. Think about fixed vs dynamic.
-      G.col(j) << Derived::Hat(n, Eigen::VectorXd::Unit(d, j));
+      const auto X = derived().Hat(n, Eigen::VectorXd::Unit(d, j));
+      G.col(j) = Eigen::Map<const Matrix>(X.data(), n2, 1);
     }
 
     // Vectorize
     Vector X(n2);
-    X << derived();
+    X << Eigen::Map<const Matrix>(derived().data(), n2, 1);
 
     // If requested, calculate H as (I \oplus Q) * P
     if (H) {
