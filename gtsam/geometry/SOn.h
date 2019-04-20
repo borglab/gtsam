@@ -107,14 +107,17 @@ class SOn : public Eigen::MatrixXd,
   /// @name Constructors
   /// @{
 
+  /// Default constructor: only used for serialization and wrapping
+  SOn() {}
+
   /// Construct SO(n) identity
-  SOn(size_t n) : Eigen::MatrixXd(n, n) {
+  explicit SOn(size_t n) : Eigen::MatrixXd(n, n) {
     *this << Eigen::MatrixXd::Identity(n, n);
   }
 
   /// Constructor from Eigen Matrix
   template <typename Derived>
-  SOn(const Eigen::MatrixBase<Derived>& R) : Eigen::MatrixXd(R.eval()) {}
+  explicit SOn(const Eigen::MatrixBase<Derived>& R) : Eigen::MatrixXd(R.eval()) {}
 
   /// Random SO(n) element (no big claims about uniformity)
   static SOn Random(boost::mt19937& rng, size_t n) {
@@ -211,7 +214,7 @@ class SOn : public Eigen::MatrixXd,
   static SOn Retract(size_t n, const Vector& xi) {
     const Matrix X = Hat(n, xi / 2.0);
     const auto I = Eigen::MatrixXd::Identity(n, n);
-    return (I + X) * (I - X).inverse();
+    return SOn((I + X) * (I - X).inverse());
   }
 
   /**
@@ -227,6 +230,13 @@ class SOn : public Eigen::MatrixXd,
   /// @}
   /// @name Lie group
   /// @{
+
+  /// @}
+  /// @name Other methods
+  /// @{
+
+  /// Return matrix (for wrapper)
+  const Matrix &matrix() const { return *this; }
 
   /// @}
 };
@@ -275,14 +285,14 @@ struct traits<SOn> {
                      ChartJacobian H2 = boost::none) {
     if (H1 || H2) throw std::runtime_error("SOn::Retract");
     const size_t n = R.rows();
-    return R * SOn::Retract(n, xi);
+    return SOn(R * SOn::Retract(n, xi));
   }
 
   static TangentVector Local(const SOn& R, const SOn& other,  //
                              ChartJacobian H1 = boost::none,
                              ChartJacobian H2 = boost::none) {
     if (H1 || H2) throw std::runtime_error("SOn::Local");
-    Matrix between = R.inverse() * other;
+    const SOn between = SOn(R.inverse() * other);
     return SOn::Local(between);
   }
 
