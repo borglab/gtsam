@@ -67,19 +67,19 @@ Values ShonanAveraging::optimize(const NonlinearFactorGraph& graph,
   // params.setVerbosityLM("SUMMARY");
   params.linearSolverType = LevenbergMarquardtParams::Iterative;
 
+  SubgraphBuilderParameters builderParameters;
+  builderParameters.skeletonType = SubgraphBuilderParameters::KRUSKAL;
+  builderParameters.skeletonWeight = SubgraphBuilderParameters::EQUAL;
+  builderParameters.augmentationWeight = SubgraphBuilderParameters::SKELETON;
+  builderParameters.augmentationFactor = 0.0;
 #ifdef SUBGRAPH_PC
   auto pcg = boost::make_shared<PCGSolverParameters>();
-  SubgraphBuilderParameters builderParameters;
-  builderParameters.skeleton_ = SubgraphBuilderParameters::KRUSKAL;
-  builderParameters.skeletonWeight_ = SubgraphBuilderParameters::EQUAL;
-  builderParameters.augmentationWeight_ = SubgraphBuilderParameters::SKELETON;
-  builderParameters.complexity_ = 0.0;
   pcg->preconditioner_ =
       boost::make_shared<SubgraphPreconditionerParameters>(builderParameters);
-      // boost::make_shared<BlockJacobiPreconditionerParameters>();
+  // boost::make_shared<BlockJacobiPreconditionerParameters>();
   params.iterativeParams = pcg;
 #else
-  params.iterativeParams = boost::make_shared<SubgraphSolverParameters>();
+  params.iterativeParams = boost::make_shared<SubgraphSolverParameters>(builderParameters);
 #endif
   // Optimize
   LevenbergMarquardtOptimizer lm(graph, initial, params);
