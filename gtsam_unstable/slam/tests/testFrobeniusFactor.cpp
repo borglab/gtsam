@@ -91,7 +91,7 @@ TEST(FrobeniusPriorSO3, ChordalL2mean) {
 
   // manifold optimization gets same result as ChordalMean
   NonlinearFactorGraph graph;
-  graph.emplace_shared<FrobeniusPrior<SO3> >(1, R1);
+  graph.emplace_shared<FrobeniusPrior<SO3> >(1, R1.matrix());
   graph.emplace_shared<FrobeniusPrior<SO3> >(1, R1.transpose());
 
   Values initial;
@@ -206,7 +206,7 @@ TEST(FrobeniusWormholeFactorTL, equivalenceToSO3) {
   const size_t p = 4;  // test for SO(4)
   auto factor4 = FrobeniusWormholeFactorTL(1, 2, noisyR12, p, model);
   const Eigen::Map<Matrix3> E3(factor3.evaluateError(R1, R2).data());
-  const Eigen::Map<Matrix4> E4(factor4.evaluateError(Q1, Q2).data());
+  const Eigen::Map<Matrix4> E4(factor4.evaluateError(SOn(Q1.matrix()), SOn(Q2.matrix())).data());
   EXPECT(assert_equal((Matrix)E4.topLeftCorner<3, 3>(), E3, 1e-9));
 }
 

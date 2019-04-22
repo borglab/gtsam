@@ -22,60 +22,25 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
-namespace noiseModel {
+
 /**
- * Custom noise model for Frobenius norms. Templated on SO(3) or SO(4).
+ * When creating (any) FrobeniusFactor we convert a 6-dimensional Pose3
+ * BetweenFactor noise model into an 9 or 16-dimensional isotropic noise
+ * model used to weight the Frobenius norm.  If the noise model passed is
+ * null we return a Dim-dimensional isotropic noise model with sigma=1.0. If
+ * not, we we check if the 3-dimensional noise model on rotations is
+ * isotropic. If it is, we extend to 'Dim' dimensions, otherwise we throw an
+ * error. If defaultToUnit == false throws an exception on unexepcted input.
  */
-template <size_t Dim>
-struct FrobeniusNoiseModel : Isotropic {
-  /** protected constructor takes sigma */
-  FrobeniusNoiseModel(double sigma) : Isotropic(Dim, sigma) {}
-
- public:
-  /**
-   * When creating (any) FrobeniusFactor we convert a 6-dimensional Pose3
-   * BetweenFactor noise model into an 9 or 16-dimensional isotropic noise
-   * model used to weight the Frobenius norm.  If the noise model passed is
-   * null we return a Dim-dimensional isotropic noise model with sigma=1.0. If
-   * not, we we check if the 3-dimensional noise model on rotations is
-   * isotropic. If it is, we extend to 'Dim' dimensions, otherwise we throw an
-   * error. If defaultToUnit == false throws an exception on unexepcted input.
-   */
-  static boost::shared_ptr<FrobeniusNoiseModel> FromPose3NoiseModel(
-      const gtsam::SharedNoiseModel& model, bool defaultToUnit = true) {
-    double sigma = 1.0;
-    if (model != nullptr) {
-      if (model->dim() != 6) {
-        if (!defaultToUnit)
-          throw std::runtime_error("Can only convert Pose3 noise models");
-      } else {
-        auto sigmas = model->sigmas().head(3);
-        if (sigmas(1) != sigmas(0) || sigmas(2) != sigmas(0)) {
-          if (!defaultToUnit)
-            throw std::runtime_error(
-                "Can only convert isotropic rotation noise");
-        } else {
-          sigma = sigmas(0);
-        }
-      }
-    }
-    return boost::shared_ptr<FrobeniusNoiseModel>(
-        new FrobeniusNoiseModel(sigma));
-  }
-};
-
-// Define these for wrapper
-using FrobeniusNoiseModel9 = FrobeniusNoiseModel<9>;
-using FrobeniusNoiseModel12 = FrobeniusNoiseModel<12>;
-using FrobeniusNoiseModel16 = FrobeniusNoiseModel<16>;
-}  // namespace noiseModel
+boost::shared_ptr<noiseModel::Isotropic> ConvertPose3NoiseModel(
+    const SharedNoiseModel& model, size_t d, bool defaultToUnit = true);
 
 /**
  * FrobeniusPrior calculates the Frobenius norm between a given matrix and an
  * element of SO(3) or SO(4).
  */
 template <class Rot>
-class FrobeniusPrior : public gtsam::NoiseModelFactor1<Rot> {
+class FrobeniusPrior : public NoiseModelFactor1<Rot> {
   enum { Dim = Rot::RowsAtCompileTime * Rot::ColsAtCompileTime };
   using MatrixNN =
       Eigen::Matrix<double, Rot::RowsAtCompileTime, Rot::ColsAtCompileTime>;
@@ -84,11 +49,9 @@ class FrobeniusPrior : public gtsam::NoiseModelFactor1<Rot> {
  public:
   /// Constructor
   FrobeniusPrior(Key j, const MatrixNN& M,
-                 const gtsam::SharedNoiseModel& model = nullptr)
-      : gtsam::NoiseModelFactor1<SO3>(
-            noiseModel::FrobeniusNoiseModel<Dim>::FromPose3NoiseModel(model),
-            j) {
-    vecM_ << M;
+                 const SharedNoiseModel& model = nullptr)
+      : NoiseModelFactor1<SO3>(ConvertPose3NoiseModel(model, Dim), j) {
+    vecM_ << Eigen::Map<const Matrix>(M.data(), Dim, 1);
   }
 
   /// Error is just Frobenius norm between Rot element and vectorized matrix M.
@@ -103,16 +66,14 @@ class FrobeniusPrior : public gtsam::NoiseModelFactor1<Rot> {
  * The template argument can be any SO<N>.
  */
 template <class Rot>
-class FrobeniusFactor : public gtsam::NoiseModelFactor2<Rot, Rot> {
+class FrobeniusFactor : public NoiseModelFactor2<Rot, Rot> {
   enum { Dim = Rot::RowsAtCompileTime * Rot::ColsAtCompileTime };
 
  public:
   /// Constructor
-  FrobeniusFactor(Key j1, Key j2,
-                  const gtsam::SharedNoiseModel& model = nullptr)
-      : gtsam::NoiseModelFactor2<Rot, Rot>(
-            noiseModel::FrobeniusNoiseModel<Dim>::FromPose3NoiseModel(model),
-            j1, j2) {}
+  FrobeniusFactor(Key j1, Key j2, const SharedNoiseModel& model = nullptr)
+      : NoiseModelFactor2<Rot, Rot>(ConvertPose3NoiseModel(model, Dim), j1,
+                                    j2) {}
 
   /// Error is just Frobenius norm between rotation matrices.
   Vector evaluateError(const Rot& R1, const Rot& R2,
@@ -130,7 +91,7 @@ class FrobeniusFactor : public gtsam::NoiseModelFactor2<Rot, Rot> {
  * Logmap of the error).
  */
 template <class Rot>
-class FrobeniusBetweenFactor : public gtsam::NoiseModelFactor2<Rot, Rot> {
+class FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
   Rot R12_;  ///< measured rotation between R1 and R2
   Eigen::Matrix<double, Rot::dimension, Rot::dimension>
       R2hat_H_R1_;  ///< fixed derivative of R2hat wrpt R1
@@ -139,10 +100,8 @@ class FrobeniusBetweenFactor : public gtsam::NoiseModelFactor2<Rot, Rot> {
  public:
   /// Constructor
   FrobeniusBetweenFactor(Key j1, Key j2, const Rot& R12,
-                         const gtsam::SharedNoiseModel& model = nullptr)
-      : gtsam::NoiseModelFactor2<Rot, Rot>(
-            noiseModel::FrobeniusNoiseModel<Dim>::FromPose3NoiseModel(model),
-            j1, j2),
+                         const SharedNoiseModel& model = nullptr)
+      : NoiseModelFactor2<Rot, Rot>(ConvertPose3NoiseModel(model, Dim), j1, j2),
         R12_(R12),
         R2hat_H_R1_(R12.inverse().AdjointMap()) {}
 
@@ -163,13 +122,13 @@ class FrobeniusBetweenFactor : public gtsam::NoiseModelFactor2<Rot, Rot> {
  * land on the SO(3) sub-manifold of SO(n) at the global minimum. It upgrades
  * the measurement to R^nxn.
  */
-class FrobeniusWormholeFactorTL : public gtsam::NoiseModelFactor2<SOn, SOn> {
+class FrobeniusWormholeFactorTL : public NoiseModelFactor2<SOn, SOn> {
   Matrix M_;  ///< measured rotation between R1 and R2, upgraded to R^nxn
 
  public:
   /// Constructor. Note we convert to 16-dimensional noise model.
   FrobeniusWormholeFactorTL(Key j1, Key j2, const SO3& R12, size_t n = 4,
-                            const gtsam::SharedNoiseModel& model = nullptr);
+                            const SharedNoiseModel& model = nullptr);
 
   /// Error is Frobenius norm between pi(Q1)*R12 and pi(Q2), where pi extracts
   /// the 3*3 leftmost block from the SO(n) matrix Q.
@@ -185,14 +144,14 @@ class FrobeniusWormholeFactorTL : public gtsam::NoiseModelFactor2<SOn, SOn> {
  * the projections will land on the SO(3) sub-manifold of SO(4) at the global
  * minimum.
  */
-class FrobeniusWormholeFactorPi : public gtsam::NoiseModelFactor2<SO4, SO4> {
+class FrobeniusWormholeFactorPi : public NoiseModelFactor2<SO4, SO4> {
   SO3 R12_;          ///< measured rotation between R1 and R2
   Matrix99 MR_H_M_;  ///< constant derivative of compose
 
  public:
   /// Constructor. Note we convert to 9-dimensional noise model.
   FrobeniusWormholeFactorPi(Key j1, Key j2, const SO3& R12,
-                            const gtsam::SharedNoiseModel& model = nullptr);
+                            const SharedNoiseModel& model = nullptr);
 
   /// Error is Frobenius norm between pi(Q1)*R12 and pi(Q2), where pi extracts
   /// the 3*3 leftmost block from the SO(4) matrix Q.
@@ -209,14 +168,14 @@ class FrobeniusWormholeFactorPi : public gtsam::NoiseModelFactor2<SO4, SO4> {
  * projections will land on the SO(3) sub-manifold of SO(4) at the global
  * minimum.
  */
-class FrobeniusWormholeFactor : public gtsam::NoiseModelFactor2<SO4, SO4> {
+class FrobeniusWormholeFactor : public NoiseModelFactor2<SO4, SO4> {
   Matrix43
       M_;  ///< measured rotation between R1 and R2, upgraded to 4*3 = E'*R12
 
  public:
   /// Constructor. Note we convert to a 12-dimensional noise model.
   FrobeniusWormholeFactor(Key j1, Key j2, const SO3& R12,
-                          const gtsam::SharedNoiseModel& model = nullptr);
+                          const SharedNoiseModel& model = nullptr);
 
   /// Error is Frobenius norm between pi(Q1)*R12 and pi(Q2), where pi [rojects
   /// down to the Stiefel manifold

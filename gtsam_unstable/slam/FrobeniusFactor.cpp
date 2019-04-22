@@ -16,11 +16,13 @@
  * @brief  Various factors that minimize some Frobenius norm
  */
 
+#include <gtsam_unstable/slam/FrobeniusFactor.h>
+
 #include <gtsam/base/timing.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam_unstable/slam/FrobeniusFactor.h>
 
+#include <cmath>
 #include <iostream>
 #include <vector>
 
@@ -28,24 +30,15 @@ using namespace std;
 
 namespace gtsam {
 
-/**
- * When creating (any) FrobeniusFactor we convert a 6-dimensional Pose3
- * BetweenFactor noise model into an 9 or 16-dimensional isotropic noise
- * model used to weight the Frobenius norm.  If the noise model passed is
- * null we return a Dim-dimensional isotropic noise model with sigma=1.0. If
- * not, we we check if the 3-dimensional noise model on rotations is
- * isotropic. If it is, we extend to 'Dim' dimensions, otherwise we throw an
- * error. If defaultToUnit == false throws an exception on unexepcted input.
- */
-static boost::shared_ptr<noiseModel::Isotropic> ConverPose3NoiseModel(
-    const gtsam::SharedNoiseModel& model, size_t d, bool defaultToUnit = true) {
+boost::shared_ptr<noiseModel::Isotropic> ConvertPose3NoiseModel(
+    const SharedNoiseModel& model, size_t d, bool defaultToUnit) {
   double sigma = 1.0;
   if (model != nullptr) {
     if (model->dim() != 6) {
       if (!defaultToUnit)
         throw std::runtime_error("Can only convert Pose3 noise models");
     } else {
-      auto sigmas = model->sigmas().head(3);
+      auto sigmas = model->sigmas().head(3).eval();
       if (sigmas(1) != sigmas(0) || sigmas(2) != sigmas(0)) {
         if (!defaultToUnit)
           throw std::runtime_error("Can only convert isotropic rotation noise");
@@ -59,10 +52,8 @@ static boost::shared_ptr<noiseModel::Isotropic> ConverPose3NoiseModel(
 
 /* ************************************************************************* */
 FrobeniusWormholeFactorTL::FrobeniusWormholeFactorTL(
-    Key j1, Key j2, const SO3& R12, size_t n,
-    const gtsam::SharedNoiseModel& model)
-    : gtsam::NoiseModelFactor2<SOn, SOn>(ConverPose3NoiseModel(model, n * n),
-                                         j1, j2),
+    Key j1, Key j2, const SO3& R12, size_t n, const SharedNoiseModel& model)
+    : NoiseModelFactor2<SOn, SOn>(ConvertPose3NoiseModel(model, n * n), j1, j2),
       M_(n, n) {
   M_.setZero();
   M_.topLeftCorner<3, 3>() = R12;
@@ -102,7 +93,6 @@ Vector FrobeniusWormholeFactorTL::evaluateError(
     G.col(j) = Eigen::Map<const Matrix>(X.data(), n2, 1);
   }
 
-  // << operator below implements vec
   Vector fQ2(n2), hQ1(n2);
   fQ2 = Q2.vec(H2);
   const Matrix Q1M = Q1.matrix() * M_;
@@ -122,10 +112,8 @@ Vector FrobeniusWormholeFactorTL::evaluateError(
 
 /* ************************************************************************* */
 FrobeniusWormholeFactorPi::FrobeniusWormholeFactorPi(
-    Key j1, Key j2, const SO3& R12, const gtsam::SharedNoiseModel& model)
-    : gtsam::NoiseModelFactor2<SO4, SO4>(
-          noiseModel::FrobeniusNoiseModel<9>::FromPose3NoiseModel(model), j1,
-          j2),
+    Key j1, Key j2, const SO3& R12, const SharedNoiseModel& model)
+    : NoiseModelFactor2<SO4, SO4>(ConvertPose3NoiseModel(model, 9), j1, j2),
       R12_(R12),
       MR_H_M_(so3::Dcompose(R12_)) {}
 
@@ -135,22 +123,20 @@ Vector FrobeniusWormholeFactorPi::evaluateError(
     boost::optional<Matrix&> H2) const {
   gttic(FrobeniusWormholeFactor_evaluateError);
 
-  // << operator below implements vec
   // The projection Jacobians are computed by passing H1 and H2:
   Vector9 fQ2, hQ1;
-  fQ2 << Q2.topLeft(H2);
-  hQ1 << so3::compose(Q1.topLeft(H1), R12_);
+  fQ2 << Eigen::Map<const Vector9>(Q2.topLeft(H2).data());
+  const Matrix3 Q1R12 = so3::compose(Q1.topLeft(H1), R12_);
+  hQ1 << Eigen::Map<const Vector9>(Q1R12.data());
   // Implement chain rule by pre-multiplying with constant Dcompose.
   if (H1) *H1 = -MR_H_M_ * (*H1);
   return fQ2 - hQ1;
 }
 
 /* ************************************************************************* */
-FrobeniusWormholeFactor::FrobeniusWormholeFactor(
-    Key j1, Key j2, const SO3& R12, const gtsam::SharedNoiseModel& model)
-    : gtsam::NoiseModelFactor2<SO4, SO4>(
-          noiseModel::FrobeniusNoiseModel<12>::FromPose3NoiseModel(model), j1,
-          j2) {
+FrobeniusWormholeFactor::FrobeniusWormholeFactor(Key j1, Key j2, const SO3& R12,
+                                                 const SharedNoiseModel& model)
+    : NoiseModelFactor2<SO4, SO4>(ConvertPose3NoiseModel(model, 12), j1, j2) {
   M_ << R12, 0, 0, 0;
 }
 
@@ -160,11 +146,11 @@ Vector FrobeniusWormholeFactor::evaluateError(
     boost::optional<Matrix&> H2) const {
   gttic(FrobeniusWormholeFactor_evaluateError);
 
-  // << operator below implements vec
   // The projection Jacobians are computed by passing H1 and H2:
   Vector12 fQ2, hQ1;
-  fQ2 << Q2.stiefel(H2);
-  hQ1 << Q1.matrix() * M_;
+  fQ2 << Eigen::Map<const Vector12>(Q2.stiefel(H2).data());
+  const Matrix43 Q1M = Q1.matrix() * M_;
+  hQ1 << Eigen::Map<const Vector12>(Q1M.data());
   // We do the combined derivative of Q*E'*R which is (R'E \otimes Q)P
   if (H1) {
     Eigen::Matrix<double, 12, 16> MxO;

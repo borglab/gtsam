@@ -286,7 +286,6 @@ virtual class PriorFactor : gtsam::NoiseModelFactor {
   void serializable() const; // enabling serialization functionality
 };
 
-
 #include <gtsam/slam/BetweenFactor.h>
 template<T = {gtsam::PoseRTV}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
@@ -322,18 +321,6 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
 };
 
 #include <gtsam_unstable/slam/FrobeniusFactor.h>
-namespace noiseModel {
-virtual class FrobeniusNoiseModel9: gtsam::noiseModel::Isotropic {
-  static gtsam::noiseModel::Isotropic* FromPose3NoiseModel(gtsam::noiseModel::Base* model);
-};
-virtual class FrobeniusNoiseModel12: gtsam::noiseModel::Isotropic {
-  static gtsam::noiseModel::Isotropic* FromPose3NoiseModel(gtsam::noiseModel::Base* model);
-};
-virtual class FrobeniusNoiseModel16: gtsam::noiseModel::Isotropic {
-  static gtsam::noiseModel::Isotropic* FromPose3NoiseModel(gtsam::noiseModel::Base* model);
-};
-}
-
 template<T = {gtsam::SO3, gtsam::SO4}>
 virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
   FrobeniusFactor(size_t key1, size_t key2);
