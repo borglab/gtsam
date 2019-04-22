@@ -18,6 +18,7 @@
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/SO3.h>
+#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/slam/dataset.h>
 
 #include <map>
@@ -26,8 +27,20 @@
 namespace gtsam {
 class NonlinearFactorGraph;
 
+/// Parameters governing optimization etc.
+struct ShonanAveragingParameters {
+  bool prior;                   // whether to use a prior
+  bool karcher;                 // whether to use Karcher mean prior
+  LevenbergMarquardtParams lm;  // LM parameters
+  ShonanAveragingParameters(const std::string& verbosity = "SILENT",
+                            const std::string& method = "SUBGRAPH");
+  void setPrior(bool value) { prior = value; }
+  void setKarcher(bool value) { karcher = value; }
+};
+
 class ShonanAveraging {
  private:
+  ShonanAveragingParameters parameters_;
   BetweenFactorPose3s factors_;
   std::map<Key, Pose3> poses_;
 
@@ -35,7 +48,9 @@ class ShonanAveraging {
   /**
    * Construct from a G2O file
    */
-  explicit ShonanAveraging(const std::string& g2oFile);
+  explicit ShonanAveraging(const std::string& g2oFile,
+                           const ShonanAveragingParameters& parameters =
+                               ShonanAveragingParameters());
 
   /**
    * Build graph for SO(p)

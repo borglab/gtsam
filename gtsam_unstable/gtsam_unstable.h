@@ -356,8 +356,16 @@ virtual class FrobeniusWormholeFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam_unstable/slam/ShonanAveraging.h>
+class ShonanAveragingParameters {
+  ShonanAveragingParameters(string verbosity);
+  ShonanAveragingParameters(string verbosity, string method);
+  void setPrior(bool value);
+  void setKarcher(bool value);
+};
+
 class ShonanAveraging {
   ShonanAveraging(string g2oFile);
+  ShonanAveraging(string g2oFile, const gtsam::ShonanAveragingParameters& parameters);
   gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
   gtsam::Values initializeRandomlyAt(size_t p) const;
   double costAt(size_t p, const gtsam::Values& values) const;

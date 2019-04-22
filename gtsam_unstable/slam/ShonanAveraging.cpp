@@ -21,6 +21,7 @@
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 #include <gtsam_unstable/slam/FrobeniusFactor.h>
@@ -33,7 +34,51 @@ namespace gtsam {
 static boost::mt19937 kRandomNumberGenerator(42);
 
 /* ************************************************************************* */
-ShonanAveraging::ShonanAveraging(const string& g2oFile) {
+ShonanAveragingParameters::ShonanAveragingParameters(const string& verbosity,
+                                                     const std::string& method)
+    : prior(true), karcher(true) {
+  lm.setVerbosityLM(verbosity);
+
+  // Set parameters to be similar to ceres
+  LevenbergMarquardtParams::SetCeresDefaults(&lm);
+
+  // By default, we will do conjugate gradient
+  lm.linearSolverType = LevenbergMarquardtParams::Iterative;
+
+  // Create subgraph builder parameters
+  SubgraphBuilderParameters builderParameters;
+  builderParameters.skeletonType = SubgraphBuilderParameters::KRUSKAL;
+  builderParameters.skeletonWeight = SubgraphBuilderParameters::EQUAL;
+  builderParameters.augmentationWeight = SubgraphBuilderParameters::SKELETON;
+  builderParameters.augmentationFactor = 0.0;
+
+  auto pcg = boost::make_shared<PCGSolverParameters>();
+
+  // Choose optimization method
+  if (method == "SUBGRAPH") {
+    lm.iterativeParams =
+        boost::make_shared<SubgraphSolverParameters>(builderParameters);
+  } else if (method == "SGPC") {
+    pcg->preconditioner_ =
+        boost::make_shared<SubgraphPreconditionerParameters>(builderParameters);
+    lm.iterativeParams = pcg;
+  } else if (method == "JACOBI") {
+    pcg->preconditioner_ =
+        boost::make_shared<BlockJacobiPreconditionerParameters>();
+    lm.iterativeParams = pcg;
+  } else if (method == "QR") {
+    lm.setLinearSolverType("MULTIFRONTAL_QR");
+  } else if (method == "CHOLESKY") {
+    lm.setLinearSolverType("MULTIFRONTAL_CHOLESKY");
+  } else {
+    throw std::invalid_argument("ShonanAveragingParameters: unknown mtehod");
+  }
+}
+
+/* ************************************************************************* */
+ShonanAveraging::ShonanAveraging(const string& g2oFile,
+                                 const ShonanAveragingParameters& parameters)
+    : parameters_(parameters) {
   factors_ = parse3DFactors(g2oFile);
   poses_ = parse3DPoses(g2oFile);
 }
@@ -48,8 +93,6 @@ NonlinearFactorGraph ShonanAveraging::buildGraphAt(size_t p) const {
     graph.emplace_shared<FrobeniusWormholeFactorTL>(
         keys[0], keys[1], SO3(Tij.rotation().matrix()), p, model);
   }
-  const size_t d = p * (p - 1) / 2;
-  graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), d);
   return graph;
 }
 
@@ -63,32 +106,9 @@ Values ShonanAveraging::initializeRandomlyAt(size_t p) const {
 }
 
 /* ************************************************************************* */
-static Values Optimize(const NonlinearFactorGraph& graph,
-                       const Values& initial) {
-  // Set parameters to be similar to ceres
-  LevenbergMarquardtParams params;
-  LevenbergMarquardtParams::SetCeresDefaults(&params);
-  //   params.setLinearSolverType("MULTIFRONTAL_QR");
-  // params.setVerbosityLM("SUMMARY");
-  params.linearSolverType = LevenbergMarquardtParams::Iterative;
-
-  SubgraphBuilderParameters builderParameters;
-  builderParameters.skeletonType = SubgraphBuilderParameters::KRUSKAL;
-  builderParameters.skeletonWeight = SubgraphBuilderParameters::EQUAL;
-  builderParameters.augmentationWeight = SubgraphBuilderParameters::SKELETON;
-  builderParameters.augmentationFactor = 0.0;
-#ifdef SUBGRAPH_PC
-  auto pcg = boost::make_shared<PCGSolverParameters>();
-  pcg->preconditioner_ =
-      boost::make_shared<SubgraphPreconditionerParameters>(builderParameters);
-  // boost::make_shared<BlockJacobiPreconditionerParameters>();
-  params.iterativeParams = pcg;
-#else
-  params.iterativeParams =
-      boost::make_shared<SubgraphSolverParameters>(builderParameters);
-#endif
-  // Optimize
-  LevenbergMarquardtOptimizer lm(graph, initial, params);
+static Values Optimize(const NonlinearFactorGraph& graph, const Values& initial,
+                       const LevenbergMarquardtParams& LMparameters) {
+  LevenbergMarquardtOptimizer lm(graph, initial, LMparameters);
   Values result = lm.optimize();
   return result;
 }
@@ -101,12 +121,27 @@ double ShonanAveraging::costAt(size_t p, const Values& values) const {
 
 /* ************************************************************************* */
 Values ShonanAveraging::tryOptimizingAt(
-    size_t p, const boost::optional<const Values&> initial) const {
+    size_t p, const boost::optional<const Values&> initialEstimate) const {
   // Build graph
   auto graph = buildGraphAt(p);
 
+  // Initialize randomly if no initial estimate is given
+  // TODO(frank): add option to do chordal init
+  const Values initial =
+      initialEstimate ? *initialEstimate : initializeRandomlyAt(p);
+
+  // Prior is only added here as depends on initial value (and cost is zero)
+  if (parameters_.prior) {
+    if (parameters_.karcher) {
+      const size_t d = p * (p - 1) / 2;
+      graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), d);
+    } else {
+      graph.emplace_shared<NonlinearEquality<SOn>>(0, initial.at<SOn>(0));
+    }
+  }
+
   // Optimize
-  return Optimize(graph, initial ? *initial : initializeRandomlyAt(p));
+  return Optimize(graph, initial, parameters_.lm);
 }
 
 /* ************************************************************************* */
