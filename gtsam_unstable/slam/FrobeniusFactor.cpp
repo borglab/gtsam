@@ -52,9 +52,9 @@ boost::shared_ptr<noiseModel::Isotropic> ConvertPose3NoiseModel(
 
 /* ************************************************************************* */
 FrobeniusWormholeFactorTL::FrobeniusWormholeFactorTL(
-    Key j1, Key j2, const SO3& R12, size_t n, const SharedNoiseModel& model)
-    : NoiseModelFactor2<SOn, SOn>(ConvertPose3NoiseModel(model, n * n), j1, j2),
-      M_(n, n) {
+    Key j1, Key j2, const SO3& R12, size_t p, const SharedNoiseModel& model)
+    : NoiseModelFactor2<SOn, SOn>(ConvertPose3NoiseModel(model, p * p), j1, j2),
+      M_(p, p) {
   M_.setZero();
   M_.topLeftCorner<3, 3>() = R12;
 }
@@ -79,31 +79,31 @@ static const Eigen::Matrix<double, 16, 6> P =
 Vector FrobeniusWormholeFactorTL::evaluateError(
     const SOn& Q1, const SOn& Q2, boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2) const {
-  gttic(FrobeniusWormholeFactor_evaluateError);
+  gttic(FrobeniusWormholeFactorTL_evaluateError);
 
   // Calculate G matrix of vectorized generators
   // TODO(generalize)
-  const size_t n = Q1.rows();
-  assert(Q2.rows() == n);
-  const size_t n2 = n * n, d = n * (n - 1) / 2;
-  Matrix G(n2, d);
+  const size_t p = Q1.rows();
+  assert(Q2.rows() == p);
+  const size_t pp = p * p, d = p * (p - 1) / 2;
+  Matrix G(pp, d);
   for (size_t j = 0; j < d; j++) {
     // TODO(frank): this can't be right. Think about fixed vs dynamic.
-    const auto X = SOn::Hat(n, Eigen::VectorXd::Unit(d, j));
-    G.col(j) = Eigen::Map<const Matrix>(X.data(), n2, 1);
+    const auto X = SOn::Hat(p, Eigen::VectorXd::Unit(d, j));
+    G.col(j) = Eigen::Map<const Matrix>(X.data(), pp, 1);
   }
 
-  Vector fQ2(n2), hQ1(n2);
+  Vector fQ2(pp), hQ1(pp);
   fQ2 = Q2.vec(H2);
   const Matrix Q1M = Q1.matrix() * M_;
-  hQ1 << Eigen::Map<const Matrix>(Q1M.data(), n2, 1);
+  hQ1 << Eigen::Map<const Matrix>(Q1M.data(), pp, 1);
 
   // If asked, calculate Jacobian as (M \otimes Q1) * G
   if (H1) {
-    Matrix MxO(n2, n2);
-    for (size_t i = 0; i < n; i++)
-      for (size_t j = 0; j < n; j++)
-        MxO.block(i * n, j * n, n, n) = Q1 * M_(j, i);
+    Matrix MxO(pp, pp);
+    for (size_t i = 0; i < p; i++)
+      for (size_t j = 0; j < p; j++)
+        MxO.block(i * p, j * p, p, p) = Q1 * M_(j, i);
     *H1 = -MxO * G;
   }
 
@@ -121,7 +121,7 @@ FrobeniusWormholeFactorPi::FrobeniusWormholeFactorPi(
 Vector FrobeniusWormholeFactorPi::evaluateError(
     const SO4& Q1, const SO4& Q2, boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2) const {
-  gttic(FrobeniusWormholeFactor_evaluateError);
+  gttic(FrobeniusWormholeFactorPi_evaluateError);
 
   // The projection Jacobians are computed by passing H1 and H2:
   Vector9 fQ2, hQ1;
@@ -159,6 +159,67 @@ Vector FrobeniusWormholeFactor::evaluateError(
         Q1 * M_(0, 2), Q1 * M_(1, 2), Q1 * M_(2, 2), Z_4x4;
     *H1 = -MxO * P;
   }
+  return fQ2 - hQ1;
+}
+
+/* ************************************************************************* */
+FrobeniusWormholeFactorP::FrobeniusWormholeFactorP(
+    Key j1, Key j2, const SO3& R12, size_t p, const SharedNoiseModel& model)
+    : NoiseModelFactor2<SOn, SOn>(ConvertPose3NoiseModel(model, p * 3), j1, j2),
+      R12_(R12) {}
+
+/* ************************************************************************* */
+Vector FrobeniusWormholeFactorP::evaluateError(
+    const SOn& Q1, const SOn& Q2, boost::optional<Matrix&> H1,
+    boost::optional<Matrix&> H2) const {
+  gttic(FrobeniusWormholeFactorP_evaluateError);
+
+  const size_t p = Q1.rows();
+  const size_t dim = p * 3;  // Stiefel manifold dimension
+  assert(noiseModel()->dim() == dim);
+
+  // Calculate G matrix of vectorized generators
+  // TODO(generalize)
+  assert(Q2.rows() == p);
+  const size_t p2 = p * 2, pp = p * p, d = p * (p - 1) / 2;
+  Matrix Z = zeros(p, p);
+  Matrix G(pp, d);
+  for (size_t j = 0; j < d; j++) {
+    // TODO(frank): this can't be right. Think about fixed vs dynamic.
+    const auto X = SOn::Hat(p, Eigen::VectorXd::Unit(d, j));
+    G.col(j) = Eigen::Map<const Matrix>(X.data(), pp, 1);
+  }
+
+  Vector fQ2(dim), hQ1(dim);
+
+  // Vectorize and extract only d leftmost columns, i.e. vec(Q2*P)
+  assert(Q2.rows() == p && Q2.cols() == p && dim <= pp);
+  fQ2 << Eigen::Map<const Matrix>(Q2.data(), dim, 1);
+
+  // Vectorize Q1*P*R12
+  const Matrix Q1PR12 = Q1.leftCols<3>() * R12_;
+  assert(Q1PR12.rows() == p && Q1PR12.cols() == 3);
+  hQ1 << Eigen::Map<const Matrix>(Q1PR12.data(), dim, 1);
+
+  // If asked, calculate Jacobian as (M \otimes Q1) * G
+  if (H1) {
+    Matrix RPxQ = zeros(dim, pp);
+    RPxQ.block(0, 0, p, dim) << Q1 * R12_(0, 0), Q1 * R12_(1, 0),
+        Q1 * R12_(2, 0);
+    RPxQ.block(p, 0, p, dim) << Q1 * R12_(0, 1), Q1 * R12_(1, 1),
+        Q1 * R12_(2, 1);
+    RPxQ.block(p2, 0, p, dim) << Q1 * R12_(0, 2), Q1 * R12_(1, 2),
+        Q1 * R12_(2, 2);
+    *H1 = -RPxQ * G;
+  }
+  if (H2) {
+    Matrix PxQ = zeros(dim, pp);
+    PxQ.block(0, 0, p, p) = Q2;
+    PxQ.block(p, p, p, p) = Q2;
+    PxQ.block(p2, p2, p, p) = Q2;
+    *H2 = PxQ * G;
+  }
+
   return fQ2 - hQ1;
 }
 

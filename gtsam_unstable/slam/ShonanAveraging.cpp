@@ -90,7 +90,7 @@ NonlinearFactorGraph ShonanAveraging::buildGraphAt(size_t p) const {
     const auto& keys = factor->keys();
     const auto& Tij = factor->measured();
     const auto& model = factor->noiseModel();
-    graph.emplace_shared<FrobeniusWormholeFactorTL>(
+    graph.emplace_shared<FrobeniusWormholeFactorP>(
         keys[0], keys[1], SO3(Tij.rotation().matrix()), p, model);
   }
   return graph;
@@ -136,7 +136,7 @@ Values ShonanAveraging::tryOptimizingAt(
       const size_t d = p * (p - 1) / 2;
       graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), d);
     } else {
-      graph.emplace_shared<NonlinearEquality<SOn>>(0, initial.at<SOn>(0));
+      graph.emplace_shared<PriorFactor<SOn>>(0, initial.at<SOn>(0));
     }
   }
 

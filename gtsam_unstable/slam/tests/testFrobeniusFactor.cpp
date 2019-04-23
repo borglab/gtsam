@@ -21,6 +21,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/testLie.h>
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/geometry/SO4.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
@@ -206,7 +207,8 @@ TEST(FrobeniusWormholeFactorTL, equivalenceToSO3) {
   const size_t p = 4;  // test for SO(4)
   auto factor4 = FrobeniusWormholeFactorTL(1, 2, noisyR12, p, model);
   const Eigen::Map<Matrix3> E3(factor3.evaluateError(R1, R2).data());
-  const Eigen::Map<Matrix4> E4(factor4.evaluateError(SOn(Q1.matrix()), SOn(Q2.matrix())).data());
+  const Eigen::Map<Matrix4> E4(
+      factor4.evaluateError(SOn(Q1.matrix()), SOn(Q2.matrix())).data());
   EXPECT(assert_equal((Matrix)E4.topLeftCorner<3, 3>(), E3, 1e-9));
 }
 
@@ -253,6 +255,41 @@ TEST(FrobeniusWormholeFactor, equivalenceToSO3) {
   auto factor4 = FrobeniusWormholeFactor(1, 2, R12, model);
   const Eigen::Map<Matrix3> E3(factor3.evaluateError(R1, R2).data());
   const Eigen::Map<Matrix43> E4(factor4.evaluateError(Q1, Q2).data());
+  EXPECT(assert_equal((Matrix)E4.topLeftCorner<3, 3>(), E3, 1e-9));
+  EXPECT(assert_equal((Matrix)E4.row(3), Matrix13::Zero(), 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(FrobeniusWormholeFactorP, evaluateError) {
+  auto model = noiseModel::Isotropic::Sigma(6, 1.2);  // dimension = 6 not 16
+  for (const size_t p : {3, 4, 5}) {
+    Matrix M(p, p);
+    M.topLeftCorner(3, 3) = Rot3::Ypr(1, 2, 3).matrix();
+    SOn Q1(M);
+    M.topLeftCorner(3, 3) = Rot3::Ypr(4, 5, 6).matrix();
+    SOn Q2(M);
+    auto factor = FrobeniusWormholeFactorP(1, 2, ::so3::R12, p, model);
+    Matrix H1, H2;
+    factor.evaluateError(Q1, Q2, H1, H2);
+
+    // Test derivatives
+    Values values;
+    values.insert(1, Q1);
+    values.insert(2, Q2);
+    EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+  }
+}
+
+/* ************************************************************************* */
+TEST(FrobeniusWormholeFactorP, equivalenceToSO3) {
+  using namespace ::submanifold;
+  auto R12 = ::so3::R12.retract(Vector3(0.1, 0.2, -0.1));
+  auto model = noiseModel::Isotropic::Sigma(6, 1.2);  // wrong dimension
+  auto factor3 = FrobeniusBetweenFactor<SO3>(1, 2, R12, model);
+  auto factor4 = FrobeniusWormholeFactorP(1, 2, R12, 4, model);
+  const Eigen::Map<Matrix3> E3(factor3.evaluateError(R1, R2).data());
+  const Eigen::Map<Matrix43> E4(
+      factor4.evaluateError(SOn(Q1.matrix()), SOn(Q2.matrix())).data());
   EXPECT(assert_equal((Matrix)E4.topLeftCorner<3, 3>(), E3, 1e-9));
   EXPECT(assert_equal((Matrix)E4.row(3), Matrix13::Zero(), 1e-9));
 }
