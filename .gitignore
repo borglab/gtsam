@@ -1,4 +1,5 @@
 /build*
+/debug*
 .idea
 *.pyc
 *.DS_Store
@@ -17,3 +18,7 @@ cython/gtsam.so
 cython/gtsam_wrapper.pxd
 .vscode
 .env
+/.vs/
+/CMakeSettings.json
+# for QtCreator:
+CMakeLists.txt.user*

@@ -46,7 +46,6 @@ static double rankTol = 1.0;
 template<class CALIBRATION>
 PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
     const PinholeCamera<CALIBRATION>& camera) {
-  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   Pose3 cameraPose = camera.pose();
@@ -170,9 +169,7 @@ TEST( SmartProjectionCameraFactor, noisy ) {
   measurements.push_back(level_uv);
   measurements.push_back(level_uv_right);
 
-  vector<Key> views;
-  views.push_back(c1);
-  views.push_back(c2);
+  KeyVector views {c1, c2};
 
   factor2->add(measurements, views);
 
@@ -195,10 +192,7 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(unit2));
   SmartFactor::shared_ptr smartFactor2(new SmartFactor(unit2));
   SmartFactor::shared_ptr smartFactor3(new SmartFactor(unit2));
-  vector<Key> views;
-  views.push_back(c1);
-  views.push_back(c2);
-  views.push_back(c3);
+  KeyVector views {c1, c2, c3};
   smartFactor1->add(measurements_cam1, views);
   smartFactor2->add(measurements_cam2, views);
   smartFactor3->add(measurements_cam3, views);
@@ -293,10 +287,7 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
-  vector<Key> views;
-  views.push_back(c1);
-  views.push_back(c2);
-  views.push_back(c3);
+  KeyVector views {c1, c2, c3};
 
   SfM_Track track1;
   for (size_t i = 0; i < 3; ++i) {
@@ -370,10 +361,7 @@ TEST( SmartProjectionCameraFactor, perturbCamerasAndOptimize ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark4, measurements_cam4);
   projectToMultipleCameras(cam1, cam2, cam3, landmark5, measurements_cam5);
 
-  vector<Key> views;
-  views.push_back(c1);
-  views.push_back(c2);
-  views.push_back(c3);
+  KeyVector views {c1, c2, c3};
 
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(unit2));
   smartFactor1->add(measurements_cam1, views);
@@ -450,10 +438,7 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark4, measurements_cam4);
   projectToMultipleCameras(cam1, cam2, cam3, landmark5, measurements_cam5);
 
-  vector<Key> views;
-  views.push_back(c1);
-  views.push_back(c2);
-  views.push_back(c3);
+  KeyVector views {c1, c2, c3};
 
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(unit2));
   smartFactor1->add(measurements_cam1, views);
@@ -526,10 +511,7 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler2 ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark4, measurements_cam4);
   projectToMultipleCameras(cam1, cam2, cam3, landmark5, measurements_cam5);
 
-  vector<Key> views;
-  views.push_back(c1);
-  views.push_back(c2);
-  views.push_back(c3);
+  KeyVector views {c1, c2, c3};
 
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(unit2));
   smartFactor1->add(measurements_cam1, views);

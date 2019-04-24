@@ -563,7 +563,7 @@ TEST( ConcurrentBatchSmoother, synchronize_3 )
   for(const Values::ConstKeyValuePair& key_value: filterSeparatorValues) {
     eliminateKeys.erase(key_value.key);
   }
-  std::vector<Key> variables(eliminateKeys.begin(), eliminateKeys.end());
+  KeyVector variables(eliminateKeys.begin(), eliminateKeys.end());
   GaussianFactorGraph result = *linearFactors->eliminatePartialMultifrontal(variables, EliminateCholesky).second;
 
   expectedSmootherSummarization.resize(0);

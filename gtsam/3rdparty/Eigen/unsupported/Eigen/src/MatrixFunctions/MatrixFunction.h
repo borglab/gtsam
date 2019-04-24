@@ -7,8 +7,8 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef EIGEN_MATRIX_FUNCTION
-#define EIGEN_MATRIX_FUNCTION
+#ifndef EIGEN_MATRIX_FUNCTION_H
+#define EIGEN_MATRIX_FUNCTION_H
 
 #include "StemFunction.h"
 
@@ -577,4 +577,4 @@ const MatrixFunctionReturnValue<Derived> MatrixBase<Derived>::cosh() const
 
 } // end namespace Eigen
 
-#endif // EIGEN_MATRIX_FUNCTION
+#endif // EIGEN_MATRIX_FUNCTION_H

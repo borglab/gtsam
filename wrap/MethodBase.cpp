@@ -108,11 +108,6 @@ string MethodBase::wrapper_fragment(
   // start
   wrapperFile.oss << "{\n";
 
-  returnVal.wrapTypeUnwrap(wrapperFile);
-
-  wrapperFile.oss << "  typedef boost::shared_ptr<" << cppClassName
-                  << "> Shared;" << endl;
-
   // get call
   // for static methods: cppClassName::staticMethod<TemplateVal>
   // for instance methods: obj->instanceMethod<TemplateVal>

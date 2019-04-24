@@ -1,11 +1,25 @@
+"""
+GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+PlanarSLAM unit tests.
+Author: Frank Dellaert & Duy Nguyen Ta (Python)
+"""
 import unittest
-import gtsam
 from math import pi
+
 import numpy as np
 
-class TestPose2SLAMExample(unittest.TestCase):
+import gtsam
+from gtsam.utils.test_case import GtsamTestCase
 
-    def test_Pose2SLAMExample(self):
+
+class TestPlanarSLAM(GtsamTestCase):
+
+    def test_PlanarSLAM(self):
         # Assumptions
         #  - All values are axis aligned
         #  - Robot poses are facing along the X axis (horizontal, to the right in images)
@@ -56,7 +70,7 @@ class TestPose2SLAMExample(unittest.TestCase):
         P = marginals.marginalCovariance(1)
 
         pose_1 = result.atPose2(1)
-        self.assertTrue(pose_1.equals(gtsam.Pose2(), 1e-4))
+        self.gtsamAssertEquals(pose_1, gtsam.Pose2(), 1e-4)
 
 
 

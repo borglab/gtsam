@@ -51,7 +51,6 @@ using namespace gtsam::symbol_shorthand;
 
 namespace gtsam {
 
-#ifndef MATLAB_MEX_FILE
 /* ************************************************************************* */
 string findExampleDataFile(const string& name) {
   // Search source tree and installed location
@@ -67,6 +66,7 @@ string findExampleDataFile(const string& name) {
   namesToSearch.push_back(name + ".graph");
   namesToSearch.push_back(name + ".txt");
   namesToSearch.push_back(name + ".out");
+  namesToSearch.push_back(name + ".xml");
 
   // Find first name that exists
   for(const fs::path& root: rootsToSearch) {
@@ -99,9 +99,6 @@ string createRewrittenFileName(const string& name) {
 
   return newpath.string();
 }
-
-/* ************************************************************************* */
-#endif
 
 /* ************************************************************************* */
 GraphAndValues load2D(pair<string, SharedNoiseModel> dataset, int maxID,
@@ -413,17 +410,17 @@ void save2D(const NonlinearFactorGraph& graph, const Values& config,
 
 /* ************************************************************************* */
 GraphAndValues readG2o(const string& g2oFile, const bool is3D,
-    KernelFunctionType kernelFunctionType) {
-  // just call load2D
-  int maxID = 0;
-  bool addNoise = false;
-  bool smart = true;
-
-  if(is3D)
+                       KernelFunctionType kernelFunctionType) {
+  if (is3D) {
     return load3D(g2oFile);
-
-  return load2D(g2oFile, SharedNoiseModel(), maxID, addNoise, smart,
-      NoiseFormatG2O, kernelFunctionType);
+  } else {
+    // just call load2D
+    int maxID = 0;
+    bool addNoise = false;
+    bool smart = true;
+    return load2D(g2oFile, SharedNoiseModel(), maxID, addNoise, smart,
+                  NoiseFormatG2O, kernelFunctionType);
+  }
 }
 
 /* ************************************************************************* */
@@ -432,23 +429,27 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
   fstream stream(filename.c_str(), fstream::out);
 
   // save 2D & 3D poses
-  Values::ConstFiltered<Pose2> viewPose2 = estimate.filter<Pose2>();
-  for(const Values::ConstFiltered<Pose2>::KeyValuePair& key_value: viewPose2) {
-    stream << "VERTEX_SE2 " << key_value.key << " " << key_value.value.x() << " "
-        << key_value.value.y() << " " << key_value.value.theta() << endl;
+  for (const auto& key_value : estimate) {
+    auto p = dynamic_cast<const GenericValue<Pose2>*>(&key_value.value);
+    if (!p) continue;
+    const Pose2& pose = p->value();
+    stream << "VERTEX_SE2 " << key_value.key << " " << pose.x() << " "
+        << pose.y() << " " << pose.theta() << endl;
   }
 
-  Values::ConstFiltered<Pose3> viewPose3 = estimate.filter<Pose3>();
-  for(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value: viewPose3) {
-      Point3 p = key_value.value.translation();
-      Rot3 R = key_value.value.rotation();
-      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << p.x() << " "  << p.y() << " " << p.z()
+  for(const auto& key_value: estimate) {
+      auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
+      if (!p) continue;
+      const Pose3& pose = p->value();
+      Point3 t = pose.translation();
+      Rot3 R = pose.rotation();
+      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "  << t.y() << " " << t.z()
         << " " << R.toQuaternion().x() << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()
         << " " << R.toQuaternion().w() << endl;
   }
 
   // save edges (2D or 3D)
-  for(boost::shared_ptr<NonlinearFactor> factor_: graph) {
+  for(const auto& factor_: graph) {
     boost::shared_ptr<BetweenFactor<Pose2> > factor =
         boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
     if (factor){
@@ -510,15 +511,12 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
 }
 
 /* ************************************************************************* */
-GraphAndValues load3D(const string& filename) {
-
+std::map<Key, Pose3> parse3DPoses(const string& filename) {
   ifstream is(filename.c_str());
   if (!is)
-    throw invalid_argument("load3D: can not find file " + filename);
+    throw invalid_argument("parse3DPoses: can not find file " + filename);
 
-  Values::shared_ptr initial(new Values);
-  NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
-
+  std::map<Key, Pose3> poses;
   while (!is.eof()) {
     char buf[LINESIZE];
     is.getline(buf, LINESIZE);
@@ -530,22 +528,24 @@ GraphAndValues load3D(const string& filename) {
       Key id;
       double x, y, z, roll, pitch, yaw;
       ls >> id >> x >> y >> z >> roll >> pitch >> yaw;
-      Rot3 R = Rot3::Ypr(yaw,pitch,roll);
-      Point3 t = Point3(x, y, z);
-      initial->insert(id, Pose3(R,t));
+      poses.emplace(id, Pose3(Rot3::Ypr(yaw, pitch, roll), {x, y, z}));
     }
     if (tag == "VERTEX_SE3:QUAT") {
       Key id;
       double x, y, z, qx, qy, qz, qw;
       ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
-      Rot3 R = Rot3::Quaternion(qw, qx, qy, qz);
-      Point3 t = Point3(x, y, z);
-      initial->insert(id, Pose3(R,t));
+      poses.emplace(id, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}));
     }
   }
-  is.clear(); /* clears the end-of-file and error flags */
-  is.seekg(0, ios::beg);
+  return poses;
+}
 
+/* ************************************************************************* */
+BetweenFactorPose3s parse3DFactors(const string& filename) {
+  ifstream is(filename.c_str());
+  if (!is) throw invalid_argument("parse3DFactors: can not find file " + filename);
+
+  std::vector<BetweenFactor<Pose3>::shared_ptr> factors;
   while (!is.eof()) {
     char buf[LINESIZE];
     is.getline(buf, LINESIZE);
@@ -557,44 +557,55 @@ GraphAndValues load3D(const string& filename) {
       Key id1, id2;
       double x, y, z, roll, pitch, yaw;
       ls >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
-      Rot3 R = Rot3::Ypr(yaw,pitch,roll);
-      Point3 t = Point3(x, y, z);
-      Matrix m = I_6x6;
-      for (int i = 0; i < 6; i++)
-        for (int j = i; j < 6; j++)
-          ls >> m(i, j);
+      Matrix m(6, 6);
+      for (size_t i = 0; i < 6; i++)
+        for (size_t j = i; j < 6; j++) ls >> m(i, j);
       SharedNoiseModel model = noiseModel::Gaussian::Information(m);
-      NonlinearFactor::shared_ptr factor(
-          new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
-      graph->push_back(factor);
+      factors.emplace_back(new BetweenFactor<Pose3>(
+          id1, id2, Pose3(Rot3::Ypr(yaw, pitch, roll), {x, y, z}), model));
     }
     if (tag == "EDGE_SE3:QUAT") {
-      Matrix m = I_6x6;
       Key id1, id2;
       double x, y, z, qx, qy, qz, qw;
       ls >> id1 >> id2 >> x >> y >> z >> qx >> qy >> qz >> qw;
-      Rot3 R = Rot3::Quaternion(qw, qx, qy, qz);
-      Point3 t = Point3(x, y, z);
-      for (int i = 0; i < 6; i++){
-        for (int j = i; j < 6; j++){
+      Matrix m(6, 6);
+      for (size_t i = 0; i < 6; i++) {
+        for (size_t j = i; j < 6; j++) {
           double mij;
           ls >> mij;
           m(i, j) = mij;
           m(j, i) = mij;
         }
       }
-      Matrix mgtsam = I_6x6;
+      Matrix mgtsam(6, 6);
 
-      mgtsam.block<3,3>(0,0) = m.block<3,3>(3,3); // cov rotation
-      mgtsam.block<3,3>(3,3) = m.block<3,3>(0,0); // cov translation
-      mgtsam.block<3,3>(0,3) = m.block<3,3>(0,3); // off diagonal
-      mgtsam.block<3,3>(3,0) = m.block<3,3>(3,0); // off diagonal
+      mgtsam.block<3, 3>(0, 0) = m.block<3, 3>(3, 3);  // cov rotation
+      mgtsam.block<3, 3>(3, 3) = m.block<3, 3>(0, 0);  // cov translation
+      mgtsam.block<3, 3>(0, 3) = m.block<3, 3>(0, 3);  // off diagonal
+      mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0);  // off diagonal
 
       SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
-      NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
-      graph->push_back(factor);
+      factors.emplace_back(new BetweenFactor<Pose3>(
+          id1, id2, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}), model));
     }
   }
+  return factors;
+}
+
+/* ************************************************************************* */
+GraphAndValues load3D(const string& filename) {
+  const auto factors = parse3DFactors(filename);
+  NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
+  for (const auto& factor : factors) {
+    graph->push_back(factor);
+  }
+
+  const auto poses = parse3DPoses(filename);
+  Values::shared_ptr initial(new Values);
+  for (const auto& key_pose : poses) {
+    initial->insert(key_pose.first, key_pose.second);
+  }
+
   return make_pair(graph, initial);
 }
 
@@ -857,48 +868,47 @@ bool writeBAL(const string& filename, SfM_data &data) {
 
 bool writeBALfromValues(const string& filename, const SfM_data &data,
     Values& values) {
-
+  using Camera = PinholeCamera<Cal3Bundler>;
   SfM_data dataValues = data;
 
   // Store poses or cameras in SfM_data
-  Values valuesPoses = values.filter<Pose3>();
-  if (valuesPoses.size() == dataValues.number_cameras()) { // we only estimated camera poses
+  size_t nrPoses = values.count<Pose3>();
+  if (nrPoses == dataValues.number_cameras()) { // we only estimated camera poses
     for (size_t i = 0; i < dataValues.number_cameras(); i++) { // for each camera
       Key poseKey = symbol('x', i);
       Pose3 pose = values.at<Pose3>(poseKey);
       Cal3Bundler K = dataValues.cameras[i].calibration();
-      PinholeCamera<Cal3Bundler> camera(pose, K);
+      Camera camera(pose, K);
       dataValues.cameras[i] = camera;
     }
   } else {
-    Values valuesCameras = values.filter<PinholeCamera<Cal3Bundler> >();
-    if (valuesCameras.size() == dataValues.number_cameras()) { // we only estimated camera poses and calibration
-      for (size_t i = 0; i < dataValues.number_cameras(); i++) { // for each camera
+    size_t nrCameras = values.count<Camera>();
+    if (nrCameras == dataValues.number_cameras()) { // we only estimated camera poses and calibration
+      for (size_t i = 0; i < nrCameras; i++) { // for each camera
         Key cameraKey = i; // symbol('c',i);
-        PinholeCamera<Cal3Bundler> camera =
-            values.at<PinholeCamera<Cal3Bundler> >(cameraKey);
+        Camera camera = values.at<Camera>(cameraKey);
         dataValues.cameras[i] = camera;
       }
     } else {
       cout
-          << "writeBALfromValues: different number of cameras in SfM_dataValues (#cameras= "
+          << "writeBALfromValues: different number of cameras in SfM_dataValues (#cameras "
           << dataValues.number_cameras() << ") and values (#cameras "
-          << valuesPoses.size() << ", #poses " << valuesCameras.size() << ")!!"
+          << nrPoses << ", #poses " << nrCameras << ")!!"
           << endl;
       return false;
     }
   }
 
   // Store 3D points in SfM_data
-  Values valuesPoints = values.filter<Point3>();
-  if (valuesPoints.size() != dataValues.number_tracks()) {
+  size_t nrPoints = values.count<Point3>(), nrTracks = dataValues.number_tracks();
+  if (nrPoints != nrTracks) {
     cout
         << "writeBALfromValues: different number of points in SfM_dataValues (#points= "
-        << dataValues.number_tracks() << ") and values (#points "
-        << valuesPoints.size() << ")!!" << endl;
+        << nrTracks << ") and values (#points "
+        << nrPoints << ")!!" << endl;
   }
 
-  for (size_t j = 0; j < dataValues.number_tracks(); j++) { // for each point
+  for (size_t j = 0; j < nrTracks; j++) { // for each point
     Key pointKey = P(j);
     if (values.exists(pointKey)) {
       Point3 point = values.at<Point3>(pointKey);

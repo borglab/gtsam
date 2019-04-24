@@ -1,8 +1,22 @@
+"""
+GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+PriorFactor unit tests.
+Author: Frank Dellaert & Duy Nguyen Ta (Python)
+"""
 import unittest
-import gtsam
+
 import numpy as np
 
-class TestPriorFactor(unittest.TestCase):
+import gtsam
+from gtsam.utils.test_case import GtsamTestCase
+
+
+class TestPriorFactor(GtsamTestCase):
 
     def test_PriorFactor(self):
         values = gtsam.Values()

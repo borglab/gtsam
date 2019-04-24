@@ -36,11 +36,42 @@ namespace internal {
 #endif
 #endif
 
+#if EIGEN_COMP_MSVC
+
+// In MSVC's arm_neon.h header file, all NEON vector types
+// are aliases to the same underlying type __n128.
+// We thus have to wrap them to make them different C++ types.
+// (See also bug 1428)
+
+template<typename T,int unique_id>
+struct eigen_packet_wrapper
+{
+  operator T&() { return m_val; }
+  operator const T&() const { return m_val; }
+  eigen_packet_wrapper() {}
+  eigen_packet_wrapper(const T &v) : m_val(v) {}
+  eigen_packet_wrapper& operator=(const T &v) {
+    m_val = v;
+    return *this;
+  }
+
+  T m_val;
+};
+typedef eigen_packet_wrapper<float32x2_t,0> Packet2f;
+typedef eigen_packet_wrapper<float32x4_t,1> Packet4f;
+typedef eigen_packet_wrapper<int32x4_t  ,2> Packet4i;
+typedef eigen_packet_wrapper<int32x2_t  ,3> Packet2i;
+typedef eigen_packet_wrapper<uint32x4_t ,4> Packet4ui;
+
+#else
+
 typedef float32x2_t Packet2f;
 typedef float32x4_t Packet4f;
 typedef int32x4_t   Packet4i;
 typedef int32x2_t   Packet2i;
 typedef uint32x4_t  Packet4ui;
+
+#endif // EIGEN_COMP_MSVC
 
 #define _EIGEN_DECLARE_CONST_Packet4f(NAME,X) \
   const Packet4f p4f_##NAME = pset1<Packet4f>(X)

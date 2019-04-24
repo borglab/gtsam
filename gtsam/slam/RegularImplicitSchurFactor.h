@@ -48,7 +48,7 @@ public:
   }
 
   /// Construct from blocks of F, E, inv(E'*E), and RHS vector b
-  RegularImplicitSchurFactor(const FastVector<Key>& keys,
+  RegularImplicitSchurFactor(const KeyVector& keys,
       const std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> >& FBlocks, const Matrix& E, const Matrix& P,
       const Vector& b) :
       GaussianFactor(keys), FBlocks_(FBlocks), PointCovariance_(P), E_(E), b_(b) {
@@ -108,7 +108,7 @@ public:
     return D;
   }
 
-  virtual void updateHessian(const FastVector<Key>& keys,
+  virtual void updateHessian(const KeyVector& keys,
                          SymmetricBlockMatrix* info) const {
     throw std::runtime_error(
         "RegularImplicitSchurFactor::updateHessian non implemented");

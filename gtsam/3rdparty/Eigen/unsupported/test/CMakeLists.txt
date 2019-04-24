@@ -30,11 +30,16 @@ else(GOOGLEHASH_FOUND)
   ei_add_property(EIGEN_MISSING_BACKENDS  "GoogleHash, ")
 endif(GOOGLEHASH_FOUND)
 
+
 find_package(Adolc)
 if(ADOLC_FOUND)
   include_directories(${ADOLC_INCLUDES})
   ei_add_property(EIGEN_TESTED_BACKENDS "Adolc, ")
-  ei_add_test(forward_adolc "" ${ADOLC_LIBRARIES})
+  if(EIGEN_TEST_CXX11)
+    ei_add_test(forward_adolc "" ${ADOLC_LIBRARIES})
+  else()
+    message(STATUS "Adolc found, but tests require C++11 mode")
+  endif()
 else(ADOLC_FOUND)
   ei_add_property(EIGEN_MISSING_BACKENDS "Adolc, ")
 endif(ADOLC_FOUND)
@@ -63,7 +68,7 @@ ei_add_test(EulerAngles)
 
 find_package(MPFR 2.3.0)
 find_package(GMP)
-if(MPFR_FOUND AND EIGEN_COMPILER_SUPPORT_CXX11)
+if(MPFR_FOUND AND EIGEN_COMPILER_SUPPORT_CPP11)
   include_directories(${MPFR_INCLUDES} ./mpreal)
   ei_add_property(EIGEN_TESTED_BACKENDS "MPFR C++, ")
   set(EIGEN_MPFR_TEST_LIBRARIES ${MPFR_LIBRARIES} ${GMP_LIBRARIES})
@@ -149,7 +154,8 @@ if(EIGEN_TEST_CXX11)
   endif(EIGEN_TEST_SYCL)
   # It should be safe to always run these tests as there is some fallback code for
   # older compiler that don't support cxx11.
-  set(CMAKE_CXX_STANDARD 11)
+  # This is already set if EIGEN_TEST_CXX11 is enabled:
+  # set(CMAKE_CXX_STANDARD 11)
 
   ei_add_test(cxx11_eventcount "-pthread" "${CMAKE_THREAD_LIBS_INIT}")
   ei_add_test(cxx11_runqueue "-pthread" "${CMAKE_THREAD_LIBS_INIT}")

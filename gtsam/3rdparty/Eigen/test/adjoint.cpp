@@ -70,7 +70,6 @@ template<typename MatrixType> void adjoint(const MatrixType& m)
      Transpose.h Conjugate.h Dot.h
   */
   using std::abs;
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;

@@ -12,19 +12,6 @@
 
 namespace Eigen {
 
-/** \class TensorForcedEval
-  * \ingroup CXX11_Tensor_Module
-  *
-  * \brief Tensor reshaping class.
-  *
-  *
-  */
-/// template <class> class MakePointer_ is added to convert the host pointer to the device pointer.
-/// It is added due to the fact that for our device compiler T* is not allowed.
-/// If we wanted to use the same Evaluator functions we have to convert that type to our pointer T.
-/// This is done through our MakePointer_ class. By default the Type in the MakePointer_<T> is T* .
-/// Therefore, by adding the default value, we managed to convert the type and it does not break any
-/// existing code as its default value is T*.
 namespace internal {
 template<typename XprType, template <class> class MakePointer_>
 struct traits<TensorForcedEvalOp<XprType, MakePointer_> >
@@ -65,6 +52,21 @@ struct nested<TensorForcedEvalOp<XprType, MakePointer_>, 1, typename eval<Tensor
 
 
 
+// FIXME use proper doxygen documentation (e.g. \tparam MakePointer_)
+
+/** \class TensorForcedEvalOp
+  * \ingroup CXX11_Tensor_Module
+  *
+  * \brief Tensor reshaping class.
+  *
+  *
+  */
+/// `template <class> class MakePointer_` is added to convert the host pointer to the device pointer.
+/// It is added due to the fact that for our device compiler `T*` is not allowed.
+/// If we wanted to use the same Evaluator functions we have to convert that type to our pointer `T`.
+/// This is done through our `MakePointer_` class. By default the Type in the `MakePointer_<T>` is `T*` .
+/// Therefore, by adding the default value, we managed to convert the type and it does not break any
+/// existing code as its default value is `T*`.
 template<typename XprType, template <class> class MakePointer_>
 class TensorForcedEvalOp : public TensorBase<TensorForcedEvalOp<XprType, MakePointer_>, ReadOnlyAccessors>
 {

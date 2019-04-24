@@ -63,6 +63,8 @@ In addition you can choose which parts will be substituted by defining one or mu
 <tr><td>\c EIGEN_USE_MKL_ALL </td><td>Defines \c EIGEN_USE_BLAS, \c EIGEN_USE_LAPACKE, and \c EIGEN_USE_MKL_VML </td></tr>
 </table>
 
+The options can be combined with \b MKL_DIRECT_CALL to enable MKL direct call feature. This may help to increase performance of some MKL BLAS (?GEMM, ?GEMV, ?TRSM, ?AXPY and ?DOT) and LAPACK (LU, Cholesky and QR) routines for very small matrices. To make it work properly, the macro \c EIGEN_USE_MKL must also be defined in the case none of the other \c EIGEN_USE_MKL_* macros has been defined.
+
 Note that the BLAS and LAPACKE backends can be enabled for any F77 compatible BLAS and LAPACK libraries. See this \link TopicUsingBlasLapack page \endlink for the details.
 
 Finally, the PARDISO sparse solver shipped with Intel MKL can be used through the \ref PardisoLU, \ref PardisoLLT and \ref PardisoLDLT classes of the \ref PardisoSupport_Module.

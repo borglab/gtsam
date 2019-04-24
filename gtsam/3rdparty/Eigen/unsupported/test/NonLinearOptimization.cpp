@@ -565,7 +565,7 @@ void testLmdif1()
 
   // do the computation
   lmdif_functor functor;
-  DenseIndex nfev;
+  DenseIndex nfev = -1; // initialize to avoid maybe-uninitialized warning
   info = LevenbergMarquardt<lmdif_functor>::lmdif1(functor, x, &nfev);
 
   // check return value

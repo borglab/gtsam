@@ -231,7 +231,7 @@ TEST(ExpressionFactor, Shallow) {
   Point2_ expression = project(transform_to(x_, p_));
 
   // Get and check keys and dims
-  FastVector<Key> keys;
+  KeyVector keys;
   FastVector<int> dims;
   boost::tie(keys, dims) = expression.keysAndDims();
   LONGS_EQUAL(2,keys.size());
@@ -243,7 +243,6 @@ TEST(ExpressionFactor, Shallow) {
 
   // traceExecution of shallow tree
   typedef internal::UnaryExpression<Point2, Point3> Unary;
-  typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
   size_t size = expression.traceSize();
   internal::ExecutionTraceStorage traceStorage[size];
   internal::ExecutionTrace<Point2> trace;

@@ -252,8 +252,8 @@ CombinedImuFactor::CombinedImuFactor(
 : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
     pose_j, vel_j, bias_i, bias_j),
 _PIM_(pim) {
-  boost::shared_ptr<CombinedPreintegratedMeasurements::Params> p =
-  boost::make_shared<CombinedPreintegratedMeasurements::Params>(pim.p());
+  using P = CombinedPreintegratedMeasurements::Params;
+  auto p = boost::allocate_shared<P>(Eigen::aligned_allocator<P>(), pim.p());
   p->n_gravity = n_gravity;
   p->omegaCoriolis = omegaCoriolis;
   p->body_P_sensor = body_P_sensor;

@@ -41,7 +41,7 @@ const double tol = 1e-5;
 /* ************************************************************************* */
 TEST(HessianFactor, Slot)
 {
-  FastVector<Key> keys = list_of(2)(4)(1);
+  KeyVector keys {2, 4, 1};
   EXPECT_LONGS_EQUAL(0, GaussianFactor::Slot(keys,2));
   EXPECT_LONGS_EQUAL(1, GaussianFactor::Slot(keys,4));
   EXPECT_LONGS_EQUAL(2, GaussianFactor::Slot(keys,1));
@@ -252,8 +252,7 @@ TEST(HessianFactor, ConstructorNWay)
     (1, dx1)
     (2, dx2);
 
-  std::vector<Key> js;
-  js.push_back(0); js.push_back(1); js.push_back(2);
+  KeyVector js {0, 1, 2};
   std::vector<Matrix> Gs;
   Gs.push_back(G11); Gs.push_back(G12); Gs.push_back(G13); Gs.push_back(G22); Gs.push_back(G23); Gs.push_back(G33);
   std::vector<Vector> gs;
@@ -517,7 +516,7 @@ TEST(HessianFactor, gradientAtZero)
   // test gradient at zero
   VectorValues expectedG = pair_list_of<Key, Vector>(0, -g1) (1, -g2);
   Matrix A; Vector b; boost::tie(A,b) = factor.jacobian();
-  FastVector<Key> keys; keys += 0,1;
+  KeyVector keys {0, 1};
   EXPECT(assert_equal(-A.transpose()*b, expectedG.vector(keys)));
   VectorValues actualG = factor.gradientAtZero();
   EXPECT(assert_equal(expectedG, actualG));

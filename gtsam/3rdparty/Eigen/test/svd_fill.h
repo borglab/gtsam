@@ -23,7 +23,6 @@ void svd_fill_random(MatrixType &m, int Option = 0)
   using std::pow;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::RealScalar RealScalar;
-  typedef typename MatrixType::Index Index;
   Index diagSize = (std::min)(m.rows(), m.cols());
   RealScalar s = std::numeric_limits<RealScalar>::max_exponent10/4;
   s = internal::random<RealScalar>(1,s);

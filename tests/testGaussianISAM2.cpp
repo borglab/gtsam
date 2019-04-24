@@ -648,7 +648,7 @@ TEST(ISAM2, slamlike_solution_partial_relinearization_check)
 namespace {
   bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
     Matrix expectedAugmentedHessian, expected3AugmentedHessian;
-    vector<Key> toKeep;
+    KeyVector toKeep;
     for(Key j: isam.getDelta() | br::map_keys)
       if(find(leafKeys.begin(), leafKeys.end(), j) == leafKeys.end())
         toKeep.push_back(j);

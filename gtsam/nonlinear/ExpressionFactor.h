@@ -205,6 +205,11 @@ private:
  BOOST_SERIALIZATION_SPLIT_MEMBER()
 
  friend class boost::serialization::access;
+
+ // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+ enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
+  public:
+	  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 // ExpressionFactor
 
@@ -260,6 +265,13 @@ class ExpressionFactor2 : public ExpressionFactor<T> {
   /// Return an expression that predicts the measurement given Values
   virtual Expression<T> expression() const {
     return expression(this->keys_[0], this->keys_[1]);
+  }
+
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp(
+        "ExpressionFactor", boost::serialization::base_object<ExpressionFactor<T> >(*this));
   }
 };
 // ExpressionFactor2

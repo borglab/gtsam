@@ -67,6 +67,7 @@ namespace internal {
       // This method should implement "dst += alpha * lhs * rhs" inplace,
       // however, for iterative solvers, alpha is always equal to 1, so let's not bother about it.
       assert(alpha==Scalar(1) && "scaling is not implemented");
+      EIGEN_ONLY_USED_FOR_DEBUG(alpha);
 
       // Here we could simply call dst.noalias() += lhs.my_matrix() * rhs,
       // but let's do something fancier (and less efficient):

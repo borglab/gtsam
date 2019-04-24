@@ -206,6 +206,15 @@ ELSEIF(MKL_ROOT_DIR) # UNIX and macOS
                 )
         ENDIF()
 
+        IF(NOT MKL_LAPACK_LIBRARY)
+                FIND_LIBRARY(MKL_LAPACK_LIBRARY
+                  mkl_intel_lp64
+                  PATHS
+                        ${MKL_ROOT_DIR}/lib/${MKL_ARCH_DIR}
+                        ${MKL_ROOT_DIR}/lib/
+                )
+        ENDIF()
+
         # iomp5
         IF("${MKL_ARCH_DIR}" STREQUAL "32")
                 IF(UNIX AND NOT APPLE)

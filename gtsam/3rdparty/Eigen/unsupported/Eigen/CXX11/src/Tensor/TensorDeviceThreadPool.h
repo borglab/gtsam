@@ -196,9 +196,11 @@ struct ThreadPoolDevice {
     // of blocks to be evenly dividable across threads.
 
     double block_size_f = 1.0 / CostModel::taskSize(1, cost);
-    Index block_size = numext::mini(n, numext::maxi<Index>(1, block_size_f));
-    const Index max_block_size =
-        numext::mini(n, numext::maxi<Index>(1, 2 * block_size_f));
+    const Index max_oversharding_factor = 4;
+    Index block_size = numext::mini(
+        n, numext::maxi<Index>(divup<Index>(n, max_oversharding_factor * numThreads()),
+                               block_size_f));
+    const Index max_block_size = numext::mini(n, 2 * block_size);
     if (block_align) {
       Index new_block_size = block_align(block_size);
       eigen_assert(new_block_size >= block_size);
@@ -212,7 +214,8 @@ struct ThreadPoolDevice {
         (divup<int>(block_count, numThreads()) * numThreads());
     // Now try to increase block size up to max_block_size as long as it
     // doesn't decrease parallel efficiency.
-    for (Index prev_block_count = block_count; prev_block_count > 1;) {
+    for (Index prev_block_count = block_count;
+         max_efficiency < 1.0 && prev_block_count > 1;) {
       // This is the next block size that divides size into a smaller number
       // of blocks than the current block_size.
       Index coarser_block_size = divup(n, prev_block_count - 1);

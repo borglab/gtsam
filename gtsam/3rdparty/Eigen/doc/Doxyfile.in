@@ -1596,6 +1596,7 @@ PREDEFINED             = EIGEN_EMPTY_STRUCT \
                          "EIGEN_CAT2(a,b)= a ## b"\
                          "EIGEN_CAT(a,b)=EIGEN_CAT2(a,b)"\
                          "EIGEN_CWISE_BINARY_RETURN_TYPE(LHS,RHS,OPNAME)=CwiseBinaryOp<EIGEN_CAT(EIGEN_CAT(internal::scalar_,OPNAME),_op)<LHS::Scalar, RHS::Scalar>, const LHS, const RHS>"\
+                         "EIGEN_ALIGN_TO_BOUNDARY(x)="\
                          DOXCOMMA=,
 
 
@@ -1618,6 +1619,9 @@ EXPAND_AS_DEFINED      = EIGEN_MAKE_TYPEDEFS \
                          EIGEN_EULER_ANGLES_TYPEDEFS \
                          EIGEN_EULER_ANGLES_SINGLE_TYPEDEF \
                          EIGEN_EULER_SYSTEM_TYPEDEF \
+                         EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY \
+                         EIGEN_MATRIX_FUNCTION \
+                         EIGEN_MATRIX_FUNCTION_1 \
                          EIGEN_DOC_UNARY_ADDONS \
                          EIGEN_DOC_BLOCK_ADDONS_NOT_INNER_PANEL \
                          EIGEN_DOC_BLOCK_ADDONS_INNER_PANEL_IF
@@ -1665,7 +1669,7 @@ ALLEXTERNALS           = NO
 # in the modules index. If set to NO, only the current project's groups will
 # be listed.
 
-EXTERNAL_GROUPS        = YES
+EXTERNAL_GROUPS        = NO
 
 # The PERL_PATH should be the absolute path and name of the perl script
 # interpreter (i.e. the result of `which perl').

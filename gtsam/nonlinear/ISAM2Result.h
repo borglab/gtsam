@@ -31,8 +31,6 @@
 
 namespace gtsam {
 
-typedef FastVector<size_t> FactorIndices;
-
 /**
  * @addtogroup ISAM2
  * This struct is returned from ISAM2::update() and contains information about

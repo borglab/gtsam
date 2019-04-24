@@ -141,7 +141,7 @@ public:
    * Clones a factor and fully replaces its keys
    * @param new_keys is the full replacement set of keys
    */
-  shared_ptr rekey(const std::vector<Key>& new_keys) const;
+  shared_ptr rekey(const KeyVector& new_keys) const;
 
 }; // \class NonlinearFactor
 

@@ -117,7 +117,7 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues GaussianConditional::solve(const VectorValues& x) const {
     // Concatenate all vector values that correspond to parent variables
-    const Vector xS = x.vector(FastVector<Key>(beginParents(), endParents()));
+    const Vector xS = x.vector(KeyVector(beginParents(), endParents()));
 
     // Update right-hand-side
     const Vector rhs = get_d() - get_S() * xS;
@@ -134,7 +134,7 @@ namespace gtsam {
     VectorValues result;
     DenseIndex vectorPosition = 0;
     for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
-      result.insert(*frontal, solution.segment(vectorPosition, getDim(frontal)));
+      result.emplace(*frontal, solution.segment(vectorPosition, getDim(frontal)));
       vectorPosition += getDim(frontal);
     }
 
@@ -145,10 +145,10 @@ namespace gtsam {
   VectorValues GaussianConditional::solveOtherRHS(
     const VectorValues& parents, const VectorValues& rhs) const {
     // Concatenate all vector values that correspond to parent variables
-    Vector xS = parents.vector(FastVector<Key>(beginParents(), endParents()));
+    Vector xS = parents.vector(KeyVector(beginParents(), endParents()));
 
     // Instead of updating getb(), update the right-hand-side from the given rhs
-    const Vector rhsR = rhs.vector(FastVector<Key>(beginFrontals(), endFrontals()));
+    const Vector rhsR = rhs.vector(KeyVector(beginFrontals(), endFrontals()));
     xS = rhsR - get_S() * xS;
 
     // Solve Matrix
@@ -162,7 +162,7 @@ namespace gtsam {
     VectorValues result;
     DenseIndex vectorPosition = 0;
     for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
-      result.insert(*frontal, soln.segment(vectorPosition, getDim(frontal)));
+      result.emplace(*frontal, soln.segment(vectorPosition, getDim(frontal)));
       vectorPosition += getDim(frontal);
     }
 
@@ -171,14 +171,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const {
-    Vector frontalVec = gy.vector(FastVector<Key>(beginFrontals(), endFrontals()));
-    frontalVec = gtsam::backSubstituteUpper(frontalVec, Matrix(get_R()));
+    Vector frontalVec = gy.vector(KeyVector(beginFrontals(), endFrontals()));
+    frontalVec = get_R().transpose().triangularView<Eigen::Lower>().solve(frontalVec);
 
     // Check for indeterminant solution
     if (frontalVec.hasNaN()) throw IndeterminantLinearSystemException(this->keys().front());
 
     for (const_iterator it = beginParents(); it!= endParents(); it++)
-      gy[*it] += -1.0 * Matrix(getA(it)).transpose() * frontalVec;
+      gy[*it].noalias() += -1.0 * getA(it).transpose() * frontalVec;
 
     // Scale by sigmas
     if (model_)

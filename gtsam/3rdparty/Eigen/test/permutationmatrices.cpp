@@ -14,14 +14,15 @@
 using namespace std;
 template<typename MatrixType> void permutationmatrices(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   enum { Rows = MatrixType::RowsAtCompileTime, Cols = MatrixType::ColsAtCompileTime,
          Options = MatrixType::Options };
   typedef PermutationMatrix<Rows> LeftPermutationType;
+  typedef Transpositions<Rows> LeftTranspositionsType;
   typedef Matrix<int, Rows, 1> LeftPermutationVectorType;
   typedef Map<LeftPermutationType> MapLeftPerm;
   typedef PermutationMatrix<Cols> RightPermutationType;
+  typedef Transpositions<Cols> RightTranspositionsType;
   typedef Matrix<int, Cols, 1> RightPermutationVectorType;
   typedef Map<RightPermutationType> MapRightPerm;
 
@@ -35,6 +36,8 @@ template<typename MatrixType> void permutationmatrices(const MatrixType& m)
   RightPermutationVectorType rv;
   randomPermutationVector(rv, cols);
   RightPermutationType rp(rv);
+  LeftTranspositionsType lt(lv);
+  RightTranspositionsType rt(rv);
   MatrixType m_permuted = MatrixType::Random(rows,cols);
   
   VERIFY_EVALUATION_COUNT(m_permuted = lp * m_original * rp, 1); // 1 temp for sub expression "lp * m_original"
@@ -115,6 +118,14 @@ template<typename MatrixType> void permutationmatrices(const MatrixType& m)
     Matrix<Scalar, Cols, Cols> B = rp.transpose();
     VERIFY_IS_APPROX(A, B.transpose());
   }
+
+  m_permuted = m_original;
+  lp = lt;
+  rp = rt;
+  VERIFY_EVALUATION_COUNT(m_permuted = lt * m_permuted * rt, 1);
+  VERIFY_IS_APPROX(m_permuted, lp*m_original*rp.transpose());
+  
+  VERIFY_IS_APPROX(lt.inverse()*m_permuted*rt.inverse(), m_original);
 }
 
 template<typename T>

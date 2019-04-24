@@ -23,7 +23,6 @@
 template<typename SvdType, typename MatrixType>
 void svd_check_full(const MatrixType& m, const SvdType& svd)
 {
-  typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
 
@@ -101,7 +100,6 @@ void svd_least_square(const MatrixType& m, unsigned int computationOptions)
 {
   typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::RealScalar RealScalar;
-  typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
 
@@ -168,7 +166,6 @@ template<typename MatrixType>
 void svd_min_norm(const MatrixType& m, unsigned int computationOptions)
 {
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename MatrixType::Index Index;
   Index cols = m.cols();
 
   enum {
@@ -261,7 +258,6 @@ void svd_test_all_computation_options(const MatrixType& m, bool full_only)
     CALL_SUBTEST(( svd_min_norm(m, ComputeThinU | ComputeThinV) ));
 
     // test reconstruction
-    typedef typename MatrixType::Index Index;
     Index diagSize = (std::min)(m.rows(), m.cols());
     SvdType svd(m, ComputeThinU | ComputeThinV);
     VERIFY_IS_APPROX(m, svd.matrixU().leftCols(diagSize) * svd.singularValues().asDiagonal() * svd.matrixV().leftCols(diagSize).adjoint());
@@ -437,7 +433,6 @@ template<typename SvdType,typename MatrixType>
 void svd_verify_assert(const MatrixType& m)
 {
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
 

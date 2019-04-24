@@ -138,23 +138,34 @@ namespace gtsam {
   //}
 
   /* ************************************************************************* */
-  pair<Matrix, Vector> GaussianBayesNet::matrix() const {
+  Ordering GaussianBayesNet::ordering() const {
     GaussianFactorGraph factorGraph(*this);
-    KeySet keys = factorGraph.keys();
+    auto keys = factorGraph.keys();
     // add frontal keys in order
     Ordering ordering;
-    for (const sharedConditional& cg: *this)
+    for (const sharedConditional& cg : *this)
       if (cg) {
-        for (Key key: cg->frontals()) {
+        for (Key key : cg->frontals()) {
           ordering.push_back(key);
           keys.erase(key);
         }
       }
     // add remaining keys in case Bayes net is incomplete
-    for (Key key: keys)
-      ordering.push_back(key);
-    // return matrix and RHS
-    return factorGraph.jacobian(ordering);
+    for (Key key : keys) ordering.push_back(key);
+    return ordering;
+  }
+
+  /* ************************************************************************* */
+  pair<Matrix, Vector> GaussianBayesNet::matrix(boost::optional<const Ordering&> ordering) const {
+    if (ordering) {
+      // Convert to a GaussianFactorGraph and use its machinery
+      GaussianFactorGraph factorGraph(*this);
+      return factorGraph.jacobian(ordering);
+    } else {
+      // recursively call with default ordering
+      const auto defaultOrdering = this->ordering();
+      return matrix(defaultOrdering);
+    }
   }
 
   ///* ************************************************************************* */

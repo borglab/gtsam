@@ -161,8 +161,8 @@ the z-axis.
 \include MatrixExponential.cpp
 Output: \verbinclude MatrixExponential.out
 
-\note \p M has to be a matrix of \c float, \c double, \c long double
-\c complex<float>, \c complex<double>, or \c complex<long double> .
+\note \p M has to be a matrix of \c float, \c double, `long double`
+\c complex<float>, \c complex<double>, or `complex<long double>` .
 
 
 \subsection matrixbase_log MatrixBase::log()
@@ -219,9 +219,8 @@ documentation of \ref matrixbase_exp "exp()".
 \include MatrixLogarithm.cpp
 Output: \verbinclude MatrixLogarithm.out
 
-\note \p M has to be a matrix of \c float, \c double, <tt>long
-double</tt>, \c complex<float>, \c complex<double>, or \c complex<long
-double> .
+\note \p M has to be a matrix of \c float, \c double, `long
+double`, \c complex<float>, \c complex<double>, or `complex<long double>`.
 
 \sa MatrixBase::exp(), MatrixBase::matrixFunction(), 
     class MatrixLogarithmAtomic, MatrixBase::sqrt().
@@ -326,9 +325,9 @@ Example:
 \include MatrixPower_optimal.cpp
 Output: \verbinclude MatrixPower_optimal.out
 
-\note \p M has to be a matrix of \c float, \c double, <tt>long
-double</tt>, \c complex<float>, \c complex<double>, or \c complex<long
-double> .
+\note \p M has to be a matrix of \c float, \c double, `long
+double`, \c complex<float>, \c complex<double>, or
+\c complex<long double> .
 
 \sa MatrixBase::exp(), MatrixBase::log(), class MatrixPower.
 

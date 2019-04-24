@@ -24,12 +24,15 @@ namespace gtsam {
 /// Simple trajectory simulator.
 class Scenario {
  public:
+  /// virtual destructor
+  virtual ~Scenario() {}
+
   // Quantities a Scenario needs to specify:
 
-  virtual Pose3 pose(double t) const = 0;
-  virtual Vector3 omega_b(double t) const = 0;
-  virtual Vector3 velocity_n(double t) const = 0;
-  virtual Vector3 acceleration_n(double t) const = 0;
+  virtual Pose3 pose(double t) const = 0;  ///< pose at time t
+  virtual Vector3 omega_b(double t) const = 0;  ///< angular velocity in body frame
+  virtual Vector3 velocity_n(double t) const = 0;  ///< velocity at time t, in nav frame
+  virtual Vector3 acceleration_n(double t) const = 0;  ///< acceleration in nav frame
 
   // Derived quantities:
 

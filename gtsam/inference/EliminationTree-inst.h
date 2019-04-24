@@ -48,7 +48,7 @@ namespace gtsam {
     gatheredFactors.push_back(childrenResults.begin(), childrenResults.end());
 
     // Do dense elimination step
-    FastVector<Key> keyAsVector(1); keyAsVector[0] = key;
+    KeyVector keyAsVector(1); keyAsVector[0] = key;
     std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
       function(gatheredFactors, Ordering(keyAsVector));
 

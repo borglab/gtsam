@@ -54,16 +54,16 @@ FastList<Key> createKeyList(std::string s, const Vector& I) {
 }
 
 // Create a KeyVector from indices
-FastVector<Key> createKeyVector(const Vector& I) {
-  FastVector<Key> set;
+KeyVector createKeyVector(const Vector& I) {
+  KeyVector set;
   for (int i = 0; i < I.size(); i++)
     set.push_back(I[i]);
   return set;
 }
 
 // Create a KeyVector from indices using symbol
-FastVector<Key> createKeyVector(std::string s, const Vector& I) {
-  FastVector<Key> set;
+KeyVector createKeyVector(std::string s, const Vector& I) {
+  KeyVector set;
   char c = s[0];
   for (int i = 0; i < I.size(); i++)
     set.push_back(Symbol(c, I[i]));
@@ -222,12 +222,12 @@ Matrix reprojectionErrors(const NonlinearFactorGraph& graph,
 
 /// Convert from local to world coordinates
 Values localToWorld(const Values& local, const Pose2& base,
-    const FastVector<Key> user_keys = FastVector<Key>()) {
+    const KeyVector user_keys = KeyVector()) {
 
   Values world;
 
   // if no keys given, get all keys from local values
-  FastVector<Key> keys(user_keys);
+  KeyVector keys(user_keys);
   if (keys.size()==0)
     keys = local.keys();
 

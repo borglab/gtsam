@@ -96,7 +96,7 @@ bool ISAM2::equals(const ISAM2& other, double tol) const {
 }
 
 /* ************************************************************************* */
-KeySet ISAM2::getAffectedFactors(const KeyList& keys) const {
+FactorIndexSet ISAM2::getAffectedFactors(const KeyList& keys) const {
   static const bool debug = false;
   if (debug) cout << "Getting affected factors for ";
   if (debug) {
@@ -106,15 +106,14 @@ KeySet ISAM2::getAffectedFactors(const KeyList& keys) const {
   }
   if (debug) cout << endl;
 
-  NonlinearFactorGraph allAffected;
-  KeySet indices;
+  FactorIndexSet indices;
   for (const Key key : keys) {
     const VariableIndex::Factors& factors(variableIndex_[key]);
     indices.insert(factors.begin(), factors.end());
   }
   if (debug) cout << "Affected factors are: ";
   if (debug) {
-    for (const size_t index : indices) {
+    for (const auto index : indices) {
       cout << index << " ";
     }
   }
@@ -131,8 +130,6 @@ GaussianFactorGraph::shared_ptr ISAM2::relinearizeAffectedFactors(
   gttic(getAffectedFactors);
   KeySet candidates = getAffectedFactors(affectedKeys);
   gttoc(getAffectedFactors);
-
-  NonlinearFactorGraph nonlinearAffectedFactors;
 
   gttic(affectedKeysSet);
   // for fast lookup below
@@ -195,7 +192,7 @@ GaussianFactorGraph ISAM2::getCachedBoundaryFactors(const Cliques& orphans) {
 /* ************************************************************************* */
 boost::shared_ptr<KeySet> ISAM2::recalculate(
     const KeySet& markedKeys, const KeySet& relinKeys,
-    const vector<Key>& observedKeys, const KeySet& unusedIndices,
+    const KeyVector& observedKeys, const KeySet& unusedIndices,
     const boost::optional<FastMap<Key, int> >& constrainKeys,
     ISAM2Result* result) {
   // TODO(dellaert):  new factors are linearized twice,
@@ -243,7 +240,7 @@ boost::shared_ptr<KeySet> ISAM2::recalculate(
   gttic(removetop);
   Cliques orphans;
   GaussianBayesNet affectedBayesNet;
-  this->removeTop(FastVector<Key>(markedKeys.begin(), markedKeys.end()),
+  this->removeTop(KeyVector(markedKeys.begin(), markedKeys.end()),
                   affectedBayesNet, orphans);
   gttoc(removetop);
 
@@ -589,7 +586,7 @@ ISAM2Result ISAM2::update(
   // Remove the removed factors
   NonlinearFactorGraph removeFactors;
   removeFactors.reserve(removeFactorIndices.size());
-  for (size_t index : removeFactorIndices) {
+  for (const auto index : removeFactorIndices) {
     removeFactors.push_back(nonlinearFactors_[index]);
     nonlinearFactors_.remove(index);
     if (params_.cacheLinearizedFactors) linearFactors_.remove(index);
@@ -667,7 +664,7 @@ ISAM2Result ISAM2::update(
   // NOTE: we use assign instead of the iterator constructor here because this
   // is a vector of size_t, so the constructor unintentionally resolves to
   // vector(size_t count, Key value) instead of the iterator constructor.
-  FastVector<Key> observedKeys;
+  KeyVector observedKeys;
   observedKeys.reserve(markedKeys.size());
   for (Key index : markedKeys) {
     if (unusedIndices.find(index) ==
@@ -823,7 +820,7 @@ void ISAM2::marginalizeLeaves(
   KeySet leafKeysRemoved;
 
   // Keep track of factors that get summarized by removing cliques
-  KeySet factorIndicesToRemove;
+  FactorIndexSet factorIndicesToRemove;
 
   // Remove the subtree and throw away the cliques
   auto trackingRemoveSubtree = [&](const sharedClique& subtreeRoot) {
@@ -937,15 +934,15 @@ void ISAM2::marginalizeLeaves(
           }
         }
         // Create factor graph from factor indices
-        for (size_t i : factorsFromMarginalizedInClique_step1) {
-          graph.push_back(nonlinearFactors_[i]->linearize(theta_));
+        for (const auto index: factorsFromMarginalizedInClique_step1) {
+          graph.push_back(nonlinearFactors_[index]->linearize(theta_));
         }
 
         // Reeliminate the linear graph to get the marginal and discard the
         // conditional
         auto cg = clique->conditional();
         const KeySet cliqueFrontals(cg->beginFrontals(), cg->endFrontals());
-        FastVector<Key> cliqueFrontalsToEliminate;
+        KeyVector cliqueFrontalsToEliminate;
         std::set_intersection(cliqueFrontals.begin(), cliqueFrontals.end(),
                               leafKeys.begin(), leafKeys.end(),
                               std::back_inserter(cliqueFrontalsToEliminate));
@@ -967,7 +964,7 @@ void ISAM2::marginalizeLeaves(
         cg->matrixObject().rowStart() = dimToRemove;
 
         // Change the keys in the clique
-        FastVector<Key> originalKeys;
+        KeyVector originalKeys;
         originalKeys.swap(cg->keys());
         cg->keys().assign(originalKeys.begin() + nToRemove, originalKeys.end());
         cg->nrFrontals() -= nToRemove;
@@ -1011,10 +1008,10 @@ void ISAM2::marginalizeLeaves(
   // Remove the factors to remove that have been summarized in the newly-added
   // marginal factors
   NonlinearFactorGraph removedFactors;
-  for (size_t i : factorIndicesToRemove) {
-    removedFactors.push_back(nonlinearFactors_[i]);
-    nonlinearFactors_.remove(i);
-    if (params_.cacheLinearizedFactors) linearFactors_.remove(i);
+  for (const auto index: factorIndicesToRemove) {
+    removedFactors.push_back(nonlinearFactors_[index]);
+    nonlinearFactors_.remove(index);
+    if (params_.cacheLinearizedFactors) linearFactors_.remove(index);
   }
   variableIndex_.remove(factorIndicesToRemove.begin(),
                         factorIndicesToRemove.end(), removedFactors);

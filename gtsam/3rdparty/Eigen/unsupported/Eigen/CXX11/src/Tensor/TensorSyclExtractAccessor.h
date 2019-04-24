@@ -35,7 +35,7 @@
 namespace Eigen {
 namespace TensorSycl {
 namespace internal {
-/// \struct ExtractAccessor: Extract Accessor Class is used to extract the
+/// struct ExtractAccessor: Extract Accessor Class is used to extract the
 /// accessor from a buffer.
 /// Depending on the type of the leaf node we can get a read accessor or a
 /// read_write accessor

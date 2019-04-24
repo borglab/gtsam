@@ -173,6 +173,35 @@ TEST(Pose2, expmap_c_full)
 }
 
 /* ************************************************************************* */
+// assert that T*exp(xi)*T^-1 is equal to exp(Ad_T(xi))
+TEST(Pose2, Adjoint_full) {
+  Pose2 T(1, 2, 3);
+  Pose2 expected = T * Pose2::Expmap(screwPose2::xi) * T.inverse();
+  Vector xiprime = T.Adjoint(screwPose2::xi);
+  EXPECT(assert_equal(expected, Pose2::Expmap(xiprime), 1e-6));
+
+  Vector3 xi2(4, 5, 6);
+  Pose2 expected2 = T * Pose2::Expmap(xi2) * T.inverse();
+  Vector xiprime2 = T.Adjoint(xi2);
+  EXPECT(assert_equal(expected2, Pose2::Expmap(xiprime2), 1e-6));
+}
+
+/* ************************************************************************* */
+// assert that T*wedge(xi)*T^-1 is equal to wedge(Ad_T(xi))
+TEST(Pose2, Adjoint_hat) {
+  Pose2 T(1, 2, 3);
+  auto hat = [](const Vector& xi) { return ::wedge<Pose2>(xi); };
+  Matrix3 expected = T.matrix() * hat(screwPose2::xi) * T.matrix().inverse();
+  Matrix3 xiprime = hat(T.Adjoint(screwPose2::xi));
+  EXPECT(assert_equal(expected, xiprime, 1e-6));
+
+  Vector3 xi2(4, 5, 6);
+  Matrix3 expected2 = T.matrix() * hat(xi2) * T.matrix().inverse();
+  Matrix3 xiprime2 = hat(T.Adjoint(xi2));
+  EXPECT(assert_equal(expected2, xiprime2, 1e-6));
+}
+
+/* ************************************************************************* */
 TEST(Pose2, logmap) {
   Pose2 pose0(M_PI/2.0, Point2(1, 2));
   Pose2 pose(M_PI/2.0+0.018, Point2(1.015, 2.01));

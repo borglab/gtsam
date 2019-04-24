@@ -80,14 +80,14 @@ Matrix Marginals::marginalCovariance(Key variable) const {
 }
 
 /* ************************************************************************* */
-JointMarginal Marginals::jointMarginalCovariance(const std::vector<Key>& variables) const {
+JointMarginal Marginals::jointMarginalCovariance(const KeyVector& variables) const {
   JointMarginal info = jointMarginalInformation(variables);
   info.blockMatrix_.invertInPlace();
   return info;
 }
 
 /* ************************************************************************* */
-JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variables) const {
+JointMarginal Marginals::jointMarginalInformation(const KeyVector& variables) const {
 
   // If 2 variables, we can use the BayesTree::joint function, otherwise we
   // have to use sequential elimination.
@@ -119,7 +119,7 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
     Matrix info = augmentedInfo.topLeftCorner(augmentedInfo.rows()-1, augmentedInfo.cols()-1);
 
     // Information matrix will be returned with sorted keys
-    std::vector<Key> variablesSorted = variables;
+    KeyVector variablesSorted = variables;
     std::sort(variablesSorted.begin(), variablesSorted.end());
 
     // Get dimensions from factor graph

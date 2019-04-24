@@ -14,7 +14,6 @@ template<typename MatrixType> void replicate(const MatrixType& m)
   /* this test covers the following files:
      Replicate.cpp
   */
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
   typedef Matrix<Scalar, Dynamic, Dynamic> MatrixX;

@@ -94,8 +94,6 @@ void GlobalFunction::generateSingleFunction(const string& toolboxPath,
     // start
     file.oss << "{\n";
 
-    returnVal.wrapTypeUnwrap(file);
-
     // check arguments
     // NOTE: for static functions, there is no object passed
     file.oss << "  checkArguments(\"" << matlabUniqueName

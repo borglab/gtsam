@@ -202,16 +202,13 @@ public:
 
     size_t numKeys = this->keys_.size();
     // Create structures for Hessian Factors
-    std::vector<Key> js;
+    KeyVector js;
     std::vector<Matrix> Gs(numKeys * (numKeys + 1) / 2);
     std::vector<Vector> gs(numKeys);
 
-    if (this->measured_.size() != cameras.size()) {
-      std::cout
-          << "SmartStereoProjectionHessianFactor: this->measured_.size() inconsistent with input"
-          << std::endl;
-      exit(1);
-    }
+    if (this->measured_.size() != cameras.size())
+      throw std::runtime_error("SmartStereoProjectionHessianFactor: this->"
+                               "measured_.size() inconsistent with input");
 
     triangulateSafe(cameras);
 

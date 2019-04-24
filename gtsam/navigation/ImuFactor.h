@@ -75,7 +75,7 @@ class GTSAM_EXPORT PreintegratedImuMeasurements: public PreintegrationType {
 
 protected:
 
-  Matrix9 preintMeasCov_; ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION]
+  Matrix9 preintMeasCov_; ///< COVARIANCE OF: [PreintROTATION PreintPOSITION PreintVELOCITY]
   ///< (first-order propagation from *measurementCovariance*).
 
 public:

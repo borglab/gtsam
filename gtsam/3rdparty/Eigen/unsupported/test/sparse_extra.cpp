@@ -8,10 +8,10 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-// import basic and product tests for deprectaed DynamicSparseMatrix
+// import basic and product tests for deprecated DynamicSparseMatrix
 #define EIGEN_NO_DEPRECATED_WARNING
-#include "sparse_basic.cpp"
 #include "sparse_product.cpp"
+#include "sparse_basic.cpp"
 #include <Eigen/SparseExtra>
 
 template<typename SetterType,typename DenseType, typename Scalar, int Options>

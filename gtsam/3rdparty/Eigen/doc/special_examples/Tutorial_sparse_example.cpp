@@ -1,5 +1,6 @@
 #include <Eigen/Sparse>
 #include <vector>
+#include <iostream>
 
 typedef Eigen::SparseMatrix<double> SpMat; // declares a column-major sparse matrix type of double
 typedef Eigen::Triplet<double> T;
@@ -9,7 +10,10 @@ void saveAsBitmap(const Eigen::VectorXd& x, int n, const char* filename);
 
 int main(int argc, char** argv)
 {
-  assert(argc==2);
+  if(argc!=2) {
+    std::cerr << "Error: expected one and only one argument.\n";
+    return -1;
+  }
   
   int n = 300;  // size of the image
   int m = n*n;  // number of unknows (=number of pixels)

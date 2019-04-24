@@ -292,14 +292,14 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    */
   void expmapMasked(const KeySet& mask);
 
-  FastSet<Key> getAffectedFactors(const FastList<Key>& keys) const;
+  FactorIndexSet getAffectedFactors(const FastList<Key>& keys) const;
   GaussianFactorGraph::shared_ptr relinearizeAffectedFactors(
       const FastList<Key>& affectedKeys, const KeySet& relinKeys) const;
   GaussianFactorGraph getCachedBoundaryFactors(const Cliques& orphans);
 
   virtual boost::shared_ptr<KeySet> recalculate(
       const KeySet& markedKeys, const KeySet& relinKeys,
-      const std::vector<Key>& observedKeys, const KeySet& unusedIndices,
+      const KeyVector& observedKeys, const KeySet& unusedIndices,
       const boost::optional<FastMap<Key, int> >& constrainKeys,
       ISAM2Result* result);
 

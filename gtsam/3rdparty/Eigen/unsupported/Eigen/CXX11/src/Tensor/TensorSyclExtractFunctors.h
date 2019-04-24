@@ -25,7 +25,7 @@
 namespace Eigen {
 namespace TensorSycl {
 namespace internal {
-/// \struct FunctorExtractor:  This struct is used to extract the functors
+/// struct FunctorExtractor:  This struct is used to extract the functors
 /// constructed on
 /// the host-side, to pack them and reuse them in reconstruction of the
 /// expression on the device.

@@ -279,9 +279,8 @@ TEST(Values, extract_keys)
   config.insert(key3, Pose2());
   config.insert(key4, Pose2());
 
-  KeyVector expected, actual;
-  expected += key1, key2, key3, key4;
-  actual = config.keys();
+  KeyVector expected {key1, key2, key3, key4};
+  KeyVector actual = config.keys();
 
   CHECK(actual.size() == expected.size());
   KeyVector::const_iterator itAct = actual.begin(), itExp = expected.begin();
@@ -384,6 +383,8 @@ TEST(Values, filter) {
     ++ i;
   }
   EXPECT_LONGS_EQUAL(2, (long)i);
+  EXPECT_LONGS_EQUAL(2, (long)values.count<Pose3>());
+  EXPECT_LONGS_EQUAL(2, (long)values.count<Pose2>());
 
   // construct a values with the view
   Values actualSubValues2(pose_filtered);

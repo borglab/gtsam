@@ -54,6 +54,28 @@ template<typename Scalar> void test_sparseqr_scalar()
   
   b = dA * DenseVector::Random(A.cols());
   solver.compute(A);
+
+  // Q should be MxM
+  VERIFY_IS_EQUAL(solver.matrixQ().rows(), A.rows());
+  VERIFY_IS_EQUAL(solver.matrixQ().cols(), A.rows());
+
+  // R should be MxN
+  VERIFY_IS_EQUAL(solver.matrixR().rows(), A.rows());
+  VERIFY_IS_EQUAL(solver.matrixR().cols(), A.cols());
+
+  // Q and R can be multiplied
+  DenseMat recoveredA = solver.matrixQ()
+                      * DenseMat(solver.matrixR().template triangularView<Upper>())
+                      * solver.colsPermutation().transpose();
+  VERIFY_IS_EQUAL(recoveredA.rows(), A.rows());
+  VERIFY_IS_EQUAL(recoveredA.cols(), A.cols());
+
+  // and in the full rank case the original matrix is recovered
+  if (solver.rank() == A.cols())
+  {
+      VERIFY_IS_APPROX(A, recoveredA);
+  }
+
   if(internal::random<float>(0,1)>0.5f)
     solver.factorize(A);  // this checks that calling analyzePattern is not needed if the pattern do not change.
   if (solver.info() != Success)

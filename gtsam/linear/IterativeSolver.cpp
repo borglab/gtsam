@@ -117,7 +117,7 @@ void KeyInfo::initialize(const GaussianFactorGraph &fg) {
   for (size_t i = 0; i < n; ++i) {
     const size_t key = ordering_[i];
     const size_t dim = colspec.find(key)->second;
-    insert(make_pair(key, KeyInfoEntry(i, dim, start)));
+    this->emplace(key, KeyInfoEntry(i, dim, start));
     start += dim;
   }
   numCols_ = start;
@@ -126,8 +126,8 @@ void KeyInfo::initialize(const GaussianFactorGraph &fg) {
 /****************************************************************************/
 vector<size_t> KeyInfo::colSpec() const {
   std::vector<size_t> result(size(), 0);
-  for ( const KeyInfo::value_type &item: *this ) {
-    result[item.second.index()] = item.second.dim();
+  for ( const auto &item: *this ) {
+    result[item.second.index] = item.second.dim;
   }
   return result;
 }
@@ -135,8 +135,8 @@ vector<size_t> KeyInfo::colSpec() const {
 /****************************************************************************/
 VectorValues KeyInfo::x0() const {
   VectorValues result;
-  for ( const KeyInfo::value_type &item: *this ) {
-    result.insert(item.first, Vector::Zero(item.second.dim()));
+  for ( const auto &item: *this ) {
+    result.emplace(item.first, Vector::Zero(item.second.dim));
   }
   return result;
 }

@@ -22,7 +22,9 @@ namespace Eigen {
   * This class is the common parent of the Tensor and TensorMap class, thus
   * making it possible to use either class interchangably in expressions.
   */
-
+#ifndef EIGEN_PARSED_BY_DOXYGEN
+// FIXME Doxygen does not like the inheritance with different template parameters
+// Since there is no doxygen documentation inside, we disable it for now
 template<typename Derived>
 class TensorBase<Derived, ReadOnlyAccessors>
 {
@@ -1004,7 +1006,7 @@ class TensorBase : public TensorBase<Derived, ReadOnlyAccessors> {
     EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE const Derived& derived() const { return *static_cast<const Derived*>(this); }
 };
-
+#endif // EIGEN_PARSED_BY_DOXYGEN
 } // end namespace Eigen
 
 #endif // EIGEN_CXX11_TENSOR_TENSOR_BASE_H

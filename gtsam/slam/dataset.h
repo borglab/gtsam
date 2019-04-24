@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point2.h>
@@ -34,10 +35,10 @@
 #include <utility> // for pair
 #include <vector>
 #include <iosfwd>
+#include <map>
 
 namespace gtsam {
 
-#ifndef MATLAB_MEX_FILE
 /**
  * Find the full path to an example dataset distributed with gtsam.  The name
  * may be specified with or without a file extension - if no extension is
@@ -56,7 +57,6 @@ GTSAM_EXPORT std::string findExampleDataFile(const std::string& name);
  * for checking read-write oprations
  */
 GTSAM_EXPORT std::string createRewrittenFileName(const std::string& name);
-#endif
 
 /// Indicates how noise parameters are stored in file
 enum NoiseFormat {
@@ -155,9 +155,14 @@ GTSAM_EXPORT GraphAndValues readG2o(const std::string& g2oFile, const bool is3D 
 GTSAM_EXPORT void writeG2o(const NonlinearFactorGraph& graph,
     const Values& estimate, const std::string& filename);
 
-/**
- * Load TORO 3D Graph
- */
+/// Parse edges in 3D TORO graph file into a set of BetweenFactors.
+using BetweenFactorPose3s = std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>;
+GTSAM_EXPORT BetweenFactorPose3s parse3DFactors(const std::string& filename);
+
+/// Parse vertices in 3D TORO graph file into a map of Pose3s.
+GTSAM_EXPORT std::map<Key, Pose3> parse3DPoses(const std::string& filename);
+
+/// Load TORO 3D Graph
 GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
 
 /// A measurement with its camera index

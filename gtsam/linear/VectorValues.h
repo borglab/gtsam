@@ -26,6 +26,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+
 #include <map>
 #include <string>
 
@@ -49,9 +50,9 @@ namespace gtsam {
    * Example:
    * \code
      VectorValues values;
-     values.insert(3, Vector3(1.0, 2.0, 3.0));
-     values.insert(4, Vector2(4.0, 5.0));
-     values.insert(0, (Vector(4) << 6.0, 7.0, 8.0, 9.0).finished());
+     values.emplace(3, Vector3(1.0, 2.0, 3.0));
+     values.emplace(4, Vector2(4.0, 5.0));
+     values.emplace(0, (Vector(4) << 6.0, 7.0, 8.0, 9.0).finished());
 
      // Prints [ 3.0 4.0 ]
      gtsam::print(values[1]);
@@ -63,18 +64,7 @@ namespace gtsam {
    *
    * <h2>Advanced Interface and Performance Information</h2>
    *
-   * For advanced usage, or where speed is important:
-   *  - Allocate space ahead of time using a pre-allocating constructor
-   *    (\ref AdvancedConstructors "Advanced Constructors"), Zero(),
-   *    SameStructure(), resize(), or append().  Do not use
-   *    insert(Key, const Vector&), which always has to re-allocate the
-   *    internal vector.
-   *  - The vector() function permits access to the underlying Vector, for
-   *    doing mathematical or other operations that require all values.
-   *  - operator[]() returns a SubVector view of the underlying Vector,
-   *    without copying any data.
-   *
-   * Access is through the variable index j, and returns a SubVector,
+   * Access is through the variable Key j, and returns a SubVector,
    * which is a view on the underlying data structure.
    *
    * This class is additionally used in gradient descent and dog leg to store the gradient.
@@ -182,15 +172,21 @@ namespace gtsam {
      *  j is already used.
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated. */
-    iterator insert(Key j, const Vector& value) {
-      return insert(std::make_pair(j, value));
-    }
+    iterator insert(const std::pair<Key, Vector>& key_value);
+
+    /** Emplace a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
+     *  j is already used.
+     * @param value The vector to be inserted.
+     * @param j The index with which the value will be associated. */
+    iterator emplace(Key j, const Vector& value);
 
     /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
      *  j is already used.
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated. */
-    iterator insert(const std::pair<Key, Vector>& key_value);
+    iterator insert(Key j, const Vector& value) {
+      return insert(std::make_pair(j, value));
+    }
 
     /** Insert all values from \c values.  Throws an invalid_argument exception if any keys to be
      *  inserted are already used. */
@@ -201,7 +197,8 @@ namespace gtsam {
      *  exist, it is inserted and an iterator pointing to the new element, along with 'true', is
      *  returned. */
     std::pair<iterator, bool> tryInsert(Key j, const Vector& value) {
-      return values_.insert(std::make_pair(j, value)); }
+      return values_.emplace(j, value); 
+    }
 
     /** Erase the vector with the given key, or throw std::out_of_range if it does not exist */
     void erase(Key var) {

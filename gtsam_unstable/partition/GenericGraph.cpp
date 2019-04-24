@@ -6,7 +6,6 @@
  *  Description: generic graph types used in partitioning
  */
 #include <iostream>
-#include <boost/tuple/tuple.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -48,15 +47,15 @@ namespace gtsam { namespace partition {
           toErase.push_back(itFactor);  nrFactors--; continue;
         }
 
-        size_t label1 = dsf.findSet(key1.index);
-        size_t label2 = dsf.findSet(key2.index);
+        size_t label1 = dsf.find(key1.index);
+        size_t label2 = dsf.find(key2.index);
         if (label1 == label2) {  toErase.push_back(itFactor);  nrFactors--; continue; }
 
         // merge two trees if the connection is strong enough, otherwise cache it
         // an odometry factor always merges two islands
         if (key1.type == NODE_POSE_2D && key2.type  == NODE_POSE_2D) {
           toErase.push_back(itFactor); nrFactors--;
-          dsf.makeUnionInPlace(label1, label2);
+          dsf.merge(label1, label2);
           succeed = true;
           break;
         }
@@ -65,7 +64,7 @@ namespace gtsam { namespace partition {
         if ((dsf.isSingleton(label1)==1 && key1.type == NODE_LANDMARK_2D) ||
             (dsf.isSingleton(label2)==1 && key2.type == NODE_LANDMARK_2D)) {
           toErase.push_back(itFactor); nrFactors--;
-          dsf.makeUnionInPlace(label1, label2);
+          dsf.merge(label1, label2);
           succeed = true;
           break;
         }
@@ -88,7 +87,7 @@ namespace gtsam { namespace partition {
           } else {
             toErase.push_back(itFactor); nrFactors--;
             toErase.push_back(itCached->second); nrFactors--;
-            dsf.makeUnionInPlace(label1, label2);
+            dsf.merge(label1, label2);
             connections.erase(itCached);
             succeed = true;
             break;
@@ -105,9 +104,8 @@ namespace gtsam { namespace partition {
 
     list<vector<size_t> > islands;
     map<size_t, vector<size_t> > arrays = dsf.arrays();
-    size_t key; vector<size_t> array;
-    for(boost::tie(key, array): arrays)
-      islands.push_back(array);
+    for(const auto& kv : arrays)
+      islands.push_back(kv.second);
     return islands;
   }
 
@@ -152,8 +150,8 @@ namespace gtsam { namespace partition {
         }
 
         if (graph.size() == 178765) cout << "kai22" << endl;
-        size_t label1 = dsf.findSet(key1.index);
-        size_t label2 = dsf.findSet(key2.index);
+        size_t label1 = dsf.find(key1.index);
+        size_t label2 = dsf.find(key2.index);
         if (label1 == label2) {  toErase.push_back(itFactor);  nrFactors--; continue; }
 
         if (graph.size() == 178765) cout << "kai23" << endl;
@@ -162,7 +160,7 @@ namespace gtsam { namespace partition {
         if ((key1.type == NODE_POSE_3D && key2.type  == NODE_LANDMARK_3D) ||
             (key1.type == NODE_POSE_3D && key2.type  == NODE_POSE_3D)) {
           toErase.push_back(itFactor); nrFactors--;
-          dsf.makeUnionInPlace(label1, label2);
+          dsf.merge(label1, label2);
           succeed = true;
           break;
         }
@@ -305,7 +303,8 @@ namespace gtsam { namespace partition {
     // regenerating islands
     map<size_t, vector<size_t> > labelIslands = dsf.arrays();
     size_t label; vector<size_t> island;
-    for(boost::tie(label, island): labelIslands) {
+    for(const auto& li: labelIslands) {
+      tie(label, island) = li;
       vector<size_t> filteredIsland; // remove singular cameras from array
       filteredIsland.reserve(island.size());
       for(const size_t key: island) {
@@ -354,8 +353,6 @@ namespace gtsam { namespace partition {
   void reduceGenericGraph(const GenericGraph3D& graph, const std::vector<size_t>& cameraKeys,  const std::vector<size_t>& landmarkKeys,
       const std::vector<int>& dictionary,  GenericGraph3D& reducedGraph) {
 
-    typedef size_t CameraKey;
-    typedef pair<CameraKey, CameraKey> CameraPair;
     typedef size_t LandmarkKey;
     // get a mapping from each landmark to its connected cameras
     vector<vector<LandmarkKey> > cameraToLandmarks(dictionary.size());

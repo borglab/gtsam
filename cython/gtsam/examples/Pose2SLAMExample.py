@@ -19,6 +19,9 @@ import numpy as np
 
 import gtsam
 
+import matplotlib.pyplot as plt
+import gtsam.utils.plot as gtsam_plot
+
 
 def vector3(x, y, z):
     """Create 3d double numpy array."""
@@ -85,3 +88,10 @@ print("Final Result:\n{}".format(result))
 marginals = gtsam.Marginals(graph, result)
 for i in range(1, 6):
     print("X{} covariance:\n{}\n".format(i, marginals.marginalCovariance(i)))
+
+fig = plt.figure(0)
+for i in range(1, 6):
+    gtsam_plot.plot_pose2(0, result.atPose2(i), 0.5, marginals.marginalCovariance(i))
+
+plt.axis('equal')
+plt.show()
