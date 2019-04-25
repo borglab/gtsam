@@ -163,6 +163,27 @@ TEST(JabobianFactor, Hessian_conversion) {
 }
 
 /* ************************************************************************* */
+TEST(JabobianFactor, Hessian_conversion2) {
+  JacobianFactor jf(0, (Matrix(3,3) <<
+      1, 2, 3,
+      0, 0, 3, 
+      2, 1, 1).finished(),
+    Vector3(1, 2, 2));
+  HessianFactor hessian(jf);
+  EXPECT(assert_equal(jf, JacobianFactor(hessian), 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(JabobianFactor, Hessian_conversion3) {
+  JacobianFactor jf(0, (Matrix(2,4) <<
+      1, 2, 3, 0,
+      0, 3, 2, 1).finished(),
+    Vector2(1, 2));
+  HessianFactor hessian(jf);
+  EXPECT(assert_equal(jf, JacobianFactor(hessian), 1e-9));
+}
+
+/* ************************************************************************* */
 namespace simple_graph {
 
 Key keyX(10), keyY(8), keyZ(12);
