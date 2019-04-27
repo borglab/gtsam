@@ -102,10 +102,9 @@ JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
 }
 
 /* ************************************************************************* */
-JacobianFactor::JacobianFactor(const HessianFactor& factor) :
-    Base(factor), Ab_(
-        VerticalBlockMatrix::LikeActiveViewOf(factor.info(),
-            factor.rows())) {
+JacobianFactor::JacobianFactor(const HessianFactor& factor)
+    : Base(factor),
+      Ab_(VerticalBlockMatrix::LikeActiveViewOf(factor.info(), factor.rows())) {
   // Copy Hessian into our matrix and then do in-place Cholesky
   Ab_.full() = factor.info().selfadjointView();
 
@@ -114,16 +113,19 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor) :
   bool success;
   boost::tie(maxrank, success) = choleskyCareful(Ab_.matrix());
 
-  // Check for indefinite system
-  if (!success)
+  // Check that Cholesky succeeded OR it managed to factor the full Hessian.
+  // THe latter case occurs with non-positive definite matrices arising from QP.
+  if (success || maxrank == factor.rows() - 1) {
+    // Zero out lower triangle
+    Ab_.matrix().topRows(maxrank).triangularView<Eigen::StrictlyLower>() =
+        Matrix::Zero(maxrank, Ab_.matrix().cols());
+    // FIXME: replace with triangular system
+    Ab_.rowEnd() = maxrank;
+    model_ = SharedDiagonal();  // is equivalent to Unit::Create(maxrank)
+  } else {
+    // indefinite system
     throw IndeterminantLinearSystemException(factor.keys().front());
-
-  // Zero out lower triangle
-  Ab_.matrix().topRows(maxrank).triangularView<Eigen::StrictlyLower>() =
-      Matrix::Zero(maxrank, Ab_.matrix().cols());
-  // FIXME: replace with triangular system
-  Ab_.rowEnd() = maxrank;
-  model_ = SharedDiagonal(); // should be same as Unit::Create(maxrank);
+  }
 }
 
 /* ************************************************************************* */

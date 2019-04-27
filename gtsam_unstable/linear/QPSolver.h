@@ -32,9 +32,14 @@ struct QPPolicy {
   static constexpr double maxAlpha = 1.0;
 
   /// Simply the cost of the QP problem
-  static const GaussianFactorGraph& buildCostFunction(
-      const QP& qp, const VectorValues& xk = VectorValues()) {
-    return qp.cost;
+  static const GaussianFactorGraph buildCostFunction(const QP& qp,
+      const VectorValues& xk = VectorValues()) {
+    GaussianFactorGraph no_constant_factor;
+    for (auto factor : qp.cost) {
+      HessianFactor hf = static_cast<HessianFactor>(*factor);
+      no_constant_factor.push_back(hf);
+    }
+    return no_constant_factor;
   }
 };
 

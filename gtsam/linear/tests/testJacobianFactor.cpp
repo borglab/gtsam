@@ -146,7 +146,7 @@ TEST(JacobianFactor, constructors_and_accessors)
 
 /* ************************************************************************* */
 TEST(JabobianFactor, Hessian_conversion) {
-  HessianFactor hessian(0, (Matrix(4,4) <<
+  HessianFactor hessian(0, (Matrix(4, 4) <<
         1.57,        2.695,         -1.1,        -2.35,
        2.695,      11.3125,        -0.65,      -10.225,
         -1.1,        -0.65,            1,          0.5,
@@ -154,12 +154,33 @@ TEST(JabobianFactor, Hessian_conversion) {
       (Vector(4) << -7.885, -28.5175, 2.75, 25.675).finished(),
       73.1725);
 
-  JacobianFactor expected(0, (Matrix(2,4) <<
+  JacobianFactor expected(0, (Matrix(2, 4) <<
       1.2530,   2.1508,   -0.8779,  -1.8755,
            0,   2.5858,    0.4789,  -2.3943).finished(),
       Vector2(-6.2929, -5.7941));
 
   EXPECT(assert_equal(expected, JacobianFactor(hessian), 1e-3));
+}
+
+/* ************************************************************************* */
+TEST(JabobianFactor, Hessian_conversion2) {
+  JacobianFactor jf(0, (Matrix(3, 3) <<
+      1, 2, 3,
+      0, 2, 3,
+      0, 0, 3).finished(),
+    Vector3(1, 2, 2));
+  HessianFactor hessian(jf);
+  EXPECT(assert_equal(jf, JacobianFactor(hessian), 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(JabobianFactor, Hessian_conversion3) {
+  JacobianFactor jf(0, (Matrix(2, 4) <<
+      1, 2, 3, 0,
+      0, 3, 2, 1).finished(),
+    Vector2(1, 2));
+  HessianFactor hessian(jf);
+  EXPECT(assert_equal(jf, JacobianFactor(hessian), 1e-9));
 }
 
 /* ************************************************************************* */
