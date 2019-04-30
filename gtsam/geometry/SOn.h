@@ -21,7 +21,6 @@
 #include <gtsam/base/Manifold.h>
 
 #include <Eigen/Core>
-
 #include <boost/random.hpp>
 
 #include <iostream>
@@ -34,21 +33,16 @@ constexpr int VecSize(int N) { return (N < 0) ? Eigen::Dynamic : N * N; }
 
 /**
  * Base class for rotation group objects. Template arguments:
- *   Derived: derived class
+ *   Derived_: derived class
+ * Must have:
  *   N : dimension of ambient space, or Eigen::Dynamic, e.g. 4 for SO4
- *   D : dimension of rotation manifold, or Eigen::Dynamic, e.g. 6 for SO4
+ *   dimension: manifold dimension, or Eigen::Dynamic, e.g. 6 for SO4
  */
-template <class Derived, int N, int D>
+template <class Derived_>
 class SOnBase {
  public:
-  enum { N2 = internal::VecSize(N) };
-  using VectorN2 = Eigen::Matrix<double, N2, 1>;
-
   /// @name Basic functionality
   /// @{
-
-  /// Get access to derived class
-  const Derived& derived() const { return static_cast<const Derived&>(*this); }
 
   /// @}
   /// @name Manifold
@@ -62,44 +56,13 @@ class SOnBase {
   /// @name Other methods
   /// @{
 
-  /**
-   * Return vectorized rotation matrix in column order.
-   * Will use dynamic matrices as intermediate results, but returns a fixed size
-   * X and fixed-size Jacobian if dimension is known at compile time.
-   * */
-  VectorN2 vec(OptionalJacobian<N2, D> H = boost::none) const {
-    const size_t n = derived().rows(), n2 = n * n;
-    const size_t d = (n2 - n) / 2;  // manifold dimension
-
-    // Calculate G matrix of vectorized generators
-    Matrix G(n2, d);
-    for (size_t j = 0; j < d; j++) {
-      // TODO(frank): this can't be right. Think about fixed vs dynamic.
-      const auto X = derived().Hat(n, Eigen::VectorXd::Unit(d, j));
-      G.col(j) = Eigen::Map<const Matrix>(X.data(), n2, 1);
-    }
-
-    // Vectorize
-    Vector X(n2);
-    X << Eigen::Map<const Matrix>(derived().data(), n2, 1);
-
-    // If requested, calculate H as (I \oplus Q) * P
-    if (H) {
-      H->resize(n2, d);
-      for (size_t i = 0; i < n; i++) {
-        H->block(i * n, 0, n, d) = derived() * G.block(i * n, 0, n, d);
-      }
-    }
-    return X;
-  }
   /// @}
 };
 
 /**
  *  Variable size rotations
  */
-class SOn : public Eigen::MatrixXd,
-            public SOnBase<SOn, Eigen::Dynamic, Eigen::Dynamic> {
+class SOn : public Eigen::MatrixXd, public SOnBase<SOn> {
  public:
   enum { N = Eigen::Dynamic };
   enum { dimension = Eigen::Dynamic };
@@ -116,8 +79,9 @@ class SOn : public Eigen::MatrixXd,
   }
 
   /// Constructor from Eigen Matrix
-  template <typename Derived>
-  explicit SOn(const Eigen::MatrixBase<Derived>& R) : Eigen::MatrixXd(R.eval()) {}
+  template <typename Derived_>
+  explicit SOn(const Eigen::MatrixBase<Derived_>& R)
+      : Eigen::MatrixXd(R.eval()) {}
 
   /// Random SO(n) element (no big claims about uniformity)
   static SOn Random(boost::mt19937& rng, size_t n) {
@@ -139,7 +103,7 @@ class SOn : public Eigen::MatrixXd,
    * Hat operator creates Lie algebra element corresponding to d-vector, where d
    * is the dimensionality of the manifold. This function is implemented
    * recursively, and the d-vector is assumed to laid out such that the last
-   * element corresponds to so(2), the last 3 to so(3), the last for to so(4)
+   * element corresponds to so(2), the last 3 to so(3), the last 6 to so(4)
    * etc... For example, the vector-space isomorphic to so(5) is laid out as:
    *   a b c d | u v w | x y | z
    * where the latter elements correspond to "telescoping" sub-algebras:
@@ -236,7 +200,38 @@ class SOn : public Eigen::MatrixXd,
   /// @{
 
   /// Return matrix (for wrapper)
-  const Matrix &matrix() const { return *this; }
+  const Matrix& matrix() const { return *this; }
+
+  /**
+   * Return vectorized rotation matrix in column order.
+   * Will use dynamic matrices as intermediate results, but returns a fixed size
+   * X and fixed-size Jacobian if dimension is known at compile time.
+   * */
+  Vector vec(OptionalJacobian<-1, -1> H = boost::none) const {
+    const size_t n = rows(), n2 = n * n;
+    const size_t d = (n2 - n) / 2;  // manifold dimension
+
+    // Calculate G matrix of vectorized generators
+    Matrix G(n2, d);
+    for (size_t j = 0; j < d; j++) {
+      // TODO(frank): this can't be right. Think about fixed vs dynamic.
+      const auto X = Hat(n, Eigen::VectorXd::Unit(d, j));
+      G.col(j) = Eigen::Map<const Matrix>(X.data(), n2, 1);
+    }
+
+    // Vectorize
+    Vector X(n2);
+    X << Eigen::Map<const Matrix>(data(), n2, 1);
+
+    // If requested, calculate H as (I \oplus Q) * P
+    if (H) {
+      H->resize(n2, d);
+      for (size_t i = 0; i < n; i++) {
+        H->block(i * n, 0, n, d) = derived() * G.block(i * n, 0, n, d);
+      }
+    }
+    return X;
+  }
 
   /// @}
 };
