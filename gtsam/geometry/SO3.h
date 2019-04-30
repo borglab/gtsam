@@ -20,8 +20,10 @@
 
 #pragma once
 
-#include <gtsam/base/Matrix.h>
+#include <gtsam/geometry/SOn.h>
+
 #include <gtsam/base/Lie.h>
+#include <gtsam/base/Matrix.h>
 
 #include <cmath>
 #include <iosfwd>
@@ -33,11 +35,8 @@ namespace gtsam {
  *  We guarantee (all but first) constructors only generate from sub-manifold.
  *  However, round-off errors in repeated composition could move off it...
  */
-class SO3: public Matrix3, public LieGroup<SO3, 3> {
-
-protected:
-
-public:
+class SO3 : public SOnBase<SO3>, public Matrix3, public LieGroup<SO3, 3> {
+ public:
   enum { N = 3 };
   enum { dimension = 3 };
 
@@ -45,20 +44,14 @@ public:
   /// @{
 
   /// Default constructor creates identity
-  SO3() :
-      Matrix3(I_3x3) {
-  }
+  SO3() : Matrix3(I_3x3) {}
 
   /// Constructor from Eigen Matrix
-  template<typename Derived>
-  SO3(const MatrixBase<Derived>& R) :
-      Matrix3(R.eval()) {
-  }
+  template <typename Derived>
+  SO3(const MatrixBase<Derived>& R) : Matrix3(R.eval()) {}
 
   /// Constructor from AngleAxisd
-  SO3(const Eigen::AngleAxisd& angleAxis) :
-      Matrix3(angleAxis) {
-  }
+  SO3(const Eigen::AngleAxisd& angleAxis) : Matrix3(angleAxis) {}
 
   /// Static, named constructor. TODO(dellaert): think about relation with above
   GTSAM_EXPORT static SO3 AxisAngle(const Vector3& axis, double theta);
@@ -163,7 +156,6 @@ public:
        ar & boost::serialization::make_nvp("R32", (*this)(2,1));
        ar & boost::serialization::make_nvp("R33", (*this)(2,2));
     }
-
 };
 
 namespace so3 {

@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <gtsam/geometry/SOn.h>
+
 #include <gtsam/base/Group.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Manifold.h>
@@ -34,7 +36,7 @@ namespace gtsam {
 /**
  *  True SO(4), i.e., 4*4 matrix subgroup
  */
-class SO4 : public Matrix4, public LieGroup<SO4, 6> {
+class SO4 : public SOnBase<SO4>, public Matrix4, public LieGroup<SO4, 6> {
  public:
   enum { N = 4 };
   enum { dimension = 6 };
