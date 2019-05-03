@@ -31,52 +31,63 @@ constexpr int DimensionSO(int N) {
 }
 }  // namespace internal
 
+/**
+ * Space of special orthogonal rotation matrices SO<N>
+ */
 template <int N>
-class SO : public Eigen::Matrix<double, N, N>,
-           public LieGroup<SO<N>, internal::DimensionSO(N)> {
+class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
  public:
   enum { dimension = internal::DimensionSO(N) };
   using MatrixNN = Eigen::Matrix<double, N, N>;
   using VectorD = Eigen::Matrix<double, dimension, 1>;
   using MatrixDD = Eigen::Matrix<double, dimension, dimension>;
 
+  MatrixNN matrix_;  ///< Rotation matrix
+
   /// @name Constructors
   /// @{
 
   /// Construct SO<N> identity for N >= 2
   template <int N_ = N, typename = boost::enable_if_t<N_ >= 2, void>>
-  SO() {
-    *this << MatrixNN::Identity();
-  }
+  SO() : matrix_(MatrixNN::Identity()) {}
 
   /// Construct SO<N> identity for N == Eigen::Dynamic
   template <int N_ = N,
             typename = boost::enable_if_t<N_ == Eigen::Dynamic, void>>
   explicit SO(size_t n = 0) {
     if (n == 0) throw std::runtime_error("SO: Dimensionality not known.");
-    this->resize(n, n);
-    *this << Eigen::MatrixXd::Identity(n, n);
+    matrix_ = Eigen::MatrixXd::Identity(n, n);
   }
 
   /// Constructor from Eigen Matrix
   template <typename Derived>
-  SO(const Eigen::MatrixBase<Derived>& R) : MatrixNN(R.eval()) {}
+  explicit SO(const Eigen::MatrixBase<Derived>& R) : matrix_(R.eval()) {}
+
+  /// @}
+  /// @name Standard methods
+  /// @{
+
+  size_t rows() const { return matrix_.rows(); }
+  size_t cols() const { return matrix_.cols(); }
 
   /// @}
   /// @name Testable
   /// @{
 
   void print(const std::string& s) const {
-    std::cout << s << *this << std::endl;
+    std::cout << s << matrix_ << std::endl;
   }
 
-  bool equals(const SO& R, double tol) const {
-    return equal_with_abs_tol(*this, R, tol);
+  bool equals(const SO& other, double tol) const {
+    return equal_with_abs_tol(matrix_, other.matrix_, tol);
   }
 
   /// @}
   /// @name Group
   /// @{
+
+  /// Multiplication
+  SO operator*(const SO& other) const { return SO(matrix_ * other.matrix_); }
 
   /// SO<N> identity for N >= 2
   template <int N_ = N, typename = boost::enable_if_t<N_ >= 2, void>>
@@ -92,7 +103,7 @@ class SO : public Eigen::Matrix<double, N, N>,
   }
 
   /// inverse of a rotation = transpose
-  SO inverse() const { return this->transpose(); }
+  SO inverse() const { return SO(matrix_.transpose()); }
 
   /// @}
   /// @name Manifold
@@ -119,12 +130,14 @@ class SO : public Eigen::Matrix<double, N, N>,
   /**
    * Exponential map at identity - create a rotation from canonical coordinates
    */
-  static SO Expmap(const VectorD& omega, OptionalJacobian<dimension, dimension> H = boost::none);
+  static SO Expmap(const VectorD& omega,
+                   OptionalJacobian<dimension, dimension> H = boost::none);
 
   /**
    * Log map at identity - returns the canonical coordinates of this rotation
    */
-  static VectorD Logmap(const SO& R, OptionalJacobian<dimension, dimension> H = boost::none);
+  static VectorD Logmap(const SO& R,
+                        OptionalJacobian<dimension, dimension> H = boost::none);
 
   // inverse with optional derivative
   using LieGroup<SO<N>, internal::DimensionSO(N)>::inverse;
