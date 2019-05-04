@@ -29,6 +29,12 @@ namespace internal {
 constexpr int DimensionSO(int N) {
   return (N < 0) ? Eigen::Dynamic : N * (N - 1) / 2;
 }
+
+// Return dynamic identity matrix for given SO(n) dimensionality d
+Matrix IdentitySO(size_t n) {
+  const size_t d = n * (n - 1) / 2;
+  return Matrix::Identity(d, d);
+}
 }  // namespace internal
 
 /**
@@ -149,6 +155,34 @@ using SOn = SO<Eigen::Dynamic>;
 using SO3 = SO<3>;
 using SO4 = SO<4>;
 
+/*
+ * Fully specialize compose and between, because the derivative is unknowable by
+ * the LieGroup implementations, who return a fixed-size matrix for H2.
+ */
+
+using DynamicJacobian = OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>;
+
+template <>
+SOn LieGroup<SOn, Eigen::Dynamic>::compose(const SOn& g, DynamicJacobian H1,
+                                           DynamicJacobian H2) const {
+  if (H1) *H1 = g.inverse().AdjointMap();
+  if (H2) *H2 = internal::IdentitySO(g.rows());
+  return derived() * g;
+}
+
+template <>
+SOn LieGroup<SOn, Eigen::Dynamic>::between(const SOn& g, DynamicJacobian H1,
+                                           DynamicJacobian H2) const {
+  SOn result = derived().inverse() * g;
+  if (H1) *H1 = -result.inverse().AdjointMap();
+  if (H2) *H2 = internal::IdentitySO(g.rows());
+  return result;
+}
+
+/*
+ * Define the traits. internal::LieGroup provides both Lie group and Testable
+ */
+
 template <int N>
 struct traits<SO<N>> : public internal::LieGroup<SO<N>> {};
 
@@ -179,9 +213,9 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 TEST(SOn, Concept) {
-  // BOOST_CONCEPT_ASSERT((IsGroup<SOn>));
-  // BOOST_CONCEPT_ASSERT((IsManifold<SOn>));
-  // BOOST_CONCEPT_ASSERT((IsLieGroup<SOn>));
+  BOOST_CONCEPT_ASSERT((IsGroup<SOn>));
+  BOOST_CONCEPT_ASSERT((IsManifold<SOn>));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<SOn>));
 }
 
 // /* *************************************************************************
