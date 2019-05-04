@@ -35,9 +35,6 @@ namespace gtsam {
 template <class Class, int N>
 struct LieGroup {
 
-  BOOST_STATIC_ASSERT_MSG(N != Eigen::Dynamic,
-      "LieGroup not yet specialized for dynamically sized types.");
-
   enum { dimension = N };
   typedef OptionalJacobian<N, N> ChartJacobian;
   typedef Eigen::Matrix<double, N, N> Jacobian;
@@ -189,9 +186,6 @@ struct LieGroupTraits {
   enum { dimension = Class::dimension };
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
-
-  BOOST_STATIC_ASSERT_MSG(dimension != Eigen::Dynamic,
-      "LieGroupTraits not yet specialized for dynamically sized types.");
 
   static int GetDimension(const Class&) {return dimension;}
 
