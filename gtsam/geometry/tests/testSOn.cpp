@@ -17,6 +17,9 @@
 
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/geometry/Unit3.h>
+
+#include <boost/random.hpp>
 
 #include <iostream>
 #include <stdexcept>
@@ -25,15 +28,9 @@
 namespace gtsam {
 
 namespace internal {
-// Calculate dimensionality of SO<N> manifold, or return Dynamic if so
+/// Calculate dimensionality of SO<N> manifold, or return Dynamic if so
 constexpr int DimensionSO(int N) {
   return (N < 0) ? Eigen::Dynamic : N * (N - 1) / 2;
-}
-
-// Return dynamic identity matrix for given SO(n) dimensionality d
-Matrix IdentitySO(size_t n) {
-  const size_t d = n * (n - 1) / 2;
-  return Matrix::Identity(d, d);
 }
 }  // namespace internal
 
@@ -45,21 +42,30 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
  public:
   enum { dimension = internal::DimensionSO(N) };
   using MatrixNN = Eigen::Matrix<double, N, N>;
-  using VectorD = Eigen::Matrix<double, dimension, 1>;
   using MatrixDD = Eigen::Matrix<double, dimension, dimension>;
 
+ protected:
   MatrixNN matrix_;  ///< Rotation matrix
 
+  // enable_if_t aliases, used to specialize constructors/methods, see
+  // https://www.fluentcpp.com/2018/05/18/make-sfinae-pretty-2-hidden-beauty-sfinae/
+  template <int N_>
+  using IsDynamic = boost::enable_if_t<N_ == Eigen::Dynamic, void>;
+  template <int N_>
+  using IsFixed = boost::enable_if_t<N_ >= 2, void>;
+  template <int N_>
+  using IsSO3 = boost::enable_if_t<N_ == 3, void>;
+
+ public:
   /// @name Constructors
   /// @{
 
   /// Construct SO<N> identity for N >= 2
-  template <int N_ = N, typename = boost::enable_if_t<N_ >= 2, void>>
+  template <int N_ = N, typename = IsFixed<N_>>
   SO() : matrix_(MatrixNN::Identity()) {}
 
   /// Construct SO<N> identity for N == Eigen::Dynamic
-  template <int N_ = N,
-            typename = boost::enable_if_t<N_ == Eigen::Dynamic, void>>
+  template <int N_ = N, typename = IsDynamic<N_>>
   explicit SO(size_t n = 0) {
     if (n == 0) throw std::runtime_error("SO: Dimensionality not known.");
     matrix_ = Eigen::MatrixXd::Identity(n, n);
@@ -68,6 +74,31 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// Constructor from Eigen Matrix
   template <typename Derived>
   explicit SO(const Eigen::MatrixBase<Derived>& R) : matrix_(R.eval()) {}
+
+  /// Constructor from AngleAxisd
+  template <int N_ = N, typename = IsSO3<N_>>
+  SO(const Eigen::AngleAxisd& angleAxis) : matrix_(angleAxis) {}
+
+  /// Random SO(n) element (no big claims about uniformity)
+  template <int N_ = N, typename = IsDynamic<N_>>
+  static SO Random(boost::mt19937& rng, size_t n = 0) {
+    if (n == 0) throw std::runtime_error("SO: Dimensionality not known.");
+    // This needs to be re-thought!
+    static boost::uniform_real<double> randomAngle(-M_PI, M_PI);
+    const size_t d = SO::Dimension(n);
+    Vector xi(d);
+    for (size_t j = 0; j < d; j++) {
+      xi(j) = randomAngle(rng);
+    }
+    return SO::Retract(xi);
+  }
+
+  /// Random SO(N) element (no big claims about uniformity)
+  template <int N_ = N, typename = IsFixed<N_>>
+  static SO Random(boost::mt19937& rng) {
+    // By default, use dynamic implementation above. Specialized for SO(3).
+    return SO(SO<Eigen::Dynamic>::Random(rng, N).matrix_);
+  }
 
   /// @}
   /// @name Standard methods
@@ -96,14 +127,13 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   SO operator*(const SO& other) const { return SO(matrix_ * other.matrix_); }
 
   /// SO<N> identity for N >= 2
-  template <int N_ = N, typename = boost::enable_if_t<N_ >= 2, void>>
+  template <int N_ = N, typename = IsFixed<N_>>
   static SO identity() {
     return SO();
   }
 
   /// SO<N> identity for N == Eigen::Dynamic
-  template <int N_ = N,
-            typename = boost::enable_if_t<N_ == Eigen::Dynamic, void>>
+  template <int N_ = N, typename = IsDynamic<N_>>
   static SO identity(size_t n = 0) {
     return SO(n);
   }
@@ -115,17 +145,126 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// @name Manifold
   /// @{
 
+  using TangentVector = Eigen::Matrix<double, dimension, 1>;
+  using ChartJacobian = OptionalJacobian<dimension, dimension>;
+
+  /// Return compile-time dimensionality: fixed size N or Eigen::Dynamic
+  static int Dim() { return dimension; }
+
+  // Calculate manifold dimensionality for SO(n).
+  // Available as dimension or Dim() for fixed N.
+  static size_t Dimension(size_t n) { return n * (n - 1) / 2; }
+
+  // Calculate ambient dimension n from manifold dimensionality d.
+  static size_t AmbientDim(size_t d) { return (1 + std::sqrt(1 + 8 * d)) / 2; }
+
+  // Calculate run-time dimensionality of manifold.
+  // Available as dimension or Dim() for fixed N.
+  size_t dim() const { return Dimension(matrix_.rows()); }
+
+  /**
+   * Hat operator creates Lie algebra element corresponding to d-vector, where d
+   * is the dimensionality of the manifold. This function is implemented
+   * recursively, and the d-vector is assumed to laid out such that the last
+   * element corresponds to so(2), the last 3 to so(3), the last 6 to so(4)
+   * etc... For example, the vector-space isomorphic to so(5) is laid out as:
+   *   a b c d | u v w | x y | z
+   * where the latter elements correspond to "telescoping" sub-algebras:
+   *   0 -z  y -w  d
+   *   z  0 -x  v -c
+   *  -y  x  0 -u  b
+   *   w -v  u  0 -a
+   *  -d  c -b  a  0
+   * This scheme behaves exactly as expected for SO(2) and SO(3).
+   */
+  static Matrix Hat(const Vector& xi) {
+    size_t n = AmbientDim(xi.size());
+    if (n < 2) throw std::invalid_argument("SOn::Hat: n<2 not supported");
+
+    Matrix X(n, n);  // allocate space for n*n skew-symmetric matrix
+    X.setZero();
+    if (n == 2) {
+      // Handle SO(2) case as recursion bottom
+      assert(xi.size() == 1);
+      X << 0, -xi(0), xi(0), 0;
+    } else {
+      // Recursively call SO(n-1) call for top-left block
+      const size_t dmin = (n - 1) * (n - 2) / 2;
+      X.topLeftCorner(n - 1, n - 1) = Hat(xi.tail(dmin));
+
+      // Now fill last row and column
+      double sign = 1.0;
+      for (size_t i = 0; i < n - 1; i++) {
+        const size_t j = n - 2 - i;
+        X(n - 1, j) = sign * xi(i);
+        X(j, n - 1) = -X(n - 1, j);
+        sign = -sign;
+      }
+    }
+    return X;
+  }
+
+  /**
+   * Inverse of Hat. See note about xi element order in Hat.
+   */
+  static Vector Vee(const Matrix& X) {
+    const size_t n = X.rows();
+    if (n < 2) throw std::invalid_argument("SOn::Hat: n<2 not supported");
+
+    if (n == 2) {
+      // Handle SO(2) case as recursion bottom
+      Vector xi(1);
+      xi(0) = X(1, 0);
+      return xi;
+    } else {
+      // Calculate dimension and allocate space
+      const size_t d = n * (n - 1) / 2;
+      Vector xi(d);
+
+      // Fill first n-1 spots from last row of X
+      double sign = 1.0;
+      for (size_t i = 0; i < n - 1; i++) {
+        const size_t j = n - 2 - i;
+        xi(i) = sign * X(n - 1, j);
+        sign = -sign;
+      }
+
+      // Recursively call Vee to fill remainder of x
+      const size_t dmin = (n - 1) * (n - 2) / 2;
+      xi.tail(dmin) = Vee(X.topLeftCorner(n - 1, n - 1));
+      return xi;
+    }
+  }
+
   // Chart at origin
   struct ChartAtOrigin {
-    static SO Retract(const VectorD& xi,
-                      OptionalJacobian<dimension, dimension> H = boost::none) {
-      return SO();  // TODO(frank): Expmap(xi, H);
+    /**
+     * Retract uses Cayley map. See note about xi element order in Hat.
+     * Deafault implementation has no Jacobian implemented
+     */
+    static SO Retract(const TangentVector& xi, ChartJacobian H = boost::none) {
+      const Matrix X = Hat(xi / 2.0);
+      size_t n = AmbientDim(xi.size());
+      const auto I = Eigen::MatrixXd::Identity(n, n);
+      return SO((I + X) * (I - X).inverse());
     }
-    static VectorD Local(
-        const SO& R, OptionalJacobian<dimension, dimension> H = boost::none) {
-      return VectorD();  // TODO(frank): Logmap(R, H);
+    /**
+     * Inverse of Retract. See note about xi element order in Hat.
+     */
+    static TangentVector Local(const SO& R, ChartJacobian H = boost::none) {
+      const size_t n = R.rows();
+      const auto I = Eigen::MatrixXd::Identity(n, n);
+      const Matrix X = (I - R.matrix_) * (I + R.matrix_).inverse();
+      return -2 * Vee(X);
     }
   };
+
+  // Return dynamic identity DxD Jacobian for given SO(n)
+  template <int N_ = N, typename = IsDynamic<N_>>
+  static MatrixDD IdentityJacobian(size_t n) {
+    const size_t d = Dimension(n);
+    return MatrixDD::Identity(d, d);
+  }
 
   /// @}
   /// @name Lie Group
@@ -136,14 +275,12 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /**
    * Exponential map at identity - create a rotation from canonical coordinates
    */
-  static SO Expmap(const VectorD& omega,
-                   OptionalJacobian<dimension, dimension> H = boost::none);
+  static SO Expmap(const TangentVector& omega, ChartJacobian H = boost::none);
 
   /**
    * Log map at identity - returns the canonical coordinates of this rotation
    */
-  static VectorD Logmap(const SO& R,
-                        OptionalJacobian<dimension, dimension> H = boost::none);
+  static TangentVector Logmap(const SO& R, ChartJacobian H = boost::none);
 
   // inverse with optional derivative
   using LieGroup<SO<N>, internal::DimensionSO(N)>::inverse;
@@ -151,14 +288,14 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// @}
 };
 
-using SOn = SO<Eigen::Dynamic>;
-using SO3 = SO<3>;
-using SO4 = SO<4>;
-
 /*
  * Fully specialize compose and between, because the derivative is unknowable by
  * the LieGroup implementations, who return a fixed-size matrix for H2.
  */
+
+using SO3 = SO<3>;
+using SO4 = SO<4>;
+using SOn = SO<Eigen::Dynamic>;
 
 using DynamicJacobian = OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>;
 
@@ -166,7 +303,7 @@ template <>
 SOn LieGroup<SOn, Eigen::Dynamic>::compose(const SOn& g, DynamicJacobian H1,
                                            DynamicJacobian H2) const {
   if (H1) *H1 = g.inverse().AdjointMap();
-  if (H2) *H2 = internal::IdentitySO(g.rows());
+  if (H2) *H2 = SOn::IdentityJacobian(g.rows());
   return derived() * g;
 }
 
@@ -175,7 +312,7 @@ SOn LieGroup<SOn, Eigen::Dynamic>::between(const SOn& g, DynamicJacobian H1,
                                            DynamicJacobian H2) const {
   SOn result = derived().inverse() * g;
   if (H1) *H1 = -result.inverse().AdjointMap();
-  if (H2) *H2 = internal::IdentitySO(g.rows());
+  if (H2) *H2 = SOn::IdentityJacobian(g.rows());
   return result;
 }
 
@@ -206,10 +343,13 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-// TEST(SOn, SO5) {
-//   const auto R = SOn(5);
-//   EXPECT_LONGS_EQUAL(5, R.rows());
-// }
+TEST(SOn, SO5) {
+  const auto R = SOn(5);
+  EXPECT_LONGS_EQUAL(5, R.rows());
+  EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::dimension);
+  EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::Dim());
+  EXPECT_LONGS_EQUAL(10, R.dim());
+}
 
 /* ************************************************************************* */
 TEST(SOn, Concept) {
@@ -218,23 +358,23 @@ TEST(SOn, Concept) {
   BOOST_CONCEPT_ASSERT((IsLieGroup<SOn>));
 }
 
-// /* *************************************************************************
-// */ TEST(SOn, Values) {
-//   const auto R = SOn(5);
-//   Values values;
-//   const Key key(0);
-//   values.insert(key, R);
-//   const auto B = values.at<SOn>(key);
-//   EXPECT_LONGS_EQUAL(5, B.rows());
-// }
+/* ************************************************************************* */
+TEST(SOn, Values) {
+  const auto R = SOn(5);
+  Values values;
+  const Key key(0);
+  values.insert(key, R);
+  const auto B = values.at<SOn>(key);
+  EXPECT_LONGS_EQUAL(5, B.rows());
+}
 
-// /* *************************************************************************
-// */ TEST(SOn, Random) {
-//   static boost::mt19937 rng(42);
-//   EXPECT_LONGS_EQUAL(3, SOn::Random(rng, 3).rows());
-//   EXPECT_LONGS_EQUAL(4, SOn::Random(rng, 4).rows());
-//   EXPECT_LONGS_EQUAL(5, SOn::Random(rng, 5).rows());
-// }
+/* ************************************************************************* */
+TEST(SOn, Random) {
+  static boost::mt19937 rng(42);
+  EXPECT_LONGS_EQUAL(3, SOn::Random(rng, 3).rows());
+  EXPECT_LONGS_EQUAL(4, SOn::Random(rng, 4).rows());
+  EXPECT_LONGS_EQUAL(5, SOn::Random(rng, 5).rows());
+}
 
 // /* *************************************************************************
 // */ TEST(SOn, HatVee) {
@@ -296,6 +436,9 @@ TEST(SOn, Concept) {
 TEST(SO4, Identity) {
   const SO4 R;
   EXPECT_LONGS_EQUAL(4, R.rows());
+  EXPECT_LONGS_EQUAL(6, SO4::dimension);
+  EXPECT_LONGS_EQUAL(6, SO4::Dim());
+  EXPECT_LONGS_EQUAL(6, R.dim());
 }
 
 /* ************************************************************************* */
@@ -439,6 +582,9 @@ TEST(SO4, Concept) {
 TEST(SO3, Identity) {
   const SO3 R;
   EXPECT_LONGS_EQUAL(3, R.rows());
+  EXPECT_LONGS_EQUAL(3, SO3::dimension);
+  EXPECT_LONGS_EQUAL(3, SO3::Dim());
+  EXPECT_LONGS_EQUAL(3, R.dim());
 }
 
 //******************************************************************************
@@ -448,14 +594,14 @@ TEST(SO3, Concept) {
   BOOST_CONCEPT_ASSERT((IsLieGroup<SO3>));
 }
 
-// //******************************************************************************
-// TEST(SO3, Constructor) { SO3 q(Eigen::AngleAxisd(1, Vector3(0, 0, 1))); }
+//******************************************************************************
+TEST(SO3, Constructor) { SO3 q(Eigen::AngleAxisd(1, Vector3(0, 0, 1))); }
 
-// //******************************************************************************
-// SO3 id;
-// Vector3 z_axis(0, 0, 1);
-// SO3 R1(Eigen::AngleAxisd(0.1, z_axis));
-// SO3 R2(Eigen::AngleAxisd(0.2, z_axis));
+//******************************************************************************
+SO3 id;
+Vector3 z_axis(0, 0, 1);
+SO3 R1(Eigen::AngleAxisd(0.1, z_axis));
+SO3 R2(Eigen::AngleAxisd(0.2, z_axis));
 
 // //******************************************************************************
 // TEST(SO3, Local) {
