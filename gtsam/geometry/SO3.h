@@ -20,8 +20,6 @@
 
 #pragma once
 
-#include <gtsam/geometry/SOn.h>
-
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
 
@@ -35,7 +33,7 @@ namespace gtsam {
  *  We guarantee (all but first) constructors only generate from sub-manifold.
  *  However, round-off errors in repeated composition could move off it...
  */
-class SO3 : public SOnBase<SO3>, public Matrix3, public LieGroup<SO3, 3> {
+class SO3 : public Matrix3, public LieGroup<SO3, 3> {
  public:
   enum { N = 3 };
   enum { dimension = 3 };
