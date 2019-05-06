@@ -19,8 +19,8 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/geometry/SOt.h>
 #include <gtsam/geometry/SO4.h>
+#include <gtsam/geometry/SOt.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -30,7 +30,6 @@ using namespace std;
 using namespace gtsam;
 
 //******************************************************************************
-
 TEST(SO4, Identity) {
   const SO4 R;
   EXPECT_LONGS_EQUAL(4, R.rows());
@@ -83,13 +82,32 @@ TEST(SO4, Expmap) {
 }
 
 //******************************************************************************
-TEST(SO4, Cayley) {
-  CHECK(assert_equal(id.retract(v1 / 100), SO4::Expmap(v1 / 100)));
-  CHECK(assert_equal(id.retract(v2 / 100), SO4::Expmap(v2 / 100)));
+TEST(SO4, Hat) {
+  // Check that Hat specialization is equal to dynamic version
+  EXPECT(assert_equal(SO4::Hat(v1), SOn::Hat(v1)));
+  EXPECT(assert_equal(SO4::Hat(v2), SOn::Hat(v2)));
+  EXPECT(assert_equal(SO4::Hat(v3), SOn::Hat(v3)));
+}
+
+//******************************************************************************
+TEST(SO4, Vee) {
+  // Check that Hat specialization is equal to dynamic version
+  auto X1 = SOn::Hat(v1), X2 = SOn::Hat(v2), X3 = SOn::Hat(v3);
+  EXPECT(assert_equal(SO4::Vee(X1), SOn::Vee(X1)));
+  EXPECT(assert_equal(SO4::Vee(X2), SOn::Vee(X2)));
+  EXPECT(assert_equal(SO4::Vee(X3), SOn::Vee(X3)));
 }
 
 //******************************************************************************
 TEST(SO4, Retract) {
+  // Check that Cayley yields the same as Expmap for small values
+  EXPECT(assert_equal(id.retract(v1 / 100), SO4::Expmap(v1 / 100)));
+  EXPECT(assert_equal(id.retract(v2 / 100), SO4::Expmap(v2 / 100)));
+
+  // Check that Cayley is identical to dynamic version
+  EXPECT(assert_equal(SOn(id.retract(v1 / 100)), SOn(4).retract(v1 / 100)));
+  EXPECT(assert_equal(SOn(id.retract(v2 / 100)), SOn(4).retract(v2 / 100)));
+
   auto v = Vector6::Zero();
   SO4 actual = traits<SO4>::Retract(id, v);
   EXPECT(assert_equal(id, actual));
@@ -97,6 +115,12 @@ TEST(SO4, Retract) {
 
 //******************************************************************************
 TEST(SO4, Local) {
+  // Check that Cayley is identical to dynamic version
+  EXPECT(
+      assert_equal(id.localCoordinates(Q1), SOn(4).localCoordinates(SOn(Q1))));
+  EXPECT(
+      assert_equal(id.localCoordinates(Q2), SOn(4).localCoordinates(SOn(Q2))));
+
   auto v0 = Vector6::Zero();
   Vector6 actual = traits<SO4>::Local(id, id);
   EXPECT(assert_equal((Vector)v0, actual));
@@ -122,15 +146,15 @@ TEST(SO4, compose) {
   SO4 expected = Q1 * Q2;
   Matrix actualH1, actualH2;
   SO4 actual = Q1.compose(Q2, actualH1, actualH2);
-  CHECK(assert_equal(expected, actual));
+  EXPECT(assert_equal(expected, actual));
 
   Matrix numericalH1 =
       numericalDerivative21(testing::compose<SO4>, Q1, Q2, 1e-2);
-  CHECK(assert_equal(numericalH1, actualH1));
+  EXPECT(assert_equal(numericalH1, actualH1));
 
   Matrix numericalH2 =
       numericalDerivative22(testing::compose<SO4>, Q1, Q2, 1e-2);
-  CHECK(assert_equal(numericalH2, actualH2));
+  EXPECT(assert_equal(numericalH2, actualH2));
 }
 
 //******************************************************************************
@@ -139,39 +163,39 @@ TEST(SO4, vec) {
   const Vector16 expected = Eigen::Map<const Vector16>(Q2.matrix().data());
   Matrix actualH;
   const Vector16 actual = Q2.vec(actualH);
-  CHECK(assert_equal(expected, actual));
+  EXPECT(assert_equal(expected, actual));
   boost::function<Vector16(const SO4&)> f = [](const SO4& Q) {
     return Q.vec();
   };
   const Matrix numericalH = numericalDerivative11(f, Q2, 1e-5);
-  CHECK(assert_equal(numericalH, actualH));
+  EXPECT(assert_equal(numericalH, actualH));
 }
 
-// /* *************************************************************************
-// */ TEST(SO4, topLeft) {
-//   const Matrix3 expected = Q3.topLeftCorner<3, 3>();
-//   Matrix actualH;
-//   const Matrix3 actual = Q3.topLeft(actualH);
-//   CHECK(assert_equal(expected, actual));
-//   boost::function<Matrix3(const SO4&)> f = [](const SO4& Q3) {
-//     return Q3.topLeft();
-//   };
-//   const Matrix numericalH = numericalDerivative11(f, Q3, 1e-5);
-//   CHECK(assert_equal(numericalH, actualH));
-// }
+//******************************************************************************
+TEST(SO4, topLeft) {
+  const Matrix3 expected = Q3.matrix().topLeftCorner<3, 3>();
+  Matrix actualH;
+  const Matrix3 actual = topLeft(Q3, actualH);
+  EXPECT(assert_equal(expected, actual));
+  boost::function<Matrix3(const SO4&)> f = [](const SO4& Q3) {
+    return topLeft(Q3);
+  };
+  const Matrix numericalH = numericalDerivative11(f, Q3, 1e-5);
+  EXPECT(assert_equal(numericalH, actualH));
+}
 
-// /* *************************************************************************
-// */ TEST(SO4, stiefel) {
-//   const Matrix43 expected = Q3.leftCols<3>();
-//   Matrix actualH;
-//   const Matrix43 actual = Q3.stiefel(actualH);
-//   CHECK(assert_equal(expected, actual));
-//   boost::function<Matrix43(const SO4&)> f = [](const SO4& Q3) {
-//     return Q3.stiefel();
-//   };
-//   const Matrix numericalH = numericalDerivative11(f, Q3, 1e-5);
-//   CHECK(assert_equal(numericalH, actualH));
-// }
+//******************************************************************************
+TEST(SO4, stiefel) {
+  const Matrix43 expected = Q3.matrix().leftCols<3>();
+  Matrix actualH;
+  const Matrix43 actual = stiefel(Q3, actualH);
+  EXPECT(assert_equal(expected, actual));
+  boost::function<Matrix43(const SO4&)> f = [](const SO4& Q3) {
+    return stiefel(Q3);
+  };
+  const Matrix numericalH = numericalDerivative11(f, Q3, 1e-5);
+  EXPECT(assert_equal(numericalH, actualH));
+}
 
 //******************************************************************************
 int main() {
