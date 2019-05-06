@@ -39,11 +39,14 @@ using SO3 = SO<3>;
 //   /// Static, named constructor that finds chordal mean = argmin_R \sum
 //   sqr(|R-R_i|_F). static SO3 ChordalMean(const std::vector<SO3>& rotations);
 
-//   static Matrix3 Hat(const Vector3 &xi); ///< make skew symmetric matrix
-//   static Vector3 Vee(const Matrix3 &X);  ///< inverse of Hat
-
 // Below are all declarations of SO<3> specializations.
 // They are *defined* in SO3.cpp.
+
+template <>
+Matrix3 SO3::Hat(const Vector3& xi);  ///< make skew symmetric matrix
+
+template <>
+Vector3 SO3::Vee(const Matrix3& X);  ///< inverse of Hat
 
 /// Adjoint map
 template <>
