@@ -33,14 +33,17 @@ namespace gtsam {
 
 using SO3 = SO<3>;
 
-//   /// Static, named constructor that finds SO(3) matrix closest to M in
-//   Frobenius norm. static SO3 ClosestTo(const Matrix3& M);
-
-//   /// Static, named constructor that finds chordal mean = argmin_R \sum
-//   sqr(|R-R_i|_F). static SO3 ChordalMean(const std::vector<SO3>& rotations);
-
 // Below are all declarations of SO<3> specializations.
 // They are *defined* in SO3.cpp.
+
+template <>
+SO3 SO3::AxisAngle(const Vector3& axis, double theta);
+
+template <>
+SO3 SO3::ClosestTo(const Matrix3& M);
+
+template <>
+SO3 SO3::ChordalMean(const std::vector<SO3>& rotations);
 
 template <>
 Matrix3 SO3::Hat(const Vector3& xi);  ///< make skew symmetric matrix
