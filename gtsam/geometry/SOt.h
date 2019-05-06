@@ -42,7 +42,10 @@ using SO3 = SO<3>;
 //   static Matrix3 Hat(const Vector3 &xi); ///< make skew symmetric matrix
 //   static Vector3 Vee(const Matrix3 &X);  ///< inverse of Hat
 
-//******************************************************************************
+/**
+ * Exponential map at identity - create a rotation from canonical coordinates
+ * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
+ */
 template <>
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H);
 
@@ -51,12 +54,6 @@ SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H);
 //   return sot::DexpFunctor(omega).dexp();
 // }
 
-/**
- * Exponential map at identity - create a rotation from canonical coordinates
- * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
- */
-//   static SO3 Expmap(const Vector3& omega, ChartJacobian H = boost::none);
-
 /// Derivative of Expmap
 //   static Matrix3 ExpmapDerivative(const Vector3& omega);
 
@@ -64,48 +61,27 @@ SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H);
  * Log map at identity - returns the canonical coordinates
  * \f$ [R_x,R_y,R_z] \f$ of this rotation
  */
-//   static Vector3 Logmap(const SO3& R, ChartJacobian H = boost::none);
-
-/// Derivative of Logmap
-//   static Matrix3 LogmapDerivative(const Vector3& omega);
-
-//   Matrix3 AdjointMap() const {
-//     return *this;
-//   }
-
-//   // Chart at origin
-//   struct ChartAtOrigin {
-//     static SO3 Retract(const Vector3& omega, ChartJacobian H = boost::none) {
-//       return Expmap(omega, H);
-//     }
-//     static Vector3 Local(const SO3& R, ChartJacobian H = boost::none) {
-//       return Logmap(R, H);
-//     }
-//   };
-
-//******************************************************************************
-static Vector9 vec3(const Matrix3& R) {
-  return Eigen::Map<const Vector9>(R.data());
-}
-
-static const std::vector<const Matrix3> G3({SO3::Hat(Vector3::Unit(0)),
-                                            SO3::Hat(Vector3::Unit(1)),
-                                            SO3::Hat(Vector3::Unit(2))});
-
-static const Matrix93 P3 =
-    (Matrix93() << vec3(G3[0]), vec3(G3[1]), vec3(G3[2])).finished();
-
-//******************************************************************************
 template <>
-Vector9 SO3::vec(OptionalJacobian<9, 3> H) const {
-  const Matrix3& R = matrix_;
-  if (H) {
-    // As Luca calculated (for SO4), this is (I3 \oplus R) * P3
-    *H << R * P3.block<3, 3>(0, 0), R * P3.block<3, 3>(3, 0),
-        R * P3.block<3, 3>(6, 0);
-  }
-  return gtsam::vec3(R);
+Vector3 SO3::Logmap(const SO3& R, ChartJacobian H);
+
+template <>
+Matrix3 SO3::AdjointMap() const {
+  return matrix_;
 }
+
+// Chart at origin for SO3 is *not* Cayley but actual Expmap/Logmap
+template <>
+SO3 SO3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H) {
+  return Expmap(omega, H);
+}
+
+template <>
+Vector3 SO3::ChartAtOrigin::Local(const SO3& R, ChartJacobian H) {
+  return Logmap(R, H);
+}
+
+template <>
+Vector9 SO3::vec(OptionalJacobian<9, 3> H) const;
 
 //   private:
 
