@@ -159,16 +159,25 @@ Vector3 DexpFunctor::applyInvDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
 // }
 
 //******************************************************************************
-// Matrix3 SO3::Hat(const Vector3& xi) { return skewSymmetric(xi); }
+template <>
+Matrix3 SO3::Hat(const Vector3& xi) {
+  // skew symmetric matrix X = xi^
+  Matrix3 Y = Z_3x3;
+  Y(0, 1) = -xi(2);
+  Y(0, 2) = +xi(1);
+  Y(1, 2) = -xi(0);
+  return Y - Y.transpose();
+}
 
-// /* *************************************************************************
-// */ Vector3 SO3::Vee(const Matrix3& X) {
-//   Vector3 xi;
-//   xi(0) = -X(1, 2);
-//   xi(1) = X(0, 2);
-//   xi(2) = -X(0, 1);
-//   return xi;
-// }
+//******************************************************************************
+template <>
+Vector3 SO3::Vee(const Matrix3& X) {
+  Vector3 xi;
+  xi(0) = -X(1, 2);
+  xi(1) = +X(0, 2);
+  xi(2) = -X(0, 1);
+  return xi;
+}
 
 //******************************************************************************
 template <>
