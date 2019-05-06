@@ -134,29 +134,33 @@ Vector3 DexpFunctor::applyInvDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
 }  // namespace sot
 
 //******************************************************************************
-// SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
-//   return sot::ExpmapFunctor(axis, theta).expmap();
-// }
+template <>
+SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
+  return sot::ExpmapFunctor(axis, theta).expmap();
+}
 
 //******************************************************************************
-// SO3 SO3::ClosestTo(const Matrix3& M) {
-//   Eigen::JacobiSVD<Matrix3> svd(M, Eigen::ComputeFullU |
-//   Eigen::ComputeFullV); const auto& U = svd.matrixU(); const auto& V =
-//   svd.matrixV(); const double det = (U * V.transpose()).determinant(); return
-//   U * Vector3(1, 1, det).asDiagonal() * V.transpose();
-// }
+template <>
+SO3 SO3::ClosestTo(const Matrix3& M) {
+  Eigen::JacobiSVD<Matrix3> svd(M, Eigen::ComputeFullU | Eigen::ComputeFullV);
+  const auto& U = svd.matrixU();
+  const auto& V = svd.matrixV();
+  const double det = (U * V.transpose()).determinant();
+  return SO3(U * Vector3(1, 1, det).asDiagonal() * V.transpose());
+}
 
 //******************************************************************************
-// SO3 SO3::ChordalMean(const std::vector<SO3>& rotations) {
-//   //  See Hartley13ijcv:
-//   //  Cost function C(R) = \sum sqr(|R-R_i|_F)
-//   // Closed form solution = ClosestTo(C_e), where C_e = \sum R_i !!!!
-//   Matrix3 C_e{Z_3x3};
-//   for (const auto& R_i : rotations) {
-//     C_e += R_i;
-//   }
-//   return ClosestTo(C_e);
-// }
+template <>
+SO3 SO3::ChordalMean(const std::vector<SO3>& rotations) {
+  // See Hartley13ijcv:
+  // Cost function C(R) = \sum sqr(|R-R_i|_F)
+  // Closed form solution = ClosestTo(C_e), where C_e = \sum R_i !!!!
+  Matrix3 C_e{Z_3x3};
+  for (const auto& R_i : rotations) {
+    C_e += R_i.matrix();
+  }
+  return ClosestTo(C_e);
+}
 
 //******************************************************************************
 template <>

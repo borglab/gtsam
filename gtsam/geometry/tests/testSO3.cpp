@@ -40,13 +40,42 @@ TEST(SO3, Concept) {
 }
 
 //******************************************************************************
-TEST(SO3, Constructor) { SO3 q(Eigen::AngleAxisd(1, Vector3(0, 0, 1))); }
+TEST(SO3, Constructors) {
+  const Vector3 axis(0, 0, 1);
+  const double angle = 2.5;
+  SO3 Q(Eigen::AngleAxisd(angle, axis));
+  SO3 R = SO3::AxisAngle(axis, angle);
+  EXPECT(assert_equal(Q, R));
+}
+
+/* ************************************************************************* */
+TEST(SO3, ClosestTo) {
+  // Example top-left of SO(4) matrix not quite on SO(3) manifold
+  Matrix3 M;
+  M << 0.79067393, 0.6051136, -0.0930814,   //
+      0.4155925, -0.64214347, -0.64324489,  //
+      -0.44948549, 0.47046326, -0.75917576;
+
+  Matrix expected(3, 3);
+  expected << 0.790687, 0.605096, -0.0931312,  //
+      0.415746, -0.642355, -0.643844,          //
+      -0.449411, 0.47036, -0.759468;
+
+  auto actual = SO3::ClosestTo(3 * M);
+  EXPECT(assert_equal(expected, actual.matrix(), 1e-6));
+}
 
 //******************************************************************************
 SO3 id;
 Vector3 z_axis(0, 0, 1), v2(1, 2, 0), v3(1, 2, 3);
 SO3 R1(Eigen::AngleAxisd(0.1, z_axis));
 SO3 R2(Eigen::AngleAxisd(0.2, z_axis));
+
+/* ************************************************************************* */
+TEST(SO3, ChordalMean) {
+  std::vector<SO3> rotations = {R1, R1.inverse()};
+  EXPECT(assert_equal(SO3(), SO3::ChordalMean(rotations)));
+}
 
 //******************************************************************************
 TEST(SO3, Hat) {
