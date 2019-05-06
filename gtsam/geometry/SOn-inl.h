@@ -98,6 +98,32 @@ typename SO<N>::TangentVector SO<N>::ChartAtOrigin::Local(const SO& R,
 }
 
 template <int N>
+typename SO<N>::MatrixDD SO<N>::AdjointMap() const {
+  throw std::runtime_error(
+      "SO<N>::AdjointMap only implemented for SO3 and SO4.");
+}
+
+template <int N>
+SO<N> SO<N>::Expmap(const TangentVector& omega, ChartJacobian H) {
+  throw std::runtime_error("SO<N>::Expmap only implemented for SO3 and SO4.");
+}
+
+template <int N>
+typename SO<N>::MatrixDD SO<N>::ExpmapDerivative(const TangentVector& omega) {
+  throw std::runtime_error("SO<N>::ExpmapDerivative only implemented for SO3.");
+}
+
+template <int N>
+typename SO<N>::TangentVector SO<N>::Logmap(const SO& R, ChartJacobian H) {
+  throw std::runtime_error("SO<N>::Logmap only implemented for SO3 and SO4.");
+}
+
+template <int N>
+typename SO<N>::MatrixDD SO<N>::LogmapDerivative(const TangentVector& omega) {
+  throw std::runtime_error("O<N>::LogmapDerivative only implemented for SO3.");
+}
+
+template <int N>
 typename SO<N>::VectorN2 SO<N>::vec(
     OptionalJacobian<internal::NSquaredSO(N), dimension> H) const {
   const size_t n = rows();
