@@ -83,6 +83,10 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   template <typename Derived>
   explicit SO(const Eigen::MatrixBase<Derived>& R) : matrix_(R.eval()) {}
 
+  /// Construct dynamic SO(n) from Fixed SO<M>
+  template <int M, int N_ = N, typename = IsDynamic<N_>>
+  explicit SO(const SO<M>& R) : matrix_(R.matrix()) {}
+
   /// Constructor from AngleAxisd
   template <int N_ = N, typename = IsSO3<N_>>
   SO(const Eigen::AngleAxisd& angleAxis) : matrix_(angleAxis) {}
@@ -188,12 +192,12 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
    *  -d  c -b  a  0
    * This scheme behaves exactly as expected for SO(2) and SO(3).
    */
-  static Matrix Hat(const Vector& xi);
+  static MatrixNN Hat(const TangentVector& xi);
 
   /**
    * Inverse of Hat. See note about xi element order in Hat.
    */
-  static Vector Vee(const Matrix& X);
+  static TangentVector Vee(const MatrixNN& X);
 
   // Chart at origin
   struct ChartAtOrigin {
@@ -259,8 +263,20 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
 using SOn = SO<Eigen::Dynamic>;
 
 /*
- * Fully specialize compose and between, because the derivative is unknowable by
- * the LieGroup implementations, who return a fixed-size matrix for H2.
+ * Specialize dynamic Hat and Vee, because recursion depends on dynamic nature.
+ * The definition is in SOn.cpp. Fixed-size SO3 and SO4 have their own version,
+ * and implementation for other fixed N is in SOn-inl.h.
+ */
+
+template <>
+Matrix SOn::Hat(const Vector& xi);
+
+template <>
+Vector SOn::Vee(const Matrix& X);
+
+/*
+ * Specialize dynamic compose and between, because the derivative is unknowable
+ * by the LieGroup implementations, who return a fixed-size matrix for H2.
  */
 
 using DynamicJacobian = OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>;
