@@ -42,13 +42,13 @@ using SO4 = SO<4>;
 // They are *defined* in SO4.cpp.
 
 template <>
-Matrix4 SO4::Hat(const TangentVector& xi);
+Matrix4 SO4::Hat(const TangentVector &xi);
 
 template <>
-Vector6 SO4::Vee(const Matrix4& X);
+Vector6 SO4::Vee(const Matrix4 &X);
 
 template <>
-SO4 SO4::Expmap(const Vector6& xi, ChartJacobian H);
+SO4 SO4::Expmap(const Vector6 &xi, ChartJacobian H);
 
 template <>
 Matrix6 SO4::AdjointMap() const;
@@ -57,47 +57,46 @@ template <>
 SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const;
 
 template <>
-SO4 SO4::ChartAtOrigin::Retract(const Vector6& omega, ChartJacobian H);
+SO4 SO4::ChartAtOrigin::Retract(const Vector6 &omega, ChartJacobian H);
 
 template <>
-Vector6 SO4::ChartAtOrigin::Local(const SO4& R, ChartJacobian H);
+Vector6 SO4::ChartAtOrigin::Local(const SO4 &Q, ChartJacobian H);
 
 /**
  * Project to top-left 3*3 matrix. Note this is *not* in general \in SO(3).
  */
-Matrix3 topLeft(const SO4& Q, OptionalJacobian<9, 6> H = boost::none);
+Matrix3 topLeft(const SO4 &Q, OptionalJacobian<9, 6> H = boost::none);
 
 /**
  * Project to Stiefel manifold of 4*3 orthonormal 3-frames in R^4, i.e., pi(Q)
  * -> S \in St(3,4).
  */
-Matrix43 stiefel(const SO4& Q, OptionalJacobian<12, 6> H = boost::none);
+Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = boost::none);
 
-//  private:
-//   /** Serialization function */
-//   friend class boost::serialization::access;
-//   template <class ARCHIVE>
-//   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-//     ar &boost::serialization::make_nvp("Q11", (*this)(0, 0));
-//     ar &boost::serialization::make_nvp("Q12", (*this)(0, 1));
-//     ar &boost::serialization::make_nvp("Q13", (*this)(0, 2));
-//     ar &boost::serialization::make_nvp("Q14", (*this)(0, 3));
+/** Serialization function */
+template <class Archive>
+void serialize(Archive &ar, SO4 &Q, const unsigned int /*version*/) {
+  Matrix4 &M = Q.matrix_;
+  ar &boost::serialization::make_nvp("Q11", M(0, 0));
+  ar &boost::serialization::make_nvp("Q12", M(0, 1));
+  ar &boost::serialization::make_nvp("Q13", M(0, 2));
+  ar &boost::serialization::make_nvp("Q14", M(0, 3));
 
-//     ar &boost::serialization::make_nvp("Q21", (*this)(1, 0));
-//     ar &boost::serialization::make_nvp("Q22", (*this)(1, 1));
-//     ar &boost::serialization::make_nvp("Q23", (*this)(1, 2));
-//     ar &boost::serialization::make_nvp("Q24", (*this)(1, 3));
+  ar &boost::serialization::make_nvp("Q21", M(1, 0));
+  ar &boost::serialization::make_nvp("Q22", M(1, 1));
+  ar &boost::serialization::make_nvp("Q23", M(1, 2));
+  ar &boost::serialization::make_nvp("Q24", M(1, 3));
 
-//     ar &boost::serialization::make_nvp("Q31", (*this)(2, 0));
-//     ar &boost::serialization::make_nvp("Q32", (*this)(2, 1));
-//     ar &boost::serialization::make_nvp("Q33", (*this)(2, 2));
-//     ar &boost::serialization::make_nvp("Q34", (*this)(2, 3));
+  ar &boost::serialization::make_nvp("Q31", M(2, 0));
+  ar &boost::serialization::make_nvp("Q32", M(2, 1));
+  ar &boost::serialization::make_nvp("Q33", M(2, 2));
+  ar &boost::serialization::make_nvp("Q34", M(2, 3));
 
-//     ar &boost::serialization::make_nvp("Q41", (*this)(3, 0));
-//     ar &boost::serialization::make_nvp("Q42", (*this)(3, 1));
-//     ar &boost::serialization::make_nvp("Q43", (*this)(3, 2));
-//     ar &boost::serialization::make_nvp("Q44", (*this)(3, 3));
-//   }
+  ar &boost::serialization::make_nvp("Q41", M(3, 0));
+  ar &boost::serialization::make_nvp("Q42", M(3, 1));
+  ar &boost::serialization::make_nvp("Q43", M(3, 2));
+  ar &boost::serialization::make_nvp("Q44", M(3, 3));
+}
 
 /*
  * Define the traits. internal::LieGroup provides both Lie group and Testable

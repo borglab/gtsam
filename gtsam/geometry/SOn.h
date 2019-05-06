@@ -270,6 +270,10 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   VectorN2 vec(OptionalJacobian<internal::NSquaredSO(N), dimension> H =
                    boost::none) const;
   /// @}
+
+  template <class Archive>
+  friend void serialize(Archive& ar, SO& R, const unsigned int /*version*/);
+  friend class boost::serialization::access;
 };
 
 using SOn = SO<Eigen::Dynamic>;

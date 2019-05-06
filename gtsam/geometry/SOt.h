@@ -93,23 +93,20 @@ Vector3 SO3::ChartAtOrigin::Local(const SO3& R, ChartJacobian H) {
 template <>
 Vector9 SO3::vec(OptionalJacobian<9, 3> H) const;
 
-//   private:
-
-//     /** Serialization function */
-//     friend class boost::serialization::access;
-//     template<class ARCHIVE>
-//     void serialize(ARCHIVE & ar, const unsigned int /*version*/)
-//     {
-//        ar & boost::serialization::make_nvp("R11", (*this)(0,0));
-//        ar & boost::serialization::make_nvp("R12", (*this)(0,1));
-//        ar & boost::serialization::make_nvp("R13", (*this)(0,2));
-//        ar & boost::serialization::make_nvp("R21", (*this)(1,0));
-//        ar & boost::serialization::make_nvp("R22", (*this)(1,1));
-//        ar & boost::serialization::make_nvp("R23", (*this)(1,2));
-//        ar & boost::serialization::make_nvp("R31", (*this)(2,0));
-//        ar & boost::serialization::make_nvp("R32", (*this)(2,1));
-//        ar & boost::serialization::make_nvp("R33", (*this)(2,2));
-//     }
+/** Serialization function */
+template <class Archive>
+void serialize(Archive& ar, SO3& R, const unsigned int /*version*/) {
+  Matrix3& M = R.matrix_;
+  ar& boost::serialization::make_nvp("R11", M(0, 0));
+  ar& boost::serialization::make_nvp("R12", M(0, 1));
+  ar& boost::serialization::make_nvp("R13", M(0, 2));
+  ar& boost::serialization::make_nvp("R21", M(1, 0));
+  ar& boost::serialization::make_nvp("R22", M(1, 1));
+  ar& boost::serialization::make_nvp("R23", M(1, 2));
+  ar& boost::serialization::make_nvp("R31", M(2, 0));
+  ar& boost::serialization::make_nvp("R32", M(2, 1));
+  ar& boost::serialization::make_nvp("R33", M(2, 2));
+}
 
 namespace sot {
 
