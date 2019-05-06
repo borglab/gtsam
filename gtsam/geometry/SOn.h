@@ -27,6 +27,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace gtsam {
 
@@ -90,6 +91,17 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// Constructor from AngleAxisd
   template <int N_ = N, typename = IsSO3<N_>>
   SO(const Eigen::AngleAxisd& angleAxis) : matrix_(angleAxis) {}
+
+  /// Constructor from axis and angle. Only defined for SO3
+  static SO AxisAngle(const Vector3& axis, double theta);
+
+  /// Named constructor that finds SO(n) matrix closest to M in Frobenius norm,
+  /// currently only defined for SO3.
+  static SO ClosestTo(const MatrixNN& M);
+
+  /// Named constructor that finds chordal mean = argmin_R \sum sqr(|R-R_i|_F),
+  /// currently only defined for SO3.
+  static SO ChordalMean(const std::vector<SO>& rotations);
 
   /// Random SO(n) element (no big claims about uniformity)
   template <int N_ = N, typename = IsDynamic<N_>>

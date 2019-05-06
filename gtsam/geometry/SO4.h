@@ -104,9 +104,9 @@ Matrix43 stiefel(const SO4& Q, OptionalJacobian<12, 6> H = boost::none);
  */
 
 template <>
-struct traits<SO4> : Testable<SO4>, internal::LieGroupTraits<SO4> {};
+struct traits<SO4> : public internal::LieGroup<SO4> {};
 
 template <>
-struct traits<const SO4> : Testable<SO4>, internal::LieGroupTraits<SO4> {};
+struct traits<const SO4> : public internal::LieGroup<SO4> {};
 
 }  // end namespace gtsam
