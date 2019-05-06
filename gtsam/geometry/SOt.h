@@ -42,6 +42,15 @@ using SO3 = SO<3>;
 //   static Matrix3 Hat(const Vector3 &xi); ///< make skew symmetric matrix
 //   static Vector3 Vee(const Matrix3 &X);  ///< inverse of Hat
 
+// Below are all declarations of SO<3> specializations.
+// They are *defined* in SO3.cpp.
+
+/// Adjoint map
+template <>
+Matrix3 SO3::AdjointMap() const {
+  return matrix_;
+}
+
 /**
  * Exponential map at identity - create a rotation from canonical coordinates
  * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
@@ -49,13 +58,9 @@ using SO3 = SO<3>;
 template <>
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H);
 
-// template<>
-// Matrix3 SO3::ExpmapDerivative(const Vector3& omega) {
-//   return sot::DexpFunctor(omega).dexp();
-// }
-
 /// Derivative of Expmap
-//   static Matrix3 ExpmapDerivative(const Vector3& omega);
+template <>
+Matrix3 SO3::ExpmapDerivative(const Vector3& omega);
 
 /**
  * Log map at identity - returns the canonical coordinates
@@ -64,10 +69,9 @@ SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H);
 template <>
 Vector3 SO3::Logmap(const SO3& R, ChartJacobian H);
 
+/// Derivative of Logmap
 template <>
-Matrix3 SO3::AdjointMap() const {
-  return matrix_;
-}
+Matrix3 SO3::LogmapDerivative(const Vector3& omega);
 
 // Chart at origin for SO3 is *not* Cayley but actual Expmap/Logmap
 template <>
