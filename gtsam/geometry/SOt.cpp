@@ -182,9 +182,10 @@ SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
   }
 }
 
-// Matrix3 SO3::ExpmapDerivative(const Vector3& omega) {
-//   return sot::DexpFunctor(omega).dexp();
-// }
+template <>
+Matrix3 SO3::ExpmapDerivative(const Vector3& omega) {
+  return sot::DexpFunctor(omega).dexp();
+}
 
 //******************************************************************************
 /* Right Jacobian for Log map in SO(3) - equation (10.86) and following
@@ -254,19 +255,22 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
     omega = magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
   }
 
-  if (H) *H = SO3::LogmapDerivative(omega);
+  if (H) *H = LogmapDerivative(omega);
   return omega;
 }
 
 //******************************************************************************
+// local vectorize
 static Vector9 vec3(const Matrix3& R) {
   return Eigen::Map<const Vector9>(R.data());
 }
 
+// so<3> generators
 static const std::vector<const Matrix3> G3({SO3::Hat(Vector3::Unit(0)),
                                             SO3::Hat(Vector3::Unit(1)),
                                             SO3::Hat(Vector3::Unit(2))});
 
+// vectorized generators
 static const Matrix93 P3 =
     (Matrix93() << vec3(G3[0]), vec3(G3[1]), vec3(G3[2])).finished();
 
