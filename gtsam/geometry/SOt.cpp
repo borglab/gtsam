@@ -133,12 +133,12 @@ Vector3 DexpFunctor::applyInvDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
 
 }  // namespace sot
 
-/* ************************************************************************* */
+//******************************************************************************
 // SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
 //   return sot::ExpmapFunctor(axis, theta).expmap();
 // }
 
-/* ************************************************************************* */
+//******************************************************************************
 // SO3 SO3::ClosestTo(const Matrix3& M) {
 //   Eigen::JacobiSVD<Matrix3> svd(M, Eigen::ComputeFullU |
 //   Eigen::ComputeFullV); const auto& U = svd.matrixU(); const auto& V =
@@ -146,7 +146,7 @@ Vector3 DexpFunctor::applyInvDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
 //   U * Vector3(1, 1, det).asDiagonal() * V.transpose();
 // }
 
-/* ************************************************************************* */
+//******************************************************************************
 // SO3 SO3::ChordalMean(const std::vector<SO3>& rotations) {
 //   //  See Hartley13ijcv:
 //   //  Cost function C(R) = \sum sqr(|R-R_i|_F)
@@ -170,6 +170,7 @@ Vector3 DexpFunctor::applyInvDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
 //   return xi;
 // }
 
+//******************************************************************************
 template <>
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
   if (H) {
@@ -185,97 +186,101 @@ SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
 //   return sot::DexpFunctor(omega).dexp();
 // }
 
-/* ************************************************************************* */
-// Vector3 SO3::Logmap(const SO3& R, ChartJacobian H) {
-//   using std::sin;
-//   using std::sqrt;
+//******************************************************************************
+/* Right Jacobian for Log map in SO(3) - equation (10.86) and following
+ equations in G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie
+ Groups", Volume 2, 2008.
 
-//   // note switch to base 1
-//   const double &R11 = R(0, 0), R12 = R(0, 1), R13 = R(0, 2);
-//   const double &R21 = R(1, 0), R22 = R(1, 1), R23 = R(1, 2);
-//   const double &R31 = R(2, 0), R32 = R(2, 1), R33 = R(2, 2);
+   logmap( Rhat * expmap(omega) ) \approx logmap(Rhat) + Jrinv * omega
 
-//   // Get trace(R)
-//   const double tr = R.trace();
+ where Jrinv = LogmapDerivative(omega). This maps a perturbation on the
+ manifold (expmap(omega)) to a perturbation in the tangent space (Jrinv *
+ omega)
+ */
+template <>
+Matrix3 SO3::LogmapDerivative(const Vector3& omega) {
+  using std::cos;
+  using std::sin;
 
-//   Vector3 omega;
+  double theta2 = omega.dot(omega);
+  if (theta2 <= std::numeric_limits<double>::epsilon()) return I_3x3;
+  double theta = std::sqrt(theta2);  // rotation angle
 
-//   // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
-//   // we do something special
-//   if (std::abs(tr + 1.0) < 1e-10) {
-//     if (std::abs(R33 + 1.0) > 1e-10)
-//       omega = (M_PI / sqrt(2.0 + 2.0 * R33)) * Vector3(R13, R23, 1.0 + R33);
-//     else if (std::abs(R22 + 1.0) > 1e-10)
-//       omega = (M_PI / sqrt(2.0 + 2.0 * R22)) * Vector3(R12, 1.0 + R22, R32);
-//     else
-//       // if(std::abs(R.r1_.x()+1.0) > 1e-10)  This is implicit
-//       omega = (M_PI / sqrt(2.0 + 2.0 * R11)) * Vector3(1.0 + R11, R21, R31);
-//   } else {
-//     double magnitude;
-//     const double tr_3 = tr - 3.0;  // always negative
-//     if (tr_3 < -1e-7) {
-//       double theta = acos((tr - 1.0) / 2.0);
-//       magnitude = theta / (2.0 * sin(theta));
-//     } else {
-//       // when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
-//       // use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
-//       magnitude = 0.5 - tr_3 * tr_3 / 12.0;
-//     }
-//     omega = magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
-//   }
+  // element of Lie algebra so(3): W = omega^
+  const Matrix3 W = Hat(omega);
+  return I_3x3 + 0.5 * W +
+         (1 / (theta * theta) - (1 + cos(theta)) / (2 * theta * sin(theta))) *
+             W * W;
+}
 
-//   if (H) *H = LogmapDerivative(omega);
-//   return omega;
-// }
+//******************************************************************************
+template <>
+Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
+  using std::sin;
+  using std::sqrt;
 
-/* ************************************************************************* */
-// Matrix3 SO3::LogmapDerivative(const Vector3& omega) {
-//   using std::cos;
-//   using std::sin;
+  // note switch to base 1
+  const Matrix3& R = Q.matrix();
+  const double &R11 = R(0, 0), R12 = R(0, 1), R13 = R(0, 2);
+  const double &R21 = R(1, 0), R22 = R(1, 1), R23 = R(1, 2);
+  const double &R31 = R(2, 0), R32 = R(2, 1), R33 = R(2, 2);
 
-//   double theta2 = omega.dot(omega);
-//   if (theta2 <= std::numeric_limits<double>::epsilon()) return I_3x3;
-//   double theta = std::sqrt(theta2);  // rotation angle
-//   /** Right Jacobian for Log map in SO(3) - equation (10.86) and following
-//    * equations in G.S. Chirikjian, "Stochastic Models, Information Theory,
-//    and
-//    * Lie Groups", Volume 2, 2008. logmap( Rhat * expmap(omega) ) \approx
-//    logmap(
-//    * Rhat ) + Jrinv * omega where Jrinv = LogmapDerivative(omega); This maps
-//    a
-//    * perturbation on the manifold (expmap(omega)) to a perturbation in the
-//    * tangent space (Jrinv * omega)
-//    */
-//   const Matrix3 W =
-//       skewSymmetric(omega);  // element of Lie algebra so(3): W = omega^
-//   return I_3x3 + 0.5 * W +
-//          (1 / (theta * theta) - (1 + cos(theta)) / (2 * theta * sin(theta)))
-//          *
-//              W * W;
-// }
+  // Get trace(R)
+  const double tr = R.trace();
 
-/* ************************************************************************* */
-// static Vector9 vec(const SO3& R) { return Eigen::Map<const
-// Vector9>(R.data()); }
+  Vector3 omega;
 
-// static const std::vector<const Matrix3> G({SO3::Hat(Vector3::Unit(0)),
-//                                            SO3::Hat(Vector3::Unit(1)),
-//                                            SO3::Hat(Vector3::Unit(2))});
+  // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
+  // we do something special
+  if (std::abs(tr + 1.0) < 1e-10) {
+    if (std::abs(R33 + 1.0) > 1e-10)
+      omega = (M_PI / sqrt(2.0 + 2.0 * R33)) * Vector3(R13, R23, 1.0 + R33);
+    else if (std::abs(R22 + 1.0) > 1e-10)
+      omega = (M_PI / sqrt(2.0 + 2.0 * R22)) * Vector3(R12, 1.0 + R22, R32);
+    else
+      // if(std::abs(R.r1_.x()+1.0) > 1e-10)  This is implicit
+      omega = (M_PI / sqrt(2.0 + 2.0 * R11)) * Vector3(1.0 + R11, R21, R31);
+  } else {
+    double magnitude;
+    const double tr_3 = tr - 3.0;  // always negative
+    if (tr_3 < -1e-7) {
+      double theta = acos((tr - 1.0) / 2.0);
+      magnitude = theta / (2.0 * sin(theta));
+    } else {
+      // when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
+      // use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
+      magnitude = 0.5 - tr_3 * tr_3 / 12.0;
+    }
+    omega = magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
+  }
 
-// static const Matrix93 P =
-//     (Matrix93() << vec(G[0]), vec(G[1]), vec(G[2])).finished();
+  if (H) *H = SO3::LogmapDerivative(omega);
+  return omega;
+}
 
-/* ************************************************************************* */
-// Vector9 SO3::vec(OptionalJacobian<9, 3> H) const {
-//   const SO3& R = *this;
-//   if (H) {
-//     // As Luca calculated (for SO4), this is (I3 \oplus R) * P
-//     *H << R * P.block<3, 3>(0, 0), R * P.block<3, 3>(3, 0),
-//         R * P.block<3, 3>(6, 0);
-//   }
-//   return gtsam::vec(R);
-// };
+//******************************************************************************
+static Vector9 vec3(const Matrix3& R) {
+  return Eigen::Map<const Vector9>(R.data());
+}
 
-/* ************************************************************************* */
+static const std::vector<const Matrix3> G3({SO3::Hat(Vector3::Unit(0)),
+                                            SO3::Hat(Vector3::Unit(1)),
+                                            SO3::Hat(Vector3::Unit(2))});
+
+static const Matrix93 P3 =
+    (Matrix93() << vec3(G3[0]), vec3(G3[1]), vec3(G3[2])).finished();
+
+//******************************************************************************
+template <>
+Vector9 SO3::vec(OptionalJacobian<9, 3> H) const {
+  const Matrix3& R = matrix_;
+  if (H) {
+    // As Luca calculated (for SO4), this is (I3 \oplus R) * P3
+    *H << R * P3.block<3, 3>(0, 0), R * P3.block<3, 3>(3, 0),
+        R * P3.block<3, 3>(6, 0);
+  }
+  return gtsam::vec3(R);
+}
+//******************************************************************************
 
 }  // end namespace gtsam
