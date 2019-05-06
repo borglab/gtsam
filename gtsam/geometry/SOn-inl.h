@@ -115,7 +115,7 @@ typename SO<N>::MatrixDD SO<N>::ExpmapDerivative(const TangentVector& omega) {
 
 template <int N>
 typename SO<N>::TangentVector SO<N>::Logmap(const SO& R, ChartJacobian H) {
-  throw std::runtime_error("SO<N>::Logmap only implemented for SO3 and SO4.");
+  throw std::runtime_error("SO<N>::Logmap only implemented for SO3.");
 }
 
 template <int N>

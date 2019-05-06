@@ -157,7 +157,7 @@ TEST(SO3, ExpmapDerivative) {
   EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-7));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ExpmapDerivative2) {
   const Vector3 theta(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
@@ -168,7 +168,7 @@ TEST(SO3, ExpmapDerivative2) {
                      SO3::ExpmapDerivative(-theta)));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ExpmapDerivative3) {
   const Vector3 theta(10, 20, 30);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
@@ -179,7 +179,7 @@ TEST(SO3, ExpmapDerivative3) {
                      SO3::ExpmapDerivative(-theta)));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ExpmapDerivative4) {
   // Iserles05an (Lie-group Methods) says:
   // scalar is easy: d exp(a(t)) / dt = exp(a(t)) a'(t)
@@ -207,7 +207,7 @@ TEST(SO3, ExpmapDerivative4) {
   }
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ExpmapDerivative5) {
   auto w = [](double t) { return Vector3(2 * t, sin(t), 4 * t * t); };
   auto w_dot = [](double t) { return Vector3(2, cos(t), 8 * t); };
@@ -223,7 +223,7 @@ TEST(SO3, ExpmapDerivative5) {
   }
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ExpmapDerivative6) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
@@ -233,7 +233,7 @@ TEST(SO3, ExpmapDerivative6) {
   EXPECT(assert_equal(Jexpected, Jactual));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, LogmapDerivative) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const SO3 R = SO3::Expmap(thetahat);  // some rotation
@@ -243,7 +243,7 @@ TEST(SO3, LogmapDerivative) {
   EXPECT(assert_equal(Jexpected, Jactual));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, JacobianLogmap) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const SO3 R = SO3::Expmap(thetahat);  // some rotation
