@@ -220,27 +220,24 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// @name Lie Group
   /// @{
 
-  MatrixDD AdjointMap() const {
-    throw std::runtime_error(
-        "SO<N>::AdjointMap only implemented for SO3 and SO4.");
-  }
+  /// Adjoint map
+  MatrixDD AdjointMap() const;
 
   /**
    * Exponential map at identity - create a rotation from canonical coordinates
    */
-  static SO Expmap(const TangentVector& omega, ChartJacobian H = boost::none) {
-    throw std::runtime_error("SO<N>::Expmap only implemented for SO3 and SO4.");
-  }
+  static SO Expmap(const TangentVector& omega, ChartJacobian H = boost::none);
+
+  /// Derivative of Expmap, currently only defined for SO3
+  static MatrixDD ExpmapDerivative(const TangentVector& omega);
 
   /**
    * Log map at identity - returns the canonical coordinates of this rotation
    */
-  static TangentVector Logmap(const SO& R, ChartJacobian H = boost::none) {
-    throw std::runtime_error("SO<N>::Logmap only implemented for SO3 and SO4.");
-  }
+  static TangentVector Logmap(const SO& R, ChartJacobian H = boost::none);
 
-  // template <int N_ = N, typename = IsSO3<N_>>
-  static Matrix3 LogmapDerivative(const Vector3& omega);
+  /// Derivative of Logmap, currently only defined for SO3
+  static MatrixDD LogmapDerivative(const TangentVector& omega);
 
   // inverse with optional derivative
   using LieGroup<SO<N>, internal::DimensionSO(N)>::inverse;
