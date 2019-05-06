@@ -15,13 +15,22 @@
  * @author Frank Dellaert
  **/
 
-#include <gtsam/geometry/SO3.h>
-#include <gtsam/base/testLie.h>
-#include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/testLie.h>
+#include <gtsam/geometry/SOt.h>
 
 using namespace std;
 using namespace gtsam;
+
+//******************************************************************************
+TEST(SO3, Identity) {
+  const SO3 R;
+  EXPECT_LONGS_EQUAL(3, R.rows());
+  EXPECT_LONGS_EQUAL(3, SO3::dimension);
+  EXPECT_LONGS_EQUAL(3, SO3::Dim());
+  EXPECT_LONGS_EQUAL(3, R.dim());
+}
 
 //******************************************************************************
 TEST(SO3, Concept) {
@@ -50,7 +59,21 @@ TEST(SO3, Local) {
 TEST(SO3, Retract) {
   Vector3 v(0, 0, 0.1);
   SO3 actual = traits<SO3>::Retract(R1, v);
-  EXPECT(actual.isApprox(R2));
+  EXPECT(assert_equal(R2, actual));
+}
+
+//******************************************************************************
+TEST(SO3, Logmap) {
+  Vector3 expected(0, 0, 0.1);
+  Vector3 actual = SO3::Logmap(R1.between(R2));
+  EXPECT(assert_equal((Vector)expected, actual));
+}
+
+//******************************************************************************
+TEST(SO3, Expmap) {
+  Vector3 v(0, 0, 0.1);
+  SO3 actual = R1 * SO3::Expmap(v);
+  EXPECT(assert_equal(R2, actual));
 }
 
 //******************************************************************************
@@ -231,17 +254,17 @@ TEST(SO3, JacobianLogmap) {
   EXPECT(assert_equal(Jexpected, Jactual));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ApplyDexp) {
   Matrix aH1, aH2;
   for (bool nearZeroApprox : {true, false}) {
     boost::function<Vector3(const Vector3&, const Vector3&)> f =
         [=](const Vector3& omega, const Vector3& v) {
-          return so3::DexpFunctor(omega, nearZeroApprox).applyDexp(v);
+          return sot::DexpFunctor(omega, nearZeroApprox).applyDexp(v);
         };
     for (Vector3 omega : {Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0),
                           Vector3(0, 0, 1), Vector3(0.1, 0.2, 0.3)}) {
-      so3::DexpFunctor local(omega, nearZeroApprox);
+      sot::DexpFunctor local(omega, nearZeroApprox);
       for (Vector3 v : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1),
                         Vector3(0.4, 0.3, 0.2)}) {
         EXPECT(assert_equal(Vector3(local.dexp() * v),
@@ -254,17 +277,17 @@ TEST(SO3, ApplyDexp) {
   }
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ApplyInvDexp) {
   Matrix aH1, aH2;
   for (bool nearZeroApprox : {true, false}) {
     boost::function<Vector3(const Vector3&, const Vector3&)> f =
         [=](const Vector3& omega, const Vector3& v) {
-          return so3::DexpFunctor(omega, nearZeroApprox).applyInvDexp(v);
+          return sot::DexpFunctor(omega, nearZeroApprox).applyInvDexp(v);
         };
     for (Vector3 omega : {Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0),
                           Vector3(0, 0, 1), Vector3(0.1, 0.2, 0.3)}) {
-      so3::DexpFunctor local(omega, nearZeroApprox);
+      sot::DexpFunctor local(omega, nearZeroApprox);
       Matrix invDexp = local.dexp().inverse();
       for (Vector3 v : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1),
                         Vector3(0.4, 0.3, 0.2)}) {
@@ -278,15 +301,13 @@ TEST(SO3, ApplyInvDexp) {
   }
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, vec) {
-  const Vector9 expected = Eigen::Map<Vector9>(R2.data());
+  const Vector9 expected = Eigen::Map<const Vector9>(R2.matrix().data());
   Matrix actualH;
   const Vector9 actual = R2.vec(actualH);
   CHECK(assert_equal(expected, actual));
-  boost::function<Vector9(const SO3&)> f = [](const SO3& Q) {
-    return Q.vec();
-  };
+  boost::function<Vector9(const SO3&)> f = [](const SO3& Q) { return Q.vec(); };
   const Matrix numericalH = numericalDerivative11(f, R2, 1e-5);
   CHECK(assert_equal(numericalH, actualH));
 }
