@@ -18,7 +18,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/testLie.h>
-#include <gtsam/geometry/SOt.h>
+#include <gtsam/geometry/SO3.h>
 
 using namespace std;
 using namespace gtsam;
@@ -152,7 +152,7 @@ TEST(SO3, ChartDerivatives) {
 }
 
 /* ************************************************************************* */
-TEST(SO3, Expmap) {
+TEST(SO3, ExpmapFunctor) {
   Vector axis = Vector3(0., 1., 0.);  // rotation around Y
   double angle = 3.14 / 4.0;
   Matrix expected(3,3);
@@ -306,11 +306,11 @@ TEST(SO3, ApplyDexp) {
   for (bool nearZeroApprox : {true, false}) {
     boost::function<Vector3(const Vector3&, const Vector3&)> f =
         [=](const Vector3& omega, const Vector3& v) {
-          return sot::DexpFunctor(omega, nearZeroApprox).applyDexp(v);
+          return so3::DexpFunctor(omega, nearZeroApprox).applyDexp(v);
         };
     for (Vector3 omega : {Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0),
                           Vector3(0, 0, 1), Vector3(0.1, 0.2, 0.3)}) {
-      sot::DexpFunctor local(omega, nearZeroApprox);
+      so3::DexpFunctor local(omega, nearZeroApprox);
       for (Vector3 v : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1),
                         Vector3(0.4, 0.3, 0.2)}) {
         EXPECT(assert_equal(Vector3(local.dexp() * v),
@@ -329,11 +329,11 @@ TEST(SO3, ApplyInvDexp) {
   for (bool nearZeroApprox : {true, false}) {
     boost::function<Vector3(const Vector3&, const Vector3&)> f =
         [=](const Vector3& omega, const Vector3& v) {
-          return sot::DexpFunctor(omega, nearZeroApprox).applyInvDexp(v);
+          return so3::DexpFunctor(omega, nearZeroApprox).applyInvDexp(v);
         };
     for (Vector3 omega : {Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0),
                           Vector3(0, 0, 1), Vector3(0.1, 0.2, 0.3)}) {
-      sot::DexpFunctor local(omega, nearZeroApprox);
+      so3::DexpFunctor local(omega, nearZeroApprox);
       Matrix invDexp = local.dexp().inverse();
       for (Vector3 v : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1),
                         Vector3(0.4, 0.3, 0.2)}) {

@@ -16,7 +16,7 @@
  **/
 
 #include <gtsam/geometry/SOn.h>
-#include <gtsam/geometry/SOt.h>
+#include <gtsam/geometry/SO3.h>
 
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Manifold.h>
