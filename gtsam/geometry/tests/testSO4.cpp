@@ -20,7 +20,7 @@
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/SO4.h>
-#include <gtsam/geometry/SOt.h>
+#include <gtsam/geometry/SO3.h>
 
 #include <CppUnitLite/TestHarness.h>
 

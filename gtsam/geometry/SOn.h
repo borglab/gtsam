@@ -272,8 +272,9 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// @}
 
   template <class Archive>
-  friend void serialize(Archive& ar, SO& R, const unsigned int /*version*/);
+  friend void serialize(Archive&, SO&, const unsigned int);
   friend class boost::serialization::access;
+  friend class Rot3;  // for serialize
 };
 
 using SOn = SO<Eigen::Dynamic>;
