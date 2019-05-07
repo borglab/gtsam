@@ -36,18 +36,17 @@ Rot3::Rot3() : rot_(I_3x3) {}
 
 /* ************************************************************************* */
 Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) {
-  rot_.col(0) = col1;
-  rot_.col(1) = col2;
-  rot_.col(2) = col3;
+  Matrix3 R;
+  R << col1, col2, col3;
+  rot_ = SO3(R);
 }
 
 /* ************************************************************************* */
-Rot3::Rot3(double R11, double R12, double R13,
-    double R21, double R22, double R23,
-    double R31, double R32, double R33) {
-    rot_ << R11, R12, R13,
-        R21, R22, R23,
-        R31, R32, R33;
+Rot3::Rot3(double R11, double R12, double R13, double R21, double R22,
+           double R23, double R31, double R32, double R33) {
+  Matrix3 R;
+  R << R11, R12, R13, R21, R22, R23, R31, R32, R33;
+  rot_ = SO3(R);
 }
 
 /* ************************************************************************* */
@@ -107,21 +106,21 @@ Rot3 Rot3::RzRyRx(double x, double y, double z) {
 
 /* ************************************************************************* */
 Rot3 Rot3::operator*(const Rot3& R2) const {
-  return Rot3(Matrix3(rot_*R2.rot_));
+  return Rot3(rot_*R2.rot_);
 }
 
 /* ************************************************************************* */
 // TODO const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
 Matrix3 Rot3::transpose() const {
-  return rot_.transpose();
+  return rot_.matrix().transpose();
 }
 
 /* ************************************************************************* */
 Point3 Rot3::rotate(const Point3& p,
     OptionalJacobian<3,3> H1,  OptionalJacobian<3,3> H2) const {
-  if (H1) *H1 = rot_ * skewSymmetric(-p.x(), -p.y(), -p.z());
-  if (H2) *H2 = rot_;
-  return rot_ * p;
+  if (H1) *H1 = rot_.matrix() * skewSymmetric(-p.x(), -p.y(), -p.z());
+  if (H2) *H2 = rot_.matrix();
+  return rot_.matrix() * p;
 }
 
 /* ************************************************************************* */
@@ -178,21 +177,21 @@ Vector3 Rot3::ChartAtOrigin::Local(const Rot3& R, ChartJacobian H) {
 
 /* ************************************************************************* */
 Matrix3 Rot3::matrix() const {
-  return rot_;
+  return rot_.matrix();
 }
 
 /* ************************************************************************* */
-Point3 Rot3::r1() const { return Point3(rot_.col(0)); }
+Point3 Rot3::r1() const { return Point3(rot_.matrix().col(0)); }
 
 /* ************************************************************************* */
-Point3 Rot3::r2() const { return Point3(rot_.col(1)); }
+Point3 Rot3::r2() const { return Point3(rot_.matrix().col(1)); }
 
 /* ************************************************************************* */
-Point3 Rot3::r3() const { return Point3(rot_.col(2)); }
+Point3 Rot3::r3() const { return Point3(rot_.matrix().col(2)); }
 
 /* ************************************************************************* */
 gtsam::Quaternion Rot3::toQuaternion() const {
-  return gtsam::Quaternion(rot_);
+  return gtsam::Quaternion(rot_.matrix());
 }
 
 /* ************************************************************************* */

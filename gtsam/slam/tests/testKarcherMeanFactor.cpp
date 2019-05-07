@@ -98,7 +98,7 @@ TEST(KarcherMean, FactorSO4) {
       FindKarcherMean<SO4>({result.at<SO4>(1), result.at<SO4>(2)});
   EXPECT(assert_equal(expected, actual));
   EXPECT(assert_equal((Matrix)(Q * Q * Q).matrix(),
-                      result.at<SO4>(1).between(result.at<SO4>(2))));
+                      result.at<SO4>(1).between(result.at<SO4>(2)).matrix()));
 }
 
 /* ************************************************************************* */
