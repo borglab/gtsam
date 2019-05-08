@@ -36,6 +36,7 @@ TEST(SO4, Identity) {
   EXPECT_LONGS_EQUAL(6, SO4::dimension);
   EXPECT_LONGS_EQUAL(6, SO4::Dim());
   EXPECT_LONGS_EQUAL(6, R.dim());
+  EXPECT_LONGS_EQUAL(6, traits<SO4>::GetDimension(R));
 }
 
 //******************************************************************************
