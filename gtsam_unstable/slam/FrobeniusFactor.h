@@ -41,9 +41,8 @@ boost::shared_ptr<noiseModel::Isotropic> ConvertPose3NoiseModel(
  */
 template <class Rot>
 class FrobeniusPrior : public NoiseModelFactor1<Rot> {
-  enum { Dim = Rot::RowsAtCompileTime * Rot::ColsAtCompileTime };
-  using MatrixNN =
-      Eigen::Matrix<double, Rot::RowsAtCompileTime, Rot::ColsAtCompileTime>;
+  enum { Dim = Rot::VectorN2::RowsAtCompileTime };
+  using MatrixNN = typename Rot::MatrixNN;
   Eigen::Matrix<double, Dim, 1> vecM_;  ///< vectorized matrix to approximate
 
  public:
@@ -67,7 +66,7 @@ class FrobeniusPrior : public NoiseModelFactor1<Rot> {
  */
 template <class Rot>
 class FrobeniusFactor : public NoiseModelFactor2<Rot, Rot> {
-  enum { Dim = Rot::RowsAtCompileTime * Rot::ColsAtCompileTime };
+  enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
   /// Constructor
@@ -95,7 +94,7 @@ class FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
   Rot R12_;  ///< measured rotation between R1 and R2
   Eigen::Matrix<double, Rot::dimension, Rot::dimension>
       R2hat_H_R1_;  ///< fixed derivative of R2hat wrpt R1
-  enum { Dim = Rot::RowsAtCompileTime * Rot::ColsAtCompileTime };
+  enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
   /// Constructor
@@ -118,80 +117,15 @@ class FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
 };
 
 /**
- * FrobeniusWormholeFactorTL is a BetweenFactor that moves in SO(p), but will
- * land on the SO(3) sub-manifold of SO(p) at the global minimum. It upgrades
- * the measurement to R^nxn.
- */
-class FrobeniusWormholeFactorTL : public NoiseModelFactor2<SOn, SOn> {
-  Matrix M_;  ///< measured rotation between R1 and R2, upgraded to R^nxn
-
- public:
-  /// Constructor. Note we convert to 16-dimensional noise model.
-  FrobeniusWormholeFactorTL(Key j1, Key j2, const SO3& R12, size_t p = 4,
-                            const SharedNoiseModel& model = nullptr);
-
-  /// Error is Frobenius norm between pi(Q1)*R12 and pi(Q2), where pi extracts
-  /// the 3*3 leftmost block from the SO(p) matrix Q.
-  Vector evaluateError(const SOn& Q1, const SOn& Q2,
-                       boost::optional<Matrix&> H1 = boost::none,
-                       boost::optional<Matrix&> H2 = boost::none) const;
-};
-
-/**
- * FrobeniusWormholeFactorPi is a BetweenFactor that moves in SO(4), but
- * evaluates the Frobenius norm of the rotation error between two elements Q1
- * and Q2 when projected down to *non-orthogonal* matrices. The theory is that
- * the projections will land on the SO(3) sub-manifold of SO(4) at the global
- * minimum.
- */
-class FrobeniusWormholeFactorPi : public NoiseModelFactor2<SO4, SO4> {
-  SO3 R12_;          ///< measured rotation between R1 and R2
-  Matrix99 MR_H_M_;  ///< constant derivative of compose
-
- public:
-  /// Constructor. Note we convert to 9-dimensional noise model.
-  FrobeniusWormholeFactorPi(Key j1, Key j2, const SO3& R12,
-                            const SharedNoiseModel& model = nullptr);
-
-  /// Error is Frobenius norm between pi(Q1)*R12 and pi(Q2), where pi extracts
-  /// the 3*3 leftmost block from the SO(4) matrix Q.
-  Vector evaluateError(const SO4& Q1, const SO4& Q2,
-                       boost::optional<Matrix&> H1 = boost::none,
-                       boost::optional<Matrix&> H2 = boost::none) const;
-};
-
-/**
- * FrobeniusWormholeFactor is a BetweenFactor that moves in SO(4), but
- * evaluates the Frobenius norm of the rotation error between two elements Q1
- * and Q2 when projected down to the St(3,4), the Stiefel manifold of 3
- * orthonormal 4-vectors arranged ina 4x3 matrix. The theory is that the
- * projections will land on the SO(3) sub-manifold of SO(4) at the global
- * minimum.
- */
-class FrobeniusWormholeFactor : public NoiseModelFactor2<SO4, SO4> {
-  Matrix43
-      M_;  ///< measured rotation between R1 and R2, upgraded to 4*3 = E'*R12
-
- public:
-  /// Constructor. Note we convert to a 12-dimensional noise model.
-  FrobeniusWormholeFactor(Key j1, Key j2, const SO3& R12,
-                          const SharedNoiseModel& model = nullptr);
-
-  /// Error is Frobenius norm between pi(Q1)*R12 and pi(Q2), where pi [rojects
-  /// down to the Stiefel manifold
-  Vector evaluateError(const SO4& Q1, const SO4& Q2,
-                       boost::optional<Matrix&> H1 = boost::none,
-                       boost::optional<Matrix&> H2 = boost::none) const;
-};
-
-/**
  * FrobeniusWormholeFactorP is a BetweenFactor that moves in SO(p), but will
  * land on the SO(3) sub-manifold of SO(p) at the global minimum. It projects
  * the SO(p) matrices down to a Stiefel manifold of p*d matrices.
  * TODO(frank): template on D=2 or 3
  */
 class FrobeniusWormholeFactorP : public NoiseModelFactor2<SOn, SOn> {
-  SO3 R12_;  ///< measured rotation between R1 and R2
+  Matrix M_;                   ///< measured rotation between R1 and R2
+  size_t p_, pp_, dimension_;  ///< dimensionality constants
+  Matrix G_;                   ///< matrix of vectorized generators
 
  public:
   /// Constructor. Note we convert to 3*p-dimensional noise model.

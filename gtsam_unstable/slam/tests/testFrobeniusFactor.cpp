@@ -18,7 +18,6 @@
  * @brief  Check evaluateError for various Frobenius norm
  */
 
-#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/testLie.h>
 #include <gtsam/geometry/Rot3.h>
@@ -28,6 +27,8 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam_unstable/slam/FrobeniusFactor.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -45,7 +46,7 @@ SO3 R12 = R1.between(R2);
 /* ************************************************************************* */
 TEST(FrobeniusPriorSO3, evaluateError) {
   using namespace ::so3;
-  auto factor = FrobeniusPrior<SO3>(1, R2);
+  auto factor = FrobeniusPrior<SO3>(1, R2.matrix());
   Vector actual = factor.evaluateError(R1);
   Vector expected = R1.vec() - R2.vec();
   EXPECT(assert_equal(expected, actual, 1e-9));
@@ -63,7 +64,7 @@ TEST(FrobeniusPriorSO3, ClosestTo) {
       0.4155925, -0.64214347, -0.64324489,  //
       -0.44948549, 0.47046326, -0.75917576;
 
-  Matrix expected = SO3::ClosestTo(M).matrix();
+  SO3 expected = SO3::ClosestTo(M);
 
   // manifold optimization gets same result as SVD solution in ClosestTo
   NonlinearFactorGraph graph;
@@ -86,17 +87,17 @@ TEST(FrobeniusPriorSO3, ChordalL2mean) {
   // We will test by computing mean of R1=exp(v1) R1^T=exp(-v1):
   using namespace ::so3;
   SO3 expected;  // identity
-  Matrix3 M = R1 + R1.transpose();
+  Matrix3 M = R1.matrix() + R1.matrix().transpose();
   EXPECT(assert_equal(expected, SO3::ClosestTo(M), 1e-6));
-  EXPECT(assert_equal(expected, SO3::ChordalMean({R1, R1.transpose()}), 1e-6));
+  EXPECT(assert_equal(expected, SO3::ChordalMean({R1, R1.inverse()}), 1e-6));
 
   // manifold optimization gets same result as ChordalMean
   NonlinearFactorGraph graph;
   graph.emplace_shared<FrobeniusPrior<SO3> >(1, R1.matrix());
-  graph.emplace_shared<FrobeniusPrior<SO3> >(1, R1.transpose());
+  graph.emplace_shared<FrobeniusPrior<SO3> >(1, R1.matrix().transpose());
 
   Values initial;
-  initial.insert<SO3>(1, R1.transpose());
+  initial.insert<SO3>(1, R1.inverse());
   auto result = GaussNewtonOptimizer(graph, initial).optimize();
   EXPECT_DOUBLES_EQUAL(0.0, graph.error(result), 0.1);  // Why so loose?
   EXPECT(assert_equal(expected, result.at<SO3>(1), 1e-5));
@@ -157,11 +158,11 @@ TEST(FrobeniusFactorSO4, evaluateError) {
 TEST(FrobeniusBetweenFactorSO4, evaluateError) {
   using namespace ::so4;
   Matrix4 M{I_4x4};
-  M.topLeftCorner<3, 3>() = ::so3::R12;
+  M.topLeftCorner<3, 3>() = ::so3::R12.matrix();
   auto factor = FrobeniusBetweenFactor<SO4>(1, 2, Q1.between(Q2));
   Matrix H1, H2;
   Vector actual = factor.evaluateError(Q1, Q2, H1, H2);
-  Vector expected = SO4::Vector16::Zero();
+  Vector expected = SO4::VectorN2::Zero();
   EXPECT(assert_equal(expected, actual, 1e-9));
 
   Values values;
@@ -170,103 +171,26 @@ TEST(FrobeniusBetweenFactorSO4, evaluateError) {
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
-/* ************************************************************************* */
-TEST(FrobeniusWormholeFactorTL, evaluateError) {
-  auto model = noiseModel::Isotropic::Sigma(6, 1.2);  // dimension = 6 not 16
-  for (const size_t p : {3, 4, 5}) {
-    SOn Q1(p), Q2(p);
-    auto factor = FrobeniusWormholeFactorTL(1, 2, ::so3::R12, p, model);
-    Matrix H1, H2;
-    factor.evaluateError(Q1, Q2, H1, H2);
-
-    // Test derivatives
-    Values values;
-    values.insert(1, Q1);
-    values.insert(2, Q2);
-    EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
-  }
-}
 //******************************************************************************
 namespace submanifold {
 SO4 id;
-Vector6 v1 = (Vector(6) << 0.1, 0, 0, 0, 0, 0).finished();
-SO3 R1 = SO3::Expmap(v1.head<3>());
+Vector6 v1 = (Vector(6) << 0, 0, 0, 0.1, 0, 0).finished();
+SO3 R1 = SO3::Expmap(v1.tail<3>());
 SO4 Q1 = SO4::Expmap(v1);
-Vector6 v2 = (Vector(6) << 0.01, 0.02, 0.03, 0, 0, 0).finished();
-SO3 R2 = SO3::Expmap(v2.head<3>());
+Vector6 v2 = (Vector(6) << 0, 0, 0, 0.01, 0.02, 0.03).finished();
+SO3 R2 = SO3::Expmap(v2.tail<3>());
 SO4 Q2 = SO4::Expmap(v2);
 SO3 R12 = R1.between(R2);
 }  // namespace submanifold
 
 /* ************************************************************************* */
-TEST(FrobeniusWormholeFactorTL, equivalenceToSO3) {
-  using namespace ::submanifold;
-  auto noisyR12 = R12.retract(Vector3(0.1, 0.2, -0.1));
-  auto model = noiseModel::Isotropic::Sigma(6, 1.2);  // wrong dimension
-  auto factor3 = FrobeniusBetweenFactor<SO3>(1, 2, noisyR12, model);
-  const size_t p = 4;  // test for SO(4)
-  auto factor4 = FrobeniusWormholeFactorTL(1, 2, noisyR12, p, model);
-  const Eigen::Map<Matrix3> E3(factor3.evaluateError(R1, R2).data());
-  const Eigen::Map<Matrix4> E4(
-      factor4.evaluateError(SOn(Q1.matrix()), SOn(Q2.matrix())).data());
-  EXPECT(assert_equal((Matrix)E4.topLeftCorner<3, 3>(), E3, 1e-9));
-}
-
-/* ************************************************************************* */
-TEST(FrobeniusWormholeFactorPi, evaluateError) {
-  using namespace ::so4;
-  auto model = noiseModel::Isotropic::Sigma(6, 1.2);  // wrong dimension
-  auto factor = FrobeniusWormholeFactorPi(1, 2, ::so3::R12, model);
-  factor.evaluateError(Q1, Q2);
-
-  // Check Isotropic model dimension has been corrected
-  EXPECT_LONGS_EQUAL(9, factor.noiseModel()->dim());
-
-  // Test derivatives
-  Values values;
-  values.insert(1, Q1);
-  values.insert(2, Q2);
-  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
-}
-
-/* ************************************************************************* */
-TEST(FrobeniusWormholeFactor, evaluateError) {
-  using namespace ::so4;
-  auto model = noiseModel::Isotropic::Sigma(6, 1.2);  // wrong dimension
-  auto factor = FrobeniusWormholeFactor(1, 2, ::so3::R12, model);
-  factor.evaluateError(Q1, Q2);
-
-  // Check Isotropic model dimension has been corrected
-  EXPECT_LONGS_EQUAL(12, factor.noiseModel()->dim());
-
-  // Test derivatives
-  Values values;
-  values.insert(1, Q1);
-  values.insert(2, Q2);
-  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
-}
-
-/* ************************************************************************* */
-TEST(FrobeniusWormholeFactor, equivalenceToSO3) {
-  using namespace ::submanifold;
-  auto R12 = ::so3::R12.retract(Vector3(0.1, 0.2, -0.1));
-  auto model = noiseModel::Isotropic::Sigma(6, 1.2);  // wrong dimension
-  auto factor3 = FrobeniusBetweenFactor<SO3>(1, 2, R12, model);
-  auto factor4 = FrobeniusWormholeFactor(1, 2, R12, model);
-  const Eigen::Map<Matrix3> E3(factor3.evaluateError(R1, R2).data());
-  const Eigen::Map<Matrix43> E4(factor4.evaluateError(Q1, Q2).data());
-  EXPECT(assert_equal((Matrix)E4.topLeftCorner<3, 3>(), E3, 1e-9));
-  EXPECT(assert_equal((Matrix)E4.row(3), Matrix13::Zero(), 1e-9));
-}
-
-/* ************************************************************************* */
 TEST(FrobeniusWormholeFactorP, evaluateError) {
   auto model = noiseModel::Isotropic::Sigma(6, 1.2);  // dimension = 6 not 16
-  for (const size_t p : {3, 4, 5}) {
-    Matrix M(p, p);
-    M.topLeftCorner(3, 3) = Rot3::Ypr(1, 2, 3).matrix();
+  for (const size_t p : {5, 4, 3}) {
+    Matrix M = Matrix::Identity(p, p);
+    M.topLeftCorner(3, 3) = submanifold::R1.matrix();
     SOn Q1(M);
-    M.topLeftCorner(3, 3) = Rot3::Ypr(4, 5, 6).matrix();
+    M.topLeftCorner(3, 3) = submanifold::R2.matrix();
     SOn Q2(M);
     auto factor = FrobeniusWormholeFactorP(1, 2, ::so3::R12, p, model);
     Matrix H1, H2;

@@ -150,7 +150,7 @@ Values ShonanAveraging::projectFrom(size_t p, const Values& values) const {
   for (size_t j = 0; j < poses_.size(); j++) {
     const SOn Q = values.at<SOn>(j);
     assert(Q.rows() == p);
-    const SO3 R = SO3::ClosestTo(Q.topLeftCorner(3, 3));
+    const SO3 R = SO3::ClosestTo(Q.matrix().topLeftCorner(3, 3));
     SO3_values.insert(j, R);
   }
   return SO3_values;
