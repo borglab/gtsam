@@ -30,6 +30,7 @@ TEST(SO3, Identity) {
   EXPECT_LONGS_EQUAL(3, SO3::dimension);
   EXPECT_LONGS_EQUAL(3, SO3::Dim());
   EXPECT_LONGS_EQUAL(3, R.dim());
+  EXPECT_LONGS_EQUAL(3, traits<SO3>::GetDimension(R));
 }
 
 //******************************************************************************
