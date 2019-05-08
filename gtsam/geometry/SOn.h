@@ -151,7 +151,10 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// @{
 
   /// Multiplication
-  SO operator*(const SO& other) const { return SO(matrix_ * other.matrix_); }
+  SO operator*(const SO& other) const {
+    assert(dim() == other.dim());
+    return SO(matrix_ * other.matrix_);
+  }
 
   /// SO<N> identity for N >= 2
   template <int N_ = N, typename = IsFixed<N_>>

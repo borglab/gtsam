@@ -15,8 +15,9 @@
  * @author Frank Dellaert
  **/
 
-#include <gtsam/geometry/SOn.h>
 #include <gtsam/geometry/SO3.h>
+#include <gtsam/geometry/SO4.h>
+#include <gtsam/geometry/SOn.h>
 
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Manifold.h>
@@ -45,6 +46,7 @@ TEST(SOn, SO5) {
   EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::dimension);
   EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::Dim());
   EXPECT_LONGS_EQUAL(10, R.dim());
+  EXPECT_LONGS_EQUAL(10, traits<SOn>::GetDimension(R));
 }
 
 //******************************************************************************
@@ -55,6 +57,14 @@ TEST(SOn, Concept) {
 }
 
 //******************************************************************************
+TEST(SOn, CopyConstructor) {
+  const auto R = SOn(5);
+  const auto B(R);
+  EXPECT_LONGS_EQUAL(5, B.rows());
+  EXPECT_LONGS_EQUAL(10, B.dim());
+}
+
+//******************************************************************************
 TEST(SOn, Values) {
   const auto R = SOn(5);
   Values values;
@@ -62,6 +72,7 @@ TEST(SOn, Values) {
   values.insert(key, R);
   const auto B = values.at<SOn>(key);
   EXPECT_LONGS_EQUAL(5, B.rows());
+  EXPECT_LONGS_EQUAL(10, B.dim());
 }
 
 //******************************************************************************
@@ -104,9 +115,25 @@ TEST(SOn, HatVee) {
 
 //******************************************************************************
 TEST(SOn, RetractLocal) {
+  Vector6 v1 = (Vector(6) << 0, 0, 0, 1, 0, 0).finished() / 10000;
+  Vector6 v2 = (Vector(6) << 0, 0, 0, 1, 2, 3).finished() / 10000;
+  Vector6 v3 = (Vector(6) << 3, 2, 1, 1, 2, 3).finished() / 10000;
+
+  // Check that Cayley yields the same as Expmap for small values
+  SOn id(4);
+  EXPECT(assert_equal(id.retract(v1), SOn(SO4::Expmap(v1))));
+  EXPECT(assert_equal(id.retract(v2), SOn(SO4::Expmap(v2))));
+  EXPECT(assert_equal(id.retract(v3), SOn(SO4::Expmap(v3))));
+
+  // Same for SO3:
+  SOn I3(3);
+  EXPECT(
+      assert_equal(I3.retract(v1.tail<3>()), SOn(SO3::Expmap(v1.tail<3>()))));
+  EXPECT(
+      assert_equal(I3.retract(v2.tail<3>()), SOn(SO3::Expmap(v2.tail<3>()))));
+
   // If we do expmap in SO(3) subgroup, topleft should be equal to R1.
-  Vector6 v1 = (Vector(6) << 0, 0, 0, 0.01, 0, 0).finished();
-  Matrix R1 = SO3::Retract(v1.tail<3>()).matrix();
+  Matrix R1 = SO3().retract(v1.tail<3>()).matrix();
   SOn Q1 = SOn::Retract(v1);
   CHECK(assert_equal(R1, Q1.matrix().block(0, 0, 3, 3), 1e-7));
   CHECK(assert_equal(v1, SOn::ChartAtOrigin::Local(Q1), 1e-7));
