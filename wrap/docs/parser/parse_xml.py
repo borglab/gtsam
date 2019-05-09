@@ -3,22 +3,31 @@ import textwrap
 
 import os.path as path
 import xml.etree.ElementTree as ET
-
-import docs.documentation_template as template
+import docs.doc_template as template
 
 DOXYGEN_CONF = 'conf_doxygen.py'
 
 
-def generate_xml(path_to_file):
+def generate_xml(input_path, output_path, quiet=False):
     '''Parse the file for documentation and output it as in an xml format'''
-    conf_path = path.join(path.relpath(path.split(__file__)[0]), DOXYGEN_CONF)
-    file_path = path.relpath(path_to_file)
+    if not quiet:
+        print('--------------Generating XML--------------')
 
-    command = \
-        '( cat {conf_path} ; echo "INPUT={file_path}" ) | doxygen -'.format(
-            conf_path=conf_path, file_path=file_path)
+    input_path = path.relpath(input_path, os.getcwd())
+    conf_path = path.relpath(path.join(path.dirname(__file__), DOXYGEN_CONF))
+    output_path = path.relpath(output_path)
 
-    print('--------------Generating XML--------------')
+    if not path.isdir(output_path):
+        os.mkdir(output_path)
+
+    command = textwrap.dedent(
+        '''( cat {conf_path} ; echo "INPUT={input_path}" ; echo "OUTPUT_DIRECTORY={output_path}" ; echo "EXTRACT_ALL={quiet}" ) | doxygen -'''
+    ).format(
+        conf_path=conf_path,
+        input_path=input_path,
+        output_path=output_path,
+        quiet='YES' if quiet else 'NO'
+    )
 
     os.system(command)
 
