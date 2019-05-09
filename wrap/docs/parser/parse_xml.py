@@ -1,9 +1,8 @@
 import os
-import textwrap
 
+import docs.doc_template as template
 import os.path as path
 import xml.etree.ElementTree as ET
-import docs.doc_template as template
 
 DOXYGEN_CONF = 'conf_doxygen.py'
 
@@ -20,14 +19,11 @@ def generate_xml(input_path, output_path, quiet=False):
     if not path.isdir(output_path):
         os.mkdir(output_path)
 
-    command = textwrap.dedent(
-        '''( cat {conf_path} ; echo "INPUT={input_path}" ; echo "OUTPUT_DIRECTORY={output_path}" ; echo "EXTRACT_ALL={quiet}" ) | doxygen -'''
-    ).format(
+    command = '( cat {conf_path} ; echo "INPUT={input_path}" ; echo "OUTPUT_DIRECTORY={output_path}" ; echo "EXTRACT_ALL={quiet}" ) | doxygen -'.format(
         conf_path=conf_path,
         input_path=input_path,
         output_path=output_path,
-        quiet='YES' if quiet else 'NO'
-    )
+        quiet='YES' if quiet else 'NO')
 
     os.system(command)
 
