@@ -23,4 +23,5 @@ cython/gtsam_wrapper.pxd
 CMakeLists.txt.user*
 /wrap/tests/actual-matlab/
 /wrap/tests/actual-python/
-/wrap/docs/output/
+/wrap/tests/actual-xml-generation/
+/wrap/docs/parser/output/
