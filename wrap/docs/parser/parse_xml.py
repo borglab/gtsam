@@ -21,7 +21,20 @@ def parse(input_path, output_path, quiet=False):
     '''
     generate_xml(input_path, output_path, quiet)
 
+    class_docs = {}
+    free_docs = {}
+
     # TODO: For each xml file -> categorize it -> move to template for its type
+    for root, dirs, files in os.walk(output_path):
+        for f in files:
+            if f.endswith('.xml'):
+                file_path = path.join(root, f)
+                doc = init_doc(file_path)
+
+                if isinstance(doc, template.ClassDoc):
+                    class_docs[file_path] = doc
+
+    return template.Docs(class_docs, free_docs)
 
 
 def generate_xml(input_path, output_path, quiet=False):
@@ -40,7 +53,8 @@ def generate_xml(input_path, output_path, quiet=False):
         conf_path=conf_path,
         input_path=input_path,
         output_path=output_path,
-        quiet='YES' if quiet else 'NO')
+        quiet='YES' if quiet else 'NO'
+    )
 
     os.system(command)
 
@@ -49,9 +63,37 @@ def categorize_xml(tree):
     '''Determine the type of the object the xml tree represents.
 
     Arguments:
-    tree -- an xml tree
+    tree -- an xml tree or path to xml string
     '''
-    return find_first_element_with_tag(tree, 'compounddef').get('kind')
+    if isinstance(tree, str):
+        tree = ET.parse(tree)
+
+    first_compound_def = find_first_element_with_tag(tree, 'compounddef')
+
+    if first_compound_def is None:
+        return first_compound_def
+
+    return first_compound_def.get('kind')
+
+
+def init_doc(file_path):
+    '''Initialize documentation given its type.
+
+    Categorize the xml tree at file_path and initiliaze the corresponding doc
+    type with the xml tree and other relevant information.
+
+    Arguments:
+    file_path -- path to the xml tree
+
+    Returns:
+        An initialized Doc
+    '''
+    tree = ET.parse(file_path)
+
+    category = categorize_xml(tree)
+
+    if category == 'class':
+        return template.ClassDoc(tree)
 
 
 def find_first_element_with_tag(tree, tag):
