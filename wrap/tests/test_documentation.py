@@ -24,6 +24,12 @@ tree_right = ET.SubElement(tree_root, 1)
 tree_leaf = ET.SubElement(tree_right, None)
 tree_recursive = ET.SubElement(tree_left, tree_left)
 
+a = ET.Element('a')
+b = ET.SubElement(a, 'b')
+c = ET.SubElement(b, 'c')
+d = ET.SubElement(b, 'd')
+d2 = ET.SubElement(d, 'd')
+
 
 class TestDocument(unittest.TestCase):
     DIR_NAME = path.dirname(__file__)
@@ -56,12 +62,6 @@ class TestDocument(unittest.TestCase):
 
     def test_find_first_element_with_tag(self):
         '''Test parse_xml.find_first_element_with_tag'''
-        a = ET.Element('a')
-        b = ET.SubElement(a, 'b')
-        c = ET.SubElement(b, 'c')
-        d = ET.SubElement(b, 'd')
-        d2 = ET.SubElement(d, 'd')
-
         tree = ET.ElementTree(a)
 
         self.assertEqual(parser.find_first_element_with_tag(tree, 'a'), a)
@@ -90,24 +90,35 @@ class TestDocument(unittest.TestCase):
                 path_to_xml, files[i] + '.xml'))), kinds[i])
 
     def test_parse(self):
-        '''
         docs = parser.parse(
             self.DOC_DIR_PATH, self.OUTPUT_XML_DIR_PATH, quiet=True)
 
-        for class_name in docs.get_class_docs_list():
-            actual_tree = docs.get_class_docs(class_name).get_tree()
-            expected_tree = ET.parse(self.EXPECTED_XML_DIR_PATH).getroot()
+        for class_name in docs.get_class_docs_keys_list():
+            actual_tree_root = docs.get_class_docs(
+                class_name).get_tree().getroot()
+            expected_tree_root = ET.parse(class_name).getroot()
 
-            self.assertEqual(actual_tree, expected_tree)
-        '''
-        pass
+            self.assertEqual(
+                ET.tostring(actual_tree_root), ET.tostring(expected_tree_root))
+
+    def test_init_doc(self):
+        expected_xml_path = path.join(self.EXPECTED_XML_DIR_PATH, 'xml')
+
+        path_to_class_doc = path.join(
+            expected_xml_path, 'classgtsam_1_1JacobianFactorQ.xml')
+        # TODO: Find free doc and test it
+
+        expected_class_doc = template.ClassDoc(ET.parse(path_to_class_doc))
+
+        self.assertEqual(
+            parser.init_doc(path_to_class_doc), expected_class_doc)
 
     def test_documentation_python(self):
         '''Check generation of python documentation'''
         for root, dirs, files in os.walk(self.DOC_DIR_PATH):
             for f in files:
                 if f.endswith('.h'):
-                    print(f)
+                    pass
 
 
 class TestDocTemplate(unittest.TestCase):
@@ -156,6 +167,19 @@ class TestDocTemplate(unittest.TestCase):
         self.assertIs(self.class_doc_leaf.get_tree(), tree_leaf)
         self.assertIs(self.class_doc_recursive.get_tree(), tree_recursive)
 
+    def test_class_doc_eq(self):
+        '''Test ClassDoc.__eq__'''
+        doc1 = template.ClassDoc(ET.ElementTree(a))
+        doc2 = template.ClassDoc(ET.ElementTree(d))
+        doc3 = template.ClassDoc(ET.ElementTree(d2))
+
+        self.assertEqual(doc1, doc1)
+        self.assertEqual(doc2, doc2)
+        self.assertNotEqual(doc2, doc3)
+        self.assertEqual(None, None)
+        self.assertNotEqual(doc1, doc2)
+        self.assertNotEqual(doc1, None)
+
     # FreeDoc
     def test_free_doc(self):
         '''Test the constructor in FreeDoc'''
@@ -172,6 +196,19 @@ class TestDocTemplate(unittest.TestCase):
         self.assertIs(self.free_doc_right.get_tree(), tree_right)
         self.assertIs(self.free_doc_leaf.get_tree(), tree_leaf)
         self.assertIs(self.free_doc_recursive.get_tree(), tree_recursive)        
+
+    def test_free_doc_eq(self):
+        '''Test FreeDoc.__eq__'''
+        doc1 = template.FreeDoc(ET.ElementTree(a))
+        doc2 = template.FreeDoc(ET.ElementTree(d))
+        doc3 = template.FreeDoc(ET.ElementTree(d2))
+
+        self.assertEqual(doc1, doc1)
+        self.assertEqual(doc2, doc2)
+        self.assertNotEqual(doc2, doc3)
+        self.assertEqual(None, None)
+        self.assertNotEqual(doc1, doc2)
+        self.assertNotEqual(doc1, None)
 
     # Docs
     def test_docs(self):
