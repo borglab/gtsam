@@ -19,7 +19,7 @@ class Docs():
         self.class_docs = class_docs
         self.free_docs = free_docs
 
-    def get_class_doc(self, class_name):
+    def get_class_docs(self, class_name):
         '''Get the documentation for the class.
 
         Arguments:
@@ -31,7 +31,7 @@ class Docs():
         '''
         return self.class_docs.get(class_name)
 
-    def get_free_doc(self, free_func_name):
+    def get_free_docs(self, free_func_name):
         '''Get the documentation for a free function.
 
         Arguments:
@@ -42,3 +42,15 @@ class Docs():
         does not exist.
         '''
         return self.free_docs.get(free_func_name)
+
+    def get_class_docs_keys_list(self):
+        return list(self.class_docs)
+
+    def get_free_docs_keys_list(self):
+        return list(self.free_docs)
+
+    def get_class_docs_values_list(self):
+        return list(self.class_docs.values())
+
+    def get_free_docs_values_list(self):
+        return list(self.free_docs.values())
