@@ -7,6 +7,23 @@ import xml.etree.ElementTree as ET
 DOXYGEN_CONF = 'conf_doxygen.py'
 
 
+def parse(input_path, output_path, quiet=False):
+    '''Parse the files for documentation and store it in templates.
+
+    Arguments:
+    input_path -- path to the input folder or file
+    output_path -- path to the output folder
+    quiet -- turn on/off the messages that are generated to standard output by
+             Doxygen
+
+    Returns:
+        A Docs template storing all the documentation in the input.
+    '''
+    generate_xml(input_path, output_path, quiet)
+
+    # TODO: For each xml file -> categorize it -> move to template for its type
+
+
 def generate_xml(input_path, output_path, quiet=False):
     '''Parse the file for documentation and output it as in an xml format'''
     if not quiet:
@@ -28,10 +45,20 @@ def generate_xml(input_path, output_path, quiet=False):
     os.system(command)
 
 
-def parse():
-    memberdefs = find_all_elements_with_name('memberdef')
+def categorize_xml(tree):
+    '''Determine the type of the object the xml tree represents.
 
-    instantiate_methods(memberdefs)
+    Arguments:
+    tree -- an xml tree
+    '''
+    return find_first_element_with_tag(tree, 'compounddef').get('kind')
+
+
+def find_first_element_with_tag(tree, tag):
+    if tree.getroot().tag == tag:
+        return tree.getroot()
+
+    return tree.find('.//{}'.format(tag))
 
 
 def find_all_elements_with_name(name):
@@ -53,47 +80,3 @@ def find_method_element_text(method, name):
         out += e.text
 
     return out
-
-
-def instantiate_params(param_list):
-    return list(map(
-        lambda param:
-            template.param(name=param.findtext('declname'),
-                           type=param.findtext('type'),
-                           default_value=param.findtext('defval')),
-        param_list))
-
-
-def instantiate_methods(methods):
-    for method in methods:
-        method_doc = template.method(
-            return_type=method.findtext('type'),
-            definition=method.findtext('definition'),
-            argsstring=method.findtext('argsstring'),
-            name=method.findtext('name'),
-            reimplements=method.findtext('reimplements'),
-            params=instantiate_params(method.findall('param')),
-            brief_description=find_method_element_text(
-                method, 'briefdescription'),
-            detailed_description=find_method_element_text(
-                method, 'detaileddescription'),
-            inbody_description=find_method_element_text(
-                method, 'inbodydescription')
-        )
-
-        if len(method_doc.params) != 0:
-            param_example = '{} : {}\n'.format(
-                method_doc.params[0].name, method_doc.params[0].type)
-        else:
-            param_example = ''
-
-        print('Comment')
-        print(textwrap.dedent('''\
-            """{}\n
-            {}\n
-            Parameters
-            ----------
-            {}
-            """
-        ''').format(method_doc.brief_description.lstrip(),
-                    method_doc.detailed_description, param_example))
