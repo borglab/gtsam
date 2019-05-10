@@ -1,9 +1,20 @@
+import xml.etree.ElementTree as ET
+
+
+# TODO: Make Doc abtract class
 class ClassDoc():
     def __init__(self, tree):
         self.tree = tree
 
     def get_tree(self):
         return self.tree
+
+    def __eq__(self, other):
+        if other is None or other.get_tree() is None:
+            return None
+
+        return ET.tostring(self.tree.getroot()) == \
+            ET.tostring(other.get_tree().getroot())
 
 
 class FreeDoc():
@@ -12,6 +23,13 @@ class FreeDoc():
 
     def get_tree(self):
         return self.tree
+
+    def __eq__(self, other):
+        if other is None or other.get_tree() is None:
+            return None
+
+        return ET.tostring(
+            self.tree.getroot()) == ET.tostring(other.tree.getroot())
 
 
 class Docs():
