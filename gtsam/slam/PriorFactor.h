@@ -53,7 +53,7 @@ namespace gtsam {
     virtual ~PriorFactor() {}
 
     /** Constructor */
-    PriorFactor(Key key, const VALUE& prior, const SharedNoiseModel& model) :
+    PriorFactor(Key key, const VALUE& prior, const SharedNoiseModel& model = nullptr) :
       Base(model, key), prior_(prior) {
     }
 

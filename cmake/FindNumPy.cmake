@@ -40,9 +40,17 @@
 
 # Finding NumPy involves calling the Python interpreter
 if(NumPy_FIND_REQUIRED)
+  if(GTSAM_PYTHON_VERSION STREQUAL "Default")
     find_package(PythonInterp REQUIRED)
+  else()
+      find_package(PythonInterp ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
+  endif()
 else()
+  if(GTSAM_PYTHON_VERSION STREQUAL "Default")
     find_package(PythonInterp)
+  else()
+    find_package(PythonInterp ${GTSAM_PYTHON_VERSION} EXACT)
+  endif()
 endif()
 
 if(NOT PYTHONINTERP_FOUND)

@@ -3,7 +3,22 @@
 # in the current environment are different from the cached!
 unset(PYTHON_EXECUTABLE CACHE)
 unset(CYTHON_EXECUTABLE CACHE)
+unset(PYTHON_INCLUDE_DIR CACHE)
+unset(PYTHON_MAJOR_VERSION CACHE)
+
+if(GTSAM_PYTHON_VERSION STREQUAL "Default")
+  find_package(PythonInterp REQUIRED)
+  find_package(PythonLibs REQUIRED)
+else()
+  find_package(PythonInterp ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
+  find_package(PythonLibs ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
+endif()
 find_package(Cython 0.25.2 REQUIRED)
+
+execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
+    "from __future__ import print_function;import sys;print(sys.version[0], end='')"
+    OUTPUT_VARIABLE PYTHON_MAJOR_VERSION
+)
 
 # User-friendly Cython wrapping and installing function.
 # Builds a Cython module from the provided interface_header.
@@ -29,11 +44,11 @@ endfunction()
 
 function(set_up_required_cython_packages)
   # Set up building of cython module
-  find_package(PythonLibs 2.7 REQUIRED)
   include_directories(${PYTHON_INCLUDE_DIRS})
   find_package(NumPy REQUIRED)
   include_directories(${NUMPY_INCLUDE_DIRS})
 endfunction()
+
 
 # Convert pyx to cpp by executing cython
 # This is the first step to compile cython from the command line
@@ -52,7 +67,7 @@ function(pyx_to_cpp target pyx_file generated_cpp include_dirs)
   add_custom_command(
     OUTPUT ${generated_cpp}
     COMMAND
-      ${CYTHON_EXECUTABLE} -X boundscheck=False -v --fast-fail --cplus ${includes_for_cython} ${pyx_file} -o ${generated_cpp}
+    ${CYTHON_EXECUTABLE} -X boundscheck=False -v --fast-fail --cplus -${PYTHON_MAJOR_VERSION} ${includes_for_cython} ${pyx_file} -o ${generated_cpp}
     VERBATIM)
   add_custom_target(${target} ALL DEPENDS ${generated_cpp})
 endfunction()

@@ -2,9 +2,10 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import patches
 
 
-def plot_pose2_on_axes(axes, pose, axis_length=0.1):
+def plot_pose2_on_axes(axes, pose, axis_length=0.1, covariance=None):
     """Plot a 2D pose on given axis 'axes' with given 'axis_length'."""
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
@@ -20,13 +21,26 @@ def plot_pose2_on_axes(axes, pose, axis_length=0.1):
     line = np.append(origin[np.newaxis], y_axis[np.newaxis], axis=0)
     axes.plot(line[:, 0], line[:, 1], 'g-')
 
+    if covariance is not None:
+        pPp = covariance[0:2, 0:2]
+        gPp = np.matmul(np.matmul(gRp, pPp), gRp.T)
 
-def plot_pose2(fignum, pose, axis_length=0.1):
+        w, v = np.linalg.eig(gPp)
+
+        # k = 2.296
+        k = 5.0
+
+        angle = np.arctan2(v[1, 0], v[0, 0])
+        e1 = patches.Ellipse(origin, np.sqrt(w[0]*k), np.sqrt(w[1]*k),
+                             np.rad2deg(angle), fill=False)
+        axes.add_patch(e1)
+
+def plot_pose2(fignum, pose, axis_length=0.1, covariance=None):
     """Plot a 2D pose on given figure with given 'axis_length'."""
     # get figure object
     fig = plt.figure(fignum)
     axes = fig.gca()
-    plot_pose2_on_axes(axes, pose, axis_length)
+    plot_pose2_on_axes(axes, pose, axis_length, covariance)
 
 
 def plot_point3_on_axes(axes, point, linespec):

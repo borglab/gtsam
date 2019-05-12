@@ -243,7 +243,6 @@ TEST(ExpressionFactor, Shallow) {
 
   // traceExecution of shallow tree
   typedef internal::UnaryExpression<Point2, Point3> Unary;
-  typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
   size_t size = expression.traceSize();
   internal::ExecutionTraceStorage traceStorage[size];
   internal::ExecutionTrace<Point2> trace;

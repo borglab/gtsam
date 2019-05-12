@@ -29,10 +29,15 @@
 
 # Use the Cython executable that lives next to the Python executable
 # if it is a local installation.
-find_package( PythonInterp )
+if(GTSAM_PYTHON_VERSION STREQUAL "Default")
+  find_package(PythonInterp)
+else()
+  find_package(PythonInterp ${GTSAM_PYTHON_VERSION} EXACT)
+endif()
+
 if ( PYTHONINTERP_FOUND )
   execute_process( COMMAND "${PYTHON_EXECUTABLE}" "-c"
-      "import Cython; print Cython.__path__"
+      "import Cython; print(Cython.__path__[0])"
       RESULT_VARIABLE RESULT
       OUTPUT_VARIABLE CYTHON_PATH
       OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -51,7 +56,7 @@ endif ()
 # RESULT=0 means ok
 if ( NOT RESULT )
   execute_process( COMMAND "${PYTHON_EXECUTABLE}" "-c"
-      "import Cython; print Cython.__version__"
+      "import Cython; print(Cython.__version__)"
       RESULT_VARIABLE RESULT
       OUTPUT_VARIABLE CYTHON_VAR_OUTPUT
       ERROR_VARIABLE CYTHON_VAR_OUTPUT

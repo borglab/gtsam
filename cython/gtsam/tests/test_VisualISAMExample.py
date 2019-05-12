@@ -1,10 +1,25 @@
+"""
+GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+visual_isam unit tests.
+Author: Frank Dellaert & Duy Nguyen Ta (Python)
+"""
 import unittest
+
 import numpy as np
-from gtsam import symbol
+
+import gtsam
 import gtsam.utils.visual_data_generator as generator
 import gtsam.utils.visual_isam as visual_isam
+from gtsam import symbol
+from gtsam.utils.test_case import GtsamTestCase
 
-class TestVisualISAMExample(unittest.TestCase):
+
+class TestVisualISAMExample(GtsamTestCase):
 
     def test_VisualISAMExample(self):
         # Data Options
@@ -32,11 +47,11 @@ class TestVisualISAMExample(unittest.TestCase):
 
         for i in range(len(truth.cameras)):
             pose_i = result.atPose3(symbol(ord('x'), i))
-            self.assertTrue(pose_i.equals(truth.cameras[i].pose(), 1e-5))
+            self.gtsamAssertEquals(pose_i, truth.cameras[i].pose(), 1e-5)
 
         for j in range(len(truth.points)):
             point_j = result.atPoint3(symbol(ord('l'), j))
-            self.assertTrue(point_j.equals(truth.points[j], 1e-5))
+            self.gtsamAssertEquals(point_j, truth.points[j], 1e-5)
 
 if __name__ == "__main__":
     unittest.main()

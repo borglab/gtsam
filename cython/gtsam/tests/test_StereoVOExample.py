@@ -1,10 +1,23 @@
+"""
+GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+Stereo VO unit tests.
+Author: Frank Dellaert & Duy Nguyen Ta (Python)
+"""
 import unittest
-import gtsam
-from gtsam import symbol
+
 import numpy as np
 
+import gtsam
+from gtsam import symbol
+from gtsam.utils.test_case import GtsamTestCase
 
-class TestStereoVOExample(unittest.TestCase):
+
+class TestStereoVOExample(GtsamTestCase):
 
     def test_StereoVOExample(self):
         ## Assumptions
@@ -60,10 +73,10 @@ class TestStereoVOExample(unittest.TestCase):
 
         ## check equality for the first pose and point
         pose_x1 = result.atPose3(x1)
-        self.assertTrue(pose_x1.equals(first_pose,1e-4))
+        self.gtsamAssertEquals(pose_x1, first_pose,1e-4)
 
         point_l1 = result.atPoint3(l1)
-        self.assertTrue(point_l1.equals(expected_l1,1e-4))
+        self.gtsamAssertEquals(point_l1, expected_l1,1e-4)
 
 if __name__ == "__main__":
     unittest.main()

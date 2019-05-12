@@ -44,8 +44,7 @@ Cal3_S2::Cal3_S2(const std::string &path) :
   if (infile)
     infile >> fx_ >> fy_ >> s_ >> u0_ >> v0_;
   else {
-    printf("Unable to load the calibration\n");
-    exit(0);
+    throw std::runtime_error("Cal3_S2: Unable to load the calibration");
   }
 
   infile.close();

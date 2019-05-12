@@ -32,8 +32,8 @@
 namespace gtsam {
 
 // Forward declarations
+struct KeyInfoEntry;
 class KeyInfo;
-class KeyInfoEntry;
 class GaussianFactorGraph;
 class Values;
 class VectorValues;
@@ -109,27 +109,14 @@ public:
 
 /**
  * Handy data structure for iterative solvers
- * key to (index, dimension, colstart)
+ * key to (index, dimension, start)
  */
-class GTSAM_EXPORT KeyInfoEntry: public boost::tuple<Key, size_t, Key> {
-
-public:
-
-  typedef boost::tuple<Key, size_t, Key> Base;
-
+struct GTSAM_EXPORT KeyInfoEntry {
+  size_t index, dim, start;
   KeyInfoEntry() {
   }
   KeyInfoEntry(size_t idx, size_t d, Key start) :
-      Base(idx, d, start) {
-  }
-  size_t index() const {
-    return this->get<0>();
-  }
-  size_t dim() const {
-    return this->get<1>();
-  }
-  size_t colstart() const {
-    return this->get<2>();
+      index(idx), dim(d), start(start) {
   }
 };
 

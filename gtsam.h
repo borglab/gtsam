@@ -209,11 +209,60 @@ class KeyGroupMap {
   bool insert2(size_t key, int val);
 };
 
+// Actually a FastSet<FactorIndex>
+class FactorIndexSet {
+  FactorIndexSet();
+  FactorIndexSet(const gtsam::FactorIndexSet& set);
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  void insert(size_t factorIndex);
+  bool erase(size_t factorIndex); // returns true if value was removed
+  bool count(size_t factorIndex) const; // returns true if value exists
+};
+
+// Actually a vector<FactorIndex>
+class FactorIndices {
+  FactorIndices();
+  FactorIndices(const gtsam::FactorIndices& other);
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  size_t at(size_t i) const;
+  size_t front() const;
+  size_t back() const;
+  void push_back(size_t factorIndex) const;
+};
+
 //*************************************************************************
 // base
 //*************************************************************************
 
 /** gtsam namespace functions */
+
+#include <gtsam/base/DSFMap.h>
+class IndexPair { 
+  IndexPair(); 
+  IndexPair(size_t i, size_t j); 
+  size_t i() const;
+  size_t j() const;
+};
+
+template<KEY = {gtsam::IndexPair}>
+class DSFMap {
+  DSFMap();
+  KEY find(const KEY& key) const;
+  void merge(const KEY& x, const KEY& y);
+};
+
 #include <gtsam/base/Matrix.h>
 bool linear_independent(Matrix A, Matrix B, double tol);
 
@@ -577,9 +626,9 @@ class Pose2 {
   static Matrix LogmapDerivative(const gtsam::Pose2& v);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
-  static Matrix adjointMap(Vector v);
-  Vector adjoint(Vector xi, Vector y);
-  Vector adjointTranspose(Vector xi, Vector y);
+  static Matrix adjointMap_(Vector v);
+  static Vector adjoint_(Vector xi, Vector y);
+  static Vector adjointTranspose(Vector xi, Vector y);
   static Matrix wedge(double vx, double vy, double w);
 
   // Group Actions on Point2
@@ -628,8 +677,8 @@ class Pose3 {
   static Vector Logmap(const gtsam::Pose3& pose);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
-  static Matrix adjointMap(Vector xi);
-  static Vector adjoint(Vector xi, Vector y);
+  static Matrix adjointMap_(Vector xi);
+  static Vector adjoint_(Vector xi, Vector y);
   static Vector adjointTranspose(Vector xi, Vector y);
   static Matrix ExpmapDerivative(Vector xi);
   static Matrix LogmapDerivative(const gtsam::Pose3& xi);
@@ -1218,14 +1267,30 @@ class VariableIndex {
 namespace noiseModel {
 #include <gtsam/linear/NoiseModel.h>
 virtual class Base {
+  void print(string s) const;
+  // Methods below are available for all noise models. However, can't add them
+  // because wrap (incorrectly) thinks robust classes derive from this Base as well.
+  // bool isConstrained() const;
+  // bool isUnit() const;
+  // size_t dim() const;
+  // Vector sigmas() const;
 };
 
 virtual class Gaussian : gtsam::noiseModel::Base {
   static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
   static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
-  Matrix R() const;
+
   bool equals(gtsam::noiseModel::Base& expected, double tol);
-  void print(string s) const;
+
+  // access to noise model
+  Matrix R() const;
+  Matrix information() const;
+  Matrix covariance() const;
+
+  // Whitening operations
+  Vector whiten(Vector v) const;
+  Vector unwhiten(Vector v) const;
+  Matrix Whiten(Matrix H) const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1236,7 +1301,11 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
   static gtsam::noiseModel::Diagonal* Variances(Vector variances);
   static gtsam::noiseModel::Diagonal* Precisions(Vector precisions);
   Matrix R() const;
-  void print(string s) const;
+
+  // access to noise model
+  Vector sigmas() const;
+  Vector invsigmas() const;
+  Vector precisions() const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1263,7 +1332,9 @@ virtual class Isotropic : gtsam::noiseModel::Diagonal {
   static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma);
   static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace);
   static gtsam::noiseModel::Isotropic* Precision(size_t dim, double precision);
-  void print(string s) const;
+
+  // access to noise model
+  double sigma() const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1271,7 +1342,6 @@ virtual class Isotropic : gtsam::noiseModel::Diagonal {
 
 virtual class Unit : gtsam::noiseModel::Isotropic {
   static gtsam::noiseModel::Unit* Create(size_t dim);
-  void print(string s) const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1279,11 +1349,11 @@ virtual class Unit : gtsam::noiseModel::Isotropic {
 
 namespace mEstimator {
 virtual class Base {
+  void print(string s) const;
 };
 
 virtual class Null: gtsam::noiseModel::mEstimator::Base {
   Null();
-  void print(string s) const;
   static gtsam::noiseModel::mEstimator::Null* Create();
 
   // enabling serialization functionality
@@ -1292,7 +1362,6 @@ virtual class Null: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Fair: gtsam::noiseModel::mEstimator::Base {
   Fair(double c);
-  void print(string s) const;
   static gtsam::noiseModel::mEstimator::Fair* Create(double c);
 
   // enabling serialization functionality
@@ -1301,7 +1370,6 @@ virtual class Fair: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Huber: gtsam::noiseModel::mEstimator::Base {
   Huber(double k);
-  void print(string s) const;
   static gtsam::noiseModel::mEstimator::Huber* Create(double k);
 
   // enabling serialization functionality
@@ -1310,7 +1378,6 @@ virtual class Huber: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
   Tukey(double k);
-  void print(string s) const;
   static gtsam::noiseModel::mEstimator::Tukey* Create(double k);
 
   // enabling serialization functionality
@@ -1322,7 +1389,6 @@ virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
 virtual class Robust : gtsam::noiseModel::Base {
   Robust(const gtsam::noiseModel::mEstimator::Base* robust, const gtsam::noiseModel::Base* noise);
   static gtsam::noiseModel::Robust* Create(const gtsam::noiseModel::mEstimator::Base* robust, const gtsam::noiseModel::Base* noise);
-  void print(string s) const;
 
   // enabling serialization functionality
   void serializable() const;
@@ -1713,7 +1779,7 @@ virtual class SubgraphSolverParameters : gtsam::ConjugateGradientParameters {
 
 virtual class SubgraphSolver  {
   SubgraphSolver(const gtsam::GaussianFactorGraph &A, const gtsam::SubgraphSolverParameters &parameters, const gtsam::Ordering& ordering);
-  SubgraphSolver(const gtsam::GaussianFactorGraph &Ab1, const gtsam::GaussianFactorGraph &Ab2, const gtsam::SubgraphSolverParameters &parameters, const gtsam::Ordering& ordering);
+  SubgraphSolver(const gtsam::GaussianFactorGraph &Ab1, const gtsam::GaussianFactorGraph* Ab2, const gtsam::SubgraphSolverParameters &parameters, const gtsam::Ordering& ordering);
   gtsam::VectorValues optimize() const;
 };
 
@@ -2002,10 +2068,12 @@ virtual class NonlinearOptimizerParams {
   void setVerbosity(string s);
 
   string getLinearSolverType() const;
-
   void setLinearSolverType(string solver);
-  void setOrdering(const gtsam::Ordering& ordering);
+
   void setIterativeParams(gtsam::IterativeOptimizationParameters* params);
+  void setOrdering(const gtsam::Ordering& ordering);
+  string getOrderingType() const;
+  void setOrderingType(string ordering);
 
   bool isMultifrontal() const;
   bool isSequential() const;
@@ -2026,15 +2094,32 @@ virtual class GaussNewtonParams : gtsam::NonlinearOptimizerParams {
 virtual class LevenbergMarquardtParams : gtsam::NonlinearOptimizerParams {
   LevenbergMarquardtParams();
 
-  double getlambdaInitial() const;
+  bool getDiagonalDamping() const;
   double getlambdaFactor() const;
+  double getlambdaInitial() const;
+  double getlambdaLowerBound() const;
   double getlambdaUpperBound() const;
+  bool getUseFixedLambdaFactor();
+  string getLogFile() const;
   string getVerbosityLM() const;
 
-  void setlambdaInitial(double value);
+  void setDiagonalDamping(bool flag);
   void setlambdaFactor(double value);
+  void setlambdaInitial(double value);
+  void setlambdaLowerBound(double value);
   void setlambdaUpperBound(double value);
+  void setUseFixedLambdaFactor(bool flag);
+  void setLogFile(string s);
   void setVerbosityLM(string s);
+
+  static gtsam::LevenbergMarquardtParams LegacyDefaults();
+  static gtsam::LevenbergMarquardtParams CeresDefaults();
+
+  static gtsam::LevenbergMarquardtParams EnsureHasOrdering(
+      gtsam::LevenbergMarquardtParams params,
+      const gtsam::NonlinearFactorGraph& graph);
+  static gtsam::LevenbergMarquardtParams ReplaceOrdering(
+      gtsam::LevenbergMarquardtParams params, const gtsam::Ordering& ordering);
 };
 
 #include <gtsam/nonlinear/DoglegOptimizer.h>
@@ -2172,8 +2257,6 @@ class ISAM2Result {
   size_t getVariablesReeliminated() const;
   size_t getCliques() const;
 };
-
-class FactorIndices {};
 
 class ISAM2 {
   ISAM2();
@@ -2479,6 +2562,36 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D_robust(string filename
 void save2D(const gtsam::NonlinearFactorGraph& graph,
     const gtsam::Values& config, gtsam::noiseModel::Diagonal* model,
     string filename);
+
+// std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>
+class BetweenFactorPose3s
+{
+  size_t size() const;
+  gtsam::BetweenFactorPose3* at(size_t i) const;
+};
+
+#include <gtsam/slam/InitializePose3.h>
+class InitializePose3 {
+  static gtsam::Values computeOrientationsChordal(
+      const gtsam::NonlinearFactorGraph& pose3Graph);
+  static gtsam::Values computeOrientationsGradient(
+      const gtsam::NonlinearFactorGraph& pose3Graph,
+      const gtsam::Values& givenGuess, size_t maxIter, const bool setRefFrame);
+  static gtsam::Values computeOrientationsGradient(
+      const gtsam::NonlinearFactorGraph& pose3Graph,
+      const gtsam::Values& givenGuess);
+  static gtsam::NonlinearFactorGraph buildPose3graph(
+      const gtsam::NonlinearFactorGraph& graph);
+  static gtsam::Values initializeOrientations(
+      const gtsam::NonlinearFactorGraph& graph);
+  static gtsam::Values initialize(const gtsam::NonlinearFactorGraph& graph,
+                                  const gtsam::Values& givenGuess,
+                                  bool useGradient);
+  static gtsam::Values initialize(const gtsam::NonlinearFactorGraph& graph);
+};
+
+gtsam::BetweenFactorPose3s parse3DFactors(string filename);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load3D(string filename);
 
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename, bool is3D);

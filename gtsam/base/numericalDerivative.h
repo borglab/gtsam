@@ -67,28 +67,29 @@ struct FixedSizeMatrix {
 }
 
 /**
- * Numerically compute gradient of scalar function
+ * @brief Numerically compute gradient of scalar function
+ * @return n-dimensional gradient computed via central differencing
  * Class X is the input argument
  * The class X needs to have dim, expmap, logmap
+  * int N is the dimension of the X input value if variable dimension type but known at test time
  */
-template<class X>
-typename internal::FixedSizeMatrix<X>::type numericalGradient(boost::function<double(const X&)> h, const X& x,
-    double delta = 1e-5) {
+
+template <class X, int N = traits<X>::dimension>
+typename Eigen::Matrix<double, N, 1> numericalGradient(
+    boost::function<double(const X&)> h, const X& x, double delta = 1e-5) {
   double factor = 1.0 / (2.0 * delta);
 
   BOOST_STATIC_ASSERT_MSG(
       (boost::is_base_of<manifold_tag, typename traits<X>::structure_category>::value),
       "Template argument X must be a manifold type.");
-  static const int N = traits<X>::dimension;
-  BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type.");
-
-  typedef typename traits<X>::TangentVector TangentX;
+  BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type or N must be specified.");
 
   // Prepare a tangent vector to perturb x with, only works for fixed size
-  TangentX d;
+  typename traits<X>::TangentVector d;
   d.setZero();
 
-  Eigen::Matrix<double,N,1> g; g.setZero(); // Can be fixed size
+  Eigen::Matrix<double,N,1> g; 
+  g.setZero();
   for (int j = 0; j < N; j++) {
     d(j) = delta;
     double hxplus = h(traits<X>::Retract(x, d));
@@ -108,37 +109,34 @@ typename internal::FixedSizeMatrix<X>::type numericalGradient(boost::function<do
  * @param delta increment for numerical derivative
  * Class Y is the output argument
  * Class X is the input argument
+ * int N is the dimension of the X input value if variable dimension type but known at test time
  * @return m*n Jacobian computed via central differencing
  */
 
-template<class Y, class X>
+template <class Y, class X, int N = traits<X>::dimension>
 // TODO Should compute fixed-size matrix
-typename internal::FixedSizeMatrix<Y,X>::type numericalDerivative11(boost::function<Y(const X&)> h, const X& x,
-    double delta = 1e-5) {
-
+typename internal::FixedSizeMatrix<Y, X>::type numericalDerivative11(
+    boost::function<Y(const X&)> h, const X& x, double delta = 1e-5) {
   typedef typename internal::FixedSizeMatrix<Y,X>::type Matrix;
 
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
   typedef traits<Y> TraitsY;
-  typedef typename TraitsY::TangentVector TangentY;
 
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X>::structure_category>::value),
       "Template argument X must be a manifold type.");
-  static const int N = traits<X>::dimension;
-  BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type.");
+  BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type or N must be specified.");
   typedef traits<X> TraitsX;
-  typedef typename TraitsX::TangentVector TangentX;
 
   // get value at x, and corresponding chart
   const Y hx = h(x);
 
   // Bit of a hack for now to find number of rows
-  const TangentY zeroY = TraitsY::Local(hx, hx);
+  const typename TraitsY::TangentVector zeroY = TraitsY::Local(hx, hx);
   const size_t m = zeroY.size();
 
   // Prepare a tangent vector to perturb x with, only works for fixed size
-  TangentX dx;
+  Eigen::Matrix<double, N, 1> dx;
   dx.setZero();
 
   // Fill in Jacobian H
@@ -146,9 +144,9 @@ typename internal::FixedSizeMatrix<Y,X>::type numericalDerivative11(boost::funct
   const double factor = 1.0 / (2.0 * delta);
   for (int j = 0; j < N; j++) {
     dx(j) = delta;
-    const TangentY dy1 = TraitsY::Local(hx, h(TraitsX::Retract(x, dx)));
+    const auto dy1 = TraitsY::Local(hx, h(TraitsX::Retract(x, dx)));
     dx(j) = -delta;
-    const TangentY dy2 = TraitsY::Local(hx, h(TraitsX::Retract(x, dx)));
+    const auto dy2 = TraitsY::Local(hx, h(TraitsX::Retract(x, dx)));
     dx(j) = 0;
     H.col(j) << (dy1 - dy2) * factor;
   }
