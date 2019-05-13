@@ -24,7 +24,6 @@ def parse(input_path, output_path, quiet=False):
     class_docs = {}
     free_docs = {}
 
-    # TODO: For each xml file -> categorize it -> move to template for its type
     for root, dirs, files in os.walk(output_path):
         for f in files:
             if f.endswith('.xml'):
