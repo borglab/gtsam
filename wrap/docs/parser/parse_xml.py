@@ -7,19 +7,21 @@ import xml.etree.ElementTree as ET
 DOXYGEN_CONF = 'conf_doxygen.py'
 
 
-def parse(input_path, output_path, quiet=False):
+def parse(input_path, output_path, quiet=False, generate_xml=True):
     '''Parse the files for documentation and store it in templates.
 
     Arguments:
     input_path -- path to the input folder or file
     output_path -- path to the output folder
     quiet -- turn on/off the messages that are generated to standard output by
-             Doxygen
+             Doxygen (default = False)
+    generate_xml -- use Doxygen to generate xml (default = True)
 
     Returns:
         A Docs template storing all the documentation in the input.
     '''
-    generate_xml(input_path, output_path, quiet)
+    if generate_xml:
+        generate_xml(input_path, output_path, quiet)
 
     class_docs = {}
     free_docs = {}
@@ -102,11 +104,8 @@ def find_first_element_with_tag(tree, tag):
     return tree.find('.//{}'.format(tag))
 
 
-def find_all_elements_with_name(name):
-    tree = ET.parse(
-        'docs/parser/output/xml/classgtsam_1_1NoiseModelFactor1.xml')
-
-    return tree.getroot().findall('.//{}'.format(name))
+def find_all_elements(tree, name, tag):
+    return tree.find('.//{}'.format(tag))
 
 
 def find_method_element_text(method, name):
