@@ -1,8 +1,7 @@
 import xml.etree.ElementTree as ET
 
 
-# TODO: Make Doc abtract class
-class ClassDoc():
+class Doc():
     def __init__(self, tree):
         self.tree = tree
 
@@ -17,19 +16,12 @@ class ClassDoc():
             ET.tostring(other.get_tree().getroot())
 
 
-class FreeDoc():
-    def __init__(self, tree):
-        self.tree = tree
+class ClassDoc(Doc):
+    pass
 
-    def get_tree(self):
-        return self.tree
 
-    def __eq__(self, other):
-        if other is None or other.get_tree() is None:
-            return None
-
-        return ET.tostring(
-            self.tree.getroot()) == ET.tostring(other.tree.getroot())
+class FreeDoc(Doc):
+    pass
 
 
 class Docs():
