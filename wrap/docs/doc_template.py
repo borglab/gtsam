@@ -17,7 +17,18 @@ class Doc():
 
 
 class ClassDoc(Doc):
-    pass
+    def get_member(self, tag, name):
+        '''Get the find element in the class tree fitting the criteria'''
+        member = self.tree.find('.//{}'.format(tag))
+        name = member.find('.//name')
+
+        if name is None:
+            return None
+
+        if name.text == name:
+            return member
+
+        return None
 
 
 class FreeDoc(Doc):
@@ -26,6 +37,7 @@ class FreeDoc(Doc):
 
 class Docs():
     def __init__(self, class_docs, free_docs):
+        # These are maps of file_path -> Doc
         self.class_docs = class_docs
         self.free_docs = free_docs
 
