@@ -1,7 +1,16 @@
+import os
+import sys
 import argparse
+import textwrap
 
+import os.path as path
 import interface_parser as parser
 import template_instantiator as instantiator
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import docs.doc_template as template
+import docs.parser.parse_xml as xml_parser
 
 
 class PybindWrapper(object):
@@ -77,7 +86,7 @@ class PybindWrapper(object):
             '[]({opt_self}{opt_comma}{args_signature_with_names}){{'\
             '{function_call}'\
             '}}'\
-            '{py_args_names}){suffix}'.format(
+            '{py_args_names}{doc}){suffix}'.format(
                 prefix=prefix,
                 cdef="def_static" if is_static else "def",
                 py_method=py_method if py_method != "print" else "print_",
@@ -89,6 +98,11 @@ class PybindWrapper(object):
                 args_signature_with_names=args_signature_with_names,
                 function_call=function_call,
                 py_args_names=py_args_names,
+                doc=', ' + textwrap.indent(textwrap.dedent('''
+                R"pbdoc(
+                    Add two numbers
+                    Some other explanation about the add function.
+                )pbdoc"'''), prefix='            '),
                 suffix=suffix,
             )
 
@@ -125,6 +139,7 @@ class PybindWrapper(object):
         cpp_class = instantiated_class.cpp_class()
         if cpp_class in self.ignore_classes:
             return ""
+
         return '\n    py::class_<{cpp_class}, {class_parent}'\
             'std::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'\
             '{wrapped_ctors}'\
@@ -171,6 +186,15 @@ class PybindWrapper(object):
     def wrap_namespace(self, namespace):
         wrapped = ""
         includes = ""
+
+        # TODO: Set generate xml to true
+        dir_name = path.dirname(__file__)
+        docs = xml_parser.parse(
+            '..',
+            path.abspath(path.join(dir_name, 'docs/parser/output')),
+            quiet=True,
+            generate_xml=False
+        )
 
         namespaces = namespace.full_namespaces()
         if not self._partial_match(namespaces, self.top_module_namespaces):

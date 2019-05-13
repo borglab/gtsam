@@ -45,12 +45,12 @@ class TestWrap(unittest.TestCase):
 
         cc_content = wrapper.wrap()
 
-        output = self.TEST_DIR + 'actual-python/geometry_py.cpp'
+        output = path.join(self.TEST_DIR, 'actual-python/geometry_py.cpp')
 
-        if not os.path.exists(self.TEST_DIR + 'actual-python'):
+        if not path.exists(self.TEST_DIR + 'actual-python'):
             os.mkdir(self.TEST_DIR + 'actual-python')
 
-        with open(self.TEST_DIR + 'actual-python/geometry_py.cpp', 'w') as f:
+        with open(output, 'w') as f:
             f.write(cc_content)
 
         self.assertTrue(filecmp.cmp(
