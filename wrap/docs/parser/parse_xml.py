@@ -1,13 +1,13 @@
 import os
 
-import docs.doc_template as template
+from docs.docs import ClassDoc, Doc, Docs, FreeDoc
 import os.path as path
 import xml.etree.ElementTree as ET
 
 DOXYGEN_CONF = 'conf_doxygen.py'
 
 
-def parse(input_path, output_path, quiet=False, generate_xml=True):
+def parse(input_path, output_path, quiet=False, generate_xml_flag=True):
     '''Parse the files for documentation and store it in templates.
 
     Arguments:
@@ -20,7 +20,7 @@ def parse(input_path, output_path, quiet=False, generate_xml=True):
     Returns:
         A Docs template storing all the documentation in the input.
     '''
-    if generate_xml:
+    if generate_xml_flag:
         generate_xml(input_path, output_path, quiet)
 
     class_docs = {}
@@ -32,10 +32,10 @@ def parse(input_path, output_path, quiet=False, generate_xml=True):
                 file_path = path.join(root, f)
                 doc = init_doc(file_path)
 
-                if isinstance(doc, template.ClassDoc):
+                if isinstance(doc, ClassDoc):
                     class_docs[file_path] = doc
 
-    return template.Docs(class_docs, free_docs)
+    return Docs(class_docs, free_docs)
 
 
 def generate_xml(input_path, output_path, quiet=False):
@@ -94,7 +94,7 @@ def init_doc(file_path):
     category = categorize_xml(tree)
 
     if category == 'class':
-        return template.ClassDoc(tree)
+        return ClassDoc(tree)
 
 
 def find_first_element_with_tag(tree, tag):

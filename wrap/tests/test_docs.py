@@ -5,17 +5,16 @@ Date: May 2019
 """
 import filecmp
 import os
-import sys
-import shutil
-import unittest
-
 import os.path as path
+import shutil
+import sys
+import unittest
 import xml.etree.ElementTree as ET
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import docs.doc_template as template
 import docs.parser.parse_xml as parser
+from docs.docs import ClassDoc, Doc, Docs, FreeDoc
 
 
 tree_root = ET.Element('a')
@@ -108,7 +107,7 @@ class TestDocument(unittest.TestCase):
             expected_xml_path, 'classgtsam_1_1JacobianFactorQ.xml')
         # TODO: Find free doc and test it
 
-        expected_class_doc = template.ClassDoc(ET.parse(path_to_class_doc))
+        expected_class_doc = ClassDoc(ET.parse(path_to_class_doc))
 
         self.assertEqual(
             parser.init_doc(path_to_class_doc), expected_class_doc)
@@ -122,17 +121,17 @@ class TestDocument(unittest.TestCase):
 
 
 class TestDocTemplate(unittest.TestCase):
-    class_doc_root = template.ClassDoc(tree_root)
-    class_doc_left = template.ClassDoc(tree_left)
-    class_doc_right = template.ClassDoc(tree_right)
-    class_doc_leaf = template.ClassDoc(tree_leaf)
-    class_doc_recursive = template.ClassDoc(tree_recursive)
+    class_doc_root = ClassDoc(tree_root)
+    class_doc_left = ClassDoc(tree_left)
+    class_doc_right = ClassDoc(tree_right)
+    class_doc_leaf = ClassDoc(tree_leaf)
+    class_doc_recursive = ClassDoc(tree_recursive)
 
-    free_doc_root = template.ClassDoc(tree_root)
-    free_doc_left = template.ClassDoc(tree_left)
-    free_doc_right = template.ClassDoc(tree_right)
-    free_doc_leaf = template.ClassDoc(tree_leaf)
-    free_doc_recursive = template.ClassDoc(tree_recursive)
+    free_doc_root = ClassDoc(tree_root)
+    free_doc_left = ClassDoc(tree_left)
+    free_doc_right = ClassDoc(tree_right)
+    free_doc_leaf = ClassDoc(tree_leaf)
+    free_doc_recursive = ClassDoc(tree_recursive)
 
     CLASS_DOCS = {
         'Class_Root': tree_root,
@@ -169,9 +168,9 @@ class TestDocTemplate(unittest.TestCase):
 
     def test_class_doc_eq(self):
         '''Test ClassDoc.__eq__'''
-        doc1 = template.ClassDoc(ET.ElementTree(a))
-        doc2 = template.ClassDoc(ET.ElementTree(d))
-        doc3 = template.ClassDoc(ET.ElementTree(d2))
+        doc1 = ClassDoc(ET.ElementTree(a))
+        doc2 = ClassDoc(ET.ElementTree(d))
+        doc3 = ClassDoc(ET.ElementTree(d2))
 
         self.assertEqual(doc1, doc1)
         self.assertEqual(doc2, doc2)
@@ -195,13 +194,13 @@ class TestDocTemplate(unittest.TestCase):
         self.assertIs(self.free_doc_left.get_tree(), tree_left)
         self.assertIs(self.free_doc_right.get_tree(), tree_right)
         self.assertIs(self.free_doc_leaf.get_tree(), tree_leaf)
-        self.assertIs(self.free_doc_recursive.get_tree(), tree_recursive)        
+        self.assertIs(self.free_doc_recursive.get_tree(), tree_recursive)
 
     def test_free_doc_eq(self):
         '''Test FreeDoc.__eq__'''
-        doc1 = template.FreeDoc(ET.ElementTree(a))
-        doc2 = template.FreeDoc(ET.ElementTree(d))
-        doc3 = template.FreeDoc(ET.ElementTree(d2))
+        doc1 = FreeDoc(ET.ElementTree(a))
+        doc2 = FreeDoc(ET.ElementTree(d))
+        doc3 = FreeDoc(ET.ElementTree(d2))
 
         self.assertEqual(doc1, doc1)
         self.assertEqual(doc2, doc2)
@@ -213,27 +212,27 @@ class TestDocTemplate(unittest.TestCase):
     # Docs
     def test_docs(self):
         '''Test Docs template constructor'''
-        docs = template.Docs(self.CLASS_DOCS, self.FREE_DOCS)
+        docs = Docs(self.CLASS_DOCS, self.FREE_DOCS)
 
         self.assertIs(docs.class_docs, self.CLASS_DOCS)
         self.assertIs(docs.free_docs, self.FREE_DOCS)
 
     def test_get_class_docs(self):
-        docs = template.Docs(self.CLASS_DOCS, self.FREE_DOCS)
+        docs = Docs(self.CLASS_DOCS, self.FREE_DOCS)
 
         for doc_name in self.CLASS_DOCS.keys():
             self.assertIs(
                 self.CLASS_DOCS.get(doc_name), docs.get_class_docs(doc_name))
 
     def test_get_free_docs(self):
-        docs = template.Docs(self.CLASS_DOCS, self.FREE_DOCS)
+        docs = Docs(self.CLASS_DOCS, self.FREE_DOCS)
 
         for doc_name in self.FREE_DOCS.keys():
             self.assertIs(
                 self.FREE_DOCS.get(doc_name), docs.get_free_docs(doc_name))
 
     def test_get_class_docs_keys_list(self):
-        docs = template.Docs(self.CLASS_DOCS, self.FREE_DOCS)
+        docs = Docs(self.CLASS_DOCS, self.FREE_DOCS)
         class_doc_keys = list(self.CLASS_DOCS)
         docs_list = docs.get_class_docs_keys_list()
 
@@ -243,7 +242,7 @@ class TestDocTemplate(unittest.TestCase):
             self.assertIn(key, docs_list)
 
     def test_get_free_docs_keys_list(self):
-        docs = template.Docs(self.CLASS_DOCS, self.FREE_DOCS)
+        docs = Docs(self.CLASS_DOCS, self.FREE_DOCS)
         free_doc_keys = list(self.FREE_DOCS)
         docs_list = docs.get_free_docs_keys_list()
 
@@ -253,7 +252,7 @@ class TestDocTemplate(unittest.TestCase):
             self.assertIn(key, docs_list)
 
     def test_get_class_docs_values_list(self):
-        docs = template.Docs(self.CLASS_DOCS, self.FREE_DOCS)
+        docs = Docs(self.CLASS_DOCS, self.FREE_DOCS)
         docs_list = docs.get_class_docs_values_list()
 
         self.assertEqual(len(self.CLASS_DOCS), len(docs_list))
@@ -264,7 +263,7 @@ class TestDocTemplate(unittest.TestCase):
         self.assertIn(tree_recursive, docs_list)
 
     def test_get_free_docs_values_list(self):
-        docs = template.Docs(self.CLASS_DOCS, self.FREE_DOCS)
+        docs = Docs(self.CLASS_DOCS, self.FREE_DOCS)
         docs_list = docs.get_free_docs_values_list()
 
         self.assertEqual(len(self.FREE_DOCS), len(docs_list))
@@ -273,6 +272,7 @@ class TestDocTemplate(unittest.TestCase):
         self.assertIn(tree_right, docs_list)
         self.assertIn(tree_leaf, docs_list)
         self.assertIn(tree_recursive, docs_list)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -25,3 +25,5 @@ CMakeLists.txt.user*
 /wrap/tests/actual-python/
 /wrap/tests/actual-xml-generation/
 /wrap/docs/parser/output/
+/wrap/output
+/wrap/sphinx/_build
