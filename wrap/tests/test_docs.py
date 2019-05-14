@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import docs.parser.parse_xml as parser
+import docs.parser.parse_doxygen_xml as parser
 from docs.docs import ClassDoc, Doc, Docs, FreeDoc
 
 
@@ -41,7 +41,6 @@ class TestDocument(unittest.TestCase):
     OUTPUT_XML_DIR_PATH = path.abspath(path.join(DIR_NAME, OUTPUT_XML_DIR))
     EXPECTED_XML_DIR_PATH = path.abspath(path.join(DIR_NAME, EXPECTED_XML_DIR))
 
-    # docs/parser/parse_xml.py
     def test_generate_xml(self):
         '''Test parse_xml.generate_xml'''
         shutil.rmtree(self.OUTPUT_XML_DIR_PATH, ignore_errors=True)
@@ -59,38 +58,9 @@ class TestDocument(unittest.TestCase):
 
         self.assertTrue(not dircmp.diff_files and not dircmp.funny_files)
 
-    def test_find_first_element_with_tag(self):
-        '''Test parse_xml.find_first_element_with_tag'''
-        tree = ET.ElementTree(a)
-
-        self.assertEqual(parser.find_first_element_with_tag(tree, 'a'), a)
-        self.assertEqual(parser.find_first_element_with_tag(tree, 'b'), b)
-        self.assertEqual(parser.find_first_element_with_tag(tree, 'c'), c)
-        self.assertEqual(parser.find_first_element_with_tag(tree, 'd'), d)
-        self.assertEqual(parser.find_first_element_with_tag(tree, 'z'), None)
-
-    def test_categorize_xml(self):
-        '''Test parse_xml.categorize_xml'''
-        path_to_xml = path.join(self.EXPECTED_XML_DIR_PATH, 'xml')
-
-        files = [
-            'classgtsam_1_1JacobianFactorQ', 'classgtsam_1_1NoiseModelFactor2',
-            'classgtsam_1_1NonlinearFactor', 'deprecated',
-            'JacobianFactorQ_8h', 'namespacegtsam',
-            'structgtsam_1_1traits_3_01JacobianFactorQ_3_01D_00_01ZDim_01_4_01_4'
-        ]
-
-        kinds = [
-            'class', 'class', 'class', 'page', 'file', 'namespace', 'struct'
-        ]
-
-        for i in range(len(files)):
-            self.assertEqual(parser.categorize_xml(ET.parse(path.join(
-                path_to_xml, files[i] + '.xml'))), kinds[i])
-
     def test_parse(self):
-        docs = parser.parse(
-            self.DOC_DIR_PATH, self.OUTPUT_XML_DIR_PATH, quiet=True)
+        docs = parser.ParseDoxygenXML(
+            self.DOC_DIR_PATH, self.OUTPUT_XML_DIR_PATH).run()
 
         for class_name in docs.get_class_docs_keys_list():
             actual_tree_root = docs.get_class_docs(
@@ -99,25 +69,6 @@ class TestDocument(unittest.TestCase):
 
             self.assertEqual(
                 ET.tostring(actual_tree_root), ET.tostring(expected_tree_root))
-
-    def test_init_doc(self):
-        expected_xml_path = path.join(self.EXPECTED_XML_DIR_PATH, 'xml')
-
-        path_to_class_doc = path.join(
-            expected_xml_path, 'classgtsam_1_1JacobianFactorQ.xml')
-        # TODO: Find free doc and test it
-
-        expected_class_doc = ClassDoc(ET.parse(path_to_class_doc))
-
-        self.assertEqual(
-            parser.init_doc(path_to_class_doc), expected_class_doc)
-
-    def test_documentation_python(self):
-        '''Check generation of python documentation'''
-        for root, dirs, files in os.walk(self.DOC_DIR_PATH):
-            for f in files:
-                if f.endswith('.h'):
-                    pass
 
 
 class TestDocTemplate(unittest.TestCase):
