@@ -6,6 +6,11 @@ class Doc():
         self.tree = tree
 
     def get_tree(self):
+        """Get this Doc's tree.
+
+        Returns:
+            The xml.etree.ElementTree object of the documentation.
+        """
         return self.tree
 
     def __eq__(self, other):
@@ -17,18 +22,7 @@ class Doc():
 
 
 class ClassDoc(Doc):
-    def get_member(self, tag, name):
-        '''Get the find element in the class tree fitting the criteria'''
-        member = self.tree.find('.//{}'.format(tag))
-        name = member.find('.//name')
-
-        if name is None:
-            return None
-
-        if name.text == name:
-            return member
-
-        return None
+    pass
 
 
 class FreeDoc(Doc):
@@ -37,7 +31,7 @@ class FreeDoc(Doc):
 
 class Docs():
     def __init__(self, class_docs, free_docs):
-        # These are maps of file_path -> Doc
+        # These are dicts that map file_path -> Doc
         self.class_docs = class_docs
         self.free_docs = free_docs
 
