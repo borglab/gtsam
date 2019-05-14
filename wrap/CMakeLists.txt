@@ -1,3 +1,5 @@
+include(GtsamPybindWrap)
+
 # Create the python toolbox for the gtsam library
 if(GTSAM_INSTALL_PYTHON_TOOLBOX)
   # wrap gtsam add_custom_target(gtsam_header DEPENDS "../gtsam.h")
