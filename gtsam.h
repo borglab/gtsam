@@ -542,6 +542,7 @@ class SO3 {
   // Standard Constructors
   SO3();
   SO3(Matrix R);
+  static gtsam::SO3 FromMatrix(Matrix R);
   static gtsam::SO3 AxisAngle(const Vector axis, double theta);
   static gtsam::SO3 ClosestTo(const Matrix M);
 
@@ -570,6 +571,7 @@ class SO4 {
   // Standard Constructors
   SO4();
   SO4(Matrix R);
+  static gtsam::SO4 FromMatrix(Matrix R);
 
   // Testable
   void print(string s) const;
@@ -595,7 +597,22 @@ class SO4 {
 class SOn {
   // Standard Constructors
   SOn(size_t n);
-  SOn(Matrix R);
+  static gtsam::SOn FromMatrix(Matrix R);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::SOn& other, double tol) const;
+
+  // Group
+  static gtsam::SOn identity();
+  gtsam::SOn inverse() const;
+  gtsam::SOn between(const gtsam::SOn& Q) const;
+  gtsam::SOn compose(const gtsam::SOn& Q) const;
+
+  // Manifold
+  gtsam::SOn retract(Vector v) const;
+  Vector localCoordinates(const gtsam::SOn& Q) const;
+  static gtsam::SOn Expmap(Vector v);
 
   // Other methods
   Vector vec() const;
