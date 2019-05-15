@@ -1,6 +1,6 @@
 /**
  * @file    testBiasedGPSFactor.cpp
- * @brief  
+ * @brief
  * @author Luca Carlone
  * @date   July 30, 2014
  */

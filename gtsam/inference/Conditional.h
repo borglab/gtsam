@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -75,7 +75,7 @@ namespace gtsam {
     bool equals(const This& c, double tol = 1e-9) const;
 
     /// @}
-    
+
   public:
     /// @name Standard Interface
     /// @{
@@ -102,10 +102,10 @@ namespace gtsam {
 
     /** Iterator pointing to first frontal key. */
     typename FACTOR::const_iterator beginFrontals() const { return asFactor().begin(); }
-    
+
     /** Iterator pointing past the last frontal key. */
     typename FACTOR::const_iterator endFrontals() const { return asFactor().begin() + nrFrontals_; }
-    
+
     /** Iterator pointing to the first parent key. */
     typename FACTOR::const_iterator beginParents() const { return endFrontals(); }
 

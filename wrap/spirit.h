@@ -16,7 +16,7 @@
 #include <boost/spirit/include/classic_assign_actor.hpp>
 #include <boost/spirit/include/classic_confix.hpp>
 #include <boost/spirit/include/classic_increment_actor.hpp>
- 
+
 namespace boost {
 namespace spirit {
 

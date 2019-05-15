@@ -80,7 +80,7 @@ std::string ReturnType::pyx_returnType(bool addShared) const {
 /* ************************************************************************* */
 std::string ReturnType::pyx_casting(const std::string& var,
                                     bool isSharedVar) const {
-  if (isEigen()) { 
+  if (isEigen()) {
     string s = "ndarray_copy(" + var + ")";
     if (pyxClassName() == "Vector")
       return s + ".squeeze()";

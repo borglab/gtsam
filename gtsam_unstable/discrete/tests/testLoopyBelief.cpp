@@ -1,6 +1,6 @@
 /**
  * @file    testLoopyBelief.cpp
- * @brief  
+ * @brief
  * @author Duy-Nguyen Ta
  * @date    Oct 11, 2013
  */

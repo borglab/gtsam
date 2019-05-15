@@ -116,7 +116,7 @@ namespace gtsam {
     This& operator=(const This& other);
 
     /// @}
-    
+
   public:
     /// @name Standard Interface
     /// @{
@@ -142,11 +142,11 @@ namespace gtsam {
     bool equals(const This& other, double tol = 1e-9) const;
 
     /// @}
-    
+
   public:
     /// @name Advanced Interface
     /// @{
-    
+
     /** Return the set of roots (one for a tree, multiple for a forest) */
     const FastVector<sharedNode>& roots() const { return roots_; }
 

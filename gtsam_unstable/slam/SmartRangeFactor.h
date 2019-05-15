@@ -2,7 +2,7 @@
  * @file SmartRangeFactor.h
  *
  * @brief A smart factor for range-only SLAM that does initialization and marginalization
- * 
+ *
  * @date Sep 10, 2012
  * @author Alex Cunningham
  */

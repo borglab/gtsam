@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
   cout << "initial state:\n" << initial_state.transpose() << "\n\n";
 
   // Assemble initial quaternion through gtsam constructor ::quaternion(w,x,y,z);
-  Rot3 prior_rotation = Rot3::Quaternion(initial_state(6), initial_state(3), 
+  Rot3 prior_rotation = Rot3::Quaternion(initial_state(6), initial_state(3),
                                          initial_state(4), initial_state(5));
   Point3 prior_point(initial_state.head<3>());
   Pose3 prior_pose(prior_rotation, prior_point);
@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
   int correction_count = 0;
   initial_values.insert(X(correction_count), prior_pose);
   initial_values.insert(V(correction_count), prior_velocity);
-  initial_values.insert(B(correction_count), prior_imu_bias);  
+  initial_values.insert(B(correction_count), prior_imu_bias);
 
   // Assemble prior noise model and add it the graph.
   noiseModel::Diagonal::shared_ptr pose_noise_model = noiseModel::Diagonal::Sigmas((Vector(6) << 0.01, 0.01, 0.01, 0.5, 0.5, 0.5).finished()); // rad,rad,rad,m, m, m
@@ -138,7 +138,7 @@ int main(int argc, char* argv[])
   p->biasAccCovariance = bias_acc_cov; // acc bias in continuous
   p->biasOmegaCovariance = bias_omega_cov; // gyro bias in continuous
   p->biasAccOmegaInt = bias_acc_omega_int;
-  
+
 #ifdef USE_COMBINED
   imu_preintegrated_ = new PreintegratedCombinedMeasurements(p, prior_imu_bias);
 #else
@@ -154,7 +154,7 @@ int main(int argc, char* argv[])
   double current_position_error = 0.0, current_orientation_error = 0.0;
 
   double output_time = 0.0;
-  double dt = 0.005;  // The real system has noise, but here, results are nearly 
+  double dt = 0.005;  // The real system has noise, but here, results are nearly
                       // exactly the same, so keeping this for simplicity.
 
   // All priors have been set up, now iterate through the data file.
@@ -203,8 +203,8 @@ int main(int argc, char* argv[])
                            *preint_imu);
       graph->add(imu_factor);
       imuBias::ConstantBias zero_bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
-      graph->add(BetweenFactor<imuBias::ConstantBias>(B(correction_count-1), 
-                                                      B(correction_count  ), 
+      graph->add(BetweenFactor<imuBias::ConstantBias>(B(correction_count-1),
+                                                      B(correction_count  ),
                                                       zero_bias, bias_noise_model));
 #endif
 
@@ -215,7 +215,7 @@ int main(int argc, char* argv[])
                                   gps(2)), // D,
                            correction_noise);
       graph->add(gps_factor);
-      
+
       // Now optimize and compare results.
       prop_state = imu_preintegrated_->predict(prev_state, prev_bias);
       initial_values.insert(X(correction_count), prop_state.pose());
@@ -250,10 +250,10 @@ int main(int argc, char* argv[])
       // display statistics
       cout << "Position error:" << current_position_error << "\t " << "Angular error:" << current_orientation_error << "\n";
 
-      fprintf(fp_out, "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", 
+      fprintf(fp_out, "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
               output_time, gtsam_position(0), gtsam_position(1), gtsam_position(2),
               gtsam_quat.x(), gtsam_quat.y(), gtsam_quat.z(), gtsam_quat.w(),
-              gps(0), gps(1), gps(2), 
+              gps(0), gps(1), gps(2),
               gps_quat.x(), gps_quat.y(), gps_quat.z(), gps_quat.w());
 
       output_time += 1.0;

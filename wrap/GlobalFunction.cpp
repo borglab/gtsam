@@ -134,7 +134,7 @@ void GlobalFunction::python_wrapper(FileWriter& wrapperFile) const {
 /* ************************************************************************* */
 void GlobalFunction::emit_cython_pxd(FileWriter& file) const {
   file.oss << "cdef extern from \"" << includeFile << "\" namespace \""
-                << overloads[0].qualifiedNamespaces("::") 
+                << overloads[0].qualifiedNamespaces("::")
                 << "\":" << endl;
   for (size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "        ";
