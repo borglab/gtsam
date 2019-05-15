@@ -76,13 +76,20 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// Construct SO<N> identity for N == Eigen::Dynamic
   template <int N_ = N, typename = IsDynamic<N_>>
   explicit SO(size_t n = 0) {
-    if (n == 0) throw std::runtime_error("SO: Dimensionality not known.");
+    // We allow for n=0 as the default constructor, needed for serialization,
+    // wrappers etc.
     matrix_ = Eigen::MatrixXd::Identity(n, n);
   }
 
-  /// Constructor from Eigen Matrix
+  /// Constructor from Eigen Matrix, dynamic version
   template <typename Derived>
   explicit SO(const Eigen::MatrixBase<Derived>& R) : matrix_(R.eval()) {}
+
+  /// Named constructor from Eigen Matrix
+  template <typename Derived>
+  static SO FromMatrix(const Eigen::MatrixBase<Derived>& R) {
+    return SO(R);
+  }
 
   /// Construct dynamic SO(n) from Fixed SO<M>
   template <int M, int N_ = N, typename = IsDynamic<N_>>
