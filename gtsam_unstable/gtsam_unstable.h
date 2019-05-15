@@ -321,6 +321,9 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
 };
 
 #include <gtsam_unstable/slam/FrobeniusFactor.h>
+gtsam::noiseModel::Isotropic* ConvertPose3NoiseModel(
+    gtsam::noiseModel::Base* model, size_t d);
+
 template<T = {gtsam::SO3, gtsam::SO4}>
 virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
   FrobeniusFactor(size_t key1, size_t key2);
@@ -337,22 +340,12 @@ virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
   Vector evaluateError(const T& R1, const T& R2);
 };
 
-virtual class FrobeniusWormholeFactorTL : gtsam::NoiseModelFactor {
-  FrobeniusWormholeFactorTL(size_t key1, size_t key2, const gtsam::SO3& R12, size_t n);
-  FrobeniusWormholeFactorTL(size_t key1, size_t key2, const gtsam::SO3& R12, size_t n, gtsam::noiseModel::Base* model);
-  Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
-};
-
-virtual class FrobeniusWormholeFactorPi : gtsam::NoiseModelFactor {
-  FrobeniusWormholeFactorPi(size_t key1, size_t key2, const gtsam::SO3& R12);
-  FrobeniusWormholeFactorPi(size_t key1, size_t key2, const gtsam::SO3& R12, gtsam::noiseModel::Base* model);
-  Vector evaluateError(const gtsam::SO4& R1, const gtsam::SO4& R2);
-};
-
 virtual class FrobeniusWormholeFactor : gtsam::NoiseModelFactor {
-  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::SO3& R12);
-  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::SO3& R12, gtsam::noiseModel::Base* model);
-  Vector evaluateError(const gtsam::SO4& R1, const gtsam::SO4& R2);
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::SO3& R12,
+                          size_t p);
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::SO3& R12,
+                          size_t p, gtsam::noiseModel::Base* model);
+  Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
 };
 
 #include <gtsam_unstable/slam/ShonanAveraging.h>

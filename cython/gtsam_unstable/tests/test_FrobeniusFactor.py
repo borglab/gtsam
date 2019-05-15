@@ -12,14 +12,14 @@ Author: Frank Dellaert
 import unittest
 
 import numpy as np
-from gtsam import SO3, SO4
+from gtsam import SO3, SO4, SOn
 from gtsam_unstable import (FrobeniusBetweenFactorSO4, FrobeniusFactorSO4,
                             FrobeniusWormholeFactor)
 
 id = SO4()
-v1 = np.array([0.1, 0, 0, 0, 0, 0])
+v1 = np.array([0, 0, 0, 0.1, 0, 0])
 Q1 = SO4.Expmap(v1)
-v2 = np.array([0.01, 0.02, 0.03, 0, 0, 0])
+v2 = np.array([0, 0, 0, 0.01, 0.02, 0.03])
 Q2 = SO4.Expmap(v2)
 
 
@@ -42,12 +42,16 @@ class TestFrobeniusFactorSO4(unittest.TestCase):
 
     def test_frobenius_wormhole_factor(self):
         """Test creation of a factor that calculates Shonan error."""
-        R1 = SO3.Expmap(v1[:3])
-        R2 = SO3.Expmap(v2[:3])
-        factor = FrobeniusWormholeFactor(1, 2, R1.between(R2))
+        R1 = SO3.Expmap(v1[3:])
+        R2 = SO3.Expmap(v2[3:])
+        factor = FrobeniusWormholeFactor(1, 2, R1.between(R2), p=4)
+        I4 = SOn(4)
+        Q1 = I4.retract(v1)
+        Q2 = I4.retract(v2)
         actual = factor.evaluateError(Q1, Q2)
-        expected = np.zeros((9,))
-        np.testing.assert_array_almost_equal(actual, expected)
+        expected = np.zeros((12,))
+        np.testing.assert_array_almost_equal(actual, expected, decimal=4)
+
 
 if __name__ == "__main__":
     unittest.main()

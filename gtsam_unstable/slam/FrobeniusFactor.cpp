@@ -52,7 +52,7 @@ boost::shared_ptr<noiseModel::Isotropic> ConvertPose3NoiseModel(
 }
 
 //******************************************************************************
-FrobeniusWormholeFactorP::FrobeniusWormholeFactorP(
+FrobeniusWormholeFactor::FrobeniusWormholeFactor(
     Key j1, Key j2, const SO3& R12, size_t p, const SharedNoiseModel& model)
     : NoiseModelFactor2<SOn, SOn>(ConvertPose3NoiseModel(model, p * 3), j1, j2),
       M_(R12.matrix()),
@@ -70,7 +70,7 @@ FrobeniusWormholeFactorP::FrobeniusWormholeFactorP(
 }
 
 //******************************************************************************
-Vector FrobeniusWormholeFactorP::evaluateError(
+Vector FrobeniusWormholeFactor::evaluateError(
     const SOn& Q1, const SOn& Q2, boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2) const {
   gttic(FrobeniusWormholeFactorP_evaluateError);

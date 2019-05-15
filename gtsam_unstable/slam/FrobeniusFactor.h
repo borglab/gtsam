@@ -117,19 +117,19 @@ class FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
 };
 
 /**
- * FrobeniusWormholeFactorP is a BetweenFactor that moves in SO(p), but will
+ * FrobeniusWormholeFactor is a BetweenFactor that moves in SO(p), but will
  * land on the SO(3) sub-manifold of SO(p) at the global minimum. It projects
  * the SO(p) matrices down to a Stiefel manifold of p*d matrices.
  * TODO(frank): template on D=2 or 3
  */
-class FrobeniusWormholeFactorP : public NoiseModelFactor2<SOn, SOn> {
+class FrobeniusWormholeFactor : public NoiseModelFactor2<SOn, SOn> {
   Matrix M_;                   ///< measured rotation between R1 and R2
   size_t p_, pp_, dimension_;  ///< dimensionality constants
   Matrix G_;                   ///< matrix of vectorized generators
 
  public:
   /// Constructor. Note we convert to 3*p-dimensional noise model.
-  FrobeniusWormholeFactorP(Key j1, Key j2, const SO3& R12, size_t p = 4,
+  FrobeniusWormholeFactor(Key j1, Key j2, const SO3& R12, size_t p = 4,
                            const SharedNoiseModel& model = nullptr);
 
   /// Error is Frobenius norm between Q1*P*R12 and Q2*P, where P=[I_3x3;0]
