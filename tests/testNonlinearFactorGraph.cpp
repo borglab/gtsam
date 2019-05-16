@@ -202,7 +202,8 @@ TEST(NonlinearFactorGraph, UpdateCholesky) {
 }
 
 /* ************************************************************************* */
-// Example from issue #452 which threw an ILS error
+// Example from issue #452 which threw an ILS error. The reason was a very 
+// weak prior on heading, which was tightened, and the ILS disappeared.
 TEST(testNonlinearFactorGraph, eliminate) {
   // Linearization point
   Pose2 T11(0, 0, 0);
@@ -219,18 +220,14 @@ TEST(testNonlinearFactorGraph, eliminate) {
   graph.add(PriorFactor<Pose2>(21, T21, prior));
 
   // Odometry
-  auto model = noiseModel::Diagonal::Sigmas(Vector3(0.01, 0.01, 1e6));
+  auto model = noiseModel::Diagonal::Sigmas(Vector3(0.01, 0.01, 0.3));
   graph.add(BetweenFactor<Pose2>(11, 12, T11.between(T12), model));
   graph.add(BetweenFactor<Pose2>(21, 22, T21.between(T22), model));
 
-  // Range
+  // Range factor
   auto model_rho = noiseModel::Isotropic::Sigma(1, 0.01);
   graph.add(RangeFactor<Pose2>(12, 22, 1.0, model_rho));
 
-  // Print graph
-  GTSAM_PRINT(graph);
-
-  double sigma = 0.1;
   Values values;
   values.insert(11, T11.retract(Vector3(0.1,0.2,0.3)));
   values.insert(12, T12);
@@ -242,6 +239,7 @@ TEST(testNonlinearFactorGraph, eliminate) {
   Ordering ordering;
   ordering += 11, 21, 12, 22;
   auto bn = linearized->eliminateSequential(ordering);
+  EXPECT_LONGS_EQUAL(4, bn->size());
 }
 
 /* ************************************************************************* */
