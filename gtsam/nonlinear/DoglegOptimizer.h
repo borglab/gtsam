@@ -37,11 +37,11 @@ public:
     VERBOSE
   };
 
-  double deltaInitial; ///< The initial trust region radius (default: 1.0)
+  double deltaInitial; ///< The initial trust region radius (default: 10.0)
   VerbosityDL verbosityDL; ///< The verbosity level for Dogleg (default: SILENT), see also NonlinearOptimizerParams::verbosity
 
   DoglegParams() :
-    deltaInitial(1.0), verbosityDL(SILENT) {}
+    deltaInitial(10.0), verbosityDL(SILENT) {}
 
   virtual ~DoglegParams() {}
 
