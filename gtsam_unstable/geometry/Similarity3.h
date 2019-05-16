@@ -96,11 +96,11 @@ public:
   /// @{
 
   /// Action on a point p is s*(R*p+t)
-  Point3 transform_from(const Point3& p, //
+  Point3 transformFrom(const Point3& p, //
       OptionalJacobian<3, 7> H1 = boost::none, //
       OptionalJacobian<3, 3> H2 = boost::none) const;
 
-  /** syntactic sugar for transform_from */
+  /** syntactic sugar for transformFrom */
   Point3 operator*(const Point3& p) const;
 
   /// @}

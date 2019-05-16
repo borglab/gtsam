@@ -30,9 +30,9 @@ class TestPose3(GtsamTestCase):
         self.gtsamAssertEquals(actual, expected, 1e-6)
 
     def test_transform_to(self):
-        """Test transform_to method."""
+        """Test transformTo method."""
         transform = Pose3(Rot3.Rodrigues(0, 0, -1.570796), Point3(2, 4, 0))
-        actual = transform.transform_to(Point3(3, 2, 10))
+        actual = transform.transformTo(Point3(3, 2, 10))
         expected = Point3(2, 1, 10)
         self.gtsamAssertEquals(actual, expected, 1e-6)
 

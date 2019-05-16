@@ -50,7 +50,7 @@ int main() {
 #ifdef TERNARY
       (model, z, project3(x, p, K));
 #else
-      (model, z, uncalibrate(K, project(transform_to(x, p))));
+      (model, z, uncalibrate(K, project(transformTo(x, p))));
 #endif
   time("timing:", f, values);
 

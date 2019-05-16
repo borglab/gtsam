@@ -166,7 +166,7 @@ double doubleF(const Pose3& pose,  //
 }
 Pose3_ x(1);
 Point3_ p(2);
-Point3_ p_cam(x, &Pose3::transform_to, p);
+Point3_ p_cam(x, &Pose3::transformTo, p);
 }
 
 /* ************************************************************************* */

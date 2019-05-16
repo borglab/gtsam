@@ -138,7 +138,7 @@ class GTSAM_EXPORT EssentialMatrix {
    * @param Dpoint optional 3*3 Jacobian wrpt point
    * @return point in pose coordinates
    */
-  Point3 transform_to(const Point3& p,
+  Point3 transformTo(const Point3& p,
       OptionalJacobian<3, 5> DE = boost::none,
       OptionalJacobian<3, 3> Dpoint = boost::none) const;
 
@@ -175,6 +175,17 @@ class GTSAM_EXPORT EssentialMatrix {
   GTSAM_EXPORT friend std::istream& operator >>(std::istream& is, EssentialMatrix& E);
 
   /// @}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  /// @name Deprecated
+  /// @{
+  Point3 transform_to(const Point3& p,
+      OptionalJacobian<3, 5> DE = boost::none,
+      OptionalJacobian<3, 3> Dpoint = boost::none) const {
+    return transformTo(p, DE, Dpoint);
+  };
+  /// @}
+#endif
 
  private:
   /// @name Advanced Interface

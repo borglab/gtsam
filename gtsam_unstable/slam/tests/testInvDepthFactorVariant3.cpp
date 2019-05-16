@@ -38,7 +38,7 @@ TEST( InvDepthFactorVariant3, optimize) {
   Point2 pixel2 = camera2.project(landmark);
 
   // Create expected landmark
-  Point3 landmark_p1 = pose1.transform_to(landmark);
+  Point3 landmark_p1 = pose1.transformTo(landmark);
   // landmark_p1.print("Landmark in Pose1 Frame:\n");
   double theta = atan2(landmark_p1.x(), landmark_p1.z());
   double phi = atan2(landmark_p1.y(), sqrt(landmark_p1.x()*landmark_p1.x()+landmark_p1.z()*landmark_p1.z()));

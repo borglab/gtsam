@@ -220,7 +220,7 @@ TEST (EssentialMatrixFactor2, factor) {
     EssentialMatrixFactor2 factor(100, i, pA(i), pB(i), model2);
 
     // Check evaluation
-    Point3 P1 = data.tracks[i].p, P2 = data.cameras[1].pose().transform_to(P1);
+    Point3 P1 = data.tracks[i].p, P2 = data.cameras[1].pose().transformTo(P1);
     const Point2 pi = PinholeBase::Project(P2);
     Point2 expected(pi - pB(i));
 

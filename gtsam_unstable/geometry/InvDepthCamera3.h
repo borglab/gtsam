@@ -157,7 +157,7 @@ public:
     const gtsam::Point2 pn = k_->calibrate(pi);
     gtsam::Point3 pc(pn.x(), pn.y(), 1.0);
     pc = pc/pc.norm();
-    gtsam::Point3 pw = pose_.transform_from(pc);
+    gtsam::Point3 pw = pose_.transformFrom(pc);
     const gtsam::Point3& pt = pose_.translation();
     gtsam::Point3 ray = pw - pt;
     double theta = atan2(ray.y(), ray.x()); // longitude

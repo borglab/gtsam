@@ -256,7 +256,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
   for(const Pose3& pose: poses) {
-    const Point3& p_local = pose.transform_to(point);
+    const Point3& p_local = pose.transformTo(point);
     if (p_local.z() <= 0)
       throw(TriangulationCheiralityException());
   }
@@ -304,7 +304,7 @@ Point3 triangulatePoint3(
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
   for(const CAMERA& camera: cameras) {
-    const Point3& p_local = camera.pose().transform_to(point);
+    const Point3& p_local = camera.pose().transformTo(point);
     if (p_local.z() <= 0)
       throw(TriangulationCheiralityException());
   }
@@ -484,7 +484,7 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
         // verify that the triangulated point lies in front of all cameras
         // Only needed if this was not yet handled by exception
-        const Point3& p_local = pose.transform_to(point);
+        const Point3& p_local = pose.transformTo(point);
         if (p_local.z() <= 0)
           return TriangulationResult::BehindCamera();
 #endif

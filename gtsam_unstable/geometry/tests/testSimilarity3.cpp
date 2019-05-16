@@ -232,17 +232,17 @@ TEST(Similarity3, GroupAction) {
   Point3 pa = Point3(1, 0, 0);
   Similarity3 Ta(Rot3(), Point3(1, 2, 3), 1.0);
   Similarity3 Tb(Rot3(), Point3(1, 2, 3), 2.0);
-  EXPECT(assert_equal(Point3(2, 2, 3), Ta.transform_from(pa)));
-  EXPECT(assert_equal(Point3(4, 4, 6), Tb.transform_from(pa)));
+  EXPECT(assert_equal(Point3(2, 2, 3), Ta.transformFrom(pa)));
+  EXPECT(assert_equal(Point3(4, 4, 6), Tb.transformFrom(pa)));
 
   Similarity3 Tc(Rot3::Rz(M_PI / 2.0), Point3(1, 2, 3), 1.0);
   Similarity3 Td(Rot3::Rz(M_PI / 2.0), Point3(1, 2, 3), 2.0);
-  EXPECT(assert_equal(Point3(1, 3, 3), Tc.transform_from(pa)));
-  EXPECT(assert_equal(Point3(2, 6, 6), Td.transform_from(pa)));
+  EXPECT(assert_equal(Point3(1, 3, 3), Tc.transformFrom(pa)));
+  EXPECT(assert_equal(Point3(2, 6, 6), Td.transformFrom(pa)));
 
   // Test derivative
   boost::function<Point3(Similarity3, Point3)> f = boost::bind(
-      &Similarity3::transform_from, _1, _2, boost::none, boost::none);
+      &Similarity3::transformFrom, _1, _2, boost::none, boost::none);
 
   Point3 q(1, 2, 3);
   for (const auto T : { T1, T2, T3, T4, T5, T6 }) {
@@ -250,7 +250,7 @@ TEST(Similarity3, GroupAction) {
     Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(f, T, q);
     Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(f, T, q);
     Matrix actualH1, actualH2;
-    T.transform_from(q, actualH1, actualH2);
+    T.transformFrom(q, actualH1, actualH2);
     EXPECT(assert_equal(H1, actualH1));
     EXPECT(assert_equal(H2, actualH2));
   }
@@ -370,9 +370,9 @@ TEST(Similarity3, AlignScaledPointClouds) {
   Expression<Point3> q1_(q1), q2_(q2), q3_(q3);
 
   // Create prediction expressions
-  Expression<Point3> predict1(unknownT, &Similarity3::transform_from, q1_);
-  Expression<Point3> predict2(unknownT, &Similarity3::transform_from, q2_);
-  Expression<Point3> predict3(unknownT, &Similarity3::transform_from, q3_);
+  Expression<Point3> predict1(unknownT, &Similarity3::transformFrom, q1_);
+  Expression<Point3> predict2(unknownT, &Similarity3::transformFrom, q2_);
+  Expression<Point3> predict3(unknownT, &Similarity3::transformFrom, q3_);
 
 //// Create Expression factor graph
 //  ExpressionFactorGraph graph;
