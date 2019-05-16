@@ -153,7 +153,7 @@ public:
     }
 
     // Whiten the system if needed
-    const SharedNoiseModel& noiseModel = this->get_noiseModel();
+    const SharedNoiseModel& noiseModel = this->noiseModel();
     if (noiseModel && !noiseModel->isUnit()) {
       // TODO: implement WhitenSystem for fixed size matrices and include
       // above

@@ -62,7 +62,7 @@ Examples: noiseModel_Gaussian, noiseModel_mEstimator_Tukey
 - Casting from a base class to a derive class must be done explicitly.
 Examples:
 ```Python
-      noiseBase = factor.get_noiseModel()
+      noiseBase = factor.noiseModel()
       noiseGaussian = dynamic_cast_noiseModel_Gaussian_noiseModel_Base(noiseBase)
 ```
 
