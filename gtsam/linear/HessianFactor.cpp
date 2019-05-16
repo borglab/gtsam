@@ -487,6 +487,11 @@ boost::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Or
     // Erase the eliminated keys in this factor
     keys_.erase(begin(), begin() + nFrontals);
   } catch (const CholeskyFailed&) {
+#ifndef NDEBUG
+    cout << "Partial Cholesky on HessianFactor failed." << endl;
+    keys.print("Frontal keys ");
+    print("HessianFactor:");
+#endif
     throw IndeterminantLinearSystemException(keys.front());
   }
 
