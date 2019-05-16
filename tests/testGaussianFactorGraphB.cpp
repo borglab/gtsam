@@ -169,35 +169,6 @@ TEST(GaussianFactorGraph, eliminateOne_l1_fast) {
   EXPECT(assert_equal(expected, *actual, tol));
 }
 
-// /* ************************************************************************* */
-// TEST( GaussianFactorGraph, eliminateAll )
-// {
-//   // create expected Chordal bayes Net
-//   Matrix I = I_2x2;
-
-//   Ordering ordering;
-//   ordering += X(2),L(1),X(1);
-
-//   Vector d1 = Vector2(-0.1,-0.1);
-//   GaussianBayesNet expected = simpleGaussian(X(1),d1,0.1);
-
-//   double sig1 = 0.149071;
-//   Vector d2 = Vector2(0.0, 0.2)/sig1, sigma2 = Vector::Ones(2);
-//   push_front(expected,L(1),d2, I/sig1,X(1), (-1)*I/sig1,sigma2);
-
-//   double sig2 = 0.0894427;
-//   Vector d3 = Vector2(0.2, -0.14)/sig2, sigma3 = Vector::Ones(2);
-//   push_front(expected,X(2),d3, I/sig2,L(1), (-0.2)*I/sig2, X(1), (-0.8)*I/sig2, sigma3);
-
-//   // Check one ordering
-//   GaussianFactorGraph fg1 = createGaussianFactorGraph();
-//   GaussianBayesNet actual = *fg1.eliminateSequential();
-//   EXPECT(assert_equal(expected,actual,tol));
-
-//   GaussianBayesNet actualQR = *fg1.eliminateSequential(, true);
-//   EXPECT(assert_equal(expected,actualQR,tol));
-// }
-
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, copying) {
   // Create a graph
@@ -338,19 +309,16 @@ TEST(GaussianFactorGraph, elimination) {
          equal_with_abs_tol(expected2, R, 1e-6));
 }
 
-#if 0
-
 /* ************************************************************************* */
 // Tests ported from ConstrainedGaussianFactorGraph
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, constrained_simple )
-{
+TEST(GaussianFactorGraph, constrained_simple) {
   // get a graph with a constraint in it
   GaussianFactorGraph fg = createSimpleConstraintGraph();
   EXPECT(hasConstraints(fg));
 
   // eliminate and solve
-  VectorValues actual = *fg.eliminateSequential().optimize();
+  VectorValues actual = fg.eliminateSequential()->optimize();
 
   // verify
   VectorValues expected = createSimpleConstraintValues();
@@ -358,14 +326,13 @@ TEST( GaussianFactorGraph, constrained_simple )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, constrained_single )
-{
+TEST(GaussianFactorGraph, constrained_single) {
   // get a graph with a constraint in it
   GaussianFactorGraph fg = createSingleConstraintGraph();
   EXPECT(hasConstraints(fg));
 
   // eliminate and solve
-  VectorValues actual = *fg.eliminateSequential().optimize();
+  VectorValues actual = fg.eliminateSequential()->optimize();
 
   // verify
   VectorValues expected = createSingleConstraintValues();
@@ -373,14 +340,13 @@ TEST( GaussianFactorGraph, constrained_single )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, constrained_multi1 )
-{
+TEST(GaussianFactorGraph, constrained_multi1) {
   // get a graph with a constraint in it
   GaussianFactorGraph fg = createMultiConstraintGraph();
   EXPECT(hasConstraints(fg));
 
   // eliminate and solve
-  VectorValues actual = *fg.eliminateSequential().optimize();
+  VectorValues actual = fg.eliminateSequential()->optimize();
 
   // verify
   VectorValues expected = createMultiConstraintValues();
@@ -419,27 +385,6 @@ TEST(GaussianFactorGraph, replace)
 
   EXPECT(assert_equal(expected, actual));
 }
-
-/* ************************************************************************* */
-TEST(GaussianFactorGraph, createSmoother2)
-{
-  using namespace example;
-  GaussianFactorGraph fg2;
-  Ordering ordering;
-  boost::tie(fg2,ordering) = createSmoother(3);
-  LONGS_EQUAL(5,fg2.size());
-
-  // eliminate
-  vector<Index> x3var; x3var.push_back(ordering[X(3)]);
-  vector<Index> x1var; x1var.push_back(X(1));
-  GaussianBayesNet p_x3 = *GaussianSequentialSolver(
-      *fg2.eliminateSequential().jointFactorGraph(x3var));
-  GaussianBayesNet p_x1 = *GaussianSequentialSolver(
-      *fg2.eliminateSequential().jointFactorGraph(x1var));
-  CHECK(assert_equal(*p_x1.back(),*p_x3.front())); // should be the same because of symmetry
-}
-
-#endif
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, hasConstraints)
