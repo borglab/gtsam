@@ -253,11 +253,6 @@ public:
   /** convert to 4*4 matrix */
   Matrix4 matrix() const;
 
-  /** receives a pose in local coordinates and transforms it to world coordinates
-  * @deprecated: This is actually equivalent to transform_from, so it is WRONG! Use
-  * transform_pose_to instead. */
-  Pose3 transform_to(const Pose3& pose) const;
-
   /** receives a pose in world coordinates and transforms it to local coordinates */
   Pose3 transform_pose_to(const Pose3& pose, OptionalJacobian<6, 6> H1 = boost::none,
                                              OptionalJacobian<6, 6> H2 = boost::none) const;
@@ -320,6 +315,14 @@ public:
   /// Output stream operator
   GTSAM_EXPORT
   friend std::ostream &operator<<(std::ostream &os, const Pose3& p);
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  /// @name Deprecated
+  /// @{
+  /// This function is neither here not there. Do not use.
+  Pose3 transform_to(const Pose3& pose) const;
+  /// @}
+#endif
 
  private:
   /** Serialization function */

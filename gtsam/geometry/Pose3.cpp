@@ -285,11 +285,13 @@ Matrix4 Pose3::matrix() const {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 Pose3 Pose3::transform_to(const Pose3& pose) const {
   Rot3 cRv = R_ * Rot3(pose.R_.inverse());
   Point3 t = pose.transform_to(t_);
   return Pose3(cRv, t);
 }
+#endif
 
 /* ************************************************************************* */
 Pose3 Pose3::transform_pose_to(const Pose3& pose, OptionalJacobian<6, 6> H1,
