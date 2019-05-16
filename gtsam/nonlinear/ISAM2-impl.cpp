@@ -246,8 +246,8 @@ void updateRgProd(const ISAM2::sharedClique& clique, const KeySet& replacedKeys,
                                     clique->conditional()->endParents()));
 
     // Compute R*g and S*g for this clique
-    Vector RSgProd = clique->conditional()->get_R() * gR +
-                     clique->conditional()->get_S() * gS;
+    Vector RSgProd = clique->conditional()->R() * gR +
+                     clique->conditional()->S() * gS;
 
     // Write into RgProd vector
     DenseIndex vectorPosition = 0;

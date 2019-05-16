@@ -37,9 +37,9 @@ void ISAM2Clique::setEliminationResult(
   gradientContribution_.resize(conditional_->cols() - 1);
   // Rewrite -(R * P')'*d   as   -(d' * R * P')'   for computational speed
   // reasons
-  gradientContribution_ << -conditional_->get_R().transpose() *
-                               conditional_->get_d(),
-      -conditional_->get_S().transpose() * conditional_->get_d();
+  gradientContribution_ << -conditional_->R().transpose() *
+                               conditional_->d(),
+      -conditional_->S().transpose() * conditional_->d();
 }
 
 /* ************************************************************************* */
@@ -141,8 +141,8 @@ void ISAM2Clique::fastBackSubstitute(VectorValues* delta) const {
     // This is because Eigen (as of 3.3) no longer evaluates S * xS into
     // a temporary, and the operation trashes valus in xS.
     // See: http://eigen.tuxfamily.org/index.php?title=3.3
-    const Vector rhs = c.getb() - c.get_S() * xS;
-    const Vector solution = c.get_R().triangularView<Eigen::Upper>().solve(rhs);
+    const Vector rhs = c.getb() - c.S() * xS;
+    const Vector solution = c.R().triangularView<Eigen::Upper>().solve(rhs);
 
     // Check for indeterminant solution
     if (solution.hasNaN())
@@ -284,7 +284,7 @@ size_t optimizeWildfireNonRecursive(const ISAM2Clique::shared_ptr& root,
 /* ************************************************************************* */
 void ISAM2Clique::nnz_internal(size_t* result) const {
   size_t dimR = conditional_->rows();
-  size_t dimSep = conditional_->get_S().cols();
+  size_t dimSep = conditional_->S().cols();
   *result += ((dimR + 1) * dimR) / 2 + dimSep * dimR;
   // traverse the children
   for (const auto& child : children) {

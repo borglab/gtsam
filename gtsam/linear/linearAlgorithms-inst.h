@@ -87,10 +87,10 @@ namespace gtsam
             // This is because Eigen (as of 3.3) no longer evaluates S * xS into
             // a temporary, and the operation trashes valus in xS.
             // See: http://eigen.tuxfamily.org/index.php?title=3.3
-            const Vector rhs = c.getb() - c.get_S() * xS;
+            const Vector rhs = c.getb() - c.S() * xS;
 
             // TODO(gareth): Inline instantiation of Eigen::Solve and check flag
-            const Vector solution = c.get_R().triangularView<Eigen::Upper>().solve(rhs);
+            const Vector solution = c.R().triangularView<Eigen::Upper>().solve(rhs);
 
             // Check for indeterminant solution
             if(solution.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());

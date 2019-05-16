@@ -213,8 +213,8 @@ void SubgraphPreconditioner::solve(const Vector &y, Vector &x) const {
     const Vector rhsFrontal = getSubvector(y, keyInfo_, frontalKeys);
 
     /* compute the solution for the current pivot */
-    const Vector solFrontal = cg->get_R().triangularView<Eigen::Upper>().solve(
-        rhsFrontal - cg->get_S() * xParent);
+    const Vector solFrontal = cg->R().triangularView<Eigen::Upper>().solve(
+        rhsFrontal - cg->S() * xParent);
 
     /* assign subvector of sol to the frontal variables */
     setSubvector(solFrontal, keyInfo_, frontalKeys, x);
@@ -232,7 +232,7 @@ void SubgraphPreconditioner::transposeSolve(const Vector &y, Vector &x) const {
     const KeyVector frontalKeys(cg->beginFrontals(), cg->endFrontals());
     const Vector rhsFrontal = getSubvector(x, keyInfo_, frontalKeys);
     const Vector solFrontal =
-        cg->get_R().transpose().triangularView<Eigen::Lower>().solve(
+        cg->R().transpose().triangularView<Eigen::Lower>().solve(
             rhsFrontal);
 
     // Check for indeterminant solution
