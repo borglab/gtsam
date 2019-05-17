@@ -192,11 +192,11 @@ namespace gtsam {
     double logDet = 0.0;
     for(const sharedConditional& cg: *this) {
       if(cg->get_model()) {
-        Vector diag = cg->get_R().diagonal();
+        Vector diag = cg->R().diagonal();
         cg->get_model()->whitenInPlace(diag);
         logDet += diag.unaryExpr(ptr_fun<double,double>(log)).sum();
       } else {
-        logDet += cg->get_R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
+        logDet += cg->R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
       }
     }
     return logDet;

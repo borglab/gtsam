@@ -37,7 +37,7 @@ namespace gtsam {
     /* ************************************************************************* */
     double logDeterminant(const GaussianBayesTreeClique::shared_ptr& clique, double& parentSum)
     {
-      parentSum += clique->conditional()->get_R().diagonal().unaryExpr(std::ptr_fun<double,double>(log)).sum();
+      parentSum += clique->conditional()->R().diagonal().unaryExpr(std::ptr_fun<double,double>(log)).sum();
       assert(false);
       return 0;
     }

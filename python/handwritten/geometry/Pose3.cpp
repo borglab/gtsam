@@ -30,8 +30,8 @@ using namespace gtsam;
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, Pose3::print, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(equals_overloads, Pose3::equals, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(transform_to_overloads, Pose3::transform_to, 1, 3)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(transform_from_overloads, Pose3::transform_from, 1, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(transform_to_overloads, Pose3::transformTo, 1, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(transform_from_overloads, Pose3::transformFrom, 1, 3)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(rotation_overloads, Pose3::rotation, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(translation_overloads, Pose3::translation, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(compose_overloads, Pose3::compose, 2, 3)
@@ -41,9 +41,9 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(range_overloads, Pose3::range, 1, 3)
 
 void exportPose3(){
 
-  // function pointers to desambiguate transform_to() calls
-  Point3 (Pose3::*transform_to1)(const Point3&,  OptionalJacobian< 3, 6 >,  OptionalJacobian< 3, 3 > ) const = &Pose3::transform_to;
-  Pose3  (Pose3::*transform_to2)(const Pose3&) const = &Pose3::transform_to;
+  // function pointers to desambiguate transformTo() calls
+  Point3 (Pose3::*transform_to1)(const Point3&,  OptionalJacobian< 3, 6 >,  OptionalJacobian< 3, 3 > ) const = &Pose3::transformTo;
+  Pose3  (Pose3::*transform_to2)(const Pose3&) const = &Pose3::transformTo;
   // function pointers to desambiguate compose() calls
   Pose3 (Pose3::*compose1)(const Pose3 &g) const  = &Pose3::compose;
   Pose3 (Pose3::*compose2)(const Pose3 &g, typename Pose3::ChartJacobian, typename Pose3::ChartJacobian) const  = &Pose3::compose;
@@ -69,10 +69,10 @@ void exportPose3(){
       .def("identity", &Pose3::identity)
       .staticmethod("identity")
       .def("matrix", &Pose3::matrix)
-      .def("transform_from", &Pose3::transform_from,
+      .def("transformFrom", &Pose3::transformFrom,
            transform_from_overloads(args("point", "H1", "H2")))
-      .def("transform_to", transform_to1, transform_to_overloads(args("point", "H1", "H2")))
-      .def("transform_to", transform_to2)
+      .def("transformTo", transform_to1, transform_to_overloads(args("point", "H1", "H2")))
+      .def("transformTo", transform_to2)
       .def("x", &Pose3::x)
       .def("y", &Pose3::y)
       .def("z", &Pose3::z)

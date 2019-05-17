@@ -132,7 +132,7 @@ public:
   /**
    * Apply transform to this pose, with optional derivatives
    * equivalent to:
-   * local = trans.transform_from(global, Dtrans, Dglobal)
+   * local = trans.transformFrom(global, Dtrans, Dglobal)
    *
    * Note: the transform jacobian convention is flipped
    */

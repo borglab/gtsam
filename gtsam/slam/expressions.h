@@ -21,8 +21,8 @@ typedef Expression<Point2> Point2_;
 typedef Expression<Rot2> Rot2_;
 typedef Expression<Pose2> Pose2_;
 
-inline Point2_ transform_to(const Pose2_& x, const Point2_& p) {
-  return Point2_(x, &Pose2::transform_to, p);
+inline Point2_ transformTo(const Pose2_& x, const Point2_& p) {
+  return Point2_(x, &Pose2::transformTo, p);
 }
 
 // 3D Geometry
@@ -32,12 +32,12 @@ typedef Expression<Unit3> Unit3_;
 typedef Expression<Rot3> Rot3_;
 typedef Expression<Pose3> Pose3_;
 
-inline Point3_ transform_to(const Pose3_& x, const Point3_& p) {
-  return Point3_(x, &Pose3::transform_to, p);
+inline Point3_ transformTo(const Pose3_& x, const Point3_& p) {
+  return Point3_(x, &Pose3::transformTo, p);
 }
 
-inline Point3_ transform_from(const Pose3_& x, const Point3_& p) {
-  return Point3_(x, &Pose3::transform_from, p);
+inline Point3_ transformFrom(const Pose3_& x, const Point3_& p) {
+  return Point3_(x, &Pose3::transformFrom, p);
 }
 
 inline Point3_ rotate(const Rot3_& x, const Point3_& p) {

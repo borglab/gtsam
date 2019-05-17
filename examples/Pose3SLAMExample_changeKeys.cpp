@@ -79,7 +79,7 @@ int main(const int argc, const char *argv[]) {
           key2 = pose3Between->key2() - firstKey;
         }
         NonlinearFactor::shared_ptr simpleFactor(
-            new BetweenFactor<Pose3>(key1, key2, pose3Between->measured(), pose3Between->get_noiseModel()));
+            new BetweenFactor<Pose3>(key1, key2, pose3Between->measured(), pose3Between->noiseModel()));
         simpleGraph.add(simpleFactor);
       }
     }

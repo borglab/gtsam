@@ -632,8 +632,8 @@ class Pose2 {
   static Matrix wedge(double vx, double vy, double w);
 
   // Group Actions on Point2
-  gtsam::Point2 transform_from(const gtsam::Point2& p) const;
-  gtsam::Point2 transform_to(const gtsam::Point2& p) const;
+  gtsam::Point2 transformFrom(const gtsam::Point2& p) const;
+  gtsam::Point2 transformTo(const gtsam::Point2& p) const;
 
   // Standard Interface
   double x() const;
@@ -685,8 +685,8 @@ class Pose3 {
   static Matrix wedge(double wx, double wy, double wz, double vx, double vy, double vz);
 
   // Group Action on Point3
-  gtsam::Point3 transform_from(const gtsam::Point3& point) const;
-  gtsam::Point3 transform_to(const gtsam::Point3& point) const;
+  gtsam::Point3 transformFrom(const gtsam::Point3& point) const;
+  gtsam::Point3 transformTo(const gtsam::Point3& point) const;
 
   // Standard Interface
   gtsam::Rot3 rotation() const;
@@ -695,7 +695,8 @@ class Pose3 {
   double y() const;
   double z() const;
   Matrix matrix() const;
-  gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const; // FIXME: shadows other transform_to()
+  gtsam::Pose3 transformPoseFrom(const gtsam::Pose3& pose) const;
+  gtsam::Pose3 transformPoseTo(const gtsam::Pose3& pose) const;
   double range(const gtsam::Point3& point);
   double range(const gtsam::Pose3& pose);
 
@@ -1916,7 +1917,6 @@ virtual class NonlinearFactor {
 #include <gtsam/nonlinear/NonlinearFactor.h>
 virtual class NoiseModelFactor: gtsam::NonlinearFactor {
   bool equals(const gtsam::NoiseModelFactor& other, double tol) const;
-  gtsam::noiseModel::Base* get_noiseModel() const; // deprecated by below
   gtsam::noiseModel::Base* noiseModel() const;
   Vector unwhitenedError(const gtsam::Values& x) const;
   Vector whitenedError(const gtsam::Values& x) const;

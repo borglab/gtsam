@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
       Point2 measurement = camera.project(points[j]);
       // Below an expression for the prediction of the measurement:
       Point3_ p('l', j);
-      Point2_ prediction = uncalibrate(cK, project(transform_to(x, p)));
+      Point2_ prediction = uncalibrate(cK, project(transformTo(x, p)));
       // Again, here we use an ExpressionFactor
       graph.addExpressionFactor(prediction, measurement, measurementNoise);
     }
