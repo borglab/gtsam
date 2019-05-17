@@ -49,7 +49,7 @@ PreintegratedImuMeasurements ScenarioRunner::integrate(
 
 NavState ScenarioRunner::predict(const PreintegratedImuMeasurements& pim,
                                  const Bias& estimatedBias) const {
-  const NavState state_i(scenario_->pose(0), scenario_->velocity_n(0));
+  const NavState state_i(scenario_.pose(0), scenario_.velocity_n(0));
   return pim.predict(state_i, estimatedBias);
 }
 
