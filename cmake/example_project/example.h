@@ -20,6 +20,7 @@
 
 namespace example {
 
+#include <example/PrintExamples.h>
 class PrintExamples {
   void sayHello() const;
   void sayGoodbye() const;
