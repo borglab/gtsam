@@ -2140,7 +2140,7 @@ virtual class NonlinearOptimizer {
   double error() const;
   int iterations() const;
   gtsam::Values values() const;
-  void iterate() const;
+  gtsam::GaussianFactorGraph* iterate() const;
 };
 
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
