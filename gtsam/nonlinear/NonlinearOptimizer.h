@@ -86,9 +86,9 @@ public:
   /// @name Standard interface
   /// @{
 
-  /** Optimize for the maximum-likelihood estimate, returning a new
-   * NonlinearOptimizer class containing the optimized variable assignments,
-   * which may be retrieved with values().
+  /** 
+   * Optimize for the maximum-likelihood estimate, returning a the optimized 
+   * variable assignments.
    *
    * This function simply calls iterate() in a loop, checking for convergence
    * with check_convergence().  For fine-grain control over the optimization
@@ -126,9 +126,9 @@ public:
   virtual VectorValues solve(const GaussianFactorGraph &gfg,
       const NonlinearOptimizerParams& params) const;
 
-  /** Perform a single iteration, returning a new NonlinearOptimizer class
-   * containing the updated variable assignments, which may be retrieved with
-   * values().
+  /** 
+   * Perform a single iteration, returning GaussianFactorGraph corresponding to 
+   * the linearized factor graph.
    */
   virtual GaussianFactorGraph::shared_ptr iterate() = 0;
 
