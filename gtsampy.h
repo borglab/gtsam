@@ -2045,7 +2045,7 @@ virtual class NonlinearOptimizer {
   double error() const;
   int iterations() const;
   gtsam::Values values() const;
-  void iterate() const;
+  gtsam::GaussianFactorGraph* iterate() const;
 };
 
 virtual class GaussNewtonOptimizer : gtsam::NonlinearOptimizer {
