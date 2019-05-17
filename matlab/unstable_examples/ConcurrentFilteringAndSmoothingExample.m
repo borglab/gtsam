@@ -107,7 +107,7 @@ for time = deltaT : deltaT : 10.0
   %% Print the filter optimized poses
   fprintf(1, 'Timestamp = %5.3f\n', time);
   filterResult = concurrentFilter.calculateEstimate;
-  filterResult.at(currentKey).print('Concurrent Estimate: ');
+  filterResult.atPose2(currentKey).print('Concurrent Estimate: ');
   
   %% Plot Covariance Ellipses
   cla;
