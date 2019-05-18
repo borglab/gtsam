@@ -2856,6 +2856,30 @@ virtual class AcceleratingScenario : gtsam::Scenario {
                        Vector omega_b);
 };
 
+#include <gtsam/navigation/ScenarioRunner.h>
+class ScenarioRunner {
+  ScenarioRunner(const gtsam::Scenario& scenario,
+                 const gtsam::PreintegrationParams* p,
+                 double imuSampleTime,
+                 const gtsam::imuBias::ConstantBias& bias);
+  Vector gravity_n() const;
+  Vector actualAngularVelocity(double t) const;
+  Vector actualSpecificForce(double t) const;
+  Vector measuredAngularVelocity(double t) const;
+  Vector measuredSpecificForce(double t) const;
+  double imuSampleTime() const;
+  gtsam::PreintegratedImuMeasurements integrate(
+      double T, const gtsam::imuBias::ConstantBias& estimatedBias,
+      bool corrupted) const;
+  gtsam::NavState predict(
+      const gtsam::PreintegratedImuMeasurements& pim,
+      const gtsam::imuBias::ConstantBias& estimatedBias) const;
+  Matrix estimateCovariance(
+      double T, size_t N,
+      const gtsam::imuBias::ConstantBias& estimatedBias) const;
+  Matrix estimateNoiseCovariance(size_t N) const;
+};
+
 //*************************************************************************
 // Utilities
 //*************************************************************************
