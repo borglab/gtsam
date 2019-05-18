@@ -107,7 +107,7 @@ Point2 PinholeBase::Project(const Unit3& pc, OptionalJacobian<2, 2> Dpoint) {
 
 /* ************************************************************************* */
 pair<Point2, bool> PinholeBase::projectSafe(const Point3& pw) const {
-  const Point3 pc = pose().transform_to(pw);
+  const Point3 pc = pose().transformTo(pw);
   const Point2 pn = Project(pc);
   return make_pair(pn, pc.z() > 0);
 }
@@ -116,8 +116,8 @@ pair<Point2, bool> PinholeBase::projectSafe(const Point3& pw) const {
 Point2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
     OptionalJacobian<2, 3> Dpoint) const {
 
-  Matrix3 Rt; // calculated by transform_to if needed
-  const Point3 q = pose().transform_to(point, boost::none, Dpoint ? &Rt : 0);
+  Matrix3 Rt; // calculated by transformTo if needed
+  const Point3 q = pose().transformTo(point, boost::none, Dpoint ? &Rt : 0);
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   if (q.z() <= 0)
     throw CheiralityException();

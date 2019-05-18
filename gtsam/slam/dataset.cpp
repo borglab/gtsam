@@ -66,6 +66,7 @@ string findExampleDataFile(const string& name) {
   namesToSearch.push_back(name + ".graph");
   namesToSearch.push_back(name + ".txt");
   namesToSearch.push_back(name + ".out");
+  namesToSearch.push_back(name + ".xml");
 
   // Find first name that exists
   for(const fs::path& root: rootsToSearch) {
@@ -358,7 +359,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
       if (!initial->exists(L(id2))) {
         Pose2 pose = initial->at<Pose2>(id1);
         Point2 local(cos(bearing) * range, sin(bearing) * range);
-        Point2 global = pose.transform_from(local);
+        Point2 global = pose.transformFrom(local);
         initial->insert(L(id2), global);
       }
     }

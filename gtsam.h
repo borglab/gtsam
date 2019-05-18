@@ -209,11 +209,60 @@ class KeyGroupMap {
   bool insert2(size_t key, int val);
 };
 
+// Actually a FastSet<FactorIndex>
+class FactorIndexSet {
+  FactorIndexSet();
+  FactorIndexSet(const gtsam::FactorIndexSet& set);
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  void insert(size_t factorIndex);
+  bool erase(size_t factorIndex); // returns true if value was removed
+  bool count(size_t factorIndex) const; // returns true if value exists
+};
+
+// Actually a vector<FactorIndex>
+class FactorIndices {
+  FactorIndices();
+  FactorIndices(const gtsam::FactorIndices& other);
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  size_t at(size_t i) const;
+  size_t front() const;
+  size_t back() const;
+  void push_back(size_t factorIndex) const;
+};
+
 //*************************************************************************
 // base
 //*************************************************************************
 
 /** gtsam namespace functions */
+
+#include <gtsam/base/DSFMap.h>
+class IndexPair { 
+  IndexPair(); 
+  IndexPair(size_t i, size_t j); 
+  size_t i() const;
+  size_t j() const;
+};
+
+template<KEY = {gtsam::IndexPair}>
+class DSFMap {
+  DSFMap();
+  KEY find(const KEY& key) const;
+  void merge(const KEY& x, const KEY& y);
+};
+
 #include <gtsam/base/Matrix.h>
 bool linear_independent(Matrix A, Matrix B, double tol);
 
@@ -583,8 +632,8 @@ class Pose2 {
   static Matrix wedge(double vx, double vy, double w);
 
   // Group Actions on Point2
-  gtsam::Point2 transform_from(const gtsam::Point2& p) const;
-  gtsam::Point2 transform_to(const gtsam::Point2& p) const;
+  gtsam::Point2 transformFrom(const gtsam::Point2& p) const;
+  gtsam::Point2 transformTo(const gtsam::Point2& p) const;
 
   // Standard Interface
   double x() const;
@@ -636,8 +685,8 @@ class Pose3 {
   static Matrix wedge(double wx, double wy, double wz, double vx, double vy, double vz);
 
   // Group Action on Point3
-  gtsam::Point3 transform_from(const gtsam::Point3& point) const;
-  gtsam::Point3 transform_to(const gtsam::Point3& point) const;
+  gtsam::Point3 transformFrom(const gtsam::Point3& point) const;
+  gtsam::Point3 transformTo(const gtsam::Point3& point) const;
 
   // Standard Interface
   gtsam::Rot3 rotation() const;
@@ -646,7 +695,8 @@ class Pose3 {
   double y() const;
   double z() const;
   Matrix matrix() const;
-  gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const; // FIXME: shadows other transform_to()
+  gtsam::Pose3 transformPoseFrom(const gtsam::Pose3& pose) const;
+  gtsam::Pose3 transformPoseTo(const gtsam::Pose3& pose) const;
   double range(const gtsam::Point3& point);
   double range(const gtsam::Pose3& pose);
 
@@ -1219,7 +1269,7 @@ namespace noiseModel {
 #include <gtsam/linear/NoiseModel.h>
 virtual class Base {
   void print(string s) const;
-  // Methods below are available for all noise models. However, can't add them 
+  // Methods below are available for all noise models. However, can't add them
   // because wrap (incorrectly) thinks robust classes derive from this Base as well.
   // bool isConstrained() const;
   // bool isUnit() const;
@@ -1257,7 +1307,7 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
   Vector sigmas() const;
   Vector invsigmas() const;
   Vector precisions() const;
-    
+
   // enabling serialization functionality
   void serializable() const;
 };
@@ -1730,7 +1780,7 @@ virtual class SubgraphSolverParameters : gtsam::ConjugateGradientParameters {
 
 virtual class SubgraphSolver  {
   SubgraphSolver(const gtsam::GaussianFactorGraph &A, const gtsam::SubgraphSolverParameters &parameters, const gtsam::Ordering& ordering);
-  SubgraphSolver(const gtsam::GaussianFactorGraph &Ab1, const gtsam::GaussianFactorGraph &Ab2, const gtsam::SubgraphSolverParameters &parameters, const gtsam::Ordering& ordering);
+  SubgraphSolver(const gtsam::GaussianFactorGraph &Ab1, const gtsam::GaussianFactorGraph* Ab2, const gtsam::SubgraphSolverParameters &parameters, const gtsam::Ordering& ordering);
   gtsam::VectorValues optimize() const;
 };
 
@@ -1867,7 +1917,6 @@ virtual class NonlinearFactor {
 #include <gtsam/nonlinear/NonlinearFactor.h>
 virtual class NoiseModelFactor: gtsam::NonlinearFactor {
   bool equals(const gtsam::NoiseModelFactor& other, double tol) const;
-  gtsam::noiseModel::Base* get_noiseModel() const; // deprecated by below
   gtsam::noiseModel::Base* noiseModel() const;
   Vector unwhitenedError(const gtsam::Values& x) const;
   Vector whitenedError(const gtsam::Values& x) const;
@@ -2053,7 +2102,7 @@ virtual class LevenbergMarquardtParams : gtsam::NonlinearOptimizerParams {
   bool getUseFixedLambdaFactor();
   string getLogFile() const;
   string getVerbosityLM() const;
-  
+
   void setDiagonalDamping(bool flag);
   void setlambdaFactor(double value);
   void setlambdaInitial(double value);
@@ -2091,7 +2140,7 @@ virtual class NonlinearOptimizer {
   double error() const;
   int iterations() const;
   gtsam::Values values() const;
-  void iterate() const;
+  gtsam::GaussianFactorGraph* iterate() const;
 };
 
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
@@ -2208,8 +2257,6 @@ class ISAM2Result {
   size_t getVariablesReeliminated() const;
   size_t getCliques() const;
 };
-
-class FactorIndices {};
 
 class ISAM2 {
   ISAM2();

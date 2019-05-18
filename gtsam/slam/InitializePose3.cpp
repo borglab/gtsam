@@ -82,7 +82,11 @@ Values InitializePose3::normalizeRelaxedRotations(
   for(const auto& it: relaxedRot3) {
     Key key = it.first;
     if (key != kAnchorKey) {
-      Matrix3 R; R << it.second;
+      Matrix3 R;
+      R << Eigen::Map<const Matrix3>(it.second.data()); // Recover M from vectorized
+
+      // ClosestTo finds rotation matrix closest to H in Frobenius sense
+      // Rot3 initRot = Rot3::ClosestTo(M.transpose());
 
       Matrix U, V; Vector s;
       svd(R.transpose(), U, s, V);

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
 
   // Create a prior on the first pose, placing it at the origin
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
-  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
+  auto priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
   Key priorKey = 0;
   newFactors.push_back(PriorFactor<Pose2>(priorKey, priorMean, priorNoise));
   newValues.insert(priorKey, priorMean); // Initialize the first pose at the mean of the prior
@@ -110,11 +110,11 @@ int main(int argc, char** argv) {
 
     // Add odometry factors from two different sources with different error stats
     Pose2 odometryMeasurement1 = Pose2(0.61, -0.08, 0.02);
-    noiseModel::Diagonal::shared_ptr odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.05));
+    auto odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.05));
     newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement1, odometryNoise1));
 
     Pose2 odometryMeasurement2 = Pose2(0.47, 0.03, 0.01);
-    noiseModel::Diagonal::shared_ptr odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector3(0.05, 0.05, 0.05));
+    auto odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector3(0.05, 0.05, 0.05));
     newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
 
     // Unlike the fixed-lag versions, the concurrent filter implementation
@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
   Key loopKey1(1000 * (0.0));
   Key loopKey2(1000 * (5.0));
   Pose2 loopMeasurement = Pose2(9.5, 1.00, 0.00);
-  noiseModel::Diagonal::shared_ptr loopNoise = noiseModel::Diagonal::Sigmas(Vector3(0.5, 0.5, 0.25));
+  auto loopNoise = noiseModel::Diagonal::Sigmas(Vector3(0.5, 0.5, 0.25));
   NonlinearFactor::shared_ptr loopFactor(new BetweenFactor<Pose2>(loopKey1, loopKey2, loopMeasurement, loopNoise));
 
   // This measurement cannot be added directly to the concurrent filter because it connects a filter state to a smoother state
@@ -189,11 +189,11 @@ int main(int argc, char** argv) {
 
     // Add odometry factors from two different sources with different error stats
     Pose2 odometryMeasurement1 = Pose2(0.61, -0.08, 0.02);
-    noiseModel::Diagonal::shared_ptr odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.05));
+    auto odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.05));
     newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement1, odometryNoise1));
 
     Pose2 odometryMeasurement2 = Pose2(0.47, 0.03, 0.01);
-    noiseModel::Diagonal::shared_ptr odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector3(0.05, 0.05, 0.05));
+    auto odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector3(0.05, 0.05, 0.05));
     newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
 
     // Unlike the fixed-lag versions, the concurrent filter implementation
@@ -262,11 +262,11 @@ int main(int argc, char** argv) {
 
     // Add odometry factors from two different sources with different error stats
     Pose2 odometryMeasurement1 = Pose2(0.61, -0.08, 0.02);
-    noiseModel::Diagonal::shared_ptr odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.05));
+    auto odometryNoise1 = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.05));
     newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement1, odometryNoise1));
 
     Pose2 odometryMeasurement2 = Pose2(0.47, 0.03, 0.01);
-    noiseModel::Diagonal::shared_ptr odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector3(0.05, 0.05, 0.05));
+    auto odometryNoise2 = noiseModel::Diagonal::Sigmas(Vector3(0.05, 0.05, 0.05));
     newFactors.push_back(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
 
     // Unlike the fixed-lag versions, the concurrent filter implementation
@@ -309,19 +309,19 @@ int main(int argc, char** argv) {
   // And to demonstrate the fixed-lag aspect, print the keys contained in each smoother after 3.0 seconds
   cout << "After 15.0 seconds, each version contains to the following keys:" << endl;
   cout << "  Concurrent Filter Keys: " << endl;
-  for(const Values::ConstKeyValuePair& key_value: concurrentFilter.getLinearizationPoint()) {
+  for(const auto& key_value: concurrentFilter.getLinearizationPoint()) {
     cout << setprecision(5) << "    Key: " << key_value.key << endl;
   }
   cout << "  Concurrent Smoother Keys: " << endl;
-  for(const Values::ConstKeyValuePair& key_value: concurrentSmoother.getLinearizationPoint()) {
+  for(const auto& key_value: concurrentSmoother.getLinearizationPoint()) {
     cout << setprecision(5) << "    Key: " << key_value.key << endl;
   }
   cout << "  Fixed-Lag Smoother Keys: " << endl;
-  for(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp: fixedlagSmoother.timestamps()) {
+  for(const auto& key_timestamp: fixedlagSmoother.timestamps()) {
     cout << setprecision(5) << "    Key: " << key_timestamp.first << endl;
   }
   cout << "  Batch Smoother Keys: " << endl;
-  for(const FixedLagSmoother::KeyTimestampMap::value_type& key_timestamp: batchSmoother.timestamps()) {
+  for(const auto& key_timestamp: batchSmoother.timestamps()) {
     cout << setprecision(5) << "    Key: " << key_timestamp.first << endl;
   }
 

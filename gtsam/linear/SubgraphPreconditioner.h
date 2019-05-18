@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,30 +17,16 @@
 
 #pragma once
 
+#include <gtsam/linear/SubgraphBuilder.h>
 #include <gtsam/linear/Errors.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/IterativeSolver.h>
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/base/FastVector.h>
-#include <gtsam/base/types.h>
-#include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
 
-#include <boost/serialization/nvp.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <map>
-#include <utility>
-#include <vector>
-
-namespace boost {
-namespace serialization {
-class access;
-} /* namespace serialization */
-} /* namespace boost */
 
 namespace gtsam {
 
@@ -49,142 +35,11 @@ namespace gtsam {
   class GaussianFactorGraph;
   class VectorValues;
 
-  struct GTSAM_EXPORT SubgraphEdge {
-    size_t index_;   /* edge id */
-    double weight_; /* edge weight */
-    SubgraphEdge() : index_(0), weight_(1.0) {}
-    SubgraphEdge(const SubgraphEdge &e) : index_(e.index()), weight_(e.weight()) {}
-    SubgraphEdge(const size_t index, const double weight = 1.0): index_(index), weight_(weight) {}
-    inline size_t index() const { return index_; }
-    inline double weight() const { return weight_; }
-    inline bool isUnitWeight() const { return (weight_ == 1.0); }
-    friend std::ostream &operator<<(std::ostream &os, const SubgraphEdge &edge);
-  private:
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_NVP(index_);
-      ar & BOOST_SERIALIZATION_NVP(weight_);
-    }
-  };
-
-  /**************************************************************************/
-  class GTSAM_EXPORT Subgraph {
-  public:
-    typedef boost::shared_ptr<Subgraph> shared_ptr;
-    typedef std::vector<shared_ptr> vector_shared_ptr;
-    typedef std::vector<SubgraphEdge> Edges;
-    typedef std::vector<size_t> EdgeIndices;
-    typedef Edges::iterator iterator;
-    typedef Edges::const_iterator const_iterator;
-
-  protected:
-    Edges edges_;                 /* index to the factors */
-
-  public:
-    Subgraph() {}
-    Subgraph(const Subgraph &subgraph) : edges_(subgraph.edges()) {}
-    Subgraph(const Edges &edges) : edges_(edges) {}
-    Subgraph(const std::vector<size_t> &indices) ;
-
-    inline const Edges& edges() const { return edges_; }
-    inline size_t size() const { return edges_.size(); }
-    EdgeIndices edgeIndices() const;
-
-    iterator begin() { return edges_.begin(); }
-    const_iterator begin() const { return edges_.begin(); }
-    iterator end() { return edges_.end(); }
-    const_iterator end() const { return edges_.end(); }
-
-    void save(const std::string &fn) const;
-    static shared_ptr load(const std::string &fn);
-    friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph);
-
-  private:
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_NVP(edges_);
-    }
-  };
-
-  /****************************************************************************/
-  struct GTSAM_EXPORT SubgraphBuilderParameters {
-  public:
-    typedef boost::shared_ptr<SubgraphBuilderParameters> shared_ptr;
-
-    enum Skeleton {
-      /* augmented tree */
-      NATURALCHAIN = 0,  /* natural ordering of the graph */
-      BFS,      /* breadth-first search tree */
-      KRUSKAL,  /* maximum weighted spanning tree */
-    } skeleton_ ;
-
-    enum SkeletonWeight {   /* how to weigh the graph edges */
-      EQUAL = 0,    /* every block edge has equal weight */
-      RHS_2NORM,    /* use the 2-norm of the rhs */
-      LHS_FNORM,    /* use the frobenius norm of the lhs */
-      RANDOM,       /* bounded random edge weight */
-    } skeletonWeight_ ;
-
-    enum AugmentationWeight {   /* how to weigh the graph edges */
-      SKELETON = 0,             /* use the same weights in building the skeleton */
-//      STRETCH,                  /* stretch in the laplacian sense */
-//      GENERALIZED_STRETCH       /* the generalized stretch defined in jian2013iros */
-    } augmentationWeight_ ;
-
-    double complexity_;
-
-    SubgraphBuilderParameters()
-      : skeleton_(KRUSKAL), skeletonWeight_(RANDOM), augmentationWeight_(SKELETON), complexity_(1.0) {}
-    virtual ~SubgraphBuilderParameters() {}
-
-    /* for serialization */
-    void print() const ;
-    virtual void print(std::ostream &os) const ;
-    friend std::ostream& operator<<(std::ostream &os, const PreconditionerParameters &p);
-
-    static Skeleton skeletonTranslator(const std::string &s);
-    static std::string skeletonTranslator(Skeleton w);
-    static SkeletonWeight skeletonWeightTranslator(const std::string &s);
-    static std::string skeletonWeightTranslator(SkeletonWeight w);
-    static AugmentationWeight augmentationWeightTranslator(const std::string &s);
-    static std::string augmentationWeightTranslator(AugmentationWeight w);
-  };
-
-  /*****************************************************************************/
-  class GTSAM_EXPORT SubgraphBuilder {
-
-  public:
-    typedef SubgraphBuilder Base;
-    typedef boost::shared_ptr<SubgraphBuilder> shared_ptr;
-    typedef std::vector<double> Weights;
-
-    SubgraphBuilder(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
-      : parameters_(p) {}
-    virtual ~SubgraphBuilder() {}
-    virtual boost::shared_ptr<Subgraph> operator() (const GaussianFactorGraph &jfg) const ;
-
-  private:
-    std::vector<size_t> buildTree(const GaussianFactorGraph &gfg, const FastMap<Key, size_t> &ordering, const std::vector<double> &weights) const ;
-    std::vector<size_t> unary(const GaussianFactorGraph &gfg) const ;
-    std::vector<size_t> natural_chain(const GaussianFactorGraph &gfg) const ;
-    std::vector<size_t> bfs(const GaussianFactorGraph &gfg) const ;
-    std::vector<size_t> kruskal(const GaussianFactorGraph &gfg, const FastMap<Key, size_t> &ordering, const std::vector<double> &w) const ;
-    std::vector<size_t> sample(const std::vector<double> &weights, const size_t t) const ;
-    Weights weights(const GaussianFactorGraph &gfg) const;
-    SubgraphBuilderParameters parameters_;
-
-  };
-
-  /*******************************************************************************************/
   struct GTSAM_EXPORT SubgraphPreconditionerParameters : public PreconditionerParameters {
-    typedef PreconditionerParameters Base;
     typedef boost::shared_ptr<SubgraphPreconditionerParameters> shared_ptr;
     SubgraphPreconditionerParameters(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
-      : Base(), builderParams_(p) {}
-    virtual ~SubgraphPreconditionerParameters() {}
-    SubgraphBuilderParameters builderParams_;
+      : builderParams(p) {}
+    SubgraphBuilderParameters builderParams;
   };
 
   /**
@@ -249,8 +104,8 @@ namespace gtsam {
 
     /* A zero VectorValues with the structure of xbar */
     VectorValues zero() const {
-      VectorValues V(VectorValues::Zero(*xbar_));
-      return V ;
+      assert(xbar_);
+      return VectorValues::Zero(*xbar_);
     }
 
     /**
@@ -285,50 +140,19 @@ namespace gtsam {
     /*****************************************************************************/
     /* implement virtual functions of Preconditioner */
 
-    /* Computation Interfaces for Vector */
-    virtual void solve(const Vector& y, Vector &x) const;
-    virtual void transposeSolve(const Vector& y, Vector& x) const ;
+    /// implement x = R^{-1} y
+    void solve(const Vector& y, Vector &x) const override;
 
-    virtual void build(
+    /// implement x = R^{-T} y
+    void transposeSolve(const Vector& y, Vector& x) const override;
+
+    /// build/factorize the preconditioner
+    void build(
       const GaussianFactorGraph &gfg,
       const KeyInfo &info,
       const std::map<Key,Vector> &lambda
-      ) ;
+      ) override;
     /*****************************************************************************/
   };
-
-  /* get subvectors */
-  Vector getSubvector(const Vector &src, const KeyInfo &keyInfo, const KeyVector &keys);
-
-  /* set subvectors */
-  void setSubvector(const Vector &src, const KeyInfo &keyInfo, const KeyVector &keys, Vector &dst);
-
-
-  /* build a factor subgraph, which is defined as a set of weighted edges (factors) */
-  boost::shared_ptr<GaussianFactorGraph>
-  buildFactorSubgraph(const GaussianFactorGraph &gfg, const Subgraph &subgraph, const bool clone);
-
-
-  /* sort the container and return permutation index with default comparator */
-   template <typename Container>
-   std::vector<size_t> sort_idx(const Container &src)
-   {
-     typedef typename Container::value_type T;
-     const size_t n = src.size() ;
-     std::vector<std::pair<size_t,T> > tmp;
-     tmp.reserve(n);
-     for ( size_t i = 0 ; i < n ; i++ )
-       tmp.push_back(std::make_pair(i, src[i]));
-
-     /* sort */
-     std::stable_sort(tmp.begin(), tmp.end()) ;
-
-     /* copy back */
-     std::vector<size_t> idx; idx.reserve(n);
-     for ( size_t i = 0 ; i < n ; i++ ) {
-       idx.push_back(tmp[i].first) ;
-     }
-     return idx;
-   }
 
 } // namespace gtsam

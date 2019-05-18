@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -36,7 +36,7 @@ Test *Test::getNext() const
 }
 
 void Test::setNext(Test *test)
-{  
+{
   next_ = test;
 }
 
@@ -46,9 +46,9 @@ bool Test::check(long expected, long actual, TestResult& result, const std::stri
     return true;
   result.addFailure (
     Failure (
-      name_, 
+      name_,
       boost::lexical_cast<std::string> (__FILE__),
-      __LINE__, 
+      __LINE__,
       boost::lexical_cast<std::string> (expected),
       boost::lexical_cast<std::string> (actual)));
 
@@ -63,10 +63,10 @@ bool Test::check(const std::string& expected, const std::string& actual, TestRes
     return true;
   result.addFailure (
     Failure (
-      name_, 
+      name_,
       boost::lexical_cast<std::string> (__FILE__),
-      __LINE__, 
-      expected, 
+      __LINE__,
+      expected,
       actual));
 
   return false;

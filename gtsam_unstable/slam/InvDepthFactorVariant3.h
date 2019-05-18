@@ -88,7 +88,7 @@ public:
       double theta = landmark(0), phi = landmark(1), rho = landmark(2);
       Point3 pose_P_landmark(cos(phi)*sin(theta)/rho, sin(phi)/rho, cos(phi)*cos(theta)/rho);
       // Convert the landmark to world coordinates
-      Point3 world_P_landmark = pose.transform_from(pose_P_landmark);
+      Point3 world_P_landmark = pose.transformFrom(pose_P_landmark);
       // Project landmark into Pose2
       PinholeCamera<Cal3_S2> camera(pose, *K_);
       return camera.project(world_P_landmark) - measured_;
@@ -208,7 +208,7 @@ public:
       double theta = landmark(0), phi = landmark(1), rho = landmark(2);
       Point3 pose1_P_landmark(cos(phi)*sin(theta)/rho, sin(phi)/rho, cos(phi)*cos(theta)/rho);
       // Convert the landmark to world coordinates
-      Point3 world_P_landmark = pose1.transform_from(pose1_P_landmark);
+      Point3 world_P_landmark = pose1.transformFrom(pose1_P_landmark);
       // Project landmark into Pose2
       PinholeCamera<Cal3_S2> camera(pose2, *K_);
       return camera.project(world_P_landmark) - measured_;

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -94,16 +94,16 @@ namespace gtsam {
     bool equals(const GaussianFactor&cg, double tol = 1e-9) const;
 
     /** Return a view of the upper-triangular R block of the conditional */
-    constABlock get_R() const { return Ab_.range(0, nrFrontals()); }
+    constABlock R() const { return Ab_.range(0, nrFrontals()); }
 
     /** Get a view of the parent blocks. */
-    constABlock get_S() const { return Ab_.range(nrFrontals(), size()); }
+    constABlock S() const { return Ab_.range(nrFrontals(), size()); }
 
     /** Get a view of the S matrix for the variable pointed to by the given key iterator */
-    constABlock get_S(const_iterator variable) const { return BaseFactor::getA(variable); }
+    constABlock S(const_iterator it) const { return BaseFactor::getA(it); }
 
     /** Get a view of the r.h.s. vector d */
-    const constBVector get_d() const { return BaseFactor::getb(); }
+    const constBVector d() const { return BaseFactor::getb(); }
 
     /**
     * Solves a conditional Gaussian and writes the solution into the entries of
@@ -130,8 +130,17 @@ namespace gtsam {
     void scaleFrontalsBySigma(VectorValues& gy) const;
 //    __declspec(deprecated) void scaleFrontalsBySigma(VectorValues& gy) const; // FIXME: depreciated flag doesn't appear to exist?
 
-  private:
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+    /// @name Deprecated
+    /// @{
+    constABlock get_R() const { return R(); }
+    constABlock get_S() const { return S(); }
+    constABlock get_S(const_iterator it) const { return S(it); }
+    const constBVector get_d() const { return d(); }
+    /// @}
+#endif
 
+   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>

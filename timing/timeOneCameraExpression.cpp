@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -50,7 +50,7 @@ int main() {
 #ifdef TERNARY
       (model, z, project3(x, p, K));
 #else
-      (model, z, uncalibrate(K, project(transform_to(x, p))));
+      (model, z, uncalibrate(K, project(transformTo(x, p))));
 #endif
   time("timing:", f, values);
 

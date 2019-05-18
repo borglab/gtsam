@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -61,7 +61,7 @@ int main() {
 #ifdef TERNARY
           (model, z, project3(x[i], p[j], K));
 #else
-          (model, z, uncalibrate(K, project(transform_to(x[i], p[j]))));
+          (model, z, uncalibrate(K, project(transformTo(x[i], p[j]))));
 #endif
       graph.push_back(f);
     }

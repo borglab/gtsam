@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -536,7 +536,7 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
   std::vector<size_t> removedFactorSlots;
   VariableIndex variableIndex(factors_);
   for(Key key: keysToMove) {
-    const FastVector<size_t>& slots = variableIndex[key];
+    const auto& slots = variableIndex[key];
     removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
   }
 

@@ -241,7 +241,7 @@ Values localToWorld(const Values& local, const Pose2& base,
       try {
         // if value is a Point2, transform it from base pose
         Point2 point = local.at<Point2>(key);
-        world.insert(key, base.transform_from(point));
+        world.insert(key, base.transformFrom(point));
       } catch (std::exception e2) {
         // if not Pose2 or Point2, do nothing
       }

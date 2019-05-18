@@ -195,17 +195,17 @@ public:
   /// @{
 
   /** Return point coordinates in pose coordinate frame */
-  Point2 transform_to(const Point2& point,
-      OptionalJacobian<2, 3> H1 = boost::none,
-      OptionalJacobian<2, 2> H2 = boost::none) const;
+  Point2 transformTo(const Point2& point,
+      OptionalJacobian<2, 3> Dpose = boost::none,
+      OptionalJacobian<2, 2> Dpoint = boost::none) const;
 
   /** Return point coordinates in global frame */
-  Point2 transform_from(const Point2& point,
-      OptionalJacobian<2, 3> H1 = boost::none,
-      OptionalJacobian<2, 2> H2 = boost::none) const;
+  Point2 transformFrom(const Point2& point,
+      OptionalJacobian<2, 3> Dpose = boost::none,
+      OptionalJacobian<2, 2> Dpoint = boost::none) const;
 
-  /** syntactic sugar for transform_from */
-  inline Point2 operator*(const Point2& point) const { return transform_from(point);}
+  /** syntactic sugar for transformFrom */
+  inline Point2 operator*(const Point2& point) const { return transformFrom(point);}
 
   /// @}
   /// @name Standard Interface
@@ -289,7 +289,23 @@ public:
 
   /// @}
 
-private:
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  /// @name Deprecated
+  /// @{
+  Point2 transform_from(const Point2& point,
+                        OptionalJacobian<2, 3> Dpose = boost::none,
+                        OptionalJacobian<2, 2> Dpoint = boost::none) const {
+    return transformFrom(point, Dpose, Dpoint);
+  }
+  Point2 transform_to(const Point2& point,
+                      OptionalJacobian<2, 3> Dpose = boost::none,
+                      OptionalJacobian<2, 2> Dpoint = boost::none) const {
+    return transformTo(point, Dpose, Dpoint);
+  }
+    /// @}
+#endif
+
+ private:
 
   // Serialization function
   friend class boost::serialization::access;
@@ -313,7 +329,7 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
 
 /**
  * Calculate pose between a vector of 2D point correspondences (p,q)
- * where q = Pose2::transform_from(p) = t + R*p
+ * where q = Pose2::transformFrom(p) = t + R*p
  */
 typedef std::pair<Point2,Point2> Point2Pair;
 GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);

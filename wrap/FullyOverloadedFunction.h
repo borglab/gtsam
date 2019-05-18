@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -79,8 +79,8 @@ public:
       if (argLCount != nrOverloads() - 1)
         proxyFile.oss << ", ";
       else
-        proxyFile.oss << " : returns " << returnValue(0).return_type(false)
-            << std::endl;
+        proxyFile.oss << " : returns " << returnValue(0).returnType()
+                      << std::endl;
       argLCount++;
     }
   }
@@ -91,8 +91,8 @@ public:
     for(ArgumentList argList: argLists_) {
       proxyFile.oss << "%";
       argList.emit_prototype(proxyFile, name);
-      proxyFile.oss << " : returns " << returnVals_[i++].return_type(false)
-          << std::endl;
+      proxyFile.oss << " : returns " << returnVals_[i++].returnType()
+                    << std::endl;
     }
   }
 

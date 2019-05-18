@@ -37,11 +37,11 @@ public:
     VERBOSE
   };
 
-  double deltaInitial; ///< The initial trust region radius (default: 1.0)
+  double deltaInitial; ///< The initial trust region radius (default: 10.0)
   VerbosityDL verbosityDL; ///< The verbosity level for Dogleg (default: SILENT), see also NonlinearOptimizerParams::verbosity
 
   DoglegParams() :
-    deltaInitial(1.0), verbosityDL(SILENT) {}
+    deltaInitial(10.0), verbosityDL(SILENT) {}
 
   virtual ~DoglegParams() {}
 
@@ -105,9 +105,9 @@ public:
   /** Virtual destructor */
   virtual ~DoglegOptimizer() {}
 
-  /** Perform a single iteration, returning a new NonlinearOptimizer class
-   * containing the updated variable assignments, which may be retrieved with
-   * values().
+  /** 
+   * Perform a single iteration, returning GaussianFactorGraph corresponding to 
+   * the linearized factor graph.
    */
   GaussianFactorGraph::shared_ptr iterate() override;
 

@@ -359,7 +359,7 @@ public:
                                                  Dresult_ddepth ? &Dpoint_ddepth : 0);
 
     Matrix33 Dresult_dpoint;
-    const Point3 result = pose().transform_from(point, Dresult_dpose,
+    const Point3 result = pose().transformFrom(point, Dresult_dpose,
                                                        (Dresult_ddepth ||
                                                         Dresult_dp) ? &Dresult_dpoint : 0);
 

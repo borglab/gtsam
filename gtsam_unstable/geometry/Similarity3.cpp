@@ -71,7 +71,7 @@ Similarity3 Similarity3::inverse() const {
   return Similarity3(Rt, sRt, 1.0 / s_);
 }
 
-Point3 Similarity3::transform_from(const Point3& p, //
+Point3 Similarity3::transformFrom(const Point3& p, //
     OptionalJacobian<3, 7> H1, OptionalJacobian<3, 3> H2) const {
   const Point3 q = R_ * p + t_;
   if (H1) {
@@ -86,7 +86,7 @@ Point3 Similarity3::transform_from(const Point3& p, //
 }
 
 Point3 Similarity3::operator*(const Point3& p) const {
-  return transform_from(p);
+  return transformFrom(p);
 }
 
 Matrix4 Similarity3::wedge(const Vector7& xi) {

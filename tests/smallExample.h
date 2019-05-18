@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -26,7 +26,6 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <boost/tuple/tuple.hpp>
 #include <boost/assign/list_of.hpp>
 
 namespace gtsam {
@@ -131,7 +130,7 @@ namespace example {
  * -x11-x21-x31
  * with x11 clamped at (1,1), and others related by 2D odometry.
  */
-// inline boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N);
+// inline std::pair<GaussianFactorGraph, VectorValues> planarGraph(size_t N);
 
 /*
  * Create canonical ordering for planar graph that also works for tree
@@ -399,7 +398,7 @@ inline std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T) {
 inline GaussianFactorGraph createSmoother(int T) {
   NonlinearFactorGraph nlfg;
   Values poses;
-  boost::tie(nlfg, poses) = createNonlinearSmoother(T);
+  std::tie(nlfg, poses) = createNonlinearSmoother(T);
 
   return *nlfg.linearize(poses);
 }
@@ -563,7 +562,7 @@ inline Symbol key(size_t x, size_t y) {
 } // \namespace impl
 
 /* ************************************************************************* */
-inline boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
+inline std::pair<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
   using namespace impl;
 
   // create empty graph
@@ -601,7 +600,7 @@ inline boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
 
   // linearize around zero
   boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros);
-  return boost::make_tuple(*gfg, xtrue);
+  return std::make_pair(*gfg, xtrue);
 }
 
 /* ************************************************************************* */
@@ -614,26 +613,26 @@ inline Ordering planarOrdering(size_t N) {
 }
 
 /* ************************************************************************* */
-inline std::pair<GaussianFactorGraph, GaussianFactorGraph > splitOffPlanarTree(size_t N,
+inline std::pair<GaussianFactorGraph::shared_ptr, GaussianFactorGraph::shared_ptr > splitOffPlanarTree(size_t N,
     const GaussianFactorGraph& original) {
-  GaussianFactorGraph T, C;
+  auto T = boost::make_shared<GaussianFactorGraph>(), C= boost::make_shared<GaussianFactorGraph>();
 
   // Add the x11 constraint to the tree
-  T.push_back(original[0]);
+  T->push_back(original[0]);
 
   // Add all horizontal constraints to the tree
   size_t i = 1;
   for (size_t x = 1; x < N; x++)
     for (size_t y = 1; y <= N; y++, i++)
-      T.push_back(original[i]);
+      T->push_back(original[i]);
 
   // Add first vertical column of constraints to T, others to C
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y < N; y++, i++)
       if (x == 1)
-        T.push_back(original[i]);
+        T->push_back(original[i]);
       else
-        C.push_back(original[i]);
+        C->push_back(original[i]);
 
   return std::make_pair(T, C);
 }

@@ -61,7 +61,7 @@ namespace gtsam {
       for (GaussianFactor::const_iterator it = gf->begin(); it != gf->end(); it++) {
         map<Key,size_t>::iterator it2 = spec.find(*it);
         if ( it2 == spec.end() ) {
-          spec.insert(make_pair(*it, gf->getDim(it)));
+          spec.emplace(*it, gf->getDim(it));
         }
       }
     }
@@ -246,7 +246,7 @@ namespace gtsam {
         if (blocks.count(j))
           blocks[j] += Bj;
         else
-          blocks.insert(make_pair(j,Bj));
+          blocks.emplace(j,Bj);
       }
     }
     return blocks;

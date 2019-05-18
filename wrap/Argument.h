@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -101,7 +101,7 @@ struct ArgumentList: public std::vector<Argument> {
   ArgumentList expandTemplate(const TemplateSubstitution& ts) const;
 
   bool isSameSignature(const ArgumentList& other) const {
-    for(size_t i = 0; i<size(); ++i) 
+    for(size_t i = 0; i<size(); ++i)
       if (!at(i).isSameSignature(other[i])) return false;
     return true;
   }

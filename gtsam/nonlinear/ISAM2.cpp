@@ -96,7 +96,7 @@ bool ISAM2::equals(const ISAM2& other, double tol) const {
 }
 
 /* ************************************************************************* */
-KeySet ISAM2::getAffectedFactors(const KeyList& keys) const {
+FactorIndexSet ISAM2::getAffectedFactors(const KeyList& keys) const {
   static const bool debug = false;
   if (debug) cout << "Getting affected factors for ";
   if (debug) {
@@ -106,15 +106,14 @@ KeySet ISAM2::getAffectedFactors(const KeyList& keys) const {
   }
   if (debug) cout << endl;
 
-  NonlinearFactorGraph allAffected;
-  KeySet indices;
+  FactorIndexSet indices;
   for (const Key key : keys) {
     const VariableIndex::Factors& factors(variableIndex_[key]);
     indices.insert(factors.begin(), factors.end());
   }
   if (debug) cout << "Affected factors are: ";
   if (debug) {
-    for (const size_t index : indices) {
+    for (const auto index : indices) {
       cout << index << " ";
     }
   }
@@ -131,8 +130,6 @@ GaussianFactorGraph::shared_ptr ISAM2::relinearizeAffectedFactors(
   gttic(getAffectedFactors);
   KeySet candidates = getAffectedFactors(affectedKeys);
   gttoc(getAffectedFactors);
-
-  NonlinearFactorGraph nonlinearAffectedFactors;
 
   gttic(affectedKeysSet);
   // for fast lookup below
@@ -589,7 +586,7 @@ ISAM2Result ISAM2::update(
   // Remove the removed factors
   NonlinearFactorGraph removeFactors;
   removeFactors.reserve(removeFactorIndices.size());
-  for (size_t index : removeFactorIndices) {
+  for (const auto index : removeFactorIndices) {
     removeFactors.push_back(nonlinearFactors_[index]);
     nonlinearFactors_.remove(index);
     if (params_.cacheLinearizedFactors) linearFactors_.remove(index);
@@ -823,7 +820,7 @@ void ISAM2::marginalizeLeaves(
   KeySet leafKeysRemoved;
 
   // Keep track of factors that get summarized by removing cliques
-  KeySet factorIndicesToRemove;
+  FactorIndexSet factorIndicesToRemove;
 
   // Remove the subtree and throw away the cliques
   auto trackingRemoveSubtree = [&](const sharedClique& subtreeRoot) {
@@ -937,8 +934,8 @@ void ISAM2::marginalizeLeaves(
           }
         }
         // Create factor graph from factor indices
-        for (size_t i : factorsFromMarginalizedInClique_step1) {
-          graph.push_back(nonlinearFactors_[i]->linearize(theta_));
+        for (const auto index: factorsFromMarginalizedInClique_step1) {
+          graph.push_back(nonlinearFactors_[index]->linearize(theta_));
         }
 
         // Reeliminate the linear graph to get the marginal and discard the
@@ -1011,10 +1008,10 @@ void ISAM2::marginalizeLeaves(
   // Remove the factors to remove that have been summarized in the newly-added
   // marginal factors
   NonlinearFactorGraph removedFactors;
-  for (size_t i : factorIndicesToRemove) {
-    removedFactors.push_back(nonlinearFactors_[i]);
-    nonlinearFactors_.remove(i);
-    if (params_.cacheLinearizedFactors) linearFactors_.remove(i);
+  for (const auto index: factorIndicesToRemove) {
+    removedFactors.push_back(nonlinearFactors_[index]);
+    nonlinearFactors_.remove(index);
+    if (params_.cacheLinearizedFactors) linearFactors_.remove(index);
   }
   variableIndex_.remove(factorIndicesToRemove.begin(),
                         factorIndicesToRemove.end(), removedFactors);

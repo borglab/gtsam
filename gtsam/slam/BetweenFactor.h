@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -56,7 +56,7 @@ namespace gtsam {
 
     /** Constructor */
     BetweenFactor(Key key1, Key key2, const VALUE& measured,
-        const SharedNoiseModel& model) :
+        const SharedNoiseModel& model = nullptr) :
       Base(model, key1, key2), measured_(measured) {
     }
 
@@ -122,7 +122,7 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
-  
+
 	  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
 	  enum { NeedsToAlign = (sizeof(VALUE) % 16) == 0 };
     public:

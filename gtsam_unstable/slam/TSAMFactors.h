@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -48,7 +48,7 @@ public:
   Vector evaluateError(const Pose2& pose, const Point2& point,
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
           boost::none) const {
-    return pose.transform_to(point, H1, H2) - measured_;
+    return pose.transformTo(point, H1, H2) - measured_;
   }
 };
 
@@ -85,10 +85,10 @@ public:
       Matrix D_pose_g_base1, D_pose_g_pose;
       Pose2 pose_g = base1.compose(pose, D_pose_g_base1, D_pose_g_pose);
       Matrix D_point_g_base2, D_point_g_point;
-      Point2 point_g = base2.transform_from(point, D_point_g_base2,
+      Point2 point_g = base2.transformFrom(point, D_point_g_base2,
           D_point_g_point);
       Matrix D_e_pose_g, D_e_point_g;
-      Point2 d = pose_g.transform_to(point_g, D_e_pose_g, D_e_point_g);
+      Point2 d = pose_g.transformTo(point_g, D_e_pose_g, D_e_point_g);
       if (H1)
         *H1 = D_e_pose_g * D_pose_g_base1;
       if (H2)
@@ -100,8 +100,8 @@ public:
       return d - measured_;
     } else {
       Pose2 pose_g = base1.compose(pose);
-      Point2 point_g = base2.transform_from(point);
-      Point2 d = pose_g.transform_to(point_g);
+      Point2 point_g = base2.transformFrom(point);
+      Point2 d = pose_g.transformTo(point_g);
       return d - measured_;
     }
   }

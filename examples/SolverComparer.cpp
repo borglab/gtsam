@@ -361,8 +361,8 @@ void runIncremental()
           const auto& measured = factor->measured();
           Rot2 measuredBearing = measured.bearing();
           double measuredRange = measured.range();
-          newVariables.insert(lmKey, 
-            pose.transform_from(measuredBearing.rotate(Point2(measuredRange, 0.0))));
+          newVariables.insert(lmKey,
+            pose.transformFrom(measuredBearing.rotate(Point2(measuredRange, 0.0))));
         }
       }
       else

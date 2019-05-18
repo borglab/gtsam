@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -29,12 +29,12 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, Pose2::print, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(equals_overloads, Pose2::equals, 1, 2)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(compose_overloads, Pose2::compose, 1, 3)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(between_overloads, Pose2::between, 1, 3)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(transform_to_overloads, Pose2::transform_to, 1, 3)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(transform_from_overloads, Pose2::transform_from, 1, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(transform_to_overloads, Pose2::transformTo, 1, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(transform_from_overloads, Pose2::transformFrom, 1, 3)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(bearing_overloads, Pose2::bearing, 1, 3)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(range_overloads, Pose2::range, 1, 3)
 
-// Manually wrap 
+// Manually wrap
 
 void exportPose2(){
 
@@ -61,9 +61,9 @@ void exportPose2(){
     // .def("dim", &Pose2::dim)
     // .def("retract", &Pose2::retract)
 
-    .def("transform_to", &Pose2::transform_to, 
+    .def("transformTo", &Pose2::transformTo,
       transform_to_overloads(args("point", "H1", "H2")))
-    .def("transform_from", &Pose2::transform_from, 
+    .def("transformFrom", &Pose2::transformFrom,
       transform_to_overloads(args("point", "H1", "H2")))
 
     .def("x", &Pose2::x)

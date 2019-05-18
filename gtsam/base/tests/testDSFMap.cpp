@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -16,7 +16,7 @@
  * @brief unit tests for DSFMap
  */
 
-#include <gtsam_unstable/base/DSFMap.h>
+#include <gtsam/base/DSFMap.h>
 
 #include <boost/assign/std/list.hpp>
 #include <boost/assign/std/set.hpp>
@@ -115,7 +115,6 @@ TEST(DSFMap, mergePairwiseMatches2) {
 TEST(DSFMap, sets){
   // Create some "matches"
   typedef pair<size_t,size_t> Match;
-  typedef pair<size_t, set<size_t> > key_pair;
   list<Match> matches;
   matches += Match(1,2), Match(2,3), Match(4,5), Match(4,6);
 
@@ -128,18 +127,24 @@ TEST(DSFMap, sets){
   set<size_t> s1, s2;
   s1 += 1,2,3;
   s2 += 4,5,6;
-  
+
   /*for(key_pair st: sets){
     cout << "Set " << st.first << " :{";
     for(const size_t s: st.second)
       cout << s << ", ";
     cout << "}" << endl;
   }*/
-    
+
   EXPECT(s1 == sets[1]);
   EXPECT(s2 == sets[4]);
 }
 
+/* ************************************************************************* */
+TEST(DSFMap, findIndexPair) {
+  DSFMap<IndexPair> dsf;
+  EXPECT(dsf.find(IndexPair(1,2))==IndexPair(1,2));
+  EXPECT(dsf.find(IndexPair(1,2)) != dsf.find(IndexPair(1,3)));
+}
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

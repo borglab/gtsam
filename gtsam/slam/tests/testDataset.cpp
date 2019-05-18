@@ -505,7 +505,7 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
   }
   for(size_t j=0; j < readData.number_tracks(); j++){ // for each point
     Key pointKey = P(j);
-    Point3 point = poseChange.transform_from( readData.tracks[j].p );
+    Point3 point = poseChange.transformFrom( readData.tracks[j].p );
     value.insert(pointKey, point);
   }
 

@@ -353,8 +353,6 @@ namespace gtsam { namespace partition {
   void reduceGenericGraph(const GenericGraph3D& graph, const std::vector<size_t>& cameraKeys,  const std::vector<size_t>& landmarkKeys,
       const std::vector<int>& dictionary,  GenericGraph3D& reducedGraph) {
 
-    typedef size_t CameraKey;
-    typedef pair<CameraKey, CameraKey> CameraPair;
     typedef size_t LandmarkKey;
     // get a mapping from each landmark to its connected cameras
     vector<vector<LandmarkKey> > cameraToLandmarks(dictionary.size());

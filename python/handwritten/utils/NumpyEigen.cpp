@@ -1,6 +1,6 @@
  /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -40,7 +40,7 @@ void registerNumpyEigenConversions()
   NumpyEigenConverter<Vector8>::register_converter();
   NumpyEigenConverter<Vector9>::register_converter();
   NumpyEigenConverter<Vector10>::register_converter();
-  
+
   NumpyEigenConverter<Matrix>::register_converter();
   NumpyEigenConverter<Matrix2>::register_converter();
   NumpyEigenConverter<Matrix3>::register_converter();

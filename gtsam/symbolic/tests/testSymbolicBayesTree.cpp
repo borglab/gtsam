@@ -612,7 +612,7 @@ TEST(SymbolicBayesTree, complicatedMarginal)
   SymbolicBayesTreeClique::shared_ptr cur;
   SymbolicBayesTreeClique::shared_ptr root = MakeClique(list_of(11)(12), 2);
   cur = root;
-  
+
   root->children += MakeClique(list_of(9)(10)(11)(12), 2);
   root->children.back()->parent_ = root;
 

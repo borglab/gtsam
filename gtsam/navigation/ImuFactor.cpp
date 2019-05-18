@@ -52,8 +52,13 @@ void PreintegratedImuMeasurements::resetIntegration() {
 //------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
+  if (dt <= 0) {
+    throw std::runtime_error(
+        "PreintegratedImuMeasurements::integrateMeasurement: dt <=0");
+  }
+
   // Update preintegrated measurements (also get Jacobian)
-  Matrix9 A; // overall Jacobian wrt preintegrated measurements (df/dx)
+  Matrix9 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix93 B, C;
   PreintegrationType::update(measuredAcc, measuredOmega, dt, &A, &B, &C);
 

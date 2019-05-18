@@ -62,7 +62,7 @@ namespace gtsam {
       cout << (boost::format("[%1%]")%(formatter(*it))).str() << " ";
     }
     cout << endl;
-    cout << formatMatrixIndented("  R = ", get_R()) << endl;
+    cout << formatMatrixIndented("  R = ", R()) << endl;
     for (const_iterator it = beginParents() ; it != endParents() ; ++it) {
       cout << formatMatrixIndented((boost::format("  S[%1%] = ")%(formatter(*it))).str(), getA(it))
         << endl;
@@ -84,8 +84,8 @@ namespace gtsam {
       // check if R_ and d_ are linear independent
       for (DenseIndex i = 0; i < Ab_.rows(); i++) {
         list<Vector> rows1, rows2;
-        rows1.push_back(Vector(get_R().row(i)));
-        rows2.push_back(Vector(c->get_R().row(i)));
+        rows1.push_back(Vector(R().row(i)));
+        rows2.push_back(Vector(c->R().row(i)));
 
         // check if the matrices are the same
         // iterate over the parents_ map
@@ -120,10 +120,10 @@ namespace gtsam {
     const Vector xS = x.vector(KeyVector(beginParents(), endParents()));
 
     // Update right-hand-side
-    const Vector rhs = get_d() - get_S() * xS;
+    const Vector rhs = d() - S() * xS;
 
     // Solve matrix
-    const Vector solution = get_R().triangularView<Eigen::Upper>().solve(rhs);
+    const Vector solution = R().triangularView<Eigen::Upper>().solve(rhs);
 
     // Check for indeterminant solution
     if (solution.hasNaN()) {
@@ -134,7 +134,7 @@ namespace gtsam {
     VectorValues result;
     DenseIndex vectorPosition = 0;
     for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
-      result.insert(*frontal, solution.segment(vectorPosition, getDim(frontal)));
+      result.emplace(*frontal, solution.segment(vectorPosition, getDim(frontal)));
       vectorPosition += getDim(frontal);
     }
 
@@ -149,10 +149,10 @@ namespace gtsam {
 
     // Instead of updating getb(), update the right-hand-side from the given rhs
     const Vector rhsR = rhs.vector(KeyVector(beginFrontals(), endFrontals()));
-    xS = rhsR - get_S() * xS;
+    xS = rhsR - S() * xS;
 
     // Solve Matrix
-    Vector soln = get_R().triangularView<Eigen::Upper>().solve(xS);
+    Vector soln = R().triangularView<Eigen::Upper>().solve(xS);
 
     // Scale by sigmas
     if (model_)
@@ -162,7 +162,7 @@ namespace gtsam {
     VectorValues result;
     DenseIndex vectorPosition = 0;
     for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
-      result.insert(*frontal, soln.segment(vectorPosition, getDim(frontal)));
+      result.emplace(*frontal, soln.segment(vectorPosition, getDim(frontal)));
       vectorPosition += getDim(frontal);
     }
 
@@ -172,13 +172,13 @@ namespace gtsam {
   /* ************************************************************************* */
   void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const {
     Vector frontalVec = gy.vector(KeyVector(beginFrontals(), endFrontals()));
-    frontalVec = gtsam::backSubstituteUpper(frontalVec, Matrix(get_R()));
+    frontalVec = R().transpose().triangularView<Eigen::Lower>().solve(frontalVec);
 
     // Check for indeterminant solution
     if (frontalVec.hasNaN()) throw IndeterminantLinearSystemException(this->keys().front());
 
     for (const_iterator it = beginParents(); it!= endParents(); it++)
-      gy[*it] += -1.0 * Matrix(getA(it)).transpose() * frontalVec;
+      gy[*it].noalias() += -1.0 * getA(it).transpose() * frontalVec;
 
     // Scale by sigmas
     if (model_)
