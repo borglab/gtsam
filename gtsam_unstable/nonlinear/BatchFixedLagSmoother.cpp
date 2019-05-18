@@ -52,7 +52,7 @@ Matrix BatchFixedLagSmoother::marginalCovariance(Key key) const {
 /* ************************************************************************* */
 FixedLagSmoother::Result BatchFixedLagSmoother::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const KeyTimestampMap& timestamps) {
+    const KeyTimestampMap& timestamps, const FastVector<size_t>& factorsToRemove) {
 
   // Update all of the internal variables with the new information
   gttic(augment_system);
@@ -68,6 +68,12 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   // Add the new factors to the graph, updating the variable index
   insertFactors(newFactors);
   gttoc(augment_system);
+
+  // remove factors in factorToRemove
+  for(const size_t i : factorsToRemove){
+    if(factors_[i])
+      factors_[i].reset();
+  }
 
   // Update the Timestamps associated with the factor keys
   updateKeyTimestampMap(timestamps);

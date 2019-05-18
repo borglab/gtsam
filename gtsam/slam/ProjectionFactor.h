@@ -152,7 +152,7 @@ namespace gtsam {
           std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
               " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
         if (throwCheirality_)
-          throw e;
+          throw CheiralityException(this->key2());
       }
       return Vector2::Constant(2.0 * K_->fx());
     }

@@ -250,19 +250,33 @@ double Unit3::distance(const Unit3& q, OptionalJacobian<1, 2> H) const {
 }
 
 /* ************************************************************************* */
-Unit3 Unit3::retract(const Vector2& v) const {
+Unit3 Unit3::retract(const Vector2& v, OptionalJacobian<2,2> H) const {
   // Compute the 3D xi_hat vector
   const Vector3 xi_hat = basis() * v;
   const double theta = xi_hat.norm();
+  const double c = std::cos(theta);
 
-  // Treat case of very small v differently
+  // Treat case of very small v differently.
+  Matrix23 H_from_point;
   if (theta < std::numeric_limits<double>::epsilon()) {
-    return Unit3(Vector3(std::cos(theta) * p_ + xi_hat));
+    const Unit3 exp_p_xi_hat = Unit3::FromPoint3(c * p_ + xi_hat,
+                                                 H? &H_from_point : nullptr);
+    if (H) { // Jacobian
+      *H = H_from_point *
+          (-p_ * xi_hat.transpose() + Matrix33::Identity()) * basis();
+    }
+    return exp_p_xi_hat;
   }
 
-  const Vector3 exp_p_xi_hat =
-      std::cos(theta) * p_ + xi_hat * (sin(theta) / theta);
-  return Unit3(exp_p_xi_hat);
+  const double st = std::sin(theta) / theta;
+  const Unit3 exp_p_xi_hat = Unit3::FromPoint3(c * p_ + xi_hat * st,
+                                               H? &H_from_point : nullptr);
+  if (H) { // Jacobian
+    *H = H_from_point *
+        (p_ * -st * xi_hat.transpose() + st * Matrix33::Identity() +
+        xi_hat * ((c - st) / std::pow(theta, 2)) * xi_hat.transpose()) * basis();
+  }
+  return exp_p_xi_hat;
 }
 
 /* ************************************************************************* */

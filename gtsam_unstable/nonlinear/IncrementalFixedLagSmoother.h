@@ -59,10 +59,12 @@ public:
    * @param newFactors new factors on old and/or new variables
    * @param newTheta new values for new variables only
    * @param timestamps an (optional) map from keys to real time stamps
+   * @param factorsToRemove an (optional) list of factors to remove.
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
-      const Values& newTheta = Values(), //
-      const KeyTimestampMap& timestamps = KeyTimestampMap());
+                const Values& newTheta = Values(), //
+                const KeyTimestampMap& timestamps = KeyTimestampMap(),
+                const FastVector<size_t>& factorsToRemove = FactorIndices());
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
@@ -108,10 +110,16 @@ public:
     return isam_.marginalCovariance(key);
   }
 
+  /// Get results of latest isam2 update
+  const ISAM2Result& getISAM2Result() const{ return isamResult_; }
+
 protected:
   /** An iSAM2 object used to perform inference. The smoother lag is controlled
    * by what factors are removed each iteration */
   ISAM2 isam_;
+
+  /** Store results of latest isam2 update */
+  ISAM2Result isamResult_;
 
   /** Erase any keys associated with timestamps before the provided time */
   void eraseKeysBefore(double timestamp);
