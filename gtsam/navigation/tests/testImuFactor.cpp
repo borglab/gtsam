@@ -803,11 +803,11 @@ TEST(ImuFactor, bodyPSensorWithBias) {
 static const double kVelocity = 2.0, kAngularVelocity = M_PI / 6;
 
 struct ImuFactorMergeTest {
-  boost::shared_ptr<PreintegratedImuMeasurements::Params> p_;
+  boost::shared_ptr<PreintegrationParams> p_;
   const ConstantTwistScenario forward_, loop_;
 
   ImuFactorMergeTest()
-      : p_(PreintegratedImuMeasurements::Params::MakeSharedU(kGravity)),
+      : p_(PreintegrationParams::MakeSharedU(kGravity)),
         forward_(kZero, Vector3(kVelocity, 0, 0)),
         loop_(Vector3(0, -kAngularVelocity, 0), Vector3(kVelocity, 0, 0)) {
     // arbitrary noise values
