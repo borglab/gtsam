@@ -65,7 +65,7 @@ bool IncrementalFixedLagSmoother::equals(const FixedLagSmoother& rhs,
 /* ************************************************************************* */
 FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const KeyTimestampMap& timestamps, const FastVector<size_t>& factorsToRemove) {
+    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove) {
 
   const bool debug = ISDEBUG("IncrementalFixedLagSmoother update");
 
