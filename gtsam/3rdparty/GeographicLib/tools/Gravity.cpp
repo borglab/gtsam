@@ -2,24 +2,11 @@
  * \file Gravity.cpp
  * \brief Command line utility for evaluating gravity fields
  *
- * Copyright (c) Charles Karney (2011-2012) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2017) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  *
- * Compile and link with
- *   g++ -g -O3 -I../include -I../man -o Gravity \
- *       Gravity.cpp \
- *       ../src/CircularEngine.cpp \
- *       ../src/DMS.cpp \
- *       ../src/Geocentric.cpp \
- *       ../src/GravityCircle.cpp \
- *       ../src/GravityModel.cpp \
- *       ../src/NormalGravity.cpp \
- *       ../src/SphericalEngine.cpp \
- *       ../src/Utility.cpp
- *
- * See the <a href="Gravity.1.html">man page</a> for usage
- * information.
+ * See the <a href="Gravity.1.html">man page</a> for usage information.
  **********************************************************************/
 
 #include <iostream>
@@ -39,11 +26,12 @@
 
 #include "Gravity.usage"
 
-int main(int argc, char* argv[]) {
+int main(int argc, const char* const argv[]) {
   try {
     using namespace GeographicLib;
     typedef Math::real real;
-    bool verbose = false;
+    Utility::set_digits();
+    bool verbose = false, longfirst = false;
     std::string dir;
     std::string model = GravityModel::DefaultGravityName();
     std::string istring, ifile, ofile, cdelim;
@@ -77,13 +65,14 @@ int main(int argc, char* argv[]) {
       else if (arg == "-c") {
         if (m + 2 >= argc) return usage(1, true);
         try {
+          using std::abs;
           DMS::flag ind;
           lat = DMS::Decode(std::string(argv[++m]), ind);
           if (ind == DMS::LONGITUDE)
             throw GeographicErr("Bad hemisphere letter on latitude");
-          if (!(std::abs(lat) <= 90))
+          if (!(abs(lat) <= 90))
             throw GeographicErr("Latitude not in [-90d, 90d]");
-          h = Utility::num<real>(std::string(argv[++m]));
+          h = Utility::val<real>(std::string(argv[++m]));
           circle = true;
         }
         catch (const std::exception& e) {
@@ -91,10 +80,12 @@ int main(int argc, char* argv[]) {
                     << e.what() << "\n";
           return 1;
         }
-      } else if (arg == "-p") {
+      } else if (arg == "-w")
+        longfirst = !longfirst;
+      else if (arg == "-p") {
         if (++m == argc) return usage(1, true);
         try {
-          prec = Utility::num<int>(std::string(argv[m]));
+          prec = Utility::val<int>(std::string(argv[m]));
         }
         catch (const std::exception&) {
           std::cerr << "Precision " << argv[m] << " is not a number\n";
@@ -122,9 +113,8 @@ int main(int argc, char* argv[]) {
         if (++m == argc) return usage(1, true);
         cdelim = argv[m];
       } else if (arg == "--version") {
-        std::cout
-          << argv[0] << ": GeographicLib version "
-          << GEOGRAPHICLIB_VERSION_STRING << "\n";
+        std::cout << argv[0] << ": GeographicLib version "
+                  << GEOGRAPHICLIB_VERSION_STRING << "\n";
         return 0;
       } else {
         int retval = usage(!(arg == "-h" || arg == "--help"), arg != "--help");
@@ -177,22 +167,22 @@ int main(int argc, char* argv[]) {
 
     switch (mode) {
     case GRAVITY:
-      prec = std::min(16, prec < 0 ? 5 : prec);
+      prec = std::min(16 + Math::extra_digits(), prec < 0 ? 5 : prec);
       break;
     case DISTURBANCE:
     case ANOMALY:
-      prec = std::min(14, prec < 0 ? 3 : prec);
+      prec = std::min(14 + Math::extra_digits(), prec < 0 ? 3 : prec);
       break;
     case UNDULATION:
     default:
-      prec = std::min(12, prec < 0 ? 4 : prec);
+      prec = std::min(12 + Math::extra_digits(), prec < 0 ? 4 : prec);
       break;
     }
     int retval = 0;
     try {
       const GravityModel g(model, dir);
       if (circle) {
-        if (!Math::isfinite<real>(h))
+        if (!Math::isfinite(h))
           throw GeographicErr("Bad height");
         else if (mode == UNDULATION && h != 0)
           throw GeographicErr("Height should be zero for geoid undulations");
@@ -208,10 +198,11 @@ int main(int argc, char* argv[]) {
                         (mode == ANOMALY ? GravityModel::SPHERICAL_ANOMALY :
                          GravityModel::GEOID_HEIGHT))); // mode == UNDULATION
       const GravityCircle c(circle ? g.Circle(lat, h, mask) : GravityCircle());
-      std::string s, stra, strb;
+      std::string s, eol, stra, strb;
+      std::istringstream str;
       while (std::getline(*input, s)) {
         try {
-          std::string eol("\n");
+          eol = "\n";
           if (!cdelim.empty()) {
             std::string::size_type m = s.find(cdelim);
             if (m != std::string::npos) {
@@ -219,7 +210,7 @@ int main(int argc, char* argv[]) {
               s = s.substr(0, m);
             }
           }
-          std::istringstream str(s);
+          str.clear(); str.str(s);
           real lon;
           if (circle) {
             if (!(str >> strb))
@@ -228,13 +219,10 @@ int main(int argc, char* argv[]) {
             lon = DMS::Decode(strb, ind);
             if (ind == DMS::LATITUDE)
               throw GeographicErr("Bad hemisphere letter on " + strb);
-            if (lon < -540 || lon >= 540)
-              throw GeographicErr("Longitude " + strb +
-                                  " not in [-540d, 540d)");
           } else {
             if (!(str >> stra >> strb))
               throw GeographicErr("Incomplete input: " + s);
-            DMS::DecodeLatLon(stra, strb, lat, lon);
+            DMS::DecodeLatLon(stra, strb, lat, lon, longfirst);
             h = 0;
             if (!(str >> h))    // h is optional
               str.clear();
@@ -252,9 +240,9 @@ int main(int argc, char* argv[]) {
               } else {
                 g.Gravity(lat, lon, h, gx, gy, gz);
               }
-              *output << Utility::str<real>(gx, prec) << " "
-                      << Utility::str<real>(gy, prec) << " "
-                      << Utility::str<real>(gz, prec) << eol;
+              *output << Utility::str(gx, prec) << " "
+                      << Utility::str(gy, prec) << " "
+                      << Utility::str(gz, prec) << eol;
             }
             break;
           case DISTURBANCE:
@@ -266,9 +254,9 @@ int main(int argc, char* argv[]) {
                 g.Disturbance(lat, lon, h, deltax, deltay, deltaz);
               }
               // Convert to mGals
-              *output << Utility::str<real>(deltax * 1e5, prec) << " "
-                      << Utility::str<real>(deltay * 1e5, prec) << " "
-                      << Utility::str<real>(deltaz * 1e5, prec)
+              *output << Utility::str(deltax * 100000, prec) << " "
+                      << Utility::str(deltay * 100000, prec) << " "
+                      << Utility::str(deltaz * 100000, prec)
                       << eol;
             }
             break;
@@ -279,19 +267,19 @@ int main(int argc, char* argv[]) {
                 c.SphericalAnomaly(lon, Dg01, xi, eta);
               else
                 g.SphericalAnomaly(lat, lon, h, Dg01, xi, eta);
-              Dg01 *= 1e5;      // Convert to mGals
+              Dg01 *= 100000;      // Convert to mGals
               xi *= 3600;       // Convert to arcsecs
               eta *= 3600;
-              *output << Utility::str<real>(Dg01, prec) << " "
-                      << Utility::str<real>(xi, prec) << " "
-                      << Utility::str<real>(eta, prec) << eol;
+              *output << Utility::str(Dg01, prec) << " "
+                      << Utility::str(xi, prec) << " "
+                      << Utility::str(eta, prec) << eol;
             }
             break;
           case UNDULATION:
           default:
             {
               real N = circle ? c.GeoidHeight(lon) : g.GeoidHeight(lat, lon);
-              *output << Utility::str<real>(N, prec) << eol;
+              *output << Utility::str(N, prec) << eol;
             }
             break;
           }

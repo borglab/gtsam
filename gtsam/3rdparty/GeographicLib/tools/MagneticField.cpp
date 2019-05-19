@@ -2,23 +2,11 @@
  * \file MagneticField.cpp
  * \brief Command line utility for evaluating magnetic fields
  *
- * Copyright (c) Charles Karney (2011-2012) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2017) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  *
- * Compile and link with
- *   g++ -g -O3 -I../include -I../man -o MagneticField \
- *       MagneticField.cpp \
- *       ../src/CircularEngine.cpp \
- *       ../src/DMS.cpp \
- *       ../src/Geocentric.cpp \
- *       ../src/MagneticCircle.cpp \
- *       ../src/MagneticModel.cpp \
- *       ../src/SphericalEngine.cpp \
- *       ../src/Utility.cpp
- *
- * See the <a href="MagneticField.1.html">man page</a> for usage
- * information.
+ * See the <a href="MagneticField.1.html">man page</a> for usage information.
  **********************************************************************/
 
 #include <iostream>
@@ -37,11 +25,12 @@
 
 #include "MagneticField.usage"
 
-int main(int argc, char* argv[]) {
+int main(int argc, const char* const argv[]) {
   try {
     using namespace GeographicLib;
     typedef Math::real real;
-    bool verbose = false;
+    Utility::set_digits();
+    bool verbose = false, longfirst = false;
     std::string dir;
     std::string model = MagneticModel::DefaultMagneticName();
     std::string istring, ifile, ofile, cdelim;
@@ -74,14 +63,15 @@ int main(int argc, char* argv[]) {
       } else if (arg == "-c") {
         if (m + 3 >= argc) return usage(1, true);
         try {
+          using std::abs;
           time = Utility::fractionalyear<real>(std::string(argv[++m]));
           DMS::flag ind;
           lat = DMS::Decode(std::string(argv[++m]), ind);
           if (ind == DMS::LONGITUDE)
             throw GeographicErr("Bad hemisphere letter on latitude");
-          if (!(std::abs(lat) <= 90))
+          if (!(abs(lat) <= 90))
             throw GeographicErr("Latitude not in [-90d, 90d]");
-          h = Utility::num<real>(std::string(argv[++m]));
+          h = Utility::val<real>(std::string(argv[++m]));
           timeset = false;
           circle = true;
         }
@@ -92,10 +82,12 @@ int main(int argc, char* argv[]) {
         }
       } else if (arg == "-r")
         rate = !rate;
+      else if (arg == "-w")
+        longfirst = !longfirst;
       else if (arg == "-p") {
         if (++m == argc) return usage(1, true);
         try {
-          prec = Utility::num<int>(std::string(argv[m]));
+          prec = Utility::val<int>(std::string(argv[m]));
         }
         catch (const std::exception&) {
           std::cerr << "Precision " << argv[m] << " is not a number\n";
@@ -104,7 +96,7 @@ int main(int argc, char* argv[]) {
       } else if (arg == "-T") {
         if (++m == argc) return usage(1, true);
         try {
-          tguard = Utility::num<real>(std::string(argv[m]));
+          tguard = Utility::val<real>(std::string(argv[m]));
         }
         catch (const std::exception& e) {
           std::cerr << "Error decoding argument of " << arg << ": "
@@ -114,7 +106,7 @@ int main(int argc, char* argv[]) {
       } else if (arg == "-H") {
         if (++m == argc) return usage(1, true);
         try {
-          hguard = Utility::num<real>(std::string(argv[m]));
+          hguard = Utility::val<real>(std::string(argv[m]));
         }
         catch (const std::exception& e) {
           std::cerr << "Error decoding argument of " << arg << ": "
@@ -143,9 +135,8 @@ int main(int argc, char* argv[]) {
         if (++m == argc) return usage(1, true);
         cdelim = argv[m];
       } else if (arg == "--version") {
-        std::cout
-          << argv[0] << ": GeographicLib version "
-          << GEOGRAPHICLIB_VERSION_STRING << "\n";
+        std::cout << argv[0] << ": GeographicLib version "
+                  << GEOGRAPHICLIB_VERSION_STRING << "\n";
         return 0;
       } else {
         int retval = usage(!(arg == "-h" || arg == "--help"), arg != "--help");
@@ -198,12 +189,12 @@ int main(int argc, char* argv[]) {
 
     tguard = std::max(real(0), tguard);
     hguard = std::max(real(0), hguard);
-    prec = std::min(10, std::max(0, prec));
+    prec = std::min(10 + Math::extra_digits(), std::max(0, prec));
     int retval = 0;
     try {
       const MagneticModel m(model, dir);
       if ((timeset || circle)
-          && (!Math::isfinite<real>(time) ||
+          && (!Math::isfinite(time) ||
               time < m.MinTime() - tguard ||
               time > m.MaxTime() + tguard))
         throw GeographicErr("Time " + Utility::str(time) +
@@ -211,7 +202,7 @@ int main(int argc, char* argv[]) {
                             Utility::str(m.MinTime()) + "," +
                             Utility::str(m.MaxTime()) + "]");
       if (circle
-          && (!Math::isfinite<real>(h) ||
+          && (!Math::isfinite(h) ||
               h < m.MinHeight() - hguard ||
               h > m.MaxHeight() + hguard))
         throw GeographicErr("Height " + Utility::str(h/1000) +
@@ -241,18 +232,19 @@ int main(int argc, char* argv[]) {
                   << m.MaxHeight()/1000 << "km]\n";
       const MagneticCircle c(circle ? m.Circle(time, lat, h) :
                              MagneticCircle());
-      std::string s, stra, strb;
+      std::string s, eol, stra, strb;
+      std::istringstream str;
       while (std::getline(*input, s)) {
         try {
-          std::string eol("\n");
+          eol = "\n";
           if (!cdelim.empty()) {
-            std::string::size_type m = s.find(cdelim);
-            if (m != std::string::npos) {
-              eol = " " + s.substr(m) + "\n";
-              s = s.substr(0, m);
+            std::string::size_type n = s.find(cdelim);
+            if (n != std::string::npos) {
+              eol = " " + s.substr(n) + "\n";
+              s = s.substr(0, n);
             }
           }
-          std::istringstream str(s);
+          str.clear(); str.str(s);
           if (!(timeset || circle)) {
             if (!(str >> stra))
               throw GeographicErr("Incomplete input: " + s);
@@ -276,13 +268,10 @@ int main(int argc, char* argv[]) {
             lon = DMS::Decode(strb, ind);
             if (ind == DMS::LATITUDE)
               throw GeographicErr("Bad hemisphere letter on " + strb);
-            if (lon < -540 || lon >= 540)
-              throw GeographicErr("Longitude " + strb +
-                                  " not in [-540d, 540d)");
           } else {
             if (!(str >> stra >> strb))
               throw GeographicErr("Incomplete input: " + s);
-            DMS::DecodeLatLon(stra, strb, lat, lon);
+            DMS::DecodeLatLon(stra, strb, lat, lon, longfirst);
             h = 0;              // h is optional
             if (str >> h) {
               if (h < m.MinHeight() - hguard || h > m.MaxHeight() + hguard)
@@ -312,19 +301,19 @@ int main(int argc, char* argv[]) {
 
           *output << DMS::Encode(D, prec + 1, DMS::NUMBER) << " "
                   << DMS::Encode(I, prec + 1, DMS::NUMBER) << " "
-                  << Utility::str<real>(H, prec) << " "
-                  << Utility::str<real>(by, prec) << " "
-                  << Utility::str<real>(bx, prec) << " "
-                  << Utility::str<real>(-bz, prec) << " "
-                  << Utility::str<real>(F, prec) << eol;
+                  << Utility::str(H, prec) << " "
+                  << Utility::str(by, prec) << " "
+                  << Utility::str(bx, prec) << " "
+                  << Utility::str(-bz, prec) << " "
+                  << Utility::str(F, prec) << eol;
           if (rate)
             *output << DMS::Encode(Dt, prec + 1, DMS::NUMBER) << " "
                     << DMS::Encode(It, prec + 1, DMS::NUMBER) << " "
-                    << Utility::str<real>(Ht, prec) << " "
-                    << Utility::str<real>(byt, prec) << " "
-                    << Utility::str<real>(bxt, prec) << " "
-                    << Utility::str<real>(-bzt, prec) << " "
-                    << Utility::str<real>(Ft, prec) << eol;
+                    << Utility::str(Ht, prec) << " "
+                    << Utility::str(byt, prec) << " "
+                    << Utility::str(bxt, prec) << " "
+                    << Utility::str(-bzt, prec) << " "
+                    << Utility::str(Ft, prec) << eol;
         }
         catch (const std::exception& e) {
           *output << "ERROR: " << e.what() << "\n";

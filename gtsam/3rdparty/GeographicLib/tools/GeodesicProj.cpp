@@ -2,26 +2,14 @@
  * \file GeodesicProj.cpp
  * \brief Command line utility for geodesic projections
  *
- * Copyright (c) Charles Karney (2009-2012) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2009-2017) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  *
- * Compile and link with
- *   g++ -g -O3 -I../include -I../man -o GeodesicProj \
- *       GeodesicProj.cpp \
- *       ../src/AzimuthalEquidistant.cpp \
- *       ../src/CassiniSoldner.cpp \
- *       ../src/DMS.cpp \
- *       ../src/Geodesic.cpp \
- *       ../src/GeodesicLine.cpp \
- *       ../src/Gnomonic.cpp
- *
- * See the <a href="GeodesicProj.1.html">man page</a> for usage
- * information.
+ * See the <a href="GeodesicProj.1.html">man page</a> for usage information.
  **********************************************************************/
 
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -40,15 +28,18 @@
 
 #include "GeodesicProj.usage"
 
-int main(int argc, char* argv[]) {
+int main(int argc, const char* const argv[]) {
   try {
     using namespace GeographicLib;
     typedef Math::real real;
-    bool azimuthal = false, cassini = false, gnomonic = false, reverse = false;
+    Utility::set_digits();
+    bool azimuthal = false, cassini = false, gnomonic = false, reverse = false,
+      longfirst = false;
     real lat0 = 0, lon0 = 0;
     real
-      a = Constants::WGS84_a<real>(),
-      f = Constants::WGS84_f<real>();
+      a = Constants::WGS84_a(),
+      f = Constants::WGS84_f();
+    int prec = 6;
     std::string istring, ifile, ofile, cdelim;
     char lsep = ';';
 
@@ -57,13 +48,14 @@ int main(int argc, char* argv[]) {
       if (arg == "-r")
         reverse = true;
       else if (arg == "-c" || arg == "-z" || arg == "-g") {
+        cassini = azimuthal =  gnomonic = false;
         cassini = arg == "-c";
         azimuthal = arg == "-z";
         gnomonic = arg == "-g";
         if (m + 2 >= argc) return usage(1, true);
         try {
           DMS::DecodeLatLon(std::string(argv[m + 1]), std::string(argv[m + 2]),
-                            lat0, lon0);
+                            lat0, lon0, longfirst);
         }
         catch (const std::exception& e) {
           std::cerr << "Error decoding arguments of " << arg << ": "
@@ -74,7 +66,7 @@ int main(int argc, char* argv[]) {
       } else if (arg == "-e") {
         if (m + 2 >= argc) return usage(1, true);
         try {
-          a = Utility::num<real>(std::string(argv[m + 1]));
+          a = Utility::val<real>(std::string(argv[m + 1]));
           f = Utility::fract<real>(std::string(argv[m + 2]));
         }
         catch (const std::exception& e) {
@@ -82,6 +74,17 @@ int main(int argc, char* argv[]) {
           return 1;
         }
         m += 2;
+      } else if (arg == "-w")
+        longfirst = !longfirst;
+      else if (arg == "-p") {
+        if (++m == argc) return usage(1, true);
+        try {
+          prec = Utility::val<int>(std::string(argv[m]));
+        }
+        catch (const std::exception&) {
+          std::cerr << "Precision " << argv[m] << " is not a number\n";
+          return 1;
+        }
       } else if (arg == "--input-string") {
         if (++m == argc) return usage(1, true);
         istring = argv[m];
@@ -102,9 +105,8 @@ int main(int argc, char* argv[]) {
         if (++m == argc) return usage(1, true);
         cdelim = argv[m];
       } else if (arg == "--version") {
-        std::cout
-          << argv[0] << ": GeographicLib version "
-          << GEOGRAPHICLIB_VERSION_STRING << "\n";
+        std::cout << argv[0] << ": GeographicLib version "
+                  << GEOGRAPHICLIB_VERSION_STRING << "\n";
         return 0;
       } else
         return usage(!(arg == "-h" || arg == "--help"), arg != "--help");
@@ -159,12 +161,16 @@ int main(int argc, char* argv[]) {
     const AzimuthalEquidistant az(geod);
     const Gnomonic gn(geod);
 
-    std::string s;
+    // Max precision = 10: 0.1 nm in distance, 10^-15 deg (= 0.11 nm),
+    // 10^-11 sec (= 0.3 nm).
+    prec = std::min(10 + Math::extra_digits(), std::max(0, prec));
+    std::string s, eol, stra, strb, strc;
+    std::istringstream str;
     int retval = 0;
     std::cout << std::fixed;
     while (std::getline(*input, s)) {
       try {
-        std::string eol("\n");
+        eol = "\n";
         if (!cdelim.empty()) {
           std::string::size_type m = s.find(cdelim);
           if (m != std::string::npos) {
@@ -172,17 +178,15 @@ int main(int argc, char* argv[]) {
             s = s.substr(0, m);
           }
         }
-        std::istringstream str(s);
+        str.clear(); str.str(s);
         real lat, lon, x, y, azi, rk;
-        std::string stra, strb;
         if (!(str >> stra >> strb))
           throw GeographicErr("Incomplete input: " + s);
         if (reverse) {
-          x = Utility::num<real>(stra);
-          y = Utility::num<real>(strb);
+          x = Utility::val<real>(stra);
+          y = Utility::val<real>(strb);
         } else
-          DMS::DecodeLatLon(stra, strb, lat, lon);
-        std::string strc;
+          DMS::DecodeLatLon(stra, strb, lat, lon, longfirst);
         if (str >> strc)
           throw GeographicErr("Extraneous input: " + strc);
         if (reverse) {
@@ -192,10 +196,10 @@ int main(int argc, char* argv[]) {
             az.Reverse(lat0, lon0, x, y, lat, lon, azi, rk);
           else
             gn.Reverse(lat0, lon0, x, y, lat, lon, azi, rk);
-          *output << Utility::str<real>(lat, 15) << " "
-                  << Utility::str<real>(lon, 15) << " "
-                  << Utility::str<real>(azi, 15) << " "
-                  << Utility::str<real>(rk, 16) << eol;
+          *output << Utility::str(longfirst ? lon : lat, prec + 5) << " "
+                  << Utility::str(longfirst ? lat : lon, prec + 5) << " "
+                  << Utility::str(azi, prec + 5) << " "
+                  << Utility::str(rk, prec + 6) << eol;
         } else {
           if (cassini)
             cs.Forward(lat, lon, x, y, azi, rk);
@@ -203,10 +207,10 @@ int main(int argc, char* argv[]) {
             az.Forward(lat0, lon0, lat, lon, x, y, azi, rk);
           else
             gn.Forward(lat0, lon0, lat, lon, x, y, azi, rk);
-          *output << Utility::str<real>(x, 10) << " "
-                  << Utility::str<real>(y, 10) << " "
-                  << Utility::str<real>(azi, 15) << " "
-                  << Utility::str<real>(rk, 16) << eol;
+          *output << Utility::str(x, prec) << " "
+                  << Utility::str(y, prec) << " "
+                  << Utility::str(azi, prec + 5) << " "
+                  << Utility::str(rk, prec + 6) << eol;
         }
       }
       catch (const std::exception& e) {

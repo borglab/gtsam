@@ -6,7 +6,7 @@ TransverseMercatorProj -- perform transverse Mercator projection
 
 B<TransverseMercatorProj> [ B<-s> | B<-t> ]
 [ B<-l> I<lon0> ] [ B<-k> I<k0> ] [ B<-r> ]
-[ B<-e> I<a> I<f> ]
+[ B<-e> I<a> I<f> ] [ B<-w> ] [ B<-p> I<prec> ]
 [ B<--comment-delimiter> I<commentdelim> ]
 [ B<--version> | B<-h> | B<--help> ]
 [ B<--input-file> I<infile> | B<--input-string> I<instring> ]
@@ -23,11 +23,13 @@ exact transverse Mercator projection is used.
 
 Geodetic coordinates are provided on standard input as a set of lines
 containing (blank separated) I<latitude> and I<longitude> (decimal
-degrees or degrees, minutes, seconds).  For each set of geodetic
-coordinates, the corresponding projected easting, I<x>, and northing,
-I<y>, (meters) are printed on standard output together with the meridian
-convergence I<gamma> (degrees) and scale I<k>.  The meridian convergence
-is the bearing of the I<y> axis measured clockwise from true north.
+degrees or degrees, minutes, seconds); for detils on the allowed
+formats for latitude and longitude, see the C<GEOGRAPHIC COORDINATES>
+section of GeoConvert(1).  For each set of geodetic coordinates, the
+corresponding projected easting, I<x>, and northing, I<y>, (meters) are
+printed on standard output together with the meridian convergence
+I<gamma> (degrees) and scale I<k>.  The meridian convergence is the
+bearing of grid north (the I<y> axis) measured clockwise from true north.
 
 =head1 OPTIONS
 
@@ -42,11 +44,11 @@ Mercator projection instead of the exact projection.
 
 use the exact algorithm with the L</EXTENDED DOMAIN>.
 
-=item B<-l>
+=item B<-l> I<lon0>
 
 specify the longitude of origin I<lon0> (degrees, default 0).
 
-=item B<-k>
+=item B<-k> I<k0>
 
 specify the scale I<k0> on the central meridian (default 0.9996).
 
@@ -56,17 +58,30 @@ perform the reverse projection.  I<x> and I<y> are given on standard
 input and each line of standard output gives I<latitude>, I<longitude>,
 I<gamma>, and I<k>.
 
-=item B<-e>
+=item B<-e> I<a> I<f>
 
-specify the ellipsoid via I<a> I<f>; the equatorial radius is I<a> and
-the flattening is I<f>.  Setting I<f> = 0 results in a sphere.  Specify
+specify the ellipsoid via the equatorial radius, I<a> and
+the flattening, I<f>.  Setting I<f> = 0 results in a sphere.  Specify
 I<f> E<lt> 0 for a prolate ellipsoid.  A simple fraction, e.g., 1/297,
-is allowed for I<f>.  (Also, if I<f> E<gt> 1, the flattening is set to
-1/I<f>.)  By default, the WGS84 ellipsoid is used, I<a> = 6378137 m,
-I<f> = 1/298.257223563.  If the exact algorithm is used, I<f> must be
-positive.
+is allowed for I<f>.  By default, the WGS84 ellipsoid is used, I<a> =
+6378137 m, I<f> = 1/298.257223563.  If the exact algorithm is used, I<f>
+must be positive.
 
-=item B<--comment-delimiter>
+=item B<-w>
+
+on input and output, longitude precedes latitude (except that on input
+this can be overridden by a hemisphere designator, I<N>, I<S>, I<E>,
+I<W>).
+
+=item B<-p> I<prec>
+
+set the output precision to I<prec> (default 6).  I<prec> is the number
+of digits after the decimal point for lengths (in meters).  For
+latitudes and longitudes (in degrees), the number of digits after the
+decimal point is I<prec> + 5.  For the convergence (in degrees) and
+scale, the number of digits after the decimal point is I<prec> + 6.
+
+=item B<--comment-delimiter> I<commentdelim>
 
 set the comment delimiter to I<commentdelim> (e.g., "#" or "//").  If
 set, the input lines will be scanned for this delimiter and, if found,
@@ -86,23 +101,23 @@ print usage and exit.
 
 print full documentation and exit.
 
-=item B<--input-file>
+=item B<--input-file> I<infile>
 
 read input from the file I<infile> instead of from standard input; a file
 name of "-" stands for standard input.
 
-=item B<--input-string>
+=item B<--input-string> I<instring>
 
 read input from the string I<instring> instead of from standard input.
 All occurrences of the line separator character (default is a semicolon)
 in I<instring> are converted to newlines before the reading begins.
 
-=item B<--line-separator>
+=item B<--line-separator> I<linesep>
 
 set the line separator character to I<linesep>.  By default this is a
 semicolon.
 
-=item B<--output-file>
+=item B<--output-file> I<outfile>
 
 write output to the file I<outfile> instead of to standard output; a
 file name of "-" stands for standard output.
@@ -143,14 +158,14 @@ B<TransverseMercatorProj> was written by Charles Karney.
 The algorithms for the transverse Mercator projection are described in
 C. F. F. Karney, I<Transverse Mercator with an accuracy of a few
 nanometers>, J. Geodesy B<85>(8), 475-485 (Aug. 2011); DOI
-L<http://dx.doi.org/10.1007/s00190-011-0445-3>; preprint
-L<http://arxiv.org/abs/1002.1417>.  The explanation of the extended
+L<https://doi.org/10.1007/s00190-011-0445-3>; preprint
+L<https://arxiv.org/abs/1002.1417>.  The explanation of the extended
 domain of the projection with the B<-t> option is given in Section 5 of
 this paper.
 
 =head1 HISTORY
 
 B<TransverseMercatorProj> was added to GeographicLib,
-L<http://geographiclib.sf.net>, in 2009-01.  Prior to version 1.9 it was
-called TransverseMercatorTest (and its interface was slightly
-different).
+L<https://geographiclib.sourceforge.io>, in 2009-01.
+Prior to version 1.9 it was called TransverseMercatorTest (and its
+interface was slightly different).

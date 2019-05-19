@@ -6,7 +6,7 @@
 #
 # Copyright (c) Charles Karney (2011-2013) <charles@karney.com> and
 # licensed under the MIT/X11 License.  For more information, see
-# http://geographiclib.sourceforge.net/
+# https://geographiclib.sourceforge.io/
 
 DEFAULTDIR="@GEOGRAPHICLIB_DATA@"
 SUBDIR=geoids
@@ -45,8 +45,6 @@ In addition you can specify
   good = same as best but substitute egm2008-2_5 for egm2008-1 to save
          on disk space
 
-If no name is specified then minimal is assumed.
-
 -p parentdir (default $DEFAULTDIR) specifies where the
 datasets should be stored.  The "Default $NAME path" listed when running
 
@@ -64,7 +62,7 @@ will be saved.  -h prints this help.
 
 For more information on the $NAME datasets, visit
 
-  http://geographiclib.sourceforge.net/html/$NAME.html
+  https://geographiclib.sourceforge.io/html/$NAME.html
 
 EOF
 }
@@ -91,6 +89,10 @@ while getopts hp:fd c; do
     esac
 done
 shift `expr $OPTIND - 1`
+if test $# -eq 0; then
+    usage 1>&2;
+    exit 1
+fi
 
 test -d "$PARENTDIR"/$SUBDIR || mkdir -p "$PARENTDIR"/$SUBDIR 2> /dev/null
 if test ! -d "$PARENTDIR"/$SUBDIR; then
@@ -103,7 +105,7 @@ if test -z "$DEBUG"; then
 trap 'trap "" 0; test "$TEMP" && rm -rf "$TEMP"; exit 1' 1 2 3 9 15
 trap            'test "$TEMP" && rm -rf "$TEMP"'            0
 fi
-TEMP=`mktemp --tmpdir --quiet --directory $NAME-XXXXXXXX`
+TEMP=`mktemp -d -q -t $NAME-XXXXXXXX`
 
 if test -z "$TEMP" -o ! -d "$TEMP"; then
     echo Cannot create temporary directory 1>&2
@@ -130,8 +132,6 @@ egm2008-2_5
 egm2008-1
 EOF
 
-test $# -eq 0 && set -- minimal
-
 while test $# -gt 0; do
     if grep "^$1\$" $TEMP/all > /dev/null; then
 	echo $1
@@ -140,7 +140,7 @@ while test $# -gt 0; do
 	    all )
 		cat $TEMP/all
 		;;
-	    minimal )		# same as no argument
+	    minimal )
 		echo egm96-5
 		;;
 	    best )		# highest resolution models
@@ -176,7 +176,7 @@ while read file; do
     fi
     echo download $file.tar.bz2 ...
     echo $file >> $TEMP/download
-    URL="http://downloads.sourceforge.net/project/geographiclib/$SUBDIR-distrib/$file.tar.bz2?use_mirror=autoselect"
+    URL="https://downloads.sourceforge.net/project/geographiclib/$SUBDIR-distrib/$file.tar.bz2?use_mirror=autoselect"
     ARCHIVE=$TEMP/$file.tar.bz2
     wget -O$ARCHIVE $URL
     echo unpack $file.tar.bz2 ...

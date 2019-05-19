@@ -24,7 +24,7 @@ int main() {
   struct geod_geodesic g;
 
   geod_init(&g, a, f);
-  while (scanf("%lf %lf %lf %lf\n", &lat1, &lon1, &azi1, &s12) == 4) {
+  while (scanf("%lf %lf %lf %lf", &lat1, &lon1, &azi1, &s12) == 4) {
     geod_direct(&g, lat1, lon1, azi1, s12, &lat2, &lon2, &azi2);
     printf("%.15f %.15f %.15f\n", lat2, lon2, azi2);
   }

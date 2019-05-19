@@ -2,28 +2,33 @@
  * \file Gnomonic.cpp
  * \brief Implementation for GeographicLib::Gnomonic class
  *
- * Copyright (c) Charles Karney (2010-2011) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2015) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #include <GeographicLib/Gnomonic.hpp>
 
 #if defined(_MSC_VER)
-// Squelch warnings about potentially uninitialized local variables
-#  pragma warning (disable: 4701)
+// Squelch warnings about potentially uninitialized local variables and
+// constant conditional expressions
+#  pragma warning (disable: 4701 4127)
 #endif
 
 namespace GeographicLib {
 
   using namespace std;
 
-  const Math::real Gnomonic::eps0_ = numeric_limits<real>::epsilon();
-  const Math::real Gnomonic::eps_ = real(0.01) * sqrt(eps0_);
+  Gnomonic::Gnomonic(const Geodesic& earth)
+    : eps0_(numeric_limits<real>::epsilon())
+    , eps_(real(0.01) * sqrt(eps0_))
+    , _earth(earth)
+    , _a(_earth.MajorRadius())
+    , _f(_earth.Flattening())
+  {}
 
   void Gnomonic::Forward(real lat0, real lon0, real lat, real lon,
-                         real& x, real& y, real& azi, real& rk)
-    const throw() {
+                         real& x, real& y, real& azi, real& rk) const {
     real azi0, m, M, t;
     _earth.GenInverse(lat0, lon0, lat, lon,
                       Geodesic::AZIMUTH | Geodesic::REDUCEDLENGTH |
@@ -31,20 +36,18 @@ namespace GeographicLib {
                       t, azi0, azi, m, M, t, t);
     rk = M;
     if (M <= 0)
-      x = y = Math::NaN<real>();
+      x = y = Math::NaN();
     else {
       real rho = m/M;
-      azi0 *= Math::degree<real>();
-      x = rho * sin(azi0);
-      y = rho * cos(azi0);
+      Math::sincosd(azi0, x, y);
+      x *= rho; y *= rho;
     }
   }
 
   void Gnomonic::Reverse(real lat0, real lon0, real x, real y,
-                         real& lat, real& lon, real& azi, real& rk)
-    const throw() {
+                         real& lat, real& lon, real& azi, real& rk) const {
     real
-      azi0 = atan2(x, y) / Math::degree<real>(),
+      azi0 = Math::atan2d(x, y),
       rho = Math::hypot(x, y),
       s = _a * atan(rho/_a);
     bool little = rho <= _a;
@@ -57,7 +60,7 @@ namespace GeographicLib {
                                   Geodesic::GEODESICSCALE));
     int count = numit_, trip = 0;
     real lat1, lon1, azi1, M;
-    while (count--) {
+    while (count-- || GEOGRAPHICLIB_PANIC) {
       real m, t;
       line.Position(s, lat1, lon1, azi1, m, M, t);
       if (trip)
@@ -73,7 +76,7 @@ namespace GeographicLib {
     if (trip) {
       lat = lat1; lon = lon1; azi = azi1; rk = M;
     } else
-      lat = lon = azi = rk = Math::NaN<real>();
+      lat = lon = azi = rk = Math::NaN();
     return;
   }
 

@@ -10,11 +10,11 @@ using namespace GeographicLib;
 int main() {
   try {
    const double
-     a = Constants::WGS84_a<double>(),
-     f = Constants::WGS84_f<double>(),
+     a = Constants::WGS84_a(),
+     f = Constants::WGS84_f(),
      lat1 = 40 + 58/60.0, lat2 = 39 + 56/60.0, // standard parallels
      k1 = 1,                                   // scale
-     lon0 = -77 - 45/60.0;                     // Central meridan
+     lon0 = -77 - 45/60.0;                     // Central meridian
    // Set up basic projection
    const AlbersEqualArea albers(a, f, lat1, lat2, k1);
    {
@@ -22,19 +22,18 @@ int main() {
      double lat = 39.95, lon = -75.17;    // Philadelphia
      double x, y;
      albers.Forward(lon0, lat, lon, x, y);
-     std::cout << x << " " << y << "\n";
+     cout << x << " " << y << "\n";
    }
    {
      // Sample conversion from Albers Equal Area grid to geodetic
      double x = 220e3, y = -53e3;
      double lat, lon;
      albers.Reverse(lon0, x, y, lat, lon);
-     std::cout << lat << " " << lon << "\n";
+     cout << lat << " " << lon << "\n";
    }
   }
   catch (const exception& e) {
     cerr << "Caught exception: " << e.what() << "\n";
     return 1;
   }
-  return 0;
 }

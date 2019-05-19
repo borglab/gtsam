@@ -7,7 +7,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #include "NETGeographicLib.h"
 
@@ -85,13 +85,97 @@ namespace NETGeographicLib
    **********************************************************************/
     public ref class GeodesicExact
     {
-        private:
+    private:
+        enum class captype {
+          CAP_NONE = 0U,
+          CAP_E    = 1U<<0,
+          // Skip 1U<<1 for compatibility with Geodesic (not required)
+          CAP_D    = 1U<<2,
+          CAP_H    = 1U<<3,
+          CAP_C4   = 1U<<4,
+          CAP_ALL  = 0x1FU,
+          CAP_MASK = CAP_ALL,
+          OUT_ALL  = 0x7F80U,
+          OUT_MASK = 0xFF80U,       // Includes LONG_UNROLL
+        };
         // pointer to the unmanaged GeographicLib::GeodesicExact.
         const GeographicLib::GeodesicExact* m_pGeodesicExact;
 
         // the finalizer deletes the unmanaged memory.
         !GeodesicExact();
     public:
+        /**
+         * Bit masks for what calculations to do.  These masks do double duty.
+         * They signify to the GeodesicLineExact::GeodesicLineExact constructor and
+         * to GeodesicExact::Line what capabilities should be included in the
+         * GeodesicLineExact object.  They also specify which results to return in
+         * the general routines GeodesicExact::GenDirect and
+         * GeodesicExact::GenInverse routines.  GeodesicLineExact::mask is a
+         * duplication of this enum.
+         **********************************************************************/
+        enum class mask {
+          /**
+           * No capabilities, no output.
+           * @hideinitializer
+           **********************************************************************/
+          NONE          = 0U,
+          /**
+           * Calculate latitude \e lat2.  (It's not necessary to include this as a
+           * capability to GeodesicLineExact because this is included by default.)
+           * @hideinitializer
+           **********************************************************************/
+          LATITUDE      = 1U<<7  | unsigned(captype::CAP_NONE),
+          /**
+           * Calculate longitude \e lon2.
+           * @hideinitializer
+           **********************************************************************/
+          LONGITUDE     = 1U<<8  | unsigned(captype::CAP_H),
+          /**
+           * Calculate azimuths \e azi1 and \e azi2.  (It's not necessary to
+           * include this as a capability to GeodesicLineExact because this is
+           * included by default.)
+           * @hideinitializer
+           **********************************************************************/
+          AZIMUTH       = 1U<<9  | unsigned(captype::CAP_NONE),
+          /**
+           * Calculate distance \e s12.
+           * @hideinitializer
+           **********************************************************************/
+          DISTANCE      = 1U<<10 | unsigned(captype::CAP_E),
+          /**
+           * Allow distance \e s12 to be used as input in the direct geodesic
+           * problem.
+           * @hideinitializer
+           **********************************************************************/
+          DISTANCE_IN   = 1U<<11 | unsigned(captype::CAP_E),
+          /**
+           * Calculate reduced length \e m12.
+           * @hideinitializer
+           **********************************************************************/
+          REDUCEDLENGTH = 1U<<12 | unsigned(captype::CAP_D),
+          /**
+           * Calculate geodesic scales \e M12 and \e M21.
+           * @hideinitializer
+           **********************************************************************/
+          GEODESICSCALE = 1U<<13 | unsigned(captype::CAP_D),
+          /**
+           * Calculate area \e S12.
+           * @hideinitializer
+           **********************************************************************/
+          AREA          = 1U<<14 | unsigned(captype::CAP_C4),
+          /**
+           * Unroll \e lon2 in the direct calculation.
+           * @hideinitializer
+           **********************************************************************/
+          LONG_UNROLL   = 1U<<15,
+          /**
+           * All capabilities, calculate everything.  (LONG_UNROLL is not
+           * included in this mask.)
+           * @hideinitializer
+           **********************************************************************/
+          ALL           = unsigned(captype::OUT_ALL)| unsigned(captype::CAP_ALL),
+        };
+
         /** \name Constructor
          **********************************************************************/
         ///@{
@@ -105,8 +189,7 @@ namespace NETGeographicLib
          *
          * @param[in] a equatorial radius (meters).
          * @param[in] f flattening of ellipsoid.  Setting \e f = 0 gives a sphere.
-         *   Negative \e f gives a prolate ellipsoid.  If \e f > 1, set flattening
-         *   to 1/\e f.
+         *   Negative \e f gives a prolate ellipsoid.
          * @exception GeographicErr if \e a or (1 &minus; \e f ) \e a is not
          *   positive.
          **********************************************************************/
@@ -142,10 +225,9 @@ namespace NETGeographicLib
          * @param[out] S12 area under the geodesic (meters<sup>2</sup>).
          * @return \e a12 arc length of between point 1 and point 2 (degrees).
          *
-         * \e lat1 should be in the range [&minus;90&deg;, 90&deg;]; \e lon1 and \e
-         * azi1 should be in the range [&minus;540&deg;, 540&deg;).  The values of
-         * \e lon2 and \e azi2 returned are in the range [&minus;180&deg;,
-         * 180&deg;).
+         * \e lat1 should be in the range [&minus;90&deg;, 90&deg;];.  The
+         * values of \e lon2 and \e azi2 returned are in the range
+         * [&minus;180&deg;, 180&deg;).
          *
          * If either point is at a pole, the azimuth is defined by keeping the
          * longitude fixed, writing \e lat = &plusmn;(90&deg; &minus; &epsilon;),
@@ -236,10 +318,9 @@ namespace NETGeographicLib
          *   (dimensionless).
          * @param[out] S12 area under the geodesic (meters<sup>2</sup>).
          *
-         * \e lat1 should be in the range [&minus;90&deg;, 90&deg;]; \e lon1 and \e
-         * azi1 should be in the range [&minus;540&deg;, 540&deg;).  The values of
-         * \e lon2 and \e azi2 returned are in the range [&minus;180&deg;,
-         * 180&deg;).
+         * \e lat1 should be in the range [&minus;90&deg;, 90&deg;].  The
+         * values of \e lon2 and \e azi2 returned are in the range
+         * [&minus;180&deg;, 180&deg;).
          *
          * If either point is at a pole, the azimuth is defined by keeping the
          * longitude fixed, writing \e lat = &plusmn;(90&deg; &minus; &epsilon;),
@@ -335,7 +416,7 @@ namespace NETGeographicLib
          * @param[in] s12_a12 if \e arcmode is false, this is the distance between
          *   point 1 and point 2 (meters); otherwise it is the arc length between
          *   point 1 and point 2 (degrees); it can be signed.
-         * @param[in] outmask a bitor'ed combination of  NETGeographicLib::Mask values
+         * @param[in] outmask a bitor'ed combination of GeodesicExact::mask values
          *   specifying which of the following parameters should be set.
          * @param[out] lat2 latitude of point 2 (degrees).
          * @param[out] lon2 longitude of point 2 (degrees).
@@ -349,26 +430,32 @@ namespace NETGeographicLib
          * @param[out] S12 area under the geodesic (meters<sup>2</sup>).
          * @return \e a12 arc length of between point 1 and point 2 (degrees).
          *
-         * The  NETGeographicLib::Mask values possible for \e outmask are
-         * - \e outmask |= NETGeographicLib::Mask::LATITUDE for the latitude \e lat2;
-         * - \e outmask |= NETGeographicLib::Mask::LONGITUDE for the latitude \e lon2;
-         * - \e outmask |= NETGeographicLib::Mask::AZIMUTH for the latitude \e azi2;
-         * - \e outmask |= NETGeographicLib::Mask::DISTANCE for the distance \e s12;
-         * - \e outmask |= NETGeographicLib::Mask::REDUCEDLENGTH for the reduced length \e
+         * The GeodesicExact::mask values possible for \e outmask are
+         * - \e outmask |= GeodesicExact::LATITUDE for the latitude \e lat2;
+         * - \e outmask |= GeodesicExact::LONGITUDE for the latitude \e lon2;
+         * - \e outmask |= GeodesicExact::AZIMUTH for the latitude \e azi2;
+         * - \e outmask |= GeodesicExact::DISTANCE for the distance \e s12;
+         * - \e outmask |= GeodesicExact::REDUCEDLENGTH for the reduced length \e
          *   m12;
-         * - \e outmask |= NETGeographicLib::Mask::GEODESICSCALE for the geodesic scales \e
+         * - \e outmask |= GeodesicExact::GEODESICSCALE for the geodesic scales \e
          *   M12 and \e M21;
-         * - \e outmask |= NETGeographicLib::Mask::AREA for the area \e S12;
-         * - \e outmask |= NETGeographicLib::Mask::ALL for all of the above.
+         * - \e outmask |= GeodesicExact::AREA for the area \e S12;
+         * - \e outmask |= GeodesicExact::ALL for all of the above;
+         * - \e outmask |= GeodesicExact::LONG_UNROLL to unroll \e lon2 instead of
+         *   wrapping it into the range [&minus;180&deg;, 180&deg;).
          * .
          * The function value \e a12 is always computed and returned and this
          * equals \e s12_a12 is \e arcmode is true.  If \e outmask includes
          * GeodesicExact::DISTANCE and \e arcmode is false, then \e s12 = \e
-         * s12_a12.  It is not necessary to include  NETGeographicLib::Mask::DISTANCE_IN in
+         * s12_a12.  It is not necessary to include GeodesicExact::DISTANCE_IN in
          * \e outmask; this is automatically included is \e arcmode is false.
+         *
+         * With the LONG_UNROLL bit set, the quantity \e lon2 &minus; \e lon1
+         * indicates how many times and in what sense the geodesic encircles
+         * the ellipsoid.
          **********************************************************************/
         double GenDirect(double lat1, double lon1, double azi1,
-                        bool arcmode, double s12_a12, NETGeographicLib::Mask outmask,
+                        bool arcmode, double s12_a12, GeodesicExact::mask outmask,
                         [System::Runtime::InteropServices::Out] double% lat2,
                         [System::Runtime::InteropServices::Out] double% lon2,
                         [System::Runtime::InteropServices::Out] double% azi2,
@@ -400,10 +487,9 @@ namespace NETGeographicLib
          * @param[out] S12 area under the geodesic (meters<sup>2</sup>).
          * @return \e a12 arc length of between point 1 and point 2 (degrees).
          *
-         * \e lat1 and \e lat2 should be in the range [&minus;90&deg;, 90&deg;]; \e
-         * lon1 and \e lon2 should be in the range [&minus;540&deg;, 540&deg;).
-         * The values of \e azi1 and \e azi2 returned are in the range
-         * [&minus;180&deg;, 180&deg;).
+         * \e lat1 and \e lat2 should be in the range [&minus;90&deg;,
+         * 90&deg;].  The values of \e azi1 and \e azi2 returned are in the
+         * range [&minus;180&deg;, 180&deg;).
          *
          * If either point is at a pole, the azimuth is defined by keeping the
          * longitude fixed, writing \e lat = &plusmn;(90&deg; &minus; &epsilon;),
@@ -485,7 +571,7 @@ namespace NETGeographicLib
          * @param[in] lon1 longitude of point 1 (degrees).
          * @param[in] lat2 latitude of point 2 (degrees).
          * @param[in] lon2 longitude of point 2 (degrees).
-         * @param[in] outmask a bitor'ed combination of  NETGeographicLib::Mask values
+         * @param[in] outmask a bitor'ed combination of GeodesicExact::mask values
          *   specifying which of the following parameters should be set.
          * @param[out] s12 distance between point 1 and point 2 (meters).
          * @param[out] azi1 azimuth at point 1 (degrees).
@@ -498,20 +584,20 @@ namespace NETGeographicLib
          * @param[out] S12 area under the geodesic (meters<sup>2</sup>).
          * @return \e a12 arc length of between point 1 and point 2 (degrees).
          *
-         * The NETGeographicLib::Mask values possible for \e outmask are
-         * - \e outmask |= NETGeographicLib::Mask::DISTANCE for the distance \e s12;
-         * - \e outmask |= NETGeographicLib::Mask::AZIMUTH for the latitude \e azi2;
-         * - \e outmask |= NETGeographicLib::Mask::REDUCEDLENGTH for the reduced length \e
+         * The GeodesicExact::mask values possible for \e outmask are
+         * - \e outmask |= GeodesicExact::DISTANCE for the distance \e s12;
+         * - \e outmask |= GeodesicExact::AZIMUTH for the latitude \e azi2;
+         * - \e outmask |= GeodesicExact::REDUCEDLENGTH for the reduced length \e
          *   m12;
-         * - \e outmask |= NETGeographicLib::Mask::GEODESICSCALE for the geodesic scales \e
+         * - \e outmask |= GeodesicExact::GEODESICSCALE for the geodesic scales \e
          *   M12 and \e M21;
-         * - \e outmask |= NETGeographicLib::Mask::AREA for the area \e S12;
-         * - \e outmask |= NETGeographicLib::Mask::ALL for all of the above.
+         * - \e outmask |= GeodesicExact::AREA for the area \e S12;
+         * - \e outmask |= GeodesicExact::ALL for all of the above.
          * .
          * The arc length is always computed and returned as the function value.
          **********************************************************************/
         double GenInverse(double lat1, double lon1, double lat2, double lon2,
-                        NETGeographicLib::Mask outmask,
+                        GeodesicExact::mask outmask,
                         [System::Runtime::InteropServices::Out] double% s12,
                         [System::Runtime::InteropServices::Out] double% azi1,
                         [System::Runtime::InteropServices::Out] double% azi2,
@@ -537,8 +623,7 @@ namespace NETGeographicLib
          *   GeodesicLineExact::Position.
          * @return a GeodesicLineExact object.
          *
-         * \e lat1 should be in the range [&minus;90&deg;, 90&deg;]; \e lon1 and \e
-         * azi1 should be in the range [&minus;540&deg;, 540&deg;).
+         * \e lat1 should be in the range [&minus;90&deg;, 90&deg;].
          *
          * The GeodesicExact::mask values are
          * - \e caps |= NETGeographicLib::Mask::LATITUDE for the latitude \e lat2; this is
@@ -566,6 +651,98 @@ namespace NETGeographicLib
         GeodesicLineExact^ Line(double lat1, double lon1, double azi1,
             NETGeographicLib::Mask caps );
 
+        /**
+        * Define a GeodesicLineExact in terms of the inverse geodesic problem.
+        *
+        * @param[in] lat1 latitude of point 1 (degrees).
+        * @param[in] lon1 longitude of point 1 (degrees).
+        * @param[in] lat2 latitude of point 2 (degrees).
+        * @param[in] lon2 longitude of point 2 (degrees).
+        * @param[in] caps bitor'ed combination of GeodesicExact::mask values
+        *   specifying the capabilities the GeodesicLineExact object should
+        *   possess, i.e., which quantities can be returned in calls to
+        *   GeodesicLineExact::Position.
+        * @return a GeodesicLineExact object.
+        *
+        * This function sets point 3 of the GeodesicLineExact to correspond to
+        * point 2 of the inverse geodesic problem.
+        *
+        * \e lat1 and \e lat2 should be in the range [&minus;90&deg;, 90&deg;].
+        **********************************************************************/
+        GeodesicLineExact^ InverseLine(double lat1, double lon1, double lat2,
+            double lon2, NETGeographicLib::Mask caps );
+
+        /**
+        * Define a GeodesicLineExact in terms of the direct geodesic problem
+        * specified in terms of distance.
+        *
+        * @param[in] lat1 latitude of point 1 (degrees).
+        * @param[in] lon1 longitude of point 1 (degrees).
+        * @param[in] azi1 azimuth at point 1 (degrees).
+        * @param[in] s12 distance between point 1 and point 2 (meters); it can be
+        *   negative.
+        * @param[in] caps bitor'ed combination of GeodesicExact::mask values
+        *   specifying the capabilities the GeodesicLineExact object should
+        *   possess, i.e., which quantities can be returned in calls to
+        *   GeodesicLineExact::Position.
+        * @return a GeodesicLineExact object.
+        *
+        * This function sets point 3 of the GeodesicLineExact to correspond to
+        * point 2 of the direct geodesic problem.
+        *
+        * \e lat1 should be in the range [&minus;90&deg;, 90&deg;].
+        **********************************************************************/
+        GeodesicLineExact^ DirectLine(double lat1, double lon1, double azi1,
+            double s12, NETGeographicLib::Mask caps);
+
+        /**
+        * Define a GeodesicLineExact in terms of the direct geodesic problem
+        * specified in terms of arc length.
+        *
+        * @param[in] lat1 latitude of point 1 (degrees).
+        * @param[in] lon1 longitude of point 1 (degrees).
+        * @param[in] azi1 azimuth at point 1 (degrees).
+        * @param[in] a12 arc length between point 1 and point 2 (degrees); it can
+        *   be negative.
+        * @param[in] caps bitor'ed combination of GeodesicExact::mask values
+        *   specifying the capabilities the GeodesicLineExact object should
+        *   possess, i.e., which quantities can be returned in calls to
+        *   GeodesicLineExact::Position.
+        * @return a GeodesicLineExact object.
+        *
+        * This function sets point 3 of the GeodesicLineExact to correspond to
+        * point 2 of the direct geodesic problem.
+        *
+        * \e lat1 should be in the range [&minus;90&deg;, 90&deg;].
+        **********************************************************************/
+        GeodesicLineExact^ ArcDirectLine(double lat1, double lon1, double azi1,
+            double a12, NETGeographicLib::Mask caps);
+
+        /**
+        * Define a GeodesicLineExact in terms of the direct geodesic problem
+        * specified in terms of either distance or arc length.
+        *
+        * @param[in] lat1 latitude of point 1 (degrees).
+        * @param[in] lon1 longitude of point 1 (degrees).
+        * @param[in] azi1 azimuth at point 1 (degrees).
+        * @param[in] arcmode boolean flag determining the meaning of the \e
+        *   s12_a12.
+        * @param[in] s12_a12 if \e arcmode is false, this is the distance between
+        *   point 1 and point 2 (meters); otherwise it is the arc length between
+        *   point 1 and point 2 (degrees); it can be negative.
+        * @param[in] caps bitor'ed combination of GeodesicExact::mask values
+        *   specifying the capabilities the GeodesicLineExact object should
+        *   possess, i.e., which quantities can be returned in calls to
+        *   GeodesicLineExact::Position.
+        * @return a GeodesicLineExact object.
+        *
+        * This function sets point 3 of the GeodesicLineExact to correspond to
+        * point 2 of the direct geodesic problem.
+        *
+        * \e lat1 should be in the range [&minus;90&deg;, 90&deg;].
+        **********************************************************************/
+        GeodesicLineExact^ GenDirectLine(double lat1, double lon1, double azi1,
+            bool arcmode, double s12_a12, NETGeographicLib::Mask caps);
         ///@}
 
         /** \name Inspector functions.

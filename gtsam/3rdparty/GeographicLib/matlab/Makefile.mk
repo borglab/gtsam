@@ -1,31 +1,22 @@
-FUNCTIONS = utmupsforward utmupsreverse mgrsforward mgrsreverse \
-	geodesicdirect geodesicinverse geodesicline \
-	geoidheight geocentricforward geocentricreverse \
-	localcartesianforward localcartesianreverse polygonarea
+MATLAB_FILES = $(wildcard geographiclib/*.m)
+MATLAB_PRIVATE = $(wildcard geographiclib/private/*.m)
+MATLAB_LEGACY = $(wildcard geographiclib-legacy/*.m)
 
-MATLAB_COMPILESCRIPT = geographiclibinterface.m
-
-MATLAB_GEOD = geoddoc.m geodreckon.m geoddistance.m geodarea.m \
-	defaultellipsoid.m ecc2flat.m flat2ecc.m \
-	geodproj.m eqdazim_fwd.m eqdazim_inv.m cassini_fwd.m cassini_inv.m \
-	tranmerc_fwd.m tranmerc_inv.m gnomonic_fwd.m gnomonic_inv.m \
-	utm_fwd.m utm_inv.m
-
-MATLAB_GEOD_PRIVATE = $(wildcard private/*.m)
-
-MATLABFILES = $(addsuffix .cpp,$(FUNCTIONS)) $(addsuffix .m,$(FUNCTIONS)) \
-	 $(MATLAB_COMPILESCRIPT) $(MATLAB_GEOD)
-
-DEST = $(PREFIX)/libexec/GeographicLib/matlab
+DEST = $(PREFIX)/share/matlab
 INSTALL = install -b
 
 all:
 	@:
 
 install:
-	test -d $(DEST)/private || mkdir -p $(DEST)/private
-	$(INSTALL) -m 644 $(MATLABFILES) $(DEST)/
-	$(INSTALL) -m 644 $(MATLAB_GEOD_PRIVATE) $(DEST)/private/
+	test -d $(DEST)/geographiclib/private || \
+		mkdir -p $(DEST)/geographiclib/private
+	test -d $(DEST)/geographiclib-legacy || \
+		mkdir -p $(DEST)/geographiclib-legacy
+	$(INSTALL) -m 644 $(MATLAB_FILES) $(DEST)/geographiclib
+	$(INSTALL) -m 644 $(MATLAB_PRIVATE) $(DEST)/geographiclib/private/
+	$(INSTALL) -m 644 $(MATLAB_LEGACY) $(DEST)/geographiclib-legacy
+
 clean:
 	rm -f *.mex* *.oct
 

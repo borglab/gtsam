@@ -3,9 +3,8 @@
 #
 # Copyright (C) 2009, Francesco P. Lovergine <frankie@debian.org>
 
-AM_CPPFLAGS = -Wall -funroll-loops -finline-functions -fomit-frame-pointer
-INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include \
-           -I$(top_builddir)/man -I$(top_srcdir)/man
+AM_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include \
+           -I$(top_builddir)/man -I$(top_srcdir)/man -Wall -Wextra
 
 LDADD = $(top_builddir)/src/libGeographic.la
 DEPS = $(top_builddir)/src/libGeographic.la
@@ -19,6 +18,7 @@ bin_PROGRAMS = CartConvert \
 	Gravity \
 	MagneticField \
 	Planimeter \
+	RhumbSolve \
 	TransverseMercatorProj
 
 CartConvert_SOURCES = CartConvert.cpp \
@@ -115,11 +115,20 @@ Planimeter_SOURCES = Planimeter.cpp \
 	../include/GeographicLib/Accumulator.hpp \
 	../include/GeographicLib/Constants.hpp \
 	../include/GeographicLib/DMS.hpp \
+	../include/GeographicLib/Ellipsoid.hpp \
 	../include/GeographicLib/GeoCoords.hpp \
 	../include/GeographicLib/Geodesic.hpp \
 	../include/GeographicLib/Math.hpp \
 	../include/GeographicLib/PolygonArea.hpp \
 	../include/GeographicLib/UTMUPS.hpp \
+	../include/GeographicLib/Utility.hpp
+RhumbSolve_SOURCES = RhumbSolve.cpp \
+	../man/RhumbSolve.usage \
+	../include/GeographicLib/Config.h \
+	../include/GeographicLib/Constants.hpp \
+	../include/GeographicLib/DMS.hpp \
+	../include/GeographicLib/Ellipsoid.hpp \
+	../include/GeographicLib/Math.hpp \
 	../include/GeographicLib/Utility.hpp
 TransverseMercatorProj_SOURCES = TransverseMercatorProj.cpp \
 	../man/TransverseMercatorProj.usage \
@@ -136,7 +145,7 @@ sbin_SCRIPTS = geographiclib-get-geoids \
 	geographiclib-get-gravity \
 	geographiclib-get-magnetic
 
-geographiclib_data=$(datadir)/GeographicLib
+geographiclib_data = $(datadir)/GeographicLib
 geographiclib-get-geoids: geographiclib-get-geoids.sh
 	sed -e "s%@GEOGRAPHICLIB_DATA@%$(geographiclib_data)%" $< > $@
 	chmod +x $@
@@ -148,6 +157,6 @@ geographiclib-get-magnetic: geographiclib-get-magnetic.sh
 	chmod +x $@
 
 CLEANFILES = $(sbin_SCRIPTS)
-EXTRA_DIST = Makefile.mk CMakeLists.txt \
+EXTRA_DIST = Makefile.mk CMakeLists.txt tests.cmake \
 	geographiclib-get-geoids.sh geographiclib-get-gravity.sh \
 	geographiclib-get-magnetic.sh

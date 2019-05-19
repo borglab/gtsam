@@ -2,7 +2,7 @@
   <head>
     <title>GeographicLib-@PROJECT_VERSION@ utilities</title>
     <meta HTTP-EQUIV="Refresh"
-	  CONTENT="0; URL=http://geographiclib.sourceforge.net/@PROJECT_VERSION@/utilities.html">
+	  CONTENT="0; URL=https://geographiclib.sourceforge.io/@PROJECT_VERSION@/utilities.html">
   </head>
   <body topmargin=10 leftmargin=10>
     <h3>
@@ -11,8 +11,8 @@
 	  Online documentation for utilities for GeographicLib version
 	  @PROJECT_VERSION@ is available at
 	  <center>
-	    <a href="http://geographiclib.sourceforge.net/@PROJECT_VERSION@/utilities.html">
-	      http://geographiclib.sourceforge.net/@PROJECT_VERSION@/utilities.html</a>.
+	    <a href="https://geographiclib.sourceforge.io/@PROJECT_VERSION@/utilities.html">
+	      https://geographiclib.sourceforge.io/@PROJECT_VERSION@/utilities.html</a>.
 	  </center>
 	  <br>
 	  You will be redirected there.  Click on the link to go there

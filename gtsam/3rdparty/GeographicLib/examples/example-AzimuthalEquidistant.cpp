@@ -11,7 +11,7 @@ using namespace GeographicLib;
 int main() {
   try {
     Geodesic geod(Constants::WGS84_a(), Constants::WGS84_f());
-    // Alternatively: const Geodesic& geod = Geodesic::WGS84;
+    // Alternatively: const Geodesic& geod = Geodesic::WGS84();
     const double lat0 = 48 + 50/60.0, lon0 = 2 + 20/60.0; // Paris
     AzimuthalEquidistant proj(geod);
     {
@@ -33,5 +33,4 @@ int main() {
     cerr << "Caught exception: " << e.what() << "\n";
     return 1;
   }
-  return 0;
 }

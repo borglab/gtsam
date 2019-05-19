@@ -7,7 +7,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 namespace NETGeographicLib
@@ -32,17 +32,15 @@ namespace NETGeographicLib
    * this class evaluates the height by interpolation into a grid of
    * precomputed values.
    *
+   * The geoid height, \e N, can be used to convert a height above the
+   * ellipsoid, \e h, to the corresponding height above the geoid (roughly the
+   * height above mean sea level), \e H, using the relations
+   *
+   * &nbsp;&nbsp;&nbsp;\e h = \e N + \e H;
+   * &nbsp;&nbsp;\e H = &minus;\e N + \e h.
+   *
    * See \ref geoid for details of how to install the data sets, the data
    * format, estimates of the interpolation errors, and how to use caching.
-   *
-   * In addition to returning the geoid height, the gradient of the geoid can
-   * be calculated.  The gradient is defined as the rate of change of the geoid
-   * as a function of position on the ellipsoid.  This uses the parameters for
-   * the WGS84 ellipsoid.  The gradient defined in terms of the interpolated
-   * heights.  As a result of the way that the geoid data is stored, the
-   * calculation of gradients can result in large quantization errors.  This is
-   * particularly acute for fine grids, at high latitudes, and for the easterly
-   * gradient.
    *
    * This class is typically \e not thread safe in that a single instantiation
    * cannot be safely used by multiple threads because of the way the object
@@ -149,8 +147,7 @@ namespace NETGeographicLib
          * parallels \e south and \e north and the meridians \e west and \e east.
          * \e east is always interpreted as being east of \e west, if necessary by
          * adding 360&deg; to its value.  \e south and \e north should be in
-         * the range [&minus;90&deg;, 90&deg;]; \e west and \e east should
-         * be in the range [&minus;540&deg;, 540&deg;).
+         * the range [&minus;90&deg;, 90&deg;].
          **********************************************************************/
         void CacheArea(double south, double west, double north, double east);
 
@@ -189,33 +186,9 @@ namespace NETGeographicLib
          *   never happens if (\e lat, \e lon) is within a successfully cached area.
          * @return geoid height (meters).
          *
-         * The latitude should be in [&minus;90&deg;, 90&deg;] and
-         * longitude should be in [&minus;540&deg;, 540&deg;).
+         * The latitude should be in [&minus;90&deg;, 90&deg;].
          **********************************************************************/
         double Height(double lat, double lon);
-
-        /**
-         * Compute the geoid height and gradient at a point
-         *
-         * @param[in] lat latitude of the point (degrees).
-         * @param[in] lon longitude of the point (degrees).
-         * @param[out] gradn northerly gradient (dimensionless).
-         * @param[out] grade easterly gradient (dimensionless).
-         * @exception GeographicErr if there's a problem reading the data; this
-         *   never happens if (\e lat, \e lon) is within a successfully cached area.
-         * @return geoid height (meters).
-         *
-         * The latitude should be in [&minus;90&deg;, 90&deg;] and
-         * longitude should be in [&minus;540&deg;, 540&deg;).  As a result
-         * of the way that the geoid data is stored, the calculation of gradients
-         * can result in large quantization errors.  This is particularly acute for
-         * fine grids, at high latitudes, and for the easterly gradient.  If you
-         * need to compute the direction of the acceleration due to gravity
-         * accurately, you should use GravityModel::Gravity.
-         **********************************************************************/
-        double Height(double lat, double lon,
-            [System::Runtime::InteropServices::Out] double% gradn,
-            [System::Runtime::InteropServices::Out] double% grade);
 
         /**
          * Convert a height above the geoid to a height above the ellipsoid and
@@ -357,22 +330,22 @@ namespace NETGeographicLib
         /**
          * @return the default path for geoid data files.
          *
-         * This is the value of the environment variable GEOID_PATH, if set;
-         * otherwise, it is $GEOGRAPHICLIB_DATA/geoids if the environment variable
+         * This is the value of the environment variable
+         * GEOGRAPHICLIB_GEOID_PATH, if set; otherwise, it is
+         * $GEOGRAPHICLIB_DATA/geoids if the environment variable
          * GEOGRAPHICLIB_DATA is set; otherwise, it is a compile-time default
          * (/usr/local/share/GeographicLib/geoids on non-Windows systems and
-         * C:/Documents and Settings/All Users/Application
-         * Data/GeographicLib/geoids on Windows systems).
+         * C:/ProgramData/GeographicLib/geoids on Windows systems).
          **********************************************************************/
         static System::String^ DefaultGeoidPath();
 
         /**
          * @return the default name for the geoid.
          *
-         * This is the value of the environment variable GEOID_NAME, if set,
-         * otherwise, it is "egm96-5".  The Geoid class does not use this function;
-         * it is just provided as a convenience for a calling program when
-         * constructing a Geoid object.
+         * This is the value of the environment variable
+         * GEOGRAPHICLIB_GEOID_NAME, if set, otherwise, it is "egm96-5".  The
+         * Geoid class does not use this function; it is just provided as a
+         * convenience for a calling program when constructing a Geoid object.
          **********************************************************************/
         static System::String^ DefaultGeoidName();
     };

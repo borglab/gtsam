@@ -3,7 +3,7 @@ Compute series approximations for Transverse Mercator Projection
 
 Copyright (c) Charles Karney (2009-2010) <charles@karney.com> and
 licensed under the MIT/X11 License.  For more information, see
-http://geographiclib.sourceforge.net/
+https://geographiclib.sourceforge.io/
 
 Reference:
 
@@ -11,8 +11,8 @@ Reference:
    Transverse Mercator with an accuracy of a few nanometers,
    J. Geodesy 85(8), 475-485 (Aug. 2011).
    DOI 10.1007/s00190-011-0445-3
-   preprint http://arxiv.org/abs/1002.1417
-   resource page http://geographiclib.sf.net/tm.html
+   preprint https://arxiv.org/abs/1002.1417
+   resource page https://geographiclib.sourceforge.io/tm.html
 
 Compute coefficient for forward and inverse trigonometric series for
 conversion from conformal latitude to rectifying latitude.  This prints
@@ -66,7 +66,7 @@ tested out to maxpow = 30; but this takes a long time (see below).
    30  13535s = 226m
 */
 
-maxpow:6$ /* Max power for forward and reverse projections */
+maxpow:8$ /* Max power for forward and reverse projections */
 /* Notation
 
    e = eccentricity
@@ -205,6 +205,15 @@ defarrayfuns():=block([aa:a1*(1+n),alpha:zeta_zetap,beta:zetap_zeta,t],
       1+sum(coeff(t,cos(2*k*zeta))*cos(2*k*z),k,1,i))))$
 
 printseries()$
+(b1:a1,
+  for i:1 thru maxpow do (alp[i]:coeff(zeta_zetap,sin(2*i*zetap)),
+    bet[i]:coeff(expand(-zetap_zeta),sin(2*i*zeta))))$
+load("polyprint.mac")$
+printtm():=block([macro:GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER],
+  value1('(b1*(1+n)),'n,2,0),
+  array1('alp,'n,1,0),
+  array1('bet,'n,1,0))$
+printtm()$
 /*
 defarrayfuns()$
 save("tmseries.lsp",maxpow,arrays)$

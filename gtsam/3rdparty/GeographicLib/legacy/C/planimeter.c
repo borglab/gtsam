@@ -29,7 +29,7 @@ int main() {
   geod_init(&g, a, f);
   geod_polygon_init(&p, 0);
 
-  while (scanf("%lf %lf\n", &lat, &lon) == 2)
+  while (scanf("%lf %lf", &lat, &lon) == 2)
     geod_polygon_addpoint(&g, &p, lat, lon);
   n = geod_polygon_compute(&g, &p, 0, 1, &A, &P);
   printf("%d %.8f %.3f\n", n, P, A);

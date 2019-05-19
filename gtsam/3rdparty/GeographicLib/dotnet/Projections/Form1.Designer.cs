@@ -45,6 +45,7 @@ namespace Projections
             this.m_magneticPage = new System.Windows.Forms.TabPage();
             this.m_polyPage = new System.Windows.Forms.TabPage();
             this.m_accumPage = new System.Windows.Forms.TabPage();
+            this.m_rhumbTabPage = new System.Windows.Forms.TabPage();
             this.m_tabControl.SuspendLayout();
             this.SuspendLayout();
             //
@@ -66,6 +67,7 @@ namespace Projections
             this.m_tabControl.Controls.Add(this.m_magneticPage);
             this.m_tabControl.Controls.Add(this.m_polyPage);
             this.m_tabControl.Controls.Add(this.m_accumPage);
+            this.m_tabControl.Controls.Add(this.m_rhumbTabPage);
             this.m_tabControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.m_tabControl.Location = new System.Drawing.Point(0, 0);
             this.m_tabControl.Name = "m_tabControl";
@@ -228,6 +230,16 @@ namespace Projections
             this.m_accumPage.Text = "Accumulator";
             this.m_accumPage.UseVisualStyleBackColor = true;
             //
+            // m_rhumbTabPage
+            //
+            this.m_rhumbTabPage.Location = new System.Drawing.Point(4, 22);
+            this.m_rhumbTabPage.Name = "m_rhumbTabPage";
+            this.m_rhumbTabPage.Padding = new System.Windows.Forms.Padding(3);
+            this.m_rhumbTabPage.Size = new System.Drawing.Size(936, 236);
+            this.m_rhumbTabPage.TabIndex = 16;
+            this.m_rhumbTabPage.Text = "Rhumb";
+            this.m_rhumbTabPage.UseVisualStyleBackColor = true;
+            //
             // Form1
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -260,7 +272,7 @@ namespace Projections
         private System.Windows.Forms.TabPage m_magneticPage;
         private System.Windows.Forms.TabPage m_polyPage;
         private System.Windows.Forms.TabPage m_accumPage;
+        private System.Windows.Forms.TabPage m_rhumbTabPage;
 
     }
 }
-

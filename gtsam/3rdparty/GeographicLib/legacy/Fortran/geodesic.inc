@@ -9,11 +9,13 @@
 
       interface
 
-        subroutine direct(a, f, lat1, lon1, azi1, s12a12, arcmod,
+* omask bits: 1 = a12; 2 = m12; 4 = MM12 + MM21; 8 = SS12
+* flags bits: 1 = arcmode; 2 = unroll
+
+        subroutine direct(a, f, lat1, lon1, azi1, s12a12, flags,
      +      lat2, lon2, azi2, omask, a12s12, m12, MM12, MM21, SS12)
         double precision, intent(in) :: a, f, lat1, lon1, azi1, s12a12
-        logical, intent(in) :: arcmod
-        integer, intent(in) :: omask
+        integer, intent(in) :: flags, omask
         double precision, intent(out) :: lat2, lon2, azi2
         double precision, intent(out) :: a12s12, m12, MM12, MM21, SS12
         end subroutine direct
@@ -31,5 +33,9 @@
         double precision, intent(in) :: a, f, lats(n), lons(n)
         double precision, intent(out) :: AA, PP
         end subroutine area
+
+        subroutine geover(major, minor, patch)
+        integer, intent(out) :: major, minor, patch
+        end subroutine geover
 
       end interface
