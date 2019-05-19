@@ -11,7 +11,7 @@ using namespace GeographicLib;
 int main() {
   try {
     GeodesicExact geod(Constants::WGS84_a(), Constants::WGS84_f());
-    // Alternatively: const GeodesicExact& geod = GeodesicExact::WGS84;
+    // Alternatively: const GeodesicExact& geod = GeodesicExact::WGS84();
     {
       // Sample direct calculation, travelling about NE from JFK
       double lat1 = 40.6, lon1 = -73.8, s12 = 5.5e6, azi1 = 51;
@@ -33,5 +33,4 @@ int main() {
     cerr << "Caught exception: " << e.what() << "\n";
     return 1;
   }
-  return 0;
 }

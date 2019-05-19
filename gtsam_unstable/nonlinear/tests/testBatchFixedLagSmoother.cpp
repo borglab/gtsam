@@ -216,7 +216,7 @@ TEST( BatchFixedLagSmoother, Example )
     Timestamps emptyNewTimestamps;
 
     size_t factorIndex = 6; // any index that does not break connectivity of the graph
-    FastVector<size_t> factorToRemove;
+    FactorIndices factorToRemove;
     factorToRemove.push_back(factorIndex);
 
     const NonlinearFactorGraph smootherFactorsBeforeRemove = smoother.getFactors();

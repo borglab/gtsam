@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #pragma once
 
@@ -93,8 +93,7 @@ namespace NETGeographicLib
          * @param[in] earth the Geodesic object to use for geodesic calculations.
          *   By default this uses the WGS84 ellipsoid.
          *
-         * \e lat0 should be in the range [&minus;90&deg;, 90&deg;] and \e
-         * lon0 should be in the range [&minus;540&deg;, 540&deg;).
+         * \e lat0 should be in the range [&minus;90&deg;, 90&deg;].
          **********************************************************************/
         CassiniSoldner(double lat0, double lon0, Geodesic^ earth );
 
@@ -110,8 +109,7 @@ namespace NETGeographicLib
          * @param[in] lat0 latitude of center point of projection (degrees).
          * @param[in] lon0 longitude of center point of projection (degrees).
          *
-         * \e lat0 should be in the range [&minus;90&deg;, 90&deg;] and \e
-         * lon0 should be in the range [&minus;540&deg;, 540&deg;).
+         * \e lat0 should be in the range [&minus;90&deg;, 90&deg;].
          **********************************************************************/
         void Reset(double lat0, double lon0);
 
@@ -125,9 +123,8 @@ namespace NETGeographicLib
          * @param[out] azi azimuth of easting direction at point (degrees).
          * @param[out] rk reciprocal of azimuthal northing scale at point.
          *
-         * \e lat should be in the range [&minus;90&deg;, 90&deg;] and \e
-         * lon should be in the range [&minus;540&deg;, 540&deg;).  A call
-         * to Forward followed by a call to Reverse will return the original (\e
+         * \e lat should be in the range [&minus;90&deg;, 90&deg;].  A call to
+         * Forward followed by a call to Reverse will return the original (\e
          * lat, \e lon) (to within roundoff).  The routine does nothing if the
          * origin has not been set.
          **********************************************************************/

@@ -4,7 +4,7 @@
  *
  * Copyright (c) Charles Karney (2011) <charles@karney.com> and licensed under
  * the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #include <GeographicLib/CircularEngine.hpp>
@@ -13,11 +13,11 @@ namespace GeographicLib {
 
   using namespace std;
 
-  Math::real CircularEngine::Value(bool gradp, real cl, real sl,
-                                   real& gradx, real& grady, real& gradz)
-    const throw() {
+  Math::real CircularEngine::Value(bool gradp, real sl, real cl,
+                                   real& gradx, real& grady, real& gradz) const
+  {
     gradp = _gradp && gradp;
-    const vector<real>& root_( SphericalEngine::root_ );
+    const vector<real>& root( SphericalEngine::sqrttable() );
 
     // Initialize outer sum
     real vc  = 0, vc2  = 0, vs  = 0, vs2  = 0;   // v [N + 1], v [N + 2]
@@ -33,14 +33,14 @@ namespace GeographicLib {
         real v, A, B;           // alpha[m], beta[m + 1]
         switch (_norm) {
         case FULL:
-          v = root_[2] * root_[2 * m + 3] / root_[m + 1];
+          v = root[2] * root[2 * m + 3] / root[m + 1];
           A = cl * v * _uq;
-          B = - v * root_[2 * m + 5] / (root_[8] * root_[m + 2]) * _uq2;
+          B = - v * root[2 * m + 5] / (root[8] * root[m + 2]) * _uq2;
           break;
         case SCHMIDT:
-          v = root_[2] * root_[2 * m + 1] / root_[m + 1];
+          v = root[2] * root[2 * m + 1] / root[m + 1];
           A = cl * v * _uq;
-          B = - v * root_[2 * m + 3] / (root_[8] * root_[m + 2]) * _uq2;
+          B = - v * root[2 * m + 3] / (root[8] * root[m + 2]) * _uq2;
           break;
         default:
           A = B = 0;
@@ -59,17 +59,17 @@ namespace GeographicLib {
         real A, B, qs;
         switch (_norm) {
         case FULL:
-          A = root_[3] * _uq;       // F[1]/(q*cl) or F[1]/(q*sl)
-          B = - root_[15]/2 * _uq2; // beta[1]/q
+          A = root[3] * _uq;       // F[1]/(q*cl) or F[1]/(q*sl)
+          B = - root[15]/2 * _uq2; // beta[1]/q
           break;
         case SCHMIDT:
           A = _uq;
-          B = - root_[3]/2 * _uq2;
+          B = - root[3]/2 * _uq2;
           break;
         default:
           A = B = 0;
         }
-        qs = _q / SphericalEngine::scale_;
+        qs = _q / SphericalEngine::scale();
         vc = qs * (_wc[m] + A * (cl * vc + sl * vs ) + B * vc2);
         if (gradp) {
           qs /= _r;

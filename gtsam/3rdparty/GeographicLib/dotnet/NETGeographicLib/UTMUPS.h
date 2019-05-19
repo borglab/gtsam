@@ -7,7 +7,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 namespace NETGeographicLib
@@ -166,8 +166,6 @@ namespace NETGeographicLib
          *   coordinates (default = false).
          * @exception GeographicErr if \e lat is not in [&minus;90&deg;,
          *   90&deg;].
-         * @exception GeographicErr if \e lon is not in [&minus;540&deg;,
-         *   540&deg;).
          * @exception GeographicErr if the resulting \e x or \e y is out of allowed
          *   range (see Reverse); in this case, these arguments are unchanged.
          *
@@ -311,12 +309,13 @@ namespace NETGeographicLib
          *
          * For UTM, \e zonestr has the form of a zone number in the range
          * [UTMUPS::MINUTMZONE, UTMUPS::MAXUTMZONE] = [1, 60] followed by a
-         * hemisphere letter, N or S.  For UPS, it consists just of the hemisphere
-         * letter.  The returned value of \e zone is UTMUPS::UPS = 0 for UPS.  Note
-         * well that "38S" indicates the southern hemisphere of zone 38 and not
-         * latitude band S, [32, 40].  N, 01S, 2N, 38S are legal.  0N, 001S, 61N,
-         * 38P are illegal.  INV is a special value for which the returned value of
-         * \e is UTMUPS::INVALID.
+         * hemisphere letter, n or s (or "north" or "south" spelled out).  For UPS,
+         * it consists just of the hemisphere letter (or the spelled out
+         * hemisphere).  The returned value of \e zone is UTMUPS::UPS = 0 for UPS.
+         * Note well that "38s" indicates the southern hemisphere of zone 38 and
+         * not latitude band S, 32&deg; &le; \e lat &lt; 40&deg;.  n, 01s, 2n, 38s,
+         * south, 3north are legal.  0n, 001s, +3n, 61n, 38P are illegal.  INV is a
+         * special value for which the returned value of \e is UTMUPS::INVALID.
          **********************************************************************/
         static void DecodeZone(System::String^ zonestr,
             [System::Runtime::InteropServices::Out] int% zone,
@@ -327,6 +326,8 @@ namespace NETGeographicLib
          *
          * @param[in] zone the UTM zone (zero means UPS).
          * @param[in] northp hemisphere (true means north, false means south).
+         * @param[in] abbrev if true (the default) use abbreviated (n/s) notation
+         *   for hemisphere; otherwise spell out the hemisphere (north/south)
          * @exception GeographicErr if \e zone is out of range (see below).
          * @exception std::bad_alloc if memoy for the string can't be allocated.
          * @return string representation of zone and hemisphere.
@@ -334,10 +335,10 @@ namespace NETGeographicLib
          * \e zone must be in the range [UTMUPS::MINZONE, UTMUPS::MAXZONE] = [0,
          * 60] with \e zone = UTMUPS::UPS, 0, indicating UPS (but the resulting
          * string does not contain "0").  \e zone may also be UTMUPS::INVALID, in
-         * which case the returned string is "INV".  This reverses
+         * which case the returned string is "inv".  This reverses
          * UTMUPS::DecodeZone.
          **********************************************************************/
-        static System::String^ EncodeZone(int zone, bool northp);
+        static System::String^ EncodeZone(int zone, bool northp, bool abbrev);
 
         /**
          * Decode EPSG.

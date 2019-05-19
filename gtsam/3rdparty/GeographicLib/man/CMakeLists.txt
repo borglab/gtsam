@@ -15,6 +15,7 @@ endif ()
 set (MANPAGES)
 set (USAGE)
 set (HTMLMAN)
+set (SYSMANPAGES)
 
 # Loop over the tools building up lists of the derived files.  Also in
 # maintainer mode, specify how the derived files are created.  The sed
@@ -32,10 +33,11 @@ foreach (TOOL ${TOOLS})
         ${CMAKE_CURRENT_SOURCE_DIR}/${TOOL}.pod > ${TOOL}.1
       COMMENT "Building man page for ${TOOL}"
       MAIN_DEPENDENCY ${TOOL}.pod)
-    add_custom_command (OUTPUT ${TOOL}.1.html
-      COMMAND
-        pod2html --title "'${TOOL}(1)'" --noindex ${CMAKE_CURRENT_SOURCE_DIR}/${TOOL}.pod |
-        sed -e 's%<head>%<head><link href="http://search.cpan.org/s/style.css" rel="stylesheet" type="text/css">%'
+    add_custom_command (OUTPUT ${TOOL}.1.html COMMAND
+        pod2html --title "'${TOOL}(1)'"
+          --noindex ${CMAKE_CURRENT_SOURCE_DIR}/${TOOL}.pod |
+        sed
+          -e 's%<head>%<head><link href="http://search.cpan.org/s/style.css" rel="stylesheet" type="text/css">%'
           -e 's%<code>\\\([^<>]*\\\)\(\\\(.\\\)\)</code>%<a href="\\1.\\2.html">&</a>%'g > ${TOOL}.1.html &&
         cp ${TOOL}.1.html ../doc/html-stage/
       COMMENT "Building html version of man page for ${TOOL}"
@@ -69,6 +71,14 @@ foreach (TOOL ${TOOLS})
   endif ()
 endforeach ()
 
+if (NOT WIN32)
+  foreach (SCRIPT ${SCRIPTS})
+    string (REPLACE geographiclib-get- "" DATA ${SCRIPT})
+    set (SYSMANPAGES ${SYSMANPAGES} ${CMAKE_CURRENT_BINARY_DIR}/${SCRIPT}.8)
+    configure_file (script.8.in ${SCRIPT}.8 @ONLY)
+  endforeach ()
+endif ()
+
 # Add the extra maintainer tasks into the dependency list.  The
 # distrib-man target copies the derived documentation files into the
 # source tree.
@@ -84,11 +94,14 @@ if (MAINTAINER)
   add_custom_command (TARGET distrib-man
     COMMAND
       for f in ${MANPAGES} ${USAGE} ${HTMLMAN}\; do
-        cmp "$$f" ${CMAKE_CURRENT_SOURCE_DIR}/`basename "$$f" `
-        >/dev/null 2>&1 ||
-        install -m 644 "$$f" ${CMAKE_CURRENT_SOURCE_DIR}\; done
+        install -C -m 644 "$$f" ${CMAKE_CURRENT_SOURCE_DIR}\; done
     COMMENT "Installing man documentation page in source tree")
+else ()
+  add_custom_target (htmlman ALL DEPENDS ${HTMLMAN})
 endif ()
 
 # Install the man pages.
 install (FILES ${MANPAGES} DESTINATION share/man/man1)
+if (NOT WIN32)
+  install (FILES ${SYSMANPAGES} DESTINATION share/man/man8)
+endif ()

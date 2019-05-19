@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #include "stdafx.h"
 #include "GeographicLib/PolarStereographic.hpp"
@@ -50,7 +50,7 @@ PolarStereographic::PolarStereographic()
     try
     {
         m_pPolarStereographic = new GeographicLib::PolarStereographic(
-            GeographicLib::PolarStereographic::UPS );
+            GeographicLib::PolarStereographic::UPS() );
     }
     catch (std::bad_alloc)
     {

@@ -2,9 +2,9 @@
  * \file MagneticModel.hpp
  * \brief Header for GeographicLib::MagneticModel class
  *
- * Copyright (c) Charles Karney (2011) <charles@karney.com> and licensed under
- * the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * Copyright (c) Charles Karney (2011-2015) <charles@karney.com> and licensed
+ * under the MIT/X11 License.  For more information, see
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #if !defined(GEOGRAPHICLIB_MAGNETICMODEL_HPP)
@@ -33,22 +33,31 @@ namespace GeographicLib {
    * of currents in the ionosphere and magnetosphere which have daily and
    * annual variations.
    *
-   * See \ref magnetic for details of how to install the magnetic model and the
-   * data format.
+   * See \ref magnetic for details of how to install the magnetic models and
+   * the data format.
    *
    * See
    * - General information:
    *   - http://geomag.org/models/index.html
    * - WMM2010:
-   *   - http://ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml
-   *   - http://ngdc.noaa.gov/geomag/WMM/data/WMM2010/WMM2010COF.zip
+   *   - https://ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml
+   *   - https://ngdc.noaa.gov/geomag/WMM/data/WMM2010/WMM2010COF.zip
+   * - WMM2015:
+   *   - https://ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml
+   *   - https://ngdc.noaa.gov/geomag/WMM/data/WMM2015/WMM2015COF.zip
    * - IGRF11:
-   *   - http://ngdc.noaa.gov/IAGA/vmod/igrf.html
-   *   - http://ngdc.noaa.gov/IAGA/vmod/igrf11coeffs.txt
-   *   - http://ngdc.noaa.gov/IAGA/vmod/geomag70_linux.tar.gz
+   *   - https://ngdc.noaa.gov/IAGA/vmod/igrf.html
+   *   - https://ngdc.noaa.gov/IAGA/vmod/igrf11coeffs.txt
+   *   - https://ngdc.noaa.gov/IAGA/vmod/geomag70_linux.tar.gz
    * - EMM2010:
-   *   - http://ngdc.noaa.gov/geomag/EMM/index.html
-   *   - http://ngdc.noaa.gov/geomag/EMM/data/geomag/EMM2010_Sph_Windows_Linux.zip
+   *   - https://ngdc.noaa.gov/geomag/EMM/index.html
+   *   - https://ngdc.noaa.gov/geomag/EMM/data/geomag/EMM2010_Sph_Windows_Linux.zip
+   * - EMM2015:
+   *   - https://ngdc.noaa.gov/geomag/EMM/index.html
+   *   - https://www.ngdc.noaa.gov/geomag/EMM/data/geomag/EMM2015_Sph_Linux.zip
+   * - EMM2017:
+   *   - https://ngdc.noaa.gov/geomag/EMM/index.html
+   *   - https://www.ngdc.noaa.gov/geomag/EMM/data/geomag/EMM2017_Sph_Linux.zip
    *
    * Example of use:
    * \include example-MagneticModel.cpp
@@ -63,7 +72,7 @@ namespace GeographicLib {
     static const int idlength_ = 8;
     std::string _name, _dir, _description, _date, _filename, _id;
     real _t0, _dt0, _tmin, _tmax, _a, _hmin, _hmax;
-    int _Nmodels;
+    int _Nmodels, _Nconstants;
     SphericalHarmonic::normalization _norm;
     Geocentric _earth;
     std::vector< std::vector<real> > _G;
@@ -71,7 +80,7 @@ namespace GeographicLib {
     std::vector<SphericalHarmonic> _harm;
     void Field(real t, real lat, real lon, real h, bool diffp,
                real& Bx, real& By, real& Bz,
-               real& Bxt, real& Byt, real& Bzt) const throw();
+               real& Bxt, real& Byt, real& Bzt) const;
     void ReadMetadata(const std::string& name);
     MagneticModel(const MagneticModel&); // copy constructor not allowed
     MagneticModel& operator=(const MagneticModel&); // nor copy assignment
@@ -86,7 +95,7 @@ namespace GeographicLib {
      * @param[in] name the name of the model.
      * @param[in] path (optional) directory for data file.
      * @param[in] earth (optional) Geocentric object for converting
-     *   coordinates; default Geocentric::WGS84.
+     *   coordinates; default Geocentric::WGS84().
      * @exception GeographicErr if the data file cannot be found, is
      *   unreadable, or is corrupt.
      * @exception std::bad_alloc if the memory necessary for storing the model
@@ -109,7 +118,7 @@ namespace GeographicLib {
      **********************************************************************/
     explicit MagneticModel(const std::string& name,
                            const std::string& path = "",
-                           const Geocentric& earth = Geocentric::WGS84);
+                           const Geocentric& earth = Geocentric::WGS84());
     ///@}
 
     /** \name Compute the magnetic field
@@ -123,12 +132,13 @@ namespace GeographicLib {
      * @param[in] lon longitude of the point (degrees).
      * @param[in] h the height of the point above the ellipsoid (meters).
      * @param[out] Bx the easterly component of the magnetic field (nanotesla).
-     * @param[out] By the northerly component of the magnetic field (nanotesla).
+     * @param[out] By the northerly component of the magnetic field
+     *   (nanotesla).
      * @param[out] Bz the vertical (up) component of the magnetic field
      *   (nanotesla).
      **********************************************************************/
     void operator()(real t, real lat, real lon, real h,
-                    real& Bx, real& By, real& Bz) const throw() {
+                    real& Bx, real& By, real& Bz) const {
       real dummy;
       Field(t, lat, lon, h, false, Bx, By, Bz, dummy, dummy, dummy);
     }
@@ -142,7 +152,8 @@ namespace GeographicLib {
      * @param[in] lon longitude of the point (degrees).
      * @param[in] h the height of the point above the ellipsoid (meters).
      * @param[out] Bx the easterly component of the magnetic field (nanotesla).
-     * @param[out] By the northerly component of the magnetic field (nanotesla).
+     * @param[out] By the northerly component of the magnetic field
+     *   (nanotesla).
      * @param[out] Bz the vertical (up) component of the magnetic field
      *   (nanotesla).
      * @param[out] Bxt the rate of change of \e Bx (nT/yr).
@@ -151,7 +162,7 @@ namespace GeographicLib {
      **********************************************************************/
     void operator()(real t, real lat, real lon, real h,
                     real& Bx, real& By, real& Bz,
-                    real& Bxt, real& Byt, real& Bzt) const throw() {
+                    real& Bxt, real& Byt, real& Bzt) const {
       Field(t, lat, lon, h, true, Bx, By, Bz, Bxt, Byt, Bzt);
     }
 
@@ -189,7 +200,7 @@ namespace GeographicLib {
      *   horizontal).
      **********************************************************************/
     static void FieldComponents(real Bx, real By, real Bz,
-                                real& H, real& F, real& D, real& I) throw() {
+                                real& H, real& F, real& D, real& I) {
       real Ht, Ft, Dt, It;
       FieldComponents(Bx, By, Bz, real(0), real(1), real(0),
                       H, F, D, I, Ht, Ft, Dt, It);
@@ -219,7 +230,7 @@ namespace GeographicLib {
     static void FieldComponents(real Bx, real By, real Bz,
                                 real Bxt, real Byt, real Bzt,
                                 real& H, real& F, real& D, real& I,
-                                real& Ht, real& Ft, real& Dt, real& It) throw();
+                                real& Ht, real& Ft, real& Dt, real& It);
     ///@}
 
     /** \name Inspector functions
@@ -229,29 +240,29 @@ namespace GeographicLib {
      * @return the description of the magnetic model, if available, from the
      *   Description file in the data file; if absent, return "NONE".
      **********************************************************************/
-    const std::string& Description() const throw() { return _description; }
+    const std::string& Description() const { return _description; }
 
     /**
      * @return date of the model, if available, from the ReleaseDate field in
      *   the data file; if absent, return "UNKNOWN".
      **********************************************************************/
-    const std::string& DateTime() const throw() { return _date; }
+    const std::string& DateTime() const { return _date; }
 
     /**
      * @return full file name used to load the magnetic model.
      **********************************************************************/
-    const std::string& MagneticFile() const throw() { return _filename; }
+    const std::string& MagneticFile() const { return _filename; }
 
     /**
      * @return "name" used to load the magnetic model (from the first argument
      *   of the constructor, but this may be overridden by the model file).
      **********************************************************************/
-    const std::string& MagneticModelName() const throw() { return _name; }
+    const std::string& MagneticModelName() const { return _name; }
 
     /**
      * @return directory used to load the magnetic model.
      **********************************************************************/
-    const std::string& MagneticModelDirectory() const throw() { return _dir; }
+    const std::string& MagneticModelDirectory() const { return _dir; }
 
     /**
      * @return the minimum height above the ellipsoid (in meters) for which
@@ -262,7 +273,7 @@ namespace GeographicLib {
      * argument is made by MagneticModel::operator()() or
      * MagneticModel::Circle.
      **********************************************************************/
-    Math::real MinHeight() const throw() { return _hmin; }
+    Math::real MinHeight() const { return _hmin; }
 
     /**
      * @return the maximum height above the ellipsoid (in meters) for which
@@ -273,7 +284,7 @@ namespace GeographicLib {
      * argument is made by MagneticModel::operator()() or
      * MagneticModel::Circle.
      **********************************************************************/
-    Math::real MaxHeight() const throw() { return _hmax; }
+    Math::real MaxHeight() const { return _hmax; }
 
     /**
      * @return the minimum time (in years) for which this MagneticModel should
@@ -284,7 +295,7 @@ namespace GeographicLib {
      * argument is made by MagneticModel::operator()() or
      * MagneticModel::Circle.
      **********************************************************************/
-    Math::real MinTime() const throw() { return _tmin; }
+    Math::real MinTime() const { return _tmin; }
 
     /**
      * @return the maximum time (in years) for which this MagneticModel should
@@ -295,41 +306,42 @@ namespace GeographicLib {
      * argument is made by MagneticModel::operator()() or
      * MagneticModel::Circle.
      **********************************************************************/
-    Math::real MaxTime() const throw() { return _tmax; }
+    Math::real MaxTime() const { return _tmax; }
 
     /**
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value of \e a inherited from the Geocentric object used in the
      *   constructor.
      **********************************************************************/
-    Math::real MajorRadius() const throw() { return _earth.MajorRadius(); }
+    Math::real MajorRadius() const { return _earth.MajorRadius(); }
 
     /**
      * @return \e f the flattening of the ellipsoid.  This is the value
      *   inherited from the Geocentric object used in the constructor.
      **********************************************************************/
-    Math::real Flattening() const throw() { return _earth.Flattening(); }
+    Math::real Flattening() const { return _earth.Flattening(); }
     ///@}
 
     /**
      * @return the default path for magnetic model data files.
      *
-     * This is the value of the environment variable MAGNETIC_PATH, if set;
-     * otherwise, it is $GEOGRAPHICLIB_DATA/magnetic if the environment
-     * variable GEOGRAPHICLIB_DATA is set; otherwise, it is a compile-time
-     * default (/usr/local/share/GeographicLib/magnetic on non-Windows systems
-     * and C:/Documents and Settings/All Users/Application
-     * Data/GeographicLib/magnetic on Windows systems).
+     * This is the value of the environment variable
+     * GEOGRAPHICLIB_MAGNETIC_PATH, if set; otherwise, it is
+     * $GEOGRAPHICLIB_DATA/magnetic if the environment variable
+     * GEOGRAPHICLIB_DATA is set; otherwise, it is a compile-time default
+     * (/usr/local/share/GeographicLib/magnetic on non-Windows systems and
+     * C:/ProgramData/GeographicLib/magnetic on Windows systems).
      **********************************************************************/
     static std::string DefaultMagneticPath();
 
     /**
      * @return the default name for the magnetic model.
      *
-     * This is the value of the environment variable MAGNETIC_NAME, if set,
-     * otherwise, it is "wmm2010".  The MagneticModel class does not use this
-     * function; it is just provided as a convenience for a calling program
-     * when constructing a MagneticModel object.
+     * This is the value of the environment variable
+     * GEOGRAPHICLIB_MAGNETIC_NAME, if set; otherwise, it is "wmm2015".  The
+     * MagneticModel class does not use this function; it is just provided as a
+     * convenience for a calling program when constructing a MagneticModel
+     * object.
      **********************************************************************/
     static std::string DefaultMagneticName();
   };

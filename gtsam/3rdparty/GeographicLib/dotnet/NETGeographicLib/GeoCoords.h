@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #pragma once
 
@@ -65,8 +65,7 @@ namespace NETGeographicLib
          **********************************************************************/
         ///@{
         /**
-         * The default constructor is equivalent to \e latitude = 90&deg;,
-         * \e longitude = 0&deg;.
+         * The default constructor sets the coordinate as undefined.
          **********************************************************************/
         GeoCoords();
 
@@ -77,7 +76,7 @@ namespace NETGeographicLib
          *   the position.
          * @param[in] centerp governs the interpretation of MGRS coordinates (see
          *   below).
-         * @param[in] swaplatlong governs the interpretation of geographic
+         * @param[in] longfirst governs the interpretation of geographic
          *   coordinates (see below).
          * @exception GeographicErr if the \e s is malformed (see below).
          *
@@ -95,7 +94,7 @@ namespace NETGeographicLib
          *   -  43d16'12&quot;E 33d26'24&quot;N
          *   -  43:16:12E  33:26:24
          * - MGRS
-         *   -  38SLC301
+         *   -  38SLC30
          *   -  38SLC391014
          *   -  38SLC3918701405
          *   -  37SHT9708
@@ -105,9 +104,9 @@ namespace NETGeographicLib
          *
          * <b>Latitude and Longitude parsing</b>: Latitude precedes longitude,
          * unless a N, S, E, W hemisphere designator is used on one or both
-         * coordinates.  If \e swaplatlong = true (default is false), then
+         * coordinates.  If \e longfirst = true (default is false), then
          * longitude precedes latitude in the absence of a hemisphere designator.
-         * Thus (with \e swaplatlong = false)
+         * Thus (with \e longfirst = false)
          * - 40 -75
          * - N40 W75
          * - -75 N40
@@ -129,10 +128,9 @@ namespace NETGeographicLib
          * - 40:30.5
          * - 40.508333333
          * .
-         * all specify the same angle.  The leading sign applies to all components
-         * so -1d30 is -(1+30/60) = -1.5.  Latitudes must be in the range
-         * [&minus;90&deg;, 90&deg;] and longitudes in the range
-         * [&minus;540&deg;, 540&deg;).  Internally longitudes are reduced
+         * all specify the same angle.  The leading sign applies to all
+         * components so -1d30 is -(1+30/60) = -1.5.  Latitudes must be in the
+         * range [&minus;90&deg;, 90&deg;].  Internally longitudes are reduced
          * to the range [&minus;180&deg;, 180&deg;).
          *
          * <b>UTM/UPS parsing</b>: For UTM zones (&minus;80&deg; &le; Lat <
@@ -156,7 +154,7 @@ namespace NETGeographicLib
          * - 38SMB4484       = 38N 444000 3684000
          * - 38SMB44148470   = 38N 444140 3684700
          **********************************************************************/
-        GeoCoords(System::String^ s, bool centerp, bool swaplatlong );
+        GeoCoords(System::String^ s, bool centerp, bool longfirst );
 
         /**
          * Construct from geographic coordinates.
@@ -167,8 +165,6 @@ namespace NETGeographicLib
          *   specified zone using the rules given in UTMUPS::zonespec.
          * @exception GeographicErr if \e latitude is not in [&minus;90&deg;,
          *   90&deg;].
-         * @exception GeographicErr if \e longitude is not in [&minus;540&deg;,
-         *   540&deg;).
          * @exception GeographicErr if \e zone cannot be used for this location.
          **********************************************************************/
         GeoCoords(double latitude, double longitude, int zone );
@@ -192,16 +188,16 @@ namespace NETGeographicLib
 
         /**
          * Reset the location from a string.  See
-         * GeoCoords(const std::string& s, bool centerp, bool swaplatlong).
+         * GeoCoords(const std::string& s, bool centerp, bool longfirst).
          *
          * @param[in] s 1-element, 2-element, or 3-element string representation of
          *   the position.
          * @param[in] centerp governs the interpretation of MGRS coordinates.
-         * @param[in] swaplatlong governs the interpretation of geographic
+         * @param[in] longfirst governs the interpretation of geographic
          *   coordinates.
          * @exception GeographicErr if the \e s is malformed.
          **********************************************************************/
-        void Reset( System::String^ s, bool centerp, bool swaplatlong);
+        void Reset( System::String^ s, bool centerp, bool longfirst);
 
         /**
          * Reset the location in terms of geographic coordinates.  See
@@ -213,8 +209,6 @@ namespace NETGeographicLib
          *   specified zone using the rules given in UTMUPS::zonespec.
          * @exception GeographicErr if \e latitude is not in [&minus;90&deg;,
          *   90&deg;].
-         * @exception GeographicErr if \e longitude is not in [&minus;540&deg;,
-         *   540&deg;).
          * @exception GeographicErr if \e zone cannot be used for this location.
          **********************************************************************/
         void Reset(double latitude, double longitude, int zone ) ;
@@ -327,7 +321,7 @@ namespace NETGeographicLib
          * degrees.
          *
          * @param[in] prec precision (relative to about 1m).
-         * @param[in] swaplatlong if true give longitude first (default = false)
+         * @param[in] longfirst if true give longitude first (default = false)
          * @exception std::bad_alloc if memory for the string can't be allocated.
          * @return decimal latitude/longitude string representation.
          *
@@ -337,14 +331,14 @@ namespace NETGeographicLib
          * - prec = 3, 10<sup>&minus;8</sup>&deg;
          * - prec = 9 (max), 10<sup>&minus;14</sup>&deg;
          **********************************************************************/
-        System::String^ GeoRepresentation(int prec, bool swaplatlong );
+        System::String^ GeoRepresentation(int prec, bool longfirst );
 
         /**
          * String representation with latitude and longitude as degrees, minutes,
          * seconds, and hemisphere.
          *
          * @param[in] prec precision (relative to about 1m)
-         * @param[in] swaplatlong if true give longitude first (default = false)
+         * @param[in] longfirst if true give longitude first (default = false)
          * @param[in] dmssep if non-null, use as the DMS separator character
          *   (instead of d, ', &quot; delimiters).
          * @exception std::bad_alloc if memory for the string can't be allocated.
@@ -360,7 +354,7 @@ namespace NETGeographicLib
          * - prec = 1, 0.01&quot;
          * - prec = 10 (max), 10<sup>&minus;11</sup>&quot;
          **********************************************************************/
-        System::String^ DMSRepresentation(int prec, bool swaplatlong,
+        System::String^ DMSRepresentation(int prec, bool longfirst,
                                       char dmssep );
 
         /**
@@ -390,6 +384,8 @@ namespace NETGeographicLib
          * UTM/UPS string.
          *
          * @param[in] prec precision (relative to about 1m)
+         * @param[in] abbrev if true (the default) use abbreviated (n/s) notation
+         *   for hemisphere; otherwise spell out the hemisphere (north/south)
          * @exception std::bad_alloc if memory for the string can't be allocated.
          * @return UTM/UPS string representation: zone designator, easting, and
          *   northing.
@@ -402,20 +398,22 @@ namespace NETGeographicLib
          * - prec = 6, 1&mu;m
          * - prec = 9 (max), 1nm
          **********************************************************************/
-        System::String^ UTMUPSRepresentation(int prec);
+        System::String^ UTMUPSRepresentation(int prec, bool abbrev);
 
         /**
          * UTM/UPS string with hemisphere override.
          *
-         * @param[in] prec precision (relative to about 1m)
          * @param[in] northp hemisphere override
+         * @param[in] prec precision (relative to about 1m)
+         * @param[in] abbrev if true (the default) use abbreviated (n/s) notation
+         *   for hemisphere; otherwise spell out the hemisphere (north/south)
          * @exception GeographicErr if the hemisphere override attempts to change
-         *   UPS N to UPS S or vice verse.
+         *   UPS N to UPS S or vice versa.
          * @exception std::bad_alloc if memory for the string can't be allocated.
          * @return UTM/UPS string representation: zone designator, easting, and
          *   northing.
          **********************************************************************/
-        System::String^ UTMUPSRepresentation(bool northp, int prec);
+        System::String^ UTMUPSRepresentation(bool northp, int prec, bool abbrev);
 
         /**
          * MGRS string for the alternate zone.  See GeoCoords::MGRSRepresentation.
@@ -431,24 +429,28 @@ namespace NETGeographicLib
          * GeoCoords::UTMUPSRepresentation.
          *
          * @param[in] prec precision (relative to about 1m)
+         * @param[in] abbrev if true (the default) use abbreviated (n/s) notation
+         *   for hemisphere; otherwise spell out the hemisphere (north/south)
          * @exception std::bad_alloc if memory for the string can't be allocated.
          * @return UTM/UPS string representation: zone designator, easting, and
          *   northing.
          **********************************************************************/
-        System::String^ AltUTMUPSRepresentation(int prec);
+        System::String^ AltUTMUPSRepresentation(int prec, bool abbrev);
 
         /**
          * UTM/UPS string for the alternate zone, with hemisphere override.
          *
-         * @param[in] prec precision (relative to about 1m)
          * @param[in] northp hemisphere override
+         * @param[in] prec precision (relative to about 1m)
+         * @param[in] abbrev if true (the default) use abbreviated (n/s) notation
+         *   for hemisphere; otherwise spell out the hemisphere (north/south)
          * @exception GeographicErr if the hemisphere override attempts to change
-         *   UPS N to UPS S or vice verse.
+         *   UPS n to UPS s or vice verse.
          * @exception std::bad_alloc if memory for the string can't be allocated.
          * @return UTM/UPS string representation: zone designator, easting, and
          *   northing.
          **********************************************************************/
-        System::String^ AltUTMUPSRepresentation(bool northp, int prec);
+        System::String^ AltUTMUPSRepresentation(bool northp, int prec, bool abbrev);
         ///@}
 
         /** \name Inspector functions

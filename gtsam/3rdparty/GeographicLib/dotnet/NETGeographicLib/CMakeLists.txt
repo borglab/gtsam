@@ -11,32 +11,44 @@ set_target_properties (${NETGEOGRAPHICLIB_LIBRARIES}
 string (REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 string (REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
+if (MSVC AND NOT MSVC_VERSION GREATER 1600)
+  # Disable "already imported" and "unsupported default parameter"
+  # warnings with VS 10
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4945 /wd4564")
+endif ()
+
 add_definitions (${PROJECT_DEFINITIONS})
 target_link_libraries (${NETGEOGRAPHICLIB_LIBRARIES} ${PROJECT_LIBRARIES})
 
 # Set the version number on the library
 set_target_properties (${NETGEOGRAPHICLIB_LIBRARIES} PROPERTIES
-  VERSION "${LIBVERSIONFULL}" OUTPUT_NAME ${NETLIBNAME}
-  PDB_NAME ${NETLIBNAME}${CMAKE_DEBUG_POSTFIX})
+  VERSION "${LIBVERSIONFULL}" OUTPUT_NAME ${NETLIBNAME})
 
-# Specify where the library is installed, adding it to the export depends
+# Specify where the library is installed, adding it to the export targets
 install (TARGETS ${NETGEOGRAPHICLIB_LIBRARIES}
-  EXPORT depends
+  EXPORT targets
   RUNTIME DESTINATION bin)
 
 if (PACKAGE_DEBUG_LIBS)
   install (PROGRAMS
-    "${CMAKE_CURRENT_BINARY_DIR}/Debug/${NETLIBNAME}${CMAKE_DEBUG_POSTFIX}.dll"
+    "${PROJECT_BINARY_DIR}/bin/Debug/${NETLIBNAME}${CMAKE_DEBUG_POSTFIX}.dll"
     DESTINATION bin CONFIGURATIONS Release)
 endif ()
 
-# Install pdb file in debug mode.
-get_target_property (_P ${NETGEOGRAPHICLIB_LIBRARIES} LOCATION_DEBUG)
-get_filename_component (_P ${_P} PATH)
-get_target_property (_N ${NETGEOGRAPHICLIB_LIBRARIES} PDB_NAME)
-set (_PDB ${_P}/${_N}.pdb)
-install (FILES ${_PDB} DESTINATION bin
-  RENAME ${NETLIBNAME}${CMAKE_DEBUG_POSTFIX}.pdb CONFIGURATIONS Debug)
+if (NOT CMAKE_VERSION VERSION_LESS 3.0)
+  # Suppress 3.0 warnings about use of the LOCATION target property
+  cmake_policy (SET CMP0026 OLD)
+endif ()
+
+# Install pdb file.
+foreach (_c ${CMAKE_CONFIGURATION_TYPES})
+  string (TOUPPER ${_c} _C)
+  get_target_property (_P ${NETGEOGRAPHICLIB_LIBRARIES} LOCATION_${_C})
+  get_filename_component (_D ${_P} PATH)
+  get_filename_component (_N ${_P} NAME_WE)
+  set (_PDB ${_D}/${_N}.pdb)
+  install (FILES ${_PDB} DESTINATION bin CONFIGURATIONS ${_c} OPTIONAL)
+endforeach ()
 
 # Put all the library into a folder in the IDE
 set_property (TARGET ${NETGEOGRAPHICLIB_LIBRARIES} PROPERTY FOLDER library)

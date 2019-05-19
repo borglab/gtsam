@@ -7,6 +7,7 @@ PROGRAMS = CartConvert \
 	Gravity \
 	MagneticField \
 	Planimeter \
+	RhumbSolve \
 	TransverseMercatorProj
 
 MANPAGES = $(addsuffix .1,$(PROGRAMS))

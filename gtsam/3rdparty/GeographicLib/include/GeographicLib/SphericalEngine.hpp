@@ -2,9 +2,9 @@
  * \file SphericalEngine.hpp
  * \brief Header for GeographicLib::SphericalEngine class
  *
- * Copyright (c) Charles Karney (2011-2012) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2017) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #if !defined(GEOGRAPHICLIB_SPHERICALENGINE_HPP)
@@ -40,15 +40,28 @@ namespace GeographicLib {
   class GEOGRAPHICLIB_EXPORT SphericalEngine {
   private:
     typedef Math::real real;
-    // A table of the square roots of integers
-    static std::vector<real> root_;
-    friend class CircularEngine; // CircularEngine needs access to root_, scale_
+    // CircularEngine needs access to sqrttable, scale
+    friend class CircularEngine;
+    // Return the table of the square roots of integers
+    static std::vector<real>& sqrttable();
     // An internal scaling of the coefficients to avoid overflow in
     // intermediate calculations.
-    static const real scale_;
+    static real scale() {
+      using std::pow;
+      static const real
+        // Need extra real because, since C++11, pow(float, int) returns double
+        s = real(pow(real(std::numeric_limits<real>::radix),
+                     -3 * (std::numeric_limits<real>::max_exponent < (1<<14) ?
+                           std::numeric_limits<real>::max_exponent : (1<<14))
+                     / 5));
+      return s;
+    }
     // Move latitudes near the pole off the axis by this amount.
-    static const real eps_;
-    static const std::vector<real> Z_;
+    static real eps() {
+      using std::sqrt;
+      return std::numeric_limits<real>::epsilon() *
+        sqrt(std::numeric_limits<real>::epsilon());
+    }
     SphericalEngine();          // Disable constructor
   public:
     /**
@@ -69,11 +82,6 @@ namespace GeographicLib {
        * @hideinitializer
        **********************************************************************/
       SCHMIDT = 1,
-      /// \cond SKIP
-      // These are deprecated...
-      full = FULL,
-      schmidt = SCHMIDT,
-      /// \endcond
     };
 
     /**
@@ -97,12 +105,7 @@ namespace GeographicLib {
       /**
        * A default constructor
        **********************************************************************/
-      coeff()
-        : _Nx(-1)
-        , _nmx(-1)
-        , _mmx(-1)
-        , _Cnm(Z_.begin())
-        , _Snm(Z_.begin()) {}
+      coeff() : _Nx(-1) , _nmx(-1) , _mmx(-1) {}
       /**
        * The general constructor.
        *
@@ -165,15 +168,15 @@ namespace GeographicLib {
       /**
        * @return \e N the degree giving storage layout for \e C and \e S.
        **********************************************************************/
-      inline int N() const throw() { return _Nx; }
+      int N() const { return _Nx; }
       /**
        * @return \e nmx the maximum degree to be used.
        **********************************************************************/
-      inline int nmx() const throw() { return _nmx; }
+      int nmx() const { return _nmx; }
       /**
        * @return \e mmx the maximum order to be used.
        **********************************************************************/
-      inline int mmx() const throw() { return _mmx; }
+      int mmx() const { return _mmx; }
       /**
        * The one-dimensional index into \e C and \e S.
        *
@@ -181,7 +184,7 @@ namespace GeographicLib {
        * @param[in] m the order.
        * @return the one-dimensional index.
        **********************************************************************/
-      inline int index(int n, int m) const throw()
+      int index(int n, int m) const
       { return m * _Nx - m * (m - 1) / 2 + n; }
       /**
        * An element of \e C.
@@ -189,14 +192,14 @@ namespace GeographicLib {
        * @param[in] k the one-dimensional index.
        * @return the value of the \e C coefficient.
        **********************************************************************/
-      inline Math::real Cv(int k) const { return *(_Cnm + k); }
+      Math::real Cv(int k) const { return *(_Cnm + k); }
       /**
        * An element of \e S.
        *
        * @param[in] k the one-dimensional index.
        * @return the value of the \e S coefficient.
        **********************************************************************/
-      inline Math::real Sv(int k) const { return *(_Snm + (k - (_Nx + 1))); }
+      Math::real Sv(int k) const { return *(_Snm + (k - (_Nx + 1))); }
       /**
        * An element of \e C with checking.
        *
@@ -207,7 +210,7 @@ namespace GeographicLib {
        * @return the value of the \e C coefficient multiplied by \e f in \e n
        *   and \e m are in range else 0.
        **********************************************************************/
-      inline Math::real Cv(int k, int n, int m, real f) const
+      Math::real Cv(int k, int n, int m, real f) const
       { return m > _mmx || n > _nmx ? 0 : *(_Cnm + k) * f; }
       /**
        * An element of \e S with checking.
@@ -219,7 +222,7 @@ namespace GeographicLib {
        * @return the value of the \e S coefficient multiplied by \e f in \e n
        *   and \e m are in range else 0.
        **********************************************************************/
-      inline Math::real Sv(int k, int n, int m, real f) const
+      Math::real Sv(int k, int n, int m, real f) const
       { return m > _mmx || n > _nmx ? 0 : *(_Snm + (k - (_Nx + 1))) * f; }
 
       /**
@@ -230,7 +233,7 @@ namespace GeographicLib {
        * @return the size of the vector of cosine terms as stored in column
        *   major order.
        **********************************************************************/
-      static inline int Csize(int N, int M) throw()
+      static int Csize(int N, int M)
       { return (M + 1) * (2 * N - M + 2) / 2; }
 
       /**
@@ -241,7 +244,7 @@ namespace GeographicLib {
        * @return the size of the vector of cosine terms as stored in column
        *   major order.
        **********************************************************************/
-      static inline int Ssize(int N, int M) throw ()
+      static int Ssize(int N, int M)
       { return Csize(N, M) - (N + 1); }
 
       /**
@@ -301,7 +304,7 @@ namespace GeographicLib {
     template<bool gradp, normalization norm, int L>
       static Math::real Value(const coeff c[], const real f[],
                               real x, real y, real z, real a,
-                              real& gradx, real& grady, real& gradz) throw();
+                              real& gradx, real& grady, real& gradz);
 
     /**
      * Create a CircularEngine object
@@ -354,12 +357,14 @@ namespace GeographicLib {
      * Clear the static table of square roots and release the memory.  Call
      * this only when you are sure you no longer will be using SphericalEngine.
      * Your program will crash if you call SphericalEngine after calling this
-     * routine.  <b>It's safest not to call this routine at all.</b> (The space
-     * used by the table is modest.)
+     * routine.
+     *
+     * \warning It's safest not to call this routine at all.  (The space used
+     * by the table is modest.)
      **********************************************************************/
     static void ClearRootTable() {
       std::vector<real> temp(0);
-      root_.swap(temp);
+      sqrttable().swap(temp);
     }
   };
 

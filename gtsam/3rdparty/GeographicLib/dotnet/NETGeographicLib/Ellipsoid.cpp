@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #include "stdafx.h"
 #include "GeographicLib/Ellipsoid.hpp"
@@ -32,7 +32,7 @@ Ellipsoid::Ellipsoid()
 {
     try
     {
-        m_pEllipsoid = new GeographicLib::Ellipsoid( GeographicLib::Ellipsoid::WGS84 );
+        m_pEllipsoid = new GeographicLib::Ellipsoid( GeographicLib::Ellipsoid::WGS84() );
     }
     catch ( std::bad_alloc )
     {

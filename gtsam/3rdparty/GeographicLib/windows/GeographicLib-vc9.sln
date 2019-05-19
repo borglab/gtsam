@@ -61,6 +61,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Gravity", "Gravity-vc9.vcpr
 		{3D185FB1-192C-457B-A327-27CFAEB82D8A} = {3D185FB1-192C-457B-A327-27CFAEB82D8A}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RhumbSolve", "RhumbSolve-vc9.vcproj", "{57A786B5-042F-46BD-BBC6-74148C3F961F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4CFBCD6C-956C-42BC-A863-3C60F3ED9CC1} = {4CFBCD6C-956C-42BC-A863-3C60F3ED9CC1}
+		{0FC0DED7-C708-468A-9E29-E7F245EE0C1C} = {0FC0DED7-C708-468A-9E29-E7F245EE0C1C}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -157,6 +163,14 @@ Global
 		{0FC0DED7-C708-468A-9E29-E7F245EE0C1C}.Release|Win32.Build.0 = Release|Win32
 		{0FC0DED7-C708-468A-9E29-E7F245EE0C1C}.Release|x64.ActiveCfg = Release|x64
 		{0FC0DED7-C708-468A-9E29-E7F245EE0C1C}.Release|x64.Build.0 = Release|x64
+		{57A786B5-042F-46BD-BBC6-74148C3F961F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{57A786B5-042F-46BD-BBC6-74148C3F961F}.Debug|Win32.Build.0 = Debug|Win32
+		{57A786B5-042F-46BD-BBC6-74148C3F961F}.Debug|x64.ActiveCfg = Debug|x64
+		{57A786B5-042F-46BD-BBC6-74148C3F961F}.Debug|x64.Build.0 = Debug|x64
+		{57A786B5-042F-46BD-BBC6-74148C3F961F}.Release|Win32.ActiveCfg = Release|Win32
+		{57A786B5-042F-46BD-BBC6-74148C3F961F}.Release|Win32.Build.0 = Release|Win32
+		{57A786B5-042F-46BD-BBC6-74148C3F961F}.Release|x64.ActiveCfg = Release|x64
+		{57A786B5-042F-46BD-BBC6-74148C3F961F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
