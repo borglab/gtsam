@@ -385,6 +385,17 @@ namespace gtsam {
     ConstFiltered<ValueType>
     filter(const boost::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
 
+    // Count values of given type \c ValueType
+    template<class ValueType>
+    size_t count() const {
+      size_t i = 0;
+      for (const auto& key_value : *this) {
+        if (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value))
+          ++i;
+      }
+      return i;
+    }
+
   private:
     // Filters based on ValueType (if not Value) and also based on the user-
     // supplied \c filter function.
@@ -404,7 +415,7 @@ namespace gtsam {
 
     static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
       return ConstKeyValuePair(key_value.first, *key_value.second); }
-    
+
     static KeyValuePair make_deref_pair(const KeyValueMap::iterator::value_type& key_value) {
       return KeyValuePair(key_value.first, *key_value.second); }
 

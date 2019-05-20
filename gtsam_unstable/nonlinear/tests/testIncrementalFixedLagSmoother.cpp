@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -70,8 +70,6 @@ TEST( IncrementalFixedLagSmoother, Example )
   // Create containers to keep the full graph
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-
-
 
   // i keeps track of the time step
   size_t i = 0;
@@ -177,6 +175,63 @@ TEST( IncrementalFixedLagSmoother, Example )
     ++i;
   }
 
+  // add/remove an extra factor
+  {
+	  Key key1 = MakeKey(i-1);
+	  Key key2 = MakeKey(i);
+
+	  NonlinearFactorGraph newFactors;
+	  Values newValues;
+	  Timestamps newTimestamps;
+
+	  // add 2 odometry factors
+	  newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
+	  newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
+	  newValues.insert(key2, Point2(double(i)+0.1, -0.1));
+	  newTimestamps[key2] = double(i);
+
+	  fullgraph.push_back(newFactors);
+	  fullinit.insert(newValues);
+
+	  // Update the smoother
+	  smoother.update(newFactors, newValues, newTimestamps);
+
+	  // Check
+	  CHECK(check_smoother(fullgraph, fullinit, smoother, key2));
+
+	  // now remove one of the two and try again
+	  // empty values and new factors for fake update in which we only remove factors
+	  NonlinearFactorGraph emptyNewFactors;
+	  Values emptyNewValues;
+	  Timestamps emptyNewTimestamps;
+
+	  size_t factorIndex = 25; // any index that does not break connectivity of the graph
+	  FactorIndices factorToRemove;
+	  factorToRemove.push_back(factorIndex);
+
+	  const NonlinearFactorGraph smootherFactorsBeforeRemove = smoother.getFactors();
+
+	  // remove factor
+	  smoother.update(emptyNewFactors, emptyNewValues, emptyNewTimestamps,factorToRemove);
+
+	  // Note: the following test (checking that the number of factor is reduced by 1)
+	  // fails  since we are not reusing slots, hence also when removing a factor we do not change
+	  // the size of the factor graph
+	  // size_t nrFactorsAfterRemoval = smoother.getFactors().size();
+	  // DOUBLES_EQUAL(nrFactorsBeforeRemoval-1, nrFactorsAfterRemoval, 1e-5);
+
+	  // check that the factors in the smoother are right
+	  NonlinearFactorGraph actual = smoother.getFactors();
+	  for(size_t i=0; i< smootherFactorsBeforeRemove.size(); i++){
+	    // check that the factors that were not removed are there
+	    if(smootherFactorsBeforeRemove[i] && i != factorIndex){
+	      EXPECT(smootherFactorsBeforeRemove[i]->equals(*actual[i]));
+	    }
+	    else{ // while the factors that were not there or were removed are no longer there
+	      EXPECT(!actual[i]);
+	    }
+	  }
+  }
 }
 
 /* ************************************************************************* */

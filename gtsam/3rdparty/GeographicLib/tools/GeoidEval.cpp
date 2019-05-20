@@ -2,23 +2,11 @@
  * \file GeoidEval.cpp
  * \brief Command line utility for evaluating geoid heights
  *
- * Copyright (c) Charles Karney (2009-2012) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2009-2017) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  *
- * Compile and link with
- *   g++ -g -O3 -I../include -I../man -o GeoidEval \
- *       GeoidEval.cpp \
- *       ../src/DMS.cpp \
- *       ../src/GeoCoords.cpp \
- *       ../src/Geoid.cpp \
- *       ../src/MGRS.cpp \
- *       ../src/PolarStereographic.cpp \
- *       ../src/TransverseMercator.cpp \
- *       ../src/UTMUPS.cpp
- *
- * See the <a href="GeoidEval.1.html">man page</a> for usage
- * information.
+ * See the <a href="GeoidEval.1.html">man page</a> for usage information.
  **********************************************************************/
 
 #include <iostream>
@@ -38,19 +26,19 @@
 
 #include "GeoidEval.usage"
 
-int main(int argc, char* argv[]) {
+int main(int argc, const char* const argv[]) {
   try {
     using namespace GeographicLib;
     typedef Math::real real;
-    bool cacheall = false, cachearea = false, verbose = false,
-      cubic = true, gradp = false;
+    Utility::set_digits();
+    bool cacheall = false, cachearea = false, verbose = false, cubic = true;
     real caches, cachew, cachen, cachee;
     std::string dir;
     std::string geoid = Geoid::DefaultGeoidName();
     Geoid::convertflag heightmult = Geoid::NONE;
     std::string istring, ifile, ofile, cdelim;
     char lsep = ';';
-    bool northp = false;
+    bool northp = false, longfirst = false;
     int zonenum = UTMUPS::INVALID;
 
     for (int m = 1; m < argc; ++m) {
@@ -65,9 +53,9 @@ int main(int argc, char* argv[]) {
         cachearea = true;
         try {
           DMS::DecodeLatLon(std::string(argv[m + 1]), std::string(argv[m + 2]),
-                            caches, cachew);
+                            caches, cachew, longfirst);
           DMS::DecodeLatLon(std::string(argv[m + 3]), std::string(argv[m + 4]),
-                            cachen, cachee);
+                            cachen, cachee, longfirst);
         }
         catch (const std::exception& e) {
           std::cerr << "Error decoding argument of -c: " << e.what() << "\n";
@@ -78,6 +66,8 @@ int main(int argc, char* argv[]) {
         heightmult = Geoid::GEOIDTOELLIPSOID;
       else if (arg == "--haetomsl")
         heightmult = Geoid::ELLIPSOIDTOGEOID;
+      else if (arg == "-w")
+        longfirst = !longfirst;
       else if (arg == "-z") {
         if (++m == argc) return usage(1, true);
         std::string zone = argv[m];
@@ -100,8 +90,6 @@ int main(int argc, char* argv[]) {
         dir = argv[m];
       } else if (arg == "-l")
         cubic = false;
-      else if (arg == "-g")
-        gradp = true;
       else if (arg == "-v")
         verbose = true;
       else if (arg == "--input-string") {
@@ -124,16 +112,16 @@ int main(int argc, char* argv[]) {
         if (++m == argc) return usage(1, true);
         cdelim = argv[m];
       } else if (arg == "--version") {
-        std::cout
-          << argv[0] << ": GeographicLib version "
-          << GEOGRAPHICLIB_VERSION_STRING << "\n";
+        std::cout << argv[0] << ": GeographicLib version "
+                  << GEOGRAPHICLIB_VERSION_STRING << "\n";
         return 0;
       } else {
         int retval = usage(!(arg == "-h" || arg == "--help"), arg != "--help");
         if (arg == "-h")
-          std::cout<< "\nDefault geoid path = \""   << Geoid::DefaultGeoidPath()
-                   << "\"\nDefault geoid name = \"" << Geoid::DefaultGeoidName()
-                   << "\"\n";
+          std::cout
+            << "\nDefault geoid path = \""   << Geoid::DefaultGeoidPath()
+            << "\"\nDefault geoid name = \"" << Geoid::DefaultGeoidName()
+            << "\"\n";
         return retval;
       }
     }
@@ -197,18 +185,19 @@ int main(int argc, char* argv[]) {
                   << "Max error (m): " << g.MaxError()      << "\n"
                   << "RMS error (m): " << g.RMSError()      << "\n";
         if (g.Cache())
-          std::cerr<< "Caching:"
-                   << "\n SW Corner: " << g.CacheSouth() << " " << g.CacheWest()
-                   << "\n NE Corner: " << g.CacheNorth() << " " << g.CacheEast()
-                   << "\n";
+          std::cerr
+            << "Caching:"
+            << "\n SW Corner: " << g.CacheSouth() << " " << g.CacheWest()
+            << "\n NE Corner: " << g.CacheNorth() << " " << g.CacheEast()
+            << "\n";
       }
 
       GeoCoords p;
-      std::string s, suff;
+      std::string s, eol, suff;
       const char* spaces = " \t\n\v\f\r,"; // Include comma as space
       while (std::getline(*input, s)) {
         try {
-          std::string eol("\n");
+          eol = "\n";
           if (!cdelim.empty()) {
             std::string::size_type m = s.find(cdelim);
             if (m != std::string::npos) {
@@ -234,7 +223,7 @@ int main(int argc, char* argv[]) {
               // End of i'th token
               pb = s.find_first_of(spaces, pa);
               (i == 2 ? height : (i == 0 ? easting : northing)) =
-                Utility::num<real>(s.substr(pa, (pb == std::string::npos ?
+                Utility::val<real>(s.substr(pa, (pb == std::string::npos ?
                                                  pb : pb - pa)));
             }
             p.Reset(zonenum, northp, easting, northing);
@@ -252,30 +241,19 @@ int main(int argc, char* argv[]) {
               std::string::size_type pa = s.find_last_of(spaces, pb);
               if (pa == std::string::npos || pb == std::string::npos)
                 throw GeographicErr("Incomplete input: " + s);
-              height = Utility::num<real>(s.substr(pa + 1, pb - pa));
+              height = Utility::val<real>(s.substr(pa + 1, pb - pa));
               s = s.substr(0, pa + 1);
             }
-            p.Reset(s);
+            p.Reset(s, true, longfirst);
           }
           if (heightmult) {
             real h = g(p.Latitude(), p.Longitude());
             *output << s
-                    << Utility::str<real>(height + real(heightmult) * h, 4)
+                    << Utility::str(height + real(heightmult) * h, 4)
                     << suff << eol;
           } else {
-            if (gradp) {
-            real gradn, grade;
-            real h = g(p.Latitude(), p.Longitude(), gradn, grade);
-            *output << Utility::str<real>(h, 4) << " "
-                    << Utility::str<real>(gradn * 1e6, 2)
-                    << (Math::isnan(gradn) ? " " : "e-6 ")
-                    << Utility::str<real>(grade * 1e6, 2)
-                    << (Math::isnan(grade) ? "" : "e-6")
-                    << eol;
-            } else {
             real h = g(p.Latitude(), p.Longitude());
-            *output << Utility::str<real>(h, 4) << eol;
-            }
+            *output << Utility::str(h, 4) << eol;
           }
         }
         catch (const std::exception& e) {

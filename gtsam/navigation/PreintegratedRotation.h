@@ -28,12 +28,14 @@ namespace gtsam {
 
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
-struct PreintegratedRotationParams {
+struct GTSAM_EXPORT PreintegratedRotationParams {
   Matrix3 gyroscopeCovariance;  ///< continuous-time "Covariance" of gyroscope measurements
   boost::optional<Vector3> omegaCoriolis;  ///< Coriolis constant
   boost::optional<Pose3> body_P_sensor;    ///< The pose of the sensor in the body frame
 
   PreintegratedRotationParams() : gyroscopeCovariance(I_3x3) {}
+
+  virtual ~PreintegratedRotationParams() {}
 
   virtual void print(const std::string& s) const;
   virtual bool equals(const PreintegratedRotationParams& other, double tol=1e-9) const;
@@ -56,6 +58,12 @@ struct PreintegratedRotationParams {
     ar & BOOST_SERIALIZATION_NVP(omegaCoriolis);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor);
   }
+
+#ifdef GTSAM_USE_QUATERNIONS
+  // Align if we are using Quaternions
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 /**
@@ -63,7 +71,7 @@ struct PreintegratedRotationParams {
  * classes (in AHRSFactor, ImuFactor, and CombinedImuFactor).
  * It includes the definitions of the preintegrated rotation.
  */
-class PreintegratedRotation {
+class GTSAM_EXPORT PreintegratedRotation {
  public:
   typedef PreintegratedRotationParams Params;
 
@@ -163,6 +171,12 @@ class PreintegratedRotation {
     ar& BOOST_SERIALIZATION_NVP(deltaRij_);
     ar& BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
   }
+
+#ifdef GTSAM_USE_QUATERNIONS
+  // Align if we are using Quaternions
+  public:
+	  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 template <>

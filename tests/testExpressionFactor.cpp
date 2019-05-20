@@ -228,10 +228,10 @@ TEST(ExpressionFactor, Shallow) {
   Point3_ p_(2);
 
   // Construct expression, concise evrsion
-  Point2_ expression = project(transform_to(x_, p_));
+  Point2_ expression = project(transformTo(x_, p_));
 
   // Get and check keys and dims
-  FastVector<Key> keys;
+  KeyVector keys;
   FastVector<int> dims;
   boost::tie(keys, dims) = expression.keysAndDims();
   LONGS_EQUAL(2,keys.size());
@@ -243,7 +243,6 @@ TEST(ExpressionFactor, Shallow) {
 
   // traceExecution of shallow tree
   typedef internal::UnaryExpression<Point2, Point3> Unary;
-  typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
   size_t size = expression.traceSize();
   internal::ExecutionTraceStorage traceStorage[size];
   internal::ExecutionTrace<Point2> trace;
@@ -289,7 +288,7 @@ TEST(ExpressionFactor, tree) {
   Cal3_S2_ K(3);
 
   // Create expression tree
-  Point3_ p_cam(x, &Pose3::transform_to, p);
+  Point3_ p_cam(x, &Pose3::transformTo, p);
   Point2_ xy_hat(Project, p_cam);
   Point2_ uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
 
@@ -302,7 +301,7 @@ TEST(ExpressionFactor, tree) {
 
   // Concise version
   ExpressionFactor<Point2> f2(model, measured,
-      uncalibrate(K, project(transform_to(x, p))));
+      uncalibrate(K, project(transformTo(x, p))));
   EXPECT_DOUBLES_EQUAL(expected_error, f2.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f2.dim());
   boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
@@ -462,7 +461,7 @@ TEST(ExpressionFactor, tree_finite_differences) {
   Cal3_S2_ K(3);
 
   // Create expression tree
-  Point3_ p_cam(x, &Pose3::transform_to, p);
+  Point3_ p_cam(x, &Pose3::transformTo, p);
   Point2_ xy_hat(Project, p_cam);
   Point2_ uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
 

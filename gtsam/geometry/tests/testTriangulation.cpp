@@ -60,7 +60,7 @@ Point2 z2 = camera2.project(landmark);
 TEST( triangulation, twoPoses) {
 
   vector<Pose3> poses;
-  vector<Point2> measurements;
+  Point2Vector measurements;
 
   poses += pose1, pose2;
   measurements += z1, z2;
@@ -108,7 +108,7 @@ TEST( triangulation, twoPosesBundler) {
   Point2 z2 = camera2.project(landmark);
 
   vector<Pose3> poses;
-  vector<Point2> measurements;
+  Point2Vector measurements;
 
   poses += pose1, pose2;
   measurements += z1, z2;
@@ -132,7 +132,7 @@ TEST( triangulation, twoPosesBundler) {
 //******************************************************************************
 TEST( triangulation, fourPoses) {
   vector<Pose3> poses;
-  vector<Point2> measurements;
+  Point2Vector measurements;
 
   poses += pose1, pose2;
   measurements += z1, z2;
@@ -195,8 +195,8 @@ TEST( triangulation, fourPoses_distinct_Ks) {
   Point2 z1 = camera1.project(landmark);
   Point2 z2 = camera2.project(landmark);
 
-  vector<SimpleCamera> cameras;
-  vector<Point2> measurements;
+  CameraSet<SimpleCamera> cameras;
+  Point2Vector measurements;
 
   cameras += camera1, camera2;
   measurements += z1, z2;
@@ -247,6 +247,59 @@ TEST( triangulation, fourPoses_distinct_Ks) {
 }
 
 //******************************************************************************
+TEST( triangulation, outliersAndFarLandmarks) {
+  Cal3_S2 K1(1500, 1200, 0, 640, 480);
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  SimpleCamera camera1(pose1, K1);
+
+  // create second camera 1 meter to the right of first camera
+  Cal3_S2 K2(1600, 1300, 0, 650, 440);
+  SimpleCamera camera2(pose2, K2);
+
+  // 1. Project two landmarks into two cameras and triangulate
+  Point2 z1 = camera1.project(landmark);
+  Point2 z2 = camera2.project(landmark);
+
+  CameraSet<SimpleCamera> cameras;
+  Point2Vector measurements;
+
+  cameras += camera1, camera2;
+  measurements += z1, z2;
+
+  double landmarkDistanceThreshold = 10; // landmark is closer than that
+  TriangulationParameters params(1.0, false, landmarkDistanceThreshold); // all default except landmarkDistanceThreshold
+  TriangulationResult actual = triangulateSafe(cameras,measurements,params);
+  EXPECT(assert_equal(landmark, *actual, 1e-2));
+  EXPECT(actual.valid());
+
+  landmarkDistanceThreshold = 4; // landmark is farther than that
+  TriangulationParameters params2(1.0, false, landmarkDistanceThreshold); // all default except landmarkDistanceThreshold
+  actual = triangulateSafe(cameras,measurements,params2);
+  EXPECT(actual.farPoint());
+
+  // 3. Add a slightly rotated third camera above with a wrong measurement (OUTLIER)
+  Pose3 pose3 = pose1 * Pose3(Rot3::Ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
+  Cal3_S2 K3(700, 500, 0, 640, 480);
+  SimpleCamera camera3(pose3, K3);
+  Point2 z3 = camera3.project(landmark);
+
+  cameras += camera3;
+  measurements += z3 + Point2(10, -10);
+
+  landmarkDistanceThreshold = 10; // landmark is closer than that
+  double outlierThreshold = 100; // loose, the outlier is going to pass
+  TriangulationParameters params3(1.0, false, landmarkDistanceThreshold,outlierThreshold);
+  actual = triangulateSafe(cameras,measurements,params3);
+  EXPECT(actual.valid());
+
+  // now set stricter threshold for outlier rejection
+  outlierThreshold = 5; // tighter, the outlier is not going to pass
+  TriangulationParameters params4(1.0, false, landmarkDistanceThreshold,outlierThreshold);
+  actual = triangulateSafe(cameras,measurements,params4);
+  EXPECT(actual.outlier());
+}
+
+//******************************************************************************
 TEST( triangulation, twoIdenticalPoses) {
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   SimpleCamera camera1(pose1, *sharedCal);
@@ -255,7 +308,7 @@ TEST( triangulation, twoIdenticalPoses) {
   Point2 z1 = camera1.project(landmark);
 
   vector<Pose3> poses;
-  vector<Point2> measurements;
+  Point2Vector measurements;
 
   poses += pose1, pose1;
   measurements += z1, z1;
@@ -270,7 +323,7 @@ TEST( triangulation, onePose) {
   // because there's only one camera observation
 
   vector<Pose3> poses;
-  vector<Point2> measurements;
+  Point2Vector measurements;
 
   poses += Pose3();
   measurements += Point2(0,0);
@@ -301,7 +354,7 @@ TEST( triangulation, StereotriangulateNonlinear ) {
   cameras.push_back(StereoCamera(Pose3(m1), stereoK));
   cameras.push_back(StereoCamera(Pose3(m2), stereoK));
 
-  vector<StereoPoint2> measurements;
+  StereoPoint2Vector measurements;
   measurements += StereoPoint2(226.936, 175.212, 424.469);
   measurements += StereoPoint2(339.571, 285.547, 669.973);
 
@@ -325,12 +378,12 @@ TEST( triangulation, StereotriangulateNonlinear ) {
 
     NonlinearFactorGraph graph;
     static SharedNoiseModel unit(noiseModel::Unit::Create(3));
-    graph.push_back(StereoFactor::shared_ptr(new StereoFactor(measurements[0], unit, Symbol('x',1), Symbol('l',1), stereoK)));
-    graph.push_back(StereoFactor::shared_ptr(new StereoFactor(measurements[1], unit, Symbol('x',2), Symbol('l',1), stereoK)));
+    graph.emplace_shared<StereoFactor>(measurements[0], unit, Symbol('x',1), Symbol('l',1), stereoK);
+    graph.emplace_shared<StereoFactor>(measurements[1], unit, Symbol('x',2), Symbol('l',1), stereoK);
 
     const SharedDiagonal posePrior = noiseModel::Isotropic::Sigma(6, 1e-9);
-    graph.push_back(PriorFactor<Pose3>(Symbol('x',1), Pose3(m1), posePrior));
-    graph.push_back(PriorFactor<Pose3>(Symbol('x',2), Pose3(m2), posePrior));
+    graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x',1), Pose3(m1), posePrior);
+    graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x',2), Pose3(m2), posePrior);
 
     LevenbergMarquardtOptimizer optimizer(graph, values);
     Values result = optimizer.optimize();
@@ -346,8 +399,8 @@ TEST( triangulation, StereotriangulateNonlinear ) {
     NonlinearFactorGraph graph;
     static SharedNoiseModel unit(noiseModel::Unit::Create(3));
 
-    graph.push_back(TriangulationFactor<StereoCamera>(cameras[0], measurements[0], unit, Symbol('l',1)));
-    graph.push_back(TriangulationFactor<StereoCamera>(cameras[1], measurements[1], unit, Symbol('l',1)));
+    graph.emplace_shared<TriangulationFactor<StereoCamera> >(cameras[0], measurements[0], unit, Symbol('l',1));
+    graph.emplace_shared<TriangulationFactor<StereoCamera> >(cameras[1], measurements[1], unit, Symbol('l',1));
 
     LevenbergMarquardtOptimizer optimizer(graph, values);
     Values result = optimizer.optimize();

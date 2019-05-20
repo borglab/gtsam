@@ -52,7 +52,7 @@ GTSAM_EXPORT std::string _multirobotKeyFormatter(gtsam::Key key);
 static const gtsam::KeyFormatter MultiRobotKeyFormatter =
     &_multirobotKeyFormatter;
 
-/// Useful typedef for operations with Values - allows for matlab interface
+/// Define collection type once and for all - also used in wrappers
 typedef FastVector<Key> KeyVector;
 
 // TODO(frank): Nothing fast about these :-(

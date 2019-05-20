@@ -19,10 +19,11 @@
 #pragma once
 
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/CalibratedCamera.h> // for Cheirality exception
+#include <gtsam/geometry/CalibratedCamera.h>  // for Cheirality exception
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastMap.h>
+#include <gtsam/inference/Key.h>
 #include <vector>
 
 namespace gtsam {
@@ -31,7 +32,7 @@ namespace gtsam {
  * @brief A set of cameras, all with their own calibration
  */
 template<class CAMERA>
-class CameraSet: public std::vector<CAMERA> {
+class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA> > {
 
 protected:
 
@@ -40,13 +41,14 @@ protected:
    * The order is kept the same as the keys that we use to create the factor.
    */
   typedef typename CAMERA::Measurement Z;
+  typedef typename CAMERA::MeasurementVector ZVector;
 
   static const int D = traits<CAMERA>::dimension; ///< Camera dimension
   static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
 
   /// Make a vector of re-projection errors
-  static Vector ErrorVector(const std::vector<Z>& predicted,
-      const std::vector<Z>& measured) {
+  static Vector ErrorVector(const ZVector& predicted,
+      const ZVector& measured) {
 
     // Check size
     size_t m = predicted.size();
@@ -56,7 +58,11 @@ protected:
     // Project and fill error vector
     Vector b(ZDim * m);
     for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
-      b.segment<ZDim>(row) = traits<Z>::Local(measured[i], predicted[i]);
+      Vector bi = traits<Z>::Local(measured[i], predicted[i]);
+      if(ZDim==3 && std::isnan(bi(1))){ // if it is a stereo point and the right pixel is missing (nan)
+        bi(1) = 0;
+      }
+      b.segment<ZDim>(row) = bi;
     }
     return b;
   }
@@ -65,7 +71,7 @@ public:
 
   /// Definitions for blocks of F
   typedef Eigen::Matrix<double, ZDim, D> MatrixZD;
-  typedef std::vector<MatrixZD> FBlocks;
+  typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;
 
   /**
    * print
@@ -98,7 +104,7 @@ public:
    * throws CheiralityException
    */
   template<class POINT>
-  std::vector<Z> project2(const POINT& point, //
+  ZVector project2(const POINT& point, //
       boost::optional<FBlocks&> Fs = boost::none, //
       boost::optional<Matrix&> E = boost::none) const {
 
@@ -106,7 +112,7 @@ public:
 
     // Allocate result
     size_t m = this->size();
-    std::vector<Z> z;
+    ZVector z;
     z.reserve(m);
 
     // Allocate derivatives
@@ -127,7 +133,7 @@ public:
 
   /// Calculate vector [project2(point)-z] of re-projection errors
   template<class POINT>
-  Vector reprojectionError(const POINT& point, const std::vector<Z>& measured,
+  Vector reprojectionError(const POINT& point, const ZVector& measured,
       boost::optional<FBlocks&> Fs = boost::none, //
       boost::optional<Matrix&> E = boost::none) const {
     return ErrorVector(project2(point, Fs, E), measured);
@@ -205,11 +211,11 @@ public:
       bool diagonalDamping = false) {
     if (E.cols() == 2) {
       Matrix2 P2;
-      ComputePointCovariance(P2, E, lambda, diagonalDamping);
+      ComputePointCovariance<2>(P2, E, lambda, diagonalDamping);
       return P2;
     } else {
       Matrix3 P3;
-      ComputePointCovariance(P3, E, lambda, diagonalDamping);
+      ComputePointCovariance<3>(P3, E, lambda, diagonalDamping);
       return P3;
     }
   }
@@ -223,12 +229,12 @@ public:
       bool diagonalDamping = false) {
     if (E.cols() == 2) {
       Matrix2 P;
-      ComputePointCovariance(P, E, lambda, diagonalDamping);
-      return SchurComplement(Fblocks, E, P, b);
+      ComputePointCovariance<2>(P, E, lambda, diagonalDamping);
+      return SchurComplement<2>(Fblocks, E, P, b);
     } else {
       Matrix3 P;
-      ComputePointCovariance(P, E, lambda, diagonalDamping);
-      return SchurComplement(Fblocks, E, P, b);
+      ComputePointCovariance<3>(P, E, lambda, diagonalDamping);
+      return SchurComplement<3>(Fblocks, E, P, b);
     }
   }
 
@@ -239,7 +245,7 @@ public:
   template<int N> // N = 2 or 3
   static void UpdateSchurComplement(const FBlocks& Fs, const Matrix& E,
       const Eigen::Matrix<double, N, N>& P, const Vector& b,
-      const FastVector<Key>& allKeys, const FastVector<Key>& keys,
+      const KeyVector& allKeys, const KeyVector& keys,
       /*output ->*/SymmetricBlockMatrix& augmentedHessian) {
 
     assert(keys.size()==Fs.size());
@@ -311,6 +317,9 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & (*this);
   }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template<class CAMERA>

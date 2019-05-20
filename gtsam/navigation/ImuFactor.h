@@ -68,22 +68,22 @@ typedef ManifoldPreintegration PreintegrationType;
  *
  * @addtogroup SLAM
  */
-class PreintegratedImuMeasurements: public PreintegrationType {
+class GTSAM_EXPORT PreintegratedImuMeasurements: public PreintegrationType {
 
   friend class ImuFactor;
   friend class ImuFactor2;
 
 protected:
 
-  Matrix9 preintMeasCov_; ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION]
+  Matrix9 preintMeasCov_; ///< COVARIANCE OF: [PreintROTATION PreintPOSITION PreintVELOCITY]
   ///< (first-order propagation from *measurementCovariance*).
 
-  /// Default constructor for serialization
+public:
+
+  /// Default constructor for serialization and Cython wrapper
   PreintegratedImuMeasurements() {
     preintMeasCov_.setZero();
   }
-
-public:
 
  /**
    *  Constructor, initializes the class with no measurements
@@ -104,6 +104,10 @@ public:
   PreintegratedImuMeasurements(const PreintegrationType& base, const Matrix9& preintMeasCov)
      : PreintegrationType(base),
        preintMeasCov_(preintMeasCov) {
+  }
+
+  /// Virtual destructor
+  virtual ~PreintegratedImuMeasurements() {
   }
 
   /// print
@@ -176,7 +180,7 @@ private:
  *
  * @addtogroup SLAM
  */
-class ImuFactor: public NoiseModelFactor5<Pose3, Vector3, Pose3, Vector3,
+class GTSAM_EXPORT ImuFactor: public NoiseModelFactor5<Pose3, Vector3, Pose3, Vector3,
     imuBias::ConstantBias> {
 private:
 
@@ -285,7 +289,7 @@ private:
  * ImuFactor2 is a ternary factor that uses NavStates rather than Pose/Velocity.
  * @addtogroup SLAM
  */
-class ImuFactor2 : public NoiseModelFactor3<NavState, NavState, imuBias::ConstantBias> {
+class GTSAM_EXPORT ImuFactor2 : public NoiseModelFactor3<NavState, NavState, imuBias::ConstantBias> {
 private:
 
   typedef ImuFactor2 This;

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/geometry/Cal3_S2.h>
+#include <iosfwd>
 
 namespace gtsam {
 
@@ -26,7 +27,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class Cal3_S2Stereo {
+  class GTSAM_EXPORT Cal3_S2Stereo {
   private:
 
     Cal3_S2 K_;
@@ -62,16 +63,10 @@ namespace gtsam {
     /// @name Testable
     /// @{
 
-    void print(const std::string& s = "") const {
-      K_.print(s+"K: ");
-      std::cout << s << "Baseline: " << b_ << std::endl;
-    }
+    void print(const std::string& s = "") const;
 
     /// Check if equal up to specified tolerance
-    bool equals(const Cal3_S2Stereo& other, double tol = 10e-9) const {
-      if (fabs(b_ - other.b_) > tol) return false;
-      return K_.equals(other.K_,tol);
-    }
+    bool equals(const Cal3_S2Stereo& other, double tol = 10e-9) const;
 
    /// @}
     /// @name Standard Interface

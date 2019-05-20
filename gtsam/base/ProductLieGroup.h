@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -138,17 +138,27 @@ public:
     return ProductLieGroup(g,h);
   }
   static ProductLieGroup Expmap(const TangentVector& v, ChartJacobian Hv = boost::none) {
-    if (Hv) throw std::runtime_error("ProductLieGroup::Expmap derivatives not implemented yet");
-    G g = traits<G>::Expmap(v.template head<dimension1>());
-    H h = traits<H>::Expmap(v.template tail<dimension2>());
+    Jacobian1 D_g_first; Jacobian2 D_h_second;
+    G g = traits<G>::Expmap(v.template head<dimension1>(), Hv ? &D_g_first : 0);
+    H h = traits<H>::Expmap(v.template tail<dimension2>(), Hv ? &D_h_second : 0);
+    if (Hv) {
+      Hv->setZero();
+      Hv->template topLeftCorner<dimension1,dimension1>() = D_g_first;
+      Hv->template bottomRightCorner<dimension2,dimension2>() = D_h_second;
+    }
     return ProductLieGroup(g,h);
   }
   static TangentVector Logmap(const ProductLieGroup& p, ChartJacobian Hp = boost::none) {
-    if (Hp) throw std::runtime_error("ProductLieGroup::Logmap derivatives not implemented yet");
-    typename traits<G>::TangentVector v1 = traits<G>::Logmap(p.first);
-    typename traits<H>::TangentVector v2 = traits<H>::Logmap(p.second);
+    Jacobian1 D_g_first; Jacobian2 D_h_second;
+    typename traits<G>::TangentVector v1 = traits<G>::Logmap(p.first, Hp ? &D_g_first : 0);
+    typename traits<H>::TangentVector v2 = traits<H>::Logmap(p.second, Hp ? &D_h_second : 0);
     TangentVector v;
     v << v1, v2;
+    if (Hp) {
+      Hp->setZero();
+      Hp->template topLeftCorner<dimension1,dimension1>() = D_g_first;
+      Hp->template bottomRightCorner<dimension2,dimension2>() = D_h_second;
+    }
     return v;
   }
   ProductLieGroup expmap(const TangentVector& v) const {

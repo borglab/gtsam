@@ -5,11 +5,11 @@
 # from to python.  See the documentation for the C++ class for more information
 # at
 #
-#    http://geographiclib.sourceforge.net/html/annotated.html
+#    https://geographiclib.sourceforge.io/html/annotated.html
 #
 # Copyright (c) Charles Karney (2011) <charles@karney.com> and licensed under
 # the MIT/X11 License.  For more information, see
-# http://geographiclib.sourceforge.net/
+# https://geographiclib.sourceforge.io/
 ######################################################################
 
 from geographiclib.geomath import Math
@@ -25,6 +25,7 @@ class Accumulator(object):
       self._s, self._t = float(y), 0.0
 
   def __init__(self, y = 0.0):
+    """Constructor"""
     self.Set(y)
 
   def Add(self, y):

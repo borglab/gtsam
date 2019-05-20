@@ -22,7 +22,7 @@
  *  -moves forward 1 meter
  *  -takes stereo readings on three landmarks
  */
- 
+
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/nonlinear/Values.h>
@@ -39,22 +39,22 @@ int main(int argc, char** argv){
   //create graph object, add first pose at origin with key '1'
   NonlinearFactorGraph graph;
   Pose3 first_pose;
-  graph.push_back(NonlinearEquality<Pose3>(1, Pose3()));
-  
+  graph.emplace_shared<NonlinearEquality<Pose3> >(1, Pose3());
+
   //create factor noise model with 3 sigmas of value 1
   const noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(3,1);
   //create stereo camera calibration object with .2m between cameras
   const Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2));
 
   //create and add stereo factors between first pose (key value 1) and the three landmarks
-  graph.push_back(GenericStereoFactor<Pose3,Point3>(StereoPoint2(520, 480, 440), model, 1, 3, K));
-  graph.push_back(GenericStereoFactor<Pose3,Point3>(StereoPoint2(120, 80, 440), model, 1, 4, K));
-  graph.push_back(GenericStereoFactor<Pose3,Point3>(StereoPoint2(320, 280, 140), model, 1, 5, K));
+  graph.emplace_shared<GenericStereoFactor<Pose3,Point3> >(StereoPoint2(520, 480, 440), model, 1, 3, K);
+  graph.emplace_shared<GenericStereoFactor<Pose3,Point3> >(StereoPoint2(120, 80, 440), model, 1, 4, K);
+  graph.emplace_shared<GenericStereoFactor<Pose3,Point3> >(StereoPoint2(320, 280, 140), model, 1, 5, K);
 
   //create and add stereo factors between second pose and the three landmarks
-  graph.push_back(GenericStereoFactor<Pose3,Point3>(StereoPoint2(570, 520, 490), model, 2, 3, K));
-  graph.push_back(GenericStereoFactor<Pose3,Point3>(StereoPoint2(70, 20, 490), model, 2, 4, K));
-  graph.push_back(GenericStereoFactor<Pose3,Point3>(StereoPoint2(320, 270, 115), model, 2, 5, K));
+  graph.emplace_shared<GenericStereoFactor<Pose3,Point3> >(StereoPoint2(570, 520, 490), model, 2, 3, K);
+  graph.emplace_shared<GenericStereoFactor<Pose3,Point3> >(StereoPoint2(70, 20, 490), model, 2, 4, K);
+  graph.emplace_shared<GenericStereoFactor<Pose3,Point3> >(StereoPoint2(320, 270, 115), model, 2, 5, K);
 
   //create Values object to contain initial estimates of camera poses and landmark locations
   Values initial_estimate;

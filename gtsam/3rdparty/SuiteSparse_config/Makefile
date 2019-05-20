@@ -7,7 +7,7 @@ export SUITESPARSE
 
 # version of SuiteSparse_config is also version of SuiteSparse meta-package
 LIBRARY = libsuitesparseconfig
-VERSION = 4.5.2
+VERSION = 4.5.6
 SO_VERSION = 4
 
 default: library
@@ -26,6 +26,8 @@ OBJ = SuiteSparse_config.o
 
 SuiteSparse_config.o: SuiteSparse_config.c SuiteSparse_config.h
 	$(CC) $(CF) -c SuiteSparse_config.c
+
+static: $(AR_TARGET)
 
 $(AR_TARGET): $(OBJ)
 	$(ARCHIVE) $(AR_TARGET) SuiteSparse_config.o

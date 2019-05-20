@@ -17,16 +17,6 @@
  * @author  Christian Potthast
  */
 
-/*STL/C++*/
-#include <iostream>
-using namespace std;
-
-#include <boost/assign/std/list.hpp>
-#include <boost/assign/std/set.hpp>
-using namespace boost::assign;
-
-#include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
 #include <tests/smallExample.h>
@@ -34,7 +24,21 @@ using namespace boost::assign;
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/sam/RangeFactor.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
 
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/assign/std/list.hpp>
+#include <boost/assign/std/set.hpp>
+using namespace boost::assign;
+
+/*STL/C++*/
+#include <iostream>
+
+using namespace std;
 using namespace gtsam;
 using namespace example;
 
@@ -195,6 +199,47 @@ TEST(NonlinearFactorGraph, UpdateCholesky) {
     }
   };
   EXPECT(assert_equal(initial, fg.updateCholesky(initial, boost::none, dampen), 1e-6));
+}
+
+/* ************************************************************************* */
+// Example from issue #452 which threw an ILS error. The reason was a very 
+// weak prior on heading, which was tightened, and the ILS disappeared.
+TEST(testNonlinearFactorGraph, eliminate) {
+  // Linearization point
+  Pose2 T11(0, 0, 0);
+  Pose2 T12(1, 0, 0);
+  Pose2 T21(0, 1, 0);
+  Pose2 T22(1, 1, 0);
+
+  // Factor graph
+  auto graph = NonlinearFactorGraph();
+
+  // Priors
+  auto prior = noiseModel::Isotropic::Sigma(3, 1);
+  graph.add(PriorFactor<Pose2>(11, T11, prior));
+  graph.add(PriorFactor<Pose2>(21, T21, prior));
+
+  // Odometry
+  auto model = noiseModel::Diagonal::Sigmas(Vector3(0.01, 0.01, 0.3));
+  graph.add(BetweenFactor<Pose2>(11, 12, T11.between(T12), model));
+  graph.add(BetweenFactor<Pose2>(21, 22, T21.between(T22), model));
+
+  // Range factor
+  auto model_rho = noiseModel::Isotropic::Sigma(1, 0.01);
+  graph.add(RangeFactor<Pose2>(12, 22, 1.0, model_rho));
+
+  Values values;
+  values.insert(11, T11.retract(Vector3(0.1,0.2,0.3)));
+  values.insert(12, T12);
+  values.insert(21, T21);
+  values.insert(22, T22);
+  auto linearized = graph.linearize(values);
+
+  // Eliminate
+  Ordering ordering;
+  ordering += 11, 21, 12, 22;
+  auto bn = linearized->eliminateSequential(ordering);
+  EXPECT_LONGS_EQUAL(4, bn->size());
 }
 
 /* ************************************************************************* */

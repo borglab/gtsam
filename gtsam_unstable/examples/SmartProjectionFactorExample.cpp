@@ -43,8 +43,6 @@ using namespace std;
 using namespace gtsam;
 
 int main(int argc, char** argv){
-
-  typedef PinholePose<Cal3_S2> Camera;
   typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 
   Values initial_estimate;
@@ -104,7 +102,7 @@ int main(int argc, char** argv){
   //constrain the first pose such that it cannot change from its original value during optimization
   // NOTE: NonlinearEquality forces the optimizer to use QR rather than Cholesky
   // QR is much slower than Cholesky, but numerically more stable
-  graph.push_back(NonlinearEquality<Pose3>(1,firstPose));
+  graph.emplace_shared<NonlinearEquality<Pose3> >(1,firstPose);
 
   LevenbergMarquardtParams params;
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;

@@ -51,7 +51,7 @@ namespace gtsam {
       Key key;
       size_t n;
       boost::tie(key, n) = v;
-      values_.insert(make_pair(key, x.segment(j, n)));
+      values_.emplace(key, x.segment(j, n));
       j += n;
     }
   }
@@ -60,7 +60,7 @@ namespace gtsam {
   VectorValues::VectorValues(const Vector& x, const Scatter& scatter) {
     size_t j = 0;
     for (const SlotEntry& v : scatter) {
-      values_.insert(make_pair(v.key, x.segment(j, v.dimension)));
+      values_.emplace(v.key, x.segment(j, v.dimension));
       j += v.dimension;
     }
   }
@@ -70,18 +70,26 @@ namespace gtsam {
   {
     VectorValues result;
     for(const KeyValuePair& v: other)
-      result.values_.insert(make_pair(v.first, Vector::Zero(v.second.size())));
+      result.values_.emplace(v.first, Vector::Zero(v.second.size()));
     return result;
   }
 
   /* ************************************************************************* */
   VectorValues::iterator VectorValues::insert(const std::pair<Key, Vector>& key_value) {
-    // Note that here we accept a pair with a reference to the Vector, but the Vector is copied as
-    // it is inserted into the values_ map.
     std::pair<iterator, bool> result = values_.insert(key_value);
     if(!result.second)
       throw std::invalid_argument(
       "Requested to insert variable '" + DefaultKeyFormatter(key_value.first)
+      + "' already in this VectorValues.");
+    return result.first;
+  }
+
+  /* ************************************************************************* */
+  VectorValues::iterator VectorValues::emplace(Key j, const Vector& value) {
+    std::pair<iterator, bool> result = values_.emplace(j, value);
+    if(!result.second)
+      throw std::invalid_argument(
+      "Requested to emplace variable '" + DefaultKeyFormatter(j)
       + "' already in this VectorValues.");
     return result.first;
   }
@@ -132,8 +140,7 @@ namespace gtsam {
   bool VectorValues::equals(const VectorValues& x, double tol) const {
     if(this->size() != x.size())
       return false;
-    typedef boost::tuple<value_type, value_type> ValuePair;
-    for(const ValuePair& values: boost::combine(*this, x)) {
+    for(const auto& values: boost::combine(*this, x)) {
       if(values.get<0>().first != values.get<1>().first ||
         !equal_with_abs_tol(values.get<0>().second, values.get<1>().second, tol))
         return false;
@@ -142,41 +149,17 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Vector VectorValues::vector() const
-  {
+  Vector VectorValues::vector() const {
     // Count dimensions
     DenseIndex totalDim = 0;
-    for(const Vector& v: *this | map_values)
-      totalDim += v.size();
+    for (const Vector& v : *this | map_values) totalDim += v.size();
 
     // Copy vectors
     Vector result(totalDim);
     DenseIndex pos = 0;
-    for(const Vector& v: *this | map_values) {
+    for (const Vector& v : *this | map_values) {
       result.segment(pos, v.size()) = v;
       pos += v.size();
-    }
-
-    return result;
-  }
-
-  /* ************************************************************************* */
-  Vector VectorValues::vector(const FastVector<Key>& keys) const
-  {
-    // Count dimensions and collect pointers to avoid double lookups
-    DenseIndex totalDim = 0;
-    FastVector<const Vector*> items(keys.size());
-    for(size_t i = 0; i < keys.size(); ++i) {
-      items[i] = &at(keys[i]);
-      totalDim += items[i]->size();
-    }
-
-    // Copy vectors
-    Vector result(totalDim);
-    DenseIndex pos = 0;
-    for(const Vector *v: items) {
-      result.segment(pos, v->size()) = *v;
-      pos += v->size();
     }
 
     return result;
@@ -264,7 +247,7 @@ namespace gtsam {
     VectorValues result;
     // The result.end() hint here should result in constant-time inserts
     for(const_iterator j1 = begin(), j2 = c.begin(); j1 != end(); ++j1, ++j2)
-      result.values_.insert(result.end(), make_pair(j1->first, j1->second + j2->second));
+      result.values_.emplace(j1->first, j1->second + j2->second);
 
     return result;
   }
@@ -322,7 +305,7 @@ namespace gtsam {
     VectorValues result;
     // The result.end() hint here should result in constant-time inserts
     for(const_iterator j1 = begin(), j2 = c.begin(); j1 != end(); ++j1, ++j2)
-      result.values_.insert(result.end(), make_pair(j1->first, j1->second - j2->second));
+      result.values_.emplace(j1->first, j1->second - j2->second);
 
     return result;
   }
@@ -338,7 +321,7 @@ namespace gtsam {
   {
     VectorValues result;
     for(const VectorValues::KeyValuePair& key_v: v)
-      result.values_.insert(result.values_.end(), make_pair(key_v.first, a * key_v.second));
+      result.values_.emplace(key_v.first, a * key_v.second);
     return result;
   }
 

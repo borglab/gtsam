@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -158,6 +158,8 @@ private:
   /// @}
 
 };
+
+typedef std::vector<StereoPoint2> StereoPoint2Vector;
 
 template<>
 struct traits<StereoPoint2> : public internal::VectorSpace<StereoPoint2> {};

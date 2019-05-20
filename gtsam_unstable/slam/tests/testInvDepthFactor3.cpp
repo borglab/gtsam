@@ -56,7 +56,7 @@ TEST( InvDepthFactor, optimize) {
 
   LevenbergMarquardtParams lmParams;
   Values result = LevenbergMarquardtOptimizer(graph, initial, lmParams).optimize();
-  
+
   // with a single factor the incorrect initialization of 1/4 should not move!
   EXPECT(assert_equal(initial, result, 1e-9));
 
@@ -80,12 +80,12 @@ TEST( InvDepthFactor, optimize) {
   initial.insert(Symbol('x',2), right_pose);
 
   Values result2 = LevenbergMarquardtOptimizer(graph, initial, lmParams).optimize();
-  
+
   Point3 result2_lmk = InvDepthCamera3<Cal3_S2>::invDepthTo3D(
       result2.at<Vector5>(Symbol('l',1)),
       result2.at<double>(Symbol('d',1)));
   EXPECT(assert_equal(landmark, result2_lmk, 1e-9));
-  
+
   // TODO: need to add priors to make this work with
   //    Values result2 = optimize<NonlinearFactorGraph>(graph, initial,
   //      NonlinearOptimizationParameters(),MULTIFRONTAL, GN);

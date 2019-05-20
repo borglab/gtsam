@@ -19,10 +19,14 @@
 
 #pragma once
 
+#include <iostream>
 #include <sstream>
 #include <string>
 
 #include <gtsam/base/serialization.h>
+
+#include <boost/serialization/serialization.hpp>
+
 
 // whether to print the serialized text to stdout
 const bool verbose = false;
@@ -142,4 +146,3 @@ bool equalsDereferencedBinary(const T& input = T()) {
 
 } // \namespace serializationTestHelpers
 } // \namespace gtsam
-

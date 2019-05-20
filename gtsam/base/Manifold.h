@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -168,9 +168,9 @@ struct FixedDimension {
       "FixedDimension instantiated for dymanically-sized type.");
 };
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 /// Helper class to construct the product manifold of two other manifolds, M1 and M2
-/// Assumes nothing except manifold structure for M1 and M2, and the existence
-/// of default constructor for those types
+/// Deprecated because of limited usefulness, maximum obfuscation
 template<typename M1, typename M2>
 class ProductManifold: public std::pair<M1, M2> {
   BOOST_CONCEPT_ASSERT((IsManifold<M1>));
@@ -209,12 +209,19 @@ public:
     v << v1, v2;
     return v;
   }
+
+  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+  enum { NeedsToAlign = (sizeof(M1) % 16) == 0 || (sizeof(M2) % 16) == 0
+  };
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 // Define any direct product group to be a model of the multiplicative Group concept
 template<typename M1, typename M2>
 struct traits<ProductManifold<M1, M2> > : internal::Manifold<ProductManifold<M1, M2> > {
 };
+#endif
 
 } // \ namespace gtsam
 

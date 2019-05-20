@@ -11,7 +11,6 @@
 
 template<typename MatrixType> void product_selfadjoint(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
   typedef Matrix<Scalar, 1, MatrixType::RowsAtCompileTime> RowVectorType;
@@ -67,14 +66,21 @@ void test_product_selfadjoint()
     CALL_SUBTEST_1( product_selfadjoint(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( product_selfadjoint(Matrix<float, 2, 2>()) );
     CALL_SUBTEST_3( product_selfadjoint(Matrix3d()) );
+    
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2);
     CALL_SUBTEST_4( product_selfadjoint(MatrixXcf(s, s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
+    
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2);
     CALL_SUBTEST_5( product_selfadjoint(MatrixXcd(s,s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
+    
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
     CALL_SUBTEST_6( product_selfadjoint(MatrixXd(s,s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
+    
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
     CALL_SUBTEST_7( product_selfadjoint(Matrix<float,Dynamic,Dynamic,RowMajor>(s,s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
   }
-  TEST_SET_BUT_UNUSED_VARIABLE(s)
 }

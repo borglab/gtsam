@@ -16,7 +16,6 @@ template<typename MatrixType> void determinant(const MatrixType& m)
   /* this test covers the following files:
      Determinant.h
   */
-  typedef typename MatrixType::Index Index;
   Index size = m.rows();
 
   MatrixType m1(size, size), m2(size, size);

@@ -1,0 +1,37 @@
+{
+  "name": "geographiclib",
+  "version": "1.49.0",
+  "description":
+  "JavaScript implementation of geodesic routines in GeographicLib",
+  "main": "geographiclib.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://git.code.sourceforge.net/p/geographiclib/code"
+  },
+  "url": "https://geographiclib.sourceforge.net",
+  "keywords": [
+    "geodesics",
+    "geometry",
+    "geographiclib",
+    "geography",
+    "geodesic problem",
+    "direct geodesic problem",
+    "inverse geodesic problem",
+    "geodesic calculator"
+  ],
+  "devDependencies": {
+    "mocha": "2.3.0"
+  },
+  "author": "Charles Karney <charles@karney.com>",
+  "contributors": [
+    "Yurij Mikhalevich <0@39.yt>"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://sourceforge.net/p/geographiclib/discussion/",
+    "email": "charles@karney.com"
+  }
+}

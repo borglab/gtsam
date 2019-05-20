@@ -2,9 +2,9 @@
  * \file GravityModel.hpp
  * \brief Header for GeographicLib::GravityModel class
  *
- * Copyright (c) Charles Karney (2011) <charles@karney.com> and licensed under
- * the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * Copyright (c) Charles Karney (2011-2016) <charles@karney.com> and licensed
+ * under the MIT/X11 License.  For more information, see
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #if !defined(GEOGRAPHICLIB_GRAVITYMODEL_HPP)
@@ -32,10 +32,10 @@ namespace GeographicLib {
    * models treat only the gravitational field exterior to the mass of the
    * earth.  When computing the field at points near (but above) the surface of
    * the earth a small correction can be applied to account for the mass of the
-   * atomsphere above the point in question; see \ref gravityatmos.
-   * Determining the geoid height entails correcting for the mass of the earth
-   * above the geoid.  The egm96 and egm2008 include separate correction terms
-   * to account for this mass.
+   * atmosphere above the point in question; see \ref gravityatmos.
+   * Determining the height of the geoid above the ellipsoid entails correcting
+   * for the mass of the earth above the geoid.  The egm96 and egm2008 include
+   * separate correction terms to account for this mass.
    *
    * Definitions and terminology (from Heiskanen and Moritz, Sec 2-13):
    * - \e V = gravitational potential;
@@ -51,13 +51,13 @@ namespace GeographicLib {
    * - <b>&gamma;</b> = &nabla;\e U;
    * - <b>&delta;</b> = &nabla;\e T = gravity disturbance vector
    *   = <b>g</b><sub><i>P</i></sub> &minus; <b>&gamma;</b><sub><i>P</i></sub>;
-   * - &delta;\e g = gravity disturbance = \e g<sub><i>P</i></sub> &minus;
+   * - &delta;\e g = gravity disturbance = <i>g</i><sub><i>P</i></sub> &minus;
    *   &gamma;<sub><i>P</i></sub>;
    * - &Delta;<b>g</b> = gravity anomaly vector = <b>g</b><sub><i>P</i></sub>
    *   &minus; <b>&gamma;</b><sub><i>Q</i></sub>; here the line \e PQ is
    *   perpendicular to ellipsoid and the potential at \e P equals the normal
    *   potential at \e Q;
-   * - &Delta;\e g = gravity anomaly = \e g<sub><i>P</i></sub> &minus;
+   * - &Delta;\e g = gravity anomaly = <i>g</i><sub><i>P</i></sub> &minus;
    *   &gamma;<sub><i>Q</i></sub>;
    * - (&xi;, &eta;) deflection of the vertical, the difference in
    *   directions of <b>g</b><sub><i>P</i></sub> and
@@ -66,7 +66,7 @@ namespace GeographicLib {
    * - \e x, \e y, \e z, local cartesian coordinates used to denote the east,
    *   north and up directions.
    *
-   * See \ref gravity for details of how to install the gravity model and the
+   * See \ref gravity for details of how to install the gravity models and the
    * data format.
    *
    * References:
@@ -97,7 +97,7 @@ namespace GeographicLib {
     void ReadMetadata(const std::string& name);
     Math::real InternalT(real X, real Y, real Z,
                          real& deltaX, real& deltaY, real& deltaZ,
-                         bool gradp, bool correct) const throw();
+                         bool gradp, bool correct) const;
     GravityModel(const GravityModel&); // copy constructor not allowed
     GravityModel& operator=(const GravityModel&); // nor copy assignment
 
@@ -200,12 +200,13 @@ namespace GeographicLib {
      *   (m s<sup>&minus;2</sup>).
      * @param[out] gz the upward component of the acceleration
      *   (m s<sup>&minus;2</sup>); this is usually negative.
-     * @return \e W the sum of the gravitational and centrifugal potentials.
+     * @return \e W the sum of the gravitational and centrifugal potentials
+     *   (m<sup>2</sup> s<sup>&minus;2</sup>).
      *
      * The function includes the effects of the earth's rotation.
      **********************************************************************/
     Math::real Gravity(real lat, real lon, real h,
-                       real& gx, real& gy, real& gz) const throw();
+                       real& gx, real& gy, real& gz) const;
 
     /**
      * Evaluate the gravity disturbance vector at an arbitrary point above (or
@@ -220,11 +221,12 @@ namespace GeographicLib {
      *   (m s<sup>&minus;2</sup>).
      * @param[out] deltaz the upward component of the disturbance vector
      *   (m s<sup>&minus;2</sup>).
-     * @return \e T the corresponding disturbing potential.
+     * @return \e T the corresponding disturbing potential
+     *   (m<sup>2</sup> s<sup>&minus;2</sup>).
      **********************************************************************/
     Math::real Disturbance(real lat, real lon, real h,
                            real& deltax, real& deltay, real& deltaz)
-      const throw();
+      const;
 
     /**
      * Evaluate the geoid height.
@@ -239,7 +241,7 @@ namespace GeographicLib {
      * results of the NGA codes are reproduced accurately.  Details are given
      * in \ref gravitygeoid.
      **********************************************************************/
-    Math::real GeoidHeight(real lat, real lon) const throw();
+    Math::real GeoidHeight(real lat, real lon) const;
 
     /**
      * Evaluate the components of the gravity anomaly vector using the
@@ -259,7 +261,7 @@ namespace GeographicLib {
      * approximations used here.  Details are given in \ref gravitygeoid.
      **********************************************************************/
     void SphericalAnomaly(real lat, real lon, real h,
-                          real& Dg01, real& xi, real& eta) const throw();
+                          real& Dg01, real& xi, real& eta) const;
     ///@}
 
     /** \name Compute gravity in geocentric coordinates
@@ -281,10 +283,10 @@ namespace GeographicLib {
      * @return \e W = \e V + &Phi; the sum of the gravitational and
      *   centrifugal potentials (m<sup>2</sup> s<sup>&minus;2</sup>).
      *
-     * This calls NormalGravity::U for  ReferenceEllipsoid().
+     * This calls NormalGravity::U for ReferenceEllipsoid().
      **********************************************************************/
     Math::real W(real X, real Y, real Z,
-                 real& gX, real& gY, real& gZ) const throw();
+                 real& gX, real& gY, real& gZ) const;
 
     /**
      * Evaluate the components of the acceleration due to gravity in geocentric
@@ -303,7 +305,7 @@ namespace GeographicLib {
      *   (m<sup>2</sup> s<sup>&minus;2</sup>).
      **********************************************************************/
     Math::real V(real X, real Y, real Z,
-                 real& GX, real& GY, real& GZ) const throw();
+                 real& GX, real& GY, real& GZ) const;
 
     /**
      * Evaluate the components of the gravity disturbance in geocentric
@@ -322,7 +324,7 @@ namespace GeographicLib {
      *   anomalous potential) (m<sup>2</sup> s<sup>&minus;2</sup>).
      **********************************************************************/
     Math::real T(real X, real Y, real Z,
-                 real& deltaX, real& deltaY, real& deltaZ) const throw()
+                 real& deltaX, real& deltaY, real& deltaZ) const
     { return InternalT(X, Y, Z, deltaX, deltaY, deltaZ, true, true); }
 
     /**
@@ -334,7 +336,7 @@ namespace GeographicLib {
      * @return \e T = \e W - \e U the disturbing potential (also called the
      *   anomalous potential) (m<sup>2</sup> s<sup>&minus;2</sup>).
      **********************************************************************/
-    Math::real T(real X, real Y, real Z) const throw() {
+    Math::real T(real X, real Y, real Z) const {
       real dummy;
       return InternalT(X, Y, Z, dummy, dummy, dummy, false, true);
     }
@@ -356,10 +358,10 @@ namespace GeographicLib {
      *   normal gravitational and centrifugal potentials
      *   (m<sup>2</sup> s<sup>&minus;2</sup>).
      *
-     * This calls NormalGravity::U for  ReferenceEllipsoid().
+     * This calls NormalGravity::U for ReferenceEllipsoid().
      **********************************************************************/
     Math::real U(real X, real Y, real Z,
-                 real& gammaX, real& gammaY, real& gammaZ) const throw()
+                 real& gammaX, real& gammaY, real& gammaZ) const
     { return _earth.U(X, Y, Z, gammaX, gammaY, gammaZ); }
 
     /**
@@ -374,9 +376,9 @@ namespace GeographicLib {
      * @return &Phi; the centrifugal potential (m<sup>2</sup>
      * s<sup>&minus;2</sup>).
      *
-     * This calls NormalGravity::Phi for  ReferenceEllipsoid().
+     * This calls NormalGravity::Phi for ReferenceEllipsoid().
      **********************************************************************/
-    Math::real Phi(real X, real Y, real& fX, real& fY) const throw()
+    Math::real Phi(real X, real Y, real& fX, real& fY) const
     { return _earth.Phi(X, Y, fX, fY); }
     ///@}
 
@@ -425,39 +427,39 @@ namespace GeographicLib {
     /**
      * @return the NormalGravity object for the reference ellipsoid.
      **********************************************************************/
-    const NormalGravity& ReferenceEllipsoid() const throw() { return _earth; }
+    const NormalGravity& ReferenceEllipsoid() const { return _earth; }
 
     /**
      * @return the description of the gravity model, if available, in the data
      *   file; if absent, return "NONE".
      **********************************************************************/
-    const std::string& Description() const throw() { return _description; }
+    const std::string& Description() const { return _description; }
 
     /**
      * @return date of the model; if absent, return "UNKNOWN".
      **********************************************************************/
-    const std::string& DateTime() const throw() { return _date; }
+    const std::string& DateTime() const { return _date; }
 
     /**
      * @return full file name used to load the gravity model.
      **********************************************************************/
-    const std::string& GravityFile() const throw() { return _filename; }
+    const std::string& GravityFile() const { return _filename; }
 
     /**
      * @return "name" used to load the gravity model (from the first argument
      *   of the constructor, but this may be overridden by the model file).
      **********************************************************************/
-    const std::string& GravityModelName() const throw() { return _name; }
+    const std::string& GravityModelName() const { return _name; }
 
     /**
      * @return directory used to load the gravity model.
      **********************************************************************/
-    const std::string& GravityModelDirectory() const throw() { return _dir; }
+    const std::string& GravityModelDirectory() const { return _dir; }
 
     /**
      * @return \e a the equatorial radius of the ellipsoid (meters).
      **********************************************************************/
-    Math::real MajorRadius() const throw() { return _earth.MajorRadius(); }
+    Math::real MajorRadius() const { return _earth.MajorRadius(); }
 
     /**
      * @return \e GM the mass constant of the model (m<sup>3</sup>
@@ -465,47 +467,48 @@ namespace GeographicLib {
      *   constant and \e M the mass of the earth (usually including the mass of
      *   the earth's atmosphere).
      **********************************************************************/
-    Math::real MassConstant() const throw() { return _GMmodel; }
+    Math::real MassConstant() const { return _GMmodel; }
 
     /**
      * @return \e GM the mass constant of the ReferenceEllipsoid()
      *   (m<sup>3</sup> s<sup>&minus;2</sup>).
      **********************************************************************/
-    Math::real ReferenceMassConstant() const throw()
+    Math::real ReferenceMassConstant() const
     { return _earth.MassConstant(); }
 
     /**
      * @return &omega; the angular velocity of the model and the
      *   ReferenceEllipsoid() (rad s<sup>&minus;1</sup>).
      **********************************************************************/
-    Math::real AngularVelocity() const throw()
+    Math::real AngularVelocity() const
     { return _earth.AngularVelocity(); }
 
     /**
      * @return \e f the flattening of the ellipsoid.
      **********************************************************************/
-    Math::real Flattening() const throw() { return _earth.Flattening(); }
+    Math::real Flattening() const { return _earth.Flattening(); }
     ///@}
 
     /**
      * @return the default path for gravity model data files.
      *
-     * This is the value of the environment variable GRAVITY_PATH, if set;
-     * otherwise, it is $GEOGRAPHICLIB_DATA/gravity if the environment variable
+     * This is the value of the environment variable
+     * GEOGRAPHICLIB_GRAVITY_PATH, if set; otherwise, it is
+     * $GEOGRAPHICLIB_DATA/gravity if the environment variable
      * GEOGRAPHICLIB_DATA is set; otherwise, it is a compile-time default
      * (/usr/local/share/GeographicLib/gravity on non-Windows systems and
-     * C:/Documents and Settings/All Users/Application
-     * Data/GeographicLib/gravity on Windows systems).
+     * C:/ProgramData/GeographicLib/gravity on Windows systems).
      **********************************************************************/
     static std::string DefaultGravityPath();
 
     /**
      * @return the default name for the gravity model.
      *
-     * This is the value of the environment variable GRAVITY_NAME, if set,
-     * otherwise, it is "egm96".  The GravityModel class does not use
-     * this function; it is just provided as a convenience for a calling
-     * program when constructing a GravityModel object.
+     * This is the value of the environment variable
+     * GEOGRAPHICLIB_GRAVITY_NAME, if set; otherwise, it is "egm96".  The
+     * GravityModel class does not use this function; it is just provided as a
+     * convenience for a calling program when constructing a GravityModel
+     * object.
      **********************************************************************/
     static std::string DefaultGravityName();
   };

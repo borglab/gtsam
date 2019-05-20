@@ -20,6 +20,7 @@
 #pragma once
 
 #include <gtsam/slam/SmartFactorBase.h>
+#include <gtsam/slam/SmartFactorParams.h>
 
 #include <gtsam/geometry/triangulation.h>
 #include <gtsam/inference/Symbol.h>
@@ -30,103 +31,6 @@
 #include <vector>
 
 namespace gtsam {
-
-/// Linearization mode: what factor to linearize to
-enum LinearizationMode {
-  HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
-};
-
-/// How to manage degeneracy
-enum DegeneracyMode {
-  IGNORE_DEGENERACY, ZERO_ON_DEGENERACY, HANDLE_INFINITY
-};
-
-/*
- *  Parameters for the smart projection factors
- */
-struct GTSAM_EXPORT SmartProjectionParams {
-
-  LinearizationMode linearizationMode; ///< How to linearize the factor
-  DegeneracyMode degeneracyMode; ///< How to linearize the factor
-
-  /// @name Parameters governing the triangulation
-  /// @{
-  TriangulationParameters triangulation;
-  double retriangulationThreshold; ///< threshold to decide whether to re-triangulate
-  /// @}
-
-  /// @name Parameters governing how triangulation result is treated
-  /// @{
-  bool throwCheirality; ///< If true, re-throws Cheirality exceptions (default: false)
-  bool verboseCheirality; ///< If true, prints text for Cheirality exceptions (default: false)
-  /// @}
-
-  // Constructor
-  SmartProjectionParams(LinearizationMode linMode = HESSIAN,
-      DegeneracyMode degMode = IGNORE_DEGENERACY, bool throwCheirality = false,
-      bool verboseCheirality = false) :
-      linearizationMode(linMode), degeneracyMode(degMode), retriangulationThreshold(
-          1e-5), throwCheirality(throwCheirality), verboseCheirality(
-          verboseCheirality) {
-  }
-
-  virtual ~SmartProjectionParams() {
-  }
-
-  void print(const std::string& str) const {
-    std::cout << "linearizationMode: " << linearizationMode << "\n";
-    std::cout << "   degeneracyMode: " << degeneracyMode << "\n";
-    std::cout << triangulation << std::endl;
-  }
-
-  LinearizationMode getLinearizationMode() const {
-    return linearizationMode;
-  }
-  DegeneracyMode getDegeneracyMode() const {
-    return degeneracyMode;
-  }
-  TriangulationParameters getTriangulationParameters() const {
-    return triangulation;
-  }
-  bool getVerboseCheirality() const {
-    return verboseCheirality;
-  }
-  bool getThrowCheirality() const {
-    return throwCheirality;
-  }
-  void setLinearizationMode(LinearizationMode linMode) {
-    linearizationMode = linMode;
-  }
-  void setDegeneracyMode(DegeneracyMode degMode) {
-    degeneracyMode = degMode;
-  }
-  void setRankTolerance(double rankTol) {
-    triangulation.rankTolerance = rankTol;
-  }
-  void setEnableEPI(bool enableEPI) {
-    triangulation.enableEPI = enableEPI;
-  }
-  void setLandmarkDistanceThreshold(double landmarkDistanceThreshold) {
-    triangulation.landmarkDistanceThreshold = landmarkDistanceThreshold;
-  }
-  void setDynamicOutlierRejectionThreshold(double dynOutRejectionThreshold) {
-    triangulation.dynamicOutlierRejectionThreshold = dynOutRejectionThreshold;
-  }
-
-private:
-
-  /// Serialization function
-  friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
-    ar & BOOST_SERIALIZATION_NVP(linearizationMode);
-    ar & BOOST_SERIALIZATION_NVP(degeneracyMode);
-    ar & BOOST_SERIALIZATION_NVP(triangulation);
-    ar & BOOST_SERIALIZATION_NVP(retriangulationThreshold);
-    ar & BOOST_SERIALIZATION_NVP(throwCheirality);
-    ar & BOOST_SERIALIZATION_NVP(verboseCheirality);
-  }
-};
 
 /**
  * SmartProjectionFactor: triangulates point and keeps an estimate of it around.
@@ -157,7 +61,7 @@ protected:
   /// @name Caching triangulation
   /// @{
   mutable TriangulationResult result_; ///< result from triangulateSafe
-  mutable std::vector<Pose3> cameraPosesTriangulation_; ///< current triangulation poses
+  mutable std::vector<Pose3, Eigen::aligned_allocator<Pose3> > cameraPosesTriangulation_; ///< current triangulation poses
   /// @}
 
 public:
@@ -275,16 +179,13 @@ public:
 
     size_t numKeys = this->keys_.size();
     // Create structures for Hessian Factors
-    std::vector<Key> js;
+    KeyVector js;
     std::vector<Matrix> Gs(numKeys * (numKeys + 1) / 2);
     std::vector<Vector> gs(numKeys);
 
-    if (this->measured_.size() != cameras.size()) {
-      std::cout
-          << "SmartProjectionHessianFactor: this->measured_.size() inconsistent with input"
-          << std::endl;
-      exit(1);
-    }
+    if (this->measured_.size() != cameras.size())
+      throw std::runtime_error("SmartProjectionHessianFactor: this->measured_"
+                               ".size() inconsistent with input");
 
     triangulateSafe(cameras);
 
@@ -299,7 +200,7 @@ public:
     }
 
     // Jacobian could be 3D Point3 OR 2D Unit3, difference is E.cols().
-    std::vector<typename Base::MatrixZD> Fblocks;
+    std::vector<typename Base::MatrixZD, Eigen::aligned_allocator<typename Base::MatrixZD> > Fblocks;
     Matrix E;
     Vector b;
     computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
@@ -433,7 +334,7 @@ public:
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
   void computeJacobiansWithTriangulatedPoint(
-      std::vector<typename Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
+      std::vector<typename Base::MatrixZD, Eigen::aligned_allocator<typename Base::MatrixZD> >& Fblocks, Matrix& E, Vector& b,
       const Cameras& cameras) const {
 
     if (!result_) {
@@ -450,7 +351,7 @@ public:
 
   /// Version that takes values, and creates the point
   bool triangulateAndComputeJacobians(
-      std::vector<typename Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
+      std::vector<typename Base::MatrixZD, Eigen::aligned_allocator<typename Base::MatrixZD> >& Fblocks, Matrix& E, Vector& b,
       const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
@@ -461,7 +362,7 @@ public:
 
   /// takes values
   bool triangulateAndComputeJacobiansSVD(
-      std::vector<typename Base::MatrixZD>& Fblocks, Matrix& Enull, Vector& b,
+      std::vector<typename Base::MatrixZD, Eigen::aligned_allocator<typename Base::MatrixZD> >& Fblocks, Matrix& Enull, Vector& b,
       const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
@@ -528,19 +429,19 @@ public:
   }
 
   /// Is result valid?
-  bool isValid() const {
-    return result_;
-  }
+  bool isValid() const { return result_.valid(); }
 
   /** return the degenerate state */
-  bool isDegenerate() const {
-    return result_.degenerate();
-  }
+  bool isDegenerate() const { return result_.degenerate(); }
 
   /** return the cheirality status flag */
-  bool isPointBehindCamera() const {
-    return result_.behindCamera();
-  }
+  bool isPointBehindCamera() const { return result_.behindCamera(); }
+
+  /** return the outlier state */
+  bool isOutlier() const { return result_.outlier(); }
+
+  /** return the farPoint state */
+  bool isFarPoint() const { return result_.farPoint(); }
 
 private:
 

@@ -9,7 +9,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 using System;
 using System.Collections.Generic;
@@ -133,6 +133,9 @@ namespace Projections
                 mc.Field(lon, out x, out y, out z, out bxt, out byt, out bzt);
                 if (bx != x || by != y || bz != z )
                     throw new Exception("Error in MagneticCircle.Field (2)");
+
+                double dtest = Utility.FractionalYear("2015.34");
+                dtest = Utility.FractionalYear("2015-07-31");
 
                 MessageBox.Show("No errors detected", "OK", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }

@@ -18,8 +18,6 @@
     VERIFY(threw && "should have thrown bad_alloc: " #a);     \
   }
 
-typedef DenseIndex Index;
-
 template<typename MatrixType>
 void triggerMatrixBadAlloc(Index rows, Index cols)
 {

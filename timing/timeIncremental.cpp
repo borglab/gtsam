@@ -153,10 +153,10 @@ int main(int argc, char *argv[]) {
         if(!isam2.getLinearizationPoint().exists(lmKey))
         {
           Pose pose = isam2.calculateEstimate<Pose>(poseKey);
-          Rot2 measuredBearing = measurement->measured().first;
-          double measuredRange = measurement->measured().second;
-          newVariables.insert(lmKey, 
-            pose.transform_from(measuredBearing.rotate(Point2(measuredRange, 0.0))));
+          Rot2 measuredBearing = measurement->measured().bearing();
+          double measuredRange = measurement->measured().range();
+          newVariables.insert(lmKey,
+            pose.transformFrom(measuredBearing.rotate(Point2(measuredRange, 0.0))));
         }
       }
       else
@@ -231,7 +231,7 @@ int main(int argc, char *argv[]) {
       for (Key key2: boost::adaptors::reverse(values.keys())) {
         if(i != j) {
           gttic_(jointMarginalInformation);
-          std::vector<Key> keys(2);
+          KeyVector keys(2);
           keys[0] = key1;
           keys[1] = key2;
           JointMarginal info = marginals.jointMarginalInformation(keys);

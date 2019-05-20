@@ -24,12 +24,15 @@ namespace gtsam {
 /// Simple trajectory simulator.
 class Scenario {
  public:
+  /// virtual destructor
+  virtual ~Scenario() {}
+
   // Quantities a Scenario needs to specify:
 
-  virtual Pose3 pose(double t) const = 0;
-  virtual Vector3 omega_b(double t) const = 0;
-  virtual Vector3 velocity_n(double t) const = 0;
-  virtual Vector3 acceleration_n(double t) const = 0;
+  virtual Pose3 pose(double t) const = 0;  ///< pose at time t
+  virtual Vector3 omega_b(double t) const = 0;  ///< angular velocity in body frame
+  virtual Vector3 velocity_n(double t) const = 0;  ///< velocity at time t, in nav frame
+  virtual Vector3 acceleration_n(double t) const = 0;  ///< acceleration in nav frame
 
   // Derived quantities:
 
@@ -57,10 +60,13 @@ class Scenario {
 class ConstantTwistScenario : public Scenario {
  public:
   /// Construct scenario with constant twist [w,v]
-  ConstantTwistScenario(const Vector3& w, const Vector3& v)
-      : twist_((Vector6() << w, v).finished()), a_b_(w.cross(v)) {}
+  ConstantTwistScenario(const Vector3& w, const Vector3& v,
+                        const Pose3& nTb0 = Pose3())
+      : twist_((Vector6() << w, v).finished()), a_b_(w.cross(v)), nTb0_(nTb0) {}
 
-  Pose3 pose(double t) const override { return Pose3::Expmap(twist_ * t); }
+  Pose3 pose(double t) const override {
+    return nTb0_ * Pose3::Expmap(twist_ * t);
+  }
   Vector3 omega_b(double t) const override { return twist_.head<3>(); }
   Vector3 velocity_n(double t) const override {
     return rotation(t).matrix() * twist_.tail<3>();
@@ -70,6 +76,7 @@ class ConstantTwistScenario : public Scenario {
  private:
   const Vector6 twist_;
   const Vector3 a_b_;  // constant centripetal acceleration in body = w_b * v_b
+  const Pose3 nTb0_;
 };
 
 /// Accelerating from an arbitrary initial state, with optional rotation

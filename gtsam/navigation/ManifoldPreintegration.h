@@ -30,7 +30,7 @@ namespace gtsam {
  * IMU pre-integration on NavSatet manifold.
  * This corresponds to the original RSS paper (with one difference: V is rotated)
  */
-class ManifoldPreintegration : public PreintegrationBase {
+class GTSAM_EXPORT ManifoldPreintegration : public PreintegrationBase {
  protected:
 
   /**

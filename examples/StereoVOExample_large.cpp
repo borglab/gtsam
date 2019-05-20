@@ -50,7 +50,7 @@ int main(int argc, char** argv){
   string calibration_loc = findExampleDataFile("VO_calibration.txt");
   string pose_loc = findExampleDataFile("VO_camera_poses_large.txt");
   string factor_loc = findExampleDataFile("VO_stereo_factors_large.txt");
-  
+
   //read camera calibration info from file
   // focal lengths fx, fy, skew s, principal point u0, v0, baseline b
   double fx, fy, s, u0, v0, b;
@@ -60,7 +60,7 @@ int main(int argc, char** argv){
 
   //create stereo camera calibration object
   const Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(fx,fy,s,u0,v0,b));
-  
+
   ifstream pose_file(pose_loc.c_str());
   cout << "Reading camera poses" << endl;
   int pose_id;
@@ -72,7 +72,7 @@ int main(int argc, char** argv){
     }
     initial_estimate.insert(Symbol('x', pose_id), Pose3(m));
   }
-  
+
   // camera and landmark keys
   size_t x, l;
 
@@ -83,14 +83,14 @@ int main(int argc, char** argv){
   cout << "Reading stereo factors" << endl;
   //read stereo measurement details from file and use to create and add GenericStereoFactor objects to the graph representation
   while (factor_file >> x >> l >> uL >> uR >> v >> X >> Y >> Z) {
-    graph.push_back(
-        GenericStereoFactor<Pose3, Point3>(StereoPoint2(uL, uR, v), model,
-            Symbol('x', x), Symbol('l', l), K));
+    graph.emplace_shared<
+        GenericStereoFactor<Pose3, Point3> >(StereoPoint2(uL, uR, v), model,
+            Symbol('x', x), Symbol('l', l), K);
     //if the landmark variable included in this factor has not yet been added to the initial variable value estimate, add it
     if (!initial_estimate.exists(Symbol('l', l))) {
       Pose3 camPose = initial_estimate.at<Pose3>(Symbol('x', x));
-      //transform_from() transforms the input Point3 from the camera pose space, camPose, to the global space
-      Point3 worldPoint = camPose.transform_from(Point3(X, Y, Z));
+      //transformFrom() transforms the input Point3 from the camera pose space, camPose, to the global space
+      Point3 worldPoint = camPose.transformFrom(Point3(X, Y, Z));
       initial_estimate.insert(Symbol('l', l), worldPoint);
     }
   }
@@ -99,7 +99,7 @@ int main(int argc, char** argv){
   //constrain the first pose such that it cannot change from its original value during optimization
   // NOTE: NonlinearEquality forces the optimizer to use QR rather than Cholesky
   // QR is much slower than Cholesky, but numerically more stable
-  graph.push_back(NonlinearEquality<Pose3>(Symbol('x',1),first_pose));
+  graph.emplace_shared<NonlinearEquality<Pose3> >(Symbol('x',1),first_pose);
 
   cout << "Optimizing" << endl;
   //create Levenberg-Marquardt optimizer to optimize the factor graph

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -33,6 +33,11 @@ struct StaticMethod: public MethodBase {
       os << "static " << m.returnVals_[i] << " " << m.name_ << m.argLists_[i];
     return os;
   }
+
+  void emit_cython_pxd(FileWriter& file, const Class& cls) const;
+  void emit_cython_wrapper_pxd(FileWriter& file, const Class& cls) const;
+  void emit_cython_pyx(FileWriter& file, const Class& cls) const;
+  void emit_cython_pyx_no_overload(FileWriter& file, const Class& cls) const;
 
 protected:
 

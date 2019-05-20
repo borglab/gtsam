@@ -26,10 +26,10 @@ origin = Pose2;
 graph.add(gtsam.PriorFactorPose2(10, origin, noisePrior))
 graph.add(gtsam.PriorFactorPose2(20, origin, noisePrior))
 graph.add(gtsam.PriorFactorPose2(100, origin, noisePrior))
-graph.add(DeltaFactor(10, 1, b1.transform_to(l1), noiseDelta))
-graph.add(DeltaFactor(20, 1, b2.transform_to(l2), noiseDelta))
-graph.add(DeltaFactorBase(100,10, 200,2, b1.transform_to(l2), noiseDelta))
-graph.add(DeltaFactorBase(200,20, 100,1, b2.transform_to(l1), noiseDelta))
+graph.add(DeltaFactor(10, 1, b1.transformTo(l1), noiseDelta))
+graph.add(DeltaFactor(20, 1, b2.transformTo(l2), noiseDelta))
+graph.add(DeltaFactorBase(100,10, 200,2, b1.transformTo(l2), noiseDelta))
+graph.add(DeltaFactorBase(200,20, 100,1, b2.transformTo(l1), noiseDelta))
 graph.add(OdometryFactorBase(100,10,200,20, Pose2(2,0,0), noiseOdom))
 
 % Initial values

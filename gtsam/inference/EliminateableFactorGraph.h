@@ -99,7 +99,7 @@ namespace gtsam {
 
     /** Do sequential elimination of all variables to produce a Bayes net.  If an ordering is not
      *  provided, the ordering provided by COLAMD will be used.
-     *  
+     *
      *  <b> Example - Full Cholesky elimination in COLAMD order: </b>
      *  \code
      *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(EliminateCholesky);
@@ -108,12 +108,12 @@ namespace gtsam {
      *  <b> Example - METIS ordering for elimination
      *  \code
      *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(OrderingType::METIS);
-     *  
+     *
      *  <b> Example - Full QR elimination in specified order:
      *  \code
      *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(EliminateQR, myOrdering);
      *  \endcode
-     *  
+     *
      *  <b> Example - Reusing an existing VariableIndex to improve performance, and using COLAMD ordering: </b>
      *  \code
      *  VariableIndex varIndex(graph); // Build variable index
@@ -130,17 +130,17 @@ namespace gtsam {
     /** Do multifrontal elimination of all variables to produce a Bayes tree.  If an ordering is not
      *  provided, the ordering will be computed using either COLAMD or METIS, dependeing on
      *  the parameter orderingType (Ordering::COLAMD or Ordering::METIS)
-     *  
+     *
      *  <b> Example - Full Cholesky elimination in COLAMD order: </b>
      *  \code
      *  boost::shared_ptr<GaussianBayesTree> result = graph.eliminateMultifrontal(EliminateCholesky);
      *  \endcode
-     *  
+     *
      *  <b> Example - Full QR elimination in specified order:
      *  \code
      *  boost::shared_ptr<GaussianBayesTree> result = graph.eliminateMultifrontal(EliminateQR, myOrdering);
      *  \endcode
-     *  
+     *
      *  <b> Example - Reusing an existing VariableIndex to improve performance, and using COLAMD ordering: </b>
      *  \code
      *  VariableIndex varIndex(graph); // Build variable index
@@ -170,7 +170,7 @@ namespace gtsam {
      *  factor graph, and \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BayesNetType>, boost::shared_ptr<FactorGraphType> >
       eliminatePartialSequential(
-      const std::vector<Key>& variables,
+      const KeyVector& variables,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
@@ -183,21 +183,21 @@ namespace gtsam {
       const Ordering& ordering,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
-    
+
     /** Do multifrontal elimination of the given \c variables in an ordering computed by COLAMD to
      *  produce a Bayes net and a remaining factor graph.  This computes the factorization \f$ p(X)
      *  = p(A|B) p(B) \f$, where \f$ A = \f$ \c variables, \f$ X \f$ is all the variables in the
      *  factor graph, and \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> >
       eliminatePartialMultifrontal(
-      const std::vector<Key>& variables,
+      const KeyVector& variables,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
     /** Compute the marginal of the requested variables and return the result as a Bayes net.
      *  @param variables Determines the variables whose marginal to compute, if provided as an
      *         Ordering they will be ordered in the returned BayesNet as specified, and if provided
-     *         as a vector<Key> they will be ordered using constrained COLAMD.
+     *         as a KeyVector they will be ordered using constrained COLAMD.
      *  @param marginalizedVariableOrdering Optional ordering for the variables being marginalized
      *         out, i.e. all variables not in \c variables.  If this is boost::none, the ordering
      *         will be computed with COLAMD.
@@ -206,7 +206,7 @@ namespace gtsam {
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
     boost::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
-      boost::variant<const Ordering&, const std::vector<Key>&> variables,
+      boost::variant<const Ordering&, const KeyVector&> variables,
       OptionalOrdering marginalizedVariableOrdering = boost::none,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
@@ -214,7 +214,7 @@ namespace gtsam {
     /** Compute the marginal of the requested variables and return the result as a Bayes tree.
      *  @param variables Determines the variables whose marginal to compute, if provided as an
      *         Ordering they will be ordered in the returned BayesNet as specified, and if provided
-     *         as a vector<Key> they will be ordered using constrained COLAMD.
+     *         as a KeyVector they will be ordered using constrained COLAMD.
      *  @param marginalizedVariableOrdering Optional ordering for the variables being marginalized
      *         out, i.e. all variables not in \c variables.  If this is boost::none, the ordering
      *         will be computed with COLAMD.
@@ -223,14 +223,14 @@ namespace gtsam {
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
     boost::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
-      boost::variant<const Ordering&, const std::vector<Key>&> variables,
+      boost::variant<const Ordering&, const KeyVector&> variables,
       OptionalOrdering marginalizedVariableOrdering = boost::none,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
     /** Compute the marginal factor graph of the requested variables. */
     boost::shared_ptr<FactorGraphType> marginal(
-      const std::vector<Key>& variables,
+      const KeyVector& variables,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 

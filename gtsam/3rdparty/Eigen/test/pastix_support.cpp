@@ -7,6 +7,8 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+#define EIGEN_NO_DEBUG_SMALL_PRODUCT_BLOCKS
 #include "sparse_solver.h"
 #include <Eigen/PaStiXSupport>
 #include <unsupported/Eigen/SparseExtra>
@@ -25,6 +27,14 @@ template<typename T> void test_pastix_T()
   check_sparse_spd_solving(pastix_llt_upper);
   check_sparse_spd_solving(pastix_ldlt_upper);
   check_sparse_square_solving(pastix_lu);
+
+  // Some compilation check:
+  pastix_llt_lower.iparm();
+  pastix_llt_lower.dparm();
+  pastix_ldlt_lower.iparm();
+  pastix_ldlt_lower.dparm();
+  pastix_lu.iparm();
+  pastix_lu.dparm();
 }
 
 // There is no support for selfadjoint matrices with PaStiX. 

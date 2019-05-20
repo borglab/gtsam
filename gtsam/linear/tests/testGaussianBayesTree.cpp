@@ -287,7 +287,7 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
   VectorValues actual = bt.optimizeGradientSearch();
 
   // Check that points agree
-  FastVector<Key> keys = list_of(0)(1)(2)(3)(4);
+  KeyVector keys {0, 1, 2, 3, 4};
   EXPECT(assert_equal(expected, actual.vector(keys), 1e-5));
   EXPECT(assert_equal(expectedFromBN, actual, 1e-5));
 
@@ -297,6 +297,29 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
   EXPECT(newError < origError);
 }
 
+/* ************************************************************************* */
+TEST(GaussianBayesTree, determinant_and_smallestEigenvalue) {
+
+  // create small factor graph
+  GaussianFactorGraph fg;
+  Key x1 = 2, x2 = 0, l1 = 1;
+  SharedDiagonal unit2 = noiseModel::Unit::Create(2);
+  fg += JacobianFactor(x1, 10 * I_2x2, -1.0 * Vector::Ones(2), unit2);
+  fg += JacobianFactor(x2, 10 * I_2x2, x1, -10 * I_2x2, Vector2(2.0, -1.0), unit2);
+  fg += JacobianFactor(l1, 5 * I_2x2, x1, -5 * I_2x2, Vector2(0.0, 1.0), unit2);
+  fg += JacobianFactor(x2, -5 * I_2x2, l1, 5 * I_2x2, Vector2(-1.0, 1.5), unit2);
+
+  // create corresponding Bayes tree:
+  boost::shared_ptr<gtsam::GaussianBayesTree> bt = fg.eliminateMultifrontal();
+  Matrix H = fg.hessian().first;
+
+  // test determinant
+  // NOTE: the hessian of the factor graph is H = R'R where R is the matrix encoded by the bayes tree,
+  // for this reason we have to take the sqrt
+  double expectedDeterminant = sqrt(H.determinant()); // determinant computed from full matrix
+  double actualDeterminant = bt->determinant();
+  EXPECT_DOUBLES_EQUAL(expectedDeterminant,actualDeterminant,expectedDeterminant*1e-6);// relative tolerance
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

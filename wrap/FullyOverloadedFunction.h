@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -19,6 +19,7 @@
 #pragma once
 
 #include "OverloadedFunction.h"
+#include <array>
 
 namespace wrap {
 
@@ -27,7 +28,7 @@ namespace wrap {
  */
 class SignatureOverloads: public ArgumentOverloads {
 
-protected:
+public:
 
   std::vector<ReturnValue> returnVals_;
 
@@ -78,8 +79,8 @@ public:
       if (argLCount != nrOverloads() - 1)
         proxyFile.oss << ", ";
       else
-        proxyFile.oss << " : returns " << returnValue(0).return_type(false)
-            << std::endl;
+        proxyFile.oss << " : returns " << returnValue(0).returnType()
+                      << std::endl;
       argLCount++;
     }
   }
@@ -90,8 +91,8 @@ public:
     for(ArgumentList argList: argLists_) {
       proxyFile.oss << "%";
       argList.emit_prototype(proxyFile, name);
-      proxyFile.oss << " : returns " << returnVals_[i++].return_type(false)
-          << std::endl;
+      proxyFile.oss << " : returns " << returnVals_[i++].returnType()
+                    << std::endl;
     }
   }
 
@@ -116,6 +117,19 @@ public:
     return first;
   }
 
+  // emit cython pyx function call
+  std::string pyx_functionCall(const std::string& caller, const std::string& funcName,
+                        size_t iOverload) const;
+
+  /// Cython: Rename functions which names are python keywords
+  static const std::array<std::string, 2> pythonKeywords;
+  static std::string pyRename(const std::string& name) {
+    if (std::find(pythonKeywords.begin(), pythonKeywords.end(), name) ==
+        pythonKeywords.end())
+      return name;
+    else
+      return name + "_";
+  }
 };
 
 // Templated checking functions

@@ -16,7 +16,7 @@ namespace example_UTMUPS
                     bool northp;
                     double x, y;
                     UTMUPS.Forward(lat, lon, out zone, out northp, out x, out y, -1, true);
-                    string zonestr = UTMUPS.EncodeZone(zone, northp);
+                    string zonestr = UTMUPS.EncodeZone(zone, northp, true);
                     Console.WriteLine(String.Format("{0} {1} {2}", zonestr, x, y));
                 }
                 {

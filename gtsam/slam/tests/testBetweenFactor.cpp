@@ -1,6 +1,6 @@
 /**
  * @file    testBetweenFactor.cpp
- * @brief  
+ * @brief
  * @author Duy-Nguyen Ta
  * @date    Aug 2, 2013
  */

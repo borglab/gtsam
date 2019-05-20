@@ -132,6 +132,8 @@ public:
    * Ad_pose is 3*3 matrix that when applied to twist xi \f$ [T_x,T_y,\theta] \f$, returns Ad_pose(xi)
    */
   Matrix3 AdjointMap() const;
+
+  /// Apply AdjointMap to twist xi
   inline Vector3 Adjoint(const Vector3& xi) const {
     return AdjointMap()*xi;
   }
@@ -140,6 +142,24 @@ public:
    * Compute the [ad(w,v)] operator for SE2 as in [Kobilarov09siggraph], pg 19
    */
   static Matrix3 adjointMap(const Vector3& v);
+
+  /**
+   * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
+   */
+  static Vector3 adjoint(const Vector3& xi, const Vector3& y) {
+    return adjointMap(xi) * y;
+  }
+
+  /**
+   * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
+   */
+  static Vector3 adjointTranspose(const Vector3& xi, const Vector3& y) {
+    return adjointMap(xi).transpose() * y;
+  }
+
+  // temporary fix for wrappers until case issue is resolved
+  static Matrix3 adjointMap_(const Vector3 &xi) { return adjointMap(xi);}
+  static Vector3 adjoint_(const Vector3 &xi, const Vector3 &y) { return adjoint(xi, y);}
 
   /**
    * wedge for SE(2):
@@ -175,17 +195,17 @@ public:
   /// @{
 
   /** Return point coordinates in pose coordinate frame */
-  Point2 transform_to(const Point2& point,
-      OptionalJacobian<2, 3> H1 = boost::none,
-      OptionalJacobian<2, 2> H2 = boost::none) const;
+  Point2 transformTo(const Point2& point,
+      OptionalJacobian<2, 3> Dpose = boost::none,
+      OptionalJacobian<2, 2> Dpoint = boost::none) const;
 
   /** Return point coordinates in global frame */
-  Point2 transform_from(const Point2& point,
-      OptionalJacobian<2, 3> H1 = boost::none,
-      OptionalJacobian<2, 2> H2 = boost::none) const;
+  Point2 transformFrom(const Point2& point,
+      OptionalJacobian<2, 3> Dpose = boost::none,
+      OptionalJacobian<2, 2> Dpoint = boost::none) const;
 
-  /** syntactic sugar for transform_from */
-  inline Point2 operator*(const Point2& point) const { return transform_from(point);}
+  /** syntactic sugar for transformFrom */
+  inline Point2 operator*(const Point2& point) const { return transformFrom(point);}
 
   /// @}
   /// @name Standard Interface
@@ -269,7 +289,23 @@ public:
 
   /// @}
 
-private:
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  /// @name Deprecated
+  /// @{
+  Point2 transform_from(const Point2& point,
+                        OptionalJacobian<2, 3> Dpose = boost::none,
+                        OptionalJacobian<2, 2> Dpoint = boost::none) const {
+    return transformFrom(point, Dpose, Dpoint);
+  }
+  Point2 transform_to(const Point2& point,
+                      OptionalJacobian<2, 3> Dpose = boost::none,
+                      OptionalJacobian<2, 2> Dpoint = boost::none) const {
+    return transformTo(point, Dpose, Dpoint);
+  }
+    /// @}
+#endif
+
+ private:
 
   // Serialization function
   friend class boost::serialization::access;
@@ -278,17 +314,22 @@ private:
     ar & BOOST_SERIALIZATION_NVP(t_);
     ar & BOOST_SERIALIZATION_NVP(r_);
   }
+
+public:
+  // Align for Point2, which is either derived from, or is typedef, of Vector2
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 }; // Pose2
 
 /** specialization for pose2 wedge function (generic template in Lie.h) */
 template <>
 inline Matrix wedge<Pose2>(const Vector& xi) {
-  return Pose2::wedge(xi(0),xi(1),xi(2));
+  // NOTE(chris): Need eval() as workaround for Apple clang + avx2.
+  return Matrix(Pose2::wedge(xi(0),xi(1),xi(2))).eval();
 }
 
 /**
  * Calculate pose between a vector of 2D point correspondences (p,q)
- * where q = Pose2::transform_from(p) = t + R*p
+ * where q = Pose2::transformFrom(p) = t + R*p
  */
 typedef std::pair<Point2,Point2> Point2Pair;
 GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);

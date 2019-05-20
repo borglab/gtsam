@@ -51,14 +51,14 @@ struct LPPolicy {
          ++it) {
       size_t dim = lp.cost.getDim(it);
       Vector b = xk.at(*it) - lp.cost.getA(it).transpose();  // b = xk-g
-      graph.push_back(JacobianFactor(*it, Matrix::Identity(dim, dim), b));
+      graph.emplace_shared<JacobianFactor>(*it, Matrix::Identity(dim, dim), b);
     }
 
     KeySet allKeys = lp.inequalities.keys();
     allKeys.merge(lp.equalities.keys());
     allKeys.merge(KeySet(lp.cost.keys()));
     // Add corresponding factors for all variables that are not explicitly in
-    // the cost function. Gradients of the cost function wrt to these variables 
+    // the cost function. Gradients of the cost function wrt to these variables
     // are zero (g=0), so b=xk
     if (lp.cost.keys().size() != allKeys.size()) {
       KeySet difference;
@@ -67,8 +67,7 @@ struct LPPolicy {
                           std::inserter(difference, difference.end()));
       for (Key k : difference) {
         size_t dim = lp.constrainedKeyDimMap().at(k);
-        graph.push_back(
-            JacobianFactor(k, Matrix::Identity(dim, dim), xk.at(k)));
+        graph.emplace_shared<JacobianFactor>(k, Matrix::Identity(dim, dim), xk.at(k));
       }
     }
     return graph;

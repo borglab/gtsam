@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -31,7 +31,7 @@ typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
  * @deprecated: SimpleCamera for backwards compatability with GTSAM 3.x
  * Use PinholeCameraCal3_S2 instead
  */
-class SimpleCamera : public PinholeCameraCal3_S2 {
+class GTSAM_EXPORT SimpleCamera : public PinholeCameraCal3_S2 {
 
   typedef PinholeCamera<Cal3_S2> Base;
   typedef boost::shared_ptr<SimpleCamera> shared_ptr;

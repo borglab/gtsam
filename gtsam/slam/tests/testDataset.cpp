@@ -16,8 +16,8 @@
  */
 
 
-#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/dataset.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -25,6 +25,9 @@
 #include <boost/algorithm/string.hpp>
 
 #include <CppUnitLite/TestHarness.h>
+
+#include <iostream>
+#include <sstream>
 
 using namespace gtsam::symbol_shorthand;
 using namespace std;
@@ -37,6 +40,37 @@ TEST(dataSet, findExampleDataFile) {
   string actual_end = actual.substr(actual.size() - expected_end.size(), expected_end.size());
   boost::replace_all(actual_end, "\\", "/"); // Convert directory separators to forward-slash
   EXPECT(assert_equal(expected_end, actual_end));
+}
+
+/* ************************************************************************* */
+TEST( dataSet, parseVertex)
+{
+  const string str = "VERTEX2 1 2.000000 3.000000 4.000000";
+  istringstream is(str);
+  string tag;
+  EXPECT(is >> tag);
+  const auto actual = parseVertex(is, tag);
+  EXPECT(actual);
+  if (actual) {
+    EXPECT_LONGS_EQUAL(1, actual->first);
+    EXPECT(assert_equal(Pose2(2, 3, 4), actual->second));
+  }
+}
+
+/* ************************************************************************* */
+TEST( dataSet, parseEdge)
+{
+  const string str = "EDGE2 0 1 2.000000 3.000000 4.000000";
+  istringstream is(str);
+  string tag;
+  EXPECT(is >> tag);
+  const auto actual = parseEdge(is, tag);
+  EXPECT(actual);
+  if (actual) {
+    pair<Key, Key> expected(0, 1);
+    EXPECT(expected == actual->first);
+    EXPECT(assert_equal(Pose2(2, 3, 4), actual->second));
+  }
 }
 
 /* ************************************************************************* */
@@ -112,81 +146,90 @@ TEST( dataSet, readG2o)
 
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Precisions(Vector3(44.721360, 44.721360, 30.901699));
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.add(BetweenFactor<Pose2>(0, 1, Pose2(1.030390, 0.011350, -0.081596), model));
-  expectedGraph.add(BetweenFactor<Pose2>(1, 2, Pose2(1.013900, -0.058639, -0.220291), model));
-  expectedGraph.add(BetweenFactor<Pose2>(2, 3, Pose2(1.027650, -0.007456, -0.043627), model));
-  expectedGraph.add(BetweenFactor<Pose2>(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model));
-  expectedGraph.add(BetweenFactor<Pose2>(4, 5, Pose2(1.016030, 0.014565, -0.030930), model));
-  expectedGraph.add(BetweenFactor<Pose2>(5, 6, Pose2(1.023890, 0.006808, -0.007452), model));
-  expectedGraph.add(BetweenFactor<Pose2>(6, 7, Pose2(0.957734, 0.003159, 0.082836), model));
-  expectedGraph.add(BetweenFactor<Pose2>(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model));
-  expectedGraph.add(BetweenFactor<Pose2>(8, 9, Pose2(1.023440, 0.013984, -0.127624), model));
-  expectedGraph.add(BetweenFactor<Pose2>(9,10, Pose2(1.003350, 0.022250, -0.195918), model));
-  expectedGraph.add(BetweenFactor<Pose2>(5, 9, Pose2(0.033943, 0.032439, 3.073637), model));
-  expectedGraph.add(BetweenFactor<Pose2>(3,10, Pose2(0.044020, 0.988477, -1.553511), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(0, 1, Pose2(1.030390, 0.011350, -0.081596), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(1.013900, -0.058639, -0.220291), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(2, 3, Pose2(1.027650, -0.007456, -0.043627), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(4, 5, Pose2(1.016030, 0.014565, -0.030930), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 6, Pose2(1.023890, 0.006808, -0.007452), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(6, 7, Pose2(0.957734, 0.003159, 0.082836), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(8, 9, Pose2(1.023440, 0.013984, -0.127624), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(9,10, Pose2(1.003350, 0.022250, -0.195918), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 9, Pose2(0.033943, 0.032439, 3.073637), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3,10, Pose2(0.044020, 0.988477, -1.553511), model);
   EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
 }
 
 /* ************************************************************************* */
-TEST( dataSet, readG2o3D)
-{
+TEST(dataSet, readG2o3D) {
   const string g2oFile = findExampleDataFile("pose3example");
+  auto model = noiseModel::Isotropic::Precision(6, 10000);
+
+  // Initialize 6 relative measurements with quaternion/point3 values:
+  const std::vector<Pose3> relative_poses = {
+      {{0.854230, 0.190253, 0.283162, -0.392318},
+       {1.001367, 0.015390, 0.004948}},
+      {{0.105373, 0.311512, 0.656877, -0.678505},
+       {0.523923, 0.776654, 0.326659}},
+      {{0.568551, 0.595795, -0.561677, 0.079353},
+       {0.910927, 0.055169, -0.411761}},
+      {{0.542221, -0.592077, 0.303380, -0.513226},
+       {0.775288, 0.228798, -0.596923}},
+      {{0.327419, -0.125250, -0.534379, 0.769122},
+       {-0.577841, 0.628016, -0.543592}},
+      {{0.083672, 0.104639, 0.627755, 0.766795},
+       {-0.623267, 0.086928, 0.773222}},
+  };
+
+  // Initialize 5 poses with quaternion/point3 values:
+  const std::vector<Pose3> poses = {
+      {{1.000000, 0.000000, 0.000000, 0.000000}, {0, 0, 0}},
+      {{0.854230, 0.190253, 0.283162, -0.392318},
+       {1.001367, 0.015390, 0.004948}},
+      {{0.421446, -0.351729, -0.597838, 0.584174},
+       {1.993500, 0.023275, 0.003793}},
+      {{0.067024, 0.331798, -0.200659, 0.919323},
+       {2.004291, 1.024305, 0.018047}},
+      {{0.765488, -0.035697, -0.462490, 0.445933},
+       {0.999908, 1.055073, 0.020212}},
+  };
+
+  // Specify connectivity:
+  using KeyPair = pair<Key, Key>;
+  std::vector<KeyPair> edges = {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {1, 4}, {3, 0}};
+
+  // Created expected factor graph
+  size_t i = 0;
+  NonlinearFactorGraph expectedGraph;
+  for (const auto& keys : edges) {
+    expectedGraph.emplace_shared<BetweenFactor<Pose3>>(
+        keys.first, keys.second, relative_poses[i++], model);
+  }
+
+  // Check factor parsing
+  const auto actualFactors = parse3DFactors(g2oFile);
+  for (size_t i : {0, 1, 2, 3, 4, 5}) {
+    EXPECT(assert_equal(
+        *boost::dynamic_pointer_cast<BetweenFactor<Pose3>>(expectedGraph[i]),
+        *actualFactors[i], 1e-5));
+  }
+
+  // Check pose parsing
+  const auto actualPoses = parse3DPoses(g2oFile);
+  for (size_t j : {0, 1, 2, 3, 4}) {
+    EXPECT(assert_equal(poses[j], actualPoses.at(j), 1e-5));
+  }
+
+  // Check graph version
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
   bool is3D = true;
   boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D);
-
-  Values expectedValues;
-  Rot3 R0 = Rot3::Quaternion(1.000000, 0.000000, 0.000000, 0.000000 );
-  Point3 p0 = Point3(0.000000, 0.000000, 0.000000);
-  expectedValues.insert(0, Pose3(R0, p0));
-
-  Rot3 R1 = Rot3::Quaternion(0.854230, 0.190253, 0.283162, -0.392318 );
-  Point3 p1 = Point3(1.001367, 0.015390, 0.004948);
-  expectedValues.insert(1, Pose3(R1, p1));
-
-  Rot3 R2 = Rot3::Quaternion(0.421446, -0.351729, -0.597838, 0.584174 );
-  Point3 p2 = Point3(1.993500, 0.023275, 0.003793);
-  expectedValues.insert(2, Pose3(R2, p2));
-
-  Rot3 R3 = Rot3::Quaternion(0.067024, 0.331798, -0.200659, 0.919323);
-  Point3 p3 = Point3(2.004291, 1.024305, 0.018047);
-  expectedValues.insert(3, Pose3(R3, p3));
-
-  Rot3 R4 = Rot3::Quaternion(0.765488, -0.035697, -0.462490, 0.445933);
-  Point3 p4 = Point3(0.999908, 1.055073, 0.020212);
-  expectedValues.insert(4, Pose3(R4, p4));
-
-  EXPECT(assert_equal(expectedValues,*actualValues,1e-5));
-
-  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Precisions((Vector(6) << 10000.0,10000.0,10000.0,10000.0,10000.0,10000.0).finished());
-  NonlinearFactorGraph expectedGraph;
-
-  Point3 p01 = Point3(1.001367, 0.015390, 0.004948);
-  Rot3 R01 = Rot3::Quaternion(0.854230, 0.190253, 0.283162, -0.392318 );
-  expectedGraph.add(BetweenFactor<Pose3>(0, 1, Pose3(R01,p01), model));
-
-  Point3 p12 = Point3(0.523923, 0.776654, 0.326659);
-  Rot3 R12 = Rot3::Quaternion(0.105373 , 0.311512, 0.656877, -0.678505 );
-  expectedGraph.add(BetweenFactor<Pose3>(1, 2, Pose3(R12,p12), model));
-
-  Point3 p23 = Point3(0.910927, 0.055169, -0.411761);
-  Rot3 R23 = Rot3::Quaternion(0.568551 , 0.595795, -0.561677, 0.079353 );
-  expectedGraph.add(BetweenFactor<Pose3>(2, 3, Pose3(R23,p23), model));
-
-  Point3 p34 = Point3(0.775288, 0.228798, -0.596923);
-  Rot3 R34 = Rot3::Quaternion(0.542221 , -0.592077, 0.303380, -0.513226 );
-  expectedGraph.add(BetweenFactor<Pose3>(3, 4, Pose3(R34,p34), model));
-
-  Point3 p14 = Point3(-0.577841, 0.628016, -0.543592);
-  Rot3 R14 = Rot3::Quaternion(0.327419 , -0.125250, -0.534379, 0.769122  );
-  expectedGraph.add(BetweenFactor<Pose3>(1, 4, Pose3(R14,p14), model));
-
-  Point3 p30 = Point3(-0.623267, 0.086928, 0.773222);
-  Rot3 R30 = Rot3::Quaternion(0.083672 ,  0.104639, 0.627755, 0.766795  );
-  expectedGraph.add(BetweenFactor<Pose3>(3, 0, Pose3(R30,p30), model));
-
-  EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
+  EXPECT(assert_equal(expectedGraph, *actualGraph, 1e-5));
+  for (size_t j : {0, 1, 2, 3, 4}) {
+    EXPECT(assert_equal(poses[j], actualValues->at<Pose3>(j), 1e-5));
+  }
 }
 
 /* ************************************************************************* */
@@ -224,7 +267,7 @@ TEST( dataSet, readG2o3DNonDiagonalNoise)
   NonlinearFactorGraph expectedGraph;
   Point3 p01 = Point3(1.001367, 0.015390, 0.004948);
   Rot3 R01 = Rot3::Quaternion(0.854230, 0.190253, 0.283162, -0.392318 );
-  expectedGraph.add(BetweenFactor<Pose3>(0, 1, Pose3(R01,p01), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(0, 1, Pose3(R01,p01), model);
 
   EXPECT(assert_equal(expectedGraph,*actualGraph,1e-2));
 }
@@ -242,18 +285,18 @@ TEST( dataSet, readG2oHuber)
   SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345), baseModel);
 
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.add(BetweenFactor<Pose2>(0, 1, Pose2(1.030390, 0.011350, -0.081596), model));
-  expectedGraph.add(BetweenFactor<Pose2>(1, 2, Pose2(1.013900, -0.058639, -0.220291), model));
-  expectedGraph.add(BetweenFactor<Pose2>(2, 3, Pose2(1.027650, -0.007456, -0.043627), model));
-  expectedGraph.add(BetweenFactor<Pose2>(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model));
-  expectedGraph.add(BetweenFactor<Pose2>(4, 5, Pose2(1.016030, 0.014565, -0.030930), model));
-  expectedGraph.add(BetweenFactor<Pose2>(5, 6, Pose2(1.023890, 0.006808, -0.007452), model));
-  expectedGraph.add(BetweenFactor<Pose2>(6, 7, Pose2(0.957734, 0.003159, 0.082836), model));
-  expectedGraph.add(BetweenFactor<Pose2>(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model));
-  expectedGraph.add(BetweenFactor<Pose2>(8, 9, Pose2(1.023440, 0.013984, -0.127624), model));
-  expectedGraph.add(BetweenFactor<Pose2>(9,10, Pose2(1.003350, 0.022250, -0.195918), model));
-  expectedGraph.add(BetweenFactor<Pose2>(5, 9, Pose2(0.033943, 0.032439, 3.073637), model));
-  expectedGraph.add(BetweenFactor<Pose2>(3,10, Pose2(0.044020, 0.988477, -1.553511), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(0, 1, Pose2(1.030390, 0.011350, -0.081596), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(1.013900, -0.058639, -0.220291), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(2, 3, Pose2(1.027650, -0.007456, -0.043627), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(4, 5, Pose2(1.016030, 0.014565, -0.030930), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 6, Pose2(1.023890, 0.006808, -0.007452), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(6, 7, Pose2(0.957734, 0.003159, 0.082836), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(8, 9, Pose2(1.023440, 0.013984, -0.127624), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(9,10, Pose2(1.003350, 0.022250, -0.195918), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 9, Pose2(0.033943, 0.032439, 3.073637), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3,10, Pose2(0.044020, 0.988477, -1.553511), model);
   EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
 }
 
@@ -270,18 +313,18 @@ TEST( dataSet, readG2oTukey)
   SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Tukey::Create(4.6851), baseModel);
 
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.add(BetweenFactor<Pose2>(0, 1, Pose2(1.030390, 0.011350, -0.081596), model));
-  expectedGraph.add(BetweenFactor<Pose2>(1, 2, Pose2(1.013900, -0.058639, -0.220291), model));
-  expectedGraph.add(BetweenFactor<Pose2>(2, 3, Pose2(1.027650, -0.007456, -0.043627), model));
-  expectedGraph.add(BetweenFactor<Pose2>(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model));
-  expectedGraph.add(BetweenFactor<Pose2>(4, 5, Pose2(1.016030, 0.014565, -0.030930), model));
-  expectedGraph.add(BetweenFactor<Pose2>(5, 6, Pose2(1.023890, 0.006808, -0.007452), model));
-  expectedGraph.add(BetweenFactor<Pose2>(6, 7, Pose2(0.957734, 0.003159, 0.082836), model));
-  expectedGraph.add(BetweenFactor<Pose2>(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model));
-  expectedGraph.add(BetweenFactor<Pose2>(8, 9, Pose2(1.023440, 0.013984, -0.127624), model));
-  expectedGraph.add(BetweenFactor<Pose2>(9,10, Pose2(1.003350, 0.022250, -0.195918), model));
-  expectedGraph.add(BetweenFactor<Pose2>(5, 9, Pose2(0.033943, 0.032439, 3.073637), model));
-  expectedGraph.add(BetweenFactor<Pose2>(3,10, Pose2(0.044020, 0.988477, -1.553511), model));
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(0, 1, Pose2(1.030390, 0.011350, -0.081596), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(1.013900, -0.058639, -0.220291), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(2, 3, Pose2(1.027650, -0.007456, -0.043627), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(4, 5, Pose2(1.016030, 0.014565, -0.030930), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 6, Pose2(1.023890, 0.006808, -0.007452), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(6, 7, Pose2(0.957734, 0.003159, 0.082836), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(8, 9, Pose2(1.023440, 0.013984, -0.127624), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(9,10, Pose2(1.003350, 0.022250, -0.195918), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 9, Pose2(0.033943, 0.032439, 3.073637), model);
+  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3,10, Pose2(0.044020, 0.988477, -1.553511), model);
   EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
 }
 
@@ -462,7 +505,7 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
   }
   for(size_t j=0; j < readData.number_tracks(); j++){ // for each point
     Key pointKey = P(j);
-    Point3 point = poseChange.transform_from( readData.tracks[j].p );
+    Point3 point = poseChange.transformFrom( readData.tracks[j].p );
     value.insert(pointKey, point);
   }
 

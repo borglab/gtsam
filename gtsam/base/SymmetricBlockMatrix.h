@@ -24,7 +24,7 @@
 #include <boost/serialization/nvp.hpp>
 #include <cassert>
 #include <stdexcept>
-#include <vector>
+#include <array>
 
 namespace boost {
 namespace serialization {

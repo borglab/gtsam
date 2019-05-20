@@ -120,8 +120,6 @@ TEST(OrientedPlane3, localCoordinates_retract) {
   maxXiLimit << M_PI, M_PI, 10.0;
   for (size_t i = 0; i < numIterations; i++) {
 
-    sleep(0);
-
     // Create a Plane
     OrientedPlane3 p1(randomVector(minPlaneLimit, maxPlaneLimit));
     Vector v12 = randomVector(minXiLimit, maxXiLimit);
@@ -161,6 +159,26 @@ TEST (OrientedPlane3, error2) {
   expectedH2 = numericalDerivative22(f, plane1, plane2);
   EXPECT(assert_equal(expectedH1, actualH1, 1e-9));
   EXPECT(assert_equal(expectedH2, actualH2, 1e-9));
+}
+
+//*******************************************************************************
+TEST (OrientedPlane3, jacobian_retract) {
+  OrientedPlane3 plane(-1, 0.1, 0.2, 5);
+  Matrix33 H_actual;
+  boost::function<OrientedPlane3(const Vector3&)> f =
+      boost::bind(&OrientedPlane3::retract, plane, _1, boost::none);
+  {
+      Vector3 v (-0.1, 0.2, 0.3);
+      plane.retract(v, H_actual);
+      Matrix H_expected_numerical = numericalDerivative11(f, v);
+      EXPECT(assert_equal(H_expected_numerical, H_actual, 1e-9));
+  }
+  {
+      Vector3 v (0, 0, 0);
+      plane.retract(v, H_actual);
+      Matrix H_expected_numerical = numericalDerivative11(f, v);
+      EXPECT(assert_equal(H_expected_numerical, H_actual, 1e-9));
+  }
 }
 
 /* ************************************************************************* */

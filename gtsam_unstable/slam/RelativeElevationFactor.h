@@ -2,7 +2,7 @@
  * @file RelativeElevationFactor.h
  *
  * @brief Factor representing a known relative altitude in global frame
- * 
+ *
  * @date Aug 17, 2012
  * @author Alex Cunningham
  */

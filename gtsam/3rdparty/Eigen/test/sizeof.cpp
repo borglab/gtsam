@@ -13,14 +13,27 @@ template<typename MatrixType> void verifySizeOf(const MatrixType&)
 {
   typedef typename MatrixType::Scalar Scalar;
   if (MatrixType::RowsAtCompileTime!=Dynamic && MatrixType::ColsAtCompileTime!=Dynamic)
-    VERIFY(std::ptrdiff_t(sizeof(MatrixType))==std::ptrdiff_t(sizeof(Scalar))*std::ptrdiff_t(MatrixType::SizeAtCompileTime));
+    VERIFY_IS_EQUAL(std::ptrdiff_t(sizeof(MatrixType)),std::ptrdiff_t(sizeof(Scalar))*std::ptrdiff_t(MatrixType::SizeAtCompileTime));
   else
-    VERIFY(sizeof(MatrixType)==sizeof(Scalar*) + 2 * sizeof(typename MatrixType::Index));
+    VERIFY_IS_EQUAL(sizeof(MatrixType),sizeof(Scalar*) + 2 * sizeof(typename MatrixType::Index));
 }
 
 void test_sizeof()
 {
   CALL_SUBTEST(verifySizeOf(Matrix<float, 1, 1>()) );
+  CALL_SUBTEST(verifySizeOf(Array<float, 2, 1>()) );
+  CALL_SUBTEST(verifySizeOf(Array<float, 3, 1>()) );
+  CALL_SUBTEST(verifySizeOf(Array<float, 4, 1>()) );
+  CALL_SUBTEST(verifySizeOf(Array<float, 5, 1>()) );
+  CALL_SUBTEST(verifySizeOf(Array<float, 6, 1>()) );
+  CALL_SUBTEST(verifySizeOf(Array<float, 7, 1>()) );
+  CALL_SUBTEST(verifySizeOf(Array<float, 8, 1>()) );
+  CALL_SUBTEST(verifySizeOf(Array<float, 9, 1>()) );
+  CALL_SUBTEST(verifySizeOf(Array<float, 10, 1>()) );
+  CALL_SUBTEST(verifySizeOf(Array<float, 11, 1>()) );
+  CALL_SUBTEST(verifySizeOf(Array<float, 12, 1>()) );
+  CALL_SUBTEST(verifySizeOf(Vector2d()) );
+  CALL_SUBTEST(verifySizeOf(Vector4f()) );
   CALL_SUBTEST(verifySizeOf(Matrix4d()) );
   CALL_SUBTEST(verifySizeOf(Matrix<double, 4, 2>()) );
   CALL_SUBTEST(verifySizeOf(Matrix<bool, 7, 5>()) );

@@ -1,12 +1,12 @@
 /* ----------------------------------------------------------------------------
- 
+
  * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
- 
+
  * See LICENSE for the license information
- 
+
  * -------------------------------------------------------------------------- */
 
 /**
@@ -58,7 +58,7 @@ public:
 
   /// triangulateSafe
   TriangulationResult triangulateSafe(
-      const std::vector<Point2>& measured,
+      const typename CAMERA::MeasurementVector& measured,
       const TriangulationParameters& params) const {
     return gtsam::triangulateSafe(*this, measured, params);
   }

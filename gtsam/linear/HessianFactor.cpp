@@ -155,7 +155,7 @@ DenseIndex _getSizeHF(const Vector& m) {
 }
 
 /* ************************************************************************* */
-HessianFactor::HessianFactor(const std::vector<Key>& js,
+HessianFactor::HessianFactor(const KeyVector& js,
     const std::vector<Matrix>& Gs, const std::vector<Vector>& gs, double f) :
     GaussianFactor(js), info_(gs | br::transformed(&_getSizeHF), true) {
   // Get the number of variables
@@ -305,7 +305,7 @@ Matrix HessianFactor::information() const {
 VectorValues HessianFactor::hessianDiagonal() const {
   VectorValues d;
   for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
-    d.insert(keys_[j], info_.diagonal(j));
+    d.emplace(keys_[j], info_.diagonal(j));
   }
   return d;
 }
@@ -356,7 +356,7 @@ double HessianFactor::error(const VectorValues& c) const {
 }
 
 /* ************************************************************************* */
-void HessianFactor::updateHessian(const FastVector<Key>& infoKeys,
+void HessianFactor::updateHessian(const KeyVector& infoKeys,
                                   SymmetricBlockMatrix* info) const {
   gttic(updateHessian_HessianFactor);
   assert(info);
@@ -436,7 +436,7 @@ VectorValues HessianFactor::gradientAtZero() const {
   VectorValues g;
   size_t n = size();
   for (size_t j = 0; j < n; ++j)
-    g.insert(keys_[j], -info_.aboveDiagonalBlock(j, n));
+    g.emplace(keys_[j], -info_.aboveDiagonalBlock(j, n));
   return g;
 }
 
@@ -486,7 +486,12 @@ boost::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Or
 
     // Erase the eliminated keys in this factor
     keys_.erase(begin(), begin() + nFrontals);
-  } catch (const CholeskyFailed& e) {
+  } catch (const CholeskyFailed&) {
+#ifndef NDEBUG
+    cout << "Partial Cholesky on HessianFactor failed." << endl;
+    keys.print("Frontal keys ");
+    print("HessianFactor:");
+#endif
     throw IndeterminantLinearSystemException(keys.front());
   }
 
@@ -513,7 +518,7 @@ VectorValues HessianFactor::solve() {
   std::size_t offset = 0;
   for (DenseIndex j = 0; j < (DenseIndex)n; ++j) {
     const DenseIndex dim = info_.getDim(j);
-    delta.insert(keys_[j], solution.segment(offset, dim));
+    delta.emplace(keys_[j], solution.segment(offset, dim));
     offset += dim;
   }
 

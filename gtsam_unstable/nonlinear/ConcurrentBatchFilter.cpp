@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -362,7 +362,7 @@ void ConcurrentBatchFilter::reorder(const boost::optional<FastList<Key> >& keysT
 
   // COLAMD groups will be used to place marginalize keys in Group 0, and everything else in Group 1
   if(keysToMove && keysToMove->size() > 0) {
-    ordering_ = Ordering::ColamdConstrainedFirst(factors_, std::vector<Key>(keysToMove->begin(), keysToMove->end()));
+    ordering_ = Ordering::ColamdConstrainedFirst(factors_, KeyVector(keysToMove->begin(), keysToMove->end()));
   }else{
     ordering_ = Ordering::Colamd(factors_);
   }
@@ -536,7 +536,7 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
   std::vector<size_t> removedFactorSlots;
   VariableIndex variableIndex(factors_);
   for(Key key: keysToMove) {
-    const FastVector<size_t>& slots = variableIndex[key];
+    const auto& slots = variableIndex[key];
     removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
   }
 

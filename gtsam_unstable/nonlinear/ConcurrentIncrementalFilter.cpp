@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -291,7 +291,7 @@ FactorIndices ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2& isam
   FactorIndices removedFactorSlots;
   const VariableIndex& variableIndex = isam2.getVariableIndex();
   for(Key key: keys) {
-    const FastVector<size_t>& slots = variableIndex[key];
+    const auto& slots = variableIndex[key];
     removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
   }
 
@@ -353,7 +353,7 @@ NonlinearFactorGraph ConcurrentIncrementalFilter::calculateFilterSummarization()
   }
 
   // Create the set of clique keys LC:
-  std::vector<Key> cliqueKeys;
+  KeyVector cliqueKeys;
   for(const ISAM2Clique::shared_ptr& clique: separatorCliques) {
     for(Key key: clique->conditional()->frontals()) {
       cliqueKeys.push_back(key);

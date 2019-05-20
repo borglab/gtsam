@@ -26,7 +26,7 @@
 #include <boost/pool/pool_alloc.hpp>
 
 #include <cmath>
-#include <iosfwd>
+#include <iostream>
 #include <typeinfo> // operator typeid
 
 namespace gtsam {
@@ -110,7 +110,7 @@ public:
      * Clone this value (normal clone on the heap, delete with 'delete' operator)
      */
     virtual boost::shared_ptr<Value> clone() const {
-      return boost::make_shared<GenericValue>(*this);
+		return boost::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
     }
 
     /// Generic Value interface version of retract
@@ -164,13 +164,13 @@ public:
 
   protected:
 
-    // implicit assignment operator for (const GenericValue& rhs) works fine here
     /// Assignment operator, protected because only the Value or DERIVED
     /// assignment operators should be used.
-    //  DerivedValue<DERIVED>& operator=(const DerivedValue<DERIVED>& rhs) {
-    //    // Nothing to do, do not call base class assignment operator
-    //    return *this;
-    //  }
+    GenericValue<T>& operator=(const GenericValue<T>& rhs) {
+      Value::operator=(static_cast<Value const&>(rhs));
+      value_ = rhs.value_;
+      return *this;
+    }
 
   private:
 
@@ -187,12 +187,17 @@ public:
       ar & boost::serialization::make_nvp("GenericValue",
               boost::serialization::base_object<Value>(*this));
       ar & boost::serialization::make_nvp("value", value_);
-    }
+	}
+
+
+  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+  enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+};
 
 /// use this macro instead of BOOST_CLASS_EXPORT for GenericValues
-#define GTSAM_VALUE_EXPORT(Type) BOOST_CLASS_EXPORT(GenericValue<Type>)
-
-};
+#define GTSAM_VALUE_EXPORT(Type) BOOST_CLASS_EXPORT(gtsam::GenericValue<Type>)
 
 // traits
 template <typename ValueType>

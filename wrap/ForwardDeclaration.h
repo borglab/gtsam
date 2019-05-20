@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,11 +23,14 @@
 
 namespace wrap {
 
+  class Class;
+
   struct ForwardDeclaration {
-    std::string name;
+    Class cls;
     bool isVirtual;
     ForwardDeclaration() : isVirtual(false) {}
-    ForwardDeclaration(const std::string& s) : name(s), isVirtual(false) {}
+    explicit ForwardDeclaration(const std::string& s) : cls(s), isVirtual(false) {}
+    std::string name() const { return cls.qualifiedName("::"); }
   };
 
 }

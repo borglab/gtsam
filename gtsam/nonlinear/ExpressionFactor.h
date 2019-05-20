@@ -47,7 +47,13 @@ protected:
  public:
   typedef boost::shared_ptr<ExpressionFactor<T> > shared_ptr;
 
-  /// Constructor
+  /**
+   * Constructor: creates a factor from a measurement and measurement function
+   *   @param noiseModel the noise model associated with a measurement
+   *   @param measurement actual value of the measurement, of type T
+   *   @param expression predicts the measurement from Values
+   * The keys associated with the factor, returned by keys(), are sorted.
+   */
   ExpressionFactor(const SharedNoiseModel& noiseModel,  //
                    const T& measurement, const Expression<T>& expression)
       : NoiseModelFactor(noiseModel), measured_(measurement) {
@@ -158,7 +164,18 @@ protected:
 
    // Get keys and dimensions for Jacobian matrices
    // An Expression is assumed unmutable, so we do this now
-   boost::tie(keys_, dims_) = expression_.keysAndDims();
+   if (keys_.empty()) {
+     // This is the case when called in ExpressionFactor Constructor.
+     // We then take the keys from the expression in sorted order.
+     boost::tie(keys_, dims_) = expression_.keysAndDims();
+   } else {
+     // This happens with classes derived from BinaryExpressionFactor etc.
+     // In that case, the keys_ are already defined and we just need to grab
+     // the dimensions in the correct order.
+     std::map<Key, int> keyedDims;
+     expression_.dims(keyedDims);
+     for (Key key : keys_) dims_.push_back(keyedDims[key]);
+   }
  }
 
  /// Recreate expression from keys_ and measured_, used in load below.
@@ -188,6 +205,11 @@ private:
  BOOST_SERIALIZATION_SPLIT_MEMBER()
 
  friend class boost::serialization::access;
+
+ // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+ enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
+  public:
+	  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 // ExpressionFactor
 
@@ -196,9 +218,9 @@ template <typename T>
 struct traits<ExpressionFactor<T> > : public Testable<ExpressionFactor<T> > {};
 
 /**
- * Binary specialization of ExpressionFactor meant as a base class for binary factors
- * Enforces expression method with two keys, and provides evaluateError
- * Derived needs to call initialize.
+ * Binary specialization of ExpressionFactor meant as a base class for binary
+ * factors. Enforces an 'expression' method with two keys, and provides 'evaluateError'.
+ * Derived class (a binary factor!) needs to call 'initialize'.
  */
 template <typename T, typename A1, typename A2>
 class ExpressionFactor2 : public ExpressionFactor<T> {
@@ -244,8 +266,14 @@ class ExpressionFactor2 : public ExpressionFactor<T> {
   virtual Expression<T> expression() const {
     return expression(this->keys_[0], this->keys_[1]);
   }
+
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp(
+        "ExpressionFactor", boost::serialization::base_object<ExpressionFactor<T> >(*this));
+  }
 };
 // ExpressionFactor2
 
 }// \ namespace gtsam
-

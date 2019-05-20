@@ -22,11 +22,18 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <GeographicLib/Config.h>
 #include <GeographicLib/LocalCartesian.hpp>
 
 using namespace std;
 using namespace gtsam;
 using namespace GeographicLib;
+
+#if GEOGRAPHICLIB_VERSION_MINOR<37
+static const auto& kWGS84 = Geocentric::WGS84;
+#else
+static const auto& kWGS84 = Geocentric::WGS84();
+#endif
 
 // *************************************************************************
 namespace example {
@@ -34,7 +41,7 @@ namespace example {
 const double lat0 = 33.86998, lon0 = -84.30626, h0 = 274;
 
 // Convert from GPS to ENU
-LocalCartesian origin_ENU(lat0, lon0, h0, Geocentric::WGS84);
+LocalCartesian origin_ENU(lat0, lon0, h0, kWGS84);
 
 // Dekalb-Peachtree Airport runway 2L
 const double lat = 33.87071, lon = -84.30482, h = 274;
@@ -107,8 +114,7 @@ TEST(GPSData, init) {
   // GPS Reading 1 will be ENU origin
   double t1 = 84831;
   Point3 NED1(0, 0, 0);
-  LocalCartesian enu(35.4393283333333, -119.062986666667, 275.54,
-      Geocentric::WGS84);
+  LocalCartesian enu(35.4393283333333, -119.062986666667, 275.54, kWGS84);
 
   // GPS Readin 2
   double t2 = 84831.5;

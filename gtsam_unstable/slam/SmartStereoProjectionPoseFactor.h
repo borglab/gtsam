@@ -66,9 +66,9 @@ public:
    * @param params internal parameters of the smart factors
    */
   SmartStereoProjectionPoseFactor(const SharedNoiseModel& sharedNoiseModel,
-      const SmartStereoProjectionParams& params =
-      SmartStereoProjectionParams()) :
-      Base(sharedNoiseModel, params) {
+      const SmartStereoProjectionParams& params = SmartStereoProjectionParams(),
+      const boost::optional<Pose3> body_P_sensor = boost::none) :
+      Base(sharedNoiseModel, params, body_P_sensor) {
   }
 
   /** Virtual destructor */
@@ -92,7 +92,7 @@ public:
    * @param poseKeys vector of keys corresponding to the camera observing the same landmark
    * @param Ks vector of calibration objects
    */
-  void add(std::vector<StereoPoint2> measurements, std::vector<Key> poseKeys,
+  void add(std::vector<StereoPoint2> measurements, KeyVector poseKeys,
       std::vector<boost::shared_ptr<Cal3_S2Stereo> > Ks) {
     Base::add(measurements, poseKeys);
     for (size_t i = 0; i < measurements.size(); i++) {
@@ -102,11 +102,11 @@ public:
 
   /**
    * Variant of the previous one in which we include a set of measurements with the same noise and calibration
-   * @param mmeasurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
+   * @param measurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
    * @param poseKeys vector of keys corresponding to the camera observing the same landmark
    * @param K the (known) camera calibration (same for all measurements)
    */
-  void add(std::vector<StereoPoint2> measurements, std::vector<Key> poseKeys,
+  void add(std::vector<StereoPoint2> measurements, KeyVector poseKeys,
       const boost::shared_ptr<Cal3_S2Stereo> K) {
     for (size_t i = 0; i < measurements.size(); i++) {
       Base::add(measurements.at(i), poseKeys.at(i));
@@ -161,7 +161,11 @@ public:
     Base::Cameras cameras;
     size_t i=0;
     for(const Key& k: this->keys_) {
-      const Pose3& pose = values.at<Pose3>(k);
+      Pose3 pose = values.at<Pose3>(k);
+
+      if (Base::body_P_sensor_)
+    	  pose = pose.compose(*(Base::body_P_sensor_));
+
       StereoCamera camera(pose, K_all_[i++]);
       cameras.push_back(camera);
     }

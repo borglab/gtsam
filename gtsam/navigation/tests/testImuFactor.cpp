@@ -106,7 +106,7 @@ TEST(ImuFactor, Accelerating) {
       Vector3(a, 0, 0));
 
   const double T = 3.0; // seconds
-  ScenarioRunner runner(&scenario, testing::Params(), T / 10);
+  ScenarioRunner runner(scenario, testing::Params(), T / 10);
 
   PreintegratedImuMeasurements pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
@@ -494,7 +494,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   Bias biasHat(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0));
 
   const double T = 3.0; // seconds
-  ScenarioRunner runner(&scenario, p, T / 10);
+  ScenarioRunner runner(scenario, p, T / 10);
 
   //  PreintegratedImuMeasurements pim = runner.integrate(T);
   //  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
@@ -630,7 +630,7 @@ TEST(ImuFactor, PredictArbitrary) {
       Vector3(0.1, 0.2, 0), Vector3(M_PI / 10, M_PI / 10, M_PI / 10));
 
   const double T = 3.0; // seconds
-  ScenarioRunner runner(&scenario, testing::Params(), T / 10);
+  ScenarioRunner runner(scenario, testing::Params(), T / 10);
   //
   //  PreintegratedImuMeasurements pim = runner.integrate(T);
   //  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
@@ -781,8 +781,8 @@ TEST(ImuFactor, bodyPSensorWithBias) {
       pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
     // Create factors
-    graph.add(ImuFactor(X(i - 1), V(i - 1), X(i), V(i), B(i - 1), pim));
-    graph.add(BetweenFactor<Bias>(B(i - 1), B(i), zeroBias, biasNoiseModel));
+    graph.emplace_shared<ImuFactor>(X(i - 1), V(i - 1), X(i), V(i), B(i - 1), pim);
+    graph.emplace_shared<BetweenFactor<Bias> >(B(i - 1), B(i), zeroBias, biasNoiseModel);
 
     values.insert(X(i), Pose3());
     values.insert(V(i), zeroVel);
@@ -803,11 +803,11 @@ TEST(ImuFactor, bodyPSensorWithBias) {
 static const double kVelocity = 2.0, kAngularVelocity = M_PI / 6;
 
 struct ImuFactorMergeTest {
-  boost::shared_ptr<PreintegratedImuMeasurements::Params> p_;
+  boost::shared_ptr<PreintegrationParams> p_;
   const ConstantTwistScenario forward_, loop_;
 
   ImuFactorMergeTest()
-      : p_(PreintegratedImuMeasurements::Params::MakeSharedU(kGravity)),
+      : p_(PreintegrationParams::MakeSharedU(kGravity)),
         forward_(kZero, Vector3(kVelocity, 0, 0)),
         loop_(Vector3(0, -kAngularVelocity, 0), Vector3(kVelocity, 0, 0)) {
     // arbitrary noise values
@@ -827,7 +827,7 @@ struct ImuFactorMergeTest {
     PreintegratedImuMeasurements pim02_expected(p_, bias01);
 
     double deltaT = 0.01;
-    ScenarioRunner runner(&scenario, p_, deltaT);
+    ScenarioRunner runner(scenario, p_, deltaT);
     // TODO(frank) can this loop just go into runner ?
     for (int i = 0; i < 100; i++) {
       double t = i * deltaT;

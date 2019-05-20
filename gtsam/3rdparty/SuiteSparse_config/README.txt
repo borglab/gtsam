@@ -1,4 +1,4 @@
-SuiteSparse_config, 2016, Timothy A. Davis, http://www.suitesparse.com
+SuiteSparse_config, 2017, Timothy A. Davis, http://www.suitesparse.com
 (formerly the UFconfig package)
 
 This directory contains a default SuiteSparse_config.mk file.  It tries to

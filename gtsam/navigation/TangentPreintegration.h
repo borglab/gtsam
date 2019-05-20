@@ -25,7 +25,7 @@ namespace gtsam {
  * Integrate on the 9D tangent space of the NavState manifold.
  * See extensive discussion in ImuFactor.lyx
  */
-class TangentPreintegration : public PreintegrationBase {
+class GTSAM_EXPORT TangentPreintegration : public PreintegrationBase {
  protected:
 
   /**
@@ -42,7 +42,7 @@ class TangentPreintegration : public PreintegrationBase {
   }
 
 public:
-  /// @name Constructors
+  /// @name Constructors/destructors
   /// @{
 
   /**
@@ -52,6 +52,10 @@ public:
    */
   TangentPreintegration(const boost::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
+
+  /// Virtual destructor
+  virtual ~TangentPreintegration() {
+  }
 
   /// @}
 
@@ -135,6 +139,9 @@ private:
     ar & bs::make_nvp("preintegrated_H_biasAcc_", bs::make_array(preintegrated_H_biasAcc_.data(), preintegrated_H_biasAcc_.size()));
     ar & bs::make_nvp("preintegrated_H_biasOmega_", bs::make_array(preintegrated_H_biasOmega_.data(), preintegrated_H_biasOmega_.size()));
   }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } /// namespace gtsam

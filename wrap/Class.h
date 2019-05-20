@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -25,6 +25,7 @@
 #include "Deconstructor.h"
 #include "Method.h"
 #include "StaticMethod.h"
+#include "TemplateMethod.h"
 #include "TypeAttributesTable.h"
 
 #ifdef __GNUC__
@@ -54,12 +55,15 @@ public:
   typedef const std::string& Str;
   typedef std::map<std::string, Method> Methods;
   typedef std::map<std::string, StaticMethod> StaticMethods;
+  typedef std::map<std::string, TemplateMethod> TemplateMethods;
 
 private:
 
   boost::optional<Qualified> parentClass; ///< The *single* parent
-  Methods methods_; ///< Class methods
-  Method& mutableMethod(Str key);
+  Methods methods_; ///< Class methods, including all expanded/instantiated template methods -- to be serialized to matlab and Python classes in Cython pyx
+  Methods nontemplateMethods_; ///< only nontemplate methods -- to be serialized into Cython pxd
+  TemplateMethods templateMethods_; ///< only template methods -- to be serialized into Cython pxd
+  // Method& mutableMethod(Str key);
 
 public:
 
@@ -68,12 +72,17 @@ public:
   // Then the instance variables are set directly by the Module constructor
   std::vector<std::string> templateArgs; ///< Template arguments
   std::string typedefName; ///< The name to typedef *from*, if this class is actually a typedef, i.e. typedef [typedefName] [name]
+  std::vector<Qualified> templateInstTypeList; ///< the original typelist used to instantiate this class from a template.
+                                               ///< Empty if it's not an instantiation. Needed for template classes in Cython pxd.
+  boost::optional<Qualified> templateClass = boost::none; ///< qualified name of the original template class from which this class was instantiated.
+                                                          ///< boost::none if not an instantiation. Needed for template classes in Cython pxd.
   bool isVirtual; ///< Whether the class is part of a virtual inheritance chain
   bool isSerializable; ///< Whether we can use boost.serialization to serialize the class - creates exports
   bool hasSerialization; ///< Whether we should create the serialization functions
   Constructor constructor; ///< Class constructors
   Deconstructor deconstructor; ///< Deconstructor to deallocate C++ object
   bool verbose_; ///< verbose flag
+  std::string includeFile;
 
   /// Constructor creates an empty class
   Class(bool verbose = true) :
@@ -81,9 +90,19 @@ public:
           false), deconstructor(verbose), verbose_(verbose) {
   }
 
+  Class(const std::string& name, bool verbose = true)
+      : Qualified(name, Qualified::Category::CLASS),
+        parentClass(boost::none),
+        isVirtual(false),
+        isSerializable(false),
+        hasSerialization(false),
+        deconstructor(verbose),
+        verbose_(verbose) {}
+
   void assignParent(const Qualified& parent);
 
   boost::optional<std::string> qualifiedParent() const;
+  boost::optional<Qualified> getParent() const { return parentClass; }
 
   size_t nrMethods() const {
     return methods_.size();
@@ -92,7 +111,7 @@ public:
   const Method& method(Str key) const;
 
   bool exists(Str name) const {
-    return methods_.find(name) != methods_.end();
+      return methods_.find(name) != methods_.end();
   }
 
   // And finally MATLAB code is emitted, methods below called by Module::matlab_code
@@ -116,6 +135,7 @@ public:
 
   /// Post-process classes for serialization markers
   void erase_serialization(); // non-const !
+  void erase_serialization(Methods& methods); // non-const !
 
   /// verify all of the function arguments
   void verifyAll(std::vector<std::string>& functionNames,
@@ -123,6 +143,8 @@ public:
 
   void appendInheritedMethods(const Class& cls,
       const std::vector<Class>& classes);
+
+  void removeInheritedNontemplateMethods(std::vector<Class>& classes);
 
   /// The typedef line for this class, if this class is a typedef, otherwise returns an empty string.
   std::string getTypedef() const;
@@ -140,6 +162,17 @@ public:
 
   // emit python wrapper
   void python_wrapper(FileWriter& wrapperFile) const;
+
+  // emit cython wrapper
+  void emit_cython_pxd(FileWriter& pxdFile) const;
+  void emit_cython_wrapper_pxd(FileWriter& pxdFile) const;
+  void emit_cython_pyx(FileWriter& pyxFile,
+                       const std::vector<Class>& allClasses) const;
+  void pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj,
+                        const std::string& cySharedObj,
+                        const std::vector<Class>& allClasses) const;
+  void pyxDynamicCast(FileWriter& pyxFile, const Class& curLevel,
+                           const std::vector<Class>& allClasses) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Class& cls) {
     os << "class " << cls.name() << "{\n";

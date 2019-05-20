@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -11,7 +11,7 @@
 
 /**
  * @file testMarginals.cpp
- * @brief 
+ * @brief
  * @author Richard Roberts
  * @date May 14, 2012
  */
@@ -139,10 +139,7 @@ TEST(Marginals, planarSLAMmarginals) {
       0.151935669757191,   0.007741936219615,   0.090000180000270,  -0.000000000000000,   0.000000000000000,   0.160967924878730,   0.007741936219615,   0.004516127560770,
      -0.104516127560770,   0.351935664055174,   0.000000000000000,   0.090000180000270,   0.040000000000000,   0.007741936219615,   0.351935664055174,   0.056129031890193,
      -0.050967744878460,   0.056129031890193,   0.000000000000000,   0.000000000000000,   0.010000000000000,   0.004516127560770,   0.056129031890193,   0.027741936219615;
-  vector<Key> variables(3);
-  variables[0] = x1;
-  variables[1] = l2;
-  variables[2] = x3;
+  KeyVector variables {x1, l2, x3};
   JointMarginal joint_l2x1x3 = marginals.jointMarginalCovariance(variables);
   EXPECT(assert_equal(Matrix(expected_l2x1x3.block(0,0,2,2)), Matrix(joint_l2x1x3(l2,l2)), 1e-6));
   EXPECT(assert_equal(Matrix(expected_l2x1x3.block(2,0,3,2)), Matrix(joint_l2x1x3(x1,l2)), 1e-6));
@@ -227,7 +224,7 @@ TEST(Marginals, order) {
 
   Marginals marginals(fg, vals);
   KeySet set = fg.keys();
-  FastVector<Key> keys(set.begin(), set.end());
+  KeyVector keys(set.begin(), set.end());
   JointMarginal joint = marginals.jointMarginalCovariance(keys);
 
   LONGS_EQUAL(3, (long)joint(0,0).rows());

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -18,6 +18,7 @@
 
 #include "TypeAttributesTable.h"
 #include "Class.h"
+#include "ForwardDeclaration.h"
 #include "utilities.h"
 
 #include <boost/range/adaptor/map.hpp>
@@ -43,6 +44,13 @@ const TypeAttributes& TypeAttributesTable::attributes(const string& key) const {
 }
 
 /* ************************************************************************* */
+void TypeAttributesTable::addType(const Qualified& cls) {
+  if (!table_.insert(make_pair(cls.qualifiedName("::"), TypeAttributes(false)))
+           .second)
+    throw DuplicateDefinition("types " + cls.qualifiedName("::"));
+}
+
+/* ************************************************************************* */
 void TypeAttributesTable::addClasses(const vector<Class>& classes) {
   for(const Class& cls: classes) {
     if (!table_.insert(
@@ -55,8 +63,8 @@ void TypeAttributesTable::addClasses(const vector<Class>& classes) {
 void TypeAttributesTable::addForwardDeclarations(
     const vector<ForwardDeclaration>& forwardDecls) {
   for(const ForwardDeclaration& fwDec: forwardDecls) {
-    if (!table_.insert(make_pair(fwDec.name, TypeAttributes(fwDec.isVirtual))).second)
-      throw DuplicateDefinition("class " + fwDec.name);
+    if (!table_.insert(make_pair(fwDec.name(), TypeAttributes(fwDec.isVirtual))).second)
+      throw DuplicateDefinition("forward defined class " + fwDec.name());
   }
 }
 

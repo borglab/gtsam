@@ -7,7 +7,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 namespace NETGeographicLib
@@ -23,7 +23,10 @@ namespace NETGeographicLib
    * different longitudes to be evaluated rapidly.
    *
    * Use GravityModel::Circle to create a GravityCircle object.  (The
-   * constructor for this class is for internal use only.)
+   * constructor for this class is private.)
+   *
+   * See \ref gravityparallel for an example of using GravityCircle (together
+   * with OpenMP) to speed up the computation of geoid heights.
    *
    * C# Example:
    * \include example-GravityCircle.cs

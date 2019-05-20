@@ -87,17 +87,19 @@ bool DiscreteConditional::equals(const DiscreteFactor& other,
 Potentials::ADT DiscreteConditional::choose(const Values& parentsValues) const {
   ADT pFS(*this);
   Key j; size_t value;
-  for(Key key: parents())
-  try {
-    j = (key);
-    value = parentsValues.at(j);
-    pFS = pFS.choose(j, value);
-  } catch (exception&) {
-    cout << "Key: " << j << "  Value: " << value << endl;
-    parentsValues.print("parentsValues: ");
-//    pFS.print("pFS: ");
-    throw runtime_error("DiscreteConditional::choose: parent value missing");
-  };
+  for(Key key: parents()) {
+    try {
+      j = (key);
+      value = parentsValues.at(j);
+      pFS = pFS.choose(j, value);
+    } catch (exception&) {
+      cout << "Key: " << j << "  Value: " << value << endl;
+      parentsValues.print("parentsValues: ");
+  //    pFS.print("pFS: ");
+      throw runtime_error("DiscreteConditional::choose: parent value missing");
+    };
+  }
+
   return pFS;
 }
 

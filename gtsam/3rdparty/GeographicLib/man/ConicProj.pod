@@ -6,7 +6,7 @@ ConicProj -- perform conic projections
 
 B<ConicProj> ( B<-c> | B<-a> ) I<lat1> I<lat2>
 [ B<-l> I<lon0> ] [ B<-k> I<k1> ] [ B<-r> ]
-[ B<-e> I<a> I<f> ]
+[ B<-e> I<a> I<f> ] [ B<-w> ] [ B<-p> I<prec> ]
 [ B<--comment-delimiter> I<commentdelim> ]
 [ B<--version> | B<-h> | B<--help> ]
 [ B<--input-file> I<infile> | B<--input-string> I<instring> ]
@@ -28,12 +28,14 @@ area).  The (azimuthal) scale on the standard parallels is I<k1>.
 
 Geodetic coordinates are provided on standard input as a set of lines
 containing (blank separated) I<latitude> and I<longitude> (decimal
-degrees or degrees, minutes, seconds).  For each set of geodetic
-coordinates, the corresponding projected easting, I<x>, and northing,
-I<y>, (meters) are printed on standard output together with the meridian
-convergence I<gamma> (degrees) and (azimuthal) scale I<k>.  For Albers
-equal area, the radial scale is 1/I<k>.  The meridian convergence is the
-bearing of the I<y> axis measured clockwise from true north.
+degrees or degrees, minutes, seconds);  for details on the allowed
+formats for latitude and longitude, see the C<GEOGRAPHIC COORDINATES>
+section of GeoConvert(1).  For each set of geodetic coordinates, the
+corresponding projected easting, I<x>, and northing, I<y>, (meters) are
+printed on standard output together with the meridian convergence
+I<gamma> (degrees) and (azimuthal) scale I<k>.  For Albers equal area,
+the radial scale is 1/I<k>.  The meridian convergence is the bearing of
+the I<y> axis measured clockwise from true north.
 
 Special cases of the Lambert conformal projection are the Mercator
 projection (the standard latitudes equal and opposite) and the polar
@@ -48,21 +50,21 @@ projection (one standard parallel is at a pole).
 
 =over
 
-=item B<-c>
+=item B<-c> I<lat1> I<lat2>
 
 use the Lambert conformal conic projection with standard parallels
 I<lat1> and I<lat2>.
 
-=item B<-a>
+=item B<-a> I<lat1> I<lat2>
 
 use the Albers equal area projection with standard parallels I<lat1> and
 I<lat2>.
 
-=item B<-l>
+=item B<-l> I<lon0>
 
 specify the longitude of origin I<lon0> (degrees, default 0).
 
-=item B<-k>
+=item B<-k> I<k1>
 
 specify the (azimuthal) scale I<k1> on the standard parallels (default
 1).
@@ -73,16 +75,30 @@ perform the reverse projection.  I<x> and I<y> are given on standard
 input and each line of standard output gives I<latitude>, I<longitude>,
 I<gamma>, and I<k>.
 
-=item B<-e>
+=item B<-e> I<a> I<f>
 
-specify the ellipsoid via I<a> I<f>; the equatorial radius is I<a> and
-the flattening is I<f>.  Setting I<f> = 0 results in a sphere.  Specify
+specify the ellipsoid via the equatorial radius, I<a> and
+the flattening, I<f>.  Setting I<f> = 0 results in a sphere.  Specify
 I<f> E<lt> 0 for a prolate ellipsoid.  A simple fraction, e.g., 1/297,
-is allowed for I<f>.  (Also, if I<f> E<gt> 1, the flattening is set to
-1/I<f>.)  By default, the WGS84 ellipsoid is used, I<a> = 6378137 m,
-I<f> = 1/298.257223563.
+is allowed for I<f>.  By default, the WGS84 ellipsoid is used, I<a> =
+6378137 m, I<f> = 1/298.257223563.
 
-=item B<--comment-delimiter>
+=item B<-w>
+
+toggle the longitude first flag (it starts off); if the flag is on, then
+on input and output, longitude precedes latitude (except that, on input,
+this can be overridden by a hemisphere designator, I<N>, I<S>, I<E>,
+I<W>).
+
+=item B<-p> I<prec>
+
+set the output precision to I<prec> (default 6).  I<prec> is the number
+of digits after the decimal point for lengths (in meters).  For
+latitudes and longitudes (in degrees), the number of digits after the
+decimal point is I<prec> + 5.  For the convergence (in degrees) and
+scale, the number of digits after the decimal point is I<prec> + 6.
+
+=item B<--comment-delimiter> I<commentdelim>
 
 set the comment delimiter to I<commentdelim> (e.g., "#" or "//").  If
 set, the input lines will be scanned for this delimiter and, if found,
@@ -102,23 +118,23 @@ print usage and exit.
 
 print full documentation and exit.
 
-=item B<--input-file>
+=item B<--input-file> I<infile>
 
 read input from the file I<infile> instead of from standard input; a file
 name of "-" stands for standard input.
 
-=item B<--input-string>
+=item B<--input-string> I<instring>
 
 read input from the string I<instring> instead of from standard input.
 All occurrences of the line separator character (default is a semicolon)
 in I<instring> are converted to newlines before the reading begins.
 
-=item B<--line-separator>
+=item B<--line-separator> I<linesep>
 
 set the line separator character to I<linesep>.  By default this is a
 semicolon.
 
-=item B<--output-file>
+=item B<--output-file> I<outfile>
 
 write output to the file I<outfile> instead of to standard output; a
 file name of "-" stands for standard output.
@@ -145,5 +161,5 @@ B<ConicProj> was written by Charles Karney.
 
 =head1 HISTORY
 
-B<ConicProj> was added to GeographicLib, L<http://geographiclib.sf.net>,
-in version 1.9.
+B<ConicProj> was added to GeographicLib,
+L<https://geographiclib.sourceforge.io>, in version 1.9.

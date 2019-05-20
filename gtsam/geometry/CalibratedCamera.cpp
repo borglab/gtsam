@@ -107,7 +107,7 @@ Point2 PinholeBase::Project(const Unit3& pc, OptionalJacobian<2, 2> Dpoint) {
 
 /* ************************************************************************* */
 pair<Point2, bool> PinholeBase::projectSafe(const Point3& pw) const {
-  const Point3 pc = pose().transform_to(pw);
+  const Point3 pc = pose().transformTo(pw);
   const Point2 pn = Project(pc);
   return make_pair(pn, pc.z() > 0);
 }
@@ -116,8 +116,8 @@ pair<Point2, bool> PinholeBase::projectSafe(const Point3& pw) const {
 Point2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
     OptionalJacobian<2, 3> Dpoint) const {
 
-  Matrix3 Rt; // calculated by transform_to if needed
-  const Point3 q = pose().transform_to(point, boost::none, Dpoint ? &Rt : 0);
+  Matrix3 Rt; // calculated by transformTo if needed
+  const Point3 q = pose().transformTo(point, boost::none, Dpoint ? &Rt : 0);
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   if (q.z() <= 0)
     throw CheiralityException();
@@ -142,8 +142,11 @@ Point2 PinholeBase::project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
   Matrix23 Dpc_rot;
   Matrix2 Dpc_point;
   const Unit3 pc = pose().rotation().unrotate(pw, Dpose ? &Dpc_rot : 0,
-      Dpose ? &Dpc_point : 0);
-
+      Dpoint ? &Dpc_point : 0);
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+  if (pc.unitVector().z() <= 0)
+    throw CheiralityException();
+#endif
   // camera to normalized image coordinate
   Matrix2 Dpn_pc;
   const Point2 pn = Project(pc, Dpose || Dpoint ? &Dpn_pc : 0);
@@ -161,8 +164,12 @@ Point2 PinholeBase::project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
   return pn;
 }
 /* ************************************************************************* */
-Point3 PinholeBase::backproject_from_camera(const Point2& p,
-    const double depth) {
+Point3 PinholeBase::BackprojectFromCamera(const Point2& p,
+    const double depth, OptionalJacobian<3, 2> Dpoint, OptionalJacobian<3, 1> Ddepth) {
+  if (Dpoint)
+    *Dpoint << depth, 0, 0, depth, 0, 0;
+  if (Ddepth)
+    *Ddepth << p.x(), p.y(), 1;
   return Point3(p.x() * depth, p.y() * depth, depth);
 }
 

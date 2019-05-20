@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -173,6 +173,35 @@ TEST(Pose2, expmap_c_full)
 }
 
 /* ************************************************************************* */
+// assert that T*exp(xi)*T^-1 is equal to exp(Ad_T(xi))
+TEST(Pose2, Adjoint_full) {
+  Pose2 T(1, 2, 3);
+  Pose2 expected = T * Pose2::Expmap(screwPose2::xi) * T.inverse();
+  Vector xiprime = T.Adjoint(screwPose2::xi);
+  EXPECT(assert_equal(expected, Pose2::Expmap(xiprime), 1e-6));
+
+  Vector3 xi2(4, 5, 6);
+  Pose2 expected2 = T * Pose2::Expmap(xi2) * T.inverse();
+  Vector xiprime2 = T.Adjoint(xi2);
+  EXPECT(assert_equal(expected2, Pose2::Expmap(xiprime2), 1e-6));
+}
+
+/* ************************************************************************* */
+// assert that T*wedge(xi)*T^-1 is equal to wedge(Ad_T(xi))
+TEST(Pose2, Adjoint_hat) {
+  Pose2 T(1, 2, 3);
+  auto hat = [](const Vector& xi) { return ::wedge<Pose2>(xi); };
+  Matrix3 expected = T.matrix() * hat(screwPose2::xi) * T.matrix().inverse();
+  Matrix3 xiprime = hat(T.Adjoint(screwPose2::xi));
+  EXPECT(assert_equal(expected, xiprime, 1e-6));
+
+  Vector3 xi2(4, 5, 6);
+  Matrix3 expected2 = T.matrix() * hat(xi2) * T.matrix().inverse();
+  Matrix3 xiprime2 = hat(T.Adjoint(xi2));
+  EXPECT(assert_equal(expected2, xiprime2, 1e-6));
+}
+
+/* ************************************************************************* */
 TEST(Pose2, logmap) {
   Pose2 pose0(M_PI/2.0, Point2(1, 2));
   Pose2 pose(M_PI/2.0+0.018, Point2(1.015, 2.01));
@@ -237,45 +266,44 @@ TEST( Pose2, LogmapDerivative2) {
 }
 
 /* ************************************************************************* */
-static Point2 transform_to_proxy(const Pose2& pose, const Point2& point) {
-  return pose.transform_to(point);
+static Point2 transformTo_(const Pose2& pose, const Point2& point) {
+  return pose.transformTo(point);
 }
 
-TEST( Pose2, transform_to )
-{
-  Pose2 pose(M_PI/2.0, Point2(1,2)); // robot at (1,2) looking towards y
-  Point2 point(-1,4);    // landmark at (-1,4)
+TEST(Pose2, transformTo) {
+  Pose2 pose(M_PI / 2.0, Point2(1, 2));  // robot at (1,2) looking towards y
+  Point2 point(-1, 4);                   // landmark at (-1,4)
 
   // expected
-  Point2 expected(2,2);
-  Matrix expectedH1 = (Matrix(2,3) << -1.0, 0.0, 2.0,  0.0, -1.0, -2.0).finished();
-  Matrix expectedH2 = (Matrix(2,2) << 0.0, 1.0,  -1.0, 0.0).finished();
+  Point2 expected(2, 2);
+  Matrix expectedH1 =
+      (Matrix(2, 3) << -1.0, 0.0, 2.0, 0.0, -1.0, -2.0).finished();
+  Matrix expectedH2 = (Matrix(2, 2) << 0.0, 1.0, -1.0, 0.0).finished();
 
   // actual
   Matrix actualH1, actualH2;
-  Point2 actual = pose.transform_to(point, actualH1, actualH2);
-  EXPECT(assert_equal(expected,actual));
+  Point2 actual = pose.transformTo(point, actualH1, actualH2);
+  EXPECT(assert_equal(expected, actual));
 
-  EXPECT(assert_equal(expectedH1,actualH1));
-  Matrix numericalH1 = numericalDerivative21(transform_to_proxy, pose, point);
-  EXPECT(assert_equal(numericalH1,actualH1));
+  EXPECT(assert_equal(expectedH1, actualH1));
+  Matrix numericalH1 = numericalDerivative21(transformTo_, pose, point);
+  EXPECT(assert_equal(numericalH1, actualH1));
 
-  EXPECT(assert_equal(expectedH2,actualH2));
-  Matrix numericalH2 = numericalDerivative22(transform_to_proxy, pose, point);
-  EXPECT(assert_equal(numericalH2,actualH2));
+  EXPECT(assert_equal(expectedH2, actualH2));
+  Matrix numericalH2 = numericalDerivative22(transformTo_, pose, point);
+  EXPECT(assert_equal(numericalH2, actualH2));
 }
 
 /* ************************************************************************* */
-static Point2 transform_from_proxy(const Pose2& pose, const Point2& point) {
-  return pose.transform_from(point);
+static Point2 transformFrom_(const Pose2& pose, const Point2& point) {
+  return pose.transformFrom(point);
 }
 
-TEST (Pose2, transform_from)
-{
-  Pose2 pose(1., 0., M_PI/2.0);
+TEST(Pose2, transformFrom) {
+  Pose2 pose(1., 0., M_PI / 2.0);
   Point2 pt(2., 1.);
   Matrix H1, H2;
-  Point2 actual = pose.transform_from(pt, H1, H2);
+  Point2 actual = pose.transformFrom(pt, H1, H2);
 
   Point2 expected(0., 2.);
   EXPECT(assert_equal(expected, actual));
@@ -283,11 +311,11 @@ TEST (Pose2, transform_from)
   Matrix H1_expected = (Matrix(2, 3) << 0., -1., -2., 1., 0., -1.).finished();
   Matrix H2_expected = (Matrix(2, 2) << 0., -1., 1., 0.).finished();
 
-  Matrix numericalH1 = numericalDerivative21(transform_from_proxy, pose, pt);
+  Matrix numericalH1 = numericalDerivative21(transformFrom_, pose, pt);
   EXPECT(assert_equal(H1_expected, H1));
   EXPECT(assert_equal(H1_expected, numericalH1));
 
-  Matrix numericalH2 = numericalDerivative22(transform_from_proxy, pose, pt);
+  Matrix numericalH2 = numericalDerivative22(transformFrom_, pose, pt);
   EXPECT(assert_equal(H2_expected, H2));
   EXPECT(assert_equal(H2_expected, numericalH2));
 }
@@ -320,8 +348,8 @@ TEST(Pose2, compose_a)
 
   Point2 point(sqrt(0.5), 3.0*sqrt(0.5));
   Point2 expected_point(-1.0, -1.0);
-  Point2 actual_point1 = (pose1 * pose2).transform_to(point);
-  Point2 actual_point2 = pose2.transform_to(pose1.transform_to(point));
+  Point2 actual_point1 = (pose1 * pose2).transformTo(point);
+  Point2 actual_point2 = pose2.transformTo(pose1.transformTo(point));
   EXPECT(assert_equal(expected_point, actual_point1));
   EXPECT(assert_equal(expected_point, actual_point2));
 }
@@ -706,7 +734,7 @@ TEST(Pose2, align_2) {
 
   vector<Point2Pair> correspondences;
   Point2 p1(0,0), p2(10,0);
-  Point2 q1 = expected.transform_from(p1), q2 = expected.transform_from(p2);
+  Point2 q1 = expected.transformFrom(p1), q2 = expected.transformFrom(p2);
   EXPECT(assert_equal(Point2(20,10),q1));
   EXPECT(assert_equal(Point2(20,20),q2));
   Point2Pair pq1(make_pair(p1, q1));
@@ -721,7 +749,7 @@ namespace align_3 {
   Point2 t(10,10);
   Pose2 expected(Rot2::fromAngle(2*M_PI/3), t);
   Point2 p1(0,0), p2(10,0), p3(10,10);
-  Point2 q1 = expected.transform_from(p1), q2 = expected.transform_from(p2), q3 = expected.transform_from(p3);
+  Point2 q1 = expected.transformFrom(p1), q2 = expected.transformFrom(p2), q3 = expected.transformFrom(p3);
 }
 
 TEST(Pose2, align_3) {
@@ -743,7 +771,7 @@ namespace {
   /* ************************************************************************* */
   struct Triangle { size_t i_,j_,k_;};
 
-  boost::optional<Pose2> align2(const vector<Point2>& ps, const vector<Point2>& qs,
+  boost::optional<Pose2> align2(const Point2Vector& ps, const Point2Vector& qs,
     const pair<Triangle, Triangle>& trianglePair) {
       const Triangle& t1 = trianglePair.first, t2 = trianglePair.second;
       vector<Point2Pair> correspondences;
@@ -755,7 +783,7 @@ namespace {
 TEST(Pose2, align_4) {
   using namespace align_3;
 
-  vector<Point2> ps,qs;
+  Point2Vector ps,qs;
   ps += p1, p2, p3;
   qs += q3, q1, q2; // note in 3,1,2 order !
 

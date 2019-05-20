@@ -104,6 +104,20 @@ Rot3 slow_but_correct_Rodrigues(const Vector& w) {
 }
 
 /* ************************************************************************* */
+TEST( Rot3, AxisAngle)
+{
+  Vector axis = Vector3(0., 1., 0.); // rotation around Y
+  double angle = 3.14 / 4.0;
+  Rot3 expected(0.707388, 0, 0.706825,
+                       0, 1,        0,
+               -0.706825, 0, 0.707388);
+  Rot3 actual = Rot3::AxisAngle(axis, angle);
+  CHECK(assert_equal(expected,actual,1e-5));
+  Rot3 actual2 = Rot3::AxisAngle(axis, angle-2*M_PI);
+  CHECK(assert_equal(expected,actual2,1e-5));
+}
+
+/* ************************************************************************* */
 TEST( Rot3, Rodrigues)
 {
   Rot3 R1 = Rot3::Rodrigues(epsilon, 0, 0);

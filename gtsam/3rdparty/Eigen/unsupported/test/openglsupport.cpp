@@ -318,10 +318,6 @@ void test_openglsupport()
         
       GLint prg_id = createShader(vtx,frg);
       
-      typedef Vector2d Vector2d;
-      typedef Vector3d Vector3d;
-      typedef Vector4d Vector4d;
-      
       VERIFY_UNIFORM(dv,v2d, Vector2d);
       VERIFY_UNIFORM(dv,v3d, Vector3d);
       VERIFY_UNIFORM(dv,v4d, Vector4d);

@@ -27,6 +27,8 @@
 #include <gtsam/linear/NoiseModel.h>
 
 #include <iosfwd>
+#include <string>
+#include <utility>
 
 namespace gtsam {
 
@@ -55,13 +57,12 @@ struct PoseVelocityBias {
  * It includes the definitions of the preintegrated variables and the methods
  * to access, print, and compare them.
  */
-class PreintegrationBase {
+class GTSAM_EXPORT PreintegrationBase {
  public:
   typedef imuBias::ConstantBias Bias;
   typedef PreintegrationParams Params;
 
  protected:
-
   /// Parameters. Declared mutable only for deprecated predict method.
   /// TODO(frank): make const once deprecated method is removed
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
@@ -78,7 +79,10 @@ class PreintegrationBase {
   /// Default constructor for serialization
   PreintegrationBase() {}
 
-public:
+  /// Virtual destructor for serialization
+  virtual ~PreintegrationBase() {}
+
+ public:
   /// @name Constructors
   /// @{
 
@@ -95,7 +99,7 @@ public:
   /// @name Basic utilities
   /// @{
   /// Re-initialize PreintegratedMeasurements
-  virtual void resetIntegration()=0;
+  virtual void resetIntegration() = 0;
 
   /// @name Basic utilities
   /// @{
@@ -129,10 +133,10 @@ public:
   const imuBias::ConstantBias& biasHat() const { return biasHat_; }
   double deltaTij() const { return deltaTij_; }
 
-  virtual Vector3  deltaPij() const=0;
-  virtual Vector3  deltaVij() const=0;
-  virtual Rot3     deltaRij() const=0;
-  virtual NavState deltaXij() const=0;
+  virtual Vector3  deltaPij() const = 0;
+  virtual Vector3  deltaVij() const = 0;
+  virtual Rot3     deltaRij() const = 0;
+  virtual NavState deltaXij() const = 0;
 
   // Exposed for MATLAB
   Vector6 biasHatVector() const { return biasHat_.vector(); }
@@ -147,20 +151,24 @@ public:
   /// @name Main functionality
   /// @{
 
-  /// Subtract estimate and correct for sensor pose
-  /// Compute the derivatives due to non-identity body_P_sensor (rotation and centrifugal acc)
-  /// Ignore D_correctedOmega_measuredAcc as it is trivially zero
+  /**
+   * Subtract estimate and correct for sensor pose
+   * Compute the derivatives due to non-identity body_P_sensor (rotation and centrifugal acc)
+   * Ignore D_correctedOmega_measuredAcc as it is trivially zero
+   */
   std::pair<Vector3, Vector3> correctMeasurementsBySensorPose(
       const Vector3& unbiasedAcc, const Vector3& unbiasedOmega,
       OptionalJacobian<3, 3> correctedAcc_H_unbiasedAcc = boost::none,
       OptionalJacobian<3, 3> correctedAcc_H_unbiasedOmega = boost::none,
       OptionalJacobian<3, 3> correctedOmega_H_unbiasedOmega = boost::none) const;
 
-  /// Update preintegrated measurements and get derivatives
-  /// It takes measured quantities in the j frame
-  /// Modifies preintegrated quantities in place after correcting for bias and possibly sensor pose
+  /**
+   *  Update preintegrated measurements and get derivatives
+   * It takes measured quantities in the j frame
+   * Modifies preintegrated quantities in place after correcting for bias and possibly sensor pose
+   */
   virtual void update(const Vector3& measuredAcc, const Vector3& measuredOmega,
-      const double dt, Matrix9* A, Matrix93* B, Matrix93* C)=0;
+      const double dt, Matrix9* A, Matrix93* B, Matrix93* C) = 0;
 
   /// Version without derivatives
   virtual void integrateMeasurement(const Vector3& measuredAcc,
@@ -169,7 +177,7 @@ public:
   /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far
   virtual Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
-      OptionalJacobian<9, 6> H = boost::none) const=0;
+      OptionalJacobian<9, 6> H = boost::none) const = 0;
 
   /// Predict state at time j
   NavState predict(const NavState& state_i, const imuBias::ConstantBias& bias_i,
@@ -182,7 +190,10 @@ public:
                        OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2,
                        OptionalJacobian<9, 6> H3) const;
 
-  /// Compute errors w.r.t. preintegrated measurements and jacobians wrt pose_i, vel_i, bias_i, pose_j, bias_j
+  /**
+   * Compute errors w.r.t. preintegrated measurements and jacobians
+   * wrt pose_i, vel_i, bias_i, pose_j, bias_j
+   */
   Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
       const Pose3& pose_j, const Vector3& vel_j,
       const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H1 =
@@ -202,7 +213,8 @@ public:
   /// @}
 #endif
 
-  /// @}
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} /// namespace gtsam
+}  /// namespace gtsam

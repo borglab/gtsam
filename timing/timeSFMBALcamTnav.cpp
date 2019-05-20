@@ -42,8 +42,8 @@ int main(int argc, char* argv[]) {
       Point3_ nav_point_(P(j));
       graph.addExpressionFactor(
           gNoiseModel, z,
-          uncalibrate(calibration_,  // now using transform_from !!!:
-                      project(transform_from(camTnav_, nav_point_))));
+          uncalibrate(calibration_,  // now using transformFrom !!!:
+                      project(transformFrom(camTnav_, nav_point_))));
     }
   }
 

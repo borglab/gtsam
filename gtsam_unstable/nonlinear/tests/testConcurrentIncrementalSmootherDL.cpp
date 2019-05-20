@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -583,7 +583,7 @@ TEST( ConcurrentIncrementalSmootherDL, synchronize_3 )
   for(const Values::ConstKeyValuePair& key_value: filterSeparatorValues) {
     allkeys.erase(key_value.key);
   }
-  std::vector<Key> variables(allkeys.begin(), allkeys.end());
+  KeyVector variables(allkeys.begin(), allkeys.end());
   std::pair<GaussianBayesNet::shared_ptr, GaussianFactorGraph::shared_ptr> result = LinFactorGraph->eliminatePartialSequential(variables, EliminateCholesky);
 
   expectedSmootherSummarization.resize(0);

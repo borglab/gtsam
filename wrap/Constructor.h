@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -25,6 +25,9 @@
 
 namespace wrap {
 
+// Forward declaration
+class Class;
+
 // Constructor class
 struct Constructor: public OverloadedFunction {
 
@@ -41,6 +44,9 @@ struct Constructor: public OverloadedFunction {
     inst.name_ = ts.expandedClassName();
     return inst;
   }
+
+  /// return true if the default constructor exists
+  bool hasDefaultConstructor() const;
 
   // MATLAB code generation
   // toolboxPath is main toolbox directory, e.g., ../matlab
@@ -77,6 +83,10 @@ struct Constructor: public OverloadedFunction {
 
   // emit python wrapper
   void python_wrapper(FileWriter& wrapperFile, Str className) const;
+
+  // emit cython wrapper
+  void emit_cython_pxd(FileWriter& pxdFile, const Class& cls) const;
+  void emit_cython_pyx(FileWriter& pyxFile, const Class& cls) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Constructor& m) {
     for (size_t i = 0; i < m.nrOverloads(); i++)

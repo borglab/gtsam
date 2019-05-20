@@ -4,7 +4,7 @@
  *
  * Copyright (c) Charles Karney (2011) <charles@karney.com> and licensed under
  * the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #if !defined(GEOGRAPHICLIB_SPHERICALHARMONIC_HPP)
@@ -14,7 +14,6 @@
 #include <GeographicLib/Constants.hpp>
 #include <GeographicLib/SphericalEngine.hpp>
 #include <GeographicLib/CircularEngine.hpp>
-#include <GeographicLib/Geocentric.hpp>
 
 namespace GeographicLib {
 
@@ -32,10 +31,10 @@ namespace GeographicLib {
    * - \e q = <i>a</i>/<i>r</i>,
    * - &theta; = atan2(\e p, \e z) = the spherical \e colatitude,
    * - &lambda; = atan2(\e y, \e x) = the longitude.
-   * - P<sub>\e nm</sub>(\e t) is the associated Legendre polynomial of degree
-   *   \e n and order \e m.
+   * - P<sub><i>nm</i></sub>(\e t) is the associated Legendre polynomial of
+   *   degree \e n and order \e m.
    *
-   * Two normalizations are supported for P<sub>\e nm</sub>
+   * Two normalizations are supported for P<sub><i>nm</i></sub>
    * - fully normalized denoted by SphericalHarmonic::FULL.
    * - Schmidt semi-normalized denoted by SphericalHarmonic::SCHMIDT.
    *
@@ -45,18 +44,23 @@ namespace GeographicLib {
    * implementation.
    *
    * References:
-   * - C. W. Clenshaw, A note on the summation of Chebyshev series,
+   * - C. W. Clenshaw,
+   *   <a href="https://doi.org/10.1090/S0025-5718-1955-0071856-0">
+   *   A note on the summation of Chebyshev series</a>,
    *   %Math. Tables Aids Comput. 9(51), 118--120 (1955).
    * - R. E. Deakin, Derivatives of the earth's potentials, Geomatics
    *   Research Australasia 68, 31--60, (June 1998).
    * - W. A. Heiskanen and H. Moritz, Physical Geodesy, (Freeman, San
    *   Francisco, 1967).  (See Sec. 1-14, for a definition of Pbar.)
-   * - S. A. Holmes and W. E. Featherstone, A unified approach to the Clenshaw
-   *   summation and the recursive computation of very high degree and order
-   *   normalised associated Legendre functions, J. Geodesy 76(5),
-   *   279--299 (2002).
-   * - C. C. Tscherning and K. Poder, Some geodetic applications of Clenshaw
-   *   summation, Boll. Geod. Sci. Aff. 41(4), 349--375 (1982).
+   * - S. A. Holmes and W. E. Featherstone,
+   *   <a href="https://doi.org/10.1007/s00190-002-0216-2">
+   *   A unified approach to the Clenshaw summation and the recursive
+   *   computation of very high degree and order normalised associated Legendre
+   *   functions</a>, J. Geodesy 76(5), 279--299 (2002).
+   * - C. C. Tscherning and K. Poder,
+   *   <a href="http://cct.gfy.ku.dk/publ_cct/cct80.pdf">
+   *   Some geodetic applications of Clenshaw summation</a>,
+   *   Boll. Geod. Sci. Aff. 41(4), 349--375 (1982).
    *
    * Example of use:
    * \include example-SphericalHarmonic.cpp
@@ -71,9 +75,10 @@ namespace GeographicLib {
       /**
        * Fully normalized associated Legendre polynomials.
        *
-       * These are defined by <i>P</i><sub><i>nm</i></sub><sup>full</sup>(\e z)
-       * = (&minus;1)<sup><i>m</i></sup> sqrt(\e k (2\e n + 1) (\e n &minus; \e
-       * m)! / (\e n + \e m)!)
+       * These are defined by
+       * <i>P</i><sub><i>nm</i></sub><sup>full</sup>(\e z)
+       * = (&minus;1)<sup><i>m</i></sup>
+       * sqrt(\e k (2\e n + 1) (\e n &minus; \e m)! / (\e n + \e m)!)
        * <b>P</b><sub><i>n</i></sub><sup><i>m</i></sup>(\e z), where
        * <b>P</b><sub><i>n</i></sub><sup><i>m</i></sup>(\e z) is Ferrers
        * function (also known as the Legendre function on the cut or the
@@ -92,10 +97,12 @@ namespace GeographicLib {
       /**
        * Schmidt semi-normalized associated Legendre polynomials.
        *
-       * These are defined by <i>P</i><sub><i>nm</i></sub><sup>schmidt</sup>(\e
-       * z) = (&minus;1)<sup><i>m</i></sup> sqrt(\e k (\e n &minus; \e m)! /
-       * (\e n + \e m)!)  <b>P</b><sub><i>n</i></sub><sup><i>m</i></sup>(\e z),
-       * where <b>P</b><sub><i>n</i></sub><sup><i>m</i></sup>(\e z) is Ferrers
+       * These are defined by
+       * <i>P</i><sub><i>nm</i></sub><sup>schmidt</sup>(\e z)
+       * = (&minus;1)<sup><i>m</i></sup>
+       * sqrt(\e k (\e n &minus; \e m)! / (\e n + \e m)!)
+       * <b>P</b><sub><i>n</i></sub><sup><i>m</i></sup>(\e z), where
+       * <b>P</b><sub><i>n</i></sub><sup><i>m</i></sup>(\e z) is Ferrers
        * function (also known as the Legendre function on the cut or the
        * associated Legendre polynomial) http://dlmf.nist.gov/14.7.E10 and \e k
        * = 1 for \e m = 0 and \e k = 2 otherwise.
@@ -109,11 +116,6 @@ namespace GeographicLib {
        * @hideinitializer
        **********************************************************************/
       SCHMIDT = SphericalEngine::SCHMIDT,
-      /// \cond SKIP
-      // These are deprecated...
-      full = FULL,
-      schmidt = SCHMIDT,
-      /// \endcond
     };
 
   private:
@@ -126,22 +128,23 @@ namespace GeographicLib {
     /**
      * Constructor with a full set of coefficients specified.
      *
-     * @param[in] C the coefficients \e C<sub>\e nm</sub>.
-     * @param[in] S the coefficients \e S<sub>\e nm</sub>.
+     * @param[in] C the coefficients <i>C</i><sub><i>nm</i></sub>.
+     * @param[in] S the coefficients <i>S</i><sub><i>nm</i></sub>.
      * @param[in] N the maximum degree and order of the sum
      * @param[in] a the reference radius appearing in the definition of the
      *   sum.
      * @param[in] norm the normalization for the associated Legendre
-     *   polynomials, either SphericalHarmonic::full (the default) or
-     *   SphericalHarmonic::schmidt.
+     *   polynomials, either SphericalHarmonic::FULL (the default) or
+     *   SphericalHarmonic::SCHMIDT.
      * @exception GeographicErr if \e N does not satisfy \e N &ge; &minus;1.
      * @exception GeographicErr if \e C or \e S is not big enough to hold the
      *   coefficients.
      *
-     * The coefficients \e C<sub>\e nm</sub> and \e S<sub>\e nm</sub> are
-     * stored in the one-dimensional vectors \e C and \e S which must contain
-     * (\e N + 1)(\e N + 2)/2 and N (\e N + 1)/2 elements, respectively, stored
-     * in "column-major" order.  Thus for \e N = 3, the order would be:
+     * The coefficients <i>C</i><sub><i>nm</i></sub> and
+     * <i>S</i><sub><i>nm</i></sub> are stored in the one-dimensional vectors
+     * \e C and \e S which must contain (\e N + 1)(\e N + 2)/2 and \e N (\e N +
+     * 1)/2 elements, respectively, stored in "column-major" order.  Thus for
+     * \e N = 3, the order would be:
      * <i>C</i><sub>00</sub>,
      * <i>C</i><sub>10</sub>,
      * <i>C</i><sub>20</sub>,
@@ -171,8 +174,8 @@ namespace GeographicLib {
     /**
      * Constructor with a subset of coefficients specified.
      *
-     * @param[in] C the coefficients \e C<sub>\e nm</sub>.
-     * @param[in] S the coefficients \e S<sub>\e nm</sub>.
+     * @param[in] C the coefficients <i>C</i><sub><i>nm</i></sub>.
+     * @param[in] S the coefficients <i>S</i><sub><i>nm</i></sub>.
      * @param[in] N the degree used to determine the layout of \e C and \e S.
      * @param[in] nmx the maximum degree used in the sum.  The sum over \e n is
      *   from 0 thru \e nmx.
@@ -218,7 +221,7 @@ namespace GeographicLib {
      * This routine requires constant memory and thus never throws an
      * exception.
      **********************************************************************/
-    Math::real operator()(real x, real y, real z) const throw() {
+    Math::real operator()(real x, real y, real z) const {
       real f[] = {1};
       real v = 0;
       real dummy;
@@ -252,7 +255,7 @@ namespace GeographicLib {
      * an exception.
      **********************************************************************/
     Math::real operator()(real x, real y, real z,
-                          real& gradx, real& grady, real& gradz) const throw() {
+                          real& gradx, real& grady, real& gradz) const {
       real f[] = {1};
       real v = 0;
       switch (_norm) {
@@ -281,8 +284,9 @@ namespace GeographicLib {
      * @return the CircularEngine object.
      *
      * SphericalHarmonic::operator()() exchanges the order of the sums in the
-     * definition, i.e., &sum;<sub>n = 0..N</sub> &sum;<sub>m = 0..n</sub>
-     * becomes &sum;<sub>m = 0..N</sub> &sum;<sub>n = m..N</sub>.
+     * definition, i.e., &sum;<sub><i>n</i> = 0..<i>N</i></sub>
+     * &sum;<sub><i>m</i> = 0..<i>n</i></sub> becomes &sum;<sub><i>m</i> =
+     * 0..<i>N</i></sub> &sum;<sub><i>n</i> = <i>m</i>..<i>N</i></sub>.
      * SphericalHarmonic::Circle performs the inner sum over degree \e n (which
      * entails about <i>N</i><sup>2</sup> operations).  Calling
      * CircularEngine::operator()() on the returned object performs the outer
@@ -341,7 +345,7 @@ namespace GeographicLib {
     /**
      * @return the zeroth SphericalEngine::coeff object.
      **********************************************************************/
-    const SphericalEngine::coeff& Coefficients() const throw()
+    const SphericalEngine::coeff& Coefficients() const
     { return _c[0]; }
   };
 

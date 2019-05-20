@@ -11,7 +11,9 @@
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/base/Manifold.h>
+
 #include <iosfwd>
+#include <string>
 
 namespace gtsam {
 
@@ -21,19 +23,13 @@ namespace gtsam {
  * but here we choose instead to parameterize it as a (Rot3,Unit3) pair.
  * We can then non-linearly optimize immediately on this 5-dimensional manifold.
  */
-class GTSAM_EXPORT EssentialMatrix : private ProductManifold<Rot3, Unit3> {
+class GTSAM_EXPORT EssentialMatrix {
+ private:
+  Rot3 R_;     ///< Rotation
+  Unit3 t_;    ///< Translation
+  Matrix3 E_;  ///< Essential matrix
 
-private:
-  typedef ProductManifold<Rot3, Unit3> Base;
-  Matrix3 E_; ///< Essential matrix
-
-  /// Construct from Base
-  EssentialMatrix(const Base& base) :
-      Base(base), E_(direction().skew() * rotation().matrix()) {
-  }
-
-public:
-
+ public:
   /// Static function to convert Point2 to homogeneous coordinates
   static Vector3 Homogeneous(const Point2& p) {
     return Vector3(p.x(), p.y(), 1);
@@ -43,13 +39,12 @@ public:
   /// @{
 
   /// Default constructor
-  EssentialMatrix() :
-      Base(Rot3(), Unit3(1, 0, 0)), E_(direction().skew()) {
+  EssentialMatrix() :E_(t_.skew()) {
   }
 
   /// Construct from rotation and translation
   EssentialMatrix(const Rot3& aRb, const Unit3& aTb) :
-      Base(aRb, aTb), E_(direction().skew() * rotation().matrix()) {
+      R_(aRb), t_(aTb), E_(t_.skew() * R_.matrix()) {
   }
 
   /// Named constructor with derivatives
@@ -79,27 +74,32 @@ public:
 
   /// assert equality up to a tolerance
   bool equals(const EssentialMatrix& other, double tol = 1e-8) const {
-    return rotation().equals(other.rotation(), tol)
-        && direction().equals(other.direction(), tol);
+    return R_.equals(other.R_, tol)
+        && t_.equals(other.t_, tol);
   }
 
   /// @}
 
   /// @name Manifold
   /// @{
+  enum { dimension = 5 };
+  inline static size_t Dim() { return dimension;}
+  inline size_t dim() const { return dimension;}
 
-  using Base::dimension;
-  using Base::dim;
-  using Base::Dim;
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 
   /// Retract delta to manifold
-  EssentialMatrix retract(const TangentVector& v) const {
-    return Base::retract(v);
+  EssentialMatrix retract(const Vector5& xi) const {
+    return EssentialMatrix(R_.retract(xi.head<3>()), t_.retract(xi.tail<2>()));
   }
 
   /// Compute the coordinates in the tangent space
-  TangentVector localCoordinates(const EssentialMatrix& other) const {
-    return Base::localCoordinates(other);
+  Vector5 localCoordinates(const EssentialMatrix& other) const {
+    auto v1 = R_.localCoordinates(other.R_);
+    auto v2 = t_.localCoordinates(other.t_);
+    Vector5 v;
+    v << v1, v2;
+    return v;
   }
   /// @}
 
@@ -108,12 +108,12 @@ public:
 
   /// Rotation
   inline const Rot3& rotation() const {
-    return this->first;
+    return R_;
   }
 
   /// Direction
   inline const Unit3& direction() const {
-    return this->second;
+    return t_;
   }
 
   /// Return 3*3 matrix representation
@@ -123,12 +123,12 @@ public:
 
   /// Return epipole in image_a , as Unit3 to allow for infinity
   inline const Unit3& epipole_a() const {
-    return direction();
+    return t_;
   }
 
   /// Return epipole in image_b, as Unit3 to allow for infinity
   inline Unit3 epipole_b() const {
-    return rotation().unrotate(direction());
+    return R_.unrotate(t_);
   }
 
   /**
@@ -138,9 +138,9 @@ public:
    * @param Dpoint optional 3*3 Jacobian wrpt point
    * @return point in pose coordinates
    */
-  Point3 transform_to(const Point3& p,
-      OptionalJacobian<3,5> DE = boost::none,
-      OptionalJacobian<3,3> Dpoint = boost::none) const;
+  Point3 transformTo(const Point3& p,
+      OptionalJacobian<3, 5> DE = boost::none,
+      OptionalJacobian<3, 3> Dpoint = boost::none) const;
 
   /**
    * Given essential matrix E in camera frame B, convert to body frame C
@@ -160,8 +160,8 @@ public:
   }
 
   /// epipolar error, algebraic
-  double error(const Vector3& vA, const Vector3& vB, //
-      OptionalJacobian<1,5> H = boost::none) const;
+  double error(const Vector3& vA, const Vector3& vB,
+      OptionalJacobian<1, 5> H = boost::none) const;
 
   /// @}
 
@@ -176,8 +176,18 @@ public:
 
   /// @}
 
-private:
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  /// @name Deprecated
+  /// @{
+  Point3 transform_to(const Point3& p,
+      OptionalJacobian<3, 5> DE = boost::none,
+      OptionalJacobian<3, 3> Dpoint = boost::none) const {
+    return transformTo(p, DE, Dpoint);
+  };
+  /// @}
+#endif
 
+ private:
   /// @name Advanced Interface
   /// @{
 
@@ -185,21 +195,24 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_NVP(first);
-      ar & BOOST_SERIALIZATION_NVP(second);
+      ar & BOOST_SERIALIZATION_NVP(R_);
+      ar & BOOST_SERIALIZATION_NVP(t_);
 
-      ar & boost::serialization::make_nvp("E11", E_(0,0));
-      ar & boost::serialization::make_nvp("E12", E_(0,1));
-      ar & boost::serialization::make_nvp("E13", E_(0,2));
-      ar & boost::serialization::make_nvp("E21", E_(1,0));
-      ar & boost::serialization::make_nvp("E22", E_(1,1));
-      ar & boost::serialization::make_nvp("E23", E_(1,2));
-      ar & boost::serialization::make_nvp("E31", E_(2,0));
-      ar & boost::serialization::make_nvp("E32", E_(2,1));
-      ar & boost::serialization::make_nvp("E33", E_(2,2));
+      ar & boost::serialization::make_nvp("E11", E_(0, 0));
+      ar & boost::serialization::make_nvp("E12", E_(0, 1));
+      ar & boost::serialization::make_nvp("E13", E_(0, 2));
+      ar & boost::serialization::make_nvp("E21", E_(1, 0));
+      ar & boost::serialization::make_nvp("E22", E_(1, 1));
+      ar & boost::serialization::make_nvp("E23", E_(1, 2));
+      ar & boost::serialization::make_nvp("E31", E_(2, 0));
+      ar & boost::serialization::make_nvp("E32", E_(2, 1));
+      ar & boost::serialization::make_nvp("E33", E_(2, 2));
     }
 
   /// @}
+
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template<>
@@ -208,5 +221,5 @@ struct traits<EssentialMatrix> : public internal::Manifold<EssentialMatrix> {};
 template<>
 struct traits<const EssentialMatrix> : public internal::Manifold<EssentialMatrix> {};
 
-} // gtsam
+}  // namespace gtsam
 

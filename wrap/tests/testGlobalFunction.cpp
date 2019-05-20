@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -37,7 +37,8 @@ TEST( GlobalFunction, Grammar ) {
   // Create type grammar that will place result in actual
   GlobalFunctions actual;
   vector<string> namespaces;
-  GlobalFunctionGrammar g(actual,namespaces);
+  std::string includeFile;
+  GlobalFunctionGrammar g(actual,namespaces,includeFile);
 
   // a class type with namespaces
   EXPECT(parse("Vector aGlobalFunction();", g, space_p).full);

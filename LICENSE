@@ -1,18 +1,25 @@
 GTSAM is released under the simplified BSD license, reproduced in the file 
 LICENSE.BSD in this directory.
 
-GTSAM contains two third party libraries, with documentation of licensing and 
-modifications as follows:
+GTSAM contains several third party libraries, with documentation of licensing
+and modifications as follows:
 
-- CCOLAMD 2.73: Tim Davis' constrained column approximate minimum degree 
+- CCOLAMD 2.9.6: Tim Davis' constrained column approximate minimum degree
 ordering library
-    - Included unmodified in gtsam/3rdparty/CCOLAMD and gtsam/3rdparty/UFconfig
-    - http://www.cise.ufl.edu/research/sparse
-    - Licenced under LGPL v2.1, provided in gtsam/3rdparty/CCOLAMD/Doc/lesser.txt
-- Eigen 3.2:  General C++ matrix and linear algebra library
-    - Modified with 3 patches that have been contributed back to the Eigen team:
-        - http://eigen.tuxfamily.org/bz/show_bug.cgi?id=704 (Householder QR MKL selection)
-        - http://eigen.tuxfamily.org/bz/show_bug.cgi?id=705 (Fix MKL LLT return code)
-        - http://eigen.tuxfamily.org/bz/show_bug.cgi?id=716 (Improved comma initialization)
+    - Included unmodified in gtsam/3rdparty/CCOLAMD and
+      gtsam/3rdparty/SuiteSparse_config
+    - http://faculty.cse.tamu.edu/davis/suitesparse.html
+    - Licenced under BSD-3, provided in gtsam/3rdparty/CCOLAMD/Doc/License.txt
+- ceres: Google's nonlinear least-squares optimization library
+    - Includes only auto-diff/jet code, with minor modifications to includes
+    - http://ceres-solver.org/license.html
+- Eigen 3.3.7:  General C++ matrix and linear algebra library
     - Licenced under MPL2, provided in gtsam/3rdparty/Eigen/COPYING.README 
     - Some code that is 3rd-party to Eigen is BSD and LGPL
+- GeographicLib 1.35: Charles Karney's geographic conversion utility library
+    - Included unmodified in gtsam/3rdparty/GeographicLib
+    - Licenced under MIT, provided in gtsam/3rdparty/GeographicLib/LICENSE.txt
+- METIS 5.1.0: Graph partitioning and fill-reducing matrix ordering library
+    - Included unmodified in gtsam/3rdparty/metis
+    - Licenced under Apache License v 2.0, provided in
+      gtsam/3rdparty/metis/LICENSE.txt

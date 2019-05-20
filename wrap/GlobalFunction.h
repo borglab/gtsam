@@ -2,7 +2,7 @@
  * @file GlobalFunction.h
  *
  * @brief Implements codegen for a global function wrapped in matlab
- * 
+ *
  * @date Jul 22, 2012
  * @author Alex Cunningham
  */
@@ -28,10 +28,11 @@ namespace wrap {
 struct GlobalFunction: public FullyOverloadedFunction {
 
   std::vector<Qualified> overloads; ///< Stack of qualified names
+  std::string includeFile;
 
   // adds an overloaded version of this function,
   void addOverload(const Qualified& overload, const ArgumentList& args,
-      const ReturnValue& retVal, boost::optional<const Qualified> instName =
+      const ReturnValue& retVal, const std::string& _includeFile = "", boost::optional<const Qualified> instName =
           boost::none, bool verbose = false);
 
   void verifyArguments(const std::vector<std::string>& validArgs) const {
@@ -50,6 +51,16 @@ struct GlobalFunction: public FullyOverloadedFunction {
   // emit python wrapper
   void python_wrapper(FileWriter& wrapperFile) const;
 
+  // function name in Cython pxd
+  std::string pxdName() const { return "pxd_" + pyRename(name_); }
+  // function name in Python pyx
+  std::string pyxName() const { return pyRename(name_); }
+
+  // emit cython wrapper
+  void emit_cython_pxd(FileWriter& pxdFile) const;
+  void emit_cython_pyx(FileWriter& pyxFile) const;
+  void emit_cython_pyx_no_overload(FileWriter& pyxFile) const;
+
 private:
 
   // Creates a single global function - all in same namespace
@@ -67,12 +78,15 @@ struct GlobalFunctionGrammar: public classic::grammar<GlobalFunctionGrammar> {
 
   GlobalFunctions& global_functions_; ///< successful parse will be placed in here
   std::vector<std::string>& namespaces_;
+  std::string& includeFile;
 
   /// Construct type grammar and specify where result is placed
   GlobalFunctionGrammar(GlobalFunctions& global_functions,
-      std::vector<std::string>& namespaces) :
-      global_functions_(global_functions), namespaces_(namespaces) {
-  }
+                        std::vector<std::string>& namespaces,
+                        std::string& includeFile)
+      : global_functions_(global_functions),
+        namespaces_(namespaces),
+        includeFile(includeFile) {}
 
   /// Definition of type grammar
   template<typename ScannerT>
@@ -101,16 +115,16 @@ struct GlobalFunctionGrammar: public classic::grammar<GlobalFunctionGrammar> {
       globalFunctionName_p = lexeme_d[(upper_p | lower_p) >> *(alnum_p | '_')];
 
       // parse a global function
-      global_function_p = (returnValue_g
-          >> globalFunctionName_p[assign_a(globalFunction.name_)]
-          >> argumentList_g >> ';' >> *comments_p) //
-          [assign_a(globalFunction.namespaces_, self.namespaces_)][bl::bind(
+      global_function_p = (returnValue_g >> globalFunctionName_p[assign_a(
+                                                globalFunction.name_)] >>
+                           argumentList_g >> ';' >> *comments_p)    //
+          [assign_a(globalFunction.namespaces_, self.namespaces_)]  //
+          [bl::bind(
               &GlobalFunction::addOverload,
               bl::var(self.global_functions_)[bl::var(globalFunction.name_)],
-              bl::var(globalFunction), bl::var(args), bl::var(retVal),
-              boost::none, verbose)] //
+              bl::var(globalFunction), bl::var(args), bl::var(retVal), bl::var(self.includeFile),
+              boost::none, verbose)]  //
           [assign_a(retVal, retVal0)][clear_a(globalFunction)][clear_a(args)];
-
     }
 
     classic::rule<ScannerT> const& start() const {

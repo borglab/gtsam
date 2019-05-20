@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -39,6 +39,12 @@ struct Argument {
       type(t), name(n), is_const(false), is_ref(false), is_ptr(false) {
   }
 
+  bool isSameSignature(const Argument& other) const {
+    return type == other.type
+        && is_const == other.is_const && is_ref == other.is_ref
+        && is_ptr == other.is_ptr;
+  }
+
   bool operator==(const Argument& other) const {
     return type == other.type && name == other.name
         && is_const == other.is_const && is_ref == other.is_ref
@@ -50,9 +56,6 @@ struct Argument {
   /// return MATLAB class for use in isa(x,class)
   std::string matlabClass(const std::string& delim = "") const;
 
-  /// Check if will be unwrapped using scalar login in wrap/matlab.h
-  bool isScalar() const;
-
   /// MATLAB code generation, MATLAB to C++
   void matlab_unwrap(FileWriter& file, const std::string& matlabName) const;
 
@@ -61,6 +64,16 @@ struct Argument {
    * @param proxyFile output stream
    */
   void proxy_check(FileWriter& proxyFile, const std::string& s) const;
+
+  /**
+   * emit arguments for cython pxd
+   * @param file output stream
+   */
+  void emit_cython_pxd(FileWriter& file, const std::string& className,
+                       const std::vector<std::string>& templateArgs) const;
+  void emit_cython_pyx(FileWriter& file) const;
+  std::string pyx_asParam() const;
+  std::string pyx_convertEigenTypeAndStorageOrder() const;
 
   friend std::ostream& operator<<(std::ostream& os, const Argument& arg) {
     os << (arg.is_const ? "const " : "") << arg.type << (arg.is_ptr ? "*" : "")
@@ -87,6 +100,12 @@ struct ArgumentList: public std::vector<Argument> {
 
   ArgumentList expandTemplate(const TemplateSubstitution& ts) const;
 
+  bool isSameSignature(const ArgumentList& other) const {
+    for(size_t i = 0; i<size(); ++i)
+      if (!at(i).isSameSignature(other[i])) return false;
+    return true;
+  }
+
   // MATLAB code generation:
 
   /**
@@ -102,6 +121,18 @@ struct ArgumentList: public std::vector<Argument> {
    * @param name of method or function
    */
   void emit_prototype(FileWriter& file, const std::string& name) const;
+
+  /**
+   * emit arguments for cython pxd
+   * @param file output stream
+   */
+  void emit_cython_pxd(FileWriter& file, const std::string& className,
+                       const std::vector<std::string>& templateArgs) const;
+  void emit_cython_pyx(FileWriter& file) const;
+  std::string pyx_asParams() const;
+  std::string pyx_paramsList() const;
+  std::string pyx_castParamsToPythonType(const std::string& indent) const;
+  std::string pyx_convertEigenTypeAndStorageOrder(const std::string& indent) const;
 
   /**
    * emit checking arguments to MATLAB proxy

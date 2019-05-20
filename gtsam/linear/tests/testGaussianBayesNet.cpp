@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -21,6 +21,8 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 
+#include <CppUnitLite/TestHarness.h>
+#include <boost/tuple/tuple.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
@@ -28,13 +30,11 @@ using namespace boost::assign;
 // STL/C++
 #include <iostream>
 #include <sstream>
-#include <CppUnitLite/TestHarness.h>
-#include <boost/tuple/tuple.hpp>
 
 using namespace std;
 using namespace gtsam;
 
-static const Key _x_=0, _y_=1;
+static const Key _x_ = 11, _y_ = 22, _z_ = 33;
 
 static GaussianBayesNet smallBayesNet =
     list_of(GaussianConditional(_x_, Vector1::Constant(9), I_1x1, _y_, I_1x1))(
@@ -42,9 +42,9 @@ static GaussianBayesNet smallBayesNet =
 
 static GaussianBayesNet noisyBayesNet =
     list_of(GaussianConditional(_x_, Vector1::Constant(9), I_1x1, _y_, I_1x1,
-                                noiseModel::Diagonal::Sigmas(Vector1::Constant(2))))(
+                                noiseModel::Isotropic::Sigma(1, 2.0)))(
         GaussianConditional(_y_, Vector1::Constant(5), I_1x1,
-                            noiseModel::Diagonal::Sigmas(Vector1::Constant(3))));
+                            noiseModel::Isotropic::Sigma(1, 3.0)));
 
 /* ************************************************************************* */
 TEST( GaussianBayesNet, Matrix )
@@ -120,7 +120,7 @@ TEST( GaussianBayesNet, optimizeIncomplete )
 TEST( GaussianBayesNet, optimize3 )
 {
   // y = R*x, x=inv(R)*y
-  // 4 = 1 1   -1 
+  // 4 = 1 1   -1
   // 5     1    5
   // NOTE: we are supplying a new RHS here
 
@@ -134,6 +134,37 @@ TEST( GaussianBayesNet, optimize3 )
     (_y_, Vector1::Constant(5));
   VectorValues actual = smallBayesNet.backSubstitute(gx);
   EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(GaussianBayesNet, ordering) 
+{
+  Ordering expected;
+  expected += _x_, _y_;
+  const auto actual = noisyBayesNet.ordering();
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST( GaussianBayesNet, MatrixStress )
+{
+  GaussianBayesNet bn;
+  using GC = GaussianConditional;
+  bn.emplace_shared<GC>(_x_, Vector2(1, 2), 1 * I_2x2, _y_, 2 * I_2x2, _z_, 3 * I_2x2);
+  bn.emplace_shared<GC>(_y_, Vector2(3, 4), 4 * I_2x2, _z_, 5 * I_2x2);
+  bn.emplace_shared<GC>(_z_, Vector2(5, 6), 6 * I_2x2);
+
+  const VectorValues expected = bn.optimize();
+  for (const auto keys :
+       {KeyVector({_x_, _y_, _z_}), KeyVector({_x_, _z_, _y_}),
+        KeyVector({_y_, _x_, _z_}), KeyVector({_y_, _z_, _x_}),
+        KeyVector({_z_, _x_, _y_}), KeyVector({_z_, _y_, _x_})}) {
+    const Ordering ordering(keys);
+    Matrix R;
+    Vector d;
+    boost::tie(R, d) = bn.matrix(ordering);
+    EXPECT(assert_equal(expected.vector(ordering), R.inverse() * d));
+  }
 }
 
 /* ************************************************************************* */
@@ -152,6 +183,34 @@ TEST( GaussianBayesNet, backSubstituteTranspose )
 
   VectorValues actual = smallBayesNet.backSubstituteTranspose(x);
   EXPECT(assert_equal(expected, actual));
+  
+  const auto ordering = noisyBayesNet.ordering();
+  const Matrix R = smallBayesNet.matrix(ordering).first;
+  const Vector expected_vector = R.transpose().inverse() * x.vector(ordering);
+  EXPECT(assert_equal(expected_vector, actual.vector(ordering)));
+}
+
+/* ************************************************************************* */
+TEST( GaussianBayesNet, backSubstituteTransposeNoisy )
+{
+  // x=R'*y, expected=inv(R')*x
+  // 2 = 1    2
+  // 5   1 1  3
+  VectorValues
+    x = map_list_of<Key, Vector>
+      (_x_, Vector1::Constant(2))
+      (_y_, Vector1::Constant(5)),
+    expected = map_list_of<Key, Vector>
+      (_x_, Vector1::Constant(4))
+      (_y_, Vector1::Constant(9));
+
+  VectorValues actual = noisyBayesNet.backSubstituteTranspose(x);
+  EXPECT(assert_equal(expected, actual));
+  
+  const auto ordering = noisyBayesNet.ordering();
+  const Matrix R = noisyBayesNet.matrix(ordering).first;
+  const Vector expected_vector = R.transpose().inverse() * x.vector(ordering);
+  EXPECT(assert_equal(expected_vector, actual.vector(ordering)));
 }
 
 /* ************************************************************************* */
@@ -229,7 +288,7 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
   VectorValues actual = gbn.optimizeGradientSearch();
 
   // Check that points agree
-  FastVector<Key> keys = list_of(0)(1)(2)(3)(4);
+  KeyVector keys {0, 1, 2, 3, 4};
   Vector actualAsVector = actual.vector(keys);
   EXPECT(assert_equal(expected, actualAsVector, 1e-5));
 

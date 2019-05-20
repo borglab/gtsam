@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -96,7 +96,7 @@ namespace gtsam {
 
     /** Root cliques */
     typedef FastVector<sharedClique> Roots;
-    
+
     /** Root cliques */
     Roots roots_;
 
@@ -190,7 +190,7 @@ namespace gtsam {
     /// @}
     /// @name Advanced Interface
     /// @{
-    
+
     /**
      * Find parent clique of a conditional.  It will look at all parents and
      * return the one with the lowest index in the ordering.
@@ -214,7 +214,7 @@ namespace gtsam {
      * Given a list of indices, turn "contaminated" part of the tree back into a factor graph.
      * Factors and orphans are added to the in/out arguments.
      */
-    void removeTop(const FastVector<Key>& keys, BayesNetType& bn, Cliques& orphans);
+    void removeTop(const KeyVector& keys, BayesNetType& bn, Cliques& orphans);
 
     /**
      * Remove the requested subtree. */

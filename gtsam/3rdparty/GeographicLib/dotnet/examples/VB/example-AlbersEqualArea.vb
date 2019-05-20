@@ -5,7 +5,7 @@ Module example_AlbersEqualArea
         Try
             Dim lat1 As Double = 40 + 58 / 60.0 : Dim lat2 As Double = 39 + 56 / 60.0 ' standard parallels
             Dim k1 As Double = 1  ' scale
-            Dim lon0 As Double = -77 - 45 / 60.0 ' Central meridan
+            Dim lon0 As Double = -77 - 45 / 60.0 ' Central meridian
             ' Set up basic projection
             Dim albers As AlbersEqualArea = New AlbersEqualArea(Constants.WGS84.MajorRadius,
                                                                 Constants.WGS84.Flattening,

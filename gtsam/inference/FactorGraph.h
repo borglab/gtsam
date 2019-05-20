@@ -22,16 +22,20 @@
 
 #pragma once
 
-#include <boost/serialization/nvp.hpp>
-#include <boost/assign/list_inserter.hpp>
-#include <boost/bind.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/utility/enable_if.hpp>
-#include <boost/type_traits.hpp>
-
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Key.h>
+
+#include <Eigen/Core>  // for Eigen::aligned_allocator
+
+#include <boost/serialization/nvp.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/assign/list_inserter.hpp>
+#include <boost/bind.hpp>
+#include <boost/make_shared.hpp>
+
+#include <type_traits>
+#include <utility>
 
 namespace gtsam {
 
@@ -151,7 +155,7 @@ namespace gtsam {
 
     /** Add a factor directly using a shared_ptr */
     template<class DERIVEDFACTOR>
-    typename boost::enable_if<boost::is_base_of<FactorType, DERIVEDFACTOR> >::type
+    typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
     push_back(boost::shared_ptr<DERIVEDFACTOR> factor) {
       factors_.push_back(boost::shared_ptr<FACTOR>(factor)); }
 
@@ -159,15 +163,22 @@ namespace gtsam {
     void push_back(const sharedFactor& factor) {
       factors_.push_back(factor); }
 
+    /** Emplace a factor */
+	template<class DERIVEDFACTOR, class... Args>
+	typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
+		emplace_shared(Args&&... args) {
+		factors_.push_back(boost::allocate_shared<DERIVEDFACTOR>(Eigen::aligned_allocator<DERIVEDFACTOR>(), std::forward<Args>(args)...));
+	}
+
     /** push back many factors with an iterator over shared_ptr (factors are not copied) */
     template<typename ITERATOR>
-    typename boost::enable_if<boost::is_base_of<FactorType, typename ITERATOR::value_type::element_type> >::type
+    typename std::enable_if<std::is_base_of<FactorType, typename ITERATOR::value_type::element_type>::value>::type
       push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
         factors_.insert(end(), firstFactor, lastFactor); }
 
     /** push back many factors as shared_ptr's in a container (factors are not copied) */
     template<typename CONTAINER>
-    typename boost::enable_if<boost::is_base_of<FactorType, typename CONTAINER::value_type::element_type> >::type
+    typename std::enable_if<std::is_base_of<FactorType, typename CONTAINER::value_type::element_type>::value>::type
       push_back(const CONTAINER& container) {
         push_back(container.begin(), container.end());
     }
@@ -175,22 +186,24 @@ namespace gtsam {
     /** push back a BayesTree as a collection of factors.  NOTE: This should be hidden in derived
      *  classes in favor of a type-specialized version that calls this templated function. */
     template<class CLIQUE>
-    typename boost::enable_if<boost::is_base_of<This, typename CLIQUE::FactorGraphType> >::type
+    typename std::enable_if<std::is_base_of<This, typename CLIQUE::FactorGraphType>::value>::type
     push_back(const BayesTree<CLIQUE>& bayesTree) {
       bayesTree.addFactorsToGraph(*this);
     }
 
+//#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     /** Add a factor by value, will be copy-constructed (use push_back with a shared_ptr to avoid
     *  the copy). */
     template<class DERIVEDFACTOR>
-    typename boost::enable_if<boost::is_base_of<FactorType, DERIVEDFACTOR> >::type
+    typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
       push_back(const DERIVEDFACTOR& factor) {
-        factors_.push_back(boost::make_shared<DERIVEDFACTOR>(factor));
+        factors_.push_back(boost::allocate_shared<DERIVEDFACTOR>(Eigen::aligned_allocator<DERIVEDFACTOR>(), factor));
     }
+//#endif
 
     /** push back many factors with an iterator over plain factors (factors are copied) */
     template<typename ITERATOR>
-    typename boost::enable_if<boost::is_base_of<FactorType, typename ITERATOR::value_type> >::type
+    typename std::enable_if<std::is_base_of<FactorType, typename ITERATOR::value_type>::value>::type
       push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
         for (ITERATOR f = firstFactor; f != lastFactor; ++f)
           push_back(*f);
@@ -198,14 +211,14 @@ namespace gtsam {
 
     /** push back many factors as non-pointer objects in a container (factors are copied) */
     template<typename CONTAINER>
-    typename boost::enable_if<boost::is_base_of<FactorType, typename CONTAINER::value_type> >::type
+    typename std::enable_if<std::is_base_of<FactorType, typename CONTAINER::value_type>::value>::type
       push_back(const CONTAINER& container) {
         push_back(container.begin(), container.end());
     }
 
     /** Add a factor directly using a shared_ptr */
     template<class DERIVEDFACTOR>
-    typename boost::enable_if<boost::is_base_of<FactorType, DERIVEDFACTOR>,
+    typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value,
       boost::assign::list_inserter<RefCallPushBack<This> > >::type
       operator+=(boost::shared_ptr<DERIVEDFACTOR> factor) {
         return boost::assign::make_list_inserter(RefCallPushBack<This>(*this))(factor);
@@ -226,7 +239,7 @@ namespace gtsam {
 
     /** Add a factor directly using a shared_ptr */
     template<class DERIVEDFACTOR>
-    typename boost::enable_if<boost::is_base_of<FactorType, DERIVEDFACTOR> >::type
+    typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value>::type
       add(boost::shared_ptr<DERIVEDFACTOR> factor) {
         push_back(factor);
     }

@@ -7,7 +7,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 namespace NETGeographicLib
@@ -34,6 +34,9 @@ namespace NETGeographicLib
    * - WMM2010:
    *   - http://ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml
    *   - http://ngdc.noaa.gov/geomag/WMM/data/WMM2010/WMM2010COF.zip
+   * - WMM2015:
+   *   - http://ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml
+   *   - http://ngdc.noaa.gov/geomag/WMM/data/WMM2015/WMM2015COF.zip
    * - IGRF11:
    *   - http://ngdc.noaa.gov/IAGA/vmod/igrf.html
    *   - http://ngdc.noaa.gov/IAGA/vmod/igrf11coeffs.txt
@@ -343,22 +346,23 @@ namespace NETGeographicLib
         /**
          * @return the default path for magnetic model data files.
          *
-         * This is the value of the environment variable MAGNETIC_PATH, if set;
-         * otherwise, it is $GEOGRAPHICLIB_DATA/magnetic if the environment
-         * variable GEOGRAPHICLIB_DATA is set; otherwise, it is a compile-time
-         * default (/usr/local/share/GeographicLib/magnetic on non-Windows systems
-         * and C:/Documents and Settings/All Users/Application
-         * Data/GeographicLib/magnetic on Windows systems).
+         * This is the value of the environment variable
+         * GEOGRAPHICLIB_MAGNETIC_PATH, if set; otherwise, it is
+         * $GEOGRAPHICLIB_DATA/magnetic if the environment variable
+         * GEOGRAPHICLIB_DATA is set; otherwise, it is a compile-time default
+         * (/usr/local/share/GeographicLib/magnetic on non-Windows systems and
+         * C:/ProgramData/GeographicLib/magnetic on Windows systems).
          **********************************************************************/
         static System::String^ DefaultMagneticPath();
 
         /**
          * @return the default name for the magnetic model.
          *
-         * This is the value of the environment variable MAGNETIC_NAME, if set,
-         * otherwise, it is "wmm2010".  The MagneticModel class does not use this
-         * function; it is just provided as a convenience for a calling program
-         * when constructing a MagneticModel object.
+         * This is the value of the environment variable
+         * GEOGRAPHICLIB_MAGNETIC_NAME, if set, otherwise, it is "wmm2015".
+         * The MagneticModel class does not use this function; it is just
+         * provided as a convenience for a calling program when constructing a
+         * MagneticModel object.
          **********************************************************************/
         static System::String^ DefaultMagneticName();
     };

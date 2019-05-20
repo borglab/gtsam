@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -42,7 +42,8 @@ public:
   template<typename T>
   void addExpressionFactor(const Expression<T>& h, const T& z,
       const SharedNoiseModel& R) {
-    push_back(boost::make_shared<ExpressionFactor<T> >(R, z, h));
+    using F = ExpressionFactor<T>;
+    push_back(boost::allocate_shared<F>(Eigen::aligned_allocator<F>(), R, z, h));
   }
 
   /// @}

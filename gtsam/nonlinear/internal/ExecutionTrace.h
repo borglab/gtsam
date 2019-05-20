@@ -25,6 +25,7 @@
 #include <boost/type_traits/aligned_storage.hpp>
 
 #include <Eigen/Core>
+#include <iostream>
 
 namespace gtsam {
 namespace internal {
@@ -34,7 +35,7 @@ template<int T> struct CallRecord;
 /// Storage type for the execution trace.
 /// It enforces the proper alignment in a portable way.
 /// Provide a traceSize() sized array of this type to traceExecution as traceStorage.
-static const unsigned TraceAlignment = 16;
+static const unsigned TraceAlignment = 32;
 typedef boost::aligned_storage<1, TraceAlignment>::type ExecutionTraceStorage;
 
 template<bool UseBlock, typename Derived>

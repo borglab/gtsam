@@ -188,7 +188,7 @@ public:
   };
 
   /// The retract function
-  Unit3 retract(const Vector2& v) const;
+  Unit3 retract(const Vector2& v, OptionalJacobian<2,2> H = boost::none) const;
 
   /// The local coordinates function
   Vector2 localCoordinates(const Unit3& s) const;
@@ -208,6 +208,8 @@ private:
 
   /// @}
 
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // Define GTSAM traits

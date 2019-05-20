@@ -23,6 +23,7 @@
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/linear/VectorValues.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 class NonlinearOptimizerMoreOptimizationTest;
 
@@ -93,9 +94,9 @@ public:
   /// @name Advanced interface
   /// @{
 
-  /** Perform a single iteration, returning a new NonlinearOptimizer class
-   * containing the updated variable assignments, which may be retrieved with
-   * values().
+  /** 
+   * Perform a single iteration, returning GaussianFactorGraph corresponding to 
+   * the linearized factor graph.
    */
   GaussianFactorGraph::shared_ptr iterate() override;
 

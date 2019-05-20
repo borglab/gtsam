@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -231,7 +231,7 @@ void ConcurrentBatchSmoother::reorder() {
   variableIndex_ = VariableIndex(factors_);
 
   KeyVector separatorKeys = separatorValues_.keys();
-  ordering_ = Ordering::ColamdConstrainedLast(variableIndex_, std::vector<Key>(separatorKeys.begin(), separatorKeys.end()));
+  ordering_ = Ordering::ColamdConstrainedLast(variableIndex_, KeyVector(separatorKeys.begin(), separatorKeys.end()));
 
 }
 
@@ -270,7 +270,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
       while(true) {
         if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
           std::cout << "trying lambda = " << lambda << std::endl;
-        
+
         // Add prior factors at the current solution
         gttic(damp);
         GaussianFactorGraph dampedFactorGraph(linearFactorGraph);
@@ -287,7 +287,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
           }
         }
         gttoc(damp);
-        if (lmVerbosity >= LevenbergMarquardtParams::DAMPED) 
+        if (lmVerbosity >= LevenbergMarquardtParams::DAMPED)
           dampedFactorGraph.print("damped");
         result.lambdas++;
 
@@ -298,9 +298,9 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
         evalpoint = theta_.retract(newDelta);
         gttoc(solve);
 
-        if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) 
+        if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
           std::cout << "linear delta norm = " << newDelta.norm() << std::endl;
-        if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) 
+        if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA)
           newDelta.print("delta");
 
         // Evaluate the new error
@@ -308,9 +308,9 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
         double error = factors_.error(evalpoint);
         gttoc(compute_error);
 
-        if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) 
+        if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
           std::cout << "next error = " << error << std::endl;
-        
+
         if(error < result.error) {
           // Keep this change
           // Update the error value

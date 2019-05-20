@@ -2,7 +2,7 @@
   <head>
     <title>@TOOL@ -- a GeographicLib utility</title>
     <meta HTTP-EQUIV="Refresh"
-	  CONTENT="0; URL=http://geographiclib.sourceforge.net/@PROJECT_VERSION@/@TOOL@.1.html">
+	  CONTENT="0; URL=https://geographiclib.sourceforge.io/@PROJECT_VERSION@/@TOOL@.1.html">
   </head>
   <body topmargin=10 leftmargin=10>
     <h3>
@@ -10,8 +10,8 @@
 	<em>
 	  Online documentation for the @TOOL@ utility is available at
 	  <center>
-	    <a href="http://geographiclib.sourceforge.net/@PROJECT_VERSION@/@TOOL@.1.html">
-	      http://geographiclib.sourceforge.net/@PROJECT_VERSION@/@TOOL@.1.html</a>.
+	    <a href="https://geographiclib.sourceforge.io/@PROJECT_VERSION@/@TOOL@.1.html">
+	      https://geographiclib.sourceforge.io/@PROJECT_VERSION@/@TOOL@.1.html</a>.
 	  </center>
 	  <br>
 	  You will be redirected there.  Click on the link to go there

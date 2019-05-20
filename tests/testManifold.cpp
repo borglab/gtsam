@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -149,6 +149,7 @@ TEST(Manifold, DefaultChart) {
   EXPECT(assert_equal((Vector) Z_3x1, traits<Rot3>::Local(R, R)));
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 //******************************************************************************
 typedef ProductManifold<Point2,Point2> MyPoint2Pair;
 
@@ -174,6 +175,7 @@ TEST(Manifold, ProductManifold) {
   EXPECT(assert_equal(expected,pair2,1e-9));
   EXPECT(assert_equal(d, pair1.localCoordinates(pair2),1e-9));
 }
+#endif
 
 //******************************************************************************
 int main() {

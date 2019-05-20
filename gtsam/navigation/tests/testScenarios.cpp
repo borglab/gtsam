@@ -34,7 +34,7 @@ static const Vector3 kAccBias(0.2, 0, 0), kRotBias(0.1, 0, 0.3);
 static const imuBias::ConstantBias kNonZeroBias(kAccBias, kRotBias);
 
 // Create default parameters with Z-up and above noise parameters
-static boost::shared_ptr<PreintegratedImuMeasurements::Params> defaultParams() {
+static boost::shared_ptr<PreintegrationParams> defaultParams() {
   auto p = PreintegrationParams::MakeSharedU(10);
   p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
   p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
@@ -52,7 +52,7 @@ TEST(ScenarioRunner, Spin) {
   const ConstantTwistScenario scenario(W, V);
 
   auto p = defaultParams();
-  ScenarioRunner runner(&scenario, p, kDt);
+  ScenarioRunner runner(scenario, p, kDt);
   const double T = 2 * kDt;  // seconds
 
   auto pim = runner.integrate(T);
@@ -80,7 +80,7 @@ ConstantTwistScenario scenario(Z_3x1, Vector3(v, 0, 0));
 /* ************************************************************************* */
 TEST(ScenarioRunner, Forward) {
   using namespace forward;
-  ScenarioRunner runner(&scenario, defaultParams(), kDt);
+  ScenarioRunner runner(scenario, defaultParams(), kDt);
   const double T = 0.1;  // seconds
 
   auto pim = runner.integrate(T);
@@ -94,7 +94,7 @@ TEST(ScenarioRunner, Forward) {
 /* ************************************************************************* */
 TEST(ScenarioRunner, ForwardWithBias) {
   using namespace forward;
-  ScenarioRunner runner(&scenario, defaultParams(), kDt);
+  ScenarioRunner runner(scenario, defaultParams(), kDt);
   const double T = 0.1;  // seconds
 
   auto pim = runner.integrate(T, kNonZeroBias);
@@ -108,7 +108,7 @@ TEST(ScenarioRunner, Circle) {
   const double v = 2, w = 6 * kDegree;
   ConstantTwistScenario scenario(Vector3(0, 0, w), Vector3(v, 0, 0));
 
-  ScenarioRunner runner(&scenario, defaultParams(), kDt);
+  ScenarioRunner runner(scenario, defaultParams(), kDt);
   const double T = 0.1;  // seconds
 
   auto pim = runner.integrate(T);
@@ -126,7 +126,7 @@ TEST(ScenarioRunner, Loop) {
   const double v = 2, w = 6 * kDegree;
   ConstantTwistScenario scenario(Vector3(0, -w, 0), Vector3(v, 0, 0));
 
-  ScenarioRunner runner(&scenario, defaultParams(), kDt);
+  ScenarioRunner runner(scenario, defaultParams(), kDt);
   const double T = 0.1;  // seconds
 
   auto pim = runner.integrate(T);
@@ -157,7 +157,7 @@ const double T = 3;  // seconds
 /* ************************************************************************* */
 TEST(ScenarioRunner, Accelerating) {
   using namespace accelerating;
-  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+  ScenarioRunner runner(scenario, defaultParams(), T / 10);
 
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
@@ -170,7 +170,7 @@ TEST(ScenarioRunner, Accelerating) {
 /* ************************************************************************* */
 TEST(ScenarioRunner, AcceleratingWithBias) {
   using namespace accelerating;
-  ScenarioRunner runner(&scenario, defaultParams(), T / 10, kNonZeroBias);
+  ScenarioRunner runner(scenario, defaultParams(), T / 10, kNonZeroBias);
 
   auto pim = runner.integrate(T, kNonZeroBias);
   Matrix9 estimatedCov = runner.estimateCovariance(T, 10000, kNonZeroBias);
@@ -185,7 +185,7 @@ TEST(ScenarioRunner, AcceleratingAndRotating) {
   const AcceleratingScenario scenario(nRb, P0, V0, A, W);
 
   const double T = 10;  // seconds
-  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+  ScenarioRunner runner(scenario, defaultParams(), T / 10);
 
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
@@ -216,7 +216,7 @@ const double T = 3;  // seconds
 /* ************************************************************************* */
 TEST(ScenarioRunner, Accelerating2) {
   using namespace accelerating2;
-  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+  ScenarioRunner runner(scenario, defaultParams(), T / 10);
 
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
@@ -229,7 +229,7 @@ TEST(ScenarioRunner, Accelerating2) {
 /* ************************************************************************* */
 TEST(ScenarioRunner, AcceleratingWithBias2) {
   using namespace accelerating2;
-  ScenarioRunner runner(&scenario, defaultParams(), T / 10, kNonZeroBias);
+  ScenarioRunner runner(scenario, defaultParams(), T / 10, kNonZeroBias);
 
   auto pim = runner.integrate(T, kNonZeroBias);
   Matrix9 estimatedCov = runner.estimateCovariance(T, 10000, kNonZeroBias);
@@ -244,7 +244,7 @@ TEST(ScenarioRunner, AcceleratingAndRotating2) {
   const AcceleratingScenario scenario(nRb, P0, V0, A, W);
 
   const double T = 10;  // seconds
-  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+  ScenarioRunner runner(scenario, defaultParams(), T / 10);
 
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
@@ -276,7 +276,7 @@ const double T = 3;  // seconds
 /* ************************************************************************* */
 TEST(ScenarioRunner, Accelerating3) {
   using namespace accelerating3;
-  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+  ScenarioRunner runner(scenario, defaultParams(), T / 10);
 
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
@@ -289,7 +289,7 @@ TEST(ScenarioRunner, Accelerating3) {
 /* ************************************************************************* */
 TEST(ScenarioRunner, AcceleratingWithBias3) {
   using namespace accelerating3;
-  ScenarioRunner runner(&scenario, defaultParams(), T / 10, kNonZeroBias);
+  ScenarioRunner runner(scenario, defaultParams(), T / 10, kNonZeroBias);
 
   auto pim = runner.integrate(T, kNonZeroBias);
   Matrix9 estimatedCov = runner.estimateCovariance(T, 10000, kNonZeroBias);
@@ -304,7 +304,7 @@ TEST(ScenarioRunner, AcceleratingAndRotating3) {
   const AcceleratingScenario scenario(nRb, P0, V0, A, W);
 
   const double T = 10;  // seconds
-  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+  ScenarioRunner runner(scenario, defaultParams(), T / 10);
 
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
@@ -337,7 +337,7 @@ const double T = 3;  // seconds
 /* ************************************************************************* */
 TEST(ScenarioRunner, Accelerating4) {
   using namespace accelerating4;
-  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+  ScenarioRunner runner(scenario, defaultParams(), T / 10);
 
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
@@ -350,7 +350,7 @@ TEST(ScenarioRunner, Accelerating4) {
 /* ************************************************************************* */
 TEST(ScenarioRunner, AcceleratingWithBias4) {
   using namespace accelerating4;
-  ScenarioRunner runner(&scenario, defaultParams(), T / 10, kNonZeroBias);
+  ScenarioRunner runner(scenario, defaultParams(), T / 10, kNonZeroBias);
 
   auto pim = runner.integrate(T, kNonZeroBias);
   Matrix9 estimatedCov = runner.estimateCovariance(T, 10000, kNonZeroBias);
@@ -365,7 +365,7 @@ TEST(ScenarioRunner, AcceleratingAndRotating4) {
   const AcceleratingScenario scenario(nRb, P0, V0, A, W);
 
   const double T = 10;  // seconds
-  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+  ScenarioRunner runner(scenario, defaultParams(), T / 10);
 
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));

@@ -36,8 +36,8 @@ bool SimWall2D::intersects(const SimWall2D& B, boost::optional<Point2&> pt) cons
   // normalized points, Aa at origin, Ab at (length, 0.0)
   double len = A.length();
   if (debug) cout << "len: " << len << endl;
-  Point2 Ba = transform.transform_to(B.a()),
-       Bb = transform.transform_to(B.b());
+  Point2 Ba = transform.transformTo(B.a()),
+       Bb = transform.transformTo(B.b());
   if (debug) traits<Point2>::Print(Ba, "Ba");
   if (debug) traits<Point2>::Print(Bb, "Bb");
 
@@ -51,11 +51,11 @@ bool SimWall2D::intersects(const SimWall2D& B, boost::optional<Point2&> pt) cons
 
   // check conditions for exactly on the same line
   if (Ba.y() == 0.0 && Ba.x() > 0.0 && Ba.x() < len) {
-    if (pt) *pt = transform.transform_from(Ba);
+    if (pt) *pt = transform.transformFrom(Ba);
     if (debug) cout << "Ba on the line" << endl;
     return true;
   } else if (Bb.y() == 0.0 && Bb.x() > 0.0 && Bb.x() < len) {
-    if (pt) *pt = transform.transform_from(Bb);
+    if (pt) *pt = transform.transformFrom(Bb);
     if (debug) cout << "Bb on the line" << endl;
     return true;
   }
@@ -64,7 +64,7 @@ bool SimWall2D::intersects(const SimWall2D& B, boost::optional<Point2&> pt) cons
   if (fabs(Ba.x() - Bb.x()) < 1e-5) {
     if (debug) cout << "vertical line" << endl;
     if (Ba.x() < len && Ba.x() > 0.0) {
-      if (pt) *pt = transform.transform_from(Point2(Ba.x(), 0.0));
+      if (pt) *pt = transform.transformFrom(Point2(Ba.x(), 0.0));
       if (debug) cout << "  within range" << endl;
       return true;
     } else {
@@ -91,7 +91,7 @@ bool SimWall2D::intersects(const SimWall2D& B, boost::optional<Point2&> pt) cons
   double xint = (low.x() < high.x()) ? low.x() + fabs(low.y())/slope : high.x() - fabs(high.y())/slope;
   if (debug) cout << "xintercept " << xint << endl;
   if (xint > 0.0 && xint < len) {
-    if (pt) *pt = transform.transform_from(Point2(xint, 0.0));
+    if (pt) *pt = transform.transformFrom(Point2(xint, 0.0));
     return true;
   } else {
     if (debug) cout << "xintercept out of range" << endl;
@@ -116,7 +116,7 @@ Rot2 SimWall2D::reflection(const Point2& init, const Point2& intersection) const
   // translate to put the intersection at the origin and the wall along the x axis
   Rot2 wallAngle = Rot2::relativeBearing(b_ - a_);
   Pose2 transform(wallAngle, intersection);
-  Point2 t_init = transform.transform_to(init);
+  Point2 t_init = transform.transformTo(init);
   Point2 t_goal(-t_init.x(), t_init.y());
   return Rot2::relativeBearing(wallAngle.rotate(t_goal));
 }

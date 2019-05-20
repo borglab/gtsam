@@ -48,6 +48,9 @@ protected:
 
 public:
 
+  /// Default constructor only for Cython wrapper
+  Marginals(){}
+
   /** Construct a marginals class.
    * @param graph The factor graph defining the full joint density on all variables.
    * @param solution The linearization point about which to compute Gaussian marginals (usually the MLE as obtained from a NonlinearOptimizer).
@@ -71,10 +74,10 @@ public:
   Matrix marginalCovariance(Key variable) const;
 
   /** Compute the joint marginal covariance of several variables */
-  JointMarginal jointMarginalCovariance(const std::vector<Key>& variables) const;
+  JointMarginal jointMarginalCovariance(const KeyVector& variables) const;
 
   /** Compute the joint marginal information of several variables */
-  JointMarginal jointMarginalInformation(const std::vector<Key>& variables) const;
+  JointMarginal jointMarginalInformation(const KeyVector& variables) const;
 
   /** Optimize the bayes tree */
   VectorValues optimize() const;
@@ -91,6 +94,9 @@ protected:
   FastMap<Key, size_t> indices_;
 
 public:
+  /// Default constructor only for Cython wrapper
+  JointMarginal() {}
+
   /** Access a block, corresponding to a pair of variables, of the joint
    * marginal.  Each block is accessed by its "vertical position",
    * corresponding to the variable with nonlinear Key \c iVariable and
@@ -124,7 +130,7 @@ public:
   void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
 protected:
-  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const std::vector<Key>& keys) :
+  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const KeyVector& keys) :
     blockMatrix_(dims, fullMatrix), keys_(keys), indices_(Ordering(keys).invert()) {}
 
   friend class Marginals;

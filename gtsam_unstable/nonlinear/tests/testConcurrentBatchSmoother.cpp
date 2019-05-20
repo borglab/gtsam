@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -563,7 +563,7 @@ TEST( ConcurrentBatchSmoother, synchronize_3 )
   for(const Values::ConstKeyValuePair& key_value: filterSeparatorValues) {
     eliminateKeys.erase(key_value.key);
   }
-  std::vector<Key> variables(eliminateKeys.begin(), eliminateKeys.end());
+  KeyVector variables(eliminateKeys.begin(), eliminateKeys.end());
   GaussianFactorGraph result = *linearFactors->eliminatePartialMultifrontal(variables, EliminateCholesky).second;
 
   expectedSmootherSummarization.resize(0);
@@ -617,13 +617,13 @@ TEST( ConcurrentBatchSmoother, removeFactors_topology_1 )
   NonlinearFactorGraph actualGraph = smoother.getFactors();
 
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.emplace_shared<PriorFactor<Pose3> >(1, poseInitial, noisePrior);
+  // we removed this one: expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
   // we should add an empty one, so that the ordering and labeling of the factors is preserved
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
-  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(2, 3, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(3, 4, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
 
   CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
 }
@@ -670,11 +670,11 @@ TEST( ConcurrentBatchSmoother, removeFactors_topology_2 )
   NonlinearFactorGraph actualGraph = smoother.getFactors();
 
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
-  // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.emplace_shared<PriorFactor<Pose3> >(1, poseInitial, noisePrior);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(2, 3, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(3, 4, poseOdometry, noiseOdometery);
+  // we removed this one: expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
   // we should add an empty one, so that the ordering and labeling of the factors is preserved
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
 
@@ -724,10 +724,10 @@ TEST( ConcurrentBatchSmoother, removeFactors_topology_3 )
   NonlinearFactorGraph expectedGraph;
   // we should add an empty one, so that the ordering and labeling of the factors is preserved
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
-  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  expectedGraph.emplace_shared<PriorFactor<Pose3> >(1, poseInitial, noisePrior);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(2, 3, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(3, 4, poseOdometry, noiseOdometery);
 
   CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
 }
@@ -744,11 +744,11 @@ TEST( ConcurrentBatchSmoother, removeFactors_values )
 
   // Add some factors to the Smoother
   NonlinearFactorGraph newFactors;
-  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
-  newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
-  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.emplace_shared<PriorFactor<Pose3> >(1, poseInitial, noisePrior);
+  newFactors.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
+  newFactors.emplace_shared<BetweenFactor<Pose3> >(2, 3, poseOdometry, noiseOdometery);
+  newFactors.emplace_shared<BetweenFactor<Pose3> >(3, 4, poseOdometry, noiseOdometery);
+  newFactors.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
 
   Values newValues;
   newValues.insert(1, Pose3().compose(poseError));
@@ -774,11 +774,11 @@ TEST( ConcurrentBatchSmoother, removeFactors_values )
 
   // note: factors are removed before the optimization
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
-  // we removed this one:   expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.emplace_shared<PriorFactor<Pose3> >(1, poseInitial, noisePrior);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(2, 3, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(3, 4, poseOdometry, noiseOdometery);
+  // we removed this one:   expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
   // we should add an empty one, so that the ordering and labeling of the factors is preserved
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
 

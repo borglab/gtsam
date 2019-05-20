@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -71,18 +71,14 @@ int main(int argc, char* argv[]) {
   // add measurement factors
   SharedDiagonal measurementNoise = Diagonal::Sigmas(Vector2(0.5, 0.5));
   boost::shared_ptr<ResectioningFactor> factor;
-  graph.push_back(
-      boost::make_shared<ResectioningFactor>(measurementNoise, X(1), calib,
-          Point2(55, 45), Point3(10, 10, 0)));
-  graph.push_back(
-      boost::make_shared<ResectioningFactor>(measurementNoise, X(1), calib,
-          Point2(45, 45), Point3(-10, 10, 0)));
-  graph.push_back(
-      boost::make_shared<ResectioningFactor>(measurementNoise, X(1), calib,
-          Point2(45, 55), Point3(-10, -10, 0)));
-  graph.push_back(
-      boost::make_shared<ResectioningFactor>(measurementNoise, X(1), calib,
-          Point2(55, 55), Point3(10, -10, 0)));
+  graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,
+          Point2(55, 45), Point3(10, 10, 0));
+  graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,
+          Point2(45, 45), Point3(-10, 10, 0));
+  graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,
+          Point2(45, 55), Point3(-10, -10, 0));
+  graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,
+          Point2(55, 55), Point3(10, -10, 0));
 
   /* 3. Create an initial estimate for the camera pose */
   Values initial;

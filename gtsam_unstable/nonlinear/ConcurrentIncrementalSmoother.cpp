@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -194,7 +194,7 @@ void ConcurrentIncrementalSmoother::updateSmootherSummarization() {
   }
 
   // Create the set of clique keys LC:
-  std::vector<Key> cliqueKeys;
+  KeyVector cliqueKeys;
   for(const ISAM2Clique::shared_ptr& clique: separatorCliques) {
     for(Key key: clique->conditional()->frontals()) {
       cliqueKeys.push_back(key);

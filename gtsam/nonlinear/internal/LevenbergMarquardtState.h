@@ -113,9 +113,9 @@ struct LevenbergMarquardtState : public NonlinearOptimizerState {
   // Small cache of A|b|model indexed by dimension. Can save many mallocs.
   mutable std::vector<CachedModel> noiseModelCache;
   CachedModel* getCachedModel(size_t dim) const {
-    if (dim > noiseModelCache.size())
-      noiseModelCache.resize(dim);
-    CachedModel* item = &noiseModelCache[dim - 1];
+    if (dim >= noiseModelCache.size())
+      noiseModelCache.resize(dim+1);
+    CachedModel* item = &noiseModelCache[dim];
     if (!item->model)
       *item = CachedModel(dim, 1.0 / std::sqrt(lambda));
     return item;
@@ -147,7 +147,7 @@ struct LevenbergMarquardtState : public NonlinearOptimizerState {
         CachedModel* item = getCachedModel(dim);
         item->A.diagonal() = sqrtHessianDiagonal.at(key);  // use diag(hessian)
         damped += boost::make_shared<JacobianFactor>(key, item->A, item->b, item->model);
-      } catch (const std::out_of_range& e) {
+      } catch (const std::out_of_range&) {
         continue;  // Don't attempt any damping if no key found in diagonal
       }
     }

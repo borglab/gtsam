@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -24,7 +24,6 @@
 #include <string>
 
 // includes for standard serialization types
-#include <boost/serialization/export.hpp>
 #include <boost/serialization/optional.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>
@@ -39,6 +38,7 @@
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/export.hpp>
 
 namespace gtsam {
 
@@ -84,8 +84,13 @@ bool deserializeFromFile(const std::string& filename, T& output) {
 template<class T>
 std::string serializeXML(const T& input, const std::string& name="data") {
   std::ostringstream out_archive_stream;
-  boost::archive::xml_oarchive out_archive(out_archive_stream);
-  out_archive << boost::serialization::make_nvp(name.c_str(), input);
+  // braces to flush out_archive as it goes out of scope before taking str()
+  // fixes crash with boost 1.66-1.68
+  // see https://github.com/boostorg/serialization/issues/82
+  {
+    boost::archive::xml_oarchive out_archive(out_archive_stream);
+    out_archive << boost::serialization::make_nvp(name.c_str(), input);
+  }
   return out_archive_stream.str();
 }
 

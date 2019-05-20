@@ -165,10 +165,10 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
 
   if (formatting.mergeSimilarFactors) {
     // Remove duplicate factors
-    std::set<vector<Key> > structure;
+    std::set<KeyVector > structure;
     for (const sharedFactor& factor : factors_) {
       if (factor) {
-        vector<Key> factorKeys = factor->keys();
+        KeyVector factorKeys = factor->keys();
         std::sort(factorKeys.begin(), factorKeys.end());
         structure.insert(factorKeys);
       }
@@ -176,7 +176,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
 
     // Create factors and variable connections
     size_t i = 0;
-    for(const vector<Key>& factorKeys: structure){
+    for(const KeyVector& factorKeys: structure){
       // Make each factor a dot
       stm << "  factor" << i << "[label=\"\", shape=point";
       {
@@ -199,7 +199,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
     for(size_t i = 0; i < size(); ++i) {
       const NonlinearFactor::shared_ptr& factor = at(i);
       if(formatting.plotFactorPoints) {
-        const FastVector<Key>& keys = factor->keys();
+        const KeyVector& keys = factor->keys();
         if (formatting.binaryEdges && keys.size()==2) {
           stm << "  var" << keys[0] << "--" << "var" << keys[1] << ";\n";
         } else {

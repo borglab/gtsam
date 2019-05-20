@@ -48,9 +48,8 @@ namespace gtsam {
     gatheredFactors.push_back(childrenResults.begin(), childrenResults.end());
 
     // Do dense elimination step
-    FastVector<Key> keyAsVector(1); keyAsVector[0] = key;
-    std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
-      function(gatheredFactors, Ordering(keyAsVector));
+    KeyVector keyAsVector(1); keyAsVector[0] = key;
+    auto eliminationResult = function(gatheredFactors, Ordering(keyAsVector));
 
     // Add conditional to BayesNet
     output->push_back(eliminationResult.first);
@@ -190,13 +189,13 @@ namespace gtsam {
   {
     gttic(EliminationTree_eliminate);
     // Allocate result
-    boost::shared_ptr<BayesNetType> result = boost::make_shared<BayesNetType>();
+    auto result = boost::make_shared<BayesNetType>();
 
     // Run tree elimination algorithm
     FastVector<sharedFactor> remainingFactors = inference::EliminateTree(result, *this, function);
 
     // Add remaining factors that were not involved with eliminated variables
-    boost::shared_ptr<FactorGraphType> allRemainingFactors = boost::make_shared<FactorGraphType>();
+    auto allRemainingFactors = boost::make_shared<FactorGraphType>();
     allRemainingFactors->push_back(remainingFactors_.begin(), remainingFactors_.end());
     allRemainingFactors->push_back(remainingFactors.begin(), remainingFactors.end());
 

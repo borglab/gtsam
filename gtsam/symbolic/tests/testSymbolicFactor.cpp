@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -33,7 +33,7 @@ using namespace boost::assign;
 /* ************************************************************************* */
 #ifdef TRACK_ELIMINATE
 TEST(SymbolicFactor, eliminate) {
-  vector<Key> keys; keys += 2, 3, 4, 6, 7, 9, 10, 11;
+  KeyVector keys {2, 3, 4, 6, 7, 9, 10, 11};
   IndexFactor actual(keys.begin(), keys.end());
   BayesNet<IndexConditional> fragment = *actual.eliminate(3);
 

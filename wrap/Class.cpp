@@ -1,37 +1,42 @@
-/* ---------------------------------------------------------------------------- 
- 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,  
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
- * All Rights Reserved 
- * Authors: Frank Dellaert, et al. (see THANKS for the full author list) 
- 
- * See LICENSE for the license information 
- 
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
  * -------------------------------------------------------------------------- */
 
-/** 
- * @file Class.cpp 
- * @author Frank Dellaert 
- * @author Andrew Melim 
+/**
+ * @file Class.cpp
+ * @author Frank Dellaert
+ * @author Andrew Melim
  * @author Richard Roberts
  **/
 
 #include "Class.h"
 #include "utilities.h"
 #include "Argument.h"
+#include <unordered_set>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/copy.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/iterator/zip_iterator.hpp>
+#include <boost/range/combine.hpp>
+#include <boost/range/algorithm/remove_if.hpp>
 
-#include <vector> 
-#include <iostream> 
-#include <fstream> 
+#include <vector>
+#include <iostream>
+#include <fstream>
 #include <sstream>
 #include <iterator>     // std::ostream_iterator
-//#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags 
-//#include <cinttypes> // same failure as above 
-#include <stdint.h> // works on Linux GCC 
+//#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags
+//#include <cinttypes> // same failure as above
+#include <stdint.h> // works on Linux GCC
 using namespace std;
 using namespace wrap;
 
@@ -58,14 +63,14 @@ static void handleException(const out_of_range& oor,
 }
 
 /* ************************************************************************* */
-Method& Class::mutableMethod(Str key) {
-  try {
-    return methods_.at(key);
-  } catch (const out_of_range& oor) {
-    handleException(oor, methods_);
-    throw runtime_error("Internal error in wrap");
-  }
-}
+// Method& Class::mutableMethod(Str key) {
+//   try {
+//     return methods_.at(key);
+//   } catch (const out_of_range& oor) {
+//     handleException(oor, methods_);
+//     throw runtime_error("Internal error in wrap");
+//   }
+// }
 
 /* ************************************************************************* */
 const Method& Class::method(Str key) const {
@@ -82,20 +87,20 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
     const TypeAttributesTable& typeAttributes, FileWriter& wrapperFile,
     vector<string>& functionNames) const {
 
-  // Create namespace folders 
+  // Create namespace folders
   createNamespaceStructure(namespaces(), toolboxPath);
 
-  // open destination classFile 
+  // open destination classFile
   string classFile = matlabName(toolboxPath);
   FileWriter proxyFile(classFile, verbose_, "%");
 
-  // get the name of actual matlab object 
+  // get the name of actual matlab object
   const string matlabQualName = qualifiedName(".");
   const string matlabUniqueName = qualifiedName();
   const string cppName = qualifiedName("::");
 
-  // emit class proxy code 
-  // we want our class to inherit the handle class for memory purposes 
+  // emit class proxy code
+  // we want our class to inherit the handle class for memory purposes
   const string parent =
       parentClass ? parentClass->qualifiedName(".") : "handle";
   comment_fragment(proxyFile);
@@ -105,20 +110,20 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   proxyFile.oss << "  end\n";
   proxyFile.oss << "  methods\n";
 
-  // Constructor 
+  // Constructor
   proxyFile.oss << "    function obj = " << name() << "(varargin)\n";
-  // Special pointer constructors - one in MATLAB to create an object and 
-  // assign a pointer returned from a C++ function.  In turn this MATLAB 
-  // constructor calls a special C++ function that just adds the object to 
-  // its collector.  This allows wrapped functions to return objects in 
-  // other wrap modules - to add these to their collectors the pointer is 
-  // passed from one C++ module into matlab then back into the other C++ 
-  // module. 
+  // Special pointer constructors - one in MATLAB to create an object and
+  // assign a pointer returned from a C++ function.  In turn this MATLAB
+  // constructor calls a special C++ function that just adds the object to
+  // its collector.  This allows wrapped functions to return objects in
+  // other wrap modules - to add these to their collectors the pointer is
+  // passed from one C++ module into matlab then back into the other C++
+  // module.
   pointer_constructor_fragments(proxyFile, wrapperFile, wrapperName,
       functionNames);
   wrapperFile.oss << "\n";
 
-  // Regular constructors 
+  // Regular constructors
   boost::optional<string> cppBaseName = qualifiedParent();
   for (size_t i = 0; i < constructor.nrOverloads(); i++) {
     ArgumentList args = constructor.argumentList(i);
@@ -140,7 +145,7 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   proxyFile.oss << "      obj.ptr_" << matlabUniqueName << " = my_ptr;\n";
   proxyFile.oss << "    end\n\n";
 
-  // Deconstructor 
+  // Deconstructor
   {
     const int id = (int) functionNames.size();
     deconstructor.proxy_fragment(proxyFile, wrapperName, matlabUniqueName, id);
@@ -155,7 +160,7 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   proxyFile.oss
       << "    function disp(obj), obj.display; end\n    %DISP Calls print on the object\n";
 
-  // Methods 
+  // Methods
   for(const Methods::value_type& name_m: methods_) {
     const Method& m = name_m.second;
     m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName,
@@ -170,7 +175,7 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   proxyFile.oss << "\n";
   proxyFile.oss << "  methods(Static = true)\n";
 
-  // Static methods 
+  // Static methods
   for(const StaticMethods::value_type& name_m: static_methods) {
     const StaticMethod& m = name_m.second;
     m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName,
@@ -185,7 +190,7 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   proxyFile.oss << "  end\n";
   proxyFile.oss << "end\n";
 
-  // Close file 
+  // Close file
   proxyFile.emit(true);
 }
 
@@ -212,8 +217,8 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
     functionNames.push_back(upcastFromVoidFunctionName);
   }
 
-  // MATLAB constructor that assigns pointer to matlab object then calls c++ 
-  // function to add the object to the collector. 
+  // MATLAB constructor that assigns pointer to matlab object then calls c++
+  // function to add the object to the collector.
   if (isVirtual) {
     proxyFile.oss
         << "      if (nargin == 2 || (nargin == 3 && strcmp(varargin{3}, 'void')))";
@@ -236,25 +241,25 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
     proxyFile.oss << "        ";
   else
     proxyFile.oss << "        base_ptr = ";
-  proxyFile.oss << wrapperName << "(" << collectorInsertId << ", my_ptr);\n"; // Call collector insert and get base class ptr 
+  proxyFile.oss << wrapperName << "(" << collectorInsertId << ", my_ptr);\n"; // Call collector insert and get base class ptr
 
-  // C++ function to add pointer from MATLAB to collector.  The pointer always 
-  // comes from a C++ return value; this mechanism allows the object to be added 
-  // to a collector in a different wrap module.  If this class has a base class, 
-  // a new pointer to the base class is allocated and returned. 
+  // C++ function to add pointer from MATLAB to collector.  The pointer always
+  // comes from a C++ return value; this mechanism allows the object to be added
+  // to a collector in a different wrap module.  If this class has a base class,
+  // a new pointer to the base class is allocated and returned.
   wrapperFile.oss << "void " << collectorInsertFunctionName
       << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
   wrapperFile.oss << "{\n";
   wrapperFile.oss << "  mexAtExit(&_deleteAllObjects);\n";
-  // Typedef boost::shared_ptr 
+  // Typedef boost::shared_ptr
   wrapperFile.oss << "  typedef boost::shared_ptr<" << cppName << "> Shared;\n";
   wrapperFile.oss << "\n";
-  // Get self pointer passed in 
+  // Get self pointer passed in
   wrapperFile.oss
       << "  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));\n";
-  // Add to collector 
+  // Add to collector
   wrapperFile.oss << "  collector_" << matlabUniqueName << ".insert(self);\n";
-  // If we have a base class, return the base class pointer (MATLAB will call the base class collectorInsertAndMakeBase to add this to the collector and recurse the heirarchy) 
+  // If we have a base class, return the base class pointer (MATLAB will call the base class collectorInsertAndMakeBase to add this to the collector and recurse the heirarchy)
   boost::optional<string> cppBaseName = qualifiedParent();
   if (cppBaseName) {
     wrapperFile.oss << "\n";
@@ -267,10 +272,10 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
   }
   wrapperFile.oss << "}\n";
 
-  // If this is a virtual function, C++ function to dynamic upcast it from a 
-  // shared_ptr<void>.  This mechanism allows automatic dynamic creation of the 
-  // real underlying derived-most class when a C++ method returns a virtual 
-  // base class. 
+  // If this is a virtual function, C++ function to dynamic upcast it from a
+  // shared_ptr<void>.  This mechanism allows automatic dynamic creation of the
+  // real underlying derived-most class when a C++ method returns a virtual
+  // base class.
   if (isVirtual)
     wrapperFile.oss << "\n"
         "void " << upcastFromVoidFunctionName
@@ -309,6 +314,8 @@ vector<Class> Class::expandTemplate(Str templateArg,
     inst.templateArgs.clear();
     inst.typedefName = qualifiedName("::") + "<" + instName.qualifiedName("::")
         + ">";
+    inst.templateInstTypeList.push_back(instName);
+    inst.templateClass = *this;
     result.push_back(inst);
   }
   return result;
@@ -339,9 +346,13 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
     const Template& tmplate) {
   // Check if templated
   if (tmplate.valid()) {
+    templateMethods_[methodName].addOverload(methodName, argumentList,
+                                             returnValue, is_const,
+                                             tmplate.argName(), verbose);
     // Create method to expand
     // For all values of the template argument, create a new method
     for(const Qualified& instName: tmplate.argValues()) {
+
       const TemplateSubstitution ts(tmplate.argName(), instName, *this);
       // substitute template in arguments
       ArgumentList expandedArgs = argumentList.expandTemplate(ts);
@@ -353,34 +364,42 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
       methods_[expandedMethodName].addOverload(methodName, expandedArgs,
           expandedRetVal, is_const, instName, verbose);
     }
-  } else
+  } else {
     // just add overload
     methods_[methodName].addOverload(methodName, argumentList, returnValue,
         is_const, boost::none, verbose);
+    nontemplateMethods_[methodName].addOverload(methodName, argumentList, returnValue,
+        is_const, boost::none, verbose);
+  }
 }
 
 /* ************************************************************************* */
-void Class::erase_serialization() {
-  Methods::iterator it = methods_.find("serializable");
-  if (it != methods_.end()) {
+void Class::erase_serialization(Methods& methods) {
+  Methods::iterator it = methods.find("serializable");
+  if (it != methods.end()) {
 #ifndef WRAP_DISABLE_SERIALIZE
     isSerializable = true;
 #else
     // cout << "Ignoring serializable() flag in class " << name << endl;
 #endif
-    methods_.erase(it);
+    methods.erase(it);
   }
 
-  it = methods_.find("serialize");
-  if (it != methods_.end()) {
+  it = methods.find("serialize");
+  if (it != methods.end()) {
 #ifndef WRAP_DISABLE_SERIALIZE
     isSerializable = true;
     hasSerialization = true;
 #else
     // cout << "Ignoring serialize() flag in class " << name << endl;
 #endif
-    methods_.erase(it);
+    methods.erase(it);
   }
+}
+
+void Class::erase_serialization() {
+  erase_serialization(methods_);
+  erase_serialization(nontemplateMethods_);
 }
 
 /* ************************************************************************* */
@@ -420,6 +439,56 @@ void Class::appendInheritedMethods(const Class& cls,
       }
     }
   }
+}
+
+/* ************************************************************************* */
+void Class::removeInheritedNontemplateMethods(vector<Class>& classes) {
+  if (!parentClass) return;
+  // Find parent
+  auto parentIt = std::find_if(classes.begin(), classes.end(),
+      [&](const Class& cls) { return cls.name() == parentClass->name(); });
+  if (parentIt == classes.end()) return; // ignore if parent not found
+  Class& parent = *parentIt;
+
+  // Only check nontemplateMethods_
+  for(const string& methodName: nontemplateMethods_ | boost::adaptors::map_keys) {
+    // check if the method exists in its parent
+    // Check against parent's methods_ because all the methods of grand
+    // parent and grand-grand-parent, etc. are already included there
+    // This is to avoid looking into higher level grand parents...
+    auto it = parent.methods_.find(methodName);
+    if (it == parent.methods_.end()) continue; // if not: ignore!
+
+    Method& parentMethod = it->second;
+    Method& method = nontemplateMethods_[methodName];
+    // check if they have the same modifiers (const/static/templateArgs)
+    if (!method.isSameModifiers(parentMethod)) continue; // if not: ignore
+
+    // check and remove duplicate overloads
+    auto methodOverloads = boost::combine(method.returnVals_, method.argLists_);
+    auto parentMethodOverloads = boost::combine(parentMethod.returnVals_, parentMethod.argLists_);
+    auto result = boost::remove_if(
+        methodOverloads,
+        [&](boost::tuple<ReturnValue, ArgumentList> const& overload) {
+            bool found = std::find_if(
+                       parentMethodOverloads.begin(),
+                       parentMethodOverloads.end(),
+                       [&](boost::tuple<ReturnValue, ArgumentList> const&
+                               parentOverload) {
+                           return overload.get<0>() == parentOverload.get<0>() &&
+                                  overload.get<1>().isSameSignature(parentOverload.get<1>());
+                       }) != parentMethodOverloads.end();
+            return found;
+        });
+    // remove all duplicate overloads
+    method.returnVals_.erase(boost::get<0>(result.get_iterator_tuple()),
+                             method.returnVals_.end());
+    method.argLists_.erase(boost::get<1>(result.get_iterator_tuple()),
+                               method.argLists_.end());
+  }
+  // [Optional] remove the entire method if it has no overload
+  for (auto it = nontemplateMethods_.begin(), ite = nontemplateMethods_.end(); it != ite;)
+      if (it->second.nrOverloads() == 0) it = nontemplateMethods_.erase(it); else ++it;
 }
 
 /* ************************************************************************* */
@@ -657,6 +726,156 @@ void Class::python_wrapper(FileWriter& wrapperFile) const {
   for(const Method& m: methods_ | boost::adaptors::map_values)
     m.python_wrapper(wrapperFile, name());
   wrapperFile.oss << ";\n\n";
+}
+
+/* ************************************************************************* */
+void Class::emit_cython_pxd(FileWriter& pxdFile) const {
+  pxdFile.oss << "cdef extern from \"" << includeFile << "\"";
+  string ns = qualifiedNamespaces("::");
+  if (!ns.empty())
+    pxdFile.oss << " namespace \"" << ns << "\"";
+  pxdFile.oss << ":" << endl;
+  pxdFile.oss << "    cdef cppclass " << pxdClassName() << " \"" << qualifiedName("::") << "\"";
+  if (templateArgs.size()>0) {
+    pxdFile.oss << "[";
+    for(size_t i = 0; i<templateArgs.size(); ++i) {
+      pxdFile.oss << templateArgs[i];
+      if (i<templateArgs.size()-1) pxdFile.oss << ",";
+    }
+    pxdFile.oss << "]";
+  }
+  if (parentClass) pxdFile.oss << "(" <<  parentClass->pxdClassName() << ")";
+  pxdFile.oss << ":\n";
+
+  constructor.emit_cython_pxd(pxdFile, *this);
+  if (constructor.nrOverloads()>0) pxdFile.oss << "\n";
+
+  for(const StaticMethod& m: static_methods | boost::adaptors::map_values)
+    m.emit_cython_pxd(pxdFile, *this);
+  if (static_methods.size()>0) pxdFile.oss << "\n";
+
+  for(const Method& m: nontemplateMethods_ | boost::adaptors::map_values)
+    m.emit_cython_pxd(pxdFile, *this);
+
+  for(const TemplateMethod& m: templateMethods_ | boost::adaptors::map_values)
+    m.emit_cython_pxd(pxdFile, *this);
+  size_t numMethods = constructor.nrOverloads() + static_methods.size() +
+                      methods_.size() + templateMethods_.size();
+  if (numMethods == 0)
+      pxdFile.oss << "        pass\n";
+}
+/* ************************************************************************* */
+void Class::emit_cython_wrapper_pxd(FileWriter& pxdFile) const {
+  pxdFile.oss << "\ncdef class " << pyxClassName();
+  if (getParent())
+    pxdFile.oss << "(" << getParent()->pyxClassName() << ")";
+  pxdFile.oss << ":\n";
+  pxdFile.oss << "    cdef " << shared_pxd_class_in_pyx() << " "
+      << shared_pxd_obj_in_pyx() << "\n";
+  // cyCreateFromShared
+  pxdFile.oss << "    @staticmethod\n";
+  pxdFile.oss << "    cdef " << pyxClassName() << " cyCreateFromShared(const "
+      << shared_pxd_class_in_pyx() << "& other)\n";
+  for(const StaticMethod& m: static_methods | boost::adaptors::map_values)
+    m.emit_cython_wrapper_pxd(pxdFile, *this);
+  if (static_methods.size()>0) pxdFile.oss << "\n";
+}
+
+/* ************************************************************************* */
+void Class::pyxInitParentObj(FileWriter& pyxFile, const std::string& pyObj,
+                             const std::string& cySharedObj,
+                             const std::vector<Class>& allClasses) const {
+    if (parentClass) {
+      pyxFile.oss << pyObj << "." << parentClass->shared_pxd_obj_in_pyx() << " = "
+                  << "<" << parentClass->shared_pxd_class_in_pyx() << ">("
+                  << cySharedObj << ")\n";
+      // Find the parent class with name "parentClass" and point its cython obj
+      // to the same pointer
+      auto parent_it = find_if(allClasses.begin(), allClasses.end(),
+                               [this](const Class& cls) {
+                                   return cls.pxdClassName() ==
+                                          this->parentClass->pxdClassName();
+                               });
+      if (parent_it == allClasses.end()) {
+          cerr << "Can't find parent class: " << parentClass->pxdClassName();
+        throw std::runtime_error("Parent class not found!");
+      }
+      parent_it->pyxInitParentObj(pyxFile, pyObj, cySharedObj, allClasses);
+  }
+}
+
+/* ************************************************************************* */
+void Class::pyxDynamicCast(FileWriter& pyxFile, const Class& curLevel,
+                           const std::vector<Class>& allClasses) const {
+  std::string me = this->pyxClassName(), sharedMe = this->shared_pxd_class_in_pyx();
+  if (curLevel.parentClass) {
+    std::string parent = curLevel.parentClass->pyxClassName(),
+                parentObj = curLevel.parentClass->shared_pxd_obj_in_pyx(),
+                parentCythonClass = curLevel.parentClass->pxd_class_in_pyx();
+    pyxFile.oss << "def dynamic_cast_" << me << "_" << parent << "(" << parent
+                << " parent):\n";
+    pyxFile.oss << "    try:\n";
+    pyxFile.oss << "        return " << me << ".cyCreateFromShared(<" << sharedMe
+                << ">dynamic_pointer_cast[" << pxd_class_in_pyx() << ","
+                << parentCythonClass << "](parent." << parentObj
+                << "))\n";
+    pyxFile.oss << "    except:\n";
+    pyxFile.oss << "        raise TypeError('dynamic cast failed!')\n";
+    // Move up higher to one level: Find the parent class with name "parentClass"
+    auto parent_it = find_if(allClasses.begin(), allClasses.end(),
+                             [&curLevel](const Class& cls) {
+                                 return cls.pxdClassName() ==
+                                        curLevel.parentClass->pxdClassName();
+                             });
+    if (parent_it == allClasses.end()) {
+        cerr << "Can't find parent class: " << parentClass->pxdClassName();
+      throw std::runtime_error("Parent class not found!");
+    }
+    pyxDynamicCast(pyxFile, *parent_it, allClasses);
+  }
+}
+
+/* ************************************************************************* */
+void Class::emit_cython_pyx(FileWriter& pyxFile, const std::vector<Class>& allClasses) const {
+  pyxFile.oss << "cdef class " << pyxClassName();
+  if (parentClass) pyxFile.oss << "(" <<  parentClass->pyxClassName() << ")";
+  pyxFile.oss << ":\n";
+
+  // __init___
+  pyxFile.oss << "    def __init__(self, *args, **kwargs):\n";
+  pyxFile.oss << "        cdef list __params\n";
+  pyxFile.oss << "        self." << shared_pxd_obj_in_pyx() << " = " << shared_pxd_class_in_pyx() << "()\n";
+  pyxFile.oss << "        if len(args)==0 and len(kwargs)==1 and kwargs.has_key('cyCreateFromShared'):\n            return\n";
+
+  // Constructors
+  constructor.emit_cython_pyx(pyxFile, *this);
+  pyxFile.oss << "        if (self." << shared_pxd_obj_in_pyx() << ".use_count()==0):\n";
+  pyxFile.oss << "            raise TypeError('" << pyxClassName()
+      << " construction failed!')\n";
+  pyxInitParentObj(pyxFile, "        self", "self." + shared_pxd_obj_in_pyx(), allClasses);
+  pyxFile.oss << "\n";
+
+  // cyCreateFromShared
+  pyxFile.oss << "    @staticmethod\n";
+  pyxFile.oss << "    cdef " << pyxClassName() << " cyCreateFromShared(const "
+              << shared_pxd_class_in_pyx() << "& other):\n"
+              << "        if other.get() == NULL:\n"
+              << "            raise RuntimeError('Cannot create object from a nullptr!')\n"
+              << "        cdef " << pyxClassName() << " return_value = " << pyxClassName() << "(cyCreateFromShared=True)\n"
+              << "        return_value." << shared_pxd_obj_in_pyx() << " = other\n";
+  pyxInitParentObj(pyxFile, "        return_value", "other", allClasses);
+  pyxFile.oss << "        return return_value" << "\n\n";
+
+  for(const StaticMethod& m: static_methods | boost::adaptors::map_values)
+    m.emit_cython_pyx(pyxFile, *this);
+  if (static_methods.size()>0) pyxFile.oss << "\n";
+
+  for(const Method& m: methods_ | boost::adaptors::map_values)
+    m.emit_cython_pyx(pyxFile, *this);
+
+  pyxDynamicCast(pyxFile, *this, allClasses);
+
+  pyxFile.oss << "\n\n";
 }
 
 /* ************************************************************************* */

@@ -2,9 +2,9 @@
  * \file LambertConformalConic.cpp
  * \brief Implementation for GeographicLib::LambertConformalConic class
  *
- * Copyright (c) Charles Karney (2010-2012) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2017) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #include <GeographicLib/LambertConformalConic.hpp>
@@ -13,80 +13,75 @@ namespace GeographicLib {
 
   using namespace std;
 
-  const Math::real LambertConformalConic::eps_ =
-    numeric_limits<real>::epsilon();
-  const Math::real LambertConformalConic::epsx_ = Math::sq(eps_);
-  const Math::real LambertConformalConic::tol_ = real(0.1) * sqrt(eps_);
-  const Math::real LambertConformalConic::ahypover_ =
-    real(numeric_limits<real>::digits) * log(real(numeric_limits<real>::radix))
-    + 2;
-
   LambertConformalConic::LambertConformalConic(real a, real f,
                                                real stdlat, real k0)
-    : _a(a)
-    , _f(f <= 1 ? f : 1/f)
+    : eps_(numeric_limits<real>::epsilon())
+    , epsx_(Math::sq(eps_))
+    , ahypover_(Math::digits() * log(real(numeric_limits<real>::radix)) + 2)
+    , _a(a)
+    , _f(f)
     , _fm(1 - _f)
     , _e2(_f * (2 - _f))
-    , _e(sqrt(abs(_e2)))
-    , _e2m(1 - _e2)
+    , _es((_f < 0 ? -1 : 1) * sqrt(abs(_e2)))
   {
     if (!(Math::isfinite(_a) && _a > 0))
-      throw GeographicErr("Major radius is not positive");
+      throw GeographicErr("Equatorial radius is not positive");
     if (!(Math::isfinite(_f) && _f < 1))
-      throw GeographicErr("Minor radius is not positive");
+      throw GeographicErr("Polar semi-axis is not positive");
     if (!(Math::isfinite(k0) && k0 > 0))
       throw GeographicErr("Scale is not positive");
     if (!(abs(stdlat) <= 90))
       throw GeographicErr("Standard latitude not in [-90d, 90d]");
-    real
-      phi = stdlat * Math::degree<real>(),
-      sphi = sin(phi),
-      cphi = abs(stdlat) != 90 ? cos(phi) : 0;
+    real sphi, cphi;
+    Math::sincosd(stdlat, sphi, cphi);
     Init(sphi, cphi, sphi, cphi, k0);
   }
 
   LambertConformalConic::LambertConformalConic(real a, real f,
                                                real stdlat1, real stdlat2,
                                                real k1)
-    : _a(a)
-    , _f(f <= 1 ? f : 1/f)
+    : eps_(numeric_limits<real>::epsilon())
+    , epsx_(Math::sq(eps_))
+    , ahypover_(Math::digits() * log(real(numeric_limits<real>::radix)) + 2)
+    , _a(a)
+    , _f(f)
     , _fm(1 - _f)
     , _e2(_f * (2 - _f))
-    , _e(sqrt(abs(_e2)))
-    , _e2m(1 - _e2)
+    , _es((_f < 0 ? -1 : 1) * sqrt(abs(_e2)))
   {
     if (!(Math::isfinite(_a) && _a > 0))
-      throw GeographicErr("Major radius is not positive");
+      throw GeographicErr("Equatorial radius is not positive");
     if (!(Math::isfinite(_f) && _f < 1))
-      throw GeographicErr("Minor radius is not positive");
+      throw GeographicErr("Polar semi-axis is not positive");
     if (!(Math::isfinite(k1) && k1 > 0))
       throw GeographicErr("Scale is not positive");
     if (!(abs(stdlat1) <= 90))
       throw GeographicErr("Standard latitude 1 not in [-90d, 90d]");
     if (!(abs(stdlat2) <= 90))
       throw GeographicErr("Standard latitude 2 not in [-90d, 90d]");
-    real
-      phi1 = stdlat1 * Math::degree<real>(),
-      phi2 = stdlat2 * Math::degree<real>();
-    Init(sin(phi1), abs(stdlat1) != 90 ? cos(phi1) : 0,
-         sin(phi2), abs(stdlat2) != 90 ? cos(phi2) : 0, k1);
+    real sphi1, cphi1, sphi2, cphi2;
+    Math::sincosd(stdlat1, sphi1, cphi1);
+    Math::sincosd(stdlat2, sphi2, cphi2);
+    Init(sphi1, cphi1, sphi2, cphi2, k1);
   }
 
   LambertConformalConic::LambertConformalConic(real a, real f,
                                                real sinlat1, real coslat1,
                                                real sinlat2, real coslat2,
                                                real k1)
-    : _a(a)
-    , _f(f <= 1 ? f : 1/f)
+    : eps_(numeric_limits<real>::epsilon())
+    , epsx_(Math::sq(eps_))
+    , ahypover_(Math::digits() * log(real(numeric_limits<real>::radix)) + 2)
+    , _a(a)
+    , _f(f)
     , _fm(1 - _f)
     , _e2(_f * (2 - _f))
-    , _e(sqrt(abs(_e2)))
-    , _e2m(1 - _e2)
+    , _es((_f < 0 ? -1 : 1) * sqrt(abs(_e2)))
   {
     if (!(Math::isfinite(_a) && _a > 0))
-      throw GeographicErr("Major radius is not positive");
+      throw GeographicErr("Equatorial radius is not positive");
     if (!(Math::isfinite(_f) && _f < 1))
-      throw GeographicErr("Minor radius is not positive");
+      throw GeographicErr("Polar semi-axis is not positive");
     if (!(Math::isfinite(k1) && k1 > 0))
       throw GeographicErr("Scale is not positive");
     if (!(coslat1 >= 0))
@@ -105,7 +100,7 @@ namespace GeographicLib {
   }
 
   void LambertConformalConic::Init(real sphi1, real cphi1,
-                                   real sphi2, real cphi2, real k1) throw() {
+                                   real sphi2, real cphi2, real k1) {
     {
       real r;
       r = Math::hypot(sphi1, cphi1);
@@ -148,10 +143,10 @@ namespace GeographicLib {
       tbet2 = _fm * tphi2, scbet2 = hyp(tbet2);
     real
       scphi1 = 1/cphi1,
-      xi1 = eatanhe(sphi1), shxi1 = sinh(xi1), chxi1 = hyp(shxi1),
+      xi1 = Math::eatanhe(sphi1, _es), shxi1 = sinh(xi1), chxi1 = hyp(shxi1),
       tchi1 = chxi1 * tphi1 - shxi1 * scphi1, scchi1 = hyp(tchi1),
       scphi2 = 1/cphi2,
-      xi2 = eatanhe(sphi2), shxi2 = sinh(xi2), chxi2 = hyp(shxi2),
+      xi2 = Math::eatanhe(sphi2, _es), shxi2 = sinh(xi2), chxi2 = hyp(shxi2),
       tchi2 = chxi2 * tphi2 - shxi2 * scphi2, scchi2 = hyp(tchi2),
       psi1 = Math::asinh(tchi1);
     if (tphi2 - tphi1 != 0) {
@@ -174,8 +169,8 @@ namespace GeographicLib {
         //   = log(tchi2 + scchi2) - log(tchi1 + scchi1)
         //
         // then den * (1 - n) =
-        // (log((tchi2 + scchi2)/(2*scbet2)) - log((tchi1 + scchi1)/(2*scbet1)))
-        // / (tphi2 - tphi1)
+        // (log((tchi2 + scchi2)/(2*scbet2)) -
+        //  log((tchi1 + scchi1)/(2*scbet1))) / (tphi2 - tphi1)
         // = Dlog1p(a2, a1) * (tchi2+scchi2 + tchi1+scchi1)/(4*scbet1*scbet2)
         //   * fm * Q
         //
@@ -239,7 +234,8 @@ namespace GeographicLib {
         // dchi = ((mu2 + mu1) - D(nu2, nu1) * (scphi2 + scphi1)) /
         //         D(tchi2, tchi1)
         real
-          xiZ = eatanhe(real(1)), shxiZ = sinh(xiZ), chxiZ = hyp(shxiZ),
+          xiZ = Math::eatanhe(real(1), _es),
+          shxiZ = sinh(xiZ), chxiZ = hyp(shxiZ),
           // These are differences not divided differences
           // dxiZ1 = xiZ - xi1; dshxiZ1 = shxiZ - shxi; dchxiZ1 = chxiZ - chxi
           dxiZ1 = Deatanhe(real(1), sphi1)/(scphi1*(tphi1+scphi1)),
@@ -286,11 +282,11 @@ namespace GeographicLib {
     }
 
     _scbet0 = hyp(_fm * tphi0);
-    real shxi0 = sinh(eatanhe(_n));
+    real shxi0 = sinh(Math::eatanhe(_n, _es));
     _tchi0 = tphi0 * hyp(shxi0) - shxi0 * hyp(tphi0); _scchi0 = hyp(_tchi0);
     _psi0 = Math::asinh(_tchi0);
 
-    _lat0 = atan(_sign * tphi0) / Math::degree<real>();
+    _lat0 = atan(_sign * tphi0) / Math::degree();
     _t0nm1 = Math::expm1(- _n * _psi0); // Snyder's t0^n - 1
     // a * k1 * m1/t1^n = a * k1 * m2/t2^n = a * k1 * n * (Snyder's F)
     // = a * k1 / (scbet1 * exp(-n * psi1))
@@ -313,7 +309,7 @@ namespace GeographicLib {
       real
         sphi = -1, cphi =  epsx_,
         tphi = sphi/cphi,
-        scphi = 1/cphi, shxi = sinh(eatanhe(sphi)),
+        scphi = 1/cphi, shxi = sinh(Math::eatanhe(sphi, _es)),
         tchi = hyp(shxi) * tphi - shxi * scphi, scchi = hyp(tchi),
         psi = Math::asinh(tchi),
         dpsi = Dasinh(tchi, _tchi0, scchi, _scchi0) * (tchi - _tchi0);
@@ -325,15 +321,17 @@ namespace GeographicLib {
     }
   }
 
-  const LambertConformalConic
-  LambertConformalConic::Mercator(Constants::WGS84_a<real>(),
-                                  Constants::WGS84_f<real>(),
-                                  real(0), real(1));
+  const LambertConformalConic& LambertConformalConic::Mercator() {
+    static const LambertConformalConic mercator(Constants::WGS84_a(),
+                                                Constants::WGS84_f(),
+                                                real(0), real(1));
+    return mercator;
+  }
 
   void LambertConformalConic::Forward(real lon0, real lat, real lon,
-                                      real& x, real& y, real& gamma, real& k)
-    const throw() {
-    lon = Math::AngDiff(Math::AngNormalize(lon0), Math::AngNormalize(lon));
+                                      real& x, real& y,
+                                      real& gamma, real& k) const {
+    lon = Math::AngDiff(lon0, lon);
     // From Snyder, we have
     //
     // theta = n * lambda
@@ -344,12 +342,13 @@ namespace GeographicLib {
     //
     // where nrho0 = n * rho0, drho = rho - rho0
     // and drho is evaluated with divided differences
+    real sphi, cphi;
+    Math::sincosd(Math::LatFix(lat) * _sign, sphi, cphi);
+    cphi = max(epsx_, cphi);
     real
-      lam = lon * Math::degree<real>(),
-      phi = _sign * lat * Math::degree<real>(),
-      sphi = sin(phi), cphi = abs(lat) != 90 ? cos(phi) : epsx_,
+      lam = lon * Math::degree(),
       tphi = sphi/cphi, scbet = hyp(_fm * tphi),
-      scphi = 1/cphi, shxi = sinh(eatanhe(sphi)),
+      scphi = 1/cphi, shxi = sinh(Math::eatanhe(sphi, _es)),
       tchi = hyp(shxi) * tphi - shxi * scphi, scchi = hyp(tchi),
       psi = Math::asinh(tchi),
       theta = _n * lam, stheta = sin(theta), ctheta = cos(theta),
@@ -368,13 +367,12 @@ namespace GeographicLib {
       (exp( - (Math::sq(_nc)/(1 + _n)) * dpsi )
        * (tchi >= 0 ? scchi + tchi : 1 / (scchi - tchi)) / (_scchi0 + _tchi0));
     y *= _sign;
-    gamma = _sign * theta / Math::degree<real>();
+    gamma = _sign * theta / Math::degree();
   }
 
   void LambertConformalConic::Reverse(real lon0, real x, real y,
                                       real& lat, real& lon,
-                                      real& gamma, real& k)
-    const throw() {
+                                      real& gamma, real& k) const {
     // From Snyder, we have
     //
     //        x = rho * sin(theta)
@@ -390,7 +388,7 @@ namespace GeographicLib {
     y *= _sign;
     real
       // Guard against 0 * inf in computation of ny
-      nx = _n * x, ny = _n ? _n * y : 0, y1 = _nrho0 - ny,
+      nx = _n * x, ny = _n != 0 ? _n * y : 0, y1 = _nrho0 - ny,
       den = Math::hypot(nx, y1) + _nrho0, // 0 implies origin with polar aspect
       // isfinite test is to avoid inf/inf
       drho = ((den != 0 && Math::isfinite(den))
@@ -425,36 +423,19 @@ namespace GeographicLib {
       tchi = sh * (tn + 1/tn)/2 - hyp(sh) * (tnm1 * (tn + 1)/tn)/2;
     }
 
-    // Use Newton's method to solve for tphi
-    real
-      // See comment in TransverseMercator.cpp about the initial guess
-      tphi = tchi/_e2m,
-      stol = tol_ * max(real(1), abs(tchi));
-    // min iterations = 1, max iterations = 2; mean = 1.94
-    for (int i = 0; i < numit_; ++i) {
-      real
-        scphi = hyp(tphi),
-        shxi = sinh( eatanhe( tphi / scphi ) ),
-        tchia = hyp(shxi) * tphi - shxi * scphi,
-        dtphi = (tchi - tchia) * (1 + _e2m * Math::sq(tphi)) /
-        ( _e2m * scphi * hyp(tchia) );
-      tphi += dtphi;
-      if (!(abs(dtphi) >= stol))
-        break;
-    }
     // log(t) = -asinh(tan(chi)) = -psi
     gamma = atan2(nx, y1);
     real
-      phi = _sign * atan(tphi),
+      tphi = Math::tauf(tchi, _es),
       scbet = hyp(_fm * tphi), scchi = hyp(tchi),
       lam = _n != 0 ? gamma / _n : x / y1;
-    lat = phi / Math::degree<real>();
-    lon = lam / Math::degree<real>();
+    lat = Math::atand(_sign * tphi);
+    lon = lam / Math::degree();
     lon = Math::AngNormalize(lon + Math::AngNormalize(lon0));
     k = _k0 * (scbet/_scbet0) /
       (exp(_nc != 0 ? - (Math::sq(_nc)/(1 + _n)) * dpsi : 0)
        * (tchi >= 0 ? scchi + tchi : 1 / (scchi - tchi)) / (_scchi0 + _tchi0));
-    gamma /= _sign * Math::degree<real>();
+    gamma /= _sign * Math::degree();
   }
 
   void LambertConformalConic::SetScale(real lat, real k) {

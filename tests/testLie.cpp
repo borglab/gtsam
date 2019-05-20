@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -100,6 +100,33 @@ TEST( testProduct, inverse ) {
   state1.inverse(actH1);
   Matrix numericH1 = numericalDerivative11(inverse_proxy, state1);
   EXPECT(assert_equal(numericH1, actH1, tol));
+}
+
+/* ************************************************************************* */
+Product expmap_proxy(const Vector5& vec) {
+  return Product::Expmap(vec);
+}
+TEST( testProduct, Expmap ) {
+  Vector5 vec;
+  vec << 1, 2, 0.1, 0.2, 0.3;
+
+  Matrix actH;
+  Product::Expmap(vec, actH);
+  Matrix numericH = numericalDerivative11(expmap_proxy, vec);
+  EXPECT(assert_equal(numericH, actH, tol));
+}
+
+/* ************************************************************************* */
+Vector5 logmap_proxy(const Product& p) {
+  return Product::Logmap(p);
+}
+TEST( testProduct, Logmap ) {
+  Product state(Point2(1, 2), Pose2(3, 4, 5));
+
+  Matrix actH;
+  Product::Logmap(state, actH);
+  Matrix numericH = numericalDerivative11(logmap_proxy, state);
+  EXPECT(assert_equal(numericH, actH, tol));
 }
 
 //******************************************************************************

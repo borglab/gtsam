@@ -90,6 +90,12 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     endif()
 endif()
 
+option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" ON)
+if(GTSAM_BUILD_WITH_MARCH_NATIVE)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+endif()
+
 # Set up build type library postfixes
 if(GTSAM_BUILD_TYPE_POSTFIXES)
   foreach(build_type Debug Timing Profiling RelWithDebInfo MinSizeRel)

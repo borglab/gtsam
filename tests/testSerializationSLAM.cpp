@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -96,8 +96,8 @@ typedef NonlinearEquality<CalibratedCamera>  NonlinearEqualityCalibratedCamera;
 typedef NonlinearEquality<SimpleCamera>      NonlinearEqualitySimpleCamera;
 typedef NonlinearEquality<StereoCamera>      NonlinearEqualityStereoCamera;
 
-typedef RangeFactor<Pose2, Point2>                      RangeFactorPosePoint2;
-typedef RangeFactor<Pose3, Point3>                      RangeFactorPosePoint3;
+typedef RangeFactor<Pose2, Point2>                      RangeFactor2D;
+typedef RangeFactor<Pose3, Point3>                      RangeFactor3D;
 typedef RangeFactor<Pose2, Pose2>                       RangeFactorPose2;
 typedef RangeFactor<Pose3, Pose3>                       RangeFactorPose3;
 typedef RangeFactor<CalibratedCamera, Point3>           RangeFactorCalibratedCameraPoint;
@@ -204,8 +204,8 @@ BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCalibratedCamera, "gtsam::NonlinearEqua
 BOOST_CLASS_EXPORT_GUID(NonlinearEqualitySimpleCamera, "gtsam::NonlinearEqualitySimpleCamera");
 BOOST_CLASS_EXPORT_GUID(NonlinearEqualityStereoCamera, "gtsam::NonlinearEqualityStereoCamera");
 
-BOOST_CLASS_EXPORT_GUID(RangeFactorPosePoint2, "gtsam::RangeFactorPosePoint2");
-BOOST_CLASS_EXPORT_GUID(RangeFactorPosePoint3, "gtsam::RangeFactorPosePoint3");
+BOOST_CLASS_EXPORT_GUID(RangeFactor2D, "gtsam::RangeFactor2D");
+BOOST_CLASS_EXPORT_GUID(RangeFactor3D, "gtsam::RangeFactor3D");
 BOOST_CLASS_EXPORT_GUID(RangeFactorPose2, "gtsam::RangeFactorPose2");
 BOOST_CLASS_EXPORT_GUID(RangeFactorPose3, "gtsam::RangeFactorPose3");
 BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCameraPoint, "gtsam::RangeFactorCalibratedCameraPoint");
@@ -378,8 +378,8 @@ TEST (testSerializationSLAM, factors) {
   NonlinearEqualitySimpleCamera nonlinearEqualitySimpleCamera(a13, simpleCamera);
   NonlinearEqualityStereoCamera nonlinearEqualityStereoCamera(a14, stereoCamera);
 
-  RangeFactorPosePoint2 rangeFactorPosePoint2(a08, a03, 2.0, model1);
-  RangeFactorPosePoint3 rangeFactorPosePoint3(a09, a05, 2.0, model1);
+  RangeFactor2D rangeFactor2D(a08, a03, 2.0, model1);
+  RangeFactor3D rangeFactor3D(a09, a05, 2.0, model1);
   RangeFactorPose2 rangeFactorPose2(a08, b08, 2.0, model1);
   RangeFactorPose3 rangeFactorPose3(a09, b09, 2.0, model1);
   RangeFactorCalibratedCameraPoint rangeFactorCalibratedCameraPoint(a12, a05, 2.0, model1);
@@ -439,8 +439,8 @@ TEST (testSerializationSLAM, factors) {
   graph += nonlinearEqualitySimpleCamera;
   graph += nonlinearEqualityStereoCamera;
 
-  graph += rangeFactorPosePoint2;
-  graph += rangeFactorPosePoint3;
+  graph += rangeFactor2D;
+  graph += rangeFactor3D;
   graph += rangeFactorPose2;
   graph += rangeFactorPose3;
   graph += rangeFactorCalibratedCameraPoint;
@@ -505,8 +505,8 @@ TEST (testSerializationSLAM, factors) {
   EXPECT(equalsObj<NonlinearEqualitySimpleCamera>(nonlinearEqualitySimpleCamera));
   EXPECT(equalsObj<NonlinearEqualityStereoCamera>(nonlinearEqualityStereoCamera));
 
-  EXPECT(equalsObj<RangeFactorPosePoint2>(rangeFactorPosePoint2));
-  EXPECT(equalsObj<RangeFactorPosePoint3>(rangeFactorPosePoint3));
+  EXPECT(equalsObj<RangeFactor2D>(rangeFactor2D));
+  EXPECT(equalsObj<RangeFactor3D>(rangeFactor3D));
   EXPECT(equalsObj<RangeFactorPose2>(rangeFactorPose2));
   EXPECT(equalsObj<RangeFactorPose3>(rangeFactorPose3));
   EXPECT(equalsObj<RangeFactorCalibratedCameraPoint>(rangeFactorCalibratedCameraPoint));
@@ -571,8 +571,8 @@ TEST (testSerializationSLAM, factors) {
   EXPECT(equalsXML<NonlinearEqualitySimpleCamera>(nonlinearEqualitySimpleCamera));
   EXPECT(equalsXML<NonlinearEqualityStereoCamera>(nonlinearEqualityStereoCamera));
 
-  EXPECT(equalsXML<RangeFactorPosePoint2>(rangeFactorPosePoint2));
-  EXPECT(equalsXML<RangeFactorPosePoint3>(rangeFactorPosePoint3));
+  EXPECT(equalsXML<RangeFactor2D>(rangeFactor2D));
+  EXPECT(equalsXML<RangeFactor3D>(rangeFactor3D));
   EXPECT(equalsXML<RangeFactorPose2>(rangeFactorPose2));
   EXPECT(equalsXML<RangeFactorPose3>(rangeFactorPose3));
   EXPECT(equalsXML<RangeFactorCalibratedCameraPoint>(rangeFactorCalibratedCameraPoint));
@@ -637,8 +637,8 @@ TEST (testSerializationSLAM, factors) {
   EXPECT(equalsBinary<NonlinearEqualitySimpleCamera>(nonlinearEqualitySimpleCamera));
   EXPECT(equalsBinary<NonlinearEqualityStereoCamera>(nonlinearEqualityStereoCamera));
 
-  EXPECT(equalsBinary<RangeFactorPosePoint2>(rangeFactorPosePoint2));
-  EXPECT(equalsBinary<RangeFactorPosePoint3>(rangeFactorPosePoint3));
+  EXPECT(equalsBinary<RangeFactor2D>(rangeFactor2D));
+  EXPECT(equalsBinary<RangeFactor3D>(rangeFactor3D));
   EXPECT(equalsBinary<RangeFactorPose2>(rangeFactorPose2));
   EXPECT(equalsBinary<RangeFactorPose3>(rangeFactorPose3));
   EXPECT(equalsBinary<RangeFactorCalibratedCameraPoint>(rangeFactorCalibratedCameraPoint));

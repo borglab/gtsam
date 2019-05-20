@@ -56,6 +56,9 @@ namespace gtsam {
   /// Integer nonlinear key type
   typedef std::uint64_t Key;
 
+  /// Integer nonlinear factor index type
+  typedef std::uint64_t FactorIndex;
+
   /// The index type for Eigen objects
   typedef ptrdiff_t DenseIndex;
 

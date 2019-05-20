@@ -12,7 +12,7 @@ int main(array<System::String ^> ^/*args*/)
             bool northp;
             double x, y;
             UTMUPS::Forward(lat, lon, zone, northp, x, y, -1, true);
-            String^ zonestr = UTMUPS::EncodeZone(zone, northp);
+            String^ zonestr = UTMUPS::EncodeZone(zone, northp, true);
             Console::WriteLine(String::Format("{0} {1} {2}", zonestr, x, y));
         }
         {

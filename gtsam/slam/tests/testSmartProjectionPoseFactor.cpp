@@ -82,6 +82,17 @@ TEST( SmartProjectionPoseFactor, Constructor4) {
 }
 
 /* ************************************************************************* */
+TEST( SmartProjectionPoseFactor, params) {
+  using namespace vanillaPose;
+  SmartProjectionParams params;
+  double rt = params.getRetriangulationThreshold();
+  EXPECT_DOUBLES_EQUAL(1e-5, rt, 1e-7);
+  params.setRetriangulationThreshold(1e-3);
+  rt = params.getRetriangulationThreshold();
+  EXPECT_DOUBLES_EQUAL(1e-3, rt, 1e-7);
+}
+
+/* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Equals ) {
   using namespace vanillaPose;
   SmartFactor::shared_ptr factor1(new SmartFactor(model, sharedK));
@@ -144,8 +155,8 @@ TEST( SmartProjectionPoseFactor, noiseless ) {
 
   // Calculate using computeJacobians
   Vector b;
-  vector<SmartFactor::MatrixZD> Fblocks;
-  factor.computeJacobians(Fblocks, E, b, cameras, *point);
+  SmartFactor::FBlocks Fs;
+  factor.computeJacobians(Fs, E, b, cameras, *point);
   double actualError3 = b.squaredNorm();
   EXPECT(assert_equal(expectedE, E, 1e-7));
   EXPECT_DOUBLES_EQUAL(expectedError, actualError3, 1e-8);
@@ -174,11 +185,11 @@ TEST( SmartProjectionPoseFactor, noisy ) {
   double actualError1 = factor->error(values);
 
   SmartFactor::shared_ptr factor2(new SmartFactor(model, sharedK));
-  vector<Point2> measurements;
+  Point2Vector measurements;
   measurements.push_back(level_uv);
   measurements.push_back(level_uv_right);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
 
@@ -217,7 +228,7 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ){
   Point3 landmark2(5, -0.5, 1.2);
   Point3 landmark3(5, 0, 3.0);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
@@ -225,7 +236,7 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ){
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   // Create smart factors
-  std::vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -251,8 +262,8 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ){
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, bodyPose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, bodyPose2, noisePrior));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, bodyPose1, noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, bodyPose2, noisePrior);
 
   // Check errors at ground truth poses
   Values gtValues;
@@ -281,14 +292,14 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ){
 TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
 
   using namespace vanillaPose2;
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -308,8 +319,8 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, cam2.pose(), noisePrior));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
 
   Values groundTruth;
   groundTruth.insert(x1, cam1.pose());
@@ -352,14 +363,14 @@ TEST( SmartProjectionPoseFactor, Factors ) {
   // one landmarks 1m in front of camera
   Point3 landmark1(0, 0, 10);
 
-  vector<Point2> measurements_cam1;
+  Point2Vector measurements_cam1;
 
   // Project 2 landmarks into 2 cameras
   measurements_cam1.push_back(cam1.project(landmark1));
   measurements_cam1.push_back(cam2.project(landmark1));
 
   // Create smart factors
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
 
@@ -443,19 +454,19 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     E(2, 0) = 10;
     E(2, 2) = 1;
     E(3, 1) = 10;
-    vector<Matrix26> Fblocks = list_of<Matrix>(F1)(F2);
+    SmartFactor::FBlocks Fs = list_of<Matrix>(F1)(F2);
     Vector b(4);
     b.setZero();
 
     // Create smart factors
-    FastVector<Key> keys;
+    KeyVector keys;
     keys.push_back(x1);
     keys.push_back(x2);
 
     // createJacobianQFactor
     SharedIsotropic n = noiseModel::Isotropic::Sigma(4, sigma);
     Matrix3 P = (E.transpose() * E).inverse();
-    JacobianFactorQ<6, 2> expectedQ(keys, Fblocks, E, P, b, n);
+    JacobianFactorQ<6, 2> expectedQ(keys, Fs, E, P, b, n);
     EXPECT(assert_equal(expectedInformation, expectedQ.information(), 1e-8));
 
     boost::shared_ptr<JacobianFactorQ<6, 2> > actualQ =
@@ -469,11 +480,11 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     // Whiten for RegularImplicitSchurFactor (does not have noise model)
     model->WhitenSystem(E, b);
     Matrix3 whiteP = (E.transpose() * E).inverse();
-    Fblocks[0] = model->Whiten(Fblocks[0]);
-    Fblocks[1] = model->Whiten(Fblocks[1]);
+    Fs[0] = model->Whiten(Fs[0]);
+    Fs[1] = model->Whiten(Fs[1]);
 
     // createRegularImplicitSchurFactor
-    RegularImplicitSchurFactor<Camera> expected(keys, Fblocks, E, whiteP, b);
+    RegularImplicitSchurFactor<Camera> expected(keys, Fs, E, whiteP, b);
 
     boost::shared_ptr<RegularImplicitSchurFactor<Camera> > actual =
         smartFactor1->createRegularImplicitSchurFactor(cameras, 0.0);
@@ -509,12 +520,12 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
 
   using namespace vanillaPose;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
@@ -536,8 +547,8 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, cam2.pose(), noisePrior));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -566,12 +577,12 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
 
   using namespace vanillaPose;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
@@ -603,8 +614,8 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, cam2.pose(), noisePrior));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -627,12 +638,12 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
 
   double excludeLandmarksFutherThanDist = 2;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
@@ -664,8 +675,8 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, cam2.pose(), noisePrior));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -690,7 +701,7 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   double excludeLandmarksFutherThanDist = 1e10;
   double dynamicOutlierRejectionThreshold = 1; // max 1 pixel of average reprojection error
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -698,7 +709,7 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   // add fourth landmark
   Point3 landmark4(5, -0.5, 1);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3,
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3,
       measurements_cam4;
 
   // Project 4 landmarks into three cameras
@@ -736,8 +747,8 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
   graph.push_back(smartFactor4);
-  graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, cam2.pose(), noisePrior));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
 
   Values values;
   values.insert(x1, cam1.pose());
@@ -756,12 +767,12 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
 
   using namespace vanillaPose;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
@@ -789,8 +800,8 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, cam2.pose(), noisePrior));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
 
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
@@ -810,7 +821,7 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
 
   using namespace vanillaPose2;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -819,30 +830,21 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
   NonlinearFactorGraph graph;
 
   // Project three landmarks into three cameras
-  graph.push_back(
-      ProjectionFactor(cam1.project(landmark1), model, x1, L(1), sharedK2));
-  graph.push_back(
-      ProjectionFactor(cam2.project(landmark1), model, x2, L(1), sharedK2));
-  graph.push_back(
-      ProjectionFactor(cam3.project(landmark1), model, x3, L(1), sharedK2));
+  graph.emplace_shared<ProjectionFactor>(cam1.project(landmark1), model, x1, L(1), sharedK2);
+  graph.emplace_shared<ProjectionFactor>(cam2.project(landmark1), model, x2, L(1), sharedK2);
+  graph.emplace_shared<ProjectionFactor>(cam3.project(landmark1), model, x3, L(1), sharedK2);
 
-  graph.push_back(
-      ProjectionFactor(cam1.project(landmark2), model, x1, L(2), sharedK2));
-  graph.push_back(
-      ProjectionFactor(cam2.project(landmark2), model, x2, L(2), sharedK2));
-  graph.push_back(
-      ProjectionFactor(cam3.project(landmark2), model, x3, L(2), sharedK2));
+  graph.emplace_shared<ProjectionFactor>(cam1.project(landmark2), model, x1, L(2), sharedK2);
+  graph.emplace_shared<ProjectionFactor>(cam2.project(landmark2), model, x2, L(2), sharedK2);
+  graph.emplace_shared<ProjectionFactor>(cam3.project(landmark2), model, x3, L(2), sharedK2);
 
-  graph.push_back(
-      ProjectionFactor(cam1.project(landmark3), model, x1, L(3), sharedK2));
-  graph.push_back(
-      ProjectionFactor(cam2.project(landmark3), model, x2, L(3), sharedK2));
-  graph.push_back(
-      ProjectionFactor(cam3.project(landmark3), model, x3, L(3), sharedK2));
+  graph.emplace_shared<ProjectionFactor>(cam1.project(landmark3), model, x1, L(3), sharedK2);
+  graph.emplace_shared<ProjectionFactor>(cam2.project(landmark3), model, x2, L(3), sharedK2);
+  graph.emplace_shared<ProjectionFactor>(cam3.project(landmark3), model, x3, L(3), sharedK2);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-  graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose_right, noisePrior));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, level_pose, noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, pose_right, noisePrior);
 
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
@@ -867,7 +869,7 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, CheckHessian) {
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -881,7 +883,7 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   Camera cam2(pose2, sharedK);
   Camera cam3(pose3, sharedK);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
@@ -953,7 +955,7 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
 TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_factor ) {
   using namespace vanillaPose2;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -964,7 +966,7 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   Camera cam2(pose2, sharedK2);
   Camera cam3(pose3, sharedK2);
 
-  vector<Point2> measurements_cam1, measurements_cam2;
+  Point2Vector measurements_cam1, measurements_cam2;
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
@@ -989,11 +991,9 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   NonlinearFactorGraph graph;
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
-  graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
-  graph.push_back(
-      PoseTranslationPrior<Pose3>(x2, positionPrior, noisePriorTranslation));
-  graph.push_back(
-      PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
+  graph.emplace_shared<PoseTranslationPrior<Pose3> >(x2, positionPrior, noisePriorTranslation);
+  graph.emplace_shared<PoseTranslationPrior<Pose3> >(x3, positionPrior, noisePriorTranslation);
 
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
@@ -1011,9 +1011,10 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) {
 
+  // this test considers a condition in which the cheirality constraint is triggered
   using namespace vanillaPose;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1025,7 +1026,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   Camera cam2(pose2, sharedK);
   Camera cam3(pose3, sharedK);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
@@ -1057,11 +1058,9 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
-  graph.push_back(
-      PoseTranslationPrior<Pose3>(x2, positionPrior, noisePriorTranslation));
-  graph.push_back(
-      PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
+  graph.emplace_shared<PoseTranslationPrior<Pose3> >(x2, positionPrior, noisePriorTranslation);
+  graph.emplace_shared<PoseTranslationPrior<Pose3> >(x3, positionPrior, noisePriorTranslation);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -1085,8 +1084,14 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
 
   // Since we do not do anything on degenerate instances (ZERO_ON_DEGENERACY)
   // rotation remains the same as the initial guess, but position is fixed by PoseTranslationPrior
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   EXPECT(assert_equal(Pose3(values.at<Pose3>(x3).rotation(),
       Point3(0,0,1)), result.at<Pose3>(x3)));
+#else
+  // if the check is disabled, no cheirality exception if thrown and the pose converges to the right rotation
+  // with modest accuracy since the configuration is essentially degenerate without the translation due to noise (noise_pose)
+  EXPECT(assert_equal(pose3, result.at<Pose3>(x3),1e-3));
+#endif
 }
 
 /* *************************************************************************/
@@ -1094,14 +1099,14 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
 
   using namespace vanillaPose2;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
 
   // Project three landmarks into 2 cameras
   Point2 cam1_uv1 = cam1.project(landmark1);
   Point2 cam2_uv1 = cam2.project(landmark1);
-  vector<Point2> measurements_cam1;
+  Point2Vector measurements_cam1;
   measurements_cam1.push_back(cam1_uv1);
   measurements_cam1.push_back(cam2_uv1);
 
@@ -1128,12 +1133,12 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
 
   using namespace vanillaPose;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
 
@@ -1181,7 +1186,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
 
   using namespace vanillaPose2;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1190,7 +1195,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   Camera cam2(level_pose, sharedK2);
   Camera cam3(level_pose, sharedK2);
 
-  vector<Point2> measurements_cam1;
+  Point2Vector measurements_cam1;
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
 
   SmartFactor::shared_ptr smartFactor(new SmartFactor(model, sharedK2));
@@ -1248,14 +1253,14 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   // three landmarks ~5 meters in front of camera
   Point3 landmark3(3, 0, 3.0);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1275,8 +1280,8 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, cam2.pose(), noisePrior));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
+  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -1304,7 +1309,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
 
   using namespace bundlerPose;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1319,7 +1324,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   // landmark3 at 3 meters now
   Point3 landmark3(3, 0, 3.0);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
@@ -1351,11 +1356,9 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
-  graph.push_back(
-      PoseTranslationPrior<Pose3>(x2, positionPrior, noisePriorTranslation));
-  graph.push_back(
-      PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
+  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
+  graph.emplace_shared<PoseTranslationPrior<Pose3> >(x2, positionPrior, noisePriorTranslation);
+  graph.emplace_shared<PoseTranslationPrior<Pose3> >(x3, positionPrior, noisePriorTranslation);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -1418,8 +1421,8 @@ TEST(SmartProjectionPoseFactor, serialize2) {
   SmartFactor factor(model, sharedK, bts, params);
 
   // insert some measurments
-  vector<Key> key_view;
-  vector<Point2> meas_view;
+  KeyVector key_view;
+  Point2Vector meas_view;
   key_view.push_back(Symbol('x', 1));
   meas_view.push_back(Point2(10, 10));
   factor.add(meas_view, key_view);

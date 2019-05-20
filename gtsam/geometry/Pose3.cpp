@@ -285,22 +285,31 @@ Matrix4 Pose3::matrix() const {
 }
 
 /* ************************************************************************* */
+Pose3 Pose3::transformPoseFrom(const Pose3& aTb) const {
+  const Pose3& wTa = *this;
+  return wTa * aTb;
+}
+
+/* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 Pose3 Pose3::transform_to(const Pose3& pose) const {
   Rot3 cRv = R_ * Rot3(pose.R_.inverse());
   Point3 t = pose.transform_to(t_);
   return Pose3(cRv, t);
 }
+#endif
 
 /* ************************************************************************* */
-Pose3 Pose3::transform_pose_to(const Pose3& pose, OptionalJacobian<6, 6> H1,
-                                                  OptionalJacobian<6, 6> H2) const {
-  if (H1) *H1 = -pose.inverse().AdjointMap() * AdjointMap();
+Pose3 Pose3::transformPoseTo(const Pose3& wTb, OptionalJacobian<6, 6> H1,
+                                               OptionalJacobian<6, 6> H2) const {
+  if (H1) *H1 = -wTb.inverse().AdjointMap() * AdjointMap();
   if (H2) *H2 = I_6x6;
-  return inverse() * pose;
+  const Pose3& wTa = *this;
+  return wTa.inverse() * wTb;
 }
 
 /* ************************************************************************* */
-Point3 Pose3::transform_from(const Point3& p, OptionalJacobian<3,6> Dpose,
+Point3 Pose3::transformFrom(const Point3& p, OptionalJacobian<3,6> Dpose,
     OptionalJacobian<3,3> Dpoint) const {
   // Only get matrix once, to avoid multiple allocations,
   // as well as multiple conversions in the Quaternion case
@@ -316,7 +325,7 @@ Point3 Pose3::transform_from(const Point3& p, OptionalJacobian<3,6> Dpose,
 }
 
 /* ************************************************************************* */
-Point3 Pose3::transform_to(const Point3& p, OptionalJacobian<3,6> Dpose,
+Point3 Pose3::transformTo(const Point3& p, OptionalJacobian<3,6> Dpose,
     OptionalJacobian<3,3> Dpoint) const {
   // Only get transpose once, to avoid multiple allocations,
   // as well as multiple conversions in the Quaternion case
@@ -340,7 +349,7 @@ double Pose3::range(const Point3& point, OptionalJacobian<1, 6> H1,
                     OptionalJacobian<1, 3> H2) const {
   Matrix36 D_local_pose;
   Matrix3 D_local_point;
-  Point3 local = transform_to(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
+  Point3 local = transformTo(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
   if (!H1 && !H2) {
     return local.norm();
   } else {
@@ -366,7 +375,7 @@ Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> H1,
                      OptionalJacobian<2, 3> H2) const {
   Matrix36 D_local_pose;
   Matrix3 D_local_point;
-  Point3 local = transform_to(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
+  Point3 local = transformTo(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
   if (!H1 && !H2) {
     return Unit3(local);
   } else {
@@ -376,6 +385,16 @@ Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> H1,
     if (H2) *H2 = D_b_local * D_local_point;
     return b;
   }
+}
+
+/* ************************************************************************* */
+Unit3 Pose3::bearing(const Pose3& pose, OptionalJacobian<2, 6> H1,
+                     OptionalJacobian<2, 6> H2) const {
+  if (H2) {
+    H2->setZero();
+    return bearing(pose.translation(), H1, H2.cols<3>(3));
+  }
+  return bearing(pose.translation(), H1, boost::none);
 }
 
 /* ************************************************************************* */

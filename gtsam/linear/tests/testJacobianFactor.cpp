@@ -146,7 +146,7 @@ TEST(JacobianFactor, constructors_and_accessors)
 
 /* ************************************************************************* */
 TEST(JabobianFactor, Hessian_conversion) {
-  HessianFactor hessian(0, (Matrix(4,4) <<
+  HessianFactor hessian(0, (Matrix(4, 4) <<
         1.57,        2.695,         -1.1,        -2.35,
        2.695,      11.3125,        -0.65,      -10.225,
         -1.1,        -0.65,            1,          0.5,
@@ -154,12 +154,33 @@ TEST(JabobianFactor, Hessian_conversion) {
       (Vector(4) << -7.885, -28.5175, 2.75, 25.675).finished(),
       73.1725);
 
-  JacobianFactor expected(0, (Matrix(2,4) <<
+  JacobianFactor expected(0, (Matrix(2, 4) <<
       1.2530,   2.1508,   -0.8779,  -1.8755,
            0,   2.5858,    0.4789,  -2.3943).finished(),
       Vector2(-6.2929, -5.7941));
 
   EXPECT(assert_equal(expected, JacobianFactor(hessian), 1e-3));
+}
+
+/* ************************************************************************* */
+TEST(JabobianFactor, Hessian_conversion2) {
+  JacobianFactor jf(0, (Matrix(3, 3) <<
+      1, 2, 3,
+      0, 2, 3,
+      0, 0, 3).finished(),
+    Vector3(1, 2, 2));
+  HessianFactor hessian(jf);
+  EXPECT(assert_equal(jf, JacobianFactor(hessian), 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(JabobianFactor, Hessian_conversion3) {
+  JacobianFactor jf(0, (Matrix(2, 4) <<
+      1, 2, 3, 0,
+      0, 3, 2, 1).finished(),
+    Vector2(1, 2));
+  HessianFactor hessian(jf);
+  EXPECT(assert_equal(jf, JacobianFactor(hessian), 1e-9));
 }
 
 /* ************************************************************************* */
@@ -322,27 +343,30 @@ TEST(JacobianFactor, matrices)
 /* ************************************************************************* */
 TEST(JacobianFactor, operators )
 {
-  SharedDiagonal  sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
+  const double sigma = 0.1;
+  SharedDiagonal sigma0_1 = noiseModel::Isotropic::Sigma(2, sigma);
 
   Matrix I = I_2x2;
   Vector b = Vector2(0.2,-0.1);
   JacobianFactor lf(1, -I, 2, I, b, sigma0_1);
 
-  VectorValues c;
-  c.insert(1, Vector2(10.,20.));
-  c.insert(2, Vector2(30.,60.));
+  VectorValues x;
+  Vector2 x1(10,20), x2(30,60);
+  x.insert(1, x1);
+  x.insert(2, x2);
 
   // test A*x
-  Vector expectedE = Vector2(200.,400.);
-  Vector actualE = lf * c;
+  Vector expectedE = (x2 - x1)/sigma;
+  Vector actualE = lf * x;
   EXPECT(assert_equal(expectedE, actualE));
 
   // test A^e
   VectorValues expectedX;
-  expectedX.insert(1, Vector2(-2000.,-4000.));
-  expectedX.insert(2, Vector2(2000., 4000.));
+  const double alpha = 0.5;
+  expectedX.insert(1, - alpha * expectedE /sigma);
+  expectedX.insert(2,   alpha * expectedE /sigma);
   VectorValues actualX = VectorValues::Zero(expectedX);
-  lf.transposeMultiplyAdd(1.0, actualE, actualX);
+  lf.transposeMultiplyAdd(alpha, actualE, actualX);
   EXPECT(assert_equal(expectedX, actualX));
 
   // test gradient at zero
@@ -350,7 +374,7 @@ TEST(JacobianFactor, operators )
   VectorValues expectedG;
   expectedG.insert(1, Vector2(20,-10));
   expectedG.insert(2, Vector2(-20, 10));
-  FastVector<Key> keys; keys += 1,2;
+  KeyVector keys {1, 2};
   EXPECT(assert_equal(-A.transpose()*b2, expectedG.vector(keys)));
   VectorValues actualG = lf.gradientAtZero();
   EXPECT(assert_equal(expectedG, actualG));

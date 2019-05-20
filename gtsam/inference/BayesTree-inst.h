@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -83,26 +83,28 @@ namespace gtsam {
     std::string parent = out.str();
     parent += "[label=\"";
 
-    for(Key index: clique->conditional_->frontals()) {
-      if(!first) parent += ","; first = false;
+    for (Key index : clique->conditional_->frontals()) {
+      if (!first) parent += ",";
+      first = false;
       parent += indexFormatter(index);
     }
 
-    if(clique->parent()){
+    if (clique->parent()) {
       parent += " : ";
       s << parentnum << "->" << num << "\n";
     }
 
     first = true;
-    for(Key sep: clique->conditional_->parents()) {
-      if(!first) parent += ","; first = false;
+    for (Key sep : clique->conditional_->parents()) {
+      if (!first) parent += ",";
+      first = false;
       parent += indexFormatter(sep);
     }
     parent += "\"];\n";
     s << parent;
     parentnum = num;
 
-    for(sharedClique c: clique->children) {
+    for (sharedClique c : clique->children) {
       num++;
       saveGraph(s, c, indexFormatter, parentnum);
     }
@@ -342,7 +344,7 @@ namespace gtsam {
       // Get the set of variables to eliminate, which is C1\B.
       gttic(Full_root_factoring);
       boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
-        FastVector<Key> C1_minus_B; {
+        KeyVector C1_minus_B; {
           KeySet C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
           for(const Key j: *B->conditional()) {
             C1_minus_B_set.erase(j); }
@@ -354,7 +356,7 @@ namespace gtsam {
           FactorGraphType(p_C1_Bred).eliminatePartialMultifrontal(Ordering(C1_minus_B), function);
       }
       boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
-        FastVector<Key> C2_minus_B; {
+        KeyVector C2_minus_B; {
           KeySet C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
           for(const Key j: *B->conditional()) {
             C2_minus_B_set.erase(j); }
@@ -458,7 +460,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CLIQUE>
-  void BayesTree<CLIQUE>::removeTop(const FastVector<Key>& keys, BayesNetType& bn, Cliques& orphans)
+  void BayesTree<CLIQUE>::removeTop(const KeyVector& keys, BayesNetType& bn, Cliques& orphans)
   {
     // process each key of the new factor
     for(const Key& j: keys)

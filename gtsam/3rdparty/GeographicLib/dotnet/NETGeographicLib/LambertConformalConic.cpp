@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #include "stdafx.h"
 #include "GeographicLib/LambertConformalConic.hpp"
@@ -93,7 +93,7 @@ LambertConformalConic::LambertConformalConic()
     try
     {
         m_pLambertConformalConic = new GeographicLib::LambertConformalConic(
-            GeographicLib::LambertConformalConic::Mercator );
+            GeographicLib::LambertConformalConic::Mercator() );
     }
     catch ( std::bad_alloc )
     {

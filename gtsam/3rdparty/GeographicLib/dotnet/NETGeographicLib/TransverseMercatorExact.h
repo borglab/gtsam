@@ -7,7 +7,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 namespace NETGeographicLib
@@ -19,7 +19,7 @@ namespace NETGeographicLib
    *
    * Implementation of the Transverse Mercator Projection given in
    *  - L. P. Lee,
-   *    <a href="http://dx.doi.org/10.3138/X687-1574-4325-WM62"> Conformal
+   *    <a href="https://doi.org/10.3138/X687-1574-4325-WM62"> Conformal
    *    Projections Based On Jacobian Elliptic Functions</a>, Part V of
    *    Conformal Projections Based on Elliptic Functions,
    *    (B. V. Gutsell, Toronto, 1976), 128pp.,
@@ -27,11 +27,11 @@ namespace NETGeographicLib
    *    (also appeared as:
    *    Monograph 16, Suppl. No. 1 to Canadian Cartographer, Vol 13).
    *  - C. F. F. Karney,
-   *    <a href="http://dx.doi.org/10.1007/s00190-011-0445-3">
+   *    <a href="https://doi.org/10.1007/s00190-011-0445-3">
    *    Transverse Mercator with an accuracy of a few nanometers,</a>
    *    J. Geodesy 85(8), 475--485 (Aug. 2011);
    *    preprint
-   *    <a href="http://arxiv.org/abs/1002.1417">arXiv:1002.1417</a>.
+   *    <a href="https://arxiv.org/abs/1002.1417">arXiv:1002.1417</a>.
    *
    * Lee gives the correct results for forward and reverse transformations
    * subject to the branch cut rules (see the description of the \e extendp
@@ -40,7 +40,7 @@ namespace NETGeographicLib
    * The error in the convergence is 2 &times; 10<sup>&minus;15</sup>&quot;,
    * the relative error in the scale is 7 &times; 10<sup>&minus;12</sup>%%.
    * See Sec. 3 of
-   * <a href="http://arxiv.org/abs/1002.1417">arXiv:1002.1417</a> for details.
+   * <a href="https://arxiv.org/abs/1002.1417">arXiv:1002.1417</a> for details.
    * The method is "exact" in the sense that the errors are close to the
    * round-off limit and that no changes are needed in the algorithms for them
    * to be used with reals of a higher precision.  Thus the errors using long
@@ -58,7 +58,7 @@ namespace NETGeographicLib
    * taken to be the equator.  See the documentation on TransverseMercator for
    * how to include a false easting, false northing, or a latitude of origin.
    *
-   * See <a href="http://geographiclib.sourceforge.net/tm-grid.kmz"
+   * See <a href="https://geographiclib.sourceforge.io/tm-grid.kmz"
    * type="application/vnd.google-earth.kmz"> tm-grid.kmz</a>, for an
    * illustration of the transverse Mercator grid in Google Earth.
    *
@@ -93,8 +93,7 @@ namespace NETGeographicLib
          * Constructor for a ellipsoid with
          *
          * @param[in] a equatorial radius (meters).
-         * @param[in] f flattening of ellipsoid.  If \e f > 1, set flattening
-         *   to 1/\e f.
+         * @param[in] f flattening of ellipsoid.
          * @param[in] k0 central scale factor.
          * @param[in] extendp use extended domain.
          * @exception GeographicErr if \e a, \e f, or \e k0 is not positive.
@@ -129,7 +128,7 @@ namespace NETGeographicLib
          *     a) in (&minus;&infin;, 0]
          * .
          * See Sec. 5 of
-         * <a href="http://arxiv.org/abs/1002.1417">arXiv:1002.1417</a> for a full
+         * <a href="https://arxiv.org/abs/1002.1417">arXiv:1002.1417</a> for a full
          * discussion of the treatment of the branch cut.
          *
          * The method will work for all ellipsoids used in terrestrial geodesy.
@@ -165,8 +164,7 @@ namespace NETGeographicLib
          * @param[out] k scale of projection at point.
          *
          * No false easting or northing is added. \e lat should be in the range
-         * [&minus;90&deg;, 90&deg;]; \e lon and \e lon0 should be in the
-         * range [&minus;540&deg;, 540&deg;).
+         * [&minus;90&deg;, 90&deg;].
          **********************************************************************/
         void Forward(double lon0, double lat, double lon,
                      [System::Runtime::InteropServices::Out] double% x,
@@ -185,9 +183,8 @@ namespace NETGeographicLib
          * @param[out] gamma meridian convergence at point (degrees).
          * @param[out] k scale of projection at point.
          *
-         * No false easting or northing is added.  \e lon0 should be in the range
-         * [&minus;540&deg;, 540&deg;).  The value of \e lon returned is in
-         * the range [&minus;180&deg;, 180&deg;).
+         * No false easting or northing is added.  The value of \e lon returned
+         * is in the range [&minus;180&deg;, 180&deg;).
          **********************************************************************/
         void Reverse(double lon0, double x, double y,
                      [System::Runtime::InteropServices::Out] double% lat,

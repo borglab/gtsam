@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <cstdarg>
 #include <limits>
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
@@ -124,8 +125,8 @@ bool assert_inequal(const Vector& expected, const Vector& actual, double tol) {
 bool assert_equal(const SubVector& expected, const SubVector& actual, double tol) {
   if (equal_with_abs_tol(expected,actual,tol)) return true;
   cout << "not equal:" << endl;
-  print(expected, "expected");
-  print(actual, "actual");
+  print(static_cast<Vector>(expected), "expected");
+  print(static_cast<Vector>(actual), "actual");
   return false;
 }
 

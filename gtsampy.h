@@ -499,8 +499,8 @@ class Pose2 {
   static Matrix wedge(double vx, double vy, double w);
 
   // Group Actions on Point2
-  gtsam::Point2 transform_from(const gtsam::Point2& p) const;
-  gtsam::Point2 transform_to(const gtsam::Point2& p) const;
+  gtsam::Point2 transformFrom(const gtsam::Point2& p) const;
+  gtsam::Point2 transformTo(const gtsam::Point2& p) const;
 
   // Standard Interface
   double x() const;
@@ -546,8 +546,8 @@ class Pose3 {
   static Matrix wedge(double wx, double wy, double wz, double vx, double vy, double vz);
 
   // Group Action on Point3
-  gtsam::Point3 transform_from(const gtsam::Point3& p) const;
-  gtsam::Point3 transform_to(const gtsam::Point3& p) const;
+  gtsam::Point3 transformFrom(const gtsam::Point3& p) const;
+  gtsam::Point3 transformTo(const gtsam::Point3& p) const;
 
   // Standard Interface
   gtsam::Rot3 rotation() const;
@@ -556,7 +556,7 @@ class Pose3 {
   double y() const;
   double z() const;
   Matrix matrix() const;
-  gtsam::Pose3 transform_to(const gtsam::Pose3& pose) const; // FIXME: shadows other transform_to()
+  gtsam::Pose3 transformTo(const gtsam::Pose3& pose) const; // FIXME: shadows other transformTo()
   double range(const gtsam::Point3& point);
   double range(const gtsam::Pose3& pose);
 
@@ -1742,7 +1742,7 @@ virtual class NonlinearFactor {
 
 virtual class NoiseModelFactor: gtsam::NonlinearFactor {
   void equals(const gtsam::NoiseModelFactor& other, double tol) const;
-  gtsam::noiseModel::Base* get_noiseModel() const;
+  gtsam::noiseModel::Base* noiseModel() const;
   Vector unwhitenedError(const gtsam::Values& x) const;
   Vector whitenedError(const gtsam::Values& x) const;
 };
@@ -2045,7 +2045,7 @@ virtual class NonlinearOptimizer {
   double error() const;
   int iterations() const;
   gtsam::Values values() const;
-  void iterate() const;
+  gtsam::GaussianFactorGraph* iterate() const;
 };
 
 virtual class GaussNewtonOptimizer : gtsam::NonlinearOptimizer {
@@ -2258,8 +2258,8 @@ virtual class RangeFactor : gtsam::NoiseModelFactor {
   RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
 };
 
-typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
-typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactorPosePoint3;
+typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactor2D;
+typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactor3D;
 typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Pose2> RangeFactorPose2;
 typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Pose3> RangeFactorPose3;
 typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::Point3> RangeFactorCalibratedCameraPoint;

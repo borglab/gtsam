@@ -22,6 +22,15 @@
 namespace gtsam {
 
 /* ************************************************************************* */
+void FixedLagSmoother::Result::print() const {
+  std::cout << "Nr iterations: " << iterations << '\n'
+            << "Nr intermediateSteps: " << intermediateSteps << '\n'
+            << "Nr nonlinear variables: " << nonlinearVariables << '\n'
+            << "Nr linear variables: " << linearVariables << '\n'
+            << "error: " << error << std::endl;
+}
+
+/* ************************************************************************* */
 void FixedLagSmoother::print(const std::string& s, const KeyFormatter& keyFormatter) const {
   std::cout << s;
   std::cout << "  smoother lag: " << smootherLag_ << std::endl;

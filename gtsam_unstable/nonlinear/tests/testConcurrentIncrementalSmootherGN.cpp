@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -584,7 +584,7 @@ TEST( ConcurrentIncrementalSmootherGN, synchronize_3 )
   KeySet allkeys = LinFactorGraph->keys();
   for(const Values::ConstKeyValuePair& key_value: filterSeparatorValues)
     allkeys.erase(key_value.key);
-  std::vector<Key> variables(allkeys.begin(), allkeys.end());
+  KeyVector variables(allkeys.begin(), allkeys.end());
   std::pair<GaussianBayesNet::shared_ptr, GaussianFactorGraph::shared_ptr> result = LinFactorGraph->eliminatePartialSequential(variables, EliminateCholesky);
 
   expectedSmootherSummarization.resize(0);
@@ -639,13 +639,13 @@ TEST( ConcurrentIncrementalSmoother, removeFactors_topology_1 )
   actualGraph.print("actual graph:  \n");
 
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  expectedGraph.emplace_shared<PriorFactor<Pose3> >(1, poseInitial, noisePrior);
   // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   // we should add an empty one, so that the ordering and labeling of the factors is preserved
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
-  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(2, 3, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(3, 4, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
 
 //  CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
 }

@@ -206,7 +206,7 @@ int main(int argc, char *argv[]) {
   }
 
 #ifdef GTSAM_USE_TBB
-  std::auto_ptr<tbb::task_scheduler_init> init;
+  std::unique_ptr<tbb::task_scheduler_init> init;
   if(nThreads > 0) {
     cout << "Using " << nThreads << " threads" << endl;
     init.reset(new tbb::task_scheduler_init(nThreads));
@@ -251,10 +251,10 @@ void runIncremental()
   Key firstPose;
   while(nextMeasurement < datasetMeasurements.size())
   {
-    if(BetweenFactor<Pose>::shared_ptr measurement =
+    if(BetweenFactor<Pose>::shared_ptr factor =
       boost::dynamic_pointer_cast<BetweenFactor<Pose> >(datasetMeasurements[nextMeasurement]))
     {
-      Key key1 = measurement->key1(), key2 = measurement->key2();
+      Key key1 = factor->key1(), key2 = factor->key2();
       if(((int)key1 >= firstStep && key1 < key2) || ((int)key2 >= firstStep && key2 < key1)) {
         // We found an odometry starting at firstStep
         firstPose = std::min(key1, key2);
@@ -302,52 +302,53 @@ void runIncremental()
 
       NonlinearFactor::shared_ptr measurementf = datasetMeasurements[nextMeasurement];
 
-      if(BetweenFactor<Pose>::shared_ptr measurement =
+      if(BetweenFactor<Pose>::shared_ptr factor =
         boost::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
       {
         // Stop collecting measurements that are for future steps
-        if(measurement->key1() > step || measurement->key2() > step)
+        if(factor->key1() > step || factor->key2() > step)
           break;
 
         // Require that one of the nodes is the current one
-        if(measurement->key1() != step && measurement->key2() != step)
+        if(factor->key1() != step && factor->key2() != step)
           throw runtime_error("Problem in data file, out-of-sequence measurements");
 
         // Add a new factor
-        newFactors.push_back(measurement);
+        newFactors.push_back(factor);
+        const auto& measured = factor->measured();
 
         // Initialize the new variable
-        if(measurement->key1() > measurement->key2()) {
-          if(!newVariables.exists(measurement->key1())) { // Only need to check newVariables since loop closures come after odometry
+        if(factor->key1() > factor->key2()) {
+          if(!newVariables.exists(factor->key1())) { // Only need to check newVariables since loop closures come after odometry
             if(step == 1)
-              newVariables.insert(measurement->key1(), measurement->measured().inverse());
+              newVariables.insert(factor->key1(), measured.inverse());
             else {
-              Pose prevPose = isam2.calculateEstimate<Pose>(measurement->key2());
-              newVariables.insert(measurement->key1(), prevPose * measurement->measured().inverse());
+              Pose prevPose = isam2.calculateEstimate<Pose>(factor->key2());
+              newVariables.insert(factor->key1(), prevPose * measured.inverse());
             }
           }
         } else {
-          if(!newVariables.exists(measurement->key2())) { // Only need to check newVariables since loop closures come after odometry
+          if(!newVariables.exists(factor->key2())) { // Only need to check newVariables since loop closures come after odometry
             if(step == 1)
-              newVariables.insert(measurement->key2(), measurement->measured());
+              newVariables.insert(factor->key2(), measured);
             else {
-              Pose prevPose = isam2.calculateEstimate<Pose>(measurement->key1());
-              newVariables.insert(measurement->key2(), prevPose * measurement->measured());
+              Pose prevPose = isam2.calculateEstimate<Pose>(factor->key1());
+              newVariables.insert(factor->key2(), prevPose * measured);
             }
           }
         }
       }
-      else if(BearingRangeFactor<Pose, Point2>::shared_ptr measurement =
+      else if(BearingRangeFactor<Pose, Point2>::shared_ptr factor =
         boost::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
       {
-        Key poseKey = measurement->keys()[0], lmKey = measurement->keys()[1];
+        Key poseKey = factor->keys()[0], lmKey = factor->keys()[1];
 
         // Stop collecting measurements that are for future steps
         if(poseKey > step)
           throw runtime_error("Problem in data file, out-of-sequence measurements");
 
         // Add new factor
-        newFactors.push_back(measurement);
+        newFactors.push_back(factor);
 
         // Initialize new landmark
         if(!isam2.getLinearizationPoint().exists(lmKey))
@@ -357,10 +358,11 @@ void runIncremental()
             pose = isam2.calculateEstimate<Pose>(poseKey);
           else
             pose = newVariables.at<Pose>(poseKey);
-          Rot2 measuredBearing = measurement->measured().first;
-          double measuredRange = measurement->measured().second;
-          newVariables.insert(lmKey, 
-            pose.transform_from(measuredBearing.rotate(Point2(measuredRange, 0.0))));
+          const auto& measured = factor->measured();
+          Rot2 measuredBearing = measured.bearing();
+          double measuredRange = measured.range();
+          newVariables.insert(lmKey,
+            pose.transformFrom(measuredBearing.rotate(Point2(measuredRange, 0.0))));
         }
       }
       else
@@ -427,7 +429,7 @@ void runIncremental()
   //    for (Key key12: boost::adaptors::reverse(values.keys())) {
   //      if(i != j) {
   //        gttic_(jointMarginalInformation);
-  //        std::vector<Key> keys(2);
+  //        KeyVector keys(2);
   //        keys[0] = key1;
   //        keys[1] = key2;
   //        JointMarginal info = marginals.jointMarginalInformation(keys);
@@ -522,7 +524,7 @@ void runCompare()
 
   // Check solution for equality
   cout << "Comparing solutions..." << endl;
-  vector<Key> missingKeys;
+  KeyVector missingKeys;
   br::set_symmetric_difference(soln1.keys(), soln2.keys(), std::back_inserter(missingKeys));
   if(!missingKeys.empty()) {
     cout << "  Keys unique to one solution file: ";
@@ -533,7 +535,7 @@ void runCompare()
     }
     cout << endl;
   }
-  vector<Key> commonKeys;
+  KeyVector commonKeys;
   br::set_intersection(soln1.keys(), soln2.keys(), std::back_inserter(commonKeys));
   double maxDiff = 0.0;
   for(Key j: commonKeys)

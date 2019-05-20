@@ -2,9 +2,9 @@
  * \file Gnomonic.hpp
  * \brief Header for GeographicLib::Gnomonic class
  *
- * Copyright (c) Charles Karney (2010-2011) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2016) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #if !defined(GEOGRAPHICLIB_GNOMONIC_HPP)
@@ -22,12 +22,13 @@ namespace GeographicLib {
    * %Gnomonic projection centered at an arbitrary position \e C on the
    * ellipsoid.  This projection is derived in Section 8 of
    * - C. F. F. Karney,
-   *   <a href="http://dx.doi.org/10.1007/s00190-012-0578-z">
+   *   <a href="https://doi.org/10.1007/s00190-012-0578-z">
    *   Algorithms for geodesics</a>,
    *   J. Geodesy <b>87</b>, 43--55 (2013);
-   *   DOI: <a href="http://dx.doi.org/10.1007/s00190-012-0578-z">
+   *   DOI: <a href="https://doi.org/10.1007/s00190-012-0578-z">
    *   10.1007/s00190-012-0578-z</a>;
-   *   addenda: <a href="http://geographiclib.sf.net/geod-addenda.html">
+   *   addenda:
+   *   <a href="https://geographiclib.sourceforge.io/geod-addenda.html">
    *   geod-addenda.html</a>.
    * .
    * The projection of \e P is defined as follows: compute the geodesic line
@@ -66,9 +67,9 @@ namespace GeographicLib {
    * (<i>r</i>/2<i>a</i>)<sup>3</sup> \e r.
    *
    * The conversions all take place using a Geodesic object (by default
-   * Geodesic::WGS84).  For more information on geodesics see \ref geodesic.
+   * Geodesic::WGS84()).  For more information on geodesics see \ref geodesic.
    *
-   * <b>CAUTION:</b> The definition of this projection for a sphere is
+   * \warning The definition of this projection for a sphere is
    * standard.  However, there is no standard for how it should be extended to
    * an ellipsoid.  The choices are:
    * - Declare that the projection is undefined for an ellipsoid.
@@ -82,9 +83,9 @@ namespace GeographicLib {
    *   sphere at the center point.  This causes normal sections through the
    *   center point to appear as straight lines in the projection; i.e., it
    *   generalizes the spherical great circle to a normal section.  This was
-   *   proposed by I. G. Letoval'tsev, Generalization of the %Gnomonic
-   *   Projection for a Spheroid and the Principal Geodetic Problems Involved
-   *   in the Alignment of Surface Routes, Geodesy and Aerophotography (5),
+   *   proposed by I. G. Letoval'tsev, Generalization of the gnomonic
+   *   projection for a spheroid and the principal geodetic problems involved
+   *   in the alignment of surface routes, Geodesy and Aerophotography (5),
    *   271--274 (1963).
    * - The projection given here.  This causes geodesics close to the center
    *   point to appear as straight lines in the projection; i.e., it
@@ -101,10 +102,9 @@ namespace GeographicLib {
   class GEOGRAPHICLIB_EXPORT Gnomonic {
   private:
     typedef Math::real real;
+    real eps0_, eps_;
     Geodesic _earth;
     real _a, _f;
-    static const real eps0_;
-    static const real eps_;
     static const int numit_ = 10;
   public:
 
@@ -114,12 +114,7 @@ namespace GeographicLib {
      * @param[in] earth the Geodesic object to use for geodesic calculations.
      *   By default this uses the WGS84 ellipsoid.
      **********************************************************************/
-    explicit Gnomonic(const Geodesic& earth = Geodesic::WGS84)
-      throw()
-      : _earth(earth)
-      , _a(_earth.MajorRadius())
-      , _f(_earth.Flattening())
-    {}
+    explicit Gnomonic(const Geodesic& earth = Geodesic::WGS84());
 
     /**
      * Forward projection, from geographic to gnomonic.
@@ -133,8 +128,7 @@ namespace GeographicLib {
      * @param[out] azi azimuth of geodesic at point (degrees).
      * @param[out] rk reciprocal of azimuthal scale at point.
      *
-     * \e lat0 and \e lat should be in the range [&minus;90&deg;, 90&deg;] and
-     * \e lon0 and \e lon should be in the range [&minus;540&deg;, 540&deg;).
+     * \e lat0 and \e lat should be in the range [&minus;90&deg;, 90&deg;].
      * The scale of the projection is 1/<i>rk</i><sup>2</sup> in the "radial"
      * direction, \e azi clockwise from true north, and is 1/\e rk in the
      * direction perpendicular to this.  If the point lies "over the horizon",
@@ -144,7 +138,7 @@ namespace GeographicLib {
      * (to within roundoff) provided the point in not over the horizon.
      **********************************************************************/
     void Forward(real lat0, real lon0, real lat, real lon,
-                 real& x, real& y, real& azi, real& rk) const throw();
+                 real& x, real& y, real& azi, real& rk) const;
 
     /**
      * Reverse projection, from gnomonic to geographic.
@@ -158,26 +152,25 @@ namespace GeographicLib {
      * @param[out] azi azimuth of geodesic at point (degrees).
      * @param[out] rk reciprocal of azimuthal scale at point.
      *
-     * \e lat0 should be in the range [&minus;90&deg;, 90&deg;] and \e
-     * lon0 should be in the range [&minus;540&deg;, 540&deg;).  \e lat
-     * will be in the range [&minus;90&deg;, 90&deg;] and \e lon will
-     * be in the range [&minus;180&deg;, 180&deg;).  The scale of the
-     * projection is 1/\e rk<sup>2</sup> in the "radial" direction, \e azi
-     * clockwise from true north, and is 1/\e rk in the direction perpendicular
-     * to this.  Even though all inputs should return a valid \e lat and \e
-     * lon, it's possible that the procedure fails to converge for very large
-     * \e x or \e y; in this case NaNs are returned for all the output
-     * arguments.  A call to Reverse followed by a call to Forward will return
-     * the original (\e x, \e y) (to roundoff).
+     * \e lat0 should be in the range [&minus;90&deg;, 90&deg;].  \e lat will
+     * be in the range [&minus;90&deg;, 90&deg;] and \e lon will be in the
+     * range [&minus;180&deg;, 180&deg;].  The scale of the projection is
+     * 1/<i>rk</i><sup>2</sup> in the "radial" direction, \e azi clockwise from
+     * true north, and is 1/\e rk in the direction perpendicular to this.  Even
+     * though all inputs should return a valid \e lat and \e lon, it's possible
+     * that the procedure fails to converge for very large \e x or \e y; in
+     * this case NaNs are returned for all the output arguments.  A call to
+     * Reverse followed by a call to Forward will return the original (\e x, \e
+     * y) (to roundoff).
      **********************************************************************/
     void Reverse(real lat0, real lon0, real x, real y,
-                 real& lat, real& lon, real& azi, real& rk) const throw();
+                 real& lat, real& lon, real& azi, real& rk) const;
 
     /**
      * Gnomonic::Forward without returning the azimuth and scale.
      **********************************************************************/
     void Forward(real lat0, real lon0, real lat, real lon,
-                 real& x, real& y) const throw() {
+                 real& x, real& y) const {
       real azi, rk;
       Forward(lat0, lon0, lat, lon, x, y, azi, rk);
     }
@@ -186,7 +179,7 @@ namespace GeographicLib {
      * Gnomonic::Reverse without returning the azimuth and scale.
      **********************************************************************/
     void Reverse(real lat0, real lon0, real x, real y,
-                 real& lat, real& lon) const throw() {
+                 real& lat, real& lon) const {
       real azi, rk;
       Reverse(lat0, lon0, x, y, lat, lon, azi, rk);
     }
@@ -198,23 +191,15 @@ namespace GeographicLib {
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value inherited from the Geodesic object used in the constructor.
      **********************************************************************/
-    Math::real MajorRadius() const throw() { return _earth.MajorRadius(); }
+    Math::real MajorRadius() const { return _earth.MajorRadius(); }
 
     /**
      * @return \e f the flattening of the ellipsoid.  This is the value
      *   inherited from the Geodesic object used in the constructor.
      **********************************************************************/
-    Math::real Flattening() const throw() { return _earth.Flattening(); }
+    Math::real Flattening() const { return _earth.Flattening(); }
     ///@}
 
-    /// \cond SKIP
-    /**
-     * <b>DEPRECATED</b>
-     * @return \e r the inverse flattening of the ellipsoid.
-     **********************************************************************/
-    Math::real InverseFlattening() const throw()
-    { return _earth.InverseFlattening(); }
-    /// \endcond
   };
 
 } // namespace GeographicLib

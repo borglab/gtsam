@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -56,7 +56,7 @@ namespace gtsam {
 
     /** Constructor */
     BetweenFactor(Key key1, Key key2, const VALUE& measured,
-        const SharedNoiseModel& model) :
+        const SharedNoiseModel& model = nullptr) :
       Base(model, key1, key2), measured_(measured) {
     }
 
@@ -92,10 +92,10 @@ namespace gtsam {
       T hx = traits<T>::Between(p1, p2, H1, H2); // h(x)
       // manifold equivalent of h(x)-z -> log(z,h(x))
 #ifdef SLOW_BUT_CORRECT_BETWEENFACTOR
-      typename traits<T>::ChartJacobian::Fixed Hlocal;
+      typename traits<T>::ChartJacobian::Jacobian Hlocal;
       Vector rval = traits<T>::Local(measured_, hx, boost::none, (H1 || H2) ? &Hlocal : 0);
       if (H1) *H1 = Hlocal * (*H1);
-      if (H1) *H2 = Hlocal * (*H2);
+      if (H2) *H2 = Hlocal * (*H2);
       return rval;
 #else
       return traits<T>::Local(measured_, hx);
@@ -122,6 +122,11 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
+
+	  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+	  enum { NeedsToAlign = (sizeof(VALUE) % 16) == 0 };
+    public:
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
   }; // \class BetweenFactor
 
   /// traits

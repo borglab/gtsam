@@ -41,20 +41,22 @@ public:
   virtual ~BatchFixedLagSmoother() { };
 
   /** Print the factor for debugging and testing (implementing Testable) */
-  virtual void print(const std::string& s = "BatchFixedLagSmoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  virtual void print(const std::string& s = "BatchFixedLagSmoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /** Check if two IncrementalFixedLagSmoother Objects are equal */
-  virtual bool equals(const FixedLagSmoother& rhs, double tol = 1e-9) const;
+  virtual bool equals(const FixedLagSmoother& rhs, double tol = 1e-9) const override;
 
   /** Add new factors, updating the solution and relinearizing as needed. */
-  Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const KeyTimestampMap& timestamps = KeyTimestampMap());
+  Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
+                const Values& newTheta = Values(),
+                const KeyTimestampMap& timestamps = KeyTimestampMap(),
+                const FactorIndices& factorsToRemove = FactorIndices()) override;
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
    * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
    */
-  Values calculateEstimate() const {
+  Values calculateEstimate() const override {
     return theta_.retract(delta_);
   }
 

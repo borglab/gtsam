@@ -30,8 +30,8 @@ template<typename QuatType> void check_slerp(const QuatType& q0, const QuatType&
   Scalar largeEps = test_precision<Scalar>();
 
   Scalar theta_tot = AA(q1*q0.inverse()).angle();
-  if(theta_tot>M_PI)
-    theta_tot = Scalar(2.*M_PI)-theta_tot;
+  if(theta_tot>Scalar(EIGEN_PI))
+    theta_tot = Scalar(2.)*Scalar(EIGEN_PI)-theta_tot;
   for(Scalar t=0; t<=Scalar(1.001); t+=Scalar(0.1))
   {
     QuatType q = q0.slerp(t,q1);
@@ -49,13 +49,13 @@ template<typename Scalar, int Options> void quaternion(void)
   */
   using std::abs;
   typedef Matrix<Scalar,3,1> Vector3;
-  typedef Matrix<Scalar,4,1> Vector4;
+  typedef Matrix<Scalar,3,3> Matrix3;
   typedef Quaternion<Scalar,Options> Quaternionx;
   typedef AngleAxis<Scalar> AngleAxisx;
 
   Scalar largeEps = test_precision<Scalar>();
   if (internal::is_same<Scalar,float>::value)
-    largeEps = 1e-3f;
+    largeEps = Scalar(1e-3);
 
   Scalar eps = internal::random<Scalar>() * Scalar(1e-2);
 
@@ -64,8 +64,8 @@ template<typename Scalar, int Options> void quaternion(void)
           v2 = Vector3::Random(),
           v3 = Vector3::Random();
 
-  Scalar  a = internal::random<Scalar>(-Scalar(M_PI), Scalar(M_PI)),
-          b = internal::random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
+  Scalar  a = internal::random<Scalar>(-Scalar(EIGEN_PI), Scalar(EIGEN_PI)),
+          b = internal::random<Scalar>(-Scalar(EIGEN_PI), Scalar(EIGEN_PI));
 
   // Quaternion: Identity(), setIdentity();
   Quaternionx q1, q2;
@@ -82,8 +82,8 @@ template<typename Scalar, int Options> void quaternion(void)
 
   // angular distance
   Scalar refangle = abs(AngleAxisx(q1.inverse()*q2).angle());
-  if (refangle>Scalar(M_PI))
-    refangle = Scalar(2)*Scalar(M_PI) - refangle;
+  if (refangle>Scalar(EIGEN_PI))
+    refangle = Scalar(2)*Scalar(EIGEN_PI) - refangle;
 
   if((q1.coeffs()-q2.coeffs()).norm() > 10*largeEps)
   {
@@ -101,6 +101,11 @@ template<typename Scalar, int Options> void quaternion(void)
   q2 = q1.toRotationMatrix();
   VERIFY_IS_APPROX(q1*v1,q2*v1);
 
+  Matrix3 rot1(q1);
+  VERIFY_IS_APPROX(q1*v1,rot1*v1);
+  Quaternionx q3(rot1.transpose()*rot1);
+  VERIFY_IS_APPROX(q3*v1,v1);
+
 
   // angle-axis conversion
   AngleAxisx aa = AngleAxisx(q1);
@@ -109,8 +114,8 @@ template<typename Scalar, int Options> void quaternion(void)
   // Do not execute the test if the rotation angle is almost zero, or
   // the rotation axis and v1 are almost parallel.
   if (abs(aa.angle()) > 5*test_precision<Scalar>()
-      && (aa.axis() - v1.normalized()).norm() < 1.99
-      && (aa.axis() + v1.normalized()).norm() < 1.99) 
+      && (aa.axis() - v1.normalized()).norm() < Scalar(1.99)
+      && (aa.axis() + v1.normalized()).norm() < Scalar(1.99))
   {
     VERIFY_IS_NOT_APPROX(q1 * v1, Quaternionx(AngleAxisx(aa.angle()*2,aa.axis())) * v1);
   }
@@ -151,19 +156,19 @@ template<typename Scalar, int Options> void quaternion(void)
   Quaternionx *q = new Quaternionx;
   delete q;
 
-  q1 = AngleAxisx(a, v0.normalized());
-  q2 = AngleAxisx(b, v1.normalized());
+  q1 = Quaternionx::UnitRandom();
+  q2 = Quaternionx::UnitRandom();
   check_slerp(q1,q2);
 
   q1 = AngleAxisx(b, v1.normalized());
-  q2 = AngleAxisx(b+Scalar(M_PI), v1.normalized());
+  q2 = AngleAxisx(b+Scalar(EIGEN_PI), v1.normalized());
   check_slerp(q1,q2);
 
   q1 = AngleAxisx(b,  v1.normalized());
   q2 = AngleAxisx(-b, -v1.normalized());
   check_slerp(q1,q2);
 
-  q1.coeffs() = Vector4::Random().normalized();
+  q1 = Quaternionx::UnitRandom();
   q2.coeffs() = -q1.coeffs();
   check_slerp(q1,q2);
 }
@@ -179,11 +184,11 @@ template<typename Scalar> void mapQuaternion(void){
   
   Vector3 v0 = Vector3::Random(),
           v1 = Vector3::Random();
-  Scalar  a = internal::random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
+  Scalar  a = internal::random<Scalar>(-Scalar(EIGEN_PI), Scalar(EIGEN_PI));
 
-  EIGEN_ALIGN16 Scalar array1[4];
-  EIGEN_ALIGN16 Scalar array2[4];
-  EIGEN_ALIGN16 Scalar array3[4+1];
+  EIGEN_ALIGN_MAX Scalar array1[4];
+  EIGEN_ALIGN_MAX Scalar array2[4];
+  EIGEN_ALIGN_MAX Scalar array3[4+1];
   Scalar* array3unaligned = array3+1;
   
   MQuaternionA    mq1(array1);
@@ -226,15 +231,28 @@ template<typename Scalar> void mapQuaternion(void){
   VERIFY_IS_APPROX(mq3*mq2, q3*q2);
   VERIFY_IS_APPROX(mcq1*mq2, q1*q2);
   VERIFY_IS_APPROX(mcq3*mq2, q3*q2);
+
+  // Bug 1461, compilation issue with Map<const Quat>::w(), and other reference/constness checks:
+  VERIFY_IS_APPROX(mcq3.coeffs().x() + mcq3.coeffs().y() + mcq3.coeffs().z() + mcq3.coeffs().w(), mcq3.coeffs().sum());
+  VERIFY_IS_APPROX(mcq3.x() + mcq3.y() + mcq3.z() + mcq3.w(), mcq3.coeffs().sum());
+  mq3.w() = 1;
+  const Quaternionx& cq3(q3);
+  VERIFY( &cq3.x() == &q3.x() );
+  const MQuaternionUA& cmq3(mq3);
+  VERIFY( &cmq3.x() == &mq3.x() );
+  // FIXME the following should be ok. The problem is that currently the LValueBit flag
+  // is used to determine wether we can return a coeff by reference or not, which is not enough for Map<const ...>.
+  //const MCQuaternionUA& cmcq3(mcq3);
+  //VERIFY( &cmcq3.x() == &mcq3.x() );
 }
 
 template<typename Scalar> void quaternionAlignment(void){
   typedef Quaternion<Scalar,AutoAlign> QuaternionA;
   typedef Quaternion<Scalar,DontAlign> QuaternionUA;
 
-  EIGEN_ALIGN16 Scalar array1[4];
-  EIGEN_ALIGN16 Scalar array2[4];
-  EIGEN_ALIGN16 Scalar array3[4+1];
+  EIGEN_ALIGN_MAX Scalar array1[4];
+  EIGEN_ALIGN_MAX Scalar array2[4];
+  EIGEN_ALIGN_MAX Scalar array3[4+1];
   Scalar* arrayunaligned = array3+1;
 
   QuaternionA *q1 = ::new(reinterpret_cast<void*>(array1)) QuaternionA;
@@ -247,8 +265,8 @@ template<typename Scalar> void quaternionAlignment(void){
 
   VERIFY_IS_APPROX(q1->coeffs(), q2->coeffs());
   VERIFY_IS_APPROX(q1->coeffs(), q3->coeffs());
-  #if defined(EIGEN_VECTORIZE) && EIGEN_ALIGN_STATICALLY
-  if(internal::packet_traits<Scalar>::Vectorizable)
+  #if defined(EIGEN_VECTORIZE) && EIGEN_MAX_STATIC_ALIGN_BYTES>0
+  if(internal::packet_traits<Scalar>::Vectorizable && internal::packet_traits<Scalar>::size<=4)
     VERIFY_RAISES_ASSERT((::new(reinterpret_cast<void*>(arrayunaligned)) QuaternionA));
   #endif
 }

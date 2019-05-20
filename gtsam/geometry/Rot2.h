@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -59,7 +59,7 @@ namespace gtsam {
 
     /// Named constructor from angle in degrees
     static Rot2 fromDegrees(double theta) {
-      const double degree = M_PI / 180;
+      static const double degree = M_PI / 180;
       return fromAngle(theta * degree);
     }
 

@@ -83,6 +83,34 @@ TEST(SO3, ChartDerivatives) {
 }
 
 /* ************************************************************************* */
+TEST(SO3, Expmap) {
+  Vector axis = Vector3(0., 1., 0.);  // rotation around Y
+  double angle = 3.14 / 4.0;
+  Matrix expected(3,3);
+  expected << 0.707388, 0, 0.706825, 0, 1, 0, -0.706825, 0, 0.707388;
+
+  // axis angle version
+  so3::ExpmapFunctor f1(axis, angle);
+  SO3 actual1 = f1.expmap();
+  CHECK(assert_equal(expected, actual1.matrix(), 1e-5));
+
+  // axis angle version, negative angle
+  so3::ExpmapFunctor f2(axis, angle - 2*M_PI);
+  SO3 actual2 = f2.expmap();
+  CHECK(assert_equal(expected, actual2.matrix(), 1e-5));
+
+  // omega version
+  so3::ExpmapFunctor f3(axis * angle);
+  SO3 actual3 = f3.expmap();
+  CHECK(assert_equal(expected, actual3.matrix(), 1e-5));
+
+  // omega version, negative angle
+  so3::ExpmapFunctor f4(axis * (angle - 2*M_PI));
+  SO3 actual4 = f4.expmap();
+  CHECK(assert_equal(expected, actual4.matrix(), 1e-5));
+}
+
+/* ************************************************************************* */
 namespace exmap_derivative {
 static const Vector3 w(0.1, 0.27, -0.2);
 }

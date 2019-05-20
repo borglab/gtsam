@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -140,7 +140,7 @@ int main() {
   const GaussianConditional::shared_ptr& cg0 = linearBayesNet->back();
   assert(cg0->nrFrontals() == 1);
   assert(cg0->nrParents() == 0);
-  linearFactorGraph->add(0, cg0->get_R(), cg0->get_d() - cg0->get_R()*result[ordering->at(x1)], noiseModel::Diagonal::Sigmas(cg0->get_sigmas(), true));
+  linearFactorGraph->add(0, cg0->R(), cg0->d() - cg0->R()*result[ordering->at(x1)], noiseModel::Diagonal::Sigmas(cg0->get_sigmas(), true));
 
   // Create the desired ordering
   ordering = Ordering::shared_ptr(new Ordering);

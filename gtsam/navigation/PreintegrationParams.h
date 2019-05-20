@@ -23,7 +23,7 @@ namespace gtsam {
 
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
-struct PreintegrationParams: PreintegratedRotationParams {
+struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   Matrix3 accelerometerCovariance; ///< continuous-time "Covariance" of accelerometer
   Matrix3 integrationCovariance; ///< continuous-time "Covariance" describing integration uncertainty
   bool use2ndOrderCoriolis; ///< Whether to use second order Coriolis integration
@@ -39,12 +39,12 @@ struct PreintegrationParams: PreintegratedRotationParams {
 
   // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
   static boost::shared_ptr<PreintegrationParams> MakeSharedD(double g = 9.81) {
-    return boost::make_shared<PreintegrationParams>(Vector3(0, 0, g));
+    return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, g)));
   }
 
   // Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
   static boost::shared_ptr<PreintegrationParams> MakeSharedU(double g = 9.81) {
-    return boost::make_shared<PreintegrationParams>(Vector3(0, 0, -g));
+    return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, -g)));
   }
 
   void print(const std::string& s) const;
@@ -56,6 +56,7 @@ struct PreintegrationParams: PreintegratedRotationParams {
 
   const Matrix3& getAccelerometerCovariance() const { return accelerometerCovariance; }
   const Matrix3& getIntegrationCovariance()   const { return integrationCovariance; }
+  const Vector3& getGravity()   const { return n_gravity; }
   bool           getUse2ndOrderCoriolis()     const { return use2ndOrderCoriolis; }
 
 protected:
@@ -74,6 +75,12 @@ protected:
     ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
     ar & BOOST_SERIALIZATION_NVP(n_gravity);
   }
+
+#ifdef GTSAM_USE_QUATERNIONS
+  // Align if we are using Quaternions
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 } // namespace gtsam
