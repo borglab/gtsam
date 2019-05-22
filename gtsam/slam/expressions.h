@@ -40,6 +40,16 @@ inline Point3_ transformFrom(const Pose3_& x, const Point3_& p) {
   return Point3_(x, &Pose3::transformFrom, p);
 }
 
+namespace internal {
+Rot3 rotation(const Pose3& pose, OptionalJacobian<3, 6> H) {
+  return pose.rotation(H);
+}
+}  // namespace internal
+
+inline Rot3_ rotation(const Pose3_& pose) {
+  return Rot3_(internal::rotation, pose);
+}
+
 inline Point3_ rotate(const Rot3_& x, const Point3_& p) {
   return Point3_(x, &Rot3::rotate, p);
 }
