@@ -16,51 +16,80 @@
  * @brief unit tests for testFactorJacobians and testExpressionJacobians
  */
 
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/expressions.h>
-#include <gtsam/geometry/Point3.h>
 #include <gtsam/nonlinear/expressionTesting.h>
+#include <gtsam/slam/expressions.h>
 
 #include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;
 
 /* ************************************************************************* */
-class ScaleAndCompare {
-public:
-  ScaleAndCompare() = default;
-  explicit ScaleAndCompare(const Vector3& other) : other_(other) {}
-  Vector3 operator()(const Vector3& v,
-                        const double& s,
-                        OptionalJacobian<3, 3> Dv,
-                        OptionalJacobian<3, 1> Ds) const {
-    const Vector3 e = v - other_ * s;
-    if(Dv) {
-      *Dv = I_3x3;
+Vector3 bodyVelocity(const Pose3& w_t_b,
+                     const Vector3& vec_w,
+                     OptionalJacobian<3, 6> Hpose = boost::none,
+                     OptionalJacobian<3, 3> Hvel = boost::none) {
+  Matrix36 Hrot__pose;
+  Rot3 w_R_b = w_t_b.rotation(Hrot__pose);
+  Matrix33 Hvel__rot;
+  Vector3 vec_b = w_R_b.unrotate(vec_w, Hvel__rot, Hvel);
+  if (Hpose) {
+    *Hpose = Hvel__rot * Hrot__pose;
+  }
+  return vec_b;
+}
+
+// Functor used to create an expression for the measured wheel speed scaled
+// by the scale factor.
+class ScaledVelocityFunctor {
+ public:
+  explicit ScaledVelocityFunctor(double measured_wheel_speed)
+    : measured_velocity_(measured_wheel_speed, 0, 0) {}
+
+  // Computes the scaled measured velocity vector from the measured wheel speed
+  // and velocity scale factor. Also computes the corresponding jacobian
+  // (w.r.t. the velocity scale).
+  Vector3 operator()(double vscale,
+                     OptionalJacobian<3, 1> H = boost::none) const {
+    // The velocity scale factor value we are optimizing for is centered around
+    // 0, so we need to add 1 to it before scaling the velocity.
+    const Vector3 scaled_velocity = (vscale + 1.0) * measured_velocity_;
+    if (H) {
+      *H = measured_velocity_;
     }
-    if(Ds) {
-      *Ds = -other_;
-    }
-    return e;
+    return scaled_velocity;
   }
 
-private:
-  Vector3 other_ = Z_3x1;
+ private:
+  Vector3 measured_velocity_;
 };
 
 /* ************************************************************************* */
-// Constant
-TEST(ExpressionTesting, ScaleAndCompare) {
+TEST(ExpressionTesting, Issue16) {
   const double tol = 1e-4;
   const double numerical_step = 1e-3;
 
-  const Vector3 other(1, 0, 0);
-  Values values;
-  values.insert<Vector3>(Symbol('v', 0), Vector3(1.1, 0, 0));
-  values.insert<double>(Symbol('s', 0), 1.1);
+  // Note: name of keys matters: if we use 'p' instead of 'x' then this no
+  // longer repros the problem from issue 16. This is because the order of
+  // evaluation in linearizeNumerically depends on the key values. To repro
+  // we want to first evaluate the jacobian for the scale, then velocity,
+  // then pose.
+  const auto pose_key = Symbol('x', 1);
+  const auto vel_key = Symbol('v', 1);
+  const auto scale_key = Symbol('s', 1);
 
-  const auto err_expr = Expression<Vector3>(ScaleAndCompare{other},
-                                            Vector3_(Symbol('v', 0)),
-                                            Double_(Symbol('s', 0)));
+  Values values;
+  values.insert<Pose3>(pose_key, Pose3());
+  values.insert<Vector3>(vel_key, Vector3(1, 0, 0));
+  values.insert<double>(scale_key, 0);
+
+  const Vector3_ body_vel(&bodyVelocity,
+                          Pose3_(pose_key),
+                          Vector3_(vel_key));
+  const Vector3_ scaled_measured_vel(ScaledVelocityFunctor(1),
+                                     Double_(scale_key));
+  const auto err_expr = body_vel - scaled_measured_vel;
 
   const auto err = err_expr.value(values);
   EXPECT_LONGS_EQUAL(3, err.size());
