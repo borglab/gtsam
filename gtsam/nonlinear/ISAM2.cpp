@@ -544,6 +544,22 @@ ISAM2Result ISAM2::update(
     const boost::optional<FastList<Key> >& noRelinKeys,
     const boost::optional<FastList<Key> >& extraReelimKeys,
     bool force_relinearize) {
+
+  ISAM2UpdateParams params;
+  params.constrainedKeys = constrainedKeys;
+  params.extraReelimKeys = extraReelimKeys;
+  params.force_relinearize = force_relinearize;
+  params.noRelinKeys = noRelinKeys;
+  params.removeFactorIndices = removeFactorIndices;
+
+  return update(newFactors, newTheta, params);
+}
+
+/* ************************************************************************* */
+ISAM2Result ISAM2::update(
+    const NonlinearFactorGraph& newFactors,
+    const Values& newTheta,
+    const ISAM2UpdateParams& up) {
   const bool debug = ISDEBUG("ISAM2 update");
   const bool verbose = ISDEBUG("ISAM2 update verbose");
 
@@ -561,7 +577,7 @@ ISAM2Result ISAM2::update(
   if (params_.enableDetailedResults)
     result.detail = ISAM2Result::DetailedResults();
   const bool relinearizeThisStep =
-      force_relinearize || (params_.enableRelinearization &&
+      up.force_relinearize || (params_.enableRelinearization &&
                             update_count_ % params_.relinearizeSkip == 0);
 
   if (verbose) {
@@ -585,8 +601,8 @@ ISAM2Result ISAM2::update(
 
   // Remove the removed factors
   NonlinearFactorGraph removeFactors;
-  removeFactors.reserve(removeFactorIndices.size());
-  for (const auto index : removeFactorIndices) {
+  removeFactors.reserve(up.removeFactorIndices.size());
+  for (const auto index : up.removeFactorIndices) {
     removeFactors.push_back(nonlinearFactors_[index]);
     nonlinearFactors_.remove(index);
     if (params_.cacheLinearizedFactors) linearFactors_.remove(index);
@@ -594,7 +610,8 @@ ISAM2Result ISAM2::update(
 
   // Remove removed factors from the variable index so we do not attempt to
   // relinearize them
-  variableIndex_.remove(removeFactorIndices.begin(), removeFactorIndices.end(),
+  variableIndex_.remove(up.removeFactorIndices.begin(),
+                        up.removeFactorIndices.end(),
                         removeFactors);
 
   // Compute unused keys and indices
@@ -649,8 +666,8 @@ ISAM2Result ISAM2::update(
         markedRemoveKeys.end());  // Add to the overall set of marked keys
   }
   // Also mark any provided extra re-eliminate keys
-  if (extraReelimKeys) {
-    for (Key key : *extraReelimKeys) {
+  if (up.extraReelimKeys) {
+    for (Key key : *up.extraReelimKeys) {
       markedKeys.insert(key);
     }
   }
@@ -695,8 +712,8 @@ ISAM2Result ISAM2::update(
     for (Key key : fixedVariables_) {
       relinKeys.erase(key);
     }
-    if (noRelinKeys) {
-      for (Key key : *noRelinKeys) {
+    if (up.noRelinKeys) {
+      for (Key key : *up.noRelinKeys) {
         relinKeys.erase(key);
       }
     }
@@ -780,7 +797,7 @@ ISAM2Result ISAM2::update(
   boost::shared_ptr<KeySet> replacedKeys;
   if (!markedKeys.empty() || !observedKeys.empty())
     replacedKeys = recalculate(markedKeys, relinKeys, observedKeys,
-                               unusedIndices, constrainedKeys, &result);
+                               unusedIndices, up.constrainedKeys, &result);
 
   // Update replaced keys mask (accumulates until back-substitution takes place)
   if (replacedKeys)

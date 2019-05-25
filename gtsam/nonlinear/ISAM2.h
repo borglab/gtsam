@@ -23,6 +23,7 @@
 #include <gtsam/nonlinear/ISAM2Params.h>
 #include <gtsam/nonlinear/ISAM2Result.h>
 #include <gtsam/nonlinear/ISAM2Clique.h>
+#include <gtsam/nonlinear/ISAM2UpdateParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 
@@ -155,6 +156,20 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
       const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
       const boost::optional<FastList<Key> >& extraReelimKeys = boost::none,
       bool force_relinearize = false);
+
+  /**
+   * Alternative signature of update() with all additional parameters in one
+   * structure. This form makes easier to keep future API/ABI compatibility if
+   * parameters change.
+   *
+   * @param extraParams Additional parameters to control relinearization,
+   * constrained keys, etc.
+   * @return An ISAM2Result struct containing information about the update
+   * @note No default parameters to avoid ambiguous call errors.
+   */
+  virtual ISAM2Result update(
+      const NonlinearFactorGraph& newFactors, const Values& newTheta,
+      const ISAM2UpdateParams& up);
 
   /** Marginalize out variables listed in leafKeys.  These keys must be leaves
    * in the BayesTree.  Throws MarginalizeNonleafException if non-leaves are
