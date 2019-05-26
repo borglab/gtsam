@@ -162,7 +162,7 @@ TEST(testISAM2SmartFactor, Stereo_Batch) {
   auto priorPoseNoise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.2), Vector3::Constant(0.2)).finished());
 
-  // Map: lanmdark_id => smart_factor_index inside iSAM2
+  // Map: landmark_id => smart_factor_index inside iSAM2
   std::map<lm_id_t, FactorIndex> lm2factor;
 
   // Storage of smart factors:

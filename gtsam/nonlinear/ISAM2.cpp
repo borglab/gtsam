@@ -128,7 +128,7 @@ FactorIndexSet ISAM2::getAffectedFactors(const KeyList& keys) const {
 GaussianFactorGraph::shared_ptr ISAM2::relinearizeAffectedFactors(
     const FastList<Key>& affectedKeys, const KeySet& relinKeys) const {
   gttic(getAffectedFactors);
-  KeySet candidates = getAffectedFactors(affectedKeys);
+  FactorIndexSet candidates = getAffectedFactors(affectedKeys);
   gttoc(getAffectedFactors);
 
   gttic(affectedKeysSet);
@@ -671,6 +671,15 @@ ISAM2Result ISAM2::update(
       markedKeys.insert(key);
     }
   }
+  // Also, keys that were not observed in existing factors, but whose affected
+  // keys have been extended now (e.g. smart factors)
+  if (up.newAffectedKeys) {
+    for (const auto &f2ks : up.newAffectedKeys.value()) {
+      const auto factorIdx = f2ks.first;
+      const auto& affectedKeys = nonlinearFactors_.at(factorIdx)->keys();
+      markedKeys.insert(affectedKeys.begin(),affectedKeys.end());
+    }
+  }
 
   // Observed keys for detailed results
   if (params_.enableDetailedResults) {
@@ -678,16 +687,15 @@ ISAM2Result ISAM2::update(
       result.detail->variableStatus[key].isObserved = true;
     }
   }
-  // NOTE: we use assign instead of the iterator constructor here because this
-  // is a vector of size_t, so the constructor unintentionally resolves to
-  // vector(size_t count, Key value) instead of the iterator constructor.
+
+  // Use a set of Keys instead of a vector since we are merging key lists from
+  // different sources, so duplicates are automatically avoided.
   KeyVector observedKeys;
-  observedKeys.reserve(markedKeys.size());
   for (Key index : markedKeys) {
-    if (unusedIndices.find(index) ==
-        unusedIndices.end())  // Only add if not unused
-      observedKeys.push_back(
-          index);  // Make a copy of these, as we'll soon add to them
+    // Only add if not unused
+    if (unusedIndices.find(index) == unusedIndices.end())
+      // Make a copy of these, as we'll soon add to them
+      observedKeys.push_back(index);
   }
   gttoc(gather_involved_keys);
 
@@ -790,6 +798,14 @@ ISAM2Result ISAM2::update(
     variableIndex_.augment(newFactors, result.newFactorsIndices);
   else
     variableIndex_.augment(newFactors);
+
+  // Augment it with existing factors which now affect to more variables:
+  if (up.newAffectedKeys) {
+    for (const auto &fk : *up.newAffectedKeys) {
+      const auto factorIdx = fk.first;
+      variableIndex_.augmentExistingFactor(factorIdx, fk.second);
+    }
+  }
   gttoc(augment_VI);
 
   gttic(recalculate);

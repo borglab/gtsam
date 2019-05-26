@@ -52,6 +52,12 @@ struct GTSAM_EXPORT ISAM2UpdateParams {
    * (Params::relinearizeThreshold), regardless of the relinearization
    * interval (Params::relinearizeSkip). */
   bool force_relinearize{false};
+
+  /** An optional set of new Keys that are now affected by factors,
+   * indexed by factor indices (as returned by ISAM2::update()).
+   */
+  boost::optional<FastMap<FactorIndex,KeySet>> newAffectedKeys{boost::none};
+
 };
 
 } // namespace gtsam
