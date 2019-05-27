@@ -688,8 +688,6 @@ ISAM2Result ISAM2::update(
     }
   }
 
-  // Use a set of Keys instead of a vector since we are merging key lists from
-  // different sources, so duplicates are automatically avoided.
   KeyVector observedKeys;
   for (Key index : markedKeys) {
     // Only add if not unused
