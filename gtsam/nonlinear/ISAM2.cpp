@@ -139,7 +139,7 @@ GaussianFactorGraph::shared_ptr ISAM2::relinearizeAffectedFactors(
 
   gttic(check_candidates_and_linearize);
   auto linearized = boost::make_shared<GaussianFactorGraph>();
-  for (Key idx : candidates) {
+  for (const FactorIndex idx : candidates) {
     bool inside = true;
     bool useCachedLinear = params_.cacheLinearizedFactors;
     for (Key key : nonlinearFactors_[idx]->keys()) {
