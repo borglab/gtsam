@@ -18,7 +18,11 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <tests/smallExample.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianBayesTree.h>
@@ -145,6 +149,42 @@ TEST(DoglegOptimizer, Iterate) {
     config = newConfig;
     DOUBLES_EQUAL(fg.error(config), result.f_error, 1e-5); // Check that error is correctly filled in
   }
+}
+
+/* ************************************************************************* */
+TEST(DoglegOptimizer, Constraint) {
+  // Create a pose-graph graph with a constraint on the first pose
+  NonlinearFactorGraph graph;
+  const Pose2 origin(0, 0, 0), pose2(2, 0, 0);
+  graph.emplace_shared<NonlinearEquality<Pose2> >(1, origin);
+  auto model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
+  graph.emplace_shared<BetweenFactor<Pose2> >(1, 2, pose2, model);
+
+  // Create feasible initial estimate
+  Values initial;
+  initial.insert(1, origin); // feasible !
+  initial.insert(2, Pose2(2.3, 0.1, -0.2));
+
+  // Optimize the initial values using DoglegOptimizer
+  DoglegParams params;
+  params.setVerbosityDL("VERBOSITY");
+  DoglegOptimizer optimizer(graph, initial, params);
+  Values result = optimizer.optimize();
+
+  // Check result
+  EXPECT(assert_equal(pose2, result.at<Pose2>(2)));
+
+  // Create infeasible initial estimate
+  Values infeasible;
+  infeasible.insert(1, Pose2(0.1, 0, 0)); // infeasible !
+  infeasible.insert(2, Pose2(2.3, 0.1, -0.2));
+
+  // Try optimizing with infeasible initial estimate
+  DoglegOptimizer optimizer2(graph, infeasible, params);
+  Values result2 = optimizer2.optimize();
+
+  // Check result
+  EXPECT(assert_equal(pose2, result2.at<Pose2>(2)));
 }
 
 /* ************************************************************************* */
