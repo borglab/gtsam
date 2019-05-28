@@ -556,10 +556,9 @@ ISAM2Result ISAM2::update(
 }
 
 /* ************************************************************************* */
-ISAM2Result ISAM2::update(
-    const NonlinearFactorGraph& newFactors,
+ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
     const Values& newTheta,
-    const ISAM2UpdateParams& up) {
+    const ISAM2UpdateParams& updateParams) {
   const bool debug = ISDEBUG("ISAM2 update");
   const bool verbose = ISDEBUG("ISAM2 update verbose");
 
@@ -577,7 +576,7 @@ ISAM2Result ISAM2::update(
   if (params_.enableDetailedResults)
     result.detail = ISAM2Result::DetailedResults();
   const bool relinearizeThisStep =
-      up.force_relinearize || (params_.enableRelinearization &&
+      updateParams.force_relinearize || (params_.enableRelinearization &&
                             update_count_ % params_.relinearizeSkip == 0);
 
   if (verbose) {
@@ -601,8 +600,8 @@ ISAM2Result ISAM2::update(
 
   // Remove the removed factors
   NonlinearFactorGraph removeFactors;
-  removeFactors.reserve(up.removeFactorIndices.size());
-  for (const auto index : up.removeFactorIndices) {
+  removeFactors.reserve(updateParams.removeFactorIndices.size());
+  for (const auto index : updateParams.removeFactorIndices) {
     removeFactors.push_back(nonlinearFactors_[index]);
     nonlinearFactors_.remove(index);
     if (params_.cacheLinearizedFactors) linearFactors_.remove(index);
@@ -610,8 +609,8 @@ ISAM2Result ISAM2::update(
 
   // Remove removed factors from the variable index so we do not attempt to
   // relinearize them
-  variableIndex_.remove(up.removeFactorIndices.begin(),
-                        up.removeFactorIndices.end(),
+  variableIndex_.remove(updateParams.removeFactorIndices.begin(),
+                        updateParams.removeFactorIndices.end(),
                         removeFactors);
 
   // Compute unused keys and indices
@@ -666,16 +665,16 @@ ISAM2Result ISAM2::update(
         markedRemoveKeys.end());  // Add to the overall set of marked keys
   }
   // Also mark any provided extra re-eliminate keys
-  if (up.extraReelimKeys) {
-    for (Key key : *up.extraReelimKeys) {
+  if (updateParams.extraReelimKeys) {
+    for (Key key : *updateParams.extraReelimKeys) {
       markedKeys.insert(key);
     }
   }
   // Also, keys that were not observed in existing factors, but whose affected
   // keys have been extended now (e.g. smart factors)
-  if (up.newAffectedKeys) {
-    for (const auto &f2ks : up.newAffectedKeys.value()) {
-      const auto factorIdx = f2ks.first;
+  if (updateParams.newAffectedKeys) {
+    for (const auto &factorAddedKeys : *updateParams.newAffectedKeys) {
+      const auto factorIdx = factorAddedKeys.first;
       const auto& affectedKeys = nonlinearFactors_.at(factorIdx)->keys();
       markedKeys.insert(affectedKeys.begin(),affectedKeys.end());
     }
@@ -718,8 +717,8 @@ ISAM2Result ISAM2::update(
     for (Key key : fixedVariables_) {
       relinKeys.erase(key);
     }
-    if (up.noRelinKeys) {
-      for (Key key : *up.noRelinKeys) {
+    if (updateParams.noRelinKeys) {
+      for (Key key : *updateParams.noRelinKeys) {
         relinKeys.erase(key);
       }
     }
@@ -798,10 +797,11 @@ ISAM2Result ISAM2::update(
     variableIndex_.augment(newFactors);
 
   // Augment it with existing factors which now affect to more variables:
-  if (up.newAffectedKeys) {
-    for (const auto &fk : *up.newAffectedKeys) {
-      const auto factorIdx = fk.first;
-      variableIndex_.augmentExistingFactor(factorIdx, fk.second);
+  if (updateParams.newAffectedKeys) {
+    for (const auto &factorAddedKeys : *updateParams.newAffectedKeys) {
+      const auto factorIdx = factorAddedKeys.first;
+      variableIndex_.augmentExistingFactor(
+            factorIdx, factorAddedKeys.second);
     }
   }
   gttoc(augment_VI);
@@ -810,8 +810,9 @@ ISAM2Result ISAM2::update(
   // 8. Redo top of Bayes tree
   boost::shared_ptr<KeySet> replacedKeys;
   if (!markedKeys.empty() || !observedKeys.empty())
-    replacedKeys = recalculate(markedKeys, relinKeys, observedKeys,
-                               unusedIndices, up.constrainedKeys, &result);
+    replacedKeys = recalculate(
+          markedKeys, relinKeys, observedKeys, unusedIndices,
+          updateParams.constrainedKeys, &result);
 
   // Update replaced keys mask (accumulates until back-substitution takes place)
   if (replacedKeys)

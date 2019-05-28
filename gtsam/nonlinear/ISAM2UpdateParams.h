@@ -35,26 +35,33 @@ struct GTSAM_EXPORT ISAM2UpdateParams {
   /** Indices of factors to remove from system (default: empty) */
   FactorIndices removeFactorIndices;
 
-  /* An optional map of keys to group labels, such that a variable can be
+  /** An optional map of keys to group labels, such that a variable can be
    * constrained to a particular grouping in the BayesTree */
   boost::optional<FastMap<Key, int>> constrainedKeys{boost::none};
 
-  /* An optional set of nonlinear keys that iSAM2 will hold at a constant
+  /** An optional set of nonlinear keys that iSAM2 will hold at a constant
    * linearization point, regardless of the size of the linear delta */
   boost::optional<FastList<Key>> noRelinKeys{boost::none};
 
-  /* An optional set of nonlinear keys that iSAM2 will re-eliminate, regardless
+  /** An optional set of nonlinear keys that iSAM2 will re-eliminate, regardless
    * of the size of the linear delta. This allows the provided keys to be
    * reordered. */
   boost::optional<FastList<Key>> extraReelimKeys{boost::none};
 
-  /* Relinearize any variables whose delta magnitude is sufficiently large
+  /** Relinearize any variables whose delta magnitude is sufficiently large
    * (Params::relinearizeThreshold), regardless of the relinearization
    * interval (Params::relinearizeSkip). */
   bool force_relinearize{false};
 
   /** An optional set of new Keys that are now affected by factors,
    * indexed by factor indices (as returned by ISAM2::update()).
+   * Use when working with smart factors. For example:
+   *  - Timestamp `i`: ISAM2::update() called with a new smart factor depending
+   *    on Keys `X(0)` and `X(1)`. It returns that the factor index for the new
+   *    smart factor (inside ISAM2) is `13`.
+   *  - Timestamp `i+1`: The same smart factor has been augmented to now also
+   *    depend on Keys `X(2)`, `X(3)`. Next call to ISAM2::update() must include
+   *    its `newAffectedKeys` field with the map `13 -> {X(2), X(3)}`.
    */
   boost::optional<FastMap<FactorIndex,KeySet>> newAffectedKeys{boost::none};
 

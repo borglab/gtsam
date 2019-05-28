@@ -158,18 +158,26 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
       bool force_relinearize = false);
 
   /**
-   * Alternative signature of update() with all additional parameters in one
-   * structure. This form makes easier to keep future API/ABI compatibility if
-   * parameters change.
+   * Add new factors, updating the solution and relinearizing as needed.
    *
-   * @param extraParams Additional parameters to control relinearization,
+   * Alternative signature of update() (see its documentation above), with all
+   * additional parameters in one structure. This form makes easier to keep
+   * future API/ABI compatibility if parameters change.
+   *
+   * @param newFactors The new factors to be added to the system
+   * @param newTheta Initialization points for new variables to be added to the
+   * system. You must include here all new variables occuring in newFactors
+   * (which were not already in the system).  There must not be any variables
+   * here that do not occur in newFactors, and additionally, variables that were
+   * already in the system must not be included here.
+   * @param updateParams Additional parameters to control relinearization,
    * constrained keys, etc.
    * @return An ISAM2Result struct containing information about the update
    * @note No default parameters to avoid ambiguous call errors.
    */
   virtual ISAM2Result update(
       const NonlinearFactorGraph& newFactors, const Values& newTheta,
-      const ISAM2UpdateParams& up);
+      const ISAM2UpdateParams& updateParams);
 
   /** Marginalize out variables listed in leafKeys.  These keys must be leaves
    * in the BayesTree.  Throws MarginalizeNonleafException if non-leaves are
