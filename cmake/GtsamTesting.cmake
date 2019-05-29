@@ -169,6 +169,9 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 				add_executable(${script_name} ${script_src} ${script_headers})
 				target_link_libraries(${script_name} CppUnitLite ${linkLibraries})
 
+				# Apply user build flags from CMake cache variables:
+				gtsam_apply_build_flags(${script_name})
+
 				# Add target dependencies
 				add_test(NAME ${script_name} COMMAND ${script_name})
 				add_dependencies(check.${groupName} ${script_name})
@@ -191,7 +194,7 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 				endif()
 
 				# Add TOPSRCDIR
-				set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
+				set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${GTSAM_SOURCE_DIR}\"")
 
 				# Exclude from 'make all' and 'make install'
 				set_target_properties(${script_name} PROPERTIES EXCLUDE_FROM_ALL ON)
@@ -213,6 +216,9 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 			add_executable(${target_name} "${script_srcs}" ${script_headers})
 			target_link_libraries(${target_name} CppUnitLite ${linkLibraries})
 
+			# Apply user build flags from CMake cache variables:
+			gtsam_apply_build_flags(${target_name})
+
 			set_property(TARGET check_${groupName}_program PROPERTY FOLDER "Unit tests")
 
 			# Only have a main function in one script - use preprocessor
@@ -229,7 +235,7 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 			endif()
 
 			# Add TOPSRCDIR
-			set_property(SOURCE ${script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
+			set_property(SOURCE ${script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${GTSAM_SOURCE_DIR}\"")
 
 			# Exclude from 'make all' and 'make install'
 			set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_ALL ON)
@@ -280,6 +286,9 @@ macro(gtsamAddExesGlob_impl globPatterns excludedFiles linkLibraries groupName b
 		add_executable(${script_name} ${script_src} ${script_headers})
 		target_link_libraries(${script_name} ${linkLibraries})
 
+		# Apply user build flags from CMake cache variables:
+		gtsam_apply_build_flags(${script_name})
+
 		# Add target dependencies
 		add_dependencies(${groupName} ${script_name})
 		if(NOT MSVC AND NOT XCODE_VERSION)
@@ -287,7 +296,7 @@ macro(gtsamAddExesGlob_impl globPatterns excludedFiles linkLibraries groupName b
 		endif()
 
 		# Add TOPSRCDIR
-		set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
+		set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${GTSAM_SOURCE_DIR}\"")
 
 		# Exclude from all or not - note weird variable assignment because we're in a macro
 		set(buildWithAll_on ${buildWithAll})
