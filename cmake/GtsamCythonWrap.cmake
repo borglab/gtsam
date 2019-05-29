@@ -101,6 +101,10 @@ endfunction()
 #    - libs:          Libraries to link with
 #    - interface_header: For dependency. Any update in interface header will re-trigger cythonize
 function(cythonize target pyx_file output_lib_we output_dir include_dirs libs interface_header dependencies)
+  # Remove the postfix (so we get gtsam.so instead of gtsamDebug.so)
+  string(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
+  set(CMAKE_${build_type_upper}_POSTFIX "")
+
   get_filename_component(pyx_path "${pyx_file}" DIRECTORY)
   get_filename_component(pyx_name "${pyx_file}" NAME_WE)
   set(generated_cpp "${output_dir}/${pyx_name}.cpp")
@@ -166,12 +170,7 @@ function(install_cython_wrapped_library interface_header generated_files_path in
   message(STATUS "Installing Cython Toolbox to ${install_path}") #${GTSAM_CYTHON_INSTALL_PATH}")
   if(GTSAM_BUILD_TYPE_POSTFIXES)
     foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
-      string(TOUPPER "${build_type}" build_type_upper)
-      if(${build_type_upper} STREQUAL "RELEASE")
-        set(build_type_tag "") # Don't create release mode tag on installed directory
-      else()
-        set(build_type_tag "${build_type}")
-      endif()
+      set(build_type_tag "") # Don't create release mode tag on installed directory
       # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if there is one
       get_filename_component(location "${install_path}" PATH)
       get_filename_component(name "${install_path}" NAME)
@@ -214,12 +213,7 @@ function(install_cython_scripts source_directory dest_directory patterns)
   endforeach()
   if(GTSAM_BUILD_TYPE_POSTFIXES)
     foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
-      string(TOUPPER "${build_type}" build_type_upper)
-      if(${build_type_upper} STREQUAL "RELEASE")
-        set(build_type_tag "") # Don't create release mode tag on installed directory
-      else()
-        set(build_type_tag "${build_type}")
-      endif()
+      set(build_type_tag "") # Don't create release mode tag on installed directory
       # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if there is one
       get_filename_component(location "${dest_directory}" PATH)
       get_filename_component(name "${dest_directory}" NAME)
@@ -242,12 +236,7 @@ function(install_cython_files source_files dest_directory)
 
   if(GTSAM_BUILD_TYPE_POSTFIXES)
     foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
-      string(TOUPPER "${build_type}" build_type_upper)
-      if(${build_type_upper} STREQUAL "RELEASE")
-        set(build_type_tag "") # Don't create release mode tag on installed directory
-      else()
-        set(build_type_tag "${build_type}")
-      endif()
+      set(build_type_tag "") # Don't create release mode tag on installed directory
       # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if there is one
       get_filename_component(location "${dest_directory}" PATH)
       get_filename_component(name "${dest_directory}" NAME)
