@@ -52,6 +52,12 @@
 // Whether Eigen with MKL will use OpenMP (if OpenMP was found, Eigen uses MKL, and GTSAM_WITH_EIGEN_MKL_OPENMP is enabled in CMake)
 #cmakedefine GTSAM_USE_EIGEN_MKL_OPENMP
 
+// Eigen library version (needed to avoid mixing versions, which often leads
+// to segfaults)
+#cmakedefine GTSAM_EIGEN_VERSION_WORLD @GTSAM_EIGEN_VERSION_WORLD@
+#cmakedefine GTSAM_EIGEN_VERSION_MAJOR @GTSAM_EIGEN_VERSION_MAJOR@
+#cmakedefine GTSAM_EIGEN_VERSION_MINOR @GTSAM_EIGEN_VERSION_MINOR@
+
 // The default allocator to use
 #cmakedefine GTSAM_ALLOCATOR_BOOSTPOOL
 #cmakedefine GTSAM_ALLOCATOR_TBB

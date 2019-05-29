@@ -314,6 +314,29 @@ else()
 	set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${CMAKE_SOURCE_DIR}/gtsam/3rdparty/Eigen/")
 endif()
 
+# Detect Eigen version:
+set(EIGEN_VER_H "${GTSAM_EIGEN_INCLUDE_FOR_BUILD}/Eigen/src/Core/util/Macros.h")
+if (EXISTS ${EIGEN_VER_H})
+	file(READ "${EIGEN_VER_H}" STR_EIGEN_VERSION)
+
+	# Extract the Eigen version from the Macros.h file, lines "#define EIGEN_WORLD_VERSION  XX", etc...
+
+	string(REGEX MATCH "EIGEN_WORLD_VERSION[ ]+[0-9]+" GTSAM_EIGEN_VERSION_WORLD "${STR_EIGEN_VERSION}")
+	string(REGEX MATCH "[0-9]+" GTSAM_EIGEN_VERSION_WORLD "${GTSAM_EIGEN_VERSION_WORLD}")
+
+	string(REGEX MATCH "EIGEN_MAJOR_VERSION[ ]+[0-9]+" GTSAM_EIGEN_VERSION_MAJOR "${STR_EIGEN_VERSION}")
+	string(REGEX MATCH "[0-9]+" GTSAM_EIGEN_VERSION_MAJOR "${GTSAM_EIGEN_VERSION_MAJOR}")
+
+	string(REGEX MATCH "EIGEN_MINOR_VERSION[ ]+[0-9]+" GTSAM_EIGEN_VERSION_MINOR "${STR_EIGEN_VERSION}")
+	string(REGEX MATCH "[0-9]+" GTSAM_EIGEN_VERSION_MINOR "${GTSAM_EIGEN_VERSION_MINOR}")
+
+	set(GTSAM_EIGEN_VERSION "${GTSAM_EIGEN_VERSION_WORLD}.${GTSAM_EIGEN_VERSION_MAJOR}.${GTSAM_EIGEN_VERSION_MINOR}")
+
+	message(STATUS "Found Eigen version: ${GTSAM_EIGEN_VERSION}")
+else()
+	message(WARNING "Cannot determine Eigen version, missing file: `${EIGEN_VER_H}`")
+endif ()
+
 if (MSVC)
 	if (BUILD_SHARED_LIBS)
 		# mute eigen static assert to avoid errors in shared lib
@@ -499,11 +522,7 @@ if(NOT MSVC AND NOT XCODE_VERSION)
     message(STATUS "  C compilation flags            : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
     message(STATUS "  C++ compilation flags          : ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${cmake_build_type_toupper}}")
 endif()
-if(GTSAM_USE_SYSTEM_EIGEN)
-    message(STATUS "  Use System Eigen               : Yes")
-else()
-    message(STATUS "  Use System Eigen               : No")
-endif()
+message(STATUS "  Use System Eigen               : ${GTSAM_USE_SYSTEM_EIGEN} (Using version: ${GTSAM_EIGEN_VERSION})")
 if(GTSAM_USE_TBB)
 	message(STATUS "  Use Intel TBB                  : Yes")
 elseif(TBB_FOUND)
