@@ -126,6 +126,13 @@ public:
   void augment(const FG& factors, boost::optional<const FactorIndices&> newFactorIndices = boost::none);
 
   /**
+   * Augment the variable index after an existing factor now affects to more
+   * variable Keys. This can be used when solving problems incrementally, with
+   * smart factors or in general with factors with a dynamic number of Keys.
+   */
+  void augmentExistingFactor(const FactorIndex factorIndex, const KeySet & newKeys);
+
+  /**
    * Remove entries corresponding to the specified factors. NOTE: We intentionally do not decrement
    * nFactors_ because the factor indices need to remain consistent.  Removing factors from a factor
    * graph does not shift the indices of other factors.  Also, we keep nFactors_ one greater than
