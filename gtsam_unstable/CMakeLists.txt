@@ -1,3 +1,5 @@
+project(gtsam_unstable LANGUAGES CXX)
+
 # Build full gtsam_unstable library as a single library
 # and also build tests
 set (gtsam_unstable_subdirs
@@ -65,6 +67,10 @@ message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
 # BUILD_SHARED_LIBS automatically defines static/shared libs:
 add_library(gtsam_unstable ${gtsam_unstable_srcs})
+
+# Apply build flags:
+gtsam_apply_build_flags(gtsam_unstable)
+
 set_target_properties(gtsam_unstable PROPERTIES
   OUTPUT_NAME         gtsam_unstable
   CLEAN_DIRECT_OUTPUT 1
