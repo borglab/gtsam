@@ -19,8 +19,10 @@ packages = find_packages()
 setup(
     name='gtsam',
     description='Georgia Tech Smoothing And Mapping library',
-    url='https://bitbucket.org/gtborg/gtsam',
+    url='https://gtsam.org/',
     version='${GTSAM_VERSION_STRING}',  # https://www.python.org/dev/peps/pep-0440/
+    author='Frank Dellaert et. al.',
+    author_email='frank.dellaert@gtsam.org',
     license='Simplified BSD license',
     keywords='slam sam robotics localization mapping optimization',
     long_description='''${README_CONTENTS}''',
