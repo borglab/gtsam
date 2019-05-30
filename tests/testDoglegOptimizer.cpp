@@ -181,10 +181,7 @@ TEST(DoglegOptimizer, Constraint) {
 
   // Try optimizing with infeasible initial estimate
   DoglegOptimizer optimizer2(graph, infeasible, params);
-  Values result2 = optimizer2.optimize();
-
-  // Check result
-  EXPECT(assert_equal(pose2, result2.at<Pose2>(2)));
+  CHECK_EXCEPTION(optimizer2.optimize(), std::invalid_argument);
 }
 
 /* ************************************************************************* */
