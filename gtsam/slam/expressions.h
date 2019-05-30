@@ -41,6 +41,7 @@ inline Point3_ transformFrom(const Pose3_& x, const Point3_& p) {
 }
 
 namespace internal {
+// define getter that returns value rather than reference
 Rot3 rotation(const Pose3& pose, OptionalJacobian<3, 6> H) {
   return pose.rotation(H);
 }
@@ -54,9 +55,41 @@ inline Point3_ rotate(const Rot3_& x, const Point3_& p) {
   return Point3_(x, &Rot3::rotate, p);
 }
 
+inline Unit3_ rotate(const Rot3_& x, const Unit3_& p) {
+  return Unit3_(x, &Rot3::rotate, p);
+}
+
 inline Point3_ unrotate(const Rot3_& x, const Point3_& p) {
   return Point3_(x, &Rot3::unrotate, p);
 }
+
+inline Unit3_ unrotate(const Rot3_& x, const Unit3_& p) {
+  return Unit3_(x, &Rot3::unrotate, p);
+}
+
+#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
+namespace internal {
+// define a rotate and unrotate for Vector3
+Vector3 rotate(const Rot3& R, const Vector3& v,
+               OptionalJacobian<3, 3> H1 = boost::none,
+               OptionalJacobian<3, 3> H2 = boost::none) {
+  return R.rotate(v, H1, H2);
+}
+Vector3 unrotate(const Rot3& R, const Vector3& v,
+                 OptionalJacobian<3, 3> H1 = boost::none,
+                 OptionalJacobian<3, 3> H2 = boost::none) {
+  return R.unrotate(v, H1, H2);
+}
+}  // namespace internal
+inline Expression<Vector3> rotate(const Rot3_& R,
+                                  const Expression<Vector3>& v) {
+  return Expression<Vector3>(internal::rotate, R, v);
+}
+inline Expression<Vector3> unrotate(const Rot3_& R,
+                                    const Expression<Vector3>& v) {
+  return Expression<Vector3>(internal::unrotate, R, v);
+}
+#endif
 
 // Projection
 
