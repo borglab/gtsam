@@ -462,6 +462,7 @@ namespace gtsam {
   template<class CLIQUE>
   void BayesTree<CLIQUE>::removeTop(const KeyVector& keys, BayesNetType& bn, Cliques& orphans)
   {
+    gttic(removetop);
     // process each key of the new factor
     for(const Key& j: keys)
     {
