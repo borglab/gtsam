@@ -89,13 +89,13 @@ namespace gtsam {
     /** Map from keys to Clique */
     typedef ConcurrentMap<Key, sharedClique> Nodes;
 
+    /** Root cliques */
+    typedef FastVector<sharedClique> Roots;
+
   protected:
 
     /** Map from indices to Clique */
     Nodes nodes_;
-
-    /** Root cliques */
-    typedef FastVector<sharedClique> Roots;
 
     /** Root cliques */
     Roots roots_;
