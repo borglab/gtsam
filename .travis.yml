@@ -1,0 +1,49 @@
+language: cpp
+cache: ccache
+sudo: required
+dist: xenial
+
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - g++-8
+    - clang-3.8
+    - build-essential
+    - pkg-config
+    - cmake
+    - libpython-dev python-numpy
+    - libboost-all-dev
+
+before_install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update          ; fi
+
+script:
+  - bash .travis.sh
+
+env:
+  global:
+    - MAKEFLAGS="-j 2"
+    - CCACHE_SLOPPINESS=pch_defines,time_macros
+
+matrix:
+  include:
+  - compiler: gcc
+    os: linux
+    env: BUILD_EXAMPLES=1
+  - compiler: gcc
+    os: linux
+    env: RUN_TESTS=1
+  - compiler: gcc
+    os: linux
+    env: BUILD_EXAMPLES=1 GCC_VERSION="8"
+  - compiler: clang
+    os: linux
+    env: BUILD_EXAMPLES=1
+  - compiler: gcc
+    os: osx
+    env: BUILD_EXAMPLES=1
+  - compiler: clang
+    os: osx
+    env: RUN_TESTS=1

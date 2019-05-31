@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/borglab/gtsam.svg?branch=develop)](https://travis-ci.org/borglab/gtsam)
+
 README - Georgia Tech Smoothing and Mapping library
 ===================================================
 
