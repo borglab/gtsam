@@ -19,7 +19,9 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/linearAlgorithms-inst.h>
 #include <gtsam/nonlinear/ISAM2Clique.h>
+
 #include <stack>
+#include <utility>
 
 using namespace std;
 
@@ -304,7 +306,7 @@ void ISAM2Clique::findAll(const KeySet& markedMask, KeySet* keys) const {
   static const bool debug = false;
   // does the separator contain any of the variables?
   bool found = false;
-  for (Key key : conditional()->parents()) {
+  for (Key key : conditional_->parents()) {
     if (markedMask.exists(key)) {
       found = true;
       break;
@@ -312,12 +314,32 @@ void ISAM2Clique::findAll(const KeySet& markedMask, KeySet* keys) const {
   }
   if (found) {
     // then add this clique
-    keys->insert(conditional()->beginFrontals(), conditional()->endFrontals());
+    keys->insert(conditional_->beginFrontals(), conditional_->endFrontals());
     if (debug) print("Key(s) marked in clique ");
-    if (debug) cout << "so marking key " << conditional()->front() << endl;
+    if (debug) cout << "so marking key " << conditional_->front() << endl;
   }
   for (const auto& child : children) {
     child->findAll(markedMask, keys);
+  }
+}
+
+/* ************************************************************************* */
+void ISAM2Clique::addGradientAtZero(VectorValues* g) const {
+  // Loop through variables in each clique, adding contributions
+  DenseIndex position = 0;
+  for (auto it = conditional_->begin(); it != conditional_->end(); ++it) {
+    const DenseIndex dim = conditional_->getDim(it);
+    const Vector contribution = gradientContribution_.segment(position, dim);
+    VectorValues::iterator values_it;
+    bool success;
+    std::tie(values_it, success) = g->tryInsert(*it, contribution);
+    if (!success) values_it->second += contribution;
+    position += dim;
+  }
+
+  // Recursively add contributions from children
+  for (const auto& child : children) {
+    child->addGradientAtZero(g);
   }
 }
 

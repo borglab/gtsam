@@ -1113,6 +1113,8 @@ void ISAM2::updateDelta(bool forceFullSolve) const {
         doglegResult
             .dx_d;  // Copy the VectorValues containing with the linear solution
     gttoc(Copy_dx_d);
+  } else {
+    throw std::runtime_error("iSAM2: unknown ISAM2Params type");
   }
 }
 
@@ -1156,36 +1158,13 @@ double ISAM2::error(const VectorValues& x) const {
 }
 
 /* ************************************************************************* */
-static void gradientAtZeroTreeAdder(const boost::shared_ptr<ISAM2Clique>& root,
-                                    VectorValues* g) {
-  // Loop through variables in each clique, adding contributions
-  DenseIndex variablePosition = 0;
-  for (GaussianConditional::const_iterator jit = root->conditional()->begin();
-       jit != root->conditional()->end(); ++jit) {
-    const DenseIndex dim = root->conditional()->getDim(jit);
-    pair<VectorValues::iterator, bool> pos_ins = g->tryInsert(
-        *jit, root->gradientContribution().segment(variablePosition, dim));
-    if (!pos_ins.second)
-      pos_ins.first->second +=
-          root->gradientContribution().segment(variablePosition, dim);
-    variablePosition += dim;
-  }
-
-  // Recursively add contributions from children
-  typedef boost::shared_ptr<ISAM2Clique> sharedClique;
-  for (const sharedClique& child : root->children) {
-    gradientAtZeroTreeAdder(child, g);
-  }
-}
-
-/* ************************************************************************* */
 VectorValues ISAM2::gradientAtZero() const {
   // Create result
   VectorValues g;
 
   // Sum up contributions for each clique
-  for (const ISAM2::sharedClique& root : this->roots())
-    gradientAtZeroTreeAdder(root, &g);
+  for (const auto& root : this->roots())
+    root->addGradientAtZero(&g);
 
   return g;
 }
