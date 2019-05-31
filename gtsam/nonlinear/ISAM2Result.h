@@ -24,8 +24,8 @@
 
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/ISAM2Params.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <boost/variant.hpp>
 
@@ -96,6 +96,20 @@ struct GTSAM_EXPORT ISAM2Result {
    */
   FactorIndices newFactorsIndices;
 
+  /** Unused keys, and indices for unused keys. TODO(frank): the same??
+   * i.e., keys that are empty now and do not appear in the new factors.
+   */
+  KeySet unusedKeys, unusedIndices;
+
+  /** keys for variables that were observed, i.e., not unused. */
+  KeyVector observedKeys;
+
+  /** Keys of variables that had factors removed. */
+  KeySet keysWithRemovedFactors;
+
+  /** All keys that were marked during the update process. */
+  KeySet markedKeys;
+
   /** A struct holding detailed results, which must be enabled with
    * ISAM2Params::enableDetailedResults.
    */
@@ -132,9 +146,10 @@ struct GTSAM_EXPORT ISAM2Result {
             inRootClique(false) {}
     };
 
-    /** The status of each variable during this update, see VariableStatus.
-     */
-    FastMap<Key, VariableStatus> variableStatus;
+    typedef FastMap<Key, VariableStatus> StatusMap;
+
+    /// The status of each variable during this update, see VariableStatus.
+    StatusMap variableStatus;
   };
 
   /** Detailed results, if enabled by ISAM2Params::enableDetailedResults.  See

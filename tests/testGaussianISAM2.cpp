@@ -4,7 +4,8 @@
  * @author  Michael Kaess
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/ISAM2.h>
+#include <gtsam/nonlinear/ISAM2-impl.h>
 
 #include <tests/smallExample.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -14,7 +15,6 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianBayesTree.h>
@@ -23,10 +23,13 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/treeTraversal-inst.h>
-#include <boost/assign/list_of.hpp>
 #include <gtsam/base/deprecated/LieScalar.h>
-using namespace boost::assign;
+
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/assign/list_of.hpp>
 #include <boost/range/adaptor/map.hpp>
+using namespace boost::assign;
 namespace br { using namespace boost::adaptors; using namespace boost::range; }
 
 using namespace std;
@@ -304,7 +307,7 @@ TEST(ISAM2, AddFactorsStep1)
 
   FactorIndices actualNewFactorIndices;
 
-  ISAM2::Impl::AddFactorsStep1(newFactors, true, &nonlinearFactors, &actualNewFactorIndices);
+  UpdateImpl::AddFactorsStep1(newFactors, true, &nonlinearFactors, &actualNewFactorIndices);
 
   EXPECT(assert_equal(expectedNonlinearFactors, nonlinearFactors));
   EXPECT(assert_container_equality(expectedNewFactorIndices, actualNewFactorIndices));

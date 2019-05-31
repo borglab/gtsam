@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
 #include <gtsam/base/FastList.h>
-#include <gtsam/dllexport.h>             // GTSAM_EXPORT
-#include <gtsam/inference/Key.h>         // Key, KeySet
-#include <gtsam/nonlinear/ISAM2Result.h> //FactorIndices
+#include <gtsam/dllexport.h>              // GTSAM_EXPORT
+#include <gtsam/inference/Key.h>          // Key, KeySet
+#include <gtsam/nonlinear/ISAM2Result.h>  //FactorIndices
+#include <boost/optional.hpp>
 
 namespace gtsam {
 
@@ -63,8 +63,12 @@ struct GTSAM_EXPORT ISAM2UpdateParams {
    *    depend on Keys `X(2)`, `X(3)`. Next call to ISAM2::update() must include
    *    its `newAffectedKeys` field with the map `13 -> {X(2), X(3)}`.
    */
-  boost::optional<FastMap<FactorIndex,KeySet>> newAffectedKeys{boost::none};
+  boost::optional<FastMap<FactorIndex, KeySet>> newAffectedKeys{boost::none};
 
+  /** By default, iSAM2 uses a wildfire update scheme that stops updating when
+   * the deltas become too small down in the tree. This flagg forces a full
+   * solve instead. */
+  bool forceFullSolve{false};
 };
 
-} // namespace gtsam
+}  // namespace gtsam
