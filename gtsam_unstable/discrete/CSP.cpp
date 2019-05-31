@@ -43,7 +43,7 @@ namespace gtsam {
         // keep track of which domains changed
         changed[v] = false;
         // loop over all factors/constraints for variable v
-        const VariableIndex::Factors& factors = index[v];
+        const FactorIndices& factors = index[v];
         for(size_t f: factors) {
           // if not already a singleton
           if (!domains[v].isSingleton()) {
