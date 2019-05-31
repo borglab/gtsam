@@ -24,14 +24,14 @@ function build_and_test ()
 
   # gcc is too slow and we have a time limit in Travis CI: selective builds.
   if [ "$BUILD_EXAMPLES" == "1" ]; then
-    GTSAM_BUILD_EXAMPLES_ALWAYS=FALSE
+    GTSAM_BUILD_EXAMPLES_ALWAYS=ON
   else
-    GTSAM_BUILD_EXAMPLES_ALWAYS=TRUE
+    GTSAM_BUILD_EXAMPLES_ALWAYS=OFF
   fi
   if [ "$RUN_TESTS" == "1" ]; then
-    GTSAM_BUILD_TESTS=FALSE
+    GTSAM_BUILD_TESTS=ON
   else
-    GTSAM_BUILD_TESTS=TRUE
+    GTSAM_BUILD_TESTS=OFF
   fi
 
   cmake $SOURCE_DIR \
