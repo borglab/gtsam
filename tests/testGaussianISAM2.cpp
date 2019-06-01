@@ -305,9 +305,12 @@ TEST(ISAM2, AddFactorsStep1)
 
   const FactorIndices expectedNewFactorIndices = list_of(1)(3);
 
-  FactorIndices actualNewFactorIndices;
-
-  UpdateImpl::AddFactorsStep1(newFactors, true, &nonlinearFactors, &actualNewFactorIndices);
+  ISAM2Params params;
+  ISAM2UpdateParams updateParams;
+  params.findUnusedFactorSlots = true;
+  UpdateImpl update(params, updateParams);
+  FactorIndices actualNewFactorIndices =
+      update.addFactorsStep1(newFactors, &nonlinearFactors);
 
   EXPECT(assert_equal(expectedNonlinearFactors, nonlinearFactors));
   EXPECT(assert_container_equality(expectedNewFactorIndices, actualNewFactorIndices));

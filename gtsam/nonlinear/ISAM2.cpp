@@ -116,8 +116,8 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
                           const Values& newTheta,
                           const ISAM2UpdateParams& updateParams) {
   gttic(ISAM2_update);
-
   this->update_count_++;
+  UpdateImpl::LogStartingUpdate(newFactors, *this);
 
   ISAM2Result result;
   if (params_.enableDetailedResults)
@@ -126,12 +126,6 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
       updateParams.force_relinearize ||
       (params_.enableRelinearization &&
        update_count_ % params_.relinearizeSkip == 0);
-
-  const bool verbose = ISDEBUG("ISAM2 update verbose");
-  if (verbose) {
-    cout << "ISAM2::update\n";
-    this->print("ISAM2: ");
-  }
 
   // Update delta if we need it to check relinearization later
   if (relinearizeThisStep) {

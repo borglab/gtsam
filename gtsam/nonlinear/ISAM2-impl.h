@@ -117,17 +117,33 @@ struct GTSAM_EXPORT UpdateImpl {
   UpdateImpl(const ISAM2Params& params, const ISAM2UpdateParams& updateParams)
       : params_(params), updateParams_(updateParams) {}
 
+  // Provide some debugging information at the start of update
+  static void LogStartingUpdate(const NonlinearFactorGraph& newFactors,
+                                const ISAM2& isam2) {
+    gttic(pushBackFactors);
+    const bool debug = ISDEBUG("ISAM2 update");
+    const bool verbose = ISDEBUG("ISAM2 update verbose");
+
+    if (verbose) {
+      std::cout << "ISAM2::update\n";
+      isam2.print("ISAM2: ");
+    }
+
+    // Add the new factor indices to the result struct
+    if (debug || verbose) {
+      newFactors.print("The new factors are: ");
+    }
+  }
+
   /// Perform the first part of the bookkeeping updates for adding new factors.
   /// Adds them to the complete list of nonlinear factors, and populates the
   /// list of new factor indices, both optionally finding and reusing empty
   /// factor slots.
-  static void AddFactorsStep1(const NonlinearFactorGraph& newFactors,
-                              bool useUnusedSlots,
-                              NonlinearFactorGraph* nonlinearFactors,
-                              FactorIndices* newFactorIndices) {
-    newFactorIndices->resize(newFactors.size());
+  FactorIndices addFactorsStep1(const NonlinearFactorGraph& newFactors,
+                                NonlinearFactorGraph* nonlinearFactors) const {
+    FactorIndices newFactorIndices(newFactors.size());
 
-    if (useUnusedSlots) {
+    if (params_.findUnusedFactorSlots) {
       size_t globalFactorIndex = 0;
       for (size_t newFactorIndex = 0; newFactorIndex < newFactors.size();
            ++newFactorIndex) {
@@ -150,14 +166,15 @@ struct GTSAM_EXPORT UpdateImpl {
 
         // Use the current slot, updating nonlinearFactors and newFactorSlots.
         (*nonlinearFactors)[globalFactorIndex] = newFactors[newFactorIndex];
-        (*newFactorIndices)[newFactorIndex] = globalFactorIndex;
+        newFactorIndices[newFactorIndex] = globalFactorIndex;
       }
     } else {
       // We're not looking for unused slots, so just add the factors at the end.
       for (size_t i = 0; i < newFactors.size(); ++i)
-        (*newFactorIndices)[i] = i + nonlinearFactors->size();
+        newFactorIndices[i] = i + nonlinearFactors->size();
       nonlinearFactors->push_back(newFactors);
     }
+    return newFactorIndices;
   }
 
   // 1. Add any new factors \Factors:=\Factors\cup\Factors'.
@@ -167,13 +184,9 @@ struct GTSAM_EXPORT UpdateImpl {
                        VariableIndex* variableIndex,
                        ISAM2Result* result) const {
     gttic(pushBackFactors);
-    const bool debug = ISDEBUG("ISAM2 update");
-    const bool verbose = ISDEBUG("ISAM2 update verbose");
 
     // Add the new factor indices to the result struct
-    if (debug || verbose) newFactors.print("The new factors are: ");
-    AddFactorsStep1(newFactors, params_.findUnusedFactorSlots, nonlinearFactors,
-                    &result->newFactorsIndices);
+    result->newFactorsIndices = addFactorsStep1(newFactors, nonlinearFactors);
 
     // Remove the removed factors
     NonlinearFactorGraph removedFactors;
@@ -378,8 +391,8 @@ struct GTSAM_EXPORT UpdateImpl {
    * \c mask.  Values are expmapped in-place.
    * \param mask Mask on linear indices, only \c true entries are expmapped
    */
-  void expmapMasked(const VectorValues& delta, const KeySet& mask,
-                    Values* theta) const {
+  static void ExpmapMasked(const VectorValues& delta, const KeySet& mask,
+                           Values* theta) {
     assert(theta->size() == delta.size());
     Values::iterator key_value;
     VectorValues::const_iterator key_delta;
@@ -468,7 +481,7 @@ struct GTSAM_EXPORT UpdateImpl {
     gttic(expmap);
     // 6. Update linearization point for marked variables:
     // \Theta_{J}:=\Theta_{J}+\Delta_{J}.
-    if (!relinKeys.empty()) expmapMasked(delta, markedRelinMask, theta);
+    if (!relinKeys.empty()) ExpmapMasked(delta, markedRelinMask, theta);
     gttoc(expmap);
 
     result->variablesRelinearized = result->markedKeys.size();
@@ -511,7 +524,7 @@ struct GTSAM_EXPORT UpdateImpl {
     }
   }
 
-  void logRecalculateKeys(const ISAM2Result& result) const {
+  static void LogRecalculateKeys(const ISAM2Result& result) {
     const bool debug = ISDEBUG("ISAM2 recalculate");
 
     if (debug) {
@@ -528,8 +541,9 @@ struct GTSAM_EXPORT UpdateImpl {
     }
   }
 
-  FactorIndexSet getAffectedFactors(const KeyList& keys,
-                                    const VariableIndex& variableIndex) const {
+  static FactorIndexSet GetAffectedFactors(const KeyList& keys,
+                                           const VariableIndex& variableIndex) {
+    gttic(GetAffectedFactors);
     FactorIndexSet indices;
     for (const Key key : keys) {
       const FactorIndices& factors(variableIndex[key]);
@@ -540,8 +554,8 @@ struct GTSAM_EXPORT UpdateImpl {
 
   // find intermediate (linearized) factors from cache that are passed into the
   // affected area
-  GaussianFactorGraph getCachedBoundaryFactors(
-      const ISAM2::Cliques& orphans) const {
+  static GaussianFactorGraph GetCachedBoundaryFactors(
+      const ISAM2::Cliques& orphans) {
     GaussianFactorGraph cachedBoundary;
 
     for (const auto& orphan : orphans) {
@@ -559,9 +573,7 @@ struct GTSAM_EXPORT UpdateImpl {
       const NonlinearFactorGraph& nonlinearFactors,
       const VariableIndex& variableIndex, const Values& theta,
       GaussianFactorGraph* linearFactors) const {
-    gttic(getAffectedFactors);
-    FactorIndexSet candidates = getAffectedFactors(affectedKeys, variableIndex);
-    gttoc(getAffectedFactors);
+    FactorIndexSet candidates = GetAffectedFactors(affectedKeys, variableIndex);
 
     gttic(affectedKeysSet);
     // for fast lookup below
@@ -614,7 +626,7 @@ struct GTSAM_EXPORT UpdateImpl {
                      GaussianFactorGraph* linearFactors, ISAM2::Roots* roots,
                      ISAM2::Nodes* nodes, ISAM2Result* result) const {
     gttic(recalculate);
-    logRecalculateKeys(*result);
+    LogRecalculateKeys(*result);
 
     // FactorGraph<GaussianFactor> factors(affectedBayesNet);
     // bug was here: we cannot reuse the original factors, because then the
@@ -754,7 +766,7 @@ struct GTSAM_EXPORT UpdateImpl {
       gttic(cached);
       // add the cached intermediate results from the boundary of the orphans
       // ...
-      GaussianFactorGraph cachedBoundary = getCachedBoundaryFactors(orphans);
+      GaussianFactorGraph cachedBoundary = GetCachedBoundaryFactors(orphans);
       if (debug) cachedBoundary.print("Boundary factors: ");
       factors.push_back(cachedBoundary);
       gttoc(cached);
@@ -846,6 +858,5 @@ struct GTSAM_EXPORT UpdateImpl {
     return affectedKeysSet;
   }
 };
-/* ************************************************************************* */
 
 }  // namespace gtsam
