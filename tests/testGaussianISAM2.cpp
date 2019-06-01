@@ -23,7 +23,6 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/treeTraversal-inst.h>
-#include <gtsam/base/deprecated/LieScalar.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -37,7 +36,6 @@ using namespace gtsam;
 using boost::shared_ptr;
 
 static const SharedNoiseModel model;
-static const LieScalar Zero(0);
 
 //  SETDEBUG("ISAM2 update", true);
 //  SETDEBUG("ISAM2 update verbose", true);
@@ -286,22 +284,21 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
 }
 
 /* ************************************************************************* */
-TEST(ISAM2, AddFactorsStep1)
-{
+TEST(ISAM2, AddFactorsStep1) {
   NonlinearFactorGraph nonlinearFactors;
-  nonlinearFactors += PriorFactor<LieScalar>(10, Zero, model);
+  nonlinearFactors += PriorFactor<double>(10, 0.0, model);
   nonlinearFactors += NonlinearFactor::shared_ptr();
-  nonlinearFactors += PriorFactor<LieScalar>(11, Zero, model);
+  nonlinearFactors += PriorFactor<double>(11, 0.0, model);
 
   NonlinearFactorGraph newFactors;
-  newFactors += PriorFactor<LieScalar>(1, Zero, model);
-  newFactors += PriorFactor<LieScalar>(2, Zero, model);
+  newFactors += PriorFactor<double>(1, 0.0, model);
+  newFactors += PriorFactor<double>(2, 0.0, model);
 
   NonlinearFactorGraph expectedNonlinearFactors;
-  expectedNonlinearFactors += PriorFactor<LieScalar>(10, Zero, model);
-  expectedNonlinearFactors += PriorFactor<LieScalar>(1, Zero, model);
-  expectedNonlinearFactors += PriorFactor<LieScalar>(11, Zero, model);
-  expectedNonlinearFactors += PriorFactor<LieScalar>(2, Zero, model);
+  expectedNonlinearFactors += PriorFactor<double>(10, 0.0, model);
+  expectedNonlinearFactors += PriorFactor<double>(1, 0.0, model);
+  expectedNonlinearFactors += PriorFactor<double>(11, 0.0, model);
+  expectedNonlinearFactors += PriorFactor<double>(2, 0.0, model);
 
   const FactorIndices expectedNewFactorIndices = list_of(1)(3);
 
@@ -313,7 +310,8 @@ TEST(ISAM2, AddFactorsStep1)
       update.addFactorsStep1(newFactors, &nonlinearFactors);
 
   EXPECT(assert_equal(expectedNonlinearFactors, nonlinearFactors));
-  EXPECT(assert_container_equality(expectedNewFactorIndices, actualNewFactorIndices));
+  EXPECT(assert_container_equality(expectedNewFactorIndices,
+                                   actualNewFactorIndices));
 }
 
 /* ************************************************************************* */
@@ -698,25 +696,24 @@ namespace {
 }
 
 /* ************************************************************************* */
-TEST(ISAM2, marginalizeLeaves1)
-{
+TEST(ISAM2, marginalizeLeaves1) {
   ISAM2 isam;
   NonlinearFactorGraph factors;
-  factors += PriorFactor<LieScalar>(0, Zero, model);
+  factors += PriorFactor<double>(0, 0.0, model);
 
-  factors += BetweenFactor<LieScalar>(0, 1, Zero, model);
-  factors += BetweenFactor<LieScalar>(1, 2, Zero, model);
-  factors += BetweenFactor<LieScalar>(0, 2, Zero, model);
+  factors += BetweenFactor<double>(0, 1, 0.0, model);
+  factors += BetweenFactor<double>(1, 2, 0.0, model);
+  factors += BetweenFactor<double>(0, 2, 0.0, model);
 
   Values values;
-  values.insert(0, Zero);
-  values.insert(1, Zero);
-  values.insert(2, Zero);
+  values.insert(0, 0.0);
+  values.insert(1, 0.0);
+  values.insert(2, 0.0);
 
-  FastMap<Key,int> constrainedKeys;
-  constrainedKeys.insert(make_pair(0,0));
-  constrainedKeys.insert(make_pair(1,1));
-  constrainedKeys.insert(make_pair(2,2));
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.insert(make_pair(0, 0));
+  constrainedKeys.insert(make_pair(1, 1));
+  constrainedKeys.insert(make_pair(2, 2));
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
@@ -725,29 +722,28 @@ TEST(ISAM2, marginalizeLeaves1)
 }
 
 /* ************************************************************************* */
-TEST(ISAM2, marginalizeLeaves2)
-{
+TEST(ISAM2, marginalizeLeaves2) {
   ISAM2 isam;
 
   NonlinearFactorGraph factors;
-  factors += PriorFactor<LieScalar>(0, Zero, model);
+  factors += PriorFactor<double>(0, 0.0, model);
 
-  factors += BetweenFactor<LieScalar>(0, 1, Zero, model);
-  factors += BetweenFactor<LieScalar>(1, 2, Zero, model);
-  factors += BetweenFactor<LieScalar>(0, 2, Zero, model);
-  factors += BetweenFactor<LieScalar>(2, 3, Zero, model);
+  factors += BetweenFactor<double>(0, 1, 0.0, model);
+  factors += BetweenFactor<double>(1, 2, 0.0, model);
+  factors += BetweenFactor<double>(0, 2, 0.0, model);
+  factors += BetweenFactor<double>(2, 3, 0.0, model);
 
   Values values;
-  values.insert(0, Zero);
-  values.insert(1, Zero);
-  values.insert(2, Zero);
-  values.insert(3, Zero);
+  values.insert(0, 0.0);
+  values.insert(1, 0.0);
+  values.insert(2, 0.0);
+  values.insert(3, 0.0);
 
-  FastMap<Key,int> constrainedKeys;
-  constrainedKeys.insert(make_pair(0,0));
-  constrainedKeys.insert(make_pair(1,1));
-  constrainedKeys.insert(make_pair(2,2));
-  constrainedKeys.insert(make_pair(3,3));
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.insert(make_pair(0, 0));
+  constrainedKeys.insert(make_pair(1, 1));
+  constrainedKeys.insert(make_pair(2, 2));
+  constrainedKeys.insert(make_pair(3, 3));
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
@@ -756,38 +752,37 @@ TEST(ISAM2, marginalizeLeaves2)
 }
 
 /* ************************************************************************* */
-TEST(ISAM2, marginalizeLeaves3)
-{
+TEST(ISAM2, marginalizeLeaves3) {
   ISAM2 isam;
 
   NonlinearFactorGraph factors;
-  factors += PriorFactor<LieScalar>(0, Zero, model);
+  factors += PriorFactor<double>(0, 0.0, model);
 
-  factors += BetweenFactor<LieScalar>(0, 1, Zero, model);
-  factors += BetweenFactor<LieScalar>(1, 2, Zero, model);
-  factors += BetweenFactor<LieScalar>(0, 2, Zero, model);
+  factors += BetweenFactor<double>(0, 1, 0.0, model);
+  factors += BetweenFactor<double>(1, 2, 0.0, model);
+  factors += BetweenFactor<double>(0, 2, 0.0, model);
 
-  factors += BetweenFactor<LieScalar>(2, 3, Zero, model);
+  factors += BetweenFactor<double>(2, 3, 0.0, model);
 
-  factors += BetweenFactor<LieScalar>(3, 4, Zero, model);
-  factors += BetweenFactor<LieScalar>(4, 5, Zero, model);
-  factors += BetweenFactor<LieScalar>(3, 5, Zero, model);
+  factors += BetweenFactor<double>(3, 4, 0.0, model);
+  factors += BetweenFactor<double>(4, 5, 0.0, model);
+  factors += BetweenFactor<double>(3, 5, 0.0, model);
 
   Values values;
-  values.insert(0, Zero);
-  values.insert(1, Zero);
-  values.insert(2, Zero);
-  values.insert(3, Zero);
-  values.insert(4, Zero);
-  values.insert(5, Zero);
+  values.insert(0, 0.0);
+  values.insert(1, 0.0);
+  values.insert(2, 0.0);
+  values.insert(3, 0.0);
+  values.insert(4, 0.0);
+  values.insert(5, 0.0);
 
-  FastMap<Key,int> constrainedKeys;
-  constrainedKeys.insert(make_pair(0,0));
-  constrainedKeys.insert(make_pair(1,1));
-  constrainedKeys.insert(make_pair(2,2));
-  constrainedKeys.insert(make_pair(3,3));
-  constrainedKeys.insert(make_pair(4,4));
-  constrainedKeys.insert(make_pair(5,5));
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.insert(make_pair(0, 0));
+  constrainedKeys.insert(make_pair(1, 1));
+  constrainedKeys.insert(make_pair(2, 2));
+  constrainedKeys.insert(make_pair(3, 3));
+  constrainedKeys.insert(make_pair(4, 4));
+  constrainedKeys.insert(make_pair(5, 5));
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
@@ -796,24 +791,23 @@ TEST(ISAM2, marginalizeLeaves3)
 }
 
 /* ************************************************************************* */
-TEST(ISAM2, marginalizeLeaves4)
-{
+TEST(ISAM2, marginalizeLeaves4) {
   ISAM2 isam;
 
   NonlinearFactorGraph factors;
-  factors += PriorFactor<LieScalar>(0, Zero, model);
-  factors += BetweenFactor<LieScalar>(0, 2, Zero, model);
-  factors += BetweenFactor<LieScalar>(1, 2, Zero, model);
+  factors += PriorFactor<double>(0, 0.0, model);
+  factors += BetweenFactor<double>(0, 2, 0.0, model);
+  factors += BetweenFactor<double>(1, 2, 0.0, model);
 
   Values values;
-  values.insert(0, Zero);
-  values.insert(1, Zero);
-  values.insert(2, Zero);
+  values.insert(0, 0.0);
+  values.insert(1, 0.0);
+  values.insert(2, 0.0);
 
-  FastMap<Key,int> constrainedKeys;
-  constrainedKeys.insert(make_pair(0,0));
-  constrainedKeys.insert(make_pair(1,1));
-  constrainedKeys.insert(make_pair(2,2));
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.insert(make_pair(0, 0));
+  constrainedKeys.insert(make_pair(1, 1));
+  constrainedKeys.insert(make_pair(2, 2));
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
