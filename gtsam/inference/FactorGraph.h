@@ -273,6 +273,14 @@ class FactorGraph {
     bayesTree.addFactorsToGraph(*this);
   }
 
+  /**
+   * Add new factors to a factor graph and returns a list of new factor indices,
+   * optionally finding and reusing empty factor slots.
+   */
+  template <typename CONTAINER, typename = HasDerivedElementType<CONTAINER>>
+  FactorIndices add_factors(const CONTAINER& factors,
+                            bool useEmptySlots = false);
+
   /// @}
   /// @name Testable
   /// @{
