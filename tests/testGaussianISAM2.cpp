@@ -284,37 +284,6 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
 }
 
 /* ************************************************************************* */
-TEST(ISAM2, AddFactorsStep1) {
-  NonlinearFactorGraph nonlinearFactors;
-  nonlinearFactors += PriorFactor<double>(10, 0.0, model);
-  nonlinearFactors += NonlinearFactor::shared_ptr();
-  nonlinearFactors += PriorFactor<double>(11, 0.0, model);
-
-  NonlinearFactorGraph newFactors;
-  newFactors += PriorFactor<double>(1, 0.0, model);
-  newFactors += PriorFactor<double>(2, 0.0, model);
-
-  NonlinearFactorGraph expectedNonlinearFactors;
-  expectedNonlinearFactors += PriorFactor<double>(10, 0.0, model);
-  expectedNonlinearFactors += PriorFactor<double>(1, 0.0, model);
-  expectedNonlinearFactors += PriorFactor<double>(11, 0.0, model);
-  expectedNonlinearFactors += PriorFactor<double>(2, 0.0, model);
-
-  const FactorIndices expectedNewFactorIndices = list_of(1)(3);
-
-  ISAM2Params params;
-  ISAM2UpdateParams updateParams;
-  params.findUnusedFactorSlots = true;
-  UpdateImpl update(params, updateParams);
-  FactorIndices actualNewFactorIndices =
-      update.addFactorsStep1(newFactors, &nonlinearFactors);
-
-  EXPECT(assert_equal(expectedNonlinearFactors, nonlinearFactors));
-  EXPECT(assert_container_equality(expectedNewFactorIndices,
-                                   actualNewFactorIndices));
-}
-
-/* ************************************************************************* */
 TEST(ISAM2, simple)
 {
   for(size_t i = 0; i < 10; ++i) {

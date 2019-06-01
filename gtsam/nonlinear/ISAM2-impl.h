@@ -135,48 +135,6 @@ struct GTSAM_EXPORT UpdateImpl {
     }
   }
 
-  /// Perform the first part of the bookkeeping updates for adding new factors.
-  /// Adds them to the complete list of nonlinear factors, and populates the
-  /// list of new factor indices, both optionally finding and reusing empty
-  /// factor slots.
-  FactorIndices addFactorsStep1(const NonlinearFactorGraph& newFactors,
-                                NonlinearFactorGraph* nonlinearFactors) const {
-    FactorIndices newFactorIndices(newFactors.size());
-
-    if (params_.findUnusedFactorSlots) {
-      size_t globalFactorIndex = 0;
-      for (size_t newFactorIndex = 0; newFactorIndex < newFactors.size();
-           ++newFactorIndex) {
-        // Loop to find the next available factor slot
-        do {
-          // If we need to add more factors than we have room for, resize
-          // nonlinearFactors, filling the new slots with NULL factors.
-          // Otherwise, check if the current factor in nonlinearFactors is
-          // already used, and if so, increase globalFactorIndex.  If the
-          // current factor in nonlinearFactors is unused, break out of the loop
-          // and use the current slot.
-          if (globalFactorIndex >= nonlinearFactors->size())
-            nonlinearFactors->resize(nonlinearFactors->size() +
-                                     newFactors.size() - newFactorIndex);
-          else if ((*nonlinearFactors)[globalFactorIndex])
-            ++globalFactorIndex;
-          else
-            break;
-        } while (true);
-
-        // Use the current slot, updating nonlinearFactors and newFactorSlots.
-        (*nonlinearFactors)[globalFactorIndex] = newFactors[newFactorIndex];
-        newFactorIndices[newFactorIndex] = globalFactorIndex;
-      }
-    } else {
-      // We're not looking for unused slots, so just add the factors at the end.
-      for (size_t i = 0; i < newFactors.size(); ++i)
-        newFactorIndices[i] = i + nonlinearFactors->size();
-      nonlinearFactors->push_back(newFactors);
-    }
-    return newFactorIndices;
-  }
-
   // 1. Add any new factors \Factors:=\Factors\cup\Factors'.
   void pushBackFactors(const NonlinearFactorGraph& newFactors,
                        NonlinearFactorGraph* nonlinearFactors,
@@ -185,8 +143,12 @@ struct GTSAM_EXPORT UpdateImpl {
                        ISAM2Result* result) const {
     gttic(pushBackFactors);
 
-    // Add the new factor indices to the result struct
-    result->newFactorsIndices = addFactorsStep1(newFactors, nonlinearFactors);
+    // Perform the first part of the bookkeeping updates for adding new factors.
+    // Adds them to the complete list of nonlinear factors, and populates the
+    // list of new factor indices, both optionally finding and reusing empty
+    // factor slots.
+    result->newFactorsIndices = nonlinearFactors->add_factors(
+        newFactors, params_.findUnusedFactorSlots);
 
     // Remove the removed factors
     NonlinearFactorGraph removedFactors;
