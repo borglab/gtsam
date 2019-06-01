@@ -620,9 +620,9 @@ To find the intersection of the line between
 \begin{align*}
 \Delta & =\norm{\left(1-\tau\right)\delta x_{u}+\tau\delta x_{n}}\\
 \Delta^{2} & =\left(1-\tau\right)^{2}\delta x_{u}^{\t}\delta x_{u}+2\tau\left(1-\tau\right)\delta x_{u}^{\t}\delta x_{n}+\tau^{2}\delta x_{n}^{\t}\delta x_{n}\\
-0 & =uu-2\tau uu+\tau^{2}uu+2\tau un-2\tau^{2}un+\tau^{2}nn-\Delta^{2}\\
-0 & =\left(uu-2un+nn\right)\tau^{2}+\left(2un-2uu\right)\tau-\Delta^{2}+uu\\
-\tau & =\frac{-\left(2un-2uu\right)\pm\sqrt{\left(2un-2uu\right)^{2}-4\left(uu-2un+nn\right)\left(uu-\Delta^{2}\right)}}{2\left(uu-un+nn\right)}
+0 & =\delta x_{u}^{\t}\delta x_{u}-2\tau\delta x_{u}^{\t}\delta x_{u}+\tau^{2}\delta x_{u}^{\t}\delta x_{u}+2\tau\delta x_{u}^{\t}\delta x_{n}-2\tau^{2}\delta x_{u}^{\t}\delta x_{n}+\tau^{2}\delta x_{n}^{\t}\delta x_{n}-\Delta^{2}\\
+0 & =\left(\delta x_{u}^{\t}\delta x_{u}-2\delta x_{u}^{\t}\delta x_{n}+\delta x_{n}^{\t}\delta x_{n}\right)\tau^{2}+\left(2\delta x_{u}^{\t}\delta x_{n}-2\delta x_{u}^{\t}\delta x_{u}\right)\tau-\Delta^{2}+\delta x_{u}^{\t}\delta x_{u}\\
+\tau & =\frac{-\left(2\delta x_{u}^{\t}\delta x_{n}-2\delta x_{u}^{\t}\delta x_{u}\right)\pm\sqrt{\left(2\delta x_{u}^{\t}\delta x_{n}-2\delta x_{u}^{\t}\delta x_{u}\right)^{2}-4\left(\delta x_{u}^{\t}\delta x_{u}-2\delta x_{u}^{\t}\delta x_{n}+\delta x_{n}^{\t}\delta x_{n}\right)\left(\delta x_{u}^{\t}\delta x_{u}-\Delta^{2}\right)}}{2\left(\delta x_{u}^{\t}\delta x_{u}-\delta x_{u}^{\t}\delta x_{n}+\delta x_{n}^{\t}\delta x_{n}\right)}
 \end{align*}
 
 \end_inset
