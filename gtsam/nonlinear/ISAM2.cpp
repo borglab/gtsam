@@ -119,9 +119,6 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
   this->update_count_++;
   UpdateImpl::LogStartingUpdate(newFactors, *this);
 
-  ISAM2Result result;
-  if (params_.enableDetailedResults)
-    result.detail = ISAM2Result::DetailedResults();
   const bool relinearizeThisStep =
       updateParams.force_relinearize ||
       (params_.enableRelinearization &&
@@ -132,6 +129,9 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
     updateDelta(updateParams.forceFullSolve);
   }
 
+  ISAM2Result result;
+  if (params_.enableDetailedResults)
+    result.detail = ISAM2Result::DetailedResults();
   UpdateImpl update(params_, updateParams);
 
   // 1. Add any new factors \Factors:=\Factors\cup\Factors'.
@@ -150,14 +150,25 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
   update.gatherInvolvedKeys(newFactors, nonlinearFactors_, &result);
 
   // Check relinearization if we're at the nth step, or we are using a looser
-  // loop relin threshold
+  // loop relinerization threshold.
   KeySet relinKeys;
   if (relinearizeThisStep) {
+    // 4. Mark keys in \Delta above threshold \beta:
     relinKeys =
-        update.relinearize(roots_, delta_, fixedVariables_, &theta_, &result);
+        update.gatherRelinearizeKeys(roots_, delta_, fixedVariables_, &result);
+    if (!relinKeys.empty()) {
+      // 5. Mark all cliques that involve marked variables \Theta_{J} and all
+      // their ancestors.
+      update.fluidFindAll(roots_, relinKeys, &result);
+      // 6. Update linearization point for marked variables:
+      // \Theta_{J}:=\Theta_{J}+\Delta_{J}.
+      UpdateImpl::ExpmapMasked(delta_, relinKeys, &theta_);
+    }
+    result.variablesRelinearized = result.markedKeys.size();
   } else {
     result.variablesRelinearized = 0;
   }
+  // TODO(frank): should be result.variablesRelinearized = relinKeys.size(); ?
 
   // 7. Linearize new factors
   update.linearizeNewFactors(newFactors, theta_, nonlinearFactors_.size(),

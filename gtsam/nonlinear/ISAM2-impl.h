@@ -135,7 +135,7 @@ struct GTSAM_EXPORT UpdateImpl {
     }
   }
 
-  // 1. Add any new factors \Factors:=\Factors\cup\Factors'.
+  // Add any new factors \Factors:=\Factors\cup\Factors'.
   void pushBackFactors(const NonlinearFactorGraph& newFactors,
                        NonlinearFactorGraph* nonlinearFactors,
                        GaussianFactorGraph* linearFactors,
@@ -181,7 +181,7 @@ struct GTSAM_EXPORT UpdateImpl {
         std::inserter(result->unusedKeys, result->unusedKeys.end()));
   }
 
-  // 3. Mark linear update
+  // Mark linear update
   void gatherInvolvedKeys(const NonlinearFactorGraph& newFactors,
                           const NonlinearFactorGraph& nonlinearFactors,
                           ISAM2Result* result) const {
@@ -197,6 +197,7 @@ struct GTSAM_EXPORT UpdateImpl {
         result->markedKeys.insert(key);
       }
     }
+
     // Also, keys that were not observed in existing factors, but whose affected
     // keys have been extended now (e.g. smart factors)
     if (updateParams_.newAffectedKeys) {
@@ -343,6 +344,67 @@ struct GTSAM_EXPORT UpdateImpl {
     return relinKeys;
   }
 
+  // Mark keys in \Delta above threshold \beta:
+  KeySet gatherRelinearizeKeys(const ISAM2::Roots& roots,
+                               const VectorValues& delta,
+                               const KeySet& fixedVariables,
+                               ISAM2Result* result) const {
+    gttic(gatherRelinearizeKeys);
+    // J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
+    KeySet relinKeys =
+        params_.enablePartialRelinearizationCheck
+            ? CheckRelinearizationPartial(roots, delta,
+                                          params_.relinearizeThreshold)
+            : CheckRelinearizationFull(delta, params_.relinearizeThreshold);
+    if (updateParams_.forceFullSolve)
+      relinKeys = CheckRelinearizationFull(delta, 0.0);  // for debugging
+
+    // Remove from relinKeys any keys whose linearization points are fixed
+    for (Key key : fixedVariables) {
+      relinKeys.erase(key);
+    }
+    if (updateParams_.noRelinKeys) {
+      for (Key key : *updateParams_.noRelinKeys) {
+        relinKeys.erase(key);
+      }
+    }
+
+    // Record above relinerization threshold keys in detailed results
+    if (params_.enableDetailedResults) {
+      for (Key key : relinKeys) {
+        result->detail->variableStatus[key].isAboveRelinThreshold = true;
+        result->detail->variableStatus[key].isRelinearized = true;
+      }
+    }
+
+    // Add the variables being relinearized to the marked keys
+    result->markedKeys.insert(relinKeys.begin(), relinKeys.end());
+    return relinKeys;
+  }
+
+  // Mark all cliques that involve marked variables \Theta_{J} and all
+  // their ancestors.
+  void fluidFindAll(const ISAM2::Roots& roots, const KeySet& relinKeys,
+                    ISAM2Result* result) const {
+    gttic(fluidFindAll);
+    for (const auto& root : roots)
+      // add other cliques that have the marked ones in the separator
+      root->findAll(relinKeys, &result->markedKeys);
+
+    // Relinearization-involved keys for detailed results
+    if (params_.enableDetailedResults) {
+      KeySet involvedRelinKeys;
+      for (const auto& root : roots)
+        root->findAll(relinKeys, &involvedRelinKeys);
+      for (Key key : involvedRelinKeys) {
+        if (!result->detail->variableStatus[key].isAboveRelinThreshold) {
+          result->detail->variableStatus[key].isRelinearizeInvolved = true;
+          result->detail->variableStatus[key].isRelinearized = true;
+        }
+      }
+    }
+  }
+
   /**
    * Apply expmap to the given values, but only for indices appearing in
    * \c mask.  Values are expmapped in-place.
@@ -350,6 +412,7 @@ struct GTSAM_EXPORT UpdateImpl {
    */
   static void ExpmapMasked(const VectorValues& delta, const KeySet& mask,
                            Values* theta) {
+    gttic(ExpmapMasked);
     assert(theta->size() == delta.size());
     Values::iterator key_value;
     VectorValues::const_iterator key_delta;
@@ -372,80 +435,7 @@ struct GTSAM_EXPORT UpdateImpl {
     }
   }
 
-  KeySet relinearize(const ISAM2::Roots& roots, const VectorValues& delta,
-                     const KeySet& fixedVariables, Values* theta,
-                     ISAM2Result* result) const {
-    KeySet relinKeys;
-    gttic(gather_relinearize_keys);
-    // 4. Mark keys in \Delta above threshold \beta:
-    // J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
-    if (params_.enablePartialRelinearizationCheck)
-      relinKeys = CheckRelinearizationPartial(roots, delta,
-                                              params_.relinearizeThreshold);
-    else
-      relinKeys = CheckRelinearizationFull(delta, params_.relinearizeThreshold);
-    if (updateParams_.forceFullSolve)
-      relinKeys =
-          CheckRelinearizationFull(delta, 0.0);  // This is used for debugging
-
-    // Remove from relinKeys any keys whose linearization points are fixed
-    for (Key key : fixedVariables) {
-      relinKeys.erase(key);
-    }
-    if (updateParams_.noRelinKeys) {
-      for (Key key : *updateParams_.noRelinKeys) {
-        relinKeys.erase(key);
-      }
-    }
-
-    // Above relin threshold keys for detailed results
-    if (params_.enableDetailedResults) {
-      for (Key key : relinKeys) {
-        result->detail->variableStatus[key].isAboveRelinThreshold = true;
-        result->detail->variableStatus[key].isRelinearized = true;
-      }
-    }
-
-    // Add the variables being relinearized to the marked keys
-    KeySet markedRelinMask;
-    for (const Key key : relinKeys) markedRelinMask.insert(key);
-    result->markedKeys.insert(relinKeys.begin(), relinKeys.end());
-    gttoc(gather_relinearize_keys);
-
-    gttic(fluid_find_all);
-    // 5. Mark all cliques that involve marked variables \Theta_{J} and all
-    // their ancestors.
-    if (!relinKeys.empty()) {
-      for (const auto& root : roots)
-        // add other cliques that have the marked ones in the separator
-        root->findAll(markedRelinMask, &result->markedKeys);
-
-      // Relin involved keys for detailed results
-      if (params_.enableDetailedResults) {
-        KeySet involvedRelinKeys;
-        for (const auto& root : roots)
-          root->findAll(markedRelinMask, &involvedRelinKeys);
-        for (Key key : involvedRelinKeys) {
-          if (!result->detail->variableStatus[key].isAboveRelinThreshold) {
-            result->detail->variableStatus[key].isRelinearizeInvolved = true;
-            result->detail->variableStatus[key].isRelinearized = true;
-          }
-        }
-      }
-    }
-    gttoc(fluid_find_all);
-
-    gttic(expmap);
-    // 6. Update linearization point for marked variables:
-    // \Theta_{J}:=\Theta_{J}+\Delta_{J}.
-    if (!relinKeys.empty()) ExpmapMasked(delta, markedRelinMask, theta);
-    gttoc(expmap);
-
-    result->variablesRelinearized = result->markedKeys.size();
-    return relinKeys;
-  }
-
-  // 7. Linearize new factors
+  // Linearize new factors
   void linearizeNewFactors(const NonlinearFactorGraph& newFactors,
                            const Values& theta, size_t numNonlinearFactors,
                            const FactorIndices& newFactorsIndices,
@@ -625,8 +615,8 @@ struct GTSAM_EXPORT UpdateImpl {
       // Removed unused keys:
       VariableIndex affectedFactorsVarIndex = variableIndex;
 
-      affectedFactorsVarIndex.removeUnusedVariables(
-          result->unusedKeys.begin(), result->unusedKeys.end());
+      affectedFactorsVarIndex.removeUnusedVariables(result->unusedKeys.begin(),
+                                                    result->unusedKeys.end());
 
       for (const Key key : result->unusedKeys) {
         affectedKeysSet.erase(key);

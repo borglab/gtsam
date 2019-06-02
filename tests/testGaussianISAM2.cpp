@@ -5,7 +5,6 @@
  */
 
 #include <gtsam/nonlinear/ISAM2.h>
-#include <gtsam/nonlinear/ISAM2-impl.h>
 
 #include <tests/smallExample.h>
 #include <gtsam/slam/PriorFactor.h>
