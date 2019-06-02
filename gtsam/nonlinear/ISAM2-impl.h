@@ -140,14 +140,15 @@ struct GTSAM_EXPORT UpdateImpl {
                        NonlinearFactorGraph* nonlinearFactors,
                        GaussianFactorGraph* linearFactors,
                        VariableIndex* variableIndex,
-                       ISAM2Result* result) const {
+                       FactorIndices* newFactorsIndices,
+                       KeySet* keysWithRemovedFactors) const {
     gttic(pushBackFactors);
 
     // Perform the first part of the bookkeeping updates for adding new factors.
     // Adds them to the complete list of nonlinear factors, and populates the
     // list of new factor indices, both optionally finding and reusing empty
     // factor slots.
-    result->newFactorsIndices = nonlinearFactors->add_factors(
+    *newFactorsIndices = nonlinearFactors->add_factors(
         newFactors, params_.findUnusedFactorSlots);
 
     // Remove the removed factors
@@ -164,37 +165,41 @@ struct GTSAM_EXPORT UpdateImpl {
     variableIndex->remove(updateParams_.removeFactorIndices.begin(),
                           updateParams_.removeFactorIndices.end(),
                           removedFactors);
-    result->keysWithRemovedFactors = removedFactors.keys();
+    *keysWithRemovedFactors = removedFactors.keys();
+  }
 
-    // Compute unused keys and indices
-    // Get keys from removed factors and new factors, and compute unused keys,
-    // i.e., keys that are empty now and do not appear in the new factors.
+  // Get keys from removed factors and new factors, and compute unused keys,
+  // i.e., keys that are empty now and do not appear in the new factors.
+  void computeUnusedKeys(const NonlinearFactorGraph& newFactors,
+                         const VariableIndex& variableIndex,
+                         const KeySet& keysWithRemovedFactors,
+                         KeySet* unusedKeys) const {
+    gttic(computeUnusedKeys);
     KeySet removedAndEmpty;
-    for (Key key : result->keysWithRemovedFactors) {
-      if (variableIndex->empty(key))
+    for (Key key : keysWithRemovedFactors) {
+      if (variableIndex.empty(key))
         removedAndEmpty.insert(removedAndEmpty.end(), key);
     }
     KeySet newFactorSymbKeys = newFactors.keys();
-    std::set_difference(
-        removedAndEmpty.begin(), removedAndEmpty.end(),
-        newFactorSymbKeys.begin(), newFactorSymbKeys.end(),
-        std::inserter(result->unusedKeys, result->unusedKeys.end()));
+    std::set_difference(removedAndEmpty.begin(), removedAndEmpty.end(),
+                        newFactorSymbKeys.begin(), newFactorSymbKeys.end(),
+                        std::inserter(*unusedKeys, unusedKeys->end()));
   }
 
   // Mark linear update
   void gatherInvolvedKeys(const NonlinearFactorGraph& newFactors,
                           const NonlinearFactorGraph& nonlinearFactors,
-                          ISAM2Result* result) const {
+                          KeySet* markedKeys, ISAM2Result* result) const {
     gttic(gatherInvolvedKeys);
-    result->markedKeys = newFactors.keys();  // Get keys from new factors
+    *markedKeys = newFactors.keys();  // Get keys from new factors
     // Also mark keys involved in removed factors
-    result->markedKeys.insert(result->keysWithRemovedFactors.begin(),
-                              result->keysWithRemovedFactors.end());
+    markedKeys->insert(result->keysWithRemovedFactors.begin(),
+                       result->keysWithRemovedFactors.end());
 
     // Also mark any provided extra re-eliminate keys
     if (updateParams_.extraReelimKeys) {
       for (Key key : *updateParams_.extraReelimKeys) {
-        result->markedKeys.insert(key);
+        markedKeys->insert(key);
       }
     }
 
@@ -204,18 +209,18 @@ struct GTSAM_EXPORT UpdateImpl {
       for (const auto& factorAddedKeys : *updateParams_.newAffectedKeys) {
         const auto factorIdx = factorAddedKeys.first;
         const auto& affectedKeys = nonlinearFactors.at(factorIdx)->keys();
-        result->markedKeys.insert(affectedKeys.begin(), affectedKeys.end());
+        markedKeys->insert(affectedKeys.begin(), affectedKeys.end());
       }
     }
 
     // Observed keys for detailed results
     if (params_.enableDetailedResults) {
-      for (Key key : result->markedKeys) {
+      for (Key key : *markedKeys) {
         result->detail->variableStatus[key].isObserved = true;
       }
     }
 
-    for (Key index : result->markedKeys) {
+    for (Key index : *markedKeys) {
       // Only add if not unused
       if (result->unusedKeys.find(index) == result->unusedKeys.end())
         // Make a copy of these, as we'll soon add to them
@@ -347,7 +352,7 @@ struct GTSAM_EXPORT UpdateImpl {
   // Mark keys in \Delta above threshold \beta:
   KeySet gatherRelinearizeKeys(const ISAM2::Roots& roots,
                                const VectorValues& delta,
-                               const KeySet& fixedVariables,
+                               const KeySet& fixedVariables, KeySet* markedKeys,
                                ISAM2Result* result) const {
     gttic(gatherRelinearizeKeys);
     // J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
@@ -378,18 +383,18 @@ struct GTSAM_EXPORT UpdateImpl {
     }
 
     // Add the variables being relinearized to the marked keys
-    result->markedKeys.insert(relinKeys.begin(), relinKeys.end());
+    markedKeys->insert(relinKeys.begin(), relinKeys.end());
     return relinKeys;
   }
 
   // Mark all cliques that involve marked variables \Theta_{J} and all
   // their ancestors.
   void fluidFindAll(const ISAM2::Roots& roots, const KeySet& relinKeys,
-                    ISAM2Result* result) const {
+                    KeySet* markedKeys, ISAM2Result* result) const {
     gttic(fluidFindAll);
     for (const auto& root : roots)
       // add other cliques that have the marked ones in the separator
-      root->findAll(relinKeys, &result->markedKeys);
+      root->findAll(relinKeys, markedKeys);
 
     // Relinearization-involved keys for detailed results
     if (params_.enableDetailedResults) {

@@ -281,7 +281,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   /// @}
 
  protected:
-// Do a batch step - reorder and relinearize all variables
+  // Do a batch step - reorder and relinearize all variables
   void recalculateBatch(const ISAM2UpdateParams& updateParams,
                         KeySet* affectedKeysSet, ISAM2Result* result);
 

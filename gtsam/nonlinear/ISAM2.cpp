@@ -350,11 +350,9 @@ void ISAM2::addVariables(
     const Values& newTheta,
     ISAM2Result::DetailedResults::StatusMap* variableStatus) {
   gttic(addNewVariables);
-  // \Theta:=\Theta\cup\Theta_{new}.
-  const bool debug = ISDEBUG("ISAM2 AddVariables");
 
   theta_.insert(newTheta);
-  if (debug) newTheta.print("The new variables are: ");
+  if (ISDEBUG("ISAM2 AddVariables")) newTheta.print("The new variables are: ");
   // Add zeros into the VectorValues
   delta_.insert(newTheta.zeroVectors());
   deltaNewton_.insert(newTheta.zeroVectors());
@@ -425,9 +423,13 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
 
   // 1. Add any new factors \Factors:=\Factors\cup\Factors'.
   update.pushBackFactors(newFactors, &nonlinearFactors_, &linearFactors_,
-                         &variableIndex_, &result);
+                         &variableIndex_, &result.newFactorsIndices,
+                         &result.keysWithRemovedFactors);
+  update.computeUnusedKeys(newFactors, variableIndex_,
+                           result.keysWithRemovedFactors, &result.unusedKeys);
 
   // 2. Initialize any new variables \Theta_{new} and add
+  // \Theta:=\Theta\cup\Theta_{new}.
   addVariables(newTheta, result.detail ? &result.detail->variableStatus : 0);
 
   gttic(evaluate_error_before);
@@ -436,19 +438,20 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
   gttoc(evaluate_error_before);
 
   // 3. Mark linear update
-  update.gatherInvolvedKeys(newFactors, nonlinearFactors_, &result);
+  update.gatherInvolvedKeys(newFactors, nonlinearFactors_, &result.markedKeys,
+                            &result);
 
   // Check relinearization if we're at the nth step, or we are using a looser
   // loop relinerization threshold.
   KeySet relinKeys;
   if (relinearizeThisStep) {
     // 4. Mark keys in \Delta above threshold \beta:
-    relinKeys =
-        update.gatherRelinearizeKeys(roots_, delta_, fixedVariables_, &result);
+    relinKeys = update.gatherRelinearizeKeys(roots_, delta_, fixedVariables_,
+                                             &result.markedKeys, &result);
     if (!relinKeys.empty()) {
       // 5. Mark all cliques that involve marked variables \Theta_{J} and all
       // their ancestors.
-      update.fluidFindAll(roots_, relinKeys, &result);
+      update.fluidFindAll(roots_, relinKeys, &result.markedKeys, &result);
       // 6. Update linearization point for marked variables:
       // \Theta_{J}:=\Theta_{J}+\Delta_{J}.
       UpdateImpl::ExpmapMasked(delta_, relinKeys, &theta_);
@@ -479,8 +482,7 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
 
     KeySet affectedKeysSet = recalculate(updateParams, affectedBayesNet,
                                          relinKeys, &orphans, &result);
-    // Update replaced keys mask (accumulates until back-substitution takes
-    // place)
+    // Update replaced keys mask (accumulates until back-substitution happens)
     deltaReplacedMask_.insert(affectedKeysSet.begin(), affectedKeysSet.end());
   }
 
