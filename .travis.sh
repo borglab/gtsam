@@ -23,7 +23,6 @@ function build_and_test ()
   fi
 
   cmake $SOURCE_DIR \
-      -DGTSAM_BUILD_WITH_CCACHE=ON \
       -DGTSAM_BUILD_UNSTABLE=$GTSAM_BUILD_UNSTABLE \
       -DGTSAM_BUILD_EXAMPLES_ALWAYS=$GTSAM_BUILD_EXAMPLES_ALWAYS \
       -DGTSAM_BUILD_TESTS=$GTSAM_BUILD_TESTS
@@ -35,6 +34,9 @@ function build_and_test ()
   if [ "$GTSAM_BUILD_TESTS" == "ON" ]; then
     make check
   fi
+
+  # Print ccache stats
+  ccache -s
 
   cd $SOURCE_DIR
 }
