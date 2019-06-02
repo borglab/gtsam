@@ -96,10 +96,10 @@ struct GTSAM_EXPORT ISAM2Result {
    */
   FactorIndices newFactorsIndices;
 
-  /** Unused keys, and indices for unused keys. TODO(frank): the same??
+  /** Unused keys, and indices for unused keys,
    * i.e., keys that are empty now and do not appear in the new factors.
    */
-  KeySet unusedKeys, unusedIndices;
+  KeySet unusedKeys;
 
   /** keys for variables that were observed, i.e., not unused. */
   KeyVector observedKeys;

@@ -179,11 +179,6 @@ struct GTSAM_EXPORT UpdateImpl {
         removedAndEmpty.begin(), removedAndEmpty.end(),
         newFactorSymbKeys.begin(), newFactorSymbKeys.end(),
         std::inserter(result->unusedKeys, result->unusedKeys.end()));
-
-    // Get indices for unused keys
-    for (Key key : result->unusedKeys) {
-      result->unusedIndices.insert(result->unusedIndices.end(), key);
-    }
   }
 
   // 3. Mark linear update
@@ -221,7 +216,7 @@ struct GTSAM_EXPORT UpdateImpl {
 
     for (Key index : result->markedKeys) {
       // Only add if not unused
-      if (result->unusedIndices.find(index) == result->unusedIndices.end())
+      if (result->unusedKeys.find(index) == result->unusedKeys.end())
         // Make a copy of these, as we'll soon add to them
         result->observedKeys.push_back(index);
     }
@@ -631,9 +626,9 @@ struct GTSAM_EXPORT UpdateImpl {
       VariableIndex affectedFactorsVarIndex = variableIndex;
 
       affectedFactorsVarIndex.removeUnusedVariables(
-          result->unusedIndices.begin(), result->unusedIndices.end());
+          result->unusedKeys.begin(), result->unusedKeys.end());
 
-      for (const Key key : result->unusedIndices) {
+      for (const Key key : result->unusedKeys) {
         affectedKeysSet.erase(key);
       }
       gttoc(add_keys);
@@ -777,7 +772,7 @@ struct GTSAM_EXPORT UpdateImpl {
       for (FastMap<Key, int>::iterator iter = constraintGroups.begin();
            iter != constraintGroups.end();
            /*Incremented in loop ++iter*/) {
-        if (result->unusedIndices.exists(iter->first) ||
+        if (result->unusedKeys.exists(iter->first) ||
             !affectedKeysSet.exists(iter->first))
           constraintGroups.erase(iter++);
         else
