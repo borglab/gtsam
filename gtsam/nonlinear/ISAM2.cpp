@@ -25,7 +25,9 @@
 #include <gtsam/inference/BayesTree-inst.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 
+#include <algorithm>
 #include <map>
+#include <utility>
 
 using namespace std;
 
@@ -56,6 +58,293 @@ bool ISAM2::equals(const ISAM2& other, double tol) const {
          fixedVariables_ == other.fixedVariables_;
 }
 
+/* ************************************************************************* */
+void ISAM2::recalculateBatch(const ISAM2UpdateParams& updateParams,
+                             KeySet* affectedKeysSet, ISAM2Result* result) {
+  gttic(recalculateBatch);
+
+  gttic(add_keys);
+  br::copy(variableIndex_ | br::map_keys,
+           std::inserter(*affectedKeysSet, affectedKeysSet->end()));
+
+  // Removed unused keys:
+  VariableIndex affectedFactorsVarIndex = variableIndex_;
+
+  affectedFactorsVarIndex.removeUnusedVariables(result->unusedKeys.begin(),
+                                                result->unusedKeys.end());
+
+  for (const Key key : result->unusedKeys) {
+    affectedKeysSet->erase(key);
+  }
+  gttoc(add_keys);
+
+  gttic(ordering);
+  Ordering order;
+  if (updateParams.constrainedKeys) {
+    order = Ordering::ColamdConstrained(affectedFactorsVarIndex,
+                                        *updateParams.constrainedKeys);
+  } else {
+    if (theta_.size() > result->observedKeys.size()) {
+      // Only if some variables are unconstrained
+      FastMap<Key, int> constraintGroups;
+      for (Key var : result->observedKeys) constraintGroups[var] = 1;
+      order = Ordering::ColamdConstrained(affectedFactorsVarIndex,
+                                          constraintGroups);
+    } else {
+      order = Ordering::Colamd(affectedFactorsVarIndex);
+    }
+  }
+  gttoc(ordering);
+
+  gttic(linearize);
+  auto linearized = nonlinearFactors_.linearize(theta_);
+  if (params_.cacheLinearizedFactors) linearFactors_ = *linearized;
+  gttoc(linearize);
+
+  gttic(eliminate);
+  ISAM2BayesTree::shared_ptr bayesTree =
+      ISAM2JunctionTree(
+          GaussianEliminationTree(*linearized, affectedFactorsVarIndex, order))
+          .eliminate(params_.getEliminationFunction())
+          .first;
+  gttoc(eliminate);
+
+  gttic(insert);
+  roots_.clear();
+  roots_.insert(roots_.end(), bayesTree->roots().begin(),
+                bayesTree->roots().end());
+  nodes_.clear();
+  nodes_.insert(bayesTree->nodes().begin(), bayesTree->nodes().end());
+  gttoc(insert);
+
+  result->variablesReeliminated = affectedKeysSet->size();
+  result->factorsRecalculated = nonlinearFactors_.size();
+
+  // Reeliminated keys for detailed results
+  if (params_.enableDetailedResults) {
+    for (Key key : theta_.keys()) {
+      result->detail->variableStatus[key].isReeliminated = true;
+    }
+  }
+}
+
+/* ************************************************************************* */
+GaussianFactorGraph ISAM2::relinearizeAffectedFactors(
+    const ISAM2UpdateParams& updateParams, const FastList<Key>& affectedKeys,
+    const KeySet& relinKeys) {
+  gttic(relinearizeAffectedFactors);
+  FactorIndexSet candidates =
+      UpdateImpl::GetAffectedFactors(affectedKeys, variableIndex_);
+
+  gttic(affectedKeysSet);
+  // for fast lookup below
+  KeySet affectedKeysSet;
+  affectedKeysSet.insert(affectedKeys.begin(), affectedKeys.end());
+  gttoc(affectedKeysSet);
+
+  gttic(check_candidates_and_linearize);
+  GaussianFactorGraph linearized;
+  for (const FactorIndex idx : candidates) {
+    bool inside = true;
+    bool useCachedLinear = params_.cacheLinearizedFactors;
+    for (Key key : nonlinearFactors_[idx]->keys()) {
+      if (affectedKeysSet.find(key) == affectedKeysSet.end()) {
+        inside = false;
+        break;
+      }
+      if (useCachedLinear && relinKeys.find(key) != relinKeys.end())
+        useCachedLinear = false;
+    }
+    if (inside) {
+      if (useCachedLinear) {
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
+        assert(linearFactors_[idx]);
+        assert(linearFactors_[idx]->keys() == nonlinearFactors_[idx]->keys());
+#endif
+        linearized.push_back(linearFactors_[idx]);
+      } else {
+        auto linearFactor = nonlinearFactors_[idx]->linearize(theta_);
+        linearized.push_back(linearFactor);
+        if (params_.cacheLinearizedFactors) {
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
+          assert(linearFactors_[idx]->keys() == linearFactor->keys());
+#endif
+          linearFactors_[idx] = linearFactor;
+        }
+      }
+    }
+  }
+  gttoc(check_candidates_and_linearize);
+
+  return linearized;
+}
+
+/* ************************************************************************* */
+void ISAM2::recalculateIncremental(const ISAM2UpdateParams& updateParams,
+                                   const KeySet& relinKeys,
+                                   const FastList<Key>& affectedKeys,
+                                   KeySet* affectedKeysSet, Cliques* orphans,
+                                   ISAM2Result* result) {
+  gttic(recalculateIncremental);
+  const bool debug = ISDEBUG("ISAM2 recalculate");
+
+  // 2. Add the new factors \Factors' into the resulting factor graph
+  FastList<Key> affectedAndNewKeys;
+  affectedAndNewKeys.insert(affectedAndNewKeys.end(), affectedKeys.begin(),
+                            affectedKeys.end());
+  affectedAndNewKeys.insert(affectedAndNewKeys.end(),
+                            result->observedKeys.begin(),
+                            result->observedKeys.end());
+  GaussianFactorGraph factors =
+      relinearizeAffectedFactors(updateParams, affectedAndNewKeys, relinKeys);
+
+  if (debug) {
+    factors.print("Relinearized factors: ");
+    std::cout << "Affected keys: ";
+    for (const Key key : affectedKeys) {
+      std::cout << key << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  // Reeliminated keys for detailed results
+  if (params_.enableDetailedResults) {
+    for (Key key : affectedAndNewKeys) {
+      result->detail->variableStatus[key].isReeliminated = true;
+    }
+  }
+
+  result->variablesReeliminated = affectedAndNewKeys.size();
+  result->factorsRecalculated = factors.size();
+
+  gttic(cached);
+  // Add the cached intermediate results from the boundary of the orphans...
+  GaussianFactorGraph cachedBoundary =
+      UpdateImpl::GetCachedBoundaryFactors(*orphans);
+  if (debug) cachedBoundary.print("Boundary factors: ");
+  factors.push_back(cachedBoundary);
+  gttoc(cached);
+
+  gttic(orphans);
+  // Add the orphaned subtrees
+  for (const auto& orphan : *orphans)
+    factors +=
+        boost::make_shared<BayesTreeOrphanWrapper<ISAM2::Clique> >(orphan);
+  gttoc(orphans);
+
+  // 3. Re-order and eliminate the factor graph into a Bayes net (Algorithm
+  // [alg:eliminate]), and re-assemble into a new Bayes tree (Algorithm
+  // [alg:BayesTree])
+
+  gttic(reorder_and_eliminate);
+
+  gttic(list_to_set);
+  // create a partial reordering for the new and contaminated factors
+  // result->markedKeys are passed in: those variables will be forced to the
+  // end in the ordering
+  affectedKeysSet->insert(result->markedKeys.begin(), result->markedKeys.end());
+  affectedKeysSet->insert(affectedKeys.begin(), affectedKeys.end());
+  gttoc(list_to_set);
+
+  VariableIndex affectedFactorsVarIndex(factors);
+
+  gttic(ordering_constraints);
+  // Create ordering constraints
+  FastMap<Key, int> constraintGroups;
+  if (updateParams.constrainedKeys) {
+    constraintGroups = *updateParams.constrainedKeys;
+  } else {
+    constraintGroups = FastMap<Key, int>();
+    const int group =
+        result->observedKeys.size() < affectedFactorsVarIndex.size() ? 1 : 0;
+    for (Key var : result->observedKeys)
+      constraintGroups.insert(std::make_pair(var, group));
+  }
+
+  // Remove unaffected keys from the constraints
+  for (FastMap<Key, int>::iterator iter = constraintGroups.begin();
+       iter != constraintGroups.end();
+       /*Incremented in loop ++iter*/) {
+    if (result->unusedKeys.exists(iter->first) ||
+        !affectedKeysSet->exists(iter->first))
+      constraintGroups.erase(iter++);
+    else
+      ++iter;
+  }
+  gttoc(ordering_constraints);
+
+  // Generate ordering
+  gttic(Ordering);
+  const Ordering ordering =
+      Ordering::ColamdConstrained(affectedFactorsVarIndex, constraintGroups);
+  gttoc(Ordering);
+
+  // Do elimination
+  GaussianEliminationTree etree(factors, affectedFactorsVarIndex, ordering);
+  auto bayesTree = ISAM2JunctionTree(etree)
+                       .eliminate(params_.getEliminationFunction())
+                       .first;
+  gttoc(reorder_and_eliminate);
+
+  gttic(reassemble);
+  roots_.insert(roots_.end(), bayesTree->roots().begin(),
+                bayesTree->roots().end());
+  nodes_.insert(bayesTree->nodes().begin(), bayesTree->nodes().end());
+  gttoc(reassemble);
+
+  // 4. The orphans have already been inserted during elimination
+}
+
+/* ************************************************************************* */
+KeySet ISAM2::recalculate(const ISAM2UpdateParams& updateParams,
+                          const GaussianBayesNet& affectedBayesNet,
+                          const KeySet& relinKeys, Cliques* orphans,
+                          ISAM2Result* result) {
+  gttic(recalculate);
+  UpdateImpl::LogRecalculateKeys(*result);
+
+  // FactorGraph<GaussianFactor> factors(affectedBayesNet);
+  // bug was here: we cannot reuse the original factors, because then the
+  // cached factors get messed up [all the necessary data is actually
+  // contained in the affectedBayesNet, including what was passed in from the
+  // boundaries, so this would be correct; however, in the process we also
+  // generate new cached_ entries that will be wrong (ie. they don't contain
+  // what would be passed up at a certain point if batch elimination was done,
+  // but that's what we need); we could choose not to update cached_ from
+  // here, but then the new information (and potentially different variable
+  // ordering) is not reflected in the cached_ values which again will be
+  // wrong] so instead we have to retrieve the original linearized factors AND
+  // add the cached factors from the boundary
+
+  // ordering provides all keys in conditionals, there cannot be others
+  // because path to root included
+  gttic(affectedKeys);
+  FastList<Key> affectedKeys;
+  for (const auto& conditional : affectedBayesNet)
+    affectedKeys.insert(affectedKeys.end(), conditional->beginFrontals(),
+                        conditional->endFrontals());
+  gttoc(affectedKeys);
+
+  KeySet affectedKeysSet;  // Will return this result
+
+  static const double kBatchThreshold = 0.65;
+  if (affectedKeys.size() >= theta_.size() * kBatchThreshold) {
+    // Do a batch step - reorder and relinearize all variables
+    recalculateBatch(updateParams, &affectedKeysSet, result);
+  } else {
+    recalculateIncremental(updateParams, relinKeys, affectedKeys,
+                           &affectedKeysSet, orphans, result);
+  }
+
+  // Root clique variables for detailed results
+  if (params_.enableDetailedResults) {
+    for (const auto& root : roots_)
+      for (Key var : *root->conditional())
+        result->detail->variableStatus[var].inRootClique = true;
+  }
+
+  return affectedKeysSet;
+}
 /* ************************************************************************* */
 void ISAM2::addVariables(
     const Values& newTheta,
@@ -188,9 +477,8 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
         KeyVector(result.markedKeys.begin(), result.markedKeys.end()),
         affectedBayesNet, orphans);
 
-    KeySet affectedKeysSet = update.recalculate(
-        theta_, variableIndex_, nonlinearFactors_, affectedBayesNet, orphans,
-        relinKeys, &linearFactors_, &roots_, &nodes_, &result);
+    KeySet affectedKeysSet = recalculate(updateParams, affectedBayesNet,
+                                         relinKeys, &orphans, &result);
     // Update replaced keys mask (accumulates until back-substitution takes
     // place)
     deltaReplacedMask_.insert(affectedKeysSet.begin(), affectedKeysSet.end());

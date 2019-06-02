@@ -281,6 +281,27 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   /// @}
 
  protected:
+// Do a batch step - reorder and relinearize all variables
+  void recalculateBatch(const ISAM2UpdateParams& updateParams,
+                        KeySet* affectedKeysSet, ISAM2Result* result);
+
+  // retrieve all factors that ONLY contain the affected variables
+  // (note that the remaining stuff is summarized in the cached factors)
+  GaussianFactorGraph relinearizeAffectedFactors(
+      const ISAM2UpdateParams& updateParams, const FastList<Key>& affectedKeys,
+      const KeySet& relinKeys);
+
+  void recalculateIncremental(const ISAM2UpdateParams& updateParams,
+                              const KeySet& relinKeys,
+                              const FastList<Key>& affectedKeys,
+                              KeySet* affectedKeysSet, Cliques* orphans,
+                              ISAM2Result* result);
+
+  KeySet recalculate(const ISAM2UpdateParams& updateParams,
+                     const GaussianBayesNet& affectedBayesNet,
+                     const KeySet& relinKeys, Cliques* orphans,
+                     ISAM2Result* result);
+
   /**
    * Add new variables to the ISAM2 system.
    * @param newTheta Initial values for new variables
