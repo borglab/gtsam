@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file SmartRangeExample_plaza2.cpp
+ * @file SmartRangeExample_plaza1.cpp
  * @brief A 2D Range SLAM example
  * @date June 20, 2013
  * @author FRank Dellaert
@@ -42,6 +42,9 @@
 #include <gtsam/sam/RangeFactor.h>
 #include <gtsam_unstable/slam/SmartRangeFactor.h>
 
+// To find data files, we can use `findExampleDataFile`, declared here:
+#include <gtsam/slam/dataset.h>
+
 // Standard headers, added last, so we know headers above work on their own
 #include <fstream>
 #include <iostream>
@@ -59,10 +62,9 @@ namespace NM = gtsam::noiseModel;
 typedef pair<double, Pose2> TimedOdometry;
 list<TimedOdometry> readOdometry() {
   list<TimedOdometry> odometryList;
-  ifstream is("/Users/dellaert/borg/gtsam/examples/Data/Plaza1_DR.txt");
-  if (!is)
-    throw runtime_error(
-        "/Users/dellaert/borg/gtsam/examples/Data/Plaza1_DR.txt file not found");
+  string drFile = findExampleDataFile("Plaza1_DR.txt");
+  ifstream is(drFile);
+  if (!is) throw runtime_error("Plaza1_DR.txt file not found");
 
   while (is) {
     double t, distance_traveled, delta_heading;
@@ -79,10 +81,9 @@ list<TimedOdometry> readOdometry() {
 typedef boost::tuple<double, size_t, double> RangeTriple;
 vector<RangeTriple> readTriples() {
   vector<RangeTriple> triples;
-  ifstream is("/Users/dellaert/borg/gtsam/examples/Data/Plaza1_TD.txt");
-  if (!is)
-    throw runtime_error(
-        "/Users/dellaert/borg/gtsam/examples/Data/Plaza1_TD.txt file not found");
+  string tdFile = findExampleDataFile("Plaza1_TD.txt");
+  ifstream is(tdFile);
+  if (!is) throw runtime_error("Plaza1_TD.txt file not found");
 
   while (is) {
     double t, sender, receiver, range;
@@ -98,8 +99,6 @@ int main(int argc, char** argv) {
 
   // load Plaza1 data
   list<TimedOdometry> odometry = readOdometry();
-//  size_t M = odometry.size();
-
   vector<RangeTriple> triples = readTriples();
   size_t K = triples.size();
 
@@ -130,10 +129,8 @@ int main(int argc, char** argv) {
   NonlinearFactorGraph newFactors;
   newFactors.push_back(PriorFactor<Pose2>(0, pose0, priorNoise));
 
-  ofstream os2(
-      "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResultLM.txt");
-  ofstream os3(
-      "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResultSR.txt");
+  ofstream os2("rangeResultLM.txt");
+  ofstream os3("rangeResultSR.txt");
 
   //  initialize points (Gaussian)
   Values initial;
@@ -254,8 +251,7 @@ int main(int argc, char** argv) {
 
   // Write result to file
   Values result = isam.calculateEstimate();
-  ofstream os(
-      "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResult.txt");
+  ofstream os("rangeResult.txt");
   for(const Values::ConstFiltered<Pose2>::KeyValuePair& it: result.filter<Pose2>())
     os << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t"
         << it.value.theta() << endl;
