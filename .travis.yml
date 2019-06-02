@@ -19,6 +19,10 @@ addons:
 before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update          ; fi
 
+install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install ccache  ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then export PATH="/usr/local/opt/ccache/libexec:$PATH" ; fi
+
 script:
   - bash .travis.sh
 
