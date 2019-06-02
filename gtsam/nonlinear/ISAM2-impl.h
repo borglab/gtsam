@@ -566,6 +566,205 @@ struct GTSAM_EXPORT UpdateImpl {
     return linearized;
   }
 
+  // Do a batch step - reorder and relinearize all variables
+  void recalculateBatch(const Values& theta, const VariableIndex& variableIndex,
+                        const NonlinearFactorGraph& nonlinearFactors,
+                        GaussianFactorGraph* linearFactors,
+                        KeySet* affectedKeysSet, ISAM2::Roots* roots,
+                        ISAM2::Nodes* nodes, ISAM2Result* result) const {
+    gttic(batch);
+
+    gttic(add_keys);
+    br::copy(variableIndex | br::map_keys,
+             std::inserter(*affectedKeysSet, affectedKeysSet->end()));
+
+    // Removed unused keys:
+    VariableIndex affectedFactorsVarIndex = variableIndex;
+
+    affectedFactorsVarIndex.removeUnusedVariables(result->unusedKeys.begin(),
+                                                  result->unusedKeys.end());
+
+    for (const Key key : result->unusedKeys) {
+      affectedKeysSet->erase(key);
+    }
+    gttoc(add_keys);
+
+    gttic(ordering);
+    Ordering order;
+    if (updateParams_.constrainedKeys) {
+      order = Ordering::ColamdConstrained(affectedFactorsVarIndex,
+                                          *updateParams_.constrainedKeys);
+    } else {
+      if (theta.size() > result->observedKeys.size()) {
+        // Only if some variables are unconstrained
+        FastMap<Key, int> constraintGroups;
+        for (Key var : result->observedKeys) constraintGroups[var] = 1;
+        order = Ordering::ColamdConstrained(affectedFactorsVarIndex,
+                                            constraintGroups);
+      } else {
+        order = Ordering::Colamd(affectedFactorsVarIndex);
+      }
+    }
+    gttoc(ordering);
+
+    gttic(linearize);
+    GaussianFactorGraph linearized = *nonlinearFactors.linearize(theta);
+    if (params_.cacheLinearizedFactors) *linearFactors = linearized;
+    gttoc(linearize);
+
+    gttic(eliminate);
+    ISAM2BayesTree::shared_ptr bayesTree =
+        ISAM2JunctionTree(
+            GaussianEliminationTree(linearized, affectedFactorsVarIndex, order))
+            .eliminate(params_.getEliminationFunction())
+            .first;
+    gttoc(eliminate);
+
+    gttic(insert);
+    roots->clear();
+    roots->insert(roots->end(), bayesTree->roots().begin(),
+                  bayesTree->roots().end());
+    nodes->clear();
+    nodes->insert(bayesTree->nodes().begin(), bayesTree->nodes().end());
+    gttoc(insert);
+
+    result->variablesReeliminated = affectedKeysSet->size();
+    result->factorsRecalculated = nonlinearFactors.size();
+
+    // Reeliminated keys for detailed results
+    if (params_.enableDetailedResults) {
+      for (Key key : theta.keys()) {
+        result->detail->variableStatus[key].isReeliminated = true;
+      }
+    }
+  }
+
+  void recalculateIncremental(const Values& theta,
+                              const VariableIndex& variableIndex,
+                              const NonlinearFactorGraph& nonlinearFactors,
+                              const ISAM2::Cliques& orphans,
+                              const KeySet& relinKeys,
+                              GaussianFactorGraph* linearFactors,
+                              const FastList<Key>& affectedKeys,
+                              KeySet* affectedKeysSet, ISAM2::Roots* roots,
+                              ISAM2::Nodes* nodes, ISAM2Result* result) const {
+    gttic(incremental);
+    const bool debug = ISDEBUG("ISAM2 recalculate");
+
+    // 2. Add the new factors \Factors' into the resulting factor graph
+    FastList<Key> affectedAndNewKeys;
+    affectedAndNewKeys.insert(affectedAndNewKeys.end(), affectedKeys.begin(),
+                              affectedKeys.end());
+    affectedAndNewKeys.insert(affectedAndNewKeys.end(),
+                              result->observedKeys.begin(),
+                              result->observedKeys.end());
+    gttic(relinearizeAffected);
+    GaussianFactorGraph factors = relinearizeAffectedFactors(
+        affectedAndNewKeys, relinKeys, nonlinearFactors, variableIndex, theta,
+        linearFactors);
+    gttoc(relinearizeAffected);
+
+    if (debug) {
+      factors.print("Relinearized factors: ");
+      std::cout << "Affected keys: ";
+      for (const Key key : affectedKeys) {
+        std::cout << key << " ";
+      }
+      std::cout << std::endl;
+    }
+
+    // Reeliminated keys for detailed results
+    if (params_.enableDetailedResults) {
+      for (Key key : affectedAndNewKeys) {
+        result->detail->variableStatus[key].isReeliminated = true;
+      }
+    }
+
+    result->variablesReeliminated = affectedAndNewKeys.size();
+    result->factorsRecalculated = factors.size();
+
+    gttic(cached);
+    // add the cached intermediate results from the boundary of the orphans
+    // ...
+    GaussianFactorGraph cachedBoundary = GetCachedBoundaryFactors(orphans);
+    if (debug) cachedBoundary.print("Boundary factors: ");
+    factors.push_back(cachedBoundary);
+    gttoc(cached);
+
+    gttic(orphans);
+    // Add the orphaned subtrees
+    for (const auto& orphan : orphans)
+      factors +=
+          boost::make_shared<BayesTreeOrphanWrapper<ISAM2::Clique> >(orphan);
+    gttoc(orphans);
+
+    // END OF COPIED CODE
+
+    // 3. Re-order and eliminate the factor graph into a Bayes net (Algorithm
+    // [alg:eliminate]), and re-assemble into a new Bayes tree (Algorithm
+    // [alg:BayesTree])
+
+    gttic(reorder_and_eliminate);
+
+    gttic(list_to_set);
+    // create a partial reordering for the new and contaminated factors
+    // result->markedKeys are passed in: those variables will be forced to the
+    // end in the ordering
+    affectedKeysSet->insert(result->markedKeys.begin(),
+                            result->markedKeys.end());
+    affectedKeysSet->insert(affectedKeys.begin(), affectedKeys.end());
+    gttoc(list_to_set);
+
+    VariableIndex affectedFactorsVarIndex(factors);
+
+    gttic(ordering_constraints);
+    // Create ordering constraints
+    FastMap<Key, int> constraintGroups;
+    if (updateParams_.constrainedKeys) {
+      constraintGroups = *updateParams_.constrainedKeys;
+    } else {
+      constraintGroups = FastMap<Key, int>();
+      const int group =
+          result->observedKeys.size() < affectedFactorsVarIndex.size() ? 1 : 0;
+      for (Key var : result->observedKeys)
+        constraintGroups.insert(std::make_pair(var, group));
+    }
+
+    // Remove unaffected keys from the constraints
+    for (FastMap<Key, int>::iterator iter = constraintGroups.begin();
+         iter != constraintGroups.end();
+         /*Incremented in loop ++iter*/) {
+      if (result->unusedKeys.exists(iter->first) ||
+          !affectedKeysSet->exists(iter->first))
+        constraintGroups.erase(iter++);
+      else
+        ++iter;
+    }
+    gttoc(ordering_constraints);
+
+    // Generate ordering
+    gttic(Ordering);
+    Ordering ordering =
+        Ordering::ColamdConstrained(affectedFactorsVarIndex, constraintGroups);
+    gttoc(Ordering);
+
+    ISAM2BayesTree::shared_ptr bayesTree =
+        ISAM2JunctionTree(
+            GaussianEliminationTree(factors, affectedFactorsVarIndex, ordering))
+            .eliminate(params_.getEliminationFunction())
+            .first;
+
+    gttoc(reorder_and_eliminate);
+
+    gttic(reassemble);
+    roots->insert(roots->end(), bayesTree->roots().begin(),
+                  bayesTree->roots().end());
+    nodes->insert(bayesTree->nodes().begin(), bayesTree->nodes().end());
+    gttoc(reassemble);
+
+    // 4. The orphans have already been inserted during elimination
+  }
+
   KeySet recalculate(const Values& theta, const VariableIndex& variableIndex,
                      const NonlinearFactorGraph& nonlinearFactors,
                      const GaussianBayesNet& affectedBayesNet,
@@ -579,15 +778,14 @@ struct GTSAM_EXPORT UpdateImpl {
     // bug was here: we cannot reuse the original factors, because then the
     // cached factors get messed up [all the necessary data is actually
     // contained in the affectedBayesNet, including what was passed in from the
-    // boundaries,
-    //  so this would be correct; however, in the process we also generate new
-    //  cached_ entries that will be wrong (ie. they don't contain what would be
-    //  passed up at a certain point if batch elimination was done, but that's
-    //  what we need); we could choose not to update cached_ from here, but then
-    //  the new information (and potentially different variable ordering) is not
-    //  reflected in the cached_ values which again will be wrong]
-    // so instead we have to retrieve the original linearized factors AND add
-    // the cached factors from the boundary
+    // boundaries, so this would be correct; however, in the process we also
+    // generate new cached_ entries that will be wrong (ie. they don't contain
+    // what would be passed up at a certain point if batch elimination was done,
+    // but that's what we need); we could choose not to update cached_ from
+    // here, but then the new information (and potentially different variable
+    // ordering) is not reflected in the cached_ values which again will be
+    // wrong] so instead we have to retrieve the original linearized factors AND
+    // add the cached factors from the boundary
 
     // BEGIN OF COPIED CODE
 
@@ -603,196 +801,14 @@ struct GTSAM_EXPORT UpdateImpl {
     KeySet affectedKeysSet;  // Will return this result
 
     static const double kBatchThreshold = 0.65;
-
     if (affectedKeys.size() >= theta.size() * kBatchThreshold) {
       // Do a batch step - reorder and relinearize all variables
-      gttic(batch);
-
-      gttic(add_keys);
-      br::copy(variableIndex | br::map_keys,
-               std::inserter(affectedKeysSet, affectedKeysSet.end()));
-
-      // Removed unused keys:
-      VariableIndex affectedFactorsVarIndex = variableIndex;
-
-      affectedFactorsVarIndex.removeUnusedVariables(result->unusedKeys.begin(),
-                                                    result->unusedKeys.end());
-
-      for (const Key key : result->unusedKeys) {
-        affectedKeysSet.erase(key);
-      }
-      gttoc(add_keys);
-
-      gttic(ordering);
-      Ordering order;
-      if (updateParams_.constrainedKeys) {
-        order = Ordering::ColamdConstrained(affectedFactorsVarIndex,
-                                            *updateParams_.constrainedKeys);
-      } else {
-        if (theta.size() > result->observedKeys.size()) {
-          // Only if some variables are unconstrained
-          FastMap<Key, int> constraintGroups;
-          for (Key var : result->observedKeys) constraintGroups[var] = 1;
-          order = Ordering::ColamdConstrained(affectedFactorsVarIndex,
-                                              constraintGroups);
-        } else {
-          order = Ordering::Colamd(affectedFactorsVarIndex);
-        }
-      }
-      gttoc(ordering);
-
-      gttic(linearize);
-      GaussianFactorGraph linearized = *nonlinearFactors.linearize(theta);
-      if (params_.cacheLinearizedFactors) *linearFactors = linearized;
-      gttoc(linearize);
-
-      gttic(eliminate);
-      ISAM2BayesTree::shared_ptr bayesTree =
-          ISAM2JunctionTree(GaussianEliminationTree(
-                                linearized, affectedFactorsVarIndex, order))
-              .eliminate(params_.getEliminationFunction())
-              .first;
-      gttoc(eliminate);
-
-      gttic(insert);
-      roots->clear();
-      roots->insert(roots->end(), bayesTree->roots().begin(),
-                    bayesTree->roots().end());
-      nodes->clear();
-      nodes->insert(bayesTree->nodes().begin(), bayesTree->nodes().end());
-      gttoc(insert);
-
-      result->variablesReeliminated = affectedKeysSet.size();
-      result->factorsRecalculated = nonlinearFactors.size();
-
-      // Reeliminated keys for detailed results
-      if (params_.enableDetailedResults) {
-        for (Key key : theta.keys()) {
-          result->detail->variableStatus[key].isReeliminated = true;
-        }
-      }
-
-      gttoc(batch);
-
+      recalculateBatch(theta, variableIndex, nonlinearFactors, linearFactors,
+                       &affectedKeysSet, roots, nodes, result);
     } else {
-      gttic(incremental);
-      const bool debug = ISDEBUG("ISAM2 recalculate");
-
-      // 2. Add the new factors \Factors' into the resulting factor graph
-      FastList<Key> affectedAndNewKeys;
-      affectedAndNewKeys.insert(affectedAndNewKeys.end(), affectedKeys.begin(),
-                                affectedKeys.end());
-      affectedAndNewKeys.insert(affectedAndNewKeys.end(),
-                                result->observedKeys.begin(),
-                                result->observedKeys.end());
-      gttic(relinearizeAffected);
-      GaussianFactorGraph factors = relinearizeAffectedFactors(
-          affectedAndNewKeys, relinKeys, nonlinearFactors, variableIndex, theta,
-          linearFactors);
-      gttoc(relinearizeAffected);
-
-      if (debug) {
-        factors.print("Relinearized factors: ");
-        std::cout << "Affected keys: ";
-        for (const Key key : affectedKeys) {
-          std::cout << key << " ";
-        }
-        std::cout << std::endl;
-      }
-
-      // Reeliminated keys for detailed results
-      if (params_.enableDetailedResults) {
-        for (Key key : affectedAndNewKeys) {
-          result->detail->variableStatus[key].isReeliminated = true;
-        }
-      }
-
-      result->variablesReeliminated = affectedAndNewKeys.size();
-      result->factorsRecalculated = factors.size();
-
-      gttic(cached);
-      // add the cached intermediate results from the boundary of the orphans
-      // ...
-      GaussianFactorGraph cachedBoundary = GetCachedBoundaryFactors(orphans);
-      if (debug) cachedBoundary.print("Boundary factors: ");
-      factors.push_back(cachedBoundary);
-      gttoc(cached);
-
-      gttic(orphans);
-      // Add the orphaned subtrees
-      for (const auto& orphan : orphans)
-        factors +=
-            boost::make_shared<BayesTreeOrphanWrapper<ISAM2::Clique> >(orphan);
-      gttoc(orphans);
-
-      // END OF COPIED CODE
-
-      // 3. Re-order and eliminate the factor graph into a Bayes net (Algorithm
-      // [alg:eliminate]), and re-assemble into a new Bayes tree (Algorithm
-      // [alg:BayesTree])
-
-      gttic(reorder_and_eliminate);
-
-      gttic(list_to_set);
-      // create a partial reordering for the new and contaminated factors
-      // result->markedKeys are passed in: those variables will be forced to the
-      // end in the ordering
-      affectedKeysSet.insert(result->markedKeys.begin(),
-                             result->markedKeys.end());
-      affectedKeysSet.insert(affectedKeys.begin(), affectedKeys.end());
-      gttoc(list_to_set);
-
-      VariableIndex affectedFactorsVarIndex(factors);
-
-      gttic(ordering_constraints);
-      // Create ordering constraints
-      FastMap<Key, int> constraintGroups;
-      if (updateParams_.constrainedKeys) {
-        constraintGroups = *updateParams_.constrainedKeys;
-      } else {
-        constraintGroups = FastMap<Key, int>();
-        const int group =
-            result->observedKeys.size() < affectedFactorsVarIndex.size() ? 1
-                                                                         : 0;
-        for (Key var : result->observedKeys)
-          constraintGroups.insert(std::make_pair(var, group));
-      }
-
-      // Remove unaffected keys from the constraints
-      for (FastMap<Key, int>::iterator iter = constraintGroups.begin();
-           iter != constraintGroups.end();
-           /*Incremented in loop ++iter*/) {
-        if (result->unusedKeys.exists(iter->first) ||
-            !affectedKeysSet.exists(iter->first))
-          constraintGroups.erase(iter++);
-        else
-          ++iter;
-      }
-      gttoc(ordering_constraints);
-
-      // Generate ordering
-      gttic(Ordering);
-      Ordering ordering = Ordering::ColamdConstrained(affectedFactorsVarIndex,
-                                                      constraintGroups);
-      gttoc(Ordering);
-
-      ISAM2BayesTree::shared_ptr bayesTree =
-          ISAM2JunctionTree(GaussianEliminationTree(
-                                factors, affectedFactorsVarIndex, ordering))
-              .eliminate(params_.getEliminationFunction())
-              .first;
-
-      gttoc(reorder_and_eliminate);
-
-      gttic(reassemble);
-      roots->insert(roots->end(), bayesTree->roots().begin(),
-                    bayesTree->roots().end());
-      nodes->insert(bayesTree->nodes().begin(), bayesTree->nodes().end());
-      gttoc(reassemble);
-
-      // 4. The orphans have already been inserted during elimination
-
-      gttoc(incremental);
+      recalculateIncremental(theta, variableIndex, nonlinearFactors, orphans,
+                             relinKeys, linearFactors, affectedKeys,
+                             &affectedKeysSet, roots, nodes, result);
     }
 
     // Root clique variables for detailed results
