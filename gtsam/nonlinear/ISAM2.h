@@ -97,11 +97,11 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
                       ///< periodic relinearization
 
  public:
-  typedef ISAM2 This;                       ///< This class
-  typedef BayesTree<ISAM2Clique> Base;      ///< The BayesTree base class
-  typedef Base::Clique Clique;              ///< A clique
-  typedef Base::sharedClique sharedClique;  ///< Shared pointer to a clique
-  typedef Base::Cliques Cliques;  ///< List of Clique typedef from base class
+  using This = ISAM2;                       ///< This class
+  using Base = BayesTree<ISAM2Clique>;      ///< The BayesTree base class
+  using Clique = Base::Clique;              ///< A clique
+  using sharedClique = Base::sharedClique;  ///< Shared pointer to a clique
+  using Cliques = Base::Cliques;            ///< List of Cliques
 
   /** Create an empty ISAM2 instance */
   explicit ISAM2(const ISAM2Params& params);

@@ -110,7 +110,8 @@ struct GTSAM_EXPORT ISAM2Result {
   /** All keys that were marked during the update process. */
   KeySet markedKeys;
 
-  /** A struct holding detailed results, which must be enabled with
+  /**
+   * A struct holding detailed results, which must be enabled with
    * ISAM2Params::enableDetailedResults.
    */
   struct DetailedResults {
@@ -146,7 +147,7 @@ struct GTSAM_EXPORT ISAM2Result {
             inRootClique(false) {}
     };
 
-    typedef FastMap<Key, VariableStatus> StatusMap;
+    using StatusMap = FastMap<Key, VariableStatus>;
 
     /// The status of each variable during this update, see VariableStatus.
     StatusMap variableStatus;
