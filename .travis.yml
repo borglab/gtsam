@@ -16,8 +16,12 @@ addons:
     - libpython-dev python-numpy
     - libboost-all-dev
 
-before_install:
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update          ; fi
+# before_install:
+#  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update          ; fi
+
+install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then HOMEBREW_NO_AUTO_UPDATE=1 brew install ccache  ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then export PATH="/usr/local/opt/ccache/libexec:$PATH" ; fi
 
 script:
   - bash .travis.sh
@@ -27,23 +31,24 @@ env:
     - MAKEFLAGS="-j 2"
     - CCACHE_SLOPPINESS=pch_defines,time_macros
 
+# gcc is too slow and we have a time limit in Travis CI: selective builds.
 matrix:
   include:
   - compiler: gcc
     os: linux
-    env: BUILD_EXAMPLES=1
+    env: GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON GTSAM_BUILD_TESTS=OFF
   - compiler: gcc
     os: linux
-    env: RUN_TESTS=1
+    env: GTSAM_BUILD_UNSTABLE=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=OFF GTSAM_BUILD_TESTS=ON # gcc too slow for all tests
   - compiler: gcc
     os: linux
-    env: BUILD_EXAMPLES=1 GCC_VERSION="8"
+    env: GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON GTSAM_BUILD_TESTS=OFF GCC_VERSION="8"
   - compiler: clang
     os: linux
-    env: BUILD_EXAMPLES=1
-  - compiler: gcc
-    os: osx
-    env: BUILD_EXAMPLES=1
+    env: GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON GTSAM_BUILD_TESTS=OFF
+# - compiler: gcc
+#   os: osx
+#   env: GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON GTSAM_BUILD_TESTS=OFF
   - compiler: clang
     os: osx
-    env: RUN_TESTS=1
+    env: GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=OFF GTSAM_BUILD_TESTS=ON
