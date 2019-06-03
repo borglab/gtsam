@@ -134,6 +134,14 @@ struct GTSAM_EXPORT UpdateImpl {
     }
   }
 
+  // Check relinearization if we're at the nth step, or we are using a looser
+  // loop relinerization threshold.
+  bool relinarizationNeeded(size_t update_count) const {
+    return updateParams_.force_relinearize ||
+           (params_.enableRelinearization &&
+            update_count % params_.relinearizeSkip == 0);
+  }
+
   // Add any new factors \Factors:=\Factors\cup\Factors'.
   void pushBackFactors(const NonlinearFactorGraph& newFactors,
                        NonlinearFactorGraph* nonlinearFactors,
@@ -406,10 +414,10 @@ struct GTSAM_EXPORT UpdateImpl {
 
   // Mark all cliques that involve marked variables \Theta_{J} and all
   // their ancestors.
-  void fluidFindAll(const ISAM2::Roots& roots, const KeySet& relinKeys,
-                    KeySet* markedKeys,
-                    ISAM2Result::DetailedResults* detail) const {
-    gttic(fluidFindAll);
+  void findFluid(const ISAM2::Roots& roots, const KeySet& relinKeys,
+                 KeySet* markedKeys,
+                 ISAM2Result::DetailedResults* detail) const {
+    gttic(findFluid);
     for (const auto& root : roots)
       // add other cliques that have the marked ones in the separator
       root->findAll(relinKeys, markedKeys);

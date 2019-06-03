@@ -157,6 +157,14 @@ struct GTSAM_EXPORT ISAM2Result {
    * Detail for information about the results data stored here. */
   boost::optional<DetailedResults> detail;
 
+  explicit ISAM2Result(bool enableDetailedResults = false) {
+    if (enableDetailedResults) detail.reset(DetailedResults());
+  }
+
+  /// Return pointer to detail, 0 if no detail requested
+  DetailedResults* details() { return detail.get_ptr(); }
+
+  /// Print results
   void print(const std::string str = "") const {
     using std::cout;
     cout << str << "  Reelimintated: " << variablesReeliminated

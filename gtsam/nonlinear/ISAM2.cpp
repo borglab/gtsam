@@ -415,23 +415,14 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
                           const Values& newTheta,
                           const ISAM2UpdateParams& updateParams) {
   gttic(ISAM2_update);
-  this->update_count_++;
+  this->update_count_ += 1;
   UpdateImpl::LogStartingUpdate(newFactors, *this);
-
-  const bool relinearizeThisStep =
-      updateParams.force_relinearize ||
-      (params_.enableRelinearization &&
-       update_count_ % params_.relinearizeSkip == 0);
+  ISAM2Result result(params_.enableDetailedResults);
+  UpdateImpl update(params_, updateParams);
 
   // Update delta if we need it to check relinearization later
-  if (relinearizeThisStep) {
+  if (update.relinarizationNeeded(update_count_))
     updateDelta(updateParams.forceFullSolve);
-  }
-
-  ISAM2Result result;
-  if (params_.enableDetailedResults)
-    result.detail = ISAM2Result::DetailedResults();
-  UpdateImpl update(params_, updateParams);
 
   // 1. Add any new factors \Factors:=\Factors\cup\Factors'.
   update.pushBackFactors(newFactors, &nonlinearFactors_, &linearFactors_,
@@ -442,8 +433,7 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
 
   // 2. Initialize any new variables \Theta_{new} and add
   // \Theta:=\Theta\cup\Theta_{new}.
-  addVariables(newTheta, result.detail.get_ptr());
-
+  addVariables(newTheta, result.details());
   if (params_.evaluateNonlinearError)
     update.error(nonlinearFactors_, calculateEstimate(), &result.errorBefore);
 
@@ -452,28 +442,22 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
                             result.keysWithRemovedFactors, &result.markedKeys);
   update.updateKeys(result.markedKeys, &result);
 
-  // Check relinearization if we're at the nth step, or we are using a looser
-  // loop relinerization threshold.
   KeySet relinKeys;
-  if (relinearizeThisStep) {
+  result.variablesRelinearized = 0;
+  if (update.relinarizationNeeded(update_count_)) {
     // 4. Mark keys in \Delta above threshold \beta:
     relinKeys = update.gatherRelinearizeKeys(roots_, delta_, fixedVariables_,
                                              &result.markedKeys);
-    update.recordRelinearizeDetail(relinKeys, result.detail.get_ptr());
+    update.recordRelinearizeDetail(relinKeys, result.details());
     if (!relinKeys.empty()) {
-      // 5. Mark all cliques that involve marked variables \Theta_{J} and all
-      // their ancestors.
-      update.fluidFindAll(roots_, relinKeys, &result.markedKeys,
-                          result.detail.get_ptr());
+      // 5. Mark cliques that involve marked variables \Theta_{J} and ancestors.
+      update.findFluid(roots_, relinKeys, &result.markedKeys, result.details());
       // 6. Update linearization point for marked variables:
       // \Theta_{J}:=\Theta_{J}+\Delta_{J}.
       UpdateImpl::ExpmapMasked(delta_, relinKeys, &theta_);
     }
     result.variablesRelinearized = result.markedKeys.size();
-  } else {
-    result.variablesRelinearized = 0;
   }
-  // TODO(frank): should be result.variablesRelinearized = relinKeys.size(); ?
 
   // 7. Linearize new factors
   update.linearizeNewFactors(newFactors, theta_, nonlinearFactors_.size(),
@@ -481,18 +465,13 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
   update.augmentVariableIndex(newFactors, result.newFactorsIndices,
                               &variableIndex_);
 
-  // 8. Redo top of Bayes tree
+  // 8. Redo top of Bayes tree and update data structures
   recalculate(updateParams, relinKeys, &result);
-
-  // Update data structures to remove unused keys
-  if (!result.unusedKeys.empty()) {
-    removeVariables(result.unusedKeys);
-  }
+  if (!result.unusedKeys.empty()) removeVariables(result.unusedKeys);
   result.cliques = this->nodes().size();
 
   if (params_.evaluateNonlinearError)
     update.error(nonlinearFactors_, calculateEstimate(), &result.errorAfter);
-
   return result;
 }
 
