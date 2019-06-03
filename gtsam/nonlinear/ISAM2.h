@@ -281,6 +281,10 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   /// @}
 
  protected:
+  /// Remove marked top and either recalculate in batch or incrementally.
+  void recalculate(const ISAM2UpdateParams& updateParams,
+                   const KeySet& relinKeys, ISAM2Result* result);
+
   // Do a batch step - reorder and relinearize all variables
   void recalculateBatch(const ISAM2UpdateParams& updateParams,
                         KeySet* affectedKeysSet, ISAM2Result* result);
@@ -296,11 +300,6 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
                               const FastList<Key>& affectedKeys,
                               KeySet* affectedKeysSet, Cliques* orphans,
                               ISAM2Result* result);
-  /**
-   * Remove marked top and either recalculate in batch or incrementally.
-   */
-  void recalculate(const ISAM2UpdateParams& updateParams,
-                   const KeySet& relinKeys, ISAM2Result* result);
 
   /**
    * Add new variables to the ISAM2 system.
