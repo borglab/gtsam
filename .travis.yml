@@ -16,8 +16,8 @@ addons:
     - libpython-dev python-numpy
     - libboost-all-dev
 
-before_install:
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update          ; fi
+# before_install:
+#  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update          ; fi
 
 install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install ccache  ; fi
@@ -46,9 +46,9 @@ matrix:
   - compiler: clang
     os: linux
     env: GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON GTSAM_BUILD_TESTS=OFF
-  - compiler: gcc
-    os: osx
-    env: GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON GTSAM_BUILD_TESTS=OFF
+# - compiler: gcc
+#   os: osx
+#   env: GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON GTSAM_BUILD_TESTS=OFF
   - compiler: clang
     os: osx
     env: GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=OFF GTSAM_BUILD_TESTS=ON
