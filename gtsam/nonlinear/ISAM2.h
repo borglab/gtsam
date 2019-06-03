@@ -296,11 +296,11 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
                               const FastList<Key>& affectedKeys,
                               KeySet* affectedKeysSet, Cliques* orphans,
                               ISAM2Result* result);
-
-  KeySet recalculate(const ISAM2UpdateParams& updateParams,
-                     const GaussianBayesNet& affectedBayesNet,
-                     const KeySet& relinKeys, Cliques* orphans,
-                     ISAM2Result* result);
+  /**
+   * Remove marked top and either recalculate in batch or incrementally.
+   */
+  void recalculate(const ISAM2UpdateParams& updateParams,
+                   const KeySet& relinKeys, ISAM2Result* result);
 
   /**
    * Add new variables to the ISAM2 system.

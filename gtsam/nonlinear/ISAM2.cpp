@@ -296,54 +296,64 @@ void ISAM2::recalculateIncremental(const ISAM2UpdateParams& updateParams,
 }
 
 /* ************************************************************************* */
-KeySet ISAM2::recalculate(const ISAM2UpdateParams& updateParams,
-                          const GaussianBayesNet& affectedBayesNet,
-                          const KeySet& relinKeys, Cliques* orphans,
-                          ISAM2Result* result) {
+void ISAM2::recalculate(const ISAM2UpdateParams& updateParams,
+                        const KeySet& relinKeys, ISAM2Result* result) {
   gttic(recalculate);
   UpdateImpl::LogRecalculateKeys(*result);
 
-  // FactorGraph<GaussianFactor> factors(affectedBayesNet);
-  // bug was here: we cannot reuse the original factors, because then the
-  // cached factors get messed up [all the necessary data is actually
-  // contained in the affectedBayesNet, including what was passed in from the
-  // boundaries, so this would be correct; however, in the process we also
-  // generate new cached_ entries that will be wrong (ie. they don't contain
-  // what would be passed up at a certain point if batch elimination was done,
-  // but that's what we need); we could choose not to update cached_ from
-  // here, but then the new information (and potentially different variable
-  // ordering) is not reflected in the cached_ values which again will be
-  // wrong] so instead we have to retrieve the original linearized factors AND
-  // add the cached factors from the boundary
+  if (!result->markedKeys.empty() || !result->observedKeys.empty()) {
+    // Remove top of Bayes tree and convert to a factor graph:
+    // (a) For each affected variable, remove the corresponding clique and all
+    // parents up to the root. (b) Store orphaned sub-trees \BayesTree_{O} of
+    // removed cliques.
+    GaussianBayesNet affectedBayesNet;
+    Cliques orphans;
+    this->removeTop(
+        KeyVector(result->markedKeys.begin(), result->markedKeys.end()),
+        &affectedBayesNet, &orphans);
 
-  // ordering provides all keys in conditionals, there cannot be others
-  // because path to root included
-  gttic(affectedKeys);
-  FastList<Key> affectedKeys;
-  for (const auto& conditional : affectedBayesNet)
-    affectedKeys.insert(affectedKeys.end(), conditional->beginFrontals(),
-                        conditional->endFrontals());
-  gttoc(affectedKeys);
+    // FactorGraph<GaussianFactor> factors(affectedBayesNet);
+    // bug was here: we cannot reuse the original factors, because then the
+    // cached factors get messed up [all the necessary data is actually
+    // contained in the affectedBayesNet, including what was passed in from the
+    // boundaries, so this would be correct; however, in the process we also
+    // generate new cached_ entries that will be wrong (ie. they don't contain
+    // what would be passed up at a certain point if batch elimination was done,
+    // but that's what we need); we could choose not to update cached_ from
+    // here, but then the new information (and potentially different variable
+    // ordering) is not reflected in the cached_ values which again will be
+    // wrong] so instead we have to retrieve the original linearized factors AND
+    // add the cached factors from the boundary
 
-  KeySet affectedKeysSet;  // Will return this result
+    // ordering provides all keys in conditionals, there cannot be others
+    // because path to root included
+    gttic(affectedKeys);
+    FastList<Key> affectedKeys;
+    for (const auto& conditional : affectedBayesNet)
+      affectedKeys.insert(affectedKeys.end(), conditional->beginFrontals(),
+                          conditional->endFrontals());
+    gttoc(affectedKeys);
 
-  static const double kBatchThreshold = 0.65;
-  if (affectedKeys.size() >= theta_.size() * kBatchThreshold) {
-    // Do a batch step - reorder and relinearize all variables
-    recalculateBatch(updateParams, &affectedKeysSet, result);
-  } else {
-    recalculateIncremental(updateParams, relinKeys, affectedKeys,
-                           &affectedKeysSet, orphans, result);
+    KeySet affectedKeysSet;
+    static const double kBatchThreshold = 0.65;
+    if (affectedKeys.size() >= theta_.size() * kBatchThreshold) {
+      // Do a batch step - reorder and relinearize all variables
+      recalculateBatch(updateParams, &affectedKeysSet, result);
+    } else {
+      recalculateIncremental(updateParams, relinKeys, affectedKeys,
+                             &affectedKeysSet, &orphans, result);
+    }
+
+    // Root clique variables for detailed results
+    if (result->detail && params_.enableDetailedResults) {
+      for (const auto& root : roots_)
+        for (Key var : *root->conditional())
+          result->detail->variableStatus[var].inRootClique = true;
+    }
+
+    // Update replaced keys mask (accumulates until back-substitution happens)
+    deltaReplacedMask_.insert(affectedKeysSet.begin(), affectedKeysSet.end());
   }
-
-  // Root clique variables for detailed results
-  if (result->detail && params_.enableDetailedResults) {
-    for (const auto& root : roots_)
-      for (Key var : *root->conditional())
-        result->detail->variableStatus[var].inRootClique = true;
-  }
-
-  return affectedKeysSet;
 }
 /* ************************************************************************* */
 void ISAM2::addVariables(const Values& newTheta,
@@ -471,22 +481,7 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
                               &variableIndex_);
 
   // 8. Redo top of Bayes tree
-  if (!result.markedKeys.empty() || !result.observedKeys.empty()) {
-    // Remove top of Bayes tree and convert to a factor graph:
-    // (a) For each affected variable, remove the corresponding clique and all
-    // parents up to the root. (b) Store orphaned sub-trees \BayesTree_{O} of
-    // removed cliques.
-    GaussianBayesNet affectedBayesNet;
-    Cliques orphans;
-    this->removeTop(
-        KeyVector(result.markedKeys.begin(), result.markedKeys.end()),
-        affectedBayesNet, orphans);
-
-    KeySet affectedKeysSet = recalculate(updateParams, affectedBayesNet,
-                                         relinKeys, &orphans, &result);
-    // Update replaced keys mask (accumulates until back-substitution happens)
-    deltaReplacedMask_.insert(affectedKeysSet.begin(), affectedKeysSet.end());
-  }
+  recalculate(updateParams, relinKeys, &result);
 
   // Update data structures to remove unused keys
   if (!result.unusedKeys.empty()) {

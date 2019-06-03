@@ -187,9 +187,9 @@ struct GTSAM_EXPORT UpdateImpl {
 
   // Calculate nonlinear error
   void error(const NonlinearFactorGraph& nonlinearFactors,
-             const Values& estimate, boost::optional<double>* error) const {
+             const Values& estimate, boost::optional<double>* result) const {
     gttic(error);
-    error->reset(nonlinearFactors.error(estimate));
+    result->reset(nonlinearFactors.error(estimate));
   }
 
   // Mark linear update
