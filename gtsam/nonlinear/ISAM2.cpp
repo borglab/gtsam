@@ -337,7 +337,7 @@ KeySet ISAM2::recalculate(const ISAM2UpdateParams& updateParams,
   }
 
   // Root clique variables for detailed results
-  if (params_.enableDetailedResults) {
+  if (result->detail && params_.enableDetailedResults) {
     for (const auto& root : roots_)
       for (Key var : *root->conditional())
         result->detail->variableStatus[var].inRootClique = true;
@@ -346,9 +346,8 @@ KeySet ISAM2::recalculate(const ISAM2UpdateParams& updateParams,
   return affectedKeysSet;
 }
 /* ************************************************************************* */
-void ISAM2::addVariables(
-    const Values& newTheta,
-    ISAM2Result::DetailedResults::StatusMap* variableStatus) {
+void ISAM2::addVariables(const Values& newTheta,
+                         ISAM2Result::DetailedResults* detail) {
   gttic(addNewVariables);
 
   theta_.insert(newTheta);
@@ -359,9 +358,9 @@ void ISAM2::addVariables(
   RgProd_.insert(newTheta.zeroVectors());
 
   // New keys for detailed results
-  if (variableStatus && params_.enableDetailedResults) {
+  if (detail && params_.enableDetailedResults) {
     for (Key key : newTheta.keys()) {
-      (*variableStatus)[key].isNew = true;
+      detail->variableStatus[key].isNew = true;
     }
   }
 }
@@ -430,7 +429,7 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
 
   // 2. Initialize any new variables \Theta_{new} and add
   // \Theta:=\Theta\cup\Theta_{new}.
-  addVariables(newTheta, result.detail ? &result.detail->variableStatus : 0);
+  addVariables(newTheta, result.detail.get_ptr());
 
   gttic(evaluate_error_before);
   if (params_.evaluateNonlinearError)
@@ -448,11 +447,13 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
   if (relinearizeThisStep) {
     // 4. Mark keys in \Delta above threshold \beta:
     relinKeys = update.gatherRelinearizeKeys(roots_, delta_, fixedVariables_,
-                                             &result.markedKeys, &result);
+                                             &result.markedKeys);
+    update.recordRelinearizeDetail(relinKeys, result.detail.get_ptr());
     if (!relinKeys.empty()) {
       // 5. Mark all cliques that involve marked variables \Theta_{J} and all
       // their ancestors.
-      update.fluidFindAll(roots_, relinKeys, &result.markedKeys, &result);
+      update.fluidFindAll(roots_, relinKeys, &result.markedKeys,
+                          result.detail.get_ptr());
       // 6. Update linearization point for marked variables:
       // \Theta_{J}:=\Theta_{J}+\Delta_{J}.
       UpdateImpl::ExpmapMasked(delta_, relinKeys, &theta_);

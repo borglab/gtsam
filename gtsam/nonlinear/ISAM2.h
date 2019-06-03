@@ -307,9 +307,8 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    * @param newTheta Initial values for new variables
    * @param variableStatus optional detailed result structure
    */
-  void addVariables(
-      const Values& newTheta,
-      ISAM2Result::DetailedResults::StatusMap* variableStatus = 0);
+  void addVariables(const Values& newTheta,
+                    ISAM2Result::DetailedResults* detail = 0);
 
   /**
    * Remove variables from the ISAM2 system.

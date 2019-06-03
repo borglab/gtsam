@@ -47,9 +47,11 @@ SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas((Vector(2) << M_PI/100.0, 
 ISAM2 createSlamlikeISAM2(
     boost::optional<Values&> init_values = boost::none,
     boost::optional<NonlinearFactorGraph&> full_graph = boost::none,
-    const ISAM2Params& params = ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, true),
+    const ISAM2Params& params = ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0,
+                                            0, false, true,
+                                            ISAM2Params::CHOLESKY, true,
+                                            DefaultKeyFormatter, true),
     size_t maxPoses = 10) {
-
   // These variables will be reused and accumulate factors and values
   ISAM2 isam(params);
   Values fullinit;

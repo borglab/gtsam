@@ -218,7 +218,7 @@ struct GTSAM_EXPORT UpdateImpl {
   void updateKeys(const KeySet& markedKeys, ISAM2Result* result) const {
     gttic(updateKeys);
     // Observed keys for detailed results
-    if (params_.enableDetailedResults) {
+    if (result->detail && params_.enableDetailedResults) {
       for (Key key : markedKeys) {
         result->detail->variableStatus[key].isObserved = true;
       }
@@ -359,8 +359,8 @@ struct GTSAM_EXPORT UpdateImpl {
   // Mark keys in \Delta above threshold \beta:
   KeySet gatherRelinearizeKeys(const ISAM2::Roots& roots,
                                const VectorValues& delta,
-                               const KeySet& fixedVariables, KeySet* markedKeys,
-                               ISAM2Result* result) const {
+                               const KeySet& fixedVariables,
+                               KeySet* markedKeys) const {
     gttic(gatherRelinearizeKeys);
     // J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
     KeySet relinKeys =
@@ -381,37 +381,41 @@ struct GTSAM_EXPORT UpdateImpl {
       }
     }
 
-    // Record above relinerization threshold keys in detailed results
-    if (params_.enableDetailedResults) {
-      for (Key key : relinKeys) {
-        result->detail->variableStatus[key].isAboveRelinThreshold = true;
-        result->detail->variableStatus[key].isRelinearized = true;
-      }
-    }
-
     // Add the variables being relinearized to the marked keys
     markedKeys->insert(relinKeys.begin(), relinKeys.end());
     return relinKeys;
   }
 
+  // Record relinerization threshold keys in detailed results
+  void recordRelinearizeDetail(const KeySet& relinKeys,
+                               ISAM2Result::DetailedResults* detail) const {
+    if (detail && params_.enableDetailedResults) {
+      for (Key key : relinKeys) {
+        detail->variableStatus[key].isAboveRelinThreshold = true;
+        detail->variableStatus[key].isRelinearized = true;
+      }
+    }
+  }
+
   // Mark all cliques that involve marked variables \Theta_{J} and all
   // their ancestors.
   void fluidFindAll(const ISAM2::Roots& roots, const KeySet& relinKeys,
-                    KeySet* markedKeys, ISAM2Result* result) const {
+                    KeySet* markedKeys,
+                    ISAM2Result::DetailedResults* detail) const {
     gttic(fluidFindAll);
     for (const auto& root : roots)
       // add other cliques that have the marked ones in the separator
       root->findAll(relinKeys, markedKeys);
 
     // Relinearization-involved keys for detailed results
-    if (params_.enableDetailedResults) {
+    if (detail && params_.enableDetailedResults) {
       KeySet involvedRelinKeys;
       for (const auto& root : roots)
         root->findAll(relinKeys, &involvedRelinKeys);
       for (Key key : involvedRelinKeys) {
-        if (!result->detail->variableStatus[key].isAboveRelinThreshold) {
-          result->detail->variableStatus[key].isRelinearizeInvolved = true;
-          result->detail->variableStatus[key].isRelinearized = true;
+        if (!detail->variableStatus[key].isAboveRelinThreshold) {
+          detail->variableStatus[key].isRelinearizeInvolved = true;
+          detail->variableStatus[key].isRelinearized = true;
         }
       }
     }
