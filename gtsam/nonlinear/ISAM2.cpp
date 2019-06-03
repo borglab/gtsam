@@ -241,7 +241,7 @@ boost::shared_ptr<KeySet> ISAM2::recalculate(
   Cliques orphans;
   GaussianBayesNet affectedBayesNet;
   this->removeTop(KeyVector(markedKeys.begin(), markedKeys.end()),
-                  affectedBayesNet, orphans);
+                  &affectedBayesNet, &orphans);
   gttoc(removetop);
 
   //    FactorGraph<GaussianFactor> factors(affectedBayesNet);
