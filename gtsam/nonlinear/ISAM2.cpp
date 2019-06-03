@@ -367,6 +367,8 @@ void ISAM2::addVariables(const Values& newTheta,
 
 /* ************************************************************************* */
 void ISAM2::removeVariables(const KeySet& unusedKeys) {
+  gttic(removeVariables);
+
   variableIndex_.removeUnusedVariables(unusedKeys.begin(), unusedKeys.end());
   for (Key key : unusedKeys) {
     delta_.erase(key);
@@ -431,10 +433,8 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
   // \Theta:=\Theta\cup\Theta_{new}.
   addVariables(newTheta, result.detail.get_ptr());
 
-  gttic(evaluate_error_before);
   if (params_.evaluateNonlinearError)
-    result.errorBefore.reset(nonlinearFactors_.error(calculateEstimate()));
-  gttoc(evaluate_error_before);
+    update.error(nonlinearFactors_, calculateEstimate(), &result.errorBefore);
 
   // 3. Mark linear update
   update.gatherInvolvedKeys(newFactors, nonlinearFactors_,
@@ -490,16 +490,12 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
 
   // Update data structures to remove unused keys
   if (!result.unusedKeys.empty()) {
-    gttic(remove_variables);
     removeVariables(result.unusedKeys);
-    gttoc(remove_variables);
   }
   result.cliques = this->nodes().size();
 
-  gttic(evaluate_error_after);
   if (params_.evaluateNonlinearError)
-    result.errorAfter.reset(nonlinearFactors_.error(calculateEstimate()));
-  gttoc(evaluate_error_after);
+    update.error(nonlinearFactors_, calculateEstimate(), &result.errorAfter);
 
   return result;
 }

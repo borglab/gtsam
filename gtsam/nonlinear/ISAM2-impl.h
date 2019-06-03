@@ -185,6 +185,13 @@ struct GTSAM_EXPORT UpdateImpl {
                         std::inserter(*unusedKeys, unusedKeys->end()));
   }
 
+  // Calculate nonlinear error
+  void error(const NonlinearFactorGraph& nonlinearFactors,
+             const Values& estimate, boost::optional<double>* error) const {
+    gttic(error);
+    error->reset(nonlinearFactors.error(estimate));
+  }
+
   // Mark linear update
   void gatherInvolvedKeys(const NonlinearFactorGraph& newFactors,
                           const NonlinearFactorGraph& nonlinearFactors,
