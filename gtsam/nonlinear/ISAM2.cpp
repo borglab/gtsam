@@ -438,8 +438,9 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
   gttoc(evaluate_error_before);
 
   // 3. Mark linear update
-  update.gatherInvolvedKeys(newFactors, nonlinearFactors_, &result.markedKeys,
-                            &result);
+  update.gatherInvolvedKeys(newFactors, nonlinearFactors_,
+                            result.keysWithRemovedFactors, &result.markedKeys);
+  update.updateKeys(result.markedKeys, &result);
 
   // Check relinearization if we're at the nth step, or we are using a looser
   // loop relinerization threshold.

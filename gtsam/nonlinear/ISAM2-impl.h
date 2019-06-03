@@ -129,7 +129,6 @@ struct GTSAM_EXPORT UpdateImpl {
       isam2.print("ISAM2: ");
     }
 
-    // Add the new factor indices to the result struct
     if (debug || verbose) {
       newFactors.print("The new factors are: ");
     }
@@ -189,12 +188,13 @@ struct GTSAM_EXPORT UpdateImpl {
   // Mark linear update
   void gatherInvolvedKeys(const NonlinearFactorGraph& newFactors,
                           const NonlinearFactorGraph& nonlinearFactors,
-                          KeySet* markedKeys, ISAM2Result* result) const {
+                          const KeySet& keysWithRemovedFactors,
+                          KeySet* markedKeys) const {
     gttic(gatherInvolvedKeys);
     *markedKeys = newFactors.keys();  // Get keys from new factors
     // Also mark keys involved in removed factors
-    markedKeys->insert(result->keysWithRemovedFactors.begin(),
-                       result->keysWithRemovedFactors.end());
+    markedKeys->insert(keysWithRemovedFactors.begin(),
+                       keysWithRemovedFactors.end());
 
     // Also mark any provided extra re-eliminate keys
     if (updateParams_.extraReelimKeys) {
@@ -212,15 +212,19 @@ struct GTSAM_EXPORT UpdateImpl {
         markedKeys->insert(affectedKeys.begin(), affectedKeys.end());
       }
     }
+  }
 
+  // Update detail, unused, and observed keys from markedKeys
+  void updateKeys(const KeySet& markedKeys, ISAM2Result* result) const {
+    gttic(updateKeys);
     // Observed keys for detailed results
     if (params_.enableDetailedResults) {
-      for (Key key : *markedKeys) {
+      for (Key key : markedKeys) {
         result->detail->variableStatus[key].isObserved = true;
       }
     }
 
-    for (Key index : *markedKeys) {
+    for (Key index : markedKeys) {
       // Only add if not unused
       if (result->unusedKeys.find(index) == result->unusedKeys.end())
         // Make a copy of these, as we'll soon add to them
@@ -285,13 +289,14 @@ struct GTSAM_EXPORT UpdateImpl {
 
   /**
    * Find the set of variables to be relinearized according to
-   * relinearizeThreshold. This check is performed recursively, starting at the
-   * top of the tree. Once a variable in the tree does not need to be
+   * relinearizeThreshold. This check is performed recursively, starting at
+   * the top of the tree. Once a variable in the tree does not need to be
    * relinearized, no further checks in that branch are performed. This is an
-   * approximation of the Full version, designed to save time at the expense of
-   * accuracy.
+   * approximation of the Full version, designed to save time at the expense
+   * of accuracy.
    * @param delta The linear delta to check against the threshold
-   * @param keyFormatter Formatter for printing nonlinear keys during debugging
+   * @param keyFormatter Formatter for printing nonlinear keys during
+   * debugging
    * @return The set of variable indices in delta whose magnitude is greater
    * than or equal to relinearizeThreshold
    */
@@ -313,10 +318,12 @@ struct GTSAM_EXPORT UpdateImpl {
 
   /**
    * Find the set of variables to be relinearized according to
-   * relinearizeThreshold. Any variables in the VectorValues delta whose vector
-   * magnitude is greater than or equal to relinearizeThreshold are returned.
+   * relinearizeThreshold. Any variables in the VectorValues delta whose
+   * vector magnitude is greater than or equal to relinearizeThreshold are
+   * returned.
    * @param delta The linear delta to check against the threshold
-   * @param keyFormatter Formatter for printing nonlinear keys during debugging
+   * @param keyFormatter Formatter for printing nonlinear keys during
+   * debugging
    * @return The set of variable indices in delta whose magnitude is greater
    * than or equal to relinearizeThreshold
    */
@@ -504,8 +511,8 @@ struct GTSAM_EXPORT UpdateImpl {
     return indices;
   }
 
-  // find intermediate (linearized) factors from cache that are passed into the
-  // affected area
+  // find intermediate (linearized) factors from cache that are passed into
+  // the affected area
   static GaussianFactorGraph GetCachedBoundaryFactors(
       const ISAM2::Cliques& orphans) {
     GaussianFactorGraph cachedBoundary;
