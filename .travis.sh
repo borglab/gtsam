@@ -22,19 +22,8 @@ function build_and_test ()
     sudo update-alternatives --set gcc /usr/bin/gcc-$GCC_VERSION
   fi
 
-  # gcc is too slow and we have a time limit in Travis CI: selective builds.
-  if [ "$BUILD_EXAMPLES" == "1" ]; then
-    GTSAM_BUILD_EXAMPLES_ALWAYS=ON
-  else
-    GTSAM_BUILD_EXAMPLES_ALWAYS=OFF
-  fi
-  if [ "$RUN_TESTS" == "1" ]; then
-    GTSAM_BUILD_TESTS=ON
-  else
-    GTSAM_BUILD_TESTS=OFF
-  fi
-
   cmake $SOURCE_DIR \
+      -DGTSAM_BUILD_UNSTABLE=$GTSAM_BUILD_UNSTABLE \
       -DGTSAM_BUILD_EXAMPLES_ALWAYS=$GTSAM_BUILD_EXAMPLES_ALWAYS \
       -DGTSAM_BUILD_TESTS=$GTSAM_BUILD_TESTS
 
@@ -42,9 +31,12 @@ function build_and_test ()
   make -j2
 
   # Run tests:
-  if [ "$RUN_TESTS" == "1" ]; then
+  if [ "$GTSAM_BUILD_TESTS" == "ON" ]; then
     make check
   fi
+
+  # Print ccache stats
+  ccache -s
 
   cd $SOURCE_DIR
 }

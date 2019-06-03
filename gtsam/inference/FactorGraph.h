@@ -270,7 +270,7 @@ class FactorGraph {
   typename std::enable_if<
       std::is_base_of<This, typename CLIQUE::FactorGraphType>::value>::type
   push_back(const BayesTree<CLIQUE>& bayesTree) {
-    bayesTree.addFactorsToGraph(*this);
+    bayesTree.addFactorsToGraph(this);
   }
 
   /**
