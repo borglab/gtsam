@@ -120,6 +120,7 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 		# Add group target if it doesn't already exist
 	    if(NOT TARGET check.${groupName})
 			add_custom_target(check.${groupName} COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
+			set_property(TARGET check.${groupName} PROPERTY FOLDER "Unit tests")
 		endif()
 	
 	    # Get all script files
@@ -192,7 +193,9 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 			# Add executable
 			add_executable(${target_name} "${script_srcs}" ${script_headers})
 			target_link_libraries(${target_name} CppUnitLite ${linkLibraries})
-		
+
+			set_property(TARGET check_${groupName}_program PROPERTY FOLDER "Unit tests")
+
 			# Only have a main function in one script - use preprocessor
 			set(rest_script_srcs ${script_srcs})
 			list(REMOVE_AT rest_script_srcs 0)
