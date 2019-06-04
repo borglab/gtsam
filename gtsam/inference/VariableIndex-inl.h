@@ -67,8 +67,8 @@ void VariableIndex::remove(ITERATOR firstFactor, ITERATOR lastFactor,
           "Internal error, requested inconsistent number of factor indices and factors in VariableIndex::remove");
     if (factors[i]) {
       for(Key j: *factors[i]) {
-        Factors& factorEntries = internalAt(j);
-        Factors::iterator entry = std::find(factorEntries.begin(),
+        FactorIndices& factorEntries = internalAt(j);
+        auto entry = std::find(factorEntries.begin(),
             factorEntries.end(), *factorIndex);
         if (entry == factorEntries.end())
           throw std::invalid_argument(

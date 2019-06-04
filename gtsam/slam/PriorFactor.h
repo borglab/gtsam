@@ -18,6 +18,8 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Testable.h>
 
+#include <string>
+
 namespace gtsam {
 
   /**
@@ -70,10 +72,14 @@ namespace gtsam {
     /** implement functions needed for Testable */
 
     /** print */
-    virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
+                                                 DefaultKeyFormatter) const {
       std::cout << s << "PriorFactor on " << keyFormatter(this->key()) << "\n";
       traits<T>::Print(prior_, "  prior mean: ");
-      this->noiseModel_->print("  noise model: ");
+      if (this->noiseModel_)
+        this->noiseModel_->print("  noise model: ");
+      else
+        std::cout << "no noise model" << std::endl;
     }
 
     /** equals */
