@@ -1870,6 +1870,7 @@ class NonlinearFactorGraph {
 
   // FactorGraph
   void print(string s) const;
+  void printErrors(const gtsam::Values& values);
   bool equals(const gtsam::NonlinearFactorGraph& fg, double tol) const;
   size_t size() const;
   bool empty() const;
