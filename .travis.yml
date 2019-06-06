@@ -34,6 +34,16 @@ stages:
 # Compile stage without building examples/tests to populate the caches.
 jobs:
   include:
+# on Mac, GCC
+  - stage: compile
+    os: osx
+    compiler: gcc
+    env: GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=OFF
+# on Mac, CLANG
+  - stage: compile
+    os: osx
+    compiler: clang
+    env: GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=OFF
 # on Linux, GCC
   - stage: compile
     os: linux
@@ -52,8 +62,8 @@ jobs:
 
 # Matrix configuration:
 os:
-  - linux
   - osx
+  - linux
 compiler:
   - gcc
   - clang
