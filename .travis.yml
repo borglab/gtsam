@@ -26,32 +26,42 @@ install:
 script:
   - bash .travis.sh
 
+# We first do the compile stage specified below, then the matrix expansion specified after.
+stages:
+  - compile
+  - test
+
+# Compile stage without building examples/tests to populate the caches.
+jobs:
+  include:
+# on Linux, GCC
+  - stage: compile
+    os: linux
+    compiler: gcc
+    env: GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=OFF
+# on Linux, CLANG
+  - stage: compile
+    os: linux
+    compiler: clang
+    env: GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON
+# on Linux, with deprecated ON to make sure that path still compiles
+  - stage: compile
+    os: linux
+    compiler: clang
+    env: GTSAM_ALLOW_DEPRECATED_SINCE_V4=ON GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON
+
+# Matrix configuration:
+os:
+  - linux
+  # - osx
+compiler:
+  - gcc
+  - clang
 env:
   global:
     - MAKEFLAGS="-j 2"
     - CCACHE_SLOPPINESS=pch_defines,time_macros
+  matrix:
+    - GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON
+    - GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF GTSAM_BUILD_TESTS=ON GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=OFF
 
-# gcc is too slow and we have a time limit in Travis CI: selective builds.
-matrix:
-  include:
-  - compiler: gcc
-    os: linux
-    env: GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON
-  - compiler: gcc
-    os: linux
-    env: GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF GTSAM_BUILD_TESTS=ON GTSAM_BUILD_UNSTABLE=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=OFF  # gcc too slow for all tests
-  - compiler: gcc
-    os: linux
-    env: GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON GCC_VERSION="8"
-  - compiler: clang
-    os: linux
-    env: GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF GTSAM_BUILD_TESTS=ON GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON
-  - compiler: clang
-    os: linux
-    env: GTSAM_ALLOW_DEPRECATED_SINCE_V4=ON GTSAM_BUILD_TESTS=ON GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON
-# - compiler: gcc
-#   os: osx
-#   env: GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=ON
-  - compiler: clang
-    os: osx
-    env: GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF GTSAM_BUILD_TESTS=ON GTSAM_BUILD_UNSTABLE=ON GTSAM_BUILD_EXAMPLES_ALWAYS=OFF 
