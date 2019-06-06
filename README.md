@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/borglab/gtsam.svg?branch=develop)](https://travis-ci.org/borglab/gtsam)
+[![Build Status](https://travis-ci.com/borglab/gtsam.svg?branch=develop)](https://travis-ci.com/borglab/gtsam/)
 
 # README - Georgia Tech Smoothing and Mapping library
 
