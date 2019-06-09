@@ -118,14 +118,17 @@ public:
   }
 
   /**
-   * Add a new measurement and pose key
-   * @param measured_i is the 2m dimensional projection of a single landmark
-   * @param poseKey is the index corresponding to the camera observing the landmark
-   * @param sharedNoiseModel is the measurement noise
+   * Add a new measurement and pose/camera key
+   * @param measured is the 2m dimensional projection of a single landmark
+   * @param key is the index corresponding to the camera observing the landmark
    */
-  void add(const Z& measured_i, const Key& cameraKey_i) {
-    this->measured_.push_back(measured_i);
-    this->keys_.push_back(cameraKey_i);
+  void add(const Z& measured, const Key& key) {
+    if(std::find(keys_.begin(), keys_.end(), key) != keys_.end()) {
+      throw std::invalid_argument(
+          "SmartFactorBase::add: adding duplicate measurement for key.");
+    }
+    this->measured_.push_back(measured);
+    this->keys_.push_back(key);
   }
 
   /**
@@ -133,8 +136,7 @@ public:
    */
   void add(ZVector& measurements, KeyVector& cameraKeys) {
     for (size_t i = 0; i < measurements.size(); i++) {
-      this->measured_.push_back(measurements.at(i));
-      this->keys_.push_back(cameraKeys.at(i));
+      this->add(measurements.at(i), cameraKeys.at(i));
     }
   }
 
