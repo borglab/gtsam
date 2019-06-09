@@ -73,6 +73,7 @@ void HessianFactor::Allocate(const Scatter& scatter) {
   }
   dims.back() = 1;
   info_ = SymmetricBlockMatrix(dims);
+  assert(KeySet(keys_).size()==keys_.size() && "Keys are not unique.");
 }
 
 /* ************************************************************************* */
