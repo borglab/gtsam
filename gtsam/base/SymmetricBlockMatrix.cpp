@@ -22,6 +22,10 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/ThreadsafeException.h>
 
+#include <iostream>
+
+using namespace std;
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -65,7 +69,14 @@ Matrix SymmetricBlockMatrix::block(DenseIndex I, DenseIndex J) const {
 void SymmetricBlockMatrix::choleskyPartial(DenseIndex nFrontals) {
   gttic(VerticalBlockMatrix_choleskyPartial);
   DenseIndex topleft = variableColOffsets_[blockStart_];
-  if (!gtsam::choleskyPartial(matrix_, offset(nFrontals) - topleft, topleft)) {
+  size_t nFrontal = offset(nFrontals) - topleft;
+  if (!gtsam::choleskyPartial(matrix_, nFrontal, topleft)) {
+#ifndef NDEBUG
+    cout << "SymmetricBlockMatrix::choleskyPartial failed." << endl;
+    auto A = matrix_.block(topleft, topleft, nFrontal, nFrontal);
+    auto R = A.triangularView<Eigen::Upper>();
+    cout << "R matrix:\n" << Matrix(R) << endl;
+#endif
     throw CholeskyFailed();
   }
 }

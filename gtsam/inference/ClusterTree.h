@@ -193,6 +193,7 @@ class EliminatableClusterTree : public ClusterTree<GRAPH> {
       sharedConditional;  ///< Shared pointer to a conditional
 
   typedef typename GRAPH::Eliminate Eliminate;         ///< Typedef for an eliminate subroutine
+  typedef typename GRAPH::EliminationResult EliminationResult;  ///< Result of eliminate subroutine
   typedef typename GRAPH::FactorType FactorType;       ///< The type of factors
   typedef boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
 
