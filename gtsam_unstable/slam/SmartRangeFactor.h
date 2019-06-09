@@ -59,6 +59,10 @@ class SmartRangeFactor: public NoiseModelFactor {
 
   /// Add a range measurement to a pose with given key.
   void addRange(Key key, double measuredRange) {
+    if(std::find(keys_.begin(), keys_.end(), key) != keys_.end()) {
+      throw std::invalid_argument(
+          "SmartRangeFactor::addRange: adding duplicate measurement for key.");
+    }
     keys_.push_back(key);
     measurements_.push_back(measuredRange);
     size_t n = keys_.size();

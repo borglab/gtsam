@@ -185,8 +185,13 @@ int main(int argc, char** argv) {
       double range = boost::get<2>(triples[k]);
       if (i > start) {
         if (smart && totalCount < minK) {
-          smartFactors[j]->addRange(i, range);
-          printf("adding range %g for %d on %d",range,(int)j,(int)i);cout << endl;
+          try {
+            smartFactors[j]->addRange(i, range);
+            printf("adding range %g for %d on %d",range,(int)j,(int)i);
+          } catch (const invalid_argument& e) {
+            printf("warning: omitting duplicate range %g for %d on %d",range,(int)j,(int)i);
+          }
+          cout << endl;
         }
         else {
           RangeFactor<Pose2, Point2> factor(i, symbol('L', j), range,
