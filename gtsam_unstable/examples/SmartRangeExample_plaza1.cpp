@@ -111,11 +111,11 @@ int main(int argc, char** argv) {
 
   // Set Noise parameters
   Vector priorSigmas = Vector3(1, 1, M_PI);
-  Vector odoSigmas = Vector3(0.05, 0.01, 0.2);
+  Vector odoSigmas = Vector3(0.05, 0.01, 0.1);
+  auto odoNoise = NM::Diagonal::Sigmas(odoSigmas);
   double sigmaR = 100; // range standard deviation
   const NM::Base::shared_ptr // all same type
   priorNoise = NM::Diagonal::Sigmas(priorSigmas), //prior
-  odoNoise = NM::Diagonal::Sigmas(odoSigmas), // odometry
   gaussian = NM::Isotropic::Sigma(1, sigmaR), // non-robust
   tukey = NM::Robust::Create(NM::mEstimator::Tukey::Create(15), gaussian), //robust
   rangeNoise = robust ? tukey : gaussian;
@@ -167,11 +167,11 @@ int main(int argc, char** argv) {
     double t;
     Pose2 odometry;
     boost::tie(t, odometry) = timedOdometry;
+    printf("step %d, time = %g\n",(int)i,t);
 
     // add odometry factor
     newFactors.push_back(
-        BetweenFactor<Pose2>(i - 1, i, odometry,
-            NM::Diagonal::Sigmas(odoSigmas)));
+        BetweenFactor<Pose2>(i - 1, i, odometry, odoNoise));
 
     // predict pose and add as initial estimate
     Pose2 predictedPose = lastPose.compose(odometry);
@@ -187,9 +187,9 @@ int main(int argc, char** argv) {
         if (smart && totalCount < minK) {
           try {
             smartFactors[j]->addRange(i, range);
-            printf("adding range %g for %d on %d",range,(int)j,(int)i);
+            printf("adding range %g for %d",range,(int)j);
           } catch (const invalid_argument& e) {
-            printf("warning: omitting duplicate range %g for %d on %d",range,(int)j,(int)i);
+            printf("warning: omitting duplicate range %g for %d",range,(int)j);
           }
           cout << endl;
         }
