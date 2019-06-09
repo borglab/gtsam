@@ -182,7 +182,17 @@ struct EliminationData {
       }
 
       // >>>>>>>>>>>>>> Do dense elimination step >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      auto eliminationResult = eliminationFunction_(gatheredFactors, node->orderedFrontalKeys);
+      typename CLUSTERTREE::EliminationResult eliminationResult;
+      try {
+        eliminationResult = eliminationFunction_(gatheredFactors, node->orderedFrontalKeys);
+      }
+      catch (const std::exception& e) {
+#ifndef NDEBUG
+        std::cout << "Exception thrown while eliminating cluster tree node." << std::endl;
+        node->print("Node:");
+#endif
+        throw e;
+      }
       // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
       // Store conditional in BayesTree clique, and in the case of ISAM2Clique also store the
