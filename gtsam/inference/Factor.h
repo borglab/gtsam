@@ -80,12 +80,14 @@ typedef FastSet<FactorIndex> FactorIndexSet;
     /** Construct factor from container of keys.  This constructor is used internally from derived factor
     *  constructors, either from a container of keys or from a boost::assign::list_of. */
     template<typename CONTAINER>
-    explicit Factor(const CONTAINER& keys) : keys_(keys.begin(), keys.end()) {}
+    explicit Factor(const CONTAINER& keys) : Factor(keys.begin(), keys.end()) {}
 
     /** Construct factor from iterator keys.  This constructor may be used internally from derived
     *  factor constructors, although our code currently does not use this. */
     template<typename ITERATOR>
-    Factor(ITERATOR first, ITERATOR last) : keys_(first, last) {}
+    Factor(ITERATOR first, ITERATOR last) : keys_(first, last) {
+      assert(KeySet(first, last).size()==keys_.size() && "Keys are not unique.");
+    }
 
     /** Construct factor from container of keys.  This is called internally from derived factor static
     *  factor methods, as a workaround for not being able to call the protected constructors above. */
