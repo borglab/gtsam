@@ -280,10 +280,10 @@ namespace gtsam {
 
     /** Update an information matrix by adding the information corresponding to this factor
      * (used internally during elimination).
-     * @param scatter A mapping from variable index to slot index in this HessianFactor
-     * @param info The information matrix to be updated
+     * @param infoKeys The keys corresponding to the Hessian matrix we will update
+     * @param info The information matrix (Hessian) to be updated
      */
-    void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info) const;
+    void updateHessian(const KeyVector& infoKeys, SymmetricBlockMatrix* info) const;
 
     /** Return A*x */
     Vector operator*(const VectorValues& x) const;
