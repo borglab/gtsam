@@ -38,22 +38,38 @@ jobs:
   - stage: compile
     os: osx
     compiler: gcc
-    env: GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=ON
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=ON
+  - stage: compile
+    os: osx
+    compiler: gcc
+    env: CMAKE_BUILD_TYPE=Release GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=ON
 # on Mac, CLANG
   - stage: compile
     os: osx
     compiler: clang
-    env: GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=ON
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=ON
+  - stage: compile
+    os: osx
+    compiler: clang
+    env: CMAKE_BUILD_TYPE=Release GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=ON
 # on Linux, GCC
   - stage: compile
     os: linux
     compiler: gcc
-    env: GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=ON
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=ON
+  - stage: compile
+    os: linux
+    compiler: gcc
+    env: CMAKE_BUILD_TYPE=Release GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=ON
 # on Linux, CLANG
   - stage: compile
     os: linux
     compiler: clang
-    env: GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=ON
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=ON
+  - stage: compile
+    os: linux
+    compiler: clang
+    env: CMAKE_BUILD_TYPE=Release GTSAM_BUILD_TESTS=OFF GTSAM_BUILD_EXAMPLES_ALWAYS=ON
 # on Linux, with deprecated ON to make sure that path still compiles
   - stage: compile
     os: linux
@@ -77,7 +93,7 @@ env:
     - GTSAM_BUILD_TESTS=ON
   matrix:
     - CMAKE_BUILD_TYPE=Debug
-    - CMAKE_BUILD_TYPE=release
+    - CMAKE_BUILD_TYPE=Release
 
 # Uncomment this if you want to exclude clang on linux
 # matrix:
