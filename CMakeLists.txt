@@ -47,6 +47,17 @@ else()
     set(GTSAM_UNSTABLE_AVAILABLE 0)
 endif()
 
+# ----------------------------------------------------------------------------
+#   Uninstall target, for "make uninstall"
+# ----------------------------------------------------------------------------
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+  IMMEDIATE @ONLY)
+
+add_custom_target(uninstall
+  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+
 
 ###############################################################################
 # Set up options
@@ -131,8 +142,8 @@ if(MSVC)
 	endif()
 endif()
 
-# If building DLLs in MSVC, we need to avoid EIGEN_STATIC_ASSERT() 
-# or explicit instantiation will generate build errors. 
+# If building DLLs in MSVC, we need to avoid EIGEN_STATIC_ASSERT()
+# or explicit instantiation will generate build errors.
 # See: https://bitbucket.org/gtborg/gtsam/issues/417/fail-to-build-on-msvc-2017
 #
 if(MSVC AND BUILD_SHARED_LIBS)
