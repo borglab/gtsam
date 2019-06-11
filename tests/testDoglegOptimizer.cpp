@@ -10,9 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    DoglegOptimizer.h
+ * @file    testDoglegOptimizer.cpp
  * @brief   Unit tests for DoglegOptimizer
  * @author  Richard Roberts
+ * @author  Frank dellaert
  */
 
 #include <CppUnitLite/TestHarness.h>
@@ -181,7 +182,12 @@ TEST(DoglegOptimizer, Constraint) {
 
   // Try optimizing with infeasible initial estimate
   DoglegOptimizer optimizer2(graph, infeasible, params);
+
+#ifdef GTSAM_USE_TBB
+  CHECK_EXCEPTION(optimizer2.optimize(), std::exception);
+#else
   CHECK_EXCEPTION(optimizer2.optimize(), std::invalid_argument);
+#endif
 }
 
 /* ************************************************************************* */
