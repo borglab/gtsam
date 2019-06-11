@@ -88,36 +88,36 @@ enable_testing()
 
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_EXAMPLES_ALWAYS       "Build examples with 'make all' (build with 'make examples' if not)"       ON)
-option(GTSAM_BUILD_TIMING_ALWAYS         "Build timing scripts with 'make all' (build with 'make timing' if not"    OFF)
+	option(GTSAM_BUILD_TIMING_ALWAYS         "Build timing scripts with 'make all' (build with 'make timing' if not"    OFF)
 
-# Add option for combining unit tests
-if(MSVC OR XCODE_VERSION)
-	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" ON)
-else()
-	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)
-endif()
-mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
+		# Add option for combining unit tests
+		if(MSVC OR XCODE_VERSION)
+			option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" ON)
+		else()
+			option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)
+		endif()
+		mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
 
-# Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
-if(GTSAM_BUILD_TESTS)
-    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
-		# Also add alternative checks using valgrind.
-		# We don't look for valgrind being installed in the system, since these
-		# targets are not invoked unless directly instructed by the user.
-		if (UNIX)
-			# Run all tests using valgrind:
-			add_custom_target(check_valgrind)
+		# Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
+		if(GTSAM_BUILD_TESTS)
+			add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
+			# Also add alternative checks using valgrind.
+			# We don't look for valgrind being installed in the system, since these
+			# targets are not invoked unless directly instructed by the user.
+			if (UNIX)
+				# Run all tests using valgrind:
+				add_custom_target(check_valgrind)
+			endif()
+
+			# Add target to build tests without running
+			add_custom_target(all.tests)
 		endif()
 
-    # Add target to build tests without running
-	add_custom_target(all.tests)
-endif()
+		# Add examples target
+		add_custom_target(examples)
 
-# Add examples target
-add_custom_target(examples)
-
-# Add timing target
-add_custom_target(timing)
+		# Add timing target
+		add_custom_target(timing)
 
 
 # Implementations of this file's macros:
@@ -125,23 +125,23 @@ add_custom_target(timing)
 macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 	if(GTSAM_BUILD_TESTS)
 		# Add group target if it doesn't already exist
-	    if(NOT TARGET check.${groupName})
+		if(NOT TARGET check.${groupName})
 			add_custom_target(check.${groupName} COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
 			set_property(TARGET check.${groupName} PROPERTY FOLDER "Unit tests")
 		endif()
 
-	    # Get all script files
-        file(GLOB script_files ${globPatterns})
+		# Get all script files
+		file(GLOB script_files ${globPatterns})
 
-	    # Remove excluded scripts from the list
-	    if(NOT "${excludedFiles}" STREQUAL "")
+		# Remove excluded scripts from the list
+		if(NOT "${excludedFiles}" STREQUAL "")
 			file(GLOB excludedFilePaths ${excludedFiles})
 			if("${excludedFilePaths}" STREQUAL "")
 				message(WARNING "The pattern '${excludedFiles}' for excluding tests from group ${groupName} did not match any files")
 			else()
-		    	list(REMOVE_ITEM script_files ${excludedFilePaths})
+				list(REMOVE_ITEM script_files ${excludedFilePaths})
 			endif()
-	    endif()
+		endif()
 
 		# Separate into source files and headers (allows for adding headers to show up in
 		# MSVC and Xcode projects).
@@ -173,10 +173,10 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 				add_test(NAME ${script_name} COMMAND ${script_name})
 				add_dependencies(check.${groupName} ${script_name})
 				add_dependencies(check ${script_name})
-                add_dependencies(all.tests ${script_name})
+				add_dependencies(all.tests ${script_name})
 				if(NOT MSVC AND NOT XCODE_VERSION)
 					# Regular test run:
-				  add_custom_target(${script_name}.run
+					add_custom_target(${script_name}.run
 						COMMAND ${EXECUTABLE_OUTPUT_PATH}${script_name}
 						DEPENDS ${script_name}
 					)
@@ -242,18 +242,18 @@ endmacro()
 
 
 macro(gtsamAddExesGlob_impl globPatterns excludedFiles linkLibraries groupName buildWithAll)
-    # Get all script files
-    file(GLOB script_files ${globPatterns})
+	# Get all script files
+	file(GLOB script_files ${globPatterns})
 
-    # Remove excluded scripts from the list
-    if(NOT "${excludedFiles}" STREQUAL "")
+	# Remove excluded scripts from the list
+	if(NOT "${excludedFiles}" STREQUAL "")
 		file(GLOB excludedFilePaths ${excludedFiles})
 		if("${excludedFilePaths}" STREQUAL "")
 			message(WARNING "The script exclusion pattern '${excludedFiles}' did not match any files")
 		else()
-	    	list(REMOVE_ITEM script_files ${excludedFilePaths})
+			list(REMOVE_ITEM script_files ${excludedFilePaths})
 		endif()
-    endif()
+	endif()
 
 	# Separate into source files and headers (allows for adding headers to show up in
 	# MSVC and Xcode projects).
@@ -283,14 +283,14 @@ macro(gtsamAddExesGlob_impl globPatterns excludedFiles linkLibraries groupName b
 		# Add target dependencies
 		add_dependencies(${groupName} ${script_name})
 		if(NOT MSVC AND NOT XCODE_VERSION)
-		  add_custom_target(${script_name}.run ${EXECUTABLE_OUTPUT_PATH}${script_name} DEPENDS ${script_name})
+			add_custom_target(${script_name}.run ${EXECUTABLE_OUTPUT_PATH}${script_name} DEPENDS ${script_name})
 		endif()
 
 		# Add TOPSRCDIR
 		set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
 
-        # Exclude from all or not - note weird variable assignment because we're in a macro
-	    set(buildWithAll_on ${buildWithAll})
+		# Exclude from all or not - note weird variable assignment because we're in a macro
+		set(buildWithAll_on ${buildWithAll})
 		if(NOT buildWithAll_on)
 			# Exclude from 'make all' and 'make install'
 			set_target_properties("${script_name}" PROPERTIES EXCLUDE_FROM_ALL ON)
