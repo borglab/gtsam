@@ -183,11 +183,11 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 
 					# Run with valgrind:
 					set(GENERATED_EXE "$<TARGET_FILE:${script_name}>")
-					add_custom_target(${script_name}.run.valgrind
+					add_custom_target(${script_name}.valgrind
 						COMMAND "valgrind" "--error-exitcode=1" ${GENERATED_EXE}
 						DEPENDS ${script_name}
 					)
-					add_dependencies(check_valgrind ${script_name}.run.valgrind)
+					add_dependencies(check_valgrind ${script_name}.valgrind)
 				endif()
 
 				# Add TOPSRCDIR
