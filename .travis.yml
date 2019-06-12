@@ -35,7 +35,7 @@ jobs:
   - stage: compile
     os: osx
     compiler: gcc
-    env: CMAKE_BUILD_TYPE=Debug
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
     script: bash .travis.sh -b
   - stage: compile
     os: osx
@@ -46,7 +46,7 @@ jobs:
   - stage: compile
     os: osx
     compiler: clang
-    env: CMAKE_BUILD_TYPE=Debug
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
     script: bash .travis.sh -b
   - stage: compile
     os: osx
@@ -57,7 +57,7 @@ jobs:
   - stage: compile
     os: linux
     compiler: gcc
-    env: CMAKE_BUILD_TYPE=Debug
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
     script: bash .travis.sh -b
   - stage: compile
     os: linux
@@ -68,7 +68,7 @@ jobs:
   - stage: compile
     os: linux
     compiler: clang
-    env: CMAKE_BUILD_TYPE=Debug
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
     script: bash .travis.sh -b
   - stage: compile
     os: linux
@@ -79,7 +79,7 @@ jobs:
   - stage: compile
     os: linux
     compiler: clang
-    env: CMAKE_BUILD_TYPE=Debug GTSAM_ALLOW_DEPRECATED_SINCE_V4=ON
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF GTSAM_ALLOW_DEPRECATED_SINCE_V4=ON
     script: bash .travis.sh -b
 
 # Matrix configuration:
@@ -94,8 +94,9 @@ env:
     - MAKEFLAGS="-j2"
     - CCACHE_SLOPPINESS=pch_defines,time_macros
     - GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF
+    - GTSAM_BUILD_UNSTABLE=ON
   matrix:
-    - CMAKE_BUILD_TYPE=Debug
+    - CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
     - CMAKE_BUILD_TYPE=Release
 script:
   - bash .travis.sh -t
