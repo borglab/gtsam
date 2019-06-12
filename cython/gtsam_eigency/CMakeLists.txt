@@ -39,11 +39,11 @@ add_dependencies(cythonize_eigency cythonize_eigency_conversions cythonize_eigen
 
 # install
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        DESTINATION ${GTSAM_CYTHON_INSTALL_PATH}
+        DESTINATION "${GTSAM_CYTHON_INSTALL_PATH}${GTSAM_BUILD_TAG}"
         PATTERN "CMakeLists.txt" EXCLUDE
         PATTERN "__init__.py.in" EXCLUDE)
 install(TARGETS cythonize_eigency_core cythonize_eigency_conversions
-        DESTINATION "${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency")
-install(FILES ${OUTPUT_DIR}/conversions_api.h DESTINATION ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency)
+        DESTINATION "${GTSAM_CYTHON_INSTALL_PATH}${GTSAM_BUILD_TAG}/gtsam_eigency")
+install(FILES ${OUTPUT_DIR}/conversions_api.h DESTINATION ${GTSAM_CYTHON_INSTALL_PATH}${GTSAM_BUILD_TAG}/gtsam_eigency)
 configure_file(__init__.py.in ${OUTPUT_DIR}/__init__.py)
-install(FILES ${OUTPUT_DIR}/__init__.py DESTINATION ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency)
+install(FILES ${OUTPUT_DIR}/__init__.py DESTINATION ${GTSAM_CYTHON_INSTALL_PATH}${GTSAM_BUILD_TAG}/gtsam_eigency)
