@@ -95,7 +95,7 @@ class GTSAM_EXPORT VariableIndex {
   }
 
   /// Return true if no factors associated with a variable
-  const bool empty(Key variable) const {
+  bool empty(Key variable) const {
     return (*this)[variable].empty();
   }
 
