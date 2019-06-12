@@ -31,6 +31,7 @@ static const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
 
 PreintegratedImuMeasurements ScenarioRunner::integrate(
     double T, const Bias& estimatedBias, bool corrupted) const {
+  gttic_(integrate);
   PreintegratedImuMeasurements pim(p_, estimatedBias);
 
   const double dt = imuSampleTime();
