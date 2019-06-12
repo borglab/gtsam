@@ -18,7 +18,7 @@
  * @author  Stephen Williams
  */
 
-#define ENABLE_TIMING // uncomment for timing results
+// #define ENABLE_TIMING // uncomment for timing results
 
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ScenarioRunner.h>
