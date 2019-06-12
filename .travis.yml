@@ -100,9 +100,9 @@ env:
 script:
   - bash .travis.sh -t
 
-Uncomment this if you want to exclude clang on linux
+# Exclude clang on Linux/clang in release until issue #57 is solved
 matrix:
   exclude:
-  - os: linux
-    compiler: clang
-    env : CMAKE_BUILD_TYPE=Release
+    - os: linux
+      compiler: clang
+      env : CMAKE_BUILD_TYPE=Release
