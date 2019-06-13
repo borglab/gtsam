@@ -1,7 +1,13 @@
 # Unset these cached variables to avoid surprises when the python in the current
 # environment are different from the cached!
 unset(PYTHON_EXECUTABLE CACHE)
-find_package(pybind11 REQUIRED)
+if(GTSAM_PYTHON_VERSION STREQUAL "Default")
+  find_package(PythonInterp REQUIRED)
+  find_package(PythonLibs REQUIRED)
+else()
+  find_package(PythonInterp ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
+  find_package(PythonLibs ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
+endif()
 
 # User-friendly Pybind11 wrapping and installing function. Builds a Pybind11
 # module from the provided interface_header. For example, for the interface
@@ -12,7 +18,7 @@ find_package(pybind11 REQUIRED)
 # interface_header:  The relative path to the wrapper interface definition file.
 # install_path: destination to install the library libs: libraries to link with
 # dependencies: Dependencies which need to be built before the wrapper
-function(pybind_wrapper
+function(pybind_wrap
          target
          interface_header
          generated_cpp
@@ -29,6 +35,7 @@ function(pybind_wrapper
                              --module_name ${module_name}
                              --top_module_namespaces "${top_namespace}"
                              --ignore ${ignore_classes}
+                             --use_boost
                      VERBATIM)
   add_custom_target(pybind_wrap_${module_name} ALL DEPENDS ${generated_cpp})
 
@@ -41,7 +48,7 @@ function(pybind_wrapper
   pybind11_add_module(${target} ${generated_cpp})
   add_dependencies(${target} pybind_wrap_${module_name})
   if(NOT "${libs}" STREQUAL "")
-    target_link_libraries(${target} "${libs}")
+    target_link_libraries(${target} PRIVATE "${libs}")
   endif()
   if(NOT "${dependencies}" STREQUAL "")
     add_dependencies(${target} ${dependencies})

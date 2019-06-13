@@ -98,8 +98,8 @@ if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
     message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the MATLAB toolbox cannot deal with this yet.  Please turn one of the two options off.")
 endif()
 
-if(GTSAM_INSTALL_PYTHON_TOOLBOX AND NOT GTSAM_TYPEDEF_POINTS_TO_VECTORS)
-    message(FATAL_ERROR "GTSAM_INSTALL_PYTHON_TOOLBOX requires GTSAM_TYPEDEF_POINTS_TO_VECTORS to be enabled but it is not.")
+if(GTSAM_BUILD_PYTHON AND NOT GTSAM_TYPEDEF_POINTS_TO_VECTORS)
+    message(FATAL_ERROR "GTSAM_BUILD_PYTHON requires GTSAM_TYPEDEF_POINTS_TO_VECTORS to be enabled but it is not.")
 endif()
 
 # Flags for choosing default packaging tools
