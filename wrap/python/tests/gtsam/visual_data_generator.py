@@ -4,7 +4,7 @@ from math import pi, cos, sin
 import numpy as np
 
 from gtsam_py import gtsam
-from util import Point2, Point3
+from gtsam.util import Point2, Point3
 
 
 class Options:
@@ -63,11 +63,13 @@ class Data:
         # Set Noise parameters
         self.noiseModels = Data.NoiseModels()
         self.noiseModels.posePrior = gtsam.noiseModel.Diagonal.Sigmas(
-            np.array([0.001, 0.001, 0.001, 0.1, 0.1, 0.1]))
+            np.array([0.001, 0.001, 0.001, 0.1, 0.1, 0.1])
+        )
         # noiseModels.odometry = gtsam.noiseModel.Diagonal.Sigmas(
         #    np.array([0.001,0.001,0.001,0.1,0.1,0.1]))
         self.noiseModels.odometry = gtsam.noiseModel.Diagonal.Sigmas(
-            np.array([0.05, 0.05, 0.05, 0.2, 0.2, 0.2]))
+            np.array([0.05, 0.05, 0.05, 0.2, 0.2, 0.2])
+        )
         self.noiseModels.pointPrior = gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
         self.noiseModels.measurement = gtsam.noiseModel.Isotropic.Sigma(2, 1.0)
 
@@ -75,7 +77,7 @@ class Data:
 def generate_data(options):
     """ Generate ground-truth and measurement data. """
 
-    K = gtsam.Cal3_S2(500, 500, 0, 640. / 2., 480. / 2.)
+    K = gtsam.Cal3_S2(500, 500, 0, 640.0 / 2.0, 480.0 / 2.0)
     nrPoints = 3 if options.triangle else 8
 
     truth = GroundTruth(K=K, nrCameras=options.nrCameras, nrPoints=nrPoints)
@@ -89,10 +91,14 @@ def generate_data(options):
             truth.points[j] = Point3(r * cos(theta), r * sin(theta), 0)
     else:  # 3D landmarks as vertices of a cube
         truth.points = [
-            Point3(10, 10, 10), Point3(-10, 10, 10),
-            Point3(-10, -10, 10), Point3(10, -10, 10),
-            Point3(10, 10, -10), Point3(-10, 10, -10),
-            Point3(-10, -10, -10), Point3(10, -10, -10)
+            Point3(10, 10, 10),
+            Point3(-10, 10, 10),
+            Point3(-10, -10, 10),
+            Point3(10, -10, 10),
+            Point3(10, 10, -10),
+            Point3(-10, 10, -10),
+            Point3(-10, -10, -10),
+            Point3(10, -10, -10),
         ]
 
     # Create camera cameras on a circle around the triangle
@@ -101,10 +107,9 @@ def generate_data(options):
     for i in range(options.nrCameras):
         theta = i * 2 * pi / options.nrCameras
         t = Point3(r * cos(theta), r * sin(theta), height)
-        truth.cameras[i] = gtsam.SimpleCamera.Lookat(t,
-                                                     Point3(),
-                                                     Point3(0, 0, 1),
-                                                     truth.K)
+        truth.cameras[i] = gtsam.SimpleCamera.Lookat(
+            t, Point3(), Point3(0, 0, 1), truth.K
+        )
         # Create measurements
         for j in range(nrPoints):
             # All landmarks seen in every frame
@@ -113,7 +118,8 @@ def generate_data(options):
 
     # Calculate odometry between cameras
     for i in range(1, options.nrCameras):
-        data.odometry[i] = truth.cameras[i - 1].pose().between(
-            truth.cameras[i].pose())
+        data.odometry[i] = (
+            truth.cameras[i - 1].pose().between(truth.cameras[i].pose())
+        )
 
     return data, truth

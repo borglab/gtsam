@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from gtsam_py import gtsam
-from util import Point3
+from gtsam.util import Point3
 
 
 class TestScenario(unittest.TestCase):
@@ -23,16 +23,18 @@ class TestScenario(unittest.TestCase):
         np.testing.assert_almost_equal(W, scenario.omega_b(T))
         np.testing.assert_almost_equal(V, scenario.velocity_b(T))
         np.testing.assert_almost_equal(
-            np.cross(W, V), scenario.acceleration_b(T))
+            np.cross(W, V), scenario.acceleration_b(T)
+        )
 
         # R = v/w, so test if loop crests at 2*R
         R = v / w
         T30 = scenario.pose(T)
         np.testing.assert_almost_equal(
-            np.array([math.pi, 0, math.pi]),
-            T30.rotation().xyz())
+            np.array([math.pi, 0, math.pi]), T30.rotation().xyz()
+        )
         np.testing.assert_almost_equal(
-            Point3(0, 0, 2 * R), T30.translation(), 1e-9)
+            Point3(0, 0, 2 * R), T30.translation(), 1e-9
+        )
 
 
 if __name__ == '__main__':

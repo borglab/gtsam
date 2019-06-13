@@ -88,6 +88,8 @@ endif()
 # TODO: Check for matlab mex binary before handling building of binaries
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
 option(GTSAM_INSTALL_PYTHON_TOOLBOX      "Enable/Disable installation of Python toolbox"  OFF)
+set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of python to build the cython wrapper for (or Default)")
+
 
 # Check / set dependent variables for MATLAB wrapper
 if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT BUILD_SHARED_LIBS)

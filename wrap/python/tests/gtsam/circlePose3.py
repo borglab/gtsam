@@ -2,7 +2,7 @@ from math import pi, cos, sin
 import numpy as np
 
 from gtsam_py import gtsam
-from util import Point3
+from gtsam.util import Point3
 
 
 def circlePose3(numPoses=8, radius=1.0, symbolChar=0):
@@ -24,12 +24,16 @@ def circlePose3(numPoses=8, radius=1.0, symbolChar=0):
     theta = 0.0
     dtheta = 2 * pi / numPoses
     gRo = gtsam.Rot3(
-        np.array([[0., 1., 0.], [1., 0., 0.], [0., 0., -1.]], order='F'))
+        np.array(
+            [[0.0, 1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, -1.0]], order='F'
+        )
+    )
     for i in range(numPoses):
         key = gtsam.symbol(chr(symbolChar), i)
         gti = Point3(radius * cos(theta), radius * sin(theta), 0)
         oRi = gtsam.Rot3.Yaw(
-            -theta)  # negative yaw goes counterclockwise, with Z down !
+            -theta
+        )  # negative yaw goes counterclockwise, with Z down !
         gTi = gtsam.Pose3(gRo.compose(oRi), gti)
         values.insert(key, gTi)
         theta = theta + dtheta

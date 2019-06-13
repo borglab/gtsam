@@ -73,39 +73,39 @@ values.insert(2, gtsam.Rot3())
 values.print_(b"values:")
 
 factor = gtsam.PriorFactorVector(1, np.array([1., 2., 3.]), diag)
-print "Prior factor vector: ", factor
+print("Prior factor vector: ", factor)
 
 keys = gtsam.KeyVector()
 
 keys.push_back(1)
 keys.push_back(2)
-print 'size: ', keys.size()
-print keys.at(0)
-print keys.at(1)
+print('size: ', keys.size())
+print(keys.at(0))
+print(keys.at(1))
 
 noise = gtsam.noiseModel.Isotropic.Precision(2, 3.0)
 noise.print_('noise:')
-print 'noise print:', noise
+print('noise print:', noise)
 f = gtsam.JacobianFactor(7, np.ones([2, 2]), model=noise, b=np.ones(2))
-print 'JacobianFactor(7):\n', f
-print "A = ", f.getA()
-print "b = ", f.getb()
+print('JacobianFactor(7):\n', f)
+print("A = ", f.getA())
+print("b = ", f.getb())
 
 f = gtsam.JacobianFactor(np.ones(2))
 f.print_('jacoboian b_in:')
 
-print "JacobianFactor initalized with b_in:", f
+print("JacobianFactor initalized with b_in:", f)
 
 diag = gtsam.noiseModel.Diagonal.Sigmas(np.array([1., 2., 3.]))
 fv = gtsam.PriorFactorVector(1, np.array([4., 5., 6.]), diag)
-print "priorfactorvector: ", fv
+print("priorfactorvector: ", fv)
 
-print "base noise: ", fv.get_noiseModel()
+print("base noise: ", fv.get_noiseModel())
 diag_cast = fv.get_noiseModel()  # should be a Diagonal
-print "casted to gaussian2: ", diag_cast.R()
+print("casted to gaussian2: ", diag_cast.R())
 
 
 X = gtsam.symbol('a', 19)
-print X
-print gtsam.symbolChr(X)
-print gtsam.symbolIndex(X)
+print(X)
+print(gtsam.symbolChr(X))
+print(gtsam.symbolIndex(X))

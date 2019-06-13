@@ -3,7 +3,7 @@ import numpy as np
 
 from gtsam_py import gtsam
 from gtsam_py.gtsam import symbol
-from util import Point3
+from gtsam.util import Point3
 
 
 class TestStereoVOExample(unittest.TestCase):
@@ -33,41 +33,55 @@ class TestStereoVOExample(unittest.TestCase):
         # format: fx fy skew cx cy baseline
         K = gtsam.Cal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2)
         stereo_model = gtsam.noiseModel.Diagonal.Sigmas(
-            np.array([1.0, 1.0, 1.0]))
+            np.array([1.0, 1.0, 1.0])
+        )
 
         ## Add measurements
         # pose 1
         graph.add(
             gtsam.GenericStereoFactor3D(
-                gtsam.StereoPoint2(520, 480, 440), stereo_model, x1, l1, K))
+                gtsam.StereoPoint2(520, 480, 440), stereo_model, x1, l1, K
+            )
+        )
         graph.add(
             gtsam.GenericStereoFactor3D(
-                gtsam.StereoPoint2(120, 80, 440), stereo_model, x1, l2, K))
+                gtsam.StereoPoint2(120, 80, 440), stereo_model, x1, l2, K
+            )
+        )
         graph.add(
             gtsam.GenericStereoFactor3D(
-                gtsam.StereoPoint2(320, 280, 140), stereo_model, x1, l3, K))
+                gtsam.StereoPoint2(320, 280, 140), stereo_model, x1, l3, K
+            )
+        )
 
-        #pose 2
+        # pose 2
         graph.add(
             gtsam.GenericStereoFactor3D(
-                gtsam.StereoPoint2(570, 520, 490), stereo_model, x2, l1, K))
+                gtsam.StereoPoint2(570, 520, 490), stereo_model, x2, l1, K
+            )
+        )
         graph.add(
             gtsam.GenericStereoFactor3D(
-                gtsam.StereoPoint2(70, 20, 490), stereo_model, x2, l2, K))
+                gtsam.StereoPoint2(70, 20, 490), stereo_model, x2, l2, K
+            )
+        )
         graph.add(
             gtsam.GenericStereoFactor3D(
-                gtsam.StereoPoint2(320, 270, 115), stereo_model, x2, l3, K))
+                gtsam.StereoPoint2(320, 270, 115), stereo_model, x2, l3, K
+            )
+        )
 
         ## Create initial estimate for camera poses and landmarks
         initialEstimate = gtsam.Values()
         initialEstimate.insert(x1, first_pose)
         # noisy estimate for pose 2
         initialEstimate.insert(
-            x2, gtsam.Pose3(gtsam.Rot3(), Point3(0.1, -.1, 1.1)))
+            x2, gtsam.Pose3(gtsam.Rot3(), Point3(0.1, -0.1, 1.1))
+        )
         expected_l1 = Point3(1, 1, 5)
         initialEstimate.insert(l1, expected_l1)
         initialEstimate.insert(l2, Point3(-1, 1, 5))
-        initialEstimate.insert(l3, Point3(0, -.5, 5))
+        initialEstimate.insert(l3, Point3(0, -0.5, 5))
 
         ## optimize
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initialEstimate)

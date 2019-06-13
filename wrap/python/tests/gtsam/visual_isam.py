@@ -29,11 +29,14 @@ def initialize(data, truth, options):
         if i == 0:
             if options.hardConstraint:  # add hard constraint
                 newFactors.add(
-                    gtsam.NonlinearEqualityPose3(ii, truth.cameras[0].pose()))
+                    gtsam.NonlinearEqualityPose3(ii, truth.cameras[0].pose())
+                )
             else:
                 newFactors.add(
-                    gtsam.PriorFactorPose3(ii, truth.cameras[i].pose(),
-                                           data.noiseModels.posePrior))
+                    gtsam.PriorFactorPose3(
+                        ii, truth.cameras[i].pose(), data.noiseModels.posePrior
+                    )
+                )
         initialEstimates.insert(ii, truth.cameras[i].pose())
 
     nextPoseIndex = 2
@@ -47,26 +50,34 @@ def initialize(data, truth, options):
             jj = symbol('l', j)
             newFactors.add(
                 gtsam.GenericProjectionFactorCal3_S2(
-                    data.Z[i][k], data.noiseModels.measurement, ii, jj,
-                    data.K))
+                    data.Z[i][k], data.noiseModels.measurement, ii, jj, data.K
+                )
+            )
             # TODO: initial estimates should not be from ground truth!
             if not initialEstimates.exists(jj):
                 initialEstimates.insert(jj, truth.points[j])
             if options.pointPriors:  # add point priors
                 newFactors.add(
-                    gtsam.PriorFactorPoint3(jj, truth.points[j],
-                                            data.noiseModels.pointPrior))
+                    gtsam.PriorFactorPoint3(
+                        jj, truth.points[j], data.noiseModels.pointPrior
+                    )
+                )
 
     # Add odometry between frames 0 and 1
     newFactors.add(
         gtsam.BetweenFactorPose3(
-            symbol('x', 0), symbol('x', 1), data.odometry[1],
-            data.noiseModels.odometry))
+            symbol('x', 0),
+            symbol('x', 1),
+            data.odometry[1],
+            data.noiseModels.odometry,
+        )
+    )
 
     # Update ISAM
     if options.batchInitialization:  # Do a full optimize for first two poses
         batchOptimizer = gtsam.LevenbergMarquardtOptimizer(
-            newFactors, initialEstimates)
+            newFactors, initialEstimates
+        )
         fullyOptimized = batchOptimizer.optimize()
         isam.update(newFactors, fullyOptimized)
     else:
@@ -100,8 +111,12 @@ def step(data, isam, result, truth, currPoseIndex):
     odometry = data.odometry[prevPoseIndex]
     newFactors.add(
         gtsam.BetweenFactorPose3(
-            symbol('x', prevPoseIndex), symbol('x', currPoseIndex),
-            odometry, data.noiseModels.odometry))
+            symbol('x', prevPoseIndex),
+            symbol('x', currPoseIndex),
+            odometry,
+            data.noiseModels.odometry,
+        )
+    )
 
     # Add visual measurement factors and initializations as necessary
     for k in range(len(data.Z[currPoseIndex])):
@@ -110,8 +125,13 @@ def step(data, isam, result, truth, currPoseIndex):
         jj = symbol('l', j)
         newFactors.add(
             gtsam.GenericProjectionFactorCal3_S2(
-                zij, data.noiseModels.measurement,
-                symbol('x', currPoseIndex), jj, data.K))
+                zij,
+                data.noiseModels.measurement,
+                symbol('x', currPoseIndex),
+                jj,
+                data.K,
+            )
+        )
         # TODO: initialize with something other than truth
         if not result.exists(jj) and not initialEstimates.exists(jj):
             lmInit = truth.points[j]
@@ -120,7 +140,8 @@ def step(data, isam, result, truth, currPoseIndex):
     # Initial estimates for the new pose.
     prevPose = result.atPose3(symbol('x', prevPoseIndex))
     initialEstimates.insert(
-        symbol('x', currPoseIndex), prevPose.compose(odometry))
+        symbol('x', currPoseIndex), prevPose.compose(odometry)
+    )
 
     # Update ISAM
     # figure(1)tic

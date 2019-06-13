@@ -13,7 +13,8 @@ class TestOdometryExample(unittest.TestCase):
         # Add a Gaussian prior on pose x_1
         priorMean = gtsam.Pose2(0.0, 0.0, 0.0)  # prior mean is at origin
         priorNoise = gtsam.noiseModel.Diagonal.Sigmas(
-            np.array([0.3, 0.3, 0.1]))  # 30cm std on x,y, 0.1 rad on theta
+            np.array([0.3, 0.3, 0.1])  # 30cm std on x,y, 0.1 rad on theta
+        )
         # add directly to graph
         graph.add(gtsam.PriorFactorPose2(1, priorMean, priorNoise))
 
@@ -21,7 +22,8 @@ class TestOdometryExample(unittest.TestCase):
         # create a measurement for both factors (the same in this case)
         odometry = gtsam.Pose2(2.0, 0.0, 0.0)
         odometryNoise = gtsam.noiseModel.Diagonal.Sigmas(
-            np.array([0.2, 0.2, 0.1]))  # 20cm std on x,y, 0.1 rad on theta
+            np.array([0.2, 0.2, 0.1])
+        )  # 20cm std on x,y, 0.1 rad on theta
         graph.add(gtsam.BetweenFactorPose2(1, 2, odometry, odometryNoise))
         graph.add(gtsam.BetweenFactorPose2(2, 3, odometry, odometryNoise))
 

@@ -20,32 +20,44 @@ class TestPose2SLAMExample(unittest.TestCase):
         # gaussian for prior
         priorMean = gtsam.Pose2(0.0, 0.0, 0.0)  # prior at origin
         priorNoise = gtsam.noiseModel.Diagonal.Sigmas(
-            np.array([0.3, 0.3, 0.1]))
+            np.array([0.3, 0.3, 0.1])
+        )
         # add directly to graph
         graph.add(gtsam.PriorFactorPose2(1, priorMean, priorNoise))
 
         # Add odometry
         # general noisemodel for odometry
         odometryNoise = gtsam.noiseModel.Diagonal.Sigmas(
-            np.array([0.2, 0.2, 0.1]))
+            np.array([0.2, 0.2, 0.1])
+        )
         graph.add(
-            gtsam.BetweenFactorPose2(1, 2, gtsam.Pose2(2.0, 0.0, 0.0),
-                                     odometryNoise))
+            gtsam.BetweenFactorPose2(
+                1, 2, gtsam.Pose2(2.0, 0.0, 0.0), odometryNoise
+            )
+        )
         graph.add(
-            gtsam.BetweenFactorPose2(2, 3, gtsam.Pose2(2.0, 0.0, pi / 2),
-                                     odometryNoise))
+            gtsam.BetweenFactorPose2(
+                2, 3, gtsam.Pose2(2.0, 0.0, pi / 2), odometryNoise
+            )
+        )
         graph.add(
-            gtsam.BetweenFactorPose2(3, 4, gtsam.Pose2(2.0, 0.0, pi / 2),
-                                     odometryNoise))
+            gtsam.BetweenFactorPose2(
+                3, 4, gtsam.Pose2(2.0, 0.0, pi / 2), odometryNoise
+            )
+        )
         graph.add(
-            gtsam.BetweenFactorPose2(4, 5, gtsam.Pose2(2.0, 0.0, pi / 2),
-                                     odometryNoise))
+            gtsam.BetweenFactorPose2(
+                4, 5, gtsam.Pose2(2.0, 0.0, pi / 2), odometryNoise
+            )
+        )
 
         # Add pose constraint
         model = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
         graph.add(
-            gtsam.BetweenFactorPose2(5, 2, gtsam.Pose2(2.0, 0.0, pi / 2),
-                                     model))
+            gtsam.BetweenFactorPose2(
+                5, 2, gtsam.Pose2(2.0, 0.0, pi / 2), model
+            )
+        )
 
         # Initialize to noisy points
         initialEstimate = gtsam.Values()

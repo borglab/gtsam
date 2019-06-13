@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 from gtsam_py.gtsam import Rot3, Pose3
-from util import Point3
+from gtsam.util import Point3
 
 
 class TestPose3(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestPose3(unittest.TestCase):
 
     def test_transform_to(self):
         transform = Pose3(Rot3.Rodrigues(0, 0, -1.570796), Point3(2, 4, 0))
-        actual = transform.transform_to(Point3(3, 2, 10))
+        actual = transform.transformTo(Point3(3, 2, 10))
         expected = Point3(2, 1, 10)
         np.testing.assert_almost_equal(actual, expected, 1e-5)
 

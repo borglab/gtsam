@@ -2,8 +2,8 @@ import unittest
 from gtsam_py import gtsam
 import numpy as np
 
-class TestPriorFactor(unittest.TestCase):
 
+class TestPriorFactor(unittest.TestCase):
     def test_PriorFactor(self):
         values = gtsam.Values()
 
@@ -15,11 +15,12 @@ class TestPriorFactor(unittest.TestCase):
         self.assertEqual(factor.error(values), 0)
 
         key = 3
-        priorVector = np.array([0., 0., 0., 0.])
+        priorVector = np.array([0.0, 0.0, 0.0, 0.0])
         model = gtsam.noiseModel.Unit.Create(4)
         factor = gtsam.PriorFactorVector(key, priorVector, model)
         values.insert(key, priorVector)
         self.assertEqual(factor.error(values), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

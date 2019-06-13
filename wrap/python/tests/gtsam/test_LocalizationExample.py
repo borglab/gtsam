@@ -14,7 +14,8 @@ class TestLocalizationExample(unittest.TestCase):
         # create a measurement for both factors (the same in this case)
         odometry = gtsam.Pose2(2.0, 0.0, 0.0)
         odometryNoise = gtsam.noiseModel.Diagonal.Sigmas(
-            np.array([0.2, 0.2, 0.1]))  # 20cm std on x,y, 0.1 rad on theta
+            np.array([0.2, 0.2, 0.1])  # 20cm std on x,y, 0.1 rad on theta
+        )
         graph.add(gtsam.BetweenFactorPose2(0, 1, odometry, odometryNoise))
         graph.add(gtsam.BetweenFactorPose2(1, 2, odometry, odometryNoise))
 
@@ -24,7 +25,7 @@ class TestLocalizationExample(unittest.TestCase):
         groundTruth.insert(0, gtsam.Pose2(0.0, 0.0, 0.0))
         groundTruth.insert(1, gtsam.Pose2(2.0, 0.0, 0.0))
         groundTruth.insert(2, gtsam.Pose2(4.0, 0.0, 0.0))
-        model = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.1, 0.1, 10.]))
+        model = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.1, 0.1, 10.0]))
         for i in range(3):
             graph.add(gtsam.PriorFactorPose2(i, groundTruth.atPose2(i), model))
 

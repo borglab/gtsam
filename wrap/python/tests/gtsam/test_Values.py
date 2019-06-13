@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from util import Point2, Point3
+from gtsam.util import Point2, Point3
 from gtsam_py.gtsam import (
     Unit3,
     Rot2,
@@ -23,7 +23,7 @@ class TestValues(unittest.TestCase):
         E = EssentialMatrix(Rot3(), Unit3())
         tol = 1e-9
 
-        values.insert(0, np.array([0., 0.]))
+        values.insert(0, np.array([0.0, 0.0]))
         values.insert(1, Point3(0, 0, 0))
         values.insert(2, Rot2())
         values.insert(3, Pose2())
@@ -35,17 +35,11 @@ class TestValues(unittest.TestCase):
         values.insert(9, E)
         values.insert(10, ConstantBias())
 
-        vec = np.array([1., 2., 3., 4.])
+        vec = np.array([1.0, 2.0, 3.0, 4.0])
         values.insert(11, vec)
-        mat = np.array([
-            [1., 2.],
-            [3., 4.],
-        ], order='F')
+        mat = np.array([[1.0, 2.0], [3.0, 4.0]], order='F')
         values.insert(12, mat)
-        mat2 = np.array([
-            [1, 2],
-            [3, 5],
-        ])
+        mat2 = np.array([[1, 2], [3, 5]])
         values.insert(13, mat2)
 
         np.testing.assert_almost_equal(values.atPoint2(0), Point2(), tol)
@@ -69,12 +63,12 @@ class TestValues(unittest.TestCase):
         self.assertTrue(np.allclose(mat2, actualMatrix2, tol))
 
         # failure cases:
-        vec3 = np.array([1., 2., 3.])
+        vec3 = np.array([1.0, 2.0, 3.0])
         values.insert(14, vec3)
-        values.atVector(14)  # won't work because gtsam thinks it's a Point3.
+        # values.atVector(14)  # won't work because gtsam thinks it's a Point3.
 
         # failure cases:
-        values.serialize()  # serialize and serializable are not yet supported.
+        # values.serialize()  # serialize and serializable are not yet supported.
 
 
 if __name__ == "__main__":

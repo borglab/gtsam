@@ -3,8 +3,8 @@ from gtsam_py import gtsam
 from math import pi
 import numpy as np
 
-class TestPose2SLAMExample(unittest.TestCase):
 
+class TestPose2SLAMExample(unittest.TestCase):
     def test_Pose2SLAMExample(self):
         # Assumptions
         #  - All values are axis aligned
@@ -18,25 +18,45 @@ class TestPose2SLAMExample(unittest.TestCase):
         # Add prior
         # gaussian for prior
         priorMean = gtsam.Pose2(0.0, 0.0, 0.0)  # prior at origin
-        priorNoise = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
+        priorNoise = gtsam.noiseModel.Diagonal.Sigmas(
+            np.array([0.3, 0.3, 0.1])
+        )
         # add directly to graph
         graph.add(gtsam.PriorFactorPose2(1, priorMean, priorNoise))
 
         # Add odometry
         # general noisemodel for odometry
-        odometryNoise = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
-        graph.add(gtsam.BetweenFactorPose2(
-            1, 2, gtsam.Pose2(2.0, 0.0, 0.0), odometryNoise))
-        graph.add(gtsam.BetweenFactorPose2(
-            2, 3, gtsam.Pose2(2.0, 0.0, pi / 2), odometryNoise))
-        graph.add(gtsam.BetweenFactorPose2(
-            3, 4, gtsam.Pose2(2.0, 0.0, pi / 2), odometryNoise))
-        graph.add(gtsam.BetweenFactorPose2(
-            4, 5, gtsam.Pose2(2.0, 0.0, pi / 2), odometryNoise))
+        odometryNoise = gtsam.noiseModel.Diagonal.Sigmas(
+            np.array([0.2, 0.2, 0.1])
+        )
+        graph.add(
+            gtsam.BetweenFactorPose2(
+                1, 2, gtsam.Pose2(2.0, 0.0, 0.0), odometryNoise
+            )
+        )
+        graph.add(
+            gtsam.BetweenFactorPose2(
+                2, 3, gtsam.Pose2(2.0, 0.0, pi / 2), odometryNoise
+            )
+        )
+        graph.add(
+            gtsam.BetweenFactorPose2(
+                3, 4, gtsam.Pose2(2.0, 0.0, pi / 2), odometryNoise
+            )
+        )
+        graph.add(
+            gtsam.BetweenFactorPose2(
+                4, 5, gtsam.Pose2(2.0, 0.0, pi / 2), odometryNoise
+            )
+        )
 
         # Add pose constraint
         model = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
-        graph.add(gtsam.BetweenFactorPose2(5, 2, gtsam.Pose2(2.0, 0.0, pi / 2), model))
+        graph.add(
+            gtsam.BetweenFactorPose2(
+                5, 2, gtsam.Pose2(2.0, 0.0, pi / 2), model
+            )
+        )
 
         # Initialize to noisy points
         initialEstimate = gtsam.Values()
@@ -57,6 +77,7 @@ class TestPose2SLAMExample(unittest.TestCase):
 
         pose_1 = result.atPose2(1)
         self.assertTrue(pose_1.equals(gtsam.Pose2(), 1e-4))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,31 +6,18 @@ from gtsam_py import gtsam
 
 class TestJacobianFactor(unittest.TestCase):
     def test_eliminate(self):
-        # Recommended way to specify a matrix (see cython/README)
-        Ax2 = np.array([[-5., 0.], [+0., -5.], [10., 0.], [+0., 10.]],
-                       order='F')
+        Ax2 = np.array([[-5.0, 0.0], [+0.0, -5.0], [10.0, 0.0], [+0.0, 10.0]])
 
-        # This is good too
-        Al1 = np.array([[5, 0], [0, 5], [0, 0], [0, 0]],
-                       dtype=float,
-                       order='F')
-
-        # Not recommended for performance reasons, but should still work
-        # as the wrapper should convert it to the correct type and storage order
-        Ax1 = np.array([
-            [0, 0],  # f4
-            [0, 0],  # f4
-            [-10, 0],  # f2
-            [0, -10]
-        ])  # f2
+        Al1 = np.array([[5, 0], [0, 5], [0, 0], [0, 0]])
+        Ax1 = np.array([[0, 0], [0, 0], [-10, 0], [0, -10]])
 
         x2 = 1
         l1 = 2
         x1 = 3
 
         # the RHS
-        b2 = np.array([-1., 1.5, 2., -1.])
-        sigmas = np.array([1., 1., 1., 1.])
+        b2 = np.array([-1.0, 1.5, 2.0, -1.0])
+        sigmas = np.array([1.0, 1.0, 1.0, 1.0])
         model4 = gtsam.noiseModel.Diagonal.Sigmas(sigmas)
         combined = gtsam.JacobianFactor(x2, Ax2, l1, Al1, x1, Ax1, b2, model4)
 
@@ -45,8 +32,9 @@ class TestJacobianFactor(unittest.TestCase):
         S12 = np.array([[-2.23607, 0.00], [+0.00, -2.23607]])
         S13 = np.array([[-8.94427, 0.00], [+0.00, -8.94427]])
         d = np.array([2.23607, -1.56525])
-        expectedCG = gtsam.GaussianConditional(x2, d, R11, l1, S12, x1, S13,
-                                               gtsam.noiseModel.Unit.Create(2))
+        expectedCG = gtsam.GaussianConditional(
+            x2, d, R11, l1, S12, x1, S13, gtsam.noiseModel.Unit.Create(2)
+        )
         # check if the result matches
         self.assertTrue(actualCG.equals(expectedCG, 1e-4))
 
@@ -55,12 +43,13 @@ class TestJacobianFactor(unittest.TestCase):
 
         Bx1 = np.array(
             # x1
-            [[-4.47214, 0.00], [+0.00, -4.47214]])
+            [[-4.47214, 0.00], [+0.00, -4.47214]]
+        )
 
         # the RHS
         b1 = np.array([0.0, 0.894427])
 
-        model2 = gtsam.noiseModel.Diagonal.Sigmas(np.array([1., 1.]))
+        model2 = gtsam.noiseModel.Diagonal.Sigmas(np.array([1.0, 1.0]))
         expectedLF = gtsam.JacobianFactor(l1, Bl1, x1, Bx1, b1, model2)
 
         # check if the result matches the combined (reduced) factor
