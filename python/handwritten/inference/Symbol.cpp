@@ -31,12 +31,12 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, Symbol::print, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(equals_overloads, Symbol::equals, 1, 2)
 
 // Helper function to allow building a symbol from a python string and a index.
-static std::shared_ptr<Symbol> makeSymbol(const std::string &str, size_t j)
+static boost::shared_ptr<Symbol> makeSymbol(const std::string &str, size_t j)
 {
   if(str.size() > 1)
   	throw std::runtime_error("string argument must have one character only");
 
-  return std::make_shared<Symbol>(str.at(0),j);
+  return boost::make_shared<Symbol>(str.at(0),j);
 }
 
 // Helper function to print the symbol as "char-and-index" in python
@@ -61,7 +61,7 @@ std::string chrFromSelf(const Symbol & self)
 
 void exportSymbol(){
 
-class_<Symbol, std::shared_ptr<Symbol> >("Symbol")
+class_<Symbol, boost::shared_ptr<Symbol> >("Symbol")
   .def(init<>())
   .def(init<const Symbol &>())
   .def("__init__", make_constructor(makeSymbol))

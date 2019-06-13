@@ -43,11 +43,11 @@ GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
   GaussianFactorGraph linearGraph;
   noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(9);
 
-  for(const std::shared_ptr<NonlinearFactor>& factor: g) {
+  for(const boost::shared_ptr<NonlinearFactor>& factor: g) {
     Matrix3 Rij;
 
-    std::shared_ptr<BetweenFactor<Pose3> > pose3Between =
-        std::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
+    boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
+        boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
     if (pose3Between)
       Rij = pose3Between->measured().rotation().matrix();
     else
@@ -108,17 +108,17 @@ NonlinearFactorGraph buildPose3graph(const NonlinearFactorGraph& graph) {
   gttic(InitializePose3_buildPose3graph);
   NonlinearFactorGraph pose3Graph;
 
-  for(const std::shared_ptr<NonlinearFactor>& factor: graph) {
+  for(const boost::shared_ptr<NonlinearFactor>& factor: graph) {
 
     // recast to a between on Pose3
-    std::shared_ptr<BetweenFactor<Pose3> > pose3Between =
-        std::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
+    boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
+        boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
     if (pose3Between)
       pose3Graph.add(pose3Between);
 
     // recast PriorFactor<Pose3> to BetweenFactor<Pose3>
-    std::shared_ptr<PriorFactor<Pose3> > pose3Prior =
-        std::dynamic_pointer_cast<PriorFactor<Pose3> >(factor);
+    boost::shared_ptr<PriorFactor<Pose3> > pose3Prior =
+        boost::dynamic_pointer_cast<PriorFactor<Pose3> >(factor);
     if (pose3Prior)
       pose3Graph.emplace_shared<BetweenFactor<Pose3> >(keyAnchor, pose3Prior->keys()[0],
               pose3Prior->prior(), pose3Prior->noiseModel());
@@ -251,9 +251,9 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
 /* ************************************************************************* */
 void createSymbolicGraph(KeyVectorMap& adjEdgesMap, KeyRotMap& factorId2RotMap, const NonlinearFactorGraph& pose3Graph){
   size_t factorId = 0;
-  for(const std::shared_ptr<NonlinearFactor>& factor: pose3Graph) {
-    std::shared_ptr<BetweenFactor<Pose3> > pose3Between =
-        std::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
+  for(const boost::shared_ptr<NonlinearFactor>& factor: pose3Graph) {
+    boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
+        boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
     if (pose3Between){
       Rot3 Rij = pose3Between->measured().rotation();
       factorId2RotMap.insert(pair<Key, Rot3 >(factorId,Rij));

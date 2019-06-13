@@ -20,7 +20,7 @@
 
 #include <gtsam/linear/iterative.h>
 #include <gtsam/linear/ConjugateGradientSolver.h>
-#include <memory>
+#include <boost/shared_ptr.hpp>
 
 namespace gtsam {
 

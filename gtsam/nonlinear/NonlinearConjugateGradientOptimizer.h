@@ -51,7 +51,7 @@ public:
 
   typedef NonlinearOptimizer Base;
   typedef NonlinearOptimizerParams Parameters;
-  typedef std::shared_ptr<NonlinearConjugateGradientOptimizer> shared_ptr;
+  typedef boost::shared_ptr<NonlinearConjugateGradientOptimizer> shared_ptr;
 
 protected:
   Parameters params_;

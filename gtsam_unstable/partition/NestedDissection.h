@@ -9,7 +9,7 @@
 #pragma once
 
 #include <vector>
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam { namespace partition {
@@ -20,7 +20,7 @@ namespace gtsam { namespace partition {
   template <class NLG, class SubNLG, class GenericGraph>
   class NestedDissection {
   public:
-    typedef std::shared_ptr<SubNLG> sharedSubNLG;
+    typedef boost::shared_ptr<SubNLG> sharedSubNLG;
 
   private:
     NLG fg_;                          // the original nonlinear factor graph
@@ -36,11 +36,11 @@ namespace gtsam { namespace partition {
     NestedDissection(const NLG& fg, const Ordering& ordering, const int numNodeStopPartition, const int minNodesPerMap, const bool verbose = false);
 
     /* constructor with pre-determined cuts*/
-    NestedDissection(const NLG& fg, const Ordering& ordering, const std::shared_ptr<Cuts>& cuts, const bool verbose = false);
+    NestedDissection(const NLG& fg, const Ordering& ordering, const boost::shared_ptr<Cuts>& cuts, const bool verbose = false);
 
   private:
     /* convert generic subgraph to nonlinear subgraph  */
-    sharedSubNLG makeSubNLG(const NLG& fg, const std::vector<size_t>& frontals,  const std::vector<size_t>& sep,  const std::shared_ptr<SubNLG>& parent) const;
+    sharedSubNLG makeSubNLG(const NLG& fg, const std::vector<size_t>& frontals,  const std::vector<size_t>& sep,  const boost::shared_ptr<SubNLG>& parent) const;
 
     void processFactor(const typename GenericGraph::value_type& factor, const std::vector<int>& partitionTable,  // input
           std::vector<GenericGraph>& frontalFactors, NLG& sepFactors, std::vector<std::set<size_t> >& childSeps, // output factor graphs
@@ -58,11 +58,11 @@ namespace gtsam { namespace partition {
 
     /* recursively partition the generic graph */
     sharedSubNLG recursivePartition(const GenericGraph& gfg, const GenericUnaryGraph& unaryFactors, const std::vector<size_t>& frontals, const std::vector<size_t>& sep,
-          const int numNodeStopPartition, const int minNodesPerMap, const std::shared_ptr<SubNLG>& parent, WorkSpace& workspace, const bool verbose) const;
+          const int numNodeStopPartition, const int minNodesPerMap, const boost::shared_ptr<SubNLG>& parent, WorkSpace& workspace, const bool verbose) const;
 
     /* recursively partition the generic graph */
     sharedSubNLG recursivePartition(const GenericGraph& gfg, const GenericUnaryGraph& unaryFactors, const std::vector<size_t>& frontals, const std::vector<size_t>& sep,
-        const std::shared_ptr<Cuts>& cuts, const std::shared_ptr<SubNLG>& parent, WorkSpace& workspace, const bool verbose) const;
+        const boost::shared_ptr<Cuts>& cuts, const boost::shared_ptr<SubNLG>& parent, WorkSpace& workspace, const bool verbose) const;
 
   };
 

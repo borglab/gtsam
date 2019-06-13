@@ -147,9 +147,9 @@ Template JacobianFactor::shared_ptr This::createDualFactor(
   if (Aterms.size() > 0) {
     Vector b = problem_.costGradient(key, delta);
     // to compute the least-square approximation of dual variables
-    return std::make_shared<JacobianFactor>(Aterms, b);
+    return boost::make_shared<JacobianFactor>(Aterms, b);
   } else {
-    return std::make_shared<JacobianFactor>();
+    return boost::make_shared<JacobianFactor>();
   }
 }
 

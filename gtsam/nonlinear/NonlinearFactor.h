@@ -35,7 +35,7 @@
  */
 #define ADD_CLONE_NONLINEAR_FACTOR(Derived) \
   virtual gtsam::NonlinearFactor::shared_ptr clone() const { \
-  return std::static_pointer_cast<gtsam::NonlinearFactor>( \
+  return boost::static_pointer_cast<gtsam::NonlinearFactor>( \
       gtsam::NonlinearFactor::shared_ptr(new Derived(*this))); }
 
 namespace gtsam {
@@ -59,7 +59,7 @@ protected:
 
 public:
 
-  typedef std::shared_ptr<This> shared_ptr;
+  typedef boost::shared_ptr<This> shared_ptr;
 
   /// @name Standard Constructors
   /// @{
@@ -115,7 +115,7 @@ public:
   virtual bool active(const Values& /*c*/) const { return true; }
 
   /** linearize to a GaussianFactor */
-  virtual std::shared_ptr<GaussianFactor>
+  virtual boost::shared_ptr<GaussianFactor>
   linearize(const Values& c) const = 0;
 
   /**
@@ -172,7 +172,7 @@ protected:
 
 public:
 
-  typedef std::shared_ptr<This> shared_ptr;
+  typedef boost::shared_ptr<This> shared_ptr;
 
   /** Default constructor for I/O only */
   NoiseModelFactor() {}
@@ -246,7 +246,7 @@ public:
    * \f$ Ax-b \approx h(x+\delta x)-z = h(x) + A \delta x - z \f$
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
-  std::shared_ptr<GaussianFactor> linearize(const Values& x) const;
+  boost::shared_ptr<GaussianFactor> linearize(const Values& x) const;
 
 private:
 

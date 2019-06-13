@@ -32,7 +32,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/range/adaptor/map.hpp>
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 using boost::adaptors::map_values;

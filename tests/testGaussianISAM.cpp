@@ -45,7 +45,7 @@ TEST( ISAM, iSAM_smoother )
 
   // run iSAM for every factor
   GaussianISAM actual;
-  for(std::shared_ptr<GaussianFactor> factor: smoother) {
+  for(boost::shared_ptr<GaussianFactor> factor: smoother) {
     GaussianFactorGraph factorGraph;
     factorGraph.push_back(factor);
     actual.update(factorGraph);

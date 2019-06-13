@@ -101,13 +101,13 @@ void getSymbolicGraph(
   // Get keys for which you want the orientation
   size_t id = 0;
   // Loop over the factors
-  for(const std::shared_ptr<NonlinearFactor>& factor: g) {
+  for(const boost::shared_ptr<NonlinearFactor>& factor: g) {
     if (factor->keys().size() == 2) {
       Key key1 = factor->keys()[0];
       Key key2 = factor->keys()[1];
       // recast to a between
-      std::shared_ptr<BetweenFactor<Pose2> > pose2Between =
-          std::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
+      boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
+          boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
       if (!pose2Between)
         continue;
       // get the orientation - measured().theta();
@@ -138,8 +138,8 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
     Vector& deltaTheta, noiseModel::Diagonal::shared_ptr& model_deltaTheta) {
 
   // Get the relative rotation measurement from the between factor
-  std::shared_ptr<BetweenFactor<Pose2> > pose2Between =
-      std::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
+  boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
+      boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
   if (!pose2Between)
     throw invalid_argument(
         "buildLinearOrientationGraph: invalid between factor!");
@@ -147,8 +147,8 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
 
   // Retrieve the noise model for the relative rotation
   SharedNoiseModel model = pose2Between->noiseModel();
-  std::shared_ptr<noiseModel::Diagonal> diagonalModel =
-      std::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+  boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
+      boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
   if (!diagonalModel)
     throw invalid_argument("buildLinearOrientationGraph: invalid noise model "
         "(current version assumes diagonal noise model)!");
@@ -199,17 +199,17 @@ static NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph) {
   gttic(lago_buildPose2graph);
   NonlinearFactorGraph pose2Graph;
 
-  for(const std::shared_ptr<NonlinearFactor>& factor: graph) {
+  for(const boost::shared_ptr<NonlinearFactor>& factor: graph) {
 
     // recast to a between on Pose2
-    std::shared_ptr<BetweenFactor<Pose2> > pose2Between =
-        std::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
+    boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
+        boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
     if (pose2Between)
       pose2Graph.add(pose2Between);
 
     // recast PriorFactor<Pose2> to BetweenFactor<Pose2>
-    std::shared_ptr<PriorFactor<Pose2> > pose2Prior =
-        std::dynamic_pointer_cast<PriorFactor<Pose2> >(factor);
+    boost::shared_ptr<PriorFactor<Pose2> > pose2Prior =
+        boost::dynamic_pointer_cast<PriorFactor<Pose2> >(factor);
     if (pose2Prior)
       pose2Graph.add(
           BetweenFactor<Pose2>(keyAnchor, pose2Prior->keys()[0],
@@ -226,7 +226,7 @@ static PredecessorMap<Key> findOdometricPath(
   Key minKey = keyAnchor; // this initialization does not matter
   bool minUnassigned = true;
 
-  for(const std::shared_ptr<NonlinearFactor>& factor: pose2Graph) {
+  for(const boost::shared_ptr<NonlinearFactor>& factor: pose2Graph) {
 
     Key key1 = std::min(factor->keys()[0], factor->keys()[1]);
     Key key2 = std::max(factor->keys()[0], factor->keys()[1]);
@@ -299,10 +299,10 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
   GaussianFactorGraph linearPose2graph;
 
   // We include the linear version of each between factor
-  for(const std::shared_ptr<NonlinearFactor>& factor: pose2graph) {
+  for(const boost::shared_ptr<NonlinearFactor>& factor: pose2graph) {
 
-    std::shared_ptr<BetweenFactor<Pose2> > pose2Between =
-        std::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
+    boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
+        boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
 
     if (pose2Between) {
       Key key1 = pose2Between->keys()[0];
@@ -327,8 +327,8 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
       J1(0, 2) = s1 * dx + c1 * dy;
       J1(1, 2) = -c1 * dx + s1 * dy;
       // Retrieve the noise model for the relative rotation
-      std::shared_ptr<noiseModel::Diagonal> diagonalModel =
-          std::dynamic_pointer_cast<noiseModel::Diagonal>(
+      boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
+          boost::dynamic_pointer_cast<noiseModel::Diagonal>(
               pose2Between->noiseModel());
 
       linearPose2graph.add(key1, J1, key2, I3, b, diagonalModel);

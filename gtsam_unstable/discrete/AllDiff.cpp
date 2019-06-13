@@ -92,7 +92,7 @@ namespace gtsam {
       if (values.find(k) == values.end()) {
         newKeys.push_back(DiscreteKey(k,cardinalities_.at(k)));
       }
-    return std::make_shared<AllDiff>(newKeys);
+    return boost::make_shared<AllDiff>(newKeys);
   }
 
   /* ************************************************************************* */

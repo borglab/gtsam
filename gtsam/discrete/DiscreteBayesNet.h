@@ -19,7 +19,7 @@
 
 #include <vector>
 #include <map>
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 
@@ -33,8 +33,8 @@ namespace gtsam {
     typedef FactorGraph<DiscreteConditional> Base;
     typedef DiscreteBayesNet This;
     typedef DiscreteConditional ConditionalType;
-    typedef std::shared_ptr<This> shared_ptr;
-    typedef std::shared_ptr<ConditionalType> sharedConditional;
+    typedef boost::shared_ptr<This> shared_ptr;
+    typedef boost::shared_ptr<ConditionalType> sharedConditional;
 
     /// @name Standard Constructors
     /// @{

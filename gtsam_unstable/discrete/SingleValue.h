@@ -29,7 +29,7 @@ namespace gtsam {
 
   public:
 
-    typedef std::shared_ptr<SingleValue> shared_ptr;
+    typedef boost::shared_ptr<SingleValue> shared_ptr;
 
     /// Constructor
     SingleValue(Key key, size_t n, size_t value) :

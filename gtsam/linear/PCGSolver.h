@@ -36,7 +36,7 @@ struct PreconditionerParameters;
 struct GTSAM_EXPORT PCGSolverParameters: public ConjugateGradientParameters {
 public:
   typedef ConjugateGradientParameters Base;
-  typedef std::shared_ptr<PCGSolverParameters> shared_ptr;
+  typedef boost::shared_ptr<PCGSolverParameters> shared_ptr;
 
   PCGSolverParameters() {
   }
@@ -48,7 +48,7 @@ public:
     return *preconditioner_;
   }
 
-  std::shared_ptr<PreconditionerParameters> preconditioner_;
+  boost::shared_ptr<PreconditionerParameters> preconditioner_;
 };
 
 /**
@@ -57,12 +57,12 @@ public:
 class GTSAM_EXPORT PCGSolver: public IterativeSolver {
 public:
   typedef IterativeSolver Base;
-  typedef std::shared_ptr<PCGSolver> shared_ptr;
+  typedef boost::shared_ptr<PCGSolver> shared_ptr;
 
 protected:
 
   PCGSolverParameters parameters_;
-  std::shared_ptr<Preconditioner> preconditioner_;
+  boost::shared_ptr<Preconditioner> preconditioner_;
 
 public:
   /* Interface to initialize a solver without a problem */

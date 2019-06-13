@@ -54,7 +54,7 @@ public:
   virtual size_t dim() const { return rowDim_; }
 
   /** linearize to a GaussianFactor */
-  virtual std::shared_ptr<GaussianFactor> linearize(const Values& c) const;
+  virtual boost::shared_ptr<GaussianFactor> linearize(const Values& c) const;
 
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
@@ -63,7 +63,7 @@ public:
    * By default, throws exception if subclass does not implement the function.
    */
   virtual NonlinearFactor::shared_ptr clone() const {
-    return std::static_pointer_cast<NonlinearFactor>(
+    return boost::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new DummyFactor(*this)));
   }
 

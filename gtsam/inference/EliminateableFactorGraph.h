@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 #include <boost/variant.hpp>
 #include <boost/optional.hpp>
@@ -83,7 +83,7 @@ namespace gtsam {
 
     /// The pair of conditional and remaining factor produced by a single dense elimination step on
     /// a subgraph.
-    typedef std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<_FactorType> > EliminationResult;
+    typedef std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<_FactorType> > EliminationResult;
 
     /// The function type that does a single dense elimination step on a subgraph.
     typedef boost::function<EliminationResult(const FactorGraphType&, const Ordering&)> Eliminate;
@@ -102,26 +102,26 @@ namespace gtsam {
      *
      *  <b> Example - Full Cholesky elimination in COLAMD order: </b>
      *  \code
-     *  std::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(EliminateCholesky);
+     *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(EliminateCholesky);
      *  \endcode
      *
      *  <b> Example - METIS ordering for elimination
      *  \code
-     *  std::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(OrderingType::METIS);
+     *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(OrderingType::METIS);
      *
      *  <b> Example - Full QR elimination in specified order:
      *  \code
-     *  std::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(EliminateQR, myOrdering);
+     *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(EliminateQR, myOrdering);
      *  \endcode
      *
      *  <b> Example - Reusing an existing VariableIndex to improve performance, and using COLAMD ordering: </b>
      *  \code
      *  VariableIndex varIndex(graph); // Build variable index
      *  Data data = otherFunctionUsingVariableIndex(graph, varIndex); // Other code that uses variable index
-     *  std::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(EliminateQR, boost::none, varIndex);
+     *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(EliminateQR, boost::none, varIndex);
      *  \endcode
      *  */
-    std::shared_ptr<BayesNetType> eliminateSequential(
+    boost::shared_ptr<BayesNetType> eliminateSequential(
       OptionalOrdering ordering = boost::none,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none,
@@ -133,22 +133,22 @@ namespace gtsam {
      *
      *  <b> Example - Full Cholesky elimination in COLAMD order: </b>
      *  \code
-     *  std::shared_ptr<GaussianBayesTree> result = graph.eliminateMultifrontal(EliminateCholesky);
+     *  boost::shared_ptr<GaussianBayesTree> result = graph.eliminateMultifrontal(EliminateCholesky);
      *  \endcode
      *
      *  <b> Example - Full QR elimination in specified order:
      *  \code
-     *  std::shared_ptr<GaussianBayesTree> result = graph.eliminateMultifrontal(EliminateQR, myOrdering);
+     *  boost::shared_ptr<GaussianBayesTree> result = graph.eliminateMultifrontal(EliminateQR, myOrdering);
      *  \endcode
      *
      *  <b> Example - Reusing an existing VariableIndex to improve performance, and using COLAMD ordering: </b>
      *  \code
      *  VariableIndex varIndex(graph); // Build variable index
      *  Data data = otherFunctionUsingVariableIndex(graph, varIndex); // Other code that uses variable index
-     *  std::shared_ptr<GaussianBayesTree> result = graph.eliminateMultifrontal(EliminateQR, boost::none, varIndex);
+     *  boost::shared_ptr<GaussianBayesTree> result = graph.eliminateMultifrontal(EliminateQR, boost::none, varIndex);
      *  \endcode
      *  */
-    std::shared_ptr<BayesTreeType> eliminateMultifrontal(
+    boost::shared_ptr<BayesTreeType> eliminateMultifrontal(
       OptionalOrdering ordering = boost::none,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none,
@@ -158,7 +158,7 @@ namespace gtsam {
      *  and a remaining factor graph.  This computes the factorization \f$ p(X) = p(A|B) p(B) \f$,
      *  where \f$ A = \f$ \c variables, \f$ X \f$ is all the variables in the factor graph, and \f$
      *  B = X\backslash A \f$. */
-    std::pair<std::shared_ptr<BayesNetType>, std::shared_ptr<FactorGraphType> >
+    std::pair<boost::shared_ptr<BayesNetType>, boost::shared_ptr<FactorGraphType> >
       eliminatePartialSequential(
       const Ordering& ordering,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
@@ -168,7 +168,7 @@ namespace gtsam {
      *  produce a Bayes net and a remaining factor graph.  This computes the factorization \f$ p(X)
      *  = p(A|B) p(B) \f$, where \f$ A = \f$ \c variables, \f$ X \f$ is all the variables in the
      *  factor graph, and \f$ B = X\backslash A \f$. */
-    std::pair<std::shared_ptr<BayesNetType>, std::shared_ptr<FactorGraphType> >
+    std::pair<boost::shared_ptr<BayesNetType>, boost::shared_ptr<FactorGraphType> >
       eliminatePartialSequential(
       const KeyVector& variables,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
@@ -178,7 +178,7 @@ namespace gtsam {
      *  tree and a remaining factor graph.  This computes the factorization \f$ p(X) = p(A|B) p(B)
      *  \f$, where \f$ A = \f$ \c variables, \f$ X \f$ is all the variables in the factor graph, and
      *  \f$ B = X\backslash A \f$. */
-    std::pair<std::shared_ptr<BayesTreeType>, std::shared_ptr<FactorGraphType> >
+    std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> >
       eliminatePartialMultifrontal(
       const Ordering& ordering,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
@@ -188,7 +188,7 @@ namespace gtsam {
      *  produce a Bayes net and a remaining factor graph.  This computes the factorization \f$ p(X)
      *  = p(A|B) p(B) \f$, where \f$ A = \f$ \c variables, \f$ X \f$ is all the variables in the
      *  factor graph, and \f$ B = X\backslash A \f$. */
-    std::pair<std::shared_ptr<BayesTreeType>, std::shared_ptr<FactorGraphType> >
+    std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> >
       eliminatePartialMultifrontal(
       const KeyVector& variables,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
@@ -205,7 +205,7 @@ namespace gtsam {
      *         used.
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
-    std::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
+    boost::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
       boost::variant<const Ordering&, const KeyVector&> variables,
       OptionalOrdering marginalizedVariableOrdering = boost::none,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
@@ -222,14 +222,14 @@ namespace gtsam {
      *         used.
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
-    std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
+    boost::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
       boost::variant<const Ordering&, const KeyVector&> variables,
       OptionalOrdering marginalizedVariableOrdering = boost::none,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
     /** Compute the marginal factor graph of the requested variables. */
-    std::shared_ptr<FactorGraphType> marginal(
+    boost::shared_ptr<FactorGraphType> marginal(
       const KeyVector& variables,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;

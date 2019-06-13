@@ -25,7 +25,7 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/inference/FactorGraph.h>
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <functional>
 
 namespace gtsam {
@@ -80,7 +80,7 @@ namespace gtsam {
 
     typedef FactorGraph<NonlinearFactor> Base;
     typedef NonlinearFactorGraph This;
-    typedef std::shared_ptr<This> shared_ptr;
+    typedef boost::shared_ptr<This> shared_ptr;
 
     /** Default constructor */
     NonlinearFactorGraph() {}
@@ -122,7 +122,7 @@ namespace gtsam {
     /**
      * Create a symbolic factor graph
      */
-    std::shared_ptr<SymbolicFactorGraph> symbolic() const;
+    boost::shared_ptr<SymbolicFactorGraph> symbolic() const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.
@@ -140,10 +140,10 @@ namespace gtsam {
     Ordering orderingCOLAMDConstrained(const FastMap<Key, int>& constraints) const;
 
     /// Linearize a nonlinear factor graph
-    std::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
+    boost::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
 
     /// typdef for dampen functions used below
-    typedef std::function<void(const std::shared_ptr<HessianFactor>& hessianFactor)> Dampen;
+    typedef std::function<void(const boost::shared_ptr<HessianFactor>& hessianFactor)> Dampen;
 
     /**
      * Instead of producing a GaussianFactorGraph, pre-allocate and linearize directly
@@ -153,7 +153,7 @@ namespace gtsam {
      * An optional lambda function can be used to apply damping on the filled Hessian.
      * No parallelism is exploited, because all the factors write in the same memory.
      */
-    std::shared_ptr<HessianFactor> linearizeToHessianFactor(
+    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
         const Values& values, boost::optional<Ordering&> ordering = boost::none,
         const Dampen& dampen = nullptr) const;
 
@@ -185,7 +185,7 @@ namespace gtsam {
     template<typename T>
     void addExpressionFactor(const SharedNoiseModel& R, const T& z,
                              const Expression<T>& h) {
-      push_back(std::make_shared<ExpressionFactor<T> >(R, z, h));
+      push_back(boost::make_shared<ExpressionFactor<T> >(R, z, h));
     }
 
   private:

@@ -80,8 +80,8 @@ bool testFactorJacobians(const std::string& name_,
   JacobianFactor expected = linearizeNumerically(factor, values, delta);
 
   // Create actual value by linearize
-  std::shared_ptr<JacobianFactor> actual = //
-      std::dynamic_pointer_cast<JacobianFactor>(factor.linearize(values));
+  boost::shared_ptr<JacobianFactor> actual = //
+      boost::dynamic_pointer_cast<JacobianFactor>(factor.linearize(values));
   if (!actual) return false;
 
   // Check cast result and then equality

@@ -117,10 +117,10 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) con
 
   // Apply changes due to relinearization
   if (isJacobian()) {
-    JacobianFactor::shared_ptr jacFactor = std::dynamic_pointer_cast<JacobianFactor>(linFactor);
+    JacobianFactor::shared_ptr jacFactor = boost::dynamic_pointer_cast<JacobianFactor>(linFactor);
     jacFactor->getb() = -jacFactor->unweighted_error(delta);
   } else {
-    HessianFactor::shared_ptr hesFactor = std::dynamic_pointer_cast<HessianFactor>(linFactor);
+    HessianFactor::shared_ptr hesFactor = boost::dynamic_pointer_cast<HessianFactor>(linFactor);
 
     const auto view = hesFactor->informationView();
     Vector deltaVector = delta.vector(keys());
@@ -144,12 +144,12 @@ bool LinearContainerFactor::isHessian() const {
 
 /* ************************************************************************* */
 JacobianFactor::shared_ptr LinearContainerFactor::toJacobian() const {
-  return std::dynamic_pointer_cast<JacobianFactor>(factor_);
+  return boost::dynamic_pointer_cast<JacobianFactor>(factor_);
 }
 
 /* ************************************************************************* */
 HessianFactor::shared_ptr LinearContainerFactor::toHessian() const {
-  return std::dynamic_pointer_cast<HessianFactor>(factor_);
+  return boost::dynamic_pointer_cast<HessianFactor>(factor_);
 }
 
 /* ************************************************************************* */
@@ -171,7 +171,7 @@ NonlinearFactorGraph LinearContainerFactor::ConvertLinearGraph(
   result.reserve(linear_graph.size());
   for (const auto& f : linear_graph)
     if (f)
-      result += std::make_shared<LinearContainerFactor>(f, linearizationPoint);
+      result += boost::make_shared<LinearContainerFactor>(f, linearizationPoint);
   return result;
 }
 

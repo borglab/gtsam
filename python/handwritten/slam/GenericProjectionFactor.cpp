@@ -39,8 +39,8 @@ void exportGenericProjectionFactor()
 {
 
   class_<GenericProjectionFactorCal3_S2, bases<NonlinearFactor> >("GenericProjectionFactorCal3_S2", init<>())
-    .def(init<const Point2 &, SharedNoiseModel, Key, Key, const std::shared_ptr<Cal3_S2> &, optional<Pose3> >())
-    .def(init<const Point2 &, SharedNoiseModel, Key, Key, const std::shared_ptr<Cal3_S2> &, bool, bool, optional<Pose3> >())
+    .def(init<const Point2 &, SharedNoiseModel, Key, Key, const boost::shared_ptr<Cal3_S2> &, optional<Pose3> >())
+    .def(init<const Point2 &, SharedNoiseModel, Key, Key, const boost::shared_ptr<Cal3_S2> &, bool, bool, optional<Pose3> >())
     .def("print", &GenericProjectionFactorCal3_S2::print, print_overloads(args("s")))
     .def("equals", &GenericProjectionFactorCal3_S2::equals, equals_overloads(args("q","tol")))
     .def("evaluate_error", &GenericProjectionFactorCal3_S2::evaluateError, evaluateError_overloads())

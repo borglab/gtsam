@@ -37,7 +37,7 @@ namespace gtsam {
 
     // Keep a copy of measurement and calibration for I/O
     Point2 measured_;                    ///< 2D measurement
-    std::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
+    boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
     // verbosity handling for Cheirality Exceptions
@@ -53,7 +53,7 @@ namespace gtsam {
     typedef GenericProjectionFactor<POSE, LANDMARK, CALIBRATION> This;
 
     /// shorthand for a smart pointer to a factor
-    typedef std::shared_ptr<This> shared_ptr;
+    typedef boost::shared_ptr<This> shared_ptr;
 
     /// Default constructor
   GenericProjectionFactor() :
@@ -71,7 +71,7 @@ namespace gtsam {
      * @param body_P_sensor is the transform from body to sensor frame (default identity)
      */
     GenericProjectionFactor(const Point2& measured, const SharedNoiseModel& model,
-        Key poseKey, Key pointKey, const std::shared_ptr<CALIBRATION>& K,
+        Key poseKey, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
         boost::optional<POSE> body_P_sensor = boost::none) :
           Base(model, poseKey, pointKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
           throwCheirality_(false), verboseCheirality_(false) {}
@@ -89,7 +89,7 @@ namespace gtsam {
      * @param body_P_sensor is the transform from body to sensor frame  (default identity)
      */
     GenericProjectionFactor(const Point2& measured, const SharedNoiseModel& model,
-        Key poseKey, Key pointKey, const std::shared_ptr<CALIBRATION>& K,
+        Key poseKey, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality,
         boost::optional<POSE> body_P_sensor = boost::none) :
           Base(model, poseKey, pointKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
@@ -100,7 +100,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      return std::static_pointer_cast<gtsam::NonlinearFactor>(
+      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /**
@@ -163,7 +163,7 @@ namespace gtsam {
     }
 
     /** return the calibration object */
-    inline const std::shared_ptr<CALIBRATION> calibration() const {
+    inline const boost::shared_ptr<CALIBRATION> calibration() const {
       return K_;
     }
 

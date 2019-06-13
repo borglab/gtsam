@@ -228,7 +228,7 @@ template<class T, class A1>
 class UnaryExpression: public ExpressionNode<T> {
 
   typedef typename Expression<T>::template UnaryFunction<A1>::type Function;
-  std::shared_ptr<ExpressionNode<A1> > expression1_;
+  boost::shared_ptr<ExpressionNode<A1> > expression1_;
   Function function_;
 
   /// Constructor with a unary function f, and input argument e1
@@ -333,8 +333,8 @@ template<class T, class A1, class A2>
 class BinaryExpression: public ExpressionNode<T> {
 
   typedef typename Expression<T>::template BinaryFunction<A1, A2>::type Function;
-  std::shared_ptr<ExpressionNode<A1> > expression1_;
-  std::shared_ptr<ExpressionNode<A2> > expression2_;
+  boost::shared_ptr<ExpressionNode<A1> > expression1_;
+  boost::shared_ptr<ExpressionNode<A2> > expression2_;
   Function function_;
 
   /// Constructor with a binary function f, and two input arguments
@@ -439,9 +439,9 @@ template<class T, class A1, class A2, class A3>
 class TernaryExpression: public ExpressionNode<T> {
 
   typedef typename Expression<T>::template TernaryFunction<A1, A2, A3>::type Function;
-  std::shared_ptr<ExpressionNode<A1> > expression1_;
-  std::shared_ptr<ExpressionNode<A2> > expression2_;
-  std::shared_ptr<ExpressionNode<A3> > expression3_;
+  boost::shared_ptr<ExpressionNode<A1> > expression1_;
+  boost::shared_ptr<ExpressionNode<A2> > expression2_;
+  boost::shared_ptr<ExpressionNode<A3> > expression3_;
   Function function_;
 
   /// Constructor with a ternary function f, and two input arguments
@@ -560,7 +560,7 @@ class ScalarMultiplyNode : public ExpressionNode<T> {
   BOOST_CONCEPT_ASSERT((gtsam::IsVectorSpace<T>));
 
   double scalar_;
-  std::shared_ptr<ExpressionNode<T> > expression_;
+  boost::shared_ptr<ExpressionNode<T> > expression_;
 
  public:
   /// Constructor with a unary function f, and input argument e1
@@ -641,8 +641,8 @@ class ScalarMultiplyNode : public ExpressionNode<T> {
 template <class T>
 class BinarySumNode : public ExpressionNode<T> {
   typedef ExpressionNode<T> NodeT;
-  std::shared_ptr<ExpressionNode<T> > expression1_;
-  std::shared_ptr<ExpressionNode<T> > expression2_;
+  boost::shared_ptr<ExpressionNode<T> > expression1_;
+  boost::shared_ptr<ExpressionNode<T> > expression2_;
 
  public:
   explicit BinarySumNode() {

@@ -34,7 +34,7 @@ namespace gtsam {
 
   public:
 
-    typedef std::shared_ptr<GaussianDensity> shared_ptr;
+    typedef boost::shared_ptr<GaussianDensity> shared_ptr;
 
     /// default constructor needed for serialization
     GaussianDensity() :

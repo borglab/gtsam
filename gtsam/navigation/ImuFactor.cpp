@@ -110,7 +110,7 @@ PreintegratedImuMeasurements::PreintegratedImuMeasurements(
   if (!use2ndOrderIntegration)
   throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
   biasHat_ = biasHat;
-  std::shared_ptr<Params> p = Params::MakeSharedD();
+  boost::shared_ptr<Params> p = Params::MakeSharedD();
   p->gyroscopeCovariance = measuredOmegaCovariance;
   p->accelerometerCovariance = measuredAccCovariance;
   p->integrationCovariance = integrationErrorCovariance;
@@ -138,7 +138,7 @@ ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
 
 //------------------------------------------------------------------------------
 NonlinearFactor::shared_ptr ImuFactor::clone() const {
-  return std::static_pointer_cast<NonlinearFactor>(
+  return boost::static_pointer_cast<NonlinearFactor>(
       NonlinearFactor::shared_ptr(new This(*this)));
 }
 
@@ -213,7 +213,7 @@ ImuFactor::shared_ptr ImuFactor::Merge(const shared_ptr& f01,
   // return new factor
   auto pim02 =
   Merge(f01->preintegratedMeasurements(), f12->preintegratedMeasurements());
-  return std::make_shared<ImuFactor>(f01->key1(),// P0
+  return boost::make_shared<ImuFactor>(f01->key1(),// P0
       f01->key2(),// V0
       f12->key3(),// P2
       f12->key4(),// V2
@@ -230,7 +230,7 @@ ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
     const bool use2ndOrderCoriolis) :
 Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
     pose_j, vel_j, bias), _PIM_(pim) {
-  std::shared_ptr<PreintegratedImuMeasurements::Params> p = std::make_shared<
+  boost::shared_ptr<PreintegratedImuMeasurements::Params> p = boost::make_shared<
   PreintegratedImuMeasurements::Params>(pim.p());
   p->n_gravity = n_gravity;
   p->omegaCoriolis = omegaCoriolis;
@@ -261,7 +261,7 @@ ImuFactor2::ImuFactor2(Key state_i, Key state_j, Key bias,
 
 //------------------------------------------------------------------------------
 NonlinearFactor::shared_ptr ImuFactor2::clone() const {
-  return std::static_pointer_cast<NonlinearFactor>(
+  return boost::static_pointer_cast<NonlinearFactor>(
       NonlinearFactor::shared_ptr(new This(*this)));
 }
 

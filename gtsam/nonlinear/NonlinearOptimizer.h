@@ -81,7 +81,7 @@ protected:
 
 public:
   /** A shared pointer to this class */
-  typedef std::shared_ptr<const NonlinearOptimizer> shared_ptr;
+  typedef boost::shared_ptr<const NonlinearOptimizer> shared_ptr;
 
   /// @name Standard interface
   /// @{

@@ -42,7 +42,7 @@ using namespace std;
 // }
 
 #define PRIORFACTOR(VALUE) \
-  class_< PriorFactor<VALUE>, bases<NonlinearFactor>, std::shared_ptr< PriorFactor<VALUE> > >("PriorFactor"#VALUE) \
+  class_< PriorFactor<VALUE>, bases<NonlinearFactor>, boost::shared_ptr< PriorFactor<VALUE> > >("PriorFactor"#VALUE) \
   .def(init<Key,VALUE,noiseModel::Base::shared_ptr>()) \
   .def("prior", &PriorFactor<VALUE>::prior, return_internal_reference<>()) \
 ;

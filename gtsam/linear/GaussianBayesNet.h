@@ -34,8 +34,8 @@ namespace gtsam {
     typedef FactorGraph<GaussianConditional> Base;
     typedef GaussianBayesNet This;
     typedef GaussianConditional ConditionalType;
-    typedef std::shared_ptr<This> shared_ptr;
-    typedef std::shared_ptr<ConditionalType> sharedConditional;
+    typedef boost::shared_ptr<This> shared_ptr;
+    typedef boost::shared_ptr<ConditionalType> sharedConditional;
 
     /// @name Standard Constructors
     /// @{

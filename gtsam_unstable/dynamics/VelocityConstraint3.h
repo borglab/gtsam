@@ -23,7 +23,7 @@ protected:
 
 public:
 
-  typedef std::shared_ptr<VelocityConstraint3 > shared_ptr;
+  typedef boost::shared_ptr<VelocityConstraint3 > shared_ptr;
 
   ///TODO: comment
   VelocityConstraint3(Key key1, Key key2, Key velKey, double dt, double mu = 1000.0)
@@ -32,7 +32,7 @@ public:
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new VelocityConstraint3(*this))); }
 
   /** x1 + v*dt - x2 = 0, with optional derivatives */

@@ -50,7 +50,7 @@ namespace gtsam {
     typedef GaussianBayesTree BayesTreeType;             ///< Type of Bayes tree
     typedef GaussianJunctionTree JunctionTreeType;       ///< Type of Junction tree
     /// The default dense elimination function
-    static std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType> >
+    static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
       DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
         return EliminatePreferCholesky(factors, keys); }
   };
@@ -71,7 +71,7 @@ namespace gtsam {
     typedef GaussianFactorGraph This; ///< Typedef to this class
     typedef FactorGraph<GaussianFactor> Base; ///< Typedef to base factor graph type
     typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
-    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
     /** Default constructor */
     GaussianFactorGraph() {}

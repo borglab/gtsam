@@ -54,7 +54,7 @@ namespace gtsam {
   private:
     // These typedefs are private because they must be overridden in derived classes.
     typedef Factor This; ///< This class
-    typedef std::shared_ptr<Factor> shared_ptr; ///< A shared_ptr to this class.
+    typedef boost::shared_ptr<Factor> shared_ptr; ///< A shared_ptr to this class.
 
   public:
     /// Iterator over keys

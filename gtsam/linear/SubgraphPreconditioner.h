@@ -30,7 +30,7 @@
 #include <gtsam/dllexport.h>
 
 #include <boost/serialization/nvp.hpp>
-#include <memory>
+#include <boost/shared_ptr.hpp>
 
 #include <map>
 #include <utility>
@@ -71,7 +71,7 @@ namespace gtsam {
   /**************************************************************************/
   class GTSAM_EXPORT Subgraph {
   public:
-    typedef std::shared_ptr<Subgraph> shared_ptr;
+    typedef boost::shared_ptr<Subgraph> shared_ptr;
     typedef std::vector<shared_ptr> vector_shared_ptr;
     typedef std::vector<SubgraphEdge> Edges;
     typedef std::vector<size_t> EdgeIndices;
@@ -111,7 +111,7 @@ namespace gtsam {
   /****************************************************************************/
   struct GTSAM_EXPORT SubgraphBuilderParameters {
   public:
-    typedef std::shared_ptr<SubgraphBuilderParameters> shared_ptr;
+    typedef boost::shared_ptr<SubgraphBuilderParameters> shared_ptr;
 
     enum Skeleton {
       /* augmented tree */
@@ -157,13 +157,13 @@ namespace gtsam {
 
   public:
     typedef SubgraphBuilder Base;
-    typedef std::shared_ptr<SubgraphBuilder> shared_ptr;
+    typedef boost::shared_ptr<SubgraphBuilder> shared_ptr;
     typedef std::vector<double> Weights;
 
     SubgraphBuilder(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
       : parameters_(p) {}
     virtual ~SubgraphBuilder() {}
-    virtual std::shared_ptr<Subgraph> operator() (const GaussianFactorGraph &jfg) const ;
+    virtual boost::shared_ptr<Subgraph> operator() (const GaussianFactorGraph &jfg) const ;
 
   private:
     std::vector<size_t> buildTree(const GaussianFactorGraph &gfg, const FastMap<Key, size_t> &ordering, const std::vector<double> &weights) const ;
@@ -180,7 +180,7 @@ namespace gtsam {
   /*******************************************************************************************/
   struct GTSAM_EXPORT SubgraphPreconditionerParameters : public PreconditionerParameters {
     typedef PreconditionerParameters Base;
-    typedef std::shared_ptr<SubgraphPreconditionerParameters> shared_ptr;
+    typedef boost::shared_ptr<SubgraphPreconditionerParameters> shared_ptr;
     SubgraphPreconditionerParameters(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
       : Base(), builderParams_(p) {}
     virtual ~SubgraphPreconditionerParameters() {}
@@ -197,11 +197,11 @@ namespace gtsam {
   class GTSAM_EXPORT SubgraphPreconditioner : public Preconditioner {
 
   public:
-    typedef std::shared_ptr<SubgraphPreconditioner> shared_ptr;
-    typedef std::shared_ptr<const GaussianBayesNet> sharedBayesNet;
-    typedef std::shared_ptr<const GaussianFactorGraph> sharedFG;
-    typedef std::shared_ptr<const VectorValues> sharedValues;
-    typedef std::shared_ptr<const Errors> sharedErrors;
+    typedef boost::shared_ptr<SubgraphPreconditioner> shared_ptr;
+    typedef boost::shared_ptr<const GaussianBayesNet> sharedBayesNet;
+    typedef boost::shared_ptr<const GaussianFactorGraph> sharedFG;
+    typedef boost::shared_ptr<const VectorValues> sharedValues;
+    typedef boost::shared_ptr<const Errors> sharedErrors;
 
   private:
     sharedFG Ab2_;
@@ -305,7 +305,7 @@ namespace gtsam {
 
 
   /* build a factor subgraph, which is defined as a set of weighted edges (factors) */
-  std::shared_ptr<GaussianFactorGraph>
+  boost::shared_ptr<GaussianFactorGraph>
   buildFactorSubgraph(const GaussianFactorGraph &gfg, const Subgraph &subgraph, const bool clone);
 
 

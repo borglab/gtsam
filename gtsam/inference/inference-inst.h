@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 #include <utility>
 

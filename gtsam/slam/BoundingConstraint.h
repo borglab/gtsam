@@ -33,7 +33,7 @@ template<class VALUE>
 struct BoundingConstraint1: public NoiseModelFactor1<VALUE> {
   typedef VALUE X;
   typedef NoiseModelFactor1<VALUE> Base;
-  typedef std::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
+  typedef boost::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
 
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than
@@ -102,7 +102,7 @@ struct BoundingConstraint2: public NoiseModelFactor2<VALUE1, VALUE2> {
   typedef VALUE2 X2;
 
   typedef NoiseModelFactor2<VALUE1, VALUE2> Base;
-  typedef std::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
+  typedef boost::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
 
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than

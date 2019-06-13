@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 
 #include <gtsam/inference/FactorGraph.h>
 
@@ -38,7 +38,7 @@ namespace gtsam {
     typedef FactorGraph<CONDITIONAL> Base;
 
   public:
-    typedef typename std::shared_ptr<CONDITIONAL> sharedConditional; ///< A shared pointer to a conditional
+    typedef typename boost::shared_ptr<CONDITIONAL> sharedConditional; ///< A shared pointer to a conditional
 
   protected:
     /// @name Standard Constructors

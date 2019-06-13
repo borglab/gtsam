@@ -131,10 +131,10 @@ namespace gtsam {
 
       // Convert to JacobianFactor if necessary
       JacobianFactor::shared_ptr jacobianFactor(
-          std::dynamic_pointer_cast<JacobianFactor>(factor));
+          boost::dynamic_pointer_cast<JacobianFactor>(factor));
       if (!jacobianFactor) {
         HessianFactor::shared_ptr hessian(
-            std::dynamic_pointer_cast<HessianFactor>(factor));
+            boost::dynamic_pointer_cast<HessianFactor>(factor));
         if (hessian)
           jacobianFactor.reset(new JacobianFactor(*hessian));
         else
@@ -286,10 +286,10 @@ namespace gtsam {
   /* ************************************************************************* */
   namespace {
     JacobianFactor::shared_ptr convertToJacobianFactorPtr(const GaussianFactor::shared_ptr &gf) {
-      JacobianFactor::shared_ptr result = std::dynamic_pointer_cast<JacobianFactor>(gf);
+      JacobianFactor::shared_ptr result = boost::dynamic_pointer_cast<JacobianFactor>(gf);
       if( !result )
         // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
-        result = std::make_shared<JacobianFactor>(*gf);
+        result = boost::make_shared<JacobianFactor>(*gf);
       return result;
     }
   }
@@ -383,7 +383,7 @@ namespace gtsam {
   bool hasConstraints(const GaussianFactorGraph& factors) {
     typedef JacobianFactor J;
     for (const GaussianFactor::shared_ptr& factor: factors) {
-      J::shared_ptr jacobian(std::dynamic_pointer_cast<J>(factor));
+      J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
       if (jacobian && jacobian->get_model() && jacobian->get_model()->isConstrained()) {
         return true;
       }

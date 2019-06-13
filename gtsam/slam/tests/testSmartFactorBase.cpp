@@ -42,9 +42,9 @@ public:
   virtual double error(const Values& values) const {
     return 0.0;
   }
-  virtual std::shared_ptr<GaussianFactor> linearize(
+  virtual boost::shared_ptr<GaussianFactor> linearize(
       const Values& values) const {
-    return std::shared_ptr<GaussianFactor>(new JacobianFactor());
+    return boost::shared_ptr<GaussianFactor>(new JacobianFactor());
   }
 };
 
@@ -74,9 +74,9 @@ public:
   virtual double error(const Values& values) const {
     return 0.0;
   }
-  virtual std::shared_ptr<GaussianFactor> linearize(
+  virtual boost::shared_ptr<GaussianFactor> linearize(
       const Values& values) const {
-    return std::shared_ptr<GaussianFactor>(new JacobianFactor());
+    return boost::shared_ptr<GaussianFactor>(new JacobianFactor());
   }
 };
 

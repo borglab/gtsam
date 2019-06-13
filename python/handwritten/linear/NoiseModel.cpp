@@ -102,10 +102,10 @@ void exportNoiseModels(){
   class_<BaseCallback,boost::noncopyable>("Base")
     .def("print", pure_virtual(&Base::print))
   ;
-  register_ptr_to_python< std::shared_ptr<Base> >();
+  register_ptr_to_python< boost::shared_ptr<Base> >();
 
   // NOTE: We should use "Base" in "bases<...>", and not "BaseCallback" (it was not clear at the begining)
-  class_<Gaussian, std::shared_ptr<Gaussian>, bases<Base> >("Gaussian", no_init)
+  class_<Gaussian, boost::shared_ptr<Gaussian>, bases<Base> >("Gaussian", no_init)
     .def("SqrtInformation",&Gaussian::SqrtInformation, Gaussian_SqrtInformation_overloads())
     .staticmethod("SqrtInformation")
     .def("Information",&Gaussian::Information, Gaussian_Information_overloads())
@@ -115,7 +115,7 @@ void exportNoiseModels(){
   ;
   REGISTER_SHARED_PTR_TO_PYTHON(Gaussian);
 
-  class_<Diagonal, std::shared_ptr<Diagonal>, bases<Gaussian> >("Diagonal", no_init)
+  class_<Diagonal, boost::shared_ptr<Diagonal>, bases<Gaussian> >("Diagonal", no_init)
     .def("Sigmas",&Diagonal::Sigmas, Diagonal_Sigmas_overloads())
     .staticmethod("Sigmas")
     .def("Variances",&Diagonal::Variances, Diagonal_Variances_overloads())
@@ -125,7 +125,7 @@ void exportNoiseModels(){
   ;
   REGISTER_SHARED_PTR_TO_PYTHON(Diagonal);
 
-  class_<Isotropic, std::shared_ptr<Isotropic>, bases<Diagonal> >("Isotropic", no_init)
+  class_<Isotropic, boost::shared_ptr<Isotropic>, bases<Diagonal> >("Isotropic", no_init)
     .def("Sigma",&Isotropic::Sigma, Isotropic_Sigma_overloads())
     .staticmethod("Sigma")
     .def("Variance",&Isotropic::Variance, Isotropic_Variance_overloads())
@@ -135,7 +135,7 @@ void exportNoiseModels(){
   ;
   REGISTER_SHARED_PTR_TO_PYTHON(Isotropic);
 
-  class_<Unit, std::shared_ptr<Unit>, bases<Isotropic> >("Unit", no_init)
+  class_<Unit, boost::shared_ptr<Unit>, bases<Isotropic> >("Unit", no_init)
     .def("Create",&Unit::Create)
     .staticmethod("Create")
   ;

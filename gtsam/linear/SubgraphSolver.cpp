@@ -50,7 +50,7 @@ SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab1,
 
   GaussianBayesNet::shared_ptr Rc1 = Ab1.eliminateSequential(ordering_,
       EliminateQR);
-  initialize(Rc1, std::make_shared<GaussianFactorGraph>(Ab2));
+  initialize(Rc1, boost::make_shared<GaussianFactorGraph>(Ab2));
 }
 
 /**************************************************************************************************/
@@ -69,7 +69,7 @@ SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1,
     const GaussianFactorGraph &Ab2, const Parameters &parameters,
     const Ordering& ordering) :
     parameters_(parameters), ordering_(ordering) {
-  initialize(Rc1, std::make_shared<GaussianFactorGraph>(Ab2));
+  initialize(Rc1, boost::make_shared<GaussianFactorGraph>(Ab2));
 }
 
 /**************************************************************************************************/
@@ -96,7 +96,7 @@ VectorValues SubgraphSolver::optimize(const VectorValues &initial) {
 /**************************************************************************************************/
 void SubgraphSolver::initialize(const GaussianFactorGraph &jfg) {
   GaussianFactorGraph::shared_ptr Ab1 =
-      std::make_shared<GaussianFactorGraph>(), Ab2 = std::make_shared<
+      boost::make_shared<GaussianFactorGraph>(), Ab2 = boost::make_shared<
       GaussianFactorGraph>();
 
   boost::tie(Ab1, Ab2) = splitGraph(jfg);
@@ -106,17 +106,17 @@ void SubgraphSolver::initialize(const GaussianFactorGraph &jfg) {
 
   GaussianBayesNet::shared_ptr Rc1 = Ab1->eliminateSequential(ordering_,
       EliminateQR);
-  VectorValues::shared_ptr xbar = std::make_shared<VectorValues>(
+  VectorValues::shared_ptr xbar = boost::make_shared<VectorValues>(
       Rc1->optimize());
-  pc_ = std::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
+  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
 /**************************************************************************************************/
 void SubgraphSolver::initialize(const GaussianBayesNet::shared_ptr &Rc1,
     const GaussianFactorGraph::shared_ptr &Ab2) {
-  VectorValues::shared_ptr xbar = std::make_shared<VectorValues>(
+  VectorValues::shared_ptr xbar = boost::make_shared<VectorValues>(
       Rc1->optimize());
-  pc_ = std::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
+  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
 /**************************************************************************************************/

@@ -132,7 +132,7 @@ PreintegratedCombinedMeasurements::PreintegratedCombinedMeasurements(
   if (!use2ndOrderIntegration)
   throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
   biasHat_ = biasHat;
-  std::shared_ptr<Params> p = Params::MakeSharedD();
+  boost::shared_ptr<Params> p = Params::MakeSharedD();
   p->gyroscopeCovariance = measuredOmegaCovariance;
   p->accelerometerCovariance = measuredAccCovariance;
   p->integrationCovariance = integrationErrorCovariance;
@@ -156,7 +156,7 @@ CombinedImuFactor::CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j,
 
 //------------------------------------------------------------------------------
 gtsam::NonlinearFactor::shared_ptr CombinedImuFactor::clone() const {
-  return std::static_pointer_cast<gtsam::NonlinearFactor>(
+  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
       gtsam::NonlinearFactor::shared_ptr(new This(*this)));
 }
 
@@ -253,7 +253,7 @@ CombinedImuFactor::CombinedImuFactor(
     pose_j, vel_j, bias_i, bias_j),
 _PIM_(pim) {
   using P = CombinedPreintegratedMeasurements::Params;
-  auto p = std::allocate_shared<P>(Eigen::aligned_allocator<P>(), pim.p());
+  auto p = boost::allocate_shared<P>(Eigen::aligned_allocator<P>(), pim.p());
   p->n_gravity = n_gravity;
   p->omegaCoriolis = omegaCoriolis;
   p->body_P_sensor = body_P_sensor;

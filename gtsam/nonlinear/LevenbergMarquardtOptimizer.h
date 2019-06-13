@@ -41,7 +41,7 @@ protected:
   void initTime();
 
 public:
-  typedef std::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
+  typedef boost::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
 
   /// @name Constructors/Destructor
   /// @{

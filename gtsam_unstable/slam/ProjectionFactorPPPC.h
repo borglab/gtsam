@@ -49,7 +49,7 @@ namespace gtsam {
     typedef ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> This;
 
     /// shorthand for a smart pointer to a factor
-    typedef std::shared_ptr<This> shared_ptr;
+    typedef boost::shared_ptr<This> shared_ptr;
 
     /// Default constructor
   ProjectionFactorPPPC() :
@@ -92,7 +92,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     virtual NonlinearFactor::shared_ptr clone() const {
-      return std::static_pointer_cast<NonlinearFactor>(
+      return boost::static_pointer_cast<NonlinearFactor>(
           NonlinearFactor::shared_ptr(new This(*this))); }
 
     /**

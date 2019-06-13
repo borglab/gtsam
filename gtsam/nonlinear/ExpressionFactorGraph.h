@@ -43,7 +43,7 @@ public:
   void addExpressionFactor(const Expression<T>& h, const T& z,
       const SharedNoiseModel& R) {
     using F = ExpressionFactor<T>;
-    push_back(std::allocate_shared<F>(Eigen::aligned_allocator<F>(), R, z, h));
+    push_back(boost::allocate_shared<F>(Eigen::aligned_allocator<F>(), R, z, h));
   }
 
   /// @}

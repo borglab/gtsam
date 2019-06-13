@@ -30,7 +30,7 @@ class GTSAM_EXPORT ConjugateGradientParameters : public IterativeOptimizationPar
 
 public:
   typedef IterativeOptimizationParameters Base;
-  typedef std::shared_ptr<ConjugateGradientParameters> shared_ptr;
+  typedef boost::shared_ptr<ConjugateGradientParameters> shared_ptr;
 
   size_t minIterations_;  ///< minimum number of cg iterations
   size_t maxIterations_;  ///< maximum number of cg iterations

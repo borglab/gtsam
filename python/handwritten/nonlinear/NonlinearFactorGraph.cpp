@@ -28,9 +28,9 @@ using namespace gtsam;
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, NonlinearFactorGraph::print, 0, 1);
 
-std::shared_ptr<NonlinearFactor> getNonlinearFactor(
+boost::shared_ptr<NonlinearFactor> getNonlinearFactor(
     const NonlinearFactorGraph& graph, size_t idx) {
-  auto p = std::dynamic_pointer_cast<NonlinearFactor>(graph.at(idx));
+  auto p = boost::dynamic_pointer_cast<NonlinearFactor>(graph.at(idx));
   if (!p) throw std::runtime_error("No NonlinearFactor at requested index");
   return p;
 };

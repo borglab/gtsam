@@ -50,7 +50,7 @@ public:
    */
   template<class CALIBRATION>
   EssentialMatrixFactor(Key key, const Point2& pA, const Point2& pB,
-      const SharedNoiseModel& model, std::shared_ptr<CALIBRATION> K) :
+      const SharedNoiseModel& model, boost::shared_ptr<CALIBRATION> K) :
       Base(model, key) {
     assert(K);
     vA_ = EssentialMatrix::Homogeneous(K->calibrate(pA));
@@ -59,7 +59,7 @@ public:
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -124,7 +124,7 @@ public:
    */
   template<class CALIBRATION>
   EssentialMatrixFactor2(Key key1, Key key2, const Point2& pA, const Point2& pB,
-      const SharedNoiseModel& model, std::shared_ptr<CALIBRATION> K) :
+      const SharedNoiseModel& model, boost::shared_ptr<CALIBRATION> K) :
       Base(model, key1, key2), dP1_(
           EssentialMatrix::Homogeneous(K->calibrate(pA))), pn_(K->calibrate(pB)) {
     f_ = 0.5 * (K->fx() + K->fy());
@@ -132,7 +132,7 @@ public:
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -245,13 +245,13 @@ public:
   template<class CALIBRATION>
   EssentialMatrixFactor3(Key key1, Key key2, const Point2& pA, const Point2& pB,
       const Rot3& cRb, const SharedNoiseModel& model,
-      std::shared_ptr<CALIBRATION> K) :
+      boost::shared_ptr<CALIBRATION> K) :
       EssentialMatrixFactor2(key1, key2, pA, pB, model, K), cRb_(cRb) {
   }
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 

@@ -16,7 +16,7 @@
  * @author Frank Dellaert
  */
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <boost/assign/std/list.hpp> // for +=
 using namespace boost::assign;
 

@@ -13,8 +13,8 @@
  *     - Eigen types:       Matrix, Vector
  *     - C/C++ basic types: string, bool, size_t, int, double, char, unsigned char
  *     - void
- *     - Any class with which be copied with std::make_shared()
- *     - std::shared_ptr of any object type
+ *     - Any class with which be copied with boost::make_shared()
+ *     - boost::shared_ptr of any object type
  *   Constructors
  *     - Overloads are supported
  *     - A class with no constructors can be returned from other functions but not allocated directly in MATLAB
@@ -31,8 +31,8 @@
  *      - Eigen types:       Matrix, Vector
  *      - Eigen types and classes as an optionally const reference
  *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
- *     - Any class with which be copied with std::make_shared() (except Eigen)
- *     - std::shared_ptr of any object type (except Eigen)
+ *     - Any class with which be copied with boost::make_shared() (except Eigen)
+ *     - boost::shared_ptr of any object type (except Eigen)
  *   Comments can use either C++ or C style, with multiple lines
  *   Namespace definitions
  *     - Names of namespaces must start with a lowercase letter
@@ -62,7 +62,7 @@
  *       in the MATLAB interface).  clone() will be called whenever an object copy is needed, instead
  *       of using the copy constructor (which is used for non-virtual objects).
  *     - Signature of clone function - will be called virtually, so must appear at least at the top of the inheritance tree
- *           virtual std::shared_ptr<CLASS_NAME> clone() const;
+ *           virtual boost::shared_ptr<CLASS_NAME> clone() const;
  *   Class Templates
  *     - Basic templates are supported either with an explicit list of types to instantiate,
  *       e.g. template<T = {gtsam::Pose2, gtsam::Rot2, gtsam::Point3}> class Class1 { ... };

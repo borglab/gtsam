@@ -81,7 +81,7 @@ double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& c
   // the factor graph already includes a factor for the prior/equality constraint.
   //  double dof = graph.size() - config.size();
   int graph_dim = 0;
-  for(const std::shared_ptr<gtsam::NonlinearFactor>& nlf: graph) {
+  for(const boost::shared_ptr<gtsam::NonlinearFactor>& nlf: graph) {
     graph_dim += (int)nlf->dim();
   }
   double dof = double(graph_dim) - double(config.dim()); // kaess: changed to dim
@@ -252,7 +252,7 @@ void runIncremental()
   while(nextMeasurement < datasetMeasurements.size())
   {
     if(BetweenFactor<Pose>::shared_ptr factor =
-      std::dynamic_pointer_cast<BetweenFactor<Pose> >(datasetMeasurements[nextMeasurement]))
+      boost::dynamic_pointer_cast<BetweenFactor<Pose> >(datasetMeasurements[nextMeasurement]))
     {
       Key key1 = factor->key1(), key2 = factor->key2();
       if(((int)key1 >= firstStep && key1 < key2) || ((int)key2 >= firstStep && key2 < key1)) {
@@ -281,7 +281,7 @@ void runIncremental()
     NonlinearFactorGraph newFactors;
     Values newVariables;
 
-    newFactors.push_back(std::make_shared<PriorFactor<Pose> >(firstPose, Pose(), noiseModel::Unit::Create(3)));
+    newFactors.push_back(boost::make_shared<PriorFactor<Pose> >(firstPose, Pose(), noiseModel::Unit::Create(3)));
     newVariables.insert(firstPose, Pose());
 
     isam2.update(newFactors, newVariables);
@@ -303,7 +303,7 @@ void runIncremental()
       NonlinearFactor::shared_ptr measurementf = datasetMeasurements[nextMeasurement];
 
       if(BetweenFactor<Pose>::shared_ptr factor =
-        std::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
+        boost::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
       {
         // Stop collecting measurements that are for future steps
         if(factor->key1() > step || factor->key2() > step)
@@ -339,7 +339,7 @@ void runIncremental()
         }
       }
       else if(BearingRangeFactor<Pose, Point2>::shared_ptr factor =
-        std::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
+        boost::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
       {
         Key poseKey = factor->keys()[0], lmKey = factor->keys()[1];
 
@@ -464,7 +464,7 @@ void runBatch()
   cout << "Creating batch optimizer..." << endl;
 
   NonlinearFactorGraph measurements = datasetMeasurements;
-  measurements.push_back(std::make_shared<PriorFactor<Pose> >(0, Pose(), noiseModel::Unit::Create(3)));
+  measurements.push_back(boost::make_shared<PriorFactor<Pose> >(0, Pose(), noiseModel::Unit::Create(3)));
 
   gttic_(Create_optimizer);
   GaussNewtonParams params;

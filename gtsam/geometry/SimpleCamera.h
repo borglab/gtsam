@@ -34,7 +34,7 @@ typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
 class GTSAM_EXPORT SimpleCamera : public PinholeCameraCal3_S2 {
 
   typedef PinholeCamera<Cal3_S2> Base;
-  typedef std::shared_ptr<SimpleCamera> shared_ptr;
+  typedef boost::shared_ptr<SimpleCamera> shared_ptr;
 
 public:
 
@@ -106,7 +106,7 @@ public:
    }
 
    /// Copy this object as its actual derived type.
-   SimpleCamera::shared_ptr clone() const { return std::make_shared<SimpleCamera>(*this); }
+   SimpleCamera::shared_ptr clone() const { return boost::make_shared<SimpleCamera>(*this); }
 
 
    /// @}

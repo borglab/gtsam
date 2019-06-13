@@ -36,7 +36,7 @@ Vector3 (Cal3_S2::*calibrate2)(const Vector3 &) const = &Cal3_S2::calibrate;
 
 void exportCal3_S2(){
 
-class_<Cal3_S2, std::shared_ptr<Cal3_S2> >("Cal3_S2", init<>())
+class_<Cal3_S2, boost::shared_ptr<Cal3_S2> >("Cal3_S2", init<>())
   .def(init<double,double,double,double,double>())
   .def(init<const Vector &>())
   .def(init<double,int,int>(args("fov","w","h")))
@@ -59,6 +59,6 @@ class_<Cal3_S2, std::shared_ptr<Cal3_S2> >("Cal3_S2", init<>())
   .def("calibrate",calibrate2)
   .def("between",&Cal3_S2::between, between_overloads())
 ;
-register_ptr_to_python< std::shared_ptr<Cal3_S2> >();
+register_ptr_to_python< boost::shared_ptr<Cal3_S2> >();
 
 }

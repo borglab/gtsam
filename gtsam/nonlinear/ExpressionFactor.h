@@ -45,7 +45,7 @@ protected:
 
 
  public:
-  typedef std::shared_ptr<ExpressionFactor<T> > shared_ptr;
+  typedef boost::shared_ptr<ExpressionFactor<T> > shared_ptr;
 
   /**
    * Constructor: creates a factor from a measurement and measurement function
@@ -99,20 +99,20 @@ protected:
     }
   }
 
-  virtual std::shared_ptr<GaussianFactor> linearize(const Values& x) const {
+  virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
     // Only linearize if the factor is active
     if (!active(x))
-      return std::shared_ptr<JacobianFactor>();
+      return boost::shared_ptr<JacobianFactor>();
 
     // In case noise model is constrained, we need to provide a noise model
     SharedDiagonal noiseModel;
     if (noiseModel_ && noiseModel_->isConstrained()) {
-      noiseModel = std::static_pointer_cast<noiseModel::Constrained>(
+      noiseModel = boost::static_pointer_cast<noiseModel::Constrained>(
           noiseModel_)->unit();
     }
 
     // Create a writeable JacobianFactor in advance
-    std::shared_ptr<JacobianFactor> factor(
+    boost::shared_ptr<JacobianFactor> factor(
         new JacobianFactor(keys_, dims_, Dim, noiseModel));
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_
@@ -139,7 +139,7 @@ protected:
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 

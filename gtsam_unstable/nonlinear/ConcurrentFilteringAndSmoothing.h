@@ -38,7 +38,7 @@ void GTSAM_UNSTABLE_EXPORT synchronize(ConcurrentFilter& filter, ConcurrentSmoot
  */
 class GTSAM_UNSTABLE_EXPORT ConcurrentFilter {
 public:
-  typedef std::shared_ptr<ConcurrentFilter> shared_ptr;
+  typedef boost::shared_ptr<ConcurrentFilter> shared_ptr;
 
   /** Default constructor */
   ConcurrentFilter() {};
@@ -98,7 +98,7 @@ public:
  */
 class GTSAM_UNSTABLE_EXPORT ConcurrentSmoother {
 public:
-  typedef std::shared_ptr<ConcurrentSmoother> shared_ptr;
+  typedef boost::shared_ptr<ConcurrentSmoother> shared_ptr;
 
   /** Default constructor */
   ConcurrentSmoother() {};

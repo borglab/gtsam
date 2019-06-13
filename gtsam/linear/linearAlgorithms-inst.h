@@ -20,7 +20,7 @@
 #include <gtsam/base/treeTraversal-inst.h>
 
 #include <boost/optional.hpp>
-#include <memory>
+#include <boost/shared_ptr.hpp>
 
 namespace gtsam
 {
@@ -49,7 +49,7 @@ namespace gtsam
         VectorValues collectedResult;
 
         OptimizeData operator()(
-          const std::shared_ptr<CLIQUE>& clique,
+          const boost::shared_ptr<CLIQUE>& clique,
           OptimizeData& parentData)
         {
           OptimizeData myData;

@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
   Matrix33 bias_omega_cov = Matrix33::Identity(3,3) * pow(gyro_bias_rw_sigma,2);
   Matrix66 bias_acc_omega_int = Matrix::Identity(6,6)*1e-5; // error in the bias used for preintegration
 
-  std::shared_ptr<PreintegratedCombinedMeasurements::Params> p = PreintegratedCombinedMeasurements::Params::MakeSharedD(0.0);
+  boost::shared_ptr<PreintegratedCombinedMeasurements::Params> p = PreintegratedCombinedMeasurements::Params::MakeSharedD(0.0);
   // PreintegrationBase params:
   p->accelerometerCovariance = measured_acc_cov; // acc white noise in continuous
   p->integrationCovariance = integration_error_cov; // integration uncertainty continuous

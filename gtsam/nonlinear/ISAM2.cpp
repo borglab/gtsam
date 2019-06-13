@@ -54,7 +54,7 @@ class ISAM2BayesTree : public ISAM2::Base {
  public:
   typedef ISAM2::Base Base;
   typedef ISAM2BayesTree This;
-  typedef std::shared_ptr<This> shared_ptr;
+  typedef boost::shared_ptr<This> shared_ptr;
 
   ISAM2BayesTree() {}
 };
@@ -67,7 +67,7 @@ class ISAM2JunctionTree
  public:
   typedef JunctionTree<ISAM2BayesTree, GaussianFactorGraph> Base;
   typedef ISAM2JunctionTree This;
-  typedef std::shared_ptr<This> shared_ptr;
+  typedef boost::shared_ptr<This> shared_ptr;
 
   explicit ISAM2JunctionTree(const GaussianEliminationTree& eliminationTree)
       : Base(eliminationTree) {}
@@ -141,7 +141,7 @@ GaussianFactorGraph::shared_ptr ISAM2::relinearizeAffectedFactors(
   gttoc(affectedKeysSet);
 
   gttic(check_candidates_and_linearize);
-  auto linearized = std::make_shared<GaussianFactorGraph>();
+  auto linearized = boost::make_shared<GaussianFactorGraph>();
   for (Key idx : candidates) {
     bool inside = true;
     bool useCachedLinear = params_.cacheLinearizedFactors;
@@ -193,7 +193,7 @@ GaussianFactorGraph ISAM2::getCachedBoundaryFactors(const Cliques& orphans) {
 }
 
 /* ************************************************************************* */
-std::shared_ptr<KeySet> ISAM2::recalculate(
+boost::shared_ptr<KeySet> ISAM2::recalculate(
     const KeySet& markedKeys, const KeySet& relinKeys,
     const KeyVector& observedKeys, const KeySet& unusedIndices,
     const boost::optional<FastMap<Key, int> >& constrainKeys,
@@ -271,7 +271,7 @@ std::shared_ptr<KeySet> ISAM2::recalculate(
                         conditional->endFrontals());
   gttoc(affectedKeys);
 
-  std::shared_ptr<KeySet> affectedKeysSet(
+  boost::shared_ptr<KeySet> affectedKeysSet(
       new KeySet());  // Will return this result
 
   if (affectedKeys.size() >= theta_.size() * kBatchThreshold) {
@@ -402,7 +402,7 @@ std::shared_ptr<KeySet> ISAM2::recalculate(
     gttic(orphans);
     // Add the orphaned subtrees
     for (const sharedClique& orphan : orphans)
-      factors += std::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan);
+      factors += boost::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan);
     gttoc(orphans);
 
     // END OF COPIED CODE
@@ -780,7 +780,7 @@ ISAM2Result ISAM2::update(
 
   gttic(recalculate);
   // 8. Redo top of Bayes tree
-  std::shared_ptr<KeySet> replacedKeys;
+  boost::shared_ptr<KeySet> replacedKeys;
   if (!markedKeys.empty() || !observedKeys.empty())
     replacedKeys = recalculate(markedKeys, relinKeys, observedKeys,
                                unusedIndices, constrainedKeys, &result);
@@ -856,7 +856,7 @@ void ISAM2::marginalizeLeaves(
 
       // Traverse up the tree to find the root of the marginalized subtree
       sharedClique clique = nodes_[j];
-      while (!clique->parent_.expired()) {
+      while (!clique->parent_._empty()) {
         // Check if parent contains a marginalized leaf variable.  Only need to
         // check the first variable because it is the closest to the leaves.
         sharedClique parent = clique->parent();
@@ -998,7 +998,7 @@ void ISAM2::marginalizeLeaves(
         if (marginalFactorsIndices)
           marginalFactorsIndices->push_back(nonlinearFactors_.size());
         nonlinearFactors_.push_back(
-            std::make_shared<LinearContainerFactor>(factor));
+            boost::make_shared<LinearContainerFactor>(factor));
         if (params_.cacheLinearizedFactors) linearFactors_.push_back(factor);
         for (Key factorKey : *factor) {
           fixedVariables_.insert(factorKey);
@@ -1127,7 +1127,7 @@ double ISAM2::error(const VectorValues& x) const {
 }
 
 /* ************************************************************************* */
-static void gradientAtZeroTreeAdder(const std::shared_ptr<ISAM2Clique>& root,
+static void gradientAtZeroTreeAdder(const boost::shared_ptr<ISAM2Clique>& root,
                                     VectorValues* g) {
   // Loop through variables in each clique, adding contributions
   DenseIndex variablePosition = 0;
@@ -1143,7 +1143,7 @@ static void gradientAtZeroTreeAdder(const std::shared_ptr<ISAM2Clique>& root,
   }
 
   // Recursively add contributions from children
-  typedef std::shared_ptr<ISAM2Clique> sharedClique;
+  typedef boost::shared_ptr<ISAM2Clique> sharedClique;
   for (const sharedClique& child : root->children) {
     gradientAtZeroTreeAdder(child, g);
   }

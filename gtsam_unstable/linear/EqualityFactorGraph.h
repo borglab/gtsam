@@ -29,7 +29,7 @@ namespace gtsam {
  */
 class EqualityFactorGraph: public FactorGraph<LinearEquality> {
 public:
-  typedef std::shared_ptr<EqualityFactorGraph> shared_ptr;
+  typedef boost::shared_ptr<EqualityFactorGraph> shared_ptr;
 
   /// Compute error of a guess.
   double error(const VectorValues& x) const {

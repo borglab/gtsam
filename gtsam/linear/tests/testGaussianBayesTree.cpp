@@ -47,8 +47,8 @@ namespace {
   // Helper functions for below
   GaussianBayesTreeClique::shared_ptr MakeClique(const GaussianConditional& conditional)
   {
-    return std::make_shared<GaussianBayesTreeClique>(
-      std::make_shared<GaussianConditional>(conditional));
+    return boost::make_shared<GaussianBayesTreeClique>(
+      boost::make_shared<GaussianConditional>(conditional));
   }
 
   template<typename CHILDREN>
@@ -56,8 +56,8 @@ namespace {
     const GaussianConditional& conditional, const CHILDREN& children)
   {
     GaussianBayesTreeClique::shared_ptr clique =
-      std::make_shared<GaussianBayesTreeClique>(
-      std::make_shared<GaussianConditional>(conditional));
+      boost::make_shared<GaussianBayesTreeClique>(
+      boost::make_shared<GaussianConditional>(conditional));
     clique->children.assign(children.begin(), children.end());
     for(typename CHILDREN::const_iterator child = children.begin(); child != children.end(); ++child)
       (*child)->parent_ = clique;

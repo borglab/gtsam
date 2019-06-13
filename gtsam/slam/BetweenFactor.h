@@ -49,7 +49,7 @@ namespace gtsam {
   public:
 
     // shorthand for a smart pointer to a factor
-    typedef typename std::shared_ptr<BetweenFactor> shared_ptr;
+    typedef typename boost::shared_ptr<BetweenFactor> shared_ptr;
 
     /** default constructor - only use for serialization */
     BetweenFactor() {}
@@ -64,7 +64,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      return std::static_pointer_cast<gtsam::NonlinearFactor>(
+      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
@@ -141,7 +141,7 @@ namespace gtsam {
   template<class VALUE>
   class BetweenConstraint : public BetweenFactor<VALUE> {
   public:
-    typedef std::shared_ptr<BetweenConstraint<VALUE> > shared_ptr;
+    typedef boost::shared_ptr<BetweenConstraint<VALUE> > shared_ptr;
 
     /** Syntactic sugar for constrained version */
     BetweenConstraint(const VALUE& measured, Key key1, Key key2, double mu = 1000.0) :

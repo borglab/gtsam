@@ -297,7 +297,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
       const FastList<Key>& affectedKeys, const KeySet& relinKeys) const;
   GaussianFactorGraph getCachedBoundaryFactors(const Cliques& orphans);
 
-  virtual std::shared_ptr<KeySet> recalculate(
+  virtual boost::shared_ptr<KeySet> recalculate(
       const KeySet& markedKeys, const KeySet& relinKeys,
       const KeyVector& observedKeys, const KeySet& unusedIndices,
       const boost::optional<FastMap<Key, int> >& constrainKeys,

@@ -21,7 +21,7 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/Testable.h>
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/make_shared.hpp>
 
@@ -45,7 +45,7 @@ namespace gtsam {
     typedef SymbolicConditional ConditionalType;
 
     /** Overriding the shared_ptr typedef */
-    typedef std::shared_ptr<This> shared_ptr;
+    typedef boost::shared_ptr<This> shared_ptr;
 
     /// @name Standard Interface
     /// @{
@@ -83,7 +83,7 @@ namespace gtsam {
     virtual ~SymbolicFactor() {}
 
     /// Copy this object as its actual derived type.
-    SymbolicFactor::shared_ptr clone() const { return std::make_shared<This>(*this); }
+    SymbolicFactor::shared_ptr clone() const { return boost::make_shared<This>(*this); }
 
     /// @}
 
@@ -106,7 +106,7 @@ namespace gtsam {
     /** Constructor from a collection of keys */
     template<typename KEYITERATOR>
     static SymbolicFactor::shared_ptr FromIteratorsShared(KEYITERATOR beginKey, KEYITERATOR endKey) {
-      SymbolicFactor::shared_ptr result = std::make_shared<SymbolicFactor>();
+      SymbolicFactor::shared_ptr result = boost::make_shared<SymbolicFactor>();
       result->keys_.assign(beginKey, endKey);
       return result;
     }
@@ -135,7 +135,7 @@ namespace gtsam {
 
     /** Eliminate the variables in \c keys, in the order specified in \c keys, returning a
      *  conditional and marginal. */
-    std::pair<std::shared_ptr<SymbolicConditional>, std::shared_ptr<SymbolicFactor> >
+    std::pair<boost::shared_ptr<SymbolicConditional>, boost::shared_ptr<SymbolicFactor> >
       eliminate(const Ordering& keys) const;
 
     /// @}
@@ -157,7 +157,7 @@ namespace gtsam {
    *  one of the factor graph elimination functions (see EliminateableFactorGraph).  The factor
    *  graph elimination functions do sparse variable elimination, and use this function to eliminate
    *  single variables or variable cliques. */
-  GTSAM_EXPORT std::pair<std::shared_ptr<SymbolicConditional>, std::shared_ptr<SymbolicFactor> >
+  GTSAM_EXPORT std::pair<boost::shared_ptr<SymbolicConditional>, boost::shared_ptr<SymbolicFactor> >
     EliminateSymbolic(const SymbolicFactorGraph& factors, const Ordering& keys);
 
   /// traits

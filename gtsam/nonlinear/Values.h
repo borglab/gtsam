@@ -92,10 +92,10 @@ namespace gtsam {
   public:
 
     /// A shared_ptr to this class
-    typedef std::shared_ptr<Values> shared_ptr;
+    typedef boost::shared_ptr<Values> shared_ptr;
 
     /// A const shared_ptr to this class
-    typedef std::shared_ptr<const Values> const_shared_ptr;
+    typedef boost::shared_ptr<const Values> const_shared_ptr;
 
     /// A key-value pair, which you get by dereferencing iterators
     struct GTSAM_EXPORT KeyValuePair {

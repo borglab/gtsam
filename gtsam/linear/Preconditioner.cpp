@@ -12,7 +12,7 @@
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <iostream>
@@ -183,16 +183,16 @@ void BlockJacobiPreconditioner::clean() {
 }
 
 /***************************************************************************************/
-std::shared_ptr<Preconditioner> createPreconditioner(const std::shared_ptr<PreconditionerParameters> parameters) {
+boost::shared_ptr<Preconditioner> createPreconditioner(const boost::shared_ptr<PreconditionerParameters> parameters) {
 
-  if ( DummyPreconditionerParameters::shared_ptr dummy = std::dynamic_pointer_cast<DummyPreconditionerParameters>(parameters) ) {
-    return std::make_shared<DummyPreconditioner>();
+  if ( DummyPreconditionerParameters::shared_ptr dummy = boost::dynamic_pointer_cast<DummyPreconditionerParameters>(parameters) ) {
+    return boost::make_shared<DummyPreconditioner>();
   }
-  else if ( BlockJacobiPreconditionerParameters::shared_ptr blockJacobi = std::dynamic_pointer_cast<BlockJacobiPreconditionerParameters>(parameters) ) {
-    return std::make_shared<BlockJacobiPreconditioner>();
+  else if ( BlockJacobiPreconditionerParameters::shared_ptr blockJacobi = boost::dynamic_pointer_cast<BlockJacobiPreconditionerParameters>(parameters) ) {
+    return boost::make_shared<BlockJacobiPreconditioner>();
   }
-  else if ( SubgraphPreconditionerParameters::shared_ptr subgraph = std::dynamic_pointer_cast<SubgraphPreconditionerParameters>(parameters) ) {
-    return std::make_shared<SubgraphPreconditioner>(*subgraph);
+  else if ( SubgraphPreconditionerParameters::shared_ptr subgraph = boost::dynamic_pointer_cast<SubgraphPreconditionerParameters>(parameters) ) {
+    return boost::make_shared<SubgraphPreconditioner>(*subgraph);
   }
 
   throw invalid_argument("createPreconditioner: unexpected preconditioner parameter type");

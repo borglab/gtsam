@@ -90,7 +90,7 @@ public:
   virtual ~ReferenceFrameFactor(){}
 
   virtual NonlinearFactor::shared_ptr clone() const {
-    return std::static_pointer_cast<NonlinearFactor>(
+    return boost::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** Combined cost and derivative function using boost::optional */
