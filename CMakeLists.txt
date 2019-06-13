@@ -87,7 +87,6 @@ endif()
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
-option(GTSAM_INSTALL_PYTHON_TOOLBOX      "Enable/Disable installation of Python toolbox"  OFF)
 set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of python to build the cython wrapper for (or Default)")
 
 
@@ -437,19 +436,6 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	add_subdirectory(matlab)
 endif()
 
-# Python wrap
-if (GTSAM_INSTALL_PYTHON_TOOLBOX)
-  set(GTSAM_INSTALL_PYTHON_TOOLBOX 1)
-  # Set up cache options
-  set(GTSAM_PYTHON_INSTALL_PATH "" CACHE PATH "Python toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/python")
-  if(NOT GTSAM_PYTHON_INSTALL_PATH)
-    set(GTSAM_PYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/python")
-  endif()
-else()
-  set(GTSAM_INSTALL_PYTHON_TOOLBOX 0) # This will go into config.h
-endif()
-
-
 # Install config and export files
 GtsamMakeConfigFile(GTSAM "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")
 export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
@@ -581,10 +567,6 @@ endif()
 if(GTSAM_BUILD_PYTHON)
 	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
 endif()
-
-message(STATUS "Python toolbox flags                                      ")
-print_config_flag(${GTSAM_INSTALL_PYTHON_TOOLBOX}      "Install Python toolbox         ")
-message(STATUS "===============================================================")
 
 # Print warnings at the end
 if(GTSAM_WITH_TBB AND NOT TBB_FOUND)

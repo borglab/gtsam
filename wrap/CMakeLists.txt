@@ -1,4 +1,7 @@
-if(GTSAM_INSTALL_PYTHON_TOOLBOX)
+configure_file(${PROJECT_SOURCE_DIR}/wrap/setup.py.in
+                ${PROJECT_BINARY_DIR}/setup.py)
+
+if(GTSAM_BUILD_PYTHON)
   add_subdirectory(pybind11)
   include(GtsamPybindWrap)
 
@@ -15,8 +18,8 @@ if(GTSAM_INSTALL_PYTHON_TOOLBOX)
               ${CMAKE_CURRENT_SOURCE_DIR}/../gtsam.h # interface_header
               "gtsam_py.cpp" # generated_cpp
               "gtsam_py" # module_name
-              "" # top_namespace ignore_classes
-              "${ignore}"
+              "gtsam" # top_namespace
+              "${ignore}" # ignore_classes
               gtsam # libs
               "gtsam;gtsam_header" # dependencies
               )
@@ -24,8 +27,6 @@ if(GTSAM_INSTALL_PYTHON_TOOLBOX)
 
   file(READ "${PROJECT_SOURCE_DIR}/README.md" README_CONTENTS)
 
-  configure_file(${PROJECT_SOURCE_DIR}/wrap/setup.py.in
-                 ${PROJECT_BINARY_DIR}/wrap/setup.py)
   install_python_files("${PROJECT_BINARY_DIR}/wrap/setup.py"
                        "${CMAKE_INSTALL_PREFIX}/lib")
   # install scripts and tests
