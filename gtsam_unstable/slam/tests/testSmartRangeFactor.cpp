@@ -46,7 +46,7 @@ TEST( SmartRangeFactor, constructor ) {
 TEST( SmartRangeFactor, addRange ) {
   SmartRangeFactor f(sigma);
   f.addRange(1, 10);
-  f.addRange(1, 12);
+  f.addRange(2, 12);
   LONGS_EQUAL(2, f.size())
 }
 /* ************************************************************************* */
