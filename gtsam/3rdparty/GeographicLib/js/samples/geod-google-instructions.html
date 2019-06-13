@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      Geodesic lines, circles, envelopes in Google Maps (instructions)
+    </title>
+    <meta name="description"
+          content="Geodesic lines, circles,
+                   envelopes in Google Maps (instructions)" />
+    <meta name="author" content="Charles F. F. Karney">
+    <meta name="keywords"
+          content="geodesics,
+                   geodesic distance,
+                   geographic distance,
+                   shortest path,
+                   direct geodesic problem,
+                   inverse geodesic problem,
+                   distance and azimuth,
+                   distance and heading,
+                   range and bearing,
+                   geographic circle,
+                   geodesic envelope,
+                   geodesic astroid,
+                   latitude and longitude,
+                   Google Maps,
+                   WGS84 ellipsoid,
+                   GeographicLib" />
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  </head>
+  <body>
+    <h2>
+      Geodesic lines, circles, envelopes in Google Maps (instructions)
+    </h2>
+    <p>
+      The <a href="geod-google.html">page</a> allows you to draw
+      accurate ellipsoidal geodesics on Google Maps.  You can specify the
+      geodesic in one of two forms:
+      <ul>
+        <li>
+          The <b>direct</b> problem: specify a starting point, an
+          azimuth and a distance as <i>lat1 lon1 azi1 s12</i> as degrees
+          and meters.
+        <li>
+          The <b>inverse</b> problem: specify the two end points
+          as <i>lat1 lon1 lat2 lon2</i> as degrees; this finds the
+          shortest path between the two points.
+      </ul>
+      (Angles may be entered as decimal degrees or as degrees, minutes,
+      and seconds, e.g. -20.51125, 20&deg;30&prime;40.5&Prime;S,
+      S20d30'40.5&quot;, or -20:30:40.5.)  Click on the
+      corresponding "compute" button.  The display then shows
+      <ul>
+        <li>The requested geodesic as a <font color="blue">blue
+          line</font>; the WGS84 ellipsoid model is used.
+        <li>The geodesic circle as a <font color="green">green
+          curve</font>; this shows the locus of points a
+          distance <i>s12</i> from <i>lat1, lon1</i>.
+        <li>The geodesic envelopes as <font color="red">red
+          curves</font>; all the geodesics emanating from <i>lat1,
+          lon1</i> are tangent to the envelopes (providing they are
+          extended far enough).  The number of solutions to the inverse
+          problem changes depending on whether <i>lat2, lon2</i> lies
+          inside the envelopes.  For example, there are four (resp. two)
+          approximately hemispheroidal geodesics if this point lies
+          inside (resp. outside) the inner envelope (only one of which
+          is a shortest path).
+      </ul>
+    </p>
+    <p>
+      The sample data has <i>lat1, lon1</i> in Wellington, New
+      Zealand, <i>lat2, lon2</i> in Salamanca, Spain, and <i>s12</i>
+      about 1.5 times the earth's circumference.  Try clicking on the
+      "compute" button next to the "Direct:" input box when the page
+      first loads.  You can navigate around the map using the normal
+      Google Map controls.
+    </p>
+    <p>
+      The precision of output for the geodesic is 0.1&quot; or 1&nbsp;m.
+      A text-only <a href="geod-calc.html">geodesic calculator</a> based
+      on the same JavaScript library is also available; this calculator
+      solves the inverse and direct geodesic problems, computes
+      intermediate points on a geodesic, and finds the area of a
+      geodesic polygon; it allows you to specify the precision of the
+      output and choose between decimal degrees and degrees, minutes,
+      and seconds.  Basic online tools which provide similar capabilities
+      are
+      <a href="https://geographiclib.sourceforge.io/cgi-bin/GeodSolve">
+        GeodSolve</a>
+      and
+      <a href="https://geographiclib.sourceforge.io/cgi-bin/Planimeter">
+        Planimeter</a>;
+      these call a C++ backend.
+    </p>
+    <p>
+      The JavaScript code for computing the geodesic lines, circles, and
+      envelopes available in the JavaScript package
+      <a href="https://www.npmjs.com/package/geographiclib">
+        geographiclib, the geodesic routines in GeographicLib</a>
+      (<a href="https://geographiclib.sourceforge.io/html/js/">
+        documentation</a>).  The algorithms are derived in
+      <blockquote>
+        Charles F. F. Karney,<br>
+        <a href="https://doi.org/10.1007/s00190-012-0578-z">
+          <i>Algorithms for geodesics</i></a>,<br>
+        J. Geodesy <b>87</b>(1), 43&ndash;55 (Jan. 2013);<br>
+        DOI:
+        <a href="https://doi.org/10.1007/s00190-012-0578-z">
+          10.1007/s00190-012-0578-z</a>
+        (<a href="https://doi.org/10.1007/s00190-012-0578-z">pdf</a>);<br>
+        addenda:
+        <a href="https://geographiclib.sourceforge.io/geod-addenda.html">
+          geod-addenda.html</a>.
+      </blockquote>
+      In putting together this Google Maps demonstration, I started with
+      the sample code
+      <a href="https://developers.google.com/maps/documentation/javascript/examples/geometry-headings">
+        geometry-headings</a>.
+    </p>
+    <hr>
+    <address>Charles Karney
+      <a href="mailto:charles@karney.com">&lt;charles@karney.com&gt;</a>
+      (2011-08-02)</address>
+    <br>
+    <a href="https://geographiclib.sourceforge.io">
+      Geographiclib Sourceforge</a>
+  </body>
+</html>

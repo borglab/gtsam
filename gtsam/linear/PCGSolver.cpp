@@ -89,7 +89,7 @@ void GaussianFactorGraphSystem::multiply(const Vector &x, Vector& AtAx) const {
   VectorValues vvX = buildVectorValues(x, keyInfo_);
 
   // VectorValues form of A'Ax for multiplyHessianAdd
-  VectorValues vvAtAx;
+  VectorValues vvAtAx = keyInfo_.x0(); // crucial for performance
 
   // vvAtAx += 1.0 * A'Ax for each factor
   gfg_.multiplyHessianAdd(1.0, vvX, vvAtAx);
@@ -132,14 +132,14 @@ VectorValues buildVectorValues(const Vector &v, const Ordering &ordering,
 
   DenseIndex offset = 0;
   for (size_t i = 0; i < ordering.size(); ++i) {
-    const Key &key = ordering[i];
+    const Key key = ordering[i];
     map<Key, size_t>::const_iterator it = dimensions.find(key);
     if (it == dimensions.end()) {
       throw invalid_argument(
           "buildVectorValues: inconsistent ordering and dimensions");
     }
     const size_t dim = it->second;
-    result.insert(key, v.segment(offset, dim));
+    result.emplace(key, v.segment(offset, dim));
     offset += dim;
   }
 
@@ -150,8 +150,7 @@ VectorValues buildVectorValues(const Vector &v, const Ordering &ordering,
 VectorValues buildVectorValues(const Vector &v, const KeyInfo &keyInfo) {
   VectorValues result;
   for ( const KeyInfo::value_type &item: keyInfo ) {
-    result.insert(item.first,
-        v.segment(item.second.colstart(), item.second.dim()));
+    result.emplace(item.first, v.segment(item.second.start, item.second.dim));
   }
   return result;
 }

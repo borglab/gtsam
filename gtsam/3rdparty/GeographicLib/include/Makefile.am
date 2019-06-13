@@ -12,6 +12,7 @@ nobase_include_HEADERS = GeographicLib/Accumulator.hpp \
 			GeographicLib/DMS.hpp \
 			GeographicLib/Ellipsoid.hpp \
 			GeographicLib/EllipticFunction.hpp \
+			GeographicLib/GARS.hpp \
 			GeographicLib/GeoCoords.hpp \
 			GeographicLib/Geocentric.hpp \
 			GeographicLib/Geodesic.hpp \
@@ -20,6 +21,7 @@ nobase_include_HEADERS = GeographicLib/Accumulator.hpp \
 			GeographicLib/GeodesicLineExact.hpp \
 			GeographicLib/Geohash.hpp \
 			GeographicLib/Geoid.hpp \
+			GeographicLib/Georef.hpp \
 			GeographicLib/Gnomonic.hpp \
 			GeographicLib/GravityCircle.hpp \
 			GeographicLib/GravityModel.hpp \
@@ -29,10 +31,12 @@ nobase_include_HEADERS = GeographicLib/Accumulator.hpp \
 			GeographicLib/MagneticCircle.hpp \
 			GeographicLib/MagneticModel.hpp \
 			GeographicLib/Math.hpp \
+			GeographicLib/NearestNeighbor.hpp \
 			GeographicLib/NormalGravity.hpp \
 			GeographicLib/OSGB.hpp \
 			GeographicLib/PolarStereographic.hpp \
 			GeographicLib/PolygonArea.hpp \
+			GeographicLib/Rhumb.hpp \
 			GeographicLib/SphericalEngine.hpp \
 			GeographicLib/SphericalHarmonic.hpp \
 			GeographicLib/SphericalHarmonic1.hpp \

@@ -15,13 +15,20 @@ foreach (EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
   set_target_properties (${EXAMPLE} PROPERTIES COMPILE_FLAGS "/clr")
   # This is set up for Release builds only.  Change
   # Release/NETGeographic.dll to Debug/NETGeographic_d.dll for Debug
-  # builds.
+  # builds.  TODO: get this to work for Debug + Release.  Unfortunately
+  # generator expressions don't work in this context.
   set_target_properties (${EXAMPLE} PROPERTIES VS_DOTNET_REFERENCES
-    "${CMAKE_CURRENT_BINARY_DIR}/../../NETGeographicLib/Release/NETGeographic.dll")
+    "${PROJECT_BINARY_DIR}/bin/Release/NETGeographic.dll")
 endforeach ()
 
 string (REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 string (REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
+if (MSVC AND NOT MSVC_VERSION GREATER 1600)
+  # Disable "already imported" and "unsupported default parameter"
+  # warnings with VS 10
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4945 /wd4564")
+endif ()
 
 add_custom_target (netexamples DEPENDS ${EXAMPLES})
 

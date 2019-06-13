@@ -47,6 +47,17 @@ else()
     set(GTSAM_UNSTABLE_AVAILABLE 0)
 endif()
 
+# ----------------------------------------------------------------------------
+#   Uninstall target, for "make uninstall"
+# ----------------------------------------------------------------------------
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+  IMMEDIATE @ONLY)
+
+add_custom_target(uninstall
+  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+
 
 ###############################################################################
 # Set up options
@@ -90,6 +101,7 @@ endif()
 if(GTSAM_INSTALL_PYTHON_TOOLBOX AND NOT GTSAM_TYPEDEF_POINTS_TO_VECTORS)
     message(FATAL_ERROR "GTSAM_INSTALL_PYTHON_TOOLBOX requires GTSAM_TYPEDEF_POINTS_TO_VECTORS to be enabled but it is not.")
 endif()
+
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
 set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
@@ -116,6 +128,14 @@ if(MSVC)
 	endif()
 endif()
 
+# If building DLLs in MSVC, we need to avoid EIGEN_STATIC_ASSERT()
+# or explicit instantiation will generate build errors.
+# See: https://bitbucket.org/gtborg/gtsam/issues/417/fail-to-build-on-msvc-2017
+#
+if(MSVC AND BUILD_SHARED_LIBS)
+	list(APPEND GTSAM_COMPILE_DEFINITIONS_PUBLIC EIGEN_NO_STATIC_ASSERT)
+endif()
+
 # Store these in variables so they are automatically replicated in GTSAMConfig.cmake and such.
 set(BOOST_FIND_MINIMUM_VERSION 1.43)
 set(BOOST_FIND_MINIMUM_COMPONENTS serialization system filesystem thread program_options date_time timer chrono regex)
@@ -128,22 +148,43 @@ if(NOT Boost_SERIALIZATION_LIBRARY OR NOT Boost_SYSTEM_LIBRARY OR NOT Boost_FILE
   message(FATAL_ERROR "Missing required Boost components >= v1.43, please install/upgrade Boost or configure your search paths.")
 endif()
 
-option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
 # Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
+option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
+
+# JLBC: This was once updated to target-based names (Boost::xxx), but it caused
+# problems with Boost versions newer than FindBoost.cmake was prepared to handle,
+# so we downgraded this to classic filenames-based variables, and manually adding
+# the target_include_directories(xxx ${Boost_INCLUDE_DIR})
 set(GTSAM_BOOST_LIBRARIES
-  Boost::serialization
-  Boost::system
-  Boost::filesystem
-  Boost::thread
-  Boost::date_time
-  Boost::regex
+  optimized
+    ${Boost_SERIALIZATION_LIBRARY_RELEASE}
+    ${Boost_SYSTEM_LIBRARY_RELEASE}
+    ${Boost_FILESYSTEM_LIBRARY_RELEASE}
+    ${Boost_THREAD_LIBRARY_RELEASE}
+    ${Boost_DATE_TIME_LIBRARY_RELEASE}
+    ${Boost_REGEX_LIBRARY_RELEASE}
+  debug
+    ${Boost_SERIALIZATION_LIBRARY_DEBUG}
+    ${Boost_SYSTEM_LIBRARY_DEBUG}
+    ${Boost_FILESYSTEM_LIBRARY_DEBUG}
+    ${Boost_THREAD_LIBRARY_DEBUG}
+    ${Boost_DATE_TIME_LIBRARY_DEBUG}
+    ${Boost_REGEX_LIBRARY_DEBUG}
 )
+message(STATUS "GTSAM_BOOST_LIBRARIES: ${GTSAM_BOOST_LIBRARIES}")
 if (GTSAM_DISABLE_NEW_TIMERS)
     message("WARNING:  GTSAM timing instrumentation manually disabled")
     list(APPEND GTSAM_COMPILE_DEFINITIONS_PUBLIC DGTSAM_DISABLE_NEW_TIMERS)
 else()
     if(Boost_TIMER_LIBRARY)
-      list(APPEND GTSAM_BOOST_LIBRARIES Boost::timer Boost::chrono)
+      list(APPEND GTSAM_BOOST_LIBRARIES
+        optimized
+          ${Boost_TIMER_LIBRARY_RELEASE}
+          ${Boost_CHRONO_LIBRARY_RELEASE}
+        debug
+          ${Boost_TIMER_LIBRARY_DEBUG}
+          ${Boost_CHRONO_LIBRARY_DEBUG}
+        )
     else()
       list(APPEND GTSAM_BOOST_LIBRARIES rt) # When using the header-only boost timer library, need -lrt
       message("WARNING:  GTSAM timing instrumentation will use the older, less accurate, Boost timer library because boost older than 1.48 was found.")
@@ -158,7 +199,7 @@ endif()
 
 ###############################################################################
 # Find TBB
-find_package(TBB COMPONENTS tbb tbbmalloc)
+find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
 
 # Set up variables if we're using TBB
 if(TBB_FOUND AND GTSAM_WITH_TBB)
@@ -269,6 +310,29 @@ else()
 	# The actual include directory (for BUILD cmake target interface):
 	set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${CMAKE_SOURCE_DIR}/gtsam/3rdparty/Eigen/")
 endif()
+
+# Detect Eigen version:
+set(EIGEN_VER_H "${GTSAM_EIGEN_INCLUDE_FOR_BUILD}/Eigen/src/Core/util/Macros.h")
+if (EXISTS ${EIGEN_VER_H})
+	file(READ "${EIGEN_VER_H}" STR_EIGEN_VERSION)
+
+	# Extract the Eigen version from the Macros.h file, lines "#define EIGEN_WORLD_VERSION  XX", etc...
+
+	string(REGEX MATCH "EIGEN_WORLD_VERSION[ ]+[0-9]+" GTSAM_EIGEN_VERSION_WORLD "${STR_EIGEN_VERSION}")
+	string(REGEX MATCH "[0-9]+" GTSAM_EIGEN_VERSION_WORLD "${GTSAM_EIGEN_VERSION_WORLD}")
+
+	string(REGEX MATCH "EIGEN_MAJOR_VERSION[ ]+[0-9]+" GTSAM_EIGEN_VERSION_MAJOR "${STR_EIGEN_VERSION}")
+	string(REGEX MATCH "[0-9]+" GTSAM_EIGEN_VERSION_MAJOR "${GTSAM_EIGEN_VERSION_MAJOR}")
+
+	string(REGEX MATCH "EIGEN_MINOR_VERSION[ ]+[0-9]+" GTSAM_EIGEN_VERSION_MINOR "${STR_EIGEN_VERSION}")
+	string(REGEX MATCH "[0-9]+" GTSAM_EIGEN_VERSION_MINOR "${GTSAM_EIGEN_VERSION_MINOR}")
+
+	set(GTSAM_EIGEN_VERSION "${GTSAM_EIGEN_VERSION_WORLD}.${GTSAM_EIGEN_VERSION_MAJOR}.${GTSAM_EIGEN_VERSION_MINOR}")
+
+	message(STATUS "Found Eigen version: ${GTSAM_EIGEN_VERSION}")
+else()
+	message(WARNING "Cannot determine Eigen version, missing file: `${EIGEN_VER_H}`")
+endif ()
 
 if (MSVC)
 	if (BUILD_SHARED_LIBS)
@@ -444,16 +508,13 @@ if(GTSAM_UNSTABLE_AVAILABLE)
     print_config_flag(${GTSAM_BUILD_UNSTABLE}          "Build libgtsam_unstable        ")
 endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" cmake_build_type_toupper)
+print_config_flag(${GTSAM_BUILD_WITH_MARCH_NATIVE}     "Build for native architecture  ")
 if(NOT MSVC AND NOT XCODE_VERSION)
     message(STATUS "  Build type                     : ${CMAKE_BUILD_TYPE}")
     message(STATUS "  C compilation flags            : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
     message(STATUS "  C++ compilation flags          : ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${cmake_build_type_toupper}}")
 endif()
-if(GTSAM_USE_SYSTEM_EIGEN)
-    message(STATUS "  Use System Eigen               : Yes")
-else()
-    message(STATUS "  Use System Eigen               : No")
-endif()
+message(STATUS "  Use System Eigen               : ${GTSAM_USE_SYSTEM_EIGEN} (Using version: ${GTSAM_EIGEN_VERSION})")
 if(GTSAM_USE_TBB)
 	message(STATUS "  Use Intel TBB                  : Yes")
 elseif(TBB_FOUND)
@@ -501,7 +562,7 @@ print_config_flag(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency chec
 print_config_flag(${GTSAM_ROT3_EXPMAP}                 "Rot3 retract is full ExpMap     ")
 print_config_flag(${GTSAM_POSE3_EXPMAP}                "Pose3 retract is full ExpMap    ")
 print_config_flag(${GTSAM_ALLOW_DEPRECATED_SINCE_V4}   "Deprecated in GTSAM 4 allowed   ")
-print_config_flag(${GTSAM_TYPEDEF_POINTS_TO_VECTORS}          "Point3 is typedef to Vector3    ")
+print_config_flag(${GTSAM_TYPEDEF_POINTS_TO_VECTORS}   "Point3 is typedef to Vector3    ")
 print_config_flag(${GTSAM_SUPPORT_NESTED_DISSECTION}   "Metis-based Nested Dissection   ")
 print_config_flag(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space preintegration")
 
@@ -525,16 +586,13 @@ message(STATUS "==============================================================="
 
 # Print warnings at the end
 if(GTSAM_WITH_TBB AND NOT TBB_FOUND)
-	message(WARNING "TBB was not found - this is ok, but note that GTSAM parallelization will be disabled.  Set GTSAM_WITH_TBB to 'Off' to avoid this warning.")
+	message(WARNING "TBB 4.4 or newer was not found - this is ok, but note that GTSAM parallelization will be disabled.  Set GTSAM_WITH_TBB to 'Off' to avoid this warning.")
 endif()
 if(GTSAM_WITH_EIGEN_MKL AND NOT MKL_FOUND)
 	message(WARNING "MKL was not found - this is ok, but note that MKL will be disabled.  Set GTSAM_WITH_EIGEN_MKL to 'Off' to disable this warning.  See INSTALL.md for notes on performance.")
 endif()
 if(GTSAM_WITH_EIGEN_MKL_OPENMP AND NOT OPENMP_FOUND AND MKL_FOUND)
 	message(WARNING "Your compiler does not support OpenMP.  Set GTSAM_WITH_EIGEN_MKL_OPENMP to 'Off' to avoid this warning. See INSTALL.md for notes on performance.")
-endif()
-if(GTSAM_BUILD_PYTHON AND GTSAM_PYTHON_WARNINGS)
-	message(WARNING "${GTSAM_PYTHON_WARNINGS}")
 endif()
 
 # Include CPack *after* all flags

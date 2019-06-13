@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #pragma once
 #include "Geodesic.h"
@@ -86,13 +86,12 @@ namespace NETGeographicLib
          * @param[out] azi azimuth of geodesic at point (degrees).
          * @param[out] rk reciprocal of azimuthal scale at point.
          *
-         * \e lat0 and \e lat should be in the range [&minus;90&deg;,
-         * 90&deg;] and \e lon0 and \e lon should be in the range
-         * [&minus;540&deg;, 540&deg;).  The scale of the projection is 1
-         * in the "radial" direction, \e azi clockwise from true north, and is 1/\e
-         * rk in the direction perpendicular to this.  A call to Forward followed
-         * by a call to Reverse will return the original (\e lat, \e lon) (to
-         * within roundoff).
+         * \e lat0 and \e lat should be in the range [&minus;90&deg;, 90&deg;].
+         * The scale of the projection is 1 in the "radial" direction, \e azi
+         * clockwise from true north, and is 1/\e rk in the direction
+         * perpendicular to this.  A call to Forward followed by a call to
+         * Reverse will return the original (\e lat, \e lon) (to within
+         * roundoff).
          **********************************************************************/
         void Forward(double lat0, double lon0, double lat, double lon,
                      [System::Runtime::InteropServices::Out] double% x,
@@ -112,15 +111,14 @@ namespace NETGeographicLib
          * @param[out] azi azimuth of geodesic at point (degrees).
          * @param[out] rk reciprocal of azimuthal scale at point.
          *
-         * \e lat0 should be in the range [&minus;90&deg;, 90&deg;] and \e
-         * lon0 should be in the range [&minus;540&deg;, 540&deg;).  \e lat
-         * will be in the range [&minus;90&deg;, 90&deg;] and \e lon will
-         * be in the range [&minus;180&deg;, 180&deg;).  The scale of the
-         * projection is 1 in the "radial" direction, \e azi clockwise from true
-         * north, and is 1/\e rk in the direction perpendicular to this.  A call to
-         * Reverse followed by a call to Forward will return the original (\e x, \e
-         * y) (to roundoff) only if the geodesic to (\e x, \e y) is a shortest
-         * path.
+         * \e lat0 should be in the range [&minus;90&deg;, 90&deg;].  \e lat
+         * will be in the range [&minus;90&deg;, 90&deg;] and \e lon will be in
+         * the range [&minus;180&deg;, 180&deg;).  The scale of the projection
+         * is 1 in the "radial" direction, \e azi clockwise from true north,
+         * and is 1/\e rk in the direction perpendicular to this.  A call to
+         * Reverse followed by a call to Forward will return the original (\e
+         * x, \e y) (to roundoff) only if the geodesic to (\e x, \e y) is a
+         * shortest path.
          **********************************************************************/
         void Reverse(double lat0, double lon0, double x, double y,
                      [System::Runtime::InteropServices::Out] double% lat,

@@ -66,6 +66,7 @@ string findExampleDataFile(const string& name) {
   namesToSearch.push_back(name + ".graph");
   namesToSearch.push_back(name + ".txt");
   namesToSearch.push_back(name + ".out");
+  namesToSearch.push_back(name + ".xml");
 
   // Find first name that exists
   for(const fs::path& root: rootsToSearch) {
@@ -358,7 +359,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
       if (!initial->exists(L(id2))) {
         Pose2 pose = initial->at<Pose2>(id1);
         Point2 local(cos(bearing) * range, sin(bearing) * range);
-        Point2 global = pose.transform_from(local);
+        Point2 global = pose.transformFrom(local);
         initial->insert(L(id2), global);
       }
     }
@@ -409,17 +410,17 @@ void save2D(const NonlinearFactorGraph& graph, const Values& config,
 
 /* ************************************************************************* */
 GraphAndValues readG2o(const string& g2oFile, const bool is3D,
-    KernelFunctionType kernelFunctionType) {
-  // just call load2D
-  int maxID = 0;
-  bool addNoise = false;
-  bool smart = true;
-
-  if(is3D)
+                       KernelFunctionType kernelFunctionType) {
+  if (is3D) {
     return load3D(g2oFile);
-
-  return load2D(g2oFile, SharedNoiseModel(), maxID, addNoise, smart,
-      NoiseFormatG2O, kernelFunctionType);
+  } else {
+    // just call load2D
+    int maxID = 0;
+    bool addNoise = false;
+    bool smart = true;
+    return load2D(g2oFile, SharedNoiseModel(), maxID, addNoise, smart,
+                  NoiseFormatG2O, kernelFunctionType);
+  }
 }
 
 /* ************************************************************************* */
@@ -510,15 +511,12 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
 }
 
 /* ************************************************************************* */
-GraphAndValues load3D(const string& filename) {
-
+std::map<Key, Pose3> parse3DPoses(const string& filename) {
   ifstream is(filename.c_str());
   if (!is)
-    throw invalid_argument("load3D: can not find file " + filename);
+    throw invalid_argument("parse3DPoses: can not find file " + filename);
 
-  Values::shared_ptr initial(new Values);
-  NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
-
+  std::map<Key, Pose3> poses;
   while (!is.eof()) {
     char buf[LINESIZE];
     is.getline(buf, LINESIZE);
@@ -530,22 +528,24 @@ GraphAndValues load3D(const string& filename) {
       Key id;
       double x, y, z, roll, pitch, yaw;
       ls >> id >> x >> y >> z >> roll >> pitch >> yaw;
-      Rot3 R = Rot3::Ypr(yaw,pitch,roll);
-      Point3 t = Point3(x, y, z);
-      initial->insert(id, Pose3(R,t));
+      poses.emplace(id, Pose3(Rot3::Ypr(yaw, pitch, roll), {x, y, z}));
     }
     if (tag == "VERTEX_SE3:QUAT") {
       Key id;
       double x, y, z, qx, qy, qz, qw;
       ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
-      Rot3 R = Rot3::Quaternion(qw, qx, qy, qz);
-      Point3 t = Point3(x, y, z);
-      initial->insert(id, Pose3(R,t));
+      poses.emplace(id, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}));
     }
   }
-  is.clear(); /* clears the end-of-file and error flags */
-  is.seekg(0, ios::beg);
+  return poses;
+}
 
+/* ************************************************************************* */
+BetweenFactorPose3s parse3DFactors(const string& filename) {
+  ifstream is(filename.c_str());
+  if (!is) throw invalid_argument("parse3DFactors: can not find file " + filename);
+
+  std::vector<BetweenFactor<Pose3>::shared_ptr> factors;
   while (!is.eof()) {
     char buf[LINESIZE];
     is.getline(buf, LINESIZE);
@@ -557,44 +557,55 @@ GraphAndValues load3D(const string& filename) {
       Key id1, id2;
       double x, y, z, roll, pitch, yaw;
       ls >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
-      Rot3 R = Rot3::Ypr(yaw,pitch,roll);
-      Point3 t = Point3(x, y, z);
-      Matrix m = I_6x6;
-      for (int i = 0; i < 6; i++)
-        for (int j = i; j < 6; j++)
-          ls >> m(i, j);
+      Matrix m(6, 6);
+      for (size_t i = 0; i < 6; i++)
+        for (size_t j = i; j < 6; j++) ls >> m(i, j);
       SharedNoiseModel model = noiseModel::Gaussian::Information(m);
-      NonlinearFactor::shared_ptr factor(
-          new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
-      graph->push_back(factor);
+      factors.emplace_back(new BetweenFactor<Pose3>(
+          id1, id2, Pose3(Rot3::Ypr(yaw, pitch, roll), {x, y, z}), model));
     }
     if (tag == "EDGE_SE3:QUAT") {
-      Matrix m = I_6x6;
       Key id1, id2;
       double x, y, z, qx, qy, qz, qw;
       ls >> id1 >> id2 >> x >> y >> z >> qx >> qy >> qz >> qw;
-      Rot3 R = Rot3::Quaternion(qw, qx, qy, qz);
-      Point3 t = Point3(x, y, z);
-      for (int i = 0; i < 6; i++){
-        for (int j = i; j < 6; j++){
+      Matrix m(6, 6);
+      for (size_t i = 0; i < 6; i++) {
+        for (size_t j = i; j < 6; j++) {
           double mij;
           ls >> mij;
           m(i, j) = mij;
           m(j, i) = mij;
         }
       }
-      Matrix mgtsam = I_6x6;
+      Matrix mgtsam(6, 6);
 
-      mgtsam.block<3,3>(0,0) = m.block<3,3>(3,3); // cov rotation
-      mgtsam.block<3,3>(3,3) = m.block<3,3>(0,0); // cov translation
-      mgtsam.block<3,3>(0,3) = m.block<3,3>(0,3); // off diagonal
-      mgtsam.block<3,3>(3,0) = m.block<3,3>(3,0); // off diagonal
+      mgtsam.block<3, 3>(0, 0) = m.block<3, 3>(3, 3);  // cov rotation
+      mgtsam.block<3, 3>(3, 3) = m.block<3, 3>(0, 0);  // cov translation
+      mgtsam.block<3, 3>(0, 3) = m.block<3, 3>(0, 3);  // off diagonal
+      mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0);  // off diagonal
 
       SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
-      NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
-      graph->push_back(factor);
+      factors.emplace_back(new BetweenFactor<Pose3>(
+          id1, id2, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}), model));
     }
   }
+  return factors;
+}
+
+/* ************************************************************************* */
+GraphAndValues load3D(const string& filename) {
+  const auto factors = parse3DFactors(filename);
+  NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
+  for (const auto& factor : factors) {
+    graph->push_back(factor);
+  }
+
+  const auto poses = parse3DPoses(filename);
+  Values::shared_ptr initial(new Values);
+  for (const auto& key_pose : poses) {
+    initial->insert(key_pose.first, key_pose.second);
+  }
+
   return make_pair(graph, initial);
 }
 

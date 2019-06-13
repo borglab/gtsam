@@ -6,7 +6,7 @@ Gravity -- compute the earth's gravity field
 
 B<Gravity> [ B<-n> I<name> ] [ B<-d> I<dir> ]
 [ B<-G> | B<-D> | B<-A> | B<-H> ] [ B<-c> I<lat> I<h> ]
-[ B<-p> I<prec> ]
+[ B<-w> ] [ B<-p> I<prec> ]
 [ B<-v> ]
 [ B<--comment-delimiter> I<commentdelim> ]
 [ B<--version> | B<-h> | B<--help> ]
@@ -21,28 +21,29 @@ gravitational field on standard output.
 
 The input line is of the form I<lat> I<lon> I<h>.  I<lat> and I<lon> are
 the latitude and longitude expressed as decimal degrees or degrees,
-minutes, and seconds; see GeoConvert(1) for details.  I<h> is the height
-above the ellipsoid in meters; this quantity is optional and defaults to
-0.  Alternatively, the gravity field can be computed at various points
-on a circle of latitude (constant I<lat> and I<h>) via the B<-c> option;
-in this case only the longitude should be given on the input lines.  The
-quantities printed out are governed by the B<-G> (default), B<-D>,
-B<-A>, or B<-H> options.
+minutes, and seconds; for details on the allowed formats for latitude
+and longitude, see the C<GEOGRAPHIC COORDINATES> section of
+GeoConvert(1).  I<h> is the height above the ellipsoid in meters; this
+quantity is optional and defaults to 0.  Alternatively, the gravity
+field can be computed at various points on a circle of latitude
+(constant I<lat> and I<h>) via the B<-c> option; in this case only the
+longitude should be given on the input lines.  The quantities printed
+out are governed by the B<-G> (default), B<-D>, B<-A>, or B<-H> options.
 
-All the supported gravity models use WGS84 as the reference ellipsoid
-I<a> = 6378137 m, I<f> = 1/298.257223563, I<omega> = 7292115e-11 rad/s,
-and I<GM> = 3986004.418e8 m^3/s^2.
+All the supported gravity models, except for grs80, use WGS84 as the
+reference ellipsoid I<a> = 6378137 m, I<f> = 1/298.257223563, I<omega> =
+7292115e-11 rad/s, and I<GM> = 3986004.418e8 m^3/s^2.
 
 =head1 OPTIONS
 
 =over
 
-=item B<-n>
+=item B<-n> I<name>
 
 use gravity field model I<name> instead of the default C<egm96>.  See
 L</MODELS>.
 
-=item B<-d>
+=item B<-d> I<dir>
 
 read gravity models from I<dir> instead of the default.  See
 L</MODELS>.
@@ -86,14 +87,21 @@ compute geoid heights much more quickly by interpolating on a grid of
 precomputed results; however the results from GeoidEval(1) are only
 accurate to a few millimeters.
 
-=item B<-c>
+=item B<-c> I<lat> I<h>
 
 evaluate the field on a circle of latitude given by I<lat> and I<h>
 instead of reading these quantities from the input lines.  In this case,
 B<Gravity> can calculate the field considerably more quickly.  If geoid
 heights are being computed (the B<-H> option), then I<h> must be zero.
 
-=item B<-p>
+=item B<-w>
+
+toggle the longitude first flag (it starts off); if the flag is on, then
+on input and output, longitude precedes latitude (except that, on input,
+this can be overridden by a hemisphere designator, I<N>, I<S>, I<E>,
+I<W>).
+
+=item B<-p> I<prec>
 
 set the output precision to I<prec>.  By default I<prec> is 5 for
 acceleration due to gravity, 3 for the gravity disturbance and anomaly,
@@ -104,7 +112,7 @@ and 4 for the geoid height.
 print information about the gravity model on standard error before
 processing the input.
 
-=item B<--comment-delimiter>
+=item B<--comment-delimiter> I<commentdelim>
 
 set the comment delimiter to I<commentdelim> (e.g., "#" or "//").  If
 set, the input lines will be scanned for this delimiter and, if found,
@@ -124,23 +132,23 @@ print usage, the default gravity path and name, and exit.
 
 print full documentation and exit.
 
-=item B<--input-file>
+=item B<--input-file> I<infile>
 
 read input from the file I<infile> instead of from standard input; a file
 name of "-" stands for standard input.
 
-=item B<--input-string>
+=item B<--input-string> I<instring>
 
 read input from the string I<instring> instead of from standard input.
 All occurrences of the line separator character (default is a semicolon)
 in I<instring> are converted to newlines before the reading begins.
 
-=item B<--line-separator>
+=item B<--line-separator> I<linesep>
 
 set the line separator character to I<linesep>.  By default this is a
 semicolon.
 
-=item B<--output-file>
+=item B<--output-file> I<outfile>
 
 write output to the file I<outfile> instead of to standard output; a
 file name of "-" stands for standard output.
@@ -159,47 +167,48 @@ B<Gravity> computes the gravity field using one of the following models
       http://earth-info.nga.mil/GandG/wgs84/gravitymod/egm2008
     wgs84, world geodetic system 1984.  This returns the normal
       gravity for the WGS84 ellipsoid.
+    grs80, geodetic reference system 1980.  This returns the normal
+      gravity for the GRS80 ellipsoid.
 
 These models approximate the gravitation field above the surface of the
 earth.  By default, the C<egm96> gravity model is used.  This may
-changed by setting the environment variable C<GRAVITY_NAME> or with the
-B<-n> option.
+changed by setting the environment variable
+C<GEOGRAPHICLIB_GRAVITY_NAME> or with the B<-n> option.
 
 The gravity models will be loaded from a directory specified at compile
 time.  This may changed by setting the environment variables
-C<GRAVITY_PATH> or C<GEOGRAPHICLIB_DATA>, or with the B<-d> option.
-The B<-h> option prints the default gravity path and name.  Use the
-B<-v> option to ascertain the full path name of the data file.
+C<GEOGRAPHICLIB_GRAVITY_PATH> or C<GEOGRAPHICLIB_DATA>, or with the
+B<-d> option.  The B<-h> option prints the default gravity path and
+name.  Use the B<-v> option to ascertain the full path name of the data
+file.
 
-Instructions for downloading and installing gravity models are
-available at
-L<http://geographiclib.sf.net/html/gravity.html#gravityinst>.
+Instructions for downloading and installing gravity models are available
+at L<https://geographiclib.sourceforge.io/html/gravity.html#gravityinst>.
 
 =head1 ENVIRONMENT
 
 =over
 
-=item B<GRAVITY_NAME>
+=item B<GEOGRAPHICLIB_GRAVITY_NAME>
 
 Override the compile-time default gravity name of C<egm96>.  The B<-h>
-option reports the value of B<GRAVITY_NAME>, if defined, otherwise it
-reports the compile-time value.  If the B<-n> I<name> option is used,
-then I<name> takes precedence.
+option reports the value of B<GEOGRAPHICLIB_GRAVITY_NAME>, if defined,
+otherwise it reports the compile-time value.  If the B<-n> I<name>
+option is used, then I<name> takes precedence.
 
-=item B<GRAVITY_PATH>
+=item B<GEOGRAPHICLIB_GRAVITY_PATH>
 
 Override the compile-time default gravity path.  This is typically
 C</usr/local/share/GeographicLib/gravity> on Unix-like systems and
-C<C:/Documents and Settings/All Users/Application
-Data/GeographicLib/gravity> on Windows systems.  The B<-h> option reports
-the value of B<GRAVITY_PATH>, if defined, otherwise it reports the
-compile-time value.  If the B<-d> I<dir> option is used, then I<dir>
-takes precedence.
+C<C:/ProgramData/GeographicLib/gravity> on Windows systems.  The B<-h>
+option reports the value of B<GEOGRAPHICLIB_GRAVITY_PATH>, if defined,
+otherwise it reports the compile-time value.  If the B<-d> I<dir> option
+is used, then I<dir> takes precedence.
 
 =item B<GEOGRAPHICLIB_DATA>
 
 Another way of overriding the compile-time default gravity path.  If it
-is set (and if B<GRAVITY_PATH> is not set), then
+is set (and if B<GEOGRAPHICLIB_GRAVITY_PATH> is not set), then
 $B<GEOGRAPHICLIB_DATA>/gravity is used.
 
 =back
@@ -220,7 +229,7 @@ The gravity field from EGM2008 at the top of Mount Everest
 
 =head1 SEE ALSO
 
-GeoConvert(1), GeoidEval(1).
+GeoConvert(1), GeoidEval(1), geographiclib-get-gravity(8).
 
 =head1 AUTHOR
 
@@ -228,5 +237,5 @@ B<Gravity> was written by Charles Karney.
 
 =head1 HISTORY
 
-B<Gravity> was added to GeographicLib, L<http://geographiclib.sf.net>,
+B<Gravity> was added to GeographicLib, L<https://geographiclib.sourceforge.io>,
 in version 1.16.

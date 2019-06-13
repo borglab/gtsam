@@ -65,8 +65,9 @@ Matrix SymmetricBlockMatrix::block(DenseIndex I, DenseIndex J) const {
 void SymmetricBlockMatrix::choleskyPartial(DenseIndex nFrontals) {
   gttic(VerticalBlockMatrix_choleskyPartial);
   DenseIndex topleft = variableColOffsets_[blockStart_];
-  if (!gtsam::choleskyPartial(matrix_, offset(nFrontals) - topleft, topleft))
+  if (!gtsam::choleskyPartial(matrix_, offset(nFrontals) - topleft, topleft)) {
     throw CholeskyFailed();
+  }
 }
 
 /* ************************************************************************* */

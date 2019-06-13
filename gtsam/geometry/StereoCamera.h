@@ -25,9 +25,19 @@ namespace gtsam {
 
 class GTSAM_EXPORT StereoCheiralityException: public std::runtime_error {
 public:
-  StereoCheiralityException() :
-      std::runtime_error("Stereo Cheirality Exception") {
+  StereoCheiralityException()
+    : StereoCheiralityException(std::numeric_limits<Key>::max()) {}
+
+  StereoCheiralityException(Key j)
+    : std::runtime_error("Stereo Cheirality Exception"),
+      j_(j) {}
+
+  Key nearbyVariable() const {
+    return j_;
   }
+
+private:
+  Key j_;
 };
 
 /**

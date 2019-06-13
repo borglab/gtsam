@@ -7,7 +7,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 namespace NETGeographicLib
@@ -16,8 +16,8 @@ namespace NETGeographicLib
    * \brief .NET wrapper for GeographicLib::Geohash.
    *
    * Geohashes are described in
-   * - http://en.wikipedia.org/wiki/Geohash
-   * - http://geohash.org/
+   * - https://en.wikipedia.org/wiki/Geohash
+   * - http://geohash.org/ (this link is broken as of 2012-12-11)
    * .
    * They provide a compact string representation of a particular geographic
    * location (expressed as latitude and longitude), with the property that if
@@ -45,10 +45,8 @@ namespace NETGeographicLib
          * @param[in] lon longitude of point (degrees).
          * @param[in] len the length of the resulting geohash.
          * @param[out] geohash the geohash.
-         * @exception GeographicErr if \e la is not in [&minus;90&deg;,
+         * @exception GeographicErr if \e lat is not in [&minus;90&deg;,
          *   90&deg;].
-         * @exception GeographicErr if \e lon is not in [&minus;540&deg;,
-         *   540&deg;).
          * @exception std::bad_alloc if memory for \e geohash can't be allocated.
          *
          * Internally, \e len is first put in the range [0, 18].

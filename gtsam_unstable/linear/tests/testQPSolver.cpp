@@ -14,6 +14,7 @@
  * @brief Test simple QP solver for a linear inequality constraint
  * @date Apr 10, 2014
  * @author Duy-Nguyen Ta
+ * @author Ivan Dario Jimenez
  */
 
 #include <gtsam/base/Testable.h>
@@ -218,7 +219,7 @@ pair<QP, QP> testParser(QPSParser parser) {
   // min f(x,y) = 4 + 1.5x -y + 0.58x^2 + 2xy + 2yx + 10y^2
   expectedqp.cost.push_back(
       HessianFactor(X1, X2, 8.0 * I_1x1, 2.0 * I_1x1, -1.5 * kOne, 10.0 * I_1x1,
-          2.0 * kOne, 4.0));
+          2.0 * kOne, 8.0));
   // 2x + y >= 2
   // -x + 2y <= 6
   expectedqp.inequalities.push_back(
@@ -267,6 +268,66 @@ TEST(QPSolver, QPExampleTest){
   double error_actual = problem.cost.error(actualSolution);
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-7))
   CHECK(assert_equal(error_expected, error_actual))
+}
+
+TEST(QPSolver, HS21) {
+  QP problem = QPSParser("HS21.QPS").Parse();
+  VectorValues actualSolution;
+  VectorValues expectedSolution;
+  expectedSolution.insert(Symbol('X',1), 2.0*I_1x1);
+  expectedSolution.insert(Symbol('X',2), 0.0*I_1x1);
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(-99.9599999, error_actual, 1e-7))
+  CHECK(assert_equal(expectedSolution, actualSolution))
+}
+
+TEST(QPSolver, HS35) {
+  QP problem = QPSParser("HS35.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(1.11111111e-01,error_actual, 1e-7))
+}
+
+TEST(QPSolver, HS35MOD) {
+  QP problem = QPSParser("HS35MOD.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(2.50000001e-01,error_actual, 1e-7))
+}
+
+TEST(QPSolver, HS51) {
+  QP problem = QPSParser("HS51.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(8.88178420e-16,error_actual, 1e-7))
+}
+
+TEST(QPSolver, HS52) {
+  QP problem = QPSParser("HS52.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(5.32664756,error_actual, 1e-7))
+}
+
+TEST(QPSolver, HS268) { // This test needs an extra order of magnitude of tolerance than the rest
+  QP problem = QPSParser("HS268.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(5.73107049e-07,error_actual, 1e-6))
+}
+
+TEST(QPSolver, QPTEST) { // REQUIRES Jacobian Fix
+  QP problem = QPSParser("QPTEST.QPS").Parse();
+  VectorValues actualSolution;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(problem).optimize();
+  double error_actual = problem.cost.error(actualSolution);
+  CHECK(assert_equal(0.437187500e01,error_actual, 1e-7))
 }
 
 /* ************************************************************************* */

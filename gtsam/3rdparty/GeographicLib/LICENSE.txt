@@ -1,6 +1,7 @@
-This license applies to GeographicLib, versions 1.12 and later.
+The MIT License (MIT); this license applies to GeographicLib,
+versions 1.12 and later.
 
-Copyright (c) 2008-2013, Charles Karney
+Copyright (c) 2008-2017, Charles Karney
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation

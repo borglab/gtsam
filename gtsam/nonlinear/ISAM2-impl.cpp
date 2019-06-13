@@ -32,150 +32,6 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-void ISAM2::Impl::AddFactorsStep1(const NonlinearFactorGraph& newFactors,
-                                  bool useUnusedSlots,
-                                  NonlinearFactorGraph* nonlinearFactors,
-                                  FactorIndices* newFactorIndices) {
-  newFactorIndices->resize(newFactors.size());
-
-  if (useUnusedSlots) {
-    size_t globalFactorIndex = 0;
-    for (size_t newFactorIndex = 0; newFactorIndex < newFactors.size();
-         ++newFactorIndex) {
-      // Loop to find the next available factor slot
-      do {
-        // If we need to add more factors than we have room for, resize
-        // nonlinearFactors, filling the new slots with NULL factors. Otherwise,
-        // check if the current factor in nonlinearFactors is already used, and
-        // if so, increase globalFactorIndex.  If the current factor in
-        // nonlinearFactors is unused, break out of the loop and use the current
-        // slot.
-        if (globalFactorIndex >= nonlinearFactors->size())
-          nonlinearFactors->resize(nonlinearFactors->size() +
-                                   newFactors.size() - newFactorIndex);
-        else if ((*nonlinearFactors)[globalFactorIndex])
-          ++globalFactorIndex;
-        else
-          break;
-      } while (true);
-
-      // Use the current slot, updating nonlinearFactors and newFactorSlots.
-      (*nonlinearFactors)[globalFactorIndex] = newFactors[newFactorIndex];
-      (*newFactorIndices)[newFactorIndex] = globalFactorIndex;
-    }
-  } else {
-    // We're not looking for unused slots, so just add the factors at the end.
-    for (size_t i = 0; i < newFactors.size(); ++i)
-      (*newFactorIndices)[i] = i + nonlinearFactors->size();
-    nonlinearFactors->push_back(newFactors);
-  }
-}
-
-/* ************************************************************************* */
-KeySet ISAM2::Impl::CheckRelinearizationFull(
-    const VectorValues& delta,
-    const ISAM2Params::RelinearizationThreshold& relinearizeThreshold) {
-  KeySet relinKeys;
-
-  if (const double* threshold = boost::get<double>(&relinearizeThreshold)) {
-    for (const VectorValues::KeyValuePair& key_delta : delta) {
-      double maxDelta = key_delta.second.lpNorm<Eigen::Infinity>();
-      if (maxDelta >= *threshold) relinKeys.insert(key_delta.first);
-    }
-  } else if (const FastMap<char, Vector>* thresholds =
-                 boost::get<FastMap<char, Vector> >(&relinearizeThreshold)) {
-    for (const VectorValues::KeyValuePair& key_delta : delta) {
-      const Vector& threshold =
-          thresholds->find(Symbol(key_delta.first).chr())->second;
-      if (threshold.rows() != key_delta.second.rows())
-        throw std::invalid_argument(
-            "Relinearization threshold vector dimensionality for '" +
-            std::string(1, Symbol(key_delta.first).chr()) +
-            "' passed into iSAM2 parameters does not match actual variable "
-            "dimensionality.");
-      if ((key_delta.second.array().abs() > threshold.array()).any())
-        relinKeys.insert(key_delta.first);
-    }
-  }
-
-  return relinKeys;
-}
-
-/* ************************************************************************* */
-static void CheckRelinearizationRecursiveDouble(
-    double threshold, const VectorValues& delta,
-    const ISAM2::sharedClique& clique, KeySet* relinKeys) {
-  // Check the current clique for relinearization
-  bool relinearize = false;
-  for (Key var : *clique->conditional()) {
-    double maxDelta = delta[var].lpNorm<Eigen::Infinity>();
-    if (maxDelta >= threshold) {
-      relinKeys->insert(var);
-      relinearize = true;
-    }
-  }
-
-  // If this node was relinearized, also check its children
-  if (relinearize) {
-    for (const ISAM2::sharedClique& child : clique->children) {
-      CheckRelinearizationRecursiveDouble(threshold, delta, child, relinKeys);
-    }
-  }
-}
-
-/* ************************************************************************* */
-static void CheckRelinearizationRecursiveMap(
-    const FastMap<char, Vector>& thresholds, const VectorValues& delta,
-    const ISAM2::sharedClique& clique, KeySet* relinKeys) {
-  // Check the current clique for relinearization
-  bool relinearize = false;
-  for (Key var : *clique->conditional()) {
-    // Find the threshold for this variable type
-    const Vector& threshold = thresholds.find(Symbol(var).chr())->second;
-
-    const Vector& deltaVar = delta[var];
-
-    // Verify the threshold vector matches the actual variable size
-    if (threshold.rows() != deltaVar.rows())
-      throw std::invalid_argument(
-          "Relinearization threshold vector dimensionality for '" +
-          std::string(1, Symbol(var).chr()) +
-          "' passed into iSAM2 parameters does not match actual variable "
-          "dimensionality.");
-
-    // Check for relinearization
-    if ((deltaVar.array().abs() > threshold.array()).any()) {
-      relinKeys->insert(var);
-      relinearize = true;
-    }
-  }
-
-  // If this node was relinearized, also check its children
-  if (relinearize) {
-    for (const ISAM2::sharedClique& child : clique->children) {
-      CheckRelinearizationRecursiveMap(thresholds, delta, child, relinKeys);
-    }
-  }
-}
-
-/* ************************************************************************* */
-KeySet ISAM2::Impl::CheckRelinearizationPartial(
-    const ISAM2::Roots& roots, const VectorValues& delta,
-    const ISAM2Params::RelinearizationThreshold& relinearizeThreshold) {
-  KeySet relinKeys;
-  for (const ISAM2::sharedClique& root : roots) {
-    if (relinearizeThreshold.type() == typeid(double))
-      CheckRelinearizationRecursiveDouble(
-          boost::get<double>(relinearizeThreshold), delta, root, &relinKeys);
-    else if (relinearizeThreshold.type() == typeid(FastMap<char, Vector>))
-      CheckRelinearizationRecursiveMap(
-          boost::get<FastMap<char, Vector> >(relinearizeThreshold), delta, root,
-          &relinKeys);
-  }
-  return relinKeys;
-}
-
-/* ************************************************************************* */
 namespace internal {
 inline static void optimizeInPlace(const ISAM2::sharedClique& clique,
                                    VectorValues* result) {
@@ -189,7 +45,7 @@ inline static void optimizeInPlace(const ISAM2::sharedClique& clique,
 }  // namespace internal
 
 /* ************************************************************************* */
-size_t ISAM2::Impl::UpdateGaussNewtonDelta(const ISAM2::Roots& roots,
+size_t DeltaImpl::UpdateGaussNewtonDelta(const ISAM2::Roots& roots,
                                            const KeySet& replacedKeys,
                                            double wildfireThreshold,
                                            VectorValues* delta) {
@@ -246,8 +102,8 @@ void updateRgProd(const ISAM2::sharedClique& clique, const KeySet& replacedKeys,
                                     clique->conditional()->endParents()));
 
     // Compute R*g and S*g for this clique
-    Vector RSgProd = clique->conditional()->get_R() * gR +
-                     clique->conditional()->get_S() * gS;
+    Vector RSgProd = clique->conditional()->R() * gR +
+                     clique->conditional()->S() * gS;
 
     // Write into RgProd vector
     DenseIndex vectorPosition = 0;
@@ -272,7 +128,7 @@ void updateRgProd(const ISAM2::sharedClique& clique, const KeySet& replacedKeys,
 }  // namespace internal
 
 /* ************************************************************************* */
-size_t ISAM2::Impl::UpdateRgProd(const ISAM2::Roots& roots,
+size_t DeltaImpl::UpdateRgProd(const ISAM2::Roots& roots,
                                  const KeySet& replacedKeys,
                                  const VectorValues& gradAtZero,
                                  VectorValues* RgProd) {
@@ -287,7 +143,7 @@ size_t ISAM2::Impl::UpdateRgProd(const ISAM2::Roots& roots,
 }
 
 /* ************************************************************************* */
-VectorValues ISAM2::Impl::ComputeGradientSearch(const VectorValues& gradAtZero,
+VectorValues DeltaImpl::ComputeGradientSearch(const VectorValues& gradAtZero,
                                                 const VectorValues& RgProd) {
   // Compute gradient squared-magnitude
   const double gradientSqNorm = gradAtZero.dot(gradAtZero);

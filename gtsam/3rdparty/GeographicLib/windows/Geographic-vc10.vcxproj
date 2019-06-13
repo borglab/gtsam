@@ -148,6 +148,7 @@
     <ClInclude Include="../include/GeographicLib/DMS.hpp" />
     <ClInclude Include="../include/GeographicLib/Ellipsoid.hpp" />
     <ClInclude Include="../include/GeographicLib/EllipticFunction.hpp" />
+    <ClInclude Include="../include/GeographicLib/GARS.hpp" />
     <ClInclude Include="../include/GeographicLib/GeoCoords.hpp" />
     <ClInclude Include="../include/GeographicLib/Geocentric.hpp" />
     <ClInclude Include="../include/GeographicLib/Geodesic.hpp" />
@@ -155,6 +156,7 @@
     <ClInclude Include="../include/GeographicLib/GeodesicLine.hpp" />
     <ClInclude Include="../include/GeographicLib/GeodesicLineExact.hpp" />
     <ClInclude Include="../include/GeographicLib/Geohash.hpp" />
+    <ClInclude Include="../include/GeographicLib/Georef.hpp" />
     <ClInclude Include="../include/GeographicLib/Geoid.hpp" />
     <ClInclude Include="../include/GeographicLib/Gnomonic.hpp" />
     <ClInclude Include="../include/GeographicLib/GravityCircle.hpp" />
@@ -169,6 +171,7 @@
     <ClInclude Include="../include/GeographicLib/OSGB.hpp" />
     <ClInclude Include="../include/GeographicLib/PolarStereographic.hpp" />
     <ClInclude Include="../include/GeographicLib/PolygonArea.hpp" />
+    <ClInclude Include="../include/GeographicLib/Rhumb.hpp" />
     <ClInclude Include="../include/GeographicLib/SphericalEngine.hpp" />
     <ClInclude Include="../include/GeographicLib/SphericalHarmonic.hpp" />
     <ClInclude Include="../include/GeographicLib/SphericalHarmonic1.hpp" />
@@ -188,14 +191,17 @@
     <ClCompile Include="../src/DMS.cpp" />
     <ClCompile Include="../src/Ellipsoid.cpp" />
     <ClCompile Include="../src/EllipticFunction.cpp" />
+    <ClCompile Include="../src/GARS.cpp" />
     <ClCompile Include="../src/GeoCoords.cpp" />
     <ClCompile Include="../src/Geocentric.cpp" />
     <ClCompile Include="../src/Geodesic.cpp" />
     <ClCompile Include="../src/GeodesicExact.cpp" />
+    <ClCompile Include="../src/GeodesicExactC4.cpp" />
     <ClCompile Include="../src/GeodesicLine.cpp" />
     <ClCompile Include="../src/GeodesicLineExact.cpp" />
     <ClCompile Include="../src/Geohash.cpp" />
     <ClCompile Include="../src/Geoid.cpp" />
+    <ClCompile Include="../src/Georef.cpp" />
     <ClCompile Include="../src/Gnomonic.cpp" />
     <ClCompile Include="../src/GravityCircle.cpp" />
     <ClCompile Include="../src/GravityModel.cpp" />
@@ -204,10 +210,12 @@
     <ClCompile Include="../src/MGRS.cpp" />
     <ClCompile Include="../src/MagneticCircle.cpp" />
     <ClCompile Include="../src/MagneticModel.cpp" />
+    <ClCompile Include="../src/Math.cpp" />
     <ClCompile Include="../src/NormalGravity.cpp" />
     <ClCompile Include="../src/OSGB.cpp" />
     <ClCompile Include="../src/PolarStereographic.cpp" />
     <ClCompile Include="../src/PolygonArea.cpp" />
+    <ClCompile Include="../src/Rhumb.cpp" />
     <ClCompile Include="../src/SphericalEngine.cpp" />
     <ClCompile Include="../src/TransverseMercator.cpp" />
     <ClCompile Include="../src/TransverseMercatorExact.cpp" />
@@ -218,4 +226,3 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
-

@@ -1,6 +1,7 @@
 // Example of using the GeographicLib::DMS class
 
 #include <iostream>
+#include <string>
 #include <exception>
 #include <GeographicLib/DMS.hpp>
 
@@ -25,5 +26,4 @@ int main() {
     cerr << "Caught exception: " << e.what() << "\n";
     return 1;
   }
-  return 0;
 }

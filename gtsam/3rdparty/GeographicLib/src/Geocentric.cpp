@@ -2,9 +2,9 @@
  * \file Geocentric.cpp
  * \brief Implementation for GeographicLib::Geocentric class
  *
- * Copyright (c) Charles Karney (2008-2011) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2017) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #include <GeographicLib/Geocentric.hpp>
@@ -15,35 +15,32 @@ namespace GeographicLib {
 
   Geocentric::Geocentric(real a, real f)
     : _a(a)
-    , _f(f <= 1 ? f : 1/f)
+    , _f(f)
     , _e2(_f * (2 - _f))
-    , _e2m(Math::sq(1 - _f))          // 1 - _e2
+    , _e2m(Math::sq(1 - _f))    // 1 - _e2
     , _e2a(abs(_e2))
     , _e4a(Math::sq(_e2))
     , _maxrad(2 * _a / numeric_limits<real>::epsilon())
   {
     if (!(Math::isfinite(_a) && _a > 0))
-      throw GeographicErr("Major radius is not positive");
+      throw GeographicErr("Equatorial radius is not positive");
     if (!(Math::isfinite(_f) && _f < 1))
-      throw GeographicErr("Minor radius is not positive");
+      throw GeographicErr("Polar semi-axis is not positive");
   }
 
-  const Geocentric Geocentric::WGS84(Constants::WGS84_a<real>(),
-                                     Constants::WGS84_f<real>());
+  const Geocentric& Geocentric::WGS84() {
+    static const Geocentric wgs84(Constants::WGS84_a(), Constants::WGS84_f());
+    return wgs84;
+  }
 
   void Geocentric::IntForward(real lat, real lon, real h,
                               real& X, real& Y, real& Z,
-                              real M[dim2_]) const throw() {
-    lon = Math::AngNormalize(lon);
-    real
-      phi = lat * Math::degree<real>(),
-      lam = lon * Math::degree<real>(),
-      sphi = sin(phi),
-      cphi = abs(lat) == 90 ? 0 : cos(phi),
-      n = _a/sqrt(1 - _e2 * Math::sq(sphi)),
-      slam = lon == -180 ? 0 : sin(lam),
-      clam = abs(lon) == 90 ? 0 : cos(lam);
-    Z = ( _e2m * n + h) * sphi;
+                              real M[dim2_]) const {
+    real sphi, cphi, slam, clam;
+    Math::sincosd(Math::LatFix(lat), sphi, cphi);
+    Math::sincosd(lon, slam, clam);
+    real n = _a/sqrt(1 - _e2 * Math::sq(sphi));
+    Z = (_e2m * n + h) * sphi;
     X = (n + h) * cphi;
     Y = X * slam;
     X *= clam;
@@ -53,11 +50,11 @@ namespace GeographicLib {
 
   void Geocentric::IntReverse(real X, real Y, real Z,
                               real& lat, real& lon, real& h,
-                              real M[dim2_]) const throw() {
+                              real M[dim2_]) const {
     real
       R = Math::hypot(X, Y),
-      slam = R ? Y / R : 0,
-      clam = R ? X / R : 1;
+      slam = R != 0 ? Y / R : 0,
+      clam = R != 0 ? X / R : 1;
     h = Math::hypot(R, Z);      // Distance to center of earth
     real sphi, cphi;
     if (h > _maxrad) {
@@ -68,8 +65,8 @@ namespace GeographicLib {
       //
       // Treat the case X, Y finite, but R overflows to +inf by scaling by 2.
       R = Math::hypot(X/2, Y/2);
-      slam = R ? (Y/2) / R : 0;
-      clam = R ? (X/2) / R : 1;
+      slam = R != 0 ? (Y/2) / R : 0;
+      clam = R != 0 ? (X/2) / R : 1;
       real H = Math::hypot(Z/2, R);
       sphi = (Z/2) / H;
       cphi = R / H;
@@ -149,15 +146,14 @@ namespace GeographicLib {
         h = - _a * (_f >= 0 ? _e2m : 1) * H / _e2a;
       }
     }
-    lat = atan2(sphi, cphi) / Math::degree<real>();
-    // Negative signs return lon in [-180, 180).
-    lon = -atan2(-slam, clam) / Math::degree<real>();
+    lat = Math::atan2d(sphi, cphi);
+    lon = Math::atan2d(slam, clam);
     if (M)
       Rotation(sphi, cphi, slam, clam, M);
   }
 
   void Geocentric::Rotation(real sphi, real cphi, real slam, real clam,
-                            real M[dim2_]) throw() {
+                            real M[dim2_]) {
     // This rotation matrix is given by the following quaternion operations
     // qrot(lam, [0,0,1]) * qrot(phi, [0,-1,0]) * [1,1,1,1]/2
     // or

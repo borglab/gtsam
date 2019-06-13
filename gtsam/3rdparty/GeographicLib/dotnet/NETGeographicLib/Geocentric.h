@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #pragma once
 
@@ -28,7 +28,7 @@ namespace NETGeographicLib
    * The conversion from geographic to geocentric coordinates is
    * straightforward.  For the reverse transformation we use
    * - H. Vermeille,
-   *   <a href="http://dx.doi.org/10.1007/s00190-002-0273-6"> Direct
+   *   <a href="https://doi.org/10.1007/s00190-002-0273-6"> Direct
    *   transformation from geocentric coordinates to geodetic coordinates</a>,
    *   J. Geodesy 76, 451--454 (2002).
    * .
@@ -36,11 +36,11 @@ namespace NETGeographicLib
    * results for all finite inputs (even if \e h is infinite).  The changes are
    * described in Appendix B of
    * - C. F. F. Karney,
-   *   <a href="http://arxiv.org/abs/1102.1215v1">Geodesics
+   *   <a href="https://arxiv.org/abs/1102.1215v1">Geodesics
    *   on an ellipsoid of revolution</a>,
    *   Feb. 2011;
    *   preprint
-   *   <a href="http://arxiv.org/abs/1102.1215v1">arxiv:1102.1215v1</a>.
+   *   <a href="https://arxiv.org/abs/1102.1215v1">arxiv:1102.1215v1</a>.
    * .
    * See \ref geocentric for more information.
    *
@@ -79,8 +79,7 @@ namespace NETGeographicLib
          *
          * @param[in] a equatorial radius (meters).
          * @param[in] f flattening of ellipsoid.  Setting \e f = 0 gives a sphere.
-         *   Negative \e f gives a prolate ellipsoid.  If \e f > 1, set flattening
-         *   to 1/\e f.
+         *   Negative \e f gives a prolate ellipsoid.
          * @exception GeographicErr if \e a or (1 &minus; \e f ) \e a is not
          *   positive.
          **********************************************************************/
@@ -114,8 +113,7 @@ namespace NETGeographicLib
          * @param[out] Y geocentric coordinate (meters).
          * @param[out] Z geocentric coordinate (meters).
          *
-         * \e lat should be in the range [&minus;90&deg;, 90&deg;]; \e lon
-         * should be in the range [&minus;540&deg;, 540&deg;).
+         * \e lat should be in the range [&minus;90&deg;, 90&deg;].
          **********************************************************************/
         void Forward(double lat, double lon, double h,
             [System::Runtime::InteropServices::Out] double% X,

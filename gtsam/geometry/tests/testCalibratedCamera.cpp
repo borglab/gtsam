@@ -134,7 +134,7 @@ TEST( CalibratedCamera, Dproject_point_pose)
   Point2 result = camera.project(point1, Dpose, Dpoint);
   Matrix numerical_pose  = numericalDerivative21(project2, camera, point1);
   Matrix numerical_point = numericalDerivative22(project2, camera, point1);
-  CHECK(assert_equal(Point3(-0.08, 0.08, 0.5), camera.pose().transform_to(point1)));
+  CHECK(assert_equal(Point3(-0.08, 0.08, 0.5), camera.pose().transformTo(point1)));
   CHECK(assert_equal(Point2(-.16,  .16), result));
   CHECK(assert_equal(numerical_pose,  Dpose, 1e-7));
   CHECK(assert_equal(numerical_point, Dpoint, 1e-7));

@@ -5,16 +5,20 @@
  *
  * Written by Scott Heiman <mrmtdew2@outlook.com> and licensed under the
  * MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 /**
 \mainpage NETGeographicLib library
 \author Scott Heiman (mrmtdew2@outlook.com)
-\version 1.35
-\date 2014-03-13
+\version 1.49
+\date 2017-10-05
 
-\section abstract Abstract
+The documentation for other versions is available at
+<tt>https://geographiclib.sourceforge.io/m.nn/NET</tt> for versions numbers
+<tt>m.nn</tt> &ge; 1.33.
+
+\section abstract-net Abstract
 
 %NETGeographicLib is a .NET wrapper for GeographicLib.  It allows
 .NET developers to access GeographicLib classes within C#, Visual
@@ -25,15 +29,15 @@ of the GeographicLib software.  It is a container that provides interfaces
 to the GeographicLib classes.  GeographicLib and NETGeographicLib is an
 integrated product.
 
-The NETGeographic project in the GeographicLib-vc10.sln file located in
-\<install folder\>/GeographicLib-1.35/windows will create the NETGeographicLib
-DLL.  The source code for NETGeographicLib is located in
-\<install folder\>/GeographicLib-1.35/dotnet/NETGeographicLib.  NETGeographicLib
-is not available for older versions of Microsoft Visual Studio.
+The NETGeographic solutions and C++ projects are located in the
+\<install\>/windows folder.  The C# Projections projects are located in
+the \<install\>/dotnet/Projections folder.  Solution files have been provided
+for VS 2010 and VS 2013 NETGeographicLib is not available for older
+versions of Microsoft Visual Studio.
 
 NETGeographicLib has been tested with C#, Managed C++, and Visual Basic.
 Sample code snippets can be found in
-\<install folder\>/GeographicLib-1.35/dotnet/examples.
+\<install folder\>/GeographicLib-1.49/dotnet/examples.
 
 \section differences Differences between NETGeographicLib and GeographicLib
 
@@ -41,14 +45,15 @@ The NETGeographicLib class names are identical to the GeographicLib class names.
 All NETGeographicLib classes are in the NETGeographicLib namespace.
 
 NETGeographicLib exposes most of the GeographicLib classes.  The exceptions
-are SphericalEngine, GeographicLib::Math, and GeographicLib::Utility.  The
+are SphericalEngine, GeographicLib::Math, and most of GeographicLib::Utility.  The
 SphericalEngine class is a template class which (according to the comments in
 the SphericalEngine.h file) is not usually accessible to developers.  The
 GeographicLib::Math class contains several specialized functions required by
 GeographicLib classes.  They have limited use outside GeographicLib.  This class
 may be exposed in a future release if there is demand for it.  The functions
 provided by GeographicLib::Utility duplicate functions provided by existing .NET
-controls (DateTime).
+controls (DateTime).  The GeographicLib::Utility::fractionalyear function is
+available to .NET programmers by calling NETGeographicLib::Utility::FractionalYear.
 
 The SphericalCoefficients class replaces the SphericalEngine::coeff class.
 
@@ -59,7 +64,10 @@ in the header files contain a section labeled "INTERFACE DIFFERENCES" that detai
 the differences between the NETGeographicLib interfaces and the GeographicLib
 interfaces.  The differences are summarized in the text that follows.
 
-Default values for function parameters are not supported in .NET.
+Default values for function parameters are not supported in .NET.  If
+the documentation refers to a default value for a parameter, it applies
+only to GeographicLib.  However, such a "default" value often provides a
+reasonable choice for this parameter.
 
 Several GeographicLib class functions accept or return a "capabilities mask" as
 an unsigned integer.  The NETGeographicLib classes accept and return the capabilities
@@ -135,7 +143,7 @@ to any Visual Basic source that uses NETGeographicLib classes.
 
 A C# sample application is provided that demonstrates NETGeographicLib classes.
 The source code for the sample application is located in
-\<install folder\>/GeographicLib-1.35/dotnet/Projections.  The sample
+\<install folder\>/GeographicLib-1.49/dotnet/Projections.  The sample
 application creates a tabbed dialog.  Each tab provides data entry fields that
 allow the user to exercise one or more NETGeographicLib classes.
 
@@ -153,12 +161,13 @@ The following table lists the source code that demonstrates specific classes.
 <TR><TD>GravityPanel.cs</TD><TD>NormalGravity, GravityModel, GravityCircle</TD></TR>
 <TR><TD>LocalCartesianPanel.cs</TD><TD>LocalCartesian</TD></TR>
 <TR><TD>MagneticPanel.cs</TD><TD>MagneticModel, MagneticCircle</TD></TR>
-<TR><TD>MiscPanel.cs</TD><TD>DMS, Geohash</TD></TR>
+<TR><TD>MiscPanel.cs</TD><TD>DMS, Geohash, GARS, Georef</TD></TR>
 <TR><TD>PolarStereoPanel.cs</TD><TD>PolarStereographic</TD></TR>
 <TR><TD>PolyPanel.cs</TD><TD>PolygonArea</TD></TR>
 <TR><TD>ProjectionsPanel.cs</TD><TD>AzimuthalEquidistant, CassiniSoldner, Gnomonic</TD></TR>
 <TR><TD>SphericalHarmonicsPanel.cs</TD><TD>SphericalHarmonic, SphericalHarmonic1, SphericalHarmonic2, CircularEngine, SphericalCoefficients</TD></TR>
 <TR><TD>TypeIIIProjPanel.cs</TD><TD>UTMUPS, MGRS, OSGB</TD></TR>
+<TR><TD>RhumbPanel.cs</TD><TD>Rhumb, RhumbLine</TD></TR>
 </TABLE>
 </center>
 
@@ -174,7 +183,7 @@ two ways:
   application.  You can build %GeographicLib as a shared library using
   <code>-D GEOGRAPHICLIB_LIB_TYPE=SHARED</code> or <code>BOTH</code>.
 - you have installed %GeographicLib using one of the binary installers (see
-  \ref windowsbin "Using a binary installer for Windows" in the
+  \ref binaryinstwin "Using a binary installer for Windows" in the
   %GeographicLib documentation).  In this case, you are restricted to using
   Visual Studio 10.
 

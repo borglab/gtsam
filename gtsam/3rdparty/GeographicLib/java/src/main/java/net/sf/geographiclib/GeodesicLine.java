@@ -1,9 +1,9 @@
 /**
  * Implementation of the net.sf.geographiclib.GeodesicLine class
  *
- * Copyright (c) Charles Karney (2013) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2013-2017) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 package net.sf.geographiclib;
 
@@ -12,14 +12,28 @@ package net.sf.geographiclib;
  * <p>
  * GeodesicLine facilitates the determination of a series of points on a single
  * geodesic.  The starting point (<i>lat1</i>, <i>lon1</i>) and the azimuth
- * <i>azi1</i> are specified in the constructor.  {@link #Position Position}
- * returns the location of point 2 a distance <i>s12</i> along the geodesic.
- * Alternatively {@link #ArcPosition ArcPosition} gives the position of point 2
- * an arc length <i>a12</i> along the geodesic.
+ * <i>azi1</i> are specified in the constructor; alternatively, the {@link
+ * Geodesic#Line Geodesic.Line} method can be used to create a GeodesicLine.
+ * {@link #Position Position} returns the location of point 2 a distance
+ * <i>s12</i> along the geodesic.  Alternatively {@link #ArcPosition
+ * ArcPosition} gives the position of point 2 an arc length <i>a12</i> along
+ * the geodesic.
+ * <p>
+ * You can register the position of a reference point 3 a distance (arc
+ * length), <i>s13</i> (<i>a13</i>) along the geodesic with the
+ * {@link #SetDistance SetDistance} ({@link #SetArc SetArc}) functions.  Points
+ * a fractional distance along the line can be found by providing, for example,
+ * 0.5 * {@link #Distance} as an argument to {@link #Position Position}.  The
+ * {@link Geodesic#InverseLine Geodesic.InverseLine} or
+ * {@link Geodesic#DirectLine Geodesic.DirectLine} methods return GeodesicLine
+ * objects with point 3 set to the point 2 of the corresponding geodesic
+ * problem.  GeodesicLine objects created with the public constructor or with
+ * {@link Geodesic#Line Geodesic.Line} have <i>s13</i> and <i>a13</i> set to
+ * NaNs.
  * <p>
  * The calculations are accurate to better than 15 nm (15 nanometers).  See
  * Sec. 9 of
- * <a href="http://arxiv.org/abs/1102.1215v1">arXiv:1102.1215v1</a> for
+ * <a href="https://arxiv.org/abs/1102.1215v1">arXiv:1102.1215v1</a> for
  * details.  The algorithms used by this class are based on series expansions
  * using the flattening <i>f</i> as a small parameter.  These are only accurate
  * for |<i>f</i>| &lt; 0.02; however reasonably accurate results will be
@@ -29,13 +43,10 @@ package net.sf.geographiclib;
  * <ul>
  * <li>
  *   C. F. F. Karney,
- *   <a href="http://dx.doi.org/10.1007/s00190-012-0578-z">
+ *   <a href="https://doi.org/10.1007/s00190-012-0578-z">
  *   Algorithms for geodesics</a>,
- *   J. Geodesy <b>87</b>, 43&ndash;55 (2013);
- *   DOI: <a href="http://dx.doi.org/10.1007/s00190-012-0578-z">
- *   10.1007/s00190-012-0578-z</a>;
- *   addenda: <a href="http://geographiclib.sf.net/geod-addenda.html">
- *   geod-addenda.html</a>.
+ *   J. Geodesy <b>87</b>, 43&ndash;55 (2013)
+ *   (<a href="https://geographiclib.sourceforge.io/geod-addenda.html">addenda</a>).
  * </ul>
  * <p>
  * Here's an example of using this class
@@ -49,30 +60,30 @@ package net.sf.geographiclib;
  *     double
  *       lat1 = 40.640, lon1 = -73.779, // JFK
  *       lat2 =  1.359, lon2 = 103.989; // SIN
- *     GeodesicData g = geod.Inverse(lat1, lon1, lat2, lon2,
- *                  GeodesicMask.DISTANCE | GeodesicMask.AZIMUTH);
- *     GeodesicLine line = new GeodesicLine(geod, lat1, lon1, g.azi1,
- *                  GeodesicMask.DISTANCE_IN | GeodesicMask.LONGITUDE);
- *     double
- *       s12 = g.s12,
- *       a12 = g.a12,
- *       ds0 = 500e3;        // Nominal distance between points = 500 km
- *     int num = (int)(Math.ceil(s12 / ds0)); // The number of intervals
+ *     GeodesicLine line = geod.InverseLine(lat1, lon1, lat2, lon2,
+ *                                          GeodesicMask.DISTANCE_IN |
+ *                                          GeodesicMask.LATITUDE |
+ *                                          GeodesicMask.LONGITUDE);
+ *     double ds0 = 500e3;     // Nominal distance between points = 500 km
+ *     // The number of intervals
+ *     int num = (int)(Math.ceil(line.Distance() / ds0));
  *     {
  *       // Use intervals of equal length
- *       double ds = s12 / num;
+ *       double ds = line.Distance() / num;
  *       for (int i = 0; i <= num; ++i) {
- *         g = line.Position(i * ds,
- *                  GeodesicMask.LATITUDE | GeodesicMask.LONGITUDE);
+ *         GeodesicData g = line.Position(i * ds,
+ *                                        GeodesicMask.LATITUDE |
+ *                                        GeodesicMask.LONGITUDE);
  *         System.out.println(i + " " + g.lat2 + " " + g.lon2);
  *       }
  *     }
  *     {
  *       // Slightly faster, use intervals of equal arc length
- *       double da = a12 / num;
+ *       double da = line.Arc() / num;
  *       for (int i = 0; i <= num; ++i) {
- *         g = line.ArcPosition(i * da,
- *                  GeodesicMask.LATITUDE | GeodesicMask.LONGITUDE);
+ *         GeodesicData g = line.ArcPosition(i * da,
+ *                                           GeodesicMask.LATITUDE |
+ *                                           GeodesicMask.LONGITUDE);
  *         System.out.println(i + " " + g.lat2 + " " + g.lon2);
  *       }
  *     }
@@ -91,6 +102,7 @@ public class GeodesicLine {
   private double _a, _f, _b, _c2, _f1, _salp0, _calp0, _k2,
     _salp1, _calp1, _ssig1, _csig1, _dn1, _stau1, _ctau1, _somg1, _comg1,
     _A1m1, _A2m1, _A3c, _B11, _B21, _B31, _A4, _B41;
+  private double _a13, _s13;
   // index zero elements of _C1a, _C1pa, _C2a, _C3a are unused
   private double _C1a[], _C1pa[], _C2a[], _C3a[],
     _C4a[];    // all the elements of _C4a are used
@@ -106,8 +118,7 @@ public class GeodesicLine {
    * @param lon1 longitude of point 1 (degrees).
    * @param azi1 azimuth at point 1 (degrees).
    * <p>
-   * <i>lat1</i> should be in the range [&minus;90&deg;, 90&deg;]; <i>lon1</i>
-   * and <i>azi1</i> should be in the range [&minus;540&deg;, 540&deg;).
+   * <i>lat1</i> should be in the range [&minus;90&deg;, 90&deg;].
    * <p>
    * If the point is at a pole, the azimuth is defined by keeping <i>lon1</i>
    * fixed, writing <i>lat1</i> = &plusmn;(90&deg; &minus; &epsilon;), and
@@ -136,61 +147,66 @@ public class GeodesicLine {
    * The {@link GeodesicMask} values are
    * <ul>
    * <li>
-   *   <i>caps</i> |= GeodesicMask.LATITUDE for the latitude <i>lat2</i>; this
-   *   is added automatically;
+   *   <i>caps</i> |= {@link GeodesicMask#LATITUDE} for the latitude
+   *   <i>lat2</i>; this is added automatically;
    * <li>
-   *   <i>caps</i> |= GeodesicMask.LONGITUDE for the latitude <i>lon2</i>;
+   *   <i>caps</i> |= {@link GeodesicMask#LONGITUDE} for the latitude
+   *   <i>lon2</i>;
    * <li>
-   *   <i>caps</i> |= GeodesicMask.AZIMUTH for the latitude <i>azi2</i>; this
-   *   is added automatically;
+   *   <i>caps</i> |= {@link GeodesicMask#AZIMUTH} for the latitude
+   *   <i>azi2</i>; this is added automatically;
    * <li>
-   *   <i>caps</i> |= GeodesicMask.DISTANCE for the distance <i>s12</i>;
+   *   <i>caps</i> |= {@link GeodesicMask#DISTANCE} for the distance
+   *   <i>s12</i>;
    * <li>
-   *   <i>caps</i> |= GeodesicMask.REDUCEDLENGTH for the reduced length
+   *   <i>caps</i> |= {@link GeodesicMask#REDUCEDLENGTH} for the reduced length
    *   <i>m12</i>;
    * <li>
-   *   <i>caps</i> |= GeodesicMask.GEODESICSCALE for the geodesic scales
-   *   <i>M12</i> and <i>M21</i>;
+   *   <i>caps</i> |= {@link GeodesicMask#GEODESICSCALE} for the geodesic
+   *   scales <i>M12</i> and <i>M21</i>;
    * <li>
-   *   <i>caps</i> |= GeodesicMask.AREA for the area <i>S12</i>;
+   *   <i>caps</i> |= {@link GeodesicMask#AREA} for the area <i>S12</i>;
    * <li>
-   *   <i>caps</i> |= GeodesicMask.DISTANCE_IN permits the length of the
-   *   geodesic to be given in terms of <i>s12</i>; without this capability the
-   *   length can only be specified in terms of arc length;
+   *   <i>caps</i> |= {@link GeodesicMask#DISTANCE_IN} permits the length of
+   *   the geodesic to be given in terms of <i>s12</i>; without this capability
+   *   the length can only be specified in terms of arc length;
    * <li>
-   *   <i>caps</i> |= GeodesicMask.ALL for all of the above;
+   *   <i>caps</i> |= {@link GeodesicMask#ALL} for all of the above.
    * </ul>
    **********************************************************************/
   public GeodesicLine(Geodesic g,
                       double lat1, double lon1, double azi1,
                       int caps) {
+    azi1 = GeoMath.AngNormalize(azi1);
+    double salp1, calp1;
+    // Guard against underflow in salp0
+    { Pair p = GeoMath.sincosd(GeoMath.AngRound(azi1));
+      salp1 = p.first; calp1 = p.second; }
+    LineInit(g, lat1, lon1, azi1, salp1, calp1, caps);
+  }
+
+  private void LineInit(Geodesic g,
+                        double lat1, double lon1,
+                        double azi1, double salp1, double calp1,
+                        int caps) {
     _a = g._a;
     _f = g._f;
     _b = g._b;
     _c2 = g._c2;
     _f1 = g._f1;
-    // Always allow latitude and azimuth
-    _caps = caps | GeodesicMask.LATITUDE | GeodesicMask.AZIMUTH;
+    // Always allow latitude and azimuth and unrolling the longitude
+    _caps = caps | GeodesicMask.LATITUDE | GeodesicMask.AZIMUTH |
+      GeodesicMask.LONG_UNROLL;
 
-    // Guard against underflow in salp0
-    azi1 = Geodesic.AngRound(GeoMath.AngNormalize(azi1));
-    lon1 = GeoMath.AngNormalize(lon1);
-    _lat1 = lat1;
+    _lat1 = GeoMath.LatFix(lat1);
     _lon1 = lon1;
-    _azi1 = azi1;
-    // alp1 is in [0, pi]
-    double alp1 = azi1 * GeoMath.degree;
-    // Enforce sin(pi) == 0 and cos(pi/2) == 0.  Better to face the ensuing
-    // problems directly than to skirt them.
-    _salp1 =          azi1  == -180 ? 0 : Math.sin(alp1);
-    _calp1 = Math.abs(azi1) ==   90 ? 0 : Math.cos(alp1);
-    double cbet1, sbet1, phi;
-    phi = lat1 * GeoMath.degree;
+    _azi1 = azi1; _salp1 = salp1; _calp1 = calp1;
+    double cbet1, sbet1;
+    { Pair p = GeoMath.sincosd(GeoMath.AngRound(_lat1));
+      sbet1 = _f1 * p.first; cbet1 = p.second; }
     // Ensure cbet1 = +epsilon at poles
-    sbet1 = _f1 * Math.sin(phi);
-    cbet1 = Math.abs(lat1) == 90 ? Geodesic.tiny_ : Math.cos(phi);
-    { Pair p = Geodesic.SinCosNorm(sbet1, cbet1);
-      sbet1 = p.first; cbet1 = p.second; }
+    { Pair p = GeoMath.norm(sbet1, cbet1);
+      sbet1 = p.first; cbet1 = Math.max(Geodesic.tiny_, p.second); }
     _dn1 = Math.sqrt(1 + g._ep2 * GeoMath.sq(sbet1));
 
     // Evaluate alp0 from sin(alp1) * cos(bet1) = sin(alp0),
@@ -209,9 +225,9 @@ public class GeodesicLine {
     // With alp0 = 0, omg1 = 0 for alp1 = 0, omg1 = pi for alp1 = pi.
     _ssig1 = sbet1; _somg1 = _salp0 * sbet1;
     _csig1 = _comg1 = sbet1 != 0 || _calp1 != 0 ? cbet1 * _calp1 : 1;
-    { Pair p = Geodesic.SinCosNorm(_ssig1, _csig1);
+    { Pair p = GeoMath.norm(_ssig1, _csig1);
       _ssig1 = p.first; _csig1 = p.second; } // sig1 in (-pi, pi]
-    // Geodesic.SinCosNorm(_somg1, _comg1); -- don't need to normalize!
+    // GeoMath.norm(_somg1, _comg1); -- don't need to normalize!
 
     _k2 = GeoMath.sq(_calp0) * g._ep2;
     double eps = _k2 / (2 * (1 + Math.sqrt(1 + _k2)) + _k2);
@@ -257,6 +273,14 @@ public class GeodesicLine {
     }
   }
 
+  protected GeodesicLine(Geodesic g,
+                         double lat1, double lon1,
+                         double azi1, double salp1, double calp1,
+                         int caps, boolean arcmode, double s13_a13) {
+    LineInit(g, lat1, lon1, azi1, salp1, calp1, caps);
+    GenSetDistance(arcmode, s13_a13);
+  }
+
   /**
    * A default constructor.  If GeodesicLine.Position is called on the
    * resulting object, it returns immediately (without doing any calculations).
@@ -271,7 +295,7 @@ public class GeodesicLine {
    * Compute the position of point 2 which is a distance <i>s12</i> (meters)
    * from point 1.
    * <p>
-   * @param s12 distance between point 1 and point 2 (meters); it can be
+   * @param s12 distance from point 1 to point 2 (meters); it can be
    *   negative.
    * @return a {@link GeodesicData} object with the following fields:
    *   <i>lat1</i>, <i>lon1</i>, <i>azi1</i>, <i>lat2</i>, <i>lon2</i>,
@@ -279,21 +303,19 @@ public class GeodesicLine {
    *   missing if the GeodesicLine did not include the relevant capability.
    * <p>
    * The values of <i>lon2</i> and <i>azi2</i> returned are in the range
-   * [&minus;180&deg;, 180&deg;).
+   * [&minus;180&deg;, 180&deg;].
    * <p>
    * The GeodesicLine object <i>must</i> have been constructed with <i>caps</i>
    * |= {@link GeodesicMask#DISTANCE_IN}; otherwise no parameters are set.
    **********************************************************************/
   public GeodesicData Position(double s12) {
-    return Position(false, s12,
-                    GeodesicMask.LATITUDE | GeodesicMask.LONGITUDE |
-                    GeodesicMask.AZIMUTH);
+    return Position(false, s12, GeodesicMask.STANDARD);
   }
   /**
    * Compute the position of point 2 which is a distance <i>s12</i> (meters)
    * from point 1 and with a subset of the geodesic results returned.
    * <p>
-   * @param s12 distance between point 1 and point 2 (meters); it can be
+   * @param s12 distance from point 1 to point 2 (meters); it can be
    *   negative.
    * @param outmask a bitor'ed combination of {@link GeodesicMask} values
    *   specifying which results should be returned.
@@ -302,7 +324,12 @@ public class GeodesicLine {
    * The GeodesicLine object <i>must</i> have been constructed with <i>caps</i>
    * |= {@link GeodesicMask#DISTANCE_IN}; otherwise no parameters are set.
    * Requesting a value which the GeodesicLine object is not capable of
-   * computing is not an error (no parameters will be set).
+   * computing is not an error (no parameters will be set).  The value of
+   * <i>lon2</i> returned is normally in the range [&minus;180&deg;, 180&deg;];
+   * however if the <i>outmask</i> includes the
+   * {@link GeodesicMask#LONG_UNROLL} flag, the longitude is "unrolled" so that
+   * the quantity <i>lon2</i> &minus; <i>lon1</i> indicates how many times and
+   * in what sense the geodesic encircles the ellipsoid.
    **********************************************************************/
   public GeodesicData Position(double s12, int outmask) {
     return Position(false, s12, outmask);
@@ -312,7 +339,7 @@ public class GeodesicLine {
    * Compute the position of point 2 which is an arc length <i>a12</i>
    * (degrees) from point 1.
    * <p>
-   * @param a12 arc length between point 1 and point 2 (degrees); it can
+   * @param a12 arc length from point 1 to point 2 (degrees); it can
    *   be negative.
    * @return a {@link GeodesicData} object with the following fields:
    *   <i>lat1</i>, <i>lon1</i>, <i>azi1</i>, <i>lat2</i>, <i>lon2</i>,
@@ -320,31 +347,29 @@ public class GeodesicLine {
    *   missing if the GeodesicLine did not include the relevant capability.
    * <p>
    * The values of <i>lon2</i> and <i>azi2</i> returned are in the range
-   * [&minus;180&deg;, 180&deg;).
+   * [&minus;180&deg;, 180&deg;].
    * <p>
    * The GeodesicLine object <i>must</i> have been constructed with <i>caps</i>
    * |= {@link GeodesicMask#DISTANCE_IN}; otherwise no parameters are set.
    **********************************************************************/
   public GeodesicData ArcPosition(double a12) {
-    return Position(true, a12,
-                    GeodesicMask.LATITUDE | GeodesicMask.LONGITUDE |
-                    GeodesicMask.AZIMUTH | GeodesicMask.DISTANCE);
+    return Position(true, a12, GeodesicMask.STANDARD);
   }
   /**
    * Compute the position of point 2 which is an arc length <i>a12</i>
    * (degrees) from point 1 and with a subset of the geodesic results returned.
    * <p>
-   * @param a12 arc length between point 1 and point 2 (degrees); it can
+   * @param a12 arc length from point 1 to point 2 (degrees); it can
    *   be negative.
    * @param outmask a bitor'ed combination of {@link GeodesicMask} values
    *   specifying which results should be returned.
    * @return a {@link GeodesicData} object giving <i>lat1</i>, <i>lon2</i>,
    *   <i>azi2</i>, and <i>a12</i>.
    * <p>
-   * The GeodesicLine object <i>must</i> have been constructed with <i>caps</i>
-   * |= {@link GeodesicMask#DISTANCE_IN}; otherwise no parameters are set.
    * Requesting a value which the GeodesicLine object is not capable of
-   * computing is not an error (no parameters will be set).
+   * computing is not an error (no parameters will be set).  The value of
+   * <i>lon2</i> returned is in the range [&minus;180&deg;, 180&deg;], unless
+   * the <i>outmask</i> includes the {@link GeodesicMask#LONG_UNROLL} flag.
    **********************************************************************/
   public GeodesicData ArcPosition(double a12, int outmask) {
     return Position(true, a12, outmask);
@@ -368,21 +393,28 @@ public class GeodesicLine {
    * The {@link GeodesicMask} values possible for <i>outmask</i> are
    * <ul>
    * <li>
-   *   <i>outmask</i> |= GeodesicMask.LATITUDE for the latitude <i>lat2</i>.
+   *   <i>outmask</i> |= {@link GeodesicMask#LATITUDE} for the latitude
+   *   <i>lat2</i>;
    * <li>
-   *   <i>outmask</i> |= GeodesicMask.LONGITUDE for the latitude <i>lon2</i>.
+   *   <i>outmask</i> |= {@link GeodesicMask#LONGITUDE} for the latitude
+   *   <i>lon2</i>;
    * <li>
-   *   <i>outmask</i> |= GeodesicMask.AZIMUTH for the latitude <i>azi2</i>.
+   *   <i>outmask</i> |= {@link GeodesicMask#AZIMUTH} for the latitude
+   *   <i>azi2</i>;
    * <li>
-   *   <i>outmask</i> |= GeodesicMask.DISTANCE for the distance <i>s12</i>.
+   *   <i>outmask</i> |= {@link GeodesicMask#DISTANCE} for the distance
+   *   <i>s12</i>;
    * <li>
-   *   <i>outmask</i> |= GeodesicMask.REDUCEDLENGTH for the reduced length
-   *   <i>m12</i>.
+   *   <i>outmask</i> |= {@link GeodesicMask#REDUCEDLENGTH} for the reduced
+   *   length <i>m12</i>;
    * <li>
-   *   <i>outmask</i> |= GeodesicMask.GEODESICSCALE for the geodesic scales
-   *   <i>M12</i> and <i>M21</i>.
+   *   <i>outmask</i> |= {@link GeodesicMask#GEODESICSCALE} for the geodesic
+   *   scales <i>M12</i> and <i>M21</i>;
    * <li>
-   *   <i>outmask</i> |= GeodesicMask.AREA for the area <i>S12</i>.
+   *   <i>outmask</i> |= {@link GeodesicMask#ALL} for all of the above;
+   * <li>
+   *   <i>outmask</i> |= {@link GeodesicMask#LONG_UNROLL} to unroll <i>lon2</i>
+   *   (instead of reducing it to the range [&minus;180&deg;, 180&deg;]).
    * </ul>
    * <p>
    * Requesting a value which the GeodesicLine object is not capable of
@@ -390,25 +422,26 @@ public class GeodesicLine {
    **********************************************************************/
   public GeodesicData Position(boolean arcmode, double s12_a12,
                                int outmask) {
-    outmask &= _caps & GeodesicMask.OUT_ALL;
+    outmask &= _caps & GeodesicMask.OUT_MASK;
     GeodesicData r = new GeodesicData();
     if (!( Init() &&
            (arcmode ||
-            (_caps & GeodesicMask.DISTANCE_IN & GeodesicMask.OUT_ALL) != 0) ))
+            (_caps & (GeodesicMask.OUT_MASK & GeodesicMask.DISTANCE_IN)) != 0)
+           ))
       // Uninitialized or impossible distance calculation requested
       return r;
-    r.lat1 = _lat1; r.lon1 = _lon1; r.azi1 = _azi1;
+    r.lat1 = _lat1; r.azi1 = _azi1;
+    r.lon1 = ((outmask & GeodesicMask.LONG_UNROLL) != 0) ? _lon1 :
+      GeoMath.AngNormalize(_lon1);
 
     // Avoid warning about uninitialized B12.
     double sig12, ssig12, csig12, B12 = 0, AB1 = 0;
     if (arcmode) {
       // Interpret s12_a12 as spherical arc length
       r.a12 = s12_a12;
-      sig12 = s12_a12 * GeoMath.degree;
-      double s12a = Math.abs(s12_a12);
-      s12a -= 180 * Math.floor(s12a / 180);
-      ssig12 = s12a ==  0 ? 0 : Math.sin(sig12);
-      csig12 = s12a == 90 ? 0 : Math.cos(sig12);
+      sig12 = Math.toRadians(s12_a12);
+      { Pair p = GeoMath.sincosd(s12_a12);
+        ssig12 = p.first; csig12 = p.second; }
     } else {
       // Interpret s12_a12 as distance
       r.s12 = s12_a12;
@@ -422,7 +455,6 @@ public class GeodesicLine {
                                     _ctau1 * c - _stau1 * s,
                                     _C1pa);
       sig12 = tau12 - (B12 - _B11);
-      r.a12 = sig12 / GeoMath.degree;
       ssig12 = Math.sin(sig12); csig12 = Math.cos(sig12);
       if (Math.abs(_f) > 0.01) {
         // Reverted distance series is inaccurate for |f| > 1/100, so correct
@@ -431,7 +463,8 @@ public class GeodesicLine {
         // GeodesicExact.
         //     erri = the error in the inverse solution (nm)
         //     errd = the error in the direct solution (series only) (nm)
-        //     errda = the error in the direct solution (series + 1 Newton) (nm)
+        //     errda = the error in the direct solution
+        //             (series + 1 Newton) (nm)
         //
         //       f     erri  errd errda
         //     -1/5    12e6 1.2e9  69e6
@@ -455,10 +488,10 @@ public class GeodesicLine {
         ssig12 = Math.sin(sig12); csig12 = Math.cos(sig12);
         // Update B12 below
       }
+      r.a12 = Math.toDegrees(sig12);
     }
 
-    double omg12, lam12, lon12;
-    double ssig2, csig2, sbet2, cbet2, somg2, comg2, salp2, calp2;
+    double ssig2, csig2, sbet2, cbet2, salp2, calp2;
     // sig2 = sig1 + sig12
     ssig2 = _ssig1 * csig12 + _csig1 * ssig12;
     csig2 = _csig1 * csig12 - _ssig1 * ssig12;
@@ -476,34 +509,36 @@ public class GeodesicLine {
     if (cbet2 == 0)
       // I.e., salp0 = 0, csig2 = 0.  Break the degeneracy in this case
       cbet2 = csig2 = Geodesic.tiny_;
-    // tan(omg2) = sin(alp0) * tan(sig2)
-    somg2 = _salp0 * ssig2; comg2 = csig2;  // No need to normalize
     // tan(alp0) = cos(sig2)*tan(alp2)
     salp2 = _salp0; calp2 = _calp0 * csig2; // No need to normalize
-    // omg12 = omg2 - omg1
-    omg12 = Math.atan2(somg2 * _comg1 - comg2 * _somg1,
-                  comg2 * _comg1 + somg2 * _somg1);
 
     if ((outmask & GeodesicMask.DISTANCE) != 0 && arcmode)
       r.s12 = _b * ((1 + _A1m1) * sig12 + AB1);
 
     if ((outmask & GeodesicMask.LONGITUDE) != 0) {
-      lam12 = omg12 + _A3c *
+      // tan(omg2) = sin(alp0) * tan(sig2)
+      double somg2 = _salp0 * ssig2, comg2 = csig2, // No need to normalize
+        E = GeoMath.copysign(1, _salp0);            // east or west going?
+      // omg12 = omg2 - omg1
+      double omg12 = ((outmask & GeodesicMask.LONG_UNROLL) != 0)
+        ? E * (sig12
+               - (Math.atan2(  ssig2, csig2) - Math.atan2(  _ssig1, _csig1))
+               + (Math.atan2(E*somg2, comg2) - Math.atan2(E*_somg1, _comg1)))
+        : Math.atan2(somg2 * _comg1 - comg2 * _somg1,
+                     comg2 * _comg1 + somg2 * _somg1);
+      double lam12 = omg12 + _A3c *
         ( sig12 + (Geodesic.SinCosSeries(true, ssig2, csig2, _C3a)
                    - _B31));
-      lon12 = lam12 / GeoMath.degree;
-      // Use GeoMath.AngNormalize2 because longitude might have wrapped
-      // multiple times.
-      lon12 = GeoMath.AngNormalize2(lon12);
-      r.lon2 = GeoMath.AngNormalize(_lon1 + lon12);
+      double lon12 = Math.toDegrees(lam12);
+      r.lon2 = ((outmask & GeodesicMask.LONG_UNROLL) != 0) ? _lon1 + lon12 :
+        GeoMath.AngNormalize(r.lon1 + GeoMath.AngNormalize(lon12));
     }
 
     if ((outmask & GeodesicMask.LATITUDE) != 0)
-      r.lat2 = Math.atan2(sbet2, _f1 * cbet2) / GeoMath.degree;
+      r.lat2 = GeoMath.atan2d(sbet2, _f1 * cbet2);
 
     if ((outmask & GeodesicMask.AZIMUTH) != 0)
-      // minus signs give range [-180, 180). 0- converts -0 to +0.
-      r.azi2 = 0 - Math.atan2(-salp2, calp2) / GeoMath.degree;
+      r.azi2 = GeoMath.atan2d(salp2, calp2);
 
     if ((outmask &
          (GeodesicMask.REDUCEDLENGTH | GeodesicMask.GEODESICSCALE)) != 0) {
@@ -528,17 +563,9 @@ public class GeodesicLine {
         B42 = Geodesic.SinCosSeries(false, ssig2, csig2, _C4a);
       double salp12, calp12;
       if (_calp0 == 0 || _salp0 == 0) {
-        // alp12 = alp2 - alp1, used in atan2 so no need to normalized
+        // alp12 = alp2 - alp1, used in atan2 so no need to normalize
         salp12 = salp2 * _calp1 - calp2 * _salp1;
         calp12 = calp2 * _calp1 + salp2 * _salp1;
-        // The right thing appears to happen if alp1 = +/-180 and alp2 = 0, viz
-        // salp12 = -0 and alp12 = -180.  However this depends on the sign
-        // being attached to 0 correctly.  The following ensures the correct
-        // behavior.
-        if (salp12 == 0 && calp12 < 0) {
-          salp12 = Geodesic.tiny_ * _calp1;
-          calp12 = -1;
-        }
       } else {
         // tan(alp) = tan(alp0) * sec(sig)
         // tan(alp2-alp1) = (tan(alp2) -tan(alp1)) / (tan(alp2)*tan(alp1)+1)
@@ -557,6 +584,54 @@ public class GeodesicLine {
     }
 
     return r;
+  }
+
+  /**
+   * Specify position of point 3 in terms of distance.
+   *
+   * @param s13 the distance from point 1 to point 3 (meters); it
+   *   can be negative.
+   *
+   * This is only useful if the GeodesicLine object has been constructed
+   * with <i>caps</i> |= {@link GeodesicMask#DISTANCE_IN}.
+   **********************************************************************/
+  public void SetDistance(double s13) {
+    _s13 = s13;
+    GeodesicData g = Position(false, _s13, 0);
+    _a13 = g.a12;
+  }
+
+  /**
+   * Specify position of point 3 in terms of arc length.
+   *
+   * @param a13 the arc length from point 1 to point 3 (degrees); it
+   *   can be negative.
+   *
+   * The distance <i>s13</i> is only set if the GeodesicLine object has been
+   * constructed with <i>caps</i> |= {@link GeodesicMask#DISTANCE}.
+   **********************************************************************/
+  void SetArc(double a13) {
+    _a13 = a13;
+    GeodesicData g = Position(true, _a13, GeodesicMask.DISTANCE);
+    _s13 = g.s12;
+  }
+
+  /**
+   * Specify position of point 3 in terms of either distance or arc length.
+   *
+   * @param arcmode boolean flag determining the meaning of the second
+   *   parameter; if <i>arcmode</i> is false, then the GeodesicLine object must
+   *   have been constructed with <i>caps</i> |=
+   *   {@link GeodesicMask#DISTANCE_IN}.
+   * @param s13_a13 if <i>arcmode</i> is false, this is the distance from
+   *   point 1 to point 3 (meters); otherwise it is the arc length from
+   *   point 1 to point 3 (degrees); it can be negative.
+   **********************************************************************/
+  public void GenSetDistance(boolean arcmode, double s13_a13) {
+    if (arcmode)
+      SetArc(s13_a13);
+    else
+      SetDistance(s13_a13);
   }
 
   /**
@@ -583,12 +658,30 @@ public class GeodesicLine {
   { return Init() ? _azi1 : Double.NaN; }
 
   /**
+   * @return pair of sine and cosine of <i>azi1</i> the azimuth (degrees) of
+   *   the geodesic line at point 1.
+   **********************************************************************/
+  public Pair AzimuthCosines() {
+    return new Pair(Init() ? _salp1 : Double.NaN,
+                    Init() ? _calp1 : Double.NaN);
+  }
+
+  /**
    * @return <i>azi0</i> the azimuth (degrees) of the geodesic line as it
    *   crosses the equator in a northward direction.
    **********************************************************************/
   public double EquatorialAzimuth() {
     return Init() ?
-      Math.atan2(_salp0, _calp0) / GeoMath.degree : Double.NaN;
+      GeoMath.atan2d(_salp0, _calp0) : Double.NaN;
+  }
+
+  /**
+   * @return pair of sine and cosine of <i>azi0</i> the azimuth of the geodesic
+   *   line as it crosses the equator in a northward direction.
+   **********************************************************************/
+  public Pair EquatorialAzimuthCosines() {
+    return new Pair(Init() ? _salp0 : Double.NaN,
+                    Init() ? _calp0 : Double.NaN);
   }
 
   /**
@@ -597,7 +690,7 @@ public class GeodesicLine {
    **********************************************************************/
   public double EquatorialArc() {
     return Init() ?
-      Math.atan2(_ssig1, _csig1) / GeoMath.degree : Double.NaN;
+      GeoMath.atan2d(_ssig1, _csig1) : Double.NaN;
   }
 
   /**
@@ -628,5 +721,26 @@ public class GeodesicLine {
     testcaps &= GeodesicMask.OUT_ALL;
     return (_caps & testcaps) == testcaps;
   }
+
+  /**
+   * The distance or arc length to point 3.
+   *
+   * @param arcmode boolean flag determining the meaning of returned
+   *   value.
+   * @return <i>s13</i> if <i>arcmode</i> is false; <i>a13</i> if
+   *   <i>arcmode</i> is true.
+   **********************************************************************/
+  public double GenDistance(boolean arcmode)
+  { return Init() ? (arcmode ? _a13 : _s13) : Double.NaN; }
+
+  /**
+   * @return <i>s13</i>, the distance to point 3 (meters).
+   **********************************************************************/
+  public double Distance() { return GenDistance(false); }
+
+  /**
+   * @return <i>a13</i>, the arc length to point 3 (degrees).
+   **********************************************************************/
+  public double Arc() { return GenDistance(true); }
 
 }

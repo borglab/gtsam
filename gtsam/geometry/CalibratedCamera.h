@@ -32,9 +32,17 @@ namespace gtsam {
 class GTSAM_EXPORT CheiralityException: public ThreadsafeException<
     CheiralityException> {
 public:
-  CheiralityException() :
-      ThreadsafeException<CheiralityException>("Cheirality Exception") {
-  }
+  CheiralityException()
+    : CheiralityException(std::numeric_limits<Key>::max()) {}
+
+  CheiralityException(Key j)
+    : ThreadsafeException<CheiralityException>("CheiralityException"),
+      j_(j) {}
+
+  Key nearbyVariable() const {return j_;}
+
+private:
+  Key j_;
 };
 
 /**
@@ -351,7 +359,7 @@ public:
                                                  Dresult_ddepth ? &Dpoint_ddepth : 0);
 
     Matrix33 Dresult_dpoint;
-    const Point3 result = pose().transform_from(point, Dresult_dpose,
+    const Point3 result = pose().transformFrom(point, Dresult_dpose,
                                                        (Dresult_ddepth ||
                                                         Dresult_dp) ? &Dresult_dpoint : 0);
 

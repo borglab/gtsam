@@ -12,7 +12,7 @@ using namespace GeographicLib;
 int main() {
   try {
     Geocentric earth(Constants::WGS84_a(), Constants::WGS84_f());
-    // Alternatively: const Geocentric& earth = Geocentric::WGS84;
+    // Alternatively: const Geocentric& earth = Geocentric::WGS84();
     const double lat0 = 48 + 50/60.0, lon0 = 2 + 20/60.0; // Paris
     LocalCartesian proj(lat0, lon0, 0, earth);
     {
@@ -34,5 +34,4 @@ int main() {
     cerr << "Caught exception: " << e.what() << "\n";
     return 1;
   }
-  return 0;
 }

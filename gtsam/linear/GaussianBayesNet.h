@@ -74,6 +74,14 @@ namespace gtsam {
     /// Version of optimize for incomplete BayesNet, needs solution for missing variables
     VectorValues optimize(const VectorValues& solutionForMissing) const;
 
+    /**
+     * Return ordering corresponding to a topological sort.
+     * There are many topological sorts of a Bayes net. This one
+     * corresponds to the one that makes 'matrix' below upper-triangular.
+     * In case Bayes net is incomplete any non-frontal are added to the end.
+     */
+    Ordering ordering() const;
+
     ///@}
 
     ///@name Linear Algebra
@@ -81,8 +89,10 @@ namespace gtsam {
 
     /**
      * Return (dense) upper-triangular matrix representation
+     * Will return upper-triangular matrix only when using 'ordering' above.
+     * In case Bayes net is incomplete zero columns are added to the end.
      */
-    std::pair<Matrix, Vector> matrix() const;
+    std::pair<Matrix, Vector> matrix(boost::optional<const Ordering&> ordering = boost::none) const;
 
     /**
      * Optimize along the gradient direction, with a closed-form computation to perform the line

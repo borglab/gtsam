@@ -56,6 +56,7 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
 
   const Matrix3& getAccelerometerCovariance() const { return accelerometerCovariance; }
   const Matrix3& getIntegrationCovariance()   const { return integrationCovariance; }
+  const Vector3& getGravity()   const { return n_gravity; }
   bool           getUse2ndOrderCoriolis()     const { return use2ndOrderCoriolis; }
 
 protected:

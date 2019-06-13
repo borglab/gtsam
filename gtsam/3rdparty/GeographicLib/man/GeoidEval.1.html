@@ -7,7 +7,7 @@
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
-<body style="background-color: white">
+<body>
 
 
 
@@ -17,27 +17,35 @@
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
-<p><b>GeoidEval</b> [ <b>-n</b> <i>name</i> ] [ <b>-d</b> <i>dir</i> ] [ <b>-l</b> ] [ <b>-a</b> | <b>-c</b> <i>south</i> <i>west</i> <i>north</i> <i>east</i> ] [ <b>-g</b> ] [ <b>-z</b> <i>zone</i> ] [ <b>--msltohae</b> ] [ <b>--haetomsl</b> ] [ <b>-v</b> ] [ <b>--comment-delimiter</b> <i>commentdelim</i> ] [ <b>--version</b> | <b>-h</b> | <b>--help</b> ] [ <b>--input-file</b> <i>infile</i> | <b>--input-string</b> <i>instring</i> ] [ <b>--line-separator</b> <i>linesep</i> ] [ <b>--output-file</b> <i>outfile</i> ]</p>
+<p><b>GeoidEval</b> [ <b>-n</b> <i>name</i> ] [ <b>-d</b> <i>dir</i> ] [ <b>-l</b> ] [ <b>-a</b> | <b>-c</b> <i>south</i> <i>west</i> <i>north</i> <i>east</i> ] [ <b>-w</b> ] [ <b>-z</b> <i>zone</i> ] [ <b>--msltohae</b> ] [ <b>--haetomsl</b> ] [ <b>-v</b> ] [ <b>--comment-delimiter</b> <i>commentdelim</i> ] [ <b>--version</b> | <b>-h</b> | <b>--help</b> ] [ <b>--input-file</b> <i>infile</i> | <b>--input-string</b> <i>instring</i> ] [ <b>--line-separator</b> <i>linesep</i> ] [ <b>--output-file</b> <i>outfile</i> ]</p>
 
 <h1 id="DESCRIPTION">DESCRIPTION</h1>
 
-<p><b>GeoidEval</b> reads in positions on standard input and prints out the corresponding geoid heights on standard output. Optionally, it also prints the northerly and easterly gradients of the geoid height.</p>
+<p><b>GeoidEval</b> reads in positions on standard input and prints out the corresponding heights of the geoid above the WGS84 ellipsoid on standard output.</p>
 
 <p>Positions are given as latitude and longitude, UTM/UPS, or MGRS, in any of the formats accepted by GeoConvert(1). (MGRS coordinates signify the <i>center</i> of the corresponding MGRS square.) If the <b>-z</b> option is specified then the specified zone is prepended to each line of input (which must be in UTM/UPS coordinates). This allows a file with UTM eastings and northings in a single zone to be used as standard input.</p>
 
 <p>More accurate results for the geoid height are provided by Gravity(1). This utility can also compute the direction of gravity accurately.</p>
 
+<p>The height of the geoid above the ellipsoid, <i>N</i>, is sometimes called the geoid undulation. It can be used to convert a height above the ellipsoid, <i>h</i>, to the corresponding height above the geoid (the orthometric height, roughly the height above mean sea level), <i>H</i>, using the relations</p>
+
+<ul>
+
+<p><i>h</i> = <i>N</i> + <i>H</i>, &nbsp;&nbsp;<i>H</i> = -<i>N</i> + <i>h</i>.</p>
+
+</ul>
+
 <h1 id="OPTIONS">OPTIONS</h1>
 
 <dl>
 
-<dt id="n"><b>-n</b></dt>
+<dt id="n-name"><b>-n</b> <i>name</i></dt>
 <dd>
 
 <p>use geoid <i>name</i> instead of the default <code>egm96-5</code>. See <a href="#GEOIDS">&quot;GEOIDS&quot;</a>.</p>
 
 </dd>
-<dt id="d"><b>-d</b></dt>
+<dt id="d-dir"><b>-d</b> <i>dir</i></dt>
 <dd>
 
 <p>read geoid data from <i>dir</i> instead of the default. See <a href="#GEOIDS">&quot;GEOIDS&quot;</a>.</p>
@@ -55,22 +63,22 @@
 <p>cache the entire data set in memory. See <a href="#CACHE">&quot;CACHE&quot;</a>.</p>
 
 </dd>
-<dt id="c"><b>-c</b></dt>
+<dt id="c-south-west-north-east"><b>-c</b> <i>south</i> <i>west</i> <i>north</i> <i>east</i></dt>
 <dd>
 
-<p>cache the data bounded by <i>south</i> <i>west</i> <i>north</i> <i>east</i> in memory. See <a href="#CACHE">&quot;CACHE&quot;</a>.</p>
+<p>cache the data bounded by <i>south</i> <i>west</i> <i>north</i> <i>east</i> in memory. The first two arguments specify the SW corner of the cache and the last two arguments specify the NE corner. The <b>-w</b> flag specifies that longitude precedes latitude for these corners, provided that it appears before <b>-c</b>. See <a href="#CACHE">&quot;CACHE&quot;</a>.</p>
 
 </dd>
-<dt id="g"><b>-g</b></dt>
+<dt id="w"><b>-w</b></dt>
 <dd>
 
-<p>print the northerly and easterly gradients after the geoid height (i.e., the rate at which the geoid height changes per unit distance along the WGS84 ellipsoid in the specified directions). As a result of the way that the geoid data is stored, the calculation of gradients can result in large quantization errors. This is particularly acute at high latitudes and for the easterly gradient.</p>
+<p>toggle the longitude first flag (it starts off); if the flag is on, then when reading geographic coordinates, longitude precedes latitude (this can be overridden by a hemisphere designator, <i>N</i>, <i>S</i>, <i>E</i>, <i>W</i>).</p>
 
 </dd>
-<dt id="z"><b>-z</b></dt>
+<dt id="z-zone"><b>-z</b> <i>zone</i></dt>
 <dd>
 
-<p>prefix each line of input by <i>zone</i>, e.g., <code>38N</code>. This should be used when the input consists of UTM/UPS eastings and northings.</p>
+<p>prefix each line of input by <i>zone</i>, e.g., <code>38n</code>. This should be used when the input consists of UTM/UPS eastings and northings.</p>
 
 </dd>
 <dt id="msltohae"><b>--msltohae</b></dt>
@@ -91,7 +99,7 @@
 <p>print information about the geoid on standard error before processing the input.</p>
 
 </dd>
-<dt id="comment-delimiter"><b>--comment-delimiter</b></dt>
+<dt id="comment-delimiter-commentdelim"><b>--comment-delimiter</b> <i>commentdelim</i></dt>
 <dd>
 
 <p>set the comment delimiter to <i>commentdelim</i> (e.g., &quot;#&quot; or &quot;//&quot;). If set, the input lines will be scanned for this delimiter and, if found, the delimiter and the rest of the line will be removed prior to processing and subsequently appended to the output line (separated by a space).</p>
@@ -115,25 +123,25 @@
 <p>print full documentation and exit.</p>
 
 </dd>
-<dt id="input-file"><b>--input-file</b></dt>
+<dt id="input-file-infile"><b>--input-file</b> <i>infile</i></dt>
 <dd>
 
 <p>read input from the file <i>infile</i> instead of from standard input; a file name of &quot;-&quot; stands for standard input.</p>
 
 </dd>
-<dt id="input-string"><b>--input-string</b></dt>
+<dt id="input-string-instring"><b>--input-string</b> <i>instring</i></dt>
 <dd>
 
 <p>read input from the string <i>instring</i> instead of from standard input. All occurrences of the line separator character (default is a semicolon) in <i>instring</i> are converted to newlines before the reading begins.</p>
 
 </dd>
-<dt id="line-separator"><b>--line-separator</b></dt>
+<dt id="line-separator-linesep"><b>--line-separator</b> <i>linesep</i></dt>
 <dd>
 
 <p>set the line separator character to <i>linesep</i>. By default this is a semicolon.</p>
 
 </dd>
-<dt id="output-file"><b>--output-file</b></dt>
+<dt id="output-file-outfile"><b>--output-file</b> <i>outfile</i></dt>
 <dd>
 
 <p>write output to the file <i>outfile</i> instead of to standard output; a file name of &quot;-&quot; stands for standard output.</p>
@@ -155,11 +163,11 @@
    egm2008-2_5  EGM2008   2.5&#39;    0.135 m  3.2 mm   0.031 m  0.8 mm
    egm2008-1    EGM2008   1&#39;      0.025 m  0.8 mm   .0022 m  0.7 mm</code></pre>
 
-<p>By default, the <code>egm96-5</code> geoid is used. This may changed by setting the environment variable <code>GEOID_NAME</code> or with the <b>-n</b> option. The errors listed here are estimates of the quantization and interpolation errors in the reported heights compared to the specified geoid.</p>
+<p>By default, the <code>egm96-5</code> geoid is used. This may changed by setting the environment variable <code>GEOGRAPHICLIB_GEOID_NAME</code> or with the <b>-n</b> option. The errors listed here are estimates of the quantization and interpolation errors in the reported heights compared to the specified geoid.</p>
 
-<p>The geoid data will be loaded from a directory specified at compile time. This may changed by setting the environment variables <code>GEOID_PATH</code> or <code>GEOGRAPHICLIB_DATA</code>, or with the <b>-d</b> option. The <b>-h</b> option prints the default geoid path and name. Use the <b>-v</b> option to ascertain the full path name of the data file.</p>
+<p>The geoid data will be loaded from a directory specified at compile time. This may changed by setting the environment variables <code>GEOGRAPHICLIB_GEOID_PATH</code> or <code>GEOGRAPHICLIB_DATA</code>, or with the <b>-d</b> option. The <b>-h</b> option prints the default geoid path and name. Use the <b>-v</b> option to ascertain the full path name of the data file.</p>
 
-<p>Instructions for downloading and installing geoid data are available at <a href="http://geographiclib.sf.net/html/geoid.html#geoidinst">http://geographiclib.sf.net/html/geoid.html#geoidinst</a>.</p>
+<p>Instructions for downloading and installing geoid data are available at <a href="https://geographiclib.sourceforge.io/html/geoid.html#geoidinst">https://geographiclib.sourceforge.io/html/geoid.html#geoidinst</a>.</p>
 
 <p><b>NOTE</b>: all the geoids above apply to the WGS84 ellipsoid (<i>a</i> = 6378137 m, <i>f</i> = 1/298.257223563) only.</p>
 
@@ -172,7 +180,7 @@
    1 2 2 1
    . 1 1 .</code></pre>
 
-<p>The cubic is constrained to be independent of longitude when evaluating the height at one of the poles. Cubic interpolation is considerably more accurate than bilinear; however it results in small discontinuities in the returned height on cell boundaries. The gradients are computed by differentiating the interpolated results.</p>
+<p>The cubic is constrained to be independent of longitude when evaluating the height at one of the poles. Cubic interpolation is considerably more accurate than bilinear; however it results in small discontinuities in the returned height on cell boundaries.</p>
 
 <h1 id="CACHE">CACHE</h1>
 
@@ -184,22 +192,22 @@
 
 <dl>
 
-<dt id="GEOID_NAME"><b>GEOID_NAME</b></dt>
+<dt id="GEOGRAPHICLIB_GEOID_NAME"><b>GEOGRAPHICLIB_GEOID_NAME</b></dt>
 <dd>
 
-<p>Override the compile-time default geoid name of <code>egm96-5</code>. The <b>-h</b> option reports the value of <b>GEOID_NAME</b>, if defined, otherwise it reports the compile-time value. If the <b>-n</b> <i>name</i> option is used, then <i>name</i> takes precedence.</p>
+<p>Override the compile-time default geoid name of <code>egm96-5</code>. The <b>-h</b> option reports the value of <b>GEOGRAPHICLIB_GEOID_NAME</b>, if defined, otherwise it reports the compile-time value. If the <b>-n</b> <i>name</i> option is used, then <i>name</i> takes precedence.</p>
 
 </dd>
-<dt id="GEOID_PATH"><b>GEOID_PATH</b></dt>
+<dt id="GEOGRAPHICLIB_GEOID_PATH"><b>GEOGRAPHICLIB_GEOID_PATH</b></dt>
 <dd>
 
-<p>Override the compile-time default geoid path. This is typically <code>/usr/local/share/GeographicLib/geoids</code> on Unix-like systems and <code>C:/Documents and Settings/All Users/Application Data/GeographicLib/geoids</code> on Windows systems. The <b>-h</b> option reports the value of <b>GEOID_PATH</b>, if defined, otherwise it reports the compile-time value. If the <b>-d</b> <i>dir</i> option is used, then <i>dir</i> takes precedence.</p>
+<p>Override the compile-time default geoid path. This is typically <code>/usr/local/share/GeographicLib/geoids</code> on Unix-like systems and <code>C:/ProgramData/GeographicLib/geoids</code> on Windows systems. The <b>-h</b> option reports the value of <b>GEOGRAPHICLIB_GEOID_PATH</b>, if defined, otherwise it reports the compile-time value. If the <b>-d</b> <i>dir</i> option is used, then <i>dir</i> takes precedence.</p>
 
 </dd>
 <dt id="GEOGRAPHICLIB_DATA"><b>GEOGRAPHICLIB_DATA</b></dt>
 <dd>
 
-<p>Another way of overriding the compile-time default magnetic path. If it is set (and if <b>MAGNETIC_PATH</b> is not set), then $<b>GEOGRAPHICLIB_DATA</b>/magnetic is used.</p>
+<p>Another way of overriding the compile-time default geoid path. If it is set (and if <b>GEOGRAPHICLIB_GEOID_PATH</b> is not set), then $<b>GEOGRAPHICLIB_DATA</b>/geoids is used.</p>
 
 </dd>
 </dl>
@@ -235,7 +243,7 @@
 <dt id="WGS84"><b>WGS84</b></dt>
 <dd>
 
-<p>World Geodetic System 1984, <a href="http://en.wikipedia.org/wiki/WGS84">http://en.wikipedia.org/wiki/WGS84</a>.</p>
+<p>World Geodetic System 1984, <a href="https://en.wikipedia.org/wiki/WGS84">https://en.wikipedia.org/wiki/WGS84</a>.</p>
 
 </dd>
 <dt id="HAE"><b>HAE</b></dt>
@@ -261,14 +269,16 @@
 
 <p>The first number returned is the height of the geoid and the 2nd and 3rd are its slopes in the northerly and easterly directions.</p>
 
-<p>Convert a point in UTM zone 18N from MSL to HAE</p>
+<p>Convert a point in UTM zone 18n from MSL to HAE</p>
 
-<pre><code>   echo 531595 4468135 23 | GeoidEval --msltohae -z 18N
+<pre><code>   echo 531595 4468135 23 | GeoidEval --msltohae -z 18n
    =&gt; 531595 4468135 -10.842</code></pre>
 
 <h1 id="SEE-ALSO">SEE ALSO</h1>
 
-<p>GeoConvert(1), Gravity(1).</p>
+<p>GeoConvert(1), Gravity(1), geographiclib-get-geoids(8).</p>
+
+<p>An online version of this utility is availbable at <a href="https://geographiclib.sourceforge.io/cgi-bin/GeoidEval">https://geographiclib.sourceforge.io/cgi-bin/GeoidEval</a>.</p>
 
 <h1 id="AUTHOR">AUTHOR</h1>
 
@@ -276,7 +286,7 @@
 
 <h1 id="HISTORY">HISTORY</h1>
 
-<p><b>GeoidEval</b> was added to GeographicLib, <a href="http://geographiclib.sf.net">http://geographiclib.sf.net</a>, in 2009-09.</p>
+<p><b>GeoidEval</b> was added to GeographicLib, <a href="https://geographiclib.sourceforge.io">https://geographiclib.sourceforge.io</a>, in 2009-09.</p>
 
 
 </body>

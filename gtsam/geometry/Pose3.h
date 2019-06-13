@@ -81,7 +81,6 @@ public:
   /**
    *  Create Pose3 by aligning two point pairs
    *  A pose aTb is estimated between pairs (a_point, b_point) such that a_point = aTb * b_point
-   *  Meant to replace the deprecated function 'align', which orders the pairs the opposite way.
    *  Note this allows for noise on the points but in that case the mapping will not be exact.
    */
   static boost::optional<Pose3> Align(const std::vector<Point3Pair>& abPointPairs);
@@ -207,12 +206,12 @@ public:
    * @param Dpoint optional 3*3 Jacobian wrpt point
    * @return point in world coordinates
    */
-  Point3 transform_from(const Point3& p, OptionalJacobian<3, 6> Dpose =
+  Point3 transformFrom(const Point3& p, OptionalJacobian<3, 6> Dpose =
       boost::none, OptionalJacobian<3, 3> Dpoint = boost::none) const;
 
-  /** syntactic sugar for transform_from */
+  /** syntactic sugar for transformFrom */
   inline Point3 operator*(const Point3& p) const {
-    return transform_from(p);
+    return transformFrom(p);
   }
 
   /**
@@ -222,7 +221,7 @@ public:
    * @param Dpoint optional 3*3 Jacobian wrpt point
    * @return point in Pose coordinates
    */
-  Point3 transform_to(const Point3& p, OptionalJacobian<3, 6> Dpose =
+  Point3 transformTo(const Point3& p, OptionalJacobian<3, 6> Dpose =
       boost::none, OptionalJacobian<3, 3> Dpoint = boost::none) const;
 
   /// @}
@@ -253,14 +252,12 @@ public:
   /** convert to 4*4 matrix */
   Matrix4 matrix() const;
 
-  /** receives a pose in local coordinates and transforms it to world coordinates
-  * @deprecated: This is actually equivalent to transform_from, so it is WRONG! Use
-  * transform_pose_to instead. */
-  Pose3 transform_to(const Pose3& pose) const;
+  /** receives a pose in local coordinates and transforms it to world coordinates */
+  Pose3 transformPoseFrom(const Pose3& pose) const;
 
   /** receives a pose in world coordinates and transforms it to local coordinates */
-  Pose3 transform_pose_to(const Pose3& pose, OptionalJacobian<6, 6> H1 = boost::none,
-                                             OptionalJacobian<6, 6> H2 = boost::none) const;
+  Pose3 transformPoseTo(const Pose3& pose, OptionalJacobian<6, 6> H1 = boost::none,
+                                           OptionalJacobian<6, 6> H2 = boost::none) const;
 
   /**
    * Calculate range to a landmark
@@ -321,6 +318,30 @@ public:
   GTSAM_EXPORT
   friend std::ostream &operator<<(std::ostream &os, const Pose3& p);
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  /// @name Deprecated
+  /// @{
+  Point3 transform_from(const Point3& p,
+                        OptionalJacobian<3, 6> Dpose = boost::none,
+                        OptionalJacobian<3, 3> Dpoint = boost::none) const {
+    return transformFrom(p, Dpose, Dpoint);
+  }
+  Point3 transform_to(const Point3& p,
+                      OptionalJacobian<3, 6> Dpose = boost::none,
+                      OptionalJacobian<3, 3> Dpoint = boost::none) const {
+    return transformTo(p, Dpose, Dpoint);
+  }
+  Pose3 transform_pose_to(const Pose3& pose, 
+                          OptionalJacobian<6, 6> H1 = boost::none,
+                          OptionalJacobian<6, 6> H2 = boost::none) const {
+    return transformPoseTo(pose, H1, H2);
+  }
+  /** 
+  * @deprecated: this function is neither here not there. */
+  Pose3 transform_to(const Pose3& pose) const;
+  /// @}
+#endif
+
  private:
   /** Serialization function */
   friend class boost::serialization::access;
@@ -351,12 +372,10 @@ inline Matrix wedge<Pose3>(const Vector& xi) {
   return Pose3::wedge(xi(0), xi(1), xi(2), xi(3), xi(4), xi(5));
 }
 
-/**
- * Calculate pose between a vector of 3D point correspondences (b_point, a_point)
- * where a_point = Pose3::transform_from(b_point) = t + R*b_point
- * @deprecated: use Pose3::Align with point pairs ordered the opposite way
- */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+// deprecated: use Pose3::Align with point pairs ordered the opposite way
 GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& baPointPairs);
+#endif
 
 // For MATLAB wrapper
 typedef std::vector<Pose3> Pose3Vector;

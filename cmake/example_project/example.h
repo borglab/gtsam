@@ -18,11 +18,14 @@
 // This is an interface file for automatic MATLAB wrapper generation.  See
 // gtsam.h for full documentation and more examples.
 
+#include <example/PrintExamples.h>
+
 namespace example {
 
 class PrintExamples {
-  void sayHello() const;
-  void sayGoodbye() const;
+    PrintExamples();
+    void sayHello() const;
+    void sayGoodbye() const;
 };
 
 }

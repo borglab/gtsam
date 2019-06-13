@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #pragma once
 
@@ -50,7 +50,7 @@ namespace NETGeographicLib
         // A pointer to the unmanaged GeographicLib::Ellipsoid
         GeographicLib::Ellipsoid* m_pEllipsoid;
 
-        // Th efinalizer frees the unmanaged memory when the object is destroyed.
+        // The finalizer frees the unmanaged memory when the object is destroyed.
         !Ellipsoid();
     public:
         /** \name Constructor
@@ -67,8 +67,7 @@ namespace NETGeographicLib
          *
          * @param[in] a equatorial radius (meters).
          * @param[in] f flattening of ellipsoid.  Setting \e f = 0 gives a sphere.
-         *   Negative \e f gives a prolate ellipsoid.  If \e f > 1, set flattening
-         *   to 1/\e f.
+         *   Negative \e f gives a prolate ellipsoid.
          * @exception GeographicErr if \e a or (1 &minus; \e f ) \e a is not
          *   positive.
          **********************************************************************/
@@ -402,9 +401,8 @@ namespace NETGeographicLib
          *   section at latitude &phi; inclined at an angle \e azi to the
          *   meridian (meters).
          *
-         * &phi; must lie in the range [&minus;90&deg;, 90&deg;] and \e
-         * azi must lie in the range [&minus;540&deg;, 540&deg;); the
-         * result is undefined if either of conditions does not hold.
+         * &phi; must lie in the range [&minus;90&deg;, 90&deg;]; the
+         * result is undefined if this condition does not hold.
          **********************************************************************/
         double NormalCurvatureRadius(double phi, double azi);
         ///@}

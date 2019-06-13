@@ -1,4 +1,5 @@
 /build*
+/debug*
 .idea
 *.pyc
 *.DS_Store
@@ -7,7 +8,6 @@
 /examples/Data/pose3example-rewritten.txt
 *.txt.user
 *.txt.user.6d59f0c
-/python-build/
 *.pydevproject
 cython/venv
 cython/gtsam.cpp

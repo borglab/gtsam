@@ -30,8 +30,11 @@ find_package(GTSAM REQUIRED) # Uses installed package
 ###################################################################################
 # Build static library from common sources
 set(CONVENIENCE_LIB_NAME ${PROJECT_NAME})
-add_library(${CONVENIENCE_LIB_NAME} STATIC example/PrintExamples.h example/PrintExamples.cpp)
+add_library(${CONVENIENCE_LIB_NAME} SHARED example/PrintExamples.h example/PrintExamples.cpp)
 target_link_libraries(${CONVENIENCE_LIB_NAME} gtsam)
+
+# Install library
+install(TARGETS ${CONVENIENCE_LIB_NAME} LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
 
 ###################################################################################
 # Build tests (CMake tracks the dependecy to link with GTSAM through our project's static library)

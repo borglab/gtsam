@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #pragma once
 
@@ -55,8 +55,7 @@ namespace NETGeographicLib
          * @param[out] gamma meridian convergence at point (degrees).
          * @param[out] k scale of projection at point.
          *
-         * \e lat should be in the range [&minus;90&deg;, 90&deg;]; \e lon
-         * should be in the range [&minus;540&deg;, 540&deg;).
+         * \e lat should be in the range [&minus;90&deg;, 90&deg;].
          **********************************************************************/
         static void Forward(double lat, double lon,
                     [System::Runtime::InteropServices::Out] double% x,
@@ -124,6 +123,8 @@ namespace NETGeographicLib
          * northing must be in the range [&minus;500 km, 2000 km).  These bounds
          * are consistent with rules for the letter designations for the grid
          * system.
+         *
+         * If \e x or \e y is NaN, the returned grid reference is "INVALID".
          **********************************************************************/
         static void GridReference(double x, double y, int prec,
             [System::Runtime::InteropServices::Out] System::String^% gridref);
@@ -141,6 +142,9 @@ namespace NETGeographicLib
          *
          * The grid reference must be of the form: two letters (not including I)
          * followed by an even number of digits (up to 22).
+         *
+         * If the first 2 characters of \e gridref are "IN", then \e x and \e y are
+         * set to NaN and \e prec is set to &minus;2.
          **********************************************************************/
         static void GridReference(System::String^ gridref,
                 [System::Runtime::InteropServices::Out] double% x,

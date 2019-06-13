@@ -35,8 +35,8 @@ namespace gtsam {
     for(const_iterator it = beginFrontals(); it != endFrontals(); ++it)
       cout << (boost::format("[%1%]")%(formatter(*it))).str() << " ";
     cout << endl;
-    gtsam::print(Matrix(get_R()), "R: ");
-    gtsam::print(Vector(get_d()), "d: ");
+    gtsam::print(Matrix(R()), "R: ");
+    gtsam::print(Vector(d()), "d: ");
     if(model_)
       model_->print("Noise model: ");
   }

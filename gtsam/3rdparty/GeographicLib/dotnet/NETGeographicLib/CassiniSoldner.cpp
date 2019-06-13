@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #include "stdafx.h"
 #include "GeographicLib/CassiniSoldner.hpp"
@@ -33,7 +33,7 @@ CassiniSoldner::CassiniSoldner(double lat0, double lon0)
 {
     try
     {
-        m_pCassiniSoldner = new GeographicLib::CassiniSoldner( GeographicLib::Geodesic::WGS84 );
+        m_pCassiniSoldner = new GeographicLib::CassiniSoldner( GeographicLib::Geodesic::WGS84() );
         m_pCassiniSoldner->Reset(lat0, lon0);
     }
     catch ( std::bad_alloc )

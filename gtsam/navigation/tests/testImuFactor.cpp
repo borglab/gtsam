@@ -18,6 +18,8 @@
  * @author  Stephen Williams
  */
 
+// #define ENABLE_TIMING // uncomment for timing results
+
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/geometry/Pose3.h>
@@ -106,12 +108,12 @@ TEST(ImuFactor, Accelerating) {
       Vector3(a, 0, 0));
 
   const double T = 3.0; // seconds
-  ScenarioRunner runner(&scenario, testing::Params(), T / 10);
+  ScenarioRunner runner(scenario, testing::Params(), T / 10);
 
   PreintegratedImuMeasurements pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  Matrix9 estimatedCov = runner.estimateCovariance(T, 100);
   EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 }
 
@@ -494,7 +496,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   Bias biasHat(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0));
 
   const double T = 3.0; // seconds
-  ScenarioRunner runner(&scenario, p, T / 10);
+  ScenarioRunner runner(scenario, p, T / 10);
 
   //  PreintegratedImuMeasurements pim = runner.integrate(T);
   //  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
@@ -569,6 +571,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
 
 /* ************************************************************************* */
 TEST(ImuFactor, PredictPositionAndVelocity) {
+  gttic(PredictPositionAndVelocity);
   Bias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
 
   // Measurements
@@ -597,6 +600,7 @@ TEST(ImuFactor, PredictPositionAndVelocity) {
 
 /* ************************************************************************* */
 TEST(ImuFactor, PredictRotation) {
+  gttic(PredictRotation);
   Bias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
 
   // Measurements
@@ -623,6 +627,7 @@ TEST(ImuFactor, PredictRotation) {
 
 /* ************************************************************************* */
 TEST(ImuFactor, PredictArbitrary) {
+  gttic(PredictArbitrary);
   Pose3 x1;
   const Vector3 v1(0, 0, 0);
 
@@ -630,7 +635,7 @@ TEST(ImuFactor, PredictArbitrary) {
       Vector3(0.1, 0.2, 0), Vector3(M_PI / 10, M_PI / 10, M_PI / 10));
 
   const double T = 3.0; // seconds
-  ScenarioRunner runner(&scenario, testing::Params(), T / 10);
+  ScenarioRunner runner(scenario, testing::Params(), T / 10);
   //
   //  PreintegratedImuMeasurements pim = runner.integrate(T);
   //  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
@@ -675,6 +680,7 @@ TEST(ImuFactor, PredictArbitrary) {
 
 /* ************************************************************************* */
 TEST(ImuFactor, bodyPSensorNoBias) {
+  gttic(bodyPSensorNoBias);
   Bias bias(Vector3(0, 0, 0), Vector3(0, 0.1, 0)); // Biases (acc, rot)
 
   // Rotate sensor (z-down) to body (same as navigation) i.e. z-up
@@ -716,10 +722,11 @@ TEST(ImuFactor, bodyPSensorNoBias) {
 #include <gtsam/nonlinear/Marginals.h>
 
 TEST(ImuFactor, bodyPSensorWithBias) {
+  gttic(bodyPSensorWithBias);
   using noiseModel::Diagonal;
   typedef Bias Bias;
 
-  int numFactors = 80;
+  int numFactors = 10;
   Vector6 noiseBetweenBiasSigma;
   noiseBetweenBiasSigma << Vector3(2.0e-5, 2.0e-5, 2.0e-5), Vector3(3.0e-6,
       3.0e-6, 3.0e-6);
@@ -803,11 +810,11 @@ TEST(ImuFactor, bodyPSensorWithBias) {
 static const double kVelocity = 2.0, kAngularVelocity = M_PI / 6;
 
 struct ImuFactorMergeTest {
-  boost::shared_ptr<PreintegratedImuMeasurements::Params> p_;
+  boost::shared_ptr<PreintegrationParams> p_;
   const ConstantTwistScenario forward_, loop_;
 
   ImuFactorMergeTest()
-      : p_(PreintegratedImuMeasurements::Params::MakeSharedU(kGravity)),
+      : p_(PreintegrationParams::MakeSharedU(kGravity)),
         forward_(kZero, Vector3(kVelocity, 0, 0)),
         loop_(Vector3(0, -kAngularVelocity, 0), Vector3(kVelocity, 0, 0)) {
     // arbitrary noise values
@@ -827,7 +834,7 @@ struct ImuFactorMergeTest {
     PreintegratedImuMeasurements pim02_expected(p_, bias01);
 
     double deltaT = 0.01;
-    ScenarioRunner runner(&scenario, p_, deltaT);
+    ScenarioRunner runner(scenario, p_, deltaT);
     // TODO(frank) can this loop just go into runner ?
     for (int i = 0; i < 100; i++) {
       double t = i * deltaT;
@@ -899,6 +906,7 @@ TEST(ImuFactor, MergeWithCoriolis) {
 /* ************************************************************************* */
 // Same values as pre-integration test but now testing covariance
 TEST(ImuFactor, CheckCovariance) {
+  gttic(CheckCovariance);
   // Measurements
   Vector3 measuredAcc(0.1, 0.0, 0.0);
   Vector3 measuredOmega(M_PI / 100.0, 0.0, 0.0);
@@ -922,6 +930,10 @@ TEST(ImuFactor, CheckCovariance) {
 /* ************************************************************************* */
 int main() {
   TestResult tr;
-  return TestRegistry::runAllTests(tr);
+  auto result = TestRegistry::runAllTests(tr);
+#ifdef ENABLE_TIMING
+  tictoc_print_();
+#endif
+  return result;
 }
 /* ************************************************************************* */

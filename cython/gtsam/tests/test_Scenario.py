@@ -5,11 +5,9 @@ All Rights Reserved
 
 See LICENSE for the license information
 
-Unit tests for IMU testing scenarios.
+Scenario unit tests.
 Author: Frank Dellaert & Duy Nguyen Ta (Python)
 """
-# pylint: disable=invalid-name, E1101
-
 from __future__ import print_function
 
 import math
@@ -18,9 +16,12 @@ import unittest
 import numpy as np
 
 import gtsam
+from gtsam.utils.test_case import GtsamTestCase
+
+# pylint: disable=invalid-name, E1101
 
 
-class TestScenario(unittest.TestCase):
+class TestScenario(GtsamTestCase):
     def setUp(self):
         pass
 
@@ -44,8 +45,8 @@ class TestScenario(unittest.TestCase):
         T30 = scenario.pose(T)
         np.testing.assert_almost_equal(
             np.array([math.pi, 0, math.pi]), T30.rotation().xyz())
-        self.assertTrue(gtsam.Point3(
-            0, 0, 2.0 * R).equals(T30.translation(), 1e-9))
+        self.gtsamAssertEquals(gtsam.Point3(
+            0, 0, 2.0 * R), T30.translation(), 1e-9)
 
 
 if __name__ == '__main__':

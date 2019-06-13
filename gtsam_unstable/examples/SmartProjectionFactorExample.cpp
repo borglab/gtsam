@@ -43,8 +43,6 @@ using namespace std;
 using namespace gtsam;
 
 int main(int argc, char** argv){
-
-  typedef PinholePose<Cal3_S2> Camera;
   typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 
   Values initial_estimate;

@@ -2,9 +2,9 @@
  * \file MGRS.hpp
  * \brief Header for GeographicLib::MGRS class
  *
- * Copyright (c) Charles Karney (2008-2011) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2017) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #if !defined(GEOGRAPHICLIB_MGRS_HPP)
@@ -27,9 +27,16 @@ namespace GeographicLib {
    * MGRS is defined in Chapter 3 of
    * - J. W. Hager, L. L. Fry, S. S. Jacks, D. R. Hill,
    *   <a href="http://earth-info.nga.mil/GandG/publications/tm8358.1/pdf/TM8358_1.pdf">
-
    *   Datums, Ellipsoids, Grids, and Grid Reference Systems</a>,
    *   Defense Mapping Agency, Technical Manual TM8358.1 (1990).
+   * .
+   * This document has been updated by the two NGA documents
+   * - <a href="http://earth-info.nga.mil/GandG/publications/NGA_STND_0037_2_0_0_GRIDS/NGA.STND.0037_2.0.0_GRIDS.pdf">
+   *   Universal Grids and Grid Reference Systems</a>,
+   *   NGA.STND.0037_2.0.0_GRIDS (2014).
+   * - <a href="http://earth-info.nga.mil/GandG/publications/NGA_SIG_0012_2_0_0_UTMUPS/NGA.SIG.0012_2.0.0_UTMUPS.pdf">
+   *   The Universal Grids and the Transverse Mercator and Polar Stereographic
+   *   Map Projections</a>, NGA.SIG.0012_2.0.0_UTMUPS (2014).
    *
    * This implementation has the following properties:
    * - The conversions are closed, i.e., output from Forward is legal input for
@@ -39,6 +46,11 @@ namespace GeographicLib {
    *   identity.  (This is affected in predictable ways by errors in
    *   determining the latitude band and by loss of precision in the MGRS
    *   coordinates.)
+   * - The trailing digits produced by Forward are consistent as the precision
+   *   is varied.  Specifically, the digits are obtained by operating on the
+   *   easting with &lfloor;10<sup>6</sup> <i>x</i>&rfloor; and extracting the
+   *   required digits from the resulting number (and similarly for the
+   *   northing).
    * - All MGRS coordinates truncate to legal 100 km blocks.  All MGRS
    *   coordinates with a legal 100 km block prefix are legal (even though the
    *   latitude band letter may now belong to a neighboring band).
@@ -62,18 +74,14 @@ namespace GeographicLib {
   class GEOGRAPHICLIB_EXPORT MGRS {
   private:
     typedef Math::real real;
-    // The smallest length s.t., 1.0e7 - eps_ < 1.0e7 (approx 1.9 nm)
-    static const real eps_;
-    // The smallest angle s.t., 90 - eps_ < 90 (approx 50e-12 arcsec)
-    static const real angeps_;
-    static const std::string hemispheres_;
-    static const std::string utmcols_[3];
-    static const std::string utmrow_;
-    static const std::string upscols_[4];
-    static const std::string upsrows_[2];
-    static const std::string latband_;
-    static const std::string upsband_;
-    static const std::string digits_;
+    static const char* const hemispheres_;
+    static const char* const utmcols_[3];
+    static const char* const utmrow_;
+    static const char* const upscols_[4];
+    static const char* const upsrows_[2];
+    static const char* const latband_;
+    static const char* const upsband_;
+    static const char* const digits_;
 
     static const int mineasting_[4];
     static const int maxeasting_[4];
@@ -89,28 +97,32 @@ namespace GeographicLib {
       utmevenrowshift_ = 5,
       // Maximum precision is um
       maxprec_ = 5 + 6,
+      // For generating digits at maxprec
+      mult_ = 1000000,
     };
     static void CheckCoords(bool utmp, bool& northp, real& x, real& y);
-    static int UTMRow(int iband, int icol, int irow) throw();
+    static int UTMRow(int iband, int icol, int irow);
 
     friend class UTMUPS;        // UTMUPS::StandardZone calls LatitudeBand
     // Return latitude band number [-10, 10) for the given latitude (degrees).
     // The bands are reckoned in include their southern edges.
-    static int LatitudeBand(real lat) throw() {
-      int ilat = int(std::floor(lat));
+    static int LatitudeBand(real lat) {
+      using std::floor;
+      int ilat = int(floor(lat));
       return (std::max)(-10, (std::min)(9, (ilat + 80)/8 - 10));
     }
     // Return approximate latitude band number [-10, 10) for the given northing
     // (meters).  With this rule, each 100km tile would have a unique band
     // letter corresponding to the latitude at the center of the tile.  This
     // function isn't currently used.
-    static int ApproxLatitudeBand(real y) throw() {
+    static int ApproxLatitudeBand(real y) {
       // northing at tile center in units of tile = 100km
-      real ya = std::floor( (std::min)(real(88), std::abs(y/tile_)) ) +
+      using std::floor; using std::abs;
+      real ya = floor( (std::min)(real(88), abs(y/tile_)) ) +
         real(0.5);
       // convert to lat (mult by 90/100) and then to band (divide by 8)
       // the +1 fine tunes the boundary between bands 3 and 4
-      int b = int(std::floor( ((ya * 9 + 1) / 10) / 8 ));
+      int b = int(floor( ((ya * 9 + 1) / 10) / 8 ));
       // For the northern hemisphere we have
       // band rows  num
       // N 0   0:8    9
@@ -162,14 +174,16 @@ namespace GeographicLib {
      *   allocated.
      *
      * \e prec specifies the precision of the MGRS string as follows:
-     * - prec = 0 (min), 100 km
-     * - prec = 1, 10 km
-     * - prec = 2, 1 km
-     * - prec = 3, 100 m
-     * - prec = 4, 10 m
-     * - prec = 5, 1 m
-     * - prec = 6, 0.1 m
-     * - prec = 11 (max), 1 &mu;m
+     * - \e prec = &minus;1 (min), only the grid zone is returned
+     * - \e prec = 0, 100 km
+     * - \e prec = 1, 10 km
+     * - \e prec = 2, 1 km
+     * - \e prec = 3, 100 m
+     * - \e prec = 4, 10 m
+     * - \e prec = 5, 1 m
+     * - \e prec = 6, 0.1 m
+     * - &hellip;
+     * - \e prec = 11 (max), 1 &mu;m
      *
      * UTM eastings are allowed to be in the range [100 km, 900 km], northings
      * are allowed to be in in [0 km, 9500 km] for the northern hemisphere and
@@ -182,7 +196,7 @@ namespace GeographicLib {
      * in the northern hemisphere and in [800 km, 3200 km] in the southern
      * hemisphere.
      *
-     * The ranges are 100 km more restrictive that for the conversion between
+     * The ranges are 100 km more restrictive than for the conversion between
      * geographic coordinates and UTM and UPS given by UTMUPS.  These
      * restrictions are dictated by the allowed letters in MGRS coordinates.
      * The choice of 9500 km for the maximum northing for northern hemisphere
@@ -197,7 +211,7 @@ namespace GeographicLib {
      * them \e within the allowed range.  (This includes reducing a southern
      * hemisphere northing of 10000 km by 4 nm so that it is placed in latitude
      * band M.)  The UTM or UPS coordinates are truncated to requested
-     * precision to determine the MGRS coordinate.  Thus in UTM zone 38N, the
+     * precision to determine the MGRS coordinate.  Thus in UTM zone 38n, the
      * square area with easting in [444 km, 445 km) and northing in [3688 km,
      * 3689 km) maps to MGRS coordinate 38SMB4488 (at \e prec = 2, 1 km),
      * Khulani Sq., Baghdad.
@@ -213,6 +227,11 @@ namespace GeographicLib {
      * neighboring latitude band letter may be given if the point is within 5nm
      * of a band boundary.  For prec in [6, 11], the conversion is accurate to
      * roundoff.
+     *
+     * If \e prec = &minus;1, then the "grid zone designation", e.g., 18T, is
+     * returned.  This consists of the UTM zone number (absent for UPS) and the
+     * first letter of the MGRS string which labels the latitude band for UTM
+     * and the hemisphere for UPS.
      *
      * If \e x or \e y is NaN or if \e zone is UTMUPS::INVALID, the returned
      * MGRS string is "INVALID".
@@ -267,22 +286,29 @@ namespace GeographicLib {
      * zones 1--9.)  In addition, MGRS coordinates with a neighboring
      * latitude band letter are permitted provided that some portion of the
      * 100 km block is within the given latitude band.  Thus
-     *   - 38VLS and 38WLS are allowed (latitude 64N intersects the square
-     *     38[VW]LS); but 38VMS is not permitted (all of 38VMS is north of 64N)
-     *   - 38MPE and 38NPF are permitted (they straddle the equator); but 38NPE
-     *     and 38MPF are not permitted (the equator does not intersect either
-     *     block).
-     *   - Similarly ZAB and YZB are permitted (they straddle the prime
-     *     meridian); but YAB and ZZB are not (the prime meridian does not
-     *     intersect either block).
+     * - 38VLS and 38WLS are allowed (latitude 64N intersects the square
+     *   38[VW]LS); but 38VMS is not permitted (all of 38WMS is north of 64N)
+     * - 38MPE and 38NPF are permitted (they straddle the equator); but 38NPE
+     *   and 38MPF are not permitted (the equator does not intersect either
+     *   block).
+     * - Similarly ZAB and YZB are permitted (they straddle the prime
+     *   meridian); but YAB and ZZB are not (the prime meridian does not
+     *   intersect either block).
      *
      * The UTM/UPS selection and the UTM zone is preserved in the conversion
      * from MGRS coordinate.  The conversion is exact for prec in [0, 5].  With
-     * centerp = true the conversion from MGRS to geographic and back is
+     * \e centerp = true, the conversion from MGRS to geographic and back is
      * stable.  This is not assured if \e centerp = false.
      *
+     * If a "grid zone designation" (for example, 18T or A) is given, then some
+     * suitable (but essentially arbitrary) point within that grid zone is
+     * returned.  The main utility of the conversion is to allow \e zone and \e
+     * northp to be determined.  In this case, the \e centerp parameter is
+     * ignored and \e prec is set to &minus;1.
+     *
      * If the first 3 characters of \e mgrs are "INV", then \e x and \e y are
-     * set to NaN and \e zone is set to UTMUPS::INVALID.
+     * set to NaN, \e zone is set to UTMUPS::INVALID, and \e prec is set to
+     * &minus;2.
      *
      * If an exception is thrown, then the arguments are unchanged.
      **********************************************************************/
@@ -299,7 +325,7 @@ namespace GeographicLib {
      * (The WGS84 value is returned because the UTM and UPS projections are
      * based on this ellipsoid.)
      **********************************************************************/
-    static Math::real MajorRadius() throw() { return UTMUPS::MajorRadius(); }
+    static Math::real MajorRadius() { return UTMUPS::MajorRadius(); }
 
     /**
      * @return \e f the flattening of the WGS84 ellipsoid.
@@ -307,17 +333,17 @@ namespace GeographicLib {
      * (The WGS84 value is returned because the UTM and UPS projections are
      * based on this ellipsoid.)
      **********************************************************************/
-    static Math::real Flattening() throw() { return UTMUPS::Flattening(); }
+    static Math::real Flattening() { return UTMUPS::Flattening(); }
     ///@}
 
-    /// \cond SKIP
     /**
-     * <b>DEPRECATED</b>
-     * @return \e r the inverse flattening of the WGS84 ellipsoid.
+     * Perform some checks on the UTMUPS coordinates on this ellipsoid.  Throw
+     * an error if any of the assumptions made in the MGRS class is not true.
+     * This check needs to be carried out if the ellipsoid parameters (or the
+     * UTM/UPS scales) are ever changed.
      **********************************************************************/
-    static Math::real InverseFlattening() throw()
-    { return UTMUPS::InverseFlattening(); }
-    /// \endcond
+    static void Check();
+
   };
 
 } // namespace GeographicLib

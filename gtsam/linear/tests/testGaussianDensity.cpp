@@ -33,7 +33,7 @@ TEST(GaussianDensity, constructor)
   GaussianConditional conditional(1, d, R, noiseModel::Diagonal::Sigmas(s));
 
   GaussianDensity copied(conditional);
-  EXPECT(assert_equal(d, copied.get_d()));
+  EXPECT(assert_equal(d, copied.d()));
   EXPECT(assert_equal(s, copied.get_model()->sigmas()));
 }
 

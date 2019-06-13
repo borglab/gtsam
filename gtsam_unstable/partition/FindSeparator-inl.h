@@ -175,7 +175,6 @@ namespace gtsam { namespace partition {
   void prepareMetisGraph(const GenericGraph& graph, const std::vector<size_t>& keys, WorkSpace& workspace,
       sharedInts* ptr_xadj, sharedInts* ptr_adjncy, sharedInts* ptr_adjwgt) {
 
-    typedef int Weight;
     typedef std::vector<int> Weights;
     typedef std::vector<int> Neighbors;
     typedef std::pair<Neighbors, Weights> NeighborsInfo;

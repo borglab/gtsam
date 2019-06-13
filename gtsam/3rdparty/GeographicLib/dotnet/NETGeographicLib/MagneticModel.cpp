@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #include "stdafx.h"
 #include "GeographicLib/MagneticModel.hpp"
@@ -72,7 +72,7 @@ MagneticModel::MagneticModel(System::String^ name,
         m_pMagneticModel = new GeographicLib::MagneticModel(
             StringConvert::ManagedToUnmanaged( name ),
             StringConvert::ManagedToUnmanaged( path ),
-            GeographicLib::Geocentric::WGS84 );
+            GeographicLib::Geocentric::WGS84() );
     }
     catch ( std::bad_alloc )
     {

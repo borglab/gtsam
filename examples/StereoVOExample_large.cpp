@@ -89,8 +89,8 @@ int main(int argc, char** argv){
     //if the landmark variable included in this factor has not yet been added to the initial variable value estimate, add it
     if (!initial_estimate.exists(Symbol('l', l))) {
       Pose3 camPose = initial_estimate.at<Pose3>(Symbol('x', x));
-      //transform_from() transforms the input Point3 from the camera pose space, camPose, to the global space
-      Point3 worldPoint = camPose.transform_from(Point3(X, Y, Z));
+      //transformFrom() transforms the input Point3 from the camera pose space, camPose, to the global space
+      Point3 worldPoint = camPose.transformFrom(Point3(X, Y, Z));
       initial_estimate.insert(Symbol('l', l), worldPoint);
     }
   }

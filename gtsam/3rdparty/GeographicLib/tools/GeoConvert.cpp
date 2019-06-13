@@ -2,32 +2,21 @@
  * \file GeoConvert.cpp
  * \brief Command line utility for geographic coordinate conversions
  *
- * Copyright (c) Charles Karney (2008-2012) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2017) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  *
- * Compile and link with
- *   g++ -g -O3 -I../include -I../man -o GeoConvert \
- *       GeoConvert.cpp \
- *       ../src/DMS.cpp \
- *       ../src/GeoCoords.cpp \
- *       ../src/MGRS.cpp \
- *       ../src/PolarStereographic.cpp \
- *       ../src/TransverseMercator.cpp \
- *       ../src/UTMUPS.cpp
- *
- * See the <a href="GeoConvert.1.html">man page</a> for usage
- * information.
+ * See the <a href="GeoConvert.1.html">man page</a> for usage information.
  **********************************************************************/
 
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <sstream>
 #include <fstream>
 #include <GeographicLib/GeoCoords.hpp>
 #include <GeographicLib/DMS.hpp>
 #include <GeographicLib/Utility.hpp>
+#include <GeographicLib/MGRS.hpp>
 
 #if defined(_MSC_VER)
 // Squelch warnings about constant conditional expressions
@@ -36,18 +25,19 @@
 
 #include "GeoConvert.usage"
 
-int main(int argc, char* argv[]) {
+int main(int argc, const char* const argv[]) {
   try {
     using namespace GeographicLib;
     typedef Math::real real;
+    Utility::set_digits();
     enum { GEOGRAPHIC, DMS, UTMUPS, MGRS, CONVERGENCE };
     int outputmode = GEOGRAPHIC;
     int prec = 0;
     int zone = UTMUPS::MATCH;
-    bool centerp = true, swaplatlong = false;
+    bool centerp = true, longfirst = false;
     std::string istring, ifile, ofile, cdelim;
     char lsep = ';', dmssep = char(0);
-    bool sethemisphere = false, northp = false;
+    bool sethemisphere = false, northp = false, abbrev = true, latch = false;
 
     for (int m = 1; m < argc; ++m) {
       std::string arg(argv[m]);
@@ -67,18 +57,7 @@ int main(int argc, char* argv[]) {
         outputmode = CONVERGENCE;
       else if (arg == "-n")
         centerp = false;
-      else if (arg == "-w")
-        swaplatlong = true;
-      else if (arg == "-p") {
-        if (++m == argc) return usage(1, true);
-        try {
-          prec = Utility::num<int>(std::string(argv[m]));
-        }
-        catch (const std::exception&) {
-          std::cerr << "Precision " << argv[m] << " is not a number\n";
-          return 1;
-        }
-      } else if (arg == "-z") {
+      else if (arg == "-z") {
         if (++m == argc) return usage(1, true);
         std::string zonestr(argv[m]);
         try {
@@ -99,13 +78,39 @@ int main(int argc, char* argv[]) {
           }
           sethemisphere = false;
         }
+        latch = false;
       } else if (arg == "-s") {
         zone = UTMUPS::STANDARD;
         sethemisphere = false;
+        latch = false;
+      } else if (arg == "-S") {
+        zone = UTMUPS::STANDARD;
+        sethemisphere = false;
+        latch = true;
       } else if (arg == "-t") {
         zone = UTMUPS::UTM;
         sethemisphere = false;
-      } else if (arg == "--input-string") {
+        latch = false;
+      } else if (arg == "-T") {
+        zone = UTMUPS::UTM;
+        sethemisphere = false;
+        latch = true;
+      } else if (arg == "-w")
+        longfirst = !longfirst;
+      else if (arg == "-p") {
+        if (++m == argc) return usage(1, true);
+        try {
+          prec = Utility::val<int>(std::string(argv[m]));
+        }
+        catch (const std::exception&) {
+          std::cerr << "Precision " << argv[m] << " is not a number\n";
+          return 1;
+        }
+      } else if (arg == "-l")
+        abbrev = false;
+      else if (arg == "-a")
+        abbrev = true;
+      else if (arg == "--input-string") {
         if (++m == argc) return usage(1, true);
         istring = argv[m];
       } else if (arg == "--input-file") {
@@ -125,9 +130,9 @@ int main(int argc, char* argv[]) {
         if (++m == argc) return usage(1, true);
         cdelim = argv[m];
       } else if (arg == "--version") {
-        std::cout
-          << argv[0] << ": GeographicLib version "
-          << GEOGRAPHICLIB_VERSION_STRING << "\n";
+        std::cout << argv[0] << ": GeographicLib version "
+                  << GEOGRAPHICLIB_VERSION_STRING << "\n";
+        MGRS::Check();
         return 0;
       } else
         return usage(!(arg == "-h" || arg == "--help"), arg != "--help");
@@ -171,12 +176,12 @@ int main(int argc, char* argv[]) {
     std::ostream* output = !ofile.empty() ? &outfile : &std::cout;
 
     GeoCoords p;
-    std::string s;
+    std::string s, eol;
     std::string os;
     int retval = 0;
 
     while (std::getline(*input, s)) {
-      std::string eol("\n");
+      eol = "\n";
       try {
         if (!cdelim.empty()) {
           std::string::size_type m = s.find(cdelim);
@@ -185,19 +190,19 @@ int main(int argc, char* argv[]) {
             s = s.substr(0, m);
           }
         }
-        p.Reset(s, centerp, swaplatlong);
+        p.Reset(s, centerp, longfirst);
         p.SetAltZone(zone);
         switch (outputmode) {
         case GEOGRAPHIC:
-          os = p.GeoRepresentation(prec, swaplatlong);
+          os = p.GeoRepresentation(prec, longfirst);
           break;
         case DMS:
-          os = p.DMSRepresentation(prec, swaplatlong, dmssep);
+          os = p.DMSRepresentation(prec, longfirst, dmssep);
           break;
         case UTMUPS:
           os = (sethemisphere
-                ? p.AltUTMUPSRepresentation(northp, prec)
-                : p.AltUTMUPSRepresentation(prec));
+                ? p.AltUTMUPSRepresentation(northp, prec, abbrev)
+                : p.AltUTMUPSRepresentation(prec, abbrev));
           break;
         case MGRS:
           os = p.AltMGRSRepresentation(prec);
@@ -207,10 +212,17 @@ int main(int argc, char* argv[]) {
             real
               gamma = p.AltConvergence(),
               k = p.AltScale();
-            int prec1 = std::max(-5, std::min( Math::extradigits + 8, prec ));
-            os = Utility::str<real>(gamma, prec1 + 5) + " "
-              + Utility::str<real>(k, prec1 + 7);
+            int prec1 = std::max(-5, std::min(Math::extra_digits() + 8, prec));
+            os = Utility::str(gamma, prec1 + 5) + " "
+              + Utility::str(k, prec1 + 7);
           }
+        }
+        if (latch &&
+            zone < UTMUPS::MINZONE && p.AltZone() >= UTMUPS::MINZONE) {
+          zone = p.AltZone();
+          northp = p.Northp();
+          sethemisphere = true;
+          latch = false;
         }
       }
       catch (const std::exception& e) {
