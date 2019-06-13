@@ -5,12 +5,14 @@ import template_instantiator as instantiator
 
 
 class PybindWrapper(object):
-    def __init__(self,
-                 module,
-                 module_name,
-                 top_module_namespaces='',
-                 use_boost=False,
-                 ignore_classes=[]):
+    def __init__(
+        self,
+        module,
+        module_name,
+        top_module_namespaces='',
+        use_boost=False,
+        ignore_classes=[],
+    ):
         self.module = module
         self.module_name = module_name
         self.top_module_namespaces = top_module_namespaces
@@ -37,21 +39,16 @@ class PybindWrapper(object):
     def wrap_ctors(self, my_class):
         res = ""
         for ctor in my_class.ctors:
-            res += '\n' + ' '*8 + '.def(py::init<{args_cpp_types}>()'\
+            res += (
+                '\n' + ' ' * 8 + '.def(py::init<{args_cpp_types}>()'
                 '{py_args_names})'.format(
-                    args_cpp_types=", ".join(
-                        ctor.args.to_cpp(self.use_boost)),
+                    args_cpp_types=", ".join(ctor.args.to_cpp(self.use_boost)),
                     py_args_names=self._py_args_names(ctor.args),
                 )
+            )
         return res
 
-    def _wrap_method(
-            self,
-            method,
-            cpp_class,
-            prefix,
-            suffix,
-    ):
+    def _wrap_method(self, method, cpp_class, prefix, suffix):
         py_method = method.name
         cpp_method = method.to_cpp()
         if cpp_method == "serialize" or cpp_method == "serializable":
@@ -62,27 +59,32 @@ class PybindWrapper(object):
         args_names = method.args.args_names()
         py_args_names = self._py_args_names(method.args)
         args_signature_with_names = self._method_args_signature_with_names(
-            method.args)
+            method.args
+        )
 
         caller = cpp_class + "::" if not is_method else "self->"
-        function_call = '{opt_return} {caller}{function_name}'\
+        function_call = (
+            '{opt_return} {caller}{function_name}'
             '({args_names});'.format(
                 opt_return='return' if not return_void else '',
                 caller=caller,
                 function_name=cpp_method,
                 args_names=', '.join(args_names),
             )
+        )
 
-        return '{prefix}.{cdef}("{py_method}",'\
-            '[]({opt_self}{opt_comma}{args_signature_with_names}){{'\
-            '{function_call}'\
-            '}}'\
+        return (
+            '{prefix}.{cdef}("{py_method}",'
+            '[]({opt_self}{opt_comma}{args_signature_with_names}){{'
+            '{function_call}'
+            '}}'
             '{py_args_names}){suffix}'.format(
                 prefix=prefix,
                 cdef="def_static" if is_static else "def",
                 py_method=py_method if py_method != "print" else "print_",
                 opt_self="{cpp_class}* self".format(cpp_class=cpp_class)
-                if is_method else "",
+                if is_method
+                else "",
                 cpp_class=cpp_class,
                 cpp_method=cpp_method,
                 opt_comma=',' if is_method and args_names else '',
@@ -91,12 +93,11 @@ class PybindWrapper(object):
                 py_args_names=py_args_names,
                 suffix=suffix,
             )
+        )
 
-    def wrap_methods(self,
-                     methods,
-                     cpp_class,
-                     prefix='\n' + ' ' * 8,
-                     suffix=''):
+    def wrap_methods(
+        self, methods, cpp_class, prefix='\n' + ' ' * 8, suffix=''
+    ):
         res = ""
         for method in methods:
             res += self._wrap_method(
@@ -110,14 +111,17 @@ class PybindWrapper(object):
     def wrap_properties(self, properties, cpp_class, prefix='\n' + ' ' * 8):
         res = ""
         for prop in properties:
-            res += '{prefix}.def_{property}("{property_name}", '\
+            res += (
+                '{prefix}.def_{property}("{property_name}", '
                 '&{cpp_class}::{property_name})'.format(
                     prefix=prefix,
                     property="readonly"
-                    if prop.ctype.is_const else "readwrite",
+                    if prop.ctype.is_const
+                    else "readwrite",
                     cpp_class=cpp_class,
                     property_name=prop.name,
                 )
+            )
         return res
 
     def wrap_instantiated_class(self, instantiated_class):
@@ -125,30 +129,30 @@ class PybindWrapper(object):
         cpp_class = instantiated_class.cpp_class()
         if cpp_class in self.ignore_classes:
             return ""
-        return '\n    py::class_<{cpp_class}, {class_parent}'\
-            'std::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'\
-            '{wrapped_ctors}'\
-            '{wrapped_methods}'\
-            '{wrapped_static_methods}'\
+        return (
+            '\n    py::class_<{cpp_class}, {class_parent}'
+            'std::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
+            '{wrapped_ctors}'
+            '{wrapped_methods}'
+            '{wrapped_static_methods}'
             '{wrapped_properties};\n'.format(
                 cpp_class=cpp_class,
                 class_name=instantiated_class.name,
-                class_parent=str(instantiated_class.parent_class) +
-                (', ' if instantiated_class.parent_class else ''),
+                class_parent=str(instantiated_class.parent_class)
+                + (', ' if instantiated_class.parent_class else ''),
                 module_var=module_var,
                 wrapped_ctors=self.wrap_ctors(instantiated_class),
                 wrapped_methods=self.wrap_methods(
-                    instantiated_class.methods,
-                    cpp_class,
+                    instantiated_class.methods, cpp_class
                 ),
                 wrapped_static_methods=self.wrap_methods(
-                    instantiated_class.static_methods,
-                    cpp_class,
+                    instantiated_class.static_methods, cpp_class
                 ),
                 wrapped_properties=self.wrap_properties(
-                    instantiated_class.properties, cpp_class,
+                    instantiated_class.properties, cpp_class
                 ),
             )
+        )
 
     def _partial_match(self, namespaces1, namespaces2):
         for i in range(min(len(namespaces1), len(namespaces2))):
@@ -157,7 +161,7 @@ class PybindWrapper(object):
         return True
 
     def _gen_module_var(self, namespaces):
-        sub_module_namespaces = namespaces[len(self.top_module_namespaces):]
+        sub_module_namespaces = namespaces[len(self.top_module_namespaces) :]
         return "m_{}".format('_'.join(sub_module_namespaces))
 
     def _add_namespaces(self, name, namespaces):
@@ -179,34 +183,44 @@ class PybindWrapper(object):
         if len(namespaces) < len(self.top_module_namespaces):
             for element in namespace.content:
                 if isinstance(element, parser.Include):
-                    includes += "{}\n".format(element).replace('<',
-                                                               '"').replace(
-                                                                   '>', '"')
+                    includes += (
+                        "{}\n".format(element)
+                        .replace('<', '"')
+                        .replace('>', '"')
+                    )
                 if isinstance(element, parser.Namespace):
-                    wrapped_namespace, includes_namespace = \
-                        self.wrap_namespace(element)
+                    wrapped_namespace, includes_namespace = self.wrap_namespace(
+                        element
+                    )
                     wrapped += wrapped_namespace
                     includes += includes_namespace
         else:
             module_var = self._gen_module_var(namespaces)
 
             if len(namespaces) > len(self.top_module_namespaces):
-                wrapped += ' '*4 + 'pybind11::module {module_var} = '\
-                    '{parent_module_var}.def_submodule("{namespace}", "'\
+                wrapped += (
+                    ' ' * 4 + 'pybind11::module {module_var} = '
+                    '{parent_module_var}.def_submodule("{namespace}", "'
                     '{namespace} submodule");\n'.format(
                         module_var=module_var,
                         namespace=namespace.name,
                         parent_module_var=self._gen_module_var(
-                            namespaces[:-1]))
+                            namespaces[:-1]
+                        ),
+                    )
+                )
 
             for element in namespace.content:
                 if isinstance(element, parser.Include):
-                    includes += "{}\n".format(element).replace('<',
-                                                               '"').replace(
-                                                                   '>', '"')
+                    includes += (
+                        "{}\n".format(element)
+                        .replace('<', '"')
+                        .replace('>', '"')
+                    )
                 elif isinstance(element, parser.Namespace):
-                    wrapped_namespace, includes_namespace = \
-                        self.wrap_namespace(element)
+                    wrapped_namespace, includes_namespace = self.wrap_namespace(
+                        element
+                    )
                     wrapped += wrapped_namespace
                     includes += includes_namespace
                 elif isinstance(element, instantiator.InstantiatedClass):
@@ -214,7 +228,8 @@ class PybindWrapper(object):
 
             # Global functions.
             all_funcs = [
-                func for func in namespace.content
+                func
+                for func in namespace.content
                 if isinstance(func, parser.GlobalFunction)
             ]
             wrapped += self.wrap_methods(
@@ -251,35 +266,42 @@ PYBIND11_PLUGIN({module_name}) {{
 
 """.format(
             include_boost="#include <boost/shared_ptr.hpp>"
-            if self.use_boost else "",
+            if self.use_boost
+            else "",
             module_name=self.module_name,
             includes=includes,
             hoder_type="PYBIND11_DECLARE_HOLDER_TYPE(T, boost::shared_ptr<T>);"
-            if self.use_boost else "",
+            if self.use_boost
+            else "",
             wrapped_namespace=wrapped_namespace,
         )
 
 
 def main():
     arg_parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     arg_parser.add_argument(
-        "--src", type=str, required=True, help="Input interface .h file")
+        "--src", type=str, required=True, help="Input interface .h file"
+    )
     arg_parser.add_argument(
         "--module_name",
         type=str,
         required=True,
         help="Name of the Python module to be generated and "
-        "used in the Python `import` statement.")
+        "used in the Python `import` statement.",
+    )
     arg_parser.add_argument(
         "--out",
         type=str,
         required=True,
-        help="Name of the output pybind .cc file")
+        help="Name of the output pybind .cc file",
+    )
     arg_parser.add_argument(
         "--use_boost",
         action="store_true",
-        help="using boost's shared_ptr instead of std's")
+        help="using boost's shared_ptr instead of std's",
+    )
     arg_parser.add_argument(
         "--top_module_namespaces",
         type=str,
@@ -291,13 +313,15 @@ def main():
         "For example, `import <module_name>` gives you access to a Python "
         "`<module_name>.Class` of the corresponding C++ `ns1::ns2::ns3::Class`,"
         " and `from <module_name> import ns4` gives you access to a Python "
-        "`ns4.Class` of the C++ `ns1::ns2::ns3::ns4::Class`. ")
+        "`ns4.Class` of the C++ `ns1::ns2::ns3::ns4::Class`. ",
+    )
     arg_parser.add_argument(
         "--ignore",
         nargs='*',
         type=str,
         help="A space-separated list of classes to ignore. "
-        "Class names must include their full namespaces.")
+        "Class names must include their full namespaces.",
+    )
     args = arg_parser.parse_args()
 
     top_module_namespaces = args.top_module_namespaces.split("::")
