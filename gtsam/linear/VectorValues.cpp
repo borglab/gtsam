@@ -136,14 +136,16 @@ namespace gtsam {
 #ifdef GTSAM_USE_TBB
     map<Key, Vector> sorted;
     for (const auto& key_value : v) {
-      sorted.insert(std::make_pair(key_value.first, key_value.second));
+      sorted.emplace(std::make_pair(key_value.first, key_value.second));
     }
     for (const auto& key_value : sorted)
 #else
     for (const auto& key_value : v)
 #endif
+    {
       os << "  " << key_value.first << ": " << key_value.second.transpose()
          << "\n";
+    }
     return os;
   }
 
