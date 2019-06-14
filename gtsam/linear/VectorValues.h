@@ -29,6 +29,7 @@
 
 #include <map>
 #include <string>
+#include <iostream>
 
 namespace gtsam {
 
@@ -227,6 +228,11 @@ namespace gtsam {
      * variable is present with this key.
      */
     const_iterator find(Key j) const { return values_.find(j); }
+
+    /**
+     * overload operator << to print to stringstream
+     */
+    friend std::ostream& operator<<(std::ostream& ss, const VectorValues& v);
 
     /** print required by Testable for unit testing */
     void print(const std::string& str = "VectorValues: ",
