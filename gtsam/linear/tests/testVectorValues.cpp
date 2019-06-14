@@ -241,10 +241,9 @@ TEST(VectorValues, print)
   vv.insert(7, Vector2(8, 9));
 
   string expected =
-      "VectorValues: : 5 elements\n  0: 1\n  1: 2 3\n  2: 4 5\n  5: 6 7\n  7: 8 9\n";
+      "VectorValues: 5 elements\n  0: 1\n  1: 2 3\n  2: 4 5\n  5: 6 7\n  7: 8 9\n";
   stringstream actual;
   actual << vv;
-
   EXPECT(expected == actual.str());
 }
 

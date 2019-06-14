@@ -129,30 +129,22 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  bool compare(std::pair<Key, Vector>& lhs, std::pair<Key, Vector>& rhs) {
-    return lhs.first < rhs.first;
-  }
-
-  ostream& operator<<(ostream& ss, const VectorValues& v) {
-    ss << "VectorValues: "
+  ostream& operator<<(ostream& os, const VectorValues& v) {
+    os << "VectorValues"
        << ": " << v.size() << " elements\n";
     // Change print depending on whether we are using TBB
 #ifdef GTSAM_USE_TBB
-    std::vector<std::pair<Key, Vector>> vec;
-    vec.reserve(v.size());
+    map<Key, Vector> sorted;
     for (const auto& key_value : v) {
-      vec.push_back(std::make_pair(key_value.first, key_value.second));
+      sorted.insert(std::make_pair(key_value.first, key_value.second));
     }
-    sort(vec.begin(), vec.end(), compare);
-    for (const auto& key_value : vec)
-      ss << "  " << key_value.first << ": " << key_value.second.transpose()
-         << "\n";
+    for (const auto& key_value : sorted)
 #else
     for (const auto& key_value : v)
-      ss << "  " << key_value.first << ": " << key_value.second.transpose()
-         << "\n";
 #endif
-    return ss;
+      os << "  " << key_value.first << ": " << key_value.second.transpose()
+         << "\n";
+    return os;
   }
 
   /* ************************************************************************* */
