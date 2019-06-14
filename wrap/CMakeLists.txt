@@ -38,8 +38,8 @@ if(GTSAM_BUILD_PYTHON)
   # Install.
   install(TARGETS gtsam_py DESTINATION gtsam_py)
   install_python_files("${PROJECT_BINARY_DIR}/setup.py"
-                       "${CMAKE_INSTALL_PREFIX}/gtsam_py")
-  install_python_scripts("${PROJECT_SOURCE_DIR}/wrap/gtsam_py"
+                       "${CMAKE_INSTALL_PREFIX}")
+  install_python_scripts("${PROJECT_SOURCE_DIR}/wrap/python/gtsam_py/"
                          "${CMAKE_INSTALL_PREFIX}/gtsam_py" "*.py")
 
 endif()

@@ -1,81 +1,39 @@
 import os
-import multiprocessing
-import re
 import sys
-import platform
-import subprocess
 
-from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext
-from distutils.version import LooseVersion
+try:
+    from setuptools import setup, find_packages
+except ImportError:
+    from distutils.core import setup, find_packages
 
-
-class CMakeExtension(Extension):
-    def __init__(self, name, sourcedir=''):
-        Extension.__init__(self, name, sources=[])
-        self.sourcedir = os.path.abspath(sourcedir)
-
-
-class CMakeBuild(build_ext):
-    def run(self):
-        try:
-            out = subprocess.check_output(['cmake', '--version'])
-        except OSError:
-            raise RuntimeError(
-                "CMake must be installed to build the following extensions: "
-                + ", ".join(e.name for e in self.extensions)
+if 'SETUP_PY_NO_CHECK' not in os.environ:
+    script_path = os.path.abspath(os.path.realpath(__file__))
+    install_path = os.path.abspath(
+        os.path.realpath(os.path.join('${CMAKE_INSTALL_PREFIX}', 'setup.py'))
+    )
+    if script_path != install_path:
+        print(
+            'setup.py is being run from an unexpected location: "{}"'.format(
+                script_path
             )
-
-        if platform.system() == "Windows":
-            cmake_version = LooseVersion(
-                re.search(r'version\s*([\d.]+)', out.decode()).group(1)
-            )
-            if cmake_version < '3.1.0':
-                raise RuntimeError("CMake >= 3.1.0 is required on Windows")
-
-        for ext in self.extensions:
-            self.build_extension(ext)
-
-    def build_extension(self, ext):
-        extdir = os.getcwd()
-        cmake_args = [
-            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-            '-DPYTHON_EXECUTABLE=' + sys.executable,
-            '-DGTSAM_BUILD_PYTHON=ON',
-            '-DGTSAM_TYPEDEF_POINTS_TO_VECTORS=ON',
-            '-DGTSAM_BUILD_TEST=OFF',
-            '-DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF',
-            '-DCMAKE_VERBOSE_MAKEFILE=ON',
-        ]
-
-        cfg = 'Debug' if self.debug else 'Release'
-        build_args = ['--config', cfg]
-
-        if platform.system() == "Windows":
-            cmake_args += [
-                '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(
-                    cfg.upper(), '.'
-                )
-            ]
-
-            if sys.maxsize > 2 ** 32:
-                cmake_args += ['-A', 'x64']
-            build_args += ['--', '/m']
-        else:
-            num_cores = multiprocessing.cpu_count()
-            cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
-            build_args += ['--', f'-j{num_cores}']
-
-        env = os.environ.copy()
-        env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(
-            env.get('CXXFLAGS', ''), self.distribution.get_version()
         )
-        subprocess.check_call(['cmake', '..'] + cmake_args, cwd='.', env=env)
-        subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd='.')
+        print('please run `make install` and run the script from there')
+        sys.exit(1)
 
+packages = find_packages()
+print(f"PACKAGES: {packages}")
+package_data = {
+    'gtsam_py': [
+        '*.so',
+        '*.dll',
+        '../lib/*.so',
+        '../lib/*.so.*',
+        '../lib/*.dll',
+    ]
+}
 
 setup(
-    name='gtsam',
+    name='gtsam_py',
     description='Georgia Tech Smoothing And Mapping library',
     url='https://gtsam.org/',
     version='${GTSAM_VERSION_STRING}',  # https://www.python.org/dev/peps/pep-0440/
@@ -97,8 +55,9 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
     ],
-    ext_modules=[CMakeExtension('gtsam_py')],
-    cmdclass=dict(build_ext=CMakeBuild),
+    packages=packages,
+    package_data=package_data,
+    test_suite="gtsam_py.tests",
+    install_requires="numpy",
     zip_safe=False,
-    install_requires=['pyparsing'],
 )

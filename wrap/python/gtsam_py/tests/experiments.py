@@ -6,7 +6,7 @@ Its name convention is different from other tests so it won't be discovered.
 import numpy as np
 
 from gtsam_py import gtsam
-from util import Point2, Point3
+from gtsam_py.util import Point2, Point3
 
 r = gtsam.Rot3()
 print(r)
@@ -100,8 +100,8 @@ diag = gtsam.noiseModel.Diagonal.Sigmas(np.array([1., 2., 3.]))
 fv = gtsam.PriorFactorVector(1, np.array([4., 5., 6.]), diag)
 print("priorfactorvector: ", fv)
 
-print("base noise: ", fv.get_noiseModel())
-diag_cast = fv.get_noiseModel()  # should be a Diagonal
+print("base noise: ", fv.noiseModel())
+diag_cast = fv.noiseModel()  # should be a Diagonal
 print("casted to gaussian2: ", diag_cast.R())
 
 
