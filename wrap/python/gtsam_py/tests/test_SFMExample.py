@@ -3,16 +3,16 @@ import numpy as np
 
 from gtsam_py import gtsam
 from gtsam_py.gtsam import symbol
-import gtsam.visual_data_generator as generator
+import gtsam_py.tests.visual_data_generator as datagen
 
 
 class TestSFMExample(unittest.TestCase):
     def test_SFMExample(self):
-        options = generator.Options()
+        options = datagen.Options()
         options.triangle = False
         options.nrCameras = 10
 
-        [data, truth] = generator.generate_data(options)
+        [data, truth] = datagen.generate_data(options)
 
         measurementNoiseSigma = 1.0
         pointNoiseSigma = 0.1

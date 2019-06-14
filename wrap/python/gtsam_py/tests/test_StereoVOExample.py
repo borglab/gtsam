@@ -3,7 +3,7 @@ import numpy as np
 
 from gtsam_py import gtsam
 from gtsam_py.gtsam import symbol
-from gtsam.util import Point3
+from gtsam_py.util import Point3
 
 
 class TestStereoVOExample(unittest.TestCase):

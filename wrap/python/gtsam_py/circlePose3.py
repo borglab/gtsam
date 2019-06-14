@@ -2,7 +2,7 @@ from math import pi, cos, sin
 import numpy as np
 
 from gtsam_py import gtsam
-from gtsam.util import Point3
+from gtsam_py.util import Point3
 
 
 def circlePose3(numPoses=8, radius=1.0, symbolChar=0):

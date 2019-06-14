@@ -3,14 +3,14 @@ import numpy as np
 
 from gtsam_py import gtsam
 from gtsam_py.gtsam import symbol
-from gtsam import visual_data_generator as generator
-from gtsam import visual_isam
+from gtsam_py.tests import visual_data_generator as datagen
+from gtsam_py.tests import visual_isam
 
 
 class TestVisualISAMExample(unittest.TestCase):
     def test_VisualISAMExample(self):
         # Data Options
-        options = generator.Options()
+        options = datagen.Options()
         options.triangle = False
         options.nrCameras = 20
 
@@ -23,7 +23,7 @@ class TestVisualISAMExample(unittest.TestCase):
         isamOptions.alwaysRelinearize = False
 
         # Generate data
-        data, truth = generator.generate_data(options)
+        data, truth = datagen.generate_data(options)
 
         # Initialize iSAM with the first pose and points
         isam, result, nextPose = visual_isam.initialize(

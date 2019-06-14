@@ -5,8 +5,14 @@ if(GTSAM_PYTHON_VERSION STREQUAL "Default")
   find_package(PythonInterp REQUIRED)
   find_package(PythonLibs REQUIRED)
 else()
-  find_package(PythonInterp ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
-  find_package(PythonLibs ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
+  find_package(PythonInterp
+               ${GTSAM_PYTHON_VERSION}
+               EXACT
+               REQUIRED)
+  find_package(PythonLibs
+               ${GTSAM_PYTHON_VERSION}
+               EXACT
+               REQUIRED)
 endif()
 
 # User-friendly Pybind11 wrapping and installing function. Builds a Pybind11
@@ -108,26 +114,29 @@ function(install_python_scripts
 
 endfunction()
 
-# Helper function to install specific files and handle multiple build types where the scripts
-# should be installed to all build type toolboxes
+# Helper function to install specific files and handle multiple build types
+# where the scripts should be installed to all build type toolboxes
 #
-# Arguments:
-#  source_files: The source files to be installed.
-#  dest_directory: The destination directory to install to.
+# Arguments: source_files: The source files to be installed. dest_directory: The
+# destination directory to install to.
 function(install_python_files source_files dest_directory)
 
   if(GTSAM_BUILD_TYPE_POSTFIXES)
     foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
       string(TOUPPER "${build_type}" build_type_upper)
       if(${build_type_upper} STREQUAL "RELEASE")
-        set(build_type_tag "") # Don't create release mode tag on installed directory
+        set(build_type_tag "") # Don't create release mode tag on installed
+                               # directory
       else()
         set(build_type_tag "${build_type}")
       endif()
-      # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if there is one
+      # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if
+      # there is one
       get_filename_component(location "${dest_directory}" PATH)
       get_filename_component(name "${dest_directory}" NAME)
-      install(FILES "${source_files}" DESTINATION "${location}/${name}${build_type_tag}" CONFIGURATIONS "${build_type}")
+      install(FILES "${source_files}"
+              DESTINATION "${location}/${name}${build_type_tag}"
+              CONFIGURATIONS "${build_type}")
     endforeach()
   else()
     install(FILES "${source_files}" DESTINATION "${dest_directory}")
@@ -135,3 +144,45 @@ function(install_python_files source_files dest_directory)
 
 endfunction()
 
+# https://stackoverflow.com/questions/13959434/cmake-out-of-source-build-python-
+# files
+function(create_symlinks source_folder dest_folder)
+  if(${source_folder} STREQUAL ${dest_folder})
+    return()
+  endif()
+
+  file(GLOB files
+       LIST_DIRECTORIES true
+       RELATIVE "${source_folder}"
+       "${source_folder}/*")
+  foreach(path_file ${files})
+    get_filename_component(folder ${path_file} PATH)
+
+    # Create REAL folder
+    file(MAKE_DIRECTORY "${dest_folder}")
+
+    # Delete symlink if it exists
+    file(REMOVE "${dest_folder}/${path_file}")
+
+    # Get OS dependent path to use in `execute_process`
+    file(TO_NATIVE_PATH "${dest_folder}/${path_file}" link)
+    file(TO_NATIVE_PATH "${source_folder}/${path_file}" target)
+
+    if(UNIX)
+      set(command ln -s ${target} ${link})
+    else()
+      set(command cmd.exe /c mklink ${link} ${target})
+    endif()
+
+    execute_process(COMMAND ${command}
+                    RESULT_VARIABLE result
+                    ERROR_VARIABLE output)
+
+    if(NOT ${result} EQUAL 0)
+      message(
+        FATAL_ERROR
+          "Could not create symbolic link for: ${target} --> ${output}")
+    endif()
+
+  endforeach(path_file)
+endfunction(create_symlinks)

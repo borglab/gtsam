@@ -116,7 +116,10 @@ set_target_properties(gtsam PROPERTIES
     OUTPUT_NAME         gtsam
     CLEAN_DIRECT_OUTPUT 1
     VERSION             ${gtsam_version}
-    SOVERSION           ${gtsam_soversion})
+    SOVERSION           ${gtsam_soversion}
+    INSTALL_RPATH       "$ORIGIN"
+    INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
 
 # Append Eigen include path, set in top-level CMakeLists.txt to either
 # system-eigen, or GTSAM eigen path
