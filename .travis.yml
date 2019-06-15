@@ -27,6 +27,7 @@ install:
 stages:
   - compile
   - test
+  - special
 
 # Compile stage without building examples/tests to populate the caches.
 jobs:
@@ -75,12 +76,18 @@ jobs:
     compiler: clang
     env: CMAKE_BUILD_TYPE=Release
     script: bash .travis.sh -b
-# on Linux, with deprecated ON to make sure that path still compiles
-  - stage: compile
+# on Linux, with deprecated ON to make sure that path still compiles/tests
+  - stage: special
     os: linux
     compiler: clang
-    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF GTSAM_ALLOW_DEPRECATED_SINCE_V4=ON
-    script: bash .travis.sh -b
+    env: CMAKE_BUILD_TYPE=Release GTSAM_BUILD_UNSTABLE=OFF GTSAM_ALLOW_DEPRECATED_SINCE_V4=ON
+    script: bash .travis.sh -t
+# on Linux, with quaternions ON to make sure that path still compiles/tests
+  - stage: special
+    os: linux
+    compiler: clang
+    env: CMAKE_BUILD_TYPE=Release GTSAM_BUILD_UNSTABLE=OFF GTSAM_USE_QUATERNIONS=ON
+    script: bash .travis.sh -t
 
 # Matrix configuration:
 os:
