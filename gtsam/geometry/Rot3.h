@@ -94,7 +94,8 @@ namespace gtsam {
      */
     template <typename Derived>
 #ifdef GTSAM_USE_QUATERNIONS
-    explicit Rot3(const Eigen::MatrixBase<Derived>& R) : quaternion_(R) {
+    explicit Rot3(const Eigen::MatrixBase<Derived>& R) {
+      quaternion_ = Matrix3(R);
     }
 #else
     explicit Rot3(const Eigen::MatrixBase<Derived>& R) : rot_(R) {
