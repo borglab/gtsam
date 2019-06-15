@@ -28,7 +28,6 @@
 
 #include <boost/random/mersenne_twister.hpp>
 
-#include <iosfwd>
 #include <string>
 
 namespace gtsam {
