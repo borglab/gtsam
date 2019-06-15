@@ -138,7 +138,7 @@ static SO4::VectorN2 vec4(const Matrix4& Q) {
 }
 
 // so<4> generators
-static const std::vector<const Matrix4> G4(
+static std::vector<const Matrix4> G4(
     {SO4::Hat(Vector6::Unit(0)), SO4::Hat(Vector6::Unit(1)),
      SO4::Hat(Vector6::Unit(2)), SO4::Hat(Vector6::Unit(3)),
      SO4::Hat(Vector6::Unit(4)), SO4::Hat(Vector6::Unit(5))});
