@@ -20,7 +20,7 @@
 
 #include <gtsam/linear/NoiseModel.h>
 
-#include <boost/random.hpp>
+#include <random>
 
 namespace gtsam {
 
@@ -37,7 +37,7 @@ protected:
   noiseModel::Diagonal::shared_ptr model_;
 
   /** generator */
-  boost::mt19937_64 generator_;
+  std::mt19937_64 generator_;
 
 public:
   typedef boost::shared_ptr<Sampler> shared_ptr;
