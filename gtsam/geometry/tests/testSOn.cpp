@@ -46,7 +46,7 @@ TEST(SOn, SO5) {
   EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::dimension);
   EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::Dim());
   EXPECT_LONGS_EQUAL(10, R.dim());
-  EXPECT_LONGS_EQUAL(10, traits<SOn>::GetDimension(R));
+  EXPECT_LONGS_EQUAL(-1, traits<SOn>::GetDimension(R));
 }
 
 //******************************************************************************
