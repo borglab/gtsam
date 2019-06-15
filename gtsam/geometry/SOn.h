@@ -25,7 +25,6 @@
 #include <Eigen/Core>
 #include <boost/random.hpp>
 
-#include <iostream>
 #include <string>
 #include <vector>
 

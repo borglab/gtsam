@@ -26,7 +26,6 @@
 #include <gtsam/base/Matrix.h>
 
 #include <cmath>
-#include <iosfwd>
 #include <vector>
 
 namespace gtsam {
