@@ -27,8 +27,9 @@ using namespace gtsam;
 
 TEST(WeightedSampler, sampleWithoutReplacement) {
   vector<double> weights{1, 2, 3, 4, 3, 2, 1};
-  mt19937 rng(42);
-  auto samples = sampleWithoutReplacement(rng, 5, weights);
+  std::mt19937 rng(42);
+  WeightedSampler<std::mt19937> sampler(&rng);
+  auto samples = sampler.sampleWithoutReplacement(5, weights);
   EXPECT_LONGS_EQUAL(5, samples.size());
 }
 
