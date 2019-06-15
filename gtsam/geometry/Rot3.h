@@ -28,6 +28,8 @@
 #include <gtsam/base/concepts.h>
 #include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
 
+#include <random>
+
 // You can override the default coordinate mode using this flag
 #ifndef ROT3_DEFAULT_COORDINATES_MODE
   #ifdef GTSAM_USE_QUATERNIONS
@@ -128,8 +130,13 @@ namespace gtsam {
     Rot3(const Quaternion& q);
     Rot3(double w, double x, double y, double z) : Rot3(Quaternion(w, x, y, z)) {}
 
-    /// Random, generates a random axis, then random angle \in [-p,pi]
-    static Rot3 Random(boost::mt19937 & rng);
+    /**
+     * Random, generates a random axis, then random angle \in [-p,pi]
+     * Example:
+     *   std::mt19937 engine(42);
+     *   Unit3 unit = Unit3::Random(engine);
+     */
+    static Rot3 Random(std::mt19937 & rng);
 
     /** Virtual destructor */
     virtual ~Rot3() {}

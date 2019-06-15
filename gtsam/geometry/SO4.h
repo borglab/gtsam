@@ -27,8 +27,6 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/dllexport.h>
 
-#include <boost/random/mersenne_twister.hpp>
-
 #include <string>
 
 namespace gtsam {
