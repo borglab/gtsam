@@ -68,7 +68,8 @@ ExpmapFunctor::ExpmapFunctor(const Vector3& omega, bool nearZeroApprox)
   }
 }
 
-ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle, bool nearZeroApprox)
+ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle,
+                             bool nearZeroApprox)
     : theta2(angle * angle), theta(angle) {
   const double ax = axis.x(), ay = axis.y(), az = axis.z();
   K << 0.0, -az, +ay, +az, 0.0, -ax, -ay, +ax, 0.0;
@@ -88,9 +89,9 @@ SO3 ExpmapFunctor::expmap() const {
 
 DexpFunctor::DexpFunctor(const Vector3& omega, bool nearZeroApprox)
     : ExpmapFunctor(omega, nearZeroApprox), omega(omega) {
-  if (nearZero)
+  if (nearZero) {
     dexp_ = I_3x3 - 0.5 * W;
-  else {
+  } else {
     a = one_minus_cos / theta;
     b = 1.0 - sin_theta / theta;
     dexp_ = I_3x3 - a * K + b * KK;
@@ -296,9 +297,9 @@ static Vector9 vec3(const Matrix3& R) {
 }
 
 // so<3> generators
-static const std::vector<const Matrix3> G3({SO3::Hat(Vector3::Unit(0)),
-                                            SO3::Hat(Vector3::Unit(1)),
-                                            SO3::Hat(Vector3::Unit(2))});
+static std::vector<const Matrix3> G3({SO3::Hat(Vector3::Unit(0)),
+                                      SO3::Hat(Vector3::Unit(1)),
+                                      SO3::Hat(Vector3::Unit(2))});
 
 // vectorized generators
 static const Matrix93 P3 =
