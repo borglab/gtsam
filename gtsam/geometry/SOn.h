@@ -26,6 +26,7 @@
 #include <boost/random.hpp>
 
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace gtsam {
@@ -58,11 +59,11 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   // enable_if_t aliases, used to specialize constructors/methods, see
   // https://www.fluentcpp.com/2018/05/18/make-sfinae-pretty-2-hidden-beauty-sfinae/
   template <int N_>
-  using IsDynamic = boost::enable_if_t<N_ == Eigen::Dynamic, void>;
+  using IsDynamic = typename std::enable_if<N_ == Eigen::Dynamic, void>::type;
   template <int N_>
-  using IsFixed = boost::enable_if_t<N_ >= 2, void>;
+  using IsFixed = typename std::enable_if<N_ >= 2, void>::type;
   template <int N_>
-  using IsSO3 = boost::enable_if_t<N_ == 3, void>;
+  using IsSO3 = typename std::enable_if<N_ == 3, void>::type;
 
  public:
   /// @name Constructors
