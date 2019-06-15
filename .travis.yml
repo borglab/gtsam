@@ -28,6 +28,7 @@ install:
 stages:
   - compile
   - test
+  - special
 
 env:
   global:
@@ -82,8 +83,8 @@ jobs:
     compiler: clang
     env: CC=clang-9 CXX=clang++-9 CMAKE_BUILD_TYPE=Release
     script: bash .travis.sh -b
-# on Linux, with deprecated ON to make sure that path still compiles
-  - stage: compile
+# on Linux, with deprecated ON to make sure that path still compiles/tests
+  - stage: special
     os: linux
     compiler: clang
     env: CC=clang-9 CXX=clang++-9 CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF GTSAM_ALLOW_DEPRECATED_SINCE_V4=ON
@@ -105,15 +106,9 @@ jobs:
     compiler: gcc
     env: CMAKE_BUILD_TYPE=Release
     script: bash .travis.sh -t
-# Exclude g++ debug on Linux as it consistently times out
-#  - stage: test
-#    os: linux
-#    compiler: gcc
-#    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
-#    script: bash .travis.sh -t
-# Exclude clang on Linux/clang in release until issue #57 is solved
-#  - stage: test
-#    os: linux
-#    compiler: clang
-#    env: CC=clang-9 CXX=clang++-9 CMAKE_BUILD_TYPE=Release
-#    script: bash .travis.sh -t
+# on Linux, with quaternions ON to make sure that path still compiles/tests
+  - stage: special
+    os: linux
+    compiler: clang
+    env: CC=clang-9 CXX=clang++-9 CMAKE_BUILD_TYPE=Release GTSAM_BUILD_UNSTABLE=OFF GTSAM_USE_QUATERNIONS=ON
+    script: bash .travis.sh -t
