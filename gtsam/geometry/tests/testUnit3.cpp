@@ -33,9 +33,10 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/bind.hpp>
-#include <boost/random.hpp>
 #include <boost/assign/std/vector.hpp>
+
 #include <cmath>
+#include <random>
 
 using namespace boost::assign;
 using namespace gtsam;
@@ -339,7 +340,7 @@ TEST(Unit3, basis) {
 /// Check the basis derivatives of a bunch of random Unit3s.
 TEST(Unit3, basis_derivatives) {
   int num_tests = 100;
-  boost::mt19937 rng(42);
+  std::mt19937 rng(42);
   for (int i = 0; i < num_tests; i++) {
     Unit3 p = Unit3::Random(rng);
 
@@ -403,7 +404,7 @@ TEST(Unit3, retract_expmap) {
 
 //*******************************************************************************
 TEST(Unit3, Random) {
-  boost::mt19937 rng(42);
+  std::mt19937 rng(42);
   // Check that means are all zero at least
   Point3 expectedMean(0,0,0), actualMean(0,0,0);
   for (size_t i = 0; i < 100; i++)
@@ -415,7 +416,7 @@ TEST(Unit3, Random) {
 //*******************************************************************************
 // New test that uses Unit3::Random
 TEST(Unit3, localCoordinates_retract) {
-  boost::mt19937 rng(42);
+  std::mt19937 rng(42);
   size_t numIterations = 10000;
 
   for (size_t i = 0; i < numIterations; i++) {

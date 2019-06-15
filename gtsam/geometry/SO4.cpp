@@ -22,11 +22,11 @@
 #include <gtsam/geometry/Unit3.h>
 
 #include <Eigen/Eigenvalues>
-#include <boost/random.hpp>
 
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <random>
 #include <vector>
 
 using namespace std;

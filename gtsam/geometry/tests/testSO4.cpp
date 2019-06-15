@@ -25,6 +25,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <iostream>
+#include <random>
 
 using namespace std;
 using namespace gtsam;
@@ -57,7 +58,7 @@ SO4 Q3 = SO4::Expmap(v3);
 
 //******************************************************************************
 TEST(SO4, Random) {
-  boost::mt19937 rng(42);
+  std::mt19937 rng(42);
   auto Q = SO4::Random(rng);
   EXPECT_LONGS_EQUAL(4, Q.matrix().rows());
 }

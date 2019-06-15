@@ -26,8 +26,6 @@
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/Matrix.h>
 
-#include <boost/random/mersenne_twister.hpp>
-
 #include <string>
 
 namespace gtsam {
