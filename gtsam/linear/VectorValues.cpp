@@ -141,7 +141,7 @@ namespace gtsam {
     for (const auto& key_value : v)
 #endif
     {
-      os << "  " << key_value.first << ": " << key_value.second.transpose()
+      os << "  " << StreamedKey(key_value.first) << ": " << key_value.second.transpose()
          << "\n";
     }
     return os;
@@ -151,7 +151,7 @@ namespace gtsam {
   void VectorValues::print(const string& str,
                            const KeyFormatter& formatter) const {
     cout << str << ": " << size() << " elements\n";
-    cout << *this;
+    cout << key_formatter(formatter) << *this;
     cout.flush();
 }
 
