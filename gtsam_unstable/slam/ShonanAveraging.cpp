@@ -28,10 +28,11 @@
 
 #include <iostream>
 #include <map>
+#include <random>
 
 namespace gtsam {
 
-static boost::mt19937 kRandomNumberGenerator(42);
+static std::mt19937 kRandomNumberGenerator(42);
 
 /* ************************************************************************* */
 ShonanAveragingParameters::ShonanAveragingParameters(const string& verbosity,
