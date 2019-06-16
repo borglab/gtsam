@@ -64,7 +64,7 @@ typedef ManifoldPreintegration PreintegrationType;
  *
  * @addtogroup SLAM
  */
-class PreintegratedCombinedMeasurements : public PreintegrationType {
+class GTSAM_EXPORT PreintegratedCombinedMeasurements : public PreintegrationType {
 
 public:
 
@@ -222,7 +222,7 @@ public:
  *
  * @addtogroup SLAM
  */
-class CombinedImuFactor: public NoiseModelFactor6<Pose3, Vector3, Pose3,
+class GTSAM_EXPORT CombinedImuFactor: public NoiseModelFactor6<Pose3, Vector3, Pose3,
     Vector3, imuBias::ConstantBias, imuBias::ConstantBias> {
 public:
 

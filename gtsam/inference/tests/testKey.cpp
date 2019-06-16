@@ -22,6 +22,9 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/std/list.hpp> // for operator +=
+
+#include <sstream>
+
 using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
@@ -41,17 +44,15 @@ TEST(Key, KeySymbolConversion) {
 template<int KeySize>
 Key KeyTestValue();
 
-template<>
-Key KeyTestValue<8>()
-{
+template <>
+Key KeyTestValue<8>() {
   return 0x6100000000000005;
-};
+}
 
-template<>
-Key KeyTestValue<4>()
-{
+template <>
+Key KeyTestValue<4>() {
   return 0x61000005;
-};
+}
 
 /* ************************************************************************* */
 TEST(Key, KeySymbolEncoding) {
@@ -68,12 +69,41 @@ TEST(Key, KeySymbolEncoding) {
 
 /* ************************************************************************* */
 TEST(Key, ChrTest) {
-  Key key = Symbol('c',3);
+  Symbol key('c', 3);
   EXPECT(Symbol::ChrTest('c')(key));
   EXPECT(!Symbol::ChrTest('d')(key));
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+// A custom (nonsensical) formatter.
+string myFormatter(Key key) {
+  return "special";
+}
+
+TEST(Key, Formatting) {
+  Symbol key('c', 3);
+  EXPECT("c3" == DefaultKeyFormatter(key));
+
+  // Try streaming keys, should be default-formatted.
+  stringstream ss;
+  ss << StreamedKey(key);
+  EXPECT("c3" == ss.str());
+
+  // use key_formatter with a function pointer
+  stringstream ss2;
+  ss2 << key_formatter(myFormatter) << StreamedKey(key);
+  EXPECT("special" == ss2.str());
+
+  // use key_formatter with a function object.
+  stringstream ss3;
+  ss3 << key_formatter(DefaultKeyFormatter) << StreamedKey(key);
+  EXPECT("c3" == ss3.str());
+}
+
+/* ************************************************************************* */
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */
 

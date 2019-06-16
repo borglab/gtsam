@@ -1870,7 +1870,6 @@ class NonlinearFactorGraph {
 
   // FactorGraph
   void print(string s) const;
-  void printErrors(const gtsam::Values& values);
   bool equals(const gtsam::NonlinearFactorGraph& fg, double tol) const;
   size_t size() const;
   bool empty() const;
@@ -1887,6 +1886,7 @@ class NonlinearFactorGraph {
   gtsam::KeyVector keyVector() const;
 
   // NonlinearFactorGraph
+  void printErrors(const gtsam::Values& values) const;
   double error(const gtsam::Values& values) const;
   double probPrime(const gtsam::Values& values) const;
   gtsam::Ordering orderingCOLAMD() const;
