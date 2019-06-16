@@ -130,8 +130,6 @@ namespace gtsam {
 
   /* ************************************************************************* */
   ostream& operator<<(ostream& os, const VectorValues& v) {
-    os << "VectorValues"
-       << ": " << v.size() << " elements\n";
     // Change print depending on whether we are using TBB
 #ifdef GTSAM_USE_TBB
     map<Key, Vector> sorted;
@@ -152,6 +150,7 @@ namespace gtsam {
   /* ************************************************************************* */
   void VectorValues::print(const string& str,
                            const KeyFormatter& formatter) const {
+    cout << str << ": " << size() << " elements\n";
     cout << *this;
     cout.flush();
 }
