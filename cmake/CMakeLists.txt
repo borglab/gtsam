@@ -1,4 +1,4 @@
-# This file installs the scripts from this directory that may be used in other 
+# This file installs the scripts from this directory that may be used in other
 # projects.  See README.txt in this directory for documentation.
 
 # Set the install directory depending on the platform so it will be found by
@@ -17,11 +17,8 @@ install(FILES
   GtsamBuildTypes.cmake
   GtsamMakeConfigFile.cmake
   GtsamMatlabWrap.cmake
-  GtsamPythonWrap.cmake
-  GtsamCythonWrap.cmake
+  GtsamPybindWrap.cmake
   GtsamTesting.cmake
-  FindCython.cmake
-  FindNumPy.cmake
   README.html
   DESTINATION "${SCRIPT_INSTALL_DIR}/GTSAMCMakeTools")
 

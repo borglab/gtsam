@@ -87,7 +87,7 @@ endif()
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
-set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of python to build the cython wrapper for (or Default)")
+set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of python to build gtsam_py for (or Default)")
 
 
 # Check / set dependent variables for MATLAB wrapper
@@ -99,9 +99,12 @@ if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
     message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the MATLAB toolbox cannot deal with this yet.  Please turn one of the two options off.")
 endif()
 
-if(GTSAM_BUILD_PYTHON AND NOT GTSAM_TYPEDEF_POINTS_TO_VECTORS)
-    message(FATAL_ERROR "GTSAM_BUILD_PYTHON requires GTSAM_TYPEDEF_POINTS_TO_VECTORS to be enabled but it is not.")
-endif()
+# if(GTSAM_BUILD_PYTHON)
+# 	if (NOT GTSAM_TYPEDEF_POINTS_TO_VECTORS)
+# 		message(FATAL_ERROR "GTSAM_BUILD_PYTHON requires GTSAM_TYPEDEF_POINTS_TO_VECTORS to be enabled but it is not.")
+# 	endif()
+# 	set(GTSAM_PYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/python" CACHE STRING "Path to install gtsam Python package gtsam_py.")
+# endif()
 
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")

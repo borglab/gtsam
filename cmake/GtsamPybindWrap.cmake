@@ -35,7 +35,7 @@ function(pybind_wrap
          dependencies)
   add_custom_command(OUTPUT ${generated_cpp}
                      COMMAND ${PYTHON_EXECUTABLE}
-                             ${CMAKE_CURRENT_SOURCE_DIR}/pybind_wrapper.py
+                             ${CMAKE_SOURCE_DIR}/wrap/pybind_wrapper.py
                              --src
                              ${interface_header}
                              --out
