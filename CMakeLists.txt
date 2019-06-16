@@ -99,12 +99,12 @@ if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
     message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the MATLAB toolbox cannot deal with this yet.  Please turn one of the two options off.")
 endif()
 
-# if(GTSAM_BUILD_PYTHON)
-# 	if (NOT GTSAM_TYPEDEF_POINTS_TO_VECTORS)
-# 		message(FATAL_ERROR "GTSAM_BUILD_PYTHON requires GTSAM_TYPEDEF_POINTS_TO_VECTORS to be enabled but it is not.")
-# 	endif()
-# 	set(GTSAM_PYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/python" CACHE STRING "Path to install gtsam Python package gtsam_py.")
-# endif()
+if(GTSAM_BUILD_PYTHON)
+	if (NOT GTSAM_TYPEDEF_POINTS_TO_VECTORS)
+		message(FATAL_ERROR "GTSAM_BUILD_PYTHON requires GTSAM_TYPEDEF_POINTS_TO_VECTORS to be enabled but it is not.")
+	endif()
+	set(GTSAM_PY_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/python")
+endif()
 
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")

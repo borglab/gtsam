@@ -36,11 +36,11 @@ if(GTSAM_BUILD_PYTHON)
                   "${PROJECT_BINARY_DIR}/gtsam_py")
 
   # Install.
-  install(TARGETS gtsam_py DESTINATION python/gtsam_py)
-  message("PYTHON INSTALL PATH: ${GTSAM_PYTHON_INSTALL_PATH}")
+  install(TARGETS gtsam_py DESTINATION ${GTSAM_PY_INSTALL_PATH}/gtsam_py)
+  message("PYTHON INSTALL PATH: ${GTSAM_PY_INSTALL_PATH}")
   install_python_files("${PROJECT_BINARY_DIR}/setup.py"
-                       "${GTSAM_PYTHON_INSTALL_PATH}")
+                       "${GTSAM_PY_INSTALL_PATH}")
   install_python_scripts("${PROJECT_SOURCE_DIR}/wrap/python/gtsam_py/"
-                         "${GTSAM_PYTHON_INSTALL_PATH}/gtsam_py" "*.py")
+                         "${GTSAM_PY_INSTALL_PATH}/gtsam_py" "*.py")
 
 endif()
