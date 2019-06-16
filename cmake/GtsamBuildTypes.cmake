@@ -18,7 +18,7 @@ function(append_config_if_not_empty TARGET_VARIABLE_ build_type)
   set(flags_variable_name "${TARGET_VARIABLE_}_${build_type_toupper}")
   set(flags_ ${${flags_variable_name}})
   if (NOT "${flags_}" STREQUAL "")
-    if ("${build_type_toupper}" STREQUAL "COMMON")
+    if (${build_type_toupper} STREQUAL "COMMON")
       # Special "COMMON" configuration type, just append without CMake expression:
       list_append_cache(${TARGET_VARIABLE_} "${flags_}")
     else()
