@@ -1,4 +1,3 @@
-
 project(GTSAM CXX C)
 cmake_minimum_required(VERSION 3.0)
 
@@ -134,11 +133,11 @@ if(MSVC)
 	# If we use Boost shared libs, disable auto linking.
 	# Some libraries, at least Boost Program Options, rely on this to export DLL symbols.
 	if(NOT Boost_USE_STATIC_LIBS)
-		list(APPEND GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
+		list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
 	endif()
 	# Virtual memory range for PCH exceeded on VS2015
 	if(MSVC_VERSION LESS 1910) # older than VS2017
-	  list(APPEND GTSAM_COMPILE_OPTIONS_PRIVATE -Zm295)
+	  list_append_cache(GTSAM_COMPILE_OPTIONS_PRIVATE -Zm295)
 	endif()
 endif()
 
@@ -147,7 +146,7 @@ endif()
 # See: https://bitbucket.org/gtborg/gtsam/issues/417/fail-to-build-on-msvc-2017
 #
 if(MSVC AND BUILD_SHARED_LIBS)
-	list(APPEND GTSAM_COMPILE_DEFINITIONS_PUBLIC EIGEN_NO_STATIC_ASSERT)
+	list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC EIGEN_NO_STATIC_ASSERT)
 endif()
 
 # Store these in variables so they are automatically replicated in GTSAMConfig.cmake and such.
@@ -188,7 +187,7 @@ set(GTSAM_BOOST_LIBRARIES
 message(STATUS "GTSAM_BOOST_LIBRARIES: ${GTSAM_BOOST_LIBRARIES}")
 if (GTSAM_DISABLE_NEW_TIMERS)
     message("WARNING:  GTSAM timing instrumentation manually disabled")
-    list(APPEND GTSAM_COMPILE_DEFINITIONS_PUBLIC DGTSAM_DISABLE_NEW_TIMERS)
+    list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC DGTSAM_DISABLE_NEW_TIMERS)
 else()
     if(Boost_TIMER_LIBRARY)
       list(APPEND GTSAM_BOOST_LIBRARIES
@@ -208,7 +207,7 @@ endif()
 
 if(NOT (${Boost_VERSION} LESS 105600))
 	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
-	list(APPEND GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES BOOST_OPTIONAL_CONFIG_ALLOW_BINDING_TO_RVALUES)
+	list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES BOOST_OPTIONAL_CONFIG_ALLOW_BINDING_TO_RVALUES)
 endif()
 
 ###############################################################################
@@ -276,7 +275,7 @@ find_package(OpenMP)  # do this here to generate correct message if disabled
 if(GTSAM_WITH_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP AND GTSAM_USE_EIGEN_MKL)
     if(OPENMP_FOUND AND GTSAM_USE_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP)
         set(GTSAM_USE_EIGEN_MKL_OPENMP 1) # This will go into config.h
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC ${OpenMP_CXX_FLAGS})
     endif()
 endif()
 
@@ -351,9 +350,9 @@ endif ()
 if (MSVC)
 	if (BUILD_SHARED_LIBS)
 		# mute eigen static assert to avoid errors in shared lib
-		list(APPEND GTSAM_COMPILE_DEFINITIONS_PUBLIC DEIGEN_NO_STATIC_ASSERT)
+		list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC EIGEN_NO_STATIC_ASSERT)
 	endif()
-	list(APPEND GTSAM_COMPILE_OPTIONS_PRIVATE "/wd4244") # Disable loss of precision which is thrown all over our Eigen
+	list_append_cache(GTSAM_COMPILE_OPTIONS_PRIVATE "/wd4244") # Disable loss of precision which is thrown all over our Eigen
 endif()
 
 ###############################################################################
@@ -395,28 +394,28 @@ elseif("${GTSAM_DEFAULT_ALLOCATOR}" STREQUAL "tcmalloc")
 endif()
 
 if(MSVC)
-	list(APPEND GTSAM_COMPILE_DEFINITIONS_PRIVATE _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
-	list(APPEND GTSAM_COMPILE_OPTIONS_PRIVATE /wd4251 /wd4275 /wd4251 /wd4661 /wd4344 /wd4503) # Disable non-DLL-exported base class and other warnings
-	list(APPEND GTSAM_COMPILE_OPTIONS_PRIVATE /bigobj) # Allow large object files for template-based code
+	list_append_cache(GTSAM_COMPILE_DEFINITIONS_PRIVATE _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
+	list_append_cache(GTSAM_COMPILE_OPTIONS_PRIVATE /wd4251 /wd4275 /wd4251 /wd4661 /wd4344 /wd4503) # Disable non-DLL-exported base class and other warnings
+	list_append_cache(GTSAM_COMPILE_OPTIONS_PRIVATE /bigobj) # Allow large object files for template-based code
 endif()
 
 # GCC 4.8+ complains about local typedefs which we use for shared_ptr etc.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
-    list(APPEND GTSAM_COMPILE_OPTIONS_PRIVATE -Wno-unused-local-typedefs)
+    list_append_cache(GTSAM_COMPILE_OPTIONS_PRIVATE -Wno-unused-local-typedefs)
   endif()
 endif()
 
 # As of XCode 7, clang also complains about this
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
-    list(APPEND GTSAM_COMPILE_OPTIONS_PRIVATE -Wno-unused-local-typedefs)
+    list_append_cache(GTSAM_COMPILE_OPTIONS_PRIVATE -Wno-unused-local-typedefs)
   endif()
 endif()
 
 if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
   # This should be made PUBLIC if GTSAM_EXTRA_CONSISTENCY_CHECKS is someday used in a public .h
-  list(APPEND GTSAM_COMPILE_DEFINITIONS_PRIVATE GTSAM_EXTRA_CONSISTENCY_CHECKS)
+  list_append_cache(GTSAM_COMPILE_DEFINITIONS_PRIVATE GTSAM_EXTRA_CONSISTENCY_CHECKS)
 endif()
 
 ###############################################################################
@@ -514,6 +513,9 @@ message(STATUS "==============================================================="
 message(STATUS "================  Configuration Options  ======================")
 message(STATUS "  CMAKE_CXX_COMPILER_ID type     : ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "  CMAKE_CXX_COMPILER_VERSION     : ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "  CMake version                  : ${CMAKE_VERSION}")
+message(STATUS "  CMake generator                : ${CMAKE_GENERATOR}")
+message(STATUS "  CMake build tool               : ${CMAKE_BUILD_TOOL}")
 message(STATUS "Build flags                                               ")
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
 print_config_flag(${GTSAM_BUILD_EXAMPLES_ALWAYS}       "Build examples with 'make all' ")
@@ -527,13 +529,16 @@ if(GTSAM_UNSTABLE_AVAILABLE)
     print_config_flag(${GTSAM_BUILD_UNSTABLE}          "Build libgtsam_unstable        ")
 endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" cmake_build_type_toupper)
-print_config_flag("${GTSAM_BUILD_WITH_MARCH_NATIVE}"     "Build for native architecture  ")
 if(NOT MSVC AND NOT XCODE_VERSION)
+    print_config_flag(${GTSAM_BUILD_WITH_MARCH_NATIVE}     "Build for native architecture  ")
     message(STATUS "  Build type                     : ${CMAKE_BUILD_TYPE}")
-    message(STATUS "  C compilation flags            : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
     message(STATUS "  C++ compilation flags          : ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${cmake_build_type_toupper}}")
 endif()
+
+print_build_options_for_target(gtsam)
+
 message(STATUS "  Use System Eigen               : ${GTSAM_USE_SYSTEM_EIGEN} (Using version: ${GTSAM_EIGEN_VERSION})")
+
 if(GTSAM_USE_TBB)
 	message(STATUS "  Use Intel TBB                  : Yes")
 elseif(TBB_FOUND)
