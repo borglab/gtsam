@@ -562,13 +562,10 @@ print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox  
 
 message(STATUS "Python module flags                                       ")
 
-if(GTSAM_PYTHON_WARNINGS)
-	message(STATUS "  Build python module            : No - dependencies missing")
-else()
-	print_config_flag(${GTSAM_BUILD_PYTHON}                "Build python module            ")
-endif()
+print_config_flag(${GTSAM_BUILD_PYTHON}                "Build python module            ")
 if(GTSAM_BUILD_PYTHON)
 	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
+	message(STATUS "  gtsam_py install path          : ${GTSAM_PY_INSTALL_PATH}")
 endif()
 
 # Print warnings at the end

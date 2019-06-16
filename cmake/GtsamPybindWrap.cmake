@@ -1,6 +1,9 @@
 # Unset these cached variables to avoid surprises when the python in the current
 # environment are different from the cached!
 unset(PYTHON_EXECUTABLE CACHE)
+unset(PYTHON_INCLUDE_DIR CACHE)
+unset(PYTHON_MAJOR_VERSION CACHE)
+
 if(GTSAM_PYTHON_VERSION STREQUAL "Default")
   find_package(PythonInterp REQUIRED)
   find_package(PythonLibs REQUIRED)
@@ -66,7 +69,7 @@ function(pybind_wrap
   endif()
 endfunction()
 
-# Helper function to install Cython scripts and handle multiple build types
+# Helper function to install python scripts and handle multiple build types
 # where the scripts should be installed to all build type toolboxes
 #
 # Arguments: source_directory: The source directory to be installed. "The last
@@ -130,7 +133,7 @@ function(install_python_files source_files dest_directory)
       else()
         set(build_type_tag "${build_type}")
       endif()
-      # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if
+      # Split up filename to strip trailing '/' in GTSAM_PY_INSTALL_PATH if
       # there is one
       get_filename_component(location "${dest_directory}" PATH)
       get_filename_component(name "${dest_directory}" NAME)
