@@ -297,9 +297,9 @@ static Vector9 vec3(const Matrix3& R) {
 }
 
 // so<3> generators
-static std::vector<const Matrix3> G3({SO3::Hat(Vector3::Unit(0)),
-                                      SO3::Hat(Vector3::Unit(1)),
-                                      SO3::Hat(Vector3::Unit(2))});
+static std::vector<Matrix3> G3({SO3::Hat(Vector3::Unit(0)),
+                                SO3::Hat(Vector3::Unit(1)),
+                                SO3::Hat(Vector3::Unit(2))});
 
 // vectorized generators
 static const Matrix93 P3 =
