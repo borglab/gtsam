@@ -41,7 +41,7 @@ public:
   VerbosityDL verbosityDL; ///< The verbosity level for Dogleg (default: SILENT), see also NonlinearOptimizerParams::verbosity
 
   DoglegParams() :
-    deltaInitial(10.0), verbosityDL(SILENT) {}
+    deltaInitial(1.0), verbosityDL(SILENT) {}
 
   virtual ~DoglegParams() {}
 

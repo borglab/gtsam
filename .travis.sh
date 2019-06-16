@@ -51,7 +51,7 @@ function build ()
       -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=$GTSAM_ALLOW_DEPRECATED_SINCE_V4
 
   # Actual build:
-  make -j2
+  VERBOSE=1 make -j2
 
   finish
 }

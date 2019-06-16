@@ -101,9 +101,13 @@ env:
 script:
   - bash .travis.sh -t
 
-# Exclude clang on Linux/clang in release until issue #57 is solved
 matrix:
   exclude:
+    # Exclude g++ debug on Linux as it consistently times out
+    - os: linux
+      compiler: gcc
+      env : CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
+    # Exclude clang on Linux/clang in release until issue #57 is solved
     - os: linux
       compiler: clang
       env : CMAKE_BUILD_TYPE=Release
