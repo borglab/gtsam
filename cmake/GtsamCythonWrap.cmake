@@ -86,8 +86,13 @@ function(build_cythonized_cpp target cpp_file output_lib_we output_dir)
   if(APPLE)
     set(link_flags "-undefined dynamic_lookup")
   endif()
-  set_target_properties(${target} PROPERTIES COMPILE_FLAGS "-w" LINK_FLAGS "${link_flags}"
-    OUTPUT_NAME ${output_lib_we} PREFIX "" LIBRARY_OUTPUT_DIRECTORY ${output_dir})
+  set_target_properties(${target}
+      PROPERTIES COMPILE_FLAGS "-w"
+      LINK_FLAGS "${link_flags}"
+      OUTPUT_NAME ${output_lib_we}
+      PREFIX ""
+      ${CMAKE_BUILD_TYPE_UPPER}_POSTFIX ""
+      LIBRARY_OUTPUT_DIRECTORY ${output_dir})
 endfunction()
 
 # Cythonize a pyx from the command line as described at
@@ -161,9 +166,13 @@ endfunction()
 function(install_cython_wrapped_library interface_header generated_files_path install_path)
   get_filename_component(module_name "${interface_header}" NAME_WE)
 
-    # NOTE: only installs .pxd and .pyx and binary files (not .cpp) - the trailing slash on the directory name
+  # NOTE: only installs .pxd and .pyx and binary files (not .cpp) - the trailing slash on the directory name
   # here prevents creating the top-level module name directory in the destination.
-  message(STATUS "Installing Cython Toolbox to ${install_path}") #${GTSAM_CYTHON_INSTALL_PATH}")
+  # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH/subdirectory if there is one
+  get_filename_component(location "${install_path}" PATH)
+  get_filename_component(name "${install_path}" NAME)
+  message(STATUS "Installing Cython Toolbox to ${location}${GTSAM_BUILD_TAG}/${name}") #${GTSAM_CYTHON_INSTALL_PATH}"
+
   if(GTSAM_BUILD_TYPE_POSTFIXES)
     foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
       string(TOUPPER "${build_type}" build_type_upper)
@@ -172,10 +181,8 @@ function(install_cython_wrapped_library interface_header generated_files_path in
       else()
         set(build_type_tag "${build_type}")
       endif()
-      # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if there is one
-      get_filename_component(location "${install_path}" PATH)
-      get_filename_component(name "${install_path}" NAME)
-      install(DIRECTORY "${generated_files_path}/" DESTINATION "${location}/${name}${build_type_tag}"
+
+      install(DIRECTORY "${generated_files_path}/" DESTINATION "${location}${build_type_tag}/${name}"
           CONFIGURATIONS "${build_type}"
           PATTERN "build" EXCLUDE
           PATTERN "CMakeFiles" EXCLUDE

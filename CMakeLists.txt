@@ -75,11 +75,22 @@ option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available"
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" OFF)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION "Throw exception when a triangulated point is behind a camera" ON)
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V4   "Allow use of methods/functions deprecated in GTSAM 4" ON)
-option(GTSAM_TYPEDEF_POINTS_TO_VECTORS   "Typdef Point2 and Point3 to Eigen::Vector equivalents" OFF)
+option(GTSAM_TYPEDEF_POINTS_TO_VECTORS   "Typedef Point2 and Point3 to Eigen::Vector equivalents" OFF)
 option(GTSAM_SUPPORT_NESTED_DISSECTION   "Support Metis-based nested dissection" ON)
 option(GTSAM_TANGENT_PREINTEGRATION      "Use new ImuFactor with integration on tangent space" ON)
 if(NOT MSVC AND NOT XCODE_VERSION)
     option(GTSAM_BUILD_WITH_CCACHE           "Use ccache compiler cache" ON)
+endif()
+
+# Set the build type to upper case for downstream use
+string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPER)
+
+# Set the GTSAM_BUILD_TAG variable.
+# If build type is Release, set to blank (""), else set to the build type.
+if(${CMAKE_BUILD_TYPE_UPPER} STREQUAL "RELEASE")
+	set(GTSAM_BUILD_TAG "") # Don't create release mode tag on installed directory
+else()
+	set(GTSAM_BUILD_TAG "${CMAKE_BUILD_TYPE}")
 endif()
 
 # Options relating to MATLAB wrapper
@@ -94,10 +105,7 @@ if((GTSAM_INSTALL_MATLAB_TOOLBOX OR GTSAM_INSTALL_CYTHON_TOOLBOX) AND NOT GTSAM_
 	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX or GTSAM_INSTALL_CYTHON_TOOLBOX is enabled, please also enable GTSAM_BUILD_WRAP")
 endif()
 if((GTSAM_INSTALL_MATLAB_TOOLBOX OR GTSAM_INSTALL_CYTHON_TOOLBOX) AND GTSAM_BUILD_TYPE_POSTFIXES)
-    set(CURRENT_POSTFIX ${CMAKE_${CMAKE_BUILD_TYPE}_POSTFIX})
-    if(NOT "${CURRENT_POSTFIX}" STREQUAL "")
-        message(FATAL_ERROR "Cannot use executable postfixes with the matlab or cython wrappers. Please disable GTSAM_BUILD_TYPE_POSTFIXES")
-    endif()
+		set(CURRENT_POSTFIX ${CMAKE_${CMAKE_BUILD_TYPE_UPPER}_POSTFIX})
 endif()
 if(GTSAM_INSTALL_WRAP AND NOT GTSAM_BUILD_WRAP)
 	message(FATAL_ERROR "GTSAM_INSTALL_WRAP is enabled, please also enable GTSAM_BUILD_WRAP")
@@ -528,11 +536,13 @@ print_config_flag(${GTSAM_BUILD_TYPE_POSTFIXES}        "Put build type in librar
 if(GTSAM_UNSTABLE_AVAILABLE)
     print_config_flag(${GTSAM_BUILD_UNSTABLE}          "Build libgtsam_unstable        ")
 endif()
-string(TOUPPER "${CMAKE_BUILD_TYPE}" cmake_build_type_toupper)
+
+print_config_flag(${GTSAM_BUILD_WITH_MARCH_NATIVE}     "Build for native architecture  ")
 if(NOT MSVC AND NOT XCODE_VERSION)
     print_config_flag(${GTSAM_BUILD_WITH_MARCH_NATIVE}     "Build for native architecture  ")
     message(STATUS "  Build type                     : ${CMAKE_BUILD_TYPE}")
-    message(STATUS "  C++ compilation flags          : ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${cmake_build_type_toupper}}")
+    message(STATUS "  C compilation flags            : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
+    message(STATUS "  C++ compilation flags          : ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
 endif()
 
 print_build_options_for_target(gtsam)
