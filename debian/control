@@ -1,0 +1,15 @@
+Source: gtsam
+Section: libs
+Priority: optional
+Maintainer: Bernd Pfrommer <bernd.pfrommer@gmail.com>
+Build-Depends: cmake, libboost-all-dev (>= 1.58), libeigen3-dev, libtbb-dev, debhelper (>=9)
+Standards-Version: 3.9.7
+Homepage: https://bitbucket.org/gtborg/gtsam
+#Vcs-Git: git://anonscm.debian.org/collab-maint/gtsam.git
+Vcs-Browser: https://bitbucket.org/gtborg/gtsam.git
+
+Package: gtsam
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Georgia Tech Smoothing and Mapping Library
+ gtsam: Georgia Tech Smoothing and Mapping library for SLAM type applications
