@@ -45,8 +45,16 @@ class WeightedSampler {
    */
   explicit WeightedSampler(Engine* engine) : engine_(engine) {}
 
-  std::vector<size_t> sampleWithoutReplacement(
-      size_t numSamples, const std::vector<double>& weights) {
+  /**
+   * Sample `numSamples` indices given a vector of weights.
+   * Note: because of the algorithm used, the vector of indices is not
+   * ordered randomly: higher-weighted indices will appear earlier in the
+   * sequence. If this is an issue, set the `shuffle` flag to true and the
+   * result will be randomly shuffled before being returned, at extra cost.
+   */
+  std::vector<size_t> sampleWithoutReplacement(size_t numSamples,
+                                               const std::vector<double>& weights,
+                                               bool shuffle = false) {
     // Implementation adapted from code accompanying paper at
     // https://www.ethz.ch/content/dam/ethz/special-interest/baug/ivt/ivt-dam/vpl/reports/1101-1200/ab1141.pdf
     const size_t n = weights.size();
@@ -114,21 +122,26 @@ class WeightedSampler {
       }
     }
 
-    for (auto iret = result.end(); iret != result.begin();) {
-      --iret;
+    for (auto it = result.end(); it != result.begin();) {
+      --it;
 
       if (reservoir.empty()) {
         throw std::runtime_error(
             "Reservoir empty before all elements have been filled");
       }
 
-      *iret = reservoir.top().second - 1;
+      *it = reservoir.top().second - 1;
       reservoir.pop();
     }
 
     if (!reservoir.empty()) {
       throw std::runtime_error(
           "Reservoir not empty after all elements have been filled");
+    }
+
+    // Optionally shuffle
+    if (shuffle) {
+      std::shuffle(result.begin(), result.end(), *engine_);
     }
 
     return result;
