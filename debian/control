@@ -2,11 +2,11 @@ Source: gtsam
 Section: libs
 Priority: optional
 Maintainer: Bernd Pfrommer <bernd.pfrommer@gmail.com>
+Uploaders: Jose Luis Blanco Claraco <joseluisblancoc@gmail.com>
 Build-Depends: cmake, libboost-all-dev (>= 1.58), libeigen3-dev, libtbb-dev, debhelper (>=9)
 Standards-Version: 3.9.7
-Homepage: https://bitbucket.org/gtborg/gtsam
-#Vcs-Git: git://anonscm.debian.org/collab-maint/gtsam.git
-Vcs-Browser: https://bitbucket.org/gtborg/gtsam.git
+Homepage: https://github.com/borglab/gtsam
+Vcs-Browser: https://github.com/borglab/gtsam
 
 Package: gtsam
 Architecture: any
