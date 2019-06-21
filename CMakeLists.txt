@@ -82,15 +82,17 @@ if(NOT MSVC AND NOT XCODE_VERSION)
     option(GTSAM_BUILD_WITH_CCACHE           "Use ccache compiler cache" ON)
 endif()
 
-# Set the build type to upper case for downstream use
-string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPER)
+if(NOT MSVC AND NOT XCODE_VERSION)
+  # Set the build type to upper case for downstream use
+  string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPER)
 
-# Set the GTSAM_BUILD_TAG variable.
-# If build type is Release, set to blank (""), else set to the build type.
-if(${CMAKE_BUILD_TYPE_UPPER} STREQUAL "RELEASE")
-	set(GTSAM_BUILD_TAG "") # Don't create release mode tag on installed directory
-else()
-	set(GTSAM_BUILD_TAG "${CMAKE_BUILD_TYPE}")
+  # Set the GTSAM_BUILD_TAG variable.
+  # If build type is Release, set to blank (""), else set to the build type.
+  if("${CMAKE_BUILD_TYPE_UPPER}" STREQUAL "RELEASE")
+   set(GTSAM_BUILD_TAG "") # Don't create release mode tag on installed directory
+  else()
+   set(GTSAM_BUILD_TAG "${CMAKE_BUILD_TYPE}")
+  endif()
 endif()
 
 # Options relating to MATLAB wrapper
@@ -537,7 +539,6 @@ if(GTSAM_UNSTABLE_AVAILABLE)
     print_config_flag(${GTSAM_BUILD_UNSTABLE}          "Build libgtsam_unstable        ")
 endif()
 
-print_config_flag(${GTSAM_BUILD_WITH_MARCH_NATIVE}     "Build for native architecture  ")
 if(NOT MSVC AND NOT XCODE_VERSION)
     print_config_flag(${GTSAM_BUILD_WITH_MARCH_NATIVE}     "Build for native architecture  ")
     message(STATUS "  Build type                     : ${CMAKE_BUILD_TYPE}")
