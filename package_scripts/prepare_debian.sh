@@ -155,9 +155,9 @@ if [ "$CHANGELOG_UPSTREAM_VER" = "$GTSAM_VERSION_STR" ];
 then
 	NEW_DEBIAN_VER=$[$CHANGELOG_LAST_DEBIAN_VER + 1]
 	echo "Changing to a new Debian version: ${GTSAM_VERSION_STR}-${NEW_DEBIAN_VER}"
-	DEBCHANGE_CMD="--newversion 1:${GTSAM_VERSION_STR}-${NEW_DEBIAN_VER}"
+	DEBCHANGE_CMD="--newversion ${GTSAM_VERSION_STR}-${NEW_DEBIAN_VER}"
 else
-	DEBCHANGE_CMD="--newversion 1:${GTSAM_VERSION_STR}-1"
+	DEBCHANGE_CMD="--newversion ${GTSAM_VERSION_STR}-1"
 fi
 
 echo "Adding a new entry to debian/changelog..."

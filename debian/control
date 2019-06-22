@@ -8,7 +8,7 @@ Standards-Version: 3.9.7
 Homepage: https://github.com/borglab/gtsam
 Vcs-Browser: https://github.com/borglab/gtsam
 
-Package: gtsam
+Package: libgtsam-dev
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Georgia Tech Smoothing and Mapping Library

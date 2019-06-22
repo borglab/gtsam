@@ -69,7 +69,7 @@ do
 	cd ${GTSAM_DEB_DIR}/gtsam-${GTSAM_VER_MMP}~snapshot${GTSAM_SNAPSHOT_VERSION}${DEBIAN_DIST}/debian
 	#cp ${GTSAM_EXTERN_DEBIAN_DIR}/changelog changelog
 	cp /tmp/my_changelog changelog
-	DEBCHANGE_CMD="--newversion 1:${GTSAM_VERSION_STR}~snapshot${GTSAM_SNAPSHOT_VERSION}${DEBIAN_DIST}-1~ppa1~${DEBIAN_DIST}"
+	DEBCHANGE_CMD="--newversion ${GTSAM_VERSION_STR}~snapshot${GTSAM_SNAPSHOT_VERSION}${DEBIAN_DIST}-1"
 	echo "Changing to a new Debian version: ${DEBCHANGE_CMD}"
 	echo "Adding a new entry to debian/changelog for distribution ${DEBIAN_DIST}"
 	DEBEMAIL="Jose Luis Blanco Claraco <joseluisblancoc@gmail.com>" debchange $DEBCHANGE_CMD -b --distribution ${DEBIAN_DIST} --force-distribution New version of upstream sources.
