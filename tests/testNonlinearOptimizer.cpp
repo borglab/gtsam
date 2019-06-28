@@ -52,7 +52,7 @@ using symbol_shorthand::L;
 TEST( NonlinearOptimizer, iterateLM )
 {
   // really non-linear factor graph
-  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
+  auto fg = example::createReallyNonlinearFactorGraph();
 
   // config far from minimum
   Point2 x0(3,0);
@@ -60,8 +60,7 @@ TEST( NonlinearOptimizer, iterateLM )
   config.insert(X(1), x0);
 
   // normal iterate
-  GaussNewtonParams gnParams;
-  GaussNewtonOptimizer gnOptimizer(fg, config, gnParams);
+  GaussNewtonOptimizer gnOptimizer(fg, config);
   gnOptimizer.iterate();
 
   // LM iterate with lambda 0 should be the same
@@ -76,7 +75,7 @@ TEST( NonlinearOptimizer, iterateLM )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, optimize )
 {
-  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
+  auto fg = example::createReallyNonlinearFactorGraph();
 
   // test error at minimum
   Point2 xstar(0,0);
@@ -116,7 +115,7 @@ TEST( NonlinearOptimizer, optimize )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, SimpleLMOptimizer )
 {
-  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
+  auto fg = example::createReallyNonlinearFactorGraph();
 
   Point2 x0(3,3);
   Values c0;
@@ -129,7 +128,7 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, SimpleGNOptimizer )
 {
-  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
+  auto fg = example::createReallyNonlinearFactorGraph();
 
   Point2 x0(3,3);
   Values c0;
@@ -142,7 +141,7 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, SimpleDLOptimizer )
 {
-  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
+  auto fg = example::createReallyNonlinearFactorGraph();
 
   Point2 x0(3,3);
   Values c0;
@@ -153,24 +152,21 @@ TEST( NonlinearOptimizer, SimpleDLOptimizer )
 }
 
 /* ************************************************************************* */
-TEST( NonlinearOptimizer, optimization_method )
-{
-  LevenbergMarquardtParams paramsQR;
-  paramsQR.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_QR;
-  LevenbergMarquardtParams paramsChol;
-  paramsChol.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+TEST(NonlinearOptimizer, optimization_method) {
+  auto fg = example::createReallyNonlinearFactorGraph();
 
-  NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
-
-  Point2 x0(3,3);
+  Point2 x0(3, 3);
   Values c0;
   c0.insert(X(1), x0);
 
-  Values actualMFQR = LevenbergMarquardtOptimizer(fg, c0, paramsQR).optimize();
-  DOUBLES_EQUAL(0,fg.error(actualMFQR),tol);
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_QR;
+  Values actualMFQR = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
+  DOUBLES_EQUAL(0, fg.error(actualMFQR), tol);
 
-  Values actualMFChol = LevenbergMarquardtOptimizer(fg, c0, paramsChol).optimize();
-  DOUBLES_EQUAL(0,fg.error(actualMFChol),tol);
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  Values actualMFChol = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
+  DOUBLES_EQUAL(0, fg.error(actualMFChol), tol);
 }
 
 /* ************************************************************************* */
@@ -202,7 +198,7 @@ TEST( NonlinearOptimizer, Factorization )
 /* ************************************************************************* */
 TEST(NonlinearOptimizer, NullFactor) {
 
-  NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
+  auto fg = example::createReallyNonlinearFactorGraph();
 
   // Add null factor
   fg.push_back(NonlinearFactorGraph::sharedFactor());
@@ -263,7 +259,7 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
   expectedGradient.insert(2,Z_3x1);
 
   // Try LM and Dogleg
-  LevenbergMarquardtParams params = LevenbergMarquardtParams::LegacyDefaults();
+  auto params = LevenbergMarquardtParams::LegacyDefaults();
   {
     LevenbergMarquardtOptimizer optimizer(fg, init, params);
 
@@ -276,8 +272,6 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
     EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
   }
   EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
-
-//  cout << "===================================================================================" << endl;
 
   // Try LM with diagonal damping
   Values initBetter;
@@ -360,9 +354,8 @@ TEST(NonlinearOptimizer, MoreOptimizationWithHuber) {
   expected.insert(1, Pose2(1,0,M_PI/2));
   expected.insert(2, Pose2(1,1,M_PI));
 
-  LevenbergMarquardtParams params;
   EXPECT(assert_equal(expected, GaussNewtonOptimizer(fg, init).optimize()));
-  EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(fg, init, params).optimize()));
+  EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(fg, init).optimize()));
   EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
 }
 
@@ -437,7 +430,7 @@ TEST(NonlinearOptimizer, subclass_solver) {
 #include <wrap/utilities.h>
 TEST( NonlinearOptimizer, logfile )
 {
-  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
+  auto fg = example::createReallyNonlinearFactorGraph();
 
   Point2 x0(3,3);
   Values c0;
