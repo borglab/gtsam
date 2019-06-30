@@ -102,8 +102,7 @@ namespace gtsam {
   /* ************************************************************************* */
   vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
     // First find dimensions of each variable
-    typedef std::map<Key, size_t> KeySizeMap;
-    KeySizeMap dims;
+    std::map<Key, size_t> dims;
     for (const sharedFactor& factor : *this) {
       if (!static_cast<bool>(factor))
         continue;
@@ -116,10 +115,10 @@ namespace gtsam {
 
     // Compute first scalar column of each variable
     size_t currentColIndex = 0;
-    KeySizeMap columnIndices = dims;
-    for (const KeySizeMap::value_type& col : dims) {
-      columnIndices[col.first] = currentColIndex;
-      currentColIndex += dims[col.first];
+    std::map<Key, size_t> columnIndices;
+    for (const auto& keyValue : dims) {
+      columnIndices[keyValue.first] = currentColIndex;
+      currentColIndex += keyValue.second;
     }
 
     // Iterate over all factors, adding sparse scalar entries
@@ -154,19 +153,20 @@ namespace gtsam {
           for (size_t j = 0; j < (size_t) whitenedA.cols(); j++) {
             double s = whitenedA(i, j);
             if (std::abs(s) > 1e-12)
-              entries.push_back(boost::make_tuple(row + i, column_start + j, s));
+              entries.emplace_back(row + i, column_start + j, s);
           }
       }
 
       JacobianFactor::constBVector whitenedb(whitened.getb());
       size_t bcolumn = currentColIndex;
       for (size_t i = 0; i < (size_t) whitenedb.size(); i++)
-        entries.push_back(boost::make_tuple(row + i, bcolumn, whitenedb(i)));
+        entries.emplace_back(row + i, bcolumn, whitenedb(i));
 
       // Increment row index
       row += jacobianFactor->rows();
     }
-    return vector<triplet>(entries.begin(), entries.end());
+    
+    return entries;
   }
 
   /* ************************************************************************* */
