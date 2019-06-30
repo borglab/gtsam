@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file   testGaussianFactorGraphUnordered.cpp
- *  @brief  Unit tests for Linear Factor Graph
+ *  @file   testGaussianFactorGraph.cpp
+ *  @brief  Unit tests for Gaussian (i.e., Linear) Factor Graph
  *  @author Christian Potthast
  *  @author Frank Dellaert
  *  @author Luca Carlone
@@ -73,8 +73,17 @@ TEST(GaussianFactorGraph, sparseJacobian) {
   //  5  6  7  0  0  8
   //  9 10  0 11 12 13
   //  0  0  0 14 15 16
+  GaussianFactorGraph gfg;
+  SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 0.5);
+  gfg.add(0, (Matrix(2, 3) << 1., 2., 3., 5., 6., 7.).finished(), Vector2(4., 8.), model);
+  gfg.add(0, (Matrix(2, 3) << 9., 10., 0., 0., 0., 0.).finished(), 1,
+          (Matrix(2, 2) << 11., 12., 14., 15.).finished(), Vector2(13., 16.), model);
 
-  // Expected - NOTE that we transpose this!
+  // Check the triplets size...
+  auto entries = gfg.sparseJacobian();
+  EXPECT_LONGS_EQUAL(16, entries.size());
+
+  // Check version for MATLAB - NOTE that we transpose this!
   Matrix expectedT = (Matrix(16, 3) <<
       1., 1., 2.,
       1., 2., 4.,
@@ -92,18 +101,10 @@ TEST(GaussianFactorGraph, sparseJacobian) {
       4., 5.,30.,
       3., 6.,26.,
       4., 6.,32.).finished();
+  Matrix expectedMatlab = expectedT.transpose();
+  Matrix matlab = gfg.sparseJacobian_();
 
-  Matrix expected = expectedT.transpose();
-
-  GaussianFactorGraph gfg;
-  SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 0.5);
-  gfg.add(0, (Matrix(2, 3) << 1., 2., 3., 5., 6., 7.).finished(), Vector2(4., 8.), model);
-  gfg.add(0, (Matrix(2, 3) << 9., 10., 0., 0., 0., 0.).finished(), 1,
-          (Matrix(2, 2) << 11., 12., 14., 15.).finished(), Vector2(13., 16.), model);
-
-  Matrix actual = gfg.sparseJacobian_();
-
-  EXPECT(assert_equal(expected, actual));
+  EXPECT(assert_equal(expectedMatlab, matlab));
 }
 
 /* ************************************************************************* */
