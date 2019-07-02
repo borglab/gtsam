@@ -344,7 +344,8 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
 }
 
 /* ************************************************************************* */
-static Scatter scatterFromValues(const Values& values, boost::optional<Ordering&> ordering) {
+static Scatter scatterFromValues(const Values& values,
+                                 boost::optional<Ordering&> ordering) {
   gttic(scatterFromValues);
 
   Scatter scatter;
@@ -353,13 +354,13 @@ static Scatter scatterFromValues(const Values& values, boost::optional<Ordering&
   if (!ordering) {
     // use "natural" ordering with keys taken from the initial values
     for (const auto& key_value : values) {
-      scatter.add(key_value.key, key_value.value.dim());
+      scatter.emplace_back(key_value.key, key_value.value.dim());
     }
   } else {
     // copy ordering into keys and lookup dimension in values, is O(n*log n)
     for (Key key : *ordering) {
       const Value& value = values.at(key);
-      scatter.add(key, value.dim());
+      scatter.emplace_back(key, value.dim());
     }
   }
 

@@ -57,9 +57,6 @@ class Scatter : public FastVector<SlotEntry> {
   Scatter(const GaussianFactorGraph& gfg,
           boost::optional<const Ordering&> ordering = boost::none);
 
-  /// Add a key/dim pair
-  void add(Key key, size_t dim);
-
  private:
 
   /// Find the SlotEntry with the right key (linear time worst case)
