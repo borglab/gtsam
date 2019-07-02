@@ -41,8 +41,10 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
   gttic(Scatter_Constructor);
 
   // If we have an ordering, pre-fill the ordered variables first
-  for (Key key : ordering) {
-    add(key, 0);
+  if (ordering) {
+    for (Key key : *ordering) {
+      emplace_back(key, 0);
+    }
   }
 
   // Now, find dimensions of variables and/or extend
@@ -54,7 +56,7 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
     const JacobianFactor* asJacobian = dynamic_cast<const JacobianFactor*>(factor.get());
     if (asJacobian && asJacobian->cols() <= 1) continue;
 
-    // loop over variables
+    // loop over variable keys
     for (GaussianFactor::const_iterator variable = factor->begin();
          variable != factor->end(); ++variable) {
       const Key key = *variable;
@@ -62,7 +64,7 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
       if (it!=end())
         it->dimension = factor->getDim(variable);
       else
-        add(key, factor->getDim(variable));
+        emplace_back(key, factor->getDim(variable));
     }
   }
 
@@ -70,11 +72,6 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
   iterator first = begin();
   first += ordering.size();
   if (first != end()) std::sort(first, end());
-}
-
-/* ************************************************************************* */
-void Scatter::add(Key key, size_t dim) {
-  emplace_back(SlotEntry(key, dim));
 }
 
 /* ************************************************************************* */
