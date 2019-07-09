@@ -35,7 +35,11 @@ mark_as_advanced(FORCE MEX_COMMAND)
 # Now that we have mex, trace back to find the Matlab installation root
 get_filename_component(MEX_COMMAND "${MEX_COMMAND}" REALPATH)
 get_filename_component(mex_path "${MEX_COMMAND}" PATH)
-get_filename_component(MATLAB_ROOT "${mex_path}/.." ABSOLUTE)
+if(mex_path MATCHES ".*/win64$")
+	get_filename_component(MATLAB_ROOT "${mex_path}/../.." ABSOLUTE)
+else()
+	get_filename_component(MATLAB_ROOT "${mex_path}/.." ABSOLUTE)
+endif()
 set(MATLAB_ROOT "${MATLAB_ROOT}" CACHE PATH "Path to MATLAB installation root (e.g. /usr/local/MATLAB/R2012a)")
 
 
@@ -97,9 +101,9 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	set(compiled_mex_modules_root "${PROJECT_BINARY_DIR}/wrap/${moduleName}_mex")
 	
 	message(STATUS "Building wrap module ${moduleName}")
-	
+
 	# Find matlab.h in GTSAM
-	if("${PROJECT_NAME}" STREQUAL "GTSAM")
+	if("${PROJECT_NAME}" STREQUAL "gtsam")
 		set(matlab_h_path "${PROJECT_SOURCE_DIR}")
 	else()
 		if(NOT GTSAM_INCLUDE_DIR)
@@ -115,14 +119,15 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	set(automaticDependencies "")
 	foreach(lib ${moduleName} ${linkLibraries})
 	  #message("MODULE NAME: ${moduleName}")
+	  #message("lib: ${lib}")
 		if(TARGET "${lib}")
             get_target_property(dependentLibraries ${lib} INTERFACE_LINK_LIBRARIES)
-           # message("DEPENDENT LIBRARIES:  ${dependentLibraries}")
-            if(dependentLibraries)
-               list(APPEND automaticDependencies ${dependentLibraries})
+            #message("DEPENDENT LIBRARIES:  ${dependentLibraries}")
+			if(dependentLibraries)
+			   list(APPEND automaticDependencies ${dependentLibraries})
             endif()
         endif()
-    endforeach()
+	endforeach()
     
     ## CHRIS: Temporary fix. On my system the get_target_property above returned Not-found for gtsam module
     ## This needs to be fixed!!
