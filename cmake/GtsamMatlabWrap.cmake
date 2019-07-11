@@ -82,28 +82,29 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 			set(mexModuleExt mexw32)
 		endif()
 	endif()
-		
+
 	# Wrap codegen interface
     #usage: wrap interfacePath moduleName toolboxPath headerPath
     #  interfacePath : *absolute* path to directory of module interface file
     #  moduleName    : the name of the module, interface file must be called moduleName.h
     #  toolboxPath   : the directory in which to generate the wrappers
-    #  headerPath    : path to matlab.h 
-	
+    #  headerPath    : path to matlab.h
+
 	# Extract module name from interface header file name
 	get_filename_component(interfaceHeader "${interfaceHeader}" ABSOLUTE)
 	get_filename_component(modulePath "${interfaceHeader}" PATH)
 	get_filename_component(moduleName "${interfaceHeader}" NAME_WE)
-	
+
 	# Paths for generated files
 	set(generated_files_path "${PROJECT_BINARY_DIR}/wrap/${moduleName}")
 	set(generated_cpp_file "${generated_files_path}/${moduleName}_wrapper.cpp")
 	set(compiled_mex_modules_root "${PROJECT_BINARY_DIR}/wrap/${moduleName}_mex")
-	
+
 	message(STATUS "Building wrap module ${moduleName}")
-	
+
 	# Find matlab.h in GTSAM
-	if("${PROJECT_NAME}" STREQUAL "gtsam")
+	if(("${PROJECT_NAME}" STREQUAL "gtsam") OR
+		("${PROJECT_NAME}" STREQUAL "gtsam_unstable"))
 		set(matlab_h_path "${PROJECT_SOURCE_DIR}")
 	else()
 		if(NOT GTSAM_INCLUDE_DIR)
