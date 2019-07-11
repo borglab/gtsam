@@ -18,10 +18,6 @@
 
 #pragma once
 
-//Needed if windows.h is included somehow.  
-//It defines min and max, which conflicts with numeric_limits::max()
-#define NOMINMAX  
-
 #include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose3.h>
@@ -33,7 +29,8 @@
 
 namespace gtsam {
 
-class GTSAM_EXPORT CheiralityException: public ThreadsafeException<CheiralityException> {
+class GTSAM_EXPORT CheiralityException: public ThreadsafeException<
+    CheiralityException> {
 public:
   CheiralityException()
     : CheiralityException(std::numeric_limits<Key>::max()) {}
