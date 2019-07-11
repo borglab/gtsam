@@ -143,6 +143,7 @@ void GlobalFunction::emit_cython_pxd(FileWriter& file) const {
                     "\"(";
     argumentList(i).emit_cython_pxd(file, "", vector<string>());
     file.oss << ")";
+    file.oss << " except +";
     file.oss << "\n";
   }
 }
@@ -206,16 +207,18 @@ void GlobalFunction::emit_cython_pyx(FileWriter& file) const {
 
     /// Call corresponding cython function
     file.oss << argumentList(i).pyx_convertEigenTypeAndStorageOrder("        ");
-    string call = pyx_functionCall("", pxdName(), i);
-    if (!returnVals_[i].isVoid()) {
-      file.oss << "        return_value = " << call << "\n";
-      file.oss << "        return True, " << returnVals_[i].pyx_casting("return_value") << "\n";
-    } else {
-      file.oss << "        " << call << "\n";
-      file.oss << "        return True, None\n";
-    }
+    // catch exception which indicates the parameters passed are incorrect.
     file.oss << "    except:\n";
     file.oss << "        return False, None\n\n";
+
+    string call = pyx_functionCall("", pxdName(), i);
+    if (!returnVals_[i].isVoid()) {
+      file.oss << "    return_value = " << call << "\n";
+      file.oss << "    return True, " << returnVals_[i].pyx_casting("return_value") << "\n";
+    } else {
+      file.oss << "    " << call << "\n";
+      file.oss << "    return True, None\n";
+    }
   }
 }
 /* ************************************************************************* */
