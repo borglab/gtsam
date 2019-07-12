@@ -226,6 +226,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	string(REPLACE ";" " " mexFlagsSpaced "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
 	add_library(${moduleName}_matlab_wrapper MODULE ${generated_cpp_file} ${interfaceHeader} ${otherSourcesAndObjects})
 	target_link_libraries(${moduleName}_matlab_wrapper ${correctedOtherLibraries})
+	target_link_libraries(${moduleName}_matlab_wrapper ${moduleName})
 	set_target_properties(${moduleName}_matlab_wrapper PROPERTIES
 		OUTPUT_NAME              "${moduleName}_wrapper"
 		PREFIX                   ""
