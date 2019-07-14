@@ -29,7 +29,7 @@ namespace gtsam {
  * we can directly add double, Vector, and Matrix into values now, because of
  * gtsam::traits.
  */
-struct GTSAM_EXPORT LieMatrix : public Matrix {
+struct LieMatrix : public Matrix {
 
   /// @name Constructors
   /// @{
