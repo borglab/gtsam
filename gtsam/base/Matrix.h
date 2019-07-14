@@ -299,7 +299,7 @@ GTSAM_EXPORT std::pair<Matrix,Matrix> qr(const Matrix& A);
  * @param A is the input matrix, and is the output
  * @param clear_below_diagonal enables zeroing out below diagonal
  */
-GTSAM_EXPORT void inplace_QR(Matrix& A);
+void inplace_QR(Matrix& A);
 
 /**
  * Imperative algorithm for in-place full elimination with

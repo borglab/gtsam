@@ -286,6 +286,99 @@ virtual class GenericValue : gtsam::Value {
   void serializable() const;
 };
 
+#include <gtsam/base/deprecated/LieScalar.h>
+class LieScalar {
+  // Standard constructors
+  LieScalar();
+  LieScalar(double d);
+
+  // Standard interface
+  double value() const;
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::LieScalar& expected, double tol) const;
+
+  // Group
+  static gtsam::LieScalar identity();
+  gtsam::LieScalar inverse() const;
+  gtsam::LieScalar compose(const gtsam::LieScalar& p) const;
+  gtsam::LieScalar between(const gtsam::LieScalar& l2) const;
+
+  // Manifold
+  size_t dim() const;
+  gtsam::LieScalar retract(Vector v) const;
+  Vector localCoordinates(const gtsam::LieScalar& t2) const;
+
+  // Lie group
+  static gtsam::LieScalar Expmap(Vector v);
+  static Vector Logmap(const gtsam::LieScalar& p);
+};
+
+#include <gtsam/base/deprecated/LieVector.h>
+class LieVector {
+  // Standard constructors
+  LieVector();
+  LieVector(Vector v);
+
+  // Standard interface
+  Vector vector() const;
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::LieVector& expected, double tol) const;
+
+  // Group
+  static gtsam::LieVector identity();
+  gtsam::LieVector inverse() const;
+  gtsam::LieVector compose(const gtsam::LieVector& p) const;
+  gtsam::LieVector between(const gtsam::LieVector& l2) const;
+
+  // Manifold
+  size_t dim() const;
+  gtsam::LieVector retract(Vector v) const;
+  Vector localCoordinates(const gtsam::LieVector& t2) const;
+
+  // Lie group
+  static gtsam::LieVector Expmap(Vector v);
+  static Vector Logmap(const gtsam::LieVector& p);
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
+#include <gtsam/base/deprecated/LieMatrix.h>
+class LieMatrix {
+  // Standard constructors
+  LieMatrix();
+  LieMatrix(Matrix v);
+
+  // Standard interface
+  Matrix matrix() const;
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::LieMatrix& expected, double tol) const;
+
+  // Group
+  static gtsam::LieMatrix identity();
+  gtsam::LieMatrix inverse() const;
+  gtsam::LieMatrix compose(const gtsam::LieMatrix& p) const;
+  gtsam::LieMatrix between(const gtsam::LieMatrix& l2) const;
+
+  // Manifold
+  size_t dim() const;
+  gtsam::LieMatrix retract(Vector v) const;
+  Vector localCoordinates(const gtsam::LieMatrix & t2) const;
+
+  // Lie group
+  static gtsam::LieMatrix Expmap(Vector v);
+  static Vector Logmap(const gtsam::LieMatrix& p);
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
 //*************************************************************************
 // geometry
 //*************************************************************************

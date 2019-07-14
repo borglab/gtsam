@@ -39,12 +39,6 @@ set (excluded_sources #"")
 
 set (excluded_headers #"")
     "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/base/LieMatrix.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/base/LieVector.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/base/LieScalar.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/base/deprecated/LieMatrix.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/base/deprecated/LieVector.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/base/deprecated/LieScalar.h"
 )
 
 if(GTSAM_USE_QUATERNIONS)
@@ -62,7 +56,6 @@ foreach(subdir ${gtsam_subdirs})
     # Build convenience libraries
     file(GLOB_RECURSE subdir_srcs "${subdir}/*.cpp" "${subdir}/*.h") # Include header files so they show up in Visual Studio
     list(REMOVE_ITEM subdir_srcs ${excluded_sources})
-    list(REMOVE_ITEM subdir_srcs ${excluded_headers})
 	file(GLOB subdir_test_files "${subdir}/tests/*")
 	list(REMOVE_ITEM subdir_srcs ${subdir_test_files}) # Remove test files from sources compiled into library
     gtsam_assign_source_folders("${subdir_srcs}") # Create MSVC structure
