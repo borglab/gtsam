@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam_unstable/dllexport.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Pose3.h>
 

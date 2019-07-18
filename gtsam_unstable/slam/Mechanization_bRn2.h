@@ -9,7 +9,7 @@
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam_unstable/dllexport.h>
 #include <list>
 
 namespace gtsam {
