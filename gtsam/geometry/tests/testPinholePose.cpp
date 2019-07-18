@@ -58,6 +58,7 @@ TEST( PinholePose, constructor)
 }
 
 //******************************************************************************
+/* Already in testPinholeCamera??? 
 TEST(PinholeCamera, Pose) {
 
   Matrix actualH;
@@ -69,6 +70,7 @@ TEST(PinholeCamera, Pose) {
   Matrix numericalH = numericalDerivative11<Pose3,Camera>(f,camera);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }
+*/
 
 /* ************************************************************************* */
 TEST( PinholePose, lookat)
@@ -207,7 +209,7 @@ static Point3 backproject(const Pose3& pose, const Cal3_S2& cal,
   return Camera(pose, cal.vector()).backproject(p, depth);
 }
 
-TEST( PinholePose, Dbackproject)
+TEST( PinholePose, DbackprojectRegCamera)
 {
   Matrix36 Dpose;
   Matrix31 Ddepth;

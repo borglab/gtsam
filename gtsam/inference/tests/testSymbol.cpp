@@ -23,7 +23,7 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 // A custom (nonsensical) formatter.
-string myFormatter(Key key) {
+string symbolMyFormatter(Key key) {
   return "special";
 }
 
@@ -32,7 +32,7 @@ TEST(Symbol, Formatting) {
 
   // use key_formatter with a function pointer
   stringstream ss2;
-  ss2 << key_formatter(myFormatter) << symbol;
+  ss2 << key_formatter(symbolMyFormatter) << symbol;
   EXPECT("special" == ss2.str());
 
   // use key_formatter with a function object.

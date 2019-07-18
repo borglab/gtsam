@@ -60,10 +60,10 @@ public:
   }
 
   /** print with optional string */
-  void print(const std::string& s = "") const;
+  GTSAM_EXPORT void print(const std::string& s = "") const;
 
   /** equals with an tolerance */
-  bool equals(const Event& other, double tol = 1e-9) const;
+  GTSAM_EXPORT bool equals(const Event& other, double tol = 1e-9) const;
 
   /// Updates a with tangent space delta
   inline Event retract(const Vector4& v) const {
@@ -94,6 +94,6 @@ public:
 
 // Define GTSAM traits
 template<>
-struct GTSAM_EXPORT traits<Event> : internal::Manifold<Event> {};
+struct traits<Event> : internal::Manifold<Event> {};
 
 } //\ namespace gtsam
