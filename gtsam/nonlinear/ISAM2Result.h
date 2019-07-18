@@ -38,7 +38,7 @@ namespace gtsam {
  * converging, and about how much work was required for the update.  See member
  * variables for details and information about each entry.
  */
-struct GTSAM_EXPORT ISAM2Result {
+struct ISAM2Result {
   /** The nonlinear error of all of the factors, \a including new factors and
    * variables added during the current call to ISAM2::update().  This error is
    * calculated using the following variable values:

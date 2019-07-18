@@ -156,14 +156,14 @@ class GTSAM_EXPORT ExpmapFunctor {
 };
 
 /// Functor that implements Exponential map *and* its derivatives
-class GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
+class DexpFunctor : public ExpmapFunctor {
   const Vector3 omega;
   double a, b;
   Matrix3 dexp_;
 
  public:
   /// Constructor with element of Lie algebra so(3)
-  DexpFunctor(const Vector3& omega, bool nearZeroApprox = false);
+  GTSAM_EXPORT DexpFunctor(const Vector3& omega, bool nearZeroApprox = false);
 
   // NOTE(luca): Right Jacobian for Exponential map in SO(3) - equation
   // (10.86) and following equations in G.S. Chirikjian, "Stochastic Models,
@@ -174,11 +174,11 @@ class GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   const Matrix3& dexp() const { return dexp_; }
 
   /// Multiplies with dexp(), with optional derivatives
-  Vector3 applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
+  GTSAM_EXPORT Vector3 applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
                     OptionalJacobian<3, 3> H2 = boost::none) const;
 
   /// Multiplies with dexp().inverse(), with optional derivatives
-  Vector3 applyInvDexp(const Vector3& v,
+  GTSAM_EXPORT Vector3 applyInvDexp(const Vector3& v,
                        OptionalJacobian<3, 3> H1 = boost::none,
                        OptionalJacobian<3, 3> H2 = boost::none) const;
 };

@@ -22,6 +22,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <cmath>
 #include <iosfwd>
+#include <gtsam_unstable/dllexport.h>
 
 namespace gtsam {
 
@@ -60,10 +61,10 @@ public:
   }
 
   /** print with optional string */
-  GTSAM_EXPORT void print(const std::string& s = "") const;
+  GTSAM_UNSTABLE_EXPORT void print(const std::string& s = "") const;
 
   /** equals with an tolerance */
-  GTSAM_EXPORT bool equals(const Event& other, double tol = 1e-9) const;
+  GTSAM_UNSTABLE_EXPORT bool equals(const Event& other, double tol = 1e-9) const;
 
   /// Updates a with tangent space delta
   inline Event retract(const Vector4& v) const {

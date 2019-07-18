@@ -386,7 +386,7 @@ private:
 /**
  * TriangulationResult is an optional point, along with the reasons why it is invalid.
  */
-class GTSAM_EXPORT TriangulationResult: public boost::optional<Point3> {
+class TriangulationResult: public boost::optional<Point3> {
   enum Status {
     VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT
   };
