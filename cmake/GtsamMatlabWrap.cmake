@@ -99,7 +99,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	message(STATUS "Building wrap module ${moduleName}")
 	
 	# Find matlab.h in GTSAM
-	if("${PROJECT_NAME}" STREQUAL "GTSAM")
+	if("${PROJECT_NAME}" STREQUAL "GTSAM" OR "${PROJECT_NAME}" STREQUAL "gtsam" OR "${PROJECT_NAME}" STREQUAL "gtsam_unstable")
 		set(matlab_h_path "${PROJECT_SOURCE_DIR}")
 	else()
 		if(NOT GTSAM_INCLUDE_DIR)
