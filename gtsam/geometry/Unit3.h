@@ -39,7 +39,7 @@
 namespace gtsam {
 
 /// Represents a 3D point on a unit sphere.
-class GTSAM_EXPORT Unit3 {
+class Unit3 {
 
 private:
 
@@ -94,11 +94,11 @@ public:
   }
 
   /// Named constructor from Point3 with optional Jacobian
-  static Unit3 FromPoint3(const Point3& point, //
+  GTSAM_EXPORT static Unit3 FromPoint3(const Point3& point, //
       OptionalJacobian<2, 3> H = boost::none);
 
   /// Random direction, using boost::uniform_on_sphere
-  static Unit3 Random(boost::mt19937 & rng);
+  GTSAM_EXPORT static Unit3 Random(boost::mt19937 & rng);
 
   /// @}
 
@@ -108,7 +108,7 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const Unit3& pair);
 
   /// The print fuction
-  void print(const std::string& s = std::string()) const;
+  GTSAM_EXPORT void print(const std::string& s = std::string()) const;
 
   /// The equals function with tolerance
   bool equals(const Unit3& s, double tol = 1e-9) const {
@@ -125,16 +125,16 @@ public:
    * tangent to the sphere at the current direction.
    * Provides derivatives of the basis with the two basis vectors stacked up as a 6x1.
    */
-  const Matrix32& basis(OptionalJacobian<6, 2> H = boost::none) const;
+  GTSAM_EXPORT const Matrix32& basis(OptionalJacobian<6, 2> H = boost::none) const;
 
   /// Return skew-symmetric associated with 3D point on unit sphere
-  Matrix3 skew() const;
+  GTSAM_EXPORT Matrix3 skew() const;
 
   /// Return unit-norm Point3
-  Point3 point3(OptionalJacobian<3, 2> H = boost::none) const;
+  GTSAM_EXPORT Point3 point3(OptionalJacobian<3, 2> H = boost::none) const;
 
   /// Return unit-norm Vector
-  Vector3 unitVector(OptionalJacobian<3, 2> H = boost::none) const;
+  GTSAM_EXPORT Vector3 unitVector(OptionalJacobian<3, 2> H = boost::none) const;
 
   /// Return scaled direction as Point3
   friend Point3 operator*(double s, const Unit3& d) {
@@ -142,20 +142,20 @@ public:
   }
 
   /// Return dot product with q
-  double dot(const Unit3& q, OptionalJacobian<1,2> H1 = boost::none, //
+  GTSAM_EXPORT double dot(const Unit3& q, OptionalJacobian<1,2> H1 = boost::none, //
                              OptionalJacobian<1,2> H2 = boost::none) const;
 
   /// Signed, vector-valued error between two directions
   /// @deprecated, errorVector has the proper derivatives, this confusingly has only the second.
-  Vector2 error(const Unit3& q, OptionalJacobian<2, 2> H_q = boost::none) const;
+  GTSAM_EXPORT Vector2 error(const Unit3& q, OptionalJacobian<2, 2> H_q = boost::none) const;
 
   /// Signed, vector-valued error between two directions
   /// NOTE(hayk): This method has zero derivatives if this (p) and q are orthogonal.
-  Vector2 errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p = boost::none, //
+  GTSAM_EXPORT Vector2 errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p = boost::none, //
                       OptionalJacobian<2, 2> H_q = boost::none) const;
 
   /// Distance between two directions
-  double distance(const Unit3& q, OptionalJacobian<1, 2> H = boost::none) const;
+  GTSAM_EXPORT double distance(const Unit3& q, OptionalJacobian<1, 2> H = boost::none) const;
 
   /// Cross-product between two Unit3s
   Unit3 cross(const Unit3& q) const {
@@ -188,10 +188,10 @@ public:
   };
 
   /// The retract function
-  Unit3 retract(const Vector2& v, OptionalJacobian<2,2> H = boost::none) const;
+  GTSAM_EXPORT Unit3 retract(const Vector2& v, OptionalJacobian<2,2> H = boost::none) const;
 
   /// The local coordinates function
-  Vector2 localCoordinates(const Unit3& s) const;
+  GTSAM_EXPORT Vector2 localCoordinates(const Unit3& s) const;
 
   /// @}
 

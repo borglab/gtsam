@@ -77,7 +77,10 @@ set(GTSAM_COMPILE_DEFINITIONS_PRIVATE_PROFILING       "NDEBUG" CACHE STRING "(Us
 set(GTSAM_COMPILE_DEFINITIONS_PRIVATE_TIMING          "NDEBUG;ENABLE_TIMING" CACHE STRING "(User editable) Private preprocessor macros for Timing configuration.")
 if(MSVC)
   # Common to all configurations:
-  list_append_cache(GTSAM_COMPILE_DEFINITIONS_PRIVATE WINDOWS_LEAN_AND_MEAN)
+  list_append_cache(GTSAM_COMPILE_DEFINITIONS_PRIVATE
+    WINDOWS_LEAN_AND_MEAN
+    NOMINMAX
+	)
 endif()
 
 # Other (non-preprocessor macros) compiler flags:

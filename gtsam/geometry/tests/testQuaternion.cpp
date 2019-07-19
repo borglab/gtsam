@@ -81,13 +81,14 @@ TEST(Quaternion , Compose) {
 }
 
 //******************************************************************************
-Vector3 z_axis(0, 0, 1);
-Q id(Eigen::AngleAxisd(0, z_axis));
-Q R1(Eigen::AngleAxisd(1, z_axis));
+Vector3 Q_z_axis(0, 0, 1);
+Q id(Eigen::AngleAxisd(0, Q_z_axis));
+Q R1(Eigen::AngleAxisd(1, Q_z_axis));
 Q R2(Eigen::AngleAxisd(2, Vector3(0, 1, 0)));
 
 //******************************************************************************
 TEST(Quaternion , Between) {
+  Vector3 z_axis(0, 0, 1);
   Q q1(Eigen::AngleAxisd(0.2, z_axis));
   Q q2(Eigen::AngleAxisd(0.1, z_axis));
 
@@ -98,6 +99,7 @@ TEST(Quaternion , Between) {
 
 //******************************************************************************
 TEST(Quaternion , Inverse) {
+  Vector3 z_axis(0, 0, 1);
   Q q1(Eigen::AngleAxisd(0.1, z_axis));
   Q expected(Eigen::AngleAxisd(-0.1, z_axis));
 

@@ -422,7 +422,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class GTSAM_EXPORT ValuesKeyAlreadyExists : public std::exception {
+  class ValuesKeyAlreadyExists : public std::exception {
   protected:
     const Key key_; ///< The key that already existed
 
@@ -440,11 +440,11 @@ namespace gtsam {
     Key key() const throw() { return key_; }
 
     /// The message to be displayed to the user
-    virtual const char* what() const throw();
+    GTSAM_EXPORT virtual const char* what() const throw();
   };
 
   /* ************************************************************************* */
-  class GTSAM_EXPORT ValuesKeyDoesNotExist : public std::exception {
+  class ValuesKeyDoesNotExist : public std::exception {
   protected:
     const char* operation_; ///< The operation that attempted to access the key
     const Key key_; ///< The key that does not exist
@@ -463,11 +463,11 @@ namespace gtsam {
     Key key() const throw() { return key_; }
 
     /// The message to be displayed to the user
-    virtual const char* what() const throw();
+    GTSAM_EXPORT virtual const char* what() const throw();
   };
 
   /* ************************************************************************* */
-  class GTSAM_EXPORT ValuesIncorrectType : public std::exception {
+  class ValuesIncorrectType : public std::exception {
   protected:
     const Key key_; ///< The key requested
     const std::type_info& storedTypeId_;
@@ -494,11 +494,11 @@ namespace gtsam {
     const std::type_info& requestedTypeId() const { return requestedTypeId_; }
 
     /// The message to be displayed to the user
-    virtual const char* what() const throw();
+    GTSAM_EXPORT virtual const char* what() const throw();
   };
 
   /* ************************************************************************* */
-  class GTSAM_EXPORT DynamicValuesMismatched : public std::exception {
+  class DynamicValuesMismatched : public std::exception {
 
   public:
     DynamicValuesMismatched() throw() {}
@@ -511,7 +511,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class GTSAM_EXPORT NoMatchFoundForFixed: public std::exception {
+  class NoMatchFoundForFixed: public std::exception {
 
   protected:
     const size_t M1_, N1_;
@@ -528,7 +528,7 @@ namespace gtsam {
     virtual ~NoMatchFoundForFixed() throw () {
     }
 
-    virtual const char* what() const throw ();
+    GTSAM_EXPORT virtual const char* what() const throw ();
   };
 
   /* ************************************************************************* */
