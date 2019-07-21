@@ -9,11 +9,11 @@ import sys
 import unittest
 import filecmp
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from pybind_wrapper import PybindWrapper
 import interface_parser as parser
 import template_instantiator as instantiator
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class TestWrap(unittest.TestCase):
@@ -51,8 +51,11 @@ class TestWrap(unittest.TestCase):
         with open(self.TEST_DIR + 'actual-python/geometry_py.cpp', 'w') as f:
             f.write(cc_content)
 
-        self.assertTrue(filecmp.cmp(
-            output, self.TEST_DIR + 'expected-python/geometry_pybind.cpp'))
+        self.assertTrue(
+            filecmp.cmp(
+                output, self.TEST_DIR + 'expected-python/geometry_pybind.cpp'
+            )
+        )
 
 
 if __name__ == '__main__':

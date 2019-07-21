@@ -8,11 +8,11 @@ import sys
 import unittest
 import filecmp
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 import template_instantiator as instantiator
 import interface_parser as parser
 from matlab_wrapper import MatlabWrapper
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class TestWrap(unittest.TestCase):
@@ -38,14 +38,20 @@ class TestWrap(unittest.TestCase):
                     try:
                         os.mkdir(path_to_folder)
                     except OSError:
-                        print("Failed to create directory {path}".format(
-                            path=path_to_file))
+                        print(
+                            "Failed to create directory {path}".format(
+                                path=path_to_file
+                            )
+                        )
 
                 for sub_content in c:
                     self._generate_content(sub_content[1], path_to_folder)
             else:
-                path_to_file = self.MATLAB_ACTUAL_DIR + c[0] if path == '' \
+                path_to_file = (
+                    self.MATLAB_ACTUAL_DIR + c[0]
+                    if path == ''
                     else path + '/' + c[0]
+                )
 
                 with open(path_to_file, 'w') as f:
                     f.write(c[1])
@@ -78,42 +84,78 @@ class TestWrap(unittest.TestCase):
         self._generate_content(cc_content)
 
         self.assertTrue(os.path.isdir(self.MATLAB_ACTUAL_DIR + '+gtsam'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + '+gtsam/Point2.m',
-            self.MATLAB_TEST_DIR + '+gtsam/Point2.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + '+gtsam/Point3.m',
-            self.MATLAB_TEST_DIR + '+gtsam/Point3.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'Test.m',
-            self.MATLAB_TEST_DIR + 'Test.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'MyBase.m',
-            self.MATLAB_TEST_DIR + 'MyBase.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'MyTemplatePoint2.m',
-            self.MATLAB_TEST_DIR + 'MyTemplatePoint2.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'MyTemplateMatrix.m',
-            self.MATLAB_TEST_DIR + 'MyTemplateMatrix.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'MyVector3.m',
-            self.MATLAB_TEST_DIR + 'MyVector3.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'MyVector12.m',
-            self.MATLAB_TEST_DIR + 'MyVector12.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'MyFactorPosePoint2.m',
-            self.MATLAB_TEST_DIR + 'MyFactorPosePoint2.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'aGlobalFunction.m',
-            self.MATLAB_TEST_DIR + 'aGlobalFunction.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'overloadedGlobalFunction.m',
-            self.MATLAB_TEST_DIR + 'overloadedGlobalFunction.m'))
-        self.assertTrue(filecmp.cmp(
-            self.MATLAB_ACTUAL_DIR + 'geometry_wrapper.cpp',
-            self.MATLAB_TEST_DIR + 'geometry_wrapper.cpp'))
+        self.assertTrue(
+            filecmp.cmp(
+                self.MATLAB_ACTUAL_DIR + '+gtsam/Point2.m',
+                self.MATLAB_TEST_DIR + '+gtsam/Point2.m',
+            )
+        )
+        self.assertTrue(
+            filecmp.cmp(
+                self.MATLAB_ACTUAL_DIR + '+gtsam/Point3.m',
+                self.MATLAB_TEST_DIR + '+gtsam/Point3.m',
+            )
+        )
+        self.assertTrue(
+            filecmp.cmp(
+                self.MATLAB_ACTUAL_DIR + 'Test.m',
+                self.MATLAB_TEST_DIR + 'Test.m',
+            )
+        )
+        self.assertTrue(
+            filecmp.cmp(
+                self.MATLAB_ACTUAL_DIR + 'MyBase.m',
+                self.MATLAB_TEST_DIR + 'MyBase.m',
+            )
+        )
+        self.assertTrue(
+            filecmp.cmp(
+                self.MATLAB_ACTUAL_DIR + 'MyTemplatePoint2.m',
+                self.MATLAB_TEST_DIR + 'MyTemplatePoint2.m',
+            )
+        )
+        self.assertTrue(
+            filecmp.cmp(
+                self.MATLAB_ACTUAL_DIR + 'MyTemplateMatrix.m',
+                self.MATLAB_TEST_DIR + 'MyTemplateMatrix.m',
+            )
+        )
+        self.assertTrue(
+            filecmp.cmp(
+                self.MATLAB_ACTUAL_DIR + 'MyVector3.m',
+                self.MATLAB_TEST_DIR + 'MyVector3.m',
+            )
+        )
+        self.assertTrue(
+            filecmp.cmp(
+                self.MATLAB_ACTUAL_DIR + 'MyVector12.m',
+                self.MATLAB_TEST_DIR + 'MyVector12.m',
+            )
+        )
+        self.assertTrue(
+            filecmp.cmp(
+                self.MATLAB_ACTUAL_DIR + 'MyFactorPosePoint2.m',
+                self.MATLAB_TEST_DIR + 'MyFactorPosePoint2.m',
+            )
+        )
+        self.assertTrue(
+            filecmp.cmp(
+                self.MATLAB_ACTUAL_DIR + 'aGlobalFunction.m',
+                self.MATLAB_TEST_DIR + 'aGlobalFunction.m',
+            )
+        )
+        self.assertTrue(
+            filecmp.cmp(
+                self.MATLAB_ACTUAL_DIR + 'overloadedGlobalFunction.m',
+                self.MATLAB_TEST_DIR + 'overloadedGlobalFunction.m',
+            )
+        )
+        self.assertTrue(
+            filecmp.cmp(
+                self.MATLAB_ACTUAL_DIR + 'geometry_wrapper.cpp',
+                self.MATLAB_TEST_DIR + 'geometry_wrapper.cpp',
+            )
+        )
 
 
 if __name__ == '__main__':

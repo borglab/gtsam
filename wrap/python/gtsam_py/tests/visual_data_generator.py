@@ -15,8 +15,8 @@ class Options:
     def __init__(self, triangle=False, nrCameras=3, K=gtsam.Cal3_S2()):
         """
         Options to generate test scenario
-        @param triangle: generate a triangle scene with 3 points if True, otherwise
-                  a cube with 8 points
+        @param triangle: generate a triangle scene with 3 points if True,
+            otherwise a cube with 8 points
         @param nrCameras: number of cameras to generate
         @param K: camera calibration object
         """

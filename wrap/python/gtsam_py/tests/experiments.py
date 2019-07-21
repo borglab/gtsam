@@ -32,8 +32,8 @@ Rmat = np.array([[0.990074, -0.0942928, 0.104218],
 r5 = gtsam.Rot3(Rmat)
 r5.print_(b"r5: ")
 
-l = gtsam.Rot3.Logmap(r5)
-print("l = ", l)
+l5 = gtsam.Rot3.Logmap(r5)
+print("l = ", l5)
 
 noise = gtsam.noiseModel.Gaussian.Covariance(Rmat)
 noise.print_(b"noise:")

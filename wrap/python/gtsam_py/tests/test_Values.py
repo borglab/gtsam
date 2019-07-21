@@ -68,7 +68,8 @@ class TestValues(unittest.TestCase):
         # values.atVector(14)  # won't work because gtsam thinks it's a Point3.
 
         # failure cases:
-        # values.serialize()  # serialize and serializable are not yet supported.
+        # values.serialize()  # serialize and serializable are not yet
+        # supported.
 
 
 if __name__ == "__main__":

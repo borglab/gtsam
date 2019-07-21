@@ -88,8 +88,9 @@ def plot_pose3_on_axes(axes, pose, axis_length=0.1):
     # plot the covariance
     # TODO (dellaert): make this work
     # if (nargin>2) && (~isempty(P))
-    #     pPp = P(4:6,4:6); % covariance matrix in pose coordinate frame
-    #     gPp = gRp*pPp*gRp'; % convert the covariance matrix to global coordinate frame
+    #     pPp = P(4:6,4:6)  # covariance matrix in pose coordinate frame
+    #     gPp = gRp*pPp*gRp'  # convert the covariance matrix to global
+    #                         # coordinate frame
     #     gtsam.covarianceEllipse3D(origin,gPp);
     # end
 

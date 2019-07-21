@@ -1,9 +1,25 @@
 import os
 import pyparsing
-from pyparsing import (alphas, alphanums, cppStyleComment, delimitedList,
-                       empty, nums, stringEnd, CharsNotIn, Keyword, Forward,
-                       Word, Literal, OneOrMore, Optional, Or, Group, Suppress,
-                       ZeroOrMore)
+from pyparsing import (
+    alphas,
+    alphanums,
+    cppStyleComment,
+    delimitedList,
+    empty,
+    nums,
+    stringEnd,
+    CharsNotIn,
+    Keyword,
+    Forward,
+    Word,
+    Literal,
+    OneOrMore,
+    Optional,
+    Or,
+    Group,
+    Suppress,
+    ZeroOrMore,
+)
 from pyparsing import ParseException, ParserElement
 import sys
 
@@ -14,7 +30,8 @@ POINTER, REF = map(Literal, "*&")
 LPAREN, RPAREN, LBRACE, RBRACE, COLON, SEMI_COLON = map(Suppress, "(){}:;")
 LOPBRACK, ROPBRACK, COMMA, EQUAL = map(Suppress, "<>,=")
 CONST, VIRTUAL, CLASS, STATIC, PAIR, TEMPLATE, TYPEDEF, INCLUDE = map(
-    Keyword, [
+    Keyword,
+    [
         "const",
         "virtual",
         "class",
@@ -23,36 +40,38 @@ CONST, VIRTUAL, CLASS, STATIC, PAIR, TEMPLATE, TYPEDEF, INCLUDE = map(
         "template",
         "typedef",
         "#include",
-    ])
+    ],
+)
 NAMESPACE = Keyword("namespace")
-BASIS_TYPES = map(Keyword, [
-    "void",
-    "bool",
-    "unsigned char",
-    "char",
-    "int",
-    "size_t",
-    "double",
-    "float",
-    "string",
-])
+BASIS_TYPES = map(
+    Keyword,
+    [
+        "void",
+        "bool",
+        "unsigned char",
+        "char",
+        "int",
+        "size_t",
+        "double",
+        "float",
+        "string",
+    ],
+)
 
 
 class Typename(object):
     """
     Type's name with full namespaces.
     """
+
     namespaces_name_rule = delimitedList(IDENT, "::")
     instantiation_name_rule = delimitedList(IDENT, "::")
     rule = Forward()
 
     rule << (
-        namespaces_name_rule("namespaces_name") +
-        Optional(
-            (
-                LOPBRACK + delimitedList(rule, ",")("instantiations") +
-                ROPBRACK
-            )
+        namespaces_name_rule("namespaces_name")
+        + Optional(
+            (LOPBRACK + delimitedList(rule, ",")("instantiations") + ROPBRACK)
         )
     ).setParseAction(lambda t: Typename(t.namespaces_name, t.instantiations))
 
@@ -83,13 +102,16 @@ class Typename(object):
     def to_cpp(self):
         idx = 1 if self.namespaces and not self.namespaces[0] else 0
         if self.instantiations:
-            cpp_name = self.name + \
-                "<{}>".format(", ".join(
-                    [inst.to_cpp() for inst in self.instantiations]))
+            cpp_name = self.name + "<{}>".format(
+                ", ".join([inst.to_cpp() for inst in self.instantiations])
+            )
         else:
             cpp_name = self.name
-        return '{}{}{}'.format("::".join(self.namespaces[idx:]),
-                               "::" if self.namespaces[idx:] else "", cpp_name)
+        return '{}{}{}'.format(
+            "::".join(self.namespaces[idx:]),
+            "::" if self.namespaces[idx:] else "",
+            cpp_name,
+        )
 
     def __eq__(self, other):
         if isinstance(other, Typename):
@@ -109,12 +131,11 @@ class Type(object):
         """
         Type with qualifiers.
         """
+
         rule = (
-            Optional(
-                CONST("is_const")
-            ) +
-            Typename.rule("typename") +
-            Optional(POINTER("is_ptr") | REF("is_ref"))
+            Optional(CONST("is_const"))
+            + Typename.rule("typename")
+            + Optional(POINTER("is_ptr") | REF("is_ref"))
         ).setParseAction(
             lambda t: Type._QualifiedType(
                 Typename.from_parse_result(t.typename),
@@ -134,6 +155,7 @@ class Type(object):
         """
         Basis types don't have qualifiers and only allow copy-by-value.
         """
+
         rule = Or(BASIS_TYPES).setParseAction(lambda t: Typename(t))
 
     rule = (
@@ -169,8 +191,9 @@ class Type(object):
             raise ValueError("Parse result is not a Type?")
 
     def __repr__(self):
-        return '{} {}{}{}'.format(self.typename, self.is_const, self.is_ptr,
-                                  self.is_ref)
+        return '{} {}{}{}'.format(
+            self.typename, self.is_const, self.is_ptr, self.is_ref
+        )
 
     def to_cpp(self, use_boost):
         """
@@ -178,17 +201,26 @@ class Type(object):
         Treat Matrix and Vector as "const Matrix&" and "const Vector&" resp.
         """
         shared_ptr_ns = "boost" if use_boost else "std"
-        return "{const} {shared_ptr}{typename}{shared_ptr_ropbracket}{ref}"\
-            .format(
-                const="const" if self.is_const or self.is_ptr
-                or self.typename.name in ["Matrix", "Vector"] else "",
+        return (
+            "{const} {shared_ptr}{typename}"
+            "{shared_ptr_ropbracket}{ref}".format(
+                const="const"
+                if self.is_const
+                or self.is_ptr
+                or self.typename.name in ["Matrix", "Vector"]
+                else "",
                 typename=self.typename.to_cpp(),
                 shared_ptr="{}::shared_ptr<".format(shared_ptr_ns)
-                if self.is_ptr else "",
+                if self.is_ptr
+                else "",
                 shared_ptr_ropbracket=">" if self.is_ptr else "",
-                ref="&" if self.is_ref or self.is_ptr
-                or self.typename.name in ["Matrix", "Vector"] else "",
+                ref="&"
+                if self.is_ref
+                or self.is_ptr
+                or self.typename.name in ["Matrix", "Vector"]
+                else "",
             )
+        )
 
 
 class HasParent(object):
@@ -197,8 +229,9 @@ class HasParent(object):
 
 
 class Argument(object):
-    rule = (Type.rule("ctype") +
-            IDENT("name")).setParseAction(lambda t: Argument(t.ctype, t.name))
+    rule = (Type.rule("ctype") + IDENT("name")).setParseAction(
+        lambda t: Argument(t.ctype, t.name)
+    )
 
     def __init__(self, ctype, name):
         self.ctype = ctype
@@ -210,7 +243,8 @@ class Argument(object):
 
 class ArgumentList(object):
     rule = Optional(delimitedList(Argument.rule)("args_list")).setParseAction(
-        lambda t: ArgumentList.from_parse_result(t.args_list))
+        lambda t: ArgumentList.from_parse_result(t.args_list)
+    )
 
     def __init__(self, args_list):
         self.args_list = args_list
@@ -235,11 +269,17 @@ class ArgumentList(object):
 
 
 class ReturnType(object):
-    _pair = PAIR.suppress() + LOPBRACK + Type.rule(
-        "type1") + COMMA + Type.rule("type2") + ROPBRACK
-    rule = (  # BR
-        _pair ^ Type.rule("type1")
-    ).setParseAction(lambda t: ReturnType(t.type1, t.type2))
+    _pair = (
+        PAIR.suppress()
+        + LOPBRACK
+        + Type.rule("type1")
+        + COMMA
+        + Type.rule("type2")
+        + ROPBRACK
+    )
+    rule = (_pair ^ Type.rule("type1")).setParseAction(  # BR
+        lambda t: ReturnType(t.type1, t.type2)
+    )
 
     def __init__(self, type1, type2):
         self.type1 = type1
@@ -250,13 +290,14 @@ class ReturnType(object):
 
     def __repr__(self):
         return "{}{}".format(
-            self.type1, (', ' + self.type2.__repr__()) if self.type2 else '')
+            self.type1, (', ' + self.type2.__repr__()) if self.type2 else ''
+        )
 
     def to_cpp(self):
         if self.type2:
             return "std::pair<{type1},{type2}>".format(
-                type1=self.type1.to_cpp(),
-                type2=self.type2.to_cpp())
+                type1=self.type1.to_cpp(), type2=self.type2.to_cpp()
+            )
         else:
             return self.type1.to_cpp()
 
@@ -264,15 +305,16 @@ class ReturnType(object):
 class Template(object):
     class TypenameAndInstantiations(object):
         rule = (
-            IDENT("typename") + Optional(
-                EQUAL + LBRACE + (
-                    (delimitedList(Typename.rule)("instantiations"))
-                ) + RBRACE
+            IDENT("typename")
+            + Optional(
+                EQUAL
+                + LBRACE
+                + ((delimitedList(Typename.rule)("instantiations")))
+                + RBRACE
             )
         ).setParseAction(
             lambda t: Template.TypenameAndInstantiations(
-                t.typename,
-                t.instantiations,
+                t.typename, t.instantiations
             )
         )
 
@@ -285,12 +327,15 @@ class Template(object):
                 self.instantiations = []
 
     rule = (  # BR
-        TEMPLATE + LOPBRACK +
-        delimitedList(TypenameAndInstantiations.rule)(
-            "typename_and_instantiations_list")
+        TEMPLATE
+        + LOPBRACK
+        + delimitedList(TypenameAndInstantiations.rule)(
+            "typename_and_instantiations_list"
+        )
         + ROPBRACK  # BR
     ).setParseAction(
-        lambda t: Template(t.typename_and_instantiations_list.asList()))
+        lambda t: Template(t.typename_and_instantiations_list.asList())
+    )
 
     def __init__(self, typename_and_instantiations_list):
         ti_list = typename_and_instantiations_list
@@ -300,16 +345,17 @@ class Template(object):
 
 class Method(HasParent):
     rule = (
-        Optional(Template.rule("template")) + ReturnType.rule("return_type") +
-        IDENT("name") + LPAREN + ArgumentList.rule("args_list") + RPAREN +
-        Optional(CONST("is_const")) + SEMI_COLON  # BR
+        Optional(Template.rule("template"))
+        + ReturnType.rule("return_type")
+        + IDENT("name")
+        + LPAREN
+        + ArgumentList.rule("args_list")
+        + RPAREN
+        + Optional(CONST("is_const"))
+        + SEMI_COLON  # BR
     ).setParseAction(
         lambda t: Method(
-            t.template,
-            t.name,
-            t.return_type,
-            t.args_list,
-            t.is_const,
+            t.template, t.name, t.return_type, t.args_list, t.is_const
         )
     )
 
@@ -323,21 +369,26 @@ class Method(HasParent):
         self.parent = parent
 
     def __repr__(self):
-        return "Method: {} {} {}({}){}".format(self.template, self.return_type,
-                                               self.name, self.args,
-                                               self.is_const)
+        return "Method: {} {} {}({}){}".format(
+            self.template,
+            self.return_type,
+            self.name,
+            self.args,
+            self.is_const,
+        )
 
 
 class StaticMethod(HasParent):
     rule = (
-        STATIC + ReturnType.rule("return_type") + IDENT("name") + LPAREN +
-        ArgumentList.rule("args_list") + RPAREN + SEMI_COLON  # BR
+        STATIC
+        + ReturnType.rule("return_type")
+        + IDENT("name")
+        + LPAREN
+        + ArgumentList.rule("args_list")
+        + RPAREN
+        + SEMI_COLON  # BR
     ).setParseAction(
-        lambda t: StaticMethod(
-            t.name,
-            t.return_type,
-            t.args_list,
-        )
+        lambda t: StaticMethod(t.name, t.return_type, t.args_list)
     )
 
     def __init__(self, name, return_type, args, parent=''):
@@ -356,8 +407,11 @@ class StaticMethod(HasParent):
 
 class Constructor(HasParent):
     rule = (
-        IDENT("name") + LPAREN + ArgumentList.rule("args_list") + RPAREN +
-        SEMI_COLON  # BR
+        IDENT("name")
+        + LPAREN
+        + ArgumentList.rule("args_list")
+        + RPAREN
+        + SEMI_COLON  # BR
     ).setParseAction(lambda t: Constructor(t.name, t.args_list))
 
     def __init__(self, name, args, parent=''):
@@ -371,9 +425,9 @@ class Constructor(HasParent):
 
 
 class Property(HasParent):
-    rule = (
-        Type.rule("ctype") + IDENT("name") + SEMI_COLON
-    ).setParseAction(lambda t: Property(t.ctype, t.name))
+    rule = (Type.rule("ctype") + IDENT("name") + SEMI_COLON).setParseAction(
+        lambda t: Property(t.ctype, t.name)
+    )
 
     def __init__(self, ctype, name, parent=''):
         self.ctype = ctype
@@ -398,7 +452,6 @@ def collect_namespaces(obj):
 
 
 class Class(HasParent):
-
     class MethodsAndProperties(object):
         rule = ZeroOrMore(
             Constructor.rule ^ StaticMethod.rule ^ Method.rule ^ Property.rule
@@ -421,23 +474,40 @@ class Class(HasParent):
 
     _parent = COLON + Typename.rule("parent_class")
     rule = (
-        Optional(Template.rule("template")) + Optional(
-            VIRTUAL("is_virtual")) + CLASS + IDENT("name") + Optional(_parent)
-        + LBRACE + MethodsAndProperties.rule("methods_props") + RBRACE
+        Optional(Template.rule("template"))
+        + Optional(VIRTUAL("is_virtual"))
+        + CLASS
+        + IDENT("name")
+        + Optional(_parent)
+        + LBRACE
+        + MethodsAndProperties.rule("methods_props")
+        + RBRACE
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Class(
-        t.template,
-        t.is_virtual,
-        t.name,
-        t.parent_class,
-        t.methods_props.ctors,
-        t.methods_props.methods,
-        t.methods_props.static_methods,
-        t.methods_props.properties,
-    ))
+    ).setParseAction(
+        lambda t: Class(
+            t.template,
+            t.is_virtual,
+            t.name,
+            t.parent_class,
+            t.methods_props.ctors,
+            t.methods_props.methods,
+            t.methods_props.static_methods,
+            t.methods_props.properties,
+        )
+    )
 
-    def __init__(self, template, is_virtual, name, parent_class, ctors,
-                 methods, static_methods, properties, parent=''):
+    def __init__(
+        self,
+        template,
+        is_virtual,
+        name,
+        parent_class,
+        ctors,
+        methods,
+        static_methods,
+        properties,
+        parent='',
+    ):
         self.template = template
         self.is_virtual = is_virtual
         self.name = name
@@ -454,8 +524,11 @@ class Class(HasParent):
         # Make sure ctors' names and class name are the same.
         for ctor in self.ctors:
             if ctor.name != self.name:
-                raise ValueError("Error in constructor name! {} != {}".format(
-                    ctor.name, self.name))
+                raise ValueError(
+                    "Error in constructor name! {} != {}".format(
+                        ctor.name, self.name
+                    )
+                )
 
         for ctor in self.ctors:
             ctor.parent = self
@@ -475,8 +548,7 @@ class TypedefTemplateInstantiation(HasParent):
         TYPEDEF + Typename.rule("typename") + IDENT("new_name") + SEMI_COLON
     ).setParseAction(
         lambda t: TypedefTemplateInstantiation(
-            Typename.from_parse_result(t.typename),
-            t.new_name,
+            Typename.from_parse_result(t.typename), t.new_name
         )
     )
 
@@ -487,8 +559,9 @@ class TypedefTemplateInstantiation(HasParent):
 
 
 class Include(HasParent):
-    rule = (INCLUDE + LOPBRACK + CharsNotIn('>')("header") +
-            ROPBRACK).setParseAction(lambda t: Include(t.header))
+    rule = (
+        INCLUDE + LOPBRACK + CharsNotIn('>')("header") + ROPBRACK
+    ).setParseAction(lambda t: Include(t.header))
 
     def __init__(self, header, parent=''):
         self.header = header
@@ -500,14 +573,13 @@ class Include(HasParent):
 
 class ForwardDeclaration(HasParent):
     rule = (
-        Optional(VIRTUAL("is_virtual")) + CLASS + Typename.rule("name") +
-        Optional(COLON + Typename.rule("parent_type")) + SEMI_COLON
+        Optional(VIRTUAL("is_virtual"))
+        + CLASS
+        + Typename.rule("name")
+        + Optional(COLON + Typename.rule("parent_type"))
+        + SEMI_COLON
     ).setParseAction(
-        lambda t: ForwardDeclaration(
-            t.is_virtual,
-            t.name,
-            t.parent_type,
-        )
+        lambda t: ForwardDeclaration(t.is_virtual, t.name, t.parent_type)
     )
 
     def __init__(self, is_virtual, name, parent_type, parent=''):
@@ -520,20 +592,21 @@ class ForwardDeclaration(HasParent):
         self.parent = parent
 
     def __repr__(self):
-        return "ForwardDeclaration: {} {}({})".format(self.is_virtual,
-                                                      self.name, self.parent)
+        return "ForwardDeclaration: {} {}({})".format(
+            self.is_virtual, self.name, self.parent
+        )
 
 
 class GlobalFunction(HasParent):
     rule = (
-        ReturnType.rule("return_type") + IDENT("name") + LPAREN +
-        ArgumentList.rule("args_list") + RPAREN + SEMI_COLON
+        ReturnType.rule("return_type")
+        + IDENT("name")
+        + LPAREN
+        + ArgumentList.rule("args_list")
+        + RPAREN
+        + SEMI_COLON
     ).setParseAction(
-        lambda t: GlobalFunction(
-            t.name,
-            t.return_type,
-            t.args_list,
-        )
+        lambda t: GlobalFunction(t.name, t.return_type, t.args_list)
     )
 
     def __init__(self, name, return_type, args_list, parent=''):
@@ -547,8 +620,9 @@ class GlobalFunction(HasParent):
         self.args.parent = self
 
     def __repr__(self):
-        return "GlobalFunction:  {}{}({})".format(self.return_type, self.name,
-                                                  self.args)
+        return "GlobalFunction:  {}{}({})".format(
+            self.return_type, self.name, self.args
+        )
 
     def to_cpp(self):
         return self.name
@@ -558,8 +632,9 @@ def find_sub_namespace(namespace, str_namespaces):
     if not str_namespaces:
         return [namespace]
 
-    sub_namespaces = (ns for ns in namespace.content
-                      if isinstance(ns, Namespace))
+    sub_namespaces = (
+        ns for ns in namespace.content if isinstance(ns, Namespace)
+    )
 
     found_namespaces = [
         ns for ns in sub_namespaces if ns.name == str_namespaces[0]
@@ -578,11 +653,21 @@ def find_sub_namespace(namespace, str_namespaces):
 class Namespace(HasParent):
     rule = Forward()
     rule << (
-        NAMESPACE + IDENT("name") + LBRACE +  # BR
-        ZeroOrMore(ForwardDeclaration.rule ^ Include.rule ^ Class.rule ^
-                   TypedefTemplateInstantiation.rule ^ GlobalFunction.rule ^
-                   rule)("content")  # BR
-        + RBRACE).setParseAction(lambda t: Namespace.from_parse_result(t))
+        NAMESPACE
+        + IDENT("name")
+        + LBRACE
+        + ZeroOrMore(  # BR
+            ForwardDeclaration.rule
+            ^ Include.rule
+            ^ Class.rule
+            ^ TypedefTemplateInstantiation.rule
+            ^ GlobalFunction.rule
+            ^ rule
+        )(
+            "content"
+        )  # BR
+        + RBRACE
+    ).setParseAction(lambda t: Namespace.from_parse_result(t))
 
     def __init__(self, name, content, parent=''):
         self.name = name
@@ -611,11 +696,14 @@ class Namespace(HasParent):
             res += [c for c in classes if c.name == typename.name]
         if not res:
             raise ValueError(
-                "Cannot find class {} in module!".format(typename.name))
+                "Cannot find class {} in module!".format(typename.name)
+            )
         elif len(res) > 1:
             raise ValueError(
                 "Found more than one classes {} in module!".format(
-                    typename.name))
+                    typename.name
+                )
+            )
         else:
             return res[0]
 
@@ -639,10 +727,18 @@ class Module(object):
     """
     Module is just a global namespace.
     """
-    rule = ZeroOrMore(ForwardDeclaration.rule ^ Include.rule ^ Class.rule ^
-                      TypedefTemplateInstantiation.rule ^ GlobalFunction.rule ^
-                      Namespace.rule).setParseAction(
-                          lambda t: Namespace('', t.asList())) + stringEnd
+
+    rule = (
+        ZeroOrMore(
+            ForwardDeclaration.rule
+            ^ Include.rule
+            ^ Class.rule
+            ^ TypedefTemplateInstantiation.rule
+            ^ GlobalFunction.rule
+            ^ Namespace.rule
+        ).setParseAction(lambda t: Namespace('', t.asList()))
+        + stringEnd
+    )
 
     rule.ignore(cppStyleComment)
 

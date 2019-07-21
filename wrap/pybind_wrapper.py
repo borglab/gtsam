@@ -161,7 +161,7 @@ class PybindWrapper(object):
         return True
 
     def _gen_module_var(self, namespaces):
-        sub_module_namespaces = namespaces[len(self.top_module_namespaces) :]
+        sub_module_namespaces = namespaces[len(self.top_module_namespaces):]
         return "m_{}".format('_'.join(sub_module_namespaces))
 
     def _add_namespaces(self, name, namespaces):
@@ -189,7 +189,7 @@ class PybindWrapper(object):
                         .replace('>', '"')
                     )
                 if isinstance(element, parser.Namespace):
-                    wrapped_namespace, includes_namespace = self.wrap_namespace(
+                    wrapped_namespace, includes_namespace = self.wrap_namespace(  # noqa
                         element
                     )
                     wrapped += wrapped_namespace
@@ -218,7 +218,7 @@ class PybindWrapper(object):
                         .replace('>', '"')
                     )
                 elif isinstance(element, parser.Namespace):
-                    wrapped_namespace, includes_namespace = self.wrap_namespace(
+                    wrapped_namespace, includes_namespace = self.wrap_namespace(  # noqa
                         element
                     )
                     wrapped += wrapped_namespace
@@ -311,8 +311,8 @@ def main():
         "will be wrapped. The content of this namespace will be available at "
         "the top module level, and its sub-namespaces' in the submodules.\n"
         "For example, `import <module_name>` gives you access to a Python "
-        "`<module_name>.Class` of the corresponding C++ `ns1::ns2::ns3::Class`,"
-        " and `from <module_name> import ns4` gives you access to a Python "
+        "`<module_name>.Class` of the corresponding C++ `ns1::ns2::ns3::Class`"
+        ", and `from <module_name> import ns4` gives you access to a Python "
         "`ns4.Class` of the C++ `ns1::ns2::ns3::ns4::Class`. ",
     )
     arg_parser.add_argument(

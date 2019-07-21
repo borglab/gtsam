@@ -8,7 +8,8 @@ class TestPose2SLAMExample(unittest.TestCase):
     def test_Pose2SLAMExample(self):
         # Assumptions
         #  - All values are axis aligned
-        #  - Robot poses are facing along the X axis (horizontal, to the right in images)
+        #  - Robot poses are facing along the X axis (horizontal, to the right
+        #    in images)
         #  - We have full odometry for measurements
         #  - The robot is on a grid, moving 2 meters each step
 
