@@ -248,6 +248,9 @@ class FactorIndices {
 
 /** gtsam namespace functions */
 
+#include <gtsam/base/debug.h>
+bool isDebugVersion();
+
 #include <gtsam/base/DSFMap.h>
 class IndexPair {
   IndexPair();

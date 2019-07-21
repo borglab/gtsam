@@ -28,7 +28,7 @@ namespace gtsam {
    * we can directly add double, Vector, and Matrix into values now, because of
    * gtsam::traits.
    */
-  struct GTSAM_EXPORT LieScalar {
+  struct LieScalar {
 
     enum { dimension = 1 };
 

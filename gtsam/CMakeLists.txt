@@ -1,3 +1,5 @@
+project(gtsam LANGUAGES CXX)
+
 # We split the library in to separate subfolders, each containing
 # tests, timing, and an optional convenience library.
 # The following variable is the master list of subdirs to add
@@ -82,9 +84,9 @@ ENDIF(MSVC)
 # Generate and install config and dllexport files
 configure_file(config.h.in config.h)
 set(library_name GTSAM) # For substitution in dllexport.h.in
-configure_file("${PROJECT_SOURCE_DIR}/cmake/dllexport.h.in" "dllexport.h")
-list(APPEND gtsam_srcs "${PROJECT_BINARY_DIR}/gtsam/config.h" "${PROJECT_BINARY_DIR}/gtsam/dllexport.h")
-install(FILES "${PROJECT_BINARY_DIR}/gtsam/config.h" "${PROJECT_BINARY_DIR}/gtsam/dllexport.h" DESTINATION include/gtsam)
+configure_file("${GTSAM_SOURCE_DIR}/cmake/dllexport.h.in" "dllexport.h")
+list(APPEND gtsam_srcs "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/dllexport.h")
+install(FILES "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/dllexport.h" DESTINATION include/gtsam)
 
 if(GTSAM_SUPPORT_NESTED_DISSECTION)
     list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis)
@@ -101,17 +103,16 @@ message(STATUS "Building GTSAM - shared: ${BUILD_SHARED_LIBS}")
 
 # BUILD_SHARED_LIBS automatically defines static/shared libs:
 add_library(gtsam ${gtsam_srcs})
+
 # Boost:
 target_link_libraries(gtsam PUBLIC ${GTSAM_BOOST_LIBRARIES})
 target_include_directories(gtsam PUBLIC ${Boost_INCLUDE_DIR})
 # Other deps:
 target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
-target_compile_definitions(gtsam PRIVATE ${GTSAM_COMPILE_DEFINITIONS_PRIVATE})
-target_compile_definitions(gtsam PUBLIC ${GTSAM_COMPILE_DEFINITIONS_PUBLIC})
-if (NOT "${GTSAM_COMPILE_OPTIONS_PUBLIC}" STREQUAL "")
-  target_compile_options(gtsam PUBLIC ${GTSAM_COMPILE_OPTIONS_PUBLIC})
-endif()
-target_compile_options(gtsam PRIVATE ${GTSAM_COMPILE_OPTIONS_PRIVATE})
+
+# Apply build flags:
+gtsam_apply_build_flags(gtsam)
+
 set_target_properties(gtsam PROPERTIES
     OUTPUT_NAME         gtsam
     CLEAN_DIRECT_OUTPUT 1
@@ -174,7 +175,7 @@ if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with 
 		set_target_properties(gtsam PROPERTIES
 			PREFIX ""
 			DEFINE_SYMBOL GTSAM_EXPORTS
-			RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+    RUNTIME_OUTPUT_DIRECTORY "${GTSAM_BINARY_DIR}/bin")
 	endif()
 endif()
 

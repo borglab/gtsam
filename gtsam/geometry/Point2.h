@@ -37,7 +37,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Point2 : public Vector2 {
+class Point2 : public Vector2 {
 private:
 
 public:
@@ -66,10 +66,10 @@ public:
   /// @{
 
   /// print with optional string
-  void print(const std::string& s = "") const;
+  GTSAM_EXPORT void print(const std::string& s = "") const;
 
   /// equals with an tolerance, prints out message if unequal
-  bool equals(const Point2& q, double tol = 1e-9) const;
+  GTSAM_EXPORT bool equals(const Point2& q, double tol = 1e-9) const;
 
   /// @}
   /// @name Group
@@ -86,10 +86,10 @@ public:
   Point2 unit() const { return *this/norm(); }
 
   /** norm of point, with derivative */
-  double norm(OptionalJacobian<1,2> H = boost::none) const;
+  GTSAM_EXPORT double norm(OptionalJacobian<1,2> H = boost::none) const;
 
   /** distance between two points */
-  double distance(const Point2& p2, OptionalJacobian<1,2> H1 = boost::none,
+  GTSAM_EXPORT double distance(const Point2& p2, OptionalJacobian<1,2> H1 = boost::none,
       OptionalJacobian<1,2> H2 = boost::none) const;
 
   /// @}
@@ -124,9 +124,9 @@ public:
   static Vector2 Logmap(const Point2& p) { return p;}
   static Point2 Expmap(const Vector2& v) { return Point2(v);}
   inline double dist(const Point2& p2) const {return distance(p2);}
-  static boost::optional<Point2> CircleCircleIntersection(double R_d, double r_d, double tol = 1e-9);
-  static std::list<Point2> CircleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2> fh);
-  static std::list<Point2> CircleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2, double tol = 1e-9);
+  GTSAM_EXPORT static boost::optional<Point2> CircleCircleIntersection(double R_d, double r_d, double tol = 1e-9);
+  GTSAM_EXPORT static std::list<Point2> CircleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2> fh);
+  GTSAM_EXPORT static std::list<Point2> CircleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2, double tol = 1e-9);
   /// @}
 #endif
 

@@ -23,7 +23,7 @@ namespace gtsam {
  * This factor does have the ability to perform relinearization under small-angle and
  * linearity assumptions if a linearization point is added.
  */
-class GTSAM_EXPORT LinearContainerFactor : public NonlinearFactor {
+class LinearContainerFactor : public NonlinearFactor {
 protected:
 
   GaussianFactor::shared_ptr factor_;
@@ -33,7 +33,7 @@ protected:
   LinearContainerFactor() {}
 
   /** direct copy constructor */
-  LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const boost::optional<Values>& linearizationPoint);
+  GTSAM_EXPORT LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const boost::optional<Values>& linearizationPoint);
 
   // Some handy typedefs
   typedef NonlinearFactor Base;
@@ -44,13 +44,13 @@ public:
   typedef boost::shared_ptr<This> shared_ptr;
 
   /** Primary constructor: store a linear factor with optional linearization point */
-  LinearContainerFactor(const JacobianFactor& factor, const Values& linearizationPoint = Values());
+  GTSAM_EXPORT LinearContainerFactor(const JacobianFactor& factor, const Values& linearizationPoint = Values());
 
   /** Primary constructor: store a linear factor with optional linearization point */
-  LinearContainerFactor(const HessianFactor& factor, const Values& linearizationPoint = Values());
+  GTSAM_EXPORT LinearContainerFactor(const HessianFactor& factor, const Values& linearizationPoint = Values());
 
   /** Constructor from shared_ptr */
-  LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const Values& linearizationPoint = Values());
+  GTSAM_EXPORT LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const Values& linearizationPoint = Values());
 
   // Access
 
@@ -59,10 +59,10 @@ public:
   // Testable
 
   /** print */
-  void print(const std::string& s = "", const KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const;
+  GTSAM_EXPORT void print(const std::string& s = "", const KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const;
 
   /** Check if two factors are equal */
-  bool equals(const NonlinearFactor& f, double tol = 1e-9) const;
+  GTSAM_EXPORT bool equals(const NonlinearFactor& f, double tol = 1e-9) const;
 
   // NonlinearFactor
 
@@ -74,10 +74,10 @@ public:
    *
    * @return nonlinear error if linearizationPoint present, zero otherwise
    */
-  double error(const Values& c) const;
+  GTSAM_EXPORT double error(const Values& c) const;
 
   /** get the dimension of the factor: rows of linear factor */
-  size_t dim() const;
+  GTSAM_EXPORT size_t dim() const;
 
   /** Extract the linearization point used in recalculating error */
   const boost::optional<Values>& linearizationPoint() const { return linearizationPoint_; }
@@ -98,17 +98,17 @@ public:
    * TODO: better approximation of relinearization
    * TODO: switchable modes for approximation technique
    */
-  GaussianFactor::shared_ptr linearize(const Values& c) const;
+  GTSAM_EXPORT GaussianFactor::shared_ptr linearize(const Values& c) const;
 
   /**
    * Creates an anti-factor directly
    */
-  GaussianFactor::shared_ptr negateToGaussian() const;
+  GTSAM_EXPORT GaussianFactor::shared_ptr negateToGaussian() const;
 
   /**
    * Creates the equivalent anti-factor as another LinearContainerFactor.
    */
-  NonlinearFactor::shared_ptr negateToNonlinear() const;
+  GTSAM_EXPORT NonlinearFactor::shared_ptr negateToNonlinear() const;
 
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow
@@ -127,31 +127,31 @@ public:
   /**
    * Simple checks whether this is a Jacobian or Hessian factor
    */
-  bool isJacobian() const;
-  bool isHessian() const;
+  GTSAM_EXPORT bool isJacobian() const;
+  GTSAM_EXPORT bool isHessian() const;
 
   /** Casts to JacobianFactor */
-  boost::shared_ptr<JacobianFactor> toJacobian() const;
+  GTSAM_EXPORT boost::shared_ptr<JacobianFactor> toJacobian() const;
 
   /** Casts to HessianFactor */
-  boost::shared_ptr<HessianFactor> toHessian() const;
+  GTSAM_EXPORT boost::shared_ptr<HessianFactor> toHessian() const;
 
   /**
    * Utility function for converting linear graphs to nonlinear graphs
    * consisting of LinearContainerFactors.
    */
-  static NonlinearFactorGraph ConvertLinearGraph(const GaussianFactorGraph& linear_graph,
+  GTSAM_EXPORT static NonlinearFactorGraph ConvertLinearGraph(const GaussianFactorGraph& linear_graph,
       const Values& linearizationPoint = Values());
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
+  GTSAM_EXPORT static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
       const Values& linearizationPoint = Values()) {
     return ConvertLinearGraph(linear_graph, linearizationPoint);
   }
 #endif
 
 protected:
-  void initializeLinearizationPoint(const Values& linearizationPoint);
+	GTSAM_EXPORT void initializeLinearizationPoint(const Values& linearizationPoint);
 
 private:
 

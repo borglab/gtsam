@@ -76,7 +76,7 @@ TEST(Key, ChrTest) {
 
 /* ************************************************************************* */
 // A custom (nonsensical) formatter.
-string myFormatter(Key key) {
+string keyMyFormatter(Key key) {
   return "special";
 }
 
@@ -91,7 +91,7 @@ TEST(Key, Formatting) {
 
   // use key_formatter with a function pointer
   stringstream ss2;
-  ss2 << key_formatter(myFormatter) << StreamedKey(key);
+  ss2 << key_formatter(keyMyFormatter) << StreamedKey(key);
   EXPECT("special" == ss2.str());
 
   // use key_formatter with a function object.

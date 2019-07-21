@@ -18,7 +18,7 @@
  */
 
 #include <gtsam/global_includes.h>
-#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam_unstable/dllexport.h>
 #include <string>
 
 namespace gtsam {

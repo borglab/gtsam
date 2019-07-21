@@ -129,12 +129,31 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void VectorValues::print(const string& str, const KeyFormatter& formatter) const {
-    cout << str << ": " << size() << " elements\n";
-    for(const value_type& key_value: *this)
-      cout << "  " << formatter(key_value.first) << ": " << key_value.second.transpose() << "\n";
-    cout.flush();
+  ostream& operator<<(ostream& os, const VectorValues& v) {
+    // Change print depending on whether we are using TBB
+#ifdef GTSAM_USE_TBB
+    map<Key, Vector> sorted;
+    for (const auto& key_value : v) {
+      sorted.emplace(key_value.first, key_value.second);
+    }
+    for (const auto& key_value : sorted)
+#else
+    for (const auto& key_value : v)
+#endif
+    {
+      os << "  " << StreamedKey(key_value.first) << ": " << key_value.second.transpose()
+         << "\n";
+    }
+    return os;
   }
+
+  /* ************************************************************************* */
+  void VectorValues::print(const string& str,
+                           const KeyFormatter& formatter) const {
+    cout << str << ": " << size() << " elements\n";
+    cout << key_formatter(formatter) << *this;
+    cout.flush();
+}
 
   /* ************************************************************************* */
   bool VectorValues::equals(const VectorValues& x, double tol) const {
