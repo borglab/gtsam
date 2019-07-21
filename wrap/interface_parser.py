@@ -1,4 +1,6 @@
 import os
+import sys
+
 import pyparsing
 from pyparsing import (
     alphas,
@@ -21,7 +23,6 @@ from pyparsing import (
     ZeroOrMore,
 )
 from pyparsing import ParseException, ParserElement
-import sys
 
 ParserElement.enablePackrat()
 
@@ -223,11 +224,6 @@ class Type(object):
         )
 
 
-class HasParent(object):
-    def __init__(self):
-        self.parent = ''
-
-
 class Argument(object):
     rule = (Type.rule("ctype") + IDENT("name")).setParseAction(
         lambda t: Argument(t.ctype, t.name)
@@ -343,7 +339,7 @@ class Template(object):
         self.instantiations = [ti.instantiations for ti in ti_list]
 
 
-class Method(HasParent):
+class Method(object):
     rule = (
         Optional(Template.rule("template"))
         + ReturnType.rule("return_type")
@@ -378,7 +374,7 @@ class Method(HasParent):
         )
 
 
-class StaticMethod(HasParent):
+class StaticMethod(object):
     rule = (
         STATIC
         + ReturnType.rule("return_type")
@@ -405,7 +401,7 @@ class StaticMethod(HasParent):
         return self.name
 
 
-class Constructor(HasParent):
+class Constructor(object):
     rule = (
         IDENT("name")
         + LPAREN
@@ -424,7 +420,7 @@ class Constructor(HasParent):
         return "Constructor: {}".format(self.name)
 
 
-class Property(HasParent):
+class Property(object):
     rule = (Type.rule("ctype") + IDENT("name") + SEMI_COLON).setParseAction(
         lambda t: Property(t.ctype, t.name)
     )
@@ -451,7 +447,7 @@ def collect_namespaces(obj):
     return [''] + namespaces
 
 
-class Class(HasParent):
+class Class(object):
     class MethodsAndProperties(object):
         rule = ZeroOrMore(
             Constructor.rule ^ StaticMethod.rule ^ Method.rule ^ Property.rule
@@ -543,7 +539,7 @@ class Class(HasParent):
         return collect_namespaces(self)
 
 
-class TypedefTemplateInstantiation(HasParent):
+class TypedefTemplateInstantiation(object):
     rule = (
         TYPEDEF + Typename.rule("typename") + IDENT("new_name") + SEMI_COLON
     ).setParseAction(
@@ -558,7 +554,7 @@ class TypedefTemplateInstantiation(HasParent):
         self.parent = parent
 
 
-class Include(HasParent):
+class Include(object):
     rule = (
         INCLUDE + LOPBRACK + CharsNotIn('>')("header") + ROPBRACK
     ).setParseAction(lambda t: Include(t.header))
@@ -571,7 +567,7 @@ class Include(HasParent):
         return "#include <{}>".format(self.header)
 
 
-class ForwardDeclaration(HasParent):
+class ForwardDeclaration(object):
     rule = (
         Optional(VIRTUAL("is_virtual"))
         + CLASS
@@ -597,7 +593,7 @@ class ForwardDeclaration(HasParent):
         )
 
 
-class GlobalFunction(HasParent):
+class GlobalFunction(object):
     rule = (
         ReturnType.rule("return_type")
         + IDENT("name")
@@ -650,7 +646,7 @@ def find_sub_namespace(namespace, str_namespaces):
     return res
 
 
-class Namespace(HasParent):
+class Namespace(object):
     rule = Forward()
     rule << (
         NAMESPACE
