@@ -63,7 +63,7 @@ TEST(BetweenFactor, SlowButCorrectCompare) {
   Matrix actualH1 = Eigen::MatrixXd::Zero(3,3);
   Matrix actualH2 = Eigen::MatrixXd::Zero(3,3);
   double duration = 0.0;
-
+  // Running samples to get the timing of evaluateError
   size_t sample_size = 100; 
   for (size_t i = 0; i < sample_size; i++) {
     Matrix H1, H2;
