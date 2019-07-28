@@ -55,8 +55,8 @@ TEST(BetweenFactor, Rot3) {
 TEST(BetweenFactor, SlowButCorrectCompare) {
   Rot3 R1 = Rot3::Rodrigues(0.1, 0.2, 0.3);
   Rot3 R2 = Rot3::Rodrigues(0.4, 0.5, 0.6);
-  Rot3 noise = Rot3::Rodrigues(0.01, 0.01, 0.01); // Uncomment to make unit test fail
-  Rot3 measured = R1.between(R2)*noise  ;
+  Rot3 noise = Rot3::Rodrigues(0.01, 0.01, 0.01);
+  Rot3 measured = R1.between(R2)*noise  ; // Some noisy measurement
   BetweenFactor<Rot3> factor(R(1), R(2), measured, Isotropic::Sigma(3, 0.05));
 
   Vector3 actual;
@@ -81,7 +81,7 @@ TEST(BetweenFactor, SlowButCorrectCompare) {
   actualH1 = actualH1 / sample_size;
   actualH2 = actualH2 / sample_size;
   duration = duration / sample_size;
-
+  // Comparing calculated Jacobian to numerically obtained Jacobian 
   Vector expected = Rot3::Logmap(measured.inverse() * R1.between(R2));
   Matrix numericalH1 = numericalDerivative21<Vector3,Rot3,Rot3>(
       boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
