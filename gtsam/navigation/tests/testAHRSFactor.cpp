@@ -129,22 +129,22 @@ TEST( AHRSFactor, PreintegratedAhrsMeasurementsConstructor ) {
   double deltaTij = 0.02;
   Matrix3 delRdelBiasOmega = Matrix3::Ones()*0.5;
   Matrix3 preintMeasCov = Matrix3::Ones()*0.2;
-  gtsam::PreintegratedAhrsMeasurements test_pim(
-    boost::make_shared<gtsam::PreintegratedRotationParams>(params),
+  PreintegratedAhrsMeasurements actualPim(
+    boost::make_shared<PreintegratedRotationParams>(params),
     bias,
     deltaTij,
     deltaRij,
     delRdelBiasOmega,
     preintMeasCov);
   EXPECT(assert_equal(gyroscopeCovariance,
-      test_pim.p().getGyroscopeCovariance(), 1e-6));
+      actualPim.p().getGyroscopeCovariance(), 1e-6));
   EXPECT(assert_equal(omegaCoriolis,
-      test_pim.p().getOmegaCoriolis().get(), 1e-6));
-  EXPECT(assert_equal(bias, test_pim.biasHat(), 1e-6));
-  DOUBLES_EQUAL(deltaTij, test_pim.deltaTij(), 1e-6);
-  EXPECT(assert_equal(deltaRij, Rot3(test_pim.deltaRij()), 1e-6));
-  EXPECT(assert_equal(delRdelBiasOmega, test_pim.delRdelBiasOmega(), 1e-6));
-  EXPECT(assert_equal(preintMeasCov, test_pim.preintMeasCov(), 1e-6));
+      actualPim.p().getOmegaCoriolis().get(), 1e-6));
+  EXPECT(assert_equal(bias, actualPim.biasHat(), 1e-6));
+  DOUBLES_EQUAL(deltaTij, actualPim.deltaTij(), 1e-6);
+  EXPECT(assert_equal(deltaRij, Rot3(actualPim.deltaRij()), 1e-6));
+  EXPECT(assert_equal(delRdelBiasOmega, actualPim.delRdelBiasOmega(), 1e-6));
+  EXPECT(assert_equal(preintMeasCov, actualPim.preintMeasCov(), 1e-6));
 }
 
 /* ************************************************************************* */
