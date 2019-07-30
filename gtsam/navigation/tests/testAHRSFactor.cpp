@@ -121,7 +121,6 @@ TEST( AHRSFactor, PreintegratedMeasurements ) {
 
 //******************************************************************************
 TEST( AHRSFactor, PreintegratedAhrsMeasurementsConstructor ) {
-  // Linearization point
   Matrix3 gyroscopeCovariance = Matrix3::Ones()*0.4;
   Vector3 omegaCoriolis(0.1, 0.5, 0.9);
   PreintegratedRotationParams params(gyroscopeCovariance, omegaCoriolis);
