@@ -73,9 +73,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
       const Matrix3& preint_meas_cov) :
       biasHat_(bias_hat),
       PreintegratedRotation(p, deltaTij, deltaRij, delRdelBiasOmega),
-      preintMeasCov_(preint_meas_cov) {
-    p_->gyroscopeCovariance = p->getGyroscopeCovariance();
-  }
+      preintMeasCov_(preint_meas_cov) {}
 
   const Params& p() const { return *boost::static_pointer_cast<const Params>(p_);}
   const Vector3& biasHat() const { return biasHat_; }
