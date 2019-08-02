@@ -153,20 +153,31 @@ TEST( NonlinearOptimizer, SimpleDLOptimizer )
 
 /* ************************************************************************* */
 TEST(NonlinearOptimizer, optimization_method) {
+  // Create nonlinear example
   auto fg = example::createReallyNonlinearFactorGraph();
 
+  // Create some test Values (just one 2D point, in this case)
   Point2 x0(3, 3);
   Values c0;
   c0.insert(X(1), x0);
 
+  // Below we solve with different backend linear solver choices
   LevenbergMarquardtParams params;
+
+  // Multifrontal QR, will be parallel if TBB installed
   params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_QR;
   Values actualMFQR = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
   DOUBLES_EQUAL(0, fg.error(actualMFQR), tol);
 
+  // Multifrontal Cholesky (more sensitive to conditioning, but faster)
   params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
   Values actualMFChol = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
   DOUBLES_EQUAL(0, fg.error(actualMFChol), tol);
+
+  // Test sparse Eigen solver
+  params.linearSolverType = LevenbergMarquardtParams::EIGEN;
+  Values actualEigen = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
+  DOUBLES_EQUAL(0, fg.error(actualEigen), tol);
 }
 
 /* ************************************************************************* */
