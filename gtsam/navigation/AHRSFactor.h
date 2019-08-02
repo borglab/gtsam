@@ -71,8 +71,8 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
       const Rot3& deltaRij,
       const Matrix3& delRdelBiasOmega,
       const Matrix3& preint_meas_cov) :
-      biasHat_(bias_hat),
       PreintegratedRotation(p, deltaTij, deltaRij, delRdelBiasOmega),
+      biasHat_(bias_hat),
       preintMeasCov_(preint_meas_cov) {}
 
   const Params& p() const { return *boost::static_pointer_cast<const Params>(p_);}
