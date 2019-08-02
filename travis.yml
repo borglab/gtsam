@@ -1,0 +1,113 @@
+language: cpp
+cache: ccache
+sudo: required
+dist: xenial
+
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - g++-8
+    - clang-3.8
+    - build-essential
+    - pkg-config
+    - cmake
+    - libpython-dev python-numpy
+    - libboost-all-dev
+
+# before_install:
+#  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update          ; fi
+
+install:
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then HOMEBREW_NO_AUTO_UPDATE=1 brew install ccache  ; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then export PATH="/usr/local/opt/ccache/libexec:$PATH" ; fi
+
+# We first do the compile stage specified below, then the matrix expansion specified after.
+stages:
+  - compile
+  - test
+
+# Compile stage without building examples/tests to populate the caches.
+jobs:
+  include:
+# on Mac, GCC
+  - stage: compile
+    os: osx
+    compiler: gcc
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
+    script: bash .travis.sh -b
+  - stage: compile
+    os: osx
+    compiler: gcc
+    env: CMAKE_BUILD_TYPE=Release
+    script: bash .travis.sh -b
+# on Mac, CLANG
+  - stage: compile
+    os: osx
+    compiler: clang
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
+    script: bash .travis.sh -b
+  - stage: compile
+    os: osx
+    compiler: clang
+    env: CMAKE_BUILD_TYPE=Release
+    script: bash .travis.sh -b
+# on Linux, GCC
+  - stage: compile
+    os: linux
+    compiler: gcc
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
+    script: bash .travis.sh -b
+  - stage: compile
+    os: linux
+    compiler: gcc
+    env: CMAKE_BUILD_TYPE=Release
+    script: bash .travis.sh -b
+# on Linux, CLANG
+  - stage: compile
+    os: linux
+    compiler: clang
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
+    script: bash .travis.sh -b
+  - stage: compile
+    os: linux
+    compiler: clang
+    env: CMAKE_BUILD_TYPE=Release
+    script: bash .travis.sh -b
+# on Linux, with deprecated ON to make sure that path still compiles
+  - stage: compile
+    os: linux
+    compiler: clang
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF GTSAM_ALLOW_DEPRECATED_SINCE_V4=ON
+    script: bash .travis.sh -b
+
+# Matrix configuration:
+os:
+  - osx
+  - linux
+compiler:
+  - gcc
+  - clang
+env:
+  global:
+    - MAKEFLAGS="-j2"
+    - CCACHE_SLOPPINESS=pch_defines,time_macros
+    - GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF
+    - GTSAM_BUILD_UNSTABLE=ON
+  matrix:
+    - CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
+    - CMAKE_BUILD_TYPE=Release
+script:
+  - bash .travis.sh -t
+
+matrix:
+  exclude:
+    # Exclude g++ debug on Linux as it consistently times out
+    - os: linux
+      compiler: gcc
+      env : CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
+    # Exclude clang on Linux/clang in release until issue #57 is solved
+    - os: linux
+      compiler: clang
+      env : CMAKE_BUILD_TYPE=Release
