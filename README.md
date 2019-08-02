@@ -1,6 +1,6 @@
 README - Georgia Tech Smoothing and Mapping library
 ===================================================
-Version: Pre-Release 3.2.0
+Version: 3.2.3
 
 What is GTSAM?
 --------------
