@@ -27,6 +27,8 @@
 
 #include <gtsam/inference/Ordering.h>
 
+#include <Eigen/Sparse>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -124,13 +126,13 @@ const Values& NonlinearOptimizer::optimizeSafely() {
 }
 
 /* ************************************************************************* */
-VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
-                                       const NonlinearOptimizerParams& params) const {
+VectorValues NonlinearOptimizer::solve(
+    const GaussianFactorGraph& gfg,
+    const NonlinearOptimizerParams& params) const {
   // solution of linear solver is an update to the linearization point
   VectorValues delta;
   boost::optional<const Ordering&> optionalOrdering;
-  if (params.ordering)
-    optionalOrdering.reset(*params.ordering);
+  if (params.ordering) optionalOrdering.reset(*params.ordering);
 
   // Check which solver we are using
   if (params.isMultifrontal()) {
@@ -138,27 +140,64 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
     delta = gfg.optimize(optionalOrdering, params.getEliminationFunction());
   } else if (params.isSequential()) {
     // Sequential QR or Cholesky (decided by params.getEliminationFunction())
-    delta = gfg.eliminateSequential(optionalOrdering, params.getEliminationFunction(), boost::none,
-                                    params.orderingType)->optimize();
+    delta = gfg.eliminateSequential(optionalOrdering,
+                                    params.getEliminationFunction(),
+                                    boost::none, params.orderingType)
+                ->optimize();
   } else if (params.isIterative()) {
     // Conjugate Gradient -> needs params.iterativeParams
     if (!params.iterativeParams)
-      throw std::runtime_error("NonlinearOptimizer::solve: cg parameter has to be assigned ...");
+      throw std::runtime_error(
+          "NonlinearOptimizer::solve: cg parameter has to be assigned ...");
 
     if (boost::shared_ptr<PCGSolverParameters> pcg =
-            boost::dynamic_pointer_cast<PCGSolverParameters>(params.iterativeParams)) {
+            boost::dynamic_pointer_cast<PCGSolverParameters>(
+                params.iterativeParams)) {
       delta = PCGSolver(*pcg).optimize(gfg);
     } else if (boost::shared_ptr<SubgraphSolverParameters> spcg =
-                   boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams)) {
+                   boost::dynamic_pointer_cast<SubgraphSolverParameters>(
+                       params.iterativeParams)) {
       if (!params.ordering)
         throw std::runtime_error("SubgraphSolver needs an ordering");
       delta = SubgraphSolver(gfg, *spcg, *params.ordering).optimize();
     } else {
       throw std::runtime_error(
-          "NonlinearOptimizer::solve: special cg parameter type is not handled in LM solver ...");
+          "NonlinearOptimizer::solve: special cg parameter type is not handled "
+          "in LM solver ...");
     }
+  } else if (params.isEigen()) {
+    // TODO(Mandy): make this a GFG method ?
+
+    // Get sparse entries of Jacobian [A|b] augmented with RHS b.
+    auto entries = gfg.sparseJacobian();
+
+    // Convert boost tuples to Eigen triplets
+    // TODO(Mandy): Levenberg-MQ prior has zeros in RHS
+    vector<Eigen::Triplet<double>> triplets;
+    entries.reserve(triplets.size());
+    for (const auto& e : entries) {
+      triplets.emplace_back(e.get<0>(), e.get<1>(), e.get<2>());
+      cout << e.get<0>() << ", " << e.get<1>()<< ", " << e.get<2>() << endl;
+    }
+
+    // ...and make a sparse matrix with it.
+    const auto& lastTriplet = triplets.back();
+    const size_t rows = lastTriplet.row() + 1, cols = lastTriplet.col();
+    using SpMat = Eigen::SparseMatrix<double>;
+    SpMat Ab(rows, cols + 1);
+    Ab.setFromTriplets(triplets.begin(), triplets.end());
+    Ab.makeCompressed();
+    cout << Ab << endl;
+
+    // Solve A*x = b using sparse QR from Eigen
+    Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>> qr(Ab.rightCols(cols));
+    Eigen::VectorXd x = qr.solve(Ab.col(cols));
+    cout << x << endl;
+
+    // TODO(Mandy): make delta
   } else {
-    throw std::runtime_error("NonlinearOptimizer::solve: Optimization parameter is invalid");
+    throw std::runtime_error(
+        "NonlinearOptimizer::solve: Optimization parameter is invalid");
   }
 
   // return update
