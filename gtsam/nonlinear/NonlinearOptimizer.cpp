@@ -193,9 +193,22 @@ VectorValues NonlinearOptimizer::solve(
     cout << Ab << endl;
 
     // Solve A*x = b using sparse QR from Eigen
-    Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>> qr(Ab.rightCols(cols));
+    Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>> qr(Ab);
     Eigen::VectorXd x = qr.solve(Ab.col(cols));
     cout << x << endl;
+
+    // First find dimensions of each variable
+    std::map<Key, size_t> dims;
+    for (const auto& factor : gfg) {
+      if (!static_cast<bool>(factor))
+        continue;
+
+      for (GaussianFactor::const_iterator key = factor->begin();
+          key != factor->end(); ++key) {
+        dims[*key] = factor->getDim(key);
+      }
+    }
+    delta = VectorValues(x, dims);
 
     // TODO(Mandy): make delta
   } else {
