@@ -162,21 +162,21 @@ TEST(NonlinearOptimizer, optimization_method) {
   c0.insert(X(1), x0);
 
   // Below we solve with different backend linear solver choices
-  LevenbergMarquardtParams params;
+  GaussNewtonParams params;
 
   // Multifrontal QR, will be parallel if TBB installed
-  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_QR;
-  Values actualMFQR = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
+  params.linearSolverType = GaussNewtonParams::MULTIFRONTAL_QR;
+  Values actualMFQR = GaussNewtonOptimizer(fg, c0, params).optimize();
   DOUBLES_EQUAL(0, fg.error(actualMFQR), tol);
 
   // Multifrontal Cholesky (more sensitive to conditioning, but faster)
-  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
-  Values actualMFChol = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
+  params.linearSolverType = GaussNewtonParams::MULTIFRONTAL_CHOLESKY;
+  Values actualMFChol = GaussNewtonOptimizer(fg, c0, params).optimize();
   DOUBLES_EQUAL(0, fg.error(actualMFChol), tol);
 
   // Test sparse Eigen solver
-  params.linearSolverType = LevenbergMarquardtParams::EIGEN;
-  Values actualEigen = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
+  params.linearSolverType = GaussNewtonParams::EIGEN;
+  Values actualEigen = GaussNewtonOptimizer(fg, c0, params).optimize();
   DOUBLES_EQUAL(0, fg.error(actualEigen), tol);
 }
 
