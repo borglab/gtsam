@@ -273,10 +273,10 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
     boost::optional<const Scatter&> scatter)
 {
   gttic(HessianFactor_MergeConstructor);
-  boost::optional<Scatter> computedScatter;
+  Scatter computedScatter;
   if(!scatter) {
     computedScatter = Scatter(factors);
-    scatter = computedScatter;
+    scatter.reset(computedScatter);
   }
 
   // Allocate and copy keys

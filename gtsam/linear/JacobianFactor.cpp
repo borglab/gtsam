@@ -224,10 +224,10 @@ JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
   gttic(JacobianFactor_combine_constructor);
 
   // Compute VariableSlots if one was not provided
-  boost::optional<VariableSlots> computedVariableSlots;
+  VariableSlots computedVariableSlots;
   if (!variableSlots) {
     computedVariableSlots = VariableSlots(graph);
-    variableSlots = computedVariableSlots; // Binds reference, does not copy VariableSlots
+    variableSlots.reset(computedVariableSlots); // Binds reference, does not copy VariableSlots
   }
 
   // Cast or convert to Jacobians

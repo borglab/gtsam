@@ -191,7 +191,8 @@ TEST( JacobianFactor, construct_from_graph)
   JacobianFactor expected(10, A1, 8, A2, 12, A3, b, noiseModel::Diagonal::Sigmas(sigmas));
 
   // The ordering here specifies the order in which the variables will appear in the combined factor
-  JacobianFactor actual(factors, Ordering(list_of(10)(8)(12)));
+  const Ordering ordering(list_of(10)(8)(12));
+  JacobianFactor actual(factors, ordering);
 
   EXPECT(assert_equal(expected, actual));
 }

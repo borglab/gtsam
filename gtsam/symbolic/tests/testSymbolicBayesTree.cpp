@@ -231,8 +231,8 @@ TEST( BayesTree, shortcutCheck )
     (SymbolicFactor(_E_, _B_))
     (SymbolicFactor(_F_, _E_))
     (SymbolicFactor(_G_, _F_));
-  SymbolicBayesTree bayesTree = *chain.eliminateMultifrontal(
-    Ordering(list_of(_G_)(_F_)(_E_)(_D_)(_C_)(_B_)(_A_)));
+  const Ordering ordering(list_of(_G_)(_F_)(_E_)(_D_)(_C_)(_B_)(_A_));
+  SymbolicBayesTree bayesTree = *chain.eliminateMultifrontal(ordering);
 
   //bayesTree.saveGraph("BT1.dot");
 
@@ -337,8 +337,8 @@ TEST( BayesTree, removeTop3 )
     (SymbolicFactor(X(4), L(5)))
     (SymbolicFactor(X(2), X(4)))
     (SymbolicFactor(X(3), X(2)));
-  SymbolicBayesTree bayesTree = *graph.eliminateMultifrontal(
-    Ordering(list_of (X(3)) (X(2)) (X(4)) (L(5)) ));
+  const Ordering ordering(list_of(X(3))(X(2))(X(4))(L(5)));
+  SymbolicBayesTree bayesTree = *graph.eliminateMultifrontal(ordering);
 
   // remove all
   SymbolicBayesNet bn;
@@ -361,8 +361,8 @@ TEST( BayesTree, removeTop4 )
     (SymbolicFactor(X(4), L(5)))
     (SymbolicFactor(X(2), X(4)))
     (SymbolicFactor(X(3), X(2)));
-  SymbolicBayesTree bayesTree = *graph.eliminateMultifrontal(
-    Ordering(list_of (X(3)) (X(2)) (X(4)) (L(5)) ));
+  const Ordering ordering(list_of(X(3))(X(2))(X(4))(L(5)));
+  SymbolicBayesTree bayesTree = *graph.eliminateMultifrontal(ordering);
 
   // remove all
   SymbolicBayesNet bn;
@@ -386,10 +386,10 @@ TEST( BayesTree, removeTop5 )
     (SymbolicFactor(X(4), L(5)))
     (SymbolicFactor(X(2), X(4)))
     (SymbolicFactor(X(3), X(2)));
-  SymbolicBayesTree bayesTree = *graph.eliminateMultifrontal(
-    Ordering(list_of (X(3)) (X(2)) (X(4)) (L(5)) ));
+  const Ordering ordering(list_of(X(3))(X(2))(X(4))(L(5)));
+  SymbolicBayesTree bayesTree = *graph.eliminateMultifrontal(ordering);
 
-  // Remove nonexistant
+  // Remove non-existent
   SymbolicBayesNet bn;
   SymbolicBayesTree::Cliques orphans;
   bayesTree.removeTop(list_of(X(10)), bn, orphans);

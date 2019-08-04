@@ -60,6 +60,9 @@ public:
   /// @name Standard Constructors
   /// @{
 
+  /// Default constructor
+  VariableSlots() {}
+
   /**
    * Constructor from a set of factors to be combined.  Sorts the variables
    * and keeps track of which variable from each factor ends up in each slot

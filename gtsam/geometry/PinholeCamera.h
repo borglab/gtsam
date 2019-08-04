@@ -503,7 +503,7 @@ public:
       const CalibratedCamera& camera, //
       boost::optional<Matrix&> Dpose = boost::none,
       boost::optional<Matrix&> Dother = boost::none) const {
-    return pose_.range(camera.pose_, Dpose, Dother);
+    return pose_.range(camera.pose(), Dpose, Dother);
   }
 
 private:
