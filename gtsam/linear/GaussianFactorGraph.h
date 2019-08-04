@@ -319,6 +319,9 @@ namespace gtsam {
     /** In-place version e <- A*x that takes an iterator. */
     void multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const;
 
+    /// solve Ax = b using SparseQR from Eigen
+    VectorValues eigenSparseQR() const;
+
     /// @}
 
   private:
