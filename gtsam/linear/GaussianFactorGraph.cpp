@@ -30,6 +30,8 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/cholesky.h>
 
+#include <Eigen/Sparse>
+
 using namespace std;
 using namespace gtsam;
 
@@ -159,8 +161,11 @@ namespace gtsam {
 
       JacobianFactor::constBVector whitenedb(whitened.getb());
       size_t bcolumn = currentColIndex;
-      for (size_t i = 0; i < (size_t) whitenedb.size(); i++)
-        entries.emplace_back(row + i, bcolumn, whitenedb(i));
+      for (size_t i = 0; i < (size_t) whitenedb.size(); i++) {
+        double s = whitenedb(i);
+        if (std::abs(s) > 1e-12)
+          entries.emplace_back(row + i, bcolumn, s);
+      }
 
       // Increment row index
       row += jacobianFactor->rows();
@@ -459,5 +464,4 @@ namespace gtsam {
     }
     return e;
   }
-
 } // namespace gtsam
