@@ -169,48 +169,7 @@ VectorValues NonlinearOptimizer::solve(
           "in LM solver ...");
     }
   } else if (params.isEigen()) {
-    // TODO(Mandy): make this a GFG method ?
-
-    // Get sparse entries of Jacobian [A|b] augmented with RHS b.
-    auto entries = gfg.sparseJacobian();
-
-    // Convert boost tuples to Eigen triplets
-    // TODO(Mandy): Levenberg-MQ prior has zeros in RHS
-    vector<Eigen::Triplet<double>> triplets;
-    entries.reserve(triplets.size());
-    for (const auto& e : entries) {
-      triplets.emplace_back(e.get<0>(), e.get<1>(), e.get<2>());
-      cout << e.get<0>() << ", " << e.get<1>()<< ", " << e.get<2>() << endl;
-    }
-
-    // ...and make a sparse matrix with it.
-    const auto& lastTriplet = triplets.back();
-    const size_t rows = lastTriplet.row() + 1, cols = lastTriplet.col();
-    using SpMat = Eigen::SparseMatrix<double>;
-    SpMat Ab(rows, cols + 1);
-    Ab.setFromTriplets(triplets.begin(), triplets.end());
-    Ab.makeCompressed();
-    cout << Ab << endl;
-
-    // Solve A*x = b using sparse QR from Eigen
-    Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>> qr(Ab);
-    Eigen::VectorXd x = qr.solve(Ab.col(cols));
-    cout << x << endl;
-
-    // First find dimensions of each variable
-    std::map<Key, size_t> dims;
-    for (const auto& factor : gfg) {
-      if (!static_cast<bool>(factor))
-        continue;
-
-      for (GaussianFactor::const_iterator key = factor->begin();
-          key != factor->end(); ++key) {
-        dims[*key] = factor->getDim(key);
-      }
-    }
-    delta = VectorValues(x, dims);
-
-    // TODO(Mandy): make delta
+      delta = gfg.eigenSparseQR();
   } else {
     throw std::runtime_error(
         "NonlinearOptimizer::solve: Optimization parameter is invalid");
