@@ -112,10 +112,10 @@ public:
   }
 
   /**
-   * Return relative pose between p1 and p2, in p1 coordinate frame
-   * as well as optionally the derivatives
+   * Return relative pose between wT1 (this) and wT2, in wT1 coordinate frame.
+   * i.e., returns wT1.inverse() * wT2 = 1T2.
    */
-  Pose3 between(const Pose3& p2, boost::optional<Matrix&> H1 = boost::none,
+  Pose3 between(const Pose3& wT2, boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none) const;
 
   /// @}

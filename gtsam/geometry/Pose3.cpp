@@ -287,7 +287,6 @@ Pose3 Pose3::inverse(boost::optional<Matrix&> H1) const {
 }
 
 /* ************************************************************************* */
-// between = compose(p2,inverse(p1));
 Pose3 Pose3::between(const Pose3& p2, boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2) const {
   Pose3 result = inverse() * p2;

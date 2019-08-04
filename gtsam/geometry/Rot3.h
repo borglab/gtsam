@@ -236,9 +236,10 @@ namespace gtsam {
     }
 
     /**
-     * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
+     * Return relative rotation between wR1 (this) and wR2, in wR1 coordinate frame.
+     * i.e., returns wR1.inverse() * wR2 = 1R2.
      */
-    Rot3 between(const Rot3& R2,
+    Rot3 between(const Rot3& wR2,
         boost::optional<Matrix&> H1=boost::none,
         boost::optional<Matrix&> H2=boost::none) const;
 

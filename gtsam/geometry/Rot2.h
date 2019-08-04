@@ -128,12 +128,15 @@ namespace gtsam {
       return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
     }
 
-    /** Between using the default implementation */
-    inline Rot2 between(const Rot2& R, boost::optional<Matrix&> H1 =
+    /**
+     * Return relative rotation between wR1 (this) and wR2, in wR1 coordinate frame.
+     * i.e., returns wR1.inverse() * wR2 = 1R2.
+     */
+    inline Rot2 between(const Rot2& wR2, boost::optional<Matrix&> H1 =
         boost::none, boost::optional<Matrix&> H2 = boost::none) const {
       if (H1) *H1 = -eye(1);
       if (H2) *H2 = eye(1);
-      return fromCosSin(c_ * R.c_ + s_ * R.s_, -s_ * R.c_ + c_ * R.s_);
+      return fromCosSin(c_ * wR2.c_ + s_ * wR2.s_, -s_ * wR2.c_ + c_ * wR2.s_);
     }
 
     /// @}
