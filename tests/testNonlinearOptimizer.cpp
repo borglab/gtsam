@@ -174,10 +174,15 @@ TEST(NonlinearOptimizer, optimization_method) {
   Values actualMFChol = GaussNewtonOptimizer(fg, c0, params).optimize();
   DOUBLES_EQUAL(0, fg.error(actualMFChol), tol);
 
-  // Test sparse Eigen solver
-  params.linearSolverType = GaussNewtonParams::EIGEN;
-  Values actualEigen = GaussNewtonOptimizer(fg, c0, params).optimize();
-  DOUBLES_EQUAL(0, fg.error(actualEigen), tol);
+  // Test sparse Eigen QR solver
+  params.linearSolverType = GaussNewtonParams::EIGEN_QR;
+  Values actualEigenQR = GaussNewtonOptimizer(fg, c0, params).optimize();
+  DOUBLES_EQUAL(0, fg.error(actualEigenQR), tol);
+
+  // Test sparse Eigen Cholesky solver
+  params.linearSolverType = GaussNewtonParams::EIGEN_CHOLESKY;
+  Values actualEigenCholesky = GaussNewtonOptimizer(fg, c0, params).optimize();
+  DOUBLES_EQUAL(0, fg.error(actualEigenCholesky), tol);
 }
 
 /* ************************************************************************* */
