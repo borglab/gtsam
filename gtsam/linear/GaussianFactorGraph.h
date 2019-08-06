@@ -251,6 +251,10 @@ namespace gtsam {
      */
     VectorValues optimizeDensely() const;
 
+
+    /// Optimize using Eigen's SparseQR factorization
+    VectorValues optimizeEigenQR() const;
+
     /**
      * Compute the gradient of the energy function,
      * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,
@@ -319,8 +323,6 @@ namespace gtsam {
     /** In-place version e <- A*x that takes an iterator. */
     void multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const;
 
-    /// solve Ax = b using SparseQR from Eigen
-    VectorValues eigenSparseQR() const;
 
     /// @}
 
