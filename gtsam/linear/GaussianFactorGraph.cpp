@@ -289,6 +289,35 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValues GaussianFactorGraph::optimizeEigenQR() const {
+    // Get sparse entries of Jacobian [A|b] augmented with RHS b.
+    auto entries = sparseJacobian();
+
+    // Convert boost tuples to Eigen triplets
+    vector<Eigen::Triplet<double>> triplets;
+    triplets.reserve(entries.size());
+    size_t rows = 0, cols = 0;
+    for (const auto& e : entries) {
+      size_t temp_rows = e.get<0>(), temp_cols = e.get<1>(); 
+      triplets.emplace_back(temp_rows, temp_cols, e.get<2>());
+      rows = std::max(rows, temp_rows);
+      cols = std::max(cols, temp_cols);
+    }
+
+    // ...and make a sparse matrix with it. 
+    using SpMat = Eigen::SparseMatrix<double>;
+    SpMat Ab(rows + 1, cols + 1);
+    Ab.setFromTriplets(triplets.begin(), triplets.end());
+    Ab.makeCompressed();
+
+    // Solve A*x = b using sparse QR from Eigen
+    Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>> qr(Ab.block(0, 0, rows+1, cols));
+    Eigen::VectorXd x = qr.solve(Ab.col(cols));
+
+    return VectorValues(x, getKeyDimMap());
+  }
+
+  /* ************************************************************************* */
   namespace {
     JacobianFactor::shared_ptr convertToJacobianFactorPtr(const GaussianFactor::shared_ptr &gf) {
       JacobianFactor::shared_ptr result = boost::dynamic_pointer_cast<JacobianFactor>(gf);
@@ -464,34 +493,5 @@ namespace gtsam {
     }
     return e;
   }
-
-  /* ************************************************************************* */
-  VectorValues GaussianFactorGraph::eigenSparseQR() const {
-    // Get sparse entries of Jacobian [A|b] augmented with RHS b.
-    auto entries = sparseJacobian();
-
-    // Convert boost tuples to Eigen triplets
-    vector<Eigen::Triplet<double>> triplets;
-    triplets.reserve(entries.size());
-    size_t rows = 0, cols = 0;
-    for (const auto& e : entries) {
-      size_t temp_rows = e.get<0>(), temp_cols = e.get<1>(); 
-      triplets.emplace_back(temp_rows, temp_cols, e.get<2>());
-      rows = std::max(rows, temp_rows);
-      cols = std::max(cols, temp_cols);
-    }
-
-    // ...and make a sparse matrix with it. 
-    using SpMat = Eigen::SparseMatrix<double>;
-    SpMat Ab(rows + 1, cols + 1);
-    Ab.setFromTriplets(triplets.begin(), triplets.end());
-    Ab.makeCompressed();
-
-    // Solve A*x = b using sparse QR from Eigen
-    Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>> qr(Ab.block(0, 0, rows+1, cols));
-    Eigen::VectorXd x = qr.solve(Ab.col(cols));
-
-    return VectorValues(x, getKeyDimMap());
-  }
-
+  
 } // namespace gtsam
