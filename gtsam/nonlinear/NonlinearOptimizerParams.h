@@ -79,7 +79,8 @@ public:
     SEQUENTIAL_QR,
     Iterative, /* Experimental Flag */
     CHOLMOD, /* Experimental Flag */
-    EIGEN,
+    EIGEN_QR,
+    EIGEN_CHOLESKY,
   };
 
   LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
@@ -104,8 +105,12 @@ public:
     return (linearSolverType == Iterative);
   }
 
-  inline bool isEigen() const {
-    return (linearSolverType == EIGEN);
+  inline bool isEigenQR() const {
+    return (linearSolverType == EIGEN_QR);
+  }
+
+  inline bool isEigenCholesky() const {
+    return (linearSolverType == EIGEN_CHOLESKY);
   }
 
   GaussianFactorGraph::Eliminate getEliminationFunction() const {
