@@ -65,7 +65,7 @@ GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
  */
 GTSAM_EXPORT Point3 triangulateDLT(
     const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
-    const Point2Vector& measurements, 
+    const Point2Vector& measurements,
     double rank_tol = 1e-9);
 
 /**
@@ -256,7 +256,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
   for(const Pose3& pose: poses) {
-    const Point3& p_local = pose.transform_to(point);
+    const Point3& p_local = pose.transformTo(point);
     if (p_local.z() <= 0)
       throw(TriangulationCheiralityException());
   }
@@ -304,7 +304,7 @@ Point3 triangulatePoint3(
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
   for(const CAMERA& camera: cameras) {
-    const Point3& p_local = camera.pose().transform_to(point);
+    const Point3& p_local = camera.pose().transformTo(point);
     if (p_local.z() <= 0)
       throw(TriangulationCheiralityException());
   }
@@ -386,7 +386,7 @@ private:
 /**
  * TriangulationResult is an optional point, along with the reasons why it is invalid.
  */
-class GTSAM_EXPORT TriangulationResult: public boost::optional<Point3> {
+class TriangulationResult: public boost::optional<Point3> {
   enum Status {
     VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT
   };
@@ -484,7 +484,7 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
         // verify that the triangulated point lies in front of all cameras
         // Only needed if this was not yet handled by exception
-        const Point3& p_local = pose.transform_to(point);
+        const Point3& p_local = pose.transformTo(point);
         if (p_local.z() <= 0)
           return TriangulationResult::BehindCamera();
 #endif

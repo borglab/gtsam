@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -138,23 +138,34 @@ namespace gtsam {
   //}
 
   /* ************************************************************************* */
-  pair<Matrix, Vector> GaussianBayesNet::matrix() const {
+  Ordering GaussianBayesNet::ordering() const {
     GaussianFactorGraph factorGraph(*this);
-    KeySet keys = factorGraph.keys();
+    auto keys = factorGraph.keys();
     // add frontal keys in order
     Ordering ordering;
-    for (const sharedConditional& cg: *this)
+    for (const sharedConditional& cg : *this)
       if (cg) {
-        for (Key key: cg->frontals()) {
+        for (Key key : cg->frontals()) {
           ordering.push_back(key);
           keys.erase(key);
         }
       }
     // add remaining keys in case Bayes net is incomplete
-    for (Key key: keys)
-      ordering.push_back(key);
-    // return matrix and RHS
-    return factorGraph.jacobian(ordering);
+    for (Key key : keys) ordering.push_back(key);
+    return ordering;
+  }
+
+  /* ************************************************************************* */
+  pair<Matrix, Vector> GaussianBayesNet::matrix(boost::optional<const Ordering&> ordering) const {
+    if (ordering) {
+      // Convert to a GaussianFactorGraph and use its machinery
+      GaussianFactorGraph factorGraph(*this);
+      return factorGraph.jacobian(ordering);
+    } else {
+      // recursively call with default ordering
+      const auto defaultOrdering = this->ordering();
+      return matrix(defaultOrdering);
+    }
   }
 
   ///* ************************************************************************* */
@@ -181,11 +192,11 @@ namespace gtsam {
     double logDet = 0.0;
     for(const sharedConditional& cg: *this) {
       if(cg->get_model()) {
-        Vector diag = cg->get_R().diagonal();
+        Vector diag = cg->R().diagonal();
         cg->get_model()->whitenInPlace(diag);
         logDet += diag.unaryExpr(ptr_fun<double,double>(log)).sum();
       } else {
-        logDet += cg->get_R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
+        logDet += cg->R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
       }
     }
     return logDet;

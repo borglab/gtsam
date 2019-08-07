@@ -206,12 +206,9 @@ public:
     std::vector<Matrix> Gs(numKeys * (numKeys + 1) / 2);
     std::vector<Vector> gs(numKeys);
 
-    if (this->measured_.size() != cameras.size()) {
-      std::cout
-          << "SmartStereoProjectionHessianFactor: this->measured_.size() inconsistent with input"
-          << std::endl;
-      exit(1);
-    }
+    if (this->measured_.size() != cameras.size())
+      throw std::runtime_error("SmartStereoProjectionHessianFactor: this->"
+                               "measured_.size() inconsistent with input");
 
     triangulateSafe(cameras);
 
@@ -360,7 +357,7 @@ public:
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
   void computeJacobiansWithTriangulatedPoint(
-      FBlocks& Fs, 
+      FBlocks& Fs,
       Matrix& E, Vector& b,
       const Cameras& cameras) const {
 

@@ -24,6 +24,7 @@ from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
 import gtsam
 import gtsam.utils.plot as gtsam_plot
 from gtsam import Pose2
+from gtsam.utils.test_case import GtsamTestCase
 
 
 def vector3(x, y, z):
@@ -114,7 +115,7 @@ class ThreeLinkArm(object):
 
         l1Zl1 = expmap(0.0, 0.0, q[0])
         l2Zl2 = expmap(0.0, self.L1, q[1])
-        l3Zl3 = expmap(0.0, 7.0, q[2])
+        l3Zl3 = expmap(0.0, self.L1+self.L2, q[2])
         return compose(l1Zl1, l2Zl2, l3Zl3, self.sXt0)
 
     def ik(self, sTt_desired, e=1e-9):
@@ -202,7 +203,7 @@ Q1 = np.radians(vector3(-30, -45, -90))
 Q2 = np.radians(vector3(-90, 90, 0))
 
 
-class TestPose2SLAMExample(unittest.TestCase):
+class TestPose2SLAMExample(GtsamTestCase):
     """Unit tests for functions used below."""
 
     def setUp(self):
@@ -296,12 +297,18 @@ def run_example():
     """ Use trajectory interpolation and then trajectory tracking a la Murray
         to move a 3-link arm on a straight line.
     """
+    # Create arm
     arm = ThreeLinkArm()
+
+    # Get initial pose using forward kinematics
     q = np.radians(vector3(30, -30, 45))
     sTt_initial = arm.fk(q)
+
+    # Create interpolated trajectory in task space to desired goal pose
     sTt_goal = Pose2(2.4, 4.3, math.radians(0))
     poses = trajectory(sTt_initial, sTt_goal, 50)
 
+    # Setup figure and plot initial pose
     fignum = 0
     fig = plt.figure(fignum)
     axes = fig.gca()
@@ -309,6 +316,8 @@ def run_example():
     axes.set_ylim(0, 10)
     gtsam_plot.plot_pose2(fignum, arm.fk(q))
 
+    # For all poses in interpolated trajectory, calculate dq to move to next pose.
+    # We do this by calculating the local Jacobian J and doing dq = inv(J)*delta(sTt, pose).
     for pose in poses:
         sTt = arm.fk(q)
         error = delta(sTt, pose)

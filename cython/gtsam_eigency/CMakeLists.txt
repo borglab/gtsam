@@ -22,17 +22,28 @@ cythonize(cythonize_eigency_conversions "../gtsam_eigency/conversions.pyx" "conv
   "${OUTPUT_DIR}" "${EIGENCY_INCLUDE_DIR}" "" "" "")
 cythonize(cythonize_eigency_core "../gtsam_eigency/core.pyx" "core"
   ${OUTPUT_DIR} "${EIGENCY_INCLUDE_DIR}" "" "" "")
+
+# Include Eigen headers:
+target_include_directories(cythonize_eigency_conversions PUBLIC
+  $<BUILD_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_BUILD}>
+  $<INSTALL_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_INSTALL}>
+)
+target_include_directories(cythonize_eigency_core PUBLIC
+  $<BUILD_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_BUILD}>
+  $<INSTALL_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_INSTALL}>
+)
+
 add_dependencies(cythonize_eigency_core cythonize_eigency_conversions)
 add_custom_target(cythonize_eigency)
 add_dependencies(cythonize_eigency cythonize_eigency_conversions cythonize_eigency_core)
 
 # install
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        DESTINATION ${GTSAM_CYTHON_INSTALL_PATH}
+        DESTINATION "${GTSAM_CYTHON_INSTALL_PATH}${GTSAM_BUILD_TAG}"
         PATTERN "CMakeLists.txt" EXCLUDE
         PATTERN "__init__.py.in" EXCLUDE)
 install(TARGETS cythonize_eigency_core cythonize_eigency_conversions
-        DESTINATION "${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency")
-install(FILES ${OUTPUT_DIR}/conversions_api.h DESTINATION ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency)
+        DESTINATION "${GTSAM_CYTHON_INSTALL_PATH}${GTSAM_BUILD_TAG}/gtsam_eigency")
+install(FILES ${OUTPUT_DIR}/conversions_api.h DESTINATION ${GTSAM_CYTHON_INSTALL_PATH}${GTSAM_BUILD_TAG}/gtsam_eigency)
 configure_file(__init__.py.in ${OUTPUT_DIR}/__init__.py)
-install(FILES ${OUTPUT_DIR}/__init__.py DESTINATION ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency)
+install(FILES ${OUTPUT_DIR}/__init__.py DESTINATION ${GTSAM_CYTHON_INSTALL_PATH}${GTSAM_BUILD_TAG}/gtsam_eigency)

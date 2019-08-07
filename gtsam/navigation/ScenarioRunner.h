@@ -36,13 +36,13 @@ static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
  *  Simple class to test navigation scenarios.
  *  Takes a trajectory scenario as input, and can generate IMU measurements
  */
-class ScenarioRunner {
+class GTSAM_EXPORT ScenarioRunner {
  public:
   typedef imuBias::ConstantBias Bias;
-  typedef boost::shared_ptr<PreintegratedImuMeasurements::Params> SharedParams;
+  typedef boost::shared_ptr<PreintegrationParams> SharedParams;
 
  private:
-  const Scenario* scenario_;
+  const Scenario& scenario_;
   const SharedParams p_;
   const double imuSampleTime_, sqrt_dt_;
   const Bias estimatedBias_;
@@ -51,7 +51,7 @@ class ScenarioRunner {
   mutable Sampler gyroSampler_, accSampler_;
 
  public:
-  ScenarioRunner(const Scenario* scenario, const SharedParams& p,
+  ScenarioRunner(const Scenario& scenario, const SharedParams& p,
                  double imuSampleTime = 1.0 / 100.0, const Bias& bias = Bias())
       : scenario_(scenario),
         p_(p),
@@ -68,13 +68,13 @@ class ScenarioRunner {
 
   // A gyro simply measures angular velocity in body frame
   Vector3 actualAngularVelocity(double t) const {
-    return scenario_->omega_b(t);
+    return scenario_.omega_b(t);
   }
 
   // An accelerometer measures acceleration in body, but not gravity
   Vector3 actualSpecificForce(double t) const {
-    Rot3 bRn(scenario_->rotation(t).transpose());
-    return scenario_->acceleration_b(t) - bRn * gravity_n();
+    Rot3 bRn(scenario_.rotation(t).transpose());
+    return scenario_.acceleration_b(t) - bRn * gravity_n();
   }
 
   // versions corrupted by bias and noise
@@ -104,6 +104,15 @@ class ScenarioRunner {
 
   /// Estimate covariance of sampled noise for sanity-check
   Matrix6 estimateNoiseCovariance(size_t N = 1000) const;
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  /// @name Deprecated
+  /// @{
+  ScenarioRunner(const Scenario* scenario, const SharedParams& p,
+                 double imuSampleTime = 1.0 / 100.0, const Bias& bias = Bias())
+      : ScenarioRunner(*scenario, p, imuSampleTime, bias) {}
+  /// @}
+#endif
 };
 
 }  // namespace gtsam

@@ -20,7 +20,7 @@ cat <<EOF
 For full documentation type:\n\\
     $NAME --help\n\\
 or visit:\n\\
-    http://geographiclib.sf.net/$VERSION/$NAME.1.html\n";
+    https://geographiclib.sourceforge.io/$VERSION/$NAME.1.html\n";
   else
     ( retval ? std::cerr : std::cout ) << "Man page:\n\\
 EOF

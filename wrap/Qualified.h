@@ -95,7 +95,7 @@ public:
   }
 
   bool match(const std::vector<std::string>& templateArgs) const {
-    for(const std::string& s: templateArgs) 
+    for(const std::string& s: templateArgs)
       if (match(s)) return true;
     return false;
   }

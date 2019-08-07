@@ -1,16 +1,16 @@
 /*
 Compute the series expansions for the ellipsoidal geodesic problem.
 
-Copyright (c) Charles Karney (2009-2012) <charles@karney.com> and
+Copyright (c) Charles Karney (2009-2015) <charles@karney.com> and
 licensed under the MIT/X11 License.  For more information, see
-http://geographiclib.sourceforge.net/
+https://geographiclib.sourceforge.io/
 
 References:
 
    Charles F. F. Karney,
    Algorithms for geodesics, J. Geodesy 87, 43-55 (2013),
-   http://dx.doi.org/10.1007/s00190-012-0578-z
-   Addenda: http://geographiclib.sf.net/geod-addenda.html
+   https://doi.org/10.1007/s00190-012-0578-z
+   Addenda: https://geographiclib.sourceforge.io/geod-addenda.html
 
 There are 4 sections in this file
 
@@ -34,8 +34,8 @@ To run the code, start Maxima and enter
 
 taylordepth:5$
 ataylor(expr,var,ord):=expand(ratdisrep(taylor(expr,var,0,ord)))$
-jtaylor(expr,var1,var2,ord):=expand(subst([zz=1],
-    ratdisrep(taylor(subst([var1=zz*var1,var2=zz*var2],expr),zz,0,ord))))$
+jtaylor(expr,var1,var2,ord):=block([zz],expand(subst([zz=1],
+    ratdisrep(taylor(subst([var1=zz*var1,var2=zz*var2],expr),zz,0,ord)))))$
 
 /*
 
@@ -93,7 +93,7 @@ Then the Lagrange Inversion Theorem
    J. L. Lagrange, Nouvelle methode pour resoudre les equations
    litterales par le moyen des series, Mem. de l'Acad. Roy. des Sciences
    de Berlin 24, 251-326 (1768, publ. 1770), Sec. 16,
-   http://books.google.com/books?id=YywPAAAAIAAJ&pg=PA25
+   https://books.google.com/books?id=YywPAAAAIAAJ&pg=PA25
 
 gives
 
@@ -133,9 +133,9 @@ in A2 and C2[l].  This leads to a series where half the terms drop out.
 
 computeI2(maxpow):=block([sintegrand,sintegrandexp,s,sigma,tau1,k2,eps],
   sintegrand:1/sqrt(1+k2*sin(sigma)^2),
-/* Multiplicative factor (1-eps) */
+/* Multiplicative factor 1/(1+eps) */
   sintegrandexp:ataylor(
-      1/(1-eps)*subst([k2=4*eps/(1-eps)^2],sintegrand),
+      (1+eps)*subst([k2=4*eps/(1-eps)^2],sintegrand),
       eps,maxpow),
   s:trigreduce(integrate(sintegrandexp,sigma)),
   s:s-subst(sigma=0,s),
@@ -144,18 +144,18 @@ computeI2(maxpow):=block([sintegrand,sintegrandexp,s,sigma,tau1,k2,eps],
   for i:1 thru maxpow do C2[i]:coeff(tau1,sin(2*i*sigma)),
   if expand(tau1-sigma-sum(C2[i]*sin(2*i*sigma),i,1,maxpow)) # 0
   then error("left over terms in B2"),
-  A2:A2*(1-eps),
+  A2:A2/(1+eps),
   'done)$
 
 /*
 
 Express
 
-    I3 = integrate( (2-f)/(1+(1-f)*sqrt(1+k2*sin(sigma1)^2)), sigma1, 0, sigma )
+   I3 = integrate( (2-f)/(1+(1-f)*sqrt(1+k2*sin(sigma1)^2)), sigma1, 0, sigma )
 
 as a series
 
-    A3 * ( sigma + sum(C3[l] * sin(2*l*sigma), l, 1, maxpow-1) )
+   A3 * ( sigma + sum(C3[l] * sin(2*l*sigma), l, 1, maxpow-1) )
 
 valid for f and k2 small.  It is convenient to write k2 = 4 * eps / (1 -
 eps)^2 and f = 2*n/(1+n) and expand in eps and n.  This procedure leads
@@ -226,12 +226,12 @@ computeall():=(
 
 /* If nA1, nC1, nC1p, nA2, nA3, nC3 are compile-time constants
 indicating the required order, the compiler will include only the needed
-code.  STATIC_ASSERT is a macro to cause a compile-time error if the
-assertion is false.  */
+code.  GEOGRAPHICLIB_STATIC_ASSERT is a macro to cause a compile-time
+error if the assertion is false.  */
 
 codeA1(maxpow):=block([tab2:"    ",tab3:"      "],
   print("  // The scale factor A1-1 = mean value of (d/dsigma)I1 - 1
-  Math::real Geodesic::A1m1f(real eps) throw() {
+  Math::real Geodesic::A1m1f(real eps) {
     real
       eps2 = Math::sq(eps),
       t;
@@ -243,7 +243,7 @@ codeA1(maxpow):=block([tab2:"    ",tab3:"      "],
     print(concat(tab3,"t = ",string(q),";")),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"STATIC_ASSERT(nA1_ >= ",string(0),
+  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nA1_ >= ",string(0),
       " && nA1_ <= ",string(maxpow),", \"Bad value of nA1_\");")),
   print(concat(tab3,"t = 0;")),
   print("    }
@@ -253,7 +253,7 @@ codeA1(maxpow):=block([tab2:"    ",tab3:"      "],
 
 codeC1(maxpow):=block([tab2:"    ",tab3:"      "],
   print("  // The coefficients C1[l] in the Fourier expansion of B1
-  void Geodesic::C1f(real eps, real c[]) throw() {
+  void Geodesic::C1f(real eps, real c[]) {
     real
       eps2 = Math::sq(eps),
       d = eps;
@@ -267,7 +267,7 @@ codeC1(maxpow):=block([tab2:"    ",tab3:"      "],
       print(concat(tab3,"c[",string(m),"] = ",string(q),";"))),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"STATIC_ASSERT(nC1_ >= ",string(0),
+  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nC1_ >= ",string(0),
       " && nC1_ <= ",string(maxpow),", \"Bad value of nC1_\");")),
   print("    }
   }"),
@@ -275,7 +275,7 @@ codeC1(maxpow):=block([tab2:"    ",tab3:"      "],
 
 codeC1p(maxpow):=block([tab2:"    ",tab3:"      "],
   print("  // The coefficients C1p[l] in the Fourier expansion of B1p
-  void Geodesic::C1pf(real eps, real c[]) throw() {
+  void Geodesic::C1pf(real eps, real c[]) {
     real
       eps2 = Math::sq(eps),
       d = eps;
@@ -289,7 +289,7 @@ codeC1p(maxpow):=block([tab2:"    ",tab3:"      "],
       print(concat(tab3,"c[",string(m),"] = ",string(q),";"))),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"STATIC_ASSERT(nC1p_ >= ",string(0),
+  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nC1p_ >= ",string(0),
       " && nC1p_ <= ",string(maxpow),", \"Bad value of nC1p_\");")),
   print("    }
   }"),
@@ -297,29 +297,29 @@ codeC1p(maxpow):=block([tab2:"    ",tab3:"      "],
 
 codeA2(maxpow):=block([tab2:"    ",tab3:"      "],
   print("  // The scale factor A2-1 = mean value of (d/dsigma)I2 - 1
-  Math::real Geodesic::A2m1f(real eps) throw() {
+  Math::real Geodesic::A2m1f(real eps) {
     real
       eps2 = Math::sq(eps),
       t;
     switch (nA2_/2) {"),
   for n:0 thru entier(maxpow/2) do block([
-    q:horner(ataylor(subst([eps=sqrt(eps2)],A2/(1-eps)-1),eps2,n)),
+    q:horner(ataylor(subst([eps=sqrt(eps2)],A2*(1+eps)-1),eps2,n)),
     linel:1200],
     print(concat(tab2,"case ",string(n),":")),
     print(concat(tab3,"t = ",string(q),";")),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"STATIC_ASSERT(nA2_ >= ",string(0),
+  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nA2_ >= ",string(0),
       " && nA2_ <= ",string(maxpow),", \"Bad value of nA2_\");")),
   print(concat(tab3,"t = 0;")),
   print("    }
-    return t * (1 - eps) - eps;
+    return (t - eps) / (1 + eps);
   }"),
 'done)$
 
 codeC2(maxpow):=block([tab2:"    ",tab3:"      "],
   print("  // The coefficients C2[l] in the Fourier expansion of B2
-  void Geodesic::C2f(real eps, real c[]) throw() {
+  void Geodesic::C2f(real eps, real c[]) {
     real
       eps2 = Math::sq(eps),
       d = eps;
@@ -333,7 +333,7 @@ codeC2(maxpow):=block([tab2:"    ",tab3:"      "],
       print(concat(tab3,"c[",string(m),"] = ",string(q),";"))),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"STATIC_ASSERT(nC2_ >= ",string(0),
+  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nC2_ >= ",string(0),
       " && nC2_ <= ",string(maxpow),", \"Bad value of nC2_\");")),
   print("    }
   }"),
@@ -341,7 +341,7 @@ codeC2(maxpow):=block([tab2:"    ",tab3:"      "],
 
 codeA3(maxpow):=block([tab2:"    ",tab3:"      "],
   print("  // The scale factor A3 = mean value of (d/dsigma)I3
-  void Geodesic::A3coeff() throw() {
+  void Geodesic::A3coeff() {
     switch (nA3_) {"),
   for nn:0 thru maxpow do block(
     [q:if nn=0 then 0 else
@@ -353,7 +353,7 @@ codeA3(maxpow):=block([tab2:"    ",tab3:"      "],
         string(horner(coeff(q,eps,i))),";")),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"STATIC_ASSERT(nA3_ >= ",string(0),
+  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nA3_ >= ",string(0),
       " && nA3_ <= ",string(maxpow),", \"Bad value of nA3_\");")),
   print("    }
   }"),
@@ -361,7 +361,7 @@ codeA3(maxpow):=block([tab2:"    ",tab3:"      "],
 
 codeC3(maxpow):=block([tab2:"    ",tab3:"      "],
   print("  // The coefficients C3[l] in the Fourier expansion of B3
-  void Geodesic::C3coeff() throw() {
+  void Geodesic::C3coeff() {
     switch (nC3_) {"),
   for nn:0 thru maxpow do block([c],
     print(concat(tab2,"case ",string(nn),":")),
@@ -377,7 +377,7 @@ codeC3(maxpow):=block([tab2:"    ",tab3:"      "],
     ),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"STATIC_ASSERT(nC3_ >= ",string(0),
+  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nC3_ >= ",string(0),
       " && nC3_ <= ",string(maxpow),", \"Bad value of nC3_\");")),
   print("    }
   }"),
@@ -385,7 +385,7 @@ codeC3(maxpow):=block([tab2:"    ",tab3:"      "],
 
 codeC4(maxpow):=block([tab2:"    ",tab3:"      "],
   print("  // The coefficients C4[l] in the Fourier expansion of I4
-  void Geodesic::C4coeff() throw() {
+  void Geodesic::C4coeff() {
     switch (nC4_) {"),
   for nn:0 thru maxpow do block([c],
     print(concat(tab2,"case ",string(nn),":")),
@@ -400,7 +400,7 @@ codeC4(maxpow):=block([tab2:"    ",tab3:"      "],
     ),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"STATIC_ASSERT(nC4_ >= ",string(0),
+  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nC4_ >= ",string(0),
       " && nC4_ <= ",string(maxpow),", \"Bad value of nC4_\");")),
   print("    }
   }"),
@@ -455,12 +455,12 @@ block([tt:ataylor(C1p[i],eps,ord),ttt,linel:1200],
         if j=ord or j=ord-1 then ";" else ""))))$
 
 dispA2(ord):=block(
-  [tt:ataylor(A2/(1-eps),eps,ord),ttt,linel:1200],
+  [tt:ataylor(A2*(1+eps),eps,ord),ttt,linel:1200],
   for j:2 step 2 thru ord do (ttt:coeff(tt,eps,j),
     print(concat(if j = 2 then "A2 = (1 " else "        ",
         if ttt>0 then "+ " else "- ",
         string(abs(ttt)), " * ", string(eps^j),
-        if j=ord or j = ord-1 then ") * (1 - eps);" else ""))))$
+        if j=ord or j = ord-1 then ") / (1 + eps);" else ""))))$
 
 dispC2(ord):=for i:1 thru ord do
 block([tt:ataylor(C2[i],eps,ord),ttt,linel:1200],
@@ -577,8 +577,21 @@ dispseries():=(
   */
 maxpow:8$
 computeall()$
-printcode()$
+/* printcode()$ */
 dispseries()$
+
+load("polyprint.mac")$
+printgeod():= block([macro:if simplenum then "GEOGRAPHICLIB_GEODESIC_ORDER"
+  else "GEOGRAPHICLIB_GEODESICEXACT_ORDER"],
+  value1('(A1*(1-eps)-1),'eps,2,0),
+  array1('C1,'eps,2,0),
+  array1('C1p,'eps,2,0),
+  value1('(A2*(1+eps)-1),'eps,2,0),
+  array1('C2,eps,2,0),
+  value2('A3,'n,'eps,1),
+  array2('C3,'n,'eps,1),
+  array2('C4,'n,'eps,1))$
+printgeod()$
 /* Save the values needed for geodesic.mac  This is commented out
 here to avoid accidentally overwriting files in a user's directory. */
-/* save(concat("geod",maxpow,".lsp"), values, arrays)$ */
+/* (file:concat("geod",maxpow,".lsp"), save(file, values, arrays))$ */

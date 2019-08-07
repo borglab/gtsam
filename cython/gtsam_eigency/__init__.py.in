@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-__eigen_dir__ = "${GTSAM_EIGEN_INCLUDE_PREFIX}"
+__eigen_dir__ = "${GTSAM_EIGEN_INCLUDE_FOR_INSTALL}"
 
 def get_includes(include_eigen=True):
     root = os.path.dirname(__file__)

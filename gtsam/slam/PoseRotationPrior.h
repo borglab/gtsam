@@ -2,7 +2,7 @@
  * @file PoseRotationPrior.h
  *
  * @brief Implements a prior on the rotation component of a pose
- * 
+ *
  * @date Jun 14, 2012
  * @author Alex Cunningham
  */

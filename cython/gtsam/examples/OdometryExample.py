@@ -17,6 +17,9 @@ import numpy as np
 
 import gtsam
 
+import matplotlib.pyplot as plt
+import gtsam.utils.plot as gtsam_plot
+
 # Create noise models
 ODOMETRY_NOISE = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
 PRIOR_NOISE = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
@@ -50,3 +53,17 @@ params = gtsam.LevenbergMarquardtParams()
 optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial, params)
 result = optimizer.optimize()
 print("\nFinal Result:\n{}".format(result))
+
+# 5. Calculate and print marginal covariances for all variables
+marginals = gtsam.Marginals(graph, result)
+for i in range(1, 4):
+    print("X{} covariance:\n{}\n".format(i, marginals.marginalCovariance(i)))
+
+fig = plt.figure(0)
+for i in range(1, 4):
+    gtsam_plot.plot_pose2(0, result.atPose2(i), 0.5, marginals.marginalCovariance(i))
+plt.axis('equal')
+plt.show()
+
+
+

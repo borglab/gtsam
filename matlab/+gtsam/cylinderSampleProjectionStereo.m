@@ -24,7 +24,7 @@ for i = 1:cylinderNum
                 
         % For Cheirality Exception
         sampledPoint3 = cylinders{i}.Points{j};
-        sampledPoint3local = pose.transform_to(sampledPoint3);
+        sampledPoint3local = pose.transformTo(sampledPoint3);
         if sampledPoint3local.z < 0
             continue; 
         end

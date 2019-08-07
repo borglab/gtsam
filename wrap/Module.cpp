@@ -394,14 +394,18 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
 
 /* ************************************************************************* */
 void Module::emit_cython_pyx(FileWriter& pyxFile) const {
+  // directives...
+  // allow str to automatically coerce to std::string and back (for python3)
+  pyxFile.oss << "# cython: c_string_type=str, c_string_encoding=ascii\n\n";
+
   // headers...
   string pxdHeader = name;
   pyxFile.oss << "cimport numpy as np\n"
                  "import numpy as npp\n"
                  "cimport " << pxdHeader << "\n"
-                 "from "<< pxdHeader << " cimport shared_ptr\n"
-                 "from "<< pxdHeader << " cimport dynamic_pointer_cast\n"
-                 "from "<< pxdHeader << " cimport make_shared\n";
+                 "from ."<< pxdHeader << " cimport shared_ptr\n"
+                 "from ."<< pxdHeader << " cimport dynamic_pointer_cast\n"
+                 "from ."<< pxdHeader << " cimport make_shared\n";
 
   pyxFile.oss << "# C helper function that copies all arguments into a positional list.\n"
                  "cdef list process_args(list keywords, tuple args, dict kwargs):\n"

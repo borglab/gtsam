@@ -39,11 +39,11 @@ namespace Projections
             this.m_LongitudeTextBox = new System.Windows.Forms.TextBox();
             this.m_latitudeTextBox = new System.Windows.Forms.TextBox();
             this.m_geohashTextBox = new System.Windows.Forms.TextBox();
-            this.label5 = new System.Windows.Forms.Label();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
             this.button4 = new System.Windows.Forms.Button();
+            this.m_comboBox = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
             //
             // label1
@@ -117,15 +117,6 @@ namespace Projections
             this.m_geohashTextBox.Size = new System.Drawing.Size(155, 20);
             this.m_geohashTextBox.TabIndex = 8;
             //
-            // label5
-            //
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(409, 4);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(50, 13);
-            this.label5.TabIndex = 9;
-            this.label5.Text = "Geohash";
-            //
             // button1
             //
             this.button1.Location = new System.Drawing.Point(96, 83);
@@ -166,15 +157,29 @@ namespace Projections
             this.button4.UseVisualStyleBackColor = true;
             this.button4.Click += new System.EventHandler(this.OnValidate);
             //
+            // m_comboBox
+            //
+            this.m_comboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.m_comboBox.FormattingEnabled = true;
+            this.m_comboBox.Items.AddRange(new object[] {
+            "Geohash",
+            "GARS",
+            "Georef"});
+            this.m_comboBox.Location = new System.Drawing.Point(376, 4);
+            this.m_comboBox.Name = "m_comboBox";
+            this.m_comboBox.Size = new System.Drawing.Size(121, 21);
+            this.m_comboBox.TabIndex = 14;
+            this.m_toolTip.SetToolTip(this.m_comboBox, "Select the reference system");
+            //
             // MiscPanel
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.m_comboBox);
             this.Controls.Add(this.button4);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
-            this.Controls.Add(this.label5);
             this.Controls.Add(this.m_geohashTextBox);
             this.Controls.Add(this.m_latitudeTextBox);
             this.Controls.Add(this.m_LongitudeTextBox);
@@ -203,10 +208,10 @@ namespace Projections
         private System.Windows.Forms.TextBox m_LongitudeTextBox;
         private System.Windows.Forms.TextBox m_latitudeTextBox;
         private System.Windows.Forms.TextBox m_geohashTextBox;
-        private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.ComboBox m_comboBox;
     }
 }

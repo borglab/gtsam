@@ -31,7 +31,6 @@ namespace so3 {
 void ExpmapFunctor::init(bool nearZeroApprox) {
   nearZero = nearZeroApprox || (theta2 <= std::numeric_limits<double>::epsilon());
   if (!nearZero) {
-    theta = std::sqrt(theta2);  // rotation angle
     sin_theta = std::sin(theta);
     const double s2 = std::sin(theta / 2.0);
     one_minus_cos = 2.0 * s2 * s2;  // numerically better than [1 - cos(theta)]
@@ -39,7 +38,7 @@ void ExpmapFunctor::init(bool nearZeroApprox) {
 }
 
 ExpmapFunctor::ExpmapFunctor(const Vector3& omega, bool nearZeroApprox)
-    : theta2(omega.dot(omega)) {
+    : theta2(omega.dot(omega)), theta(std::sqrt(theta2)) {
   const double wx = omega.x(), wy = omega.y(), wz = omega.z();
   W << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
   init(nearZeroApprox);
@@ -50,7 +49,7 @@ ExpmapFunctor::ExpmapFunctor(const Vector3& omega, bool nearZeroApprox)
 }
 
 ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle, bool nearZeroApprox)
-    : theta2(angle * angle) {
+    : theta2(angle * angle), theta(angle) {
   const double ax = axis.x(), ay = axis.y(), az = axis.z();
   K << 0.0, -az, +ay, +az, 0.0, -ax, -ay, +ax, 0.0;
   W = K * angle;

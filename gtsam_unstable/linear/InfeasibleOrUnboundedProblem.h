@@ -16,7 +16,7 @@
  * @date     1/24/16
  */
 
-#pragma once 
+#pragma once
 
 namespace gtsam {
 

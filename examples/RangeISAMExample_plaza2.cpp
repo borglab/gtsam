@@ -108,7 +108,7 @@ int main (int argc, char** argv) {
 
   // Set Noise parameters
   Vector priorSigmas = Vector3(1,1,M_PI);
-  Vector odoSigmas = Vector3(0.05, 0.01, 0.2);
+  Vector odoSigmas = Vector3(0.05, 0.01, 0.1);
   double sigmaR = 100; // range standard deviation
   const NM::Base::shared_ptr // all same type
   priorNoise = NM::Diagonal::Sigmas(priorSigmas), //prior
@@ -157,7 +157,7 @@ int main (int argc, char** argv) {
     boost::tie(t, odometry) = timedOdometry;
 
     // add odometry factor
-    newFactors.push_back(BetweenFactor<Pose2>(i-1, i, odometry,NM::Diagonal::Sigmas(odoSigmas)));
+    newFactors.push_back(BetweenFactor<Pose2>(i-1, i, odometry, odoNoise));
 
     // predict pose and add as initial estimate
     Pose2 predictedPose = lastPose.compose(odometry);

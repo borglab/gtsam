@@ -10,7 +10,7 @@ Module example_UTMUPS
             Dim northp As Boolean
             Dim x, y As Double
             UTMUPS.Forward(lat, lon, zone, northp, x, y, -1, True)
-            Dim zonestr As String = UTMUPS.EncodeZone(zone, northp)
+            Dim zonestr As String = UTMUPS.EncodeZone(zone, northp, True)
             Console.WriteLine(String.Format("{0} {1} {2}", zonestr, x, y))
             ' Sample reverse calculation
             zonestr = "38N"

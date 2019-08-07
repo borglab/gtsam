@@ -6,10 +6,11 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #include "stdafx.h"
 #include "GeographicLib/GeodesicExact.hpp"
+#include "GeographicLib/GeodesicLineExact.hpp"
 #include "GeodesicExact.h"
 #include "GeodesicLineExact.h"
 
@@ -32,7 +33,7 @@ GeodesicExact::GeodesicExact()
 {
     try
     {
-        m_pGeodesicExact = new GeographicLib::GeodesicExact( GeographicLib::GeodesicExact::WGS84 );
+        m_pGeodesicExact = new GeographicLib::GeodesicExact( GeographicLib::GeodesicExact::WGS84() );
     }
     catch ( std::bad_alloc err )
     {
@@ -294,7 +295,7 @@ void GeodesicExact::ArcDirect(double lat1, double lon1, double azi1, double a12,
 //*****************************************************************************
 double GeodesicExact::GenDirect(double lat1, double lon1, double azi1,
                         bool arcmode, double s12_a12,
-                        NETGeographicLib::Mask outmask,
+                        GeodesicExact::mask outmask,
                         [System::Runtime::InteropServices::Out] double% lat2,
                         [System::Runtime::InteropServices::Out] double% lon2,
                         [System::Runtime::InteropServices::Out] double% azi2,
@@ -439,7 +440,7 @@ double GeodesicExact::Inverse(double lat1, double lon1, double lat2, double lon2
 
 //*****************************************************************************
 double GeodesicExact::GenInverse(double lat1, double lon1, double lat2, double lon2,
-                        NETGeographicLib::Mask outmask,
+                        GeodesicExact::mask outmask,
                         [System::Runtime::InteropServices::Out] double% s12,
                         [System::Runtime::InteropServices::Out] double% azi1,
                         [System::Runtime::InteropServices::Out] double% azi2,
@@ -474,6 +475,38 @@ GeodesicLineExact^ GeodesicExact::Line(double lat1, double lon1, double azi1,
     NETGeographicLib::Mask caps )
 {
     return gcnew GeodesicLineExact( this, lat1, lon1, azi1, caps );
+}
+
+//*****************************************************************************
+GeodesicLineExact^ GeodesicExact::InverseLine(double lat1, double lon1,
+    double lat2, double lon2, NETGeographicLib::Mask caps)
+{
+    return gcnew GeodesicLineExact(m_pGeodesicExact->InverseLine(
+        lat1, lon1, lat2, lon2, static_cast<unsigned>(caps)));
+}
+
+//*****************************************************************************
+GeodesicLineExact^ GeodesicExact::DirectLine(double lat1, double lon1,
+    double azi1, double s12, NETGeographicLib::Mask caps)
+{
+    return gcnew GeodesicLineExact(m_pGeodesicExact->DirectLine(
+        lat1, lon1, azi1, s12, static_cast<unsigned>(caps)));
+}
+
+//*****************************************************************************
+GeodesicLineExact^ GeodesicExact::ArcDirectLine(double lat1, double lon1,
+    double azi1, double a12, NETGeographicLib::Mask caps)
+{
+    return gcnew GeodesicLineExact(m_pGeodesicExact->ArcDirectLine(
+        lat1, lon1, azi1, a12, static_cast<unsigned>(caps)));
+}
+
+//*****************************************************************************
+GeodesicLineExact^ GeodesicExact::GenDirectLine(double lat1, double lon1,
+    double azi1, bool arcmode, double s12_a12, NETGeographicLib::Mask caps)
+{
+    return gcnew GeodesicLineExact(m_pGeodesicExact->GenDirectLine(
+        lat1, lon1, azi1, arcmode, s12_a12, static_cast<unsigned>(caps)));
 }
 
 //*****************************************************************************

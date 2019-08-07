@@ -1,13 +1,24 @@
-"""Pose3 unit tests."""
+"""
+GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+Pose3 unit tests.
+Author: Frank Dellaert & Duy Nguyen Ta (Python)
+"""
 import math
 import unittest
 
 import numpy as np
 
+import gtsam
 from gtsam import Point3, Pose3, Rot3
+from gtsam.utils.test_case import GtsamTestCase
 
 
-class TestPose3(unittest.TestCase):
+class TestPose3(GtsamTestCase):
     """Test selected Pose3 methods."""
 
     def test_between(self):
@@ -16,14 +27,14 @@ class TestPose3(unittest.TestCase):
         T3 = Pose3(Rot3.Rodrigues(-90, 0, 0), Point3(1, 2, 3))
         expected = T2.inverse().compose(T3)
         actual = T2.between(T3)
-        self.assertTrue(actual.equals(expected, 1e-6))
+        self.gtsamAssertEquals(actual, expected, 1e-6)
 
     def test_transform_to(self):
-        """Test transform_to method."""
+        """Test transformTo method."""
         transform = Pose3(Rot3.Rodrigues(0, 0, -1.570796), Point3(2, 4, 0))
-        actual = transform.transform_to(Point3(3, 2, 10))
+        actual = transform.transformTo(Point3(3, 2, 10))
         expected = Point3(2, 1, 10)
-        self.assertTrue(actual.equals(expected, 1e-6))
+        self.gtsamAssertEquals(actual, expected, 1e-6)
 
     def test_range(self):
         """Test range method."""
@@ -49,8 +60,8 @@ class TestPose3(unittest.TestCase):
     def test_adjoint(self):
         """Test adjoint method."""
         xi = np.array([1, 2, 3, 4, 5, 6])
-        expected = np.dot(Pose3.adjointMap(xi), xi)
-        actual = Pose3.adjoint(xi, xi)
+        expected = np.dot(Pose3.adjointMap_(xi), xi)
+        actual = Pose3.adjoint_(xi, xi)
         np.testing.assert_array_equal(actual, expected)
 
 

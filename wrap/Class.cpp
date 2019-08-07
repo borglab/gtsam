@@ -1,18 +1,18 @@
-/* ---------------------------------------------------------------------------- 
- 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,  
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
- * All Rights Reserved 
- * Authors: Frank Dellaert, et al. (see THANKS for the full author list) 
- 
- * See LICENSE for the license information 
- 
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
  * -------------------------------------------------------------------------- */
 
-/** 
- * @file Class.cpp 
- * @author Frank Dellaert 
- * @author Andrew Melim 
+/**
+ * @file Class.cpp
+ * @author Frank Dellaert
+ * @author Andrew Melim
  * @author Richard Roberts
  **/
 
@@ -29,14 +29,14 @@
 #include <boost/range/combine.hpp>
 #include <boost/range/algorithm/remove_if.hpp>
 
-#include <vector> 
-#include <iostream> 
-#include <fstream> 
+#include <vector>
+#include <iostream>
+#include <fstream>
 #include <sstream>
 #include <iterator>     // std::ostream_iterator
-//#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags 
-//#include <cinttypes> // same failure as above 
-#include <stdint.h> // works on Linux GCC 
+//#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags
+//#include <cinttypes> // same failure as above
+#include <stdint.h> // works on Linux GCC
 using namespace std;
 using namespace wrap;
 
@@ -87,20 +87,20 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
     const TypeAttributesTable& typeAttributes, FileWriter& wrapperFile,
     vector<string>& functionNames) const {
 
-  // Create namespace folders 
+  // Create namespace folders
   createNamespaceStructure(namespaces(), toolboxPath);
 
-  // open destination classFile 
+  // open destination classFile
   string classFile = matlabName(toolboxPath);
   FileWriter proxyFile(classFile, verbose_, "%");
 
-  // get the name of actual matlab object 
+  // get the name of actual matlab object
   const string matlabQualName = qualifiedName(".");
   const string matlabUniqueName = qualifiedName();
   const string cppName = qualifiedName("::");
 
-  // emit class proxy code 
-  // we want our class to inherit the handle class for memory purposes 
+  // emit class proxy code
+  // we want our class to inherit the handle class for memory purposes
   const string parent =
       parentClass ? parentClass->qualifiedName(".") : "handle";
   comment_fragment(proxyFile);
@@ -110,20 +110,20 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   proxyFile.oss << "  end\n";
   proxyFile.oss << "  methods\n";
 
-  // Constructor 
+  // Constructor
   proxyFile.oss << "    function obj = " << name() << "(varargin)\n";
-  // Special pointer constructors - one in MATLAB to create an object and 
-  // assign a pointer returned from a C++ function.  In turn this MATLAB 
-  // constructor calls a special C++ function that just adds the object to 
-  // its collector.  This allows wrapped functions to return objects in 
-  // other wrap modules - to add these to their collectors the pointer is 
-  // passed from one C++ module into matlab then back into the other C++ 
-  // module. 
+  // Special pointer constructors - one in MATLAB to create an object and
+  // assign a pointer returned from a C++ function.  In turn this MATLAB
+  // constructor calls a special C++ function that just adds the object to
+  // its collector.  This allows wrapped functions to return objects in
+  // other wrap modules - to add these to their collectors the pointer is
+  // passed from one C++ module into matlab then back into the other C++
+  // module.
   pointer_constructor_fragments(proxyFile, wrapperFile, wrapperName,
       functionNames);
   wrapperFile.oss << "\n";
 
-  // Regular constructors 
+  // Regular constructors
   boost::optional<string> cppBaseName = qualifiedParent();
   for (size_t i = 0; i < constructor.nrOverloads(); i++) {
     ArgumentList args = constructor.argumentList(i);
@@ -145,7 +145,7 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   proxyFile.oss << "      obj.ptr_" << matlabUniqueName << " = my_ptr;\n";
   proxyFile.oss << "    end\n\n";
 
-  // Deconstructor 
+  // Deconstructor
   {
     const int id = (int) functionNames.size();
     deconstructor.proxy_fragment(proxyFile, wrapperName, matlabUniqueName, id);
@@ -160,7 +160,7 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   proxyFile.oss
       << "    function disp(obj), obj.display; end\n    %DISP Calls print on the object\n";
 
-  // Methods 
+  // Methods
   for(const Methods::value_type& name_m: methods_) {
     const Method& m = name_m.second;
     m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName,
@@ -175,7 +175,7 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   proxyFile.oss << "\n";
   proxyFile.oss << "  methods(Static = true)\n";
 
-  // Static methods 
+  // Static methods
   for(const StaticMethods::value_type& name_m: static_methods) {
     const StaticMethod& m = name_m.second;
     m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName,
@@ -190,7 +190,7 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   proxyFile.oss << "  end\n";
   proxyFile.oss << "end\n";
 
-  // Close file 
+  // Close file
   proxyFile.emit(true);
 }
 
@@ -217,8 +217,8 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
     functionNames.push_back(upcastFromVoidFunctionName);
   }
 
-  // MATLAB constructor that assigns pointer to matlab object then calls c++ 
-  // function to add the object to the collector. 
+  // MATLAB constructor that assigns pointer to matlab object then calls c++
+  // function to add the object to the collector.
   if (isVirtual) {
     proxyFile.oss
         << "      if (nargin == 2 || (nargin == 3 && strcmp(varargin{3}, 'void')))";
@@ -241,25 +241,25 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
     proxyFile.oss << "        ";
   else
     proxyFile.oss << "        base_ptr = ";
-  proxyFile.oss << wrapperName << "(" << collectorInsertId << ", my_ptr);\n"; // Call collector insert and get base class ptr 
+  proxyFile.oss << wrapperName << "(" << collectorInsertId << ", my_ptr);\n"; // Call collector insert and get base class ptr
 
-  // C++ function to add pointer from MATLAB to collector.  The pointer always 
-  // comes from a C++ return value; this mechanism allows the object to be added 
-  // to a collector in a different wrap module.  If this class has a base class, 
-  // a new pointer to the base class is allocated and returned. 
+  // C++ function to add pointer from MATLAB to collector.  The pointer always
+  // comes from a C++ return value; this mechanism allows the object to be added
+  // to a collector in a different wrap module.  If this class has a base class,
+  // a new pointer to the base class is allocated and returned.
   wrapperFile.oss << "void " << collectorInsertFunctionName
       << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])\n";
   wrapperFile.oss << "{\n";
   wrapperFile.oss << "  mexAtExit(&_deleteAllObjects);\n";
-  // Typedef boost::shared_ptr 
+  // Typedef boost::shared_ptr
   wrapperFile.oss << "  typedef boost::shared_ptr<" << cppName << "> Shared;\n";
   wrapperFile.oss << "\n";
-  // Get self pointer passed in 
+  // Get self pointer passed in
   wrapperFile.oss
       << "  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));\n";
-  // Add to collector 
+  // Add to collector
   wrapperFile.oss << "  collector_" << matlabUniqueName << ".insert(self);\n";
-  // If we have a base class, return the base class pointer (MATLAB will call the base class collectorInsertAndMakeBase to add this to the collector and recurse the heirarchy) 
+  // If we have a base class, return the base class pointer (MATLAB will call the base class collectorInsertAndMakeBase to add this to the collector and recurse the heirarchy)
   boost::optional<string> cppBaseName = qualifiedParent();
   if (cppBaseName) {
     wrapperFile.oss << "\n";
@@ -272,10 +272,10 @@ void Class::pointer_constructor_fragments(FileWriter& proxyFile,
   }
   wrapperFile.oss << "}\n";
 
-  // If this is a virtual function, C++ function to dynamic upcast it from a 
-  // shared_ptr<void>.  This mechanism allows automatic dynamic creation of the 
-  // real underlying derived-most class when a C++ method returns a virtual 
-  // base class. 
+  // If this is a virtual function, C++ function to dynamic upcast it from a
+  // shared_ptr<void>.  This mechanism allows automatic dynamic creation of the
+  // real underlying derived-most class when a C++ method returns a virtual
+  // base class.
   if (isVirtual)
     wrapperFile.oss << "\n"
         "void " << upcastFromVoidFunctionName
@@ -342,17 +342,21 @@ vector<Class> Class::expandTemplate(Str templateArg,
 
 /* ************************************************************************* */
 void Class::addMethod(bool verbose, bool is_const, Str methodName,
-    const ArgumentList& argumentList, const ReturnValue& returnValue,
-    const Template& tmplate) {
+                      const ArgumentList& argumentList,
+                      const ReturnValue& returnValue, const Template& tmplate) {
   // Check if templated
   if (tmplate.valid()) {
-    templateMethods_[methodName].addOverload(methodName, argumentList,
-                                             returnValue, is_const,
-                                             tmplate.argName(), verbose);
+    try {
+      templateMethods_[methodName].addOverload(methodName, argumentList,
+                                               returnValue, is_const,
+                                               tmplate.argName(), verbose);
+    } catch (const std::runtime_error& e) {
+      throw std::runtime_error("Class::addMethod: error adding " + name_ +
+                               "::" + methodName + "\n" + e.what());
+    }
     // Create method to expand
     // For all values of the template argument, create a new method
-    for(const Qualified& instName: tmplate.argValues()) {
-
+    for (const Qualified& instName : tmplate.argValues()) {
       const TemplateSubstitution ts(tmplate.argName(), instName, *this);
       // substitute template in arguments
       ArgumentList expandedArgs = argumentList.expandTemplate(ts);
@@ -361,15 +365,27 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
       // Now stick in new overload stack with expandedMethodName key
       // but note we use the same, unexpanded methodName in overload
       string expandedMethodName = methodName + instName.name();
-      methods_[expandedMethodName].addOverload(methodName, expandedArgs,
-          expandedRetVal, is_const, instName, verbose);
+      try {
+        methods_[expandedMethodName].addOverload(methodName, expandedArgs,
+                                                 expandedRetVal, is_const,
+                                                 instName, verbose);
+      } catch (const std::runtime_error& e) {
+        throw std::runtime_error("Class::addMethod: error adding " + name_ +
+                                 "::" + expandedMethodName + "\n" + e.what());
+      }
     }
   } else {
-    // just add overload
-    methods_[methodName].addOverload(methodName, argumentList, returnValue,
-        is_const, boost::none, verbose);
-    nontemplateMethods_[methodName].addOverload(methodName, argumentList, returnValue,
-        is_const, boost::none, verbose);
+    try {
+      // just add overload
+      methods_[methodName].addOverload(methodName, argumentList, returnValue,
+                                       is_const, boost::none, verbose);
+      nontemplateMethods_[methodName].addOverload(methodName, argumentList,
+                                                  returnValue, is_const,
+                                                  boost::none, verbose);
+    } catch (const std::runtime_error& e) {
+      throw std::runtime_error("Class::addMethod: error adding " + name_ +
+                               "::" + methodName + "\n" + e.what());
+    }
   }
 }
 

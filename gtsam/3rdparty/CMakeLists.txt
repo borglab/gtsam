@@ -41,6 +41,10 @@ add_subdirectory(ceres)
 # add_subdirectory (tools)
 
 # Find GeographicLib using the find script distributed with it
+unset(GEOGRAPHICLIB_FOUND CACHE)
+unset(GeographicLib_INCLUDE_DIRS CACHE)
+unset(GeographicLib_LIBRARIES CACHE)
+unset(GeographicLib_LIBRARY_DIRS CACHE)
 include(GeographicLib/cmake/FindGeographicLib.cmake)
 
 # Set up the option to install GeographicLib

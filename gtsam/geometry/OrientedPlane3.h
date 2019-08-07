@@ -134,7 +134,7 @@ public:
   }
 
   /// The retract function
-  OrientedPlane3 retract(const Vector3& v) const;
+  OrientedPlane3 retract(const Vector3& v, OptionalJacobian<3,3> H = boost::none) const;
 
   /// The local coordinates function
   Vector3 localCoordinates(const OrientedPlane3& s) const;

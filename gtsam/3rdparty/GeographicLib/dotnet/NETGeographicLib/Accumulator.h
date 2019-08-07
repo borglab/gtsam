@@ -7,7 +7,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 namespace NETGeographicLib
@@ -22,7 +22,7 @@ namespace NETGeographicLib
     precision of the sum is 106 bits or about 32 decimal places.
 
     The implementation follows J. R. Shewchuk,
-    <a href="http://dx.doi.org/10.1007/PL00009321"> Adaptive Precision
+    <a href="https://doi.org/10.1007/PL00009321"> Adaptive Precision
     Floating-Point Arithmetic and Fast Robust Geometric Predicates</a>,
     Discrete & Computational Geometry 18(3) 305--363 (1997).
 

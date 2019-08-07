@@ -7,7 +7,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 namespace NETGeographicLib
@@ -64,8 +64,7 @@ namespace NETGeographicLib
          * @param[in] earth Geocentric object for the transformation; default
          *   Geocentric::WGS84.
          *
-         * \e lat0 should be in the range [&minus;90&deg;, 90&deg;]; \e
-         * lon0 should be in the range [&minus;540&deg;, 540&deg;).
+         * \e lat0 should be in the range [&minus;90&deg;, 90&deg;].
          **********************************************************************/
         LocalCartesian(double lat0, double lon0, double h0,
                        Geocentric^ earth );
@@ -77,8 +76,7 @@ namespace NETGeographicLib
          * @param[in] lon0 longitude at origin (degrees).
          * @param[in] h0 height above ellipsoid at origin (meters); default 0.
          *
-         * \e lat0 should be in the range [&minus;90&deg;, 90&deg;]; \e
-         * lon0 should be in the range [&minus;540&deg;, 540&deg;).
+         * \e lat0 should be in the range [&minus;90&deg;, 90&deg;].
          **********************************************************************/
         LocalCartesian(double lat0, double lon0, double h0 );
 
@@ -112,8 +110,7 @@ namespace NETGeographicLib
          * @param[in] lon0 longitude at origin (degrees).
          * @param[in] h0 height above ellipsoid at origin (meters); default 0.
          *
-         * \e lat0 should be in the range [&minus;90&deg;, 90&deg;]; \e
-         * lon0 should be in the range [&minus;540&deg;, 540&deg;).
+         * \e lat0 should be in the range [&minus;90&deg;, 90&deg;].
          **********************************************************************/
         void Reset(double lat0, double lon0, double h0 );
 
@@ -127,8 +124,7 @@ namespace NETGeographicLib
          * @param[out] y local cartesian coordinate (meters).
          * @param[out] z local cartesian coordinate (meters).
          *
-         * \e lat should be in the range [&minus;90&deg;, 90&deg;]; \e lon
-         * should be in the range [&minus;540&deg;, 540&deg;).
+         * \e lat should be in the range [&minus;90&deg;, 90&deg;].
          **********************************************************************/
         void Forward(double lat, double lon, double h,
             [System::Runtime::InteropServices::Out] double% x,
@@ -147,8 +143,7 @@ namespace NETGeographicLib
          * @param[out] z local cartesian coordinate (meters).
          * @param[out] M a 3 &times; 3 rotation matrix.
          *
-         * \e lat should be in the range [&minus;90&deg;, 90&deg;]; \e lon
-         * should be in the range [&minus;540&deg;, 540&deg;).
+         * \e lat should be in the range [&minus;90&deg;, 90&deg;].
          *
          * Let \e v be a unit vector located at (\e lat, \e lon, \e h).  We can
          * express \e v as \e column vectors in one of two ways

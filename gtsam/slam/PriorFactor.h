@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,6 +17,8 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Testable.h>
+
+#include <string>
 
 namespace gtsam {
 
@@ -53,7 +55,7 @@ namespace gtsam {
     virtual ~PriorFactor() {}
 
     /** Constructor */
-    PriorFactor(Key key, const VALUE& prior, const SharedNoiseModel& model) :
+    PriorFactor(Key key, const VALUE& prior, const SharedNoiseModel& model = nullptr) :
       Base(model, key), prior_(prior) {
     }
 
@@ -70,10 +72,14 @@ namespace gtsam {
     /** implement functions needed for Testable */
 
     /** print */
-    virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
+                                                 DefaultKeyFormatter) const {
       std::cout << s << "PriorFactor on " << keyFormatter(this->key()) << "\n";
       traits<T>::Print(prior_, "  prior mean: ");
-      this->noiseModel_->print("  noise model: ");
+      if (this->noiseModel_)
+        this->noiseModel_->print("  noise model: ");
+      else
+        std::cout << "no noise model" << std::endl;
     }
 
     /** equals */
@@ -104,7 +110,7 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);
     }
-  
+
 	// Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
 	enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
   public:

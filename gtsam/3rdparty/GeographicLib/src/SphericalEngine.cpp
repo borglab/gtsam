@@ -2,9 +2,9 @@
  * \file SphericalEngine.cpp
  * \brief Implementation for GeographicLib::SphericalEngine class
  *
- * Copyright (c) Charles Karney (2011) <charles@karney.com> and licensed under
- * the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * Copyright (c) Charles Karney (2011-2017) <charles@karney.com> and licensed
+ * under the MIT/X11 License.  For more information, see
+ * https://geographiclib.sourceforge.io/
  *
  * The general sum is\verbatim
  V(r, theta, lambda) = sum(n = 0..N) sum(m = 0..n)
@@ -144,31 +144,28 @@ namespace GeographicLib {
 
   using namespace std;
 
-  const Math::real SphericalEngine::scale_ =
-    pow(real(numeric_limits<real>::radix),
-        -3 * numeric_limits<real>::max_exponent / 5);
-  const Math::real SphericalEngine::eps_ =
-    numeric_limits<real>::epsilon() * sqrt(numeric_limits<real>::epsilon());
-
-  const vector<Math::real> SphericalEngine::Z_(0);
-  vector<Math::real> SphericalEngine::root_(0);
+  vector<Math::real>& SphericalEngine::sqrttable() {
+    static vector<real> sqrttable(0);
+    return sqrttable;
+  }
 
   template<bool gradp, SphericalEngine::normalization norm, int L>
   Math::real SphericalEngine::Value(const coeff c[], const real f[],
                                     real x, real y, real z, real a,
                                     real& gradx, real& grady, real& gradz)
-    throw() {
-    STATIC_ASSERT(L > 0, "L must be positive");
-    STATIC_ASSERT(norm == FULL || norm == SCHMIDT, "Unknown normalization");
+    {
+    GEOGRAPHICLIB_STATIC_ASSERT(L > 0, "L must be positive");
+    GEOGRAPHICLIB_STATIC_ASSERT(norm == FULL || norm == SCHMIDT,
+                                "Unknown normalization");
     int N = c[0].nmx(), M = c[0].mmx();
 
     real
       p = Math::hypot(x, y),
-      cl = p ? x / p : 1,       // cos(lambda); at pole, pick lambda = 0
-      sl = p ? y / p : 0,       // sin(lambda)
+      cl = p != 0 ? x / p : 1,  // cos(lambda); at pole, pick lambda = 0
+      sl = p != 0 ? y / p : 0,  // sin(lambda)
       r = Math::hypot(z, p),
-      t = r ? z / r : 0,            // cos(theta); at origin, pick theta = pi/2
-      u = r ? max(p / r, eps_) : 1, // sin(theta); but avoid the pole
+      t = r != 0 ? z / r : 0,   // cos(theta); at origin, pick theta = pi/2
+      u = r != 0 ? max(p / r, eps()) : 1, // sin(theta); but avoid the pole
       q = a / r;
     real
       q2 = Math::sq(q),
@@ -183,35 +180,37 @@ namespace GeographicLib {
     real vtc = 0, vtc2 = 0, vts = 0, vts2 = 0;   // vt[N + 1], vt[N + 2]
     real vlc = 0, vlc2 = 0, vls = 0, vls2 = 0;   // vl[N + 1], vl[N + 2]
     int k[L];
+    const vector<real>& root( sqrttable() );
     for (int m = M; m >= 0; --m) {   // m = M .. 0
       // Initialize inner sum
-      real wc  = 0, wc2  = 0, ws  = 0, ws2  = 0; // w [N - m + 1], w [N - m + 2]
-      real wrc = 0, wrc2 = 0, wrs = 0, wrs2 = 0; // wr[N - m + 1], wr[N - m + 2]
-      real wtc = 0, wtc2 = 0, wts = 0, wts2 = 0; // wt[N - m + 1], wt[N - m + 2]
+      real
+        wc  = 0, wc2  = 0, ws  = 0, ws2  = 0, // w [N - m + 1], w [N - m + 2]
+        wrc = 0, wrc2 = 0, wrs = 0, wrs2 = 0, // wr[N - m + 1], wr[N - m + 2]
+        wtc = 0, wtc2 = 0, wts = 0, wts2 = 0; // wt[N - m + 1], wt[N - m + 2]
       for (int l = 0; l < L; ++l)
         k[l] = c[l].index(N, m) + 1;
       for (int n = N; n >= m; --n) {             // n = N .. m; l = N - m .. 0
         real w, A, Ax, B, R;    // alpha[l], beta[l + 1]
         switch (norm) {
         case FULL:
-          w = root_[2 * n + 1] / (root_[n - m + 1] * root_[n + m + 1]);
-          Ax = q * w * root_[2 * n + 3];
+          w = root[2 * n + 1] / (root[n - m + 1] * root[n + m + 1]);
+          Ax = q * w * root[2 * n + 3];
           A = t * Ax;
-          B = - q2 * root_[2 * n + 5] /
-            (w * root_[n - m + 2] * root_[n + m + 2]);
+          B = - q2 * root[2 * n + 5] /
+            (w * root[n - m + 2] * root[n + m + 2]);
           break;
         case SCHMIDT:
-          w = root_[n - m + 1] * root_[n + m + 1];
+          w = root[n - m + 1] * root[n + m + 1];
           Ax = q * (2 * n + 1) / w;
           A = t * Ax;
-          B = - q2 * w / (root_[n - m + 2] * root_[n + m + 2]);
+          B = - q2 * w / (root[n - m + 2] * root[n + m + 2]);
           break;
         default: break;       // To suppress warning message from Visual Studio
         }
         R = c[0].Cv(--k[0]);
         for (int l = 1; l < L; ++l)
           R += c[l].Cv(--k[l], n, m, f[l]);
-        R *= scale_;
+        R *= scale();
         w = A * wc + B * wc2 + R; wc2 = wc; wc = w;
         if (gradp) {
           w = A * wrc + B * wrc2 + (n + 1) * R; wrc2 = wrc; wrc = w;
@@ -221,7 +220,7 @@ namespace GeographicLib {
           R = c[0].Sv(k[0]);
           for (int l = 1; l < L; ++l)
             R += c[l].Sv(k[l], n, m, f[l]);
-          R *= scale_;
+          R *= scale();
           w = A * ws + B * ws2 + R; ws2 = ws; ws = w;
           if (gradp) {
             w = A * wrs + B * wrs2 + (n + 1) * R; wrs2 = wrs; wrs = w;
@@ -235,14 +234,14 @@ namespace GeographicLib {
         real v, A, B;           // alpha[m], beta[m + 1]
         switch (norm) {
         case FULL:
-          v = root_[2] * root_[2 * m + 3] / root_[m + 1];
+          v = root[2] * root[2 * m + 3] / root[m + 1];
           A = cl * v * uq;
-          B = - v * root_[2 * m + 5] / (root_[8] * root_[m + 2]) * uq2;
+          B = - v * root[2 * m + 5] / (root[8] * root[m + 2]) * uq2;
           break;
         case SCHMIDT:
-          v = root_[2] * root_[2 * m + 1] / root_[m + 1];
+          v = root[2] * root[2 * m + 1] / root[m + 1];
           A = cl * v * uq;
-          B = - v * root_[2 * m + 3] / (root_[8] * root_[m + 2]) * uq2;
+          B = - v * root[2 * m + 3] / (root[8] * root[m + 2]) * uq2;
           break;
         default: break;       // To suppress warning message from Visual Studio
         }
@@ -262,16 +261,16 @@ namespace GeographicLib {
         real A, B, qs;
         switch (norm) {
         case FULL:
-          A = root_[3] * uq;       // F[1]/(q*cl) or F[1]/(q*sl)
-          B = - root_[15]/2 * uq2; // beta[1]/q
+          A = root[3] * uq;       // F[1]/(q*cl) or F[1]/(q*sl)
+          B = - root[15]/2 * uq2; // beta[1]/q
           break;
         case SCHMIDT:
           A = uq;
-          B = - root_[3]/2 * uq2;
+          B = - root[3]/2 * uq2;
           break;
         default: break;       // To suppress warning message from Visual Studio
         }
-        qs = q / scale_;
+        qs = q / scale();
         vc = qs * (wc + A * (cl * vc + sl * vs ) + B * vc2);
         if (gradp) {
           qs /= r;
@@ -299,49 +298,52 @@ namespace GeographicLib {
   CircularEngine SphericalEngine::Circle(const coeff c[], const real f[],
                                          real p, real z, real a) {
 
-    STATIC_ASSERT(L > 0, "L must be positive");
-    STATIC_ASSERT(norm == FULL || norm == SCHMIDT, "Unknown normalization");
+    GEOGRAPHICLIB_STATIC_ASSERT(L > 0, "L must be positive");
+    GEOGRAPHICLIB_STATIC_ASSERT(norm == FULL || norm == SCHMIDT,
+                                "Unknown normalization");
     int N = c[0].nmx(), M = c[0].mmx();
 
     real
       r = Math::hypot(z, p),
-      t = r ? z / r : 0,            // cos(theta); at origin, pick theta = pi/2
-      u = r ? max(p / r, eps_) : 1, // sin(theta); but avoid the pole
+      t = r != 0 ? z / r : 0,   // cos(theta); at origin, pick theta = pi/2
+      u = r != 0 ? max(p / r, eps()) : 1, // sin(theta); but avoid the pole
       q = a / r;
     real
       q2 = Math::sq(q),
       tu = t / u;
     CircularEngine circ(M, gradp, norm, a, r, u, t);
     int k[L];
+    const vector<real>& root( sqrttable() );
     for (int m = M; m >= 0; --m) {   // m = M .. 0
       // Initialize inner sum
-      real wc  = 0, wc2  = 0, ws  = 0, ws2  = 0; // w [N - m + 1], w [N - m + 2]
-      real wrc = 0, wrc2 = 0, wrs = 0, wrs2 = 0; // wr[N - m + 1], wr[N - m + 2]
-      real wtc = 0, wtc2 = 0, wts = 0, wts2 = 0; // wt[N - m + 1], wt[N - m + 2]
+      real
+        wc  = 0, wc2  = 0, ws  = 0, ws2  = 0, // w [N - m + 1], w [N - m + 2]
+        wrc = 0, wrc2 = 0, wrs = 0, wrs2 = 0, // wr[N - m + 1], wr[N - m + 2]
+        wtc = 0, wtc2 = 0, wts = 0, wts2 = 0; // wt[N - m + 1], wt[N - m + 2]
       for (int l = 0; l < L; ++l)
         k[l] = c[l].index(N, m) + 1;
       for (int n = N; n >= m; --n) {             // n = N .. m; l = N - m .. 0
         real w, A, Ax, B, R;    // alpha[l], beta[l + 1]
         switch (norm) {
         case FULL:
-          w = root_[2 * n + 1] / (root_[n - m + 1] * root_[n + m + 1]);
-          Ax = q * w * root_[2 * n + 3];
+          w = root[2 * n + 1] / (root[n - m + 1] * root[n + m + 1]);
+          Ax = q * w * root[2 * n + 3];
           A = t * Ax;
-          B = - q2 * root_[2 * n + 5] /
-            (w * root_[n - m + 2] * root_[n + m + 2]);
+          B = - q2 * root[2 * n + 5] /
+            (w * root[n - m + 2] * root[n + m + 2]);
           break;
         case SCHMIDT:
-          w = root_[n - m + 1] * root_[n + m + 1];
+          w = root[n - m + 1] * root[n + m + 1];
           Ax = q * (2 * n + 1) / w;
           A = t * Ax;
-          B = - q2 * w / (root_[n - m + 2] * root_[n + m + 2]);
+          B = - q2 * w / (root[n - m + 2] * root[n + m + 2]);
           break;
         default: break;       // To suppress warning message from Visual Studio
         }
         R = c[0].Cv(--k[0]);
         for (int l = 1; l < L; ++l)
           R += c[l].Cv(--k[l], n, m, f[l]);
-        R *= scale_;
+        R *= scale();
         w = A * wc + B * wc2 + R; wc2 = wc; wc = w;
         if (gradp) {
           w = A * wrc + B * wrc2 + (n + 1) * R; wrc2 = wrc; wrc = w;
@@ -351,7 +353,7 @@ namespace GeographicLib {
           R = c[0].Sv(k[0]);
           for (int l = 1; l < L; ++l)
             R += c[l].Sv(k[l], n, m, f[l]);
-          R *= scale_;
+          R *= scale();
           w = A * ws + B * ws2 + R; ws2 = ws; ws = w;
           if (gradp) {
             w = A * wrs + B * wrs2 + (n + 1) * R; wrs2 = wrs; wrs = w;
@@ -373,12 +375,13 @@ namespace GeographicLib {
 
   void SphericalEngine::RootTable(int N) {
     // Need square roots up to max(2 * N + 5, 15).
-    int L = max(2 * N + 5, 15) + 1, oldL = int(root_.size());
+    vector<real>& root( sqrttable() );
+    int L = max(2 * N + 5, 15) + 1, oldL = int(root.size());
     if (oldL >= L)
       return;
-    root_.resize(L);
+    root.resize(L);
     for (int l = oldL; l < L; ++l)
-      root_[l] = sqrt(real(l));
+      root[l] = sqrt(real(l));
   }
 
   void SphericalEngine::coeff::readcoeffs(std::istream& stream, int& N, int& M,

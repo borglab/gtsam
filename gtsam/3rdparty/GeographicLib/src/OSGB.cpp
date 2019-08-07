@@ -2,9 +2,9 @@
  * \file OSGB.cpp
  * \brief Implementation for GeographicLib::OSGB class
  *
- * Copyright (c) Charles Karney (2010-2012) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2017) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #include <GeographicLib/OSGB.hpp>
@@ -14,23 +14,21 @@ namespace GeographicLib {
 
   using namespace std;
 
-  const string OSGB::letters_ = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
-  const string OSGB::digits_ = "0123456789";
+  const char* const OSGB::letters_ = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
+  const char* const OSGB::digits_ = "0123456789";
 
-  const TransverseMercator
-  OSGB::OSGBTM_(MajorRadius(), Flattening(), CentralScale());
+  const TransverseMercator& OSGB::OSGBTM() {
+    static const TransverseMercator osgbtm(MajorRadius(), Flattening(),
+                                           CentralScale());
+    return osgbtm;
+  }
 
-  Math::real OSGB::northoffset_ = 0;
-  bool OSGB::init_ = false;
-
-  Math::real OSGB::computenorthoffset() throw() {
-    if (!init_) {
-      real x, y;
-      OSGBTM_.Forward(real(0), OriginLatitude(), real(0), x, y);
-      northoffset_ = FalseNorthing() - y;
-      init_ = true;
-    }
-    return northoffset_;
+  Math::real OSGB::computenorthoffset() {
+    real x, y;
+    static const real northoffset =
+      ( OSGBTM().Forward(real(0), OriginLatitude(), real(0), x, y),
+        FalseNorthing() - y );
+    return northoffset;
   }
 
   void OSGB::GridReference(real x, real y, int prec, std::string& gridref) {
@@ -39,10 +37,14 @@ namespace GeographicLib {
       throw GeographicErr("OSGB precision " + Utility::str(prec)
                           + " not in [0, "
                           + Utility::str(int(maxprec_)) + "]");
+    if (Math::isnan(x) || Math::isnan(y)) {
+      gridref = "INVALID";
+      return;
+    }
     char grid[2 + 2 * maxprec_];
     int
-      xh = int(floor(x)) / tile_,
-      yh = int(floor(y)) / tile_;
+      xh = int(floor(x / tile_)),
+      yh = int(floor(y / tile_));
     real
       xf = x - tile_ * xh,
       yf = y - tile_ * yh;
@@ -53,7 +55,8 @@ namespace GeographicLib {
                         * tilegrid_ + (xh / tilegrid_)];
     grid[z++] = letters_[(tilegrid_ - (yh % tilegrid_) - 1)
                         * tilegrid_ + (xh % tilegrid_)];
-    real mult = pow(real(base_), max(tilelevel_ - prec, 0));
+    // Need extra real because, since C++11, pow(float, int) returns double
+    real mult = real(pow(real(base_), max(tilelevel_ - prec, 0)));
     int
       ix = int(floor(xf / mult)),
       iy = int(floor(yf / mult));
@@ -66,7 +69,7 @@ namespace GeographicLib {
     if (prec > tilelevel_) {
       xf -= floor(xf / mult);
       yf -= floor(yf / mult);
-      mult = pow(real(base_), prec - tilelevel_);
+      mult = real(pow(real(base_), prec - tilelevel_));
       ix = int(floor(xf * mult));
       iy = int(floor(yf * mult));
       for (int c = prec - tilelevel_; c--;) {
@@ -87,6 +90,13 @@ namespace GeographicLib {
     int
       len = int(gridref.size()),
       p = 0;
+    if (len >= 2 &&
+        toupper(gridref[0]) == 'I' &&
+        toupper(gridref[1]) == 'N') {
+      x = y = Math::NaN();
+      prec = -2;                // For compatibility with MGRS::Reverse.
+      return;
+    }
     char grid[2 + 2 * maxprec_];
     for (int i = 0; i < len; ++i) {
       if (!isspace(gridref[i])) {
@@ -142,13 +152,13 @@ namespace GeographicLib {
   void OSGB::CheckCoords(real x, real y) {
     // Limits are all multiples of 100km and are all closed on the lower end
     // and open on the upper end -- and this is reflected in the error
-    // messages.
-    if (! (x >= minx_ && x < maxx_) )
+    // messages.  NaNs are let through.
+    if (x < minx_ || x >= maxx_)
       throw GeographicErr("Easting " + Utility::str(int(floor(x/1000)))
                           + "km not in OSGB range ["
                           + Utility::str(minx_/1000) + "km, "
                           + Utility::str(maxx_/1000) + "km)");
-    if (! (y >= miny_ && y < maxy_) )
+    if (y < miny_ || y >= maxy_)
       throw GeographicErr("Northing " + Utility::str(int(floor(y/1000)))
                           + "km not in OSGB range ["
                           + Utility::str(miny_/1000) + "km, "

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -36,19 +36,20 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CLIQUE>
   BayesTreeCliqueData BayesTree<CLIQUE>::getCliqueData() const {
-    BayesTreeCliqueData data;
-    for(const sharedClique& root: roots_)
-      getCliqueData(data, root);
-    return data;
+    BayesTreeCliqueData stats;
+    for (const sharedClique& root : roots_) getCliqueData(root, &stats);
+    return stats;
   }
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  void BayesTree<CLIQUE>::getCliqueData(BayesTreeCliqueData& data, sharedClique clique) const {
-    data.conditionalSizes.push_back(clique->conditional()->nrFrontals());
-    data.separatorSizes.push_back(clique->conditional()->nrParents());
-    for(sharedClique c: clique->children) {
-      getCliqueData(data, c);
+  template <class CLIQUE>
+  void BayesTree<CLIQUE>::getCliqueData(sharedClique clique,
+                                        BayesTreeCliqueData* stats) const {
+    const auto conditional = clique->conditional();
+    stats->conditionalSizes.push_back(conditional->nrFrontals());
+    stats->separatorSizes.push_back(conditional->nrParents());
+    for (sharedClique c : clique->children) {
+      getCliqueData(c, stats);
     }
   }
 
@@ -133,34 +134,26 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // TODO: Clean up
   namespace {
-    template<class FACTOR, class CLIQUE>
-    int _pushClique(FactorGraph<FACTOR>& fg, const boost::shared_ptr<CLIQUE>& clique) {
-      fg.push_back(clique->conditional_);
+  template <class FACTOR, class CLIQUE>
+  struct _pushCliqueFunctor {
+    _pushCliqueFunctor(FactorGraph<FACTOR>* graph_) : graph(graph_) {}
+    FactorGraph<FACTOR>* graph;
+    int operator()(const boost::shared_ptr<CLIQUE>& clique, int dummy) {
+      graph->push_back(clique->conditional_);
       return 0;
     }
-
-    template<class FACTOR, class CLIQUE>
-    struct _pushCliqueFunctor {
-      _pushCliqueFunctor(FactorGraph<FACTOR>& graph_) : graph(graph_) {}
-      FactorGraph<FACTOR>& graph;
-      int operator()(const boost::shared_ptr<CLIQUE>& clique, int dummy) {
-        graph.push_back(clique->conditional_);
-        return 0;
-      }
-    };
-  }
+  };
+  }  // namespace
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  void BayesTree<CLIQUE>::addFactorsToGraph(FactorGraph<FactorType>& graph) const
-  {
+  template <class CLIQUE>
+  void BayesTree<CLIQUE>::addFactorsToGraph(
+      FactorGraph<FactorType>* graph) const {
     // Traverse the BayesTree and add all conditionals to this graph
-    int data = 0; // Unused
-    _pushCliqueFunctor<FactorType,CLIQUE> functor(graph);
-    treeTraversal::DepthFirstForest(*this, data, functor); // FIXME: sort of works?
-//    treeTraversal::DepthFirstForest(*this, data, boost::bind(&_pushClique<FactorType,CLIQUE>, boost::ref(graph), _1));
+    int data = 0;  // Unused
+    _pushCliqueFunctor<FactorType, CLIQUE> functor(graph);
+    treeTraversal::DepthFirstForest(*this, data, functor);
   }
 
   /* ************************************************************************* */
@@ -434,50 +427,51 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  void BayesTree<CLIQUE>::removePath(sharedClique clique, BayesNetType& bn, Cliques& orphans)
-  {
+  template <class CLIQUE>
+  void BayesTree<CLIQUE>::removePath(sharedClique clique, BayesNetType* bn,
+                                     Cliques* orphans) {
     // base case is NULL, if so we do nothing and return empties above
     if (clique) {
-
       // remove the clique from orphans in case it has been added earlier
-      orphans.remove(clique);
+      orphans->remove(clique);
 
       // remove me
       this->removeClique(clique);
 
       // remove path above me
-      this->removePath(typename Clique::shared_ptr(clique->parent_.lock()), bn, orphans);
+      this->removePath(typename Clique::shared_ptr(clique->parent_.lock()), bn,
+                       orphans);
 
-      // add children to list of orphans (splice also removed them from clique->children_)
-      orphans.insert(orphans.begin(), clique->children.begin(), clique->children.end());
+      // add children to list of orphans (splice also removed them from
+      // clique->children_)
+      orphans->insert(orphans->begin(), clique->children.begin(),
+                      clique->children.end());
       clique->children.clear();
 
-      bn.push_back(clique->conditional_);
-
+      bn->push_back(clique->conditional_);
     }
   }
 
-  /* ************************************************************************* */
-  template<class CLIQUE>
-  void BayesTree<CLIQUE>::removeTop(const KeyVector& keys, BayesNetType& bn, Cliques& orphans)
-  {
+  /* *************************************************************************
+   */
+  template <class CLIQUE>
+  void BayesTree<CLIQUE>::removeTop(const KeyVector& keys, BayesNetType* bn,
+                                    Cliques* orphans) {
+    gttic(removetop);
     // process each key of the new factor
-    for(const Key& j: keys)
-    {
+    for (const Key& j : keys) {
       // get the clique
-      // TODO: Nodes will be searched again in removeClique
+      // TODO(frank): Nodes will be searched again in removeClique
       typename Nodes::const_iterator node = nodes_.find(j);
-      if(node != nodes_.end()) {
+      if (node != nodes_.end()) {
         // remove path from clique to root
         this->removePath(node->second, bn, orphans);
       }
     }
 
     // Delete cachedShortcuts for each orphan subtree
-    //TODO: Consider Improving
-    for(sharedClique& orphan: orphans)
-      orphan->deleteCachedShortcuts();
+    // TODO(frank): Consider Improving
+    for (sharedClique& orphan : *orphans) orphan->deleteCachedShortcuts();
   }
 
   /* ************************************************************************* */

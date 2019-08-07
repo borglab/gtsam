@@ -41,7 +41,7 @@ namespace gtsam {
     Key key() const { return key_; }
     virtual const char* what() const throw() {
       if(what_.empty())
-        what_ = 
+        what_ =
 "\nRequested to marginalize out variable " + formatter_(key_) + ", but this variable\n\
 is not a leaf.  To make the variables you would like to marginalize be leaves,\n\
 their ordering should be constrained using the constrainedKeys argument to\n\

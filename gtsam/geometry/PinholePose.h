@@ -145,7 +145,7 @@ public:
                                                (Dresult_dp || Dresult_dcal) ? &Dpoint_dpn : 0,
                                                Dresult_ddepth ? &Dpoint_ddepth : 0);
     Matrix33 Dresult_dpoint;
-    const Point3 result = pose().transform_from(point, Dresult_dpose,
+    const Point3 result = pose().transformFrom(point, Dresult_dpose,
                                                     (Dresult_ddepth ||
                                                      Dresult_dp     ||
                                                      Dresult_dcal) ? &Dresult_dpoint : 0);
@@ -220,7 +220,7 @@ private:
     & boost::serialization::make_nvp("PinholeBase",
         boost::serialization::base_object<PinholeBase>(*this));
   }
-  
+
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

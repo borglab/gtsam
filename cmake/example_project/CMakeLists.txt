@@ -7,7 +7,7 @@
 
 ###################################################################################
 # To create your own project, replace "example" with the actual name of your project
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 project(example CXX C)
 
 # Include GTSAM CMake tools
@@ -22,13 +22,19 @@ include_directories(BEFORE "${PROJECT_SOURCE_DIR}")
 ###################################################################################
 # Find GTSAM components
 find_package(GTSAM REQUIRED) # Uses installed package
-include_directories(${GTSAM_INCLUDE_DIR})
+# Note: Since Jan-2019, GTSAMConfig.cmake defines exported CMake targets
+# that automatically do include the include_directories() without the need
+# to call include_directories(), just target_link_libraries(NAME gtsam)
+#include_directories(${GTSAM_INCLUDE_DIR})
 
 ###################################################################################
 # Build static library from common sources
 set(CONVENIENCE_LIB_NAME ${PROJECT_NAME})
-add_library(${CONVENIENCE_LIB_NAME} STATIC example/PrintExamples.h example/PrintExamples.cpp)
+add_library(${CONVENIENCE_LIB_NAME} SHARED example/PrintExamples.h example/PrintExamples.cpp)
 target_link_libraries(${CONVENIENCE_LIB_NAME} gtsam)
+
+# Install library
+install(TARGETS ${CONVENIENCE_LIB_NAME} LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
 
 ###################################################################################
 # Build tests (CMake tracks the dependecy to link with GTSAM through our project's static library)

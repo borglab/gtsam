@@ -2,7 +2,7 @@
  * @file GlobalFunction.h
  *
  * @brief Implements codegen for a global function wrapped in matlab
- * 
+ *
  * @date Jul 22, 2012
  * @author Alex Cunningham
  */

@@ -7,7 +7,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 namespace NETGeographicLib
@@ -79,6 +79,7 @@ namespace NETGeographicLib
          *   allocated.
          *
          * \e prec specifies the precision of the MGRS string as follows:
+         * - prec = &minus;1 (min), only the grid zone is returned
          * - prec = 0 (min), 100 km
          * - prec = 1, 10 km
          * - prec = 2, 1 km
@@ -114,7 +115,7 @@ namespace NETGeographicLib
          * them \e within the allowed range.  (This includes reducing a southern
          * hemisphere northing of 10000 km by 4 nm so that it is placed in latitude
          * band M.)  The UTM or UPS coordinates are truncated to requested
-         * precision to determine the MGRS coordinate.  Thus in UTM zone 38N, the
+         * precision to determine the MGRS coordinate.  Thus in UTM zone 38n, the
          * square area with easting in [444 km, 445 km) and northing in [3688 km,
          * 3689 km) maps to MGRS coordinate 38SMB4488 (at \e prec = 2, 1 km),
          * Khulani Sq., Baghdad.
@@ -130,6 +131,11 @@ namespace NETGeographicLib
          * neighboring latitude band letter may be given if the point is within 5nm
          * of a band boundary.  For prec in [6, 11], the conversion is accurate to
          * roundoff.
+         *
+         * If \e prec = &minus;1, then the "grid zone designation", e.g., 18T, is
+         * returned.  This consists of the UTM zone number (absent for UPS) and the
+         * first letter of the MGRS string which labels the latitude band for UTM
+         * and the hemisphere for UPS.
          *
          * If \e x or \e y is NaN or if \e zone is UTMUPS::INVALID, the returned
          * MGRS string is "INVALID".
@@ -157,6 +163,7 @@ namespace NETGeographicLib
          *   allowed range.
          * @exception GeographicErr if \e lat is inconsistent with the given UTM
          *   coordinates.
+         * @exception std::bad_alloc if the memory for \e mgrs can't be allocated.
          *
          * The latitude is ignored for \e zone = 0 (UPS); otherwise the latitude is
          * used to determine the latitude band and this is checked for consistency
@@ -199,8 +206,15 @@ namespace NETGeographicLib
          * centerp = true the conversion from MGRS to geographic and back is
          * stable.  This is not assured if \e centerp = false.
          *
+         * If a "grid zone designation" (for example, 18T or A) is given, then some
+         * suitable (but essentially arbitrary) point within that grid zone is
+         * returned.  The main utility of the conversion is to allow \e zone and \e
+         * northp to be determined.  In this case, the \e centerp parameter is
+         * ignored and \e prec is set to &minus;1.
+         *
          * If the first 3 characters of \e mgrs are "INV", then \e x and \e y are
-         * set to NaN and \e zone is set to UTMUPS::INVALID.
+         * set to NaN, \e zone is set to UTMUPS::INVALID, and \e prec is set to
+         * &minus;2.
          *
          * If an exception is thrown, then the arguments are unchanged.
          **********************************************************************/

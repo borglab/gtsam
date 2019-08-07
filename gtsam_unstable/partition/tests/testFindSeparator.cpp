@@ -121,7 +121,7 @@ TEST ( Partition, edgePartitionByMetis2 )
   CHECK(A_expected == actual->A);
   CHECK(B_expected == actual->B);
   CHECK(C_expected == actual->C);
-} 
+}
 
 /* ************************************************************************* */
 // x0 - x1 - x2

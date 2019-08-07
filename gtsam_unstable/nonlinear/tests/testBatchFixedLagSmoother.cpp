@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -53,11 +53,11 @@ TEST( BatchFixedLagSmoother, Example )
   // the BatchFixedLagSmoother should be identical (even with the linearized approximations at
   // the end of the smoothing lag)
 
-//  SETDEBUG("BatchFixedLagSmoother update", true);
-//  SETDEBUG("BatchFixedLagSmoother reorder", true);
-//  SETDEBUG("BatchFixedLagSmoother optimize", true);
-//  SETDEBUG("BatchFixedLagSmoother marginalize", true);
-//  SETDEBUG("BatchFixedLagSmoother calculateMarginalFactors", true);
+  //  SETDEBUG("BatchFixedLagSmoother update", true);
+  //  SETDEBUG("BatchFixedLagSmoother reorder", true);
+  //  SETDEBUG("BatchFixedLagSmoother optimize", true);
+  //  SETDEBUG("BatchFixedLagSmoother marginalize", true);
+  //  SETDEBUG("BatchFixedLagSmoother calculateMarginalFactors", true);
 
   // Set up parameters
   SharedDiagonal odometerNoise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
@@ -177,6 +177,65 @@ TEST( BatchFixedLagSmoother, Example )
     ++i;
   }
 
+  // add/remove an extra factor
+  {
+    Key key1 = Key(i-1);
+    Key key2 = Key(i);
+
+    NonlinearFactorGraph newFactors;
+    Values newValues;
+    Timestamps newTimestamps;
+
+    // add 2 odometry factors
+    newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
+    newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
+    newValues.insert(key2, Point2(double(i)+0.1, -0.1));
+    newTimestamps[key2] = double(i);
+
+    fullgraph.push_back(newFactors);
+    fullinit.insert(newValues);
+
+    // Update the smoother
+    smoother.update(newFactors, newValues, newTimestamps);
+
+    // Check
+    CHECK(check_smoother(fullgraph, fullinit, smoother, key2));
+
+//    NonlinearFactorGraph smootherGraph = smoother.getFactors();
+//    for(size_t i=0; i<smootherGraph.size(); i++){
+//      if(smootherGraph[i]){
+//      std::cout << "i:" << i << std::endl;
+//      smootherGraph[i]->print();
+//      }
+//    }
+
+    // now remove one of the two and try again
+    // empty values and new factors for fake update in which we only remove factors
+    NonlinearFactorGraph emptyNewFactors;
+    Values emptyNewValues;
+    Timestamps emptyNewTimestamps;
+
+    size_t factorIndex = 6; // any index that does not break connectivity of the graph
+    FactorIndices factorToRemove;
+    factorToRemove.push_back(factorIndex);
+
+    const NonlinearFactorGraph smootherFactorsBeforeRemove = smoother.getFactors();
+
+    // remove factor
+    smoother.update(emptyNewFactors, emptyNewValues, emptyNewTimestamps,factorToRemove);
+
+    // check that the factors in the smoother are right
+    NonlinearFactorGraph actual = smoother.getFactors();
+    for(size_t i=0; i< smootherFactorsBeforeRemove.size(); i++){
+      // check that the factors that were not removed are there
+      if(smootherFactorsBeforeRemove[i] && i != factorIndex){
+        EXPECT(smootherFactorsBeforeRemove[i]->equals(*actual[i]));
+      }
+      else{ // while the factors that were not there or were removed are no longer there
+        EXPECT(!actual[i]);
+      }
+    }
+  }
 }
 
 /* ************************************************************************* */

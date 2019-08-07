@@ -127,7 +127,7 @@ private:
 
 /**
  * CallRecordMaxVirtualStaticRows tells which separate virtual reverseAD with specific
- * static rows (1..CallRecordMaxVirtualStaticRows) methods are part of the CallRecord 
+ * static rows (1..CallRecordMaxVirtualStaticRows) methods are part of the CallRecord
  * interface. It is used to keep the testCallRecord unit test in sync.
  */
 const int CallRecordMaxVirtualStaticRows = 5;

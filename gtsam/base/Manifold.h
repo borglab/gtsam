@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -170,7 +170,7 @@ struct FixedDimension {
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 /// Helper class to construct the product manifold of two other manifolds, M1 and M2
-/// Deprecated because of limited usefulness, maximum obfuscation 
+/// Deprecated because of limited usefulness, maximum obfuscation
 template<typename M1, typename M2>
 class ProductManifold: public std::pair<M1, M2> {
   BOOST_CONCEPT_ASSERT((IsManifold<M1>));

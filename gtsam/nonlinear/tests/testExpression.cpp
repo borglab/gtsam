@@ -166,7 +166,7 @@ double doubleF(const Pose3& pose,  //
 }
 Pose3_ x(1);
 Point3_ p(2);
-Point3_ p_cam(x, &Pose3::transform_to, p);
+Point3_ p_cam(x, &Pose3::transformTo, p);
 }
 
 /* ************************************************************************* */
@@ -196,6 +196,7 @@ TEST(Expression, BinaryDimensions) {
 TEST(Expression, BinaryTraceSize) {
   typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
   size_t expectedTraceSize = sizeof(Binary::Record);
+  internal::upAlign(expectedTraceSize);
   EXPECT_LONGS_EQUAL(expectedTraceSize, binary::p_cam.traceSize());
 }
 

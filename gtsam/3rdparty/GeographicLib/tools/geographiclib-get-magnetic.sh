@@ -2,9 +2,9 @@
 #
 # Download magnetic models for use by GeographicLib::MagneticModel.
 #
-# Copyright (c) Charles Karney (2011) <charles@karney.com> and licensed
-# under the MIT/X11 License.  For more information, see
-# http://geographiclib.sourceforge.net/
+# Copyright (c) Charles Karney (2011-2015) <charles@karney.com> and
+# licensed under the MIT/X11 License.  For more information, see
+# https://geographiclib.sourceforge.io/
 
 DEFAULTDIR="@GEOGRAPHICLIB_DATA@"
 SUBDIR=magnetic
@@ -25,16 +25,18 @@ table:
                                   size (kB)
   name     degree    years      tar.bz2  disk
   wmm2010    12    2010-2015      2       3
+  wmm2015    12    2015-2020      2       3
   igrf11     13    1900-2015      7      25
-  emm2010   740    2010-2015    3700    4400
+  igrf12     13    1900-2020      7      26
+  emm2010   739    2010-2015    3700    4400
+  emm2015   729    2000-2020     660    4300
+  emm2017   790    2000-2022    1740    5050
 
 The size columns give the download and installed sizes of the datasets.
 In addition you can specify
 
   all = all of the supported magnetic models
-  minimal = wmm2010 igrf11
-
-If no name is specified then minimal is assumed.
+  minimal = wmm2015 igrf12
 
 -p parentdir (default $DEFAULTDIR) specifies where the
 datasets should be stored.  The "Default $NAME path" listed when running
@@ -53,7 +55,7 @@ will be saved.  -h prints this help.
 
 For more information on the magnetic models, visit
 
-  http://geographiclib.sourceforge.net/html/$NAME.html
+  https://geographiclib.sourceforge.io/html/$NAME.html
 
 EOF
 }
@@ -79,6 +81,10 @@ while getopts hp:fd c; do
     esac
 done
 shift `expr $OPTIND - 1`
+if test $# -eq 0; then
+    usage 1>&2;
+    exit 1
+fi
 
 test -d "$PARENTDIR"/$SUBDIR || mkdir -p "$PARENTDIR"/$SUBDIR 2> /dev/null
 if test ! -d "$PARENTDIR"/$SUBDIR; then
@@ -91,7 +97,7 @@ if test -z "$DEBUG"; then
 trap 'trap "" 0; test "$TEMP" && rm -rf "$TEMP"; exit 1' 1 2 3 9 15
 trap            'test "$TEMP" && rm -rf "$TEMP"'            0
 fi
-TEMP=`mktemp --tmpdir --quiet --directory $NAME-XXXXXXXX`
+TEMP=`mktemp -d -q -t $NAME-XXXXXXXX`
 
 if test -z "$TEMP" -o ! -d "$TEMP"; then
     echo Cannot create temporary directory 1>&2
@@ -110,11 +116,13 @@ set -e
 
 cat > $TEMP/all <<EOF
 wmm2010
+wmm2015
 emm2010
+emm2015
+emm2017
 igrf11
+igrf12
 EOF
-
-test $# -eq 0 && set -- minimal
 
 while test $# -gt 0; do
     if grep "^$1\$" $TEMP/all > /dev/null; then
@@ -124,8 +132,8 @@ while test $# -gt 0; do
 	    all )
 		cat $TEMP/all
 		;;
-	    minimal )		# same as no argument
-		echo wmm2010; echo igrf11
+	    minimal )
+		echo wmm2015; echo igrf12
 		;;
 	    * )
 		echo Unknown magnetic model $1 1>&2
@@ -146,7 +154,7 @@ while read file; do
     fi
     echo download $file.tar.bz2 ...
     echo $file >> $TEMP/download
-    URL="http://downloads.sourceforge.net/project/geographiclib/$SUBDIR-distrib/$file.tar.bz2?use_mirror=autoselect"
+    URL="https://downloads.sourceforge.net/project/geographiclib/$SUBDIR-distrib/$file.tar.bz2?use_mirror=autoselect"
     ARCHIVE=$TEMP/$file.tar.bz2
     wget -O$ARCHIVE $URL
     echo unpack $file.tar.bz2 ...

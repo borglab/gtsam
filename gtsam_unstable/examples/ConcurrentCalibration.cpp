@@ -46,7 +46,7 @@ int main(int argc, char** argv){
   string calibration_loc = findExampleDataFile("VO_calibration00s.txt");
   string pose_loc = findExampleDataFile("VO_camera_poses00s.txt");
   string factor_loc = findExampleDataFile("VO_stereo_factors00s.txt");
-  
+
   //read camera calibration info from file
   // focal lengths fx, fy, skew s, principal point u0, v0, baseline b
   double fx, fy, s, u0, v0, b;
@@ -57,7 +57,7 @@ int main(int argc, char** argv){
   //create stereo camera calibration object
   const Cal3_S2::shared_ptr K(new Cal3_S2(fx,fy,s,u0,v0));
   const Cal3_S2::shared_ptr noisy_K(new Cal3_S2(fx*1.2,fy*1.2,s,u0-10,v0+10));
-  
+
   initial_estimate.insert(Symbol('K', 0), *noisy_K);
 
   noiseModel::Diagonal::shared_ptr calNoise = noiseModel::Diagonal::Sigmas((Vector(5) << 500, 500, 1e-5, 100, 100).finished());
@@ -75,7 +75,7 @@ int main(int argc, char** argv){
     }
     initial_estimate.insert(Symbol('x', pose_id), Pose3(m));
   }
-  
+
   noiseModel::Isotropic::shared_ptr poseNoise = noiseModel::Isotropic::Sigma(6, 0.01);
   graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x', pose_id), Pose3(m), poseNoise);
 
@@ -97,8 +97,8 @@ int main(int argc, char** argv){
     //if the landmark variable included in this factor has not yet been added to the initial variable value estimate, add it
     if (!initial_estimate.exists(Symbol('l', l))) {
       Pose3 camPose = initial_estimate.at<Pose3>(Symbol('x', x));
-      //transform_from() transforms the input Point3 from the camera pose space, camPose, to the global space
-      Point3 worldPoint = camPose.transform_from(Point3(X, Y, Z));
+      //transformFrom() transforms the input Point3 from the camera pose space, camPose, to the global space
+      Point3 worldPoint = camPose.transformFrom(Point3(X, Y, Z));
       initial_estimate.insert(Symbol('l', l), worldPoint);
     }
   }

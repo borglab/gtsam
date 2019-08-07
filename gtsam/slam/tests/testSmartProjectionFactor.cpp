@@ -38,7 +38,6 @@ static const double rankTol = 1.0;
 template<class CALIBRATION>
 PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
     const PinholeCamera<CALIBRATION>& camera) {
-  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   Pose3 cameraPose = camera.pose();

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -72,9 +72,9 @@ public:
   // Then the instance variables are set directly by the Module constructor
   std::vector<std::string> templateArgs; ///< Template arguments
   std::string typedefName; ///< The name to typedef *from*, if this class is actually a typedef, i.e. typedef [typedefName] [name]
-  std::vector<Qualified> templateInstTypeList; ///< the original typelist used to instantiate this class from a template. 
+  std::vector<Qualified> templateInstTypeList; ///< the original typelist used to instantiate this class from a template.
                                                ///< Empty if it's not an instantiation. Needed for template classes in Cython pxd.
-  boost::optional<Qualified> templateClass = boost::none; ///< qualified name of the original template class from which this class was instantiated. 
+  boost::optional<Qualified> templateClass = boost::none; ///< qualified name of the original template class from which this class was instantiated.
                                                           ///< boost::none if not an instantiation. Needed for template classes in Cython pxd.
   bool isVirtual; ///< Whether the class is part of a virtual inheritance chain
   bool isSerializable; ///< Whether we can use boost.serialization to serialize the class - creates exports

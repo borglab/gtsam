@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
       graph.addExpressionFactor(
           gNoiseModel, z,
           uncalibrate(calibration_,
-                      project(transform_to(navTcam_, nav_point_))));
+                      project(transformTo(navTcam_, nav_point_))));
     }
   }
 

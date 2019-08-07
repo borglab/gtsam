@@ -35,8 +35,8 @@ void VariableIndex::print(const string& str, const KeyFormatter& keyFormatter) c
   cout << "nEntries = " << nEntries() << ", nFactors = " << nFactors() << "\n";
   for(KeyMap::value_type key_factors: index_) {
     cout << "var " << keyFormatter(key_factors.first) << ":";
-    for(const size_t factor: key_factors.second)
-      cout << " " << factor;
+    for(const auto index: key_factors.second)
+      cout << " " << index;
     cout << "\n";
   }
   cout.flush();
@@ -48,11 +48,24 @@ void VariableIndex::outputMetisFormat(ostream& os) const {
   // run over variables, which will be hyper-edges.
   for(KeyMap::value_type key_factors: index_) {
     // every variable is a hyper-edge covering its factors
-    for(const size_t factor: key_factors.second)
-      os << (factor+1) << " "; // base 1
+    for(const auto index: key_factors.second)
+      os << (index+1) << " "; // base 1
     os << "\n";
   }
   os << flush;
+}
+
+/* ************************************************************************* */
+void VariableIndex::augmentExistingFactor(const FactorIndex factorIndex, const KeySet & newKeys)
+{
+  gttic(VariableIndex_augmentExistingFactor);
+
+  for(const Key key: newKeys) {
+    index_[key].push_back(factorIndex);
+    ++nEntries_;
+  }
+
+  gttoc(VariableIndex_augmentExistingFactor);
 }
 
 }

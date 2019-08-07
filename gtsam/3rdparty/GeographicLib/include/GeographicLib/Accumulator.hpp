@@ -2,9 +2,9 @@
  * \file Accumulator.hpp
  * \brief Header for GeographicLib::Accumulator class
  *
- * Copyright (c) Charles Karney (2010-2011) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2015) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #if !defined(GEOGRAPHICLIB_ACCUMULATOR_HPP)
@@ -17,12 +17,12 @@ namespace GeographicLib {
   /**
    * \brief An accumulator for sums
    *
-   * This allow many numbers of floating point type \e T to be added together
+   * This allows many numbers of floating point type \e T to be added together
    * with twice the normal precision.  Thus if \e T is double, the effective
    * precision of the sum is 106 bits or about 32 decimal places.
    *
    * The implementation follows J. R. Shewchuk,
-   * <a href="http://dx.doi.org/10.1007/PL00009321"> Adaptive Precision
+   * <a href="https://doi.org/10.1007/PL00009321"> Adaptive Precision
    * Floating-Point Arithmetic and Fast Robust Geometric Predicates</a>,
    * Discrete & Computational Geometry 18(3) 305--363 (1997).
    *
@@ -43,16 +43,17 @@ namespace GeographicLib {
     T _s, _t;
     // Same as Math::sum, but requires abs(u) >= abs(v).  This isn't currently
     // used.
-    static inline T fastsum(T u, T v, T& t) throw() {
-      volatile T s = u + v;
-      volatile T vp = s - u;
+    static T fastsum(T u, T v, T& t) {
+      GEOGRAPHICLIB_VOLATILE T s = u + v;
+      GEOGRAPHICLIB_VOLATILE T vp = s - u;
       t = v - vp;
       return s;
     }
-    void Add(T y) throw() {
+    void Add(T y) {
       // Here's Shewchuk's solution...
       T u;                       // hold exact sum as [s, t, u]
-      y  = Math::sum(y, _t,  u); // Accumulate starting at least significant end
+      // Accumulate starting at least significant end
+      y  = Math::sum(y, _t,  u);
       _s = Math::sum(y, _s, _t);
       // Start is _s, _t decreasing and non-adjacent.  Sum is now (s + t + u)
       // exactly with s, t, u non-adjacent and in decreasing order (except for
@@ -86,7 +87,7 @@ namespace GeographicLib {
       else
         _t += u;                // otherwise just accumulate u to t.
     }
-    T Sum(T y) const throw() {
+    T Sum(T y) const {
       Accumulator a(*this);
       a.Add(y);
       return a._s;
@@ -98,41 +99,42 @@ namespace GeographicLib {
      *
      * @param[in] y set \e sum = \e y.
      **********************************************************************/
-    Accumulator(T y = T(0)) throw() : _s(y), _t(0) {
-      STATIC_ASSERT(!std::numeric_limits<T>::is_integer,
-                    "Accumulator type is not floating point");
+    Accumulator(T y = T(0)) : _s(y), _t(0) {
+      GEOGRAPHICLIB_STATIC_ASSERT(!std::numeric_limits<T>::is_integer,
+                                  "Accumulator type is not floating point");
     }
     /**
      * Set the accumulator to a number.
      *
      * @param[in] y set \e sum = \e y.
      **********************************************************************/
-    Accumulator& operator=(T y) throw() { _s = y; _t = 0; return *this; }
+    Accumulator& operator=(T y) { _s = y; _t = 0; return *this; }
     /**
      * Return the value held in the accumulator.
      *
      * @return \e sum.
      **********************************************************************/
-    T operator()() const throw() { return _s; }
+    T operator()() const { return _s; }
     /**
-     * Return the result of adding a number to \e sum (but don't change \e sum).
+     * Return the result of adding a number to \e sum (but don't change \e
+     * sum).
      *
      * @param[in] y the number to be added to the sum.
      * @return \e sum + \e y.
      **********************************************************************/
-    T operator()(T y) const throw() { return Sum(y); }
+    T operator()(T y) const { return Sum(y); }
     /**
      * Add a number to the accumulator.
      *
      * @param[in] y set \e sum += \e y.
      **********************************************************************/
-    Accumulator& operator+=(T y) throw() { Add(y); return *this; }
+    Accumulator& operator+=(T y) { Add(y); return *this; }
     /**
      * Subtract a number from the accumulator.
      *
      * @param[in] y set \e sum -= \e y.
      **********************************************************************/
-    Accumulator& operator-=(T y) throw() { Add(-y); return *this; }
+    Accumulator& operator-=(T y) { Add(-y); return *this; }
     /**
      * Multiply accumulator by an integer.  To avoid loss of accuracy, use only
      * integers such that \e n &times; \e T is exactly representable as a \e T
@@ -140,31 +142,43 @@ namespace GeographicLib {
      *
      * @param[in] n set \e sum *= \e n.
      **********************************************************************/
-    Accumulator& operator*=(int n) throw() { _s *= n; _t *= n; return *this; }
+    Accumulator& operator*=(int n) { _s *= n; _t *= n; return *this; }
+    /**
+     * Multiply accumulator by a number.  The fma (fused multiply and add)
+     * instruction is used (if available) in order to maintain accuracy.
+     *
+     * @param[in] y set \e sum *= \e y.
+     **********************************************************************/
+    Accumulator& operator*=(T y) {
+      T d = _s; _s *= y;
+      d = Math::fma(y, d, -_s); // the error in the first multiplication
+      _t = Math::fma(y, _t, d); // add error to the second term
+      return *this;
+    }
     /**
      * Test equality of an Accumulator with a number.
      **********************************************************************/
-    bool operator==(T y) const throw() { return _s == y; }
+    bool operator==(T y) const { return _s == y; }
     /**
      * Test inequality of an Accumulator with a number.
      **********************************************************************/
-    bool operator!=(T y) const throw() { return _s != y; }
+    bool operator!=(T y) const { return _s != y; }
     /**
      * Less operator on an Accumulator and a number.
      **********************************************************************/
-    bool operator<(T y) const throw() { return _s < y; }
+    bool operator<(T y) const { return _s < y; }
     /**
      * Less or equal operator on an Accumulator and a number.
      **********************************************************************/
-    bool operator<=(T y) const throw() { return _s <= y; }
+    bool operator<=(T y) const { return _s <= y; }
     /**
      * Greater operator on an Accumulator and a number.
      **********************************************************************/
-    bool operator>(T y) const throw() { return _s > y; }
+    bool operator>(T y) const { return _s > y; }
     /**
      * Greater or equal operator on an Accumulator and a number.
      **********************************************************************/
-    bool operator>=(T y) const throw() { return _s >= y; }
+    bool operator>=(T y) const { return _s >= y; }
   };
 
 } // namespace GeographicLib

@@ -4,9 +4,11 @@ GeodSolve -- perform geodesic calculations
 
 =head1 SYNOPSIS
 
-B<GeodSolve> [ B<-i> | B<-l> I<lat1> I<lon1> I<azi1> ] [ B<-a> ]
-[ B<-e> I<a> I<f> ]
-[ B<-d> | B<-:> ] [ B<-b> ] [ B<-f> ] [ B<-p> I<prec> ] [ B<-E> ]
+B<GeodSolve>
+[ B<-i> | B<-L> I<lat1> I<lon1> I<azi1> |
+B<-D> I<lat1> I<lon1> I<azi1> I<s13> | B<-I> I<lat1> I<lon1> I<lat3> I<lon3> ]
+[ B<-a> ] [ B<-e> I<a> I<f> ] [ B<-u> ] [ B<-F> ]
+[ B<-d> | B<-:> ] [ B<-w> ] [ B<-b> ] [ B<-f> ] [ B<-p> I<prec> ] [ B<-E> ]
 [ B<--comment-delimiter> I<commentdelim> ]
 [ B<--version> | B<-h> | B<--help> ]
 [ B<--input-file> I<infile> | B<--input-string> I<instring> ]
@@ -32,16 +34,18 @@ on standard output.  This is the direct geodesic calculation.
 
 =item 2.
 
-Command line arguments B<-l> I<lat1> I<lon1> I<azi1> specify a geodesic
-line.  B<GeodSolve> then accepts a sequence of I<s12> values (one per
-line) on standard input and prints I<lat2> I<lon2> I<azi2> for each.
-This generates a sequence of points on a single geodesic.
-
-=item 3.
-
 With the B<-i> command line argument, B<GeodSolve> performs the inverse
 geodesic calculation.  It reads lines containing I<lat1> I<lon1> I<lat2>
 I<lon2> and prints the corresponding values of I<azi1> I<azi2> I<s12>.
+
+=item 3.
+
+Command line arguments B<-L> I<lat1> I<lon1> I<azi1> specify a geodesic
+line.  B<GeodSolve> then accepts a sequence of I<s12> values (one per
+line) on standard input and prints I<lat2> I<lon2> I<azi2> for each.
+This generates a sequence of points on a single geodesic.  Command line
+arguments B<-D> and B<-I> work similarly with the geodesic line defined
+in terms of a direct or inverse geodesic calculation, respectively.
 
 =back
 
@@ -51,26 +55,61 @@ I<lon2> and prints the corresponding values of I<azi1> I<azi2> I<s12>.
 
 =item B<-i>
 
-perform an inverse geodesic calculation (see 3 above).
+perform an inverse geodesic calculation (see 2 above).
 
-=item B<-l>
+=item B<-L> I<lat1> I<lon1> I<azi1>
 
-line mode (see 2 above); generate a sequence of points along the
-geodesic specified by I<lat1> I<lon1> I<azi1>.
+line mode (see 3 above); generate a sequence of points along the
+geodesic specified by I<lat1> I<lon1> I<azi1>.  The B<-w> flag can be
+used to swap the default order of the 2 geographic coordinates, provided
+that it appears before B<-L>.  (B<-l> is an alternative, deprecated,
+spelling of this flag.)
+
+=item B<-D> I<lat1> I<lon1> I<azi1> I<s13>
+
+line mode (see 3 above); generate a sequence of points along the
+geodesic specified by I<lat1> I<lon1> I<azi1> I<s13>.  The B<-w> flag
+can be used to swap the default order of the 2 geographic coordinates,
+provided that it appears before B<-D>.  Similarly, the B<-a> flag can be
+used to change the interpretation of I<s13> to I<a13>, provided that it
+appears before B<-D>.
+
+=item B<-I> I<lat1> I<lon1> I<lat3> I<lon3>
+
+line mode (see 3 above); generate a sequence of points along the
+geodesic specified by I<lat1> I<lon1> I<lat3> I<lon3>.  The B<-w> flag
+can be used to swap the default order of the 2 geographic coordinates,
+provided that it appears before B<-I>.
 
 =item B<-a>
 
-arc mode; on input I<and> output I<s12> is replaced by I<a12> the arc
-length (in degrees) on the auxiliary sphere.  See L</AUXILIARY SPHERE>.
+toggle the arc mode flag (it starts off); if this flag is on, then on
+input I<and> output I<s12> is replaced by I<a12> the arc length (in
+degrees) on the auxiliary sphere.  See L</AUXILIARY SPHERE>.
 
-=item B<-e>
+=item B<-e> I<a> I<f>
 
-specify the ellipsoid via I<a> I<f>; the equatorial radius is I<a> and
-the flattening is I<f>.  Setting I<f> = 0 results in a sphere.  Specify
+specify the ellipsoid via the equatorial radius, I<a> and
+the flattening, I<f>.  Setting I<f> = 0 results in a sphere.  Specify
 I<f> E<lt> 0 for a prolate ellipsoid.  A simple fraction, e.g., 1/297,
-is allowed for I<f>.  (Also, if I<f> E<gt> 1, the flattening is set to
-1/I<f>.)  By default, the WGS84 ellipsoid is used, I<a> = 6378137 m,
-I<f> = 1/298.257223563.
+is allowed for I<f>.  By default, the WGS84 ellipsoid is used, I<a> =
+6378137 m, I<f> = 1/298.257223563.
+
+=item B<-u>
+
+unroll the longitude.  Normally, on output longitudes are reduced to lie
+in [-180deg,180deg).  However with this option, the returned longitude
+I<lon2> is "unrolled" so that I<lon2> - I<lon1> indicates how often and
+in what sense the geodesic has encircled the earth.  Use the B<-f>
+option, to get both longitudes printed.
+
+=item B<-F>
+
+fractional mode.  This only has any effect with the B<-D> and B<-I>
+options (and is otherwise ignored).  The values read on standard input
+are interpreted as fractional distances to point 3, i.e., as
+I<s12>/I<s13> instead of I<s12>.  If arc mode is in effect, then the
+values denote fractional arc length, i.e., I<a12>/I<a13>.
 
 =item B<-d>
 
@@ -80,6 +119,13 @@ output angles as degrees, minutes, seconds instead of decimal degrees.
 
 like B<-d>, except use : as a separator instead of the d, ', and "
 delimiters.
+
+=item B<-w>
+
+toggle the longitude first flag (it starts off); if the flag is on, then
+on input and output, longitude precedes latitude (except that, on input,
+this can be overridden by a hemisphere designator, I<N>, I<S>, I<E>,
+I<W>).
 
 =item B<-b>
 
@@ -93,7 +139,7 @@ I<M21> I<S12>.  I<a12> is described in L</AUXILIARY SPHERE>.  The four
 quantities I<m12>, I<M12>, I<M21>, and I<S12> are described in
 L</ADDITIONAL QUANTITIES>.
 
-=item B<-p>
+=item B<-p> I<prec>
 
 set the output precision to I<prec> (default 3); I<prec> is the
 precision relative to 1 m.  See L</PRECISION>.
@@ -102,9 +148,9 @@ precision relative to 1 m.  See L</PRECISION>.
 
 use "exact" algorithms (based on elliptic integrals) for the geodesic
 calculations.  These are more accurate than the (default) series
-expansions for |I<f>| > 0.02.
+expansions for |I<f>| E<gt> 0.02.
 
-=item B<--comment-delimiter>
+=item B<--comment-delimiter> I<commentdelim>
 
 set the comment delimiter to I<commentdelim> (e.g., "#" or "//").  If
 set, the input lines will be scanned for this delimiter and, if found,
@@ -124,23 +170,23 @@ print usage and exit.
 
 print full documentation and exit.
 
-=item B<--input-file>
+=item B<--input-file> I<infile>
 
 read input from the file I<infile> instead of from standard input; a file
 name of "-" stands for standard input.
 
-=item B<--input-string>
+=item B<--input-string> I<instring>
 
 read input from the string I<instring> instead of from standard input.
 All occurrences of the line separator character (default is a semicolon)
 in I<instring> are converted to newlines before the reading begins.
 
-=item B<--line-separator>
+=item B<--line-separator> I<linesep>
 
 set the line separator character to I<linesep>.  By default this is a
 semicolon.
 
-=item B<--output-file>
+=item B<--output-file> I<outfile>
 
 write output to the file I<outfile> instead of to standard output; a
 file name of "-" stands for standard output.
@@ -150,18 +196,18 @@ file name of "-" stands for standard output.
 =head1 INPUT
 
 B<GeodSolve> measures all angles in degrees and all lengths (I<s12>) in
-meters.  On input angles (latitude, longitude, azimuth, arc length) can
-be as decimal degrees or degrees (d), minutes ('), seconds (").  A
-decimal point can only appear in the least significant component and the
-designator (d, ', or ") for this component is optional; thus C<40d30>,
-C<40d30'>, C<40.5d>, and C<40.5> are all equivalent.  By default,
-latitude precedes longitude for each point; however on input either may
-be given first by appending (or prepending) I<N> or I<S> to the latitude
-and I<E> or I<W> to the longitude.  Azimuths are measured clockwise from
-north; however this may be overridden with I<E> or I<W>.
+meters, and all areas (I<S12>) in meters^2.  On input angles (latitude,
+longitude, azimuth, arc length) can be as decimal degrees or degrees,
+minutes, seconds.  For example, C<40d30>, C<40d30'>, C<40:30>, C<40.5d>,
+and C<40.5> are all equivalent.  By default, latitude precedes longitude
+for each point (the B<-w> flag switches this convention); however on
+input either may be given first by appending (or prepending) I<N> or
+I<S> to the latitude and I<E> or I<W> to the longitude.  Azimuths are
+measured clockwise from north; however this may be overridden with I<E>
+or I<W>.
 
-See the C<QUOTING> section of GeoConvert(1) for how to quote the DMS
-designators ' and ".
+For details on the allowed formats for angles, see the C<GEOGRAPHIC
+COORDINATES> section of GeoConvert(1).
 
 =head1 AUXILIARY SPHERE
 
@@ -194,13 +240,14 @@ and I<M21> are dimensionless quantities.  On a flat surface, we have
 I<M12> = I<M21> = 1.
 
 If points 1, 2, and 3 lie on a single geodesic, then the following
-addition rules hold,
-I<s13> = I<s12> + I<s23>,
-I<a13> = I<a12> + I<a23>,
-I<S13> = I<S12> + I<S23>,
-I<m13> = I<m12> I<M23> + I<m23> I<M21>,
-I<M13> = I<M12> I<M23> - (1 - I<M12> I<M21>) I<m23> / I<m12>, and
-I<M31> = I<M32> I<M21> - (1 - I<M23> I<M32>) I<m12> / I<m23>.
+addition rules hold:
+
+   s13 = s12 + s23,
+   a13 = a12 + a23,
+   S13 = S12 + S23,
+   m13 = m12 M23 + m23 M21,
+   M13 = M12 M23 - (1 - M12 M21) m23 / m12,
+   M31 = M32 M21 - (1 - M23 M32) m12 / m23.
 
 Finally, I<S12> is the area between the geodesic from point 1 to point 2
 and the equator; i.e., it is the area, measured counter-clockwise, of
@@ -212,9 +259,9 @@ the geodesic quadrilateral with corners (I<lat1>,I<lon1>), (0,I<lon1>),
 I<prec> gives precision of the output with I<prec> = 0 giving 1 m
 precision, I<prec> = 3 giving 1 mm precision, etc.  I<prec> is the
 number of digits after the decimal point for lengths.  For decimal
-degrees, the number of digits after the decimal point is 5 + I<prec>.
+degrees, the number of digits after the decimal point is I<prec> + 5.
 For DMS (degree, minute, seconds) output, the number of digits after the
-decimal point in the seconds component is 1 + I<prec>.  The minimum
+decimal point in the seconds component is I<prec> + 1.  The minimum
 value of I<prec> is 0 and the maximum is 10.
 
 =head1 ERRORS
@@ -228,7 +275,7 @@ following lines will be converted.
 
 Using the (default) series solution, GeodSolve is accurate to about 15
 nm (15 nanometers) for the WGS84 ellipsoid.  The approximate maximum
-error (expressed as a distance) for an ellipsoid with the same major
+error (expressed as a distance) for an ellipsoid with the same equatorial
 radius as the WGS84 ellipsoid and different values of the flattening is
 
    |f|     error
@@ -307,29 +354,37 @@ Route from JFK Airport to Singapore Changi Airport:
 
    003:18:29.9 177:29:09.2 15347628
 
-Waypoints on the route at intervals of 2000km:
+Equally spaced waypoints on the route:
 
-   for ((i = 0; i <= 16; i += 2)); do echo ${i}000000;done |
-   GeodSolve -l 40:38:23N 073:46:44W 003:18:29.9 -: -p 0
+   for ((i = 0; i <= 10; ++i)); do echo ${i}e-1; done |
+   GeodSolve -I 40:38:23N 073:46:44W 01:21:33N 103:59:22E -F -: -p 0
 
    40:38:23.0N 073:46:44.0W 003:18:29.9
-   58:34:45.1N 071:49:36.7W 004:48:48.8
-   76:22:28.4N 065:32:17.8W 010:41:38.4
-   84:50:28.0N 075:04:39.2E 150:55:00.9
-   67:26:20.3N 098:00:51.2E 173:27:20.3
-   49:33:03.2N 101:06:52.6E 176:07:54.3
-   31:34:16.5N 102:30:46.3E 177:03:08.4
-   13:31:56.0N 103:26:50.7E 177:24:55.0
-   04:32:05.7S 104:14:48.7E 177:28:43.6
+   54:24:51.3N 072:25:39.6W 004:18:44.1
+   68:07:37.7N 069:40:42.9W 006:44:25.4
+   81:38:00.4N 058:37:53.9W 017:28:52.7
+   83:43:26.0N 080:37:16.9E 156:26:00.4
+   70:20:29.2N 097:01:29.4E 172:31:56.4
+   56:38:36.0N 100:14:47.6E 175:26:10.5
+   42:52:37.1N 101:43:37.2E 176:34:28.6
+   29:03:57.0N 102:39:34.8E 177:07:35.2
+   15:13:18.6N 103:22:08.0E 177:23:44.7
+   01:21:33.0N 103:59:22.0E 177:29:09.2
 
 =head1 SEE ALSO
 
-GeoConvert(1).  The algorithms are described in C. F. F. Karney,
+GeoConvert(1).
+
+An online version of this utility is availbable at
+L<https://geographiclib.sourceforge.io/cgi-bin/GeodSolve>.
+
+The algorithms are described in C. F. F. Karney,
 I<Algorithms for geodesics>, J. Geodesy 87, 43-55 (2013); DOI:
-L<http://dx.doi.org/10.1007/s00190-012-0578-z>;
-addenda: L<http://geographiclib.sf.net/geod-addenda.html>.
-The wikipedia page, Geodesics on an ellipsoid,
-L<http://en.wikipedia.org/wiki/Geodesics_on_an_ellipsoid>.
+L<https://doi.org/10.1007/s00190-012-0578-z>;
+addenda: L<https://geographiclib.sourceforge.io/geod-addenda.html>.
+
+The Wikipedia page, Geodesics on an ellipsoid,
+L<https://en.wikipedia.org/wiki/Geodesics_on_an_ellipsoid>.
 
 =head1 AUTHOR
 
@@ -337,6 +392,7 @@ B<GeodSolve> was written by Charles Karney.
 
 =head1 HISTORY
 
-B<GeodSolve> was added to GeographicLib, L<http://geographiclib.sf.net>,
-in 2009-03.  Prior to version 1.30, it was called B<Geod>.  (The name
-was changed to avoid a conflict with the B<geod> utility in I<proj.4>.)
+B<GeodSolve> was added to GeographicLib,
+L<https://geographiclib.sourceforge.io>, in 2009-03.  Prior to version
+1.30, it was called B<Geod>.  (The name was changed to avoid a conflict
+with the B<geod> utility in I<proj.4>.)

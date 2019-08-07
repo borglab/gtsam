@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -11,7 +11,7 @@
 
 /**
  *  @file  testNonlinearFactor.cpp
- *  @brief Unit tests for Non-Linear Factor, 
+ *  @brief Unit tests for Non-Linear Factor,
  *  create a non linear factor graph and a values structure for it and
  *  calculate the error for the factor.
  *  @author Christian Potthast

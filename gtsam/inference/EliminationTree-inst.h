@@ -49,8 +49,7 @@ namespace gtsam {
 
     // Do dense elimination step
     KeyVector keyAsVector(1); keyAsVector[0] = key;
-    std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
-      function(gatheredFactors, Ordering(keyAsVector));
+    auto eliminationResult = function(gatheredFactors, Ordering(keyAsVector));
 
     // Add conditional to BayesNet
     output->push_back(eliminationResult.first);
@@ -99,7 +98,7 @@ namespace gtsam {
       for (size_t j = 0; j < n; j++)
       {
         // Retrieve the factors involving this variable and create the current node
-        const VariableIndex::Factors& factors = structure[order[j]];
+        const FactorIndices& factors = structure[order[j]];
         const sharedNode node = boost::make_shared<Node>();
         node->key = order[j];
 
@@ -190,13 +189,13 @@ namespace gtsam {
   {
     gttic(EliminationTree_eliminate);
     // Allocate result
-    boost::shared_ptr<BayesNetType> result = boost::make_shared<BayesNetType>();
+    auto result = boost::make_shared<BayesNetType>();
 
     // Run tree elimination algorithm
     FastVector<sharedFactor> remainingFactors = inference::EliminateTree(result, *this, function);
 
     // Add remaining factors that were not involved with eliminated variables
-    boost::shared_ptr<FactorGraphType> allRemainingFactors = boost::make_shared<FactorGraphType>();
+    auto allRemainingFactors = boost::make_shared<FactorGraphType>();
     allRemainingFactors->push_back(remainingFactors_.begin(), remainingFactors_.end());
     allRemainingFactors->push_back(remainingFactors.begin(), remainingFactors.end());
 

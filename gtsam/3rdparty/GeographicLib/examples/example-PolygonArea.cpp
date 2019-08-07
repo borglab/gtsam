@@ -12,7 +12,7 @@ using namespace GeographicLib;
 int main() {
   try {
     Geodesic geod(Constants::WGS84_a(), Constants::WGS84_f());
-    // Alternatively: const Geodesic& geod = Geodesic::WGS84;
+    // Alternatively: const Geodesic& geod = Geodesic::WGS84();
     PolygonArea poly(geod);
     poly.AddPoint( 52,  0);     // London
     poly.AddPoint( 41,-74);     // New York
@@ -26,5 +26,4 @@ int main() {
     cerr << "Caught exception: " << e.what() << "\n";
     return 1;
   }
-  return 0;
 }

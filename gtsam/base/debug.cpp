@@ -47,4 +47,15 @@ void guardedSetDebug(const std::string& s, const bool v) {
   gtsam::debugFlags[s] = v;
 }
 
+bool isDebugVersion() {
+#ifdef NDEBUG
+  // nondebug
+  return false;
+#else
+  // debug
+  return true;
+#endif
+
+}
+
 }

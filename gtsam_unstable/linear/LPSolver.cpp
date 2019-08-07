@@ -11,7 +11,7 @@
 
 /**
  * @file     LPSolver.cpp
- * @brief    
+ * @brief
  * @author   Duy Nguyen Ta
  * @author   Ivan Dario Jimenez
  * @date     1/26/16

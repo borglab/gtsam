@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -540,7 +540,7 @@ Matrix cholesky_inverse(const Matrix &A)
 }
 
 /* ************************************************************************* */
-// Semantics: 
+// Semantics:
 // if B = inverse_square_root(A), then all of the following are true:
 // inv(B) * inv(B)' == A
 // inv(B' * B) == A

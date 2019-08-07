@@ -1,10 +1,24 @@
-import unittest
-import numpy as np
-import gtsam
-from math import pi
-from gtsam.utils.circlePose3 import * 
+"""
+GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
 
-class TestPose3SLAMExample(unittest.TestCase):
+See LICENSE for the license information
+
+PoseSLAM unit tests.
+Author: Frank Dellaert & Duy Nguyen Ta (Python)
+"""
+import unittest
+from math import pi
+
+import numpy as np
+
+import gtsam
+from gtsam.utils.test_case import GtsamTestCase
+from gtsam.utils.circlePose3 import *
+
+
+class TestPose3SLAMExample(GtsamTestCase):
 
     def test_Pose3SLAMExample(self):
         # Create a hexagon of poses
@@ -40,7 +54,7 @@ class TestPose3SLAMExample(unittest.TestCase):
         result = optimizer.optimizeSafely()
 
         pose_1 = result.atPose3(1)
-        self.assertTrue(pose_1.equals(p1, 1e-4))
+        self.gtsamAssertEquals(pose_1, p1, 1e-4)
 
 if __name__ == "__main__":
     unittest.main()

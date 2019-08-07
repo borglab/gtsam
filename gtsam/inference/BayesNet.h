@@ -65,7 +65,7 @@ namespace gtsam {
 
     /// @name Standard Interface
     /// @{
-    
+
     void saveGraph(const std::string &s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
   };
 

@@ -372,6 +372,26 @@ TEST(Unit3, retract) {
 }
 
 //*******************************************************************************
+TEST (Unit3, jacobian_retract) {
+  Matrix22 H;
+  Unit3 p;
+  boost::function<Unit3(const Vector2&)> f =
+      boost::bind(&Unit3::retract, p, _1, boost::none);
+  {
+      Vector2 v (-0.2, 0.1);
+      p.retract(v, H);
+      Matrix H_expected_numerical = numericalDerivative11(f, v);
+      EXPECT(assert_equal(H_expected_numerical, H, 1e-9));
+  }
+  {
+      Vector2 v (0, 0);
+      p.retract(v, H);
+      Matrix H_expected_numerical = numericalDerivative11(f, v);
+      EXPECT(assert_equal(H_expected_numerical, H, 1e-9));
+  }
+}
+
+//*******************************************************************************
 TEST(Unit3, retract_expmap) {
   Unit3 p;
   Vector2 v((M_PI / 2.0), 0);

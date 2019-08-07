@@ -13,6 +13,7 @@ EXAMPLE_FILES = \
 	example-DMS.cpp \
 	example-Ellipsoid.cpp \
 	example-EllipticFunction.cpp \
+	example-GARS.cpp \
 	example-GeoCoords.cpp \
 	example-Geocentric.cpp \
 	example-Geodesic.cpp \
@@ -23,6 +24,7 @@ EXAMPLE_FILES = \
 	example-GeographicErr.cpp \
 	example-Geohash.cpp \
 	example-Geoid.cpp \
+	example-Georef.cpp \
 	example-Gnomonic.cpp \
 	example-GravityCircle.cpp \
 	example-GravityModel.cpp \
@@ -32,10 +34,13 @@ EXAMPLE_FILES = \
 	example-MagneticCircle.cpp \
 	example-MagneticModel.cpp \
 	example-Math.cpp \
+	example-NearestNeighbor.cpp \
 	example-NormalGravity.cpp \
 	example-OSGB.cpp \
 	example-PolarStereographic.cpp \
 	example-PolygonArea.cpp \
+	example-Rhumb.cpp \
+	example-RhumbLine.cpp \
 	example-SphericalEngine.cpp \
 	example-SphericalHarmonic.cpp \
 	example-SphericalHarmonic1.cpp \
@@ -44,6 +49,8 @@ EXAMPLE_FILES = \
 	example-TransverseMercatorExact.cpp \
 	example-UTMUPS.cpp \
 	example-Utility.cpp \
-	GeoidToGTX.cpp
+	GeoidToGTX.cpp \
+	JacobiConformal.cpp JacobiConformal.hpp \
+	make-egmcof.cpp
 
 EXTRA_DIST = CMakeLists.txt $(EXAMPLE_FILES)

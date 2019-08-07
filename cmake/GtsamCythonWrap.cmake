@@ -3,7 +3,22 @@
 # in the current environment are different from the cached!
 unset(PYTHON_EXECUTABLE CACHE)
 unset(CYTHON_EXECUTABLE CACHE)
+unset(PYTHON_INCLUDE_DIR CACHE)
+unset(PYTHON_MAJOR_VERSION CACHE)
+
+if(GTSAM_PYTHON_VERSION STREQUAL "Default")
+  find_package(PythonInterp REQUIRED)
+  find_package(PythonLibs REQUIRED)
+else()
+  find_package(PythonInterp ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
+  find_package(PythonLibs ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
+endif()
 find_package(Cython 0.25.2 REQUIRED)
+
+execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
+    "from __future__ import print_function;import sys;print(sys.version[0], end='')"
+    OUTPUT_VARIABLE PYTHON_MAJOR_VERSION
+)
 
 # User-friendly Cython wrapping and installing function.
 # Builds a Cython module from the provided interface_header.
@@ -29,11 +44,11 @@ endfunction()
 
 function(set_up_required_cython_packages)
   # Set up building of cython module
-  find_package(PythonLibs 2.7 REQUIRED)
   include_directories(${PYTHON_INCLUDE_DIRS})
   find_package(NumPy REQUIRED)
   include_directories(${NUMPY_INCLUDE_DIRS})
 endfunction()
+
 
 # Convert pyx to cpp by executing cython
 # This is the first step to compile cython from the command line
@@ -52,7 +67,7 @@ function(pyx_to_cpp target pyx_file generated_cpp include_dirs)
   add_custom_command(
     OUTPUT ${generated_cpp}
     COMMAND
-      ${CYTHON_EXECUTABLE} -X boundscheck=False -v --fast-fail --cplus ${includes_for_cython} ${pyx_file} -o ${generated_cpp}
+    ${CYTHON_EXECUTABLE} -X boundscheck=False -v --fast-fail --cplus -${PYTHON_MAJOR_VERSION} ${includes_for_cython} ${pyx_file} -o ${generated_cpp}
     VERBATIM)
   add_custom_target(${target} ALL DEPENDS ${generated_cpp})
 endfunction()
@@ -71,8 +86,13 @@ function(build_cythonized_cpp target cpp_file output_lib_we output_dir)
   if(APPLE)
     set(link_flags "-undefined dynamic_lookup")
   endif()
-  set_target_properties(${target} PROPERTIES COMPILE_FLAGS "-w" LINK_FLAGS "${link_flags}"
-    OUTPUT_NAME ${output_lib_we} PREFIX "" LIBRARY_OUTPUT_DIRECTORY ${output_dir})
+  set_target_properties(${target}
+      PROPERTIES COMPILE_FLAGS "-w"
+      LINK_FLAGS "${link_flags}"
+      OUTPUT_NAME ${output_lib_we}
+      PREFIX ""
+      ${CMAKE_BUILD_TYPE_UPPER}_POSTFIX ""
+      LIBRARY_OUTPUT_DIRECTORY ${output_dir})
 endfunction()
 
 # Cythonize a pyx from the command line as described at
@@ -146,9 +166,13 @@ endfunction()
 function(install_cython_wrapped_library interface_header generated_files_path install_path)
   get_filename_component(module_name "${interface_header}" NAME_WE)
 
-    # NOTE: only installs .pxd and .pyx and binary files (not .cpp) - the trailing slash on the directory name
+  # NOTE: only installs .pxd and .pyx and binary files (not .cpp) - the trailing slash on the directory name
   # here prevents creating the top-level module name directory in the destination.
-  message(STATUS "Installing Cython Toolbox to ${install_path}") #${GTSAM_CYTHON_INSTALL_PATH}")
+  # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH/subdirectory if there is one
+  get_filename_component(location "${install_path}" PATH)
+  get_filename_component(name "${install_path}" NAME)
+  message(STATUS "Installing Cython Toolbox to ${location}${GTSAM_BUILD_TAG}/${name}") #${GTSAM_CYTHON_INSTALL_PATH}"
+
   if(GTSAM_BUILD_TYPE_POSTFIXES)
     foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
       string(TOUPPER "${build_type}" build_type_upper)
@@ -157,10 +181,8 @@ function(install_cython_wrapped_library interface_header generated_files_path in
       else()
         set(build_type_tag "${build_type}")
       endif()
-      # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if there is one
-      get_filename_component(location "${install_path}" PATH)
-      get_filename_component(name "${install_path}" NAME)
-      install(DIRECTORY "${generated_files_path}/" DESTINATION "${location}/${name}${build_type_tag}"
+
+      install(DIRECTORY "${generated_files_path}/" DESTINATION "${location}${build_type_tag}/${name}"
           CONFIGURATIONS "${build_type}"
           PATTERN "build" EXCLUDE
           PATTERN "CMakeFiles" EXCLUDE

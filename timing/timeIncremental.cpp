@@ -155,8 +155,8 @@ int main(int argc, char *argv[]) {
           Pose pose = isam2.calculateEstimate<Pose>(poseKey);
           Rot2 measuredBearing = measurement->measured().bearing();
           double measuredRange = measurement->measured().range();
-          newVariables.insert(lmKey, 
-            pose.transform_from(measuredBearing.rotate(Point2(measuredRange, 0.0))));
+          newVariables.insert(lmKey,
+            pose.transformFrom(measuredBearing.rotate(Point2(measuredRange, 0.0))));
         }
       }
       else

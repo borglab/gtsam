@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -24,14 +24,14 @@ namespace gtsam {
 
 /* ************************************************************************* */
 template<class BAYESTREE>
-void ISAM<BAYESTREE>::update_internal(const FactorGraphType& newFactors,
-    Cliques& orphans, const Eliminate& function) {
+void ISAM<BAYESTREE>::updateInternal(const FactorGraphType& newFactors,
+    Cliques* orphans, const Eliminate& function) {
   // Remove the contaminated part of the Bayes tree
   BayesNetType bn;
   const KeySet newFactorKeys = newFactors.keys();
   if (!this->empty()) {
     KeyVector keyVector(newFactorKeys.begin(), newFactorKeys.end());
-    this->removeTop(keyVector, bn, orphans);
+    this->removeTop(keyVector, &bn, orphans);
   }
 
   // Add the removed top and the new factors
@@ -40,7 +40,7 @@ void ISAM<BAYESTREE>::update_internal(const FactorGraphType& newFactors,
   factors += newFactors;
 
   // Add the orphaned subtrees
-  for (const sharedClique& orphan : orphans)
+  for (const sharedClique& orphan : *orphans)
     factors += boost::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan);
 
   // Get an ordering where the new keys are eliminated last
@@ -62,7 +62,7 @@ template<class BAYESTREE>
 void ISAM<BAYESTREE>::update(const FactorGraphType& newFactors,
     const Eliminate& function) {
   Cliques orphans;
-  this->update_internal(newFactors, orphans, function);
+  this->updateInternal(newFactors, &orphans, function);
 }
 
 }

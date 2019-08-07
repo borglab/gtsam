@@ -23,7 +23,7 @@ namespace gtsam {
  * but here we choose instead to parameterize it as a (Rot3,Unit3) pair.
  * We can then non-linearly optimize immediately on this 5-dimensional manifold.
  */
-class GTSAM_EXPORT EssentialMatrix {
+class EssentialMatrix {
  private:
   Rot3 R_;     ///< Rotation
   Unit3 t_;    ///< Translation
@@ -48,12 +48,12 @@ class GTSAM_EXPORT EssentialMatrix {
   }
 
   /// Named constructor with derivatives
-  static EssentialMatrix FromRotationAndDirection(const Rot3& aRb, const Unit3& aTb,
+  GTSAM_EXPORT static EssentialMatrix FromRotationAndDirection(const Rot3& aRb, const Unit3& aTb,
                                                   OptionalJacobian<5, 3> H1 = boost::none,
                                                   OptionalJacobian<5, 2> H2 = boost::none);
 
   /// Named constructor converting a Pose3 with scale to EssentialMatrix (no scale)
-  static EssentialMatrix FromPose3(const Pose3& _1P2_,
+  GTSAM_EXPORT static EssentialMatrix FromPose3(const Pose3& _1P2_,
       OptionalJacobian<5, 6> H = boost::none);
 
   /// Random, using Rot3::Random and Unit3::Random
@@ -70,7 +70,7 @@ class GTSAM_EXPORT EssentialMatrix {
   /// @{
 
   /// print with optional string
-  void print(const std::string& s = "") const;
+  GTSAM_EXPORT void print(const std::string& s = "") const;
 
   /// assert equality up to a tolerance
   bool equals(const EssentialMatrix& other, double tol = 1e-8) const {
@@ -138,7 +138,7 @@ class GTSAM_EXPORT EssentialMatrix {
    * @param Dpoint optional 3*3 Jacobian wrpt point
    * @return point in pose coordinates
    */
-  Point3 transform_to(const Point3& p,
+  GTSAM_EXPORT Point3 transformTo(const Point3& p,
       OptionalJacobian<3, 5> DE = boost::none,
       OptionalJacobian<3, 3> Dpoint = boost::none) const;
 
@@ -147,7 +147,7 @@ class GTSAM_EXPORT EssentialMatrix {
    * @param cRb rotation from body frame to camera frame
    * @param E essential matrix E in camera frame C
    */
-  EssentialMatrix rotate(const Rot3& cRb, OptionalJacobian<5, 5> HE =
+  GTSAM_EXPORT EssentialMatrix rotate(const Rot3& cRb, OptionalJacobian<5, 5> HE =
       boost::none, OptionalJacobian<5, 3> HR = boost::none) const;
 
   /**
@@ -160,7 +160,7 @@ class GTSAM_EXPORT EssentialMatrix {
   }
 
   /// epipolar error, algebraic
-  double error(const Vector3& vA, const Vector3& vB,
+  GTSAM_EXPORT double error(const Vector3& vA, const Vector3& vB,
       OptionalJacobian<1, 5> H = boost::none) const;
 
   /// @}
@@ -175,6 +175,17 @@ class GTSAM_EXPORT EssentialMatrix {
   GTSAM_EXPORT friend std::istream& operator >>(std::istream& is, EssentialMatrix& E);
 
   /// @}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  /// @name Deprecated
+  /// @{
+  Point3 transform_to(const Point3& p,
+      OptionalJacobian<3, 5> DE = boost::none,
+      OptionalJacobian<3, 3> Dpoint = boost::none) const {
+    return transformTo(p, DE, Dpoint);
+  };
+  /// @}
+#endif
 
  private:
   /// @name Advanced Interface

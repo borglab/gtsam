@@ -70,6 +70,17 @@ NonlinearFactorGraph graph() {
   g.add(PriorFactor<Pose3>(x0, pose0, model));
   return g;
 }
+
+NonlinearFactorGraph graph2() {
+  NonlinearFactorGraph g;
+  g.add(BetweenFactor<Pose3>(x0, x1, pose0.between(pose1), noiseModel::Isotropic::Precision(6, 1.0)));
+  g.add(BetweenFactor<Pose3>(x1, x2, pose1.between(pose2), noiseModel::Isotropic::Precision(6, 1.0)));
+  g.add(BetweenFactor<Pose3>(x2, x3, pose2.between(pose3), noiseModel::Isotropic::Precision(6, 1.0)));
+  g.add(BetweenFactor<Pose3>(x2, x0, Pose3(Rot3::Ypr(0.1,0,0.1), Point3()), noiseModel::Isotropic::Precision(6, 0.0))); // random pose, but zero information
+  g.add(BetweenFactor<Pose3>(x0, x3, Pose3(Rot3::Ypr(0.5,-0.2,0.2), Point3(10,20,30)), noiseModel::Isotropic::Precision(6, 0.0))); // random pose, but zero informatoin
+  g.add(PriorFactor<Pose3>(x0, pose0, model));
+  return g;
+}
 }
 
 /* *************************************************************************** */
@@ -81,6 +92,19 @@ TEST( InitializePose3, buildPose3graph ) {
 /* *************************************************************************** */
 TEST( InitializePose3, orientations ) {
   NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
+
+  Values initial = InitializePose3::computeOrientationsChordal(pose3Graph);
+
+  // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
+  EXPECT(assert_equal(simple::R0, initial.at<Rot3>(x0), 1e-6));
+  EXPECT(assert_equal(simple::R1, initial.at<Rot3>(x1), 1e-6));
+  EXPECT(assert_equal(simple::R2, initial.at<Rot3>(x2), 1e-6));
+  EXPECT(assert_equal(simple::R3, initial.at<Rot3>(x3), 1e-6));
+}
+
+/* *************************************************************************** */
+TEST( InitializePose3, orientationsPrecisions ) {
+  NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph2());
 
   Values initial = InitializePose3::computeOrientationsChordal(pose3Graph);
 

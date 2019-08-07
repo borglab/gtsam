@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -35,12 +35,15 @@ namespace gtsam {
   namespace internal
   {
     /* ************************************************************************* */
-    double logDeterminant(const GaussianBayesTreeClique::shared_ptr& clique, double& parentSum)
-    {
-      parentSum += clique->conditional()->get_R().diagonal().unaryExpr(std::ptr_fun<double,double>(log)).sum();
-      assert(false);
-      return 0;
-    }
+  double logDeterminant(const GaussianBayesTreeClique::shared_ptr& clique,
+                        double& parentSum) {
+    parentSum += clique->conditional()
+                     ->R()
+                     .diagonal()
+                     .unaryExpr(std::ptr_fun<double, double>(log))
+                     .sum();
+    return 0;
+  }
   }
 
   /* ************************************************************************* */

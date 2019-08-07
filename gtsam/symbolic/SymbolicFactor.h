@@ -89,11 +89,11 @@ namespace gtsam {
 
     /// @name Testable
     /// @{
-    
+
     bool equals(const This& other, double tol = 1e-9) const;
 
     /// @}
-    
+
     /// @name Advanced Constructors
     /// @{
   public:
@@ -129,7 +129,7 @@ namespace gtsam {
 
     /// @name Standard Interface
     /// @{
-    
+
     /** Whether the factor is empty (involves zero variables). */
     bool empty() const { return keys_.empty(); }
 

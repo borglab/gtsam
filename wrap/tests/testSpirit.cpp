@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -68,7 +68,7 @@ TEST( spirit, sequence ) {
 // parser for interface files
 
 // const string reference reference
-Rule constStringRef_p = 
+Rule constStringRef_p =
   str_p("const") >> "string" >> '&';
 
 // class reference
@@ -104,9 +104,9 @@ TEST( spirit, constMethod_p ) {
 
 
 /* ************************************************************************* */
-/* See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=56665 
+/* See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=56665
    GCC compiler issues with -O2 and -fno-strict-aliasing results in undefined
-   behaviour when spirit uses assign_a with a literal.  
+   behaviour when spirit uses assign_a with a literal.
    GCC versions 4.7.2 -> 5.4 inclusive */
 
 TEST( spirit, return_value_p ) {

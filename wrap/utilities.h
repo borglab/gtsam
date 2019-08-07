@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -90,7 +90,7 @@ public:
   ~AttributeError() throw() {}
   virtual const char* what() const throw() { return what_.c_str(); }
 };
-  
+
 // "Unique" key to signal calling the matlab object constructor with a raw pointer
 // to a shared pointer of the same C++ object type as the MATLAB type.
 // Also present in matlab.h

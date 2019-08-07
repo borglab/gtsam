@@ -296,6 +296,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\GARS.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\GeoCoords.cpp"
 				>
 			</File>
@@ -312,6 +316,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\GeodesicExactC4.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\GeodesicLine.cpp"
 				>
 			</File>
@@ -325,6 +333,10 @@
 			</File>
 			<File
 				RelativePath="..\src\Geoid.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\Georef.cpp"
 				>
 			</File>
 			<File
@@ -360,6 +372,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\Math.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\NormalGravity.cpp"
 				>
 			</File>
@@ -373,6 +389,10 @@
 			</File>
 			<File
 				RelativePath="..\src\PolygonArea.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\Rhumb.cpp"
 				>
 			</File>
 			<File
@@ -438,6 +458,10 @@
 				>
 			</File>
 			<File
+				RelativePath="../include/GeographicLib/GARS.hpp"
+				>
+			</File>
+			<File
 				RelativePath="../include/GeographicLib/GeoCoords.hpp"
 				>
 			</File>
@@ -467,6 +491,10 @@
 			</File>
 			<File
 				RelativePath="../include/GeographicLib/Geoid.hpp"
+				>
+			</File>
+			<File
+				RelativePath="../include/GeographicLib/Georef.hpp"
 				>
 			</File>
 			<File
@@ -519,6 +547,10 @@
 			</File>
 			<File
 				RelativePath="../include/GeographicLib/PolygonArea.hpp"
+				>
+			</File>
+			<File
+				RelativePath="../include/GeographicLib/Rhumb.hpp"
 				>
 			</File>
 			<File

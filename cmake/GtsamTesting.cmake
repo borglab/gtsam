@@ -8,7 +8,7 @@
 # Macro:
 #
 # gtsamAddTestsGlob(groupName globPatterns excludedFiles linkLibraries)
-# 
+#
 # Add a group of unit tests.  A list of unit test .cpp files or glob patterns specifies the
 # tests to create.  Tests are assigned into a group name so they can easily by run
 # independently with a make target.  Running 'make check' builds and runs all tests.
@@ -35,7 +35,7 @@ endmacro()
 # Macro:
 #
 # gtsamAddExamplesGlob(globPatterns excludedFiles linkLibraries)
-# 
+#
 # Add scripts that will serve as examples of how to use the library.  A list of files or
 # glob patterns is specified, and one executable will be created for each matching .cpp
 # file.  These executables will not be installed.  They are built with 'make all' if
@@ -60,7 +60,7 @@ endmacro()
 # Macro:
 #
 # gtsamAddTimingGlob(globPatterns excludedFiles linkLibraries)
-# 
+#
 # Add scripts that time aspects of the library.  A list of files or
 # glob patterns is specified, and one executable will be created for each matching .cpp
 # file.  These executables will not be installed.  They are not built with 'make all',
@@ -88,29 +88,36 @@ enable_testing()
 
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_EXAMPLES_ALWAYS       "Build examples with 'make all' (build with 'make examples' if not)"       ON)
-option(GTSAM_BUILD_TIMING_ALWAYS         "Build timing scripts with 'make all' (build with 'make timing' if not"    OFF)
+	option(GTSAM_BUILD_TIMING_ALWAYS         "Build timing scripts with 'make all' (build with 'make timing' if not"    OFF)
 
-# Add option for combining unit tests
-if(MSVC OR XCODE_VERSION)
-	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" ON)
-else()
-	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)
-endif()
-mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
+		# Add option for combining unit tests
+		if(MSVC OR XCODE_VERSION)
+			option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" ON)
+		else()
+			option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)
+		endif()
+		mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
 
-# Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
-if(GTSAM_BUILD_TESTS)
-    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
-    
-    # Add target to build tests without running
-	add_custom_target(all.tests)
-endif()
+		# Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
+		if(GTSAM_BUILD_TESTS)
+			add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
+			# Also add alternative checks using valgrind.
+			# We don't look for valgrind being installed in the system, since these
+			# targets are not invoked unless directly instructed by the user.
+			if (UNIX)
+				# Run all tests using valgrind:
+				add_custom_target(check_valgrind)
+			endif()
 
-# Add examples target
-add_custom_target(examples)
+			# Add target to build tests without running
+			add_custom_target(all.tests)
+		endif()
 
-# Add timing target
-add_custom_target(timing)
+		# Add examples target
+		add_custom_target(examples)
+
+		# Add timing target
+		add_custom_target(timing)
 
 
 # Implementations of this file's macros:
@@ -118,23 +125,24 @@ add_custom_target(timing)
 macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 	if(GTSAM_BUILD_TESTS)
 		# Add group target if it doesn't already exist
-	    if(NOT TARGET check.${groupName})
+		if(NOT TARGET check.${groupName})
 			add_custom_target(check.${groupName} COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
+			set_property(TARGET check.${groupName} PROPERTY FOLDER "Unit tests")
 		endif()
-	
-	    # Get all script files
-        file(GLOB script_files ${globPatterns})
 
-	    # Remove excluded scripts from the list
-	    if(NOT "${excludedFiles}" STREQUAL "")
+		# Get all script files
+		file(GLOB script_files ${globPatterns})
+
+		# Remove excluded scripts from the list
+		if(NOT "${excludedFiles}" STREQUAL "")
 			file(GLOB excludedFilePaths ${excludedFiles})
 			if("${excludedFilePaths}" STREQUAL "")
 				message(WARNING "The pattern '${excludedFiles}' for excluding tests from group ${groupName} did not match any files")
 			else()
-		    	list(REMOVE_ITEM script_files ${excludedFilePaths})
+				list(REMOVE_ITEM script_files ${excludedFilePaths})
 			endif()
-	    endif()
-	
+		endif()
+
 		# Separate into source files and headers (allows for adding headers to show up in
 		# MSVC and Xcode projects).
 		set(script_srcs "")
@@ -147,7 +155,7 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 				list(APPEND script_srcs ${script_file})
 			endif()
 		endforeach()
-	
+
 		# Don't put test files in folders in MSVC and Xcode because they're already grouped
 		source_group("" FILES ${script_srcs} ${script_headers})
 
@@ -156,26 +164,41 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 			foreach(script_src IN ITEMS ${script_srcs})
 				# Get test base name
 				get_filename_component(script_name ${script_src} NAME_WE)
-			
+
 				# Add executable
 				add_executable(${script_name} ${script_src} ${script_headers})
 				target_link_libraries(${script_name} CppUnitLite ${linkLibraries})
-				
+
+				# Apply user build flags from CMake cache variables:
+				gtsam_apply_build_flags(${script_name})
+
 				# Add target dependencies
 				add_test(NAME ${script_name} COMMAND ${script_name})
 				add_dependencies(check.${groupName} ${script_name})
 				add_dependencies(check ${script_name})
-                add_dependencies(all.tests ${script_name})
+				add_dependencies(all.tests ${script_name})
 				if(NOT MSVC AND NOT XCODE_VERSION)
-				  add_custom_target(${script_name}.run ${EXECUTABLE_OUTPUT_PATH}${script_name} DEPENDS ${script_name})
+					# Regular test run:
+					add_custom_target(${script_name}.run
+						COMMAND ${EXECUTABLE_OUTPUT_PATH}${script_name}
+						DEPENDS ${script_name}
+					)
+
+					# Run with valgrind:
+					set(GENERATED_EXE "$<TARGET_FILE:${script_name}>")
+					add_custom_target(${script_name}.valgrind
+						COMMAND "valgrind" "--error-exitcode=1" ${GENERATED_EXE}
+						DEPENDS ${script_name}
+					)
+					add_dependencies(check_valgrind ${script_name}.valgrind)
 				endif()
-			
+
 				# Add TOPSRCDIR
-				set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
-			
+				set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${GTSAM_SOURCE_DIR}\"")
+
 				# Exclude from 'make all' and 'make install'
 				set_target_properties(${script_name} PROPERTIES EXCLUDE_FROM_ALL ON)
-			
+
 				# Configure target folder (for MSVC and Xcode)
 				set_property(TARGET ${script_name} PROPERTY FOLDER "Unit tests/${groupName}")
 			endforeach()
@@ -188,16 +211,21 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 
 			# Default on MSVC and XCode - combine test group into a single exectuable
 			set(target_name check_${groupName}_program)
-		
+
 			# Add executable
 			add_executable(${target_name} "${script_srcs}" ${script_headers})
 			target_link_libraries(${target_name} CppUnitLite ${linkLibraries})
-		
+
+			# Apply user build flags from CMake cache variables:
+			gtsam_apply_build_flags(${target_name})
+
+			set_property(TARGET check_${groupName}_program PROPERTY FOLDER "Unit tests")
+
 			# Only have a main function in one script - use preprocessor
 			set(rest_script_srcs ${script_srcs})
 			list(REMOVE_AT rest_script_srcs 0)
 			set_property(SOURCE ${rest_script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "main=inline no_main")
-		
+
 			# Add target dependencies
 			add_test(NAME ${target_name} COMMAND ${target_name})
 			add_dependencies(check.${groupName} ${target_name})
@@ -205,10 +233,10 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 			if(NOT XCODE_VERSION)
 				add_dependencies(all.tests ${target_name})
 			endif()
-		
+
 			# Add TOPSRCDIR
-			set_property(SOURCE ${script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
-		
+			set_property(SOURCE ${script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${GTSAM_SOURCE_DIR}\"")
+
 			# Exclude from 'make all' and 'make install'
 			set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_ALL ON)
 
@@ -220,18 +248,18 @@ endmacro()
 
 
 macro(gtsamAddExesGlob_impl globPatterns excludedFiles linkLibraries groupName buildWithAll)
-    # Get all script files
-    file(GLOB script_files ${globPatterns})
+	# Get all script files
+	file(GLOB script_files ${globPatterns})
 
-    # Remove excluded scripts from the list
-    if(NOT "${excludedFiles}" STREQUAL "")
+	# Remove excluded scripts from the list
+	if(NOT "${excludedFiles}" STREQUAL "")
 		file(GLOB excludedFilePaths ${excludedFiles})
 		if("${excludedFilePaths}" STREQUAL "")
 			message(WARNING "The script exclusion pattern '${excludedFiles}' did not match any files")
 		else()
-	    	list(REMOVE_ITEM script_files ${excludedFilePaths})
+			list(REMOVE_ITEM script_files ${excludedFilePaths})
 		endif()
-    endif()
+	endif()
 
 	# Separate into source files and headers (allows for adding headers to show up in
 	# MSVC and Xcode projects).
@@ -257,18 +285,21 @@ macro(gtsamAddExesGlob_impl globPatterns excludedFiles linkLibraries groupName b
 		# Add executable
 		add_executable(${script_name} ${script_src} ${script_headers})
 		target_link_libraries(${script_name} ${linkLibraries})
-	
+
+		# Apply user build flags from CMake cache variables:
+		gtsam_apply_build_flags(${script_name})
+
 		# Add target dependencies
 		add_dependencies(${groupName} ${script_name})
 		if(NOT MSVC AND NOT XCODE_VERSION)
-		  add_custom_target(${script_name}.run ${EXECUTABLE_OUTPUT_PATH}${script_name} DEPENDS ${script_name})
+			add_custom_target(${script_name}.run ${EXECUTABLE_OUTPUT_PATH}${script_name} DEPENDS ${script_name})
 		endif()
 
 		# Add TOPSRCDIR
-		set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
+		set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${GTSAM_SOURCE_DIR}\"")
 
-        # Exclude from all or not - note weird variable assignment because we're in a macro	
-	    set(buildWithAll_on ${buildWithAll})
+		# Exclude from all or not - note weird variable assignment because we're in a macro
+		set(buildWithAll_on ${buildWithAll})
 		if(NOT buildWithAll_on)
 			# Exclude from 'make all' and 'make install'
 			set_target_properties("${script_name}" PROPERTIES EXCLUDE_FROM_ALL ON)

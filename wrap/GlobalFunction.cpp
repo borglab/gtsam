@@ -94,8 +94,6 @@ void GlobalFunction::generateSingleFunction(const string& toolboxPath,
     // start
     file.oss << "{\n";
 
-    returnVal.wrapTypeUnwrap(file);
-
     // check arguments
     // NOTE: for static functions, there is no object passed
     file.oss << "  checkArguments(\"" << matlabUniqueName
@@ -136,7 +134,7 @@ void GlobalFunction::python_wrapper(FileWriter& wrapperFile) const {
 /* ************************************************************************* */
 void GlobalFunction::emit_cython_pxd(FileWriter& file) const {
   file.oss << "cdef extern from \"" << includeFile << "\" namespace \""
-                << overloads[0].qualifiedNamespaces("::") 
+                << overloads[0].qualifiedNamespaces("::")
                 << "\":" << endl;
   for (size_t i = 0; i < nrOverloads(); ++i) {
     file.oss << "        ";
@@ -145,6 +143,7 @@ void GlobalFunction::emit_cython_pxd(FileWriter& file) const {
                     "\"(";
     argumentList(i).emit_cython_pxd(file, "", vector<string>());
     file.oss << ")";
+    file.oss << " except +";
     file.oss << "\n";
   }
 }
@@ -208,16 +207,18 @@ void GlobalFunction::emit_cython_pyx(FileWriter& file) const {
 
     /// Call corresponding cython function
     file.oss << argumentList(i).pyx_convertEigenTypeAndStorageOrder("        ");
-    string call = pyx_functionCall("", pxdName(), i);
-    if (!returnVals_[i].isVoid()) {
-      file.oss << "        return_value = " << call << "\n";
-      file.oss << "        return True, " << returnVals_[i].pyx_casting("return_value") << "\n";
-    } else {
-      file.oss << "        " << call << "\n";
-      file.oss << "        return True, None\n";
-    }
+    // catch exception which indicates the parameters passed are incorrect.
     file.oss << "    except:\n";
     file.oss << "        return False, None\n\n";
+
+    string call = pyx_functionCall("", pxdName(), i);
+    if (!returnVals_[i].isVoid()) {
+      file.oss << "    return_value = " << call << "\n";
+      file.oss << "    return True, " << returnVals_[i].pyx_casting("return_value") << "\n";
+    } else {
+      file.oss << "    " << call << "\n";
+      file.oss << "    return True, None\n";
+    }
   }
 }
 /* ************************************************************************* */

@@ -60,7 +60,7 @@ namespace gtsam { namespace partition {
     }
 
     // call metis parition routine
-    METIS_ComputeVertexSeparator(&n, xadj.get(), adjncy.get(), 
+    METIS_ComputeVertexSeparator(&n, xadj.get(), adjncy.get(),
            vwgt, options, &sepsize, part_.get());
 
     if (verbose) {
@@ -95,7 +95,7 @@ namespace gtsam { namespace partition {
 
     ncon = graph->ncon;
     ctrl->ncuts = 1;
-  
+
     /* determine the weights of the two partitions as a function of the weight of the
        target partition weights */
 
@@ -153,7 +153,7 @@ namespace gtsam { namespace partition {
     modefied_EdgeComputeSeparator(&n, xadj.get(), adjncy.get(), vwgt, adjwgt.get(),
         options, &edgecut, part_.get());
 
-    
+
     if (verbose) {
       //stoptimer(TOTALTmr);
       printf("\nTiming Information --------------------------------------------------\n");
@@ -175,7 +175,6 @@ namespace gtsam { namespace partition {
   void prepareMetisGraph(const GenericGraph& graph, const std::vector<size_t>& keys, WorkSpace& workspace,
       sharedInts* ptr_xadj, sharedInts* ptr_adjncy, sharedInts* ptr_adjwgt) {
 
-    typedef int Weight;
     typedef std::vector<int> Weights;
     typedef std::vector<int> Neighbors;
     typedef std::pair<Neighbors, Weights> NeighborsInfo;
@@ -198,7 +197,7 @@ namespace gtsam { namespace partition {
       std::cout << "index1: " << index1 << std::endl;
       std::cout << "index2: " << index2 << std::endl;
       // if both nodes are in the current graph, i.e. not a joint factor between frontal and separator
-      if (index1 >= 0 && index2 >= 0) {       
+      if (index1 >= 0 && index2 >= 0) {
         std::pair<Neighbors, Weights>& adjacencyMap1 = adjacencyMap[index1];
         std::pair<Neighbors, Weights>& adjacencyMap2 = adjacencyMap[index2];
         try{
@@ -239,7 +238,7 @@ namespace gtsam { namespace partition {
     const std::vector<size_t>& keys, WorkSpace& workspace, bool verbose) {
     // create a metis graph
     size_t numKeys = keys.size();
-    if (verbose) 
+    if (verbose)
       std::cout << graph.size() << " factors,\t" << numKeys << " nodes;\t" << std::endl;
 
     sharedInts xadj, adjncy, adjwgt;
@@ -287,7 +286,7 @@ namespace gtsam { namespace partition {
     return result;
   }
 
-  /* *************************************************************************/ 
+  /* *************************************************************************/
   template<class GenericGraph>
   boost::optional<MetisResult> edgePartitionByMetis(const GenericGraph& graph,
    const std::vector<size_t>& keys, WorkSpace& workspace, bool verbose) {
@@ -492,7 +491,7 @@ namespace gtsam { namespace partition {
       const boost::optional<std::vector<Symbol> >& int2symbol, const bool reduceGraph,
       const int minNrConstraintsPerCamera, const int minNrConstraintsPerLandmark) {
 
-    boost::optional<MetisResult> result = findPartitoning(graph, keys, workspace, 
+    boost::optional<MetisResult> result = findPartitoning(graph, keys, workspace,
       verbose, int2symbol, reduceGraph);
 
     // find the island in A and B, and make them separated submaps

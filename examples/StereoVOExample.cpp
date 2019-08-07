@@ -22,7 +22,7 @@
  *  -moves forward 1 meter
  *  -takes stereo readings on three landmarks
  */
- 
+
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/nonlinear/Values.h>
@@ -40,7 +40,7 @@ int main(int argc, char** argv){
   NonlinearFactorGraph graph;
   Pose3 first_pose;
   graph.emplace_shared<NonlinearEquality<Pose3> >(1, Pose3());
-  
+
   //create factor noise model with 3 sigmas of value 1
   const noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(3,1);
   //create stereo camera calibration object with .2m between cameras

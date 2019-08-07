@@ -2,9 +2,9 @@
  * \file Geoid.hpp
  * \brief Header for GeographicLib::Geoid class
  *
- * Copyright (c) Charles Karney (2009-2012) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2009-2015) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #if !defined(GEOGRAPHICLIB_GEOID_HPP)
@@ -20,7 +20,7 @@
 #  pragma warning (disable: 4251 4127)
 #endif
 
-#if !defined(PGM_PIXEL_WIDTH)
+#if !defined(GEOGRAPHICLIB_GEOID_PGM_PIXEL_WIDTH)
 /**
  * The size of the pixel data in the pgm data files for the geoids.  2 is the
  * standard size corresponding to a maxval 2<sup>16</sup>&minus;1.  Setting it
@@ -28,15 +28,15 @@
  * the data files from .pgm to .pgm4.  Note that the format of these pgm4 files
  * is a non-standard extension of the pgm format.
  **********************************************************************/
-#  define PGM_PIXEL_WIDTH 2
+#  define GEOGRAPHICLIB_GEOID_PGM_PIXEL_WIDTH 2
 #endif
 
 namespace GeographicLib {
 
   /**
-   * \brief Looking up the height of the geoid
+   * \brief Looking up the height of the geoid above the ellipsoid
    *
-   * This class evaluated the height of one of the standard geoids, EGM84,
+   * This class evaluates the height of one of the standard geoids, EGM84,
    * EGM96, or EGM2008 by bilinear or cubic interpolation into a rectangular
    * grid of data.  These geoid models are documented in
    * - EGM84:
@@ -51,17 +51,16 @@ namespace GeographicLib {
    * this class evaluates the height by interpolation into a grid of
    * precomputed values.
    *
+   * The height of the geoid above the ellipsoid, \e N, is sometimes called the
+   * geoid undulation.  It can be used to convert a height above the ellipsoid,
+   * \e h, to the corresponding height above the geoid (the orthometric height,
+   * roughly the height above mean sea level), \e H, using the relations
+   *
+   * &nbsp;&nbsp;&nbsp;\e h = \e N + \e H;
+   * &nbsp;&nbsp;\e H = &minus;\e N + \e h.
+   *
    * See \ref geoid for details of how to install the data sets, the data
    * format, estimates of the interpolation errors, and how to use caching.
-   *
-   * In addition to returning the geoid height, the gradient of the geoid can
-   * be calculated.  The gradient is defined as the rate of change of the geoid
-   * as a function of position on the ellipsoid.  This uses the parameters for
-   * the WGS84 ellipsoid.  The gradient defined in terms of the interpolated
-   * heights.  As a result of the way that the geoid data is stored, the
-   * calculation of gradients can result in large quantization errors.  This is
-   * particularly acute for fine grids, at high latitudes, and for the easterly
-   * gradient.
    *
    * This class is typically \e not thread safe in that a single instantiation
    * cannot be safely used by multiple threads because of the way the object
@@ -83,7 +82,7 @@ namespace GeographicLib {
   class GEOGRAPHICLIB_EXPORT Geoid {
   private:
     typedef Math::real real;
-#if PGM_PIXEL_WIDTH != 4
+#if GEOGRAPHICLIB_GEOID_PGM_PIXEL_WIDTH != 4
     typedef unsigned short pixel_t;
     static const unsigned pixel_size_ = 2;
     static const unsigned pixel_max_ = 0xffffu;
@@ -94,12 +93,12 @@ namespace GeographicLib {
 #endif
     static const unsigned stencilsize_ = 12;
     static const unsigned nterms_ = ((3 + 1) * (3 + 2))/2; // for a cubic fit
-    static const real c0_;
-    static const real c0n_;
-    static const real c0s_;
-    static const real c3_[stencilsize_ * nterms_];
-    static const real c3n_[stencilsize_ * nterms_];
-    static const real c3s_[stencilsize_ * nterms_];
+    static const int c0_;
+    static const int c0n_;
+    static const int c0s_;
+    static const int c3_[stencilsize_ * nterms_];
+    static const int c3n_[stencilsize_ * nterms_];
+    static const int c3s_[stencilsize_ * nterms_];
 
     std::string _name, _dir, _filename;
     const bool _cubic;
@@ -146,7 +145,8 @@ namespace GeographicLib {
         }
         try {
           filepos(ix, iy);
-          char a, b;
+          // initial values to suppress warnings in case get fails
+          char a = 0, b = 0;
           _file.get(a);
           _file.get(b);
           unsigned r = ((unsigned char)(a) << 8) | (unsigned char)(b);
@@ -170,8 +170,7 @@ namespace GeographicLib {
         }
       }
     }
-    real height(real lat, real lon, bool gradp,
-                real& grade, real& gradn) const;
+    real height(real lat, real lon) const;
     Geoid(const Geoid&);            // copy constructor not allowed
     Geoid& operator=(const Geoid&); // copy assignment not allowed
   public:
@@ -227,9 +226,11 @@ namespace GeographicLib {
     /**
      * Set up a cache.
      *
-     * @param[in] south latitude (degrees) of the south edge of the cached area.
+     * @param[in] south latitude (degrees) of the south edge of the cached
+     *   area.
      * @param[in] west longitude (degrees) of the west edge of the cached area.
-     * @param[in] north latitude (degrees) of the north edge of the cached area.
+     * @param[in] north latitude (degrees) of the north edge of the cached
+     *   area.
      * @param[in] east longitude (degrees) of the east edge of the cached area.
      * @exception GeographicErr if the memory necessary for caching the data
      *   can't be allocated (in this case, you will have no cache and can try
@@ -241,8 +242,7 @@ namespace GeographicLib {
      * parallels \e south and \e north and the meridians \e west and \e east.
      * \e east is always interpreted as being east of \e west, if necessary by
      * adding 360&deg; to its value.  \e south and \e north should be in
-     * the range [&minus;90&deg;, 90&deg;]; \e west and \e east should
-     * be in the range [&minus;540&deg;, 540&deg;).
+     * the range [&minus;90&deg;, 90&deg;].
      **********************************************************************/
     void CacheArea(real south, real west, real north, real east) const;
 
@@ -266,7 +266,7 @@ namespace GeographicLib {
      * Clear the cache.  This never throws an error.  (This does nothing with a
      * thread safe Geoid.)
      **********************************************************************/
-    void CacheClear() const throw();
+    void CacheClear() const;
 
     ///@}
 
@@ -279,38 +279,14 @@ namespace GeographicLib {
      * @param[in] lat latitude of the point (degrees).
      * @param[in] lon longitude of the point (degrees).
      * @exception GeographicErr if there's a problem reading the data; this
-     *   never happens if (\e lat, \e lon) is within a successfully cached area.
-     * @return geoid height (meters).
+     *   never happens if (\e lat, \e lon) is within a successfully cached
+     *   area.
+     * @return the height of the geoid above the ellipsoid (meters).
      *
-     * The latitude should be in [&minus;90&deg;, 90&deg;] and
-     * longitude should be in [&minus;540&deg;, 540&deg;).
+     * The latitude should be in [&minus;90&deg;, 90&deg;].
      **********************************************************************/
     Math::real operator()(real lat, real lon) const {
-      real gradn, grade;
-      return height(lat, lon, false, gradn, grade);
-    }
-
-    /**
-     * Compute the geoid height and gradient at a point
-     *
-     * @param[in] lat latitude of the point (degrees).
-     * @param[in] lon longitude of the point (degrees).
-     * @param[out] gradn northerly gradient (dimensionless).
-     * @param[out] grade easterly gradient (dimensionless).
-     * @exception GeographicErr if there's a problem reading the data; this
-     *   never happens if (\e lat, \e lon) is within a successfully cached area.
-     * @return geoid height (meters).
-     *
-     * The latitude should be in [&minus;90&deg;, 90&deg;] and
-     * longitude should be in [&minus;540&deg;, 540&deg;).  As a result
-     * of the way that the geoid data is stored, the calculation of gradients
-     * can result in large quantization errors.  This is particularly acute for
-     * fine grids, at high latitudes, and for the easterly gradient.  If you
-     * need to compute the direction of the acceleration due to gravity
-     * accurately, you should use GravityModel::Gravity.
-     **********************************************************************/
-    Math::real operator()(real lat, real lon, real& gradn, real& grade) const {
-      return height(lat, lon, true, gradn, grade);
+      return height(lat, lon);
     }
 
     /**
@@ -325,13 +301,13 @@ namespace GeographicLib {
      *   geoid to a height above the ellipsoid; Geoid::ELLIPSOIDTOGEOID means
      *   convert a height above the ellipsoid to a height above the geoid.
      * @exception GeographicErr if there's a problem reading the data; this
-     *   never happens if (\e lat, \e lon) is within a successfully cached area.
+     *   never happens if (\e lat, \e lon) is within a successfully cached
+     *   area.
      * @return converted height (meters).
      **********************************************************************/
     Math::real ConvertHeight(real lat, real lon, real h,
                              convertflag d) const {
-      real gradn, grade;
-      return h + real(d) * height(lat, lon, true, gradn, grade);
+      return h + real(d) * height(lat, lon);
     }
 
     ///@}
@@ -343,28 +319,28 @@ namespace GeographicLib {
      * @return geoid description, if available, in the data file; if
      *   absent, return "NONE".
      **********************************************************************/
-    const std::string& Description() const throw() { return _description; }
+    const std::string& Description() const { return _description; }
 
     /**
      * @return date of the data file; if absent, return "UNKNOWN".
      **********************************************************************/
-    const std::string& DateTime() const throw() { return _datetime; }
+    const std::string& DateTime() const { return _datetime; }
 
     /**
      * @return full file name used to load the geoid data.
      **********************************************************************/
-    const std::string& GeoidFile() const throw() { return _filename; }
+    const std::string& GeoidFile() const { return _filename; }
 
     /**
      * @return "name" used to load the geoid data (from the first argument of
      *   the constructor).
      **********************************************************************/
-    const std::string& GeoidName() const throw() { return _name; }
+    const std::string& GeoidName() const { return _name; }
 
     /**
      * @return directory used to load the geoid data.
      **********************************************************************/
-    const std::string& GeoidDirectory() const throw() { return _dir; }
+    const std::string& GeoidDirectory() const { return _dir; }
 
     /**
      * @return interpolation method ("cubic" or "bilinear").
@@ -379,7 +355,7 @@ namespace GeographicLib {
      * This relies on the value being stored in the data file.  If the value is
      * absent, return &minus;1.
      **********************************************************************/
-    Math::real MaxError() const throw() { return _maxerror; }
+    Math::real MaxError() const { return _maxerror; }
 
     /**
      * @return estimate of the RMS interpolation and quantization error
@@ -388,7 +364,7 @@ namespace GeographicLib {
      * This relies on the value being stored in the data file.  If the value is
      * absent, return &minus;1.
      **********************************************************************/
-    Math::real RMSError() const throw() { return _rmserror; }
+    Math::real RMSError() const { return _rmserror; }
 
     /**
      * @return offset (meters).
@@ -396,7 +372,7 @@ namespace GeographicLib {
      * This in used in converting from the pixel values in the data file to
      * geoid heights.
      **********************************************************************/
-    Math::real Offset() const throw() { return _offset; }
+    Math::real Offset() const { return _offset; }
 
     /**
      * @return scale (meters).
@@ -404,22 +380,22 @@ namespace GeographicLib {
      * This in used in converting from the pixel values in the data file to
      * geoid heights.
      **********************************************************************/
-    Math::real Scale() const throw() { return _scale; }
+    Math::real Scale() const { return _scale; }
 
     /**
      * @return true if the object is constructed to be thread safe.
      **********************************************************************/
-    bool ThreadSafe() const throw() { return _threadsafe; }
+    bool ThreadSafe() const { return _threadsafe; }
 
     /**
      * @return true if a data cache is active.
      **********************************************************************/
-    bool Cache() const throw() { return _cache; }
+    bool Cache() const { return _cache; }
 
     /**
      * @return west edge of the cached area; the cache includes this edge.
      **********************************************************************/
-    Math::real CacheWest() const throw() {
+    Math::real CacheWest() const {
       return _cache ? ((_xoffset + (_xsize == _width ? 0 : _cubic)
                         + _width/2) % _width - _width/2) / _rlonres :
         0;
@@ -428,7 +404,7 @@ namespace GeographicLib {
     /**
      * @return east edge of the cached area; the cache excludes this edge.
      **********************************************************************/
-    Math::real CacheEast() const throw() {
+    Math::real CacheEast() const {
       return  _cache ?
         CacheWest() +
         (_xsize - (_xsize == _width ? 0 : 1 + 2 * _cubic)) / _rlonres :
@@ -438,7 +414,7 @@ namespace GeographicLib {
     /**
      * @return north edge of the cached area; the cache includes this edge.
      **********************************************************************/
-    Math::real CacheNorth() const throw() {
+    Math::real CacheNorth() const {
       return _cache ? 90 - (_yoffset + _cubic) / _rlatres : 0;
     }
 
@@ -446,7 +422,7 @@ namespace GeographicLib {
      * @return south edge of the cached area; the cache excludes this edge
      *   unless it's the south pole.
      **********************************************************************/
-    Math::real CacheSouth() const throw() {
+    Math::real CacheSouth() const {
       return _cache ? 90 - ( _yoffset + _ysize - 1 - _cubic) / _rlatres : 0;
     }
 
@@ -456,8 +432,8 @@ namespace GeographicLib {
      * (The WGS84 value is returned because the supported geoid models are all
      * based on this ellipsoid.)
      **********************************************************************/
-    Math::real MajorRadius() const throw()
-    { return Constants::WGS84_a<real>(); }
+    Math::real MajorRadius() const
+    { return Constants::WGS84_a(); }
 
     /**
      * @return \e f the flattening of the WGS84 ellipsoid.
@@ -465,37 +441,27 @@ namespace GeographicLib {
      * (The WGS84 value is returned because the supported geoid models are all
      * based on this ellipsoid.)
      **********************************************************************/
-    Math::real Flattening() const throw() { return Constants::WGS84_f<real>(); }
+    Math::real Flattening() const { return Constants::WGS84_f(); }
     ///@}
-
-    /// \cond SKIP
-    /**
-     * <b>DEPRECATED</b>
-     * @return \e r the inverse flattening of the WGS84 ellipsoid.
-     **********************************************************************/
-    Math::real InverseFlattening() const throw()
-    { return 1/Constants::WGS84_f<real>(); }
-    /// \endcond
 
     /**
      * @return the default path for geoid data files.
      *
-     * This is the value of the environment variable GEOID_PATH, if set;
-     * otherwise, it is $GEOGRAPHICLIB_DATA/geoids if the environment variable
-     * GEOGRAPHICLIB_DATA is set; otherwise, it is a compile-time default
-     * (/usr/local/share/GeographicLib/geoids on non-Windows systems and
-     * C:/Documents and Settings/All Users/Application
-     * Data/GeographicLib/geoids on Windows systems).
+     * This is the value of the environment variable GEOGRAPHICLIB_GEOID_PATH,
+     * if set; otherwise, it is $GEOGRAPHICLIB_DATA/geoids if the environment
+     * variable GEOGRAPHICLIB_DATA is set; otherwise, it is a compile-time
+     * default (/usr/local/share/GeographicLib/geoids on non-Windows systems
+     * and C:/ProgramData/GeographicLib/geoids on Windows systems).
      **********************************************************************/
     static std::string DefaultGeoidPath();
 
     /**
      * @return the default name for the geoid.
      *
-     * This is the value of the environment variable GEOID_NAME, if set,
-     * otherwise, it is "egm96-5".  The Geoid class does not use this function;
-     * it is just provided as a convenience for a calling program when
-     * constructing a Geoid object.
+     * This is the value of the environment variable GEOGRAPHICLIB_GEOID_NAME,
+     * if set; otherwise, it is "egm96-5".  The Geoid class does not use this
+     * function; it is just provided as a convenience for a calling program
+     * when constructing a Geoid object.
      **********************************************************************/
     static std::string DefaultGeoidName();
 

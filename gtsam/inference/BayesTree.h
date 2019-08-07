@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -89,14 +89,14 @@ namespace gtsam {
     /** Map from keys to Clique */
     typedef ConcurrentMap<Key, sharedClique> Nodes;
 
+    /** Root cliques */
+    typedef FastVector<sharedClique> Roots;
+
   protected:
 
     /** Map from indices to Clique */
     Nodes nodes_;
 
-    /** Root cliques */
-    typedef FastVector<sharedClique> Roots;
-    
     /** Root cliques */
     Roots roots_;
 
@@ -190,7 +190,7 @@ namespace gtsam {
     /// @}
     /// @name Advanced Interface
     /// @{
-    
+
     /**
      * Find parent clique of a conditional.  It will look at all parents and
      * return the one with the lowest index in the ordering.
@@ -208,13 +208,13 @@ namespace gtsam {
      * Remove path from clique to root and return that path as factors
      * plus a list of orphaned subtree roots. Used in removeTop below.
      */
-    void removePath(sharedClique clique, BayesNetType& bn, Cliques& orphans);
+    void removePath(sharedClique clique, BayesNetType* bn, Cliques* orphans);
 
     /**
      * Given a list of indices, turn "contaminated" part of the tree back into a factor graph.
      * Factors and orphans are added to the in/out arguments.
      */
-    void removeTop(const KeyVector& keys, BayesNetType& bn, Cliques& orphans);
+    void removeTop(const KeyVector& keys, BayesNetType* bn, Cliques* orphans);
 
     /**
      * Remove the requested subtree. */
@@ -229,7 +229,7 @@ namespace gtsam {
     void addClique(const sharedClique& clique, const sharedClique& parent_clique = sharedClique());
 
     /** Add all cliques in this BayesTree to the specified factor graph */
-    void addFactorsToGraph(FactorGraph<FactorType>& graph) const;
+    void addFactorsToGraph(FactorGraph<FactorType>* graph) const;
 
   protected:
 
@@ -238,7 +238,7 @@ namespace gtsam {
         int parentnum = 0) const;
 
     /** Gather data on a single clique */
-    void getCliqueData(BayesTreeCliqueData& stats, sharedClique clique) const;
+    void getCliqueData(sharedClique clique, BayesTreeCliqueData* stats) const;
 
     /** remove a clique: warning, can result in a forest */
     void removeClique(sharedClique clique);
@@ -249,7 +249,26 @@ namespace gtsam {
     // Friend JunctionTree because it directly fills roots and nodes index.
     template<class BAYESRTEE, class GRAPH> friend class EliminatableClusterTree;
 
-  private:
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+   public:
+    /// @name Deprecated
+    /// @{
+    void removePath(sharedClique clique, BayesNetType& bn, Cliques& orphans) {
+      removePath(clique, &bn, &orphans);
+    }
+    void removeTop(const KeyVector& keys, BayesNetType& bn, Cliques& orphans) {
+      removeTop(keys, &bn, &orphans);
+    }
+    void getCliqueData(BayesTreeCliqueData& stats, sharedClique clique) const {
+      getCliqueData(clique, &stats);
+    }
+    void addFactorsToGraph(FactorGraph<FactorType>& graph) const{
+      addFactorsToGraph(& graph);
+    }
+    /// @}
+#endif
+
+   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>

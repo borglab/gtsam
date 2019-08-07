@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -28,7 +28,7 @@ namespace gtsam {
    * we can directly add double, Vector, and Matrix into values now, because of
    * gtsam::traits.
    */
-  struct GTSAM_EXPORT LieScalar {
+  struct LieScalar {
 
     enum { dimension = 1 };
 
