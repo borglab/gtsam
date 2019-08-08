@@ -75,15 +75,12 @@ protected:
    */
   ZVector measured_;
 
-  /// @name Pose of the camera in the body frame
-  boost::optional<Pose3> body_P_sensor_; ///< Pose of the camera in the body frame
-  /// @}
+  boost::optional<Pose3> body_P_sensor_;  ///< Pose of the camera in the body frame
 
   // Cache for Fblocks, to avoid a malloc ever time we re-linearize
   mutable FBlocks Fs;
 
-public:
-
+ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// shorthand for a smart pointer to a factor
@@ -200,17 +197,20 @@ public:
     return e && Base::equals(p, tol) && areMeasurementsEqual;
   }
 
-  /// Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and derivatives
-  template<class POINT>
-  Vector unwhitenedError(const Cameras& cameras, const POINT& point,
-      boost::optional<typename Cameras::FBlocks&> Fs = boost::none, //
+  /// Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and
+  /// derivatives
+  template <class POINT>
+  Vector unwhitenedError(
+      const Cameras& cameras, const POINT& point,
+      boost::optional<typename Cameras::FBlocks&> Fs = boost::none,  //
       boost::optional<Matrix&> E = boost::none) const {
     Vector ue = cameras.reprojectionError(point, measured_, Fs, E);
-    if(body_P_sensor_ && Fs){
-      for(size_t i=0; i < Fs->size(); i++){
-        Pose3 w_Pose_body = (cameras[i].pose()).compose(body_P_sensor_->inverse());
+    if (body_P_sensor_ && Fs) {
+      const Pose3 sensor_P_body = body_P_sensor_->inverse();
+      for (size_t i = 0; i < Fs->size(); i++) {
+        const Pose3 w_Pose_body = cameras[i].pose() * sensor_P_body;
         Matrix J(6, 6);
-        Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
+        const Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
         Fs->at(i) = Fs->at(i) * J;
       }
     }
