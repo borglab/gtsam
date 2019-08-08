@@ -71,7 +71,7 @@ TEST(SmartProjectionFactor, Constructor) {
 TEST(SmartProjectionFactor, Constructor2) {
   using namespace vanilla;
   params.setRankTolerance(rankTol);
-  SmartFactor factor1(unit2, boost::none, params);
+  SmartFactor factor1(unit2, params);
 }
 
 /* ************************************************************************* */
@@ -85,7 +85,7 @@ TEST(SmartProjectionFactor, Constructor3) {
 TEST(SmartProjectionFactor, Constructor4) {
   using namespace vanilla;
   params.setRankTolerance(rankTol);
-  SmartFactor factor1(unit2, boost::none, params);
+  SmartFactor factor1(unit2, params);
   factor1.add(measurement1, c1);
 }
 
@@ -777,7 +777,7 @@ TEST(SmartProjectionFactor, implicitJacobianFactor ) {
   params.setEnableEPI(useEPI);
 
   SmartFactor::shared_ptr explicitFactor(
-      new SmartFactor(unit2, boost::none, params));
+      new SmartFactor(unit2, params));
   explicitFactor->add(level_uv, c1);
   explicitFactor->add(level_uv_right, c2);
 
@@ -789,7 +789,7 @@ TEST(SmartProjectionFactor, implicitJacobianFactor ) {
   // Implicit Schur version
   params.setLinearizationMode(gtsam::IMPLICIT_SCHUR);
   SmartFactor::shared_ptr implicitFactor(
-      new SmartFactor(unit2, boost::none, params));
+      new SmartFactor(unit2, params));
   implicitFactor->add(level_uv, c1);
   implicitFactor->add(level_uv_right, c2);
   GaussianFactor::shared_ptr gaussianImplicitSchurFactor =
@@ -808,65 +808,6 @@ TEST(SmartProjectionFactor, implicitJacobianFactor ) {
   hessianFactor.multiplyHessianAdd(alpha, x, yActual);
   implicitSchurFactor.multiplyHessianAdd(alpha, x, yExpected);
   EXPECT(assert_equal(yActual, yExpected, 1e-7));
-}
-
-
-/* *************************************************************************/
-TEST(SmartProjectionFactor, smartFactorWithSensorBodyTransform) {
-  using namespace vanilla;
-
-  // create arbitrary body_T_sensor (transforms from sensor to body)
-  Pose3 body_T_sensor = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(1, 1, 1));
-
-  // These are the poses we want to estimate, from camera measurements
-  const Pose3 sensor_T_body = body_T_sensor.inverse();
-  Pose3 wTb1 = cam1.pose() * sensor_T_body;
-  Pose3 wTb2 = cam2.pose() * sensor_T_body;
-  Pose3 wTb3 = cam3.pose() * sensor_T_body;
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2), landmark2(5, -0.5, 1.2), landmark3(5, 0, 3.0);
-
-  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
-
-  // Project three landmarks into three cameras
-  projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
-  projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
-  projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
-
-  // Create smart factors
-  KeyVector views {1, 2, 3};
-
-  SmartProjectionParams params;
-  params.setRankTolerance(1.0);
-  params.setDegeneracyMode(IGNORE_DEGENERACY);
-  params.setEnableEPI(false);
-
-  SmartFactor smartFactor1(unit2, body_T_sensor, params);
-  smartFactor1.add(measurements_cam1, views);
-
-  SmartFactor smartFactor2(unit2, body_T_sensor, params);
-  smartFactor2.add(measurements_cam2, views);
-
-  SmartFactor smartFactor3(unit2, body_T_sensor, params);
-  smartFactor3.add(measurements_cam3, views);
-
-  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-
-  // Put all factors in factor graph, adding priors
-  NonlinearFactorGraph graph;
-  graph.push_back(smartFactor1);
-  graph.push_back(smartFactor2);
-  graph.push_back(smartFactor3);
-
-  // Check errors at ground truth poses
-  Values gtValues;
-  gtValues.insert(1, cam1);
-  gtValues.insert(2, cam2);
-  gtValues.insert(3, cam3);
-  double actualError = graph.error(gtValues);
-  double expectedError = 0.0;
-  DOUBLES_EQUAL(expectedError, actualError, 1e-7);
 }
 
 /* ************************************************************************* */
