@@ -18,6 +18,7 @@
  * @author Mandy Xie
  */
 
+#include <gtsam/base/timing.h>
 #include <gtsam/linear/EigenOptimizer.h>
 #include <Eigen/MetisSupport>
 #include <vector>
@@ -28,6 +29,7 @@ namespace gtsam {
 using SpMat = Eigen::SparseMatrix<double>;
 /// obtain sparse matrix for eigen sparse solver
 SpMat obtainSparseMatrix(const GaussianFactorGraph &gfg) {
+  gttic_(EigenOptimizer_obtainSparseMatrix);
   // Get sparse entries of Jacobian [A|b] augmented with RHS b.
   auto entries = gfg.sparseJacobian();
 
@@ -51,7 +53,8 @@ SpMat obtainSparseMatrix(const GaussianFactorGraph &gfg) {
 }
 
 template <typename EigenSolverType>
-Eigen::VectorXd solveQR(const SpMat &Ab) {
+Eigen::VectorXd createQR(const SpMat &Ab) {
+  gttic_(EigenOptimizer_createQR);
   size_t rows = Ab.rows();
   size_t cols = Ab.cols();
   EigenSolverType solver(Ab.block(0, 0, rows, cols - 1));
@@ -61,52 +64,63 @@ Eigen::VectorXd solveQR(const SpMat &Ab) {
 /* ************************************************************************* */
 VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
                              const std::string &orderingType) {
+  gttic_(EigenOptimizer_optimizeEigenQR);
   SpMat Ab = obtainSparseMatrix(gfg);
   // Solve A*x = b using sparse QR from Eigen
   Eigen::VectorXd x;
   if (orderingType == "AMD") {
-    x = solveQR<Eigen::SparseQR<SpMat, Eigen::AMDOrdering<int>>>(Ab);
+    gttic_(EigenOptimizer_optimizeEigenQR_AMD);
+    x = createQR<Eigen::SparseQR<SpMat, Eigen::AMDOrdering<int>>>(Ab);
   } else if (orderingType == "COLAMD") {
-    x = solveQR<Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>>>(Ab);
+    gttic_(EigenOptimizer_optimizeEigenQR_COLAMD);
+    x = createQR<Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>>>(Ab);
   } else if (orderingType == "NATURAL") {
-    x = solveQR<Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<int>>>(Ab);
+    gttic_(EigenOptimizer_optimizeEigenQR_NATURAL);
+    x = createQR<Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<int>>>(Ab);
   } else if (orderingType == "METIS") {
-    x = solveQR<Eigen::SparseQR<SpMat, Eigen::MetisOrdering<int>>>(Ab);
+    gttic_(EigenOptimizer_optimizeEigenQR_METIS);
+    x = createQR<Eigen::SparseQR<SpMat, Eigen::MetisOrdering<int>>>(Ab);
   }
   return VectorValues(x, gfg.getKeyDimMap());
 }
 
 template <typename EigenSolverType>
-Eigen::VectorXd solveCholesky(const SpMat &Ab) {
+Eigen::VectorXd createCholesky(const SpMat &Ab) {
+  gttic_(EigenOptimizer_createCholesky);
   size_t rows = Ab.rows();
   size_t cols = Ab.cols();
   auto A = Ab.block(0, 0, rows, cols - 1);
   auto At = A.transpose();
   auto b = Ab.col(cols - 1);
-  EigenSolverType solver(At*A);
-  return solver.solve(At*b);
+  EigenSolverType solver(At * A);
+  return solver.solve(At * b);
 }
 
 /* *************************************************************************
  */
 VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
                                    const std::string &orderingType) {
+  gttic_(EigenOptimizer_optimizeEigenCholesky);
   SpMat Ab = obtainSparseMatrix(gfg);
   // Solve A*x = b using sparse QR from Eigen
   Eigen::VectorXd x;
   if (orderingType == "AMD") {
-    x = solveCholesky<
+    gttic_(EigenOptimizer_optimizeEigenCholesky_AMD);
+    x = createCholesky<
         Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::AMDOrdering<int>>>(
         Ab);
   } else if (orderingType == "COLAMD") {
-    x = solveCholesky<
+    gttic_(EigenOptimizer_optimizeEigenCholesky_COLAMD);
+    x = createCholesky<
         Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::COLAMDOrdering<int>>>(
         Ab);
   } else if (orderingType == "NATURAL") {
-    x = solveCholesky<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
-                                      Eigen::NaturalOrdering<int>>>(Ab);
+    gttic_(EigenOptimizer_optimizeEigenCholesky_NATURAL);
+    x = createCholesky<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
+                                            Eigen::NaturalOrdering<int>>>(Ab);
   } else if (orderingType == "METIS") {
-    x = solveCholesky<
+    gttic_(EigenOptimizer_optimizeEigenCholesky_METIS);
+    x = createCholesky<
         Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::MetisOrdering<int>>>(
         Ab);
   }
