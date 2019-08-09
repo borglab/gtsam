@@ -19,6 +19,7 @@
  */
 
 #include <gtsam/linear/EigenOptimizer.h>
+#include <Eigen/MetisSupport>
 #include <vector>
 
 using namespace std;
@@ -59,17 +60,18 @@ Eigen::VectorXd solve_x(const SpMat &Ab) {
 
 /* ************************************************************************* */
 VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
-                             const Ordering::OrderingType &ordering) {
+                             const std::string &orderingType) {
   SpMat Ab = obtainSparseMatrix(gfg);
   // Solve A*x = b using sparse QR from Eigen
   Eigen::VectorXd x;
-  switch (ordering) {
-    case Ordering::COLAMD:
-      x = solve_x<Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>>>(Ab);
-    case Ordering::NATURAL:
-      x = solve_x<Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<int>>>(Ab);
-    default:
-      x = solve_x<Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>>>(Ab);
+  if (orderingType == "AMD") {
+    x = solve_x<Eigen::SparseQR<SpMat, Eigen::AMDOrdering<int>>>(Ab);
+  } else if (orderingType == "COLAMD") {
+    x = solve_x<Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>>>(Ab);
+  } else if (orderingType == "NATURAL") {
+    x = solve_x<Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<int>>>(Ab);
+  } else if (orderingType == "METIS") {
+    x = solve_x<Eigen::SparseQR<SpMat, Eigen::MetisOrdering<int>>>(Ab);
   }
   return VectorValues(x, gfg.getKeyDimMap());
 }
@@ -77,20 +79,25 @@ VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
 /* *************************************************************************
  */
 VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
-                                   const Ordering::OrderingType &ordering) {
+                                   const std::string &orderingType) {
   SpMat Ab = obtainSparseMatrix(gfg);
   // Solve A*x = b using sparse QR from Eigen
   Eigen::VectorXd x;
-  switch (ordering) {
-    case Ordering::COLAMD:
-      x = solve_x<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
-                                        Eigen::COLAMDOrdering<int>>>(Ab);
-    case Ordering::NATURAL:
-      x = solve_x<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
-                                        Eigen::NaturalOrdering<int>>>(Ab);
-    default:
-      x = solve_x<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
-                                        Eigen::COLAMDOrdering<int>>>(Ab);
+  if (orderingType == "AMD") {
+    x = solve_x<
+        Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::AMDOrdering<int>>>(
+        Ab);
+  } else if (orderingType == "COLAMD") {
+    x = solve_x<
+        Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::COLAMDOrdering<int>>>(
+        Ab);
+  } else if (orderingType == "NATURAL") {
+    x = solve_x<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
+                                      Eigen::NaturalOrdering<int>>>(Ab);
+  } else if (orderingType == "METIS") {
+    x = solve_x<
+        Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::MetisOrdering<int>>>(
+        Ab);
   }
   return VectorValues(x, gfg.getKeyDimMap());
 }
