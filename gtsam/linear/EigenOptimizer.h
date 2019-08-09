@@ -19,18 +19,18 @@
  */
 #pragma once
 
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <Eigen/Sparse>
+#include <string>
 
 namespace gtsam {
 /// Optimize using Eigen's SparseQR factorization
 VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
-                             const Ordering::OrderingType &orderingType);
+                             const std::string &orderingType);
 
 /// Optimize using Eigen's SimplicailLDLT factorization
 VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
-                                   const Ordering::OrderingType &orderingType);
+                                   const std::string &orderingType);
 
 }  // namespace gtsam

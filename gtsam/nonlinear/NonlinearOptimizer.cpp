@@ -165,9 +165,9 @@ VectorValues NonlinearOptimizer::solve(
           "in LM solver ...");
     }
   } else if (params.isEigenQR()) {
-      delta = optimizeEigenQR(gfg, params.orderingType);
+      delta = optimizeEigenQR(gfg, params.getOrderingType());
   } else if (params.isEigenCholesky()) {
-      delta = optimizeEigenCholesky(gfg, params.orderingType);
+      delta = optimizeEigenCholesky(gfg, params.getOrderingType());
   } else {
     throw std::runtime_error(
         "NonlinearOptimizer::solve: Optimization parameter is invalid");
