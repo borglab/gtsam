@@ -49,29 +49,50 @@ SpMat obtainSparseMatrix(const GaussianFactorGraph &gfg) {
   return Ab;
 }
 
-/* ************************************************************************* */
-VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg) {
-  SpMat Ab = obtainSparseMatrix(gfg);
+template <typename EigenSolverType>
+Eigen::VectorXd solve_x(const SpMat &Ab) {
   size_t rows = Ab.rows();
   size_t cols = Ab.cols();
-  // Solve A*x = b using sparse QR from Eigen
-  Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>> qr(
-      Ab.block(0, 0, rows, cols - 1));
-  Eigen::VectorXd x = qr.solve(Ab.col(cols - 1));
-
-  return VectorValues(x, gfg.getKeyDimMap());
+  EigenSolverType solver(Ab.block(0, 0, rows, cols - 1));
+  return solver.solve(Ab.col(cols - 1));
 }
 
 /* ************************************************************************* */
-VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg) {
+VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
+                             const Ordering::OrderingType &ordering) {
   SpMat Ab = obtainSparseMatrix(gfg);
-  size_t rows = Ab.rows();
-  size_t cols = Ab.cols();
   // Solve A*x = b using sparse QR from Eigen
-  Eigen::SimplicialLDLT<SpMat> ldlt(Ab.block(0, 0, rows, cols - 1));
-  Eigen::VectorXd x = ldlt.solve(Ab.col(cols - 1));
-
+  Eigen::VectorXd x;
+  switch (ordering) {
+    case Ordering::COLAMD:
+      x = solve_x<Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>>>(Ab);
+    case Ordering::NATURAL:
+      x = solve_x<Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<int>>>(Ab);
+    default:
+      x = solve_x<Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>>>(Ab);
+  }
   return VectorValues(x, gfg.getKeyDimMap());
 }
 
-} //namespace gtsam
+/* *************************************************************************
+ */
+VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
+                                   const Ordering::OrderingType &ordering) {
+  SpMat Ab = obtainSparseMatrix(gfg);
+  // Solve A*x = b using sparse QR from Eigen
+  Eigen::VectorXd x;
+  switch (ordering) {
+    case Ordering::COLAMD:
+      x = solve_x<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
+                                        Eigen::COLAMDOrdering<int>>>(Ab);
+    case Ordering::NATURAL:
+      x = solve_x<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
+                                        Eigen::NaturalOrdering<int>>>(Ab);
+    default:
+      x = solve_x<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
+                                        Eigen::COLAMDOrdering<int>>>(Ab);
+  }
+  return VectorValues(x, gfg.getKeyDimMap());
+}
+
+}  // namespace gtsam
