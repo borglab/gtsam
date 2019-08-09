@@ -51,7 +51,7 @@ SpMat obtainSparseMatrix(const GaussianFactorGraph &gfg) {
 }
 
 template <typename EigenSolverType>
-Eigen::VectorXd solve_x(const SpMat &Ab) {
+Eigen::VectorXd solveQR(const SpMat &Ab) {
   size_t rows = Ab.rows();
   size_t cols = Ab.cols();
   EigenSolverType solver(Ab.block(0, 0, rows, cols - 1));
@@ -65,15 +65,26 @@ VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
   // Solve A*x = b using sparse QR from Eigen
   Eigen::VectorXd x;
   if (orderingType == "AMD") {
-    x = solve_x<Eigen::SparseQR<SpMat, Eigen::AMDOrdering<int>>>(Ab);
+    x = solveQR<Eigen::SparseQR<SpMat, Eigen::AMDOrdering<int>>>(Ab);
   } else if (orderingType == "COLAMD") {
-    x = solve_x<Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>>>(Ab);
+    x = solveQR<Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>>>(Ab);
   } else if (orderingType == "NATURAL") {
-    x = solve_x<Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<int>>>(Ab);
+    x = solveQR<Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<int>>>(Ab);
   } else if (orderingType == "METIS") {
-    x = solve_x<Eigen::SparseQR<SpMat, Eigen::MetisOrdering<int>>>(Ab);
+    x = solveQR<Eigen::SparseQR<SpMat, Eigen::MetisOrdering<int>>>(Ab);
   }
   return VectorValues(x, gfg.getKeyDimMap());
+}
+
+template <typename EigenSolverType>
+Eigen::VectorXd solveCholesky(const SpMat &Ab) {
+  size_t rows = Ab.rows();
+  size_t cols = Ab.cols();
+  auto A = Ab.block(0, 0, rows, cols - 1);
+  auto At = A.transpose();
+  auto b = Ab.col(cols - 1);
+  EigenSolverType solver(At*A);
+  return solver.solve(At*b);
 }
 
 /* *************************************************************************
@@ -84,18 +95,18 @@ VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
   // Solve A*x = b using sparse QR from Eigen
   Eigen::VectorXd x;
   if (orderingType == "AMD") {
-    x = solve_x<
+    x = solveCholesky<
         Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::AMDOrdering<int>>>(
         Ab);
   } else if (orderingType == "COLAMD") {
-    x = solve_x<
+    x = solveCholesky<
         Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::COLAMDOrdering<int>>>(
         Ab);
   } else if (orderingType == "NATURAL") {
-    x = solve_x<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
+    x = solveCholesky<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
                                       Eigen::NaturalOrdering<int>>>(Ab);
   } else if (orderingType == "METIS") {
-    x = solve_x<
+    x = solveCholesky<
         Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::MetisOrdering<int>>>(
         Ab);
   }
