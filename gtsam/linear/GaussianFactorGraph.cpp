@@ -101,6 +101,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
+    gttic_(GaussianFactorGraph_sparseJacobian);
     // First find dimensions of each variable
     std::map<Key, size_t> dims;
     for (const sharedFactor& factor : *this) {
