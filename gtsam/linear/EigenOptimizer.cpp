@@ -37,24 +37,30 @@ SpMat obtainSparseMatrix(const GaussianFactorGraph &gfg) {
   vector<Eigen::Triplet<double>> triplets;
   triplets.reserve(entries.size());
   size_t rows = 0, cols = 0;
+
+  gttic_(EigenOptimizer_obtainSparseMatrix_for_loop);
   for (const auto &e : entries) {
     size_t temp_rows = e.get<0>(), temp_cols = e.get<1>();
     triplets.emplace_back(temp_rows, temp_cols, e.get<2>());
     rows = std::max(rows, temp_rows);
     cols = std::max(cols, temp_cols);
   }
-
+  gttoc_(EigenOptimizer_obtainSparseMatrix_for_loop);
   // ...and make a sparse matrix with it.
   using SpMat = Eigen::SparseMatrix<double>;
   SpMat Ab(rows + 1, cols + 1);
+  gttic_(EigenOptimizer_obtainSparseMatrix_setFromTriplets);
   Ab.setFromTriplets(triplets.begin(), triplets.end());
+  gttoc_(EigenOptimizer_obtainSparseMatrix_setFromTriplets);
+  gttic_(EigenOptimizer_obtainSparseMatrix_makeCompressed);
   Ab.makeCompressed();
+  gttoc_(EigenOptimizer_obtainSparseMatrix_makeCompressed);
   return Ab;
 }
 
 template <typename EigenSolverType>
-Eigen::VectorXd createQR(const SpMat &Ab) {
-  gttic_(EigenOptimizer_createQR);
+Eigen::VectorXd solveQR(const SpMat &Ab) {
+  gttic_(EigenOptimizer_solveQR);
   size_t rows = Ab.rows();
   size_t cols = Ab.cols();
   EigenSolverType solver(Ab.block(0, 0, rows, cols - 1));
@@ -70,23 +76,23 @@ VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
   Eigen::VectorXd x;
   if (orderingType == "AMD") {
     gttic_(EigenOptimizer_optimizeEigenQR_AMD);
-    x = createQR<Eigen::SparseQR<SpMat, Eigen::AMDOrdering<int>>>(Ab);
+    x = solveQR<Eigen::SparseQR<SpMat, Eigen::AMDOrdering<int>>>(Ab);
   } else if (orderingType == "COLAMD") {
     gttic_(EigenOptimizer_optimizeEigenQR_COLAMD);
-    x = createQR<Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>>>(Ab);
+    x = solveQR<Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>>>(Ab);
   } else if (orderingType == "NATURAL") {
     gttic_(EigenOptimizer_optimizeEigenQR_NATURAL);
-    x = createQR<Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<int>>>(Ab);
+    x = solveQR<Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<int>>>(Ab);
   } else if (orderingType == "METIS") {
     gttic_(EigenOptimizer_optimizeEigenQR_METIS);
-    x = createQR<Eigen::SparseQR<SpMat, Eigen::MetisOrdering<int>>>(Ab);
+    x = solveQR<Eigen::SparseQR<SpMat, Eigen::MetisOrdering<int>>>(Ab);
   }
   return VectorValues(x, gfg.getKeyDimMap());
 }
 
 template <typename EigenSolverType>
-Eigen::VectorXd createCholesky(const SpMat &Ab) {
-  gttic_(EigenOptimizer_createCholesky);
+Eigen::VectorXd solveCholesky(const SpMat &Ab) {
+  gttic_(EigenOptimizer_solveCholesky);
   size_t rows = Ab.rows();
   size_t cols = Ab.cols();
   auto A = Ab.block(0, 0, rows, cols - 1);
@@ -105,22 +111,18 @@ VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
   // Solve A*x = b using sparse QR from Eigen
   Eigen::VectorXd x;
   if (orderingType == "AMD") {
-    gttic_(EigenOptimizer_optimizeEigenCholesky_AMD);
-    x = createCholesky<
+    x = solveCholesky<
         Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::AMDOrdering<int>>>(
         Ab);
   } else if (orderingType == "COLAMD") {
-    gttic_(EigenOptimizer_optimizeEigenCholesky_COLAMD);
-    x = createCholesky<
+    x = solveCholesky<
         Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::COLAMDOrdering<int>>>(
         Ab);
   } else if (orderingType == "NATURAL") {
-    gttic_(EigenOptimizer_optimizeEigenCholesky_NATURAL);
-    x = createCholesky<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
+    x = solveCholesky<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
                                             Eigen::NaturalOrdering<int>>>(Ab);
   } else if (orderingType == "METIS") {
-    gttic_(EigenOptimizer_optimizeEigenCholesky_METIS);
-    x = createCholesky<
+    x = solveCholesky<
         Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::MetisOrdering<int>>>(
         Ab);
   }
