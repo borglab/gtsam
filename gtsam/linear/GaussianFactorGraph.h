@@ -185,14 +185,15 @@ namespace gtsam {
      * where i(k) and j(k) are the base 0 row and column indices, s(k) a double.
      * The standard deviations are baked into A and b
      */
-    std::vector<boost::tuple<size_t, size_t, double> > sparseJacobian() const;
+    std::vector<boost::tuple<size_t, size_t, double> > sparseJacobian(
+        boost::optional<const Ordering&> optionalOrdering = boost::none) const;
 
     /**
      * Matrix version of sparseJacobian: generates a 3*m matrix with [i,j,s] entries
      * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
      * The standard deviations are baked into A and b
      */
-    Matrix sparseJacobian_() const;
+    Matrix sparseJacobian_(boost::optional<const Ordering&> optionalOrdering = boost::none) const;
 
     /**
      * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$

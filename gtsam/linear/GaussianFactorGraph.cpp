@@ -100,7 +100,9 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
+  vector<boost::tuple<size_t, size_t, double> >
+  GaussianFactorGraph::sparseJacobian(
+      boost::optional<const Ordering&> ordering) const {
     gttic_(GaussianFactorGraph_sparseJacobian);
     // First find dimensions of each variable
     std::map<Key, size_t> dims;
@@ -108,18 +110,24 @@ namespace gtsam {
       if (!static_cast<bool>(factor))
         continue;
 
-      for (GaussianFactor::const_iterator key = factor->begin();
-          key != factor->end(); ++key) {
-        dims[*key] = factor->getDim(key);
+      for (auto it = factor->begin(); it != factor->end(); ++it) {
+        dims[*it] = factor->getDim(it);
       }
     }
 
     // Compute first scalar column of each variable
     size_t currentColIndex = 0;
     std::map<Key, size_t> columnIndices;
-    for (const auto& keyValue : dims) {
-      columnIndices[keyValue.first] = currentColIndex;
-      currentColIndex += keyValue.second;
+    if (ordering) {
+      for (const auto key : *ordering) {
+        columnIndices[key] = currentColIndex;
+        currentColIndex += dims[key];
+      }
+    } else {
+      for (const auto& keyValue : dims) {
+        columnIndices[keyValue.first] = currentColIndex;
+        currentColIndex += keyValue.second;
+      }
     }
 
     // Iterate over all factors, adding sparse scalar entries
@@ -174,11 +182,11 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix GaussianFactorGraph::sparseJacobian_() const {
-
+  Matrix GaussianFactorGraph::sparseJacobian_(
+      boost::optional<const Ordering&> optionalOrdering) const {
     // call sparseJacobian
     typedef boost::tuple<size_t, size_t, double> triplet;
-    vector<triplet> result = sparseJacobian();
+    vector<triplet> result = sparseJacobian(optionalOrdering);
 
     // translate to base 1 matrix
     size_t nzmax = result.size();
