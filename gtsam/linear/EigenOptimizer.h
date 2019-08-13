@@ -27,9 +27,13 @@
 namespace gtsam {
 /// Optimize using Eigen's SparseQR factorization
 VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
+                             const Ordering &ordering);
+VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
                              const std::string &orderingType);
 
 /// Optimize using Eigen's SimplicailLDLT factorization
+VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
+                                   const Ordering &ordering);
 VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
                                    const std::string &orderingType);
 

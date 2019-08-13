@@ -28,105 +28,94 @@ using namespace std;
 namespace gtsam {
 using SpMat = Eigen::SparseMatrix<double>;
 /// obtain sparse matrix for eigen sparse solver
-SpMat obtainSparseMatrix(const GaussianFactorGraph &gfg) {
+std::pair<SpMat, Eigen::VectorXd> obtainSparseMatrix(
+    const GaussianFactorGraph &gfg, const Ordering &ordering) {
   gttic_(EigenOptimizer_obtainSparseMatrix);
   // Get sparse entries of Jacobian [A|b] augmented with RHS b.
-  auto entries = gfg.sparseJacobian();
-
+  auto entries = gfg.sparseJacobian(ordering);
   // Convert boost tuples to Eigen triplets
   vector<Eigen::Triplet<double>> triplets;
   triplets.reserve(entries.size());
   size_t rows = 0, cols = 0;
-
-  gttic_(EigenOptimizer_obtainSparseMatrix_for_loop);
   for (const auto &e : entries) {
     size_t temp_rows = e.get<0>(), temp_cols = e.get<1>();
     triplets.emplace_back(temp_rows, temp_cols, e.get<2>());
     rows = std::max(rows, temp_rows);
     cols = std::max(cols, temp_cols);
   }
-  gttoc_(EigenOptimizer_obtainSparseMatrix_for_loop);
   // ...and make a sparse matrix with it.
-  using SpMat = Eigen::SparseMatrix<double>;
   SpMat Ab(rows + 1, cols + 1);
-  gttic_(EigenOptimizer_obtainSparseMatrix_setFromTriplets);
   Ab.setFromTriplets(triplets.begin(), triplets.end());
-  gttoc_(EigenOptimizer_obtainSparseMatrix_setFromTriplets);
-  gttic_(EigenOptimizer_obtainSparseMatrix_makeCompressed);
   Ab.makeCompressed();
-  gttoc_(EigenOptimizer_obtainSparseMatrix_makeCompressed);
-  return Ab;
-}
-
-template <typename EigenSolverType>
-Eigen::VectorXd solveQR(const SpMat &Ab) {
-  gttic_(EigenOptimizer_solveQR);
-  size_t rows = Ab.rows();
-  size_t cols = Ab.cols();
-  EigenSolverType solver(Ab.block(0, 0, rows, cols - 1));
-  return solver.solve(Ab.col(cols - 1));
+  return make_pair<SpMat, Eigen::VectorXd>(Ab.block(0, 0, rows + 1, cols),
+                                           Ab.col(cols));
 }
 
 /* ************************************************************************* */
 VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
-                             const std::string &orderingType) {
+                             const Ordering &ordering) {
   gttic_(EigenOptimizer_optimizeEigenQR);
-  SpMat Ab = obtainSparseMatrix(gfg);
+  auto Ab_pair = obtainSparseMatrix(gfg, ordering);
   // Solve A*x = b using sparse QR from Eigen
-  Eigen::VectorXd x;
-  if (orderingType == "AMD") {
-    gttic_(EigenOptimizer_optimizeEigenQR_AMD);
-    x = solveQR<Eigen::SparseQR<SpMat, Eigen::AMDOrdering<int>>>(Ab);
-  } else if (orderingType == "COLAMD") {
-    gttic_(EigenOptimizer_optimizeEigenQR_COLAMD);
-    x = solveQR<Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>>>(Ab);
-  } else if (orderingType == "NATURAL") {
-    gttic_(EigenOptimizer_optimizeEigenQR_NATURAL);
-    x = solveQR<Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<int>>>(Ab);
-  } else if (orderingType == "METIS") {
-    gttic_(EigenOptimizer_optimizeEigenQR_METIS);
-    x = solveQR<Eigen::SparseQR<SpMat, Eigen::MetisOrdering<int>>>(Ab);
-  }
+  gttic_(EigenOptimizer_optimizeEigenQR_create_solver);
+  Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<int>> solver(Ab_pair.first);
+  gttoc_(EigenOptimizer_optimizeEigenQR_create_solver);
+  gttic_(EigenOptimizer_optimizeEigenQR_solve);
+  Eigen::VectorXd x = solver.solve(Ab_pair.second);
+  gttoc_(EigenOptimizer_optimizeEigenQR_solve);
   return VectorValues(x, gfg.getKeyDimMap());
 }
 
-template <typename EigenSolverType>
-Eigen::VectorXd solveCholesky(const SpMat &Ab) {
-  gttic_(EigenOptimizer_solveCholesky);
-  size_t rows = Ab.rows();
-  size_t cols = Ab.cols();
-  auto A = Ab.block(0, 0, rows, cols - 1);
-  auto At = A.transpose();
-  auto b = Ab.col(cols - 1);
-  EigenSolverType solver(At * A);
-  return solver.solve(At * b);
+VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
+                                   const std::string &orderingType) {
+  if (orderingType == "COLAMD") {
+    return optimizeEigenQR(gfg, Ordering::Colamd(gfg));
+  } else if (orderingType == "METIS") {
+    return optimizeEigenQR(gfg, Ordering::Metis(gfg));
+  } else if (orderingType == "NATURAL") {
+    return optimizeEigenQR(gfg, Ordering::Natural(gfg));
+  } else {
+    std::cout
+        << "No applicable ordering method, use COLAMD ordering by default !!"
+        << std::endl;
+    return optimizeEigenQR(gfg, Ordering::Colamd(gfg));
+  }
 }
 
-/* *************************************************************************
- */
+/* *************************************************************************/
+VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
+                                   const Ordering &ordering) {
+  gttic_(EigenOptimizer_optimizeEigenCholesky);
+  auto Ab_pair = obtainSparseMatrix(gfg, ordering);
+  auto A = Ab_pair.first;
+  gttic_(EigenOptimizer_optimizeEigenCholesky_Atranspose);
+  auto At = A.transpose();
+  gttoc_(EigenOptimizer_optimizeEigenCholesky_Atranspose);
+  gttic_(EigenOptimizer_optimizeEigenCholesky_create_solver);
+  // Solve A*x = b using sparse QR from Eigen
+  Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::NaturalOrdering<int>>
+      solver(At * A);
+  gttoc_(EigenOptimizer_optimizeEigenCholesky_create_solver);
+  gttic_(EigenOptimizer_optimizeEigenCholesky_solve);
+  Eigen::VectorXd x = solver.solve(At * Ab_pair.second);
+  gttoc_(EigenOptimizer_optimizeEigenCholesky_solve);
+  return VectorValues(x, gfg.getKeyDimMap());
+}
+
 VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
                                    const std::string &orderingType) {
-  gttic_(EigenOptimizer_optimizeEigenCholesky);
-  SpMat Ab = obtainSparseMatrix(gfg);
-  // Solve A*x = b using sparse QR from Eigen
-  Eigen::VectorXd x;
-  if (orderingType == "AMD") {
-    x = solveCholesky<
-        Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::AMDOrdering<int>>>(
-        Ab);
-  } else if (orderingType == "COLAMD") {
-    x = solveCholesky<
-        Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::COLAMDOrdering<int>>>(
-        Ab);
-  } else if (orderingType == "NATURAL") {
-    x = solveCholesky<Eigen::SimplicialLDLT<SpMat, Eigen::Lower,
-                                            Eigen::NaturalOrdering<int>>>(Ab);
+  if (orderingType == "COLAMD") {
+    return optimizeEigenCholesky(gfg, Ordering::Colamd(gfg));
   } else if (orderingType == "METIS") {
-    x = solveCholesky<
-        Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::MetisOrdering<int>>>(
-        Ab);
+    return optimizeEigenCholesky(gfg, Ordering::Metis(gfg));
+  } else if (orderingType == "NATURAL") {
+    return optimizeEigenCholesky(gfg, Ordering::Natural(gfg));
+  } else {
+    std::cout
+        << "No applicable ordering method, use COLAMD ordering by default !!"
+        << std::endl;
+    return optimizeEigenCholesky(gfg, Ordering::Colamd(gfg));
   }
-  return VectorValues(x, gfg.getKeyDimMap());
 }
 
 }  // namespace gtsam
