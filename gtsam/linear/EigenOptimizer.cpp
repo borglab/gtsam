@@ -29,7 +29,8 @@ namespace gtsam {
 using SpMat = Eigen::SparseMatrix<double>;
 /// obtain sparse matrix for eigen sparse solver
 std::pair<SpMat, Eigen::VectorXd> obtainSparseMatrix(
-    const GaussianFactorGraph &gfg, const Ordering &ordering) {
+    const GaussianFactorGraph &gfg,
+    boost::optional<const Ordering &> ordering = boost::none) {
   gttic_(EigenOptimizer_obtainSparseMatrix);
   // Get sparse entries of Jacobian [A|b] augmented with RHS b.
   auto entries = gfg.sparseJacobian(ordering);
@@ -67,7 +68,7 @@ VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
 }
 
 VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
-                                   const std::string &orderingType) {
+                             const std::string &orderingType) {
   if (orderingType == "COLAMD") {
     return optimizeEigenQR(gfg, Ordering::Colamd(gfg));
   } else if (orderingType == "METIS") {
