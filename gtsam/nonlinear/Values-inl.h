@@ -224,12 +224,15 @@ namespace gtsam {
     if(item == values_.end())
       throw ValuesKeyDoesNotExist("retrieve", j);
 
+    // NOTE(abe): clang warns about potential side effects if done in typeid
+    const Value* value = item->second;
+
     // Check the type and throw exception if incorrect
-    if(typeid(*item->second) != typeid(ValueType))
-      throw ValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
+    if(typeid(*value) != typeid(ValueType))
+      throw ValuesIncorrectType(j, typeid(*value), typeid(ValueType));
 
     // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
-    return static_cast<const ValueType&>(*item->second);
+    return static_cast<const ValueType&>(*value);
   }
 
   /* ************************************************************************* */
@@ -238,13 +241,16 @@ namespace gtsam {
     // Find the item
     KeyValueMap::const_iterator item = values_.find(j);
 
+    // NOTE(abe): clang warns about potential side effects if done in typeid
+    const Value* value = item->second;
+
     if(item != values_.end()) {
       // Check the type and throw exception if incorrect
-      if(typeid(*item->second) != typeid(ValueType))
-        throw ValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
+      if(typeid(*value) != typeid(ValueType))
+        throw ValuesIncorrectType(j, typeid(*value), typeid(ValueType));
 
       // We have already checked the type, so do a "blind" static_cast, not dynamic_cast
-      return static_cast<const ValueType&>(*item->second);
+      return static_cast<const ValueType&>(*value);
     } else {
       return boost::none;
     }
