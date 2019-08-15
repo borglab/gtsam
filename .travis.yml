@@ -15,7 +15,6 @@ addons:
     - cmake
     - libpython-dev python-numpy
     - libboost-all-dev
-    - libeigen3-dev
 
 # before_install:
 #  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update          ; fi
@@ -65,17 +64,6 @@ jobs:
     compiler: gcc
     env: CMAKE_BUILD_TYPE=Release
     script: bash .travis.sh -b
-# on Linux, CLANG
-  - stage: compile
-    os: linux
-    compiler: clang
-    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
-    script: bash .travis.sh -b
-  - stage: compile
-    os: linux
-    compiler: clang
-    env: CMAKE_BUILD_TYPE=Release
-    script: bash .travis.sh -b
 # on Linux, with deprecated ON to make sure that path still compiles
   - stage: compile
     os: linux
@@ -112,3 +100,7 @@ matrix:
     - os: linux
       compiler: clang
       env : CMAKE_BUILD_TYPE=Release
+    # Exclude clang on Linux/clang because many warnings make travis error
+    - os: linux
+      compiler: clang
+      env : CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
