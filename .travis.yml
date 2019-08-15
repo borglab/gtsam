@@ -15,6 +15,7 @@ addons:
     - cmake
     - libpython-dev python-numpy
     - libboost-all-dev
+    - libeigen3-dev
 
 # before_install:
 #  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update          ; fi
