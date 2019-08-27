@@ -79,15 +79,15 @@ public:
 
   /**
    * Constructor
-   * @param body_P_sensor pose of the camera in the body frame
-   * @param params internal parameters of the smart factors
+   * @param sharedNoiseModel isotropic noise model for the 2D feature measurements
+   * @param params parameters for the smart projection factors
    */
-  SmartProjectionFactor(const SharedNoiseModel& sharedNoiseModel,
-      const boost::optional<Pose3> body_P_sensor = boost::none,
-      const SmartProjectionParams& params = SmartProjectionParams()) :
-      Base(sharedNoiseModel, body_P_sensor), params_(params), //
-      result_(TriangulationResult::Degenerate()) {
-  }
+  SmartProjectionFactor(
+      const SharedNoiseModel& sharedNoiseModel,
+      const SmartProjectionParams& params = SmartProjectionParams())
+      : Base(sharedNoiseModel),
+        params_(params),
+        result_(TriangulationResult::Degenerate()) {}
 
   /** Virtual destructor */
   virtual ~SmartProjectionFactor() {
@@ -443,7 +443,26 @@ public:
   /** return the farPoint state */
   bool isFarPoint() const { return result_.farPoint(); }
 
-private:
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  /// @name Deprecated
+  /// @{
+  // It does not make sense to optimize for a camera where the pose would not be
+  // the actual pose of the camera. An unfortunate consequence of deprecating
+  // this constructor means that we cannot optimize for calibration when the
+  // camera is offset from the body pose. That would need a new factor with
+  // (body) pose and calibration as variables. However, that use case is
+  // unlikely: when a global offset is know, calibration is typically known.
+  SmartProjectionFactor(
+      const SharedNoiseModel& sharedNoiseModel,
+      const boost::optional<Pose3> body_P_sensor,
+      const SmartProjectionParams& params = SmartProjectionParams())
+      : Base(sharedNoiseModel, body_P_sensor),
+        params_(params),
+        result_(TriangulationResult::Degenerate()) {}
+  /// @}
+#endif
+
+ private:
 
   /// Serialization function
   friend class boost::serialization::access;

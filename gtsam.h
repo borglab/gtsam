@@ -2501,6 +2501,9 @@ virtual class SmartProjectionPoseFactor: gtsam::NonlinearFactor {
       const gtsam::Pose3& body_P_sensor);
   SmartProjectionPoseFactor(const gtsam::noiseModel::Base* noise,
       const CALIBRATION* K,
+      const gtsam::SmartProjectionParams& params);
+  SmartProjectionPoseFactor(const gtsam::noiseModel::Base* noise,
+      const CALIBRATION* K,
       const gtsam::Pose3& body_P_sensor,
       const gtsam::SmartProjectionParams& params);
 
