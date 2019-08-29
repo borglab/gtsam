@@ -852,15 +852,15 @@ namespace gtsam {
         }
       };
 
-      /// Welsh implements the "Welsh" robust error model (Zhang97ivc)
-      class GTSAM_EXPORT Welsh : public Base {
+      /// Welsch implements the "Welsch" robust error model (Zhang97ivc)
+      class GTSAM_EXPORT Welsch : public Base {
       protected:
         double c_, csquared_;
 
       public:
-        typedef boost::shared_ptr<Welsh> shared_ptr;
+        typedef boost::shared_ptr<Welsch> shared_ptr;
 
-        Welsh(double c = 2.9846, const ReweightScheme reweight = Block);
+        Welsch(double c = 2.9846, const ReweightScheme reweight = Block);
         double weight(double error) const {
           double xc2 = (error*error)/csquared_;
           return std::exp(-xc2);
