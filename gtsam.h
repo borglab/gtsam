@@ -252,9 +252,9 @@ class FactorIndices {
 bool isDebugVersion();
 
 #include <gtsam/base/DSFMap.h>
-class IndexPair { 
-  IndexPair(); 
-  IndexPair(size_t i, size_t j); 
+class IndexPair {
+  IndexPair();
+  IndexPair(size_t i, size_t j);
   size_t i() const;
   size_t j() const;
 };
@@ -1387,6 +1387,15 @@ virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
   // enabling serialization functionality
   void serializable() const;
 };
+
+virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
+  Welsch(double k);
+  static gtsam::noiseModel::mEstimator::Welsch* Create(double k);
+
+  // enabling serialization functionality
+  void serializable() const;
+};
+
 
 }///\namespace mEstimator
 
