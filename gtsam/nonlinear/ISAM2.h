@@ -304,7 +304,15 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   /**
    * Add new variables to the ISAM2 system.
    * @param newTheta Initial values for new variables
+<<<<<<< 1b8d1b8fbb737213aa07f5196357184678e9f564
    * @param variableStatus optional detailed result structure
+=======
+   * @param theta Current solution to be augmented with new initialization
+   * @param delta Current linear delta to be augmented with zeros
+   * @param deltaNewton
+   * @param RgProd
+   * @param keyFormatter Formatter for printing nonlinear keys during debugging
+>>>>>>> remove trailing spaces
    */
   void addVariables(const Values& newTheta,
                     ISAM2Result::DetailedResults* detail = 0);

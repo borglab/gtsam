@@ -362,7 +362,11 @@ void runIncremental()
           Rot2 measuredBearing = measured.bearing();
           double measuredRange = measured.range();
           newVariables.insert(lmKey,
+<<<<<<< 1b8d1b8fbb737213aa07f5196357184678e9f564
             pose.transformFrom(measuredBearing.rotate(Point2(measuredRange, 0.0))));
+=======
+            pose.transform_from(measuredBearing.rotate(Point2(measuredRange, 0.0))));
+>>>>>>> remove trailing spaces
         }
       }
       else

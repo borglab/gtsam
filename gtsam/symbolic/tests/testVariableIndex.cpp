@@ -11,7 +11,11 @@
 
 /**
  * @file    testVariableIndex.cpp
+<<<<<<< 1b8d1b8fbb737213aa07f5196357184678e9f564
  * @brief   Unit tests for VariableIndex class
+=======
+ * @brief
+>>>>>>> remove trailing spaces
  * @author  Richard Roberts
  * @date    Sep 26, 2010
  */
