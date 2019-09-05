@@ -193,7 +193,7 @@ class PybindWrapper(object):
             '..',
             path.abspath(path.join(dir_name, 'docs/parser/output')),
             quiet=True,
-            generate_xml=False
+            generate_xml_flag=False
         )
 
         namespaces = namespace.full_namespaces()

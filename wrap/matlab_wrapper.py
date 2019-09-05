@@ -69,16 +69,7 @@ class MatlabWrapper(object):
     """Id for ordering global functions in the wrapper"""
     global_function_id = 0
 
-    """Set of all the includes in the namespace"""
-    includes = {}
-
-    """Set of all classes in the namespace"""
-    classes = []
-    classes_elems = {}
-
     """Files and their content"""
-    content = []
-
     content = []
 
     def __init__(self, module, module_name, top_module_namespace='',
@@ -350,8 +341,7 @@ class MatlabWrapper(object):
 
             if check_type is None:
                 check_type = self._format_type_name(
-                    arg.ctype.typename,
-                    separator='.')
+                    arg.ctype.typename, separator='.')
 
             check_statement += " && isa(varargin{{{id}}},'{ctype}')".format(
                 id=arg_id, ctype=check_type)
@@ -414,50 +404,6 @@ class MatlabWrapper(object):
                     id=arg_id)), prefix='  ')
 
             arg_id += 1
-
-        return params, body_args
-
-    def _wrapper_unwrap_arguments(self, args, id=0, constructor=False):
-        """Format the interface_parser.Arguments into the form
-        ((a), unsigned char a = unwrap< unsigned char >(in[1]);)
-        """
-        params = ''
-        body_args = ''
-
-        for arg in args.args_list:
-            if params != '':
-                params += ','
-
-            params += arg.name
-
-            if self._is_ref(arg.ctype) and not constructor:
-                body_args += '  {ctype}& {name} = *unwrap_shared_ptr< ' \
-                    '{ctype} >(in[{id}], "ptr_{ctype_camel}");\n'.format(
-                        ctype=self._format_type_name(arg.ctype.typename),
-                        ctype_camel=self._format_type_name(
-                            arg.ctype.typename, separator=''),
-                        name=arg.name,
-                        id=id
-                    )
-            elif self._is_ptr(arg.ctype) and \
-                    arg.ctype.typename.name not in self.ignore_namespace:
-                body_args += '  std::shared_ptr<{ctype_sep}> {name} = unwrap' \
-                    '_shared_ptr< {ctype_sep} >(in[{id}], "ptr_{ctype}");' \
-                    '\n'.format(
-                        ctype_sep=self._format_type_name(arg.ctype.typename),
-                        ctype=self._format_type_name(
-                            arg.ctype.typename, separator=''),
-                        name=arg.name,
-                        id=id
-                    )
-            else:
-                body_args += '  {ctype} {name} = unwrap< {ctype} >(in[' \
-                    '{id}]);\n'.format(
-                        ctype=arg.ctype.typename.name,
-                        name=arg.name,
-                        id=id)
-
-            id += 1
 
         return params, body_args
 
@@ -907,30 +853,6 @@ class MatlabWrapper(object):
 
         return method_text
 
-    def wrap_class_serialize_method(self, namespace_name, inst_class):
-        class_name = inst_class.name
-
-        return 'function varargout = string_serialize(this, varargin)\n'\
-            '  % STRING_SERIALIZE usage: string_serialize() : returns '\
-            'string\n'\
-            '  % Doxygen can be found at '\
-            'http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html\n'\
-            '  if length(varargin) == 0\n'\
-            '    varargout{{1}} = {wrapper}({id}, this, '\
-            'varargin{{:}});\n'\
-            '  else\n'\
-            "    error('Arguments do not match any overload of function "\
-            "{class_name}.string_serialize');\n"\
-            '  end\nend\n\n'\
-            'function sobj = saveobj(obj)\n'\
-            '  % SAVEOBJ Saves the object to a matlab-readable format\n'\
-            '  sobj = obj.string_serialize();\nend\n'.format(
-                wrapper=self._wrapper_name(),
-                id=self._update_wrapper_id(
-                    (namespace_name, inst_class, 'string_serialize', 'serialize')
-                ),
-                class_name=namespace_name + '.' + class_name)
-
     def wrap_instantiated_class(self, instantiated_class, namespace_name=''):
         """Generate comments and code for given class.
 
@@ -1329,28 +1251,10 @@ class MatlabWrapper(object):
 
                 if is_method:
                     shared_obj = \
-                        '  Shared obj = unwrap_shared_ptr<{class_name_sep}>(in[0], "ptr_{class_name}");\n'.format(
+                        '  auto obj = unwrap_shared_ptr<{class_name_sep}>(in[0], "ptr_{class_name}");\n'.format(
                             class_name_sep=class_name_separated,
                             class_name=class_name)
 
-                if return_count >= 1:
-                    return_1 = return_type.type1
-
-                    if return_1.typename.name != 'void' and \
-                            self._is_ptr(return_1) and return_1.typename.name \
-                            not in self.ignore_namespace:
-                        body += '  typedef std::shared_ptr<{}> {}\n'.format(
-                            self._format_type_name(return_1.typename),
-                            'Shared' + return_1.typename.name + ';')
-
-                if return_count == 2:
-                    return_2 = return_type.type2
-
-                    if self._is_ptr(return_2) and return_2.typename.name \
-                            not in self.ignore_namespace:
-                        body += '  typedef std::shared_ptr<{}> {}\n'.format(
-                            self._format_type_name(return_2.typename),
-                            'Shared' + return_2.typename.name + ';')
                 """
                 body += textwrap.dedent('''\
                       typedef std::shared_ptr<{class_name_sep}> Shared;
@@ -1360,9 +1264,7 @@ class MatlabWrapper(object):
                     {return_body}
                 ''')
                 """
-                body += '  typedef std::shared_ptr<{class_name_sep}> Shared;' \
-                    '\n' \
-                    '  checkArguments("{method_name}",nargout,nargin{min1},' \
+                body += '  checkArguments("{method_name}",nargout,nargin{min1},' \
                     '{num_args});\n' \
                     '{shared_obj}' \
                     '{body_args}' \
@@ -1548,8 +1450,6 @@ class MatlabWrapper(object):
             if cls.is_virtual:
                 rtti_reg_mid += '    types.insert(std::make_pair(typeid({}).name(), "{}"));\n'.format(
                     class_name_sep, class_name)
-
-        set_next_case = False
 
         set_next_case = False
 

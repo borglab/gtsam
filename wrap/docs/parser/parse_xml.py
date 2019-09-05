@@ -1,6 +1,6 @@
 import os
 
-from docs.docs import ClassDoc, Doc, Docs, FreeDoc
+from docs.doc_template import ClassDoc, Doc, Docs, FreeDoc
 import os.path as path
 import xml.etree.ElementTree as ET
 
