@@ -52,14 +52,16 @@ boost::shared_ptr<noiseModel::Isotropic> ConvertPose3NoiseModel(
 }
 
 //******************************************************************************
-FrobeniusWormholeFactor::FrobeniusWormholeFactor(
-    Key j1, Key j2, const SO3& R12, size_t p, const SharedNoiseModel& model)
+FrobeniusWormholeFactor::FrobeniusWormholeFactor(Key j1, Key j2, const SO3& R12,
+                                                 size_t p,
+                                                 const SharedNoiseModel& model)
     : NoiseModelFactor2<SOn, SOn>(ConvertPose3NoiseModel(model, p * 3), j1, j2),
-      M_(R12.matrix()),
-      p_(p),
-      pp_(p * p),
-      dimension_(SOn::Dimension(p)),
-      G_(pp_, dimension_) {
+      M_(R12.matrix()),               // 3*3 in all cases
+      p_(p),                          // 4 for SO(4)
+      pp_(p * p),                     // 16 for SO(4)
+      dimension_(SOn::Dimension(p)),  // 6 for SO(4)
+      G_(pp_, dimension_)             // 16*6 for SO(4)
+{
   // Calculate G matrix of vectorized generators
   Matrix Z = zeros(p, p);
   for (size_t j = 0; j < dimension_; j++) {
