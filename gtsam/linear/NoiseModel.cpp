@@ -808,8 +808,25 @@ Tukey::shared_ptr Tukey::Create(double c, const ReweightScheme reweight) {
 }
 
 /* ************************************************************************* */
-// Welsh
+// Welsch
 /* ************************************************************************* */
+Welsch::Welsch(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
+
+void Welsch::print(const std::string &s="") const {
+  std::cout << s << ": Welsch (" << c_ << ")" << std::endl;
+}
+
+bool Welsch::equals(const Base &expected, double tol) const {
+  const Welsch* p = dynamic_cast<const Welsch*>(&expected);
+  if (p == NULL) return false;
+  return std::abs(c_ - p->c_) < tol;
+}
+
+Welsch::shared_ptr Welsch::Create(double c, const ReweightScheme reweight) {
+  return shared_ptr(new Welsch(c, reweight));
+}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 Welsh::Welsh(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
 
 void Welsh::print(const std::string &s="") const {
@@ -825,6 +842,7 @@ bool Welsh::equals(const Base &expected, double tol) const {
 Welsh::shared_ptr Welsh::Create(double c, const ReweightScheme reweight) {
   return shared_ptr(new Welsh(c, reweight));
 }
+#endif
 
 /* ************************************************************************* */
 // GemanMcClure
