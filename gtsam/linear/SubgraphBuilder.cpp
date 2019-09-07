@@ -127,7 +127,8 @@ static vector<size_t> UniqueSampler(const vector<double> &weight,
 
     /* sampling and cache results */
     vector<size_t> samples = iidSampler(localWeights, n - count);
-    for (const size_t &index : samples) {
+    const auto samplesSize = samples.size();
+    for (size_t index = 0; index < samplesSize; index++) {
       if (touched[index] == false) {
         touched[index] = true;
         samples.push_back(index);
