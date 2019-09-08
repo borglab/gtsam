@@ -460,7 +460,6 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
   }
 
   // 7. Linearize new factors
-<<<<<<< 34f1888cafb1fdea6a13b7919973ed83df7bd6ce
   update.linearizeNewFactors(newFactors, theta_, nonlinearFactors_.size(),
                              result.newFactorsIndices, &linearFactors_);
   update.augmentVariableIndex(newFactors, result.newFactorsIndices,
@@ -469,50 +468,6 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
   // 8. Redo top of Bayes tree and update data structures
   recalculate(updateParams, relinKeys, &result);
   if (!result.unusedKeys.empty()) removeVariables(result.unusedKeys);
-=======
-  if (params_.cacheLinearizedFactors) {
-    gttic(linearize);
-    auto linearFactors = newFactors.linearize(theta_);
-    if (params_.findUnusedFactorSlots) {
-      linearFactors_.resize(nonlinearFactors_.size());
-      for (size_t newFactorI = 0; newFactorI < newFactors.size(); ++newFactorI)
-        linearFactors_[result.newFactorsIndices[newFactorI]] =
-            (*linearFactors)[newFactorI];
-    } else {
-      linearFactors_.push_back(*linearFactors);
-    }
-    assert(nonlinearFactors_.size() == linearFactors_.size());
-    gttoc(linearize);
-  }
-  gttoc(linearize_new);
-
-  gttic(augment_VI);
-  // Augment the variable index with the new factors
-  if (params_.findUnusedFactorSlots)
-    variableIndex_.augment(newFactors, result.newFactorsIndices);
-  else
-    variableIndex_.augment(newFactors);
-  gttoc(augment_VI);
-
-  gttic(recalculate);
-  // 8. Redo top of Bayes tree
-  std::shared_ptr<KeySet> replacedKeys;
-  if (!markedKeys.empty() || !observedKeys.empty())
-    replacedKeys = recalculate(markedKeys, relinKeys, observedKeys,
-                               unusedIndices, constrainedKeys, &result);
-
-  // Update replaced keys mask (accumulates until back-substitution takes place)
-  if (replacedKeys)
-    deltaReplacedMask_.insert(replacedKeys->begin(), replacedKeys->end());
-  gttoc(recalculate);
-
-  // Update data structures to remove unused keys
-  if (!unusedKeys.empty()) {
-    gttic(remove_variables);
-    removeVariables(unusedKeys);
-    gttoc(remove_variables);
-  }
->>>>>>> replace boost::shared_ptr with std::shared_ptr
   result.cliques = this->nodes().size();
 
   if (params_.evaluateNonlinearError)
@@ -844,8 +799,11 @@ double ISAM2::error(const VectorValues& x) const {
 }
 
 /* ************************************************************************* */
+<<<<<<< HEAD
 <<<<<<< 34f1888cafb1fdea6a13b7919973ed83df7bd6ce
 =======
+=======
+>>>>>>> f6217b9beebfb7541f9d0c4f9eb9c2f9351f48b6
 static void gradientAtZeroTreeAdder(const std::shared_ptr<ISAM2Clique>& root,
                                     VectorValues* g) {
   // Loop through variables in each clique, adding contributions

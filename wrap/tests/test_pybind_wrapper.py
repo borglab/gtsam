@@ -47,7 +47,7 @@ class TestWrap(unittest.TestCase):
 
         output = path.join(self.TEST_DIR, 'actual-python/geometry_py.cpp')
 
-        if not path.exists(path.join(self.TEST_DIR, '/actual-python')):
+        if not path.exists(path.join(self.TEST_DIR, 'actual-python')):
             os.mkdir(path.join(self.TEST_DIR, 'actual-python'))
 
         with open(output, 'w') as f:

@@ -9,9 +9,8 @@ import template_instantiator as instantiator
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import docs.doc_template as template
-import docs.parser.parse_xml as xml_parser
-
+import docs.parser.parse_doxygen_xml as xml_parser
+from docs.docs import Doc, ClassDoc, FreeDoc, Docs
 
 class PybindWrapper(object):
     def __init__(self,
@@ -86,7 +85,7 @@ class PybindWrapper(object):
             '[]({opt_self}{opt_comma}{args_signature_with_names}){{'\
             '{function_call}'\
             '}}'\
-            '{py_args_names}{doc}){suffix}'.format(
+            '{py_args_names}){suffix}'.format(
                 prefix=prefix,
                 cdef="def_static" if is_static else "def",
                 py_method=py_method if py_method != "print" else "print_",
@@ -184,17 +183,17 @@ class PybindWrapper(object):
             return name
 
     def wrap_namespace(self, namespace):
+        """
+        Wraps all classes and free functions in this namespace.
+        """
         wrapped = ""
         includes = ""
 
-        # TODO: Set generate xml to true
-        dir_name = path.dirname(__file__)
-        docs = xml_parser.parse(
+        docs = xml_parser.ParseDoxygenXML(
             '..',
-            path.abspath(path.join(dir_name, 'docs/parser/output')),
-            quiet=True,
-            generate_xml_flag=False
-        )
+            path.abspath(
+                path.join(path.dirname(__file__), 'docs/parser/output')
+            )).run()
 
         namespaces = namespace.full_namespaces()
         if not self._partial_match(namespaces, self.top_module_namespaces):
