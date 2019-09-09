@@ -31,7 +31,7 @@ VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
 VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
                              const std::string &orderingType);
 
-/// Optimize using Eigen's SimplicailLDLT factorization
+/// Optimize using Eigen's SimplicialLDLT factorization
 VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
                                    const Ordering &ordering);
 VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
