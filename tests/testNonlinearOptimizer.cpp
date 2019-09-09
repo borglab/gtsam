@@ -165,22 +165,22 @@ TEST(NonlinearOptimizer, optimization_method) {
   LevenbergMarquardtParams params;
 
   // Multifrontal QR, will be parallel if TBB installed
-  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_QR;
+  params.linearSolverType = MULTIFRONTAL_QR;
   Values actualMFQR = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
   DOUBLES_EQUAL(0, fg.error(actualMFQR), tol);
 
   // Multifrontal Cholesky (more sensitive to conditioning, but faster)
-  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  params.linearSolverType = MULTIFRONTAL_CHOLESKY;
   Values actualMFChol = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
   DOUBLES_EQUAL(0, fg.error(actualMFChol), tol);
 
   // Test sparse Eigen QR solver
-  params.linearSolverType = LevenbergMarquardtParams::EIGEN_QR;
+  params.linearSolverType = EIGEN_QR;
   Values actualEigenQR = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
   DOUBLES_EQUAL(0, fg.error(actualEigenQR), tol);
 
   // Test sparse Eigen Cholesky solver
-  params.linearSolverType = LevenbergMarquardtParams::EIGEN_CHOLESKY;
+  params.linearSolverType = EIGEN_CHOLESKY;
   Values actualEigenCholesky = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
   DOUBLES_EQUAL(0, fg.error(actualEigenCholesky), tol);
 }

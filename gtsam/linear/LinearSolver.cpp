@@ -10,20 +10,21 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    LinearOptimizer.h
+ * @file    LinearOptimizer.cpp
  * @brief   Common Interface for Linear Optimizers
  * @author  Fan Jiang
  */
 
-#pragma once
+#include "LinearSolver.h"
 
-#include "gtsam/nonlinear/NonlinearOptimizerParams.h"
+namespace gtsam {
 
-class LinearOptimizer {
-public:
-    LinearOptimizer();
-    LinearOptimizer(gtsam::NonlinearOptimizerParams param);
+  std::unique_ptr<LinearSolver> LinearSolver::fromNonlinearParams(gtsam::NonlinearOptimizerParams nlparams) {
+    return std::unique_ptr<LinearSolver>();
+  }
 
-    LinearOptimizer(LinearOptimizer&) = delete;
-};
+  LinearSolver::LinearSolver() {
 
+  }
+
+}
