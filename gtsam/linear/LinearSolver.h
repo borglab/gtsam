@@ -19,6 +19,7 @@
 
 #include <gtsam/linear/LinearSolverParams.h>
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
   class LinearSolver {
@@ -27,16 +28,24 @@ namespace gtsam {
 
     gtsam::LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
 
-    virtual bool isIterative() = 0;
+    virtual bool isIterative() {
+      return false;
+    };
 
-    virtual bool isSequential() = 0;
+    virtual bool isSequential() {
+      return false;
+    };
 
-    static std::unique_ptr<LinearSolver> fromNonlinearParams(gtsam::NonlinearOptimizerParams nlparams);
+    static std::shared_ptr<LinearSolver> fromNonlinearParams(const gtsam::NonlinearOptimizerParams &nlparams);
 
-    virtual VectorValues solve(const GaussianFactorGraph &gfg) = 0;
+    virtual VectorValues solve(const GaussianFactorGraph &gfg, const Ordering &ordering) {
+      throw std::runtime_error(
+              "BUG_CHECK: Calling solve of the base class!");
+    };
 
   protected:
     LinearSolver();
+    virtual ~LinearSolver() = default;
   };
 
 }

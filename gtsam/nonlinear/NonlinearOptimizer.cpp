@@ -24,7 +24,8 @@
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/EigenOptimizer.h>
+#include <gtsam/linear/LinearSolver.h>
+#include <gtsam/linear/SparseEigenSolver.h>
 
 #include <gtsam/inference/Ordering.h>
 
@@ -164,10 +165,9 @@ VectorValues NonlinearOptimizer::solve(
           "NonlinearOptimizer::solve: special cg parameter type is not handled "
           "in LM solver ...");
     }
-  } else if (params.isEigenQR()) {
-      delta = optimizeEigenQR(gfg, params.getOrderingType());
-  } else if (params.isEigenCholesky()) {
-      delta = optimizeEigenCholesky(gfg, params.getOrderingType());
+  } else if (params.isEigenQR() || params.isEigenCholesky()) {
+      LinearSolver solver = LinearSolver::fromNonlinearParams(params);
+      delta = solver.solve(gfg, *optionalOrdering);
   } else {
     throw std::runtime_error(
         "NonlinearOptimizer::solve: Optimization parameter is invalid");
