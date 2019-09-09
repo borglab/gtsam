@@ -10,13 +10,16 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file EigenOptimizer.h
+ * @file SparseEigenSolver.h
  *
- * @brief optimizer linear factor graph using eigen solver as backend
+ * @brief Eigen SparseSolver based linear solver backend for GTSAM
  *
  * @date Aug 2019
  * @author Mandy Xie
+ * @author Fan Jiang
+ * @author Frank Dellaert
  */
+
 #pragma once
 
 #include <gtsam/linear/GaussianFactorGraph.h>

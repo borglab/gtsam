@@ -22,11 +22,14 @@
 #include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
+
+  /** Common Interface Class for all linear solvers */
   class LinearSolver {
   public:
     LinearSolver(LinearSolver &) = delete;
 
-    gtsam::LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
+    // TODO: Remove this and use trait functions instead?
+    gtsam::LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY; ///< The type of this instance
 
     virtual bool isIterative() {
       return false;
@@ -36,15 +39,22 @@ namespace gtsam {
       return false;
     };
 
+    ///
+    /**
+     * Factor method for generating a LinearSolver from legacy NonlinearOptimizerParams
+     * @param nonlinear optimizer parameters
+     * @return pointer to a LinearSolver object
+     */
     static std::shared_ptr<LinearSolver> fromNonlinearParams(const gtsam::NonlinearOptimizerParams &nlparams);
 
     virtual VectorValues solve(const GaussianFactorGraph &gfg, const Ordering &ordering) {
       throw std::runtime_error(
-              "BUG_CHECK: Calling solve of the base class!");
+          "BUG_CHECK: Calling solve of the base class!");
     };
 
   protected:
     LinearSolver();
+
     virtual ~LinearSolver() = default;
   };
 
