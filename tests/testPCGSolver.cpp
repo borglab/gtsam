@@ -129,7 +129,7 @@ TEST( GaussianFactorGraphSystem, multiply_getb)
 TEST( PCGSolver, dummy )
 {
   LevenbergMarquardtParams paramsPCG;
-  paramsPCG.linearSolverType = LevenbergMarquardtParams::Iterative;
+  paramsPCG.linearSolverType = Iterative;
   PCGSolverParameters::shared_ptr pcg = boost::make_shared<PCGSolverParameters>();
   pcg->preconditioner_ = boost::make_shared<DummyPreconditionerParameters>();
   paramsPCG.iterativeParams = pcg;
@@ -150,7 +150,7 @@ TEST( PCGSolver, dummy )
 TEST( PCGSolver, blockjacobi )
 {
   LevenbergMarquardtParams paramsPCG;
-  paramsPCG.linearSolverType = LevenbergMarquardtParams::Iterative;
+  paramsPCG.linearSolverType = Iterative;
   PCGSolverParameters::shared_ptr pcg = boost::make_shared<PCGSolverParameters>();
   pcg->preconditioner_ = boost::make_shared<BlockJacobiPreconditionerParameters>();
   paramsPCG.iterativeParams = pcg;
@@ -171,7 +171,7 @@ TEST( PCGSolver, blockjacobi )
 TEST( PCGSolver, subgraph )
 {
   LevenbergMarquardtParams paramsPCG;
-  paramsPCG.linearSolverType = LevenbergMarquardtParams::Iterative;
+  paramsPCG.linearSolverType = Iterative;
   PCGSolverParameters::shared_ptr pcg = boost::make_shared<PCGSolverParameters>();
   pcg->preconditioner_ = boost::make_shared<SubgraphPreconditionerParameters>();
   paramsPCG.iterativeParams = pcg;

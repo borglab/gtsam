@@ -23,7 +23,7 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphSolver.h>
-#include <gtsam/linear/LinearOptimizerParams.h>
+#include <gtsam/linear/LinearSolverParams.h>
 #include <boost/optional.hpp>
 #include <string>
 
