@@ -15,16 +15,27 @@
  * @author  Fan Jiang
  */
 
-#include "LinearSolver.h"
+#include <gtsam/linear/LinearSolver.h>
+#include <gtsam/linear/SparseEigenSolver.h>
 
 namespace gtsam {
 
-  std::unique_ptr<LinearSolver> LinearSolver::fromNonlinearParams(gtsam::NonlinearOptimizerParams nlparams) {
-    return std::unique_ptr<LinearSolver>();
+  std::shared_ptr<LinearSolver> LinearSolver::fromNonlinearParams(const gtsam::NonlinearOptimizerParams &nlparams) {
+
+    boost::optional<const Ordering&> optionalOrdering;
+    if (nlparams.ordering) optionalOrdering.reset(*nlparams.ordering);
+
+    if (nlparams.isEigenQR()) {
+      return std::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::QR));
+    } else if (nlparams.isEigenCholesky()) {
+      return std::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::CHOLESKY));
+    }
+
+    throw std::runtime_error(
+            "Invalid parameters passed");
+
   }
 
-  LinearSolver::LinearSolver() {
-
-  }
+  LinearSolver::LinearSolver() = default;
 
 }

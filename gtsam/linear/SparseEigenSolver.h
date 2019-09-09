@@ -21,10 +21,35 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/LinearSolver.h>
 #include <Eigen/Sparse>
 #include <string>
 
 namespace gtsam {
+
+class SparseEigenSolver : public gtsam::LinearSolver {
+  public:
+
+    typedef enum {
+      QR,
+      CHOLESKY
+    } SparseEigenSolverType;
+
+
+    explicit SparseEigenSolver(SparseEigenSolverType type);
+
+    bool isIterative() override;
+
+    bool isSequential() override;
+
+    VectorValues solve(const GaussianFactorGraph &gfg, const Ordering &ordering) override;
+
+  protected:
+
+    SparseEigenSolverType solverType = QR;
+
+  };
+
 /// Optimize using Eigen's SparseQR factorization
 VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
                              const Ordering &ordering);

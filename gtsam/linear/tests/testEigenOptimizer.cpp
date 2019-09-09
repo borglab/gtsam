@@ -16,7 +16,7 @@
  *  @author Frank Dellaert
  **/
 
-#include <gtsam/linear/EigenOptimizer.h>
+#include <gtsam/linear/SparseEigenSolver.h>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
