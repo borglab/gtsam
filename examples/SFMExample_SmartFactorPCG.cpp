@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
   // In addition, the *type* of the iterativeParams decides on the type of
   // iterative solver, in this case the SPCG (subgraph PCG)
   LevenbergMarquardtParams parameters;
-  parameters.linearSolverType = NonlinearOptimizerParams::Iterative;
+  parameters.linearSolverType = Iterative;
   parameters.absoluteErrorTol = 1e-10;
   parameters.relativeErrorTol = 1e-10;
   parameters.maxIterations = 500;
