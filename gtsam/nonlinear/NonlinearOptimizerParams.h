@@ -23,6 +23,7 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphSolver.h>
+#include <gtsam/linear/LinearOptimizerParams.h>
 #include <boost/optional.hpp>
 #include <string>
 
@@ -71,17 +72,7 @@ public:
   static Verbosity verbosityTranslator(const std::string &s) ;
   static std::string verbosityTranslator(Verbosity value) ;
 
-  /** See NonlinearOptimizerParams::linearSolverType */
-  enum LinearSolverType {
-    MULTIFRONTAL_CHOLESKY,
-    MULTIFRONTAL_QR,
-    SEQUENTIAL_CHOLESKY,
-    SEQUENTIAL_QR,
-    Iterative, /* Experimental Flag */
-    CHOLMOD, /* Experimental Flag */
-    EIGEN_QR,
-    EIGEN_CHOLESKY,
-  };
+  using LinearSolverType = gtsam::LinearSolverType;
 
   LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
   boost::optional<Ordering> ordering; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
