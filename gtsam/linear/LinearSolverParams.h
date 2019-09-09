@@ -19,17 +19,18 @@
 
 namespace gtsam {
 
-    /** See NonlinearOptimizerParams::linearSolverType */
-    typedef enum LinearSolverType {
-        MULTIFRONTAL_CHOLESKY,
-        MULTIFRONTAL_QR,
-        SEQUENTIAL_CHOLESKY,
-        SEQUENTIAL_QR,
-        Iterative, /* Experimental Flag */
-        CHOLMOD, /* Experimental Flag */
-        EIGEN_QR,
-        EIGEN_CHOLESKY,
-    } LinearSolverType;
+  // TODO: Remove this enum
+  /** See NonlinearOptimizerParams::linearSolverType */
+  typedef enum LinearSolverType {
+    MULTIFRONTAL_CHOLESKY,
+    MULTIFRONTAL_QR,
+    SEQUENTIAL_CHOLESKY,
+    SEQUENTIAL_QR,
+    Iterative, /* Experimental Flag */
+    CHOLMOD, /* Experimental Flag */
+    EIGEN_QR,
+    EIGEN_CHOLESKY,
+  } LinearSolverType;
 }
 
 
