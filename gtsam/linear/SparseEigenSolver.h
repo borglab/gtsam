@@ -49,17 +49,4 @@ class SparseEigenSolver : public gtsam::LinearSolver {
     SparseEigenSolverType solverType = QR;
 
   };
-
-/// Optimize using Eigen's SparseQR factorization
-VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
-                             const Ordering &ordering);
-VectorValues optimizeEigenQR(const GaussianFactorGraph &gfg,
-                             const std::string &orderingType);
-
-/// Optimize using Eigen's SimplicialLDLT factorization
-VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
-                                   const Ordering &ordering);
-VectorValues optimizeEigenCholesky(const GaussianFactorGraph &gfg,
-                                   const std::string &orderingType);
-
 }  // namespace gtsam
