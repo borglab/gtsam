@@ -170,7 +170,7 @@ VectorValues NonlinearOptimizer::solve(
     }
   } else if (params.isEigenQR() || params.isEigenCholesky()) {
       auto solver = LinearSolver::fromNonlinearParams(params);
-      delta = solver->solve(gfg, *optionalOrdering);
+      delta = solver->solve(gfg);
   } else {
     throw std::runtime_error(
         "NonlinearOptimizer::solve: Optimization parameter is invalid");

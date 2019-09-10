@@ -26,9 +26,9 @@ namespace gtsam {
     if (nlparams.ordering) optionalOrdering.reset(*nlparams.ordering);
 
     if (nlparams.isEigenQR()) {
-      return std::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::QR));
+      return std::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::QR, *optionalOrdering));
     } else if (nlparams.isEigenCholesky()) {
-      return std::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::CHOLESKY));
+      return std::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::CHOLESKY, *optionalOrdering));
     }
 
     throw std::runtime_error(

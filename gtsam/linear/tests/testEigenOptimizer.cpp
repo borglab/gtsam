@@ -50,8 +50,8 @@ TEST(EigenOptimizer, optimizeEigenQR) {
   expected.insert(0, Vector2(0.1, -0.2));
   expected.insert(1, Vector2(-0.1, 0.1));
 
-  auto solver = new SparseEigenSolver(SparseEigenSolver::QR);
-  VectorValues actual = solver->solve(A, Ordering::Colamd(A));
+  auto solver = new SparseEigenSolver(SparseEigenSolver::QR, Ordering::Colamd(A));
+  VectorValues actual = solver->solve(A);
   EXPECT(assert_equal(expected, actual));
 }
 
@@ -64,8 +64,8 @@ TEST(EigenOptimizer, optimizeEigenCholesky) {
   expected.insert(0, Vector2(0.1, -0.2));
   expected.insert(1, Vector2(-0.1, 0.1));
 
-  auto solver = new SparseEigenSolver(SparseEigenSolver::CHOLESKY);
-  VectorValues actual = solver->solve(A, Ordering::Colamd(A));
+  auto solver = new SparseEigenSolver(SparseEigenSolver::CHOLESKY, Ordering::Colamd(A));
+  VectorValues actual = solver->solve(A);
   EXPECT(assert_equal(expected, actual));
 }
 

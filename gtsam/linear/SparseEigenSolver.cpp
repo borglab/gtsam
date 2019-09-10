@@ -71,7 +71,7 @@ namespace gtsam {
     return false;
   }
 
-  VectorValues SparseEigenSolver::solve(const GaussianFactorGraph &gfg, const Ordering &ordering) {
+  VectorValues SparseEigenSolver::solve(const GaussianFactorGraph &gfg) {
     if (solverType == QR) {
       gttic_(EigenOptimizer_optimizeEigenQR);
       auto Ab_pair = obtainSparseMatrix(gfg, ordering);
@@ -111,7 +111,8 @@ namespace gtsam {
     return VectorValues(); // Should throw?
   }
 
-  SparseEigenSolver::SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType type) {
+  SparseEigenSolver::SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType type, const Ordering &ordering) {
     solverType = type;
+    this->ordering = ordering;
   }
 }  // namespace gtsam

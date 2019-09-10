@@ -47,7 +47,7 @@ namespace gtsam {
      */
     static std::shared_ptr<LinearSolver> fromNonlinearParams(const gtsam::NonlinearOptimizerParams &nlparams);
 
-    virtual VectorValues solve(const GaussianFactorGraph &gfg, const Ordering &ordering) {
+    virtual VectorValues solve(const GaussianFactorGraph &gfg) {
       throw std::runtime_error(
           "BUG_CHECK: Calling solve of the base class!");
     };

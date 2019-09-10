@@ -39,17 +39,18 @@ class SparseEigenSolver : public gtsam::LinearSolver {
     } SparseEigenSolverType;
 
 
-    explicit SparseEigenSolver(SparseEigenSolverType type);
+    explicit SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType type, const Ordering &ordering);
 
     bool isIterative() override;
 
     bool isSequential() override;
 
-    VectorValues solve(const GaussianFactorGraph &gfg, const Ordering &ordering) override;
+    VectorValues solve(const GaussianFactorGraph &gfg) override;
 
   protected:
 
     SparseEigenSolverType solverType = QR;
 
+    Ordering ordering;
   };
 }  // namespace gtsam
