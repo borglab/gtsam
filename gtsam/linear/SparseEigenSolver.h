@@ -30,7 +30,10 @@
 
 namespace gtsam {
 
-class SparseEigenSolver : public gtsam::LinearSolver {
+  /**
+   * Eigen SparseSolver based Backend class
+   */
+  class SparseEigenSolver : public gtsam::LinearSolver {
   public:
 
     typedef enum {

@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    LinearOptimizer.cpp
- * @brief   Common Interface for Linear Optimizers
+ * @file    LinearSolver.cpp
+ * @brief   Common Interface for Linear Solvers
  * @author  Fan Jiang
  */
 
