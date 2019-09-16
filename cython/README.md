@@ -1,6 +1,8 @@
+# Python Wrapper
+
 This is the Cython/Python wrapper around the GTSAM C++ library.
 
-# INSTALL
+## Install
 
 - if you want to build the gtsam python library for a specific python version (eg 2.7), use the `-DGTSAM_PYTHON_VERSION=2.7` option when running `cmake` otherwise the default interpreter will be used.
     - If the interpreter is inside an environment (such as an anaconda environment or virtualenv environment) then the environment should be active while building gtsam.
@@ -27,7 +29,7 @@ export PYTHONPATH=$PYTHONPATH:<GTSAM_CYTHON_INSTALL_PATH>
     - if you run `setup.py` from the build directory rather than the installation directory, the script will warn you with the message: `setup.py is being run from an unexpected location`.
       Before `make install` is run, not all the components of the package have been copied across, so running `setup.py` from the build directory would result in an incomplete package.
 
-# UNIT TESTS
+## Unit Tests
 
 The Cython toolbox also has a small set of unit tests located in the
 test directory. To run them:
@@ -37,11 +39,11 @@ test directory. To run them:
  python -m unittest discover
 ```
 
-# WRITING YOUR OWN SCRIPTS
+## Writing Your Own Scripts
 
 See the tests for examples.
 
-## Some important notes:
+### Some Important Notes:
 
 - Vector/Matrix:
   + GTSAM expects double-precision floating point vectors and matrices.
@@ -66,7 +68,7 @@ Examples:
       noiseGaussian = dynamic_cast_noiseModel_Gaussian_noiseModel_Base(noiseBase)
 ```
 
-# WRAPPING YOUR OWN PROJECT THAT USES GTSAM
+## Wrapping Your Own Project That Uses GTSAM
 
 - Set PYTHONPATH to include ${GTSAM_CYTHON_INSTALL_PATH}
   + so that it can find gtsam Cython header: gtsam/gtsam.pxd
@@ -88,8 +90,8 @@ wrap_and_install_library_cython("your_project_interface.h"
 #Optional: install_cython_scripts and install_cython_files. See GtsamCythonWrap.cmake.
 ```
 
-KNOWN ISSUES
-============
+## KNOWN ISSUES
+
   - Doesn't work with python3 installed from homebrew
     - size-related issue: can only wrap up to a certain number of classes: up to mEstimator!
     - Guess: 64 vs 32b? disutils Compiler flags?
@@ -99,7 +101,7 @@ KNOWN ISSUES
     - support these constructors by default and declare "delete" for special classes?
 
 
-# TODO
+### TODO
 
 - [ ] allow duplication of parent' functions in child classes. Not allowed for now due to conflicts in Cython.
 - [ ] a common header for boost shared_ptr? (Or wait until everything is switched to std::shared_ptr in gtsam?)
@@ -107,7 +109,7 @@ KNOWN ISSUES
 - [ ] Wrap fixed-size Matrices/Vectors?
 
 
-# Completed/Cancelled:
+### Completed/Cancelled:
 
 - [x] Fix Python tests: don't use " import <package> * ": Bad style!!! (18-03-17 19:50)
 - [x] Unit tests for cython wrappers @done (18-03-17 18:45) -- simply compare generated files

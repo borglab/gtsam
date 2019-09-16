@@ -45,6 +45,10 @@ GTSAM 4 will introduce several new features, most notably Expressions and a pyth
 
 Also, GTSAM 4 introduces traits, a C++ technique that allows optimizing with non-GTSAM types. That opens the door to retiring geometric types such as Point2 and Point3 to pure Eigen types, which we will also do. A significant change which will not trigger a compile error is that zero-initializing of Point2 and Point3 will be deprecated, so please be aware that this might render functions using their default constructor incorrect.
 
+## Wrappers
+
+We provide support for [MATLAB](matlab/README.md) and [Python](cython/README.md) wrappers for GTSAM. Please refer to the linked documents for more details.
+
 ## The Preintegrated IMU Factor
 
 GTSAM includes a state of the art IMU handling scheme based on
