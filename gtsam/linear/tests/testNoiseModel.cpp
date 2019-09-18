@@ -459,15 +459,17 @@ TEST(NoiseModel, WhitenInPlace)
 
 TEST(NoiseModel, robustFunctionHuber)
 {
-  const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0;
+  const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
   const mEstimator::Huber::shared_ptr huber = mEstimator::Huber::Create(k);
   const double weight1 = huber->weight(error1),
                weight2 = huber->weight(error2),
-               weight3 = huber->weight(error3);
+               weight3 = huber->weight(error3),
+               weight4 = huber->weight(error4);
   DOUBLES_EQUAL(1.0, weight1, 1e-8);
   DOUBLES_EQUAL(0.5, weight2, 1e-8);
   // Test negative value to ensure we take absolute value of error.
   DOUBLES_EQUAL(0.5, weight3, 1e-8);
+  DOUBLES_EQUAL(1.0, weight4, 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionGemanMcClure)
