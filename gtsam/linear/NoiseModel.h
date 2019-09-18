@@ -629,7 +629,7 @@ namespace gtsam {
     /**
      * The mEstimator name space contains all robust error functions.
      * It mirrors the exposition at
-     *  http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
+     *  https://members.loria.fr/MOBerger/Enseignement/Master2/Documents/ZhangIVC-97-01.pdf
      * which talks about minimizing \sum \rho(r_i), where \rho is a residual function of choice.
      *
      * To illustrate, let's consider the least-squares (L2), L1, and Huber estimators as examples:
@@ -681,7 +681,7 @@ namespace gtsam {
         /*
          * This method is responsible for returning the weight function for a given amount of error.
          * The weight function is related to the analytic derivative of the residual function. See
-         *  http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
+         *  https://members.loria.fr/MOBerger/Enseignement/Master2/Documents/ZhangIVC-97-01.pdf
          * for details. This method is required when optimizing cost functions with robust penalties
          * using iteratively re-weighted least squares.
          */
@@ -776,7 +776,7 @@ namespace gtsam {
 
         Huber(double k = 1.345, const ReweightScheme reweight = Block);
         double weight(double error) const {
-          return (error < k_) ? (1.0) : (k_ / fabs(error));
+          return (std::abs(error) < k_) ? (1.0) : (k_ / fabs(error));
         }
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
