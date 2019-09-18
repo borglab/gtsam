@@ -165,7 +165,7 @@ TEST(Vector, weightedPseudoinverse )
 
   // verify
   EXPECT(assert_equal(expected,actual));
-  EXPECT(fabs(expPrecision-precision) < 1e-5);
+  EXPECT(std::abs(expPrecision-precision) < 1e-5);
 }
 
 /* ************************************************************************* */

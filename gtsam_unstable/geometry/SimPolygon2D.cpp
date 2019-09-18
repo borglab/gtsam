@@ -77,7 +77,7 @@ bool SimPolygon2D::contains(const Point2& c) const {
     Point2 dab = ab.b() - ab.a();
     Point2 dac = c - ab.a();
     double cross = dab.x() * dac.y() - dab.y() * dac.x();
-    if (fabs(cross) < 1e-6) // check for on one of the edges
+    if (std::abs(cross) < 1e-6) // check for on one of the edges
       return true;
     bool side = cross > 0;
     // save the first side found
@@ -241,14 +241,14 @@ double SimPolygon2D::randomDistance(double mu, double sigma, double min_dist) {
   boost::variate_generator<boost::minstd_rand&, boost::normal_distribution<double> > gen_d(rng, norm_dist);
   double d = -10.0;
   for (size_t i=0; i<max_it; ++i) {
-    d = fabs(gen_d());
+    d = std::abs(gen_d());
     if (d > min_dist)
       return d;
   }
   cout << "Non viable distance: " << d << " with mu = " << mu << " sigma = " << sigma
        << " min_dist = " << min_dist << endl;
   throw runtime_error("Failed to find a viable distance");
-  return fabs(norm_dist(rng));
+  return std::abs(norm_dist(rng));
 }
 
 /* ***************************************************************** */
@@ -313,7 +313,7 @@ Pose2 SimPolygon2D::randomFreePose(double boundary_size, const vector<SimPolygon
 
 /* ***************************************************************** */
 bool SimPolygon2D::insideBox(double s, const Point2& p) {
-  return fabs(p.x()) < s/2.0 && fabs(p.y()) < s/2.0;
+  return std::abs(p.x()) < s/2.0 && std::abs(p.y()) < s/2.0;
 }
 
 /* ***************************************************************** */

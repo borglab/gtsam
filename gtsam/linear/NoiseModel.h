@@ -750,7 +750,7 @@ namespace gtsam {
 
         Fair(double c = 1.3998, const ReweightScheme reweight = Block);
         double weight(double error) const {
-          return 1.0 / (1.0 + fabs(error) / c_);
+          return 1.0 / (1.0 + std::abs(error) / c_);
         }
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
@@ -832,7 +832,7 @@ namespace gtsam {
 
         Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
         double weight(double error) const {
-          if (std::fabs(error) <= c_) {
+          if (std::abs(error) <= c_) {
             double xc2 = error*error/csquared_;
             return (1.0-xc2)*(1.0-xc2);
           }
@@ -952,14 +952,14 @@ namespace gtsam {
 
           L2WithDeadZone(double k, const ReweightScheme reweight = Block);
           double residual(double error) const {
-            const double abs_error = fabs(error);
+            const double abs_error = std::abs(error);
             return (abs_error < k_) ? 0.0 : 0.5*(k_-abs_error)*(k_-abs_error);
           }
           double weight(double error) const {
             // note that this code is slightly uglier than above, because there are three distinct
             // cases to handle (left of deadzone, deadzone, right of deadzone) instead of the two
             // cases (deadzone, non-deadzone) above.
-            if (fabs(error) <= k_) return 0.0;
+            if (std::abs(error) <= k_) return 0.0;
             else if (error > k_) return (-k_+error)/error;
             else return (k_+error)/error;
           }

@@ -167,7 +167,7 @@ int main(int argc, char** argv) {
       RangeFactor<Pose2, Point2> factor(i, symbol('L', j), range, rangeNoise);
       // Throw out obvious outliers based on current landmark estimates
       Vector error = factor.unwhitenedError(landmarkEstimates);
-      if (k <= 200 || fabs(error[0]) < 5)
+      if (k <= 200 || std::abs(error[0]) < 5)
         newFactors.push_back(factor);
       k = k + 1;
       countK = countK + 1;
