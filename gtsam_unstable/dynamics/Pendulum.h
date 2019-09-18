@@ -37,7 +37,7 @@ public:
 
   ///Constructor.  k1: q_{k+1}, k: q_k, velKey: velocity variable depending on the chosen method, h: time step
   PendulumFactor1(Key k1, Key k, Key velKey, double h, double mu = 1000.0)
-  : Base(noiseModel::Constrained::All(1, fabs(mu)), k1, k, velKey), h_(h) {}
+  : Base(noiseModel::Constrained::All(1, std::abs(mu)), k1, k, velKey), h_(h) {}
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
@@ -85,7 +85,7 @@ public:
 
   ///Constructor.  vk1: v_{k+1}, vk: v_k, qkey: q's key depending on the chosen method, h: time step
   PendulumFactor2(Key vk1, Key vk, Key qkey, double h, double r = 1.0, double g = 9.81, double mu = 1000.0)
-  : Base(noiseModel::Constrained::All(1, fabs(mu)), vk1, vk, qkey), h_(h), g_(g), r_(r) {}
+  : Base(noiseModel::Constrained::All(1, std::abs(mu)), vk1, vk, qkey), h_(h), g_(g), r_(r) {}
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
@@ -135,7 +135,7 @@ public:
   ///Constructor
   PendulumFactorPk(Key pKey, Key qKey, Key qKey1,
       double h, double m = 1.0, double r = 1.0, double g = 9.81, double alpha = 0.0, double mu = 1000.0)
-  : Base(noiseModel::Constrained::All(1, fabs(mu)), pKey, qKey, qKey1),
+  : Base(noiseModel::Constrained::All(1, std::abs(mu)), pKey, qKey, qKey1),
     h_(h), m_(m), r_(r), g_(g), alpha_(alpha) {}
 
   /// @return a deep copy of this factor
@@ -191,7 +191,7 @@ public:
   ///Constructor
   PendulumFactorPk1(Key pKey1, Key qKey, Key qKey1,
       double h, double m = 1.0, double r = 1.0, double g = 9.81, double alpha = 0.0, double mu = 1000.0)
-  : Base(noiseModel::Constrained::All(1, fabs(mu)), pKey1, qKey, qKey1),
+  : Base(noiseModel::Constrained::All(1, std::abs(mu)), pKey1, qKey, qKey1),
     h_(h), m_(m), r_(r), g_(g), alpha_(alpha) {}
 
   /// @return a deep copy of this factor

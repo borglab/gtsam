@@ -201,9 +201,9 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
 
       double minAbsoluteTolerance = params_.relativeErrorTol * currentState->error;
       // if the change is small we terminate
-      if (fabs(costChange) < minAbsoluteTolerance) {
+      if (std::abs(costChange) < minAbsoluteTolerance) {
         if (verbose)
-          cout << "fabs(costChange)=" << fabs(costChange)
+          cout << "abs(costChange)=" << std::abs(costChange)
                << "  minAbsoluteTolerance=" << minAbsoluteTolerance
                << " (relativeErrorTol=" << params_.relativeErrorTol << ")" << endl;
         stopSearchingLambda = true;

@@ -107,7 +107,7 @@ double lineSearch(const S &system, const V currentValues, const W &gradient) {
             newStep - resphi * (newStep - minStep);
 
     if ((maxStep - minStep)
-        < tau * (std::fabs(testStep) + std::fabs(newStep))) {
+        < tau * (std::abs(testStep) + std::abs(newStep))) {
       return 0.5 * (minStep + maxStep);
     }
 

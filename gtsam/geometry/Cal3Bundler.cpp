@@ -59,9 +59,9 @@ void Cal3Bundler::print(const std::string& s) const {
 
 /* ************************************************************************* */
 bool Cal3Bundler::equals(const Cal3Bundler& K, double tol) const {
-  if (fabs(f_ - K.f_) > tol || fabs(k1_ - K.k1_) > tol
-      || fabs(k2_ - K.k2_) > tol || fabs(u0_ - K.u0_) > tol
-      || fabs(v0_ - K.v0_) > tol)
+  if (std::abs(f_ - K.f_) > tol || std::abs(k1_ - K.k1_) > tol
+      || std::abs(k2_ - K.k2_) > tol || std::abs(u0_ - K.u0_) > tol
+      || std::abs(v0_ - K.v0_) > tol)
     return false;
   return true;
 }

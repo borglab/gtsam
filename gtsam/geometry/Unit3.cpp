@@ -68,7 +68,7 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
 /* ************************************************************************* */
 // Get the axis of rotation with the minimum projected length of the point
 static Point3 CalculateBestAxis(const Point3& n) {
-  double mx = fabs(n.x()), my = fabs(n.y()), mz = fabs(n.z());
+  double mx = std::abs(n.x()), my = std::abs(n.y()), mz = std::abs(n.z());
   if ((mx <= my) && (mx <= mz)) {
     return Point3(1.0, 0.0, 0.0);
   } else if ((my <= mx) && (my <= mz)) {
