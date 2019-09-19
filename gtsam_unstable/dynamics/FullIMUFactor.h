@@ -61,7 +61,7 @@ public:
     return f && Base::equals(e) &&
         equal_with_abs_tol(accel_, f->accel_, tol) &&
         equal_with_abs_tol(gyro_, f->gyro_, tol) &&
-        fabs(dt_ - f->dt_) < tol;
+        std::abs(dt_ - f->dt_) < tol;
   }
 
   void print(const std::string& s="", const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const {

@@ -84,7 +84,7 @@ bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol) {
   for(size_t i=0; i<m; ++i) {
     if(std::isnan(vec1[i]) ^ std::isnan(vec2[i]))
       return false;
-    if(fabs(vec1[i] - vec2[i]) > tol)
+    if(std::abs(vec1[i] - vec2[i]) > tol)
       return false;
   }
   return true;
@@ -97,7 +97,7 @@ bool equal_with_abs_tol(const SubVector& vec1, const SubVector& vec2, double tol
   for(size_t i=0; i<m; ++i) {
     if(std::isnan(vec1[i]) ^ std::isnan(vec2[i]))
       return false;
-    if(fabs(vec1[i] - vec2[i]) > tol)
+    if(std::abs(vec1[i] - vec2[i]) > tol)
       return false;
   }
   return true;
@@ -145,14 +145,14 @@ bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol) {
   bool flag = false;   double scale = 1.0;
   size_t m = vec1.size();
   for(size_t i=0; i<m; i++) {
-    if((fabs(vec1[i])>tol&&fabs(vec2[i])<tol) || (fabs(vec1[i])<tol&&fabs(vec2[i])>tol))
+    if((std::abs(vec1[i])>tol && std::abs(vec2[i])<tol) || (std::abs(vec1[i])<tol && std::abs(vec2[i])>tol))
       return false;
     if(vec1[i] == 0 && vec2[i] == 0) continue;
     if (!flag) {
       scale = vec1[i] / vec2[i];
       flag = true ;
     }
-    else if (fabs(vec1[i] - vec2[i]*scale) > tol) return false;
+    else if (std::abs(vec1[i] - vec2[i]*scale) > tol) return false;
   }
   return flag;
 }
@@ -213,7 +213,7 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
 
   // Check once for zero entries of a. TODO: really needed ?
   vector<bool> isZero;
-  for (size_t i = 0; i < m; ++i) isZero.push_back(fabs(a[i]) < 1e-9);
+  for (size_t i = 0; i < m; ++i) isZero.push_back(std::abs(a[i]) < 1e-9);
 
   // If there is a valid (a!=0) constraint (sigma==0) return the first one
   for (size_t i = 0; i < m; ++i) {

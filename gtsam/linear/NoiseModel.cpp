@@ -865,7 +865,7 @@ void GemanMcClure::print(const std::string &s="") const {
 bool GemanMcClure::equals(const Base &expected, double tol) const {
   const GemanMcClure* p = dynamic_cast<const GemanMcClure*>(&expected);
   if (p == NULL) return false;
-  return fabs(c_ - p->c_) < tol;
+  return std::abs(c_ - p->c_) < tol;
 }
 
 GemanMcClure::shared_ptr GemanMcClure::Create(double c, const ReweightScheme reweight) {
@@ -897,7 +897,7 @@ void DCS::print(const std::string &s="") const {
 bool DCS::equals(const Base &expected, double tol) const {
   const DCS* p = dynamic_cast<const DCS*>(&expected);
   if (p == NULL) return false;
-  return fabs(c_ - p->c_) < tol;
+  return std::abs(c_ - p->c_) < tol;
 }
 
 DCS::shared_ptr DCS::Create(double c, const ReweightScheme reweight) {
@@ -921,7 +921,7 @@ void L2WithDeadZone::print(const std::string &s="") const {
 bool L2WithDeadZone::equals(const Base &expected, double tol) const {
   const L2WithDeadZone* p = dynamic_cast<const L2WithDeadZone*>(&expected);
   if (p == NULL) return false;
-  return fabs(k_ - p->k_) < tol;
+  return std::abs(k_ - p->k_) < tol;
 }
 
 L2WithDeadZone::shared_ptr L2WithDeadZone::Create(double k, const ReweightScheme reweight) {
