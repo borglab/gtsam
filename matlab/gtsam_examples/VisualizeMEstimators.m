@@ -7,57 +7,69 @@ x = linspace(-10, 10, 1000);
 % x = linspace(-10, 10, 21)
 
 [rho, psi, w] = fair(x);
+figure(1);
 plot_rho(x, rho, 1, -1, 30)
 title('Fair');
-plot_psi(x, psi, 7, -3, 3);
-plot_w(x, w, 13, 3);
+plot_psi(x, psi, 2, -3, 3);
+plot_w(x, w, 3, 3);
+saveas(figure(1), 'fair.png');
 
 [rho, psi, w] = huber(x);
-plot_rho(x, rho, 2, -1, 30);
+figure(2);
+plot_rho(x, rho, 1, -1, 30);
 title('Huber');
-plot_psi(x, psi, 8, -15, 15);
-plot_w(x, w, 14, 5);
+plot_psi(x, psi, 2, -15, 15);
+plot_w(x, w, 3, 5);
+saveas(figure(2), 'huber.png');
 
 [rho, psi, w] = cauchy(x);
-plot_rho(x, rho, 3, -0.1, 0.1);
+figure(3);
+plot_rho(x, rho, 1, -0.1, 0.1);
 title('Cauchy');
-plot_psi(x, psi, 9, -0.2, 0.2);
-plot_w(x, w, 15, 1.5);
+plot_psi(x, psi, 2, -0.2, 0.2);
+plot_w(x, w, 3, 1.5);
+saveas(figure(3), 'cauchy.png');
 
 [rho, psi, w] = gemancclure(x);
-plot_rho(x, rho, 4, -1, 1);
+figure(4);
+plot_rho(x, rho, 1, -1, 1);
 title('Geman-McClure');
-plot_psi(x, psi, 10, -1, 1);
-plot_w(x, w, 16, 1.5);
+plot_psi(x, psi, 2, -1, 1);
+plot_w(x, w, 3, 1.5);
+saveas(figure(4), 'gemanmcclure.png');
 
 [rho, psi, w] = welsch(x);
-plot_rho(x, rho, 5, -5, 10);
+figure(5);
+plot_rho(x, rho, 1, -5, 10);
 title('Welsch');
-plot_psi(x, psi, 11, -2, 2);
-plot_w(x, w, 17, 2);
+plot_psi(x, psi, 2, -2, 2);
+plot_w(x, w, 3, 2);
+saveas(figure(5), 'welsch.png');
 
 [rho, psi, w] = tukey(x);
-plot_rho(x, rho, 6, -5, 10);
+figure(6);
+plot_rho(x, rho, 1, -5, 10);
 title('Tukey');
-plot_psi(x, psi, 12, -2, 2);
-plot_w(x, w, 18, 2);
+plot_psi(x, psi, 2, -2, 2);
+plot_w(x, w, 3, 2);
+saveas(figure(6), 'tukey.png');
 
 function plot_rho(x, y, idx, yll, ylu)
-    subplot(3, 6, idx);
+    subplot(3, 1, idx);
     plot(x, y);
     xlim([-15, 15]);
     ylim([yll, ylu]);
 end
 
 function plot_psi(x, y, idx, yll, ylu)
-    subplot(3, 6, idx);
+    subplot(3, 1, idx);
     plot(x, y);
     xlim([-15, 15]);
     ylim([yll, ylu]);
 end
 
 function plot_w(x, y, idx, yl)
-    subplot(3, 6, idx);
+    subplot(3, 1, idx);
     plot(x, y);
     xlim([-15, 15]);
     ylim([-yl, yl]);
@@ -131,7 +143,7 @@ function [rho, psi, w] = welsch(x)
     c = 2.9846;
     rho = (c^2 / 2) * ( 1 - exp(-(x ./ c) .^2 ));
     
-    est = noiseModel.mEstimator.Welsh(c);
+    est = noiseModel.mEstimator.Welsch(c);
 
     w = zeros(size(x));
     for i = 1:size(x, 2)
