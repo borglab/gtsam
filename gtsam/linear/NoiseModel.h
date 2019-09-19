@@ -635,9 +635,9 @@ namespace gtsam {
      * To illustrate, let's consider the least-squares (L2), L1, and Huber estimators as examples:
      *
      * Name        Symbol          Least-Squares   L1-norm    Huber
-     * Residual    \rho(x)         0.5*x^2         |x|        0.5*x^2 if x<k, 0.5*k^2 + k|x-k| otherwise
-     * Derivative  \phi(x)         x               sgn(x)     x       if x<k, k sgn(x)         otherwise
-     * Weight      w(x)=\phi(x)/x  1               1/|x|      1       if x<k, k/|x|            otherwise
+     * Residual    \rho(x)         0.5*x^2         |x|        0.5*x^2 if |x|<k, 0.5*k^2 + k|x-k| otherwise
+     * Derivative  \phi(x)         x               sgn(x)     x       if |x|<k, k sgn(x)         otherwise
+     * Weight      w(x)=\phi(x)/x  1               1/|x|      1       if |x|<k, k/|x|            otherwise
      *
      * With these definitions, D(\rho(x), p) = \phi(x) D(x,p) = w(x) x D(x,p) = w(x) D(L2(x), p),
      * and hence we can solve the equivalent weighted least squares problem \sum w(r_i) \rho(r_i)
