@@ -1,6 +1,4 @@
-# GTSAM - Georgia Tech Smoothing and Mapping Library
-
-## MATLAB wrapper
+# MATLAB Wrapper
 
 http://borg.cc.gatech.edu/projects/gtsam
 

@@ -41,7 +41,7 @@ void TangentPreintegration::resetIntegration() {
 //------------------------------------------------------------------------------
 bool TangentPreintegration::equals(const TangentPreintegration& other,
     double tol) const {
-  return p_->equals(*other.p_, tol) && fabs(deltaTij_ - other.deltaTij_) < tol
+  return p_->equals(*other.p_, tol) && std::abs(deltaTij_ - other.deltaTij_) < tol
       && biasHat_.equals(other.biasHat_, tol)
       && equal_with_abs_tol(preintegrated_, other.preintegrated_, tol)
       && equal_with_abs_tol(preintegrated_H_biasAcc_,

@@ -464,11 +464,11 @@ def overloadedGlobalFunction_0(args, kwargs):
     try:
         __params = process_args(['a'], args, kwargs)
         a = <int>(__params[0])
-        return_value = pxd_overloadedGlobalFunction(a)
-        return True, ndarray_copy(return_value).squeeze()
     except:
         return False, None
 
+    return_value = pxd_overloadedGlobalFunction(a)
+    return True, ndarray_copy(return_value).squeeze()
 def overloadedGlobalFunction_1(args, kwargs):
     cdef list __params
     cdef VectorXd return_value
@@ -476,8 +476,8 @@ def overloadedGlobalFunction_1(args, kwargs):
         __params = process_args(['a', 'b'], args, kwargs)
         a = <int>(__params[0])
         b = <double>(__params[1])
-        return_value = pxd_overloadedGlobalFunction(a, b)
-        return True, ndarray_copy(return_value).squeeze()
     except:
         return False, None
 
+    return_value = pxd_overloadedGlobalFunction(a, b)
+    return True, ndarray_copy(return_value).squeeze()

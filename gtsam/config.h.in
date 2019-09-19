@@ -25,7 +25,7 @@
 #define GTSAM_VERSION_STRING "@GTSAM_VERSION_STRING@"
 
 // Paths to example datasets distributed with GTSAM
-#define GTSAM_SOURCE_TREE_DATASET_DIR "@PROJECT_SOURCE_DIR@/examples/Data"
+#define GTSAM_SOURCE_TREE_DATASET_DIR "@GTSAM_SOURCE_DIR@/examples/Data"
 #define GTSAM_INSTALLED_DATASET_DIR "@GTSAM_TOOLBOX_INSTALL_PATH@/gtsam_examples/Data"
 
 // Whether GTSAM is compiled to use quaternions for Rot3 (otherwise uses rotation matrices)
@@ -51,6 +51,12 @@
 
 // Whether Eigen with MKL will use OpenMP (if OpenMP was found, Eigen uses MKL, and GTSAM_WITH_EIGEN_MKL_OPENMP is enabled in CMake)
 #cmakedefine GTSAM_USE_EIGEN_MKL_OPENMP
+
+// Eigen library version (needed to avoid mixing versions, which often leads
+// to segfaults)
+#cmakedefine GTSAM_EIGEN_VERSION_WORLD @GTSAM_EIGEN_VERSION_WORLD@
+#cmakedefine GTSAM_EIGEN_VERSION_MAJOR @GTSAM_EIGEN_VERSION_MAJOR@
+#cmakedefine GTSAM_EIGEN_VERSION_MINOR @GTSAM_EIGEN_VERSION_MINOR@
 
 // The default allocator to use
 #cmakedefine GTSAM_ALLOCATOR_BOOSTPOOL

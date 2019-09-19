@@ -42,7 +42,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-class GTSAM_EXPORT Point3 : public Vector3 {
+class Point3 : public Vector3 {
 
   public:
 
@@ -63,10 +63,10 @@ class GTSAM_EXPORT Point3 : public Vector3 {
     /// @{
 
     /** print with optional string */
-    void print(const std::string& s = "") const;
+	GTSAM_EXPORT void print(const std::string& s = "") const;
 
     /** equals with an tolerance */
-    bool equals(const Point3& p, double tol = 1e-9) const;
+	GTSAM_EXPORT bool equals(const Point3& p, double tol = 1e-9) const;
 
     /// @}
     /// @name Group
@@ -80,21 +80,21 @@ class GTSAM_EXPORT Point3 : public Vector3 {
     /// @{
 
     /** distance between two points */
-    double distance(const Point3& p2, OptionalJacobian<1, 3> H1 = boost::none,
+	GTSAM_EXPORT double distance(const Point3& p2, OptionalJacobian<1, 3> H1 = boost::none,
                     OptionalJacobian<1, 3> H2 = boost::none) const;
 
     /** Distance of the point from the origin, with Jacobian */
-    double norm(OptionalJacobian<1,3> H = boost::none) const;
+	GTSAM_EXPORT double norm(OptionalJacobian<1,3> H = boost::none) const;
 
     /** normalize, with optional Jacobian */
-    Point3 normalized(OptionalJacobian<3, 3> H = boost::none) const;
+	GTSAM_EXPORT Point3 normalized(OptionalJacobian<3, 3> H = boost::none) const;
 
     /** cross product @return this x q */
-    Point3 cross(const Point3 &q, OptionalJacobian<3, 3> H_p = boost::none, //
+	GTSAM_EXPORT Point3 cross(const Point3 &q, OptionalJacobian<3, 3> H_p = boost::none, //
                                   OptionalJacobian<3, 3> H_q = boost::none) const;
 
     /** dot product @return this * q*/
-    double dot(const Point3 &q, OptionalJacobian<1, 3> H_p = boost::none, //
+	GTSAM_EXPORT double dot(const Point3 &q, OptionalJacobian<1, 3> H_p = boost::none, //
                                 OptionalJacobian<1, 3> H_q = boost::none) const;
 
     /// @}
@@ -130,9 +130,9 @@ class GTSAM_EXPORT Point3 : public Vector3 {
     static Point3 Expmap(const Vector3& v) { return Point3(v);}
     inline double dist(const Point3& q) const { return (q - *this).norm(); }
     Point3 normalize(OptionalJacobian<3, 3> H = boost::none) const { return normalized(H);}
-    Point3 add(const Point3& q, OptionalJacobian<3, 3> H1 = boost::none,
+	GTSAM_EXPORT Point3 add(const Point3& q, OptionalJacobian<3, 3> H1 = boost::none,
                OptionalJacobian<3, 3> H2 = boost::none) const;
-    Point3 sub(const Point3& q, OptionalJacobian<3, 3> H1 = boost::none,
+	GTSAM_EXPORT Point3 sub(const Point3& q, OptionalJacobian<3, 3> H1 = boost::none,
                OptionalJacobian<3, 3> H2 = boost::none) const;
   /// @}
 #endif

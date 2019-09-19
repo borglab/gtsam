@@ -41,7 +41,7 @@ class VectorValues;
 /**
  * parameters for iterative linear solvers
  */
-class GTSAM_EXPORT IterativeOptimizationParameters {
+class IterativeOptimizationParameters {
 
 public:
 
@@ -63,27 +63,27 @@ public:
   inline Verbosity verbosity() const {
     return verbosity_;
   }
-  std::string getVerbosity() const;
-  void setVerbosity(const std::string &s);
+  GTSAM_EXPORT std::string getVerbosity() const;
+  GTSAM_EXPORT void setVerbosity(const std::string &s);
 
   /* matlab interface */
-  void print() const;
+  GTSAM_EXPORT void print() const;
 
   /* virtual print function */
-  virtual void print(std::ostream &os) const;
+  GTSAM_EXPORT virtual void print(std::ostream &os) const;
 
   /* for serialization */
   friend std::ostream& operator<<(std::ostream &os,
       const IterativeOptimizationParameters &p);
 
-  static Verbosity verbosityTranslator(const std::string &s);
-  static std::string verbosityTranslator(Verbosity v);
+  GTSAM_EXPORT static Verbosity verbosityTranslator(const std::string &s);
+  GTSAM_EXPORT static std::string verbosityTranslator(Verbosity v);
 };
 
 /**
  * Base class for Iterative Solvers like SubgraphSolver
  */
-class GTSAM_EXPORT IterativeSolver {
+class IterativeSolver {
 public:
   typedef boost::shared_ptr<IterativeSolver> shared_ptr;
   IterativeSolver() {
@@ -92,12 +92,12 @@ public:
   }
 
   /* interface to the nonlinear optimizer, without metadata, damping and initial estimate */
-  VectorValues optimize(const GaussianFactorGraph &gfg,
+  GTSAM_EXPORT VectorValues optimize(const GaussianFactorGraph &gfg,
       boost::optional<const KeyInfo&> = boost::none,
       boost::optional<const std::map<Key, Vector>&> lambda = boost::none);
 
   /* interface to the nonlinear optimizer, without initial estimate */
-  VectorValues optimize(const GaussianFactorGraph &gfg, const KeyInfo &keyInfo,
+  GTSAM_EXPORT VectorValues optimize(const GaussianFactorGraph &gfg, const KeyInfo &keyInfo,
       const std::map<Key, Vector> &lambda);
 
   /* interface to the nonlinear optimizer that the subclasses have to implement */

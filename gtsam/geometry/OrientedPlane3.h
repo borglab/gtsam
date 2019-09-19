@@ -78,7 +78,7 @@ public:
 
   /// The equals function with tolerance
   bool equals(const OrientedPlane3& s, double tol = 1e-9) const {
-    return (n_.equals(s.n_, tol) && (fabs(d_ - s.d_) < tol));
+    return (n_.equals(s.n_, tol) && (std::abs(d_ - s.d_) < tol));
   }
 
   /// @}

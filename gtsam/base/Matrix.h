@@ -90,7 +90,7 @@ bool equal_with_abs_tol(const Eigen::DenseBase<MATRIX>& A, const Eigen::DenseBas
     for(size_t j=0; j<n1; j++) {
       if(boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
         return false;
-      else if(fabs(A(i,j) - B(i,j)) > tol)
+      else if(std::abs(A(i,j) - B(i,j)) > tol)
         return false;
     }
   return true;
@@ -299,7 +299,7 @@ GTSAM_EXPORT std::pair<Matrix,Matrix> qr(const Matrix& A);
  * @param A is the input matrix, and is the output
  * @param clear_below_diagonal enables zeroing out below diagonal
  */
-void inplace_QR(Matrix& A);
+GTSAM_EXPORT void inplace_QR(Matrix& A);
 
 /**
  * Imperative algorithm for in-place full elimination with

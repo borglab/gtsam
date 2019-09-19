@@ -79,7 +79,7 @@ namespace gtsam {
     bool equals(const Node& q, double tol) const {
       const Leaf* other = dynamic_cast<const Leaf*> (&q);
       if (!other) return false;
-      return fabs(double(this->constant_ - other->constant_)) < tol;
+      return std::abs(double(this->constant_ - other->constant_)) < tol;
     }
 
     /** print */

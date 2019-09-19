@@ -79,7 +79,7 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
   size_t index = 0;
   for (auto key_factors: variableIndex) {
     // Arrange factor indices into COLAMD format
-    const VariableIndex::Factors& column = key_factors.second;
+    const FactorIndices& column = key_factors.second;
     for(size_t factorIndex: column) {
       A[count++] = (int) factorIndex; // copy sparse column
     }

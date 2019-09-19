@@ -145,7 +145,7 @@ cdef extern from "folder/path/to/Test.h":
 
 
 cdef extern from "folder/path/to/Test.h" namespace "":
-        VectorXd pxd_aGlobalFunction "aGlobalFunction"()
+        VectorXd pxd_aGlobalFunction "aGlobalFunction"() except +
 cdef extern from "folder/path/to/Test.h" namespace "":
-        VectorXd pxd_overloadedGlobalFunction "overloadedGlobalFunction"(int a)
-        VectorXd pxd_overloadedGlobalFunction "overloadedGlobalFunction"(int a, double b)
+        VectorXd pxd_overloadedGlobalFunction "overloadedGlobalFunction"(int a) except +
+        VectorXd pxd_overloadedGlobalFunction "overloadedGlobalFunction"(int a, double b) except +

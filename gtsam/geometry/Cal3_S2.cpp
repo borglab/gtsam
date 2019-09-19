@@ -64,15 +64,15 @@ void Cal3_S2::print(const std::string& s) const {
 
 /* ************************************************************************* */
 bool Cal3_S2::equals(const Cal3_S2& K, double tol) const {
-  if (fabs(fx_ - K.fx_) > tol)
+  if (std::abs(fx_ - K.fx_) > tol)
     return false;
-  if (fabs(fy_ - K.fy_) > tol)
+  if (std::abs(fy_ - K.fy_) > tol)
     return false;
-  if (fabs(s_ - K.s_) > tol)
+  if (std::abs(s_ - K.s_) > tol)
     return false;
-  if (fabs(u0_ - K.u0_) > tol)
+  if (std::abs(u0_ - K.u0_) > tol)
     return false;
-  if (fabs(v0_ - K.v0_) > tol)
+  if (std::abs(v0_ - K.v0_) > tol)
     return false;
   return true;
 }

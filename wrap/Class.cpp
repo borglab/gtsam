@@ -342,17 +342,21 @@ vector<Class> Class::expandTemplate(Str templateArg,
 
 /* ************************************************************************* */
 void Class::addMethod(bool verbose, bool is_const, Str methodName,
-    const ArgumentList& argumentList, const ReturnValue& returnValue,
-    const Template& tmplate) {
+                      const ArgumentList& argumentList,
+                      const ReturnValue& returnValue, const Template& tmplate) {
   // Check if templated
   if (tmplate.valid()) {
-    templateMethods_[methodName].addOverload(methodName, argumentList,
-                                             returnValue, is_const,
-                                             tmplate.argName(), verbose);
+    try {
+      templateMethods_[methodName].addOverload(methodName, argumentList,
+                                               returnValue, is_const,
+                                               tmplate.argName(), verbose);
+    } catch (const std::runtime_error& e) {
+      throw std::runtime_error("Class::addMethod: error adding " + name_ +
+                               "::" + methodName + "\n" + e.what());
+    }
     // Create method to expand
     // For all values of the template argument, create a new method
-    for(const Qualified& instName: tmplate.argValues()) {
-
+    for (const Qualified& instName : tmplate.argValues()) {
       const TemplateSubstitution ts(tmplate.argName(), instName, *this);
       // substitute template in arguments
       ArgumentList expandedArgs = argumentList.expandTemplate(ts);
@@ -361,15 +365,27 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
       // Now stick in new overload stack with expandedMethodName key
       // but note we use the same, unexpanded methodName in overload
       string expandedMethodName = methodName + instName.name();
-      methods_[expandedMethodName].addOverload(methodName, expandedArgs,
-          expandedRetVal, is_const, instName, verbose);
+      try {
+        methods_[expandedMethodName].addOverload(methodName, expandedArgs,
+                                                 expandedRetVal, is_const,
+                                                 instName, verbose);
+      } catch (const std::runtime_error& e) {
+        throw std::runtime_error("Class::addMethod: error adding " + name_ +
+                                 "::" + expandedMethodName + "\n" + e.what());
+      }
     }
   } else {
-    // just add overload
-    methods_[methodName].addOverload(methodName, argumentList, returnValue,
-        is_const, boost::none, verbose);
-    nontemplateMethods_[methodName].addOverload(methodName, argumentList, returnValue,
-        is_const, boost::none, verbose);
+    try {
+      // just add overload
+      methods_[methodName].addOverload(methodName, argumentList, returnValue,
+                                       is_const, boost::none, verbose);
+      nontemplateMethods_[methodName].addOverload(methodName, argumentList,
+                                                  returnValue, is_const,
+                                                  boost::none, verbose);
+    } catch (const std::runtime_error& e) {
+      throw std::runtime_error("Class::addMethod: error adding " + name_ +
+                               "::" + methodName + "\n" + e.what());
+    }
   }
 }
 

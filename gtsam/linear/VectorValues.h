@@ -29,6 +29,7 @@
 
 #include <map>
 #include <string>
+#include <iosfwd>
 
 namespace gtsam {
 
@@ -228,8 +229,11 @@ namespace gtsam {
      */
     const_iterator find(Key j) const { return values_.find(j); }
 
+    /// overload operator << to print to stringstream
+    friend std::ostream& operator<<(std::ostream&, const VectorValues&);
+
     /** print required by Testable for unit testing */
-    void print(const std::string& str = "VectorValues: ",
+    void print(const std::string& str = "VectorValues",
         const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     /** equals required by Testable for unit testing */

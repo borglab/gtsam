@@ -398,7 +398,7 @@ The local coordinates
  and note that 
 \begin_inset Formula 
 \[
-\frac{d\Phi_{R_{0}}\left(\omega t\right)}{dt}\biggr\vert_{t=0}=\frac{dR_{0}\exp\left(\Skew{\omega t}\right)}{dt}\biggr\vert_{t=0}=R_{0}\Skew{\omega}
+\frac{d\Phi_{R_{0}}\left(\omega t\right)}{dt}\biggr\vert_{t=0}=\frac{dR_{0}\exp\left(\Skew{\omega t}\right)}{dt}\biggr\vert_{t=0}=R_{0}\Skew{\omega t}
 \]
 
 \end_inset

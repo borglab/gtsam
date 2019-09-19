@@ -234,8 +234,8 @@ struct GTSAM_EXPORT ISAM2Params {
               Factorization _factorization = ISAM2Params::CHOLESKY,
               bool _cacheLinearizedFactors = true,
               const KeyFormatter& _keyFormatter =
-                  DefaultKeyFormatter  ///< see ISAM2::Params::keyFormatter
-              )
+                  DefaultKeyFormatter,  ///< see ISAM2::Params::keyFormatter,
+              bool _enableDetailedResults = false)
       : optimizationParams(_optimizationParams),
         relinearizeThreshold(_relinearizeThreshold),
         relinearizeSkip(_relinearizeSkip),
@@ -244,7 +244,7 @@ struct GTSAM_EXPORT ISAM2Params {
         factorization(_factorization),
         cacheLinearizedFactors(_cacheLinearizedFactors),
         keyFormatter(_keyFormatter),
-        enableDetailedResults(false),
+        enableDetailedResults(_enableDetailedResults),
         enablePartialRelinearizationCheck(false),
         findUnusedFactorSlots(false) {}
 

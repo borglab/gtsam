@@ -47,6 +47,9 @@ namespace gtsam {
   // Non-guarded use led to crashes, and solved in commit cd35db2
   bool GTSAM_EXPORT guardedIsDebug(const std::string& s);
   void GTSAM_EXPORT guardedSetDebug(const std::string& s, const bool v);
+
+  // function to check if compiled version has debug information
+  bool GTSAM_EXPORT isDebugVersion();
 }
 
 #undef ISDEBUG

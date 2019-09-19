@@ -64,6 +64,18 @@ typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
 
 /**
+  * Ensure we are not including a different version of Eigen in user code than
+  * while compiling gtsam, since it can lead to hard-to-understand runtime
+  * crashes.
+  */
+#if defined(GTSAM_EIGEN_VERSION_WORLD)
+static_assert(
+    GTSAM_EIGEN_VERSION_WORLD==EIGEN_WORLD_VERSION &&
+    GTSAM_EIGEN_VERSION_MAJOR==EIGEN_MAJOR_VERSION,
+  "Error: GTSAM was built against a different version of Eigen");
+#endif
+
+/**
  * print without optional string, must specify cout yourself
  */
 GTSAM_EXPORT void print(const Vector& v, const std::string& s, std::ostream& stream);

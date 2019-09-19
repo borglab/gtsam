@@ -248,10 +248,13 @@ class FactorIndices {
 
 /** gtsam namespace functions */
 
+#include <gtsam/base/debug.h>
+bool isDebugVersion();
+
 #include <gtsam/base/DSFMap.h>
-class IndexPair { 
-  IndexPair(); 
-  IndexPair(size_t i, size_t j); 
+class IndexPair {
+  IndexPair();
+  IndexPair(size_t i, size_t j);
   size_t i() const;
   size_t j() const;
 };
@@ -1385,6 +1388,15 @@ virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 };
 
+virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
+  Welsch(double k);
+  static gtsam::noiseModel::mEstimator::Welsch* Create(double k);
+
+  // enabling serialization functionality
+  void serializable() const;
+};
+
+
 }///\namespace mEstimator
 
 virtual class Robust : gtsam::noiseModel::Base {
@@ -1886,6 +1898,7 @@ class NonlinearFactorGraph {
   gtsam::KeyVector keyVector() const;
 
   // NonlinearFactorGraph
+  void printErrors(const gtsam::Values& values) const;
   double error(const gtsam::Values& values) const;
   double probPrime(const gtsam::Values& values) const;
   gtsam::Ordering orderingCOLAMD() const;
@@ -2495,6 +2508,9 @@ virtual class SmartProjectionPoseFactor: gtsam::NonlinearFactor {
   SmartProjectionPoseFactor(const gtsam::noiseModel::Base* noise,
       const CALIBRATION* K,
       const gtsam::Pose3& body_P_sensor);
+  SmartProjectionPoseFactor(const gtsam::noiseModel::Base* noise,
+      const CALIBRATION* K,
+      const gtsam::SmartProjectionParams& params);
   SmartProjectionPoseFactor(const gtsam::noiseModel::Base* noise,
       const CALIBRATION* K,
       const gtsam::Pose3& body_P_sensor,

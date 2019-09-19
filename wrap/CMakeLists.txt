@@ -26,6 +26,9 @@ if (NOT GTSAM_WRAP_SERIALIZATION)
   target_compile_definitions(wrap_lib PUBLIC -DWRAP_DISABLE_SERIALIZE)
 endif()
 
+# Apply build flags:
+gtsam_apply_build_flags(wrap_lib)
+
 target_link_libraries(wrap_lib ${WRAP_BOOST_LIBRARIES})
 target_include_directories(wrap_lib PUBLIC ${Boost_INCLUDE_DIR})
 

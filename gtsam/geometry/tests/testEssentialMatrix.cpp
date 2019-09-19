@@ -218,10 +218,10 @@ TEST (EssentialMatrix, epipoles) {
   }
 
   // check rank 2 constraint
-  CHECK(fabs(S(2))<1e-10);
+  CHECK(std::abs(S(2))<1e-10);
 
   // check epipoles not at infinity
-  CHECK(fabs(U(2,2))>1e-10 && fabs(V(2,2))>1e-10);
+  CHECK(std::abs(U(2,2))>1e-10 && std::abs(V(2,2))>1e-10);
 
   // Check epipoles
 

@@ -46,7 +46,7 @@ void ManifoldPreintegration::resetIntegration() {
 //------------------------------------------------------------------------------
 bool ManifoldPreintegration::equals(const ManifoldPreintegration& other,
     double tol) const {
-  return p_->equals(*other.p_, tol) && fabs(deltaTij_ - other.deltaTij_) < tol
+  return p_->equals(*other.p_, tol) && std::abs(deltaTij_ - other.deltaTij_) < tol
       && biasHat_.equals(other.biasHat_, tol)
       && deltaXij_.equals(other.deltaXij_, tol)
       && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol)

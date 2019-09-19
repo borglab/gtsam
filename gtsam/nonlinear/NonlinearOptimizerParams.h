@@ -31,7 +31,7 @@ namespace gtsam {
 /** The common parameters for Nonlinear optimizers.  Most optimizers
  * deriving from NonlinearOptimizer also subclass the parameters.
  */
-class GTSAM_EXPORT NonlinearOptimizerParams {
+class NonlinearOptimizerParams {
 public:
   /** See NonlinearOptimizerParams::verbosity */
   enum Verbosity {
@@ -52,7 +52,7 @@ public:
 
   virtual ~NonlinearOptimizerParams() {
   }
-  virtual void print(const std::string& str = "") const;
+  GTSAM_EXPORT virtual void print(const std::string& str = "") const;
 
   size_t getMaxIterations() const { return maxIterations; }
   double getRelativeErrorTol() const { return relativeErrorTol; }
@@ -68,8 +68,8 @@ public:
     verbosity = verbosityTranslator(src);
   }
 
-  static Verbosity verbosityTranslator(const std::string &s) ;
-  static std::string verbosityTranslator(Verbosity value) ;
+  GTSAM_EXPORT static Verbosity verbosityTranslator(const std::string &s) ;
+  GTSAM_EXPORT static std::string verbosityTranslator(Verbosity value) ;
 
   /** See NonlinearOptimizerParams::linearSolverType */
   enum LinearSolverType {
@@ -144,10 +144,10 @@ public:
   }
 
 private:
-  std::string linearSolverTranslator(LinearSolverType linearSolverType) const;
-  LinearSolverType linearSolverTranslator(const std::string& linearSolverType) const;
-  std::string orderingTypeTranslator(Ordering::OrderingType type) const;
-  Ordering::OrderingType orderingTypeTranslator(const std::string& type) const;
+  GTSAM_EXPORT std::string linearSolverTranslator(LinearSolverType linearSolverType) const;
+  GTSAM_EXPORT LinearSolverType linearSolverTranslator(const std::string& linearSolverType) const;
+  GTSAM_EXPORT std::string orderingTypeTranslator(Ordering::OrderingType type) const;
+  GTSAM_EXPORT Ordering::OrderingType orderingTypeTranslator(const std::string& type) const;
 };
 
 // For backward compatibility:

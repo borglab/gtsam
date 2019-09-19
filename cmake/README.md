@@ -1,5 +1,4 @@
-GTSAMCMakeTools
-===============
+# GTSAMCMakeTools
 
 This is the collection of GTSAM CMake tools that may be useful in external projects.  The way to use this collection is by first making a find_package call:
 
@@ -7,8 +6,7 @@ This is the collection of GTSAM CMake tools that may be useful in external proje
 
 which will add a directory containing the GTSAM CMake tools to the CMAKE_MODULE_PATH variable.  After that, you may include the files you would like to use.  These files and the functions they define are explained below.
 
-GtsamBuildTypes
----------------
+## GtsamBuildTypes
 
     include(GtsamBuildTypes)
 
@@ -17,8 +15,8 @@ Including this file immediately sets up the following build types and a drop-dow
 *   `Debug`
 *   `Release`
 *   `RelWithDebInfo`
-*   `Profiling`:  All optimizations enabled and minimal debug symbols
-*   `Timing`:  Defines the symbol GTSAM_ENABLE_TIMING for using GTSAM timing instrumentation
+*   `Profiling`: All optimizations enabled and minimal debug symbols
+*   `Timing`: Defines the symbol GTSAM_ENABLE_TIMING for using GTSAM timing instrumentation
 
 It also configures several minor details, as follows:
 
@@ -30,8 +28,7 @@ It defines the following functions:
 *   `gtsam_assign_source_folders( [files] )` Organizes files in the IDE into folders to reflect the actual directory structure of those files.  Folders will be determined relative to the current source folder when this function is called.
 *   `gtsam_assign_all_source_folders()` Calls `gtsam_assign_source_folders` on all cpp, c, and h files recursively in the current source folder.
 
-GtsamTesting
-------------
+## GtsamTesting
 
     include(GtsamTesting)
 
@@ -70,8 +67,7 @@ Defines two useful functions for creating CTest unit tests.  Also immediately cr
                        an empty string "" if nothing needs to be excluded.
         linkLibraries: The list of libraries to link to.
 
-GtsamMatlabWrap
----------------
+## GtsamMatlabWrap
 
     include(GtsamMatlabWrap)
     
@@ -97,8 +93,7 @@ Defines functions for generating MATLAB wrappers.  Also immediately creates seve
         extraMexFlags:    Any *additional* flags to pass to the compiler when building
                           the wrap code.  Normally, leave this empty.
 
-GtsamMakeConfigFile
--------------------
+## GtsamMakeConfigFile
 
     include(GtsamMakeConfigFile)
      

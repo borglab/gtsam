@@ -121,7 +121,7 @@ class Class : public Point3 {
     return norm3(*this, H);
   }
   bool equals(const Class &q, double tol) const {
-    return (fabs(x() - q.x()) < tol && fabs(y() - q.y()) < tol && fabs(z() - q.z()) < tol);
+    return (std::abs(x() - q.x()) < tol && std::abs(y() - q.y()) < tol && std::abs(z() - q.z()) < tol);
   }
   void print(const string& s) const { cout << s << *this << endl;}
 };

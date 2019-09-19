@@ -152,7 +152,7 @@ bool AHRS::isAidingAvailable(const Mechanization_bRn2& mech,
 
   double mu_f = f_.norm() - ge; // accelerometer same magnitude as local gravity ?
   double mu_u = u_.norm(); // gyro says we are not maneuvering ?
-  return (fabs(mu_f)<0.5 && mu_u < 5.0 / 180.0 * M_PI);
+  return (std::abs(mu_f)<0.5 && mu_u < 5.0 / 180.0 * M_PI);
 }
 
 /* ************************************************************************* */

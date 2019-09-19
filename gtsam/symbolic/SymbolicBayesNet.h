@@ -27,7 +27,7 @@ namespace gtsam {
   /** Symbolic Bayes Net
    *  \nosubgrouping
    */
-  class GTSAM_EXPORT SymbolicBayesNet : public FactorGraph<SymbolicConditional> {
+  class SymbolicBayesNet : public FactorGraph<SymbolicConditional> {
 
   public:
 
@@ -61,14 +61,14 @@ namespace gtsam {
     /// @{
 
     /** Check equality */
-    bool equals(const This& bn, double tol = 1e-9) const;
+    GTSAM_EXPORT bool equals(const This& bn, double tol = 1e-9) const;
 
     /// @}
 
     /// @name Standard Interface
     /// @{
 
-    void saveGraph(const std::string &s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    GTSAM_EXPORT void saveGraph(const std::string &s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /// @}
 

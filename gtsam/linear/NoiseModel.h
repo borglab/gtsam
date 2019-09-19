@@ -629,7 +629,7 @@ namespace gtsam {
     /**
      * The mEstimator name space contains all robust error functions.
      * It mirrors the exposition at
-     *  http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
+     *  https://members.loria.fr/MOBerger/Enseignement/Master2/Documents/ZhangIVC-97-01.pdf
      * which talks about minimizing \sum \rho(r_i), where \rho is a residual function of choice.
      *
      * To illustrate, let's consider the least-squares (L2), L1, and Huber estimators as examples:
@@ -681,7 +681,7 @@ namespace gtsam {
         /*
          * This method is responsible for returning the weight function for a given amount of error.
          * The weight function is related to the analytic derivative of the residual function. See
-         *  http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
+         *  https://members.loria.fr/MOBerger/Enseignement/Master2/Documents/ZhangIVC-97-01.pdf
          * for details. This method is required when optimizing cost functions with robust penalties
          * using iteratively re-weighted least squares.
          */
@@ -750,7 +750,7 @@ namespace gtsam {
 
         Fair(double c = 1.3998, const ReweightScheme reweight = Block);
         double weight(double error) const {
-          return 1.0 / (1.0 + fabs(error) / c_);
+          return 1.0 / (1.0 + std::abs(error) / c_);
         }
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
@@ -776,7 +776,8 @@ namespace gtsam {
 
         Huber(double k = 1.345, const ReweightScheme reweight = Block);
         double weight(double error) const {
-          return (error < k_) ? (1.0) : (k_ / fabs(error));
+          double absError = std::abs(error);
+          return (absError < k_) ? (1.0) : (k_ / absError);
         }
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
@@ -832,7 +833,7 @@ namespace gtsam {
 
         Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
         double weight(double error) const {
-          if (std::fabs(error) <= c_) {
+          if (std::abs(error) <= c_) {
             double xc2 = error*error/csquared_;
             return (1.0-xc2)*(1.0-xc2);
           }
@@ -852,7 +853,38 @@ namespace gtsam {
         }
       };
 
-      /// Welsh implements the "Welsh" robust error model (Zhang97ivc)
+      /// Welsch implements the "Welsch" robust error model (Zhang97ivc)
+      class GTSAM_EXPORT Welsch : public Base {
+      protected:
+        double c_, csquared_;
+
+      public:
+        typedef boost::shared_ptr<Welsch> shared_ptr;
+
+        Welsch(double c = 2.9846, const ReweightScheme reweight = Block);
+        double weight(double error) const {
+          double xc2 = (error*error)/csquared_;
+          return std::exp(-xc2);
+        }
+        void print(const std::string &s) const;
+        bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
+
+      private:
+        /** Serialization function */
+        friend class boost::serialization::access;
+        template<class ARCHIVE>
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+          ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+          ar & BOOST_SERIALIZATION_NVP(c_);
+        }
+      };
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+      /// @name Deprecated
+      /// @{
+      // Welsh implements the "Welsch" robust error model (Zhang97ivc)
+      // This was misspelled in previous versions of gtsam and should be
+      // removed in the future.
       class GTSAM_EXPORT Welsh : public Base {
       protected:
         double c_, csquared_;
@@ -878,6 +910,7 @@ namespace gtsam {
           ar & BOOST_SERIALIZATION_NVP(c_);
         }
       };
+#endif
 
       /// GemanMcClure implements the "Geman-McClure" robust error model
       /// (Zhang97ivc).
@@ -952,14 +985,14 @@ namespace gtsam {
 
           L2WithDeadZone(double k, const ReweightScheme reweight = Block);
           double residual(double error) const {
-            const double abs_error = fabs(error);
+            const double abs_error = std::abs(error);
             return (abs_error < k_) ? 0.0 : 0.5*(k_-abs_error)*(k_-abs_error);
           }
           double weight(double error) const {
             // note that this code is slightly uglier than above, because there are three distinct
             // cases to handle (left of deadzone, deadzone, right of deadzone) instead of the two
             // cases (deadzone, non-deadzone) above.
-            if (fabs(error) <= k_) return 0.0;
+            if (std::abs(error) <= k_) return 0.0;
             else if (error > k_) return (-k_+error)/error;
             else return (k_+error)/error;
           }

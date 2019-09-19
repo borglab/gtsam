@@ -121,7 +121,7 @@ namespace gtsam {
 
     // access
     const Vector& prior() const { return prior_; }
-    const std::vector<bool>& mask() const { return  mask_; }
+    const std::vector<size_t>& mask() const { return  mask_; }
     const Matrix& H() const { return H_; }
 
   protected:

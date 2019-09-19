@@ -221,7 +221,7 @@ static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
 #else
   // The closed-form formula in Barfoot14tro eq. (102)
   double phi = w.norm();
-  if (fabs(phi)>1e-5) {
+  if (std::abs(phi)>1e-5) {
     const double sinPhi = sin(phi), cosPhi = cos(phi);
     const double phi2 = phi * phi, phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
     // Invert the sign of odd-order terms to have the right Jacobian
