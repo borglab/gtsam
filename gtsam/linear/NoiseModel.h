@@ -776,7 +776,8 @@ namespace gtsam {
 
         Huber(double k = 1.345, const ReweightScheme reweight = Block);
         double weight(double error) const {
-          return (std::abs(error) < k_) ? (1.0) : (k_ / fabs(error));
+          double absError = std::abs(error);
+          return (absError < k_) ? (1.0) : (k_ / absError);
         }
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
