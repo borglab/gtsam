@@ -46,9 +46,9 @@ JacobianFactor linearizeNumerically(const NoiseModelFactor& factor,
 
   // Loop over all variables
   const double one_over_2delta = 1.0 / (2.0 * delta);
-  VectorValues dX = values.zeroVectors();
   for(Key key: factor) {
     // Compute central differences using the values struct.
+    VectorValues dX = values.zeroVectors();
     const size_t cols = dX.dim(key);
     Matrix J = Matrix::Zero(rows, cols);
     for (size_t col = 0; col < cols; ++col) {

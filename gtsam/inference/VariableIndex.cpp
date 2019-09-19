@@ -55,4 +55,17 @@ void VariableIndex::outputMetisFormat(ostream& os) const {
   os << flush;
 }
 
+/* ************************************************************************* */
+void VariableIndex::augmentExistingFactor(const FactorIndex factorIndex, const KeySet & newKeys)
+{
+  gttic(VariableIndex_augmentExistingFactor);
+
+  for(const Key key: newKeys) {
+    index_[key].push_back(factorIndex);
+    ++nEntries_;
+  }
+
+  gttoc(VariableIndex_augmentExistingFactor);
+}
+
 }

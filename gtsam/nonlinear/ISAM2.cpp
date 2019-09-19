@@ -128,7 +128,7 @@ FactorIndexSet ISAM2::getAffectedFactors(const KeyList& keys) const {
 GaussianFactorGraph::shared_ptr ISAM2::relinearizeAffectedFactors(
     const FastList<Key>& affectedKeys, const KeySet& relinKeys) const {
   gttic(getAffectedFactors);
-  KeySet candidates = getAffectedFactors(affectedKeys);
+  FactorIndexSet candidates = getAffectedFactors(affectedKeys);
   gttoc(getAffectedFactors);
 
   gttic(affectedKeysSet);
@@ -139,7 +139,7 @@ GaussianFactorGraph::shared_ptr ISAM2::relinearizeAffectedFactors(
 
   gttic(check_candidates_and_linearize);
   auto linearized = boost::make_shared<GaussianFactorGraph>();
-  for (Key idx : candidates) {
+  for (const FactorIndex idx : candidates) {
     bool inside = true;
     bool useCachedLinear = params_.cacheLinearizedFactors;
     for (Key key : nonlinearFactors_[idx]->keys()) {
@@ -544,6 +544,21 @@ ISAM2Result ISAM2::update(
     const boost::optional<FastList<Key> >& noRelinKeys,
     const boost::optional<FastList<Key> >& extraReelimKeys,
     bool force_relinearize) {
+
+  ISAM2UpdateParams params;
+  params.constrainedKeys = constrainedKeys;
+  params.extraReelimKeys = extraReelimKeys;
+  params.force_relinearize = force_relinearize;
+  params.noRelinKeys = noRelinKeys;
+  params.removeFactorIndices = removeFactorIndices;
+
+  return update(newFactors, newTheta, params);
+}
+
+/* ************************************************************************* */
+ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
+    const Values& newTheta,
+    const ISAM2UpdateParams& updateParams) {
   const bool debug = ISDEBUG("ISAM2 update");
   const bool verbose = ISDEBUG("ISAM2 update verbose");
 
@@ -561,7 +576,7 @@ ISAM2Result ISAM2::update(
   if (params_.enableDetailedResults)
     result.detail = ISAM2Result::DetailedResults();
   const bool relinearizeThisStep =
-      force_relinearize || (params_.enableRelinearization &&
+      updateParams.force_relinearize || (params_.enableRelinearization &&
                             update_count_ % params_.relinearizeSkip == 0);
 
   if (verbose) {
@@ -585,8 +600,8 @@ ISAM2Result ISAM2::update(
 
   // Remove the removed factors
   NonlinearFactorGraph removeFactors;
-  removeFactors.reserve(removeFactorIndices.size());
-  for (const auto index : removeFactorIndices) {
+  removeFactors.reserve(updateParams.removeFactorIndices.size());
+  for (const auto index : updateParams.removeFactorIndices) {
     removeFactors.push_back(nonlinearFactors_[index]);
     nonlinearFactors_.remove(index);
     if (params_.cacheLinearizedFactors) linearFactors_.remove(index);
@@ -594,7 +609,8 @@ ISAM2Result ISAM2::update(
 
   // Remove removed factors from the variable index so we do not attempt to
   // relinearize them
-  variableIndex_.remove(removeFactorIndices.begin(), removeFactorIndices.end(),
+  variableIndex_.remove(updateParams.removeFactorIndices.begin(),
+                        updateParams.removeFactorIndices.end(),
                         removeFactors);
 
   // Compute unused keys and indices
@@ -649,9 +665,18 @@ ISAM2Result ISAM2::update(
         markedRemoveKeys.end());  // Add to the overall set of marked keys
   }
   // Also mark any provided extra re-eliminate keys
-  if (extraReelimKeys) {
-    for (Key key : *extraReelimKeys) {
+  if (updateParams.extraReelimKeys) {
+    for (Key key : *updateParams.extraReelimKeys) {
       markedKeys.insert(key);
+    }
+  }
+  // Also, keys that were not observed in existing factors, but whose affected
+  // keys have been extended now (e.g. smart factors)
+  if (updateParams.newAffectedKeys) {
+    for (const auto &factorAddedKeys : *updateParams.newAffectedKeys) {
+      const auto factorIdx = factorAddedKeys.first;
+      const auto& affectedKeys = nonlinearFactors_.at(factorIdx)->keys();
+      markedKeys.insert(affectedKeys.begin(),affectedKeys.end());
     }
   }
 
@@ -661,16 +686,13 @@ ISAM2Result ISAM2::update(
       result.detail->variableStatus[key].isObserved = true;
     }
   }
-  // NOTE: we use assign instead of the iterator constructor here because this
-  // is a vector of size_t, so the constructor unintentionally resolves to
-  // vector(size_t count, Key value) instead of the iterator constructor.
+
   KeyVector observedKeys;
-  observedKeys.reserve(markedKeys.size());
   for (Key index : markedKeys) {
-    if (unusedIndices.find(index) ==
-        unusedIndices.end())  // Only add if not unused
-      observedKeys.push_back(
-          index);  // Make a copy of these, as we'll soon add to them
+    // Only add if not unused
+    if (unusedIndices.find(index) == unusedIndices.end())
+      // Make a copy of these, as we'll soon add to them
+      observedKeys.push_back(index);
   }
   gttoc(gather_involved_keys);
 
@@ -695,8 +717,8 @@ ISAM2Result ISAM2::update(
     for (Key key : fixedVariables_) {
       relinKeys.erase(key);
     }
-    if (noRelinKeys) {
-      for (Key key : *noRelinKeys) {
+    if (updateParams.noRelinKeys) {
+      for (Key key : *updateParams.noRelinKeys) {
         relinKeys.erase(key);
       }
     }
@@ -773,14 +795,24 @@ ISAM2Result ISAM2::update(
     variableIndex_.augment(newFactors, result.newFactorsIndices);
   else
     variableIndex_.augment(newFactors);
+
+  // Augment it with existing factors which now affect to more variables:
+  if (updateParams.newAffectedKeys) {
+    for (const auto &factorAddedKeys : *updateParams.newAffectedKeys) {
+      const auto factorIdx = factorAddedKeys.first;
+      variableIndex_.augmentExistingFactor(
+            factorIdx, factorAddedKeys.second);
+    }
+  }
   gttoc(augment_VI);
 
   gttic(recalculate);
   // 8. Redo top of Bayes tree
   boost::shared_ptr<KeySet> replacedKeys;
   if (!markedKeys.empty() || !observedKeys.empty())
-    replacedKeys = recalculate(markedKeys, relinKeys, observedKeys,
-                               unusedIndices, constrainedKeys, &result);
+    replacedKeys = recalculate(
+          markedKeys, relinKeys, observedKeys, unusedIndices,
+          updateParams.constrainedKeys, &result);
 
   // Update replaced keys mask (accumulates until back-substitution takes place)
   if (replacedKeys)

@@ -202,7 +202,7 @@ endif()
 
 ###############################################################################
 # Find TBB
-find_package(TBB COMPONENTS tbb tbbmalloc)
+find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
 
 # Set up variables if we're using TBB
 if(TBB_FOUND AND GTSAM_WITH_TBB)
@@ -568,7 +568,7 @@ message(STATUS "==============================================================="
 
 # Print warnings at the end
 if(GTSAM_WITH_TBB AND NOT TBB_FOUND)
-	message(WARNING "TBB was not found - this is ok, but note that GTSAM parallelization will be disabled.  Set GTSAM_WITH_TBB to 'Off' to avoid this warning.")
+	message(WARNING "TBB 4.4 or newer was not found - this is ok, but note that GTSAM parallelization will be disabled.  Set GTSAM_WITH_TBB to 'Off' to avoid this warning.")
 endif()
 if(GTSAM_WITH_EIGEN_MKL AND NOT MKL_FOUND)
 	message(WARNING "MKL was not found - this is ok, but note that MKL will be disabled.  Set GTSAM_WITH_EIGEN_MKL to 'Off' to disable this warning.  See INSTALL.md for notes on performance.")
