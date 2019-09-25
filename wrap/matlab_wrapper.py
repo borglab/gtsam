@@ -6,6 +6,7 @@ import interface_parser as parser
 import template_instantiator as instantiator
 
 from functools import reduce
+from functools import partial
 
 
 class MatlabWrapper(object):
@@ -377,7 +378,6 @@ class MatlabWrapper(object):
             if self._is_ref(arg.ctype) and not constructor:
                 ctype_camel = self._format_type_name(
                     arg.ctype.typename, separator='')
-            # TODO: Add \n if not last argument (don't need to use textwrap)
                 body_args += textwrap.indent(textwrap.dedent('''\
                    {ctype}& {name} = *unwrap_shared_ptr< {ctype} >(in[{id}], "ptr_{ctype_camel}");
                 '''.format(
@@ -388,8 +388,9 @@ class MatlabWrapper(object):
             elif self._is_ptr(arg.ctype) and \
                     arg.ctype.typename.name not in self.ignore_namespace:
                 body_args += textwrap.indent(textwrap.dedent('''\
-                    std::shared_ptr<{ctype_sep}> {name} = unwrap_shared_ptr< {ctype_sep} >(in[{id}], "ptr_{ctype}");
+                    {std_boost}::shared_ptr<{ctype_sep}> {name} = unwrap_shared_ptr< {ctype_sep} >(in[{id}], "ptr_{ctype}");
                 '''.format(
+                    std_boost='std' if constructor else 'boost',
                     ctype_sep=self._format_type_name(arg.ctype.typename),
                     ctype=self._format_type_name(
                         arg.ctype.typename, separator=''),
@@ -997,8 +998,8 @@ class MatlabWrapper(object):
 
         return textwrap.indent(textwrap.dedent('''\
             {{
-            Shared{name}* ret = new Shared{name}({shared_obj});
-            out[{id}] = wrap_shared_ptr(ret,"{name}");
+            boost::shared_ptr<{name}> shared({shared_obj});
+            out[{id}] = wrap_shared_ptr(shared,"{name}");
             }}{new_line}''').format(
             name=self._format_type_name(
                 return_type_name, include_namespace=False),
@@ -1011,18 +1012,13 @@ class MatlabWrapper(object):
         pair_value = 'first' if id == 0 else 'second'
         new_line = '\n' if id == 0 else ''
 
-        if len(return_type.typename.namespaces) > 0:
-            namespace = return_type.typename.namespaces[0]
-        else:
-            namespace = ''
-
         if self._is_ptr(return_type):
             shared_obj = 'pairResult.' + pair_value
 
             if not return_type.is_ptr:
-                shared_obj = 'Shared{name}(new {formatted_name}({shared_obj}))' \
+                shared_obj = 'boost::make_shared<{name}>({shared_obj})' \
                     .format(
-                        name=return_type.typename.name,
+                        name=self._format_type_name(return_type.typename),
                         formatted_name=self._format_type_name(
                             return_type.typename),
                         shared_obj='pairResult.' + pair_value)
@@ -1075,29 +1071,31 @@ class MatlabWrapper(object):
         if return_1_name != 'void':
             if return_count == 1:
                 if self._is_ptr(return_1):
-                    if return_1.is_ptr:
-                        shared_obj = obj
-                    else:
-                        shared_obj = 'Shared{method_name}(new {method_name_sep}({obj}))' \
-                            .format(
-                                method_name=return_1.typename.name,
-                                method_name_sep=self._format_type_name(
-                                    return_1.typename, include_namespace=True),
-                                obj=obj)
+                    sep_method_name = partial(self._format_type_name, return_1.typename, include_namespace=True)
 
                     if return_1.typename.name in self.ignore_namespace:
                         expanded += self.wrap_collector_function_shared_return(
                             return_1.typename,
-                            shared_obj,
+                            obj,
                             0,
                             new_line=False)
+
+                    if return_1.is_ptr:
+                        shared_obj = '{obj},"{method_name_sep}"'.format(
+                            obj=obj,
+                            method_name_sep=sep_method_name('.'))
                     else:
+                        shared_obj = 'boost::make_shared<{method_name_sep_col}>({obj}),"{method_name_sep_dot}"' \
+                            .format(
+                                method_name=return_1.typename.name,
+                                method_name_sep_col=sep_method_name(),
+                                method_name_sep_dot=sep_method_name('.'),
+                                obj=obj)
+
+                    if return_1.typename.name not in self.ignore_namespace:
                         expanded += textwrap.indent(
-                            'out[0] = wrap_shared_ptr({},"{}", false);'.format(
-                                shared_obj,
-                                self._format_type_name(
-                                    return_1.typename, separator='.')
-                            ), prefix='  ')
+                            'out[0] = wrap_shared_ptr({}, false);'.format(shared_obj), prefix='  '
+                        )
                 else:
                     expanded += '  out[0] = wrap< {} >({});'.format(
                         return_1.typename.name,
@@ -1105,31 +1103,7 @@ class MatlabWrapper(object):
             elif return_count == 2:
                 return_2 = method.return_type.type2
 
-                if self._is_ptr(return_1):
-                    if return_1.is_ptr:
-                        return_1_typename = 'Shared' + return_1.typename.name
-                    else:
-                        return_1_typename = self._format_type_name(
-                            return_1.typename)
-                else:
-                    return_1_typename = self._format_type_name(
-                        return_1.typename)
-
-                if self._is_ptr(return_2):
-                    if return_2.is_ptr:
-                        return_2_typename = 'Shared' + return_2.typename.name
-                    else:
-                        return_2_typename = self._format_type_name(
-                            return_2.typename)
-                else:
-                    return_2_typename = self._format_type_name(
-                        return_2.typename)
-
-                expanded += '  pair< {}, {} > pairResult = {};\n'.format(
-                    return_1_typename,
-                    return_2_typename,
-                    obj)
-
+                expanded += '  auto pairResult = {};\n'.format(obj)
                 expanded += self.wrap_collector_function_return_types(
                     return_1, 0)
                 expanded += self.wrap_collector_function_return_types(
