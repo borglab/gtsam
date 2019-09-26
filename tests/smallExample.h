@@ -171,8 +171,8 @@ static const Key _x_=0, _y_=1, _z_=2;
 
 /* ************************************************************************* */
 inline boost::shared_ptr<const NonlinearFactorGraph>
-sharedNonlinearFactorGraph(const noiseModel::Base &noiseModel1 = kSigma0_1,
-                           const noiseModel::Base &noiseModel2 = kSigma0_2) {
+sharedNonlinearFactorGraph(const SharedNoiseModel &noiseModel1 = impl::kSigma0_1,
+                           const SharedNoiseModel &noiseModel2 = impl::kSigma0_2) {
   using namespace impl;
   using symbol_shorthand::L;
   using symbol_shorthand::X;
@@ -204,8 +204,8 @@ sharedNonlinearFactorGraph(const noiseModel::Base &noiseModel1 = kSigma0_1,
 
 /* ************************************************************************* */
 inline NonlinearFactorGraph
-createNonlinearFactorGraph(const noiseModel::Base &noiseModel1 = kSigma0_1,
-                           const noiseModel::Base &noiseModel2 = kSigma0_2) {
+createNonlinearFactorGraph(const SharedNoiseModel &noiseModel1 = impl::kSigma0_1,
+                           const SharedNoiseModel &noiseModel2 = impl::kSigma0_2) {
   return *sharedNonlinearFactorGraph(noiseModel1, noiseModel2);
 }
 
