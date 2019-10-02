@@ -858,6 +858,12 @@ double GemanMcClure::weight(double error) const {
   return c4/(c2error*c2error);
 }
 
+double GemanMcClure::residual(double error) const {
+  const double c2 = c_*c_;
+  const double error2 = error*error;
+  return 0.5 * (c2 * error2) / (c2 + error2);
+}
+
 void GemanMcClure::print(const std::string &s="") const {
   std::cout << s << ": Geman-McClure (" << c_ << ")" << std::endl;
 }

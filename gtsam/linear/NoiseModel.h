@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include<iostream>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/dllexport.h>
@@ -727,6 +728,7 @@ namespace gtsam {
         Null(const ReweightScheme reweight = Block) : Base(reweight) {}
         virtual ~Null() {}
         virtual double weight(double /*error*/) const { return 1.0; }
+        virtual double residual(double error) const { return error; }
         virtual void print(const std::string &s) const;
         virtual bool equals(const Base& /*expected*/, double /*tol*/) const { return true; }
         static shared_ptr Create() ;
@@ -751,6 +753,12 @@ namespace gtsam {
         Fair(double c = 1.3998, const ReweightScheme reweight = Block);
         double weight(double error) const {
           return 1.0 / (1.0 + std::abs(error) / c_);
+        }
+        double residual(double error) const {
+          double absError = std::abs(error);
+          double normalizedError = absError / c_;
+          double val = normalizedError - std::log(1 + normalizedError);
+          return c_ * c_ * val;
         }
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
@@ -778,6 +786,14 @@ namespace gtsam {
         double weight(double error) const {
           double absError = std::abs(error);
           return (absError < k_) ? (1.0) : (k_ / absError);
+        }
+        double residual(double error) const {
+          double absError = std::abs(error);
+          if (absError <= k_) {  // |x| <= k
+            return error*error / 2;
+          } else { // |x| > k
+            return k_ * (absError - (k_/2));
+          }
         }
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
@@ -809,6 +825,11 @@ namespace gtsam {
         double weight(double error) const {
           return ksquared_ / (ksquared_ + error*error);
         }
+        double residual(double error) const {
+          double normalizedError = error / k_;
+          double val = std::log(1 + (normalizedError*normalizedError));
+          return ksquared_ * val * 0.5;
+        }
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
@@ -839,6 +860,16 @@ namespace gtsam {
           }
           return 0.0;
         }
+        double residual(double error) const {
+          double absError = std::abs(error);
+          if (absError <= c_) {
+            double t = csquared_ - (error*error);
+            double val = t * t * t;
+            return ((csquared_*csquared_*csquared_) - val) / (6.0 * csquared_ * csquared_);
+          } else {
+            return csquared_ / 6.0;
+          }
+        }
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
@@ -865,6 +896,10 @@ namespace gtsam {
         double weight(double error) const {
           double xc2 = (error*error)/csquared_;
           return std::exp(-xc2);
+        }
+        double residual(double error) const {
+          double xc2 = (error*error)/csquared_;
+          return csquared_ * 0.5 * (1 - std::exp(-xc2) );
         }
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
@@ -897,6 +932,10 @@ namespace gtsam {
           double xc2 = (error*error)/csquared_;
           return std::exp(-xc2);
         }
+        double residual(double error) const {
+          double xc2 = (error*error)/csquared_;
+          return csquared_ * 0.5 * (1 - std::exp(-xc2) );
+        }
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
@@ -925,6 +964,7 @@ namespace gtsam {
         GemanMcClure(double c = 1.0, const ReweightScheme reweight = Block);
         virtual ~GemanMcClure() {}
         virtual double weight(double error) const;
+        virtual double residual(double error) const;
         virtual void print(const std::string &s) const;
         virtual bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
