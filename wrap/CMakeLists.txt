@@ -1,15 +1,23 @@
 # Build/install Wrap
 
-set(WRAP_BOOST_LIBRARIES
-  optimized
-    ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-    ${Boost_SYSTEM_LIBRARY_RELEASE}
-    ${Boost_THREAD_LIBRARY_RELEASE}
-  debug
-    ${Boost_FILESYSTEM_LIBRARY_DEBUG}
-    ${Boost_SYSTEM_LIBRARY_DEBUG}
-    ${Boost_THREAD_LIBRARY_DEBUG}
-)
+set(WRAP_BOOST_LIBRARIES "")
+foreach(TMP
+        ${Boost_FILESYSTEM_LIBRARY_RELEASE}
+        ${Boost_SYSTEM_LIBRARY_RELEASE}
+        ${Boost_THREAD_LIBRARY_RELEASE})
+    if(NOT "${TMP}" STREQUAL "")
+        list(APPEND WRAP_BOOST_LIBRARIES optimized "${TMP}")
+    endif()
+endforeach(TMP)
+foreach(TMP
+        ${Boost_FILESYSTEM_LIBRARY_DEBUG}
+        ${Boost_SYSTEM_LIBRARY_DEBUG}
+        ${Boost_THREAD_LIBRARY_DEBUG})
+    if(NOT "${TMP}" STREQUAL "")
+        list(APPEND WRAP_BOOST_LIBRARIES debug "${TMP}")
+    endif()
+endforeach(TMP)
+
 
 # Allow for disabling serialization to handle errors related to Clang's linker
 option(GTSAM_WRAP_SERIALIZATION "If enabled, allows for wrapped objects to be saved via boost.serialization" ON)
