@@ -20,13 +20,28 @@ function(GtsamMakeConfigFile PACKAGE_NAME)
 		set(EXTRA_FILE "_does_not_exist_")
 	endif()
 
+	# Version file
+	include(CMakePackageConfigHelpers)
+	write_basic_package_version_file(
+	  "${PROJECT_BINARY_DIR}/${PACKAGE_NAME}ConfigVersion.cmake"
+	  VERSION ${GTSAM_VERSION_STRING}
+	  COMPATIBILITY AnyNewerVersion
+	)
+
+	# Config file
 	file(RELATIVE_PATH CONF_REL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/${DEF_INSTALL_CMAKE_DIR}" "${CMAKE_INSTALL_PREFIX}/include")
 	file(RELATIVE_PATH CONF_REL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/${DEF_INSTALL_CMAKE_DIR}" "${CMAKE_INSTALL_PREFIX}/lib")
 	configure_file(${GTSAM_CONFIG_TEMPLATE_PATH}/Config.cmake.in "${PROJECT_BINARY_DIR}/${PACKAGE_NAME}Config.cmake" @ONLY)
 	message(STATUS "Wrote ${PROJECT_BINARY_DIR}/${PACKAGE_NAME}Config.cmake")
 
-	# Install config and exports files (for find scripts)
-	install(FILES "${PROJECT_BINARY_DIR}/${PACKAGE_NAME}Config.cmake" DESTINATION "${CMAKE_INSTALL_PREFIX}/${DEF_INSTALL_CMAKE_DIR}")
+	# Install config, version and exports files (for find scripts)
+	install(
+		FILES
+			"${PROJECT_BINARY_DIR}/${PACKAGE_NAME}Config.cmake"
+			"${PROJECT_BINARY_DIR}/${PACKAGE_NAME}ConfigVersion.cmake"
+		DESTINATION
+			"${CMAKE_INSTALL_PREFIX}/${DEF_INSTALL_CMAKE_DIR}"
+	)
 	install(EXPORT ${PACKAGE_NAME}-exports DESTINATION ${DEF_INSTALL_CMAKE_DIR})
 
 endfunction()
