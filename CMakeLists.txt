@@ -178,32 +178,49 @@ option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
 # problems with Boost versions newer than FindBoost.cmake was prepared to handle,
 # so we downgraded this to classic filenames-based variables, and manually adding
 # the target_include_directories(xxx ${Boost_INCLUDE_DIR})
-set(GTSAM_BOOST_LIBRARIES
-  optimized ${Boost_SERIALIZATION_LIBRARY_RELEASE}
-  optimized ${Boost_SYSTEM_LIBRARY_RELEASE}
-  optimized ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-  optimized ${Boost_THREAD_LIBRARY_RELEASE}
-  optimized ${Boost_DATE_TIME_LIBRARY_RELEASE}
-  optimized ${Boost_REGEX_LIBRARY_RELEASE}
-  debug ${Boost_SERIALIZATION_LIBRARY_DEBUG}
-  debug ${Boost_SYSTEM_LIBRARY_DEBUG}
-  debug ${Boost_FILESYSTEM_LIBRARY_DEBUG}
-  debug ${Boost_THREAD_LIBRARY_DEBUG}
-  debug ${Boost_DATE_TIME_LIBRARY_DEBUG}
-  debug ${Boost_REGEX_LIBRARY_DEBUG}
-)
+set(GTSAM_BOOST_LIBRARIES "")
+foreach(TMP
+        ${Boost_SERIALIZATION_LIBRARY_RELEASE}
+        ${Boost_SYSTEM_LIBRARY_RELEASE}
+        ${Boost_FILESYSTEM_LIBRARY_RELEASE}
+        ${Boost_THREAD_LIBRARY_RELEASE}
+        ${Boost_DATE_TIME_LIBRARY_RELEASE}
+        ${Boost_REGEX_LIBRARY_RELEASE})
+    if(NOT "${TMP}" STREQUAL "")
+        list(APPEND GTSAM_BOOST_LIBRARIES optimized "${TMP}")
+    endif()
+endforeach(TMP)
+foreach(TMP
+        ${Boost_SERIALIZATION_LIBRARY_DEBUG}
+        ${Boost_SYSTEM_LIBRARY_DEBUG}
+        ${Boost_FILESYSTEM_LIBRARY_DEBUG}
+        ${Boost_THREAD_LIBRARY_DEBUG}
+        ${Boost_DATE_TIME_LIBRARY_DEBUG}
+        ${Boost_REGEX_LIBRARY_DEBUG})
+    if(NOT "${TMP}" STREQUAL "")
+        list(APPEND GTSAM_BOOST_LIBRARIES debug "${TMP}")
+    endif()
+endforeach(TMP)
 message(STATUS "GTSAM_BOOST_LIBRARIES: ${GTSAM_BOOST_LIBRARIES}")
 if (GTSAM_DISABLE_NEW_TIMERS)
     message("WARNING:  GTSAM timing instrumentation manually disabled")
     list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC DGTSAM_DISABLE_NEW_TIMERS)
 else()
     if(Boost_TIMER_LIBRARY)
-      list(APPEND GTSAM_BOOST_LIBRARIES
-        optimized ${Boost_TIMER_LIBRARY_RELEASE}
-        optimized ${Boost_CHRONO_LIBRARY_RELEASE}
-        debug ${Boost_TIMER_LIBRARY_DEBUG}
-        debug ${Boost_CHRONO_LIBRARY_DEBUG}
-        )
+        foreach(TMP
+                ${Boost_TIMER_LIBRARY_RELEASE}
+                ${Boost_CHRONO_LIBRARY_RELEASE})
+            if(NOT "${TMP}" STREQUAL "")
+                list(APPEND GTSAM_BOOST_LIBRARIES optimized "${TMP}")
+            endif()
+        endforeach(TMP)
+        foreach(TMP
+                ${Boost_TIMER_LIBRARY_DEBUG}
+                ${Boost_CHRONO_LIBRARY_DEBUG})
+            if(NOT "${TMP}" STREQUAL "")
+                list(APPEND GTSAM_BOOST_LIBRARIES debug "${TMP}")
+            endif()
+        endforeach(TMP)
     else()
       list(APPEND GTSAM_BOOST_LIBRARIES rt) # When using the header-only boost timer library, need -lrt
       message("WARNING:  GTSAM timing instrumentation will use the older, less accurate, Boost timer library because boost older than 1.48 was found.")
