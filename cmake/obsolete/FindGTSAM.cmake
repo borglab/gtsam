@@ -77,12 +77,25 @@ else()
     DOC "GTSAM libraries")
 endif()
 
+# Parse version
+if (GTSAM_INCLUDE_DIR)
+  file(READ "${GTSAM_INCLUDE_DIR}/gtsam/config.h" ver)
+
+  string(REGEX MATCH "GTSAM_VERSION_MAJOR ([0-9]*)" _ ${ver})
+  set(ver_major ${CMAKE_MATCH_1})
+
+  string(REGEX MATCH "GTSAM_VERSION_MINOR ([0-9]*)" _ ${ver})
+  set(ver_minor ${CMAKE_MATCH_1})
+
+  string(REGEX MATCH "GTSAM_VERSION_PATCH ([0-9]*)" _ ${ver})
+  set(ver_patch ${CMAKE_MATCH_1})
+
+  set(GTSAM_VERSION "${ver_major}.${ver_minor}.${ver_patch}")
+endif()
+
 # handle the QUIETLY and REQUIRED arguments and set GTSAM_FOUND to TRUE
 # if all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(GTSAM DEFAULT_MSG
-                                  GTSAM_LIBS GTSAM_INCLUDE_DIR)
- 
-
-
-
+find_package_handle_standard_args(GTSAM
+  REQUIRED_VARS GTSAM_INCLUDE_DIR GTSAM_LIBS
+  VERSION_VAR GTSAM_VERSION)

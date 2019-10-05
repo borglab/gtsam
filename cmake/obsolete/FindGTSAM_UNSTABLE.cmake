@@ -77,12 +77,25 @@ else()
     DOC "GTSAM_UNSTABLE libraries")
 endif()
 
+# Parse version from gtsam, which is expected to be at the same level as gtsam_unstable
+if (GTSAM_UNSTABLE_INCLUDE_DIR)
+  file(READ "${GTSAM_UNSTABLE_INCLUDE_DIR}/gtsam/config.h" ver)
+
+  string(REGEX MATCH "GTSAM_VERSION_MAJOR ([0-9]*)" _ ${ver})
+  set(ver_major ${CMAKE_MATCH_1})
+
+  string(REGEX MATCH "GTSAM_VERSION_MINOR ([0-9]*)" _ ${ver})
+  set(ver_minor ${CMAKE_MATCH_1})
+
+  string(REGEX MATCH "GTSAM_VERSION_PATCH ([0-9]*)" _ ${ver})
+  set(ver_patch ${CMAKE_MATCH_1})
+
+  set(GTSAM_UNSTABLE_VERSION "${ver_major}.${ver_minor}.${ver_patch}")
+endif()
+
 # handle the QUIETLY and REQUIRED arguments and set GTSAM_UNSTABLE_FOUND to TRUE
 # if all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(GTSAM_UNSTABLE DEFAULT_MSG
-                                  GTSAM_UNSTABLE_LIBS GTSAM_UNSTABLE_INCLUDE_DIR)
- 
-
-
-
+find_package_handle_standard_args(GTSAM_UNSTABLE
+  REQUIRED_VARS GTSAM_UNSTABLE_INCLUDE_DIR GTSAM_UNSTABLE_LIBS
+  VERSION_VAR GTSAM_UNSTABLE_VERSION)
