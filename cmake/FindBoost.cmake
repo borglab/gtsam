@@ -243,7 +243,10 @@ Set ``Boost_NO_BOOST_CMAKE`` to ``ON``, to disable the search for boost-cmake.
 
 # The FPHSA helper provides standard way of reporting final search results to
 # the user including the version and component checks.
-include(${CMAKE_CURRENT_LIST_DIR}/FindPackageHandleStandardArgs.cmake)
+
+# Patch  for GTSAM:
+#include(${CMAKE_CURRENT_LIST_DIR}/FindPackageHandleStandardArgs.cmake)
+include(FindPackageHandleStandardArgs)
 
 # Save project's policies
 cmake_policy(PUSH)
@@ -1487,7 +1490,11 @@ if(WIN32)
     INTERFACE_COMPILE_DEFINITIONS "BOOST_ALL_NO_LIB")
 endif()
 
-cmake_policy(GET CMP0074 _Boost_CMP0074)
+# Patch  for GTSAM:
+if (POLICY CMP0074)
+	cmake_policy(GET CMP0074 _Boost_CMP0074)
+endif()
+
 if(NOT "x${_Boost_CMP0074}x" STREQUAL "xNEWx")
   _Boost_CHECK_SPELLING(Boost_ROOT)
 endif()
@@ -1640,9 +1647,12 @@ if(Boost_INCLUDE_DIR)
   set(Boost_VERSION_STRING "${Boost_VERSION_MAJOR}.${Boost_VERSION_MINOR}.${Boost_VERSION_PATCH}")
 
   # Define final Boost_VERSION
-  cmake_policy(GET CMP0093 _Boost_CMP0093
-    PARENT_SCOPE # undocumented, do not use outside of CMake
-  )
+  if (POLICY CMP0093)
+    cmake_policy(GET CMP0093 _Boost_CMP0093
+   	  PARENT_SCOPE # undocumented, do not use outside of CMake
+    )
+  endif()
+
   if("x${_Boost_CMP0093}x" STREQUAL "xNEWx")
     set(Boost_VERSION ${Boost_VERSION_STRING})
   else()
