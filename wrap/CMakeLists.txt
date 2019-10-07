@@ -1,14 +1,9 @@
 # Build/install Wrap
 
 set(WRAP_BOOST_LIBRARIES
-  optimized
-    ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-    ${Boost_SYSTEM_LIBRARY_RELEASE}
-    ${Boost_THREAD_LIBRARY_RELEASE}
-  debug
-    ${Boost_FILESYSTEM_LIBRARY_DEBUG}
-    ${Boost_SYSTEM_LIBRARY_DEBUG}
-    ${Boost_THREAD_LIBRARY_DEBUG}
+  Boost::system
+  Boost::filesystem
+  Boost::thread
 )
 
 # Allow for disabling serialization to handle errors related to Clang's linker
@@ -30,8 +25,6 @@ endif()
 gtsam_apply_build_flags(wrap_lib)
 
 target_link_libraries(wrap_lib ${WRAP_BOOST_LIBRARIES})
-target_include_directories(wrap_lib PUBLIC ${Boost_INCLUDE_DIR})
-
 gtsam_assign_source_folders(${wrap_srcs} ${wrap_headers})
 add_executable(wrap wrap.cpp)
 target_link_libraries(wrap PRIVATE wrap_lib)
