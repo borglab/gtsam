@@ -36,7 +36,7 @@ plot_m_estimator(x, cauchyNoiseModel, rho, 'Cauchy', 3, 'cauchy.png')
 c = 1.0;
 rho = gemanmcclure(x, c);
 gemanmcclureNoiseModel = gtsam.noiseModel.mEstimator.GemanMcClure(c);
-plot_m_estimator(x, gemanmcclureNoiseModel, rho, 'GemanMcClure', 4, 'gemanmcclure.png')
+plot_m_estimator(x, gemanmcclureNoiseModel, rho, 'Geman-McClure', 4, 'gemanmcclure.png')
 
 c = 2.9846;
 rho = welsch(x, c);
@@ -59,15 +59,20 @@ function plot_m_estimator(x, model, rho, plot_title, fig_id, filename)
 
     figure(fig_id);
     subplot(3, 1, 1);
-    plot(x, rho);
+    plot(x, rho, 'LineWidth',2);
+    title('rho function');
     xlim([-5, 5]);
-    title(plot_title);
     subplot(3, 1, 2);
-    plot(x, psi);
+    plot(x, psi, 'LineWidth',2);
+    title('influence function');
     xlim([-5, 5]);
     subplot(3, 1, 3);
-    plot(x, w);
+    plot(x, w, 'LineWidth',2);
+    title('weight function');
     xlim([-5, 5]);
+
+    sgtitle(plot_title, 'FontSize', 26);
+
     saveas(figure(fig_id), filename);
 end
 
