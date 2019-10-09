@@ -663,21 +663,10 @@ TEST(NoiseModel, robustNoiseL2WithDeadZone)
     noiseModel::mEstimator::L2WithDeadZone::Create(dead_zone_size),
     Unit::Create(3));
 
-/*
- * TODO(mike): There is currently a bug in GTSAM, where none of the mEstimator classes
- * implement a residual function, and GTSAM calls the weight function to evaluate the
- * total penalty, rather than calling the residual function. The weight function should be
- * used during iteratively reweighted least squares optimization, but should not be used to
- * evaluate the total penalty. The long-term solution is for all mEstimators to implement
- * both a weight and a residual function, and for GTSAM to call the residual function when
- * evaluating the total penalty. This bug causes the test below to fail, so I'm leaving it
- * commented out until the underlying bug in GTSAM is fixed.
- *
- * for (int i = 0; i < 5; i++) {
- *   Vector3 error = Vector3(i, 0, 0);
- *   DOUBLES_EQUAL(0.5*max(0,i-1)*max(0,i-1), robust->distance(error), 1e-8);
- * }
- */
+  for (int i = 0; i < 5; i++) {
+    Vector3 error = Vector3(i, 0, 0);
+    DOUBLES_EQUAL(0.5*max(0,i-1)*max(0,i-1), robust->distance(error), 1e-8);
+  }
 
 }
 

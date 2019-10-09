@@ -666,15 +666,6 @@ namespace gtsam {
          * This method is responsible for returning the total penalty for a given amount of error.
          * For example, this method is responsible for implementing the quadratic function for an
          * L2 penalty, the absolute value function for an L1 penalty, etc.
-         *
-         * TODO(mike): There is currently a bug in GTSAM, where none of the mEstimator classes
-         * implement a residual function, and GTSAM calls the weight function to evaluate the
-         * total penalty, rather than calling the residual function. The weight function should be
-         * used during iteratively reweighted least squares optimization, but should not be used to
-         * evaluate the total penalty. The long-term solution is for all mEstimators to implement
-         * both a weight and a residual function, and for GTSAM to call the residual function when
-         * evaluating the total penalty. But for now, I'm leaving this residual method as pure
-         * virtual, so the existing mEstimators can inherit this default fallback behavior.
          */
         virtual double residual(double error) const { return 0; };
 
@@ -1027,8 +1018,7 @@ namespace gtsam {
       inline virtual Vector unwhiten(const Vector& /*v*/) const
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
       inline virtual double distance(const Vector& v) const
-      { return this->whiten(v).squaredNorm(); }
-      // TODO(mike): fold the use of the m-estimator residual(...) function into distance(...)
+      { return robust_->residual(v.norm()); }
       inline virtual double distance_non_whitened(const Vector& v) const
       { return robust_->residual(v.norm()); }
       // TODO: these are really robust iterated re-weighting support functions
