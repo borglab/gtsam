@@ -556,10 +556,12 @@ TEST(NoiseModel, robustFunctionDCS)
 {
   const double k = 1.0, error1 = 1.0, error2 = 10.0;
   const mEstimator::DCS::shared_ptr dcs = mEstimator::DCS::Create(k);
-  const double weight1 = dcs->weight(error1),
-               weight2 = dcs->weight(error2);
-  DOUBLES_EQUAL(1.0       , weight1, 1e-8);
-  DOUBLES_EQUAL(0.00039211, weight2, 1e-8);
+
+  DOUBLES_EQUAL(1.0       , dcs->weight(error1), 1e-8);
+  DOUBLES_EQUAL(0.00039211, dcs->weight(error2), 1e-8);
+
+  DOUBLES_EQUAL(0.5         , dcs->residual(error1), 1e-8);
+  DOUBLES_EQUAL(0.9900990099, dcs->residual(error2), 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionL2WithDeadZone)
