@@ -1432,7 +1432,27 @@ virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
   double residual(double error) const;
 };
 
-//TODO DCS and L2WithDeadZone mEstimators
+virtual class DCS: gtsam::noiseModel::mEstimator::Base {
+  DCS(double c);
+  static gtsam::noiseModel::mEstimator::DCS* Create(double c);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
+};
+
+virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
+  L2WithDeadZone(double k);
+  static gtsam::noiseModel::mEstimator::L2WithDeadZone* Create(double k);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
+};
 
 }///\namespace mEstimator
 
