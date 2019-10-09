@@ -728,10 +728,10 @@ Fair::Fair(double c, const ReweightScheme reweight) : Base(reweight), c_(c) {
   }
 }
 
-double Fair::weight(const double error) const {
+double Fair::weight(double error) const {
   return 1.0 / (1.0 + std::abs(error) / c_);
 }
-double Fair::residual(const double error) const {
+double Fair::residual(double error) const {
   const double absError = std::abs(error);
   const double normalizedError = absError / c_;
   const double c_2 = c_ * c_;
@@ -760,12 +760,12 @@ Huber::Huber(double k, const ReweightScheme reweight) : Base(reweight), k_(k) {
   }
 }
 
-double Huber::weight(const double error) const {
+double Huber::weight(double error) const {
   const double absError = std::abs(error);
   return (absError <= k_) ? (1.0) : (k_ / absError);
 }
 
-double Huber::residual(const double error) const {
+double Huber::residual(double error) const {
   const double absError = std::abs(error);
   if (absError <= k_) {  // |x| <= k
     return error*error / 2;
@@ -798,11 +798,11 @@ Cauchy::Cauchy(double k, const ReweightScheme reweight) : Base(reweight), k_(k),
   }
 }
 
-double Cauchy::weight(const double error) const {
+double Cauchy::weight(double error) const {
   return ksquared_ / (ksquared_ + error*error);
 }
 
-double Cauchy::residual(const double error) const {
+double Cauchy::residual(double error) const {
   const double xc2 = error / k_;
   const double val = std::log(1 + (xc2*xc2));
   return ksquared_ * val * 0.5;
@@ -832,14 +832,14 @@ Tukey::Tukey(double c, const ReweightScheme reweight) : Base(reweight), c_(c), c
   }
 }
 
-double Tukey::weight(const double error) const {
+double Tukey::weight(double error) const {
   if (std::abs(error) <= c_) {
     const double xc2 = error*error/csquared_;
     return (1.0-xc2)*(1.0-xc2);
   }
   return 0.0;
 }
-double Tukey::residual(const double error) const {
+double Tukey::residual(double error) const {
   double absError = std::abs(error);
   if (absError <= c_) {
     const double xc2 = error*error/csquared_;
@@ -870,12 +870,12 @@ Tukey::shared_ptr Tukey::Create(double c, const ReweightScheme reweight) {
 
 Welsch::Welsch(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
 
-double Welsch::weight(const double error) const {
+double Welsch::weight(double error) const {
   const double xc2 = (error*error)/csquared_;
   return std::exp(-xc2);
 }
 
-double Welsch::residual(const double error) const {
+double Welsch::residual(double error) const {
   const double xc2 = (error*error)/csquared_;
   return csquared_ * 0.5 * (1 - std::exp(-xc2) );
 }
@@ -964,6 +964,16 @@ double DCS::weight(double error) const {
   return 1.0;
 }
 
+double DCS::residual(double error) const {
+  // This is the simplified version of Eq 9 from (Agarwal13icra)
+  // after you simplify and cancel terms.
+  const double e2 = error*error;
+  const double e4 = e2*e2;
+  const double c2 = c_*c_;
+
+  return (c2*e2 + c_*e4) / ((e2 + c_)*(e2 + c_));
+}
+
 void DCS::print(const std::string &s="") const {
   std::cout << s << ": DCS (" << c_ << ")" << std::endl;
 }
@@ -986,6 +996,19 @@ L2WithDeadZone::L2WithDeadZone(double k, const ReweightScheme reweight) : Base(r
   if (k_ <= 0) {
     throw runtime_error("mEstimator L2WithDeadZone takes only positive double in constructor.");
   }
+}
+
+double L2WithDeadZone::residual(double error) const {
+  const double abs_error = std::abs(error);
+  return (abs_error < k_) ? 0.0 : 0.5*(k_-abs_error)*(k_-abs_error);
+}
+double L2WithDeadZone::weight(double error) const {
+  // note that this code is slightly uglier than residual, because there are three distinct
+  // cases to handle (left of deadzone, deadzone, right of deadzone) instead of the two
+  // cases (deadzone, non-deadzone) in residual.
+  if (std::abs(error) <= k_) return 0.0;
+  else if (error > k_) return (-k_+error)/error;
+  else return (k_+error)/error;
 }
 
 void L2WithDeadZone::print(const std::string &s="") const {
