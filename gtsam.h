@@ -1375,6 +1375,7 @@ virtual class Fair: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
+  double residual(double error) const;
 };
 
 virtual class Huber: gtsam::noiseModel::mEstimator::Base {
