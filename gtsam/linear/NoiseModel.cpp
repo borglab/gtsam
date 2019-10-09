@@ -718,15 +718,25 @@ void Null::print(const std::string &s="") const
 Null::shared_ptr Null::Create()
 { return shared_ptr(new Null()); }
 
+/* ************************************************************************* */
+// Fair
+/* ************************************************************************* */
+
 Fair::Fair(double c, const ReweightScheme reweight) : Base(reweight), c_(c) {
   if (c_ <= 0) {
     throw runtime_error("mEstimator Fair takes only positive double in constructor.");
   }
 }
 
-/* ************************************************************************* */
-// Fair
-/* ************************************************************************* */
+double Fair::weight(const double error) const {
+  return 1.0 / (1.0 + std::abs(error) / c_);
+}
+double Fair::residual(const double error) const {
+  const double absError = std::abs(error);
+  const double normalizedError = absError / c_;
+  const double c_2 = c_ * c_;
+  return c_2 * (normalizedError - std::log(1 + normalizedError));
+}
 
 void Fair::print(const std::string &s="") const
 { cout << s << "fair (" << c_ << ")" << endl; }
@@ -747,6 +757,20 @@ Fair::shared_ptr Fair::Create(double c, const ReweightScheme reweight)
 Huber::Huber(double k, const ReweightScheme reweight) : Base(reweight), k_(k) {
   if (k_ <= 0) {
     throw runtime_error("mEstimator Huber takes only positive double in constructor.");
+  }
+}
+
+double Huber::weight(const double error) const {
+  const double absError = std::abs(error);
+  return (absError <= k_) ? (1.0) : (k_ / absError);
+}
+
+double Huber::residual(const double error) const {
+  const double absError = std::abs(error);
+  if (absError <= k_) {  // |x| <= k
+    return error*error / 2;
+  } else { // |x| > k
+    return k_ * (absError - (k_/2));
   }
 }
 
@@ -774,6 +798,16 @@ Cauchy::Cauchy(double k, const ReweightScheme reweight) : Base(reweight), k_(k),
   }
 }
 
+double Cauchy::weight(const double error) const {
+  return ksquared_ / (ksquared_ + error*error);
+}
+
+double Cauchy::residual(const double error) const {
+  const double xc2 = error / k_;
+  const double val = std::log(1 + (xc2*xc2));
+  return ksquared_ * val * 0.5;
+}
+
 void Cauchy::print(const std::string &s="") const {
   cout << s << "cauchy (" << k_ << ")" << endl;
 }
@@ -791,7 +825,30 @@ Cauchy::shared_ptr Cauchy::Create(double c, const ReweightScheme reweight) {
 /* ************************************************************************* */
 // Tukey
 /* ************************************************************************* */
-Tukey::Tukey(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
+
+Tukey::Tukey(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {
+  if (c <= 0) {
+    throw runtime_error("mEstimator Tukey takes only positive double in constructor.");
+  }
+}
+
+double Tukey::weight(const double error) const {
+  if (std::abs(error) <= c_) {
+    const double xc2 = error*error/csquared_;
+    return (1.0-xc2)*(1.0-xc2);
+  }
+  return 0.0;
+}
+double Tukey::residual(const double error) const {
+  double absError = std::abs(error);
+  if (absError <= c_) {
+    const double xc2 = error*error/csquared_;
+    const double t = (1 - xc2)*(1 - xc2)*(1 - xc2);
+    return csquared_ * (1 - t) / 6.0;
+  } else {
+    return csquared_ / 6.0;
+  }
+}
 
 void Tukey::print(const std::string &s="") const {
   std::cout << s << ": Tukey (" << c_ << ")" << std::endl;
@@ -810,7 +867,18 @@ Tukey::shared_ptr Tukey::Create(double c, const ReweightScheme reweight) {
 /* ************************************************************************* */
 // Welsch
 /* ************************************************************************* */
+
 Welsch::Welsch(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
+
+double Welsch::weight(const double error) const {
+  const double xc2 = (error*error)/csquared_;
+  return std::exp(-xc2);
+}
+
+double Welsch::residual(const double error) const {
+  const double xc2 = (error*error)/csquared_;
+  return csquared_ * 0.5 * (1 - std::exp(-xc2) );
+}
 
 void Welsch::print(const std::string &s="") const {
   std::cout << s << ": Welsch (" << c_ << ")" << std::endl;
