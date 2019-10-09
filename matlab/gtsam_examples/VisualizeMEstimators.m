@@ -12,47 +12,43 @@
 
 % import gtsam.*
 
-clear all;
 close all;
 
 x = linspace(-10, 10, 1000);
-% x = linspace(-5, 5, 101);
+
+%% Define all the mEstimator models and plot them
 
 c = 1.3998;
-rho = fair(x, c);
 fairNoiseModel = gtsam.noiseModel.mEstimator.Fair(c);
-plot_m_estimator(x, fairNoiseModel, rho, 'Fair', 1, 'fair.png')
+plot_m_estimator(x, fairNoiseModel, 'Fair', 1, 'fair.png')
 
 c = 1.345;
-rho = huber(x, c);
 huberNoiseModel = gtsam.noiseModel.mEstimator.Huber(c);
-plot_m_estimator(x, huberNoiseModel, rho, 'Huber', 2, 'huber.png')
+plot_m_estimator(x, huberNoiseModel, 'Huber', 2, 'huber.png')
 
 c = 0.1;
-rho = cauchy(x, c);
 cauchyNoiseModel = gtsam.noiseModel.mEstimator.Cauchy(c);
-plot_m_estimator(x, cauchyNoiseModel, rho, 'Cauchy', 3, 'cauchy.png')
+plot_m_estimator(x, cauchyNoiseModel, 'Cauchy', 3, 'cauchy.png')
 
 c = 1.0;
-rho = gemanmcclure(x, c);
 gemanmcclureNoiseModel = gtsam.noiseModel.mEstimator.GemanMcClure(c);
-plot_m_estimator(x, gemanmcclureNoiseModel, rho, 'Geman-McClure', 4, 'gemanmcclure.png')
+plot_m_estimator(x, gemanmcclureNoiseModel, 'Geman-McClure', 4, 'gemanmcclure.png')
 
 c = 2.9846;
-rho = welsch(x, c);
 welschNoiseModel = gtsam.noiseModel.mEstimator.Welsch(c);
-plot_m_estimator(x, welschNoiseModel, rho, 'Welsch', 5, 'welsch.png')
+plot_m_estimator(x, welschNoiseModel, 'Welsch', 5, 'welsch.png')
 
 c = 4.6851;
-rho = tukey(x, c);
 tukeyNoiseModel = gtsam.noiseModel.mEstimator.Tukey(c);
-plot_m_estimator(x, tukeyNoiseModel, rho, 'Tukey', 6, 'tukey.png')
+plot_m_estimator(x, tukeyNoiseModel, 'Tukey', 6, 'tukey.png')
 
 %% Plot rho, psi and weights of the mEstimator.
-function plot_m_estimator(x, model, rho, plot_title, fig_id, filename)
+function plot_m_estimator(x, model, plot_title, fig_id, filename)
     w = zeros(size(x));
+    rho = zeros(size(x));
     for i = 1:size(x, 2)
         w(i) = model.weight(x(i));
+        rho(i) = model.residual(x(i));
     end
 
     psi = w .* x;
@@ -74,34 +70,4 @@ function plot_m_estimator(x, model, rho, plot_title, fig_id, filename)
     sgtitle(plot_title, 'FontSize', 26);
 
     saveas(figure(fig_id), filename);
-end
-
-function rho = fair(x, c)
-    rho = c^2 * ( (abs(x) ./ c) - log(1 + (abs(x)./c)) );
-end
-
-function rho = huber(x, k)
-    t = (abs(x) > k);
-
-    rho = (x .^ 2) ./ 2;
-    rho(t) = k * (abs(x(t)) - (k/2));
-end
-
-function rho = cauchy(x, c)    
-    rho = (c^2 / 2) .* log(1 + ((x./c) .^ 2));
-end
-
-function rho = gemanmcclure(x, c)
-    rho = ((x .^ 2) ./ 2) ./ (1 + x .^ 2);
-end
-
-function rho = welsch(x, c)
-    rho = (c^2 / 2) * ( 1 - exp(-(x ./ c) .^2 ));
-end
-
-function rho = tukey(x, c)
-    t = (abs(x) > c);
-
-    rho = (c^2 / 6) * (1 - (1 - (x ./ c) .^ 2 ) .^ 3 );
-    rho(t) = c .^ 2 / 6;
 end
