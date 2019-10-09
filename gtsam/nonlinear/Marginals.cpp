@@ -28,15 +28,35 @@ namespace gtsam {
 /* ************************************************************************* */
 Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization,
                      EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering)
-{
+                     : values_(solution), factorization_(factorization) {
   gttic(MarginalsConstructor);
-
-  // Linearize graph
   graph_ = *graph.linearize(solution);
+  computeBayesTree(ordering);
+}
 
-  // Store values
-  values_ = solution;
+/* ************************************************************************* */
+Marginals::Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization,
+                     EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering)
+                     : graph_(graph), factorization_(factorization) {
+  gttic(MarginalsConstructor);
+  Values vals;
+  for (const VectorValues::KeyValuePair& v: solution) {
+    vals.insert(v.first, v.second);
+  }
+  values_ = vals;
+  computeBayesTree(ordering);
+}
 
+/* ************************************************************************* */
+Marginals::Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization,
+                     EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering)
+                     : graph_(graph), values_(solution), factorization_(factorization) {
+  gttic(MarginalsConstructor);
+  computeBayesTree(ordering);
+}
+
+/* ************************************************************************* */
+void Marginals::computeBayesTree(EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering) {
   // Compute BayesTree
   factorization_ = factorization;
   if(factorization_ == CHOLESKY)
