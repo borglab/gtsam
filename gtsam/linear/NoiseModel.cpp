@@ -731,6 +731,7 @@ Fair::Fair(double c, const ReweightScheme reweight) : Base(reweight), c_(c) {
 double Fair::weight(double error) const {
   return 1.0 / (1.0 + std::abs(error) / c_);
 }
+
 double Fair::residual(double error) const {
   const double absError = std::abs(error);
   const double normalizedError = absError / c_;
@@ -839,6 +840,7 @@ double Tukey::weight(double error) const {
   }
   return 0.0;
 }
+
 double Tukey::residual(double error) const {
   double absError = std::abs(error);
   if (absError <= c_) {
@@ -893,24 +895,6 @@ bool Welsch::equals(const Base &expected, double tol) const {
 Welsch::shared_ptr Welsch::Create(double c, const ReweightScheme reweight) {
   return shared_ptr(new Welsch(c, reweight));
 }
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-Welsh::Welsh(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
-
-void Welsh::print(const std::string &s="") const {
-  std::cout << s << ": Welsh (" << c_ << ")" << std::endl;
-}
-
-bool Welsh::equals(const Base &expected, double tol) const {
-  const Welsh* p = dynamic_cast<const Welsh*>(&expected);
-  if (p == NULL) return false;
-  return std::abs(c_ - p->c_) < tol;
-}
-
-Welsh::shared_ptr Welsh::Create(double c, const ReweightScheme reweight) {
-  return shared_ptr(new Welsh(c, reweight));
-}
-#endif
 
 /* ************************************************************************* */
 // GemanMcClure
@@ -992,16 +976,13 @@ DCS::shared_ptr DCS::Create(double c, const ReweightScheme reweight) {
 // L2WithDeadZone
 /* ************************************************************************* */
 
-L2WithDeadZone::L2WithDeadZone(double k, const ReweightScheme reweight) : Base(reweight), k_(k) {
+L2WithDeadZone::L2WithDeadZone(double k, const ReweightScheme reweight)
+ : Base(reweight), k_(k) {
   if (k_ <= 0) {
     throw runtime_error("mEstimator L2WithDeadZone takes only positive double in constructor.");
   }
 }
 
-double L2WithDeadZone::residual(double error) const {
-  const double abs_error = std::abs(error);
-  return (abs_error < k_) ? 0.0 : 0.5*(k_-abs_error)*(k_-abs_error);
-}
 double L2WithDeadZone::weight(double error) const {
   // note that this code is slightly uglier than residual, because there are three distinct
   // cases to handle (left of deadzone, deadzone, right of deadzone) instead of the two
@@ -1009,6 +990,11 @@ double L2WithDeadZone::weight(double error) const {
   if (std::abs(error) <= k_) return 0.0;
   else if (error > k_) return (-k_+error)/error;
   else return (k_+error)/error;
+}
+
+double L2WithDeadZone::residual(double error) const {
+  const double abs_error = std::abs(error);
+  return (abs_error < k_) ? 0.0 : 0.5*(k_-abs_error)*(k_-abs_error);
 }
 
 void L2WithDeadZone::print(const std::string &s="") const {

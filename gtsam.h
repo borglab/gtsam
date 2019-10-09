@@ -1422,8 +1422,8 @@ virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
 };
 
 virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
-  GemanMcClure(double k);
-  static gtsam::noiseModel::mEstimator::GemanMcClure* Create(double k);
+  GemanMcClure(double c);
+  static gtsam::noiseModel::mEstimator::GemanMcClure* Create(double c);
 
   // enabling serialization functionality
   void serializable() const;

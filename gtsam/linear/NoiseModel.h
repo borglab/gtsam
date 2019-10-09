@@ -725,11 +725,11 @@ namespace gtsam {
         typedef boost::shared_ptr<Null> shared_ptr;
 
         Null(const ReweightScheme reweight = Block) : Base(reweight) {}
-        virtual ~Null() {}
-        virtual double weight(double /*error*/) const { return 1.0; }
-        virtual double residual(double error) const { return error; }
-        virtual void print(const std::string &s) const;
-        virtual bool equals(const Base& /*expected*/, double /*tol*/) const { return true; }
+        ~Null() {}
+        double weight(double /*error*/) const { return 1.0; }
+        double residual(double error) const { return error; }
+        void print(const std::string &s) const;
+        bool equals(const Base& /*expected*/, double /*tol*/) const { return true; }
         static shared_ptr Create() ;
 
       private:
@@ -951,9 +951,9 @@ namespace gtsam {
       public:
           typedef boost::shared_ptr<L2WithDeadZone> shared_ptr;
 
-          L2WithDeadZone(double k, const ReweightScheme reweight = Block);
-          double residual(double error) const override;
+          L2WithDeadZone(double k = 1.0, const ReweightScheme reweight = Block);
           double weight(double error) const override;
+          double residual(double error) const override;
           void print(const std::string &s) const;
           bool equals(const Base& expected, double tol=1e-8) const;
           static shared_ptr Create(double k, const ReweightScheme reweight = Block);
