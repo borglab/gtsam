@@ -27,7 +27,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization,
-                     boost::optional<const Ordering &> ordering)
+                     EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering)
                      : values_(solution), factorization_(factorization) {
   gttic(MarginalsConstructor);
   graph_ = *graph.linearize(solution);
@@ -36,7 +36,7 @@ Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, 
 
 /* ************************************************************************* */
 Marginals::Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization,
-                     boost::optional<const Ordering &> ordering)
+                     EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering)
                      : graph_(graph), factorization_(factorization) {
   gttic(MarginalsConstructor);
   Values vals;
@@ -49,14 +49,14 @@ Marginals::Marginals(const GaussianFactorGraph& graph, const VectorValues& solut
 
 /* ************************************************************************* */
 Marginals::Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization,
-                     boost::optional<const Ordering &> ordering)
+                     EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering)
                      : graph_(graph), values_(solution), factorization_(factorization) {
   gttic(MarginalsConstructor);
   computeBayesTree(ordering);
 }
 
 /* ************************************************************************* */
-void Marginals::computeBayesTree(boost::optional<const Ordering &> ordering) {
+void Marginals::computeBayesTree(EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering) {
   // Compute BayesTree
   if(factorization_ == CHOLESKY)
     bayesTree_ = *graph_.eliminateMultifrontal(ordering, EliminatePreferCholesky);

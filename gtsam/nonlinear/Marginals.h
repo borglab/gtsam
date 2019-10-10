@@ -58,7 +58,7 @@ public:
    * @param ordering An optional variable ordering for elimination.
    */
   Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization = CHOLESKY,
-            boost::optional<const Ordering &> ordering = boost::none);
+            EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering = boost::none);
 
   /** Construct a marginals class from a linear factor graph.
    * @param graph The factor graph defining the full joint density on all variables.
@@ -67,7 +67,7 @@ public:
    * @param ordering An optional variable ordering for elimination.
    */          
   Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization = CHOLESKY,
-              boost::optional<const Ordering &> ordering = boost::none);
+              EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering = boost::none);
 
   /** Construct a marginals class from a linear factor graph.
    * @param graph The factor graph defining the full joint density on all variables.
@@ -76,7 +76,7 @@ public:
    * @param ordering An optional variable ordering for elimination.
    */          
   Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization = CHOLESKY,
-              boost::optional<const Ordering &> ordering = boost::none);
+              EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering = boost::none);
 
   /** print */
   void print(const std::string& str = "Marginals: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
@@ -103,7 +103,7 @@ public:
 protected:
   
   /** Compute the Bayes Tree as a helper function to the constructor */
-  void computeBayesTree(boost::optional<const Ordering &> ordering);
+  void computeBayesTree(EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering);
 
 };
 
