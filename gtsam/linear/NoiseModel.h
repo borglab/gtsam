@@ -635,9 +635,9 @@ namespace gtsam {
      * To illustrate, let's consider the least-squares (L2), L1, and Huber estimators as examples:
      *
      * Name        Symbol          Least-Squares   L1-norm    Huber
-     * Residual    \rho(x)         0.5*x^2         |x|        0.5*x^2 if x<k, 0.5*k^2 + k|x-k| otherwise
-     * Derivative  \phi(x)         x               sgn(x)     x       if x<k, k sgn(x)         otherwise
-     * Weight      w(x)=\phi(x)/x  1               1/|x|      1       if x<k, k/|x|            otherwise
+     * Residual    \rho(x)         0.5*x^2         |x|        0.5*x^2 if |x|<k, 0.5*k^2 + k|x-k| otherwise
+     * Derivative  \phi(x)         x               sgn(x)     x       if |x|<k, k sgn(x)         otherwise
+     * Weight      w(x)=\phi(x)/x  1               1/|x|      1       if |x|<k, k/|x|            otherwise
      *
      * With these definitions, D(\rho(x), p) = \phi(x) D(x,p) = w(x) x D(x,p) = w(x) D(L2(x), p),
      * and hence we can solve the equivalent weighted least squares problem \sum w(r_i) \rho(r_i)
@@ -725,10 +725,11 @@ namespace gtsam {
         typedef boost::shared_ptr<Null> shared_ptr;
 
         Null(const ReweightScheme reweight = Block) : Base(reweight) {}
-        virtual ~Null() {}
-        virtual double weight(double /*error*/) const { return 1.0; }
-        virtual void print(const std::string &s) const;
-        virtual bool equals(const Base& /*expected*/, double /*tol*/) const { return true; }
+        ~Null() {}
+        double weight(double /*error*/) const { return 1.0; }
+        double residual(double error) const { return error; }
+        void print(const std::string &s) const;
+        bool equals(const Base& /*expected*/, double /*tol*/) const { return true; }
         static shared_ptr Create() ;
 
       private:
@@ -749,9 +750,8 @@ namespace gtsam {
         typedef boost::shared_ptr<Fair> shared_ptr;
 
         Fair(double c = 1.3998, const ReweightScheme reweight = Block);
-        double weight(double error) const {
-          return 1.0 / (1.0 + std::abs(error) / c_);
-        }
+        double weight(double error) const override;
+        double residual(double error) const override;
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double c, const ReweightScheme reweight = Block) ;
@@ -775,10 +775,8 @@ namespace gtsam {
         typedef boost::shared_ptr<Huber> shared_ptr;
 
         Huber(double k = 1.345, const ReweightScheme reweight = Block);
-        double weight(double error) const {
-          double absError = std::abs(error);
-          return (absError < k_) ? (1.0) : (k_ / absError);
-        }
+        double weight(double error) const override;
+        double residual(double error) const override;
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
@@ -806,9 +804,8 @@ namespace gtsam {
         typedef boost::shared_ptr<Cauchy> shared_ptr;
 
         Cauchy(double k = 0.1, const ReweightScheme reweight = Block);
-        double weight(double error) const {
-          return ksquared_ / (ksquared_ + error*error);
-        }
+        double weight(double error) const override;
+        double residual(double error) const override;
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
@@ -832,13 +829,8 @@ namespace gtsam {
         typedef boost::shared_ptr<Tukey> shared_ptr;
 
         Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
-        double weight(double error) const {
-          if (std::abs(error) <= c_) {
-            double xc2 = error*error/csquared_;
-            return (1.0-xc2)*(1.0-xc2);
-          }
-          return 0.0;
-        }
+        double weight(double error) const override;
+        double residual(double error) const override;
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
@@ -862,10 +854,8 @@ namespace gtsam {
         typedef boost::shared_ptr<Welsch> shared_ptr;
 
         Welsch(double c = 2.9846, const ReweightScheme reweight = Block);
-        double weight(double error) const {
-          double xc2 = (error*error)/csquared_;
-          return std::exp(-xc2);
-        }
+        double weight(double error) const override;
+        double residual(double error) const override;
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
@@ -885,31 +875,7 @@ namespace gtsam {
       // Welsh implements the "Welsch" robust error model (Zhang97ivc)
       // This was misspelled in previous versions of gtsam and should be
       // removed in the future.
-      class GTSAM_EXPORT Welsh : public Base {
-      protected:
-        double c_, csquared_;
-
-      public:
-        typedef boost::shared_ptr<Welsh> shared_ptr;
-
-        Welsh(double c = 2.9846, const ReweightScheme reweight = Block);
-        double weight(double error) const {
-          double xc2 = (error*error)/csquared_;
-          return std::exp(-xc2);
-        }
-        void print(const std::string &s) const;
-        bool equals(const Base& expected, double tol=1e-8) const;
-        static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
-
-      private:
-        /** Serialization function */
-        friend class boost::serialization::access;
-        template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-          ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-          ar & BOOST_SERIALIZATION_NVP(c_);
-        }
-      };
+      using Welsh = Welsch;
 #endif
 
       /// GemanMcClure implements the "Geman-McClure" robust error model
@@ -923,10 +889,11 @@ namespace gtsam {
         typedef boost::shared_ptr<GemanMcClure> shared_ptr;
 
         GemanMcClure(double c = 1.0, const ReweightScheme reweight = Block);
-        virtual ~GemanMcClure() {}
-        virtual double weight(double error) const;
-        virtual void print(const std::string &s) const;
-        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        ~GemanMcClure() {}
+        double weight(double error) const override;
+        double residual(double error) const override;
+        void print(const std::string &s) const;
+        bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       protected:
@@ -952,10 +919,11 @@ namespace gtsam {
         typedef boost::shared_ptr<DCS> shared_ptr;
 
         DCS(double c = 1.0, const ReweightScheme reweight = Block);
-        virtual ~DCS() {}
-        virtual double weight(double error) const;
-        virtual void print(const std::string &s) const;
-        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        ~DCS() {}
+        double weight(double error) const override;
+        double residual(double error) const override;
+        void print(const std::string &s) const;
+        bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       protected:
@@ -983,19 +951,9 @@ namespace gtsam {
       public:
           typedef boost::shared_ptr<L2WithDeadZone> shared_ptr;
 
-          L2WithDeadZone(double k, const ReweightScheme reweight = Block);
-          double residual(double error) const {
-            const double abs_error = std::abs(error);
-            return (abs_error < k_) ? 0.0 : 0.5*(k_-abs_error)*(k_-abs_error);
-          }
-          double weight(double error) const {
-            // note that this code is slightly uglier than above, because there are three distinct
-            // cases to handle (left of deadzone, deadzone, right of deadzone) instead of the two
-            // cases (deadzone, non-deadzone) above.
-            if (std::abs(error) <= k_) return 0.0;
-            else if (error > k_) return (-k_+error)/error;
-            else return (k_+error)/error;
-          }
+          L2WithDeadZone(double k = 1.0, const ReweightScheme reweight = Block);
+          double weight(double error) const override;
+          double residual(double error) const override;
           void print(const std::string &s) const;
           bool equals(const Base& expected, double tol=1e-8) const;
           static shared_ptr Create(double k, const ReweightScheme reweight = Block);

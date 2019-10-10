@@ -1362,6 +1362,9 @@ virtual class Null: gtsam::noiseModel::mEstimator::Base {
 
   // enabling serialization functionality
   void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
 };
 
 virtual class Fair: gtsam::noiseModel::mEstimator::Base {
@@ -1370,6 +1373,9 @@ virtual class Fair: gtsam::noiseModel::mEstimator::Base {
 
   // enabling serialization functionality
   void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
 };
 
 virtual class Huber: gtsam::noiseModel::mEstimator::Base {
@@ -1378,6 +1384,20 @@ virtual class Huber: gtsam::noiseModel::mEstimator::Base {
 
   // enabling serialization functionality
   void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
+};
+
+virtual class Cauchy: gtsam::noiseModel::mEstimator::Base {
+  Cauchy(double k);
+  static gtsam::noiseModel::mEstimator::Cauchy* Create(double k);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
 };
 
 virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
@@ -1386,6 +1406,9 @@ virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
 
   // enabling serialization functionality
   void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
 };
 
 virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
@@ -1394,8 +1417,43 @@ virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
 
   // enabling serialization functionality
   void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
 };
 
+virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
+  GemanMcClure(double c);
+  static gtsam::noiseModel::mEstimator::GemanMcClure* Create(double c);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
+};
+
+virtual class DCS: gtsam::noiseModel::mEstimator::Base {
+  DCS(double c);
+  static gtsam::noiseModel::mEstimator::DCS* Create(double c);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
+};
+
+virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
+  L2WithDeadZone(double k);
+  static gtsam::noiseModel::mEstimator::L2WithDeadZone* Create(double k);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
+};
 
 }///\namespace mEstimator
 
