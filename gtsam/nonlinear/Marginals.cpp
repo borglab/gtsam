@@ -28,17 +28,36 @@ namespace gtsam {
 /* ************************************************************************* */
 Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization,
                      EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering)
-{
+                     : values_(solution), factorization_(factorization) {
   gttic(MarginalsConstructor);
-
-  // Linearize graph
   graph_ = *graph.linearize(solution);
+  computeBayesTree(ordering);
+}
 
-  // Store values
-  values_ = solution;
+/* ************************************************************************* */
+Marginals::Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization,
+                     EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering)
+                     : graph_(graph), factorization_(factorization) {
+  gttic(MarginalsConstructor);
+  Values vals;
+  for (const auto& keyValue: solution) {
+    vals.insert(keyValue.first, keyValue.second);
+  }
+  values_ = vals;
+  computeBayesTree(ordering);
+}
 
+/* ************************************************************************* */
+Marginals::Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization,
+                     EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering)
+                     : graph_(graph), values_(solution), factorization_(factorization) {
+  gttic(MarginalsConstructor);
+  computeBayesTree(ordering);
+}
+
+/* ************************************************************************* */
+void Marginals::computeBayesTree(EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering) {
   // Compute BayesTree
-  factorization_ = factorization;
   if(factorization_ == CHOLESKY)
     bayesTree_ = *graph_.eliminateMultifrontal(ordering, EliminatePreferCholesky);
   else if(factorization_ == QR)
@@ -125,7 +144,7 @@ JointMarginal Marginals::jointMarginalInformation(const KeyVector& variables) co
     // Get dimensions from factor graph
     std::vector<size_t> dims;
     dims.reserve(variablesSorted.size());
-    for(Key key: variablesSorted) {
+    for(const auto& key: variablesSorted) {
       dims.push_back(values_.at(key).dim());
     }
 
@@ -142,7 +161,7 @@ VectorValues Marginals::optimize() const {
 void JointMarginal::print(const std::string& s, const KeyFormatter& formatter) const {
   cout << s << "Joint marginal on keys ";
   bool first = true;
-  for(Key key: keys_) {
+  for(const auto& key: keys_) {
     if(!first)
       cout << ", ";
     else

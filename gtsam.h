@@ -2011,6 +2011,10 @@ class Values {
 class Marginals {
   Marginals(const gtsam::NonlinearFactorGraph& graph,
       const gtsam::Values& solution);
+  Marginals(const gtsam::GaussianFactorGraph& gfgraph,
+      const gtsam::Values& solution);
+  Marginals(const gtsam::GaussianFactorGraph& gfgraph,
+      const gtsam::VectorValues& solutionvec);
 
   void print(string s) const;
   Matrix marginalCovariance(size_t variable) const;
