@@ -171,39 +171,22 @@ if(NOT Boost_SERIALIZATION_LIBRARY OR NOT Boost_SYSTEM_LIBRARY OR NOT Boost_FILE
   message(FATAL_ERROR "Missing required Boost components >= v1.43, please install/upgrade Boost or configure your search paths.")
 endif()
 
-# Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
-
-# JLBC: This was once updated to target-based names (Boost::xxx), but it caused
-# problems with Boost versions newer than FindBoost.cmake was prepared to handle,
-# so we downgraded this to classic filenames-based variables, and manually adding
-# the target_include_directories(xxx ${Boost_INCLUDE_DIR})
+# Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 set(GTSAM_BOOST_LIBRARIES
-  optimized ${Boost_SERIALIZATION_LIBRARY_RELEASE}
-  optimized ${Boost_SYSTEM_LIBRARY_RELEASE}
-  optimized ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-  optimized ${Boost_THREAD_LIBRARY_RELEASE}
-  optimized ${Boost_DATE_TIME_LIBRARY_RELEASE}
-  optimized ${Boost_REGEX_LIBRARY_RELEASE}
-  debug ${Boost_SERIALIZATION_LIBRARY_DEBUG}
-  debug ${Boost_SYSTEM_LIBRARY_DEBUG}
-  debug ${Boost_FILESYSTEM_LIBRARY_DEBUG}
-  debug ${Boost_THREAD_LIBRARY_DEBUG}
-  debug ${Boost_DATE_TIME_LIBRARY_DEBUG}
-  debug ${Boost_REGEX_LIBRARY_DEBUG}
+  Boost::serialization
+  Boost::system
+  Boost::filesystem
+  Boost::thread
+  Boost::date_time
+  Boost::regex
 )
-message(STATUS "GTSAM_BOOST_LIBRARIES: ${GTSAM_BOOST_LIBRARIES}")
 if (GTSAM_DISABLE_NEW_TIMERS)
     message("WARNING:  GTSAM timing instrumentation manually disabled")
     list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC DGTSAM_DISABLE_NEW_TIMERS)
 else()
     if(Boost_TIMER_LIBRARY)
-      list(APPEND GTSAM_BOOST_LIBRARIES
-        optimized ${Boost_TIMER_LIBRARY_RELEASE}
-        optimized ${Boost_CHRONO_LIBRARY_RELEASE}
-        debug ${Boost_TIMER_LIBRARY_DEBUG}
-        debug ${Boost_CHRONO_LIBRARY_DEBUG}
-        )
+      list(APPEND GTSAM_BOOST_LIBRARIES Boost::timer Boost::chrono)
     else()
       list(APPEND GTSAM_BOOST_LIBRARIES rt) # When using the header-only boost timer library, need -lrt
       message("WARNING:  GTSAM timing instrumentation will use the older, less accurate, Boost timer library because boost older than 1.48 was found.")
