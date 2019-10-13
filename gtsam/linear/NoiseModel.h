@@ -752,8 +752,8 @@ namespace gtsam {
         Fair(double c = 1.3998, const ReweightScheme reweight = Block);
         double weight(double error) const override;
         double residual(double error) const override;
-        void print(const std::string &s) const;
-        bool equals(const Base& expected, double tol=1e-8) const;
+        void print(const std::string &s) const override;
+        bool equals(const Base& expected, double tol = 1e-8) const override;
         static shared_ptr Create(double c, const ReweightScheme reweight = Block) ;
 
       private:
@@ -777,8 +777,8 @@ namespace gtsam {
         Huber(double k = 1.345, const ReweightScheme reweight = Block);
         double weight(double error) const override;
         double residual(double error) const override;
-        void print(const std::string &s) const;
-        bool equals(const Base& expected, double tol=1e-8) const;
+        void print(const std::string &s) const override;
+        bool equals(const Base& expected, double tol = 1e-8) const override;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       private:
@@ -806,8 +806,8 @@ namespace gtsam {
         Cauchy(double k = 0.1, const ReweightScheme reweight = Block);
         double weight(double error) const override;
         double residual(double error) const override;
-        void print(const std::string &s) const;
-        bool equals(const Base& expected, double tol=1e-8) const;
+        void print(const std::string &s) const override;
+        bool equals(const Base& expected, double tol = 1e-8) const override;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       private:
@@ -831,8 +831,8 @@ namespace gtsam {
         Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
         double weight(double error) const override;
         double residual(double error) const override;
-        void print(const std::string &s) const;
-        bool equals(const Base& expected, double tol=1e-8) const;
+        void print(const std::string &s) const override;
+        bool equals(const Base& expected, double tol = 1e-8) const override;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       private:
@@ -856,8 +856,8 @@ namespace gtsam {
         Welsch(double c = 2.9846, const ReweightScheme reweight = Block);
         double weight(double error) const override;
         double residual(double error) const override;
-        void print(const std::string &s) const;
-        bool equals(const Base& expected, double tol=1e-8) const;
+        void print(const std::string &s) const override;
+        bool equals(const Base& expected, double tol = 1e-8) const override;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       private:
@@ -892,8 +892,8 @@ namespace gtsam {
         ~GemanMcClure() {}
         double weight(double error) const override;
         double residual(double error) const override;
-        void print(const std::string &s) const;
-        bool equals(const Base& expected, double tol=1e-8) const;
+        void print(const std::string &s) const override;
+        bool equals(const Base& expected, double tol=1e-8) const override;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       protected:
@@ -922,8 +922,8 @@ namespace gtsam {
         ~DCS() {}
         double weight(double error) const override;
         double residual(double error) const override;
-        void print(const std::string &s) const;
-        bool equals(const Base& expected, double tol=1e-8) const;
+        void print(const std::string &s) const override;
+        bool equals(const Base& expected, double tol = 1e-8) const override;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       protected:
@@ -954,8 +954,8 @@ namespace gtsam {
           L2WithDeadZone(double k = 1.0, const ReweightScheme reweight = Block);
           double weight(double error) const override;
           double residual(double error) const override;
-          void print(const std::string &s) const;
-          bool equals(const Base& expected, double tol=1e-8) const;
+          void print(const std::string &s) const override;
+          bool equals(const Base& expected, double tol = 1e-8) const override;
           static shared_ptr Create(double k, const ReweightScheme reweight = Block);
 
       private:
