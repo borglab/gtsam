@@ -89,10 +89,10 @@ namespace gtsam {
     typedef boost::function<EliminationResult(const FactorGraphType&, const Ordering&)> Eliminate;
 
     /// Typedef for an optional ordering as an argument to elimination functions
-    typedef boost::optional<const Ordering&> OptionalOrdering;
+    typedef const boost::optional<Ordering>& OptionalOrdering;
 
     /// Typedef for an optional variable index as an argument to elimination functions
-    typedef boost::optional<const VariableIndex&> OptionalVariableIndex;
+    typedef const boost::optional<VariableIndex>& OptionalVariableIndex;
 
     /// Typedef for an optional ordering type
     typedef boost::optional<Ordering::OrderingType> OptionalOrderingType;
