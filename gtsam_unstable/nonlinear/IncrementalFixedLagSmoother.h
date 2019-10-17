@@ -39,8 +39,8 @@ public:
 
   /** default constructor */
   IncrementalFixedLagSmoother(double smootherLag = 0.0,
-      const boost::optional<ISAM2Params>& parameters = boost::none) :
-      FixedLagSmoother(smootherLag), isam_(parameters ? (*parameters) : getDefaultParams()) {
+      const ISAM2Params& parameters = DefaultISAM2Params()) :
+      FixedLagSmoother(smootherLag), isam_(parameters) {
   }
 
   /** destructor */
@@ -115,8 +115,8 @@ public:
 
 protected:
 
-  /* Create default parameters */
-  ISAM2Params getDefaultParams() const {
+  /** Create default parameters */
+  static ISAM2Params DefaultISAM2Params() {
     ISAM2Params params;
     params.findUnusedFactorSlots = true;
     return params;
