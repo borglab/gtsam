@@ -29,6 +29,12 @@
 
 namespace gtsam {
 
+#ifdef GTSAM_TANGENT_PREINTEGRATION
+typedef TangentPreintegration PreintegrationType;
+#else
+typedef ManifoldPreintegration PreintegrationType;
+#endif
+
 /*
  * If you are using the factor, please cite:
  * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating
@@ -48,6 +54,8 @@ namespace gtsam {
  *     Robotics: Science and Systems (RSS), 2015.
  */
 
+/// Parameters for pre-integration using PreintegratedCombinedMeasurements:
+/// Usage: Create just a single Params and pass a shared pointer to the constructor
 struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
   Matrix3 biasAccCovariance;    ///< continuous-time "Covariance" describing accelerometer bias random walk
   Matrix3 biasOmegaCovariance;  ///< continuous-time "Covariance" describing gyroscope bias random walk
@@ -94,13 +102,6 @@ private:
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-  
-#ifdef GTSAM_TANGENT_PREINTEGRATION
-typedef TangentPreintegration PreintegrationType;
-#else
-typedef ManifoldPreintegration PreintegrationType;
-#endif
 
 
 /**
