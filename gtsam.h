@@ -2812,7 +2812,6 @@ virtual class ImuFactor: gtsam::NonlinearFactor {
 };
 
 #include <gtsam/navigation/CombinedImuFactor.h>
-//typedef PreintegratedCombinedMeasurements::Params PreintegrationCombinedParams;
 virtual class PreintegrationCombinedParams : gtsam::PreintegrationParams {
   PreintegrationCombinedParams(Vector n_gravity);
 
