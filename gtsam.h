@@ -2405,7 +2405,7 @@ virtual class PriorFactor : gtsam::NoiseModelFactor {
 
 
 #include <gtsam/slam/BetweenFactor.h>
-template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::imuBias::ConstantBias}>
+template<T = {Vector,gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::imuBias::ConstantBias}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
   T measured() const;
@@ -2812,7 +2812,33 @@ virtual class ImuFactor: gtsam::NonlinearFactor {
 };
 
 #include <gtsam/navigation/CombinedImuFactor.h>
+virtual class PreintegrationCombinedParams : gtsam::PreintegrationParams {
+  PreintegrationCombinedParams(Vector n_gravity);
+
+  static gtsam::PreintegrationCombinedParams* MakeSharedD(double g);
+  static gtsam::PreintegrationCombinedParams* MakeSharedU(double g);
+  static gtsam::PreintegrationCombinedParams* MakeSharedD();  // default g = 9.81
+  static gtsam::PreintegrationCombinedParams* MakeSharedU();  // default g = 9.81
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::PreintegrationCombinedParams& expected, double tol);
+
+  void setBiasAccCovariance(Matrix cov);
+  void setBiasOmegaCovariance(Matrix cov);
+  void setBiasAccOmegaInt(Matrix cov);
+  
+  Matrix getBiasAccCovariance() const ;
+  Matrix getBiasOmegaCovariance() const ;
+  Matrix getBiasAccOmegaInt() const;
+ 
+};
+
 class PreintegratedCombinedMeasurements {
+// Constructors
+  PreintegratedCombinedMeasurements(const gtsam::PreintegrationCombinedParams* params);
+  PreintegratedCombinedMeasurements(const gtsam::PreintegrationCombinedParams* params,
+				    const gtsam::imuBias::ConstantBias& bias);
   // Testable
   void print(string s) const;
   bool equals(const gtsam::PreintegratedCombinedMeasurements& expected,
