@@ -2936,6 +2936,31 @@ virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor {
   gtsam::Unit3 bRef() const;
 };
 
+#include <gtsam/navigation/GPSFactor.h>
+virtual class GPSFactor : gtsam::NonlinearFactor{
+  GPSFactor(size_t key, const gtsam::Point3& gpsIn,
+            const gtsam::noiseModel::Base* model);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::GPSFactor& expected, double tol);
+
+  // Standard Interface
+  gtsam::Point3 measurementIn() const;
+};
+
+virtual class GPSFactor2 : gtsam::NonlinearFactor {
+  GPSFactor2(size_t key, const gtsam::Point3& gpsIn,
+            const gtsam::noiseModel::Base* model);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::GPSFactor2& expected, double tol);
+
+  // Standard Interface
+  gtsam::Point3 measurementIn() const;
+};
+
 #include <gtsam/navigation/Scenario.h>
 virtual class Scenario {
   gtsam::Pose3 pose(double t) const;
