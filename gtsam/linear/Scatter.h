@@ -64,7 +64,7 @@ class Scatter : public FastVector<SlotEntry> {
 
   /// Helper function for constructors, adds/finds dimensions of variables and
   //  sorts starting from sortStart
-  void ScatterHelper(const GaussianFactorGraph& gfg, size_t sortStart);
+  void setDimensions(const GaussianFactorGraph& gfg, size_t sortStart);
 
   /// Find the SlotEntry with the right key (linear time worst case)
   iterator find(Key key);

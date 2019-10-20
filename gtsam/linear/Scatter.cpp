@@ -34,8 +34,7 @@ string SlotEntry::toString() const {
 }
 
 /* ************************************************************************* */
-void Scatter::ScatterHelper(const GaussianFactorGraph& gfg, size_t sortStart) {
-  // Now, find dimensions of variables and/or extend
+void Scatter::setDimensions(const GaussianFactorGraph& gfg, size_t sortStart) {
   for (const auto& factor : gfg) {
     if (!factor)
       continue;
@@ -66,7 +65,7 @@ void Scatter::ScatterHelper(const GaussianFactorGraph& gfg, size_t sortStart) {
 Scatter::Scatter(const GaussianFactorGraph& gfg) {
   gttic(Scatter_Constructor);
 
-  ScatterHelper(gfg, 0);
+  setDimensions(gfg, 0);
 }
 
 /* ************************************************************************* */
@@ -79,7 +78,7 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
     add(key, 0);
   }
 
-  ScatterHelper(gfg, ordering.size());
+  setDimensions(gfg, ordering.size());
 }
 
 /* ************************************************************************* */

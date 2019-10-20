@@ -149,17 +149,31 @@ namespace gtsam {
      * Instead of producing a GaussianFactorGraph, pre-allocate and linearize directly
      * into a HessianFactor. Avoids the many mallocs and pointer indirection in constructing
      * a new graph, and hence useful in case a dense solve is appropriate for your problem.
-     * An optional ordering can be given that still decides how the Hessian is laid out.
      * An optional lambda function can be used to apply damping on the filled Hessian.
      * No parallelism is exploited, because all the factors write in the same memory.
      */
     boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
-        const Values& values, boost::optional<Ordering&> ordering = boost::none,
-        const Dampen& dampen = nullptr) const;
+        const Values& values, const Dampen& dampen = nullptr) const;
+
+    /**
+     * Instead of producing a GaussianFactorGraph, pre-allocate and linearize directly
+     * into a HessianFactor. Avoids the many mallocs and pointer indirection in constructing
+     * a new graph, and hence useful in case a dense solve is appropriate for your problem.
+     * An ordering is given that still decides how the Hessian is laid out.
+     * An optional lambda function can be used to apply damping on the filled Hessian.
+     * No parallelism is exploited, because all the factors write in the same memory.
+     */
+    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+        const Values& values, const Ordering& ordering, const Dampen& dampen = nullptr) const;
 
     /// Linearize and solve in one pass.
     /// Calls linearizeToHessianFactor, densely solves the normal equations, and updates the values.
-    Values updateCholesky(const Values& values, boost::optional<Ordering&> ordering = boost::none,
+    Values updateCholesky(const Values& values,
+                          const Dampen& dampen = nullptr) const;
+
+    /// Linearize and solve in one pass.
+    /// Calls linearizeToHessianFactor, densely solves the normal equations, and updates the values.
+    Values updateCholesky(const Values& values, const Ordering& ordering,
                           const Dampen& dampen = nullptr) const;
 
     /// Clone() performs a deep-copy of the graph, including all of the factors

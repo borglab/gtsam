@@ -46,16 +46,25 @@ DiscreteConditional::DiscreteConditional(const size_t nrFrontals,
 
 /* ******************************************************************************** */
 DiscreteConditional::DiscreteConditional(const DecisionTreeFactor& joint,
-    const DecisionTreeFactor& marginal, const boost::optional<Ordering>& orderedKeys) :
+    const DecisionTreeFactor& marginal) :
     BaseFactor(
         ISDEBUG("DiscreteConditional::COUNT") ? joint : joint / marginal), BaseConditional(
             joint.size()-marginal.size()) {
   if (ISDEBUG("DiscreteConditional::DiscreteConditional"))
     cout << (firstFrontalKey()) << endl; //TODO Print all keys
-  if (orderedKeys) {
-    keys_.clear();
-    keys_.insert(keys_.end(), orderedKeys->begin(), orderedKeys->end());
-  }
+}
+
+/* ******************************************************************************** */
+DiscreteConditional::DiscreteConditional(const DecisionTreeFactor& joint,
+    const DecisionTreeFactor& marginal, const Ordering& orderedKeys) :
+    BaseFactor(
+        ISDEBUG("DiscreteConditional::COUNT") ? joint : joint / marginal), BaseConditional(
+            joint.size()-marginal.size()) {
+  if (ISDEBUG("DiscreteConditional::DiscreteConditional"))
+    cout << (firstFrontalKey()) << endl; //TODO Print all keys
+    
+  keys_.clear();
+  keys_.insert(keys_.end(), orderedKeys.begin(), orderedKeys.end());
 }
 
 /* ******************************************************************************** */
