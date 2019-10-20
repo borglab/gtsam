@@ -34,17 +34,7 @@ string SlotEntry::toString() const {
 }
 
 /* ************************************************************************* */
-Scatter::Scatter(const GaussianFactorGraph& gfg,
-    boost::optional<const Ordering&> ordering) {
-  gttic(Scatter_Constructor);
-
-  // If we have an ordering, pre-fill the ordered variables first
-  if (ordering) {
-    for (Key key : *ordering) {
-      add(key, 0);
-    }
-  }
-
+void Scatter::ScatterHelper(const GaussianFactorGraph& gfg, size_t sortStart) {
   // Now, find dimensions of variables and/or extend
   for (const auto& factor : gfg) {
     if (!factor)
@@ -68,8 +58,28 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
 
   // To keep the same behavior as before, sort the keys after the ordering
   iterator first = begin();
-  if (ordering) first += ordering->size();
+  first += sortStart;
   if (first != end()) std::sort(first, end());
+}
+
+/* ************************************************************************* */
+Scatter::Scatter(const GaussianFactorGraph& gfg) {
+  gttic(Scatter_Constructor);
+
+  ScatterHelper(gfg, 0);
+}
+
+/* ************************************************************************* */
+Scatter::Scatter(const GaussianFactorGraph& gfg,
+    const Ordering& ordering) {
+  gttic(Scatter_Constructor);
+
+  // pre-fill the ordered variables first
+  for (Key key : ordering) {
+    add(key, 0);
+  }
+
+  ScatterHelper(gfg, ordering.size());
 }
 
 /* ************************************************************************* */

@@ -26,8 +26,16 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization,
-                     EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering)
+Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization)
+                     : values_(solution), factorization_(factorization) {
+  gttic(MarginalsConstructor);
+  graph_ = *graph.linearize(solution);
+  computeBayesTree();
+}
+
+/* ************************************************************************* */
+Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, const Ordering& ordering,
+                     Factorization factorization)
                      : values_(solution), factorization_(factorization) {
   gttic(MarginalsConstructor);
   graph_ = *graph.linearize(solution);
@@ -35,28 +43,52 @@ Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, 
 }
 
 /* ************************************************************************* */
-Marginals::Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization,
-                     EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering)
-                     : graph_(graph), factorization_(factorization) {
+Marginals::Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization)
+                     : graph_(graph), values_(solution), factorization_(factorization) {
   gttic(MarginalsConstructor);
-  Values vals;
-  for (const auto& keyValue: solution) {
-    vals.insert(keyValue.first, keyValue.second);
-  }
-  values_ = vals;
-  computeBayesTree(ordering);
+  computeBayesTree();
 }
 
 /* ************************************************************************* */
-Marginals::Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization,
-                     EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering)
+Marginals::Marginals(const GaussianFactorGraph& graph, const Values& solution, const Ordering& ordering,
+                     Factorization factorization)
                      : graph_(graph), values_(solution), factorization_(factorization) {
   gttic(MarginalsConstructor);
   computeBayesTree(ordering);
 }
 
 /* ************************************************************************* */
-void Marginals::computeBayesTree(EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering) {
+Marginals::Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization)
+                     : graph_(graph), factorization_(factorization) {
+  gttic(MarginalsConstructor);
+  for (const auto& keyValue: solution) {
+    values_.insert(keyValue.first, keyValue.second);
+  }
+  computeBayesTree();
+}
+
+/* ************************************************************************* */
+Marginals::Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, const Ordering& ordering,
+                     Factorization factorization)
+                     : graph_(graph), factorization_(factorization) {
+  gttic(MarginalsConstructor);
+  for (const auto& keyValue: solution) {
+    values_.insert(keyValue.first, keyValue.second);
+  }
+  computeBayesTree(ordering);
+}
+
+/* ************************************************************************* */
+void Marginals::computeBayesTree() {
+  // Compute BayesTree
+  if(factorization_ == CHOLESKY)
+    bayesTree_ = *graph_.eliminateMultifrontal(EliminatePreferCholesky);
+  else if(factorization_ == QR)
+    bayesTree_ = *graph_.eliminateMultifrontal(EliminateQR);
+}
+
+/* ************************************************************************* */
+void Marginals::computeBayesTree(const Ordering& ordering) {
   // Compute BayesTree
   if(factorization_ == CHOLESKY)
     bayesTree_ = *graph_.eliminateMultifrontal(ordering, EliminatePreferCholesky);
@@ -128,9 +160,9 @@ JointMarginal Marginals::jointMarginalInformation(const KeyVector& variables) co
         jointFG = *bayesTree_.joint(variables[0], variables[1], EliminateQR);
     } else {
       if(factorization_ == CHOLESKY)
-        jointFG = GaussianFactorGraph(*graph_.marginalMultifrontalBayesTree(variables, boost::none, EliminatePreferCholesky));
+        jointFG = GaussianFactorGraph(*graph_.marginalMultifrontalBayesTree(variables, EliminatePreferCholesky));
       else if(factorization_ == QR)
-        jointFG = GaussianFactorGraph(*graph_.marginalMultifrontalBayesTree(variables, boost::none, EliminateQR));
+        jointFG = GaussianFactorGraph(*graph_.marginalMultifrontalBayesTree(variables, EliminateQR));
     }
 
     // Get information matrix

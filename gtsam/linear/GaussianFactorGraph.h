@@ -282,7 +282,14 @@ namespace gtsam {
      *  the dense elimination function specified in \c function (default EliminatePreferCholesky),
      *  followed by back-substitution in the Bayes tree resulting from elimination.  Is equivalent
      *  to calling graph.eliminateMultifrontal()->optimize(). */
-    VectorValues optimize(OptionalOrdering ordering = boost::none,
+    VectorValues optimize(
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+
+    /** Solve the factor graph by performing multifrontal variable elimination in COLAMD order using
+     *  the dense elimination function specified in \c function (default EliminatePreferCholesky),
+     *  followed by back-substitution in the Bayes tree resulting from elimination.  Is equivalent
+     *  to calling graph.eliminateMultifrontal()->optimize(). */
+    VectorValues optimize(const Ordering&,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
     /**
