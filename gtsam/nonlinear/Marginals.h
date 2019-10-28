@@ -64,7 +64,7 @@ public:
    * @param factorization The linear decomposition mode - either Marginals::CHOLESKY (faster and suitable for most problems) or Marginals::QR (slower but more numerically stable for poorly-conditioned problems).
    * @param ordering The ordering for elimination.
    */
-  Marginals(const NonlinearFactorGraph& graph, const Values& solution, const Ordering& ordering, // argument order switch due to default value of factorization, potentially code breaking
+  Marginals(const NonlinearFactorGraph& graph, const Values& solution, const Ordering& ordering,
               Factorization factorization = CHOLESKY);
 
   /** Construct a marginals class from a linear factor graph.
@@ -80,7 +80,7 @@ public:
    * @param factorization The linear decomposition mode - either Marginals::CHOLESKY (faster and suitable for most problems) or Marginals::QR (slower but more numerically stable for poorly-conditioned problems).
    * @param ordering The ordering for elimination.
    */          
-  Marginals(const GaussianFactorGraph& graph, const Values& solution, const Ordering& ordering, // argument order switch due to default value of factorization, potentially code breaking
+  Marginals(const GaussianFactorGraph& graph, const Values& solution, const Ordering& ordering,
               Factorization factorization = CHOLESKY);
 
   /** Construct a marginals class from a linear factor graph.
@@ -97,7 +97,7 @@ public:
    * @param factorization The linear decomposition mode - either Marginals::CHOLESKY (faster and suitable for most problems) or Marginals::QR (slower but more numerically stable for poorly-conditioned problems).
    * @param ordering An optional variable ordering for elimination.
    */          
-  Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, const Ordering& ordering, // argument order switch due to default value of factorization, potentially code breaking
+  Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, const Ordering& ordering,
               Factorization factorization = CHOLESKY);
 
   /** print */
@@ -121,7 +121,7 @@ public:
 
   /** Optimize the bayes tree */
   VectorValues optimize() const;
-
+            
 protected:
   
   /** Compute the Bayes Tree as a helper function to the constructor */
@@ -129,6 +129,19 @@ protected:
 
   /** Compute the Bayes Tree as a helper function to the constructor */
   void computeBayesTree(const Ordering& ordering);
+
+public:
+  /** \deprecated argument order changed due to removing boost::optional<Ordering> */
+  Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization,
+            const Ordering& ordering) : Marginals(graph, solution, ordering, factorization) {}
+
+  /** \deprecated argument order changed due to removing boost::optional<Ordering> */
+  Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization,
+            const Ordering& ordering) : Marginals(graph, solution, ordering, factorization) {}
+
+  /** \deprecated argument order changed due to removing boost::optional<Ordering> */
+  Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization,
+            const Ordering& ordering) : Marginals(graph, solution, ordering, factorization) {}
 
 };
 

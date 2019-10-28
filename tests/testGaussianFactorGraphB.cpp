@@ -206,6 +206,7 @@ TEST(GaussianFactorGraph, optimize_Cholesky) {
   GaussianFactorGraph fg = createGaussianFactorGraph();
 
   // optimize the graph
+  VectorValues actual1 = fg.optimize(boost::none, EliminateCholesky);
   VectorValues actual = fg.optimize(EliminateCholesky);
 
   // verify
@@ -220,6 +221,7 @@ TEST( GaussianFactorGraph, optimize_QR )
   GaussianFactorGraph fg = createGaussianFactorGraph();
 
   // optimize the graph
+  VectorValues actual1 = fg.optimize(boost::none, EliminateQR);
   VectorValues actual = fg.optimize(EliminateQR);
 
   // verify

@@ -28,8 +28,8 @@ namespace gtsam {
   template<class FACTORGRAPH>
   boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
     EliminateableFactorGraph<FACTORGRAPH>::eliminateSequential(
-    const Eliminate& function, OptionalVariableIndex variableIndex,
-    OptionalOrderingType orderingType) const {
+    OptionalOrderingType orderingType, const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
     if(!variableIndex) {
       // If no VariableIndex provided, compute one and call this function again IMPORTANT: we check
       // for no variable index first so that it's always computed if we need to call COLAMD because
@@ -56,12 +56,12 @@ namespace gtsam {
   boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
     EliminateableFactorGraph<FACTORGRAPH>::eliminateSequential(
     const Ordering& ordering, const Eliminate& function,
-    OptionalVariableIndex variableIndex, OptionalOrderingType orderingType) const
+    OptionalVariableIndex variableIndex) const
   {
     if(!variableIndex) {
       // If no VariableIndex provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminateSequential(ordering, function, computedVariableIndex, orderingType);
+      return eliminateSequential(ordering, function, computedVariableIndex);
     } else {
       gttic(eliminateSequential);
       // Do elimination
@@ -81,8 +81,8 @@ namespace gtsam {
   template<class FACTORGRAPH>
   boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
     EliminateableFactorGraph<FACTORGRAPH>::eliminateMultifrontal(
-    const Eliminate& function, OptionalVariableIndex variableIndex,
-    OptionalOrderingType orderingType) const
+    OptionalOrderingType orderingType, const Eliminate& function,
+    OptionalVariableIndex variableIndex) const
   {
     if(!variableIndex) {
       // If no VariableIndex provided, compute one and call this function again IMPORTANT: we check
@@ -110,12 +110,12 @@ namespace gtsam {
   boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
     EliminateableFactorGraph<FACTORGRAPH>::eliminateMultifrontal(
     const Ordering& ordering, const Eliminate& function,
-    OptionalVariableIndex variableIndex, OptionalOrderingType orderingType) const
+    OptionalVariableIndex variableIndex) const
   {
     if(!variableIndex) {
       // If no VariableIndex provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminateMultifrontal(ordering, function, computedVariableIndex, orderingType);
+      return eliminateMultifrontal(ordering, function, computedVariableIndex);
     } else {
       gttic(eliminateMultifrontal);
       // Do elimination with given ordering

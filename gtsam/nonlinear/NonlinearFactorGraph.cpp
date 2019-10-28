@@ -376,19 +376,7 @@ static Scatter scatterFromValues(const Values& values, const Ordering& ordering)
 
 /* ************************************************************************* */
 HessianFactor::shared_ptr NonlinearFactorGraph::linearizeToHessianFactor(
-    const Values& values, const Dampen& dampen) const {
-  KeyVector keys = values.keys();
-  Ordering defaultOrdering(keys);
-  return linearizeToHessianFactor(values, defaultOrdering, dampen);
-}
-
-/* ************************************************************************* */
-HessianFactor::shared_ptr NonlinearFactorGraph::linearizeToHessianFactor(
-    const Values& values, const Ordering& ordering, const Dampen& dampen) const {
-  gttic(NonlinearFactorGraph_linearizeToHessianFactor);
-
-  Scatter scatter = scatterFromValues(values, ordering);
-
+    const Values& values, const Scatter& scatter, const Dampen& dampen) const {
   // NOTE(frank): we are heavily leaning on friendship below
   HessianFactor::shared_ptr hessianFactor(new HessianFactor(scatter));
 
@@ -407,6 +395,24 @@ HessianFactor::shared_ptr NonlinearFactorGraph::linearizeToHessianFactor(
   if (dampen) dampen(hessianFactor);
 
   return hessianFactor;
+}
+
+/* ************************************************************************* */
+HessianFactor::shared_ptr NonlinearFactorGraph::linearizeToHessianFactor(
+    const Values& values, const Ordering& order, const Dampen& dampen) const {
+  gttic(NonlinearFactorGraph_linearizeToHessianFactor);
+
+  Scatter scatter = scatterFromValues(values, order);
+  return linearizeToHessianFactor(values, scatter, dampen);
+}
+
+/* ************************************************************************* */
+HessianFactor::shared_ptr NonlinearFactorGraph::linearizeToHessianFactor(
+    const Values& values, const Dampen& dampen) const {
+  gttic(NonlinearFactorGraph_linearizeToHessianFactor);
+
+  Scatter scatter = scatterFromValues(values);
+  return linearizeToHessianFactor(values, scatter, dampen);
 }
 
 /* ************************************************************************* */

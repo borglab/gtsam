@@ -204,6 +204,13 @@ namespace gtsam {
 
   private:
 
+    /**
+     * Linearize from Scatter rather than from Ordering.  Made private because
+     *  it doesn't include gttic.
+     */
+    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+        const Values& values, const Scatter& scatter, const Dampen& dampen = nullptr) const;
+
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -211,6 +218,19 @@ namespace gtsam {
       ar & boost::serialization::make_nvp("NonlinearFactorGraph",
                 boost::serialization::base_object<Base>(*this));
     }
+
+  public:
+
+    /** \deprecated */
+    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+        const Values& values, boost::none_t, const Dampen& dampen = nullptr) const
+      {return linearizeToHessianFactor(values, dampen);}
+
+    /** \deprecated */
+    Values updateCholesky(const Values& values, boost::none_t,
+                          const Dampen& dampen = nullptr) const
+      {return updateCholesky(values, dampen);}
+
   };
 
 /// traits

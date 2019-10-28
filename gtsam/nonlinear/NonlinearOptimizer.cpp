@@ -128,18 +128,22 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
                                        const NonlinearOptimizerParams& params) const {
   // solution of linear solver is an update to the linearization point
   VectorValues delta;
-  Ordering ordering;
-  if (params.ordering)
-    ordering = *params.ordering;
 
   // Check which solver we are using
   if (params.isMultifrontal()) {
     // Multifrontal QR or Cholesky (decided by params.getEliminationFunction())
-    delta = gfg.optimize(ordering, params.getEliminationFunction());
+    if (params.ordering)
+      delta = gfg.optimize(*params.ordering, params.getEliminationFunction());
+    else
+      delta = gfg.optimize(params.getEliminationFunction());
   } else if (params.isSequential()) {
     // Sequential QR or Cholesky (decided by params.getEliminationFunction())
-    delta = gfg.eliminateSequential(ordering, params.getEliminationFunction(), boost::none,
-                                    params.orderingType)->optimize();
+    if (params.ordering)
+      delta = gfg.eliminateSequential(*params.ordering, params.getEliminationFunction(),
+                                      boost::none, params.orderingType)->optimize();
+    else
+      delta = gfg.eliminateSequential(params.getEliminationFunction(), boost::none,
+                                      params.orderingType)->optimize();
   } else if (params.isIterative()) {
     // Conjugate Gradient -> needs params.iterativeParams
     if (!params.iterativeParams)

@@ -71,8 +71,12 @@ bool assert_equal(const V& expected, const boost::optional<V>& actual, double to
 }
 
 template<class V>
-bool assert_equal(const V& expected, double tol = 1e-9) {
-  return false;
+bool assert_equal(const V& expected, const boost::optional<const V&>& actual, double tol = 1e-9) {
+  if (!actual) {
+    std::cout << "actual is boost::none" << std::endl;
+    return false;
+  }
+  return assert_equal(expected, *actual, tol);
 }
 
 /**

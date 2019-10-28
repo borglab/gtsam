@@ -375,6 +375,12 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
 
+  public:
+
+    /** \deprecated */
+    VectorValues optimize(boost::none_t,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+
   };
 
   /**

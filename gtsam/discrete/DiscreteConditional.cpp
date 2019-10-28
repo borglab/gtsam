@@ -57,12 +57,7 @@ DiscreteConditional::DiscreteConditional(const DecisionTreeFactor& joint,
 /* ******************************************************************************** */
 DiscreteConditional::DiscreteConditional(const DecisionTreeFactor& joint,
     const DecisionTreeFactor& marginal, const Ordering& orderedKeys) :
-    BaseFactor(
-        ISDEBUG("DiscreteConditional::COUNT") ? joint : joint / marginal), BaseConditional(
-            joint.size()-marginal.size()) {
-  if (ISDEBUG("DiscreteConditional::DiscreteConditional"))
-    cout << (firstFrontalKey()) << endl; //TODO Print all keys
-    
+    DiscreteConditional(joint, marginal) {
   keys_.clear();
   keys_.insert(keys_.end(), orderedKeys.begin(), orderedKeys.end());
 }

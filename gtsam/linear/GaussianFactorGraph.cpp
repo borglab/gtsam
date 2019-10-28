@@ -494,4 +494,11 @@ namespace gtsam {
     return e;
   }
 
+  /* ************************************************************************* */
+  /** \deprecated */
+  VectorValues GaussianFactorGraph::optimize(boost::none_t,
+    const Eliminate& function) const {
+      return optimize(function);
+  }
+
 } // namespace gtsam

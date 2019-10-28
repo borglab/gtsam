@@ -33,8 +33,19 @@ string SlotEntry::toString() const {
   return oss.str();
 }
 
+Scatter::Scatter(const GaussianFactorGraph& gfg) : Scatter(gfg, Ordering()) {}
+
 /* ************************************************************************* */
-void Scatter::setDimensions(const GaussianFactorGraph& gfg, size_t sortStart) {
+Scatter::Scatter(const GaussianFactorGraph& gfg,
+    const Ordering& ordering) {
+  gttic(Scatter_Constructor);
+
+  // If we have an ordering, pre-fill the ordered variables first
+  for (Key key : ordering) {
+    add(key, 0);
+  }
+
+  // Now, find dimensions of variables and/or extend
   for (const auto& factor : gfg) {
     if (!factor)
       continue;
@@ -57,28 +68,8 @@ void Scatter::setDimensions(const GaussianFactorGraph& gfg, size_t sortStart) {
 
   // To keep the same behavior as before, sort the keys after the ordering
   iterator first = begin();
-  first += sortStart;
+  first += ordering.size();
   if (first != end()) std::sort(first, end());
-}
-
-/* ************************************************************************* */
-Scatter::Scatter(const GaussianFactorGraph& gfg) {
-  gttic(Scatter_Constructor);
-
-  setDimensions(gfg, 0);
-}
-
-/* ************************************************************************* */
-Scatter::Scatter(const GaussianFactorGraph& gfg,
-    const Ordering& ordering) {
-  gttic(Scatter_Constructor);
-
-  // pre-fill the ordered variables first
-  for (Key key : ordering) {
-    add(key, 0);
-  }
-
-  setDimensions(gfg, ordering.size());
 }
 
 /* ************************************************************************* */
