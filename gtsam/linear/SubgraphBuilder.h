@@ -93,7 +93,7 @@ class GTSAM_EXPORT Subgraph {
 
 /****************************************************************************/
 struct GTSAM_EXPORT SubgraphBuilderParameters {
-  typedef boost::shared_ptr<SubgraphBuilderParameters> shared_ptr;
+  typedef std::shared_ptr<SubgraphBuilderParameters> shared_ptr;
 
   enum Skeleton {
     /* augmented tree */
@@ -171,12 +171,12 @@ class GTSAM_EXPORT SubgraphBuilder {
 };
 
 /** Select the factors in a factor graph according to the subgraph. */
-boost::shared_ptr<GaussianFactorGraph> buildFactorSubgraph(
+std::shared_ptr<GaussianFactorGraph> buildFactorSubgraph(
     const GaussianFactorGraph &gfg, const Subgraph &subgraph, const bool clone);
 
 /** Split the graph into a subgraph and the remaining edges. 
  * Note that the remaining factorgraph has null factors. */
-std::pair<boost::shared_ptr<GaussianFactorGraph>, boost::shared_ptr<GaussianFactorGraph> > 
+std::pair<std::shared_ptr<GaussianFactorGraph>, std::shared_ptr<GaussianFactorGraph> > 
 splitFactorGraph(const GaussianFactorGraph &factorGraph, const Subgraph &subgraph);
 
 }  // namespace gtsam

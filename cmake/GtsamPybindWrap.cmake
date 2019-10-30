@@ -40,8 +40,9 @@ function(pybind_wrapper
 
   pybind11_add_module(${target} ${generated_cpp})
   add_dependencies(${target} pybind_wrap_${module_name})
+  message("Python Wrap target: ${target} LIBS: ${libs} DEP: ${dependencies}")
   if(NOT "${libs}" STREQUAL "")
-    target_link_libraries(${target} "${libs}")
+    target_link_libraries(${target} PRIVATE ${libs})
   endif()
   if(NOT "${dependencies}" STREQUAL "")
     add_dependencies(${target} ${dependencies})

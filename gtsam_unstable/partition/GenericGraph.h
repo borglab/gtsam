@@ -62,7 +62,7 @@ namespace gtsam { namespace partition {
       WorkSpace& workspace, const int minNrConstraintsPerCamera, const int minNrConstraintsPerLandmark) {  return; }
 
   /** print the graph **/
-  void print(const GenericGraph2D& graph, const std::string name = "GenericGraph2D");
+  void print(const GenericGraph2D& graph, std::string name);
 
   /***************************************************
    * 3D generic factors and their factor graph
@@ -109,7 +109,7 @@ namespace gtsam { namespace partition {
 
 
   /** print the graph **/
-  void print(const GenericGraph3D& graph, const std::string name = "GenericGraph3D");
+  void print(const GenericGraph3D& graph, std::string name);
 
   /***************************************************
    * unary generic factors and their factor graph

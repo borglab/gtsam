@@ -68,15 +68,8 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
-<<<<<<< HEAD
-<<<<<<< 1b8d1b8fbb737213aa07f5196357184678e9f564
+
     GTSAM_EXPORT void saveGraph(const std::string &s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
-=======
-    void saveGraph(const std::string &s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
->>>>>>> remove trailing spaces
-=======
-    void saveGraph(const std::string &s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
->>>>>>> f6217b9beebfb7541f9d0c4f9eb9c2f9351f48b6
 
     /// @}
 

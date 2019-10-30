@@ -98,12 +98,7 @@ namespace gtsam {
     Nodes nodes_;
 
     /** Root cliques */
-<<<<<<< 1b8d1b8fbb737213aa07f5196357184678e9f564
-=======
-    typedef FastVector<sharedClique> Roots;
 
-    /** Root cliques */
->>>>>>> remove trailing spaces
     Roots roots_;
 
     /// @name Standard Constructors

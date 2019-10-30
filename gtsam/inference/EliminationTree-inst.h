@@ -99,7 +99,7 @@ namespace gtsam {
       {
         // Retrieve the factors involving this variable and create the current node
         const FactorIndices& factors = structure[order[j]];
-        const sharedNode node = boost::make_shared<Node>();
+        const sharedNode node = std::make_shared<Node>();
         node->key = order[j];
 
         // for row i \in Struct[A*j] do
@@ -189,13 +189,13 @@ namespace gtsam {
   {
     gttic(EliminationTree_eliminate);
     // Allocate result
-    auto result = boost::make_shared<BayesNetType>();
+    auto result = std::make_shared<BayesNetType>();
 
     // Run tree elimination algorithm
     FastVector<sharedFactor> remainingFactors = inference::EliminateTree(result, *this, function);
 
     // Add remaining factors that were not involved with eliminated variables
-    auto allRemainingFactors = boost::make_shared<FactorGraphType>();
+    auto allRemainingFactors = std::make_shared<FactorGraphType>();
     allRemainingFactors->push_back(remainingFactors_.begin(), remainingFactors_.end());
     allRemainingFactors->push_back(remainingFactors.begin(), remainingFactors.end());
 

@@ -139,7 +139,7 @@ namespace gtsam {
   struct _pushCliqueFunctor {
     _pushCliqueFunctor(FactorGraph<FACTOR>* graph_) : graph(graph_) {}
     FactorGraph<FACTOR>* graph;
-    int operator()(const boost::shared_ptr<CLIQUE>& clique, int dummy) {
+    int operator()(const std::shared_ptr<CLIQUE>& clique, int dummy) {
       graph->push_back(clique->conditional_);
       return 0;
     }

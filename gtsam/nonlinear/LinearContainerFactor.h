@@ -131,10 +131,10 @@ public:
   GTSAM_EXPORT bool isHessian() const;
 
   /** Casts to JacobianFactor */
-  GTSAM_EXPORT boost::shared_ptr<JacobianFactor> toJacobian() const;
+  GTSAM_EXPORT std::shared_ptr<JacobianFactor> toJacobian() const;
 
   /** Casts to HessianFactor */
-  GTSAM_EXPORT boost::shared_ptr<HessianFactor> toHessian() const;
+  GTSAM_EXPORT std::shared_ptr<HessianFactor> toHessian() const;
 
   /**
    * Utility function for converting linear graphs to nonlinear graphs

@@ -290,7 +290,7 @@ void ISAM2::recalculateIncremental(const ISAM2UpdateParams& updateParams,
   // Add the orphaned subtrees
   for (const auto& orphan : *orphans)
     factors +=
-        boost::make_shared<BayesTreeOrphanWrapper<ISAM2::Clique> >(orphan);
+        std::make_shared<BayesTreeOrphanWrapper<ISAM2::Clique> >(orphan);
   gttoc(orphans);
 
   // 3. Re-order and eliminate the factor graph into a Bayes net (Algorithm
@@ -799,11 +799,6 @@ double ISAM2::error(const VectorValues& x) const {
 }
 
 /* ************************************************************************* */
-<<<<<<< HEAD
-<<<<<<< 34f1888cafb1fdea6a13b7919973ed83df7bd6ce
-=======
-=======
->>>>>>> f6217b9beebfb7541f9d0c4f9eb9c2f9351f48b6
 static void gradientAtZeroTreeAdder(const std::shared_ptr<ISAM2Clique>& root,
                                     VectorValues* g) {
   // Loop through variables in each clique, adding contributions
@@ -827,7 +822,6 @@ static void gradientAtZeroTreeAdder(const std::shared_ptr<ISAM2Clique>& root,
 }
 
 /* ************************************************************************* */
->>>>>>> replace boost::shared_ptr with std::shared_ptr
 VectorValues ISAM2::gradientAtZero() const {
   // Create result
   VectorValues g;

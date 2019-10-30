@@ -49,7 +49,7 @@ class ISAM2BayesTree : public ISAM2::Base {
  public:
   typedef ISAM2::Base Base;
   typedef ISAM2BayesTree This;
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   ISAM2BayesTree() {}
 };

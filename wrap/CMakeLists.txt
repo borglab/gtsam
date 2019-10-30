@@ -10,6 +10,10 @@ if(GTSAM_INSTALL_PYTHON_TOOLBOX)
       gtsam::LieMatrix
       gtsam::ISAM2ThresholdMapValue
       gtsam::FactorIndices)
+
+  # wrap gtsam
+  add_custom_target(gtsam_header DEPENDS "../gtsam.h")
+
   pybind_wrapper(
     gtsam_py # target
     ${CMAKE_CURRENT_SOURCE_DIR}/../gtsam.h # interface_header

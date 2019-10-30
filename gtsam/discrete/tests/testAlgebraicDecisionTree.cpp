@@ -24,7 +24,7 @@
 #include <gtsam/discrete/DecisionTree-inl.h> // for convert only
 #define DISABLE_TIMING
 
-#include <boost/timer.hpp>
+#include <boost/timer/timer.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/assign/std/map.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -75,11 +75,11 @@ void dot(const T&f, const string& filename) {
 // instrumented operators
 /* ******************************************************************************** */
 size_t muls = 0, adds = 0;
-boost::timer timer;
+boost::timer::cpu_timer timer;
 void resetCounts() {
   muls = 0;
   adds = 0;
-  timer.restart();
+  timer.start();
 }
 void printCounts(const string& s) {
 #ifndef DISABLE_TIMING

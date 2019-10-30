@@ -78,6 +78,8 @@ option(GTSAM_ALLOW_DEPRECATED_SINCE_V4   "Allow use of methods/functions depreca
 option(GTSAM_TYPEDEF_POINTS_TO_VECTORS   "Typedef Point2 and Point3 to Eigen::Vector equivalents" OFF)
 option(GTSAM_SUPPORT_NESTED_DISSECTION   "Support Metis-based nested dissection" ON)
 option(GTSAM_TANGENT_PREINTEGRATION      "Use new ImuFactor with integration on tangent space" ON)
+option(GTSAM_BUILD_PYTHON     			 "Build the python wrapper" ON)
+option(GTSAM_BUILD_WRAP 				 "Build the wrap command" ON)
 if(NOT MSVC AND NOT XCODE_VERSION)
     option(GTSAM_BUILD_WITH_CCACHE           "Use ccache compiler cache" ON)
 endif()
@@ -88,7 +90,7 @@ if(NOT MSVC AND NOT XCODE_VERSION)
 
   # Set the GTSAM_BUILD_TAG variable.
   # If build type is Release, set to blank (""), else set to the build type.
-  if("${CMAKE_BUILD_TYPE_UPPER}" STREQUAL "RELEASE")
+  if(CMAKE_BUILD_TYPE_UPPER STREQUAL "RELEASE")
    set(GTSAM_BUILD_TAG "") # Don't create release mode tag on installed directory
   else()
    set(GTSAM_BUILD_TAG "${CMAKE_BUILD_TYPE}")

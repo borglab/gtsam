@@ -79,7 +79,7 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
 
  protected:
   Parameters parameters_;
-  boost::shared_ptr<SubgraphPreconditioner> pc_;  ///< preconditioner object
+  std::shared_ptr<SubgraphPreconditioner> pc_;  ///< preconditioner object
 
  public:
   /// @name Constructors
@@ -100,14 +100,14 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
    * into Rc1, but take Ab2 as a shared pointer as we need to keep it around.
    */
   SubgraphSolver(const GaussianFactorGraph &Ab1,
-                 const boost::shared_ptr<GaussianFactorGraph> &Ab2,
+                 const std::shared_ptr<GaussianFactorGraph> &Ab2,
                  const Parameters &parameters, const Ordering &ordering);
   /**
    * The same as above, but we assume A1 was solved by caller.
    * We take two shared pointers as we keep both around.
    */
-  SubgraphSolver(const boost::shared_ptr<GaussianBayesNet> &Rc1,
-                 const boost::shared_ptr<GaussianFactorGraph> &Ab2,
+  SubgraphSolver(const std::shared_ptr<GaussianBayesNet> &Rc1,
+                 const std::shared_ptr<GaussianFactorGraph> &Ab2,
                  const Parameters &parameters);
 
   /// Destructor
@@ -131,8 +131,8 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
   /// @{
 
   /// Split graph using Kruskal algorithm, treating binary factors as edges.
-  std::pair < boost::shared_ptr<GaussianFactorGraph>,
-      boost::shared_ptr<GaussianFactorGraph> > splitGraph(
+  std::pair < std::shared_ptr<GaussianFactorGraph>,
+      std::shared_ptr<GaussianFactorGraph> > splitGraph(
           const GaussianFactorGraph &gfg);
 
   /// @}
@@ -140,16 +140,16 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @name Deprecated
   /// @{
-  SubgraphSolver(const boost::shared_ptr<GaussianFactorGraph> &A,
+  SubgraphSolver(const std::shared_ptr<GaussianFactorGraph> &A,
                  const Parameters &parameters, const Ordering &ordering)
       : SubgraphSolver(*A, parameters, ordering) {}
   SubgraphSolver(const GaussianFactorGraph &, const GaussianFactorGraph &,
                  const Parameters &, const Ordering &);
-  SubgraphSolver(const boost::shared_ptr<GaussianFactorGraph> &Ab1,
-                 const boost::shared_ptr<GaussianFactorGraph> &Ab2,
+  SubgraphSolver(const std::shared_ptr<GaussianFactorGraph> &Ab1,
+                 const std::shared_ptr<GaussianFactorGraph> &Ab2,
                  const Parameters &parameters, const Ordering &ordering)
       : SubgraphSolver(*Ab1, Ab2, parameters, ordering) {}
-  SubgraphSolver(const boost::shared_ptr<GaussianBayesNet> &,
+  SubgraphSolver(const std::shared_ptr<GaussianBayesNet> &,
                  const GaussianFactorGraph &, const Parameters &);
   /// @}
 #endif

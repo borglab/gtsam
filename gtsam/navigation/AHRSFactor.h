@@ -65,7 +65,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
    *  @param preint_meas_cov: Pre-integration covariance
    */
   PreintegratedAhrsMeasurements(
-      const boost::shared_ptr<Params>& p,
+      const std::shared_ptr<Params>& p,
       const Vector3& bias_hat,
       double deltaTij,
       const Rot3& deltaRij,
@@ -75,7 +75,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
       biasHat_(bias_hat),
       preintMeasCov_(preint_meas_cov) {}
 
-  const Params& p() const { return *boost::static_pointer_cast<const Params>(p_);}
+  const Params& p() const { return *std::static_pointer_cast<const Params>(p_);}
   const Vector3& biasHat() const { return biasHat_; }
   const Matrix3& preintMeasCov() const { return preintMeasCov_; }
 

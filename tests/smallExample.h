@@ -599,7 +599,7 @@ inline std::pair<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
       xtrue.insert(key(x, y), Point2((double)x, (double)y));
 
   // linearize around zero
-  boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros);
+  std::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros);
   return std::make_pair(*gfg, xtrue);
 }
 
@@ -615,7 +615,7 @@ inline Ordering planarOrdering(size_t N) {
 /* ************************************************************************* */
 inline std::pair<GaussianFactorGraph::shared_ptr, GaussianFactorGraph::shared_ptr > splitOffPlanarTree(size_t N,
     const GaussianFactorGraph& original) {
-  auto T = boost::make_shared<GaussianFactorGraph>(), C= boost::make_shared<GaussianFactorGraph>();
+  auto T = std::make_shared<GaussianFactorGraph>(), C= std::make_shared<GaussianFactorGraph>();
 
   // Add the x11 constraint to the tree
   T->push_back(original[0]);

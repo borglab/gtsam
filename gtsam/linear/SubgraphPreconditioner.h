@@ -36,7 +36,7 @@ namespace gtsam {
   class VectorValues;
 
   struct GTSAM_EXPORT SubgraphPreconditionerParameters : public PreconditionerParameters {
-    typedef boost::shared_ptr<SubgraphPreconditionerParameters> shared_ptr;
+    typedef std::shared_ptr<SubgraphPreconditionerParameters> shared_ptr;
     SubgraphPreconditionerParameters(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
       : builderParams(p) {}
     SubgraphBuilderParameters builderParams;

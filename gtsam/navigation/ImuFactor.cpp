@@ -235,7 +235,7 @@ ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
     const bool use2ndOrderCoriolis) :
 Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
     pose_j, vel_j, bias), _PIM_(pim) {
-  boost::shared_ptr<PreintegrationParams> p = boost::make_shared<
+  std::shared_ptr<PreintegrationParams> p = std::make_shared<
   PreintegrationParams>(pim.p());
   p->n_gravity = n_gravity;
   p->omegaCoriolis = omegaCoriolis;

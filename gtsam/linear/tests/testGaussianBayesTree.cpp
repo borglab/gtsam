@@ -310,7 +310,7 @@ TEST(GaussianBayesTree, determinant_and_smallestEigenvalue) {
   fg += JacobianFactor(x2, -5 * I_2x2, l1, 5 * I_2x2, Vector2(-1.0, 1.5), unit2);
 
   // create corresponding Bayes tree:
-  boost::shared_ptr<gtsam::GaussianBayesTree> bt = fg.eliminateMultifrontal();
+  std::shared_ptr<gtsam::GaussianBayesTree> bt = fg.eliminateMultifrontal();
   Matrix H = fg.hessian().first;
 
   // test determinant

@@ -41,8 +41,8 @@ SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab,
          << " factors" << endl;
 
   auto Rc1 = Ab1->eliminateSequential(ordering, EliminateQR);
-  auto xbar = boost::make_shared<VectorValues>(Rc1->optimize());
-  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
+  auto xbar = std::make_shared<VectorValues>(Rc1->optimize());
+  pc_ = std::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
 /**************************************************************************************************/
@@ -51,8 +51,8 @@ SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1,
                                const GaussianFactorGraph::shared_ptr &Ab2,
                                const Parameters &parameters)
     : parameters_(parameters) {
-  auto xbar = boost::make_shared<VectorValues>(Rc1->optimize());
-  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
+  auto xbar = std::make_shared<VectorValues>(Rc1->optimize());
+  pc_ = std::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
 /**************************************************************************************************/
@@ -71,14 +71,14 @@ SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab1,
 SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1,
                                const GaussianFactorGraph &Ab2,
                                const Parameters &parameters)
-    : SubgraphSolver(Rc1, boost::make_shared<GaussianFactorGraph>(Ab2),
+    : SubgraphSolver(Rc1, std::make_shared<GaussianFactorGraph>(Ab2),
                      parameters) {}
 
 SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab1,
                                const GaussianFactorGraph &Ab2,
                                const Parameters &parameters,
                                const Ordering &ordering)
-    : SubgraphSolver(Ab1, boost::make_shared<GaussianFactorGraph>(Ab2),
+    : SubgraphSolver(Ab1, std::make_shared<GaussianFactorGraph>(Ab2),
                      parameters, ordering) {}
 #endif
 

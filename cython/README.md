@@ -13,7 +13,7 @@ This is the Cython/Python wrapper around the GTSAM C++ library.
 - For compatibility with gtsam's Eigen version, it contains its own cloned version of [Eigency](https://github.com/wouterboomsma/eigency.git),
 named **gtsam_eigency**, to interface between C++'s Eigen and Python's numpy.
 
-- Build and install gtsam using cmake with `GTSAM_INSTALL_CYTHON_TOOLBOX` enabled.
+- Build and install gtsam using cmake with `GTSAM_INSTALL_PYTHON_TOOLBOX` enabled.
 The wrapped module will be installed to `GTSAM_CYTHON_INSTALL_PATH`, which is
 by default: `<your CMAKE_INSTALL_PREFIX>/cython`
 

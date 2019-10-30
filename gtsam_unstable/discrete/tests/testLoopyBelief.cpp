@@ -181,12 +181,12 @@ private:
         // accumulate unary factors
         if (graph.at(factorIndex)->size() == 1) {
           if (!prodOfUnaries)
-            prodOfUnaries = boost::dynamic_pointer_cast<DecisionTreeFactor>(
+            prodOfUnaries = std::dynamic_pointer_cast<DecisionTreeFactor>(
                 graph.at(factorIndex));
           else
             prodOfUnaries = std::make_shared<DecisionTreeFactor>(
                 *prodOfUnaries
-                    * (*boost::dynamic_pointer_cast<DecisionTreeFactor>(
+                    * (*std::dynamic_pointer_cast<DecisionTreeFactor>(
                         graph.at(factorIndex))));
         }
       }

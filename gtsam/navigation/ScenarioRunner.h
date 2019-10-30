@@ -39,7 +39,7 @@ static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
 class GTSAM_EXPORT ScenarioRunner {
  public:
   typedef imuBias::ConstantBias Bias;
-  typedef boost::shared_ptr<PreintegrationParams> SharedParams;
+  typedef std::shared_ptr<PreintegrationParams> SharedParams;
 
  private:
   const Scenario& scenario_;
