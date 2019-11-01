@@ -32,13 +32,13 @@ class TestPlanarSLAM(GtsamTestCase):
         # Add prior
         # gaussian for prior
         priorMean = gtsam.Pose2(0.0, 0.0, 0.0)  # prior at origin
-        priorNoise = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
+        priorNoise = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
         # add directly to graph
         graph.add(gtsam.PriorFactorPose2(1, priorMean, priorNoise))
 
         # Add odometry
         # general noisemodel for odometry
-        odometryNoise = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
+        odometryNoise = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
         graph.add(gtsam.BetweenFactorPose2(
             1, 2, gtsam.Pose2(2.0, 0.0, 0.0), odometryNoise))
         graph.add(gtsam.BetweenFactorPose2(
@@ -49,7 +49,7 @@ class TestPlanarSLAM(GtsamTestCase):
             4, 5, gtsam.Pose2(2.0, 0.0, pi / 2), odometryNoise))
 
         # Add pose constraint
-        model = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
+        model = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
         graph.add(gtsam.BetweenFactorPose2(5, 2, gtsam.Pose2(2.0, 0.0, pi / 2), model))
 
         # Initialize to noisy points
