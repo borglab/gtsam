@@ -9,6 +9,7 @@ if(GTSAM_INSTALL_PYTHON_TOOLBOX)
       gtsam::LieVector
       gtsam::LieMatrix
       gtsam::ISAM2ThresholdMapValue
+      gtsam::FactorIndexSet
       gtsam::FactorIndices)
 
   # wrap gtsam
