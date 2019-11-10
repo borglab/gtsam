@@ -145,5 +145,18 @@ int main(int argc, char** argv) {
     cout << setprecision(5) << "    Key: " << key_timestamp.first << "  Time: " << key_timestamp.second << endl;
   }
 
+  // get the linearization point
+  Values result = smootherISAM2.calculateEstimate();
+
+  // create the factor graph
+  auto &factor_graph = smootherISAM2.getFactors();
+
+  // linearize to a Gaussian factor graph
+  boost::shared_ptr<GaussianFactorGraph> linear_graph = factor_graph.linearize(result);
+
+  // this is where the segmentation fault occurs
+  Matrix A = linear_graph->jacobian().first;
+  cout << " A = " << A << endl;
+
   return 0;
 }
