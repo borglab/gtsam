@@ -145,18 +145,19 @@ int main(int argc, char** argv) {
     cout << setprecision(5) << "    Key: " << key_timestamp.first << "  Time: " << key_timestamp.second << endl;
   }
 
-  // get the linearization point
+  // Here is an example of how to get the full Jacobian of the problem.
+  // First, get the linearization point.
   Values result = smootherISAM2.calculateEstimate();
 
-  // create the factor graph
-  auto &factor_graph = smootherISAM2.getFactors();
+  // Get the factor graph
+  auto &factorGraph = smootherISAM2.getFactors();
 
-  // linearize to a Gaussian factor graph
-  boost::shared_ptr<GaussianFactorGraph> linear_graph = factor_graph.linearize(result);
+  // Linearize to a Gaussian factor graph
+  boost::shared_ptr<GaussianFactorGraph> linearGraph = factorGraph.linearize(result);
 
-  // this is where the segmentation fault occurs
-  Matrix A = linear_graph->jacobian().first;
-  cout << " A = " << A << endl;
+  // Converts the linear graph into a Jacobian factor and extracts the Jacobian matrix
+  Matrix jacobian = linearGraph->jacobian().first;
+  cout << " Jacobian: " << jacobian << endl;
 
   return 0;
 }
