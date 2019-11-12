@@ -117,6 +117,14 @@ namespace gtsam {
         v = unwhiten(v);
       }
 
+      /** Useful function for robust noise models to get the unweighted but whitened error */
+      virtual Vector unweightedWhiten(const Vector& v) const {
+        return whiten(v);
+      }
+
+      /** get the weight from the effective loss function on residual vector v */
+      virtual double weight(const Vector& v) const { return 1.0; }
+
     private:
       /** Serialization function */
       friend class boost::serialization::access;
@@ -684,9 +692,9 @@ namespace gtsam {
       { Vector b; Matrix B=A; this->WhitenSystem(B,b); return B; }
       inline virtual Vector unwhiten(const Vector& /*v*/) const
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
+      // Fold the use of the m-estimator residual(...) function into distance(...)
       inline virtual double distance(const Vector& v) const
-      { return this->whiten(v).squaredNorm(); }
-      // TODO(mike): fold the use of the m-estimator residual(...) function into distance(...)
+      { return robust_->residual(this->unweightedWhiten(v).norm()); }
       inline virtual double distance_non_whitened(const Vector& v) const
       { return robust_->residual(v.norm()); }
       // TODO: these are really robust iterated re-weighting support functions
@@ -695,6 +703,14 @@ namespace gtsam {
       virtual void WhitenSystem(Matrix& A, Vector& b) const;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const;
+
+      virtual Vector unweightedWhiten(const Vector& v) const {
+        return noise_->unweightedWhiten(v);
+      }
+      virtual double weight(const Vector& v) const {
+        // Todo(mikebosse): make the robust weight function input a vector.
+        return robust_->weight(v.norm());
+      }
 
       static shared_ptr Create(
         const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise);
