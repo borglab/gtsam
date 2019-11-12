@@ -17,13 +17,16 @@ def make_time_plot(timings):
     plt.show()
     plt.savefig("p_time_6")
 
-def make_combined_plot(p_values, times, costs):
+def make_combined_plot(p_values, times, costs, min_cost_range=10):
     """ Make a plot that combines timing and SO(3) cost.
         Arguments:
             p_values: list of p-values (int)
             times: list of timings (seconds)
             costs: list of costs (double)
+        Will calculate the range of the costs, default minimum range = 10.0
     """
+    min_cost = min(costs)
+    cost_range = max(max(costs)-min_cost,min_cost_range)
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     ax1.plot(p_values, times, label="time")
@@ -34,6 +37,7 @@ def make_combined_plot(p_values, times, costs):
     ax2.set_ylabel('Cost at SO(P) form')
     ax2.set_xlabel('p_value')
     ax2.set_xticks(p_values)
+    ax2.set_ylim(min_cost, min_cost + cost_range)
     plt.title('cubicle vertex = 5750, edge = 16869', fontsize=12)
     ax1.legend(loc="upper left")
     ax2.legend(loc="upper right")
