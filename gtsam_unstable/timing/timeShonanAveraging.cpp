@@ -65,8 +65,8 @@ int main(int argc, char* argv[]) {
   static const ShonanAveraging kShonan(g2oFile);
 
   // increase p value and try optimize using Shonan Algorithm. use chrono for timing
-  const size_t N = 5;
-  for (size_t p = 3; p < 15; p++){
+  const size_t N = 1;
+  for (size_t p = 3; p < 7; p++){
     // cout << "*********************************************************" << endl;
     const Values initial = kShonan.initializeRandomlyAt(p);
     gttic_(optimize);

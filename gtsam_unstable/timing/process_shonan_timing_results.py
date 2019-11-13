@@ -34,11 +34,11 @@ def make_combined_plot(p_values, times, costs, min_cost_range=10):
     ax1.set_xlabel('p_value')
     ax2 = ax1.twinx()
     ax2.plot(p_values, costs, 'r', label="cost")
-    ax2.set_ylabel('Cost at SO(P) form')
+    ax2.set_ylabel('Cost at SO(3) form')
     ax2.set_xlabel('p_value')
     ax2.set_xticks(p_values)
     ax2.set_ylim(min_cost, min_cost + cost_range)
-    plt.title('cubicle vertex = 5750, edge = 16869', fontsize=12)
+    plt.title('tinygrid vertex = 9, edge = 11', fontsize=12)
     ax1.legend(loc="upper left")
     ax2.legend(loc="upper right")
     plt.show()
@@ -55,7 +55,7 @@ import csv
 # Parse CSV file
 p_values, times, costs = [],[],[]
 with open(args.csv_file) as csvfile:
-    reader = csv.reader(csvfile, delimiter='\t')
+    reader = csv.reader(csvfile, delimiter=',')
     for row in reader:
         print(row)
         p_values.append(int(row[0]))

@@ -13,6 +13,7 @@
  *  @file  BetweenFactor.h
  *  @author Frank Dellaert, Viorela Ila
  **/
+#define SLOW_BUT_CORRECT_BETWEENFACTOR
 #pragma once
 
 #include <ostream>
