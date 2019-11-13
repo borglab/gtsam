@@ -344,23 +344,31 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
 }
 
 /* ************************************************************************* */
-static Scatter scatterFromValues(const Values& values, boost::optional<Ordering&> ordering) {
+static Scatter scatterFromValues(const Values& values) {
   gttic(scatterFromValues);
 
   Scatter scatter;
   scatter.reserve(values.size());
 
-  if (!ordering) {
-    // use "natural" ordering with keys taken from the initial values
-    for (const auto& key_value : values) {
-      scatter.add(key_value.key, key_value.value.dim());
-    }
-  } else {
-    // copy ordering into keys and lookup dimension in values, is O(n*log n)
-    for (Key key : *ordering) {
-      const Value& value = values.at(key);
-      scatter.add(key, value.dim());
-    }
+  // use "natural" ordering with keys taken from the initial values
+  for (const auto& key_value : values) {
+    scatter.add(key_value.key, key_value.value.dim());
+  }
+
+  return scatter;
+}
+
+/* ************************************************************************* */
+static Scatter scatterFromValues(const Values& values, const Ordering& ordering) {
+  gttic(scatterFromValues);
+
+  Scatter scatter;
+  scatter.reserve(values.size());
+
+  // copy ordering into keys and lookup dimension in values, is O(n*log n)
+  for (Key key : ordering) {
+    const Value& value = values.at(key);
+    scatter.add(key, value.dim());
   }
 
   return scatter;
@@ -368,11 +376,7 @@ static Scatter scatterFromValues(const Values& values, boost::optional<Ordering&
 
 /* ************************************************************************* */
 HessianFactor::shared_ptr NonlinearFactorGraph::linearizeToHessianFactor(
-    const Values& values, boost::optional<Ordering&> ordering, const Dampen& dampen) const {
-  gttic(NonlinearFactorGraph_linearizeToHessianFactor);
-
-  Scatter scatter = scatterFromValues(values, ordering);
-
+    const Values& values, const Scatter& scatter, const Dampen& dampen) const {
   // NOTE(frank): we are heavily leaning on friendship below
   HessianFactor::shared_ptr hessianFactor(new HessianFactor(scatter));
 
@@ -394,8 +398,35 @@ HessianFactor::shared_ptr NonlinearFactorGraph::linearizeToHessianFactor(
 }
 
 /* ************************************************************************* */
+HessianFactor::shared_ptr NonlinearFactorGraph::linearizeToHessianFactor(
+    const Values& values, const Ordering& order, const Dampen& dampen) const {
+  gttic(NonlinearFactorGraph_linearizeToHessianFactor);
+
+  Scatter scatter = scatterFromValues(values, order);
+  return linearizeToHessianFactor(values, scatter, dampen);
+}
+
+/* ************************************************************************* */
+HessianFactor::shared_ptr NonlinearFactorGraph::linearizeToHessianFactor(
+    const Values& values, const Dampen& dampen) const {
+  gttic(NonlinearFactorGraph_linearizeToHessianFactor);
+
+  Scatter scatter = scatterFromValues(values);
+  return linearizeToHessianFactor(values, scatter, dampen);
+}
+
+/* ************************************************************************* */
 Values NonlinearFactorGraph::updateCholesky(const Values& values,
-                                            boost::optional<Ordering&> ordering,
+                                            const Dampen& dampen) const {
+  gttic(NonlinearFactorGraph_updateCholesky);
+  auto hessianFactor = linearizeToHessianFactor(values, dampen);
+  VectorValues delta = hessianFactor->solve();
+  return values.retract(delta);
+}
+
+/* ************************************************************************* */
+Values NonlinearFactorGraph::updateCholesky(const Values& values,
+                                            const Ordering& ordering,
                                             const Dampen& dampen) const {
   gttic(NonlinearFactorGraph_updateCholesky);
   auto hessianFactor = linearizeToHessianFactor(values, ordering, dampen);
