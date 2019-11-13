@@ -63,7 +63,11 @@ int main(int argc, char* argv[]) {
     }
 
     // Create a csv output file
-    ofstream csvFile("shonan_timing.csv");
+    size_t pos1 = g2oFile.find("data/");
+    size_t pos2 = g2oFile.find(".g2o");
+    string name = g2oFile.substr(pos1 + 5, pos2 - pos1 - 5);
+    cout << name << endl;
+    ofstream csvFile("shonan_timing_of_" + name + ".csv");
 
     // Create Shonan averaging instance from the file.
     static const ShonanAveraging kShonan(g2oFile);
