@@ -18,6 +18,8 @@
 
 #include <gtsam/linear/LossFunctions.h>
 
+#include <iostream>
+
 using namespace std;
 
 namespace gtsam {
