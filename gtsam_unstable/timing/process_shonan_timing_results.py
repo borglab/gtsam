@@ -17,7 +17,7 @@ def make_time_plot(timings):
     plt.show()
     plt.savefig("p_time_6")
 
-def make_combined_plot(p_values, times, costs, min_cost_range=10):
+def make_combined_plot(name, p_values, times, costs, min_cost_range=10):
     """ Make a plot that combines timing and SO(3) cost.
         Arguments:
             p_values: list of p-values (int)
@@ -38,29 +38,50 @@ def make_combined_plot(p_values, times, costs, min_cost_range=10):
     ax2.set_xlabel('p_value')
     ax2.set_xticks(p_values)
     ax2.set_ylim(min_cost, min_cost + cost_range)
-    plt.title('tinygrid vertex = 9, edge = 11', fontsize=12)
+    plt.title(name, fontsize=12)
     ax1.legend(loc="upper left")
     ax2.legend(loc="upper right")
     plt.show()
 
 # Process arguments and call plot function
 import argparse
-parser = argparse.ArgumentParser()
-parser.add_argument("csv_file")
-args = parser.parse_args()
-print(args.csv_file)
-
 import csv
+import os
+
+parser = argparse.ArgumentParser()
+parser.add_argument("path")
+args = parser.parse_args()
+
+
+file_path = []
+domain = os.path.abspath(args.path)
+for info in os.listdir(args.path):
+    file_path.append(os.path.join(domain, info))
+file_path.sort()
+print(file_path)
+
+
+# name of all the plots
+names = {}
+names[0] = 'tinyGrid3D vertex = 9, edge = 11'
+names[1] = 'smallGrid3D vertex = 125, edge = 297'
+names[2] = 'parking-garage vertex = 1661, edge = 6275'
+names[3] = 'sphere2500 vertex = 2500, edge = 4949'
+names[4] = 'sphere_bignoise vertex = 2200, edge = 8647'
+names[5] = 'torus3D vertex = 5000, edge = 9048'
+names[6] = 'cubicle vertex = 5750, edge = 16869'
 
 # Parse CSV file
-p_values, times, costs = [],[],[]
-with open(args.csv_file) as csvfile:
-    reader = csv.reader(csvfile, delimiter=',')
-    for row in reader:
-        print(row)
-        p_values.append(int(row[0]))
-        times.append(float(row[1]))
-        costs.append(float(row[3]))
+for key, name in names.items():
+    print(key, name)
+    p_values, times, costs = [],[],[]
+    with open(file_path[key]) as csvfile:
+        reader = csv.reader(csvfile, delimiter=',')
+        for row in reader:
+            print(row)
+            p_values.append(int(row[0]))
+            times.append(float(row[1]))
+            costs.append(float(row[3]))
 
-#plot
-make_combined_plot(p_values, times, costs)
+    #plot
+    make_combined_plot(name, p_values, times, costs)
