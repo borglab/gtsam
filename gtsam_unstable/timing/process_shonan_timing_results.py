@@ -62,8 +62,8 @@ def make_convergence_plot(name, p_values, times, costs, iter=10):
     p_values = list(dict(Counter(p_values)).keys())
     p_mean_cost = [np.mean(np.array(costs[i*iter:(i+1)*iter])) for i in range(len(p_values))]
     p_max = p_values[p_mean_cost.index(max(p_mean_cost))]
-    print(p_mean_cost)
-    print(p_max)
+    # print(p_mean_cost)
+    # print(p_max)
 
     # calculate the convergence rate for each p_value
     p_success_rates = []
@@ -73,23 +73,17 @@ def make_convergence_plot(name, p_values, times, costs, iter=10):
         for p in p_values:
             if p > p_max:
                 p_costs = costs[p_values.index(p)*iter:(p_values.index(p)+1)*iter]
-                print(p_costs)
+                # print(p_costs)
                 converged = [ int(p_cost < 0.3*max_cost) for p_cost in p_costs]
                 success_rate = sum(converged)/len(converged)    
                 p_success_rates.append(success_rate)
             else:
                 p_success_rates.append(0)
-    print(p_success_rates)
-    # def success_rate(x, pos):
-    #     """ value and tick position
-    #     """
-    #     return (r'%d \%' % (x*100))
-    # formatter = FuncFormatter(success_rate)
 
     fig, ax = plt.subplots()
-    # ax.yaxis.set_major_formatter(formatter)
-    plt.bar(p_values, p_success_rates)
+    plt.bar(p_values, p_success_rates, align='center', alpha=0.5)
     plt.xticks(p_values)
+    plt.yticks(np.arange(0, 1.2, 0.2), ['0%', '20%', '40%', '60%', '80%', '100%'])
     plt.xlabel("p_value")
     plt.ylabel("success rate")
     plt.title(name, fontsize=12)
