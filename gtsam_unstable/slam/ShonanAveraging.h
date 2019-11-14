@@ -31,11 +31,14 @@ class NonlinearFactorGraph;
 struct ShonanAveragingParameters {
   bool prior;                   // whether to use a prior
   bool karcher;                 // whether to use Karcher mean prior
+  double noiseSigma;            // Optional noise Sigma, will be ignored if zero
   LevenbergMarquardtParams lm;  // LM parameters
   ShonanAveragingParameters(const std::string& verbosity = "SILENT",
-                            const std::string& method = "SUBGRAPH");
+                            const std::string& method = "SUBGRAPH",
+                            double noiseSigma = 0);
   void setPrior(bool value) { prior = value; }
   void setKarcher(bool value) { karcher = value; }
+  void setNoiseSigma(bool value) { noiseSigma = value; }
 };
 
 class ShonanAveraging {

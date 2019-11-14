@@ -36,8 +36,9 @@ static std::mt19937 kRandomNumberGenerator(42);
 
 /* ************************************************************************* */
 ShonanAveragingParameters::ShonanAveragingParameters(const string& verbosity,
-                                                     const std::string& method)
-    : prior(true), karcher(true) {
+                                                     const std::string& method,
+                                                     double noiseSigma)
+    : prior(true), karcher(true), noiseSigma(noiseSigma) {
   lm.setVerbosityLM(verbosity);
 
   // Set parameters to be similar to ceres
@@ -80,7 +81,8 @@ ShonanAveragingParameters::ShonanAveragingParameters(const string& verbosity,
 ShonanAveraging::ShonanAveraging(const string& g2oFile,
                                  const ShonanAveragingParameters& parameters)
     : parameters_(parameters) {
-  factors_ = parse3DFactors(g2oFile);
+  auto corruptingNoise = noiseModel::Isotropic::Sigma(3, parameters.noiseSigma);
+  factors_ = parse3DFactors(g2oFile, corruptingNoise);
   poses_ = parse3DPoses(g2oFile);
 }
 

@@ -70,6 +70,9 @@ int main(int argc, char* argv[]) {
     ofstream csvFile("shonan_timing_of_" + name + ".csv");
 
     // Create Shonan averaging instance from the file.
+    ShonanAveragingParameters parameters;
+    double sigmaNoiseInRadians = 5 * pi/180;
+    parameters.setNoiseSigma(sigmaNoiseInRadians);
     static const ShonanAveraging kShonan(g2oFile);
 
     // increase p value and try optimize using Shonan Algorithm. For each p
