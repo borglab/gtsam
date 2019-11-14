@@ -78,10 +78,10 @@ int main(int argc, char* argv[]) {
     for (size_t p = 3; p < 11; p++) {
         // cout << "*********************************************************"
         // << endl;
-        const Values initial = kShonan.initializeRandomlyAt(p);
         gttic_(optimize);
         double CostP = 0, Cost3 = 0;
         for (size_t i = 0; i < iter; i++) {
+            const Values initial = kShonan.initializeRandomlyAt(p);
             chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
             const Values result = kShonan.tryOptimizingAt(p, initial);
             CostP = kShonan.costAt(p, result);
