@@ -78,9 +78,9 @@ int main(int argc, char* argv[]) {
     // increase p value and try optimize using Shonan Algorithm. For each p
     // value, iterate several times to check convergence rate.
     const size_t iter = 5;
-    for (size_t i = 0; i < iter; i++) {
+    for (size_t p = 3; p < 11; p++) {
         const Values initial = kShonan.initializeRandomlyAt(p);
-        for (size_t p = 3; p < 11; p++) {
+        for (size_t i = 0; i < iter; i++) {
             double CostP = 0, Cost3 = 0;
             chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
             const Values result = kShonan.tryOptimizingAt(p, initial);
