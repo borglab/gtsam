@@ -103,6 +103,43 @@ def make_convergence_plot(name, p_values, times, costs, iter=10):
     plt.title(name, fontsize=12)
     plt.show()
 
+def make_eigen_and_bound_plot(name, p_values, times1, times2, min_eigens, subounds):
+    """ Make a plot that combines time for optimizing, time for optimizing and compute min_eigen,
+        min_eigen, subound (subound = (f_R - f_SDP) / f_SDP).
+        Arguments:
+            name: string of the plot title
+            p_values: list of p-values (int)
+            times1: list of timings (seconds)
+            times2: list of timings (seconds)
+            min_eigens: list of min_eigen (double)
+            subounds: list of subound (double)
+    """
+    plt.figure(1)
+    plt.ylabel('Time used (seconds)')
+    plt.xlabel('p_value')
+    plt.plot(p_values, times1, 'r', label="time for optimizing")
+    plt.plot(p_values, times2, 'blue', label="time for optimizing and check")
+    plt.title(name, fontsize=12)
+    plt.legend(loc="best")
+    plt.interactive(False)
+    plt.show()
+
+    plt.figure(2)
+    plt.ylabel('Min eigen_value')
+    plt.xlabel('p_value')
+    plt.plot(p_values, min_eigens, 'r', label="min_eigen values")
+    plt.title(name, fontsize=12)
+    plt.legend(loc="best")
+    plt.interactive(False)
+    plt.show()
+
+    plt.figure(3)
+    plt.ylabel('sub_bounds')
+    plt.xlabel('p_value')
+    plt.plot(p_values, subounds, 'blue', label="sub_bounds")
+    plt.title(name, fontsize=12)
+    plt.legend(loc="best")
+    plt.show()
 
 # Process arguments and call plot function
 import argparse
@@ -145,15 +182,20 @@ for key, name in names.items():
         print("The file %s is not in the path" % name)
         continue
 
-    p_values, times, costs = [],[],[]
+    p_values, times1, costPs, cost3s, times2, min_eigens, subounds = [],[],[],[],[],[],[]
     with open(name_file) as csvfile:
         reader = csv.reader(csvfile, delimiter='\t')
         for row in reader:
             print(row)
             p_values.append(int(row[0]))
-            times.append(float(row[1]))
-            costs.append(float(row[3]))
+            times1.append(float(row[1]))
+            costPs.append(float(row[2]))
+            cost3s.append(float(row[3]))
+            times2.append(float(row[4]))
+            min_eigens.append(float(row[5]))
+            subounds.append(float(row[6]))
 
     #plot
-    # make_combined_plot(name, p_values, times, costs)
-    make_convergence_plot(name, p_values, times, costs)
+    # make_combined_plot(name, p_values, times1, cost3s)
+    # make_convergence_plot(name, p_values, times1, cost3s)
+    make_eigen_and_bound_plot(name, p_values, times1, times2, min_eigens, subounds)
