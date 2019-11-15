@@ -36,7 +36,7 @@ struct ShonanAveragingParameters {
   double noiseSigma;            // Optional noise Sigma, will be ignored if zero
   LevenbergMarquardtParams lm;  // LM parameters
   ShonanAveragingParameters(const std::string& verbosity = "SILENT",
-                            const std::string& method = "CHOLESKY",
+                            const std::string& method = "JACOBI",
                             double noiseSigma = 0);
   void setPrior(bool value) { prior = value; }
   void setKarcher(bool value) { karcher = value; }
