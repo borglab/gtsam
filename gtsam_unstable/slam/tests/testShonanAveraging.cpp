@@ -38,10 +38,16 @@ TEST(ShonanAveraging, buildGraphAt) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, buildQ) {
+TEST(ShonanAveraging, checkOptimalityAt) {
   auto Q = kShonan.buildQ();
-  EXPECT_LONGS_EQUAL(3*5, Q.rows());
-  EXPECT_LONGS_EQUAL(3*5, Q.cols());
+  EXPECT_LONGS_EQUAL(3 * 5, Q.rows());
+  EXPECT_LONGS_EQUAL(3 * 5, Q.cols());
+  cout << Q << endl;
+  const Values values = kShonan.initializeRandomlyAt(4);
+  auto Lambda = kShonan.computeLambda(values, Q);
+  cout << Lambda << endl;
+  EXPECT_LONGS_EQUAL(3 * 5, Lambda.rows());
+  EXPECT_LONGS_EQUAL(3 * 5, Lambda.cols());
 }
 
 /* ************************************************************************* */
@@ -51,7 +57,7 @@ TEST(ShonanAveraging, tryOptimizingAt3) {
   EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(3, result), 1e-4);
   const Values SO3Values = kShonan.projectFrom(3, result);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(SO3Values), 1e-4);
-  EXPECT(kShonan.checkOptimalityAt(3, SO3Values));
+  EXPECT(kShonan.checkOptimalityAt(3, result));
 }
 
 /* ************************************************************************* */

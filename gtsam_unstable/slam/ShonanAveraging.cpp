@@ -102,7 +102,7 @@ NonlinearFactorGraph ShonanAveraging::buildGraphAt(size_t p) const {
 /* ************************************************************************* */
 Values ShonanAveraging::initializeRandomlyAt(size_t p) const {
   Values initial;
-  for (size_t j = 0; j < poses_.size(); j++) {
+  for (size_t j = 0; j < nrPoses(); j++) {
     initial.insert(j, SOn::Random(kRandomNumberGenerator, p));
   }
   return initial;
@@ -150,7 +150,7 @@ Values ShonanAveraging::tryOptimizingAt(
 /* ************************************************************************* */
 Values ShonanAveraging::projectFrom(size_t p, const Values& values) const {
   Values SO3_values;
-  for (size_t j = 0; j < poses_.size(); j++) {
+  for (size_t j = 0; j < nrPoses(); j++) {
     const SOn Q = values.at<SOn>(j);
     assert(Q.rows() == p);
     const SO3 R = SO3::ClosestTo(Q.matrix().topLeftCorner(3, 3));
@@ -182,16 +182,12 @@ ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
   // Each measurement contributes 2*d elements along the diagonal of the
   // connection Laplacian, and 2*d^2 elements on a pair of symmetric
   // off-diagonal blocks
-  constexpr size_t measurement_stride = 2 * (d + d * d);
+  constexpr size_t stride = 2 * (d + d * d);
 
-  // We will use this to keep track of the largest pose index encountered, which
-  // in turn provides the number of poses
-  size_t num_poses = 0;
-
+  // Reserve space for triplets
   std::vector<Eigen::Triplet<double>> triplets;
-  triplets.reserve(measurement_stride * factors_.size());
+  triplets.reserve(stride * factors_.size());
 
-  size_t i, j;
   for (const auto& factor : factors_) {
     // Get pose keys
     const auto& keys = factor->keys();
@@ -205,7 +201,7 @@ ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
     // Get kappa from noise model
     double kappa;
     if (useNoiseModel) {
-      const auto& m = factor->noiseModel();
+      // const auto& m = factor->noiseModel();
       // isotropic = noiseModel_FrobeniusNoiseModel9.FromPose3NoiseModel(m)
       // sigma = isotropic.sigma()
       // kappa_ij = 1.0/(sigma*sigma)
@@ -243,15 +239,49 @@ ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
 /* ************************************************************************* */
 ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Values& values,
                                                        const Sparse& Q) const {
-  return Sparse();
+  constexpr size_t d = 3;  // for now only for 3D rotations
+
+  // Each pose contributes 2*d elements along the diagonal of Lambda
+  constexpr size_t stride = d * d;
+
+  // Reserve space for triplets
+  const size_t N = nrPoses();
+  std::vector<Eigen::Triplet<double>> triplets;
+  triplets.reserve(stride * N);
+
+  // Project to pxdN Stiefel manifold
+  const size_t p = values.at<SOn>(0).rows();
+  Matrix S(p, N * d);
+  for (size_t j = 0; j < N; j++) {
+    const SOn Q = values.at<SOn>(j);
+    S.block(0, j * d, p, d) = Q.matrix().leftCols(d);  // project Qj to Stiefel
+  }
+
+  // Do sparse-dense multiply to get Q*S'
+  auto QSt = Q * S.transpose();
+
+  for (size_t j = 0; j < N; j++) {
+    // Compute B, the building block for the j^th diagonal block of Lambda
+    Matrix B = QSt.middleRows(j, d) * S.middleCols(j, d);
+
+    // Elements of jth block-diagonal
+    for (size_t r = 0; r < d; r++)
+      for (size_t c = 0; c < d; c++)
+        triplets.emplace_back(j * d + r, j * d + c, 0.5 * (B(r, c) + B(c, r)));
+  }
+
+  // Construct and return a sparse matrix from these triplets
+  ShonanAveraging::Sparse Lambda(d * N, d * N);
+  Lambda.setFromTriplets(triplets.begin(), triplets.end());
+  return Lambda;
 }
 
 /* ************************************************************************* */
 bool ShonanAveraging::checkOptimalityAt(size_t p, const Values& values,
-                                        bool noise) const {
+                                        bool useNoiseModel) const {
   /// Based on Luca's MATLAB version on BitBucket repo.
   assert(values.size() == nrPoses());
-  auto Q = buildQ(noise);
+  auto Q = buildQ(useNoiseModel);
   auto Lambda = computeLambda(values, Q);
   auto A = Q - Lambda;
   // auto eigenvalues = eigsh(A, k = 1, which = 'SA', return_eigenvectors =
