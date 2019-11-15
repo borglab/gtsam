@@ -45,6 +45,7 @@ def make_combined_plot(name, p_values, times, costs, min_cost_range=10):
     plt.title(name, fontsize=12)
     ax1.legend(loc="upper left")
     ax2.legend(loc="upper right")
+    plt.interactive(False)
     plt.show()
 
 def make_convergence_plot(name, p_values, times, costs, iter=10):
@@ -77,11 +78,11 @@ def make_convergence_plot(name, p_values, times, costs, iter=10):
         times_tmp = times[p_values.index(p)*iter:(p_values.index(p)+1)*iter]
         mean_time = sum(times_tmp)/len(times_tmp)
         mean_times.append(mean_time)
-    # make_combined_plot(name, p_values,mean_times, mean_costs)
+    make_combined_plot(name, p_values,mean_times, mean_costs)
 
     # calculate the convergence rate for each p_value
     p_success_rates = []
-    if p_mean_cost[0] >= 0.9*np.mean(np.array(costs)) and p_mean_cost[0] <= 1.1*np.mean(np.array(costs)):
+    if p_mean_cost[0] >= 0.95*np.mean(np.array(costs)) and p_mean_cost[0] <= 1.05*np.mean(np.array(costs)):
         p_success_rates = [ 1.0 for p in p_values]
     else:
         for p in p_values:
@@ -94,7 +95,6 @@ def make_convergence_plot(name, p_values, times, costs, iter=10):
             else:
                 p_success_rates.append(0)
 
-    fig, ax = plt.subplots()
     plt.bar(p_values, p_success_rates, align='center', alpha=0.5)
     plt.xticks(p_values)
     plt.yticks(np.arange(0, 1.2, 0.2), ['0%', '20%', '40%', '60%', '80%', '100%'])
@@ -155,5 +155,5 @@ for key, name in names.items():
             costs.append(float(row[3]))
 
     #plot
-    make_combined_plot(name, p_values, times, costs)
-    # make_convergence_plot(name, p_values, times, costs)
+    # make_combined_plot(name, p_values, times, costs)
+    make_convergence_plot(name, p_values, times, costs)
