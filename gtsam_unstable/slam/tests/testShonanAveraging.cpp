@@ -38,23 +38,26 @@ TEST(ShonanAveraging, buildGraphAt) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, checkOptimalityAt) {
+TEST(ShonanAveraging, checkOptimality) {
   auto Q = kShonan.buildQ();
   EXPECT_LONGS_EQUAL(3 * 5, Q.rows());
   EXPECT_LONGS_EQUAL(3 * 5, Q.cols());
-  const Values values = kShonan.initializeRandomlyAt(4);
-  auto Lambda = kShonan.computeLambda(values, Q);
+  const Values random = kShonan.initializeRandomlyAt(4);
+  auto Lambda = kShonan.computeLambda(random);
   EXPECT_LONGS_EQUAL(3 * 5, Lambda.rows());
   EXPECT_LONGS_EQUAL(3 * 5, Lambda.cols());
   EXPECT_LONGS_EQUAL(45, Lambda.nonZeros());
+  auto lambdaMin = kShonan.computeMinEigenValue(random);  
+  EXPECT_DOUBLES_EQUAL(0, lambdaMin, 1e-4); // Regression test
+  EXPECT(!kShonan.checkOptimality(random));
 }
 
 /* ************************************************************************* */
 TEST(ShonanAveraging, tryOptimizingAt3) {
   const Values initial = kShonan.initializeRandomlyAt(3);
-  EXPECT(!kShonan.checkOptimalityAt(3, initial));
+  EXPECT(!kShonan.checkOptimality(initial));
   const Values result = kShonan.tryOptimizingAt(3, initial);
-  EXPECT(kShonan.checkOptimalityAt(3, result));
+  EXPECT(kShonan.checkOptimality(result));
   EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(3, result), 1e-4);
   const Values SO3Values = kShonan.projectFrom(3, result);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(SO3Values), 1e-4);
@@ -63,7 +66,7 @@ TEST(ShonanAveraging, tryOptimizingAt3) {
 /* ************************************************************************* */
 TEST(ShonanAveraging, tryOptimizingAt4) {
   const Values result = kShonan.tryOptimizingAt(4);
-  EXPECT(kShonan.checkOptimalityAt(4, result));
+  EXPECT(kShonan.checkOptimality(result));
   EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(4, result), 1e-3);
   const Values SO3Values = kShonan.projectFrom(4, result);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(SO3Values), 1e-4);

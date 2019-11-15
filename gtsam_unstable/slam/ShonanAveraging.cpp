@@ -87,6 +87,7 @@ ShonanAveraging::ShonanAveraging(const string& g2oFile,
   auto corruptingNoise = noiseModel::Isotropic::Sigma(3, parameters.noiseSigma);
   factors_ = parse3DFactors(g2oFile, corruptingNoise);
   poses_ = parse3DPoses(g2oFile);
+  Q_ = buildQ();
 }
 
 /* ************************************************************************* */
@@ -240,8 +241,7 @@ ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
 }
 
 /* ************************************************************************* */
-ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Values& values,
-                                                       const Sparse& Q) const {
+ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Values& values) const {
   constexpr size_t d = 3;  // for now only for 3D rotations
 
   // Each pose contributes 2*d elements along the diagonal of Lambda
@@ -261,7 +261,7 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Values& values,
   }
 
   // Do sparse-dense multiply to get Q*S'
-  auto QSt = Q * S.transpose();
+  auto QSt = Q_ * S.transpose();
 
   for (size_t j = 0; j < N; j++) {
     // Compute B, the building block for the j^th diagonal block of Lambda
@@ -280,20 +280,24 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Values& values,
 }
 
 /* ************************************************************************* */
-bool ShonanAveraging::checkOptimalityAt(size_t p, const Values& values,
-                                        bool useNoiseModel) const {
+double ShonanAveraging::computeMinEigenValue(const Values& values) const {
   /// Based on Luca's MATLAB version on BitBucket repo.
   assert(values.size() == nrPoses());
-  auto Q = buildQ(useNoiseModel);
-  auto Lambda = computeLambda(values, Q);
-  auto A = Q - Lambda;
+  auto Lambda = computeLambda(values);
+  auto A = Q_ - Lambda;
   Eigen::EigenSolver<Matrix> solver(Matrix(A), false);
   auto lambdas = solver.eigenvalues();
   double lambda_min = lambdas(0).real();
   for (size_t i = 1; i < lambdas.size(); i++) {
     lambda_min = min(lambdas(i).real(), lambda_min);
   }
-  return lambda_min > -1e-4;  // tolerance
+  return lambda_min;
+}
+
+/* ************************************************************************* */
+bool ShonanAveraging::checkOptimality(const Values& values) const {
+  double lambda_min = computeMinEigenValue(values);
+  return lambda_min > -1e-4;  // TODO(frank): move tolerance to params
 }
 
 /* ************************************************************************* */

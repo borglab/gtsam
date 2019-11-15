@@ -51,6 +51,7 @@ class ShonanAveraging {
   ShonanAveragingParameters parameters_;
   BetweenFactorPose3s factors_;
   std::map<Key, Pose3> poses_;
+  Sparse Q_;  // connection Laplacian needed for optimality check
 
  public:
   /**
@@ -93,15 +94,19 @@ class ShonanAveraging {
    * relaxation, this function computes and returns the block-diagonal elements
    * of the corresponding Lagrange multiplier.
    */
-  Sparse computeLambda(const Values& values, const Sparse& Q) const;
+  Sparse computeLambda(const Values& values) const;
 
   /**
-   * Check optimality for SO(p)
-   * @param values: should be of type SO(p)
-   * @param useNoiseModel whether to use noise model
+   * Compute minimum eigenvalue for optimality check.
+   * @param values: should be of type SOn
    */
-  bool checkOptimalityAt(size_t p, const Values& values,
-                         bool useNoiseModel = false) const;
+  double computeMinEigenValue(const Values& values) const;
+
+  /**
+   * Check optimality 
+   * @param values: should be of type SOn
+   */
+  bool checkOptimality(const Values& values) const;
 
   /**
    * Try to optimize at SO(p)
