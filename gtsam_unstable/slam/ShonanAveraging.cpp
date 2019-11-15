@@ -26,6 +26,9 @@
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 #include <gtsam_unstable/slam/FrobeniusFactor.h>
 
+#include <Eigen/Eigenvalues>
+
+#include <complex>
 #include <iostream>
 #include <map>
 #include <random>
@@ -284,9 +287,12 @@ bool ShonanAveraging::checkOptimalityAt(size_t p, const Values& values,
   auto Q = buildQ(useNoiseModel);
   auto Lambda = computeLambda(values, Q);
   auto A = Q - Lambda;
-  // auto eigenvalues = eigsh(A, k = 1, which = 'SA', return_eigenvectors =
-  // False);
-  auto lambda_min = 100;      // eigenvalues[0];
+  Eigen::EigenSolver<Matrix> solver(Matrix(A), false);
+  auto lambdas = solver.eigenvalues();
+  double lambda_min = lambdas(0).real();
+  for (size_t i = 1; i < lambdas.size(); i++) {
+    lambda_min = min(lambdas(i).real(), lambda_min);
+  }
   return lambda_min > -1e-4;  // tolerance
 }
 
