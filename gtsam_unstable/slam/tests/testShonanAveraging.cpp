@@ -43,6 +43,7 @@ TEST(ShonanAveraging, tryOptimizingAt3) {
   EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(3, result), 1e-4);
   const Values SO3Values = kShonan.projectFrom(3, result);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(SO3Values), 1e-4);
+  EXPECT(kShonan.checkOptimalityAt(3, SO3Values));
 }
 
 /* ************************************************************************* */

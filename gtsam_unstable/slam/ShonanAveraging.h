@@ -21,6 +21,8 @@
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/slam/dataset.h>
 
+#include <Eigen/Sparse>
+
 #include <map>
 #include <string>
 
@@ -42,6 +44,9 @@ struct ShonanAveragingParameters {
 };
 
 class ShonanAveraging {
+ public:
+  using Sparse = Eigen::SparseMatrix<double>;
+
  private:
   ShonanAveragingParameters parameters_;
   BetweenFactorPose3s factors_;
@@ -72,6 +77,29 @@ class ShonanAveraging {
    * Values should be of type SO(p)
    */
   double costAt(size_t p, const Values& values) const;
+
+  /**
+   * Build 3Nx3N sparse matrix consisting of rotation measurements, arranged as
+   *       (i,j) and (j,i) blocks within a sparse matrix.
+   * @param nrNodes total number of nodes in the factor graph
+   * @param useNoiseModel whether to use noise model
+   */
+  Sparse buildQ(size_t nrNodes, bool useNoiseModel) const;
+
+  /**
+   * Given an estimated local minimum Yopt for the (possibly lifted)
+   * relaxation, this function computes and returns the block-diagonal elements
+   * of the corresponding Lagrange multiplier.
+   */
+  Sparse computeLambda(const Values& values, const Sparse& Q) const;
+
+  /**
+   * Check optimality for SO(p)
+   * @param values: should be of type SO(p)
+   * @param useNoiseModel whether to use noise model
+   */
+  bool checkOptimalityAt(size_t p, const Values& values,
+                         bool useNoiseModel = false) const;
 
   /**
    * Try to optimize at SO(p)

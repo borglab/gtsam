@@ -173,6 +173,31 @@ double ShonanAveraging::cost(const Values& values) const {
 }
 
 /* ************************************************************************* */
+ShonanAveraging::Sparse ShonanAveraging::buildQ(size_t nrNodes,
+                                                bool useNoiseModel) const {
+  return Sparse();
+}
+
+/* ************************************************************************* */
+ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Values& values,
+                                                       const Sparse& Q) const {
+  return Sparse();
+}
+
+/* ************************************************************************* */
+bool ShonanAveraging::checkOptimalityAt(size_t p, const Values& values,
+                                        bool noise) const {
+  /// Based on Luca's MATLAB version on BitBucket repo.
+  auto Q = buildQ(values.size(), noise);
+  auto Lambda = computeLambda(values, Q);
+  auto A = Q - Lambda;
+  // auto eigenvalues = eigsh(A, k = 1, which = 'SA', return_eigenvectors =
+  // False);
+  auto lambda_min = 100;      // eigenvalues[0];
+  return lambda_min > -1e-4;  // tolerance
+}
+
+/* ************************************************************************* */
 void ShonanAveraging::run(size_t p_max) const {
   // TODO(frank): check optimality and return optimal values
   for (size_t p = 3; p <= p_max; p++) {
