@@ -60,10 +60,24 @@ def make_convergence_plot(name, p_values, times, costs, iter=10):
     max_cost = np.mean(np.array(heapq.nlargest(iter, costs)))
     # calculate mean costs for each p value
     p_values = list(dict(Counter(p_values)).keys())
+    # make sure the iter number 
+    iter = int(len(times)/len(p_values))
     p_mean_cost = [np.mean(np.array(costs[i*iter:(i+1)*iter])) for i in range(len(p_values))]
     p_max = p_values[p_mean_cost.index(max(p_mean_cost))]
     # print(p_mean_cost)
     # print(p_max)
+
+    #take mean and make the combined plot
+    mean_times = []
+    mean_costs = []
+    for p in p_values:
+        costs_tmp = costs[p_values.index(p)*iter:(p_values.index(p)+1)*iter]
+        mean_cost = sum(costs_tmp)/len(costs_tmp)
+        mean_costs.append(mean_cost)
+        times_tmp = times[p_values.index(p)*iter:(p_values.index(p)+1)*iter]
+        mean_time = sum(times_tmp)/len(times_tmp)
+        mean_times.append(mean_time)
+    # make_combined_plot(name, p_values,mean_times, mean_costs)
 
     # calculate the convergence rate for each p_value
     p_success_rates = []
@@ -141,5 +155,5 @@ for key, name in names.items():
             costs.append(float(row[3]))
 
     #plot
-    # make_combined_plot(name, p_values, times, costs)
-    make_convergence_plot(name, p_values, times, costs)
+    make_combined_plot(name, p_values, times, costs)
+    # make_convergence_plot(name, p_values, times, costs)
