@@ -36,9 +36,11 @@ using namespace gtsam;
 // "/home/jingwu/catkin_workspace/gtsam/examples/Data/tinyGrid3D.g2o";
 
 // save a single line of timing info to an output stream
-void saveData(size_t p, double time, double costP, double cost3,
+void saveData(size_t p, double time1, double costP, double cost3,
+              double time2, double min_eigenvalue, double suBound,
               std::ostream* os) {
-    *os << (int)p << "\t" << time << "\t" << costP << "\t" << cost3 << endl;
+    *os << (int)p << "\t" << time1 << "\t" << costP << "\t" << cost3 << "\t" 
+    << time2 << "\t" << min_eigenvalue << "\t" << suBound << endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -71,56 +73,57 @@ int main(int argc, char* argv[]) {
 
     // Create Shonan averaging instance from the file.
     ShonanAveragingParameters parameters;
-    double sigmaNoiseInRadians = 50 * M_PI / 180;
+    double sigmaNoiseInRadians = 0 * M_PI / 180;
     parameters.setNoiseSigma(sigmaNoiseInRadians);
     static const ShonanAveraging kShonan(g2oFile);
 
     // increase p value and try optimize using Shonan Algorithm. For each p
     // value, iterate several times to check convergence rate.
-    const size_t iter = 5;
-    for (size_t p = 3; p < 11; p++) {
-        const Values initial = kShonan.initializeRandomlyAt(p);
-        for (size_t i = 0; i < iter; i++) {
-            double CostP = 0, Cost3 = 0;
-            chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
-            const Values result = kShonan.tryOptimizingAt(p, initial);
-            CostP = kShonan.costAt(p, result);
-            const Values SO3Values = kShonan.projectFrom(p, result);
-            Cost3 = kShonan.cost(SO3Values);
-            chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
-            chrono::duration<double> timeUsed =
-                chrono::duration_cast<chrono::duration<double>>(t2 - t1);
-            saveData(p, timeUsed.count(), CostP, Cost3, &cout);
-            saveData(p, timeUsed.count(), CostP, Cost3, &csvFile);
-        }
-    }
+    // const size_t iter = 5;
+    // for (size_t p = 3; p < 11; p++) {
+    //     const Values initial = kShonan.initializeRandomlyAt(p);
+    //     for (size_t i = 0; i < iter; i++) {
+    //         double CostP = 0, Cost3 = 0;
+    //         chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
+    //         const Values result = kShonan.tryOptimizingAt(p, initial);
+    //         CostP = kShonan.costAt(p, result);
+    //         const Values SO3Values = kShonan.projectFrom(p, result);
+    //         Cost3 = kShonan.cost(SO3Values);
+    //         chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
+    //         chrono::duration<double> timeUsed =
+    //             chrono::duration_cast<chrono::duration<double>>(t2 - t1);
+    //         saveData(p, timeUsed.count(), CostP, Cost3, &cout);
+    //         saveData(p, timeUsed.count(), CostP, Cost3, &csvFile);
+    //     }
+    // }
 
     // increase p value and try optimize using Shonan Algorithm. use chrono for
     // timing
-    // const size_t N = 1;
-    // for (size_t p = 3; p < 10; p++) {
-    //     // cout <<
-    //     "*********************************************************"
-    //     // << endl;
-    //     const Values initial = kShonan.initializeRandomlyAt(p);
-    //     //    gttic_(optimize);
-    //     chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
-    //     double sumCostP = 0, sumCost3 = 0;
-    //     for (size_t i = 0; i < N; i++) {
-    //         const Values result = kShonan.tryOptimizingAt(p, initial);
-    //         sumCostP += kShonan.costAt(p, result);
-    //         const Values SO3Values = kShonan.projectFrom(p, result);
-    //         sumCost3 += kShonan.cost(SO3Values);
-    //     }
+    for (size_t p = 3; p < 10; p++) {
+        const Values initial = kShonan.initializeRandomlyAt(p);
+        double CostP = 0, Cost3 = 0, lambdaMin = 0, suBound = 0;
 
-    //     chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
-    //     chrono::duration<double> timeUsed =
-    //         chrono::duration_cast<chrono::duration<double>>(t2 - t1) / N;
-    //     saveData(p, timeUsed.count(), sumCostP / N, sumCost3 / N, &cout);
-    //     saveData(p, timeUsed.count(), sumCostP / N, sumCost3 / N, &csvFile);
-    //     // tictoc_finishedIteration_();
-    //     // tictoc_print_();
-    // }
+        chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
+        const Values result = kShonan.tryOptimizingAt(p, initial);
+        chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
+        chrono::duration<double> timeUsed1 =
+            chrono::duration_cast<chrono::duration<double>>(t2 - t1);
+
+        auto Q = kShonan.buildQ();
+        auto Lambda = kShonan.computeLambda(result);
+        lambdaMin = kShonan.computeMinEigenValue(result);
+        chrono::steady_clock::time_point t3 = chrono::steady_clock::now();
+        chrono::duration<double> timeUsed2 =
+            chrono::duration_cast<chrono::duration<double>>(t3 - t1);
+
+        CostP += kShonan.costAt(p, result);
+        const Values SO3Values = kShonan.projectFrom(p, result);
+        Cost3 += kShonan.cost(SO3Values);
+        suBound = (Cost3 - CostP) / CostP;
+        
+        saveData(p, timeUsed1.count(), CostP, Cost3, timeUsed2.count(), lambdaMin, suBound, &cout);
+        saveData(p, timeUsed1.count(), CostP, Cost3, timeUsed2.count(), lambdaMin, suBound, &csvFile);
+    }
 
     return 0;
 }
