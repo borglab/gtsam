@@ -71,58 +71,58 @@ int main(int argc, char* argv[]) {
 
     // Create Shonan averaging instance from the file.
     ShonanAveragingParameters parameters;
-    double sigmaNoiseInRadians = 5 * pi/180;
+    double sigmaNoiseInRadians = 5 * M_PI/180;
     parameters.setNoiseSigma(sigmaNoiseInRadians);
     static const ShonanAveraging kShonan(g2oFile);
 
     // increase p value and try optimize using Shonan Algorithm. For each p
     // value, iterate several times to check convergence rate.
-    const size_t iter = 10;
-    for (size_t p = 3; p < 11; p++) {
-        // cout << "*********************************************************"
-        // << endl;
-        gttic_(optimize);
-        double CostP = 0, Cost3 = 0;
-        for (size_t i = 0; i < iter; i++) {
-            const Values initial = kShonan.initializeRandomlyAt(p);
-            chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
-            const Values result = kShonan.tryOptimizingAt(p, initial);
-            CostP = kShonan.costAt(p, result);
-            const Values SO3Values = kShonan.projectFrom(p, result);
-            Cost3 = kShonan.cost(SO3Values);
-            chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
-            chrono::duration<double> timeUsed =
-                chrono::duration_cast<chrono::duration<double>>(t2 - t1);
-            saveData(p, timeUsed.count(), CostP, Cost3, &cout);
-            saveData(p, timeUsed.count(), CostP, Cost3, &csvFile);
-        }
-    }
+    // const size_t iter = 10;
+    // for (size_t p = 3; p < 11; p++) {
+    //     // cout << "*********************************************************"
+    //     // << endl;
+    //     gttic_(optimize);
+    //     double CostP = 0, Cost3 = 0;
+    //     for (size_t i = 0; i < iter; i++) {
+    //         const Values initial = kShonan.initializeRandomlyAt(p);
+    //         chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
+    //         const Values result = kShonan.tryOptimizingAt(p, initial);
+    //         CostP = kShonan.costAt(p, result);
+    //         const Values SO3Values = kShonan.projectFrom(p, result);
+    //         Cost3 = kShonan.cost(SO3Values);
+    //         chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
+    //         chrono::duration<double> timeUsed =
+    //             chrono::duration_cast<chrono::duration<double>>(t2 - t1);
+    //         saveData(p, timeUsed.count(), CostP, Cost3, &cout);
+    //         saveData(p, timeUsed.count(), CostP, Cost3, &csvFile);
+    //     }
+    // }
 
     // increase p value and try optimize using Shonan Algorithm. use chrono for
     // timing
-    // const size_t N = 1;
-    // for (size_t p = 3; p < 11; p++) {
+    const size_t N = 1;
+    for (size_t p = 3; p < 11; p++) {
     // cout << "*********************************************************"
     // << endl;
-    //    const Values initial = kShonan.initializeRandomlyAt(p);
+       const Values initial = kShonan.initializeRandomlyAt(p);
     //    gttic_(optimize);
-    //    chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
-    //    double sumCostP = 0, sumCost3 = 0;
-    //    for (size_t i = 0; i < N; i++) {
-    //        const Values result = kShonan.tryOptimizingAt(p, initial);
-    //        sumCostP += kShonan.costAt(p, result);
-    //        const Values SO3Values = kShonan.projectFrom(p, result);
-    //        sumCost3 += kShonan.cost(SO3Values);
-    //    }
+       chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
+       double sumCostP = 0, sumCost3 = 0;
+       for (size_t i = 0; i < N; i++) {
+           const Values result = kShonan.tryOptimizingAt(p, initial);
+           sumCostP += kShonan.costAt(p, result);
+           const Values SO3Values = kShonan.projectFrom(p, result);
+           sumCost3 += kShonan.cost(SO3Values);
+       }
 
-    //    chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
-    //    chrono::duration<double> timeUsed =
-    //        chrono::duration_cast<chrono::duration<double>>(t2 - t1) / N;
-    //    saveData(p, timeUsed.count(), sumCostP / N, sumCost3 / N, &cout);
-    //    saveData(p, timeUsed.count(), sumCostP / N, sumCost3 / N, &csvFile);
+       chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
+       chrono::duration<double> timeUsed =
+           chrono::duration_cast<chrono::duration<double>>(t2 - t1) / N;
+       saveData(p, timeUsed.count(), sumCostP / N, sumCost3 / N, &cout);
+       saveData(p, timeUsed.count(), sumCostP / N, sumCost3 / N, &csvFile);
     // tictoc_finishedIteration_();
     // tictoc_print_();
-    //}
+    }
 
     return 0;
 }
