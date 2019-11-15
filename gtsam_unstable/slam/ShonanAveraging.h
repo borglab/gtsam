@@ -60,6 +60,9 @@ class ShonanAveraging {
                            const ShonanAveragingParameters& parameters =
                                ShonanAveragingParameters());
 
+  /// Return number of poses
+  size_t nrPoses() const { return poses_.size(); }
+
   /**
    * Build graph for SO(p)
    * @param p the dimensionality of the rotation manifold to optimize over
@@ -81,10 +84,9 @@ class ShonanAveraging {
   /**
    * Build 3Nx3N sparse matrix consisting of rotation measurements, arranged as
    *       (i,j) and (j,i) blocks within a sparse matrix.
-   * @param nrNodes total number of nodes in the factor graph
    * @param useNoiseModel whether to use noise model
    */
-  Sparse buildQ(size_t nrNodes, bool useNoiseModel) const;
+  Sparse buildQ(bool useNoiseModel = false) const;
 
   /**
    * Given an estimated local minimum Yopt for the (possibly lifted)

@@ -73,7 +73,7 @@ ShonanAveragingParameters::ShonanAveragingParameters(const string& verbosity,
   } else if (method == "CHOLESKY") {
     lm.setLinearSolverType("MULTIFRONTAL_CHOLESKY");
   } else {
-    throw std::invalid_argument("ShonanAveragingParameters: unknown mtehod");
+    throw std::invalid_argument("ShonanAveragingParameters: unknown method");
   }
 }
 
@@ -173,9 +173,71 @@ double ShonanAveraging::cost(const Values& values) const {
 }
 
 /* ************************************************************************* */
-ShonanAveraging::Sparse ShonanAveraging::buildQ(size_t nrNodes,
-                                                bool useNoiseModel) const {
-  return Sparse();
+// heavily cribbed from David's construct_rotational_connection_Laplacian
+ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
+  assert(useNoiseModel == false);
+
+  constexpr size_t d = 3;  // for now only for 3D rotations
+
+  // Each measurement contributes 2*d elements along the diagonal of the
+  // connection Laplacian, and 2*d^2 elements on a pair of symmetric
+  // off-diagonal blocks
+  constexpr size_t measurement_stride = 2 * (d + d * d);
+
+  // We will use this to keep track of the largest pose index encountered, which
+  // in turn provides the number of poses
+  size_t num_poses = 0;
+
+  std::vector<Eigen::Triplet<double>> triplets;
+  triplets.reserve(measurement_stride * factors_.size());
+
+  size_t i, j;
+  for (const auto& factor : factors_) {
+    // Get pose keys
+    const auto& keys = factor->keys();
+    size_t i = keys[0];
+    size_t j = keys[1];
+
+    // Extract rotation measurement
+    const auto& Tij = factor->measured();
+    const Matrix3 Rij = Tij.rotation().matrix();
+
+    // Get kappa from noise model
+    double kappa;
+    if (useNoiseModel) {
+      const auto& m = factor->noiseModel();
+      // isotropic = noiseModel_FrobeniusNoiseModel9.FromPose3NoiseModel(m)
+      // sigma = isotropic.sigma()
+      // kappa_ij = 1.0/(sigma*sigma)
+    } else {
+      kappa = 1.0;
+    }
+
+    // Elements of ith block-diagonal
+    for (size_t k = 0; k < d; k++)
+      triplets.emplace_back(d * i + k, d * i + k, kappa);
+
+    // Elements of jth block-diagonal
+    for (size_t k = 0; k < d; k++)
+      triplets.emplace_back(d * j + k, d * j + k, kappa);
+
+    // Elements of ij block
+    for (size_t r = 0; r < d; r++)
+      for (size_t c = 0; c < d; c++)
+        triplets.emplace_back(i * d + r, j * d + c, -kappa * Rij(r, c));
+
+    // Elements of ji block
+    for (size_t r = 0; r < d; r++)
+      for (size_t c = 0; c < d; c++)
+        triplets.emplace_back(j * d + r, i * d + c, -kappa * Rij(c, r));
+  }
+
+  // Construct and return a sparse matrix from these triplets
+  const size_t N = nrPoses();
+  ShonanAveraging::Sparse LGrho(d * N, d * N);
+  LGrho.setFromTriplets(triplets.begin(), triplets.end());
+
+  return LGrho;
 }
 
 /* ************************************************************************* */
@@ -188,7 +250,8 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Values& values,
 bool ShonanAveraging::checkOptimalityAt(size_t p, const Values& values,
                                         bool noise) const {
   /// Based on Luca's MATLAB version on BitBucket repo.
-  auto Q = buildQ(values.size(), noise);
+  assert(values.size() == nrPoses());
+  auto Q = buildQ(noise);
   auto Lambda = computeLambda(values, Q);
   auto A = Q - Lambda;
   // auto eigenvalues = eigsh(A, k = 1, which = 'SA', return_eigenvectors =

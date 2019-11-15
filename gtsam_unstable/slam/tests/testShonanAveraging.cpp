@@ -33,7 +33,15 @@ static const ShonanAveraging kShonan(g2oFile);
 /* ************************************************************************* */
 TEST(ShonanAveraging, buildGraphAt) {
   auto graph = kShonan.buildGraphAt(5);
+  EXPECT_LONGS_EQUAL(5, kShonan.nrPoses());
   EXPECT_LONGS_EQUAL(6, graph.size());
+}
+
+/* ************************************************************************* */
+TEST(ShonanAveraging, buildQ) {
+  auto Q = kShonan.buildQ();
+  EXPECT_LONGS_EQUAL(3*5, Q.rows());
+  EXPECT_LONGS_EQUAL(3*5, Q.cols());
 }
 
 /* ************************************************************************* */
