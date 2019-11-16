@@ -47,8 +47,9 @@ TEST(ShonanAveraging, checkOptimality) {
   EXPECT_LONGS_EQUAL(3 * 5, Lambda.rows());
   EXPECT_LONGS_EQUAL(3 * 5, Lambda.cols());
   EXPECT_LONGS_EQUAL(45, Lambda.nonZeros());
-  auto lambdaMin = kShonan.computeMinEigenValue(random);  
-  EXPECT_DOUBLES_EQUAL(0, lambdaMin, 1e-4); // Regression test
+  auto lambdaMin = kShonan.computeMinEigenValue(random);
+  EXPECT_DOUBLES_EQUAL(-5.2964625490657866, lambdaMin,
+                       1e-4);  // Regression test
   EXPECT(!kShonan.checkOptimality(random));
 }
 
@@ -58,6 +59,9 @@ TEST(ShonanAveraging, tryOptimizingAt3) {
   EXPECT(!kShonan.checkOptimality(initial));
   const Values result = kShonan.tryOptimizingAt(3, initial);
   EXPECT(kShonan.checkOptimality(result));
+  auto lambdaMin = kShonan.computeMinEigenValue(result);
+  EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, lambdaMin,
+                       1e-4);  // Regression test
   EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(3, result), 1e-4);
   const Values SO3Values = kShonan.projectFrom(3, result);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(SO3Values), 1e-4);
@@ -68,6 +72,9 @@ TEST(ShonanAveraging, tryOptimizingAt4) {
   const Values result = kShonan.tryOptimizingAt(4);
   EXPECT(kShonan.checkOptimality(result));
   EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(4, result), 1e-3);
+  auto lambdaMin = kShonan.computeMinEigenValue(result);
+  EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, lambdaMin,
+                       1e-4);  // Regression test
   const Values SO3Values = kShonan.projectFrom(4, result);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(SO3Values), 1e-4);
 }
@@ -75,11 +82,19 @@ TEST(ShonanAveraging, tryOptimizingAt4) {
 /* ************************************************************************* */
 TEST(ShonanAveraging, tryOptimizingAt5) {
   const Values result = kShonan.tryOptimizingAt(5);
-  EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(5, result), 1e-3);
+  EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(3, result), 1e-3);
+  auto lambdaMin = kShonan.computeMinEigenValue(result);
+  EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, lambdaMin,
+                       1e-4);  // Regression test
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, run) { kShonan.run(5); }
+TEST(ShonanAveraging, run) {
+  auto result = kShonan.run(5);
+  EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result.first), 1e-3);
+  EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
+                       1e-4);  // Regression test
+}
 
 /* ************************************************************************* */
 int main() {
