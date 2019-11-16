@@ -368,7 +368,9 @@ class ShonanAveraging {
   double cost(const gtsam::Values& values) const;
   double computeMinEigenValue(const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
-  void run() const;
+  pair<gtsam::Values, double> run() const;
+  pair<gtsam::Values, double> run(size_t min_p) const;
+  pair<gtsam::Values, double> run(size_t min_p, size_t max_p) const;
 };
 
 #include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactorEM.h>

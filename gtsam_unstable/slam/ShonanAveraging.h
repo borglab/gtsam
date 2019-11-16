@@ -34,10 +34,12 @@ struct ShonanAveragingParameters {
   bool prior;                   // whether to use a prior
   bool karcher;                 // whether to use Karcher mean prior
   double noiseSigma;            // Optional noise Sigma, will be ignored if zero
+  double optimalityThreshold;   // threshold used in checkOptimality
   LevenbergMarquardtParams lm;  // LM parameters
   ShonanAveragingParameters(const std::string& verbosity = "SILENT",
                             const std::string& method = "JACOBI",
-                            double noiseSigma = 0);
+                            double noiseSigma = 0,
+                            double optimalityThreshold = -1e-4);
   void setPrior(bool value) { prior = value; }
   void setKarcher(bool value) { karcher = value; }
   void setNoiseSigma(bool value) { noiseSigma = value; }
@@ -96,6 +98,9 @@ class ShonanAveraging {
    */
   Sparse computeLambda(const Values& values) const;
 
+  // Version that takes pxdN Stiefel manifold elements
+  Sparse computeLambda(const Matrix& S) const;
+
   /**
    * Compute minimum eigenvalue for optimality check.
    * @param values: should be of type SOn
@@ -103,7 +108,7 @@ class ShonanAveraging {
   double computeMinEigenValue(const Values& values) const;
 
   /**
-   * Check optimality 
+   * Check optimality
    * @param values: should be of type SOn
    */
   bool checkOptimality(const Values& values) const;
@@ -132,9 +137,11 @@ class ShonanAveraging {
 
   /**
    * Optimize at different values of p until convergence.
+   * @param p_min value of p to start Riemanian staircase at.
    * @param p_max maximum value of p to try (default: 20)
+   * @return (SO(3) values, minimum eigenvalue)
    */
-  void run(size_t p_max = 20) const;
+  std::pair<Values, double> run(size_t p_min = 5, size_t p_max = 20) const;
 };
 
 }  // namespace gtsam

@@ -40,8 +40,12 @@ static std::mt19937 kRandomNumberGenerator(42);
 /* ************************************************************************* */
 ShonanAveragingParameters::ShonanAveragingParameters(const string& verbosity,
                                                      const std::string& method,
-                                                     double noiseSigma)
-    : prior(true), karcher(true), noiseSigma(noiseSigma) {
+                                                     double noiseSigma,
+                                                     double optimalityThreshold)
+    : prior(true),
+      karcher(true),
+      noiseSigma(noiseSigma),
+      optimalityThreshold(optimalityThreshold) {
   lm.setVerbosityLM(verbosity);
 
   // Set parameters to be similar to ceres
@@ -84,7 +88,8 @@ ShonanAveragingParameters::ShonanAveragingParameters(const string& verbosity,
 ShonanAveraging::ShonanAveraging(const string& g2oFile,
                                  const ShonanAveragingParameters& parameters)
     : parameters_(parameters) {
-  auto corruptingNoise = noiseModel::Isotropic::Sigma(3, parameters.noiseSigma);
+  constexpr size_t d = 3;  // for now only for 3D rotations
+  auto corruptingNoise = noiseModel::Isotropic::Sigma(d, parameters.noiseSigma);
   factors_ = parse3DFactors(g2oFile, corruptingNoise);
   poses_ = parse3DPoses(g2oFile);
   Q_ = buildQ();
@@ -153,11 +158,12 @@ Values ShonanAveraging::tryOptimizingAt(
 
 /* ************************************************************************* */
 Values ShonanAveraging::projectFrom(size_t p, const Values& values) const {
+  constexpr size_t d = 3;  // for now only for 3D rotations
   Values SO3_values;
   for (size_t j = 0; j < nrPoses(); j++) {
     const SOn Q = values.at<SOn>(j);
     assert(Q.rows() == p);
-    const SO3 R = SO3::ClosestTo(Q.matrix().topLeftCorner(3, 3));
+    const SO3 R = SO3::ClosestTo(Q.matrix().topLeftCorner(d, d));
     SO3_values.insert(j, R);
   }
   return SO3_values;
@@ -255,8 +261,7 @@ static Matrix StiefelElementMatrix(const Values& values) {
 }
 
 /* ************************************************************************* */
-ShonanAveraging::Sparse ShonanAveraging::computeLambda(
-    const Values& values) const {
+ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Matrix& S) const {
   constexpr size_t d = 3;  // for now only for 3D rotations
 
   // Each pose contributes 2*d elements along the diagonal of Lambda
@@ -266,9 +271,6 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(
   const size_t N = nrPoses();
   std::vector<Eigen::Triplet<double>> triplets;
   triplets.reserve(stride * N);
-
-  // Project to pxdN Stiefel manifold
-  Matrix S = StiefelElementMatrix(values);
 
   // Do sparse-dense multiply to get Q*S'
   auto QSt = Q_ * S.transpose();
@@ -287,6 +289,15 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(
   ShonanAveraging::Sparse Lambda(d * N, d * N);
   Lambda.setFromTriplets(triplets.begin(), triplets.end());
   return Lambda;
+}
+
+/* ************************************************************************* */
+ShonanAveraging::Sparse ShonanAveraging::computeLambda(
+    const Values& values) const {
+  // Project to pxdN Stiefel manifold...
+  Matrix S = StiefelElementMatrix(values);
+  // ...and call version above.
+  return computeLambda(S);
 }
 
 /* ************************************************************************* */
@@ -440,7 +451,8 @@ bool A_min_eig(const SparseMatrix& A, const Matrix& Y, double& min_eigenvalue,
 double ShonanAveraging::computeMinEigenValue(const Values& values) const {
   /// Based on Luca's MATLAB version on BitBucket repo.
   assert(values.size() == nrPoses());
-  auto Lambda = computeLambda(values);
+  const Matrix S = StiefelElementMatrix(values);
+  auto Lambda = computeLambda(S);
   auto A = Q_ - Lambda;
 #ifdef SLOW_EIGEN_COMPUTATION
   Eigen::EigenSolver<Matrix> solver(Matrix(A), false);
@@ -450,8 +462,6 @@ double ShonanAveraging::computeMinEigenValue(const Values& values) const {
     lambda_min = min(lambdas(i).real(), lambda_min);
   }
 #else
-  // Project to pxdN Stiefel manifold, TODO(frank) already done in computeLambda
-  Matrix S = StiefelElementMatrix(values);
   double lambda_min;
   Vector min_eigenvector;
   size_t num_iterations;
@@ -466,15 +476,23 @@ double ShonanAveraging::computeMinEigenValue(const Values& values) const {
 /* ************************************************************************* */
 bool ShonanAveraging::checkOptimality(const Values& values) const {
   double lambda_min = computeMinEigenValue(values);
-  return lambda_min > -1e-4;  // TODO(frank): move tolerance to params
+  return lambda_min > parameters_.optimalityThreshold;
 }
 
 /* ************************************************************************* */
-void ShonanAveraging::run(size_t p_max) const {
-  // TODO(frank): check optimality and return optimal values
-  for (size_t p = 3; p <= p_max; p++) {
-    tryOptimizingAt(p);
+std::pair<Values, double> ShonanAveraging::run(size_t p_min,
+                                               size_t p_max) const {
+  Values result;
+  for (size_t p = p_min; p <= p_max; p++) {
+    auto SOpValues = tryOptimizingAt(p);
+    double lambda_min = computeMinEigenValue(SOpValues);
+    cout << p << " : " << lambda_min << endl;
+    if (lambda_min > parameters_.optimalityThreshold) {
+      const Values SO3Values = projectFrom(p, SOpValues);
+      return std::make_pair(SO3Values, lambda_min);
+    }
   }
+  throw std::runtime_error("Shonan::run did not converge for given p_max");
 }
 
 /* ************************************************************************* */
