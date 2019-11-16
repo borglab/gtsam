@@ -333,7 +333,7 @@ struct MatrixProdFunctor {
     Eigen::Map<Vector> Y(y, rows());
 
     // Do the multiplication using wrapped Eigen vectors
-    Y = A_ * X;
+    Y = A_ * X + sigma_ * X;
   }
 };
 
@@ -486,7 +486,6 @@ std::pair<Values, double> ShonanAveraging::run(size_t p_min,
   for (size_t p = p_min; p <= p_max; p++) {
     auto SOpValues = tryOptimizingAt(p);
     double lambda_min = computeMinEigenValue(SOpValues);
-    cout << p << " : " << lambda_min << endl;
     if (lambda_min > parameters_.optimalityThreshold) {
       const Values SO3Values = projectFrom(p, SOpValues);
       return std::make_pair(SO3Values, lambda_min);
