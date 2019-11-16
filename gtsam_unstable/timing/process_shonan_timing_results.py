@@ -9,17 +9,6 @@ from matplotlib.ticker import FuncFormatter
 import heapq
 from collections import Counter
 
-def make_time_plot(timings):
-    """Plot timings given as a dictionary {name:time}."""
-    for name,time in timings.items():
-        plt.plot(p_value, time[:5], label="tinygrid vertex = 9, edge = 11")
-    plt.xlabel("SO(P), p number")
-    plt.ylabel("Time used to optimize \ seconds")
-    plt.title('The relationship between the p and time used for optimization', fontsize=12)
-    plt.legend(loc='upper right', frameon=True)
-    plt.show()
-    plt.savefig("p_time_6")
-
 def make_combined_plot(name, p_values, times, costs, min_cost_range=10):
     """ Make a plot that combines timing and SO(3) cost.
         Arguments:
@@ -168,6 +157,7 @@ names[3] = 'sphere2500 vertex = 2500, edge = 4949'
 names[4] = 'sphere_bignoise vertex = 2200, edge = 8647'
 names[5] = 'torus3D vertex = 5000, edge = 9048'
 names[6] = 'cubicle vertex = 5750, edge = 16869'
+names[7] = 'rim vertex = 10195, edge = 29743'
 
 # Parse CSV file
 for key, name in names.items():
@@ -196,6 +186,8 @@ for key, name in names.items():
             subounds.append(float(row[6]))
 
     #plot
-    # make_combined_plot(name, p_values, times1, cost3s)
+    if times2[0] == 0:
+        make_combined_plot(name, p_values, times1, cost3s)
     # make_convergence_plot(name, p_values, times1, cost3s)
-    make_eigen_and_bound_plot(name, p_values, times1, times2, min_eigens, subounds)
+    else:
+        make_eigen_and_bound_plot(name, p_values, times1, times2, min_eigens, subounds)
