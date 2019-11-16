@@ -365,6 +365,7 @@ class ShonanAveraging {
   gtsam::Values tryOptimizingAt(size_t p) const;
   gtsam::Values tryOptimizingAt(size_t p, const gtsam::Values& initial) const;
   gtsam::Values projectFrom(size_t p, const gtsam::Values& values) const;
+  gtsam::Values roundSolution(const gtsam::Values& values) const;
   double cost(const gtsam::Values& values) const;
   double computeMinEigenValue(const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
