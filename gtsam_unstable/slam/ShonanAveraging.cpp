@@ -242,15 +242,16 @@ ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
 
 /* ************************************************************************* */
 // Project to pxdN Stiefel manifold
-static Matrix StiefelManifoldElement(const Values& values) {
+static Matrix StiefelElementMatrix(const Values& values) {
   constexpr size_t d = 3;  // for now only for 3D rotations
-  const size_t p = values.at<SOn>(0).rows();
   const size_t N = values.size();
+  const size_t p = values.at<SOn>(0).rows();
   Matrix S(p, N * d);
   for (size_t j = 0; j < N; j++) {
     const SOn Q = values.at<SOn>(j);
     S.block(0, j * d, p, d) = Q.matrix().leftCols(d);  // project Qj to Stiefel
   }
+  return S;
 }
 
 /* ************************************************************************* */
@@ -267,7 +268,7 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(
   triplets.reserve(stride * N);
 
   // Project to pxdN Stiefel manifold
-  Matrix S = StiefelManifoldElement(values);
+  Matrix S = StiefelElementMatrix(values);
 
   // Do sparse-dense multiply to get Q*S'
   auto QSt = Q_ * S.transpose();
@@ -441,7 +442,7 @@ double ShonanAveraging::computeMinEigenValue(const Values& values) const {
   assert(values.size() == nrPoses());
   auto Lambda = computeLambda(values);
   auto A = Q_ - Lambda;
-#ifdef SLOW_EGEN_COMPUTATION
+#ifdef SLOW_EIGEN_COMPUTATION
   Eigen::EigenSolver<Matrix> solver(Matrix(A), false);
   auto lambdas = solver.eigenvalues();
   double lambda_min = lambdas(0).real();
@@ -449,8 +450,8 @@ double ShonanAveraging::computeMinEigenValue(const Values& values) const {
     lambda_min = min(lambdas(i).real(), lambda_min);
   }
 #else
-  // Project to pxdN Stiefel manifold
-  Matrix S = StiefelManifoldElement(values);
+  // Project to pxdN Stiefel manifold, TODO(frank) already done in computeLambda
+  Matrix S = StiefelElementMatrix(values);
   double lambda_min;
   Vector min_eigenvector;
   size_t num_iterations;
