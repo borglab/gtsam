@@ -536,7 +536,7 @@ std::pair<Values, double> ShonanAveraging::run(size_t p_min,
     auto SOpValues = tryOptimizingAt(p);
     double lambda_min = computeMinEigenValue(SOpValues);
     if (lambda_min > parameters_.optimalityThreshold) {
-      const Values SO3Values = roundSolution(p, SOpValues);
+      const Values SO3Values = roundSolution(SOpValues);
       return std::make_pair(SO3Values, lambda_min);
     }
   }
