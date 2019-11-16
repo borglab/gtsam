@@ -54,6 +54,7 @@ class ShonanAveraging {
   BetweenFactorPose3s factors_;
   std::map<Key, Pose3> poses_;
   Sparse Q_;  // connection Laplacian needed for optimality check
+  size_t d_;  // dimensionality (typically 2 or 3)
 
  public:
   /**
@@ -128,6 +129,13 @@ class ShonanAveraging {
    * Values should be of type SO(p)
    */
   Values projectFrom(size_t p, const Values& values) const;
+
+  /**
+   * Project from SO(p)^N to SO(3)^N
+   * Values should be of type SO(p)
+   */
+  Values roundSolution(const Matrix Y) const;
+  Values roundSolution(const Values& values) const;
 
   /**
    * Calculate cost for SO(3)

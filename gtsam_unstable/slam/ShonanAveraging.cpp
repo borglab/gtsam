@@ -87,9 +87,9 @@ ShonanAveragingParameters::ShonanAveragingParameters(const string& verbosity,
 /* ************************************************************************* */
 ShonanAveraging::ShonanAveraging(const string& g2oFile,
                                  const ShonanAveragingParameters& parameters)
-    : parameters_(parameters) {
-  constexpr size_t d = 3;  // for now only for 3D rotations
-  auto corruptingNoise = noiseModel::Isotropic::Sigma(d, parameters.noiseSigma);
+    : parameters_(parameters), d_(3) {
+  auto corruptingNoise =
+      noiseModel::Isotropic::Sigma(d_, parameters.noiseSigma);
   factors_ = parse3DFactors(g2oFile, corruptingNoise);
   poses_ = parse3DPoses(g2oFile);
   Q_ = buildQ();
@@ -145,8 +145,8 @@ Values ShonanAveraging::tryOptimizingAt(
   // Prior is only added here as depends on initial value (and cost is zero)
   if (parameters_.prior) {
     if (parameters_.karcher) {
-      const size_t d = p * (p - 1) / 2;
-      graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), d);
+      const size_t dim = p * (p - 1) / 2;
+      graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
     } else {
       graph.emplace_shared<PriorFactor<SOn>>(0, initial.at<SOn>(0));
     }
@@ -157,16 +157,82 @@ Values ShonanAveraging::tryOptimizingAt(
 }
 
 /* ************************************************************************* */
-Values ShonanAveraging::projectFrom(size_t p, const Values& values) const {
+// Project to pxdN Stiefel manifold
+static Matrix StiefelElementMatrix(const Values& values) {
   constexpr size_t d = 3;  // for now only for 3D rotations
+  const size_t N = values.size();
+  const size_t p = values.at<SOn>(0).rows();
+  Matrix S(p, N * d);
+  for (size_t j = 0; j < N; j++) {
+    const SOn Q = values.at<SOn>(j);
+    S.block(0, j * d, p, d) = Q.matrix().leftCols(d);  // project Qj to Stiefel
+  }
+  return S;
+}
+
+/* ************************************************************************* */
+Values ShonanAveraging::projectFrom(size_t p, const Values& values) const {
   Values SO3_values;
   for (size_t j = 0; j < nrPoses(); j++) {
     const SOn Q = values.at<SOn>(j);
     assert(Q.rows() == p);
-    const SO3 R = SO3::ClosestTo(Q.matrix().topLeftCorner(d, d));
+    const SO3 R = SO3::ClosestTo(Q.matrix().topLeftCorner(d_, d_));
     SO3_values.insert(j, R);
   }
   return SO3_values;
+}
+
+/* ************************************************************************* */
+Values ShonanAveraging::roundSolution(const Matrix Y) const {
+  size_t N = nrPoses();
+  // First, compute a thin SVD of Y
+  Eigen::JacobiSVD<Matrix> svd(Y, Eigen::ComputeThinV);
+  Vector sigmas = svd.singularValues();
+
+  // Construct a diagonal matrix comprised of the first d singular values
+  using DiagonalMatrix = Eigen::DiagonalMatrix<double, Eigen::Dynamic>;
+  DiagonalMatrix Sigma_d(d_);
+  DiagonalMatrix::DiagonalVectorType& diagonal = Sigma_d.diagonal();
+  for (size_t i = 0; i < d_; ++i) diagonal(i) = sigmas(i);
+
+  // First, construct a rank-d truncated singular value decomposition for Y
+  Matrix R = Sigma_d * svd.matrixV().leftCols(d_).transpose();
+  Vector determinants(N);
+
+  size_t ng0 = 0;  // This will count the number of blocks whose
+
+  // determinants have positive sign
+  for (size_t i = 0; i < N; ++i) {
+    // Compute the determinant of the ith dxd block of R
+    determinants(i) = R.block(0, i * d_, d_, d_).determinant();
+    if (determinants(i) > 0) ++ng0;
+  }
+
+  if (ng0 < N / 2) {
+    // Less than half of the total number of blocks have the correct sign, so
+    // reverse their orientations
+    // Get a reflection matrix that we can use to reverse the signs of those
+    // blocks of R that have the wrong determinant
+    Matrix reflector = Matrix::Identity(d_, d_);
+    reflector(d_ - 1, d_ - 1) = -1;
+    R = reflector * R;
+  }
+
+  // Finally, project each dxd rotation block to SO(d)
+  Values SO3_values;
+  for (size_t i = 0; i < N; ++i) {
+    const SO3 Ri = SO3::ClosestTo(R.block(0, i * d_, d_, d_));
+    SO3_values.insert(i, Ri);
+  }
+  return SO3_values;
+}
+
+/* ************************************************************************* */
+Values ShonanAveraging::roundSolution(const Values& values) const {
+  // Project to pxdN Stiefel manifold...
+  Matrix S = StiefelElementMatrix(values);
+  // ...and call version above.
+  return roundSolution(S);
 }
 
 /* ************************************************************************* */
@@ -187,12 +253,10 @@ double ShonanAveraging::cost(const Values& values) const {
 ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
   assert(useNoiseModel == false);
 
-  constexpr size_t d = 3;  // for now only for 3D rotations
-
   // Each measurement contributes 2*d elements along the diagonal of the
   // connection Laplacian, and 2*d^2 elements on a pair of symmetric
   // off-diagonal blocks
-  constexpr size_t stride = 2 * (d + d * d);
+  const size_t stride = 2 * (d_ + d_ * d_);
 
   // Reserve space for triplets
   std::vector<Eigen::Triplet<double>> triplets;
@@ -220,52 +284,36 @@ ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
     }
 
     // Elements of ith block-diagonal
-    for (size_t k = 0; k < d; k++)
-      triplets.emplace_back(d * i + k, d * i + k, kappa);
+    for (size_t k = 0; k < d_; k++)
+      triplets.emplace_back(d_ * i + k, d_ * i + k, kappa);
 
     // Elements of jth block-diagonal
-    for (size_t k = 0; k < d; k++)
-      triplets.emplace_back(d * j + k, d * j + k, kappa);
+    for (size_t k = 0; k < d_; k++)
+      triplets.emplace_back(d_ * j + k, d_ * j + k, kappa);
 
     // Elements of ij block
-    for (size_t r = 0; r < d; r++)
-      for (size_t c = 0; c < d; c++)
-        triplets.emplace_back(i * d + r, j * d + c, -kappa * Rij(r, c));
+    for (size_t r = 0; r < d_; r++)
+      for (size_t c = 0; c < d_; c++)
+        triplets.emplace_back(i * d_ + r, j * d_ + c, -kappa * Rij(r, c));
 
     // Elements of ji block
-    for (size_t r = 0; r < d; r++)
-      for (size_t c = 0; c < d; c++)
-        triplets.emplace_back(j * d + r, i * d + c, -kappa * Rij(c, r));
+    for (size_t r = 0; r < d_; r++)
+      for (size_t c = 0; c < d_; c++)
+        triplets.emplace_back(j * d_ + r, i * d_ + c, -kappa * Rij(c, r));
   }
 
   // Construct and return a sparse matrix from these triplets
   const size_t N = nrPoses();
-  ShonanAveraging::Sparse LGrho(d * N, d * N);
+  ShonanAveraging::Sparse LGrho(d_ * N, d_ * N);
   LGrho.setFromTriplets(triplets.begin(), triplets.end());
 
   return LGrho;
 }
 
 /* ************************************************************************* */
-// Project to pxdN Stiefel manifold
-static Matrix StiefelElementMatrix(const Values& values) {
-  constexpr size_t d = 3;  // for now only for 3D rotations
-  const size_t N = values.size();
-  const size_t p = values.at<SOn>(0).rows();
-  Matrix S(p, N * d);
-  for (size_t j = 0; j < N; j++) {
-    const SOn Q = values.at<SOn>(j);
-    S.block(0, j * d, p, d) = Q.matrix().leftCols(d);  // project Qj to Stiefel
-  }
-  return S;
-}
-
-/* ************************************************************************* */
 ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Matrix& S) const {
-  constexpr size_t d = 3;  // for now only for 3D rotations
-
-  // Each pose contributes 2*d elements along the diagonal of Lambda
-  constexpr size_t stride = d * d;
+  // Each pose contributes 2*d_ elements along the diagonal of Lambda
+  const size_t stride = d_ * d_;
 
   // Reserve space for triplets
   const size_t N = nrPoses();
@@ -277,16 +325,17 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Matrix& S) const {
 
   for (size_t j = 0; j < N; j++) {
     // Compute B, the building block for the j^th diagonal block of Lambda
-    Matrix B = QSt.middleRows(j, d) * S.middleCols(j, d);
+    Matrix B = QSt.middleRows(j, d_) * S.middleCols(j, d_);
 
     // Elements of jth block-diagonal
-    for (size_t r = 0; r < d; r++)
-      for (size_t c = 0; c < d; c++)
-        triplets.emplace_back(j * d + r, j * d + c, 0.5 * (B(r, c) + B(c, r)));
+    for (size_t r = 0; r < d_; r++)
+      for (size_t c = 0; c < d_; c++)
+        triplets.emplace_back(j * d_ + r, j * d_ + c,
+                              0.5 * (B(r, c) + B(c, r)));
   }
 
   // Construct and return a sparse matrix from these triplets
-  ShonanAveraging::Sparse Lambda(d * N, d * N);
+  ShonanAveraging::Sparse Lambda(d_ * N, d_ * N);
   Lambda.setFromTriplets(triplets.begin(), triplets.end());
   return Lambda;
 }
@@ -487,7 +536,7 @@ std::pair<Values, double> ShonanAveraging::run(size_t p_min,
     auto SOpValues = tryOptimizingAt(p);
     double lambda_min = computeMinEigenValue(SOpValues);
     if (lambda_min > parameters_.optimalityThreshold) {
-      const Values SO3Values = projectFrom(p, SOpValues);
+      const Values SO3Values = roundSolution(p, SOpValues);
       return std::make_pair(SO3Values, lambda_min);
     }
   }
