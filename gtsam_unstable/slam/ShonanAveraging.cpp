@@ -46,307 +46,312 @@ ShonanAveragingParameters::ShonanAveragingParameters(const string& verbosity,
       karcher(true),
       noiseSigma(noiseSigma),
       optimalityThreshold(optimalityThreshold) {
-  lm.setVerbosityLM(verbosity);
+    lm.setVerbosityLM(verbosity);
 
-  // Set parameters to be similar to ceres
-  LevenbergMarquardtParams::SetCeresDefaults(&lm);
+    // Set parameters to be similar to ceres
+    LevenbergMarquardtParams::SetCeresDefaults(&lm);
 
-  // By default, we will do conjugate gradient
-  lm.linearSolverType = LevenbergMarquardtParams::Iterative;
+    // By default, we will do conjugate gradient
+    lm.linearSolverType = LevenbergMarquardtParams::Iterative;
 
-  // Create subgraph builder parameters
-  SubgraphBuilderParameters builderParameters;
-  builderParameters.skeletonType = SubgraphBuilderParameters::KRUSKAL;
-  builderParameters.skeletonWeight = SubgraphBuilderParameters::EQUAL;
-  builderParameters.augmentationWeight = SubgraphBuilderParameters::SKELETON;
-  builderParameters.augmentationFactor = 0.0;
+    // Create subgraph builder parameters
+    SubgraphBuilderParameters builderParameters;
+    builderParameters.skeletonType = SubgraphBuilderParameters::KRUSKAL;
+    builderParameters.skeletonWeight = SubgraphBuilderParameters::EQUAL;
+    builderParameters.augmentationWeight = SubgraphBuilderParameters::SKELETON;
+    builderParameters.augmentationFactor = 0.0;
 
-  auto pcg = boost::make_shared<PCGSolverParameters>();
+    auto pcg = boost::make_shared<PCGSolverParameters>();
 
-  // Choose optimization method
-  if (method == "SUBGRAPH") {
-    lm.iterativeParams =
-        boost::make_shared<SubgraphSolverParameters>(builderParameters);
-  } else if (method == "SGPC") {
-    pcg->preconditioner_ =
-        boost::make_shared<SubgraphPreconditionerParameters>(builderParameters);
-    lm.iterativeParams = pcg;
-  } else if (method == "JACOBI") {
-    pcg->preconditioner_ =
-        boost::make_shared<BlockJacobiPreconditionerParameters>();
-    lm.iterativeParams = pcg;
-  } else if (method == "QR") {
-    lm.setLinearSolverType("MULTIFRONTAL_QR");
-  } else if (method == "CHOLESKY") {
-    lm.setLinearSolverType("MULTIFRONTAL_CHOLESKY");
-  } else {
-    throw std::invalid_argument("ShonanAveragingParameters: unknown method");
-  }
+    // Choose optimization method
+    if (method == "SUBGRAPH") {
+        lm.iterativeParams =
+            boost::make_shared<SubgraphSolverParameters>(builderParameters);
+    } else if (method == "SGPC") {
+        pcg->preconditioner_ =
+            boost::make_shared<SubgraphPreconditionerParameters>(
+                builderParameters);
+        lm.iterativeParams = pcg;
+    } else if (method == "JACOBI") {
+        pcg->preconditioner_ =
+            boost::make_shared<BlockJacobiPreconditionerParameters>();
+        lm.iterativeParams = pcg;
+    } else if (method == "QR") {
+        lm.setLinearSolverType("MULTIFRONTAL_QR");
+    } else if (method == "CHOLESKY") {
+        lm.setLinearSolverType("MULTIFRONTAL_CHOLESKY");
+    } else {
+        throw std::invalid_argument(
+            "ShonanAveragingParameters: unknown method");
+    }
 }
 
 /* ************************************************************************* */
 ShonanAveraging::ShonanAveraging(const string& g2oFile,
                                  const ShonanAveragingParameters& parameters)
     : parameters_(parameters), d_(3) {
-  auto corruptingNoise =
-      noiseModel::Isotropic::Sigma(d_, parameters.noiseSigma);
-  factors_ = parse3DFactors(g2oFile, corruptingNoise);
-  poses_ = parse3DPoses(g2oFile);
-  Q_ = buildQ();
+    auto corruptingNoise =
+        noiseModel::Isotropic::Sigma(d_, parameters.noiseSigma);
+    factors_ = parse3DFactors(g2oFile, corruptingNoise);
+    poses_ = parse3DPoses(g2oFile);
+    Q_ = buildQ();
 }
 
 /* ************************************************************************* */
 NonlinearFactorGraph ShonanAveraging::buildGraphAt(size_t p) const {
-  NonlinearFactorGraph graph;
-  for (const auto& factor : factors_) {
-    const auto& keys = factor->keys();
-    const auto& Tij = factor->measured();
-    const auto& model = factor->noiseModel();
-    graph.emplace_shared<FrobeniusWormholeFactor>(
-        keys[0], keys[1], SO3(Tij.rotation().matrix()), p, model);
-  }
-  return graph;
+    NonlinearFactorGraph graph;
+    for (const auto& factor : factors_) {
+        const auto& keys = factor->keys();
+        const auto& Tij = factor->measured();
+        const auto& model = factor->noiseModel();
+        graph.emplace_shared<FrobeniusWormholeFactor>(
+            keys[0], keys[1], SO3(Tij.rotation().matrix()), p, model);
+    }
+    return graph;
 }
 
 /* ************************************************************************* */
 Values ShonanAveraging::initializeRandomlyAt(size_t p) const {
-  Values initial;
-  for (size_t j = 0; j < nrPoses(); j++) {
-    initial.insert(j, SOn::Random(kRandomNumberGenerator, p));
-  }
-  return initial;
+    Values initial;
+    for (size_t j = 0; j < nrPoses(); j++) {
+        initial.insert(j, SOn::Random(kRandomNumberGenerator, p));
+    }
+    return initial;
 }
 
 /* ************************************************************************* */
 static Values Optimize(const NonlinearFactorGraph& graph, const Values& initial,
                        const LevenbergMarquardtParams& LMparameters) {
-  LevenbergMarquardtOptimizer lm(graph, initial, LMparameters);
-  Values result = lm.optimize();
-  return result;
+    LevenbergMarquardtOptimizer lm(graph, initial, LMparameters);
+    Values result = lm.optimize();
+    return result;
 }
 
 /* ************************************************************************* */
 double ShonanAveraging::costAt(size_t p, const Values& values) const {
-  const NonlinearFactorGraph graph = buildGraphAt(p);
-  return graph.error(values);
+    const NonlinearFactorGraph graph = buildGraphAt(p);
+    return graph.error(values);
 }
 
 /* ************************************************************************* */
 Values ShonanAveraging::tryOptimizingAt(
     size_t p, const boost::optional<const Values&> initialEstimate) const {
-  // Build graph
-  auto graph = buildGraphAt(p);
+    // Build graph
+    auto graph = buildGraphAt(p);
 
-  // Initialize randomly if no initial estimate is given
-  // TODO(frank): add option to do chordal init
-  const Values initial =
-      initialEstimate ? *initialEstimate : initializeRandomlyAt(p);
+    // Initialize randomly if no initial estimate is given
+    // TODO(frank): add option to do chordal init
+    const Values initial =
+        initialEstimate ? *initialEstimate : initializeRandomlyAt(p);
 
-  // Prior is only added here as depends on initial value (and cost is zero)
-  if (parameters_.prior) {
-    if (parameters_.karcher) {
-      const size_t dim = p * (p - 1) / 2;
-      graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
-    } else {
-      graph.emplace_shared<PriorFactor<SOn>>(0, initial.at<SOn>(0));
+    // Prior is only added here as depends on initial value (and cost is zero)
+    if (parameters_.prior) {
+        if (parameters_.karcher) {
+            const size_t dim = p * (p - 1) / 2;
+            graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
+        } else {
+            graph.emplace_shared<PriorFactor<SOn>>(0, initial.at<SOn>(0));
+        }
     }
-  }
 
-  // Optimize
-  return Optimize(graph, initial, parameters_.lm);
+    // Optimize
+    return Optimize(graph, initial, parameters_.lm);
 }
 
 /* ************************************************************************* */
 // Project to pxdN Stiefel manifold
 static Matrix StiefelElementMatrix(const Values& values) {
-  constexpr size_t d = 3;  // for now only for 3D rotations
-  const size_t N = values.size();
-  const size_t p = values.at<SOn>(0).rows();
-  Matrix S(p, N * d);
-  for (size_t j = 0; j < N; j++) {
-    const SOn Q = values.at<SOn>(j);
-    S.block(0, j * d, p, d) = Q.matrix().leftCols(d);  // project Qj to Stiefel
-  }
-  return S;
+    constexpr size_t d = 3;  // for now only for 3D rotations
+    const size_t N = values.size();
+    const size_t p = values.at<SOn>(0).rows();
+    Matrix S(p, N * d);
+    for (size_t j = 0; j < N; j++) {
+        const SOn Q = values.at<SOn>(j);
+        S.block(0, j * d, p, d) =
+            Q.matrix().leftCols(d);  // project Qj to Stiefel
+    }
+    return S;
 }
 
 /* ************************************************************************* */
 Values ShonanAveraging::projectFrom(size_t p, const Values& values) const {
-  Values SO3_values;
-  for (size_t j = 0; j < nrPoses(); j++) {
-    const SOn Q = values.at<SOn>(j);
-    assert(Q.rows() == p);
-    const SO3 R = SO3::ClosestTo(Q.matrix().topLeftCorner(d_, d_));
-    SO3_values.insert(j, R);
-  }
-  return SO3_values;
+    Values SO3_values;
+    for (size_t j = 0; j < nrPoses(); j++) {
+        const SOn Q = values.at<SOn>(j);
+        assert(Q.rows() == p);
+        const SO3 R = SO3::ClosestTo(Q.matrix().topLeftCorner(d_, d_));
+        SO3_values.insert(j, R);
+    }
+    return SO3_values;
 }
 
 /* ************************************************************************* */
 Values ShonanAveraging::roundSolution(const Matrix Y) const {
-  size_t N = nrPoses();
-  // First, compute a thin SVD of Y
-  Eigen::JacobiSVD<Matrix> svd(Y, Eigen::ComputeThinV);
-  Vector sigmas = svd.singularValues();
+    size_t N = nrPoses();
+    // First, compute a thin SVD of Y
+    Eigen::JacobiSVD<Matrix> svd(Y, Eigen::ComputeThinV);
+    Vector sigmas = svd.singularValues();
 
-  // Construct a diagonal matrix comprised of the first d singular values
-  using DiagonalMatrix = Eigen::DiagonalMatrix<double, Eigen::Dynamic>;
-  DiagonalMatrix Sigma_d(d_);
-  DiagonalMatrix::DiagonalVectorType& diagonal = Sigma_d.diagonal();
-  for (size_t i = 0; i < d_; ++i) diagonal(i) = sigmas(i);
+    // Construct a diagonal matrix comprised of the first d singular values
+    using DiagonalMatrix = Eigen::DiagonalMatrix<double, Eigen::Dynamic>;
+    DiagonalMatrix Sigma_d(d_);
+    DiagonalMatrix::DiagonalVectorType& diagonal = Sigma_d.diagonal();
+    for (size_t i = 0; i < d_; ++i) diagonal(i) = sigmas(i);
 
-  // First, construct a rank-d truncated singular value decomposition for Y
-  Matrix R = Sigma_d * svd.matrixV().leftCols(d_).transpose();
-  Vector determinants(N);
+    // First, construct a rank-d truncated singular value decomposition for Y
+    Matrix R = Sigma_d * svd.matrixV().leftCols(d_).transpose();
+    Vector determinants(N);
 
-  size_t ng0 = 0;  // This will count the number of blocks whose
+    size_t ng0 = 0;  // This will count the number of blocks whose
 
-  // determinants have positive sign
-  for (size_t i = 0; i < N; ++i) {
-    // Compute the determinant of the ith dxd block of R
-    determinants(i) = R.block(0, i * d_, d_, d_).determinant();
-    if (determinants(i) > 0) ++ng0;
-  }
+    // determinants have positive sign
+    for (size_t i = 0; i < N; ++i) {
+        // Compute the determinant of the ith dxd block of R
+        determinants(i) = R.block(0, i * d_, d_, d_).determinant();
+        if (determinants(i) > 0) ++ng0;
+    }
 
-  if (ng0 < N / 2) {
-    // Less than half of the total number of blocks have the correct sign, so
-    // reverse their orientations
-    // Get a reflection matrix that we can use to reverse the signs of those
-    // blocks of R that have the wrong determinant
-    Matrix reflector = Matrix::Identity(d_, d_);
-    reflector(d_ - 1, d_ - 1) = -1;
-    R = reflector * R;
-  }
+    if (ng0 < N / 2) {
+        // Less than half of the total number of blocks have the correct sign,
+        // so reverse their orientations Get a reflection matrix that we can use
+        // to reverse the signs of those blocks of R that have the wrong
+        // determinant
+        Matrix reflector = Matrix::Identity(d_, d_);
+        reflector(d_ - 1, d_ - 1) = -1;
+        R = reflector * R;
+    }
 
-  // Finally, project each dxd rotation block to SO(d)
-  Values SO3_values;
-  for (size_t i = 0; i < N; ++i) {
-    const SO3 Ri = SO3::ClosestTo(R.block(0, i * d_, d_, d_));
-    SO3_values.insert(i, Ri);
-  }
-  return SO3_values;
+    // Finally, project each dxd rotation block to SO(d)
+    Values SO3_values;
+    for (size_t i = 0; i < N; ++i) {
+        const SO3 Ri = SO3::ClosestTo(R.block(0, i * d_, d_, d_));
+        SO3_values.insert(i, Ri);
+    }
+    return SO3_values;
 }
 
 /* ************************************************************************* */
 Values ShonanAveraging::roundSolution(const Values& values) const {
-  // Project to pxdN Stiefel manifold...
-  Matrix S = StiefelElementMatrix(values);
-  // ...and call version above.
-  return roundSolution(S);
+    // Project to pxdN Stiefel manifold...
+    Matrix S = StiefelElementMatrix(values);
+    // ...and call version above.
+    return roundSolution(S);
 }
 
 /* ************************************************************************* */
 double ShonanAveraging::cost(const Values& values) const {
-  NonlinearFactorGraph graph;
-  for (const auto& factor : factors_) {
-    const auto& keys = factor->keys();
-    const auto& Tij = factor->measured();
-    const auto& model = factor->noiseModel();
-    graph.emplace_shared<FrobeniusBetweenFactor<SO3>>(
-        keys[0], keys[1], SO3(Tij.rotation().matrix()), model);
-  }
-  return graph.error(values);
+    NonlinearFactorGraph graph;
+    for (const auto& factor : factors_) {
+        const auto& keys = factor->keys();
+        const auto& Tij = factor->measured();
+        const auto& model = factor->noiseModel();
+        graph.emplace_shared<FrobeniusBetweenFactor<SO3>>(
+            keys[0], keys[1], SO3(Tij.rotation().matrix()), model);
+    }
+    return graph.error(values);
 }
 
 /* ************************************************************************* */
 // heavily cribbed from David's construct_rotational_connection_Laplacian
 ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
-  assert(useNoiseModel == false);
+    assert(useNoiseModel == false);
 
-  // Each measurement contributes 2*d elements along the diagonal of the
-  // connection Laplacian, and 2*d^2 elements on a pair of symmetric
-  // off-diagonal blocks
-  const size_t stride = 2 * (d_ + d_ * d_);
+    // Each measurement contributes 2*d elements along the diagonal of the
+    // connection Laplacian, and 2*d^2 elements on a pair of symmetric
+    // off-diagonal blocks
+    const size_t stride = 2 * (d_ + d_ * d_);
 
-  // Reserve space for triplets
-  std::vector<Eigen::Triplet<double>> triplets;
-  triplets.reserve(stride * factors_.size());
+    // Reserve space for triplets
+    std::vector<Eigen::Triplet<double>> triplets;
+    triplets.reserve(stride * factors_.size());
 
-  for (const auto& factor : factors_) {
-    // Get pose keys
-    const auto& keys = factor->keys();
-    size_t i = keys[0];
-    size_t j = keys[1];
+    for (const auto& factor : factors_) {
+        // Get pose keys
+        const auto& keys = factor->keys();
+        size_t i = keys[0];
+        size_t j = keys[1];
 
-    // Extract rotation measurement
-    const auto& Tij = factor->measured();
-    const Matrix3 Rij = Tij.rotation().matrix();
+        // Extract rotation measurement
+        const auto& Tij = factor->measured();
+        const Matrix3 Rij = Tij.rotation().matrix();
 
-    // Get kappa from noise model
-    double kappa;
-    if (useNoiseModel) {
-      // const auto& m = factor->noiseModel();
-      // isotropic = noiseModel_FrobeniusNoiseModel9.FromPose3NoiseModel(m)
-      // sigma = isotropic.sigma()
-      // kappa_ij = 1.0/(sigma*sigma)
-    } else {
-      kappa = 1.0;
+        // Get kappa from noise model
+        double kappa;
+        if (useNoiseModel) {
+            // const auto& m = factor->noiseModel();
+            // isotropic =
+            // noiseModel_FrobeniusNoiseModel9.FromPose3NoiseModel(m) sigma =
+            // isotropic.sigma() kappa_ij = 1.0/(sigma*sigma)
+        } else {
+            kappa = 1.0;
+        }
+
+        // Elements of ith block-diagonal
+        for (size_t k = 0; k < d_; k++)
+            triplets.emplace_back(d_ * i + k, d_ * i + k, kappa);
+
+        // Elements of jth block-diagonal
+        for (size_t k = 0; k < d_; k++)
+            triplets.emplace_back(d_ * j + k, d_ * j + k, kappa);
+
+        // Elements of ij block
+        for (size_t r = 0; r < d_; r++)
+            for (size_t c = 0; c < d_; c++)
+                triplets.emplace_back(i * d_ + r, j * d_ + c,
+                                      -kappa * Rij(r, c));
+
+        // Elements of ji block
+        for (size_t r = 0; r < d_; r++)
+            for (size_t c = 0; c < d_; c++)
+                triplets.emplace_back(j * d_ + r, i * d_ + c,
+                                      -kappa * Rij(c, r));
     }
 
-    // Elements of ith block-diagonal
-    for (size_t k = 0; k < d_; k++)
-      triplets.emplace_back(d_ * i + k, d_ * i + k, kappa);
+    // Construct and return a sparse matrix from these triplets
+    const size_t N = nrPoses();
+    ShonanAveraging::Sparse LGrho(d_ * N, d_ * N);
+    LGrho.setFromTriplets(triplets.begin(), triplets.end());
 
-    // Elements of jth block-diagonal
-    for (size_t k = 0; k < d_; k++)
-      triplets.emplace_back(d_ * j + k, d_ * j + k, kappa);
-
-    // Elements of ij block
-    for (size_t r = 0; r < d_; r++)
-      for (size_t c = 0; c < d_; c++)
-        triplets.emplace_back(i * d_ + r, j * d_ + c, -kappa * Rij(r, c));
-
-    // Elements of ji block
-    for (size_t r = 0; r < d_; r++)
-      for (size_t c = 0; c < d_; c++)
-        triplets.emplace_back(j * d_ + r, i * d_ + c, -kappa * Rij(c, r));
-  }
-
-  // Construct and return a sparse matrix from these triplets
-  const size_t N = nrPoses();
-  ShonanAveraging::Sparse LGrho(d_ * N, d_ * N);
-  LGrho.setFromTriplets(triplets.begin(), triplets.end());
-
-  return LGrho;
+    return LGrho;
 }
 
 /* ************************************************************************* */
 ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Matrix& S) const {
-  // Each pose contributes 2*d_ elements along the diagonal of Lambda
-  const size_t stride = d_ * d_;
+    // Each pose contributes 2*d_ elements along the diagonal of Lambda
+    const size_t stride = d_ * d_;
 
-  // Reserve space for triplets
-  const size_t N = nrPoses();
-  std::vector<Eigen::Triplet<double>> triplets;
-  triplets.reserve(stride * N);
+    // Reserve space for triplets
+    const size_t N = nrPoses();
+    std::vector<Eigen::Triplet<double>> triplets;
+    triplets.reserve(stride * N);
 
-  // Do sparse-dense multiply to get Q*S'
-  auto QSt = Q_ * S.transpose();
+    // Do sparse-dense multiply to get Q*S'
+    auto QSt = Q_ * S.transpose();
 
-  for (size_t j = 0; j < N; j++) {
-    // Compute B, the building block for the j^th diagonal block of Lambda
-    Matrix B = QSt.middleRows(j, d_) * S.middleCols(j, d_);
+    for (size_t j = 0; j < N; j++) {
+        // Compute B, the building block for the j^th diagonal block of Lambda
+        Matrix B = QSt.middleRows(j, d_) * S.middleCols(j, d_);
 
-    // Elements of jth block-diagonal
-    for (size_t r = 0; r < d_; r++)
-      for (size_t c = 0; c < d_; c++)
-        triplets.emplace_back(j * d_ + r, j * d_ + c,
-                              0.5 * (B(r, c) + B(c, r)));
-  }
+        // Elements of jth block-diagonal
+        for (size_t r = 0; r < d_; r++)
+            for (size_t c = 0; c < d_; c++)
+                triplets.emplace_back(j * d_ + r, j * d_ + c,
+                                      0.5 * (B(r, c) + B(c, r)));
+    }
 
-  // Construct and return a sparse matrix from these triplets
-  ShonanAveraging::Sparse Lambda(d_ * N, d_ * N);
-  Lambda.setFromTriplets(triplets.begin(), triplets.end());
-  return Lambda;
+    // Construct and return a sparse matrix from these triplets
+    ShonanAveraging::Sparse Lambda(d_ * N, d_ * N);
+    Lambda.setFromTriplets(triplets.begin(), triplets.end());
+    return Lambda;
 }
 
 /* ************************************************************************* */
 ShonanAveraging::Sparse ShonanAveraging::computeLambda(
     const Values& values) const {
-  // Project to pxdN Stiefel manifold...
-  Matrix S = StiefelElementMatrix(values);
-  // ...and call version above.
-  return computeLambda(S);
+    // Project to pxdN Stiefel manifold...
+    Matrix S = StiefelElementMatrix(values);
+    // ...and call version above.
+    return computeLambda(S);
 }
 
 /* ************************************************************************* */
@@ -361,29 +366,29 @@ using SparseMatrix = ShonanAveraging::Sparse;
  * nontrivial function, perform_op(x,y), that computes and returns the product
  * y = (A + sigma*I) x */
 struct MatrixProdFunctor {
-  // Const reference to an externally-held matrix whose minimum-eigenvalue we
-  // want to compute
-  const SparseMatrix& A_;
+    // Const reference to an externally-held matrix whose minimum-eigenvalue we
+    // want to compute
+    const SparseMatrix& A_;
 
-  // Spectral shift
-  double sigma_;
+    // Spectral shift
+    double sigma_;
 
-  // Constructor
-  MatrixProdFunctor(const SparseMatrix& A, double sigma = 0)
-      : A_(A), sigma_(sigma) {}
+    // Constructor
+    MatrixProdFunctor(const SparseMatrix& A, double sigma = 0)
+        : A_(A), sigma_(sigma) {}
 
-  int rows() const { return A_.rows(); }
-  int cols() const { return A_.cols(); }
+    int rows() const { return A_.rows(); }
+    int cols() const { return A_.cols(); }
 
-  // Matrix-vector multiplication operation
-  void perform_op(const double* x, double* y) const {
-    // Wrap the raw arrays as Eigen Vector types
-    Eigen::Map<const Vector> X(x, rows());
-    Eigen::Map<Vector> Y(y, rows());
+    // Matrix-vector multiplication operation
+    void perform_op(const double* x, double* y) const {
+        // Wrap the raw arrays as Eigen Vector types
+        Eigen::Map<const Vector> X(x, rows());
+        Eigen::Map<Vector> Y(y, rows());
 
-    // Do the multiplication using wrapped Eigen vectors
-    Y = A_ * X + sigma_ * X;
-  }
+        // Do the multiplication using wrapped Eigen vectors
+        Y = A_ * X + sigma_ * X;
+    }
 };
 
 /// Function to compute the minimum eigenvalue of A using Lanczos in Spectra.
@@ -418,129 +423,130 @@ bool A_min_eig(const SparseMatrix& A, const Matrix& Y, double& min_eigenvalue,
                size_t max_iterations = 1000,
                double min_eigenvalue_nonnegativity_tolerance = 10e-4,
                Eigen::Index num_Lanczos_vectors = 20) {
-  // a. Estimate the largest-magnitude eigenvalue of this matrix using Lanczos
-  MatrixProdFunctor lm_op(A);
-  Spectra::SymEigsSolver<double, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN,
-                         MatrixProdFunctor>
-      largest_magnitude_eigensolver(&lm_op, 1,
-                                    std::min(num_Lanczos_vectors, A.rows()));
-  largest_magnitude_eigensolver.init();
+    // a. Estimate the largest-magnitude eigenvalue of this matrix using Lanczos
+    MatrixProdFunctor lm_op(A);
+    Spectra::SymEigsSolver<double, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN,
+                           MatrixProdFunctor>
+        largest_magnitude_eigensolver(&lm_op, 1,
+                                      std::min(num_Lanczos_vectors, A.rows()));
+    largest_magnitude_eigensolver.init();
 
-  int num_converged = largest_magnitude_eigensolver.compute(
-      max_iterations, 1e-4, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN);
+    int num_converged = largest_magnitude_eigensolver.compute(
+        max_iterations, 1e-4, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN);
 
-  // Check convergence and bail out if necessary
-  if (num_converged != 1) return false;
+    // Check convergence and bail out if necessary
+    if (num_converged != 1) return false;
 
-  double lambda_lm = largest_magnitude_eigensolver.eigenvalues()(0);
+    double lambda_lm = largest_magnitude_eigensolver.eigenvalues()(0);
 
-  if (lambda_lm < 0) {
-    // The largest-magnitude eigenvalue is negative, and therefore also the
-    // minimum eigenvalue, so just return this solution
-    min_eigenvalue = lambda_lm;
-    min_eigenvector = largest_magnitude_eigensolver.eigenvectors(1);
+    if (lambda_lm < 0) {
+        // The largest-magnitude eigenvalue is negative, and therefore also the
+        // minimum eigenvalue, so just return this solution
+        min_eigenvalue = lambda_lm;
+        min_eigenvector = largest_magnitude_eigensolver.eigenvectors(1);
+        min_eigenvector.normalize();  // Ensure that this is a unit vector
+        return true;
+    }
+
+    // The largest-magnitude eigenvalue is positive, and is therefore the
+    // maximum  eigenvalue.  Therefore, after shifting the spectrum of A
+    // by -2*lambda_lm (by forming A - 2*lambda_max*I), the  shifted
+    // spectrum will lie in the interval [lambda_min(A) - 2* lambda_max(A),
+    // -lambda_max*A]; in particular, the largest-magnitude eigenvalue of
+    //  A - 2*lambda_max*I is lambda_min - 2*lambda_max, with  corresponding
+    // eigenvector v_min
+
+    MatrixProdFunctor min_shifted_op(A, -2 * lambda_lm);
+
+    Spectra::SymEigsSolver<double, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN,
+                           MatrixProdFunctor>
+        min_eigensolver(&min_shifted_op, 1,
+                        std::min(num_Lanczos_vectors, A.rows()));
+
+    // If Y is a critical point of F, then Y^T is also in the null space of S -
+    // Lambda(Y) (cf. Lemma 6 of the tech report), and therefore its rows are
+    // eigenvectors corresponding to the eigenvalue 0.  In the case  that the
+    // relaxation is exact, this is the *minimum* eigenvalue, and therefore the
+    // rows of Y are exactly the eigenvectors that we're looking for.  On the
+    // other hand, if the relaxation is *not* exact, then S - Lambda(Y) has at
+    // least one strictly negative eigenvalue, and the rows of Y are *unstable
+    // fixed points* for the Lanczos iterations.  Thus, we will take a slightly
+    // "fuzzed" version of the first row of Y as an initialization for the
+    // Lanczos iterations; this allows for rapid convergence in the case that
+    // the relaxation is exact (since are starting close to a solution), while
+    // simultaneously allowing the iterations to escape from this fixed point in
+    // the case that the relaxation is not exact.
+    Vector v0 = Y.row(0).transpose();
+    Vector perturbation(v0.size());
+    perturbation.setRandom();
+    perturbation.normalize();
+    Vector xinit = v0 + (.03 * v0.norm()) * perturbation;  // Perturb v0 by ~3%
+
+    // Use this to initialize the eigensolver
+    min_eigensolver.init(xinit.data());
+
+    // Now determine the relative precision required in the Lanczos method in
+    // order to be able to estimate the smallest eigenvalue within an *absolute*
+    // tolerance of 'min_eigenvalue_nonnegativity_tolerance'
+    num_converged = min_eigensolver.compute(
+        max_iterations, min_eigenvalue_nonnegativity_tolerance / lambda_lm,
+        Spectra::SELECT_EIGENVALUE::LARGEST_MAGN);
+
+    if (num_converged != 1) return false;
+
+    min_eigenvector = min_eigensolver.eigenvectors(1);
     min_eigenvector.normalize();  // Ensure that this is a unit vector
+    min_eigenvalue = min_eigensolver.eigenvalues()(0) + 2 * lambda_lm;
+    num_iterations = min_eigensolver.num_iterations();
     return true;
-  }
-
-  // The largest-magnitude eigenvalue is positive, and is therefore the
-  // maximum  eigenvalue.  Therefore, after shifting the spectrum of A
-  // by -2*lambda_lm (by forming A - 2*lambda_max*I), the  shifted
-  // spectrum will lie in the interval [lambda_min(A) - 2* lambda_max(A),
-  // -lambda_max*A]; in particular, the largest-magnitude eigenvalue of
-  //  A - 2*lambda_max*I is lambda_min - 2*lambda_max, with  corresponding
-  // eigenvector v_min
-
-  MatrixProdFunctor min_shifted_op(A, -2 * lambda_lm);
-
-  Spectra::SymEigsSolver<double, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN,
-                         MatrixProdFunctor>
-      min_eigensolver(&min_shifted_op, 1,
-                      std::min(num_Lanczos_vectors, A.rows()));
-
-  // If Y is a critical point of F, then Y^T is also in the null space of S -
-  // Lambda(Y) (cf. Lemma 6 of the tech report), and therefore its rows are
-  // eigenvectors corresponding to the eigenvalue 0.  In the case  that the
-  // relaxation is exact, this is the *minimum* eigenvalue, and therefore the
-  // rows of Y are exactly the eigenvectors that we're looking for.  On the
-  // other hand, if the relaxation is *not* exact, then S - Lambda(Y) has at
-  // least one strictly negative eigenvalue, and the rows of Y are *unstable
-  // fixed points* for the Lanczos iterations.  Thus, we will take a slightly
-  // "fuzzed" version of the first row of Y as an initialization for the Lanczos
-  // iterations; this allows for rapid convergence in the case that the
-  // relaxation is exact (since are starting close to a solution), while
-  // simultaneously allowing the iterations to escape from this fixed point in
-  // the case that the relaxation is not exact.
-  Vector v0 = Y.row(0).transpose();
-  Vector perturbation(v0.size());
-  perturbation.setRandom();
-  perturbation.normalize();
-  Vector xinit = v0 + (.03 * v0.norm()) * perturbation;  // Perturb v0 by ~3%
-
-  // Use this to initialize the eigensolver
-  min_eigensolver.init(xinit.data());
-
-  // Now determine the relative precision required in the Lanczos method in
-  // order to be able to estimate the smallest eigenvalue within an *absolute*
-  // tolerance of 'min_eigenvalue_nonnegativity_tolerance'
-  num_converged = min_eigensolver.compute(
-      max_iterations, min_eigenvalue_nonnegativity_tolerance / lambda_lm,
-      Spectra::SELECT_EIGENVALUE::LARGEST_MAGN);
-
-  if (num_converged != 1) return false;
-
-  min_eigenvector = min_eigensolver.eigenvectors(1);
-  min_eigenvector.normalize();  // Ensure that this is a unit vector
-  min_eigenvalue = min_eigensolver.eigenvalues()(0) + 2 * lambda_lm;
-  num_iterations = min_eigensolver.num_iterations();
-  return true;
 }
 
 /* ************************************************************************* */
 double ShonanAveraging::computeMinEigenValue(const Values& values) const {
-  /// Based on Luca's MATLAB version on BitBucket repo.
-  assert(values.size() == nrPoses());
-  const Matrix S = StiefelElementMatrix(values);
-  auto Lambda = computeLambda(S);
-  auto A = Q_ - Lambda;
+    /// Based on Luca's MATLAB version on BitBucket repo.
+    assert(values.size() == nrPoses());
+    const Matrix S = StiefelElementMatrix(values);
+    auto Lambda = computeLambda(S);
+    auto A = Q_ - Lambda;
 #ifdef SLOW_EIGEN_COMPUTATION
-  Eigen::EigenSolver<Matrix> solver(Matrix(A), false);
-  auto lambdas = solver.eigenvalues();
-  double lambda_min = lambdas(0).real();
-  for (size_t i = 1; i < lambdas.size(); i++) {
-    lambda_min = min(lambdas(i).real(), lambda_min);
-  }
+    Eigen::EigenSolver<Matrix> solver(Matrix(A), false);
+    auto lambdas = solver.eigenvalues();
+    double lambda_min = lambdas(0).real();
+    for (size_t i = 1; i < lambdas.size(); i++) {
+        lambda_min = min(lambdas(i).real(), lambda_min);
+    }
 #else
-  double lambda_min;
-  Vector min_eigenvector;
-  size_t num_iterations;
-  bool success = A_min_eig(A, S, lambda_min, min_eigenvector, num_iterations);
-  if (!success) {
-    throw std::runtime_error("A_min_eig failed to compute minimum eigenvalue.");
-  }
+    double lambda_min;
+    Vector min_eigenvector;
+    size_t num_iterations;
+    bool success = A_min_eig(A, S, lambda_min, min_eigenvector, num_iterations);
+    if (!success) {
+        throw std::runtime_error(
+            "A_min_eig failed to compute minimum eigenvalue.");
+    }
 #endif
-  return lambda_min;
+    return lambda_min;
 }
 
 /* ************************************************************************* */
 bool ShonanAveraging::checkOptimality(const Values& values) const {
-  double lambda_min = computeMinEigenValue(values);
-  return lambda_min > parameters_.optimalityThreshold;
+    double lambda_min = computeMinEigenValue(values);
+    return lambda_min > parameters_.optimalityThreshold;
 }
 
 /* ************************************************************************* */
 std::pair<Values, double> ShonanAveraging::run(size_t p_min,
                                                size_t p_max) const {
-  Values result;
-  for (size_t p = p_min; p <= p_max; p++) {
-    auto SOpValues = tryOptimizingAt(p);
-    double lambda_min = computeMinEigenValue(SOpValues);
-    if (lambda_min > parameters_.optimalityThreshold) {
-      const Values SO3Values = roundSolution(p, SOpValues);
-      return std::make_pair(SO3Values, lambda_min);
+    Values result;
+    for (size_t p = p_min; p <= p_max; p++) {
+        auto SOpValues = tryOptimizingAt(p);
+        double lambda_min = computeMinEigenValue(SOpValues);
+        if (lambda_min > parameters_.optimalityThreshold) {
+            const Values SO3Values = roundSolution(SOpValues);
+            return std::make_pair(SO3Values, lambda_min);
+        }
     }
-  }
-  throw std::runtime_error("Shonan::run did not converge for given p_max");
+    throw std::runtime_error("Shonan::run did not converge for given p_max");
 }
 
 /* ************************************************************************* */
