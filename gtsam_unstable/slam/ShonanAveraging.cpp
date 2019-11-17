@@ -537,6 +537,7 @@ bool ShonanAveraging::checkOptimality(const Values& values) const {
 /* ************************************************************************* */
 std::pair<Values, double> ShonanAveraging::run(size_t p_min,
                                                size_t p_max) const {
+<<<<<<< HEAD
     Values result;
     for (size_t p = p_min; p <= p_max; p++) {
         auto SOpValues = tryOptimizingAt(p);
@@ -545,6 +546,15 @@ std::pair<Values, double> ShonanAveraging::run(size_t p_min,
             const Values SO3Values = roundSolution(SOpValues);
             return std::make_pair(SO3Values, lambda_min);
         }
+=======
+  Values result;
+  for (size_t p = p_min; p <= p_max; p++) {
+    auto SOpValues = tryOptimizingAt(p);
+    double lambda_min = computeMinEigenValue(SOpValues);
+    if (lambda_min > parameters_.optimalityThreshold) {
+      const Values SO3Values = roundSolution(SOpValues);
+      return std::make_pair(SO3Values, lambda_min);
+>>>>>>> e7208fca774ed591ecd47ce18d61aebfd2d6a75b
     }
     throw std::runtime_error("Shonan::run did not converge for given p_max");
 }

@@ -63,7 +63,7 @@ TEST(ShonanAveraging, tryOptimizingAt3) {
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, lambdaMin,
                        1e-4);  // Regression test
   EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(3, result), 1e-4);
-  const Values SO3Values = kShonan.projectFrom(3, result);
+  const Values SO3Values = kShonan.roundSolution(result);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(SO3Values), 1e-4);
 }
 
@@ -75,7 +75,7 @@ TEST(ShonanAveraging, tryOptimizingAt4) {
   auto lambdaMin = kShonan.computeMinEigenValue(result);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, lambdaMin,
                        1e-4);  // Regression test
-  const Values SO3Values = kShonan.projectFrom(4, result);
+  const Values SO3Values = kShonan.roundSolution(result);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(SO3Values), 1e-4);
 }
 

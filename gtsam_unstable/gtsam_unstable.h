@@ -324,7 +324,7 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
 gtsam::noiseModel::Isotropic* ConvertPose3NoiseModel(
     gtsam::noiseModel::Base* model, size_t d);
 
-template<T = {gtsam::SO3, gtsam::SO4}>
+template<T = {gtsam::SO3, gtsam::SO4, gtsam::SOn}>
 virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
   FrobeniusFactor(size_t key1, size_t key2);
   FrobeniusFactor(size_t key1, size_t key2, gtsam::noiseModel::Base* model);
@@ -332,7 +332,7 @@ virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
   Vector evaluateError(const T& R1, const T& R2);
 };
 
-template<T = {gtsam::SO3, gtsam::SO4}>
+template<T = {gtsam::SO3, gtsam::SO4, gtsam::SOn}>
 virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
   FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12);
   FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12, gtsam::noiseModel::Base* model);
@@ -365,6 +365,7 @@ class ShonanAveraging {
   gtsam::Values tryOptimizingAt(size_t p) const;
   gtsam::Values tryOptimizingAt(size_t p, const gtsam::Values& initial) const;
   gtsam::Values projectFrom(size_t p, const gtsam::Values& values) const;
+  gtsam::Values roundSolution(const gtsam::Values& values) const;
   double cost(const gtsam::Values& values) const;
   double computeMinEigenValue(const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
