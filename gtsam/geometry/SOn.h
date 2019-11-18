@@ -53,6 +53,9 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   using VectorN2 = Eigen::Matrix<double, internal::NSquaredSO(N), 1>;
   using MatrixDD = Eigen::Matrix<double, dimension, dimension>;
 
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
  protected:
   MatrixNN matrix_;  ///< Rotation matrix
 
