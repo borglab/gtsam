@@ -192,5 +192,4 @@ Ordering::OrderingType NonlinearOptimizerParams::orderingTypeTranslator(
       "Invalid ordering type: You must provide an ordering for a custom ordering type. See setOrdering");
 }
 
-
 } // namespace

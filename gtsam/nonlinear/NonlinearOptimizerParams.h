@@ -26,6 +26,7 @@
 #include <gtsam/linear/LinearSolverParams.h>
 #include <boost/optional.hpp>
 #include <string>
+#include <gtsam/linear/LinearSolver.h>
 
 namespace gtsam {
 
@@ -75,7 +76,9 @@ public:
   using LinearSolverType = gtsam::LinearSolverType;
 
   LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
-  boost::optional<Ordering> ordering; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
+  std::shared_ptr<LinearSolverParams> linearSolverParams;
+  boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
+
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
 
   inline bool isMultifrontal() const {

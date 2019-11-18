@@ -169,7 +169,10 @@ VectorValues NonlinearOptimizer::solve(
           "in LM solver ...");
     }
   } else if (params.isEigenQR() || params.isEigenCholesky()) {
-      auto solver = LinearSolver::fromNonlinearParams(params);
+      LinearSolverParams lsparams;
+      lsparams.ordering = params.ordering;
+      lsparams.solverType = params.linearSolverType;
+      auto solver = LinearSolver::fromLinearSolverParams(lsparams);
       delta = solver->solve(gfg);
   } else {
     throw std::runtime_error(

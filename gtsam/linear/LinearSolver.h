@@ -18,7 +18,6 @@
 #pragma once
 
 #include <gtsam/linear/LinearSolverParams.h>
-#include <gtsam/nonlinear/NonlinearOptimizerParams.h>
 #include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
@@ -45,12 +44,13 @@ namespace gtsam {
      * @param nonlinear optimizer parameters
      * @return pointer to a LinearSolver object
      */
-    static std::shared_ptr<LinearSolver> fromNonlinearParams(const gtsam::NonlinearOptimizerParams &nlparams);
 
     virtual VectorValues solve(const GaussianFactorGraph &gfg) {
       throw std::runtime_error(
           "BUG_CHECK: Calling solve of the base class!");
     };
+
+    static std::shared_ptr<LinearSolver> fromLinearSolverParams(const LinearSolverParams &params);
 
   protected:
     LinearSolver();

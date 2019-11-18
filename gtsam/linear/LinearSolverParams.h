@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include<gtsam/inference/Ordering.h>
+#include<boost/optional.hpp>
+
 namespace gtsam {
 
   // TODO: Remove this enum
@@ -31,9 +34,11 @@ namespace gtsam {
     EIGEN_QR,
     EIGEN_CHOLESKY,
   } LinearSolverType;
+
+  class LinearSolverParams {
+  public:
+    LinearSolverType solverType = MULTIFRONTAL_CHOLESKY;
+    boost::optional<Ordering> ordering;
+  };
+
 }
-
-
-class LinearSolverParams {
-
-};

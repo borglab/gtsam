@@ -20,22 +20,23 @@
 
 namespace gtsam {
 
-  std::shared_ptr<LinearSolver> LinearSolver::fromNonlinearParams(const gtsam::NonlinearOptimizerParams &nlparams) {
+  LinearSolver::LinearSolver() = default;
 
-    boost::optional<const Ordering&> optionalOrdering;
-    if (nlparams.ordering) optionalOrdering.reset(*nlparams.ordering);
+  std::shared_ptr<LinearSolver> LinearSolver::fromLinearSolverParams(const LinearSolverParams &params) {
 
-    if (nlparams.isEigenQR()) {
-      return std::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::QR, *optionalOrdering));
-    } else if (nlparams.isEigenCholesky()) {
-      return std::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::CHOLESKY, *optionalOrdering));
+    boost::optional<const Ordering &> optionalOrdering;
+    if (params.ordering) optionalOrdering.reset(*params.ordering);
+
+    if (params.solverType == EIGEN_QR) {
+      return std::shared_ptr<SparseEigenSolver>(
+              new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::QR, *optionalOrdering));
+    } else if (params.solverType == EIGEN_CHOLESKY) {
+      return std::shared_ptr<SparseEigenSolver>(
+              new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::CHOLESKY, *optionalOrdering));
     }
 
     throw std::runtime_error(
             "Invalid parameters passed");
 
   }
-
-  LinearSolver::LinearSolver() = default;
-
 }
