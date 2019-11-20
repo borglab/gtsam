@@ -53,7 +53,7 @@ class ShonanAveraging {
   ShonanAveragingParameters parameters_;
   BetweenFactorPose3s factors_;
   std::map<Key, Pose3> poses_;
-  Sparse Q_;  // connection Laplacian needed for optimality check
+  Sparse L_;  // connection Laplacian needed for optimality check
   size_t d_;  // dimensionality (typically 2 or 3)
 
  public:

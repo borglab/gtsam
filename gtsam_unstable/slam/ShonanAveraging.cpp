@@ -94,7 +94,7 @@ ShonanAveraging::ShonanAveraging(const string& g2oFile,
         noiseModel::Isotropic::Sigma(d_, parameters.noiseSigma);
     factors_ = parse3DFactors(g2oFile, corruptingNoise);
     poses_ = parse3DPoses(g2oFile);
-    Q_ = buildQ();
+    L_ = buildQ();
 }
 
 /* ************************************************************************* */
@@ -186,10 +186,10 @@ Values ShonanAveraging::projectFrom(size_t p, const Values& values) const {
 }
 
 /* ************************************************************************* */
-Values ShonanAveraging::roundSolution(const Matrix Y) const {
+Values ShonanAveraging::roundSolution(const Matrix S) const {
     size_t N = nrPoses();
-    // First, compute a thin SVD of Y
-    Eigen::JacobiSVD<Matrix> svd(Y, Eigen::ComputeThinV);
+    // First, compute a thin SVD of S
+    Eigen::JacobiSVD<Matrix> svd(S, Eigen::ComputeThinV);
     Vector sigmas = svd.singularValues();
 
     // Construct a diagonal matrix comprised of the first d singular values
@@ -198,7 +198,7 @@ Values ShonanAveraging::roundSolution(const Matrix Y) const {
     DiagonalMatrix::DiagonalVectorType& diagonal = Sigma_d.diagonal();
     for (size_t i = 0; i < d_; ++i) diagonal(i) = sigmas(i);
 
-    // First, construct a rank-d truncated singular value decomposition for Y
+    // First, construct a rank-d truncated singular value decomposition for S
     Matrix R = Sigma_d * svd.matrixV().leftCols(d_).transpose();
     Vector determinants(N);
 
@@ -326,7 +326,7 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Matrix& S) const {
     triplets.reserve(stride * N);
 
     // Do sparse-dense multiply to get Q*S'
-    auto QSt = Q_ * S.transpose();
+    auto QSt = L_ * S.transpose();
 
     for (size_t j = 0; j < N; j++) {
         // Compute B, the building block for the j^th diagonal block of Lambda
@@ -401,103 +401,102 @@ struct MatrixProdFunctor {
 ///
 /// Upon completion, this returns a boolean value indicating whether the minimum
 /// eigenvalue was computed to the required precision -- if so, its sets the
-/// values of min_eigenvalue and min_eigenvector appropriately
+/// values of minEigenValue and minEigenVector appropriately
 
-/// Note that in the following function signature, Y is supposed to be the
+/// Note that in the following function signature, S is supposed to be the
 /// block-row-matrix that is a critical point for the optimization algorithm;
 /// either S (Stiefel manifold) or R (block rotations).  We use this to
 /// construct a starting vector v for the Lanczos process that will be close to
 /// the minimum eigenvector we're looking for whenever the relaxation is exact
 /// -- this is a key feature that helps to make this method fast.  Note that
-/// instead of passing in all of Y, it would be enough to pass in one of Y's
+/// instead of passing in all of S, it would be enough to pass in one of S's
 /// *rows*, if that's more convenient.
 
 // For the defaults, David Rosen says:
-//   - max_iterations refers to the max number of Lanczos iterations to run;
+//   - maxIterations refers to the max number of Lanczos iterations to run;
 //   ~1000 should be sufficiently large
 //   - We've been using 10^-4 for the nonnegativity tolerance
-//   - for num_Lanczos_vectors, 20 is a good default value
+//   - for numLanczosVectors, 20 is a good default value
 
-bool A_min_eig(const SparseMatrix& A, const Matrix& Y, double& min_eigenvalue,
-               Vector& min_eigenvector, size_t& num_iterations,
-               size_t max_iterations = 1000,
-               double min_eigenvalue_nonnegativity_tolerance = 10e-4,
-               Eigen::Index num_Lanczos_vectors = 20) {
+bool sparseMinimumEigenValue(const SparseMatrix& A, const Matrix& S, double& minEigenValue,
+               Vector& minEigenVector, size_t& numIterations,
+               size_t maxIterations = 1000,
+               double minEigenvalueNonnegativityTolerance = 10e-4,
+               Eigen::Index numLanczosVectors = 20) {
     // a. Estimate the largest-magnitude eigenvalue of this matrix using Lanczos
-    MatrixProdFunctor lm_op(A);
+    MatrixProdFunctor lmOperator(A);
     Spectra::SymEigsSolver<double, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN,
                            MatrixProdFunctor>
-        largest_magnitude_eigensolver(&lm_op, 1,
-                                      std::min(num_Lanczos_vectors, A.rows()));
-    largest_magnitude_eigensolver.init();
+        lmEigenValueSolver(&lmOperator, 1, std::min(numLanczosVectors, A.rows()));
+    lmEigenValueSolver.init();
 
-    int num_converged = largest_magnitude_eigensolver.compute(
-        max_iterations, 1e-4, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN);
+    const int lmConverged = lmEigenValueSolver.compute(
+        maxIterations, 1e-4, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN);
 
     // Check convergence and bail out if necessary
-    if (num_converged != 1) return false;
+    if (lmConverged != 1) return false;
 
-    double lambda_lm = largest_magnitude_eigensolver.eigenvalues()(0);
+    const double lmEigenValue = lmEigenValueSolver.eigenvalues()(0);
 
-    if (lambda_lm < 0) {
+    if (lmEigenValue < 0) {
         // The largest-magnitude eigenvalue is negative, and therefore also the
         // minimum eigenvalue, so just return this solution
-        min_eigenvalue = lambda_lm;
-        min_eigenvector = largest_magnitude_eigensolver.eigenvectors(1);
-        min_eigenvector.normalize();  // Ensure that this is a unit vector
+        minEigenValue = lmEigenValue;
+        minEigenVector = lmEigenValueSolver.eigenvectors(1);
+        minEigenVector.normalize();  // Ensure that this is a unit vector
         return true;
     }
 
     // The largest-magnitude eigenvalue is positive, and is therefore the
     // maximum  eigenvalue.  Therefore, after shifting the spectrum of A
-    // by -2*lambda_lm (by forming A - 2*lambda_max*I), the  shifted
-    // spectrum will lie in the interval [lambda_min(A) - 2* lambda_max(A),
+    // by -2*lmEigenValue (by forming A - 2*lambda_max*I), the  shifted
+    // spectrum will lie in the interval [minEigenValue(A) - 2* lambda_max(A),
     // -lambda_max*A]; in particular, the largest-magnitude eigenvalue of
-    //  A - 2*lambda_max*I is lambda_min - 2*lambda_max, with  corresponding
+    //  A - 2*lambda_max*I is minEigenValue - 2*lambda_max, with corresponding
     // eigenvector v_min
 
-    MatrixProdFunctor min_shifted_op(A, -2 * lambda_lm);
+    MatrixProdFunctor minShiftedOperator(A, -2 * lmEigenValue);
 
     Spectra::SymEigsSolver<double, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN,
                            MatrixProdFunctor>
-        min_eigensolver(&min_shifted_op, 1,
-                        std::min(num_Lanczos_vectors, A.rows()));
+        minEigenValueSolver(&minShiftedOperator, 1,
+                        std::min(numLanczosVectors, A.rows()));
 
-    // If Y is a critical point of F, then Y^T is also in the null space of S -
-    // Lambda(Y) (cf. Lemma 6 of the tech report), and therefore its rows are
+    // If S is a critical point of F, then S^T is also in the null space of S -
+    // Lambda(S) (cf. Lemma 6 of the tech report), and therefore its rows are
     // eigenvectors corresponding to the eigenvalue 0.  In the case  that the
     // relaxation is exact, this is the *minimum* eigenvalue, and therefore the
-    // rows of Y are exactly the eigenvectors that we're looking for.  On the
-    // other hand, if the relaxation is *not* exact, then S - Lambda(Y) has at
-    // least one strictly negative eigenvalue, and the rows of Y are *unstable
+    // rows of S are exactly the eigenvectors that we're looking for.  On the
+    // other hand, if the relaxation is *not* exact, then S - Lambda(S) has at
+    // least one strictly negative eigenvalue, and the rows of S are *unstable
     // fixed points* for the Lanczos iterations.  Thus, we will take a slightly
-    // "fuzzed" version of the first row of Y as an initialization for the
+    // "fuzzed" version of the first row of S as an initialization for the
     // Lanczos iterations; this allows for rapid convergence in the case that
     // the relaxation is exact (since are starting close to a solution), while
     // simultaneously allowing the iterations to escape from this fixed point in
     // the case that the relaxation is not exact.
-    Vector v0 = Y.row(0).transpose();
+    Vector v0 = S.row(0).transpose();
     Vector perturbation(v0.size());
     perturbation.setRandom();
     perturbation.normalize();
     Vector xinit = v0 + (.03 * v0.norm()) * perturbation;  // Perturb v0 by ~3%
 
     // Use this to initialize the eigensolver
-    min_eigensolver.init(xinit.data());
+    minEigenValueSolver.init(xinit.data());
 
     // Now determine the relative precision required in the Lanczos method in
     // order to be able to estimate the smallest eigenvalue within an *absolute*
-    // tolerance of 'min_eigenvalue_nonnegativity_tolerance'
-    num_converged = min_eigensolver.compute(
-        max_iterations, min_eigenvalue_nonnegativity_tolerance / lambda_lm,
+    // tolerance of 'minEigenvalueNonnegativityTolerance'
+    const int minConverged = minEigenValueSolver.compute(
+        maxIterations, minEigenvalueNonnegativityTolerance / lmEigenValue,
         Spectra::SELECT_EIGENVALUE::LARGEST_MAGN);
 
-    if (num_converged != 1) return false;
+    if (minConverged != 1) return false;
 
-    min_eigenvector = min_eigensolver.eigenvectors(1);
-    min_eigenvector.normalize();  // Ensure that this is a unit vector
-    min_eigenvalue = min_eigensolver.eigenvalues()(0) + 2 * lambda_lm;
-    num_iterations = min_eigensolver.num_iterations();
+    minEigenVector = minEigenValueSolver.eigenvectors(1);
+    minEigenVector.normalize();  // Ensure that this is a unit vector
+    minEigenValue = minEigenValueSolver.eigenvalues()(0) + 2 * lmEigenValue;
+    numIterations = minEigenValueSolver.num_iterations();
     return true;
 }
 
@@ -507,54 +506,44 @@ double ShonanAveraging::computeMinEigenValue(const Values& values) const {
     assert(values.size() == nrPoses());
     const Matrix S = StiefelElementMatrix(values);
     auto Lambda = computeLambda(S);
-    auto A = Q_ - Lambda;
+    auto C = L_ - Lambda;
 #ifdef SLOW_EIGEN_COMPUTATION
-    Eigen::EigenSolver<Matrix> solver(Matrix(A), false);
+    Eigen::EigenSolver<Matrix> solver(Matrix(C), false);
     auto lambdas = solver.eigenvalues();
-    double lambda_min = lambdas(0).real();
+    double minEigenValue = lambdas(0).real();
     for (size_t i = 1; i < lambdas.size(); i++) {
-        lambda_min = min(lambdas(i).real(), lambda_min);
+        minEigenValue = min(lambdas(i).real(), minEigenValue);
     }
 #else
-    double lambda_min;
-    Vector min_eigenvector;
-    size_t num_iterations;
-    bool success = A_min_eig(A, S, lambda_min, min_eigenvector, num_iterations);
+    double minEigenValue;
+    Vector minEigenVector;
+    size_t numIterations;
+    bool success = sparseMinimumEigenValue(C, S, minEigenValue, minEigenVector, numIterations);
     if (!success) {
         throw std::runtime_error(
-            "A_min_eig failed to compute minimum eigenvalue.");
+            "sparseMinimumEigenValue failed to compute minimum eigenvalue.");
     }
 #endif
-    return lambda_min;
+    return minEigenValue;
 }
 
 /* ************************************************************************* */
 bool ShonanAveraging::checkOptimality(const Values& values) const {
-    double lambda_min = computeMinEigenValue(values);
-    return lambda_min > parameters_.optimalityThreshold;
+    double minEigenValue = computeMinEigenValue(values);
+    return minEigenValue > parameters_.optimalityThreshold;
 }
 
 /* ************************************************************************* */
 std::pair<Values, double> ShonanAveraging::run(size_t p_min,
                                                size_t p_max) const {
-<<<<<<< HEAD
     Values result;
     for (size_t p = p_min; p <= p_max; p++) {
         auto SOpValues = tryOptimizingAt(p);
-        double lambda_min = computeMinEigenValue(SOpValues);
-        if (lambda_min > parameters_.optimalityThreshold) {
+        double minEigenValue = computeMinEigenValue(SOpValues);
+        if (minEigenValue > parameters_.optimalityThreshold) {
             const Values SO3Values = roundSolution(SOpValues);
-            return std::make_pair(SO3Values, lambda_min);
+            return std::make_pair(SO3Values, minEigenValue);
         }
-=======
-  Values result;
-  for (size_t p = p_min; p <= p_max; p++) {
-    auto SOpValues = tryOptimizingAt(p);
-    double lambda_min = computeMinEigenValue(SOpValues);
-    if (lambda_min > parameters_.optimalityThreshold) {
-      const Values SO3Values = roundSolution(SOpValues);
-      return std::make_pair(SO3Values, lambda_min);
->>>>>>> e7208fca774ed591ecd47ce18d61aebfd2d6a75b
     }
     throw std::runtime_error("Shonan::run did not converge for given p_max");
 }
