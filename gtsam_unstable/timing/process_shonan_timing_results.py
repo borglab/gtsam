@@ -92,43 +92,66 @@ def make_convergence_plot(name, p_values, times, costs, iter=10):
     plt.title(name, fontsize=12)
     plt.show()
 
-def make_eigen_and_bound_plot(name, p_values, times1, times2, min_eigens, subounds):
+def make_eigen_and_bound_plot(name, p_values, times1, costPs, cost3s, times2, min_eigens, subounds):
     """ Make a plot that combines time for optimizing, time for optimizing and compute min_eigen,
         min_eigen, subound (subound = (f_R - f_SDP) / f_SDP).
         Arguments:
             name: string of the plot title
             p_values: list of p-values (int)
             times1: list of timings (seconds)
+            costPs: f_SDP
+            cost3s: f_R
             times2: list of timings (seconds)
             min_eigens: list of min_eigen (double)
             subounds: list of subound (double)
     """
-    plt.figure(1)
-    plt.ylabel('Time used (seconds)')
-    plt.xlabel('p_value')
-    plt.plot(p_values, times1, 'r', label="time for optimizing")
-    plt.plot(p_values, times2, 'blue', label="time for optimizing and check")
-    plt.title(name, fontsize=12)
-    plt.legend(loc="best")
-    plt.interactive(False)
-    plt.show()
+    
+    if dict(Counter(p_values))[5] != 1:
+        p_values = list(dict(Counter(p_values)).keys())
+        iter = int(len(times1)/len(p_values))
+        p_mean_times1 = [np.mean(np.array(times1[i*iter:(i+1)*iter])) for i in range(len(p_values))]
+        p_mean_times2 = [np.mean(np.array(times2[i*iter:(i+1)*iter])) for i in range(len(p_values))]
+        print("p_values \n", p_values)
+        print("p_mean_times_opti \n", p_mean_times1)
+        print("p_mean_times_eig \n", p_mean_times2)
 
-    plt.figure(2)
-    plt.ylabel('Min eigen_value')
-    plt.xlabel('p_value')
-    plt.plot(p_values, min_eigens, 'r', label="min_eigen values")
-    plt.title(name, fontsize=12)
-    plt.legend(loc="best")
-    plt.interactive(False)
-    plt.show()
+        p_mean_costPs = [np.mean(np.array(costPs[i*iter:(i+1)*iter])) for i in range(len(p_values))]
+        p_mean_cost3s = [np.mean(np.array(cost3s[i*iter:(i+1)*iter])) for i in range(len(p_values))]
+        p_mean_lambdas = [np.mean(np.array(min_eigens[i*iter:(i+1)*iter])) for i in range(len(p_values))]
 
-    plt.figure(3)
-    plt.ylabel('sub_bounds')
-    plt.xlabel('p_value')
-    plt.plot(p_values, subounds, 'blue', label="sub_bounds")
-    plt.title(name, fontsize=12)
-    plt.legend(loc="best")
-    plt.show()
+        print("p_mean_costPs \n", p_mean_costPs)
+        print("p_mean_cost3s \n", p_mean_cost3s)
+        print("p_mean_lambdas \n", p_mean_lambdas)
+        print("*******************************************************************************************************************")
+
+
+    else:
+        plt.figure(1)
+        plt.ylabel('Time used (seconds)')
+        plt.xlabel('p_value')
+        plt.plot(p_values, times1, 'r', label="time for optimizing")
+        plt.plot(p_values, times2, 'blue', label="time for optimizing and check")
+        plt.title(name, fontsize=12)
+        plt.legend(loc="best")
+        plt.interactive(False)
+        plt.show()
+
+        plt.figure(2)
+        plt.ylabel('Min eigen_value')
+        plt.xlabel('p_value')
+        plt.plot(p_values, min_eigens, 'r', label="min_eigen values")
+        plt.title(name, fontsize=12)
+        plt.legend(loc="best")
+        plt.interactive(False)
+        plt.show()
+
+        plt.figure(3)
+        plt.ylabel('sub_bounds')
+        plt.xlabel('p_value')
+        plt.plot(p_values, subounds, 'blue', label="sub_bounds")
+        plt.title(name, fontsize=12)
+        plt.legend(loc="best")
+        plt.show()
 
 # Process arguments and call plot function
 import argparse
@@ -154,7 +177,7 @@ names[0] = 'tinyGrid3D vertex = 9, edge = 11'
 names[1] = 'smallGrid3D vertex = 125, edge = 297'
 names[2] = 'parking-garage vertex = 1661, edge = 6275'
 names[3] = 'sphere2500 vertex = 2500, edge = 4949'
-names[4] = 'sphere_bignoise vertex = 2200, edge = 8647'
+# names[4] = 'sphere_bignoise vertex = 2200, edge = 8647'
 names[5] = 'torus3D vertex = 5000, edge = 9048'
 names[6] = 'cubicle vertex = 5750, edge = 16869'
 names[7] = 'rim vertex = 10195, edge = 29743'
@@ -166,7 +189,7 @@ for key, name in names.items():
     # find  according file to process
     name_file = None
     for path in file_path:
-        if name[0:7] in path:
+        if name[0:3] in path:
             name_file = path
     if name_file == None:
         print("The file %s is not in the path" % name)
@@ -181,13 +204,12 @@ for key, name in names.items():
             times1.append(float(row[1]))
             costPs.append(float(row[2]))
             cost3s.append(float(row[3]))
-            times2.append(float(row[4]))
-            min_eigens.append(float(row[5]))
-            subounds.append(float(row[6]))
+            if len(row) > 4:
+                times2.append(float(row[4]))
+                min_eigens.append(float(row[5]))
+                subounds.append(float(row[6]))
 
     #plot
-    if times2[0] == 0:
-        make_combined_plot(name, p_values, times1, cost3s)
+    # make_combined_plot(name, p_values, times1, cost3s)
     # make_convergence_plot(name, p_values, times1, cost3s)
-    else:
-        make_eigen_and_bound_plot(name, p_values, times1, times2, min_eigens, subounds)
+    make_eigen_and_bound_plot(name, p_values, times1, costPs, cost3s, times2, min_eigens, subounds)
