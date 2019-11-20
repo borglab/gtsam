@@ -3,10 +3,13 @@
 
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "gtsam/geometry/Point2.h"
 #include "gtsam/geometry/Point3.h"
 #include "folder/path/to/Test.h"
+
+#include "wrap/serialization.h"
 
 
 
@@ -15,8 +18,8 @@ using namespace std;
 
 namespace py = pybind11;
 
-PYBIND11_PLUGIN(geometry_py) {
-    pybind11::module m_("geometry_py", "pybind11 wrapper of geometry_py");
+PYBIND11_MODULE(geometry_py, m_) {
+    m_.doc() = "pybind11 wrapper of geometry_py";
 
     pybind11::module m_gtsam = m_.def_submodule("gtsam", "gtsam submodule");
 
@@ -35,6 +38,8 @@ PYBIND11_PLUGIN(geometry_py) {
     py::class_<gtsam::Point3, std::shared_ptr<gtsam::Point3>>(m_gtsam, "Point3")
         .def(py::init< double,  double,  double>(), py::arg("x"), py::arg("y"), py::arg("z"))
         .def("norm",[](gtsam::Point3* self){return self->norm();})
+        .def("serialize",[](gtsam::Point3* self){return serialize(self);})
+        .def("deserialize",[](gtsam::Point3* self, string serialized){return deserialize(serialized, self);})
         .def_static("staticFunction",[](){return gtsam::Point3::staticFunction();})
         .def_static("StaticFunctionRet",[]( double z){return gtsam::Point3::StaticFunctionRet(z);}, py::arg("z"));
 
@@ -103,7 +108,5 @@ PYBIND11_PLUGIN(geometry_py) {
     m_.def("aGlobalFunction",[](){return ::aGlobalFunction();});
     m_.def("overloadedGlobalFunction",[]( int a){return ::overloadedGlobalFunction(a);}, py::arg("a"));
     m_.def("overloadedGlobalFunction",[]( int a, double b){return ::overloadedGlobalFunction(a, b);}, py::arg("a"), py::arg("b"));
-
-    return m_.ptr();
 }
 

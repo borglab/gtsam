@@ -62,8 +62,18 @@ class PybindWrapper(object):
     ):
         py_method = method.name
         cpp_method = method.to_cpp()
-        if cpp_method == "serialize" or cpp_method == "serializable":
+
+        if cpp_method == "serialize":
+            return textwrap.indent(textwrap.dedent(
+                '''
+        .def("serialize",[]({class_inst} self){{return serialize(self);}})
+        .def("deserialize",[]({class_inst} self, string serialized){{return deserialize(serialized, self);}})'''.format(
+                    class_inst=cpp_class + '*'
+                )), '        ')
+
+        if cpp_method == "serializable":
             return ''
+
         is_method = isinstance(method, instantiator.InstantiatedMethod)
         is_static = isinstance(method, parser.StaticMethod)
         return_void = method.return_type.is_void()
@@ -163,7 +173,6 @@ class PybindWrapper(object):
                     instantiated_class.properties, cpp_class,
                 ),
             )
-
 
     def wrap_stl_class(self, stl_class):
         module_var = self._gen_module_var(stl_class.namespaces())
@@ -290,6 +299,8 @@ class PybindWrapper(object):
 #include <pybind11/stl.h>
 
 {includes}
+#include "wrap/serialization.h"
+
 
 {hoder_type}
 
@@ -301,7 +312,6 @@ PYBIND11_MODULE({module_name}, m_) {{
     m_.doc() = "pybind11 wrapper of {module_name}";
 
 {wrapped_namespace}
-
 }}
 
 """.format(

@@ -12,8 +12,10 @@ import filecmp
 import os.path as path
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.normpath(os.path.abspath(os.path.join(__file__, '../../../build/wrap'))))
 
 from pybind_wrapper import PybindWrapper
+from gtsam_py import gtsam
 import interface_parser as parser
 import template_instantiator as instantiator
 
@@ -58,6 +60,25 @@ class TestWrap(unittest.TestCase):
             path.join(self.TEST_DIR, 'expected-python/geometry_pybind.cpp'))
         )
 
+    def test_gtsam(self):
+        """Test insertion into and serialization/deserialization for gtsam
+        KeySet object. This is primarily to test serialization, not KeySet.
+        """
+        x = gtsam.KeySet()
+
+        self.assertTrue(x.size() == 0)
+
+        x.insert(1)
+        x.insert(1)
+        x.insert(2)
+
+        self.assertTrue(x.size() == 2)
+
+        y = gtsam.KeySet()
+
+        y = y.deserialize(x.serialize())
+
+        self.assertTrue(x.equals(y))
 
 if __name__ == '__main__':
     unittest.main()
