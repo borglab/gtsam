@@ -418,8 +418,8 @@ struct MatrixProdFunctor {
 //   - We've been using 10^-4 for the nonnegativity tolerance
 //   - for numLanczosVectors, 20 is a good default value
 
-bool sparseMinimumEigenValue(const SparseMatrix& A, const Matrix& S, double& minEigenValue,
-               Vector& minEigenVector, size_t& numIterations,
+static bool SparseMinimumEigenValue(const SparseMatrix& A, const Matrix& S, double* minEigenValue,
+               Vector* minEigenVector=0, size_t* numIterations=0,
                size_t maxIterations = 1000,
                double minEigenvalueNonnegativityTolerance = 10e-4,
                Eigen::Index numLanczosVectors = 20) {
@@ -441,9 +441,11 @@ bool sparseMinimumEigenValue(const SparseMatrix& A, const Matrix& S, double& min
     if (lmEigenValue < 0) {
         // The largest-magnitude eigenvalue is negative, and therefore also the
         // minimum eigenvalue, so just return this solution
-        minEigenValue = lmEigenValue;
-        minEigenVector = lmEigenValueSolver.eigenvectors(1);
-        minEigenVector.normalize();  // Ensure that this is a unit vector
+        *minEigenValue = lmEigenValue;
+        if (minEigenVector) {
+            *minEigenVector = lmEigenValueSolver.eigenvectors(1);
+            minEigenVector->normalize();  // Ensure that this is a unit vector
+        }
         return true;
     }
 
@@ -493,15 +495,17 @@ bool sparseMinimumEigenValue(const SparseMatrix& A, const Matrix& S, double& min
 
     if (minConverged != 1) return false;
 
-    minEigenVector = minEigenValueSolver.eigenvectors(1);
-    minEigenVector.normalize();  // Ensure that this is a unit vector
-    minEigenValue = minEigenValueSolver.eigenvalues()(0) + 2 * lmEigenValue;
-    numIterations = minEigenValueSolver.num_iterations();
+    *minEigenValue = minEigenValueSolver.eigenvalues()(0) + 2 * lmEigenValue;
+    if (minEigenVector) {
+        *minEigenVector = minEigenValueSolver.eigenvectors(1);
+        minEigenVector->normalize();  // Ensure that this is a unit vector
+    }
+    if (numIterations) * numIterations = minEigenValueSolver.num_iterations();
     return true;
 }
 
 /* ************************************************************************* */
-double ShonanAveraging::computeMinEigenValue(const Values& values) const {
+double ShonanAveraging::computeMinEigenValue(const Values& values, Vector* minEigenVector) const {
     /// Based on Luca's MATLAB version on BitBucket repo.
     assert(values.size() == nrPoses());
     const Matrix S = StiefelElementMatrix(values);
@@ -516,12 +520,10 @@ double ShonanAveraging::computeMinEigenValue(const Values& values) const {
     }
 #else
     double minEigenValue;
-    Vector minEigenVector;
-    size_t numIterations;
-    bool success = sparseMinimumEigenValue(C, S, minEigenValue, minEigenVector, numIterations);
+    bool success = SparseMinimumEigenValue(C, S, &minEigenValue, minEigenVector);
     if (!success) {
         throw std::runtime_error(
-            "sparseMinimumEigenValue failed to compute minimum eigenvalue.");
+            "SparseMinimumEigenValue failed to compute minimum eigenvalue.");
     }
 #endif
     return minEigenValue;
@@ -534,18 +536,43 @@ bool ShonanAveraging::checkOptimality(const Values& values) const {
 }
 
 /* ************************************************************************* */
-std::pair<Values, double> ShonanAveraging::run(size_t p_min,
-                                               size_t p_max) const {
-    Values result;
-    for (size_t p = p_min; p <= p_max; p++) {
-        auto SOpValues = tryOptimizingAt(p);
-        double minEigenValue = computeMinEigenValue(SOpValues);
+Values ShonanAveraging::initializeWithDescent(const Values& values, const Vector& minEigenVector) const {
+    size_t dN = minEigenVector.size();
+    // for all i:
+    // Vcetor xi_i(dimXi); xi_i = 
+    return Values(); // TODO(jing): make this work
+}
+
+/* ************************************************************************* */
+std::pair<Values, double> ShonanAveraging::run(size_t pMin,
+                                               size_t pMax,
+                                               bool withDescent) const {
+    Values Qstar;
+    Vector minEigenVector;
+    for (size_t p = pMin; p <= pMax; p++) {
+        const Values initial =
+            (p > pMin && withDescent) ? initializeWithDescent(Qstar, minEigenVector) : initializeRandomlyAt(p);
+        Qstar = tryOptimizingAt(p, initial);
+        double minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
         if (minEigenValue > parameters_.optimalityThreshold) {
-            const Values SO3Values = roundSolution(SOpValues);
+            const Values SO3Values = roundSolution(Qstar);
             return std::make_pair(SO3Values, minEigenValue);
         }
     }
-    throw std::runtime_error("Shonan::run did not converge for given p_max");
+    throw std::runtime_error("Shonan::run did not converge for given pMax");
+}
+
+/* ************************************************************************* */
+std::pair<Values, double> ShonanAveraging::runWithRandom(size_t pMin,
+                                                         size_t pMax) const {
+                                                             
+    return run(pMin, pMax, false);
+}
+
+/* ************************************************************************* */
+std::pair<Values, double> ShonanAveraging::runWithDescent(size_t pMin,
+                                                          size_t pMax) const {
+    return run(pMin, pMax, true);
 }
 
 /* ************************************************************************* */

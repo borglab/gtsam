@@ -89,8 +89,25 @@ TEST(ShonanAveraging, tryOptimizingAt5) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, run) {
-  auto result = kShonan.run(5);
+TEST(ShonanAveraging, runWithRandom) {
+  auto result = kShonan.runWithRandom(5);
+  EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result.first), 1e-3);
+  EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
+                       1e-4);  // Regression test
+}
+
+/* ************************************************************************* */
+TEST(ShonanAveraging, initializeWithDescent) {
+  const Values Qstar3 = kShonan.tryOptimizingAt(3);
+  Vector minEigenVector;
+  kShonan.computeMinEigenValue(Qstar3, &minEigenVector);
+  Values initialQ4 = kShonan.initializeWithDescent(Qstar3, minEigenVector);
+  EXPECT_LONGS_EQUAL(5, initialQ4.size());
+}
+
+/* ************************************************************************* */
+TEST(ShonanAveraging, runWithDescent) {
+  auto result = kShonan.runWithDescent(5);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result.first), 1e-3);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
                        1e-4);  // Regression test
