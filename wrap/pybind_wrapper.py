@@ -51,8 +51,18 @@ class PybindWrapper(object):
     def _wrap_method(self, method, cpp_class, prefix, suffix):
         py_method = method.name
         cpp_method = method.to_cpp()
-        if cpp_method == "serialize" or cpp_method == "serializable":
+
+        if cpp_method == "serialize":
+            return textwrap.indent(textwrap.dedent(
+                '''
+        .def("serialize",[]({class_inst} self){{return serialize(self);}})
+        .def("deserialize",[]({class_inst} self, string serialized){{return deserialize(serialized, self);}})'''.format(
+                    class_inst=cpp_class + '*'
+                )), '        ')
+
+        if cpp_method == "serializable":
             return ''
+
         is_method = isinstance(method, instantiator.InstantiatedMethod)
         is_static = isinstance(method, parser.StaticMethod)
         return_void = method.return_type.is_void()
@@ -160,6 +170,36 @@ class PybindWrapper(object):
                     instantiated_class.properties, cpp_class
                 ),
             )
+
+    def wrap_stl_class(self, stl_class):
+        module_var = self._gen_module_var(stl_class.namespaces())
+        cpp_class = stl_class.cpp_class()
+        if cpp_class in self.ignore_classes:
+            return ""
+
+        return '\n    py::class_<{cpp_class}, {class_parent}' \
+               'std::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")' \
+               '{wrapped_ctors}' \
+               '{wrapped_methods}' \
+               '{wrapped_static_methods}' \
+               '{wrapped_properties};\n'.format(
+            cpp_class=cpp_class,
+            class_name=stl_class.name,
+            class_parent=str(stl_class.parent_class) +
+                         (', ' if stl_class.parent_class else ''),
+            module_var=module_var,
+            wrapped_ctors=self.wrap_ctors(stl_class),
+            wrapped_methods=self.wrap_methods(
+                stl_class.methods,
+                cpp_class,
+            ),
+            wrapped_static_methods=self.wrap_methods(
+                stl_class.static_methods,
+                cpp_class,
+            ),
+            wrapped_properties=self.wrap_properties(
+                stl_class.properties, cpp_class,
+            ),
         )
 
     def _partial_match(self, namespaces1, namespaces2):
@@ -258,6 +298,8 @@ class PybindWrapper(object):
 #include <gtsam/nonlinear/utilities.h>  // for RedirectCout.
 
 {includes}
+#include "wrap/serialization.h"
+
 
 {hoder_type}
 
@@ -269,7 +311,6 @@ PYBIND11_MODULE({module_name}, m_) {{
     m_.doc() = "pybind11 wrapper of {module_name}";
 
 {wrapped_namespace}
-
 }}
 
 """.format(
