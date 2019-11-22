@@ -101,7 +101,7 @@ void NonlinearOptimizer::defaultOptimize() {
       cout << "newError: " << error() << endl;
   } while (iterations() < params.maxIterations &&
            !checkConvergence(params.relativeErrorTol, params.absoluteErrorTol, params.errorTol,
-                             currentError, error(), params.verbosity));
+                             currentError, error(), params.verbosity) && std::isfinite(currentError));
 
   // Printing if verbose
   if (params.verbosity >= NonlinearOptimizerParams::TERMINATION) {
