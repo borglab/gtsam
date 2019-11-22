@@ -82,10 +82,12 @@ TEST(Rot3AttitudeFactor, CopyAndMove) {
   Rot3AttitudeFactor factor(0, nDown, model);
 
   // Copy assignable.
+  EXPECT(std::is_copy_assignable<Rot3AttitudeFactor>::value);
   Rot3AttitudeFactor factor_copied = factor;
   EXPECT(assert_equal(factor, factor_copied));
 
   // Move assignable.
+  EXPECT(std::is_move_assignable<Rot3AttitudeFactor>::value);
   Rot3AttitudeFactor factor_moved = std::move(factor_copied);
   EXPECT(assert_equal(factor, factor_moved));
 }
@@ -141,10 +143,12 @@ TEST(Pose3AttitudeFactor, CopyAndMove) {
   Pose3AttitudeFactor factor(0, nDown, model);
 
   // Copy assignable.
+  EXPECT(std::is_copy_assignable<Pose3AttitudeFactor>::value);
   Pose3AttitudeFactor factor_copied = factor;
   EXPECT(assert_equal(factor, factor_copied));
 
   // Move assignable.
+  EXPECT(std::is_move_assignable<Pose3AttitudeFactor>::value);
   Pose3AttitudeFactor factor_moved = std::move(factor_copied);
   EXPECT(assert_equal(factor, factor_moved));
 }
