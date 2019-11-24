@@ -8,6 +8,11 @@
   <license>BSD</license>
 
   <buildtool_depend>cmake</buildtool_depend>
+  
+  <build_depend>boost</build_depend>
+  <build_depend>eigen</build_depend>
+  <build_depend>tbb</build_depend>
+  
   <export>
     <!-- Specify that this is not really a Catkin package-->
     <build_type>cmake</build_type>
