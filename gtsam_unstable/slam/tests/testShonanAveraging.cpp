@@ -26,8 +26,8 @@
 using namespace std;
 using namespace gtsam;
 
-string g2oFile = findExampleDataFile("toyExample.g2o");
-// string g2oFile = "/Users/dellaert/git/SE-Sync/data/toy3D.g2o";
+// string g2oFile = findExampleDataFile("toyExample.g2o");
+string g2oFile = "/home/jingwu/git/gtsam/examples/Data/toyExample.g2o";
 static const ShonanAveraging kShonan(g2oFile);
 
 /* ************************************************************************* */
@@ -101,7 +101,7 @@ TEST(ShonanAveraging, initializeWithDescent) {
   const Values Qstar3 = kShonan.tryOptimizingAt(3);
   Vector minEigenVector;
   kShonan.computeMinEigenValue(Qstar3, &minEigenVector);
-  Values initialQ4 = kShonan.initializeWithDescent(Qstar3, minEigenVector);
+  Values initialQ4 = kShonan.initializeWithDescent(3, Qstar3, minEigenVector);
   EXPECT_LONGS_EQUAL(5, initialQ4.size());
 }
 

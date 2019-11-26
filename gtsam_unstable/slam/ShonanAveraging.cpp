@@ -536,11 +536,24 @@ bool ShonanAveraging::checkOptimality(const Values& values) const {
 }
 
 /* ************************************************************************* */
-Values ShonanAveraging::initializeWithDescent(const Values& values, const Vector& minEigenVector) const {
-    size_t dN = minEigenVector.size();
-    // for all i:
-    // Vcetor xi_i(dimXi); xi_i = 
-    return Values(); // TODO(jing): make this work
+Values ShonanAveraging::initializeWithDescent(size_t p, const Values& values, const Vector& minEigenVector) const {
+    Values newValues = initializeRandomlyAt(p + 1);
+    const size_t dN = minEigenVector.size(); 
+    const size_t dim = dN / nrPoses();
+    const size_t d = (p + 1) * p;
+    static std::uniform_real_distribution<double> randomAngle(-M_PI / 100, M_PI / 100);
+    std::mt19937 rng; 
+    // values.print();
+    for (size_t j = 0; j < nrPoses(); j++){
+        Vector xi(d);
+        for (size_t i = 0; i < d; i++){
+            xi(i) =
+                (i < dim) ?  minEigenVector(j*dim + i) : randomAngle(rng);
+        }
+        newValues.update(j, values.at<SOn>(j) * SOn::Retract(xi) );
+    }
+    
+    return newValues;
 }
 
 /* ************************************************************************* */
@@ -551,7 +564,7 @@ std::pair<Values, double> ShonanAveraging::run(size_t pMin,
     Vector minEigenVector;
     for (size_t p = pMin; p <= pMax; p++) {
         const Values initial =
-            (p > pMin && withDescent) ? initializeWithDescent(Qstar, minEigenVector) : initializeRandomlyAt(p);
+            (p > pMin && withDescent) ? initializeWithDescent(p, Qstar, minEigenVector) : initializeRandomlyAt(p);
         Qstar = tryOptimizingAt(p, initial);
         double minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
         if (minEigenValue > parameters_.optimalityThreshold) {

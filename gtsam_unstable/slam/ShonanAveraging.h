@@ -149,7 +149,7 @@ class ShonanAveraging {
    * @param minEigenVector corresponding to minEigenValue at level p
    * @return values of type SO(p+1)
    */
-  Values initializeWithDescent(const Values& values, const Vector& minEigenVector) const;
+  Values initializeWithDescent(size_t p, const Values& values, const Vector& minEigenVector) const;
 
   /**
    * Optimize at different values of p until convergence, with random init at each level.
