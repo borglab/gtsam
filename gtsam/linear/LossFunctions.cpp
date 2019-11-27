@@ -145,7 +145,7 @@ double Fair::residual(double error) const {
   const double absError = std::abs(error);
   const double normalizedError = absError / c_;
   const double c_2 = c_ * c_;
-  return c_2 * (normalizedError - std::log(1 + normalizedError));
+  return c_2 * (normalizedError - std::log1p(normalizedError));
 }
 
 void Fair::print(const std::string &s="") const
@@ -213,8 +213,7 @@ double Cauchy::weight(double error) const {
 }
 
 double Cauchy::residual(double error) const {
-  const double xc2 = error / k_;
-  const double val = std::log(1 + (xc2*xc2));
+  const double val = std::log1p(error * error / ksquared_);
   return ksquared_ * val * 0.5;
 }
 
@@ -244,8 +243,8 @@ Tukey::Tukey(double c, const ReweightScheme reweight) : Base(reweight), c_(c), c
 
 double Tukey::weight(double error) const {
   if (std::abs(error) <= c_) {
-    const double xc2 = error*error/csquared_;
-    return (1.0-xc2)*(1.0-xc2);
+    const double one_minus_xc2 = 1.0 - error*error/csquared_;
+    return one_minus_xc2 * one_minus_xc2;
   }
   return 0.0;
 }
@@ -253,8 +252,8 @@ double Tukey::weight(double error) const {
 double Tukey::residual(double error) const {
   double absError = std::abs(error);
   if (absError <= c_) {
-    const double xc2 = error*error/csquared_;
-    const double t = (1 - xc2)*(1 - xc2)*(1 - xc2);
+    const double one_minus_xc2 = 1.0 - error*error/csquared_;
+    const double t = one_minus_xc2*one_minus_xc2*one_minus_xc2;
     return csquared_ * (1 - t) / 6.0;
   } else {
     return csquared_ / 6.0;
@@ -288,7 +287,7 @@ double Welsch::weight(double error) const {
 
 double Welsch::residual(double error) const {
   const double xc2 = (error*error)/csquared_;
-  return csquared_ * 0.5 * (1 - std::exp(-xc2) );
+  return csquared_ * 0.5 * -std::expm1(-xc2);
 }
 
 void Welsch::print(const std::string &s="") const {
