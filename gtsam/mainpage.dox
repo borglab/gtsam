@@ -1,7 +1,6 @@
 // This causes Doxygen to find classes inside the gtsam namespace without
 // explicitly specifying it when writing class names.
 namespace gtsam {
-
 /**
 
 \mainpage GTSAM
@@ -23,5 +22,4 @@ To use GTSAM to solve your own problems, you will often have to create new facto
    - This is more advanced and allows creating factors without an explicit noise model, or that linearize to HessianFactor instead of JacobianFactor.
 
 */
-
 }
