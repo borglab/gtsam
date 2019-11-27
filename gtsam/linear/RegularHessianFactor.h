@@ -77,8 +77,14 @@ public:
 
   /// Construct from a GaussianFactorGraph
   RegularHessianFactor(const GaussianFactorGraph& factors,
-                       boost::optional<const Scatter&> scatter = boost::none)
+                       const Scatter& scatter)
       : HessianFactor(factors, scatter) {
+    checkInvariants();
+  }
+
+  /// Construct from a GaussianFactorGraph
+  RegularHessianFactor(const GaussianFactorGraph& factors)
+      : HessianFactor(factors) {
     checkInvariants();
   }
 

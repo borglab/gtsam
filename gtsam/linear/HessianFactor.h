@@ -176,7 +176,11 @@ namespace gtsam {
 
     /** Combine a set of factors into a single dense HessianFactor */
     explicit HessianFactor(const GaussianFactorGraph& factors,
-      boost::optional<const Scatter&> scatter = boost::none);
+      const Scatter& scatter);
+
+    /** Combine a set of factors into a single dense HessianFactor */
+    explicit HessianFactor(const GaussianFactorGraph& factors)
+        : HessianFactor(factors, Scatter(factors)) {}
 
     /** Destructor */
     virtual ~HessianFactor() {}

@@ -171,7 +171,7 @@ namespace gtsam {
 
         // The variables we want to keepSet are exactly the ones in S
         KeyVector indicesS(this->conditional()->beginParents(), this->conditional()->endParents());
-        cachedSeparatorMarginal_ = *p_Cp.marginalMultifrontalBayesNet(Ordering(indicesS), boost::none, function);
+        cachedSeparatorMarginal_ = *p_Cp.marginalMultifrontalBayesNet(Ordering(indicesS), function);
       }
     }
 

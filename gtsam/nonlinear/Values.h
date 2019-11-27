@@ -39,6 +39,7 @@
 #pragma GCC diagnostic pop
 #endif
 #include <boost/ptr_container/serialize_ptr_map.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <string>
 #include <utility>
