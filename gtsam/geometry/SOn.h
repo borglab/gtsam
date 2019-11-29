@@ -11,8 +11,7 @@
 
 /**
  * @file    SOn.h
- * @brief   n*n matrix representation of SO(n), template on N, which can be
- * Eigen::Dynamic
+ * @brief   N*N matrix representation of SO(N). N can be Eigen::Dynamic
  * @author  Frank Dellaert
  * @date    March 2019
  */
@@ -43,7 +42,7 @@ constexpr int NSquaredSO(int N) { return (N < 0) ? Eigen::Dynamic : N * N; }
 
 /**
  * Manifold of special orthogonal rotation matrices SO<N>.
- * Template paramater N can be a fizxed integer or can be Eigen::Dynamic
+ * Template paramater N can be a fixed integer or can be Eigen::Dynamic
  */
 template <int N>
 class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
@@ -53,7 +52,6 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   using VectorN2 = Eigen::Matrix<double, internal::NSquaredSO(N), 1>;
   using MatrixDD = Eigen::Matrix<double, dimension, dimension>;
 
- public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
@@ -100,7 +98,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
 
   /// Constructor from AngleAxisd
   template <int N_ = N, typename = IsSO3<N_>>
-  SO(const Eigen::AngleAxisd& angleAxis) : matrix_(angleAxis) {}
+  explicit SO(const Eigen::AngleAxisd& angleAxis) : matrix_(angleAxis) {}
 
   /// Constructor from axis and angle. Only defined for SO3
   static SO AxisAngle(const Vector3& axis, double theta);
@@ -117,7 +115,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   template <int N_ = N, typename = IsDynamic<N_>>
   static SO Random(boost::mt19937& rng, size_t n = 0) {
     if (n == 0) throw std::runtime_error("SO: Dimensionality not known.");
-    // This needs to be re-thought!
+    // TODO(frank): This needs to be re-thought!
     static boost::uniform_real<double> randomAngle(-M_PI, M_PI);
     const size_t d = SO::Dimension(n);
     Vector xi(d);

@@ -12,7 +12,7 @@
 /*
  * @file KarcherMeanFactor.h
  * @author Frank Dellaert
- * @date March 2019ƒ
+ * @date March 2019
  */
 
 #pragma once
@@ -26,18 +26,18 @@
 namespace gtsam {
 /**
  * Optimize for the Karcher mean, minimizing the geodesic distance to each of
- * the given rotations, ,by constructing a factor graph out of simple
+ * the given rotations, by constructing a factor graph out of simple
  * PriorFactors.
  */
 template <class T>
 T FindKarcherMean(const std::vector<T>& rotations);
 
 /**
- * The KarcherMeanFactor creates a constraint on all SO(3) variables with
+ * The KarcherMeanFactor creates a constraint on all SO(n) variables with
  * given keys that the Karcher mean (see above) will stay the same. Note the
  * mean itself is irrelevant to the constraint and is not a parameter: the
  * constraint is implemented as enforcing that the sum of local updates is
- * equal to zero, hence creating a rank-3 constraint. Note it is implemented as
+ * equal to zero, hence creating a rank-dim constraint. Note it is implemented as
  * a soft constraint, as typically it is used to fix a gauge freedom.
  * */
 template <class T>
