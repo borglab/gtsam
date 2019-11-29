@@ -40,6 +40,17 @@ using namespace std;
 using namespace gtsam;
 
 //******************************************************************************
+// Test dhynamic with n=0
+TEST(SOn, SO0) {
+  const auto R = SOn(0);
+  EXPECT_LONGS_EQUAL(0, R.rows());
+  EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::dimension);
+  EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::Dim());
+  EXPECT_LONGS_EQUAL(0, R.dim());
+  EXPECT_LONGS_EQUAL(-1, traits<SOn>::GetDimension(R));
+}
+
+//******************************************************************************
 TEST(SOn, SO5) {
   const auto R = SOn(5);
   EXPECT_LONGS_EQUAL(5, R.rows());
