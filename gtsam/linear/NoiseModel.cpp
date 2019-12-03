@@ -371,7 +371,7 @@ Vector Constrained::whiten(const Vector& v) const {
 }
 
 /* ************************************************************************* */
-double Constrained::distance(const Vector& v) const {
+double Constrained::squaredDistance(const Vector& v) const {
   Vector w = Diagonal::whiten(v); // get noisemodel for constrained elements
   for (size_t i=0; i<dim_; ++i)  // add mu weights on constrained variables
     if (constrained(i)) // whiten makes constrained variables zero

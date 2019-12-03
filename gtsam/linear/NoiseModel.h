@@ -90,7 +90,7 @@ namespace gtsam {
       /// Unwhiten an error vector.
       virtual Vector unwhiten(const Vector& v) const = 0;
 
-      virtual double distance(const Vector& v) const = 0;
+      virtual double squaredDistance(const Vector& v) const = 0;
 
       virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const = 0;
       virtual void WhitenSystem(Matrix& A, Vector& b) const = 0;
@@ -211,7 +211,7 @@ namespace gtsam {
        */
       virtual double Mahalanobis(const Vector& v) const;
 
-      inline virtual double distance(const Vector& v) const {
+      inline virtual double squaredDistance(const Vector& v) const {
         return Mahalanobis(v);
       }
 
@@ -460,11 +460,11 @@ namespace gtsam {
       }
 
       /**
-       * The distance function for a constrained noisemodel,
+       * The squaredDistance function for a constrained noisemodel,
        * for non-constrained versions, uses sigmas, otherwise
        * uses the penalty function with mu
        */
-      virtual double distance(const Vector& v) const;
+      virtual double squaredDistance(const Vector& v) const;
 
       /** Fully constrained variations */
       static shared_ptr All(size_t dim) {
@@ -692,11 +692,9 @@ namespace gtsam {
       { Vector b; Matrix B=A; this->WhitenSystem(B,b); return B; }
       inline virtual Vector unwhiten(const Vector& /*v*/) const
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
-      // Fold the use of the m-estimator residual(...) function into distance(...)
-      inline virtual double distance(const Vector& v) const
-      { return robust_->residual(this->unweightedWhiten(v).norm()); }
-      inline virtual double distance_non_whitened(const Vector& v) const
-      { return robust_->residual(v.norm()); }
+      // Fold the use of the m-estimator loss(...) function into squaredDistance(...)
+      inline virtual double squaredDistance(const Vector& v) const
+      { return 2.0 * robust_->loss(this->unweightedWhiten(v).norm()); }
       // TODO: these are really robust iterated re-weighting support functions
       virtual void WhitenSystem(Vector& b) const;
       virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const;

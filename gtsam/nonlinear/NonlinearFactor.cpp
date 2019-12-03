@@ -106,7 +106,7 @@ double NoiseModelFactor::weight(const Values& c) const {
     if (noiseModel_) {
       const Vector b = unwhitenedError(c);
       check(noiseModel_, b.size());
-      return 0.5 * noiseModel_->weight(b);
+      return noiseModel_->weight(b);
     }
     else
       return 1.0;
@@ -121,7 +121,7 @@ double NoiseModelFactor::error(const Values& c) const {
     const Vector b = unwhitenedError(c);
     check(noiseModel_, b.size());
     if (noiseModel_)
-      return 0.5 * noiseModel_->distance(b);
+      return 0.5 * noiseModel_->squaredDistance(b);
     else
       return 0.5 * b.squaredNorm();
   } else {
