@@ -166,7 +166,9 @@ namespace gtsam {
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(conditional_);
-      ar & BOOST_SERIALIZATION_NVP(parent_);
+      if (parent_) { // TODO(fan): Workaround for boost/serialization #119
+        ar & BOOST_SERIALIZATION_NVP(parent_);
+      }
       ar & BOOST_SERIALIZATION_NVP(children);
     }
 
