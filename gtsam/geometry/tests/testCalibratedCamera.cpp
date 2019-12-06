@@ -206,7 +206,7 @@ TEST( CalibratedCamera, DBackprojectFromCamera)
 static Point3 backproject(const Pose3& pose, const Point2& point, const double& depth) {
   return CalibratedCamera(pose).backproject(point, depth);
 }
-TEST( PinholePose, Dbackproject)
+TEST( PinholePose, DbackprojectCalibCamera)
 {
   Matrix36 Dpose;
   Matrix31 Ddepth;

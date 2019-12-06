@@ -22,6 +22,7 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 #include <gtsam/global_includes.h>
+#include <gtsam/inference/VariableSlots.h>
 
 #include <boost/make_shared.hpp>
 
@@ -152,9 +153,32 @@ namespace gtsam {
      * structure computed for \c graph is already available, providing it will reduce the amount of
      * computation performed. */
     explicit JacobianFactor(
+      const GaussianFactorGraph& graph);
+
+    /**
+     * Build a dense joint factor from all the factors in a factor graph.  If a VariableSlots
+     * structure computed for \c graph is already available, providing it will reduce the amount of
+     * computation performed. */
+    explicit JacobianFactor(
       const GaussianFactorGraph& graph,
-      boost::optional<const Ordering&> ordering = boost::none,
-      boost::optional<const VariableSlots&> p_variableSlots = boost::none);
+      const VariableSlots& p_variableSlots);
+    
+    /**
+     * Build a dense joint factor from all the factors in a factor graph.  If a VariableSlots
+     * structure computed for \c graph is already available, providing it will reduce the amount of
+     * computation performed. */
+    explicit JacobianFactor(
+      const GaussianFactorGraph& graph,
+      const Ordering& ordering);
+    
+    /**
+     * Build a dense joint factor from all the factors in a factor graph.  If a VariableSlots
+     * structure computed for \c graph is already available, providing it will reduce the amount of
+     * computation performed. */
+    explicit JacobianFactor(
+      const GaussianFactorGraph& graph,
+      const Ordering& ordering,
+      const VariableSlots& p_variableSlots);
 
     /** Virtual destructor */
     virtual ~JacobianFactor() {}
@@ -355,6 +379,14 @@ namespace gtsam {
     void fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel);
 
   private:
+
+    /**
+     * Helper function for public constructors:
+     * Build a dense joint factor from all the factors in a factor graph.  Takes in
+     * ordered variable slots */
+    void JacobianFactorHelper(
+      const GaussianFactorGraph& graph,
+      const FastVector<VariableSlots::const_iterator>& orderedSlots);
 
     /** Unsafe Constructor that creates an uninitialized Jacobian of right size
      *  @param keys in some order

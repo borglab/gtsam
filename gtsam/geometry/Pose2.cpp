@@ -142,7 +142,7 @@ Matrix3 Pose2::adjointMap(const Vector3& v) {
 Matrix3 Pose2::ExpmapDerivative(const Vector3& v) {
   double alpha = v[2];
   Matrix3 J;
-  if (fabs(alpha) > 1e-5) {
+  if (std::abs(alpha) > 1e-5) {
     // Chirikjian11book2, pg. 36
     /* !!!Warning!!! Compare Iserles05an, formula 2.42 and Chirikjian11book2 pg.26
      * Iserles' right-trivialization dexpR is actually the left Jacobian J_l in Chirikjian's notation
@@ -174,7 +174,7 @@ Matrix3 Pose2::LogmapDerivative(const Pose2& p) {
   Vector3 v = Logmap(p);
   double alpha = v[2];
   Matrix3 J;
-  if (fabs(alpha) > 1e-5) {
+  if (std::abs(alpha) > 1e-5) {
     double alphaInv = 1/alpha;
     double halfCotHalfAlpha = 0.5*sin(alpha)/(1-cos(alpha));
     double v1 = v[0], v2 = v[1];

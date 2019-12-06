@@ -38,7 +38,7 @@ void FixedLagSmoother::print(const std::string& s, const KeyFormatter& keyFormat
 
 /* ************************************************************************* */
 bool FixedLagSmoother::equals(const FixedLagSmoother& rhs, double tol) const {
-  return std::fabs(smootherLag_ - rhs.smootherLag_) < tol
+  return std::abs(smootherLag_ - rhs.smootherLag_) < tol
       && std::equal(timestampKeyMap_.begin(), timestampKeyMap_.end(), rhs.timestampKeyMap_.begin());
 }
 

@@ -107,7 +107,7 @@ static vector<size_t> UniqueSampler(const vector<double> &weight,
   const size_t m = weight.size();
   if (n > m) throw std::invalid_argument("UniqueSampler: invalid input size");
 
-  vector<size_t> samples;
+  vector<size_t> results;
 
   size_t count = 0;
   vector<bool> touched(m, false);
@@ -130,12 +130,12 @@ static vector<size_t> UniqueSampler(const vector<double> &weight,
     for (const size_t &index : samples) {
       if (touched[index] == false) {
         touched[index] = true;
-        samples.push_back(index);
+        results.push_back(index);
         if (++count >= n) break;
       }
     }
   }
-  return samples;
+  return results;
 }
 
 /****************************************************************************/

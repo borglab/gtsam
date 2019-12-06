@@ -65,7 +65,7 @@ bool PreintegratedRotation::equals(const PreintegratedRotation& other,
     double tol) const {
   return this->matchesParamsWith(other)
       && deltaRij_.equals(other.deltaRij_, tol)
-      && fabs(deltaTij_ - other.deltaTij_) < tol
+      && std::abs(deltaTij_ - other.deltaTij_) < tol
       && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol);
 }
 

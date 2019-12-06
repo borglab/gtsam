@@ -44,7 +44,7 @@ void Pose3Upright::print(const std::string& s) const {
 
 /* ************************************************************************* */
 bool Pose3Upright::equals(const Pose3Upright& x, double tol) const {
-  return T_.equals(x.T_, tol) && fabs(z_ - x.z_) < tol;
+  return T_.equals(x.T_, tol) && std::abs(z_ - x.z_) < tol;
 }
 
 /* ************************************************************************* */

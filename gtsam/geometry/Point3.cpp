@@ -24,8 +24,8 @@ namespace gtsam {
 
 #ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
 bool Point3::equals(const Point3 &q, double tol) const {
-  return (fabs(x() - q.x()) < tol && fabs(y() - q.y()) < tol &&
-          fabs(z() - q.z()) < tol);
+  return (std::abs(x() - q.x()) < tol && std::abs(y() - q.y()) < tol &&
+          std::abs(z() - q.z()) < tol);
 }
 
 void Point3::print(const string& s) const {
@@ -98,7 +98,7 @@ double distance3(const Point3 &p1, const Point3 &q, OptionalJacobian<1, 3> H1,
 double norm3(const Point3 &p, OptionalJacobian<1, 3> H) {
   double r = sqrt(p.x() * p.x() + p.y() * p.y() + p.z() * p.z());
   if (H) {
-    if (fabs(r) > 1e-10)
+    if (std::abs(r) > 1e-10)
       *H << p.x() / r, p.y() / r, p.z() / r;
     else
       *H << 1, 1, 1;  // really infinity, why 1 ?

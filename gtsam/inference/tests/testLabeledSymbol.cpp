@@ -81,7 +81,7 @@ TEST(LabeledSymbol, ChrTest) {
 
 /* ************************************************************************* */
 // A custom (nonsensical) formatter.
-string myFormatter(Key key) {
+string labeledSymbolMyFormatter(Key key) {
   return "special";
 }
 
@@ -90,7 +90,7 @@ TEST(LabeledSymbol, Formatting) {
 
   // use key_formatter with a function pointer
   stringstream ss2;
-  ss2 << key_formatter(myFormatter) << symbol;
+  ss2 << key_formatter(labeledSymbolMyFormatter) << symbol;
   EXPECT("special" == ss2.str());
 
   // use key_formatter with a function object.

@@ -58,7 +58,7 @@ static const gtsam::KeyFormatter MultiRobotKeyFormatter =
 struct StreamedKey {
   const Key &key_;
   explicit StreamedKey(const Key &key) : key_(key) {}
-  friend std::ostream &operator<<(std::ostream &, const StreamedKey &);
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &, const StreamedKey &);
 };
 
 /**
@@ -72,8 +72,8 @@ struct StreamedKey {
 class key_formatter {
  public:
   explicit key_formatter(KeyFormatter v) : formatter_(v) {}
-  friend std::ostream &operator<<(std::ostream &, const key_formatter &);
-  friend std::ostream &operator<<(std::ostream &, const StreamedKey &);
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &, const key_formatter &);
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &, const StreamedKey &);
 
  private:
   KeyFormatter formatter_;

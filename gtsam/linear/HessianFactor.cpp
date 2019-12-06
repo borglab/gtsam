@@ -250,10 +250,10 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) :
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
-    boost::optional<const Scatter&> scatter) {
+    const Scatter& scatter) {
   gttic(HessianFactor_MergeConstructor);
 
-  Allocate(scatter ? *scatter : Scatter(factors));
+  Allocate(scatter);
 
   // Form A' * A
   gttic(update);

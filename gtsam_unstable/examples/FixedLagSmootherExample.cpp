@@ -145,5 +145,19 @@ int main(int argc, char** argv) {
     cout << setprecision(5) << "    Key: " << key_timestamp.first << "  Time: " << key_timestamp.second << endl;
   }
 
+  // Here is an example of how to get the full Jacobian of the problem.
+  // First, get the linearization point.
+  Values result = smootherISAM2.calculateEstimate();
+
+  // Get the factor graph
+  auto &factorGraph = smootherISAM2.getFactors();
+
+  // Linearize to a Gaussian factor graph
+  boost::shared_ptr<GaussianFactorGraph> linearGraph = factorGraph.linearize(result);
+
+  // Converts the linear graph into a Jacobian factor and extracts the Jacobian matrix
+  Matrix jacobian = linearGraph->jacobian().first;
+  cout << " Jacobian: " << jacobian << endl;
+
   return 0;
 }

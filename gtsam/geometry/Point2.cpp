@@ -27,7 +27,7 @@ namespace gtsam {
 double norm2(const Point2& p, OptionalJacobian<1,2> H) {
   double r = std::sqrt(p.x() * p.x() + p.y() * p.y());
   if (H) {
-    if (fabs(r) > 1e-10)
+    if (std::abs(r) > 1e-10)
       *H << p.x() / r, p.y() / r;
     else
       *H << 1, 1;  // really infinity, why 1 ?
@@ -59,7 +59,7 @@ void Point2::print(const string& s) const {
 
 /* ************************************************************************* */
 bool Point2::equals(const Point2& q, double tol) const {
-  return (fabs(x() - q.x()) < tol && fabs(y() - q.y()) < tol);
+  return (std::abs(x() - q.x()) < tol && std::abs(y() - q.y()) < tol);
 }
 
 /* ************************************************************************* */

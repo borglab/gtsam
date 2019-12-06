@@ -29,7 +29,7 @@ namespace gtsam {
  * This struct is used by ISAM2::update() to pass additional parameters to
  * give the user a fine-grained control on how factors and relinearized, etc.
  */
-struct GTSAM_EXPORT ISAM2UpdateParams {
+struct ISAM2UpdateParams {
   ISAM2UpdateParams() = default;
 
   /** Indices of factors to remove from system (default: empty) */

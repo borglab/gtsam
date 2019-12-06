@@ -191,7 +191,10 @@ public:
 
   template<class FACTOR_GRAPH>
   static Ordering Metis(const FACTOR_GRAPH& graph) {
-    return Metis(MetisIndex(graph));
+    if (graph.empty())
+      return Ordering();
+    else
+      return Metis(MetisIndex(graph));
   }
 
   /// @}

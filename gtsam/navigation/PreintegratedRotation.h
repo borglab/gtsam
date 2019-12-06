@@ -35,6 +35,13 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
 
   PreintegratedRotationParams() : gyroscopeCovariance(I_3x3) {}
 
+  PreintegratedRotationParams(const Matrix3& gyroscope_covariance,
+                              boost::optional<Vector3> omega_coriolis)
+    : gyroscopeCovariance(gyroscope_covariance) {
+      if (omega_coriolis)
+        omegaCoriolis.reset(omega_coriolis.get());
+  }
+
   virtual ~PreintegratedRotationParams() {}
 
   virtual void print(const std::string& s) const;

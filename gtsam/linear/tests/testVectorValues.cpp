@@ -17,12 +17,15 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/inference/LabeledSymbol.h>
 
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/range/adaptor/map.hpp>
+
+#include <sstream>
 
 using namespace std;
 using namespace boost::assign;
@@ -226,6 +229,23 @@ TEST(VectorValues, vector_sub)
 
   // Test version with dims argument
   EXPECT(assert_equal(expected, vv.vector(dims)));
+}
+
+/* ************************************************************************* */
+TEST(VectorValues, print)
+{
+  VectorValues vv;
+  vv.insert(0, (Vector(1) << 1).finished());
+  vv.insert(1, Vector2(2, 3));
+  vv.insert(2, Vector2(4, 5));
+  vv.insert(5, Vector2(6, 7));
+  vv.insert(7, Vector2(8, 9));
+
+  string expected =
+      "  0: 1\n  1: 2 3\n  2: 4 5\n  5: 6 7\n  7: 8 9\n";
+  stringstream actual;
+  actual << vv;
+  EXPECT(expected == actual.str());
 }
 
 /* ************************************************************************* */

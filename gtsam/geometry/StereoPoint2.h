@@ -62,8 +62,8 @@ public:
 
   /** equals */
   bool equals(const StereoPoint2& q, double tol = 1e-9) const {
-    return (fabs(uL_ - q.uL_) < tol && fabs(uR_ - q.uR_) < tol
-        && fabs(v_ - q.v_) < tol);
+    return (std::abs(uL_ - q.uL_) < tol && std::abs(uR_ - q.uR_) < tol
+        && std::abs(v_ - q.v_) < tol);
   }
 
   /// @}
