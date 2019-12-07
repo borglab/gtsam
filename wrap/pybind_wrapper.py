@@ -73,7 +73,7 @@ class PybindWrapper(object):
             )
         )
 
-        return (
+        ret = (
             '{prefix}.{cdef}("{py_method}",'
             '[]({opt_self}{opt_comma}{args_signature_with_names}){{'
             '{function_call}'
@@ -94,6 +94,14 @@ class PybindWrapper(object):
                 suffix=suffix,
             )
         )
+        if method.name == 'print':
+            ret += f'''{prefix}.def("__repr__",
+                 [](const {cpp_class} &a) {{
+                     gtsam::RedirectCout redirect;
+                     a.print("");
+                     return redirect.str();
+                 }}){suffix}'''
+        return ret
 
     def wrap_methods(
         self, methods, cpp_class, prefix='\n' + ' ' * 8, suffix=''
@@ -247,6 +255,7 @@ class PybindWrapper(object):
 
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+#include <gtsam/nonlinear/utilities.h>  // for RedirectCout.
 
 {includes}
 

@@ -71,6 +71,7 @@ values = gtsam.Values()
 values.insert(1, Point3())
 values.insert(2, gtsam.Rot3())
 values.print_(b"values:")
+print(values)
 
 factor = gtsam.PriorFactorVector(1, np.array([1., 2., 3.]), diag)
 print("Prior factor vector: ", factor)

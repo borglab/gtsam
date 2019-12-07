@@ -37,7 +37,7 @@ void IterativeOptimizationParameters::setVerbosity(const string &src) {
 }
 
 /*****************************************************************************/
-void IterativeOptimizationParameters::print() const {
+void IterativeOptimizationParameters::print(const std::string& s) const {
   print(cout);
 }
 

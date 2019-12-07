@@ -67,7 +67,7 @@ public:
   GTSAM_EXPORT void setVerbosity(const std::string &s);
 
   /* matlab interface */
-  GTSAM_EXPORT void print() const;
+  GTSAM_EXPORT void print(const std::string& s = "") const;
 
   /* virtual print function */
   GTSAM_EXPORT virtual void print(std::ostream &os) const;

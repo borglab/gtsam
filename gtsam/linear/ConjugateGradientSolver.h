@@ -21,6 +21,8 @@
 
 #include <gtsam/linear/IterativeSolver.h>
 
+#include <string>
+
 namespace gtsam {
 
 /**
@@ -79,7 +81,7 @@ public:
   inline void setEpsilon_abs(double value) { epsilon_abs_ = value; }
 
 
-  void print() const { Base::print(); }
+  void print(const std::string& s = "") const { Base::print(); }
   virtual void print(std::ostream &os) const;
 
   static std::string blasTranslator(const BLASKernel k) ;

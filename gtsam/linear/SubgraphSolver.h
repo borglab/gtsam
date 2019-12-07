@@ -23,6 +23,7 @@
 #include <gtsam/linear/SubgraphBuilder.h>
 
 #include <map>
+#include <string>
 #include <utility>  // pair
 
 namespace gtsam {
@@ -37,7 +38,7 @@ struct GTSAM_EXPORT SubgraphSolverParameters
   SubgraphBuilderParameters builderParams;
   explicit SubgraphSolverParameters(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
     : builderParams(p) {}
-  void print() const { Base::print(); }
+  void print(const std::string& s = "") const { Base::print(); }
   virtual void print(std::ostream &os) const {
     Base::print(os);
   }
