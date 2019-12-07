@@ -23,7 +23,7 @@ endif()
 # header gtsam.h, this will build the wrap module 'gtsam_py.cc'.
 #
 # Arguments:
-#
+# ~~~
 # interface_header:  The relative path to the wrapper interface definition file.
 # install_path: destination to install the library libs: libraries to link with
 # dependencies: Dependencies which need to be built before the wrapper
@@ -54,10 +54,16 @@ function(pybind_wrap
   add_custom_target(pybind_wrap_${module_name} ALL DEPENDS ${generated_cpp})
 
   # Late dependency injection, to make sure this gets called whenever the
-  # interface header is updated See:
-  # https://stackoverflow.com/questions/40032593/cmake-does-not-rebuild-
-  # dependent-after-prerequisite-changes
-  add_custom_command(OUTPUT ${generated_cpp} DEPENDS ${interface_header} APPEND)
+  # interface header or the wrap library are updated.
+  # ~~~
+  # See: https://stackoverflow.com/questions/40032593/cmake-does-not-rebuild-dependent-after-prerequisite-changes
+  # ~~~
+  add_custom_command(OUTPUT ${generated_cpp}
+                     DEPENDS ${interface_header}
+                             ${CMAKE_SOURCE_DIR}/wrap/interface_parser.py
+                             ${CMAKE_SOURCE_DIR}/wrap/pybind_wrapper.py
+                             ${CMAKE_SOURCE_DIR}/wrap/template_instantiator.py
+                     APPEND)
 
   pybind11_add_module(${target} ${generated_cpp})
   add_dependencies(${target} pybind_wrap_${module_name})
@@ -72,13 +78,16 @@ endfunction()
 # Helper function to install python scripts and handle multiple build types
 # where the scripts should be installed to all build type toolboxes
 #
-# Arguments: source_directory: The source directory to be installed. "The last
-# component of each directory name is appended to the destination directory but
-# a trailing slash may be used to avoid this because it leaves the last
-# component empty."
-# (https://cmake.org/cmake/help/v3.3/command/install.html?highlight=install
-# #installing-directories) dest_directory: The destination directory to install
-# to. patterns: list of file patterns to install
+# Arguments:
+# ~~~
+# source_directory: The source directory to be installed. "The last component
+#     of each directory name is appended to the destination directory but a
+#     trailing slash may be used to avoid this because it leaves the last
+#     component empty."
+#     (https://cmake.org/cmake/help/v3.3/command/install.html?highlight=install#installing-directories)
+# dest_directory: The destination directory to install to.
+# patterns: list of file patterns to install
+# ~~~
 function(install_python_scripts
          source_directory
          dest_directory
@@ -120,8 +129,10 @@ endfunction()
 # Helper function to install specific files and handle multiple build types
 # where the scripts should be installed to all build type toolboxes
 #
-# Arguments: source_files: The source files to be installed. dest_directory: The
-# destination directory to install to.
+# Arguments:
+# ~~~
+# source_files: The source files to be installed.
+# dest_directory: The destination directory to install to.
 function(install_python_files source_files dest_directory)
 
   if(GTSAM_BUILD_TYPE_POSTFIXES)
@@ -147,8 +158,9 @@ function(install_python_files source_files dest_directory)
 
 endfunction()
 
-# https://stackoverflow.com/questions/13959434/cmake-out-of-source-build-python-
-# files
+# ~~~
+# https://stackoverflow.com/questions/13959434/cmake-out-of-source-build-python-files
+# ~~~
 function(create_symlinks source_folder dest_folder)
   if(${source_folder} STREQUAL ${dest_folder})
     return()
@@ -171,11 +183,13 @@ function(create_symlinks source_folder dest_folder)
     file(TO_NATIVE_PATH "${dest_folder}/${path_file}" link)
     file(TO_NATIVE_PATH "${source_folder}/${path_file}" target)
 
+    # cmake-format: off
     if(UNIX)
       set(command ln -s ${target} ${link})
     else()
       set(command cmd.exe /c mklink ${link} ${target})
     endif()
+    # cmake-format: on
 
     execute_process(COMMAND ${command}
                     RESULT_VARIABLE result

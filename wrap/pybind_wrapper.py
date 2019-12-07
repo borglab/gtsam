@@ -256,12 +256,11 @@ using namespace std;
 
 namespace py = pybind11;
 
-PYBIND11_PLUGIN({module_name}) {{
-    pybind11::module m_("{module_name}", "pybind11 wrapper of {module_name}");
+PYBIND11_MODULE({module_name}, m_) {{
+    m_.doc() = "pybind11 wrapper of {module_name}";
 
 {wrapped_namespace}
 
-    return m_.ptr();
 }}
 
 """.format(
