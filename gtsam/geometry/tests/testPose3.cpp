@@ -649,8 +649,8 @@ TEST(Pose3, Bearing) {
   // Check numerical derivatives
   expectedH1 = numericalDerivative21(bearing_proxy, x1, l1);
   expectedH2 = numericalDerivative22(bearing_proxy, x1, l1);
-  EXPECT(assert_equal(expectedH1, actualH1));
-  EXPECT(assert_equal(expectedH2, actualH2));
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
+  EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
 }
 
 TEST(Pose3, Bearing2) {
@@ -660,8 +660,8 @@ TEST(Pose3, Bearing2) {
   // Check numerical derivatives
   expectedH1 = numericalDerivative21(bearing_proxy, x2, l4);
   expectedH2 = numericalDerivative22(bearing_proxy, x2, l4);
-  EXPECT(assert_equal(expectedH1, actualH1));
-  EXPECT(assert_equal(expectedH2, actualH2));
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
+  EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
 }
 
 TEST(Pose3, PoseToPoseBearing) {
@@ -681,8 +681,8 @@ TEST(Pose3, PoseToPoseBearing) {
   expectedH2.setZero();
   expectedH2.block<2, 3>(0, 3) = H2block;
 
-  EXPECT(assert_equal(expectedH1, actualH1));
-  EXPECT(assert_equal(expectedH2, actualH2));
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
+  EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
 }
 
 /* ************************************************************************* */
