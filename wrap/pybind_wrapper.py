@@ -312,7 +312,7 @@ def main():
         "the top module level, and its sub-namespaces' in the submodules.\n"
         "For example, `import <module_name>` gives you access to a Python "
         "`<module_name>.Class` of the corresponding C++ `ns1::ns2::ns3::Class`"
-        ", and `from <module_name> import ns4` gives you access to a Python "
+        "and `from <module_name> import ns4` gives you access to a Python "
         "`ns4.Class` of the C++ `ns1::ns2::ns3::ns4::Class`. ",
     )
     arg_parser.add_argument(
