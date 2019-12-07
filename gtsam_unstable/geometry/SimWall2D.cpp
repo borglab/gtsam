@@ -61,7 +61,7 @@ bool SimWall2D::intersects(const SimWall2D& B, boost::optional<Point2&> pt) cons
   }
 
   // handle vertical case to avoid calculating slope
-  if (fabs(Ba.x() - Bb.x()) < 1e-5) {
+  if (std::abs(Ba.x() - Bb.x()) < 1e-5) {
     if (debug) cout << "vertical line" << endl;
     if (Ba.x() < len && Ba.x() > 0.0) {
       if (pt) *pt = transform.transformFrom(Point2(Ba.x(), 0.0));
@@ -88,7 +88,7 @@ bool SimWall2D::intersects(const SimWall2D& B, boost::optional<Point2&> pt) cons
   // find x-intercept
   double slope = (high.y() - low.y())/(high.x() - low.x());
   if (debug) cout << "slope " << slope << endl;
-  double xint = (low.x() < high.x()) ? low.x() + fabs(low.y())/slope : high.x() - fabs(high.y())/slope;
+  double xint = (low.x() < high.x()) ? low.x() + std::abs(low.y())/slope : high.x() - std::abs(high.y())/slope;
   if (debug) cout << "xintercept " << xint << endl;
   if (xint > 0.0 && xint < len) {
     if (pt) *pt = transform.transformFrom(Point2(xint, 0.0));

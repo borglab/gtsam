@@ -94,6 +94,28 @@ Vector NoiseModelFactor::whitenedError(const Values& c) const {
 }
 
 /* ************************************************************************* */
+Vector NoiseModelFactor::unweightedWhitenedError(const Values& c) const {
+  const Vector b = unwhitenedError(c);
+  check(noiseModel_, b.size());
+  return noiseModel_ ? noiseModel_->unweightedWhiten(b) : b;
+}
+
+/* ************************************************************************* */
+double NoiseModelFactor::weight(const Values& c) const {
+  if (active(c)) {
+    if (noiseModel_) {
+      const Vector b = unwhitenedError(c);
+      check(noiseModel_, b.size());
+      return 0.5 * noiseModel_->weight(b);
+    }
+    else
+      return 1.0;
+  } else {
+    return 0.0;
+  }
+}
+
+/* ************************************************************************* */
 double NoiseModelFactor::error(const Values& c) const {
   if (active(c)) {
     const Vector b = unwhitenedError(c);

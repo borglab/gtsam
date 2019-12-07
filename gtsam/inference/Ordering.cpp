@@ -213,11 +213,21 @@ Ordering Ordering::Metis(const MetisIndex& met) {
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
   gttic(Ordering_METIS);
 
+  idx_t size = met.nValues();
+  if (size == 0)
+  {
+    return Ordering();
+  }
+
+  if (size == 1)
+  {
+    return Ordering(KeyVector(1, met.intToKey(0)));
+  }
+
   vector<idx_t> xadj = met.xadj();
   vector<idx_t> adj = met.adj();
   vector<idx_t> perm, iperm;
 
-  idx_t size = met.nValues();
   for (idx_t i = 0; i < size; i++) {
     perm.push_back(0);
     iperm.push_back(0);

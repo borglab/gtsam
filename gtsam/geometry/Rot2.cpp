@@ -25,7 +25,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Rot2 Rot2::fromCosSin(double c, double s) {
-  if (fabs(c * c + s * s - 1.0) > 1e-9) {
+  if (std::abs(c * c + s * s - 1.0) > 1e-9) {
     double norm_cs = sqrt(c*c + s*s);
     c = c/norm_cs;
     s = s/norm_cs;
@@ -46,13 +46,13 @@ void Rot2::print(const string& s) const {
 
 /* ************************************************************************* */
 bool Rot2::equals(const Rot2& R, double tol) const {
-  return fabs(c_ - R.c_) <= tol && fabs(s_ - R.s_) <= tol;
+  return std::abs(c_ - R.c_) <= tol && std::abs(s_ - R.s_) <= tol;
 }
 
 /* ************************************************************************* */
 Rot2& Rot2::normalize() {
   double scale = c_*c_ + s_*s_;
-  if(fabs(scale-1.0)>1e-10) {
+  if(std::abs(scale-1.0)>1e-10) {
     scale = pow(scale, -0.5);
     c_ *= scale;
     s_ *= scale;
@@ -115,7 +115,7 @@ Point2 Rot2::unrotate(const Point2& p,
 /* ************************************************************************* */
 Rot2 Rot2::relativeBearing(const Point2& d, OptionalJacobian<1, 2> H) {
   double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
-  if(fabs(n) > 1e-5) {
+  if(std::abs(n) > 1e-5) {
     if (H) {
       *H << -y / d2, x / d2;
     }

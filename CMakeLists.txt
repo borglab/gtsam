@@ -10,7 +10,7 @@ endif()
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 4)
 set (GTSAM_VERSION_MINOR 0)
-set (GTSAM_VERSION_PATCH 0)
+set (GTSAM_VERSION_PATCH 2)
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
 
@@ -101,7 +101,6 @@ endif()
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
 set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of python to build gtsam_py for (or Default)")
 
-
 # Check / set dependent variables for MATLAB wrapper
 if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT BUILD_SHARED_LIBS)
 	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and BUILD_SHARED_LIBS=OFF. The MATLAB wrapper cannot be compiled with a static GTSAM library because mex modules are themselves shared libraries.  If you want a self-contained mex module, enable GTSAM_MEX_BUILD_STATIC_MODULE instead of BUILD_SHARED_LIBS=OFF.")
@@ -164,39 +163,22 @@ if(NOT Boost_SERIALIZATION_LIBRARY OR NOT Boost_SYSTEM_LIBRARY OR NOT Boost_FILE
   message(FATAL_ERROR "Missing required Boost components >= v1.43, please install/upgrade Boost or configure your search paths.")
 endif()
 
-# Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
-
-# JLBC: This was once updated to target-based names (Boost::xxx), but it caused
-# problems with Boost versions newer than FindBoost.cmake was prepared to handle,
-# so we downgraded this to classic filenames-based variables, and manually adding
-# the target_include_directories(xxx ${Boost_INCLUDE_DIR})
+# Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 set(GTSAM_BOOST_LIBRARIES
-  optimized ${Boost_SERIALIZATION_LIBRARY_RELEASE}
-  optimized ${Boost_SYSTEM_LIBRARY_RELEASE}
-  optimized ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-  optimized ${Boost_THREAD_LIBRARY_RELEASE}
-  optimized ${Boost_DATE_TIME_LIBRARY_RELEASE}
-  optimized ${Boost_REGEX_LIBRARY_RELEASE}
-  debug ${Boost_SERIALIZATION_LIBRARY_DEBUG}
-  debug ${Boost_SYSTEM_LIBRARY_DEBUG}
-  debug ${Boost_FILESYSTEM_LIBRARY_DEBUG}
-  debug ${Boost_THREAD_LIBRARY_DEBUG}
-  debug ${Boost_DATE_TIME_LIBRARY_DEBUG}
-  debug ${Boost_REGEX_LIBRARY_DEBUG}
+  Boost::serialization
+  Boost::system
+  Boost::filesystem
+  Boost::thread
+  Boost::date_time
+  Boost::regex
 )
-message(STATUS "GTSAM_BOOST_LIBRARIES: ${GTSAM_BOOST_LIBRARIES}")
 if (GTSAM_DISABLE_NEW_TIMERS)
     message("WARNING:  GTSAM timing instrumentation manually disabled")
     list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC DGTSAM_DISABLE_NEW_TIMERS)
 else()
     if(Boost_TIMER_LIBRARY)
-      list(APPEND GTSAM_BOOST_LIBRARIES
-        optimized ${Boost_TIMER_LIBRARY_RELEASE}
-        optimized ${Boost_CHRONO_LIBRARY_RELEASE}
-        debug ${Boost_TIMER_LIBRARY_DEBUG}
-        debug ${Boost_CHRONO_LIBRARY_DEBUG}
-        )
+      list(APPEND GTSAM_BOOST_LIBRARIES Boost::timer Boost::chrono)
     else()
       list(APPEND GTSAM_BOOST_LIBRARIES rt) # When using the header-only boost timer library, need -lrt
       message("WARNING:  GTSAM timing instrumentation will use the older, less accurate, Boost timer library because boost older than 1.48 was found.")
@@ -286,6 +268,7 @@ endif()
 ### See:  http://eigen.tuxfamily.org/bz/show_bug.cgi?id=704 (Householder QR MKL selection)
 ###       http://eigen.tuxfamily.org/bz/show_bug.cgi?id=705 (Fix MKL LLT return code)
 option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
+option(GTSAM_WITH_EIGEN_UNSUPPORTED "Install Eigen's unsupported modules" OFF)
 
 # Switch for using system Eigen or GTSAM-bundled Eigen
 if(GTSAM_USE_SYSTEM_EIGEN)

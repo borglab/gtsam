@@ -177,7 +177,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     gttic(adjust_delta);
     // Compute gain ratio.  Here we take advantage of the invariant that the
     // Bayes' net error at zero is equal to the nonlinear error
-    const double rho = fabs(f_error - result.f_error) < 1e-15 || fabs(M_error - new_M_error) < 1e-15 ?
+    const double rho = std::abs(f_error - result.f_error) < 1e-15 || std::abs(M_error - new_M_error) < 1e-15 ?
         0.5 :
         (f_error - result.f_error) / (M_error - new_M_error);
 
@@ -191,7 +191,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
       if(mode == ONE_STEP_PER_ITERATION || mode == SEARCH_REDUCE_ONLY)
         stay = false;   // If not searching, just return with the new delta
       else if(mode == SEARCH_EACH_ITERATION) {
-        if(fabs(newDelta - delta) < 1e-15 || lastAction == DECREASED_DELTA)
+        if(std::abs(newDelta - delta) < 1e-15 || lastAction == DECREASED_DELTA)
           stay = false; // Searching, but Newton's solution is within trust region so keep the same trust region
         else {
           stay = true;  // Searching and increased delta, so try again to increase delta

@@ -252,7 +252,7 @@ Template InequalityFactorGraph This::identifyActiveConstraints(
       double error = workingFactor->error(initialValues);
       // Safety guard. This should not happen unless users provide a bad init
       if (error > 0) throw InfeasibleInitialValues();
-      if (fabs(error) < 1e-7)
+      if (std::abs(error) < 1e-7)
         workingFactor->activate();
       else
         workingFactor->inactivate();

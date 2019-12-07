@@ -198,7 +198,7 @@ TEST(NonlinearFactorGraph, UpdateCholesky) {
       }
     }
   };
-  EXPECT(assert_equal(initial, fg.updateCholesky(initial, boost::none, dampen), 1e-6));
+  EXPECT(assert_equal(initial, fg.updateCholesky(initial, dampen), 1e-6));
 }
 
 /* ************************************************************************* */

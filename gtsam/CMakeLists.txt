@@ -103,11 +103,7 @@ message(STATUS "Building GTSAM - shared: ${BUILD_SHARED_LIBS}")
 
 # BUILD_SHARED_LIBS automatically defines static/shared libs:
 add_library(gtsam ${gtsam_srcs})
-
-# Boost:
 target_link_libraries(gtsam PUBLIC ${GTSAM_BOOST_LIBRARIES})
-target_include_directories(gtsam PUBLIC ${Boost_INCLUDE_DIR})
-# Other deps:
 target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
 
 # Apply build flags:
@@ -143,13 +139,13 @@ endif()
 target_include_directories(gtsam BEFORE PUBLIC
   # SuiteSparse_config
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SuiteSparse_config>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include/gtsam/3rdparty/SuiteSparse_config>
+  $<INSTALL_INTERFACE:include/gtsam/3rdparty/SuiteSparse_config>
   # CCOLAMD
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Include>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include/gtsam/3rdparty/CCOLAMD>
+  $<INSTALL_INTERFACE:include/gtsam/3rdparty/CCOLAMD>
   # main gtsam includes:
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include/>
+  $<INSTALL_INTERFACE:include/>
   # config.h
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
   # unit tests:
