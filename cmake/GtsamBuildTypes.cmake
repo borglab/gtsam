@@ -9,6 +9,11 @@ function(list_append_cache var)
   set(${var} "${cur_value}" CACHE STRING "${MYVAR_DOCSTRING}" FORCE)
 endfunction()
 
+# Check for optional compiler flags, if supported:
+include(CheckCXXCompilerFlag)
+# See https://github.com/borglab/gtsam/issues/21
+check_cxx_compiler_flag(-faligned-new COMPILER_HAS_FALIGNED_NEW)
+
 # function:  append_config_if_not_empty(TARGET_VARIABLE build_type)
 # Auxiliary function used to merge configuration-specific flags into the
 # global variables that will actually be send to cmake targets.
@@ -95,7 +100,12 @@ if(MSVC)
 else()
   # Common to all configurations, next for each configuration:
   # "-fPIC" is to ensure proper code generation for shared libraries
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          -Wall -fPIC CACHE STRING "(User editable) Private compiler flags for all configurations.")
+  
+  set(DEFAULT_COMMON_FLAGS -Wall -fPIC)
+  if (COMPILER_HAS_FALIGNED_NEW)
+      list(APPEND DEFAULT_COMMON_FLAGS -faligned-new)
+  endif()  
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          ${DEFAULT_COMMON_FLAGS} CACHE STRING "(User editable) Private compiler flags for all configurations.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           -g -fno-inline  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  -g -O3  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         -O3  CACHE STRING "(User editable) Private compiler flags for Release configuration.")
