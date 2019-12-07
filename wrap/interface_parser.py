@@ -1,7 +1,6 @@
 import os
 import sys
 
-import pyparsing
 from pyparsing import (
     alphas,
     alphanums,
@@ -11,18 +10,19 @@ from pyparsing import (
     nums,
     stringEnd,
     CharsNotIn,
-    Keyword,
     Forward,
-    Word,
+    Group,
+    Keyword,
     Literal,
     OneOrMore,
     Optional,
     Or,
-    Group,
+    ParseException,
+    ParserElement,
     Suppress,
+    Word,
     ZeroOrMore,
 )
-from pyparsing import ParseException, ParserElement
 
 ParserElement.enablePackrat()
 
