@@ -281,7 +281,11 @@ virtual class Value {
 };
 
 #include <gtsam/base/GenericValue.h>
-template<T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
+template <T = {Vector, Matrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2,
+               gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2,
+               gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler,
+               gtsam::CalibratedCamera, gtsam::SimpleCamera,
+               gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias}>
 virtual class GenericValue : gtsam::Value {
   void serializable() const;
 };
@@ -759,6 +763,9 @@ class EssentialMatrix {
   gtsam::Unit3 direction() const;
   Matrix matrix() const;
   double error(Vector vA, Vector vB);
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 #include <gtsam/geometry/Cal3_S2.h>
@@ -2827,11 +2834,11 @@ virtual class PreintegrationCombinedParams : gtsam::PreintegrationParams {
   void setBiasAccCovariance(Matrix cov);
   void setBiasOmegaCovariance(Matrix cov);
   void setBiasAccOmegaInt(Matrix cov);
-  
+
   Matrix getBiasAccCovariance() const ;
   Matrix getBiasOmegaCovariance() const ;
   Matrix getBiasAccOmegaInt() const;
- 
+
 };
 
 class PreintegratedCombinedMeasurements {
@@ -3038,7 +3045,5 @@ namespace utilities {
   gtsam::Values localToWorld(const gtsam::Values& local, const gtsam::Pose2& base, const gtsam::KeyVector& keys);
 
 } //\namespace utilities
-
-};
 
 }

@@ -67,9 +67,9 @@ class TestValues(unittest.TestCase):
         values.insert(14, vec3)
         # values.atVector(14)  # won't work because gtsam thinks it's a Point3.
 
-        # failure cases:
-        # values.serialize()  # serialize and serializable are not yet
-        # supported.
+        # test serialization.
+        values2 = values.deserialize(values.serialize())
+        self.assertTrue(values2.equals(values, tol))
 
 
 if __name__ == "__main__":

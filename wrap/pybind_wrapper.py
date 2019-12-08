@@ -1,4 +1,6 @@
 import argparse
+import re
+import textwrap
 
 import interface_parser as parser
 import template_instantiator as instantiator
@@ -18,6 +20,9 @@ class PybindWrapper(object):
         self.top_module_namespaces = top_module_namespaces
         self.use_boost = use_boost
         self.ignore_classes = ignore_classes
+        self._serializing_classes = set(
+            ["gtsam::Matrix", "gtsam::Vector"]
+        )
 
     def _py_args_names(self, args_list):
         names = args_list.args_names()
@@ -52,16 +57,26 @@ class PybindWrapper(object):
         py_method = method.name
         cpp_method = method.to_cpp()
 
-        if cpp_method == "serialize":
-            return textwrap.indent(textwrap.dedent(
-                '''
-        .def("serialize",[]({class_inst} self){{return serialize(self);}})
-        .def("deserialize",[]({class_inst} self, string serialized){{return deserialize(serialized, self);}})'''.format(
-                    class_inst=cpp_class + '*'
-                )), '        ')
-
-        if cpp_method == "serializable":
-            return ''
+        if cpp_method in ["serialize", "serializable"]:
+            self._serializing_classes.add(cpp_class)
+            return textwrap.indent(
+                textwrap.dedent(
+                    '''
+                    .def("serialize",
+                        []({class_inst} self){{
+                            return gtsam::serialize(self);
+                        }}
+                    )
+                    .def("deserialize",
+                        []({class_inst} self, string serialized){{
+                            return gtsam::deserialize(serialized, self);
+                        }})
+                    '''.format(
+                        class_inst=cpp_class + '*'
+                    )
+                ),
+                '        ',
+            )
 
         is_method = isinstance(method, instantiator.InstantiatedMethod)
         is_static = isinstance(method, parser.StaticMethod)
@@ -170,6 +185,7 @@ class PybindWrapper(object):
                     instantiated_class.properties, cpp_class
                 ),
             )
+        )
 
     def wrap_stl_class(self, stl_class):
         module_var = self._gen_module_var(stl_class.namespaces())
@@ -177,29 +193,29 @@ class PybindWrapper(object):
         if cpp_class in self.ignore_classes:
             return ""
 
-        return '\n    py::class_<{cpp_class}, {class_parent}' \
-               'std::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")' \
-               '{wrapped_ctors}' \
-               '{wrapped_methods}' \
-               '{wrapped_static_methods}' \
-               '{wrapped_properties};\n'.format(
-            cpp_class=cpp_class,
-            class_name=stl_class.name,
-            class_parent=str(stl_class.parent_class) +
-                         (', ' if stl_class.parent_class else ''),
-            module_var=module_var,
-            wrapped_ctors=self.wrap_ctors(stl_class),
-            wrapped_methods=self.wrap_methods(
-                stl_class.methods,
-                cpp_class,
-            ),
-            wrapped_static_methods=self.wrap_methods(
-                stl_class.static_methods,
-                cpp_class,
-            ),
-            wrapped_properties=self.wrap_properties(
-                stl_class.properties, cpp_class,
-            ),
+        return (
+            '\n    py::class_<{cpp_class}, {class_parent}'
+            'std::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
+            '{wrapped_ctors}'
+            '{wrapped_methods}'
+            '{wrapped_static_methods}'
+            '{wrapped_properties};\n'.format(
+                cpp_class=cpp_class,
+                class_name=stl_class.name,
+                class_parent=str(stl_class.parent_class)
+                + (', ' if stl_class.parent_class else ''),
+                module_var=module_var,
+                wrapped_ctors=self.wrap_ctors(stl_class),
+                wrapped_methods=self.wrap_methods(
+                    stl_class.methods, cpp_class
+                ),
+                wrapped_static_methods=self.wrap_methods(
+                    stl_class.static_methods, cpp_class
+                ),
+                wrapped_properties=self.wrap_properties(
+                    stl_class.properties, cpp_class
+                ),
+            )
         )
 
     def _partial_match(self, namespaces1, namespaces2):
@@ -209,7 +225,7 @@ class PybindWrapper(object):
         return True
 
     def _gen_module_var(self, namespaces):
-        sub_module_namespaces = namespaces[len(self.top_module_namespaces):]
+        sub_module_namespaces = namespaces[len(self.top_module_namespaces) :]
         return "m_{}".format('_'.join(sub_module_namespaces))
 
     def _add_namespaces(self, name, namespaces):
@@ -290,16 +306,29 @@ class PybindWrapper(object):
 
     def wrap(self):
         wrapped_namespace, includes = self.wrap_namespace(self.module)
+
+        # Export classes for serialization.
+        boost_class_export = ""
+        for cpp_class in self._serializing_classes:
+            new_name = cpp_class
+            # The boost's macro doesn't like commas, so we have to typedef.
+            if ',' in cpp_class:
+                new_name = re.sub("[,:<> ]", "", cpp_class)
+                boost_class_export += f"typedef {cpp_class} {new_name};\n"
+            boost_class_export += f"BOOST_CLASS_EXPORT({new_name})\n"
+
         return """
 {include_boost}
 
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
-#include <gtsam/nonlinear/utilities.h>  // for RedirectCout.
+#include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 
 {includes}
 #include "wrap/serialization.h"
+#include <boost/serialization/export.hpp>
 
+{boost_class_export}
 
 {hoder_type}
 
@@ -323,6 +352,7 @@ PYBIND11_MODULE({module_name}, m_) {{
             if self.use_boost
             else "",
             wrapped_namespace=wrapped_namespace,
+            boost_class_export=boost_class_export,
         )
 
 
