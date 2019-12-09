@@ -3,7 +3,7 @@ from __future__ import print_function
 from math import pi, cos, sin
 import numpy as np
 
-from gtsam_py import gtsam
+import gtsam
 from gtsam_py.util import Point2, Point3
 
 

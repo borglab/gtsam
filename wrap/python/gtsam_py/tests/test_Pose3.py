@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from gtsam_py.gtsam import Rot3, Pose3
+from gtsam import Rot3, Pose3
 from gtsam_py.util import Point3
 
 

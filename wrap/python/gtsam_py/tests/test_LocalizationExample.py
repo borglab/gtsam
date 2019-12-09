@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from gtsam_py import gtsam
+import gtsam
 
 
 class TestLocalizationExample(unittest.TestCase):

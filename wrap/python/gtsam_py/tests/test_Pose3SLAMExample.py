@@ -3,7 +3,7 @@ from math import pi
 import numpy as np
 
 from gtsam_py.circlePose3 import circlePose3
-from gtsam_py import gtsam
+import gtsam
 
 
 class TestPose3SLAMExample(unittest.TestCase):

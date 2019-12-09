@@ -1,5 +1,5 @@
 import unittest
-from gtsam_py import gtsam
+import gtsam
 import numpy as np
 
 

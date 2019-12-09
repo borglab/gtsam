@@ -1,8 +1,8 @@
 import unittest
 import numpy as np
 
-from gtsam_py import gtsam
-from gtsam_py.gtsam import symbol
+import gtsam
+from gtsam import symbol
 from gtsam_py.util import Point3
 
 

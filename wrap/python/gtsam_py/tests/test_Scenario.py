@@ -2,7 +2,7 @@ import math
 import unittest
 import numpy as np
 
-from gtsam_py import gtsam
+import gtsam
 from gtsam_py.util import Point3
 
 

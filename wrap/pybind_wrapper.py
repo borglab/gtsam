@@ -57,9 +57,8 @@ class PybindWrapper(object):
 
         if cpp_method in ["serialize", "serializable"]:
             self._serializing_classes.add(cpp_class)
-            return textwrap.indent(
-                textwrap.dedent(
-                    '''
+            return textwrap.dedent(
+                '''
                     .def("serialize",
                         []({class_inst} self){{
                             return gtsam::serialize(self);
@@ -70,10 +69,8 @@ class PybindWrapper(object):
                             return gtsam::deserialize(serialized, self);
                         }})
                     '''.format(
-                        class_inst=cpp_class + '*'
-                    )
-                ),
-                '        ',
+                    class_inst=cpp_class + '*'
+                )
             )
 
         is_method = isinstance(method, instantiator.InstantiatedMethod)
@@ -118,12 +115,14 @@ class PybindWrapper(object):
             )
         )
         if method.name == 'print':
-            ret += f'''{prefix}.def("__repr__",
+            ret += '''{prefix}.def("__repr__",
                  [](const {cpp_class} &a) {{
                      gtsam::RedirectCout redirect;
                      a.print("");
                      return redirect.str();
-                 }}){suffix}'''
+                 }}){suffix}'''.format(
+                prefix=prefix, cpp_class=cpp_class, suffix=suffix,
+            )
         return ret
 
     def wrap_methods(
@@ -251,7 +250,10 @@ class PybindWrapper(object):
                         .replace('>', '"')
                     )
                 if isinstance(element, parser.Namespace):
-                    wrapped_namespace, includes_namespace = self.wrap_namespace(  # noqa
+                    (
+                        wrapped_namespace,
+                        includes_namespace,
+                    ) = self.wrap_namespace(  # noqa
                         element
                     )
                     wrapped += wrapped_namespace
@@ -280,7 +282,10 @@ class PybindWrapper(object):
                         .replace('>', '"')
                     )
                 elif isinstance(element, parser.Namespace):
-                    wrapped_namespace, includes_namespace = self.wrap_namespace(  # noqa
+                    (
+                        wrapped_namespace,
+                        includes_namespace,
+                    ) = self.wrap_namespace(  # noqa
                         element
                     )
                     wrapped += wrapped_namespace
@@ -312,8 +317,12 @@ class PybindWrapper(object):
             # The boost's macro doesn't like commas, so we have to typedef.
             if ',' in cpp_class:
                 new_name = re.sub("[,:<> ]", "", cpp_class)
-                boost_class_export += f"typedef {cpp_class} {new_name};\n"
-            boost_class_export += f"BOOST_CLASS_EXPORT({new_name})\n"
+                boost_class_export += "typedef {cpp_class} {new_name};\n".format(  # noqa
+                    cpp_class=cpp_class, new_name=new_name,
+                )
+            boost_class_export += "BOOST_CLASS_EXPORT({new_name})\n".format(
+                new_name=new_name,
+            )
 
         return """
 {include_boost}

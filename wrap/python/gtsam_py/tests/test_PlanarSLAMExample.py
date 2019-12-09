@@ -2,7 +2,7 @@ import unittest
 from math import pi
 import numpy as np
 
-from gtsam_py import gtsam
+import gtsam
 
 
 class TestPose2SLAMExample(unittest.TestCase):

@@ -6,26 +6,12 @@ try:
 except ImportError:
     from distutils.core import setup, find_packages
 
-# if 'SETUP_PY_NO_CHECK' not in os.environ:
-#     script_path = os.path.abspath(os.path.realpath(__file__))
-#     install_path = os.path.abspath(
-#         os.path.realpath(
-#             os.path.join('${CMAKE_INSTALL_PREFIX}/gtsam_py', 'setup.py')))
-#     if script_path != install_path:
-#         print('setup_gtsam.py is being run from an unexpected location: "{}"'.
-#               format(script_path))
-#         print('please run `make install` and run the script from there')
-#         sys.exit(1)
-
 packages = find_packages(where=".")
-print(f"PACKAGES: {packages}")
+print("PACKAGES: ", packages)
 package_data = {
     'gtsam_py': [
-        '*.so',
-        '*.dll',
-        # '../lib/*.so',
-        # '../lib/*.so.*',
-        # '../lib/*.dll',
+        '../*.so',
+        '../*.dll',
     ]
 }
 

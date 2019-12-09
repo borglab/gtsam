@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from gtsam_py.util import Point2, Point3
-from gtsam_py.gtsam import (
+from gtsam import (
     Unit3,
     Rot2,
     Pose2,
@@ -14,7 +14,7 @@ from gtsam_py.gtsam import (
     Cal3Bundler,
     EssentialMatrix,
 )
-from gtsam_py.gtsam.imuBias import ConstantBias
+from gtsam.imuBias import ConstantBias
 
 
 class TestValues(unittest.TestCase):

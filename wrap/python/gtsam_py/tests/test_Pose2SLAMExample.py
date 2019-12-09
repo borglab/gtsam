@@ -1,5 +1,5 @@
 import unittest
-from gtsam_py import gtsam
+import gtsam
 from math import pi
 import numpy as np
 

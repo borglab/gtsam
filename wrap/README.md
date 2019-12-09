@@ -11,7 +11,7 @@ It was designed to be more general than just wrapping GTSAM. For notes on creati
     git submodule update
     ```
 
-2. The `interface_parser.py` in this library uses `pyparsing` to parse the interface file `gtsam.h`. Please install it first in your current Python environment before attempting the build.
+1. The `interface_parser.py` in this library uses `pyparsing` to parse the interface file `gtsam.h`. Please install it first in your current Python environment before attempting the build.
     ```
     python3 -m pip install pyparsing
     ```
@@ -22,7 +22,7 @@ It was designed to be more general than just wrapping GTSAM. For notes on creati
 1. What you can do in the `build` folder:
     1. Just run python then import gtsam and play around:
         ```
-        from gtsam_py import gtsam
+        import gtsam
         gtsam.__dir__()
         ```
 
