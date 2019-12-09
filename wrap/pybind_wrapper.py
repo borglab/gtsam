@@ -20,9 +20,7 @@ class PybindWrapper(object):
         self.top_module_namespaces = top_module_namespaces
         self.use_boost = use_boost
         self.ignore_classes = ignore_classes
-        self._serializing_classes = set(
-            ["gtsam::Matrix", "gtsam::Vector"]
-        )
+        self._serializing_classes = set()
 
     def _py_args_names(self, args_list):
         names = args_list.args_names()

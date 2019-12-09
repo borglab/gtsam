@@ -62,10 +62,14 @@ class TestValues(unittest.TestCase):
         actualMatrix2 = values.atMatrix(13)
         self.assertTrue(np.allclose(mat2, actualMatrix2, tol))
 
-        # failure cases:
+        # Try atVector for fixed-size vectors of 2 and 3 to see if it is
+        # confusing with Point2/Point3.
+        vec2 = np.array([1.0, 2.0])
+        values.insert(14, vec2)
+        values.atVector(14)
         vec3 = np.array([1.0, 2.0, 3.0])
-        values.insert(14, vec3)
-        # values.atVector(14)  # won't work because gtsam thinks it's a Point3.
+        values.insert(15, vec3)
+        values.atVector(15)
 
         # test serialization.
         values2 = values.deserialize(values.serialize())

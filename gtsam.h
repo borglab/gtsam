@@ -2035,6 +2035,10 @@ class Values {
   // void update(size_t j, const gtsam::Value& val);
   // gtsam::Value at(size_t j) const;
 
+  // The order is important: Vector has to precede Point2/Point3 so `atVector`
+  // can work for those fixed-size vectors.
+  void insert(size_t j, Vector vector);
+  void insert(size_t j, Matrix matrix);
   void insert(size_t j, const gtsam::Point2& point2);
   void insert(size_t j, const gtsam::Point3& point3);
   void insert(size_t j, const gtsam::Rot2& rot2);
@@ -2047,8 +2051,6 @@ class Values {
   void insert(size_t j, const gtsam::EssentialMatrix& essential_matrix);
   void insert(size_t j, const gtsam::SimpleCamera& simpel_camera);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
-  void insert(size_t j, Vector vector);
-  void insert(size_t j, Matrix matrix);
 
   void update(size_t j, const gtsam::Point2& point2);
   void update(size_t j, const gtsam::Point3& point3);

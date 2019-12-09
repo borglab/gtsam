@@ -91,7 +91,7 @@ namespace gtsam {
       }
     }
     return true; // We return false earlier if we find anything that does not match
-}
+  }
 
   /* ************************************************************************* */
   bool Values::exists(Key j) const {
