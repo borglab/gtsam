@@ -75,7 +75,7 @@ static const SO4 Q = SO4::Expmap((Vector6() << 1, 2, 3, 4, 5, 6).finished());
 
 /* ************************************************************************* */
 TEST(KarcherMean, FindSO4) {
-  std::vector<SO4> rotations = {Q, Q.inverse()};
+  std::vector<SO4, Eigen::aligned_allocator<SO4>> rotations = {Q, Q.inverse()};
   auto expected = SO4();  //::ChordalMean(rotations);
   auto actual = FindKarcherMean(rotations);
   EXPECT(assert_equal(expected, actual));
