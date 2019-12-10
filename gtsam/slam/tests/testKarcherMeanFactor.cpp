@@ -91,7 +91,9 @@ TEST(KarcherMean, FactorSO4) {
   Values initial;
   initial.insert<SO4>(1, Q.inverse());
   initial.insert<SO4>(2, Q);
-  const auto expected = FindKarcherMean<SO4>({Q, Q.inverse()});
+
+  std::vector<SO4, Eigen::aligned_allocator<SO4> > rotations = {Q, Q.inverse()};
+  const auto expected = FindKarcherMean<SO4>(rotations);
 
   auto result = GaussNewtonOptimizer(graph, initial).optimize();
   const auto actual =

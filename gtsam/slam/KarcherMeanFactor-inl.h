@@ -26,8 +26,8 @@ using namespace std;
 
 namespace gtsam {
 
-template <class T>
-T FindKarcherMean(const vector<T>& rotations) {
+template <class T, class ALLOC>
+T FindKarcherMeanImpl(const vector<T, ALLOC>& rotations) {
   // Cost function C(R) = \sum PriorFactor(R_i)::error(R)
   // No closed form solution.
   NonlinearFactorGraph graph;
@@ -39,6 +39,16 @@ T FindKarcherMean(const vector<T>& rotations) {
   initial.insert<T>(kKey, T());
   auto result = GaussNewtonOptimizer(graph, initial).optimize();
   return result.at<T>(kKey);
+}
+
+template <class T, class ALLOC>
+T FindKarcherMean(const vector<T, ALLOC>& rotations) {
+  return FindKarcherMeanImpl(rotations);
+}
+
+template <class T>
+T FindKarcherMean(std::initializer_list<T>&& rotations) {
+  return FindKarcherMeanImpl(std::vector<T, Eigen::aligned_allocator<T> >(rotations));
 }
 
 template <class T>
