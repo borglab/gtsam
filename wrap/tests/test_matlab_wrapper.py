@@ -3,10 +3,11 @@ Unit test for Matlab wrap program
 Author: Matthew Sklar
 Date: March 2019
 """
-import os
-import sys
+import os, sys, inspect
 import unittest
 import filecmp
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))))
 
 import template_instantiator as instantiator
 import interface_parser as parser

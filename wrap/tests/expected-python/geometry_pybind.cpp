@@ -3,13 +3,17 @@
 
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 
 #include "gtsam/geometry/Point2.h"
 #include "gtsam/geometry/Point3.h"
 #include "folder/path/to/Test.h"
 
 #include "wrap/serialization.h"
+#include <boost/serialization/export.hpp>
+
+BOOST_CLASS_EXPORT(gtsam::Point2)
+BOOST_CLASS_EXPORT(gtsam::Point3)
 
 
 
@@ -33,13 +37,31 @@ PYBIND11_MODULE(geometry_py, m_) {
         .def("argChar",[](gtsam::Point2* self, char a){ self->argChar(a);}, py::arg("a"))
         .def("argUChar",[](gtsam::Point2* self, unsigned char a){ self->argUChar(a);}, py::arg("a"))
         .def("eigenArguments",[](gtsam::Point2* self,const gtsam::Vector& v,const gtsam::Matrix& m){ self->eigenArguments(v, m);}, py::arg("v"), py::arg("m"))
-        .def("vectorConfusion",[](gtsam::Point2* self){return self->vectorConfusion();});
+        .def("vectorConfusion",[](gtsam::Point2* self){return self->vectorConfusion();})
+.def("serialize",
+    [](gtsam::Point2* self){
+        return gtsam::serialize(self);
+    }
+)
+.def("deserialize",
+    [](gtsam::Point2* self, string serialized){
+        return gtsam::deserialize(serialized, self);
+    })
+;
 
     py::class_<gtsam::Point3, std::shared_ptr<gtsam::Point3>>(m_gtsam, "Point3")
         .def(py::init< double,  double,  double>(), py::arg("x"), py::arg("y"), py::arg("z"))
         .def("norm",[](gtsam::Point3* self){return self->norm();})
-        .def("serialize",[](gtsam::Point3* self){return serialize(self);})
-        .def("deserialize",[](gtsam::Point3* self, string serialized){return deserialize(serialized, self);})
+.def("serialize",
+    [](gtsam::Point3* self){
+        return gtsam::serialize(self);
+    }
+)
+.def("deserialize",
+    [](gtsam::Point3* self, string serialized){
+        return gtsam::deserialize(serialized, self);
+    })
+
         .def_static("staticFunction",[](){return gtsam::Point3::staticFunction();})
         .def_static("StaticFunctionRet",[]( double z){return gtsam::Point3::StaticFunctionRet(z);}, py::arg("z"));
 
@@ -64,7 +86,13 @@ PYBIND11_MODULE(geometry_py, m_) {
         .def("create_ptrs",[](Test* self){return self->create_ptrs();})
         .def("create_MixedPtrs",[](Test* self){return self->create_MixedPtrs();})
         .def("return_ptrs",[](Test* self,const std::shared_ptr<Test>& p1,const std::shared_ptr<Test>& p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"))
-        .def("print_",[](Test* self){ self->print();});
+        .def("print_",[](Test* self){ self->print();})
+        .def("__repr__",
+                 [](const Test &a) {
+                     gtsam::RedirectCout redirect;
+                     a.print("");
+                     return redirect.str();
+                 });
 
     py::class_<MyBase, std::shared_ptr<MyBase>>(m_, "MyBase");
 
