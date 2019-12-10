@@ -29,14 +29,22 @@
 #  undef max
 #  undef ERROR
 
+#include <functional> // std::hash()
+
 // Use TBB concurrent_unordered_map for ConcurrentMap
-#  define CONCURRENT_MAP_BASE tbb::concurrent_unordered_map<KEY, VALUE>
+template <typename KEY, typename VALUE>
+using ConcurrentMapBase = tbb::concurrent_unordered_map<
+  KEY,
+  VALUE,
+  std::hash<KEY>
+  >;
 
 #else
 
 // If we're not using TBB, use a FastMap for ConcurrentMap
-#  include <gtsam/base/FastMap.h>
-#  define CONCURRENT_MAP_BASE gtsam::FastMap<KEY, VALUE>
+#include <gtsam/base/FastMap.h>
+template <typename KEY, typename VALUE>
+using ConcurrentMapBase = gtsam::FastMap<KEY, VALUE>;
 
 #endif
 
@@ -57,11 +65,11 @@ namespace gtsam {
  * @addtogroup base
  */
 template<typename KEY, typename VALUE>
-class ConcurrentMap : public CONCURRENT_MAP_BASE {
+class ConcurrentMap : public ConcurrentMapBase<KEY,VALUE> {
 
 public:
 
-  typedef CONCURRENT_MAP_BASE Base;
+  typedef ConcurrentMapBase<KEY,VALUE> Base;
 
   /** Default constructor */
   ConcurrentMap() {}
