@@ -29,8 +29,8 @@ namespace gtsam {
  * the given rotations, by constructing a factor graph out of simple
  * PriorFactors.
  */
-template <class T, class ALLOC = Eigen::aligned_allocator<T>>
-T FindKarcherMean(const std::vector<T, ALLOC>& rotations);
+template <class T>
+T FindKarcherMean(const std::vector<T, Eigen::aligned_allocator<T>>& rotations);
 
 template <class T>
 T FindKarcherMean(std::initializer_list<T>&& rotations);
