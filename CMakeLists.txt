@@ -434,7 +434,7 @@ add_subdirectory(timing)
 # Build gtsam_unstable
 if (GTSAM_BUILD_UNSTABLE)
     add_subdirectory(gtsam_unstable)
-endif(GTSAM_BUILD_UNSTABLE)
+endif()
 
 # Matlab toolbox
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
