@@ -14,18 +14,9 @@ function prepare ()
   rm -fr $BUILD_DIR || true
   mkdir $BUILD_DIR && cd $BUILD_DIR
 
-  if [ -z "$CMAKE_BUILD_TYPE" ]; then
-    CMAKE_BUILD_TYPE=Debug
-  fi
-
-  if [ -z "$GTSAM_ALLOW_DEPRECATED_SINCE_V4" ]; then
-    GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF
-  fi
-
   if [ ! -z "$GCC_VERSION" ]; then
-    sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VERSION 60 \
-                         --slave /usr/bin/g++ g++ /usr/bin/g++-$GCC_VERSION
-    sudo update-alternatives --set gcc /usr/bin/gcc-$GCC_VERSION
+    export CC=gcc-$GCC_VERSION
+    export CXX=g++-$GCC_VERSION
   fi
 }
 
@@ -44,11 +35,12 @@ function build ()
   prepare
 
   cmake $SOURCE_DIR \
-      -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
+      -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} \
       -DGTSAM_BUILD_TESTS=OFF \
       -DGTSAM_BUILD_UNSTABLE=$GTSAM_BUILD_UNSTABLE \
       -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
-      -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=$GTSAM_ALLOW_DEPRECATED_SINCE_V4
+      -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=${GTSAM_ALLOW_DEPRECATED_SINCE_V4:-OFF} \
+      -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF  # to avoid crashes in builder VMs
 
   # Actual build:
   VERBOSE=1 make -j2
@@ -62,11 +54,12 @@ function test ()
   prepare
 
   cmake $SOURCE_DIR \
-      -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
+      -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} \
       -DGTSAM_BUILD_TESTS=ON \
       -DGTSAM_BUILD_UNSTABLE=$GTSAM_BUILD_UNSTABLE \
       -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
-      -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF
+      -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=${GTSAM_ALLOW_DEPRECATED_SINCE_V4:-OFF} \
+      -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF  # to avoid crashes in builder VMs
 
   # Actual build:
   make -j2 check
@@ -79,7 +72,7 @@ case $1 in
   -b)
     build
     ;;
-  -t)                      
+  -t)
     test
     ;;
 esac
