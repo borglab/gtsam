@@ -835,6 +835,137 @@ TEST(Pose2 , ChartDerivatives) {
   CHECK_CHART_DERIVATIVES(T2,T1);
 }
 
+//******************************************************************************
+namespace transform_covariance3 {
+  const double degree = M_PI / 180;
+
+  template<class TPose>
+  static typename TPose::Jacobian generate_full_covariance(
+    std::array<double, TPose::dimension> sigma_values)
+  {
+    typename TPose::TangentVector sigmas(&sigma_values.front());
+    return typename TPose::Jacobian{sigmas * sigmas.transpose()};
+  }
+
+  template<class TPose>
+  static typename TPose::Jacobian generate_one_variable_covariance(int idx, double sigma)
+  {
+    typename TPose::Jacobian cov = TPose::Jacobian::Zero();
+    cov(idx, idx) = sigma * sigma;
+    return cov;
+  }
+
+  template<class TPose>
+  static typename TPose::Jacobian transform_covariance(
+    const TPose &wTb,
+    const typename TPose::Jacobian &cov)
+  {
+    // transform the covariance with the AdjointMap
+    auto adjointMap = wTb.AdjointMap();
+    return adjointMap * cov * adjointMap.transpose();
+  }
+
+  static typename Pose2::Jacobian rotate_only(
+    const std::array<double, Pose2::Rotation::dimension> r,
+    const typename Pose2::Jacobian &cov)
+  {
+    // Create a rotation only transform
+    Pose2 wTb{Pose2::Rotation{r[0] * degree}, Pose2::Translation{}};
+    return transform_covariance(wTb, cov);
+  }
+
+  static Pose2::Jacobian translate_only(
+    const std::array<double, Pose2::Translation::dimension> t,
+    const Pose2::Jacobian &cov)
+  {
+    // Create a translation only transform
+    Pose2 wTb{Pose2::Rotation{}, Pose2::Translation{t[0], t[1]}};
+    return transform_covariance(wTb, cov);
+  }
+
+  static Pose2::Jacobian rotate_translate(
+    const std::array<double, Pose2::Rotation::dimension> r,
+    const std::array<double, Pose2::Translation::dimension> t,
+    const Pose2::Jacobian &cov)
+  {
+    // Create a translation only transform
+    Pose2 wTb{Pose2::Rotation{r[0] * degree}, Pose2::Translation{t[0], t[1]}};
+    return transform_covariance(wTb, cov);
+  }
+}
+TEST(Pose2 , TransformCovariance3) {
+  using namespace transform_covariance3;
+
+  // rotate
+  {
+    auto cov = generate_full_covariance<Pose2>({0.1, 0.3, 0.7});
+    auto cov_trans = rotate_only({90.}, cov);
+    // interchange x and y axes
+    EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), cov(0, 0), 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(0, 0), cov(1, 1), 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(2, 2), cov(2, 2), 1e-9);
+
+    EXPECT_DOUBLES_EQUAL(cov_trans(1, 0), -cov(1, 0), 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(2, 0), -cov(2, 1), 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(2, 1), cov(2, 0), 1e-9);
+  }
+
+  // translate along x with uncertainty in x
+  {
+    auto cov = generate_one_variable_covariance<Pose2>(0, 0.1);
+    auto cov_trans = translate_only({20., 0.}, cov);
+    EXPECT_DOUBLES_EQUAL(cov_trans(0, 0), 0.1 * 0.1, 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), 0., 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(2, 2), 0., 1e-9);
+
+    EXPECT_DOUBLES_EQUAL(cov_trans(1, 0), 0., 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(2, 0), 0., 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(2, 1), 0., 1e-9);
+  }
+
+  // translate along x with uncertainty in y
+  {
+    auto cov = generate_one_variable_covariance<Pose2>(1, 0.1);
+    auto cov_trans = translate_only({20., 0.}, cov);
+    EXPECT_DOUBLES_EQUAL(cov_trans(0, 0), 0., 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), 0.1 * 0.1, 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(2, 2), 0., 1e-9);
+
+    EXPECT_DOUBLES_EQUAL(cov_trans(1, 0), 0., 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(2, 0), 0., 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(2, 1), 0., 1e-9);
+  }
+
+  // translate along x with uncertainty in theta
+  {
+    auto cov = generate_one_variable_covariance<Pose2>(2, 0.1);
+    auto cov_trans = translate_only({20., 0.}, cov);
+    EXPECT_DOUBLES_EQUAL(cov_trans(2, 1), -0.1 * 0.1 * 20., 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), 0.1 * 0.1 * 20. * 20., 1e-9);
+  }
+
+  // rotate and translate along x with uncertainty in x
+  {
+    auto cov = generate_one_variable_covariance<Pose2>(0, 0.1);
+    auto cov_trans = rotate_translate({90.}, {20., 0.}, cov);
+    EXPECT_DOUBLES_EQUAL(cov_trans(0, 0), 0., 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), 0.1 * 0.1, 1e-9);
+  }
+
+  // rotate and translate along x with uncertainty in theta
+  {
+    auto cov = generate_one_variable_covariance<Pose2>(2, 0.1);
+    auto cov_trans = rotate_translate({90.}, {20., 0.}, cov);
+    EXPECT_DOUBLES_EQUAL(cov_trans(0, 0), 0., 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), 0.1 * 0.1 * 20. * 20., 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(2, 2), 0.1 * 0.1, 1e-9);
+
+    EXPECT_DOUBLES_EQUAL(cov_trans(1, 0), 0., 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(2, 0), 0., 1e-9);
+    EXPECT_DOUBLES_EQUAL(cov_trans(2, 1), -0.1 * 0.1 * 20., 1e-9);
+  }
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
