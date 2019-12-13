@@ -102,11 +102,12 @@ class ShonanAveraging {
   // Version that takes pxdN Stiefel manifold elements
   Sparse computeLambda(const Matrix& S) const;
 
-  /** 
+  /**
    * Compute minimum eigenvalue for optimality check.
    * @param values: should be of type SOn
    */
-  double computeMinEigenValue(const Values& values, Vector* minEigenVector = nullptr) const;
+  double computeMinEigenValue(const Values& values,
+                              Vector* minEigenVector = nullptr) const;
 
   /**
    * Check optimality
@@ -143,22 +144,26 @@ class ShonanAveraging {
    */
   double cost(const Values& values) const;
 
-  /** 
-   * Given some values at p, return new values at p+1, by doing a line search along the descent direction, computed from the minimum eigenvector at p.
+  /**
+   * Given some values at p, return new values at p+1, by doing a line search
+   * along the descent direction, computed from the minimum eigenvector at p.
    * @param values should be of type SO(p)
    * @param minEigenVector corresponding to minEigenValue at level p
    * @return values of type SO(p+1)
    */
-  Values initializeWithDescent(size_t p, const Values& values, const Vector& minEigenVector) const;
+  Values initializeWithDescent(size_t p, const Values& values,
+                               const Vector& minEigenVector) const;
 
   /**
-   * Optimize at different values of p until convergence, with random init at each level.
+   * Optimize at different values of p until convergence, with random init at
+   * each level.
    * @param pMin value of p to start Riemanian staircase at.
    * @param pMax maximum value of p to try (default: 20)
    * @param withDescent use descent direction from paper.
    * @return (SO(3) values, minimum eigenvalue)
    */
-  std::pair<Values, double> run(size_t pMin, size_t pMax, bool withDescent) const;
+  std::pair<Values, double> run(size_t pMin, size_t pMax,
+                                bool withDescent) const;
 
   /**
    * Optimize at different values of p until convergence, with random init at each level.

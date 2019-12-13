@@ -26,8 +26,7 @@
 using namespace std;
 using namespace gtsam;
 
-// string g2oFile = findExampleDataFile("toyExample.g2o");
-string g2oFile = "/home/jingwu/git/gtsam/examples/Data/toyExample.g2o";
+string g2oFile = findExampleDataFile("toyExample.g2o");
 static const ShonanAveraging kShonan(g2oFile);
 
 /* ************************************************************************* */
