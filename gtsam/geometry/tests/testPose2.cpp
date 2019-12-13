@@ -894,6 +894,8 @@ namespace transform_covariance3 {
   }
 }
 TEST(Pose2 , TransformCovariance3) {
+  // Use simple covariance matrices and transforms to create tests that can be
+  // validated with simple computations.
   using namespace transform_covariance3;
 
   // rotate

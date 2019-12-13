@@ -959,6 +959,7 @@ namespace transform_covariance6 {
   }
 }
 TEST(Pose3, TransformCovariance6MapTo2d) {
+  // Create 3d scenarios that map to 2d configurations and compare with Pose2 results.
   using namespace transform_covariance6;
   std::array<double, Pose2::dimension> s{{0.1, 0.3, 0.7}};
   std::array<double, Pose2::Rotation::dimension> r{{31.}};
@@ -1002,7 +1003,10 @@ TEST(Pose3, TransformCovariance6MapTo2d) {
 
 /* ************************************************************************* */
 TEST(Pose3, TransformCovariance6) {
+  // Use simple covariance matrices and transforms to create tests that can be
+  // validated with simple computations.
   using namespace transform_covariance6;
+
   // rotate 90 around z axis and then 90 around y axis
   {
     auto cov = generate_full_covariance<Pose3>({0.1, 0.2, 0.3, 0.5, 0.7, 1.1});
