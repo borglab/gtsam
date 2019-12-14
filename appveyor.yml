@@ -1,0 +1,25 @@
+# version format
+version: 4.0.2-{branch}-build{build}
+
+os: Visual Studio 2019
+
+clone_folder: c:\projects\gtsam
+
+platform: x64
+configuration: Release
+
+environment:
+  CTEST_OUTPUT_ON_FAILURE: 1
+  BOOST_ROOT: C:/Libraries/boost_1_71_0
+
+build_script:
+  - cd c:\projects\gtsam\build
+  - cmake --build . 
+  - cmake --build . --target check
+
+before_build:
+  - cd c:\projects\gtsam
+  - mkdir build
+  - cd build
+  # Disable examples to avoid AppVeyor timeout
+  - cmake -G "Visual Studio 16 2019"  .. -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF
