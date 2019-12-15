@@ -155,6 +155,7 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
   // Compute the old linearized error as it is not the same
   // as the nonlinear error when robust noise models are used.
   double oldLinearizedError = linear.error(VectorValues::Zero(delta));
+  cout << "old error: " << currentState->error << ", linear: " << oldLinearizedError << endl;
   if (systemSolvedSuccessfully) {
     if (verbose)
       cout << "linear delta norm = " << delta.norm() << endl;
