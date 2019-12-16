@@ -30,7 +30,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   /// A clique in a SymbolicBayesTree
-  class SymbolicBayesTreeClique :
+  class GTSAM_EXPORT SymbolicBayesTreeClique :
     public BayesTreeCliqueBase<SymbolicBayesTreeClique, SymbolicFactorGraph>
   {
   public:
@@ -45,7 +45,7 @@ namespace gtsam {
   /* ************************************************************************* */
   /// A Bayes tree that represents the connectivity between variables but is not associated with any
   /// probability functions.
-  class SymbolicBayesTree :
+  class GTSAM_EXPORT SymbolicBayesTree :
     public BayesTree<SymbolicBayesTreeClique>
   {
   private:
@@ -59,7 +59,7 @@ namespace gtsam {
     SymbolicBayesTree() {}
 
     /** check equality */
-    GTSAM_EXPORT bool equals(const This& other, double tol = 1e-9) const;
+    bool equals(const This& other, double tol = 1e-9) const;
 
   private:
     /** Serialization function */
