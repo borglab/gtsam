@@ -929,8 +929,8 @@ namespace transform_covariance6 {
   // Transform a covariance matrix with a rotation and a translation
   template<class TPose>
   static typename TPose::Jacobian RotateTranslate(
-    std::array<double, TPose::Rotation::dimension> r,
-    std::array<double, TPose::Translation::dimension> t,
+    const std::array<double, TPose::Rotation::dimension> &r,
+    const std::array<double, TPose::Translation::dimension> &t,
     const typename TPose::Jacobian &cov)
   {
     // Construct a pose object

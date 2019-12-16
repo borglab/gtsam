@@ -880,8 +880,8 @@ namespace transform_covariance3 {
   // Transform a covariance matrix with a rotation and a translation
   template<class TPose>
   static typename TPose::Jacobian RotateTranslate(
-    std::array<double, TPose::Rotation::dimension> r,
-    std::array<double, TPose::Translation::dimension> t,
+    const std::array<double, TPose::Rotation::dimension> &r,
+    const std::array<double, TPose::Translation::dimension> &t,
     const typename TPose::Jacobian &cov)
   {
     // Construct a pose object
@@ -900,7 +900,7 @@ TEST(Pose2 , TransformCovariance3) {
 
   // rotate
   {
-    auto cov = GenerateFullCovariance<Pose2>({0.1, 0.3, 0.7});
+    auto cov = GenerateFullCovariance<Pose2>({{0.1, 0.3, 0.7}});
     auto cov_trans = RotateTranslate<Pose2>({{90.}}, {{}}, cov);
     // interchange x and y axes
     EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), cov(0, 0), 1e-9);
