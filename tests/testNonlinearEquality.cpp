@@ -207,9 +207,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
   // optimize
   Ordering ordering;
   ordering.push_back(key1);
-  gtsam::LevenbergMarquardtParams params;
-  params.setVerbosityLM("TRYDELTA");
-  Values result = LevenbergMarquardtOptimizer(graph, init, ordering, params).optimize();
+  Values result = LevenbergMarquardtOptimizer(graph, init, ordering).optimize();
 
   // verify
   Values expected;
@@ -243,9 +241,7 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
   // optimize
   Ordering ordering;
   ordering.push_back(key1);
-  gtsam::LevenbergMarquardtParams params;
-  params.setVerbosityLM("TRYLAMBDA");
-  Values actual = LevenbergMarquardtOptimizer(graph, init, ordering, params).optimize();
+  Values actual = LevenbergMarquardtOptimizer(graph, init, ordering).optimize();
 
   // verify
   Values expected;
@@ -334,17 +330,7 @@ TEST( testNonlinearEqualityConstraint, unary_simple_optimization ) {
   EXPECT(constraint->active(expected));
   EXPECT_DOUBLES_EQUAL(0.0, constraint->error(expected), tol);
 
-  graph.print();
-  auto lin = graph.linearize(initValues);
-  lin->print("linear");
-  cout << lin->error(initValues.zeroVectors()) << endl;
-  cout << graph.error(initValues) << " " << graph.error(expected) << endl;
-  cout << constraint->error(initValues) << " " << constraint->error(expected) << endl;
-  cout << factor->error(initValues) << " " << factor->error(expected) <<endl;
-
-  gtsam::LevenbergMarquardtParams params;
-  params.setVerbosityLM("TRYDELTA");
-  Values actual = LevenbergMarquardtOptimizer(graph, initValues, params).optimize();
+  Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
   EXPECT(assert_equal(expected, actual, tol));
 }
 
@@ -434,10 +420,7 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
   initValues.insert(key1, Point2(0,0));
   initValues.insert(key2, badPt);
 
-
-  gtsam::LevenbergMarquardtParams params;
-  params.setVerbosityLM("TRYDELTA");
-  Values actual = LevenbergMarquardtOptimizer(graph, initValues, params).optimize();
+  Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
   Values expected;
   expected.insert(key1, truth_pt1);
   expected.insert(key2, truth_pt2);
