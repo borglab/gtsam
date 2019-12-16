@@ -836,67 +836,12 @@ TEST(Pose2 , ChartDerivatives) {
 }
 
 //******************************************************************************
-namespace transform_covariance3 {
-  const double degree = M_PI / 180;
+#include "testPoseAdjointMap.h"
 
-  // Create a covariance matrix for type T. Use sigma_values^2 on the diagonal
-  // and fill in non-diagonal entries with a correlation coefficient of 1. Note:
-  // a covariance matrix for T has the same dimensions as a Jacobian for T.
-  template<class T>
-  static typename T::Jacobian GenerateFullCovariance(
-    std::array<double, T::dimension> sigma_values)
-  {
-    typename T::TangentVector sigmas(&sigma_values.front());
-    return typename T::Jacobian{sigmas * sigmas.transpose()};
-  }
-
-  // Create a covariance matrix with one non-zero element on the diagonal.
-  template<class T>
-  static typename T::Jacobian GenerateOneVariableCovariance(int idx, double sigma)
-  {
-    typename T::Jacobian cov = T::Jacobian::Zero();
-    cov(idx, idx) = sigma * sigma;
-    return cov;
-  }
-
-  // Create a covariance matrix with two non-zero elements on the diagonal with
-  // a correlation of 1.0
-  template<class T>
-  static typename T::Jacobian GenerateTwoVariableCovariance(int idx0, int idx1, double sigma0, double sigma1)
-  {
-    typename T::Jacobian cov = T::Jacobian::Zero();
-    cov(idx0, idx0) = sigma0 * sigma0;
-    cov(idx1, idx1) = sigma1 * sigma1;
-    cov(idx0, idx1) = cov(idx1, idx0) = sigma0 * sigma1;
-    return cov;
-  }
-
-  // Overloaded function to create a Rot2 from one angle.
-  static Rot2 RotFromArray(const std::array<double, Rot2::dimension> &r)
-  {
-    return Rot2{r[0] * degree};
-  }
-
-  // Transform a covariance matrix with a rotation and a translation
-  template<class TPose>
-  static typename TPose::Jacobian RotateTranslate(
-    const std::array<double, TPose::Rotation::dimension> &r,
-    const std::array<double, TPose::Translation::dimension> &t,
-    const typename TPose::Jacobian &cov)
-  {
-    // Construct a pose object
-    typename TPose::Rotation rot{RotFromArray(r)};
-    TPose wTb{rot, typename TPose::Translation{&t.front()}};
-
-    // transform the covariance with the AdjointMap
-    auto adjointMap = wTb.AdjointMap();
-    return adjointMap * cov * adjointMap.transpose();
-  }
-}
 TEST(Pose2 , TransformCovariance3) {
   // Use simple covariance matrices and transforms to create tests that can be
   // validated with simple computations.
-  using namespace transform_covariance3;
+  using namespace test_pose_adjoint_map;
 
   // rotate
   {
