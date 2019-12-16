@@ -513,8 +513,10 @@ Vector JacobianFactor::error_vector(const VectorValues& c) const {
 
 /* ************************************************************************* */
 double JacobianFactor::error(const VectorValues& c) const {
-  Vector weighted = error_vector(c);
-  return 0.5 * weighted.dot(weighted);
+  Vector e = unweighted_error(c);
+  // Use the noise model distance function to get the correct error if available.
+  if (model_) return 0.5 * model_->distance(e);
+  return 0.5 * e.dot(e);
 }
 
 /* ************************************************************************* */
