@@ -505,76 +505,76 @@ static bool SparseMinimumEigenValue(const SparseMatrix& A, const Matrix& S, doub
 }
 
 /* ************************************************************************* */
-double ShonanAveraging::computeMinEigenValue(const Values& values, Vector* minEigenVector) const {
-    /// Based on Luca's MATLAB version on BitBucket repo.
-    assert(values.size() == nrPoses());
-    const Matrix S = StiefelElementMatrix(values);
-    auto Lambda = computeLambda(S);
-    auto C = L_ - Lambda;
+double ShonanAveraging::computeMinEigenValue(const Values& values,
+                                             Vector* minEigenVector) const {
+  /// Based on Luca's MATLAB version on BitBucket repo.
+  assert(values.size() == nrPoses());
+  const Matrix S = StiefelElementMatrix(values);
+  auto Lambda = computeLambda(S);
+  auto C = L_ - Lambda;
 #ifdef SLOW_EIGEN_COMPUTATION
-    Eigen::EigenSolver<Matrix> solver(Matrix(C), false);
-    auto lambdas = solver.eigenvalues();
-    double minEigenValue = lambdas(0).real();
-    for (size_t i = 1; i < lambdas.size(); i++) {
-        minEigenValue = min(lambdas(i).real(), minEigenValue);
-    }
+  Eigen::EigenSolver<Matrix> solver(Matrix(C), false);
+  auto lambdas = solver.eigenvalues();
+  double minEigenValue = lambdas(0).real();
+  for (size_t i = 1; i < lambdas.size(); i++) {
+    minEigenValue = min(lambdas(i).real(), minEigenValue);
+  }
 #else
-    double minEigenValue;
-    bool success = SparseMinimumEigenValue(C, S, &minEigenValue, minEigenVector);
-    if (!success) {
-        throw std::runtime_error(
-            "SparseMinimumEigenValue failed to compute minimum eigenvalue.");
-    }
+  double minEigenValue;
+  bool success = SparseMinimumEigenValue(C, S, &minEigenValue, minEigenVector);
+  if (!success) {
+    throw std::runtime_error(
+        "SparseMinimumEigenValue failed to compute minimum eigenvalue.");
+  }
 #endif
-    return minEigenValue;
+  return minEigenValue;
 }
 
 /* ************************************************************************* */
 bool ShonanAveraging::checkOptimality(const Values& values) const {
-    double minEigenValue = computeMinEigenValue(values);
-    return minEigenValue > parameters_.optimalityThreshold;
+  double minEigenValue = computeMinEigenValue(values);
+  return minEigenValue > parameters_.optimalityThreshold;
 }
 
 /* ************************************************************************* */
-Values ShonanAveraging::initializeWithDescent(size_t p, const Values& values, const Vector& minEigenVector) const {
-    Values newValues = initializeRandomlyAt(p + 1);
-    const size_t dN = minEigenVector.size(); 
-    const size_t dim = dN / nrPoses();
-    const size_t d = (p + 1) * p;
-    // static std::uniform_real_distribution<double> randomAngle(-M_PI / 100, M_PI / 100);
-    // std::mt19937 rng; 
-    // values.print();
-    for (size_t j = 0; j < nrPoses(); j++){
-        Vector xi(d);
-        xi.block(0, 0, dim, 0) = minEigenVector.block(j, 0, j+dim, 0);
-        // for (size_t i = 0; i < d; i++){
-        //     xi(i) =
-        //         (i < dim) ?  minEigenVector(j*dim + i) : randomAngle(rng);
-        // }
-        cout << "xi size" << xi.size() << endl;
-        newValues.update(j, values.at<SOn>(j) * SOn::Retract(xi) );
+Values ShonanAveraging::initializeWithDescent(
+    size_t p, const Values& values, const Vector& minEigenVector) const {
+  Values newValues = initializeRandomlyAt(p + 1);
+  const size_t dN = minEigenVector.size();
+  const size_t dim = dN / nrPoses();
+  const size_t d = (p + 1) * p;
+  static std::uniform_real_distribution<double> randomAngle(-M_PI / 100,
+                                                            M_PI / 100);
+  std::mt19937 rng;
+  // values.print();
+  for (size_t j = 0; j < nrPoses(); j++) {
+    Vector xi(d);
+    for (size_t i = 0; i < d; i++) {
+      xi(i) = (i < dim) ? minEigenVector(j * dim + i) : randomAngle(rng);
     }
-    
-    return newValues;
+    newValues.update(j, values.at<SOn>(j) * SOn::Retract(xi));
+  }
+
+  return newValues;
 }
 
 /* ************************************************************************* */
-std::pair<Values, double> ShonanAveraging::run(size_t pMin,
-                                               size_t pMax,
+std::pair<Values, double> ShonanAveraging::run(size_t pMin, size_t pMax,
                                                bool withDescent) const {
-    Values Qstar;
-    Vector minEigenVector;
-    for (size_t p = pMin; p <= pMax; p++) {
-        const Values initial =
-            (p > pMin && withDescent) ? initializeWithDescent(p, Qstar, minEigenVector) : initializeRandomlyAt(p);
-        Qstar = tryOptimizingAt(p, initial);
-        double minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
-        if (minEigenValue > parameters_.optimalityThreshold) {
-            const Values SO3Values = roundSolution(Qstar);
-            return std::make_pair(SO3Values, minEigenValue);
-        }
+  Values Qstar;
+  Vector minEigenVector;
+  for (size_t p = pMin; p <= pMax; p++) {
+    const Values initial = (p > pMin && withDescent)
+                               ? initializeWithDescent(p, Qstar, minEigenVector)
+                               : initializeRandomlyAt(p);
+    Qstar = tryOptimizingAt(p, initial);
+    double minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
+    if (minEigenValue > parameters_.optimalityThreshold) {
+      const Values SO3Values = roundSolution(Qstar);
+      return std::make_pair(SO3Values, minEigenValue);
     }
-    throw std::runtime_error("Shonan::run did not converge for given pMax");
+  }
+  throw std::runtime_error("Shonan::run did not converge for given pMax");
 }
 
 /* ************************************************************************* */
