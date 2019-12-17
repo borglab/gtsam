@@ -541,15 +541,17 @@ Values ShonanAveraging::initializeWithDescent(size_t p, const Values& values, co
     const size_t dN = minEigenVector.size(); 
     const size_t dim = dN / nrPoses();
     const size_t d = (p + 1) * p;
-    static std::uniform_real_distribution<double> randomAngle(-M_PI / 100, M_PI / 100);
-    std::mt19937 rng; 
+    // static std::uniform_real_distribution<double> randomAngle(-M_PI / 100, M_PI / 100);
+    // std::mt19937 rng; 
     // values.print();
     for (size_t j = 0; j < nrPoses(); j++){
         Vector xi(d);
-        for (size_t i = 0; i < d; i++){
-            xi(i) =
-                (i < dim) ?  minEigenVector(j*dim + i) : randomAngle(rng);
-        }
+        xi.block(0, 0, dim, 0) = minEigenVector.block(j, 0, j+dim, 0);
+        // for (size_t i = 0; i < d; i++){
+        //     xi(i) =
+        //         (i < dim) ?  minEigenVector(j*dim + i) : randomAngle(rng);
+        // }
+        cout << "xi size" << xi.size() << endl;
         newValues.update(j, values.at<SOn>(j) * SOn::Retract(xi) );
     }
     
