@@ -547,14 +547,15 @@ Values ShonanAveraging::initializeWithDescent(
     Vector xi = Vector::Zero(d);
     Matrix X = Matrix::Identity(p, p);
     X.topLeftCorner(p-1, p-1) = values.at<SOn>(j).matrix();
-    xi.head(dim) = minEigenVector.segment(j, j+dim);
+    xi.head(dim) = minEigenVector.segment(j, j+dim-1);
+    // xi.segment(p-dim, p-1) = minEigenVector.segment(j, j+dim-1);
     SOn Qplus = SOn(X * SOn::Retract(xi).matrix());
     // newValues.insert(j, SOn(X) * SOn::Retract(xi));
     newValues.insert(j, Qplus);
   }
 
   return newValues;
-}
+
 
 /* ************************************************************************* */
 std::pair<Values, double> ShonanAveraging::run(size_t pMin, size_t pMax,
