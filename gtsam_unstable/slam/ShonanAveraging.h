@@ -143,13 +143,18 @@ class ShonanAveraging {
    */
   double cost(const Values& values) const;
 
-  /** 
-   * Given some values at p, return new values at p+1, by doing a line search along the descent direction, computed from the minimum eigenvector at p.
-   * @param values should be of type SO(p)
-   * @param minEigenVector corresponding to minEigenValue at level p
-   * @return values of type SO(p+1)
+  /// Create a tangent direction xi with eigenvector segment v_i
+  static Vector MakeATangentVector(size_t p, const Vector& v, size_t i);
+
+  /**
+   * Given some values at p-1, return new values at p, by doing a line search
+   * along the descent direction, computed from the minimum eigenvector at p-1.
+   * @param values should be of type SO(p-1)
+   * @param minEigenVector corresponding to minEigenValue at level p-1
+   * @return values of type SO(p)
    */
-  Values initializeWithDescent(size_t p, const Values& values, const Vector& minEigenVector) const;
+  Values initializeWithDescent(size_t p, const Values& values,
+                               const Vector& minEigenVector) const;
 
   /**
    * Optimize at different values of p until convergence, with random init at each level.

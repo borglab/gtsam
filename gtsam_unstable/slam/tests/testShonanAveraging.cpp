@@ -26,8 +26,7 @@
 using namespace std;
 using namespace gtsam;
 
-// string g2oFile = findExampleDataFile("toyExample.g2o");
-string g2oFile = "/home/jingwu/git/gtsam/examples/Data/toyExample.g2o";
+string g2oFile = findExampleDataFile("toyExample.g2o");
 static const ShonanAveraging kShonan(g2oFile);
 
 /* ************************************************************************* */
@@ -94,6 +93,21 @@ TEST(ShonanAveraging, runWithRandom) {
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result.first), 1e-3);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
                        1e-4);  // Regression test
+}
+
+/* ************************************************************************* */
+TEST(ShonanAveraging, MakeATangentVector) {
+  Vector9 v;
+  v<< 1,2,3, 4,5,6, 7,8,9;
+  Matrix expected(5, 5);
+  expected << 0, 0, 0, 0, -4, //
+              0, 0, 0, 0, -5, //
+              0, 0, 0, 0, -6, //
+              0, 0, 0, 0,  0, //
+              4, 5, 6, 0,  0;
+  const Vector xi_1 = ShonanAveraging::MakeATangentVector(5, v, 1);
+  const auto actual = SOn::Hat(xi_1);
+  CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

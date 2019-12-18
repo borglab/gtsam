@@ -537,21 +537,32 @@ bool ShonanAveraging::checkOptimality(const Values& values) const {
 }
 
 /* ************************************************************************* */
+Vector ShonanAveraging::MakeATangentVector(size_t p, const Vector& v, size_t i) {
+    // Create a tangent direction xi with eigenvector segment v_i
+  const size_t dimension = p * (p - 1) / 2;
+  constexpr size_t d = 3;  // for now only for 3D rotations
+  const auto v_i = v.segment(i * d, d);
+  Vector xi = Vector::Zero(dimension);
+  for (size_t j=0;j<d;j++) {
+    xi(j+p-d-1) = v_i(j);
+  }
+  return xi;
+}
+
+/* ************************************************************************* */
 Values ShonanAveraging::initializeWithDescent(
     size_t p, const Values& values, const Vector& minEigenVector) const {
   Values newValues;
-  const size_t dN = minEigenVector.size();
-  const size_t dim = dN / nrPoses();
-  const size_t d = (p - 1) * p / 2;
-  for (size_t j = 0; j < nrPoses(); j++) {
-    Vector xi = Vector::Zero(d);
-    Matrix X = Matrix::Identity(p, p);
-    X.topLeftCorner(p-1, p-1) = values.at<SOn>(j).matrix();
-    xi.head(dim) = minEigenVector.segment(j, j+dim-1);
-    // xi.segment(p-dim, p-1) = minEigenVector.segment(j, j+dim-1);
-    SOn Qplus = SOn(X * SOn::Retract(xi).matrix());
-    // newValues.insert(j, SOn(X) * SOn::Retract(xi));
-    newValues.insert(j, Qplus);
+  // for all poses, initialize with the eigenvector segment v_i
+  for (size_t i = 0; i < nrPoses(); i++) {
+    // Initialize SO(p) with topleft block the old value Q \in SO(p-1)
+    Matrix Q = Matrix::Identity(p, p);
+    Q.topLeftCorner(p - 1, p - 1) = values.at<SOn>(i).matrix();
+    // Create a tangent direction xi with eigenvector segment v_i
+    const Vector xi = MakeATangentVector(p, minEigenVector, i);;
+    // Move the old value in the descent direction
+    const SOn Qplus = SOn(Q).retract(xi);
+    newValues.insert(i, Qplus);
   }
 
   return newValues;
