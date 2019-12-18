@@ -57,9 +57,9 @@ Matrix4 SO4::Hat(const Vector6& xi) {
   Y(0, 1) = -xi(5);
   Y(0, 2) = +xi(4);
   Y(1, 2) = -xi(3);
-  Y(0, 3) = -xi(2);
-  Y(1, 3) = +xi(1);
-  Y(2, 3) = -xi(0);
+  Y(0, 3) = +xi(2);
+  Y(1, 3) = -xi(1);
+  Y(2, 3) = +xi(0);
   return Y - Y.transpose();
 }
 
@@ -70,9 +70,9 @@ Vector6 SO4::Vee(const Matrix4& X) {
   xi(5) = -X(0, 1);
   xi(4) = +X(0, 2);
   xi(3) = -X(1, 2);
-  xi(2) = -X(0, 3);
-  xi(1) = +X(1, 3);
-  xi(0) = -X(2, 3);
+  xi(2) = +X(0, 3);
+  xi(1) = -X(1, 3);
+  xi(0) = +X(2, 3);
   return xi;
 }
 
