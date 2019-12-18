@@ -555,10 +555,10 @@ Values ShonanAveraging::initializeWithDescent(
   }
 
   return newValues;
-
+}
 
 /* ************************************************************************* */
-std::pair<Values, double> ShonanAveraging::run(size_t pMin, size_t pMax,
+std::pair<Values, double> ShonanAveraging::run (size_t pMin, size_t pMax,
                                                bool withDescent) const {
   Values Qstar;
   Vector minEigenVector;
