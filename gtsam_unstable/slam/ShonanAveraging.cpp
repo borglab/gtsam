@@ -539,20 +539,18 @@ bool ShonanAveraging::checkOptimality(const Values& values) const {
 /* ************************************************************************* */
 Values ShonanAveraging::initializeWithDescent(
     size_t p, const Values& values, const Vector& minEigenVector) const {
-  Values newValues = initializeRandomlyAt(p + 1);
+  Values newValues;
   const size_t dN = minEigenVector.size();
   const size_t dim = dN / nrPoses();
-  const size_t d = (p + 1) * p;
-  static std::uniform_real_distribution<double> randomAngle(-M_PI / 100,
-                                                            M_PI / 100);
-  std::mt19937 rng;
-  // values.print();
+  const size_t d = (p - 1) * p / 2;
   for (size_t j = 0; j < nrPoses(); j++) {
-    Vector xi(d);
-    for (size_t i = 0; i < d; i++) {
-      xi(i) = (i < dim) ? minEigenVector(j * dim + i) : randomAngle(rng);
-    }
-    newValues.update(j, values.at<SOn>(j) * SOn::Retract(xi));
+    Vector xi = Vector::Zero(d);
+    Matrix X = Matrix::Identity(p, p);
+    X.topLeftCorner(p-1, p-1) = values.at<SOn>(j).matrix();
+    xi.head(dim) = minEigenVector.segment(j, j+dim);
+    SOn Qplus = SOn(X * SOn::Retract(xi).matrix());
+    // newValues.insert(j, SOn(X) * SOn::Retract(xi));
+    newValues.insert(j, Qplus);
   }
 
   return newValues;

@@ -101,7 +101,7 @@ TEST(ShonanAveraging, initializeWithDescent) {
   const Values Qstar3 = kShonan.tryOptimizingAt(3);
   Vector minEigenVector;
   kShonan.computeMinEigenValue(Qstar3, &minEigenVector);
-  Values initialQ4 = kShonan.initializeWithDescent(3, Qstar3, minEigenVector);
+  Values initialQ4 = kShonan.initializeWithDescent(4, Qstar3, minEigenVector);
   EXPECT_LONGS_EQUAL(5, initialQ4.size());
 }
 

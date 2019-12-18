@@ -83,10 +83,12 @@ int main(int argc, char* argv[]) {
     Values Qstar;
     Vector minEigenVector;
     double CostP = 0, Cost3 = 0, lambdaMin = 0, suBound = 0;
+    cout << "(int)p" << "\t" << "time1" << "\t" << "costP" << "\t" << "cost3" << "\t"
+        << "time2" << "\t" << "min_eigenvalue" << "\t" << "suBound" << endl;
 
     for (size_t p = pMin; p < 11; p++) {
         const Values initial = 
-            (p > pMin && withDescent) ? kShonan.initializeWithDescent( p - 1, Qstar, minEigenVector) : kShonan.initializeRandomlyAt(p);
+            (p > pMin && withDescent) ? kShonan.initializeWithDescent( p, Qstar, minEigenVector) : kShonan.initializeRandomlyAt(p);
         chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
         const Values result = kShonan.tryOptimizingAt(p, initial);
         chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
