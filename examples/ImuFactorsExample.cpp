@@ -43,9 +43,6 @@
 #include <fstream>
 #include <iostream>
 
-// Uncomment line below to use the CombinedIMUFactor as opposed to the standard ImuFactor.
-// #define USE_COMBINED
-
 using namespace gtsam;
 using namespace std;
 
@@ -139,11 +136,16 @@ int main(int argc, char* argv[])
   p->biasOmegaCovariance = bias_omega_cov; // gyro bias in continuous
   p->biasAccOmegaInt = bias_acc_omega_int;
 
-#ifdef USE_COMBINED
-  imu_preintegrated_ = new PreintegratedCombinedMeasurements(p, prior_imu_bias);
-#else
-  imu_preintegrated_ = new PreintegratedImuMeasurements(p, prior_imu_bias);
-#endif
+  static constexpr bool use_combined_preint = false;
+  std::shared_ptr<PreintegrationType> imu_preintegrated_ = nullptr;
+  if (use_combined_preint) {
+    imu_preintegrated_ =
+        std::make_shared<PreintegratedCombinedMeasurements>(p, prior_imu_bias);
+  } else {
+    imu_preintegrated_ =
+        std::make_shared<PreintegratedImuMeasurements>(p, prior_imu_bias);
+  }
+  assert(imu_preintegrated_);
 
   // Store previous state for the imu integration and the latest predicted outcome.
   NavState prev_state(prior_pose, prior_velocity);
@@ -188,25 +190,29 @@ int main(int argc, char* argv[])
       correction_count++;
 
       // Adding IMU factor and GPS factor and optimizing.
-#ifdef USE_COMBINED
-      PreintegratedCombinedMeasurements *preint_imu_combined = dynamic_cast<PreintegratedCombinedMeasurements*>(imu_preintegrated_);
-      CombinedImuFactor imu_factor(X(correction_count-1), V(correction_count-1),
-                                   X(correction_count  ), V(correction_count  ),
-                                   B(correction_count-1), B(correction_count  ),
-                                   *preint_imu_combined);
-      graph->add(imu_factor);
-#else
-      PreintegratedImuMeasurements *preint_imu = dynamic_cast<PreintegratedImuMeasurements*>(imu_preintegrated_);
-      ImuFactor imu_factor(X(correction_count-1), V(correction_count-1),
-                           X(correction_count  ), V(correction_count  ),
-                           B(correction_count-1),
-                           *preint_imu);
-      graph->add(imu_factor);
-      imuBias::ConstantBias zero_bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
-      graph->add(BetweenFactor<imuBias::ConstantBias>(B(correction_count-1),
-                                                      B(correction_count  ),
-                                                      zero_bias, bias_noise_model));
-#endif
+      if (use_combined_preint) {
+        const PreintegratedCombinedMeasurements& preint_imu_combined =
+            dynamic_cast<const PreintegratedCombinedMeasurements&>(
+              *imu_preintegrated_);
+        CombinedImuFactor imu_factor(X(correction_count-1), V(correction_count-1),
+                                     X(correction_count  ), V(correction_count  ),
+                                     B(correction_count-1), B(correction_count  ),
+                                     preint_imu_combined);
+        graph->add(imu_factor);
+      } else {
+        const PreintegratedImuMeasurements& preint_imu =
+            dynamic_cast<const PreintegratedImuMeasurements&>(
+              *imu_preintegrated_);
+        ImuFactor imu_factor(X(correction_count-1), V(correction_count-1),
+                             X(correction_count  ), V(correction_count  ),
+                             B(correction_count-1),
+                             preint_imu);
+        graph->add(imu_factor);
+        imuBias::ConstantBias zero_bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
+        graph->add(BetweenFactor<imuBias::ConstantBias>(B(correction_count-1),
+                                                        B(correction_count  ),
+                                                        zero_bias, bias_noise_model));
+      }
 
       noiseModel::Diagonal::shared_ptr correction_noise = noiseModel::Isotropic::Sigma(3,1.0);
       GPSFactor gps_factor(X(correction_count),
