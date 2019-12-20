@@ -98,6 +98,12 @@ if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with 
 	endif()
 endif()
 
+if (APPLE AND BUILD_SHARED_LIBS)
+	set_target_properties(gtsam_unstable PROPERTIES
+		INSTALL_NAME_DIR
+		"${CMAKE_INSTALL_PREFIX}/lib")
+endif()
+
 install(
 	TARGETS gtsam_unstable
 	EXPORT GTSAM-exports
