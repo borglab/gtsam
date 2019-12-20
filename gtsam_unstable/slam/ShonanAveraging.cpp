@@ -543,8 +543,10 @@ Vector ShonanAveraging::MakeATangentVector(size_t p, const Vector& v, size_t i) 
   constexpr size_t d = 3;  // for now only for 3D rotations
   const auto v_i = v.segment(i * d, d);
   Vector xi = Vector::Zero(dimension);
+  double sign = pow(-1.0, round((p+1)/2)+1);
   for (size_t j=0;j<d;j++) {
-    xi(j+p-d-1) = v_i(j);
+    xi(j+p-d-1) = sign * v_i(d-j-1);
+    sign = -sign;
   }
   return xi;
 }
