@@ -345,6 +345,12 @@ if (MSVC)
 	list_append_cache(GTSAM_COMPILE_OPTIONS_PRIVATE "/wd4244") # Disable loss of precision which is thrown all over our Eigen
 endif()
 
+if (APPLE AND BUILD_SHARED_LIBS)
+	set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib"
+		CACHE PATH
+		"Default install directory on macOS")
+endif()
+
 ###############################################################################
 # Global compile options
 
