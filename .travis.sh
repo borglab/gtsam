@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # common tasks before either build or test
-function prepare ()
+function configure()
 {
   set -e   # Make sure any error makes the script to return an error code
   set -x   # echo
@@ -14,20 +14,22 @@ function prepare ()
   rm -fr $BUILD_DIR || true
   mkdir $BUILD_DIR && cd $BUILD_DIR
 
-  if [ -z "$CMAKE_BUILD_TYPE" ]; then
-    CMAKE_BUILD_TYPE=Debug
-  fi
-
-  if [ -z "$GTSAM_ALLOW_DEPRECATED_SINCE_V4" ]; then
-    GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF
-  fi
-
   if [ ! -z "$GCC_VERSION" ]; then
-    sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VERSION 60 \
-                         --slave /usr/bin/g++ g++ /usr/bin/g++-$GCC_VERSION
-    sudo update-alternatives --set gcc /usr/bin/gcc-$GCC_VERSION
+    export CC=gcc-$GCC_VERSION
+    export CXX=g++-$GCC_VERSION
   fi
+
+  # GTSAM_BUILD_WITH_MARCH_NATIVE=OFF: to avoid crashes in builder VMs
+  cmake $SOURCE_DIR \
+      -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} \
+      -DGTSAM_BUILD_TESTS=${GTSAM_BUILD_TESTS:-OFF} \
+      -DGTSAM_BUILD_UNSTABLE=${GTSAM_BUILD_UNSTABLE:-ON} \
+      -DGTSAM_BUILD_EXAMPLES_ALWAYS=${GTSAM_BUILD_EXAMPLES_ALWAYS:-ON} \
+      -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=${GTSAM_ALLOW_DEPRECATED_SINCE_V4:-OFF} \
+      -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+      -DCMAKE_VERBOSE_MAKEFILE=ON
 }
+
 
 # common tasks after either build or test
 function finish ()
@@ -41,17 +43,12 @@ function finish ()
 # compile the code with the intent of populating the cache
 function build ()
 {
-  prepare
+  export GTSAM_BUILD_EXAMPLES_ALWAYS=ON
+  export GTSAM_BUILD_TESTS=OFF
 
-  cmake $SOURCE_DIR \
-      -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
-      -DGTSAM_BUILD_TESTS=OFF \
-      -DGTSAM_BUILD_UNSTABLE=$GTSAM_BUILD_UNSTABLE \
-      -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
-      -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=$GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  configure
 
-  # Actual build:
-  VERBOSE=1 make -j2
+  make -j2
 
   finish
 }
@@ -59,14 +56,10 @@ function build ()
 # run the tests
 function test ()
 {
-  prepare
+  export GTSAM_BUILD_EXAMPLES_ALWAYS=OFF
+  export GTSAM_BUILD_TESTS=ON
 
-  cmake $SOURCE_DIR \
-      -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
-      -DGTSAM_BUILD_TESTS=ON \
-      -DGTSAM_BUILD_UNSTABLE=$GTSAM_BUILD_UNSTABLE \
-      -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
-      -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF
+  configure
 
   # Actual build:
   make -j2 check
@@ -79,7 +72,7 @@ case $1 in
   -b)
     build
     ;;
-  -t)                      
+  -t)
     test
     ;;
 esac
