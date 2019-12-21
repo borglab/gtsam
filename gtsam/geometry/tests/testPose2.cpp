@@ -846,7 +846,7 @@ TEST(Pose2 , TransformCovariance3) {
   // rotate
   {
     auto cov = FullCovarianceFromSigmas<Pose2>({0.1, 0.3, 0.7});
-    auto transformed = Pose2::TransformCovariance{{0., 0., 90 * degree}}(cov);
+    auto transformed = TransformCovariance<Pose2>{{0., 0., 90 * degree}}(cov);
     // interchange x and y axes
     EXPECT(assert_equal(
       Vector3{cov(1, 1), cov(0, 0), cov(2, 2)},
@@ -859,7 +859,7 @@ TEST(Pose2 , TransformCovariance3) {
   // translate along x with uncertainty in x
   {
     auto cov = SingleVariableCovarianceFromSigma<Pose2>(0, 0.1);
-    auto transformed = Pose2::TransformCovariance{{20., 0., 0.}}(cov);
+    auto transformed = TransformCovariance<Pose2>{{20., 0., 0.}}(cov);
     // No change
     EXPECT(assert_equal(cov, transformed));
   }
@@ -867,7 +867,7 @@ TEST(Pose2 , TransformCovariance3) {
   // translate along x with uncertainty in y
   {
     auto cov = SingleVariableCovarianceFromSigma<Pose2>(1, 0.1);
-    auto transformed = Pose2::TransformCovariance{{20., 0., 0.}}(cov);
+    auto transformed = TransformCovariance<Pose2>{{20., 0., 0.}}(cov);
     // No change
     EXPECT(assert_equal(cov, transformed));
   }
@@ -875,7 +875,7 @@ TEST(Pose2 , TransformCovariance3) {
   // translate along x with uncertainty in theta
   {
     auto cov = SingleVariableCovarianceFromSigma<Pose2>(2, 0.1);
-    auto transformed = Pose2::TransformCovariance{{20., 0., 0.}}(cov);
+    auto transformed = TransformCovariance<Pose2>{{20., 0., 0.}}(cov);
     EXPECT(assert_equal(
       Vector3{0., 0.1 * 0.1 * 20. * 20., 0.1 * 0.1},
       Vector3{transformed.diagonal()}));
@@ -887,7 +887,7 @@ TEST(Pose2 , TransformCovariance3) {
   // rotate and translate along x with uncertainty in x
   {
     auto cov = SingleVariableCovarianceFromSigma<Pose2>(0, 0.1);
-    auto transformed = Pose2::TransformCovariance{{20., 0., 90 * degree}}(cov);
+    auto transformed = TransformCovariance<Pose2>{{20., 0., 90 * degree}}(cov);
     // interchange x and y axes
     EXPECT(assert_equal(
       Vector3{cov(1, 1), cov(0, 0), cov(2, 2)},
@@ -900,7 +900,7 @@ TEST(Pose2 , TransformCovariance3) {
   // rotate and translate along x with uncertainty in theta
   {
     auto cov = SingleVariableCovarianceFromSigma<Pose2>(2, 0.1);
-    auto transformed = Pose2::TransformCovariance{{20., 0., 90 * degree}}(cov);
+    auto transformed = TransformCovariance<Pose2>{{20., 0., 90 * degree}}(cov);
     EXPECT(assert_equal(
       Vector3{0., 0.1 * 0.1 * 20. * 20., 0.1 * 0.1},
       Vector3{transformed.diagonal()}));

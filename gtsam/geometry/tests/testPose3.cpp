@@ -888,7 +888,7 @@ TEST(Pose3, TransformCovariance6MapTo2d) {
   Vector3 s2{0.1, 0.3, 0.7};
   Pose2 p2{1.1, 1.5, 31. * degree};
   auto cov2 = FullCovarianceFromSigmas<Pose2>(s2);
-  auto transformed2 = Pose2::TransformCovariance{p2}(cov2);
+  auto transformed2 = TransformCovariance<Pose2>{p2}(cov2);
 
   auto match_cov3_to_cov2 = [&](int spatial_axis0, int spatial_axis1, int r_axis,
                                 const Pose2::Jacobian &cov2, const Pose3::Jacobian &cov3) -> void
@@ -904,21 +904,21 @@ TEST(Pose3, TransformCovariance6MapTo2d) {
   // rotate around x axis
   {
     auto cov3 = FullCovarianceFromSigmas<Pose3>((Vector6{} << s2(2), 0., 0., 0., s2(0), s2(1)).finished());
-    auto transformed3 = Pose3::TransformCovariance{{Rot3::RzRyRx(p2.theta(), 0., 0.), {0., p2.x(), p2.y()}}}(cov3);
+    auto transformed3 = TransformCovariance<Pose3>{{Rot3::RzRyRx(p2.theta(), 0., 0.), {0., p2.x(), p2.y()}}}(cov3);
     match_cov3_to_cov2(4, 5, 0, transformed2, transformed3);
   }
 
   // rotate around y axis
   {
     auto cov3 = FullCovarianceFromSigmas<Pose3>((Vector6{} << 0., s2(2), 0., s2(1), 0., s2(0)).finished());
-    auto transformed3 = Pose3::TransformCovariance{{Rot3::RzRyRx(0., p2.theta(), 0.), {p2.y(), 0., p2.x()}}}(cov3);
+    auto transformed3 = TransformCovariance<Pose3>{{Rot3::RzRyRx(0., p2.theta(), 0.), {p2.y(), 0., p2.x()}}}(cov3);
     match_cov3_to_cov2(5, 3, 1, transformed2, transformed3);
   }
 
   // rotate around z axis
   {
     auto cov3 = FullCovarianceFromSigmas<Pose3>((Vector6{} << 0., 0., s2(2), s2(0), s2(1), 0.).finished());
-    auto transformed3 = Pose3::TransformCovariance{{Rot3::RzRyRx(0., 0., p2.theta()), {p2.x(), p2.y(), 0.}}}(cov3);
+    auto transformed3 = TransformCovariance<Pose3>{{Rot3::RzRyRx(0., 0., p2.theta()), {p2.x(), p2.y(), 0.}}}(cov3);
     match_cov3_to_cov2(3, 4, 2, transformed2, transformed3);
   }
 }
@@ -932,7 +932,7 @@ TEST(Pose3, TransformCovariance6) {
   // rotate 90 around z axis and then 90 around y axis
   {
     auto cov = FullCovarianceFromSigmas<Pose3>((Vector6{} << 0.1, 0.2, 0.3, 0.5, 0.7, 1.1).finished());
-    auto transformed = Pose3::TransformCovariance{{Rot3::RzRyRx(0., 90 * degree, 90 * degree), {0., 0., 0.}}}(cov);
+    auto transformed = TransformCovariance<Pose3>{{Rot3::RzRyRx(0., 90 * degree, 90 * degree), {0., 0., 0.}}}(cov);
     // x from y, y from z, z from x
     EXPECT(assert_equal(
       (Vector6{} << cov(1, 1), cov(2, 2), cov(0, 0), cov(4, 4), cov(5, 5), cov(3, 3)).finished(),
@@ -947,7 +947,7 @@ TEST(Pose3, TransformCovariance6) {
   // translate along the x axis with uncertainty in roty and rotz
   {
     auto cov = TwoVariableCovarianceFromSigmas<Pose3>(1, 2, 0.7, 0.3);
-    auto transformed = Pose3::TransformCovariance{{Rot3::RzRyRx(0., 0., 0.), {20., 0., 0.}}}(cov);
+    auto transformed = TransformCovariance<Pose3>{{Rot3::RzRyRx(0., 0., 0.), {20., 0., 0.}}}(cov);
     // The uncertainty in roty and rotz causes off-diagonal covariances
     EXPECT(assert_equal(0.7 * 0.7 * 20., transformed(5, 1)));
     EXPECT(assert_equal(0.7 * 0.7 * 20. * 20., transformed(5, 5)));
@@ -961,7 +961,7 @@ TEST(Pose3, TransformCovariance6) {
   // rotate around x axis and translate along the x axis with uncertainty in rotx
   {
     auto cov = SingleVariableCovarianceFromSigma<Pose3>(0, 0.1);
-    auto transformed = Pose3::TransformCovariance{{Rot3::RzRyRx(90 * degree, 0., 0.), {20., 0., 0.}}}(cov);
+    auto transformed = TransformCovariance<Pose3>{{Rot3::RzRyRx(90 * degree, 0., 0.), {20., 0., 0.}}}(cov);
     // No change
     EXPECT(assert_equal(cov, transformed));
   }
@@ -969,7 +969,7 @@ TEST(Pose3, TransformCovariance6) {
   // rotate around x axis and translate along the x axis with uncertainty in roty
   {
     auto cov = SingleVariableCovarianceFromSigma<Pose3>(1, 0.1);
-    auto transformed = Pose3::TransformCovariance{{Rot3::RzRyRx(90 * degree, 0., 0.), {20., 0., 0.}}}(cov);
+    auto transformed = TransformCovariance<Pose3>{{Rot3::RzRyRx(90 * degree, 0., 0.), {20., 0., 0.}}}(cov);
     // Uncertainty is spread to other dimensions.
     EXPECT(assert_equal(
       (Vector6{} << 0., 0., 0.1 * 0.1, 0., 0.1 * 0.1 * 20. * 20., 0.).finished(),
