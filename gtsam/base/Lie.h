@@ -161,6 +161,16 @@ struct LieGroup {
     return v;
   }
 
+  // Functor for transforming covariance of Class
+  class TransformCovariance
+  {
+  private:
+    typename Class::Jacobian adjointMap_;
+  public:
+    explicit TransformCovariance(const Class &X) : adjointMap_{X.AdjointMap()} {}
+    typename Class::Jacobian operator()(const typename Class::Jacobian &covariance)
+    { return adjointMap_ * covariance * adjointMap_.transpose(); }
+  };
 };
 
 /// tag to assert a type is a Lie group

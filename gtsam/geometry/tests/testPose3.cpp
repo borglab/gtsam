@@ -885,43 +885,41 @@ TEST(Pose3, TransformCovariance6MapTo2d) {
   // Create 3d scenarios that map to 2d configurations and compare with Pose2 results.
   using namespace test_pose_adjoint_map;
 
-  std::array<double, Pose2::dimension> s{{0.1, 0.3, 0.7}};
-  std::array<double, Pose2::Rotation::dimension> r{{31.}};
-  std::array<double, Pose2::Translation::dimension> t{{1.1, 1.5}};
-  auto cov2 = GenerateFullCovariance<Pose2>({{0.1, 0.3, 0.7}});
-  auto cov2_trans = RotateTranslate<Pose2>(r, t, cov2);
+  Vector3 s2{0.1, 0.3, 0.7};
+  Pose2 p2{1.1, 1.5, 31. * degree};
+  auto cov2 = FullCovarianceFromSigmas<Pose2>(s2);
+  auto transformed2 = Pose2::TransformCovariance{p2}(cov2);
 
-  auto match_cov3_to_cov2 = [&](int r_axis, int spatial_axis0, int spatial_axis1,
+  auto match_cov3_to_cov2 = [&](int spatial_axis0, int spatial_axis1, int r_axis,
                                 const Pose2::Jacobian &cov2, const Pose3::Jacobian &cov3) -> void
   {
-    EXPECT_DOUBLES_EQUAL(cov2(0, 0), cov3(spatial_axis0, spatial_axis0), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov2(1, 1), cov3(spatial_axis1, spatial_axis1), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov2(2, 2), cov3(r_axis, r_axis), 1e-9);
-
-    EXPECT_DOUBLES_EQUAL(cov2(1, 0), cov3(spatial_axis1, spatial_axis0), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov2(2, 1), cov3(r_axis, spatial_axis1), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov2(2, 0), cov3(r_axis, spatial_axis0), 1e-9);
+    EXPECT(assert_equal(
+      Vector3{cov2.diagonal()},
+      Vector3{cov3(spatial_axis0, spatial_axis0), cov3(spatial_axis1, spatial_axis1), cov3(r_axis, r_axis)}));
+    EXPECT(assert_equal(
+      Vector3{cov2(1, 0), cov2(2, 0), cov2(2, 1)},
+      Vector3{cov3(spatial_axis1, spatial_axis0), cov3(r_axis, spatial_axis0), cov3(r_axis, spatial_axis1)}));
   };
 
   // rotate around x axis
   {
-    auto cov3 = GenerateFullCovariance<Pose3>({{s[2], 0., 0., 0., s[0], s[1]}});
-    auto cov3_trans = RotateTranslate<Pose3>({{r[0], 0., 0.}}, {{0., t[0], t[1]}}, cov3);
-    match_cov3_to_cov2(0, 4, 5, cov2_trans, cov3_trans);
+    auto cov3 = FullCovarianceFromSigmas<Pose3>((Vector6{} << s2(2), 0., 0., 0., s2(0), s2(1)).finished());
+    auto transformed3 = Pose3::TransformCovariance{{Rot3::RzRyRx(p2.theta(), 0., 0.), {0., p2.x(), p2.y()}}}(cov3);
+    match_cov3_to_cov2(4, 5, 0, transformed2, transformed3);
   }
 
   // rotate around y axis
   {
-    auto cov3 = GenerateFullCovariance<Pose3>({{0., s[2], 0., s[1], 0., s[0]}});
-    auto cov3_trans = RotateTranslate<Pose3>({{0., r[0], 0.}}, {{t[1], 0., t[0]}}, cov3);
-    match_cov3_to_cov2(1, 5, 3, cov2_trans, cov3_trans);
+    auto cov3 = FullCovarianceFromSigmas<Pose3>((Vector6{} << 0., s2(2), 0., s2(1), 0., s2(0)).finished());
+    auto transformed3 = Pose3::TransformCovariance{{Rot3::RzRyRx(0., p2.theta(), 0.), {p2.y(), 0., p2.x()}}}(cov3);
+    match_cov3_to_cov2(5, 3, 1, transformed2, transformed3);
   }
 
   // rotate around z axis
   {
-    auto cov3 = GenerateFullCovariance<Pose3>({{0., 0., s[2], s[0], s[1], 0.}});
-    auto cov3_trans = RotateTranslate<Pose3>({{0., 0., r[0]}}, {{t[0], t[1], 0.}}, cov3);
-    match_cov3_to_cov2(2, 3, 4, cov2_trans, cov3_trans);
+    auto cov3 = FullCovarianceFromSigmas<Pose3>((Vector6{} << 0., 0., s2(2), s2(0), s2(1), 0.).finished());
+    auto transformed3 = Pose3::TransformCovariance{{Rot3::RzRyRx(0., 0., p2.theta()), {p2.x(), p2.y(), 0.}}}(cov3);
+    match_cov3_to_cov2(3, 4, 2, transformed2, transformed3);
   }
 }
 
@@ -933,54 +931,49 @@ TEST(Pose3, TransformCovariance6) {
 
   // rotate 90 around z axis and then 90 around y axis
   {
-    auto cov = GenerateFullCovariance<Pose3>({{0.1, 0.2, 0.3, 0.5, 0.7, 1.1}});
-    auto cov_trans = RotateTranslate<Pose3>({{0., 90., 90.}}, {{}}, cov);
+    auto cov = FullCovarianceFromSigmas<Pose3>((Vector6{} << 0.1, 0.2, 0.3, 0.5, 0.7, 1.1).finished());
+    auto transformed = Pose3::TransformCovariance{{Rot3::RzRyRx(0., 90 * degree, 90 * degree), {0., 0., 0.}}}(cov);
     // x from y, y from z, z from x
-    EXPECT_DOUBLES_EQUAL(cov_trans(0, 0), cov(1, 1), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), cov(2, 2), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 2), cov(0, 0), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(3, 3), cov(4, 4), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(4, 4), cov(5, 5), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(5, 5), cov(3, 3), 1e-9);
-
+    EXPECT(assert_equal(
+      (Vector6{} << cov(1, 1), cov(2, 2), cov(0, 0), cov(4, 4), cov(5, 5), cov(3, 3)).finished(),
+      Vector6{transformed.diagonal()}));
     // Both the x and z axes are pointing in the negative direction.
-    EXPECT_DOUBLES_EQUAL(cov_trans(1, 0), -cov(2, 1), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 0), cov(0, 1), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(3, 0), cov(4, 1), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(4, 0), -cov(5, 1), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(5, 0), cov(3, 1), 1e-9);
+    EXPECT(assert_equal(
+      (Vector5{} << -cov(2, 1), cov(0, 1), cov(4, 1), -cov(5, 1), cov(3, 1)).finished(),
+      (Vector5{} << transformed(1, 0), transformed(2, 0), transformed(3, 0),
+        transformed(4, 0), transformed(5, 0)).finished()));
   }
 
   // translate along the x axis with uncertainty in roty and rotz
   {
-    auto cov = GenerateTwoVariableCovariance<Pose3>(1, 2, 0.7, 0.3);
-    auto cov_trans = RotateTranslate<Pose3>({{}}, {{20., 0., 0.}}, cov);
-    // The variance in roty and rotz causes off-diagonal covariances
-    EXPECT_DOUBLES_EQUAL(cov_trans(5, 1), 0.7 * 0.7 * 20., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(5, 5), 0.7 * 0.7 * 20. * 20., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(4, 2), -0.3 * 0.3 * 20., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(4, 4), 0.3 * 0.3 * 20. * 20., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(4, 1), -0.3 * 0.7 * 20., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(5, 2), 0.3 * 0.7 * 20., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(5, 4), -0.3 * 0.7 * 20. * 20., 1e-9);
+    auto cov = TwoVariableCovarianceFromSigmas<Pose3>(1, 2, 0.7, 0.3);
+    auto transformed = Pose3::TransformCovariance{{Rot3::RzRyRx(0., 0., 0.), {20., 0., 0.}}}(cov);
+    // The uncertainty in roty and rotz causes off-diagonal covariances
+    EXPECT(assert_equal(0.7 * 0.7 * 20., transformed(5, 1)));
+    EXPECT(assert_equal(0.7 * 0.7 * 20. * 20., transformed(5, 5)));
+    EXPECT(assert_equal(-0.3 * 0.3 * 20., transformed(4, 2)));
+    EXPECT(assert_equal(0.3 * 0.3 * 20. * 20., transformed(4, 4)));
+    EXPECT(assert_equal(-0.3 * 0.7 * 20., transformed(4, 1)));
+    EXPECT(assert_equal(0.3 * 0.7 * 20., transformed(5, 2)));
+    EXPECT(assert_equal(-0.3 * 0.7 * 20. * 20., transformed(5, 4)));
   }
 
   // rotate around x axis and translate along the x axis with uncertainty in rotx
   {
-    auto cov = GenerateOneVariableCovariance<Pose3>(0, 0.1);
-    auto cov_trans = RotateTranslate<Pose3>({{90., 0., 0.}}, {{20., 0., 0.}}, cov);
-    EXPECT_DOUBLES_EQUAL(cov_trans(1, 0), 0., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 0), 0., 1e-9);
+    auto cov = SingleVariableCovarianceFromSigma<Pose3>(0, 0.1);
+    auto transformed = Pose3::TransformCovariance{{Rot3::RzRyRx(90 * degree, 0., 0.), {20., 0., 0.}}}(cov);
+    // No change
+    EXPECT(assert_equal(cov, transformed));
   }
 
   // rotate around x axis and translate along the x axis with uncertainty in roty
   {
-    auto cov = GenerateOneVariableCovariance<Pose3>(1, 0.1);
-    auto cov_trans = RotateTranslate<Pose3>({{90., 0., 0.}}, {{20., 0., 0.}}, cov);
-    // interchange the y and z axes.
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 2), 0.1 * 0.1, 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(4, 2), -0.1 * 0.1 * 20., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(4, 4), 0.1 * 0.1 * 20. * 20., 1e-9);
+    auto cov = SingleVariableCovarianceFromSigma<Pose3>(1, 0.1);
+    auto transformed = Pose3::TransformCovariance{{Rot3::RzRyRx(90 * degree, 0., 0.), {20., 0., 0.}}}(cov);
+    // Uncertainty is spread to other dimensions.
+    EXPECT(assert_equal(
+      (Vector6{} << 0., 0., 0.1 * 0.1, 0., 0.1 * 0.1 * 20. * 20., 0.).finished(),
+      Vector6{transformed.diagonal()}));
   }
 }
 

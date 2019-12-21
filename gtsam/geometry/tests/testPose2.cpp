@@ -845,71 +845,68 @@ TEST(Pose2 , TransformCovariance3) {
 
   // rotate
   {
-    auto cov = GenerateFullCovariance<Pose2>({{0.1, 0.3, 0.7}});
-    auto cov_trans = RotateTranslate<Pose2>({{90.}}, {{}}, cov);
+    auto cov = FullCovarianceFromSigmas<Pose2>({0.1, 0.3, 0.7});
+    auto transformed = Pose2::TransformCovariance{{0., 0., 90 * degree}}(cov);
     // interchange x and y axes
-    EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), cov(0, 0), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(0, 0), cov(1, 1), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 2), cov(2, 2), 1e-9);
-
-    EXPECT_DOUBLES_EQUAL(cov_trans(1, 0), -cov(1, 0), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 0), -cov(2, 1), 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 1), cov(2, 0), 1e-9);
+    EXPECT(assert_equal(
+      Vector3{cov(1, 1), cov(0, 0), cov(2, 2)},
+      Vector3{transformed.diagonal()}));
+    EXPECT(assert_equal(
+      Vector3{-cov(1, 0), -cov(2, 1), cov(2, 0)},
+      Vector3{transformed(1, 0), transformed(2, 0), transformed(2, 1)}));
   }
 
   // translate along x with uncertainty in x
   {
-    auto cov = GenerateOneVariableCovariance<Pose2>(0, 0.1);
-    auto cov_trans = RotateTranslate<Pose2>({{}}, {{20., 0.}}, cov);
-    EXPECT_DOUBLES_EQUAL(cov_trans(0, 0), 0.1 * 0.1, 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), 0., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 2), 0., 1e-9);
-
-    EXPECT_DOUBLES_EQUAL(cov_trans(1, 0), 0., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 0), 0., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 1), 0., 1e-9);
+    auto cov = SingleVariableCovarianceFromSigma<Pose2>(0, 0.1);
+    auto transformed = Pose2::TransformCovariance{{20., 0., 0.}}(cov);
+    // No change
+    EXPECT(assert_equal(cov, transformed));
   }
 
   // translate along x with uncertainty in y
   {
-    auto cov = GenerateOneVariableCovariance<Pose2>(1, 0.1);
-    auto cov_trans = RotateTranslate<Pose2>({{}}, {{20., 0.}}, cov);
-    EXPECT_DOUBLES_EQUAL(cov_trans(0, 0), 0., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), 0.1 * 0.1, 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 2), 0., 1e-9);
-
-    EXPECT_DOUBLES_EQUAL(cov_trans(1, 0), 0., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 0), 0., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 1), 0., 1e-9);
+    auto cov = SingleVariableCovarianceFromSigma<Pose2>(1, 0.1);
+    auto transformed = Pose2::TransformCovariance{{20., 0., 0.}}(cov);
+    // No change
+    EXPECT(assert_equal(cov, transformed));
   }
 
   // translate along x with uncertainty in theta
   {
-    auto cov = GenerateOneVariableCovariance<Pose2>(2, 0.1);
-    auto cov_trans = RotateTranslate<Pose2>({{}}, {{20., 0.}}, cov);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 1), -0.1 * 0.1 * 20., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), 0.1 * 0.1 * 20. * 20., 1e-9);
+    auto cov = SingleVariableCovarianceFromSigma<Pose2>(2, 0.1);
+    auto transformed = Pose2::TransformCovariance{{20., 0., 0.}}(cov);
+    EXPECT(assert_equal(
+      Vector3{0., 0.1 * 0.1 * 20. * 20., 0.1 * 0.1},
+      Vector3{transformed.diagonal()}));
+    EXPECT(assert_equal(
+      Vector3{0., 0., -0.1 * 0.1 * 20.},
+      Vector3{transformed(1, 0), transformed(2, 0), transformed(2, 1)}));
   }
 
   // rotate and translate along x with uncertainty in x
   {
-    auto cov = GenerateOneVariableCovariance<Pose2>(0, 0.1);
-    auto cov_trans = RotateTranslate<Pose2>({{90.}}, {{20., 0.}}, cov);
-    EXPECT_DOUBLES_EQUAL(cov_trans(0, 0), 0., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), 0.1 * 0.1, 1e-9);
+    auto cov = SingleVariableCovarianceFromSigma<Pose2>(0, 0.1);
+    auto transformed = Pose2::TransformCovariance{{20., 0., 90 * degree}}(cov);
+    // interchange x and y axes
+    EXPECT(assert_equal(
+      Vector3{cov(1, 1), cov(0, 0), cov(2, 2)},
+      Vector3{transformed.diagonal()}));
+    EXPECT(assert_equal(
+      Vector3{Z_3x1},
+      Vector3{transformed(1, 0), transformed(2, 0), transformed(2, 1)}));
   }
 
   // rotate and translate along x with uncertainty in theta
   {
-    auto cov = GenerateOneVariableCovariance<Pose2>(2, 0.1);
-    auto cov_trans = RotateTranslate<Pose2>({{90.}}, {{20., 0.}}, cov);
-    EXPECT_DOUBLES_EQUAL(cov_trans(0, 0), 0., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(1, 1), 0.1 * 0.1 * 20. * 20., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 2), 0.1 * 0.1, 1e-9);
-
-    EXPECT_DOUBLES_EQUAL(cov_trans(1, 0), 0., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 0), 0., 1e-9);
-    EXPECT_DOUBLES_EQUAL(cov_trans(2, 1), -0.1 * 0.1 * 20., 1e-9);
+    auto cov = SingleVariableCovarianceFromSigma<Pose2>(2, 0.1);
+    auto transformed = Pose2::TransformCovariance{{20., 0., 90 * degree}}(cov);
+    EXPECT(assert_equal(
+      Vector3{0., 0.1 * 0.1 * 20. * 20., 0.1 * 0.1},
+      Vector3{transformed.diagonal()}));
+    EXPECT(assert_equal(
+      Vector3{0., 0., -0.1 * 0.1 * 20.},
+      Vector3{transformed(1, 0), transformed(2, 0), transformed(2, 1)}));
   }
 }
 
