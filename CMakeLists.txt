@@ -346,9 +346,8 @@ if (MSVC)
 endif()
 
 if (APPLE AND BUILD_SHARED_LIBS)
-	set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib"
-		CACHE PATH
-		"Default install directory on macOS")
+	# Set the default install directory on macOS
+	set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 endif()
 
 ###############################################################################
