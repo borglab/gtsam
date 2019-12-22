@@ -61,7 +61,7 @@ namespace gtsam {
     /** Internal Eigen Quaternion */
     gtsam::Quaternion quaternion_;
 #else
-    Matrix3 rot_;
+    SO3 rot_;
 #endif
 
   public:
@@ -92,26 +92,34 @@ namespace gtsam {
      * allow assignment/construction from a generic matrix.
      * See: http://stackoverflow.com/questions/27094132/cannot-understand-if-this-is-circular-dependency-or-clang#tab-top
      */
-    template<typename Derived>
-    inline explicit Rot3(const Eigen::MatrixBase<Derived>& R) {
-      #ifdef GTSAM_USE_QUATERNIONS
-        quaternion_=Matrix3(R);
-      #else
-        rot_ = R;
-      #endif
+    template <typename Derived>
+#ifdef GTSAM_USE_QUATERNIONS
+    explicit Rot3(const Eigen::MatrixBase<Derived>& R) {
+      quaternion_ = Matrix3(R);
     }
+#else
+    explicit Rot3(const Eigen::MatrixBase<Derived>& R) : rot_(R) {
+    }
+#endif
 
     /**
      * Constructor from a rotation matrix
      * Overload version for Matrix3 to avoid casting in quaternion mode.
      */
-    inline explicit Rot3(const Matrix3& R) {
-      #ifdef GTSAM_USE_QUATERNIONS
-        quaternion_=R;
-      #else
-        rot_ = R;
-      #endif
-    }
+#ifdef GTSAM_USE_QUATERNIONS
+    explicit Rot3(const Matrix3& R) : quaternion_(R) {}
+#else
+    explicit Rot3(const Matrix3& R) : rot_(R) {}
+#endif
+
+    /**
+     * Constructor from an SO3 instance
+     */
+#ifdef GTSAM_USE_QUATERNIONS
+    explicit Rot3(const SO3& R) : quaternion_(R.matrix()) {}
+#else
+    explicit Rot3(const SO3& R) : rot_(R) {}
+#endif
 
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion
@@ -227,6 +235,9 @@ namespace gtsam {
     /// Calculate rotation from two pairs of homogeneous points using two successive rotations
     static Rot3 AlignTwoPairs(const Unit3& a_p, const Unit3& b_p,  //
                               const Unit3& a_q, const Unit3& b_q);
+
+    /// Static, named constructor that finds Rot3 element closest to M in Frobenius norm.
+    static Rot3 ClosestTo(const Matrix3& M) { return Rot3(SO3::ClosestTo(M)); }
 
     /// @}
     /// @name Testable
@@ -483,28 +494,27 @@ namespace gtsam {
   /// @}
 #endif
 
-  private:
-
+   private:
     /** Serialization function */
     friend class boost::serialization::access;
-    template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/)
-    {
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
 #ifndef GTSAM_USE_QUATERNIONS
-       ar & boost::serialization::make_nvp("rot11", rot_(0,0));
-       ar & boost::serialization::make_nvp("rot12", rot_(0,1));
-       ar & boost::serialization::make_nvp("rot13", rot_(0,2));
-       ar & boost::serialization::make_nvp("rot21", rot_(1,0));
-       ar & boost::serialization::make_nvp("rot22", rot_(1,1));
-       ar & boost::serialization::make_nvp("rot23", rot_(1,2));
-       ar & boost::serialization::make_nvp("rot31", rot_(2,0));
-       ar & boost::serialization::make_nvp("rot32", rot_(2,1));
-       ar & boost::serialization::make_nvp("rot33", rot_(2,2));
+      Matrix3& M = rot_.matrix_;
+      ar& boost::serialization::make_nvp("rot11", M(0, 0));
+      ar& boost::serialization::make_nvp("rot12", M(0, 1));
+      ar& boost::serialization::make_nvp("rot13", M(0, 2));
+      ar& boost::serialization::make_nvp("rot21", M(1, 0));
+      ar& boost::serialization::make_nvp("rot22", M(1, 1));
+      ar& boost::serialization::make_nvp("rot23", M(1, 2));
+      ar& boost::serialization::make_nvp("rot31", M(2, 0));
+      ar& boost::serialization::make_nvp("rot32", M(2, 1));
+      ar& boost::serialization::make_nvp("rot33", M(2, 2));
 #else
-      ar & boost::serialization::make_nvp("w", quaternion_.w());
-      ar & boost::serialization::make_nvp("x", quaternion_.x());
-      ar & boost::serialization::make_nvp("y", quaternion_.y());
-      ar & boost::serialization::make_nvp("z", quaternion_.z());
+      ar& boost::serialization::make_nvp("w", quaternion_.w());
+      ar& boost::serialization::make_nvp("x", quaternion_.x());
+      ar& boost::serialization::make_nvp("y", quaternion_.y());
+      ar& boost::serialization::make_nvp("z", quaternion_.z());
 #endif
     }
 
