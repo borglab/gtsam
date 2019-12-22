@@ -153,7 +153,7 @@ if(GTSAM_SUPPORT_NESTED_DISSECTION)
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/include>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include/gtsam/3rdparty/metis/>
+    $<INSTALL_INTERFACE:include/gtsam/3rdparty/metis/>
   )
 endif()
 
