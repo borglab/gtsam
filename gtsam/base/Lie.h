@@ -160,7 +160,6 @@ struct LieGroup {
     if (H2) *H2 = D_v_h;
     return v;
   }
-
 };
 
 /// tag to assert a type is a Lie group
@@ -335,6 +334,21 @@ T interpolate(const T& X, const T& Y, double t) {
   assert(t >= 0 && t <= 1);
   return traits<T>::Compose(X, traits<T>::Expmap(t * traits<T>::Logmap(traits<T>::Between(X, Y))));
 }
+
+/**
+ * Functor for transforming covariance of T.
+ * T needs to satisfy the Lie group concept.
+ */
+template<class T>
+class TransformCovariance
+{
+private:
+  typename T::Jacobian adjointMap_;
+public:
+  explicit TransformCovariance(const T &X) : adjointMap_{X.AdjointMap()} {}
+  typename T::Jacobian operator()(const typename T::Jacobian &covariance)
+  { return adjointMap_ * covariance * adjointMap_.transpose(); }
+};
 
 } // namespace gtsam
 
