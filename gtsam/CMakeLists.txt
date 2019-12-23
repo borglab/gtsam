@@ -153,7 +153,7 @@ if(GTSAM_SUPPORT_NESTED_DISSECTION)
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/include>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include/gtsam/3rdparty/metis/>
+    $<INSTALL_INTERFACE:include/gtsam/3rdparty/metis/>
   )
 endif()
 
@@ -168,14 +168,8 @@ if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with 
 		set_target_properties(gtsam PROPERTIES
 			PREFIX ""
 			DEFINE_SYMBOL GTSAM_EXPORTS
-    RUNTIME_OUTPUT_DIRECTORY "${GTSAM_BINARY_DIR}/bin")
+			RUNTIME_OUTPUT_DIRECTORY "${GTSAM_BINARY_DIR}/bin")
 	endif()
-endif()
-
-if (APPLE AND BUILD_SHARED_LIBS)
-	set_target_properties(gtsam PROPERTIES
-		INSTALL_NAME_DIR
-		"${CMAKE_INSTALL_PREFIX}/lib")
 endif()
 
 install(
