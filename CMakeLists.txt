@@ -193,12 +193,6 @@ else()
     endif()
 endif()
 
-
-if(NOT (${Boost_VERSION} LESS 105600))
-	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
-	list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES BOOST_OPTIONAL_CONFIG_ALLOW_BINDING_TO_RVALUES)
-endif()
-
 ###############################################################################
 # Find TBB
 find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
