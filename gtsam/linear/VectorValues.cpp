@@ -129,7 +129,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  ostream& operator<<(ostream& os, const VectorValues& v) {
+  GTSAM_EXPORT ostream& operator<<(ostream& os, const VectorValues& v) {
     // Change print depending on whether we are using TBB
 #ifdef GTSAM_USE_TBB
     map<Key, Vector> sorted;

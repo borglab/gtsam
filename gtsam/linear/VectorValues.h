@@ -230,7 +230,7 @@ namespace gtsam {
     const_iterator find(Key j) const { return values_.find(j); }
 
     /// overload operator << to print to stringstream
-    friend std::ostream& operator<<(std::ostream&, const VectorValues&);
+    GTSAM_EXPORT friend std::ostream& operator<<(std::ostream&, const VectorValues&);
 
     /** print required by Testable for unit testing */
     void print(const std::string& str = "VectorValues",

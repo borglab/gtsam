@@ -32,7 +32,7 @@ namespace gtsam {
 //******************************************************************************
 namespace so3 {
 
-Matrix99 Dcompose(const SO3& Q) {
+GTSAM_EXPORT Matrix99 Dcompose(const SO3& Q) {
   Matrix99 H;
   auto R = Q.matrix();
   H << I_3x3 * R(0, 0), I_3x3 * R(1, 0), I_3x3 * R(2, 0),  //
@@ -41,7 +41,7 @@ Matrix99 Dcompose(const SO3& Q) {
   return H;
 }
 
-Matrix3 compose(const Matrix3& M, const SO3& R, OptionalJacobian<9, 9> H) {
+GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R, OptionalJacobian<9, 9> H) {
   Matrix3 MR = M * R.matrix();
   if (H) *H = Dcompose(R);
   return MR;
@@ -134,12 +134,14 @@ Vector3 DexpFunctor::applyInvDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
   return so3::ExpmapFunctor(axis, theta).expmap();
 }
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 SO3 SO3::ClosestTo(const Matrix3& M) {
   Eigen::JacobiSVD<Matrix3> svd(M, Eigen::ComputeFullU | Eigen::ComputeFullV);
   const auto& U = svd.matrixU();
@@ -150,6 +152,7 @@ SO3 SO3::ClosestTo(const Matrix3& M) {
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 SO3 SO3::ChordalMean(const std::vector<SO3>& rotations) {
   // See Hartley13ijcv:
   // Cost function C(R) = \sum sqr(|R-R_i|_F)
@@ -163,6 +166,7 @@ SO3 SO3::ChordalMean(const std::vector<SO3>& rotations) {
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 Matrix3 SO3::Hat(const Vector3& xi) {
   // skew symmetric matrix X = xi^
   Matrix3 Y = Z_3x3;
@@ -174,6 +178,7 @@ Matrix3 SO3::Hat(const Vector3& xi) {
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 Vector3 SO3::Vee(const Matrix3& X) {
   Vector3 xi;
   xi(0) = -X(1, 2);
@@ -184,12 +189,14 @@ Vector3 SO3::Vee(const Matrix3& X) {
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 Matrix3 SO3::AdjointMap() const {
   return matrix_;
 }
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
   if (H) {
     so3::DexpFunctor impl(omega);
@@ -201,6 +208,7 @@ SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
 }
 
 template <>
+GTSAM_EXPORT
 Matrix3 SO3::ExpmapDerivative(const Vector3& omega) {
   return so3::DexpFunctor(omega).dexp();
 }
@@ -217,6 +225,7 @@ Matrix3 SO3::ExpmapDerivative(const Vector3& omega) {
  omega)
  */
 template <>
+GTSAM_EXPORT
 Matrix3 SO3::LogmapDerivative(const Vector3& omega) {
   using std::cos;
   using std::sin;
@@ -234,6 +243,7 @@ Matrix3 SO3::LogmapDerivative(const Vector3& omega) {
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
   using std::sin;
   using std::sqrt;
@@ -281,11 +291,13 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
 // Chart at origin for SO3 is *not* Cayley but actual Expmap/Logmap
 
 template <>
+GTSAM_EXPORT
 SO3 SO3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H) {
   return Expmap(omega, H);
 }
 
 template <>
+GTSAM_EXPORT
 Vector3 SO3::ChartAtOrigin::Local(const SO3& R, ChartJacobian H) {
   return Logmap(R, H);
 }
@@ -307,6 +319,7 @@ static const Matrix93 P3 =
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 Vector9 SO3::vec(OptionalJacobian<9, 3> H) const {
   const Matrix3& R = matrix_;
   if (H) {
