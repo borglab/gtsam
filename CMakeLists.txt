@@ -88,7 +88,7 @@ if(NOT MSVC AND NOT XCODE_VERSION)
 
   # Set the GTSAM_BUILD_TAG variable.
   # If build type is Release, set to blank (""), else set to the build type.
-  if("${CMAKE_BUILD_TYPE_UPPER}" STREQUAL "RELEASE")
+  if(${CMAKE_BUILD_TYPE_UPPER} STREQUAL "RELEASE")
    set(GTSAM_BUILD_TAG "") # Don't create release mode tag on installed directory
   else()
    set(GTSAM_BUILD_TAG "${CMAKE_BUILD_TYPE}")
