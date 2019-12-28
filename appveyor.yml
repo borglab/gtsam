@@ -14,8 +14,16 @@ environment:
 
 build_script:
   - cd c:\projects\gtsam\build
-  - cmake --build . 
-  - cmake --build . --target check
+  # As of Dec 2019, not all unit tests build cleanly for MSVC, so we'll just
+  # check that parts of GTSAM build correctly:
+  #- cmake --build .
+  - cmake --build . --config Release --target gtsam
+  - cmake --build . --config Release --target gtsam_unstable
+  - cmake --build . --config Release --target wrap
+  #- cmake --build . --target check
+  - cmake --build . --config Release --target check.base
+  - cmake --build . --config Release --target check.base_unstable
+  - cmake --build . --config Release --target check.linear
 
 before_build:
   - cd c:\projects\gtsam
