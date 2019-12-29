@@ -21,6 +21,7 @@
 namespace gtsam {
 
 template <>
+GTSAM_EXPORT
 Matrix SOn::Hat(const Vector& xi) {
   size_t n = AmbientDim(xi.size());
   if (n < 2) throw std::invalid_argument("SO<N>::Hat: n<2 not supported");
@@ -49,6 +50,7 @@ Matrix SOn::Hat(const Vector& xi) {
 }
 
 template <>
+GTSAM_EXPORT
 Vector SOn::Vee(const Matrix& X) {
   const size_t n = X.rows();
   if (n < 2) throw std::invalid_argument("SO<N>::Hat: n<2 not supported");

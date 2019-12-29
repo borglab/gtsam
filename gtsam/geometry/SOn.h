@@ -20,6 +20,7 @@
 
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/dllexport.h>
 
 #include <Eigen/Core>
 #include <boost/random.hpp>
@@ -297,9 +298,11 @@ using SOn = SO<Eigen::Dynamic>;
  */
 
 template <>
+GTSAM_EXPORT
 Matrix SOn::Hat(const Vector& xi);
 
 template <>
+GTSAM_EXPORT
 Vector SOn::Vee(const Matrix& X);
 
 /*

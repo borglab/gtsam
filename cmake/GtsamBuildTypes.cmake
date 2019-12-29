@@ -81,6 +81,11 @@ if(MSVC)
     WINDOWS_LEAN_AND_MEAN
     NOMINMAX
 	)
+  # Avoid literally hundreds to thousands of warnings:
+  list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC
+	/wd4267 # warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  )
+
 endif()
 
 # Other (non-preprocessor macros) compiler flags:
