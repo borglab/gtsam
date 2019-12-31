@@ -49,13 +49,11 @@ TEST(EigenOptimizer, optimizeEigenQR) {
   expected.insert(0, Vector2(0.1, -0.2));
   expected.insert(1, Vector2(-0.1, 0.1));
 
-  LevenbergMarquardtParams parameters;
-  parameters.verbosity = NonlinearOptimizerParams::ERROR;
-  parameters.verbosityLM = LevenbergMarquardtParams::LAMBDA;
-  parameters.linearSolverType = EIGEN_QR;
-  parameters.ordering = Ordering::Colamd(A);
+  LinearSolverParams params;
+  params.solverType = EIGEN_QR;
+  params.ordering = Ordering::Colamd(A);
 
-  auto solver = LinearSolver::fromNonlinearParams(parameters);
+  auto solver = LinearSolver::fromLinearSolverParams(params);
   VectorValues actual = solver->solve(A);
   EXPECT(assert_equal(expected, actual));
 }
@@ -69,13 +67,11 @@ TEST(EigenOptimizer, optimizeEigenCholesky) {
   expected.insert(0, Vector2(0.1, -0.2));
   expected.insert(1, Vector2(-0.1, 0.1));
 
-  LevenbergMarquardtParams parameters;
-  parameters.verbosity = NonlinearOptimizerParams::ERROR;
-  parameters.verbosityLM = LevenbergMarquardtParams::LAMBDA;
-  parameters.linearSolverType = EIGEN_CHOLESKY;
-  parameters.ordering = Ordering::Colamd(A);
+  LinearSolverParams params;
+  params.solverType = EIGEN_CHOLESKY;
+  params.ordering = Ordering::Colamd(A);
 
-  auto solver = LinearSolver::fromNonlinearParams(parameters);
+  auto solver = LinearSolver::fromLinearSolverParams(params);
   VectorValues actual = solver->solve(A);
   EXPECT(assert_equal(expected, actual));
 }

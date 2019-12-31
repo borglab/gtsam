@@ -41,10 +41,8 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
   gttic(Scatter_Constructor);
 
   // If we have an ordering, pre-fill the ordered variables first
-  if (ordering) {
-    for (Key key : *ordering) {
-      add(key, 0);
-    }
+  for (Key key : ordering) {
+    add(key, 0);
   }
 
   // Now, find dimensions of variables and/or extend
