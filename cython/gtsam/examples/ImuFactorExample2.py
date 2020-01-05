@@ -106,7 +106,7 @@ def IMU_example():
     # Add a prior on pose x0. This indirectly specifies where the origin is.
     # 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
     noise = gtsam.noiseModel_Diagonal.Sigmas(
-        np.array([0.3, 0.3, 0.3, 0.1, 0.1, 0.1]))
+        np.array([0.1, 0.1, 0.1, 0.3, 0.3, 0.3]))
     newgraph.push_back(gtsam.PriorFactorPose3(X(0), pose_0, noise))
 
     # Add imu priors
