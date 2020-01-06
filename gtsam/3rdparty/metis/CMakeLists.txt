@@ -34,7 +34,7 @@ else()
   set(METIS_LIBRARY_TYPE STATIC)
 endif()
 
-# Configure libmetis library.
+# Allow a static METIS while building GTSAM as dynamic
 if(BUILD_STATIC_METIS)
   set(METIS_LIBRARY_TYPE STATIC)
 endif()

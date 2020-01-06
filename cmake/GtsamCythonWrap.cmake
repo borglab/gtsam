@@ -5,10 +5,10 @@ unset(PYTHON_EXECUTABLE CACHE)
 unset(CYTHON_EXECUTABLE CACHE)
 unset(PYTHON_INCLUDE_DIR CACHE)
 unset(PYTHON_MAJOR_VERSION CACHE)
+unset(PYTHON_LIBRARY CACHE)
 
-if(PYTHON_LIBRARY)
-  
-else()
+# Allow override from command line
+if(NOT PYTHON_LIBRARY)
   if(GTSAM_PYTHON_VERSION STREQUAL "Default")
     find_package(PythonInterp REQUIRED)
     find_package(PythonLibs REQUIRED)
