@@ -34,6 +34,11 @@ else()
   set(METIS_LIBRARY_TYPE STATIC)
 endif()
 
+# Configure libmetis library.
+if(BUILD_STATIC_METIS)
+  set(METIS_LIBRARY_TYPE STATIC)
+endif()
+
 include(${GKLIB_PATH}/GKlibSystem.cmake)
 # Add include directories.
 include_directories(${GKLIB_PATH})
