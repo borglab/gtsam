@@ -8,7 +8,7 @@ unset(PYTHON_MAJOR_VERSION CACHE)
 unset(PYTHON_LIBRARY CACHE)
 
 # Allow override from command line
-if(NOT PYTHON_LIBRARY)
+if(NOT DEFINED PYTHON_LIBRARY)
   if(GTSAM_PYTHON_VERSION STREQUAL "Default")
     find_package(PythonInterp REQUIRED)
     find_package(PythonLibs REQUIRED)
