@@ -32,9 +32,7 @@
 
 #include <string>
 
-#ifdef GTSAM_USE_TBB
-#include <tbb/mutex.h>
-#endif
+#include <mutex> // std::mutex
 
 namespace gtsam {
 
@@ -47,9 +45,7 @@ private:
   mutable boost::optional<Matrix32> B_; ///< Cached basis
   mutable boost::optional<Matrix62> H_B_; ///< Cached basis derivative
 
-#ifdef GTSAM_USE_TBB
-  mutable tbb::mutex B_mutex_; ///< Mutex to protect the cached basis.
-#endif
+  mutable std::mutex B_mutex_; ///< Mutex to protect the cached basis.
 
 public:
 
