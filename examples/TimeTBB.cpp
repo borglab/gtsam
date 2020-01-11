@@ -28,9 +28,10 @@ using boost::assign::list_of;
 
 #ifdef GTSAM_USE_TBB
 
-#include <tbb/tbb.h>
-#undef max // TBB seems to include windows.h and we don't want these macros
-#undef min
+#include <tbb/blocked_range.h>           // tbb::blocked_range
+#include <tbb/tick_count.h>              // tbb::tick_count
+#include <tbb/parallel_for.h>            // tbb::parallel_for
+#include <tbb/cache_aligned_allocator.h> // tbb::cache_aligned_allocator
 
 static const DenseIndex numberOfProblems = 1000000;
 static const DenseIndex problemSize = 4;
@@ -153,7 +154,6 @@ int main(int argc, char* argv[])
   for(size_t n: numThreads)
   {
     cout << "With " << n << " threads:" << endl;
-    tbb::task_scheduler_init init((int)n);
     results[(int)n].grainSizesWithoutAllocation = testWithoutMemoryAllocation();
     results[(int)n].grainSizesWithAllocation = testWithMemoryAllocation();
     cout << endl;

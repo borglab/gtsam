@@ -57,12 +57,6 @@
 #include <fstream>
 #include <iostream>
 
-#ifdef GTSAM_USE_TBB
-#include <tbb/tbb.h>
-#undef max // TBB seems to include windows.h and we don't want these macros
-#undef min
-#endif
-
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
@@ -206,10 +200,8 @@ int main(int argc, char *argv[]) {
   }
 
 #ifdef GTSAM_USE_TBB
-  std::unique_ptr<tbb::task_scheduler_init> init;
   if(nThreads > 0) {
     cout << "Using " << nThreads << " threads" << endl;
-    init.reset(new tbb::task_scheduler_init(nThreads));
   } else
     cout << "Using threads for all processors" << endl;
 #else
