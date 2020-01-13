@@ -32,6 +32,7 @@ using boost::assign::list_of;
 #include <tbb/tick_count.h>              // tbb::tick_count
 #include <tbb/parallel_for.h>            // tbb::parallel_for
 #include <tbb/cache_aligned_allocator.h> // tbb::cache_aligned_allocator
+#include <tbb/task_scheduler_init.h>     // tbb::task_scheduler_init
 
 static const DenseIndex numberOfProblems = 1000000;
 static const DenseIndex problemSize = 4;
@@ -154,6 +155,7 @@ int main(int argc, char* argv[])
   for(size_t n: numThreads)
   {
     cout << "With " << n << " threads:" << endl;
+    tbb::task_scheduler_init init((int)n);
     results[(int)n].grainSizesWithoutAllocation = testWithoutMemoryAllocation();
     results[(int)n].grainSizesWithAllocation = testWithMemoryAllocation();
     cout << endl;
