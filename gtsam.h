@@ -1364,6 +1364,7 @@ virtual class Base {
 };
 
 virtual class Gaussian : gtsam::noiseModel::Base {
+  static gtsam::noiseModel::Gaussian* Information(Matrix R);
   static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
   static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
 
