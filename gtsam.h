@@ -1799,6 +1799,9 @@ virtual class GaussianConditional : gtsam::GaussianFactor {
   gtsam::VectorValues solveOtherRHS(const gtsam::VectorValues& parents, const gtsam::VectorValues& rhs) const;
   void solveTransposeInPlace(gtsam::VectorValues& gy) const;
   void scaleFrontalsBySigma(gtsam::VectorValues& gy) const;
+  Matrix R() const;
+  Matrix S() const;
+  Vector d() const;
 
   // enabling serialization functionality
   void serialize() const;
