@@ -43,7 +43,7 @@ void Errors::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
-struct equalsVector : public std::binary_function<const Vector&, const Vector&, bool> {
+struct equalsVector : public std::function<bool(const Vector&, const Vector&)> {
   double tol_;
   equalsVector(double tol = 1e-9) : tol_(tol) {}
   bool operator()(const Vector& expected, const Vector& actual) {
