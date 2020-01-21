@@ -814,6 +814,7 @@ class Unit3 {
   // Other functionality
   Matrix basis() const;
   Matrix skew() const;
+  gtsam::Point3 point3() const;
 
   // Manifold
   static size_t Dim();
