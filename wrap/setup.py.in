@@ -23,7 +23,7 @@ if 'SETUP_PY_NO_CHECK' not in os.environ:
 packages = find_packages()
 print(f"PACKAGES: {packages}")
 package_data = {
-    'gtsam_py': [
+    'gtsam': [
         '*.so',
         '*.dll',
         '../lib/*.so',
@@ -33,7 +33,7 @@ package_data = {
 }
 
 setup(
-    name='gtsam_py',
+    name='gtsam',
     description='Georgia Tech Smoothing And Mapping library',
     url='https://gtsam.org/',
     version='${GTSAM_VERSION_STRING}',  # https://www.python.org/dev/peps/pep-0440/
@@ -57,7 +57,7 @@ setup(
     ],
     packages=packages,
     package_data=package_data,
-    test_suite="gtsam_py.tests",
+    test_suite="gtsam.tests",
     install_requires=["numpy"],
     zip_safe=False,
 )

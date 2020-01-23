@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 import gtsam
-from gtsam_py.util import Point3
+from gtsam.util import Point3
 
 
 class TestScenario(unittest.TestCase):
