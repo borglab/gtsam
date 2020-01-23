@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from gtsam_py.util import Point2, Point3
+from gtsam.util import Point2, Point3
 from gtsam import (
     Unit3,
     Rot2,

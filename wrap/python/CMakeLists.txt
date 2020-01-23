@@ -29,18 +29,19 @@ if(GTSAM_BUILD_PYTHON)
         INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
         INSTALL_RPATH_USE_LINK_PATH TRUE
         OUTPUT_NAME "gtsam"
-        LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+        LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/gtsam"
+        DEBUG_POSTFIX "" # Otherwise you will have a wrong name
         )
   # Symlink all tests .py files to build folder.
   create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_py/"
-                  "${PROJECT_BINARY_DIR}/gtsam_py")
+                  "${PROJECT_BINARY_DIR}/gtsam")
 
   # Install.
   install(TARGETS gtsam_py DESTINATION ${GTSAM_PY_INSTALL_PATH})
   message("PYTHON INSTALL PATH: ${GTSAM_PY_INSTALL_PATH}")
   install_python_files("${PROJECT_BINARY_DIR}/setup.py"
                        "${GTSAM_PY_INSTALL_PATH}")
-  install_python_scripts("${PROJECT_SOURCE_DIR}/wrap/python/gtsam_py/"
-                         "${GTSAM_PY_INSTALL_PATH}/gtsam_py" "*.py")
+  install_python_scripts("${PROJECT_SOURCE_DIR}/wrap/python/gtsam/"
+                         "${GTSAM_PY_INSTALL_PATH}/gtsam" "*.py")
 
 endif()

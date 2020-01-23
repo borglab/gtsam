@@ -3,7 +3,7 @@ import numpy as np
 
 import gtsam
 from gtsam import symbol
-import gtsam_py.tests.visual_data_generator as datagen
+import gtsam.tests.visual_data_generator as datagen
 
 
 class TestSFMExample(unittest.TestCase):

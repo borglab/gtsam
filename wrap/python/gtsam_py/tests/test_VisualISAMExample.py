@@ -3,8 +3,8 @@ import numpy as np
 
 import gtsam
 from gtsam import symbol
-from gtsam_py.tests import visual_data_generator as datagen
-from gtsam_py.tests import visual_isam
+from gtsam.tests import visual_data_generator as datagen
+from gtsam.tests import visual_isam
 
 
 class TestVisualISAMExample(unittest.TestCase):
@@ -25,17 +25,19 @@ class TestVisualISAMExample(unittest.TestCase):
         # Generate data
         data, truth = datagen.generate_data(options)
 
+        print("Initialize")
         # Initialize iSAM with the first pose and points
         isam, result, nextPose = visual_isam.initialize(
             data, truth, isamOptions
         )
-
+        print("Initialized")
         # Main loop for iSAM: stepping through all poses
         for currentPose in range(nextPose, options.nrCameras):
+            print("Pose: ", currentPose)
             isam, result = visual_isam.step(
                 data, isam, result, truth, currentPose
             )
-
+        print("Optimized")
         for i in range(len(truth.cameras)):
             pose_i = result.atPose3(symbol('x', i))
             self.assertTrue(pose_i.equals(truth.cameras[i].pose(), 1e-5))

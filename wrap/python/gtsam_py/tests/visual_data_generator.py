@@ -4,7 +4,7 @@ from math import pi, cos, sin
 import numpy as np
 
 import gtsam
-from gtsam_py.util import Point2, Point3
+from gtsam.util import Point2, Point3
 
 
 class Options:

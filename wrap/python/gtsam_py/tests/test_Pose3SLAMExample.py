@@ -2,7 +2,7 @@ import unittest
 from math import pi
 import numpy as np
 
-from gtsam_py.circlePose3 import circlePose3
+from gtsam.circlePose3 import circlePose3
 import gtsam
 
 

@@ -6,7 +6,7 @@ Its name convention is different from other tests so it won't be discovered.
 import numpy as np
 
 import gtsam
-from gtsam_py.util import Point2, Point3
+from gtsam.util import Point2, Point3
 
 r = gtsam.Rot3()
 print(r)

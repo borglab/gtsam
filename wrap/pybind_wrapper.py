@@ -115,14 +115,25 @@ class PybindWrapper(object):
             )
         )
         if method.name == 'print':
-            ret += '''{prefix}.def("__repr__",
-                 [](const {cpp_class} &a) {{
-                     gtsam::RedirectCout redirect;
-                     a.print("");
-                     return redirect.str();
-                 }}){suffix}'''.format(
-                prefix=prefix, cpp_class=cpp_class, suffix=suffix,
-            )
+            type_list = method.args.to_cpp(self.use_boost)
+            if len(type_list) > 0 and type_list[0].strip() == 'string':
+                ret += '''{prefix}.def("__repr__",
+                    [](const {cpp_class} &a) {{
+                        gtsam::RedirectCout redirect;
+                        a.print("");
+                        return redirect.str();
+                    }}){suffix}'''.format(
+                    prefix=prefix, cpp_class=cpp_class, suffix=suffix,
+                )
+            else:
+                ret += '''{prefix}.def("__repr__",
+                    [](const {cpp_class} &a) {{
+                        gtsam::RedirectCout redirect;
+                        a.print();
+                        return redirect.str();
+                    }}){suffix}'''.format(
+                    prefix=prefix, cpp_class=cpp_class, suffix=suffix,
+                )
         return ret
 
     def wrap_methods(

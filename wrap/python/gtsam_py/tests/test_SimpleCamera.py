@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from gtsam import Pose2, Rot3, Pose3, Cal3_S2, SimpleCamera
-from gtsam_py.util import Point3
+from gtsam.util import Point3
 
 K = Cal3_S2(625, 625, 0, 0, 0)
 

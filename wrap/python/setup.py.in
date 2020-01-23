@@ -9,14 +9,14 @@ except ImportError:
 packages = find_packages(where=".")
 print("PACKAGES: ", packages)
 package_data = {
-    'gtsam_py': [
-        '../*.so',
-        '../*.dll',
+    '': [
+        './*.so',
+        './*.dll',
     ]
 }
 
 setup(
-    name='gtsam_py',
+    name='gtsam',
     description='Georgia Tech Smoothing And Mapping library',
     url='https://gtsam.org/',
     version=
@@ -41,7 +41,7 @@ setup(
     ],
     packages=packages,
     package_data=package_data,
-    test_suite="gtsam_py.tests",
+    test_suite="gtsam.tests",
     install_requires=["numpy"],
     zip_safe=False,
 )
