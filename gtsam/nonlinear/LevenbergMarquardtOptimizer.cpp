@@ -152,18 +152,18 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
     systemSolvedSuccessfully = false;
   }
 
-  // Compute the old linearized error as it is not the same
-  // as the nonlinear error when robust noise models are used.
-  double oldLinearizedError = linear.error(VectorValues::Zero(delta));
   if (systemSolvedSuccessfully) {
     if (verbose)
       cout << "linear delta norm = " << delta.norm() << endl;
     if (params_.verbosityLM >= LevenbergMarquardtParams::TRYDELTA)
       delta.print("delta");
 
-    // cost change in the linearized system (old - new)
+    // Compute the old linearized error as it is not the same
+    // as the nonlinear error when robust noise models are used.
+    double oldLinearizedError = linear.error(VectorValues::Zero(delta));
     double newlinearizedError = linear.error(delta);
 
+    // cost change in the linearized system (old - new)
     double linearizedCostChange = oldLinearizedError - newlinearizedError;
     if (verbose)
       cout << "newlinearizedError = " << newlinearizedError
