@@ -172,7 +172,7 @@ class PybindWrapper(object):
             return ""
         return (
             '\n    py::class_<{cpp_class}, {class_parent}'
-            'std::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
+            'boost::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
             '{wrapped_ctors}'
             '{wrapped_methods}'
             '{wrapped_static_methods}'
@@ -203,7 +203,7 @@ class PybindWrapper(object):
 
         return (
             '\n    py::class_<{cpp_class}, {class_parent}'
-            'std::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
+            'boost::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
             '{wrapped_ctors}'
             '{wrapped_methods}'
             '{wrapped_static_methods}'
@@ -366,7 +366,7 @@ PYBIND11_MODULE({module_name}, m_) {{
             else "",
             module_name=self.module_name,
             includes=includes,
-            hoder_type="PYBIND11_DECLARE_HOLDER_TYPE(T, boost::shared_ptr<T>);"
+            hoder_type="PYBIND11_DECLARE_HOLDER_TYPE(TYPE_PLACEHOLDER_DONOTUSE, boost::shared_ptr<TYPE_PLACEHOLDER_DONOTUSE>);"
             if self.use_boost
             else "",
             wrapped_namespace=wrapped_namespace,
