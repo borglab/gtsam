@@ -71,9 +71,9 @@ int main(int argc, char* argv[]) {
     ofstream csvFile("shonan_timing_of_" + name + ".csv");
 
     // Create Shonan averaging instance from the file.
-    ShonanAveragingParameters parameters;
-    double sigmaNoiseInRadians = 0 * M_PI / 180;
-    parameters.setNoiseSigma(sigmaNoiseInRadians);
+    // ShonanAveragingParameters parameters;
+    // double sigmaNoiseInRadians = 0 * M_PI / 180;
+    // parameters.setNoiseSigma(sigmaNoiseInRadians);
     static const ShonanAveraging kShonan(g2oFile);
 
     // increase p value and try optimize using Shonan Algorithm. use chrono for
@@ -84,11 +84,11 @@ int main(int argc, char* argv[]) {
     Vector minEigenVector;
     double CostP = 0, Cost3 = 0, lambdaMin = 0, suBound = 0;
     cout << "(int)p" << "\t" << "time1" << "\t" << "costP" << "\t" << "cost3" << "\t"
-        << "time2" << "\t" << "min_eigenvalue" << "\t" << "suBound" << endl;
+        << "time2" << "\t" << "MinEigenvalue" << "\t" << "SuBound" << endl;
 
     for (size_t p = pMin; p < 11; p++) {
         const Values initial = 
-            (p > pMin && withDescent) ? kShonan.initializeWithDescent( p, Qstar, minEigenVector) : kShonan.initializeRandomlyAt(p);
+            (p > pMin && withDescent) ? kShonan.initializeWithDescent( p, Qstar, minEigenVector, lambdaMin) : kShonan.initializeRandomlyAt(p);
         chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
         const Values result = kShonan.tryOptimizingAt(p, initial);
         chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
