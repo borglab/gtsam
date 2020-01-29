@@ -111,11 +111,20 @@ TEST(ShonanAveraging, MakeATangentVector) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, initializeWithDescent) {
+TEST(ShonanAveraging, dimensionLifting) {
   const Values Qstar3 = kShonan.tryOptimizingAt(3);
   Vector minEigenVector;
   kShonan.computeMinEigenValue(Qstar3, &minEigenVector);
-  Values initialQ4 = kShonan.initializeWithDescent(4, Qstar3, minEigenVector);
+  Values initialQ4 = kShonan.dimensionLifting(4, Qstar3, minEigenVector);
+  EXPECT_LONGS_EQUAL(5, initialQ4.size());
+}
+
+/* ************************************************************************* */
+TEST(ShonanAveraging, initializeWithDescent) {
+  const Values Qstar3 = kShonan.tryOptimizingAt(3);
+  Vector minEigenVector;
+  double lambdaMin = kShonan.computeMinEigenValue(Qstar3, &minEigenVector);
+  Values initialQ4 = kShonan.initializeWithDescent(4, Qstar3, minEigenVector, lambdaMin);
   EXPECT_LONGS_EQUAL(5, initialQ4.size());
 }
 
