@@ -563,12 +563,12 @@ Matrix ShonanAveraging::riemannianGradient(size_t p, const Values& values) const
     // project the gradient onto the entire euclidean space
     Matrix symBlockDiagProduct(p, d * nrPoses());
     for (size_t i = 0; i < nrPoses(); i++) {
-        // Compute block product Bi' * Ci
+        // Compute block product 
         Matrix P =
         S_dot.block(0, i * d, p, d).transpose() * euclideanGradient.block(0, i * d, p, d);
         // Symmetrize this block
         Matrix S = .5 * (P + P.transpose());
-        // Compute Ai * S and set corresponding block of R
+        // Compute S_dot * S and set corresponding block
         symBlockDiagProduct.block(0, i * d, p, d) = S_dot.block(0, i * d, p, d) * S;
     }
     Matrix riemannianGradient = euclideanGradient - symBlockDiagProduct;
