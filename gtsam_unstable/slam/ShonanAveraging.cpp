@@ -552,22 +552,84 @@ Vector ShonanAveraging::MakeATangentVector(size_t p, const Vector& v, size_t i) 
 }
 
 /* ************************************************************************* */
-Values ShonanAveraging::initializeWithDescent(
-    size_t p, const Values& values, const Vector& minEigenVector) const {
-  Values newValues;
-  // for all poses, initialize with the eigenvector segment v_i
-  for (size_t i = 0; i < nrPoses(); i++) {
-    // Initialize SO(p) with topleft block the old value Q \in SO(p-1)
-    Matrix Q = Matrix::Identity(p, p);
-    Q.topLeftCorner(p - 1, p - 1) = values.at<SOn>(i).matrix();
-    // Create a tangent direction xi with eigenvector segment v_i
-    const Vector xi = MakeATangentVector(p, minEigenVector, i);;
-    // Move the old value in the descent direction
-    const SOn Qplus = SOn(Q).retract(xi);
-    newValues.insert(i, Qplus);
-  }
+Matrix ShonanAveraging::riemannianGradient(size_t p, const Values& values) const {
+    
+    constexpr size_t d = 3;  // for now only for 3D rotations
+    Matrix S_dot = StiefelElementMatrix(values);
+    // calculate the gradient of F(Q_dot) at Q_dot
+    Matrix euclideanGradient = 2 * (L_ * (S_dot.transpose())).transpose();
+    // cout << "euclidean gradient rows and cols" << euclideanGradient.rows() << "\t" << euclideanGradient.cols() << endl;
 
-  return newValues;
+    // project the gradient onto the entire euclidean space
+    Matrix symBlockDiagProduct(p, d * nrPoses());
+    for (size_t i = 0; i < nrPoses(); i++) {
+        // Compute block product Bi' * Ci
+        Matrix P =
+        S_dot.block(0, i * d, p, d).transpose() * euclideanGradient.block(0, i * d, p, d);
+        // Symmetrize this block
+        Matrix S = .5 * (P + P.transpose());
+        // Compute Ai * S and set corresponding block of R
+        symBlockDiagProduct.block(0, i * d, p, d) = S_dot.block(0, i * d, p, d) * S;
+    }
+    Matrix riemannianGradient = euclideanGradient - symBlockDiagProduct;
+    return riemannianGradient;
+}
+
+/* ************************************************************************* */
+Values ShonanAveraging::dimensionLifting(
+    size_t p, const Values& values, const Vector& minEigenVector) const {
+    Values newValues;
+    // for all poses, initialize with the eigenvector segment v_i
+    for (size_t i = 0; i < nrPoses(); i++) {
+        // Initialize SO(p) with topleft block the old value Q \in SO(p-1)
+        Matrix Q = Matrix::Identity(p, p);
+        Q.topLeftCorner(p - 1, p - 1) = values.at<SOn>(i).matrix();
+        // Create a tangent direction xi with eigenvector segment v_i
+        const Vector xi = MakeATangentVector(p, minEigenVector, i);;
+        // Move the old value in the descent direction
+        const SOn Qplus = SOn(Q).retract(xi);
+        newValues.insert(i, Qplus);
+    }
+    return newValues;
+}
+
+/* ************************************************************************* */
+Values ShonanAveraging::initializeWithDescent(
+    size_t p, const Values& values, const Vector& minEigenVector, double minEigenValue, 
+    double gradienTolerance, double preconditionedGradNormTolerance) const {
+    
+    double funcVal = costAt(p, values);
+    double alphaMin = 1e-6;
+    double alpha = 
+        std::max(16 * alphaMin, 10 * gradienTolerance / fabs(minEigenValue));
+    vector<double> alphas;
+    vector<double> fvals;    
+    // line search
+    while ((alpha >= alphaMin)){
+        Values Qplus = dimensionLifting(p, values, alpha * minEigenVector);
+        double funcValTest = costAt(p, Qplus);
+        Matrix gradTest = riemannianGradient(p, Qplus);
+        double gradTestNorm = gradTest.norm();
+        // Record alpha and funcVal
+        alphas.push_back(alpha);
+        fvals.push_back(funcValTest);
+        if ((funcVal > funcValTest) && (gradTestNorm > gradienTolerance)){
+            return Qplus;
+        }
+        alpha /= 2;
+    }
+    
+    auto fminIter = min_element(fvals.begin(), fvals.end());
+    auto minIdx = distance(fvals.begin(), fminIter);
+    double fMin = fvals[minIdx];
+    double aMin = alphas[minIdx];
+    if (fMin < funcVal){
+        Values Qplus = dimensionLifting(p, values, aMin * minEigenVector);
+        return Qplus;
+    }
+
+    throw std::runtime_error(
+        "Did not find second order critical point by line search!");
 }
 
 /* ************************************************************************* */
@@ -575,12 +637,13 @@ std::pair<Values, double> ShonanAveraging::run (size_t pMin, size_t pMax,
                                                bool withDescent) const {
   Values Qstar;
   Vector minEigenVector;
+  double minEigenValue = 0;
   for (size_t p = pMin; p <= pMax; p++) {
     const Values initial = (p > pMin && withDescent)
-                               ? initializeWithDescent(p, Qstar, minEigenVector)
+                               ? initializeWithDescent(p, Qstar, minEigenVector, minEigenValue)
                                : initializeRandomlyAt(p);
     Qstar = tryOptimizingAt(p, initial);
-    double minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
+    minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
     if (minEigenValue > parameters_.optimalityThreshold) {
       const Values SO3Values = roundSolution(Qstar);
       return std::make_pair(SO3Values, minEigenValue);

@@ -147,6 +147,18 @@ class ShonanAveraging {
   static Vector MakeATangentVector(size_t p, const Vector& v, size_t i);
 
   /**
+   * Calculate the riemannian gradient of F(values) at values 
+   */
+  Matrix riemannianGradient(size_t p, const Values& values) const;
+
+  /**
+   *  Lift up the dimension of values in type SO(p-1) with descent direction provided by minEigenVector
+   * and return new values in type SO(p-1)
+   */
+  Values dimensionLifting(
+    size_t p, const Values& values, const Vector& minEigenVector) const;
+
+  /**
    * Given some values at p-1, return new values at p, by doing a line search
    * along the descent direction, computed from the minimum eigenvector at p-1.
    * @param values should be of type SO(p-1)
@@ -154,7 +166,7 @@ class ShonanAveraging {
    * @return values of type SO(p)
    */
   Values initializeWithDescent(size_t p, const Values& values,
-                               const Vector& minEigenVector) const;
+                               const Vector& minEigenVector, double minEigenValue, double gradienTolerance=1e-2, double preconditionedGradNormTolerance=1e-4) const;
 
   /**
    * Optimize at different values of p until convergence, with random init at each level.
