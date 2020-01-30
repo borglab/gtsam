@@ -31,6 +31,7 @@ if(GTSAM_BUILD_PYTHON)
         OUTPUT_NAME "gtsam"
         LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/gtsam"
         DEBUG_POSTFIX "" # Otherwise you will have a wrong name
+        RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
         )
   # Symlink all tests .py files to build folder.
   create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_py/"
