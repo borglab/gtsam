@@ -371,7 +371,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
 
 /* ************************************************************************* */
 GraphAndValues load2D_robust(const string& filename,
-    noiseModel::Base::shared_ptr& model, int maxID) {
+    const noiseModel::Base::shared_ptr& model, int maxID) {
   return load2D(filename, model, maxID);
 }
 
