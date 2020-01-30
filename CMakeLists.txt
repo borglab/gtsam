@@ -587,21 +587,21 @@ print_config_flag(${GTSAM_ALLOW_DEPRECATED_SINCE_V4}   "Deprecated in GTSAM 4 al
 print_config_flag(${GTSAM_TYPEDEF_POINTS_TO_VECTORS}   "Point3 is typedef to Vector3    ")
 print_config_flag(${GTSAM_SUPPORT_NESTED_DISSECTION}   "Metis-based Nested Dissection   ")
 print_config_flag(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space preintegration")
-print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
+print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                      ")
 
 message(STATUS "MATLAB toolbox flags                                      ")
-print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox         ")
+print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox          ")
 
 message(STATUS "Cython toolbox flags                                      ")
-print_config_flag(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox         ")
+print_config_flag(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox          ")
 if(GTSAM_INSTALL_CYTHON_TOOLBOX)
-	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
+	message(STATUS "  Python version                  : ${GTSAM_PYTHON_VERSION}")
 endif()
 
-print_config_flag(${GTSAM_BUILD_PYTHON}                "Build Python module with pybind")
+print_config_flag(${GTSAM_BUILD_PYTHON}                "Build Python module with pybind ")
 if(GTSAM_BUILD_PYTHON)
-	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
-	message(STATUS "  gtsam_py install path          : ${GTSAM_PY_INSTALL_PATH}")
+	message(STATUS "  Python version                  : ${GTSAM_PYTHON_VERSION}")
+	message(STATUS "  Python module install path      : ${GTSAM_PY_INSTALL_PATH}")
 endif()
 
 message(STATUS "===============================================================")
