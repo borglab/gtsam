@@ -507,18 +507,18 @@ class ISAM2 {
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
                             const gtsam::Values& newTheta,
                             const gtsam::FactorIndices& removeFactorIndices,
-                            gtsam::KeyGroupMap& constrainedKeys,
+                            const gtsam::KeyGroupMap& constrainedKeys,
                             const gtsam::KeyList& noRelinKeys);
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
                             const gtsam::Values& newTheta,
                             const gtsam::FactorIndices& removeFactorIndices,
-                            gtsam::KeyGroupMap& constrainedKeys,
+                            const gtsam::KeyGroupMap& constrainedKeys,
                             const gtsam::KeyList& noRelinKeys,
                             const gtsam::KeyList& extraReelimKeys);
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
                             const gtsam::Values& newTheta,
                             const gtsam::FactorIndices& removeFactorIndices,
-                            gtsam::KeyGroupMap& constrainedKeys,
+                            const gtsam::KeyGroupMap& constrainedKeys,
                             const gtsam::KeyList& noRelinKeys,
                             const gtsam::KeyList& extraReelimKeys,
                             bool force_relinearize);
@@ -526,6 +526,8 @@ class ISAM2 {
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
                             const gtsam::Values& newTheta,
                             const gtsam::ISAM2UpdateParams& updateParams);
+
+  double error(const gtsam::VectorValues& values) const;
 
   gtsam::Values getLinearizationPoint() const;
   bool valueExists(gtsam::Key key) const;
