@@ -1,3 +1,13 @@
+"""
+GTSAM Copyright 2010-2020, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+Code generator for wrapping a C++ module with MATLAB MEX
+Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar and Frank Dellaert
+"""
 import os
 import argparse
 import textwrap

@@ -1,3 +1,13 @@
+"""
+GTSAM Copyright 2010-2020, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+Code generator for wrapping a C++ module with Pybind11
+Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar and Frank Dellaert
+"""
 import argparse
 import re
 import textwrap
