@@ -14,7 +14,7 @@ from gtsam import (
     Cal3Bundler,
     EssentialMatrix,
 )
-from gtsam.imuBias import ConstantBias
+from gtsam.gtsam.imuBias import ConstantBias
 
 
 class TestValues(unittest.TestCase):
