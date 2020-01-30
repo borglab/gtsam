@@ -42,7 +42,7 @@ using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
-BOOST_CLASS_EXPORT(gtsam::GenericValue<gtsam::Vector3>);
+GTSAM_VALUE_EXPORT(gtsam::Vector3);
 
 // Convenience for named keys
 using symbol_shorthand::X;
