@@ -1,3 +1,4 @@
+
 # WRAP
 
 The wrap library wraps the GTSAM library into a Python library or MATLAB toolbox.
@@ -5,13 +6,8 @@ It was designed to be more general than just wrapping GTSAM. For notes on creati
 
 ## Presequisites: Pybind11 and pyparsing
 
-1. This library uses `pybind11`, which is included as a submodule in GTSAM. If you didn't clone gtsam with the `--recursive` option, you will need to initialize and update the submodule first as follows:
-    ```
-    git submodule init
-    git submodule update
-    ```
-
-1. The `interface_parser.py` in this library uses `pyparsing` to parse the interface file `gtsam.h`. Please install it first in your current Python environment before attempting the build.
+1. This library uses `pybind11`, which is included as a subdirectory in GTSAM.
+2. The `interface_parser.py` in this library uses `pyparsing` to parse the interface file `gtsam.h`. Please install it first in your current Python environment before attempting the build.
     ```
     python3 -m pip install pyparsing
     ```
