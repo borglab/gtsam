@@ -21,7 +21,11 @@ class GtsamTestCase(unittest.TestCase):
             Keyword Arguments:
                 tol {float} -- tolerance passed to 'equals', default 1e-9
         """
-        equal = actual.equals(expected, tol)
+        import numpy
+        if isinstance(expected, numpy.ndarray):
+            equal = numpy.allclose(actual, expected, atol=tol)
+        else:
+            equal = actual.equals(expected, tol)
         if not equal:
             raise self.failureException(
                 "Values are not equal:\n{}!={}".format(actual, expected))

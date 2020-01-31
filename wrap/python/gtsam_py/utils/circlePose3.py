@@ -3,7 +3,7 @@ import numpy as np
 from math import pi, cos, sin
 
 
-def circlePose3(numPoses=8, radius=1.0, symbolChar=0):
+def circlePose3(numPoses=8, radius=1.0, symbolChar='\0'):
     """
     circlePose3 generates a set of poses in a circle. This function
     returns those poses inside a gtsam.Values object, with sequential
@@ -17,10 +17,6 @@ def circlePose3(numPoses=8, radius=1.0, symbolChar=0):
     z-->xZ--> Y  (z pointing towards viewer, Z pointing away from viewer)
     Vehicle at p0 is looking towards y axis (X-axis points towards world y)
     """
-
-    # Force symbolChar to be a single character
-    if type(symbolChar) is str:
-        symbolChar = ord(symbolChar[0])
 
     values = gtsam.Values()
     theta = 0.0

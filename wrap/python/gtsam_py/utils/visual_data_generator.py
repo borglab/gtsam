@@ -60,14 +60,14 @@ class Data:
 
         # Set Noise parameters
         self.noiseModels = Data.NoiseModels()
-        self.noiseModels.posePrior = gtsam.noiseModel_Diagonal.Sigmas(
+        self.noiseModels.posePrior = gtsam.noiseModel.Diagonal.Sigmas(
             np.array([0.001, 0.001, 0.001, 0.1, 0.1, 0.1]))
-        # noiseModels.odometry = gtsam.noiseModel_Diagonal.Sigmas(
+        # noiseModels.odometry = gtsam.noiseModel.Diagonal.Sigmas(
         #    np.array([0.001,0.001,0.001,0.1,0.1,0.1]))
-        self.noiseModels.odometry = gtsam.noiseModel_Diagonal.Sigmas(
+        self.noiseModels.odometry = gtsam.noiseModel.Diagonal.Sigmas(
             np.array([0.05, 0.05, 0.05, 0.2, 0.2, 0.2]))
-        self.noiseModels.pointPrior = gtsam.noiseModel_Isotropic.Sigma(3, 0.1)
-        self.noiseModels.measurement = gtsam.noiseModel_Isotropic.Sigma(2, 1.0)
+        self.noiseModels.pointPrior = gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
+        self.noiseModels.measurement = gtsam.noiseModel.Isotropic.Sigma(2, 1.0)
 
 
 def generate_data(options):
