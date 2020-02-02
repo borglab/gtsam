@@ -87,6 +87,18 @@ public:
   /** Handy 'exists' function */
   bool exists(const KEY& e) const { return this->count(e); }
 
+#ifdef TBB_LESS_2020
+  // typedef for TBB iterator
+  typedef tbb::interface5::internal::split_ordered_list<typename Base::value_type, typename Base::allocator_type> solist_t;
+  typedef typename solist_t::iterator iterator;
+
+  /** If TBB version less than 2020, override default emplace function of
+   *  tbb::concurrent_unordered_map to work with clang */
+  std::pair<iterator, bool> emplace(KEY k, VALUE v) {
+    return this->insert(std::make_pair(k, v));
+  }
+#endif
+
 #ifndef GTSAM_USE_TBB
   // If we're not using TBB and this is actually a FastMap, we need to add these functions and hide
   // the original erase functions.
