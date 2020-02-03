@@ -1,12 +1,27 @@
+"""
+GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+Scenario unit tests.
+Author: Frank Dellaert & Duy Nguyen Ta (Python)
+"""
+from __future__ import print_function
+
 import math
 import unittest
+
 import numpy as np
 
 import gtsam
-from gtsam.util import Point3
+from gtsam.utils.test_case import GtsamTestCase
+
+# pylint: disable=invalid-name, E1101
 
 
-class TestScenario(unittest.TestCase):
+class TestScenario(GtsamTestCase):
     def setUp(self):
         pass
 
@@ -23,18 +38,15 @@ class TestScenario(unittest.TestCase):
         np.testing.assert_almost_equal(W, scenario.omega_b(T))
         np.testing.assert_almost_equal(V, scenario.velocity_b(T))
         np.testing.assert_almost_equal(
-            np.cross(W, V), scenario.acceleration_b(T)
-        )
+            np.cross(W, V), scenario.acceleration_b(T))
 
         # R = v/w, so test if loop crests at 2*R
         R = v / w
         T30 = scenario.pose(T)
         np.testing.assert_almost_equal(
-            np.array([math.pi, 0, math.pi]), T30.rotation().xyz()
-        )
-        np.testing.assert_almost_equal(
-            Point3(0, 0, 2 * R), T30.translation(), 1e-9
-        )
+            np.array([math.pi, 0, math.pi]), T30.rotation().xyz())
+        self.gtsamAssertEquals(gtsam.Point3(
+            0, 0, 2.0 * R), T30.translation(), 1e-9)
 
 
 if __name__ == '__main__':

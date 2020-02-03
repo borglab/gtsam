@@ -1,10 +1,23 @@
+"""
+GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+KalmanFilter unit tests.
+Author: Frank Dellaert & Duy Nguyen Ta (Python)
+"""
 import unittest
+
 import numpy as np
 
 import gtsam
+from gtsam.utils.test_case import GtsamTestCase
 
 
-class TestKalmanFilter(unittest.TestCase):
+class TestKalmanFilter(GtsamTestCase):
+
     def test_KalmanFilter(self):
         F = np.eye(2)
         B = np.eye(2)
@@ -65,7 +78,6 @@ class TestKalmanFilter(unittest.TestCase):
         self.assertTrue(np.allclose(expected3, state.mean()))
         state = KF.update(state, H, z3, modelR)
         self.assertTrue(np.allclose(expected3, state.mean()))
-
 
 if __name__ == "__main__":
     unittest.main()
