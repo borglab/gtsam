@@ -29,7 +29,7 @@ namespace gtsam {
    * @addtogroup SLAM
    */
   template<class VALUE>
-  class BetweenFactor: public NoiseModelFactor2<VALUE, VALUE> {
+  class GTSAM_EXPORT BetweenFactor: public NoiseModelFactor2<VALUE, VALUE> {
 
     // Check that VALUE type is a testable Lie group
     BOOST_CONCEPT_ASSERT((IsTestable<VALUE>));

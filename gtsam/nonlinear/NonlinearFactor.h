@@ -283,7 +283,7 @@ private:
  * which are objects in non-linear manifolds (Lie groups).
  */
 template<class VALUE>
-class NoiseModelFactor1: public NoiseModelFactor {
+class GTSAM_EXPORT NoiseModelFactor1: public NoiseModelFactor {
 
 public:
 
@@ -352,7 +352,7 @@ private:
 /** A convenient base class for creating your own NoiseModelFactor with 2
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2>
-class NoiseModelFactor2: public NoiseModelFactor {
+class GTSAM_EXPORT NoiseModelFactor2: public NoiseModelFactor {
 
 public:
 
