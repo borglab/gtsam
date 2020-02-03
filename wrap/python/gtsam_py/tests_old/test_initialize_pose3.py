@@ -61,11 +61,9 @@ class TestValues(GtsamTestCase):
 
     def test_buildPose3graph(self):
         pose3graph = gtsam.InitializePose3.buildPose3graph(self.graph)
-        print(pose3graph)
 
     def test_orientations(self):
         pose3Graph = gtsam.InitializePose3.buildPose3graph(self.graph)
-        print("pose3Graph: ", pose3Graph)
         initial = gtsam.InitializePose3.computeOrientationsChordal(pose3Graph)
     
         # comparison is up to M_PI, that's why we add some multiples of 2*M_PI
