@@ -352,7 +352,7 @@ private:
 /** A convenient base class for creating your own NoiseModelFactor with 2
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2>
-class GTSAM_EXPORT NoiseModelFactor2: public NoiseModelFactor {
+class NoiseModelFactor2: public NoiseModelFactor {
 
 public:
 
