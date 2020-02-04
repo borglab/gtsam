@@ -35,7 +35,7 @@ namespace gtsam {
  * Wraps any type T so it can play as a Value
  */
 template<class T>
-class GenericValue: public Value {
+class GTSAM_EXPORT GenericValue: public Value {
 
 public:
 

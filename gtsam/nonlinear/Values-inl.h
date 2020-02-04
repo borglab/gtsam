@@ -292,6 +292,11 @@ namespace gtsam {
    struct handle_matrix<Eigen::Matrix<double, M, N>, true> {
      Eigen::Matrix<double, M, N> operator()(Key j, const Value* const pointer) {
        try {
+        // TODO(fan): Investigate how to make dynamic_cast work for Eigen on Mac with dylibs
+        // std::cout << "Wanted: " << typeid(const GenericValue<Eigen::Matrix<double, M, N>>&).name()
+        //  << ", " << typeid(const GenericValue<Eigen::Matrix<double, M, N>>&).hash_code() << std::endl;
+        //  std::cout << "Actual: " << typeid(*pointer).name() << ", " << typeid(*pointer).hash_code() << std::endl;
+         
          // value returns a const Matrix&, and the return makes a copy !!!!!
          return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N>>&>(*pointer).value();
        } catch (std::bad_cast&) {
@@ -306,6 +311,10 @@ namespace gtsam {
    struct handle_matrix<Eigen::Matrix<double, M, N>, false> {
      Eigen::Matrix<double, M, N> operator()(Key j, const Value* const pointer) {
        try {
+         // TODO(fan): Investigate how to make dynamic_cast work for Eigen on Mac with dylibs
+         // std::cout << "Given " << typeid(*pointer).name() << std::endl;
+         // std::cout << "Want  " << typeid(const GenericValue<Eigen::Matrix<double, M, N>>&).name() << std::endl;
+
          // value returns a const MatrixMN&, and the return makes a copy !!!!!
          return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N>>&>(*pointer).value();
        } catch (std::bad_cast&) {
