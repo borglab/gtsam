@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 GTSAM Copyright 2010-2020, Georgia Tech Research Corporation,
 Atlanta, Georgia 30332-0415
