@@ -76,6 +76,7 @@ DELTA = gtsam.Pose3(gtsam.Rot3.Rodrigues(0, 0, 0),
 def IMU_example():
     """Run iSAM 2 example with IMU factor."""
 
+    ZERO_BIAS = gtsam.imuBias.ConstantBias()
     # Start with a camera on x-axis looking at origin
     radius = 30
     up = gtsam.Point3(0, 0, 1)
@@ -112,10 +113,10 @@ def IMU_example():
     # Add imu priors
     biasKey = gtsam.symbol('b', 0)
     biasnoise = gtsam.noiseModel.Isotropic.Sigma(6, 0.1)
-    biasprior = gtsam.PriorFactorConstantBias(biasKey, gtsam.imuBias.ConstantBias(),
+    biasprior = gtsam.PriorFactorConstantBias(biasKey, ZERO_BIAS,
                                               biasnoise)
     newgraph.push_back(biasprior)
-    initialEstimate.insert(biasKey, gtsam.imuBias.ConstantBias())
+    initialEstimate.insert(biasKey, ZERO_BIAS)
     velnoise = gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
 
     # Calculate with correct initial velocity
@@ -142,9 +143,9 @@ def IMU_example():
             if i % 5 == 0:
                 biasKey += 1
                 factor = gtsam.BetweenFactorConstantBias(
-                    biasKey - 1, biasKey, gtsam.imuBias.ConstantBias(), BIAS_COVARIANCE)
+                    biasKey - 1, biasKey, ZERO_BIAS, BIAS_COVARIANCE)
                 newgraph.add(factor)
-                initialEstimate.insert(biasKey, gtsam.imuBias.ConstantBias())
+                initialEstimate.insert(biasKey, ZERO_BIAS)
 
             # Predict acceleration and gyro measurements in (actual) body frame
             nRb = scenario.rotation(t).matrix()
