@@ -21,7 +21,7 @@ from gtsam.gtsam import (Cal3_S2, DoglegOptimizer,
 
 def symbol(name: str, index: int) -> int:
     """ helper for creating a symbol without explicitly casting 'name' from str to int """
-    return gtsam.symbol(ord(name), index)
+    return gtsam.symbol(name, index)
 
 
 def main():

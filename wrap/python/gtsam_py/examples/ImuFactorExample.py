@@ -20,17 +20,17 @@ import gtsam
 from gtsam.utils.plot import plot_pose3
 from PreintegrationExample import POSES_FIG, PreintegrationExample
 
-BIAS_KEY = int(gtsam.symbol(ord('b'), 0))
+BIAS_KEY = int(gtsam.symbol('b', 0))
 
 
 def X(key):
     """Create symbol for pose key."""
-    return gtsam.symbol(ord('x'), key)
+    return gtsam.symbol('x', key)
 
 
 def V(key):
     """Create symbol for velocity key."""
-    return gtsam.symbol(ord('v'), key)
+    return gtsam.symbol('v', key)
 
 
 np.set_printoptions(precision=3, suppress=True)
@@ -52,7 +52,7 @@ class ImuFactorExample(PreintegrationExample):
 
         accBias = np.array([-0.3, 0.1, 0.2])
         gyroBias = np.array([0.1, 0.3, -0.1])
-        bias = gtsam.imuBias_ConstantBias(accBias, gyroBias)
+        bias = gtsam.imuBias.ConstantBias(accBias, gyroBias)
 
         dt = 1e-2
         super(ImuFactorExample, self).__init__(sick_twist, bias, dt)
@@ -133,7 +133,7 @@ class ImuFactorExample(PreintegrationExample):
             pose_i = result.atPose3(X(i))
             plot_pose3(POSES_FIG, pose_i, 0.1)
             i += 1
-        print(result.atimuBias_ConstantBias(BIAS_KEY))
+        print(result.atimuBias.ConstantBias(BIAS_KEY))
 
         plt.ioff()
         plt.show()

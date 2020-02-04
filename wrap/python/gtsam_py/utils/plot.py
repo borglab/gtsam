@@ -10,7 +10,7 @@ def plot_pose2_on_axes(axes, pose, axis_length=0.1, covariance=None):
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
     t = pose.translation()
-    origin = np.array([t.x(), t.y()])
+    origin = t
 
     # draw the camera axes
     x_axis = origin + gRp[:, 0] * axis_length
@@ -45,7 +45,7 @@ def plot_pose2(fignum, pose, axis_length=0.1, covariance=None):
 
 def plot_point3_on_axes(axes, point, linespec):
     """Plot a 3D point on given axis 'axes' with given 'linespec'."""
-    axes.plot([point.x()], [point.y()], [point.z()], linespec)
+    axes.plot([point[0]], [point[1]], [point[2]], linespec)
 
 
 def plot_point3(fignum, point, linespec):
@@ -84,7 +84,7 @@ def plot_pose3_on_axes(axes, pose, axis_length=0.1):
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
     t = pose.translation()
-    origin = np.array([t.x(), t.y(), t.z()])
+    origin = t
 
     # draw the camera axes
     x_axis = origin + gRp[:, 0] * axis_length

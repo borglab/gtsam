@@ -24,12 +24,12 @@ from gtsam.examples import SFMdata
 
 def X(i):
     """Create key for pose i."""
-    return int(gtsam.symbol(ord('x'), i))
+    return int(gtsam.symbol('x', i))
 
 
 def L(j):
     """Create key for landmark j."""
-    return int(gtsam.symbol(ord('l'), j))
+    return int(gtsam.symbol('l', j))
 
 
 def visual_ISAM2_plot(result):
@@ -132,7 +132,7 @@ def visual_ISAM2_example():
             # Intentionally initialize the variables off from the ground truth
             for j, point in enumerate(points):
                 initial_estimate.insert(L(j), gtsam.Point3(
-                    point.x()-0.25, point.y()+0.20, point.z()+0.15))
+                    point[0]-0.25, point[1]+0.20, point[2]+0.15))
         else:
             # Update iSAM with the new factors
             isam.update(graph, initial_estimate)

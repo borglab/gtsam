@@ -16,14 +16,14 @@ import numpy as np
 import gtsam
 from gtsam.examples import SFMdata
 from gtsam.gtsam import (Cal3_S2, GenericProjectionFactorCal3_S2,
-                         NonlinearFactorGraph, NonlinearISAM, Point3, Pose3,
+                         NonlinearFactorGraph, NonlinearISAM, Pose3,
                          PriorFactorPoint3, PriorFactorPose3, Rot3,
                          SimpleCamera, Values)
 
 
 def symbol(name: str, index: int) -> int:
     """ helper for creating a symbol without explicitly casting 'name' from str to int """
-    return gtsam.symbol(ord(name), index)
+    return gtsam.symbol(name, index)
 
 
 def main():
@@ -62,7 +62,7 @@ def main():
             graph.push_back(factor)
 
         # Intentionally initialize the variables off from the ground truth
-        noise = Pose3(r=Rot3.Rodrigues(-0.1, 0.2, 0.25), t=Point3(0.05, -0.10, 0.20))
+        noise = Pose3(r=Rot3.Rodrigues(-0.1, 0.2, 0.25), t=gtsam.Point3(0.05, -0.10, 0.20))
         initial_xi = pose.compose(noise)
 
         # Add an initial guess for the current pose
@@ -87,8 +87,8 @@ def main():
             noise = np.array([-0.25, 0.20, 0.15])
             for j, point in enumerate(points):
                 # Intentionally initialize the variables off from the ground truth
-                initial_lj = points[j].vector() + noise
-                initial_estimate.insert(symbol('l', j), Point3(initial_lj))
+                initial_lj = points[j] + noise
+                initial_estimate.insert(symbol('l', j), initial_lj)
         else:
             # Update iSAM with the new factors
             isam.update(graph, initial_estimate)

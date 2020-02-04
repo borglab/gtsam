@@ -68,7 +68,7 @@ class PreintegrationExample(object):
         else:
             accBias = np.array([0, 0.1, 0])
             gyroBias = np.array([0, 0, 0])
-            self.actualBias = gtsam.imuBias_ConstantBias(accBias, gyroBias)
+            self.actualBias = gtsam.imuBias.ConstantBias(accBias, gyroBias)
 
         self.runner = gtsam.ScenarioRunner(
             self.scenario, self.params, self.dt, self.actualBias)
@@ -111,7 +111,7 @@ class PreintegrationExample(object):
         actualPose = self.scenario.pose(t)
         plot_pose3(POSES_FIG, actualPose, 0.3)
         t = actualPose.translation()
-        self.maxDim = max([abs(t.x()), abs(t.y()), abs(t.z()), self.maxDim])
+        self.maxDim = max([max(t), self.maxDim])
         ax = plt.gca()
         ax.set_xlim3d(-self.maxDim, self.maxDim)
         ax.set_ylim3d(-self.maxDim, self.maxDim)

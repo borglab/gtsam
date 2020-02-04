@@ -18,12 +18,12 @@ import gtsam.utils.plot as gtsam_plot
 
 def X(key):
     """Create symbol for pose key."""
-    return gtsam.symbol(ord('x'), key)
+    return gtsam.symbol('x', key)
 
 
 def V(key):
     """Create symbol for velocity key."""
-    return gtsam.symbol(ord('v'), key)
+    return gtsam.symbol('v', key)
 
 
 def vector3(x, y, z):
@@ -43,7 +43,7 @@ def ISAM2_plot(values, fignum=0):
     while values.exists(X(i)):
         pose_i = values.atPose3(X(i))
         gtsam_plot.plot_pose3(fignum, pose_i, 10)
-        position = pose_i.translation().vector()
+        position = pose_i.translation()
         min_bounds = [min(v1, v2) for (v1, v2) in zip(position, min_bounds)]
         max_bounds = [max(v1, v2) for (v1, v2) in zip(position, max_bounds)]
         # max_bounds = min(pose_i.x(), max_bounds[0]), 0, 0
@@ -110,12 +110,12 @@ def IMU_example():
     newgraph.push_back(gtsam.PriorFactorPose3(X(0), pose_0, noise))
 
     # Add imu priors
-    biasKey = gtsam.symbol(ord('b'), 0)
+    biasKey = gtsam.symbol('b', 0)
     biasnoise = gtsam.noiseModel.Isotropic.Sigma(6, 0.1)
-    biasprior = gtsam.PriorFactorConstantBias(biasKey, gtsam.imuBias_ConstantBias(),
+    biasprior = gtsam.PriorFactorConstantBias(biasKey, gtsam.imuBias.ConstantBias(),
                                               biasnoise)
     newgraph.push_back(biasprior)
-    initialEstimate.insert(biasKey, gtsam.imuBias_ConstantBias())
+    initialEstimate.insert(biasKey, gtsam.imuBias.ConstantBias())
     velnoise = gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
 
     # Calculate with correct initial velocity
@@ -142,9 +142,9 @@ def IMU_example():
             if i % 5 == 0:
                 biasKey += 1
                 factor = gtsam.BetweenFactorConstantBias(
-                    biasKey - 1, biasKey, gtsam.imuBias_ConstantBias(), BIAS_COVARIANCE)
+                    biasKey - 1, biasKey, gtsam.imuBias.ConstantBias(), BIAS_COVARIANCE)
                 newgraph.add(factor)
-                initialEstimate.insert(biasKey, gtsam.imuBias_ConstantBias())
+                initialEstimate.insert(biasKey, gtsam.imuBias.ConstantBias())
 
             # Predict acceleration and gyro measurements in (actual) body frame
             nRb = scenario.rotation(t).matrix()
