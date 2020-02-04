@@ -167,13 +167,11 @@ class ThreeLinkArm(object):
         axes = fig.gca()
 
         sXl1 = Pose2(0, 0, math.radians(90))
-        t = sXl1.translation()
-        p1 = t
+        p1 = sXl1.translation()
         gtsam_plot.plot_pose2_on_axes(axes, sXl1)
 
         def plot_line(p, g, color):
-            t = g.translation()
-            q = t
+            q = g.translation()
             line = np.append(p[np.newaxis], q[np.newaxis], axis=0)
             axes.plot(line[:, 0], line[:, 1], color)
             return q

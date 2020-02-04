@@ -9,8 +9,7 @@ def plot_pose2_on_axes(axes, pose, axis_length=0.1, covariance=None):
     """Plot a 2D pose on given axis 'axes' with given 'axis_length'."""
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
-    t = pose.translation()
-    origin = t
+    origin = pose.translation()
 
     # draw the camera axes
     x_axis = origin + gRp[:, 0] * axis_length
@@ -83,8 +82,7 @@ def plot_pose3_on_axes(axes, pose, axis_length=0.1):
     """Plot a 3D pose on given axis 'axes' with given 'axis_length'."""
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
-    t = pose.translation()
-    origin = t
+    origin = pose.translation()
 
     # draw the camera axes
     x_axis = origin + gRp[:, 0] * axis_length
