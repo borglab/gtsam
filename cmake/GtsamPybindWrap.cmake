@@ -4,18 +4,21 @@ unset(PYTHON_EXECUTABLE CACHE)
 unset(PYTHON_INCLUDE_DIR CACHE)
 unset(PYTHON_MAJOR_VERSION CACHE)
 
-if(GTSAM_PYTHON_VERSION STREQUAL "Default")
-  find_package(PythonInterp REQUIRED)
-  find_package(PythonLibs REQUIRED)
-else()
-  find_package(PythonInterp
-               ${GTSAM_PYTHON_VERSION}
-               EXACT
-               REQUIRED)
-  find_package(PythonLibs
-               ${GTSAM_PYTHON_VERSION}
-               EXACT
-               REQUIRED)
+# Allow override from command line
+if(NOT DEFINED GTSAM_USE_CUSTOM_PYTHON_LIBRARY)
+  if(GTSAM_PYTHON_VERSION STREQUAL "Default")
+    find_package(PythonInterp REQUIRED)
+    find_package(PythonLibs REQUIRED)
+  else()
+    find_package(PythonInterp
+                ${GTSAM_PYTHON_VERSION}
+                EXACT
+                REQUIRED)
+    find_package(PythonLibs
+                ${GTSAM_PYTHON_VERSION}
+                EXACT
+                REQUIRED)
+  endif()
 endif()
 
 # User-friendly Pybind11 wrapping and installing function. Builds a Pybind11
