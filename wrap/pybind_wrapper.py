@@ -61,8 +61,8 @@ class PybindWrapper(object):
             )
         return res
 
-    def _wrap_method(self, method, cpp_class, prefix, suffix):
-        py_method = method.name
+    def _wrap_method(self, method, cpp_class, prefix, suffix, method_suffix=""):
+        py_method = method.name + method_suffix
         cpp_method = method.to_cpp()
 
         if cpp_method in ["serialize", "serializable"]:
@@ -151,6 +151,21 @@ class PybindWrapper(object):
     ):
         res = ""
         for method in methods:
+
+            # To avoid type confusion for insert, currently unused
+            if method.name == 'insert' and cpp_class == 'gtsam::Values':
+                name_list = method.args.args_names()
+                type_list = method.args.to_cpp(self.use_boost)
+                if type_list[0].strip() == 'size_t': # inserting non-wrapped value types
+                    method_suffix = '_' + name_list[1].strip()
+                    res += self._wrap_method(
+                        method=method,
+                        cpp_class=cpp_class,
+                        prefix=prefix,
+                        suffix=suffix,
+                        method_suffix=method_suffix
+                    )
+            
             res += self._wrap_method(
                 method=method,
                 cpp_class=cpp_class,
