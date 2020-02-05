@@ -1,17 +1,20 @@
-gcc/clang: [![Build Status](https://travis-ci.com/borglab/gtsam.svg?branch=develop)](https://travis-ci.com/borglab/gtsam/) MSVC: [![Build status](https://ci.appveyor.com/api/projects/status/3enllitj52jsxwfg/branch/develop?svg=true)](https://ci.appveyor.com/project/dellaert/gtsam)
-
-# README - Georgia Tech Smoothing and Mapping library
+# README - Georgia Tech Smoothing and Mapping Library
 
 ## What is GTSAM?
 
-GTSAM is a library of C++ classes that implement smoothing and
-mapping (SAM) in robotics and vision, using factor graphs and Bayes
-networks as the underlying computing paradigm rather than sparse
+GTSAM is a C++ library that implement smoothing and
+mapping (SAM) in robotics and vision, using Factor Graphs and Bayes
+Networks as the underlying computing paradigm rather than sparse
 matrices.
 
-On top of the C++ library, GTSAM includes a MATLAB interface (enable
-GTSAM_INSTALL_MATLAB_TOOLBOX in CMake to build it). A Python interface
-is under development.
+| Platform  | Build Status  |
+|:---------:|:-------------:|
+| gcc/clang | [![Build Status](https://travis-ci.com/borglab/gtsam.svg?branch=develop)](https://travis-ci.com/borglab/gtsam/) |
+| MSVC      | [![Build status](https://ci.appveyor.com/api/projects/status/3enllitj52jsxwfg/branch/develop?svg=true)](https://ci.appveyor.com/project/dellaert/gtsam) |
+
+
+On top of the C++ library, GTSAM includes [wrappers for MATLAB & Python](##Wrappers).
+
 
 ## Quickstart
 
@@ -79,4 +82,4 @@ GTSAM is open source under the BSD license, see the [`LICENSE`](LICENSE) and [`L
 
 Please see the [`examples/`](examples) directory and the [`USAGE`](USAGE.md) file for examples on how to use GTSAM.
 
-GTSAM was developed in the lab of [Frank Dellaert](http://www.cc.gatech.edu/~dellaert) at the [Georgia Institute of Technology](http://www.gatech.edu), with the help of many contributors over the years, see [THANKS](THANKS).
+GTSAM was developed in the lab of [Frank Dellaert](http://www.cc.gatech.edu/~dellaert) at the [Georgia Institute of Technology](http://www.gatech.edu), with the help of many contributors over the years, see [THANKS](THANKS.md).
