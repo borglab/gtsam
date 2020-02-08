@@ -14,6 +14,8 @@ It was designed to be more general than just wrapping GTSAM. For notes on creati
 
 ## GTSAM Python wrapper
 
+**WARNING: On macOS, you have to statically build GTSAM to use the wrapper.**
+
 1. Set `GTSAM_BUILD_PYTHON=ON` while configuring the build with `cmake`.
 1. What you can do in the `build` folder:
     1. Just run python then import GTSAM and play around:
