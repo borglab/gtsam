@@ -31,7 +31,7 @@ class PybindWrapper(object):
         self.top_module_namespaces = top_module_namespaces
         self.use_boost = use_boost
         self.ignore_classes = ignore_classes
-        self._serializing_classes = set()
+        self._serializing_classes = list()
 
     def _py_args_names(self, args_list):
         names = args_list.args_names()
@@ -67,7 +67,8 @@ class PybindWrapper(object):
         cpp_method = method.to_cpp()
 
         if cpp_method in ["serialize", "serializable"]:
-            self._serializing_classes.add(cpp_class)
+            if not cpp_class in self._serializing_classes:
+                self._serializing_classes.append(cpp_class)
             return textwrap.dedent(
                 '''
                     .def("serialize",
