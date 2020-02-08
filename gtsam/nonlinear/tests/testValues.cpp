@@ -33,9 +33,16 @@ using namespace boost::assign;
 #include <limits>
 #include <type_traits>
 
+#include <sstream>
+#include <boost/serialization/export.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+
 using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
+
+GTSAM_VALUE_EXPORT(gtsam::Vector3);
 
 // Convenience for named keys
 using symbol_shorthand::X;
@@ -586,6 +593,27 @@ TEST(Values, MatrixDynamicInsertFixedRead) {
   values.insert(key1, v);
   Vector3 expected(5.0, 6.0, 7.0);
   CHECK(assert_equal((Vector)expected, values.at<Matrix13>(key1)));
+  CHECK_EXCEPTION(values.at<Matrix23>(key1), exception);
+}
+
+/* ************************************************************************* */
+TEST(Values, ValuesSerializationRoundtrip) {
+  Values values;
+  Vector3 v; v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  Vector3 expected(5.0, 6.0, 7.0);
+
+  std::ostringstream out_archive_stream;
+  boost::archive::text_oarchive out_archive(out_archive_stream);
+  out_archive << values;
+  auto serialized = out_archive_stream.str();
+
+  std::istringstream in_archive_stream(serialized);
+  boost::archive::text_iarchive in_archive(in_archive_stream);
+  Values deserialized;
+  in_archive >> deserialized;
+  
+  CHECK(assert_equal((Vector)expected, deserialized.at<Vector3>(key1)));
   CHECK_EXCEPTION(values.at<Matrix23>(key1), exception);
 }
 

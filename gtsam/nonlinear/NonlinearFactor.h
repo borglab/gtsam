@@ -283,7 +283,7 @@ private:
  * which are objects in non-linear manifolds (Lie groups).
  */
 template<class VALUE>
-class NoiseModelFactor1: public NoiseModelFactor {
+class GTSAM_EXPORT NoiseModelFactor1: public NoiseModelFactor {
 
 public:
 

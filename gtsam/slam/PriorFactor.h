@@ -27,7 +27,7 @@ namespace gtsam {
    * @addtogroup SLAM
    */
   template<class VALUE>
-  class PriorFactor: public NoiseModelFactor1<VALUE> {
+  class GTSAM_EXPORT PriorFactor: public NoiseModelFactor1<VALUE> {
 
   public:
     typedef VALUE T;

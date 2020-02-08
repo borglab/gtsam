@@ -74,6 +74,7 @@ option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TB
 option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" OFF)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" OFF)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION "Throw exception when a triangulated point is behind a camera" ON)
+option(GTSAM_BUILD_PYTHON                "Enable/Disable building & installation of Python module with pybind11" OFF)
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V4   "Allow use of methods/functions deprecated in GTSAM 4" ON)
 option(GTSAM_TYPEDEF_POINTS_TO_VECTORS   "Typedef Point2 and Point3 to Eigen::Vector equivalents" OFF)
 option(GTSAM_SUPPORT_NESTED_DISSECTION   "Support Metis-based nested dissection" ON)
@@ -100,7 +101,7 @@ endif()
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
 option(GTSAM_INSTALL_CYTHON_TOOLBOX      "Enable/Disable installation of Cython toolbox"  OFF)
 option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab/cython wrap utility (necessary for matlab/cython interface)" ON)
-set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of python to build the cython wrapper for (or Default)")
+set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of Python to build the wrappers against.")
 
 # Check / set dependent variables for MATLAB wrapper
 if((GTSAM_INSTALL_MATLAB_TOOLBOX OR GTSAM_INSTALL_CYTHON_TOOLBOX) AND NOT GTSAM_BUILD_WRAP)
@@ -125,9 +126,24 @@ if(GTSAM_INSTALL_CYTHON_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
     message(FATAL_ERROR "GTSAM_INSTALL_CYTHON_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the CYTHON toolbox cannot deal with this yet.  Please turn one of the two options off.")
 endif()
 
+if(GTSAM_BUILD_PYTHON)
+	if (NOT GTSAM_TYPEDEF_POINTS_TO_VECTORS)
+		message(FATAL_ERROR "GTSAM_BUILD_PYTHON requires GTSAM_TYPEDEF_POINTS_TO_VECTORS to be enabled but it is not.")
+	endif()
+	set(GTSAM_PY_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/python")
+endif()
+
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
 set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
+
+if (CMAKE_GENERATOR STREQUAL "Ninja" AND
+    ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9) OR
+     (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.5)))
+    # Force colored warnings in Ninja's output, if the compiler has -fdiagnostics-color support.
+    # Rationale in https://github.com/ninja-build/ninja/issues/814
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+endif()
 
 ###############################################################################
 # Find boost
@@ -579,16 +595,23 @@ print_config_flag(${GTSAM_ALLOW_DEPRECATED_SINCE_V4}   "Deprecated in GTSAM 4 al
 print_config_flag(${GTSAM_TYPEDEF_POINTS_TO_VECTORS}   "Point3 is typedef to Vector3    ")
 print_config_flag(${GTSAM_SUPPORT_NESTED_DISSECTION}   "Metis-based Nested Dissection   ")
 print_config_flag(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space preintegration")
-print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
+print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                      ")
 
 message(STATUS "MATLAB toolbox flags                                      ")
-print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox         ")
+print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox          ")
 
 message(STATUS "Cython toolbox flags                                      ")
-print_config_flag(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox         ")
+print_config_flag(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox          ")
 if(GTSAM_INSTALL_CYTHON_TOOLBOX)
-	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
+	message(STATUS "  Python version                  : ${GTSAM_PYTHON_VERSION}")
 endif()
+
+print_config_flag(${GTSAM_BUILD_PYTHON}                "Build Python module with pybind ")
+if(GTSAM_BUILD_PYTHON)
+	message(STATUS "  Python version                  : ${GTSAM_PYTHON_VERSION}")
+	message(STATUS "  Python module install path      : ${GTSAM_PY_INSTALL_PATH}")
+endif()
+
 message(STATUS "===============================================================")
 
 # Print warnings at the end

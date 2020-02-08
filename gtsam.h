@@ -281,7 +281,7 @@ virtual class Value {
 };
 
 #include <gtsam/base/GenericValue.h>
-template<T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
+template<T = {Vector, Matrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias}>
 virtual class GenericValue : gtsam::Value {
   void serializable() const;
 };
@@ -2115,7 +2115,11 @@ class Values {
   // void insert(size_t j, const gtsam::Value& value);
   // void update(size_t j, const gtsam::Value& val);
   // gtsam::Value at(size_t j) const;
-
+  
+  // The order is important: Vector has to precede Point2/Point3 so `atVector`
+  // can work for those fixed-size vectors.
+  void insert(size_t j, Vector vector);
+  void insert(size_t j, Matrix matrix);
   void insert(size_t j, const gtsam::Point2& point2);
   void insert(size_t j, const gtsam::Point3& point3);
   void insert(size_t j, const gtsam::Rot2& rot2);
@@ -2131,8 +2135,6 @@ class Values {
   void insert(size_t j, const gtsam::EssentialMatrix& essential_matrix);
   void insert(size_t j, const gtsam::SimpleCamera& simpel_camera);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
-  void insert(size_t j, Vector vector);
-  void insert(size_t j, Matrix matrix);
 
   void update(size_t j, const gtsam::Point2& point2);
   void update(size_t j, const gtsam::Point3& point3);
@@ -2730,7 +2732,7 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D_robust(string filename,
-    gtsam::noiseModel::Base* model);
+    gtsam::noiseModel::Base* model, int maxID);
 void save2D(const gtsam::NonlinearFactorGraph& graph,
     const gtsam::Values& config, gtsam::noiseModel::Diagonal* model,
     string filename);
