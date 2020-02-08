@@ -27,7 +27,7 @@ PYBIND11_MODULE(geometry_py, m_) {
 
     pybind11::module m_gtsam = m_.def_submodule("gtsam", "gtsam submodule");
 
-    py::class_<gtsam::Point2, std::shared_ptr<gtsam::Point2>>(m_gtsam, "Point2")
+    py::class_<gtsam::Point2, boost::shared_ptr<gtsam::Point2>>(m_gtsam, "Point2")
         .def(py::init<>())
         .def(py::init< double,  double>(), py::arg("x"), py::arg("y"))
         .def("x",[](gtsam::Point2* self){return self->x();})
@@ -49,7 +49,7 @@ PYBIND11_MODULE(geometry_py, m_) {
     })
 ;
 
-    py::class_<gtsam::Point3, std::shared_ptr<gtsam::Point3>>(m_gtsam, "Point3")
+    py::class_<gtsam::Point3, boost::shared_ptr<gtsam::Point3>>(m_gtsam, "Point3")
         .def(py::init< double,  double,  double>(), py::arg("x"), py::arg("y"), py::arg("z"))
         .def("norm",[](gtsam::Point3* self){return self->norm();})
 .def("serialize",
@@ -65,7 +65,7 @@ PYBIND11_MODULE(geometry_py, m_) {
         .def_static("staticFunction",[](){return gtsam::Point3::staticFunction();})
         .def_static("StaticFunctionRet",[]( double z){return gtsam::Point3::StaticFunctionRet(z);}, py::arg("z"));
 
-    py::class_<Test, std::shared_ptr<Test>>(m_, "Test")
+    py::class_<Test, boost::shared_ptr<Test>>(m_, "Test")
         .def(py::init<>())
         .def(py::init< double, const gtsam::Matrix&>(), py::arg("a"), py::arg("b"))
         .def("return_pair",[](Test* self,const gtsam::Vector& v,const gtsam::Matrix& A){return self->return_pair(v, A);}, py::arg("v"), py::arg("A"))
@@ -88,15 +88,15 @@ PYBIND11_MODULE(geometry_py, m_) {
         .def("return_ptrs",[](Test* self,const std::shared_ptr<Test>& p1,const std::shared_ptr<Test>& p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"))
         .def("print_",[](Test* self){ self->print();})
         .def("__repr__",
-                 [](const Test &a) {
-                     gtsam::RedirectCout redirect;
-                     a.print("");
-                     return redirect.str();
-                 });
+                    [](const Test &a) {
+                        gtsam::RedirectCout redirect;
+                        a.print();
+                        return redirect.str();
+                    });
 
-    py::class_<MyBase, std::shared_ptr<MyBase>>(m_, "MyBase");
+    py::class_<MyBase, boost::shared_ptr<MyBase>>(m_, "MyBase");
 
-    py::class_<MyTemplate<gtsam::Point2>, MyBase, std::shared_ptr<MyTemplate<gtsam::Point2>>>(m_, "MyTemplatePoint2")
+    py::class_<MyTemplate<gtsam::Point2>, MyBase, boost::shared_ptr<MyTemplate<gtsam::Point2>>>(m_, "MyTemplatePoint2")
         .def(py::init<>())
         .def("templatedMethodPoint2",[](MyTemplate<gtsam::Point2>* self,const gtsam::Point2& t){return self->templatedMethod<gtsam::Point2>(t);}, py::arg("t"))
         .def("templatedMethodPoint3",[](MyTemplate<gtsam::Point2>* self,const gtsam::Point3& t){return self->templatedMethod<gtsam::Point3>(t);}, py::arg("t"))
@@ -110,7 +110,7 @@ PYBIND11_MODULE(geometry_py, m_) {
         .def("create_MixedPtrs",[](MyTemplate<gtsam::Point2>* self){return self->create_MixedPtrs();})
         .def("return_ptrs",[](MyTemplate<gtsam::Point2>* self,const std::shared_ptr<gtsam::Point2>& p1,const std::shared_ptr<gtsam::Point2>& p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"));
 
-    py::class_<MyTemplate<gtsam::Matrix>, MyBase, std::shared_ptr<MyTemplate<gtsam::Matrix>>>(m_, "MyTemplateMatrix")
+    py::class_<MyTemplate<gtsam::Matrix>, MyBase, boost::shared_ptr<MyTemplate<gtsam::Matrix>>>(m_, "MyTemplateMatrix")
         .def(py::init<>())
         .def("templatedMethodPoint2",[](MyTemplate<gtsam::Matrix>* self,const gtsam::Point2& t){return self->templatedMethod<gtsam::Point2>(t);}, py::arg("t"))
         .def("templatedMethodPoint3",[](MyTemplate<gtsam::Matrix>* self,const gtsam::Point3& t){return self->templatedMethod<gtsam::Point3>(t);}, py::arg("t"))
@@ -124,13 +124,13 @@ PYBIND11_MODULE(geometry_py, m_) {
         .def("create_MixedPtrs",[](MyTemplate<gtsam::Matrix>* self){return self->create_MixedPtrs();})
         .def("return_ptrs",[](MyTemplate<gtsam::Matrix>* self,const std::shared_ptr<gtsam::Matrix>& p1,const std::shared_ptr<gtsam::Matrix>& p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"));
 
-    py::class_<MyVector<3>, std::shared_ptr<MyVector<3>>>(m_, "MyVector3")
+    py::class_<MyVector<3>, boost::shared_ptr<MyVector<3>>>(m_, "MyVector3")
         .def(py::init<>());
 
-    py::class_<MyVector<12>, std::shared_ptr<MyVector<12>>>(m_, "MyVector12")
+    py::class_<MyVector<12>, boost::shared_ptr<MyVector<12>>>(m_, "MyVector12")
         .def(py::init<>());
 
-    py::class_<MyFactor<gtsam::Pose2, gtsam::Matrix>, std::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>>>(m_, "MyFactorPosePoint2")
+    py::class_<MyFactor<gtsam::Pose2, gtsam::Matrix>, boost::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>>>(m_, "MyFactorPosePoint2")
         .def(py::init< size_t,  size_t,  double, const std::shared_ptr<gtsam::noiseModel::Base>&>(), py::arg("key1"), py::arg("key2"), py::arg("measured"), py::arg("noiseModel"));
 
     m_.def("aGlobalFunction",[](){return ::aGlobalFunction();});
