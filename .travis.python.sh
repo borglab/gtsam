@@ -1,10 +1,12 @@
 #!/bin/bash
-set -x
+set -x -e
 
 # Install a system package required by our library
 sudo apt-get install wget libicu libicu-dev
 
 CURRDIR=$(pwd)
+
+python -m pip install ./cython/requirements.txt
 
 mkdir $CURRDIR/build
 cd $CURRDIR/build
