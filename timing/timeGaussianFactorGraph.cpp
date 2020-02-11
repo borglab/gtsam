@@ -40,7 +40,7 @@ double timeKalmanSmoother(int T) {
 /* ************************************************************************* */
 // Create a planar factor graph and optimize
 double timePlanarSmoother(int N, bool old = true) {
-  GaussianFactorGraph fg = planarGraph(N).get<0>();
+  GaussianFactorGraph fg = planarGraph(N).first;
   clock_t start = clock();
   fg.optimize();
   clock_t end = clock ();
@@ -51,7 +51,7 @@ double timePlanarSmoother(int N, bool old = true) {
 /* ************************************************************************* */
 // Create a planar factor graph and eliminate
 double timePlanarSmootherEliminate(int N, bool old = true) {
-  GaussianFactorGraph fg = planarGraph(N).get<0>();
+  GaussianFactorGraph fg = planarGraph(N).first;
   clock_t start = clock();
   fg.eliminateMultifrontal();
   clock_t end = clock ();

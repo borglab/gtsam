@@ -60,7 +60,11 @@ public:
 
   /** construct P(X|Y)=P(X,Y)/P(Y) from P(X,Y) and P(Y) */
   DiscreteConditional(const DecisionTreeFactor& joint,
-      const DecisionTreeFactor& marginal, const boost::optional<Ordering>& orderedKeys = boost::none);
+      const DecisionTreeFactor& marginal);
+
+  /** construct P(X|Y)=P(X,Y)/P(Y) from P(X,Y) and P(Y) */
+  DiscreteConditional(const DecisionTreeFactor& joint,
+      const DecisionTreeFactor& marginal, const Ordering& orderedKeys);
 
   /**
    * Combine several conditional into a single one.

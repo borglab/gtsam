@@ -50,6 +50,7 @@ namespace gtsam {
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 Matrix4 SO4::Hat(const Vector6& xi) {
   // skew symmetric matrix X = xi^
   // Unlike Luca, makes upper-left the SO(3) subgroup.
@@ -65,6 +66,7 @@ Matrix4 SO4::Hat(const Vector6& xi) {
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 Vector6 SO4::Vee(const Matrix4& X) {
   Vector6 xi;
   xi(5) = -X(0, 1);
@@ -81,6 +83,7 @@ Vector6 SO4::Vee(const Matrix4& X) {
  * "SOME REMARKS ON THE EXPONENTIAL MAP ON THE GROUPS SO(n) AND SE(n)" by
  * Ramona-Andreaa Rohan */
 template <>
+GTSAM_EXPORT
 SO4 SO4::Expmap(const Vector6& xi, ChartJacobian H) {
   using namespace std;
   if (H) throw std::runtime_error("SO4::Expmap Jacobian");
@@ -138,7 +141,7 @@ static SO4::VectorN2 vec4(const Matrix4& Q) {
 }
 
 // so<4> generators
-static std::vector<Matrix4> G4(
+static std::vector<Matrix4, Eigen::aligned_allocator<Matrix4> > G4(
     {SO4::Hat(Vector6::Unit(0)), SO4::Hat(Vector6::Unit(1)),
      SO4::Hat(Vector6::Unit(2)), SO4::Hat(Vector6::Unit(3)),
      SO4::Hat(Vector6::Unit(4)), SO4::Hat(Vector6::Unit(5))});
@@ -151,6 +154,7 @@ static const Eigen::Matrix<double, 16, 6> P4 =
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 Matrix6 SO4::AdjointMap() const {
   // Elaborate way of calculating the AdjointMap
   // TODO(frank): find a closed form solution. In SO(3) is just R :-/
@@ -166,6 +170,7 @@ Matrix6 SO4::AdjointMap() const {
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const {
   const Matrix& Q = matrix_;
   if (H) {
@@ -178,6 +183,7 @@ SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const {
 
 ///******************************************************************************
 template <>
+GTSAM_EXPORT
 SO4 SO4::ChartAtOrigin::Retract(const Vector6& xi, ChartJacobian H) {
   if (H) throw std::runtime_error("SO4::ChartAtOrigin::Retract Jacobian");
   gttic(SO4_Retract);
@@ -187,6 +193,7 @@ SO4 SO4::ChartAtOrigin::Retract(const Vector6& xi, ChartJacobian H) {
 
 //******************************************************************************
 template <>
+GTSAM_EXPORT
 Vector6 SO4::ChartAtOrigin::Local(const SO4& Q, ChartJacobian H) {
   if (H) throw std::runtime_error("SO4::ChartAtOrigin::Retract Jacobian");
   const Matrix4& R = Q.matrix();
@@ -195,7 +202,7 @@ Vector6 SO4::ChartAtOrigin::Local(const SO4& Q, ChartJacobian H) {
 }
 
 //******************************************************************************
-Matrix3 topLeft(const SO4& Q, OptionalJacobian<9, 6> H) {
+GTSAM_EXPORT Matrix3 topLeft(const SO4& Q, OptionalJacobian<9, 6> H) {
   const Matrix4& R = Q.matrix();
   const Matrix3 M = R.topLeftCorner<3, 3>();
   if (H) {
@@ -209,7 +216,7 @@ Matrix3 topLeft(const SO4& Q, OptionalJacobian<9, 6> H) {
 }
 
 //******************************************************************************
-Matrix43 stiefel(const SO4& Q, OptionalJacobian<12, 6> H) {
+GTSAM_EXPORT Matrix43 stiefel(const SO4& Q, OptionalJacobian<12, 6> H) {
   const Matrix4& R = Q.matrix();
   const Matrix43 M = R.leftCols<3>();
   if (H) {

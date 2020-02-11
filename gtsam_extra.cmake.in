@@ -1,8 +1,7 @@
 # Extra CMake definitions for GTSAM
 
-set (GTSAM_VERSION_MAJOR @GTSAM_VERSION_MAJOR@)
-set (GTSAM_VERSION_MINOR @GTSAM_VERSION_MINOR@)
-set (GTSAM_VERSION_PATCH @GTSAM_VERSION_PATCH@)
+# All version variables are handled by GTSAMConfigVersion.cmake, except these
+# two below. We continue to set them here in case someone uses them
 set (GTSAM_VERSION_NUMERIC @GTSAM_VERSION_NUMERIC@)
 set (GTSAM_VERSION_STRING "@GTSAM_VERSION_STRING@")
 

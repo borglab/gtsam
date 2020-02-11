@@ -36,15 +36,18 @@ typename SO<N>::TangentVector SO<N>::Vee(const MatrixNN& X) {
 
 template <int N>
 SO<N> SO<N>::ChartAtOrigin::Retract(const TangentVector& xi, ChartJacobian H) {
+  if (H) throw std::runtime_error("SO<N>::Retract jacobian not implemented.");
   const Matrix X = Hat(xi / 2.0);
   size_t n = AmbientDim(xi.size());
   const auto I = Eigen::MatrixXd::Identity(n, n);
+  // https://pdfs.semanticscholar.org/6165/0347b2ccac34b5f423081d1ce4dbc4d09475.pdf
   return SO((I + X) * (I - X).inverse());
 }
 
 template <int N>
 typename SO<N>::TangentVector SO<N>::ChartAtOrigin::Local(const SO& R,
                                                           ChartJacobian H) {
+  if (H) throw std::runtime_error("SO<N>::Local jacobian not implemented.");
   const size_t n = R.rows();
   const auto I = Eigen::MatrixXd::Identity(n, n);
   const Matrix X = (I - R.matrix_) * (I + R.matrix_).inverse();
@@ -87,9 +90,11 @@ typename SO<N>::VectorN2 SO<N>::vec(
   VectorN2 X(n2);
   X << Eigen::Map<const Matrix>(matrix_.data(), n2, 1);
 
-  // If requested, calculate H as (I \oplus Q) * P
+  // If requested, calculate H as (I \oplus Q) * P,
+  // where Q is the N*N rotation matrix, and P is calculated below.
   if (H) {
     // Calculate P matrix of vectorized generators
+    // TODO(duy): Should we refactor this as the jacobian of Hat?
     const size_t d = dim();
     Matrix P(n2, d);
     for (size_t j = 0; j < d; j++) {

@@ -15,10 +15,12 @@
  * @author Frank Dellaert
  **/
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/SO3.h>
+
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/testLie.h>
-#include <gtsam/geometry/SO3.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -51,7 +53,6 @@ TEST(SO3, Constructors) {
 
 /* ************************************************************************* */
 TEST(SO3, ClosestTo) {
-  // Example top-left of SO(4) matrix not quite on SO(3) manifold
   Matrix3 M;
   M << 0.79067393, 0.6051136, -0.0930814,   //
       0.4155925, -0.64214347, -0.64324489,  //

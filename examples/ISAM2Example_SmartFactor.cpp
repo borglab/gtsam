@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
       noiseModel::Isotropic::Sigma(2, 1.0);  // one pixel in u and v
 
   Vector6 sigmas;
-  sigmas << Vector3::Constant(0.3), Vector3::Constant(0.1);
+  sigmas << Vector3::Constant(0.1), Vector3::Constant(0.3);
   auto noise = noiseModel::Diagonal::Sigmas(sigmas);
 
   ISAM2Params parameters;

@@ -12,6 +12,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <vector>
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_array.hpp>
 #include <boost/timer.hpp>
@@ -40,14 +41,14 @@ namespace gtsam { namespace partition {
     const sharedInts& adjncy, const sharedInts& adjwgt, bool verbose) {
 
     // control parameters
-    idx_t vwgt[n];                  // the weights of the vertices
+    std::vector<idx_t> vwgt;        // the weights of the vertices
     idx_t options[METIS_NOPTIONS];
     METIS_SetDefaultOptions(options);  // use defaults
     idx_t sepsize;                      // the size of the separator, output
     sharedInts part_(new idx_t[n]);      // the partition of each vertex, output
 
     // set uniform weights on the vertices
-    std::fill(vwgt, vwgt+n, 1);
+    vwgt.assign(n, 1);
 
     // TODO: Fix at later time
     //boost::timer::cpu_timer TOTALTmr;
@@ -61,7 +62,7 @@ namespace gtsam { namespace partition {
 
     // call metis parition routine
     METIS_ComputeVertexSeparator(&n, xadj.get(), adjncy.get(),
-           vwgt, options, &sepsize, part_.get());
+           &vwgt[0], options, &sepsize, part_.get());
 
     if (verbose) {
       //boost::cpu_times const elapsed_times(timer.elapsed());
@@ -127,14 +128,14 @@ namespace gtsam { namespace partition {
     const sharedInts& adjwgt, bool verbose) {
 
     // control parameters
-    idx_t vwgt[n];                  // the weights of the vertices
+    std::vector<idx_t> vwgt;                  // the weights of the vertices
     idx_t options[METIS_NOPTIONS];
     METIS_SetDefaultOptions(options);  // use defaults
     idx_t edgecut;                      // the number of edge cuts, output
     sharedInts part_(new idx_t[n]);      // the partition of each vertex, output
 
     // set uniform weights on the vertices
-    std::fill(vwgt, vwgt+n, 1);
+    vwgt.assign(n, 1);
 
     //TODO: Fix later
     //boost::timer TOTALTmr;
@@ -150,7 +151,7 @@ namespace gtsam { namespace partition {
     //int wgtflag = 1; // only edge weights
     //int numflag = 0; // c style numbering starting from 0
     //int nparts = 2; // partition the graph to 2 submaps
-    modefied_EdgeComputeSeparator(&n, xadj.get(), adjncy.get(), vwgt, adjwgt.get(),
+    modefied_EdgeComputeSeparator(&n, xadj.get(), adjncy.get(), &vwgt[0], adjwgt.get(),
         options, &edgecut, part_.get());
 
 

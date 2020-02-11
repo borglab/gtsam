@@ -25,6 +25,7 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/dllexport.h>
 
 #include <string>
 
@@ -39,36 +40,43 @@ using SO4 = SO<4>;
 // They are *defined* in SO4.cpp.
 
 template <>
+GTSAM_EXPORT
 Matrix4 SO4::Hat(const TangentVector &xi);
 
 template <>
+GTSAM_EXPORT
 Vector6 SO4::Vee(const Matrix4 &X);
 
 template <>
+GTSAM_EXPORT
 SO4 SO4::Expmap(const Vector6 &xi, ChartJacobian H);
 
 template <>
+GTSAM_EXPORT
 Matrix6 SO4::AdjointMap() const;
 
 template <>
+GTSAM_EXPORT
 SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const;
 
 template <>
+GTSAM_EXPORT
 SO4 SO4::ChartAtOrigin::Retract(const Vector6 &omega, ChartJacobian H);
 
 template <>
+GTSAM_EXPORT
 Vector6 SO4::ChartAtOrigin::Local(const SO4 &Q, ChartJacobian H);
 
 /**
  * Project to top-left 3*3 matrix. Note this is *not* in general \in SO(3).
  */
-Matrix3 topLeft(const SO4 &Q, OptionalJacobian<9, 6> H = boost::none);
+GTSAM_EXPORT Matrix3 topLeft(const SO4 &Q, OptionalJacobian<9, 6> H = boost::none);
 
 /**
  * Project to Stiefel manifold of 4*3 orthonormal 3-frames in R^4, i.e., pi(Q)
  * -> S \in St(3,4).
  */
-Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = boost::none);
+GTSAM_EXPORT Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = boost::none);
 
 /** Serialization function */
 template <class Archive>

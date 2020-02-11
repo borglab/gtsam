@@ -75,7 +75,7 @@ static const SO4 Q = SO4::Expmap((Vector6() << 1, 2, 3, 4, 5, 6).finished());
 
 /* ************************************************************************* */
 TEST(KarcherMean, FindSO4) {
-  std::vector<SO4> rotations = {Q, Q.inverse()};
+  std::vector<SO4, Eigen::aligned_allocator<SO4>> rotations = {Q, Q.inverse()};
   auto expected = SO4();  //::ChordalMean(rotations);
   auto actual = FindKarcherMean(rotations);
   EXPECT(assert_equal(expected, actual));
@@ -91,7 +91,9 @@ TEST(KarcherMean, FactorSO4) {
   Values initial;
   initial.insert<SO4>(1, Q.inverse());
   initial.insert<SO4>(2, Q);
-  const auto expected = FindKarcherMean<SO4>({Q, Q.inverse()});
+
+  std::vector<SO4, Eigen::aligned_allocator<SO4> > rotations = {Q, Q.inverse()};
+  const auto expected = FindKarcherMean<SO4>(rotations);
 
   auto result = GaussNewtonOptimizer(graph, initial).optimize();
   const auto actual =

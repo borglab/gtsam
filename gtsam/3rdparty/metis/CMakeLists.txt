@@ -34,6 +34,11 @@ else()
   set(METIS_LIBRARY_TYPE STATIC)
 endif()
 
+# Allow a static METIS while building GTSAM as dynamic
+if(BUILD_STATIC_METIS)
+  set(METIS_LIBRARY_TYPE STATIC)
+endif()
+
 include(${GKLIB_PATH}/GKlibSystem.cmake)
 # Add include directories.
 include_directories(${GKLIB_PATH})
@@ -47,3 +52,17 @@ if(GTSAM_BUILD_METIS_EXECUTABLES)
 endif()
 
 set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
+# Export macros assumed in metis public headers to clients of the library.
+# This was added to solve MSVC build errors.
+if (TARGET metis AND GKlib_COPTIONS)
+  # Remove (possibly) duplicated symbols:
+  string(REPLACE -DLINUX "" GKlib_COPTIONS ${GKlib_COPTIONS})
+  string(REPLACE -DWIN32 "" GKlib_COPTIONS ${GKlib_COPTIONS})
+  string(REPLACE -DNDEBUG2 "" GKlib_COPTIONS ${GKlib_COPTIONS})
+  string(REPLACE -DNDEBUG "" GKlib_COPTIONS ${GKlib_COPTIONS})
+  string(REPLACE -pedantic "" GKlib_COPTIONS ${GKlib_COPTIONS})
+  string(REPLACE -std=c99 "" GKlib_COPTIONS ${GKlib_COPTIONS})
+  separate_arguments(GKlib_COPTIONS)
+  # Declare those flags as to-be-imported in "client libraries", i.e. "gtsam"
+  target_compile_options(metis INTERFACE ${GKlib_COPTIONS})
+endif()

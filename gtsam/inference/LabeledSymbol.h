@@ -107,7 +107,7 @@ public:
   LabeledSymbol newLabel(unsigned char label) const { return LabeledSymbol(c_, label, j_); }
 
   /// Output stream operator that can be used with key_formatter (see Key.h).
-  friend std::ostream &operator<<(std::ostream &, const LabeledSymbol &);
+  friend GTSAM_EXPORT std::ostream &operator<<(std::ostream &, const LabeledSymbol &);
 
 private:
 

@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
     if (i == 0) {
       // Add a prior on pose x0, 30cm std on x,y,z and 0.1 rad on roll,pitch,yaw
       static auto kPosePrior = noiseModel::Diagonal::Sigmas(
-          (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1))
+          (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3))
               .finished());
       graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x', 0), poses[0],
                                                 kPosePrior);

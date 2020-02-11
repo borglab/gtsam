@@ -814,6 +814,7 @@ class Unit3 {
   // Other functionality
   Matrix basis() const;
   Matrix skew() const;
+  gtsam::Point3 point3() const;
 
   // Manifold
   static size_t Dim();
@@ -874,6 +875,7 @@ class Cal3_S2 {
   double py() const;
   gtsam::Point2 principalPoint() const;
   Vector vector() const;
+  Matrix K() const;
   Matrix matrix() const;
   Matrix matrix_inverse() const;
 
@@ -1164,6 +1166,9 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
     gtsam::Cal3_S2* sharedCal, const gtsam::Point2Vector& measurements,
     double rank_tol, bool optimize);
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
+    gtsam::Cal3DS2* sharedCal, const gtsam::Point2Vector& measurements,
+    double rank_tol, bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
     gtsam::Cal3Bundler* sharedCal, const gtsam::Point2Vector& measurements,
     double rank_tol, bool optimize);
 
@@ -1364,6 +1369,7 @@ virtual class Base {
 };
 
 virtual class Gaussian : gtsam::noiseModel::Base {
+  static gtsam::noiseModel::Gaussian* Information(Matrix R);
   static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
   static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
 
@@ -1445,6 +1451,9 @@ virtual class Null: gtsam::noiseModel::mEstimator::Base {
 
   // enabling serialization functionality
   void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
 };
 
 virtual class Fair: gtsam::noiseModel::mEstimator::Base {
@@ -1453,6 +1462,9 @@ virtual class Fair: gtsam::noiseModel::mEstimator::Base {
 
   // enabling serialization functionality
   void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
 };
 
 virtual class Huber: gtsam::noiseModel::mEstimator::Base {
@@ -1461,6 +1473,20 @@ virtual class Huber: gtsam::noiseModel::mEstimator::Base {
 
   // enabling serialization functionality
   void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
+};
+
+virtual class Cauchy: gtsam::noiseModel::mEstimator::Base {
+  Cauchy(double k);
+  static gtsam::noiseModel::mEstimator::Cauchy* Create(double k);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
 };
 
 virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
@@ -1469,6 +1495,9 @@ virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
 
   // enabling serialization functionality
   void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
 };
 
 virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
@@ -1477,8 +1506,43 @@ virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
 
   // enabling serialization functionality
   void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
 };
 
+virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
+  GemanMcClure(double c);
+  static gtsam::noiseModel::mEstimator::GemanMcClure* Create(double c);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
+};
+
+virtual class DCS: gtsam::noiseModel::mEstimator::Base {
+  DCS(double c);
+  static gtsam::noiseModel::mEstimator::DCS* Create(double c);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
+};
+
+virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
+  L2WithDeadZone(double k);
+  static gtsam::noiseModel::mEstimator::L2WithDeadZone* Create(double k);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double residual(double error) const;
+};
 
 }///\namespace mEstimator
 
@@ -1740,6 +1804,9 @@ virtual class GaussianConditional : gtsam::GaussianFactor {
   gtsam::VectorValues solveOtherRHS(const gtsam::VectorValues& parents, const gtsam::VectorValues& rhs) const;
   void solveTransposeInPlace(gtsam::VectorValues& gy) const;
   void scaleFrontalsBySigma(gtsam::VectorValues& gy) const;
+  Matrix R() const;
+  Matrix S() const;
+  Vector d() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -2100,6 +2167,10 @@ class Values {
 class Marginals {
   Marginals(const gtsam::NonlinearFactorGraph& graph,
       const gtsam::Values& solution);
+  Marginals(const gtsam::GaussianFactorGraph& gfgraph,
+      const gtsam::Values& solution);
+  Marginals(const gtsam::GaussianFactorGraph& gfgraph,
+      const gtsam::VectorValues& solutionvec);
 
   void print(string s) const;
   Matrix marginalCovariance(size_t variable) const;
@@ -2432,7 +2503,7 @@ virtual class PriorFactor : gtsam::NoiseModelFactor {
 
 
 #include <gtsam/slam/BetweenFactor.h>
-template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::imuBias::ConstantBias}>
+template<T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::imuBias::ConstantBias}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
   T measured() const;
@@ -2845,7 +2916,33 @@ virtual class ImuFactor: gtsam::NonlinearFactor {
 };
 
 #include <gtsam/navigation/CombinedImuFactor.h>
+virtual class PreintegrationCombinedParams : gtsam::PreintegrationParams {
+  PreintegrationCombinedParams(Vector n_gravity);
+
+  static gtsam::PreintegrationCombinedParams* MakeSharedD(double g);
+  static gtsam::PreintegrationCombinedParams* MakeSharedU(double g);
+  static gtsam::PreintegrationCombinedParams* MakeSharedD();  // default g = 9.81
+  static gtsam::PreintegrationCombinedParams* MakeSharedU();  // default g = 9.81
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::PreintegrationCombinedParams& expected, double tol);
+
+  void setBiasAccCovariance(Matrix cov);
+  void setBiasOmegaCovariance(Matrix cov);
+  void setBiasAccOmegaInt(Matrix cov);
+  
+  Matrix getBiasAccCovariance() const ;
+  Matrix getBiasOmegaCovariance() const ;
+  Matrix getBiasAccOmegaInt() const;
+ 
+};
+
 class PreintegratedCombinedMeasurements {
+// Constructors
+  PreintegratedCombinedMeasurements(const gtsam::PreintegrationCombinedParams* params);
+  PreintegratedCombinedMeasurements(const gtsam::PreintegrationCombinedParams* params,
+				    const gtsam::imuBias::ConstantBias& bias);
   // Testable
   void print(string s) const;
   bool equals(const gtsam::PreintegratedCombinedMeasurements& expected,
@@ -2941,6 +3038,31 @@ virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor {
   bool equals(const gtsam::NonlinearFactor& expected, double tol) const;
   gtsam::Unit3 nZ() const;
   gtsam::Unit3 bRef() const;
+};
+
+#include <gtsam/navigation/GPSFactor.h>
+virtual class GPSFactor : gtsam::NonlinearFactor{
+  GPSFactor(size_t key, const gtsam::Point3& gpsIn,
+            const gtsam::noiseModel::Base* model);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::GPSFactor& expected, double tol);
+
+  // Standard Interface
+  gtsam::Point3 measurementIn() const;
+};
+
+virtual class GPSFactor2 : gtsam::NonlinearFactor {
+  GPSFactor2(size_t key, const gtsam::Point3& gpsIn,
+            const gtsam::noiseModel::Base* model);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::GPSFactor2& expected, double tol);
+
+  // Standard Interface
+  gtsam::Point3 measurementIn() const;
 };
 
 #include <gtsam/navigation/Scenario.h>

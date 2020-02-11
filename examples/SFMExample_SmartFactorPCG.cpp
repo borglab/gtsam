@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
   // Add a prior on pose x0. This indirectly specifies where the origin is.
   // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
   noiseModel::Diagonal::shared_ptr noise = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
+      (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3)).finished());
   graph.emplace_shared<PriorFactor<Pose3> >(0, poses[0], noise);
 
   // Fix the scale ambiguity by adding a prior

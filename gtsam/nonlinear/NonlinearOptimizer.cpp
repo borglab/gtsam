@@ -101,7 +101,7 @@ void NonlinearOptimizer::defaultOptimize() {
       cout << "newError: " << error() << endl;
   } while (iterations() < params.maxIterations &&
            !checkConvergence(params.relativeErrorTol, params.absoluteErrorTol, params.errorTol,
-                             currentError, error(), params.verbosity));
+                             currentError, error(), params.verbosity) && std::isfinite(currentError));
 
   // Printing if verbose
   if (params.verbosity >= NonlinearOptimizerParams::TERMINATION) {
@@ -128,18 +128,22 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
                                        const NonlinearOptimizerParams& params) const {
   // solution of linear solver is an update to the linearization point
   VectorValues delta;
-  boost::optional<const Ordering&> optionalOrdering;
-  if (params.ordering)
-    optionalOrdering.reset(*params.ordering);
 
   // Check which solver we are using
   if (params.isMultifrontal()) {
     // Multifrontal QR or Cholesky (decided by params.getEliminationFunction())
-    delta = gfg.optimize(optionalOrdering, params.getEliminationFunction());
+    if (params.ordering)
+      delta = gfg.optimize(*params.ordering, params.getEliminationFunction());
+    else
+      delta = gfg.optimize(params.getEliminationFunction());
   } else if (params.isSequential()) {
     // Sequential QR or Cholesky (decided by params.getEliminationFunction())
-    delta = gfg.eliminateSequential(optionalOrdering, params.getEliminationFunction(), boost::none,
-                                    params.orderingType)->optimize();
+    if (params.ordering)
+      delta = gfg.eliminateSequential(*params.ordering, params.getEliminationFunction(),
+                                      boost::none, params.orderingType)->optimize();
+    else
+      delta = gfg.eliminateSequential(params.getEliminationFunction(), boost::none,
+                                      params.orderingType)->optimize();
   } else if (params.isIterative()) {
     // Conjugate Gradient -> needs params.iterativeParams
     if (!params.iterativeParams)

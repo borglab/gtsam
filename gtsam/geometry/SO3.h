@@ -24,6 +24,7 @@
 
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/dllexport.h>
 
 #include <cmath>
 #include <vector>
@@ -36,18 +37,23 @@ using SO3 = SO<3>;
 // They are *defined* in SO3.cpp.
 
 template <>
+GTSAM_EXPORT
 SO3 SO3::AxisAngle(const Vector3& axis, double theta);
 
 template <>
+GTSAM_EXPORT
 SO3 SO3::ClosestTo(const Matrix3& M);
 
 template <>
+GTSAM_EXPORT
 SO3 SO3::ChordalMean(const std::vector<SO3>& rotations);
 
 template <>
+GTSAM_EXPORT
 Matrix3 SO3::Hat(const Vector3& xi);  ///< make skew symmetric matrix
 
 template <>
+GTSAM_EXPORT
 Vector3 SO3::Vee(const Matrix3& X);  ///< inverse of Hat
 
 /// Adjoint map
@@ -59,10 +65,12 @@ Matrix3 SO3::AdjointMap() const;
  * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
  */
 template <>
+GTSAM_EXPORT
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H);
 
 /// Derivative of Expmap
 template <>
+GTSAM_EXPORT
 Matrix3 SO3::ExpmapDerivative(const Vector3& omega);
 
 /**
@@ -70,20 +78,25 @@ Matrix3 SO3::ExpmapDerivative(const Vector3& omega);
  * \f$ [R_x,R_y,R_z] \f$ of this rotation
  */
 template <>
+GTSAM_EXPORT
 Vector3 SO3::Logmap(const SO3& R, ChartJacobian H);
 
 /// Derivative of Logmap
 template <>
+GTSAM_EXPORT
 Matrix3 SO3::LogmapDerivative(const Vector3& omega);
 
 // Chart at origin for SO3 is *not* Cayley but actual Expmap/Logmap
 template <>
+GTSAM_EXPORT
 SO3 SO3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H);
 
 template <>
+GTSAM_EXPORT
 Vector3 SO3::ChartAtOrigin::Local(const SO3& R, ChartJacobian H);
 
 template <>
+GTSAM_EXPORT
 Vector9 SO3::vec(OptionalJacobian<9, 3> H) const;
 
 /** Serialization function */
@@ -107,11 +120,11 @@ namespace so3 {
  * Compose general matrix with an SO(3) element.
  * We only provide the 9*9 derivative in the first argument M.
  */
-Matrix3 compose(const Matrix3& M, const SO3& R,
+GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
                 OptionalJacobian<9, 9> H = boost::none);
 
 /// (constant) Jacobian of compose wrpt M
-Matrix99 Dcompose(const SO3& R);
+GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
 
 // Below are two functors that allow for saving computation when exponential map
 // and its derivatives are needed at the same location in so<3>. The second
