@@ -122,3 +122,11 @@ jobs:
     compiler: clang
     env: CC=clang-9 CXX=clang++-9 CMAKE_BUILD_TYPE=Release GTSAM_BUILD_UNSTABLE=OFF GTSAM_USE_QUATERNIONS=ON
     script: bash .travis.sh -t
+  - stage: special
+    os: linux
+    compiler: gcc
+    script: bash .travis.python.sh
+  - stage: special
+    os: osx
+    compiler: clang
+    script: bash .travis.python.sh
