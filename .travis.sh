@@ -68,8 +68,6 @@ function test ()
   finish
 }
 
-exit 0
-
 # select between build or test
 case $1 in
   -b)
