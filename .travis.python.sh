@@ -1,8 +1,12 @@
 #!/bin/bash
 set -x -e
 
-# Install a system package required by our library
-sudo apt-get install wget libicu-dev
+if [[ $(uname) == "Darwin" ]]; then
+    brew install wget
+else
+    # Install a system package required by our library
+    sudo apt-get install wget libicu-dev
+fi
 
 CURRDIR=$(pwd)
 
@@ -15,6 +19,7 @@ cmake $CURRDIR -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_UNSTABLE=ON \
     -DGTSAM_USE_QUATERNIONS=OFF \
     -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+    -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
     -DGTSAM_INSTALL_CYTHON_TOOLBOX=ON \
     -DGTSAM_PYTHON_VERSION=Default \
     -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF \
