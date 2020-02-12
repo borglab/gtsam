@@ -6,7 +6,7 @@ sudo apt-get install wget libicu-dev
 
 CURRDIR=$(pwd)
 
-python -m pip install ./cython/requirements.txt
+python -m pip install -r ./cython/requirements.txt
 
 mkdir $CURRDIR/build
 cd $CURRDIR/build
