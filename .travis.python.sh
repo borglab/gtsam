@@ -2,7 +2,7 @@
 set -x -e
 
 # Install a system package required by our library
-sudo apt-get install wget libicu libicu-dev
+sudo apt-get install wget libicu-dev
 
 CURRDIR=$(pwd)
 
