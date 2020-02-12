@@ -42,6 +42,49 @@ void saveData(size_t p, double time1, double costP, double cost3, double time2,
         << time2 << "\t" << min_eigenvalue << "\t" << suBound << endl;
 }
 
+void checkR(const Rot3& R) {
+    Rot3 R2 = R.inverse();
+    Rot3 actual_R = R2 * R;
+    assert_equal(Rot3(),actual_R);
+}
+
+void saveResult(const Values& values) {
+    ofstream myfile;
+    myfile.open("shonan_result.dat");
+    size_t nrSO3 = values.count<SO3>();
+    myfile << "Type SO3 Number " << nrSO3 << "\n";
+    for (int i = 0; i < nrSO3; ++i) {
+        Matrix R = values.at<SO3>(i).matrix();
+        // Check if the result of R.Transpose*R satisfy orthogonal constraint
+        checkR(Rot3(R));
+        myfile << i;
+        for (int m = 0; m < 3; ++m) {
+            for (int n = 0; n < 3; ++n) {
+                myfile << " " << R(m, n);
+            }
+        }
+        myfile << "\n";
+    }
+    myfile.close();
+}
+
+void saveResultQuat(const Values& values) {
+    ofstream myfile;
+    myfile.open("shonan_result.dat");
+    size_t nrSOn = values.count<SOn>();
+    for (int i = 0; i < nrSOn; ++i) {
+        GTSAM_PRINT(values.at<SOn>(i));
+        Rot3 R = Rot3(values.at<SOn>(i).matrix());
+        float x = R.toQuaternion().x();
+        float y = R.toQuaternion().y();
+        float z = R.toQuaternion().z();
+        float w = R.toQuaternion().w();
+        myfile << "QuatSO3 " << i;
+        myfile << "QuatSO3 " << i << " " << w << " " << x << " " << y << " " << z << "\n";
+        myfile.close();
+    }
+}
+
 int main(int argc, char* argv[]) {
     // primitive argument parsing:
     if (argc > 3) {
@@ -53,10 +96,8 @@ int main(int argc, char* argv[]) {
         if (argc > 1)
             g2oFile = argv[argc - 1];
         else
-            //         g2oFile =
-            //         "/home/jingwu/catkin_workspace/gtsam/examples/Data/toyExample.g2o";
             g2oFile = string(
-                "/home/jingwu/Desktop/CS8903/SESync/data/SE3/tinyGrid3D.g2o");
+                "/home/jingwu/git/SESync/data/sphere2500.g2o");
 
     } catch (const exception& e) {
         cerr << e.what() << '\n';
@@ -87,9 +128,11 @@ int main(int argc, char* argv[]) {
         << "time2" << "\t" << "MinEigenvalue" << "\t" << "SuBound" << endl;
 
     for (size_t p = pMin; p < 11; p++) {
+        // Randomly initialize at lowest level, initialize by line search after that
         const Values initial = 
             (p > pMin && withDescent) ? kShonan.initializeWithDescent( p, Qstar, minEigenVector, lambdaMin) : kShonan.initializeRandomlyAt(p);
         chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
+        // optimizing
         const Values result = kShonan.tryOptimizingAt(p, initial);
         chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
         chrono::duration<double> timeUsed1 =
@@ -101,6 +144,7 @@ int main(int argc, char* argv[]) {
         Qstar = result;
         CostP = kShonan.costAt(p, result);
         const Values SO3Values = kShonan.roundSolution(result);
+        saveResult(SO3Values);
         Cost3 = kShonan.cost(SO3Values);
         suBound = (Cost3 - CostP) / CostP;
 
