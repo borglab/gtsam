@@ -598,7 +598,7 @@ Values ShonanAveraging::initializeWithDescent(
     size_t p, const Values& values, const Vector& minEigenVector, double minEigenValue, 
     double gradienTolerance, double preconditionedGradNormTolerance) const {
     
-    double funcVal = costAt(p, values);
+    double funcVal = costAt(p-1, values);
     double alphaMin = 1e-6;
     double alpha = 
         std::max(16 * alphaMin, 10 * gradienTolerance / fabs(minEigenValue));
@@ -610,6 +610,7 @@ Values ShonanAveraging::initializeWithDescent(
         double funcValTest = costAt(p, Qplus);
         Matrix gradTest = riemannianGradient(p, Qplus);
         double gradTestNorm = gradTest.norm();
+        // cout << "\n gradTestNorm: \t" << gradTestNorm << endl;
         // Record alpha and funcVal
         alphas.push_back(alpha);
         fvals.push_back(funcValTest);
@@ -628,8 +629,7 @@ Values ShonanAveraging::initializeWithDescent(
         return Qplus;
     }
 
-    throw std::runtime_error(
-        "Did not find second order critical point by line search!");
+    return dimensionLifting(p, values, alpha * minEigenVector);
 }
 
 /* ************************************************************************* */

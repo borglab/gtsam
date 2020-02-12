@@ -153,7 +153,7 @@ class ShonanAveraging {
 
   /**
    *  Lift up the dimension of values in type SO(p-1) with descent direction provided by minEigenVector
-   * and return new values in type SO(p-1)
+   * and return new values in type SO(p)
    */
   Values dimensionLifting(
     size_t p, const Values& values, const Vector& minEigenVector) const;
