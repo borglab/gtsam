@@ -1,6 +1,13 @@
 #!/bin/bash
 set -x -e
 
+if [ -z ${PYTHON_VERSION+x} ]; then
+    echo "Please provide the Python version to build against!"
+    exit 127
+fi
+
+PYTHON="python${PYTHON_VERSION}"
+
 if [[ $(uname) == "Darwin" ]]; then
     brew install wget
 else
@@ -10,7 +17,7 @@ fi
 
 CURRDIR=$(pwd)
 
-sudo python -m pip install -r ./cython/requirements.txt
+sudo $PYTHON -m pip install -r ./cython/requirements.txt
 
 mkdir $CURRDIR/build
 cd $CURRDIR/build
@@ -21,7 +28,7 @@ cmake $CURRDIR -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
     -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
     -DGTSAM_INSTALL_CYTHON_TOOLBOX=ON \
-    -DGTSAM_PYTHON_VERSION=Default \
+    -DGTSAM_PYTHON_VERSION=$PYTHON_VERSION \
     -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF \
     -DCMAKE_INSTALL_PREFIX=$CURRDIR/../gtsam_install
 
@@ -29,8 +36,8 @@ make -j$(nproc) install
 
 cd $CURRDIR/../gtsam_install/cython
 
-sudo python setup.py install
+sudo $PYTHON setup.py install
 
 cd $CURRDIR/cython/gtsam/tests
 
-python -m unittest discover
+$PYTHON -m unittest discover
