@@ -125,8 +125,10 @@ jobs:
   - stage: special
     os: linux
     compiler: gcc
+    env: PYTHON_VERSION=3
     script: bash .travis.python.sh
   - stage: special
     os: osx
     compiler: clang
+    env: PYTHON_VERSION=3
     script: bash .travis.python.sh
