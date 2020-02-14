@@ -12,7 +12,7 @@ if [[ $(uname) == "Darwin" ]]; then
     brew install wget
 else
     # Install a system package required by our library
-    sudo apt-get install wget libicu-dev python3-pip
+    sudo apt-get install wget libicu-dev python3-pip python3-setuptools
 fi
 
 CURRDIR=$(pwd)
