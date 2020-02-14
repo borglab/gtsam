@@ -610,7 +610,6 @@ Values ShonanAveraging::initializeWithDescent(
         double funcValTest = costAt(p, Qplus);
         Matrix gradTest = riemannianGradient(p, Qplus);
         double gradTestNorm = gradTest.norm();
-        // cout << "\n gradTestNorm: \t" << gradTestNorm << endl;
         // Record alpha and funcVal
         alphas.push_back(alpha);
         fvals.push_back(funcValTest);
