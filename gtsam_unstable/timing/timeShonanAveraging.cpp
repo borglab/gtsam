@@ -31,9 +31,6 @@ using namespace std;
 using namespace gtsam;
 
 // string g2oFile = findExampleDataFile("toyExample.g2o");
-// string g2oFile = "/Users/dellaert/git/SE-Sync/data/toy3D.g2o";
-// string g2oFile =
-// "/home/jingwu/catkin_workspace/gtsam/examples/Data/tinyGrid3D.g2o";
 
 // save a single line of timing info to an output stream
 void saveData(size_t p, double time1, double costP, double cost3, double time2,
@@ -48,11 +45,11 @@ void checkR(const Rot3& R) {
     assert_equal(Rot3(),actual_R);
 }
 
-void saveResult(const Values& values) {
+void saveResult(string name, const Values& values) {
     ofstream myfile;
-    myfile.open("shonan_result.dat");
+    myfile.open("shonan_result_of_" + name + ".dat");
     size_t nrSO3 = values.count<SO3>();
-    myfile << "Type SO3 Number " << nrSO3 << "\n";
+    myfile << "#Type SO3 Number " << nrSO3 << "\n";
     for (int i = 0; i < nrSO3; ++i) {
         Matrix R = values.at<SO3>(i).matrix();
         // Check if the result of R.Transpose*R satisfy orthogonal constraint
@@ -144,7 +141,7 @@ int main(int argc, char* argv[]) {
         Qstar = result;
         CostP = kShonan.costAt(p, result);
         const Values SO3Values = kShonan.roundSolution(result);
-        saveResult(SO3Values);
+        saveResult(name, SO3Values);
         Cost3 = kShonan.cost(SO3Values);
         suBound = (Cost3 - CostP) / CostP;
 
