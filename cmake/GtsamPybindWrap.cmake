@@ -69,6 +69,10 @@ function(pybind_wrap
                      APPEND)
 
   pybind11_add_module(${target} ${generated_cpp})
+
+  if(APPLE)
+    target_compile_options(${target} PRIVATE "-fvisibility-ms-compat")
+  endif()
   add_dependencies(${target} pybind_wrap_${module_name})
   if(NOT "${libs}" STREQUAL "")
     target_link_libraries(${target} PRIVATE "${libs}")
