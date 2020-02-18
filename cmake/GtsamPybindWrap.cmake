@@ -71,7 +71,9 @@ function(pybind_wrap
   pybind11_add_module(${target} ${generated_cpp})
 
   if(APPLE)
-    # Darker sides of the RTTI system :)
+    # `type_info` objects will become "weak private external" if the templated class is initialized implicitly even if we explicitly
+    # export them with `GTSAM_EXPORT`. If that happens, the `type_info` for the same templated class will diverge between shared
+    # libraries, causing `dynamic_cast` to fail. This is mitigated by telling Clang to mimic the MSVC behavior.
     # See https://developer.apple.com/library/archive/technotes/tn2185/_index.html#//apple_ref/doc/uid/DTS10004200-CH1-SUBSECTION2
     # https://github.com/CppMicroServices/CppMicroServices/pull/82/files
     # https://www.russellmcc.com/posts/2013-08-03-rtti.html
