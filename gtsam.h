@@ -875,6 +875,7 @@ class Cal3_S2 {
   double py() const;
   gtsam::Point2 principalPoint() const;
   Vector vector() const;
+  Matrix K() const;
   Matrix matrix() const;
   Matrix matrix_inverse() const;
 
@@ -1163,6 +1164,9 @@ class StereoCamera {
 // Templates appear not yet supported for free functions
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
     gtsam::Cal3_S2* sharedCal, const gtsam::Point2Vector& measurements,
+    double rank_tol, bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
+    gtsam::Cal3DS2* sharedCal, const gtsam::Point2Vector& measurements,
     double rank_tol, bool optimize);
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
     gtsam::Cal3Bundler* sharedCal, const gtsam::Point2Vector& measurements,
