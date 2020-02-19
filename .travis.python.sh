@@ -6,6 +6,27 @@ if [ -z ${PYTHON_VERSION+x} ]; then
     exit 127
 fi
 
+if [ -z ${WRAPPER+x} ]; then
+    echo "Please provide the wrapper to build!"
+    exit 126
+fi
+
+case $WRAPPER in
+"cython")
+    BUILD_CYTHON="ON"
+    BUILD_PYBIND="OFF"
+    TYPEDEF_POINTS_TO_VECTORS="OFF"
+    ;;
+"pybind")
+    BUILD_CYTHON="OFF"
+    BUILD_PYBIND="ON"
+    TYPEDEF_POINTS_TO_VECTORS="ON"
+    ;;
+*)
+    exit 126
+    ;;
+esac
+
 PYTHON="python${PYTHON_VERSION}"
 
 if [[ $(uname) == "Darwin" ]]; then
@@ -27,17 +48,29 @@ cmake $CURRDIR -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_USE_QUATERNIONS=OFF \
     -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
     -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
-    -DGTSAM_INSTALL_CYTHON_TOOLBOX=ON \
+    -DGTSAM_INSTALL_CYTHON_TOOLBOX=${BUILD_CYTHON} \
+    -DGTSAM_BUILD_PYTHON=${BUILD_PYBIND} \
+    -DGTSAM_TYPEDEF_POINTS_TO_VECTORS=${TYPEDEF_POINTS_TO_VECTORS} \
     -DGTSAM_PYTHON_VERSION=$PYTHON_VERSION \
     -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF \
     -DCMAKE_INSTALL_PREFIX=$CURRDIR/../gtsam_install
 
 make -j$(nproc) install
 
-cd $CURRDIR/../gtsam_install/cython
-
-sudo $PYTHON setup.py install
-
-cd $CURRDIR/cython/gtsam/tests
-
-$PYTHON -m unittest discover
+case $WRAPPER in
+"cython")
+    cd $CURRDIR/../gtsam_install/cython
+    sudo $PYTHON setup.py install
+    cd $CURRDIR/cython/gtsam/tests
+    $PYTHON -m unittest discover
+    ;;
+"pybind")
+    sudo $PYTHON setup.py install
+    cd $CURRDIR/wrap/python/gtsam_py/tests
+    $PYTHON -m unittest discover
+    ;;
+*)
+    echo "THIS SHOULD NEVER HAPPEN!"
+    exit 125
+    ;;
+esac
