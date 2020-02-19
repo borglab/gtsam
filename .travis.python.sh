@@ -11,22 +11,6 @@ if [ -z ${WRAPPER+x} ]; then
     exit 126
 fi
 
-case $WRAPPER in
-"cython")
-    BUILD_CYTHON="ON"
-    BUILD_PYBIND="OFF"
-    TYPEDEF_POINTS_TO_VECTORS="OFF"
-    ;;
-"pybind")
-    BUILD_CYTHON="OFF"
-    BUILD_PYBIND="ON"
-    TYPEDEF_POINTS_TO_VECTORS="ON"
-    ;;
-*)
-    exit 126
-    ;;
-esac
-
 PYTHON="python${PYTHON_VERSION}"
 
 if [[ $(uname) == "Darwin" ]]; then
@@ -34,11 +18,32 @@ if [[ $(uname) == "Darwin" ]]; then
 else
     # Install a system package required by our library
     sudo apt-get install wget libicu-dev python3-pip python3-setuptools
+    
+    pyenv install 3.7.1
+    pyenv global 3.7.1
 fi
 
-CURRDIR=$(pwd)
+case $WRAPPER in
+"cython")
+    BUILD_CYTHON="ON"
+    BUILD_PYBIND="OFF"
+    TYPEDEF_POINTS_TO_VECTORS="OFF"
 
-sudo $PYTHON -m pip install -r ./cython/requirements.txt
+    sudo $PYTHON -m pip install -r ./cython/requirements.txt
+    ;;
+"pybind")
+    BUILD_CYTHON="OFF"
+    BUILD_PYBIND="ON"
+    TYPEDEF_POINTS_TO_VECTORS="ON"
+
+    sudo $PYTHON -m pip install -r ./wrap/python/requirements.txt
+    ;;
+*)
+    exit 126
+    ;;
+esac
+
+CURRDIR=$(pwd)
 
 mkdir $CURRDIR/build
 cd $CURRDIR/build
