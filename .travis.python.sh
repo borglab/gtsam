@@ -18,9 +18,6 @@ if [[ $(uname) == "Darwin" ]]; then
 else
     # Install a system package required by our library
     sudo apt-get install wget libicu-dev python3-pip python3-setuptools
-    
-    pyenv install 3.7.1
-    pyenv global 3.7.1
 fi
 
 case $WRAPPER in
