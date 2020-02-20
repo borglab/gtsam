@@ -140,5 +140,5 @@ jobs:
   - stage: special
     os: osx
     compiler: clang
-    env: PYTHON_VERSION=3.5 WRAPPER=pybind
+    env: PYTHON_VERSION=3 WRAPPER=pybind
     script: bash .travis.python.sh
