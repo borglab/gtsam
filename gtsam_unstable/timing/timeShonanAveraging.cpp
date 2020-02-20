@@ -17,6 +17,7 @@
  * @brief  Timing script for Shonan Averaging algorithm
  */
 
+#include "gtsam/base/Matrix.h"
 #include <gtsam/base/timing.h>
 #include <gtsam_unstable/slam/ShonanAveraging.h>
 
@@ -39,21 +40,21 @@ void saveData(size_t p, double time1, double costP, double cost3, double time2,
         << time2 << "\t" << min_eigenvalue << "\t" << suBound << endl;
 }
 
-void checkR(const Rot3& R) {
-    Rot3 R2 = R.inverse();
-    Rot3 actual_R = R2 * R;
-    assert_equal(Rot3(),actual_R);
+void checkR(const Matrix& R) {
+    Matrix R2 = R.transpose();
+    Matrix actual_R = R2 * R;
+    assert_equal(Rot3(),Rot3(actual_R));
 }
 
 void saveResult(string name, const Values& values) {
     ofstream myfile;
-    myfile.open("shonan_result_of_" + name + ".dat");
+    myfile.open("shonan_result.dat");
     size_t nrSO3 = values.count<SO3>();
     myfile << "#Type SO3 Number " << nrSO3 << "\n";
     for (int i = 0; i < nrSO3; ++i) {
         Matrix R = values.at<SO3>(i).matrix();
         // Check if the result of R.Transpose*R satisfy orthogonal constraint
-        checkR(Rot3(R));
+        checkR(R);
         myfile << i;
         for (int m = 0; m < 3; ++m) {
             for (int n = 0; n < 3; ++n) {
