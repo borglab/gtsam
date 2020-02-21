@@ -4,8 +4,14 @@ on: [push]
 
 jobs:
   build:
-    name: Linux Build
-    runs-on: ubuntu-latest
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    env:
+      CTEST_OUTPUT_ON_FAILURE: ON
+      CTEST_PARALLEL_LEVEL: 2
+      CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
+      GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
     strategy:
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
@@ -20,6 +26,8 @@ jobs:
           macOS-10.14-gcc-9,
         ]
 
+        build_type: [Debug, Release]
+        build_unstable: [ON, OFF]
         include:
           - name: ubuntu-18.04-gcc-4.8
             os: ubuntu-18.04
