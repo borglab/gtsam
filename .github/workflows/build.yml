@@ -57,54 +57,54 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
     - name: Install (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          # LLVM 9 is not in Bionic's repositories so we add the official LLVM repository.
-          if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
-            sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
-          fi
-          sudo apt-get update
+      if: runner.os == 'Linux'
+      run: |
+        # LLVM 9 is not in Bionic's repositories so we add the official LLVM repository.
+        if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
+          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
+        fi
+        sudo apt-get update
 
-          sudo apt install cmake g++-9 clang-9 build-essential pkg-config libpython-dev python-numpy libboost-all-dev
-          
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
-            echo "::set-env name=CC::gcc-${{ matrix.version }}"
-            echo "::set-env name=CXX::g++-${{ matrix.version }}"
-          else
-            sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
-            echo "::set-env name=CC::clang-${{ matrix.version }}"
-            echo "::set-env name=CXX::clang++-${{ matrix.version }}"
-          fi
+        sudo apt install cmake g++-9 clang-9 build-essential pkg-config libpython-dev python-numpy libboost-all-dev
+        
+        if [ "${{ matrix.compiler }}" = "gcc" ]; then
+          sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
+          echo "::set-env name=CC::gcc-${{ matrix.version }}"
+          echo "::set-env name=CXX::g++-${{ matrix.version }}"
+        else
+          sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
+          echo "::set-env name=CC::clang-${{ matrix.version }}"
+          echo "::set-env name=CXX::clang++-${{ matrix.version }}"
+        fi
     - name: Install (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install cmake ninja
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            brew install gcc@${{ matrix.version }}
-            echo "::set-env name=CC::gcc-${{ matrix.version }}"
-            echo "::set-env name=CXX::g++-${{ matrix.version }}"
-          else
-            sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-            echo "::set-env name=CC::clang"
-            echo "::set-env name=CXX::clang++"
-          fi
+      if: runner.os == 'macOS'
+      run: |
+        brew install cmake ninja
+        if [ "${{ matrix.compiler }}" = "gcc" ]; then
+          brew install gcc@${{ matrix.version }}
+          echo "::set-env name=CC::gcc-${{ matrix.version }}"
+          echo "::set-env name=CXX::g++-${{ matrix.version }}"
+        else
+          sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
+          echo "::set-env name=CC::clang"
+          echo "::set-env name=CXX::clang++"
+        fi
     - name: Build (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          bash .travis.sh -t
+      if: runner.os == 'Linux'
+      run: |
+        bash .travis.sh -t
     - name: Build (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          bash .travis.sh -t
+      if: runner.os == 'macOS'
+      run: |
+        bash .travis.sh -t
     - name: Build (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          cmake -E remove_directory build
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF
-          cmake --build build --config Release --target gtsam
-          cmake --build build --config Release --target gtsam_unstable
-          cmake --build build --config Release --target wrap
-          cmake --build build --config Release --target check.base
-          cmake --build build --config Release --target check.base_unstable
-          cmake --build build --config Release --target check.linear
+      if: runner.os == 'Windows'
+      run: |
+        cmake -E remove_directory build
+        cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF
+        cmake --build build --config Release --target gtsam
+        cmake --build build --config Release --target gtsam_unstable
+        cmake --build build --config Release --target wrap
+        cmake --build build --config Release --target check.base
+        cmake --build build --config Release --target check.base_unstable
+        cmake --build build --config Release --target check.linear
