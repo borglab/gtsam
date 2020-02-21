@@ -664,14 +664,18 @@ namespace gtsam {
       const RobustModel::shared_ptr robust_; ///< robust error function used
       const NoiseModel::shared_ptr noise_;   ///< noise model used
 
-    public:
-
+     public:
       /// Default Constructor for serialization
-      Robust() {};
+      Robust() {}
 
-      /// Constructor
-      Robust(const RobustModel::shared_ptr robust, const NoiseModel::shared_ptr noise)
-      : Base(noise->dim()), robust_(robust), noise_(noise) {}
+      /**
+       * Construct new Robust error model
+       * @param robust is one of our robust error functions
+       * @param noise is supposed to be a Gaussian noise model
+       */
+      Robust(const RobustModel::shared_ptr robust,
+             const NoiseModel::shared_ptr noise)
+          : Base(noise->dim()), robust_(robust), noise_(noise) {}
 
       /// Destructor
       virtual ~Robust() {}
@@ -712,6 +716,10 @@ namespace gtsam {
         return robust_->weight(v.norm());
       }
 
+      /** 
+       * Create a shared robust error model.
+       * As with all noise models, direct access to the constructor is disabled.
+       */
       static shared_ptr Create(
         const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise);
 
