@@ -141,12 +141,14 @@ namespace gtsam {
     /* return a map of (Key, dimension) */
     std::map<Key, size_t> getKeyDimMap() const;
 
-    /** unnormalized error */
+    /**
+     * TODO(yetong): document
+     * unnormalized error
+     */
     double error(const VectorValues& x) const {
       double total_error = 0.;
-      for(const sharedFactor& factor: *this){
-        if(factor)
-          total_error += factor->error(x);
+      for (const sharedFactor& factor : *this) {
+        if (factor) total_error += factor->error(x);
       }
       return total_error;
     }

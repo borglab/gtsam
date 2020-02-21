@@ -198,7 +198,14 @@ namespace gtsam {
 
     Vector unweighted_error(const VectorValues& c) const; /** (A*x-b) */
     Vector error_vector(const VectorValues& c) const; /** (A*x-b)/sigma */
-    virtual double error(const VectorValues& c) const; /**  0.5*(A*x-b)'*D*(A*x-b) */
+
+    /**
+     * TODO(yetong): make formula render nicely in doxygen
+     * Propery weighted squared error 0.5*(A*x-b)'*D*(A*x-b) where
+     * D is the diagonal weighting matrix derived from the diagonal noise model
+     * which contains the precisions on the diagonal.
+     */
+    double error(const VectorValues& c) const override;
 
     /** Return the augmented information matrix represented by this GaussianFactor.
      * The augmented information matrix contains the information matrix with an

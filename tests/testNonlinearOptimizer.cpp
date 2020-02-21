@@ -492,6 +492,10 @@ TEST(NonlinearOptimizer, Traits) {
 }
 
 /* ************************************************************************* */
+TEST(NonlinearOptimizer, robust) {
+  // TODO(yetong): make sure boith JF and HF paths are tested
+}
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

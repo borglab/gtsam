@@ -54,14 +54,19 @@ namespace gtsam {
     virtual ~GaussianFactor() {}
 
     // Implementing Testable interface
+
+    /** Print for testable */
     virtual void print(const std::string& s = "",
         const KeyFormatter& formatter = DefaultKeyFormatter) const = 0;
 
     /** Equals for testable */
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const = 0;
 
-    /** Print for testable */
-    virtual double error(const VectorValues& c) const = 0; /**  0.5*(A*x-b)'*D*(A*x-b) */
+    /**
+     * TODO(yetong): document
+     * unnormalized error
+     */
+    virtual double error(const VectorValues& c) const = 0;
 
     /** Return the dimension of the variable pointed to by the given key iterator */
     virtual DenseIndex getDim(const_iterator variable) const = 0;
