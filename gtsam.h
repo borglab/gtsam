@@ -2723,6 +2723,11 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/dataset.h>
+class SfM_data {
+  size_t number_cameras() const;
+  size_t number_tracks() const;
+};
+
 string findExampleDataFile(string name);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);
