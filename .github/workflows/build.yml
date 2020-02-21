@@ -54,82 +54,82 @@ jobs:
             compiler: gcc
             version: "9"
     steps:
-    - name: Checkout
-      uses: actions/checkout@master
-    - name: Install (Linux)
-      if: runner.os == 'Linux'
-      run: |
-        # LLVM 9 is not in Bionic's repositories so we add the official LLVM repository.
-        if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
-          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
-        fi
-        sudo apt-get update
+      - name: Checkout
+        uses: actions/checkout@master
+      - name: Install (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          # LLVM 9 is not in Bionic's repositories so we add the official LLVM repository.
+          if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
+            sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
+          fi
+          sudo apt-get update
 
-        sudo apt install cmake g++-9 clang-9 build-essential pkg-config libpython-dev python-numpy libboost-all-dev
-        
-        if [ "${{ matrix.compiler }}" = "gcc" ]; then
-          sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
-          echo "::set-env name=CC::gcc-${{ matrix.version }}"
-          echo "::set-env name=CXX::g++-${{ matrix.version }}"
-        else
-          sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
-          echo "::set-env name=CC::clang-${{ matrix.version }}"
-          echo "::set-env name=CXX::clang++-${{ matrix.version }}"
-        fi
-    - name: Install (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        brew install cmake ninja
-        if [ "${{ matrix.compiler }}" = "gcc" ]; then
-          brew install gcc@${{ matrix.version }}
-          echo "::set-env name=CC::gcc-${{ matrix.version }}"
-          echo "::set-env name=CXX::g++-${{ matrix.version }}"
-        else
-          sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-          echo "::set-env name=CC::clang"
-          echo "::set-env name=CXX::clang++"
-        fi
-    - name: Install (Windows)
-      if: runner.os == 'Windows'
-      shell: powershell
-      run: |
-        Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
-        scoop install ninja --global
-        if ("${{ matrix.compiler }}".StartsWith("clang")) {
-          scoop install llvm --global
-        }
-        if ("${{ matrix.compiler }}" -eq "gcc") {
-          # Chocolatey GCC is broken on the windows-2019 image.
-          # See: https://github.com/DaanDeMeyer/doctest/runs/231595515
-          # See: https://github.community/t5/GitHub-Actions/Something-is-wrong-with-the-chocolatey-installed-version-of-gcc/td-p/32413
-          scoop install gcc --global
-          echo "::set-env name=CC::gcc"
-          echo "::set-env name=CXX::g++"
-        } elseif ("${{ matrix.compiler }}" -eq "clang") {
-          echo "::set-env name=CC::clang"
-          echo "::set-env name=CXX::clang++"
-        } else {
-          echo "::set-env name=CC::${{ matrix.compiler }}"
-          echo "::set-env name=CXX::${{ matrix.compiler }}"
-        }
-        # Scoop modifies the PATH so we make the modified PATH global.
-        echo "::set-env name=PATH::$env:PATH"
-    - name: Build (Linux)
-      if: runner.os == 'Linux'
-      run: |
-        bash .travis.sh -t
-    - name: Build (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        bash .travis.sh -t
-    - name: Build (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        cmake -E remove_directory build
-        cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF
-        cmake --build build --config Release --target gtsam
-        cmake --build build --config Release --target gtsam_unstable
-        cmake --build build --config Release --target wrap
-        cmake --build build --config Release --target check.base
-        cmake --build build --config Release --target check.base_unstable
-        cmake --build build --config Release --target check.linear
+          sudo apt install cmake g++-9 clang-9 build-essential pkg-config libpython-dev python-numpy libboost-all-dev
+          
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
+            echo "::set-env name=CC::gcc-${{ matrix.version }}"
+            echo "::set-env name=CXX::g++-${{ matrix.version }}"
+          else
+            sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
+            echo "::set-env name=CC::clang-${{ matrix.version }}"
+            echo "::set-env name=CXX::clang++-${{ matrix.version }}"
+          fi
+      - name: Install (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake ninja
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            brew install gcc@${{ matrix.version }}
+            echo "::set-env name=CC::gcc-${{ matrix.version }}"
+            echo "::set-env name=CXX::g++-${{ matrix.version }}"
+          else
+            sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
+            echo "::set-env name=CC::clang"
+            echo "::set-env name=CXX::clang++"
+          fi
+      - name: Install (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+          scoop install ninja --global
+          if ("${{ matrix.compiler }}".StartsWith("clang")) {
+            scoop install llvm --global
+          }
+          if ("${{ matrix.compiler }}" -eq "gcc") {
+            # Chocolatey GCC is broken on the windows-2019 image.
+            # See: https://github.com/DaanDeMeyer/doctest/runs/231595515
+            # See: https://github.community/t5/GitHub-Actions/Something-is-wrong-with-the-chocolatey-installed-version-of-gcc/td-p/32413
+            scoop install gcc --global
+            echo "::set-env name=CC::gcc"
+            echo "::set-env name=CXX::g++"
+          } elseif ("${{ matrix.compiler }}" -eq "clang") {
+            echo "::set-env name=CC::clang"
+            echo "::set-env name=CXX::clang++"
+          } else {
+            echo "::set-env name=CC::${{ matrix.compiler }}"
+            echo "::set-env name=CXX::${{ matrix.compiler }}"
+          }
+          # Scoop modifies the PATH so we make the modified PATH global.
+          echo "::set-env name=PATH::$env:PATH"
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          bash .travis.sh -t
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          bash .travis.sh -t
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cmake -E remove_directory build
+          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF
+          cmake --build build --config Release --target gtsam
+          cmake --build build --config Release --target gtsam_unstable
+          cmake --build build --config Release --target wrap
+          cmake --build build --config Release --target check.base
+          cmake --build build --config Release --target check.base_unstable
+          cmake --build build --config Release --target check.linear
