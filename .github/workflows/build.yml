@@ -89,6 +89,31 @@ jobs:
           echo "::set-env name=CC::clang"
           echo "::set-env name=CXX::clang++"
         fi
+    - name: Install (Windows)
+      if: runner.os == 'Windows'
+      shell: powershell
+      run: |
+        Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+        scoop install ninja --global
+        if ("${{ matrix.compiler }}".StartsWith("clang")) {
+          scoop install llvm --global
+        }
+        if ("${{ matrix.compiler }}" -eq "gcc") {
+          # Chocolatey GCC is broken on the windows-2019 image.
+          # See: https://github.com/DaanDeMeyer/doctest/runs/231595515
+          # See: https://github.community/t5/GitHub-Actions/Something-is-wrong-with-the-chocolatey-installed-version-of-gcc/td-p/32413
+          scoop install gcc --global
+          echo "::set-env name=CC::gcc"
+          echo "::set-env name=CXX::g++"
+        } elseif ("${{ matrix.compiler }}" -eq "clang") {
+          echo "::set-env name=CC::clang"
+          echo "::set-env name=CXX::clang++"
+        } else {
+          echo "::set-env name=CC::${{ matrix.compiler }}"
+          echo "::set-env name=CXX::${{ matrix.compiler }}"
+        }
+        # Scoop modifies the PATH so we make the modified PATH global.
+        echo "::set-env name=PATH::$env:PATH"
     - name: Build (Linux)
       if: runner.os == 'Linux'
       run: |
