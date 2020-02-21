@@ -339,31 +339,44 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 }
 
 /* ************************************************************************* */
+// Make sure robust noise models are correctly optimized for.
+// This example has two poses with priors and a betweenfactor.
 TEST(NonlinearOptimizer, MoreOptimizationWithHuber) {
-
+  using noiseModel::mEstimator::Huber;
   NonlinearFactorGraph fg;
-  fg += PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1));
-  fg += BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2),
-                              noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(2.0),
-                                                         noiseModel::Isotropic::Sigma(3,1)));
-  fg += BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2),
-                              noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(3.0),
-                                                         noiseModel::Isotropic::Sigma(3,1)));
+  auto diagonal = noiseModel::Isotropic::Sigma(3, 0.5);
+  const Key key1 = 11, key2 = 22;
+  fg += PriorFactor<Pose2>(key1, Pose2(0, 0, 0), diagonal);
+  fg += PriorFactor<Pose2>(key2, Pose2(1, 0, 0), diagonal);
+
+  // We make the betweenfactor to have length 0.8
+  // So the optimized poses will move toward the middle.
+  fg += BetweenFactor<Pose2>(
+      key1, key2, Pose2(0.7, 0, 0),
+      noiseModel::Robust::Create(Huber::Create(2.0), diagonal));
 
   Values init;
-  init.insert(0, Pose2(10,10,0));
-  init.insert(1, Pose2(1,0,M_PI));
-  init.insert(2, Pose2(1,1,-M_PI));
+  init.insert(key1, Pose2(10, 10, 0));
+  init.insert(key2, Pose2(1, 0, 0));
 
   Values expected;
-  expected.insert(0, Pose2(0,0,0));
-  expected.insert(1, Pose2(1,0,M_PI/2));
-  expected.insert(2, Pose2(1,1,M_PI));
+  expected.insert(key1, Pose2(0.1, 0, 0));
+  expected.insert(key2, Pose2(0.9, 0, 0));
 
   LevenbergMarquardtParams params;
-  EXPECT(assert_equal(expected, GaussNewtonOptimizer(fg, init).optimize()));
-  EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(fg, init, params).optimize()));
-  EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
+  const double tol = 1e-4;
+  EXPECT(
+      assert_equal(expected, GaussNewtonOptimizer(fg, init).optimize(), tol));
+  EXPECT(assert_equal(
+      expected, LevenbergMarquardtOptimizer(fg, init, params).optimize(), tol));
+  EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize(), tol));
+
+  // TODO(yetong): make sure both JF and HF paths are tested
+  // Set up a problem with a robust error metric
+  // Run one iteration
+  // Check iteration
+  // Solve to convergence
+  // Check solution
 }
 
 /* ************************************************************************* */
@@ -491,10 +504,6 @@ TEST(NonlinearOptimizer, Traits) {
   EXPECT(assert_equal(init, actual));
 }
 
-/* ************************************************************************* */
-TEST(NonlinearOptimizer, robust) {
-  // TODO(yetong): make sure boith JF and HF paths are tested
-}
 /* ************************************************************************* */
 int main() {
   TestResult tr;
