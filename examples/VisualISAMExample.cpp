@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
     // Add factors for each landmark observation
     for (size_t j = 0; j < points.size(); ++j) {
       // Create ground truth measurement
-      SimpleCamera camera(poses[i], *K);
+      PinholeCamera<Cal3_S2> camera(poses[i], *K);
       Point2 measurement = camera.project(points[j]);
       // Add measurement
       graph.emplace_shared<GenericProjectionFactor<Pose3, Point3, Cal3_S2> >(measurement, noise,

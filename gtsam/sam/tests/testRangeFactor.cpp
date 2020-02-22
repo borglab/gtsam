@@ -19,7 +19,8 @@
 #include <gtsam/sam/RangeFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -353,11 +354,11 @@ TEST(RangeFactor, Point3) {
 }
 
 /* ************************************************************************* */
-// Do tests with SimpleCamera
+// Do tests with PinholeCamera<Cal3_S2>
 TEST( RangeFactor, Camera) {
-  RangeFactor<SimpleCamera,Point3> factor1(poseKey, pointKey, measurement, model);
-  RangeFactor<SimpleCamera,Pose3> factor2(poseKey, pointKey, measurement, model);
-  RangeFactor<SimpleCamera,SimpleCamera> factor3(poseKey, pointKey, measurement, model);
+  RangeFactor<PinholeCamera<Cal3_S2>,Point3> factor1(poseKey, pointKey, measurement, model);
+  RangeFactor<PinholeCamera<Cal3_S2>,Pose3> factor2(poseKey, pointKey, measurement, model);
+  RangeFactor<PinholeCamera<Cal3_S2>,PinholeCamera<Cal3_S2>> factor3(poseKey, pointKey, measurement, model);
 }
 
 /* ************************************************************************* */

@@ -18,7 +18,7 @@ from gtsam.examples import SFMdata
 from gtsam.gtsam import (Cal3_S2, GenericProjectionFactorCal3_S2,
                          NonlinearFactorGraph, NonlinearISAM, Point3, Pose3,
                          PriorFactorPoint3, PriorFactorPose3, Rot3,
-                         SimpleCamera, Values)
+                         PinholeCameraCal3_S2, Values)
 
 
 def symbol(name: str, index: int) -> int:
@@ -54,7 +54,7 @@ def main():
 
     # Loop over the different poses, adding the observations to iSAM incrementally
     for i, pose in enumerate(poses):
-        camera = SimpleCamera(pose, K)
+        camera = PinholeCameraCal3_S2(pose, K)
         # Add factors for each landmark observation
         for j, point in enumerate(points):
             measurement = camera.project(point)

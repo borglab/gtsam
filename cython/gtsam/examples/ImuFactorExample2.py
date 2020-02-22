@@ -81,7 +81,7 @@ def IMU_example():
     up = gtsam.Point3(0, 0, 1)
     target = gtsam.Point3(0, 0, 0)
     position = gtsam.Point3(radius, 0, 0)
-    camera = gtsam.SimpleCamera.Lookat(position, target, up, gtsam.Cal3_S2())
+    camera = gtsam.PinholeCameraCal3_S2.Lookat(position, target, up, gtsam.Cal3_S2())
     pose_0 = camera.pose()
 
     # Create the set of ground-truth landmarks and poses

@@ -99,7 +99,7 @@ def generate_data(options):
     for i in range(options.nrCameras):
         theta = i * 2 * pi / options.nrCameras
         t = gtsam.Point3(r * cos(theta), r * sin(theta), height)
-        truth.cameras[i] = gtsam.SimpleCamera.Lookat(t,
+        truth.cameras[i] = gtsam.PinholeCameraCal3_S2.Lookat(t,
                                                      gtsam.Point3(),
                                                      gtsam.Point3(0, 0, 1),
                                                      truth.K)

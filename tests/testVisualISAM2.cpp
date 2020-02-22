@@ -59,7 +59,7 @@ TEST(testVisualISAM2, all)
         // Add factors for each landmark observation
         for (size_t j = 0; j < points.size(); ++j)
         {
-            SimpleCamera camera(poses[i], *K);
+            PinholeCamera<Cal3_S2> camera(poses[i], *K);
             Point2 measurement = camera.project(points[j]);
             graph.emplace_shared<GenericProjectionFactor<Pose3, Point3, Cal3_S2>>(
                 measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K);
