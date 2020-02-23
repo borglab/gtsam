@@ -36,7 +36,7 @@ function configure()
 function finish ()
 {
   # Print ccache stats
-  ccache -s
+  [ -x "$(command -v ccache)" ] && ccache -s
 
   cd $SOURCE_DIR
 }
