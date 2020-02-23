@@ -17,7 +17,7 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          ubuntu-18.04-gcc-5.4,
+          ubuntu-18.04-gcc-5,
           ubuntu-18.04-gcc-9,
           ubuntu-18.04-clang-9,
           windows-2016-cl,
@@ -29,10 +29,10 @@ jobs:
         build_type: [Debug, Release]
         build_unstable: [ON, OFF]
         include:
-          - name: ubuntu-18.04-gcc-5.4
+          - name: ubuntu-18.04-gcc-5
             os: ubuntu-18.04
             compiler: gcc
-            version: "5.4"
+            version: "5"
 
           - name: ubuntu-18.04-gcc-9
             os: ubuntu-18.04
