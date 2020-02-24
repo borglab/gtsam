@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.name }} ${{ matrix.build_type }} ${{ matrix.build_unstable }}
     runs-on: ${{ matrix.os }}
 
     env:
