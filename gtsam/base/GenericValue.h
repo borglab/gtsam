@@ -29,13 +29,19 @@
 #include <iostream>
 #include <typeinfo> // operator typeid
 
+#ifdef _WIN32
+#define GENERICVALUE_VISIBILITY
+#else
+#define GENERICVALUE_VISIBILITY GTSAM_EXPORT
+#endif
+
 namespace gtsam {
 
 /**
  * Wraps any type T so it can play as a Value
  */
 template<class T>
-class GTSAM_EXPORT GenericValue: public Value {
+class GENERICVALUE_VISIBILITY GenericValue: public Value {
 
 public:
 
