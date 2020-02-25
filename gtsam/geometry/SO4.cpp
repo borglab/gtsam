@@ -33,9 +33,10 @@ using namespace std;
 
 namespace gtsam {
 
+// TODO(frank): is this better than SOn::Random?
 // /* *************************************************************************
 // */ static Vector3 randomOmega(boost::mt19937 &rng) {
-//   static boost::uniform_real<double> randomAngle(-M_PI, M_PI);
+//   static std::uniform_real_distribution<double> randomAngle(-M_PI, M_PI);
 //   return Unit3::Random(rng).unitVector() * randomAngle(rng);
 // }
 

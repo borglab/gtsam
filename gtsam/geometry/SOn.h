@@ -25,10 +25,10 @@
 #include <Eigen/Core>
 
 #include <iostream> // TODO(frank): how to avoid?
-#include <boost/random.hpp>
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <random>
 
 namespace gtsam {
 
@@ -119,7 +119,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
     if (n == 0) throw std::runtime_error("SO: Dimensionality not known.");
 
     // TODO(frank): This needs to be re-thought!
-    static boost::uniform_real<double> randomAngle(-M_PI, M_PI);
+    static std::uniform_real_distribution<double> randomAngle(-M_PI, M_PI);
     const size_t d = SO::Dimension(n);
     Vector xi(d);
     for (size_t j = 0; j < d; j++) {
