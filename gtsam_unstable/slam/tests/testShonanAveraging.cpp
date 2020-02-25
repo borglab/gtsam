@@ -100,13 +100,13 @@ TEST(ShonanAveraging, runWithRandom) {
 /* ************************************************************************* */
 TEST(ShonanAveraging, MakeATangentVector) {
   Vector9 v;
-  v<< 1,2,3, 4,5,6, 7,8,9;
+  v << 1, 2, 3, 4, 5, 6, 7, 8, 9;
   Matrix expected(5, 5);
-  expected << 0, 0, 0, 0, -4, //
-              0, 0, 0, 0, -5, //
-              0, 0, 0, 0, -6, //
-              0, 0, 0, 0,  0, //
-              4, 5, 6, 0,  0;
+  expected << 0, 0, 0, 0, -4,  //
+      0, 0, 0, 0, -5,          //
+      0, 0, 0, 0, -6,          //
+      0, 0, 0, 0, 0,           //
+      4, 5, 6, 0, 0;
   const Vector xi_1 = ShonanAveraging::MakeATangentVector(5, v, 1);
   const auto actual = SOn::Hat(xi_1);
   CHECK(assert_equal(expected, actual));
@@ -126,7 +126,8 @@ TEST(ShonanAveraging, initializeWithDescent) {
   const Values Qstar3 = kShonan.tryOptimizingAt(3);
   Vector minEigenVector;
   double lambdaMin = kShonan.computeMinEigenValue(Qstar3, &minEigenVector);
-  Values initialQ4 = kShonan.initializeWithDescent(4, Qstar3, minEigenVector, lambdaMin);
+  Values initialQ4 =
+      kShonan.initializeWithDescent(4, Qstar3, minEigenVector, lambdaMin);
   EXPECT_LONGS_EQUAL(5, initialQ4.size());
 }
 
@@ -134,6 +135,16 @@ TEST(ShonanAveraging, initializeWithDescent) {
 TEST(ShonanAveraging, runWithDescent) {
   auto result = kShonan.runWithDescent(5);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result.first), 1e-3);
+  EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
+                       1e-4);  // Regression test
+}
+
+/* ************************************************************************* */
+TEST(ShonanAveraging, runWithRandomKlaus) {
+  string g2oFile = findExampleDataFile("Klaus3.g2o");
+  static const ShonanAveraging shonan(g2oFile);
+  auto result = shonan.runWithRandom(5);
+  EXPECT_DOUBLES_EQUAL(0, shonan.cost(result.first), 1e-3);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
                        1e-4);  // Regression test
 }
