@@ -18,6 +18,9 @@
  */
 
 #include "gtsam/base/Matrix.h"
+#include "gtsam/base/Vector.h"
+#include "gtsam/geometry/Point3.h"
+#include "gtsam/geometry/Rot3.h"
 #include <gtsam/base/timing.h>
 #include <gtsam_unstable/slam/ShonanAveraging.h>
 
@@ -48,7 +51,7 @@ void checkR(const Matrix& R) {
 
 void saveResult(string name, const Values& values) {
     ofstream myfile;
-    myfile.open("shonan_result.dat");
+    myfile.open("shonan_result_of_" + name + ".dat");
     size_t nrSO3 = values.count<SO3>();
     myfile << "#Type SO3 Number " << nrSO3 << "\n";
     for (int i = 0; i < nrSO3; ++i) {
@@ -64,6 +67,26 @@ void saveResult(string name, const Values& values) {
         myfile << "\n";
     }
     myfile.close();
+    cout << "Saved shonan_result.dat file" << endl;
+}
+
+void saveG2oResult(string name, const Values& values, std::map<Key, Pose3> poses) {
+    ofstream myfile;
+    myfile.open("shonan_result_of_" + name + ".g2o");
+    size_t nrSO3 = values.count<SO3>();
+    for (int i = 0; i < nrSO3; ++i) {
+        Matrix R = values.at<SO3>(i).matrix();
+        // Check if the result of R.Transpose*R satisfy orthogonal constraint
+        checkR(R);
+        myfile << "VERTEX_SE3:QUAT" << " ";
+        myfile << i << " ";
+        myfile << poses[i].x() << " " << poses[i].y() << " " << poses[i].z() << " ";
+        Vector quaternion = Rot3(R).quaternion();
+        myfile << quaternion(3) << " " << quaternion(2) << " " << quaternion(1) << " " << quaternion(0);
+        myfile << "\n";
+    }
+    myfile.close();
+    cout << "Saved shonan_result.g2o file" << endl;
 }
 
 void saveResultQuat(const Values& values) {
@@ -125,7 +148,7 @@ int main(int argc, char* argv[]) {
     cout << "(int)p" << "\t" << "time1" << "\t" << "costP" << "\t" << "cost3" << "\t"
         << "time2" << "\t" << "MinEigenvalue" << "\t" << "SuBound" << endl;
 
-    for (size_t p = pMin; p < 11; p++) {
+    for (size_t p = pMin; p < 6; p++) {
         // Randomly initialize at lowest level, initialize by line search after that
         const Values initial = 
             (p > pMin && withDescent) ? kShonan.initializeWithDescent( p, Qstar, minEigenVector, lambdaMin) : kShonan.initializeRandomlyAt(p);
@@ -142,7 +165,6 @@ int main(int argc, char* argv[]) {
         Qstar = result;
         CostP = kShonan.costAt(p, result);
         const Values SO3Values = kShonan.roundSolution(result);
-        saveResult(name, SO3Values);
         Cost3 = kShonan.cost(SO3Values);
         suBound = (Cost3 - CostP) / CostP;
 
@@ -151,6 +173,7 @@ int main(int argc, char* argv[]) {
         saveData(p, timeUsed1.count(), CostP, Cost3, timeUsed2.count(),
                  lambdaMin, suBound, &csvFile);
     }
-
+    saveResult(name, kShonan.roundSolution(Qstar));
+    saveG2oResult(name, kShonan.roundSolution(Qstar), kShonan.Poses());
     return 0;
 }
