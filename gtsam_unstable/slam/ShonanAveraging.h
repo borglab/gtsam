@@ -67,6 +67,9 @@ class ShonanAveraging {
   /// Return number of poses
   size_t nrPoses() const { return poses_.size(); }
 
+  /// Return poses
+  std::map<Key, Pose3> Poses() const { return poses_; }
+  
   /**
    * Build graph for SO(p)
    * @param p the dimensionality of the rotation manifold to optimize over
