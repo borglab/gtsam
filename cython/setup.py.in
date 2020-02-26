@@ -17,6 +17,8 @@ setup(
     license='Simplified BSD license',
     keywords='slam sam robotics localization mapping optimization',
     long_description='''${README_CONTENTS}''',
+    long_description_content_type='text/markdown',
+    python_requires='>=2.7',
     # https://pypi.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         'Development Status :: 5 - Production/Stable',
