@@ -209,9 +209,9 @@ GTSAM_EXPORT Matrix3 topLeft(const SO4& Q, OptionalJacobian<9, 6> H) {
   if (H) {
     const Vector3 m1 = M.col(0), m2 = M.col(1), m3 = M.col(2),
                   q = R.topRightCorner<3, 1>();
-    *H << Z_3x1, Z_3x1, q, Z_3x1, -m3, m2,  //
-        Z_3x1, -q, Z_3x1, m3, Z_3x1, -m1,   //
-        q, Z_3x1, Z_3x1, -m2, m1, Z_3x1;
+    *H << Z_3x1, Z_3x1, -q, Z_3x1, -m3, m2,  //
+        Z_3x1, q, Z_3x1, m3, Z_3x1, -m1,     //
+        -q, Z_3x1, Z_3x1, -m2, m1, Z_3x1;
   }
   return M;
 }
@@ -222,9 +222,9 @@ GTSAM_EXPORT Matrix43 stiefel(const SO4& Q, OptionalJacobian<12, 6> H) {
   const Matrix43 M = R.leftCols<3>();
   if (H) {
     const auto &m1 = R.col(0), m2 = R.col(1), m3 = R.col(2), q = R.col(3);
-    *H << Z_4x1, Z_4x1, q, Z_4x1, -m3, m2,  //
-        Z_4x1, -q, Z_4x1, m3, Z_4x1, -m1,   //
-        q, Z_4x1, Z_4x1, -m2, m1, Z_4x1;
+    *H << Z_4x1, Z_4x1, -q, Z_4x1, -m3, m2,  //
+        Z_4x1, q, Z_4x1, m3, Z_4x1, -m1,     //
+        -q, Z_4x1, Z_4x1, -m2, m1, Z_4x1;
   }
   return M;
 }
