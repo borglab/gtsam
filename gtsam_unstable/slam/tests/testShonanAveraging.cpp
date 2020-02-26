@@ -143,6 +143,17 @@ TEST(ShonanAveraging, runWithDescent) {
 TEST(ShonanAveraging, runWithRandomKlaus) {
   string g2oFile = findExampleDataFile("Klaus3.g2o");
   static const ShonanAveraging shonan(g2oFile);
+
+  // Check nr poses
+  EXPECT_LONGS_EQUAL(3, shonan.nrPoses());
+
+  // Check first pose
+  const auto& poses = shonan.poses();
+  Point3 r1(0, 0, -1), r2(-1, 0, 0), r3(0, 1, 0);
+  const Rot3 wRc(r1, r2, r3);
+  const Pose3 wTc(wRc, Point3(-3.9, 0, 0));
+  EXPECT(assert_equal(wTc, poses.at(0)));
+
   auto result = shonan.runWithRandom(5);
   EXPECT_DOUBLES_EQUAL(0, shonan.cost(result.first), 1e-3);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,

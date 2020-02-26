@@ -68,7 +68,7 @@ class ShonanAveraging {
   size_t nrPoses() const { return poses_.size(); }
 
   /// Return poses
-  std::map<Key, Pose3> Poses() const { return poses_; }
+  const std::map<Key, Pose3>& poses() const { return poses_; }
   
   /**
    * Build graph for SO(p)
