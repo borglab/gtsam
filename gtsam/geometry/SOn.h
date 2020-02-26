@@ -211,11 +211,11 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
    * etc... For example, the vector-space isomorphic to so(5) is laid out as:
    *   a b c d | u v w | x y | z
    * where the latter elements correspond to "telescoping" sub-algebras:
-   *   0 -z  y -w  d
-   *   z  0 -x  v -c
-   *  -y  x  0 -u  b
-   *   w -v  u  0 -a
-   *  -d  c -b  a  0
+   *   0 -z  y  w -d
+   *   z  0 -x -v  c
+   *  -y  x  0  u -b
+   *  -w  v -u  0  a
+   *   d -c  b -a  0
    * This scheme behaves exactly as expected for SO(2) and SO(3).
    */
   static MatrixNN Hat(const TangentVector& xi);

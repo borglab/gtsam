@@ -37,8 +37,9 @@ Matrix SOn::Hat(const Vector& xi) {
     const size_t dmin = (n - 1) * (n - 2) / 2;
     X.topLeftCorner(n - 1, n - 1) = Hat(xi.tail(dmin));
 
-    // Now fill last row and column
+    // determine sign of last element (signs alternate)
     double sign = pow(-1.0, xi.size());
+    // Now fill last row and column
     for (size_t i = 0; i < n - 1; i++) {
       const size_t j = n - 2 - i;
       X(n - 1, j) = -sign * xi(i);
