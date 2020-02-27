@@ -31,8 +31,8 @@ class NonlinearFactorGraph;
 
 /// Parameters governing optimization etc.
 struct ShonanAveragingParameters {
-  bool prior;                   // whether to use a prior
-  bool karcher;                 // whether to use Karcher mean prior
+  bool prior;                   // whether to use a prior (default true)
+  bool karcher;                 // whether to use Karcher mean prior (default true)
   double noiseSigma;            // Optional noise Sigma, will be ignored if zero
   double optimalityThreshold;   // threshold used in checkOptimality
   LevenbergMarquardtParams lm;  // LM parameters
@@ -66,6 +66,12 @@ class ShonanAveraging {
 
   /// Return number of poses
   size_t nrPoses() const { return poses_.size(); }
+
+  /// k^th measurement, as a Pose3.
+  const Pose3& measured(size_t i) const { return factors_[i]->measured(); }
+
+  /// Keys for k^th measurement, as a vector of Key values.
+  const KeyVector& keys(size_t i) const { return factors_[i]->keys(); }
 
   /// Return poses
   const std::map<Key, Pose3>& poses() const { return poses_; }
