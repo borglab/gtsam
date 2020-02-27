@@ -141,61 +141,91 @@ TEST(ShonanAveraging, runWithDescent) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging, runWithRandomKlaus) {
+  // Load 3 pose example taken in Klaus by Shicong
   string g2oFile = findExampleDataFile("Klaus3.g2o");
-  static const ShonanAveraging shonan(g2oFile);
+
+  // Initialize a Shonan instance without the Karcher mean
+  ShonanAveragingParameters parameters;
+  parameters.setKarcher(false);
+  static const ShonanAveraging shonan(g2oFile, parameters);
 
   // Check nr poses
   EXPECT_LONGS_EQUAL(3, shonan.nrPoses());
 
-  // Check poses in g2o file
+  // The data in the file is the Colmap solution
   const auto &poses = shonan.poses();
-  Point3 r1(1, 0, 0), r2(0, 1, 0), r3(0, 0, 1);
-  const Rot3 wRc(r1, r2, r3);
-  // const Pose3 wTc(wRc, Point3(-3.9, 0, 0));
-  // Check rotation from the datafile
-  Rot3 rot0 = poses.at(0).rotation();
-  Rot3 rot1 = poses.at(1).rotation();
-  Rot3 rot2 = poses.at(2).rotation();
-  EXPECT(assert_equal(wRc, rot0, 0.2));
-  EXPECT(assert_equal(wRc, rot1, 0.2));
-  EXPECT(assert_equal(wRc, rot2, 0.2));
+  const Rot3 wR0 = poses.at(0).rotation();
+  const Rot3 wR1 = poses.at(1).rotation();
+  const Rot3 wR2 = poses.at(2).rotation();
 
-  // Check measurement data
-  Rot3 R01(0.9995433591728293, -0.022048798853273946, -0.01796327847857683,
-           0.010210006313668573);
-  Rot3 R12(0.9927742290779572, -0.054972994022992064, 0.10432547598981769,
-           -0.02221474884651081);
-  Rot3 R02(0.9922479626852876, -0.03174661848656213, 0.11646825423134777,
-           -0.02951742735854383);
-  EXPECT(assert_equal(rot1, rot0.compose(R01), 0.1));
-  EXPECT(assert_equal(rot2, rot1.compose(R12), 0.1));
-  EXPECT(assert_equal(rot2, rot0.compose(R02), 0.1));
+  // Colmap uses the Y-down vision frame, and the first 3 rotations are close to
+  // identity. We check that below. Note tolerance is quite high.
+  static const Rot3 identity;
+  EXPECT(assert_equal(identity, wR0, 0.2));
+  EXPECT(assert_equal(identity, wR1, 0.2));
+  EXPECT(assert_equal(identity, wR2, 0.2));
 
+  // Get measurements
+  const Rot3 R01 = shonan.measured(0).rotation();
+  const Rot3 R12 = shonan.measured(1).rotation();
+  const Rot3 R02 = shonan.measured(2).rotation();
+
+  // Regression test to make sure data did not change.
+  EXPECT(assert_equal(Rot3(0.9995433591728293, -0.022048798853273946,
+                           -0.01796327847857683, 0.010210006313668573),
+                      R01));
+
+  // Check Colmap solution agrees OK with relative rotation measurements.
+  EXPECT(assert_equal(R01, wR0.between(wR1), 0.1));
+  EXPECT(assert_equal(R12, wR1.between(wR2), 0.1));
+  EXPECT(assert_equal(R02, wR0.between(wR2), 0.1));
+
+  // Run Shonan (with prior on first rotation)
   auto result = shonan.runWithRandom(5);
-  EXPECT_DOUBLES_EQUAL(0, shonan.cost(result.first), 1e-3);
-  EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
+  EXPECT_DOUBLES_EQUAL(0, shonan.cost(result.first), 1e-2);
+  EXPECT_DOUBLES_EQUAL(-9.2259161494467889e-05, result.second,
+                       1e-4);  // Regression
+
+  // Get Shonan solution in new frame R (R for result)
+  const Rot3 rR0 = Rot3(result.first.at<SO3>(0));
+  const Rot3 rR1 = Rot3(result.first.at<SO3>(1));
+  const Rot3 rR2 = Rot3(result.first.at<SO3>(2));
+
+  // rR0 = rRw * wR0 => rRw = rR0 * wR0.inverse()
+  // rR1 = rRw * wR1
+  // rR2 = rRw * wR2
+
+  const Rot3 rRw = rR0 * wR0.inverse();
+  EXPECT(assert_equal(rRw * wR1, rR1, 0.1))
+  EXPECT(assert_equal(rRw * wR2, rR2, 0.1))
+}
+
+/* ************************************************************************* */
+TEST(ShonanAveraging, runWithRandomKlausKarcher) {
+  // Load 3 pose example taken in Klaus by Shicong
+  string g2oFile = findExampleDataFile("Klaus3.g2o");
+
+  // Initialize a Shonan instance with the Karcher mean (default true)
+  static const ShonanAveraging shonan(g2oFile);
+  const auto &poses = shonan.poses();
+  const Rot3 wR0 = poses.at(0).rotation();
+  const Rot3 wR1 = poses.at(1).rotation();
+  const Rot3 wR2 = poses.at(2).rotation();
+
+  // Run Shonan (with Karcher mean prior)
+  auto result = shonan.runWithRandom(5);
+  EXPECT_DOUBLES_EQUAL(0, shonan.cost(result.first), 1e-2);
+  EXPECT_DOUBLES_EQUAL(-1.361402670507772e-05, result.second,
                        1e-4);  // Regression test
 
-  // Normalize the rotations
-  Rot3 expected_rot0 = rot0.compose(rot0.inverse());
-  Rot3 expected_rot1 = rot1.compose(rot0.inverse());
-  Rot3 expected_rot2 = rot2.compose(rot0.inverse());
-  Rot3 result_rot0 = Rot3(result.first.at<SO3>(0));
-  Rot3 result_rot1 = Rot3(result.first.at<SO3>(1));
-  Rot3 result_rot2 = Rot3(result.first.at<SO3>(2));
-  Rot3 actual_rot0 = result_rot0.compose(result_rot0.inverse());
-  Rot3 actual_rot1 = result_rot1.compose(result_rot0.inverse());
-  Rot3 actual_rot2 = result_rot2.compose(result_rot0.inverse());
+  // Get Shonan solution in new frame R (R for result)
+  const Rot3 rR0 = Rot3(result.first.at<SO3>(0));
+  const Rot3 rR1 = Rot3(result.first.at<SO3>(1));
+  const Rot3 rR2 = Rot3(result.first.at<SO3>(2));
 
-  // Check shonan result
-  EXPECT(assert_equal(Rot3(), expected_rot0))
-  EXPECT(assert_equal(Rot3(), actual_rot0))
-  EXPECT(assert_equal(expected_rot1, actual_rot1));
-  EXPECT(assert_equal(expected_rot2, actual_rot2));
-  EXPECT(assert_equal(Rot3::Logmap(expected_rot1), Rot3::Logmap(actual_rot1),
-                      0.1));
-  EXPECT(assert_equal(Rot3::Logmap(expected_rot2), Rot3::Logmap(actual_rot2),
-                      0.1));
+  const Rot3 rRw = rR0 * wR0.inverse();
+  EXPECT(assert_equal(rRw * wR1, rR1, 0.1))
+  EXPECT(assert_equal(rRw * wR2, rR2, 0.1))
 }
 
 /* ************************************************************************* */
