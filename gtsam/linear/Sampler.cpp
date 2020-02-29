@@ -46,10 +46,9 @@ Vector Sampler::sampleDiagonal(const Vector& sigmas) {
     if (sigma == 0.0) {
       result(i) = 0.0;
     } else {
-      typedef boost::normal_distribution<double> Normal;
+      typedef std::normal_distribution<double> Normal;
       Normal dist(0.0, sigma);
-      boost::variate_generator<boost::mt19937_64&, Normal> norm(generator_, dist);
-      result(i) = norm();
+      result(i) = dist(generator_);
     }
   }
   return result;

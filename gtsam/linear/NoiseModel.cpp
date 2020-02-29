@@ -21,15 +21,13 @@
 
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/random/linear_congruential.hpp>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/variate_generator.hpp>
 
-#include <limits>
-#include <iostream>
-#include <typeinfo>
-#include <stdexcept>
 #include <cmath>
+#include <iostream>
+#include <limits>
+#include <random>
+#include <stdexcept>
+#include <typeinfo>
 
 using namespace std;
 

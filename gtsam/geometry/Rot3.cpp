@@ -21,8 +21,9 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
 #include <boost/math/constants/constants.hpp>
-#include <boost/random.hpp>
+
 #include <cmath>
+#include <random>
 
 using namespace std;
 
@@ -34,10 +35,10 @@ void Rot3::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::Random(boost::mt19937& rng) {
+Rot3 Rot3::Random(std::mt19937& rng) {
   // TODO allow any engine without including all of boost :-(
   Unit3 axis = Unit3::Random(rng);
-  boost::uniform_real<double> randomAngle(-M_PI, M_PI);
+  uniform_real_distribution<double> randomAngle(-M_PI, M_PI);
   double angle = randomAngle(rng);
   return AxisAngle(axis, angle);
 }
