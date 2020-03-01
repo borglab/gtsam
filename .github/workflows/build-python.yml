@@ -1,17 +1,18 @@
-name: CI
+name: Python CI
 
 on: [push]
 
 jobs:
   build:
-    name: ${{ matrix.name }} ${{ matrix.build_type }} ${{ matrix.build_unstable }}
+    name: ${{ matrix.name }} ${{ matrix.build_type }} ${{ matrix.wrapper }} ${{ matrix.python_version }}
     runs-on: ${{ matrix.os }}
 
     env:
       CTEST_OUTPUT_ON_FAILURE: ON
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
-      GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+      PYTHON_VERSION: ${{ matrix.python_version }}
+      WRAPPER: ${{ matrix.wrapper }}
     strategy:
       fail-fast: false
       matrix:
@@ -21,13 +22,12 @@ jobs:
           ubuntu-18.04-gcc-5,
           ubuntu-18.04-gcc-9,
           ubuntu-18.04-clang-9,
-          windows-2016-cl,
-          windows-2019-cl,
           macOS-10.15-xcode-11.3.1,
         ]
 
         build_type: [Debug, Release]
-        build_unstable: [ON, OFF]
+        python_version: 3
+        wrapper: [cython, pybind]
         include:
           - name: ubuntu-18.04-gcc-5
             os: ubuntu-18.04
@@ -43,14 +43,6 @@ jobs:
             os: ubuntu-18.04
             compiler: clang
             version: "9"
-
-          - name: windows-2016-cl
-            os: windows-2016
-            compiler: cl
-
-          - name: windows-2019-cl
-            os: windows-2019
-            compiler: cl
 
           - name: macOS-10.15-xcode-11.3.1
             os: macOS-10.15
@@ -121,11 +113,11 @@ jobs:
       - name: Build (Linux)
         if: runner.os == 'Linux'
         run: |
-          bash .travis.sh -t
+          bash .travis.python.sh
       - name: Build (macOS)
         if: runner.os == 'macOS'
         run: |
-          bash .travis.sh -t
+          bash .travis.python.sh
       - name: Build (Windows)
         if: runner.os == 'Windows'
         run: |
