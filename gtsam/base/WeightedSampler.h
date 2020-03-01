@@ -45,8 +45,8 @@ class WeightedSampler {
    */
   explicit WeightedSampler(Engine* engine) : engine_(engine) {}
 
-  std::vector<size_t> sampleWithoutReplacement(size_t numSamples,
-                                               std::vector<double> weights) {
+  std::vector<size_t> sampleWithoutReplacement(
+      size_t numSamples, const std::vector<double>& weights) {
     // Implementation adapted from code accompanying paper at
     // https://www.ethz.ch/content/dam/ethz/special-interest/baug/ivt/ivt-dam/vpl/reports/1101-1200/ab1141.pdf
     const size_t n = weights.size();
@@ -122,7 +122,7 @@ class WeightedSampler {
             "Reservoir empty before all elements have been filled");
       }
 
-      *iret = reservoir.top().second;
+      *iret = reservoir.top().second - 1;
       reservoir.pop();
     }
 

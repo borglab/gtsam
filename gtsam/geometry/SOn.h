@@ -117,8 +117,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   template <int N_ = N, typename = IsDynamic<N_>>
   static SO Random(std::mt19937& rng, size_t n = 0) {
     if (n == 0) throw std::runtime_error("SO: Dimensionality not known.");
-
-    // TODO(frank): This needs to be re-thought!
+    // TODO(frank): this might need to be re-thought
     static std::uniform_real_distribution<double> randomAngle(-M_PI, M_PI);
     const size_t d = SO::Dimension(n);
     Vector xi(d);

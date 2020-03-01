@@ -676,6 +676,7 @@ class Rot3 {
   double yaw() const;
 //  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
   Vector quaternion() const;
+  gtsam::Rot3 slerp(double t, const gtsam::Rot3& other) const;
 
   // enabling serialization functionality
   void serialize() const;
