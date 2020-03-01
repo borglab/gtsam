@@ -359,6 +359,9 @@ class ShonanAveragingParameters {
 class ShonanAveraging {
   ShonanAveraging(string g2oFile);
   ShonanAveraging(string g2oFile, const gtsam::ShonanAveragingParameters& parameters);
+  Matrix denseD() const;
+  Matrix denseQ() const;
+  Matrix denseL() const;
   gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
   gtsam::Values initializeRandomlyAt(size_t p) const;
   double costAt(size_t p, const gtsam::Values& values) const;
@@ -367,9 +370,8 @@ class ShonanAveraging {
   gtsam::Values projectFrom(size_t p, const gtsam::Values& values) const;
   gtsam::Values roundSolution(const gtsam::Values& values) const;
   double cost(const gtsam::Values& values) const;
-  Matrix buildQ_(bool useNoiseModel) const;
   Matrix computeLambda_(const gtsam::Values& values) const;
-  Matrix computeLambda_(Matrix S) const;
+  Matrix computeA_(const gtsam::Values& values) const;
   double computeMinEigenValue(const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
   pair<gtsam::Values, double> runWithRandom() const;

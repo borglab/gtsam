@@ -30,26 +30,45 @@ string g2oFile = findExampleDataFile("toyExample.g2o");
 static const ShonanAveraging kShonan(g2oFile);
 
 /* ************************************************************************* */
+TEST(ShonanAveraging, checkConstructor) {
+  EXPECT_LONGS_EQUAL(5, kShonan.nrPoses());
+
+  EXPECT_LONGS_EQUAL(15, kShonan.D().rows());
+  EXPECT_LONGS_EQUAL(15, kShonan.D().cols());
+  auto D = kShonan.denseD();
+  EXPECT_LONGS_EQUAL(15, D.rows());
+  EXPECT_LONGS_EQUAL(15, D.cols());
+
+  EXPECT_LONGS_EQUAL(15, kShonan.Q().rows());
+  EXPECT_LONGS_EQUAL(15, kShonan.Q().cols());
+  auto Q = kShonan.denseQ();
+  EXPECT_LONGS_EQUAL(15, Q.rows());
+  EXPECT_LONGS_EQUAL(15, Q.cols());
+
+  EXPECT_LONGS_EQUAL(15, kShonan.L().rows());
+  EXPECT_LONGS_EQUAL(15, kShonan.L().cols());
+  auto L = kShonan.denseL();
+  EXPECT_LONGS_EQUAL(15, L.rows());
+  EXPECT_LONGS_EQUAL(15, L.cols());
+}
+
+/* ************************************************************************* */
 TEST(ShonanAveraging, buildGraphAt) {
   auto graph = kShonan.buildGraphAt(5);
-  EXPECT_LONGS_EQUAL(5, kShonan.nrPoses());
   EXPECT_LONGS_EQUAL(6, graph.size());
 }
 
 /* ************************************************************************* */
 TEST(ShonanAveraging, checkOptimality) {
-  auto Q = kShonan.buildQ();
-  EXPECT_LONGS_EQUAL(3 * 5, Q.rows());
-  EXPECT_LONGS_EQUAL(3 * 5, Q.cols());
   const Values random = kShonan.initializeRandomlyAt(4);
   auto Lambda = kShonan.computeLambda(random);
-  EXPECT_LONGS_EQUAL(3 * 5, Lambda.rows());
-  EXPECT_LONGS_EQUAL(3 * 5, Lambda.cols());
+  EXPECT_LONGS_EQUAL(15, Lambda.rows());
+  EXPECT_LONGS_EQUAL(15, Lambda.cols());
   EXPECT_LONGS_EQUAL(45, Lambda.nonZeros());
   auto lambdaMin = kShonan.computeMinEigenValue(random);
   // EXPECT_DOUBLES_EQUAL(-5.2964625490657866, lambdaMin,
   //                      1e-4);  // Regression test
-  EXPECT_DOUBLES_EQUAL(-4.3860073075695709, lambdaMin,
+  EXPECT_DOUBLES_EQUAL(-5.2964625490657902, lambdaMin,
                        1e-4);  // Regression test
   EXPECT(!kShonan.checkOptimality(random));
 }

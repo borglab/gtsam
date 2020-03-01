@@ -54,8 +54,23 @@ class ShonanAveraging {
   ShonanAveragingParameters parameters_;
   BetweenFactorPose3s factors_;
   std::map<Key, Pose3> poses_;
-  Sparse L_;  // connection Laplacian needed for optimality check
   size_t d_;  // dimensionality (typically 2 or 3)
+  Sparse D_;  // Sparse (diagonal) degree matrix
+  Sparse Q_;  // Sparse measurement matrix, == \tilde{R} in Eriksson18cvpr
+  Sparse L_;  // connection Laplacian L = D - Q, needed for optimality check
+
+  /**
+   * Build 3Nx3N sparse matrix consisting of rotation measurements, arranged as
+   *       (i,j) and (j,i) blocks within a sparse matrix.
+   * @param useNoiseModel whether to use noise model
+   */
+  Sparse buildQ(bool useNoiseModel = false) const;
+
+  /**
+   * Build 3Nx3N sparse degree matrix D
+   * @param useNoiseModel whether to use noise model
+   */
+  Sparse buildD(bool useNoiseModel = false) const;
 
  public:
   /**
@@ -76,7 +91,14 @@ class ShonanAveraging {
 
   /// Return poses
   const std::map<Key, Pose3>& poses() const { return poses_; }
-  
+    
+  Sparse D() const {return D_;} ///< Sparse version of D
+  Matrix denseD() const {return Matrix(D_);} ///< Dense version of D
+  Sparse Q() const {return Q_;} ///< Sparse version of Q
+  Matrix denseQ() const {return Matrix(Q_);} ///< Dense version of Q
+  Sparse L() const {return L_;} ///< Sparse version of L
+  Matrix denseL() const {return Matrix(L_);} ///< Dense version of L
+
   /**
    * Build graph for SO(p)
    * @param p the dimensionality of the rotation manifold to optimize over
@@ -96,35 +118,29 @@ class ShonanAveraging {
   double costAt(size_t p, const Values& values) const;
 
   /**
-   * Build 3Nx3N sparse matrix consisting of rotation measurements, arranged as
-   *       (i,j) and (j,i) blocks within a sparse matrix.
-   * @param useNoiseModel whether to use noise model
-   */
-  Sparse buildQ(bool useNoiseModel = false) const;
-
-  /// Dense version of buildQ for wrapper/testing
-  Matrix buildQ_(bool useNoiseModel = false) const {
-    return Matrix(buildQ(useNoiseModel));
-  }
-
-  /**
    * Given an estimated local minimum Yopt for the (possibly lifted)
    * relaxation, this function computes and returns the block-diagonal elements
    * of the corresponding Lagrange multiplier.
    */
   Sparse computeLambda(const Values& values) const;
 
+  /// Version that takes pxdN Stiefel manifold elements
+  Sparse computeLambda(const Matrix& S) const;
+
   /// Dense version of computeLambda for wrapper/testing
   Matrix computeLambda_(const Values& values) const {
     return Matrix(computeLambda(values));
   }
 
-  /// Version that takes pxdN Stiefel manifold elements
-  Sparse computeLambda(const Matrix& S) const;
+  /// Compute A matrix whose Eigenvalues we will examine
+  Sparse computeA(const Values& values) const;
 
-  /// Dense version of computeLambda for wrapper/testing
-  Matrix computeLambda_(const Matrix& S) const {
-    return Matrix(computeLambda(S));
+  /// Version that takes pxdN Stiefel manifold elements
+  Sparse computeA(const Matrix& S) const;
+
+  /// Dense version of computeA for wrapper/testing
+  Matrix computeA_(const Values& values) const {
+    return Matrix(computeA(values));
   }
 
   /** 

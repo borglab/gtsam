@@ -94,7 +94,10 @@ ShonanAveraging::ShonanAveraging(const string& g2oFile,
         noiseModel::Isotropic::Sigma(d_, parameters.noiseSigma);
     factors_ = parse3DFactors(g2oFile, corruptingNoise);
     poses_ = parse3DPoses(g2oFile);
-    L_ = buildQ();
+    constexpr bool useNoiseModel = false;
+    Q_ = buildQ(useNoiseModel);
+    D_ = buildD(useNoiseModel);
+    L_ = D_ - Q_;
 }
 
 /* ************************************************************************* */
@@ -252,14 +255,63 @@ double ShonanAveraging::cost(const Values& values) const {
 }
 
 /* ************************************************************************* */
-// heavily cribbed from David's construct_rotational_connection_Laplacian
-ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
+// Get kappa from noise model
+static double Kappa(const BetweenFactor<Pose3>::shared_ptr& factor, 
+                    const bool useNoiseModel) {
+    if (useNoiseModel) {
+        const auto& model = factor->noiseModel();
+        const auto& isotropic = ConvertPose3NoiseModel(model, 3);
+        const double sigma = isotropic->sigma();
+        return 1.0/(sigma*sigma);
+    } else {
+        return 1.0;
+    }
+}
+
+/* ************************************************************************* */
+ShonanAveraging::Sparse ShonanAveraging::buildD(bool useNoiseModel) const {
     assert(useNoiseModel == false);
 
     // Each measurement contributes 2*d elements along the diagonal of the
-    // connection Laplacian, and 2*d^2 elements on a pair of symmetric
+    // degree matrix.
+    const size_t stride = 2 * d_;
+
+    // Reserve space for triplets
+    std::vector<Eigen::Triplet<double>> triplets;
+    triplets.reserve(stride * factors_.size());
+
+    for (const auto& factor : factors_) {
+        // Get pose keys
+        const auto& keys = factor->keys();
+        size_t i = keys[0];
+        size_t j = keys[1];
+
+        // Get kappa from noise model
+        double kappa = Kappa(factor, useNoiseModel);
+
+        for (size_t k = 0; k < d_; k++) {
+            // Elements of ith block-diagonal
+            triplets.emplace_back(d_ * i + k, d_ * i + k, kappa);
+            // Elements of jth block-diagonal
+            triplets.emplace_back(d_ * j + k, d_ * j + k, kappa);
+        }
+    }
+
+    // Construct and return a sparse matrix from these triplets
+    const size_t N = nrPoses();
+    Sparse D(d_ * N, d_ * N);
+    D.setFromTriplets(triplets.begin(), triplets.end());
+
+    return D;
+}
+
+/* ************************************************************************* */
+ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
+    assert(useNoiseModel == false);
+
+    // Each measurement contributes 2*d^2 elements on a pair of symmetric
     // off-diagonal blocks
-    const size_t stride = 2 * (d_ + d_ * d_);
+    const size_t stride = 2 * d_ * d_;
 
     // Reserve space for triplets
     std::vector<Eigen::Triplet<double>> triplets;
@@ -276,43 +328,26 @@ ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
         const Matrix3 Rij = Tij.rotation().matrix();
 
         // Get kappa from noise model
-        double kappa;
-        if (useNoiseModel) {
-            // const auto& m = factor->noiseModel();
-            // isotropic =
-            // noiseModel_FrobeniusNoiseModel9.FromPose3NoiseModel(m) sigma =
-            // isotropic.sigma() kappa_ij = 1.0/(sigma*sigma)
-        } else {
-            kappa = 1.0;
-        }
+        double kappa = Kappa(factor, useNoiseModel);
 
-        // Elements of ith block-diagonal
-        for (size_t k = 0; k < d_; k++)
-            triplets.emplace_back(d_ * i + k, d_ * i + k, kappa);
-
-        // Elements of jth block-diagonal
-        for (size_t k = 0; k < d_; k++)
-            triplets.emplace_back(d_ * j + k, d_ * j + k, kappa);
-
-        // Elements of ij block
-        for (size_t r = 0; r < d_; r++)
-            for (size_t c = 0; c < d_; c++)
+        for (size_t r = 0; r < d_; r++) {
+            for (size_t c = 0; c < d_; c++) {
+                // Elements of ij block
                 triplets.emplace_back(i * d_ + r, j * d_ + c,
-                                      -kappa * Rij(r, c));
-
-        // Elements of ji block
-        for (size_t r = 0; r < d_; r++)
-            for (size_t c = 0; c < d_; c++)
+                                      kappa * Rij(r, c));
+                // Elements of ji block
                 triplets.emplace_back(j * d_ + r, i * d_ + c,
-                                      -kappa * Rij(c, r));
+                                      kappa * Rij(c, r));
+            }
+        }
     }
 
     // Construct and return a sparse matrix from these triplets
     const size_t N = nrPoses();
-    Sparse LGrho(d_ * N, d_ * N);
-    LGrho.setFromTriplets(triplets.begin(), triplets.end());
+    Sparse Q(d_ * N, d_ * N);
+    Q.setFromTriplets(triplets.begin(), triplets.end());
 
-    return LGrho;
+    return Q;
 }
 
 /* ************************************************************************* */
@@ -505,15 +540,27 @@ static bool SparseMinimumEigenValue(const SparseMatrix& A, const Matrix& S, doub
 }
 
 /* ************************************************************************* */
-double ShonanAveraging::computeMinEigenValue(const Values& values,
-                                             Vector* minEigenVector) const {
-  /// Based on Luca's MATLAB version on BitBucket repo.
+ShonanAveraging::Sparse ShonanAveraging::computeA(const Values& values) const {
   assert(values.size() == nrPoses());
   const Matrix S = StiefelElementMatrix(values);
   auto Lambda = computeLambda(S);
-  auto C = L_ - Lambda;
+  return L_ - Lambda;
+}
+
+/* ************************************************************************* */
+ShonanAveraging::Sparse ShonanAveraging::computeA(const Matrix& S) const {
+  auto Lambda = computeLambda(S);
+  return L_ - Lambda;
+}
+
+/* ************************************************************************* */
+double ShonanAveraging::computeMinEigenValue(const Values& values,
+                                             Vector* minEigenVector) const {
+  assert(values.size() == nrPoses());
+  const Matrix S = StiefelElementMatrix(values);
+  auto A = computeA(S);
 #ifdef SLOW_EIGEN_COMPUTATION
-  Eigen::EigenSolver<Matrix> solver(Matrix(C), false);
+  Eigen::EigenSolver<Matrix> solver(Matrix(A), false);
   auto lambdas = solver.eigenvalues();
   double minEigenValue = lambdas(0).real();
   for (size_t i = 1; i < lambdas.size(); i++) {
@@ -521,7 +568,7 @@ double ShonanAveraging::computeMinEigenValue(const Values& values,
   }
 #else
   double minEigenValue;
-  bool success = SparseMinimumEigenValue(C, S, &minEigenValue, minEigenVector);
+  bool success = SparseMinimumEigenValue(A, S, &minEigenValue, minEigenVector);
   if (!success) {
     throw std::runtime_error(
         "SparseMinimumEigenValue failed to compute minimum eigenvalue.");
