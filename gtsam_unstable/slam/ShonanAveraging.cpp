@@ -309,7 +309,7 @@ ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
 
     // Construct and return a sparse matrix from these triplets
     const size_t N = nrPoses();
-    ShonanAveraging::Sparse LGrho(d_ * N, d_ * N);
+    Sparse LGrho(d_ * N, d_ * N);
     LGrho.setFromTriplets(triplets.begin(), triplets.end());
 
     return LGrho;
@@ -340,7 +340,7 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Matrix& S) const {
     }
 
     // Construct and return a sparse matrix from these triplets
-    ShonanAveraging::Sparse Lambda(d_ * N, d_ * N);
+    Sparse Lambda(d_ * N, d_ * N);
     Lambda.setFromTriplets(triplets.begin(), triplets.end());
     return Lambda;
 }

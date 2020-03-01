@@ -20,6 +20,7 @@
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/slam/dataset.h>
+#include <gtsam/base/Matrix.h>
 
 #include <Eigen/Sparse>
 
@@ -101,6 +102,11 @@ class ShonanAveraging {
    */
   Sparse buildQ(bool useNoiseModel = false) const;
 
+  /// Dense version of buildQ for wrapper/testing
+  Matrix buildQ_(bool useNoiseModel = false) const {
+    return Matrix(buildQ(useNoiseModel));
+  }
+
   /**
    * Given an estimated local minimum Yopt for the (possibly lifted)
    * relaxation, this function computes and returns the block-diagonal elements
@@ -108,8 +114,18 @@ class ShonanAveraging {
    */
   Sparse computeLambda(const Values& values) const;
 
-  // Version that takes pxdN Stiefel manifold elements
+  /// Dense version of computeLambda for wrapper/testing
+  Matrix computeLambda_(const Values& values) const {
+    return Matrix(computeLambda(values));
+  }
+
+  /// Version that takes pxdN Stiefel manifold elements
   Sparse computeLambda(const Matrix& S) const;
+
+  /// Dense version of computeLambda for wrapper/testing
+  Matrix computeLambda_(const Matrix& S) const {
+    return Matrix(computeLambda(S));
+  }
 
   /** 
    * Compute minimum eigenvalue for optimality check.
