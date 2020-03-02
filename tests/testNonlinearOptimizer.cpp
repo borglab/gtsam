@@ -364,9 +364,8 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuberNoOutlier) {
   lm_params.setAbsoluteErrorTol(0);
   lm_params.setMaxIterations(100);
   lm_params.setlambdaUpperBound(1e10);
-  // lm_params.setVerbosityLM("TRYLAMBDA");
 
-  gtsam::NonlinearConjugateGradientOptimizer::Parameters cg_params;
+  NonlinearConjugateGradientOptimizer::Parameters cg_params;
   cg_params.setErrorTol(0);
   cg_params.setMaxIterations(100000);
   cg_params.setRelativeErrorTol(0);
@@ -376,8 +375,6 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuberNoOutlier) {
   dl_params.setRelativeErrorTol(0);
   dl_params.setAbsoluteErrorTol(0);
   dl_params.setMaxIterations(100);
-
-  // cg_params.setVerbosity("ERROR");
 
   auto cg_result = NonlinearConjugateGradientOptimizer(fg, init, cg_params).optimize();
   auto gn_result = GaussNewtonOptimizer(fg, init).optimize();
@@ -414,19 +411,11 @@ TEST(NonlinearOptimizer, Point2LinearOptimizationWithHuber) {
   expected.insert(1, Point2(1,1.85));
 
   LevenbergMarquardtParams params;
-  gtsam::NonlinearConjugateGradientOptimizer::Parameters cg_params;
-  cg_params.setErrorTol(0);
-  cg_params.setMaxIterations(100000);
-  cg_params.setRelativeErrorTol(0);
-  cg_params.setAbsoluteErrorTol(0);
+  NonlinearConjugateGradientOptimizer::Parameters cg_params;
 
-  // cg_params.setVerbosity("ERROR");
   auto cg_result = NonlinearConjugateGradientOptimizer(fg, init, cg_params).optimize();
-
   auto gn_result = GaussNewtonOptimizer(fg, init).optimize();
-
   auto lm_result = LevenbergMarquardtOptimizer(fg, init, params).optimize();
-
   auto dl_result = DoglegOptimizer(fg, init).optimize();
 
   EXPECT(assert_equal(expected, gn_result, 1e-4));
@@ -468,13 +457,9 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuber) {
   cg_params.setRelativeErrorTol(0);
   cg_params.setAbsoluteErrorTol(0);
 
-  // cg_params.setVerbosity("ERROR");
   auto cg_result = NonlinearConjugateGradientOptimizer(fg, init, cg_params).optimize();
-  fg.printErrors(cg_result);
   auto gn_result = GaussNewtonOptimizer(fg, init).optimize();
-
   auto lm_result = LevenbergMarquardtOptimizer(fg, init, params).optimize();
-
   auto dl_result = DoglegOptimizer(fg, init).optimize();
 
   EXPECT(assert_equal(expected, gn_result, 1e-1));
@@ -504,7 +489,6 @@ TEST(NonlinearOptimizer, RobustMeanCalculation) {
   expected.insert(0, 3.33333333);
 
   LevenbergMarquardtParams params;
-  // params.setVerbosityLM("TRYLAMBDA");
   params.setAbsoluteErrorTol(1e-20);
   params.setRelativeErrorTol(1e-20);
 
@@ -513,22 +497,12 @@ TEST(NonlinearOptimizer, RobustMeanCalculation) {
   cg_params.setMaxIterations(10000);
   cg_params.setRelativeErrorTol(0);
   cg_params.setAbsoluteErrorTol(0);
-  // cg_params.setVerbosity("ERROR");
+
   auto cg_result = NonlinearConjugateGradientOptimizer(fg, init, cg_params).optimize();
-//  cg_result.print("CG: ");
-//  cout << fg.error(cg_result) << endl << endl << endl;
-
   auto gn_result = GaussNewtonOptimizer(fg, init).optimize();
-//  gn_result.print("GN: ");
-//  cout << fg.error(gn_result) << endl << endl << endl;
-
   auto lm_result = LevenbergMarquardtOptimizer(fg, init, params).optimize();
-//  lm_result.print("LM: ");
-//  cout << fg.error(lm_result) << endl << endl << endl;
-
   auto dl_result = DoglegOptimizer(fg, init).optimize();
-//  dl_result.print("DL: ");
-//  cout << fg.error(dl_result) << endl << endl << endl;
+
   EXPECT(assert_equal(expected, gn_result, tol));
   EXPECT(assert_equal(expected, gn_result, tol));
   EXPECT(assert_equal(expected, lm_result, tol));
