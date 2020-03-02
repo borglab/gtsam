@@ -63,7 +63,7 @@ FrobeniusWormholeFactor::FrobeniusWormholeFactor(Key j1, Key j2, const SO3& R12,
       G_(pp_, dimension_)             // 16*6 for SO(4)
 {
   // Calculate G matrix of vectorized generators
-  Matrix Z = zeros(p, p);
+  Matrix Z = Matrix::Zero(p, p);
   for (size_t j = 0; j < dimension_; j++) {
     const auto X = SOn::Hat(Eigen::VectorXd::Unit(dimension_, j));
     G_.col(j) = Eigen::Map<const Matrix>(X.data(), pp_, 1);
@@ -94,7 +94,7 @@ Vector FrobeniusWormholeFactor::evaluateError(
   // If asked, calculate Jacobian as (M \otimes M1) * G
   if (H1) {
     const size_t p2 = 2 * p_;
-    Matrix RPxQ = zeros(dim, pp_);
+    Matrix RPxQ = Matrix::Zero(dim, pp_);
     RPxQ.block(0, 0, p_, dim) << M1 * M_(0, 0), M1 * M_(1, 0), M1 * M_(2, 0);
     RPxQ.block(p_, 0, p_, dim) << M1 * M_(0, 1), M1 * M_(1, 1), M1 * M_(2, 1);
     RPxQ.block(p2, 0, p_, dim) << M1 * M_(0, 2), M1 * M_(1, 2), M1 * M_(2, 2);
@@ -102,7 +102,7 @@ Vector FrobeniusWormholeFactor::evaluateError(
   }
   if (H2) {
     const size_t p2 = 2 * p_;
-    Matrix PxQ = zeros(dim, pp_);
+    Matrix PxQ = Matrix::Zero(dim, pp_);
     PxQ.block(0, 0, p_, p_) = M2;
     PxQ.block(p_, p_, p_, p_) = M2;
     PxQ.block(p2, p2, p_, p_) = M2;
