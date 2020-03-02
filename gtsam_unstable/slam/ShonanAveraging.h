@@ -127,9 +127,12 @@ class ShonanAveraging {
   /// Version that takes pxdN Stiefel manifold elements
   Sparse computeLambda(const Matrix& S) const;
 
-  /// Dense version of computeLambda for wrapper/testing
+  /// Dense versions of computeLambda for wrapper/testing
   Matrix computeLambda_(const Values& values) const {
     return Matrix(computeLambda(values));
+  }
+  Matrix computeLambda_(const Matrix& S) const {
+    return Matrix(computeLambda(S));
   }
 
   /// Compute A matrix whose Eigenvalues we will examine

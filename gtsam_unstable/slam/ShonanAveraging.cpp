@@ -361,7 +361,7 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Matrix& S) const {
     triplets.reserve(stride * N);
 
     // Do sparse-dense multiply to get Q*S'
-    auto QSt = L_ * S.transpose();
+    auto QSt = Q_ * S.transpose();
 
     for (size_t j = 0; j < N; j++) {
         // Compute B, the building block for the j^th diagonal block of Lambda
@@ -387,6 +387,14 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(
     Matrix S = StiefelElementMatrix(values);
     // ...and call version above.
     return computeLambda(S);
+}
+
+/* ************************************************************************* */
+ShonanAveraging::Sparse ShonanAveraging::computeA(const Values& values) const {
+  assert(values.size() == nrPoses());
+  const Matrix S = StiefelElementMatrix(values);
+  auto Lambda = computeLambda(S);
+  return Lambda - Q_;
 }
 
 /* ************************************************************************* */
@@ -540,17 +548,9 @@ static bool SparseMinimumEigenValue(const SparseMatrix& A, const Matrix& S, doub
 }
 
 /* ************************************************************************* */
-ShonanAveraging::Sparse ShonanAveraging::computeA(const Values& values) const {
-  assert(values.size() == nrPoses());
-  const Matrix S = StiefelElementMatrix(values);
-  auto Lambda = computeLambda(S);
-  return L_ - Lambda;
-}
-
-/* ************************************************************************* */
 ShonanAveraging::Sparse ShonanAveraging::computeA(const Matrix& S) const {
   auto Lambda = computeLambda(S);
-  return L_ - Lambda;
+  return Lambda - Q_;
 }
 
 /* ************************************************************************* */
