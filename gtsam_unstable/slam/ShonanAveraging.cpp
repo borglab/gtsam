@@ -365,7 +365,7 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Matrix& S) const {
 
     for (size_t j = 0; j < N; j++) {
         // Compute B, the building block for the j^th diagonal block of Lambda
-        Matrix B = QSt.middleRows(j, d_) * S.middleCols(j, d_);
+        Matrix B = QSt.middleRows(d_ * j, d_) * S.middleCols(d_ * j, d_);
 
         // Elements of jth block-diagonal
         for (size_t r = 0; r < d_; r++)
