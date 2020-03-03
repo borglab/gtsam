@@ -361,6 +361,8 @@ class ShonanAveragingParameters {
 class ShonanAveraging {
   ShonanAveraging(string g2oFile);
   ShonanAveraging(string g2oFile, const gtsam::ShonanAveragingParameters& parameters);
+  ShonanAveraging(const gtsam::BetweenFactorPose3s& factors, const gtsam::Values& values);  
+  ShonanAveraging(const gtsam::BetweenFactorPose3s& factors, const gtsam::Values& values, const gtsam::ShonanAveragingParameters& parameters);
   size_t nrPoses() const;
   gtsam::Pose3 measured(size_t i);
   gtsam::KeyVector keys(size_t i);

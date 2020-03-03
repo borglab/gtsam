@@ -87,17 +87,43 @@ ShonanAveragingParameters::ShonanAveragingParameters(const string& verbosity,
 }
 
 /* ************************************************************************* */
-ShonanAveraging::ShonanAveraging(const string& g2oFile,
-                                 const ShonanAveragingParameters& parameters)
-    : parameters_(parameters), d_(3) {
+ShonanAveraging::ShonanAveraging(const BetweenFactorPose3s& factors,
+                  const std::map<Key, Pose3>& poses,
+                  const ShonanAveragingParameters& parameters)
+    : parameters_(parameters), factors_(factors), poses_(poses), d_(3) {
+    // TODO(frank): add noise here rather than when parsing
     auto corruptingNoise =
         noiseModel::Isotropic::Sigma(d_, parameters.noiseSigma);
-    factors_ = parse3DFactors(g2oFile, corruptingNoise);
-    poses_ = parse3DPoses(g2oFile);
+    // TODO(frank): use noiseModel based on parameter setting
     constexpr bool useNoiseModel = false;
     Q_ = buildQ(useNoiseModel);
     D_ = buildD(useNoiseModel);
     L_ = D_ - Q_;
+    }
+
+/* ************************************************************************* */
+// Copy poses from Values
+static std::map<Key, Pose3> PoseMapFromValues(const Values& values)
+{
+    Values::ConstFiltered<Pose3> pose_filtered = values.filter<Pose3>();
+    std::map<Key, Pose3> poses;
+    for(const auto& it: pose_filtered) {
+        poses[it.key] = it.value;
+    }
+    return poses;
+}
+
+/* ************************************************************************* */
+ShonanAveraging::ShonanAveraging(const BetweenFactorPose3s& factors,
+                                 const Values& values,
+                                 const ShonanAveragingParameters& parameters)
+    : ShonanAveraging(factors, PoseMapFromValues(values), parameters) {
+}
+
+/* ************************************************************************* */
+ShonanAveraging::ShonanAveraging(const string& g2oFile,
+                                 const ShonanAveragingParameters& parameters)
+    : ShonanAveraging(parse3DFactors(g2oFile), parse3DPoses(g2oFile), parameters) {
 }
 
 /* ************************************************************************* */

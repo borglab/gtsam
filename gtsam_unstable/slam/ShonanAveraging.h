@@ -75,7 +75,21 @@ class ShonanAveraging {
 
  public:
   /**
-   * Construct from a G2O file
+   * Construct from factors and poses.
+   */
+  ShonanAveraging(const BetweenFactorPose3s& factors,
+                  const std::map<Key, Pose3>& poses,
+                  const ShonanAveragingParameters& parameters =
+                               ShonanAveragingParameters());
+  /**
+   * Construct from factors and values (will ignore all but Pose3 values).
+   */
+  ShonanAveraging(const BetweenFactorPose3s& factors,
+                  const Values& values,
+                  const ShonanAveragingParameters& parameters =
+                               ShonanAveragingParameters());
+  /**
+   * Construct from a G2O file.
    */
   explicit ShonanAveraging(const std::string& g2oFile,
                            const ShonanAveragingParameters& parameters =
