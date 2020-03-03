@@ -354,6 +354,8 @@ class ShonanAveragingParameters {
   ShonanAveragingParameters(string verbosity, string method);
   void setPrior(bool value);
   void setKarcher(bool value);
+  void setNoiseSigma(double value);
+  void setOptimalityThreshold(double value);
 };
 
 class ShonanAveraging {

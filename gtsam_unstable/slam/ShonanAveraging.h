@@ -32,9 +32,9 @@ class NonlinearFactorGraph;
 
 /// Parameters governing optimization etc.
 struct ShonanAveragingParameters {
-  bool prior;                   // whether to use a prior (default true)
-  bool karcher;                 // whether to use Karcher mean prior (default true)
-  double noiseSigma;            // Optional noise Sigma, will be ignored if zero
+  bool prior;         // whether to use a prior (default true)
+  bool karcher;       // whether to use Karcher mean prior (default true)
+  double noiseSigma;  // Optional noise Sigma, will be ignored if zero
   double optimalityThreshold;   // threshold used in checkOptimality
   LevenbergMarquardtParams lm;  // LM parameters
   ShonanAveragingParameters(const std::string& verbosity = "SILENT",
@@ -44,6 +44,7 @@ struct ShonanAveragingParameters {
   void setPrior(bool value) { prior = value; }
   void setKarcher(bool value) { karcher = value; }
   void setNoiseSigma(bool value) { noiseSigma = value; }
+  void setOptimalityThreshold(double value) { optimalityThreshold = value; }
 };
 
 class ShonanAveraging {
