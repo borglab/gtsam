@@ -19,6 +19,7 @@ install(FILES
   GtsamMatlabWrap.cmake
   GtsamPythonWrap.cmake
   GtsamCythonWrap.cmake
+  GtsamPybindWrap.cmake
   GtsamTesting.cmake
   GtsamPrinting.cmake
   FindCython.cmake
