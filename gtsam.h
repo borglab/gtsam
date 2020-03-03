@@ -2743,8 +2743,10 @@ void save2D(const gtsam::NonlinearFactorGraph& graph,
 // std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>
 class BetweenFactorPose3s
 {
+  BetweenFactorPose3s();
   size_t size() const;
   gtsam::BetweenFactorPose3* at(size_t i) const;
+  void push_back(const gtsam::BetweenFactorPose3* factor);
 };
 
 #include <gtsam/slam/InitializePose3.h>
