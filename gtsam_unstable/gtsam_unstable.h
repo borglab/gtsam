@@ -359,6 +359,9 @@ class ShonanAveragingParameters {
 class ShonanAveraging {
   ShonanAveraging(string g2oFile);
   ShonanAveraging(string g2oFile, const gtsam::ShonanAveragingParameters& parameters);
+  size_t nrPoses() const;
+  gtsam::Pose3 measured(size_t i);
+  gtsam::KeyVector keys(size_t i);
   Matrix denseD() const;
   Matrix denseQ() const;
   Matrix denseL() const;

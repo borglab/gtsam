@@ -175,10 +175,14 @@ class ShonanAveraging {
   Values projectFrom(size_t p, const Values& values) const;
 
   /**
+   * Project pxdN Stiefel manifold matrix S to SO(3)^N
+   */
+  Values roundSolution(const Matrix S) const;
+  
+  /**
    * Project from SO(p)^N to SO(3)^N
    * Values should be of type SO(p)
    */
-  Values roundSolution(const Matrix Y) const;
   Values roundSolution(const Values& values) const;
 
   /**
