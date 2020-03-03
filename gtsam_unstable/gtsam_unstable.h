@@ -324,7 +324,7 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
 gtsam::noiseModel::Isotropic* ConvertPose3NoiseModel(
     gtsam::noiseModel::Base* model, size_t d);
 
-template<T = {gtsam::SO3, gtsam::SO4, gtsam::SOn}>
+template<T = {gtsam::SO3, gtsam::SO4}>
 virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
   FrobeniusFactor(size_t key1, size_t key2);
   FrobeniusFactor(size_t key1, size_t key2, gtsam::noiseModel::Base* model);
@@ -332,7 +332,7 @@ virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
   Vector evaluateError(const T& R1, const T& R2);
 };
 
-template<T = {gtsam::SO3, gtsam::SO4, gtsam::SOn}>
+template<T = {gtsam::SO3, gtsam::SO4}>
 virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
   FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12);
   FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12, gtsam::noiseModel::Base* model);
@@ -341,9 +341,9 @@ virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
 };
 
 virtual class FrobeniusWormholeFactor : gtsam::NoiseModelFactor {
-  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::SO3& R12,
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
                           size_t p);
-  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::SO3& R12,
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
                           size_t p, gtsam::noiseModel::Base* model);
   Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
 };

@@ -108,7 +108,7 @@ NonlinearFactorGraph ShonanAveraging::buildGraphAt(size_t p) const {
         const auto& Tij = factor->measured();
         const auto& model = factor->noiseModel();
         graph.emplace_shared<FrobeniusWormholeFactor>(
-            keys[0], keys[1], SO3(Tij.rotation().matrix()), p, model);
+            keys[0], keys[1], Tij.rotation(), p, model);
     }
     return graph;
 }

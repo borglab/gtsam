@@ -52,7 +52,7 @@ boost::shared_ptr<noiseModel::Isotropic> ConvertPose3NoiseModel(
 }
 
 //******************************************************************************
-FrobeniusWormholeFactor::FrobeniusWormholeFactor(Key j1, Key j2, const SO3& R12,
+FrobeniusWormholeFactor::FrobeniusWormholeFactor(Key j1, Key j2, const Rot3& R12,
                                                  size_t p,
                                                  const SharedNoiseModel& model)
     : NoiseModelFactor2<SOn, SOn>(ConvertPose3NoiseModel(model, p * 3), j1, j2),

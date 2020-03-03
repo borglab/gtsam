@@ -16,8 +16,9 @@
  * @brief  Various factors that minimize some Frobenius norm
  */
 
-#include <gtsam/geometry/SO3.h>
-#include <gtsam/geometry/SO4.h>
+#pragma once
+
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SOn.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
@@ -49,7 +50,7 @@ class FrobeniusPrior : public NoiseModelFactor1<Rot> {
   /// Constructor
   FrobeniusPrior(Key j, const MatrixNN& M,
                  const SharedNoiseModel& model = nullptr)
-      : NoiseModelFactor1<SO3>(ConvertPose3NoiseModel(model, Dim), j) {
+      : NoiseModelFactor1<Rot>(ConvertPose3NoiseModel(model, Dim), j) {
     vecM_ << Eigen::Map<const Matrix>(M.data(), Dim, 1);
   }
 
@@ -62,7 +63,7 @@ class FrobeniusPrior : public NoiseModelFactor1<Rot> {
 
 /**
  * FrobeniusFactor calculates the Frobenius norm between rotation matrices.
- * The template argument can be any SO<N>.
+ * The template argument can be any fixed-size SO<N>.
  */
 template <class Rot>
 class FrobeniusFactor : public NoiseModelFactor2<Rot, Rot> {
@@ -87,7 +88,8 @@ class FrobeniusFactor : public NoiseModelFactor2<Rot, Rot> {
 /**
  * FrobeniusBetweenFactor is a BetweenFactor that evaluates the Frobenius norm
  * of the rotation error between measured and predicted (rather than the
- * Logmap of the error).
+ * Logmap of the error). This factor is only defined for fixed-dimension types,
+ * and in fact only SO3 and SO4 really work, as we need SO<N>::AdjointMap.
  */
 template <class Rot>
 class FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
@@ -100,7 +102,8 @@ class FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
   /// Constructor
   FrobeniusBetweenFactor(Key j1, Key j2, const Rot& R12,
                          const SharedNoiseModel& model = nullptr)
-      : NoiseModelFactor2<Rot, Rot>(ConvertPose3NoiseModel(model, Dim), j1, j2),
+      : NoiseModelFactor2<Rot, Rot>(
+            ConvertPose3NoiseModel(model, Dim), j1, j2),
         R12_(R12),
         R2hat_H_R1_(R12.inverse().AdjointMap()) {}
 
@@ -129,8 +132,8 @@ class FrobeniusWormholeFactor : public NoiseModelFactor2<SOn, SOn> {
 
  public:
   /// Constructor. Note we convert to 3*p-dimensional noise model.
-  FrobeniusWormholeFactor(Key j1, Key j2, const SO3& R12, size_t p = 4,
-                           const SharedNoiseModel& model = nullptr);
+  FrobeniusWormholeFactor(Key j1, Key j2, const Rot3& R12, size_t p = 4,
+                          const SharedNoiseModel& model = nullptr);
 
   /// Error is Frobenius norm between Q1*P*R12 and Q2*P, where P=[I_3x3;0]
   /// projects down from SO(p) to the Stiefel manifold of px3 matrices.
