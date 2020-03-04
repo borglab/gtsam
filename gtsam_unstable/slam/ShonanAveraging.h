@@ -98,6 +98,9 @@ class ShonanAveraging {
   /// Return number of poses
   size_t nrPoses() const { return poses_.size(); }
 
+  /// Return number of measurements
+  size_t nrMeasurements() const { return factors_.size(); }
+
   /// k^th measurement, as a Pose3.
   const Pose3& measured(size_t i) const { return factors_[i]->measured(); }
 
