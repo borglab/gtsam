@@ -2730,7 +2730,7 @@ class SfM_Track {
   pair<size_t, size_t> SIFT_index(size_t idx) const;
 };
 
-class SfM_data {
+class SfM_Data {
   size_t number_cameras() const;
   size_t number_tracks() const;
   //TODO(Varun) Need to fix issue #237 first before this can work

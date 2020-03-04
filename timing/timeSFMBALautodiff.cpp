@@ -38,7 +38,7 @@ typedef PinholeCamera<Cal3Bundler> Camera;
 
 int main(int argc, char* argv[]) {
   // parse options and read BAL file
-  SfM_data db = preamble(argc, argv);
+  SfM_Data db = preamble(argc, argv);
 
   AdaptAutoDiff<SnavelyProjection, 2, 9, 3> snavely;
 

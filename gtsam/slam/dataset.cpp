@@ -646,7 +646,7 @@ Pose3 gtsam2openGL(const Pose3& PoseGTSAM) {
 }
 
 /* ************************************************************************* */
-bool readBundler(const string& filename, SfM_data &data) {
+bool readBundler(const string& filename, SfM_Data &data) {
   // Load the data file
   ifstream is(filename.c_str(), ifstream::in);
   if (!is) {
@@ -733,7 +733,7 @@ bool readBundler(const string& filename, SfM_data &data) {
 }
 
 /* ************************************************************************* */
-bool readBAL(const string& filename, SfM_data &data) {
+bool readBAL(const string& filename, SfM_Data &data) {
   // Load the data file
   ifstream is(filename.c_str(), ifstream::in);
   if (!is) {
@@ -793,7 +793,7 @@ bool readBAL(const string& filename, SfM_data &data) {
 }
 
 /* ************************************************************************* */
-bool writeBAL(const string& filename, SfM_data &data) {
+bool writeBAL(const string& filename, SfM_Data &data) {
   // Open the output file
   ofstream os;
   os.open(filename.c_str());
@@ -866,12 +866,12 @@ bool writeBAL(const string& filename, SfM_data &data) {
   return true;
 }
 
-bool writeBALfromValues(const string& filename, const SfM_data &data,
+bool writeBALfromValues(const string& filename, const SfM_Data &data,
     Values& values) {
   using Camera = PinholeCamera<Cal3Bundler>;
-  SfM_data dataValues = data;
+  SfM_Data dataValues = data;
 
-  // Store poses or cameras in SfM_data
+  // Store poses or cameras in SfM_Data
   size_t nrPoses = values.count<Pose3>();
   if (nrPoses == dataValues.number_cameras()) { // we only estimated camera poses
     for (size_t i = 0; i < dataValues.number_cameras(); i++) { // for each camera
@@ -899,7 +899,7 @@ bool writeBALfromValues(const string& filename, const SfM_data &data,
     }
   }
 
-  // Store 3D points in SfM_data
+  // Store 3D points in SfM_Data
   size_t nrPoints = values.count<Point3>(), nrTracks = dataValues.number_tracks();
   if (nrPoints != nrTracks) {
     cout
@@ -921,11 +921,11 @@ bool writeBALfromValues(const string& filename, const SfM_data &data,
     }
   }
 
-  // Write SfM_data to file
+  // Write SfM_Data to file
   return writeBAL(filename, dataValues);
 }
 
-Values initialCamerasEstimate(const SfM_data& db) {
+Values initialCamerasEstimate(const SfM_Data& db) {
   Values initial;
   size_t i = 0; // NO POINTS:  j = 0;
   for(const SfM_Camera& camera: db.cameras)
@@ -933,7 +933,7 @@ Values initialCamerasEstimate(const SfM_data& db) {
   return initial;
 }
 
-Values initialCamerasAndPointsEstimate(const SfM_data& db) {
+Values initialCamerasAndPointsEstimate(const SfM_Data& db) {
   Values initial;
   size_t i = 0, j = 0;
   for(const SfM_Camera& camera: db.cameras)

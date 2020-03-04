@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
     filename = string(argv[1]);
 
   // Load the SfM data from file
-  SfM_data mydata;
+  SfM_Data mydata;
   readBAL(filename, mydata);
   cout
       << boost::format("read %1% tracks on %2% cameras\n")

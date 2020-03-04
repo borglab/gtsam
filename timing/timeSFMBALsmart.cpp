@@ -31,7 +31,7 @@ typedef SmartProjectionFactor<Camera> SfmFactor;
 
 int main(int argc, char* argv[]) {
   // parse options and read BAL file
-  SfM_data db = preamble(argc, argv);
+  SfM_Data db = preamble(argc, argv);
 
   // Add smart factors to graph
   NonlinearFactorGraph graph;

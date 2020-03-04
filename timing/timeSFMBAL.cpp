@@ -32,7 +32,7 @@ typedef GeneralSFMFactor<Camera, Point3> SfmFactor;
 
 int main(int argc, char* argv[]) {
   // parse options and read BAL file
-  SfM_data db = preamble(argc, argv);
+  SfM_Data db = preamble(argc, argv);
 
   // Build graph using conventional GeneralSFMFactor
   NonlinearFactorGraph graph;

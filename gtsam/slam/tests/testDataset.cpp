@@ -106,7 +106,7 @@ TEST( dataSet, Balbianello)
 {
   ///< The structure where we will save the SfM data
   const string filename = findExampleDataFile("Balbianello");
-  SfM_data mydata;
+  SfM_Data mydata;
   CHECK(readBundler(filename, mydata));
 
   // Check number of things
@@ -389,7 +389,7 @@ TEST( dataSet, readBAL_Dubrovnik)
 {
   ///< The structure where we will save the SfM data
   const string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfM_data mydata;
+  SfM_Data mydata;
   CHECK(readBAL(filename, mydata));
 
   // Check number of things
@@ -444,7 +444,7 @@ TEST( dataSet, writeBAL_Dubrovnik)
 {
   ///< Read a file using the unit tested readBAL
   const string filenameToRead = findExampleDataFile("dubrovnik-3-7-pre");
-  SfM_data readData;
+  SfM_Data readData;
   readBAL(filenameToRead, readData);
 
   // Write readData to file filenameToWrite
@@ -452,7 +452,7 @@ TEST( dataSet, writeBAL_Dubrovnik)
   CHECK(writeBAL(filenameToWrite, readData));
 
   // Read what we wrote
-  SfM_data writtenData;
+  SfM_Data writtenData;
   CHECK(readBAL(filenameToWrite, writtenData));
 
   // Check that what we read is the same as what we wrote
@@ -492,7 +492,7 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
 
   ///< Read a file using the unit tested readBAL
   const string filenameToRead = findExampleDataFile("dubrovnik-3-7-pre");
-  SfM_data readData;
+  SfM_Data readData;
   readBAL(filenameToRead, readData);
 
   Pose3 poseChange = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.3,0.1,0.3));
@@ -514,7 +514,7 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
   writeBALfromValues(filenameToWrite, readData, value);
 
   // Read the file we wrote
-  SfM_data writtenData;
+  SfM_Data writtenData;
   readBAL(filenameToWrite, writtenData);
 
   // Check that the reprojection errors are the same and the poses are correct

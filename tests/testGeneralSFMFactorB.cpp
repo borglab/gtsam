@@ -42,7 +42,7 @@ using symbol_shorthand::P;
 /* ************************************************************************* */
 TEST(PinholeCamera, BAL) {
   string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfM_data db;
+  SfM_Data db;
   bool success = readBAL(filename, db);
   if (!success) throw runtime_error("Could not access file!");
 

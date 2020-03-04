@@ -34,7 +34,7 @@ gtsam::Rot3 cRb = gtsam::Rot3(bX, bZ, -bY).inverse();
 namespace example1 {
 
 const string filename = findExampleDataFile("5pointExample1.txt");
-SfM_data data;
+SfM_Data data;
 bool readOK = readBAL(filename, data);
 Rot3 c1Rc2 = data.cameras[1].pose().rotation();
 Point3 c1Tc2 = data.cameras[1].pose().translation();
@@ -357,7 +357,7 @@ TEST (EssentialMatrixFactor3, minimization) {
 namespace example2 {
 
 const string filename = findExampleDataFile("5pointExample2.txt");
-SfM_data data;
+SfM_Data data;
 bool readOK = readBAL(filename, data);
 Rot3 aRb = data.cameras[1].pose().rotation();
 Point3 aTb = data.cameras[1].pose().translation();

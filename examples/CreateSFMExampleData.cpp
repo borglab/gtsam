@@ -31,7 +31,7 @@ void createExampleBALFile(const string& filename, const vector<Point3>& P,
         Cal3Bundler()) {
 
   // Class that will gather all data
-  SfM_data data;
+  SfM_Data data;
 
   // Create two cameras
   Rot3 aRb = Rot3::Yaw(M_PI_2);

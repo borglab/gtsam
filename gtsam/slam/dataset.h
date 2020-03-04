@@ -197,7 +197,7 @@ struct SfM_Track {
 typedef PinholeCamera<Cal3Bundler> SfM_Camera;
 
 /// Define the structure for SfM data
-struct SfM_data {
+struct SfM_Data {
   std::vector<SfM_Camera> cameras; ///< Set of cameras
   std::vector<SfM_Track> tracks; ///< Sparse set of points
   /// The number of camera poses
@@ -218,36 +218,39 @@ struct SfM_data {
   }
 };
 
+/// Alias for backwards compatibility
+typedef SfM_Data SfM_data;
+
 /**
  * @brief This function parses a bundler output file and stores the data into a
- * SfM_data structure
+ * SfM_Data structure
  * @param filename The name of the bundler file
  * @param data SfM structure where the data is stored
  * @return true if the parsing was successful, false otherwise
  */
-GTSAM_EXPORT bool readBundler(const std::string& filename, SfM_data &data);
+GTSAM_EXPORT bool readBundler(const std::string& filename, SfM_Data &data);
 
 /**
  * @brief This function parses a "Bundle Adjustment in the Large" (BAL) file and stores the data into a
- * SfM_data structure
+ * SfM_Data structure
  * @param filename The name of the BAL file
  * @param data SfM structure where the data is stored
  * @return true if the parsing was successful, false otherwise
  */
-GTSAM_EXPORT bool readBAL(const std::string& filename, SfM_data &data);
+GTSAM_EXPORT bool readBAL(const std::string& filename, SfM_Data &data);
 
 /**
  * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a
- * SfM_data structure
+ * SfM_Data structure
  * @param filename The name of the BAL file to write
  * @param data SfM structure where the data is stored
  * @return true if the parsing was successful, false otherwise
  */
-GTSAM_EXPORT bool writeBAL(const std::string& filename, SfM_data &data);
+GTSAM_EXPORT bool writeBAL(const std::string& filename, SfM_Data &data);
 
 /**
  * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a
- * SfM_data structure and a value structure (measurements are the same as the SfM input data,
+ * SfM_Data structure and a value structure (measurements are the same as the SfM input data,
  * while camera poses and values are read from Values)
  * @param filename The name of the BAL file to write
  * @param data SfM structure where the data is stored
@@ -257,7 +260,7 @@ GTSAM_EXPORT bool writeBAL(const std::string& filename, SfM_data &data);
  * @return true if the parsing was successful, false otherwise
  */
 GTSAM_EXPORT bool writeBALfromValues(const std::string& filename,
-    const SfM_data &data, Values& values);
+    const SfM_Data &data, Values& values);
 
 /**
  * @brief This function converts an openGL camera pose to an GTSAM camera pose
@@ -288,16 +291,16 @@ GTSAM_EXPORT Pose3 gtsam2openGL(const Pose3& PoseGTSAM);
 
 /**
  * @brief This function creates initial values for cameras from db
- * @param SfM_data
+ * @param SfM_Data
  * @return Values
  */
-GTSAM_EXPORT Values initialCamerasEstimate(const SfM_data& db);
+GTSAM_EXPORT Values initialCamerasEstimate(const SfM_Data& db);
 
 /**
  * @brief This function creates initial values for cameras and points from db
- * @param SfM_data
+ * @param SfM_Data
  * @return Values
  */
-GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfM_data& db);
+GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfM_Data& db);
 
 } // namespace gtsam
