@@ -173,13 +173,19 @@ typedef std::pair<size_t, size_t> SIFT_Index;
 
 /// Define the structure for the 3D points
 struct SfM_Track {
-  SfM_Track():p(0,0,0) {}
+  SfM_Track(): p(0,0,0) {}
   Point3 p; ///< 3D position of the point
   float r, g, b; ///< RGB color of the 3D point
   std::vector<SfM_Measurement> measurements; ///< The 2D image projections (id,(u,v))
   std::vector<SIFT_Index> siftIndices;
   size_t number_measurements() const {
     return measurements.size();
+  }
+  SfM_Measurement measurement(size_t idx) const {
+    return measurements[idx];
+  }
+  SIFT_Index SIFT_index(size_t idx) const {
+    return siftIndices[idx];
   }
 };
 
@@ -196,6 +202,12 @@ struct SfM_data {
   size_t number_tracks() const {
     return tracks.size();
   } ///< The number of reconstructed 3D points
+  SfM_Camera camera(size_t idx) const {
+    return cameras[idx];
+  }
+  SfM_Track track(size_t idx) const {
+    return tracks[idx];
+  }
 };
 
 /**
