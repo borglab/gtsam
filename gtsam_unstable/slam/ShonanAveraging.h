@@ -62,16 +62,14 @@ class ShonanAveraging {
 
   /**
    * Build 3Nx3N sparse matrix consisting of rotation measurements, arranged as
-   *       (i,j) and (j,i) blocks within a sparse matrix.
-   * @param useNoiseModel whether to use noise model
+   * (i,j) and (j,i) blocks within a sparse matrix.
    */
-  Sparse buildQ(bool useNoiseModel = false) const;
+  Sparse buildQ() const;
 
   /**
    * Build 3Nx3N sparse degree matrix D
-   * @param useNoiseModel whether to use noise model
    */
-  Sparse buildD(bool useNoiseModel = false) const;
+  Sparse buildD() const;
 
  public:
   /**

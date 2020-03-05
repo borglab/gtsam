@@ -94,10 +94,8 @@ ShonanAveraging::ShonanAveraging(const BetweenFactorPose3s& factors,
     // TODO(frank): add noise here rather than when parsing
     auto corruptingNoise =
         noiseModel::Isotropic::Sigma(d_, parameters.noiseSigma);
-    // TODO(frank): use noiseModel based on parameter setting
-    constexpr bool useNoiseModel = false;
-    Q_ = buildQ(useNoiseModel);
-    D_ = buildD(useNoiseModel);
+    Q_ = buildQ();
+    D_ = buildD();
     L_ = D_ - Q_;
     }
 
@@ -224,7 +222,7 @@ Values ShonanAveraging::roundSolution(const Matrix S) const {
     // Construct a diagonal matrix comprised of the first d singular values
     using DiagonalMatrix = Eigen::DiagonalMatrix<double, Eigen::Dynamic>;
     DiagonalMatrix Sigma_d(d_);
-    DiagonalMatrix::DiagonalVectorType& diagonal = Sigma_d.diagonal();
+    auto& diagonal = Sigma_d.diagonal();
     for (size_t i = 0; i < d_; ++i) diagonal(i) = sigmas(i);
 
     // First, construct a rank-d truncated singular value decomposition for S
@@ -282,21 +280,15 @@ double ShonanAveraging::cost(const Values& values) const {
 
 /* ************************************************************************* */
 // Get kappa from noise model
-static double Kappa(const BetweenFactor<Pose3>::shared_ptr& factor, 
-                    const bool useNoiseModel) {
-    if (useNoiseModel) {
-        const auto& model = factor->noiseModel();
-        const auto& isotropic = ConvertPose3NoiseModel(model, 3);
-        const double sigma = isotropic->sigma();
-        return 1.0/(sigma*sigma);
-    } else {
-        return 1.0;
-    }
+static double Kappa(const BetweenFactor<Pose3>::shared_ptr& factor) {
+    const auto& model = factor->noiseModel();
+    const auto& isotropic = ConvertPose3NoiseModel(model, 3);
+    const double sigma = isotropic->sigma();
+    return 1.0/(sigma*sigma);
 }
 
 /* ************************************************************************* */
-ShonanAveraging::Sparse ShonanAveraging::buildD(bool useNoiseModel) const {
-    assert(useNoiseModel == false);
+ShonanAveraging::Sparse ShonanAveraging::buildD() const {
 
     // Each measurement contributes 2*d elements along the diagonal of the
     // degree matrix.
@@ -313,7 +305,7 @@ ShonanAveraging::Sparse ShonanAveraging::buildD(bool useNoiseModel) const {
         size_t j = keys[1];
 
         // Get kappa from noise model
-        double kappa = Kappa(factor, useNoiseModel);
+        double kappa = Kappa(factor);
 
         for (size_t k = 0; k < d_; k++) {
             // Elements of ith block-diagonal
@@ -332,8 +324,7 @@ ShonanAveraging::Sparse ShonanAveraging::buildD(bool useNoiseModel) const {
 }
 
 /* ************************************************************************* */
-ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
-    assert(useNoiseModel == false);
+ShonanAveraging::Sparse ShonanAveraging::buildQ() const {
 
     // Each measurement contributes 2*d^2 elements on a pair of symmetric
     // off-diagonal blocks
@@ -354,7 +345,7 @@ ShonanAveraging::Sparse ShonanAveraging::buildQ(bool useNoiseModel) const {
         const Matrix3 Rij = Tij.rotation().matrix();
 
         // Get kappa from noise model
-        double kappa = Kappa(factor, useNoiseModel);
+        double kappa = Kappa(factor);
 
         for (size_t r = 0; r < d_; r++) {
             for (size_t c = 0; c < d_; c++) {

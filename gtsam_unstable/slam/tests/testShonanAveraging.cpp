@@ -68,7 +68,7 @@ TEST(ShonanAveraging, checkOptimality) {
   auto lambdaMin = kShonan.computeMinEigenValue(random);
   // EXPECT_DOUBLES_EQUAL(-5.2964625490657866, lambdaMin,
   //                      1e-4);  // Regression test
-  EXPECT_DOUBLES_EQUAL(-3.3013346196100195, lambdaMin,
+  EXPECT_DOUBLES_EQUAL(-330.13346196100195, lambdaMin,
                        1e-4);  // Regression test
   EXPECT(!kShonan.checkOptimality(random));
 }
