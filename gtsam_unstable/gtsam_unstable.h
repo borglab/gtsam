@@ -364,6 +364,7 @@ class ShonanAveraging {
   ShonanAveraging(const gtsam::BetweenFactorPose3s& factors, const gtsam::Values& values);  
   ShonanAveraging(const gtsam::BetweenFactorPose3s& factors, const gtsam::Values& values, const gtsam::ShonanAveragingParameters& parameters);
   size_t nrPoses() const;
+  size_t nrMeasurements() const;
   gtsam::Pose3 measured(size_t i);
   gtsam::KeyVector keys(size_t i);
   Matrix denseD() const;
