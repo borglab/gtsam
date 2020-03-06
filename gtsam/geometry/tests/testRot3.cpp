@@ -663,17 +663,17 @@ TEST(Rot3, ClosestTo) {
 
 /* ************************************************************************* */
 TEST(Rot3, angle) {
-  Rot3 R1(0.996136,  -0.0564186, -0.0672982, //
-          0.0419472,  0.978941,  -0.199787, //
-          0.0771527,  0.196192,   0.977525);
+  Rot3 R1 = Rot3::Ypr(0, 0, 0);
   
-  Rot3 R2(0.99755,  -0.0377748, -0.0588831, //
-          0.0238455, 0.974883,  -0.221437, //
-          0.0657689, 0.21949,    0.973395);
+  Rot3 R2 = Rot3::Ypr(M_PI/4, 0, 0);
 
-  double expected = 1.7765686464446904;
-
-  EXPECT(assert_equal(expected, R1.angle(R2), 1e-6));
+  Unit3 expectedAxis(0, 0, 1);
+  double expectedAngle = M_PI/4;
+  
+  pair<Unit3, double> actual = R1.axisAngle(R2);
+  
+  EXPECT(assert_equal(expectedAxis, actual.first, 1e-6));
+  EXPECT(assert_equal(expectedAngle, actual.second, 1e-6));
 }
 
 /* ************************************************************************* */
