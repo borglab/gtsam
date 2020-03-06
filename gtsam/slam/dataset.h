@@ -12,7 +12,9 @@
 /**
  * @file dataset.h
  * @date Jan 22, 2010
- * @author nikai, Luca Carlone
+ * @author Ni Kai
+ * @author Luca Carlone
+ * @author Varun Agrawal
  * @brief utility functions for loading datasets
  */
 
@@ -216,15 +218,6 @@ struct SfmData {
   }
 };
 
-/// Aliases for backwards compatibility
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-typedef SfmMeasurement SfM_Measurement;
-typedef SiftIndex SIFT_Index;
-typedef SfmTrack SfM_Track;
-typedef SfmCamera SfM_Camera;
-typedef SfmData SfM_data;
-#endif
-
 /**
  * @brief This function parses a bundler output file and stores the data into a
  * SfmData structure
@@ -306,5 +299,14 @@ GTSAM_EXPORT Values initialCamerasEstimate(const SfmData& db);
  * @return Values
  */
 GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfmData& db);
+
+/// Aliases for backwards compatibility
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+typedef SfmMeasurement SfM_Measurement;
+typedef SiftIndex SIFT_Index;
+typedef SfmTrack SfM_Track;
+typedef SfmCamera SfM_Camera;
+typedef SfmData SfM_data;
+#endif
 
 } // namespace gtsam
