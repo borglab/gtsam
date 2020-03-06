@@ -281,14 +281,14 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
 
   KeyVector views {c1, c2, c3};
 
-  SfM_Track track1;
+  SfmTrack track1;
   for (size_t i = 0; i < 3; ++i) {
     track1.measurements.emplace_back(i + 1, measurements_cam1.at(i));
   }
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(unit2));
   smartFactor1->add(track1);
 
-  SfM_Track track2;
+  SfmTrack track2;
   for (size_t i = 0; i < 3; ++i) {
     track2.measurements.emplace_back(i + 1, measurements_cam2.at(i));
   }
