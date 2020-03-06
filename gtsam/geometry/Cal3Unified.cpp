@@ -13,6 +13,7 @@
  * @file Cal3Unified.cpp
  * @date Mar 8, 2014
  * @author Jing Dong
+ * @author Varun Agrawal
  */
 
 #include <gtsam/base/Vector.h>
@@ -26,7 +27,8 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Cal3Unified::Cal3Unified(const Vector &v):
-    Base(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]), xi_(v[9]) {}
+    Base(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]),
+    xi_(v[9]) {}
 
 /* ************************************************************************* */
 Vector10 Cal3Unified::vector() const {
@@ -102,10 +104,16 @@ Point2 Cal3Unified::uncalibrate(const Point2& p,
 }
 
 /* ************************************************************************* */
-Point2 Cal3Unified::calibrate(const Point2& pi, const double tol) const {
+Point2 Cal3Unified::calibrate(const Point2& pi, OptionalJacobian<2, 10> Dcal,
+      OptionalJacobian<2, 2> Dp) const {
 
   // calibrate point to Nplane use base class::calibrate()
-  Point2 pnplane = Base::calibrate(pi, tol);
+  OptionalJacobian<2, 9> Dcal1;
+  Point2 pnplane = Base::calibrate(pi, Dcal1, Dp);
+
+  //TODO(Varun) handle jacobians correctly wrt xi_
+  if (Dcal)
+    Dcal << Dcal1, Matrix21::Zero();
 
   // call nplane to space
   return this->nPlaneToSpace(pnplane);

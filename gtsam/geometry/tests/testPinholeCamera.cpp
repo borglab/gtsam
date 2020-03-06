@@ -17,6 +17,7 @@
 
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Testable.h>
@@ -334,6 +335,15 @@ TEST( PinholeCamera, range3) {
   EXPECT_DOUBLES_EQUAL(1, result, 1e-9);
   EXPECT(assert_equal(Hexpected1, D1, 1e-7));
   EXPECT(assert_equal(Hexpected2, D2, 1e-7));
+}
+
+TEST( PinholeCamera, Cal3DS2) {
+  Cal3DS2 calibration;
+  Pose3 wTc;
+  PinholeCamera<Cal3DS2> camera(wTc, calibration);
+  Point2 p(50, 100);
+  // Backproject should not throw an error
+  camera.backproject(p, 10);
 }
 
 /* ************************************************************************* */

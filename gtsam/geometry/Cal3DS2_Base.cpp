@@ -13,6 +13,7 @@
  * @file Cal3DS2_Base.cpp
  * @date Feb 28, 2010
  * @author ydjian
+ * @author Varun Agrawal
  */
 
 #include <gtsam/base/Vector.h>
@@ -130,7 +131,8 @@ Point2 Cal3DS2_Base::uncalibrate(const Point2& p,
 }
 
 /* ************************************************************************* */
-Point2 Cal3DS2_Base::calibrate(const Point2& pi, const double tol) const {
+Point2 Cal3DS2_Base::calibrate(const Point2& pi,
+    OptionalJacobian<2,9> Dcal, OptionalJacobian<2,2> Dp) const {
   // Use the following fixed point iteration to invert the radial distortion.
   // pn_{t+1} = (inv(K)*pi - dp(pn_{t})) / g(pn_{t})
 
@@ -144,7 +146,7 @@ Point2 Cal3DS2_Base::calibrate(const Point2& pi, const double tol) const {
   const int maxIterations = 10;
   int iteration;
   for (iteration = 0; iteration < maxIterations; ++iteration) {
-    if (distance2(uncalibrate(pn), pi) <= tol) break;
+    if (distance2(uncalibrate(pn), pi) <= tol_) break;
     const double x = pn.x(), y = pn.y(), xy = x * y, xx = x * x, yy = y * y;
     const double rr = xx + yy;
     const double g = (1 + k1_ * rr + k2_ * rr * rr);

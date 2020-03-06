@@ -905,7 +905,7 @@ virtual class Cal3DS2_Base {
 
   // Action on Point2
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 calibrate(const gtsam::Point2& p, double tol) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -916,7 +916,7 @@ virtual class Cal3DS2 : gtsam::Cal3DS2_Base {
   // Standard Constructors
   Cal3DS2();
   Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2);
-  Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2, double p1, double p2);
+  Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2, double p1, double p2, double tol);
   Cal3DS2(Vector v);
 
   // Testable
@@ -937,7 +937,7 @@ virtual class Cal3Unified : gtsam::Cal3DS2_Base {
   // Standard Constructors
   Cal3Unified();
   Cal3Unified(double fx, double fy, double s, double u0, double v0, double k1, double k2);
-  Cal3Unified(double fx, double fy, double s, double u0, double v0, double k1, double k2, double p1, double p2, double xi);
+  Cal3Unified(double fx, double fy, double s, double u0, double v0, double k1, double k2, double p1, double p2, double xi, double tol);
   Cal3Unified(Vector v);
 
   // Testable

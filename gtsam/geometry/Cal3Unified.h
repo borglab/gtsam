@@ -14,6 +14,7 @@
  * @brief Unified Calibration Model, see Mei07icra for details
  * @date Mar 8, 2014
  * @author Jing Dong
+ * @author Varun Agrawal
  */
 
 /**
@@ -59,8 +60,9 @@ public:
   Cal3Unified() : Base(), xi_(0) {}
 
   Cal3Unified(double fx, double fy, double s, double u0, double v0,
-      double k1, double k2, double p1 = 0.0, double p2 = 0.0, double xi = 0.0) :
-        Base(fx, fy, s, u0, v0, k1, k2, p1, p2), xi_(xi) {}
+      double k1, double k2, double p1 = 0.0, double p2 = 0.0, double xi = 0.0,
+      double tol = 1e-5) :
+        Base(fx, fy, s, u0, v0, k1, k2, p1, p2, tol), xi_(xi) {}
 
   virtual ~Cal3Unified() {}
 
@@ -99,7 +101,9 @@ public:
       OptionalJacobian<2,2> Dp = boost::none) const ;
 
   /// Conver a pixel coordinate to ideal coordinate
-  Point2 calibrate(const Point2& p, const double tol=1e-5) const;
+  Point2 calibrate(const Point2& p,
+      OptionalJacobian<2, 10> Dcal = boost::none,
+      OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /// Convert a 3D point to normalized unit plane
   Point2 spaceToNPlane(const Point2& p) const;
