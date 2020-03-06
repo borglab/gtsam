@@ -173,17 +173,21 @@ typedef std::pair<size_t, size_t> SIFT_Index;
 
 /// Define the structure for the 3D points
 struct SfM_Track {
+  /// Construct empty track
   SfM_Track(): p(0,0,0) {}
   Point3 p; ///< 3D position of the point
   float r, g, b; ///< RGB color of the 3D point
   std::vector<SfM_Measurement> measurements; ///< The 2D image projections (id,(u,v))
   std::vector<SIFT_Index> siftIndices;
+  /// Total number of measurements in this track
   size_t number_measurements() const {
     return measurements.size();
   }
+  /// Get the measurement (camera index, Point2) at pose index `idx`
   SfM_Measurement measurement(size_t idx) const {
     return measurements[idx];
   }
+  /// Get the SIFT feature index corresponding to the measurement at `idx`
   SIFT_Index SIFT_index(size_t idx) const {
     return siftIndices[idx];
   }
@@ -196,15 +200,19 @@ typedef PinholeCamera<Cal3Bundler> SfM_Camera;
 struct SfM_data {
   std::vector<SfM_Camera> cameras; ///< Set of cameras
   std::vector<SfM_Track> tracks; ///< Sparse set of points
+  /// The number of camera poses
   size_t number_cameras() const {
     return cameras.size();
-  } ///< The number of camera poses
+  }
+  /// The number of reconstructed 3D points
   size_t number_tracks() const {
     return tracks.size();
-  } ///< The number of reconstructed 3D points
+  }
+  /// The camera pose at frame index `idx`
   SfM_Camera camera(size_t idx) const {
     return cameras[idx];
   }
+  /// The track formed by series of landmark measurements
   SfM_Track track(size_t idx) const {
     return tracks[idx];
   }
