@@ -2724,6 +2724,20 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/dataset.h>
+class SfM_Track {
+  size_t number_measurements() const;
+  pair<size_t, gtsam::Point2> measurement(size_t idx) const;
+  pair<size_t, size_t> SIFT_index(size_t idx) const;
+};
+
+class SfM_data {
+  size_t number_cameras() const;
+  size_t number_tracks() const;
+  //TODO(Varun) Need to fix issue #237 first before this can work
+  // gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
+  gtsam::SfM_Track track(size_t idx) const;
+};
+
 string findExampleDataFile(string name);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);

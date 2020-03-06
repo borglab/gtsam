@@ -116,7 +116,7 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, const double tol) const {
 
   if (iteration >= maxIterations)
     throw std::runtime_error(
-        "Cal3DS2::calibrate fails to converge. need a better initialization");
+        "Cal3Bundler::calibrate fails to converge. need a better initialization");
 
   return pn;
 }
