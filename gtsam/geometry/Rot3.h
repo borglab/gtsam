@@ -479,6 +479,12 @@ namespace gtsam {
      */
     Rot3 slerp(double t, const Rot3& other) const;
 
+    /**
+     * @brief Compute the angle (in degrees) between *this and other
+     * @param other Rot3 element
+     */
+    double angle(const Rot3& other) const;
+
     /// Output stream operator
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Rot3& p);
 

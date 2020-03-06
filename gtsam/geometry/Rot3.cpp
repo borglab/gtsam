@@ -229,6 +229,11 @@ Rot3 Rot3::slerp(double t, const Rot3& other) const {
 }
 
 /* ************************************************************************* */
+double Rot3::angle(const Rot3& other) const {
+  return Rot3::Logmap(this->between(other)).norm() * 180.0 / M_PI;
+}
+
+/* ************************************************************************* */
 
 } // namespace gtsam
 
