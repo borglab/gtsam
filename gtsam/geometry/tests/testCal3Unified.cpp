@@ -62,6 +62,29 @@ TEST( Cal3Unified, calibrate)
   CHECK( traits<Point2>::Equals(p, pn_hat, 1e-8));
 }
 
+Point2 calibrate_(const Cal3Unified& k, const Point2& pt) { return k.calibrate(pt); }
+
+/* ************************************************************************* */
+TEST( Cal3Unified, Dcalibrate1)
+{
+  Point2 pi = K.uncalibrate(p);
+  Matrix computed;
+  // K.calibrate(pi, computed, boost::none);
+  // Matrix numerical = numericalDerivative21(calibrate_, K, p, 1e-7);
+  // CHECK(assert_equal(numerical,computed,1e-6));
+}
+
+/* ************************************************************************* */
+TEST( Cal3Unified, Dcalibrate2)
+{
+  Point2 pi = K.uncalibrate(p);
+  Matrix computed;
+  // K.calibrate(pi, boost::none, computed);
+  // Matrix numerical = numericalDerivative22(calibrate_, K, p, 1e-7);
+  // CHECK(assert_equal(numerical,computed,1e-6));
+}
+
+
 Point2 uncalibrate_(const Cal3Unified& k, const Point2& pt) { return k.uncalibrate(pt); }
 
 /* ************************************************************************* */

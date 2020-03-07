@@ -346,6 +346,14 @@ TEST( PinholeCamera, Cal3DS2) {
   camera.backproject(p, 10);
 }
 
+TEST( PinholeCamera, Cal3Bundler) {
+  Cal3Bundler calibration;
+  Pose3 wTc;
+  PinholeCamera<Cal3Bundler> camera(wTc, calibration);
+  Point2 p(50, 100);
+  camera.backproject(p, 10);
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

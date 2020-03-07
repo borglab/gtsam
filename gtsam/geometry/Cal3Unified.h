@@ -109,7 +109,8 @@ public:
   Point2 spaceToNPlane(const Point2& p) const;
 
   /// Convert a normalized unit plane point to 3D space
-  Point2 nPlaneToSpace(const Point2& p) const;
+  Point2 nPlaneToSpace(const Point2& p,
+      OptionalJacobian<2, 1> Dcal = boost::none) const;
 
   /// @}
   /// @name Manifold

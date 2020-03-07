@@ -14,6 +14,7 @@
  * @brief Calibration used by Bundler
  * @date Sep 25, 2010
  * @author Yong Dian Jian
+ * @author Varun Agrawal
  */
 
 #pragma once
@@ -33,6 +34,7 @@ private:
   double f_; ///< focal length
   double k1_, k2_; ///< radial distortion
   double u0_, v0_; ///< image center, not a parameter to be optimized but a constant
+  double tol_; // calibration tolerance
 
 public:
 
@@ -52,7 +54,8 @@ public:
    *  @param u0 optional image center (default 0), considered a constant
    *  @param v0 optional image center (default 0), considered a constant
    */
-  Cal3Bundler(double f, double k1, double k2, double u0 = 0, double v0 = 0);
+  Cal3Bundler(double f, double k1, double k2,
+      double u0 = 0, double v0 = 0, double tol = 0);
 
   virtual ~Cal3Bundler() {}
 
@@ -70,41 +73,30 @@ public:
   /// @name Standard Interface
   /// @{
 
-  Matrix3 K() const; ///< Standard 3*3 calibration matrix
-  Vector4 k() const; ///< Radial distortion parameters (4 of them, 2 0)
-
-  Vector3 vector() const;
-
   /// focal length x
-  inline double fx() const {
-    return f_;
-  }
+  inline double fx() const { return f_;}
 
   /// focal length y
-  inline double fy() const {
-    return f_;
-  }
+  inline double fy() const { return f_;}
 
   /// distorsion parameter k1
-  inline double k1() const {
-    return k1_;
-  }
+  inline double k1() const { return k1_;}
 
   /// distorsion parameter k2
-  inline double k2() const {
-    return k2_;
-  }
+  inline double k2() const { return k2_;}
 
   /// get parameter u0
-  inline double u0() const {
-    return u0_;
-  }
+  inline double u0() const { return u0_;}
 
   /// get parameter v0
-  inline double v0() const {
-    return v0_;
-  }
+  inline double v0() const { return v0_;}
 
+  Matrix3 K() const; ///< Standard 3*3 calibration matrix
+
+  Vector4 k() const; ///< Radial distortion parameters (4 of them, 2 0)
+
+  /// Return all parameters as a vector
+  Vector3 vector() const;
 
   /**
    * @brief: convert intrinsic coordinates xy to image coordinates uv
@@ -114,11 +106,14 @@ public:
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal = boost::none,
+  Point2 uncalibrate(const Point2& p,
+      OptionalJacobian<2, 3> Dcal = boost::none,
       OptionalJacobian<2, 2> Dp = boost::none) const;
 
-  /// Conver a pixel coordinate to ideal coordinate
-  Point2 calibrate(const Point2& pi, const double tol = 1e-5) const;
+  /// Convert a pixel coordinate to ideal coordinate
+  Point2 calibrate(const Point2& pi,
+      OptionalJacobian<2, 3> Dcal = boost::none,
+      OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
   Matrix2 D2d_intrinsic(const Point2& p) const;

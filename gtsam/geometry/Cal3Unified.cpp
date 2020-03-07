@@ -111,19 +111,36 @@ Point2 Cal3Unified::calibrate(const Point2& pi, OptionalJacobian<2, 10> Dcal,
   OptionalJacobian<2, 9> Dcal1;
   Point2 pnplane = Base::calibrate(pi, Dcal1, Dp);
 
-  //TODO(Varun) handle jacobians correctly wrt xi_
-  if (Dcal)
-    Dcal << Dcal1, Matrix21::Zero();
-
   // call nplane to space
-  return this->nPlaneToSpace(pnplane);
+  OptionalJacobian<2, 1> Dcal2;
+  Point2 pSpace = this->nPlaneToSpace(pnplane, Dcal2);
+
+  if (Dcal) {
+    *Dcal << (*Dcal1), (*Dcal2);
+  }
+
+  return pSpace;
 }
 /* ************************************************************************* */
-Point2 Cal3Unified::nPlaneToSpace(const Point2& p) const {
+Point2 Cal3Unified::nPlaneToSpace(const Point2& p,
+      OptionalJacobian<2, 1> Dcal) const {
 
   const double x = p.x(), y = p.y();
   const double xy2 = x * x + y * y;
-  const double sq_xy = (xi_ + sqrt(1 + (1 - xi_ * xi_) * xy2)) / (xy2 + 1);
+
+  const double xi2xy2 = (1 - xi_ * xi_) * xy2;
+  const double sq_xy = (xi_ + sqrt(1 + xi2xy2)) / (xy2 + 1);
+
+  if (Dcal) {
+    double dsdc = 1. + (-xi_ * xy2 / (sqrt(1 + xi2xy2)));
+
+    double d2 = (1 - xi_/sq_xy) * (1 - xi_/sq_xy);
+    double dxdxi = (-x / d2) * ((1/sq_xy) - (xi_ * dsdc / (sq_xy * sq_xy)));
+    double dydxi = (-y / d2) * ((1/sq_xy) - (xi_ * dsdc / (sq_xy * sq_xy)));
+
+    *Dcal << dxdxi, //
+             dydxi;
+  }
 
   return Point2((sq_xy * x / (sq_xy - xi_)), (sq_xy * y / (sq_xy - xi_)));
 }

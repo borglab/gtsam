@@ -156,7 +156,14 @@ Point2 Cal3DS2_Base::calibrate(const Point2& pi,
   }
 
   if ( iteration >= maxIterations )
-    throw std::runtime_error("Cal3DS2::calibrate fails to converge. need a better initialization");
+    throw std::runtime_error("Cal3DS2::calibrate fails to converge, need a better initialization");
+
+  //TODO(Varun)
+  if (Dcal) {
+  }
+  //TODO(Varun)
+  if (Dp) {
+  }
 
   return pn;
 }
