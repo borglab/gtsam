@@ -642,6 +642,7 @@ class Rot3 {
   static gtsam::Rot3 Rodrigues(Vector v);
   static gtsam::Rot3 Rodrigues(double wx, double wy, double wz);
   static gtsam::Rot3 ClosestTo(const Matrix M);
+  static std::pair<gtsam::Unit3, double> ToAxisAngle(const gtsam::Rot3& R) const;
 
   // Testable
   void print(string s) const;
@@ -677,7 +678,6 @@ class Rot3 {
 //  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
   Vector quaternion() const;
   gtsam::Rot3 slerp(double t, const gtsam::Rot3& other) const;
-  double angle(const gtsam::Rot3& other) const;
 
   // enabling serialization functionality
   void serialize() const;

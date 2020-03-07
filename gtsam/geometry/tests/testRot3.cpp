@@ -14,6 +14,7 @@
  * @brief   Unit tests for Rot3 class - common between Matrix and Quaternion
  * @author  Alireza Fathi
  * @author  Frank Dellaert
+ * @author  Varun Agrawal
  */
 
 #include <gtsam/geometry/Point3.h>
@@ -663,14 +664,12 @@ TEST(Rot3, ClosestTo) {
 
 /* ************************************************************************* */
 TEST(Rot3, angle) {
-  Rot3 R1 = Rot3::Ypr(0, 0, 0);
-  
-  Rot3 R2 = Rot3::Ypr(M_PI/4, 0, 0);
+  Rot3 R1 = Rot3::Ypr(M_PI/4, 0, 0);
 
-  Unit3 expectedAxis(0, 0, 1);
-  double expectedAngle = M_PI/4;
+  Unit3 expectedAxis(-0.350067, -0.472463, 0.808846);
+  double expectedAngle = 0.709876;
   
-  pair<Unit3, double> actual = R1.axisAngle(R2);
+  pair<Unit3, double> actual = Rot3::ToAxisAngle(R.between(R1));
   
   EXPECT(assert_equal(expectedAxis, actual.first, 1e-6));
   EXPECT(assert_equal(expectedAngle, actual.second, 1e-6));

@@ -194,7 +194,7 @@ namespace gtsam {
 
     /**
      * Convert from axis/angle representation
-     * @param  axisw is the rotation axis, unit length
+     * @param  axis is the rotation axis, unit length
      * @param   angle rotation angle
      * @return incremental rotation
      */
@@ -214,6 +214,16 @@ namespace gtsam {
      */
     static Rot3 AxisAngle(const Unit3& axis, double angle) {
       return AxisAngle(axis.unitVector(),angle);
+    }
+
+     /**
+      * Compute to the Euler axis and angle (in radians) representation
+      * @param  R is the rotation matrix
+      * @return pair consisting of Unit3 axis and angle in radians
+      */
+    static std::pair<Unit3, double> ToAxisAngle(const Rot3& R) {
+      const Vector3 omega = Rot3::Logmap(R);
+      return std::pair<Unit3, double>(Unit3(omega), omega.norm());
     }
 
     /**
@@ -478,12 +488,6 @@ namespace gtsam {
      * @param other final point of iterpolation geodesic on manifold
      */
     Rot3 slerp(double t, const Rot3& other) const;
-
-    /**
-     * @brief Compute the Euler axis and angle (in radians) between *this and other
-     * @param other Rot3 element
-     */
-    std::pair<Unit3, double> axisAngle(const Rot3& other) const;
 
     /// Output stream operator
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Rot3& p);

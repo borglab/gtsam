@@ -229,12 +229,6 @@ Rot3 Rot3::slerp(double t, const Rot3& other) const {
 }
 
 /* ************************************************************************* */
-pair<Unit3, double> Rot3::axisAngle(const Rot3& other) const {
-  Vector3 rot = Rot3::Logmap(this->between(other));
-  return pair<Unit3, double>(Unit3(rot), rot.norm());
-}
-
-/* ************************************************************************* */
 
 } // namespace gtsam
 
