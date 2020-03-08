@@ -16,7 +16,6 @@
  * @brief test recovering translations when rotations are given.
  */
 
-#include <gtsam/sfm/TranslationFactor.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Unit3.h>
@@ -26,6 +25,8 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/sfm/TranslationFactor.h>
+#include <gtsam/slam/PriorFactor.h>
 
 namespace gtsam {
 
@@ -57,6 +58,7 @@ class TranslationRecovery {
 
  private:
   TranslationEdges relativeTranslations_;
+    LevenbergMarquardtParams params_;
 
  public:
   /**
@@ -66,7 +68,9 @@ class TranslationRecovery {
    * frames, indexed in a map by a pair of Pose keys.
    */
   TranslationRecovery(const TranslationEdges& relativeTranslations)
-      : relativeTranslations_(relativeTranslations) {}
+      : relativeTranslations_(relativeTranslations) {
+    params_.setVerbosityLM("Summary");
+      }
 
   /**
    * @brief Build the factor graph to do the optimization.
@@ -76,13 +80,33 @@ class TranslationRecovery {
   NonlinearFactorGraph buildGraph() const {
     auto noiseModel = noiseModel::Isotropic::Sigma(3, 0.01);
     NonlinearFactorGraph graph;
+
+    // Add all relative translation edges
     for (auto edge : relativeTranslations_) {
       Key a, b;
       std::tie(a, b) = edge.first;
       const Unit3 w_aZb = edge.second;
       graph.emplace_shared<TranslationFactor>(a, b, w_aZb, noiseModel);
     }
+
     return graph;
+  }
+
+  /**
+   * @brief Add priors on ednpoints of first measurement edge.
+   *
+   * @param scale scale for first relative translation which fixes gauge.
+   * @param graph factor graph to which prior is added.
+   */
+  void addPrior(const double scale, NonlinearFactorGraph* graph) const {
+    auto noiseModel = noiseModel::Isotropic::Sigma(3, 0.01);
+    auto edge = relativeTranslations_.begin();
+    Key a, b;
+    std::tie(a, b) = edge->first;
+    const Unit3 w_aZb = edge->second;
+    graph->emplace_shared<PriorFactor<Point3> >(a, Point3(0, 0, 0), noiseModel);
+    graph->emplace_shared<PriorFactor<Point3> >(b, scale * w_aZb.point3(),
+                                                noiseModel);
   }
 
   /**
@@ -115,14 +139,11 @@ class TranslationRecovery {
    * @return Values
    */
   Values run(const double scale = 1.0) const {
-    const auto graph = buildGraph();
+    auto graph = buildGraph();
+    addPrior(scale, &graph);
     const Values initial = initalizeRandomly();
-
-    LevenbergMarquardtParams params;
-    params.setVerbosityLM("Summary");
-    LevenbergMarquardtOptimizer lm(graph, initial, params);
+    LevenbergMarquardtOptimizer lm(graph, initial, params_);
     Values result = lm.optimize();
-
     return result;
   }
 
@@ -212,14 +233,18 @@ TEST(TranslationRecovery, BAL) {
   EXPECT_LONGS_EQUAL(3, graph.size());
 
   // Translation recovery, version 1
-  const auto result = algorithm.run(2);
+  const double scale = 2.0;
+  const auto result = algorithm.run(scale);
 
-  // Check result
+  // Check result for first two translations, determined by prior
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
   EXPECT(assert_equal(Point3(2 * w_aZb.point3()), result.at<Point3>(1)));
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(2)));
 
-  // TODO(frank): how to get stats back
+  // Check that the third translations is correct
+  Point3 expected = (Tc - Ta) * (scale / (Tb - Ta).norm());
+  EXPECT(assert_equal(expected, result.at<Point3>(2), 1e-4));
+
+  // TODO(frank): how to get stats back?
   // EXPECT_DOUBLES_EQUAL(0.0199833, actualError, 1e-5);
 }
 
