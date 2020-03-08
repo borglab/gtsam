@@ -646,7 +646,7 @@ Pose3 gtsam2openGL(const Pose3& PoseGTSAM) {
 }
 
 /* ************************************************************************* */
-bool readBundler(const string& filename, SfM_data &data) {
+bool readBundler(const string& filename, SfmData &data) {
   // Load the data file
   ifstream is(filename.c_str(), ifstream::in);
   if (!is) {
@@ -697,7 +697,7 @@ bool readBundler(const string& filename, SfM_data &data) {
   // Get the information for the 3D points
   data.tracks.reserve(nrPoints);
   for (size_t j = 0; j < nrPoints; j++) {
-    SfM_Track track;
+    SfmTrack track;
 
     // Get the 3D position
     float x, y, z;
@@ -733,7 +733,7 @@ bool readBundler(const string& filename, SfM_data &data) {
 }
 
 /* ************************************************************************* */
-bool readBAL(const string& filename, SfM_data &data) {
+bool readBAL(const string& filename, SfmData &data) {
   // Load the data file
   ifstream is(filename.c_str(), ifstream::in);
   if (!is) {
@@ -781,7 +781,7 @@ bool readBAL(const string& filename, SfM_data &data) {
     // Get the 3D position
     float x, y, z;
     is >> x >> y >> z;
-    SfM_Track& track = data.tracks[j];
+    SfmTrack& track = data.tracks[j];
     track.p = Point3(x, y, z);
     track.r = 0.4f;
     track.g = 0.4f;
@@ -793,7 +793,7 @@ bool readBAL(const string& filename, SfM_data &data) {
 }
 
 /* ************************************************************************* */
-bool writeBAL(const string& filename, SfM_data &data) {
+bool writeBAL(const string& filename, SfmData &data) {
   // Open the output file
   ofstream os;
   os.open(filename.c_str());
@@ -815,7 +815,7 @@ bool writeBAL(const string& filename, SfM_data &data) {
   os << endl;
 
   for (size_t j = 0; j < data.number_tracks(); j++) { // for each 3D point j
-    const SfM_Track& track = data.tracks[j];
+    const SfmTrack& track = data.tracks[j];
 
     for (size_t k = 0; k < track.number_measurements(); k++) { // for each observation of the 3D point j
       size_t i = track.measurements[k].first; // camera id
@@ -866,12 +866,12 @@ bool writeBAL(const string& filename, SfM_data &data) {
   return true;
 }
 
-bool writeBALfromValues(const string& filename, const SfM_data &data,
+bool writeBALfromValues(const string& filename, const SfmData &data,
     Values& values) {
   using Camera = PinholeCamera<Cal3Bundler>;
-  SfM_data dataValues = data;
+  SfmData dataValues = data;
 
-  // Store poses or cameras in SfM_data
+  // Store poses or cameras in SfmData
   size_t nrPoses = values.count<Pose3>();
   if (nrPoses == dataValues.number_cameras()) { // we only estimated camera poses
     for (size_t i = 0; i < dataValues.number_cameras(); i++) { // for each camera
@@ -899,7 +899,7 @@ bool writeBALfromValues(const string& filename, const SfM_data &data,
     }
   }
 
-  // Store 3D points in SfM_data
+  // Store 3D points in SfmData
   size_t nrPoints = values.count<Point3>(), nrTracks = dataValues.number_tracks();
   if (nrPoints != nrTracks) {
     cout
@@ -921,24 +921,24 @@ bool writeBALfromValues(const string& filename, const SfM_data &data,
     }
   }
 
-  // Write SfM_data to file
+  // Write SfmData to file
   return writeBAL(filename, dataValues);
 }
 
-Values initialCamerasEstimate(const SfM_data& db) {
+Values initialCamerasEstimate(const SfmData& db) {
   Values initial;
   size_t i = 0; // NO POINTS:  j = 0;
-  for(const SfM_Camera& camera: db.cameras)
+  for(const SfmCamera& camera: db.cameras)
     initial.insert(i++, camera);
   return initial;
 }
 
-Values initialCamerasAndPointsEstimate(const SfM_data& db) {
+Values initialCamerasAndPointsEstimate(const SfmData& db) {
   Values initial;
   size_t i = 0, j = 0;
-  for(const SfM_Camera& camera: db.cameras)
+  for(const SfmCamera& camera: db.cameras)
     initial.insert((i++), camera);
-  for(const SfM_Track& track: db.tracks)
+  for(const SfmTrack& track: db.tracks)
     initial.insert(P(j++), track.p);
   return initial;
 }

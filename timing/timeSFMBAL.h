@@ -38,7 +38,7 @@ static bool gUseSchur = true;
 static SharedNoiseModel gNoiseModel = noiseModel::Unit::Create(2);
 
 // parse options and read BAL file
-SfM_data preamble(int argc, char* argv[]) {
+SfmData preamble(int argc, char* argv[]) {
   // primitive argument parsing:
   if (argc > 2) {
     if (strcmp(argv[1], "--colamd"))
@@ -48,7 +48,7 @@ SfM_data preamble(int argc, char* argv[]) {
   }
 
   // Load BAL file
-  SfM_data db;
+  SfmData db;
   string filename;
   if (argc > 1)
     filename = argv[argc - 1];
@@ -60,7 +60,7 @@ SfM_data preamble(int argc, char* argv[]) {
 }
 
 // Create ordering and optimize
-int optimize(const SfM_data& db, const NonlinearFactorGraph& graph,
+int optimize(const SfmData& db, const NonlinearFactorGraph& graph,
              const Values& initial, bool separateCalibration = false) {
   using symbol_shorthand::P;
 

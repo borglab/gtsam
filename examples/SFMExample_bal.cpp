@@ -32,7 +32,7 @@ using symbol_shorthand::P;
 // We will be using a projection factor that ties a SFM_Camera to a 3D point.
 // An SFM_Camera is defined in datase.h as a camera with unknown Cal3Bundler calibration
 // and has a total of 9 free parameters
-typedef GeneralSFMFactor<SfM_Camera,Point3> MyFactor;
+typedef GeneralSFMFactor<SfmCamera,Point3> MyFactor;
 
 /* ************************************************************************* */
 int main (int argc, char* argv[]) {
@@ -42,7 +42,7 @@ int main (int argc, char* argv[]) {
   if (argc>1) filename = string(argv[1]);
 
   // Load the SfM data from file
-  SfM_data mydata;
+  SfmData mydata;
   readBAL(filename, mydata);
   cout << boost::format("read %1% tracks on %2% cameras\n") % mydata.number_tracks() % mydata.number_cameras();
 
@@ -55,8 +55,8 @@ int main (int argc, char* argv[]) {
 
   // Add measurements to the factor graph
   size_t j = 0;
-  for(const SfM_Track& track: mydata.tracks) {
-    for(const SfM_Measurement& m: track.measurements) {
+  for(const SfmTrack& track: mydata.tracks) {
+    for(const SfmMeasurement& m: track.measurements) {
       size_t i = m.first;
       Point2 uv = m.second;
       graph.emplace_shared<MyFactor>(uv, noise, C(i), P(j)); // note use of shorthand symbols C and P
@@ -66,14 +66,14 @@ int main (int argc, char* argv[]) {
 
   // Add a prior on pose x1. This indirectly specifies where the origin is.
   // and a prior on the position of the first landmark to fix the scale
-  graph.emplace_shared<PriorFactor<SfM_Camera> >(C(0), mydata.cameras[0],  noiseModel::Isotropic::Sigma(9, 0.1));
+  graph.emplace_shared<PriorFactor<SfmCamera> >(C(0), mydata.cameras[0],  noiseModel::Isotropic::Sigma(9, 0.1));
   graph.emplace_shared<PriorFactor<Point3> >    (P(0), mydata.tracks[0].p, noiseModel::Isotropic::Sigma(3, 0.1));
 
   // Create initial estimate
   Values initial;
   size_t i = 0; j = 0;
-  for(const SfM_Camera& camera: mydata.cameras) initial.insert(C(i++), camera);
-  for(const SfM_Track& track: mydata.tracks)    initial.insert(P(j++), track.p);
+  for(const SfmCamera& camera: mydata.cameras) initial.insert(C(i++), camera);
+  for(const SfmTrack& track: mydata.tracks)    initial.insert(P(j++), track.p);
 
   /* Optimize the graph and print results */
   Values result;

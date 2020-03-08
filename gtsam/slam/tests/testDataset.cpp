@@ -106,18 +106,18 @@ TEST( dataSet, Balbianello)
 {
   ///< The structure where we will save the SfM data
   const string filename = findExampleDataFile("Balbianello");
-  SfM_data mydata;
+  SfmData mydata;
   CHECK(readBundler(filename, mydata));
 
   // Check number of things
   EXPECT_LONGS_EQUAL(5,mydata.number_cameras());
   EXPECT_LONGS_EQUAL(544,mydata.number_tracks());
-  const SfM_Track& track0 = mydata.tracks[0];
+  const SfmTrack& track0 = mydata.tracks[0];
   EXPECT_LONGS_EQUAL(3,track0.number_measurements());
 
   // Check projection of a given point
   EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
-  const SfM_Camera& camera0 = mydata.cameras[0];
+  const SfmCamera& camera0 = mydata.cameras[0];
   Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
   EXPECT(assert_equal(expected,actual,1));
 }
@@ -389,18 +389,18 @@ TEST( dataSet, readBAL_Dubrovnik)
 {
   ///< The structure where we will save the SfM data
   const string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfM_data mydata;
+  SfmData mydata;
   CHECK(readBAL(filename, mydata));
 
   // Check number of things
   EXPECT_LONGS_EQUAL(3,mydata.number_cameras());
   EXPECT_LONGS_EQUAL(7,mydata.number_tracks());
-  const SfM_Track& track0 = mydata.tracks[0];
+  const SfmTrack& track0 = mydata.tracks[0];
   EXPECT_LONGS_EQUAL(3,track0.number_measurements());
 
   // Check projection of a given point
   EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
-  const SfM_Camera& camera0 = mydata.cameras[0];
+  const SfmCamera& camera0 = mydata.cameras[0];
   Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
   EXPECT(assert_equal(expected,actual,12));
 }
@@ -444,7 +444,7 @@ TEST( dataSet, writeBAL_Dubrovnik)
 {
   ///< Read a file using the unit tested readBAL
   const string filenameToRead = findExampleDataFile("dubrovnik-3-7-pre");
-  SfM_data readData;
+  SfmData readData;
   readBAL(filenameToRead, readData);
 
   // Write readData to file filenameToWrite
@@ -452,7 +452,7 @@ TEST( dataSet, writeBAL_Dubrovnik)
   CHECK(writeBAL(filenameToWrite, readData));
 
   // Read what we wrote
-  SfM_data writtenData;
+  SfmData writtenData;
   CHECK(readBAL(filenameToWrite, writtenData));
 
   // Check that what we read is the same as what we wrote
@@ -467,8 +467,8 @@ TEST( dataSet, writeBAL_Dubrovnik)
 
   for (size_t j = 0; j < readData.number_tracks(); j++){
     // check point
-    SfM_Track expectedTrack  = writtenData.tracks[j];
-    SfM_Track actualTrack = readData.tracks[j];
+    SfmTrack expectedTrack  = writtenData.tracks[j];
+    SfmTrack actualTrack = readData.tracks[j];
     Point3 expectedPoint = expectedTrack.p;
     Point3 actualPoint = actualTrack.p;
     EXPECT(assert_equal(expectedPoint,actualPoint));
@@ -492,7 +492,7 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
 
   ///< Read a file using the unit tested readBAL
   const string filenameToRead = findExampleDataFile("dubrovnik-3-7-pre");
-  SfM_data readData;
+  SfmData readData;
   readBAL(filenameToRead, readData);
 
   Pose3 poseChange = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.3,0.1,0.3));
@@ -514,19 +514,19 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
   writeBALfromValues(filenameToWrite, readData, value);
 
   // Read the file we wrote
-  SfM_data writtenData;
+  SfmData writtenData;
   readBAL(filenameToWrite, writtenData);
 
   // Check that the reprojection errors are the same and the poses are correct
   // Check number of things
   EXPECT_LONGS_EQUAL(3,writtenData.number_cameras());
   EXPECT_LONGS_EQUAL(7,writtenData.number_tracks());
-  const SfM_Track& track0 = writtenData.tracks[0];
+  const SfmTrack& track0 = writtenData.tracks[0];
   EXPECT_LONGS_EQUAL(3,track0.number_measurements());
 
   // Check projection of a given point
   EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
-  const SfM_Camera& camera0 = writtenData.cameras[0];
+  const SfmCamera& camera0 = writtenData.cameras[0];
   Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
   EXPECT(assert_equal(expected,actual,12));
 
