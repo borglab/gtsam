@@ -17,6 +17,7 @@
  * @author  Frank Dellaert
  * @author  Richard Roberts
  * @author  Luca Carlone
+ * @author  Varun Agrawal
  */
 // \callgraph
 
@@ -217,13 +218,19 @@ namespace gtsam {
     }
 
      /**
-      * Compute to the Euler axis and angle (in radians) representation
+      * Compute the Euler axis and angle (in radians) representation
       * @param  R is the rotation matrix
       * @return pair consisting of Unit3 axis and angle in radians
       */
     static std::pair<Unit3, double> ToAxisAngle(const Rot3& R) {
       const Vector3 omega = Rot3::Logmap(R);
-      return std::pair<Unit3, double>(Unit3(omega), omega.norm());
+      int direction = 1;
+      // Check if any element in axis is negative.
+      // This implies that the rotation is clockwise and not counterclockwise.
+      if (omega.minCoeff() < 0.0) {
+        direction = -1;
+      }
+      return std::pair<Unit3, double>(Unit3(omega), direction * omega.norm());
     }
 
     /**
@@ -439,7 +446,7 @@ namespace gtsam {
 
     /**
      * Use RQ to calculate roll-pitch-yaw angle representation
-     * @return a vector containing ypr s.t. R = Rot3::Ypr(y,p,r)
+     * @return a vector containing rpy s.t. R = Rot3::Ypr(y,p,r)
      */
     Vector3 rpy() const;
 
@@ -470,6 +477,13 @@ namespace gtsam {
     /// @}
     /// @name Advanced Interface
     /// @{
+
+    /**
+      * Compute the Euler axis and angle (in radians) representation
+      * of this rotation.
+      * @return pair consisting of Unit3 axis and angle in radians
+      */
+    std::pair<Unit3, double> axisAngle();
 
     /** Compute the quaternion representation of this rotation.
      * @return The quaternion

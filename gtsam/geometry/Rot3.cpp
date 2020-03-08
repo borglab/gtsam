@@ -16,6 +16,7 @@
  * @author  Christian Potthast
  * @author  Frank Dellaert
  * @author  Richard Roberts
+ * @author  Varun Agrawal
  */
 
 #include <gtsam/geometry/Rot3.h>
@@ -183,6 +184,11 @@ Vector Rot3::quaternion() const {
   v(2) = q.y();
   v(3) = q.z();
   return v;
+}
+
+/* ************************************************************************* */
+pair<Unit3, double> Rot3::axisAngle() {
+  return Rot3::ToAxisAngle(*this);
 }
 
 /* ************************************************************************* */

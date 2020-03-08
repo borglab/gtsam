@@ -642,7 +642,7 @@ class Rot3 {
   static gtsam::Rot3 Rodrigues(Vector v);
   static gtsam::Rot3 Rodrigues(double wx, double wy, double wz);
   static gtsam::Rot3 ClosestTo(const Matrix M);
-  static std::pair<gtsam::Unit3, double> ToAxisAngle(const gtsam::Rot3& R) const;
+  static pair<gtsam::Unit3, double> ToAxisAngle(const gtsam::Rot3& R);
 
   // Testable
   void print(string s) const;
@@ -675,6 +675,7 @@ class Rot3 {
   double roll() const;
   double pitch() const;
   double yaw() const;
+  pair<gtsam::Unit3, double> axisAngle() const;
 //  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
   Vector quaternion() const;
   gtsam::Rot3 slerp(double t, const gtsam::Rot3& other) const;
@@ -1309,7 +1310,7 @@ class SymbolicBayesTree {
 // class SymbolicBayesTreeClique {
 //   BayesTreeClique();
 //   BayesTreeClique(CONDITIONAL* conditional);
-// //  BayesTreeClique(const std::pair<typename ConditionalType::shared_ptr, typename ConditionalType::FactorType::shared_ptr>& result) : Base(result) {}
+// //  BayesTreeClique(const pair<typename ConditionalType::shared_ptr, typename ConditionalType::FactorType::shared_ptr>& result) : Base(result) {}
 //
 //   bool equals(const This& other, double tol) const;
 //   void print(string s) const;
