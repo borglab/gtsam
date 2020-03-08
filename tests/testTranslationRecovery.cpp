@@ -168,6 +168,29 @@ class TranslationRecovery {
   }
 
   /**
+   * @brief Create random initial translations.
+   *
+   * @return Values
+   */
+  Values initalizeRandomly() const {
+    Values initial;
+    auto insert = [&initial](Key j) {
+      if (!initial.exists(j)) {
+        initial.insert<Point3>(j, Vector3::Random());
+      }
+    };
+
+    // Loop over measurements and add a random translation
+    for (auto edge : relativeTranslations_) {
+      Key a, b;
+      std::tie(a, b) = edge.first;
+      insert(a);
+      insert(b);
+    }
+    return initial;
+  }
+
+  /**
    * @brief Build and optimize factor graph.
    *
    * @param scale scale for first relative translation which fixes gauge.
@@ -175,11 +198,11 @@ class TranslationRecovery {
    */
   Values run(const double scale = 1.0) const {
     const auto graph = buildGraph();
-    //   Values initial = randomTranslations();
+    const Values initial = initalizeRandomly();
 
-    //   LevenbergMarquardtOptimizer lm(graph, initial);
+    LevenbergMarquardtOptimizer lm(graph, initial);
 
-    Values result;  // = lm.optimize();
+    Values result = lm.optimize();
 
     return result;
   }
