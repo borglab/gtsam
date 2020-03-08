@@ -14,6 +14,7 @@
  * @brief   typedef and functions to augment Eigen's Vectors
  * @author  Kai Ni
  * @author  Frank Dellaert
+ * @author  Varun Agrawal
  */
 
 #include <gtsam/base/Vector.h>
@@ -32,6 +33,29 @@
 using namespace std;
 
 namespace gtsam {
+
+/* ************************************************************************* */
+bool fp_isequal(double a, double b, double epsilon) {
+  double DOUBLE_MIN_NORMAL = std::numeric_limits<double>::min() + 1.0;
+
+  // handle NaNs
+  if(std::isnan(a) ^ std::isnan(b)) {
+    return false;
+  }
+  // handle inf
+  else if(std::isinf(a) ^ std::isinf(b)) {
+    return false;
+  }
+  // If the two values are zero or both are extremely close to it
+  // relative error is less meaningful here
+  else if(a == 0 || b == 0 || (std::abs(a) + std::abs(b)) < DOUBLE_MIN_NORMAL) {
+    return std::abs(a-b) < epsilon * DOUBLE_MIN_NORMAL;
+  }
+  // Use relative error
+  else {
+    return std::abs(a-b) < epsilon * std::min((std::abs(a) + std::abs(b)), std::numeric_limits<double>::max());
+  }
+}
 
 /* ************************************************************************* */
 //3 argument call
@@ -82,9 +106,7 @@ bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol) {
   if (vec1.size()!=vec2.size()) return false;
   size_t m = vec1.size();
   for(size_t i=0; i<m; ++i) {
-    if(std::isnan(vec1[i]) ^ std::isnan(vec2[i]))
-      return false;
-    if(std::abs(vec1[i] - vec2[i]) > tol)
+    if (!fp_isequal(vec1[i], vec2[i], tol))
       return false;
   }
   return true;
@@ -95,9 +117,7 @@ bool equal_with_abs_tol(const SubVector& vec1, const SubVector& vec2, double tol
   if (vec1.size()!=vec2.size()) return false;
   size_t m = vec1.size();
   for(size_t i=0; i<m; ++i) {
-    if(std::isnan(vec1[i]) ^ std::isnan(vec2[i]))
-      return false;
-    if(std::abs(vec1[i] - vec2[i]) > tol)
+    if (!fp_isequal(vec1[i], vec2[i], tol))
       return false;
   }
   return true;

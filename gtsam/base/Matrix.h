@@ -88,10 +88,9 @@ bool equal_with_abs_tol(const Eigen::DenseBase<MATRIX>& A, const Eigen::DenseBas
 
   for(size_t i=0; i<m1; i++)
     for(size_t j=0; j<n1; j++) {
-      if(boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
+      if(!fp_isequal(A(i,j), B(i,j), tol)) {
         return false;
-      else if(std::abs(A(i,j) - B(i,j)) > tol)
-        return false;
+      }
     }
   return true;
 }

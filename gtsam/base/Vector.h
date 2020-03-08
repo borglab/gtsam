@@ -15,6 +15,7 @@
  * @author  Kai Ni
  * @author  Frank Dellaert
  * @author  Alex Hagiopol
+ * @author  Varun Agrawal
  */
 
 // \callgraph
@@ -24,6 +25,8 @@
 #define MKL_BLAS MKL_DOMAIN_BLAS
 #endif
 
+#include <cmath>
+#include <limits>
 #include <gtsam/global_includes.h>
 #include <Eigen/Core>
 #include <iosfwd>
@@ -74,6 +77,15 @@ static_assert(
     GTSAM_EIGEN_VERSION_MAJOR==EIGEN_MAJOR_VERSION,
   "Error: GTSAM was built against a different version of Eigen");
 #endif
+
+/**
+ * Numerically stable function for comparing if floating point values are equal
+ * within epsilon tolerance.
+ * Used for vector and matrix comparison with C++11 compatible functions.
+ * Reference : https://floating-point-gui.de/errors/comparison/
+ * Return true if two numbers are close wrt epsilon.
+ */
+GTSAM_EXPORT bool fp_isequal(double a, double b, double epsilon);
 
 /**
  * print without optional string, must specify cout yourself
