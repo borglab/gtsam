@@ -200,8 +200,9 @@ class TranslationRecovery {
     const auto graph = buildGraph();
     const Values initial = initalizeRandomly();
 
-    LevenbergMarquardtOptimizer lm(graph, initial);
-
+    LevenbergMarquardtParams params;
+    params.setVerbosityLM("Summary");
+    LevenbergMarquardtOptimizer lm(graph, initial, params);
     Values result = lm.optimize();
 
     return result;
@@ -296,18 +297,12 @@ TEST(TranslationRecovery, BAL) {
   const auto result = algorithm.run(2);
 
   // Check result
-  //   Pose3 expected0(wTa.rotation(), Point3(0, 0, 0));
-  //   EXPECT(assert_equal(expected0, result.at<Pose3>(0)));
-  //   Pose3 expected1(wTb.rotation(), 2 * w_aZb.point3());
-  //   EXPECT(assert_equal(expected1, result.at<Pose3>(1)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
+  EXPECT(assert_equal(Point3(2 * w_aZb.point3()), result.at<Point3>(1)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(2)));
 
-  // Values initial = randomTranslations();
-
-  //   LevenbergMarquardtOptimizer lm(graph, initial);
-
-  //   Values actual = lm.optimize();
-  //   double actualError = graph.error(actual);
-  //   EXPECT_DOUBLES_EQUAL(0.0199833, actualError, 1e-5);
+  // TODO(frank): how to get stats back
+  // EXPECT_DOUBLES_EQUAL(0.0199833, actualError, 1e-5);
 }
 
 /* ************************************************************************* */
