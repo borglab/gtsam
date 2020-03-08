@@ -35,7 +35,7 @@ namespace gtsam {
  * ambient world coordinate frame:
  *    normalized(Tb - Ta) - w_aZb.point3()
  *
- * @addtogroup SAM
+ * @addtogroup SFM
  */
 class TranslationFactor : public NoiseModelFactor2<Point3, Point3> {
  private:
@@ -67,8 +67,8 @@ class TranslationFactor : public NoiseModelFactor2<Point3, Point3> {
     Matrix33 H_predicted_dir;
     const Point3 predicted =
         dir.normalized(H1 || H2 ? &H_predicted_dir : nullptr);
-    if (H1) *H1 = H_predicted_dir;
-    if (H2) *H2 = -H_predicted_dir;
+    if (H1) *H1 = -H_predicted_dir;
+    if (H2) *H2 = H_predicted_dir;
     return predicted - measured_w_aZb_;
   }
 
