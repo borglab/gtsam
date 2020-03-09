@@ -35,26 +35,38 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-bool fp_isequal(double a, double b, double epsilon) {
-  double DOUBLE_MIN_NORMAL = std::numeric_limits<double>::min() + 1.0;
+bool fpEqual(double a, double b, double tol) {
+  using std::abs;
+  using std::isnan;
+  using std::isinf;
+
+  double DOUBLE_MIN_NORMAL = numeric_limits<double>::min() + 1.0;
+  double larger = (abs(b) > abs(a)) ? abs(b) : abs(a);
 
   // handle NaNs
-  if(std::isnan(a) ^ std::isnan(b)) {
-    return false;
+  if(std::isnan(a) || isnan(b)) {
+    return isnan(a) && isnan(b);
   }
   // handle inf
-  else if(std::isinf(a) ^ std::isinf(b)) {
-    return false;
+  else if(isinf(a) || isinf(b)) {
+    return isinf(a) && isinf(b);
   }
   // If the two values are zero or both are extremely close to it
   // relative error is less meaningful here
-  else if(a == 0 || b == 0 || (std::abs(a) + std::abs(b)) < DOUBLE_MIN_NORMAL) {
-    return std::abs(a-b) < epsilon * DOUBLE_MIN_NORMAL;
+  else if(a == 0 || b == 0 || (abs(a) + abs(b)) < DOUBLE_MIN_NORMAL) {
+    return abs(a-b) <= tol * DOUBLE_MIN_NORMAL;
+  }
+  // Check if the numbers are really close
+  // Needed when comparing numbers near zero or tol is in vicinity
+  else if(abs(a-b) <= tol) {
+    return true;
   }
   // Use relative error
-  else {
-    return std::abs(a-b) < epsilon * std::min((std::abs(a) + std::abs(b)), std::numeric_limits<double>::max());
+  else if(abs(a-b) <= tol * min(larger, std::numeric_limits<double>::max())) {
+    return true;
   }
+
+  return false;
 }
 
 /* ************************************************************************* */
@@ -106,7 +118,7 @@ bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol) {
   if (vec1.size()!=vec2.size()) return false;
   size_t m = vec1.size();
   for(size_t i=0; i<m; ++i) {
-    if (!fp_isequal(vec1[i], vec2[i], tol))
+    if (!fpEqual(vec1[i], vec2[i], tol))
       return false;
   }
   return true;
@@ -117,7 +129,7 @@ bool equal_with_abs_tol(const SubVector& vec1, const SubVector& vec2, double tol
   if (vec1.size()!=vec2.size()) return false;
   size_t m = vec1.size();
   for(size_t i=0; i<m; ++i) {
-    if (!fp_isequal(vec1[i], vec2[i], tol))
+    if (!fpEqual(vec1[i], vec2[i], tol))
       return false;
   }
   return true;

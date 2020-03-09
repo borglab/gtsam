@@ -25,11 +25,11 @@
 #define MKL_BLAS MKL_DOMAIN_BLAS
 #endif
 
-#include <cmath>
-#include <limits>
 #include <gtsam/global_includes.h>
 #include <Eigen/Core>
+#include <cmath>
 #include <iosfwd>
+#include <limits>
 #include <list>
 
 namespace gtsam {
@@ -82,10 +82,12 @@ static_assert(
  * Numerically stable function for comparing if floating point values are equal
  * within epsilon tolerance.
  * Used for vector and matrix comparison with C++11 compatible functions.
- * Reference : https://floating-point-gui.de/errors/comparison/
+ * References:
+ * 1. https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+ * 2. https://floating-point-gui.de/errors/comparison/
  * Return true if two numbers are close wrt epsilon.
  */
-GTSAM_EXPORT bool fp_isequal(double a, double b, double epsilon);
+GTSAM_EXPORT bool fpEqual(double a, double b, double epsilon);
 
 /**
  * print without optional string, must specify cout yourself
