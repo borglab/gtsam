@@ -217,22 +217,6 @@ namespace gtsam {
       return AxisAngle(axis.unitVector(),angle);
     }
 
-     /**
-      * Compute the Euler axis and angle (in radians) representation
-      * @param  R is the rotation matrix
-      * @return pair consisting of Unit3 axis and angle in radians
-      */
-    static std::pair<Unit3, double> ToAxisAngle(const Rot3& R) {
-      const Vector3 omega = Rot3::Logmap(R);
-      int direction = 1;
-      // Check if any element in axis is negative.
-      // This implies that the rotation is clockwise and not counterclockwise.
-      if (omega.minCoeff() < 0.0) {
-        direction = -1;
-      }
-      return std::pair<Unit3, double>(Unit3(omega), direction * omega.norm());
-    }
-
     /**
      * Rodrigues' formula to compute an incremental rotation
      * @param w a vector of incremental roll,pitch,yaw

@@ -642,7 +642,6 @@ class Rot3 {
   static gtsam::Rot3 Rodrigues(Vector v);
   static gtsam::Rot3 Rodrigues(double wx, double wy, double wz);
   static gtsam::Rot3 ClosestTo(const Matrix M);
-  static pair<gtsam::Unit3, double> ToAxisAngle(const gtsam::Rot3& R);
 
   // Testable
   void print(string s) const;

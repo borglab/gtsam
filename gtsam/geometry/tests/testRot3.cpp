@@ -663,42 +663,6 @@ TEST(Rot3, ClosestTo) {
 }
 
 /* ************************************************************************* */
-TEST(Rot3, ToAxisAngle) {
-  /// Test rotations along each axis
-  Rot3 R1;
-
-  // Negative because rotation is counterclockwise when looking at unchanging axis
-  Rot3 yaw = Rot3::Ypr(-M_PI/4, 0, 0);
-  Rot3 pitch = Rot3::Ypr(0, -M_PI/4, 0);
-  Rot3 roll = Rot3::Ypr(0, 0, -M_PI/4);
-
-  EXPECT(assert_equal(Unit3(0, 0, 1), Rot3::ToAxisAngle(yaw.between(R1)).first, 1e-6));
-  EXPECT_DOUBLES_EQUAL(M_PI/4, Rot3::ToAxisAngle(yaw.between(R1)).second, 1e-9);
-
-  EXPECT(assert_equal(Unit3(0, 1, 0), Rot3::ToAxisAngle(pitch.between(R1)).first, 1e-6));
-  EXPECT_DOUBLES_EQUAL(M_PI/4, Rot3::ToAxisAngle(pitch.between(R1)).second, 1e-9);
-
-  EXPECT(assert_equal(Unit3(1, 0, 0), Rot3::ToAxisAngle(roll.between(R1)).first, 1e-6));
-  EXPECT_DOUBLES_EQUAL(M_PI/4, Rot3::ToAxisAngle(roll.between(R1)).second, 1e-9);
-
-  Unit3 axis; double angle;
-  std::tie(axis,angle) = Rot3::ToAxisAngle(R);
-  EXPECT(assert_equal(Unit3(0.1, 0.4, 0.2), axis));
-  EXPECT_DOUBLES_EQUAL(Vector3(0.1, 0.4, 0.2).norm(), angle, 1e-9);
-
-  /// Test for sign ambiguity
-  double theta = M_PI + M_PI/2;  // 270 degrees
-  Rot3 R2 = Rot3::AxisAngle(Unit3(0.1, 0.3, 0.4), theta);
-
-  EXPECT_DOUBLES_EQUAL(theta - 2*M_PI, Rot3::ToAxisAngle(R2).second, 1e-9);
-
-  theta = -M_PI/2;  // -90 degrees
-  R2 = Rot3::AxisAngle(Unit3(0.1, 0.3, 0.4), theta);
-
-  EXPECT_DOUBLES_EQUAL(theta, Rot3::ToAxisAngle(R2).second, 1e-9);
-}
-
-/* ************************************************************************* */
 TEST(Rot3, axisAngle) {
   /// Test rotations along each axis
   Rot3 R1;

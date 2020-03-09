@@ -188,7 +188,14 @@ Vector Rot3::quaternion() const {
 
 /* ************************************************************************* */
 pair<Unit3, double> Rot3::axisAngle() {
-  return Rot3::ToAxisAngle(*this);
+  const Vector3 omega = Rot3::Logmap(*this);
+  int direction = 1;
+  // Check if any element in axis is negative.
+  // This implies that the rotation is clockwise and not counterclockwise.
+  if (omega.minCoeff() < 0.0) {
+    direction = -1;
+  }
+  return std::pair<Unit3, double>(Unit3(omega), direction * omega.norm());
 }
 
 /* ************************************************************************* */
