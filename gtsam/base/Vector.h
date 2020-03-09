@@ -27,9 +27,7 @@
 
 #include <gtsam/global_includes.h>
 #include <Eigen/Core>
-#include <cmath>
 #include <iosfwd>
-#include <limits>
 #include <list>
 
 namespace gtsam {
