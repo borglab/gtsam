@@ -1123,6 +1123,8 @@ virtual class SimpleCamera {
 
 };
 
+gtsam::SimpleCamera simpleCamera(const Matrix& P);
+
 // Some typedefs for common camera types
 // PinholeCameraCal3_S2 is the same as SimpleCamera above
 typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
