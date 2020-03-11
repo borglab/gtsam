@@ -177,7 +177,7 @@ Values ShonanAveraging::tryOptimizingAt(
             const size_t dim = p * (p - 1) / 2;
             graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
         } else {
-            graph.emplace_shared<PriorFactor<SOn>>(0, initial.at<SOn>(0));
+            graph.emplace_shared<PriorFactor<SOn>>(parameters_.anchorIndex, initial.at<SOn>(0));
         }
     }
 
