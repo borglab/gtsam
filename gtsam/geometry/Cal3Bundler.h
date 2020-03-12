@@ -117,7 +117,7 @@ public:
   Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal = boost::none,
       OptionalJacobian<2, 2> Dp = boost::none) const;
 
-  /// Conver a pixel coordinate to ideal coordinate
+  /// Convert a pixel coordinate to ideal coordinate
   Point2 calibrate(const Point2& pi, const double tol = 1e-5) const;
 
   /// @deprecated might be removed in next release, use uncalibrate

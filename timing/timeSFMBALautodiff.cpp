@@ -38,14 +38,14 @@ typedef PinholeCamera<Cal3Bundler> Camera;
 
 int main(int argc, char* argv[]) {
   // parse options and read BAL file
-  SfM_data db = preamble(argc, argv);
+  SfmData db = preamble(argc, argv);
 
   AdaptAutoDiff<SnavelyProjection, 2, 9, 3> snavely;
 
   // Build graph
   NonlinearFactorGraph graph;
   for (size_t j = 0; j < db.number_tracks(); j++) {
-    for (const SfM_Measurement& m: db.tracks[j].measurements) {
+    for (const SfmMeasurement& m: db.tracks[j].measurements) {
       size_t i = m.first;
       Point2 z = m.second;
       Expression<Vector9> camera_(C(i));
@@ -58,14 +58,14 @@ int main(int argc, char* argv[]) {
 
   Values initial;
   size_t i = 0, j = 0;
-  for (const SfM_Camera& camera: db.cameras) {
+  for (const SfmCamera& camera: db.cameras) {
     // readBAL converts to GTSAM format, so we need to convert back !
     Pose3 openGLpose = gtsam2openGL(camera.pose());
     Vector9 v9;
     v9 << Pose3::Logmap(openGLpose), camera.calibration();
     initial.insert(C(i++), v9);
   }
-  for (const SfM_Track& track: db.tracks) {
+  for (const SfmTrack& track: db.tracks) {
     Vector3 v3 = track.p;
     initial.insert(P(j++), v3);
   }

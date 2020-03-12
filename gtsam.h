@@ -1123,6 +1123,8 @@ virtual class SimpleCamera {
 
 };
 
+gtsam::SimpleCamera simpleCamera(const Matrix& P);
+
 // Some typedefs for common camera types
 // PinholeCameraCal3_S2 is the same as SimpleCamera above
 typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
@@ -2724,6 +2726,20 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/dataset.h>
+class SfmTrack {
+  size_t number_measurements() const;
+  pair<size_t, gtsam::Point2> measurement(size_t idx) const;
+  pair<size_t, size_t> siftIndex(size_t idx) const;
+};
+
+class SfmData {
+  size_t number_cameras() const;
+  size_t number_tracks() const;
+  //TODO(Varun) Need to fix issue #237 first before this can work
+  // gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
+  gtsam::SfmTrack track(size_t idx) const;
+};
+
 string findExampleDataFile(string name);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);
