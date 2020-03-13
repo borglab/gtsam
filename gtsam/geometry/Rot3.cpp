@@ -188,14 +188,20 @@ Vector Rot3::quaternion() const {
 
 /* ************************************************************************* */
 pair<Unit3, double> Rot3::axisAngle() {
-  const Vector3 omega = Rot3::Logmap(*this);
-  int direction = 1;
-  // Check if any element in axis is negative.
-  // This implies that the rotation is clockwise and not counterclockwise.
-  if (omega.minCoeff() < 0.0) {
-    direction = -1;
+  Vector3 omega = Rot3::Logmap(*this);
+  // Get the rotation angle.
+  double theta = omega.norm();
+
+  // Check if angle belongs to (-pi, pi].
+  // If yes, rotate in opposite direction to maintain range.
+  if (theta > M_PI) {
+    theta = theta - 2*M_PI;
+    omega = -omega;    
+  } else if (theta <= -M_PI) {
+    theta = theta + 2*M_PI;
+    omega = -omega;    
   }
-  return std::pair<Unit3, double>(Unit3(omega), direction * omega.norm());
+  return std::pair<Unit3, double>(Unit3(omega), theta);
 }
 
 /* ************************************************************************* */
