@@ -15,6 +15,7 @@
  * @author  Kai Ni
  * @author  Frank Dellaert
  * @author  Alex Hagiopol
+ * @author  Varun Agrawal
  */
 
 // \callgraph
@@ -74,6 +75,19 @@ static_assert(
     GTSAM_EIGEN_VERSION_MAJOR==EIGEN_MAJOR_VERSION,
   "Error: GTSAM was built against a different version of Eigen");
 #endif
+
+/**
+ * Numerically stable function for comparing if floating point values are equal
+ * within epsilon tolerance.
+ * Used for vector and matrix comparison with C++11 compatible functions.
+ *
+ * If either value is NaN or Inf, we check for both values to be NaN or Inf
+ * respectively for the comparison to be true.
+ * If one is NaN/Inf and the other is not, returns false.
+ *
+ * Return true if two numbers are close wrt tol.
+ */
+GTSAM_EXPORT bool fpEqual(double a, double b, double tol);
 
 /**
  * print without optional string, must specify cout yourself
