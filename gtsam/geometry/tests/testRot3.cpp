@@ -686,16 +686,25 @@ TEST(Rot3, axisAngle) {
   EXPECT(assert_equal(Unit3(0.1, 0.4, 0.2), axis));
   EXPECT_DOUBLES_EQUAL(Vector3(0.1, 0.4, 0.2).norm(), angle, 1e-9);
 
-  /// Test for sign ambiguity
-  double theta = M_PI + M_PI/2;  // 270 degrees
-  Rot3 R2 = Rot3::AxisAngle(Unit3(0.1, 0.3, 0.4), theta);
+  double theta;
 
+  /// Test for sign ambiguity
+  theta = M_PI + M_PI/2;  // 270 degrees
+  Rot3 R2 = Rot3::AxisAngle(Unit3(0.1, 0.3, 0.4), theta);
   EXPECT_DOUBLES_EQUAL(theta - 2*M_PI, R2.axisAngle().second, 1e-9);
 
-  theta = -M_PI/2;  // 270 degrees
+  theta = -(M_PI + M_PI/2);  // 90 (or -270) degrees
   R2 = Rot3::AxisAngle(Unit3(0.1, 0.3, 0.4), theta);
+  EXPECT_DOUBLES_EQUAL(2*M_PI + theta, R2.axisAngle().second, 1e-9);
 
-  EXPECT_DOUBLES_EQUAL(theta, R2.axisAngle().second, 1e-9);
+  /// Non-trivial angles
+  theta = 195 * M_PI / 180;  // 195 degrees
+  Rot3 R3 = Rot3::AxisAngle(Unit3(0.1, 0.3, 0.4), theta);
+  EXPECT_DOUBLES_EQUAL(theta - 2*M_PI, R3.axisAngle().second, 1e-9);
+
+  theta = -195 * M_PI / 180;  // 165 degrees
+  R3 = Rot3::AxisAngle(Unit3(0.1, 0.3, 0.4), theta);
+  EXPECT_DOUBLES_EQUAL(2*M_PI + theta, R3.axisAngle().second, 1e-9);
 }
 
 /* ************************************************************************* */

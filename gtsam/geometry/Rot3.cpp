@@ -192,14 +192,12 @@ pair<Unit3, double> Rot3::axisAngle() {
   // Get the rotation angle.
   double theta = omega.norm();
 
-  // Check if angle belongs to (-pi, pi].
+  // Check if angle `theta` belongs to (-pi, pi].
   // If yes, rotate in opposite direction to maintain range.
-  if (theta > M_PI) {
-    theta = theta - 2*M_PI;
-    omega = -omega;    
-  } else if (theta <= -M_PI) {
-    theta = theta + 2*M_PI;
-    omega = -omega;    
+  // Since omega = theta * u, if all coefficients are negative,
+  // then theta is outside the expected range.
+  if ((omega.array() < 0).all()) {
+    theta = -theta;
   }
   return std::pair<Unit3, double>(Unit3(omega), theta);
 }
