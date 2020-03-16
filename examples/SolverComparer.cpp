@@ -57,6 +57,10 @@
 #include <fstream>
 #include <iostream>
 
+#ifdef GTSAM_USE_TBB
+#include <tbb/task_scheduler_init.h> // tbb::task_scheduler_init
+#endif
+
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
@@ -200,8 +204,10 @@ int main(int argc, char *argv[]) {
   }
 
 #ifdef GTSAM_USE_TBB
+  std::unique_ptr<tbb::task_scheduler_init> init;
   if(nThreads > 0) {
     cout << "Using " << nThreads << " threads" << endl;
+    init.reset(new tbb::task_scheduler_init(nThreads));
   } else
     cout << "Using threads for all processors" << endl;
 #else
