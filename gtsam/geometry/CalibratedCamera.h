@@ -248,10 +248,14 @@ private:
  */
 class GTSAM_EXPORT CalibratedCamera: public PinholeBase {
 
+private:
+
+  static const size_t dimension_ = 6;
+
 public:
 
   enum {
-    dimension = 6
+    dimension = dimension_
   };
 
   /// @name Standard Constructors
@@ -326,12 +330,12 @@ public:
 
   /// @deprecated
   inline size_t dim() const {
-    return 6;
+    return dimension_;
   }
 
   /// @deprecated
   inline static size_t Dim() {
-    return 6;
+    return dimension_;
   }
 
   /// @}

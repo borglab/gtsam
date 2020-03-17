@@ -32,10 +32,11 @@ namespace gtsam {
 
     Cal3_S2 K_;
     double b_;
+    static const size_t dimension_ = 6;
 
   public:
 
-    enum { dimension = 6 };
+    enum { dimension = dimension_ };
     typedef boost::shared_ptr<Cal3_S2Stereo> shared_ptr;  ///< shared pointer to stereo calibration object
 
     /// @name Standard Constructors
@@ -112,12 +113,12 @@ namespace gtsam {
 
     /// return DOF, dimensionality of tangent space
     inline size_t dim() const {
-      return 6;
+      return dimension_;
     }
 
     /// return DOF, dimensionality of tangent space
     static size_t Dim() {
-      return 6;
+      return dimension_;
     }
 
     /// Given 6-dim tangent vector, create new calibration

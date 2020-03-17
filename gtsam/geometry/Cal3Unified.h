@@ -47,10 +47,11 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
 private:
 
   double xi_;  // mirror parameter
+  static const size_t dimension_ = 10;
 
 public:
 
-  enum { dimension = 10 };
+  enum { dimension = dimension_ };
 
   /// @name Standard Constructors
   /// @{
@@ -118,10 +119,10 @@ public:
   Vector10 localCoordinates(const Cal3Unified& T2) const ;
 
   /// Return dimensions of calibration manifold object
-  virtual size_t dim() const { return 10 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)
+  virtual size_t dim() const { return dimension_ ; }
 
   /// Return dimensions of calibration manifold object
-  static size_t Dim() { return 10; }  //TODO: make a final dimension variable
+  static size_t Dim() { return dimension_; }
 
   /// Return all parameters as a vector
   Vector10 vector() const ;

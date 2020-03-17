@@ -33,9 +33,10 @@ namespace gtsam {
 class GTSAM_EXPORT Cal3_S2 {
 private:
   double fx_, fy_, s_, u0_, v0_;
+  static const size_t dimension_ = 5;
 
 public:
-  enum { dimension = 5 };
+  enum { dimension = dimension_ };
   typedef boost::shared_ptr<Cal3_S2> shared_ptr; ///< shared pointer to calibration object
 
   /// @name Standard Constructors
@@ -194,12 +195,12 @@ public:
 
   /// return DOF, dimensionality of tangent space
   inline size_t dim() const {
-    return 5;
+    return dimension_;
   }
 
   /// return DOF, dimensionality of tangent space
   static size_t Dim() {
-    return 5;
+    return dimension_;
   }
 
   /// Given 5-dim tangent vector, create new calibration
