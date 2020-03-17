@@ -11,7 +11,7 @@
 /**
  * @file dataset.cpp
  * @date Jan 22, 2010
- * @author Kai Ni, Luca Carlone, Frank Dellaert
+ * @author Kai Ni, Luca Carlone, Frank Dellaert, Varun Agrawal
  * @brief utility functions for loading datasets
  */
 
@@ -430,22 +430,40 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
 
   // save 2D & 3D poses
   for (const auto& key_value : estimate) {
+    // Pose
     auto p = dynamic_cast<const GenericValue<Pose2>*>(&key_value.value);
-    if (!p) continue;
-    const Pose2& pose = p->value();
-    stream << "VERTEX_SE2 " << key_value.key << " " << pose.x() << " "
+    if (p) {
+      const Pose2& pose = p->value();
+      stream << "VERTEX_SE2 " << key_value.key << " " << pose.x() << " "
         << pose.y() << " " << pose.theta() << endl;
+    }
+    // Landmark
+    auto pt = dynamic_cast<const GenericValue<Point2>*>(&key_value.value);
+    if (pt) {
+      const Point2& point = pt->value();
+      // VERTEX_XY i x y
+      stream << "VERTEX_XY " << key_value.key << " " << point.x() << " "
+        << point.y() << endl;
+    }
   }
 
   for(const auto& key_value: estimate) {
       auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
-      if (!p) continue;
-      const Pose3& pose = p->value();
-      Point3 t = pose.translation();
-      Rot3 R = pose.rotation();
-      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "  << t.y() << " " << t.z()
-        << " " << R.toQuaternion().x() << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()
-        << " " << R.toQuaternion().w() << endl;
+      if (p) {
+        const Pose3& pose = p->value();
+        Point3 t = pose.translation();
+        Rot3 R = pose.rotation();
+        stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "  << t.y() << " " << t.z()
+          << " " << R.toQuaternion().x() << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()
+          << " " << R.toQuaternion().w() << endl;
+      }
+      auto pt = dynamic_cast<const GenericValue<Point3>*>(&key_value.value);
+      if (pt) {
+        const Point3& point = pt->value();
+        // VERTEX_TRACKXYZ i x y z
+        stream << "VERTEX_TRACKXYZ " << key_value.key << " " << point.x() << " "
+          << point.y() << " " << point.z() << endl;
+      }
   }
 
   // save edges (2D or 3D)
