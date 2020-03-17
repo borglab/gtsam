@@ -136,7 +136,8 @@ bool Gaussian::equals(const Base& expected, double tol) const {
   const Gaussian* p = dynamic_cast<const Gaussian*> (&expected);
   if (p == NULL) return false;
   if (typeid(*this) != typeid(*p)) return false;
-  //if (!sqrt_information_) return true; // ALEX todo;
+  //TODO(Alex);
+  //if (!sqrt_information_) return true;
   return equal_with_abs_tol(R(), p->R(), sqrt(tol));
 }
 
@@ -311,10 +312,9 @@ void Diagonal::WhitenInPlace(Eigen::Block<Matrix> H) const {
 
 namespace internal {
 // switch precisions and invsigmas to finite value
-// TODO: why?? And, why not just ask s==0.0 below ?
 static void fix(const Vector& sigmas, Vector& precisions, Vector& invsigmas) {
   for (Vector::Index i = 0; i < sigmas.size(); ++i)
-    if (!std::isfinite(1. / sigmas[i])) {
+    if (sigmas[i] <= 1e-12) {
       precisions[i] = 0.0;
       invsigmas[i] = 0.0;
     }
@@ -341,8 +341,8 @@ Constrained::shared_ptr Constrained::MixedSigmas(const Vector& mu,
 
 /* ************************************************************************* */
 bool Constrained::constrained(size_t i) const {
-  // TODO why not just check sigmas_[i]==0.0 ?
-  return !std::isfinite(1./sigmas_[i]);
+  // numerically stable way, rather than comparing to 0.0 directly.
+  return sigmas_[i] <= 1e-12;
 }
 
 /* ************************************************************************* */
