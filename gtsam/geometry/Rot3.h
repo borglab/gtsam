@@ -198,7 +198,7 @@ namespace gtsam {
      * @param  angle rotation angle
      * @return incremental rotation
      */
-    static Rot3 AxisAngle(const Vector3& axis, double angle) {
+    static Rot3 AxisAngle(const Point3& axis, double angle) {
       // Convert to unit vector.
       Vector3 unitAxis = Unit3(axis).unitVector();
 #ifdef GTSAM_USE_QUATERNIONS
@@ -273,9 +273,9 @@ namespace gtsam {
     /// inverse of a rotation
     Rot3 inverse() const {
 #ifdef GTSAM_USE_QUATERNIONS
-      return quaternion_.inverse();
+      return Rot3(quaternion_.inverse());
 #else
-      return Rot3(transpose());
+      return Rot3(rot_.matrix().transpose());
 #endif
     }
 
