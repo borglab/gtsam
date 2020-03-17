@@ -639,6 +639,7 @@ class Rot3 {
   static gtsam::Rot3 Roll(double t); // positive roll is to right (increasing yaw in aircraft)
   static gtsam::Rot3 Ypr(double y, double p, double r);
   static gtsam::Rot3 Quaternion(double w, double x, double y, double z);
+  static gtsam::Rot3 AxisAngle(const gtsam::Point3& axis, double angle);
   static gtsam::Rot3 Rodrigues(Vector v);
   static gtsam::Rot3 Rodrigues(double wx, double wy, double wz);
   static gtsam::Rot3 ClosestTo(const Matrix M);
