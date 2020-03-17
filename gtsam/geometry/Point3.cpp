@@ -29,7 +29,10 @@ bool Point3::equals(const Point3 &q, double tol) const {
 }
 
 void Point3::print(const string& s) const {
-  cout << s << *this << endl;
+  if (s.size() != 0) {
+    cout << s << " ";
+  }
+  cout << *this << endl;
 }
 
 /* ************************************************************************* */

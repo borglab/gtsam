@@ -154,7 +154,10 @@ std::ostream& operator<<(std::ostream& os, const Unit3& pair) {
 
 /* ************************************************************************* */
 void Unit3::print(const std::string& s) const {
-  cout << s << ":" << p_ << endl;
+  if(s.size() != 0) {
+    cout << s << ":";
+  }
+  cout << p_ << endl;
 }
 
 /* ************************************************************************* */
