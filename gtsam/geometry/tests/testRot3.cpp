@@ -115,6 +115,10 @@ TEST( Rot3, AxisAngle)
   CHECK(assert_equal(expected,actual,1e-5));
   Rot3 actual2 = Rot3::AxisAngle(axis, angle-2*M_PI);
   CHECK(assert_equal(expected,actual2,1e-5));
+
+  axis = Vector3(0, 50, 0);
+  Rot3 actual3 = Rot3::AxisAngle(axis, angle);
+  CHECK(assert_equal(expected,actual3,1e-5));
 }
 
 /* ************************************************************************* */

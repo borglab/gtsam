@@ -36,7 +36,6 @@ void Rot3::print(const std::string& s) const {
 
 /* ************************************************************************* */
 Rot3 Rot3::Random(std::mt19937& rng) {
-  // TODO allow any engine without including all of boost :-(
   Unit3 axis = Unit3::Random(rng);
   uniform_real_distribution<double> randomAngle(-M_PI, M_PI);
   double angle = randomAngle(rng);

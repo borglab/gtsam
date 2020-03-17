@@ -110,8 +110,7 @@ Rot3 Rot3::operator*(const Rot3& R2) const {
 }
 
 /* ************************************************************************* */
-// TODO const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
-Matrix3 Rot3::transpose() const {
+const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
   return rot_.matrix().transpose();
 }
 
