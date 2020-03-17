@@ -187,8 +187,8 @@ Vector Rot3::quaternion() const {
 }
 
 /* ************************************************************************* */
-pair<Unit3, double> Rot3::axisAngle() {
-  Vector3 omega = Rot3::Logmap(*this);
+pair<Unit3, double> Rot3::axisAngle() const {
+  const Vector3 omega = Rot3::Logmap(*this);
   return std::pair<Unit3, double>(Unit3(omega), omega.norm());
 }
 

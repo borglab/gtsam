@@ -470,7 +470,7 @@ namespace gtsam {
       * within the specified range.
       * @return pair consisting of Unit3 axis and angle in radians
       */
-    std::pair<Unit3, double> axisAngle();
+    std::pair<Unit3, double> axisAngle() const;
 
     /** Compute the quaternion representation of this rotation.
      * @return The quaternion
