@@ -143,8 +143,8 @@ bool Gaussian::equals(const Base& expected, double tol) const {
 
 /* ************************************************************************* */
 Vector Gaussian::sigmas() const {
-  // TODO(frank): can this be done faster?
-  return Vector((thisR().transpose() * thisR()).inverse().diagonal()).cwiseSqrt();
+  Matrix Rinv = thisR().inverse(); // inverse of triangular matrix is fast
+  return Vector((Rinv * Rinv.transpose()).diagonal()).cwiseSqrt();
 }
 
 /* ************************************************************************* */
