@@ -14,6 +14,7 @@
  * @brief   Unit tests for Rot3 class - common between Matrix and Quaternion
  * @author  Alireza Fathi
  * @author  Frank Dellaert
+ * @author  Varun Agrawal
  */
 
 #include <gtsam/geometry/Point3.h>
@@ -380,7 +381,7 @@ TEST( Rot3, inverse )
   Rot3 actual = R.inverse(actualH);
   CHECK(assert_equal(I,R*actual));
   CHECK(assert_equal(I,actual*R));
-  CHECK(assert_equal((Matrix)actual.matrix(), R.transpose()));
+  CHECK(assert_equal(actual, Rot3(R.transpose())));
 
   Matrix numericalH = numericalDerivative11(testing::inverse<Rot3>, R);
   CHECK(assert_equal(numericalH,actualH));
@@ -500,6 +501,29 @@ TEST( Rot3, RQ)
   boost::tie(actualK, actual) = RQ(A);
   CHECK(assert_equal(K,actualK));
   CHECK(assert_equal(expected,actual,1e-6));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, RQStability)
+{
+  // Test case to check if xyz() is computed correctly when using quaternions.
+  Matrix actualR;
+  Vector actualXyz;
+
+  // A is equivalent to the below
+  double kDegree = M_PI / 180;
+  const Rot3 nRy = Rot3::Yaw(315 * kDegree);
+  const Rot3 yRp = Rot3::Pitch(275 * kDegree);
+  const Rot3 pRb = Rot3::Roll(180 * kDegree);
+  const Rot3 nRb = nRy * yRp * pRb;
+
+  // A(2, 1) ~= -0.0
+  // Since A(2, 2) < 0, x-angle should be positive
+  Matrix A = nRb.matrix();
+  boost::tie(actualR, actualXyz) = RQ(A);
+
+  Vector3 expectedXyz(3.14159, -1.48353, -0.785398);
+  CHECK(assert_equal(expectedXyz,actualXyz,1e-6));
 }
 
 /* ************************************************************************* */
