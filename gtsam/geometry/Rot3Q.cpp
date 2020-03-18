@@ -19,8 +19,8 @@
 
 #ifdef GTSAM_USE_QUATERNIONS
 
-#include <boost/math/constants/constants.hpp>
 #include <gtsam/geometry/Rot3.h>
+#include <boost/math/constants/constants.hpp>
 #include <cmath>
 
 using namespace std;
@@ -80,8 +80,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
-    // `.eval()` to avoid aliasing effect due to transpose (allows compilation).
-    return matrix().eval().transpose();
+    // `eval` for immediate evaluation (allows compilation).
+    return Rot3(matrix()).matrix().eval().transpose();
   }
 
   /* ************************************************************************* */
