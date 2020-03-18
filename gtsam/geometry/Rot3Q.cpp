@@ -79,11 +79,9 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // TODO: Could we do this? It works in Rot3M but not here, probably because
-  // here we create an intermediate value by calling matrix()
-  // const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
-  Matrix3 Rot3::transpose() const {
-    return matrix().transpose();
+  const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
+    // `.eval()` to avoid aliasing effect due to transpose (allows compilation).
+    return matrix().eval().transpose();
   }
 
   /* ************************************************************************* */
