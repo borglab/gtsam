@@ -30,20 +30,19 @@ class TOAFactor : public ExpressionFactor<double> {
 
  public:
   /**
-   * Most genral constructor with two expressions
+   * Most general constructor with two expressions
    * @param eventExpression expression yielding an event
    * @param sensorExpression expression yielding a sensor location
    * @param toaMeasurement time of arrival at sensor
    * @param model noise model
-   * @param toa optional time of arrival functor
+   * @param speed optional speed of signal, in m/sec
    */
   TOAFactor(const Expression<Event>& eventExpression,
             const Expression<Point3>& sensorExpression, double toaMeasurement,
-            const SharedNoiseModel& model,
-            const TimeOfArrival& toa = TimeOfArrival())
+            const SharedNoiseModel& model, double speed = 330)
       : ExpressionFactor<double>(
             model, toaMeasurement,
-            Double_(toa, eventExpression, sensorExpression)) {}
+            Double_(TimeOfArrival(speed), eventExpression, sensorExpression)) {}
 
   /**
    * Constructor with fixed sensor
@@ -55,9 +54,9 @@ class TOAFactor : public ExpressionFactor<double> {
    */
   TOAFactor(const Expression<Event>& eventExpression, const Point3& sensor,
             double toaMeasurement, const SharedNoiseModel& model,
-            const TimeOfArrival& toa = TimeOfArrival())
+            double speed = 330)
       : TOAFactor(eventExpression, Expression<Point3>(sensor), toaMeasurement,
-                  model, toa) {}
+                  model, speed) {}
 };
 
 }  // namespace gtsam
