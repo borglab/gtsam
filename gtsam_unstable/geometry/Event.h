@@ -86,6 +86,7 @@ struct traits<Event> : internal::Manifold<Event> {};
 /// Time of arrival to given sensor
 class TimeOfArrival {
   const double speed_;  ///< signal speed
+
  public:
   typedef double result_type;
 
@@ -93,6 +94,12 @@ class TimeOfArrival {
   explicit TimeOfArrival(double speed = 330) : speed_(speed) {}
 
   /// Calculate time of arrival
+  double measure(const Event& event, const Point3& sensor) const {
+    double distance = gtsam::distance3(event.location(), sensor);
+    return event.time() + distance / speed_;
+  }
+
+  /// Calculate time of arrival, with derivatives
   double operator()(const Event& event, const Point3& sensor,  //
                     OptionalJacobian<1, 4> H1 = boost::none,   //
                     OptionalJacobian<1, 3> H2 = boost::none) const {

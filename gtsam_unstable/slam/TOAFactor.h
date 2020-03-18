@@ -57,6 +57,11 @@ class TOAFactor : public ExpressionFactor<double> {
             double speed = 330)
       : TOAFactor(eventExpression, Expression<Point3>(sensor), toaMeasurement,
                   model, speed) {}
+
+  static void InsertEvent(Key key, const Event& event,
+                          boost::shared_ptr<Values> values) {
+    values->insert(key, event);
+  }
 };
 
 }  // namespace gtsam
