@@ -197,27 +197,15 @@ Matrix3 Rot3::LogmapDerivative(const Vector3& x)    {
 /* ************************************************************************* */
 pair<Matrix3, Vector3> RQ(const Matrix3& A) {
 
-  // atan2 has curious/unstable behavior near 0.
-  // If either x or y is close to zero, the results can vary depending on
-  // what the sign of either x or y is.
-  // E.g. for x = 1e-15, y = -0.08, atan2(x, y) != atan2(-x, y),
-  // even though arithmetically, they are both atan2(0, y).
-  // Suppressing small numbers to 0.0 doesn't work since the floating point
-  // representation still causes the issue due to a delta difference.
-  // The only fix is to convert to an int so we are guaranteed the value is 0.
-  // This lambda function checks if a number is close to 0.
-  // If yes, then return the integer representation, else do nothing.
-  auto suppress = [](auto x) { return abs(x) > 1e-15 ? x : int(x); };
-
-  double x = -atan2(-suppress(A(2, 1)), suppress(A(2, 2)));
+  double x = -atan2(-A(2, 1), A(2, 2));
   Rot3 Qx = Rot3::Rx(-x);
   Matrix3 B = A * Qx.matrix();
 
-  double y = -atan2(suppress(B(2, 0)), suppress(B(2, 2)));
+  double y = -atan2(B(2, 0), B(2, 2));
   Rot3 Qy = Rot3::Ry(-y);
   Matrix3 C = B * Qy.matrix();
 
-  double z = -atan2(-suppress(C(1, 0)), suppress(C(1, 1)));
+  double z = -atan2(-C(1, 0), C(1, 1));
   Rot3 Qz = Rot3::Rz(-z);
   Matrix3 R = C * Qz.matrix();
 
