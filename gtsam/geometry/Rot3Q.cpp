@@ -79,9 +79,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
+  Matrix3 Rot3::transpose() const {
     // `eval` for immediate evaluation (allows compilation).
-    return Rot3(matrix()).matrix().eval().transpose();
+    // return Rot3(matrix()).matrix().eval().transpose();
+    return matrix().eval().transpose();
   }
 
   /* ************************************************************************* */

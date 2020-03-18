@@ -411,7 +411,7 @@ namespace gtsam {
     /**
      * Return 3*3 transpose (inverse) rotation matrix
      */
-    const Eigen::Transpose<const Matrix3> transpose() const;
+    Matrix3 transpose() const;
 
     /// @deprecated, this is base 1, and was just confusing
     Point3 column(int index) const;
@@ -440,16 +440,25 @@ namespace gtsam {
 
     /**
      * Accessor to get to component of angle representations
+     * NOTE: these are not efficient to get to multiple separate parts,
+     * you should instead use xyz() or ypr()
+     * TODO: make this more efficient
      */
     inline double roll() const  { return xyz()(0); }
 
     /**
      * Accessor to get to component of angle representations
+     * NOTE: these are not efficient to get to multiple separate parts,
+     * you should instead use xyz() or ypr()
+     * TODO: make this more efficient
      */
     inline double pitch() const { return xyz()(1); }
 
     /**
      * Accessor to get to component of angle representations
+     * NOTE: these are not efficient to get to multiple separate parts,
+     * you should instead use xyz() or ypr()
+     * TODO: make this more efficient
      */
     inline double yaw() const   { return xyz()(2); }
 
