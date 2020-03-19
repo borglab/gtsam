@@ -79,10 +79,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix3 Rot3::transpose() const {
-    // `eval` for immediate evaluation (allows compilation).
-    // return Rot3(matrix()).matrix().eval().transpose();
-    return matrix().eval().transpose();
+  // TODO: Maybe use return type `const Eigen::Transpose<const Matrix3>`?
+  // It works in Rot3M but not here, because of some weird behavior
+  // due to Eigen's expression templates which needs more investigation.
+  // For example, if we use matrix(), the value returned has a 1e-10,
+  // and if we use quaternion_.toRotationMatrix(), the matrix is arbitrary.
+  // Using eval() here doesn't help, it only helps if we use it in
+  // the downstream code.
+  const Matrix3 Rot3::transpose() const {
+    return matrix().transpose();
   }
 
   /* ************************************************************************* */
@@ -115,7 +120,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix3 Rot3::matrix() const {return quaternion_.toRotationMatrix();}
+  const Matrix3 Rot3::matrix() const {return quaternion_.toRotationMatrix();}
 
   /* ************************************************************************* */
   Point3 Rot3::r1() const { return Point3(quaternion_.toRotationMatrix().col(0)); }
