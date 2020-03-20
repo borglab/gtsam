@@ -17,6 +17,7 @@
  * @author  Frank Dellaert
  * @author  Richard Roberts
  * @author  Luca Carlone
+ * @author  Varun Agrawal
  */
 // \callgraph
 
@@ -434,7 +435,7 @@ namespace gtsam {
 
     /**
      * Use RQ to calculate roll-pitch-yaw angle representation
-     * @return a vector containing ypr s.t. R = Rot3::Ypr(y,p,r)
+     * @return a vector containing rpy s.t. R = Rot3::Ypr(y,p,r)
      */
     Vector3 rpy() const;
 
@@ -465,6 +466,16 @@ namespace gtsam {
     /// @}
     /// @name Advanced Interface
     /// @{
+
+    /**
+      * Compute the Euler axis and angle (in radians) representation
+      * of this rotation.
+      * The angle is in the range [0, π]. If the angle is not in the range,
+      * the axis is flipped around accordingly so that the returned angle is
+      * within the specified range.
+      * @return pair consisting of Unit3 axis and angle in radians
+      */
+    std::pair<Unit3, double> axisAngle() const;
 
     /** Compute the quaternion representation of this rotation.
      * @return The quaternion
