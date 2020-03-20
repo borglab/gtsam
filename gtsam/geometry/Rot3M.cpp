@@ -110,7 +110,7 @@ Rot3 Rot3::operator*(const Rot3& R2) const {
 }
 
 /* ************************************************************************* */
-const Matrix3 Rot3::transpose() const {
+Matrix3 Rot3::transpose() const {
   return rot_.matrix().transpose();
 }
 
@@ -175,7 +175,7 @@ Vector3 Rot3::ChartAtOrigin::Local(const Rot3& R, ChartJacobian H) {
 }
 
 /* ************************************************************************* */
-const Matrix3 Rot3::matrix() const {
+Matrix3 Rot3::matrix() const {
   return rot_.matrix();
 }
 

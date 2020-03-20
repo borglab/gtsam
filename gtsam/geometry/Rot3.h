@@ -407,12 +407,12 @@ namespace gtsam {
     /// @{
 
     /** return 3*3 rotation matrix */
-    const Matrix3 matrix() const;
+    Matrix3 matrix() const;
 
     /**
      * Return 3*3 transpose (inverse) rotation matrix
      */
-    const Matrix3 transpose() const;
+    Matrix3 transpose() const;
 
     /// @deprecated, this is base 1, and was just confusing
     Point3 column(int index) const;

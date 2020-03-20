@@ -86,7 +86,7 @@ namespace gtsam {
   // and if we use quaternion_.toRotationMatrix(), the matrix is arbitrary.
   // Using eval() here doesn't help, it only helps if we use it in
   // the downstream code.
-  const Matrix3 Rot3::transpose() const {
+  Matrix3 Rot3::transpose() const {
     return matrix().transpose();
   }
 
@@ -120,7 +120,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const Matrix3 Rot3::matrix() const {return quaternion_.toRotationMatrix();}
+  Matrix3 Rot3::matrix() const {return quaternion_.toRotationMatrix();}
 
   /* ************************************************************************* */
   Point3 Rot3::r1() const { return Point3(quaternion_.toRotationMatrix().col(0)); }
