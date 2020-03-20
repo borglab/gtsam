@@ -188,3 +188,46 @@ def plot_pose3(fignum, pose, P, axis_length=0.1):
     axes = fig.gca(projection='3d')
     plot_pose3_on_axes(axes, pose, P=P, axis_length=axis_length)
 
+def plot_trajectory(fignum, values, scale=1, marginals=None):
+    pose3Values = gtsam.allPose3s(values)
+    keys = gtsam.KeyVector(pose3Values.keys())
+    lastIndex = None
+
+    for i in range(keys.size()):
+        key = keys.at(i)
+        try:
+            pose = pose3Values.atPose3(key)
+        except:
+            print("Warning: no Pose3 at key: {0}".format(key))
+
+        if lastIndex is not None:
+            lastKey = keys.at(lastIndex)
+            try:
+                lastPose = pose3Values.atPose3(lastKey)
+            except:
+                print("Warning: no Pose3 at key: {0}".format(lastKey))
+                pass
+
+            if marginals:
+                P = marginals.marginalCovariance(lastKey)
+            else:
+                P = None
+
+            plot_pose3(fignum, lastPose, P, scale)
+
+        lastIndex = i
+
+    # Draw final pose
+    if lastIndex is not None:
+        lastKey = keys.at(lastIndex)
+        try:
+            lastPose = pose3Values.atPose3(lastKey)
+            if marginals:
+                P = marginals.marginalCovariance(lastKey)
+            else:
+                P = None
+
+            plot_pose3(fignum, lastPose, P, scale)
+
+        except:
+            pass
