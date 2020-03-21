@@ -279,3 +279,10 @@ function(install_cython_files source_files dest_directory)
 
 endfunction()
 
+function(install_python_package install_path)
+  set(package_path "${install_path}${GTSAM_BUILD_TAG}")
+  # set cython directory permissions to user so we don't get permission denied
+  install(CODE "execute_process(COMMAND sh \"-c\" \"chown -R $(logname):$(logname) ${package_path}\")")
+  # go to cython directory and run setup.py
+  install(CODE "execute_process(COMMAND sh \"-c\" \"cd ${package_path} && python setup.py install\")")
+endfunction()

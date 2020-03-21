@@ -45,4 +45,6 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
   install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam_unstable" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
 
+  install_python_package("${GTSAM_CYTHON_INSTALL_PATH}")
+
 endif ()
