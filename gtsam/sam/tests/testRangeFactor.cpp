@@ -356,9 +356,11 @@ TEST(RangeFactor, Point3) {
 /* ************************************************************************* */
 // Do tests with PinholeCamera<Cal3_S2>
 TEST( RangeFactor, Camera) {
-  RangeFactor<PinholeCamera<Cal3_S2>,Point3> factor1(poseKey, pointKey, measurement, model);
-  RangeFactor<PinholeCamera<Cal3_S2>,Pose3> factor2(poseKey, pointKey, measurement, model);
-  RangeFactor<PinholeCamera<Cal3_S2>,PinholeCamera<Cal3_S2>> factor3(poseKey, pointKey, measurement, model);
+  using Camera = PinholeCamera<Cal3_S2>;
+
+  RangeFactor<Camera, Point3> factor1(poseKey, pointKey, measurement, model);
+  RangeFactor<Camera, Pose3>  factor2(poseKey, pointKey, measurement, model);
+  RangeFactor<Camera, Camera> factor3(poseKey, pointKey, measurement, model);
 }
 
 /* ************************************************************************* */
