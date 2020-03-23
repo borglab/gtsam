@@ -1,5 +1,6 @@
 
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/ImuFactor.h>
@@ -34,7 +35,7 @@ int main(int argc, char* argv[]) {
   double radius = 30;
   const Point3 up(0, 0, 1), target(0, 0, 0);
   const Point3 position(radius, 0, 0);
-  const SimpleCamera camera = SimpleCamera::Lookat(position, target, up);
+  const auto camera = PinholeCamera<Cal3_S2>::Lookat(position, target, up);
   const auto pose_0 = camera.pose();
 
   // Now, create a constant-twist scenario that makes the camera orbit the

@@ -28,7 +28,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
 
 #include <exception>
 
@@ -169,7 +169,7 @@ void perturbPoint3(Values& values, double sigma, int32_t seed = 42u) {
 }
 
 /// Insert a number of initial point values by backprojecting
-void insertBackprojections(Values& values, const SimpleCamera& camera,
+void insertBackprojections(Values& values, const PinholeCamera<Cal3_S2>& camera,
     const Vector& J, const Matrix& Z, double depth) {
   if (Z.rows() != 2)
     throw std::invalid_argument("insertBackProjections: Z must be 2*K");
