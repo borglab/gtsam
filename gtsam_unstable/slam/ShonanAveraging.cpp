@@ -202,19 +202,19 @@ static Matrix StiefelElementMatrix(const Values& values) {
 
 /* ************************************************************************* */
 Values ShonanAveraging::projectFrom(size_t p, const Values& values) const {
-    Values SO3_values;
+    Values Rot3_values;
     for (size_t j = 0; j < nrPoses(); j++) {
         const SOn Q = values.at<SOn>(j);
         assert(Q.rows() == p);
-        const SO3 R = SO3::ClosestTo(Q.matrix().topLeftCorner(d_, d_));
-        SO3_values.insert(j, R);
+        const Rot3 R = Rot3::ClosestTo(Q.matrix().topLeftCorner(d_, d_));
+        Rot3_values.insert(j, R);
     }
-    return SO3_values;
+    return Rot3_values;
 }
 
 /* ************************************************************************* */
 Values ShonanAveraging::roundSolution(const Matrix S) const {
-    size_t N = nrPoses();
+    const size_t N = nrPoses();
     // First, compute a thin SVD of S
     Eigen::JacobiSVD<Matrix> svd(S, Eigen::ComputeThinV);
     Vector sigmas = svd.singularValues();
@@ -249,12 +249,12 @@ Values ShonanAveraging::roundSolution(const Matrix S) const {
     }
 
     // Finally, project each dxd rotation block to SO(d)
-    Values SO3_values;
+    Values Rot3_values;
     for (size_t i = 0; i < N; ++i) {
-        const SO3 Ri = SO3::ClosestTo(R.block(0, i * d_, d_, d_));
-        SO3_values.insert(i, Ri);
+        const Rot3 Ri = Rot3::ClosestTo(R.block(0, i * d_, d_, d_));
+        Rot3_values.insert(i, Ri);
     }
-    return SO3_values;
+    return Rot3_values;
 }
 
 /* ************************************************************************* */
@@ -275,7 +275,13 @@ double ShonanAveraging::cost(const Values& values) const {
         graph.emplace_shared<FrobeniusBetweenFactor<SO3>>(
             keys[0], keys[1], SO3(Tij.rotation().matrix()), model);
     }
-    return graph.error(values);
+    // Finally, project each dxd rotation block to SO(d)
+    Values SO3_values;
+    const size_t N = nrPoses();
+    for (size_t i = 0; i < N; ++i) {
+        SO3_values.insert(i, SO3(values.at<Rot3>(i).matrix()));
+    }
+    return graph.error(SO3_values);
 }
 
 /* ************************************************************************* */

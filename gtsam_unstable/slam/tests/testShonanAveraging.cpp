@@ -206,9 +206,9 @@ TEST(ShonanAveraging, runWithRandomKlaus) {
                        1e-4);  // Regression
 
   // Get Shonan solution in new frame R (R for result)
-  const Rot3 rR0 = Rot3(result.first.at<SO3>(0));
-  const Rot3 rR1 = Rot3(result.first.at<SO3>(1));
-  const Rot3 rR2 = Rot3(result.first.at<SO3>(2));
+  const Rot3 rR0 = result.first.at<Rot3>(0);
+  const Rot3 rR1 = result.first.at<Rot3>(1);
+  const Rot3 rR2 = result.first.at<Rot3>(2);
 
   // rR0 = rRw * wR0 => rRw = rR0 * wR0.inverse()
   // rR1 = rRw * wR1
@@ -238,9 +238,9 @@ TEST(ShonanAveraging, runWithRandomKlausKarcher) {
                        1e-4);  // Regression test
 
   // Get Shonan solution in new frame R (R for result)
-  const Rot3 rR0 = Rot3(result.first.at<SO3>(0));
-  const Rot3 rR1 = Rot3(result.first.at<SO3>(1));
-  const Rot3 rR2 = Rot3(result.first.at<SO3>(2));
+  const Rot3 rR0 = result.first.at<Rot3>(0);
+  const Rot3 rR1 = result.first.at<Rot3>(1);
+  const Rot3 rR2 = result.first.at<Rot3>(2);
 
   const Rot3 rRw = rR0 * wR0.inverse();
   EXPECT(assert_equal(rRw * wR1, rR1, 0.1))

@@ -17,7 +17,6 @@
  */
 
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/SO3.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/base/Matrix.h>
@@ -187,25 +186,25 @@ class ShonanAveraging {
       const boost::optional<const Values&> initial = boost::none) const;
 
   /**
-   * Project from SO(p) to SO(3)
+   * Project from SO(p) to Rot3
    * Values should be of type SO(p)
    */
   Values projectFrom(size_t p, const Values& values) const;
 
   /**
-   * Project pxdN Stiefel manifold matrix S to SO(3)^N
+   * Project pxdN Stiefel manifold matrix S to Rot3^N
    */
   Values roundSolution(const Matrix S) const;
   
   /**
-   * Project from SO(p)^N to SO(3)^N
+   * Project from SO(p)^N to Rot3^N
    * Values should be of type SO(p)
    */
   Values roundSolution(const Values& values) const;
 
   /**
    * Calculate cost for SO(3)
-   * Values should be of type SO3
+   * Values should be of type Rot3
    */
   double cost(const Values& values) const;
 
