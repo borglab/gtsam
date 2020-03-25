@@ -98,7 +98,7 @@ for i=1:20
     % generate some camera measurements
     cam_pose = initial.atPose3(i).compose(actual_transform);
 %     gtsam.plotPose3(cam_pose);
-    cam = SimpleCamera(cam_pose,K);
+    cam = PinholeCameraCal3_S2(cam_pose,K);
     i
 %     result
     for j=1:nrPoints

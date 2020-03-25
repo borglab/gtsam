@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
   noiseModel::Isotropic::shared_ptr measurementNoise = noiseModel::Isotropic::Sigma(2, 1.0);
   for (size_t i = 0; i < poses.size(); ++i) {
     for (size_t j = 0; j < points.size(); ++j) {
-      SimpleCamera camera(poses[i], K);
+      PinholeCamera<Cal3_S2> camera(poses[i], K);
       Point2 measurement = camera.project(points[j]);
       // The only real difference with the Visual SLAM example is that here we use a
       // different factor type, that also calculates the Jacobian with respect to calibration

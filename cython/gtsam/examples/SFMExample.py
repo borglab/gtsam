@@ -79,7 +79,7 @@ def main():
 
     # Simulated measurements from each camera pose, adding them to the factor graph
     for i, pose in enumerate(poses):
-        camera = SimpleCamera(pose, K)
+        camera = PinholeCameraCal3_S2(pose, K)
         for j, point in enumerate(points):
             measurement = camera.project(point)
             factor = GenericProjectionFactorCal3_S2(
