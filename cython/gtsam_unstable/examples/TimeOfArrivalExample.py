@@ -1,5 +1,5 @@
 """
-GTSAM Copyright 2010-2018, Georgia Tech Research Corporation,
+GTSAM Copyright 2010-2020, Georgia Tech Research Corporation,
 Atlanta, Georgia 30332-0415
 All Rights Reserved
 Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,7 +23,7 @@ CM = 1e-2
 TIME_OF_ARRIVAL = TimeOfArrival(330)
 
 
-def defineMicrophones():
+def define_microphones():
     """Create microphones."""
     height = 0.5
     microphones = []
@@ -34,7 +34,7 @@ def defineMicrophones():
     return microphones
 
 
-def createTrajectory(n):
+def create_trajectory(n):
     """Create ground truth trajectory."""
     trajectory = []
     timeOfEvent = 10
@@ -47,19 +47,19 @@ def createTrajectory(n):
     return trajectory
 
 
-def simulateOneTOA(microphones, event):
+def simulate_one_toa(microphones, event):
     """Simulate time-of-arrival measurements for a single event."""
     return [TIME_OF_ARRIVAL.measure(event, microphones[i])
             for i in range(len(microphones))]
 
 
-def simulateTOA(microphones, trajectory):
+def simulate_toa(microphones, trajectory):
     """Simulate time-of-arrival measurements for an entire trajectory."""
-    return [simulateOneTOA(microphones, event)
+    return [simulate_one_toa(microphones, event)
             for event in trajectory]
 
 
-def createGraph(microphones, simulatedTOA):
+def create_graph(microphones, simulatedTOA):
     """Create factor graph."""
     graph = NonlinearFactorGraph()
 
@@ -77,7 +77,7 @@ def createGraph(microphones, simulatedTOA):
     return graph
 
 
-def createInitialEstimate(n):
+def create_initial_estimate(n):
     """Create initial estimate for n events."""
     initial = Values()
     zero = Event()
@@ -86,32 +86,32 @@ def createInitialEstimate(n):
     return initial
 
 
-def TimeOfArrivalExample():
+def toa_example():
     """Run example with 4 microphones and 5 events in a straight line."""
     # Create microphones
-    microphones = defineMicrophones()
+    microphones = define_microphones()
     K = len(microphones)
     for i in range(K):
         print("mic {} = {}".format(i, microphones[i]))
 
     # Create a ground truth trajectory
     n = 5
-    groundTruth = createTrajectory(n)
+    groundTruth = create_trajectory(n)
     for event in groundTruth:
         print(event)
 
     # Simulate time-of-arrival measurements
-    simulatedTOA = simulateTOA(microphones, groundTruth)
+    simulatedTOA = simulate_toa(microphones, groundTruth)
     for key in range(n):
         for i in range(K):
             print("z_{}{} = {} ms".format(key, i, simulatedTOA[key][i] / MS))
 
     # create factor graph
-    graph = createGraph(microphones, simulatedTOA)
+    graph = create_graph(microphones, simulatedTOA)
     print(graph.at(0))
 
     # Create initial estimate
-    initial_estimate = createInitialEstimate(n)
+    initial_estimate = create_initial_estimate(n)
     print(initial_estimate)
 
     # Optimize using Levenberg-Marquardt optimization.
@@ -124,5 +124,5 @@ def TimeOfArrivalExample():
 
 
 if __name__ == '__main__':
-    TimeOfArrivalExample()
+    toa_example()
     print("Example complete")
