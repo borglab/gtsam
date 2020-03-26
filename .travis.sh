@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# install TBB with _debug.so files
+function install_tbb()
+{
+  wget https://github.com/oneapi-src/oneTBB/releases/download/4.4.5/tbb44_20160526oss_lin.tgz
+  if [ $(uname -s) == "Linux"]; then
+    tar -xvf tbb44_20160526oss_lin.tgz
+  elif [ $(uname -s) == "Linux" ]; then
+    tar -xvf tbb44_20160526oss_mac.tgz
+  fi
+  source tbb44_20160526oss/bin/tbbvars.sh intel64 linux auto_tbbroot
+}
+
 # common tasks before either build or test
 function configure()
 {
@@ -18,6 +30,8 @@ function configure()
     export CC=gcc-$GCC_VERSION
     export CXX=g++-$GCC_VERSION
   fi
+
+  install_tbb
 
   # GTSAM_BUILD_WITH_MARCH_NATIVE=OFF: to avoid crashes in builder VMs
   cmake $SOURCE_DIR \
