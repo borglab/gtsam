@@ -199,17 +199,17 @@ find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
 
 # Set up variables if we're using TBB
 if(TBB_FOUND AND GTSAM_WITH_TBB)
-	set(GTSAM_USE_TBB 1)  # This will go into config.h
-       if (${TBB_VERSION_MAJOR} GREATER_EQUAL 2020)
-           set(TBB_GREATER_EQUAL_2020 1)
-       else()
-           set(TBB_GREATER_EQUAL_2020 0)
-       endif()
-  # all definitions and link requisites will go via imported targets:
-  # tbb & tbbmalloc
-  list(APPEND GTSAM_ADDITIONAL_LIBRARIES tbb tbbmalloc)
+    set(GTSAM_USE_TBB 1)  # This will go into config.h
+    if (${TBB_VERSION_MAJOR} GREATER_EQUAL 2020)
+        set(TBB_GREATER_EQUAL_2020 1)
+    else()
+        set(TBB_GREATER_EQUAL_2020 0)
+    endif()
+    # all definitions and link requisites will go via imported targets:
+    # tbb & tbbmalloc
+    list(APPEND GTSAM_ADDITIONAL_LIBRARIES tbb tbbmalloc)
 else()
-	set(GTSAM_USE_TBB 0)  # This will go into config.h
+    set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
 
 ###############################################################################
