@@ -5,12 +5,23 @@ function install_tbb()
 {
   if [ $(uname -s) == "Linux" ]; then
     wget https://github.com/oneapi-src/oneTBB/releases/download/4.4.2/tbb44_20151115oss_lin.tgz
-    tar -xvf tbb44_20151115oss_lin.tgz
+    tar -xf tbb44_20151115oss_lin.tgz
   elif [ $(uname -s) == "Darwin" ]; then
     wget https://github.com/oneapi-src/oneTBB/releases/download/4.4.2/tbb44_20151115oss_osx.tgz
-    tar -xvf tbb44_20151115oss_osx.tgz
+    tar -xf tbb44_20151115oss_osx.tgz
   fi
-  source tbb44_20151115oss/bin/tbbvars.sh intel64 linux auto_tbbroot
+
+  # Variables needed for setting the correct library path
+  TBB_TARGET_ARCH="intel64"
+  TBBROOT=$(cd tbb44_20151115oss/bin && pwd -P)/..
+  library_directory="${TBB_TARGET_ARCH}/gcc4.1"
+
+  # Set library paths
+  MIC_LD_LIBRARY_PATH="$TBBROOT/lib/mic:${MIC_LD_LIBRARY_PATH}"; export MIC_LD_LIBRARY_PATH
+  MIC_LIBRARY_PATH="$TBBROOT/lib/mic:${MIC_LIBRARY_PATH}"; export MIC_LIBRARY_PATH
+  LD_LIBRARY_PATH="$TBBROOT/lib/$library_directory:${LD_LIBRARY_PATH}"; export LD_LIBRARY_PATH
+  LIBRARY_PATH="$TBBROOT/lib/$library_directory:${LIBRARY_PATH}"; export LIBRARY_PATH
+  CPATH="${TBBROOT}/include:$CPATH"; export CPATH
 }
 
 # common tasks before either build or test
