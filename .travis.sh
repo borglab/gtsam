@@ -3,13 +3,14 @@
 # install TBB with _debug.so files
 function install_tbb()
 {
-  wget https://github.com/oneapi-src/oneTBB/releases/download/4.4.5/tbb44_20160526oss_lin.tgz
-  if [ $(uname -s) == "Linux"]; then
-    tar -xvf tbb44_20160526oss_lin.tgz
-  elif [ $(uname -s) == "Linux" ]; then
-    tar -xvf tbb44_20160526oss_mac.tgz
+  if [ $(uname -s) == "Linux" ]; then
+    wget https://github.com/oneapi-src/oneTBB/releases/download/4.4.2/tbb44_20151115oss_lin.tgz
+    tar -xvf tbb44_20151115oss_lin.tgz
+  elif [ $(uname -s) == "Darwin" ]; then
+    wget https://github.com/oneapi-src/oneTBB/releases/download/4.4.2/tbb44_20151115oss_osx.tgz
+    tar -xvf tbb44_20151115oss_osx.tgz
   fi
-  source tbb44_20160526oss/bin/tbbvars.sh intel64 linux auto_tbbroot
+  source tbb44_20151115oss/bin/tbbvars.sh intel64 linux auto_tbbroot
 }
 
 # common tasks before either build or test
