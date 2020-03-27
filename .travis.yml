@@ -17,13 +17,13 @@ addons:
     - libpython-dev python-numpy
     - libboost-all-dev
 
-before_install:
-  - ./.travis.sh -tbb
+# before_install:
   # - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
 
 install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then HOMEBREW_NO_AUTO_UPDATE=1 brew install ccache  ; fi
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then export PATH="/usr/local/opt/ccache/libexec:$PATH" ; fi
+  - source .travis.sh -tbb
 
 # We first do the compile stage specified below, then the matrix expansion specified after.
 stages:
