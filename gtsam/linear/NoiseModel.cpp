@@ -143,7 +143,10 @@ bool Gaussian::equals(const Base& expected, double tol) const {
 
 /* ************************************************************************* */
 Vector Gaussian::sigmas() const {
-  Matrix Rinv = thisR().inverse(); // inverse of triangular matrix is fast
+  Matrix R = thisR();
+  // fast inverse of upper-triangular matrix
+  // Alternate for Matrix Rinv = R.inverse();
+  Matrix Rinv = R.triangularView<Eigen::Upper>().solve(Matrix::Identity(R.rows(), R.cols()));
   return Vector((Rinv * Rinv.transpose()).diagonal()).cwiseSqrt();
 }
 
@@ -312,9 +315,10 @@ void Diagonal::WhitenInPlace(Eigen::Block<Matrix> H) const {
 
 namespace internal {
 // switch precisions and invsigmas to finite value
+// TODO: why?? And, why not just ask s==0.0 below ?
 static void fix(const Vector& sigmas, Vector& precisions, Vector& invsigmas) {
   for (Vector::Index i = 0; i < sigmas.size(); ++i)
-    if (sigmas[i] <= 1e-12) {
+    if (!std::isfinite(1. / sigmas[i])) {
       precisions[i] = 0.0;
       invsigmas[i] = 0.0;
     }
@@ -341,8 +345,8 @@ Constrained::shared_ptr Constrained::MixedSigmas(const Vector& mu,
 
 /* ************************************************************************* */
 bool Constrained::constrained(size_t i) const {
-  // numerically stable way, rather than comparing to 0.0 directly.
-  return sigmas_[i] <= 1e-12;
+  // TODO why not just check sigmas_[i]==0.0 ?
+  return !std::isfinite(1./sigmas_[i]);
 }
 
 /* ************************************************************************* */
