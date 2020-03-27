@@ -3,11 +3,11 @@
 # install TBB with _debug.so files
 function install_tbb()
 {
-  if [ $(uname -s) == "Linux" ]; then
-    wget https://github.com/oneapi-src/oneTBB/releases/download/4.4.2/tbb44_20151115oss_lin.tgz
-    tar -xf tbb44_20151115oss_lin.tgz
+  if [ "$(uname -s)" == "Linux" ]; then
+    wget https://github.com/oneapi-src/oneTBB/releases/download/4.4.2/tbb44_20151115oss_lin.tgz -O /tmp/tbb442.tgz
+    tar -C /tmp -xvf /tmp/tbb442.tgz
 
-    TBBROOT=$(cd tbb44_20151115oss/bin && pwd -P)/..
+    TBBROOT=/tmp/tbb44_20151115oss
 
     TBB_TARGET_ARCH="intel64"
     library_directory="${TBB_TARGET_ARCH}/gcc4.1"
@@ -18,18 +18,18 @@ function install_tbb()
     export LD_LIBRARY_PATH="$TBBROOT/lib/$library_directory:${LD_LIBRARY_PATH}"
     export LIBRARY_PATH="$TBBROOT/lib/$library_directory:${LIBRARY_PATH}"
 
-  elif [ $(uname -s) == "Darwin" ]; then
-    wget https://github.com/oneapi-src/oneTBB/releases/download/4.4.2/tbb44_20151115oss_osx.tgz
-    tar -xf tbb44_20151115oss_osx.tgz
+  elif [ "$(uname -s)" == "Darwin" ]; then
+    wget https://github.com/oneapi-src/oneTBB/releases/download/4.4.2/tbb44_20151115oss_osx.tgz -O /tmp/tbb442.tgz
+    tar -C /tmp -xvf /tmp/tbb442.tgz
 
-    TBBROOT=$(cd tbb44_20151115oss/bin && pwd -P)/..
+    TBBROOT=/tmp/tbb44_20151115oss
 
     # Set library paths
     export LIBRARY_PATH="${TBBROOT}/lib:$LIBRARY_PATH"
     export DYLD_LIBRARY_PATH="${TBBROOT}/lib:$DYLD_LIBRARY_PATH"
   fi
 
-  CPATH="${TBBROOT}/include:$CPATH"; export CPATH
+  # CPATH="${TBBROOT}/include:$CPATH"; export CPATH
 }
 
 # common tasks before either build or test
