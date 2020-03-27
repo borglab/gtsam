@@ -33,13 +33,9 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
 
   typedef Cal3DS2_Base Base;
 
-private:
-
-  static const size_t dimension_ = 9;
-
 public:
 
-  enum { dimension = dimension_ };
+  enum { dimension = 9 };
 
   /// @name Standard Constructors
   /// @{
@@ -80,10 +76,10 @@ public:
   Vector localCoordinates(const Cal3DS2& T2) const ;
 
   /// Return dimensions of calibration manifold object
-  virtual size_t dim() const { return dimension_ ; }
+  virtual size_t dim() const { return dimension ; }
 
   /// Return dimensions of calibration manifold object
-  static size_t Dim() { return dimension_; }
+  static size_t Dim() { return dimension; }
 
   /// @}
   /// @name Clone
