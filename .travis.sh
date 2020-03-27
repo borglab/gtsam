@@ -5,7 +5,7 @@ function install_tbb()
 {
   if [ "$(uname -s)" == "Linux" ]; then
     wget https://github.com/oneapi-src/oneTBB/releases/download/4.4.2/tbb44_20151115oss_lin.tgz -O /tmp/tbb442.tgz
-    tar -C /tmp -xvf /tmp/tbb442.tgz
+    tar -C /tmp -xf /tmp/tbb442.tgz
 
     TBBROOT=/tmp/tbb44_20151115oss
 
@@ -20,7 +20,7 @@ function install_tbb()
 
   elif [ "$(uname -s)" == "Darwin" ]; then
     wget https://github.com/oneapi-src/oneTBB/releases/download/4.4.2/tbb44_20151115oss_osx.tgz -O /tmp/tbb442.tgz
-    tar -C /tmp -xvf /tmp/tbb442.tgz
+    tar -C /tmp -xf /tmp/tbb442.tgz
 
     TBBROOT=/tmp/tbb44_20151115oss
 
@@ -50,8 +50,6 @@ function configure()
     export CC=gcc-$GCC_VERSION
     export CXX=g++-$GCC_VERSION
   fi
-
-  install_tbb
 
   # GTSAM_BUILD_WITH_MARCH_NATIVE=OFF: to avoid crashes in builder VMs
   cmake $SOURCE_DIR \
@@ -110,5 +108,8 @@ case $1 in
     ;;
   -t)
     test
+    ;;
+  -tbb)
+    install_tbb
     ;;
 esac
