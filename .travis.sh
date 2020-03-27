@@ -13,10 +13,10 @@ function install_tbb()
     library_directory="${TBB_TARGET_ARCH}/gcc4.1"
 
     # Set library paths
-    MIC_LD_LIBRARY_PATH="$TBBROOT/lib/mic:${MIC_LD_LIBRARY_PATH}"; export MIC_LD_LIBRARY_PATH
-    MIC_LIBRARY_PATH="$TBBROOT/lib/mic:${MIC_LIBRARY_PATH}"; export MIC_LIBRARY_PATH
-    LD_LIBRARY_PATH="$TBBROOT/lib/$library_directory:${LD_LIBRARY_PATH}"; export LD_LIBRARY_PATH
-    LIBRARY_PATH="$TBBROOT/lib/$library_directory:${LIBRARY_PATH}"; export LIBRARY_PATH
+    export MIC_LD_LIBRARY_PATH="$TBBROOT/lib/mic:${MIC_LD_LIBRARY_PATH}"
+    export MIC_LIBRARY_PATH="$TBBROOT/lib/mic:${MIC_LIBRARY_PATH}"
+    export LD_LIBRARY_PATH="$TBBROOT/lib/$library_directory:${LD_LIBRARY_PATH}"
+    export LIBRARY_PATH="$TBBROOT/lib/$library_directory:${LIBRARY_PATH}"
 
   elif [ $(uname -s) == "Darwin" ]; then
     wget https://github.com/oneapi-src/oneTBB/releases/download/4.4.2/tbb44_20151115oss_osx.tgz
@@ -25,8 +25,8 @@ function install_tbb()
     TBBROOT=$(cd tbb44_20151115oss/bin && pwd -P)/..
 
     # Set library paths
-    LIBRARY_PATH="${TBBROOT}/lib:$LIBRARY_PATH"; export LIBRARY_PATH
-    DYLD_LIBRARY_PATH="${TBBROOT}/lib:$DYLD_LIBRARY_PATH"; export DYLD_LIBRARY_PATH
+    export LIBRARY_PATH="${TBBROOT}/lib:$LIBRARY_PATH"
+    export DYLD_LIBRARY_PATH="${TBBROOT}/lib:$DYLD_LIBRARY_PATH"
   fi
 
   CPATH="${TBBROOT}/include:$CPATH"; export CPATH
