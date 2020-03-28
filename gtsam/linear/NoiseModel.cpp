@@ -142,12 +142,19 @@ bool Gaussian::equals(const Base& expected, double tol) const {
 }
 
 /* ************************************************************************* */
+Matrix Gaussian::covariance() const {
+  // Uses a fast version of `covariance = information().inverse();`
+  Matrix R = this->R();
+  Matrix I = Matrix::Identity(R.rows(), R.cols());
+  // Fast inverse of upper-triangular matrix R using forward-substitution
+  Matrix Rinv = R.triangularView<Eigen::Upper>().solve(I);
+  // (R' * R)^{-1} = R^{-1} * R^{-1}'
+  return (Rinv * Rinv.transpose());
+}
+
+/* ************************************************************************* */
 Vector Gaussian::sigmas() const {
-  Matrix R = thisR();
-  // fast inverse of upper-triangular matrix
-  // Alternate for Matrix Rinv = R.inverse();
-  Matrix Rinv = R.triangularView<Eigen::Upper>().solve(Matrix::Identity(R.rows(), R.cols()));
-  return Vector((Rinv * Rinv.transpose()).diagonal()).cwiseSqrt();
+  return Vector(covariance().diagonal()).cwiseSqrt();
 }
 
 /* ************************************************************************* */
