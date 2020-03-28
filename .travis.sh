@@ -46,6 +46,8 @@ function configure()
   rm -fr $BUILD_DIR || true
   mkdir $BUILD_DIR && cd $BUILD_DIR
 
+  install_tbb
+
   if [ ! -z "$GCC_VERSION" ]; then
     export CC=gcc-$GCC_VERSION
     export CXX=g++-$GCC_VERSION
@@ -108,8 +110,5 @@ case $1 in
     ;;
   -t)
     test
-    ;;
-  -tbb)
-    install_tbb
     ;;
 esac
