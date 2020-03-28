@@ -244,6 +244,9 @@ Values localToWorld(const Values& local, const Pose2& base,
         world.insert(key, base.transformFrom(point));
       } catch (const std::exception& e2) {
         // if not Pose2 or Point2, do nothing
+        #ifndef NDEBUG
+          std::cerr << "Values[key] is neither Pose2 nor Point2, so skip" << std::endl;
+        #endif
       }
     }
   }
