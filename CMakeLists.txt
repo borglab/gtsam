@@ -421,6 +421,10 @@ add_subdirectory(CppUnitLite)
 # Build wrap
 if (GTSAM_BUILD_WRAP)
     add_subdirectory(wrap)
+	# suppress warning of cython line being too long
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-misleading-indentation")
+	endif()
 endif(GTSAM_BUILD_WRAP)
 
 # Build GTSAM library
