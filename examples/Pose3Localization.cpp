@@ -17,10 +17,11 @@
  * @author Luca Carlone
  */
 
-#include <gtsam/slam/InitializePose3.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/nonlinear/Marginals.h>
 #include <fstream>
 
 using namespace std;
@@ -31,7 +32,7 @@ int main(const int argc, const char *argv[]) {
   // Read graph from file
   string g2oFile;
   if (argc < 2)
-    g2oFile = findExampleDataFile("pose3example.txt");
+    g2oFile = findExampleDataFile("pose3Localizationexample.txt");
   else
     g2oFile = argv[1];
 
@@ -51,24 +52,34 @@ int main(const int argc, const char *argv[]) {
     break;
   }
 
-  std::cout << "Initializing Pose3 - Riemannian gradient" << std::endl;
-  bool useGradient = true;
-  Values initialization = InitializePose3::initialize(*graph, *initial, useGradient);
-  std::cout << "done!" << std::endl;
+  std::cout << "Optimizing the factor graph" << std::endl;
+  GaussNewtonParams params;
+  params.setVerbosity("TERMINATION"); // this will show info about stopping conditions
+  GaussNewtonOptimizer optimizer(*graph, *initial, params);
+  Values result = optimizer.optimize();
+  std::cout << "Optimization complete" << std::endl;
 
   std::cout << "initial error=" <<graph->error(*initial)<< std::endl;
-  std::cout << "initialization error=" <<graph->error(initialization)<< std::endl;
+  std::cout << "final error=" <<graph->error(result)<< std::endl;
 
   if (argc < 3) {
-    initialization.print("initialization");
+    result.print("result");
   } else {
     const string outputFile = argv[2];
-    std::cout << "Writing results to file: " << outputFile  << std::endl;
+    std::cout << "Writing results to file: " << outputFile << std::endl;
     NonlinearFactorGraph::shared_ptr graphNoKernel;
     Values::shared_ptr initial2;
     boost::tie(graphNoKernel, initial2) = readG2o(g2oFile);
-    writeG2o(*graphNoKernel, initialization, outputFile);
+    writeG2o(*graphNoKernel, result, outputFile);
     std::cout << "done! " << std::endl;
+  }
+
+  // Calculate and print marginal covariances for all variables
+  Marginals marginals(*graph, result);
+  for(const auto& key_value: result) {
+    auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
+    if (!p) continue;
+    std::cout << marginals.marginalCovariance(key_value.key) << endl;
   }
   return 0;
 }
