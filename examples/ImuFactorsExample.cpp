@@ -33,6 +33,8 @@
  *  optional arguments:
  *    data_csv_path           path to the CSV file with the IMU data.
  *    -c                      use CombinedImuFactor
+ *  Note: Define USE_LM to use Levenberg Marquardt Optimizer
+ *        By default ISAM2 is used
  */
 
 // GTSAM related includes.
@@ -44,10 +46,14 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/inference/Symbol.h>
 #include <cstring>
 #include <fstream>
 #include <iostream>
+
+// Uncomment the following to use Levenberg Marquardt Optimizer
+// #define USE_LM
 
 using namespace gtsam;
 using namespace std;
@@ -67,6 +73,17 @@ int main(int argc, char* argv[])
 {
   string data_filename;
   bool use_combined_imu = false;
+
+#ifndef USE_LM
+  printf("Using ISAM2\n");
+  ISAM2Params parameters;
+  parameters.relinearizeThreshold = 0.01;
+  parameters.relinearizeSkip = 1;
+  ISAM2 isam2(parameters);
+#else
+  printf("Using Levenberg Marquardt Optimizer\n");
+#endif
+
   if (argc < 2) {
     printf("using default CSV file\n");
     data_filename = findExampleDataFile("imuAndGPSdata.csv");
@@ -248,9 +265,19 @@ int main(int argc, char* argv[])
       initial_values.insert(V(correction_count), prop_state.v());
       initial_values.insert(B(correction_count), prev_bias);
 
+      Values result;
+#ifdef USE_LM
       LevenbergMarquardtOptimizer optimizer(*graph, initial_values);
-      Values result = optimizer.optimize();
+      result = optimizer.optimize();
+#else
+      isam2.update(*graph, initial_values);
+      isam2.update();
+      result = isam2.calculateEstimate();
 
+      // reset the graph
+      graph->resize(0);
+      initial_values.clear();
+#endif
       // Overwrite the beginning of the preintegration for the next step.
       prev_state = NavState(result.at<Pose3>(X(correction_count)),
                             result.at<Vector3>(V(correction_count)));
