@@ -141,7 +141,7 @@ double Fair::weight(double error) const {
   return 1.0 / (1.0 + std::abs(error) / c_);
 }
 
-double Fair::residual(double error) const {
+double Fair::loss(double error) const {
   const double absError = std::abs(error);
   const double normalizedError = absError / c_;
   const double c_2 = c_ * c_;
@@ -175,7 +175,7 @@ double Huber::weight(double error) const {
   return (absError <= k_) ? (1.0) : (k_ / absError);
 }
 
-double Huber::residual(double error) const {
+double Huber::loss(double error) const {
   const double absError = std::abs(error);
   if (absError <= k_) {  // |x| <= k
     return error*error / 2;
@@ -212,7 +212,7 @@ double Cauchy::weight(double error) const {
   return ksquared_ / (ksquared_ + error*error);
 }
 
-double Cauchy::residual(double error) const {
+double Cauchy::loss(double error) const {
   const double val = std::log1p(error * error / ksquared_);
   return ksquared_ * val * 0.5;
 }
@@ -249,7 +249,7 @@ double Tukey::weight(double error) const {
   return 0.0;
 }
 
-double Tukey::residual(double error) const {
+double Tukey::loss(double error) const {
   double absError = std::abs(error);
   if (absError <= c_) {
     const double one_minus_xc2 = 1.0 - error*error/csquared_;
@@ -285,7 +285,7 @@ double Welsch::weight(double error) const {
   return std::exp(-xc2);
 }
 
-double Welsch::residual(double error) const {
+double Welsch::loss(double error) const {
   const double xc2 = (error*error)/csquared_;
   return csquared_ * 0.5 * -std::expm1(-xc2);
 }
@@ -318,7 +318,7 @@ double GemanMcClure::weight(double error) const {
   return c4/(c2error*c2error);
 }
 
-double GemanMcClure::residual(double error) const {
+double GemanMcClure::loss(double error) const {
   const double c2 = c_*c_;
   const double error2 = error*error;
   return 0.5 * (c2 * error2) / (c2 + error2);
@@ -356,7 +356,7 @@ double DCS::weight(double error) const {
   return 1.0;
 }
 
-double DCS::residual(double error) const {
+double DCS::loss(double error) const {
   // This is the simplified version of Eq 9 from (Agarwal13icra)
   // after you simplify and cancel terms.
   const double e2 = error*error;
@@ -400,7 +400,7 @@ double L2WithDeadZone::weight(double error) const {
   else return (k_+error)/error;
 }
 
-double L2WithDeadZone::residual(double error) const {
+double L2WithDeadZone::loss(double error) const {
   const double abs_error = std::abs(error);
   return (abs_error < k_) ? 0.0 : 0.5*(k_-abs_error)*(k_-abs_error);
 }
