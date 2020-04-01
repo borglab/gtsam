@@ -207,12 +207,23 @@ namespace gtsam {
       virtual Vector unwhiten(const Vector& v) const;
 
       /**
-       * Mahalanobis distance v'*R'*R*v = <R*v,R*v>
+       * Squared Mahalanobis distance v'*R'*R*v = <R*v,R*v>
        */
+      virtual double SquaredMahalanobisDistance(const Vector& v) const;
+
+      /**
+       * Mahalanobis distance
+       */
+      virtual double MahalanobisDistance(const Vector& v) const {
+        return std::sqrt(SquaredMahalanobisDistance(v));
+      }
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
       virtual double Mahalanobis(const Vector& v) const;
+#endif
 
       inline virtual double distance(const Vector& v) const {
-        return Mahalanobis(v);
+        return SquaredMahalanobisDistance(v);
       }
 
       /**
@@ -564,7 +575,7 @@ namespace gtsam {
       }
 
       virtual void print(const std::string& name) const;
-      virtual double Mahalanobis(const Vector& v) const;
+      virtual double SquaredMahalanobisDistance(const Vector& v) const;
       virtual Vector whiten(const Vector& v) const;
       virtual Vector unwhiten(const Vector& v) const;
       virtual Matrix Whiten(const Matrix& H) const;
@@ -616,7 +627,7 @@ namespace gtsam {
       virtual bool isUnit() const { return true; }
 
       virtual void print(const std::string& name) const;
-      virtual double Mahalanobis(const Vector& v) const {return v.dot(v); }
+      virtual double SquaredMahalanobisDistance(const Vector& v) const {return v.dot(v); }
       virtual Vector whiten(const Vector& v) const { return v; }
       virtual Vector unwhiten(const Vector& v) const { return v; }
       virtual Matrix Whiten(const Matrix& H) const { return H; }
