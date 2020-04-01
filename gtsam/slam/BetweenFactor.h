@@ -24,6 +24,8 @@
 #ifdef _WIN32
 #define BETWEENFACTOR_VISIBILITY
 #else
+// This will trigger a LNKxxxx on MSVC, so disable for MSVC build
+// Please refer to https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md
 #define BETWEENFACTOR_VISIBILITY GTSAM_EXPORT
 #endif
 
