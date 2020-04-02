@@ -219,7 +219,7 @@ namespace gtsam {
       /**
        * Mahalanobis distance
        */
-      virtual double MahalanobisDistance(const Vector& v) const {
+      virtual double mahalanobisDistance(const Vector& v) const {
         return std::sqrt(squaredMahalanobisDistance(v));
       }
 
