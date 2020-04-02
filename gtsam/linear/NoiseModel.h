@@ -224,9 +224,7 @@ namespace gtsam {
       }
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-      virtual double Mahalanobis(const Vector& v) const {
-        return SquaredMahalanobisDistance(v);
-      }
+      virtual double Mahalanobis(const Vector& v) const;
 #endif
 
       inline virtual double error(const Vector& v) const {
