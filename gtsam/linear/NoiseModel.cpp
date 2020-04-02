@@ -369,12 +369,12 @@ Vector Constrained::whiten(const Vector& v) const {
 }
 
 /* ************************************************************************* */
-double Constrained::distance(const Vector& v) const {
+double Constrained::error(const Vector& v) const {
   Vector w = Diagonal::whiten(v); // get noisemodel for constrained elements
   for (size_t i=0; i<dim_; ++i)  // add mu weights on constrained variables
     if (constrained(i)) // whiten makes constrained variables zero
       w[i] = v[i] * sqrt(mu_[i]); // TODO: may want to store sqrt rather than rebuild
-  return w.dot(w);
+  return 0.5 * w.dot(w);
 }
 
 /* ************************************************************************* */
