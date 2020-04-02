@@ -681,6 +681,36 @@ TEST(NoiseModel, robustNoiseL2WithDeadZone)
 
 }
 
+TEST(NoiseModel, lossFunctionAtZero)
+{
+  const double k = 5.0;
+  auto fair = mEstimator::Fair::Create(k);
+  DOUBLES_EQUAL(fair->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(fair->weight(0), 1, 1e-8);
+  auto huber = mEstimator::Huber::Create(k);
+  DOUBLES_EQUAL(huber->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(huber->weight(0), 1, 1e-8);
+  auto cauchy = mEstimator::Cauchy::Create(k);
+  DOUBLES_EQUAL(cauchy->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(cauchy->weight(0), 1, 1e-8);
+  auto gmc = mEstimator::GemanMcClure::Create(k);
+  DOUBLES_EQUAL(gmc->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(gmc->weight(0), 1, 1e-8);
+  auto welsch = mEstimator::Welsch::Create(k);
+  DOUBLES_EQUAL(welsch->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(welsch->weight(0), 1, 1e-8);
+  auto tukey = mEstimator::Tukey::Create(k);
+  DOUBLES_EQUAL(tukey->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(tukey->weight(0), 1, 1e-8);
+  auto dcs = mEstimator::DCS::Create(k);
+  DOUBLES_EQUAL(dcs->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(dcs->weight(0), 1, 1e-8);
+  // auto lsdz = mEstimator::L2WithDeadZone::Create(k);
+  // DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
+  // DOUBLES_EQUAL(lsdz->weight(0), 1, 1e-8);
+}
+
+
 /* ************************************************************************* */
 #define TEST_GAUSSIAN(gaussian)\
   EQUALITY(info, gaussian->information());\
