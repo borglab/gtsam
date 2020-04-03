@@ -157,7 +157,7 @@ Vector Gaussian::unwhiten(const Vector& v) const {
 }
 
 /* ************************************************************************* */
-double Gaussian::Mahalanobis(const Vector& v) const {
+double Gaussian::squaredMahalanobisDistance(const Vector& v) const {
   // Note: for Diagonal, which does ediv_, will be correct for constraints
   Vector w = whiten(v);
   return w.dot(w);
@@ -573,7 +573,7 @@ void Isotropic::print(const string& name) const {
 }
 
 /* ************************************************************************* */
-double Isotropic::Mahalanobis(const Vector& v) const {
+double Isotropic::squaredMahalanobisDistance(const Vector& v) const {
   return v.dot(v) * invsigma_ * invsigma_;
 }
 
