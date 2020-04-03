@@ -90,7 +90,7 @@ namespace gtsam {
       /// Unwhiten an error vector.
       virtual Vector unwhiten(const Vector& v) const = 0;
 
-      /// calculate the error value given error vector
+      /// calculate the error value given measurement error vector
       virtual double error(const Vector& v) const = 0;
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
@@ -677,7 +677,7 @@ namespace gtsam {
 
     protected:
       typedef mEstimator::Base RobustModel;
-      typedef noiseModel::Base NoiseModel;
+      typedef noiseModel::Gaussian NoiseModel;
 
       const RobustModel::shared_ptr robust_; ///< robust error function used
       const NoiseModel::shared_ptr noise_;   ///< noise model used
@@ -712,9 +712,7 @@ namespace gtsam {
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
       // Fold the use of the m-estimator loss(...) function into error(...)
       inline virtual double error(const Vector& v) const
-      { return robust_->loss(this->unweightedWhiten(v).norm()); }
-      // inline virtual double distance_non_whitened(const Vector& v) const
-      // { return robust_->loss(v.norm()); }
+      { return robust_->loss(noise_->mahalanobisDistance(v)); }
       // TODO: these are really robust iterated re-weighting support functions
       virtual void WhitenSystem(Vector& b) const;
       virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const;
@@ -723,12 +721,15 @@ namespace gtsam {
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const;
 
       virtual Vector unweightedWhiten(const Vector& v) const {
-        return noise_->unweightedWhiten(v);
+        return noise_->whiten(v);
       }
       virtual double weight(const Vector& v) const {
         // Todo(mikebosse): make the robust weight function input a vector.
         return robust_->weight(v.norm());
       }
+
+      static shared_ptr Create(
+        const RobustModel::shared_ptr &robust, const noiseModel::Base::shared_ptr noise);
 
       static shared_ptr Create(
         const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise);

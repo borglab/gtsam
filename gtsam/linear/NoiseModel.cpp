@@ -654,6 +654,13 @@ void Robust::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const{
   robust_->reweight(A1,A2,A3,b);
 }
 
+Robust::shared_ptr Robust::Create(const RobustModel::shared_ptr& robust,
+                                  const noiseModel::Base::shared_ptr noise) {
+  SharedGaussian gaussian;
+  gaussian = boost::dynamic_pointer_cast<noiseModel::Gaussian>(noise);
+  return shared_ptr(new Robust(robust, gaussian));
+}
+
 Robust::shared_ptr Robust::Create(
   const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise){
   return shared_ptr(new Robust(robust,noise));

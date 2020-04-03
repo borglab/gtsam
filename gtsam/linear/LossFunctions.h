@@ -80,10 +80,10 @@ class GTSAM_EXPORT Base {
    * functions. It would be better for this function to accept the vector and
    * internally call the norm if necessary.
    */
-  virtual double loss(double error) const { return 0; };
+  virtual double loss(double distance) const { return 0; };
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  virtual double residual(double error) const { return loss(error); };
+  virtual double residual(double distance) const { return loss(distance); };
 #endif
   /*
    * This method is responsible for returning the weight function for a given
@@ -93,12 +93,12 @@ class GTSAM_EXPORT Base {
    * for details. This method is required when optimizing cost functions with
    * robust penalties using iteratively re-weighted least squares.
    */
-  virtual double weight(double error) const = 0;
+  virtual double weight(double distance) const = 0;
 
   virtual void print(const std::string &s) const = 0;
   virtual bool equals(const Base &expected, double tol = 1e-8) const = 0;
 
-  double sqrtWeight(double error) const { return std::sqrt(weight(error)); }
+  double sqrtWeight(double distance) const { return std::sqrt(weight(distance)); }
 
   /** produce a weight vector according to an error vector and the implemented
    * robust function */
@@ -157,8 +157,8 @@ class GTSAM_EXPORT Fair : public Base {
   typedef boost::shared_ptr<Fair> shared_ptr;
 
   Fair(double c = 1.3998, const ReweightScheme reweight = Block);
-  double weight(double error) const override;
-  double loss(double error) const override;
+  double weight(double distance) const override;
+  double loss(double distance) const override;
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double c, const ReweightScheme reweight = Block);
@@ -182,8 +182,8 @@ class GTSAM_EXPORT Huber : public Base {
   typedef boost::shared_ptr<Huber> shared_ptr;
 
   Huber(double k = 1.345, const ReweightScheme reweight = Block);
-  double weight(double error) const override;
-  double loss(double error) const override;
+  double weight(double distance) const override;
+  double loss(double distance) const override;
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
@@ -212,8 +212,8 @@ class GTSAM_EXPORT Cauchy : public Base {
   typedef boost::shared_ptr<Cauchy> shared_ptr;
 
   Cauchy(double k = 0.1, const ReweightScheme reweight = Block);
-  double weight(double error) const override;
-  double loss(double error) const override;
+  double weight(double distance) const override;
+  double loss(double distance) const override;
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
@@ -237,8 +237,8 @@ class GTSAM_EXPORT Tukey : public Base {
   typedef boost::shared_ptr<Tukey> shared_ptr;
 
   Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
-  double weight(double error) const override;
-  double loss(double error) const override;
+  double weight(double distance) const override;
+  double loss(double distance) const override;
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
@@ -262,8 +262,8 @@ class GTSAM_EXPORT Welsch : public Base {
   typedef boost::shared_ptr<Welsch> shared_ptr;
 
   Welsch(double c = 2.9846, const ReweightScheme reweight = Block);
-  double weight(double error) const override;
-  double loss(double error) const override;
+  double weight(double distance) const override;
+  double loss(double distance) const override;
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
@@ -298,8 +298,8 @@ class GTSAM_EXPORT GemanMcClure : public Base {
 
   GemanMcClure(double c = 1.0, const ReweightScheme reweight = Block);
   ~GemanMcClure() {}
-  double weight(double error) const override;
-  double loss(double error) const override;
+  double weight(double distance) const override;
+  double loss(double distance) const override;
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
@@ -328,8 +328,8 @@ class GTSAM_EXPORT DCS : public Base {
 
   DCS(double c = 1.0, const ReweightScheme reweight = Block);
   ~DCS() {}
-  double weight(double error) const override;
-  double loss(double error) const override;
+  double weight(double distance) const override;
+  double loss(double distance) const override;
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
@@ -361,8 +361,8 @@ class GTSAM_EXPORT L2WithDeadZone : public Base {
   typedef boost::shared_ptr<L2WithDeadZone> shared_ptr;
 
   L2WithDeadZone(double k = 1.0, const ReweightScheme reweight = Block);
-  double weight(double error) const override;
-  double loss(double error) const override;
+  double weight(double distance) const override;
+  double loss(double distance) const override;
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
