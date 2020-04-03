@@ -1008,7 +1008,14 @@ TEST(Pose3, print) {
   // Generate the expected output
   std::stringstream expected;
   Point3 translation(1, 2, 3);
+
+#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
+  expected << "1\n"
+              "2\n"
+              "3;\n";
+#else
   expected << '[' << translation.x() << ", " << translation.y() << ", " << translation.z() << "]\';";
+#endif
 
   // reset cout to the original stream
   std::cout.rdbuf(oldbuf);
