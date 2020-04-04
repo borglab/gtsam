@@ -11,7 +11,7 @@
 
 /**
  * @file  testCal3DS2.cpp
- * @brief Unit tests for transform derivatives
+ * @brief Unit tests for Cal3DS2 camera calibration model.
  */
 
 
@@ -19,6 +19,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3DS2.h>
+#include <limits>
 
 using namespace gtsam;
 
@@ -26,6 +27,8 @@ GTSAM_CONCEPT_TESTABLE_INST(Cal3DS2)
 GTSAM_CONCEPT_MANIFOLD_INST(Cal3DS2)
 
 static Cal3DS2 K(500, 100, 0.1, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3);
+// static Cal3DS2 K2(500, 100, 0.1, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3,
+//                   3.0*1e-4, 3.0*1e-4, 3.0*1e-4, 3.0*1e-4);
 static Point2 p(2,3);
 
 /* ************************************************************************* */
@@ -43,7 +46,7 @@ TEST( Cal3DS2, uncalibrate)
   CHECK(assert_equal(q,p_i));
 }
 
-TEST( Cal3DS2, calibrate )
+TEST( Cal3DS2, calibrate)
 {
   Point2 pn(0.5, 0.5);
   Point2 pi = K.uncalibrate(pn);
@@ -85,8 +88,8 @@ TEST( Cal3DS2, retract)
 {
   Cal3DS2 expected(500 + 1, 100 + 2, 0.1 + 3, 320 + 4, 240 + 5, 1e-3 + 6,
       2.0 * 1e-3 + 7, 3.0 * 1e-3 + 8, 4.0 * 1e-3 + 9);
-  Vector d(9);
-  d << 1,2,3,4,5,6,7,8,9;
+  Vector d(13);
+  d << 1,2,3,4,5,6,7,8,9,0,0,0,0;
   Cal3DS2 actual = K.retract(d);
   CHECK(assert_equal(expected,actual,1e-7));
   CHECK(assert_equal(d,K.localCoordinates(actual),1e-7));

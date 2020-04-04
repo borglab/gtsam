@@ -36,7 +36,7 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
 
 public:
 
-  enum { dimension = 9 };
+  enum { dimension = 13 };
 
   /// @name Standard Constructors
   /// @{
@@ -45,8 +45,9 @@ public:
   Cal3DS2() : Base() {}
 
   Cal3DS2(double fx, double fy, double s, double u0, double v0,
-      double k1, double k2, double p1 = 0.0, double p2 = 0.0, double tol = 1e-5) :
-        Base(fx, fy, s, u0, v0, k1, k2, p1, p2, tol) {}
+      double k1, double k2, double p1 = 0.0, double p2 = 0.0,
+      double k3 = 0.0, double k4 = 0.0, double k5 = 0.0, double k6 = 0.0) :
+        Base(fx, fy, s, u0, v0, k1, k2, p1, p2, k3, k4, k5, k6) {}
 
   virtual ~Cal3DS2() {}
 
@@ -77,10 +78,10 @@ public:
   Vector localCoordinates(const Cal3DS2& T2) const ;
 
   /// Return dimensions of calibration manifold object
-  virtual size_t dim() const { return 9 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)
+  virtual size_t dim() const { return 13 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)
 
   /// Return dimensions of calibration manifold object
-  static size_t Dim() { return 9; }  //TODO: make a final dimension variable
+  static size_t Dim() { return 13; }  //TODO: make a final dimension variable
 
   /// @}
   /// @name Clone

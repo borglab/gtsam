@@ -11,7 +11,7 @@
 
 /**
  * @file  testCal3_S2.cpp
- * @brief Unit tests for transform derivatives
+ * @brief Unit tests for Cal3_S2 camera calibration model.
  */
 
 #include <CppUnitLite/TestHarness.h>

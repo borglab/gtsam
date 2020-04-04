@@ -45,10 +45,7 @@ void Cal3Unified::print(const std::string& s) const {
 
 /* ************************************************************************* */
 bool Cal3Unified::equals(const Cal3Unified& K, double tol) const {
-  if (std::abs(fx_ - K.fx_) > tol || std::abs(fy_ - K.fy_) > tol || std::abs(s_ - K.s_) > tol ||
-      std::abs(u0_ - K.u0_) > tol || std::abs(v0_ - K.v0_) > tol || std::abs(k1_ - K.k1_) > tol ||
-      std::abs(k2_ - K.k2_) > tol || std::abs(p1_ - K.p1_) > tol || std::abs(p2_ - K.p2_) > tol ||
-      std::abs(xi_ - K.xi_) > tol)
+  if (Base::equals(K, tol) || std::abs(xi_ - K.xi_) > tol);
     return false;
   return true;
 }
@@ -75,7 +72,7 @@ Point2 Cal3Unified::uncalibrate(const Point2& p,
 
   // Part2: project NPlane point to pixel plane: use Cal3DS2
   Point2 m(x,y);
-  Matrix29 H1base;
+  Eigen::Matrix<double, 2, 13> H1base;
   Matrix2 H2base;    // jacobians from Base class
   Point2 puncalib = Base::uncalibrate(m, H1base, H2base);
 
