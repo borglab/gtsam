@@ -29,9 +29,6 @@ Sampler::Sampler(const Vector& sigmas, uint_fast64_t seed)
     : model_(noiseModel::Diagonal::Sigmas(sigmas, true)), generator_(seed) {}
 
 /* ************************************************************************* */
-Sampler::Sampler(uint_fast64_t seed) : generator_(seed) {}
-
-/* ************************************************************************* */
 Vector Sampler::sampleDiagonal(const Vector& sigmas) const {
   size_t d = sigmas.size();
   Vector result(d);
@@ -58,12 +55,16 @@ Vector Sampler::sample() const {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+Sampler::Sampler(uint_fast64_t seed) : generator_(seed) {}
+
 Vector Sampler::sampleNewModel(
     const noiseModel::Diagonal::shared_ptr& model) const {
   assert(model.get());
   const Vector& sigmas = model->sigmas();
   return sampleDiagonal(sigmas);
 }
+#endif
 /* ************************************************************************* */
 
 }  // namespace gtsam
