@@ -11,7 +11,7 @@
 
 /**
  * @file Sampler.cpp
- * @brief sampling from a NoiseModel to generate
+ * @brief sampling from a diagonal NoiseModel
  * @author Frank Dellaert
  * @author Alex Cunningham
  */

@@ -11,7 +11,7 @@
 
 /**
  * @file Sampler.h
- * @brief sampling from a NoiseModel to generate
+ * @brief sampling from a NoiseModel
  * @author Frank Dellaert
  * @author Alex Cunningham
  */
