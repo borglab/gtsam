@@ -11,6 +11,8 @@
 
 /**
  * @file Sampler.cpp
+ * @brief sampling from a NoiseModel to generate
+ * @author Frank Dellaert
  * @author Alex Cunningham
  */
 
@@ -19,24 +21,18 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Sampler::Sampler(const noiseModel::Diagonal::shared_ptr& model, int32_t seed)
-  : model_(model), generator_(static_cast<unsigned>(seed))
-{
-}
+    : model_(model), generator_(static_cast<unsigned>(seed)) {}
 
 /* ************************************************************************* */
 Sampler::Sampler(const Vector& sigmas, int32_t seed)
-: model_(noiseModel::Diagonal::Sigmas(sigmas, true)), generator_(static_cast<unsigned>(seed))
-{
-}
+    : model_(noiseModel::Diagonal::Sigmas(sigmas, true)),
+      generator_(static_cast<unsigned>(seed)) {}
 
 /* ************************************************************************* */
-Sampler::Sampler(int32_t seed)
-: generator_(static_cast<unsigned>(seed))
-{
-}
+Sampler::Sampler(int32_t seed) : generator_(static_cast<unsigned>(seed)) {}
 
 /* ************************************************************************* */
-Vector Sampler::sampleDiagonal(const Vector& sigmas) {
+Vector Sampler::sampleDiagonal(const Vector& sigmas) const {
   size_t d = sigmas.size();
   Vector result(d);
   for (size_t i = 0; i < d; i++) {
@@ -55,18 +51,19 @@ Vector Sampler::sampleDiagonal(const Vector& sigmas) {
 }
 
 /* ************************************************************************* */
-Vector Sampler::sample() {
+Vector Sampler::sample() const {
   assert(model_.get());
   const Vector& sigmas = model_->sigmas();
   return sampleDiagonal(sigmas);
 }
 
 /* ************************************************************************* */
-Vector Sampler::sampleNewModel(const noiseModel::Diagonal::shared_ptr& model) {
+Vector Sampler::sampleNewModel(
+    const noiseModel::Diagonal::shared_ptr& model) const {
   assert(model.get());
   const Vector& sigmas = model->sigmas();
   return sampleDiagonal(sigmas);
 }
 /* ************************************************************************* */
 
-} // \namespace gtsam
+}  // namespace gtsam
