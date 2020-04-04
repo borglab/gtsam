@@ -49,7 +49,7 @@ class GTSAM_EXPORT Sampler {
    * NOTE: do not use zero as a seed, it will break the generator
    */
   explicit Sampler(const noiseModel::Diagonal::shared_ptr& model,
-                   int32_t seed = 42u);
+                   uint_fast64_t seed = 42u);
 
   /**
    * Create a sampler for a distribution specified by a vector of sigmas
@@ -57,7 +57,7 @@ class GTSAM_EXPORT Sampler {
    *
    * NOTE: do not use zero as a seed, it will break the generator
    */
-  explicit Sampler(const Vector& sigmas, int32_t seed = 42u);
+  explicit Sampler(const Vector& sigmas, uint_fast64_t seed = 42u);
 
   /// @}
   /// @name access functions
@@ -87,7 +87,7 @@ class GTSAM_EXPORT Sampler {
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @name Deprecated
   /// @{
-  explicit Sampler(int32_t seed = 42u);
+  explicit Sampler(uint_fast64_t seed = 42u);
   Vector sampleNewModel(const noiseModel::Diagonal::shared_ptr& model) const;
   /// @}
 #endif

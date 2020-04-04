@@ -20,16 +20,16 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-Sampler::Sampler(const noiseModel::Diagonal::shared_ptr& model, int32_t seed)
-    : model_(model), generator_(static_cast<unsigned>(seed)) {}
+Sampler::Sampler(const noiseModel::Diagonal::shared_ptr& model,
+                 uint_fast64_t seed)
+    : model_(model), generator_(seed) {}
 
 /* ************************************************************************* */
-Sampler::Sampler(const Vector& sigmas, int32_t seed)
-    : model_(noiseModel::Diagonal::Sigmas(sigmas, true)),
-      generator_(static_cast<unsigned>(seed)) {}
+Sampler::Sampler(const Vector& sigmas, uint_fast64_t seed)
+    : model_(noiseModel::Diagonal::Sigmas(sigmas, true)), generator_(seed) {}
 
 /* ************************************************************************* */
-Sampler::Sampler(int32_t seed) : generator_(static_cast<unsigned>(seed)) {}
+Sampler::Sampler(uint_fast64_t seed) : generator_(seed) {}
 
 /* ************************************************************************* */
 Vector Sampler::sampleDiagonal(const Vector& sigmas) const {
