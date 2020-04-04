@@ -200,7 +200,7 @@ find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
 # Set up variables if we're using TBB
 if(TBB_FOUND AND GTSAM_WITH_TBB)
     set(GTSAM_USE_TBB 1)  # This will go into config.h
-    if (${TBB_VERSION_MAJOR} GREATER_EQUAL 2020)
+    if ((${TBB_VERSION_MAJOR} GREATER 2020) OR (${TBB_VERSION_MAJOR} EQUAL 2020))
         set(TBB_GREATER_EQUAL_2020 1)
     else()
         set(TBB_GREATER_EQUAL_2020 0)
