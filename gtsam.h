@@ -1563,17 +1563,15 @@ virtual class Robust : gtsam::noiseModel::Base {
 
 #include <gtsam/linear/Sampler.h>
 class Sampler {
-    //Constructors
+  // Constructors
   Sampler(gtsam::noiseModel::Diagonal* model, int seed);
   Sampler(Vector sigmas, int seed);
-  Sampler(int seed);
 
-    //Standard Interface
+  // Standard Interface
   size_t dim() const;
   Vector sigmas() const;
   gtsam::noiseModel::Diagonal* model() const;
   Vector sample();
-  Vector sampleNewModel(gtsam::noiseModel::Diagonal* model);
 };
 
 #include <gtsam/linear/VectorValues.h>
