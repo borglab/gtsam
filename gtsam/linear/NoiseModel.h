@@ -731,7 +731,7 @@ namespace gtsam {
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const;
 
       virtual Vector unweightedWhiten(const Vector& v) const {
-        return noise_->whiten(v);
+        return noise_->unweightedWhiten(v);
       }
       virtual double weight(const Vector& v) const {
         // Todo(mikebosse): make the robust weight function input a vector.
