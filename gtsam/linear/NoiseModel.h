@@ -94,7 +94,9 @@ namespace gtsam {
       virtual double error(const Vector& v) const = 0;
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-      virtual double distance(const Vector& v) const = 0;
+      virtual double distance(const Vector& v) {
+        return error(v) * 2;
+      }
 #endif
 
       virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const = 0;
@@ -713,6 +715,11 @@ namespace gtsam {
       { Vector b; Matrix B=A; this->WhitenSystem(B,b); return B; }
       inline virtual Vector unwhiten(const Vector& /*v*/) const
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+      inline virtual double distance(const Vector& v) {
+        return robust_->loss(this->unweightedWhiten(v).norm());
+      }
+#endif
       // Fold the use of the m-estimator loss(...) function into error(...)
       inline virtual double error(const Vector& v) const
       { return robust_->loss(noise_->mahalanobisDistance(v)); }
@@ -733,9 +740,6 @@ namespace gtsam {
 
       static shared_ptr Create(
         const RobustModel::shared_ptr &robust, const noiseModel::Base::shared_ptr noise);
-
-      // static shared_ptr Create(
-      //   const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise);
 
     private:
       /** Serialization function */
