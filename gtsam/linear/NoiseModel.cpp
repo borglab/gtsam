@@ -657,7 +657,10 @@ void Robust::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const{
 Robust::shared_ptr Robust::Create(const RobustModel::shared_ptr& robust,
                                   const noiseModel::Base::shared_ptr noise) {
   SharedGaussian gaussian;
-  gaussian = boost::dynamic_pointer_cast<noiseModel::Gaussian>(noise);
+  if (!(gaussian = boost::dynamic_pointer_cast<noiseModel::Gaussian>(noise)))
+  {
+    throw std::invalid_argument("The noise model inside robust must be Gaussian");
+  };
   return shared_ptr(new Robust(robust, gaussian));
 }
 
