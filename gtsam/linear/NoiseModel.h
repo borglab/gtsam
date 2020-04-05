@@ -229,6 +229,9 @@ namespace gtsam {
       }
 #endif
 
+      /**
+       * error value 0.5 * v'*R'*R*v
+       */
       inline virtual double error(const Vector& v) const {
         return 0.5 * squaredMahalanobisDistance(v);
       }
@@ -478,7 +481,7 @@ namespace gtsam {
       }
 
       /**
-       * The distance function for a constrained noisemodel,
+       * The error function for a constrained noisemodel,
        * for non-constrained versions, uses sigmas, otherwise
        * uses the penalty function with mu
        */
