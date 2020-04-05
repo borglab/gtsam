@@ -661,10 +661,10 @@ Robust::shared_ptr Robust::Create(const RobustModel::shared_ptr& robust,
   return shared_ptr(new Robust(robust, gaussian));
 }
 
-Robust::shared_ptr Robust::Create(
-  const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise){
-  return shared_ptr(new Robust(robust,noise));
-}
+// Robust::shared_ptr Robust::Create(
+//   const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise){
+//   return shared_ptr(new Robust(robust,noise));
+// }
 
 /* ************************************************************************* */
 

@@ -734,8 +734,8 @@ namespace gtsam {
       static shared_ptr Create(
         const RobustModel::shared_ptr &robust, const noiseModel::Base::shared_ptr noise);
 
-      static shared_ptr Create(
-        const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise);
+      // static shared_ptr Create(
+      //   const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise);
 
     private:
       /** Serialization function */
