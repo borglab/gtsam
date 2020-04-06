@@ -243,5 +243,30 @@ TEST(testNonlinearFactorGraph, eliminate) {
 }
 
 /* ************************************************************************* */
+TEST(NonlinearFactorGraph, printErrors)
+{
+  const NonlinearFactorGraph fg = createNonlinearFactorGraph();
+  const Values c = createValues();
+
+  // Test that it builds with default parameters.
+  // We cannot check the output since (at present) output is fixed to std::cout.
+  fg.printErrors(c);
+
+  // Second round: using callback filter to check that we actually visit all factors:
+  std::vector<bool> visited;
+  visited.assign(fg.size(), false);
+  const auto testFilter =
+      [&](const gtsam::Factor *f, double error, size_t index) {
+        EXPECT(f!=nullptr);
+        EXPECT(error>=.0);
+        visited.at(index)=true;
+        return false; // do not print
+      };
+  fg.printErrors(c,"Test graph: ", gtsam::DefaultKeyFormatter,testFilter);
+
+  for (bool visit : visited) EXPECT(visit==true);
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
