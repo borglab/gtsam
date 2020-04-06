@@ -36,12 +36,12 @@ namespace noiseModel {
  * The mEstimator name space contains all robust error functions.
  * It mirrors the exposition at
  *  https://members.loria.fr/MOBerger/Enseignement/Master2/Documents/ZhangIVC-97-01.pdf
- * which talks about minimizing \sum \rho(r_i), where \rho is a residual function of choice.
+ * which talks about minimizing \sum \rho(r_i), where \rho is a loss function of choice.
  *
  * To illustrate, let's consider the least-squares (L2), L1, and Huber estimators as examples:
  *
  * Name        Symbol          Least-Squares   L1-norm    Huber
- * Residual    \rho(x)         0.5*x^2         |x|        0.5*x^2 if |x|<k, 0.5*k^2 + k|x-k| otherwise
+ * Loss        \rho(x)         0.5*x^2         |x|        0.5*x^2 if |x|<k, 0.5*k^2 + k|x-k| otherwise
  * Derivative  \phi(x)         x               sgn(x)     x       if |x|<k, k sgn(x)         otherwise
  * Weight      w(x)=\phi(x)/x  1               1/|x|      1       if |x|<k, k/|x|            otherwise
  *
@@ -75,8 +75,8 @@ class GTSAM_EXPORT Base {
    * the quadratic function for an L2 penalty, the absolute value function for
    * an L1 penalty, etc.
    *
-   * TODO(mikebosse): When the residual function has as input the norm of the
-   * residual vector, then it prevents implementations of asymmeric loss
+   * TODO(mikebosse): When the loss function has as input the norm of the
+   * error vector, then it prevents implementations of asymmeric loss
    * functions. It would be better for this function to accept the vector and
    * internally call the norm if necessary.
    */
@@ -89,7 +89,7 @@ class GTSAM_EXPORT Base {
   /*
    * This method is responsible for returning the weight function for a given
    * amount of error. The weight function is related to the analytic derivative
-   * of the residual function. See
+   * of the loss function. See
    *  https://members.loria.fr/MOBerger/Enseignement/Master2/Documents/ZhangIVC-97-01.pdf
    * for details. This method is required when optimizing cost functions with
    * robust penalties using iteratively re-weighted least squares.
@@ -127,7 +127,7 @@ class GTSAM_EXPORT Base {
   }
 };
 
-/// Null class is not robust so is a Gaussian ?
+/// Null class should behave as Gaussian
 class GTSAM_EXPORT Null : public Base {
  public:
   typedef boost::shared_ptr<Null> shared_ptr;
@@ -135,7 +135,7 @@ class GTSAM_EXPORT Null : public Base {
   Null(const ReweightScheme reweight = Block) : Base(reweight) {}
   ~Null() {}
   double weight(double /*error*/) const { return 1.0; }
-  double residual(double error) const { return error; }
+  double loss(double distance) const { return 0.5 * distance * distance; }
   void print(const std::string &s) const;
   bool equals(const Base & /*expected*/, double /*tol*/) const { return true; }
   static shared_ptr Create();
