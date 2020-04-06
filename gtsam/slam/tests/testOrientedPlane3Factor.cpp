@@ -175,7 +175,7 @@ TEST( OrientedPlane3DirectionPrior, Constructor ) {
 
 /* ************************************************************************* */
 int main() {
-  srand(time(NULL));
+  srand(time(nullptr));
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }

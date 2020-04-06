@@ -398,7 +398,7 @@ namespace gtsam {
      *  @param keys in some order
      *  @param diemnsions of the variables in same order
      *  @param m output dimension
-     *  @param model noise model (default NULL)
+     *  @param model noise model (default nullptr)
      */
     template<class KEYS, class DIMENSIONS>
     JacobianFactor(const KEYS& keys, const DIMENSIONS& dims, DenseIndex m,
