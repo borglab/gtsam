@@ -394,7 +394,7 @@ void ConcurrentBatchSmoother::PrintNonlinearFactor(const NonlinearFactor::shared
     }
     std::cout << ")" << std::endl;
   } else {
-    std::cout << "{ NULL }" << std::endl;
+    std::cout << "{ nullptr }" << std::endl;
   }
 }
 
@@ -408,7 +408,7 @@ void ConcurrentBatchSmoother::PrintLinearFactor(const GaussianFactor::shared_ptr
     }
     std::cout << ")" << std::endl;
   } else {
-    std::cout << "{ NULL }" << std::endl;
+    std::cout << "{ nullptr }" << std::endl;
   }
 }
 

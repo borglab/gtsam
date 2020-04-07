@@ -133,7 +133,7 @@ void Gaussian::print(const string& name) const {
 /* ************************************************************************* */
 bool Gaussian::equals(const Base& expected, double tol) const {
   const Gaussian* p = dynamic_cast<const Gaussian*> (&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   if (typeid(*this) != typeid(*p)) return false;
   //if (!sqrt_information_) return true; // ALEX todo;
   return equal_with_abs_tol(R(), p->R(), sqrt(tol));
@@ -624,7 +624,7 @@ void Robust::print(const std::string& name) const {
 
 bool Robust::equals(const Base& expected, double tol) const {
   const Robust* p = dynamic_cast<const Robust*> (&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return noise_->equals(*p->noise_,tol) && robust_->equals(*p->robust_,tol);
 }
 

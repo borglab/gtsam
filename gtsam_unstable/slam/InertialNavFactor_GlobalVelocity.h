@@ -135,7 +135,7 @@ public:
   /** equals */
   virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
     const This *e =  dynamic_cast<const This*> (&expected);
-    return e != NULL && Base::equals(*e, tol)
+    return e != nullptr && Base::equals(*e, tol)
       && (measurement_acc_ - e->measurement_acc_).norm() < tol
       && (measurement_gyro_ - e->measurement_gyro_).norm() < tol
       && (dt_ - e->dt_) < tol

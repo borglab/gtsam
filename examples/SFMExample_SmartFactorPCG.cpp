@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
         boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
     if (smart) {
       boost::optional<Point3> point = smart->point(result);
-      if (point) // ignore if boost::optional return NULL
+      if (point) // ignore if boost::optional return nullptr
         landmark_result.insert(j, *point);
     }
   }
