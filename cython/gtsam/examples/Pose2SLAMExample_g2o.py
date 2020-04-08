@@ -53,16 +53,15 @@ graph, initial = gtsam.readG2o(g2oFile, is3D)
 assert args.kernel == "none", "Supplied kernel type is not yet implemented"
 
 # Add prior on the pose having index (key) = 0
-graphWithPrior = graph
 priorModel = gtsam.noiseModel_Diagonal.Variances(vector3(1e-6, 1e-6, 1e-8))
-graphWithPrior.add(gtsam.PriorFactorPose2(0, gtsam.Pose2(), priorModel))
+graph.add(gtsam.PriorFactorPose2(0, gtsam.Pose2(), priorModel))
 
 params = gtsam.GaussNewtonParams()
 params.setVerbosity("Termination")
 params.setMaxIterations(maxIterations)
 # parameters.setRelativeErrorTol(1e-5)
 # Create the optimizer ...
-optimizer = gtsam.GaussNewtonOptimizer(graphWithPrior, initial, params)
+optimizer = gtsam.GaussNewtonOptimizer(graph, initial, params)
 # ... and optimize
 result = optimizer.optimize()
 

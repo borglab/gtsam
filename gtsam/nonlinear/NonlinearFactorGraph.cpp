@@ -54,7 +54,7 @@ void NonlinearFactorGraph::print(const std::string& str, const KeyFormatter& key
   for (size_t i = 0; i < factors_.size(); i++) {
     stringstream ss;
     ss << "Factor " << i << ": ";
-    if (factors_[i] != NULL) factors_[i]->print(ss.str(), keyFormatter);
+    if (factors_[i] != nullptr) factors_[i]->print(ss.str(), keyFormatter);
     cout << endl;
   }
 }
@@ -67,8 +67,8 @@ void NonlinearFactorGraph::printErrors(const Values& values, const std::string& 
   for (size_t i = 0; i < factors_.size(); i++) {
     stringstream ss;
     ss << "Factor " << i << ": ";
-    if (factors_[i] == NULL) {
-      cout << "NULL" << endl;
+    if (factors_[i] == nullptr) {
+      cout << "nullptr" << endl;
     } else {
       factors_[i]->print(ss.str(), keyFormatter);
       cout << "error = " << factors_[i]->error(values) << endl;

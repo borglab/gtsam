@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 
   // Simulated measurements from each camera pose, adding them to the factor graph
   for (size_t i = 0; i < poses.size(); ++i) {
-    SimpleCamera camera(poses[i], *K);
+    PinholeCamera<Cal3_S2> camera(poses[i], *K);
     for (size_t j = 0; j < points.size(); ++j) {
       Point2 measurement = camera.project(points[j]);
       graph.emplace_shared<GenericProjectionFactor<Pose3, Point3, Cal3_S2> >(measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K);

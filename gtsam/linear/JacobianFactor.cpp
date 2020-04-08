@@ -840,7 +840,7 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFronta
 
   if (!model_) {
     throw std::invalid_argument(
-        "JacobianFactor::splitConditional cannot be  given a NULL noise model");
+        "JacobianFactor::splitConditional cannot be  given a nullptr noise model");
   }
 
   if (nrFrontals > size()) {

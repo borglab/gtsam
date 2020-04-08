@@ -63,10 +63,9 @@ int main(const int argc, const char *argv[]) {
   }
 
   // Add prior on the pose having index (key) = 0
-  NonlinearFactorGraph graphWithPrior = *graph;
   noiseModel::Diagonal::shared_ptr priorModel = //
       noiseModel::Diagonal::Variances(Vector3(1e-6, 1e-6, 1e-8));
-  graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
+  graph->add(PriorFactor<Pose2>(0, Pose2(), priorModel));
   std::cout << "Adding prior on pose 0 " << std::endl;
 
   GaussNewtonParams params;
@@ -77,7 +76,7 @@ int main(const int argc, const char *argv[]) {
   }
 
   std::cout << "Optimizing the factor graph" << std::endl;
-  GaussNewtonOptimizer optimizer(graphWithPrior, *initial, params);
+  GaussNewtonOptimizer optimizer(*graph, *initial, params);
   Values result = optimizer.optimize();
   std::cout << "Optimization complete" << std::endl;
 

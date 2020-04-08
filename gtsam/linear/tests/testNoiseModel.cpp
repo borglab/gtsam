@@ -68,10 +68,10 @@ TEST(NoiseModel, constructors)
   for(Gaussian::shared_ptr mi: m)
     EXPECT(assert_equal(unwhitened,mi->unwhiten(whitened)));
 
-  // test Mahalanobis distance
+  // test squared Mahalanobis distance
   double distance = 5*5+10*10+15*15;
   for(Gaussian::shared_ptr mi: m)
-    DOUBLES_EQUAL(distance,mi->Mahalanobis(unwhitened),1e-9);
+    DOUBLES_EQUAL(distance,mi->squaredMahalanobisDistance(unwhitened),1e-9);
 
   // test R matrix
   for(Gaussian::shared_ptr mi: m)

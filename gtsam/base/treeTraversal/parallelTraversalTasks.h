@@ -53,7 +53,7 @@ namespace gtsam {
           // Run the post-order visitor
           (void) visitorPost(treeNode, *myData);
 
-          return NULL;
+          return nullptr;
         }
       };
 
@@ -88,7 +88,7 @@ namespace gtsam {
           {
             // Run the post-order visitor since this task was recycled to run the post-order visitor
             (void) visitorPost(treeNode, *myData);
-            return NULL;
+            return nullptr;
           }
           else
           {
@@ -129,14 +129,14 @@ namespace gtsam {
               {
                 // Run the post-order visitor in this task if we have no children
                 (void) visitorPost(treeNode, *myData);
-                return NULL;
+                return nullptr;
               }
             }
             else
             {
               // Process this node and its children in this task
               processNodeRecursively(treeNode, *myData);
-              return NULL;
+              return nullptr;
             }
           }
         }
@@ -184,8 +184,8 @@ namespace gtsam {
           set_ref_count(1 + (int) roots.size());
           // Spawn tasks
           spawn_and_wait_for_all(tasks);
-          // Return NULL
-          return NULL;
+          // Return nullptr
+          return nullptr;
         }
       };
 
