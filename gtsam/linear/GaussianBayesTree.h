@@ -106,7 +106,7 @@ namespace gtsam {
      * @return A VectorValues storing the gradient. */
     VectorValues gradientAtZero() const;
 
-    /** Mahalanobis norm error. */
+    /** 0.5 * sum of squared Mahalanobis distances. */
     double error(const VectorValues& x) const;
 
     /** Computes the determinant of a GassianBayesTree, as if the Bayes tree is reorganized into a

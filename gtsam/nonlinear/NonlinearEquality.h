@@ -175,6 +175,8 @@ public:
 
   /// @}
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 private:
 
   /** Serialization function */
@@ -263,6 +265,8 @@ public:
     traits<X>::Print(value_, "Value");
   }
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 private:
 
   /** Serialization function */
@@ -326,6 +330,8 @@ public:
     if (H2) *H2 =  Matrix::Identity(p,p);
     return traits<X>::Local(x1,x2);
   }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
 

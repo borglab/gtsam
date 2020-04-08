@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
       // The output of point() is in boost::optional<Point3>, as sometimes
       // the triangulation operation inside smart factor will encounter degeneracy.
       boost::optional<Point3> point = smart->point(result);
-      if (point) // ignore if boost::optional return NULL
+      if (point) // ignore if boost::optional return nullptr
         landmark_result.insert(j, *point);
     }
   }

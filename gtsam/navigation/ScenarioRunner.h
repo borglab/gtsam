@@ -48,7 +48,7 @@ class GTSAM_EXPORT ScenarioRunner {
   const Bias estimatedBias_;
 
   // Create two samplers for acceleration and omega noise
-  mutable Sampler gyroSampler_, accSampler_;
+  Sampler gyroSampler_, accSampler_;
 
  public:
   ScenarioRunner(const Scenario& scenario, const SharedParams& p,
