@@ -10,11 +10,12 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    VisualBatchExample.cpp
+ * @file    FisheyeExample.cpp
  * @brief   A visualSLAM example for the structure-from-motion problem on a
  * simulated dataset. This version uses a fisheye camera model and a  GaussNewton
  * solver to solve the graph in one batch
  * @author  ghaggin
+ * @Date    Apr 9,2020
  */
 
 /**

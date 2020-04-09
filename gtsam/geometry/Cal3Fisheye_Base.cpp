@@ -81,11 +81,12 @@ static Matrix2 D2dintrinsic(const double xi, const double yi, const double r, co
   const double dtd_dxi = dtd_dt * dt_dr * dr_dxi;
   const double dtd_dyi = dtd_dt * dt_dr * dr_dyi;
 
-  const double rr = r*r;
-  const double dxd_dxi = dtd_dxi*xi*(1/r) + td*(1/r) + td*xi*(-1/rr)*dr_dxi;
-  const double dxd_dyi = dtd_dyi*xi*(1/r) + td*xi*(-1/rr)*dr_dyi;
-  const double dyd_dxi = dtd_dxi*yi*(1/r) + td*yi*(-1/rr)*dr_dxi;
-  const double dyd_dyi = dtd_dyi*yi*(1/r) + td*(1/r) + td*yi*(-1/rr)*dr_dyi;
+  const double rinv = 1/r;
+  const double rrinv = 1/(r*r); 
+  const double dxd_dxi = dtd_dxi*xi*rinv + td*rinv + td*xi*(-rrinv)*dr_dxi;
+  const double dxd_dyi = dtd_dyi*xi*rinv - td*xi*rrinv*dr_dyi;
+  const double dyd_dxi = dtd_dxi*yi*rinv - td*yi*rrinv*dr_dxi;
+  const double dyd_dyi = dtd_dyi*yi*rinv + td*rinv + td*yi*(-rrinv)*dr_dyi;
 
   Matrix2 DR;
   DR << dxd_dxi, dxd_dyi, dyd_dxi, dyd_dyi;

@@ -11,7 +11,7 @@
 
 /**
  * @file Cal3Fisheye.h
- * @brief Calibration of a fisheye, calculations in base class Cal3Fisheye_Base
+ * @brief Calibration of a fisheye camera, calculations in base class Cal3Fisheye_Base
  * @date Apr 8, 2020
  * @author ghaggin
  */
