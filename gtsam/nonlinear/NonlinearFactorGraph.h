@@ -24,6 +24,7 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/inference/FactorGraph.h>
+#include <gtsam/slam/PriorFactor.h>
 
 #include <boost/shared_ptr.hpp>
 #include <functional>
@@ -200,6 +201,29 @@ namespace gtsam {
     void addExpressionFactor(const SharedNoiseModel& R, const T& z,
                              const Expression<T>& h) {
       push_back(boost::make_shared<ExpressionFactor<T> >(R, z, h));
+    }
+
+    /**
+     * Directly add a PriorFactor to the factor graph.
+     * @param key    Variable key
+     * @param prior  The variable's prior value
+     * @param model  Noise model for prior factor
+     */
+    template<typename T>
+    void addPrior(Key key, const T& prior,
+                  const SharedNoiseModel& model = nullptr) {
+      push_back(boost::make_shared<PriorFactor<T>>(key, prior, model));
+    }
+
+    /**
+     * Directly add a PriorFactor to the factor graph.
+     * @param key         Variable key
+     * @param prior       The variable's prior value
+     * @param covariance  Covariance matrix.
+     */
+    template<typename T>
+    void addPrior(Key key, const T& prior, const Matrix& covariance) {
+      push_back(boost::make_shared<PriorFactor<T>>(key, prior, covariance));
     }
 
   private:
