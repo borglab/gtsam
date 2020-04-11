@@ -16,7 +16,7 @@
  *  @date Nov 2009
  */
 
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam_unstable/slam/MultiProjectionFactor.h>

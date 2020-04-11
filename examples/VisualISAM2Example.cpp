@@ -47,7 +47,7 @@
 // Adjustment problems. Here we will use Projection factors to model the
 // camera's landmark observations. Also, we will initialize the robot at some
 // location using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 
 #include <vector>

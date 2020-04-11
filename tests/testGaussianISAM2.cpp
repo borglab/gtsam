@@ -7,7 +7,7 @@
 #include <gtsam/nonlinear/ISAM2.h>
 
 #include <tests/smallExample.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/geometry/Point2.h>

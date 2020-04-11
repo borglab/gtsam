@@ -33,7 +33,7 @@
 #include <gtsam/nonlinear/Values.h>
 
 // SFM-specific factors
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h> // does calibration !
 
 // Standard headers

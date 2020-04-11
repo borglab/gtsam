@@ -38,7 +38,7 @@
 // have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.
 // Here we will use Projection factors to model the camera's landmark observations.
 // Also, we will initialize the robot at some location using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 
 // We want to use iSAM to solve the structure-from-motion problem incrementally, so

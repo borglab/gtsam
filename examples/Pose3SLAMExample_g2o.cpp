@@ -19,7 +19,7 @@
 
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <fstream>
 

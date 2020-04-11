@@ -18,7 +18,7 @@
 
 
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>

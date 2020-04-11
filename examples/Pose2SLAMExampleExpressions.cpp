@@ -21,7 +21,7 @@
 #include <gtsam/nonlinear/ExpressionFactorGraph.h>
 
 // For an explanation of headers below, please see Pose2SLAMExample.cpp
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>

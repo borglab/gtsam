@@ -6,7 +6,7 @@
 
 #include <gtsam_unstable/nonlinear/NonlinearClusterTree.h>
 #include <gtsam/sam/BearingRangeFactor.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Point2.h>

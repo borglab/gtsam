@@ -19,7 +19,7 @@
 #include <gtsam_unstable/slam/SmartRangeFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;

@@ -29,7 +29,7 @@
 #include <gtsam/linear/NoiseModel.h>
 
 // add in headers for specific factors
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 

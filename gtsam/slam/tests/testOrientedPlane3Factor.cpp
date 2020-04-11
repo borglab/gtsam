@@ -17,7 +17,7 @@
  */
 
 #include <gtsam/slam/OrientedPlane3Factor.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/numericalDerivative.h>

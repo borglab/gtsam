@@ -18,7 +18,7 @@
 
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/sam/RangeFactor.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/PinholeCamera.h>

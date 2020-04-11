@@ -36,7 +36,7 @@
 // Here we will use Between factors for the relative motion described by odometry measurements.
 // We will also use a Between Factor to encode the loop closure constraint
 // Also, we will initialize the robot at the origin using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 // When the factors are created, we will add them to a Factor Graph. As the factors we are using

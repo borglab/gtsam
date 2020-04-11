@@ -274,7 +274,7 @@ class SimPolygon2D {
  };
 
 // Nonlinear factors from gtsam, for our Value types
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 template<T = {gtsam::PoseRTV}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);

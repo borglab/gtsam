@@ -21,7 +21,7 @@
 
 #include <gtsam/slam/lago.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/geometry/Pose2.h>
 #include <fstream>
 

@@ -17,7 +17,7 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/ISAM2.h>
