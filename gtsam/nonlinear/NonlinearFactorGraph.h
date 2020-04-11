@@ -204,7 +204,7 @@ namespace gtsam {
     }
 
     /**
-     * Directly add a PriorFactor to the factor graph.
+     * Convenience method which adds a PriorFactor to the factor graph.
      * @param key    Variable key
      * @param prior  The variable's prior value
      * @param model  Noise model for prior factor
@@ -212,18 +212,22 @@ namespace gtsam {
     template<typename T>
     void addPrior(Key key, const T& prior,
                   const SharedNoiseModel& model = nullptr) {
-      push_back(boost::make_shared<PriorFactor<T>>(key, prior, model));
+      emplace_shared<PriorFactor<T>>(key, prior, model);
     }
 
     /**
-     * Directly add a PriorFactor to the factor graph.
+     * Convenience method which adds a PriorFactor to the factor graph.
      * @param key         Variable key
      * @param prior       The variable's prior value
      * @param covariance  Covariance matrix.
+     * 
+     * Note that the smart noise model associated with the prior factor
+     * automatically picks the right noise model (e.g. a diagonal noise model
+     * if the provided covariance matrix is diagonal).
      */
     template<typename T>
     void addPrior(Key key, const T& prior, const Matrix& covariance) {
-      push_back(boost::make_shared<PriorFactor<T>>(key, prior, covariance));
+      emplace_shared<PriorFactor<T>>(key, prior, covariance);
     }
 
   private:
