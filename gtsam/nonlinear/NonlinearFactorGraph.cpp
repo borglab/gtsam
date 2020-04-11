@@ -61,19 +61,26 @@ void NonlinearFactorGraph::print(const std::string& str, const KeyFormatter& key
 
 /* ************************************************************************* */
 void NonlinearFactorGraph::printErrors(const Values& values, const std::string& str,
-                                       const KeyFormatter& keyFormatter) const {
+    const KeyFormatter& keyFormatter,
+    const std::function<bool(const Factor* /*factor*/, double /*whitenedError*/, size_t /*index*/)>& printCondition) const
+{
   cout << str << "size: " << size() << endl
        << endl;
   for (size_t i = 0; i < factors_.size(); i++) {
+    const sharedFactor& factor = factors_[i];
+    const double errorValue = (factor != nullptr ? factors_[i]->error(values) : .0);
+    if (!printCondition(factor.get(),errorValue,i))
+      continue; // User-provided filter did not pass
+
     stringstream ss;
     ss << "Factor " << i << ": ";
-    if (factors_[i] == nullptr) {
-      cout << "nullptr" << endl;
+    if (factor == nullptr) {
+      cout << "nullptr" << "\n";
     } else {
-      factors_[i]->print(ss.str(), keyFormatter);
-      cout << "error = " << factors_[i]->error(values) << endl;
+      factor->print(ss.str(), keyFormatter);
+      cout << "error = " << errorValue << "\n";
     }
-    cout << endl;
+    cout << endl; // only one "endl" at end might be faster, \n for each factor
   }
 }
 
