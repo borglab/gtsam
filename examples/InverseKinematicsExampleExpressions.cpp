@@ -22,7 +22,6 @@
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/nonlinear/expressions.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/expressions.h>
 
 #include <cmath>

@@ -19,7 +19,6 @@
 
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/PriorFactor.h>
 #include <fstream>
 
 using namespace std;
