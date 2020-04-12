@@ -32,7 +32,8 @@ using boost::assign::list_of;
 #include <tbb/tick_count.h>              // tbb::tick_count
 #include <tbb/parallel_for.h>            // tbb::parallel_for
 #include <tbb/cache_aligned_allocator.h> // tbb::cache_aligned_allocator
-#include <tbb/task_scheduler_init.h>     // tbb::task_scheduler_init
+#include <tbb/task_arena.h>              // tbb::task_arena
+#include <tbb/task_group.h>              // tbb::task_group
 
 static const DenseIndex numberOfProblems = 1000000;
 static const DenseIndex problemSize = 4;
@@ -69,9 +70,13 @@ struct WorkerWithoutAllocation
 };
 
 /* ************************************************************************* */
-map<int, double> testWithoutMemoryAllocation()
+map<int, double> testWithoutMemoryAllocation(int num_threads)
 {
   // A function to do some matrix operations without allocating any memory
+
+  // Create task_arena and task_group
+  tbb::task_arena arena(num_threads);
+  tbb::task_group tg;
 
   // Now call it
   vector<double> results(numberOfProblems);
@@ -81,7 +86,15 @@ map<int, double> testWithoutMemoryAllocation()
   for(size_t grainSize: grainSizes)
   {
     tbb::tick_count t0 = tbb::tick_count::now();
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithoutAllocation(results));
+
+    // Run parallel code (as a task group) inside of task arena
+    arena.execute([&]{
+      tg.run([&]{
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithoutAllocation(results));
+      });
+      tg.wait();
+    });
+
     tbb::tick_count t1 = tbb::tick_count::now();
     cout << "Without memory allocation, grain size = " << grainSize << ", time = " << (t1 - t0).seconds() << endl;
     timingResults[(int)grainSize] = (t1 - t0).seconds();
@@ -122,9 +135,13 @@ struct WorkerWithAllocation
 };
 
 /* ************************************************************************* */
-map<int, double> testWithMemoryAllocation()
+map<int, double> testWithMemoryAllocation(int num_threads)
 {
   // A function to do some matrix operations with allocating memory
+
+  // Create task_arena and task_group
+  tbb::task_arena arena(num_threads);
+  tbb::task_group tg;
 
   // Now call it
   vector<double> results(numberOfProblems);
@@ -134,7 +151,15 @@ map<int, double> testWithMemoryAllocation()
   for(size_t grainSize: grainSizes)
   {
     tbb::tick_count t0 = tbb::tick_count::now();
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithAllocation(results));
+
+    // Run parallel code (as a task group) inside of task arena
+    arena.execute([&]{
+      tg.run([&]{
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithAllocation(results));
+      });
+      tg.wait();
+    });
+
     tbb::tick_count t1 = tbb::tick_count::now();
     cout << "With memory allocation, grain size = " << grainSize << ", time = " << (t1 - t0).seconds() << endl;
     timingResults[(int)grainSize] = (t1 - t0).seconds();
@@ -155,9 +180,8 @@ int main(int argc, char* argv[])
   for(size_t n: numThreads)
   {
     cout << "With " << n << " threads:" << endl;
-    tbb::task_scheduler_init init((int)n);
-    results[(int)n].grainSizesWithoutAllocation = testWithoutMemoryAllocation();
-    results[(int)n].grainSizesWithAllocation = testWithMemoryAllocation();
+    results[(int)n].grainSizesWithoutAllocation = testWithoutMemoryAllocation((int)n);
+    results[(int)n].grainSizesWithAllocation = testWithMemoryAllocation((int)n);
     cout << endl;
   }
 
