@@ -65,8 +65,8 @@ int main (int argc, char* argv[]) {
 
   // Add a prior on pose x1. This indirectly specifies where the origin is.
   // and a prior on the position of the first landmark to fix the scale
-  graph.addPrior<>(C(0), mydata.cameras[0],  noiseModel::Isotropic::Sigma(9, 0.1));
-  graph.addPrior<>(P(0), mydata.tracks[0].p, noiseModel::Isotropic::Sigma(3, 0.1));
+  graph.addPrior(C(0), mydata.cameras[0],  noiseModel::Isotropic::Sigma(9, 0.1));
+  graph.addPrior(P(0), mydata.tracks[0].p, noiseModel::Isotropic::Sigma(3, 0.1));
 
   // Create initial estimate
   Values initial;

@@ -52,7 +52,7 @@ TEST(Marginals, planarSLAMmarginals) {
   // gaussian for prior
   SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
-  graph.addPrior<>(x1, priorMean, priorNoise);  // add the factor to the graph
+  graph.addPrior(x1, priorMean, priorNoise);  // add the factor to the graph
 
   /* add odometry */
   // general noisemodel for odometry
@@ -194,7 +194,7 @@ TEST(Marginals, planarSLAMmarginals) {
 /* ************************************************************************* */
 TEST(Marginals, order) {
   NonlinearFactorGraph fg;
-  fg.addPrior<>(0, Pose2(), noiseModel::Unit::Create(3));
+  fg.addPrior(0, Pose2(), noiseModel::Unit::Create(3));
   fg += BetweenFactor<Pose2>(0, 1, Pose2(1,0,0), noiseModel::Unit::Create(3));
   fg += BetweenFactor<Pose2>(1, 2, Pose2(1,0,0), noiseModel::Unit::Create(3));
   fg += BetweenFactor<Pose2>(2, 3, Pose2(1,0,0), noiseModel::Unit::Create(3));

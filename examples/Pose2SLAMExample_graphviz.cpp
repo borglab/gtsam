@@ -32,7 +32,7 @@ int main (int argc, char** argv) {
 
   // 2a. Add a prior on the first pose, setting it to the origin
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-  graph.addPrior<>(1, Pose2(0, 0, 0), priorNoise);
+  graph.addPrior(1, Pose2(0, 0, 0), priorNoise);
 
   // For simplicity, we will use the same noise model for odometry and loop closures
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));

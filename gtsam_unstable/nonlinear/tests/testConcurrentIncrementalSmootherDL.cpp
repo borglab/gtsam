@@ -115,7 +115,7 @@ TEST( ConcurrentIncrementalSmootherDL, getFactors )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors1;
-  newFactors1.addPrior<>(1, poseInitial, noisePrior);
+  newFactors1.addPrior(1, poseInitial, noisePrior);
   newFactors1.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues1;
   newValues1.insert(1, Pose3());
@@ -166,7 +166,7 @@ TEST( ConcurrentIncrementalSmootherDL, getLinearizationPoint )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors1;
-  newFactors1.addPrior<>(1, poseInitial, noisePrior);
+  newFactors1.addPrior(1, poseInitial, noisePrior);
   newFactors1.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues1;
   newValues1.insert(1, Pose3());
@@ -223,7 +223,7 @@ TEST( ConcurrentIncrementalSmootherDL, calculateEstimate )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors2;
-  newFactors2.addPrior<>(1, poseInitial, noisePrior);
+  newFactors2.addPrior(1, poseInitial, noisePrior);
   newFactors2.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(1, Pose3().compose(poseError));
@@ -310,7 +310,7 @@ TEST( ConcurrentIncrementalSmootherDL, update_multiple )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors2;
-  newFactors2.addPrior<>(1, poseInitial, noisePrior);
+  newFactors2.addPrior(1, poseInitial, noisePrior);
   newFactors2.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(1, Pose3().compose(poseError));

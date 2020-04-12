@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
       //      cout << "Initializing " << 0 << endl;
       newVariables.insert(0, Pose());
       // Add prior
-      newFactors.addPrior<>(0, Pose(), noiseModel::Unit::Create(3));
+      newFactors.addPrior(0, Pose(), noiseModel::Unit::Create(3));
     }
     while(nextMeasurement < measurements.size()) {
 

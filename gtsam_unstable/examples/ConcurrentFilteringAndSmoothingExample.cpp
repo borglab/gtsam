@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
   auto priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
   Key priorKey = 0;
-  newFactors.addPrior<>(priorKey, priorMean, priorNoise);
+  newFactors.addPrior(priorKey, priorMean, priorNoise);
   newValues.insert(priorKey, priorMean); // Initialize the first pose at the mean of the prior
   newTimestamps[priorKey] = 0.0; // Set the timestamp associated with this key to 0.0 seconds;
 

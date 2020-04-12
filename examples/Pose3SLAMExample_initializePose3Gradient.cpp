@@ -46,7 +46,7 @@ int main(const int argc, const char *argv[]) {
   for(const Values::ConstKeyValuePair& key_value: *initial) {
     std::cout << "Adding prior to g2o file " << std::endl;
     firstKey = key_value.key;
-    graph->addPrior<>(firstKey, Pose3(), priorModel);
+    graph->addPrior(firstKey, Pose3(), priorModel);
     break;
   }
 

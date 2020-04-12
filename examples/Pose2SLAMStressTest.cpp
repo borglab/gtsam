@@ -47,7 +47,7 @@ void testGtsam(int numberNodes) {
   Pose3 first = Pose3(first_M);
 
   NonlinearFactorGraph graph;
-  graph.addPrior<>(0, first, priorModel);
+  graph.addPrior(0, first, priorModel);
 
   // vo noise model
   auto VOCovarianceModel = noiseModel::Isotropic::Variance(6, 1e-3);

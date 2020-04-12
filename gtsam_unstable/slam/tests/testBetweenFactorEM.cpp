@@ -279,8 +279,8 @@ TEST (BetweenFactorEM, updateNoiseModel ) {
   SharedGaussian model = SharedGaussian(noiseModel::Isotropic::Sigma(3, 1e2));
 
   NonlinearFactorGraph graph;
-  graph.addPrior<>(key1, p1, model);
-  graph.addPrior<>(key2, p2, model);
+  graph.addPrior(key1, p1, model);
+  graph.addPrior(key2, p2, model);
 
   f.updateNoiseModels(values, graph);
 

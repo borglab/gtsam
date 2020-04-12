@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
   // A prior factor consists of a mean and a noise model (covariance matrix)
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-  graph.addPrior<>(1, priorMean, priorNoise);
+  graph.addPrior(1, priorMean, priorNoise);
 
   // Add odometry factors
   Pose2 odometry(2.0, 0.0, 0.0);

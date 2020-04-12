@@ -437,7 +437,7 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
   initValues.insert(l41,  Point3(1.61051523, 6.7373052, -0.231582751)   );
 
   NonlinearFactorGraph factors;
-  factors.addPrior<>(xC1,
+  factors.addPrior(xC1,
       Pose3(Rot3(
           -1.,           0.0,  1.2246468e-16,
           0.0,             1.,           0.0,

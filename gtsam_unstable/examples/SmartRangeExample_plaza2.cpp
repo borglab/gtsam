@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
   // Add prior on first pose
   Pose2 pose0 = Pose2(-34.2086489999201, 45.3007639991120, -2.02108900000000);
   NonlinearFactorGraph newFactors;
-  newFactors.addPrior<>(0, pose0, priorNoise);
+  newFactors.addPrior(0, pose0, priorNoise);
 
   //  initialize points (Gaussian)
   Values initial;

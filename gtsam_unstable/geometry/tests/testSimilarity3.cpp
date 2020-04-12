@@ -265,7 +265,7 @@ TEST(Similarity3, Optimization) {
 
   // Create graph
   NonlinearFactorGraph graph;
-  graph.addPrior<>(key, prior, model);
+  graph.addPrior(key, prior, model);
 
   // Create initial estimate with identity transform
   Values initial;
@@ -310,7 +310,7 @@ TEST(Similarity3, Optimization2) {
 
   // Create graph
   NonlinearFactorGraph graph;
-  graph.addPrior<>(X(1), prior, model); // Prior !
+  graph.addPrior(X(1), prior, model); // Prior !
   graph.push_back(b1);
   graph.push_back(b2);
   graph.push_back(b3);

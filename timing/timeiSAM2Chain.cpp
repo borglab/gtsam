@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
     gttic_(Create_measurements);
     if(step == 0) {
       // Add prior
-      newFactors.addPrior<>(0, Pose(), noiseModel::Unit::Create(3));
+      newFactors.addPrior(0, Pose(), noiseModel::Unit::Create(3));
       newVariables.insert(0, Pose());
     } else {
       Vector eta = Vector::Random(3) * 0.1;

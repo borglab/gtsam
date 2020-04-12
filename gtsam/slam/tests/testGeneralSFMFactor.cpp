@@ -387,7 +387,7 @@ TEST(GeneralSFMFactor, GeneralCameraPoseRange) {
   graph.emplace_shared<
       RangeFactor<GeneralCamera, Pose3> >(X(0), X(1), 2.,
           noiseModel::Isotropic::Sigma(1, 1.));
-  graph.addPrior<>(X(1), Pose3(Rot3(), Point3(1., 0., 0.)),
+  graph.addPrior(X(1), Pose3(Rot3(), Point3(1., 0., 0.)),
           noiseModel::Isotropic::Sigma(6, 1.));
 
   Values init;
@@ -411,12 +411,12 @@ TEST(GeneralSFMFactor, GeneralCameraPoseRange) {
 TEST(GeneralSFMFactor, CalibratedCameraPoseRange) {
   // Tests range factor between a CalibratedCamera and a Pose3
   NonlinearFactorGraph graph;
-  graph.addPrior<>(X(0), CalibratedCamera(),
+  graph.addPrior(X(0), CalibratedCamera(),
           noiseModel::Isotropic::Sigma(6, 1.));
   graph.emplace_shared<
       RangeFactor<CalibratedCamera, Pose3> >(X(0), X(1), 2.,
           noiseModel::Isotropic::Sigma(1, 1.));
-  graph.addPrior<>(X(1), Pose3(Rot3(), Point3(1., 0., 0.)),
+  graph.addPrior(X(1), Pose3(Rot3(), Point3(1., 0., 0.)),
           noiseModel::Isotropic::Sigma(6, 1.));
 
   Values init;

@@ -83,7 +83,7 @@ TEST( BatchFixedLagSmoother, Example )
     Values newValues;
     Timestamps newTimestamps;
 
-    newFactors.addPrior<>(key0, Point2(0.0, 0.0), odometerNoise);
+    newFactors.addPrior(key0, Point2(0.0, 0.0), odometerNoise);
     newValues.insert(key0, Point2(0.01, 0.01));
     newTimestamps[key0] = 0.0;
 

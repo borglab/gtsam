@@ -26,7 +26,7 @@ NonlinearFactorGraph planarSLAMGraph() {
   // Prior on pose x1 at the origin.
   Pose2 prior(0.0, 0.0, 0.0);
   auto priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-  graph.addPrior<>(x1, prior, priorNoise);
+  graph.addPrior(x1, prior, priorNoise);
 
   // Two odometry factors
   Pose2 odometry(2.0, 0.0, 0.0);

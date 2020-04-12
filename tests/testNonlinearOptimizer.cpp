@@ -181,7 +181,7 @@ TEST( NonlinearOptimizer, Factorization )
   config.insert(X(2), Pose2(1.5,0.,0.));
 
   NonlinearFactorGraph graph;
-  graph.addPrior<>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
+  graph.addPrior(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
   graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
   Ordering ordering;
@@ -240,7 +240,7 @@ TEST(NonlinearOptimizer, NullFactor) {
 TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
   NonlinearFactorGraph fg;
-  fg.addPrior<>(0, Pose2(0, 0, 0), noiseModel::Isotropic::Sigma(3, 1));
+  fg.addPrior(0, Pose2(0, 0, 0), noiseModel::Isotropic::Sigma(3, 1));
   fg += BetweenFactor<Pose2>(0, 1, Pose2(1, 0, M_PI / 2),
       noiseModel::Isotropic::Sigma(3, 1));
   fg += BetweenFactor<Pose2>(1, 2, Pose2(1, 0, M_PI / 2),
@@ -341,7 +341,7 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 TEST(NonlinearOptimizer, Pose2OptimizationWithHuberNoOutlier) {
 
   NonlinearFactorGraph fg;
-  fg.addPrior<>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1));
+  fg.addPrior(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1));
   fg += BetweenFactor<Pose2>(0, 1, Pose2(1,1.1,M_PI/4),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(2.0),
                                                          noiseModel::Isotropic::Sigma(3,1)));
@@ -372,7 +372,7 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuberNoOutlier) {
 TEST(NonlinearOptimizer, Point2LinearOptimizationWithHuber) {
 
   NonlinearFactorGraph fg;
-  fg.addPrior<>(0, Point2(0,0), noiseModel::Isotropic::Sigma(2,0.01));
+  fg.addPrior(0, Point2(0,0), noiseModel::Isotropic::Sigma(2,0.01));
   fg += BetweenFactor<Point2>(0, 1, Point2(1,1.8),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.0),
                                                          noiseModel::Isotropic::Sigma(2,1)));
@@ -406,7 +406,7 @@ TEST(NonlinearOptimizer, Point2LinearOptimizationWithHuber) {
 TEST(NonlinearOptimizer, Pose2OptimizationWithHuber) {
 
   NonlinearFactorGraph fg;
-  fg.addPrior<>(0, Pose2(0,0, 0), noiseModel::Isotropic::Sigma(3,0.1));
+  fg.addPrior(0, Pose2(0,0, 0), noiseModel::Isotropic::Sigma(3,0.1));
   fg += BetweenFactor<Pose2>(0, 1, Pose2(0,9, M_PI/2),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(0.2),
                                                          noiseModel::Isotropic::Sigma(3,1)));
@@ -453,7 +453,7 @@ TEST(NonlinearOptimizer, RobustMeanCalculation) {
 
   vector<double> pts{-10,-3,-1,1,3,10,1000};
   for(auto pt : pts) {
-    fg.addPrior<>(0, pt, huber);
+    fg.addPrior(0, pt, huber);
   }
 
   init.insert(0, 100.0);
@@ -483,9 +483,9 @@ TEST(NonlinearOptimizer, disconnected_graph) {
   init.insert(X(3), Pose2(0.,0.,0.));
 
   NonlinearFactorGraph graph;
-  graph.addPrior<>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph.addPrior(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
   graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.5,0.,0.), noiseModel::Isotropic::Sigma(3,1));
-  graph.addPrior<>(X(3), Pose2(3.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph.addPrior(X(3), Pose2(3.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
 
   EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(graph, init).optimize()));
 }
@@ -528,9 +528,9 @@ TEST(NonlinearOptimizer, subclass_solver) {
   init.insert(X(3), Pose2(0.,0.,0.));
 
   NonlinearFactorGraph graph;
-  graph.addPrior<>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph.addPrior(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
   graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.5,0.,0.), noiseModel::Isotropic::Sigma(3,1));
-  graph.addPrior<>(X(3), Pose2(3.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph.addPrior(X(3), Pose2(3.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
 
   ConjugateGradientParameters p;
   Values actual = IterativeLM(graph, init, p).optimize();
@@ -585,7 +585,7 @@ struct traits<MyType> {
 
 TEST(NonlinearOptimizer, Traits) {
   NonlinearFactorGraph fg;
-  fg.addPrior<>(0, MyType(0, 0, 0), noiseModel::Isotropic::Sigma(3, 1));
+  fg.addPrior(0, MyType(0, 0, 0), noiseModel::Isotropic::Sigma(3, 1));
 
   Values init;
   init.insert(0, MyType(0,0,0));

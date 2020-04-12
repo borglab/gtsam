@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
   // Add a prior on pose x1 at the origin. A prior factor consists of a mean and a noise model (covariance matrix)
   Pose2 prior(0.0, 0.0, 0.0); // prior mean is at origin
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1)); // 30cm std on x,y, 0.1 rad on theta
-  graph.addPrior<>(x1, prior, priorNoise); // add directly to graph
+  graph.addPrior(x1, prior, priorNoise); // add directly to graph
 
   // Add two odometry factors
   Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)

@@ -129,16 +129,16 @@ int main(int argc, char* argv[]) {
   // Pose prior - at identity
   auto priorPoseNoise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.1)).finished());
-  graph.addPrior<>(X(1), Pose3::identity(), priorPoseNoise);
+  graph.addPrior(X(1), Pose3::identity(), priorPoseNoise);
   initialEstimate.insert(X(0), Pose3::identity());
 
   // Bias prior
-  graph.addPrior<>(B(1), imu.priorImuBias,
+  graph.addPrior(B(1), imu.priorImuBias,
                                                imu.biasNoiseModel);
   initialEstimate.insert(B(0), imu.priorImuBias);
 
   // Velocity prior - assume stationary
-  graph.addPrior<>(V(1), Vector3(0, 0, 0), imu.velocityNoiseModel);
+  graph.addPrior(V(1), Vector3(0, 0, 0), imu.velocityNoiseModel);
   initialEstimate.insert(V(0), Vector3(0, 0, 0));
 
   int lastFrame = 1;

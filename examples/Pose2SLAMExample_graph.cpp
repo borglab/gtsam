@@ -42,7 +42,7 @@ int main (int argc, char** argv) {
   // Add a Gaussian prior on first poses
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
   SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.01, 0.01, 0.01));
-  graph -> addPrior<>(0, priorMean, priorNoise);
+  graph -> addPrior(0, priorMean, priorNoise);
 
   // Single Step Optimization using Levenberg-Marquardt
   Values result = LevenbergMarquardtOptimizer(*graph, *initial).optimize();

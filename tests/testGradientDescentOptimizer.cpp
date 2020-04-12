@@ -37,7 +37,7 @@ boost::tuple<NonlinearFactorGraph, Values> generateProblem() {
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
   SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(
       Vector3(0.3, 0.3, 0.1));
-  graph.addPrior<>(1, priorMean, priorNoise);
+  graph.addPrior(1, priorMean, priorNoise);
 
   // 2b. Add odometry factors
   SharedDiagonal odometryNoise = noiseModel::Diagonal::Sigmas(

@@ -128,9 +128,9 @@ int main(int argc, char* argv[])
 
   // Add all prior factors (pose, velocity, bias) to the graph.
   NonlinearFactorGraph *graph = new NonlinearFactorGraph();
-  graph->addPrior<>(X(correction_count), prior_pose, pose_noise_model);
-  graph->addPrior<>(V(correction_count), prior_velocity,velocity_noise_model);
-  graph->addPrior<>(B(correction_count), prior_imu_bias,bias_noise_model);
+  graph->addPrior(X(correction_count), prior_pose, pose_noise_model);
+  graph->addPrior(V(correction_count), prior_velocity,velocity_noise_model);
+  graph->addPrior(B(correction_count), prior_imu_bias,bias_noise_model);
 
   // We use the sensor specs to build the noise model for the IMU factor.
   double accel_noise_sigma = 0.0003924;

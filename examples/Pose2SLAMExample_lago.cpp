@@ -43,7 +43,7 @@ int main(const int argc, const char *argv[]) {
   // Add prior on the pose having index (key) = 0
   noiseModel::Diagonal::shared_ptr priorModel = //
       noiseModel::Diagonal::Variances(Vector3(1e-6, 1e-6, 1e-8));
-  graph->addPrior<>(0, Pose2(), priorModel);
+  graph->addPrior(0, Pose2(), priorModel);
   graph->print();
 
   std::cout << "Computing LAGO estimate" << std::endl;

@@ -39,7 +39,7 @@ TEST(Rot3, optimize) {
   Values truth;
   Values initial;
   Graph fg;
-  fg.addPrior<>(Symbol('r',0), Rot3(), noiseModel::Isotropic::Sigma(3, 0.01));
+  fg.addPrior(Symbol('r',0), Rot3(), noiseModel::Isotropic::Sigma(3, 0.01));
   for(int j=0; j<6; ++j) {
     truth.insert(Symbol('r',j), Rot3::Rz(M_PI/3.0 * double(j)));
     initial.insert(Symbol('r',j), Rot3::Rz(M_PI/3.0 * double(j) + 0.1 * double(j%2)));

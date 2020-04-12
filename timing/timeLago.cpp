@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
   // Add prior on the pose having index (key) = 0
   noiseModel::Diagonal::shared_ptr priorModel = //
       noiseModel::Diagonal::Sigmas(Vector3(1e-6, 1e-6, 1e-8));
-  g->addPrior<>(0, Pose2(), priorModel);
+  g->addPrior(0, Pose2(), priorModel);
 
   // LAGO
   for (size_t i = 0; i < trials; i++) {

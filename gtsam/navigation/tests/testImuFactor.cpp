@@ -762,17 +762,17 @@ TEST(ImuFactor, bodyPSensorWithBias) {
   NonlinearFactorGraph graph;
   Values values;
 
-  graph.addPrior<>(X(0), Pose3(), priorNoisePose);
+  graph.addPrior(X(0), Pose3(), priorNoisePose);
   values.insert(X(0), Pose3());
 
-  graph.addPrior<>(V(0), zeroVel, priorNoiseVel);
+  graph.addPrior(V(0), zeroVel, priorNoiseVel);
   values.insert(V(0), zeroVel);
 
   // The key to this test is that we specify the bias, in the sensor frame, as known a priori
   // We also create factors below that encode our assumption that this bias is constant over time
   // In theory, after optimization, we should recover that same bias estimate
   Bias priorBias(Vector3(0, 0, 0), Vector3(0, 0.01, 0)); // Biases (acc, rot)
-  graph.addPrior<>(B(0), priorBias, priorNoiseBias);
+  graph.addPrior(B(0), priorBias, priorNoiseBias);
   values.insert(B(0), priorBias);
 
   // Now add IMU factors and bias noise models

@@ -280,7 +280,7 @@ void runIncremental()
     NonlinearFactorGraph newFactors;
     Values newVariables;
 
-    newFactors.addPrior<>(firstPose, Pose(), noiseModel::Unit::Create(3));
+    newFactors.addPrior(firstPose, Pose(), noiseModel::Unit::Create(3));
     newVariables.insert(firstPose, Pose());
 
     isam2.update(newFactors, newVariables);
@@ -463,7 +463,7 @@ void runBatch()
   cout << "Creating batch optimizer..." << endl;
 
   NonlinearFactorGraph measurements = datasetMeasurements;
-  measurements.addPrior<>(0, Pose(), noiseModel::Unit::Create(3));
+  measurements.addPrior(0, Pose(), noiseModel::Unit::Create(3));
 
   gttic_(Create_optimizer);
   GaussNewtonParams params;

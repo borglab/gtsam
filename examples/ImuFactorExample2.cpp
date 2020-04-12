@@ -60,18 +60,18 @@ int main(int argc, char* argv[]) {
   // 0.1 rad std on roll, pitch, yaw, 30cm std on x,y,z.
   auto noise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3)).finished());
-  newgraph.addPrior<>(X(0), pose_0, noise);
+  newgraph.addPrior(X(0), pose_0, noise);
 
   // Add imu priors
   Key biasKey = Symbol('b', 0);
   auto biasnoise = noiseModel::Diagonal::Sigmas(Vector6::Constant(0.1));
-  newgraph.addPrior<>(biasKey, imuBias::ConstantBias(), biasnoise);
+  newgraph.addPrior(biasKey, imuBias::ConstantBias(), biasnoise);
   initialEstimate.insert(biasKey, imuBias::ConstantBias());
   auto velnoise = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.1));
 
   Vector n_velocity(3);
   n_velocity << 0, angular_velocity * radius, 0;
-  newgraph.addPrior<>(V(0), n_velocity, velnoise);
+  newgraph.addPrior(V(0), n_velocity, velnoise);
 
   initialEstimate.insert(V(0), n_velocity);
 

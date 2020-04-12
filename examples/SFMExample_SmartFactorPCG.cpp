@@ -74,10 +74,10 @@ int main(int argc, char* argv[]) {
   // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
   noiseModel::Diagonal::shared_ptr noise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3)).finished());
-  graph.addPrior<>(0, poses[0], noise);
+  graph.addPrior(0, poses[0], noise);
 
   // Fix the scale ambiguity by adding a prior
-  graph.addPrior<>(1, poses[0], noise);
+  graph.addPrior(1, poses[0], noise);
 
   // Create the initial estimate to the solution
   Values initialEstimate;

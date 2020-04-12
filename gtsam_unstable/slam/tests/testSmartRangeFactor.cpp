@@ -115,8 +115,8 @@ TEST( SmartRangeFactor, optimization ) {
   graph.push_back(f);
   const noiseModel::Base::shared_ptr //
   priorNoise = noiseModel::Diagonal::Sigmas(Vector3(1, 1, M_PI));
-  graph.addPrior<>(1, pose1, priorNoise);
-  graph.addPrior<>(2, pose2, priorNoise);
+  graph.addPrior(1, pose1, priorNoise);
+  graph.addPrior(2, pose2, priorNoise);
 
   // Try optimizing
   LevenbergMarquardtParams params;
