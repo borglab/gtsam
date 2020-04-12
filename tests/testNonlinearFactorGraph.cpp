@@ -27,7 +27,6 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/sam/RangeFactor.h>
-#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -217,8 +216,8 @@ TEST(testNonlinearFactorGraph, eliminate) {
 
   // Priors
   auto prior = noiseModel::Isotropic::Sigma(3, 1);
-  graph.add(PriorFactor<Pose2>(11, T11, prior));
-  graph.add(PriorFactor<Pose2>(21, T21, prior));
+  graph.addPrior<>(11, T11, prior);
+  graph.addPrior<>(21, T21, prior);
 
   // Odometry
   auto model = noiseModel::Diagonal::Sigmas(Vector3(0.01, 0.01, 0.3));
@@ -273,7 +272,7 @@ TEST(testNonlinearFactorGraph, addPrior) {
   Eigen::DiagonalMatrix<double, 6, 6> covariance_pose3;
   covariance_pose3.setIdentity();
   Pose3 pose{Rot3(), Point3(0, 0, 0)};
-  graph.addPrior<Pose3>(k, pose, covariance_pose3);
+  graph.addPrior<>(k, pose, covariance_pose3);
 
   // Assert the graph has 0 error with the correct values.
   values.insert(k, pose);
