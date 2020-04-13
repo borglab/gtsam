@@ -15,6 +15,6 @@
  **/
 #pragma once
 
-// Note: PriorFactor has been moved to gtsam/nonlinear. This file has been
-// left here for backwards compatibility.
+// Note: PriorFactor has been moved to gtsam/nonlinear/PriorFactor.h. This file
+// has been left here for backwards compatibility.
 #include <gtsam/nonlinear/PriorFactor.h>
