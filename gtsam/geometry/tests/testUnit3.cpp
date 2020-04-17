@@ -27,7 +27,6 @@
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/slam/PriorFactor.h>
 
 
 #include <CppUnitLite/TestHarness.h>
@@ -456,7 +455,7 @@ TEST(Unit3, ErrorBetweenFactor) {
   // Add prior factors.
   SharedNoiseModel R_prior = noiseModel::Unit::Create(2);
   for (size_t i = 0; i < data.size(); i++) {
-    graph.emplace_shared<PriorFactor<Unit3> >(U(i), data[i], R_prior);
+    graph.addPrior(U(i), data[i], R_prior);
   }
 
   // Add process factors using the dot product error function.

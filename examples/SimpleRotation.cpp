@@ -32,8 +32,8 @@
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.
-// We will apply a simple prior on the rotation
-#include <gtsam/slam/PriorFactor.h>
+// We will apply a simple prior on the rotation. We do so via the `addPrior` convenience
+// method in NonlinearFactorGraph.
 
 // When the factors are created, we will add them to a Factor Graph. As the factors we are using
 // are nonlinear factors, we will need a Nonlinear Factor Graph.
@@ -78,7 +78,6 @@ int main() {
   prior.print("goal angle");
   noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(1, 1 * degree);
   Symbol key('x',1);
-  PriorFactor<Rot2> factor(key, prior, model);
 
   /**
    *    Step 2: Create a graph container and add the factor to it
@@ -90,7 +89,7 @@ int main() {
    * many more factors would be added.
    */
   NonlinearFactorGraph graph;
-  graph.push_back(factor);
+  graph.addPrior(key, prior, model);
   graph.print("full graph");
 
   /**

@@ -38,7 +38,6 @@
 // have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.
 // Here we will use Projection factors to model the camera's landmark observations.
 // Also, we will initialize the robot at some location using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 
 // We want to use iSAM to solve the structure-from-motion problem incrementally, so
@@ -108,12 +107,12 @@ int main(int argc, char* argv[]) {
       // Add a prior on pose x0, with 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
       noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas(
           (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3)).finished());
-      graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x', 0), poses[0], poseNoise);
+      graph.addPrior(Symbol('x', 0), poses[0], poseNoise);
 
       // Add a prior on landmark l0
       noiseModel::Isotropic::shared_ptr pointNoise =
           noiseModel::Isotropic::Sigma(3, 0.1);
-      graph.emplace_shared<PriorFactor<Point3> >(Symbol('l', 0), points[0], pointNoise);
+      graph.addPrior(Symbol('l', 0), points[0], pointNoise);
 
       // Add initial guesses to all observed landmarks
       Point3 noise(-0.25, 0.20, 0.15);

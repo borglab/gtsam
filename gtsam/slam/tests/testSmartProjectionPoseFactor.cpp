@@ -243,8 +243,8 @@ TEST(SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, wTb1, noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, wTb2, noisePrior);
+  graph.addPrior(x1, wTb1, noisePrior);
+  graph.addPrior(x2, wTb2, noisePrior);
 
   // Check errors at ground truth poses
   Values gtValues;
@@ -302,8 +302,8 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
+  graph.addPrior(x1, cam1.pose(), noisePrior);
+  graph.addPrior(x2, cam2.pose(), noisePrior);
 
   Values groundTruth;
   groundTruth.insert(x1, cam1.pose());
@@ -525,8 +525,8 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
+  graph.addPrior(x1, cam1.pose(), noisePrior);
+  graph.addPrior(x2, cam2.pose(), noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -589,8 +589,8 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
+  graph.addPrior(x1, cam1.pose(), noisePrior);
+  graph.addPrior(x2, cam2.pose(), noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -647,8 +647,8 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
+  graph.addPrior(x1, cam1.pose(), noisePrior);
+  graph.addPrior(x2, cam2.pose(), noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -716,8 +716,8 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
   graph.push_back(smartFactor4);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
+  graph.addPrior(x1, cam1.pose(), noisePrior);
+  graph.addPrior(x2, cam2.pose(), noisePrior);
 
   Values values;
   values.insert(x1, cam1.pose());
@@ -766,8 +766,8 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
+  graph.addPrior(x1, cam1.pose(), noisePrior);
+  graph.addPrior(x2, cam2.pose(), noisePrior);
 
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
@@ -806,8 +806,8 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
   graph.emplace_shared<ProjectionFactor>(cam3.project(landmark3), model, x3, L(3), sharedK2);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, level_pose, noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, pose_right, noisePrior);
+  graph.addPrior(x1, level_pose, noisePrior);
+  graph.addPrior(x2, pose_right, noisePrior);
 
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
@@ -948,7 +948,7 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   NonlinearFactorGraph graph;
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
+  graph.addPrior(x1, cam1.pose(), noisePrior);
   graph.emplace_shared<PoseTranslationPrior<Pose3> >(x2, positionPrior, noisePriorTranslation);
   graph.emplace_shared<PoseTranslationPrior<Pose3> >(x3, positionPrior, noisePriorTranslation);
 
@@ -1012,7 +1012,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
+  graph.addPrior(x1, cam1.pose(), noisePrior);
   graph.emplace_shared<PoseTranslationPrior<Pose3> >(x2, positionPrior, noisePriorTranslation);
   graph.emplace_shared<PoseTranslationPrior<Pose3> >(x3, positionPrior, noisePriorTranslation);
 
@@ -1223,8 +1223,8 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, cam2.pose(), noisePrior);
+  graph.addPrior(x1, cam1.pose(), noisePrior);
+  graph.addPrior(x2, cam2.pose(), noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -1296,7 +1296,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, cam1.pose(), noisePrior);
+  graph.addPrior(x1, cam1.pose(), noisePrior);
   graph.emplace_shared<PoseTranslationPrior<Pose3> >(x2, positionPrior, noisePriorTranslation);
   graph.emplace_shared<PoseTranslationPrior<Pose3> >(x3, positionPrior, noisePriorTranslation);
 

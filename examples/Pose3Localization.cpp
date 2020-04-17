@@ -19,7 +19,6 @@
 
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
 #include <fstream>
@@ -48,7 +47,7 @@ int main(const int argc, const char *argv[]) {
   for(const Values::ConstKeyValuePair& key_value: *initial) {
     std::cout << "Adding prior to g2o file " << std::endl;
     firstKey = key_value.key;
-    graph->add(PriorFactor<Pose3>(firstKey, Pose3(), priorModel));
+    graph->addPrior(firstKey, Pose3(), priorModel);
     break;
   }
 

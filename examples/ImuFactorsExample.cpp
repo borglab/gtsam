@@ -41,7 +41,6 @@
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
@@ -129,9 +128,9 @@ int main(int argc, char* argv[])
 
   // Add all prior factors (pose, velocity, bias) to the graph.
   NonlinearFactorGraph *graph = new NonlinearFactorGraph();
-  graph->add(PriorFactor<Pose3>(X(correction_count), prior_pose, pose_noise_model));
-  graph->add(PriorFactor<Vector3>(V(correction_count), prior_velocity,velocity_noise_model));
-  graph->add(PriorFactor<imuBias::ConstantBias>(B(correction_count), prior_imu_bias,bias_noise_model));
+  graph->addPrior(X(correction_count), prior_pose, pose_noise_model);
+  graph->addPrior(V(correction_count), prior_velocity,velocity_noise_model);
+  graph->addPrior(B(correction_count), prior_imu_bias,bias_noise_model);
 
   // We use the sensor specs to build the noise model for the IMU factor.
   double accel_noise_sigma = 0.0003924;

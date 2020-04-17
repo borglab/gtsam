@@ -33,7 +33,6 @@
 #include <gtsam/nonlinear/Values.h>
 
 // SFM-specific factors
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h> // does calibration !
 
 // Standard headers
@@ -54,7 +53,7 @@ int main(int argc, char* argv[]) {
 
   // Add a prior on pose x1.
   noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3)).finished()); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-  graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x', 0), poses[0], poseNoise);
+  graph.addPrior(Symbol('x', 0), poses[0], poseNoise);
 
   // Simulated measurements from each camera pose, adding them to the factor graph
   Cal3_S2 K(50.0, 50.0, 0.0, 50.0, 50.0);
@@ -71,11 +70,11 @@ int main(int argc, char* argv[]) {
 
   // Add a prior on the position of the first landmark.
   noiseModel::Isotropic::shared_ptr pointNoise = noiseModel::Isotropic::Sigma(3, 0.1);
-  graph.emplace_shared<PriorFactor<Point3> >(Symbol('l', 0), points[0], pointNoise); // add directly to graph
+  graph.addPrior(Symbol('l', 0), points[0], pointNoise); // add directly to graph
 
   // Add a prior on the calibration.
   noiseModel::Diagonal::shared_ptr calNoise = noiseModel::Diagonal::Sigmas((Vector(5) << 500, 500, 0.1, 100, 100).finished());
-  graph.emplace_shared<PriorFactor<Cal3_S2> >(Symbol('K', 0), K, calNoise);
+  graph.addPrior(Symbol('K', 0), K, calNoise);
 
   // Create the initial estimate to the solution
   // now including an estimate on the camera calibration parameters
