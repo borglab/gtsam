@@ -105,7 +105,8 @@ Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
   const double t = atan(r);
   const double tt = t * t, t4 = tt * tt, t6 = tt * t4, t8 = t4 * t4;
   const double td = t * (1 + k1_ * tt + k2_ * t4 + k3_ * t6 + k4_ * t8);
-  const double xd = td / r * xi, yd = td / r * yi;
+  const double td_o_r = r > 1e-8 ? td / r : 1;
+  const double xd = td_o_r * xi, yd = td_o_r * yi;
   Point2 uv(fx_ * xd + s_ * yd + u0_, fy_ * yd + v0_);
 
   Matrix2 DK;

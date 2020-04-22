@@ -19,6 +19,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3Fisheye.h>
+#include <gtsam/geometry/Point3.h>
 
 using namespace gtsam;
 
@@ -49,7 +50,63 @@ TEST(Cal3Fisheye, uncalibrate1) {
   CHECK(assert_equal(uv, uv_sol));
 }
 
-TEST(Cal3Fisheye, calibrate) {
+/* ************************************************************************* */
+/**
+ * Check that a point at (0,0) projects to the
+ * image center.
+ */
+TEST(Cal3Fisheye, uncalibrate2) {
+  Point2 pz(0, 0);
+  auto uv = K.uncalibrate(pz);
+  CHECK(assert_equal(uv, Point2(u0, v0)));
+}
+
+/* ************************************************************************* */
+/**
+ *  This test uses cv2::fisheye::projectPoints to test that uncalibrate
+ *  properly projects a point into the image plane.  One notable difference
+ *  between opencv and the Cal3Fisheye::uncalibrate function is the skew
+ *  parameter. The equivalence is alpha = s/fx.
+ *
+ *
+ * Python script to project points with fisheye model in OpenCv
+ * (script run with OpenCv version 4.2.0 and Numpy version 1.18.2)
+ */
+// clang-format off
+/*
+===========================================================
+
+import numpy as np
+import cv2
+
+objpts = np.float64([[23,27,31]]).reshape(1,-1,3)
+
+cameraMatrix = np.float64([
+    [250, 0, 320],
+    [0, 260, 240],
+    [0,0,1]
+])
+alpha = 0.1/250
+distCoeffs = np.float64([-0.013721808247486035, 0.020727425669427896,-0.012786476702685545, 0.0025242267320687625]) 
+
+rvec = np.float64([[0.,0.,0.]])
+tvec = np.float64([[0.,0.,0.]]);
+imagePoints, jacobian = cv2.fisheye.projectPoints(objpts, rvec, tvec, cameraMatrix, distCoeffs, alpha=alpha) 
+np.set_printoptions(precision=14) 
+print(imagePoints)
+===========================================================
+ * Script output: [[[457.82638130304935 408.18905848512986]]]
+ */
+// clang-format on
+TEST(Cal3Fisheye, uncalibrate3) {
+  Point3 p3(23, 27, 31);
+  Point2 xi(p3.x() / p3.z(), p3.y() / p3.z());
+  auto uv = K.uncalibrate(xi);
+  CHECK(assert_equal(uv, Point2(457.82638130304935, 408.18905848512986)));
+}
+
+/* ************************************************************************* */
+TEST(Cal3Fisheye, calibrate1) {
   Point2 pi;
   Point2 uv;
   Point2 pi_hat;
@@ -76,6 +133,32 @@ TEST(Cal3Fisheye, calibrate) {
   CHECK(traits<Point2>::Equals(pi, pi_hat, 1e-5));
 }
 
+/* ************************************************************************* */
+/**
+ * Check that calibrate returns (0,0) for the image center
+ */
+TEST(Cal3Fisheye, calibrate2) {
+  Point2 uv(u0, v0);
+  auto xi_hat = K.calibrate(uv);
+  CHECK(assert_equal(xi_hat, Point2(0, 0)))
+}
+
+/**
+ * Run calibrate on OpenCv test from uncalibrate3
+ *  (script shown above)
+ * 3d point: (23, 27, 31)
+ * 2d point in image plane: (457.82638130304935, 408.18905848512986)
+ */
+TEST(Cal3Fisheye, calibrate3) {
+  Point3 p3(23, 27, 31);
+  Point2 xi(p3.x() / p3.z(), p3.y() / p3.z());
+  Point2 uv(457.82638130304935, 408.18905848512986);
+  auto xi_hat = K.calibrate(uv);
+  CHECK(assert_equal(xi_hat, xi));
+}
+
+/* ************************************************************************* */
+// For numerical derivatives
 Point2 uncalibrate_(const Cal3Fisheye& k, const Point2& pt) {
   return k.uncalibrate(pt);
 }
