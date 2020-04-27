@@ -67,7 +67,8 @@ jobs:
           if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
           fi
-          sudo apt-get update
+          sudo apt-get -y update
+          sudo apt-get -y upgrade
 
           sudo apt install cmake g++-9 clang-9 build-essential pkg-config libpython-dev python-numpy libboost-all-dev
           
@@ -130,7 +131,7 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           cmake -E remove_directory build
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF
+          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="%BOOST_ROOT_1_72_0%" -DBOOST_INCLUDEDIR="%BOOST_ROOT_1_72_0%\boost\include" -DBOOST_LIBRARYDIR="%BOOST_ROOT_1_72_0%\lib")
           cmake --build build --config ${{ matrix.build_type }} --target gtsam
           cmake --build build --config ${{ matrix.build_type }} --target gtsam_unstable
           cmake --build build --config ${{ matrix.build_type }} --target wrap

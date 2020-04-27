@@ -59,8 +59,9 @@ jobs:
           if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
           fi
-          sudo apt-get update
-
+          sudo apt-get -y update
+          sudo apt-get -y upgrade
+          
           sudo apt install cmake g++-9 clang-9 build-essential pkg-config libpython-dev python-numpy libboost-all-dev
           
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
