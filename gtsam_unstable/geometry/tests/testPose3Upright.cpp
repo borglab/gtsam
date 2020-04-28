@@ -14,7 +14,7 @@
 
 using namespace gtsam;
 
-static const double tol = 1e-5;
+static const double tol = GTSAM_UNITTEST_TOLERANCE_LOOSE;
 
 /* ************************************************************************* */
 TEST( testPose3Upright, basics ) {
@@ -98,8 +98,8 @@ TEST( testPose3Upright, between ) {
 
   Matrix actualH1, actualH2, numericH1, numericH2;
   x1.between(x2, actualH1, actualH2);
-  numericH1 = numericalDerivative21(between_proxy, x1, x2, 1e-5);
-  numericH2 = numericalDerivative22(between_proxy, x1, x2, 1e-5);
+  numericH1 = numericalDerivative21(between_proxy, x1, x2, GTSAM_UNITTEST_TOLERANCE_LOOSE);
+  numericH2 = numericalDerivative22(between_proxy, x1, x2, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(numericH1, actualH1, tol));
   EXPECT(assert_equal(numericH2, actualH2, tol));
 }
@@ -113,8 +113,8 @@ TEST( testPose3Upright, compose ) {
 
   Matrix actualH1, actualH2, numericH1, numericH2;
   x1.compose(expected, actualH1, actualH2);
-  numericH1 = numericalDerivative21(compose_proxy, x1, expected, 1e-5);
-  numericH2 = numericalDerivative22(compose_proxy, x1, expected, 1e-5);
+  numericH1 = numericalDerivative21(compose_proxy, x1, expected, GTSAM_UNITTEST_TOLERANCE_LOOSE);
+  numericH2 = numericalDerivative22(compose_proxy, x1, expected, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(numericH1, actualH1, tol));
   EXPECT(assert_equal(numericH2, actualH2, tol));
 }
@@ -128,7 +128,7 @@ TEST( testPose3Upright, inverse ) {
 
   Matrix actualH1, numericH1;
   x1.inverse(actualH1);
-  numericH1 = numericalDerivative11(inverse_proxy, x1, 1e-5);
+  numericH1 = numericalDerivative11(inverse_proxy, x1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(numericH1, actualH1, tol));
 }
 

@@ -42,7 +42,7 @@ TEST(SlamExpressions, project2) {
   values.insert(Symbol('r', 0), Rot3());
   values.insert(Symbol('p', 12), Point3(4, 5, 6));
 
-  EXPECT_CORRECT_EXPRESSION_JACOBIANS(point2_expr, values, 1e-7, 1e-5);
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(point2_expr, values, 1e-7, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 }
 
 /* ************************************************************************* */

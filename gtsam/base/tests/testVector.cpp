@@ -115,7 +115,7 @@ TEST(Vector, householder )
   pair<double, Vector> result = house(x);
 
   EXPECT(result.first==0.5);
-  EXPECT(equal_with_abs_tol(expected,result.second,1e-5));
+  EXPECT(equal_with_abs_tol(expected,result.second,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -165,7 +165,7 @@ TEST(Vector, weightedPseudoinverse )
 
   // verify
   EXPECT(assert_equal(expected,actual));
-  EXPECT(std::abs(expPrecision-precision) < 1e-5);
+  EXPECT(std::abs(expPrecision-precision) < GTSAM_UNITTEST_TOLERANCE_LOOSE);
 }
 
 /* ************************************************************************* */
@@ -203,7 +203,7 @@ TEST(Vector, weightedPseudoinverse_nan )
 
   Vector expected = (Vector(4) << 1., 0., 0.,0.).finished();
   EXPECT(assert_equal(expected, pseudo));
-  DOUBLES_EQUAL(100, precision, 1e-5);
+  DOUBLES_EQUAL(100, precision, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 }
 
 /* ************************************************************************* */

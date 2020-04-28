@@ -70,13 +70,13 @@ TEST( ReferenceFrameFactor, jacobians ) {
   Matrix numericalDT, numericalDL, numericalDF;
   numericalDF = numericalDerivative31<Vector,Point2,Pose2,Point2>(
       boost::bind(evaluateError_, tc, _1, _2, _3),
-      global, trans, local, 1e-5);
+      global, trans, local, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   numericalDT = numericalDerivative32<Vector,Point2,Pose2,Point2>(
       boost::bind(evaluateError_, tc, _1, _2, _3),
-      global, trans, local, 1e-5);
+      global, trans, local, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   numericalDL = numericalDerivative33<Vector,Point2,Pose2,Point2>(
       boost::bind(evaluateError_, tc, _1, _2, _3),
-      global, trans, local, 1e-5);
+      global, trans, local, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
   EXPECT(assert_equal(numericalDF, actualDF));
   EXPECT(assert_equal(numericalDL, actualDL));
@@ -94,7 +94,7 @@ TEST( ReferenceFrameFactor, jacobians_zero ) {
   PointReferenceFrameFactor tc(lA1, tA1, lB1);
   Vector actCost = tc.evaluateError(global, trans, local),
       expCost = Z_2x1;
-  EXPECT(assert_equal(expCost, actCost, 1e-5));
+  EXPECT(assert_equal(expCost, actCost, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   Matrix actualDT, actualDL, actualDF;
   tc.evaluateError(global, trans, local, actualDF, actualDT, actualDL);
@@ -102,13 +102,13 @@ TEST( ReferenceFrameFactor, jacobians_zero ) {
   Matrix numericalDT, numericalDL, numericalDF;
   numericalDF = numericalDerivative31<Vector,Point2,Pose2,Point2>(
       boost::bind(evaluateError_, tc, _1, _2, _3),
-      global, trans, local, 1e-5);
+      global, trans, local, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   numericalDT = numericalDerivative32<Vector,Point2,Pose2,Point2>(
       boost::bind(evaluateError_, tc, _1, _2, _3),
-      global, trans, local, 1e-5);
+      global, trans, local, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   numericalDL = numericalDerivative33<Vector,Point2,Pose2,Point2>(
       boost::bind(evaluateError_, tc, _1, _2, _3),
-      global, trans, local, 1e-5);
+      global, trans, local, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
   EXPECT(assert_equal(numericalDF, actualDF));
   EXPECT(assert_equal(numericalDL, actualDL));
@@ -201,7 +201,7 @@ TEST( ReferenceFrameFactor, converge_local ) {
   Values actual = solver.optimize();
 
   CHECK(actual.exists(lA1));
-  EXPECT(assert_equal(idealLocal, actual.at<Point2>(lA1), 1e-5));
+  EXPECT(assert_equal(idealLocal, actual.at<Point2>(lA1), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -238,7 +238,7 @@ TEST( ReferenceFrameFactor, converge_global ) {
 
   // verify
   CHECK(actual.exists(lB1));
-  EXPECT(assert_equal(idealForeign, actual.at<Point2>(lB1), 1e-5));
+  EXPECT(assert_equal(idealForeign, actual.at<Point2>(lB1), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

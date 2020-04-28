@@ -39,7 +39,7 @@ using namespace gtsam;
 using namespace std;
 using namespace boost::assign;
 
-static const double tol = 1e-5;
+static const double tol = GTSAM_UNITTEST_TOLERANCE_LOOSE;
 
 static Matrix R = (Matrix(2, 2) <<
     -12.1244,  -5.1962,

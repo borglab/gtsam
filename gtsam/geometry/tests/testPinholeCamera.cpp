@@ -69,7 +69,7 @@ TEST(PinholeCamera, Create) {
   Matrix numericalH1 = numericalDerivative21<Camera,Pose3,Cal3_S2>(f,pose,K);
   EXPECT(assert_equal(numericalH1, actualH1, 1e-9));
   Matrix numericalH2 = numericalDerivative22<Camera,Pose3,Cal3_S2>(f,pose,K);
-  EXPECT(assert_equal(numericalH2, actualH2, 1e-8));
+  EXPECT(assert_equal(numericalH2, actualH2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 //******************************************************************************

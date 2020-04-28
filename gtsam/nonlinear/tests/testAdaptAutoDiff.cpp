@@ -145,8 +145,8 @@ TEST(AdaptAutoDiff, AutoDiff) {
   double* jacobians[] = {H1.data(), H2.data()};
   CHECK((AutoDiff<Projective, double, 12, 4>::Differentiate(
       projective, parameters, 2, actual2.data(), jacobians)));
-  EXPECT(assert_equal(E1, H1, 1e-8));
-  EXPECT(assert_equal(E2, H2, 1e-8));
+  EXPECT(assert_equal(E1, H1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(E2, H2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -203,8 +203,8 @@ TEST(AdaptAutoDiff, AutoDiff2) {
   double* jacobians[] = {H1.data(), H2.data()};
   CHECK((AutoDiff<SnavelyProjection, double, 9, 3>::Differentiate(
       snavely, parameters, 2, actual2.data(), jacobians)));
-  EXPECT(assert_equal(E1, H1, 1e-8));
-  EXPECT(assert_equal(E2, H2, 1e-8));
+  EXPECT(assert_equal(E1, H1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(E2, H2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -224,8 +224,8 @@ TEST(AdaptAutoDiff, AdaptAutoDiff) {
   Matrix23 H2;
   Vector2 actual2 = snavely(P, X, H1, H2);
   EXPECT(assert_equal(expectedMeasurement, actual2, 1e-6));
-  EXPECT(assert_equal(E1, H1, 1e-8));
-  EXPECT(assert_equal(E2, H2, 1e-8));
+  EXPECT(assert_equal(E1, H1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(E2, H2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */

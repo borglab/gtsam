@@ -163,22 +163,22 @@ TEST(SO3, ExpmapFunctor) {
   // axis angle version
   so3::ExpmapFunctor f1(axis, angle);
   SO3 actual1 = f1.expmap();
-  CHECK(assert_equal(expected, actual1.matrix(), 1e-5));
+  CHECK(assert_equal(expected, actual1.matrix(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // axis angle version, negative angle
   so3::ExpmapFunctor f2(axis, angle - 2*M_PI);
   SO3 actual2 = f2.expmap();
-  CHECK(assert_equal(expected, actual2.matrix(), 1e-5));
+  CHECK(assert_equal(expected, actual2.matrix(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // omega version
   so3::ExpmapFunctor f3(axis * angle);
   SO3 actual3 = f3.expmap();
-  CHECK(assert_equal(expected, actual3.matrix(), 1e-5));
+  CHECK(assert_equal(expected, actual3.matrix(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // omega version, negative angle
   so3::ExpmapFunctor f4(axis * (angle - 2*M_PI));
   SO3 actual4 = f4.expmap();
-  CHECK(assert_equal(expected, actual4.matrix(), 1e-5));
+  CHECK(assert_equal(expected, actual4.matrix(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -356,7 +356,7 @@ TEST(SO3, vec) {
   const Vector9 actual = R2.vec(actualH);
   CHECK(assert_equal(expected, actual));
   boost::function<Vector9(const SO3&)> f = [](const SO3& Q) { return Q.vec(); };
-  const Matrix numericalH = numericalDerivative11(f, R2, 1e-5);
+  const Matrix numericalH = numericalDerivative11(f, R2, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   CHECK(assert_equal(numericalH, actualH));
 }
 

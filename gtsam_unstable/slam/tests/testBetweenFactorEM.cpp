@@ -68,7 +68,7 @@ TEST( BetweenFactorEM, ConstructorAndEquals)
         prior_inlier, prior_outlier);
 
   // Equals
-  CHECK(assert_equal(f, g, 1e-5));
+  CHECK(assert_equal(f, g, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -140,7 +140,7 @@ TEST( BetweenFactorEM, EvaluateError)
   //  cout<<"actual_err_wh: "<<actual_err_wh_inlier[0]<<", "<<actual_err_wh_inlier[1]<<", "<<actual_err_wh_inlier[2]<<endl;
   //  cout<<"actual_err_wh_stnd: "<<actual_err_wh_stnd[0]<<", "<<actual_err_wh_stnd[1]<<", "<<actual_err_wh_stnd[2]<<endl;
   //
-  //  CHECK( assert_equal(actual_err_wh_inlier, actual_err_wh_stnd, 1e-8));
+  //  CHECK( assert_equal(actual_err_wh_inlier, actual_err_wh_stnd, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 ///* ************************************************************************** */
@@ -179,15 +179,15 @@ TEST (BetweenFactorEM, jacobian ) {
   BetweenFactor<gtsam::Pose2> h(key1, key2, rel_pose_msr, model_inlier );
   Vector actual_err_wh_stnd = h.whitenedError(values);
   Vector actual_err_wh_inlier = (Vector(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
-//  CHECK( assert_equal(actual_err_wh_stnd, actual_err_wh_inlier, 1e-8));
+//  CHECK( assert_equal(actual_err_wh_stnd, actual_err_wh_inlier, GTSAM_UNITTEST_TOLERANCE_TIGHT));
   std::vector<gtsam::Matrix> H_actual_stnd_unwh(2);
   (void)h.unwhitenedError(values, H_actual_stnd_unwh);
   Matrix H1_actual_stnd_unwh = H_actual_stnd_unwh[0];
   Matrix H2_actual_stnd_unwh = H_actual_stnd_unwh[1];
   Matrix H1_actual_stnd = model_inlier->Whiten(H1_actual_stnd_unwh);
   Matrix H2_actual_stnd = model_inlier->Whiten(H2_actual_stnd_unwh);
-//  CHECK( assert_equal(H1_actual_stnd, H1_actual, 1e-8));
-//  CHECK( assert_equal(H2_actual_stnd, H2_actual, 1e-8));
+//  CHECK( assert_equal(H1_actual_stnd, H1_actual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+//  CHECK( assert_equal(H2_actual_stnd, H2_actual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   double stepsize = 1.0e-9;
   Matrix H1_expected = gtsam::numericalDerivative11<LieVector, Pose2>(boost::bind(&predictionError, _1, p2, key1, key2, f), p1, stepsize);
@@ -196,11 +196,11 @@ TEST (BetweenFactorEM, jacobian ) {
 
   // try to check numerical derivatives of a standard between factor
   Matrix H1_expected_stnd = gtsam::numericalDerivative11<LieVector, Pose2>(boost::bind(&predictionError_standard, _1, p2, key1, key2, h), p1, stepsize);
-//  CHECK( assert_equal(H1_expected_stnd, H1_actual_stnd, 1e-5));
+//  CHECK( assert_equal(H1_expected_stnd, H1_actual_stnd, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 //
 //
-//  CHECK( assert_equal(H1_expected, H1_actual, 1e-8));
-//  CHECK( assert_equal(H2_expected, H2_actual, 1e-8));
+//  CHECK( assert_equal(H1_expected, H1_actual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+//  CHECK( assert_equal(H2_expected, H2_actual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
 }
 

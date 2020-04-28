@@ -205,7 +205,7 @@ TEST( PoseBetweenFactor, Jacobian ) {
   factor.evaluateError(pose1, pose2, actualH1, actualH2);
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
+  CHECK(assert_equal(expectedH1, actualH1, GTSAM_UNITTEST_TOLERANCE_LOOSE));
   CHECK(assert_equal(expectedH2, actualH2, 1e-6));
 }
 
@@ -235,7 +235,7 @@ TEST( PoseBetweenFactor, JacobianWithTransform ) {
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedH1, actualH1, 1e-6));
-  CHECK(assert_equal(expectedH2, actualH2, 1e-5));
+  CHECK(assert_equal(expectedH2, actualH2, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

@@ -278,7 +278,7 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
   Matrix augmentedHessian = GaussianFactorGraph(gbn).augmentedHessian();
   LONGS_EQUAL(11, (long)augmentedHessian.cols());
   Vector denseMatrixGradient = -augmentedHessian.col(10).segment(0,10);
-  EXPECT(assert_equal(gradient, denseMatrixGradient, 1e-5));
+  EXPECT(assert_equal(gradient, denseMatrixGradient, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // Compute the steepest descent point
   double step = -gradient.squaredNorm() / (gradient.transpose() * hessian * gradient)(0);
@@ -290,7 +290,7 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
   // Check that points agree
   KeyVector keys {0, 1, 2, 3, 4};
   Vector actualAsVector = actual.vector(keys);
-  EXPECT(assert_equal(expected, actualAsVector, 1e-5));
+  EXPECT(assert_equal(expected, actualAsVector, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // Check that point causes a decrease in error
   double origError = GaussianFactorGraph(gbn).error(VectorValues::Zero(actual));

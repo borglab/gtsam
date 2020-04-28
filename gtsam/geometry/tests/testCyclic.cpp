@@ -97,7 +97,7 @@ struct traits<K4> : internal::AdditiveGroupTraits<K4> {
   static void Print(const K4& m, const string& s = "") {
     cout << s << "(" << m.first << "," << m.second << ")" << endl;
   }
-  static bool Equals(const K4& m1, const K4& m2, double tol = 1e-8) {
+  static bool Equals(const K4& m1, const K4& m2, double tol = GTSAM_UNITTEST_TOLERANCE_TIGHT) {
     return m1 == m2;
   }
 };

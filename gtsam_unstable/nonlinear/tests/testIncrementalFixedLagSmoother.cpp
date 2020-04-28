@@ -217,7 +217,7 @@ TEST( IncrementalFixedLagSmoother, Example )
 	  // fails  since we are not reusing slots, hence also when removing a factor we do not change
 	  // the size of the factor graph
 	  // size_t nrFactorsAfterRemoval = smoother.getFactors().size();
-	  // DOUBLES_EQUAL(nrFactorsBeforeRemoval-1, nrFactorsAfterRemoval, 1e-5);
+	  // DOUBLES_EQUAL(nrFactorsBeforeRemoval-1, nrFactorsAfterRemoval, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
 	  // check that the factors in the smoother are right
 	  NonlinearFactorGraph actual = smoother.getFactors();

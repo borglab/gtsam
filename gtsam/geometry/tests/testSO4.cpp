@@ -169,7 +169,7 @@ TEST(SO4, vec) {
   boost::function<Vector16(const SO4&)> f = [](const SO4& Q) {
     return Q.vec();
   };
-  const Matrix numericalH = numericalDerivative11(f, Q2, 1e-5);
+  const Matrix numericalH = numericalDerivative11(f, Q2, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(numericalH, actualH));
 }
 
@@ -182,7 +182,7 @@ TEST(SO4, topLeft) {
   boost::function<Matrix3(const SO4&)> f = [](const SO4& Q3) {
     return topLeft(Q3);
   };
-  const Matrix numericalH = numericalDerivative11(f, Q3, 1e-5);
+  const Matrix numericalH = numericalDerivative11(f, Q3, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(numericalH, actualH));
 }
 
@@ -195,7 +195,7 @@ TEST(SO4, stiefel) {
   boost::function<Matrix43(const SO4&)> f = [](const SO4& Q3) {
     return stiefel(Q3);
   };
-  const Matrix numericalH = numericalDerivative11(f, Q3, 1e-5);
+  const Matrix numericalH = numericalDerivative11(f, Q3, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(numericalH, actualH));
 }
 

@@ -12,7 +12,7 @@
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
-const double tol=1e-5;
+const double tol=GTSAM_UNITTEST_TOLERANCE_LOOSE;
 const double h = 0.01;
 
 //const double deg2rad = M_PI/180.0;
@@ -58,20 +58,20 @@ TEST( Reconstruction, evaluateError) {
   Matrix numericalH1 = numericalDerivative31(
       boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
           boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3,
-              boost::none, boost::none, boost::none)), g2, g1, V1_g1, 1e-5);
+              boost::none, boost::none, boost::none)), g2, g1, V1_g1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
   Matrix numericalH2 = numericalDerivative32(
       boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
           boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3,
-              boost::none, boost::none, boost::none)), g2, g1, V1_g1, 1e-5);
+              boost::none, boost::none, boost::none)), g2, g1, V1_g1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
   Matrix numericalH3 = numericalDerivative33(
       boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
           boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3,
-              boost::none, boost::none, boost::none)), g2, g1, V1_g1, 1e-5);
+              boost::none, boost::none, boost::none)), g2, g1, V1_g1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
-  EXPECT(assert_equal(numericalH1,H1,1e-5));
-  EXPECT(assert_equal(numericalH2,H2,1e-5));
+  EXPECT(assert_equal(numericalH1,H1,GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  EXPECT(assert_equal(numericalH2,H2,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 #ifdef GTSAM_USE_QUATERNIONS // TODO: why is the quaternion version much less accurate??
   EXPECT(assert_equal(numericalH3,H3,1e-3));
 #else
@@ -112,25 +112,25 @@ TEST( DiscreteEulerPoincareHelicopter, evaluateError) {
       boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
           boost::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
           ),
-          expectedv2, V1_g1, g2, 1e-5
+          expectedv2, V1_g1, g2, GTSAM_UNITTEST_TOLERANCE_LOOSE
       );
 
   Matrix numericalH2 = numericalDerivative32(
       boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
           boost::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
           ),
-          expectedv2, V1_g1, g2, 1e-5
+          expectedv2, V1_g1, g2, GTSAM_UNITTEST_TOLERANCE_LOOSE
       );
 
   Matrix numericalH3 = numericalDerivative33(
       boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
           boost::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
           ),
-          expectedv2, V1_g1, g2, 1e-5
+          expectedv2, V1_g1, g2, GTSAM_UNITTEST_TOLERANCE_LOOSE
       );
 
-  EXPECT(assert_equal(numericalH1,H1,1e-5));
-  EXPECT(assert_equal(numericalH2,H2,1e-5));
+  EXPECT(assert_equal(numericalH1,H1,GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  EXPECT(assert_equal(numericalH2,H2,GTSAM_UNITTEST_TOLERANCE_LOOSE));
   EXPECT(assert_equal(numericalH3,H3,5e-5));
 }
 

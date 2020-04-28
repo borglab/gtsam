@@ -165,9 +165,9 @@ TEST( OrientedPlane3DirectionPrior, Constructor ) {
   factor.evaluateError(T3, actualH3);
 
   // Verify we get the expected error
-  EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
-  EXPECT(assert_equal(expectedH2, actualH2, 1e-8));
-  EXPECT(assert_equal(expectedH3, actualH3, 1e-8));
+  EXPECT(assert_equal(expectedH1, actualH1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(expectedH2, actualH2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(expectedH3, actualH3, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */

@@ -104,7 +104,7 @@ TEST( DiscreteConditional, Combine) {
   DiscreteConditional expected(2, factor);
   DiscreteConditional::shared_ptr actual = DiscreteConditional::Combine(
       c.begin(), c.end());
-  EXPECT(assert_equal(expected, *actual,1e-5));
+  EXPECT(assert_equal(expected, *actual,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

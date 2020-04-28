@@ -11,7 +11,7 @@
 using namespace std;
 using namespace gtsam;
 
-const double tol=1e-5;
+const double tol=GTSAM_UNITTEST_TOLERANCE_LOOSE;
 
 /* ************************************************************************* */
 TEST(testPolygon, triangle_basic) {

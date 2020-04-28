@@ -113,13 +113,13 @@ TEST( Rot3, AxisAngle)
                        0, 1,        0,
                -0.706825, 0, 0.707388);
   Rot3 actual = Rot3::AxisAngle(axis, angle);
-  CHECK(assert_equal(expected,actual,1e-5));
+  CHECK(assert_equal(expected,actual,GTSAM_UNITTEST_TOLERANCE_LOOSE));
   Rot3 actual2 = Rot3::AxisAngle(axis, angle-2*M_PI);
-  CHECK(assert_equal(expected,actual2,1e-5));
+  CHECK(assert_equal(expected,actual2,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   axis = Vector3(0, 50, 0);
   Rot3 actual3 = Rot3::AxisAngle(axis, angle);
-  CHECK(assert_equal(expected,actual3,1e-5));
+  CHECK(assert_equal(expected,actual3,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -140,9 +140,9 @@ TEST( Rot3, Rodrigues2)
                        0, 1,        0,
                -0.706825, 0, 0.707388);
   Rot3 actual = Rot3::AxisAngle(axis, angle);
-  CHECK(assert_equal(expected,actual,1e-5));
+  CHECK(assert_equal(expected,actual,GTSAM_UNITTEST_TOLERANCE_LOOSE));
   Rot3 actual2 = Rot3::Rodrigues(angle*axis);
-  CHECK(assert_equal(expected,actual2,1e-5));
+  CHECK(assert_equal(expected,actual2,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -319,7 +319,7 @@ TEST(Rot3, BCH)
   Rot3 R3 = R1 * R2;
   Vector expected = Rot3::Logmap(R3);
   Vector actual = BCH(w1, w2);
-  CHECK(assert_equal(expected, actual,1e-5));
+  CHECK(assert_equal(expected, actual,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

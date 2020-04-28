@@ -15,7 +15,7 @@
 
 using namespace gtsam;
 
-static const double tol=1e-5;
+static const double tol=GTSAM_UNITTEST_TOLERANCE_LOOSE;
 
 /* ************************************************************************* */
 TEST( testBearingS2, basics ) {

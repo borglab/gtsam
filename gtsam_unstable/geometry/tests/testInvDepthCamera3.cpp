@@ -33,7 +33,7 @@ TEST( InvDepthFactor, Project1) {
   Vector5 inv_landmark((Vector(5) << 1., 0., 1., 0., 0.).finished());
   double inv_depth(1./4);
   Point2 actual_uv = inv_camera.project(inv_landmark, inv_depth);
-  EXPECT(assert_equal(expected_uv, actual_uv,1e-8));
+  EXPECT(assert_equal(expected_uv, actual_uv,GTSAM_UNITTEST_TOLERANCE_TIGHT));
   EXPECT(assert_equal(Point2(640,480), actual_uv));
 }
 

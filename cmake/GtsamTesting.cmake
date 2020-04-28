@@ -121,6 +121,10 @@ option(GTSAM_BUILD_EXAMPLES_ALWAYS       "Build examples with 'make all' (build 
 
 
 # Implementations of this file's macros:
+set(GTSAM_UNITTEST_TOLERANCE_TIGHT 1e-8 CACHE STRING "Tolerance for unit tests (tight version)")
+set(GTSAM_UNITTEST_TOLERANCE_LOOSE 1e-5 CACHE STRING "Tolerance for unit tests (loose version)")
+mark_as_advanced(GTSAM_UNITTEST_TOLERANCE_TIGHT)
+mark_as_advanced(GTSAM_UNITTEST_TOLERANCE_LOOSE)
 
 macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 	if(GTSAM_BUILD_TESTS)
@@ -168,6 +172,10 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 				# Add executable
 				add_executable(${script_name} ${script_src} ${script_headers})
 				target_link_libraries(${script_name} CppUnitLite ${linkLibraries})
+				target_compile_definitions(${script_name} PRIVATE 
+					GTSAM_UNITTEST_TOLERANCE_TIGHT=${GTSAM_UNITTEST_TOLERANCE_TIGHT}
+					GTSAM_UNITTEST_TOLERANCE_LOOSE=${GTSAM_UNITTEST_TOLERANCE_LOOSE}
+					)
 
 				# Apply user build flags from CMake cache variables:
 				gtsam_apply_build_flags(${script_name})

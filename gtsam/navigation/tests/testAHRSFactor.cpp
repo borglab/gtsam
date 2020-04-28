@@ -191,17 +191,17 @@ TEST(AHRSFactor, Error) {
   (void) factor.evaluateError(x1, x2, bias, H1a, H2a, H3a);
 
   // rotations
-  EXPECT(assert_equal(RH1e, H1a, 1e-5));
-  // 1e-5 needs to be added only when using quaternions for rotations
+  EXPECT(assert_equal(RH1e, H1a, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  // GTSAM_UNITTEST_TOLERANCE_LOOSE needs to be added only when using quaternions for rotations
 
-  EXPECT(assert_equal(H2e, H2a, 1e-5));
+  EXPECT(assert_equal(H2e, H2a, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // rotations
-  EXPECT(assert_equal(RH2e, H2a, 1e-5));
-  // 1e-5 needs to be added only when using quaternions for rotations
+  EXPECT(assert_equal(RH2e, H2a, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  // GTSAM_UNITTEST_TOLERANCE_LOOSE needs to be added only when using quaternions for rotations
 
-  EXPECT(assert_equal(H3e, H3a, 1e-5));
-  // 1e-5 needs to be added only when using quaternions for rotations
+  EXPECT(assert_equal(H3e, H3a, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  // GTSAM_UNITTEST_TOLERANCE_LOOSE needs to be added only when using quaternions for rotations
 }
 
 /* ************************************************************************* */
@@ -464,7 +464,7 @@ TEST (AHRSFactor, predictTest) {
   // Actual Jacobians
   Matrix H;
   (void) pim.predict(bias,H);
-  EXPECT(assert_equal(expectedH, H, 1e-8));
+  EXPECT(assert_equal(expectedH, H, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 //******************************************************************************
 #include <gtsam/linear/GaussianFactorGraph.h>

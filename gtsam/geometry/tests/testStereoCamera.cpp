@@ -130,7 +130,7 @@ TEST( StereoCamera, backproject_case1)
   Point3 expected(1.2, 2.3, 4.5);
   StereoPoint2 stereo_point = stereoCam2.project(expected);
   Point3 actual = stereoCam2.backproject(stereo_point);
-  CHECK(assert_equal(expected,actual,1e-8));
+  CHECK(assert_equal(expected,actual,GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -164,7 +164,7 @@ TEST( StereoCamera, backproject2_case1)
 
   Matrix actual_jacobian_1, actual_jacobian_2;
   Point3 actual_point = stereoCam2.backproject2(stereo_point, actual_jacobian_1, actual_jacobian_2);
-  CHECK(assert_equal(expected_point, actual_point, 1e-8));
+  CHECK(assert_equal(expected_point, actual_point, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   Matrix expected_jacobian_to_pose = numericalDerivative31(backproject3, Pose3(), stereo_point, *K2);
   CHECK(assert_equal(expected_jacobian_to_pose, actual_jacobian_1, 1e-6));

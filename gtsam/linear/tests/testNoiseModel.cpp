@@ -461,95 +461,95 @@ TEST(NoiseModel, robustFunctionFair)
 {
   const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
   const mEstimator::Fair::shared_ptr fair = mEstimator::Fair::Create(k);
-  DOUBLES_EQUAL(0.8333333333333333, fair->weight(error1), 1e-8);
-  DOUBLES_EQUAL(0.3333333333333333, fair->weight(error2), 1e-8);
+  DOUBLES_EQUAL(0.8333333333333333, fair->weight(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.3333333333333333, fair->weight(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
   // Test negative value to ensure we take absolute value of error.
-  DOUBLES_EQUAL(0.3333333333333333, fair->weight(error3), 1e-8);
-  DOUBLES_EQUAL(0.8333333333333333, fair->weight(error4), 1e-8);
+  DOUBLES_EQUAL(0.3333333333333333, fair->weight(error3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.8333333333333333, fair->weight(error4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
-  DOUBLES_EQUAL(0.441961080151135, fair->residual(error1), 1e-8);
-  DOUBLES_EQUAL(22.534692783297260, fair->residual(error2), 1e-8);
-  DOUBLES_EQUAL(22.534692783297260, fair->residual(error3), 1e-8);
-  DOUBLES_EQUAL(0.441961080151135, fair->residual(error4), 1e-8);
+  DOUBLES_EQUAL(0.441961080151135, fair->residual(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(22.534692783297260, fair->residual(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(22.534692783297260, fair->residual(error3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.441961080151135, fair->residual(error4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 }
 
 TEST(NoiseModel, robustFunctionHuber)
 {
   const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
   const mEstimator::Huber::shared_ptr huber = mEstimator::Huber::Create(k);
-  DOUBLES_EQUAL(1.0, huber->weight(error1), 1e-8);
-  DOUBLES_EQUAL(0.5, huber->weight(error2), 1e-8);
+  DOUBLES_EQUAL(1.0, huber->weight(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.5, huber->weight(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
   // Test negative value to ensure we take absolute value of error.
-  DOUBLES_EQUAL(0.5, huber->weight(error3), 1e-8);
-  DOUBLES_EQUAL(1.0, huber->weight(error4), 1e-8);
+  DOUBLES_EQUAL(0.5, huber->weight(error3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(1.0, huber->weight(error4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
-  DOUBLES_EQUAL(0.5000, huber->residual(error1), 1e-8);
-  DOUBLES_EQUAL(37.5000, huber->residual(error2), 1e-8);
-  DOUBLES_EQUAL(37.5000, huber->residual(error3), 1e-8);
-  DOUBLES_EQUAL(0.5000, huber->residual(error4), 1e-8);
+  DOUBLES_EQUAL(0.5000, huber->residual(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(37.5000, huber->residual(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(37.5000, huber->residual(error3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.5000, huber->residual(error4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 }
 
 TEST(NoiseModel, robustFunctionCauchy)
 {
   const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
   const mEstimator::Cauchy::shared_ptr cauchy = mEstimator::Cauchy::Create(k);
-  DOUBLES_EQUAL(0.961538461538461, cauchy->weight(error1), 1e-8);
-  DOUBLES_EQUAL(0.2000, cauchy->weight(error2), 1e-8);
+  DOUBLES_EQUAL(0.961538461538461, cauchy->weight(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.2000, cauchy->weight(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
   // Test negative value to ensure we take absolute value of error.
-  DOUBLES_EQUAL(0.2000, cauchy->weight(error3), 1e-8);
-  DOUBLES_EQUAL(0.961538461538461, cauchy->weight(error4), 1e-8);
+  DOUBLES_EQUAL(0.2000, cauchy->weight(error3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.961538461538461, cauchy->weight(error4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
-  DOUBLES_EQUAL(0.490258914416017, cauchy->residual(error1), 1e-8);
-  DOUBLES_EQUAL(20.117973905426254, cauchy->residual(error2), 1e-8);
-  DOUBLES_EQUAL(20.117973905426254, cauchy->residual(error3), 1e-8);
-  DOUBLES_EQUAL(0.490258914416017, cauchy->residual(error4), 1e-8);
+  DOUBLES_EQUAL(0.490258914416017, cauchy->residual(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(20.117973905426254, cauchy->residual(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(20.117973905426254, cauchy->residual(error3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.490258914416017, cauchy->residual(error4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 }
 
 TEST(NoiseModel, robustFunctionGemanMcClure)
 {
   const double k = 1.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
   const mEstimator::GemanMcClure::shared_ptr gmc = mEstimator::GemanMcClure::Create(k);
-  DOUBLES_EQUAL(0.25      , gmc->weight(error1), 1e-8);
-  DOUBLES_EQUAL(9.80296e-5, gmc->weight(error2), 1e-8);
-  DOUBLES_EQUAL(9.80296e-5, gmc->weight(error3), 1e-8);
-  DOUBLES_EQUAL(0.25      , gmc->weight(error4), 1e-8);
+  DOUBLES_EQUAL(0.25      , gmc->weight(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(9.80296e-5, gmc->weight(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(9.80296e-5, gmc->weight(error3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.25      , gmc->weight(error4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
-  DOUBLES_EQUAL(0.2500, gmc->residual(error1), 1e-8);
-  DOUBLES_EQUAL(0.495049504950495, gmc->residual(error2), 1e-8);
-  DOUBLES_EQUAL(0.495049504950495, gmc->residual(error3), 1e-8);
-  DOUBLES_EQUAL(0.2500, gmc->residual(error4), 1e-8);
+  DOUBLES_EQUAL(0.2500, gmc->residual(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.495049504950495, gmc->residual(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.495049504950495, gmc->residual(error3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.2500, gmc->residual(error4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 }
 
 TEST(NoiseModel, robustFunctionWelsch)
 {
   const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
   const mEstimator::Welsch::shared_ptr welsch = mEstimator::Welsch::Create(k);
-  DOUBLES_EQUAL(0.960789439152323, welsch->weight(error1), 1e-8);
-  DOUBLES_EQUAL(0.018315638888734, welsch->weight(error2), 1e-8);
+  DOUBLES_EQUAL(0.960789439152323, welsch->weight(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.018315638888734, welsch->weight(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
   // Test negative value to ensure we take absolute value of error.
-  DOUBLES_EQUAL(0.018315638888734, welsch->weight(error3), 1e-8);
-  DOUBLES_EQUAL(0.960789439152323, welsch->weight(error4), 1e-8);
+  DOUBLES_EQUAL(0.018315638888734, welsch->weight(error3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.960789439152323, welsch->weight(error4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
-  DOUBLES_EQUAL(0.490132010595960, welsch->residual(error1), 1e-8);
-  DOUBLES_EQUAL(12.271054513890823, welsch->residual(error2), 1e-8);
-  DOUBLES_EQUAL(12.271054513890823, welsch->residual(error3), 1e-8);
-  DOUBLES_EQUAL(0.490132010595960, welsch->residual(error4), 1e-8);
+  DOUBLES_EQUAL(0.490132010595960, welsch->residual(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(12.271054513890823, welsch->residual(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(12.271054513890823, welsch->residual(error3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.490132010595960, welsch->residual(error4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 }
 
 TEST(NoiseModel, robustFunctionTukey)
 {
   const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
   const mEstimator::Tukey::shared_ptr tukey = mEstimator::Tukey::Create(k);
-  DOUBLES_EQUAL(0.9216, tukey->weight(error1), 1e-8);
-  DOUBLES_EQUAL(0.0, tukey->weight(error2), 1e-8);
+  DOUBLES_EQUAL(0.9216, tukey->weight(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.0, tukey->weight(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
   // Test negative value to ensure we take absolute value of error.
-  DOUBLES_EQUAL(0.0, tukey->weight(error3), 1e-8);
-  DOUBLES_EQUAL(0.9216, tukey->weight(error4), 1e-8);
+  DOUBLES_EQUAL(0.0, tukey->weight(error3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.9216, tukey->weight(error4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
-  DOUBLES_EQUAL(0.480266666666667, tukey->residual(error1), 1e-8);
-  DOUBLES_EQUAL(4.166666666666667, tukey->residual(error2), 1e-8);
-  DOUBLES_EQUAL(4.166666666666667, tukey->residual(error3), 1e-8);
-  DOUBLES_EQUAL(0.480266666666667, tukey->residual(error4), 1e-8);
+  DOUBLES_EQUAL(0.480266666666667, tukey->residual(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(4.166666666666667, tukey->residual(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(4.166666666666667, tukey->residual(error3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.480266666666667, tukey->residual(error4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 }
 
 TEST(NoiseModel, robustFunctionDCS)
@@ -557,11 +557,11 @@ TEST(NoiseModel, robustFunctionDCS)
   const double k = 1.0, error1 = 1.0, error2 = 10.0;
   const mEstimator::DCS::shared_ptr dcs = mEstimator::DCS::Create(k);
 
-  DOUBLES_EQUAL(1.0       , dcs->weight(error1), 1e-8);
-  DOUBLES_EQUAL(0.00039211, dcs->weight(error2), 1e-8);
+  DOUBLES_EQUAL(1.0       , dcs->weight(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.00039211, dcs->weight(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
-  DOUBLES_EQUAL(0.5         , dcs->residual(error1), 1e-8);
-  DOUBLES_EQUAL(0.9900990099, dcs->residual(error2), 1e-8);
+  DOUBLES_EQUAL(0.5         , dcs->residual(error1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.9900990099, dcs->residual(error2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 }
 
 TEST(NoiseModel, robustFunctionL2WithDeadZone)
@@ -569,19 +569,19 @@ TEST(NoiseModel, robustFunctionL2WithDeadZone)
   const double k = 1.0, e0 = -10.0, e1 = -1.01, e2 = -0.99, e3 = 0.99, e4 = 1.01, e5 = 10.0;
   const mEstimator::L2WithDeadZone::shared_ptr lsdz = mEstimator::L2WithDeadZone::Create(k);
 
-  DOUBLES_EQUAL(0.9,           lsdz->weight(e0), 1e-8);
-  DOUBLES_EQUAL(0.00990099009, lsdz->weight(e1), 1e-8);
-  DOUBLES_EQUAL(0.0,           lsdz->weight(e2), 1e-8);
-  DOUBLES_EQUAL(0.0,           lsdz->weight(e3), 1e-8);
-  DOUBLES_EQUAL(0.00990099009, lsdz->weight(e4), 1e-8);
-  DOUBLES_EQUAL(0.9,           lsdz->weight(e5), 1e-8);
+  DOUBLES_EQUAL(0.9,           lsdz->weight(e0), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.00990099009, lsdz->weight(e1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.0,           lsdz->weight(e2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.0,           lsdz->weight(e3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.00990099009, lsdz->weight(e4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.9,           lsdz->weight(e5), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
-  DOUBLES_EQUAL(40.5,    lsdz->residual(e0), 1e-8);
-  DOUBLES_EQUAL(0.00005, lsdz->residual(e1), 1e-8);
-  DOUBLES_EQUAL(0.0,     lsdz->residual(e2), 1e-8);
-  DOUBLES_EQUAL(0.0,     lsdz->residual(e3), 1e-8);
-  DOUBLES_EQUAL(0.00005, lsdz->residual(e4), 1e-8);
-  DOUBLES_EQUAL(40.5,    lsdz->residual(e5), 1e-8);
+  DOUBLES_EQUAL(40.5,    lsdz->residual(e0), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.00005, lsdz->residual(e1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.0,     lsdz->residual(e2), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.0,     lsdz->residual(e3), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(0.00005, lsdz->residual(e4), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(40.5,    lsdz->residual(e5), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 }
 
 /* ************************************************************************* */
@@ -596,13 +596,13 @@ TEST(NoiseModel, robustNoiseHuber)
 
   robust->WhitenSystem(A, b);
 
-  DOUBLES_EQUAL(error1, b(0), 1e-8);
-  DOUBLES_EQUAL(sqrt(k*error2), b(1), 1e-8);
+  DOUBLES_EQUAL(error1, b(0), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(sqrt(k*error2), b(1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
-  DOUBLES_EQUAL(1.0, A(0,0), 1e-8);
-  DOUBLES_EQUAL(10.0, A(0,1), 1e-8);
-  DOUBLES_EQUAL(sqrt(k*100.0), A(1,0), 1e-8);
-  DOUBLES_EQUAL(sqrt(k/100.0)*1000.0, A(1,1), 1e-8);
+  DOUBLES_EQUAL(1.0, A(0,0), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(10.0, A(0,1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(sqrt(k*100.0), A(1,0), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(sqrt(k/100.0)*1000.0, A(1,1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 }
 
 TEST(NoiseModel, robustNoiseGemanMcClure)
@@ -624,13 +624,13 @@ TEST(NoiseModel, robustNoiseGemanMcClure)
   const double sqrt_weight_error1 = sqrt(0.25);
   const double sqrt_weight_error2 = sqrt(k4/(k2error*k2error));
 
-  DOUBLES_EQUAL(sqrt_weight_error1*error1, b(0), 1e-8);
-  DOUBLES_EQUAL(sqrt_weight_error2*error2, b(1), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error1*error1, b(0), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(sqrt_weight_error2*error2, b(1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
-  DOUBLES_EQUAL(sqrt_weight_error1*a00, A(0,0), 1e-8);
-  DOUBLES_EQUAL(sqrt_weight_error1*a01, A(0,1), 1e-8);
-  DOUBLES_EQUAL(sqrt_weight_error2*a10, A(1,0), 1e-8);
-  DOUBLES_EQUAL(sqrt_weight_error2*a11, A(1,1), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error1*a00, A(0,0), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(sqrt_weight_error1*a01, A(0,1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(sqrt_weight_error2*a10, A(1,0), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(sqrt_weight_error2*a11, A(1,1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 }
 
 TEST(NoiseModel, robustNoiseDCS)
@@ -647,13 +647,13 @@ TEST(NoiseModel, robustNoiseDCS)
 
   const double sqrt_weight = 2.0*k/(k + error2*error2);
 
-  DOUBLES_EQUAL(error1, b(0), 1e-8);
-  DOUBLES_EQUAL(sqrt_weight*error2, b(1), 1e-8);
+  DOUBLES_EQUAL(error1, b(0), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(sqrt_weight*error2, b(1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
-  DOUBLES_EQUAL(a00, A(0,0), 1e-8);
-  DOUBLES_EQUAL(a01, A(0,1), 1e-8);
-  DOUBLES_EQUAL(sqrt_weight*a10, A(1,0), 1e-8);
-  DOUBLES_EQUAL(sqrt_weight*a11, A(1,1), 1e-8);
+  DOUBLES_EQUAL(a00, A(0,0), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(a01, A(0,1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(sqrt_weight*a10, A(1,0), GTSAM_UNITTEST_TOLERANCE_TIGHT);
+  DOUBLES_EQUAL(sqrt_weight*a11, A(1,1), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 }
 
 TEST(NoiseModel, robustNoiseL2WithDeadZone)
@@ -675,7 +675,7 @@ TEST(NoiseModel, robustNoiseL2WithDeadZone)
  *
  * for (int i = 0; i < 5; i++) {
  *   Vector3 error = Vector3(i, 0, 0);
- *   DOUBLES_EQUAL(0.5*max(0,i-1)*max(0,i-1), robust->distance(error), 1e-8);
+ *   DOUBLES_EQUAL(0.5*max(0,i-1)*max(0,i-1), robust->distance(error), GTSAM_UNITTEST_TOLERANCE_TIGHT);
  * }
  */
 

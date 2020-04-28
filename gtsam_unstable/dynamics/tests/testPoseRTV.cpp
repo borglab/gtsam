@@ -200,10 +200,10 @@ TEST( testPoseRTV, transformed_from_1 ) {
   PoseRTV expected(transform.compose(start.pose()), transform.rotation().matrix() * V);
   EXPECT(assert_equal(expected, actual));
 
-  Matrix numDGlobal = numericalDerivative21(transformed_from_proxy, start, transform, 1e-5); // At 1e-8, fails
-  Matrix numDTrans = numericalDerivative22(transformed_from_proxy, start, transform, 1e-8); // Sensitive to step size
+  Matrix numDGlobal = numericalDerivative21(transformed_from_proxy, start, transform, GTSAM_UNITTEST_TOLERANCE_LOOSE); // At 1e-8, fails
+  Matrix numDTrans = numericalDerivative22(transformed_from_proxy, start, transform, GTSAM_UNITTEST_TOLERANCE_TIGHT); // Sensitive to step size
   EXPECT(assert_equal(numDGlobal, actDGlobal));
-  EXPECT(assert_equal(numDTrans, actDTrans, 1e-5)); // FIXME: still needs analytic derivative
+  EXPECT(assert_equal(numDTrans, actDTrans, GTSAM_UNITTEST_TOLERANCE_LOOSE)); // FIXME: still needs analytic derivative
 }
 
 /* ************************************************************************* */
@@ -219,10 +219,10 @@ TEST( testPoseRTV, transformed_from_2 ) {
   PoseRTV expected(transform.compose(start.pose()), transform.rotation().matrix() * V);
   EXPECT(assert_equal(expected, actual));
 
-  Matrix numDGlobal = numericalDerivative21(transformed_from_proxy, start, transform, 1e-5); // At 1e-8, fails
-  Matrix numDTrans = numericalDerivative22(transformed_from_proxy, start, transform, 1e-8); // Sensitive to step size
+  Matrix numDGlobal = numericalDerivative21(transformed_from_proxy, start, transform, GTSAM_UNITTEST_TOLERANCE_LOOSE); // At 1e-8, fails
+  Matrix numDTrans = numericalDerivative22(transformed_from_proxy, start, transform, GTSAM_UNITTEST_TOLERANCE_TIGHT); // Sensitive to step size
   EXPECT(assert_equal(numDGlobal, actDGlobal));
-  EXPECT(assert_equal(numDTrans, actDTrans, 1e-5)); // FIXME: still needs analytic derivative
+  EXPECT(assert_equal(numDTrans, actDTrans, GTSAM_UNITTEST_TOLERANCE_LOOSE)); // FIXME: still needs analytic derivative
 }
 
 /* ************************************************************************* */

@@ -69,8 +69,8 @@ TEST(BearingFactor, 2D) {
   values.insert(pointKey, Point2(-4.0, 11.0));
 
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor.expression(poseKey, pointKey),
-                                      values, 1e-7, 1e-5);
-  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+                                      values, 1e-7, GTSAM_UNITTEST_TOLERANCE_LOOSE);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 }
 
 /* ************************************************************************* */
@@ -105,8 +105,8 @@ TEST(BearingFactor, Serialization3D) {
 //  values.insert(pointKey, Point3(1, 0, 0));
 //
 //  EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor.expression(poseKey, pointKey),
-//                                      values, 1e-7, 1e-5);
-//  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+//                                      values, 1e-7, GTSAM_UNITTEST_TOLERANCE_LOOSE);
+//  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 //}
 
 /* ************************************************************************* */

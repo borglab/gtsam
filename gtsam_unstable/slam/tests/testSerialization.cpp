@@ -82,7 +82,7 @@ TEST( testSerialization, xml_values_serialization ) {
   Values values = exampleValues();
   string serialized = serializeValuesXML(values, "values1");
   Values actValues = *deserializeValuesXML(serialized, "values1");
-  EXPECT(assert_equal(values, actValues, 1e-5));
+  EXPECT(assert_equal(values, actValues, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

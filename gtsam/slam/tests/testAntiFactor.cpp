@@ -73,7 +73,7 @@ TEST( AntiFactor, NegativeHessian)
 
   double expected_f = -originalHessian->constantTerm();
   double actual_f = antiHessian->constantTerm();
-  EXPECT_DOUBLES_EQUAL(expected_f, actual_f, 1e-5);
+  EXPECT_DOUBLES_EQUAL(expected_f, actual_f, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 }
 
 /* ************************************************************************* */
@@ -123,8 +123,8 @@ TEST( AntiFactor, EquivalentBayesNet)
   VectorValues actualDeltas = actualBayesNet->optimize();
 
   // Verify the BayesNets are identical
-  CHECK(assert_equal(*expectedBayesNet, *actualBayesNet, 1e-5));
-  CHECK(assert_equal(expectedDeltas, actualDeltas, 1e-5));
+  CHECK(assert_equal(*expectedBayesNet, *actualBayesNet, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK(assert_equal(expectedDeltas, actualDeltas, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

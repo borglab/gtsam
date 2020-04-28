@@ -118,7 +118,7 @@ struct traits<Dih6> : internal::MultiplicativeGroupTraits<Dih6> {
   static void Print(const Dih6& m, const string& s = "") {
     cout << s << m << endl;
   }
-  static bool Equals(const Dih6& m1, const Dih6& m2, double tol = 1e-8) {
+  static bool Equals(const Dih6& m1, const Dih6& m2, double tol = GTSAM_UNITTEST_TOLERANCE_TIGHT) {
     return m1 == m2;
   }
 };

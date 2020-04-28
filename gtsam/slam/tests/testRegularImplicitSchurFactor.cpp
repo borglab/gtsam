@@ -90,7 +90,7 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   Vector x = xvalues.vector(keys2);
   Vector expected = Vector::Zero(24);
   RegularImplicitSchurFactor<CalibratedCamera>::multiplyHessianAdd(F, E, P, alpha, x, expected);
-  EXPECT(assert_equal(expected, yExpected.vector(keys2), 1e-8));
+  EXPECT(assert_equal(expected, yExpected.vector(keys2), GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   // Create ImplicitSchurFactor
   RegularImplicitSchurFactor<CalibratedCamera> implicitFactor(keys, FBlocks, E, P, b);
@@ -99,11 +99,11 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   { // First Version
     VectorValues yActual = zero;
     implicitFactor.multiplyHessianAdd(alpha, xvalues, yActual);
-    EXPECT(assert_equal(yExpected, yActual, 1e-8));
+    EXPECT(assert_equal(yExpected, yActual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
     implicitFactor.multiplyHessianAdd(alpha, xvalues, yActual);
-    EXPECT(assert_equal(2 * yExpected, yActual, 1e-8));
+    EXPECT(assert_equal(2 * yExpected, yActual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
     implicitFactor.multiplyHessianAdd(-1, xvalues, yActual);
-    EXPECT(assert_equal(zero, yActual, 1e-8));
+    EXPECT(assert_equal(zero, yActual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
   }
 
   typedef Eigen::Matrix<double, 24, 1> DeltaX;
@@ -114,11 +114,11 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   { // Raw memory Version
     std::fill(y, y + 24, 0);// zero y !
     implicitFactor.multiplyHessianAdd(alpha, xdata, y);
-    EXPECT(assert_equal(expected, XMap(y), 1e-8));
+    EXPECT(assert_equal(expected, XMap(y), GTSAM_UNITTEST_TOLERANCE_TIGHT));
     implicitFactor.multiplyHessianAdd(alpha, xdata, y);
-    EXPECT(assert_equal(Vector(2 * expected), XMap(y), 1e-8));
+    EXPECT(assert_equal(Vector(2 * expected), XMap(y), GTSAM_UNITTEST_TOLERANCE_TIGHT));
     implicitFactor.multiplyHessianAdd(-1, xdata, y);
-    EXPECT(assert_equal(Vector(0 * expected), XMap(y), 1e-8));
+    EXPECT(assert_equal(Vector(0 * expected), XMap(y), GTSAM_UNITTEST_TOLERANCE_TIGHT));
   }
 
   // Create JacobianFactor with same error
@@ -136,17 +136,17 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   {
     VectorValues yActual = zero;
     jfQ.multiplyHessianAdd(alpha, xvalues, yActual);
-    EXPECT(assert_equal(yExpected, yActual, 1e-8));
+    EXPECT(assert_equal(yExpected, yActual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
     jfQ.multiplyHessianAdd(alpha, xvalues, yActual);
-    EXPECT(assert_equal(2 * yExpected, yActual, 1e-8));
+    EXPECT(assert_equal(2 * yExpected, yActual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
     jfQ.multiplyHessianAdd(-1, xvalues, yActual);
-    EXPECT(assert_equal(zero, yActual, 1e-8));
+    EXPECT(assert_equal(zero, yActual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
   }
 
   { // check hessian Diagonal
     VectorValues diagExpected = jfQ.hessianDiagonal();
     VectorValues diagActual = implicitFactor.hessianDiagonal();
-    EXPECT(assert_equal(diagExpected, diagActual, 1e-8));
+    EXPECT(assert_equal(diagExpected, diagActual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
   }
 
   { // check hessian Block Diagonal
@@ -161,11 +161,11 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   { // Raw memory Version
     std::fill(y, y + 24, 0);// zero y !
     jfQ.multiplyHessianAdd(alpha, xdata, y);
-    EXPECT(assert_equal(expected, XMap(y), 1e-8));
+    EXPECT(assert_equal(expected, XMap(y), GTSAM_UNITTEST_TOLERANCE_TIGHT));
     jfQ.multiplyHessianAdd(alpha, xdata, y);
-    EXPECT(assert_equal(Vector(2 * expected), XMap(y), 1e-8));
+    EXPECT(assert_equal(Vector(2 * expected), XMap(y), GTSAM_UNITTEST_TOLERANCE_TIGHT));
     jfQ.multiplyHessianAdd(-1, xdata, y);
-    EXPECT(assert_equal(Vector(0 * expected), XMap(y), 1e-8));
+    EXPECT(assert_equal(Vector(0 * expected), XMap(y), GTSAM_UNITTEST_TOLERANCE_TIGHT));
   }
 
   VectorValues expectedVV;
@@ -174,33 +174,33 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   expectedVV.insert(3,-19.5*Vector::Ones(6));
   { // Check gradientAtZero
     VectorValues actual = implicitFactor.gradientAtZero();
-    EXPECT(assert_equal(expectedVV, jfQ.gradientAtZero(), 1e-8));
-    EXPECT(assert_equal(expectedVV, implicitFactor.gradientAtZero(), 1e-8));
+    EXPECT(assert_equal(expectedVV, jfQ.gradientAtZero(), GTSAM_UNITTEST_TOLERANCE_TIGHT));
+    EXPECT(assert_equal(expectedVV, implicitFactor.gradientAtZero(), GTSAM_UNITTEST_TOLERANCE_TIGHT));
   }
 
   // Create JacobianFactorQR
   JacobianFactorQR<6, 2> jfQR(keys, FBlocks, E, P, b, model);
     EXPECT_DOUBLES_EQUAL(expectedError, jfQR.error(xvalues),1e-7)
-  EXPECT(assert_equal(expectedVV,  jfQR.gradientAtZero(), 1e-8));
+  EXPECT(assert_equal(expectedVV,  jfQR.gradientAtZero(), GTSAM_UNITTEST_TOLERANCE_TIGHT));
   {
     const SharedDiagonal model;
     VectorValues yActual = zero;
     jfQR.multiplyHessianAdd(alpha, xvalues, yActual);
-    EXPECT(assert_equal(yExpected, yActual, 1e-8));
+    EXPECT(assert_equal(yExpected, yActual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
     jfQR.multiplyHessianAdd(alpha, xvalues, yActual);
-    EXPECT(assert_equal(2 * yExpected, yActual, 1e-8));
+    EXPECT(assert_equal(2 * yExpected, yActual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
     jfQR.multiplyHessianAdd(-1, xvalues, yActual);
-    EXPECT(assert_equal(zero, yActual, 1e-8));
+    EXPECT(assert_equal(zero, yActual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
   }
 
   { // Raw memory Version
     std::fill(y, y + 24, 0);// zero y !
     jfQR.multiplyHessianAdd(alpha, xdata, y);
-    EXPECT(assert_equal(expected, XMap(y), 1e-8));
+    EXPECT(assert_equal(expected, XMap(y), GTSAM_UNITTEST_TOLERANCE_TIGHT));
     jfQR.multiplyHessianAdd(alpha, xdata, y);
-    EXPECT(assert_equal(Vector(2 * expected), XMap(y), 1e-8));
+    EXPECT(assert_equal(Vector(2 * expected), XMap(y), GTSAM_UNITTEST_TOLERANCE_TIGHT));
     jfQR.multiplyHessianAdd(-1, xdata, y);
-    EXPECT(assert_equal(Vector(0 * expected), XMap(y), 1e-8));
+    EXPECT(assert_equal(Vector(0 * expected), XMap(y), GTSAM_UNITTEST_TOLERANCE_TIGHT));
   }
   delete [] y;
 }
@@ -230,7 +230,7 @@ TEST(regularImplicitSchurFactor, hessianDiagonal)
   expected.insert(0, 1.195652*Vector::Ones(6));
   expected.insert(1, 4.782608*Vector::Ones(6));
   expected.insert(3, 7.043478*Vector::Ones(6));
-  EXPECT(assert_equal(expected, factor.hessianDiagonal(),1e-5));
+  EXPECT(assert_equal(expected, factor.hessianDiagonal(),GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // hessianBlockDiagonal
   map<Key,Matrix> actualBD = factor.hessianBlockDiagonal();

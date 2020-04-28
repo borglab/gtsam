@@ -157,7 +157,7 @@ TEST(SOn, vec) {
   Matrix actualH;
   const Vector actual = Q.vec(actualH);
   boost::function<Vector(const SOn&)> h = [](const SOn& Q) { return Q.vec(); };
-  const Matrix H = numericalDerivative11<Vector, SOn, 10>(h, Q, 1e-5);
+  const Matrix H = numericalDerivative11<Vector, SOn, 10>(h, Q, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   CHECK(assert_equal(H, actualH));
 }
 

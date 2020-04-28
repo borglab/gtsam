@@ -37,7 +37,7 @@ static const Point3 P2(3.5,-8.2,4.2);
 static const Pose3 T(R,P2);
 static const Pose3 T2(Rot3::Rodrigues(0.3,0.2,0.1),P2);
 static const Pose3 T3(Rot3::Rodrigues(-90, 0, 0), Point3(1, 2, 3));
-static const double tol=1e-5;
+static const double tol=GTSAM_UNITTEST_TOLERANCE_LOOSE;
 
 /* ************************************************************************* */
 TEST( Pose3, equals)
@@ -85,7 +85,7 @@ TEST( Pose3, expmap_a_full)
   v(0) = 0.3;
   EXPECT(assert_equal(expmap_default<Pose3>(id, v), Pose3(R, Point3(0,0,0))));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
-  EXPECT(assert_equal(Pose3(R, P),expmap_default<Pose3>(id, v),1e-5));
+  EXPECT(assert_equal(Pose3(R, P),expmap_default<Pose3>(id, v),GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -96,7 +96,7 @@ TEST( Pose3, expmap_a_full2)
   v(0) = 0.3;
   EXPECT(assert_equal(expmap_default<Pose3>(id, v), Pose3(R, Point3(0,0,0))));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
-  EXPECT(assert_equal(Pose3(R, P),expmap_default<Pose3>(id, v),1e-5));
+  EXPECT(assert_equal(Pose3(R, P),expmap_default<Pose3>(id, v),GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -200,7 +200,7 @@ TEST(Pose3, expmaps_galore_full)
   // Works with large v as well, but expm needs 10 iterations!
   xi = (Vector(6) << 0.2, 0.3, -0.8, 100.0, 120.0, -60.0).finished();
   actual = Pose3::Expmap(xi);
-  EXPECT(assert_equal(expm<Pose3>(xi,10), actual,1e-5));
+  EXPECT(assert_equal(expm<Pose3>(xi,10), actual,GTSAM_UNITTEST_TOLERANCE_LOOSE));
   EXPECT(assert_equal(Agrawal06iros(xi), actual,1e-9));
   EXPECT(assert_equal(xi, Pose3::Logmap(actual),1e-9));
 }
@@ -209,7 +209,7 @@ TEST(Pose3, expmaps_galore_full)
 // Check translation and its pushforward
 TEST(Pose3, translation) {
   Matrix actualH;
-  EXPECT(assert_equal(Point3(3.5, -8.2, 4.2), T.translation(actualH), 1e-8));
+  EXPECT(assert_equal(Point3(3.5, -8.2, 4.2), T.translation(actualH), GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   Matrix numericalH = numericalDerivative11<Point3, Pose3>(
       boost::bind(&Pose3::translation, _1, boost::none), T);
@@ -220,7 +220,7 @@ TEST(Pose3, translation) {
 // Check rotation and its pushforward
 TEST(Pose3, rotation) {
   Matrix actualH;
-  EXPECT(assert_equal(R, T.rotation(actualH), 1e-8));
+  EXPECT(assert_equal(R, T.rotation(actualH), GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   Matrix numericalH = numericalDerivative11<Rot3, Pose3>(
       boost::bind(&Pose3::rotation, _1, boost::none), T);
@@ -247,7 +247,7 @@ TEST( Pose3, compose )
 {
   Matrix actual = (T2*T2).matrix();
   Matrix expected = T2.matrix()*T2.matrix();
-  EXPECT(assert_equal(actual,expected,1e-8));
+  EXPECT(assert_equal(actual,expected,GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   Matrix actualDcompose1, actualDcompose2;
   T2.compose(T2, actualDcompose1, actualDcompose2);
@@ -267,7 +267,7 @@ TEST( Pose3, compose2 )
   const Pose3& T1 = T;
   Matrix actual = (T1*T2).matrix();
   Matrix expected = T1.matrix()*T2.matrix();
-  EXPECT(assert_equal(actual,expected,1e-8));
+  EXPECT(assert_equal(actual,expected,GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   Matrix actualDcompose1, actualDcompose2;
   T1.compose(T2, actualDcompose1, actualDcompose2);
@@ -277,7 +277,7 @@ TEST( Pose3, compose2 )
   EXPECT(assert_equal(T2.inverse().AdjointMap(),actualDcompose1,5e-3));
 
   Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T1, T2);
-  EXPECT(assert_equal(numericalH2,actualDcompose2,1e-5));
+  EXPECT(assert_equal(numericalH2,actualDcompose2,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -286,7 +286,7 @@ TEST( Pose3, inverse)
   Matrix actualDinverse;
   Matrix actual = T.inverse(actualDinverse).matrix();
   Matrix expected = T.matrix().inverse();
-  EXPECT(assert_equal(actual,expected,1e-8));
+  EXPECT(assert_equal(actual,expected,GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   Matrix numericalH = numericalDerivative11(testing::inverse<Pose3>, T);
   EXPECT(assert_equal(numericalH,actualDinverse,5e-3));
@@ -312,7 +312,7 @@ TEST( Pose3, compose_inverse)
 {
   Matrix actual = (T*T.inverse()).matrix();
   Matrix expected = I_4x4;
-  EXPECT(assert_equal(actual,expected,1e-8));
+  EXPECT(assert_equal(actual,expected,GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -323,7 +323,7 @@ TEST(Pose3, Dtransform_from1_a) {
   Matrix actualDtransform_from1;
   T.transformFrom(P, actualDtransform_from1, boost::none);
   Matrix numerical = numericalDerivative21(transformFrom_, T, P);
-  EXPECT(assert_equal(numerical, actualDtransform_from1, 1e-8));
+  EXPECT(assert_equal(numerical, actualDtransform_from1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 TEST(Pose3, Dtransform_from1_b) {
@@ -331,7 +331,7 @@ TEST(Pose3, Dtransform_from1_b) {
   Matrix actualDtransform_from1;
   origin.transformFrom(P, actualDtransform_from1, boost::none);
   Matrix numerical = numericalDerivative21(transformFrom_, origin, P);
-  EXPECT(assert_equal(numerical, actualDtransform_from1, 1e-8));
+  EXPECT(assert_equal(numerical, actualDtransform_from1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 TEST(Pose3, Dtransform_from1_c) {
@@ -340,7 +340,7 @@ TEST(Pose3, Dtransform_from1_c) {
   Matrix actualDtransform_from1;
   T0.transformFrom(P, actualDtransform_from1, boost::none);
   Matrix numerical = numericalDerivative21(transformFrom_, T0, P);
-  EXPECT(assert_equal(numerical, actualDtransform_from1, 1e-8));
+  EXPECT(assert_equal(numerical, actualDtransform_from1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 TEST(Pose3, Dtransform_from1_d) {
@@ -352,7 +352,7 @@ TEST(Pose3, Dtransform_from1_d) {
   // print(computed, "Dtransform_from1_d computed:");
   Matrix numerical = numericalDerivative21(transformFrom_, T0, P);
   // print(numerical, "Dtransform_from1_d numerical:");
-  EXPECT(assert_equal(numerical, actualDtransform_from1, 1e-8));
+  EXPECT(assert_equal(numerical, actualDtransform_from1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -360,7 +360,7 @@ TEST(Pose3, Dtransform_from2) {
   Matrix actualDtransform_from2;
   T.transformFrom(P, boost::none, actualDtransform_from2);
   Matrix numerical = numericalDerivative22(transformFrom_, T, P);
-  EXPECT(assert_equal(numerical, actualDtransform_from2, 1e-8));
+  EXPECT(assert_equal(numerical, actualDtransform_from2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -371,7 +371,7 @@ TEST(Pose3, Dtransform_to1) {
   Matrix computed;
   T.transformTo(P, computed, boost::none);
   Matrix numerical = numericalDerivative21(transform_to_, T, P);
-  EXPECT(assert_equal(numerical, computed, 1e-8));
+  EXPECT(assert_equal(numerical, computed, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -379,7 +379,7 @@ TEST(Pose3, Dtransform_to2) {
   Matrix computed;
   T.transformTo(P, boost::none, computed);
   Matrix numerical = numericalDerivative22(transform_to_, T, P);
-  EXPECT(assert_equal(numerical, computed, 1e-8));
+  EXPECT(assert_equal(numerical, computed, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -388,8 +388,8 @@ TEST(Pose3, transform_to_with_derivatives) {
   T.transformTo(P, actH1, actH2);
   Matrix expH1 = numericalDerivative21(transform_to_, T, P),
          expH2 = numericalDerivative22(transform_to_, T, P);
-  EXPECT(assert_equal(expH1, actH1, 1e-8));
-  EXPECT(assert_equal(expH2, actH2, 1e-8));
+  EXPECT(assert_equal(expH1, actH1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(expH2, actH2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -398,8 +398,8 @@ TEST(Pose3, transform_from_with_derivatives) {
   T.transformFrom(P, actH1, actH2);
   Matrix expH1 = numericalDerivative21(transformFrom_, T, P),
          expH2 = numericalDerivative22(transformFrom_, T, P);
-  EXPECT(assert_equal(expH1, actH1, 1e-8));
-  EXPECT(assert_equal(expH2, actH2, 1e-8));
+  EXPECT(assert_equal(expH1, actH1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(expH2, actH2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -444,8 +444,8 @@ TEST(Pose3, transformPoseTo_with_derivatives) {
 
   Matrix expH1 = numericalDerivative21(transformPoseTo_, T, T2),
          expH2 = numericalDerivative22(transformPoseTo_, T, T2);
-  EXPECT(assert_equal(expH1, actH1, 1e-8));
-  EXPECT(assert_equal(expH2, actH2, 1e-8));
+  EXPECT(assert_equal(expH1, actH1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(expH2, actH2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -456,8 +456,8 @@ TEST(Pose3, transformPoseTo_with_derivatives2) {
 
   Matrix expH1 = numericalDerivative21(transformPoseTo_, T, T3),
          expH2 = numericalDerivative22(transformPoseTo_, T, T3);
-  EXPECT(assert_equal(expH1, actH1, 1e-8));
-  EXPECT(assert_equal(expH2, actH2, 1e-8));
+  EXPECT(assert_equal(expH1, actH1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(expH2, actH2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -555,7 +555,7 @@ TEST( Pose3, between )
   EXPECT(assert_equal(numericalH1,actualDBetween1,5e-3));
 
   Matrix numericalH2 = numericalDerivative22(testing::between<Pose3> , T2, T3);
-  EXPECT(assert_equal(numericalH2,actualDBetween2,1e-5));
+  EXPECT(assert_equal(numericalH2,actualDBetween2,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -649,8 +649,8 @@ TEST(Pose3, Bearing) {
   // Check numerical derivatives
   expectedH1 = numericalDerivative21(bearing_proxy, x1, l1);
   expectedH2 = numericalDerivative22(bearing_proxy, x1, l1);
-  EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
-  EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
+  EXPECT(assert_equal(expectedH1, actualH1, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  EXPECT(assert_equal(expectedH2, actualH2, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 TEST(Pose3, Bearing2) {
@@ -660,8 +660,8 @@ TEST(Pose3, Bearing2) {
   // Check numerical derivatives
   expectedH1 = numericalDerivative21(bearing_proxy, x2, l4);
   expectedH2 = numericalDerivative22(bearing_proxy, x2, l4);
-  EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
-  EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
+  EXPECT(assert_equal(expectedH1, actualH1, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  EXPECT(assert_equal(expectedH2, actualH2, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 TEST(Pose3, PoseToPoseBearing) {
@@ -681,8 +681,8 @@ TEST(Pose3, PoseToPoseBearing) {
   expectedH2.setZero();
   expectedH2.block<2, 3>(0, 3) = H2block;
 
-  EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
-  EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
+  EXPECT(assert_equal(expectedH1, actualH1, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  EXPECT(assert_equal(expectedH2, actualH2, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -702,7 +702,7 @@ TEST( Pose3, adjointMap) {
   Matrix vh = skewSymmetric(screwPose3::xi(3), screwPose3::xi(4), screwPose3::xi(5));
   Matrix6 expected;
   expected << wh, Z_3x3, vh, wh;
-  EXPECT(assert_equal(expected,res,1e-5));
+  EXPECT(assert_equal(expected,res,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -736,7 +736,7 @@ TEST(Pose3, Align2) {
   correspondences += ab1, ab2, ab3;
 
   boost::optional<Pose3> actual = Pose3::Align(correspondences);
-  EXPECT(assert_equal(expected, *actual, 1e-5));
+  EXPECT(assert_equal(expected, *actual, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -789,7 +789,7 @@ TEST( Pose3, LogmapDerivative) {
   Matrix6 actualH;
   Vector6 w; w << 0.1, 0.2, 0.3, 4.0, 5.0, 6.0;
   Pose3 p = Pose3::Expmap(w);
-  EXPECT(assert_equal(w, Pose3::Logmap(p,actualH), 1e-5));
+  EXPECT(assert_equal(w, Pose3::Logmap(p,actualH), GTSAM_UNITTEST_TOLERANCE_LOOSE));
   Matrix expectedH = numericalDerivative21<Vector6, Pose3,
       OptionalJacobian<6, 6> >(&Pose3::Logmap, p, boost::none);
   EXPECT(assert_equal(expectedH, actualH));
@@ -807,10 +807,10 @@ TEST( Pose3, adjoint) {
   Vector actual = Pose3::adjoint(screwPose3::xi, screwPose3::xi, actualH);
 
   Matrix numericalH = numericalDerivative21<Vector6, Vector6, Vector6>(
-      testDerivAdjoint, screwPose3::xi, screwPose3::xi, 1e-5);
+      testDerivAdjoint, screwPose3::xi, screwPose3::xi, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
-  EXPECT(assert_equal(expected,actual,1e-5));
-  EXPECT(assert_equal(numericalH,actualH,1e-5));
+  EXPECT(assert_equal(expected,actual,GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  EXPECT(assert_equal(numericalH,actualH,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -827,10 +827,10 @@ TEST( Pose3, adjointTranspose) {
   Vector actual = Pose3::adjointTranspose(xi, v, actualH);
 
   Matrix numericalH = numericalDerivative21<Vector6, Vector6, Vector6>(
-      testDerivAdjointTranspose, xi, v, 1e-5);
+      testDerivAdjointTranspose, xi, v, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
   EXPECT(assert_equal(expected,actual,1e-15));
-  EXPECT(assert_equal(numericalH,actualH,1e-5));
+  EXPECT(assert_equal(numericalH,actualH,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

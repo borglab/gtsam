@@ -40,11 +40,11 @@ TEST( Rot3AttitudeFactor, Constructor ) {
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
   Rot3AttitudeFactor factor0(key, nDown, model);
   Rot3AttitudeFactor factor(key, nDown, model, bZ);
-  EXPECT(assert_equal(factor0,factor,1e-5));
+  EXPECT(assert_equal(factor0,factor,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // Create a linearization point at the zero-error point
   Rot3 nRb;
-  EXPECT(assert_equal((Vector) Z_2x1,factor.evaluateError(nRb),1e-5));
+  EXPECT(assert_equal((Vector) Z_2x1,factor.evaluateError(nRb),GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector,Rot3>(
@@ -56,7 +56,7 @@ TEST( Rot3AttitudeFactor, Constructor ) {
   factor.evaluateError(nRb, actualH);
 
   // Verify we get the expected error
-  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+  EXPECT(assert_equal(expectedH, actualH, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -106,11 +106,11 @@ TEST( Pose3AttitudeFactor, Constructor ) {
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
   Pose3AttitudeFactor factor0(key, nDown, model);
   Pose3AttitudeFactor factor(key, nDown, model, bZ);
-  EXPECT(assert_equal(factor0,factor,1e-5));
+  EXPECT(assert_equal(factor0,factor,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // Create a linearization point at the zero-error point
   Pose3 T(Rot3(), Point3(-5.0, 8.0, -11.0));
-  EXPECT(assert_equal((Vector) Z_2x1,factor.evaluateError(T),1e-5));
+  EXPECT(assert_equal((Vector) Z_2x1,factor.evaluateError(T),GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector,Pose3>(
@@ -122,7 +122,7 @@ TEST( Pose3AttitudeFactor, Constructor ) {
   factor.evaluateError(T, actualH);
 
   // Verify we get the expected error
-  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+  EXPECT(assert_equal(expectedH, actualH, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */

@@ -72,7 +72,7 @@ TEST(ScenarioRunner, Spin) {
 
   // Check calculated covariance against Monte Carlo estimate
   Matrix9 estimatedCov = runner.estimateCovariance(T, 100);
-  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 1e-5));
+  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -92,7 +92,7 @@ TEST(ScenarioRunner, Forward) {
 
   Matrix9 estimatedCov = runner.estimateCovariance(T, 100);
   EXPECT_NEAR(estimatedCov.diagonal(), pim.preintMeasCov().diagonal(), 0.1);
-  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 1e-5));
+  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -122,7 +122,7 @@ TEST(ScenarioRunner, Circle) {
 
   Matrix9 estimatedCov = runner.estimateCovariance(T, 100);
   EXPECT_NEAR(estimatedCov.diagonal(), pim.preintMeasCov().diagonal(), 0.1);
-  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 1e-5));
+  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -141,7 +141,7 @@ TEST(ScenarioRunner, Loop) {
 
   Matrix9 estimatedCov = runner.estimateCovariance(T, 100);
   EXPECT_NEAR(estimatedCov.diagonal(), pim.preintMeasCov().diagonal(), 0.1);
-  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 1e-5));
+  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

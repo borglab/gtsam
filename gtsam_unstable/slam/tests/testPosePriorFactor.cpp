@@ -128,7 +128,7 @@ TEST( PosePriorFactor, Error ) {
   Vector actualError(factor.evaluateError(pose));
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedError, actualError, 1e-8));
+  CHECK(assert_equal(expectedError, actualError, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -170,7 +170,7 @@ TEST( PosePriorFactor, ErrorWithTransform ) {
   Vector actualError(factor.evaluateError(pose));
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedError, actualError, 1e-8));
+  CHECK(assert_equal(expectedError, actualError, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -192,7 +192,7 @@ TEST( PosePriorFactor, Jacobian ) {
   factor.evaluateError(pose, actualH1);
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
+  CHECK(assert_equal(expectedH1, actualH1, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -216,7 +216,7 @@ TEST( PosePriorFactor, JacobianWithTransform ) {
   factor.evaluateError(pose, actualH1);
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
+  CHECK(assert_equal(expectedH1, actualH1, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

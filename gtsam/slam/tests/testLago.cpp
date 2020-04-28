@@ -286,7 +286,7 @@ TEST( Lago, largeGraphNoisy_orientations ) {
 
   for(const Values::KeyValuePair& key_val: *expected){
     Key k = key_val.key;
-    EXPECT(assert_equal(expected->at<Pose2>(k), actual.at<Pose2>(k), 1e-5));
+    EXPECT(assert_equal(expected->at<Pose2>(k), actual.at<Pose2>(k), GTSAM_UNITTEST_TOLERANCE_LOOSE));
   }
 }
 

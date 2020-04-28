@@ -142,7 +142,7 @@ TEST( dataSet, readG2o)
   expectedValues.insert(8, Pose2(4.128877, 2.321481, -1.825391));
   expectedValues.insert(9, Pose2(3.884653, 1.327509, -1.953016));
   expectedValues.insert(10, Pose2(3.531067, 0.388263, -2.148934));
-  EXPECT(assert_equal(expectedValues,*actualValues,1e-5));
+  EXPECT(assert_equal(expectedValues,*actualValues,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Precisions(Vector3(44.721360, 44.721360, 30.901699));
   NonlinearFactorGraph expectedGraph;
@@ -158,7 +158,7 @@ TEST( dataSet, readG2o)
   expectedGraph.emplace_shared<BetweenFactor<Pose2> >(9,10, Pose2(1.003350, 0.022250, -0.195918), model);
   expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 9, Pose2(0.033943, 0.032439, 3.073637), model);
   expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3,10, Pose2(0.044020, 0.988477, -1.553511), model);
-  EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
+  EXPECT(assert_equal(expectedGraph,*actualGraph,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -212,13 +212,13 @@ TEST(dataSet, readG2o3D) {
   for (size_t i : {0, 1, 2, 3, 4, 5}) {
     EXPECT(assert_equal(
         *boost::dynamic_pointer_cast<BetweenFactor<Pose3>>(expectedGraph[i]),
-        *actualFactors[i], 1e-5));
+        *actualFactors[i], GTSAM_UNITTEST_TOLERANCE_LOOSE));
   }
 
   // Check pose parsing
   const auto actualPoses = parse3DPoses(g2oFile);
   for (size_t j : {0, 1, 2, 3, 4}) {
-    EXPECT(assert_equal(poses[j], actualPoses.at(j), 1e-5));
+    EXPECT(assert_equal(poses[j], actualPoses.at(j), GTSAM_UNITTEST_TOLERANCE_LOOSE));
   }
 
   // Check graph version
@@ -226,9 +226,9 @@ TEST(dataSet, readG2o3D) {
   Values::shared_ptr actualValues;
   bool is3D = true;
   boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D);
-  EXPECT(assert_equal(expectedGraph, *actualGraph, 1e-5));
+  EXPECT(assert_equal(expectedGraph, *actualGraph, GTSAM_UNITTEST_TOLERANCE_LOOSE));
   for (size_t j : {0, 1, 2, 3, 4}) {
-    EXPECT(assert_equal(poses[j], actualValues->at<Pose3>(j), 1e-5));
+    EXPECT(assert_equal(poses[j], actualValues->at<Pose3>(j), GTSAM_UNITTEST_TOLERANCE_LOOSE));
   }
 }
 
@@ -250,7 +250,7 @@ TEST( dataSet, readG2o3DNonDiagonalNoise)
   Point3 p1 = Point3(1.001367, 0.015390, 0.004948);
   expectedValues.insert(1, Pose3(R1, p1));
 
-  EXPECT(assert_equal(expectedValues,*actualValues,1e-5));
+  EXPECT(assert_equal(expectedValues,*actualValues,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   Matrix Info = Matrix(6,6);
   for (int i = 0; i < 6; i++){
@@ -297,7 +297,7 @@ TEST( dataSet, readG2oHuber)
   expectedGraph.emplace_shared<BetweenFactor<Pose2> >(9,10, Pose2(1.003350, 0.022250, -0.195918), model);
   expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 9, Pose2(0.033943, 0.032439, 3.073637), model);
   expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3,10, Pose2(0.044020, 0.988477, -1.553511), model);
-  EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
+  EXPECT(assert_equal(expectedGraph,*actualGraph,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -325,7 +325,7 @@ TEST( dataSet, readG2oTukey)
   expectedGraph.emplace_shared<BetweenFactor<Pose2> >(9,10, Pose2(1.003350, 0.022250, -0.195918), model);
   expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 9, Pose2(0.033943, 0.032439, 3.073637), model);
   expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3,10, Pose2(0.044020, 0.988477, -1.553511), model);
-  EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
+  EXPECT(assert_equal(expectedGraph,*actualGraph,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -342,8 +342,8 @@ TEST( dataSet, writeG2o)
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
   boost::tie(actualGraph, actualValues) = readG2o(filenameToWrite);
-  EXPECT(assert_equal(*expectedValues,*actualValues,1e-5));
-  EXPECT(assert_equal(*expectedGraph,*actualGraph,1e-5));
+  EXPECT(assert_equal(*expectedValues,*actualValues,GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  EXPECT(assert_equal(*expectedGraph,*actualGraph,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

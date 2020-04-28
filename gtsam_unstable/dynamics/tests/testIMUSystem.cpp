@@ -23,7 +23,7 @@
 using namespace std;
 using namespace gtsam;
 
-const double tol=1e-5;
+const double tol=GTSAM_UNITTEST_TOLERANCE_LOOSE;
 
 static const Key x0 = 0, x1 = 1, x2 = 2, x3 = 3, x4 = 4;
 static const Vector g = Vector::Unit(3,2)*(-9.81);
@@ -84,7 +84,7 @@ TEST( testIMUSystem, optimize_chain ) {
   true_values.insert(x4, pose4);
 
   // verify zero error
-  EXPECT_DOUBLES_EQUAL(0, graph.error(true_values), 1e-5);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(true_values), GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
   // initialize with zero values and optimize
   Values values;
@@ -127,7 +127,7 @@ TEST( testIMUSystem, optimize_chain_fullfactor ) {
   true_values.insert(x4, pose4);
 
   // verify zero error
-  EXPECT_DOUBLES_EQUAL(0, graph.error(true_values), 1e-5);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(true_values), GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
   // initialize with zero values and optimize
   Values values;
@@ -169,7 +169,7 @@ TEST( testIMUSystem, linear_trajectory) {
     true_traj.insert(xB, cur_pose);
     init_traj.insert(xB, PoseRTV());
   }
-//  EXPECT_DOUBLES_EQUAL(0, graph.error(true_traj), 1e-5); // FAIL
+//  EXPECT_DOUBLES_EQUAL(0, graph.error(true_traj), GTSAM_UNITTEST_TOLERANCE_LOOSE); // FAIL
 }
 
 /* ************************************************************************* */

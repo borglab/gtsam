@@ -37,7 +37,7 @@ TEST(testNumericalDerivative, numericalGradient) {
 
   Vector actual = numericalGradient<Vector2>(f, x);
 
-  EXPECT(assert_equal(expected, actual, 1e-5));
+  EXPECT(assert_equal(expected, actual, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -49,7 +49,7 @@ TEST(testNumericalDerivative, numericalHessian) {
 
   Matrix actual = numericalHessian<Vector2>(f, x);
 
-  EXPECT(assert_equal(expected, actual, 1e-5));
+  EXPECT(assert_equal(expected, actual, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -69,7 +69,7 @@ TEST(testNumericalDerivative, numericalHessian2) {
 
   Matrix actual = numericalHessian(f2, x);
 
-  EXPECT(assert_equal(expected, actual, 1e-5));
+  EXPECT(assert_equal(expected, actual, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -84,15 +84,15 @@ TEST(testNumericalDerivative, numericalHessian211) {
 
   Matrix expected11 = (Matrix(1, 1) << -sin(x1) * cos(x2)).finished();
   Matrix actual11 = numericalHessian211<double, double>(f3, x1, x2);
-  EXPECT(assert_equal(expected11, actual11, 1e-5));
+  EXPECT(assert_equal(expected11, actual11, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   Matrix expected12 = (Matrix(1, 1) << -cos(x1) * sin(x2)).finished();
   Matrix actual12 = numericalHessian212<double, double>(f3, x1, x2);
-  EXPECT(assert_equal(expected12, actual12, 1e-5));
+  EXPECT(assert_equal(expected12, actual12, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   Matrix expected22 = (Matrix(1, 1) << -sin(x1) * cos(x2)).finished();
   Matrix actual22 = numericalHessian222<double, double>(f3, x1, x2);
-  EXPECT(assert_equal(expected22, actual22, 1e-5));
+  EXPECT(assert_equal(expected22, actual22, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 TEST(testNumericalDerivative, numericalHessian212) {
@@ -112,27 +112,27 @@ TEST(testNumericalDerivative, numericalHessian311) {
   double x = 1, y = 2, z = 3;
   Matrix expected11 = (Matrix(1, 1) << -sin(x) * cos(y) * z * z).finished();
   Matrix actual11 = numericalHessian311<double, double, double>(f4, x, y, z);
-  EXPECT(assert_equal(expected11, actual11, 1e-5));
+  EXPECT(assert_equal(expected11, actual11, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   Matrix expected12 = (Matrix(1, 1) << -cos(x) * sin(y) * z * z).finished();
   Matrix actual12 = numericalHessian312<double, double, double>(f4, x, y, z);
-  EXPECT(assert_equal(expected12, actual12, 1e-5));
+  EXPECT(assert_equal(expected12, actual12, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   Matrix expected13 = (Matrix(1, 1) << cos(x) * cos(y) * 2 * z).finished();
   Matrix actual13 = numericalHessian313<double, double, double>(f4, x, y, z);
-  EXPECT(assert_equal(expected13, actual13, 1e-5));
+  EXPECT(assert_equal(expected13, actual13, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   Matrix expected22 = (Matrix(1, 1) << -sin(x) * cos(y) * z * z).finished();
   Matrix actual22 = numericalHessian322<double, double, double>(f4, x, y, z);
-  EXPECT(assert_equal(expected22, actual22, 1e-5));
+  EXPECT(assert_equal(expected22, actual22, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   Matrix expected23 = (Matrix(1, 1) << -sin(x) * sin(y) * 2 * z).finished();
   Matrix actual23 = numericalHessian323<double, double, double>(f4, x, y, z);
-  EXPECT(assert_equal(expected23, actual23, 1e-5));
+  EXPECT(assert_equal(expected23, actual23, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   Matrix expected33 = (Matrix(1, 1) << sin(x) * cos(y) * 2).finished();
   Matrix actual33 = numericalHessian333<double, double, double>(f4, x, y, z);
-  EXPECT(assert_equal(expected33, actual33, 1e-5));
+  EXPECT(assert_equal(expected33, actual33, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -152,7 +152,7 @@ TEST(testNumericalDerivative, numeriDerivative61) {
   Matrix61 actual61 = numericalDerivative61<Vector6, double, double,
       double, double, double, double>(f6, x1, x2, x3, x4, x5, x6);
   
-  EXPECT(assert_equal(expected61, actual61, 1e-5));
+  EXPECT(assert_equal(expected61, actual61, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -164,7 +164,7 @@ TEST(testNumericalDerivative, numeriDerivative62) {
   Matrix61 actual62 = numericalDerivative62<Vector6, double, double, double,
      double, double, double>(f6, x1, x2, x3, x4, x5, x6);
   
-  EXPECT(assert_equal(expected62, actual62, 1e-5));
+  EXPECT(assert_equal(expected62, actual62, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -176,7 +176,7 @@ TEST(testNumericalDerivative, numeriDerivative63) {
   Matrix61 actual63 = numericalDerivative63<Vector6, double, double, double,
      double, double, double>(f6, x1, x2, x3, x4, x5, x6);
   
-  EXPECT(assert_equal(expected63, actual63, 1e-5));
+  EXPECT(assert_equal(expected63, actual63, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -188,7 +188,7 @@ TEST(testNumericalDerivative, numeriDerivative64) {
   Matrix61 actual64 = numericalDerivative64<Vector6, double, double, double,
      double, double, double>(f6, x1, x2, x3, x4, x5, x6);
   
-  EXPECT(assert_equal(expected64, actual64, 1e-5));
+  EXPECT(assert_equal(expected64, actual64, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -200,7 +200,7 @@ TEST(testNumericalDerivative, numeriDerivative65) {
   Matrix61 actual65 = numericalDerivative65<Vector6, double, double, double,
      double, double, double>(f6, x1, x2, x3, x4, x5, x6);
   
-  EXPECT(assert_equal(expected65, actual65, 1e-5));
+  EXPECT(assert_equal(expected65, actual65, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -212,7 +212,7 @@ TEST(testNumericalDerivative, numeriDerivative66) {
   Matrix61 actual66 = numericalDerivative66<Vector6, double, double, double, 
       double, double, double>(f6, x1, x2, x3, x4, x5, x6);
   
-  EXPECT(assert_equal(expected66, actual66, 1e-5));
+  EXPECT(assert_equal(expected66, actual66, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

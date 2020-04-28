@@ -65,7 +65,7 @@ TEST( GPSFactor, Constructor ) {
 
   // Create a linearization point at zero error
   Pose3 T(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(E, N, U));
-  EXPECT(assert_equal(Z_3x1,factor.evaluateError(T),1e-5));
+  EXPECT(assert_equal(Z_3x1,factor.evaluateError(T),GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector,Pose3>(
@@ -76,7 +76,7 @@ TEST( GPSFactor, Constructor ) {
   factor.evaluateError(T, actualH);
 
   // Verify we get the expected error
-  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+  EXPECT(assert_equal(expectedH, actualH, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 // *************************************************************************
@@ -94,7 +94,7 @@ TEST( GPSFactor2, Constructor ) {
 
   // Create a linearization point at zero error
   NavState T(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(E, N, U), Vector3::Zero());
-  EXPECT(assert_equal(Z_3x1,factor.evaluateError(T),1e-5));
+  EXPECT(assert_equal(Z_3x1,factor.evaluateError(T),GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector,NavState>(
@@ -105,7 +105,7 @@ TEST( GPSFactor2, Constructor ) {
   factor.evaluateError(T, actualH);
 
   // Verify we get the expected error
-  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+  EXPECT(assert_equal(expectedH, actualH, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 //***************************************************************************
@@ -129,9 +129,9 @@ TEST(GPSData, init) {
 
   // Check values values
   EXPECT(assert_equal((Vector )Vector3(29.9575, -29.0564, -1.95993), nV, 1e-4));
-  EXPECT( assert_equal(Rot3::Ypr(-0.770131, 0.046928, 0), T.rotation(), 1e-5));
+  EXPECT( assert_equal(Rot3::Ypr(-0.770131, 0.046928, 0), T.rotation(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
   Point3 expectedT(2.38461, -2.31289, -0.156011);
-  EXPECT(assert_equal(expectedT, T.translation(), 1e-5));
+  EXPECT(assert_equal(expectedT, T.translation(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 // *************************************************************************

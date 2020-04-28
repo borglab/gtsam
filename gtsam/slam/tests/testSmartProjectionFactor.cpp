@@ -194,7 +194,7 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimize ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6 + 5, 1e-5);
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6 + 5, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   graph.addPrior(c1, cam1, noisePrior);
   graph.addPrior(c2, cam2, noisePrior);
 
@@ -250,9 +250,9 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimize ) {
   LevenbergMarquardtOptimizer optimizer(graph, initial, lmParams);
   Values result = optimizer.optimize();
 
-  EXPECT(assert_equal(landmark1, *smartFactor1->point(), 1e-5));
-  EXPECT(assert_equal(landmark2, *smartFactor2->point(), 1e-5));
-  EXPECT(assert_equal(landmark3, *smartFactor3->point(), 1e-5));
+  EXPECT(assert_equal(landmark1, *smartFactor1->point(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  EXPECT(assert_equal(landmark2, *smartFactor2->point(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  EXPECT(assert_equal(landmark3, *smartFactor3->point(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(initial);
   //  VectorValues delta = GFG->optimize();
@@ -298,7 +298,7 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
   SmartFactor::shared_ptr smartFactor3(new SmartFactor(unit2));
   smartFactor3->add(measurements_cam3, views);
 
-  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6 + 5, 1e-5);
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6 + 5, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
   NonlinearFactorGraph graph;
   graph.push_back(smartFactor1);
@@ -370,7 +370,7 @@ TEST(SmartProjectionFactor, perturbCamerasAndOptimize ) {
   SmartFactor::shared_ptr smartFactor5(new SmartFactor(unit2));
   smartFactor5->add(measurements_cam5, views);
 
-  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6 + 5, 1e-5);
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6 + 5, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
   NonlinearFactorGraph graph;
   graph.push_back(smartFactor1);
@@ -389,7 +389,7 @@ TEST(SmartProjectionFactor, perturbCamerasAndOptimize ) {
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
   LevenbergMarquardtParams lmParams;
-  lmParams.relativeErrorTol = 1e-8;
+  lmParams.relativeErrorTol = GTSAM_UNITTEST_TOLERANCE_TIGHT;
   lmParams.absoluteErrorTol = 0;
   lmParams.maxIterations = 20;
   if (isDebugTest)
@@ -465,7 +465,7 @@ TEST(SmartProjectionFactor, Cal3Bundler ) {
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
   LevenbergMarquardtParams lmParams;
-  lmParams.relativeErrorTol = 1e-8;
+  lmParams.relativeErrorTol = GTSAM_UNITTEST_TOLERANCE_TIGHT;
   lmParams.absoluteErrorTol = 0;
   lmParams.maxIterations = 20;
   if (isDebugTest)
@@ -538,7 +538,7 @@ TEST(SmartProjectionFactor, Cal3Bundler2 ) {
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
   LevenbergMarquardtParams lmParams;
-  lmParams.relativeErrorTol = 1e-8;
+  lmParams.relativeErrorTol = GTSAM_UNITTEST_TOLERANCE_TIGHT;
   lmParams.absoluteErrorTol = 0;
   lmParams.maxIterations = 20;
   if (isDebugTest)

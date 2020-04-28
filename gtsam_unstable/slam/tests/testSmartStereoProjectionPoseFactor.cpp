@@ -86,7 +86,7 @@ TEST( SmartStereoProjectionPoseFactor, params) {
   // check default values and "get"
   EXPECT(p.getLinearizationMode() == HESSIAN);
   EXPECT(p.getDegeneracyMode() == IGNORE_DEGENERACY);
-  EXPECT_DOUBLES_EQUAL(p.getRetriangulationThreshold(), 1e-5, 1e-9);
+  EXPECT_DOUBLES_EQUAL(p.getRetriangulationThreshold(), GTSAM_UNITTEST_TOLERANCE_LOOSE, 1e-9);
   EXPECT(p.getVerboseCheirality() == false);
   EXPECT(p.getThrowCheirality() == false);
 
@@ -101,11 +101,11 @@ TEST( SmartStereoProjectionPoseFactor, params) {
 
   EXPECT(p.getLinearizationMode() == JACOBIAN_SVD);
   EXPECT(p.getDegeneracyMode() == ZERO_ON_DEGENERACY);
-  EXPECT_DOUBLES_EQUAL(p.getTriangulationParameters().rankTolerance, 100, 1e-5);
+  EXPECT_DOUBLES_EQUAL(p.getTriangulationParameters().rankTolerance, 100, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(p.getTriangulationParameters().enableEPI == true);
-  EXPECT_DOUBLES_EQUAL(p.getTriangulationParameters().landmarkDistanceThreshold, 200, 1e-5);
-  EXPECT_DOUBLES_EQUAL(p.getTriangulationParameters().dynamicOutlierRejectionThreshold, 3, 1e-5);
-  EXPECT_DOUBLES_EQUAL(p.getRetriangulationThreshold(), 1e-2, 1e-5);
+  EXPECT_DOUBLES_EQUAL(p.getTriangulationParameters().landmarkDistanceThreshold, 200, GTSAM_UNITTEST_TOLERANCE_LOOSE);
+  EXPECT_DOUBLES_EQUAL(p.getTriangulationParameters().dynamicOutlierRejectionThreshold, 3, GTSAM_UNITTEST_TOLERANCE_LOOSE);
+  EXPECT_DOUBLES_EQUAL(p.getRetriangulationThreshold(), 1e-2, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 }
 
 /* ************************************************************************* */
@@ -177,7 +177,7 @@ TEST_UNSAFE( SmartStereoProjectionPoseFactor, noiseless ) {
 
   // test vector of errors
   //Vector actual = factor1.unwhitenedError(values);
-  //EXPECT(assert_equal(zero(4),actual,1e-8));
+  //EXPECT(assert_equal(zero(4),actual,GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* *************************************************************************/
@@ -368,7 +368,7 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   gttoc_(SmartStereoProjectionPoseFactor);
   tictoc_finishedIteration_();
 
-  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
 //  cout << std::setprecision(10) << "SmartStereoFactor graph optimized error: " << graph.error(result) << endl;
 
@@ -420,7 +420,7 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
 
   LevenbergMarquardtOptimizer optimizer2(graph2, values, lm_params);
   Values result2 = optimizer2.optimize();
-  EXPECT_DOUBLES_EQUAL(0, graph2.error(result2), 1e-5);
+  EXPECT_DOUBLES_EQUAL(0, graph2.error(result2), GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
 //  cout << std::setprecision(10) << "StereoFactor graph optimized error: " << graph2.error(result2) << endl;
 
@@ -505,7 +505,7 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor ) {
   gttoc_(SmartStereoProjectionPoseFactor);
   tictoc_finishedIteration_();
 
-  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), GTSAM_UNITTEST_TOLERANCE_LOOSE);
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   EXPECT(assert_equal(pose3, result.at<Pose3>(x3)));
@@ -1112,7 +1112,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
   Matrix GraphInformation = GaussianGraph->hessian().first;
 
   // Check Hessian
-  EXPECT(assert_equal(GraphInformation, CumulativeInformation, 1e-8));
+  EXPECT(assert_equal(GraphInformation, CumulativeInformation, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   Matrix AugInformationMatrix = hessianFactor1->augmentedInformation()
       + hessianFactor2->augmentedInformation()
@@ -1122,7 +1122,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
   Vector InfoVector = AugInformationMatrix.block(0, 18, 18, 1); // 18x18 Hessian + information vector
 
   // Check Hessian
-  EXPECT(assert_equal(InfoVector, GaussianGraph->hessian().second, 1e-8));
+  EXPECT(assert_equal(InfoVector, GaussianGraph->hessian().second, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 //
 ///* *************************************************************************/
@@ -1446,7 +1446,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationNonDegenerate ) {
   EXPECT(
       assert_equal(hessianFactor->information(),
 #ifdef GTSAM_USE_EIGEN_MKL
-          hessianFactorRotTran->information(), 1e-5));
+          hessianFactorRotTran->information(), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 #else
           hessianFactorRotTran->information(), 1e-6));
 #endif

@@ -919,8 +919,8 @@ TEST(Matrix, weighted_elimination )
     double di, sigma;
     boost::tie(r, di, sigma) = tuple;
     EXPECT(assert_equal(r, expectedR.row(i))); // verify r
-    DOUBLES_EQUAL(d(i), di, 1e-8); // verify d
-    DOUBLES_EQUAL(newSigmas(i), sigma, 1e-5); // verify sigma
+    DOUBLES_EQUAL(d(i), di, GTSAM_UNITTEST_TOLERANCE_TIGHT); // verify d
+    DOUBLES_EQUAL(newSigmas(i), sigma, GTSAM_UNITTEST_TOLERANCE_LOOSE); // verify sigma
     i += 1;
   }
 }
@@ -1147,7 +1147,7 @@ TEST(Matrix, DLT )
   boost::tie(rank,error,actual) = DLT(A);
   Vector expected = (Vector(9) << -0.0, 0.2357, 0.4714, -0.2357, 0.0, - 0.4714,-0.4714, 0.4714, 0.0).finished();
   EXPECT_LONGS_EQUAL(8,rank);
-  EXPECT_DOUBLES_EQUAL(0,error,1e-8);
+  EXPECT_DOUBLES_EQUAL(0,error,GTSAM_UNITTEST_TOLERANCE_TIGHT);
   EXPECT(assert_equal(expected, actual, 1e-4));
 }
 

@@ -182,7 +182,7 @@ TEST( ProjectionFactorPPP, Jacobian ) {
       boost::bind(&TestProjectionFactor::evaluateError, &factor, _1, _2, _3,
           boost::none, boost::none, boost::none)), pose, Pose3(), point);
 
-  CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
+  CHECK(assert_equal(H2Expected, H2Actual, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -217,7 +217,7 @@ TEST( ProjectionFactorPPP, JacobianWithTransform ) {
       boost::bind(&TestProjectionFactor::evaluateError, &factor, _1, _2, _3,
           boost::none, boost::none, boost::none)), pose, body_P_sensor, point);
 
-  CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
+  CHECK(assert_equal(H2Expected, H2Actual, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
 
 }

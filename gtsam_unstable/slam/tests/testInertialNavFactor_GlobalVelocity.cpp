@@ -89,7 +89,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> g(
       Pose1, Vel1, Bias1, Pose2, Vel2, measurement_acc, measurement_gyro,
       measurement_dt, world_g, world_rho, world_omega_earth, model);
-  CHECK(assert_equal(f, g, 1e-5));
+  CHECK(assert_equal(f, g, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */TEST( InertialNavFactor_GlobalVelocity, Predict) {
@@ -121,8 +121,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector3 actualVel2;
   f.predict(Pose1, Vel1, Bias1, actualPose2, actualVel2);
 
-  CHECK(assert_equal(expectedPose2, actualPose2, 1e-5));
-  CHECK(assert_equal((Vector)expectedVel2, actualVel2, 1e-5));
+  CHECK(assert_equal(expectedPose2, actualPose2, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK(assert_equal((Vector)expectedVel2, actualVel2, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */TEST( InertialNavFactor_GlobalVelocity, ErrorPosVel) {
@@ -154,7 +154,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
   Vector ExpectedErr(Z_9x1);
 
-  CHECK(assert_equal(ExpectedErr, ActualErr, 1e-5));
+  CHECK(assert_equal(ExpectedErr, ActualErr, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */TEST( InertialNavFactor_GlobalVelocity, ErrorRot) {
@@ -187,7 +187,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
   Vector ExpectedErr(Z_9x1);
 
-  CHECK(assert_equal(ExpectedErr, ActualErr, 1e-5));
+  CHECK(assert_equal(ExpectedErr, ActualErr, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */TEST( InertialNavFactor_GlobalVelocity, ErrorRotPosVel) {
@@ -228,7 +228,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector ExpectedErr(Z_9x1);
 
   // TODO: Expected values need to be updated for global velocity version
-  CHECK(assert_equal(ExpectedErr, ActualErr, 1e-5));
+  CHECK(assert_equal(ExpectedErr, ActualErr, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 ///* VADIM - START ************************************************************************* */
@@ -326,11 +326,11 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
       Vel2);
 
   // Verify they are equal for this choice of state
-  CHECK( assert_equal(H1_expectedPose, H1_actualPose, 1e-5));
-  CHECK( assert_equal(H2_expectedPose, H2_actualPose, 1e-5));
+  CHECK( assert_equal(H1_expectedPose, H1_actualPose, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK( assert_equal(H2_expectedPose, H2_actualPose, GTSAM_UNITTEST_TOLERANCE_LOOSE));
   CHECK( assert_equal(H3_expectedPose, H3_actualPose, 2e-3));
-  CHECK( assert_equal(H4_expectedPose, H4_actualPose, 1e-5));
-  CHECK( assert_equal(H5_expectedPose, H5_actualPose, 1e-5));
+  CHECK( assert_equal(H4_expectedPose, H4_actualPose, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK( assert_equal(H5_expectedPose, H5_actualPose, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // Checking for Vel part in the jacobians
   // ******
@@ -360,11 +360,11 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
       Vel2);
 
   // Verify they are equal for this choice of state
-  CHECK( assert_equal(H1_expectedVel, H1_actualVel, 1e-5));
-  CHECK( assert_equal(H2_expectedVel, H2_actualVel, 1e-5));
-  CHECK( assert_equal(H3_expectedVel, H3_actualVel, 1e-5));
-  CHECK( assert_equal(H4_expectedVel, H4_actualVel, 1e-5));
-  CHECK( assert_equal(H5_expectedVel, H5_actualVel, 1e-5));
+  CHECK( assert_equal(H1_expectedVel, H1_actualVel, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK( assert_equal(H2_expectedVel, H2_actualVel, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK( assert_equal(H3_expectedVel, H3_actualVel, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK( assert_equal(H4_expectedVel, H4_actualVel, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK( assert_equal(H5_expectedVel, H5_actualVel, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */TEST( InertialNavFactor_GlobalVelocity, ConstructorWithTransform) {
@@ -413,7 +413,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
       Pose1, Vel1, Bias1, Pose2, Vel2, measurement_acc, measurement_gyro,
       measurement_dt, world_g, world_rho, world_omega_earth, model,
       body_P_sensor);
-  CHECK(assert_equal(f, g, 1e-5));
+  CHECK(assert_equal(f, g, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */TEST( InertialNavFactor_GlobalVelocity, PredictWithTransform) {
@@ -451,8 +451,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector3 actualVel2;
   f.predict(Pose1, Vel1, Bias1, actualPose2, actualVel2);
 
-  CHECK(assert_equal(expectedPose2, actualPose2, 1e-5));
-  CHECK(assert_equal((Vector)expectedVel2, actualVel2, 1e-5));
+  CHECK(assert_equal(expectedPose2, actualPose2, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK(assert_equal((Vector)expectedVel2, actualVel2, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */TEST( InertialNavFactor_GlobalVelocity, ErrorPosVelWithTransform) {
@@ -490,7 +490,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
   Vector ExpectedErr(Z_9x1);
 
-  CHECK(assert_equal(ExpectedErr, ActualErr, 1e-5));
+  CHECK(assert_equal(ExpectedErr, ActualErr, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */TEST( InertialNavFactor_GlobalVelocity, ErrorRotWithTransform) {
@@ -531,7 +531,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
   Vector ExpectedErr(Z_9x1);
 
-  CHECK(assert_equal(ExpectedErr, ActualErr, 1e-5));
+  CHECK(assert_equal(ExpectedErr, ActualErr, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */TEST( InertialNavFactor_GlobalVelocity, ErrorRotPosVelWithTransform) {
@@ -582,7 +582,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector ExpectedErr(Z_9x1);
 
   // TODO: Expected values need to be updated for global velocity version
-  CHECK(assert_equal(ExpectedErr, ActualErr, 1e-5));
+  CHECK(assert_equal(ExpectedErr, ActualErr, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */TEST (InertialNavFactor_GlobalVelocity, JacobianWithTransform ) {
@@ -658,11 +658,11 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
       Vel2);
 
   // Verify they are equal for this choice of state
-  CHECK( assert_equal(H1_expectedPose, H1_actualPose, 1e-5));
-  CHECK( assert_equal(H2_expectedPose, H2_actualPose, 1e-5));
+  CHECK( assert_equal(H1_expectedPose, H1_actualPose, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK( assert_equal(H2_expectedPose, H2_actualPose, GTSAM_UNITTEST_TOLERANCE_LOOSE));
   CHECK( assert_equal(H3_expectedPose, H3_actualPose, 2e-3));
-  CHECK( assert_equal(H4_expectedPose, H4_actualPose, 1e-5));
-  CHECK( assert_equal(H5_expectedPose, H5_actualPose, 1e-5));
+  CHECK( assert_equal(H4_expectedPose, H4_actualPose, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK( assert_equal(H5_expectedPose, H5_actualPose, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // Checking for Vel part in the jacobians
   // ******
@@ -692,11 +692,11 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
       Vel2);
 
   // Verify they are equal for this choice of state
-  CHECK( assert_equal(H1_expectedVel, H1_actualVel, 1e-5));
-  CHECK( assert_equal(H2_expectedVel, H2_actualVel, 1e-5));
-  CHECK( assert_equal(H3_expectedVel, H3_actualVel, 1e-5));
-  CHECK( assert_equal(H4_expectedVel, H4_actualVel, 1e-5));
-  CHECK( assert_equal(H5_expectedVel, H5_actualVel, 1e-5));
+  CHECK( assert_equal(H1_expectedVel, H1_actualVel, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK( assert_equal(H2_expectedVel, H2_actualVel, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK( assert_equal(H3_expectedVel, H3_actualVel, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK( assert_equal(H4_expectedVel, H4_actualVel, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK( assert_equal(H5_expectedVel, H5_actualVel, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

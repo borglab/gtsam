@@ -99,8 +99,8 @@ TEST(ExpressionCustomChart, projection) {
   EXPECT(assert_equal(expectedJacobian, Jcustom.first, 1e-10));
 
   // Amazingly, the finite differences get the expected Jacobian right.
-  const double fd_step = 1e-5;
-  const double tolerance = 1e-5;
+  const double fd_step = GTSAM_UNITTEST_TOLERANCE_LOOSE;
+  const double tolerance = GTSAM_UNITTEST_TOLERANCE_LOOSE;
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(point, custom, fd_step, tolerance);
 }
 

@@ -15,7 +15,7 @@ using namespace gtsam;
 
 SharedNoiseModel model1 = noiseModel::Unit::Create(1);
 
-const double tol = 1e-5;
+const double tol = GTSAM_UNITTEST_TOLERANCE_LOOSE;
 
 const Pose3 pose1(Rot3(), Point3(2.0, 3.0, 4.0));
 const Pose3 pose2(Rot3::Pitch(-M_PI_2), Point3(2.0, 3.0, 4.0));
@@ -36,9 +36,9 @@ TEST( testRelativeElevationFactor, level_zero_error ) {
   Matrix actH1, actH2;
   EXPECT(assert_equal(Z_1x1, factor.evaluateError(pose1, point1, actH1, actH2)));
   Matrix expH1 = numericalDerivative21<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose1, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose1, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   Matrix expH2 = numericalDerivative22<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose1, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose1, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(expH1, actH1, tol));
   EXPECT(assert_equal(expH2, actH2, tol));
 }
@@ -51,9 +51,9 @@ TEST( testRelativeElevationFactor, level_positive ) {
   Matrix actH1, actH2;
   EXPECT(assert_equal((Vector(1) << 2.0).finished(), factor.evaluateError(pose1, point1, actH1, actH2)));
   Matrix expH1 = numericalDerivative21<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose1, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose1, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   Matrix expH2 = numericalDerivative22<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose1, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose1, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(expH1, actH1, tol));
   EXPECT(assert_equal(expH2, actH2, tol));
 }
@@ -66,9 +66,9 @@ TEST( testRelativeElevationFactor, level_negative ) {
   Matrix actH1, actH2;
   EXPECT(assert_equal((Vector(1) << 3.0).finished(), factor.evaluateError(pose1, point1, actH1, actH2)));
   Matrix expH1 = numericalDerivative21<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose1, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose1, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   Matrix expH2 = numericalDerivative22<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose1, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose1, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(expH1, actH1, tol));
   EXPECT(assert_equal(expH2, actH2, tol));
 }
@@ -81,9 +81,9 @@ TEST( testRelativeElevationFactor, rotated_zero_error ) {
   Matrix actH1, actH2;
   EXPECT(assert_equal(Z_1x1, factor.evaluateError(pose2, point1, actH1, actH2)));
   Matrix expH1 = numericalDerivative21<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose2, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose2, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   Matrix expH2 = numericalDerivative22<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose2, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose2, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(expH1, actH1, tol));
   EXPECT(assert_equal(expH2, actH2, tol));
 }
@@ -96,9 +96,9 @@ TEST( testRelativeElevationFactor, rotated_positive ) {
   Matrix actH1, actH2;
   EXPECT(assert_equal((Vector(1) << 2.0).finished(), factor.evaluateError(pose2, point1, actH1, actH2)));
   Matrix expH1 = numericalDerivative21<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose2, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose2, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   Matrix expH2 = numericalDerivative22<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose2, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose2, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(expH1, actH1, tol));
   EXPECT(assert_equal(expH2, actH2, tol));
 }
@@ -111,9 +111,9 @@ TEST( testRelativeElevationFactor, rotated_negative1 ) {
   Matrix actH1, actH2;
   EXPECT(assert_equal((Vector(1) << 3.0).finished(), factor.evaluateError(pose2, point1, actH1, actH2)));
   Matrix expH1 = numericalDerivative21<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose2, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose2, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   Matrix expH2 = numericalDerivative22<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose2, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose2, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(expH1, actH1, tol));
   EXPECT(assert_equal(expH2, actH2, tol));
 }
@@ -126,9 +126,9 @@ TEST( testRelativeElevationFactor, rotated_negative2 ) {
   Matrix actH1, actH2;
   EXPECT(assert_equal((Vector(1) << 3.0).finished(), factor.evaluateError(pose3, point1, actH1, actH2)));
   Matrix expH1 = numericalDerivative21<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose3, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose3, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   Matrix expH2 = numericalDerivative22<Vector,Pose3,Point3>(
-      boost::bind(evalFactorError, factor, _1, _2), pose3, point1, 1e-5);
+      boost::bind(evalFactorError, factor, _1, _2), pose3, point1, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(expH1, actH1, tol));
   EXPECT(assert_equal(expH2, actH2, tol));
 }

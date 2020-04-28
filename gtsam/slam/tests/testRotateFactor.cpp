@@ -58,7 +58,7 @@ TEST (RotateFactor, checkMath) {
 TEST (RotateFactor, test) {
   Model model = noiseModel::Isotropic::Sigma(3, 0.01);
   RotateFactor f(1, i1Ri2, c1Zc2, model);
-  EXPECT(assert_equal(Z_3x1, f.evaluateError(iRc), 1e-8));
+  EXPECT(assert_equal(Z_3x1, f.evaluateError(iRc), GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   Rot3 R = iRc.retract(Vector3(0.1, 0.2, 0.1));
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
@@ -66,7 +66,7 @@ TEST (RotateFactor, test) {
 #else
   Vector expectedE = Vector3(-0.0246305, 0.20197, -0.08867);
 #endif
-  EXPECT( assert_equal(expectedE, f.evaluateError(R), 1e-5));
+  EXPECT( assert_equal(expectedE, f.evaluateError(R), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   Matrix actual, expected;
   // Use numerical derivatives to calculate the expected Jacobian
@@ -96,7 +96,7 @@ TEST (RotateFactor, minimization) {
   // Check error at ground truth
   Values truth;
   truth.insert(1, iRc);
-  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
   // Check error at initial estimate
   Values initial;
@@ -127,7 +127,7 @@ TEST (RotateFactor, minimization) {
 TEST (RotateDirectionsFactor, test) {
   Model model = noiseModel::Isotropic::Sigma(2, 0.01);
   RotateDirectionsFactor f(1, p1, z1, model);
-  EXPECT(assert_equal(Z_2x1, f.evaluateError(iRc), 1e-8));
+  EXPECT(assert_equal(Z_2x1, f.evaluateError(iRc), GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   Rot3 R = iRc.retract(Vector3(0.1, 0.2, 0.1));
 
@@ -137,7 +137,7 @@ TEST (RotateDirectionsFactor, test) {
   Vector expectedE = Vector2(-0.08867, -0.20197);
 #endif
 
-  EXPECT( assert_equal(expectedE, f.evaluateError(R), 1e-5));
+  EXPECT( assert_equal(expectedE, f.evaluateError(R), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   Matrix actual, expected;
   // Use numerical derivatives to calculate the expected Jacobian
@@ -169,7 +169,7 @@ TEST (RotateDirectionsFactor, minimization) {
   // Check error at ground truth
   Values truth;
   truth.insert(1, iRc);
-  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
   // Check error at initial estimate
   Values initial;
@@ -221,8 +221,8 @@ TEST(RotateDirectionsFactor, Initialization) {
         // Check initialization
         const Rot3 actual_nRb = RotateDirectionsFactor::Initialize(n_p, b_z);
         const Vector3 actual_rpy = actual_nRb.rpy() / kDegree;
-        EXPECT_DOUBLES_EQUAL(rpy.x(), actual_rpy.x(), 1e-5);
-        EXPECT_DOUBLES_EQUAL(rpy.y(), actual_rpy.y(), 1e-5);
+        EXPECT_DOUBLES_EQUAL(rpy.x(), actual_rpy.x(), GTSAM_UNITTEST_TOLERANCE_LOOSE);
+        EXPECT_DOUBLES_EQUAL(rpy.y(), actual_rpy.y(), GTSAM_UNITTEST_TOLERANCE_LOOSE);
       }
     }
   }

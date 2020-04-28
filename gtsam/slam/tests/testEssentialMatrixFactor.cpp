@@ -67,20 +67,20 @@ TEST (EssentialMatrixFactor, testData) {
   expected << 0, 0, 0, 0, 0, -0.1, 0.1, 0, 0;
   Matrix aEb_matrix = skewSymmetric(c1Tc2.x(), c1Tc2.y(), c1Tc2.z())
       * c1Rc2.matrix();
-  EXPECT(assert_equal(expected, aEb_matrix, 1e-8));
+  EXPECT(assert_equal(expected, aEb_matrix, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   // Check some projections
-  EXPECT(assert_equal(Point2(0, 0), pA(0), 1e-8));
-  EXPECT(assert_equal(Point2(0, 0.1), pB(0), 1e-8));
-  EXPECT(assert_equal(Point2(0, -1), pA(4), 1e-8));
-  EXPECT(assert_equal(Point2(-1, 0.2), pB(4), 1e-8));
+  EXPECT(assert_equal(Point2(0, 0), pA(0), GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(Point2(0, 0.1), pB(0), GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(Point2(0, -1), pA(4), GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(Point2(-1, 0.2), pB(4), GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   // Check homogeneous version
-  EXPECT(assert_equal(Vector3(-1, 0.2, 1), vB(4), 1e-8));
+  EXPECT(assert_equal(Vector3(-1, 0.2, 1), vB(4), GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   // Check epipolar constraint
   for (size_t i = 0; i < 5; i++)
-    EXPECT_DOUBLES_EQUAL(0, vA(i).transpose() * aEb_matrix * vB(i), 1e-8);
+    EXPECT_DOUBLES_EQUAL(0, vA(i).transpose() * aEb_matrix * vB(i), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
   // Check epipolar constraint
   for (size_t i = 0; i < 5; i++)
@@ -108,7 +108,7 @@ TEST (EssentialMatrixFactor, factor) {
             boost::none), trueE);
 
     // Verify the Jacobian is correct
-    EXPECT(assert_equal(Hexpected, Hactual, 1e-8));
+    EXPECT(assert_equal(Hexpected, Hactual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
   }
 }
 
@@ -124,7 +124,7 @@ TEST(EssentialMatrixFactor, ExpressionFactor) {
     // Test the derivatives using Paul's magic
     Values values;
     values.insert(key, trueE);
-    EXPECT_CORRECT_EXPRESSION_JACOBIANS(expr, values, 1e-5, 1e-9);
+    EXPECT_CORRECT_EXPRESSION_JACOBIANS(expr, values, GTSAM_UNITTEST_TOLERANCE_LOOSE, 1e-9);
 
     // Create the factor
     ExpressionFactor<double> factor(model1, 0, expr);
@@ -154,7 +154,7 @@ TEST(EssentialMatrixFactor, ExpressionFactorRotationOnly) {
     // Test the derivatives using Paul's magic
     Values values;
     values.insert(key, trueRotation);
-    EXPECT_CORRECT_EXPRESSION_JACOBIANS(expr, values, 1e-5, 1e-9);
+    EXPECT_CORRECT_EXPRESSION_JACOBIANS(expr, values, GTSAM_UNITTEST_TOLERANCE_LOOSE, 1e-9);
 
     // Create the factor
     ExpressionFactor<double> factor(model1, 0, expr);
@@ -184,7 +184,7 @@ TEST (EssentialMatrixFactor, minimization) {
   // Check error at ground truth
   Values truth;
   truth.insert(1, trueE);
-  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
   // Check error at initial estimate
   Values initial;
@@ -239,8 +239,8 @@ TEST (EssentialMatrixFactor2, factor) {
     Hexpected2 = numericalDerivative22<Vector2, EssentialMatrix, double>(f, trueE, d);
 
     // Verify the Jacobian is correct
-    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
-    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+    EXPECT(assert_equal(Hexpected1, Hactual1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+    EXPECT(assert_equal(Hexpected2, Hactual2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
   }
 }
 
@@ -261,7 +261,7 @@ TEST (EssentialMatrixFactor2, minimization) {
     Point3 P1 = data.tracks[i].p;
     truth.insert(i, double(baseline / P1.z()));
   }
-  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
   // Optimize
   LevenbergMarquardtParams parameters;
@@ -312,8 +312,8 @@ TEST (EssentialMatrixFactor3, factor) {
     Hexpected2 = numericalDerivative22<Vector2, EssentialMatrix, double>(f, bodyE, d);
 
     // Verify the Jacobian is correct
-    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
-    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+    EXPECT(assert_equal(Hexpected1, Hactual1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+    EXPECT(assert_equal(Hexpected2, Hactual2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
   }
 }
 
@@ -333,7 +333,7 @@ TEST (EssentialMatrixFactor3, minimization) {
     Point3 P1 = data.tracks[i].p;
     truth.insert(i, double(baseline / P1.z()));
   }
-  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
   // Optimize
   LevenbergMarquardtParams parameters;
@@ -397,7 +397,7 @@ TEST (EssentialMatrixFactor, extraMinimization) {
   // Check error at ground truth
   Values truth;
   truth.insert(1, trueE);
-  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
   // Check error at initial estimate
   Values initial;
@@ -454,7 +454,7 @@ TEST (EssentialMatrixFactor2, extraTest) {
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-6));
-    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+    EXPECT(assert_equal(Hexpected2, Hactual2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
   }
 }
 
@@ -475,7 +475,7 @@ TEST (EssentialMatrixFactor2, extraMinimization) {
     Point3 P1 = data.tracks[i].p;
     truth.insert(i, double(baseline / P1.z()));
   }
-  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), GTSAM_UNITTEST_TOLERANCE_TIGHT);
 
   // Optimize
   LevenbergMarquardtParams parameters;
@@ -522,7 +522,7 @@ TEST (EssentialMatrixFactor3, extraTest) {
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-6));
-    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+    EXPECT(assert_equal(Hexpected2, Hactual2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
   }
 }
 

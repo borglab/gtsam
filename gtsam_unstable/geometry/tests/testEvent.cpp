@@ -68,11 +68,11 @@ TEST(Event, Derivatives) {
   Matrix expectedH1 = numericalDerivative11<double, Event>(
       boost::bind(kToa, _1, microphoneAt0, boost::none, boost::none),
       exampleEvent);
-  EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
+  EXPECT(assert_equal(expectedH1, actualH1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
   Matrix expectedH2 = numericalDerivative11<double, Point3>(
       boost::bind(kToa, exampleEvent, _1, boost::none, boost::none),
       microphoneAt0);
-  EXPECT(assert_equal(expectedH2, actualH2, 1e-8));
+  EXPECT(assert_equal(expectedH2, actualH2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 //*****************************************************************************

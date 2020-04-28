@@ -126,7 +126,7 @@ TEST( SmartRangeFactor, optimization ) {
   EXPECT(assert_equal(initial.at<Pose2>(1), result.at<Pose2>(1)));
   EXPECT(assert_equal(initial.at<Pose2>(2), result.at<Pose2>(2)));
   // only the third pose will be changed, converges on following:
-  EXPECT(assert_equal(Pose2(5.52159, 5.582727, 0), result.at<Pose2>(3),1e-5));
+  EXPECT(assert_equal(Pose2(5.52159, 5.582727, 0), result.at<Pose2>(3),GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

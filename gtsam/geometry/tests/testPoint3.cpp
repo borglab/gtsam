@@ -91,10 +91,10 @@ TEST( Point3, dot) {
   Point3 q = p + Point3(0.5, 0.2, -3.0);
   Point3 r = p + Point3(0.8, 0, 0);
   Point3 t = p + Point3(0, 0.3, -0.4);
-  EXPECT(assert_equal(1.130000, p.dot(p), 1e-8));
-  EXPECT(assert_equal(0.770000, p.dot(q), 1e-5));
-  EXPECT(assert_equal(1.930000, p.dot(r), 1e-5));
-  EXPECT(assert_equal(1.070000, p.dot(t), 1e-5));
+  EXPECT(assert_equal(1.130000, p.dot(p), GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(0.770000, p.dot(q), GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  EXPECT(assert_equal(1.930000, p.dot(r), GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  EXPECT(assert_equal(1.070000, p.dot(t), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // Use numerical derivatives to calculate the expected Jacobians
   Matrix H1, H2;
@@ -133,9 +133,9 @@ TEST( Point3, cross2) {
   Point3 p(1, 0.2, 0.3);
   Point3 q = p + Point3(0.5, 0.2, -3.0);
   Point3 r = p + Point3(0.8, 0, 0);
-  EXPECT(assert_equal(Point3(0, 0, 0), p.cross(p), 1e-8));
-  EXPECT(assert_equal(Point3(-0.66, 3.15, 0.1), p.cross(q), 1e-5));
-  EXPECT(assert_equal(Point3(0, 0.24, -0.16), p.cross(r), 1e-5));
+  EXPECT(assert_equal(Point3(0, 0, 0), p.cross(p), GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(Point3(-0.66, 3.15, 0.1), p.cross(q), GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  EXPECT(assert_equal(Point3(0, 0.24, -0.16), p.cross(r), GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   // Use numerical derivatives to calculate the expected Jacobians
   Matrix H1, H2;
@@ -168,10 +168,10 @@ TEST (Point3, normalize) {
   Matrix actualH;
   Point3 point(1, -2, 3); // arbitrary point
   Point3 expected(point / sqrt(14.0));
-  EXPECT(assert_equal(expected, normalize(point, actualH), 1e-8));
+  EXPECT(assert_equal(expected, normalize(point, actualH), GTSAM_UNITTEST_TOLERANCE_TIGHT));
   Matrix expectedH = numericalDerivative11<Point3, Point3>(
       boost::bind(gtsam::normalize, _1, boost::none), point);
-  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+  EXPECT(assert_equal(expectedH, actualH, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 //*************************************************************************
@@ -183,9 +183,9 @@ TEST (Point3, norm) {
   Matrix actualH;
   Point3 point(3,4,5); // arbitrary point
   double expected = sqrt(50);
-  EXPECT_DOUBLES_EQUAL(expected, norm3(point, actualH), 1e-8);
+  EXPECT_DOUBLES_EQUAL(expected, norm3(point, actualH), GTSAM_UNITTEST_TOLERANCE_TIGHT);
   Matrix expectedH = numericalDerivative11<double, Point3>(norm_proxy, point);
-  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+  EXPECT(assert_equal(expectedH, actualH, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -200,9 +200,9 @@ TEST (Point3, distance) {
   double expectedDistance = 55.542686;
   Matrix numH1 = numericalDerivative21(testFunc, P, Q);
   Matrix numH2 = numericalDerivative22(testFunc, P, Q);
-  DOUBLES_EQUAL(expectedDistance, d, 1e-5);
-  EXPECT(assert_equal(numH1, H1, 1e-8));
-  EXPECT(assert_equal(numH2, H2, 1e-8));
+  DOUBLES_EQUAL(expectedDistance, d, GTSAM_UNITTEST_TOLERANCE_LOOSE);
+  EXPECT(assert_equal(numH1, H1, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+  EXPECT(assert_equal(numH2, H2, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */

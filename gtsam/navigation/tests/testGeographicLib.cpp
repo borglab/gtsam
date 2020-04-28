@@ -53,9 +53,9 @@ TEST( GeographicLib, Geocentric) {
   // From geocentric to lat-lon
   double lat_, lon_, h_;
   kWGS84.Reverse(X, Y, Z, lat_, lon_, h_);
-  EXPECT_DOUBLES_EQUAL(lat, lat_, 1e-5);
-  EXPECT_DOUBLES_EQUAL(lon, lon_, 1e-5);
-  EXPECT_DOUBLES_EQUAL(h, h_, 1e-5);
+  EXPECT_DOUBLES_EQUAL(lat, lat_, GTSAM_UNITTEST_TOLERANCE_LOOSE);
+  EXPECT_DOUBLES_EQUAL(lon, lon_, GTSAM_UNITTEST_TOLERANCE_LOOSE);
+  EXPECT_DOUBLES_EQUAL(h, h_, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 }
 
 //**************************************************************************
@@ -100,9 +100,9 @@ TEST( GeographicLib, ENU) {
   // From geocentric to lat-lon
   double lat_, lon_, h_;
   enu.Reverse(E, N, U, lat_, lon_, h_);
-  EXPECT_DOUBLES_EQUAL(lat, lat_, 1e-5);
-  EXPECT_DOUBLES_EQUAL(lon, lon_, 1e-5);
-  EXPECT_DOUBLES_EQUAL(h, h_, 1e-5);
+  EXPECT_DOUBLES_EQUAL(lat, lat_, GTSAM_UNITTEST_TOLERANCE_LOOSE);
+  EXPECT_DOUBLES_EQUAL(lon, lon_, GTSAM_UNITTEST_TOLERANCE_LOOSE);
+  EXPECT_DOUBLES_EQUAL(h, h_, GTSAM_UNITTEST_TOLERANCE_LOOSE);
 }
 
 //**************************************************************************

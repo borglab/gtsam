@@ -82,7 +82,7 @@ TEST( DecisionTreeFactor, sum_max)
 
   DecisionTreeFactor expected(v1, "9 12");
   DecisionTreeFactor::shared_ptr actual = f1.sum(1);
-  CHECK(assert_equal(expected, *actual, 1e-5));
+  CHECK(assert_equal(expected, *actual, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 //  f1.print("f1:");
 //  actual->print("actual: ");
 //  actual->printCache("actual cache: ");

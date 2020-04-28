@@ -98,12 +98,12 @@ TEST(Similarity3, inverse) {
   Vector3 te(-9.8472, 59.7640, 10.2125);
   Similarity3 expected(Re, te, 1.0 / 7.0);
   EXPECT(assert_equal(expected, sim3.inverse(), 1e-4));
-  EXPECT(assert_equal(sim3, sim3.inverse().inverse(), 1e-8));
+  EXPECT(assert_equal(sim3, sim3.inverse().inverse(), GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   // test lie group inverse
   Matrix H1, H2;
   EXPECT(assert_equal(expected, sim3.inverse(H1), 1e-4));
-  EXPECT(assert_equal(sim3, sim3.inverse().inverse(H2), 1e-8));
+  EXPECT(assert_equal(sim3, sim3.inverse().inverse(H2), GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 //******************************************************************************

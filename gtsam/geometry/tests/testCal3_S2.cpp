@@ -64,7 +64,7 @@ TEST( Cal3_S2, Duncalibrate1)
 {
   Matrix25 computed; K.uncalibrate(p, computed, boost::none);
   Matrix numerical = numericalDerivative21(uncalibrate_, K, p);
-  CHECK(assert_equal(numerical,computed,1e-8));
+  CHECK(assert_equal(numerical,computed,GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -82,8 +82,8 @@ TEST(Cal3_S2, Dcalibrate1)
     Matrix computed;
     Point2 expected = K.calibrate(p_uv, computed, boost::none);
     Matrix numerical = numericalDerivative21(calibrate_, K, p_uv);
-    CHECK(assert_equal(expected, p_xy, 1e-8));
-    CHECK(assert_equal(numerical, computed, 1e-8));
+    CHECK(assert_equal(expected, p_xy, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+    CHECK(assert_equal(numerical, computed, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */
@@ -92,8 +92,8 @@ TEST(Cal3_S2, Dcalibrate2)
     Matrix computed;
     Point2 expected = K.calibrate(p_uv, boost::none, computed);
     Matrix numerical = numericalDerivative22(calibrate_, K, p_uv);
-    CHECK(assert_equal(expected, p_xy, 1e-8));
-    CHECK(assert_equal(numerical, computed, 1e-8));
+    CHECK(assert_equal(expected, p_xy, GTSAM_UNITTEST_TOLERANCE_TIGHT));
+    CHECK(assert_equal(numerical, computed, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 }
 
 /* ************************************************************************* */

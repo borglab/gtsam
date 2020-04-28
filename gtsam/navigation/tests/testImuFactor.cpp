@@ -522,7 +522,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
       boost::none, D_correctedAcc_measuredOmega, boost::none);
   Matrix3 expectedD = numericalDerivative11<Vector3, Vector3>(
       boost::bind(correctedAcc, pim, measuredAcc, _1), measuredOmega, 1e-6);
-  EXPECT(assert_equal(expectedD, D_correctedAcc_measuredOmega, 1e-5));
+  EXPECT(assert_equal(expectedD, D_correctedAcc_measuredOmega, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   double dt = 0.1;
 
@@ -535,13 +535,13 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
 //      boost::bind(&PreintegratedImuMeasurements::updatedDeltaXij, pim, _1, _2,
 //          dt, boost::none, boost::none, boost::none), measuredAcc,
 //      measuredOmega, 1e-6);
-//  EXPECT(assert_equal(expectedG1, G1, 1e-5));
+//  EXPECT(assert_equal(expectedG1, G1, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 //
 //  Matrix93 expectedG2 = numericalDerivative22<NavState, Vector3, Vector3>(
 //      boost::bind(&PreintegratedImuMeasurements::updatedDeltaXij, pim, _1, _2,
 //          dt, boost::none, boost::none, boost::none), measuredAcc,
 //      measuredOmega, 1e-6);
-//  EXPECT(assert_equal(expectedG2, G2, 1e-5));
+//  EXPECT(assert_equal(expectedG2, G2, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 
   Bias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
 

@@ -47,7 +47,7 @@ TEST( EssentialMatrixConstraint, test ) {
 
   Vector expected = Z_5x1;
   Vector actual = factor.evaluateError(pose1,pose2);
-  CHECK(assert_equal(expected, actual, 1e-8));
+  CHECK(assert_equal(expected, actual, GTSAM_UNITTEST_TOLERANCE_TIGHT));
 
   // Calculate numerical derivatives
   Matrix expectedH1 = numericalDerivative11<Vector5,Pose3>(
@@ -63,8 +63,8 @@ TEST( EssentialMatrixConstraint, test ) {
   factor.evaluateError(pose1, pose2, actualH1, actualH2);
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
-  CHECK(assert_equal(expectedH2, actualH2, 1e-5));
+  CHECK(assert_equal(expectedH1, actualH1, GTSAM_UNITTEST_TOLERANCE_LOOSE));
+  CHECK(assert_equal(expectedH2, actualH2, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

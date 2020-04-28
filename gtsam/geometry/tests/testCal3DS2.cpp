@@ -48,7 +48,7 @@ TEST( Cal3DS2, calibrate )
   Point2 pn(0.5, 0.5);
   Point2 pi = K.uncalibrate(pn);
   Point2 pn_hat = K.calibrate(pi);
-  CHECK( traits<Point2>::Equals(pn, pn_hat, 1e-5));
+  CHECK( traits<Point2>::Equals(pn, pn_hat, GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 Point2 uncalibrate_(const Cal3DS2& k, const Point2& pt) { return k.uncalibrate(pt); }
@@ -59,9 +59,9 @@ TEST( Cal3DS2, Duncalibrate1)
   Matrix computed;
   K.uncalibrate(p, computed, boost::none);
   Matrix numerical = numericalDerivative21(uncalibrate_, K, p, 1e-7);
-  CHECK(assert_equal(numerical,computed,1e-5));
+  CHECK(assert_equal(numerical,computed,GTSAM_UNITTEST_TOLERANCE_LOOSE));
   Matrix separate = K.D2d_calibration(p);
-  CHECK(assert_equal(numerical,separate,1e-5));
+  CHECK(assert_equal(numerical,separate,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
@@ -69,15 +69,15 @@ TEST( Cal3DS2, Duncalibrate2)
 {
   Matrix computed; K.uncalibrate(p, boost::none, computed);
   Matrix numerical = numericalDerivative22(uncalibrate_, K, p, 1e-7);
-  CHECK(assert_equal(numerical,computed,1e-5));
+  CHECK(assert_equal(numerical,computed,GTSAM_UNITTEST_TOLERANCE_LOOSE));
   Matrix separate = K.D2d_intrinsic(p);
-  CHECK(assert_equal(numerical,separate,1e-5));
+  CHECK(assert_equal(numerical,separate,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */
 TEST( Cal3DS2, assert_equal)
 {
-  CHECK(assert_equal(K,K,1e-5));
+  CHECK(assert_equal(K,K,GTSAM_UNITTEST_TOLERANCE_LOOSE));
 }
 
 /* ************************************************************************* */

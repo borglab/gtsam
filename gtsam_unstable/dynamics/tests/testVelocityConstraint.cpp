@@ -9,7 +9,7 @@
 
 using namespace gtsam;
 
-const double tol=1e-5;
+const double tol=GTSAM_UNITTEST_TOLERANCE_LOOSE;
 
 const Key x1 = 1, x2 = 2;
 const double dt = 1.0;

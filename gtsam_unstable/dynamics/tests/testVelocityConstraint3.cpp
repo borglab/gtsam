@@ -15,7 +15,7 @@ using namespace gtsam::symbol_shorthand;
 // evaluateError
 TEST( testVelocityConstraint3, evaluateError) {
 
-  const double tol = 1e-5;
+  const double tol = GTSAM_UNITTEST_TOLERANCE_LOOSE;
   const double dt = 1.0;
   double x1(1.0), x2(2.0), v(1.0);
 

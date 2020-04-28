@@ -13,7 +13,7 @@ using namespace gtsam::symbol_shorthand;
 
 namespace {
 
-  const double tol=1e-5;
+  const double tol=GTSAM_UNITTEST_TOLERANCE_LOOSE;
   const double h = 0.1;
   const double g = 9.81, l = 1.0;
 

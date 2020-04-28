@@ -20,7 +20,7 @@ using namespace boost::assign;
 using namespace gtsam;
 
 const gtsam::noiseModel::Diagonal::shared_ptr diag_model2 = noiseModel::Diagonal::Sigmas(Vector2(1.0, 1.0));
-const double tol = 1e-5;
+const double tol = GTSAM_UNITTEST_TOLERANCE_LOOSE;
 
 gtsam::Key  l1 = 101, l2 = 102, x1 = 1, x2 = 2;
 

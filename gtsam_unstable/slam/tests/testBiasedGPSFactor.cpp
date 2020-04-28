@@ -67,13 +67,13 @@ TEST(BiasedGPSFactor, jacobian) {
   Matrix numericalH1 = numericalDerivative21(
       boost::function<Vector(const Pose3&, const Point3&)>(boost::bind(
           &BiasedGPSFactor::evaluateError, factor, _1, _2, boost::none,
-          boost::none)), pose, bias, 1e-5);
+          boost::none)), pose, bias, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(numericalH1,actualH1, 1E-5));
 
   Matrix numericalH2 = numericalDerivative22(
       boost::function<Vector(const Pose3&, const Point3&)>(boost::bind(
           &BiasedGPSFactor::evaluateError, factor, _1, _2, boost::none,
-          boost::none)), pose, bias, 1e-5);
+          boost::none)), pose, bias, GTSAM_UNITTEST_TOLERANCE_LOOSE);
   EXPECT(assert_equal(numericalH2,actualH2, 1E-5));
 }
 
