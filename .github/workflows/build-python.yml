@@ -119,14 +119,3 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           bash .travis.python.sh
-      - name: Build (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          cmake -E remove_directory build
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF
-          cmake --build build --config ${{ matrix.build_type }} --target gtsam
-          cmake --build build --config ${{ matrix.build_type }} --target gtsam_unstable
-          cmake --build build --config ${{ matrix.build_type }} --target wrap
-          cmake --build build --config ${{ matrix.build_type }} --target check.base
-          cmake --build build --config ${{ matrix.build_type }} --target check.base_unstable
-          cmake --build build --config ${{ matrix.build_type }} --target check.linear
