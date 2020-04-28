@@ -30,7 +30,7 @@ class GroundTruth:
     def __init__(self, K=gtsam.Cal3_S2(), nrCameras=3, nrPoints=4):
         self.K = K
         self.cameras = [gtsam.Pose3()] * nrCameras
-        self.points = [gtsam.Point3()] * nrPoints
+        self.points = [gtsam.Point3(0, 0, 0)] * nrPoints
 
     def print_(self, s=""):
         print(s)
