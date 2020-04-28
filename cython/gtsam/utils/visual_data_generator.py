@@ -100,7 +100,7 @@ def generate_data(options):
         theta = i * 2 * pi / options.nrCameras
         t = gtsam.Point3(r * cos(theta), r * sin(theta), height)
         truth.cameras[i] = gtsam.SimpleCamera.Lookat(t,
-                                                     gtsam.Point3(),
+                                                     gtsam.Point3(0, 0, 0),
                                                      gtsam.Point3(0, 0, 1),
                                                      truth.K)
         # Create measurements
