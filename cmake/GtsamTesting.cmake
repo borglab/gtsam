@@ -172,7 +172,7 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 				# Add executable
 				add_executable(${script_name} ${script_src} ${script_headers})
 				target_link_libraries(${script_name} CppUnitLite ${linkLibraries})
-				target_compile_definitions(${script_name} PRIVATE 
+				target_compile_definitions(${script_name} PRIVATE
 					GTSAM_UNITTEST_TOLERANCE_TIGHT=${GTSAM_UNITTEST_TOLERANCE_TIGHT}
 					GTSAM_UNITTEST_TOLERANCE_LOOSE=${GTSAM_UNITTEST_TOLERANCE_LOOSE}
 					)
@@ -223,6 +223,10 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 			# Add executable
 			add_executable(${target_name} "${script_srcs}" ${script_headers})
 			target_link_libraries(${target_name} CppUnitLite ${linkLibraries})
+			target_compile_definitions(${target_name} PRIVATE 
+				GTSAM_UNITTEST_TOLERANCE_TIGHT=${GTSAM_UNITTEST_TOLERANCE_TIGHT}
+				GTSAM_UNITTEST_TOLERANCE_LOOSE=${GTSAM_UNITTEST_TOLERANCE_LOOSE}
+				)
 
 			# Apply user build flags from CMake cache variables:
 			gtsam_apply_build_flags(${target_name})
