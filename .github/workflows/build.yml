@@ -130,10 +130,9 @@ jobs:
       - name: Build (Windows)
         if: runner.os == 'Windows'
         run: |
-          echo "::set-env name=BOOST_ROOT_LATEST::$env:BOOST_ROOT_1_72_0"
           cmake -E remove_directory build
-          echo "BOOST_ROOT_LATEST: ${env:BOOST_ROOT_LATEST}"
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT_LATEST}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT_LATEST}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT_LATEST}\lib"
+          echo "BOOST_ROOT_1_72_0: ${env:BOOST_ROOT_1_72_0}"
+          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT=${env:BOOST_ROOT_1_72_0} -DBOOST_INCLUDEDIR=${env:BOOST_ROOT_1_72_0}\boost\include -DBOOST_LIBRARYDIR=${env:BOOST_ROOT_1_72_0}\lib
           cmake --build build --config ${{ matrix.build_type }} --target gtsam
           cmake --build build --config ${{ matrix.build_type }} --target gtsam_unstable
           cmake --build build --config ${{ matrix.build_type }} --target wrap
