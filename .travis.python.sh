@@ -65,12 +65,12 @@ make -j$(nproc) install
 case $WRAPPER in
 "cython")
     cd $CURRDIR/../gtsam_install/cython
-    sudo $PYTHON setup.py install
+    $PYTHON setup.py install --user
     cd $CURRDIR/cython/gtsam/tests
     $PYTHON -m unittest discover
     ;;
 "pybind")
-    sudo $PYTHON setup.py install
+    $PYTHON setup.py install --user
     cd $CURRDIR/wrap/python/gtsam_py/tests
     $PYTHON -m unittest discover
     ;;
