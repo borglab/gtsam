@@ -1,0 +1,75 @@
+name: CI Windows
+
+on: [pull_request]
+
+jobs:
+  build:
+    name: ${{ matrix.name }} ${{ matrix.build_type }} ${{ matrix.build_unstable }}
+    runs-on: ${{ matrix.os }}
+
+    env:
+      CTEST_OUTPUT_ON_FAILURE: ON
+      CTEST_PARALLEL_LEVEL: 2
+      CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
+      GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Github Actions requires a single row to be added to the build matrix.
+        # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
+        name: [
+          windows-2016-cl,
+          windows-2019-cl,
+        ]
+
+        build_type: [Debug, Release]
+        build_unstable: [ON, OFF]
+        include:
+          - name: windows-2016-cl
+            os: windows-2016
+            compiler: cl
+
+          - name: windows-2019-cl
+            os: windows-2019
+            compiler: cl
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+      - name: Install (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+          scoop install ninja --global
+          if ("${{ matrix.compiler }}".StartsWith("clang")) {
+            scoop install llvm --global
+          }
+          if ("${{ matrix.compiler }}" -eq "gcc") {
+            # Chocolatey GCC is broken on the windows-2019 image.
+            # See: https://github.com/DaanDeMeyer/doctest/runs/231595515
+            # See: https://github.community/t5/GitHub-Actions/Something-is-wrong-with-the-chocolatey-installed-version-of-gcc/td-p/32413
+            scoop install gcc --global
+            echo "::set-env name=CC::gcc"
+            echo "::set-env name=CXX::g++"
+          } elseif ("${{ matrix.compiler }}" -eq "clang") {
+            echo "::set-env name=CC::clang"
+            echo "::set-env name=CXX::clang++"
+          } else {
+            echo "::set-env name=CC::${{ matrix.compiler }}"
+            echo "::set-env name=CXX::${{ matrix.compiler }}"
+          }
+          # Scoop modifies the PATH so we make the modified PATH global.
+          echo "::set-env name=PATH::$env:PATH"
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cmake -E remove_directory build
+          echo "BOOST_ROOT_1_72_0: ${env:BOOST_ROOT_1_72_0}"
+          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT_1_72_0}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT_1_72_0}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT_1_72_0}\lib"
+          cmake --build build --config ${{ matrix.build_type }} --target gtsam
+          cmake --build build --config ${{ matrix.build_type }} --target gtsam_unstable
+          cmake --build build --config ${{ matrix.build_type }} --target wrap
+          cmake --build build --config ${{ matrix.build_type }} --target check.base
+          cmake --build build --config ${{ matrix.build_type }} --target check.base_unstable
+          cmake --build build --config ${{ matrix.build_type }} --target check.linear

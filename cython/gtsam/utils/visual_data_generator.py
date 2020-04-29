@@ -30,8 +30,8 @@ class GroundTruth:
 
     def __init__(self, K=Cal3_S2(), nrCameras=3, nrPoints=4):
         self.K = K
-        self.cameras = [Pose3()] * nrCameras
-        self.points = [Point3()] * nrPoints
+        self.cameras = [gtsam.Pose3()] * nrCameras
+        self.points = [gtsam.Point3(0, 0, 0)] * nrPoints
 
     def print_(self, s=""):
         print(s)
@@ -99,11 +99,11 @@ def generate_data(options):
     r = 40
     for i in range(options.nrCameras):
         theta = i * 2 * np.pi / options.nrCameras
-        t = Point3(r * np.cos(theta), r * np.sin(theta), height)
-        truth.cameras[i] = PinholeCameraCal3_S2.Lookat(t,
-                                                       Point3(),
-                                                       Point3(0, 0, 1),
-                                                       truth.K)
+        t = gtsam.Point3(r * np.cos(theta), r * np.sin(theta), height)
+        truth.cameras[i] = gtsam.SimpleCamera.Lookat(t,
+                                                     gtsam.Point3(0, 0, 0),
+                                                     gtsam.Point3(0, 0, 1),
+                                                     truth.K)
         # Create measurements
         for j in range(nrPoints):
             # All landmarks seen in every frame
