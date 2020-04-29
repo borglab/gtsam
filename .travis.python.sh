@@ -26,14 +26,14 @@ case $WRAPPER in
     BUILD_PYBIND="OFF"
     TYPEDEF_POINTS_TO_VECTORS="OFF"
 
-    sudo $PYTHON -m pip install -r ./cython/requirements.txt
+    $PYTHON -m pip install --user -r ./cython/requirements.txt
     ;;
 "pybind")
     BUILD_CYTHON="OFF"
     BUILD_PYBIND="ON"
     TYPEDEF_POINTS_TO_VECTORS="ON"
 
-    sudo $PYTHON -m pip install -r ./wrap/python/requirements.txt
+    $PYTHON -m pip install --user -r ./wrap/python/requirements.txt
     ;;
 *)
     exit 126
