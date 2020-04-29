@@ -99,7 +99,7 @@ def generate_data(options):
     r = 40
     for i in range(options.nrCameras):
         theta = i * 2 * np.pi / options.nrCameras
-        t = gtsam.Point3(r * cos(theta), r * sin(theta), height)
+        t = gtsam.Point3(r * np.cos(theta), r * np.sin(theta), height)
         truth.cameras[i] = PinholeCameraCal3_S2.Lookat(t,
                                                      gtsam.Point3(0, 0, 0),
                                                      gtsam.Point3(0, 0, 1),
