@@ -51,7 +51,11 @@ namespace gtsam {
       Key key;
       size_t n;
       boost::tie(key, n) = v;
+#ifdef TBB_GREATER_EQUAL_2020
       values_.emplace(key, x.segment(j, n));
+#else
+      values_.insert(std::make_pair(key, x.segment(j, n)));
+#endif
       j += n;
     }
   }
@@ -60,7 +64,11 @@ namespace gtsam {
   VectorValues::VectorValues(const Vector& x, const Scatter& scatter) {
     size_t j = 0;
     for (const SlotEntry& v : scatter) {
+#ifdef TBB_GREATER_EQUAL_2020
       values_.emplace(v.key, x.segment(j, v.dimension));
+#else
+      values_.insert(std::make_pair(v.key, x.segment(j, v.dimension)));
+#endif
       j += v.dimension;
     }
   }
@@ -70,7 +78,11 @@ namespace gtsam {
   {
     VectorValues result;
     for(const KeyValuePair& v: other)
+#ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(v.first, Vector::Zero(v.second.size()));
+#else
+      result.values_.insert(std::make_pair(v.first, Vector::Zero(v.second.size())));
+#endif
     return result;
   }
 
@@ -86,7 +98,11 @@ namespace gtsam {
 
   /* ************************************************************************* */
   VectorValues::iterator VectorValues::emplace(Key j, const Vector& value) {
+#ifdef TBB_GREATER_EQUAL_2020
     std::pair<iterator, bool> result = values_.emplace(j, value);
+#else
+    std::pair<iterator, bool> result = values_.insert(std::make_pair(j, value));
+#endif
     if(!result.second)
       throw std::invalid_argument(
       "Requested to emplace variable '" + DefaultKeyFormatter(j)
@@ -266,7 +282,11 @@ namespace gtsam {
     VectorValues result;
     // The result.end() hint here should result in constant-time inserts
     for(const_iterator j1 = begin(), j2 = c.begin(); j1 != end(); ++j1, ++j2)
+#ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(j1->first, j1->second + j2->second);
+#else
+      result.values_.insert(std::make_pair(j1->first, j1->second + j2->second));
+#endif
 
     return result;
   }
@@ -324,7 +344,11 @@ namespace gtsam {
     VectorValues result;
     // The result.end() hint here should result in constant-time inserts
     for(const_iterator j1 = begin(), j2 = c.begin(); j1 != end(); ++j1, ++j2)
+#ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(j1->first, j1->second - j2->second);
+#else
+      result.values_.insert(std::make_pair(j1->first, j1->second - j2->second));
+#endif
 
     return result;
   }
@@ -340,7 +364,11 @@ namespace gtsam {
   {
     VectorValues result;
     for(const VectorValues::KeyValuePair& key_v: v)
+#ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(key_v.first, a * key_v.second);
+#else
+      result.values_.insert(std::make_pair(key_v.first, a * key_v.second));
+#endif
     return result;
   }
 

@@ -9,7 +9,7 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/EssentialMatrix.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
 #include <iostream>
 
 namespace gtsam {

@@ -143,7 +143,7 @@ namespace gtsam {
      *        allocateVectorValues */
     VectorValues gradientAtZero() const;
 
-    /** Mahalanobis norm error. */
+    /** 0.5 * sum of squared Mahalanobis distances. */
     double error(const VectorValues& x) const;
 
     /**

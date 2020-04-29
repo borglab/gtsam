@@ -30,9 +30,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/random.hpp>
-
 #include <iostream>
+#include <random>
 #include <stdexcept>
 #include <type_traits>
 
@@ -88,7 +87,7 @@ TEST(SOn, Values) {
 
 //******************************************************************************
 TEST(SOn, Random) {
-  static boost::mt19937 rng(42);
+  static std::mt19937 rng(42);
   EXPECT_LONGS_EQUAL(3, SOn::Random(rng, 3).rows());
   EXPECT_LONGS_EQUAL(4, SOn::Random(rng, 4).rows());
   EXPECT_LONGS_EQUAL(5, SOn::Random(rng, 5).rows());

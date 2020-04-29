@@ -20,7 +20,6 @@
 #include <gtsam/slam/InitializePose3.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <fstream>
 
 using namespace std;
@@ -41,20 +40,19 @@ int main(const int argc, const char *argv[]) {
   boost::tie(graph, initial) = readG2o(g2oFile, is3D);
 
   // Add prior on the first key
-  NonlinearFactorGraph graphWithPrior = *graph;
   noiseModel::Diagonal::shared_ptr priorModel = //
       noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
   Key firstKey = 0;
   for(const Values::ConstKeyValuePair& key_value: *initial) {
     std::cout << "Adding prior to g2o file " << std::endl;
     firstKey = key_value.key;
-    graphWithPrior.add(PriorFactor<Pose3>(firstKey, Pose3(), priorModel));
+    graph->addPrior(firstKey, Pose3(), priorModel);
     break;
   }
 
   std::cout << "Initializing Pose3 - Riemannian gradient" << std::endl;
   bool useGradient = true;
-  Values initialization = InitializePose3::initialize(graphWithPrior, *initial, useGradient);
+  Values initialization = InitializePose3::initialize(*graph, *initial, useGradient);
   std::cout << "done!" << std::endl;
 
   std::cout << "initial error=" <<graph->error(*initial)<< std::endl;
@@ -65,7 +63,10 @@ int main(const int argc, const char *argv[]) {
   } else {
     const string outputFile = argv[2];
     std::cout << "Writing results to file: " << outputFile  << std::endl;
-    writeG2o(*graph, initialization, outputFile);
+    NonlinearFactorGraph::shared_ptr graphNoKernel;
+    Values::shared_ptr initial2;
+    boost::tie(graphNoKernel, initial2) = readG2o(g2oFile);
+    writeG2o(*graphNoKernel, initialization, outputFile);
     std::cout << "done! " << std::endl;
   }
   return 0;

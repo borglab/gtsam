@@ -142,7 +142,7 @@ void print(const Matrix& A, const string &s, ostream& stream) {
   static const Eigen::IOFormat matlab(
       Eigen::StreamPrecision, // precision
       0, // flags
-      " ", // coeffSeparator
+      ", ", // coeffSeparator
       ";\n", // rowSeparator
       " \t",  // rowPrefix
       "", // rowSuffix
