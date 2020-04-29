@@ -1,4 +1,4 @@
-name: Python CI
+name: Cython CI
 
 on: [pull_request]
 
@@ -27,7 +27,7 @@ jobs:
 
         build_type: [Debug, Release]
         python_version: [3]
-        wrapper: [pybind]
+        wrapper: [cython]
         include:
           - name: ubuntu-18.04-gcc-5
             os: ubuntu-18.04
