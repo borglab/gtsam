@@ -21,6 +21,14 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
+#ifdef _WIN32
+#define BETWEENFACTOR_VISIBILITY
+#else
+// This will trigger a LNKxxxx on MSVC, so disable for MSVC build
+// Please refer to https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md
+#define BETWEENFACTOR_VISIBILITY GTSAM_EXPORT
+#endif
+
 namespace gtsam {
 
   /**
@@ -29,7 +37,7 @@ namespace gtsam {
    * @addtogroup SLAM
    */
   template<class VALUE>
-  class GTSAM_EXPORT BetweenFactor: public NoiseModelFactor2<VALUE, VALUE> {
+  class BETWEENFACTOR_VISIBILITY BetweenFactor: public NoiseModelFactor2<VALUE, VALUE> {
 
     // Check that VALUE type is a testable Lie group
     BOOST_CONCEPT_ASSERT((IsTestable<VALUE>));

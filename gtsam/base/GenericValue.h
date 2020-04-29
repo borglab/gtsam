@@ -29,13 +29,21 @@
 #include <iostream>
 #include <typeinfo> // operator typeid
 
+#ifdef _WIN32
+#define GENERICVALUE_VISIBILITY
+#else
+// This will trigger a LNKxxxx on MSVC, so disable for MSVC build
+// Please refer to https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md
+#define GENERICVALUE_VISIBILITY GTSAM_EXPORT
+#endif
+
 namespace gtsam {
 
 /**
  * Wraps any type T so it can play as a Value
  */
 template<class T>
-class GTSAM_EXPORT GenericValue: public Value {
+class GENERICVALUE_VISIBILITY GenericValue: public Value {
 
 public:
 

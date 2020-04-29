@@ -30,7 +30,7 @@ class GroundTruth:
     def __init__(self, K=gtsam.Cal3_S2(), nrCameras=3, nrPoints=4):
         self.K = K
         self.cameras = [gtsam.Pose3()] * nrCameras
-        self.points = [gtsam.Point3()] * nrPoints
+        self.points = [gtsam.Point3(0, 0, 0)] * nrPoints
 
     def print_(self, s=""):
         print(s)
@@ -100,7 +100,7 @@ def generate_data(options):
         theta = i * 2 * pi / options.nrCameras
         t = gtsam.Point3(r * cos(theta), r * sin(theta), height)
         truth.cameras[i] = gtsam.SimpleCamera.Lookat(t,
-                                                     gtsam.Point3(),
+                                                     gtsam.Point3(0, 0, 0),
                                                      gtsam.Point3(0, 0, 1),
                                                      truth.K)
         # Create measurements
