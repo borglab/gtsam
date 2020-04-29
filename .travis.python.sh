@@ -20,6 +20,8 @@ else
     sudo apt-get install wget libicu-dev python3-pip python3-setuptools
 fi
 
+PATH=$PATH:$($PYTHON -c "import site; print(site.USER_BASE)")/bin
+
 case $WRAPPER in
 "cython")
     BUILD_CYTHON="ON"
