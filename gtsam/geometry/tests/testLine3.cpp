@@ -2,6 +2,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Line3.h>
+#include <gtsam/slam/expressions.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/expressionTesting.h>
@@ -117,7 +118,7 @@ TEST(Line3, transformToExpressionJacobians)
     val.insert(2, p);
 
     SharedNoiseModel model = noiseModel::Isotropic::Sigma(4, 0.1);
-    ExpressionFactor<Line3> f(model, transformTo(p, l_w), transformToExpression(p_, l_));
+    ExpressionFactor<Line3> f(model, transformTo(p, l_w), transformTo(p_, l_));
     EXPECT_CORRECT_FACTOR_JACOBIANS(f, val, 1e-5, 1e-7);
 }
 
@@ -127,17 +128,18 @@ TEST(Line3, projection)
 {
     Rot3 r;
     r = r.Expmap(Vector3(0, 0, 0));
-    Line3 l_w(r, 1, 1);
+    Line3 wL(r, 1, 1);
 
     Point3 expected(-1, 1, 0);
-    EXPECT(expected.equals(projectLine(l_w)));
+    EXPECT(expected.equals(wL.project()));
 
     Values val;
-    val.insert(1, l_w);
-    Line3_ l_w_(1);
+    val.insert(1, wL);
+    Line3_ wL_(1);
 
     SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.1);
-    ExpressionFactor<Point3> f(model, expected, projectLineExpression(l_w_));
+    Point3_ projected_(wL_, &Line3::project);
+    ExpressionFactor<Point3> f(model, expected, projected_);
     EXPECT_CORRECT_FACTOR_JACOBIANS(f, val, 1e-5, 1e-7);
 }
 
