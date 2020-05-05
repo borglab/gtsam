@@ -53,7 +53,7 @@ Point3 Line3::project(OptionalJacobian<3, 4> Dline) const {
   Vector3 V_0;
   V_0 << -b_, a_, 0;
 
-  Unit3 l = R_ * V_0;
+  Point3 l = R_ * V_0;
   if (Dline) {
     Dline->setZero();
     Dline->col(0) = a_ * R_.r3();
