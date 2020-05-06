@@ -22,11 +22,8 @@
 #include <boost/make_shared.hpp>
 
 #ifdef GTSAM_USE_TBB
-#  include <tbb/tbb.h>
-#  include <tbb/scalable_allocator.h>
-#  undef max // TBB seems to include windows.h and we don't want these macros
-#  undef min
-#  undef ERROR
+#include <tbb/task.h>               // tbb::task, tbb::task_list
+#include <tbb/scalable_allocator.h> // tbb::scalable_allocator
 
 namespace gtsam {
 
