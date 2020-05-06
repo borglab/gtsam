@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef GTSAM_USE_TBB
   arena.execute([&]{
-  tg.run([&]{
+  tg.run_and_wait([&]{
 #endif
   // Run mode
   if(incremental)

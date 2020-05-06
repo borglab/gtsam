@@ -89,10 +89,9 @@ map<int, double> testWithoutMemoryAllocation(int num_threads)
 
     // Run parallel code (as a task group) inside of task arena
     arena.execute([&]{
-      tg.run([&]{
+      tg.run_and_wait([&]{
         tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithoutAllocation(results));
       });
-      tg.wait();
     });
 
     tbb::tick_count t1 = tbb::tick_count::now();
@@ -154,10 +153,9 @@ map<int, double> testWithMemoryAllocation(int num_threads)
 
     // Run parallel code (as a task group) inside of task arena
     arena.execute([&]{
-      tg.run([&]{
+      tg.run_and_wait([&]{
         tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithAllocation(results));
       });
-      tg.wait();
     });
 
     tbb::tick_count t1 = tbb::tick_count::now();
