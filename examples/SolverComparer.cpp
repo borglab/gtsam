@@ -255,7 +255,7 @@ void runIncremental()
   cout << "Looking for first measurement from step " << firstStep << endl;
   size_t nextMeasurement = 0;
   bool havePreviousPose = false;
-  Key firstPose;
+  Key firstPose = 0;
   while(nextMeasurement < datasetMeasurements.size())
   {
     if(BetweenFactor<Pose>::shared_ptr factor =
