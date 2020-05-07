@@ -136,20 +136,18 @@ bool Gaussian::equals(const Base& expected, double tol) const {
   const Gaussian* p = dynamic_cast<const Gaussian*> (&expected);
   if (p == NULL) return false;
   if (typeid(*this) != typeid(*p)) return false;
-  //TODO(Alex);
-  //if (!sqrt_information_) return true;
   return equal_with_abs_tol(R(), p->R(), sqrt(tol));
 }
 
 /* ************************************************************************* */
 Matrix Gaussian::covariance() const {
   // Uses a fast version of `covariance = information().inverse();`
-  Matrix R = this->R();
+  const Matrix& R = this->R();
   Matrix I = Matrix::Identity(R.rows(), R.cols());
   // Fast inverse of upper-triangular matrix R using forward-substitution
   Matrix Rinv = R.triangularView<Eigen::Upper>().solve(I);
   // (R' * R)^{-1} = R^{-1} * R^{-1}'
-  return (Rinv * Rinv.transpose());
+  return Rinv * Rinv.transpose();
 }
 
 /* ************************************************************************* */
