@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <gtsam/base/concepts.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Pose3.h>
 
@@ -85,8 +84,8 @@ public:
     Unit3 project(OptionalJacobian<2, 4> Dline = boost::none) const;
 
     /**
-     * Returns point on the line that is starting from the point where the rotated XY axis
-     * intersects the line, in the direction of the line.
+     * Returns point on the line that is at a distance "scalestarting from the point where the rotated XY axis
+     * intersects the line, .
      * @param scale
      * @return
      */
