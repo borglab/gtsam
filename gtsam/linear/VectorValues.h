@@ -198,7 +198,11 @@ namespace gtsam {
      *  exist, it is inserted and an iterator pointing to the new element, along with 'true', is
      *  returned. */
     std::pair<iterator, bool> tryInsert(Key j, const Vector& value) {
-      return values_.emplace(j, value); 
+#ifdef TBB_GREATER_EQUAL_2020
+      return values_.emplace(j, value);
+#else
+      return values_.insert(std::make_pair(j, value));
+#endif
     }
 
     /** Erase the vector with the given key, or throw std::out_of_range if it does not exist */

@@ -25,7 +25,6 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
-#include <random>
 #include <stdexcept>
 #include <typeinfo>
 
@@ -134,7 +133,7 @@ void Gaussian::print(const string& name) const {
 /* ************************************************************************* */
 bool Gaussian::equals(const Base& expected, double tol) const {
   const Gaussian* p = dynamic_cast<const Gaussian*> (&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   if (typeid(*this) != typeid(*p)) return false;
   return equal_with_abs_tol(R(), p->R(), sqrt(tol));
 }
@@ -166,7 +165,7 @@ Vector Gaussian::unwhiten(const Vector& v) const {
 }
 
 /* ************************************************************************* */
-double Gaussian::Mahalanobis(const Vector& v) const {
+double Gaussian::squaredMahalanobisDistance(const Vector& v) const {
   // Note: for Diagonal, which does ediv_, will be correct for constraints
   Vector w = whiten(v);
   return w.dot(w);
@@ -582,7 +581,7 @@ void Isotropic::print(const string& name) const {
 }
 
 /* ************************************************************************* */
-double Isotropic::Mahalanobis(const Vector& v) const {
+double Isotropic::squaredMahalanobisDistance(const Vector& v) const {
   return v.dot(v) * invsigma_ * invsigma_;
 }
 
@@ -634,7 +633,7 @@ void Robust::print(const std::string& name) const {
 
 bool Robust::equals(const Base& expected, double tol) const {
   const Robust* p = dynamic_cast<const Robust*> (&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return noise_->equals(*p->noise_,tol) && robust_->equals(*p->robust_,tol);
 }
 

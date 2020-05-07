@@ -252,7 +252,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
   is.seekg(0, ios::beg);
 
   // If asked, create a sampler with random number generator
-  Sampler sampler;
+  std::unique_ptr<Sampler> sampler;
   if (addNoise) {
     noiseModel::Diagonal::shared_ptr noise;
     if (model)
@@ -261,7 +261,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
       throw invalid_argument(
           "gtsam::load2D: invalid noise model for adding noise"
               "(current version assumes diagonal noise model)!");
-    sampler = Sampler(noise);
+    sampler.reset(new Sampler(noise));
   }
 
   // Parse the pose constraints
@@ -289,7 +289,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
         model = modelInFile;
 
       if (addNoise)
-        l1Xl2 = l1Xl2.retract(sampler.sample());
+        l1Xl2 = l1Xl2.retract(sampler->sample());
 
       // Insert vertices if pure odometry file
       if (!initial->exists(id1))

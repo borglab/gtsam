@@ -42,14 +42,13 @@ int main(const int argc, const char *argv[]) {
   boost::tie(graph, initial) = readG2o(g2oFile);
 
   // Add prior on the pose having index (key) = 0
-  NonlinearFactorGraph graphWithPrior = *graph;
   noiseModel::Diagonal::shared_ptr priorModel = //
       noiseModel::Diagonal::Variances(Vector3(1e-6, 1e-6, 1e-8));
-  graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
-  graphWithPrior.print();
+  graph->add(PriorFactor<Pose2>(0, Pose2(), priorModel));
+  graph->print();
 
   std::cout << "Computing LAGO estimate" << std::endl;
-  Values estimateLago = lago::initialize(graphWithPrior);
+  Values estimateLago = lago::initialize(*graph);
   std::cout << "done!" << std::endl;
 
   if (argc < 3) {
@@ -57,7 +56,10 @@ int main(const int argc, const char *argv[]) {
   } else {
     const string outputFile = argv[2];
     std::cout << "Writing results to file: " << outputFile << std::endl;
-    writeG2o(*graph, estimateLago, outputFile);
+    NonlinearFactorGraph::shared_ptr graphNoKernel;
+    Values::shared_ptr initial2;
+    boost::tie(graphNoKernel, initial2) = readG2o(g2oFile);
+    writeG2o(*graphNoKernel, estimateLago, outputFile);
     std::cout << "done! " << std::endl;
   }
 

@@ -495,7 +495,7 @@ TEST(actualH, Serialization) {
 
 /* ************************************************************************* */
 int main() {
-  srand(time(NULL));
+  srand(time(nullptr));
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
