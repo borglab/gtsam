@@ -1,5 +1,4 @@
 #include <gtsam/geometry/Line3.h>
-#include <cstdlib>
 
 namespace gtsam {
 
