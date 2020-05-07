@@ -57,7 +57,7 @@ vector<Event> createTrajectory(int n) {
   vector<Event> trajectory;
   double timeOfEvent = 10;
   // simulate emitting a sound every second while moving on straight line
-  for (size_t key = 0; key < n; key++) {
+  for (size_t key = 0; key < static_cast<size_t>(n); key++) {
     trajectory.push_back(
         Event(timeOfEvent, 245 * cm + key * 1.0, 201.5 * cm, (212 - 45) * cm));
     timeOfEvent += 1;
@@ -114,7 +114,7 @@ Values createInitialEstimate(int n) {
   Values initial;
 
   Event zero;
-  for (size_t key = 0; key < n; key++) {
+  for (size_t key = 0; key < static_cast<size_t>(n); key++) {
     initial.insert(key, zero);
   }
   return initial;
