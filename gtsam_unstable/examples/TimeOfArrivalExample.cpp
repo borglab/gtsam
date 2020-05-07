@@ -53,7 +53,7 @@ vector<Point3> defineMicrophones() {
 
 /* ************************************************************************* */
 // Create ground truth trajectory
-vector<Event> createTrajectory(int n) {
+vector<Event> createTrajectory(size_t n) {
   vector<Event> trajectory;
   double timeOfEvent = 10;
   // simulate emitting a sound every second while moving on straight line
@@ -110,7 +110,7 @@ NonlinearFactorGraph createGraph(const vector<Point3>& microphones,
 
 /* ************************************************************************* */
 // create initial estimate for n events
-Values createInitialEstimate(int n) {
+Values createInitialEstimate(size_t n) {
   Values initial;
 
   Event zero;
