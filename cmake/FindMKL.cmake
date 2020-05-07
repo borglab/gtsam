@@ -231,6 +231,7 @@ ELSEIF(MKL_ROOT_DIR) # UNIX and macOS
                         FIND_LIBRARY(MKL_IOMP5_LIBRARY
                           iomp5
                           PATHS
+                                ${MKL_ROOT_DIR}/lib/intel64
                                 ${MKL_ROOT_DIR}/../lib/intel64
                         )
                 ELSE()
