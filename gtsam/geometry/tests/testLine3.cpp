@@ -22,7 +22,6 @@ TEST(Line3, equals) {
   EXPECT(!l.equals(l2));
 }
 
-
 // testing localCoordinates along 4 dimensions
 TEST(Line3, localCoordinates) {
   // l1 and l differ only in a_
@@ -108,7 +107,6 @@ TEST(Line3, transformToExpressionJacobians) {
   ExpressionFactor<Line3> f(model, transformTo(p, l_w), transformTo(p_, l_));
   EXPECT_CORRECT_FACTOR_JACOBIANS(f, val, 1e-5, 1e-7);
 }
-
 
 // projection in camera frame test
 TEST(Line3, projection) {
