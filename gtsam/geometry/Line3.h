@@ -84,12 +84,14 @@ public:
     Unit3 project(OptionalJacobian<2, 4> Dline = boost::none) const;
 
     /**
-     * Returns point on the line that is at a distance "scalestarting from the point where the rotated XY axis
-     * intersects the line, .
-     * @param scale
-     * @return
+     * Returns point on the line that is at a certain distance starting from the
+     * point where the rotated XY axis intersects the line.
+     * @param distance (can be positive or negative) - positive is the positive
+     * direction of the rotated z axis that forms the line. The default value of zero
+     * returns the point where the rotated XY axis intersects the line.
+     * @return Point on the line
      */
-    Point3 point(int scale = 0) const;
+    Point3 point(double distance = 0) const;
 
     /**
      * Transform a line from world to camera frame

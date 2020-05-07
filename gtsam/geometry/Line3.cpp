@@ -78,13 +78,12 @@ Unit3 Line3::project(OptionalJacobian<2, 4> Dline) const {
     return l;
 }
 
-Point3 Line3::point(int scale) const {
+Point3 Line3::point(double distance) const {
     // defining "center" of the line to be the point where it
-    // intercepts rotated XY axis
+    // intersects rotated XY axis
     Point3 center(a_, b_, 0);
     Point3 rotated_center = R_ * center;
-    Point3 direction = (R_.r3()).normalized();
-    return rotated_center + scale * direction;
+    return rotated_center + distance * R_.r3();
 }
 
 Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
