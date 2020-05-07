@@ -8,7 +8,8 @@ Line3 Line3::retract(const Vector4 &v, OptionalJacobian<4, 4> H) const {
     w << v[0], v[1], 0;
     Rot3 eps;
     if (H) {
-        OptionalJacobian<3, 3> Dw;
+        Eigen::Matrix3d Dw_mat = Eigen::Matrix3d::Zero();
+        OptionalJacobian<3, 3> Dw(Dw_mat);
         Dw->setZero();
         eps = Rot3::Expmap(w, Dw);
         H->block<2, 2>(0, 0) = Dw->block<2, 2>(0, 0);
@@ -25,7 +26,8 @@ Vector4 Line3::localCoordinates(const Line3 &q, OptionalJacobian<4, 4> H) const 
     Vector3 local_rot;
     Vector4 local;
     if (H) {
-        OptionalJacobian<3, 3> Dw;
+        Eigen::Matrix3d Dw_mat = Eigen::Matrix3d::Zero();
+        OptionalJacobian<3, 3> Dw(Dw_mat);
         Dw->setZero();
         local_rot = Rot3::Logmap(R_.inverse() * q.R_, Dw);
         H->block<2, 2>(0, 0) = Dw->block<2, 2>(0, 0);
