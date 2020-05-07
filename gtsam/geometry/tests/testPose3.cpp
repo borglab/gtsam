@@ -1021,7 +1021,7 @@ TEST(Pose3, print) {
   std::cout.rdbuf(oldbuf);
 
   // Get substring corresponding to translation part
-  std::string actual = redirectStream.str().substr(47, 11);
+  std::string actual = redirectStream.str().substr(38, 11);
 
   CHECK_EQUAL(expected.str(), actual);
 }
