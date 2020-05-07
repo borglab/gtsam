@@ -5,37 +5,31 @@ namespace gtsam {
 Line3 Line3::retract(const Vector4 &v, OptionalJacobian<4, 4> H) const {
   Vector3 w;
   w << v[0], v[1], 0;
-  Rot3 eps;
+  Rot3 incR;
   if (H) {
-    Eigen::Matrix3d Dw_mat = Eigen::Matrix3d::Zero();
-    OptionalJacobian<3, 3> Dw(Dw_mat);
-    Dw->setZero();
-    eps = Rot3::Expmap(w, Dw);
-    H->block<2, 2>(0, 0) = Dw->block<2, 2>(0, 0);
-    (*H)(2, 2) = 1;
-    (*H)(3, 3) = 1;
+    Matrix3 Dw;
+    incR = Rot3::Expmap(w, Dw);
+    H->setIdentity();
+    H->block<2, 2>(0, 0) = Dw.block<2, 2>(0, 0);
   } else {
-    eps = Rot3::Expmap(w);
+    incR = Rot3::Expmap(w);
   }
-  Rot3 Rt = R_ * eps;
+  Rot3 Rt = R_ * incR;
   return Line3(Rt, a_ + v[2], b_ + v[3]);
 }
 
 Vector4 Line3::localCoordinates(const Line3 &q, OptionalJacobian<4, 4> H) const {
-  Vector3 local_rot;
+  Vector3 localR;
   Vector4 local;
   if (H) {
-    Eigen::Matrix3d Dw_mat = Eigen::Matrix3d::Zero();
-    OptionalJacobian<3, 3> Dw(Dw_mat);
-    Dw->setZero();
-    local_rot = Rot3::Logmap(R_.inverse() * q.R_, Dw);
-    H->block<2, 2>(0, 0) = Dw->block<2, 2>(0, 0);
-    (*H)(2, 2) = 1;
-    (*H)(3, 3) = 1;
+    Matrix3 Dw;
+    localR = Rot3::Logmap(R_.inverse() * q.R_, Dw);
+    H->setIdentity();
+    H->block<2, 2>(0, 0) = Dw.block<2, 2>(0, 0);
   } else {
-    local_rot = Rot3::Logmap(R_.inverse() * q.R_);
+    localR = Rot3::Logmap(R_.inverse() * q.R_);
   }
-  local << local_rot[0], local_rot[1], q.a_ - a_, q.b_ - b_;
+  local << localR[0], localR[1], q.a_ - a_, q.b_ - b_;
   return local;
 }
 
@@ -59,19 +53,17 @@ Unit3 Line3::project(OptionalJacobian<2, 4> Dline) const {
   if (Dline) {
     // Jacobian of the normalized Unit3 projected line with respect to
     // un-normalized Vector3 projected line in homogeneous coordinates.
-    Eigen::Matrix<double, 2, 3> D_mat = Eigen::Matrix<double, 2, 3>::Zero();
-    OptionalJacobian<2, 3> D_unit_line(D_mat);
+    Matrix23 D_unit_line;
     l = Unit3::FromPoint3(Point3(R_ * V_0), D_unit_line);
     // Jacobian of the un-normalized Vector3 line with respect to
     // input 3D line
-    Eigen::Matrix<double, 3, 4> D_vec_line = Eigen::Matrix<double, 3, 4>::Zero();
+    Matrix34 D_vec_line = Matrix34::Zero();
     D_vec_line.col(0) = a_ * R_.r3();
     D_vec_line.col(1) = b_ * R_.r3();
     D_vec_line.col(2) = R_.r2();
     D_vec_line.col(3) = -R_.r1();
     // Jacobian of output wrt input is the product of the two.
-    Eigen::Matrix<double, 2, 4> Dline_mat = (*D_unit_line) * D_vec_line;
-    Dline = OptionalJacobian<2, 4>(Dline_mat);
+    *Dline = D_unit_line * D_vec_line;
   } else {
     l = Unit3::FromPoint3(Point3(R_ * V_0));
   }
@@ -97,20 +89,17 @@ Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
   Vector2 c_ab(wL.a_ - t[0], wL.b_ - t[1]);
 
   if (Dpose) {
-    // translation due to translation
-    Matrix3 cRl_mat = cRl.matrix();
-    Matrix3 lRc = cRl_mat.transpose();
-    Dpose->block<1, 3>(2, 3) = -lRc.row(0);
-    Dpose->block<1, 3>(3, 3) = -lRc.row(1);
-
-    Dpose->block<1, 3>(0, 0) = -lRc.row(0);
-    Dpose->block<1, 3>(1, 0) = -lRc.row(1);
+    Matrix3 lRc = (cRl.matrix()).transpose();
+    Dpose->setZero();
+    // rotation
+    Dpose->block<2, 3>(0, 0) = -lRc.block<2,3>(0, 0);
+    // translation
+    Dpose->block<2, 3>(2, 3) = -lRc.block<2,3>(0, 0);
   }
   if (Dline) {
-    Dline->col(0) << 1.0, 0.0, 0.0, -t[2];
-    Dline->col(1) << 0.0, 1.0, t[2], 0.0;
-    Dline->col(2) << 0.0, 0.0, 1.0, 0.0;
-    Dline->col(3) << 0.0, 0.0, 0.0, 1.0;
+    Dline->setIdentity();
+    (*Dline)(0, 3) = -t[2];
+    (*Dline)(1, 2) = t[2];
   }
   return Line3(cRl, c_ab[0], c_ab[1]);
 }
