@@ -160,8 +160,9 @@ double ShonanAveraging::costAt(size_t p, const Values& values) const {
     return graph.error(values);
 }
 
+
 /* ************************************************************************* */
-Values ShonanAveraging::tryOptimizingAt(
+boost::shared_ptr<LevenbergMarquardtOptimizer> ShonanAveraging::createOptimizerAt(
     size_t p, const boost::optional<const Values&> initialEstimate) const {
     // Build graph
     auto graph = buildGraphAt(p);
@@ -177,12 +178,23 @@ Values ShonanAveraging::tryOptimizingAt(
             const size_t dim = p * (p - 1) / 2;
             graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
         } else {
-            graph.emplace_shared<PriorFactor<SOn>>(parameters_.anchorIndex, initial.at<SOn>(parameters_.anchorIndex));
+          graph.emplace_shared<PriorFactor<SOn>>(
+              parameters_.anchor.first,
+              SOn::Lift(p, parameters_.anchor.second.matrix()));
         }
     }
 
     // Optimize
-    return Optimize(graph, initial, parameters_.lm);
+    auto optimizer = boost::make_shared<LevenbergMarquardtOptimizer>(graph, initial, parameters_.lm);
+    return optimizer;
+}
+
+/* ************************************************************************* */
+Values ShonanAveraging::tryOptimizingAt(
+    size_t p, const boost::optional<const Values&> initialEstimate) const {
+    boost::shared_ptr<LevenbergMarquardtOptimizer> lm = createOptimizerAt(p, initialEstimate);
+    Values result = lm->optimize();
+    return result;
 }
 
 /* ************************************************************************* */
@@ -601,6 +613,13 @@ double ShonanAveraging::computeMinEigenValue(const Values& values,
 }
 
 /* ************************************************************************* */
+std::pair<double, Vector> ShonanAveraging::computeMinEigenVector(const Values& values) const {
+    Vector minEigenVector;
+    double minEigenValue = computeMinEigenValue(values, &minEigenVector);
+    return std::make_pair(minEigenValue, minEigenVector);
+};
+
+/* ************************************************************************* */
 bool ShonanAveraging::checkOptimality(const Values& values) const {
   double minEigenValue = computeMinEigenValue(values);
   return minEigenValue > parameters_.optimalityThreshold;
@@ -652,12 +671,11 @@ Values ShonanAveraging::dimensionLifting(
     // for all poses, initialize with the eigenvector segment v_i
     for (size_t i = 0; i < nrPoses(); i++) {
         // Initialize SO(p) with topleft block the old value Q \in SO(p-1)
-        Matrix Q = Matrix::Identity(p, p);
-        Q.topLeftCorner(p - 1, p - 1) = values.at<SOn>(i).matrix();
+        auto Q = SOn::Lift(p, values.at<SOn>(i).matrix());
         // Create a tangent direction xi with eigenvector segment v_i
         const Vector xi = MakeATangentVector(p, minEigenVector, i);;
         // Move the old value in the descent direction
-        const SOn Qplus = SOn(Q).retract(xi);
+        const SOn Qplus = Q.retract(xi);
         newValues.insert(i, Qplus);
     }
     return newValues;

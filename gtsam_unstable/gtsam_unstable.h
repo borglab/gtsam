@@ -43,6 +43,7 @@ class gtsam::KeyVector;
 class gtsam::LevenbergMarquardtParams;
 class gtsam::ISAM2Params;
 class gtsam::GaussianDensity;
+class gtsam::LevenbergMarquardtOptimizer;
 
 namespace gtsam {
 
@@ -357,6 +358,7 @@ class ShonanAveragingParameters {
   void setAnchor(size_t index, const gtsam::Rot3& value);
   void setNoiseSigma(double value);
   void setOptimalityThreshold(double value);
+  double getOptimalityThreshold() const;
 };
 
 class ShonanAveraging {
@@ -373,7 +375,10 @@ class ShonanAveraging {
   Matrix denseL() const;
   gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
   gtsam::Values initializeRandomlyAt(size_t p) const;
+  gtsam::Values initializeWithDescent(size_t p, const gtsam::Values& values,
+                               const Vector& minEigenVector, double minEigenValue) const;
   double costAt(size_t p, const gtsam::Values& values) const;
+  gtsam::LevenbergMarquardtOptimizer* createOptimizerAt(size_t p, const gtsam::Values& initial);
   gtsam::Values tryOptimizingAt(size_t p) const;
   gtsam::Values tryOptimizingAt(size_t p, const gtsam::Values& initial) const;
   gtsam::Values projectFrom(size_t p, const gtsam::Values& values) const;
@@ -383,6 +388,7 @@ class ShonanAveraging {
   Matrix computeLambda_(Matrix S) const;
   Matrix computeA_(const gtsam::Values& values) const;
   double computeMinEigenValue(const gtsam::Values& values) const;
+  pair<double, Vector> computeMinEigenVector(const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
   pair<gtsam::Values, double> runWithRandom() const;
   pair<gtsam::Values, double> runWithRandom(size_t min_p) const;

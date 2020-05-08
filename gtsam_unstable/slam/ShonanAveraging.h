@@ -16,8 +16,12 @@
  * @brief  Shonan Averaging algorithm
  */
 
+#include "gtsam/base/Vector.h"
+#include "gtsam/geometry/Rot3.h"
+#include <cstddef>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/base/Matrix.h>
 
@@ -33,7 +37,7 @@ class NonlinearFactorGraph;
 struct ShonanAveragingParameters {
   bool prior;         // whether to use a prior (default true)
   bool karcher;       // whether to use Karcher mean prior (default true)
-  int  anchorIndex;   // which pose to use as anchor if not Karcher (default 0)
+  std::pair<size_t, Rot3>  anchor;   // which pose to use as anchor if not Karcher (default 0)
   double noiseSigma;  // Optional noise Sigma, will be ignored if zero
   double optimalityThreshold;   // threshold used in checkOptimality
   LevenbergMarquardtParams lm;  // LM parameters
@@ -43,9 +47,10 @@ struct ShonanAveragingParameters {
                             double optimalityThreshold = -1e-4);
   void setPrior(bool value) { prior = value; }
   void setKarcher(bool value) { karcher = value; }
-  void setAnchorIndex(size_t value) { anchorIndex = value; }
+  void setAnchor(size_t index, const gtsam::Rot3& value) { anchor = std::make_pair(index, value); }
   void setNoiseSigma(bool value) { noiseSigma = value; }
   void setOptimalityThreshold(double value) { optimalityThreshold = value; }
+  double getOptimalityThreshold() const { return optimalityThreshold; };
 };
 
 class ShonanAveraging {
@@ -169,11 +174,27 @@ class ShonanAveraging {
    */
   double computeMinEigenValue(const Values& values, Vector* minEigenVector = nullptr) const;
 
+  /** 
+   * Compute minimum eigenvalue for optimality check.
+   * @param values: should be of type SOn
+   * @return minEigenVector and minEigenValue
+   */
+  std::pair<double, Vector> computeMinEigenVector(const Values& values) const;
+
   /**
    * Check optimality
    * @param values: should be of type SOn
    */
   bool checkOptimality(const Values& values) const;
+
+  /**
+   * Try to create optimizer at SO(p)
+   * @param p the dimensionality of the rotation manifold to optimize over
+   * @param initial optional initial SO(p) values
+   * @return lm optimizer
+   */
+  boost::shared_ptr<LevenbergMarquardtOptimizer> createOptimizerAt(
+      size_t p, const boost::optional<const Values &> initialEstimate) const;
 
   /**
    * Try to optimize at SO(p)
