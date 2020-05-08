@@ -13,6 +13,7 @@
  * @file    SOn.cpp
  * @brief   Definitions of dynamic specializations of SO(n)
  * @author  Frank Dellaert
+ * @author  Varun Agrawal
  * @date    March 2019
  */
 

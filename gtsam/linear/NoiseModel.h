@@ -270,7 +270,7 @@ namespace gtsam {
       virtual Matrix information() const { return R().transpose() * R(); }
 
       /// Compute covariance matrix
-      virtual Matrix covariance() const { return information().inverse(); }
+      virtual Matrix covariance() const;
 
     private:
       /** Serialization function */
