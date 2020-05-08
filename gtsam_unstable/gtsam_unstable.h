@@ -354,7 +354,7 @@ class ShonanAveragingParameters {
   ShonanAveragingParameters(string verbosity, string method);
   void setPrior(bool value);
   void setKarcher(bool value);
-  void setAnchorIndex(size_t value);
+  void setAnchor(size_t index, const gtsam::Rot3& value);
   void setNoiseSigma(double value);
   void setOptimalityThreshold(double value);
 };

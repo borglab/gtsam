@@ -94,6 +94,16 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
     return SO(R);
   }
 
+  /// Named constructor from lower dimensional matrix
+  template <typename Derived, int N_ = N, typename = IsDynamic<N_>>
+  static SO Lift(size_t n, const Eigen::MatrixBase<Derived> &R) {
+    Matrix Q = Matrix::Identity(n, n);
+    size_t p = R.rows();
+    assert(p < n && R.cols() == p);
+    Q.topLeftCorner(p, p) = R;
+    return SO(Q);
+  }
+
   /// Construct dynamic SO(n) from Fixed SO<M>
   template <int M, int N_ = N, typename = IsDynamic<N_>>
   explicit SO(const SO<M>& R) : matrix_(R.matrix()) {}
