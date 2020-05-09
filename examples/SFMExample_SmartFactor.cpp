@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
   Cal3_S2::shared_ptr K(new Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0));
 
   // Define the camera observation noise model
-  noiseModel::Isotropic::shared_ptr measurementNoise =
+  auto measurementNoise =
       noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
 
   // Create the set of ground-truth landmarks and poses
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
 
   // Add a prior on pose x0. This indirectly specifies where the origin is.
   // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-  noiseModel::Diagonal::shared_ptr noise = noiseModel::Diagonal::Sigmas(
+  auto noise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3)).finished());
   graph.addPrior(0, poses[0], noise);
 

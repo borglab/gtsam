@@ -59,7 +59,6 @@ using namespace gtsam;
 const double degree = M_PI / 180;
 
 int main() {
-
   /**
    *    Step 1: Create a factor to express a unary constraint
    * The "prior" in this case is the measurement from a sensor,
@@ -76,8 +75,8 @@ int main() {
    */
   Rot2 prior = Rot2::fromAngle(30 * degree);
   prior.print("goal angle");
-  noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(1, 1 * degree);
-  Symbol key('x',1);
+  auto model = noiseModel::Isotropic::Sigma(1, 1 * degree);
+  Symbol key('x', 1);
 
   /**
    *    Step 2: Create a graph container and add the factor to it
