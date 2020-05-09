@@ -3,6 +3,8 @@
 # output every command that modifies files on the build system.
 export DH_VERBOSE = 1
 
+# Makefile target name for running unit tests:
+GTSAM_TEST_TARGET = check
 
 # see FEATURE AREAS in dpkg-buildflags(1)
 #export DEB_BUILD_MAINT_OPTIONS = hardening=+all
@@ -13,13 +15,15 @@ export DH_VERBOSE = 1
 # package maintainers to append LDFLAGS
 #export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
-
 %:
 	dh $@ --parallel
-
 
 # dh_make generated override targets
 # This is example for Cmake (See https://bugs.debian.org/641051 )
 override_dh_auto_configure:
-	dh_auto_configure -- -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_WRAP=OFF -DGTSAM_BUILD_DOCS=OFF -DGTSAM_INSTALL_CPPUNITLITE=OFF -DGTSAM_INSTALL_GEOGRAPHICLIB=OFF -DGTSAM_BUILD_TYPE_POSTFIXES=OFF -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF
+	dh_auto_configure -- -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DGTSAM_BUILD_TESTS=ON -DGTSAM_BUILD_WRAP=OFF -DGTSAM_BUILD_DOCS=OFF -DGTSAM_INSTALL_CPPUNITLITE=OFF -DGTSAM_INSTALL_GEOGRAPHICLIB=OFF -DGTSAM_BUILD_TYPE_POSTFIXES=OFF -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF
 
+override_dh_auto_test-arch:
+	# Tests for arch-dependent :
+	echo "[override_dh_auto_test-arch]"
+	dh_auto_build -O--buildsystem=cmake -- $(GTSAM_TEST_TARGET)

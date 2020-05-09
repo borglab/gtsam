@@ -159,7 +159,7 @@ TEST( SmartProjectionPoseFactor, noiseless ) {
   factor.computeJacobians(Fs, E, b, cameras, *point);
   double actualError3 = b.squaredNorm();
   EXPECT(assert_equal(expectedE, E, 1e-7));
-  EXPECT_DOUBLES_EQUAL(expectedError, actualError3, 1e-8);
+  EXPECT_DOUBLES_EQUAL(expectedError, actualError3, 1e-6);
 }
 
 /* *************************************************************************/
@@ -329,7 +329,7 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
-  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-8));
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
 }
 
 /* *************************************************************************/
@@ -407,10 +407,10 @@ TEST( SmartProjectionPoseFactor, Factors ) {
 
     boost::shared_ptr<RegularHessianFactor<6> > actual =
         smartFactor1->createHessianFactor(cameras, 0.0);
-    EXPECT(assert_equal(expectedInformation, actual->information(), 1e-8));
-    EXPECT(assert_equal(expected, *actual, 1e-8));
-    EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-8);
-    EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-8);
+    EXPECT(assert_equal(expectedInformation, actual->information(), 1e-6));
+    EXPECT(assert_equal(expected, *actual, 1e-6));
+    EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-6);
+    EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-6);
   }
 
   {
@@ -448,15 +448,15 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     SharedIsotropic n = noiseModel::Isotropic::Sigma(4, sigma);
     Matrix3 P = (E.transpose() * E).inverse();
     JacobianFactorQ<6, 2> expectedQ(keys, Fs, E, P, b, n);
-    EXPECT(assert_equal(expectedInformation, expectedQ.information(), 1e-8));
+    EXPECT(assert_equal(expectedInformation, expectedQ.information(), 1e-6));
 
     boost::shared_ptr<JacobianFactorQ<6, 2> > actualQ =
         smartFactor1->createJacobianQFactor(cameras, 0.0);
     CHECK(actualQ);
-    EXPECT(assert_equal(expectedInformation, actualQ->information(), 1e-8));
+    EXPECT(assert_equal(expectedInformation, actualQ->information(), 1e-6));
     EXPECT(assert_equal(expectedQ, *actualQ));
-    EXPECT_DOUBLES_EQUAL(0, actualQ->error(zeroDelta), 1e-8);
-    EXPECT_DOUBLES_EQUAL(expectedError, actualQ->error(perturbedDelta), 1e-8);
+    EXPECT_DOUBLES_EQUAL(0, actualQ->error(zeroDelta), 1e-6);
+    EXPECT_DOUBLES_EQUAL(expectedError, actualQ->error(perturbedDelta), 1e-6);
 
     // Whiten for RegularImplicitSchurFactor (does not have noise model)
     model->WhitenSystem(E, b);
@@ -470,11 +470,11 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     boost::shared_ptr<RegularImplicitSchurFactor<Camera> > actual =
         smartFactor1->createRegularImplicitSchurFactor(cameras, 0.0);
     CHECK(actual);
-    EXPECT(assert_equal(expectedInformation, expected.information(), 1e-8));
-    EXPECT(assert_equal(expectedInformation, actual->information(), 1e-8));
+    EXPECT(assert_equal(expectedInformation, expected.information(), 1e-6));
+    EXPECT(assert_equal(expectedInformation, actual->information(), 1e-6));
     EXPECT(assert_equal(expected, *actual));
-    EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-8);
-    EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-8);
+    EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-6);
+    EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-6);
   }
 
   {
@@ -484,15 +484,15 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     double s = sigma * sin(M_PI_4);
     SharedIsotropic n = noiseModel::Isotropic::Sigma(4 - 3, sigma);
     JacobianFactor expected(x1, s * A1, x2, s * A2, b, n);
-    EXPECT(assert_equal(expectedInformation, expected.information(), 1e-8));
+    EXPECT(assert_equal(expectedInformation, expected.information(), 1e-6));
 
     boost::shared_ptr<JacobianFactor> actual =
         smartFactor1->createJacobianSVDFactor(cameras, 0.0);
     CHECK(actual);
-    EXPECT(assert_equal(expectedInformation, actual->information(), 1e-8));
+    EXPECT(assert_equal(expectedInformation, actual->information(), 1e-6));
     EXPECT(assert_equal(expected, *actual));
-    EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-8);
-    EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-8);
+    EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-6);
+    EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-6);
   }
 }
 
@@ -603,7 +603,7 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
-  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-8));
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
 }
 
 /* *************************************************************************/
@@ -779,7 +779,7 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
-  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-8));
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
 }
 
 /* *************************************************************************/
@@ -899,7 +899,7 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   Matrix GraphInformation = GaussianGraph->hessian().first;
 
   // Check Hessian
-  EXPECT(assert_equal(GraphInformation, CumulativeInformation, 1e-8));
+  EXPECT(assert_equal(GraphInformation, CumulativeInformation, 1e-6));
 
   Matrix AugInformationMatrix = factor1->augmentedInformation()
       + factor2->augmentedInformation() + factor3->augmentedInformation();
@@ -908,7 +908,7 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   Vector InfoVector = AugInformationMatrix.block(0, 18, 18, 1); // 18x18 Hessian + information vector
 
   // Check Hessian
-  EXPECT(assert_equal(InfoVector, GaussianGraph->hessian().second, 1e-8));
+  EXPECT(assert_equal(InfoVector, GaussianGraph->hessian().second, 1e-6));
 }
 
 /* *************************************************************************/
