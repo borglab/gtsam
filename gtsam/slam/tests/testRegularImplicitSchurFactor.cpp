@@ -41,7 +41,7 @@ using namespace gtsam;
 const Matrix26 F0 = Matrix26::Ones();
 const Matrix26 F1 = 2 * Matrix26::Ones();
 const Matrix26 F3 = 3 * Matrix26::Ones();
-const vector<Matrix26, Eigen::aligned_allocator<Matrix26> > FBlocks = list_of<Matrix26>(F0)(F1)(F3);
+const vector<Matrix26, Eigen::aligned_allocator<Matrix26> > FBlocks {F0, F1, F3};
 const KeyVector keys {0, 1, 3};
 // RHS and sigmas
 const Vector b = (Vector(6) << 1., 2., 3., 4., 5., 6.).finished();
