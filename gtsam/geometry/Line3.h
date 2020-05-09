@@ -44,22 +44,31 @@ class Line3 {
 
   /**
    * The retract method maps from the tangent space back to the manifold.
+   * The method q = p + v, where p is this line, v is an increment along
+   * the tangent space and q is the resulting line.
    * The tangent space for the rotation of a line is only two dimensional -
    * rotation about x and y
    * @param v: increment in tangent space
-   * @param H: Jacobian of retraction with respect to the increment
-   * @return: resulting line after adding the increment and mapping to the manifold
+   * @param Dp: increment of retraction with respect to this line
+   * @param Dv: Jacobian of retraction with respect to the increment
+   * @return q: resulting line after adding the increment and mapping to the manifold
    */
-  Line3 retract(const Vector4 &v, OptionalJacobian<4, 4> H = boost::none) const;
+  Line3 retract(const Vector4 &v,
+                OptionalJacobian<4, 4> Dp = boost::none,
+                OptionalJacobian<4, 4> Dv = boost::none) const;
 
   /**
    * The localCoordinates method is the inverse of retract and finds the difference
-   * between two lines in the tangent space.
-   * @param q Line3 on manifold
-   * @param H OptionalJacobian of localCoordinates with respect to line
-   * @return difference in the tangent space
+   * between two lines in the tangent space. It computes v = q - p where q is an input
+   * line, p is this line and v is their difference in the tangent space.
+   * @param q: Line3 on manifold
+   * @param Dp: OptionalJacobian of localCoordinates with respect to this line
+   * @param Dq: OptionalJacobian of localCoordinates with respect to this line
+   * @return v: difference in the tangent space
    */
-  Vector4 localCoordinates(const Line3 &q, OptionalJacobian<4, 4> H = boost::none) const;
+  Vector4 localCoordinates(const Line3 &q,
+                           OptionalJacobian<4, 4> Dp = boost::none,
+                           OptionalJacobian<4, 4> Dq = boost::none) const;
 
   /**
    * Print R, a, b

@@ -41,11 +41,22 @@ TEST(Line3, localCoordinates) {
   CHECK(assert_equal(l3.localCoordinates(l), v3));
 
   // l4 and l differ in R_y
-  Rot3 r4;
-  r4 = r4.Expmap(Vector3(0, M_PI / 4, 0));
+  Rot3 r4 = Rot3::Expmap(Vector3(0, M_PI / 4, 0));
   Line3 l4(r4, 1, 1);
   Vector4 v4(0, -M_PI / 4, 0, 0);
   CHECK(assert_equal(l4.localCoordinates(l), v4));
+
+  // Jacobians
+  Line3 l5(Rot3::Expmap(Vector3(M_PI / 3, -M_PI / 4, 0)), -0.8, 2);
+  Values val;
+  val.insert(1, l);
+  val.insert(2, l5);
+  Line3_ l_(1);
+  Line3_ l5_(2);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(4, 0.1);
+  Vector4_ local_(l5_, &Line3::localCoordinates, l_);
+  ExpressionFactor<Vector4> f(model, l5.localCoordinates(l), local_);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f, val, 1e-5, 1e-7);
 }
 
 // testing retract along 4 dimensions
@@ -72,6 +83,18 @@ TEST(Line3, retract) {
   Rot3 r4 = Rot3::Expmap(Vector3(0, M_PI / 4, 0));
   Line3 l4(r4, 1, 1);
   EXPECT(l4.equals(l.retract(v4)));
+
+  // Jacobians
+  Vector4 v5(M_PI / 3, -M_PI / 4, -0.4, 1.2); // arbitrary vector
+  Values val;
+  val.insert(1, l);
+  val.insert(2, v5);
+  Line3_ l_(1);
+  Vector4_ v5_(2);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(4, 0.1);
+  Line3_ retract_(l_, &Line3::retract, v5_);
+  ExpressionFactor<Line3> f(model, l.retract(v5), retract_);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f, val, 1e-5, 1e-7);
 }
 
 // testing manifold property - Retract(p, Local(p,q)) == q

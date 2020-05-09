@@ -2,15 +2,21 @@
 
 namespace gtsam {
 
-Line3 Line3::retract(const Vector4 &v, OptionalJacobian<4, 4> H) const {
+Line3 Line3::retract(const Vector4 &v, OptionalJacobian<4, 4> Dp, OptionalJacobian<4, 4> Dv) const {
   Vector3 w;
   w << v[0], v[1], 0;
   Rot3 incR;
-  if (H) {
+
+  if (Dp) {
+    Dp->setIdentity();
+    incR = Rot3::Expmap(w);
+    Dp->block<2, 2>(0, 0) = ((incR.matrix()).transpose()).block<2, 2>(0, 0);
+  }
+  if (Dv) {
     Matrix3 Dw;
     incR = Rot3::Expmap(w, Dw);
-    H->setIdentity();
-    H->block<2, 2>(0, 0) = Dw.block<2, 2>(0, 0);
+    Dv->setIdentity();
+    Dv->block<2, 2>(0, 0) = Dw.block<2, 2>(0, 0);
   } else {
     incR = Rot3::Expmap(w);
   }
@@ -18,18 +24,25 @@ Line3 Line3::retract(const Vector4 &v, OptionalJacobian<4, 4> H) const {
   return Line3(Rt, a_ + v[2], b_ + v[3]);
 }
 
-Vector4 Line3::localCoordinates(const Line3 &q, OptionalJacobian<4, 4> H) const {
-  Vector3 localR;
-  Vector4 local;
-  if (H) {
-    Matrix3 Dw;
-    localR = Rot3::Logmap(R_.inverse() * q.R_, Dw);
-    H->setIdentity();
-    H->block<2, 2>(0, 0) = Dw.block<2, 2>(0, 0);
-  } else {
-    localR = Rot3::Logmap(R_.inverse() * q.R_);
+Vector4 Line3::localCoordinates(const Line3 &q, OptionalJacobian<4, 4> Dp,
+                                OptionalJacobian<4, 4> Dq) const {
+  Vector3 omega;
+  Matrix3 D_log;
+  omega = Rot3::Logmap(R_.inverse() * q.R_, D_log);
+  if (Dp) {
+    Matrix3 D_log_wp = -((q.R_).matrix()).transpose() * R_.matrix();
+    Matrix3 Dwp = D_log * D_log_wp;
+    Dp->setIdentity();
+    Dp->block<2, 2>(0, 0) = Dwp.block<2, 2>(0, 0);
+    (*Dp)(2, 2) = -1;
+    (*Dp)(3, 3) = -1;
   }
-  local << localR[0], localR[1], q.a_ - a_, q.b_ - b_;
+  if (Dq) {
+    Dq->setIdentity();
+    Dq->block<2, 2>(0, 0) = D_log.block<2, 2>(0, 0);
+  }
+  Vector4 local;
+  local << omega[0], omega[1], q.a_ - a_, q.b_ - b_;
   return local;
 }
 
@@ -92,9 +105,9 @@ Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
     Matrix3 lRc = (cRl.matrix()).transpose();
     Dpose->setZero();
     // rotation
-    Dpose->block<2, 3>(0, 0) = -lRc.block<2,3>(0, 0);
+    Dpose->block<2, 3>(0, 0) = -lRc.block<2, 3>(0, 0);
     // translation
-    Dpose->block<2, 3>(2, 3) = -lRc.block<2,3>(0, 0);
+    Dpose->block<2, 3>(2, 3) = -lRc.block<2, 3>(0, 0);
   }
   if (Dline) {
     Dline->setIdentity();
