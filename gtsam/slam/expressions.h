@@ -11,6 +11,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Line3.h>
 #include <gtsam/geometry/PinholeCamera.h>
 
 namespace gtsam {
@@ -31,6 +32,7 @@ typedef Expression<Point3> Point3_;
 typedef Expression<Unit3> Unit3_;
 typedef Expression<Rot3> Rot3_;
 typedef Expression<Pose3> Pose3_;
+typedef Expression<Line3> Line3_;
 
 inline Point3_ transformTo(const Pose3_& x, const Point3_& p) {
   return Point3_(x, &Pose3::transformTo, p);
@@ -38,6 +40,12 @@ inline Point3_ transformTo(const Pose3_& x, const Point3_& p) {
 
 inline Point3_ transformFrom(const Pose3_& x, const Point3_& p) {
   return Point3_(x, &Pose3::transformFrom, p);
+}
+
+inline Line3_ transformTo(const Pose3_ &wTc, const Line3_ &wL) {
+  Line3 (*f)(const Pose3 &, const Line3 &,
+             OptionalJacobian<4, 6>, OptionalJacobian<4, 4>) = &transformTo;
+  return Line3_(f, wTc, wL);
 }
 
 namespace internal {
