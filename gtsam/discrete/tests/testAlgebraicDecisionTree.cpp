@@ -158,7 +158,7 @@ TEST(ADT, joint)
   ADT pD = create((D | E, B) = "9/1 2/8 3/7 1/9");
   gttoc_(asiaCPTs);
   tictoc_getNode(asiaCPTsNode, asiaCPTs);
-  elapsed = asiaCPTsNode->secs();
+  elapsed = asiaCPTsNode->secs() + asiaCPTsNode->wall();
   tictoc_reset_();
   printCounts("Asia CPTs");
 
@@ -184,7 +184,7 @@ TEST(ADT, joint)
   EXPECT_LONGS_EQUAL(346, (long)muls);
   gttoc_(asiaJoint);
   tictoc_getNode(asiaJointNode, asiaJoint);
-  elapsed = asiaJointNode->secs();
+  elapsed = asiaJointNode->secs() + asiaJointNode->wall();
   tictoc_reset_();
   printCounts("Asia joint");
 
@@ -219,7 +219,7 @@ TEST(ADT, inference)
   ADT pD = create((D | E, B) = "9/1 2/8 3/7 1/9");
   gttoc_(infCPTs);
   tictoc_getNode(infCPTsNode, infCPTs);
-  elapsed = infCPTsNode->secs();
+  elapsed = infCPTsNode->secs() + infCPTsNode->wall();
   tictoc_reset_();
   //  printCounts("Inference CPTs");
 
@@ -245,7 +245,7 @@ TEST(ADT, inference)
   EXPECT_LONGS_EQUAL(370, (long)muls); // different ordering
   gttoc_(asiaProd);
   tictoc_getNode(asiaProdNode, asiaProd);
-  elapsed = asiaProdNode->secs();
+  elapsed = asiaProdNode->secs() + asiaProdNode->wall();
   tictoc_reset_();
   printCounts("Asia product");
 
@@ -263,7 +263,7 @@ TEST(ADT, inference)
   EXPECT_LONGS_EQUAL(161, (long)adds);
   gttoc_(asiaSum);
   tictoc_getNode(asiaSumNode, asiaSum);
-  elapsed = asiaSumNode->secs();
+  elapsed = asiaSumNode->secs() + asiaSumNode->wall();
   tictoc_reset_();
   printCounts("Asia sum");
 }
@@ -284,7 +284,7 @@ TEST(ADT, factor_graph)
   ADT pB = create(B | S = "70/30 40/60");
   gttoc_(createCPTs);
   tictoc_getNode(createCPTsNode, createCPTs);
-  elapsed = createCPTsNode->secs();
+  elapsed = createCPTsNode->secs() + createCPTsNode->wall();
   tictoc_reset_();
   //  printCounts("Create CPTs");
 
@@ -302,7 +302,7 @@ TEST(ADT, factor_graph)
   EXPECT_LONGS_EQUAL(158, (long)muls);
   gttoc_(asiaFG);
   tictoc_getNode(asiaFGNode, asiaFG);
-  elapsed = asiaFGNode->secs();
+  elapsed = asiaFGNode->secs() + asiaFGNode->wall();
   tictoc_reset_();
   printCounts("Asia FG");
 
@@ -321,7 +321,7 @@ TEST(ADT, factor_graph)
   EXPECT(adds = 54);
   gttoc_(marg);
   tictoc_getNode(margNode, marg);
-  elapsed = margNode->secs();
+  elapsed = margNode->secs() + margNode->wall();
   tictoc_reset_();
   printCounts("marginalize");
 
@@ -336,7 +336,7 @@ TEST(ADT, factor_graph)
   dot(fE, "Eliminate-02-fE");
   gttoc_(elimX);
   tictoc_getNode(elimXNode, elimX);
-  elapsed = elimXNode->secs();
+  elapsed = elimXNode->secs() + elimXNode->wall();
   tictoc_reset_();
   printCounts("Eliminate X");
 
@@ -350,7 +350,7 @@ TEST(ADT, factor_graph)
   dot(fLE, "Eliminate-04-fLE");
   gttoc_(elimT);
   tictoc_getNode(elimTNode, elimT);
-  elapsed = elimTNode->secs();
+  elapsed = elimTNode->secs() + elimTNode->wall();
   tictoc_reset_();
   printCounts("Eliminate T");
 
@@ -365,7 +365,7 @@ TEST(ADT, factor_graph)
   dot(fBL, "Eliminate-06-fBL");
   gttoc_(elimS);
   tictoc_getNode(elimSNode, elimS);
-  elapsed = elimSNode->secs();
+  elapsed = elimSNode->secs() + elimSNode->wall();
   tictoc_reset_();
   printCounts("Eliminate S");
 
@@ -380,7 +380,7 @@ TEST(ADT, factor_graph)
   dot(fBL2, "Eliminate-08-fBL2");
   gttoc_(elimE);
   tictoc_getNode(elimENode, elimE);
-  elapsed = elimENode->secs();
+  elapsed = elimENode->secs() + elimENode->wall();
   tictoc_reset_();
   printCounts("Eliminate E");
 
@@ -394,7 +394,7 @@ TEST(ADT, factor_graph)
   dot(fB, "Eliminate-10-fB");
   gttoc_(elimL);
   tictoc_getNode(elimLNode, elimL);
-  elapsed = elimLNode->secs();
+  elapsed = elimLNode->secs() + elimLNode->wall();
   tictoc_reset_();
   printCounts("Eliminate L");
 }
