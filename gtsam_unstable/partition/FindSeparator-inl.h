@@ -15,7 +15,8 @@
 #include <vector>
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_array.hpp>
-#include <boost/timer.hpp>
+
+#include <gtsam/base/timing.h>
 
 #include "FindSeparator.h"
 
