@@ -21,7 +21,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
 #include <boost/optional.hpp>
 
 namespace gtsam {

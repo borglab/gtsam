@@ -20,20 +20,22 @@ else
     sudo apt-get install wget libicu-dev python3-pip python3-setuptools
 fi
 
+PATH=$PATH:$($PYTHON -c "import site; print(site.USER_BASE)")/bin
+
 case $WRAPPER in
 "cython")
     BUILD_CYTHON="ON"
     BUILD_PYBIND="OFF"
     TYPEDEF_POINTS_TO_VECTORS="OFF"
 
-    sudo $PYTHON -m pip install -r ./cython/requirements.txt
+    $PYTHON -m pip install --user -r ./cython/requirements.txt
     ;;
 "pybind")
     BUILD_CYTHON="OFF"
     BUILD_PYBIND="ON"
     TYPEDEF_POINTS_TO_VECTORS="ON"
 
-    sudo $PYTHON -m pip install -r ./wrap/python/requirements.txt
+    $PYTHON -m pip install --user -r ./wrap/python/requirements.txt
     ;;
 *)
     exit 126
@@ -63,12 +65,12 @@ make -j$(nproc) install
 case $WRAPPER in
 "cython")
     cd $CURRDIR/../gtsam_install/cython
-    sudo $PYTHON setup.py install
+    $PYTHON setup.py install --user --prefix=
     cd $CURRDIR/cython/gtsam/tests
     $PYTHON -m unittest discover
     ;;
 "pybind")
-    sudo $PYTHON setup.py install
+    $PYTHON setup.py install --user --prefix=
     cd $CURRDIR/wrap/python/gtsam_py/tests
     $PYTHON -m unittest discover
     ;;

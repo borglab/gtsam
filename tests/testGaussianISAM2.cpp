@@ -7,7 +7,6 @@
 #include <gtsam/nonlinear/ISAM2.h>
 
 #include <tests/smallExample.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/geometry/Point2.h>
@@ -63,7 +62,7 @@ ISAM2 createSlamlikeISAM2(
   // Add a prior at time 0 and update isam
   {
     NonlinearFactorGraph newfactors;
-    newfactors += PriorFactor<Pose2>(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+    newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -499,7 +498,7 @@ TEST(ISAM2, constrained_ordering)
   // Add a prior at time 0 and update isam
   {
     NonlinearFactorGraph newfactors;
-    newfactors += PriorFactor<Pose2>(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+    newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -669,7 +668,7 @@ namespace {
 TEST(ISAM2, marginalizeLeaves1) {
   ISAM2 isam;
   NonlinearFactorGraph factors;
-  factors += PriorFactor<double>(0, 0.0, model);
+  factors.addPrior(0, 0.0, model);
 
   factors += BetweenFactor<double>(0, 1, 0.0, model);
   factors += BetweenFactor<double>(1, 2, 0.0, model);
@@ -696,7 +695,7 @@ TEST(ISAM2, marginalizeLeaves2) {
   ISAM2 isam;
 
   NonlinearFactorGraph factors;
-  factors += PriorFactor<double>(0, 0.0, model);
+  factors.addPrior(0, 0.0, model);
 
   factors += BetweenFactor<double>(0, 1, 0.0, model);
   factors += BetweenFactor<double>(1, 2, 0.0, model);
@@ -726,7 +725,7 @@ TEST(ISAM2, marginalizeLeaves3) {
   ISAM2 isam;
 
   NonlinearFactorGraph factors;
-  factors += PriorFactor<double>(0, 0.0, model);
+  factors.addPrior(0, 0.0, model);
 
   factors += BetweenFactor<double>(0, 1, 0.0, model);
   factors += BetweenFactor<double>(1, 2, 0.0, model);
@@ -765,7 +764,7 @@ TEST(ISAM2, marginalizeLeaves4) {
   ISAM2 isam;
 
   NonlinearFactorGraph factors;
-  factors += PriorFactor<double>(0, 0.0, model);
+  factors.addPrior(0, 0.0, model);
   factors += BetweenFactor<double>(0, 2, 0.0, model);
   factors += BetweenFactor<double>(1, 2, 0.0, model);
 

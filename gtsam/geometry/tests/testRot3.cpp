@@ -14,6 +14,7 @@
  * @brief   Unit tests for Rot3 class - common between Matrix and Quaternion
  * @author  Alireza Fathi
  * @author  Frank Dellaert
+ * @author  Varun Agrawal
  */
 
 #include <gtsam/geometry/Point3.h>
@@ -115,6 +116,10 @@ TEST( Rot3, AxisAngle)
   CHECK(assert_equal(expected,actual,1e-5));
   Rot3 actual2 = Rot3::AxisAngle(axis, angle-2*M_PI);
   CHECK(assert_equal(expected,actual2,1e-5));
+
+  axis = Vector3(0, 50, 0);
+  Rot3 actual3 = Rot3::AxisAngle(axis, angle);
+  CHECK(assert_equal(expected,actual3,1e-5));
 }
 
 /* ************************************************************************* */
@@ -376,7 +381,7 @@ TEST( Rot3, inverse )
   Rot3 actual = R.inverse(actualH);
   CHECK(assert_equal(I,R*actual));
   CHECK(assert_equal(I,actual*R));
-  CHECK(assert_equal((Matrix)actual.matrix(), R.transpose()));
+  CHECK(assert_equal(actual.matrix(), R.transpose()));
 
   Matrix numericalH = numericalDerivative11(testing::inverse<Rot3>, R);
   CHECK(assert_equal(numericalH,actualH));
@@ -659,6 +664,65 @@ TEST(Rot3, ClosestTo) {
 
   auto actual = Rot3::ClosestTo(3*M);
   EXPECT(assert_equal(expected, actual.matrix(), 1e-6));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, axisAngle) {
+  Unit3 actualAxis;
+  double actualAngle;
+
+// not a lambda as otherwise we can't trace error easily
+#define CHECK_AXIS_ANGLE(expectedAxis, expectedAngle, rotation) \
+  std::tie(actualAxis, actualAngle) = rotation.axisAngle();     \
+  EXPECT(assert_equal(expectedAxis, actualAxis, 1e-9));         \
+  EXPECT_DOUBLES_EQUAL(expectedAngle, actualAngle, 1e-9);       \
+  EXPECT(assert_equal(rotation, Rot3::AxisAngle(expectedAxis, expectedAngle)))
+
+  // CHECK R defined at top = Rot3::Rodrigues(0.1, 0.4, 0.2)
+  Vector3 omega(0.1, 0.4, 0.2);
+  Unit3 axis(omega), _axis(-omega);
+  CHECK_AXIS_ANGLE(axis, omega.norm(), R);
+
+  // rotate by 90
+  CHECK_AXIS_ANGLE(Unit3(1, 0, 0), M_PI_2, Rot3::Ypr(0, 0, M_PI_2))
+  CHECK_AXIS_ANGLE(Unit3(0, 1, 0), M_PI_2, Rot3::Ypr(0, M_PI_2, 0))
+  CHECK_AXIS_ANGLE(Unit3(0, 0, 1), M_PI_2, Rot3::Ypr(M_PI_2, 0, 0))
+  CHECK_AXIS_ANGLE(axis, M_PI_2, Rot3::AxisAngle(axis, M_PI_2))
+
+  // rotate by -90
+  CHECK_AXIS_ANGLE(Unit3(-1, 0, 0), M_PI_2, Rot3::Ypr(0, 0, -M_PI_2))
+  CHECK_AXIS_ANGLE(Unit3(0, -1, 0), M_PI_2, Rot3::Ypr(0, -M_PI_2, 0))
+  CHECK_AXIS_ANGLE(Unit3(0, 0, -1), M_PI_2, Rot3::Ypr(-M_PI_2, 0, 0))
+  CHECK_AXIS_ANGLE(_axis, M_PI_2, Rot3::AxisAngle(axis, -M_PI_2))
+
+  // rotate by 270
+  const double theta270 = M_PI + M_PI / 2;
+  CHECK_AXIS_ANGLE(Unit3(-1, 0, 0), M_PI_2, Rot3::Ypr(0, 0, theta270))
+  CHECK_AXIS_ANGLE(Unit3(0, -1, 0), M_PI_2, Rot3::Ypr(0, theta270, 0))
+  CHECK_AXIS_ANGLE(Unit3(0, 0, -1), M_PI_2, Rot3::Ypr(theta270, 0, 0))
+  CHECK_AXIS_ANGLE(_axis, M_PI_2, Rot3::AxisAngle(axis, theta270))
+
+  // rotate by -270
+  const double theta_270 = -(M_PI + M_PI / 2);  // 90 (or -270) degrees
+  CHECK_AXIS_ANGLE(Unit3(1, 0, 0), M_PI_2, Rot3::Ypr(0, 0, theta_270))
+  CHECK_AXIS_ANGLE(Unit3(0, 1, 0), M_PI_2, Rot3::Ypr(0, theta_270, 0))
+  CHECK_AXIS_ANGLE(Unit3(0, 0, 1), M_PI_2, Rot3::Ypr(theta_270, 0, 0))
+  CHECK_AXIS_ANGLE(axis, M_PI_2, Rot3::AxisAngle(axis, theta_270))
+
+  const double theta195 = 195 * M_PI / 180;
+  const double theta165 = 165 * M_PI / 180;
+
+  /// Non-trivial angle 165
+  CHECK_AXIS_ANGLE(Unit3(1, 0, 0), theta165, Rot3::Ypr(0, 0, theta165))
+  CHECK_AXIS_ANGLE(Unit3(0, 1, 0), theta165, Rot3::Ypr(0, theta165, 0))
+  CHECK_AXIS_ANGLE(Unit3(0, 0, 1), theta165, Rot3::Ypr(theta165, 0, 0))
+  CHECK_AXIS_ANGLE(axis, theta165, Rot3::AxisAngle(axis, theta165))
+
+  /// Non-trivial angle 195
+  CHECK_AXIS_ANGLE(Unit3(-1, 0, 0), theta165, Rot3::Ypr(0, 0, theta195))
+  CHECK_AXIS_ANGLE(Unit3(0, -1, 0), theta165, Rot3::Ypr(0, theta195, 0))
+  CHECK_AXIS_ANGLE(Unit3(0, 0, -1), theta165, Rot3::Ypr(theta195, 0, 0))
+  CHECK_AXIS_ANGLE(_axis, theta165, Rot3::AxisAngle(axis, theta195))
 }
 
 /* ************************************************************************* */

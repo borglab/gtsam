@@ -16,7 +16,7 @@ from gtsam.examples import SFMdata
 from gtsam.gtsam import (Cal3_S2, DoglegOptimizer,
                          GenericProjectionFactorCal3_S2, NonlinearFactorGraph,
                          Point3, Pose3, PriorFactorPoint3, PriorFactorPose3,
-                         Rot3, SimpleCamera, Values)
+                         Rot3, PinholeCameraCal3_S2, Values)
 
 
 def symbol(name: str, index: int) -> int:
@@ -75,7 +75,7 @@ def main():
 
     # Simulated measurements from each camera pose, adding them to the factor graph
     for i, pose in enumerate(poses):
-        camera = SimpleCamera(pose, K)
+        camera = PinholeCameraCal3_S2(pose, K)
         for j, point in enumerate(points):
             measurement = camera.project(point)
             factor = GenericProjectionFactorCal3_S2(

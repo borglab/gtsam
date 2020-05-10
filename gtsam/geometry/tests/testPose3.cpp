@@ -994,6 +994,39 @@ TEST(Pose3, Create) {
 }
 
 /* ************************************************************************* */
+TEST(Pose3, print) {
+  std::stringstream redirectStream;
+  std::streambuf* ssbuf = redirectStream.rdbuf();
+  std::streambuf* oldbuf  = std::cout.rdbuf();
+  // redirect cout to redirectStream
+  std::cout.rdbuf(ssbuf);
+
+  Pose3 pose(Rot3::identity(), Point3(1, 2, 3));
+  // output is captured to redirectStream
+  pose.print();
+
+  // Generate the expected output
+  std::stringstream expected;
+  Point3 translation(1, 2, 3);
+
+#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
+  expected << "1\n"
+              "2\n"
+              "3;\n";
+#else
+  expected << '[' << translation.x() << ", " << translation.y() << ", " << translation.z() << "]\';";
+#endif
+
+  // reset cout to the original stream
+  std::cout.rdbuf(oldbuf);
+
+  // Get substring corresponding to translation part
+  std::string actual = redirectStream.str().substr(47, 11);
+
+  CHECK_EQUAL(expected.str(), actual);
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

@@ -27,9 +27,9 @@
 #include <gtsam/dllexport.h>
 
 #include <boost/optional.hpp>
-#include <boost/random/mersenne_twister.hpp>
 #include <boost/serialization/nvp.hpp>
 
+#include <random>
 #include <string>
 
 #ifdef GTSAM_USE_TBB
@@ -97,8 +97,13 @@ public:
   GTSAM_EXPORT static Unit3 FromPoint3(const Point3& point, //
       OptionalJacobian<2, 3> H = boost::none);
 
-  /// Random direction, using boost::uniform_on_sphere
-  GTSAM_EXPORT static Unit3 Random(boost::mt19937 & rng);
+  /**
+   * Random direction, using boost::uniform_on_sphere
+   * Example:
+   *   std::mt19937 engine(42);
+   *   Unit3 unit = Unit3::Random(engine);
+   */
+  GTSAM_EXPORT static Unit3 Random(std::mt19937 & rng);
 
   /// @}
 

@@ -47,7 +47,6 @@
 // Adjustment problems. Here we will use Projection factors to model the
 // camera's landmark observations. Also, we will initialize the robot at some
 // location using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 
 #include <vector>
@@ -89,7 +88,7 @@ int main(int argc, char* argv[]) {
   for (size_t i = 0; i < poses.size(); ++i) {
     // Add factors for each landmark observation
     for (size_t j = 0; j < points.size(); ++j) {
-      SimpleCamera camera(poses[i], *K);
+      PinholeCamera<Cal3_S2> camera(poses[i], *K);
       Point2 measurement = camera.project(points[j]);
       graph.emplace_shared<GenericProjectionFactor<Pose3, Point3, Cal3_S2> >(
           measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K);
@@ -110,13 +109,11 @@ int main(int argc, char* argv[]) {
       static auto kPosePrior = noiseModel::Diagonal::Sigmas(
           (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3))
               .finished());
-      graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x', 0), poses[0],
-                                                kPosePrior);
+      graph.addPrior(Symbol('x', 0), poses[0], kPosePrior);
 
       // Add a prior on landmark l0
       static auto kPointPrior = noiseModel::Isotropic::Sigma(3, 0.1);
-      graph.emplace_shared<PriorFactor<Point3> >(Symbol('l', 0), points[0],
-                                                 kPointPrior);
+      graph.addPrior(Symbol('l', 0), points[0], kPointPrior);
 
       // Add initial guesses to all observed landmarks
       // Intentionally initialize the variables off from the ground truth

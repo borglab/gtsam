@@ -34,7 +34,6 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
@@ -281,7 +280,7 @@ void runIncremental()
     NonlinearFactorGraph newFactors;
     Values newVariables;
 
-    newFactors.push_back(boost::make_shared<PriorFactor<Pose> >(firstPose, Pose(), noiseModel::Unit::Create(3)));
+    newFactors.addPrior(firstPose, Pose(), noiseModel::Unit::Create(3));
     newVariables.insert(firstPose, Pose());
 
     isam2.update(newFactors, newVariables);
@@ -464,7 +463,7 @@ void runBatch()
   cout << "Creating batch optimizer..." << endl;
 
   NonlinearFactorGraph measurements = datasetMeasurements;
-  measurements.push_back(boost::make_shared<PriorFactor<Pose> >(0, Pose(), noiseModel::Unit::Create(3)));
+  measurements.addPrior(0, Pose(), noiseModel::Unit::Create(3));
 
   gttic_(Create_optimizer);
   GaussNewtonParams params;

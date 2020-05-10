@@ -39,7 +39,7 @@ bool BatchFixedLagSmoother::equals(const FixedLagSmoother& rhs,
     double tol) const {
   const BatchFixedLagSmoother* e =
       dynamic_cast<const BatchFixedLagSmoother*>(&rhs);
-  return e != NULL && FixedLagSmoother::equals(*e, tol)
+  return e != nullptr && FixedLagSmoother::equals(*e, tol)
       && factors_.equals(e->factors_, tol) && theta_.equals(e->theta_, tol);
 }
 
@@ -145,7 +145,7 @@ void BatchFixedLagSmoother::removeFactors(
     } else {
       // TODO: Throw an error??
       cout << "Attempting to remove a factor from slot " << slot
-          << ", but it is already NULL." << endl;
+          << ", but it is already nullptr." << endl;
     }
   }
 }
@@ -370,7 +370,7 @@ void BatchFixedLagSmoother::PrintSymbolicFactor(
       cout << " " << DefaultKeyFormatter(key);
     }
   } else {
-    cout << " NULL";
+    cout << " nullptr";
   }
   cout << " )" << endl;
 }

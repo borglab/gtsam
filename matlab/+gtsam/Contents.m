@@ -94,6 +94,7 @@
 %   Rot2                              - class Rot2, see Doxygen page for details
 %   Rot3                              - class Rot3, see Doxygen page for details
 %   SimpleCamera                      - class SimpleCamera, see Doxygen page for details
+%   PinholeCameraCal3_S2              - class PinholeCameraCal3_S2, see Doxygen page for details
 %   StereoPoint2                      - class StereoPoint2, see Doxygen page for details
 % 
 %% SLAM and SFM

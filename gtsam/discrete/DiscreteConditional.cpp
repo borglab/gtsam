@@ -23,13 +23,11 @@
 #include <gtsam/base/debug.h>
 
 #include <boost/make_shared.hpp>
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/variate_generator.hpp>
 
-#include <vector>
 #include <algorithm>
+#include <random>
 #include <stdexcept>
+#include <vector>
 
 using namespace std;
 
@@ -176,8 +174,7 @@ size_t DiscreteConditional::solve(const Values& parentsValues) const {
 /* ******************************************************************************** */
 size_t DiscreteConditional::sample(const Values& parentsValues) const {
 
-  using boost::uniform_real;
-  static boost::mt19937 gen(2); // random number generator
+  static mt19937 rng(2); // random number generator
 
   bool debug = ISDEBUG("DiscreteConditional::sample");
 
@@ -209,9 +206,8 @@ size_t DiscreteConditional::sample(const Values& parentsValues) const {
   }
 
   // inspired by http://www.boost.org/doc/libs/1_46_1/doc/html/boost_random/tutorial.html
-  uniform_real<> dist(0, cdf.back());
-  boost::variate_generator<boost::mt19937&, uniform_real<> > die(gen, dist);
-  size_t sampled = lower_bound(cdf.begin(), cdf.end(), die()) - cdf.begin();
+  uniform_real_distribution<double> dist(0, cdf.back());
+  size_t sampled = lower_bound(cdf.begin(), cdf.end(), dist(rng)) - cdf.begin();
   if (debug)
     cout << "-> " << sampled << endl;
 

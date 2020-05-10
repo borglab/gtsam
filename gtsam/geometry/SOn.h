@@ -23,8 +23,9 @@
 #include <gtsam/dllexport.h>
 
 #include <Eigen/Core>
-#include <boost/random.hpp>
 
+#include <iostream> // TODO(frank): how to avoid?
+#include <random>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -112,12 +113,12 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// currently only defined for SO3.
   static SO ChordalMean(const std::vector<SO>& rotations);
 
-  /// Random SO(n) element (no big claims about uniformity)
+  /// Random SO(n) element (no big claims about uniformity). SO(3) is specialized in SO3.cpp
   template <int N_ = N, typename = IsDynamic<N_>>
-  static SO Random(boost::mt19937& rng, size_t n = 0) {
+  static SO Random(std::mt19937& rng, size_t n = 0) {
     if (n == 0) throw std::runtime_error("SO: Dimensionality not known.");
-    // TODO(frank): This needs to be re-thought!
-    static boost::uniform_real<double> randomAngle(-M_PI, M_PI);
+    // TODO(frank): this might need to be re-thought
+    static std::uniform_real_distribution<double> randomAngle(-M_PI, M_PI);
     const size_t d = SO::Dimension(n);
     Vector xi(d);
     for (size_t j = 0; j < d; j++) {
@@ -128,7 +129,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
 
   /// Random SO(N) element (no big claims about uniformity)
   template <int N_ = N, typename = IsFixed<N_>>
-  static SO Random(boost::mt19937& rng) {
+  static SO Random(std::mt19937& rng) {
     // By default, use dynamic implementation above. Specialized for SO(3).
     return SO(SO<Eigen::Dynamic>::Random(rng, N).matrix());
   }
