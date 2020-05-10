@@ -24,7 +24,7 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-Cal3Fisheye::Cal3Fisheye(const Vector& v)
+Cal3Fisheye::Cal3Fisheye(const Vector9& v)
     : fx_(v[0]),
       fy_(v[1]),
       s_(v[2]),
@@ -50,76 +50,73 @@ Matrix3 Cal3Fisheye::K() const {
 }
 
 /* ************************************************************************* */
-static Matrix29 D2dcalibration(const double xd, const double yd,
-                               const double xi, const double yi,
-                               const double t3, const double t5,
-                               const double t7, const double t9, const double r,
-                               Matrix2& DK) {
-  // order: fx, fy, s, u0, v0
-  Matrix25 DR1;
-  DR1 << xd, 0.0, yd, 1.0, 0.0, 0.0, yd, 0.0, 0.0, 1.0;
-
-  // order: k1, k2, k3, k4
-  Matrix24 DR2;
-  DR2 << t3 * xi, t5 * xi, t7 * xi, t9 * xi, t3 * yi, t5 * yi, t7 * yi, t9 * yi;
-  DR2 /= r;
-  Matrix29 D;
-  D << DR1, DK * DR2;
-  return D;
-}
-
-/* ************************************************************************* */
-static Matrix2 D2dintrinsic(const double xi, const double yi, const double r,
-                            const double td, const double t, const double tt,
-                            const double t4, const double t6, const double t8,
-                            const double k1, const double k2, const double k3,
-                            const double k4, const Matrix2& DK) {
-  const double dr_dxi = xi / sqrt(xi * xi + yi * yi);
-  const double dr_dyi = yi / sqrt(xi * xi + yi * yi);
-  const double dt_dr = 1 / (1 + r * r);
-  const double dtd_dt =
-      1 + 3 * k1 * tt + 5 * k2 * t4 + 7 * k3 * t6 + 9 * k4 * t8;
-  const double dtd_dxi = dtd_dt * dt_dr * dr_dxi;
-  const double dtd_dyi = dtd_dt * dt_dr * dr_dyi;
-
-  const double rinv = 1 / r;
-  const double rrinv = 1 / (r * r);
-  const double dxd_dxi =
-      dtd_dxi * xi * rinv + td * rinv + td * xi * (-rrinv) * dr_dxi;
-  const double dxd_dyi = dtd_dyi * xi * rinv - td * xi * rrinv * dr_dyi;
-  const double dyd_dxi = dtd_dxi * yi * rinv - td * yi * rrinv * dr_dxi;
-  const double dyd_dyi =
-      dtd_dyi * yi * rinv + td * rinv + td * yi * (-rrinv) * dr_dyi;
-
-  Matrix2 DR;
-  DR << dxd_dxi, dxd_dyi, dyd_dxi, dyd_dyi;
-
-  return DK * DR;
+double Cal3Fisheye::Scaling(double r) {
+  static constexpr double threshold = 1e-8;
+  if (r > threshold || r < -threshold) {
+    return atan(r) / r;
+  } else {
+    // Taylor expansion close to 0
+    double r2 = r * r, r4 = r2 * r2;
+    return 1.0 - r2 / 3 + r4 / 5;
+  }
 }
 
 /* ************************************************************************* */
 Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
                                 OptionalJacobian<2, 2> H2) const {
   const double xi = p.x(), yi = p.y();
-  const double r = sqrt(xi * xi + yi * yi);
+  const double r2 = xi * xi + yi * yi, r = sqrt(r2);
   const double t = atan(r);
-  const double tt = t * t, t4 = tt * tt, t6 = tt * t4, t8 = t4 * t4;
-  const double td = t * (1 + k1_ * tt + k2_ * t4 + k3_ * t6 + k4_ * t8);
-  const double td_o_r = r > 1e-8 ? td / r : 1;
-  const double xd = td_o_r * xi, yd = td_o_r * yi;
+  const double t2 = t * t, t4 = t2 * t2, t6 = t2 * t4, t8 = t4 * t4;
+  Vector5 K, T;
+  K << 1, k1_, k2_, k3_, k4_;
+  T << 1, t2, t4, t6, t8;
+  const double scaling = Scaling(r);
+  const double s = scaling * K.dot(T);
+  const double xd = s * xi, yd = s * yi;
   Point2 uv(fx_ * xd + s_ * yd + u0_, fy_ * yd + v0_);
 
   Matrix2 DK;
   if (H1 || H2) DK << fx_, s_, 0.0, fy_;
 
   // Derivative for calibration parameters (2 by 9)
-  if (H1)
-    *H1 = D2dcalibration(xd, yd, xi, yi, t * tt, t * t4, t * t6, t * t8, r, DK);
+  if (H1) {
+    Matrix25 DR1;
+    // order: fx, fy, s, u0, v0
+    DR1 << xd, 0.0, yd, 1.0, 0.0, 0.0, yd, 0.0, 0.0, 1.0;
+
+    // order: k1, k2, k3, k4
+    Matrix24 DR2;
+    auto T4 = T.tail<4>().transpose();
+    DR2 << xi * T4, yi * T4;
+    *H1 << DR1, DK * scaling * DR2;
+  }
 
   // Derivative for points in intrinsic coords (2 by 2)
-  if (H2)
-    *H2 =
-        D2dintrinsic(xi, yi, r, td, t, tt, t4, t6, t8, k1_, k2_, k3_, k4_, DK);
+  if (H2) {
+    const double dtd_dt =
+        1 + 3 * k1_ * t2 + 5 * k2_ * t4 + 7 * k3_ * t6 + 9 * k4_ * t8;
+    const double dt_dr = 1 / (1 + r2);
+    const double rinv = 1 / r;
+    const double dr_dxi = xi * rinv;
+    const double dr_dyi = yi * rinv;
+    const double dtd_dxi = dtd_dt * dt_dr * dr_dxi;
+    const double dtd_dyi = dtd_dt * dt_dr * dr_dyi;
+
+    const double td = t * K.dot(T);
+    const double rrinv = 1 / r2;
+    const double dxd_dxi =
+        dtd_dxi * dr_dxi + td * rinv - td * xi * rrinv * dr_dxi;
+    const double dxd_dyi = dtd_dyi * dr_dxi - td * xi * rrinv * dr_dyi;
+    const double dyd_dxi = dtd_dxi * dr_dyi - td * yi * rrinv * dr_dxi;
+    const double dyd_dyi =
+        dtd_dyi * dr_dyi + td * rinv - td * yi * rrinv * dr_dyi;
+
+    Matrix2 DR;
+    DR << dxd_dxi, dxd_dyi, dyd_dxi, dyd_dyi;
+
+    *H2 = DK * DR;
+  }
 
   return uv;
 }
@@ -158,38 +155,9 @@ Point2 Cal3Fisheye::calibrate(const Point2& uv, const double tol) const {
 }
 
 /* ************************************************************************* */
-Matrix2 Cal3Fisheye::D2d_intrinsic(const Point2& p) const {
-  const double xi = p.x(), yi = p.y();
-  const double r = sqrt(xi * xi + yi * yi);
-  const double t = atan(r);
-  const double tt = t * t, t4 = tt * tt, t6 = t4 * tt, t8 = t4 * t4;
-  const double td = t * (1 + k1_ * tt + k2_ * t4 + k3_ * t6 + k4_ * t8);
-
-  Matrix2 DK;
-  DK << fx_, s_, 0.0, fy_;
-
-  return D2dintrinsic(xi, yi, r, td, t, tt, t4, t6, t8, k1_, k2_, k3_, k4_, DK);
-}
-
-/* ************************************************************************* */
-Matrix29 Cal3Fisheye::D2d_calibration(const Point2& p) const {
-  const double xi = p.x(), yi = p.y();
-  const double r = sqrt(xi * xi + yi * yi);
-  const double t = atan(r);
-  const double tt = t * t, t4 = tt * tt, t6 = tt * t4, t8 = t4 * t4;
-  const double td = t * (1 + k1_ * tt + k2_ * t4 + k3_ * t6 + k4_ * t8);
-  const double xd = td / r * xi, yd = td / r * yi;
-
-  Matrix2 DK;
-  DK << fx_, s_, 0.0, fy_;
-  return D2dcalibration(xd, yd, xi, yi, t * tt, t * t4, t * t6, t * t8, r, DK);
-}
-
-/* ************************************************************************* */
 void Cal3Fisheye::print(const std::string& s_) const {
   gtsam::print((Matrix)K(), s_ + ".K");
   gtsam::print(Vector(k()), s_ + ".k");
-  ;
 }
 
 /* ************************************************************************* */
