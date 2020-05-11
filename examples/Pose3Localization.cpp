@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Pose3SLAMExample_initializePose3.cpp
+ * @file Pose3Localization.cpp
  * @brief A 3D Pose SLAM example that reads input from g2o, and initializes the Pose3 using InitializePose3
- * Syntax for the script is ./Pose3SLAMExample_initializePose3 input.g2o output.g2o
+ * Syntax for the script is ./Pose3Localization input.g2o output.g2o
  * @date Aug 25, 2014
  * @author Luca Carlone
  */
@@ -26,8 +26,7 @@
 using namespace std;
 using namespace gtsam;
 
-int main(const int argc, const char *argv[]) {
-
+int main(const int argc, const char* argv[]) {
   // Read graph from file
   string g2oFile;
   if (argc < 2)
@@ -41,10 +40,10 @@ int main(const int argc, const char *argv[]) {
   boost::tie(graph, initial) = readG2o(g2oFile, is3D);
 
   // Add prior on the first key
-  noiseModel::Diagonal::shared_ptr priorModel = //
-      noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
+  auto priorModel = noiseModel::Diagonal::Variances(
+      (Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
   Key firstKey = 0;
-  for(const Values::ConstKeyValuePair& key_value: *initial) {
+  for (const Values::ConstKeyValuePair& key_value : *initial) {
     std::cout << "Adding prior to g2o file " << std::endl;
     firstKey = key_value.key;
     graph->addPrior(firstKey, Pose3(), priorModel);
@@ -53,13 +52,13 @@ int main(const int argc, const char *argv[]) {
 
   std::cout << "Optimizing the factor graph" << std::endl;
   GaussNewtonParams params;
-  params.setVerbosity("TERMINATION"); // this will show info about stopping conditions
+  params.setVerbosity("TERMINATION");  // show info about stopping conditions
   GaussNewtonOptimizer optimizer(*graph, *initial, params);
   Values result = optimizer.optimize();
   std::cout << "Optimization complete" << std::endl;
 
-  std::cout << "initial error=" <<graph->error(*initial)<< std::endl;
-  std::cout << "final error=" <<graph->error(result)<< std::endl;
+  std::cout << "initial error=" << graph->error(*initial) << std::endl;
+  std::cout << "final error=" << graph->error(result) << std::endl;
 
   if (argc < 3) {
     result.print("result");
@@ -75,7 +74,7 @@ int main(const int argc, const char *argv[]) {
 
   // Calculate and print marginal covariances for all variables
   Marginals marginals(*graph, result);
-  for(const auto& key_value: result) {
+  for (const auto& key_value : result) {
     auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
     if (!p) continue;
     std::cout << marginals.marginalCovariance(key_value.key) << endl;
