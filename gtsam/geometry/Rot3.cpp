@@ -16,6 +16,7 @@
  * @author  Christian Potthast
  * @author  Frank Dellaert
  * @author  Richard Roberts
+ * @author  Varun Agrawal
  */
 
 #include <gtsam/geometry/Rot3.h>
@@ -36,7 +37,6 @@ void Rot3::print(const std::string& s) const {
 
 /* ************************************************************************* */
 Rot3 Rot3::Random(std::mt19937& rng) {
-  // TODO allow any engine without including all of boost :-(
   Unit3 axis = Unit3::Random(rng);
   uniform_real_distribution<double> randomAngle(-M_PI, M_PI);
   double angle = randomAngle(rng);
@@ -183,6 +183,12 @@ Vector Rot3::quaternion() const {
   v(2) = q.y();
   v(3) = q.z();
   return v;
+}
+
+/* ************************************************************************* */
+pair<Unit3, double> Rot3::axisAngle() const {
+  const Vector3 omega = Rot3::Logmap(*this);
+  return std::pair<Unit3, double>(Unit3(omega), omega.norm());
 }
 
 /* ************************************************************************* */

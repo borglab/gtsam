@@ -29,7 +29,6 @@
 // have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.
 // Here we will use Between factors for the relative motion described by odometry measurements.
 // Also, we will initialize the robot at the origin using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 // When the factors are created, we will add them to a Factor Graph. As the factors we are using
@@ -65,7 +64,7 @@ int main(int argc, char** argv) {
   // A prior factor consists of a mean and a noise model (covariance matrix)
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-  graph.emplace_shared<PriorFactor<Pose2> >(1, priorMean, priorNoise);
+  graph.addPrior(1, priorMean, priorNoise);
 
   // Add odometry factors
   Pose2 odometry(2.0, 0.0, 0.0);

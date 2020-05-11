@@ -29,6 +29,13 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   bool use2ndOrderCoriolis; ///< Whether to use second order Coriolis integration
   Vector3 n_gravity; ///< Gravity vector in nav frame
 
+  /// Default constructor for serialization only
+  PreintegrationParams()
+      : accelerometerCovariance(I_3x3),
+        integrationCovariance(I_3x3),
+        use2ndOrderCoriolis(false),
+        n_gravity(0, 0, -1) {}
+
   /// The Params constructor insists on getting the navigation frame gravity vector
   /// For convenience, two commonly used conventions are provided by named constructors below
   PreintegrationParams(const Vector3& n_gravity)
@@ -60,8 +67,6 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   bool           getUse2ndOrderCoriolis()     const { return use2ndOrderCoriolis; }
 
 protected:
-  /// Default constructor for serialization only: uninitialized!
-  PreintegrationParams() {}
 
   /** Serialization function */
   friend class boost::serialization::access;

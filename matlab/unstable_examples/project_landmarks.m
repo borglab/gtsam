@@ -4,7 +4,7 @@ function [ measurements ] = project_landmarks( pose, landmarks, K )
 
     import gtsam.*;
 
-    camera = SimpleCamera(pose,K);    
+    camera = PinholeCameraCal3_S2(pose,K);    
     measurements = Values;
     
     for i=1:size(landmarks)-1

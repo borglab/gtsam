@@ -15,7 +15,8 @@
 #include <vector>
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_array.hpp>
-#include <boost/timer.hpp>
+
+#include <gtsam/base/timing.h>
 
 #include "FindSeparator.h"
 
@@ -83,14 +84,14 @@ namespace gtsam { namespace partition {
     graph_t *graph;
     real_t *tpwgts2;
     ctrl_t *ctrl;
-    ctrl = SetupCtrl(METIS_OP_OMETIS, options, 1, 3, NULL, NULL);
+    ctrl = SetupCtrl(METIS_OP_OMETIS, options, 1, 3, nullptr, nullptr);
     ctrl->iptype = METIS_IPTYPE_GROW;
-    //if () == NULL)
+    //if () == nullptr)
     //  return METIS_ERROR_INPUT;
 
     InitRandom(ctrl->seed);
 
-    graph = SetupGraph(ctrl, *nvtxs, 1, xadj, adjncy, vwgt, NULL, NULL);
+    graph = SetupGraph(ctrl, *nvtxs, 1, xadj, adjncy, vwgt, nullptr, nullptr);
 
     AllocateWorkSpace(ctrl, graph);
 

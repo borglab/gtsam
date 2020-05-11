@@ -31,7 +31,7 @@ data.K = truth.K;
 for i=1:options.nrCameras
     theta = (i-1)*2*pi/options.nrCameras;
     t = Point3([r*cos(theta), r*sin(theta), height]');
-    truth.cameras{i} = SimpleCamera.Lookat(t, Point3, Point3([0,0,1]'), truth.K);
+    truth.cameras{i} = PinholeCameraCal3_S2.Lookat(t, Point3, Point3([0,0,1]'), truth.K);
     % Create measurements
     for j=1:nrPoints
         % All landmarks seen in every frame

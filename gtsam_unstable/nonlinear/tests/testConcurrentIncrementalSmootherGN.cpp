@@ -17,7 +17,7 @@
  */
 
 #include <gtsam_unstable/nonlinear/ConcurrentIncrementalSmoother.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -114,7 +114,7 @@ TEST( ConcurrentIncrementalSmootherGN, getFactors )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors1;
-  newFactors1.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors1.addPrior(1, poseInitial, noisePrior);
   newFactors1.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues1;
   newValues1.insert(1, Pose3());
@@ -165,7 +165,7 @@ TEST( ConcurrentIncrementalSmootherGN, getLinearizationPoint )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors1;
-  newFactors1.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors1.addPrior(1, poseInitial, noisePrior);
   newFactors1.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues1;
   newValues1.insert(1, Pose3());
@@ -222,7 +222,7 @@ TEST( ConcurrentIncrementalSmootherGN, calculateEstimate )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors2;
-  newFactors2.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors2.addPrior(1, poseInitial, noisePrior);
   newFactors2.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(1, Pose3().compose(poseError));
@@ -309,7 +309,7 @@ TEST( ConcurrentIncrementalSmootherGN, update_multiple )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors2;
-  newFactors2.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors2.addPrior(1, poseInitial, noisePrior);
   newFactors2.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(1, Pose3().compose(poseError));
@@ -546,7 +546,7 @@ TEST( ConcurrentIncrementalSmootherGN, synchronize_3 )
   filterSumarization.push_back(LinearContainerFactor(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery).linearize(filterSeparatorValues), filterSeparatorValues));
   smootherFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
   smootherFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
-  smootherFactors.push_back(PriorFactor<Pose3>(4, poseInitial, noisePrior));
+  smootherFactors.addPrior(4, poseInitial, noisePrior);
   smootherValues.insert(3, filterSeparatorValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
   smootherValues.insert(4, smootherValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
 
@@ -609,7 +609,7 @@ TEST( ConcurrentIncrementalSmoother, removeFactors_topology_1 )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors;
-  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.addPrior(1, poseInitial, noisePrior);
   newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
   newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
@@ -639,7 +639,7 @@ TEST( ConcurrentIncrementalSmoother, removeFactors_topology_1 )
   actualGraph.print("actual graph:  \n");
 
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.emplace_shared<PriorFactor<Pose3> >(1, poseInitial, noisePrior);
+  expectedGraph.addPrior(1, poseInitial, noisePrior);
   // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   // we should add an empty one, so that the ordering and labeling of the factors is preserved
   expectedGraph.push_back(NonlinearFactor::shared_ptr());

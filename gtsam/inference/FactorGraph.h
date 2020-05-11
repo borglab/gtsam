@@ -353,7 +353,7 @@ class FactorGraph {
    */
   void resize(size_t size) { factors_.resize(size); }
 
-  /** delete factor without re-arranging indexes by inserting a NULL pointer
+  /** delete factor without re-arranging indexes by inserting a nullptr pointer
    */
   void remove(size_t i) { factors_[i].reset(); }
 

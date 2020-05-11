@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    SFMMdata.h
+ * @file    SFMdata.h
  * @brief   Simple example for the structure-from-motion problems
  * @author  Duy-Nguyen Ta
  */
@@ -30,7 +30,8 @@
 #include <gtsam/geometry/Point3.h>
 
 // We will also need a camera object to hold calibration information and perform projections.
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
 
 /* ************************************************************************* */
 std::vector<gtsam::Point3> createPoints() {

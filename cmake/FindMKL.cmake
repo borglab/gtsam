@@ -115,7 +115,7 @@ IF(WIN32 AND MKL_ROOT_DIR)
         IF (MKL_INCLUDE_DIR MATCHES "10.3")
                 SET(MKL_LIBS ${MKL_LIBS} libiomp5md)
         ENDIF()
-        
+
         FOREACH (LIB ${MKL_LIBS})
                 FIND_LIBRARY(${LIB}_PATH ${LIB} PATHS ${MKL_LIB_SEARCHPATH} ENV LIBRARY_PATH)
                 IF(${LIB}_PATH)
@@ -147,7 +147,7 @@ ELSEIF(MKL_ROOT_DIR) # UNIX and macOS
                 ${MKL_ROOT_DIR}/lib/${MKL_ARCH_DIR}
                 ${MKL_ROOT_DIR}/lib/
         )
-        
+
         # MKL on Mac OS doesn't ship with GNU thread versions, only Intel versions (see above)
         IF(NOT APPLE)
             FIND_LIBRARY(MKL_GNUTHREAD_LIBRARY
@@ -231,6 +231,7 @@ ELSEIF(MKL_ROOT_DIR) # UNIX and macOS
                         FIND_LIBRARY(MKL_IOMP5_LIBRARY
                           iomp5
                           PATHS
+                                ${MKL_ROOT_DIR}/lib/intel64
                                 ${MKL_ROOT_DIR}/../lib/intel64
                         )
                 ELSE()
@@ -254,7 +255,7 @@ ELSEIF(MKL_ROOT_DIR) # UNIX and macOS
         ELSE()
             SET(MKL_LIBRARIES ${MKL_LP_GNUTHREAD_LIBRARIES})
         ENDIF()
-        
+
         MARK_AS_ADVANCED(MKL_CORE_LIBRARY MKL_LP_LIBRARY MKL_ILP_LIBRARY
                 MKL_SEQUENTIAL_LIBRARY MKL_INTELTHREAD_LIBRARY MKL_GNUTHREAD_LIBRARY)
 ENDIF()

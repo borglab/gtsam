@@ -111,14 +111,10 @@ namespace gtsam {
     /// @{
 
     /// return DOF, dimensionality of tangent space
-    inline size_t dim() const {
-      return 6;
-    }
+    inline size_t dim() const { return dimension; }
 
     /// return DOF, dimensionality of tangent space
-    static size_t Dim() {
-      return 6;
-    }
+    static size_t Dim() { return dimension; }
 
     /// Given 6-dim tangent vector, create new calibration
     inline Cal3_S2Stereo retract(const Vector& d) const {

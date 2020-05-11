@@ -78,7 +78,7 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
   // NOTE(hayk): At some point it seemed like this reproducably resulted in
   // deadlock. However, I don't know why and I can no longer reproduce it.
   // It either was a red herring or there is still a latent bug left to debug.
-  tbb::mutex::scoped_lock lock(B_mutex_);
+  std::unique_lock<std::mutex> lock(B_mutex_);
 #endif
 
   const bool cachedBasis = static_cast<bool>(B_);

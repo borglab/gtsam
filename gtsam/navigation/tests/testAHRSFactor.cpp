@@ -15,6 +15,7 @@
  * @author Krunal Chande
  * @author Luca Carlone
  * @author Frank Dellaert
+ * @author Varun Agrawal
  */
 
 #include <gtsam/navigation/AHRSFactor.h>
@@ -200,7 +201,7 @@ TEST(AHRSFactor, Error) {
   // 1e-5 needs to be added only when using quaternions for rotations
 
   EXPECT(assert_equal(H3e, H3a, 1e-5));
-  // FIXME!! DOes not work. Different matrix dimensions.
+  // 1e-5 needs to be added only when using quaternions for rotations
 }
 
 /* ************************************************************************* */
