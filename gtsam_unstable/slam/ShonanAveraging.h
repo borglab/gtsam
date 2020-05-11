@@ -18,7 +18,6 @@
 
 #include "gtsam/base/Vector.h"
 #include "gtsam/geometry/Rot3.h"
-#include <cstddef>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>

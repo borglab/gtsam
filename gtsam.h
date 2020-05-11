@@ -2257,11 +2257,11 @@ virtual class NonlinearOptimizerParams {
   bool isIterative() const;
 };
 
-// bool checkConvergence(double relativeErrorTreshold,
-//     double absoluteErrorTreshold, double errorThreshold,
-//     double currentError, double newError);
+bool checkConvergence(double relativeErrorTreshold,
+                      double absoluteErrorTreshold, double errorThreshold,
+                      double currentError, double newError);
 bool checkConvergence(const gtsam::NonlinearOptimizerParams& params,
-    double currentError, double newError);
+                      double currentError, double newError);
 
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 virtual class GaussNewtonParams : gtsam::NonlinearOptimizerParams {
