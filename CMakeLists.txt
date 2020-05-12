@@ -350,6 +350,41 @@ if (APPLE AND BUILD_SHARED_LIBS)
 endif()
 
 ###############################################################################
+# Option for using system Metis or GTSAM-bundled Metis
+option(GTSAM_USE_SYSTEM_METIS "Find and use system-installed Metis. If 'off', use the one bundled with GTSAM" OFF)
+
+# Switch for using system Metis or GTSAM-bundled Metis
+if(GTSAM_USE_SYSTEM_METIS)
+    find_package(METIS REQUIRED)
+
+    # Use generic Metis include paths e.g. <metis.h>
+    set(GTSAM_METIS_INCLUDE_FOR_INSTALL "${METIS_INCLUDE_DIRS}")
+
+    # The actual include directory (for BUILD cmake target interface):
+    set(GTSAM_METIS_INCLUDE_FOR_BUILD "${METIS_INCLUDE_DIRS}")
+
+else()
+    # Use bundled Metis include path.
+    # Clear any variables set by FindMETIS
+    if(METIS_INCLUDE_DIRS)
+        set(METIS_INCLUDE_DIRS NOTFOUND CACHE STRING "" FORCE)
+    endif()
+    if(METIS_LIBRARIES)
+        set(METIS_LIBRARIES NOTFOUND CACHE STRING "" FORCE)
+    endif()
+
+    # set full path to be used by external projects
+    # this will be added to GTSAM_INCLUDE_DIR by gtsam_extra.cmake.in
+    set(GTSAM_METIS_INCLUDE_FOR_INSTALL "include/gtsam/3rdparty/metis/")
+
+    # The actual include directory (for BUILD cmake target interface):
+    #set(GTSAM_METIS_INCLUDE_FOR_BUILD
+    #    ${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/include
+    #    ${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis
+    #    ${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib)
+endif()
+
+###############################################################################
 # Global compile options
 
 # Build list of possible allocators
@@ -537,6 +572,10 @@ endif()
 print_build_options_for_target(gtsam)
 
 message(STATUS "  Use System Eigen               : ${GTSAM_USE_SYSTEM_EIGEN} (Using version: ${GTSAM_EIGEN_VERSION})")
+
+if(GTSAM_SUPPORT_NESTED_DISSECTION)
+    message(STATUS "  Use System Metis               : ${GTSAM_USE_SYSTEM_METIS}")
+endif()
 
 if(GTSAM_USE_TBB)
 	message(STATUS "  Use Intel TBB                  : Yes")

@@ -89,7 +89,11 @@ list(APPEND gtsam_srcs "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/d
 install(FILES "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/dllexport.h" DESTINATION include/gtsam)
 
 if(GTSAM_SUPPORT_NESTED_DISSECTION)
-    list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis)
+    if(GTSAM_USE_SYSTEM_METIS)
+        list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${METIS_LIBRARIES})
+    else()
+        list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis)
+    endif()
 endif()
 
 # Versions
@@ -130,6 +134,24 @@ if(GTSAM_USE_TBB)
   target_include_directories(gtsam PUBLIC ${TBB_INCLUDE_DIRS})
 endif()
 
+# Append Metis include path, set in top-level CMakeLists.txt to either
+# system-metis, or GTSAM metis path
+if(GTSAM_SUPPORT_NESTED_DISSECTION)
+    if(GTSAM_USE_SYSTEM_METIS)
+        target_include_directories(gtsam PUBLIC
+          $<BUILD_INTERFACE:${GTSAM_METIS_INCLUDE_FOR_BUILD}>
+          $<INSTALL_INTERFACE:${GTSAM_METIS_INCLUDE_FOR_INSTALL}>
+        )
+    else()
+        target_include_directories(gtsam PUBLIC
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/include>
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis>
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib>
+          $<INSTALL_INTERFACE:${GTSAM_METIS_INCLUDE_FOR_INSTALL}>
+        )
+    endif()
+endif()
+
 # Add includes for source directories 'BEFORE' boost and any system include
 # paths so that the compiler uses GTSAM headers in our source directory instead
 # of any previously installed GTSAM headers.
@@ -148,16 +170,6 @@ target_include_directories(gtsam BEFORE PUBLIC
   # unit tests:
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/CppUnitLite>
 )
-if(GTSAM_SUPPORT_NESTED_DISSECTION)
-  target_include_directories(gtsam BEFORE PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/include>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib>
-    $<INSTALL_INTERFACE:include/gtsam/3rdparty/metis/>
-  )
-endif()
-
-
 
 if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
 	if (NOT BUILD_SHARED_LIBS)

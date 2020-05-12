@@ -25,7 +25,7 @@
 #include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>
 
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
-#include <gtsam/3rdparty/metis/include/metis.h>
+#include <metis.h>
 #endif
 
 using namespace std;
