@@ -146,13 +146,6 @@ Values ShonanAveraging::initializeRandomlyAt(size_t p) const {
     return initial;
 }
 
-/* ************************************************************************* */
-static Values Optimize(const NonlinearFactorGraph& graph, const Values& initial,
-                       const LevenbergMarquardtParams& LMparameters) {
-    LevenbergMarquardtOptimizer lm(graph, initial, LMparameters);
-    Values result = lm.optimize();
-    return result;
-}
 
 /* ************************************************************************* */
 double ShonanAveraging::costAt(size_t p, const Values& values) const {
