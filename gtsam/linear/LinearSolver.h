@@ -38,18 +38,21 @@ namespace gtsam {
       return false;
     };
 
-    ///
     /**
-     * Factor method for generating a LinearSolver from legacy NonlinearOptimizerParams
-     * @param nonlinear optimizer parameters
-     * @return pointer to a LinearSolver object
+     * Solve a Gaussian Factor Graph with the solver
+     * @param gfg the GFG to be optimized
+     * @return the optimization result in VectorValues
      */
-
     virtual VectorValues solve(const GaussianFactorGraph &gfg) {
       throw std::runtime_error(
           "BUG_CHECK: Calling solve of the base class!");
     };
 
+    /**
+     * Factor method for generating a LinearSolver from legacy NonlinearOptimizerParams
+     * @param nonlinear optimizer parameters
+     * @return pointer to a LinearSolver object
+     */
     static std::shared_ptr<LinearSolver> fromLinearSolverParams(const LinearSolverParams &params);
 
   protected:

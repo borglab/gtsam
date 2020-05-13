@@ -101,8 +101,16 @@ namespace gtsam {
 
   /* ************************************************************************* */
   vector<boost::tuple<size_t, size_t, double> >
+  GaussianFactorGraph::sparseJacobian() const {
+    Ordering ord(this->keys());
+
+    return sparseJacobian(ord);
+  }
+
+  /* ************************************************************************* */
+  vector<boost::tuple<size_t, size_t, double> >
   GaussianFactorGraph::sparseJacobian(
-      boost::optional<const Ordering&> ordering) const {
+      const Ordering& ordering) const {
     gttic_(GaussianFactorGraph_sparseJacobian);
     // First find dimensions of each variable
     std::map<Key, size_t> dims;
@@ -118,16 +126,9 @@ namespace gtsam {
     // Compute first scalar column of each variable
     size_t currentColIndex = 0;
     std::map<Key, size_t> columnIndices;
-    if (ordering) {
-      for (const auto key : *ordering) {
-        columnIndices[key] = currentColIndex;
-        currentColIndex += dims[key];
-      }
-    } else {
-      for (const auto& keyValue : dims) {
-        columnIndices[keyValue.first] = currentColIndex;
-        currentColIndex += keyValue.second;
-      }
+    for (const auto key : ordering) {
+      columnIndices[key] = currentColIndex;
+      currentColIndex += dims[key];
     }
 
     // Iterate over all factors, adding sparse scalar entries
@@ -182,11 +183,18 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Matrix GaussianFactorGraph::sparseJacobian_() const {
+    Ordering ord = Ordering::Natural(*this);
+
+    return sparseJacobian_(ord);
+  }
+
+  /* ************************************************************************* */
   Matrix GaussianFactorGraph::sparseJacobian_(
-      boost::optional<const Ordering&> optionalOrdering) const {
+      const Ordering& ordering) const {
     // call sparseJacobian
     typedef boost::tuple<size_t, size_t, double> triplet;
-    vector<triplet> result = sparseJacobian(optionalOrdering);
+    vector<triplet> result = sparseJacobian(ordering);
 
     // translate to base 1 matrix
     size_t nzmax = result.size();

@@ -34,7 +34,7 @@ namespace gtsam {
   /// obtain sparse matrix for eigen sparse solver
   std::pair<SpMat, Eigen::VectorXd> obtainSparseMatrix(
       const GaussianFactorGraph &gfg,
-      boost::optional<const Ordering &> ordering = boost::none) {
+      const Ordering& ordering) {
 
     gttic_(EigenOptimizer_obtainSparseMatrix);
 
