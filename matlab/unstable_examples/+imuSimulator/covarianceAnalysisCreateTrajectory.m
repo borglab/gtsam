@@ -97,8 +97,8 @@ if options.useRealData == 1
       % Create the camera based on the current pose and the pose of the
       % camera in the body
       cameraPose = currentPose.compose(metadata.camera.bodyPoseCamera);
-      camera = SimpleCamera(cameraPose, metadata.camera.calibration);
-      %camera = SimpleCamera(currentPose, metadata.camera.calibration);
+      camera = PinholeCameraCal3_S2(cameraPose, metadata.camera.calibration);
+      %camera = PinholeCameraCal3_S2(currentPose, metadata.camera.calibration);
       
       % Record measurements if the landmark is within visual range
       for j=1:length(metadata.camera.gtLandmarkPoints)

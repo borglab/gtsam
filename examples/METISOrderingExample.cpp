@@ -22,7 +22,6 @@
  */
 
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -37,7 +36,7 @@ int main(int argc, char** argv) {
 
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-  graph.emplace_shared<PriorFactor<Pose2> >(1, priorMean, priorNoise);
+  graph.addPrior(1, priorMean, priorNoise);
 
   Pose2 odometry(2.0, 0.0, 0.0);
   noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));

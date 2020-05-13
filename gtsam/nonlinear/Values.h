@@ -276,8 +276,8 @@ namespace gtsam {
     void update(Key j, const Value& val);
 
     /** Templated version to update a variable with the given j,
-      * throws KeyAlreadyExists<J> if j is already present
-      * if no chart is specified, the DefaultChart<ValueType> is used
+      * throws KeyDoesNotExist<J> if j is not present.
+      * If no chart is specified, the DefaultChart<ValueType> is used.
       */
     template <typename T>
     void update(Key j, const T& val);

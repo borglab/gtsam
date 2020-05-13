@@ -17,6 +17,7 @@
  * @author  Frank Dellaert
  * @author  Richard Roberts
  * @author  Luca Carlone
+ * @author  Varun Agrawal
  */
 // \callgraph
 
@@ -194,22 +195,24 @@ namespace gtsam {
 
     /**
      * Convert from axis/angle representation
-     * @param  axisw is the rotation axis, unit length
-     * @param   angle rotation angle
+     * @param  axis is the rotation axis, unit length
+     * @param  angle rotation angle
      * @return incremental rotation
      */
     static Rot3 AxisAngle(const Point3& axis, double angle) {
+      // Convert to unit vector.
+      Vector3 unitAxis = Unit3(axis).unitVector();
 #ifdef GTSAM_USE_QUATERNIONS
-      return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, axis));
+      return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, unitAxis));
 #else
-      return Rot3(SO3::AxisAngle(axis,angle));
+      return Rot3(SO3::AxisAngle(unitAxis,angle));
 #endif
     }
 
     /**
      * Convert from axis/angle representation
-     * @param   axis is the rotation axis
-     * @param   angle rotation angle
+     * @param  axis is the rotation axis
+     * @param  angle rotation angle
      * @return incremental rotation
      */
     static Rot3 AxisAngle(const Unit3& axis, double angle) {
@@ -268,9 +271,13 @@ namespace gtsam {
     /// Syntatic sugar for composing two rotations
     Rot3 operator*(const Rot3& R2) const;
 
-    /// inverse of a rotation, TODO should be different for M/Q
+    /// inverse of a rotation
     Rot3 inverse() const {
-      return Rot3(Matrix3(transpose()));
+#ifdef GTSAM_USE_QUATERNIONS
+      return Rot3(quaternion_.inverse());
+#else
+      return Rot3(rot_.matrix().transpose());
+#endif
     }
 
     /**
@@ -406,7 +413,6 @@ namespace gtsam {
      * Return 3*3 transpose (inverse) rotation matrix
      */
     Matrix3 transpose() const;
-    // TODO: const Eigen::Transpose<const Matrix3> transpose() const;
 
     /// @deprecated, this is base 1, and was just confusing
     Point3 column(int index) const;
@@ -429,7 +435,7 @@ namespace gtsam {
 
     /**
      * Use RQ to calculate roll-pitch-yaw angle representation
-     * @return a vector containing ypr s.t. R = Rot3::Ypr(y,p,r)
+     * @return a vector containing rpy s.t. R = Rot3::Ypr(y,p,r)
      */
     Vector3 rpy() const;
 
@@ -439,7 +445,7 @@ namespace gtsam {
      * you should instead use xyz() or ypr()
      * TODO: make this more efficient
      */
-    inline double roll() const  { return ypr()(2); }
+    inline double roll() const  { return xyz()(0); }
 
     /**
      * Accessor to get to component of angle representations
@@ -447,7 +453,7 @@ namespace gtsam {
      * you should instead use xyz() or ypr()
      * TODO: make this more efficient
      */
-    inline double pitch() const { return ypr()(1); }
+    inline double pitch() const { return xyz()(1); }
 
     /**
      * Accessor to get to component of angle representations
@@ -455,11 +461,21 @@ namespace gtsam {
      * you should instead use xyz() or ypr()
      * TODO: make this more efficient
      */
-    inline double yaw() const   { return ypr()(0); }
+    inline double yaw() const   { return xyz()(2); }
 
     /// @}
     /// @name Advanced Interface
     /// @{
+
+    /**
+      * Compute the Euler axis and angle (in radians) representation
+      * of this rotation.
+      * The angle is in the range [0, π]. If the angle is not in the range,
+      * the axis is flipped around accordingly so that the returned angle is
+      * within the specified range.
+      * @return pair consisting of Unit3 axis and angle in radians
+      */
+    std::pair<Unit3, double> axisAngle() const;
 
     /** Compute the quaternion representation of this rotation.
      * @return The quaternion

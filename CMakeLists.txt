@@ -199,12 +199,17 @@ find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
 
 # Set up variables if we're using TBB
 if(TBB_FOUND AND GTSAM_WITH_TBB)
-	set(GTSAM_USE_TBB 1)  # This will go into config.h
-  # all definitions and link requisites will go via imported targets:
-  # tbb & tbbmalloc
-  list(APPEND GTSAM_ADDITIONAL_LIBRARIES tbb tbbmalloc)
+    set(GTSAM_USE_TBB 1)  # This will go into config.h
+    if ((${TBB_VERSION_MAJOR} GREATER 2020) OR (${TBB_VERSION_MAJOR} EQUAL 2020))
+        set(TBB_GREATER_EQUAL_2020 1)
+    else()
+        set(TBB_GREATER_EQUAL_2020 0)
+    endif()
+    # all definitions and link requisites will go via imported targets:
+    # tbb & tbbmalloc
+    list(APPEND GTSAM_ADDITIONAL_LIBRARIES tbb tbbmalloc)
 else()
-	set(GTSAM_USE_TBB 0)  # This will go into config.h
+    set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
 
 ###############################################################################
@@ -416,6 +421,10 @@ add_subdirectory(CppUnitLite)
 # Build wrap
 if (GTSAM_BUILD_WRAP)
     add_subdirectory(wrap)
+	# suppress warning of cython line being too long
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-misleading-indentation")
+	endif()
 endif(GTSAM_BUILD_WRAP)
 
 # Build GTSAM library

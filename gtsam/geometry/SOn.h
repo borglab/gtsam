@@ -158,9 +158,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// @name Testable
   /// @{
 
-  void print(const std::string& s) const {
-    std::cout << s << matrix_ << std::endl;
-  }
+  void print(const std::string& s = std::string()) const;
 
   bool equals(const SO& other, double tol) const {
     return equal_with_abs_tol(matrix_, other.matrix_, tol);

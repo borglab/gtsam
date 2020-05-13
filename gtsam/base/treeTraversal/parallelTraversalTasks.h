@@ -22,11 +22,8 @@
 #include <boost/make_shared.hpp>
 
 #ifdef GTSAM_USE_TBB
-#  include <tbb/tbb.h>
-#  include <tbb/scalable_allocator.h>
-#  undef max // TBB seems to include windows.h and we don't want these macros
-#  undef min
-#  undef ERROR
+#include <tbb/task.h>               // tbb::task, tbb::task_list
+#include <tbb/scalable_allocator.h> // tbb::scalable_allocator
 
 namespace gtsam {
 
@@ -53,7 +50,7 @@ namespace gtsam {
           // Run the post-order visitor
           (void) visitorPost(treeNode, *myData);
 
-          return NULL;
+          return nullptr;
         }
       };
 
@@ -88,7 +85,7 @@ namespace gtsam {
           {
             // Run the post-order visitor since this task was recycled to run the post-order visitor
             (void) visitorPost(treeNode, *myData);
-            return NULL;
+            return nullptr;
           }
           else
           {
@@ -129,14 +126,14 @@ namespace gtsam {
               {
                 // Run the post-order visitor in this task if we have no children
                 (void) visitorPost(treeNode, *myData);
-                return NULL;
+                return nullptr;
               }
             }
             else
             {
               // Process this node and its children in this task
               processNodeRecursively(treeNode, *myData);
-              return NULL;
+              return nullptr;
             }
           }
         }
@@ -184,8 +181,8 @@ namespace gtsam {
           set_ref_count(1 + (int) roots.size());
           // Spawn tasks
           spawn_and_wait_for_all(tasks);
-          // Return NULL
-          return NULL;
+          // Return nullptr
+          return nullptr;
         }
       };
 
