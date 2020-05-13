@@ -23,16 +23,12 @@ namespace gtsam {
   LinearSolver::LinearSolver() = default;
 
   std::shared_ptr<LinearSolver> LinearSolver::fromLinearSolverParams(const LinearSolverParams &params) {
-
-    boost::optional<const Ordering &> optionalOrdering;
-    if (params.ordering) optionalOrdering.reset(*params.ordering);
-
     if (params.solverType == EIGEN_QR) {
       return std::shared_ptr<SparseEigenSolver>(
-              new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::QR, *optionalOrdering));
+              new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::QR, *params.ordering));
     } else if (params.solverType == EIGEN_CHOLESKY) {
       return std::shared_ptr<SparseEigenSolver>(
-              new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::CHOLESKY, *optionalOrdering));
+              new SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType::CHOLESKY, *params.ordering));
     }
 
     throw std::runtime_error(
