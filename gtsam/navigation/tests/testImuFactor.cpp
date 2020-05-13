@@ -717,7 +717,6 @@ TEST(ImuFactor, bodyPSensorNoBias) {
 /* ************************************************************************* */
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
 
@@ -763,20 +762,17 @@ TEST(ImuFactor, bodyPSensorWithBias) {
   NonlinearFactorGraph graph;
   Values values;
 
-  PriorFactor<Pose3> priorPose(X(0), Pose3(), priorNoisePose);
-  graph.add(priorPose);
+  graph.addPrior(X(0), Pose3(), priorNoisePose);
   values.insert(X(0), Pose3());
 
-  PriorFactor<Vector3> priorVel(V(0), zeroVel, priorNoiseVel);
-  graph.add(priorVel);
+  graph.addPrior(V(0), zeroVel, priorNoiseVel);
   values.insert(V(0), zeroVel);
 
   // The key to this test is that we specify the bias, in the sensor frame, as known a priori
   // We also create factors below that encode our assumption that this bias is constant over time
   // In theory, after optimization, we should recover that same bias estimate
   Bias priorBias(Vector3(0, 0, 0), Vector3(0, 0.01, 0)); // Biases (acc, rot)
-  PriorFactor<Bias> priorBiasFactor(B(0), priorBias, priorNoiseBias);
-  graph.add(priorBiasFactor);
+  graph.addPrior(B(0), priorBias, priorNoiseBias);
   values.insert(B(0), priorBias);
 
   // Now add IMU factors and bias noise models

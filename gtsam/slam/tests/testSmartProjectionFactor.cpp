@@ -195,8 +195,8 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimize ) {
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6 + 5, 1e-5);
-  graph.emplace_shared<PriorFactor<Camera> >(c1, cam1, noisePrior);
-  graph.emplace_shared<PriorFactor<Camera> >(c2, cam2, noisePrior);
+  graph.addPrior(c1, cam1, noisePrior);
+  graph.addPrior(c2, cam2, noisePrior);
 
   // Create initial estimate
   Values initial;
@@ -281,14 +281,14 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
 
   KeyVector views {c1, c2, c3};
 
-  SfM_Track track1;
+  SfmTrack track1;
   for (size_t i = 0; i < 3; ++i) {
     track1.measurements.emplace_back(i + 1, measurements_cam1.at(i));
   }
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(unit2));
   smartFactor1->add(track1);
 
-  SfM_Track track2;
+  SfmTrack track2;
   for (size_t i = 0; i < 3; ++i) {
     track2.measurements.emplace_back(i + 1, measurements_cam2.at(i));
   }
@@ -304,8 +304,8 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Camera> >(c1, cam1, noisePrior);
-  graph.emplace_shared<PriorFactor<Camera> >(c2, cam2, noisePrior);
+  graph.addPrior(c1, cam1, noisePrior);
+  graph.addPrior(c2, cam2, noisePrior);
 
   Values values;
   values.insert(c1, cam1);
@@ -378,8 +378,8 @@ TEST(SmartProjectionFactor, perturbCamerasAndOptimize ) {
   graph.push_back(smartFactor3);
   graph.push_back(smartFactor4);
   graph.push_back(smartFactor5);
-  graph.emplace_shared<PriorFactor<Camera> >(c1, cam1, noisePrior);
-  graph.emplace_shared<PriorFactor<Camera> >(c2, cam2, noisePrior);
+  graph.addPrior(c1, cam1, noisePrior);
+  graph.addPrior(c2, cam2, noisePrior);
 
   Values values;
   values.insert(c1, cam1);
@@ -453,8 +453,8 @@ TEST(SmartProjectionFactor, Cal3Bundler ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Camera> >(c1, cam1, noisePrior);
-  graph.emplace_shared<PriorFactor<Camera> >(c2, cam2, noisePrior);
+  graph.addPrior(c1, cam1, noisePrior);
+  graph.addPrior(c2, cam2, noisePrior);
 
   Values values;
   values.insert(c1, cam1);
@@ -526,8 +526,8 @@ TEST(SmartProjectionFactor, Cal3Bundler2 ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Camera> >(c1, cam1, noisePrior);
-  graph.emplace_shared<PriorFactor<Camera> >(c2, cam2, noisePrior);
+  graph.addPrior(c1, cam1, noisePrior);
+  graph.addPrior(c2, cam2, noisePrior);
 
   Values values;
   values.insert(c1, cam1);

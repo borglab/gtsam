@@ -13,7 +13,6 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 
 
 using namespace std;
@@ -280,8 +279,8 @@ TEST (BetweenFactorEM, updateNoiseModel ) {
   SharedGaussian model = SharedGaussian(noiseModel::Isotropic::Sigma(3, 1e2));
 
   NonlinearFactorGraph graph;
-  graph.push_back(gtsam::PriorFactor<Pose2>(key1, p1, model));
-  graph.push_back(gtsam::PriorFactor<Pose2>(key2, p2, model));
+  graph.addPrior(key1, p1, model);
+  graph.addPrior(key2, p2, model);
 
   f.updateNoiseModels(values, graph);
 

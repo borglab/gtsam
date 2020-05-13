@@ -27,9 +27,9 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <exception>
+
 #ifdef GTSAM_USE_TBB
-#include <tbb/task_scheduler_init.h>
-#include <tbb/tbb_exception.h>
 #include <tbb/scalable_allocator.h>
 #endif
 

@@ -649,8 +649,8 @@ TEST(Pose3, Bearing) {
   // Check numerical derivatives
   expectedH1 = numericalDerivative21(bearing_proxy, x1, l1);
   expectedH2 = numericalDerivative22(bearing_proxy, x1, l1);
-  EXPECT(assert_equal(expectedH1, actualH1));
-  EXPECT(assert_equal(expectedH2, actualH2));
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
+  EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
 }
 
 TEST(Pose3, Bearing2) {
@@ -660,8 +660,8 @@ TEST(Pose3, Bearing2) {
   // Check numerical derivatives
   expectedH1 = numericalDerivative21(bearing_proxy, x2, l4);
   expectedH2 = numericalDerivative22(bearing_proxy, x2, l4);
-  EXPECT(assert_equal(expectedH1, actualH1));
-  EXPECT(assert_equal(expectedH2, actualH2));
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
+  EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
 }
 
 TEST(Pose3, PoseToPoseBearing) {
@@ -681,8 +681,8 @@ TEST(Pose3, PoseToPoseBearing) {
   expectedH2.setZero();
   expectedH2.block<2, 3>(0, 3) = H2block;
 
-  EXPECT(assert_equal(expectedH1, actualH1));
-  EXPECT(assert_equal(expectedH2, actualH2));
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
+  EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -991,6 +991,39 @@ TEST(Pose3, Create) {
   boost::function<Pose3(Rot3,Point3)> create = boost::bind(Pose3::Create,_1,_2,boost::none,boost::none);
   EXPECT(assert_equal(numericalDerivative21<Pose3,Rot3,Point3>(create, R, P2), actualH1, 1e-9));
   EXPECT(assert_equal(numericalDerivative22<Pose3,Rot3,Point3>(create, R, P2), actualH2, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(Pose3, print) {
+  std::stringstream redirectStream;
+  std::streambuf* ssbuf = redirectStream.rdbuf();
+  std::streambuf* oldbuf  = std::cout.rdbuf();
+  // redirect cout to redirectStream
+  std::cout.rdbuf(ssbuf);
+
+  Pose3 pose(Rot3::identity(), Point3(1, 2, 3));
+  // output is captured to redirectStream
+  pose.print();
+
+  // Generate the expected output
+  std::stringstream expected;
+  Point3 translation(1, 2, 3);
+
+#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
+  expected << "1\n"
+              "2\n"
+              "3;\n";
+#else
+  expected << '[' << translation.x() << ", " << translation.y() << ", " << translation.z() << "]\';";
+#endif
+
+  // reset cout to the original stream
+  std::cout.rdbuf(oldbuf);
+
+  // Get substring corresponding to translation part
+  std::string actual = redirectStream.str().substr(38, 11);
+
+  CHECK_EQUAL(expected.str(), actual);
 }
 
 /* ************************************************************************* */

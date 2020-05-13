@@ -73,7 +73,7 @@ option(GTSAM_ENABLE_CONSISTENCY_CHECKS   "Enable/Disable expensive consistency c
 option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TBB) if available" ON)
 option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" OFF)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" OFF)
-option(GTSAM_THROW_CHEIRALITY_EXCEPTION "Throw exception when a triangulated point is behind a camera" ON)
+option(GTSAM_THROW_CHEIRALITY_EXCEPTION  "Throw exception when a triangulated point is behind a camera" ON)
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V4   "Allow use of methods/functions deprecated in GTSAM 4" ON)
 option(GTSAM_TYPEDEF_POINTS_TO_VECTORS   "Typedef Point2 and Point3 to Eigen::Vector equivalents" OFF)
 option(GTSAM_SUPPORT_NESTED_DISSECTION   "Support Metis-based nested dissection" ON)
@@ -199,12 +199,17 @@ find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
 
 # Set up variables if we're using TBB
 if(TBB_FOUND AND GTSAM_WITH_TBB)
-	set(GTSAM_USE_TBB 1)  # This will go into config.h
-  # all definitions and link requisites will go via imported targets:
-  # tbb & tbbmalloc
-  list(APPEND GTSAM_ADDITIONAL_LIBRARIES tbb tbbmalloc)
+    set(GTSAM_USE_TBB 1)  # This will go into config.h
+    if ((${TBB_VERSION_MAJOR} GREATER 2020) OR (${TBB_VERSION_MAJOR} EQUAL 2020))
+        set(TBB_GREATER_EQUAL_2020 1)
+    else()
+        set(TBB_GREATER_EQUAL_2020 0)
+    endif()
+    # all definitions and link requisites will go via imported targets:
+    # tbb & tbbmalloc
+    list(APPEND GTSAM_ADDITIONAL_LIBRARIES tbb tbbmalloc)
 else()
-	set(GTSAM_USE_TBB 0)  # This will go into config.h
+    set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
 
 ###############################################################################
@@ -416,6 +421,10 @@ add_subdirectory(CppUnitLite)
 # Build wrap
 if (GTSAM_BUILD_WRAP)
     add_subdirectory(wrap)
+	# suppress warning of cython line being too long
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-misleading-indentation")
+	endif()
 endif(GTSAM_BUILD_WRAP)
 
 # Build GTSAM library
@@ -555,6 +564,12 @@ else()
 	message(STATUS "  Eigen will use MKL and OpenMP  : OpenMP not found")
 endif()
 message(STATUS "  Default allocator              : ${GTSAM_DEFAULT_ALLOCATOR}")
+
+if(GTSAM_THROW_CHEIRALITY_EXCEPTION)
+	message(STATUS "  Cheirality exceptions enabled  : YES")
+else()
+	message(STATUS "  Cheirality exceptions enabled  : NO")
+endif()
 
 if(NOT MSVC AND NOT XCODE_VERSION)
 	if(CCACHE_FOUND AND GTSAM_BUILD_WITH_CCACHE)
