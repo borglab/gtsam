@@ -76,7 +76,7 @@ namespace gtsam {
       blockStart_(0)
     {
       fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
-      matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
+      matrix_.setZero(variableColOffsets_.back(), variableColOffsets_.back());
       assertInvariants();
     }
 
@@ -86,7 +86,7 @@ namespace gtsam {
       blockStart_(0)
     {
       fillOffsets(firstBlockDim, lastBlockDim, appendOneDimension);
-      matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
+      matrix_.setZero(variableColOffsets_.back(), variableColOffsets_.back());
       assertInvariants();
     }
 
@@ -95,7 +95,7 @@ namespace gtsam {
     SymmetricBlockMatrix(const CONTAINER& dimensions, const Matrix& matrix, bool appendOneDimension = false) :
       blockStart_(0)
     {
-      matrix_.resize(matrix.rows(), matrix.cols());
+      matrix_.setZero(matrix.rows(), matrix.cols());
       matrix_.triangularView<Eigen::Upper>() = matrix.triangularView<Eigen::Upper>();
       fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
       if(matrix_.rows() != matrix_.cols())
