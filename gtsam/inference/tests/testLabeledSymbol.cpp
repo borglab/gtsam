@@ -80,6 +80,29 @@ TEST(LabeledSymbol, ChrTest) {
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+// A custom (nonsensical) formatter.
+string labeledSymbolMyFormatter(Key key) {
+  return "special";
+}
+
+TEST(LabeledSymbol, Formatting) {
+  LabeledSymbol symbol('c', 'A', 3);
+
+  // use key_formatter with a function pointer
+  stringstream ss2;
+  ss2 << key_formatter(labeledSymbolMyFormatter) << symbol;
+  EXPECT("special" == ss2.str());
+
+  // use key_formatter with a function object.
+  stringstream ss3;
+  ss3 << key_formatter(MultiRobotKeyFormatter) << symbol;
+  EXPECT("cA3" == ss3.str());
+}
+
+/* ************************************************************************* */
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */
 

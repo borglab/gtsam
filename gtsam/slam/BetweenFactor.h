@@ -81,7 +81,7 @@ namespace gtsam {
     /** equals */
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
       const This *e =  dynamic_cast<const This*> (&expected);
-      return e != NULL && Base::equals(*e, tol) && traits<T>::Equals(this->measured_, e->measured_, tol);
+      return e != nullptr && Base::equals(*e, tol) && traits<T>::Equals(this->measured_, e->measured_, tol);
     }
 
     /** implement functions needed to derive from Factor */
@@ -146,7 +146,7 @@ namespace gtsam {
     /** Syntactic sugar for constrained version */
     BetweenConstraint(const VALUE& measured, Key key1, Key key2, double mu = 1000.0) :
       BetweenFactor<VALUE>(key1, key2, measured,
-                           noiseModel::Constrained::All(traits<VALUE>::GetDimension(measured), fabs(mu)))
+                           noiseModel::Constrained::All(traits<VALUE>::GetDimension(measured), std::abs(mu)))
     {}
 
   private:

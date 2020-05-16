@@ -112,6 +112,9 @@ public:
    */
   static boost::function<bool(Key)> ChrTest(unsigned char c);
 
+  /// Output stream operator that can be used with key_formatter (see Key.h).
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &, const Symbol &);
+
 private:
 
   /** Serialization function */

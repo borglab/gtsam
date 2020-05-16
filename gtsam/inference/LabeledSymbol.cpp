@@ -121,6 +121,13 @@ boost::function<bool(gtsam::Key)> LabeledSymbol::TypeLabelTest(unsigned char c, 
   return boost::bind(&LabeledSymbol::chr,   boost::bind(make, _1)) == c &&
       boost::bind(&LabeledSymbol::label, boost::bind(make, _1)) == label;
 }
+
+/* ************************************************************************* */
+GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const LabeledSymbol &symbol) {
+  os << StreamedKey(symbol);
+  return os;
+}
+
 /* ************************************************************************* */
 
 } // \namespace gtsam

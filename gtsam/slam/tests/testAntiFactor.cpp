@@ -18,7 +18,6 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/slam/AntiFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -90,7 +89,7 @@ TEST( AntiFactor, EquivalentBayesNet)
   SharedNoiseModel sigma(noiseModel::Unit::Create(6));
 
   NonlinearFactorGraph graph;
-  graph.emplace_shared<PriorFactor<Pose3> >(1, pose1, sigma);
+  graph.addPrior(1, pose1, sigma);
   graph.emplace_shared<BetweenFactor<Pose3> >(1, 2, pose1.between(pose2), sigma);
 
   // Create a configuration corresponding to the ground truth

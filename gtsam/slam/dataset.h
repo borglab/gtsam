@@ -12,7 +12,9 @@
 /**
  * @file dataset.h
  * @date Jan 22, 2010
- * @author nikai, Luca Carlone
+ * @author Ni Kai
+ * @author Luca Carlone
+ * @author Varun Agrawal
  * @brief utility functions for loading datasets
  */
 
@@ -166,68 +168,86 @@ GTSAM_EXPORT std::map<Key, Pose3> parse3DPoses(const std::string& filename);
 GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
 
 /// A measurement with its camera index
-typedef std::pair<size_t, Point2> SfM_Measurement;
+typedef std::pair<size_t, Point2> SfmMeasurement;
 
-/// SfM_Track
-typedef std::pair<size_t, size_t> SIFT_Index;
+/// SfmTrack
+typedef std::pair<size_t, size_t> SiftIndex;
 
 /// Define the structure for the 3D points
-struct SfM_Track {
-  SfM_Track():p(0,0,0) {}
+struct SfmTrack {
+  SfmTrack(): p(0,0,0) {}
   Point3 p; ///< 3D position of the point
   float r, g, b; ///< RGB color of the 3D point
-  std::vector<SfM_Measurement> measurements; ///< The 2D image projections (id,(u,v))
-  std::vector<SIFT_Index> siftIndices;
+  std::vector<SfmMeasurement> measurements; ///< The 2D image projections (id,(u,v))
+  std::vector<SiftIndex> siftIndices;
+  /// Total number of measurements in this track
   size_t number_measurements() const {
     return measurements.size();
+  }
+  /// Get the measurement (camera index, Point2) at pose index `idx`
+  SfmMeasurement measurement(size_t idx) const {
+    return measurements[idx];
+  }
+  /// Get the SIFT feature index corresponding to the measurement at `idx`
+  SiftIndex siftIndex(size_t idx) const {
+    return siftIndices[idx];
   }
 };
 
 /// Define the structure for the camera poses
-typedef PinholeCamera<Cal3Bundler> SfM_Camera;
+typedef PinholeCamera<Cal3Bundler> SfmCamera;
 
 /// Define the structure for SfM data
-struct SfM_data {
-  std::vector<SfM_Camera> cameras; ///< Set of cameras
-  std::vector<SfM_Track> tracks; ///< Sparse set of points
+struct SfmData {
+  std::vector<SfmCamera> cameras; ///< Set of cameras
+  std::vector<SfmTrack> tracks; ///< Sparse set of points
   size_t number_cameras() const {
     return cameras.size();
-  } ///< The number of camera poses
+  }
+  /// The number of reconstructed 3D points
   size_t number_tracks() const {
     return tracks.size();
-  } ///< The number of reconstructed 3D points
+  }
+  /// The camera pose at frame index `idx`
+  SfmCamera camera(size_t idx) const {
+    return cameras[idx];
+  }
+  /// The track formed by series of landmark measurements
+  SfmTrack track(size_t idx) const {
+    return tracks[idx];
+  }
 };
 
 /**
  * @brief This function parses a bundler output file and stores the data into a
- * SfM_data structure
+ * SfmData structure
  * @param filename The name of the bundler file
  * @param data SfM structure where the data is stored
  * @return true if the parsing was successful, false otherwise
  */
-GTSAM_EXPORT bool readBundler(const std::string& filename, SfM_data &data);
+GTSAM_EXPORT bool readBundler(const std::string& filename, SfmData &data);
 
 /**
  * @brief This function parses a "Bundle Adjustment in the Large" (BAL) file and stores the data into a
- * SfM_data structure
+ * SfmData structure
  * @param filename The name of the BAL file
  * @param data SfM structure where the data is stored
  * @return true if the parsing was successful, false otherwise
  */
-GTSAM_EXPORT bool readBAL(const std::string& filename, SfM_data &data);
+GTSAM_EXPORT bool readBAL(const std::string& filename, SfmData &data);
 
 /**
  * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a
- * SfM_data structure
+ * SfmData structure
  * @param filename The name of the BAL file to write
  * @param data SfM structure where the data is stored
  * @return true if the parsing was successful, false otherwise
  */
-GTSAM_EXPORT bool writeBAL(const std::string& filename, SfM_data &data);
+GTSAM_EXPORT bool writeBAL(const std::string& filename, SfmData &data);
 
 /**
  * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a
- * SfM_data structure and a value structure (measurements are the same as the SfM input data,
+ * SfmData structure and a value structure (measurements are the same as the SfM input data,
  * while camera poses and values are read from Values)
  * @param filename The name of the BAL file to write
  * @param data SfM structure where the data is stored
@@ -237,7 +257,7 @@ GTSAM_EXPORT bool writeBAL(const std::string& filename, SfM_data &data);
  * @return true if the parsing was successful, false otherwise
  */
 GTSAM_EXPORT bool writeBALfromValues(const std::string& filename,
-    const SfM_data &data, Values& values);
+    const SfmData &data, Values& values);
 
 /**
  * @brief This function converts an openGL camera pose to an GTSAM camera pose
@@ -268,16 +288,25 @@ GTSAM_EXPORT Pose3 gtsam2openGL(const Pose3& PoseGTSAM);
 
 /**
  * @brief This function creates initial values for cameras from db
- * @param SfM_data
+ * @param SfmData
  * @return Values
  */
-GTSAM_EXPORT Values initialCamerasEstimate(const SfM_data& db);
+GTSAM_EXPORT Values initialCamerasEstimate(const SfmData& db);
 
 /**
  * @brief This function creates initial values for cameras and points from db
- * @param SfM_data
+ * @param SfmData
  * @return Values
  */
-GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfM_data& db);
+GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfmData& db);
+
+/// Aliases for backwards compatibility
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+typedef SfmMeasurement SfM_Measurement;
+typedef SiftIndex SIFT_Index;
+typedef SfmTrack SfM_Track;
+typedef SfmCamera SfM_Camera;
+typedef SfmData SfM_data;
+#endif
 
 } // namespace gtsam

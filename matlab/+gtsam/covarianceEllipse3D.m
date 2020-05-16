@@ -22,8 +22,8 @@ end
 % rotate data with orientation matrix U and center M
 data = kron(e(:,1),xc) + kron(e(:,2),yc) + kron(e(:,3),zc);
 n = size(data,2);
-x = data(1:n,:)+c(1); 
-y = data(n+1:2*n,:)+c(2); 
+x = data(1:n,:)+c(1);
+y = data(n+1:2*n,:)+c(2);
 z = data(2*n+1:end,:)+c(3);
 
 % now plot the rotated ellipse

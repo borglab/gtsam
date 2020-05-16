@@ -163,11 +163,11 @@ TEST(CombinedImuFactor, PredictPositionAndVelocity) {
   // Measurements
   const Vector3 measuredOmega(0, 0.1, 0);  // M_PI/10.0+0.3;
   const Vector3 measuredAcc(0, 1.1, -kGravity);
-  const double deltaT = 0.001;
+  const double deltaT = 0.01;
 
   PreintegratedCombinedMeasurements pim(p, bias);
 
-  for (int i = 0; i < 1000; ++i)
+  for (int i = 0; i < 100; ++i)
     pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
@@ -190,9 +190,9 @@ TEST(CombinedImuFactor, PredictRotation) {
   PreintegratedCombinedMeasurements pim(p, bias);
   const Vector3 measuredAcc = - kGravityAlongNavZDown;
   const Vector3 measuredOmega(0, 0, M_PI / 10.0);
-  const double deltaT = 0.001;
+  const double deltaT = 0.01;
   const double tol = 1e-4;
-  for (int i = 0; i < 1000; ++i)
+  for (int i = 0; i < 100; ++i)
     pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
   const CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), pim);
 

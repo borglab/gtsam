@@ -145,13 +145,13 @@ namespace gtsam {
                 boost::make_filter_iterator(filter,
                     ((const Values&) values).begin(),
                     ((const Values&) values).end()),
-                &ValuesCastHelper<const ValueType, ConstKeyValuePair,
+                &ValuesCastHelper<ValueType, ConstKeyValuePair,
                     Values::ConstKeyValuePair>::cast)), constEnd_(
             boost::make_transform_iterator(
                 boost::make_filter_iterator(filter,
                     ((const Values&) values).end(),
                     ((const Values&) values).end()),
-                &ValuesCastHelper<const ValueType, ConstKeyValuePair,
+                &ValuesCastHelper<ValueType, ConstKeyValuePair,
                     Values::ConstKeyValuePair>::cast)) {
     }
 
@@ -348,7 +348,9 @@ namespace gtsam {
        throw ValuesKeyDoesNotExist("at", j);
 
     // Check the type and throw exception if incorrect
-    return internal::handle<ValueType>()(j,item->second);
+    // h() split in two lines to avoid internal compiler error (MSVC2017)
+    auto h = internal::handle<ValueType>();
+    return h(j,item->second);
   }
 
   /* ************************************************************************* */

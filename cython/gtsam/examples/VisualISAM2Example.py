@@ -120,7 +120,7 @@ def visual_ISAM2_example():
         if i == 0:
             # Add a prior on pose x0
             pose_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array(
-                [0.3, 0.3, 0.3, 0.1, 0.1, 0.1]))  # 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
+                [0.1, 0.1, 0.1, 0.3, 0.3, 0.3]))  # 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
             graph.push_back(gtsam.PriorFactorPose3(X(0), poses[0], pose_noise))
 
             # Add a prior on landmark l0

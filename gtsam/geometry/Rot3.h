@@ -17,6 +17,7 @@
  * @author  Frank Dellaert
  * @author  Richard Roberts
  * @author  Luca Carlone
+ * @author  Varun Agrawal
  */
 // \callgraph
 
@@ -27,6 +28,8 @@
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
+
+#include <random>
 
 // You can override the default coordinate mode using this flag
 #ifndef ROT3_DEFAULT_COORDINATES_MODE
@@ -61,7 +64,7 @@ namespace gtsam {
     /** Internal Eigen Quaternion */
     gtsam::Quaternion quaternion_;
 #else
-    Matrix3 rot_;
+    SO3 rot_;
 #endif
 
   public:
@@ -92,26 +95,34 @@ namespace gtsam {
      * allow assignment/construction from a generic matrix.
      * See: http://stackoverflow.com/questions/27094132/cannot-understand-if-this-is-circular-dependency-or-clang#tab-top
      */
-    template<typename Derived>
-    inline explicit Rot3(const Eigen::MatrixBase<Derived>& R) {
-      #ifdef GTSAM_USE_QUATERNIONS
-        quaternion_=Matrix3(R);
-      #else
-        rot_ = R;
-      #endif
+    template <typename Derived>
+#ifdef GTSAM_USE_QUATERNIONS
+    explicit Rot3(const Eigen::MatrixBase<Derived>& R) {
+      quaternion_ = Matrix3(R);
     }
+#else
+    explicit Rot3(const Eigen::MatrixBase<Derived>& R) : rot_(R) {
+    }
+#endif
 
     /**
      * Constructor from a rotation matrix
      * Overload version for Matrix3 to avoid casting in quaternion mode.
      */
-    inline explicit Rot3(const Matrix3& R) {
-      #ifdef GTSAM_USE_QUATERNIONS
-        quaternion_=R;
-      #else
-        rot_ = R;
-      #endif
-    }
+#ifdef GTSAM_USE_QUATERNIONS
+    explicit Rot3(const Matrix3& R) : quaternion_(R) {}
+#else
+    explicit Rot3(const Matrix3& R) : rot_(R) {}
+#endif
+
+    /**
+     * Constructor from an SO3 instance
+     */
+#ifdef GTSAM_USE_QUATERNIONS
+    explicit Rot3(const SO3& R) : quaternion_(R.matrix()) {}
+#else
+    explicit Rot3(const SO3& R) : rot_(R) {}
+#endif
 
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion
@@ -120,8 +131,13 @@ namespace gtsam {
     Rot3(const Quaternion& q);
     Rot3(double w, double x, double y, double z) : Rot3(Quaternion(w, x, y, z)) {}
 
-    /// Random, generates a random axis, then random angle \in [-p,pi]
-    static Rot3 Random(boost::mt19937 & rng);
+    /**
+     * Random, generates a random axis, then random angle \in [-p,pi]
+     * Example:
+     *   std::mt19937 engine(42);
+     *   Unit3 unit = Unit3::Random(engine);
+     */
+    static Rot3 Random(std::mt19937 & rng);
 
     /** Virtual destructor */
     virtual ~Rot3() {}
@@ -179,22 +195,24 @@ namespace gtsam {
 
     /**
      * Convert from axis/angle representation
-     * @param  axisw is the rotation axis, unit length
-     * @param   angle rotation angle
+     * @param  axis is the rotation axis, unit length
+     * @param  angle rotation angle
      * @return incremental rotation
      */
     static Rot3 AxisAngle(const Point3& axis, double angle) {
+      // Convert to unit vector.
+      Vector3 unitAxis = Unit3(axis).unitVector();
 #ifdef GTSAM_USE_QUATERNIONS
-      return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, axis));
+      return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, unitAxis));
 #else
-      return Rot3(SO3::AxisAngle(axis,angle));
+      return Rot3(SO3::AxisAngle(unitAxis,angle));
 #endif
     }
 
     /**
      * Convert from axis/angle representation
-     * @param   axis is the rotation axis
-     * @param   angle rotation angle
+     * @param  axis is the rotation axis
+     * @param  angle rotation angle
      * @return incremental rotation
      */
     static Rot3 AxisAngle(const Unit3& axis, double angle) {
@@ -228,6 +246,9 @@ namespace gtsam {
     static Rot3 AlignTwoPairs(const Unit3& a_p, const Unit3& b_p,  //
                               const Unit3& a_q, const Unit3& b_q);
 
+    /// Static, named constructor that finds Rot3 element closest to M in Frobenius norm.
+    static Rot3 ClosestTo(const Matrix3& M) { return Rot3(SO3::ClosestTo(M)); }
+
     /// @}
     /// @name Testable
     /// @{
@@ -250,9 +271,13 @@ namespace gtsam {
     /// Syntatic sugar for composing two rotations
     Rot3 operator*(const Rot3& R2) const;
 
-    /// inverse of a rotation, TODO should be different for M/Q
+    /// inverse of a rotation
     Rot3 inverse() const {
-      return Rot3(Matrix3(transpose()));
+#ifdef GTSAM_USE_QUATERNIONS
+      return Rot3(quaternion_.inverse());
+#else
+      return Rot3(rot_.matrix().transpose());
+#endif
     }
 
     /**
@@ -388,7 +413,6 @@ namespace gtsam {
      * Return 3*3 transpose (inverse) rotation matrix
      */
     Matrix3 transpose() const;
-    // TODO: const Eigen::Transpose<const Matrix3> transpose() const;
 
     /// @deprecated, this is base 1, and was just confusing
     Point3 column(int index) const;
@@ -411,7 +435,7 @@ namespace gtsam {
 
     /**
      * Use RQ to calculate roll-pitch-yaw angle representation
-     * @return a vector containing ypr s.t. R = Rot3::Ypr(y,p,r)
+     * @return a vector containing rpy s.t. R = Rot3::Ypr(y,p,r)
      */
     Vector3 rpy() const;
 
@@ -421,7 +445,7 @@ namespace gtsam {
      * you should instead use xyz() or ypr()
      * TODO: make this more efficient
      */
-    inline double roll() const  { return ypr()(2); }
+    inline double roll() const  { return xyz()(0); }
 
     /**
      * Accessor to get to component of angle representations
@@ -429,7 +453,7 @@ namespace gtsam {
      * you should instead use xyz() or ypr()
      * TODO: make this more efficient
      */
-    inline double pitch() const { return ypr()(1); }
+    inline double pitch() const { return xyz()(1); }
 
     /**
      * Accessor to get to component of angle representations
@@ -437,11 +461,21 @@ namespace gtsam {
      * you should instead use xyz() or ypr()
      * TODO: make this more efficient
      */
-    inline double yaw() const   { return ypr()(0); }
+    inline double yaw() const   { return xyz()(2); }
 
     /// @}
     /// @name Advanced Interface
     /// @{
+
+    /**
+      * Compute the Euler axis and angle (in radians) representation
+      * of this rotation.
+      * The angle is in the range [0, π]. If the angle is not in the range,
+      * the axis is flipped around accordingly so that the returned angle is
+      * within the specified range.
+      * @return pair consisting of Unit3 axis and angle in radians
+      */
+    std::pair<Unit3, double> axisAngle() const;
 
     /** Compute the quaternion representation of this rotation.
      * @return The quaternion
@@ -483,28 +517,27 @@ namespace gtsam {
   /// @}
 #endif
 
-  private:
-
+   private:
     /** Serialization function */
     friend class boost::serialization::access;
-    template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/)
-    {
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
 #ifndef GTSAM_USE_QUATERNIONS
-       ar & boost::serialization::make_nvp("rot11", rot_(0,0));
-       ar & boost::serialization::make_nvp("rot12", rot_(0,1));
-       ar & boost::serialization::make_nvp("rot13", rot_(0,2));
-       ar & boost::serialization::make_nvp("rot21", rot_(1,0));
-       ar & boost::serialization::make_nvp("rot22", rot_(1,1));
-       ar & boost::serialization::make_nvp("rot23", rot_(1,2));
-       ar & boost::serialization::make_nvp("rot31", rot_(2,0));
-       ar & boost::serialization::make_nvp("rot32", rot_(2,1));
-       ar & boost::serialization::make_nvp("rot33", rot_(2,2));
+      Matrix3& M = rot_.matrix_;
+      ar& boost::serialization::make_nvp("rot11", M(0, 0));
+      ar& boost::serialization::make_nvp("rot12", M(0, 1));
+      ar& boost::serialization::make_nvp("rot13", M(0, 2));
+      ar& boost::serialization::make_nvp("rot21", M(1, 0));
+      ar& boost::serialization::make_nvp("rot22", M(1, 1));
+      ar& boost::serialization::make_nvp("rot23", M(1, 2));
+      ar& boost::serialization::make_nvp("rot31", M(2, 0));
+      ar& boost::serialization::make_nvp("rot32", M(2, 1));
+      ar& boost::serialization::make_nvp("rot33", M(2, 2));
 #else
-      ar & boost::serialization::make_nvp("w", quaternion_.w());
-      ar & boost::serialization::make_nvp("x", quaternion_.x());
-      ar & boost::serialization::make_nvp("y", quaternion_.y());
-      ar & boost::serialization::make_nvp("z", quaternion_.z());
+      ar& boost::serialization::make_nvp("w", quaternion_.w());
+      ar& boost::serialization::make_nvp("x", quaternion_.x());
+      ar& boost::serialization::make_nvp("y", quaternion_.y());
+      ar& boost::serialization::make_nvp("z", quaternion_.z());
 #endif
     }
 

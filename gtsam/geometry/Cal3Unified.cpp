@@ -43,10 +43,10 @@ void Cal3Unified::print(const std::string& s) const {
 
 /* ************************************************************************* */
 bool Cal3Unified::equals(const Cal3Unified& K, double tol) const {
-  if (fabs(fx_ - K.fx_) > tol || fabs(fy_ - K.fy_) > tol || fabs(s_ - K.s_) > tol ||
-      fabs(u0_ - K.u0_) > tol || fabs(v0_ - K.v0_) > tol || fabs(k1_ - K.k1_) > tol ||
-      fabs(k2_ - K.k2_) > tol || fabs(p1_ - K.p1_) > tol || fabs(p2_ - K.p2_) > tol ||
-      fabs(xi_ - K.xi_) > tol)
+  if (std::abs(fx_ - K.fx_) > tol || std::abs(fy_ - K.fy_) > tol || std::abs(s_ - K.s_) > tol ||
+      std::abs(u0_ - K.u0_) > tol || std::abs(v0_ - K.v0_) > tol || std::abs(k1_ - K.k1_) > tol ||
+      std::abs(k2_ - K.k2_) > tol || std::abs(p1_ - K.p1_) > tol || std::abs(p2_ - K.p2_) > tol ||
+      std::abs(xi_ - K.xi_) > tol)
     return false;
   return true;
 }

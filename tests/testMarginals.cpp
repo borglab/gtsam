@@ -29,7 +29,6 @@
 #include <gtsam/linear/NoiseModel.h>
 
 // add in headers for specific factors
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 
@@ -53,7 +52,7 @@ TEST(Marginals, planarSLAMmarginals) {
   // gaussian for prior
   SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
-  graph += PriorFactor<Pose2>(x1, priorMean, priorNoise);  // add the factor to the graph
+  graph.addPrior(x1, priorMean, priorNoise);  // add the factor to the graph
 
   /* add odometry */
   // general noisemodel for odometry
@@ -87,6 +86,12 @@ TEST(Marginals, planarSLAMmarginals) {
   soln.insert(x3, Pose2(4.0, 0.0, 0.0));
   soln.insert(l1, Point2(2.0, 2.0));
   soln.insert(l2, Point2(4.0, 2.0));
+  VectorValues soln_lin;
+  soln_lin.insert(x1, Vector3(0.0, 0.0, 0.0));
+  soln_lin.insert(x2, Vector3(2.0, 0.0, 0.0));
+  soln_lin.insert(x3, Vector3(4.0, 0.0, 0.0));
+  soln_lin.insert(l1, Vector2(2.0, 2.0));
+  soln_lin.insert(l2, Vector2(4.0, 2.0));
 
   Matrix expectedx1(3,3);
   expectedx1 <<
@@ -110,77 +115,86 @@ TEST(Marginals, planarSLAMmarginals) {
   Matrix expectedl2(2,2);
   expectedl2 <<
       0.293870968, -0.104516129,
-     -0.104516129,  0.391935484;
+    -0.104516129,  0.391935484;
 
-  // Check marginals covariances for all variables (Cholesky mode)
-  Marginals marginals(graph, soln, Marginals::CHOLESKY);
-  EXPECT(assert_equal(expectedx1, marginals.marginalCovariance(x1), 1e-8));
-  EXPECT(assert_equal(expectedx2, marginals.marginalCovariance(x2), 1e-8));
-  EXPECT(assert_equal(expectedx3, marginals.marginalCovariance(x3), 1e-8));
-  EXPECT(assert_equal(expectedl1, marginals.marginalCovariance(l1), 1e-8));
-  EXPECT(assert_equal(expectedl2, marginals.marginalCovariance(l2), 1e-8));
+  auto testMarginals = [&] (Marginals marginals) {
+    EXPECT(assert_equal(expectedx1, marginals.marginalCovariance(x1), 1e-8));
+    EXPECT(assert_equal(expectedx2, marginals.marginalCovariance(x2), 1e-8));
+    EXPECT(assert_equal(expectedx3, marginals.marginalCovariance(x3), 1e-8));
+    EXPECT(assert_equal(expectedl1, marginals.marginalCovariance(l1), 1e-8));
+    EXPECT(assert_equal(expectedl2, marginals.marginalCovariance(l2), 1e-8));
+  };
 
-  // Check marginals covariances for all variables (QR mode)
+  auto testJointMarginals = [&] (Marginals marginals) {
+    // Check joint marginals for 3 variables
+    Matrix expected_l2x1x3(8,8);
+    expected_l2x1x3 <<
+        0.293871159514111,  -0.104516127560770,   0.090000180000270,  -0.000000000000000,  -0.020000000000000,   0.151935669757191,  -0.104516127560770,  -0.050967744878460,
+      -0.104516127560770,   0.391935664055174,   0.000000000000000,   0.090000180000270,   0.040000000000000,   0.007741936219615,   0.351935664055174,   0.056129031890193,
+        0.090000180000270,   0.000000000000000,   0.090000180000270,  -0.000000000000000,   0.000000000000000,   0.090000180000270,   0.000000000000000,   0.000000000000000,
+      -0.000000000000000,   0.090000180000270,  -0.000000000000000,   0.090000180000270,   0.000000000000000,  -0.000000000000000,   0.090000180000270,   0.000000000000000,
+      -0.020000000000000,   0.040000000000000,   0.000000000000000,   0.000000000000000,   0.010000000000000,   0.000000000000000,   0.040000000000000,   0.010000000000000,
+        0.151935669757191,   0.007741936219615,   0.090000180000270,  -0.000000000000000,   0.000000000000000,   0.160967924878730,   0.007741936219615,   0.004516127560770,
+      -0.104516127560770,   0.351935664055174,   0.000000000000000,   0.090000180000270,   0.040000000000000,   0.007741936219615,   0.351935664055174,   0.056129031890193,
+      -0.050967744878460,   0.056129031890193,   0.000000000000000,   0.000000000000000,   0.010000000000000,   0.004516127560770,   0.056129031890193,   0.027741936219615;
+    KeyVector variables {x1, l2, x3};
+    JointMarginal joint_l2x1x3 = marginals.jointMarginalCovariance(variables);
+    EXPECT(assert_equal(Matrix(expected_l2x1x3.block(0,0,2,2)), Matrix(joint_l2x1x3(l2,l2)), 1e-6));
+    EXPECT(assert_equal(Matrix(expected_l2x1x3.block(2,0,3,2)), Matrix(joint_l2x1x3(x1,l2)), 1e-6));
+    EXPECT(assert_equal(Matrix(expected_l2x1x3.block(5,0,3,2)), Matrix(joint_l2x1x3(x3,l2)), 1e-6));
+
+    EXPECT(assert_equal(Matrix(expected_l2x1x3.block(0,2,2,3)), Matrix(joint_l2x1x3(l2,x1)), 1e-6));
+    EXPECT(assert_equal(Matrix(expected_l2x1x3.block(2,2,3,3)), Matrix(joint_l2x1x3(x1,x1)), 1e-6));
+    EXPECT(assert_equal(Matrix(expected_l2x1x3.block(5,2,3,3)), Matrix(joint_l2x1x3(x3,x1)), 1e-6));
+
+    EXPECT(assert_equal(Matrix(expected_l2x1x3.block(0,5,2,3)), Matrix(joint_l2x1x3(l2,x3)), 1e-6));
+    EXPECT(assert_equal(Matrix(expected_l2x1x3.block(2,5,3,3)), Matrix(joint_l2x1x3(x1,x3)), 1e-6));
+    EXPECT(assert_equal(Matrix(expected_l2x1x3.block(5,5,3,3)), Matrix(joint_l2x1x3(x3,x3)), 1e-6));
+
+    // Check joint marginals for 2 variables (different code path than >2 variable case above)
+    Matrix expected_l2x1(5,5);
+    expected_l2x1 <<
+        0.293871159514111,  -0.104516127560770,   0.090000180000270,  -0.000000000000000,  -0.020000000000000,
+      -0.104516127560770,   0.391935664055174,   0.000000000000000,   0.090000180000270,   0.040000000000000,
+        0.090000180000270,   0.000000000000000,   0.090000180000270,  -0.000000000000000,   0.000000000000000,
+      -0.000000000000000,   0.090000180000270,  -0.000000000000000,   0.090000180000270,   0.000000000000000,
+      -0.020000000000000,   0.040000000000000,   0.000000000000000,   0.000000000000000,   0.010000000000000;
+    variables.resize(2);
+    variables[0] = l2;
+    variables[1] = x1;
+    JointMarginal joint_l2x1 = marginals.jointMarginalCovariance(variables);
+    EXPECT(assert_equal(Matrix(expected_l2x1.block(0,0,2,2)), Matrix(joint_l2x1(l2,l2)), 1e-6));
+    EXPECT(assert_equal(Matrix(expected_l2x1.block(2,0,3,2)), Matrix(joint_l2x1(x1,l2)), 1e-6));
+    EXPECT(assert_equal(Matrix(expected_l2x1.block(0,2,2,3)), Matrix(joint_l2x1(l2,x1)), 1e-6));
+    EXPECT(assert_equal(Matrix(expected_l2x1.block(2,2,3,3)), Matrix(joint_l2x1(x1,x1)), 1e-6));
+
+    // Check joint marginal for 1 variable (different code path than >1 variable cases above)
+    variables.resize(1);
+    variables[0] = x1;
+    JointMarginal joint_x1 = marginals.jointMarginalCovariance(variables);
+    EXPECT(assert_equal(expectedx1, Matrix(joint_l2x1(x1,x1)), 1e-6));
+  };
+
+  Marginals marginals;
+
+  marginals = Marginals(graph, soln, Marginals::CHOLESKY);
+  testMarginals(marginals);
   marginals = Marginals(graph, soln, Marginals::QR);
-  EXPECT(assert_equal(expectedx1, marginals.marginalCovariance(x1), 1e-8));
-  EXPECT(assert_equal(expectedx2, marginals.marginalCovariance(x2), 1e-8));
-  EXPECT(assert_equal(expectedx3, marginals.marginalCovariance(x3), 1e-8));
-  EXPECT(assert_equal(expectedl1, marginals.marginalCovariance(l1), 1e-8));
-  EXPECT(assert_equal(expectedl2, marginals.marginalCovariance(l2), 1e-8));
+  testMarginals(marginals);
+  testJointMarginals(marginals);
 
-  // Check joint marginals for 3 variables
-  Matrix expected_l2x1x3(8,8);
-  expected_l2x1x3 <<
-      0.293871159514111,  -0.104516127560770,   0.090000180000270,  -0.000000000000000,  -0.020000000000000,   0.151935669757191,  -0.104516127560770,  -0.050967744878460,
-     -0.104516127560770,   0.391935664055174,   0.000000000000000,   0.090000180000270,   0.040000000000000,   0.007741936219615,   0.351935664055174,   0.056129031890193,
-      0.090000180000270,   0.000000000000000,   0.090000180000270,  -0.000000000000000,   0.000000000000000,   0.090000180000270,   0.000000000000000,   0.000000000000000,
-     -0.000000000000000,   0.090000180000270,  -0.000000000000000,   0.090000180000270,   0.000000000000000,  -0.000000000000000,   0.090000180000270,   0.000000000000000,
-     -0.020000000000000,   0.040000000000000,   0.000000000000000,   0.000000000000000,   0.010000000000000,   0.000000000000000,   0.040000000000000,   0.010000000000000,
-      0.151935669757191,   0.007741936219615,   0.090000180000270,  -0.000000000000000,   0.000000000000000,   0.160967924878730,   0.007741936219615,   0.004516127560770,
-     -0.104516127560770,   0.351935664055174,   0.000000000000000,   0.090000180000270,   0.040000000000000,   0.007741936219615,   0.351935664055174,   0.056129031890193,
-     -0.050967744878460,   0.056129031890193,   0.000000000000000,   0.000000000000000,   0.010000000000000,   0.004516127560770,   0.056129031890193,   0.027741936219615;
-  KeyVector variables {x1, l2, x3};
-  JointMarginal joint_l2x1x3 = marginals.jointMarginalCovariance(variables);
-  EXPECT(assert_equal(Matrix(expected_l2x1x3.block(0,0,2,2)), Matrix(joint_l2x1x3(l2,l2)), 1e-6));
-  EXPECT(assert_equal(Matrix(expected_l2x1x3.block(2,0,3,2)), Matrix(joint_l2x1x3(x1,l2)), 1e-6));
-  EXPECT(assert_equal(Matrix(expected_l2x1x3.block(5,0,3,2)), Matrix(joint_l2x1x3(x3,l2)), 1e-6));
-
-  EXPECT(assert_equal(Matrix(expected_l2x1x3.block(0,2,2,3)), Matrix(joint_l2x1x3(l2,x1)), 1e-6));
-  EXPECT(assert_equal(Matrix(expected_l2x1x3.block(2,2,3,3)), Matrix(joint_l2x1x3(x1,x1)), 1e-6));
-  EXPECT(assert_equal(Matrix(expected_l2x1x3.block(5,2,3,3)), Matrix(joint_l2x1x3(x3,x1)), 1e-6));
-
-  EXPECT(assert_equal(Matrix(expected_l2x1x3.block(0,5,2,3)), Matrix(joint_l2x1x3(l2,x3)), 1e-6));
-  EXPECT(assert_equal(Matrix(expected_l2x1x3.block(2,5,3,3)), Matrix(joint_l2x1x3(x1,x3)), 1e-6));
-  EXPECT(assert_equal(Matrix(expected_l2x1x3.block(5,5,3,3)), Matrix(joint_l2x1x3(x3,x3)), 1e-6));
-
-  // Check joint marginals for 2 variables (different code path than >2 variable case above)
-  Matrix expected_l2x1(5,5);
-  expected_l2x1 <<
-      0.293871159514111,  -0.104516127560770,   0.090000180000270,  -0.000000000000000,  -0.020000000000000,
-     -0.104516127560770,   0.391935664055174,   0.000000000000000,   0.090000180000270,   0.040000000000000,
-      0.090000180000270,   0.000000000000000,   0.090000180000270,  -0.000000000000000,   0.000000000000000,
-     -0.000000000000000,   0.090000180000270,  -0.000000000000000,   0.090000180000270,   0.000000000000000,
-     -0.020000000000000,   0.040000000000000,   0.000000000000000,   0.000000000000000,   0.010000000000000;
-  variables.resize(2);
-  variables[0] = l2;
-  variables[1] = x1;
-  JointMarginal joint_l2x1 = marginals.jointMarginalCovariance(variables);
-  EXPECT(assert_equal(Matrix(expected_l2x1.block(0,0,2,2)), Matrix(joint_l2x1(l2,l2)), 1e-6));
-  EXPECT(assert_equal(Matrix(expected_l2x1.block(2,0,3,2)), Matrix(joint_l2x1(x1,l2)), 1e-6));
-  EXPECT(assert_equal(Matrix(expected_l2x1.block(0,2,2,3)), Matrix(joint_l2x1(l2,x1)), 1e-6));
-  EXPECT(assert_equal(Matrix(expected_l2x1.block(2,2,3,3)), Matrix(joint_l2x1(x1,x1)), 1e-6));
-
-  // Check joint marginal for 1 variable (different code path than >1 variable cases above)
-  variables.resize(1);
-  variables[0] = x1;
-  JointMarginal joint_x1 = marginals.jointMarginalCovariance(variables);
-  EXPECT(assert_equal(expectedx1, Matrix(joint_l2x1(x1,x1)), 1e-6));
+  GaussianFactorGraph gfg = *graph.linearize(soln);
+  marginals = Marginals(gfg, soln_lin, Marginals::CHOLESKY);
+  testMarginals(marginals);
+  marginals = Marginals(gfg, soln_lin, Marginals::QR);
+  testMarginals(marginals);
+  testJointMarginals(marginals);
 }
 
 /* ************************************************************************* */
 TEST(Marginals, order) {
   NonlinearFactorGraph fg;
-  fg += PriorFactor<Pose2>(0, Pose2(), noiseModel::Unit::Create(3));
+  fg.addPrior(0, Pose2(), noiseModel::Unit::Create(3));
   fg += BetweenFactor<Pose2>(0, 1, Pose2(1,0,0), noiseModel::Unit::Create(3));
   fg += BetweenFactor<Pose2>(1, 2, Pose2(1,0,0), noiseModel::Unit::Create(3));
   fg += BetweenFactor<Pose2>(2, 3, Pose2(1,0,0), noiseModel::Unit::Create(3));
@@ -222,17 +236,26 @@ TEST(Marginals, order) {
     vals.at<Pose2>(3).bearing(vals.at<Point2>(101)),
     vals.at<Pose2>(3).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2));
 
+  auto testMarginals = [&] (Marginals marginals, KeySet set) {
+    KeyVector keys(set.begin(), set.end());
+    JointMarginal joint = marginals.jointMarginalCovariance(keys);
+
+    LONGS_EQUAL(3, (long)joint(0,0).rows());
+    LONGS_EQUAL(3, (long)joint(1,1).rows());
+    LONGS_EQUAL(3, (long)joint(2,2).rows());
+    LONGS_EQUAL(3, (long)joint(3,3).rows());
+    LONGS_EQUAL(2, (long)joint(100,100).rows());
+    LONGS_EQUAL(2, (long)joint(101,101).rows());
+  };
+
   Marginals marginals(fg, vals);
   KeySet set = fg.keys();
-  KeyVector keys(set.begin(), set.end());
-  JointMarginal joint = marginals.jointMarginalCovariance(keys);
+  testMarginals(marginals, set);
 
-  LONGS_EQUAL(3, (long)joint(0,0).rows());
-  LONGS_EQUAL(3, (long)joint(1,1).rows());
-  LONGS_EQUAL(3, (long)joint(2,2).rows());
-  LONGS_EQUAL(3, (long)joint(3,3).rows());
-  LONGS_EQUAL(2, (long)joint(100,100).rows());
-  LONGS_EQUAL(2, (long)joint(101,101).rows());
+  GaussianFactorGraph gfg = *fg.linearize(vals);
+  marginals = Marginals(gfg, vals);
+  set = gfg.keys();
+  testMarginals(marginals, set);
 }
 
 /* ************************************************************************* */

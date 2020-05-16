@@ -41,7 +41,7 @@ void TangentPreintegration::resetIntegration() {
 //------------------------------------------------------------------------------
 bool TangentPreintegration::equals(const TangentPreintegration& other,
     double tol) const {
-  return p_->equals(*other.p_, tol) && fabs(deltaTij_ - other.deltaTij_) < tol
+  return p_->equals(*other.p_, tol) && std::abs(deltaTij_ - other.deltaTij_) < tol
       && biasHat_.equals(other.biasHat_, tol)
       && equal_with_abs_tol(preintegrated_, other.preintegrated_, tol)
       && equal_with_abs_tol(preintegrated_H_biasAcc_,
@@ -68,30 +68,30 @@ Vector9 TangentPreintegration::UpdatePreintegrated(const Vector3& a_body,
   Matrix3 w_tangent_H_theta, invH;
   const Vector3 w_tangent = // angular velocity mapped back to tangent space
       local.applyInvDexp(w_body, A ? &w_tangent_H_theta : 0, C ? &invH : 0);
-  const SO3 R = local.expmap();
+  const Rot3 R(local.expmap());
   const Vector3 a_nav = R * a_body;
   const double dt22 = 0.5 * dt * dt;
 
   Vector9 preintegratedPlus;
-  preintegratedPlus << // new preintegrated vector:
-      theta + w_tangent * dt, // theta
-  position + velocity * dt + a_nav * dt22, // position
-  velocity + a_nav * dt; // velocity
+  preintegratedPlus <<                          // new preintegrated vector:
+      theta + w_tangent * dt,                   // theta
+      position + velocity * dt + a_nav * dt22,  // position
+      velocity + a_nav * dt;                    // velocity
 
   if (A) {
     // Exact derivative of R*a with respect to theta:
-    const Matrix3 a_nav_H_theta = R * skewSymmetric(-a_body) * local.dexp();
+    const Matrix3 a_nav_H_theta = R.matrix() * skewSymmetric(-a_body) * local.dexp();
 
     A->setIdentity();
-    A->block<3, 3>(0, 0).noalias() += w_tangent_H_theta * dt; // theta
-    A->block<3, 3>(3, 0) = a_nav_H_theta * dt22; // position wrpt theta...
-    A->block<3, 3>(3, 6) = I_3x3 * dt; // .. and velocity
-    A->block<3, 3>(6, 0) = a_nav_H_theta * dt; // velocity wrpt theta
+    A->block<3, 3>(0, 0).noalias() += w_tangent_H_theta * dt;  // theta
+    A->block<3, 3>(3, 0) = a_nav_H_theta * dt22;  // position wrpt theta...
+    A->block<3, 3>(3, 6) = I_3x3 * dt;            // .. and velocity
+    A->block<3, 3>(6, 0) = a_nav_H_theta * dt;    // velocity wrpt theta
   }
   if (B) {
     B->block<3, 3>(0, 0) = Z_3x3;
-    B->block<3, 3>(3, 0) = R * dt22;
-    B->block<3, 3>(6, 0) = R * dt;
+    B->block<3, 3>(3, 0) = R.matrix() * dt22;
+    B->block<3, 3>(6, 0) = R.matrix() * dt;
   }
   if (C) {
     C->block<3, 3>(0, 0) = invH * dt;

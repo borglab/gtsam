@@ -86,6 +86,8 @@ namespace gtsam {
     FastVector<derived_ptr> children;
     int problemSize_;
 
+    bool is_root = false;
+
     /// Fill the elimination result produced during elimination.  Here this just stores the
     /// conditional and ignores the remaining factor, but this is overridden in ISAM2Clique
     /// to also cache the remaining factor.
@@ -165,8 +167,14 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      if(!parent_.lock()) {
+        is_root = true;
+      }
+      ar & BOOST_SERIALIZATION_NVP(is_root);
       ar & BOOST_SERIALIZATION_NVP(conditional_);
-      ar & BOOST_SERIALIZATION_NVP(parent_);
+      if (!is_root) { // TODO(fan): Workaround for boost/serialization #119
+        ar & BOOST_SERIALIZATION_NVP(parent_);
+      }
       ar & BOOST_SERIALIZATION_NVP(children);
     }
 

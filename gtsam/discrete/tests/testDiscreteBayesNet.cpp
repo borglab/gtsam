@@ -97,8 +97,8 @@ TEST(DiscreteBayesNet, Asia)
   // now sample from it
   DiscreteFactor::Values expectedSample;
   SETDEBUG("DiscreteConditional::sample", false);
-  insert(expectedSample)(A.first, 1)(D.first, 1)(X.first, 0)(T.first, 0)(
-      S.first, 1)(E.first, 0)(L.first, 0)(B.first, 1);
+  insert(expectedSample)(A.first, 1)(D.first, 1)(X.first, 1)(T.first, 0)(
+      S.first, 1)(E.first, 1)(L.first, 1)(B.first, 0);
   DiscreteFactor::sharedValues actualSample = chordal2->sample();
   EXPECT(assert_equal(expectedSample, *actualSample));
 }

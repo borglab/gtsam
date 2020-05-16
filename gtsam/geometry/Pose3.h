@@ -44,7 +44,7 @@ public:
 private:
 
   Rot3 R_; ///< Rotation gRp, between global and pose frame
-  Point3 t_; ///< Translation gTp, from global origin to pose frame origin
+  Point3 t_; ///< Translation gPp, from global origin to pose frame origin
 
 public:
 

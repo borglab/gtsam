@@ -219,7 +219,7 @@ struct GTSAM_EXPORT ISAM2Params {
 
   /// When you will be removing many factors, e.g. when using ISAM2 as a
   /// fixed-lag smoother, enable this option to add factors in the first
-  /// available factor slots, to avoid accumulating NULL factor slots, at the
+  /// available factor slots, to avoid accumulating nullptr factor slots, at the
   /// cost of having to search for slots every time a factor is added.
   bool findUnusedFactorSlots;
 
@@ -234,8 +234,8 @@ struct GTSAM_EXPORT ISAM2Params {
               Factorization _factorization = ISAM2Params::CHOLESKY,
               bool _cacheLinearizedFactors = true,
               const KeyFormatter& _keyFormatter =
-                  DefaultKeyFormatter  ///< see ISAM2::Params::keyFormatter
-              )
+                  DefaultKeyFormatter,  ///< see ISAM2::Params::keyFormatter,
+              bool _enableDetailedResults = false)
       : optimizationParams(_optimizationParams),
         relinearizeThreshold(_relinearizeThreshold),
         relinearizeSkip(_relinearizeSkip),
@@ -244,7 +244,7 @@ struct GTSAM_EXPORT ISAM2Params {
         factorization(_factorization),
         cacheLinearizedFactors(_cacheLinearizedFactors),
         keyFormatter(_keyFormatter),
-        enableDetailedResults(false),
+        enableDetailedResults(_enableDetailedResults),
         enablePartialRelinearizationCheck(false),
         findUnusedFactorSlots(false) {}
 

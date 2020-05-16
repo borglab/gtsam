@@ -36,7 +36,7 @@ static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
  *  Simple class to test navigation scenarios.
  *  Takes a trajectory scenario as input, and can generate IMU measurements
  */
-class ScenarioRunner {
+class GTSAM_EXPORT ScenarioRunner {
  public:
   typedef imuBias::ConstantBias Bias;
   typedef boost::shared_ptr<PreintegrationParams> SharedParams;
@@ -48,7 +48,7 @@ class ScenarioRunner {
   const Bias estimatedBias_;
 
   // Create two samplers for acceleration and omega noise
-  mutable Sampler gyroSampler_, accSampler_;
+  Sampler gyroSampler_, accSampler_;
 
  public:
   ScenarioRunner(const Scenario& scenario, const SharedParams& p,

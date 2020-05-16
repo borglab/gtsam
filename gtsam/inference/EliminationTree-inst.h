@@ -98,7 +98,7 @@ namespace gtsam {
       for (size_t j = 0; j < n; j++)
       {
         // Retrieve the factors involving this variable and create the current node
-        const VariableIndex::Factors& factors = structure[order[j]];
+        const FactorIndices& factors = structure[order[j]];
         const sharedNode node = boost::make_shared<Node>();
         node->key = order[j];
 

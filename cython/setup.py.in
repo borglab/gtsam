@@ -5,25 +5,20 @@ try:
 except ImportError:
     from distutils.core import setup, find_packages
 
-if 'SETUP_PY_NO_CHECK' not in os.environ:
-    script_path = os.path.abspath(os.path.realpath(__file__))
-    install_path = os.path.abspath(os.path.realpath(os.path.join('${GTSAM_CYTHON_INSTALL_PATH}', 'setup.py')))
-    if script_path != install_path:
-        print('setup.py is being run from an unexpected location: "{}"'.format(script_path))
-        print('please run `make install` and run the script from there')
-        sys.exit(1)
-
-
 packages = find_packages()
 
 setup(
     name='gtsam',
     description='Georgia Tech Smoothing And Mapping library',
-    url='https://bitbucket.org/gtborg/gtsam',
+    url='https://gtsam.org/',
     version='${GTSAM_VERSION_STRING}',  # https://www.python.org/dev/peps/pep-0440/
+    author='Frank Dellaert et. al.',
+    author_email='frank.dellaert@gtsam.org',
     license='Simplified BSD license',
     keywords='slam sam robotics localization mapping optimization',
     long_description='''${README_CONTENTS}''',
+    long_description_content_type='text/markdown',
+    python_requires='>=2.7',
     # https://pypi.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         'Development Status :: 5 - Production/Stable',

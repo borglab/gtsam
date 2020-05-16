@@ -31,19 +31,19 @@ void createExampleBALFile(const string& filename, const vector<Point3>& P,
         Cal3Bundler()) {
 
   // Class that will gather all data
-  SfM_data data;
+  SfmData data;
 
   // Create two cameras
   Rot3 aRb = Rot3::Yaw(M_PI_2);
   Point3 aTb(0.1, 0, 0);
   Pose3 identity, aPb(aRb, aTb);
-  data.cameras.push_back(SfM_Camera(pose1, K));
-  data.cameras.push_back(SfM_Camera(pose2, K));
+  data.cameras.push_back(SfmCamera(pose1, K));
+  data.cameras.push_back(SfmCamera(pose2, K));
 
   for(const Point3& p: P) {
 
     // Create the track
-    SfM_Track track;
+    SfmTrack track;
     track.p = p;
     track.r = 1;
     track.g = 1;

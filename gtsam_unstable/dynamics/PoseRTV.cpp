@@ -99,7 +99,7 @@ PoseRTV PoseRTV::flyingDynamics(
   double yaw2 = r2.yaw();
   double pitch2 = r2.pitch();
   double forward_accel = -thrust * sin(pitch2); // r2, pitch (in global frame?) controls forward force
-  double loss_lift = lift*fabs(sin(pitch2));
+  double loss_lift = lift*std::abs(sin(pitch2));
   Rot3 yaw_correction_bn = Rot3::Yaw(yaw2);
   Point3 forward(forward_accel, 0.0, 0.0);
   Vector Acc_n =

@@ -17,7 +17,6 @@
  */
 
 #include <gtsam/slam/OrientedPlane3Factor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -49,10 +48,9 @@ TEST (OrientedPlane3Factor, lm_translation_error) {
   Pose3 init_pose(Rot3::Ypr(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0));
   Vector sigmas(6);
   sigmas << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001;
-  PriorFactor<Pose3> pose_prior(init_sym, init_pose,
-      noiseModel::Diagonal::Sigmas(sigmas));
+  new_graph.addPrior(
+      init_sym, init_pose, noiseModel::Diagonal::Sigmas(sigmas));
   new_values.insert(init_sym, init_pose);
-  new_graph.add(pose_prior);
 
   // Add two landmark measurements, differing in range
   new_values.insert(lm_sym, test_lm0);
@@ -94,11 +92,10 @@ TEST (OrientedPlane3Factor, lm_rotation_error) {
   // Init pose and prior.  Pose Prior is needed since a single plane measurement does not fully constrain the pose
   Symbol init_sym('x', 0);
   Pose3 init_pose(Rot3::Ypr(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0));
-  PriorFactor<Pose3> pose_prior(init_sym, init_pose,
+  new_graph.addPrior(init_sym, init_pose,
       noiseModel::Diagonal::Sigmas(
           (Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001).finished()));
   new_values.insert(init_sym, init_pose);
-  new_graph.add(pose_prior);
 
 //  // Add two landmark measurements, differing in angle
   new_values.insert(lm_sym, test_lm0);
@@ -175,7 +172,7 @@ TEST( OrientedPlane3DirectionPrior, Constructor ) {
 
 /* ************************************************************************* */
 int main() {
-  srand(time(NULL));
+  srand(time(nullptr));
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }

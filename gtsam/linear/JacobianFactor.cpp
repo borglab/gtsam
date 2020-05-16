@@ -220,59 +220,12 @@ FastVector<JacobianFactor::shared_ptr> _convertOrCastToJacobians(
 }
 
 /* ************************************************************************* */
-JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
-    boost::optional<const Ordering&> ordering,
-    boost::optional<const VariableSlots&> p_variableSlots) {
-  gttic(JacobianFactor_combine_constructor);
-
-  // Compute VariableSlots if one was not provided
-  // Binds reference, does not copy VariableSlots
-  const VariableSlots & variableSlots =
-      p_variableSlots ? p_variableSlots.get() : VariableSlots(graph);
+void JacobianFactor::JacobianFactorHelper(const GaussianFactorGraph& graph,
+    const FastVector<VariableSlots::const_iterator>& orderedSlots) {
 
   // Cast or convert to Jacobians
   FastVector<JacobianFactor::shared_ptr> jacobians = _convertOrCastToJacobians(
       graph);
-
-  gttic(Order_slots);
-  // Order variable slots - we maintain the vector of ordered slots, as well as keep a list
-  // 'unorderedSlots' of any variables discovered that are not in the ordering.  Those will then
-  // be added after all of the ordered variables.
-  FastVector<VariableSlots::const_iterator> orderedSlots;
-  orderedSlots.reserve(variableSlots.size());
-  if (ordering) {
-    // If an ordering is provided, arrange the slots first that ordering
-    FastList<VariableSlots::const_iterator> unorderedSlots;
-    size_t nOrderingSlotsUsed = 0;
-    orderedSlots.resize(ordering->size());
-    FastMap<Key, size_t> inverseOrdering = ordering->invert();
-    for (VariableSlots::const_iterator item = variableSlots.begin();
-        item != variableSlots.end(); ++item) {
-      FastMap<Key, size_t>::const_iterator orderingPosition =
-          inverseOrdering.find(item->first);
-      if (orderingPosition == inverseOrdering.end()) {
-        unorderedSlots.push_back(item);
-      } else {
-        orderedSlots[orderingPosition->second] = item;
-        ++nOrderingSlotsUsed;
-      }
-    }
-    if (nOrderingSlotsUsed != ordering->size())
-      throw std::invalid_argument(
-          "The ordering provided to the JacobianFactor combine constructor\n"
-              "contained extra variables that did not appear in the factors to combine.");
-    // Add the remaining slots
-    for(VariableSlots::const_iterator item: unorderedSlots) {
-      orderedSlots.push_back(item);
-    }
-  } else {
-    // If no ordering is provided, arrange the slots as they were, which will be sorted
-    // numerically since VariableSlots uses a map sorting on Key.
-    for (VariableSlots::const_iterator item = variableSlots.begin();
-        item != variableSlots.end(); ++item)
-      orderedSlots.push_back(item);
-  }
-  gttoc(Order_slots);
 
   // Count dimensions
   FastVector<DenseIndex> varDims;
@@ -342,6 +295,127 @@ JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
 
   if (sigmas)
     this->setModel(anyConstrained, *sigmas);
+}
+
+/* ************************************************************************* */
+// Order variable slots - we maintain the vector of ordered slots, as well as keep a list
+// 'unorderedSlots' of any variables discovered that are not in the ordering.  Those will then
+// be added after all of the ordered variables.
+FastVector<VariableSlots::const_iterator> orderedSlotsHelper(
+    const Ordering& ordering,
+    const VariableSlots& variableSlots) {
+  gttic(Order_slots);
+  
+  FastVector<VariableSlots::const_iterator> orderedSlots;
+  orderedSlots.reserve(variableSlots.size());
+  
+  // If an ordering is provided, arrange the slots first that ordering
+  FastList<VariableSlots::const_iterator> unorderedSlots;
+  size_t nOrderingSlotsUsed = 0;
+  orderedSlots.resize(ordering.size());
+  FastMap<Key, size_t> inverseOrdering = ordering.invert();
+  for (VariableSlots::const_iterator item = variableSlots.begin();
+      item != variableSlots.end(); ++item) {
+    FastMap<Key, size_t>::const_iterator orderingPosition =
+        inverseOrdering.find(item->first);
+    if (orderingPosition == inverseOrdering.end()) {
+      unorderedSlots.push_back(item);
+    } else {
+      orderedSlots[orderingPosition->second] = item;
+      ++nOrderingSlotsUsed;
+    }
+  }
+  if (nOrderingSlotsUsed != ordering.size())
+    throw std::invalid_argument(
+        "The ordering provided to the JacobianFactor combine constructor\n"
+            "contained extra variables that did not appear in the factors to combine.");
+  // Add the remaining slots
+  for(VariableSlots::const_iterator item: unorderedSlots) {
+    orderedSlots.push_back(item);
+  }
+
+  gttoc(Order_slots);
+
+  return orderedSlots;
+}
+
+/* ************************************************************************* */
+JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph) {
+  gttic(JacobianFactor_combine_constructor);
+
+  // Compute VariableSlots if one was not provided
+  // Binds reference, does not copy VariableSlots
+  const VariableSlots & variableSlots = VariableSlots(graph);
+
+  gttic(Order_slots);
+  // Order variable slots - we maintain the vector of ordered slots, as well as keep a list
+  // 'unorderedSlots' of any variables discovered that are not in the ordering.  Those will then
+  // be added after all of the ordered variables.
+  FastVector<VariableSlots::const_iterator> orderedSlots;
+  orderedSlots.reserve(variableSlots.size());
+  
+  // If no ordering is provided, arrange the slots as they were, which will be sorted
+  // numerically since VariableSlots uses a map sorting on Key.
+  for (VariableSlots::const_iterator item = variableSlots.begin();
+      item != variableSlots.end(); ++item)
+    orderedSlots.push_back(item);
+  gttoc(Order_slots);
+
+  JacobianFactorHelper(graph, orderedSlots);
+}
+
+/* ************************************************************************* */
+JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
+    const VariableSlots& p_variableSlots) {
+  gttic(JacobianFactor_combine_constructor);
+
+  // Binds reference, does not copy VariableSlots
+  const VariableSlots & variableSlots = p_variableSlots;
+
+  gttic(Order_slots);
+  // Order variable slots - we maintain the vector of ordered slots, as well as keep a list
+  // 'unorderedSlots' of any variables discovered that are not in the ordering.  Those will then
+  // be added after all of the ordered variables.
+  FastVector<VariableSlots::const_iterator> orderedSlots;
+  orderedSlots.reserve(variableSlots.size());
+  
+  // If no ordering is provided, arrange the slots as they were, which will be sorted
+  // numerically since VariableSlots uses a map sorting on Key.
+  for (VariableSlots::const_iterator item = variableSlots.begin();
+      item != variableSlots.end(); ++item)
+    orderedSlots.push_back(item);
+  gttoc(Order_slots);
+
+  JacobianFactorHelper(graph, orderedSlots);
+}
+
+/* ************************************************************************* */
+JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
+    const Ordering& ordering) {
+  gttic(JacobianFactor_combine_constructor);
+  
+  // Compute VariableSlots if one was not provided
+  // Binds reference, does not copy VariableSlots
+  const VariableSlots & variableSlots = VariableSlots(graph);
+
+  // Order variable slots
+  FastVector<VariableSlots::const_iterator> orderedSlots =
+    orderedSlotsHelper(ordering, variableSlots);
+
+  JacobianFactorHelper(graph, orderedSlots);
+}
+
+/* ************************************************************************* */
+JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
+    const Ordering& ordering,
+    const VariableSlots& p_variableSlots) {
+  gttic(JacobianFactor_combine_constructor);
+  
+  // Order variable slots
+  FastVector<VariableSlots::const_iterator> orderedSlots =
+    orderedSlotsHelper(ordering, p_variableSlots);
+
+  JacobianFactorHelper(graph, orderedSlots);
 }
 
 /* ************************************************************************* */
@@ -439,8 +513,10 @@ Vector JacobianFactor::error_vector(const VectorValues& c) const {
 
 /* ************************************************************************* */
 double JacobianFactor::error(const VectorValues& c) const {
-  Vector weighted = error_vector(c);
-  return 0.5 * weighted.dot(weighted);
+  Vector e = unweighted_error(c);
+  // Use the noise model distance function to get the correct error if available.
+  if (model_) return 0.5 * model_->distance(e);
+  return 0.5 * e.dot(e);
 }
 
 /* ************************************************************************* */
@@ -764,7 +840,7 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFronta
 
   if (!model_) {
     throw std::invalid_argument(
-        "JacobianFactor::splitConditional cannot be  given a NULL noise model");
+        "JacobianFactor::splitConditional cannot be  given a nullptr noise model");
   }
 
   if (nrFrontals > size()) {

@@ -55,6 +55,26 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
     resetIntegration();
   }
 
+  /**
+   *  Non-Default constructor, initialize with measurements
+   *  @param p: Parameters for AHRS pre-integration
+   *  @param bias_hat: Current estimate of acceleration and rotation rate biases
+   *  @param deltaTij: Delta time in pre-integration
+   *  @param deltaRij: Delta rotation in pre-integration
+   *  @param delRdelBiasOmega: Jacobian of rotation wrt. to gyro bias
+   *  @param preint_meas_cov: Pre-integration covariance
+   */
+  PreintegratedAhrsMeasurements(
+      const boost::shared_ptr<Params>& p,
+      const Vector3& bias_hat,
+      double deltaTij,
+      const Rot3& deltaRij,
+      const Matrix3& delRdelBiasOmega,
+      const Matrix3& preint_meas_cov) :
+      PreintegratedRotation(p, deltaTij, deltaRij, delRdelBiasOmega),
+      biasHat_(bias_hat),
+      preintMeasCov_(preint_meas_cov) {}
+
   const Params& p() const { return *boost::static_pointer_cast<const Params>(p_);}
   const Vector3& biasHat() const { return biasHat_; }
   const Matrix3& preintMeasCov() const { return preintMeasCov_; }

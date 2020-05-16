@@ -29,8 +29,7 @@
 
 namespace gtsam {
 
-class GTSAM_EXPORT CheiralityException: public ThreadsafeException<
-    CheiralityException> {
+class GTSAM_EXPORT CheiralityException: public ThreadsafeException<CheiralityException> {
 public:
   CheiralityException()
     : CheiralityException(std::numeric_limits<Key>::max()) {}
@@ -327,12 +326,12 @@ public:
 
   /// @deprecated
   inline size_t dim() const {
-    return 6;
+    return dimension;
   }
 
   /// @deprecated
   inline static size_t Dim() {
-    return 6;
+    return dimension;
   }
 
   /// @}

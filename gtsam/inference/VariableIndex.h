@@ -41,25 +41,21 @@ namespace gtsam {
  * \nosubgrouping
  */
 class GTSAM_EXPORT VariableIndex {
-public:
-
+ public:
   typedef boost::shared_ptr<VariableIndex> shared_ptr;
-  typedef FactorIndices Factors;
-  typedef Factors::iterator Factor_iterator;
-  typedef Factors::const_iterator Factor_const_iterator;
+  typedef FactorIndices::iterator Factor_iterator;
+  typedef FactorIndices::const_iterator Factor_const_iterator;
 
-protected:
-  typedef FastMap<Key,Factors> KeyMap;
+ protected:
+  typedef FastMap<Key, FactorIndices> KeyMap;
   KeyMap index_;
-  size_t nFactors_; // Number of factors in the original factor graph.
-  size_t nEntries_; // Sum of involved variable counts of each factor.
+  size_t nFactors_;  // Number of factors in the original factor graph.
+  size_t nEntries_;  // Sum of involved variable counts of each factor.
 
-public:
+ public:
   typedef KeyMap::const_iterator const_iterator;
   typedef KeyMap::const_iterator iterator;
   typedef KeyMap::value_type value_type;
-
-public:
 
   /// @name Standard Constructors
   /// @{
@@ -71,8 +67,10 @@ public:
    * Create a VariableIndex that computes and stores the block column structure
    * of a factor graph.
    */
-  template<class FG>
-  VariableIndex(const FG& factorGraph) : nFactors_(0), nEntries_(0) { augment(factorGraph); }
+  template <class FG>
+  explicit VariableIndex(const FG& factorGraph) : nFactors_(0), nEntries_(0) {
+    augment(factorGraph);
+  }
 
   /// @}
   /// @name Standard Interface
@@ -88,12 +86,17 @@ public:
   size_t nEntries() const { return nEntries_; }
 
   /// Access a list of factors by variable
-  const Factors& operator[](Key variable) const {
+  const FactorIndices& operator[](Key variable) const {
     KeyMap::const_iterator item = index_.find(variable);
     if(item == index_.end())
       throw std::invalid_argument("Requested non-existent variable from VariableIndex");
     else
     return item->second;
+  }
+
+  /// Return true if no factors associated with a variable
+  bool empty(Key variable) const {
+    return (*this)[variable].empty();
   }
 
   /// @}
@@ -124,6 +127,13 @@ public:
    */
   template<class FG>
   void augment(const FG& factors, boost::optional<const FactorIndices&> newFactorIndices = boost::none);
+
+  /**
+   * Augment the variable index after an existing factor now affects to more
+   * variable Keys. This can be used when solving problems incrementally, with
+   * smart factors or in general with factors with a dynamic number of Keys.
+   */
+  void augmentExistingFactor(const FactorIndex factorIndex, const KeySet & newKeys);
 
   /**
    * Remove entries corresponding to the specified factors. NOTE: We intentionally do not decrement
@@ -159,16 +169,18 @@ protected:
   Factor_const_iterator factorsEnd(Key variable) const { return internalAt(variable).end(); }
 
   /// Internal version of 'at' that asserts existence
-  const Factors& internalAt(Key variable) const {
+  const FactorIndices& internalAt(Key variable) const {
     const KeyMap::const_iterator item = index_.find(variable);
     assert(item != index_.end());
-    return item->second; }
+    return item->second; 
+  }
 
   /// Internal version of 'at' that asserts existence
-  Factors& internalAt(Key variable) {
+  FactorIndices& internalAt(Key variable) {
     const KeyMap::iterator item = index_.find(variable);
     assert(item != index_.end());
-    return item->second; }
+    return item->second; 
+  }
 
   /// @}
 };

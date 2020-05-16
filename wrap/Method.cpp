@@ -38,12 +38,12 @@ bool Method::addOverload(Str name, const ArgumentList& args,
     is_const_ = is_const;
   else if (is_const && !is_const_)
     throw std::runtime_error(
-        "Method::addOverload now designated as const whereas before it was "
-        "not");
+        "Method::addOverload: " + name +
+        " now designated as const whereas before it was not");
   else if (!is_const && is_const_)
     throw std::runtime_error(
-        "Method::addOverload now designated as non-const whereas before it "
-        "was");
+        "Method::addOverload: " + name +
+        " now designated as non-const whereas before it was");
   return first;
 }
 

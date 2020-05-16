@@ -10,13 +10,17 @@ A structure-from-motion problem on a simulated dataset
 """
 from __future__ import print_function
 
-import gtsam
+import matplotlib.pyplot as plt
 import numpy as np
+
+import gtsam
 from gtsam.examples import SFMdata
 from gtsam.gtsam import (Cal3_S2, DoglegOptimizer,
-                         GenericProjectionFactorCal3_S2, NonlinearFactorGraph,
-                         Point3, Pose3, PriorFactorPoint3, PriorFactorPose3,
-                         Rot3, SimpleCamera, Values)
+                         GenericProjectionFactorCal3_S2, Marginals,
+                         NonlinearFactorGraph, Point3, Pose3,
+                         PriorFactorPoint3, PriorFactorPose3, Rot3,
+                         SimpleCamera, Values)
+from gtsam.utils import plot
 
 
 def symbol(name: str, index: int) -> int:
@@ -75,7 +79,7 @@ def main():
 
     # Simulated measurements from each camera pose, adding them to the factor graph
     for i, pose in enumerate(poses):
-        camera = SimpleCamera(pose, K)
+        camera = PinholeCameraCal3_S2(pose, K)
         for j, point in enumerate(points):
             measurement = camera.project(point)
             factor = GenericProjectionFactorCal3_S2(
@@ -94,12 +98,10 @@ def main():
     # Intentionally initialize the variables off from the ground truth
     initial_estimate = Values()
     for i, pose in enumerate(poses):
-        r = Rot3.Rodrigues(-0.1, 0.2, 0.25)
-        t = Point3(0.05, -0.10, 0.20)
-        transformed_pose = pose.compose(Pose3(r, t))
+        transformed_pose = pose.retract(0.1*np.random.randn(6,1))
         initial_estimate.insert(symbol('x', i), transformed_pose)
     for j, point in enumerate(points):
-        transformed_point = Point3(point.vector() + np.array([-0.25, 0.20, 0.15]))
+        transformed_point = Point3(point.vector() + 0.1*np.random.randn(3))
         initial_estimate.insert(symbol('l', j), transformed_point)
     initial_estimate.print_('Initial Estimates:\n')
 
@@ -113,6 +115,11 @@ def main():
     print('initial error = {}'.format(graph.error(initial_estimate)))
     print('final error = {}'.format(graph.error(result)))
 
+    marginals = Marginals(graph, result)
+    plot.plot_3d_points(1, result, marginals=marginals)
+    plot.plot_trajectory(1, result, marginals=marginals, scale=8)
+    plot.set_axes_equal(1)
+    plt.show()
 
 if __name__ == '__main__':
     main()

@@ -29,6 +29,7 @@
 
 #include <map>
 #include <string>
+#include <iosfwd>
 
 namespace gtsam {
 
@@ -197,7 +198,11 @@ namespace gtsam {
      *  exist, it is inserted and an iterator pointing to the new element, along with 'true', is
      *  returned. */
     std::pair<iterator, bool> tryInsert(Key j, const Vector& value) {
-      return values_.emplace(j, value); 
+#ifdef TBB_GREATER_EQUAL_2020
+      return values_.emplace(j, value);
+#else
+      return values_.insert(std::make_pair(j, value));
+#endif
     }
 
     /** Erase the vector with the given key, or throw std::out_of_range if it does not exist */
@@ -228,8 +233,11 @@ namespace gtsam {
      */
     const_iterator find(Key j) const { return values_.find(j); }
 
+    /// overload operator << to print to stringstream
+    GTSAM_EXPORT friend std::ostream& operator<<(std::ostream&, const VectorValues&);
+
     /** print required by Testable for unit testing */
-    void print(const std::string& str = "VectorValues: ",
+    void print(const std::string& str = "VectorValues",
         const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     /** equals required by Testable for unit testing */
