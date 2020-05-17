@@ -160,6 +160,10 @@ NonlinearOptimizerParams::LinearSolverType NonlinearOptimizerParams::linearSolve
     return Iterative;
   if (linearSolverType == "CHOLMOD")
     return CHOLMOD;
+  if (linearSolverType == "EIGEN_CHOLESKY")
+    return EIGEN_CHOLESKY;
+  if (linearSolverType == "EIGEN_QR")
+    return EIGEN_QR;
   throw std::invalid_argument(
       "Unknown linear solver type in SuccessiveLinearizationOptimizer");
 }
