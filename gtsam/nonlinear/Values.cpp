@@ -235,7 +235,7 @@ namespace gtsam {
     if(message_.empty())
       message_ =
           "Attempting to retrieve value with key \"" + DefaultKeyFormatter(key_) + "\", type stored in Values is " +
-          std::string(storedTypeId_.name()) + " but requested type was " + std::string(requestedTypeId_.name());
+          std::string(demangle(storedTypeId_.name())) + " but requested type was " + std::string(demangle(requestedTypeId_.name()));
     return message_.c_str();
   }
 
