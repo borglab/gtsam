@@ -48,8 +48,7 @@ std::string demangle(const char* name) {
 
   std::free(demangled);
 
-#endif
-#ifdef _WIN32
+#elif _WIN32
     char undecorated_name[1024];
     
     if (UnDecorateSymbolName(
