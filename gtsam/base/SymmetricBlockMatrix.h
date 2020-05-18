@@ -71,6 +71,7 @@ namespace gtsam {
     }
 
     /// Construct from a container of the sizes of each block.
+    /// Uninitialized blocks are filled with zeros.
     template<typename CONTAINER>
     SymmetricBlockMatrix(const CONTAINER& dimensions, bool appendOneDimension = false) :
       blockStart_(0)
@@ -81,6 +82,7 @@ namespace gtsam {
     }
 
     /// Construct from iterator over the sizes of each vertical block.
+    /// Uninitialized blocks are filled with zeros.
     template<typename ITERATOR>
     SymmetricBlockMatrix(ITERATOR firstBlockDim, ITERATOR lastBlockDim, bool appendOneDimension = false) :
       blockStart_(0)
@@ -95,7 +97,7 @@ namespace gtsam {
     SymmetricBlockMatrix(const CONTAINER& dimensions, const Matrix& matrix, bool appendOneDimension = false) :
       blockStart_(0)
     {
-      matrix_.setZero(matrix.rows(), matrix.cols());
+      matrix_.resize(matrix.rows(), matrix.cols());
       matrix_.triangularView<Eigen::Upper>() = matrix.triangularView<Eigen::Upper>();
       fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
       if(matrix_.rows() != matrix_.cols())
