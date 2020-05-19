@@ -44,7 +44,7 @@ std::string demangle(const char* name) {
   int status = -1; // some arbitrary value to eliminate the compiler warning
   demangled = abi::__cxa_demangle(name, nullptr, nullptr, &status),
   
-  demangled_name = (status == 0) ? std::string(demangled) : name;
+  demangled_name = (status == 0) ? std::string(demangled) : std::string(name);
 
   std::free(demangled);
 
