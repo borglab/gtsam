@@ -3,6 +3,38 @@
 # Jose Luis Blanco Claraco, 2019 (for GTSAM)
 # Jose Luis Blanco Claraco, 2008-2018 (for MRPT)
 
+function show_help {
+    echo "USAGE:"
+    echo ""
+    echo "- to display this help: "
+    echo "prepare_debian.sh -h or -?"
+    echo ""
+    echo "- to package to your PPA: "
+    echo "prepare_debian.sh -e email_of_your_gpg_key"
+    echo ""
+    echo "to pass custom config for GTSAM, set the following"
+    echo "environment variable beforehand: "
+    echo ""
+    echo "GTSAM_PKG_CUSTOM_CMAKE_PARAMS=\"\"-DDISABLE_SSE3=ON\"\""
+    echo ""
+}
+
+while getopts "h?e:" opt; do
+    case "$opt" in
+    h|\?)
+        show_help
+        exit 0
+        ;;
+    e)  packager_email=$OPTARG
+        ;;
+    esac
+done
+
+if [ -z ${packager_email+x} ]; then
+    show_help
+    exit -1
+fi
+
 set -e   # end on error
 #set -x  # for debugging
 
@@ -162,7 +194,7 @@ fi
 
 echo "Adding a new entry to debian/changelog..."
 
-DEBEMAIL="Jose Luis Blanco Claraco <joseluisblancoc@gmail.com>" debchange $DEBCHANGE_CMD -b --distribution unstable --force-distribution New version of upstream sources.
+DEBEMAIL="${packager_email}" debchange $DEBCHANGE_CMD -b --distribution unstable --force-distribution New version of upstream sources.
 
 echo "Copying back the new changelog to a temporary file in: ${GTSAM_EXTERN_DEBIAN_DIR}changelog.new"
 cp debian/changelog ${GTSAM_EXTERN_DEBIAN_DIR}changelog.new
