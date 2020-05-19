@@ -10,7 +10,7 @@ APPEND_SNAPSHOT_NUM=0
 IS_FOR_UBUNTU=0
 APPEND_LINUX_DISTRO=""
 VALUE_EXTRA_CMAKE_PARAMS=""
-while getopts "sud:c:" OPTION
+while getopts "sud:c:e:" OPTION
 do
      case $OPTION in
          s)
@@ -25,12 +25,20 @@ do
          c)
              VALUE_EXTRA_CMAKE_PARAMS=$OPTARG
              ;;
+         e)
+             PACKAGER_EMAIL=$OPTARG
+             ;;
          ?)
              echo "Unknown command line argument!"
              exit 1
              ;;
      esac
 done
+
+if [ -z ${PACKAGER_EMAIL+x} ]; then
+    echo "must specify packager email via -e option!"
+    exit -1
+fi
 
 if [ -f CMakeLists.txt ];
 then
@@ -162,7 +170,7 @@ fi
 
 echo "Adding a new entry to debian/changelog..."
 
-DEBEMAIL="Jose Luis Blanco Claraco <joseluisblancoc@gmail.com>" debchange $DEBCHANGE_CMD -b --distribution unstable --force-distribution New version of upstream sources.
+DEBEMAIL=${PACKAGER_EMAIL} debchange $DEBCHANGE_CMD -b --distribution unstable --force-distribution New version of upstream sources.
 
 echo "Copying back the new changelog to a temporary file in: ${GTSAM_EXTERN_DEBIAN_DIR}changelog.new"
 cp debian/changelog ${GTSAM_EXTERN_DEBIAN_DIR}changelog.new

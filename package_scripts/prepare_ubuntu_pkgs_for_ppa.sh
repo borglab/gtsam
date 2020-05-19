@@ -1,15 +1,49 @@
 #!/bin/bash
 # Creates a set of packages for each different Ubuntu distribution, with the
-# intention of uploading them to:
-#   https://launchpad.net/~joseluisblancoc/
+# intention of uploading them to a PPA on launchpad
 #
 # JLBC, 2010
 # [Addition 2012:]
 #
 # You can declare a variable (in the caller shell) with extra flags for the
 # CMake in the final ./configure like:
+#
 #  GTSAM_PKG_CUSTOM_CMAKE_PARAMS="\"-DDISABLE_SSE3=ON\""
 #
+
+
+function show_help {
+    echo "USAGE:"
+    echo ""
+    echo "- to display this help: "
+    echo "prepare_ubuntu_packages_for_ppa.sh -h or -?"
+    echo ""
+    echo "- to package to your PPA: "
+    echo "prepare_ubuntu_packages_for_ppa.sh -e email_of_your_gpg_key"
+    echo ""
+    echo "to pass custom config for GTSAM, set the following"
+    echo "environment variable beforehand: "
+    echo ""
+    echo "GTSAM_PKG_CUSTOM_CMAKE_PARAMS=\"\"-DDISABLE_SSE3=ON\"\""
+    echo ""
+}
+
+while getopts "h?e:" opt; do
+    case "$opt" in
+    h|\?)
+        show_help
+        exit 0
+        ;;
+    e)  PACKAGER_EMAIL=$OPTARG
+        ;;
+    esac
+done
+
+if [ -z ${PACKAGER_EMAIL+x} ]; then
+    show_help
+    exit -1
+fi
+
 
 set -e
 
@@ -35,7 +69,6 @@ if [ -z "${GTSAM_DEB_DIR}" ]; then
        export GTSAM_DEB_DIR="$HOME/gtsam_debian"
 fi
 GTSAM_EXTERN_DEBIAN_DIR="$GTSAMSRC/debian/"
-EMAIL4DEB="Jose Luis Blanco (University of Malaga) <joseluisblancoc@gmail.com>"
 
 # Clean out dirs:
 rm -fr $gtsam_ubuntu_OUT_DIR/
@@ -56,7 +89,7 @@ do
 	# Call the standard "prepare_debian.sh" script:
 	# -------------------------------------------------------------------
 	cd ${GTSAMSRC}
-	bash package_scripts/prepare_debian.sh -s -u -d ${DEBIAN_DIST}   -c "${GTSAM_PKG_CUSTOM_CMAKE_PARAMS}"
+	bash package_scripts/prepare_debian.sh -e "$PACKAGER_EMAIL" -s -u -d ${DEBIAN_DIST}   -c "${GTSAM_PKG_CUSTOM_CMAKE_PARAMS}"
 
 	CUR_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 	source $CUR_SCRIPT_DIR/prepare_debian_gen_snapshot_version.sh # populate GTSAM_SNAPSHOT_VERSION
@@ -68,7 +101,7 @@ do
 	DEBCHANGE_CMD="--newversion ${GTSAM_VERSION_STR}~snapshot${GTSAM_SNAPSHOT_VERSION}${DEBIAN_DIST}-1"
 	echo "Changing to a new Debian version: ${DEBCHANGE_CMD}"
 	echo "Adding a new entry to debian/changelog for distribution ${DEBIAN_DIST}"
-	DEBEMAIL="Jose Luis Blanco Claraco <joseluisblancoc@gmail.com>" debchange $DEBCHANGE_CMD -b --distribution ${DEBIAN_DIST} --force-distribution New version of upstream sources.
+	DEBEMAIL="${PACKAGER_EMAIL}" debchange $DEBCHANGE_CMD -b --distribution ${DEBIAN_DIST} --force-distribution New version of upstream sources.
 
 	cp changelog /tmp/my_changelog
 
