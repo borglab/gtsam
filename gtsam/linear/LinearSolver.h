@@ -22,43 +22,41 @@
 
 namespace gtsam {
 
-  /** Common Interface Class for all linear solvers */
-  class LinearSolver {
-  public:
-    LinearSolver(LinearSolver &) = delete;
+/** Common Interface Class for all linear solvers */
+class LinearSolver {
+ public:
+  LinearSolver(LinearSolver &) = delete;
 
-    // TODO: Remove this and use trait functions instead?
-    gtsam::LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY; ///< The type of this instance
+  // TODO: Remove this and use trait functions instead?
+  gtsam::LinearSolverType linearSolverType =
+      MULTIFRONTAL_CHOLESKY;  ///< The type of this instance
 
-    virtual bool isIterative() {
-      return false;
-    };
+  virtual bool isIterative() { return false; };
 
-    virtual bool isSequential() {
-      return false;
-    };
+  virtual bool isSequential() { return false; };
 
-    /**
-     * Solve a Gaussian Factor Graph with the solver
-     * @param gfg the GFG to be optimized
-     * @return the optimization result in VectorValues
-     */
-    virtual VectorValues solve(const GaussianFactorGraph &gfg) {
-      throw std::runtime_error(
-          "BUG_CHECK: Calling solve of the base class!");
-    };
-
-    /**
-     * Factor method for generating a LinearSolver from legacy NonlinearOptimizerParams
-     * @param nonlinear optimizer parameters
-     * @return pointer to a LinearSolver object
-     */
-    static std::shared_ptr<LinearSolver> fromLinearSolverParams(const LinearSolverParams &params);
-
-  protected:
-    LinearSolver();
-
-    virtual ~LinearSolver() = default;
+  /**
+   * Solve a Gaussian Factor Graph with the solver
+   * @param gfg the GFG to be optimized
+   * @return the optimization result in VectorValues
+   */
+  virtual VectorValues solve(const GaussianFactorGraph &gfg) {
+    throw std::runtime_error("BUG_CHECK: Calling solve of the base class!");
   };
 
-}
+  /**
+   * Factor method for generating a LinearSolver from legacy
+   * NonlinearOptimizerParams
+   * @param nonlinear optimizer parameters
+   * @return pointer to a LinearSolver object
+   */
+  static boost::shared_ptr<LinearSolver> fromLinearSolverParams(
+      const LinearSolverParams &params);
+
+ protected:
+  LinearSolver();
+
+  virtual ~LinearSolver() = default;
+};
+
+}  // namespace gtsam
