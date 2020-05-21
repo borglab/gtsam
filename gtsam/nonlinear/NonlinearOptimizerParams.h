@@ -76,7 +76,7 @@ public:
   using LinearSolverType = gtsam::LinearSolverType;
 
   LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
-  std::shared_ptr<LinearSolverParams> linearSolverParams;
+  boost::shared_ptr<LinearSolverParams> linearSolverParams;
   boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
 
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
