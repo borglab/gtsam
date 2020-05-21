@@ -10,35 +10,34 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    LinearSolver.h
- * @brief   Common Interface for Linear Solvers
+ * @file    LinearSolverParams.h
+ * @brief   Parameters base class forLinear Solvers
  * @author  Fan Jiang
  */
 
 #pragma once
 
-#include<gtsam/inference/Ordering.h>
-#include<boost/optional.hpp>
+#include <gtsam/inference/Ordering.h>
+
+#include <boost/optional.hpp>
 
 namespace gtsam {
 
-  // TODO: Remove this enum
-  /** See NonlinearOptimizerParams::linearSolverType */
-  typedef enum LinearSolverType {
-    MULTIFRONTAL_CHOLESKY,
-    MULTIFRONTAL_QR,
-    SEQUENTIAL_CHOLESKY,
-    SEQUENTIAL_QR,
-    Iterative, /* Experimental Flag */
-    CHOLMOD, /* Experimental Flag */
-    EIGEN_QR,
-    EIGEN_CHOLESKY,
-  } LinearSolverType;
+// Type of solver
+typedef enum LinearSolverType {
+  MULTIFRONTAL_CHOLESKY,
+  MULTIFRONTAL_QR,
+  SEQUENTIAL_CHOLESKY,
+  SEQUENTIAL_QR,
+  Iterative, /* Experimental Flag */
+  CHOLMOD,   /* Experimental Flag */
+  EIGEN_QR,
+  EIGEN_CHOLESKY,
+} LinearSolverType;
 
-  class LinearSolverParams {
-  public:
-    LinearSolverType solverType = MULTIFRONTAL_CHOLESKY;
-    boost::optional<Ordering> ordering;
-  };
+struct LinearSolverParams {
+  LinearSolverType solverType = MULTIFRONTAL_CHOLESKY;
+  boost::optional<Ordering> ordering;
+};
 
-}
+}  // namespace gtsam
