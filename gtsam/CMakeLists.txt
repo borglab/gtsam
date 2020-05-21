@@ -172,6 +172,10 @@ if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with 
 	endif()
 endif()
 
+if(WIN32) # library to help with demangling variable names on Windows
+  target_link_libraries(gtsam PRIVATE Dbghelp)
+endif()
+
 install(
 	TARGETS gtsam
 	EXPORT GTSAM-exports
