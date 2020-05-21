@@ -87,6 +87,12 @@ endfunction()
 #    - output_dir:   The output directory
 function(build_cythonized_cpp target cpp_file output_lib_we output_dir)
   add_library(${target} MODULE ${cpp_file})
+  
+  # Use .pyd extension instead of .dll on Windows
+  if(WIN32)
+    set_target_properties(${target} PROPERTIES SUFFIX ".pyd")
+  endif()
+  
   if(APPLE)
     set(link_flags "-undefined dynamic_lookup")
   endif()
