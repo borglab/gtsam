@@ -493,23 +493,24 @@ TEST(NonlinearOptimizer, disconnected_graph) {
 /* ************************************************************************* */
 #include <gtsam/linear/iterative.h>
 
-class IterativeLM: public LevenbergMarquardtOptimizer {
-
+class IterativeLM : public LevenbergMarquardtOptimizer {
   /// Solver specific parameters
   ConjugateGradientParameters cgParams_;
   Values initial_;
 
-public:
+ public:
   /// Constructor
   IterativeLM(const NonlinearFactorGraph& graph, const Values& initialValues,
-      const ConjugateGradientParameters &p,
-      const LevenbergMarquardtParams& params = LevenbergMarquardtParams::LegacyDefaults()) :
-      LevenbergMarquardtOptimizer(graph, initialValues, params), cgParams_(p), initial_(initialValues) {
-  }
+              const ConjugateGradientParameters& p,
+              const LevenbergMarquardtParams& params =
+                  LevenbergMarquardtParams::LegacyDefaults())
+      : LevenbergMarquardtOptimizer(graph, initialValues, params),
+        cgParams_(p),
+        initial_(initialValues) {}
 
   /// Solve that uses conjugate gradient
-  virtual VectorValues solve(const GaussianFactorGraph &gfg,
-      const NonlinearOptimizerParams& params) const {
+  virtual VectorValues solve(const GaussianFactorGraph& gfg,
+                             const NonlinearOptimizerParams& params) const {
     VectorValues zeros = initial_.zeroVectors();
     return conjugateGradientDescent(gfg, zeros, cgParams_);
   }
@@ -518,19 +519,20 @@ public:
 /* ************************************************************************* */
 TEST(NonlinearOptimizer, subclass_solver) {
   Values expected;
-  expected.insert(X(1), Pose2(0.,0.,0.));
-  expected.insert(X(2), Pose2(1.5,0.,0.));
-  expected.insert(X(3), Pose2(3.0,0.,0.));
+  expected.insert(X(1), Pose2(0., 0., 0.));
+  expected.insert(X(2), Pose2(1.5, 0., 0.));
+  expected.insert(X(3), Pose2(3.0, 0., 0.));
 
   Values init;
-  init.insert(X(1), Pose2(0.,0.,0.));
-  init.insert(X(2), Pose2(0.,0.,0.));
-  init.insert(X(3), Pose2(0.,0.,0.));
+  init.insert(X(1), Pose2(0., 0., 0.));
+  init.insert(X(2), Pose2(0., 0., 0.));
+  init.insert(X(3), Pose2(0., 0., 0.));
 
   NonlinearFactorGraph graph;
-  graph.addPrior(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
-  graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.5,0.,0.), noiseModel::Isotropic::Sigma(3,1));
-  graph.addPrior(X(3), Pose2(3.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph.addPrior(X(1), Pose2(0., 0., 0.), noiseModel::Isotropic::Sigma(3, 1));
+  graph += BetweenFactor<Pose2>(X(1), X(2), Pose2(1.5, 0., 0.),
+                                noiseModel::Isotropic::Sigma(3, 1));
+  graph.addPrior(X(3), Pose2(3., 0., 0.), noiseModel::Isotropic::Sigma(3, 1));
 
   ConjugateGradientParameters p;
   Values actual = IterativeLM(graph, init, p).optimize();
