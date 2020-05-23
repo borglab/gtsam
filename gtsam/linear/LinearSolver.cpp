@@ -24,10 +24,10 @@ LinearSolver::LinearSolver() = default;
 
 boost::shared_ptr<LinearSolver> LinearSolver::fromLinearSolverParams(
     const LinearSolverParams &params) {
-  if (params.solverType == EIGEN_QR) {
+  if (params.linearSolverType == EIGEN_QR) {
     return boost::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(
         SparseEigenSolver::SparseEigenSolverType::QR, *params.ordering));
-  } else if (params.solverType == EIGEN_CHOLESKY) {
+  } else if (params.linearSolverType == EIGEN_CHOLESKY) {
     return boost::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(
         SparseEigenSolver::SparseEigenSolverType::CHOLESKY, *params.ordering));
   }

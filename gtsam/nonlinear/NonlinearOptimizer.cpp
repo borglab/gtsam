@@ -170,7 +170,7 @@ VectorValues NonlinearOptimizer::solve(
   } else if (params.isEigenQR() || params.isEigenCholesky()) {
       LinearSolverParams lsparams;
       lsparams.ordering = params.ordering;
-      lsparams.solverType = params.linearSolverType;
+      lsparams.linearSolverType = params.linearSolverType;
       auto solver = LinearSolver::fromLinearSolverParams(lsparams);
       delta = solver->solve(gfg);
   } else {
