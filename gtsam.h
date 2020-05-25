@@ -598,6 +598,7 @@ class SOn {
   // Standard Constructors
   SOn(size_t n);
   static gtsam::SOn FromMatrix(Matrix R);
+  static gtsam::SOn Lift(size_t n, Matrix R);
 
   // Testable
   void print(string s) const;
