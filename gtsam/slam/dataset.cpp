@@ -546,13 +546,6 @@ BetweenFactorPose3s parse3DFactors(const string& filename,
   ifstream is(filename.c_str());
   if (!is) throw invalid_argument("parse3DFactors: can not find file " + filename);
 
-  // If asked, create a sampler with random number generator
-  Sampler sampler;
-  if (corruptingNoise) {
-    sampler = Sampler(corruptingNoise);
-  }
-
-
   std::vector<BetweenFactor<Pose3>::shared_ptr> factors;
   while (!is.eof()) {
     char buf[LINESIZE];
@@ -595,6 +588,7 @@ BetweenFactorPose3s parse3DFactors(const string& filename,
       SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
       auto R12 = Rot3::Quaternion(qw, qx, qy, qz);
       if (corruptingNoise) {
+        Sampler sampler(corruptingNoise);
         R12 = R12.retract(sampler.sample());
       }
 
