@@ -181,63 +181,70 @@ TEST( Rot3, retract)
 }
 
 /* ************************************************************************* */
-TEST(Rot3, log)
-{
+TEST(Rot3, log) {
   static const double PI = boost::math::constants::pi<double>();
   Vector w;
   Rot3 R;
 
-#define CHECK_OMEGA(X,Y,Z) \
-  w = (Vector(3) << (double)X, (double)Y, double(Z)).finished(); \
-  R = Rot3::Rodrigues(w); \
-  EXPECT(assert_equal(w, Rot3::Logmap(R),1e-12));
+#define CHECK_OMEGA(X, Y, Z)             \
+  w = (Vector(3) << X, Y, Z).finished(); \
+  R = Rot3::Rodrigues(w);                \
+  EXPECT(assert_equal(w, Rot3::Logmap(R), 1e-12));
 
   // Check zero
-  CHECK_OMEGA(  0,   0,   0)
+  CHECK_OMEGA(0, 0, 0)
 
   // create a random direction:
-  double norm=sqrt(1.0+16.0+4.0);
-  double x=1.0/norm, y=4.0/norm, z=2.0/norm;
+  double norm = sqrt(1.0 + 16.0 + 4.0);
+  double x = 1.0 / norm, y = 4.0 / norm, z = 2.0 / norm;
 
   // Check very small rotation for Taylor expansion
   // Note that tolerance above is 1e-12, so Taylor is pretty good !
   double d = 0.0001;
-  CHECK_OMEGA(  d,   0,   0)
-  CHECK_OMEGA(  0,   d,   0)
-  CHECK_OMEGA(  0,   0,   d)
-  CHECK_OMEGA(x*d, y*d, z*d)
+  CHECK_OMEGA(d, 0, 0)
+  CHECK_OMEGA(0, d, 0)
+  CHECK_OMEGA(0, 0, d)
+  CHECK_OMEGA(x * d, y * d, z * d)
 
   // check normal rotation
   d = 0.1;
-  CHECK_OMEGA(  d,   0,   0)
-  CHECK_OMEGA(  0,   d,   0)
-  CHECK_OMEGA(  0,   0,   d)
-  CHECK_OMEGA(x*d, y*d, z*d)
+  CHECK_OMEGA(d, 0, 0)
+  CHECK_OMEGA(0, d, 0)
+  CHECK_OMEGA(0, 0, d)
+  CHECK_OMEGA(x * d, y * d, z * d)
 
   // Check 180 degree rotations
-  CHECK_OMEGA(  PI,   0,   0)
-  CHECK_OMEGA(   0,  PI,   0)
-  CHECK_OMEGA(   0,   0,  PI)
+  CHECK_OMEGA(PI, 0, 0)
+  CHECK_OMEGA(0, PI, 0)
+  CHECK_OMEGA(0, 0, PI)
 
   // Windows and Linux have flipped sign in quaternion mode
-#if !defined(__APPLE__) && defined (GTSAM_USE_QUATERNIONS)
-  w = (Vector(3) << x*PI, y*PI, z*PI).finished();
+#if !defined(__APPLE__) && defined(GTSAM_USE_QUATERNIONS)
+  w = (Vector(3) << x * PI, y * PI, z * PI).finished();
   R = Rot3::Rodrigues(w);
-  EXPECT(assert_equal(Vector(-w), Rot3::Logmap(R),1e-12));
+  EXPECT(assert_equal(Vector(-w), Rot3::Logmap(R), 1e-12));
 #else
-  CHECK_OMEGA(x*PI,y*PI,z*PI)
+  CHECK_OMEGA(x * PI, y * PI, z * PI)
 #endif
 
   // Check 360 degree rotations
-#define CHECK_OMEGA_ZERO(X,Y,Z) \
-  w = (Vector(3) << (double)X, (double)Y, double(Z)).finished(); \
-  R = Rot3::Rodrigues(w); \
-  EXPECT(assert_equal((Vector) Z_3x1, Rot3::Logmap(R)));
+#define CHECK_OMEGA_ZERO(X, Y, Z)        \
+  w = (Vector(3) << X, Y, Z).finished(); \
+  R = Rot3::Rodrigues(w);                \
+  EXPECT(assert_equal((Vector)Z_3x1, Rot3::Logmap(R)));
 
-  CHECK_OMEGA_ZERO( 2.0*PI,      0,      0)
-  CHECK_OMEGA_ZERO(      0, 2.0*PI,      0)
-  CHECK_OMEGA_ZERO(      0,      0, 2.0*PI)
-  CHECK_OMEGA_ZERO(x*2.*PI,y*2.*PI,z*2.*PI)
+  CHECK_OMEGA_ZERO(2.0 * PI, 0, 0)
+  CHECK_OMEGA_ZERO(0, 2.0 * PI, 0)
+  CHECK_OMEGA_ZERO(0, 0, 2.0 * PI)
+  CHECK_OMEGA_ZERO(x * 2. * PI, y * 2. * PI, z * 2. * PI)
+
+  // Check problematic case from Lund dataset vercingetorix.g2o
+  // This is an almost rotation with determinant not *quite* 1.
+  Rot3 Rlund(-0.98582676, -0.03958746, -0.16303092,  //
+             -0.03997006, -0.88835923, 0.45740671,   //
+             -0.16293753, 0.45743998, 0.87418537);
+  EXPECT(assert_equal(Vector3(-0.264544406, 0.742217405, 3.04117314),
+                      (Vector)Rot3::Logmap(Rlund), 1e-8));
 }
 
 /* ************************************************************************* */
@@ -536,16 +543,15 @@ TEST( Rot3, logmapStability ) {
 TEST(Rot3, quaternion) {
   // NOTE: This is also verifying the ability to convert Vector to Quaternion
   Quaternion q1(0.710997408193224, 0.360544029310185, 0.594459869568306, 0.105395217842782);
-  Rot3 R1 = Rot3((Matrix)(Matrix(3, 3) <<
-      0.271018623057411,   0.278786459830371,   0.921318086098018,
-      0.578529366719085,   0.717799701969298,  -0.387385285854279,
-     -0.769319620053772,   0.637998195662053,   0.033250932803219).finished());
+  Rot3 R1(0.271018623057411, 0.278786459830371, 0.921318086098018,
+          0.578529366719085, 0.717799701969298, -0.387385285854279,
+          -0.769319620053772, 0.637998195662053, 0.033250932803219);
 
-  Quaternion q2(0.263360579192421, 0.571813128030932, 0.494678363680335, 0.599136268678053);
-  Rot3 R2 = Rot3((Matrix)(Matrix(3, 3) <<
-      -0.207341903877828,   0.250149415542075,   0.945745528564780,
-       0.881304914479026,  -0.371869043667957,   0.291573424846290,
-       0.424630407073532,   0.893945571198514,  -0.143353873763946).finished());
+  Quaternion q2(0.263360579192421, 0.571813128030932, 0.494678363680335,
+                0.599136268678053);
+  Rot3 R2(-0.207341903877828, 0.250149415542075, 0.945745528564780,
+          0.881304914479026, -0.371869043667957, 0.291573424846290,
+          0.424630407073532, 0.893945571198514, -0.143353873763946);
 
   // Check creating Rot3 from quaternion
   EXPECT(assert_equal(R1, Rot3(q1)));

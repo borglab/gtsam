@@ -2258,8 +2258,10 @@ virtual class NonlinearOptimizerParams {
 };
 
 bool checkConvergence(double relativeErrorTreshold,
-    double absoluteErrorTreshold, double errorThreshold,
-    double currentError, double newError);
+                      double absoluteErrorTreshold, double errorThreshold,
+                      double currentError, double newError);
+bool checkConvergence(const gtsam::NonlinearOptimizerParams& params,
+                      double currentError, double newError);
 
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 virtual class GaussNewtonParams : gtsam::NonlinearOptimizerParams {
@@ -2495,7 +2497,7 @@ class NonlinearISAM {
 #include <gtsam/geometry/StereoPoint2.h>
 
 #include <gtsam/nonlinear/PriorFactor.h>
-template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias}>
+template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
@@ -2518,7 +2520,7 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
 
 
 #include <gtsam/nonlinear/NonlinearEquality.h>
-template<T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias}>
+template<T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias}>
 virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // Constructor - forces exact evaluation
   NonlinearEquality(size_t j, const T& feasible);
@@ -2759,8 +2761,10 @@ void save2D(const gtsam::NonlinearFactorGraph& graph,
 // std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>
 class BetweenFactorPose3s
 {
+  BetweenFactorPose3s();
   size_t size() const;
   gtsam::BetweenFactorPose3* at(size_t i) const;
+  void push_back(const gtsam::BetweenFactorPose3* factor);
 };
 
 #include <gtsam/slam/InitializePose3.h>
