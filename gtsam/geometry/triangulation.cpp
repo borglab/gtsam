@@ -82,7 +82,7 @@ Point3 optimize(const NonlinearFactorGraph& graph, const Values& values,
   params.absoluteErrorTol = 1.0;
   params.verbosityLM = LevenbergMarquardtParams::SILENT;
   params.verbosity = NonlinearOptimizerParams::SILENT;
-  params.linearSolverType = MULTIFRONTAL_CHOLESKY;
+  params.linearSolverType = NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY;
 
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   Values result = optimizer.optimize();

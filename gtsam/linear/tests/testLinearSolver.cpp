@@ -50,7 +50,7 @@ TEST(EigenOptimizer, optimizeEigenQR) {
   expected.insert(1, Vector2(-0.1, 0.1));
 
   LinearSolverParams params;
-  params.linearSolverType = EIGEN_QR;
+  params.linearSolverType = LinearSolverParams::EIGEN_QR;
   params.ordering = Ordering::Colamd(A);
 
   auto solver = LinearSolver::fromLinearSolverParams(params);
@@ -68,7 +68,7 @@ TEST(EigenOptimizer, optimizeEigenCholesky) {
   expected.insert(1, Vector2(-0.1, 0.1));
 
   LinearSolverParams params;
-  params.linearSolverType = EIGEN_CHOLESKY;
+  params.linearSolverType = LinearSolverParams::EIGEN_CHOLESKY;
   params.ordering = Ordering::Colamd(A);
 
   auto solver = LinearSolver::fromLinearSolverParams(params);

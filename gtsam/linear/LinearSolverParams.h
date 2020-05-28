@@ -25,21 +25,21 @@
 
 namespace gtsam {
 
-// Type of solver
-typedef enum LinearSolverType {
-  MULTIFRONTAL_CHOLESKY,
-  MULTIFRONTAL_QR,
-  SEQUENTIAL_CHOLESKY,
-  SEQUENTIAL_QR,
-  Iterative, /* Experimental Flag */
-  CHOLMOD,   /* Experimental Flag */
-  EIGEN_QR,
-  EIGEN_CHOLESKY,
-} LinearSolverType;
-
-struct LinearSolverParams {
+struct GTSAM_EXPORT LinearSolverParams {
 public:
-  LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
+  // Type of solver
+  typedef enum LinearSolverType {
+    MULTIFRONTAL_CHOLESKY,
+    MULTIFRONTAL_QR,
+    SEQUENTIAL_CHOLESKY,
+    SEQUENTIAL_QR,
+    Iterative, /* Experimental Flag */
+    CHOLMOD,   /* Experimental Flag */
+    EIGEN_QR,
+    EIGEN_CHOLESKY,
+  } LinearSolverType;
+
+  LinearSolverType linearSolverType = LinearSolverParams::MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
   Ordering::OrderingType orderingType = Ordering::COLAMD; ///< The method of ordering use during variable elimination (default COLAMD)
   boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
 

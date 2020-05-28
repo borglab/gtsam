@@ -49,24 +49,24 @@ std::string LinearSolverParams::linearSolverTranslator(
 }
 
 /* ************************************************************************* */
-LinearSolverType LinearSolverParams::linearSolverTranslator(
+LinearSolverParams::LinearSolverType LinearSolverParams::linearSolverTranslator(
     const std::string &linearSolverType) const {
   if (linearSolverType == "MULTIFRONTAL_CHOLESKY")
-    return MULTIFRONTAL_CHOLESKY;
+    return LinearSolverParams::MULTIFRONTAL_CHOLESKY;
   if (linearSolverType == "MULTIFRONTAL_QR")
-    return MULTIFRONTAL_QR;
+    return LinearSolverParams::MULTIFRONTAL_QR;
   if (linearSolverType == "SEQUENTIAL_CHOLESKY")
-    return SEQUENTIAL_CHOLESKY;
+    return LinearSolverParams::SEQUENTIAL_CHOLESKY;
   if (linearSolverType == "SEQUENTIAL_QR")
-    return SEQUENTIAL_QR;
+    return LinearSolverParams::SEQUENTIAL_QR;
   if (linearSolverType == "ITERATIVE")
-    return Iterative;
+    return LinearSolverParams::Iterative;
   if (linearSolverType == "CHOLMOD")
-    return CHOLMOD;
+    return LinearSolverParams::CHOLMOD;
   if (linearSolverType == "EIGEN_CHOLESKY")
-    return EIGEN_CHOLESKY;
+    return LinearSolverParams::EIGEN_CHOLESKY;
   if (linearSolverType == "EIGEN_QR")
-    return EIGEN_QR;
+    return LinearSolverParams::EIGEN_QR;
   throw std::invalid_argument(
       "Unknown linear solver type in SuccessiveLinearizationOptimizer");
 }

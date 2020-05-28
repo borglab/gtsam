@@ -23,13 +23,13 @@
 namespace gtsam {
 
 /** Common Interface Class for all linear solvers */
-class LinearSolver {
+class GTSAM_EXPORT LinearSolver {
  public:
   LinearSolver(LinearSolver &) = delete;
 
   // TODO: Remove this and use trait functions instead?
-  gtsam::LinearSolverType linearSolverType =
-      MULTIFRONTAL_CHOLESKY;  ///< The type of this instance
+  LinearSolverParams::LinearSolverType linearSolverType =
+      LinearSolverParams::MULTIFRONTAL_CHOLESKY;  ///< The type of this instance
 
   virtual bool isIterative() { return false; };
 
