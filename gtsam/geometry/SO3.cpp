@@ -262,12 +262,12 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
   // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
   // we do something special
   if (tr + 1.0 < 1e-10) {
-    if (std::abs(R33 + 1.0) > 1e-5)
+    if (std::abs(R33 + 1.0) > 1e-10)
       omega = (M_PI / sqrt(2.0 + 2.0 * R33)) * Vector3(R13, R23, 1.0 + R33);
-    else if (std::abs(R22 + 1.0) > 1e-5)
+    else if (std::abs(R22 + 1.0) > 1e-10)
       omega = (M_PI / sqrt(2.0 + 2.0 * R22)) * Vector3(R12, 1.0 + R22, R32);
     else
-      // if(std::abs(R.r1_.x()+1.0) > 1e-5)  This is implicit
+      // if(std::abs(R.r1_.x()+1.0) > 1e-10)  This is implicit
       omega = (M_PI / sqrt(2.0 + 2.0 * R11)) * Vector3(1.0 + R11, R21, R31);
   } else {
     double magnitude;
