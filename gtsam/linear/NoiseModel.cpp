@@ -619,6 +619,7 @@ void Isotropic::WhitenInPlace(Eigen::Block<Matrix> H) const {
 // Unit
 /* ************************************************************************* */
 void Unit::print(const std::string& name) const {
+  //TODO(Varun): Do we need that space at the end?
   cout << name << "unit (" << dim_ << ") " << endl;
 }
 
