@@ -184,6 +184,7 @@ namespace gtsam {
       // Solve A*x = b using sparse Cholesky from Eigen
       Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::NaturalOrdering<int>>
           solver(AtA);
+
       gttoc_(EigenOptimizer_optimizeEigenCholesky_create_solver);
 
       gttic_(EigenOptimizer_optimizeEigenCholesky_solve);

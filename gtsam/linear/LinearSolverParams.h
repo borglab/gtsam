@@ -11,7 +11,7 @@
 
 /**
  * @file    LinearSolverParams.h
- * @brief   Parameters base class forLinear Solvers
+ * @brief   Parameters base class for Linear Solvers
  * @author  Fan Jiang
  */
 
