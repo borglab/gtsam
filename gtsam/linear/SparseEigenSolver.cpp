@@ -108,7 +108,6 @@ namespace gtsam {
     // ...and make a sparse matrix with it.
     Eigen::SparseMatrix<double, Eigen::ColMajor> Ab(row + 1, currentColIndex + 1);
     Ab.setFromTriplets(entries.begin(), entries.end());
-    Ab.makeCompressed();
     return Ab;
   }
 
@@ -171,23 +170,20 @@ namespace gtsam {
 
       return VectorValues(x, gfg.getKeyDimMap());
     } else if (solverType == CHOLESKY) {
-//      gttic_(EigenOptimizer_optimizeEigenCholesky);
-//      SpMat Ab = sparseJacobianEigen(gfg, ordering);
-//      auto rows = Ab.rows(), cols = Ab.cols();
-//      auto A = Ab.block(0, 0, rows, cols - 1);
-//      auto At = A.transpose();
-      auto Ab = obtainSparseMatrix(gfg, ordering);
-      auto A = Ab.first;
-      auto b = Ab.second;
+      gttic_(EigenOptimizer_optimizeEigenCholesky);
+      SpMat Ab = sparseJacobianEigen(gfg, ordering);
+      auto rows = Ab.rows(), cols = Ab.cols();
+      auto A = Ab.block(0, 0, rows, cols - 1);
       auto At = A.transpose();
-//      SpMat AtA(A.cols(), A.cols());
-//
-//      AtA.selfadjointView<Eigen::Lower>().rankUpdate(At);
+      auto b = Ab.col(cols - 1);
+
+      SpMat AtA(A.cols(), A.cols());
+      AtA.selfadjointView<Eigen::Lower>().rankUpdate(At);
 
       gttic_(EigenOptimizer_optimizeEigenCholesky_create_solver);
       // Solve A*x = b using sparse Cholesky from Eigen
       Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::NaturalOrdering<int>>
-          solver(At * A);
+          solver(AtA);
       gttoc_(EigenOptimizer_optimizeEigenCholesky_create_solver);
 
       gttic_(EigenOptimizer_optimizeEigenCholesky_solve);
