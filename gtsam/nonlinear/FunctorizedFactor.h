@@ -37,8 +37,8 @@ namespace gtsam {
  * 
  * Example:
  *   Key key = Symbol('X', 0);
- *
  *   auto model = noiseModel::Isotropic::Sigma(9, 1);
+ *
  *   /// Functor that takes a matrix and multiplies every element by m
  *   class MultiplyFunctor {
  *     double m_; ///< simple multiplier
