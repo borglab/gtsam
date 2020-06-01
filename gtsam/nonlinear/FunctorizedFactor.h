@@ -10,8 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  FunctorizedFactor.h
- *  @author Varun Agrawal
+ * @file FunctorizedFactor.h
+ * @date May 31, 2020
+ * @author Varun Agrawal
  **/
 
 #pragma once
@@ -26,13 +27,35 @@ namespace gtsam {
 /**
  * Factor which evaluates functor and uses the result to compute
  * error on provided measurement.
- * The provided FUNCTOR should provide two definitions: `argument_type` which
+ * The provided FUNCTOR should provide two type aliases: `argument_type` which
  * corresponds to the type of input it accepts and `return_type` which indicates
  * the type of the return value. This factor uses those type values to construct
  * the functor.
  *
  * Template parameters are
  * @param FUNCTOR: A class which operates as a functor.
+ * 
+ * Example:
+ *   Key key = Symbol('X', 0);
+ *
+ *   auto model = noiseModel::Isotropic::Sigma(9, 1);
+ *   /// Functor that takes a matrix and multiplies every element by m
+ *   class MultiplyFunctor {
+ *     double m_; ///< simple multiplier
+ *    public:
+ *     using argument_type = Matrix;
+ *     using return_type = Matrix;
+ *     MultiplyFunctor(double m) : m_(m) {}
+ *     Matrix operator()(const Matrix &X,
+ *              OptionalJacobian<-1, -1> H = boost::none) const {
+ *       if (H) *H = m_ * Matrix::Identity(X.rows()*X.cols(), X.rows()*X.cols());
+ *       return m_ * X;
+ *     }
+ *   };
+ *
+ *   Matrix measurement = Matrix::Identity(3, 3);
+ *   double multiplier = 2.0;
+ *   FunctorizedFactor<MultiplyFunctor> factor(keyX, measurement, model, multiplier);
  */
 template <typename FUNCTOR>
 class GTSAM_EXPORT FunctorizedFactor
@@ -82,27 +105,24 @@ public:
 
   /// @name Testable
   /// @{
-  GTSAM_EXPORT friend std::ostream &
-  operator<<(std::ostream &os, const FunctorizedFactor<FUNCTOR> &f) {
-    os << "  noise model sigmas: " << f.noiseModel_->sigmas().transpose();
-    return os;
-  }
   void print(const std::string &s = "",
              const KeyFormatter &keyFormatter = DefaultKeyFormatter) const {
     Base::print(s, keyFormatter);
     std::cout << s << (s != "" ? " " : "") << "FunctorizedFactor("
               << keyFormatter(this->key()) << ")" << std::endl;
     traits<typename FUNCTOR::return_type>::Print(measured_, "  measurement: ");
-    std::cout << *this << std::endl;
+    std::cout << "  noise model sigmas: " << noiseModel_->sigmas().transpose()
+              << std::endl;
   }
 
-    virtual bool equals(const NonlinearFactor &other, double tol = 1e-9)
-    const {
-      const FunctorizedFactor<FUNCTOR> *e =
-          dynamic_cast<const FunctorizedFactor<FUNCTOR>*>(&other);
-      const bool base = Base::equals(*e, tol);
-      return e != nullptr && base;
-    }
+  virtual bool equals(const NonlinearFactor &other, double tol = 1e-9) const {
+    const FunctorizedFactor<FUNCTOR> *e =
+        dynamic_cast<const FunctorizedFactor<FUNCTOR> *>(&other);
+    const bool base = Base::equals(*e, tol);
+    return e && Base::equals(other, tol) &&
+           traits<typename FUNCTOR::return_type>::Equals(this->measured_, e->measured_,
+                                                tol);
+  }
   /// @}
 
 private:
@@ -117,7 +137,9 @@ private:
   }
 };
 
-// TODO(Varun): Include or kill?
-// template <> struct traits<Functorized> : public Testable<ImuFactor2> {};
+/// traits
+template <typename FUNCTOR>
+struct traits<FunctorizedFactor<FUNCTOR>>
+    : public Testable<FunctorizedFactor<FUNCTOR>> {};
 
 } // namespace gtsam
