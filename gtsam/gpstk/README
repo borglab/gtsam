@@ -1,0 +1,260 @@
+// this is for Doxygen to parse and add to the documentation
+
+/**
+ * @file README
+ * Documentation for Doxygen
+ */
+
+/** @mainpage
+ * This documentation describes the architecture and design of the
+ * GPS ToolKit (GPSTk), produced by the Space and Geophysics Laboratory (SGL)
+ * of Applied Research Laboratories, The University of Texas at Austin (ARL:UT).
+ *
+ * This documentation is generated nightly from the GPSTk Subversion repository.
+ *
+ * \section intro Introduction
+ * GPSTK is a library of support routines designed for use by programmers
+ * developing applications that read and write (particularly in RINEX format),
+ * process and otherwise manipulate GPS data. It is characterized by the following:
+ * - Modern, ANSI C++; highly object oriented
+ * - Uses templates, the Standard Template Library (STL) and iostreams classes
+ * - Portable and platform independent
+ * - Includes full implementation of the RINEX (Receiver Independent Exchange Format) I/O
+ *
+ * \section codedesign Code Design
+ * \subsection namesp Namespaces
+ * All GPSTK code is placed within the gpstk namespace. Within the gpstk namespace, other
+ * namespaces are defined for certain specialized functionality; these include
+ * - gpstk::BinUtils in the Binary utilities module
+ * - gpstk::FileUtils in the File utilities module
+ * - gpstk::StringUtils in the String utilities module
+ *
+ * Namespace std is also used throughout the GPSTK.
+ *
+ * \section content Library Content
+ * The library consists of several modules, which are more or less dependent upon each
+ * other. These include
+ * - Exceptions for use throughout the library
+ * - Binary utilities
+ * - STL "helpers"
+ * - String utilities
+ * - Command line options
+ * - Date and time conversions
+ * - Formatted file I/O
+ * - File utilities, including file filters and filter hunter
+ * - Vector and Matrix algorithms
+ * - Mathematical algorithms
+ * - Geodetic coordinates, conversions, etc
+ * - Complete RINEX implementation (including Glonass and other data),
+ *    with extensions that allow user-defined observation types
+ *   -# Rinex Meterological file I/O
+ *   -# Rinex Navigation file I/O
+ *   -# Rinex Observation file I/O
+ * - Ephemeris calculations, including almanac and ICD-GPS-200 algorithms
+ * - Ephemeris I/O and storage
+ * - SP3 format file ("precise ephemeris") I/O and storage
+ * - GPS navigation solution algorithms
+ * - Basic application frameworks
+ * - P-Code generator
+ * - GNSS Data Structures handling
+ *
+ * \section applic Applications
+ * This distribution also includes several stand-alone application programs which
+ * also serve as examples of how to use the GPSTK. These include
+ * - Rinex summary
+ * - Rinex editor
+ * - Discontinuity Correction (i.e. cycle slip fixing)
+ * - Residual and correction generator
+ *
+ */
+
+/** @namespace gpstk Namespace for entire GPSTK library. */
+
+// These are all the example and test files we have and a brief description
+// of each.
+
+/**
+ * @example AnotherFileFilterTest.cpp
+ */
+
+/**
+ * @example EphComp.cpp
+ */
+
+/**
+ * @example FileSpecTest.cpp
+ */
+
+/**
+ * @example MatrixTest.cpp
+ */
+
+/**
+ * @example NavMerge.cpp
+ */
+
+/**
+ * @example RungeKuttaTest.cpp
+ * The full, nonlinear equation of motion for a simple pendulum.
+ * Tests the RungeKutta4 integrator class.
+ *
+ */
+
+/**
+ * @example Xbegweek.cpp
+ */
+
+/**
+ * @example Xendweek.cpp
+ */
+
+/**
+ * @example daytimetest.cpp
+ * Tests the DayTime class.
+ */
+
+/**
+ * @example exceptiontest.cpp
+ * Tests exceptions.
+ */
+
+/**
+ * @example petest.cpp
+ */
+
+/**
+ * @example rinex_met_read_write.cpp
+ * Reads an input RINEX Met file, writes out the same data. The input and 
+ * output files should diff without error if everything is working right.
+ */
+
+/**
+ * @example rinex_met_test.cpp
+ * Reads an input RINEX Met file to test file data processing.
+ */
+
+/**
+ * @example rinex_nav_read_write.cpp
+ * Reads an input RINEX Nav file, writes out the same data. The input and 
+ * output files should diff without error if everything is working right.
+ */
+
+/**
+ * @example rinex_nav_test.cpp
+ * Reads an input RINEX Nav file to test file data processing.
+ */
+
+/**
+ * @example rinex_obs_read_write.cpp
+ * Reads an input RINEX Obs file, writes out the same data. The input and 
+ * output files should diff without error if everything is working right.
+ */
+
+/**
+ * @example rinex_obs_test.cpp
+ * Reads an input RINEX Obs file to test file data processing.
+ */
+
+/**
+ * @example stringutiltest.cpp
+ * Tests the string utilities.
+ */
+
+/**
+ * @example example1.cpp
+ * Demonstrates the most basic properties of DayTime.
+ */
+
+/**
+ * @example example2.cpp
+ * Demonstrates the most basic properties of RINEX input and output.
+ */
+
+/**
+ * @example example3.cpp
+ * Demonstrates simple manipulation of RINEX observables.
+ */
+
+/**
+ * @example example4.cpp
+ * Demonstrates the position solutions.
+ */
+
+/**
+ * @example example5.cpp
+ * Demonstrates how to use some very useful high-level GPSTk classes for positioning.
+ */
+
+/**
+ * @example example6.cpp
+ * Shows a minimalist way to process GPS data using GNSS Data Structures (DataStructures.hpp).
+ */
+
+/**
+ * @example example7.cpp
+ * Demonstrates several different ways to process GPS data using GNSS Data Structures (DataStructures.hpp).
+ */
+
+/**
+ * @example example8.cpp
+ * This program shows how to use GNSS Data Structures (GDS) in a basic way to
+ * obtain 'Precise Point Positioning' (PPP). (DataStructures.hpp).
+ */
+
+/**
+ * @example example9.cpp
+ * This program shows how to use GNSS Data Structures (GDS) and other classes
+ * to build a reasonable complete application that computes 'Precise Point
+ * Positioning' (PPP). (DataStructures.hpp).
+ */
+
+/**
+ * @example example10.cpp
+ * This program shows how to use GNSS Data Structures to obtain phase-based
+ * differential positioning (single-differences). (DataStructures.hpp).
+ */
+
+/**
+ * @example example11.cpp
+ * Example of GPSTk's built-in postscript plotting routines.
+ */
+
+/**
+ * @example example12.cpp
+ * This is a example program to demonstrate some of the functionality of the
+ * ObsID class. The intent is to use ObsID as a key in a STL map of gps data.
+ * ObsID supports identifying the data in a manner that is similiar but can
+ * extend the Rinex 3 specification.
+ */
+
+/**
+ * @example example13.cpp
+ * Example of native surface plots.
+ */
+
+/**
+ * @example example14.cpp
+ * This program shows how to use GNSS Data Structures (GDS) and other classes
+ * to build a reasonable complete application that implements the "Precise
+ * Orbits Positioning" (POP) strategy. (DataStructures.hpp).
+ */
+
+/**
+ * @example DayTimeToleranceTest.cpp
+ * Tests DayTime for user-defined comparison tolerances.
+ */
+
+/**
+ * @example DayTimeIncrementTest.cpp
+ * Tests DayTime's ability to reject accumulation of floating point error
+ * when incremented or decremented.
+ */
+
+/** EMACS **
+ * Local variables:
+ * mode: c++
+ * End:
+ */
+
+
+

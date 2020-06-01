@@ -100,6 +100,13 @@ public:
     return isam_.getLinearizationPoint();
   }
 
+  /** Test(Jin): Update the current linearization point */
+  template <typename ValueType>
+  void updateLinearizationPoint(Key j, const ValueType& val) {
+    isam_.updateLinearizationPoint(
+        j, static_cast<const Value&>(GenericValue<ValueType>(val)));
+  }
+
   /** Access the current set of deltas to the linearization point */
   const VectorValues& getDelta() const {
     return isam_.getDelta();

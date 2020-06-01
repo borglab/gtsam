@@ -39,11 +39,15 @@ typedef Eigen::VectorXd Vector;
 
 // Commonly used fixed size vectors
 typedef Eigen::Matrix<double, 1, 1> Vector1;
+typedef Eigen::Matrix<double,1,34> gnssStateVector;
+typedef Eigen::Matrix<double, 1,1> phaseBias;
 typedef Eigen::Vector2d Vector2;
 typedef Eigen::Vector3d Vector3;
 
 static const Eigen::MatrixBase<Vector2>::ConstantReturnType Z_2x1 = Vector2::Zero();
 static const Eigen::MatrixBase<Vector3>::ConstantReturnType Z_3x1 = Vector3::Zero();
+static const Eigen::MatrixBase<gnssStateVector>::ConstantReturnType Z_34x1 = gnssStateVector::Zero();
+static const Eigen::MatrixBase<phaseBias>::ConstantReturnType Z_32x1 = phaseBias::Zero();
 
 // Create handy typedefs and constants for vectors with N>3
 // VectorN and Z_Nx1, for N=1..9

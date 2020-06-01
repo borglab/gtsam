@@ -204,6 +204,12 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   /// Access the current linearization point
   const Values& getLinearizationPoint() const { return theta_; }
 
+  /** Test(Jin): Update the current linearization point */
+  template <typename ValueType>
+  void updateLinearizationPoint(Key j, const ValueType& val) {
+    theta_.update(j, val);
+  }
+
   /// Check whether variable with given key exists in linearization point
   bool valueExists(Key key) const { return theta_.exists(key); }
 

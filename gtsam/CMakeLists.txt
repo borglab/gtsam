@@ -15,7 +15,11 @@ set (gtsam_subdirs
     sfm
     slam
     smart
-	navigation
+    navigation
+    gnssNavigation
+    configReader
+    robustModels
+    gpstk
 )
 
 set(gtsam_srcs)
