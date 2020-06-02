@@ -10,13 +10,13 @@ RUN apt-get update && \
 # Install compiler
 RUN apt-get install -y build-essential
 
-# Clone GTSAM
+# Clone GTSAM (develop branch)
 WORKDIR /usr/src/
-RUN git clone https://bitbucket.org/gtborg/gtsam.git
-RUN mkdir build
+RUN git clone --single-branch --branch develop https://github.com/borglab/gtsam.git
 
-# Run cmake
+# Change to build directory. Will be created automatically.
 WORKDIR /usr/src/gtsam/build
+# Run cmake
 RUN cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_WITH_EIGEN_MKL=OFF \

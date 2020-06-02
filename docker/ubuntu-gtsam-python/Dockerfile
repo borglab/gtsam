@@ -7,7 +7,7 @@ FROM dellaert/ubuntu-gtsam:latest
 RUN apt-get install -y python3-pip python3-dev
 
 # Install python wrapper requirements
-RUN pip3 install -U -r /usr/src/gtsam/cython/requirements.txt
+RUN python3 -m pip install -U -r /usr/src/gtsam/cython/requirements.txt
 
 # Run cmake again, now with cython toolbox on
 WORKDIR /usr/src/gtsam/build
@@ -22,7 +22,7 @@ RUN cmake \
     ..
 
 # Build again, as ubuntu-gtsam image cleaned
-RUN make -j3 install && make clean
+RUN make -j4 install && make clean
 
 # Needed to run python wrapper:
 RUN echo 'export PYTHONPATH=/usr/local/cython/:$PYTHONPATH' >> /root/.bashrc 
