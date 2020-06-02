@@ -147,7 +147,7 @@ public:
     VectorValues d;
 
     hessianDiagonalAdd(d);
-    
+
     return d;
   }
 
