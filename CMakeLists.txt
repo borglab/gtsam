@@ -275,12 +275,18 @@ endif()
 ### use our patched version of Eigen
 ### See:  http://eigen.tuxfamily.org/bz/show_bug.cgi?id=704 (Householder QR MKL selection)
 ###       http://eigen.tuxfamily.org/bz/show_bug.cgi?id=705 (Fix MKL LLT return code)
-option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
+
+# Default: Use system's Eigen if found automatically:
+find_package(Eigen3 QUIET)
+set(USE_SYSTEM_EIGEN_INITIAL_VALUE ${Eigen3_FOUND})
+option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" ${USE_SYSTEM_EIGEN_INITIAL_VALUE})
+unset(USE_SYSTEM_EIGEN_INITIAL_VALUE)
+
 option(GTSAM_WITH_EIGEN_UNSUPPORTED "Install Eigen's unsupported modules" OFF)
 
 # Switch for using system Eigen or GTSAM-bundled Eigen
 if(GTSAM_USE_SYSTEM_EIGEN)
-	find_package(Eigen3 REQUIRED)
+	find_package(Eigen3 REQUIRED) # need to find again as REQUIRED
 
 	# Use generic Eigen include paths e.g. <Eigen/Core>
 	set(GTSAM_EIGEN_INCLUDE_FOR_INSTALL "${EIGEN3_INCLUDE_DIR}")
