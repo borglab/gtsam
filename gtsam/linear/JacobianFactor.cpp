@@ -544,6 +544,12 @@ Matrix JacobianFactor::information() const {
 /* ************************************************************************* */
 VectorValues JacobianFactor::hessianDiagonal() const {
   VectorValues d;
+  hessianDiagonalAdd(d);
+  return d;
+}
+
+/* ************************************************************************* */
+void JacobianFactor::hessianDiagonalAdd(VectorValues& d) const {
   for (size_t pos = 0; pos < size(); ++pos) {
     Key j = keys_[pos];
     size_t nj = Ab_(pos).cols();
@@ -554,9 +560,12 @@ VectorValues JacobianFactor::hessianDiagonal() const {
         model_->whitenInPlace(column_k);
       dj(k) = dot(column_k, column_k);
     }
-    d.emplace(j, dj);
+    if(d.exists(j)) {
+      d.at(j) += dj;
+    } else {
+      d.emplace(j, dj);
+    }
   }
-  return d;
 }
 
 /* ************************************************************************* */

@@ -311,6 +311,17 @@ VectorValues HessianFactor::hessianDiagonal() const {
 }
 
 /* ************************************************************************* */
+void HessianFactor::hessianDiagonalAdd(VectorValues &d) const {
+  for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
+    if(d.exists(keys_[j])) {
+      d.at(keys_[j]) += info_.diagonal(j);
+    } else {
+      d.emplace(keys_[j], info_.diagonal(j));
+    }
+  }
+}
+
+/* ************************************************************************* */
 // Raw memory access version should be called in Regular Factors only currently
 void HessianFactor::hessianDiagonal(double* d) const {
   throw std::runtime_error(

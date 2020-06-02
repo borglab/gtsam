@@ -296,6 +296,9 @@ namespace gtsam {
     /// Return the diagonal of the Hessian for this factor
     VectorValues hessianDiagonal() const override;
 
+    /// Add the current diagonal to a VectorValues instance
+    void hessianDiagonalAdd(VectorValues& d) const override;
+
     /// Raw memory access version of hessianDiagonal
     void hessianDiagonal(double* d) const override;
 
