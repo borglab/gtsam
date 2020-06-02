@@ -1,29 +1,31 @@
+#  GTSAM Ubuntu image with Python wrapper support.
+
 # Get the base Ubuntu/GTSAM image from Docker Hub
-FROM dellaert/ubuntu-gtsam:bionic
+FROM dellaert/ubuntu-gtsam:latest
 
 # Install pip
-RUN apt-get install -y python-pip python-dev
+RUN apt-get install -y python3-pip python3-dev
 
 # Install python wrapper requirements
-RUN pip install -r /usr/src/gtsam/cython/requirements.txt
+RUN pip3 install -U -r /usr/src/gtsam/cython/requirements.txt
 
 # Run cmake again, now with cython toolbox on
 WORKDIR /usr/src/gtsam/build
 RUN cmake \
     -DCMAKE_BUILD_TYPE=Release \
-    -DGTSAM_USE_SYSTEM_EIGEN=ON \
     -DGTSAM_WITH_EIGEN_MKL=OFF \
     -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
     -DGTSAM_BUILD_TIMING_ALWAYS=OFF \
     -DGTSAM_BUILD_TESTS=OFF \
     -DGTSAM_INSTALL_CYTHON_TOOLBOX=ON \
+    -DGTSAM_PYTHON_VERSION=3\
     ..
 
 # Build again, as ubuntu-gtsam image cleaned
 RUN make -j3 install && make clean
 
 # Needed to run python wrapper:
-RUN echo 'export PYTHONPATH=/usr/local/cython/' >> /root/.bashrc 
+RUN echo 'export PYTHONPATH=/usr/local/cython/:$PYTHONPATH' >> /root/.bashrc 
 
 # Run bash
 CMD ["bash"]

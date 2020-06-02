@@ -1,5 +1,7 @@
+# Ubuntu image with GTSAM installed. Configured with  Boost and TBB support.
+
 # Get the base Ubuntu image from Docker Hub
-FROM dellaert/ubuntu-boost-tbb-eigen3:bionic
+FROM dellaert/ubuntu-boost-tbb:latest
 
 # Install git
 RUN apt-get update && \ 
@@ -11,13 +13,12 @@ RUN apt-get install -y build-essential
 # Clone GTSAM
 WORKDIR /usr/src/
 RUN git clone https://bitbucket.org/gtborg/gtsam.git
+RUN mkdir build
 
 # Run cmake
-RUN mkdir /usr/src/gtsam/build
 WORKDIR /usr/src/gtsam/build
 RUN cmake \
     -DCMAKE_BUILD_TYPE=Release \
-    -DGTSAM_USE_SYSTEM_EIGEN=ON \
     -DGTSAM_WITH_EIGEN_MKL=OFF \
     -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
     -DGTSAM_BUILD_TIMING_ALWAYS=OFF \
@@ -26,10 +27,10 @@ RUN cmake \
     ..
 
 # Build
-RUN make -j3 install && make clean
+RUN make -j4 install && make clean
 
 # Needed to link with GTSAM
-RUN echo 'export LD_LIBRARY_PATH=/usr/local/lib' >> /root/.bashrc 
+RUN echo 'export LD_LIBRARY_PATH=/usr/local/lib:LD_LIBRARY_PATH' >> /root/.bashrc 
 
 # Run bash
 CMD ["bash"]
