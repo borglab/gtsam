@@ -560,8 +560,9 @@ void JacobianFactor::hessianDiagonalAdd(VectorValues& d) const {
         model_->whitenInPlace(column_k);
       dj(k) = dot(column_k, column_k);
     }
-    if(d.exists(j)) {
-      d.at(j) += dj;
+    auto item = d.find(j);
+    if(item != d.end()) {
+      item->second += dj;
     } else {
       d.emplace(j, dj);
     }
