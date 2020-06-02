@@ -179,7 +179,7 @@ namespace gtsam {
      *  j is already used.
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated. */
-    iterator emplace(Key j, const Vector& value);
+    std::pair<VectorValues::iterator, bool> emplace(Key j, const Vector& value);
 
     /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
      *  j is already used.

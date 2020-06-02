@@ -98,8 +98,13 @@ namespace gtsam
             // Insert solution into a VectorValues
             DenseIndex vectorPosition = 0;
             for(GaussianConditional::const_iterator frontal = c.beginFrontals(); frontal != c.endFrontals(); ++frontal) {
-              VectorValues::const_iterator r =
-                collectedResult.emplace(*frontal, solution.segment(vectorPosition, c.getDim(frontal)));
+              auto result = collectedResult.emplace(*frontal, solution.segment(vectorPosition, c.getDim(frontal)));
+              if(!result.second)
+                  throw std::invalid_argument(
+                      "Requested to emplace variable '" + DefaultKeyFormatter(*frontal)
+                      + "' already in this VectorValues.");
+              
+              VectorValues::const_iterator r = result.first;
               myData.cliqueResults.emplace(r->first, r);
               vectorPosition += c.getDim(frontal);
             }
