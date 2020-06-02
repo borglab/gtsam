@@ -484,7 +484,7 @@ TEST(Unit3, ErrorBetweenFactor) {
   }
 }
 
-TEST(Unit3, copy_assign) {
+TEST(Unit3, CopyAssign) {
   Unit3 p{1, 0.2, 0.3};
 
   EXPECT(p.error(p).isZero());
