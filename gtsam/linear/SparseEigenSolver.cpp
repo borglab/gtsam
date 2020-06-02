@@ -22,7 +22,6 @@
 
 #include <gtsam/base/timing.h>
 #include <gtsam/linear/SparseEigenSolver.h>
-#include <Eigen/MetisSupport>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -31,7 +30,7 @@ using namespace std;
 
 namespace gtsam {
 
-  using SpMat = Eigen::SparseMatrix<double, Eigen::ColMajor>;
+  using SpMat = Eigen::SparseMatrix<double, Eigen::ColMajor, Eigen::Index>;
 
   Eigen::SparseMatrix<double>
   sparseJacobianEigen(
@@ -161,7 +160,7 @@ namespace gtsam {
 
       // Solve A*x = b using sparse QR from Eigen
       gttic_(EigenOptimizer_optimizeEigenQR_create_solver);
-      Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<int>> solver(Ab_pair.first);
+      Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<Eigen::Index>> solver(Ab_pair.first);
       gttoc_(EigenOptimizer_optimizeEigenQR_create_solver);
 
       gttic_(EigenOptimizer_optimizeEigenQR_solve);
@@ -178,11 +177,11 @@ namespace gtsam {
       auto b = Ab.col(cols - 1);
 
       SpMat AtA(A.cols(), A.cols());
-      AtA.selfadjointView<Eigen::Lower>().rankUpdate(At);
+      AtA.selfadjointView<Eigen::Upper>().rankUpdate(At);
 
       gttic_(EigenOptimizer_optimizeEigenCholesky_create_solver);
       // Solve A*x = b using sparse Cholesky from Eigen
-      Eigen::SimplicialLDLT<SpMat, Eigen::Lower, Eigen::NaturalOrdering<int>>
+      Eigen::SimplicialLDLT<SpMat, Eigen::Upper, Eigen::NaturalOrdering<Eigen::Index>>
           solver(AtA);
 
       gttoc_(EigenOptimizer_optimizeEigenCholesky_create_solver);
