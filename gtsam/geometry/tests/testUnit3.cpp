@@ -484,6 +484,15 @@ TEST(Unit3, ErrorBetweenFactor) {
   }
 }
 
+TEST(Unit3, copy_assign) {
+  Unit3 p{1, 0.2, 0.3};
+
+  EXPECT(p.error(p).isZero());
+
+  p = Unit3{-1, 2, 8};
+  EXPECT(p.error(p).isZero());
+}
+
 /* ************************************************************************* */
 TEST(actualH, Serialization) {
   Unit3 p(0, 1, 0);
