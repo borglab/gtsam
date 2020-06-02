@@ -103,7 +103,7 @@ namespace gtsam
                   throw std::invalid_argument(
                       "Requested to emplace variable '" + DefaultKeyFormatter(*frontal)
                       + "' already in this VectorValues.");
-              
+
               VectorValues::const_iterator r = result.first;
               myData.cliqueResults.emplace(r->first, r);
               vectorPosition += c.getDim(frontal);

@@ -97,16 +97,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::pair<VectorValues::iterator, bool> VectorValues::emplace(Key j, const Vector& value) {
-#ifdef TBB_GREATER_EQUAL_2020
-    std::pair<iterator, bool> result = values_.emplace(j, value);
-#else
-    std::pair<iterator, bool> result = values_.insert(std::make_pair(j, value));
-#endif
-    return result;
-  }
-
-  /* ************************************************************************* */
   void VectorValues::update(const VectorValues& values)
   {
     iterator hint = begin();
