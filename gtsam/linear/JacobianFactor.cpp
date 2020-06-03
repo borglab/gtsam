@@ -558,13 +558,20 @@ void JacobianFactor::hessianDiagonalAdd(VectorValues& d) const {
     Vector& dj = result.first->second;
 
     for (size_t k = 0; k < nj; ++k) {
-      Vector column_k = Ab_(pos).col(k);
-      if (model_)
-        model_->whitenInPlace(column_k);
-      if(!result.second)
-        dj(k) += dot(column_k, column_k);
-      else
-        dj(k) = dot(column_k, column_k);
+      Eigen::Ref<const Vector> column_k = Ab_(pos).col(k);
+      if (model_) {
+        Vector column_k_copy = column_k;
+        model_->whitenInPlace(column_k_copy);
+        if(!result.second)
+          dj(k) += dot(column_k_copy, column_k_copy);
+        else
+          dj(k) = dot(column_k_copy, column_k_copy);
+      } else {
+        if (!result.second)
+          dj(k) += dot(column_k, column_k);
+        else
+          dj(k) = dot(column_k, column_k);
+      }
     }
   }
 }
