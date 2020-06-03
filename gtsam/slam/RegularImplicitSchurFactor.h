@@ -151,7 +151,7 @@ public:
     return d;
   }
 
-  /// Return the diagonal of the Hessian for this factor
+  /// Add the diagonal of the Hessian for this factor to existing VectorValues
   virtual void hessianDiagonalAdd(VectorValues &d) const override {
     // diag(Hessian) = diag(F' * (I - E * PointCov * E') * F);
     for (size_t k = 0; k < size(); ++k) { // for each camera
