@@ -182,7 +182,7 @@ namespace gtsam {
     template<class... Args>
     inline std::pair<VectorValues::iterator, bool> emplace(Key j, Args&&... args) {
 #if ! defined(GTSAM_USE_TBB) || defined (TBB_GREATER_EQUAL_2020)
-      return values_.emplace(j, std::forward<Args>(args)...);
+      return values_.emplace(std::piecewise_construct, std::forward_as_tuple(j), std::forward_as_tuple(args...));
 #else
       return values_.insert(std::make_pair(j, Vector(std::forward<Args>(args)...)));
 #endif
