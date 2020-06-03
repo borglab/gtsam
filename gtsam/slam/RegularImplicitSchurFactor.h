@@ -172,11 +172,9 @@ public:
         dj(k) -= FtE.row(k) * PointCovariance_ * FtE.row(k).transpose();
       }
 
-      auto item = d.find(j);
-      if(item != d.end()) {
-        item->second += dj;
-      } else {
-        d.emplace(j, dj);
+      auto result = d.emplace(j, dj);
+      if(!result.second) {
+        result.first->second += dj;
       }
     }
   }

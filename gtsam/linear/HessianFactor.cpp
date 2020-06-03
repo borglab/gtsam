@@ -313,11 +313,9 @@ VectorValues HessianFactor::hessianDiagonal() const {
 /* ************************************************************************* */
 void HessianFactor::hessianDiagonalAdd(VectorValues &d) const {
   for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
-    auto item = d.find(keys_[j]);
-    if(item != d.end()) {
-      item->second += info_.diagonal(j);
-    } else {
-      d.emplace(keys_[j], info_.diagonal(j));
+    auto result = d.emplace(keys_[j], info_.diagonal(j));
+    if(!result.second) {
+      result.first->second += info_.diagonal(j);
     }
   }
 }

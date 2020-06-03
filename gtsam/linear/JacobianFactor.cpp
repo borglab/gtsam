@@ -552,28 +552,15 @@ VectorValues JacobianFactor::hessianDiagonal() const {
 void JacobianFactor::hessianDiagonalAdd(VectorValues& d) const {
   for (size_t pos = 0; pos < size(); ++pos) {
     Key j = keys_[pos];
-    auto item = d.find(j);
+    size_t nj = Ab_(pos).cols();
+    auto result = d.emplace(j, nj);
 
-    if(item != d.end()) {
-      size_t nj = Ab_(pos).cols();
-      Vector& dj = item->second;
-      for (size_t k = 0; k < nj; ++k) {
-        Vector column_k = Ab_(pos).col(k);
-        if (model_)
-          model_->whitenInPlace(column_k);
-        dj(k) += dot(column_k, column_k);
-      }
-    } else {
-      size_t nj = Ab_(pos).cols();
-      Vector dj(nj);
-      for (size_t k = 0; k < nj; ++k) {
-        Vector column_k = Ab_(pos).col(k);
-        if (model_)
-          model_->whitenInPlace(column_k);
-        dj(k) = dot(column_k, column_k);
-      }
-
-      d.emplace(j, dj);
+    Vector& dj = result.first->second;
+    for (size_t k = 0; k < nj; ++k) {
+      Vector column_k = Ab_(pos).col(k);
+      if (model_)
+        model_->whitenInPlace(column_k);
+      dj(k) += dot(column_k, column_k);
     }
   }
 }
