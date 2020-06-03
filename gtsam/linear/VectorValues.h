@@ -179,11 +179,12 @@ namespace gtsam {
      *  j is already used.
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated. */
-    std::pair<VectorValues::iterator, bool> emplace(Key j, const Vector& value) {
+    template<class... Args>
+    inline std::pair<VectorValues::iterator, bool> emplace(Key j, Args&&... args) {
 #if ! defined(GTSAM_USE_TBB) || defined (TBB_GREATER_EQUAL_2020)
-      return values_.emplace(j, value);
+      return values_.emplace(j, std::forward<Args>(args)...);
 #else
-      return values_.insert(std::make_pair(j, value));
+      return values_.insert(std::make_pair(j, Vector(std::forward<Args>(args)...)));
 #endif
     }
 
