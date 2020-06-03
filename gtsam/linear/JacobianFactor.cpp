@@ -556,11 +556,15 @@ void JacobianFactor::hessianDiagonalAdd(VectorValues& d) const {
     auto result = d.emplace(j, nj);
 
     Vector& dj = result.first->second;
+
     for (size_t k = 0; k < nj; ++k) {
       Vector column_k = Ab_(pos).col(k);
       if (model_)
         model_->whitenInPlace(column_k);
-      dj(k) += dot(column_k, column_k);
+      if(!result.second)
+        dj(k) += dot(column_k, column_k);
+      else
+        dj(k) = dot(column_k, column_k);
     }
   }
 }
