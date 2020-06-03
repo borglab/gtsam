@@ -87,14 +87,6 @@ public:
     p_ = u.p_;
   }
 
-  /// Copy assignment
-  Unit3& operator=(const Unit3 & u) {
-    p_ = u.p_;
-    B_ = u.B_;
-    H_B_ = u.H_B_;
-    return *this;
-  }
-
   /// Named constructor from Point3 with optional Jacobian
   GTSAM_EXPORT static Unit3 FromPoint3(const Point3& point, //
       OptionalJacobian<2, 3> H = boost::none);
