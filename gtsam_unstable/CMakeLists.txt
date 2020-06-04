@@ -48,7 +48,7 @@ endforeach(subdir)
 set(library_name GTSAM_UNSTABLE) # For substitution in dllexport.h.in
 configure_file("${GTSAM_SOURCE_DIR}/cmake/dllexport.h.in" "dllexport.h")
 list(APPEND gtsam_unstable_srcs "${PROJECT_BINARY_DIR}/dllexport.h")
-install(FILES "${PROJECT_BINARY_DIR}/dllexport.h" DESTINATION include/gtsam_unstable)
+install(FILES "${PROJECT_BINARY_DIR}/dllexport.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam_unstable)
 
 # assemble gtsam_unstable components
 set(gtsam_unstable_srcs
@@ -101,9 +101,9 @@ endif()
 install(
 	TARGETS gtsam_unstable
 	EXPORT GTSAM-exports
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib
-	RUNTIME DESTINATION bin)
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable)
 set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 

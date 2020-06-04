@@ -33,28 +33,6 @@ namespace gtsam {
     namespace internal {
 
       /* ************************************************************************* */
-      template<typename NODE, typename DATA, typename VISITOR_POST>
-      class PostOrderTask : public tbb::task
-      {
-      public:
-        const boost::shared_ptr<NODE>& treeNode;
-        boost::shared_ptr<DATA> myData;
-        VISITOR_POST& visitorPost;
-
-        PostOrderTask(const boost::shared_ptr<NODE>& treeNode,
-                      const boost::shared_ptr<DATA>& myData, VISITOR_POST& visitorPost)
-            : treeNode(treeNode), myData(myData), visitorPost(visitorPost) {}
-
-        tbb::task* execute()
-        {
-          // Run the post-order visitor
-          (void) visitorPost(treeNode, *myData);
-
-          return nullptr;
-        }
-      };
-
-      /* ************************************************************************* */
       template<typename NODE, typename DATA, typename VISITOR_PRE, typename VISITOR_POST>
       class PreOrderTask : public tbb::task
       {

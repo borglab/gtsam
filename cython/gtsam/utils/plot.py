@@ -153,7 +153,7 @@ def plot_3d_points(fignum, values, linespec="g*", marginals=None):
             # I guess it's not a Point3
 
 
-def plot_pose3_on_axes(axes, pose, P=None, scale=1, axis_length=0.1):
+def plot_pose3_on_axes(axes, pose, axis_length=0.1, P=None, scale=1):
     """Plot a 3D pose on given axis 'axes' with given 'axis_length'."""
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
@@ -181,7 +181,7 @@ def plot_pose3_on_axes(axes, pose, P=None, scale=1, axis_length=0.1):
         plot_covariance_ellipse_3d(axes, origin, gPp)
 
 
-def plot_pose3(fignum, pose, P, axis_length=0.1):
+def plot_pose3(fignum, pose, axis_length=0.1, P=None):
     """Plot a 3D pose on given figure with given 'axis_length'."""
     # get figure object
     fig = plt.figure(fignum)
