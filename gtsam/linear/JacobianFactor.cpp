@@ -542,13 +542,6 @@ Matrix JacobianFactor::information() const {
 }
 
 /* ************************************************************************* */
-VectorValues JacobianFactor::hessianDiagonal() const {
-  VectorValues d;
-  hessianDiagonalAdd(d);
-  return d;
-}
-
-/* ************************************************************************* */
 void JacobianFactor::hessianDiagonalAdd(VectorValues& d) const {
   for (size_t pos = 0; pos < size(); ++pos) {
     Key j = keys_[pos];

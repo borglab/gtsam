@@ -141,15 +141,8 @@ public:
     return augmented.block(0, 0, M, M);
   }
 
-  /// Return the diagonal of the Hessian for this factor
-  virtual VectorValues hessianDiagonal() const {
-    // diag(Hessian) = diag(F' * (I - E * PointCov * E') * F);
-    VectorValues d;
-
-    hessianDiagonalAdd(d);
-
-    return d;
-  }
+  /// Using the base method
+  using GaussianFactor::hessianDiagonal;
 
   /// Add the diagonal of the Hessian for this factor to existing VectorValues
   virtual void hessianDiagonalAdd(VectorValues &d) const override {
