@@ -141,11 +141,12 @@ public:
     return augmented.block(0, 0, M, M);
   }
 
-  /// Return the diagonal of the Hessian for this factor
-  virtual VectorValues hessianDiagonal() const {
-    // diag(Hessian) = diag(F' * (I - E * PointCov * E') * F);
-    VectorValues d;
+  /// Using the base method
+  using GaussianFactor::hessianDiagonal;
 
+  /// Add the diagonal of the Hessian for this factor to existing VectorValues
+  virtual void hessianDiagonalAdd(VectorValues &d) const override {
+    // diag(Hessian) = diag(F' * (I - E * PointCov * E') * F);
     for (size_t k = 0; k < size(); ++k) { // for each camera
       Key j = keys_[k];
 
@@ -153,7 +154,7 @@ public:
       // D x 3 = (D x ZDim) * (ZDim x 3)
       const MatrixZD& Fj = FBlocks_[k];
       Eigen::Matrix<double, D, 3> FtE = Fj.transpose()
-          * E_.block<ZDim, 3>(ZDim * k, 0);
+                                        * E_.block<ZDim, 3>(ZDim * k, 0);
 
       Eigen::Matrix<double, D, 1> dj;
       for (int k = 0; k < D; ++k) { // for each diagonal element of the camera hessian
@@ -163,9 +164,12 @@ public:
         // (1 x 1) = (1 x 3) * (3 * 3) * (3 x 1)
         dj(k) -= FtE.row(k) * PointCovariance_ * FtE.row(k).transpose();
       }
-      d.insert(j, dj);
+
+      auto result = d.emplace(j, dj);
+      if(!result.second) {
+        result.first->second += dj;
+      }
     }
-    return d;
   }
 
   /**
