@@ -18,8 +18,6 @@
 
 // \callgraph
 
-#pragma once
-
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 
