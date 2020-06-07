@@ -63,6 +63,10 @@ namespace gtsam {
       Eigen::CholmodSimplicialLDLT<Eigen::SparseMatrix<double>
           , Eigen::Upper>
           solver;
+      solver.cholmod().nmethods = 1;
+      solver.cholmod().method[0].ordering = CHOLMOD_NATURAL;
+      solver.cholmod().postorder = false;
+
       solver.compute(AtA);
       gttoc_(SuiteSparseSolver_optimizeEigenCholesky_create_solver);
 

@@ -74,6 +74,7 @@ option(GTSAM_ENABLE_CONSISTENCY_CHECKS   "Enable/Disable expensive consistency c
 option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TBB) if available" ON)
 option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" OFF)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" OFF)
+option(GTSAM_WITH_SUITESPARSE            "Build with the SuiteSparse linear solver (CHOLMOD)" ON)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION  "Throw exception when a triangulated point is behind a camera" ON)
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V4   "Allow use of methods/functions deprecated in GTSAM 4" ON)
 option(GTSAM_TYPEDEF_POINTS_TO_VECTORS   "Typedef Point2 and Point3 to Eigen::Vector equivalents" OFF)
@@ -268,6 +269,17 @@ if(GTSAM_WITH_EIGEN_MKL AND GTSAM_WITH_EIGEN_MKL_OPENMP AND GTSAM_USE_EIGEN_MKL)
     endif()
 endif()
 
+###############################################################################
+# Find SuiteSparse
+find_package(SuiteSparse COMPONENTS CHOLMOD)
+
+if(CHOLMOD_FOUND AND GTSAM_WITH_SUITESPARSE)
+	set(GTSAM_USE_SUITESPARSE 1) # This will go into config.h
+	message(STATUS "Found CHOLMOD at ${CHOLMOD_LIBRARY}")
+	list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${CHOLMOD_LIBRARY})
+else()
+	set(GTSAM_USE_SUITESPARSE 0)
+endif()
 
 ###############################################################################
 # Option for using system Eigen or GTSAM-bundled Eigen
@@ -563,6 +575,13 @@ elseif(OPENMP_FOUND)
 	message(STATUS "  Eigen will use MKL and OpenMP  : OpenMP found but GTSAM_WITH_EIGEN_MKL_OPENMP is disabled")
 else()
 	message(STATUS "  Eigen will use MKL and OpenMP  : OpenMP not found")
+endif()
+if(GTSAM_WITH_SUITESPARSE)
+	message(STATUS "  GTSAM will use SuiteSparse     : Yes")
+elseif(SUITESPARSE_FOUND)
+	message(STATUS "  GTSAM will use SuiteSparse     : SuiteSparse found but GTSAM_WITH_SUITESPARSE is disabled")
+else()
+	message(STATUS "  GTSAM will use SuiteSparse     : SuiteSparse not found")
 endif()
 message(STATUS "  Default allocator              : ${GTSAM_DEFAULT_ALLOCATOR}")
 
