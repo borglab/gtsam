@@ -10,14 +10,12 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file SparseEigenSolver.h
+ * @file SuiteSparseSolver.h
  *
- * @brief Eigen SparseSolver based linear solver backend for GTSAM
+ * @brief SuiteSparse based linear solver backend for GTSAM
  *
- * @date Aug 2019
- * @author Mandy Xie
+ * @date Jun 2020
  * @author Fan Jiang
- * @author Frank Dellaert
  */
 
 #pragma once
@@ -25,7 +23,6 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/LinearSolver.h>
-#include <Eigen/Sparse>
 #include <string>
 
 namespace gtsam {
@@ -33,16 +30,16 @@ namespace gtsam {
   /**
    * Eigen SparseSolver based Backend class
    */
-  class GTSAM_EXPORT SparseEigenSolver : public LinearSolver {
+  class GTSAM_EXPORT SuiteSparseSolver : public LinearSolver {
   public:
 
     typedef enum {
       QR,
       CHOLESKY
-    } SparseEigenSolverType;
+    } SuiteSparseSolverType;
 
 
-    explicit SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType type, const Ordering &ordering);
+    explicit SuiteSparseSolver(SuiteSparseSolver::SuiteSparseSolverType type, const Ordering &ordering);
 
     bool isIterative() override;
 
@@ -50,12 +47,9 @@ namespace gtsam {
 
     VectorValues solve(const GaussianFactorGraph &gfg) override;
 
-    static Eigen::SparseMatrix<double>
-    sparseJacobianEigen(const GaussianFactorGraph &gfg, const Ordering &ordering);
-
   protected:
 
-    SparseEigenSolverType solverType = QR;
+    SuiteSparseSolverType solverType = QR;
 
     Ordering ordering;
   };

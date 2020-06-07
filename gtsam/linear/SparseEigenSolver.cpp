@@ -33,7 +33,7 @@ namespace gtsam {
   using SpMat = Eigen::SparseMatrix<double, Eigen::ColMajor, Eigen::Index>;
 
   Eigen::SparseMatrix<double>
-  sparseJacobianEigen(
+  SparseEigenSolver::sparseJacobianEigen(
       const GaussianFactorGraph &gfg,
       const Ordering &ordering) {
     // First find dimensions of each variable
