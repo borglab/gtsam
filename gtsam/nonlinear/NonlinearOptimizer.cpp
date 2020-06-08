@@ -167,7 +167,7 @@ VectorValues NonlinearOptimizer::solve(
           "NonlinearOptimizer::solve: special cg parameter type is not handled "
           "in LM solver ...");
     }
-  } else if (params.isEigenQR() || params.isEigenCholesky() || params.isSuiteSparseCholesky()) {
+  } else if (params.isEigenQR() || params.isEigenCholesky() || params.isSuiteSparseCholesky() || params.isCuSparseCholesky()) {
       LinearSolverParams lsparams;
       lsparams.ordering = params.ordering;
       lsparams.linearSolverType = params.linearSolverType;

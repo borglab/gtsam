@@ -18,6 +18,7 @@
 #include <gtsam/linear/LinearSolver.h>
 #include <gtsam/linear/SparseEigenSolver.h>
 #include <gtsam/linear/SuiteSparseSolver.h>
+#include <gtsam/linear/CuSparseSolver.h>
 
 namespace gtsam {
 
@@ -34,6 +35,9 @@ boost::shared_ptr<LinearSolver> LinearSolver::fromLinearSolverParams(
   } else if (params.linearSolverType == LinearSolverParams::SUITESPARSE_CHOLESKY) {
     return boost::shared_ptr<SuiteSparseSolver>(new SuiteSparseSolver(
         SuiteSparseSolver::SuiteSparseSolverType::CHOLESKY, *params.ordering));
+  } else if (params.linearSolverType == LinearSolverParams::CUSPARSE_CHOLESKY) {
+    return boost::shared_ptr<CuSparseSolver>(new CuSparseSolver(
+        CuSparseSolver::CuSparseSolverType::CHOLESKY, *params.ordering));
   }
 
   throw std::runtime_error("Invalid parameters passed");

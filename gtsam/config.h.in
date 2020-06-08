@@ -58,6 +58,9 @@
 // Whether GTSAM will have the SuiteSparse solver
 #cmakedefine GTSAM_USE_SUITESPARSE
 
+// Whether GTSAM will have the SuiteSparse GPU solver
+#cmakedefine GTSAM_USE_CUSPARSE
+
 // Eigen library version (needed to avoid mixing versions, which often leads
 // to segfaults)
 #cmakedefine GTSAM_EIGEN_VERSION_WORLD @GTSAM_EIGEN_VERSION_WORLD@

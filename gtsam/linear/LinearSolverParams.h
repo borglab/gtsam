@@ -38,6 +38,7 @@ public:
     EIGEN_QR,
     EIGEN_CHOLESKY,
     SUITESPARSE_CHOLESKY,
+    CUSPARSE_CHOLESKY,
   } LinearSolverType;
 
   LinearSolverType linearSolverType = LinearSolverParams::MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
@@ -74,6 +75,10 @@ public:
 
   inline bool isSuiteSparseCholesky() const {
     return (linearSolverType == SUITESPARSE_CHOLESKY);
+  }
+
+  inline bool isCuSparseCholesky() const {
+    return (linearSolverType == CUSPARSE_CHOLESKY);
   }
 
   GaussianFactorGraph::Eliminate getEliminationFunction() const {

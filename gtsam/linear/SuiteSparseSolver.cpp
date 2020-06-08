@@ -60,7 +60,7 @@ namespace gtsam {
 
       gttic_(SuiteSparseSolver_optimizeEigenCholesky_create_solver);
       // Solve A*x = b using sparse Cholesky from Eigen
-      Eigen::CholmodSimplicialLDLT<Eigen::SparseMatrix<double>
+      Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double>
           , Eigen::Upper>
           solver;
       solver.cholmod().nmethods = 1;

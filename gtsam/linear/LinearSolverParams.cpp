@@ -48,6 +48,8 @@ std::string LinearSolverParams::linearSolverTranslator(
       return "EIGEN_CHOLESKY";
     case SUITESPARSE_CHOLESKY:
       return "SUITESPARSE_CHOLESKY";
+    case CUSPARSE_CHOLESKY:
+      return "CUSPARSE_CHOLESKY";
     default:
       throw std::invalid_argument(
           "Unknown linear solver type in SuccessiveLinearizationOptimizer");
@@ -75,6 +77,8 @@ LinearSolverParams::LinearSolverType LinearSolverParams::linearSolverTranslator(
     return LinearSolverParams::EIGEN_QR;
   if (linearSolverType == "SUITESPARSE_CHOLESKY")
     return LinearSolverParams::SUITESPARSE_CHOLESKY;
+  if (linearSolverType == "CUSPARSE_CHOLESKY")
+    return LinearSolverParams::CUSPARSE_CHOLESKY;
   throw std::invalid_argument(
       "Unknown linear solver type in SuccessiveLinearizationOptimizer");
 }

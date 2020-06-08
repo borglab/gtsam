@@ -75,6 +75,7 @@ option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TB
 option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" OFF)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" OFF)
 option(GTSAM_WITH_SUITESPARSE            "Build with the SuiteSparse linear solver (CHOLMOD)" ON)
+option(GTSAM_WITH_CUSPARSE               "Enable CUDA support"                 ON)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION  "Throw exception when a triangulated point is behind a camera" ON)
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V4   "Allow use of methods/functions deprecated in GTSAM 4" ON)
 option(GTSAM_TYPEDEF_POINTS_TO_VECTORS   "Typedef Point2 and Point3 to Eigen::Vector equivalents" OFF)
@@ -279,6 +280,12 @@ if(CHOLMOD_FOUND AND GTSAM_WITH_SUITESPARSE)
 	list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${CHOLMOD_LIBRARY})
 else()
 	set(GTSAM_USE_SUITESPARSE 0)
+endif()
+
+if(GTSAM_WITH_CUSPARSE)
+	find_package(CUDAToolkit REQUIRED)
+	list(APPEND GTSAM_ADDITIONAL_LIBRARIES CUDA::cusparse CUDA::cusolver)
+	set(GTSAM_USE_CUSPARSE 1)
 endif()
 
 ###############################################################################
