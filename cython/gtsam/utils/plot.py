@@ -59,7 +59,7 @@ def ellipsoid(xc, yc, zc, rx, ry, rz, n):
     return x, y, z
 
 
-def plot_covariance_ellipse_3d(axes, origin, covariance, scale=1, n=8, alpha=0.5):
+def plot_covariance_ellipse_3d(axes, origin, P, scale=1, n=8, alpha=0.5):
     """
     Plots a Gaussian as an uncertainty ellipse
 
@@ -70,13 +70,13 @@ def plot_covariance_ellipse_3d(axes, origin, covariance, scale=1, n=8, alpha=0.5
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
         origin (gtsam.Point3): The origin in the world frame.
-        covariance (numpy.ndarray): The marginal covariance matrix of the 3D point which will be represented as an ellipse.
+        P (numpy.ndarray): The marginal covariance matrix of the 3D point which will be represented as an ellipse.
         scale (float): Scaling factor of the radii of the covariance ellipse.
         n (int): Defines the granularity of the ellipse. Higher values indicate finer ellipses.
         alpha (float): Transparency value for the plotted surface in the range [0, 1].
     """
     k = 11.82
-    U, S, _ = np.linalg.svd(covariance)
+    U, S, _ = np.linalg.svd(P)
 
     radii = k * np.sqrt(S)
     radii = radii * scale
@@ -152,7 +152,7 @@ def plot_pose2(fignum, pose, axis_length=0.1, covariance=None):
                        covariance=covariance)
 
 
-def plot_point3_on_axes(axes, point, linespec, covariance=None):
+def plot_point3_on_axes(axes, point, linespec, P=None):
     """
     Plot a 3D point on given axis `axes` with given `linespec`.
 
@@ -160,14 +160,14 @@ def plot_point3_on_axes(axes, point, linespec, covariance=None):
         axes (matplotlib.axes.Axes): Matplotlib axes.
         point (gtsam.Point3): The point to be plotted.
         linespec (string): String representing formatting options for Matplotlib.
-        covariance (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+        P (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
     """
     axes.plot([point.x()], [point.y()], [point.z()], linespec)
-    if covariance is not None:
-        plot_covariance_ellipse_3d(axes, point.vector(), covariance)
+    if P is not None:
+        plot_covariance_ellipse_3d(axes, point.vector(), P)
 
 
-def plot_point3(fignum, point, linespec, covariance=None):
+def plot_point3(fignum, point, linespec, P=None):
     """
     Plot a 3D point on given figure with given `linespec`.
 
@@ -175,11 +175,11 @@ def plot_point3(fignum, point, linespec, covariance=None):
         fignum (int): Integer representing the figure number to use for plotting.
         point (gtsam.Point3): The point to be plotted.
         linespec (string): String representing formatting options for Matplotlib.
-        covariance (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+        P (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
     """
     fig = plt.figure(fignum)
     axes = fig.gca(projection='3d')
-    plot_point3_on_axes(axes, point, linespec, covariance)
+    plot_point3_on_axes(axes, point, linespec, P)
 
 
 def plot_3d_points(fignum, values, linespec="g*", marginals=None):
@@ -215,7 +215,7 @@ def plot_3d_points(fignum, values, linespec="g*", marginals=None):
             # I guess it's not a Point3
 
 
-def plot_pose3_on_axes(axes, pose, axis_length=0.1, covariance=None, scale=1):
+def plot_pose3_on_axes(axes, pose, axis_length=0.1, P=None, scale=1):
     """
     Plot a 3D pose on given axis `axes` with given `axis_length`.
 
@@ -223,7 +223,7 @@ def plot_pose3_on_axes(axes, pose, axis_length=0.1, covariance=None, scale=1):
         axes (matplotlib.axes.Axes): Matplotlib axes.
         point (gtsam.Point3): The point to be plotted.
         linespec (string): String representing formatting options for Matplotlib.
-        covariance (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+        P (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
     """
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
@@ -243,15 +243,15 @@ def plot_pose3_on_axes(axes, pose, axis_length=0.1, covariance=None, scale=1):
     axes.plot(line[:, 0], line[:, 1], line[:, 2], 'b-')
 
     # plot the covariance
-    if covariance is not None:
+    if P is not None:
         # covariance matrix in pose coordinate frame
-        pPp = covariance[3:6, 3:6]
+        pPp = P[3:6, 3:6]
         # convert the covariance matrix to global coordinate frame
         gPp = gRp @ pPp @ gRp.T
         plot_covariance_ellipse_3d(axes, origin, gPp)
 
 
-def plot_pose3(fignum, pose, axis_length=0.1, covariance=None):
+def plot_pose3(fignum, pose, axis_length=0.1, P=None):
     """
     Plot a 3D pose on given figure with given `axis_length`.
 
@@ -259,12 +259,12 @@ def plot_pose3(fignum, pose, axis_length=0.1, covariance=None):
         fignum (int): Integer representing the figure number to use for plotting.
         pose (gtsam.Pose3): 3D pose to be plotted.
         linespec (string): String representing formatting options for Matplotlib.
-        covariance (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+        P (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
     """
     # get figure object
     fig = plt.figure(fignum)
     axes = fig.gca(projection='3d')
-    plot_pose3_on_axes(axes, pose, covariance=covariance,
+    plot_pose3_on_axes(axes, pose, P=P,
                        axis_length=axis_length)
 
 
@@ -303,7 +303,7 @@ def plot_trajectory(fignum, values, scale=1, marginals=None):
             else:
                 covariance = None
 
-            plot_pose3(fignum, lastPose,  covariance=covariance,
+            plot_pose3(fignum, lastPose,  P=covariance,
                        axis_length=scale)
 
         lastIndex = i
@@ -318,7 +318,7 @@ def plot_trajectory(fignum, values, scale=1, marginals=None):
             else:
                 covariance = None
 
-            plot_pose3(fignum, lastPose, covariance=covariance,
+            plot_pose3(fignum, lastPose, P=covariance,
                        axis_length=scale)
 
         except:
