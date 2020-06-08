@@ -282,8 +282,11 @@ else()
 	set(GTSAM_USE_SUITESPARSE 0)
 endif()
 
-if(GTSAM_WITH_CUSPARSE)
-	find_package(CUDAToolkit REQUIRED)
+###############################################################################
+# Find CUDA
+find_package(CUDAToolkit)
+
+if(CUDAToolkit_FOUND AND GTSAM_WITH_CUSPARSE)
 	list(APPEND GTSAM_ADDITIONAL_LIBRARIES CUDA::cusparse CUDA::cusolver)
 	set(GTSAM_USE_CUSPARSE 1)
 endif()
@@ -589,6 +592,13 @@ elseif(SUITESPARSE_FOUND)
 	message(STATUS "  GTSAM will use SuiteSparse     : SuiteSparse found but GTSAM_WITH_SUITESPARSE is disabled")
 else()
 	message(STATUS "  GTSAM will use SuiteSparse     : SuiteSparse not found")
+endif()
+if(GTSAM_WITH_CUSPARSE)
+	message(STATUS "  GTSAM will use cuSparse        : Yes")
+elseif(CUDAToolkit_FOUND)
+	message(STATUS "  GTSAM will use cuSparse        : cuSparse found but GTSAM_WITH_CUSPARSE is disabled")
+else()
+	message(STATUS "  GTSAM will use cuSparse        : cuSparse not found")
 endif()
 message(STATUS "  Default allocator              : ${GTSAM_DEFAULT_ALLOCATOR}")
 
