@@ -24,6 +24,7 @@
 #include <cusolverSp.h>
 #include <cuda_runtime.h>
 #include <cusolverSp.h>
+#include <cusparse_v2.h>
 
 #endif
 
@@ -56,7 +57,7 @@ namespace gtsam {
     }
   }
 
-#define CHECK_CUDA_ERROR(code) checkCUDAError(code, ____LOCATION);
+#define CHECK_CUDA_ERROR(code) checkCUDAError(code, ____LOCATION)
 
   void checkCuSolverError(cusolverStatus_t code, const char* location) {
     if(code != CUSOLVER_STATUS_SUCCESS) {
@@ -64,7 +65,7 @@ namespace gtsam {
     }
   }
 
-#define CHECK_CUSOLVER_ERROR(code) checkCuSolverError(code, ____LOCATION);
+#define CHECK_CUSOLVER_ERROR(code) checkCuSolverError(code, ____LOCATION)
 
   void checkCuSparseError(cusparseStatus_t code, const char* location) {
     if(code != CUSPARSE_STATUS_SUCCESS) {
@@ -72,7 +73,7 @@ namespace gtsam {
     }
   }
 
-#define CHECK_CUSPARSE_ERROR(code) checkCuSparseError(code, ____LOCATION);
+#define CHECK_CUSPARSE_ERROR(code) checkCuSparseError(code, ____LOCATION)
 
   void EigenSparseToCuSparseTranspose(
       const Eigen::SparseMatrix<double> &mat, int **row, int **col, double **val)
@@ -113,10 +114,59 @@ namespace gtsam {
       throw std::invalid_argument("This solver does not support QR.");
     } else if (solverType == CHOLESKY) {
       gttic_(CuSparseSolver_optimizeEigenCholesky);
+
       Eigen::SparseMatrix<double>
           Ab = SparseEigenSolver::sparseJacobianEigen(gfg, ordering);
       auto rows = Ab.rows(), cols = Ab.cols();
       Eigen::SparseMatrix<double> A = Ab.block(0, 0, rows, cols - 1);
+//
+//      // CSC in Eigen, CSR in CUDA, so A becomes At
+//      int *At_row(NULL), *At_col(NULL);
+//      double *At_val(NULL);
+//
+//      int At_num_rows = A.cols();
+//      int At_num_cols = A.rows();
+//      int At_num_nnz = A.nonZeros();
+//
+//      std::cout << "Base of At: " << A.outerIndexPtr()[0] << std::endl;
+//      EigenSparseToCuSparseTranspose(A, &At_row, &At_col, &At_val);
+//
+//      cusparseHandle_t     cspHandle = NULL;
+//      cusparseSpMatDescr_t matA, matB, matC;
+//      void*  dBuffer1    = NULL, *dBuffer2   = NULL;
+//      size_t bufferSize1 = 0,    bufferSize2 = 0;
+//
+//      CHECK_CUSPARSE_ERROR( cusparseCreate(&cspHandle) );
+//
+//      CHECK_CUSPARSE_ERROR(cusparseCreateCsr(&matA, At_num_rows, At_num_cols, At_num_nnz,
+//                                        At_row, At_col, At_val,
+//                                        CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+//                                        CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F) );
+//      CHECK_CUSPARSE_ERROR(cusparseCreateCsr(&matB, At_num_rows, At_num_cols, At_num_nnz,
+//                                        At_row, At_col, At_val,
+//                                        CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+//                                        CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F) );
+//      CHECK_CUSPARSE_ERROR(cusparseCreateCsr(&matC, At_num_rows, At_num_rows, 0,
+//                                        NULL, NULL, NULL,
+//                                        CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+//                                        CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F) );
+//
+//      int AtA_num_rows = A.cols();
+//      int AtA_num_cols = A.cols();
+//      int AtA_num_nnz = A.nonZeros();
+//      int *AtA_row(NULL), *AtA_col(NULL);
+//      double *AtA_val(NULL);
+//      CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(AtA_row), sizeof(int) * (AtA_num_cols + 1)));
+//
+//      int baseC, nnzC = 0;
+//      // nnzTotalDevHostPtr points to host memory
+//      int *nnzTotalDevHostPtr = &nnzC;
+//
+//      CHECK_CUSPARSE_ERROR(cusparseSetPointerMode(cspHandle, CUSPARSE_POINTER_MODE_HOST));
+
+      //--------------------------------------------------------------------------
+      // SpGEMM Computation
+
       auto At = A.transpose();
       Matrix b = At * Ab.col(cols - 1);
 
@@ -127,9 +177,11 @@ namespace gtsam {
 
       gttic_(CuSparseSolver_optimizeEigenCholesky_solve);
 
+      // Create the cuSolver object
       cusolverSpHandle_t solverHandle;
       CHECK_CUSOLVER_ERROR(cusolverSpCreate(&solverHandle));
 
+      // Create the matrix descriptor
       cusparseMatDescr_t descrA;
       CHECK_CUSPARSE_ERROR(cusparseCreateMatDescr(&descrA));
       CHECK_CUSPARSE_ERROR(cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL));
@@ -138,6 +190,8 @@ namespace gtsam {
       double *AtA_val(NULL);
 
       EigenSparseToCuSparseTranspose(AtA, &AtA_row, &AtA_col, &AtA_val);
+
+//      std::cout << "Base of AtA: " << AtA.outerIndexPtr()[0] << std::endl;
 
       double *x_gpu(NULL), *b_gpu(NULL);
 
@@ -166,6 +220,7 @@ namespace gtsam {
       cudaFree(AtA_col);
       cudaFree(b_gpu);
       cudaFree(x_gpu);
+      cusolverSpDestroy(solverHandle);
 
       if (singularity != -1)
         throw std::runtime_error(std::string("ILS in CUDA Solver, singularity: ") + std::to_string(singularity));
@@ -207,7 +262,7 @@ namespace gtsam {
   }
 #else
   VectorValues CuSparseSolver::solve(const gtsam::GaussianFactorGraph &gfg) {
-    throw std::invalid_argument("This GTSAM is compiled without Cholmod support");
+    throw std::invalid_argument("This GTSAM is compiled without CUDA support");
   }
 #endif
 }

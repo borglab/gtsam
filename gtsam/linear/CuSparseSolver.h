@@ -28,7 +28,7 @@
 namespace gtsam {
 
   /**
-   * Eigen SparseSolver based Backend class
+   * cuSparse based Backend class
    */
   class GTSAM_EXPORT CuSparseSolver : public LinearSolver {
   public:
