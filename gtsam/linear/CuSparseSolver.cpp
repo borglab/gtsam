@@ -12,7 +12,7 @@
 /**
  * @file CuSparseSolver.cpp
  *
- * @brief SuiteSparse based linear solver backend for GTSAM
+ * @brief cuSparse based linear solver backend for GTSAM
  *
  * @date Jun 2020
  * @author Fan Jiang
@@ -150,9 +150,6 @@ namespace gtsam {
 
       int singularity = 0;
       const double tol = 0.00001;
-
-      std::cout << "AtA_row: " << AtA_row << ", AtA_col: " << AtA_col << std::endl;
-      std::cout << "AtA.row: " << AtA.rows() << ", AtA.col: " << AtA.cols() << std::endl;
 
       // no internal reordering, so only lower part (upper part of CSC) is used
       CHECK_CUSOLVER_ERROR(cusolverSpDcsrlsvchol(

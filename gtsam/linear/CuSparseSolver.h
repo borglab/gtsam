@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file SuiteSparseSolver.h
+ * @file CuSparseSolver.h
  *
- * @brief SuiteSparse based linear solver backend for GTSAM
+ * @brief CuSparse based linear solver backend for GTSAM
  *
  * @date Jun 2020
  * @author Fan Jiang
