@@ -82,8 +82,6 @@ template<class T>
 bool equalsObj(const T& input = T()) {
   T output = create<T>();
   roundtrip<T>(input,output);
-  if (!assert_equal(input, output)) return false;
-  roundtripFile<T>(input,output);
   return assert_equal(input, output);
 }
 
@@ -135,8 +133,6 @@ template<class T>
 bool equalsXML(const T& input = T()) {
   T output = create<T>();
   roundtripXML<T>(input,output);
-  if (!assert_equal(input, output)) return false;
-  roundtripXMLFile<T>(input, output);
   return assert_equal(input, output);
 }
 
@@ -186,8 +182,6 @@ template<class T>
 bool equalsBinary(const T& input = T()) {
   T output = create<T>();
   roundtripBinary<T>(input,output);
-  if (!assert_equal(input, output)) return false;
-  roundtripBinaryFile<T>(input,output);
   return assert_equal(input, output);
 }
 
