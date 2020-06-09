@@ -120,12 +120,6 @@
 
 namespace gtsam {
 
-// Include Key typedef
-#include <gtsam/base/types.h>
-class Key {
-  Key();
-};
-
 // Actually a FastList<Key>
 #include <gtsam/inference/Key.h>
 class KeyList {
