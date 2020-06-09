@@ -26,6 +26,7 @@
 #include <gtsam/base/serialization.h>
 
 #include <boost/serialization/serialization.hpp>
+#include <boost/filesystem.hpp>
 
 
 // whether to print the serialized text to stdout
@@ -40,6 +41,13 @@ T create() {
   return T();
 }
 
+std::string resetFilesystem() {
+  // Create files in folder in build folder
+  boost::filesystem::remove_all("actual");
+  boost::filesystem::create_directory("actual");
+  return "actual/";
+}
+
 // Templated round-trip serialization
 template<class T>
 void roundtrip(const T& input, T& output) {
@@ -50,11 +58,22 @@ void roundtrip(const T& input, T& output) {
   deserialize(serialized, output);
 }
 
+// Templated round-trip serialization using a file
+template<class T>
+void roundtripFile(const T& input, T& output) {
+  std::string path = resetFilesystem();
+
+  serializeToFile(input, path + "graph.dat");
+  deserializeFromFile(path + "graph.dat", output);
+}
+
 // This version requires equality operator
 template<class T>
 bool equality(const T& input = T()) {
   T output = create<T>();
   roundtrip<T>(input,output);
+  if (input != output) return false;
+  roundtripFile<T>(input,output);
   return input==output;
 }
 
@@ -63,6 +82,8 @@ template<class T>
 bool equalsObj(const T& input = T()) {
   T output = create<T>();
   roundtrip<T>(input,output);
+  if (!assert_equal(input, output)) return false;
+  roundtripFile<T>(input,output);
   return assert_equal(input, output);
 }
 
@@ -71,6 +92,8 @@ template<class T>
 bool equalsDereferenced(const T& input) {
   T output = create<T>();
   roundtrip<T>(input,output);
+  if (!input->equals(*output)) return false;
+  roundtripFile<T>(input,output);
   return input->equals(*output);
 }
 
@@ -85,11 +108,25 @@ void roundtripXML(const T& input, T& output) {
   deserializeXML(serialized, output);
 }
 
+// Templated round-trip serialization using XML File
+template<class T>
+void roundtripXMLFile(const T& input, T& output) {
+  std::string path = resetFilesystem();
+
+  // Serialize
+  serializeToXMLFile(input, path + "graph.xml");
+
+  // De-serialize
+  deserializeFromXMLFile(path + "graph.xml", output);
+}
+
 // This version requires equality operator
 template<class T>
 bool equalityXML(const T& input = T()) {
   T output = create<T>();
   roundtripXML<T>(input,output);
+  if (input != output) return false;
+  roundtripXMLFile<T>(input,output);
   return input==output;
 }
 
@@ -98,6 +135,8 @@ template<class T>
 bool equalsXML(const T& input = T()) {
   T output = create<T>();
   roundtripXML<T>(input,output);
+  if (!assert_equal(input, output)) return false;
+  roundtripXMLFile<T>(input, output);
   return assert_equal(input, output);
 }
 
@@ -106,6 +145,8 @@ template<class T>
 bool equalsDereferencedXML(const T& input = T()) {
   T output = create<T>();
   roundtripXML<T>(input,output);
+  if (!input->equals(*output)) return false;
+  roundtripXMLFile<T>(input, output);
   return input->equals(*output);
 }
 
@@ -120,11 +161,23 @@ void roundtripBinary(const T& input, T& output) {
   deserializeBinary(serialized, output);
 }
 
+// Templated round-trip serialization using XML
+template<class T>
+void roundtripBinaryFile(const T& input, T& output) {
+  std::string path = resetFilesystem();
+  // Serialize
+  serializeToBinaryFile(input, path + "graph.bin");
+  // De-serialize
+  deserializeFromBinaryFile(path + "graph.bin", output);
+}
+
 // This version requires equality operator
 template<class T>
 bool equalityBinary(const T& input = T()) {
   T output = create<T>();
   roundtripBinary<T>(input,output);
+  if (input != output) return false;
+  roundtripBinaryFile<T>(input,output);
   return input==output;
 }
 
@@ -133,6 +186,8 @@ template<class T>
 bool equalsBinary(const T& input = T()) {
   T output = create<T>();
   roundtripBinary<T>(input,output);
+  if (!assert_equal(input, output)) return false;
+  roundtripBinaryFile<T>(input,output);
   return assert_equal(input, output);
 }
 
@@ -141,6 +196,8 @@ template<class T>
 bool equalsDereferencedBinary(const T& input = T()) {
   T output = create<T>();
   roundtripBinary<T>(input,output);
+  if (!input->equals(*output)) return false;
+  roundtripBinaryFile<T>(input,output);
   return input->equals(*output);
 }
 

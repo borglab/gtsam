@@ -106,8 +106,10 @@ bool serializeToXMLFile(const T& input, const std::string& filename, const std::
   std::ofstream out_archive_stream(filename.c_str());
   if (!out_archive_stream.is_open())
     return false;
-  boost::archive::xml_oarchive out_archive(out_archive_stream);
-  out_archive << boost::serialization::make_nvp(name.c_str(), input);;
+  {
+    boost::archive::xml_oarchive out_archive(out_archive_stream);
+    out_archive << boost::serialization::make_nvp(name.c_str(), input);;
+  }
   out_archive_stream.close();
   return true;
 }
@@ -117,8 +119,10 @@ bool deserializeFromXMLFile(const std::string& filename, T& output, const std::s
   std::ifstream in_archive_stream(filename.c_str());
   if (!in_archive_stream.is_open())
     return false;
-  boost::archive::xml_iarchive in_archive(in_archive_stream);
-  in_archive >> boost::serialization::make_nvp(name.c_str(), output);
+  {
+    boost::archive::xml_iarchive in_archive(in_archive_stream);
+    in_archive >> boost::serialization::make_nvp(name.c_str(), output);
+  }
   in_archive_stream.close();
   return true;
 }
