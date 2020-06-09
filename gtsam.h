@@ -120,6 +120,12 @@
 
 namespace gtsam {
 
+// Include Key typedef
+#include <gtsam/base/types.h>
+class Key {
+  Key();
+};
+
 // Actually a FastList<Key>
 #include <gtsam/inference/Key.h>
 class KeyList {
@@ -1977,6 +1983,35 @@ size_t symbol(char chr, size_t index);
 char symbolChr(size_t key);
 size_t symbolIndex(size_t key);
 
+namespace symbol_shorthand {
+  size_t A(size_t j);
+  size_t B(size_t j);
+  size_t C(size_t j);
+  size_t D(size_t j);
+  size_t E(size_t j);
+  size_t F(size_t j);
+  size_t G(size_t j);
+  size_t H(size_t j);
+  size_t I(size_t j);
+  size_t J(size_t j);
+  size_t K(size_t j);
+  size_t L(size_t j);
+  size_t M(size_t j);
+  size_t N(size_t j);
+  size_t O(size_t j);
+  size_t P(size_t j);
+  size_t Q(size_t j);
+  size_t R(size_t j);
+  size_t S(size_t j);
+  size_t T(size_t j);
+  size_t U(size_t j);
+  size_t V(size_t j);
+  size_t W(size_t j);
+  size_t X(size_t j);
+  size_t Y(size_t j);
+  size_t Z(size_t j);
+}
+
 // Default keyformatter
 void PrintKeyList  (const gtsam::KeyList& keys);
 void PrintKeyList  (const gtsam::KeyList& keys, string s);
@@ -2141,6 +2176,7 @@ class Values {
   void insert(size_t j, const gtsam::EssentialMatrix& essential_matrix);
   void insert(size_t j, const gtsam::PinholeCameraCal3_S2& simple_camera);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
+  void insert(size_t j, const gtsam::NavState& nav_state);
   void insert(size_t j, Vector vector);
   void insert(size_t j, Matrix matrix);
 
@@ -2158,10 +2194,11 @@ class Values {
   void update(size_t j, const gtsam::Cal3Bundler& cal3bundler);
   void update(size_t j, const gtsam::EssentialMatrix& essential_matrix);
   void update(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
+  void update(size_t j, const gtsam::NavState& nav_state);
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
 
-  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias, Vector, Matrix}>
+  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias, gtsam::NavState, Vector, Matrix}>
   T at(size_t j);
 
   /// version for double
