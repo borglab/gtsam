@@ -41,8 +41,8 @@ T create() {
   return T();
 }
 
+// Creates or empties a folder in the build folder and returns the relative path
 std::string resetFilesystem() {
-  // Create files in folder in build folder
   boost::filesystem::remove_all("actual");
   boost::filesystem::create_directory("actual");
   return "actual/";
@@ -157,7 +157,7 @@ void roundtripBinary(const T& input, T& output) {
   deserializeBinary(serialized, output);
 }
 
-// Templated round-trip serialization using XML
+// Templated round-trip serialization using Binary file
 template<class T>
 void roundtripBinaryFile(const T& input, T& output) {
   std::string path = resetFilesystem();
