@@ -5,7 +5,9 @@ All Rights Reserved
 
 See LICENSE for the license information
 
-A script validating the ImuFactor inference.
+A script validating and demonstrating the ImuFactor inference.
+
+Author: Frank Dellaert, Varun Agrawal
 """
 
 from __future__ import print_function
