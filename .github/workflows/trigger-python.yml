@@ -1,3 +1,4 @@
+# This triggers Cython builds on `gtsam-manylinux-build`
 name: Trigger Python Builds
 on: push
 jobs:
