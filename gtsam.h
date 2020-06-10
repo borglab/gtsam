@@ -2913,6 +2913,8 @@ class PreintegratedImuMeasurements {
   void integrateMeasurement(Vector measuredAcc, Vector measuredOmega,
       double deltaT);
   void resetIntegration();
+  void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
+
   Matrix preintMeasCov() const;
   double deltaTij() const;
   gtsam::Rot3 deltaRij() const;
@@ -2972,6 +2974,8 @@ class PreintegratedCombinedMeasurements {
   void integrateMeasurement(Vector measuredAcc, Vector measuredOmega,
       double deltaT);
   void resetIntegration();
+  void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
+
   Matrix preintMeasCov() const;
   double deltaTij() const;
   gtsam::Rot3 deltaRij() const;

@@ -5,7 +5,9 @@ All Rights Reserved
 
 See LICENSE for the license information
 
-A script validating the ImuFactor inference.
+A script validating and demonstrating the ImuFactor inference.
+
+Author: Frank Dellaert, Varun Agrawal
 """
 
 from __future__ import print_function
@@ -76,8 +78,14 @@ class ImuFactorExample(PreintegrationExample):
         initial.insert(BIAS_KEY, self.actualBias)
         for i in range(num_poses):
             state_i = self.scenario.navState(float(i))
-            initial.insert(X(i), state_i.pose())
-            initial.insert(V(i), state_i.velocity())
+
+            poseNoise = gtsam.Pose3.Expmap(np.random.randn(3)*0.1)
+            pose = state_i.pose().compose(poseNoise)
+
+            velocity = state_i.velocity() + np.random.randn(3)*0.1
+
+            initial.insert(X(i), pose)
+            initial.insert(V(i), velocity)
 
         # simulate the loop
         i = 0  # state index
@@ -87,6 +95,12 @@ class ImuFactorExample(PreintegrationExample):
             measuredOmega = self.runner.measuredAngularVelocity(t)
             measuredAcc = self.runner.measuredSpecificForce(t)
             pim.integrateMeasurement(measuredAcc, measuredOmega, self.dt)
+
+            poseNoise = gtsam.Pose3.Expmap(np.random.randn(3)*0.1)
+
+            actual_state_i = gtsam.NavState(
+                actual_state_i.pose().compose(poseNoise),
+                actual_state_i.velocity() + np.random.randn(3)*0.1)
 
             # Plot IMU many times
             if k % 10 == 0:
@@ -133,6 +147,9 @@ class ImuFactorExample(PreintegrationExample):
             pose_i = result.atPose3(X(i))
             plot_pose3(POSES_FIG, pose_i, 0.1)
             i += 1
+
+        gtsam.utils.plot.set_axes_equal(POSES_FIG)
+
         print(result.atimuBias_ConstantBias(BIAS_KEY))
 
         plt.ioff()
