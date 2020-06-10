@@ -2004,7 +2004,7 @@ namespace symbol_shorthand {
   size_t X(size_t j);
   size_t Y(size_t j);
   size_t Z(size_t j);
-}
+}///\namespace symbol
 
 // Default keyformatter
 void PrintKeyList  (const gtsam::KeyList& keys);
