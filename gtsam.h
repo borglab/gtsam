@@ -3136,12 +3136,12 @@ class ScenarioRunner {
 typedef KeyPair std::pair<gtsam::Key, gtsam::Key>;
 typedef TranslationEdges std::map<KeyPair, gtsam::Unit3>;
 
-#include<gtsam/sfm/TranslationRecovery.h>
+#include <gtsam/sfm/TranslationRecovery.h>
 class TranslationRecovery {
   TranslationRecovery(const TranslationEdges &relativeTranslations); // default LM params
   TranslationRecovery(const TranslationEdges &relativeTranslations, const LevenbergMarquardtParams &lmParams);
   gtsam::NonlinearFactorGraph buildGraph() const;
-  void addPrior(const double scale, gtsam::NonlinearFactorGraph::shared_ptr graph) const;
+  void addPrior(const double scale, gtsam::NonlinearFactorGraph* graph) const;
   gtsam::Values initalizeRandomly() const;
   gtsam::Values run(const double scale) const;
   gtsam::Values run() const;  // optional scale = 1.0

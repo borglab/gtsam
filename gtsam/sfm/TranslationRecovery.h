@@ -82,7 +82,7 @@ class TranslationRecovery {
    * @param scale scale for first relative translation which fixes gauge.
    * @param graph factor graph to which prior is added.
    */
-  void addPrior(const double scale, NonlinearFactorGraph::shared_ptr graph) const;
+  void addPrior(const double scale, NonlinearFactorGraph* graph) const;
 
   /**
    * @brief Create random initial translations.
