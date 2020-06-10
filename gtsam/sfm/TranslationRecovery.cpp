@@ -48,7 +48,7 @@ NonlinearFactorGraph TranslationRecovery::buildGraph() const {
 }
 
 void TranslationRecovery::addPrior(const double scale,
-                                   NonlinearFactorGraph* graph) const {
+                                   NonlinearFactorGraph::shared_ptr graph) const {
   auto noiseModel = noiseModel::Isotropic::Sigma(3, 0.01);
   auto edge = relativeTranslations_.begin();
   Key a, b;
@@ -81,7 +81,7 @@ Values TranslationRecovery::initalizeRandomly() const {
 
 Values TranslationRecovery::run(const double scale) const {
   auto graph = buildGraph();
-  addPrior(scale, &graph);
+  addPrior(scale, boost::make_shared<NonlinearFactorGraph>(graph));
   const Values initial = initalizeRandomly();
   LevenbergMarquardtOptimizer lm(graph, initial, params_);
   Values result = lm.optimize();
