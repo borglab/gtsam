@@ -9,7 +9,6 @@ from datetime import datetime
 
 import gtsam
 import numpy as np
-from comet_ml import Experiment
 from gtsam import Rot3
 from gtsam.utils.test_case import GtsamTestCase
 
@@ -55,7 +54,7 @@ class TestOptimizeComet(GtsamTestCase):
     @unittest.skip("Not a test we want run every time, as needs comet.ml account")
     def test_comet(self):
         """Test with a comet hook."""
-
+        from comet_ml import Experiment
         comet = Experiment(project_name="Testing",
                            auto_output_logging="native")
         comet.log_dataset_info(name="Karcher", path="shonan")
