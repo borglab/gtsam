@@ -60,9 +60,12 @@ class TranslationRecovery {
    *
    * @param relativeTranslations the relative translations, in world coordinate
    * frames, indexed in a map by a pair of Pose keys.
+   * @param lmParams optional LevenbergMarquardtParams object. Can be used to
+   * change the optimization parameters if necessary.
    */
-  TranslationRecovery(const TranslationEdges& relativeTranslations)
-      : relativeTranslations_(relativeTranslations) {
+  TranslationRecovery(const TranslationEdges &relativeTranslations,
+                      const LevenbergMarquardtParams &lmParams = LevenbergMarquardtParams())
+      : relativeTranslations_(relativeTranslations), params_(lmParams) {
     params_.setVerbosityLM("Summary");
   }
 
@@ -79,7 +82,7 @@ class TranslationRecovery {
    * @param scale scale for first relative translation which fixes gauge.
    * @param graph factor graph to which prior is added.
    */
-  void addPrior(const double scale, NonlinearFactorGraph* graph) const;
+  void addPrior(const double scale, NonlinearFactorGraph *graph) const;
 
   /**
    * @brief Create random initial translations.
@@ -103,6 +106,6 @@ class TranslationRecovery {
    * @param edges pairs (a,b) for which a measurement w_aZb will be generated.
    */
   static TranslationEdges SimulateMeasurements(
-      const Values& poses, const std::vector<KeyPair>& edges);
+      const Values &poses, const std::vector<KeyPair> &edges);
 };
 }  // namespace gtsam
