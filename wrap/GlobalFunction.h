@@ -54,7 +54,16 @@ struct GlobalFunction: public FullyOverloadedFunction {
   // function name in Cython pxd
   std::string pxdName() const { return "pxd_" + pyRename(name_); }
   // function name in Python pyx
-  std::string pyxName() const { return pyRename(name_); }
+  std::string pyxName() const {
+    std::string result = "";
+    for(size_t i=0; i<overloads[0].namespaces_.size(); i++){
+      if (i >= 1) {
+        result += (overloads[0].namespaces_[i] + "_");
+      }
+    }
+    result += pyRename(name_);
+    return result;
+  }
 
   // emit cython wrapper
   void emit_cython_pxd(FileWriter& pxdFile) const;
