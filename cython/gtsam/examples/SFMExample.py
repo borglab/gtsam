@@ -10,15 +10,14 @@ A structure-from-motion problem on a simulated dataset
 """
 from __future__ import print_function
 
+import gtsam
 import matplotlib.pyplot as plt
 import numpy as np
-
-import gtsam
 from gtsam.examples import SFMdata
 from gtsam.gtsam import (Cal3_S2, DoglegOptimizer,
                          GenericProjectionFactorCal3_S2, Marginals,
-                         NonlinearFactorGraph, Point3, Pose3,
-                         PriorFactorPoint3, PriorFactorPose3, Rot3,
+                         NonlinearFactorGraph, PinholeCameraCal3_S2, Point3,
+                         Pose3, PriorFactorPoint3, PriorFactorPose3, Rot3,
                          SimpleCamera, Values)
 from gtsam.utils import plot
 

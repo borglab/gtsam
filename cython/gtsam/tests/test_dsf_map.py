@@ -33,7 +33,7 @@ class TestDSFMap(GtsamTestCase):
         
         # testing the merge feature of dsf
         dsf.merge(pair1, pair2)
-        self.assertEquals(key(dsf.find(pair1)), key(dsf.find(pair2)))
+        self.assertEqual(key(dsf.find(pair1)), key(dsf.find(pair2)))
 
 
 if __name__ == '__main__':
