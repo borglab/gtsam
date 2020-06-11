@@ -243,8 +243,13 @@ TEST(Rot3, log) {
   Rot3 Rlund(-0.98582676, -0.03958746, -0.16303092,  //
              -0.03997006, -0.88835923, 0.45740671,   //
              -0.16293753, 0.45743998, 0.87418537);
-  EXPECT(assert_equal(Vector3(-0.264544406, 0.742217405, 3.04117314),
-                      (Vector)Rot3::Logmap(Rlund), 1e-8));
+  #if defined(GTSAM_USE_QUATERNIONS)
+    EXPECT(assert_equal(Vector3(0.264451979, -0.742197651, -3.04098211),
+                        (Vector)Rot3::Logmap(Rlund), 1e-8));
+  #else
+    EXPECT(assert_equal(Vector3(-0.264544406, 0.742217405, 3.04117314),
+                        (Vector)Rot3::Logmap(Rlund), 1e-8));
+  #endif
 }
 
 /* ************************************************************************* */
