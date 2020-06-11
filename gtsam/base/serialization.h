@@ -108,7 +108,7 @@ bool serializeToXMLFile(const T& input, const std::string& filename, const std::
     return false;
   {
     boost::archive::xml_oarchive out_archive(out_archive_stream);
-    out_archive << boost::serialization::make_nvp(name.c_str(), input);;
+    out_archive << boost::serialization::make_nvp(name.c_str(), input);
   }
   out_archive_stream.close();
   return true;
