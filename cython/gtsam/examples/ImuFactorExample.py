@@ -14,25 +14,18 @@ from __future__ import print_function
 
 import math
 
+import gtsam
 import matplotlib.pyplot as plt
 import numpy as np
+from gtsam import symbol_shorthand_B as B
+from gtsam import symbol_shorthand_V as V
+from gtsam import symbol_shorthand_X as X
+from gtsam.utils.plot import plot_pose3
 from mpl_toolkits.mplot3d import Axes3D
 
-import gtsam
-from gtsam.utils.plot import plot_pose3
 from PreintegrationExample import POSES_FIG, PreintegrationExample
 
-BIAS_KEY = int(gtsam.symbol(ord('b'), 0))
-
-
-def X(key):
-    """Create symbol for pose key."""
-    return gtsam.symbol(ord('x'), key)
-
-
-def V(key):
-    """Create symbol for velocity key."""
-    return gtsam.symbol(ord('v'), key)
+BIAS_KEY = B(0)
 
 
 np.set_printoptions(precision=3, suppress=True)
