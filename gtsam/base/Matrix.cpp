@@ -139,16 +139,6 @@ Vector operator^(const Matrix& A, const Vector & v) {
 /* ************************************************************************* */
 //3 argument call
 void print(const Matrix& A, const string &s, ostream& stream) {
-  static const Eigen::IOFormat matlab(
-      Eigen::StreamPrecision, // precision
-      0, // flags
-      ", ", // coeffSeparator
-      ";\n", // rowSeparator
-      "\t",  // rowPrefix
-      "", // rowSuffix
-      "[\n", // matPrefix
-      "\n]" // matSuffix
-      );
   cout << s << A.format(matlab) << endl;
 }
 
