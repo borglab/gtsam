@@ -69,31 +69,18 @@ class ImuFactorExample(PreintegrationExample):
         num_poses = T + 1  # assumes 1 factor per second
         initial = gtsam.Values()
         initial.insert(BIAS_KEY, self.actualBias)
-        for i in range(num_poses):
-            state_i = self.scenario.navState(float(i))
-
-            poseNoise = gtsam.Pose3.Expmap(np.random.randn(3)*0.1)
-            pose = state_i.pose().compose(poseNoise)
-
-            velocity = state_i.velocity() + np.random.randn(3)*0.1
-
-            initial.insert(X(i), pose)
-            initial.insert(V(i), velocity)
 
         # simulate the loop
         i = 0  # state index
         actual_state_i = self.scenario.navState(0)
+        initial.insert(X(i), actual_state_i.pose())
+        initial.insert(V(i), actual_state_i.velocity())
+
         for k, t in enumerate(np.arange(0, T, self.dt)):
             # get measurements and add them to PIM
             measuredOmega = self.runner.measuredAngularVelocity(t)
             measuredAcc = self.runner.measuredSpecificForce(t)
             pim.integrateMeasurement(measuredAcc, measuredOmega, self.dt)
-
-            poseNoise = gtsam.Pose3.Expmap(np.random.randn(3)*0.1)
-
-            actual_state_i = gtsam.NavState(
-                actual_state_i.pose().compose(poseNoise),
-                actual_state_i.velocity() + np.random.randn(3)*0.1)
 
             # Plot IMU many times
             if k % 10 == 0:
@@ -102,6 +89,7 @@ class ImuFactorExample(PreintegrationExample):
             # Plot every second
             if k % int(1 / self.dt) == 0:
                 self.plotGroundTruthPose(t)
+                plt.title("Ground Truth Trajectory")
 
             # create IMU factor every second
             if (k + 1) % int(1 / self.dt) == 0:
@@ -112,6 +100,17 @@ class ImuFactorExample(PreintegrationExample):
                     print(factor)
                     print(pim.predict(actual_state_i, self.actualBias))
                 pim.resetIntegration()
+
+                rotationNoise = gtsam.Rot3.Expmap(np.random.randn(3)*0.1)
+                translationNoise = gtsam.Point3(np.random.randn(3)*0.1)
+                poseNoise = gtsam.Pose3(rotationNoise, translationNoise)
+
+                actual_state_i = gtsam.NavState(
+                    actual_state_i.pose().compose(poseNoise),
+                    actual_state_i.velocity() + np.random.randn(3)*0.1)
+
+                initial.insert(X(i+1), actual_state_i.pose())
+                initial.insert(V(i+1), actual_state_i.velocity())
                 actual_state_i = self.scenario.navState(t + self.dt)
                 i += 1
 
@@ -138,10 +137,11 @@ class ImuFactorExample(PreintegrationExample):
         i = 0
         while result.exists(X(i)):
             pose_i = result.atPose3(X(i))
-            plot_pose3(POSES_FIG, pose_i, 0.1)
+            plot_pose3(POSES_FIG+1, pose_i, 0.1)
             i += 1
+        plt.title("Estimated Trajectory")
 
-        gtsam.utils.plot.set_axes_equal(POSES_FIG)
+        gtsam.utils.plot.set_axes_equal(POSES_FIG+1)
 
         print(result.atimuBias_ConstantBias(BIAS_KEY))
 
