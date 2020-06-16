@@ -12,6 +12,7 @@ Author: Frank Dellaert, Varun Agrawal
 
 from __future__ import print_function
 
+import argparse
 import math
 
 import gtsam
@@ -33,24 +34,27 @@ np.set_printoptions(precision=3, suppress=True)
 
 class ImuFactorExample(PreintegrationExample):
 
-    def __init__(self):
+    def __init__(self, twist_scenario="sick_twist"):
         self.velocity = np.array([2, 0, 0])
         self.priorNoise = gtsam.noiseModel_Isotropic.Sigma(6, 0.1)
         self.velNoise = gtsam.noiseModel_Isotropic.Sigma(3, 0.1)
 
         # Choose one of these twists to change scenario:
-        zero_twist = (np.zeros(3), np.zeros(3))
-        forward_twist = (np.zeros(3), self.velocity)
-        loop_twist = (np.array([0, -math.radians(30), 0]), self.velocity)
-        sick_twist = (
-            np.array([math.radians(30), -math.radians(30), 0]), self.velocity)
+        twist_scenarios = dict(
+            zero_twist=(np.zeros(3), np.zeros(3)),
+            forward_twist=(np.zeros(3), self.velocity),
+            loop_twist=(np.array([0, -math.radians(30), 0]), self.velocity),
+            sick_twist=(np.array([math.radians(30), -math.radians(30), 0]),
+                        self.velocity)
+        )
 
         accBias = np.array([-0.3, 0.1, 0.2])
         gyroBias = np.array([0.1, 0.3, -0.1])
         bias = gtsam.imuBias_ConstantBias(accBias, gyroBias)
 
         dt = 1e-2
-        super(ImuFactorExample, self).__init__(sick_twist, bias, dt)
+        super(ImuFactorExample, self).__init__(twist_scenarios[twist_scenario],
+                                               bias, dt)
 
     def addPrior(self, i, graph):
         state = self.scenario.navState(i)
@@ -59,13 +63,12 @@ class ImuFactorExample(PreintegrationExample):
         graph.push_back(gtsam.PriorFactorVector(
             V(i), state.velocity(), self.velNoise))
 
-    def run(self):
+    def run(self, T=12, verbose=True):
         graph = gtsam.NonlinearFactorGraph()
 
         # initialize data structure for pre-integrated IMU measurements
         pim = gtsam.PreintegratedImuMeasurements(self.params, self.actualBias)
 
-        T = 12
         num_poses = T + 1  # assumes 1 factor per second
         initial = gtsam.Values()
         initial.insert(BIAS_KEY, self.actualBias)
@@ -86,32 +89,34 @@ class ImuFactorExample(PreintegrationExample):
             if k % 10 == 0:
                 self.plotImu(t, measuredOmega, measuredAcc)
 
-            # Plot every second
-            if k % int(1 / self.dt) == 0:
+            if (k+1) % int(1 / self.dt) == 0:
+                # Plot every second
                 self.plotGroundTruthPose(t)
                 plt.title("Ground Truth Trajectory")
 
-            # create IMU factor every second
-            if (k + 1) % int(1 / self.dt) == 0:
-                factor = gtsam.ImuFactor(X(i), V(i), X(
-                    i + 1), V(i + 1), BIAS_KEY, pim)
+                # create IMU factor every second
+                factor = gtsam.ImuFactor(X(i), V(i),
+                                         X(i + 1), V(i + 1),
+                                         BIAS_KEY, pim)
                 graph.push_back(factor)
-                if True:
+
+                if verbose:
                     print(factor)
                     print(pim.predict(actual_state_i, self.actualBias))
+
                 pim.resetIntegration()
 
                 rotationNoise = gtsam.Rot3.Expmap(np.random.randn(3)*0.1)
                 translationNoise = gtsam.Point3(np.random.randn(3)*0.1)
                 poseNoise = gtsam.Pose3(rotationNoise, translationNoise)
 
+                actual_state_i = self.scenario.navState(t + self.dt)
                 actual_state_i = gtsam.NavState(
                     actual_state_i.pose().compose(poseNoise),
                     actual_state_i.velocity() + np.random.randn(3)*0.1)
 
                 initial.insert(X(i+1), actual_state_i.pose())
                 initial.insert(V(i+1), actual_state_i.velocity())
-                actual_state_i = self.scenario.navState(t + self.dt)
                 i += 1
 
         # add priors on beginning and end
@@ -150,4 +155,12 @@ class ImuFactorExample(PreintegrationExample):
 
 
 if __name__ == '__main__':
-    ImuFactorExample().run()
+    parser = argparse.ArgumentParser("ImuFactorExample.py")
+    parser.add_argument("--twist_scenario",
+                        default="sick_twist",
+                        choices=("zero_twist", "forward_twist", "loop_twist", "sick_twist"))
+    parser.add_argument("--time", "-T", default=12, type=int, help="Total time in seconds")
+    parser.add_argument("--verbose", default=False, action='store_true')
+    args = parser.parse_args()
+
+    ImuFactorExample().run(args.time, args.verbose)
