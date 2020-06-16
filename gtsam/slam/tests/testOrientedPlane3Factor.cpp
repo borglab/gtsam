@@ -122,6 +122,42 @@ TEST (OrientedPlane3Factor, lm_rotation_error) {
   EXPECT(assert_equal(optimized_plane_landmark, expected_plane_landmark));
 }
 
+double randDouble(double max = 1) {
+  return static_cast<double>(rand()) / RAND_MAX * max;
+}
+
+TEST( OrientedPlane3Factor, Derivatives ) {
+  for (int i=0; i<100; i++) {
+    // Random measurement
+    OrientedPlane3 p(randDouble(), randDouble(), randDouble(), randDouble());
+
+    // Random linearisation point
+    OrientedPlane3 pLin(randDouble(), randDouble(), randDouble(), randDouble());
+    gtsam::Point3 pointLin  = gtsam::Point3(randDouble(100), randDouble(100), randDouble(100));
+    gtsam::Rot3 rotationLin = gtsam::Rot3::RzRyRx(randDouble(2*M_PI), randDouble(2*M_PI), randDouble(2*M_PI));
+    Pose3 poseLin(rotationLin, pointLin);
+
+    // Factor
+    Key planeKey(1), poseKey(2);
+    SharedGaussian noise = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.1));
+    OrientedPlane3Factor factor(p.planeCoefficients(), noise, poseKey, planeKey);
+
+    // Calculate numerical derivatives
+    boost::function<Vector(const Pose3&, const OrientedPlane3&)> f = boost::bind(
+        &OrientedPlane3Factor::evaluateError, factor, _1, _2, boost::none, boost::none);
+    Matrix numericalH1 = numericalDerivative21<Vector, Pose3, OrientedPlane3>(f, poseLin, pLin);
+    Matrix numericalH2 = numericalDerivative22<Vector, Pose3, OrientedPlane3>(f, poseLin, pLin);
+
+    // Use the factor to calculate the derivative
+    Matrix actualH1, actualH2;
+    factor.evaluateError(poseLin, pLin, actualH1, actualH2);
+
+    // Verify we get the expected error
+    EXPECT(assert_equal(numericalH1, actualH1, 1e-8));
+    EXPECT(assert_equal(numericalH2, actualH2, 1e-8));
+  }
+}
+
 // *************************************************************************
 TEST( OrientedPlane3DirectionPrior, Constructor ) {
 
