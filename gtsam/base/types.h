@@ -27,9 +27,9 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <exception>
+
 #ifdef GTSAM_USE_TBB
-#include <tbb/task_scheduler_init.h>
-#include <tbb/tbb_exception.h>
 #include <tbb/scalable_allocator.h>
 #endif
 
@@ -52,6 +52,9 @@
 #endif
 
 namespace gtsam {
+
+  /// Function to demangle type name of variable, e.g. demangle(typeid(x).name())
+  std::string demangle(const char* name);
 
   /// Integer nonlinear key type
   typedef std::uint64_t Key;

@@ -49,7 +49,7 @@ int main (int argc, char* argv[]) {
   NonlinearFactorGraph graph;
 
   // We share *one* noiseModel between all projection factors
-  noiseModel::Isotropic::shared_ptr noise =
+  auto noise =
       noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
 
   // Add measurements to the factor graph

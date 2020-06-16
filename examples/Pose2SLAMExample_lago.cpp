@@ -28,7 +28,6 @@ using namespace std;
 using namespace gtsam;
 
 int main(const int argc, const char *argv[]) {
-
   // Read graph from file
   string g2oFile;
   if (argc < 2)
@@ -41,8 +40,7 @@ int main(const int argc, const char *argv[]) {
   boost::tie(graph, initial) = readG2o(g2oFile);
 
   // Add prior on the pose having index (key) = 0
-  noiseModel::Diagonal::shared_ptr priorModel = //
-      noiseModel::Diagonal::Variances(Vector3(1e-6, 1e-6, 1e-8));
+  auto priorModel = noiseModel::Diagonal::Variances(Vector3(1e-6, 1e-6, 1e-8));
   graph->addPrior(0, Pose2(), priorModel);
   graph->print();
 

@@ -97,20 +97,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValues::iterator VectorValues::emplace(Key j, const Vector& value) {
-#ifdef TBB_GREATER_EQUAL_2020
-    std::pair<iterator, bool> result = values_.emplace(j, value);
-#else
-    std::pair<iterator, bool> result = values_.insert(std::make_pair(j, value));
-#endif
-    if(!result.second)
-      throw std::invalid_argument(
-      "Requested to emplace variable '" + DefaultKeyFormatter(j)
-      + "' already in this VectorValues.");
-    return result.first;
-  }
-
-  /* ************************************************************************* */
   void VectorValues::update(const VectorValues& values)
   {
     iterator hint = begin();

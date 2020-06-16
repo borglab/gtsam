@@ -147,13 +147,15 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
   } else if (params.isIterative()) {
     // Conjugate Gradient -> needs params.iterativeParams
     if (!params.iterativeParams)
-      throw std::runtime_error("NonlinearOptimizer::solve: cg parameter has to be assigned ...");
+      throw std::runtime_error(
+          "NonlinearOptimizer::solve: cg parameter has to be assigned ...");
 
-    if (boost::shared_ptr<PCGSolverParameters> pcg =
-            boost::dynamic_pointer_cast<PCGSolverParameters>(params.iterativeParams)) {
+    if (auto pcg = boost::dynamic_pointer_cast<PCGSolverParameters>(
+            params.iterativeParams)) {
       delta = PCGSolver(*pcg).optimize(gfg);
-    } else if (boost::shared_ptr<SubgraphSolverParameters> spcg =
-                   boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams)) {
+    } else if (auto spcg =
+                   boost::dynamic_pointer_cast<SubgraphSolverParameters>(
+                       params.iterativeParams)) {
       if (!params.ordering)
         throw std::runtime_error("SubgraphSolver needs an ordering");
       delta = SubgraphSolver(gfg, *spcg, *params.ordering).optimize();

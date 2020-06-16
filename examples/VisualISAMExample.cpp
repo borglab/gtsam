@@ -56,13 +56,11 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
-
   // Define the camera calibration parameters
   Cal3_S2::shared_ptr K(new Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0));
 
   // Define the camera observation noise model
-  noiseModel::Isotropic::shared_ptr noise = //
-      noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
+  auto noise = noiseModel::Isotropic::Sigma(2, 1.0);  // one pixel in u and v
 
   // Create the set of ground-truth landmarks
   vector<Point3> points = createPoints();
@@ -81,7 +79,6 @@ int main(int argc, char* argv[]) {
 
   // Loop over the different poses, adding the observations to iSAM incrementally
   for (size_t i = 0; i < poses.size(); ++i) {
-
     // Add factors for each landmark observation
     for (size_t j = 0; j < points.size(); ++j) {
       // Create ground truth measurement
@@ -105,12 +102,12 @@ int main(int argc, char* argv[]) {
     // adding it to iSAM.
     if (i == 0) {
       // Add a prior on pose x0, with 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-      noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas(
+      auto poseNoise = noiseModel::Diagonal::Sigmas(
           (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3)).finished());
       graph.addPrior(Symbol('x', 0), poses[0], poseNoise);
 
       // Add a prior on landmark l0
-      noiseModel::Isotropic::shared_ptr pointNoise =
+      auto pointNoise =
           noiseModel::Isotropic::Sigma(3, 0.1);
       graph.addPrior(Symbol('l', 0), points[0], pointNoise);
 

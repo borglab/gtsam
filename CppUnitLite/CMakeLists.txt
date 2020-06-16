@@ -12,6 +12,6 @@ gtsam_assign_source_folders("${cppunitlite_headers};${cppunitlite_src}") # MSVC 
 
 option(GTSAM_INSTALL_CPPUNITLITE "Enable/Disable installation of CppUnitLite library" ON)
 if (GTSAM_INSTALL_CPPUNITLITE)
-    install(FILES ${cppunitlite_headers} DESTINATION include/CppUnitLite)
-    install(TARGETS CppUnitLite EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
+    install(FILES ${cppunitlite_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/CppUnitLite)
+    install(TARGETS CppUnitLite EXPORT GTSAM-exports ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(GTSAM_INSTALL_CPPUNITLITE)

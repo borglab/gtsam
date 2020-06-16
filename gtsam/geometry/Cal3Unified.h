@@ -118,10 +118,10 @@ public:
   Vector10 localCoordinates(const Cal3Unified& T2) const ;
 
   /// Return dimensions of calibration manifold object
-  virtual size_t dim() const { return 10 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)
+  virtual size_t dim() const { return dimension ; }
 
   /// Return dimensions of calibration manifold object
-  static size_t Dim() { return 10; }  //TODO: make a final dimension variable
+  static size_t Dim() { return dimension; }
 
   /// Return all parameters as a vector
   Vector10 vector() const ;

@@ -135,14 +135,23 @@ bool Gaussian::equals(const Base& expected, double tol) const {
   const Gaussian* p = dynamic_cast<const Gaussian*> (&expected);
   if (p == nullptr) return false;
   if (typeid(*this) != typeid(*p)) return false;
-  //if (!sqrt_information_) return true; // ALEX todo;
   return equal_with_abs_tol(R(), p->R(), sqrt(tol));
 }
 
 /* ************************************************************************* */
+Matrix Gaussian::covariance() const {
+  // Uses a fast version of `covariance = information().inverse();`
+  const Matrix& R = this->R();
+  Matrix I = Matrix::Identity(R.rows(), R.cols());
+  // Fast inverse of upper-triangular matrix R using forward-substitution
+  Matrix Rinv = R.triangularView<Eigen::Upper>().solve(I);
+  // (R' * R)^{-1} = R^{-1} * R^{-1}'
+  return Rinv * Rinv.transpose();
+}
+
+/* ************************************************************************* */
 Vector Gaussian::sigmas() const {
-  // TODO(frank): can this be done faster?
-  return Vector((thisR().transpose() * thisR()).inverse().diagonal()).cwiseSqrt();
+  return Vector(covariance().diagonal()).cwiseSqrt();
 }
 
 /* ************************************************************************* */
