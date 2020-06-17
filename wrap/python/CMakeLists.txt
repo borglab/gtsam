@@ -17,7 +17,11 @@ if(GTSAM_BUILD_PYTHON)
       gtsam::LieMatrix
       gtsam::ISAM2ThresholdMapValue
       gtsam::FactorIndices
-      gtsam::FactorIndexSet)
+      gtsam::FactorIndexSet
+      gtsam::BetweenFactorPose3s
+      gtsam::Point2Vector
+      gtsam::Pose3Vector
+      gtsam::KeyVector)
 
   pybind_wrap(gtsam_py # target
               ${PROJECT_SOURCE_DIR}/gtsam.h # interface_header

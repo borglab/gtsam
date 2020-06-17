@@ -2802,8 +2802,8 @@ class BetweenFactorPose3s
 {
   BetweenFactorPose3s();
   size_t size() const;
-  gtsam::BetweenFactor<gtsam::Pose3>* at(size_t i) const;
-  void push_back(const gtsam::BetweenFactor<gtsam::Pose3>* factor);
+  gtsam::BetweenFactorPose3* at(size_t i) const;
+  void push_back(const gtsam::BetweenFactorPose3* factor);
 };
 
 #include <gtsam/slam/InitializePose3.h>

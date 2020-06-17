@@ -2,6 +2,8 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 
+#pragma once
+
 namespace gtsam {
     template<class T>
     std::string serialize(const T& input) {

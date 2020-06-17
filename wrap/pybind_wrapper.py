@@ -48,6 +48,7 @@ class PybindWrapper(object):
             "{} {}".format(ctype, name)
             for ctype, name in zip(cpp_types, names)
         ]
+
         return ','.join(types_names)
 
     def wrap_ctors(self, my_class):
@@ -366,6 +367,7 @@ class PybindWrapper(object):
 {include_boost}
 
 #include <pybind11/eigen.h>
+#include <pybind11/stl_bind.h>
 #include <pybind11/pybind11.h>
 #include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 
@@ -385,7 +387,10 @@ PYBIND11_MODULE({module_name}, m_) {{
     m_.doc() = "pybind11 wrapper of {module_name}";
 
 {wrapped_namespace}
+
+#include "wrap/specializations.h"
 }}
+
 
 """.format(
             include_boost="#include <boost/shared_ptr.hpp>"
