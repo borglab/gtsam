@@ -839,7 +839,8 @@ TEST( Pose3, stream)
   Pose3 T;
   std::ostringstream os;
   os << T;
-  EXPECT(os.str() == "\n|1, 0, 0|\n|0, 1, 0|\n|0, 0, 1|\n\n[0, 0, 0]';\n");
+  string expected = "[\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\n\n[0, 0, 0]';\n";
+  EXPECT(os.str() == expected);
 }
 
 //******************************************************************************
@@ -1009,19 +1010,22 @@ TEST(Pose3, print) {
   std::stringstream expected;
   Point3 translation(1, 2, 3);
 
+  // Add expected rotation
+  expected << "R:\n[\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\n";
+
 #ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
   expected << "1\n"
               "2\n"
               "3;\n";
 #else
-  expected << '[' << translation.x() << ", " << translation.y() << ", " << translation.z() << "]\';";
+  expected << '[' << translation.x() << ", " << translation.y() << ", " << translation.z() << "]\';\n";
 #endif
 
   // reset cout to the original stream
   std::cout.rdbuf(oldbuf);
 
   // Get substring corresponding to translation part
-  std::string actual = redirectStream.str().substr(38, 11);
+  std::string actual = redirectStream.str();
 
   CHECK_EQUAL(expected.str(), actual);
 }
