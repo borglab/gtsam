@@ -62,6 +62,8 @@ TEST_DISABLED (Serialization, text_geometry) {
   EXPECT(equalsObj<gtsam::Pose2>(Pose2(1.0, 2.0, 0.3)));
   EXPECT(equalsObj<gtsam::Rot2>(Rot2::fromDegrees(30.0)));
 
+  EXPECT(equalsObj<gtsam::SOn>(SOn(SO3())));
+
   EXPECT(equalsObj<gtsam::Unit3>(Unit3(1.0, 2.1, 3.4)));
   EXPECT(equalsObj<gtsam::EssentialMatrix>(EssentialMatrix(rt3, unit3)));
 

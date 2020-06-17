@@ -617,6 +617,9 @@ class SOn {
   // Other methods
   Vector vec() const;
   Matrix matrix() const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 #include <gtsam/geometry/Rot3.h>
