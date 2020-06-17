@@ -20,6 +20,8 @@
 
 #include <gtsam/geometry/Point2.h>
 
+#include <string>
+
 namespace gtsam {
 
 /**
@@ -43,7 +45,7 @@ namespace gtsam {
  *   [u; v; 1] = K*[x_d; y_d; 1]
  */
 class GTSAM_EXPORT Cal3Fisheye {
- protected:
+ private:
   double fx_, fy_, s_, u0_, v0_;  // focal length, skew and principal point
   double k1_, k2_, k3_, k4_;      // fisheye distortion coefficients
 
@@ -78,7 +80,7 @@ class GTSAM_EXPORT Cal3Fisheye {
   /// @name Advanced Constructors
   /// @{
 
-  Cal3Fisheye(const Vector& v);
+  explicit Cal3Fisheye(const Vector9& v);
 
   /// @}
   /// @name Standard Interface
@@ -120,6 +122,9 @@ class GTSAM_EXPORT Cal3Fisheye {
   /// Return all parameters as a vector
   Vector9 vector() const;
 
+  /// Helper function that calculates atan(r)/r
+  static double Scaling(double r);
+
   /**
    * @brief convert intrinsic coordinates [x_i; y_i] to (distorted) image
    * coordinates [u; v]
@@ -135,13 +140,6 @@ class GTSAM_EXPORT Cal3Fisheye {
   /// Convert (distorted) image coordinates [u;v] to intrinsic coordinates [x_i,
   /// y_i]
   Point2 calibrate(const Point2& p, const double tol = 1e-5) const;
-
-  /// Derivative of uncalibrate wrpt intrinsic coordinates [x_i; y_i]
-  Matrix2 D2d_intrinsic(const Point2& p) const;
-
-  /// Derivative of uncalibrate wrpt the calibration parameters
-  /// [fx, fy, s, u0, v0, k1, k2, k3, k4]
-  Matrix29 D2d_calibration(const Point2& p) const;
 
   /// @}
   /// @name Testable
