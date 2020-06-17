@@ -79,7 +79,7 @@ typedef Eigen::Block<const Matrix> ConstSubMatrix;
 // Matrix formatting arguments when printing. Akin to Matlab style.
 const Eigen::IOFormat matlab(
   Eigen::StreamPrecision, // precision
-  0, // flags
+  Eigen::DontAlignCols, // flags set such that rowSpacers are not added
   ", ", // coeffSeparator
   ";\n", // rowSeparator
   "\t",  // rowPrefix
