@@ -60,7 +60,21 @@ cmake $CURRDIR -DCMAKE_BUILD_TYPE=Release \
     -DPYTHON_EXECUTABLE:FILEPATH=$(which $PYTHON) \
     -DCMAKE_INSTALL_PREFIX=$CURRDIR/../gtsam_install
 
+lock_file=$(mktemp)
+progress() {
+  pc=0;
+  while [ -e "$lock_file" ]
+    do
+      echo "Running for $pc mins"
+      sleep 60
+      ((pc++))
+    done
+}
+progress &
+
 make -j$(nproc) install
+
+rm -f "$lock_file"
 
 case $WRAPPER in
 "cython")
