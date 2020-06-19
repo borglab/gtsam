@@ -71,24 +71,22 @@ namespace gtsam {
     }
 
     /// Construct from a container of the sizes of each block.
-    /// Uninitialized blocks are filled with zeros.
     template<typename CONTAINER>
     SymmetricBlockMatrix(const CONTAINER& dimensions, bool appendOneDimension = false) :
       blockStart_(0)
     {
       fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
-      matrix_.setZero(variableColOffsets_.back(), variableColOffsets_.back());
+      matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
       assertInvariants();
     }
 
     /// Construct from iterator over the sizes of each vertical block.
-    /// Uninitialized blocks are filled with zeros.
     template<typename ITERATOR>
     SymmetricBlockMatrix(ITERATOR firstBlockDim, ITERATOR lastBlockDim, bool appendOneDimension = false) :
       blockStart_(0)
     {
       fillOffsets(firstBlockDim, lastBlockDim, appendOneDimension);
-      matrix_.setZero(variableColOffsets_.back(), variableColOffsets_.back());
+      matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
       assertInvariants();
     }
 
@@ -418,4 +416,3 @@ namespace gtsam {
   class CholeskyFailed;
 
 }
-
