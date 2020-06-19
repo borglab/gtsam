@@ -13,7 +13,7 @@ using namespace gtsam;
 using namespace gtsam::noiseModel;
 
 /// Verify zero error when there is no noise
-TEST(LandmarkFactor, errorNoiseless) {
+TEST(PoseToPointFactor, errorNoiseless) {
   Pose3 pose = Pose3::identity();
   Point3 point(1.0, 2.0, 3.0);
   Point3 noise(0.0, 0.0, 0.0);
@@ -28,7 +28,7 @@ TEST(LandmarkFactor, errorNoiseless) {
 }
 
 /// Verify expected error in test scenario
-TEST(LandmarkFactor, errorNoise) {
+TEST(PoseToPointFactor, errorNoise) {
   Pose3 pose = Pose3::identity();
   Point3 point(1.0 , 2.0, 3.0);
   Point3 noise(-1.0, 0.5, 0.3);
@@ -43,7 +43,7 @@ TEST(LandmarkFactor, errorNoise) {
 }
 
 /// Check Jacobians are correct
-TEST(LandmarkFactor, jacobian) {
+TEST(PoseToPointFactor, jacobian) {
   // Measurement
   gtsam::Point3 l_meas = gtsam::Point3(1, 2, 3);
 
