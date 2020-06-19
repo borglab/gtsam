@@ -33,7 +33,7 @@ namespace gtsam {
 /* ************************************************************************* */
 void Rot3::print(const std::string& s) const {
   cout << (s.empty() ? "R: " : s + " ");
-  gtsam::print((Matrix)matrix());
+  gtsam::print(static_cast<Matrix>(matrix()));
 }
 
 /* ************************************************************************* */
