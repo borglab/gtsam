@@ -76,17 +76,9 @@ GTSAM_MAKE_MATRIX_DEFS(9);
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
 
-// Matrix formatting arguments when printing. Akin to Matlab style.
-const Eigen::IOFormat matlab(
-  Eigen::StreamPrecision, // precision
-  Eigen::DontAlignCols, // flags set such that rowSpacers are not added
-  ", ", // coeffSeparator
-  ";\n", // rowSeparator
-  "\t",  // rowPrefix
-  "", // rowSuffix
-  "[\n", // matPrefix
-  "\n]" // matSuffix
-);
+// Matrix formatting arguments when printing.
+// Akin to Matlab style.
+const Eigen::IOFormat& matlabFormat();
 
 /**
  * equals with a tolerance

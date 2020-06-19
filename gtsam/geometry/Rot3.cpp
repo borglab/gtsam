@@ -223,7 +223,7 @@ pair<Matrix3, Vector3> RQ(const Matrix3& A) {
 
 /* ************************************************************************* */
 ostream &operator<<(ostream &os, const Rot3& R) {
-  os << R.matrix().format(matlab);
+  os << R.matrix().format(matlabFormat());
   return os;
 }
 
