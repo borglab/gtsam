@@ -28,6 +28,7 @@
 #include <cstdint>
 
 #include <exception>
+#include <string>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/scalable_allocator.h>
