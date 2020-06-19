@@ -2,10 +2,10 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Line3.h>
-#include <gtsam/slam/expressions.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/expressionTesting.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/expressions.h>
 
 using namespace gtsam;
 
@@ -146,7 +146,7 @@ TEST(Line3, projection) {
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.1);
   Unit3_ projected_(wL_, &Line3::project);
   ExpressionFactor<Unit3> f(model, expected, projected_);
-  EXPECT_CORRECT_FACTOR_JACOBIANS(f, val, 1e-5, 1e-7);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f, val, 1e-5, 1e-5);
 }
 
 int main() {

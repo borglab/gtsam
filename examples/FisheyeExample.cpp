@@ -12,7 +12,7 @@
 /**
  * @file    FisheyeExample.cpp
  * @brief   A visualSLAM example for the structure-from-motion problem on a
- * simulated dataset. This version uses a fisheye camera model and a  GaussNewton
+ * simulated dataset. This version uses a fisheye camera model and a GaussNewton
  * solver to solve the graph in one batch
  * @author  ghaggin
  * @Date    Apr 9,2020
@@ -55,75 +55,76 @@
 using namespace std;
 using namespace gtsam;
 
+using symbol_shorthand::L;  // for landmarks
+using symbol_shorthand::X;  // for poses
+
 /* ************************************************************************* */
-int main(int argc, char *argv[])
-{
-    // Define the camera calibration parameters
-    // Cal3_S2::shared_ptr K(new Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0));
-    boost::shared_ptr<Cal3Fisheye> K(new Cal3Fisheye(
-        278.66, 278.48, 0.0, 319.75, 241.96, -0.013721808247486035, 0.020727425669427896, -0.012786476702685545, 0.0025242267320687625));
+int main(int argc, char *argv[]) {
+  // Define the camera calibration parameters
+  auto K = boost::make_shared<Cal3Fisheye>(
+      278.66, 278.48, 0.0, 319.75, 241.96, -0.013721808247486035,
+      0.020727425669427896, -0.012786476702685545, 0.0025242267320687625);
 
-    // Define the camera observation noise model, 1 pixel stddev
-    auto measurementNoise = noiseModel::Isotropic::Sigma(2, 1.0);
+  // Define the camera observation noise model, 1 pixel stddev
+  auto measurementNoise = noiseModel::Isotropic::Sigma(2, 1.0);
 
-    // Create the set of ground-truth landmarks
-    vector<Point3> points = createPoints();
+  // Create the set of ground-truth landmarks
+  const vector<Point3> points = createPoints();
 
-    // Create the set of ground-truth poses
-    vector<Pose3> poses = createPoses();
+  // Create the set of ground-truth poses
+  const vector<Pose3> poses = createPoses();
 
-    // Create a Factor Graph and Values to hold the new data
-    NonlinearFactorGraph graph;
-    Values initialEstimate;
+  // Create a Factor Graph and Values to hold the new data
+  NonlinearFactorGraph graph;
+  Values initialEstimate;
 
-    // Add a prior on pose x0, 30cm std on x,y,z and 0.1 rad on roll,pitch,yaw
-    static auto kPosePrior = noiseModel::Diagonal::Sigmas(
-        (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3)).finished());
-    graph.emplace_shared<PriorFactor<Pose3>>(Symbol('x', 0), poses[0], kPosePrior);
+  // Add a prior on pose x0, 0.1 rad on roll,pitch,yaw, and 30cm std on x,y,z
+  auto posePrior = noiseModel::Diagonal::Sigmas(
+      (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3)).finished());
+  graph.emplace_shared<PriorFactor<Pose3>>(X(0), poses[0], posePrior);
 
-    // Add a prior on landmark l0
-    static auto kPointPrior = noiseModel::Isotropic::Sigma(3, 0.1);
-    graph.emplace_shared<PriorFactor<Point3>>(Symbol('l', 0), points[0], kPointPrior);
+  // Add a prior on landmark l0
+  auto pointPrior = noiseModel::Isotropic::Sigma(3, 0.1);
+  graph.emplace_shared<PriorFactor<Point3>>(L(0), points[0], pointPrior);
 
-    // Add initial guesses to all observed landmarks
-    // Intentionally initialize the variables off from the ground truth
-    static Point3 kDeltaPoint(-0.25, 0.20, 0.15);
-    for (size_t j = 0; j < points.size(); ++j)
-        initialEstimate.insert<Point3>(Symbol('l', j), points[j] + kDeltaPoint);
+  // Add initial guesses to all observed landmarks
+  // Intentionally initialize the variables off from the ground truth
+  static const Point3 kDeltaPoint(-0.25, 0.20, 0.15);
+  for (size_t j = 0; j < points.size(); ++j)
+    initialEstimate.insert<Point3>(L(j), points[j] + kDeltaPoint);
 
-    // Loop over the poses, adding the observations to the graph
-    for (size_t i = 0; i < poses.size(); ++i)
-    {
-        // Add factors for each landmark observation
-        for (size_t j = 0; j < points.size(); ++j)
-        {
-            PinholeCamera<Cal3Fisheye> camera(poses[i], *K);
-            Point2 measurement = camera.project(points[j]);
-            graph.emplace_shared<GenericProjectionFactor<Pose3, Point3, Cal3Fisheye>>(
-                measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K);
-        }
-
-        // Add an initial guess for the current pose
-        // Intentionally initialize the variables off from the ground truth
-        static Pose3 kDeltaPose(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
-        initialEstimate.insert(Symbol('x', i), poses[i] * kDeltaPose);
+  // Loop over the poses, adding the observations to the graph
+  for (size_t i = 0; i < poses.size(); ++i) {
+    // Add factors for each landmark observation
+    for (size_t j = 0; j < points.size(); ++j) {
+      PinholeCamera<Cal3Fisheye> camera(poses[i], *K);
+      Point2 measurement = camera.project(points[j]);
+      graph.emplace_shared<GenericProjectionFactor<Pose3, Point3, Cal3Fisheye>>(
+          measurement, measurementNoise, X(i), L(j), K);
     }
 
-    GaussNewtonParams params;
-    params.setVerbosity("TERMINATION");
-    params.maxIterations = 10000;
+    // Add an initial guess for the current pose
+    // Intentionally initialize the variables off from the ground truth
+    static const Pose3 kDeltaPose(Rot3::Rodrigues(-0.1, 0.2, 0.25),
+                                  Point3(0.05, -0.10, 0.20));
+    initialEstimate.insert(X(i), poses[i] * kDeltaPose);
+  }
 
-    std::cout << "Optimizing the factor graph" << std::endl;
-    GaussNewtonOptimizer optimizer(graph, initialEstimate, params);
-    Values result = optimizer.optimize();
-    std::cout << "Optimization complete" << std::endl;
+  GaussNewtonParams params;
+  params.setVerbosity("TERMINATION");
+  params.maxIterations = 10000;
 
-    std::cout << "initial error=" << graph.error(initialEstimate) << std::endl;
-    std::cout << "final error=" << graph.error(result) << std::endl;
+  std::cout << "Optimizing the factor graph" << std::endl;
+  GaussNewtonOptimizer optimizer(graph, initialEstimate, params);
+  Values result = optimizer.optimize();
+  std::cout << "Optimization complete" << std::endl;
 
-    std::ofstream os("examples/vio_batch.dot");
-    graph.saveGraph(os, result);
+  std::cout << "initial error=" << graph.error(initialEstimate) << std::endl;
+  std::cout << "final error=" << graph.error(result) << std::endl;
 
-    return 0;
+  std::ofstream os("examples/vio_batch.dot");
+  graph.saveGraph(os, result);
+
+  return 0;
 }
 /* ************************************************************************* */

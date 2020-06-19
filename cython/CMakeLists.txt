@@ -7,6 +7,11 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   add_subdirectory(gtsam_eigency)
   include_directories(${PROJECT_BINARY_DIR}/cython/gtsam_eigency)
 
+  # Fix for error "C1128: number of sections exceeded object file format limit"
+  if(MSVC)
+    add_compile_options(/bigobj)
+  endif()
+
   # wrap gtsam
   add_custom_target(gtsam_header DEPENDS "../gtsam.h")
   wrap_and_install_library_cython("../gtsam.h" # interface_header
