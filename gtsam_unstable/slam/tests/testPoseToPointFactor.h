@@ -5,9 +5,9 @@
  * @date   June 20, 2020
  */
 
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam_unstable/slam/PoseToPointFactor.h>
-#include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;
 using namespace gtsam::noiseModel;
@@ -21,25 +21,27 @@ TEST(PoseToPointFactor, errorNoiseless) {
 
   Key pose_key(1);
   Key point_key(2);
-  PoseToPointFactor factor(pose_key, point_key, measured, Isotropic::Sigma(3, 0.05));
+  PoseToPointFactor factor(pose_key, point_key, measured,
+                           Isotropic::Sigma(3, 0.05));
   Vector expectedError = Vector3(0.0, 0.0, 0.0);
   Vector actualError = factor.evaluateError(pose, point);
-  EXPECT(assert_equal(expectedError,actualError, 1E-5));
+  EXPECT(assert_equal(expectedError, actualError, 1E-5));
 }
 
 /// Verify expected error in test scenario
 TEST(PoseToPointFactor, errorNoise) {
   Pose3 pose = Pose3::identity();
-  Point3 point(1.0 , 2.0, 3.0);
+  Point3 point(1.0, 2.0, 3.0);
   Point3 noise(-1.0, 0.5, 0.3);
   Point3 measured = t + noise;
 
   Key pose_key(1);
   Key point_key(2);
-  PoseToPointFactor factor(pose_key, point_key, measured, Isotropic::Sigma(3, 0.05));
+  PoseToPointFactor factor(pose_key, point_key, measured,
+                           Isotropic::Sigma(3, 0.05));
   Vector expectedError = noise;
   Vector actualError = factor.evaluateError(pose, point);
-  EXPECT(assert_equal(expectedError,actualError, 1E-5));
+  EXPECT(assert_equal(expectedError, actualError, 1E-5));
 }
 
 /// Check Jacobians are correct
@@ -48,8 +50,8 @@ TEST(PoseToPointFactor, jacobian) {
   gtsam::Point3 l_meas = gtsam::Point3(1, 2, 3);
 
   // Linearisation point
-  gtsam::Point3 p_t  = gtsam::Point3(-5, 12, 2);
-  gtsam::Rot3 p_R = gtsam::Rot3::RzRyRx(1.5*M_PI, -0.3*M_PI, 0.4*M_PI);
+  gtsam::Point3 p_t = gtsam::Point3(-5, 12, 2);
+  gtsam::Rot3 p_R = gtsam::Rot3::RzRyRx(1.5 * M_PI, -0.3 * M_PI, 0.4 * M_PI);
   Pose3 p(p_R, p_t);
 
   gtsam::Point3 l = gtsam::Point3(3, 0, 5);
@@ -61,8 +63,8 @@ TEST(PoseToPointFactor, jacobian) {
   PoseToPointFactor factor(pose_key, point_key, l_meas, noise);
 
   // Calculate numerical derivatives
-  boost::function<Vector(const Pose3&, const Point3&)> f = boost::bind(
-      &LandmarkFactor::evaluateError, factor, _1, _2, boost::none, boost::none);
+  auto f = boost::bind(&PoseToPointFactor::evaluateError, factor, _1, _2,
+                       boost::none, boost::none);
   Matrix numerical_H1 = numericalDerivative21<Vector, Pose3, Point3>(f, p, l);
   Matrix numerical_H2 = numericalDerivative22<Vector, Pose3, Point3>(f, p, l);
 
