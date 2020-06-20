@@ -321,34 +321,6 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
   void serializable() const; // enabling serialization functionality
 };
 
-#include <gtsam_unstable/slam/FrobeniusFactor.h>
-gtsam::noiseModel::Isotropic* ConvertPose3NoiseModel(
-    gtsam::noiseModel::Base* model, size_t d);
-
-template<T = {gtsam::SO3, gtsam::SO4}>
-virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
-  FrobeniusFactor(size_t key1, size_t key2);
-  FrobeniusFactor(size_t key1, size_t key2, gtsam::noiseModel::Base* model);
-
-  Vector evaluateError(const T& R1, const T& R2);
-};
-
-template<T = {gtsam::SO3, gtsam::SO4}>
-virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
-  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12);
-  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12, gtsam::noiseModel::Base* model);
-
-  Vector evaluateError(const T& R1, const T& R2);
-};
-
-virtual class FrobeniusWormholeFactor : gtsam::NoiseModelFactor {
-  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
-                          size_t p);
-  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
-                          size_t p, gtsam::noiseModel::Base* model);
-  Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
-};
-
 #include <gtsam_unstable/slam/ShonanAveraging.h>
 class ShonanAveragingParameters {
   ShonanAveragingParameters(string verbosity);

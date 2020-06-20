@@ -8,13 +8,12 @@ See LICENSE for the license information
 FrobeniusFactor unit tests.
 Author: Frank Dellaert
 """
-# pylint: disable=no-name-in-module, import-error
+# pylint: disable=no-name-in-module, import-error, invalid-name
 import unittest
 
 import numpy as np
-from gtsam import SO3, SO4, SOn
-from gtsam_unstable import (FrobeniusBetweenFactorSO4, FrobeniusFactorSO4,
-                            FrobeniusWormholeFactor)
+from gtsam import (SO3, SO4, FrobeniusBetweenFactorSO4, FrobeniusFactorSO4,
+                   FrobeniusWormholeFactor, SOn)
 
 id = SO4()
 v1 = np.array([0, 0, 0, 0.1, 0, 0])

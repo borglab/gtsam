@@ -24,7 +24,7 @@
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
-#include <gtsam_unstable/slam/FrobeniusFactor.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 
 #include <Eigen/Eigenvalues>
 

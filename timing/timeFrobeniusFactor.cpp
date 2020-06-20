@@ -28,7 +28,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam_unstable/slam/FrobeniusFactor.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 
 #include <iostream>
 #include <string>

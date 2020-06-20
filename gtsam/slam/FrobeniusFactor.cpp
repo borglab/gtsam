@@ -16,7 +16,7 @@
  * @brief  Various factors that minimize some Frobenius norm
  */
 
-#include <gtsam_unstable/slam/FrobeniusFactor.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 
 #include <gtsam/base/timing.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>

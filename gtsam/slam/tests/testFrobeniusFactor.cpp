@@ -26,7 +26,7 @@
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam_unstable/slam/FrobeniusFactor.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 
 #include <CppUnitLite/TestHarness.h>
 
