@@ -230,3 +230,29 @@ namespace std {
 #ifdef ERROR
 #undef ERROR
 #endif
+
+namespace gtsam {
+
+  /**
+   * A trait to mark classes that need special alignment.
+   * Please refer to https://github.com/PointCloudLibrary/pcl/pull/3163
+   */
+#if __cplusplus < 201703L
+  template<typename ...> using void_t = void;
+#endif
+
+  template<typename, typename = void_t<>>
+  struct has_custom_allocator : std::false_type {
+  };
+  template<typename T>
+  struct has_custom_allocator<T, void_t<typename T::_custom_allocator_type_trait>> : std::true_type {
+  };
+
+}
+
+/**
+ * This is necessary for the Cython wrapper to work properly, and possibly reduce future misalignment problems.
+ */
+#define GTSAM_MAKE_ALIGNED_OPERATOR_NEW \
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW \
+  using _custom_allocator_type_trait = void;
