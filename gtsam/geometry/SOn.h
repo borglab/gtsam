@@ -20,8 +20,8 @@
 
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/make_shared.h>
 #include <gtsam/dllexport.h>
-
 #include <Eigen/Core>
 
 #include <iostream> // TODO(frank): how to avoid?
@@ -54,7 +54,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   using VectorN2 = Eigen::Matrix<double, internal::NSquaredSO(N), 1>;
   using MatrixDD = Eigen::Matrix<double, dimension, dimension>;
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
   MatrixNN matrix_;  ///< Rotation matrix
