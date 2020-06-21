@@ -20,7 +20,7 @@
 #include <boost/make_shared.hpp>
 #include <gtsam/base/types.h>
 
-#include <type_traits>
+#include <boost/type_traits.hpp>
 
 #include <Eigen/Core>
 
