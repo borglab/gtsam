@@ -83,7 +83,7 @@ TEST (OrientedPlane3Factor, lm_rotation_error) {
   // Tests one pose, two measurements of the landmark that differ in angle only.
   // Normal along -x, 3m away
   Symbol lm_sym('p', 0);
-  OrientedPlane3 test_lm0(-1.0, 0.0, 0.0, 3.0);
+  OrientedPlane3 test_lm0(-1.0/sqrt(1.01), 0.1/sqrt(1.01), 0.0, 3.0);
 
   ISAM2 isam2;
   Values new_values;
@@ -153,8 +153,8 @@ TEST( OrientedPlane3Factor, Derivatives ) {
     factor.evaluateError(poseLin, pLin, actualH1, actualH2);
 
     // Verify we get the expected error
-    EXPECT(assert_equal(numericalH1, actualH1, 1e-8));
-    EXPECT(assert_equal(numericalH2, actualH2, 1e-8));
+    EXPECT(assert_equal(numericalH1, actualH1, 1e-7));
+    EXPECT(assert_equal(numericalH2, actualH2, 1e-7));
   }
 }
 

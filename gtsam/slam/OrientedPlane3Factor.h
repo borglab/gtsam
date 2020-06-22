@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
@@ -48,10 +49,27 @@ public:
   virtual Vector evaluateError(const Pose3& pose, const OrientedPlane3& plane,
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
           boost::none) const {
-    OrientedPlane3 predicted_plane = OrientedPlane3::Transform(plane, pose, H1,
-        H2);
     Vector err(3);
-    err << predicted_plane.error(measured_p_);
+
+    if (H1 || H2) {
+      Matrix H1_1, H2_1;
+      OrientedPlane3 predicted_plane = OrientedPlane3::Transform(plane, pose, H1_1, H2_1);
+      err << predicted_plane.error(measured_p_);
+      // Numerically calculate the derivative since this function doesn't provide one.
+      auto f = boost::bind(&OrientedPlane3::Error, _1, _2);
+      Matrix H1_2 = numericalDerivative21<Vector3, OrientedPlane3, OrientedPlane3>(f, predicted_plane, measured_p_);
+
+      // Apply the chain rule to calculate the derivatives.
+      if (H1) {
+        *H1 = H1_2 * H1_1;
+      }
+      if (H2) {
+        *H2 = H1_2 * H2_1;
+      }
+    } else {
+      OrientedPlane3 predicted_plane = OrientedPlane3::Transform(plane, pose, H1, H2);
+      err << predicted_plane.error(measured_p_);
+    }
     return (err);
   }
   ;

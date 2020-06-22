@@ -114,6 +114,10 @@ public:
    */
   Vector3 error(const OrientedPlane3& plane) const;
 
+  static Vector3 Error(const OrientedPlane3& plane1, const OrientedPlane3& plane2) {
+    return plane1.error(plane2);
+  }
+
   /** Computes the error between the two planes, with derivatives.
    *  This uses Unit3::errorVector, as opposed to the other .error() in this class, which uses
    *  Unit3::localCoordinates. This one has correct derivatives.
