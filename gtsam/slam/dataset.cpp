@@ -37,6 +37,7 @@
 #include <boost/assign/list_inserter.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/optional.hpp>
 
 #include <cmath>
 #include <fstream>
@@ -542,16 +543,14 @@ std::map<Key, Pose3> parse3DPoses(const string& filename) {
 
 /* ************************************************************************* */
 BetweenFactorPose3s parse3DFactors(const string& filename, 
-                                   const noiseModel::Diagonal::shared_ptr& corruptingNoise) {
+    const noiseModel::Diagonal::shared_ptr& corruptingNoise) {
   ifstream is(filename.c_str());
   if (!is) throw invalid_argument("parse3DFactors: can not find file " + filename);
 
-  // If asked, create a sampler with random number generator
-  Sampler sampler;
+  boost::optional<Sampler> sampler;
   if (corruptingNoise) {
     sampler = Sampler(corruptingNoise);
   }
-
 
   std::vector<BetweenFactor<Pose3>::shared_ptr> factors;
   while (!is.eof()) {
@@ -594,8 +593,8 @@ BetweenFactorPose3s parse3DFactors(const string& filename,
 
       SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
       auto R12 = Rot3::Quaternion(qw, qx, qy, qz);
-      if (corruptingNoise) {
-        R12 = R12.retract(sampler.sample());
+      if (sampler) {
+        R12 = R12.retract(sampler->sample());
       }
 
       factors.emplace_back(new BetweenFactor<Pose3>(
