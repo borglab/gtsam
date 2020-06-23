@@ -42,10 +42,11 @@ T create() {
 }
 
 // Creates or empties a folder in the build folder and returns the relative path
-std::string resetFilesystem() {
-  boost::filesystem::remove_all("actual");
-  boost::filesystem::create_directory("actual");
-  return "actual/";
+boost::filesystem::path resetFilesystem(
+    boost::filesystem::path folder = "actual") {
+  boost::filesystem::remove_all(folder);
+  boost::filesystem::create_directory(folder);
+  return folder;
 }
 
 // Templated round-trip serialization
@@ -61,10 +62,10 @@ void roundtrip(const T& input, T& output) {
 // Templated round-trip serialization using a file
 template<class T>
 void roundtripFile(const T& input, T& output) {
-  std::string path = resetFilesystem();
+  boost::filesystem::path path = resetFilesystem()/"graph.dat";
 
-  serializeToFile(input, path + "graph.dat");
-  deserializeFromFile(path + "graph.dat", output);
+  serializeToFile(input, path.string());
+  deserializeFromFile(path.string(), output);
 }
 
 // This version requires equality operator
@@ -109,13 +110,13 @@ void roundtripXML(const T& input, T& output) {
 // Templated round-trip serialization using XML File
 template<class T>
 void roundtripXMLFile(const T& input, T& output) {
-  std::string path = resetFilesystem();
+  boost::filesystem::path path = resetFilesystem()/"graph.xml";
 
   // Serialize
-  serializeToXMLFile(input, path + "graph.xml");
+  serializeToXMLFile(input, path.string());
 
   // De-serialize
-  deserializeFromXMLFile(path + "graph.xml", output);
+  deserializeFromXMLFile(path.string(), output);
 }
 
 // This version requires equality operator
@@ -160,11 +161,11 @@ void roundtripBinary(const T& input, T& output) {
 // Templated round-trip serialization using Binary file
 template<class T>
 void roundtripBinaryFile(const T& input, T& output) {
-  std::string path = resetFilesystem();
+  boost::filesystem::path path = resetFilesystem()/"graph.bin";
   // Serialize
-  serializeToBinaryFile(input, path + "graph.bin");
+  serializeToBinaryFile(input, path.string());
   // De-serialize
-  deserializeFromBinaryFile(path + "graph.bin", output);
+  deserializeFromBinaryFile(path.string(), output);
 }
 
 // This version requires equality operator
