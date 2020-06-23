@@ -8,7 +8,7 @@ matrix:
   # - Makes sure that everything still works without optional deps (numpy/scipy/eigen) and
   #   also tests the automatic discovery functions in CMake (Python version, C++ standard).
   - os: linux
-    dist: bionic # Necessary to run doxygen 1.8.15
+    dist: xenial # Necessary to run doxygen 1.8.15
     name: Style, docs, and pip
     cache: false
     before_install:
@@ -76,7 +76,7 @@ matrix:
     services: docker
     env: DOCKER=debian:stretch PYTHON=3.5 CPP=14 GCC=6 DEBUG=1
   - os: linux
-    dist: bionic
+    dist: xenial
     env: PYTHON=3.6 CPP=17 GCC=7
     name: Python 3.6, c++17, gcc 7
     addons:
@@ -89,14 +89,14 @@ matrix:
           - python3.6-dev
           - python3.6-venv
   - os: linux
-    dist: bionic
+    dist: xenial
     env: PYTHON=3.6 CPP=17 CLANG=7
     name: Python 3.6, c++17, Clang 7
     addons:
       apt:
         sources:
           - deadsnakes
-          - llvm-toolchain-bionic-7
+          - llvm-toolchain-xenial-7
         packages:
           - python3.6-dev
           - python3.6-venv
