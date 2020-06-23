@@ -280,9 +280,16 @@ function(install_cython_files source_files dest_directory)
 endfunction()
 
 function(install_python_package install_path)
-  set(package_path "${install_path}${GTSAM_BUILD_TAG}")
-  # set cython directory permissions to user so we don't get permission denied
-  install(CODE "execute_process(COMMAND sh \"-c\" \"chown -R $(logname):$(logname) ${package_path}\")")
-  # go to cython directory and run setup.py
-  install(CODE "execute_process(COMMAND sh \"-c\" \"cd ${package_path} && python setup.py install\")")
+#TODO this will only work for Linux. Need to make it work on macOS and Windows as well
+#TODO Running `sudo make install` makes this run in admin space causing Python 2.7 to be picked up.
+  # # go to cython directory and run setup.py
+  # install(CODE "execute_process(COMMAND sh \"-c\" \"cd ${package_path} && python setup.py install\")")
+  if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(PYTHON_INSTALL_SCRIPT "install.bat")
+  elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    set(PYTHON_INSTALL_SCRIPT "install.sh")
+  endif()
+
+  configure_file(${PROJECT_SOURCE_DIR}/cython/scripts/${PYTHON_INSTALL_SCRIPT} ${PROJECT_BINARY_DIR}/cython/scripts/${PYTHON_INSTALL_SCRIPT})
+  add_custom_target(python-install "${PROJECT_BINARY_DIR}/cython/scripts/${PYTHON_INSTALL_SCRIPT}")
 endfunction()
