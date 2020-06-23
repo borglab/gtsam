@@ -37,6 +37,7 @@
 #include <boost/assign/list_inserter.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/optional.hpp>
 
 #include <cmath>
 #include <fstream>
@@ -541,9 +542,15 @@ std::map<Key, Pose3> parse3DPoses(const string& filename) {
 }
 
 /* ************************************************************************* */
-BetweenFactorPose3s parse3DFactors(const string& filename) {
+BetweenFactorPose3s parse3DFactors(const string& filename, 
+    const noiseModel::Diagonal::shared_ptr& corruptingNoise) {
   ifstream is(filename.c_str());
   if (!is) throw invalid_argument("parse3DFactors: can not find file " + filename);
+
+  boost::optional<Sampler> sampler;
+  if (corruptingNoise) {
+    sampler = Sampler(corruptingNoise);
+  }
 
   std::vector<BetweenFactor<Pose3>::shared_ptr> factors;
   while (!is.eof()) {
@@ -585,8 +592,13 @@ BetweenFactorPose3s parse3DFactors(const string& filename) {
       mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0);  // off diagonal
 
       SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
+      auto R12 = Rot3::Quaternion(qw, qx, qy, qz);
+      if (sampler) {
+        R12 = R12.retract(sampler->sample());
+      }
+
       factors.emplace_back(new BetweenFactor<Pose3>(
-          id1, id2, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}), model));
+          id1, id2, Pose3(R12, {x, y, z}), model));
     }
   }
   return factors;
