@@ -9,13 +9,12 @@ addons:
     - ubuntu-toolchain-r-test
     - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
       key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-    - deadsnakes
     packages:
     - g++-9
     - clang-9
     - build-essential pkg-config
     - cmake
-    - python3.6 python3.6-dev
+    - python3-dev libpython-dev
     - libboost-all-dev
 
 # before_install:
