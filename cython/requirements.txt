@@ -1,4 +1,3 @@
 Cython>=0.25.2
 backports_abc>=0.5
-# Numpy version restriction
-numpy>=1.12.0,<1.19.0
+numpy>=1.12.0

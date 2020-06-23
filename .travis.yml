@@ -15,6 +15,7 @@ addons:
     - build-essential pkg-config
     - cmake
     - python3-dev libpython-dev
+    - python3-numpy
     - libboost-all-dev
 
 # before_install:
