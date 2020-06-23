@@ -44,8 +44,8 @@ T create() {
 // Creates or empties a folder in the build folder and returns the relative path
 boost::filesystem::path resetFilesystem(
     boost::filesystem::path folder = "actual") {
-  // boost::filesystem::remove_all(folder);
-  // boost::filesystem::create_directory(folder);
+  boost::filesystem::remove_all(folder);
+  boost::filesystem::create_directory(folder);
   return folder;
 }
 
