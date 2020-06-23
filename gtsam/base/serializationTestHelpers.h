@@ -44,8 +44,8 @@ T create() {
 // Creates or empties a folder in the build folder and returns the relative path
 boost::filesystem::path resetFilesystem(
     boost::filesystem::path folder = "actual") {
-  boost::filesystem::remove_all(folder);
-  boost::filesystem::create_directory(folder);
+  // boost::filesystem::remove_all(folder);
+  // boost::filesystem::create_directory(folder);
   return folder;
 }
 
@@ -71,11 +71,10 @@ void roundtripFile(const T& input, T& output) {
 // This version requires equality operator
 template<class T>
 bool equality(const T& input = T()) {
-  T output = create<T>();
+  T output = create<T>(), outputf = create<T>();
   roundtrip<T>(input,output);
-  if (input != output) return false;
-  roundtripFile<T>(input,output);
-  return input==output;
+  roundtripFile<T>(input,outputf);
+  return (input==output) && (input==outputf);
 }
 
 // This version requires Testable
@@ -89,11 +88,10 @@ bool equalsObj(const T& input = T()) {
 // De-referenced version for pointers, requires equals method
 template<class T>
 bool equalsDereferenced(const T& input) {
-  T output = create<T>();
+  T output = create<T>(), outputf = create<T>();
   roundtrip<T>(input,output);
-  if (!input->equals(*output)) return false;
-  roundtripFile<T>(input,output);
-  return input->equals(*output);
+  roundtripFile<T>(input,outputf);
+  return (input->equals(*output)) && (input->equals(*outputf));
 }
 
 // Templated round-trip serialization using XML
@@ -122,11 +120,10 @@ void roundtripXMLFile(const T& input, T& output) {
 // This version requires equality operator
 template<class T>
 bool equalityXML(const T& input = T()) {
-  T output = create<T>();
+  T output = create<T>(), outputf = create<T>();
   roundtripXML<T>(input,output);
-  if (input != output) return false;
-  roundtripXMLFile<T>(input,output);
-  return input==output;
+  roundtripXMLFile<T>(input,outputf);
+  return (input==output) && (input==outputf);
 }
 
 // This version requires Testable
@@ -140,11 +137,10 @@ bool equalsXML(const T& input = T()) {
 // This version is for pointers, requires equals method
 template<class T>
 bool equalsDereferencedXML(const T& input = T()) {
-  T output = create<T>();
+  T output = create<T>(), outputf = create<T>();
   roundtripXML<T>(input,output);
-  if (!input->equals(*output)) return false;
-  roundtripXMLFile<T>(input, output);
-  return input->equals(*output);
+  roundtripXMLFile<T>(input, outputf);
+  return (input->equals(*output)) && (input->equals(*outputf));
 }
 
 // Templated round-trip serialization using XML
@@ -171,11 +167,10 @@ void roundtripBinaryFile(const T& input, T& output) {
 // This version requires equality operator
 template<class T>
 bool equalityBinary(const T& input = T()) {
-  T output = create<T>();
+  T output = create<T>(), outputf = create<T>();
   roundtripBinary<T>(input,output);
-  if (input != output) return false;
-  roundtripBinaryFile<T>(input,output);
-  return input==output;
+  roundtripBinaryFile<T>(input,outputf);
+  return (input==output) && (input==outputf);
 }
 
 // This version requires Testable
@@ -189,11 +184,10 @@ bool equalsBinary(const T& input = T()) {
 // This version is for pointers, requires equals method
 template<class T>
 bool equalsDereferencedBinary(const T& input = T()) {
-  T output = create<T>();
+  T output = create<T>(), outputf = create<T>();
   roundtripBinary<T>(input,output);
-  if (!input->equals(*output)) return false;
-  roundtripBinaryFile<T>(input,output);
-  return input->equals(*output);
+  roundtripBinaryFile<T>(input,outputf);
+  return (input->equals(*output)) && (input->equals(*outputf));
 }
 
 } // \namespace serializationTestHelpers
