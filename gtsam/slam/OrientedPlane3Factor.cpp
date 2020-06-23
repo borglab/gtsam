@@ -23,27 +23,21 @@ void OrientedPlane3Factor::print(const string& s,
 Vector OrientedPlane3Factor::evaluateError(const Pose3& pose,
     const OrientedPlane3& plane, boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2) const {
-  Vector err(3);
+  Matrix36 predicted_H_pose;
+  Matrix33 predicted_H_plane, error_H_predicted;
+  OrientedPlane3 predicted_plane = plane.transform(pose, H2 ? &predicted_H_plane : nullptr,
+                                                         H1 ? &predicted_H_pose  : nullptr);
+  Vector3 err = predicted_plane.errorVector(measured_p_, (H1 || H2) ? &error_H_predicted : nullptr);
 
-  if (H1 || H2) {
-    Matrix36 predicted_H_pose;
-    Matrix33 predicted_H_plane, error_H_predicted;
-
-    OrientedPlane3 predicted_plane = plane.transform(pose, predicted_H_plane, predicted_H_pose);
-    err << predicted_plane.error(measured_p_, error_H_predicted);
-
-    // Apply the chain rule to calculate the derivatives.
-    if (H1) {
-      *H1 = error_H_predicted * predicted_H_pose;
-    }
-    if (H2) {
-      *H2 = error_H_predicted * predicted_H_plane;
-    }
-  } else {
-    OrientedPlane3 predicted_plane = plane.transform(pose);
-    err << predicted_plane.error(measured_p_);
+  // Apply the chain rule to calculate the derivatives.
+  if (H1) {
+    *H1 = error_H_predicted * predicted_H_pose;
   }
-  return (err);
+  if (H2) {
+    *H2 = error_H_predicted * predicted_H_plane;
+  }
+
+  return err;
 }
 
 //***************************************************************************
