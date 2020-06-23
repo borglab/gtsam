@@ -20,6 +20,7 @@
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/geometry/Point2.h>
 #include <iostream>
+#include <gtsam/base/numericalDerivative.h>
 
 using namespace std;
 
@@ -58,7 +59,14 @@ OrientedPlane3 OrientedPlane3::transform(const Pose3& xr, OptionalJacobian<3, 3>
 }
 
 /* ************************************************************************* */
-Vector3 OrientedPlane3::error(const OrientedPlane3& plane) const {
+Vector3 OrientedPlane3::error(const OrientedPlane3& plane,
+                              OptionalJacobian<3,3> H1,
+                              OptionalJacobian<3,3> H2) const {
+  // Numerically calculate the derivative since this function doesn't provide one.
+  auto f = boost::bind(&OrientedPlane3::Error, _1, _2);
+  if (H1) *H1 = numericalDerivative21<Vector3, OrientedPlane3, OrientedPlane3>(f, *this, plane);
+  if (H2) *H2 = numericalDerivative22<Vector3, OrientedPlane3, OrientedPlane3>(f, *this, plane);
+
   Vector2 n_error = -n_.localCoordinates(plane.n_);
   return Vector3(n_error(0), n_error(1), d_ - plane.d_);
 }

@@ -112,7 +112,9 @@ public:
    *  The error is a norm 1 difference in tangent space.
    * @param the other plane
    */
-  Vector3 error(const OrientedPlane3& plane) const;
+  Vector3 error(const OrientedPlane3& plane,
+                OptionalJacobian<3,3> H1 = boost::none,
+                OptionalJacobian<3,3> H2 = boost::none) const;
 
   static Vector3 Error(const OrientedPlane3& plane1, const OrientedPlane3& plane2) {
     return plane1.error(plane2);
