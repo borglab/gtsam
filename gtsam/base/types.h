@@ -235,7 +235,8 @@ namespace gtsam {
 
   /**
    * A trait to mark classes that need special alignment.
-   * Please refer to https://github.com/PointCloudLibrary/pcl/pull/3163
+   * This is required to make boost::make_shared and etc respect alignment, which is essential for the Python
+   * wrappers to work properly.
    */
 #if __cplusplus < 201703L
   template<typename ...> using void_t = void;
