@@ -61,8 +61,9 @@ class TranslationRecovery {
    * @param relativeTranslations the relative translations, in world coordinate
    * frames, indexed in a map by a pair of Pose keys.
    */
-  TranslationRecovery(const TranslationEdges& relativeTranslations)
-      : relativeTranslations_(relativeTranslations) {
+  TranslationRecovery(const TranslationEdges& relativeTranslations,
+                      const LevenbergMarquardtParams& lmParams = LevenbergMarquardtParams())
+      : relativeTranslations_(relativeTranslations), params_(lmParams) {
     params_.setVerbosityLM("Summary");
   }
 
