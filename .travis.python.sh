@@ -17,8 +17,7 @@ fi
 
 CURRDIR=$(pwd)
 
-# Explicitly install packages so we are consistent with the system installed python version
-sudo $PYTHON -m pip install Cython>=0.25.2 backports_abc>=0.5
+sudo $PYTHON -m pip install -r ./cython/requirements.txt
 
 mkdir $CURRDIR/build
 cd $CURRDIR/build
