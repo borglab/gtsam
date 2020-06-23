@@ -280,16 +280,16 @@ function(install_cython_files source_files dest_directory)
 endfunction()
 
 function(install_python_package install_path)
-#TODO this will only work for Linux. Need to make it work on macOS and Windows as well
-#TODO Running `sudo make install` makes this run in admin space causing Python 2.7 to be picked up.
-  # # go to cython directory and run setup.py
-  # install(CODE "execute_process(COMMAND sh \"-c\" \"cd ${package_path} && python setup.py install\")")
+  # Select the correct install script based on the OS
   if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(PYTHON_INSTALL_SCRIPT "install.bat")
   elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(PYTHON_INSTALL_SCRIPT "install.sh")
   endif()
 
+  # Configure the variables in the script
   configure_file(${PROJECT_SOURCE_DIR}/cython/scripts/${PYTHON_INSTALL_SCRIPT} ${PROJECT_BINARY_DIR}/cython/scripts/${PYTHON_INSTALL_SCRIPT})
+
+  # Add the new make target command
   add_custom_target(python-install "${PROJECT_BINARY_DIR}/cython/scripts/${PYTHON_INSTALL_SCRIPT}")
 endfunction()
