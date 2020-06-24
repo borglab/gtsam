@@ -32,8 +32,7 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
                                     )
   endif()
 
-  file(READ "${PROJECT_SOURCE_DIR}/cython/requirements.txt" CYTHON_INSTALL_REQUIREMENTS)
-  file(READ "${PROJECT_SOURCE_DIR}/README.md" README_CONTENTS)
+  set(CYTHON_INSTALL_REQUIREMENTS_FILE "${PROJECT_SOURCE_DIR}/cython/requirements.txt")
 
   # Install the custom-generated __init__.py
   # This is to make the build/cython/gtsam folder a python package, so gtsam can be found while wrapping gtsam_unstable
