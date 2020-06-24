@@ -233,27 +233,28 @@ namespace std {
 
 namespace gtsam {
 
+  /// Convenience void_t as we assume C++11, it will not conflict the std one in C++17 as this is in `gtsam::`
+  template<typename ...> using void_t = void;
+
   /**
-   * A trait to mark classes that need special alignment.
+   * A SFINAE trait to mark classes that need special alignment.
    * This is required to make boost::make_shared and etc respect alignment, which is essential for the Python
    * wrappers to work properly.
    */
-#if __cplusplus < 201703L
-  template<typename ...> using void_t = void;
-#endif
-
   template<typename, typename = void_t<>>
-  struct has_custom_allocator : std::false_type {
+  struct needs_eigen_aligned_allocator : std::false_type {
   };
   template<typename T>
-  struct has_custom_allocator<T, void_t<typename T::_custom_allocator_type_trait>> : std::true_type {
+  struct needs_eigen_aligned_allocator<T, void_t<typename T::_eigen_aligned_allocator_trait>> : std::true_type {
   };
 
 }
 
 /**
- * This is necessary for the Cython wrapper to work properly, and possibly reduce future misalignment problems.
+ * This marks a GTSAM object to require alignment. With this macro an object will automatically be allocated in aligned
+ * memory when one uses `gtsam::make_shared`. It reduces future misalignment problems that is hard to debug.
+ * See https://eigen.tuxfamily.org/dox/group__DenseMatrixManipulation__Alignement.html for details
  */
 #define GTSAM_MAKE_ALIGNED_OPERATOR_NEW \
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW \
-  using _custom_allocator_type_trait = void;
+  using _eigen_aligned_allocator_trait = void;
