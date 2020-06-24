@@ -268,3 +268,12 @@ namespace gtsam {
 #define GTSAM_MAKE_ALIGNED_OPERATOR_NEW \
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW \
   using _eigen_aligned_allocator_trait = void;
+
+/**
+ * This marks a GTSAM object to require alignment. With this macro an object will automatically be allocated in aligned
+ * memory when one uses `gtsam::make_shared`. It reduces future misalignment problems that is hard to debug.
+ * See https://eigen.tuxfamily.org/dox/group__DenseMatrixManipulation__Alignement.html for detailed explanation.
+ */
+#define GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign) \
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign) \
+  using _eigen_aligned_allocator_trait = void;
