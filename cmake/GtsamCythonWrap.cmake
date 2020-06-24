@@ -184,7 +184,7 @@ function(install_cython_wrapped_library interface_header generated_files_path in
   # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH/subdirectory if there is one
   get_filename_component(location "${install_path}" PATH)
   get_filename_component(name "${install_path}" NAME)
-  message(STATUS "Installing Cython Toolbox to ${location}${GTSAM_BUILD_TAG}/${name}") #${GTSAM_CYTHON_INSTALL_PATH}"
+  message(STATUS "Installing Cython Toolbox to ${location}${GTSAM_BUILD_TAG}/${name}") #${GTSAM_CYTHON_INSTALL_FULLPATH}"
 
   if(GTSAM_BUILD_TYPE_POSTFIXES)
     foreach(build_type ${CMAKE_CONFIGURATION_TYPES})

@@ -458,7 +458,9 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   if(NOT GTSAM_CYTHON_INSTALL_PATH)
     set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython")
   endif()
-  set(GTSAM_EIGENCY_INSTALL_PATH ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency)
+  # Cython install path appended with Build type (e.g. cython, cythonDebug, etc).
+  set(GTSAM_CYTHON_INSTALL_FULLPATH "${GTSAM_CYTHON_INSTALL_PATH}${GTSAM_BUILD_TAG}")
+  set(GTSAM_EIGENCY_INSTALL_PATH ${GTSAM_CYTHON_INSTALL_FULLPATH}/gtsam_eigency)
   add_subdirectory(cython)
 else()
   set(GTSAM_INSTALL_CYTHON_TOOLBOX 0) # This will go into config.h
