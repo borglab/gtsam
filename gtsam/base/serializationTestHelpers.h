@@ -88,10 +88,9 @@ bool equalsObj(const T& input = T()) {
 // De-referenced version for pointers, requires equals method
 template<class T>
 bool equalsDereferenced(const T& input) {
-  T output = create<T>(), outputf = create<T>();
+  T output = create<T>();
   roundtrip<T>(input,output);
-  roundtripFile<T>(input,outputf);
-  return (input->equals(*output)) && (input->equals(*outputf));
+  return input->equals(*output);
 }
 
 // Templated round-trip serialization using XML
@@ -137,10 +136,9 @@ bool equalsXML(const T& input = T()) {
 // This version is for pointers, requires equals method
 template<class T>
 bool equalsDereferencedXML(const T& input = T()) {
-  T output = create<T>(), outputf = create<T>();
+  T output = create<T>();
   roundtripXML<T>(input,output);
-  roundtripXMLFile<T>(input, outputf);
-  return (input->equals(*output)) && (input->equals(*outputf));
+  return input->equals(*output);
 }
 
 // Templated round-trip serialization using XML
@@ -184,10 +182,9 @@ bool equalsBinary(const T& input = T()) {
 // This version is for pointers, requires equals method
 template<class T>
 bool equalsDereferencedBinary(const T& input = T()) {
-  T output = create<T>(), outputf = create<T>();
+  T output = create<T>();
   roundtripBinary<T>(input,output);
-  roundtripBinaryFile<T>(input,outputf);
-  return (input->equals(*output)) && (input->equals(*outputf));
+  return input->equals(*output);
 }
 
 } // \namespace serializationTestHelpers
