@@ -52,10 +52,8 @@ boost::filesystem::path resetFilesystem(
 // Templated round-trip serialization
 template<class T>
 void roundtrip(const T& input, T& output) {
-  // Serialize
   std::string serialized = serialize(input);
   if (verbose) std::cout << serialized << std::endl << std::endl;
-
   deserialize(serialized, output);
 }
 
@@ -63,12 +61,11 @@ void roundtrip(const T& input, T& output) {
 template<class T>
 void roundtripFile(const T& input, T& output) {
   boost::filesystem::path path = resetFilesystem()/"graph.dat";
-
   serializeToFile(input, path.string());
   deserializeFromFile(path.string(), output);
 }
 
-// This version requires equality operator
+// This version requires equality operator and uses string and file round-trips
 template<class T>
 bool equality(const T& input = T()) {
   T output = create<T>(), outputf = create<T>();
@@ -96,11 +93,8 @@ bool equalsDereferenced(const T& input) {
 // Templated round-trip serialization using XML
 template<class T>
 void roundtripXML(const T& input, T& output) {
-  // Serialize
   std::string serialized = serializeXML<T>(input);
   if (verbose) std::cout << serialized << std::endl << std::endl;
-
-  // De-serialize
   deserializeXML(serialized, output);
 }
 
@@ -108,11 +102,7 @@ void roundtripXML(const T& input, T& output) {
 template<class T>
 void roundtripXMLFile(const T& input, T& output) {
   boost::filesystem::path path = resetFilesystem()/"graph.xml";
-
-  // Serialize
   serializeToXMLFile(input, path.string());
-
-  // De-serialize
   deserializeFromXMLFile(path.string(), output);
 }
 
@@ -144,11 +134,8 @@ bool equalsDereferencedXML(const T& input = T()) {
 // Templated round-trip serialization using XML
 template<class T>
 void roundtripBinary(const T& input, T& output) {
-  // Serialize
   std::string serialized = serializeBinary<T>(input);
   if (verbose) std::cout << serialized << std::endl << std::endl;
-
-  // De-serialize
   deserializeBinary(serialized, output);
 }
 
@@ -156,9 +143,7 @@ void roundtripBinary(const T& input, T& output) {
 template<class T>
 void roundtripBinaryFile(const T& input, T& output) {
   boost::filesystem::path path = resetFilesystem()/"graph.bin";
-  // Serialize
   serializeToBinaryFile(input, path.string());
-  // De-serialize
   deserializeFromBinaryFile(path.string(), output);
 }
 
