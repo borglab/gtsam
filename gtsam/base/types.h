@@ -238,8 +238,18 @@ namespace gtsam {
 
   /**
    * A SFINAE trait to mark classes that need special alignment.
+   *
    * This is required to make boost::make_shared and etc respect alignment, which is essential for the Python
    * wrappers to work properly.
+   *
+   * Explanation
+   * =============
+   * When a GTSAM type is not declared with the type alias `_eigen_aligned_allocator_trait = void`, the first template
+   * will be taken so `needs_eigen_aligned_allocator` will be resolved to `std::false_type`.
+   *
+   * Otherwise, it will resolve to the second template, which will be resolved to `std::true_type`.
+   *
+   * Please refer to `gtsam/base/make_shared.h` for an example.
    */
   template<typename, typename = void_t<>>
   struct needs_eigen_aligned_allocator : std::false_type {
@@ -253,7 +263,7 @@ namespace gtsam {
 /**
  * This marks a GTSAM object to require alignment. With this macro an object will automatically be allocated in aligned
  * memory when one uses `gtsam::make_shared`. It reduces future misalignment problems that is hard to debug.
- * See https://eigen.tuxfamily.org/dox/group__DenseMatrixManipulation__Alignement.html for details
+ * See https://eigen.tuxfamily.org/dox/group__DenseMatrixManipulation__Alignement.html for detailed explanation.
  */
 #define GTSAM_MAKE_ALIGNED_OPERATOR_NEW \
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW \
