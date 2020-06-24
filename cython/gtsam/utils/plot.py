@@ -279,7 +279,7 @@ def plot_trajectory(fignum, values, scale=1, marginals=None):
         marginals (gtsam.Marginals): Marginalized probability values of the estimation.
             Used to plot uncertainty bounds.
     """
-    pose3Values = gtsam.allPose3s(values)
+    pose3Values = gtsam.utilities_allPose3s(values)
     keys = gtsam.KeyVector(pose3Values.keys())
     lastIndex = None
 

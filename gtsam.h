@@ -1977,6 +1977,35 @@ size_t symbol(char chr, size_t index);
 char symbolChr(size_t key);
 size_t symbolIndex(size_t key);
 
+namespace symbol_shorthand {
+  size_t A(size_t j);
+  size_t B(size_t j);
+  size_t C(size_t j);
+  size_t D(size_t j);
+  size_t E(size_t j);
+  size_t F(size_t j);
+  size_t G(size_t j);
+  size_t H(size_t j);
+  size_t I(size_t j);
+  size_t J(size_t j);
+  size_t K(size_t j);
+  size_t L(size_t j);
+  size_t M(size_t j);
+  size_t N(size_t j);
+  size_t O(size_t j);
+  size_t P(size_t j);
+  size_t Q(size_t j);
+  size_t R(size_t j);
+  size_t S(size_t j);
+  size_t T(size_t j);
+  size_t U(size_t j);
+  size_t V(size_t j);
+  size_t W(size_t j);
+  size_t X(size_t j);
+  size_t Y(size_t j);
+  size_t Z(size_t j);
+}///\namespace symbol
+
 // Default keyformatter
 void PrintKeyList  (const gtsam::KeyList& keys);
 void PrintKeyList  (const gtsam::KeyList& keys, string s);
@@ -2141,6 +2170,7 @@ class Values {
   void insert(size_t j, const gtsam::EssentialMatrix& essential_matrix);
   void insert(size_t j, const gtsam::PinholeCameraCal3_S2& simple_camera);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
+  void insert(size_t j, const gtsam::NavState& nav_state);
   void insert(size_t j, Vector vector);
   void insert(size_t j, Matrix matrix);
 
@@ -2158,10 +2188,11 @@ class Values {
   void update(size_t j, const gtsam::Cal3Bundler& cal3bundler);
   void update(size_t j, const gtsam::EssentialMatrix& essential_matrix);
   void update(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
+  void update(size_t j, const gtsam::NavState& nav_state);
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
 
-  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias, Vector, Matrix}>
+  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias, gtsam::NavState, Vector, Matrix}>
   T at(size_t j);
 
   /// version for double
@@ -2261,8 +2292,10 @@ virtual class NonlinearOptimizerParams {
 };
 
 bool checkConvergence(double relativeErrorTreshold,
-    double absoluteErrorTreshold, double errorThreshold,
-    double currentError, double newError);
+                      double absoluteErrorTreshold, double errorThreshold,
+                      double currentError, double newError);
+bool checkConvergence(const gtsam::NonlinearOptimizerParams& params,
+                      double currentError, double newError);
 
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 virtual class GaussNewtonParams : gtsam::NonlinearOptimizerParams {
@@ -2498,7 +2531,7 @@ class NonlinearISAM {
 #include <gtsam/geometry/StereoPoint2.h>
 
 #include <gtsam/nonlinear/PriorFactor.h>
-template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias}>
+template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
@@ -2521,7 +2554,7 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
 
 
 #include <gtsam/nonlinear/NonlinearEquality.h>
-template<T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias}>
+template<T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias}>
 virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // Constructor - forces exact evaluation
   NonlinearEquality(size_t j, const T& feasible);
@@ -2762,8 +2795,10 @@ void save2D(const gtsam::NonlinearFactorGraph& graph,
 // std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>
 class BetweenFactorPose3s
 {
+  BetweenFactorPose3s();
   size_t size() const;
   gtsam::BetweenFactorPose3* at(size_t i) const;
+  void push_back(const gtsam::BetweenFactorPose3* factor);
 };
 
 #include <gtsam/slam/InitializePose3.h>
@@ -2913,6 +2948,8 @@ class PreintegratedImuMeasurements {
   void integrateMeasurement(Vector measuredAcc, Vector measuredOmega,
       double deltaT);
   void resetIntegration();
+  void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
+
   Matrix preintMeasCov() const;
   double deltaTij() const;
   gtsam::Rot3 deltaRij() const;
@@ -2972,6 +3009,8 @@ class PreintegratedCombinedMeasurements {
   void integrateMeasurement(Vector measuredAcc, Vector measuredOmega,
       double deltaT);
   void resetIntegration();
+  void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
+
   Matrix preintMeasCov() const;
   double deltaTij() const;
   gtsam::Rot3 deltaRij() const;

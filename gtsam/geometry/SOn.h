@@ -24,10 +24,11 @@
 
 #include <Eigen/Core>
 
-#include <random>
+#include <iostream> // TODO(frank): how to avoid?
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <random>
 
 namespace gtsam {
 
@@ -91,6 +92,16 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   template <typename Derived>
   static SO FromMatrix(const Eigen::MatrixBase<Derived>& R) {
     return SO(R);
+  }
+
+  /// Named constructor from lower dimensional matrix
+  template <typename Derived, int N_ = N, typename = IsDynamic<N_>>
+  static SO Lift(size_t n, const Eigen::MatrixBase<Derived> &R) {
+    Matrix Q = Matrix::Identity(n, n);
+    size_t p = R.rows();
+    assert(p < n && R.cols() == p);
+    Q.topLeftCorner(p, p) = R;
+    return SO(Q);
   }
 
   /// Construct dynamic SO(n) from Fixed SO<M>
@@ -207,11 +218,11 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
    * etc... For example, the vector-space isomorphic to so(5) is laid out as:
    *   a b c d | u v w | x y | z
    * where the latter elements correspond to "telescoping" sub-algebras:
-   *   0 -z  y -w  d
-   *   z  0 -x  v -c
-   *  -y  x  0 -u  b
-   *   w -v  u  0 -a
-   *  -d  c -b  a  0
+   *   0 -z  y  w -d
+   *   z  0 -x -v  c
+   *  -y  x  0  u -b
+   *  -w  v -u  0  a
+   *   d -c  b -a  0
    * This scheme behaves exactly as expected for SO(2) and SO(3).
    */
   static MatrixNN Hat(const TangentVector& xi);
