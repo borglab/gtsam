@@ -45,6 +45,8 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam_unstable" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
 
   # Add the new make target command
-  add_custom_target(python-install COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_CYTHON_INSTALL_PATH}${GTSAM_BUILD_TAG}/setup.py install)
+  add_custom_target(python-install
+    COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_CYTHON_INSTALL_PATH}${GTSAM_BUILD_TAG}/setup.py install
+    WORKING_DIRECTORY ${GTSAM_CYTHON_INSTALL_FULLPATH})
 
 endif ()
