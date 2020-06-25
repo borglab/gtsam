@@ -17,7 +17,7 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 	endforeach(eigen_dir)
 
 	if(GTSAM_WITH_EIGEN_UNSUPPORTED)
-		message("-- Installing Eigen Unsupported modules")
+		message(STATUS "Installing Eigen Unsupported modules")
 		# do the same for the unsupported eigen folder
 		file(GLOB_RECURSE  unsupported_eigen_headers "${CMAKE_CURRENT_SOURCE_DIR}/Eigen/unsupported/Eigen/*.h")
 

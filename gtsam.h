@@ -2955,6 +2955,7 @@ class PreintegratedImuMeasurements {
   gtsam::Rot3 deltaRij() const;
   Vector deltaPij() const;
   Vector deltaVij() const;
+  gtsam::imuBias::ConstantBias biasHat() const;
   Vector biasHatVector() const;
   gtsam::NavState predict(const gtsam::NavState& state_i,
       const gtsam::imuBias::ConstantBias& bias) const;
@@ -3016,6 +3017,7 @@ class PreintegratedCombinedMeasurements {
   gtsam::Rot3 deltaRij() const;
   Vector deltaPij() const;
   Vector deltaVij() const;
+  gtsam::imuBias::ConstantBias biasHat() const;
   Vector biasHatVector() const;
   gtsam::NavState predict(const gtsam::NavState& state_i,
       const gtsam::imuBias::ConstantBias& bias) const;
