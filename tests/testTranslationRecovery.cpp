@@ -33,7 +33,7 @@ using namespace gtsam;
 // sets up an optimization problem for the three unknown translations.
 TEST(TranslationRecovery, BAL) {
   const string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfM_data db;
+  SfmData db;
   bool success = readBAL(filename, db);
   if (!success) throw runtime_error("Could not access file!");
 
