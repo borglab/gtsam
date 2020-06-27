@@ -214,7 +214,7 @@ public:
   enum { NeedsToAlign = (sizeof(M1) % 16) == 0 || (sizeof(M2) % 16) == 0
   };
 public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+	GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 // Define any direct product group to be a model of the multiplicative Group concept
