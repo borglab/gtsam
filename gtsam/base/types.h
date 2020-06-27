@@ -231,3 +231,50 @@ namespace std {
 #ifdef ERROR
 #undef ERROR
 #endif
+
+namespace gtsam {
+
+  /// Convenience void_t as we assume C++11, it will not conflict the std one in C++17 as this is in `gtsam::`
+  template<typename ...> using void_t = void;
+
+  /**
+   * A SFINAE trait to mark classes that need special alignment.
+   *
+   * This is required to make boost::make_shared and etc respect alignment, which is essential for the Python
+   * wrappers to work properly.
+   *
+   * Explanation
+   * =============
+   * When a GTSAM type is not declared with the type alias `_eigen_aligned_allocator_trait = void`, the first template
+   * will be taken so `needs_eigen_aligned_allocator` will be resolved to `std::false_type`.
+   *
+   * Otherwise, it will resolve to the second template, which will be resolved to `std::true_type`.
+   *
+   * Please refer to `gtsam/base/make_shared.h` for an example.
+   */
+  template<typename, typename = void_t<>>
+  struct needs_eigen_aligned_allocator : std::false_type {
+  };
+  template<typename T>
+  struct needs_eigen_aligned_allocator<T, void_t<typename T::_eigen_aligned_allocator_trait>> : std::true_type {
+  };
+
+}
+
+/**
+ * This marks a GTSAM object to require alignment. With this macro an object will automatically be allocated in aligned
+ * memory when one uses `gtsam::make_shared`. It reduces future misalignment problems that is hard to debug.
+ * See https://eigen.tuxfamily.org/dox/group__DenseMatrixManipulation__Alignement.html for detailed explanation.
+ */
+#define GTSAM_MAKE_ALIGNED_OPERATOR_NEW \
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW \
+  using _eigen_aligned_allocator_trait = void;
+
+/**
+ * This marks a GTSAM object to require alignment. With this macro an object will automatically be allocated in aligned
+ * memory when one uses `gtsam::make_shared`. It reduces future misalignment problems that is hard to debug.
+ * See https://eigen.tuxfamily.org/dox/group__DenseMatrixManipulation__Alignement.html for detailed explanation.
+ */
+#define GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign) \
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign) \
+  using _eigen_aligned_allocator_trait = void;

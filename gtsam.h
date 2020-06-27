@@ -281,7 +281,7 @@ virtual class Value {
 };
 
 #include <gtsam/base/GenericValue.h>
-template<T = {Vector, Matrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias}>
+template<T = {Vector, Matrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
 virtual class GenericValue : gtsam::Value {
   void serializable() const;
 };
@@ -2960,6 +2960,7 @@ class PreintegratedImuMeasurements {
   gtsam::Rot3 deltaRij() const;
   Vector deltaPij() const;
   Vector deltaVij() const;
+  gtsam::imuBias::ConstantBias biasHat() const;
   Vector biasHatVector() const;
   gtsam::NavState predict(const gtsam::NavState& state_i,
       const gtsam::imuBias::ConstantBias& bias) const;
@@ -3021,6 +3022,7 @@ class PreintegratedCombinedMeasurements {
   gtsam::Rot3 deltaRij() const;
   Vector deltaPij() const;
   Vector deltaVij() const;
+  gtsam::imuBias::ConstantBias biasHat() const;
   Vector biasHatVector() const;
   gtsam::NavState predict(const gtsam::NavState& state_i,
       const gtsam::imuBias::ConstantBias& bias) const;

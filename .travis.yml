@@ -14,7 +14,8 @@ addons:
     - clang-9
     - build-essential pkg-config
     - cmake
-    - libpython-dev python-numpy
+    - python3-dev libpython-dev
+    - python3-numpy
     - libboost-all-dev
 
 # before_install:

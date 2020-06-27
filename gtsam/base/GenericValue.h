@@ -189,7 +189,7 @@ public:
   // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
   enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 /// use this macro instead of BOOST_CLASS_EXPORT for GenericValues

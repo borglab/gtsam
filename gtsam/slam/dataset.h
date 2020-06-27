@@ -159,7 +159,8 @@ GTSAM_EXPORT void writeG2o(const NonlinearFactorGraph& graph,
 
 /// Parse edges in 3D TORO graph file into a set of BetweenFactors.
 using BetweenFactorPose3s = std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>;
-GTSAM_EXPORT BetweenFactorPose3s parse3DFactors(const std::string& filename);
+GTSAM_EXPORT BetweenFactorPose3s parse3DFactors(const std::string& filename, 
+    const noiseModel::Diagonal::shared_ptr& corruptingNoise=nullptr);
 
 /// Parse vertices in 3D TORO graph file into a map of Pose3s.
 GTSAM_EXPORT std::map<Key, Pose3> parse3DPoses(const std::string& filename);
