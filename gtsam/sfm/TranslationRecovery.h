@@ -60,6 +60,9 @@ class TranslationRecovery {
    *
    * @param relativeTranslations the relative translations, in world coordinate
    * frames, indexed in a map by a pair of Pose keys.
+   * @param lmParams (optional) gtsam::LavenbergMarquardtParams that can be
+   * used to modify the parameters for the LM optimizer. By default, uses the
+   * default LM parameters. 
    */
   TranslationRecovery(const TranslationEdges& relativeTranslations,
                       const LevenbergMarquardtParams& lmParams = LevenbergMarquardtParams())
@@ -102,6 +105,8 @@ class TranslationRecovery {
    *
    * @param poses SE(3) ground truth poses stored as Values
    * @param edges pairs (a,b) for which a measurement w_aZb will be generated.
+   * @return TranslationEdges map from a KeyPair to the simulated Unit3
+   * translation direction measurement between the cameras in KeyPair.
    */
   static TranslationEdges SimulateMeasurements(
       const Values& poses, const std::vector<KeyPair>& edges);

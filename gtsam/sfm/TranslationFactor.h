@@ -51,8 +51,10 @@ class TranslationFactor : public NoiseModelFactor2<Point3, Point3> {
       : Base(noiseModel, a, b), measured_w_aZb_(w_aZb.point3()) {}
 
   /**
-   * @brief Caclulate error norm(p1-p2) - measured
-   *
+   * @brief Caclulate error: (norm(Tb - Ta) - measurement)
+   * where Tb and Ta are Point3 translations and measurement is
+   * the Unit3 translation direction from a to b.
+   * 
    * @param Ta translation for key a
    * @param Tb translation for key b
    * @param H1 optional jacobian in Ta

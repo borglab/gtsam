@@ -38,7 +38,7 @@ TEST(TranslationFactor, Constructor) {
 }
 
 /* ************************************************************************* */
-TEST(TranslationFactor, Error) {
+TEST(TranslationFactor, ZeroError) {
   // Create a factor
   TranslationFactor factor(kKey1, kKey2, kMeasured, model);
 
@@ -50,6 +50,24 @@ TEST(TranslationFactor, Error) {
 
   // Verify we get the expected error
   Vector expected = (Vector3() << 0, 0, 0).finished();
+  EXPECT(assert_equal(expected, actualError, 1e-9));
+
+
+}
+
+/* ************************************************************************* */
+TEST(TranslationFactor, NonZeroError) {
+  // create a factor
+  TranslationFactor factor(kKey1, kKey2, kMeasured, model);
+
+  // set the linearization
+  Point3 T1(0, 1, 1), T2(0, 2, 2);
+
+  // use the factor to calculate the error
+  Vector actualError(factor.evaluateError(T1, T2));
+
+  // verify we get the expected error
+  Vector expected = (Vector3() << -1, 1/sqrt(2), 1/sqrt(2)).finished();
   EXPECT(assert_equal(expected, actualError, 1e-9));
 }
 

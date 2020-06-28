@@ -60,7 +60,7 @@ void TranslationRecovery::addPrior(const double scale,
 }
 
 Values TranslationRecovery::initalizeRandomly() const {
-  // Create a lambda expression that  checks whether value exists and randomly
+  // Create a lambda expression that checks whether value exists and randomly
   // initializes if not.
   Values initial;
   auto insert = [&initial](Key j) {
