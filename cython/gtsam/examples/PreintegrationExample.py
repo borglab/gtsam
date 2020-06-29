@@ -109,10 +109,10 @@ class PreintegrationExample(object):
             ax.scatter(t, measuredAcc[i], color=color, marker='.')
             ax.set_xlabel('specific force ' + label)
 
-    def plotGroundTruthPose(self, t):
+    def plotGroundTruthPose(self, t, scale=0.3, time_interval=0.01):
         # plot ground truth pose, as well as prediction from integrated IMU measurements
         actualPose = self.scenario.pose(t)
-        plot_pose3(POSES_FIG, actualPose, 0.3)
+        plot_pose3(POSES_FIG, actualPose, scale)
         t = actualPose.translation()
         self.maxDim = max([abs(t.x()), abs(t.y()), abs(t.z()), self.maxDim])
         ax = plt.gca()
@@ -120,11 +120,10 @@ class PreintegrationExample(object):
         ax.set_ylim3d(-self.maxDim, self.maxDim)
         ax.set_zlim3d(-self.maxDim, self.maxDim)
 
-        plt.pause(0.01)
+        plt.pause(time_interval)
 
-    def run(self):
+    def run(self, T=12):
         # simulate the loop
-        T = 12
         for i, t in enumerate(np.arange(0, T, self.dt)):
             measuredOmega = self.runner.measuredAngularVelocity(t)
             measuredAcc = self.runner.measuredSpecificForce(t)

@@ -69,7 +69,7 @@ class ImuFactorExample(PreintegrationExample):
         # initialize data structure for pre-integrated IMU measurements
         pim = gtsam.PreintegratedImuMeasurements(self.params, self.actualBias)
 
-        num_poses = T + 1  # assumes 1 factor per second
+        num_poses = T  # assumes 1 factor per second
         initial = gtsam.Values()
         initial.insert(BIAS_KEY, self.actualBias)
 
@@ -91,7 +91,7 @@ class ImuFactorExample(PreintegrationExample):
 
             if (k+1) % int(1 / self.dt) == 0:
                 # Plot every second
-                self.plotGroundTruthPose(t)
+                self.plotGroundTruthPose(t, scale=1)
                 plt.title("Ground Truth Trajectory")
 
                 # create IMU factor every second
@@ -107,7 +107,7 @@ class ImuFactorExample(PreintegrationExample):
                 pim.resetIntegration()
 
                 rotationNoise = gtsam.Rot3.Expmap(np.random.randn(3)*0.1)
-                translationNoise = gtsam.Point3(np.random.randn(3)*0.1)
+                translationNoise = gtsam.Point3(np.random.randn(3)*1)
                 poseNoise = gtsam.Pose3(rotationNoise, translationNoise)
 
                 actual_state_i = self.scenario.navState(t + self.dt)
@@ -132,6 +132,7 @@ class ImuFactorExample(PreintegrationExample):
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial, params)
         result = optimizer.optimize()
 
+        initial.print_("Initial values:")
         result.print_("")
 
         if compute_covariances:
@@ -148,7 +149,7 @@ class ImuFactorExample(PreintegrationExample):
         i = 0
         while result.exists(X(i)):
             pose_i = result.atPose3(X(i))
-            plot_pose3(POSES_FIG+1, pose_i, 0.1)
+            plot_pose3(POSES_FIG+1, pose_i, 1)
             i += 1
         plt.title("Estimated Trajectory")
 
