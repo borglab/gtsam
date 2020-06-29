@@ -175,7 +175,7 @@ public:
 
   /// @}
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
 
@@ -265,7 +265,7 @@ public:
     traits<X>::Print(value_, "Value");
   }
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
 
@@ -331,7 +331,7 @@ public:
     return traits<X>::Local(x1,x2);
   }
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
 
