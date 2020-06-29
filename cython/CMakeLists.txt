@@ -47,6 +47,7 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   # Add the new make target command
   add_custom_target(python-install
     COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_CYTHON_INSTALL_PATH}${GTSAM_BUILD_TAG}/setup.py install
+    DEPENDS gtsam
     WORKING_DIRECTORY ${GTSAM_CYTHON_INSTALL_FULLPATH})
 
 endif ()
