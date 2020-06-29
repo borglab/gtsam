@@ -268,7 +268,8 @@ def plot_pose3(fignum, pose, axis_length=0.1, P=None):
                        axis_length=axis_length)
 
 
-def plot_trajectory(fignum, values, scale=1, marginals=None):
+def plot_trajectory(fignum, values, scale=1, marginals=None,
+                    animation_interval=0.0):
     """
     Plot a complete 3D trajectory using poses in `values`.
 
@@ -323,3 +324,41 @@ def plot_trajectory(fignum, values, scale=1, marginals=None):
 
         except:
             pass
+
+
+def plot_incremental_trajectory(fignum, values, start=0,
+                                scale=1, marginals=None,
+                                time_interval=0.0):
+    """
+    Incrementally plot a complete 3D trajectory using poses in `values`.
+
+    Args:
+        fignum (int): Integer representing the figure number to use for plotting.
+        values (gtsam.Values): Values dict containing the poses.
+        start (int): Starting index to start plotting from.
+        scale (float): Value to scale the poses by.
+        marginals (gtsam.Marginals): Marginalized probability values of the estimation.
+            Used to plot uncertainty bounds.
+        time_interval (float): Time in seconds to pause between each rendering.
+            Used to create animation effect.
+    """
+    fig = plt.figure(fignum)
+    axes = fig.gca(projection='3d')
+
+    pose3Values = gtsam.utilities_allPose3s(values)
+    keys = gtsam.KeyVector(pose3Values.keys())
+
+    for i in range(start, keys.size()):
+        key = keys.at(i)
+        if values.exists(key):
+            pose_i = values.atPose3(keys.at(i))
+            plot_pose3(fignum, pose_i, scale)
+
+    # Update the plot space to encompass all plotted points
+    axes.autoscale()
+
+    # Set the 3 axes equal
+    set_axes_equal(fignum)
+
+    # Pause for a fixed amount of seconds
+    plt.pause(time_interval)
