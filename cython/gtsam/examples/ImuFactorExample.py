@@ -63,7 +63,7 @@ class ImuFactorExample(PreintegrationExample):
         graph.push_back(gtsam.PriorFactorVector(
             V(i), state.velocity(), self.velNoise))
 
-    def run(self, T=12, verbose=True):
+    def run(self, T=12, compute_covariances=False, verbose=True):
         graph = gtsam.NonlinearFactorGraph()
 
         # initialize data structure for pre-integrated IMU measurements
@@ -75,9 +75,9 @@ class ImuFactorExample(PreintegrationExample):
 
         # simulate the loop
         i = 0  # state index
-        actual_state_i = self.scenario.navState(0)
-        initial.insert(X(i), actual_state_i.pose())
-        initial.insert(V(i), actual_state_i.velocity())
+        initial_state_i = self.scenario.navState(0)
+        initial.insert(X(i), initial_state_i.pose())
+        initial.insert(V(i), initial_state_i.velocity())
 
         for k, t in enumerate(np.arange(0, T, self.dt)):
             # get measurements and add them to PIM
@@ -111,17 +111,20 @@ class ImuFactorExample(PreintegrationExample):
                 poseNoise = gtsam.Pose3(rotationNoise, translationNoise)
 
                 actual_state_i = self.scenario.navState(t + self.dt)
-                actual_state_i = gtsam.NavState(
+                print("Actual state at {0}:\n{1}".format(t+self.dt, actual_state_i))
+
+                noisy_state_i = gtsam.NavState(
                     actual_state_i.pose().compose(poseNoise),
                     actual_state_i.velocity() + np.random.randn(3)*0.1)
 
-                initial.insert(X(i+1), actual_state_i.pose())
-                initial.insert(V(i+1), actual_state_i.velocity())
+                initial.insert(X(i+1), noisy_state_i.pose())
+                initial.insert(V(i+1), noisy_state_i.velocity())
                 i += 1
 
-        # add priors on beginning and end
+        # add prior on beginning
         self.addPrior(0, graph)
-        self.addPrior(num_poses - 1, graph)
+        # add prior on end
+        # self.addPrior(num_poses - 1, graph)
 
         # optimize using Levenberg-Marquardt optimization
         params = gtsam.LevenbergMarquardtParams()
@@ -129,14 +132,17 @@ class ImuFactorExample(PreintegrationExample):
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial, params)
         result = optimizer.optimize()
 
-        # Calculate and print marginal covariances
-        marginals = gtsam.Marginals(graph, result)
-        print("Covariance on bias:\n", marginals.marginalCovariance(BIAS_KEY))
-        for i in range(num_poses):
-            print("Covariance on pose {}:\n{}\n".format(
-                i, marginals.marginalCovariance(X(i))))
-            print("Covariance on vel {}:\n{}\n".format(
-                i, marginals.marginalCovariance(V(i))))
+        result.print_("")
+
+        if compute_covariances:
+            # Calculate and print marginal covariances
+            marginals = gtsam.Marginals(graph, result)
+            print("Covariance on bias:\n", marginals.marginalCovariance(BIAS_KEY))
+            for i in range(num_poses):
+                print("Covariance on pose {}:\n{}\n".format(
+                    i, marginals.marginalCovariance(X(i))))
+                print("Covariance on vel {}:\n{}\n".format(
+                    i, marginals.marginalCovariance(V(i))))
 
         # Plot resulting poses
         i = 0
@@ -148,7 +154,7 @@ class ImuFactorExample(PreintegrationExample):
 
         gtsam.utils.plot.set_axes_equal(POSES_FIG+1)
 
-        print(result.atimuBias_ConstantBias(BIAS_KEY))
+        print("Bias Values", result.atimuBias_ConstantBias(BIAS_KEY))
 
         plt.ioff()
         plt.show()
@@ -159,8 +165,10 @@ if __name__ == '__main__':
     parser.add_argument("--twist_scenario",
                         default="sick_twist",
                         choices=("zero_twist", "forward_twist", "loop_twist", "sick_twist"))
-    parser.add_argument("--time", "-T", default=12, type=int, help="Total time in seconds")
+    parser.add_argument("--time", "-T", default=12,
+                        type=int, help="Total time in seconds")
+    parser.add_argument("--compute_covariances", default=False, action='store_true')
     parser.add_argument("--verbose", default=False, action='store_true')
     args = parser.parse_args()
 
-    ImuFactorExample().run(args.time, args.verbose)
+    ImuFactorExample(args.twist_scenario).run(args.time, args.compute_covariances, args.verbose)
