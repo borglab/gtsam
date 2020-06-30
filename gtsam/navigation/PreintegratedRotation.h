@@ -69,7 +69,7 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions
 public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 
@@ -182,7 +182,7 @@ class GTSAM_EXPORT PreintegratedRotation {
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions
   public:
-	  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 

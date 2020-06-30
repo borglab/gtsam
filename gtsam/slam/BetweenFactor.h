@@ -126,7 +126,7 @@ namespace gtsam {
 	  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
 	  enum { NeedsToAlign = (sizeof(VALUE) % 16) == 0 };
     public:
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+      GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
   }; // \class BetweenFactor
 
   /// traits
