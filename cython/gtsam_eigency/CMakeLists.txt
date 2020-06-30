@@ -8,7 +8,7 @@ set(OUTPUT_DIR "${PROJECT_BINARY_DIR}/cython/gtsam_eigency")
 set(EIGENCY_INCLUDE_DIR ${OUTPUT_DIR})
 
 # This is to make the build/cython/gtsam_eigency folder a python package
-configure_file(__init__.py.in ${PROJECT_BINARY_DIR}/cython/gtsam_eigency/__init__.py)
+configure_file(__init__.py.in ${OUTPUT_DIR}/__init__.py)
 
 # include eigency headers
 include_directories(${EIGENCY_INCLUDE_DIR})
@@ -38,12 +38,14 @@ add_custom_target(cythonize_eigency)
 add_dependencies(cythonize_eigency cythonize_eigency_conversions cythonize_eigency_core)
 
 # install
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        DESTINATION "${GTSAM_CYTHON_INSTALL_FULLPATH}"
-        PATTERN "CMakeLists.txt" EXCLUDE
-        PATTERN "__init__.py.in" EXCLUDE)
-install(TARGETS cythonize_eigency_core cythonize_eigency_conversions
-        DESTINATION "${GTSAM_CYTHON_INSTALL_FULLPATH}/gtsam_eigency")
-install(FILES ${OUTPUT_DIR}/conversions_api.h DESTINATION ${GTSAM_CYTHON_INSTALL_FULLPATH}/gtsam_eigency)
-configure_file(__init__.py.in ${OUTPUT_DIR}/__init__.py)
-install(FILES ${OUTPUT_DIR}/__init__.py DESTINATION ${GTSAM_CYTHON_INSTALL_FULLPATH}/gtsam_eigency)
+function(install_gtsam_eigency source_directory)
+  install(DIRECTORY ${source_directory}
+          DESTINATION "${GTSAM_CYTHON_INSTALL_FULLPATH}"
+          PATTERN "CMakeLists.txt" EXCLUDE
+          PATTERN "__init__.py.in" EXCLUDE)
+  install(TARGETS cythonize_eigency_core cythonize_eigency_conversions
+          DESTINATION "${GTSAM_CYTHON_INSTALL_FULLPATH}/gtsam_eigency")
+  install(FILES ${source_directory}/conversions_api.h DESTINATION ${GTSAM_CYTHON_INSTALL_FULLPATH}/gtsam_eigency)
+  install(FILES ${source_directory}/__init__.py DESTINATION ${GTSAM_CYTHON_INSTALL_FULLPATH}/gtsam_eigency)
+
+endfunction()

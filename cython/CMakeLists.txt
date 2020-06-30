@@ -44,10 +44,12 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
   install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam_unstable" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
 
-  # Add the new make target command
+  # Adding custom function here so that gtsam_eigency is installed before
+  # the below execute_process runs.
+  install_gtsam_eigency(${PROJECT_BINARY_DIR}/cython/gtsam_eigency)
+
+  # Automatically run the python installation via the setup.py
   install(CODE
     "execute_process(COMMAND ${PYTHON_EXECUTABLE} setup.py install
-    WORKING_DIRECTORY ${GTSAM_CYTHON_INSTALL_FULLPATH})")
-
-
+      WORKING_DIRECTORY ${GTSAM_CYTHON_INSTALL_FULLPATH})")
 endif ()
