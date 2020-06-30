@@ -33,9 +33,10 @@ using namespace std;
 
 namespace gtsam {
 
+// TODO(frank): is this better than SOn::Random?
 // /* *************************************************************************
 // */ static Vector3 randomOmega(boost::mt19937 &rng) {
-//   static boost::uniform_real<double> randomAngle(-M_PI, M_PI);
+//   static std::uniform_real_distribution<double> randomAngle(-M_PI, M_PI);
 //   return Unit3::Random(rng).unitVector() * randomAngle(rng);
 // }
 
@@ -58,9 +59,9 @@ Matrix4 SO4::Hat(const Vector6& xi) {
   Y(0, 1) = -xi(5);
   Y(0, 2) = +xi(4);
   Y(1, 2) = -xi(3);
-  Y(0, 3) = -xi(2);
-  Y(1, 3) = +xi(1);
-  Y(2, 3) = -xi(0);
+  Y(0, 3) = +xi(2);
+  Y(1, 3) = -xi(1);
+  Y(2, 3) = +xi(0);
   return Y - Y.transpose();
 }
 
@@ -72,9 +73,9 @@ Vector6 SO4::Vee(const Matrix4& X) {
   xi(5) = -X(0, 1);
   xi(4) = +X(0, 2);
   xi(3) = -X(1, 2);
-  xi(2) = -X(0, 3);
-  xi(1) = +X(1, 3);
-  xi(0) = -X(2, 3);
+  xi(2) = +X(0, 3);
+  xi(1) = -X(1, 3);
+  xi(0) = +X(2, 3);
   return xi;
 }
 
@@ -208,9 +209,9 @@ GTSAM_EXPORT Matrix3 topLeft(const SO4& Q, OptionalJacobian<9, 6> H) {
   if (H) {
     const Vector3 m1 = M.col(0), m2 = M.col(1), m3 = M.col(2),
                   q = R.topRightCorner<3, 1>();
-    *H << Z_3x1, Z_3x1, q, Z_3x1, -m3, m2,  //
-        Z_3x1, -q, Z_3x1, m3, Z_3x1, -m1,   //
-        q, Z_3x1, Z_3x1, -m2, m1, Z_3x1;
+    *H << Z_3x1, Z_3x1, -q, Z_3x1, -m3, m2,  //
+        Z_3x1, q, Z_3x1, m3, Z_3x1, -m1,     //
+        -q, Z_3x1, Z_3x1, -m2, m1, Z_3x1;
   }
   return M;
 }
@@ -221,9 +222,9 @@ GTSAM_EXPORT Matrix43 stiefel(const SO4& Q, OptionalJacobian<12, 6> H) {
   const Matrix43 M = R.leftCols<3>();
   if (H) {
     const auto &m1 = R.col(0), m2 = R.col(1), m3 = R.col(2), q = R.col(3);
-    *H << Z_4x1, Z_4x1, q, Z_4x1, -m3, m2,  //
-        Z_4x1, -q, Z_4x1, m3, Z_4x1, -m1,   //
-        q, Z_4x1, Z_4x1, -m2, m1, Z_4x1;
+    *H << Z_4x1, Z_4x1, -q, Z_4x1, -m3, m2,  //
+        Z_4x1, q, Z_4x1, m3, Z_4x1, -m1,     //
+        -q, Z_4x1, Z_4x1, -m2, m1, Z_4x1;
   }
   return M;
 }

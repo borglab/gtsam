@@ -589,6 +589,23 @@ TEST(Values, MatrixDynamicInsertFixedRead) {
   CHECK_EXCEPTION(values.at<Matrix23>(key1), exception);
 }
 
+TEST(Values, Demangle) {
+  Values values;
+  Matrix13 v; v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  string expected = "Values with 1 values:\nValue v1: (Eigen::Matrix<double, 1, 3, 1, 1, 3>) [\n	5, 6, 7\n]\n\n";
+
+  stringstream buffer;
+  streambuf * old = cout.rdbuf(buffer.rdbuf());
+
+  values.print();
+
+  string actual = buffer.str();
+  cout.rdbuf(old);
+
+  EXPECT(assert_equal(expected, actual));
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

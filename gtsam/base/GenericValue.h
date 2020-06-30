@@ -20,6 +20,7 @@
 #pragma once
 
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/types.h>
 #include <gtsam/base/Value.h>
 
 #include <boost/make_shared.hpp>
@@ -83,7 +84,7 @@ public:
 
   /// Virtual print function, uses traits
   virtual void print(const std::string& str) const {
-    std::cout << "(" << typeid(T).name() << ") ";
+    std::cout << "(" << demangle(typeid(T).name()) << ") ";
     traits<T>::Print(value_, str);
   }
 
@@ -180,7 +181,7 @@ public:
   // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
   enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 /// use this macro instead of BOOST_CLASS_EXPORT for GenericValues

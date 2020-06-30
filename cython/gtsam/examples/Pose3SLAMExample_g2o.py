@@ -65,7 +65,7 @@ else:
     print ("Done!")
 
 if args.plot:
-    resultPoses = gtsam.allPose3s(result)
+    resultPoses = gtsam.utilities_allPose3s(result)
     for i in range(resultPoses.size()):
         plot.plot_pose3(1, resultPoses.atPose3(i))
     plt.show()

@@ -232,10 +232,21 @@ namespace gtsam {
 
   /* ************************************************************************* */
   const char* ValuesIncorrectType::what() const throw() {
-    if(message_.empty())
-      message_ =
-          "Attempting to retrieve value with key \"" + DefaultKeyFormatter(key_) + "\", type stored in Values is " +
-          std::string(storedTypeId_.name()) + " but requested type was " + std::string(requestedTypeId_.name());
+    if(message_.empty()) {
+      std::string storedTypeName = demangle(storedTypeId_.name());
+      std::string requestedTypeName = demangle(requestedTypeId_.name());
+
+      if (storedTypeName == requestedTypeName) {
+        message_ = "WARNING: Detected types with same name but different `typeid`. \
+          This is usually caused by incorrect linking/inlining settings when compiling libraries using GTSAM. \
+          If you are a user, please report to the author of the library using GTSAM. \
+          If you are a package maintainer, please consult `cmake/GtsamPybindWrap.cmake`, line 74 for details.";
+      } else {
+        message_ =
+        "Attempting to retrieve value with key \"" + DefaultKeyFormatter(key_) + "\", type stored in Values is " +
+         storedTypeName + " but requested type was " + requestedTypeName;
+      }
+    }
     return message_.c_str();
   }
 

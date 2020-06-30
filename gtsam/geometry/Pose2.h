@@ -317,7 +317,7 @@ public:
 
 public:
   // Align for Point2, which is either derived from, or is typedef, of Vector2
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 }; // Pose2
 
 /** specialization for pose2 wedge function (generic template in Lie.h) */

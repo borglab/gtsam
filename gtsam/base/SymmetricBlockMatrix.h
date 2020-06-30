@@ -416,4 +416,3 @@ namespace gtsam {
   class CholeskyFailed;
 
 }
-

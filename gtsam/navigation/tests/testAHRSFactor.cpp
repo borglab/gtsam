@@ -342,7 +342,7 @@ TEST( AHRSFactor, fistOrderExponential ) {
 //******************************************************************************
 TEST( AHRSFactor, FirstOrderPreIntegratedMeasurements ) {
   // Linearization point
-  Vector3 bias; ///< Current estimate of rotation rate bias
+  Vector3 bias = Vector3::Zero(); ///< Current estimate of rotation rate bias
 
   Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, 0.1, 0.1)), Point3(1, 0, 1));
 
