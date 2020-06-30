@@ -4,6 +4,8 @@ Author: Jing Wu and Frank Dellaert
 """
 # pylint: disable=invalid-name
 
+import io
+import sys
 import unittest
 from datetime import datetime
 
@@ -36,6 +38,14 @@ class TestOptimizeComet(GtsamTestCase):
         self.params = gtsam.GaussNewtonParams()
         self.optimizer = gtsam.GaussNewtonOptimizer(
             graph, initial, self.params)
+
+        # setup output capture
+        self.capturedOutput = io.StringIO()
+        sys.stdout = self.capturedOutput
+
+    def tearDown(self):
+        """Reset print capture."""
+        sys.stdout = sys.__stdout__
 
     def test_simple_printing(self):
         """Test with a simple hook."""
