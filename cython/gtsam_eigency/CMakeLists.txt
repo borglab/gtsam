@@ -4,7 +4,7 @@ include(GtsamCythonWrap)
 # so that the cython-generated header "conversions_api.h" can be found when cythonizing eigency's core
 # and eigency's cython pxd headers can be found when cythonizing gtsam
 file(COPY "." DESTINATION ".")
-set(OUTPUT_DIR "${GTSAM_CYTHON_PATH}/gtsam_eigency")
+set(OUTPUT_DIR "${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency")
 set(EIGENCY_INCLUDE_DIR ${OUTPUT_DIR})
 
 # This is to make the build/cython/gtsam_eigency folder a python package
@@ -36,18 +36,3 @@ target_include_directories(cythonize_eigency_core PUBLIC
 add_dependencies(cythonize_eigency_core cythonize_eigency_conversions)
 add_custom_target(cythonize_eigency)
 add_dependencies(cythonize_eigency cythonize_eigency_conversions cythonize_eigency_core)
-
-# install
-function(install_gtsam_eigency)
-  install(DIRECTORY ${GTSAM_EIGENCY_PATH}
-          DESTINATION "${GTSAM_CYTHON_INSTALL_PATH}"
-          PATTERN "CMakeLists.txt" EXCLUDE
-          PATTERN "__init__.py.in" EXCLUDE
-          PATTERN "*.dir" EXCLUDE
-          PATTERN "*.make" EXCLUDE)
-  install(TARGETS cythonize_eigency_core cythonize_eigency_conversions
-          DESTINATION "${GTSAM_EIGENCY_INSTALL_PATH}")
-  install(FILES ${GTSAM_EIGENCY_PATH}/conversions_api.h DESTINATION ${GTSAM_EIGENCY_INSTALL_PATH})
-  install(FILES ${GTSAM_EIGENCY_PATH}/__init__.py DESTINATION ${GTSAM_EIGENCY_INSTALL_PATH})
-
-endfunction()

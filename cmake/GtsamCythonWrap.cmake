@@ -41,9 +41,9 @@ execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
 function(wrap_and_install_library_cython interface_header extra_imports install_path libs dependencies)
   # Paths for generated files
   get_filename_component(module_name "${interface_header}" NAME_WE)
-  set(generated_files_path "${PROJECT_BINARY_DIR}/cython/${module_name}")
+  set(generated_files_path "${GTSAM_CYTHON_INSTALL_PATH}/${module_name}")
   wrap_library_cython("${interface_header}" "${generated_files_path}" "${extra_imports}" "${libs}" "${dependencies}")
-  install_cython_wrapped_library("${interface_header}" "${generated_files_path}" "${install_path}")
+  # install_cython_wrapped_library("${interface_header}" "${generated_files_path}" "${install_path}")
 endfunction()
 
 function(set_up_required_cython_packages)
@@ -214,7 +214,7 @@ function(install_cython_scripts source_directory dest_directory patterns)
     list(APPEND patterns_args PATTERN "${pattern}")
   endforeach()
 
-  install(DIRECTORY "${source_directory}" DESTINATION "${dest_directory}" CONFIGURATIONS "${CMAKE_BUILD_TYPE}"
+  file(COPY "${source_directory}" DESTINATION "${dest_directory}"
             FILES_MATCHING ${patterns_args} PATTERN "${exclude_patterns}" EXCLUDE)
 endfunction()
 
