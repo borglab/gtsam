@@ -27,7 +27,6 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   configure_file(${PROJECT_SOURCE_DIR}/cython/gtsam/__init__.py ${GTSAM_CYTHON_INSTALL_PATH}/gtsam/__init__.py COPYONLY)
   configure_file(${PROJECT_SOURCE_DIR}/cython/gtsam_unstable/__init__.py ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_unstable/__init__.py COPYONLY)
   configure_file(${PROJECT_SOURCE_DIR}/cython/setup.py.in ${GTSAM_CYTHON_INSTALL_PATH}/setup.py)
-  install_cython_files("${PROJECT_BINARY_DIR}/cython/setup.py" "${GTSAM_CYTHON_INSTALL_PATH}")
 
   # Wrap gtsam
   add_custom_target(gtsam_header DEPENDS "../gtsam.h")

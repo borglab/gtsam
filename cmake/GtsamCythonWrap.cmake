@@ -197,13 +197,3 @@ function(install_cython_scripts source_directory dest_directory patterns)
   file(COPY "${source_directory}" DESTINATION "${dest_directory}"
             FILES_MATCHING ${patterns_args} PATTERN "${exclude_patterns}" EXCLUDE)
 endfunction()
-
-# Helper function to install specific files and handle multiple build types where the scripts
-# should be installed to all build type toolboxes
-#
-# Arguments:
-#  source_files: The source files to be installed.
-#  dest_directory: The destination directory to install to.
-function(install_cython_files source_files dest_directory)
-    file(COPY "${source_files}" DESTINATION "${dest_directory}")
-endfunction()
