@@ -1,3 +1,6 @@
+# Create directory where cython build files will be placed
+file(MAKE_DIRECTORY ${GTSAM_CYTHON_INSTALL_PATH})
+
 # Install cython components
 include(GtsamCythonWrap)
 
@@ -5,7 +8,7 @@ include(GtsamCythonWrap)
 if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   # build and include the eigency version of eigency
   add_subdirectory(gtsam_eigency)
-  include_directories(${PROJECT_BINARY_DIR}/cython/gtsam_eigency)
+  include_directories(${GTSAM_EIGENCY_PATH})
 
   # Fix for error "C1128: number of sections exceeded object file format limit"
   if(MSVC)
@@ -44,12 +47,13 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
   install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam_unstable" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
 
-  # Adding custom function here so that gtsam_eigency is installed before
-  # the below execute_process runs.
-  install_gtsam_eigency(${PROJECT_BINARY_DIR}/cython/gtsam_eigency)
+  # Install gtsam_eigency.
+  # The paths are picked up directly from the parent CMakeLists.txt.
+  install_gtsam_eigency()
 
   # Automatically run the python installation via the setup.py
   install(CODE
     "execute_process(COMMAND ${PYTHON_EXECUTABLE} setup.py install
-      WORKING_DIRECTORY ${GTSAM_CYTHON_INSTALL_FULLPATH})")
+      WORKING_DIRECTORY ${GTSAM_CYTHON_INSTALL_PATH})")
+
 endif ()
