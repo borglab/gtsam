@@ -137,6 +137,8 @@ function(cythonize target pyx_file output_lib_we output_dir include_dirs libs in
     target_link_libraries(${target} "${libs}")
   endif()
   add_dependencies(${target} ${target}_pyx2cpp)
+
+  add_dependencies(${python_install_target} ${target})
 endfunction()
 
 # Internal function that wraps a library and compiles the wrapper
@@ -168,8 +170,6 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
   get_property(include_dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
   cythonize(cythonize_${module_name} ${generated_pyx} ${module_name}
     ${generated_files_path} "${include_dirs}" "${libs}" ${interface_header} cython_wrap_${module_name}_pyx)
-
-  add_dependencies(${python_install_target} cython_wrap_${module_name}_pyx)
 
   # distclean
   add_custom_target(wrap_${module_name}_cython_distclean
