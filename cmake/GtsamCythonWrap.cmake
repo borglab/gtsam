@@ -184,35 +184,16 @@ function(install_cython_wrapped_library interface_header generated_files_path in
   # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH/subdirectory if there is one
   get_filename_component(location "${install_path}" PATH)
   get_filename_component(name "${install_path}" NAME)
-  message(STATUS "Installing Cython Toolbox to ${location}${GTSAM_BUILD_TAG}/${name}") #${GTSAM_CYTHON_INSTALL_FULLPATH}"
+  message(STATUS "Installing Cython Toolbox to ${location}/${name}") #${GTSAM_CYTHON_INSTALL_PATH}"
 
-  if(GTSAM_BUILD_TYPE_POSTFIXES)
-    foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
-      string(TOUPPER "${build_type}" build_type_upper)
-      if(${build_type_upper} STREQUAL "RELEASE")
-        set(build_type_tag "") # Don't create release mode tag on installed directory
-      else()
-        set(build_type_tag "${build_type}")
-      endif()
-
-      install(DIRECTORY "${generated_files_path}/" DESTINATION "${location}${build_type_tag}/${name}"
-          CONFIGURATIONS "${build_type}"
-          PATTERN "build" EXCLUDE
-          PATTERN "CMakeFiles" EXCLUDE
-          PATTERN "Makefile" EXCLUDE
-          PATTERN "*.cmake" EXCLUDE
-          PATTERN "*.cpp" EXCLUDE
-          PATTERN "*.py" EXCLUDE)
-    endforeach()
-  else()
-    install(DIRECTORY "${generated_files_path}/" DESTINATION ${install_path}
-        PATTERN "build" EXCLUDE
-        PATTERN "CMakeFiles" EXCLUDE
-        PATTERN "Makefile" EXCLUDE
-        PATTERN "*.cmake" EXCLUDE
-        PATTERN "*.cpp" EXCLUDE
-        PATTERN "*.py" EXCLUDE)
-  endif()
+  install(DIRECTORY "${generated_files_path}/" DESTINATION ${install_path}
+      CONFIGURATIONS "${CMAKE_BUILD_TYPE}"
+      PATTERN "build" EXCLUDE
+      PATTERN "CMakeFiles" EXCLUDE
+      PATTERN "Makefile" EXCLUDE
+      PATTERN "*.cmake" EXCLUDE
+      PATTERN "*.cpp" EXCLUDE
+      PATTERN "*.py" EXCLUDE)
 endfunction()
 
 # Helper function to install Cython scripts and handle multiple build types where the scripts
@@ -232,24 +213,9 @@ function(install_cython_scripts source_directory dest_directory patterns)
   foreach(pattern ${patterns})
     list(APPEND patterns_args PATTERN "${pattern}")
   endforeach()
-  if(GTSAM_BUILD_TYPE_POSTFIXES)
-    foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
-      string(TOUPPER "${build_type}" build_type_upper)
-      if(${build_type_upper} STREQUAL "RELEASE")
-        set(build_type_tag "") # Don't create release mode tag on installed directory
-      else()
-        set(build_type_tag "${build_type}")
-      endif()
-      # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if there is one
-      get_filename_component(location "${dest_directory}" PATH)
-      get_filename_component(name "${dest_directory}" NAME)
-      install(DIRECTORY "${source_directory}" DESTINATION "${location}/${name}${build_type_tag}" CONFIGURATIONS "${build_type}"
-            FILES_MATCHING ${patterns_args} PATTERN "${exclude_patterns}" EXCLUDE)
-    endforeach()
-  else()
-    install(DIRECTORY "${source_directory}" DESTINATION "${dest_directory}" FILES_MATCHING ${patterns_args} PATTERN "${exclude_patterns}" EXCLUDE)
-  endif()
 
+  install(DIRECTORY "${source_directory}" DESTINATION "${dest_directory}" CONFIGURATIONS "${CMAKE_BUILD_TYPE}"
+            FILES_MATCHING ${patterns_args} PATTERN "${exclude_patterns}" EXCLUDE)
 endfunction()
 
 # Helper function to install specific files and handle multiple build types where the scripts
@@ -259,22 +225,5 @@ endfunction()
 #  source_files: The source files to be installed.
 #  dest_directory: The destination directory to install to.
 function(install_cython_files source_files dest_directory)
-
-  if(GTSAM_BUILD_TYPE_POSTFIXES)
-    foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
-      string(TOUPPER "${build_type}" build_type_upper)
-      if(${build_type_upper} STREQUAL "RELEASE")
-        set(build_type_tag "") # Don't create release mode tag on installed directory
-      else()
-        set(build_type_tag "${build_type}")
-      endif()
-      # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if there is one
-      get_filename_component(location "${dest_directory}" PATH)
-      get_filename_component(name "${dest_directory}" NAME)
-      install(FILES "${source_files}" DESTINATION "${location}/${name}${build_type_tag}" CONFIGURATIONS "${build_type}")
-    endforeach()
-  else()
-    install(FILES "${source_files}" DESTINATION "${dest_directory}")
-  endif()
-
+    install(FILES "${source_files}" DESTINATION "${dest_directory}" CONFIGURATIONS "${CMAKE_BUILD_TYPE}")
 endfunction()
