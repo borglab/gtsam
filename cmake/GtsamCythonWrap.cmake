@@ -43,7 +43,6 @@ function(wrap_and_install_library_cython interface_header extra_imports install_
   get_filename_component(module_name "${interface_header}" NAME_WE)
   set(generated_files_path "${GTSAM_CYTHON_INSTALL_PATH}/${module_name}")
   wrap_library_cython("${interface_header}" "${generated_files_path}" "${extra_imports}" "${libs}" "${dependencies}")
-  # install_cython_wrapped_library("${interface_header}" "${generated_files_path}" "${install_path}")
 endfunction()
 
 function(set_up_required_cython_packages)
@@ -170,30 +169,11 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
   cythonize(cythonize_${module_name} ${generated_pyx} ${module_name}
     ${generated_files_path} "${include_dirs}" "${libs}" ${interface_header} cython_wrap_${module_name}_pyx)
 
+  add_dependencies(${python_install_target} cython_wrap_${module_name}_pyx)
+
   # distclean
   add_custom_target(wrap_${module_name}_cython_distclean
       COMMAND cmake -E remove_directory ${generated_files_path})
-endfunction()
-
-# Internal function that installs a wrap toolbox
-function(install_cython_wrapped_library interface_header generated_files_path install_path)
-  get_filename_component(module_name "${interface_header}" NAME_WE)
-
-  # NOTE: only installs .pxd and .pyx and binary files (not .cpp) - the trailing slash on the directory name
-  # here prevents creating the top-level module name directory in the destination.
-  # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH/subdirectory if there is one
-  get_filename_component(location "${install_path}" PATH)
-  get_filename_component(name "${install_path}" NAME)
-  message(STATUS "Installing Cython Toolbox to ${location}/${name}") #${GTSAM_CYTHON_INSTALL_PATH}"
-
-  install(DIRECTORY "${generated_files_path}/" DESTINATION ${install_path}
-      CONFIGURATIONS "${CMAKE_BUILD_TYPE}"
-      PATTERN "build" EXCLUDE
-      PATTERN "CMakeFiles" EXCLUDE
-      PATTERN "Makefile" EXCLUDE
-      PATTERN "*.cmake" EXCLUDE
-      PATTERN "*.cpp" EXCLUDE
-      PATTERN "*.py" EXCLUDE)
 endfunction()
 
 # Helper function to install Cython scripts and handle multiple build types where the scripts
@@ -225,5 +205,5 @@ endfunction()
 #  source_files: The source files to be installed.
 #  dest_directory: The destination directory to install to.
 function(install_cython_files source_files dest_directory)
-    install(FILES "${source_files}" DESTINATION "${dest_directory}" CONFIGURATIONS "${CMAKE_BUILD_TYPE}")
+    file(COPY "${source_files}" DESTINATION "${dest_directory}")
 endfunction()

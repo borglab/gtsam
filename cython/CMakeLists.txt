@@ -4,7 +4,8 @@ include(GtsamCythonWrap)
 # Create the cython toolbox for the gtsam library
 if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   # Add the new make target command
-  add_custom_target(python-install
+  set(python_install_target python-install)
+  add_custom_target(${python_install_target}
     COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_CYTHON_INSTALL_PATH}/setup.py install
     WORKING_DIRECTORY ${GTSAM_CYTHON_INSTALL_FULLPATH})
 
@@ -27,9 +28,6 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   configure_file(${PROJECT_SOURCE_DIR}/cython/gtsam_unstable/__init__.py ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_unstable/__init__.py COPYONLY)
   configure_file(${PROJECT_SOURCE_DIR}/cython/setup.py.in ${GTSAM_CYTHON_INSTALL_PATH}/setup.py)
   install_cython_files("${PROJECT_BINARY_DIR}/cython/setup.py" "${GTSAM_CYTHON_INSTALL_PATH}")
-  # install scripts and tests
-  install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
-  install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam_unstable" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
 
   # Wrap gtsam
   add_custom_target(gtsam_header DEPENDS "../gtsam.h")
@@ -39,7 +37,7 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
                                   gtsam  # library to link with
                                   "wrap;cythonize_eigency;gtsam;gtsam_header"  # dependencies which need to be built before wrapping
                                   )
-  add_dependencies(python-install gtsam gtsam_header)
+  add_dependencies(${python_install_target} gtsam gtsam_header)
 
   # Wrap gtsam_unstable
   if(GTSAM_BUILD_UNSTABLE)
@@ -50,7 +48,11 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
                                     gtsam_unstable  # library to link with
                                     "gtsam_unstable;gtsam_unstable_header;cythonize_gtsam"  # dependencies to be built before wrapping
                                     )
-    add_dependencies(python-install gtsam_unstable gtsam_unstable_header)
+    add_dependencies(${python_install_target} gtsam_unstable gtsam_unstable_header)
   endif()
+
+  # install scripts and tests
+  install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
+  install_cython_scripts("${PROJECT_SOURCE_DIR}/cython/gtsam_unstable" "${GTSAM_CYTHON_INSTALL_PATH}" "*.py")
 
 endif ()
