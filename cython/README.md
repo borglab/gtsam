@@ -1,33 +1,36 @@
 # Python Wrapper
 
-This is the Cython/Python wrapper around the GTSAM C++ library.
+This is the Python wrapper around the GTSAM C++ library. We use Cython to generate the bindings to the underlying C++ code.
+
+## Requirements
+
+- If you want to build the gtsam python library for a specific python version (eg 2.7), use the `-DGTSAM_PYTHON_VERSION=2.7` option when running `cmake` otherwise the default interpreter will be used.
+    - If the interpreter is inside an environment (such as an anaconda environment or virtualenv environment) then the environment should be active while building gtsam.
+- This wrapper needs `Cython(>=0.25.2)`, `backports_abc(>=0.5)`, and `numpy(>=1.11.0)`. These can be installed as follows:
+
+  ```bash
+  pip install -r <gtsam_folder>/cython/requirements.txt
+  ```
+
+- For compatibility with gtsam's Eigen version, it contains its own cloned version of [Eigency](https://github.com/wouterboomsma/eigency.git),
+named `gtsam_eigency`, to interface between C++'s Eigen and Python's numpy.
 
 ## Install
 
-- if you want to build the gtsam python library for a specific python version (eg 2.7), use the `-DGTSAM_PYTHON_VERSION=2.7` option when running `cmake` otherwise the default interpreter will be used.
-    - If the interpreter is inside an environment (such as an anaconda environment or virtualenv environment) then the environment should be active while building gtsam.
-- This wrapper needs Cython(>=0.25.2), backports_abc>=0.5, and numpy. These can be installed as follows:
-
-```bash
- pip install -r <gtsam_folder>/cython/requirements.txt
-```
-
-- For compatibility with gtsam's Eigen version, it contains its own cloned version of [Eigency](https://github.com/wouterboomsma/eigency.git),
-named **gtsam_eigency**, to interface between C++'s Eigen and Python's numpy.
-
-- Build and install gtsam using cmake with `GTSAM_INSTALL_CYTHON_TOOLBOX` enabled.
-The wrapped module will be installed to `GTSAM_CYTHON_INSTALL_PATH`, which is
-by default: `<your CMAKE_INSTALL_PREFIX>/cython`
+- Run cmake with the `GTSAM_INSTALL_CYTHON_TOOLBOX` cmake flag enabled to configure building the wrapper. The wrapped module will be built and copied to the directory defined by `GTSAM_CYTHON_INSTALL_PATH`, which is by default: `<CMAKE_INSTALL_PREFIX>/cython.build`.
 
 - To use the library without installing system-wide: modify your `PYTHONPATH` to include the `GTSAM_CYTHON_INSTALL_PATH`:
-```bash
-export PYTHONPATH=$PYTHONPATH:<GTSAM_CYTHON_INSTALL_PATH>
-```
-- To install system-wide: run `make install` then navigate to `GTSAM_CYTHON_INSTALL_PATH` and run `python setup.py install`
-    - (the same command can be used to install into a virtual environment if it is active)
-    - note: if you don't want gtsam to install to a system directory such as `/usr/local`, pass `-DCMAKE_INSTALL_PREFIX="./install"` to cmake to install gtsam to a subdirectory of the build directory.
-    - if you run `setup.py` from the build directory rather than the installation directory, the script will warn you with the message: `setup.py is being run from an unexpected location`.
-      Before `make install` is run, not all the components of the package have been copied across, so running `setup.py` from the build directory would result in an incomplete package.
+
+  ```bash
+  export PYTHONPATH=$PYTHONPATH:<GTSAM_CYTHON_INSTALL_PATH>
+  ```
+
+- Build GTSAM and the wrapper with `make`.
+
+- To install system-wide, simply run `make install`.
+    - The same command can be used to install into a virtual environment if it is active.
+    - **NOTE**: if you don't want gtsam to install to a system directory such as `/usr/local`, pass `-DCMAKE_INSTALL_PREFIX="./install"` to cmake to install gtsam to a subdirectory of the build directory.
+    - If you run `setup.py` from the build directory rather than the installation directory, the script will warn you with the message: `setup.py is being run from an unexpected location`.
 
 ## Unit Tests
 
@@ -47,48 +50,32 @@ See the tests for examples.
 
 - Vector/Matrix:
   + GTSAM expects double-precision floating point vectors and matrices.
-    Hence, you should pass numpy matrices with dtype=float, or 'float64'.
+    Hence, you should pass numpy matrices with `dtype=float`, or `float64`.
   + Also, GTSAM expects *column-major* matrices, unlike the default storage
     scheme in numpy. Hence, you should pass column-major matrices to gtsam using
     the flag order='F'. And you always get column-major matrices back.
-    For more details, see: https://github.com/wouterboomsma/eigency#storage-layout---why-arrays-are-sometimes-transposed
-  + Passing row-major matrices of different dtype, e.g. 'int', will also work
+    For more details, see [this link](https://github.com/wouterboomsma/eigency#storage-layout---why-arrays-are-sometimes-transposed).
+  + Passing row-major matrices of different dtype, e.g. `int`, will also work
     as the wrapper converts them to column-major and dtype float for you,
     using numpy.array.astype(float, order='F', copy=False).
     However, this will result a copy if your matrix is not in the expected type
     and storage order.
 
 - Inner namespace: Classes in inner namespace will be prefixed by <innerNamespace>_ in Python.
-Examples: noiseModel_Gaussian, noiseModel_mEstimator_Tukey
+
+  Examples: `noiseModel_Gaussian`, `noiseModel_mEstimator_Tukey`
 
 - Casting from a base class to a derive class must be done explicitly.
-Examples:
-```Python
-      noiseBase = factor.noiseModel()
-      noiseGaussian = dynamic_cast_noiseModel_Gaussian_noiseModel_Base(noiseBase)
-```
 
-## Wrapping Your Own Project That Uses GTSAM
+  Examples:
+  ```python
+  noiseBase = factor.noiseModel()
+  noiseGaussian = dynamic_cast_noiseModel_Gaussian_noiseModel_Base(noiseBase)
+  ```
 
-- Set PYTHONPATH to include ${GTSAM_CYTHON_INSTALL_PATH}
-  + so that it can find gtsam Cython header: gtsam/gtsam.pxd
+## Wrapping Custom GTSAM-based Project
 
-- In your CMakeList.txt
-```cmake
-find_package(GTSAM REQUIRED) # Make sure gtsam's install folder is in your PATH
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${GTSAM_DIR}/../GTSAMCMakeTools")
-
-# Wrap
-include(GtsamCythonWrap)
-include_directories(${GTSAM_EIGENCY_INSTALL_PATH})
-wrap_and_install_library_cython("your_project_interface.h"
-                                "from gtsam.gtsam cimport *" # extra import of gtsam/gtsam.pxd Cython header
-                                "your_install_path"
-                                "libraries_to_link_with_the_cython_module"
-                                "dependencies_which_need_to_be_built_before_the_wrapper"
-                                )
-#Optional: install_cython_scripts and install_cython_files. See GtsamCythonWrap.cmake.
-```
+Please refer to the template project and the corresponding tutorial available [here](https://github.com/borglab/gtsam-project-python).
 
 ## KNOWN ISSUES
 
