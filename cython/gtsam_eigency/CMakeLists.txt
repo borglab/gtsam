@@ -4,7 +4,7 @@ include(GtsamCythonWrap)
 # so that the cython-generated header "conversions_api.h" can be found when cythonizing eigency's core
 # and eigency's cython pxd headers can be found when cythonizing gtsam
 file(COPY "." DESTINATION ".")
-set(OUTPUT_DIR "${PROJECT_BINARY_DIR}/cython/gtsam_eigency")
+set(OUTPUT_DIR "${GTSAM_CYTHON_PATH}/gtsam_eigency")
 set(EIGENCY_INCLUDE_DIR ${OUTPUT_DIR})
 
 # This is to make the build/cython/gtsam_eigency folder a python package
@@ -16,8 +16,8 @@ include_directories(${EIGENCY_INCLUDE_DIR})
 # Cythonize and build eigency
 message(STATUS "Cythonize and build eigency")
 # Important trick: use "../gtsam_eigency/conversions.pyx" to let cython know that the conversions module is
-# a part of the gtsam_eigency package and generate the function call import_gtsam_igency__conversions()
-# in conversions_api.h correctly!!!
+# a part of the gtsam_eigency package and generate the function call import_gtsam_eigency__conversions()
+# in conversions_api.h correctly!
 cythonize(cythonize_eigency_conversions "../gtsam_eigency/conversions.pyx" "conversions"
   "${OUTPUT_DIR}" "${EIGENCY_INCLUDE_DIR}" "" "" "")
 cythonize(cythonize_eigency_core "../gtsam_eigency/core.pyx" "core"
@@ -38,14 +38,16 @@ add_custom_target(cythonize_eigency)
 add_dependencies(cythonize_eigency cythonize_eigency_conversions cythonize_eigency_core)
 
 # install
-function(install_gtsam_eigency source_directory)
-  install(DIRECTORY ${source_directory}
-          DESTINATION "${GTSAM_CYTHON_INSTALL_FULLPATH}"
+function(install_gtsam_eigency)
+  install(DIRECTORY ${GTSAM_EIGENCY_PATH}
+          DESTINATION "${GTSAM_CYTHON_INSTALL_PATH}"
           PATTERN "CMakeLists.txt" EXCLUDE
-          PATTERN "__init__.py.in" EXCLUDE)
+          PATTERN "__init__.py.in" EXCLUDE
+          PATTERN "*.dir" EXCLUDE
+          PATTERN "*.make" EXCLUDE)
   install(TARGETS cythonize_eigency_core cythonize_eigency_conversions
-          DESTINATION "${GTSAM_CYTHON_INSTALL_FULLPATH}/gtsam_eigency")
-  install(FILES ${source_directory}/conversions_api.h DESTINATION ${GTSAM_CYTHON_INSTALL_FULLPATH}/gtsam_eigency)
-  install(FILES ${source_directory}/__init__.py DESTINATION ${GTSAM_CYTHON_INSTALL_FULLPATH}/gtsam_eigency)
+          DESTINATION "${GTSAM_EIGENCY_INSTALL_PATH}")
+  install(FILES ${GTSAM_EIGENCY_PATH}/conversions_api.h DESTINATION ${GTSAM_EIGENCY_INSTALL_PATH})
+  install(FILES ${GTSAM_EIGENCY_PATH}/__init__.py DESTINATION ${GTSAM_EIGENCY_INSTALL_PATH})
 
 endfunction()
