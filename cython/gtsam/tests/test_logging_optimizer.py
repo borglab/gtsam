@@ -4,8 +4,12 @@ Author: Jing Wu and Frank Dellaert
 """
 # pylint: disable=invalid-name
 
-import io
 import sys
+if sys.version_info.major >= 3:
+    from io import StringIO
+else:
+    from cStringIO import StringIO
+
 import unittest
 from datetime import datetime
 
@@ -40,7 +44,7 @@ class TestOptimizeComet(GtsamTestCase):
             graph, initial, self.params)
 
         # setup output capture
-        self.capturedOutput = io.StringIO()
+        self.capturedOutput = StringIO()
         sys.stdout = self.capturedOutput
 
     def tearDown(self):
@@ -51,7 +55,7 @@ class TestOptimizeComet(GtsamTestCase):
         """Test with a simple hook."""
 
         # Provide a hook that just prints
-        def hook(_, error: float):
+        def hook(_, error):
             print(error)
 
         # Only thing we require from optimizer is an iterate method
@@ -75,7 +79,7 @@ class TestOptimizeComet(GtsamTestCase):
                        + str(time.hour)+":"+str(time.minute)+":"+str(time.second))
 
         # I want to do some comet thing here
-        def hook(optimizer, error: float):
+        def hook(optimizer, error):
             comet.log_metric("Karcher error",
                              error, optimizer.iterations())
 
