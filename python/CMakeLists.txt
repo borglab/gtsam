@@ -1,7 +1,7 @@
 if(GTSAM_BUILD_PYTHON)
   # Generate setup.py.
   file(READ "${PROJECT_SOURCE_DIR}/README.md" README_CONTENTS)
-  configure_file(${PROJECT_SOURCE_DIR}/wrap/python/setup.py.in
+  configure_file(${PROJECT_SOURCE_DIR}/python/setup.py.in
                  ${PROJECT_BINARY_DIR}/setup.py)
 
   add_subdirectory(pybind11)
@@ -51,7 +51,7 @@ if(GTSAM_BUILD_PYTHON)
   message("PYTHON INSTALL PATH: ${GTSAM_PY_INSTALL_PATH}")
   install_python_files("${PROJECT_BINARY_DIR}/setup.py"
                        "${GTSAM_PY_INSTALL_PATH}")
-  install_python_scripts("${PROJECT_SOURCE_DIR}/wrap/python/gtsam/"
+  install_python_scripts("${PROJECT_SOURCE_DIR}/python/gtsam/"
                          "${GTSAM_PY_INSTALL_PATH}/gtsam" "*.py")
 
 endif()

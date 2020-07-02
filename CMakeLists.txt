@@ -435,6 +435,11 @@ endif()
 # Build CppUnitLite
 add_subdirectory(CppUnitLite)
 
+# This is the new wrapper
+if(GTSAM_BUILD_PYTHON)
+	add_subdirectory(python)
+endif()
+
 # Build wrap
 if (GTSAM_BUILD_WRAP)
     add_subdirectory(wrap)
@@ -622,6 +627,7 @@ if(GTSAM_INSTALL_CYTHON_TOOLBOX)
 	message(STATUS "  Python version                  : ${GTSAM_PYTHON_VERSION}")
 endif()
 
+message(STATUS "Python toolbox flags                                      ")
 print_config_flag(${GTSAM_BUILD_PYTHON}                "Build Python module with pybind ")
 if(GTSAM_BUILD_PYTHON)
 	message(STATUS "  Python version                  : ${GTSAM_PYTHON_VERSION}")

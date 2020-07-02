@@ -1,8 +1,3 @@
-# This is the new wrapper
-if(GTSAM_BUILD_PYTHON)
-  add_subdirectory(python)
-endif()
-
 if(GTSAM_BUILD_WRAP)
   # Build/install Wrap
 
