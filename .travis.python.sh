@@ -17,7 +17,7 @@ if [[ $(uname) == "Darwin" ]]; then
     brew install wget
 else
     # Install a system package required by our library
-    sudo apt-get install wget libicu-dev python3-pip python3-setuptools
+    sudo apt-get install wget libicu-dev python3-pip python3-setuptools python3-numpy
 fi
 
 PATH=$PATH:$($PYTHON -c "import site; print(site.USER_BASE)")/bin
