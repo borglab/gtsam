@@ -79,6 +79,9 @@ class ImuFactorExample(PreintegrationExample):
         initial.insert(X(i), initial_state_i.pose())
         initial.insert(V(i), initial_state_i.velocity())
 
+        # add prior on beginning
+        self.addPrior(0, graph)
+
         for k, t in enumerate(np.arange(0, T, self.dt)):
             # get measurements and add them to PIM
             measuredOmega = self.runner.measuredAngularVelocity(t)
@@ -121,10 +124,10 @@ class ImuFactorExample(PreintegrationExample):
                 initial.insert(V(i+1), noisy_state_i.velocity())
                 i += 1
 
-        # add prior on beginning
-        self.addPrior(0, graph)
         # add prior on end
         # self.addPrior(num_poses - 1, graph)
+
+        initial.print_("Initial values:")
 
         # optimize using Levenberg-Marquardt optimization
         params = gtsam.LevenbergMarquardtParams()
@@ -132,8 +135,7 @@ class ImuFactorExample(PreintegrationExample):
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial, params)
         result = optimizer.optimize()
 
-        initial.print_("Initial values:")
-        result.print_("")
+        result.print_("Optimized values:")
 
         if compute_covariances:
             # Calculate and print marginal covariances
