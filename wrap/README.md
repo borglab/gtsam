@@ -29,7 +29,7 @@ It was designed to be more general than just wrapping GTSAM. For notes on creati
         ```
         python -m unittest discover
         ```
-    1. Edit the unittests in `wrap/python/gtsam/*.py` and simply rerun the test.
+    1. Edit the unittests in `python/gtsam/*.py` and simply rerun the test.
     They were symlinked to `<build_folder>/gtsam/*.py` to facilitate fast development.
         ```
         python -m unittest gtsam/tests/test_Pose3.py

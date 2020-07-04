@@ -17,7 +17,7 @@ if [[ $(uname) == "Darwin" ]]; then
     brew install wget
 else
     # Install a system package required by our library
-    sudo apt-get install wget libicu-dev python3-pip python3-setuptools python3-numpy
+    sudo apt-get install wget libicu-dev python3-pip python3-setuptools
 fi
 
 PATH=$PATH:$($PYTHON -c "import site; print(site.USER_BASE)")/bin
@@ -28,14 +28,14 @@ case $WRAPPER in
     BUILD_PYBIND="OFF"
     TYPEDEF_POINTS_TO_VECTORS="OFF"
 
-    $PYTHON -m pip install --user -r ./cython/requirements.txt
+    sudo $PYTHON -m pip install -r ./cython/requirements.txt
     ;;
 "pybind")
     BUILD_CYTHON="OFF"
     BUILD_PYBIND="ON"
     TYPEDEF_POINTS_TO_VECTORS="ON"
 
-    $PYTHON -m pip install --user -r ./wrap/python/requirements.txt
+    sudo $PYTHON -m pip install -r ./python/requirements.txt
     ;;
 *)
     exit 126
@@ -78,7 +78,7 @@ case $WRAPPER in
     ;;
 "pybind")
     $PYTHON setup.py install --user --prefix=
-    cd $CURRDIR/wrap/python/gtsam_py/tests
+    cd $CURRDIR/python/gtsam_py/tests
     $PYTHON -m unittest discover
     ;;
 *)
