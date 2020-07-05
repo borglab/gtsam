@@ -5,6 +5,7 @@ project(gtsam LANGUAGES CXX)
 # The following variable is the master list of subdirs to add
 set (gtsam_subdirs
     base
+    basis
     geometry
     inference
     symbolic
