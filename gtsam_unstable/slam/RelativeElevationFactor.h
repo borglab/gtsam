@@ -2,14 +2,14 @@
  * @file RelativeElevationFactor.h
  *
  * @brief Factor representing a known relative altitude in global frame
- * 
+ *
  * @date Aug 17, 2012
  * @author Alex Cunningham
  */
 
 #pragma once
 
-#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam_unstable/dllexport.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -71,33 +71,33 @@ TEST(GaussianConditional, constructor)
 
   GaussianConditional::const_iterator it = actual.beginFrontals();
   EXPECT(assert_equal(Key(1), *it));
-  EXPECT(assert_equal(R, actual.get_R()));
+  EXPECT(assert_equal(R, actual.R()));
   ++ it;
   EXPECT(it == actual.endFrontals());
 
   it = actual.beginParents();
   EXPECT(assert_equal(Key(3), *it));
-  EXPECT(assert_equal(S1, actual.get_S(it)));
+  EXPECT(assert_equal(S1, actual.S(it)));
 
   ++ it;
   EXPECT(assert_equal(Key(5), *it));
-  EXPECT(assert_equal(S2, actual.get_S(it)));
+  EXPECT(assert_equal(S2, actual.S(it)));
 
   ++ it;
   EXPECT(assert_equal(Key(7), *it));
-  EXPECT(assert_equal(S3, actual.get_S(it)));
+  EXPECT(assert_equal(S3, actual.S(it)));
 
   ++it;
   EXPECT(it == actual.endParents());
 
-  EXPECT(assert_equal(d, actual.get_d()));
+  EXPECT(assert_equal(d, actual.d()));
   EXPECT(assert_equal(*s, *actual.get_model()));
 
   // test copy constructor
   GaussianConditional copied(actual);
-  EXPECT(assert_equal(d, copied.get_d()));
+  EXPECT(assert_equal(d, copied.d()));
   EXPECT(assert_equal(*s, *copied.get_model()));
-  EXPECT(assert_equal(R, copied.get_R()));
+  EXPECT(assert_equal(R, copied.R()));
 }
 
 /* ************************************************************************* */
@@ -212,7 +212,7 @@ TEST( GaussianConditional, solve_multifrontal )
   // 3 variables, all dim=2
   GaussianConditional cg(list_of(1)(2)(10), 2, blockMatrix);
 
-  EXPECT(assert_equal(Vector(blockMatrix.full().rightCols(1)), cg.get_d()));
+  EXPECT(assert_equal(Vector(blockMatrix.full().rightCols(1)), cg.d()));
 
   // partial solution
   Vector sl1 = Vector2(9.0, 10.0);

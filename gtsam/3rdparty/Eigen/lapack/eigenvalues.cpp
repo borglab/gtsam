@@ -7,10 +7,10 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "common.h"
+#include "lapack_common.h"
 #include <Eigen/Eigenvalues>
 
-// computes an LU factorization of a general M-by-N matrix A using partial pivoting with row interchanges
+// computes eigen values and vectors of a general N-by-N matrix A
 EIGEN_LAPACK_FUNC(syev,(char *jobz, char *uplo, int* n, Scalar* a, int *lda, Scalar* w, Scalar* /*work*/, int* lwork, int *info))
 {
   // TODO exploit the work buffer
@@ -22,24 +22,7 @@ EIGEN_LAPACK_FUNC(syev,(char *jobz, char *uplo, int* n, Scalar* a, int *lda, Sca
   else  if(*n<0)                                        *info = -3;
   else  if(*lda<std::max(1,*n))                         *info = -5;
   else  if((!query_size) && *lwork<std::max(1,3**n-1))  *info = -8;
-  
-//   if(*info==0)
-//   {
-//     int nb = ILAENV( 1, 'SSYTRD', UPLO, N, -1, -1, -1 )
-//          LWKOPT = MAX( 1, ( NB+2 )*N )
-//          WORK( 1 ) = LWKOPT
-// *
-//          IF( LWORK.LT.MAX( 1, 3*N-1 ) .AND. .NOT.LQUERY )
-//      $      INFO = -8
-//       END IF
-// *
-//       IF( INFO.NE.0 ) THEN
-//          CALL XERBLA( 'SSYEV ', -INFO )
-//          RETURN
-//       ELSE IF( LQUERY ) THEN
-//          RETURN
-//       END IF
-  
+    
   if(*info!=0)
   {
     int e = -*info;
@@ -64,14 +47,14 @@ EIGEN_LAPACK_FUNC(syev,(char *jobz, char *uplo, int* n, Scalar* a, int *lda, Sca
   
   if(eig.info()==NoConvergence)
   {
-    vector(w,*n).setZero();
+    make_vector(w,*n).setZero();
     if(computeVectors)
       matrix(a,*n,*n,*lda).setIdentity();
     //*info = 1;
     return 0;
   }
   
-  vector(w,*n) = eig.eigenvalues();
+  make_vector(w,*n) = eig.eigenvalues();
   if(computeVectors)
     matrix(a,*n,*n,*lda) = eig.eigenvectors();
   

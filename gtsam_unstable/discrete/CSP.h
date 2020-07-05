@@ -22,7 +22,7 @@ namespace gtsam {
   public:
 
     /** A map from keys to values */
-    typedef std::vector<Key> Indices;
+    typedef KeyVector Indices;
     typedef Assignment<Key> Values;
     typedef boost::shared_ptr<Values> sharedValues;
 
@@ -60,7 +60,10 @@ namespace gtsam {
 //    }
 
     /// Find the best total assignment - can be expensive
-    sharedValues optimalAssignment(OptionalOrdering ordering = boost::none) const;
+    sharedValues optimalAssignment() const;
+
+    /// Find the best total assignment - can be expensive
+    sharedValues optimalAssignment(const Ordering& ordering) const;
 
 //    /*
 //     * Perform loopy belief propagation

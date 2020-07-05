@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -98,7 +98,7 @@ struct Record: public internal::CallRecordImplementor<Record, Cols> {
   friend struct internal::CallRecordImplementor;
 };
 
-internal::JacobianMap & NJM= *static_cast<internal::JacobianMap *>(NULL);
+internal::JacobianMap & NJM= *static_cast<internal::JacobianMap *>(nullptr);
 
 /* ************************************************************************* */
 typedef Eigen::Matrix<double, Eigen::Dynamic, Cols> DynRowMat;

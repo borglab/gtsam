@@ -144,7 +144,7 @@ TEST( BayesTree, removePath )
 
   SymbolicBayesNet bn;
   SymbolicBayesTree::Cliques orphans;
-  bayesTree.removePath(bayesTree[_C_], bn, orphans);
+  bayesTree.removePath(bayesTree[_C_], &bn, &orphans);
   SymbolicFactorGraph factors(bn);
   CHECK(assert_equal(expected, factors));
   CHECK(assert_container_equal(expectedOrphans|indirected, orphans|indirected));
@@ -161,7 +161,7 @@ TEST( BayesTree, removePath )
 
   SymbolicBayesNet bn2;
   SymbolicBayesTree::Cliques orphans2;
-  bayesTree.removePath(bayesTree[_E_], bn2, orphans2);
+  bayesTree.removePath(bayesTree[_E_], &bn2, &orphans2);
   SymbolicFactorGraph factors2(bn2);
   CHECK(assert_equal(expected2, factors2));
   CHECK(assert_container_equal(expectedOrphans2|indirected, orphans2|indirected));
@@ -175,7 +175,7 @@ TEST( BayesTree, removePath2 )
   // Call remove-path with clique B
   SymbolicBayesNet bn;
   SymbolicBayesTree::Cliques orphans;
-  bayesTree.removePath(bayesTree[_B_], bn, orphans);
+  bayesTree.removePath(bayesTree[_B_], &bn, &orphans);
   SymbolicFactorGraph factors(bn);
 
   // Check expected outcome
@@ -195,7 +195,7 @@ TEST(BayesTree, removePath3)
   // Call remove-path with clique T
   SymbolicBayesNet bn;
   SymbolicBayesTree::Cliques orphans;
-  bayesTree.removePath(bayesTree[_T_], bn, orphans);
+  bayesTree.removePath(bayesTree[_T_], &bn, &orphans);
   SymbolicFactorGraph factors(bn);
 
   // Check expected outcome
@@ -279,7 +279,7 @@ TEST( BayesTree, removeTop )
   // Remove the contaminated part of the Bayes tree
   SymbolicBayesNet bn;
   SymbolicBayesTree::Cliques orphans;
-  bayesTree.removeTop(list_of(_B_)(_S_), bn, orphans);
+  bayesTree.removeTop(list_of(_B_)(_S_), &bn, &orphans);
 
   // Check expected outcome
   SymbolicBayesNet expected;
@@ -295,7 +295,7 @@ TEST( BayesTree, removeTop )
   //boost::shared_ptr<IndexFactor> newFactor2(new IndexFactor(_B_));
   SymbolicBayesNet bn2;
   SymbolicBayesTree::Cliques orphans2;
-  bayesTree.removeTop(list_of(_B_), bn2, orphans2);
+  bayesTree.removeTop(list_of(_B_), &bn2, &orphans2);
   SymbolicFactorGraph factors2(bn2);
   SymbolicFactorGraph expected2;
   CHECK(assert_equal(expected2, factors2));
@@ -316,7 +316,7 @@ TEST( BayesTree, removeTop2 )
   // Remove the contaminated part of the Bayes tree
   SymbolicBayesNet bn;
   SymbolicBayesTree::Cliques orphans;
-  bayesTree.removeTop(list_of(_T_), bn, orphans);
+  bayesTree.removeTop(list_of(_T_), &bn, &orphans);
 
   // Check expected outcome
   SymbolicBayesNet expected = list_of
@@ -343,7 +343,7 @@ TEST( BayesTree, removeTop3 )
   // remove all
   SymbolicBayesNet bn;
   SymbolicBayesTree::Cliques orphans;
-  bayesTree.removeTop(list_of(L(5))(X(4))(X(2))(X(3)), bn, orphans);
+  bayesTree.removeTop(list_of(L(5))(X(4))(X(2))(X(3)), &bn, &orphans);
 
   SymbolicBayesNet expectedBn = list_of
     (SymbolicConditional::FromKeys(list_of(X(4))(L(5)), 2))
@@ -367,7 +367,7 @@ TEST( BayesTree, removeTop4 )
   // remove all
   SymbolicBayesNet bn;
   SymbolicBayesTree::Cliques orphans;
-  bayesTree.removeTop(list_of(X(2))(L(5))(X(4))(X(3)), bn, orphans);
+  bayesTree.removeTop(list_of(X(2))(L(5))(X(4))(X(3)), &bn, &orphans);
 
   SymbolicBayesNet expectedBn = list_of
     (SymbolicConditional::FromKeys(list_of(X(4))(L(5)), 2))
@@ -392,7 +392,7 @@ TEST( BayesTree, removeTop5 )
   // Remove nonexistant
   SymbolicBayesNet bn;
   SymbolicBayesTree::Cliques orphans;
-  bayesTree.removeTop(list_of(X(10)), bn, orphans);
+  bayesTree.removeTop(list_of(X(10)), &bn, &orphans);
 
   SymbolicBayesNet expectedBn;
   EXPECT(assert_equal(expectedBn, bn));
@@ -612,7 +612,7 @@ TEST(SymbolicBayesTree, complicatedMarginal)
   SymbolicBayesTreeClique::shared_ptr cur;
   SymbolicBayesTreeClique::shared_ptr root = MakeClique(list_of(11)(12), 2);
   cur = root;
-  
+
   root->children += MakeClique(list_of(9)(10)(11)(12), 2);
   root->children.back()->parent_ = root;
 

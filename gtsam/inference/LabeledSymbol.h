@@ -100,9 +100,14 @@ public:
   LabeledSymbol upper() const { return LabeledSymbol(c_, toupper(label_), j_); }
   LabeledSymbol lower() const { return LabeledSymbol(c_, tolower(label_), j_); }
 
-  // Create a new symbol with a different value
+  // Create a new symbol with a different character.
   LabeledSymbol newChr(unsigned char c) const { return LabeledSymbol(c, label_, j_); }
+
+  // Create a new symbol with a different label.
   LabeledSymbol newLabel(unsigned char label) const { return LabeledSymbol(c_, label, j_); }
+
+  /// Output stream operator that can be used with key_formatter (see Key.h).
+  friend GTSAM_EXPORT std::ostream &operator<<(std::ostream &, const LabeledSymbol &);
 
 private:
 

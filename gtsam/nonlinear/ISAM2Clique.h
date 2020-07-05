@@ -75,8 +75,11 @@ class GTSAM_EXPORT ISAM2Clique
   /** Access the cached factor */
   Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
 
-  /** Access the gradient contribution */
+  /// Access the gradient contribution
   const Vector& gradientContribution() const { return gradientContribution_; }
+
+  /// Recursively add gradient at zero to g
+  void addGradientAtZero(VectorValues* g) const;
 
   bool equals(const This& other, double tol = 1e-9) const;
 

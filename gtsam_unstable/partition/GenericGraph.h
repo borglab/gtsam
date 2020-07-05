@@ -8,9 +8,11 @@
 
 #pragma once
 
+#include <set>
 #include <list>
 #include <vector>
 #include <stdexcept>
+#include <string>
 #include <boost/shared_ptr.hpp>
 
 #include "PartitionWorkSpace.h"

@@ -14,7 +14,14 @@ using namespace std;
 namespace gtsam {
 
   /// Find the best total assignment - can be expensive
-  CSP::sharedValues CSP::optimalAssignment(OptionalOrdering ordering) const {
+  CSP::sharedValues CSP::optimalAssignment() const {
+    DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential();
+    sharedValues mpe = chordal->optimize();
+    return mpe;
+  }
+
+  /// Find the best total assignment - can be expensive
+  CSP::sharedValues CSP::optimalAssignment(const Ordering& ordering) const {
     DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential(ordering);
     sharedValues mpe = chordal->optimize();
     return mpe;
@@ -43,7 +50,7 @@ namespace gtsam {
         // keep track of which domains changed
         changed[v] = false;
         // loop over all factors/constraints for variable v
-        const VariableIndex::Factors& factors = index[v];
+        const FactorIndices& factors = index[v];
         for(size_t f: factors) {
           // if not already a singleton
           if (!domains[v].isSingleton()) {

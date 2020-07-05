@@ -2,12 +2,11 @@
  * \file TransverseMercator.cpp
  * \brief Implementation for GeographicLib::TransverseMercator class
  *
- * Copyright (c) Charles Karney (2008-2012) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2017) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  *
- * This implementation follows closely
- * <a href="http://www.jhs-suositukset.fi/suomi/jhs154"> JHS 154, ETRS89 -
+ * This implementation follows closely JHS 154, ETRS89 -
  * j&auml;rjestelm&auml;&auml;n liittyv&auml;t karttaprojektiot,
  * tasokoordinaatistot ja karttalehtijako</a> (Map projections, plane
  * coordinates, and map sheet index for ETRS89), published by JUHTA, Finnish
@@ -33,184 +32,258 @@
  * to an integer between 4 and 8, then this specifies the order of the series
  * used for the forward and reverse transformations.  The default value is 6.
  * (The series accurate to 12th order is given in \ref tmseries.)
- *
- * Other equivalent implementations are given in
- *  - http://www.ign.fr/DISPLAY/000/526/702/5267021/NTG_76.pdf
- *  - http://www.lantmateriet.se/upload/filer/kartor/geodesi_gps_och_detaljmatning/geodesi/Formelsamling/Gauss_Conformal_Projection.pdf
  **********************************************************************/
 
+#include <iostream>
+#include <complex>
 #include <GeographicLib/TransverseMercator.hpp>
 
 namespace GeographicLib {
 
   using namespace std;
 
-  const Math::real TransverseMercator::tol_ =
-    real(0.1)*sqrt(numeric_limits<real>::epsilon());
-  // Overflow value s.t. atan(overflow_) = pi/2
-  const Math::real TransverseMercator::overflow_ =
-    1 / Math::sq(numeric_limits<real>::epsilon());
-
   TransverseMercator::TransverseMercator(real a, real f, real k0)
     : _a(a)
-    , _f(f <= 1 ? f : 1/f)
+    , _f(f)
     , _k0(k0)
     , _e2(_f * (2 - _f))
-    , _e(sqrt(abs(_e2)))
+    , _es((f < 0 ? -1 : 1) * sqrt(abs(_e2)))
     , _e2m(1 - _e2)
       // _c = sqrt( pow(1 + _e, 1 + _e) * pow(1 - _e, 1 - _e) ) )
       // See, for example, Lee (1976), p 100.
-    , _c( sqrt(_e2m) * exp(eatanhe(real(1))) )
+    , _c( sqrt(_e2m) * exp(Math::eatanhe(real(1), _es)) )
     , _n(_f / (2 - _f))
   {
     if (!(Math::isfinite(_a) && _a > 0))
-      throw GeographicErr("Major radius is not positive");
+      throw GeographicErr("Equatorial radius is not positive");
     if (!(Math::isfinite(_f) && _f < 1))
-      throw GeographicErr("Minor radius is not positive");
+      throw GeographicErr("Polar semi-axis is not positive");
     if (!(Math::isfinite(_k0) && _k0 > 0))
       throw GeographicErr("Scale is not positive");
-    // If coefficents might overflow_ an int, convert them to double (and they
-    // are all exactly representable as doubles).
-    real nx = Math::sq(_n);
-    switch (maxpow_) {
-    case 4:
-      _b1 = 1/(1+_n)*(nx*(nx+16)+64)/64;
-      _alp[1] = _n*(_n*(_n*(164*_n+225)-480)+360)/720;
-      _bet[1] = _n*(_n*((555-4*_n)*_n-960)+720)/1440;
-      _alp[2] = nx*(_n*(557*_n-864)+390)/1440;
-      _bet[2] = nx*((96-437*_n)*_n+30)/1440;
-      nx *= _n;
-      _alp[3] = (427-1236*_n)*nx/1680;
-      _bet[3] = (119-148*_n)*nx/3360;
-      nx *= _n;
-      _alp[4] = 49561*nx/161280;
-      _bet[4] = 4397*nx/161280;
-      break;
-    case 5:
-      _b1 = 1/(1+_n)*(nx*(nx+16)+64)/64;
-      _alp[1] = _n*(_n*(_n*((328-635*_n)*_n+450)-960)+720)/1440;
-      _bet[1] = _n*(_n*(_n*((-3645*_n-64)*_n+8880)-15360)+11520)/23040;
-      _alp[2] = nx*(_n*(_n*(4496*_n+3899)-6048)+2730)/10080;
-      _bet[2] = nx*(_n*(_n*(4416*_n-3059)+672)+210)/10080;
-      nx *= _n;
-      _alp[3] = nx*(_n*(15061*_n-19776)+6832)/26880;
-      _bet[3] = nx*((-627*_n-592)*_n+476)/13440;
-      nx *= _n;
-      _alp[4] = (49561-171840*_n)*nx/161280;
-      _bet[4] = (4397-3520*_n)*nx/161280;
-      nx *= _n;
-      _alp[5] = 34729*nx/80640;
-      _bet[5] = 4583*nx/161280;
-      break;
-    case 6:
-      _b1 = 1/(1+_n)*(nx*(nx*(nx+4)+64)+256)/256;
-      _alp[1] = _n*(_n*(_n*(_n*(_n*(31564*_n-66675)+34440)+47250)-100800)+
-                    75600)/151200;
-      _bet[1] = _n*(_n*(_n*(_n*(_n*(384796*_n-382725)-6720)+932400)-1612800)+
-                    1209600)/2419200;
-      _alp[2] = nx*(_n*(_n*((863232-1983433*_n)*_n+748608)-1161216)+524160)/
-        1935360;
-      _bet[2] = nx*(_n*(_n*((1695744-1118711*_n)*_n-1174656)+258048)+80640)/
-        3870720;
-      nx *= _n;
-      _alp[3] = nx*(_n*(_n*(670412*_n+406647)-533952)+184464)/725760;
-      _bet[3] = nx*(_n*(_n*(22276*_n-16929)-15984)+12852)/362880;
-      nx *= _n;
-      _alp[4] = nx*(_n*(6601661*_n-7732800)+2230245)/7257600;
-      _bet[4] = nx*((-830251*_n-158400)*_n+197865)/7257600;
-      nx *= _n;
-      _alp[5] = (3438171-13675556*_n)*nx/7983360;
-      _bet[5] = (453717-435388*_n)*nx/15966720;
-      nx *= _n;
-      _alp[6] = 212378941*nx/319334400;
-      _bet[6] = 20648693*nx/638668800;
-      break;
-    case 7:
-      _b1 = 1/(1+_n)*(nx*(nx*(nx+4)+64)+256)/256;
-      _alp[1] = _n*(_n*(_n*(_n*(_n*(_n*(1804025*_n+2020096)-4267200)+2204160)+
-                            3024000)-6451200)+4838400)/9676800;
-      _bet[1] = _n*(_n*(_n*(_n*(_n*((6156736-5406467*_n)*_n-6123600)-107520)+
-                            14918400)-25804800)+19353600)/38707200;
-      _alp[2] = nx*(_n*(_n*(_n*(_n*(4626384*_n-9917165)+4316160)+3743040)-
-                        5806080)+2620800)/9676800;
-      _bet[2] = nx*(_n*(_n*(_n*(_n*(829456*_n-5593555)+8478720)-5873280)+
-                        1290240)+403200)/19353600;
-      nx *= _n;
-      _alp[3] = nx*(_n*(_n*((26816480-67102379*_n)*_n+16265880)-21358080)+
-                    7378560)/29030400;
-      _bet[3] = nx*(_n*(_n*(_n*(9261899*_n+3564160)-2708640)-2557440)+
-                    2056320)/58060800;
-      nx *= _n;
-      _alp[4] = nx*(_n*(_n*(155912000*_n+72618271)-85060800)+24532695)/
-        79833600;
-      _bet[4] = nx*(_n*(_n*(14928352*_n-9132761)-1742400)+2176515)/79833600;
-      nx *= _n;
-      _alp[5] = nx*(_n*(102508609*_n-109404448)+27505368)/63866880;
-      _bet[5] = nx*((-8005831*_n-1741552)*_n+1814868)/63866880;
-      nx *= _n;
-      _alp[6] = (2760926233.0-12282192400.0*_n)*nx/4151347200.0;
-      _bet[6] = (268433009-261810608*_n)*nx/8302694400.0;
-      nx *= _n;
-      _alp[7] = 1522256789.0*nx/1383782400.0;
-      _bet[7] = 219941297*nx/5535129600.0;
-      break;
-    case 8:
-      _b1 = 1/(1+_n)*(nx*(nx*(nx*(25*nx+64)+256)+4096)+16384)/16384;
-      _alp[1] = _n*(_n*(_n*(_n*(_n*(_n*((37884525-75900428*_n)*_n+42422016)-
-                                    89611200)+46287360)+63504000)-135475200)+
-                    101606400)/203212800;
-      _bet[1] = _n*(_n*(_n*(_n*(_n*(_n*(_n*(31777436*_n-37845269)+43097152)-
-                                    42865200)-752640)+104428800)-180633600)+
-                    135475200)/270950400;
-      _alp[2] = nx*(_n*(_n*(_n*(_n*(_n*(148003883*_n+83274912)-178508970)+
-                                77690880)+67374720)-104509440)+47174400)/
-        174182400;
-      _bet[2] = nx*(_n*(_n*(_n*(_n*(_n*(24749483*_n+14930208)-100683990)+
-                                152616960)-105719040)+23224320)+7257600)/
-        348364800;
-      nx *= _n;
-      _alp[3] = nx*(_n*(_n*(_n*(_n*(318729724*_n-738126169)+294981280)+
-                            178924680)-234938880)+81164160)/319334400;
-      _bet[3] = nx*(_n*(_n*(_n*((101880889-232468668*_n)*_n+39205760)-
-                            29795040)-28131840)+22619520)/638668800;
-      nx *= _n;
-      _alp[4] = nx*(_n*(_n*((14967552000.0-40176129013.0*_n)*_n+6971354016.0)-
-                        8165836800.0)+2355138720.0)/7664025600.0;
-      _bet[4] = nx*(_n*(_n*(_n*(324154477*_n+1433121792.0)-876745056)-
-                        167270400)+208945440)/7664025600.0;
-      nx *= _n;
-      _alp[5] = nx*(_n*(_n*(10421654396.0*_n+3997835751.0)-4266773472.0)+
-                    1072709352.0)/2490808320.0;
-      _bet[5] = nx*(_n*(_n*(457888660*_n-312227409)-67920528)+70779852)/
-        2490808320.0;
-      nx *= _n;
-      _alp[6] = nx*(_n*(175214326799.0*_n-171950693600.0)+38652967262.0)/
-        58118860800.0;
-      _bet[6] = nx*((-19841813847.0*_n-3665348512.0)*_n+3758062126.0)/
-        116237721600.0;
-      nx *= _n;
-      _alp[7] = (13700311101.0-67039739596.0*_n)*nx/12454041600.0;
-      _bet[7] = (1979471673.0-1989295244.0*_n)*nx/49816166400.0;
-      nx *= _n;
-      _alp[8] = 1424729850961.0*nx/743921418240.0;
-      _bet[8] = 191773887257.0*nx/3719607091200.0;
-      break;
-    default:
-      STATIC_ASSERT(maxpow_ >= 4 && maxpow_ <= 8, "Bad value of maxpow_");
-    }
+
+    // Generated by Maxima on 2015-05-14 22:55:13-04:00
+#if GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER/2 == 2
+    static const real b1coeff[] = {
+      // b1*(n+1), polynomial in n2 of order 2
+      1, 16, 64, 64,
+    };  // count = 4
+#elif GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER/2 == 3
+    static const real b1coeff[] = {
+      // b1*(n+1), polynomial in n2 of order 3
+      1, 4, 64, 256, 256,
+    };  // count = 5
+#elif GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER/2 == 4
+    static const real b1coeff[] = {
+      // b1*(n+1), polynomial in n2 of order 4
+      25, 64, 256, 4096, 16384, 16384,
+    };  // count = 6
+#else
+#error "Bad value for GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER"
+#endif
+
+#if GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER == 4
+    static const real alpcoeff[] = {
+      // alp[1]/n^1, polynomial in n of order 3
+      164, 225, -480, 360, 720,
+      // alp[2]/n^2, polynomial in n of order 2
+      557, -864, 390, 1440,
+      // alp[3]/n^3, polynomial in n of order 1
+      -1236, 427, 1680,
+      // alp[4]/n^4, polynomial in n of order 0
+      49561, 161280,
+    };  // count = 14
+#elif GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER == 5
+    static const real alpcoeff[] = {
+      // alp[1]/n^1, polynomial in n of order 4
+      -635, 328, 450, -960, 720, 1440,
+      // alp[2]/n^2, polynomial in n of order 3
+      4496, 3899, -6048, 2730, 10080,
+      // alp[3]/n^3, polynomial in n of order 2
+      15061, -19776, 6832, 26880,
+      // alp[4]/n^4, polynomial in n of order 1
+      -171840, 49561, 161280,
+      // alp[5]/n^5, polynomial in n of order 0
+      34729, 80640,
+    };  // count = 20
+#elif GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER == 6
+    static const real alpcoeff[] = {
+      // alp[1]/n^1, polynomial in n of order 5
+      31564, -66675, 34440, 47250, -100800, 75600, 151200,
+      // alp[2]/n^2, polynomial in n of order 4
+      -1983433, 863232, 748608, -1161216, 524160, 1935360,
+      // alp[3]/n^3, polynomial in n of order 3
+      670412, 406647, -533952, 184464, 725760,
+      // alp[4]/n^4, polynomial in n of order 2
+      6601661, -7732800, 2230245, 7257600,
+      // alp[5]/n^5, polynomial in n of order 1
+      -13675556, 3438171, 7983360,
+      // alp[6]/n^6, polynomial in n of order 0
+      212378941, 319334400,
+    };  // count = 27
+#elif GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER == 7
+    static const real alpcoeff[] = {
+      // alp[1]/n^1, polynomial in n of order 6
+      1804025, 2020096, -4267200, 2204160, 3024000, -6451200, 4838400, 9676800,
+      // alp[2]/n^2, polynomial in n of order 5
+      4626384, -9917165, 4316160, 3743040, -5806080, 2620800, 9676800,
+      // alp[3]/n^3, polynomial in n of order 4
+      -67102379, 26816480, 16265880, -21358080, 7378560, 29030400,
+      // alp[4]/n^4, polynomial in n of order 3
+      155912000, 72618271, -85060800, 24532695, 79833600,
+      // alp[5]/n^5, polynomial in n of order 2
+      102508609, -109404448, 27505368, 63866880,
+      // alp[6]/n^6, polynomial in n of order 1
+      -12282192400LL, 2760926233LL, 4151347200LL,
+      // alp[7]/n^7, polynomial in n of order 0
+      1522256789, 1383782400,
+    };  // count = 35
+#elif GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER == 8
+    static const real alpcoeff[] = {
+      // alp[1]/n^1, polynomial in n of order 7
+      -75900428, 37884525, 42422016, -89611200, 46287360, 63504000, -135475200,
+      101606400, 203212800,
+      // alp[2]/n^2, polynomial in n of order 6
+      148003883, 83274912, -178508970, 77690880, 67374720, -104509440,
+      47174400, 174182400,
+      // alp[3]/n^3, polynomial in n of order 5
+      318729724, -738126169, 294981280, 178924680, -234938880, 81164160,
+      319334400,
+      // alp[4]/n^4, polynomial in n of order 4
+      -40176129013LL, 14967552000LL, 6971354016LL, -8165836800LL, 2355138720LL,
+      7664025600LL,
+      // alp[5]/n^5, polynomial in n of order 3
+      10421654396LL, 3997835751LL, -4266773472LL, 1072709352, 2490808320LL,
+      // alp[6]/n^6, polynomial in n of order 2
+      175214326799LL, -171950693600LL, 38652967262LL, 58118860800LL,
+      // alp[7]/n^7, polynomial in n of order 1
+      -67039739596LL, 13700311101LL, 12454041600LL,
+      // alp[8]/n^8, polynomial in n of order 0
+      1424729850961LL, 743921418240LL,
+    };  // count = 44
+#else
+#error "Bad value for GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER"
+#endif
+
+#if GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER == 4
+    static const real betcoeff[] = {
+      // bet[1]/n^1, polynomial in n of order 3
+      -4, 555, -960, 720, 1440,
+      // bet[2]/n^2, polynomial in n of order 2
+      -437, 96, 30, 1440,
+      // bet[3]/n^3, polynomial in n of order 1
+      -148, 119, 3360,
+      // bet[4]/n^4, polynomial in n of order 0
+      4397, 161280,
+    };  // count = 14
+#elif GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER == 5
+    static const real betcoeff[] = {
+      // bet[1]/n^1, polynomial in n of order 4
+      -3645, -64, 8880, -15360, 11520, 23040,
+      // bet[2]/n^2, polynomial in n of order 3
+      4416, -3059, 672, 210, 10080,
+      // bet[3]/n^3, polynomial in n of order 2
+      -627, -592, 476, 13440,
+      // bet[4]/n^4, polynomial in n of order 1
+      -3520, 4397, 161280,
+      // bet[5]/n^5, polynomial in n of order 0
+      4583, 161280,
+    };  // count = 20
+#elif GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER == 6
+    static const real betcoeff[] = {
+      // bet[1]/n^1, polynomial in n of order 5
+      384796, -382725, -6720, 932400, -1612800, 1209600, 2419200,
+      // bet[2]/n^2, polynomial in n of order 4
+      -1118711, 1695744, -1174656, 258048, 80640, 3870720,
+      // bet[3]/n^3, polynomial in n of order 3
+      22276, -16929, -15984, 12852, 362880,
+      // bet[4]/n^4, polynomial in n of order 2
+      -830251, -158400, 197865, 7257600,
+      // bet[5]/n^5, polynomial in n of order 1
+      -435388, 453717, 15966720,
+      // bet[6]/n^6, polynomial in n of order 0
+      20648693, 638668800,
+    };  // count = 27
+#elif GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER == 7
+    static const real betcoeff[] = {
+      // bet[1]/n^1, polynomial in n of order 6
+      -5406467, 6156736, -6123600, -107520, 14918400, -25804800, 19353600,
+      38707200,
+      // bet[2]/n^2, polynomial in n of order 5
+      829456, -5593555, 8478720, -5873280, 1290240, 403200, 19353600,
+      // bet[3]/n^3, polynomial in n of order 4
+      9261899, 3564160, -2708640, -2557440, 2056320, 58060800,
+      // bet[4]/n^4, polynomial in n of order 3
+      14928352, -9132761, -1742400, 2176515, 79833600,
+      // bet[5]/n^5, polynomial in n of order 2
+      -8005831, -1741552, 1814868, 63866880,
+      // bet[6]/n^6, polynomial in n of order 1
+      -261810608, 268433009, 8302694400LL,
+      // bet[7]/n^7, polynomial in n of order 0
+      219941297, 5535129600LL,
+    };  // count = 35
+#elif GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER == 8
+    static const real betcoeff[] = {
+      // bet[1]/n^1, polynomial in n of order 7
+      31777436, -37845269, 43097152, -42865200, -752640, 104428800, -180633600,
+      135475200, 270950400,
+      // bet[2]/n^2, polynomial in n of order 6
+      24749483, 14930208, -100683990, 152616960, -105719040, 23224320, 7257600,
+      348364800,
+      // bet[3]/n^3, polynomial in n of order 5
+      -232468668, 101880889, 39205760, -29795040, -28131840, 22619520,
+      638668800,
+      // bet[4]/n^4, polynomial in n of order 4
+      324154477, 1433121792, -876745056, -167270400, 208945440, 7664025600LL,
+      // bet[5]/n^5, polynomial in n of order 3
+      457888660, -312227409, -67920528, 70779852, 2490808320LL,
+      // bet[6]/n^6, polynomial in n of order 2
+      -19841813847LL, -3665348512LL, 3758062126LL, 116237721600LL,
+      // bet[7]/n^7, polynomial in n of order 1
+      -1989295244, 1979471673, 49816166400LL,
+      // bet[8]/n^8, polynomial in n of order 0
+      191773887257LL, 3719607091200LL,
+    };  // count = 44
+#else
+#error "Bad value for GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER"
+#endif
+
+    GEOGRAPHICLIB_STATIC_ASSERT(sizeof(b1coeff) / sizeof(real) ==
+                                maxpow_/2 + 2,
+                                "Coefficient array size mismatch for b1");
+    GEOGRAPHICLIB_STATIC_ASSERT(sizeof(alpcoeff) / sizeof(real) ==
+                                (maxpow_ * (maxpow_ + 3))/2,
+                                "Coefficient array size mismatch for alp");
+    GEOGRAPHICLIB_STATIC_ASSERT(sizeof(betcoeff) / sizeof(real) ==
+                                (maxpow_ * (maxpow_ + 3))/2,
+                                "Coefficient array size mismatch for bet");
+    int m = maxpow_/2;
+    _b1 = Math::polyval(m, b1coeff, Math::sq(_n)) / (b1coeff[m + 1] * (1+_n));
     // _a1 is the equivalent radius for computing the circumference of
     // ellipse.
     _a1 = _b1 * _a;
+    int o = 0;
+    real d = _n;
+    for (int l = 1; l <= maxpow_; ++l) {
+      m = maxpow_ - l;
+      _alp[l] = d * Math::polyval(m, alpcoeff + o, _n) / alpcoeff[o + m + 1];
+      _bet[l] = d * Math::polyval(m, betcoeff + o, _n) / betcoeff[o + m + 1];
+      o += m + 2;
+      d *= _n;
+    }
+    // Post condition: o == sizeof(alpcoeff) / sizeof(real) &&
+    // o == sizeof(betcoeff) / sizeof(real)
   }
 
-  const TransverseMercator
-  TransverseMercator::UTM(Constants::WGS84_a<real>(),
-                          Constants::WGS84_f<real>(),
-                          Constants::UTM_k0<real>());
+  const TransverseMercator& TransverseMercator::UTM() {
+    static const TransverseMercator utm(Constants::WGS84_a(),
+                                        Constants::WGS84_f(),
+                                        Constants::UTM_k0());
+    return utm;
+  }
 
   // Engsager and Poder (2007) use trigonometric series to convert between phi
-  // and phip.
-
+  // and phip.  Here are the series...
+  //
   // Conversion from phi to phip:
   //
   //     phip = phi + sum(c[j] * sin(2*j*phi), j, 1, 6)
@@ -236,7 +309,7 @@ namespace GeographicLib {
   //       c[5] = - 734/315 * n^5
   //              + 109598/31185 * n^6;
   //       c[6] =   444337/155925 * n^6;
-
+  //
   // Conversion from phip to phi:
   //
   //     phi = phip + sum(d[j] * sin(2*j*phip), j, 1, 6)
@@ -262,57 +335,27 @@ namespace GeographicLib {
   //       d[5] =   4174/315 * n^5
   //              - 144838/6237 * n^6;
   //       d[6] =   601676/22275 * n^6;
-
+  //
   // In order to maintain sufficient relative accuracy close to the pole use
   //
   //     S = sum(c[i]*sin(2*i*phi),i,1,6)
   //     taup = (tau + tan(S)) / (1 - tau * tan(S))
 
-  // taupf and tauf are adapted from TransverseMercatorExact (taup and
-  // taupinv).  tau = tan(phi), taup = sinh(psi)
-  Math::real TransverseMercator::taupf(real tau) const throw() {
-    if (!(abs(tau) < overflow_))
-      return tau;
-    real
-      tau1 = Math::hypot(real(1), tau),
-      sig = sinh( eatanhe(tau / tau1) );
-    return Math::hypot(real(1), sig) * tau - sig * tau1;
-  }
-
-  Math::real TransverseMercator::tauf(real taup) const throw() {
-    if (!(abs(taup) < overflow_))
-      return taup;
-    real
-      // To lowest order in e^2, taup = (1 - e^2) * tau = _e2m * tau; so use
-      // tau = taup/_e2m as a starting guess.  Only 1 iteration is needed for
-      // |lat| < 3.35 deg, otherwise 2 iterations are needed.  If, instead, tau
-      // = taup is used the mean number of iterations increases to 1.99 (2
-      // iterations are needed except near tau = 0).
-      tau = taup/_e2m,
-      stol = tol_ * max(real(1), abs(taup));
-    // min iterations = 1, max iterations = 2; mean = 1.94
-    for (int i = 0; i < numit_; ++i) {
-      real
-        tau1 = Math::hypot(real(1), tau),
-        sig = sinh( eatanhe( tau / tau1 ) ),
-        taupa = Math::hypot(real(1), sig) * tau - sig * tau1,
-        dtau = (taup - taupa) * (1 + _e2m * Math::sq(tau)) /
-        ( _e2m * tau1 * Math::hypot(real(1), taupa) );
-      tau += dtau;
-      if (!(abs(dtau) >= stol))
-        break;
-    }
-    return tau;
-  }
+  // In Math::taupf and Math::tauf we evaluate the forward transform explicitly
+  // and solve the reverse one by Newton's method.
+  //
+  // There are adapted from TransverseMercatorExact (taup and taupinv).  tau =
+  // tan(phi), taup = sinh(psi)
 
   void TransverseMercator::Forward(real lon0, real lat, real lon,
-                                   real& x, real& y, real& gamma, real& k)
-    const throw() {
-    lon = Math::AngDiff(Math::AngNormalize(lon0), Math::AngNormalize(lon));
+                                   real& x, real& y,
+                                   real& gamma, real& k) const {
+    lat = Math::LatFix(lat);
+    lon = Math::AngDiff(lon0, lon);
     // Explicitly enforce the parity
     int
-      latsign = lat < 0 ? -1 : 1,
-      lonsign = lon < 0 ? -1 : 1;
+      latsign = (lat < 0) ? -1 : 1,
+      lonsign = (lon < 0) ? -1 : 1;
     lon *= lonsign;
     lat *= latsign;
     bool backside = lon > 90;
@@ -321,9 +364,9 @@ namespace GeographicLib {
         latsign = -1;
       lon = 180 - lon;
     }
-    real
-      phi = lat * Math::degree<real>(),
-      lam = lon * Math::degree<real>();
+    real sphi, cphi, slam, clam;
+    Math::sincosd(lat, sphi, cphi);
+    Math::sincosd(lon, slam, clam);
     // phi = latitude
     // phi' = conformal latitude
     // psi = isometric latitude
@@ -344,18 +387,17 @@ namespace GeographicLib {
     real etap, xip;
     if (lat != 90) {
       real
-        c = max(real(0), cos(lam)), // cos(pi/2) might be negative
-        tau = tan(phi),
-        taup = taupf(tau);
-      xip = atan2(taup, c);
+        tau = sphi / cphi,
+        taup = Math::taupf(tau, _es);
+      xip = atan2(taup, clam);
       // Used to be
       //   etap = Math::atanh(sin(lam) / cosh(psi));
-      etap = Math::asinh(sin(lam) / Math::hypot(taup, c));
+      etap = Math::asinh(slam / Math::hypot(taup, clam));
       // convergence and scale for Gauss-Schreiber TM (xip, etap) -- gamma0 =
       // atan(tan(xip) * tanh(etap)) = atan(tan(lam) * sin(phi'));
       // sin(phi') = tau'/sqrt(1 + tau'^2)
-      gamma = atan(tanx(lam) *
-                   taup / Math::hypot(real(1), taup)); // Krueger p 22 (44)
+      // Krueger p 22 (44)
+      gamma = Math::atan2d(slam * taup, clam * Math::hypot(real(1), taup));
       // k0 = sqrt(1 - _e2 * sin(phi)^2) * (cos(phi') / cos(phi)) * cosh(etap)
       // Note 1/cos(phi) = cosh(psip);
       // and cos(phi') * cosh(etap) = 1/hypot(sinh(psi), cos(lam))
@@ -363,12 +405,12 @@ namespace GeographicLib {
       // This form has cancelling errors.  This property is lost if cosh(psip)
       // is replaced by 1/cos(phi), even though it's using "primary" data (phi
       // instead of psip).
-      k = sqrt(_e2m + _e2 * Math::sq(cos(phi))) * Math::hypot(real(1), tau)
-        / Math::hypot(taup, c);
+      k = sqrt(_e2m + _e2 * Math::sq(cphi)) * Math::hypot(real(1), tau)
+        / Math::hypot(taup, clam);
     } else {
-      xip = Math::pi<real>()/2;
+      xip = Math::pi()/2;
       etap = 0;
-      gamma = lam;
+      gamma = lon;
       k = _c;
     }
     // {xi',eta'} is {northing,easting} for Gauss-Schreiber transverse Mercator
@@ -391,85 +433,89 @@ namespace GeographicLib {
     // which is used in Reverse.
     //
     // Evaluate sums via Clenshaw method.  See
-    //    http://mathworld.wolfram.com/ClenshawRecurrenceFormula.html
+    //    https://en.wikipedia.org/wiki/Clenshaw_algorithm
     //
     // Let
     //
-    //    S = sum(c[k] * F[k](x), k = 0..N)
-    //    F[n+1](x) = alpha(n,x) * F[n](x) + beta(n,x) * F[n-1](x)
+    //    S = sum(a[k] * phi[k](x), k = 0..n)
+    //    phi[k+1](x) = alpha[k](x) * phi[k](x) + beta[k](x) * phi[k-1](x)
     //
     // Evaluate S with
     //
-    //    y[N+2] = y[N+1] = 0
-    //    y[k] = alpha(k,x) * y[k+1] + beta(k+1,x) * y[k+2] + c[k]
-    //    S = c[0] * F[0](x) + y[1] * F[1](x) + beta(1,x) * F[0](x) * y[2]
+    //    b[n+2] = b[n+1] = 0
+    //    b[k] = alpha[k](x) * b[k+1] + beta[k+1](x) * b[k+2] + a[k]
+    //    S = (a[0] + beta[1](x) * b[2]) * phi[0](x) + b[1] * phi[1](x)
     //
     // Here we have
     //
     //    x = 2 * zeta'
-    //    F[n](x) = sin(n * x)
-    //    a(n, x) = 2 * cos(x)
-    //    b(n, x) = -1
-    //    [ sin(A+B) - 2*cos(B)*sin(A) + sin(A-B) = 0, A = n*x, B = x ]
-    //    N = maxpow_
-    //    c[k] = _alp[k]
-    //    S = y[1] * sin(x)
+    //    phi[k](x) = sin(k * x)
+    //    alpha[k](x) = 2 * cos(x)
+    //    beta[k](x) = -1
+    //    [ sin(A+B) - 2*cos(B)*sin(A) + sin(A-B) = 0, A = k*x, B = x ]
+    //    n = maxpow_
+    //    a[k] = _alp[k]
+    //    S = b[1] * sin(x)
     //
     // For the derivative we have
     //
     //    x = 2 * zeta'
-    //    F[n](x) = cos(n * x)
-    //    a(n, x) = 2 * cos(x)
-    //    b(n, x) = -1
-    //    [ cos(A+B) - 2*cos(B)*cos(A) + cos(A-B) = 0, A = n*x, B = x ]
-    //    c[0] = 1; c[k] = 2*k*_alp[k]
-    //    S = (c[0] - y[2]) + y[1] * cos(x)
+    //    phi[k](x) = cos(k * x)
+    //    alpha[k](x) = 2 * cos(x)
+    //    beta[k](x) = -1
+    //    [ cos(A+B) - 2*cos(B)*cos(A) + cos(A-B) = 0, A = k*x, B = x ]
+    //    a[0] = 1; a[k] = 2*k*_alp[k]
+    //    S = (a[0] - b[2]) + b[1] * cos(x)
+    //
+    // Matrix formulation (not used here):
+    //    phi[k](x) = [sin(k * x); k * cos(k * x)]
+    //    alpha[k](x) = 2 * [cos(x), 0; -sin(x), cos(x)]
+    //    beta[k](x) = -1 * [1, 0; 0, 1]
+    //    a[k] = _alp[k] * [1, 0; 0, 1]
+    //    b[n+2] = b[n+1] = [0, 0; 0, 0]
+    //    b[k] = alpha[k](x) * b[k+1] + beta[k+1](x) * b[k+2] + a[k]
+    //    N.B., for all k: b[k](1,2) = 0; b[k](1,1) = b[k](2,2)
+    //    S = (a[0] + beta[1](x) * b[2]) * phi[0](x) + b[1] * phi[1](x)
+    //    phi[0](x) = [0; 0]
+    //    phi[1](x) = [sin(x); cos(x)]
     real
       c0 = cos(2 * xip), ch0 = cosh(2 * etap),
-      s0 = sin(2 * xip), sh0 = sinh(2 * etap),
-      ar = 2 * c0 * ch0, ai = -2 * s0 * sh0; // 2 * cos(2*zeta')
+      s0 = sin(2 * xip), sh0 = sinh(2 * etap);
+    complex<real> a(2 * c0 * ch0, -2 * s0 * sh0); // 2 * cos(2*zeta')
     int n = maxpow_;
-    real
-      xi0 = (n & 1 ? _alp[n] : 0), eta0 = 0,
-      xi1 = 0, eta1 = 0;
-    real                        // Accumulators for dzeta/dzeta'
-      yr0 = (n & 1 ? 2 * maxpow_ * _alp[n--] : 0), yi0 = 0,
-      yr1 = 0, yi1 = 0;
+    complex<real>
+      y0(n & 1 ?       _alp[n] : 0), y1, // default initializer is 0+i0
+      z0(n & 1 ? 2*n * _alp[n] : 0), z1;
+    if (n & 1) --n;
     while (n) {
-      xi1  = ar * xi0 - ai * eta0 - xi1 + _alp[n];
-      eta1 = ai * xi0 + ar * eta0 - eta1;
-      yr1 = ar * yr0 - ai * yi0 - yr1 + 2 * n * _alp[n];
-      yi1 = ai * yr0 + ar * yi0 - yi1;
+      y1 = a * y0 - y1 +       _alp[n];
+      z1 = a * z0 - z1 + 2*n * _alp[n];
       --n;
-      xi0  = ar * xi1 - ai * eta1 - xi0 + _alp[n];
-      eta0 = ai * xi1 + ar * eta1 - eta0;
-      yr0 = ar * yr1 - ai * yi1 - yr0 + 2 * n * _alp[n];
-      yi0 = ai * yr1 + ar * yi1 - yi0;
+      y0 = a * y1 - y0 +       _alp[n];
+      z0 = a * z1 - z0 + 2*n * _alp[n];
       --n;
     }
-    ar /= 2; ai /= 2;           // cos(2*zeta')
-    yr1 = 1 - yr1 + ar * yr0 - ai * yi0;
-    yi1 =   - yi1 + ai * yr0 + ar * yi0;
-    ar = s0 * ch0; ai = c0 * sh0; // sin(2*zeta')
-    real
-      xi  = xip  + ar * xi0 - ai * eta0,
-      eta = etap + ai * xi0 + ar * eta0;
+    a /= real(2);               // cos(2*zeta')
+    z1 = real(1) - z1 + a * z0;
+    a = complex<real>(s0 * ch0, c0 * sh0); // sin(2*zeta')
+    y1 = complex<real>(xip, etap) + a * y0;
     // Fold in change in convergence and scale for Gauss-Schreiber TM to
     // Gauss-Krueger TM.
-    gamma -= atan2(yi1, yr1);
-    k *= _b1 * Math::hypot(yr1, yi1);
-    gamma /= Math::degree<real>();
-    y = _a1 * _k0 * (backside ? Math::pi<real>() - xi : xi) * latsign;
+    gamma -= Math::atan2d(z1.imag(), z1.real());
+    k *= _b1 * abs(z1);
+    real xi = y1.real(), eta = y1.imag();
+    y = _a1 * _k0 * (backside ? Math::pi() - xi : xi) * latsign;
     x = _a1 * _k0 * eta * lonsign;
     if (backside)
       gamma = 180 - gamma;
     gamma *= latsign * lonsign;
+    gamma = Math::AngNormalize(gamma);
     k *= _k0;
   }
 
   void TransverseMercator::Reverse(real lon0, real x, real y,
-                                   real& lat, real& lon, real& gamma, real& k)
-    const throw() {
+                                   real& lat, real& lon,
+                                   real& gamma, real& k) const {
     // This undoes the steps in Forward.  The wrinkles are: (1) Use of the
     // reverted series to express zeta' in terms of zeta. (2) Newton's method
     // to solve for phi in terms of tan(phi).
@@ -478,82 +524,72 @@ namespace GeographicLib {
       eta = x / (_a1 * _k0);
     // Explicitly enforce the parity
     int
-      xisign = xi < 0 ? -1 : 1,
-      etasign = eta < 0 ? -1 : 1;
+      xisign = (xi < 0) ? -1 : 1,
+      etasign = (eta < 0) ? -1 : 1;
     xi *= xisign;
     eta *= etasign;
-    bool backside = xi > Math::pi<real>()/2;
+    bool backside = xi > Math::pi()/2;
     if (backside)
-      xi = Math::pi<real>() - xi;
+      xi = Math::pi() - xi;
     real
       c0 = cos(2 * xi), ch0 = cosh(2 * eta),
-      s0 = sin(2 * xi), sh0 = sinh(2 * eta),
-      ar = 2 * c0 * ch0, ai = -2 * s0 * sh0; // 2 * cos(2*zeta)
+      s0 = sin(2 * xi), sh0 = sinh(2 * eta);
+    complex<real> a(2 * c0 * ch0, -2 * s0 * sh0); // 2 * cos(2*zeta)
     int n = maxpow_;
-    real                        // Accumulators for zeta'
-      xip0 = (n & 1 ? -_bet[n] : 0), etap0 = 0,
-      xip1 = 0, etap1 = 0;
-    real                        // Accumulators for dzeta'/dzeta
-      yr0 = (n & 1 ? - 2 * maxpow_ * _bet[n--] : 0), yi0 = 0,
-      yr1 = 0, yi1 = 0;
+    complex<real>
+      y0(n & 1 ?       -_bet[n] : 0), y1, // default initializer is 0+i0
+      z0(n & 1 ? -2*n * _bet[n] : 0), z1;
+    if (n & 1) --n;
     while (n) {
-      xip1  = ar * xip0 - ai * etap0 - xip1 - _bet[n];
-      etap1 = ai * xip0 + ar * etap0 - etap1;
-      yr1 = ar * yr0 - ai * yi0 - yr1 - 2 * n * _bet[n];
-      yi1 = ai * yr0 + ar * yi0 - yi1;
+      y1 = a * y0 - y1 -       _bet[n];
+      z1 = a * z0 - z1 - 2*n * _bet[n];
       --n;
-      xip0  = ar * xip1 - ai * etap1 - xip0 - _bet[n];
-      etap0 = ai * xip1 + ar * etap1 - etap0;
-      yr0 = ar * yr1 - ai * yi1 - yr0 - 2 * n * _bet[n];
-      yi0 = ai * yr1 + ar * yi1 - yi0;
+      y0 = a * y1 - y0 -       _bet[n];
+      z0 = a * z1 - z0 - 2*n * _bet[n];
       --n;
     }
-    ar /= 2; ai /= 2;           // cos(2*zeta')
-    yr1 = 1 - yr1 + ar * yr0 - ai * yi0;
-    yi1 =   - yi1 + ai * yr0 + ar * yi0;
-    ar = s0 * ch0; ai = c0 * sh0; // sin(2*zeta)
-    real
-      xip  = xi  + ar * xip0 - ai * etap0,
-      etap = eta + ai * xip0 + ar * etap0;
+    a /= real(2);               // cos(2*zeta)
+    z1 = real(1) - z1 + a * z0;
+    a = complex<real>(s0 * ch0, c0 * sh0); // sin(2*zeta)
+    y1 = complex<real>(xi, eta) + a * y0;
     // Convergence and scale for Gauss-Schreiber TM to Gauss-Krueger TM.
-    gamma = atan2(yi1, yr1);
-    k = _b1 / Math::hypot(yr1, yi1);
+    gamma = Math::atan2d(z1.imag(), z1.real());
+    k = _b1 / abs(z1);
     // JHS 154 has
     //
     //   phi' = asin(sin(xi') / cosh(eta')) (Krueger p 17 (25))
     //   lam = asin(tanh(eta') / cos(phi')
     //   psi = asinh(tan(phi'))
-    real lam, phi;
     real
+      xip = y1.real(), etap = y1.imag(),
       s = sinh(etap),
       c = max(real(0), cos(xip)), // cos(pi/2) might be negative
       r = Math::hypot(s, c);
     if (r != 0) {
-      lam = atan2(s, c);        // Krueger p 17 (25)
+      lon = Math::atan2d(s, c); // Krueger p 17 (25)
       // Use Newton's method to solve for tau
       real
-        taup = sin(xip)/r,
-        tau = tauf(taup);
-      phi = atan(tau);
-      gamma += atan(tanx(xip) * tanh(etap)); // Krueger p 19 (31)
+        sxip = sin(xip),
+        tau = Math::tauf(sxip/r, _es);
+      gamma += Math::atan2d(sxip * tanh(etap), c); // Krueger p 19 (31)
+      lat = Math::atand(tau);
       // Note cos(phi') * cosh(eta') = r
-      k *= sqrt(_e2m + _e2 * Math::sq(cos(phi))) *
+      k *= sqrt(_e2m + _e2 / (1 + Math::sq(tau))) *
         Math::hypot(real(1), tau) * r;
     } else {
-      phi = Math::pi<real>()/2;
-      lam = 0;
+      lat = 90;
+      lon = 0;
       k *= _c;
     }
-    lat = phi / Math::degree<real>() * xisign;
-    lon = lam / Math::degree<real>();
+    lat *= xisign;
     if (backside)
       lon = 180 - lon;
     lon *= etasign;
-    lon = Math::AngNormalize(lon + Math::AngNormalize(lon0));
-    gamma /= Math::degree<real>();
+    lon = Math::AngNormalize(lon + lon0);
     if (backside)
       gamma = 180 - gamma;
     gamma *= xisign * etasign;
+    gamma = Math::AngNormalize(gamma);
     k *= _k0;
   }
 

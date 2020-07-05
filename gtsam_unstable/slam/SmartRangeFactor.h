@@ -2,18 +2,17 @@
  * @file SmartRangeFactor.h
  *
  * @brief A smart factor for range-only SLAM that does initialization and marginalization
- * 
+ *
  * @date Sep 10, 2012
  * @author Alex Cunningham
  */
 
 #pragma once
 
-#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam_unstable/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/base/timing.h>
 
 #include <list>
 #include <map>
@@ -60,6 +59,10 @@ class SmartRangeFactor: public NoiseModelFactor {
 
   /// Add a range measurement to a pose with given key.
   void addRange(Key key, double measuredRange) {
+    if(std::find(keys_.begin(), keys_.end(), key) != keys_.end()) {
+      throw std::invalid_argument(
+          "SmartRangeFactor::addRange: adding duplicate measurement for key.");
+    }
     keys_.push_back(key);
     measurements_.push_back(measuredRange);
     size_t n = keys_.size();
@@ -89,7 +92,6 @@ class SmartRangeFactor: public NoiseModelFactor {
    * Raise runtime_error if not well defined.
    */
   Point2 triangulate(const Values& x) const {
-    // gttic_(triangulate);
     // create n circles corresponding to measured range around each pose
     std::list<Circle2> circles;
     size_t n = size();
@@ -100,7 +102,7 @@ class SmartRangeFactor: public NoiseModelFactor {
 
     Circle2 circle1 = circles.front();
     boost::optional<Point2> best_fh;
-    boost::optional<Circle2> bestCircle2;
+    auto bestCircle2 = boost::make_optional(false, circle1);  // fixes issue #38
 
     // loop over all circles
     for (const Circle2& it : circles) {
@@ -136,7 +138,6 @@ class SmartRangeFactor: public NoiseModelFactor {
     } else {
       throw std::runtime_error("triangulate failed");
     }
-    // gttoc_(triangulate);
   }
 
   /**

@@ -1,10 +1,11 @@
-#LyX 2.0 created this file. For more info see http://www.lyx.org/
-\lyxformat 413
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
 \begin_document
 \begin_header
 \textclass article
 \begin_preamble
-\usepackage{amssymb}
+\usepackage{url}
+\usepackage{hyperref}
 \end_preamble
 \use_default_options true
 \maintain_unincluded_children false
@@ -15,13 +16,13 @@
 \font_roman default
 \font_sans default
 \font_typewriter default
+\font_math auto
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
-
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -32,15 +33,24 @@
 \use_hyperref false
 \papersize default
 \use_geometry false
-\use_amsmath 1
-\use_esint 1
-\use_mhchem 1
-\use_mathdots 1
+\use_package amsmath 1
+\use_package amssymb 2
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 0
+\use_package stmaryrd 1
+\use_package undertilde 1
 \cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
+\justification true
 \use_refstyle 1
 \index Index
 \shortcut idx
@@ -231,7 +241,7 @@ key "Hauser06lecture"
 
 \end_inset
 
- (in our /net/hp223/borg/Literature folder).
+.
 \end_layout
 
 \begin_layout Standard
@@ -465,20 +475,37 @@ where
 \end_inset
 
 .
- A typical update rule [
-\color blue
-see where this came from in paper
-\color inherit
-] is
+ A typical update rule, as per Lec.
+ 7-1.2 of 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Hauser06lecture"
+
+\end_inset
+
+ is:
 \begin_inset Formula 
 \[
-\Delta\leftarrow\begin{cases}
-\max\left(\Delta,3\norm{\delta x_{d}}\right)\text{,} & \rho>0.75\\
-\Delta & 0.75>\rho>0.25\\
-\Delta/2 & 0.25>\rho
+\Delta_{k+1}\leftarrow\begin{cases}
+\Delta_{k}/4 & \rho<0.25\\
+\min\left(2\Delta_{k},\Delta_{max}\right)\text{,} & \rho>0.75\\
+\Delta_{k} & 0.75>\rho>0.25
 \end{cases}
 \]
 
+\end_inset
+
+where 
+\begin_inset Formula $\Delta_{k}\triangleq\norm{\delta x_{d}}$
+\end_inset
+
+.
+ Note that the rule is designed to ensure that 
+\begin_inset Formula $\Delta_{k}$
+\end_inset
+
+never exceeds the maximum trust region size 
+\begin_inset Formula $\Delta_{max}.$
 \end_inset
 
 
@@ -593,9 +620,9 @@ To find the intersection of the line between
 \begin{align*}
 \Delta & =\norm{\left(1-\tau\right)\delta x_{u}+\tau\delta x_{n}}\\
 \Delta^{2} & =\left(1-\tau\right)^{2}\delta x_{u}^{\t}\delta x_{u}+2\tau\left(1-\tau\right)\delta x_{u}^{\t}\delta x_{n}+\tau^{2}\delta x_{n}^{\t}\delta x_{n}\\
-0 & =uu-2\tau uu+\tau^{2}uu+2\tau un-2\tau^{2}un+\tau^{2}nn-\Delta^{2}\\
-0 & =\left(uu-2un+nn\right)\tau^{2}+\left(2un-2uu\right)\tau-\Delta^{2}+uu\\
-\tau & =\frac{-\left(2un-2uu\right)\pm\sqrt{\left(2un-2uu\right)^{2}-4\left(uu-2un+nn\right)\left(uu-\Delta^{2}\right)}}{2\left(uu-un+nn\right)}
+0 & =\delta x_{u}^{\t}\delta x_{u}-2\tau\delta x_{u}^{\t}\delta x_{u}+\tau^{2}\delta x_{u}^{\t}\delta x_{u}+2\tau\delta x_{u}^{\t}\delta x_{n}-2\tau^{2}\delta x_{u}^{\t}\delta x_{n}+\tau^{2}\delta x_{n}^{\t}\delta x_{n}-\Delta^{2}\\
+0 & =\left(\delta x_{u}^{\t}\delta x_{u}-2\delta x_{u}^{\t}\delta x_{n}+\delta x_{n}^{\t}\delta x_{n}\right)\tau^{2}+\left(2\delta x_{u}^{\t}\delta x_{n}-2\delta x_{u}^{\t}\delta x_{u}\right)\tau-\Delta^{2}+\delta x_{u}^{\t}\delta x_{u}\\
+\tau & =\frac{-\left(2\delta x_{u}^{\t}\delta x_{n}-2\delta x_{u}^{\t}\delta x_{u}\right)\pm\sqrt{\left(2\delta x_{u}^{\t}\delta x_{n}-2\delta x_{u}^{\t}\delta x_{u}\right)^{2}-4\left(\delta x_{u}^{\t}\delta x_{u}-2\delta x_{u}^{\t}\delta x_{n}+\delta x_{n}^{\t}\delta x_{n}\right)\left(\delta x_{u}^{\t}\delta x_{u}-\Delta^{2}\right)}}{2\left(\delta x_{u}^{\t}\delta x_{u}-\delta x_{u}^{\t}\delta x_{n}+\delta x_{n}^{\t}\delta x_{n}\right)}
 \end{align*}
 
 \end_inset
@@ -641,7 +668,7 @@ Thus, mathematically, we can write the dogleg update
 \begin_inset Formula 
 \[
 \delta x_{d}^{\left(k\right)}=\begin{cases}
--\frac{\Delta}{\norm{g^{\left(k\right)}}}g^{\left(k\right)}\text{,} & \Delta<\norm{\delta x_{u}^{\left(k\right)}}\\
+-\frac{\Delta}{\norm{\delta x_{u}^{\left(k\right)}}}\delta x_{u}^{\left(k\right)}\text{,} & \Delta<\norm{\delta x_{u}^{\left(k\right)}}\\
 \left(1-\tau^{\left(k\right)}\right)\delta x_{u}^{\left(k\right)}+\tau^{\left(k\right)}\delta x_{n}^{\left(k\right)}\text{,} & \norm{\delta x_{u}^{\left(k\right)}}<\Delta<\norm{\delta x_{n}^{\left(k\right)}}\\
 \delta x_{n}^{\left(k\right)}\text{,} & \norm{\delta x_{n}^{\left(k\right)}}<\Delta
 \end{cases}

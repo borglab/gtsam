@@ -29,12 +29,19 @@
 
 namespace gtsam {
 
-class GTSAM_EXPORT CheiralityException: public ThreadsafeException<
-    CheiralityException> {
+class GTSAM_EXPORT CheiralityException: public ThreadsafeException<CheiralityException> {
 public:
-  CheiralityException() :
-      ThreadsafeException<CheiralityException>("Cheirality Exception") {
-  }
+  CheiralityException()
+    : CheiralityException(std::numeric_limits<Key>::max()) {}
+
+  CheiralityException(Key j)
+    : ThreadsafeException<CheiralityException>("CheiralityException"),
+      j_(j) {}
+
+  Key nearbyVariable() const {return j_;}
+
+private:
+  Key j_;
 };
 
 /**
@@ -229,10 +236,6 @@ private:
   void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(pose_);
   }
-
-public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
 };
 // end of class PinholeBase
 
@@ -323,12 +326,12 @@ public:
 
   /// @deprecated
   inline size_t dim() const {
-    return 6;
+    return dimension;
   }
 
   /// @deprecated
   inline static size_t Dim() {
-    return 6;
+    return dimension;
   }
 
   /// @}
@@ -355,7 +358,7 @@ public:
                                                  Dresult_ddepth ? &Dpoint_ddepth : 0);
 
     Matrix33 Dresult_dpoint;
-    const Point3 result = pose().transform_from(point, Dresult_dpose,
+    const Point3 result = pose().transformFrom(point, Dresult_dpose,
                                                        (Dresult_ddepth ||
                                                         Dresult_dp) ? &Dresult_dpoint : 0);
 
@@ -416,9 +419,6 @@ private:
   }
 
   /// @}
-
-public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // manifold traits

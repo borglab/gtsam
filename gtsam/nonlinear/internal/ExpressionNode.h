@@ -84,7 +84,7 @@ public:
   /// Streaming
   GTSAM_EXPORT
   friend std::ostream& operator<<(std::ostream& os, const ExpressionNode& node) {
-    os << "Expression of type " << typeid(T).name();
+    os << "Expression of type " << demangle(typeid(T).name());
     if (node.traceSize_ > 0) os << ", trace size = " << node.traceSize_;
     os << "\n";
     return os;
@@ -149,6 +149,8 @@ public:
       ExecutionTraceStorage* traceStorage) const {
     return constant_;
   }
+
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //-----------------------------------------------------------------------------
@@ -217,7 +219,7 @@ static void PrintJacobianAndTrace(const std::string& indent,
                                   const typename Jacobian<T, A>::type& dTdA,
                                   const ExecutionTrace<A> trace) {
   static const Eigen::IOFormat kMatlabFormat(0, 1, " ", "; ", "", "", "[", "]");
-  std::cout << indent << "D(" << typeid(T).name() << ")/D(" << typeid(A).name()
+  std::cout << indent << "D(" << demangle(typeid(T).name()) << ")/D(" << demangle(typeid(A).name())
             << ") = " << dTdA.format(kMatlabFormat) << std::endl;
   trace.print(indent);
 }
@@ -603,7 +605,7 @@ class ScalarMultiplyNode : public ExpressionNode<T> {
     /// Print to std::cout
     void print(const std::string& indent) const {
       std::cout << indent << "ScalarMultiplyNode::Record {" << std::endl;
-      std::cout << indent << "D(" << typeid(T).name() << ")/D(" << typeid(T).name()
+      std::cout << indent << "D(" << demangle(typeid(T).name()) << ")/D(" << demangle(typeid(T).name())
                 << ") = " << scalar_dTdA << std::endl;
       trace.print();
       std::cout << indent << "}" << std::endl;

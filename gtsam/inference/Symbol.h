@@ -27,7 +27,7 @@ namespace gtsam {
 
 /**
  * Character and index key used to refer to variables. Will simply cast to a Key,
- * i.e., a large integer. Keys are used to retrieve values from Values, 
+ * i.e., a large integer. Keys are used to retrieve values from Values,
  * specify what variables factors depend on, etc.
  */
 class GTSAM_EXPORT Symbol {
@@ -111,6 +111,9 @@ public:
    * requested character.
    */
   static boost::function<bool(Key)> ChrTest(unsigned char c);
+
+  /// Output stream operator that can be used with key_formatter (see Key.h).
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &, const Symbol &);
 
 private:
 

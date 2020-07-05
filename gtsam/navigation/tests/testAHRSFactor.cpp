@@ -15,6 +15,7 @@
  * @author Krunal Chande
  * @author Luca Carlone
  * @author Frank Dellaert
+ * @author Varun Agrawal
  */
 
 #include <gtsam/navigation/AHRSFactor.h>
@@ -119,6 +120,34 @@ TEST( AHRSFactor, PreintegratedMeasurements ) {
   DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij(), 1e-6);
 }
 
+//******************************************************************************
+TEST( AHRSFactor, PreintegratedAhrsMeasurementsConstructor ) {
+  Matrix3 gyroscopeCovariance = Matrix3::Ones()*0.4;
+  Vector3 omegaCoriolis(0.1, 0.5, 0.9);
+  PreintegratedRotationParams params(gyroscopeCovariance, omegaCoriolis);
+  Vector3 bias(1.0,2.0,3.0); ///< Current estimate of angular rate bias
+  Rot3 deltaRij(Rot3::RzRyRx(M_PI / 12.0, M_PI / 6.0, M_PI / 4.0));
+  double deltaTij = 0.02;
+  Matrix3 delRdelBiasOmega = Matrix3::Ones()*0.5;
+  Matrix3 preintMeasCov = Matrix3::Ones()*0.2;
+  PreintegratedAhrsMeasurements actualPim(
+    boost::make_shared<PreintegratedRotationParams>(params),
+    bias,
+    deltaTij,
+    deltaRij,
+    delRdelBiasOmega,
+    preintMeasCov);
+  EXPECT(assert_equal(gyroscopeCovariance,
+      actualPim.p().getGyroscopeCovariance(), 1e-6));
+  EXPECT(assert_equal(omegaCoriolis,
+      actualPim.p().getOmegaCoriolis().get(), 1e-6));
+  EXPECT(assert_equal(bias, actualPim.biasHat(), 1e-6));
+  DOUBLES_EQUAL(deltaTij, actualPim.deltaTij(), 1e-6);
+  EXPECT(assert_equal(deltaRij, Rot3(actualPim.deltaRij()), 1e-6));
+  EXPECT(assert_equal(delRdelBiasOmega, actualPim.delRdelBiasOmega(), 1e-6));
+  EXPECT(assert_equal(preintMeasCov, actualPim.preintMeasCov(), 1e-6));
+}
+
 /* ************************************************************************* */
 TEST(AHRSFactor, Error) {
   // Linearization point
@@ -172,7 +201,7 @@ TEST(AHRSFactor, Error) {
   // 1e-5 needs to be added only when using quaternions for rotations
 
   EXPECT(assert_equal(H3e, H3a, 1e-5));
-  // FIXME!! DOes not work. Different matrix dimensions.
+  // 1e-5 needs to be added only when using quaternions for rotations
 }
 
 /* ************************************************************************* */
@@ -313,7 +342,7 @@ TEST( AHRSFactor, fistOrderExponential ) {
 //******************************************************************************
 TEST( AHRSFactor, FirstOrderPreIntegratedMeasurements ) {
   // Linearization point
-  Vector3 bias; ///< Current estimate of rotation rate bias
+  Vector3 bias = Vector3::Zero(); ///< Current estimate of rotation rate bias
 
   Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, 0.1, 0.1)), Point3(1, 0, 1));
 

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -35,7 +35,7 @@ class AttitudeFactor {
 
 protected:
 
-  const Unit3 nZ_, bRef_; ///< Position measurement in
+  Unit3 nZ_, bRef_; ///< Position measurement in
 
 public:
 
@@ -55,6 +55,21 @@ public:
   /** vector of errors */
   Vector attitudeError(const Rot3& p,
       OptionalJacobian<2,3> H = boost::none) const;
+
+  const Unit3& nZ() const {
+    return nZ_;
+  }
+  const Unit3& bRef() const {
+    return bRef_;
+  }
+
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    ar & boost::serialization::make_nvp("nZ_",  nZ_);
+    ar & boost::serialization::make_nvp("bRef_", bRef_);
+  }
 };
 
 /**
@@ -110,12 +125,6 @@ public:
       boost::optional<Matrix&> H = boost::none) const {
     return attitudeError(nRb, H);
   }
-  Unit3 nZ() const {
-    return nZ_;
-  }
-  Unit3 bRef() const {
-    return bRef_;
-  }
 
 private:
 
@@ -123,12 +132,14 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar
-        & boost::serialization::make_nvp("NoiseModelFactor1",
-            boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(nZ_);
-    ar & BOOST_SERIALIZATION_NVP(bRef_);
+    ar & boost::serialization::make_nvp("NoiseModelFactor1",
+        boost::serialization::base_object<Base>(*this));
+    ar & boost::serialization::make_nvp("AttitudeFactor",
+        boost::serialization::base_object<AttitudeFactor>(*this));
   }
+
+public:
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// traits
@@ -194,12 +205,6 @@ public:
     }
     return e;
   }
-  Unit3 nZ() const {
-    return nZ_;
-  }
-  Unit3 bRef() const {
-    return bRef_;
-  }
 
 private:
 
@@ -207,12 +212,14 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar
-        & boost::serialization::make_nvp("NoiseModelFactor1",
-            boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(nZ_);
-    ar & BOOST_SERIALIZATION_NVP(bRef_);
+    ar & boost::serialization::make_nvp("NoiseModelFactor1",
+        boost::serialization::base_object<Base>(*this));
+    ar & boost::serialization::make_nvp("AttitudeFactor",
+        boost::serialization::base_object<AttitudeFactor>(*this));
   }
+
+public:
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// traits

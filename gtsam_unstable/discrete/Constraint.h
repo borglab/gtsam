@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam_unstable/dllexport.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <boost/assign.hpp>
 
@@ -38,7 +38,7 @@ namespace gtsam {
   protected:
 
     /// Construct n-way factor
-    Constraint(const std::vector<Key>& js) :
+    Constraint(const KeyVector& js) :
       DiscreteFactor(js) {
     }
 

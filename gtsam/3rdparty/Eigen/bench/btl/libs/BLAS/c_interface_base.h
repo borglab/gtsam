@@ -17,12 +17,12 @@ public:
   typedef real* gene_matrix;
   typedef real* gene_vector;
 
-  static void free_matrix(gene_matrix & A, int N){
-    delete A;
+  static void free_matrix(gene_matrix & A, int /*N*/){
+    delete[] A;
   }
 
   static void free_vector(gene_vector & B){
-    delete B;
+    delete[] B;
   }
 
   static inline void matrix_from_stl(gene_matrix & A, stl_matrix & A_stl){

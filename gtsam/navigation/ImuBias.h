@@ -27,7 +27,7 @@ namespace gtsam {
 /// All bias models live in the imuBias namespace
 namespace imuBias {
 
-class ConstantBias {
+class GTSAM_EXPORT ConstantBias {
 private:
   Vector3 biasAcc_;
   Vector3 biasGyro_;
@@ -171,7 +171,7 @@ private:
 
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
   /// @}
 
 }; // ConstantBias class

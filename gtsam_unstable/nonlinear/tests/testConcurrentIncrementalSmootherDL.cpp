@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,7 +17,7 @@
  */
 
 #include <gtsam_unstable/nonlinear/ConcurrentIncrementalSmoother.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -115,7 +115,7 @@ TEST( ConcurrentIncrementalSmootherDL, getFactors )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors1;
-  newFactors1.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors1.addPrior(1, poseInitial, noisePrior);
   newFactors1.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues1;
   newValues1.insert(1, Pose3());
@@ -166,7 +166,7 @@ TEST( ConcurrentIncrementalSmootherDL, getLinearizationPoint )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors1;
-  newFactors1.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors1.addPrior(1, poseInitial, noisePrior);
   newFactors1.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues1;
   newValues1.insert(1, Pose3());
@@ -223,7 +223,7 @@ TEST( ConcurrentIncrementalSmootherDL, calculateEstimate )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors2;
-  newFactors2.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors2.addPrior(1, poseInitial, noisePrior);
   newFactors2.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(1, Pose3().compose(poseError));
@@ -310,7 +310,7 @@ TEST( ConcurrentIncrementalSmootherDL, update_multiple )
 
   // Add some factors to the smoother
   NonlinearFactorGraph newFactors2;
-  newFactors2.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors2.addPrior(1, poseInitial, noisePrior);
   newFactors2.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(1, Pose3().compose(poseError));
@@ -545,7 +545,7 @@ TEST( ConcurrentIncrementalSmootherDL, synchronize_3 )
   filterSumarization.push_back(LinearContainerFactor(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery).linearize(filterSeparatorValues), filterSeparatorValues));
   smootherFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
   smootherFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
-  smootherFactors.push_back(PriorFactor<Pose3>(4, poseInitial, noisePrior));
+  smootherFactors.addPrior(4, poseInitial, noisePrior);
   smootherValues.insert(3, filterSeparatorValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
   smootherValues.insert(4, smootherValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
 
@@ -583,7 +583,7 @@ TEST( ConcurrentIncrementalSmootherDL, synchronize_3 )
   for(const Values::ConstKeyValuePair& key_value: filterSeparatorValues) {
     allkeys.erase(key_value.key);
   }
-  std::vector<Key> variables(allkeys.begin(), allkeys.end());
+  KeyVector variables(allkeys.begin(), allkeys.end());
   std::pair<GaussianBayesNet::shared_ptr, GaussianFactorGraph::shared_ptr> result = LinFactorGraph->eliminatePartialSequential(variables, EliminateCholesky);
 
   expectedSmootherSummarization.resize(0);

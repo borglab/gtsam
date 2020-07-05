@@ -2,9 +2,9 @@
 
 Arbitrary precision Transverse Mercator Projection
 
-Copyright (c) Charles Karney (2009-2010) <charles@karney.com> and
+Copyright (c) Charles Karney (2009-2017) <charles@karney.com> and
 licensed under the MIT/X11 License.  For more information, see
-http://geographiclib.sourceforge.net/
+https://geographiclib.sourceforge.io/
 
 Reference:
 
@@ -12,15 +12,15 @@ Reference:
    Transverse Mercator with an accuracy of a few nanometers,
    J. Geodesy 85(8), 475-485 (Aug. 2011).
    DOI 10.1007/s00190-011-0445-3
-   preprint http://arxiv.org/abs/1002.1417
-   resource page http://geographiclib.sf.net/tm.html
+   preprint https://arxiv.org/abs/1002.1417
+   resource page https://geographiclib.sourceforge.io/tm.html
 
 The parameters for the transformation are set by
 
-setparams(a,invf,k0)$
-    sets the major radius, inverse flattening, and central scale
+setparams(a,f,k0)$
+    sets the equatorial radius, inverse flattening, and central scale
     factor. The default is
-      setparams(6378137b0, 298.257223563b0, 0.9996b0)$
+      setparams(6378137b0, 1/298.257223563b0, 0.9996b0)$
     appropriate for UTM applications.
 
 tm(lat,lon);
@@ -78,7 +78,7 @@ pi:bfloat(%pi)$
 degree:pi/180$
 ratprint:false$
 debugprint:false$
-setparams(a1,invf,k1):=(a:bfloat(a1),f:1/bfloat(invf),k0:bfloat(k1),
+setparams(a1,f1,k1):=(a:bfloat(a1),f:bfloat(f1),k0:bfloat(k1),
   e2:f*(2-f),
   e:sqrt(e2),
   kcu:kc(e2),
@@ -87,9 +87,9 @@ setparams(a1,invf,k1):=(a:bfloat(a1),f:1/bfloat(invf),k0:bfloat(k1),
   ecv:ec(1-e2),
   n:f/(2-f),
   'done)$
-setparams(6378137b0, 298.257223563b0, 0.9996b0)$  /* WGS 84 */
-/* setparams(6378388b0, 297b0, 0.9996b0)$ International */
-/* setparams(1/ec(0.01b0), 30*sqrt(11b0)+100, 1b0)$ testing, eps = 0.1*/
+setparams(6378137b0, 1/298.257223563b0, 0.9996b0)$  /* WGS 84 */
+/* setparams(6378388b0, 1/297b0, 0.9996b0)$ International */
+/* setparams(1/ec(0.01b0), 1/(30*sqrt(11b0)+100), 1b0)$ testing, eps = 0.1*/
 
 /*
 Interpret x_y(y) as x <- y, i.e., "transform quantity y to quantity x"

@@ -23,7 +23,7 @@ void Trackball::track(const Vector2i& point2D)
   {
     Vector3f axis = mLastPoint3D.cross(newPoint3D).normalized();
     float cos_angle = mLastPoint3D.dot(newPoint3D);
-    if ( internal::abs(cos_angle) < 1.0 )
+    if ( std::abs(cos_angle) < 1.0 )
     {
       float angle = 2. * acos(cos_angle);
       if (mMode==Around)

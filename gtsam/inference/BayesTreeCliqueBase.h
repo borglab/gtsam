@@ -86,6 +86,8 @@ namespace gtsam {
     FastVector<derived_ptr> children;
     int problemSize_;
 
+    bool is_root = false;
+
     /// Fill the elimination result produced during elimination.  Here this just stores the
     /// conditional and ignores the remaining factor, but this is overridden in ISAM2Clique
     /// to also cache the remaining factor.
@@ -149,12 +151,12 @@ namespace gtsam {
   protected:
 
     /// Calculate set \f$ S \setminus B \f$ for shortcut calculations
-    FastVector<Key> separator_setminus_B(const derived_ptr& B) const;
+    KeyVector separator_setminus_B(const derived_ptr& B) const;
 
     /** Determine variable indices to keep in recursive separator shortcut calculation The factor
      *  graph p_Cp_B has keys from the parent clique Cp and from B. But we only keep the variables
      *  not in S union B. */
-    FastVector<Key> shortcut_indices(const derived_ptr& B, const FactorGraphType& p_Cp_B) const;
+    KeyVector shortcut_indices(const derived_ptr& B, const FactorGraphType& p_Cp_B) const;
 
     /** Non-recursive delete cached shortcuts and marginals - internal only. */
     void deleteCachedShortcutsNonRecursive() { cachedSeparatorMarginal_ = boost::none; }
@@ -165,8 +167,14 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      if(!parent_.lock()) {
+        is_root = true;
+      }
+      ar & BOOST_SERIALIZATION_NVP(is_root);
       ar & BOOST_SERIALIZATION_NVP(conditional_);
-      ar & BOOST_SERIALIZATION_NVP(parent_);
+      if (!is_root) { // TODO(fan): Workaround for boost/serialization #119
+        ar & BOOST_SERIALIZATION_NVP(parent_);
+      }
       ar & BOOST_SERIALIZATION_NVP(children);
     }
 

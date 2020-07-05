@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -84,7 +84,7 @@ private:
       const std::vector<TemplateInstantiationTypedef> instantiations);
   static std::vector<std::string> GenerateValidTypes(
       const std::vector<Class>& classes,
-      const std::vector<ForwardDeclaration>& forwardDeclarations, 
+      const std::vector<ForwardDeclaration>& forwardDeclarations,
       const std::vector<TypedefPair>& typedefs);
   static void WriteCollectorsAndCleanupFcn(FileWriter& wrapperFile,
       const std::string& moduleName, const std::vector<Class>& classes);

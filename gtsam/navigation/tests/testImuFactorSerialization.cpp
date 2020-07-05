@@ -64,9 +64,9 @@ TEST(ImuFactor, serialization) {
 
   ImuFactor factor(1, 2, 3, 4, 5, pim);
 
-  EXPECT(equalsObj(factor));
-  EXPECT(equalsXML(factor));
-  EXPECT(equalsBinary(factor));
+  EXPECT(equalsObj<ImuFactor>(factor));
+  EXPECT(equalsXML<ImuFactor>(factor));
+  EXPECT(equalsBinary<ImuFactor>(factor));
 }
 
 /* ************************************************************************* */

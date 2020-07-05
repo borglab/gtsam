@@ -19,10 +19,11 @@
 #pragma once
 
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/CalibratedCamera.h> // for Cheirality exception
+#include <gtsam/geometry/CalibratedCamera.h>  // for Cheirality exception
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastMap.h>
+#include <gtsam/inference/Key.h>
 #include <vector>
 
 namespace gtsam {
@@ -210,11 +211,11 @@ public:
       bool diagonalDamping = false) {
     if (E.cols() == 2) {
       Matrix2 P2;
-      ComputePointCovariance(P2, E, lambda, diagonalDamping);
+      ComputePointCovariance<2>(P2, E, lambda, diagonalDamping);
       return P2;
     } else {
       Matrix3 P3;
-      ComputePointCovariance(P3, E, lambda, diagonalDamping);
+      ComputePointCovariance<3>(P3, E, lambda, diagonalDamping);
       return P3;
     }
   }
@@ -228,12 +229,12 @@ public:
       bool diagonalDamping = false) {
     if (E.cols() == 2) {
       Matrix2 P;
-      ComputePointCovariance(P, E, lambda, diagonalDamping);
-      return SchurComplement(Fblocks, E, P, b);
+      ComputePointCovariance<2>(P, E, lambda, diagonalDamping);
+      return SchurComplement<2>(Fblocks, E, P, b);
     } else {
       Matrix3 P;
-      ComputePointCovariance(P, E, lambda, diagonalDamping);
-      return SchurComplement(Fblocks, E, P, b);
+      ComputePointCovariance<3>(P, E, lambda, diagonalDamping);
+      return SchurComplement<3>(Fblocks, E, P, b);
     }
   }
 
@@ -244,7 +245,7 @@ public:
   template<int N> // N = 2 or 3
   static void UpdateSchurComplement(const FBlocks& Fs, const Matrix& E,
       const Eigen::Matrix<double, N, N>& P, const Vector& b,
-      const FastVector<Key>& allKeys, const FastVector<Key>& keys,
+      const KeyVector& allKeys, const KeyVector& keys,
       /*output ->*/SymmetricBlockMatrix& augmentedHessian) {
 
     assert(keys.size()==Fs.size());
@@ -318,7 +319,7 @@ private:
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template<class CAMERA>

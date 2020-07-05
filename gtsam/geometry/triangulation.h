@@ -22,14 +22,13 @@
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/TriangulationFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
 
 namespace gtsam {
 
 /// Exception thrown by triangulateDLT when SVD returns rank < 3
-class TriangulationUnderconstrainedException: public std::runtime_error {
+class GTSAM_EXPORT TriangulationUnderconstrainedException: public std::runtime_error {
 public:
   TriangulationUnderconstrainedException() :
       std::runtime_error("Triangulation Underconstrained Exception.") {
@@ -37,7 +36,7 @@ public:
 };
 
 /// Exception thrown by triangulateDLT when landmark is behind one or more of the cameras
-class TriangulationCheiralityException: public std::runtime_error {
+class GTSAM_EXPORT TriangulationCheiralityException: public std::runtime_error {
 public:
   TriangulationCheiralityException() :
       std::runtime_error(
@@ -65,7 +64,7 @@ GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
  */
 GTSAM_EXPORT Point3 triangulateDLT(
     const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
-    const Point2Vector& measurements, 
+    const Point2Vector& measurements,
     double rank_tol = 1e-9);
 
 /**
@@ -124,7 +123,17 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   return std::make_pair(graph, values);
 }
 
-/// PinholeCamera specific version // TODO: (chris) why does this exist?
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+/// DEPRECATED: PinholeCamera specific version
+template<class CALIBRATION>
+Point3 triangulateNonlinear(
+    const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
+    const Point2Vector& measurements, const Point3& initialEstimate) {
+  return triangulateNonlinear<PinholeCamera<CALIBRATION> > //
+  (cameras, measurements, initialEstimate);
+}
+
+/// DEPRECATED: PinholeCamera specific version
 template<class CALIBRATION>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
@@ -133,6 +142,7 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   return triangulationGraph<PinholeCamera<CALIBRATION> > //
   (cameras, measurements, landmarkKey, initialEstimate);
 }
+#endif
 
 /**
  * Optimize for triangulation
@@ -187,15 +197,6 @@ Point3 triangulateNonlinear(
   return optimize(graph, values, Symbol('p', 0));
 }
 
-/// PinholeCamera specific version  // TODO: (chris) why does this exist?
-template<class CALIBRATION>
-Point3 triangulateNonlinear(
-    const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
-    const Point2Vector& measurements, const Point3& initialEstimate) {
-  return triangulateNonlinear<PinholeCamera<CALIBRATION> > //
-  (cameras, measurements, initialEstimate);
-}
-
 /**
  * Create a 3*4 camera projection matrix from calibration and pose.
  * Functor for partial application on calibration
@@ -214,7 +215,7 @@ struct CameraProjectionMatrix {
 private:
   const Matrix3 K_;
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -256,7 +257,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
   for(const Pose3& pose: poses) {
-    const Point3& p_local = pose.transform_to(point);
+    const Point3& p_local = pose.transformTo(point);
     if (p_local.z() <= 0)
       throw(TriangulationCheiralityException());
   }
@@ -304,7 +305,7 @@ Point3 triangulatePoint3(
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
   for(const CAMERA& camera: cameras) {
-    const Point3& p_local = camera.pose().transform_to(point);
+    const Point3& p_local = camera.pose().transformTo(point);
     if (p_local.z() <= 0)
       throw(TriangulationCheiralityException());
   }
@@ -323,7 +324,7 @@ Point3 triangulatePoint3(
   (cameras, measurements, rank_tol, optimize);
 }
 
-struct TriangulationParameters {
+struct GTSAM_EXPORT TriangulationParameters {
 
   double rankTolerance; ///< threshold to decide whether triangulation is result.degenerate
   ///< (the rank is the number of singular values of the triangulation matrix which are larger than rankTolerance)
@@ -484,7 +485,7 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
         // verify that the triangulated point lies in front of all cameras
         // Only needed if this was not yet handled by exception
-        const Point3& p_local = pose.transform_to(point);
+        const Point3& p_local = pose.transformTo(point);
         if (p_local.z() <= 0)
           return TriangulationResult::BehindCamera();
 #endif

@@ -94,6 +94,7 @@
 %   Rot2                              - class Rot2, see Doxygen page for details
 %   Rot3                              - class Rot3, see Doxygen page for details
 %   SimpleCamera                      - class SimpleCamera, see Doxygen page for details
+%   PinholeCameraCal3_S2              - class PinholeCameraCal3_S2, see Doxygen page for details
 %   StereoPoint2                      - class StereoPoint2, see Doxygen page for details
 % 
 %% SLAM and SFM
@@ -142,8 +143,8 @@
 %   RangeFactorCalibratedCameraPoint  - class RangeFactorCalibratedCameraPoint, see Doxygen page for details
 %   RangeFactorPose2                  - class RangeFactorPose2, see Doxygen page for details
 %   RangeFactorPose3                  - class RangeFactorPose3, see Doxygen page for details
-%   RangeFactorPosePoint2             - class RangeFactorPosePoint2, see Doxygen page for details
-%   RangeFactorPosePoint3             - class RangeFactorPosePoint3, see Doxygen page for details
+%   RangeFactor2D                     - class RangeFactor2D, see Doxygen page for details
+%   RangeFactor3D                     - class RangeFactor3D, see Doxygen page for details
 %   RangeFactorSimpleCamera           - class RangeFactorSimpleCamera, see Doxygen page for details
 %   RangeFactorSimpleCameraPoint      - class RangeFactorSimpleCameraPoint, see Doxygen page for details
 %   VisualISAMGenerateData            - VisualISAMGenerateData creates data for viusalSLAM::iSAM examples

@@ -121,7 +121,7 @@ class Class : public Point3 {
     return norm3(*this, H);
   }
   bool equals(const Class &q, double tol) const {
-    return (fabs(x() - q.x()) < tol && fabs(y() - q.y()) < tol && fabs(z() - q.z()) < tol);
+    return (std::abs(x() - q.x()) < tol && std::abs(y() - q.y()) < tol && std::abs(z() - q.z()) < tol);
   }
   void print(const string& s) const { cout << s << *this << endl;}
 };
@@ -166,7 +166,7 @@ double doubleF(const Pose3& pose,  //
 }
 Pose3_ x(1);
 Point3_ p(2);
-Point3_ p_cam(x, &Pose3::transform_to, p);
+Point3_ p_cam(x, &Pose3::transformTo, p);
 }
 
 /* ************************************************************************* */
@@ -196,6 +196,7 @@ TEST(Expression, BinaryDimensions) {
 TEST(Expression, BinaryTraceSize) {
   typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
   size_t expectedTraceSize = sizeof(Binary::Record);
+  internal::upAlign(expectedTraceSize);
   EXPECT_LONGS_EQUAL(expectedTraceSize, binary::p_cam.traceSize());
 }
 

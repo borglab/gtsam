@@ -2,9 +2,9 @@
  * \file LocalCartesian.hpp
  * \brief Header for GeographicLib::LocalCartesian class
  *
- * Copyright (c) Charles Karney (2008-2011) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2016) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #if !defined(GEOGRAPHICLIB_LOCALCARTESIAN_HPP)
@@ -26,7 +26,7 @@ namespace GeographicLib {
    * due north.  The plane \e z = - \e h0 is tangent to the ellipsoid.
    *
    * The conversions all take place via geocentric coordinates using a
-   * Geocentric object (by default Geocentric::WGS84).
+   * Geocentric object (by default Geocentric::WGS84()).
    *
    * Example of use:
    * \include example-LocalCartesian.cpp
@@ -44,10 +44,10 @@ namespace GeographicLib {
     real _lat0, _lon0, _h0;
     real _x0, _y0, _z0, _r[dim2_];
     void IntForward(real lat, real lon, real h, real& x, real& y, real& z,
-                    real M[dim2_]) const throw();
+                    real M[dim2_]) const;
     void IntReverse(real x, real y, real z, real& lat, real& lon, real& h,
-                    real M[dim2_]) const throw();
-    void MatrixMultiply(real M[dim2_]) const throw();
+                    real M[dim2_]) const;
+    void MatrixMultiply(real M[dim2_]) const;
   public:
 
     /**
@@ -57,13 +57,12 @@ namespace GeographicLib {
      * @param[in] lon0 longitude at origin (degrees).
      * @param[in] h0 height above ellipsoid at origin (meters); default 0.
      * @param[in] earth Geocentric object for the transformation; default
-     *   Geocentric::WGS84.
+     *   Geocentric::WGS84().
      *
-     * \e lat0 should be in the range [&minus;90&deg;, 90&deg;]; \e
-     * lon0 should be in the range [&minus;540&deg;, 540&deg;).
+     * \e lat0 should be in the range [&minus;90&deg;, 90&deg;].
      **********************************************************************/
     LocalCartesian(real lat0, real lon0, real h0 = 0,
-                   const Geocentric& earth = Geocentric::WGS84) throw()
+                   const Geocentric& earth = Geocentric::WGS84())
       : _earth(earth)
     { Reset(lat0, lon0, h0); }
 
@@ -71,12 +70,11 @@ namespace GeographicLib {
      * Default constructor.
      *
      * @param[in] earth Geocentric object for the transformation; default
-     *   Geocentric::WGS84.
+     *   Geocentric::WGS84().
      *
      * Sets \e lat0 = 0, \e lon0 = 0, \e h0 = 0.
      **********************************************************************/
-    explicit LocalCartesian(const Geocentric& earth = Geocentric::WGS84)
-      throw()
+    explicit LocalCartesian(const Geocentric& earth = Geocentric::WGS84())
       : _earth(earth)
     { Reset(real(0), real(0), real(0)); }
 
@@ -87,10 +85,9 @@ namespace GeographicLib {
      * @param[in] lon0 longitude at origin (degrees).
      * @param[in] h0 height above ellipsoid at origin (meters); default 0.
      *
-     * \e lat0 should be in the range [&minus;90&deg;, 90&deg;]; \e
-     * lon0 should be in the range [&minus;540&deg;, 540&deg;).
+     * \e lat0 should be in the range [&minus;90&deg;, 90&deg;].
      **********************************************************************/
-    void Reset(real lat0, real lon0, real h0 = 0) throw();
+    void Reset(real lat0, real lon0, real h0 = 0);
 
     /**
      * Convert from geodetic to local cartesian coordinates.
@@ -102,11 +99,10 @@ namespace GeographicLib {
      * @param[out] y local cartesian coordinate (meters).
      * @param[out] z local cartesian coordinate (meters).
      *
-     * \e lat should be in the range [&minus;90&deg;, 90&deg;]; \e lon
-     * should be in the range [&minus;540&deg;, 540&deg;).
+     * \e lat should be in the range [&minus;90&deg;, 90&deg;].
      **********************************************************************/
     void Forward(real lat, real lon, real h, real& x, real& y, real& z)
-      const throw() {
+      const {
       IntForward(lat, lon, h, x, y, z, NULL);
     }
 
@@ -123,8 +119,7 @@ namespace GeographicLib {
      * @param[out] M if the length of the vector is 9, fill with the rotation
      *   matrix in row-major order.
      *
-     * \e lat should be in the range [&minus;90&deg;, 90&deg;]; \e lon
-     * should be in the range [&minus;540&deg;, 540&deg;).
+     * \e lat should be in the range [&minus;90&deg;, 90&deg;].
      *
      * Let \e v be a unit vector located at (\e lat, \e lon, \e h).  We can
      * express \e v as \e column vectors in one of two ways
@@ -139,11 +134,11 @@ namespace GeographicLib {
      **********************************************************************/
     void Forward(real lat, real lon, real h, real& x, real& y, real& z,
                  std::vector<real>& M)
-      const throw()  {
+      const  {
       if (M.end() == M.begin() + dim2_) {
         real t[dim2_];
         IntForward(lat, lon, h, x, y, z, t);
-        copy(t, t + dim2_, M.begin());
+        std::copy(t, t + dim2_, M.begin());
       } else
         IntForward(lat, lon, h, x, y, z, NULL);
     }
@@ -159,10 +154,10 @@ namespace GeographicLib {
      * @param[out] h height of point above the ellipsoid (meters).
      *
      * The value of \e lon returned is in the range [&minus;180&deg;,
-     * 180&deg;).
+     * 180&deg;].
      **********************************************************************/
     void Reverse(real x, real y, real z, real& lat, real& lon, real& h)
-      const throw() {
+      const {
       IntReverse(x, y, z, lat, lon, h, NULL);
     }
 
@@ -188,16 +183,16 @@ namespace GeographicLib {
      *   the local coordinate system at (\e lat0, \e lon0, \e h0)); call this
      *   representation \e v0.
      * .
-     * Then we have \e v1 = \e M<sup>T</sup> &sdot; \e v0, where \e
-     * M<sup>T</sup> is the transpose of \e M.
+     * Then we have \e v1 = <i>M</i><sup>T</sup> &sdot; \e v0, where
+     * <i>M</i><sup>T</sup> is the transpose of \e M.
      **********************************************************************/
     void Reverse(real x, real y, real z, real& lat, real& lon, real& h,
                  std::vector<real>& M)
-      const throw() {
+      const {
       if (M.end() == M.begin() + dim2_) {
         real t[dim2_];
         IntReverse(x, y, z, lat, lon, h, t);
-        copy(t, t + dim2_, M.begin());
+        std::copy(t, t + dim2_, M.begin());
       } else
         IntReverse(x, y, z, lat, lon, h, NULL);
     }
@@ -208,40 +203,32 @@ namespace GeographicLib {
     /**
      * @return latitude of the origin (degrees).
      **********************************************************************/
-    Math::real LatitudeOrigin() const throw() { return _lat0; }
+    Math::real LatitudeOrigin() const { return _lat0; }
 
     /**
      * @return longitude of the origin (degrees).
      **********************************************************************/
-    Math::real LongitudeOrigin() const throw() { return _lon0; }
+    Math::real LongitudeOrigin() const { return _lon0; }
 
     /**
      * @return height of the origin (meters).
      **********************************************************************/
-    Math::real HeightOrigin() const throw() { return _h0; }
+    Math::real HeightOrigin() const { return _h0; }
 
     /**
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value of \e a inherited from the Geocentric object used in the
      *   constructor.
      **********************************************************************/
-    Math::real MajorRadius() const throw() { return _earth.MajorRadius(); }
+    Math::real MajorRadius() const { return _earth.MajorRadius(); }
 
     /**
      * @return \e f the flattening of the ellipsoid.  This is the value
      *   inherited from the Geocentric object used in the constructor.
      **********************************************************************/
-    Math::real Flattening() const throw() { return _earth.Flattening(); }
+    Math::real Flattening() const { return _earth.Flattening(); }
     ///@}
 
-    /// \cond SKIP
-    /**
-     * <b>DEPRECATED</b>
-     * @return \e r the inverse flattening of the ellipsoid.
-     **********************************************************************/
-    Math::real InverseFlattening() const throw()
-    { return _earth.InverseFlattening(); }
-    /// \endcond
   };
 
 } // namespace GeographicLib

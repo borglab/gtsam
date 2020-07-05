@@ -4,10 +4,7 @@
  */
 
 #include <iostream>
-#include <boost/random/linear_congruential.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/variate_generator.hpp>
+#include <random>
 
 #include <gtsam_unstable/geometry/SimPolygon2D.h>
 
@@ -16,11 +13,11 @@ namespace gtsam {
 using namespace std;
 
 const size_t max_it = 100000;
-boost::minstd_rand SimPolygon2D::rng(42u);
+std::minstd_rand SimPolygon2D::rng(42u);
 
 /* ************************************************************************* */
 void SimPolygon2D::seedGenerator(unsigned long seed) {
-  rng = boost::minstd_rand(seed);
+  rng = std::minstd_rand(seed);
 }
 
 /* ************************************************************************* */
@@ -77,7 +74,7 @@ bool SimPolygon2D::contains(const Point2& c) const {
     Point2 dab = ab.b() - ab.a();
     Point2 dac = c - ab.a();
     double cross = dab.x() * dac.y() - dab.y() * dac.x();
-    if (fabs(cross) < 1e-6) // check for on one of the edges
+    if (std::abs(cross) < 1e-6) // check for on one of the edges
       return true;
     bool side = cross > 0;
     // save the first side found
@@ -225,30 +222,30 @@ SimPolygon2D SimPolygon2D::randomRectangle(
 
 /* ***************************************************************** */
 Point2 SimPolygon2D::randomPoint2(double s) {
-  boost::uniform_real<>  gen_t(-s/2.0, s/2.0);
+  std::uniform_real_distribution<> gen_t(-s/2.0, s/2.0);
   return Point2(gen_t(rng), gen_t(rng));
 }
 
 /* ***************************************************************** */
 Rot2 SimPolygon2D::randomAngle() {
-  boost::uniform_real<>  gen_r(-M_PI, M_PI); // modified range to avoid degenerate cases in triangles
+   // modified range to avoid degenerate cases in triangles:
+  std::uniform_real_distribution<> gen_r(-M_PI, M_PI);
   return Rot2::fromAngle(gen_r(rng));
 }
 
 /* ***************************************************************** */
 double SimPolygon2D::randomDistance(double mu, double sigma, double min_dist) {
-  boost::normal_distribution<double> norm_dist(mu, sigma);
-  boost::variate_generator<boost::minstd_rand&, boost::normal_distribution<double> > gen_d(rng, norm_dist);
+  std::normal_distribution<> norm_dist(mu, sigma);
   double d = -10.0;
   for (size_t i=0; i<max_it; ++i) {
-    d = fabs(gen_d());
+    d = std::abs(norm_dist(rng));
     if (d > min_dist)
       return d;
   }
   cout << "Non viable distance: " << d << " with mu = " << mu << " sigma = " << sigma
        << " min_dist = " << min_dist << endl;
   throw runtime_error("Failed to find a viable distance");
-  return fabs(norm_dist(rng));
+  return std::abs(norm_dist(rng));
 }
 
 /* ***************************************************************** */
@@ -294,8 +291,8 @@ Point2 SimPolygon2D::randomBoundedPoint2(
     const Point2Vector& landmarks,
     const std::vector<SimPolygon2D>& obstacles, double min_landmark_dist) {
 
-  boost::uniform_real<>  gen_x(0.0, UR_corner.x() - LL_corner.x());
-  boost::uniform_real<>  gen_y(0.0, UR_corner.y() - LL_corner.y());
+  std::uniform_real_distribution<> gen_x(0.0, UR_corner.x() - LL_corner.x());
+  std::uniform_real_distribution<> gen_y(0.0, UR_corner.y() - LL_corner.y());
 
   for (size_t i=0; i<max_it; ++i) {
     Point2 p = Point2(gen_x(rng), gen_y(rng)) + LL_corner;
@@ -313,7 +310,7 @@ Pose2 SimPolygon2D::randomFreePose(double boundary_size, const vector<SimPolygon
 
 /* ***************************************************************** */
 bool SimPolygon2D::insideBox(double s, const Point2& p) {
-  return fabs(p.x()) < s/2.0 && fabs(p.y()) < s/2.0;
+  return std::abs(p.x()) < s/2.0 && std::abs(p.y()) < s/2.0;
 }
 
 /* ***************************************************************** */

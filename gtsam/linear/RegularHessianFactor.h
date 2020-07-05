@@ -36,7 +36,7 @@ public:
    * quadratic term (the Hessian matrix) provided in row-order, gs the pieces
    * of the linear vector term, and f the constant term.
    */
-  RegularHessianFactor(const std::vector<Key>& js,
+  RegularHessianFactor(const KeyVector& js,
       const std::vector<Matrix>& Gs, const std::vector<Vector>& gs, double f) :
       HessianFactor(js, Gs, gs, f) {
     checkInvariants();
@@ -77,8 +77,14 @@ public:
 
   /// Construct from a GaussianFactorGraph
   RegularHessianFactor(const GaussianFactorGraph& factors,
-                       boost::optional<const Scatter&> scatter = boost::none)
+                       const Scatter& scatter)
       : HessianFactor(factors, scatter) {
+    checkInvariants();
+  }
+
+  /// Construct from a GaussianFactorGraph
+  RegularHessianFactor(const GaussianFactorGraph& factors)
+      : HessianFactor(factors) {
     checkInvariants();
   }
 

@@ -1,6 +1,44 @@
 
+# function:  list_append_cache(var [new_values ...])
+# Like "list(APPEND ...)" but working for CACHE variables.
+# -----------------------------------------------------------
+function(list_append_cache var)
+  set(cur_value ${${var}})
+  list(APPEND cur_value ${ARGN})
+  get_property(MYVAR_DOCSTRING CACHE ${var} PROPERTY HELPSTRING)
+  set(${var} "${cur_value}" CACHE STRING "${MYVAR_DOCSTRING}" FORCE)
+endfunction()
+
+# function:  append_config_if_not_empty(TARGET_VARIABLE build_type)
+# Auxiliary function used to merge configuration-specific flags into the
+# global variables that will actually be send to cmake targets.
+# -----------------------------------------------------------
+function(append_config_if_not_empty TARGET_VARIABLE_ build_type)
+  string(TOUPPER "${build_type}" build_type_toupper)
+  set(flags_variable_name "${TARGET_VARIABLE_}_${build_type_toupper}")
+  set(flags_ ${${flags_variable_name}})
+  if (NOT "${flags_}" STREQUAL "")
+    if (${build_type_toupper} STREQUAL "COMMON")
+      # Special "COMMON" configuration type, just append without CMake expression:
+      list_append_cache(${TARGET_VARIABLE_} "${flags_}")
+    else()
+      # Regular configuration type:
+      list_append_cache(${TARGET_VARIABLE_} "$<$<CONFIG:${build_type}>:${flags_}>")
+    endif()
+  endif()
+endfunction()
+
+
 # Add install prefix to search path
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
+
+
+# Set up build types for MSVC and XCode
+set(GTSAM_CMAKE_CONFIGURATION_TYPES Debug Release Timing Profiling RelWithDebInfo MinSizeRel
+      CACHE STRING "Build types available to MSVC and XCode")
+mark_as_advanced(FORCE GTSAM_CMAKE_CONFIGURATION_TYPES)
+set(CMAKE_CONFIGURATION_TYPES ${GTSAM_CMAKE_CONFIGURATION_TYPES} CACHE STRING "Build configurations" FORCE)
+
 
 # Default to Release mode
 if(NOT CMAKE_BUILD_TYPE AND NOT MSVC AND NOT XCODE_VERSION)
@@ -13,39 +51,85 @@ endif()
 # Add option for using build type postfixes to allow installing multiple build modes
 option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" ON)
 
-# Set custom compilation flags.
-# NOTE: We set all the CACHE variables with a GTSAM prefix, and then set a normal local variable below
-# so that we don't "pollute" the global variable namespace in the cmake cache.
-  # Set all CMAKE_BUILD_TYPE flags:
-  # (see https://cmake.org/Wiki/CMake_Useful_Variables#Compilers_and_Tools)
+# Define all cache variables, to be populated below depending on the OS/compiler:
+set(GTSAM_COMPILE_OPTIONS_PRIVATE        "" CACHE STRING "(Do not edit) Private compiler flags for all build configurations." FORCE)
+set(GTSAM_COMPILE_OPTIONS_PUBLIC         "" CACHE STRING "(Do not edit) Public compiler flags (exported to user projects) for all build configurations."  FORCE)
+set(GTSAM_COMPILE_DEFINITIONS_PRIVATE    "" CACHE STRING "(Do not edit) Private preprocessor macros for all build configurations." FORCE)
+set(GTSAM_COMPILE_DEFINITIONS_PUBLIC     "" CACHE STRING "(Do not edit) Public preprocessor macros for all build configurations." FORCE)
+mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE)
+mark_as_advanced(GTSAM_COMPILE_OPTIONS_PUBLIC)
+mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE)
+mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PUBLIC)
+
+foreach(build_type ${GTSAM_CMAKE_CONFIGURATION_TYPES})
+  string(TOUPPER "${build_type}" build_type_toupper)
+
+  # Define empty cache variables for "public". "private" are creaed below.
+  set(GTSAM_COMPILE_OPTIONS_PUBLIC_${build_type_toupper}      "" CACHE STRING "(User editable) Public compiler flags (exported to user projects) for `${build_type_toupper}` configuration.")
+  set(GTSAM_COMPILE_DEFINITIONS_PUBLIC_${build_type_toupper}  "" CACHE STRING "(User editable) Public preprocessor macros for `${build_type_toupper}` configuration.")
+endforeach()
+
+# Common preprocessor macros for each configuration:
+set(GTSAM_COMPILE_DEFINITIONS_PRIVATE_DEBUG           "_DEBUG;EIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "(User editable) Private preprocessor macros for Debug configuration.")
+set(GTSAM_COMPILE_DEFINITIONS_PRIVATE_RELWITHDEBINFO  "NDEBUG" CACHE STRING "(User editable) Private preprocessor macros for RelWithDebInfo configuration.")
+set(GTSAM_COMPILE_DEFINITIONS_PRIVATE_RELEASE         "NDEBUG" CACHE STRING "(User editable) Private preprocessor macros for Release configuration.")
+set(GTSAM_COMPILE_DEFINITIONS_PRIVATE_PROFILING       "NDEBUG" CACHE STRING "(User editable) Private preprocessor macros for Profiling configuration.")
+set(GTSAM_COMPILE_DEFINITIONS_PRIVATE_TIMING          "NDEBUG;ENABLE_TIMING" CACHE STRING "(User editable) Private preprocessor macros for Timing configuration.")
 if(MSVC)
-    set(GTSAM_CMAKE_C_FLAGS                  "/W3 /GR /EHsc /MP /DWINDOWS_LEAN_AND_MEAN" CACHE STRING "Flags used by the compiler for all builds.")
-    set(GTSAM_CMAKE_CXX_FLAGS                "/W3 /GR /EHsc /MP /DWINDOWS_LEAN_AND_MEAN" CACHE STRING "Flags used by the compiler for all builds.")
-    set(GTSAM_CMAKE_C_FLAGS_DEBUG            "/D_DEBUG /MDd /Zi /Ob0 /Od /RTC1 /DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Extra flags used by the compiler during debug builds.")
-    set(GTSAM_CMAKE_CXX_FLAGS_DEBUG          "/D_DEBUG /MDd /Zi /Ob0 /Od /RTC1 /DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Extra flags used by the compiler during debug builds.")
-    set(GTSAM_CMAKE_C_FLAGS_RELWITHDEBINFO   "/MD /O2 /DNDEBUG /Zi /d2Zi+" CACHE STRING "Extra flags used by the compiler during relwithdebinfo builds.")
-    set(GTSAM_CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MD /O2 /DNDEBUG /Zi /d2Zi+" CACHE STRING "Extra flags used by the compiler during relwithdebinfo builds.")
-    set(GTSAM_CMAKE_C_FLAGS_RELEASE          "/MD /O2 /DNDEBUG" CACHE STRING "Extra flags used by the compiler during release builds.")
-    set(GTSAM_CMAKE_CXX_FLAGS_RELEASE        "/MD /O2 /DNDEBUG" CACHE STRING "Extra flags used by the compiler during release builds.")
-    set(GTSAM_CMAKE_C_FLAGS_PROFILING        "${GTSAM_CMAKE_C_FLAGS_RELEASE}   /Zi" CACHE STRING "Extra flags used by the compiler during profiling builds.")
-    set(GTSAM_CMAKE_CXX_FLAGS_PROFILING      "${GTSAM_CMAKE_CXX_FLAGS_RELEASE} /Zi" CACHE STRING "Extra flags used by the compiler during profiling builds.")
-    set(GTSAM_CMAKE_C_FLAGS_TIMING           "${GTSAM_CMAKE_C_FLAGS_RELEASE}   /DENABLE_TIMING" CACHE STRING "Extra flags used by the compiler during timing builds.")
-    set(GTSAM_CMAKE_CXX_FLAGS_TIMING         "${GTSAM_CMAKE_CXX_FLAGS_RELEASE} /DENABLE_TIMING" CACHE STRING "Extra flags used by the compiler during timing builds.")
-else()
-    set(GTSAM_CMAKE_C_FLAGS                  "-std=c11   -Wall" CACHE STRING "Flags used by the compiler for all builds.")
-    set(GTSAM_CMAKE_CXX_FLAGS                "-std=c++11 -Wall" CACHE STRING "Flags used by the compiler for all builds.")
-    set(GTSAM_CMAKE_C_FLAGS_DEBUG            "-g -fno-inline -DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Extra flags used by the compiler during debug builds.")
-    set(GTSAM_CMAKE_CXX_FLAGS_DEBUG          "-g -fno-inline -DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Extra flags used by the compiler during debug builds.")
-    set(GTSAM_CMAKE_C_FLAGS_RELWITHDEBINFO   "-g -O3 -DNDEBUG" CACHE STRING "Extra flags used by the compiler during relwithdebinfo builds.")
-    set(GTSAM_CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O3 -DNDEBUG" CACHE STRING "Extra flags used by the compiler during relwithdebinfo builds.")
-    set(GTSAM_CMAKE_C_FLAGS_RELEASE          "   -O3 -DNDEBUG" CACHE STRING "Extra flags used by the compiler during release builds.")
-    set(GTSAM_CMAKE_CXX_FLAGS_RELEASE        "   -O3 -DNDEBUG" CACHE STRING "Extra flags used by the compiler during release builds.")
-    set(GTSAM_CMAKE_C_FLAGS_PROFILING        "${GTSAM_CMAKE_C_FLAGS_RELEASE}" CACHE STRING "Extra flags used by the compiler during profiling builds.")
-    set(GTSAM_CMAKE_CXX_FLAGS_PROFILING      "${GTSAM_CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "Extra flags used by the compiler during profiling builds.")
-    set(GTSAM_CMAKE_C_FLAGS_TIMING           "${GTSAM_CMAKE_C_FLAGS_RELEASE} -DENABLE_TIMING" CACHE STRING "Extra flags used by the compiler during timing builds.")
-    set(GTSAM_CMAKE_CXX_FLAGS_TIMING         "${GTSAM_CMAKE_CXX_FLAGS_RELEASE} -DENABLE_TIMING" CACHE STRING "Extra flags used by the compiler during timing builds.")
+  # Common to all configurations:
+  list_append_cache(GTSAM_COMPILE_DEFINITIONS_PRIVATE
+    WINDOWS_LEAN_AND_MEAN
+    NOMINMAX
+	)
+  # Avoid literally hundreds to thousands of warnings:
+  list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC
+	/wd4267 # warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  )
+
 endif()
 
+# Other (non-preprocessor macros) compiler flags:
+if(MSVC)
+  # Common to all configurations, next for each configuration:
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          /W3 /GR /EHsc /MP  CACHE STRING "(User editable) Private compiler flags for all configurations.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           /MDd /Zi /Ob0 /Od /RTC1  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  /MD /O2 /D /Zi /d2Zi+  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         /MD /O2  CACHE STRING "(User editable) Private compiler flags for Release configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_PROFILING       /MD /O2  /Zi  CACHE STRING "(User editable) Private compiler flags for Profiling configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          /MD /O2  CACHE STRING "(User editable) Private compiler flags for Timing configuration.")
+else()
+  # Common to all configurations, next for each configuration:
+  # "-fPIC" is to ensure proper code generation for shared libraries
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          -Wall -fPIC CACHE STRING "(User editable) Private compiler flags for all configurations.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           -g -fno-inline  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  -g -O3  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         -O3  CACHE STRING "(User editable) Private compiler flags for Release configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_PROFILING       -O3  CACHE STRING "(User editable) Private compiler flags for Profiling configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          -g -O3  CACHE STRING "(User editable) Private compiler flags for Timing configuration.")
+endif()
+
+# Enable C++11:
+if (NOT CMAKE_VERSION VERSION_LESS 3.8)
+    set(GTSAM_COMPILE_FEATURES_PUBLIC "cxx_std_11" CACHE STRING "CMake compile features property for all gtsam targets.")
+    # See: https://cmake.org/cmake/help/latest/prop_tgt/CXX_EXTENSIONS.html
+    # This is to enable -std=c++11 instead of -std=g++11
+    set(CMAKE_CXX_EXTENSIONS OFF)
+else()
+  # Old cmake versions:
+  if (NOT MSVC)
+    list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-std=c++11>)
+  endif()
+endif()
+
+# Merge all user-defined flags into the variables that are to be actually used by CMake:
+foreach(build_type "common" ${GTSAM_CMAKE_CONFIGURATION_TYPES})
+  append_config_if_not_empty(GTSAM_COMPILE_OPTIONS_PRIVATE ${build_type})
+  append_config_if_not_empty(GTSAM_COMPILE_OPTIONS_PUBLIC  ${build_type})
+  append_config_if_not_empty(GTSAM_COMPILE_DEFINITIONS_PRIVATE  ${build_type})
+  append_config_if_not_empty(GTSAM_COMPILE_DEFINITIONS_PUBLIC   ${build_type})
+endforeach()
+
+# Linker flags:
 set(GTSAM_CMAKE_SHARED_LINKER_FLAGS_TIMING  "${CMAKE_SHARED_LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during timing builds.")
 set(GTSAM_CMAKE_MODULE_LINKER_FLAGS_TIMING  "${CMAKE_MODULE_LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during timing builds.")
 set(GTSAM_CMAKE_EXE_LINKER_FLAGS_TIMING     "${CMAKE_EXE_LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during timing builds.")
@@ -54,25 +138,10 @@ set(GTSAM_CMAKE_SHARED_LINKER_FLAGS_PROFILING "${CMAKE_SHARED_LINKER_FLAGS_RELEA
 set(GTSAM_CMAKE_MODULE_LINKER_FLAGS_PROFILING "${CMAKE_MODULE_LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during profiling builds.")
 set(GTSAM_CMAKE_EXE_LINKER_FLAGS_PROFILING    "${CMAKE_EXE_LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during profiling builds.")
 
-mark_as_advanced(GTSAM_CMAKE_C_FLAGS_TIMING GTSAM_CMAKE_CXX_FLAGS_TIMING GTSAM_CMAKE_EXE_LINKER_FLAGS_TIMING 
+mark_as_advanced(GTSAM_CMAKE_EXE_LINKER_FLAGS_TIMING
                  GTSAM_CMAKE_SHARED_LINKER_FLAGS_TIMING GTSAM_CMAKE_MODULE_LINKER_FLAGS_TIMING
-                 GTSAM_CMAKE_C_FLAGS_PROFILING GTSAM_CMAKE_CXX_FLAGS_PROFILING GTSAM_CMAKE_EXE_LINKER_FLAGS_PROFILING 
+                 GTSAM_CMAKE_C_FLAGS_PROFILING GTSAM_ GTSAM_CMAKE_EXE_LINKER_FLAGS_PROFILING
                  GTSAM_CMAKE_SHARED_LINKER_FLAGS_PROFILING GTSAM_CMAKE_MODULE_LINKER_FLAGS_PROFILING)
-
-# Apply the gtsam specific build flags as normal variables. This makes it so that they only
-# apply to the gtsam part of the build if gtsam is built as a subproject
-set(CMAKE_C_FLAGS                  "${CMAKE_C_FLAGS} ${GTSAM_CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS                "${CMAKE_CXX_FLAGS} ${GTSAM_CMAKE_CXX_FLAGS}")
-set(CMAKE_C_FLAGS_DEBUG            "${CMAKE_C_FLAGS_DEBUG} ${GTSAM_CMAKE_C_FLAGS_DEBUG}")
-set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} ${GTSAM_CMAKE_CXX_FLAGS_DEBUG}")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO} ${GTSAM_CMAKE_C_FLAGS_RELWITHDEBINFO}")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${GTSAM_CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
-set(CMAKE_C_FLAGS_RELEASE          "${CMAKE_C_FLAGS_RELEASE} ${GTSAM_CMAKE_C_FLAGS_RELEASE}")
-set(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS_RELEASE} ${GTSAM_CMAKE_CXX_FLAGS_RELEASE}")
-set(CMAKE_C_FLAGS_PROFILING        "${CMAKE_C_FLAGS_PROFILING} ${GTSAM_CMAKE_C_FLAGS_PROFILING}")
-set(CMAKE_CXX_FLAGS_PROFILING      "${CMAKE_CXX_FLAGS_PROFILING} ${GTSAM_CMAKE_CXX_FLAGS_PROFILING}")
-set(CMAKE_C_FLAGS_TIMING           "${CMAKE_C_FLAGS_TIMING} ${GTSAM_CMAKE_C_FLAGS_TIMING}")
-set(CMAKE_CXX_FLAGS_TIMING         "${CMAKE_CXX_FLAGS_TIMING} ${GTSAM_CMAKE_CXX_FLAGS_TIMING}")
 
 set(CMAKE_SHARED_LINKER_FLAGS_TIMING ${GTSAM_CMAKE_SHARED_LINKER_FLAGS_TIMING})
 set(CMAKE_MODULE_LINKER_FLAGS_TIMING ${GTSAM_CMAKE_MODULE_LINKER_FLAGS_TIMING})
@@ -86,8 +155,17 @@ set(CMAKE_EXE_LINKER_FLAGS_PROFILING ${GTSAM_CMAKE_EXE_LINKER_FLAGS_PROFILING})
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     # Apple Clang before 5.0 does not support -ftemplate-depth.
     if(NOT (APPLE AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0"))
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024")
+        list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-ftemplate-depth=1024")
     endif()
+endif()
+
+if (NOT MSVC)
+  option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" ON)
+  if(GTSAM_BUILD_WITH_MARCH_NATIVE)
+    # Add as public flag so all dependant projects also use it, as required
+    # by Eigen to avid crashes due to SIMD vectorization:
+    list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-march=native")
+  endif()
 endif()
 
 # Set up build type library postfixes
@@ -111,12 +189,6 @@ if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "")
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS None Debug Release Timing Profiling RelWithDebInfo MinSizeRel)
   endif()
 endif()
-
-# Set up build types for MSVC and XCode
-set(GTSAM_CMAKE_CONFIGURATION_TYPES Debug Release Timing Profiling RelWithDebInfo MinSizeRel
-      CACHE STRING "Build types available to MSVC and XCode")
-mark_as_advanced(FORCE GTSAM_CMAKE_CONFIGURATION_TYPES)
-set(CMAKE_CONFIGURATION_TYPES ${GTSAM_CMAKE_CONFIGURATION_TYPES})
 
 # Check build types
 string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_tolower)
@@ -153,3 +225,20 @@ function(gtsam_assign_all_source_folders)
   gtsam_assign_source_folders("${all_c_srcs};${all_cpp_srcs};${all_headers}")
 endfunction()
 
+# Applies the per-config build flags to the given target (e.g. gtsam, wrap_lib)
+function(gtsam_apply_build_flags target_name_)
+  # To enable C++11: the use of target_compile_features() is preferred since
+  # it will be not in conflict with a more modern C++ standard, if used in a
+  # client program.
+  if (NOT "${GTSAM_COMPILE_FEATURES_PUBLIC}" STREQUAL "")
+  	target_compile_features(${target_name_} PUBLIC ${GTSAM_COMPILE_FEATURES_PUBLIC})
+  endif()
+
+  target_compile_definitions(${target_name_} PRIVATE ${GTSAM_COMPILE_DEFINITIONS_PRIVATE})
+  target_compile_definitions(${target_name_} PUBLIC ${GTSAM_COMPILE_DEFINITIONS_PUBLIC})
+  if (NOT "${GTSAM_COMPILE_OPTIONS_PUBLIC}" STREQUAL "")
+    target_compile_options(${target_name_} PUBLIC ${GTSAM_COMPILE_OPTIONS_PUBLIC})
+  endif()
+  target_compile_options(${target_name_} PRIVATE ${GTSAM_COMPILE_OPTIONS_PRIVATE})
+
+endfunction(gtsam_apply_build_flags)

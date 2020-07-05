@@ -28,7 +28,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
 
 #include <exception>
 
@@ -54,16 +54,16 @@ FastList<Key> createKeyList(std::string s, const Vector& I) {
 }
 
 // Create a KeyVector from indices
-FastVector<Key> createKeyVector(const Vector& I) {
-  FastVector<Key> set;
+KeyVector createKeyVector(const Vector& I) {
+  KeyVector set;
   for (int i = 0; i < I.size(); i++)
     set.push_back(I[i]);
   return set;
 }
 
 // Create a KeyVector from indices using symbol
-FastVector<Key> createKeyVector(std::string s, const Vector& I) {
-  FastVector<Key> set;
+KeyVector createKeyVector(std::string s, const Vector& I) {
+  KeyVector set;
   char c = s[0];
   for (int i = 0; i < I.size(); i++)
     set.push_back(Symbol(c, I[i]));
@@ -169,7 +169,7 @@ void perturbPoint3(Values& values, double sigma, int32_t seed = 42u) {
 }
 
 /// Insert a number of initial point values by backprojecting
-void insertBackprojections(Values& values, const SimpleCamera& camera,
+void insertBackprojections(Values& values, const PinholeCamera<Cal3_S2>& camera,
     const Vector& J, const Matrix& Z, double depth) {
   if (Z.rows() != 2)
     throw std::invalid_argument("insertBackProjections: Z must be 2*K");
@@ -222,12 +222,12 @@ Matrix reprojectionErrors(const NonlinearFactorGraph& graph,
 
 /// Convert from local to world coordinates
 Values localToWorld(const Values& local, const Pose2& base,
-    const FastVector<Key> user_keys = FastVector<Key>()) {
+    const KeyVector user_keys = KeyVector()) {
 
   Values world;
 
   // if no keys given, get all keys from local values
-  FastVector<Key> keys(user_keys);
+  KeyVector keys(user_keys);
   if (keys.size()==0)
     keys = local.keys();
 
@@ -237,13 +237,16 @@ Values localToWorld(const Values& local, const Pose2& base,
       // if value is a Pose2, compose it with base pose
       Pose2 pose = local.at<Pose2>(key);
       world.insert(key, base.compose(pose));
-    } catch (std::exception e1) {
+    } catch (const std::exception& e1) {
       try {
         // if value is a Point2, transform it from base pose
         Point2 point = local.at<Point2>(key);
-        world.insert(key, base.transform_from(point));
-      } catch (std::exception e2) {
+        world.insert(key, base.transformFrom(point));
+      } catch (const std::exception& e2) {
         // if not Pose2 or Point2, do nothing
+        #ifndef NDEBUG
+          std::cerr << "Values[key] is neither Pose2 nor Point2, so skip" << std::endl;
+        #endif
       }
     }
   }

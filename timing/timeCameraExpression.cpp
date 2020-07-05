@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -68,7 +68,7 @@ int main() {
   // 20.3 musecs/call
   NonlinearFactor::shared_ptr f2 =
       boost::make_shared<ExpressionFactor<Point2> >(model, z,
-          uncalibrate(K, project(transform_to(x, p))));
+          uncalibrate(K, project(transformTo(x, p))));
   time("Bin(Leaf,Un(Bin(Leaf,Leaf))): ", f2, values);
 
   // ExpressionFactor ternary
@@ -93,7 +93,7 @@ int main() {
   // 16.0 musecs/call
   NonlinearFactor::shared_ptr g2 =
       boost::make_shared<ExpressionFactor<Point2> >(model, z,
-          uncalibrate(Cal3_S2_(*fixedK), project(transform_to(x, p))));
+          uncalibrate(Cal3_S2_(*fixedK), project(transformTo(x, p))));
   time("Bin(Cnst,Un(Bin(Leaf,Leaf))): ", g2, values);
 
   // ExpressionFactor, optimized

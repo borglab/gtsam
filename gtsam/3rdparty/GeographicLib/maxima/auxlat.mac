@@ -1,0 +1,269 @@
+/*
+Compute series expansions for the auxiliary latitudes.
+
+Copyright (c) Charles Karney (2014-2017) <charles@karney.com> and
+licensed under the MIT/X11 License.  For more information, see
+https://geographiclib.sourceforge.io/
+
+This maxima program compute the coefficients for trigonometric series
+relating the six latitudes
+
+  phi     geographic
+  beta    parametric
+  theta   geocentric
+  mu      rectifying
+  chi     conformal
+  xi      authalic
+
+All 30 inter-relations are found.  The coefficients are expressed as
+Taylor series in the third flattening n.  This generates the series
+given on the page
+
+  https://geographiclib.sourceforge.io/html/auxlat.html
+
+Instructions:
+
+ * [optional] edit to set the desired value of maxpow (currently 8)
+ * start maxima and run
+     batch("auxlat.mac")$
+     writefile("auxlat.txt")$
+     dispall()$
+     closefile()$
+
+Timings:
+maxpow time(s)
+   6     13
+   8     41
+  10    114
+  12    293
+  14    708
+  16   1629
+*/
+
+/*
+    revert
+       var2 = expr(var1) = series in eps
+    to
+       var1 = revertexpr(var2) = series in eps
+
+Require that expr(var1) = var1 to order eps^0.  This throws in a
+trigreduce to convert to multiple angle trig functions.
+*/
+maxpow:8$
+reverta(expr,var1,var2,eps,pow):=block([tauacc:1,sigacc:0,dsig],
+  dsig:ratdisrep(taylor(expr-var1,eps,0,pow)),
+  dsig:subst([var1=var2],dsig),
+  for n:1 thru pow do (tauacc:trigreduce(ratdisrep(taylor(
+    -dsig*tauacc/n,eps,0,pow))),
+    sigacc:sigacc+expand(diff(tauacc,var2,n-1))),
+  var2+sigacc)$
+
+/* beta in terms of phi */
+beta_phi:phi+sum((-n)^j/j*sin(2*j*phi),j,1,maxpow)$
+/* Alt:
+  beta_phi:taylor(atan((1-n)/(1+n)*tan(phi)),n,0,maxpow)$
+  beta_phi:subst([atan(tan(phi))=phi,tan(phi)=sin(phi)/cos(phi)],
+    ratdisrep(beta_phi))$
+  beta_phi:trigreduce(ratsimp(beta_phi))$
+*/
+/* phi in terms of beta */
+phi_beta:subst([n=-n,phi=beta],beta_phi)$
+/* Alt:
+  beta_phi:reverta(beta_phi,phi,beta,n,maxpow)$
+*/
+/* theta in terms of beta */
+theta_beta:subst([phi=beta],beta_phi)$
+/* theta in terms of phi */
+theta_phi:subst([beta=beta_phi],theta_beta)$
+theta_phi:trigreduce(taylor(theta_phi,n,0,maxpow))$
+/* phi in terms of theta */
+phi_theta:subst([n=-n,phi=theta],theta_phi)$
+
+/* chi in terms of phi */
+atanexp(x,eps):=''(ratdisrep(taylor(atan(x+eps),eps,0,maxpow)))$
+chi_phi:block([psiv,tanchi,chiv,qq,e],
+    /* Here qq = atanh(sin(phi)) = asinh(tan(phi)) */
+    psiv:qq-e*atanh(e*tanh(qq)),
+    psiv:subst([e=sqrt(4*n/(1+n)^2),qq=atanh(sin(phi))],
+      ratdisrep(taylor(psiv,e,0,2*maxpow)))
+    +asinh(sin(phi)/cos(phi))-atanh(sin(phi)),
+    tanchi:subst([abs(cos(phi))=cos(phi),sqrt(sin(phi)^2+cos(phi)^2)=1],
+      ratdisrep(taylor(sinh(psiv),n,0,maxpow)))+tan(phi)-sin(phi)/cos(phi),
+    chiv:atanexp(tan(phi),tanchi-tan(phi)),
+    chiv:subst([atan(tan(phi))=phi,
+      tan(phi)=sin(phi)/cos(phi)],
+      (chiv-phi)/cos(phi))*cos(phi)+phi,
+    chiv:ratdisrep(taylor(chiv,n,0,maxpow)),
+    expand(trigreduce(chiv)))$
+
+/* phi in terms of chi */
+phi_chi:reverta(chi_phi,phi,chi,n,maxpow)$
+
+df[i]:=if i<0 then df[i+2]/(i+2) else i!!$
+/* df[-1] = 1; df[-3] = -1 */
+c(k,maxpow):=sum(n^(k+2*j)*(df[2*j-3]*df[2*j+2*k-3])/(df[2*j]*df[2*j+2*k]),
+  j,0,(maxpow-k)/2)$
+
+/* mu in terms of beta */
+mu_beta:expand(ratdisrep(
+    taylor(beta+sum(c(i,maxpow)/i*sin(2*i*beta),i,1,maxpow)/c(0,maxpow),
+      n,0,maxpow)))$
+/* beta in terms of mu */
+beta_mu:reverta(mu_beta,beta,mu,n,maxpow)$
+
+asinexp(x,eps):=''(sqrt(1-x^2)*
+  sum(ratsimp(diff(asin(x),x,i)/i!/sqrt(1-x^2))*eps^i,i,0,maxpow))$
+sinxi:(sin(phi)/2*(1/(1-e^2*sin(phi)^2) + atanh(e*sin(phi))/(e*sin(phi))))/
+(1/2*(1/(1-e^2) + atanh(e)/e))$
+sinxi:ratdisrep(taylor(sinxi,e,0,2*maxpow))$
+sinxi:subst([e=2*sqrt(n)/(1+n)],sinxi)$
+sinxi:expand(trigreduce(ratdisrep(taylor(sinxi,n,0,maxpow))))$
+xi_phi:asinexp(sin(phi),sinxi-sin(phi))$
+xi_phi:taylor(subst([sqrt(1-sin(phi)^2)=cos(phi),asin(sin(phi))=phi],
+    xi_phi),n,0,maxpow)$
+xi_phi:expand(ratdisrep(coeff(xi_phi,n,0))+sum(
+  ratsimp(trigreduce(sin(phi)*ratsimp(
+        subst([sin(phi)=sqrt(1-cos(phi)^2)],
+          ratsimp(trigexpand(ratdisrep(coeff(xi_phi,n,i)))/sin(phi))))))*n^i,
+  i,1,maxpow))$
+phi_xi:reverta(xi_phi,phi,xi,n,maxpow)$
+mu_phi:expand(trigreduce(taylor(subst([beta=beta_phi],mu_beta),n,0,maxpow)))$
+phi_mu:expand(trigreduce(taylor(subst([beta=beta_mu],phi_beta),n,0,maxpow)))$
+chi_mu:expand(trigreduce(taylor(subst([phi=phi_mu],chi_phi),n,0,maxpow)))$
+mu_chi:expand(trigreduce(taylor(subst([phi=phi_chi],mu_phi),n,0,maxpow)))$
+beta_chi:expand(trigreduce(taylor(subst([phi=phi_chi],beta_phi),n,0,maxpow)))$
+chi_beta:expand(trigreduce(taylor(subst([phi=phi_beta],chi_phi),n,0,maxpow)))$
+beta_theta:expand(trigreduce
+  (taylor(subst([phi=phi_theta],beta_phi),n,0,maxpow)))$
+beta_xi:expand(trigreduce(taylor(subst([phi=phi_xi],beta_phi),n,0,maxpow)))$
+chi_theta:expand(trigreduce
+  (taylor(subst([phi=phi_theta],chi_phi),n,0,maxpow)))$
+chi_xi:expand(trigreduce(taylor(subst([phi=phi_xi],chi_phi),n,0,maxpow)))$
+mu_theta:expand(trigreduce(taylor(subst([phi=phi_theta],mu_phi),n,0,maxpow)))$
+mu_xi:expand(trigreduce(taylor(subst([phi=phi_xi],mu_phi),n,0,maxpow)))$
+theta_chi:expand(trigreduce
+  (taylor(subst([phi=phi_chi],theta_phi),n,0,maxpow)))$
+theta_mu:expand(trigreduce(taylor(subst([phi=phi_mu],theta_phi),n,0,maxpow)))$
+theta_xi:expand(trigreduce(taylor(subst([phi=phi_xi],theta_phi),n,0,maxpow)))$
+xi_beta:expand(trigreduce(taylor(subst([phi=phi_beta],xi_phi),n,0,maxpow)))$
+xi_chi:expand(trigreduce(taylor(subst([phi=phi_chi],xi_phi),n,0,maxpow)))$
+xi_mu:expand(trigreduce(taylor(subst([phi=phi_mu],xi_phi),n,0,maxpow)))$
+xi_theta:expand(trigreduce(taylor(subst([phi=phi_theta],xi_phi),n,0,maxpow)))$
+
+norm(x):=block([z:subst([n=0],x)],
+  z+sum(coeff(expand(x),sin(2*i*z))*sin(2*i*z),i,1,maxpow))$
+
+(
+tx[beta,chi]:norm(beta_chi),
+tx[beta,mu]:norm(beta_mu),
+tx[beta,phi]:norm(beta_phi),
+tx[beta,theta]:norm(beta_theta),
+tx[beta,xi]:norm(beta_xi),
+
+tx[chi,beta]:norm(chi_beta),
+tx[chi,mu]:norm(chi_mu),
+tx[chi,phi]:norm(chi_phi),
+tx[chi,theta]:norm(chi_theta),
+tx[chi,xi]:norm(chi_xi),
+
+tx[mu,beta]:norm(mu_beta),
+tx[mu,chi]:norm(mu_chi),
+tx[mu,phi]:norm(mu_phi),
+tx[mu,theta]:norm(mu_theta),
+tx[mu,xi]:norm(mu_xi),
+
+tx[phi,beta]:norm(phi_beta),
+tx[phi,chi]:norm(phi_chi),
+tx[phi,mu]:norm(phi_mu),
+tx[phi,theta]:norm(phi_theta),
+tx[phi,xi]:norm(phi_xi),
+
+tx[theta,beta]:norm(theta_beta),
+tx[theta,chi]:norm(theta_chi),
+tx[theta,mu]:norm(theta_mu),
+tx[theta,phi]:norm(theta_phi),
+tx[theta,xi]:norm(theta_xi),
+
+tx[xi,beta]:norm(xi_beta),
+tx[xi,chi]:norm(xi_chi),
+tx[xi,mu]:norm(xi_mu),
+tx[xi,phi]:norm(xi_phi),
+tx[xi,theta]:norm(xi_theta))$
+
+ll1:[
+[beta,phi],
+[theta,phi],
+[theta,beta],
+[mu,phi],
+[mu,beta],
+[mu,theta]]$
+ll2:[
+[chi,phi],
+[chi,beta],
+[chi,theta],
+[chi,mu],
+[xi,phi],
+[xi,beta],
+[xi,theta],
+[xi,mu],
+[xi,chi]]$
+
+tt[i,j]:=if i=j then [] else
+block([v:tx[i,j],x:j,l:[]],
+  for i:1 thru maxpow do block([l1:[],c:coeff(v,sin(2*i*x))],
+    for j:i thru maxpow do l1:endcons(coeff(c,n,j),l1),
+    l:endcons(l1,l)),
+  l)$
+texa(i,j,pow):=block([x:j,y:i,v:tt[i,j],s:"\\",sn:"\\sin "],
+  x:concat(s,x), y:concat(s,y),
+  print(concat(y, "-",  x, "&=\\textstyle{}")),
+  for k:1 thru pow do block([t:v[k],sgn,nterm:0,str:""],
+    sgn:0,
+    for l:1 thru pow-k+1 do block([m:t[l]],
+      if m # 0 then (nterm:nterm+1,
+        if sgn = 0 then sgn:if m>0 then 1 else -1) ),
+    t:sgn*t,
+    if sgn # 0 then block([f:true],
+      str:concat(str,if sgn > 0 then "+" else "-"),
+      if nterm > 1 then str:concat(str,"\\bigl("),
+      for l:1 thru pow-k+1 do block([c:t[l]],
+      if c # 0 then (sgn:if c > 0 then 1 else -1, c:sgn*c,
+        if not f and nterm > 1 then
+        str:concat(str,if sgn > 0 then "+" else "-"),
+        f:false,
+        if c # 1 then if integerp(c) then str:concat(str,c) else
+        str:concat(str,"\\frac{",num(c),"}{",denom(c),"}"),
+        if l+k-1 > 1 then
+        str:concat(str,"n^{",l+k-1,"}")
+        else
+        str:concat(str,"n"))),
+    if nterm > 1 then str:concat(str,"\\bigr)"),
+    str:concat(str,sn,2*k,x)),
+  print(str)),
+print(concat(if v[pow+1][1] < 0 then "-" else "+","\\ldots\\\\")))$
+cf(i,j):= (
+  print(concat("<p>&",i,";&nbsp;&minus;&nbsp;&",j,";:<br><tt><small>")),
+  for x in tt[i,j] do block([str:"&nbsp;&nbsp;&nbsp;["],
+    for i:1 thru length(x) do
+    str:concat(str,string(x[i]),if i<length(x) then ", " else "]<br>"),
+    print(str)),
+  print("</small></tt>"))$
+
+disptex(ll,pow):=
+block([linel:1000],
+  print("\\f["),
+  print("\\begin{align}"),
+  for xx in ll do (texa(xx[1],xx[2],pow),texa(xx[2],xx[1],pow)),
+  print("\\end{align}"),
+  print("\\f]"))$
+dispcoeffs(ll):=
+block([linel:1000],
+  for xx in ll do (cf(xx[1],xx[2]),cf(xx[2],xx[1])))$
+dispall():=(
+  print(""),
+  disptex(ll1,4),
+  print(""),
+  disptex(ll2,3),
+  print(""),
+  dispcoeffs(append(ll1,ll2)),
+  print(""))$

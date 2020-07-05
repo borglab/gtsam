@@ -8,22 +8,19 @@ from __future__ import print_function
 
 import math
 
-import matplotlib.pyplot as plt
-import numpy as np
-from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
-
 import gtsam
 import gtsam.utils.plot as gtsam_plot
-
-
-def X(key):
-    """Create symbol for pose key."""
-    return gtsam.symbol(ord('x'), key)
-
-
-def V(key):
-    """Create symbol for velocity key."""
-    return gtsam.symbol(ord('v'), key)
+import matplotlib.pyplot as plt
+import numpy as np
+from gtsam import (ISAM2, BetweenFactorConstantBias, Cal3_S2,
+                   ConstantTwistScenario, ImuFactor, NonlinearFactorGraph,
+                   PinholeCameraCal3_S2, Point3, Pose3,
+                   PriorFactorConstantBias, PriorFactorPose3,
+                   PriorFactorVector, Rot3, Values)
+from gtsam import symbol_shorthand_B as B
+from gtsam import symbol_shorthand_V as V
+from gtsam import symbol_shorthand_X as X
+from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
 
 
 def vector3(x, y, z):
@@ -69,8 +66,8 @@ PARAMS.setUse2ndOrderCoriolis(False)
 PARAMS.setOmegaCoriolis(vector3(0, 0, 0))
 
 BIAS_COVARIANCE = gtsam.noiseModel_Isotropic.Variance(6, 0.1)
-DELTA = gtsam.Pose3(gtsam.Rot3.Rodrigues(0, 0, 0),
-                    gtsam.Point3(0.05, -0.10, 0.20))
+DELTA = Pose3(Rot3.Rodrigues(0, 0, 0),
+              Point3(0.05, -0.10, 0.20))
 
 
 def IMU_example():
@@ -78,10 +75,10 @@ def IMU_example():
 
     # Start with a camera on x-axis looking at origin
     radius = 30
-    up = gtsam.Point3(0, 0, 1)
-    target = gtsam.Point3(0, 0, 0)
-    position = gtsam.Point3(radius, 0, 0)
-    camera = gtsam.SimpleCamera.Lookat(position, target, up, gtsam.Cal3_S2())
+    up = Point3(0, 0, 1)
+    target = Point3(0, 0, 0)
+    position = Point3(radius, 0, 0)
+    camera = PinholeCameraCal3_S2.Lookat(position, target, up, Cal3_S2())
     pose_0 = camera.pose()
 
     # Create the set of ground-truth landmarks and poses
@@ -90,37 +87,37 @@ def IMU_example():
 
     angular_velocity_vector = vector3(0, -angular_velocity, 0)
     linear_velocity_vector = vector3(radius * angular_velocity, 0, 0)
-    scenario = gtsam.ConstantTwistScenario(
+    scenario = ConstantTwistScenario(
         angular_velocity_vector, linear_velocity_vector, pose_0)
 
     # Create a factor graph
-    newgraph = gtsam.NonlinearFactorGraph()
+    newgraph = NonlinearFactorGraph()
 
     # Create (incremental) ISAM2 solver
-    isam = gtsam.ISAM2()
+    isam = ISAM2()
 
     # Create the initial estimate to the solution
     # Intentionally initialize the variables off from the ground truth
-    initialEstimate = gtsam.Values()
+    initialEstimate = Values()
 
     # Add a prior on pose x0. This indirectly specifies where the origin is.
     # 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
     noise = gtsam.noiseModel_Diagonal.Sigmas(
-        np.array([0.3, 0.3, 0.3, 0.1, 0.1, 0.1]))
-    newgraph.push_back(gtsam.PriorFactorPose3(X(0), pose_0, noise))
+        np.array([0.1, 0.1, 0.1, 0.3, 0.3, 0.3]))
+    newgraph.push_back(PriorFactorPose3(X(0), pose_0, noise))
 
     # Add imu priors
-    biasKey = gtsam.symbol(ord('b'), 0)
+    biasKey = B(0)
     biasnoise = gtsam.noiseModel_Isotropic.Sigma(6, 0.1)
-    biasprior = gtsam.PriorFactorConstantBias(biasKey, gtsam.imuBias_ConstantBias(),
-                                              biasnoise)
+    biasprior = PriorFactorConstantBias(biasKey, gtsam.imuBias_ConstantBias(),
+                                        biasnoise)
     newgraph.push_back(biasprior)
     initialEstimate.insert(biasKey, gtsam.imuBias_ConstantBias())
     velnoise = gtsam.noiseModel_Isotropic.Sigma(3, 0.1)
 
     # Calculate with correct initial velocity
     n_velocity = vector3(0, angular_velocity * radius, 0)
-    velprior = gtsam.PriorFactorVector(V(0), n_velocity, velnoise)
+    velprior = PriorFactorVector(V(0), n_velocity, velnoise)
     newgraph.push_back(velprior)
     initialEstimate.insert(V(0), n_velocity)
 
@@ -141,7 +138,7 @@ def IMU_example():
             # Add Bias variables periodically
             if i % 5 == 0:
                 biasKey += 1
-                factor = gtsam.BetweenFactorConstantBias(
+                factor = BetweenFactorConstantBias(
                     biasKey - 1, biasKey, gtsam.imuBias_ConstantBias(), BIAS_COVARIANCE)
                 newgraph.add(factor)
                 initialEstimate.insert(biasKey, gtsam.imuBias_ConstantBias())
@@ -154,8 +151,7 @@ def IMU_example():
             accum.integrateMeasurement(measuredAcc, measuredOmega, delta_t)
 
             # Add Imu Factor
-            imufac = gtsam.ImuFactor(
-                X(i - 1), V(i - 1), X(i), V(i), biasKey, accum)
+            imufac = ImuFactor(X(i - 1), V(i - 1), X(i), V(i), biasKey, accum)
             newgraph.add(imufac)
 
             # insert new velocity, which is wrong
@@ -168,7 +164,7 @@ def IMU_example():
         ISAM2_plot(result)
 
         # reset
-        newgraph = gtsam.NonlinearFactorGraph()
+        newgraph = NonlinearFactorGraph()
         initialEstimate.clear()
 
 

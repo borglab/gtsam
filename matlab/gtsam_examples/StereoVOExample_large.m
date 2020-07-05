@@ -46,7 +46,7 @@ for i=1:size(measurements,1)
         % 3D landmarks are stored in camera coordinates: transform
         % to world coordinates using the respective initial pose
         pose = initial.atPose3(symbol('x', sf(1)));
-        world_point = pose.transform_from(Point3(sf(6),sf(7),sf(8)));
+        world_point = pose.transformFrom(Point3(sf(6),sf(7),sf(8)));
         initial.insert(symbol('l',sf(2)), world_point);
     end
 end

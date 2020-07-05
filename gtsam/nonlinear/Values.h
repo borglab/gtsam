@@ -39,6 +39,7 @@
 #pragma GCC diagnostic pop
 #endif
 #include <boost/ptr_container/serialize_ptr_map.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <string>
 #include <utility>
@@ -275,8 +276,8 @@ namespace gtsam {
     void update(Key j, const Value& val);
 
     /** Templated version to update a variable with the given j,
-      * throws KeyAlreadyExists<J> if j is already present
-      * if no chart is specified, the DefaultChart<ValueType> is used
+      * throws KeyDoesNotExist<J> if j is not present.
+      * If no chart is specified, the DefaultChart<ValueType> is used.
       */
     template <typename T>
     void update(Key j, const T& val);
@@ -385,6 +386,17 @@ namespace gtsam {
     ConstFiltered<ValueType>
     filter(const boost::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
 
+    // Count values of given type \c ValueType
+    template<class ValueType>
+    size_t count() const {
+      size_t i = 0;
+      for (const auto& key_value : *this) {
+        if (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value))
+          ++i;
+      }
+      return i;
+    }
+
   private:
     // Filters based on ValueType (if not Value) and also based on the user-
     // supplied \c filter function.
@@ -404,14 +416,14 @@ namespace gtsam {
 
     static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
       return ConstKeyValuePair(key_value.first, *key_value.second); }
-    
+
     static KeyValuePair make_deref_pair(const KeyValueMap::iterator::value_type& key_value) {
       return KeyValuePair(key_value.first, *key_value.second); }
 
   };
 
   /* ************************************************************************* */
-  class GTSAM_EXPORT ValuesKeyAlreadyExists : public std::exception {
+  class ValuesKeyAlreadyExists : public std::exception {
   protected:
     const Key key_; ///< The key that already existed
 
@@ -429,11 +441,11 @@ namespace gtsam {
     Key key() const throw() { return key_; }
 
     /// The message to be displayed to the user
-    virtual const char* what() const throw();
+    GTSAM_EXPORT virtual const char* what() const throw();
   };
 
   /* ************************************************************************* */
-  class GTSAM_EXPORT ValuesKeyDoesNotExist : public std::exception {
+  class ValuesKeyDoesNotExist : public std::exception {
   protected:
     const char* operation_; ///< The operation that attempted to access the key
     const Key key_; ///< The key that does not exist
@@ -452,11 +464,11 @@ namespace gtsam {
     Key key() const throw() { return key_; }
 
     /// The message to be displayed to the user
-    virtual const char* what() const throw();
+    GTSAM_EXPORT virtual const char* what() const throw();
   };
 
   /* ************************************************************************* */
-  class GTSAM_EXPORT ValuesIncorrectType : public std::exception {
+  class ValuesIncorrectType : public std::exception {
   protected:
     const Key key_; ///< The key requested
     const std::type_info& storedTypeId_;
@@ -483,11 +495,11 @@ namespace gtsam {
     const std::type_info& requestedTypeId() const { return requestedTypeId_; }
 
     /// The message to be displayed to the user
-    virtual const char* what() const throw();
+    GTSAM_EXPORT virtual const char* what() const throw();
   };
 
   /* ************************************************************************* */
-  class GTSAM_EXPORT DynamicValuesMismatched : public std::exception {
+  class DynamicValuesMismatched : public std::exception {
 
   public:
     DynamicValuesMismatched() throw() {}
@@ -500,7 +512,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class GTSAM_EXPORT NoMatchFoundForFixed: public std::exception {
+  class NoMatchFoundForFixed: public std::exception {
 
   protected:
     const size_t M1_, N1_;
@@ -517,7 +529,7 @@ namespace gtsam {
     virtual ~NoMatchFoundForFixed() throw () {
     }
 
-    virtual const char* what() const throw ();
+    GTSAM_EXPORT virtual const char* what() const throw ();
   };
 
   /* ************************************************************************* */

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -142,12 +142,12 @@ void print(const Matrix& A, const string &s, ostream& stream) {
   static const Eigen::IOFormat matlab(
       Eigen::StreamPrecision, // precision
       0, // flags
-      " ", // coeffSeparator
+      ", ", // coeffSeparator
       ";\n", // rowSeparator
-      " \t",  // rowPrefix
+      "\t",  // rowPrefix
       "", // rowSuffix
       "[\n", // matPrefix
-      "\n  ]" // matSuffix
+      "\n]" // matSuffix
       );
   cout << s << A.format(matlab) << endl;
 }
@@ -540,7 +540,7 @@ Matrix cholesky_inverse(const Matrix &A)
 }
 
 /* ************************************************************************* */
-// Semantics: 
+// Semantics:
 // if B = inverse_square_root(A), then all of the following are true:
 // inv(B) * inv(B)' == A
 // inv(B' * B) == A

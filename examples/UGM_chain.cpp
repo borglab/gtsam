@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
 
   // Each node takes 1 of 7 possible states denoted by 0-6 in following order:
   // ["VideoGames"  "Industry"  "GradSchool"  "VideoGames(with PhD)"
-  // "Industry(with PhD)"  "Academia"  "Deceased"] 
+  // "Industry(with PhD)"  "Academia"  "Deceased"]
   const size_t nrStates = 7;
 
   // define variables

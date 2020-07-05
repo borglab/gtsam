@@ -79,7 +79,7 @@ namespace gtsam {
     bool equals(const Node& q, double tol) const {
       const Leaf* other = dynamic_cast<const Leaf*> (&q);
       if (!other) return false;
-      return fabs(double(this->constant_ - other->constant_)) < tol;
+      return std::abs(double(this->constant_ - other->constant_)) < tol;
     }
 
     /** print */
@@ -355,7 +355,7 @@ namespace gtsam {
     NodePtr choose(const L& label, size_t index) const {
       if (label_ == label)
         return branches_[index]; // choose branch
-    
+
       // second case, not label of interest, just recurse
       boost::shared_ptr<Choice> r(new Choice(label_, branches_.size()));
       for(const NodePtr& branch: branches_)

@@ -94,9 +94,9 @@ public:
   /// @name Advanced interface
   /// @{
 
-  /** Perform a single iteration, returning a new NonlinearOptimizer class
-   * containing the updated variable assignments, which may be retrieved with
-   * values().
+  /** 
+   * Perform a single iteration, returning GaussianFactorGraph corresponding to 
+   * the linearized factor graph.
    */
   GaussianFactorGraph::shared_ptr iterate() override;
 

@@ -78,7 +78,7 @@ public:
 
   /// The equals function with tolerance
   bool equals(const OrientedPlane3& s, double tol = 1e-9) const {
-    return (n_.equals(s.n_, tol) && (fabs(d_ - s.d_) < tol));
+    return (n_.equals(s.n_, tol) && (std::abs(d_ - s.d_) < tol));
   }
 
   /// @}
@@ -134,7 +134,7 @@ public:
   }
 
   /// The retract function
-  OrientedPlane3 retract(const Vector3& v) const;
+  OrientedPlane3 retract(const Vector3& v, OptionalJacobian<3,3> H = boost::none) const;
 
   /// The local coordinates function
   Vector3 localCoordinates(const OrientedPlane3& s) const;

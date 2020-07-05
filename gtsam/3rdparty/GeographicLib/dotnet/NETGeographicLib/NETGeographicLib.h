@@ -7,7 +7,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #include <string>
 
@@ -23,7 +23,9 @@ namespace NETGeographicLib
       CAP_C3   = 1U<<3,
       CAP_C4   = 1U<<4,
       CAP_ALL  = 0x1FU,
+      CAP_MASK = CAP_ALL,
       OUT_ALL  = 0x7F80U,
+      OUT_MASK = 0xFF80U,
     };
 
     /**
@@ -86,6 +88,11 @@ namespace NETGeographicLib
        * @hideinitializer
        **********************************************************************/
       AREA          = 1U<<14 | unsigned(captype::CAP_C4),
+      /**
+       * Do not wrap the \e lon2 in the direct calculation.
+       * @hideinitializer
+       **********************************************************************/
+      LONG_UNROLL   = 1U<<15,
       /**
        * All capabilities, calculate everything.
        * @hideinitializer
@@ -252,5 +259,32 @@ namespace NETGeographicLib
             //! The dynamical form factor (J2).
             static property double J2 { double get() { return m_J2; } }
         };
+    };
+
+    /**
+     * @brief Utility library.
+     *
+     * This class only exposes the GeographicLib::Utility::fractionalyear
+     * function.
+     **********************************************************************/
+    public ref class Utility
+    {
+    private:
+        // hide the constructor since all members of this class are static
+        Utility() {}
+    public:
+    /**
+     * Convert a string representing a date to a fractional year.
+     *
+     * @param[in] s the string to be converted.
+     * @exception GeographicErr if \e s can't be interpreted as a date.
+     * @return the fractional year.
+     *
+     * The string is first read as an ordinary number (e.g., 2010 or 2012.5);
+     * if this is successful, the value is returned.  Otherwise the string
+     * should be of the form yyyy-mm or yyyy-mm-dd and this is converted to a
+     * number with 2010-01-01 giving 2010.0 and 2012-07-03 giving 2012.5.
+     **********************************************************************/
+        static double FractionalYear( System::String^ s );
     };
 }  // namespace NETGeographicLib

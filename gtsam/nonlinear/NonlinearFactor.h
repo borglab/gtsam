@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -29,14 +29,12 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/assign/list_of.hpp>
 
-/**
- * Macro to add a standard clone function to a derived factor
- * @deprecated: will go away shortly - just add the clone function directly
- */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 #define ADD_CLONE_NONLINEAR_FACTOR(Derived) \
   virtual gtsam::NonlinearFactor::shared_ptr clone() const { \
   return boost::static_pointer_cast<gtsam::NonlinearFactor>( \
       gtsam::NonlinearFactor::shared_ptr(new Derived(*this))); }
+#endif
 
 namespace gtsam {
 
@@ -141,7 +139,7 @@ public:
    * Clones a factor and fully replaces its keys
    * @param new_keys is the full replacement set of keys
    */
-  shared_ptr rekey(const std::vector<Key>& new_keys) const;
+  shared_ptr rekey(const KeyVector& new_keys) const;
 
 }; // \class NonlinearFactor
 
@@ -213,11 +211,6 @@ public:
     return noiseModel_;
   }
 
-  /// @deprecated access to the noise model
-  SharedNoiseModel get_noiseModel() const {
-    return noiseModel_;
-  }
-
   /**
    * Error function *without* the NoiseModel, \f$ z-h(x) \f$.
    * Override this method to finish implementing an N-way factor.
@@ -234,6 +227,16 @@ public:
   Vector whitenedError(const Values& c) const;
 
   /**
+   * Vector of errors, whitened, but unweighted by any loss function
+   */
+  Vector unweightedWhitenedError(const Values& c) const;
+
+  /**
+   * Compute the effective weight of the factor from the noise model.
+   */
+  double weight(const Values& c) const;
+
+  /**
    * Calculate the error of the factor.
    * This is the log-likelihood, e.g. \f$ 0.5(h(x)-z)^2/\sigma^2 \f$ in case of Gaussian.
    * In this class, we take the raw prediction error \f$ h(x)-z \f$, ask the noise model
@@ -247,6 +250,13 @@ public:
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
   boost::shared_ptr<GaussianFactor> linearize(const Values& x) const;
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  /// @name Deprecated
+  /// @{
+  SharedNoiseModel get_noiseModel() const { return noiseModel_; }
+  /// @}
+#endif
 
 private:
 

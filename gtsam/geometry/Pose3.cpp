@@ -52,7 +52,6 @@ Pose3 Pose3::inverse() const {
 /* ************************************************************************* */
 // Calculate Adjoint map
 // Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
-// Experimental - unit tests of derivatives based on it do not check out yet
 Matrix6 Pose3::AdjointMap() const {
   const Matrix3 R = R_.matrix();
   Matrix3 A = skewSymmetric(t_.x(), t_.y(), t_.z()) * R;
@@ -107,7 +106,7 @@ Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
 void Pose3::print(const string& s) const {
   cout << s;
   R_.print("R:\n");
-  cout << '[' << t_.x() << ", " << t_.y() << ", " << t_.z() << "]\';";
+  cout << t_ << ";" << endl;
 }
 
 /* ************************************************************************* */
@@ -221,7 +220,7 @@ static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
 #else
   // The closed-form formula in Barfoot14tro eq. (102)
   double phi = w.norm();
-  if (fabs(phi)>1e-5) {
+  if (std::abs(phi)>1e-5) {
     const double sinPhi = sin(phi), cosPhi = cos(phi);
     const double phi2 = phi * phi, phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
     // Invert the sign of odd-order terms to have the right Jacobian
@@ -285,22 +284,31 @@ Matrix4 Pose3::matrix() const {
 }
 
 /* ************************************************************************* */
+Pose3 Pose3::transformPoseFrom(const Pose3& aTb) const {
+  const Pose3& wTa = *this;
+  return wTa * aTb;
+}
+
+/* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 Pose3 Pose3::transform_to(const Pose3& pose) const {
   Rot3 cRv = R_ * Rot3(pose.R_.inverse());
   Point3 t = pose.transform_to(t_);
   return Pose3(cRv, t);
 }
+#endif
 
 /* ************************************************************************* */
-Pose3 Pose3::transform_pose_to(const Pose3& pose, OptionalJacobian<6, 6> H1,
-                                                  OptionalJacobian<6, 6> H2) const {
-  if (H1) *H1 = -pose.inverse().AdjointMap() * AdjointMap();
+Pose3 Pose3::transformPoseTo(const Pose3& wTb, OptionalJacobian<6, 6> H1,
+                                               OptionalJacobian<6, 6> H2) const {
+  if (H1) *H1 = -wTb.inverse().AdjointMap() * AdjointMap();
   if (H2) *H2 = I_6x6;
-  return inverse() * pose;
+  const Pose3& wTa = *this;
+  return wTa.inverse() * wTb;
 }
 
 /* ************************************************************************* */
-Point3 Pose3::transform_from(const Point3& p, OptionalJacobian<3,6> Dpose,
+Point3 Pose3::transformFrom(const Point3& p, OptionalJacobian<3,6> Dpose,
     OptionalJacobian<3,3> Dpoint) const {
   // Only get matrix once, to avoid multiple allocations,
   // as well as multiple conversions in the Quaternion case
@@ -316,7 +324,7 @@ Point3 Pose3::transform_from(const Point3& p, OptionalJacobian<3,6> Dpose,
 }
 
 /* ************************************************************************* */
-Point3 Pose3::transform_to(const Point3& p, OptionalJacobian<3,6> Dpose,
+Point3 Pose3::transformTo(const Point3& p, OptionalJacobian<3,6> Dpose,
     OptionalJacobian<3,3> Dpoint) const {
   // Only get transpose once, to avoid multiple allocations,
   // as well as multiple conversions in the Quaternion case
@@ -340,7 +348,7 @@ double Pose3::range(const Point3& point, OptionalJacobian<1, 6> H1,
                     OptionalJacobian<1, 3> H2) const {
   Matrix36 D_local_pose;
   Matrix3 D_local_point;
-  Point3 local = transform_to(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
+  Point3 local = transformTo(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
   if (!H1 && !H2) {
     return local.norm();
   } else {
@@ -366,7 +374,7 @@ Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> H1,
                      OptionalJacobian<2, 3> H2) const {
   Matrix36 D_local_pose;
   Matrix3 D_local_point;
-  Point3 local = transform_to(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
+  Point3 local = transformTo(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
   if (!H1 && !H2) {
     return Unit3(local);
   } else {
@@ -409,24 +417,11 @@ boost::optional<Pose3> Pose3::Align(const std::vector<Point3Pair>& abPointPairs)
   for(const Point3Pair& abPair: abPointPairs) {
     Point3 da = abPair.first - aCentroid;
     Point3 db = abPair.second - bCentroid;
-    H += db * da.transpose();
+    H += da * db.transpose();
     }
 
-  // Compute SVD
-  Eigen::JacobiSVD<Matrix> svd(H, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  Matrix U = svd.matrixU();
-  Vector S = svd.singularValues();
-  Matrix V = svd.matrixV();
-
-  // Check rank
-  if (S[1] < 1e-10)
-    return boost::none;
-
-  // Recover transform with correction from Eggert97machinevisionandapplications
-  Matrix3 UVtranspose = U * V.transpose();
-  Matrix3 detWeighting = I_3x3;
-  detWeighting(2, 2) = UVtranspose.determinant();
-  Rot3 aRb(Matrix(V * detWeighting * U.transpose()));
+  // ClosestTo finds rotation matrix closest to H in Frobenius sense
+  Rot3 aRb = Rot3::ClosestTo(H);
   Point3 aTb = Point3(aCentroid) - aRb * Point3(bCentroid);
   return Pose3(aRb, aTb);
 }

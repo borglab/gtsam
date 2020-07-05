@@ -3,6 +3,7 @@
     <title>
       Series for geodesic calculations
     </title>
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
   <body>
     <h2>
       Series for geodesic calculations
@@ -12,15 +13,15 @@ This extends the series given
 flattening.  See
     <blockquote>
       Charles F. F. Karney,<br>
-      <a href="http://dx.doi.org/10.1007/s00190-012-0578-z">
-	<i>Algorithms for geodesics</i></a>,<br>
+      <a href="https://doi.org/10.1007/s00190-012-0578-z">
+        <i>Algorithms for geodesics</i></a>,<br>
       J. Geodesy <b>87</b>(1), 43&ndash;55 (Jan. 2013);<br>
       DOI:
-      <a href="http://dx.doi.org/10.1007/s00190-012-0578-z">
-	10.1007/s00190-012-0578-z</a>
-      (<a href="http://dx.doi.org/10.1007/s00190-012-0578-z">pdf</a>);
-      addenda: <a href="http://geographiclib.sf.net/geod-addenda.html">
-	geod-addenda.html</a>.
+      <a href="https://doi.org/10.1007/s00190-012-0578-z">
+        10.1007/s00190-012-0578-z</a>
+      (<a href="https://doi.org/10.1007/s00190-012-0578-z">pdf</a>);
+      addenda: <a href="https://geographiclib.sourceforge.io/geod-addenda.html">
+        geod-addenda.html</a>.
     </blockquote>
 
     <pre>
@@ -524,21 +525,21 @@ C1'[28] = + 137344334847260471742767128830849077140799/3817741892241658452955877
 C1'[29] = + 2381352350093111938327626556685002210278872879/37975078602127776631552109325582336000000 * eps^29;
 C1'[30] = + 20034557328168749612075941075238883149/182929433787470496587153418485760 * eps^30;
 
-A2 = (1 + 1/4 * eps^2
-        + 9/64 * eps^4
-        + 25/256 * eps^6
-        + 1225/16384 * eps^8
-        + 3969/65536 * eps^10
-        + 53361/1048576 * eps^12
-        + 184041/4194304 * eps^14
-        + 41409225/1073741824 * eps^16
-        + 147744025/4294967296 * eps^18
-        + 2133423721/68719476736 * eps^20
-        + 7775536041/274877906944 * eps^22
-        + 457028729521/17592186044416 * eps^24
-        + 1690195005625/70368744177664 * eps^26
-        + 25145962430625/1125899906842624 * eps^28
-        + 93990019574025/4503599627370496 * eps^30) * (1 - eps);
+A2 = (1 - 3/4 * eps^2
+        - 7/64 * eps^4
+        - 11/256 * eps^6
+        - 375/16384 * eps^8
+        - 931/65536 * eps^10
+        - 10143/1048576 * eps^12
+        - 29403/4194304 * eps^14
+        - 5705271/1073741824 * eps^16
+        - 17892875/4294967296 * eps^18
+        - 230480679/68719476736 * eps^20
+        - 758158843/274877906944 * eps^22
+        - 40605577103/17592186044416 * eps^24
+        - 137919912459/70368744177664 * eps^26
+        - 1897157659375/1125899906842624 * eps^28
+        - 6593830148475/4503599627370496 * eps^30) / (1 + eps);
 
 C2[1] = + 1/2 * eps
         + 1/16 * eps^3

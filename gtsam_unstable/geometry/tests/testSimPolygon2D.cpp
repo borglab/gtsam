@@ -1,11 +1,12 @@
 /**
- * @file testSimPolygon
+ * @file testSimPolygon2D.cpp
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam_unstable/geometry/SimPolygon2D.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;

@@ -46,6 +46,19 @@ TEST(SlamExpressions, project2) {
 }
 
 /* ************************************************************************* */
+TEST(SlamExpressions, rotation) {
+  Pose3_ T_(0);
+  const Rot3_ R_ = rotation(T_);
+}
+
+/* ************************************************************************* */
+TEST(SlamExpressions, unrotate) {
+  Rot3_ R_(0);
+  Point3_ p_(1);
+  const Point3_ q_ = unrotate(R_, p_);
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

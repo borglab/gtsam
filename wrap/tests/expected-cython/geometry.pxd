@@ -16,6 +16,8 @@ cdef extern from "boost/shared_ptr.hpp" namespace "boost":
         T& operator*()
 
     cdef shared_ptr[T] dynamic_pointer_cast[T,U](const shared_ptr[U]& r)
+
+cdef extern from "gtsam/base/make_shared.h" namespace "gtsam":
     cdef shared_ptr[T] make_shared[T](const T& r)
 
 cdef extern from "gtsam/geometry/Point2.h" namespace "gtsam":
@@ -145,7 +147,7 @@ cdef extern from "folder/path/to/Test.h":
 
 
 cdef extern from "folder/path/to/Test.h" namespace "":
-        VectorXd pxd_aGlobalFunction "aGlobalFunction"()
+        VectorXd pxd_aGlobalFunction "aGlobalFunction"() except +
 cdef extern from "folder/path/to/Test.h" namespace "":
-        VectorXd pxd_overloadedGlobalFunction "overloadedGlobalFunction"(int a)
-        VectorXd pxd_overloadedGlobalFunction "overloadedGlobalFunction"(int a, double b)
+        VectorXd pxd_overloadedGlobalFunction "overloadedGlobalFunction"(int a) except +
+        VectorXd pxd_overloadedGlobalFunction "overloadedGlobalFunction"(int a, double b) except +

@@ -7,7 +7,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -23,7 +23,7 @@ static SharedNoiseModel sigma(noiseModel::Unit::Create(2));
 
 // camera pose at (0,0,1) looking straight along the x-axis.
 Pose3 level_pose = Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
-SimpleCamera level_camera(level_pose, *K);
+PinholeCamera<Cal3_S2> level_camera(level_pose, *K);
 
 typedef InvDepthFactor3<Pose3, Vector5, double> InverseDepthFactor;
 typedef NonlinearEquality<Pose3> PoseConstraint;
@@ -56,7 +56,7 @@ TEST( InvDepthFactor, optimize) {
 
   LevenbergMarquardtParams lmParams;
   Values result = LevenbergMarquardtOptimizer(graph, initial, lmParams).optimize();
-  
+
   // with a single factor the incorrect initialization of 1/4 should not move!
   EXPECT(assert_equal(initial, result, 1e-9));
 
@@ -64,7 +64,7 @@ TEST( InvDepthFactor, optimize) {
 
   // add a camera 2 meters to the right
   Pose3 right_pose = level_pose * Pose3(Rot3(), Point3(2,0,0));
-  SimpleCamera right_camera(right_pose, *K);
+  PinholeCamera<Cal3_S2> right_camera(right_pose, *K);
 
   // projection measurement of landmark into right camera
   // this measurement disagrees with the depth initialization
@@ -80,12 +80,12 @@ TEST( InvDepthFactor, optimize) {
   initial.insert(Symbol('x',2), right_pose);
 
   Values result2 = LevenbergMarquardtOptimizer(graph, initial, lmParams).optimize();
-  
+
   Point3 result2_lmk = InvDepthCamera3<Cal3_S2>::invDepthTo3D(
       result2.at<Vector5>(Symbol('l',1)),
       result2.at<double>(Symbol('d',1)));
   EXPECT(assert_equal(landmark, result2_lmk, 1e-9));
-  
+
   // TODO: need to add priors to make this work with
   //    Values result2 = optimize<NonlinearFactorGraph>(graph, initial,
   //      NonlinearOptimizationParameters(),MULTIFRONTAL, GN);

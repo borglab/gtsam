@@ -1,9 +1,9 @@
 /**
  * Implementation of the net.sf.geographiclib.PolygonArea class
  *
- * Copyright (c) Charles Karney (2013) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2013-2017) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 package net.sf.geographiclib;
 
@@ -15,17 +15,15 @@ package net.sf.geographiclib;
  * <ul>
  * <li>
  *   C. F. F. Karney,
- *   <a href="http://dx.doi.org/10.1007/s00190-012-0578-z">
+ *   <a href="https://doi.org/10.1007/s00190-012-0578-z">
  *   Algorithms for geodesics</a>,
- *   J. Geodesy <b>87</b>, 43&ndash;55 (2013);
- *   DOI: <a href="http://dx.doi.org/10.1007/s00190-012-0578-z">
- *   10.1007/s00190-012-0578-z</a>;
- *   addenda: <a href="http://geographiclib.sf.net/geod-addenda.html">
- *   geod-addenda.html</a>.
+ *   J. Geodesy <b>87</b>, 43&ndash;55 (2013)
+ *   (<a href="https://geographiclib.sourceforge.io/geod-addenda.html">
+ *   addenda</a>).
  * </ul>
  * <p>
  * This class lets you add vertices one at a time to the polygon.  The area
- * and perimeter are accumulated in two times the standard floating point
+ * and perimeter are accumulated at two times the standard floating point
  * precision to guard against the loss of accuracy with many-sided polygons.
  * At any point you can ask for the perimeter and area so far.  There's an
  * option to treat the points as defining a polyline instead of a polygon; in
@@ -75,12 +73,23 @@ public class PolygonArea {
     // Compute lon12 the same way as Geodesic.Inverse.
     lon1 = GeoMath.AngNormalize(lon1);
     lon2 = GeoMath.AngNormalize(lon2);
-    double lon12 = GeoMath.AngDiff(lon1, lon2);
+    double lon12 = GeoMath.AngDiff(lon1, lon2).first;
     int cross =
-      lon1 < 0 && lon2 >= 0 && lon12 > 0 ? 1 :
-      (lon2 < 0 && lon1 >= 0 && lon12 < 0 ? -1 : 0);
+      lon1 <= 0 && lon2 > 0 && lon12 > 0 ? 1 :
+      (lon2 <= 0 && lon1 > 0 && lon12 < 0 ? -1 : 0);
     return cross;
   }
+  // an alternate version of transit to deal with longitudes in the direct
+  // problem.
+  private static int transitdirect(double lon1, double lon2) {
+    // We want to compute exactly
+    //   int(floor(lon2 / 360)) - int(floor(lon1 / 360))
+    // Since we only need the parity of the result we can use std::remquo but
+    // this is buggy with g++ 4.8.3 and requires C++11.  So instead we do
+    lon1 = lon1 % 720.0; lon2 = lon2 % 720.0;
+    return ( ((lon2 >= 0 && lon2 < 360) || lon2 < -360 ? 0 : 1) -
+             ((lon1 >= 0 && lon1 < 360) || lon1 < -360 ? 0 : 1) );
+    }
 
   /**
    * Constructor for PolygonArea.
@@ -95,7 +104,8 @@ public class PolygonArea {
     _polyline = polyline;
      _mask = GeodesicMask.LATITUDE | GeodesicMask.LONGITUDE |
        GeodesicMask.DISTANCE |
-       (_polyline ? GeodesicMask.NONE : GeodesicMask.AREA);
+       (_polyline ? GeodesicMask.NONE :
+        GeodesicMask.AREA | GeodesicMask.LONG_UNROLL);
      _perimetersum = new Accumulator(0);
      if (!_polyline)
        _areasum = new Accumulator(0);
@@ -119,8 +129,7 @@ public class PolygonArea {
    * @param lat the latitude of the point (degrees).
    * @param lon the latitude of the point (degrees).
    * <p>
-   * <i>lat</i> should be in the range [&minus;90&deg;, 90&deg;] and <i>lon</i>
-   * should be in the range [&minus;540&deg;, 540&deg;).
+   * <i>lat</i> should be in the range [&minus;90&deg;, 90&deg;].
    **********************************************************************/
   public void AddPoint(double lat, double lon) {
     lon = GeoMath.AngNormalize(lon);
@@ -145,9 +154,8 @@ public class PolygonArea {
    * @param azi azimuth at current point (degrees).
    * @param s distance from current point to next point (meters).
    * <p>
-   * <i>azi</i> should be in the range [&minus;540&deg;, 540&deg;).  This does
-   * nothing if no points have been added yet.  Use PolygonArea.CurrentPoint to
-   * determine the position of the new vertex.
+   * This does nothing if no points have been added yet.  Use
+   * PolygonArea.CurrentPoint to determine the position of the new vertex.
    **********************************************************************/
   public void AddEdge(double azi, double s) {
     if (_num > 0) {             // Do nothing if _num is zero
@@ -155,7 +163,7 @@ public class PolygonArea {
       _perimetersum.Add(g.s12);
       if (!_polyline) {
         _areasum.Add(g.S12);
-        _crossings += transit(_lon1, g.lon2);
+        _crossings += transitdirect(_lon1, g.lon2);
       }
       _lat1 = g.lat2; _lon1 = g.lon2;
       ++_num;
@@ -187,6 +195,8 @@ public class PolygonArea {
    *   of the polygon or the length of the polyline (meters), and <i>area</i>
    *   is the area of the polygon (meters<sup>2</sup>) or Double.NaN of
    *   <i>polyline</i> is true in the constructor.
+   * <p>
+   * More points can be added to the polygon after this call.
    **********************************************************************/
   public PolygonResult Compute(boolean reverse, boolean sign) {
     if (_num < 2)
@@ -216,7 +226,8 @@ public class PolygonArea {
       else if (tempsum.Sum() < 0)
         tempsum.Add(+_area0);
     }
-    return new PolygonResult(_num, _perimetersum.Sum(g.s12), 0 + tempsum.Sum());
+    return
+      new PolygonResult(_num, _perimetersum.Sum(g.s12), 0 + tempsum.Sum());
   }
 
   /**
@@ -240,8 +251,7 @@ public class PolygonArea {
    *   is the area of the polygon (meters<sup>2</sup>) or Double.NaN of
    *   <i>polyline</i> is true in the constructor.
    * <p>
-   * <i>lat</i> should be in the range [&minus;90&deg;, 90&deg;] and <i>lon</i>
-   * should be in the range [&minus;540&deg;, 540&deg;).
+   * <i>lat</i> should be in the range [&minus;90&deg;, 90&deg;].
    **********************************************************************/
   public PolygonResult TestPoint(double lat, double lon,
                                  boolean reverse, boolean sign) {
@@ -309,8 +319,6 @@ public class PolygonArea {
    *   of the polygon or the length of the polyline (meters), and <i>area</i>
    *   is the area of the polygon (meters<sup>2</sup>) or Double.NaN of
    *   <i>polyline</i> is true in the constructor.
-   * <p>
-   * <i>azi</i> should be in the range [&minus;540&deg;, 540&deg;).
    **********************************************************************/
   public PolygonResult TestEdge(double azi, double s,
                                 boolean reverse, boolean sign) {
@@ -329,7 +337,7 @@ public class PolygonArea {
       GeodesicData g =
         _earth.Direct(_lat1, _lon1, azi, false, s, _mask);
       tempsum += g.S12;
-      crossings += transit(_lon1, g.lon2);
+      crossings += transitdirect(_lon1, g.lon2);
       g = _earth.Inverse(g.lat2, g.lon2, _lat0, _lon0, _mask);
       perimeter += g.s12;
       tempsum += g.S12;
@@ -377,7 +385,7 @@ public class PolygonArea {
    * @return Pair(<i>lat</i>, <i>lon</i>), the current latitude and longitude.
    * <p>
    * If no points have been added, then Double.NaN is returned.  Otherwise,
-   * <i>lon</i> will be in the range [&minus;180&deg;, 180&deg;).
+   * <i>lon</i> will be in the range [&minus;180&deg;, 180&deg;].
    **********************************************************************/
   public Pair CurrentPoint() { return new Pair(_lat1, _lon1); }
 }

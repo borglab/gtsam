@@ -75,7 +75,6 @@ public :
   static inline void partial_lu_decomp(const gene_matrix & X, gene_matrix & C, int N){
     int N2 = N*N;
     BLAS_FUNC(copy)(&N2, X, &intone, C, &intone);
-    char uplo = 'L';
     int info = 0;
     int * ipiv = (int*)alloca(sizeof(int)*N);
     BLAS_FUNC(getrf)(&N, &N, C, &N, ipiv, &info);
@@ -92,7 +91,7 @@ public :
     BLAS_FUNC(trsm)(&right, &lower, &notrans, &nonunit, &N, &N, &fone, L, &N, X, &N);
   }
 
-  static inline void trmm(gene_matrix & A, gene_matrix & B, gene_matrix & X, int N){
+  static inline void trmm(gene_matrix & A, gene_matrix & B, gene_matrix & /*X*/, int N){
     BLAS_FUNC(trmm)(&left, &lower, &notrans,&nonunit, &N,&N,&fone,A,&N,B,&N);
   }
 
@@ -101,7 +100,6 @@ public :
   static inline void lu_decomp(const gene_matrix & X, gene_matrix & C, int N){
     int N2 = N*N;
     BLAS_FUNC(copy)(&N2, X, &intone, C, &intone);
-    char uplo = 'L';
     int info = 0;
     int * ipiv = (int*)alloca(sizeof(int)*N);
     int * jpiv = (int*)alloca(sizeof(int)*N);
@@ -134,8 +132,6 @@ public :
     }
     char uplo = 'U';
     int info = 0;
-    int ilo = 1;
-    int ihi = N;
     int bsize = 64;
     int worksize = N*bsize;
     SCALAR* d = new SCALAR[3*N+worksize];

@@ -2,14 +2,14 @@
  * @file DummyFactor.h
  *
  * @brief A simple factor that can be used to trick gtsam solvers into believing a graph is connected.
- * 
+ *
  * @date Sep 10, 2012
  * @author Alex Cunningham
  */
 
 #pragma once
 
-#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam_unstable/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {

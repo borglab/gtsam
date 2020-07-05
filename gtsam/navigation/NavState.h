@@ -31,7 +31,7 @@ typedef Vector3 Velocity3;
  * Navigation state: Pose (rotation, translation) + velocity
  * NOTE(frank): it does not make sense to make this a Lie group, but it is a 9D manifold
  */
-class NavState {
+class GTSAM_EXPORT NavState {
 private:
 
   // TODO(frank):
@@ -64,7 +64,7 @@ public:
       R_(pose.rotation()), t_(pose.translation()), v_(v) {
   }
   /// Construct from SO(3) and R^6
-  NavState(const Matrix3& R, const Vector9 tv) :
+  NavState(const Matrix3& R, const Vector6& tv) :
       R_(R), t_(tv.head<3>()), v_(tv.tail<3>()) {
   }
   /// Named constructor with derivatives

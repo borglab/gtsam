@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -72,7 +72,7 @@ NonlinearFactorGraph calculateMarginalFactors(const NonlinearFactorGraph& graph,
     GaussianFactorGraph linearFactorGraph = *graph.linearize(theta);
     // .first is the eliminated Bayes tree, while .second is the remaining factor graph
     GaussianFactorGraph marginalLinearFactors = *linearFactorGraph.eliminatePartialMultifrontal(
-        std::vector<Key>(marginalizeKeys.begin(), marginalizeKeys.end()), eliminateFunction).second;
+        KeyVector(marginalizeKeys.begin(), marginalizeKeys.end()), eliminateFunction).second;
 
     // Wrap in nonlinear container factors
     NonlinearFactorGraph marginalFactors;

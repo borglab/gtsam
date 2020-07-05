@@ -19,6 +19,8 @@
 #include <gtsam/navigation/AttitudeFactor.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/serialization.h>
+#include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -57,6 +59,39 @@ TEST( Rot3AttitudeFactor, Constructor ) {
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
+/* ************************************************************************* */
+// Export Noisemodels
+// See http://www.boost.org/doc/libs/1_32_0/libs/serialization/doc/special.html
+BOOST_CLASS_EXPORT(gtsam::noiseModel::Isotropic);
+
+/* ************************************************************************* */
+TEST(Rot3AttitudeFactor, Serialization) {
+  Unit3 nDown(0, 0, -1);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
+  Rot3AttitudeFactor factor(0, nDown, model);
+
+  EXPECT(serializationTestHelpers::equalsObj(factor));
+  EXPECT(serializationTestHelpers::equalsXML(factor));
+  EXPECT(serializationTestHelpers::equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+TEST(Rot3AttitudeFactor, CopyAndMove) {
+  Unit3 nDown(0, 0, -1);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
+  Rot3AttitudeFactor factor(0, nDown, model);
+
+  // Copy assignable.
+  EXPECT(std::is_copy_assignable<Rot3AttitudeFactor>::value);
+  Rot3AttitudeFactor factor_copied = factor;
+  EXPECT(assert_equal(factor, factor_copied));
+
+  // Move assignable.
+  EXPECT(std::is_move_assignable<Rot3AttitudeFactor>::value);
+  Rot3AttitudeFactor factor_moved = std::move(factor_copied);
+  EXPECT(assert_equal(factor, factor_moved));
+}
+
 // *************************************************************************
 TEST( Pose3AttitudeFactor, Constructor ) {
 
@@ -88,6 +123,34 @@ TEST( Pose3AttitudeFactor, Constructor ) {
 
   // Verify we get the expected error
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
+}
+
+/* ************************************************************************* */
+TEST(Pose3AttitudeFactor, Serialization) {
+  Unit3 nDown(0, 0, -1);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
+  Pose3AttitudeFactor factor(0, nDown, model);
+
+  EXPECT(serializationTestHelpers::equalsObj(factor));
+  EXPECT(serializationTestHelpers::equalsXML(factor));
+  EXPECT(serializationTestHelpers::equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+TEST(Pose3AttitudeFactor, CopyAndMove) {
+  Unit3 nDown(0, 0, -1);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
+  Pose3AttitudeFactor factor(0, nDown, model);
+
+  // Copy assignable.
+  EXPECT(std::is_copy_assignable<Pose3AttitudeFactor>::value);
+  Pose3AttitudeFactor factor_copied = factor;
+  EXPECT(assert_equal(factor, factor_copied));
+
+  // Move assignable.
+  EXPECT(std::is_move_assignable<Pose3AttitudeFactor>::value);
+  Pose3AttitudeFactor factor_moved = std::move(factor_copied);
+  EXPECT(assert_equal(factor, factor_moved));
 }
 
 // *************************************************************************

@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #include "stdafx.h"
 #include "GeographicLib/Gnomonic.hpp"
@@ -49,7 +49,7 @@ Gnomonic::Gnomonic()
 {
     try
     {
-        m_pGnomonic = new GeographicLib::Gnomonic( GeographicLib::Geodesic::WGS84 );
+        m_pGnomonic = new GeographicLib::Gnomonic( GeographicLib::Geodesic::WGS84() );
     }
     catch ( std::bad_alloc )
     {

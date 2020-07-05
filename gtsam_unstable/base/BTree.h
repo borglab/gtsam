@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -72,7 +72,7 @@ namespace gtsam {
     }; // Node
 
     // We store a shared pointer to the root of the functional tree
-    // composed of Node classes. If root_==NULL, the tree is empty.
+    // composed of Node classes. If root_==nullptr, the tree is empty.
     typedef boost::shared_ptr<const Node> sharedNode;
     sharedNode root_;
 
@@ -223,7 +223,7 @@ namespace gtsam {
 
     /** Return height of the tree, 0 if empty */
     size_t height() const {
-      return (root_ != NULL) ? root_->height_ : 0;
+      return (root_ != nullptr) ? root_->height_ : 0;
     }
 
     /** return size of the tree */
@@ -244,7 +244,7 @@ namespace gtsam {
         else if (key < k) node = node->right.root_.get();
         else return node->value();
       }
-      
+
       throw std::invalid_argument("BTree::find: key not found");
     }
 

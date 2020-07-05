@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -121,6 +121,13 @@ boost::function<bool(gtsam::Key)> LabeledSymbol::TypeLabelTest(unsigned char c, 
   return boost::bind(&LabeledSymbol::chr,   boost::bind(make, _1)) == c &&
       boost::bind(&LabeledSymbol::label, boost::bind(make, _1)) == label;
 }
+
+/* ************************************************************************* */
+GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const LabeledSymbol &symbol) {
+  os << StreamedKey(symbol);
+  return os;
+}
+
 /* ************************************************************************* */
 
 } // \namespace gtsam

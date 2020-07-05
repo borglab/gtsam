@@ -21,7 +21,8 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <boost/optional.hpp>
 
 namespace gtsam {
@@ -152,7 +153,7 @@ namespace gtsam {
           std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
               " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
         if (throwCheirality_)
-          throw e;
+          throw CheiralityException(this->key2());
       }
       return Vector2::Constant(2.0 * K_->fx());
     }
@@ -186,7 +187,10 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
-  };
+
+  public:
+    GTSAM_MAKE_ALIGNED_OPERATOR_NEW
+};
 
   /// traits
   template<class POSE, class LANDMARK, class CALIBRATION>

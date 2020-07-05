@@ -37,9 +37,11 @@
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics SLAM problems.
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/sam/RangeFactor.h>
+
+// To find data files, we can use `findExampleDataFile`, declared here:
+#include <gtsam/slam/dataset.h>
 
 // Standard headers, added last, so we know headers above work on their own
 #include <fstream>
@@ -58,10 +60,9 @@ namespace NM = gtsam::noiseModel;
 typedef pair<double, Pose2> TimedOdometry;
 list<TimedOdometry> readOdometry() {
   list<TimedOdometry> odometryList;
-  ifstream is("/Users/dellaert/borg/gtsam/examples/Data/Plaza1_DR.txt");
-  if (!is)
-    throw runtime_error(
-        "/Users/dellaert/borg/gtsam/examples/Data/Plaza1_DR.txt file not found");
+  string drFile = findExampleDataFile("Plaza2_DR.txt");
+  ifstream is(drFile);
+  if (!is) throw runtime_error("Plaza2_DR.txt file not found");
 
   while (is) {
     double t, distance_traveled, delta_heading;
@@ -78,10 +79,9 @@ list<TimedOdometry> readOdometry() {
 typedef boost::tuple<double, size_t, double> RangeTriple;
 vector<RangeTriple> readTriples() {
   vector<RangeTriple> triples;
-  ifstream is("/Users/dellaert/borg/gtsam/examples/Data/Plaza1_TD.txt");
-  if (!is)
-    throw runtime_error(
-        "/Users/dellaert/borg/gtsam/examples/Data/Plaza1_TD.txt file not found");
+  string tdFile = findExampleDataFile("Plaza2_TD.txt");
+  ifstream is(tdFile);
+  if (!is) throw runtime_error("Plaza2_TD.txt file not found");
 
   while (is) {
     double t, sender, receiver, range;
@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
   // Add prior on first pose
   Pose2 pose0 = Pose2(-34.2086489999201, 45.3007639991120, -2.02108900000000);
   NonlinearFactorGraph newFactors;
-  newFactors.push_back(PriorFactor<Pose2>(0, pose0, priorNoise));
+  newFactors.addPrior(0, pose0, priorNoise);
 
   //  initialize points (Gaussian)
   Values initial;
@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
       RangeFactor<Pose2, Point2> factor(i, symbol('L', j), range, rangeNoise);
       // Throw out obvious outliers based on current landmark estimates
       Vector error = factor.unwhitenedError(landmarkEstimates);
-      if (k <= 200 || fabs(error[0]) < 5)
+      if (k <= 200 || std::abs(error[0]) < 5)
         newFactors.push_back(factor);
       k = k + 1;
       countK = countK + 1;
@@ -201,13 +201,11 @@ int main(int argc, char** argv) {
 
   // Write result to file
   Values result = isam.calculateEstimate();
-  ofstream os2(
-      "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResultLM.txt");
+  ofstream os2("rangeResultLM.txt");
   for(const Values::ConstFiltered<Point2>::KeyValuePair& it: result.filter<Point2>())
     os2 << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t1"
         << endl;
-  ofstream os(
-      "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResult.txt");
+  ofstream os("rangeResult.txt");
   for(const Values::ConstFiltered<Pose2>::KeyValuePair& it: result.filter<Pose2>())
     os << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t"
         << it.value.theta() << endl;

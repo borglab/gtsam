@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -31,7 +31,7 @@ P transform_point(
     const T& trans, const P& global,
     boost::optional<Matrix&> Dtrans,
     boost::optional<Matrix&> Dglobal) {
-  return trans.transform_from(global, Dtrans, Dglobal);
+  return trans.transformFrom(global, Dtrans, Dglobal);
 }
 
 /**
@@ -44,7 +44,7 @@ P transform_point(
  *   l = lTg * g
  *
  * The Point and Transform concepts must be Lie types, and the transform
- * relationship "Point = transform_from(Transform, Point)" must exist.
+ * relationship "Point = transformFrom(Transform, Point)" must exist.
  *
  * To implement this function in new domains, specialize a new version of
  * Point transform_point<Transform,Point>(transform, global, Dtrans, Dglobal)

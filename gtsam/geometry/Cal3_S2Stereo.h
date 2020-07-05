@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -27,7 +27,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class Cal3_S2Stereo {
+  class GTSAM_EXPORT Cal3_S2Stereo {
   private:
 
     Cal3_S2 K_;
@@ -111,14 +111,10 @@ namespace gtsam {
     /// @{
 
     /// return DOF, dimensionality of tangent space
-    inline size_t dim() const {
-      return 6;
-    }
+    inline size_t dim() const { return dimension; }
 
     /// return DOF, dimensionality of tangent space
-    static size_t Dim() {
-      return 6;
-    }
+    static size_t Dim() { return dimension; }
 
     /// Given 6-dim tangent vector, create new calibration
     inline Cal3_S2Stereo retract(const Vector& d) const {

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -43,7 +43,7 @@ void Errors::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
-struct equalsVector : public std::binary_function<const Vector&, const Vector&, bool> {
+struct equalsVector : public std::function<bool(const Vector&, const Vector&)> {
   double tol_;
   equalsVector(double tol = 1e-9) : tol_(tol) {}
   bool operator()(const Vector& expected, const Vector& actual) {

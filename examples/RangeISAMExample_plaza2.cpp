@@ -37,7 +37,6 @@
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics SLAM problems.
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/sam/RangeFactor.h>
 #include <gtsam/slam/dataset.h>
@@ -108,7 +107,7 @@ int main (int argc, char** argv) {
 
   // Set Noise parameters
   Vector priorSigmas = Vector3(1,1,M_PI);
-  Vector odoSigmas = Vector3(0.05, 0.01, 0.2);
+  Vector odoSigmas = Vector3(0.05, 0.01, 0.1);
   double sigmaR = 100; // range standard deviation
   const NM::Base::shared_ptr // all same type
   priorNoise = NM::Diagonal::Sigmas(priorSigmas), //prior
@@ -124,7 +123,7 @@ int main (int argc, char** argv) {
   Pose2 pose0 = Pose2(-34.2086489999201, 45.3007639991120,
       M_PI - 2.02108900000000);
   NonlinearFactorGraph newFactors;
-  newFactors.push_back(PriorFactor<Pose2>(0, pose0, priorNoise));
+  newFactors.addPrior(0, pose0, priorNoise);
   Values initial;
   initial.insert(0, pose0);
 
@@ -157,7 +156,7 @@ int main (int argc, char** argv) {
     boost::tie(t, odometry) = timedOdometry;
 
     // add odometry factor
-    newFactors.push_back(BetweenFactor<Pose2>(i-1, i, odometry,NM::Diagonal::Sigmas(odoSigmas)));
+    newFactors.push_back(BetweenFactor<Pose2>(i-1, i, odometry, odoNoise));
 
     // predict pose and add as initial estimate
     Pose2 predictedPose = lastPose.compose(odometry);

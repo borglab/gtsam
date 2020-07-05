@@ -27,6 +27,8 @@
 
 #include <boost/function.hpp>
 
+#include <iosfwd>
+
 namespace gtsam {
 
 /// Typedef for a function to format a key, i.e. to convert it to a string
@@ -52,7 +54,35 @@ GTSAM_EXPORT std::string _multirobotKeyFormatter(gtsam::Key key);
 static const gtsam::KeyFormatter MultiRobotKeyFormatter =
     &_multirobotKeyFormatter;
 
-/// Useful typedef for operations with Values - allows for matlab interface
+/// To use the key_formatter on Keys, they must be wrapped in a StreamedKey.
+struct StreamedKey {
+  const Key &key_;
+  explicit StreamedKey(const Key &key) : key_(key) {}
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &, const StreamedKey &);
+};
+
+/**
+ * Output stream manipulator that will format gtsam::Keys according to the given
+ * KeyFormatter, as long as Key values are wrapped in a gtsam::StreamedKey.
+ * LabeledSymbol and Symbol values do not have to be wrapped.
+ * usage:
+ *   Key key = LabeledSymbol('x', 'A', 5); // cast to key type
+ *   cout << key_formatter(MultiRobotKeyFormatter) << StreamedKey(key);
+ */
+class key_formatter {
+ public:
+  explicit key_formatter(KeyFormatter v) : formatter_(v) {}
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &, const key_formatter &);
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &, const StreamedKey &);
+
+ private:
+  KeyFormatter formatter_;
+  static void *&property(std::ios_base &s);
+  static void set_property(std::ios_base &s, const KeyFormatter &f);
+  static KeyFormatter *get_property(std::ios_base &s);
+};
+
+/// Define collection type once and for all - also used in wrappers
 typedef FastVector<Key> KeyVector;
 
 // TODO(frank): Nothing fast about these :-(

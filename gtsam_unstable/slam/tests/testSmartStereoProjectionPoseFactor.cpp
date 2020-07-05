@@ -274,7 +274,7 @@ TEST( SmartStereoProjectionPoseFactor, noisy ) {
   Ks.push_back(K);
   Ks.push_back(K);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
 
@@ -313,7 +313,7 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   vector<StereoPoint2> measurements_l3 = stereo_projectToMultipleCameras(cam1,
       cam2, cam3, landmark3);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -335,8 +335,8 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, pose1, noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, pose2, noisePrior);
+  graph.addPrior(x1, pose1, noisePrior);
+  graph.addPrior(x2, pose2, noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -396,8 +396,8 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   // add factors
   NonlinearFactorGraph graph2;
 
-  graph2.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph2.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph2.addPrior(x1, pose1, noisePrior);
+  graph2.addPrior(x2, pose2, noisePrior);
 
   typedef GenericStereoFactor<Pose3, Point3> ProjectionFactor;
 
@@ -455,7 +455,7 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor ) {
   vector<StereoPoint2> measurements_l3 = stereo_projectToMultipleCameras(cam1,
       cam2, cam3, landmark3);
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -477,8 +477,8 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.addPrior(x1, pose1, noisePrior);
+  graph.addPrior(x2, pose2, noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -523,9 +523,9 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor_monocular ){
   Pose3 cameraPose2 = cameraPose1 * Pose3(Rot3(), Point3(1,0,0));
   Pose3 cameraPose3 = cameraPose1 * Pose3(Rot3(), Point3(0,-1,0));
 
-  SimpleCamera cam1(cameraPose1, *K); // with camera poses
-  SimpleCamera cam2(cameraPose2, *K);
-  SimpleCamera cam3(cameraPose3, *K);
+  PinholeCamera<Cal3_S2> cam1(cameraPose1, *K); // with camera poses
+  PinholeCamera<Cal3_S2> cam2(cameraPose2, *K);
+  PinholeCamera<Cal3_S2> cam3(cameraPose3, *K);
 
   // create arbitrary body_Pose_sensor (transforms from sensor to body)
   Pose3 sensor_to_body =  Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(1, 1, 1)); // Pose3(); //
@@ -548,7 +548,7 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor_monocular ){
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   // Create smart factors
-  std::vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -586,8 +586,8 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor_monocular ){
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, bodyPose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, bodyPose2, noisePrior));
+  graph.addPrior(x1, bodyPose1, noisePrior);
+  graph.addPrior(x2, bodyPose2, noisePrior);
 
   // Check errors at ground truth poses
   Values gtValues;
@@ -614,7 +614,7 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor_monocular ){
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -660,8 +660,8 @@ TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, pose1, noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, pose2, noisePrior);
+  graph.addPrior(x1, pose1, noisePrior);
+  graph.addPrior(x2, pose2, noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -680,7 +680,7 @@ TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, jacobianSVDwithMissingValues ) {
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -732,8 +732,8 @@ TEST( SmartStereoProjectionPoseFactor, jacobianSVDwithMissingValues ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.addPrior(x1, pose1, noisePrior);
+  graph.addPrior(x2, pose2, noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -754,7 +754,7 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
 
 //  double excludeLandmarksFutherThanDist = 2;
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -801,8 +801,8 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, pose1, noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, pose2, noisePrior);
+  graph.addPrior(x1, pose1, noisePrior);
+  graph.addPrior(x2, pose2, noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -822,7 +822,7 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -883,8 +883,8 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
   graph.push_back(smartFactor4);
-  graph.emplace_shared<PriorFactor<Pose3> >(x1, pose1, noisePrior);
-  graph.emplace_shared<PriorFactor<Pose3> >(x2, pose2, noisePrior);
+  graph.addPrior(x1, pose1, noisePrior);
+  graph.addPrior(x2, pose2, noisePrior);
 
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
@@ -919,7 +919,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, jacobianQ ){
 //
-//  vector<Key> views;
+//  KeyVector views;
 //  views.push_back(x1);
 //  views.push_back(x2);
 //  views.push_back(x3);
@@ -980,7 +980,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, 3poses_projection_factor ){
 //
-//  vector<Key> views;
+//  KeyVector views;
 //  views.push_back(x1);
 //  views.push_back(x2);
 //  views.push_back(x3);
@@ -1040,7 +1040,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1128,7 +1128,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_factor ){
 //
-//  vector<Key> views;
+//  KeyVector views;
 //  views.push_back(x1);
 //  views.push_back(x2);
 //  views.push_back(x3);
@@ -1194,7 +1194,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ){
 //
-//  vector<Key> views;
+//  KeyVector views;
 //  views.push_back(x1);
 //  views.push_back(x2);
 //  views.push_back(x3);
@@ -1268,7 +1268,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, Hessian ){
 //
-//  vector<Key> views;
+//  KeyVector views;
 //  views.push_back(x1);
 //  views.push_back(x2);
 //
@@ -1309,7 +1309,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, HessianWithRotation ) {
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
@@ -1379,7 +1379,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotation ) {
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, HessianWithRotationNonDegenerate ) {
 
-  vector<Key> views;
+  KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);

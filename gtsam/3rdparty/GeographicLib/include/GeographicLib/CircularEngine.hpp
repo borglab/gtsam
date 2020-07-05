@@ -2,9 +2,9 @@
  * \file CircularEngine.hpp
  * \brief Header for GeographicLib::CircularEngine class
  *
- * Copyright (c) Charles Karney (2011) <charles@karney.com> and licensed under
- * the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * Copyright (c) Charles Karney (2011-2015) <charles@karney.com> and licensed
+ * under the MIT/X11 License.  For more information, see
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #if !defined(GEOGRAPHICLIB_CIRCULARENGINE_HPP)
@@ -63,19 +63,10 @@ namespace GeographicLib {
     std::vector<real> _wc, _ws, _wrc, _wrs, _wtc, _wts;
     real _q, _uq, _uq2;
 
-    Math::real Value(bool gradp, real cl, real sl,
-                     real& gradx, real& grady, real& gradz) const throw();
-
-    static inline void cossin(real x, real& cosx, real& sinx) {
-      x = x >= 180 ? x - 360 : (x < -180 ? x + 360 : x);
-      real xi = x * Math::degree<real>();
-      cosx = std::abs(x) ==   90 ? 0 : cos(xi);
-      sinx =          x  == -180 ? 0 : sin(xi);
-    }
+    Math::real Value(bool gradp, real sl, real cl,
+                     real& gradx, real& grady, real& gradz) const;
 
     friend class SphericalEngine;
-    friend class GravityCircle;  // Access to cossin
-    friend class MagneticCircle; // Access to cossin
     CircularEngine(int M, bool gradp, unsigned norm,
                    real a, real r, real u, real t)
       : _M(M)
@@ -125,18 +116,18 @@ namespace GeographicLib {
 
     /**
      * Evaluate the sum for a particular longitude given in terms of its
-     * cosine and sine.
+     * sine and cosine.
      *
-     * @param[in] coslon the cosine of the longitude.
      * @param[in] sinlon the sine of the longitude.
+     * @param[in] coslon the cosine of the longitude.
      * @return \e V the value of the sum.
      *
-     * The arguments must satisfy <i>coslon</i><sup>2</sup> +
-     * <i>sinlon</i><sup>2</sup> = 1.
+     * The arguments must satisfy <i>sinlon</i><sup>2</sup> +
+     * <i>coslon</i><sup>2</sup> = 1.
      **********************************************************************/
-    Math::real operator()(real coslon, real sinlon) const throw() {
+    Math::real operator()(real sinlon, real coslon) const {
       real dummy;
-      return Value(false, coslon, sinlon, dummy, dummy, dummy);
+      return Value(false, sinlon, coslon, dummy, dummy, dummy);
     }
 
     /**
@@ -145,18 +136,18 @@ namespace GeographicLib {
      * @param[in] lon the longitude (degrees).
      * @return \e V the value of the sum.
      **********************************************************************/
-    Math::real operator()(real lon) const throw() {
-      real coslon, sinlon;
-      cossin(lon, coslon, sinlon);
-      return (*this)(coslon, sinlon);
+    Math::real operator()(real lon) const {
+      real sinlon, coslon;
+      Math::sincosd(lon, sinlon, coslon);
+      return (*this)(sinlon, coslon);
     }
 
     /**
      * Evaluate the sum and its gradient for a particular longitude given in
-     * terms of its cosine and sine.
+     * terms of its sine and cosine.
      *
-     * @param[in] coslon the cosine of the longitude.
      * @param[in] sinlon the sine of the longitude.
+     * @param[in] coslon the cosine of the longitude.
      * @param[out] gradx \e x component of the gradient.
      * @param[out] grady \e y component of the gradient.
      * @param[out] gradz \e z component of the gradient.
@@ -165,12 +156,12 @@ namespace GeographicLib {
      * The gradients will only be computed if the CircularEngine object was
      * created with this capability (e.g., via \e gradp = true in
      * SphericalHarmonic::Circle).  If not, \e gradx, etc., will not be
-     * touched.  The arguments must satisfy <i>coslon</i><sup>2</sup> +
-     * <i>sinlon</i><sup>2</sup> = 1.
+     * touched.  The arguments must satisfy <i>sinlon</i><sup>2</sup> +
+     * <i>coslon</i><sup>2</sup> = 1.
      **********************************************************************/
-    Math::real operator()(real coslon, real sinlon,
-                          real& gradx, real& grady, real& gradz) const throw() {
-      return Value(true, coslon, sinlon, gradx, grady, gradz);
+    Math::real operator()(real sinlon, real coslon,
+                          real& gradx, real& grady, real& gradz) const {
+      return Value(true, sinlon, coslon, gradx, grady, gradz);
     }
 
     /**
@@ -188,10 +179,10 @@ namespace GeographicLib {
      * touched.
      **********************************************************************/
     Math::real operator()(real lon,
-                          real& gradx, real& grady, real& gradz) const throw() {
-      real coslon, sinlon;
-      cossin(lon, coslon, sinlon);
-      return (*this)(coslon, sinlon, gradx, grady, gradz);
+                          real& gradx, real& grady, real& gradz) const {
+      real sinlon, coslon;
+      Math::sincosd(lon, sinlon, coslon);
+      return (*this)(sinlon, coslon, gradx, grady, gradz);
     }
   };
 

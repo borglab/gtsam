@@ -70,7 +70,16 @@ public:
   virtual ~NonlinearConjugateGradientOptimizer() {
   }
 
+  /** 
+   * Perform a single iteration, returning GaussianFactorGraph corresponding to 
+   * the linearized factor graph.
+   */
   GaussianFactorGraph::shared_ptr iterate() override;
+
+  /** 
+   * Optimize for the maximum-likelihood estimate, returning a the optimized 
+   * variable assignments.
+   */
   const Values& optimize() override;
 };
 
@@ -98,7 +107,7 @@ double lineSearch(const S &system, const V currentValues, const W &gradient) {
             newStep - resphi * (newStep - minStep);
 
     if ((maxStep - minStep)
-        < tau * (std::fabs(testStep) + std::fabs(newStep))) {
+        < tau * (std::abs(testStep) + std::abs(newStep))) {
       return 0.5 * (minStep + maxStep);
     }
 

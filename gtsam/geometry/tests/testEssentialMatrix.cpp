@@ -115,9 +115,9 @@ TEST (EssentialMatrix, RoundTrip) {
 
 //*************************************************************************
 Point3 transform_to_(const EssentialMatrix& E, const Point3& point) {
-  return E.transform_to(point);
+  return E.transformTo(point);
 }
-TEST (EssentialMatrix, transform_to) {
+TEST (EssentialMatrix, transformTo) {
   // test with a more complicated EssentialMatrix
   Rot3 aRb2 = Rot3::Yaw(M_PI / 3.0) * Rot3::Pitch(M_PI_4)
       * Rot3::Roll(M_PI / 6.0);
@@ -126,7 +126,7 @@ TEST (EssentialMatrix, transform_to) {
   //EssentialMatrix E(aRb, Unit3(aTb).retract(Vector2(0.1, 0)));
   static Point3 P(0.2, 0.7, -2);
   Matrix actH1, actH2;
-  E.transform_to(P, actH1, actH2);
+  E.transformTo(P, actH1, actH2);
   Matrix expH1 = numericalDerivative21(transform_to_, E, P), //
   expH2 = numericalDerivative22(transform_to_, E, P);
   EXPECT(assert_equal(expH1, actH1, 1e-8));
@@ -159,7 +159,7 @@ TEST (EssentialMatrix, rotate) {
   Matrix actH1, actH2;
   try {
     bodyE.rotate(cRb, actH1, actH2);
-  } catch (exception e) {
+  } catch (exception& e) {
   } // avoid exception
   Matrix expH1 = numericalDerivative21(rotate_, bodyE, cRb), //
   expH2 = numericalDerivative22(rotate_, bodyE, cRb);
@@ -218,10 +218,10 @@ TEST (EssentialMatrix, epipoles) {
   }
 
   // check rank 2 constraint
-  CHECK(fabs(S(2))<1e-10);
+  CHECK(std::abs(S(2))<1e-10);
 
   // check epipoles not at infinity
-  CHECK(fabs(U(2,2))>1e-10 && fabs(V(2,2))>1e-10);
+  CHECK(std::abs(U(2,2))>1e-10 && std::abs(V(2,2))>1e-10);
 
   // Check epipoles
 

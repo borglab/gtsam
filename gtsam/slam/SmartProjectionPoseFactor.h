@@ -66,16 +66,31 @@ public:
 
   /**
    * Constructor
-   * @param Isotropic measurement noise
+   * @param sharedNoiseModel isotropic noise model for the 2D feature measurements
    * @param K (fixed) calibration, assumed to be the same for all cameras
-   * @param body_P_sensor pose of the camera in the body frame
-   * @param params internal parameters of the smart factors
+   * @param params parameters for the smart projection factors
    */
-  SmartProjectionPoseFactor(const SharedNoiseModel& sharedNoiseModel,
+  SmartProjectionPoseFactor(
+      const SharedNoiseModel& sharedNoiseModel,
       const boost::shared_ptr<CALIBRATION> K,
-      const boost::optional<Pose3> body_P_sensor = boost::none,
-      const SmartProjectionParams& params = SmartProjectionParams()) :
-      Base(sharedNoiseModel, body_P_sensor, params), K_(K) {
+      const SmartProjectionParams& params = SmartProjectionParams())
+      : Base(sharedNoiseModel, params), K_(K) {
+  }
+
+  /**
+   * Constructor
+   * @param sharedNoiseModel isotropic noise model for the 2D feature measurements
+   * @param K (fixed) calibration, assumed to be the same for all cameras
+   * @param body_P_sensor pose of the camera in the body frame (optional)
+   * @param params parameters for the smart projection factors
+   */
+  SmartProjectionPoseFactor(
+      const SharedNoiseModel& sharedNoiseModel,
+      const boost::shared_ptr<CALIBRATION> K,
+      const boost::optional<Pose3> body_P_sensor,
+      const SmartProjectionParams& params = SmartProjectionParams())
+      : SmartProjectionPoseFactor(sharedNoiseModel, K, params) {
+    this->body_P_sensor_ = body_P_sensor;
   }
 
   /** Virtual destructor */
@@ -123,18 +138,16 @@ public:
    */
   typename Base::Cameras cameras(const Values& values) const {
     typename Base::Cameras cameras;
-    for(const Key& k: this->keys_) {
-      Pose3 pose = values.at<Pose3>(k);
-      if (Base::body_P_sensor_)
-        pose = pose.compose(*(Base::body_P_sensor_));
-
-      Camera camera(pose, K_);
-      cameras.push_back(camera);
+    for (const Key& k : this->keys_) {
+      const Pose3 world_P_sensor_k =
+          Base::body_P_sensor_ ? values.at<Pose3>(k) * *Base::body_P_sensor_
+                               : values.at<Pose3>(k);
+      cameras.emplace_back(world_P_sensor_k, K_);
     }
     return cameras;
   }
 
-private:
+ private:
 
   /// Serialization function
   friend class boost::serialization::access;

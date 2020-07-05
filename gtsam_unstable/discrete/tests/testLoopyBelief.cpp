@@ -1,6 +1,6 @@
 /**
  * @file    testLoopyBelief.cpp
- * @brief  
+ * @brief
  * @author Duy-Nguyen Ta
  * @date    Oct 11, 2013
  */
@@ -175,19 +175,19 @@ private:
 
       // collect all factors involving this key in the original graph
       DiscreteFactorGraph::shared_ptr star(new DiscreteFactorGraph());
-      for(size_t factorIdx: varIndex[key]) {
-        star->push_back(graph.at(factorIdx));
+      for(size_t factorIndex: varIndex[key]) {
+        star->push_back(graph.at(factorIndex));
 
         // accumulate unary factors
-        if (graph.at(factorIdx)->size() == 1) {
+        if (graph.at(factorIndex)->size() == 1) {
           if (!prodOfUnaries)
             prodOfUnaries = boost::dynamic_pointer_cast<DecisionTreeFactor>(
-                graph.at(factorIdx));
+                graph.at(factorIndex));
           else
             prodOfUnaries = boost::make_shared<DecisionTreeFactor>(
                 *prodOfUnaries
                     * (*boost::dynamic_pointer_cast<DecisionTreeFactor>(
-                        graph.at(factorIdx))));
+                        graph.at(factorIndex))));
         }
       }
 

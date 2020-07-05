@@ -100,7 +100,7 @@ namespace gtsam {
     /** equals */
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
       const This *e = dynamic_cast<const This*> (&expected);
-      return e != NULL && Base::equals(*e, tol) &&
+      return e != nullptr && Base::equals(*e, tol) &&
           gtsam::equal_with_abs_tol(this->prior_, e->prior_, tol) &&
           this->mask_ == e->mask_;
     }
@@ -121,7 +121,7 @@ namespace gtsam {
 
     // access
     const Vector& prior() const { return prior_; }
-    const std::vector<bool>& mask() const { return  mask_; }
+    const std::vector<size_t>& mask() const { return  mask_; }
     const Matrix& H() const { return H_; }
 
   protected:

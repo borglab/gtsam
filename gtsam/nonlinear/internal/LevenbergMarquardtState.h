@@ -147,7 +147,7 @@ struct LevenbergMarquardtState : public NonlinearOptimizerState {
         CachedModel* item = getCachedModel(dim);
         item->A.diagonal() = sqrtHessianDiagonal.at(key);  // use diag(hessian)
         damped += boost::make_shared<JacobianFactor>(key, item->A, item->b, item->model);
-      } catch (const std::out_of_range& e) {
+      } catch (const std::out_of_range&) {
         continue;  // Don't attempt any damping if no key found in diagonal
       }
     }

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -142,7 +142,7 @@ namespace gtsam {
     /**
      * Timing Entry, arranged in a tree
      */
-    class GTSAM_EXPORT TimingOutline {
+    class TimingOutline {
     protected:
       size_t id_;
       size_t t_;
@@ -174,21 +174,21 @@ namespace gtsam {
 
     public:
       /// Constructor
-      TimingOutline(const std::string& label, size_t myId);
-      size_t time() const; ///< time taken, including children
+      GTSAM_EXPORT TimingOutline(const std::string& label, size_t myId);
+      GTSAM_EXPORT size_t time() const; ///< time taken, including children
       double secs() const { return double(time()) / 1000000.0;} ///< time taken, in seconds, including children
       double self() const { return double(t_)     / 1000000.0;} ///< self time only, in seconds
       double wall() const { return double(tWall_) / 1000000.0;} ///< wall time, in seconds
       double min()  const { return double(tMin_)  / 1000000.0;} ///< min time, in seconds
       double max()  const { return double(tMax_)  / 1000000.0;} ///< max time, in seconds
       double mean() const { return self() / double(n_); } ///< mean self time, in seconds
-      void print(const std::string& outline = "") const;
-      void print2(const std::string& outline = "", const double parentTotal = -1.0) const;
-      const boost::shared_ptr<TimingOutline>&
+      GTSAM_EXPORT void print(const std::string& outline = "") const;
+      GTSAM_EXPORT void print2(const std::string& outline = "", const double parentTotal = -1.0) const;
+      GTSAM_EXPORT const boost::shared_ptr<TimingOutline>&
         child(size_t child, const std::string& label, const boost::weak_ptr<TimingOutline>& thisPtr);
-      void tic();
-      void toc();
-      void finishedIteration();
+      GTSAM_EXPORT void tic();
+      GTSAM_EXPORT void toc();
+      GTSAM_EXPORT void finishedIteration();
 
       GTSAM_EXPORT friend void toc(size_t id, const char *label);
     }; // \TimingOutline
@@ -196,7 +196,7 @@ namespace gtsam {
     /**
      * Small class that calls internal::tic at construction, and internol::toc when destroyed
      */
-    class AutoTicToc {
+    class GTSAM_EXPORT AutoTicToc {
      private:
       size_t id_;
       const char* label_;

@@ -104,7 +104,7 @@ namespace gtsam {
      *  If found, we make this a singleton... Called in AllDiff::ensureArcConsistency
      *  @param keys connected domains through alldiff
      */
-    bool checkAllDiff(const std::vector<Key> keys, std::vector<Domain>& domains);
+    bool checkAllDiff(const KeyVector keys, std::vector<Domain>& domains);
 
     /// Partially apply known values
     virtual Constraint::shared_ptr partiallyApply(

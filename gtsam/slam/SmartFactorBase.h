@@ -75,16 +75,13 @@ protected:
    */
   ZVector measured_;
 
-  /// @name Pose of the camera in the body frame
-  boost::optional<Pose3> body_P_sensor_; ///< Pose of the camera in the body frame
-  /// @}
+  boost::optional<Pose3> body_P_sensor_;  ///< Pose of the camera in the body frame
 
   // Cache for Fblocks, to avoid a malloc ever time we re-linearize
   mutable FBlocks Fs;
 
-public:
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+ public:
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -118,23 +115,25 @@ public:
   }
 
   /**
-   * Add a new measurement and pose key
-   * @param measured_i is the 2m dimensional projection of a single landmark
-   * @param poseKey is the index corresponding to the camera observing the landmark
-   * @param sharedNoiseModel is the measurement noise
+   * Add a new measurement and pose/camera key
+   * @param measured is the 2m dimensional projection of a single landmark
+   * @param key is the index corresponding to the camera observing the landmark
    */
-  void add(const Z& measured_i, const Key& cameraKey_i) {
-    this->measured_.push_back(measured_i);
-    this->keys_.push_back(cameraKey_i);
+  void add(const Z& measured, const Key& key) {
+    if(std::find(keys_.begin(), keys_.end(), key) != keys_.end()) {
+      throw std::invalid_argument(
+          "SmartFactorBase::add: adding duplicate measurement for key.");
+    }
+    this->measured_.push_back(measured);
+    this->keys_.push_back(key);
   }
 
   /**
    * Add a bunch of measurements, together with the camera keys
    */
-  void add(ZVector& measurements, std::vector<Key>& cameraKeys) {
+  void add(ZVector& measurements, KeyVector& cameraKeys) {
     for (size_t i = 0; i < measurements.size(); i++) {
-      this->measured_.push_back(measurements.at(i));
-      this->keys_.push_back(cameraKeys.at(i));
+      this->add(measurements.at(i), cameraKeys.at(i));
     }
   }
 
@@ -198,17 +197,20 @@ public:
     return e && Base::equals(p, tol) && areMeasurementsEqual;
   }
 
-  /// Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and derivatives
-  template<class POINT>
-  Vector unwhitenedError(const Cameras& cameras, const POINT& point,
-      boost::optional<typename Cameras::FBlocks&> Fs = boost::none, //
+  /// Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and
+  /// derivatives
+  template <class POINT>
+  Vector unwhitenedError(
+      const Cameras& cameras, const POINT& point,
+      boost::optional<typename Cameras::FBlocks&> Fs = boost::none,  //
       boost::optional<Matrix&> E = boost::none) const {
     Vector ue = cameras.reprojectionError(point, measured_, Fs, E);
-    if(body_P_sensor_ && Fs){
-      for(size_t i=0; i < Fs->size(); i++){
-        Pose3 w_Pose_body = (cameras[i].pose()).compose(body_P_sensor_->inverse());
+    if (body_P_sensor_ && Fs) {
+      const Pose3 sensor_P_body = body_P_sensor_->inverse();
+      for (size_t i = 0; i < Fs->size(); i++) {
+        const Pose3 w_Pose_body = cameras[i].pose() * sensor_P_body;
         Matrix J(6, 6);
-        Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
+        const Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
         Fs->at(i) = Fs->at(i) * J;
       }
     }
@@ -310,7 +312,7 @@ public:
   void updateAugmentedHessian(const Cameras& cameras, const Point3& point,
       const double lambda, bool diagonalDamping,
       SymmetricBlockMatrix& augmentedHessian,
-      const FastVector<Key> allKeys) const {
+      const KeyVector allKeys) const {
     Matrix E;
     Vector b;
     computeJacobians(Fs, E, b, cameras, point);

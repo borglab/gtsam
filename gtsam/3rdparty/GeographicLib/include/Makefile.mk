@@ -1,10 +1,12 @@
-MODULES = AlbersEqualArea \
+MODULES = Accumulator \
+	AlbersEqualArea \
 	AzimuthalEquidistant \
 	CassiniSoldner \
 	CircularEngine \
 	DMS \
 	Ellipsoid \
 	EllipticFunction \
+	GARS \
 	GeoCoords \
 	Geocentric \
 	Geodesic \
@@ -13,6 +15,7 @@ MODULES = AlbersEqualArea \
 	GeodesicLineExact \
 	Geohash \
 	Geoid \
+	Georef \
 	Gnomonic \
 	GravityCircle \
 	GravityModel \
@@ -21,18 +24,19 @@ MODULES = AlbersEqualArea \
 	MGRS \
 	MagneticCircle \
 	MagneticModel \
+	Math \
 	NormalGravity \
 	OSGB \
 	PolarStereographic \
 	PolygonArea \
+	Rhumb \
 	SphericalEngine \
 	TransverseMercator \
 	TransverseMercatorExact \
 	UTMUPS \
 	Utility
-EXTRAHEADERS = Accumulator \
-	Constants \
-	Math \
+EXTRAHEADERS = Constants \
+	NearestNeighbor \
 	SphericalHarmonic \
 	SphericalHarmonic1 \
 	SphericalHarmonic2

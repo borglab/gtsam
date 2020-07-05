@@ -24,14 +24,12 @@
 
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/ISAM2Params.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <boost/variant.hpp>
 
 namespace gtsam {
-
-typedef FastVector<size_t> FactorIndices;
 
 /**
  * @addtogroup ISAM2
@@ -40,7 +38,7 @@ typedef FastVector<size_t> FactorIndices;
  * converging, and about how much work was required for the update.  See member
  * variables for details and information about each entry.
  */
-struct GTSAM_EXPORT ISAM2Result {
+struct ISAM2Result {
   /** The nonlinear error of all of the factors, \a including new factors and
    * variables added during the current call to ISAM2::update().  This error is
    * calculated using the following variable values:
@@ -98,7 +96,22 @@ struct GTSAM_EXPORT ISAM2Result {
    */
   FactorIndices newFactorsIndices;
 
-  /** A struct holding detailed results, which must be enabled with
+  /** Unused keys, and indices for unused keys,
+   * i.e., keys that are empty now and do not appear in the new factors.
+   */
+  KeySet unusedKeys;
+
+  /** keys for variables that were observed, i.e., not unused. */
+  KeyVector observedKeys;
+
+  /** Keys of variables that had factors removed. */
+  KeySet keysWithRemovedFactors;
+
+  /** All keys that were marked during the update process. */
+  KeySet markedKeys;
+
+  /**
+   * A struct holding detailed results, which must be enabled with
    * ISAM2Params::enableDetailedResults.
    */
   struct DetailedResults {
@@ -134,15 +147,24 @@ struct GTSAM_EXPORT ISAM2Result {
             inRootClique(false) {}
     };
 
-    /** The status of each variable during this update, see VariableStatus.
-     */
-    FastMap<Key, VariableStatus> variableStatus;
+    using StatusMap = FastMap<Key, VariableStatus>;
+
+    /// The status of each variable during this update, see VariableStatus.
+    StatusMap variableStatus;
   };
 
   /** Detailed results, if enabled by ISAM2Params::enableDetailedResults.  See
    * Detail for information about the results data stored here. */
   boost::optional<DetailedResults> detail;
 
+  explicit ISAM2Result(bool enableDetailedResults = false) {
+    if (enableDetailedResults) detail.reset(DetailedResults());
+  }
+
+  /// Return pointer to detail, 0 if no detail requested
+  DetailedResults* details() { return detail.get_ptr(); }
+
+  /// Print results
   void print(const std::string str = "") const {
     using std::cout;
     cout << str << "  Reelimintated: " << variablesReeliminated

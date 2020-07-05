@@ -1,0 +1,202 @@
+/*
+Compute the series expansion for the rhumb area.
+
+Copyright (c) Charles Karney (2014) <charles@karney.com> and licensed
+under the MIT/X11 License.  For more information, see
+https://geographiclib.sourceforge.io/
+
+Instructions: edit the value of maxpow near the end of this file.  Then
+load the file into maxima.
+
+Area of rhumb quad
+
+dA = c^2 sin(xi) * dlambda
+c = authalic radius
+xi = authalic latitude
+Express sin(xi) in terms of chi and expand for small n
+this can be written in terms of powers of sin(chi)
+Subst sin(chi) = tanh(psi) = tanh(m*lambda)
+Integrate over lambda to give
+
+A = c^2 * S(chi)/m
+
+S(chi) = log(sec(chi)) + sum(R[i]*cos(2*i*chi),i,0,maxpow)
+
+R[0] = + 1/3 * n
+       - 16/45 * n^2
+       + 131/945 * n^3
+       + 691/56700 * n^4
+R[1] = - 1/3 * n
+       + 22/45 * n^2
+       - 356/945 * n^3
+       + 1772/14175 * n^4;
+R[2] = - 2/15 * n^2
+       + 106/315 * n^3
+       - 1747/4725 * n^4;
+R[3] = - 31/315 * n^3
+       + 104/315 * n^4;
+R[4] = - 41/420 * n^4;
+
+i=0 term is just the integration const so can be dropped.  However
+including this terms gives S(0) = 0.
+
+Evaluate A between limits lam1 and lam2 gives
+
+A = c^2 * (lam2 - lam1) *
+ (S(chi2) - S(chi1)) / (atanh(sin(chi2)) - atanh(sin(chi1)))
+
+In limit chi2 -> chi, chi1 -> chi
+
+diff(atanh(sin(chi)),chi) = sec(chi)
+diff(log(sec(chi)),chi) = tan(chi)
+
+c^2 * (lam2 - lam1) * [
+  (1-R[1]) * sin(chi)
+- (R[1]+2*R[2]) * sin(3*chi)
+- (2*R[2]+3*R[3]) * sin(5*chi)
+- (3*R[3]+4*R[4]) * sin(7*chi)
+...
+]
+which is expansion of c^2 * (lam2 - lam1) * sin(xi) in terms of sin(chi)
+Note:
+ limit chi->0 = 0
+ limit chi->pi/2 = c^2 * (lam2-lam1)
+
+Express in terms of psi
+A = c^2 * (lam2 - lam1) *
+ (S(chi(psi2)) - S(chi(psi2))) / (psi2 - psi1)
+
+sum(R[i]*cos(2*i*chi),i,0,maxpow) = sum(sin(chi),cos(chi))
+S(chi(psi)) = log(cosh(psi)) + sum(tanh(psi),sech(psi))
+
+(S(chi(psi2)) - S(chi(psi2))) / (psi2 - psi1)
+  = Dlog(cosh(psi1),cosh(psi2)) * Dcosh(psi1,psi2)
+    + Dsum(chi1,chi2) * Dgd(psi1,psi2)
+
+*/
+
+reverta(expr,var1,var2,eps,pow):=block([tauacc:1,sigacc:0,dsig],
+  dsig:ratdisrep(taylor(expr-var1,eps,0,pow)),
+  dsig:subst([var1=var2],dsig),
+  for n:1 thru pow do (tauacc:trigreduce(ratdisrep(taylor(
+    -dsig*tauacc/n,eps,0,pow))),
+    sigacc:sigacc+expand(diff(tauacc,var2,n-1))),
+  var2+sigacc)$
+
+/* chi in terms of phi -- from auxlat.mac*/
+chi_phi(maxpow):=block([psiv,tanchi,chiv,qq,e,atanexp,x,eps],
+    /* Here qq = atanh(sin(phi)) = asinh(tan(phi)) */
+    psiv:qq-e*atanh(e*tanh(qq)),
+    psiv:subst([e=sqrt(4*n/(1+n)^2),qq=atanh(sin(phi))],
+      ratdisrep(taylor(psiv,e,0,2*maxpow)))
+    +asinh(sin(phi)/cos(phi))-atanh(sin(phi)),
+    tanchi:subst([abs(cos(phi))=cos(phi),sqrt(sin(phi)^2+cos(phi)^2)=1],
+      ratdisrep(taylor(sinh(psiv),n,0,maxpow)))+tan(phi)-sin(phi)/cos(phi),
+    atanexp:ratdisrep(taylor(atan(x+eps),eps,0,maxpow)),
+    chiv:subst([x=tan(phi),eps=tanchi-tan(phi)],atanexp),
+    chiv:subst([atan(tan(phi))=phi,
+      tan(phi)=sin(phi)/cos(phi)],
+      (chiv-phi)/cos(phi))*cos(phi)+phi,
+    chiv:ratdisrep(taylor(chiv,n,0,maxpow)),
+    expand(trigreduce(chiv)))$
+
+/* phi in terms of chi -- from auxlat.mac */
+phi_chi(maxpow):=reverta(chi_phi(maxpow),phi,chi,n,maxpow)$
+
+/* xi in terms of phi */
+xi_phi(maxpow):=block([sinxi,asinexp,x,eps,v],
+  sinxi:(sin(phi)/2*(1/(1-e^2*sin(phi)^2) + atanh(e*sin(phi))/(e*sin(phi))))/
+  (1/2*(1/(1-e^2) + atanh(e)/e)),
+  sinxi:ratdisrep(taylor(sinxi,e,0,2*maxpow)),
+  sinxi:subst([e=2*sqrt(n)/(1+n)],sinxi),
+  sinxi:expand(trigreduce(ratdisrep(taylor(sinxi,n,0,maxpow)))),
+  asinexp:sqrt(1-x^2)*
+  sum(ratsimp(diff(asin(x),x,i)/i!/sqrt(1-x^2))*eps^i,i,0,maxpow),
+  v:subst([x=sin(phi),eps=sinxi-sin(phi)],asinexp),
+  v:taylor(subst([sqrt(1-sin(phi)^2)=cos(phi),asin(sin(phi))=phi],
+      v),n,0,maxpow),
+  v:expand(ratdisrep(coeff(v,n,0))+sum(
+      ratsimp(trigreduce(sin(phi)*ratsimp(
+            subst([sin(phi)=sqrt(1-cos(phi)^2)],
+              ratsimp(trigexpand(ratdisrep(coeff(v,n,i)))/sin(phi))))))
+      *n^i,
+      i,1,maxpow)))$
+
+xi_chi(maxpow):=
+expand(trigreduce(taylor(subst([phi=phi_chi(maxpow)],xi_phi(maxpow)),
+      n,0,maxpow)))$
+
+computeR(maxpow):=block([xichi,xxn,inttanh,yy,m,yyi,yyj,s],
+  local(inttanh),
+  xichi:xi_chi(maxpow),
+  xxn:expand(subst([cos(chi)=sqrt(1-sin(chi)^2)],
+      trigexpand(taylor(sin(xichi),n,0,maxpow)))),
+  /* integrals of tanh(x)^l.  Use tanh(x)^2 + sech(x)^2 = 1. */
+  inttanh[0](x):=x, /* Not needed -- only odd l occurs in this problem */
+  inttanh[1](x):=log(cosh(x)),
+  inttanh[l](x):=inttanh[l-2](x) - tanh(x)^(l-1)/(l-1),
+  yy:subst([sin(chi)=tanh(m*lambda)],xxn),
+  /*
+  psi = atanh(sin(chi)) = m*lambda
+  sin(chi)=tanh(m*lambda)
+  sech(m*lambda) = sqrt(1-tanh(m*lambda))^2 = cos(chi)
+  cosh(m*lambda) = sec(chi)
+  m=(atanh(sin(chi2))-atanh(sin(chi1)))/(lam2-lam1)
+  */
+  yyi:block([v:yy/m,ii],
+    local(ii),
+    for j:2*maxpow+1 step -2 thru 1 do
+    v:subst([tanh(m*lambda)^j=ii[j](m*lambda)],v),
+    for j:2*maxpow+1 step -2 thru 1 do
+    v:subst([ii[j](m*lambda)=inttanh[j](m*lambda)],v),
+    expand(v)),
+  yyj:expand(m*trigreduce(
+      subst([tanh(m*lambda)=sin(chi),cosh(m*lambda)=sec(chi)],yyi)))/
+  ( (atanh(sin(chi2))-atanh(sin(chi1)))/(lam2-lam1) ),
+  s:( (atanh(sin(chi2))-atanh(sin(chi1)))/(lam2-lam1) )*yyj-log(sec(chi)),
+  for i:1 thru maxpow do R[i]:coeff(s,cos(2*i*chi)),
+  R[0]:s-expand(sum(R[i]*cos(2*i*chi),i,1,maxpow)),
+  if expand(s-sum(R[i]*cos(2*i*chi),i,0,maxpow)) # 0 then
+  error("Left over terms in R"),
+  if expand(trigreduce(expand(
+        diff(sum(R[i]*cos(2*i*chi),i,0,maxpow),chi)*cos(chi)+sin(chi))))-
+  expand(trigreduce(expand(xxn))) # 0 then
+  error("Derivative error in R"),
+  'done)$
+
+ataylor(expr,var,ord):=expand(ratdisrep(taylor(expr,var,0,ord)))$
+dispR(ord):=for i:1 thru ord do
+block([tt:ataylor(R[i],n,ord),ttt,linel:1200],
+  print(),
+  for j:max(i,1) step 1 thru ord do (ttt:coeff(tt,n,j), print(concat(
+        if j = max(i,1) then concat("R[",string(i),"] = ") else "       ",
+        if ttt<0 then "- " else "+ ",
+        string(abs(ttt)), " * ", string(n^j),
+        if j=ord then ";" else ""))))$
+
+codeR(minpow,maxpow):=block([tab2:"    ",tab3:"      "],
+  print("  // The coefficients R[l] in the Fourier expansion of rhumb area
+    real nx = n;
+    switch (maxpow_) {"),
+  for k:minpow thru maxpow do (
+    print(concat(tab2,"case ",string(k),":")),
+    for m:1 thru k do block([q:nx*horner(
+        ataylor(R[m],n,k)/n^m),
+      linel:1200],
+      if m>1 then print(concat(tab3,"nx *= n;")),
+      print(concat(tab3,"c[",string(m),"] = ",string(q),";"))),
+    print(concat(tab3,"break;"))),
+  print(concat(tab2,"default:")),
+  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(maxpow_ >= ",string(minpow),
+      " && maxpow_ <= ",string(maxpow),", \"Bad value of maxpow_\");")),
+  print("    }"),
+'done)$
+
+maxpow:8$
+computeR(maxpow)$
+dispR(maxpow)$
+/* codeR(4,maxpow)$ */
+load("polyprint.mac")$
+printrhumb():=block([macro:GEOGRAPHICLIB_RHUMBAREA_ORDER],
+  array1('R,'n,1,0))$
+printrhumb()$

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -54,47 +54,24 @@ public:
   }
   virtual void print(const std::string& str = "") const;
 
-  size_t getMaxIterations() const {
-    return maxIterations;
-  }
-  double getRelativeErrorTol() const {
-    return relativeErrorTol;
-  }
-  double getAbsoluteErrorTol() const {
-    return absoluteErrorTol;
-  }
-  double getErrorTol() const {
-    return errorTol;
-  }
-  std::string getVerbosity() const {
-    return verbosityTranslator(verbosity);
-  }
+  size_t getMaxIterations() const { return maxIterations; }
+  double getRelativeErrorTol() const { return relativeErrorTol; }
+  double getAbsoluteErrorTol() const { return absoluteErrorTol; }
+  double getErrorTol() const { return errorTol; }
+  std::string getVerbosity() const { return verbosityTranslator(verbosity); }
 
-  void setMaxIterations(int value) {
-    maxIterations = value;
-  }
-  void setRelativeErrorTol(double value) {
-    relativeErrorTol = value;
-  }
-  void setAbsoluteErrorTol(double value) {
-    absoluteErrorTol = value;
-  }
-  void setErrorTol(double value) {
-    errorTol = value;
-  }
-  void setVerbosity(const std::string &src) {
+  void setMaxIterations(int value) { maxIterations = value; }
+  void setRelativeErrorTol(double value) { relativeErrorTol = value; }
+  void setAbsoluteErrorTol(double value) { absoluteErrorTol = value; }
+  void setErrorTol(double value) { errorTol = value; }
+  void setVerbosity(const std::string& src) {
     verbosity = verbosityTranslator(src);
   }
 
   static Verbosity verbosityTranslator(const std::string &s) ;
   static std::string verbosityTranslator(Verbosity value) ;
 
-  // Successive Linearization Parameters
-
-public:
-
   /** See NonlinearOptimizerParams::linearSolverType */
-
   enum LinearSolverType {
     MULTIFRONTAL_CHOLESKY,
     MULTIFRONTAL_QR,
@@ -105,7 +82,7 @@ public:
   };
 
   LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
-  boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
+  boost::optional<Ordering> ordering; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
 
   inline bool isMultifrontal() const {
@@ -168,13 +145,9 @@ public:
 
 private:
   std::string linearSolverTranslator(LinearSolverType linearSolverType) const;
-
   LinearSolverType linearSolverTranslator(const std::string& linearSolverType) const;
-
   std::string orderingTypeTranslator(Ordering::OrderingType type) const;
-
   Ordering::OrderingType orderingTypeTranslator(const std::string& type) const;
-
 };
 
 // For backward compatibility:

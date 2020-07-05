@@ -31,6 +31,7 @@ static const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
 
 PreintegratedImuMeasurements ScenarioRunner::integrate(
     double T, const Bias& estimatedBias, bool corrupted) const {
+  gttic_(integrate);
   PreintegratedImuMeasurements pim(p_, estimatedBias);
 
   const double dt = imuSampleTime();
@@ -49,7 +50,7 @@ PreintegratedImuMeasurements ScenarioRunner::integrate(
 
 NavState ScenarioRunner::predict(const PreintegratedImuMeasurements& pim,
                                  const Bias& estimatedBias) const {
-  const NavState state_i(scenario_->pose(0), scenario_->velocity_n(0));
+  const NavState state_i(scenario_.pose(0), scenario_.velocity_n(0));
   return pim.predict(state_i, estimatedBias);
 }
 

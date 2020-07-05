@@ -35,7 +35,7 @@ inline PyArrayObject *_ndarray_view<double>(double *data, long rows, long cols, 
         return ndarray_double_C(data, rows, cols, outer_stride>0?outer_stride:cols, inner_stride>0?inner_stride:1);
     } else {
         // Eigen column-major mode: row_stride=outer_stride, and col_stride=inner_stride
-        // If no stride is given, the cow_stride is set to the number of rows.        
+        // If no stride is given, the cow_stride is set to the number of rows.
         return ndarray_double_F(data, rows, cols, inner_stride>0?inner_stride:1, outer_stride>0?outer_stride:rows);
     }
 }
@@ -355,7 +355,7 @@ public:
     FlattenedMap()
         : Base(NULL, 0, 0),
           object_(NULL) {}
-    
+
     FlattenedMap(Scalar *data, long rows, long cols, long outer_stride=0, long inner_stride=0)
         : Base(data, rows, cols,
                Eigen::Stride<_StrideOuter, _StrideInner>(outer_stride, inner_stride)),
@@ -363,7 +363,7 @@ public:
     }
 
     FlattenedMap(PyArrayObject *object)
-        : Base((Scalar *)((PyArrayObject*)object)->data,        
+        : Base((Scalar *)((PyArrayObject*)object)->data,
         // : Base(_from_numpy<Scalar>((PyArrayObject*)object),
                (((PyArrayObject*)object)->nd == 2) ? ((PyArrayObject*)object)->dimensions[0] : 1,
                (((PyArrayObject*)object)->nd == 2) ? ((PyArrayObject*)object)->dimensions[1] : ((PyArrayObject*)object)->dimensions[0],
@@ -390,7 +390,7 @@ public:
 
         return *this;
     }
-    
+
     operator Base() const {
         return static_cast<Base>(*this);
     }
@@ -429,7 +429,7 @@ public:
                (ColsAtCompileTime == Eigen::Dynamic) ? 0 : ColsAtCompileTime),
           object_(NULL) {
     }
-    
+
     Map(Scalar *data, long rows, long cols)
         : Base(data, rows, cols),
           object_(NULL) {}
@@ -456,7 +456,7 @@ public:
             throw std::invalid_argument("Numpy array must be a in one contiguous segment to be able to be transferred to a Eigen Map.");
         Py_XINCREF(object_);
     }
-    
+
     Map &operator=(const Map &other) {
         if (other.object_) {
             new (this) Map(other.object_);
@@ -474,7 +474,7 @@ public:
         MapBase<MatrixType>::operator=(other);
         return *this;
     }
-    
+
     operator Base() const {
         return static_cast<Base>(*this);
     }

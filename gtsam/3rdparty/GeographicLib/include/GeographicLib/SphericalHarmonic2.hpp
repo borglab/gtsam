@@ -4,7 +4,7 @@
  *
  * Copyright (c) Charles Karney (2011-2012) <charles@karney.com> and licensed
  * under the MIT/X11 License.  For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #if !defined(GEOGRAPHICLIB_SPHERICALHARMONIC2_HPP)
@@ -21,9 +21,10 @@ namespace GeographicLib {
    * \brief Spherical harmonic series with two corrections to the coefficients
    *
    * This classes is similar to SphericalHarmonic, except that the coefficients
-   * \e C<sub>\e nm</sub> are replaced by \e C<sub>\e nm</sub> + \e tau'
-   * C'<sub>\e nm</sub> + \e tau'' C''<sub>\e nm</sub> (and similarly for \e
-   * S<sub>\e nm</sub>).
+   * <i>C</i><sub><i>nm</i></sub> are replaced by
+   * <i>C</i><sub><i>nm</i></sub> + \e tau' <i>C'</i><sub><i>nm</i></sub> + \e
+   * tau'' <i>C''</i><sub><i>nm</i></sub> (and similarly for
+   * <i>S</i><sub><i>nm</i></sub>).
    *
    * Example of use:
    * \include example-SphericalHarmonic2.cpp
@@ -51,11 +52,6 @@ namespace GeographicLib {
        * @hideinitializer
        **********************************************************************/
       SCHMIDT = SphericalEngine::SCHMIDT,
-      /// \cond SKIP
-      // These are deprecated...
-      full = FULL,
-      schmidt = SCHMIDT,
-      /// \endcond
     };
 
   private:
@@ -68,17 +64,19 @@ namespace GeographicLib {
     /**
      * Constructor with a full set of coefficients specified.
      *
-     * @param[in] C the coefficients \e C<sub>\e nm</sub>.
-     * @param[in] S the coefficients \e S<sub>\e nm</sub>.
+     * @param[in] C the coefficients <i>C</i><sub><i>nm</i></sub>.
+     * @param[in] S the coefficients <i>S</i><sub><i>nm</i></sub>.
      * @param[in] N the maximum degree and order of the sum
-     * @param[in] C1 the coefficients \e C'<sub>\e nm</sub>.
-     * @param[in] S1 the coefficients \e S'<sub>\e nm</sub>.
+     * @param[in] C1 the coefficients <i>C'</i><sub><i>nm</i></sub>.
+     * @param[in] S1 the coefficients <i>S'</i><sub><i>nm</i></sub>.
      * @param[in] N1 the maximum degree and order of the first correction
-     *   coefficients \e C'<sub>\e nm</sub> and \e S'<sub>\e nm</sub>.
-     * @param[in] C2 the coefficients \e C''<sub>\e nm</sub>.
-     * @param[in] S2 the coefficients \e S''<sub>\e nm</sub>.
+     *   coefficients <i>C'</i><sub><i>nm</i></sub> and
+     *   <i>S'</i><sub><i>nm</i></sub>.
+     * @param[in] C2 the coefficients <i>C''</i><sub><i>nm</i></sub>.
+     * @param[in] S2 the coefficients <i>S''</i><sub><i>nm</i></sub>.
      * @param[in] N2 the maximum degree and order of the second correction
-     *   coefficients \e C'<sub>\e nm</sub> and \e S'<sub>\e nm</sub>.
+     *   coefficients <i>C'</i><sub><i>nm</i></sub> and
+     *   <i>S'</i><sub><i>nm</i></sub>.
      * @param[in] a the reference radius appearing in the definition of the
      *   sum.
      * @param[in] norm the normalization for the associated Legendre
@@ -118,21 +116,21 @@ namespace GeographicLib {
     /**
      * Constructor with a subset of coefficients specified.
      *
-     * @param[in] C the coefficients \e C<sub>\e nm</sub>.
-     * @param[in] S the coefficients \e S<sub>\e nm</sub>.
+     * @param[in] C the coefficients <i>C</i><sub><i>nm</i></sub>.
+     * @param[in] S the coefficients <i>S</i><sub><i>nm</i></sub>.
      * @param[in] N the degree used to determine the layout of \e C and \e S.
      * @param[in] nmx the maximum degree used in the sum.  The sum over \e n is
      *   from 0 thru \e nmx.
      * @param[in] mmx the maximum order used in the sum.  The sum over \e m is
      *   from 0 thru min(\e n, \e mmx).
-     * @param[in] C1 the coefficients \e C'<sub>\e nm</sub>.
-     * @param[in] S1 the coefficients \e S'<sub>\e nm</sub>.
+     * @param[in] C1 the coefficients <i>C'</i><sub><i>nm</i></sub>.
+     * @param[in] S1 the coefficients <i>S'</i><sub><i>nm</i></sub>.
      * @param[in] N1 the degree used to determine the layout of \e C' and \e
      *   S'.
      * @param[in] nmx1 the maximum degree used for \e C' and \e S'.
      * @param[in] mmx1 the maximum order used for \e C' and \e S'.
-     * @param[in] C2 the coefficients \e C''<sub>\e nm</sub>.
-     * @param[in] S2 the coefficients \e S''<sub>\e nm</sub>.
+     * @param[in] C2 the coefficients <i>C''</i><sub><i>nm</i></sub>.
+     * @param[in] S2 the coefficients <i>S''</i><sub><i>nm</i></sub>.
      * @param[in] N2 the degree used to determine the layout of \e C'' and \e
      *   S''.
      * @param[in] nmx2 the maximum degree used for \e C'' and \e S''.
@@ -185,7 +183,8 @@ namespace GeographicLib {
      * Compute a spherical harmonic sum with two correction terms.
      *
      * @param[in] tau1 multiplier for correction coefficients \e C' and \e S'.
-     * @param[in] tau2 multiplier for correction coefficients \e C'' and \e S''.
+     * @param[in] tau2 multiplier for correction coefficients \e C'' and \e
+     *   S''.
      * @param[in] x cartesian coordinate.
      * @param[in] y cartesian coordinate.
      * @param[in] z cartesian coordinate.
@@ -195,7 +194,7 @@ namespace GeographicLib {
      * exception.
      **********************************************************************/
     Math::real operator()(real tau1, real tau2, real x, real y, real z)
-      const throw() {
+      const {
       real f[] = {1, tau1, tau2};
       real v = 0;
       real dummy;
@@ -217,7 +216,8 @@ namespace GeographicLib {
      * gradient.
      *
      * @param[in] tau1 multiplier for correction coefficients \e C' and \e S'.
-     * @param[in] tau2 multiplier for correction coefficients \e C'' and \e S''.
+     * @param[in] tau2 multiplier for correction coefficients \e C'' and \e
+     *   S''.
      * @param[in] x cartesian coordinate.
      * @param[in] y cartesian coordinate.
      * @param[in] z cartesian coordinate.
@@ -232,7 +232,7 @@ namespace GeographicLib {
      * an exception.
      **********************************************************************/
     Math::real operator()(real tau1, real tau2, real x, real y, real z,
-                          real& gradx, real& grady, real& gradz) const throw() {
+                          real& gradx, real& grady, real& gradz) const {
       real f[] = {1, tau1, tau2};
       real v = 0;
       switch (_norm) {
@@ -253,7 +253,8 @@ namespace GeographicLib {
      * points on a circle of latitude at fixed values of \e tau1 and \e tau2.
      *
      * @param[in] tau1 multiplier for correction coefficients \e C' and \e S'.
-     * @param[in] tau2 multiplier for correction coefficients \e C'' and \e S''.
+     * @param[in] tau2 multiplier for correction coefficients \e C'' and \e
+     *   S''.
      * @param[in] p the radius of the circle.
      * @param[in] z the height of the circle above the equatorial plane.
      * @param[in] gradp if true the returned object will be able to compute the
@@ -263,8 +264,9 @@ namespace GeographicLib {
      * @return the CircularEngine object.
      *
      * SphericalHarmonic2::operator()() exchanges the order of the sums in the
-     * definition, i.e., &sum;<sub>n = 0..N</sub> &sum;<sub>m = 0..n</sub>
-     * becomes &sum;<sub>m = 0..N</sub> &sum;<sub>n = m..N</sub>..
+     * definition, i.e., &sum;<sub><i>n</i> = 0..<i>N</i></sub>
+     * &sum;<sub><i>m</i> = 0..<i>n</i></sub> becomes &sum;<sub><i>m</i> =
+     * 0..<i>N</i></sub> &sum;<sub><i>n</i> = <i>m</i>..<i>N</i></sub>..
      * SphericalHarmonic2::Circle performs the inner sum over degree \e n
      * (which entails about <i>N</i><sup>2</sup> operations).  Calling
      * CircularEngine::operator()() on the returned object performs the outer
@@ -297,17 +299,17 @@ namespace GeographicLib {
     /**
      * @return the zeroth SphericalEngine::coeff object.
      **********************************************************************/
-    const SphericalEngine::coeff& Coefficients() const throw()
+    const SphericalEngine::coeff& Coefficients() const
     { return _c[0]; }
     /**
      * @return the first SphericalEngine::coeff object.
      **********************************************************************/
-    const SphericalEngine::coeff& Coefficients1() const throw()
+    const SphericalEngine::coeff& Coefficients1() const
     { return _c[1]; }
     /**
      * @return the second SphericalEngine::coeff object.
      **********************************************************************/
-    const SphericalEngine::coeff& Coefficients2() const throw()
+    const SphericalEngine::coeff& Coefficients2() const
     { return _c[2]; }
   };
 

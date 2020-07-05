@@ -72,7 +72,7 @@ public:
   typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
   /** A map from keys to values */
-  typedef std::vector<Key> Indices;
+  typedef KeyVector Indices;
   typedef Assignment<Key> Values;
   typedef boost::shared_ptr<Values> sharedValues;
 

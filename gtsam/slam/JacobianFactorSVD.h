@@ -38,7 +38,7 @@ public:
   }
 
   /// Empty constructor with keys
-  JacobianFactorSVD(const FastVector<Key>& keys, //
+  JacobianFactorSVD(const KeyVector& keys, //
       const SharedDiagonal& model = SharedDiagonal()) :
       Base() {
     Matrix zeroMatrix = Matrix::Zero(0, D);
@@ -58,14 +58,14 @@ public:
    *
    * @Fblocks:
    */
-  JacobianFactorSVD(const FastVector<Key>& keys,
+  JacobianFactorSVD(const KeyVector& keys,
       const std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> >& Fblocks, const Matrix& Enull,
       const Vector& b, //
       const SharedDiagonal& model = SharedDiagonal()) :
       Base() {
     size_t numKeys = Enull.rows() / ZDim;
     size_t m2 = ZDim * numKeys - 3; // TODO: is this not just Enull.rows()?
-    // PLAIN NULL SPACE TRICK
+    // PLAIN nullptr SPACE TRICK
     // Matrix Q = Enull * Enull.transpose();
     // for(const KeyMatrixZD& it: Fblocks)
     //   QF.push_back(KeyMatrix(it.first, Q.block(0, 2 * j++, m2, 2) * it.second));

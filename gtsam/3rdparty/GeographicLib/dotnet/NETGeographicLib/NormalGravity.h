@@ -7,7 +7,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 namespace NETGeographicLib
@@ -51,7 +51,7 @@ namespace NETGeographicLib
    * - W. A. Heiskanen and H. Moritz, Physical Geodesy (Freeman, San
    *   Francisco, 1967), Secs. 1-19, 2-7, 2-8 (2-9, 2-10), 6-2 (6-3).
    * - H. Moritz, Geodetic Reference System 1980, J. Geodesy 54(3), 395-405
-   *   (1980) http://dx.doi.org/10.1007/BF02521480
+   *   (1980) https://doi.org/10.1007/BF02521480
    *
    * C# Example:
    * \include example-NormalGravity.cs
@@ -96,23 +96,29 @@ namespace NETGeographicLib
          *   the gravitational constant and \e M the mass of the earth (usually
          *   including the mass of the earth's atmosphere).
          * @param[in] omega the angular velocity (rad s<sup>&minus;1</sup>).
-         * @param[in] f the flattening of the ellipsoid.
-         * @param[in] J2 dynamical form factor.
-         * @exception if \e a is not positive or the other constants are
-         *   inconsistent (see below).
+         * @param[in] f_J2 either the flattening of the ellipsoid \e f or the
+         *   the dynamical form factor \e J2.
+         * @param[out] geometricp if true, then \e f_J2 denotes the
+         *   flattening, else it denotes the dynamical form factor \e J2.
+         * @exception if \e a is not positive or if the other parameters do not
+         *   obey the restrictions given below.
          *
-         * Exactly one of \e f and \e J2 should be positive and this will be used
-         * to define the ellipsoid.  The shape of the ellipsoid can be given in one
-         * of two ways:
-         * - geometrically, the ellipsoid is defined by the flattening \e f = (\e a
-         *   &minus; \e b) / \e a, where \e a and \e b are the equatorial radius
-         *   and the polar semi-axis.
-         * - physically, the ellipsoid is defined by the dynamical form factor
-         *   <i>J</i><sub>2</sub> = (\e C &minus; \e A) / <i>Ma</i><sup>2</sup>,
-         *   where \e A and \e C are the equatorial and polar moments of inertia
-         *   and \e M is the mass of the earth.
+         * The shape of the ellipsoid can be given in one of two ways:
+         * - geometrically (\e geomtricp = true), the ellipsoid is defined by the
+         *   flattening \e f = (\e a &minus; \e b) / \e a, where \e a and \e b are
+         *   the equatorial radius and the polar semi-axis.  The parameters should
+         *   obey \e a &gt; 0, \e f &lt; 1.  There are no restrictions on \e GM or
+         *   \e omega, in particular, \e GM need not be positive.
+         * - physically (\e geometricp = false), the ellipsoid is defined by the
+         *   dynamical form factor <i>J</i><sub>2</sub> = (\e C &minus; \e A) /
+         *   <i>Ma</i><sup>2</sup>, where \e A and \e C are the equatorial and
+         *   polar moments of inertia and \e M is the mass of the earth.  The
+         *   parameters should obey \e a &gt; 0, \e GM &gt; 0 and \e J2 &lt; 1/3
+         *   &minus; (<i>omega</i><sup>2</sup><i>a</i><sup>3</sup>/<i>GM</i>)
+         *   8/(45&pi;).  There is no restriction on \e omega.
          **********************************************************************/
-        NormalGravity(double a, double GM, double omega, double f, double J2);
+        NormalGravity(double a, double GM, double omega, double f_J2,
+                      bool geometricp);
 
         /**
          * A constructor for creating standard gravity models..
@@ -315,5 +321,45 @@ namespace NETGeographicLib
          **********************************************************************/
         Geocentric^ Earth();
         ///@}
+
+        /**
+         * A global instantiation of NormalGravity for the WGS84 ellipsoid.
+        **********************************************************************/
+        static NormalGravity^ WGS84();
+
+        /**
+         * A global instantiation of NormalGravity for the GRS80 ellipsoid.
+        **********************************************************************/
+        static NormalGravity^ GRS80();
+
+        /**
+         * Compute the flattening from the dynamical form factor.
+         *
+         * @param[in] a equatorial radius (meters).
+         * @param[in] GM mass constant of the ellipsoid
+         *   (meters<sup>3</sup>/seconds<sup>2</sup>); this is the product of \e G
+         *   the gravitational constant and \e M the mass of the earth (usually
+         *   including the mass of the earth's atmosphere).
+         * @param[in] omega the angular velocity (rad s<sup>&minus;1</sup>).
+         * @param[in] J2 the dynamical form factor.
+         * @return \e f the flattening of the ellipsoid.
+         **********************************************************************/
+        static double J2ToFlattening(double a, double GM, double omega,
+                                     double J2);
+
+        /**
+         * Compute the dynamical form factor from the flattening.
+         *
+         * @param[in] a equatorial radius (meters).
+         * @param[in] GM mass constant of the ellipsoid
+         *   (meters<sup>3</sup>/seconds<sup>2</sup>); this is the product of \e G
+         *   the gravitational constant and \e M the mass of the earth (usually
+         *   including the mass of the earth's atmosphere).
+         * @param[in] omega the angular velocity (rad s<sup>&minus;1</sup>).
+         * @param[in] f the flattening of the ellipsoid.
+         * @return \e J2 the dynamical form factor.
+         **********************************************************************/
+        static double FlatteningToJ2(double a, double GM, double omega,
+                                     double f);
     };
 } //namespace NETGeographicLib

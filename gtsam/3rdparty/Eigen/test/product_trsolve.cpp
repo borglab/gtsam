@@ -84,10 +84,18 @@ void test_product_trsolve()
     CALL_SUBTEST_4((trsolve<std::complex<double>,Dynamic,Dynamic>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2),internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))));
 
     // vectors
-    CALL_SUBTEST_1((trsolve<float,Dynamic,1>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE))));
-    CALL_SUBTEST_5((trsolve<std::complex<double>,Dynamic,1>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE))));
-    CALL_SUBTEST_6((trsolve<float,1,1>()));
-    CALL_SUBTEST_7((trsolve<float,1,2>()));
-    CALL_SUBTEST_8((trsolve<std::complex<float>,4,1>()));
+    CALL_SUBTEST_5((trsolve<float,Dynamic,1>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE))));
+    CALL_SUBTEST_6((trsolve<double,Dynamic,1>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE))));
+    CALL_SUBTEST_7((trsolve<std::complex<float>,Dynamic,1>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE))));
+    CALL_SUBTEST_8((trsolve<std::complex<double>,Dynamic,1>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE))));
+    
+    // meta-unrollers
+    CALL_SUBTEST_9((trsolve<float,4,1>()));
+    CALL_SUBTEST_10((trsolve<double,4,1>()));
+    CALL_SUBTEST_11((trsolve<std::complex<float>,4,1>()));
+    CALL_SUBTEST_12((trsolve<float,1,1>()));
+    CALL_SUBTEST_13((trsolve<float,1,2>()));
+    CALL_SUBTEST_14((trsolve<float,3,1>()));
+    
   }
 }

@@ -30,7 +30,6 @@
 // have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.
 // Here we will use Projection factors to model the camera's landmark observations.
 // Also, we will initialize the robot at some location using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 
 // When the factors are created, we will add them to a Factor Graph. As the factors we are using
@@ -57,12 +56,12 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
-
   // Define the camera calibration parameters
   Cal3_S2::shared_ptr K(new Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0));
 
   // Define the camera observation noise model
-  noiseModel::Isotropic::shared_ptr measurementNoise = noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
+  auto measurementNoise =
+      noiseModel::Isotropic::Sigma(2, 1.0);  // one pixel in u and v
 
   // Create the set of ground-truth landmarks
   vector<Point3> points = createPoints();
@@ -74,32 +73,45 @@ int main(int argc, char* argv[]) {
   NonlinearFactorGraph graph;
 
   // Add a prior on pose x1. This indirectly specifies where the origin is.
-  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished()); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-  graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x', 0), poses[0], poseNoise); // add directly to graph
+  auto poseNoise = noiseModel::Diagonal::Sigmas(
+      (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3))
+          .finished());  // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
+  graph.addPrior(Symbol('x', 0), poses[0], poseNoise);  // add directly to graph
 
-  // Simulated measurements from each camera pose, adding them to the factor graph
+  // Simulated measurements from each camera pose, adding them to the factor
+  // graph
   for (size_t i = 0; i < poses.size(); ++i) {
-    SimpleCamera camera(poses[i], *K);
+    PinholeCamera<Cal3_S2> camera(poses[i], *K);
     for (size_t j = 0; j < points.size(); ++j) {
       Point2 measurement = camera.project(points[j]);
-      graph.emplace_shared<GenericProjectionFactor<Pose3, Point3, Cal3_S2> >(measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K);
+      graph.emplace_shared<GenericProjectionFactor<Pose3, Point3, Cal3_S2> >(
+          measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K);
     }
   }
 
-  // Because the structure-from-motion problem has a scale ambiguity, the problem is still under-constrained
-  // Here we add a prior on the position of the first landmark. This fixes the scale by indicating the distance
-  // between the first camera and the first landmark. All other landmark positions are interpreted using this scale.
-  noiseModel::Isotropic::shared_ptr pointNoise = noiseModel::Isotropic::Sigma(3, 0.1);
-  graph.emplace_shared<PriorFactor<Point3> >(Symbol('l', 0), points[0], pointNoise); // add directly to graph
+  // Because the structure-from-motion problem has a scale ambiguity, the
+  // problem is still under-constrained Here we add a prior on the position of
+  // the first landmark. This fixes the scale by indicating the distance between
+  // the first camera and the first landmark. All other landmark positions are
+  // interpreted using this scale.
+  auto pointNoise = noiseModel::Isotropic::Sigma(3, 0.1);
+  graph.addPrior(Symbol('l', 0), points[0],
+                 pointNoise);  // add directly to graph
   graph.print("Factor Graph:\n");
 
   // Create the data structure to hold the initial estimate to the solution
   // Intentionally initialize the variables off from the ground truth
   Values initialEstimate;
-  for (size_t i = 0; i < poses.size(); ++i)
-    initialEstimate.insert(Symbol('x', i), poses[i].compose(Pose3(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20))));
-  for (size_t j = 0; j < points.size(); ++j)
-    initialEstimate.insert<Point3>(Symbol('l', j), points[j] + Point3(-0.25, 0.20, 0.15));
+  for (size_t i = 0; i < poses.size(); ++i) {
+    auto corrupted_pose = poses[i].compose(
+        Pose3(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20)));
+    initialEstimate.insert(
+        Symbol('x', i), corrupted_pose);
+  }
+  for (size_t j = 0; j < points.size(); ++j) {
+    auto corrupted_point = points[j] + Point3(-0.25, 0.20, 0.15);
+    initialEstimate.insert<Point3>(Symbol('l', j), corrupted_point);
+  }
   initialEstimate.print("Initial Estimates:\n");
 
   /* Optimize the graph and print results */

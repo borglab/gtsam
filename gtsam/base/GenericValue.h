@@ -20,6 +20,7 @@
 #pragma once
 
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/types.h>
 #include <gtsam/base/Value.h>
 
 #include <boost/make_shared.hpp>
@@ -83,18 +84,15 @@ public:
 
   /// Virtual print function, uses traits
   virtual void print(const std::string& str) const {
-    std::cout << "(" << typeid(T).name() << ") ";
+    std::cout << "(" << demangle(typeid(T).name()) << ") ";
     traits<T>::Print(value_, str);
   }
 
     /**
      * Create a duplicate object returned as a pointer to the generic Value interface.
-     * For the sake of performance, this function use singleton pool allocator instead of the normal heap allocator.
-     * The result must be deleted with Value::deallocate_, not with the 'delete' operator.
      */
     virtual Value* clone_() const {
-      void *place = boost::singleton_pool<PoolTag, sizeof(GenericValue)>::malloc();
-      GenericValue* ptr = new (place) GenericValue(*this); // calls copy constructor to fill in
+      GenericValue* ptr = new GenericValue(*this); // calls copy constructor to fill in
       return ptr;
     }
 
@@ -102,15 +100,14 @@ public:
      * Destroy and deallocate this object, only if it was originally allocated using clone_().
      */
     virtual void deallocate_() const {
-      this->~GenericValue(); // Virtual destructor cleans up the derived object
-      boost::singleton_pool<PoolTag, sizeof(GenericValue)>::free((void*) this); // Release memory from pool
+      delete this;
     }
 
     /**
      * Clone this value (normal clone on the heap, delete with 'delete' operator)
      */
     virtual boost::shared_ptr<Value> clone() const {
-      return boost::make_shared<GenericValue>(*this);
+		return boost::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
     }
 
     /// Generic Value interface version of retract
@@ -118,10 +115,7 @@ public:
       // Call retract on the derived class using the retract trait function
       const T retractResult = traits<T>::Retract(GenericValue<T>::value(), delta);
 
-      // Create a Value pointer copy of the result
-      void* resultAsValuePlace =
-          boost::singleton_pool<PoolTag, sizeof(GenericValue)>::malloc();
-      Value* resultAsValue = new (resultAsValuePlace) GenericValue(retractResult);
+      Value* resultAsValue = new GenericValue(retractResult);
 
       // Return the pointer to the Value base class
       return resultAsValue;
@@ -164,19 +158,13 @@ public:
 
   protected:
 
-    // implicit assignment operator for (const GenericValue& rhs) works fine here
     /// Assignment operator, protected because only the Value or DERIVED
     /// assignment operators should be used.
-    //  DerivedValue<DERIVED>& operator=(const DerivedValue<DERIVED>& rhs) {
-    //    // Nothing to do, do not call base class assignment operator
-    //    return *this;
-    //  }
-
-  private:
-
-    /// Fake Tag struct for singleton pool allocator. In fact, it is never used!
-    struct PoolTag {
-    };
+    GenericValue<T>& operator=(const GenericValue<T>& rhs) {
+      Value::operator=(static_cast<Value const&>(rhs));
+      value_ = rhs.value_;
+      return *this;
+    }
 
   private:
 
@@ -187,12 +175,17 @@ public:
       ar & boost::serialization::make_nvp("GenericValue",
               boost::serialization::base_object<Value>(*this));
       ar & boost::serialization::make_nvp("value", value_);
-    }
+	}
+
+
+  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+  enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
+public:
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+};
 
 /// use this macro instead of BOOST_CLASS_EXPORT for GenericValues
 #define GTSAM_VALUE_EXPORT(Type) BOOST_CLASS_EXPORT(gtsam::GenericValue<Type>)
-
-};
 
 // traits
 template <typename ValueType>

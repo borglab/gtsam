@@ -9,6 +9,12 @@
 #  EIGEN3_FOUND - system has eigen lib with correct version
 #  EIGEN3_INCLUDE_DIR - the eigen include directory
 #  EIGEN3_VERSION - eigen version
+#
+# This module reads hints about search locations from 
+# the following enviroment variables:
+#
+# EIGEN3_ROOT
+# EIGEN3_ROOT_DIR
 
 # Copyright (c) 2006, 2007 Montel Laurent, <montel@kde.org>
 # Copyright (c) 2008, 2009 Gael Guennebaud, <g.gael@free.fr>
@@ -60,13 +66,23 @@ if (EIGEN3_INCLUDE_DIR)
   set(EIGEN3_FOUND ${EIGEN3_VERSION_OK})
 
 else (EIGEN3_INCLUDE_DIR)
+  
+  # search first if an Eigen3Config.cmake is available in the system,
+  # if successful this would set EIGEN3_INCLUDE_DIR and the rest of
+  # the script will work as usual
+  find_package(Eigen3 ${Eigen3_FIND_VERSION} NO_MODULE QUIET)
 
-  find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
-      PATHS
-      ${CMAKE_INSTALL_PREFIX}/include
-      ${KDE4_INCLUDE_DIR}
-      PATH_SUFFIXES eigen3 eigen
-    )
+  if(NOT EIGEN3_INCLUDE_DIR)
+    find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
+        HINTS
+        ENV EIGEN3_ROOT 
+        ENV EIGEN3_ROOT_DIR
+        PATHS
+        ${CMAKE_INSTALL_PREFIX}/include
+        ${KDE4_INCLUDE_DIR}
+        PATH_SUFFIXES eigen3 eigen
+      )
+  endif(NOT EIGEN3_INCLUDE_DIR)
 
   if(EIGEN3_INCLUDE_DIR)
     _eigen3_check_version()

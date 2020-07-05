@@ -11,7 +11,7 @@ namespace example_AlbersEqualArea
                 const double
                     lat1 = 40 + 58/60.0, lat2 = 39 + 56/60.0, // standard parallels
                     k1 = 1,                                   // scale
-                    lon0 = -77 - 45/60.0;                     // Central meridan
+                    lon0 = -77 - 45/60.0;                     // Central meridian
                 // Set up basic projection
                 AlbersEqualArea albers = new AlbersEqualArea( Constants.WGS84.MajorRadius,
                                                               Constants.WGS84.Flattening,

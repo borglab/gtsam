@@ -30,7 +30,7 @@ namespace gtsam {
  * \nosubgrouping
  */
 template<typename Calibration>
-class GTSAM_EXPORT PinholeCamera: public PinholeBaseK<Calibration> {
+class PinholeCamera: public PinholeBaseK<Calibration> {
 
 public:
 
@@ -325,7 +325,7 @@ private:
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // manifold traits

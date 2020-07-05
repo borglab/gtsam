@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -165,7 +165,7 @@ TEST(Vector, weightedPseudoinverse )
 
   // verify
   EXPECT(assert_equal(expected,actual));
-  EXPECT(fabs(expPrecision-precision) < 1e-5);
+  EXPECT(std::abs(expPrecision-precision) < 1e-5);
 }
 
 /* ************************************************************************* */

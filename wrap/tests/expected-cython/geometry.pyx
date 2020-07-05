@@ -1,9 +1,11 @@
+# cython: c_string_type=str, c_string_encoding=ascii
+
 cimport numpy as np
 import numpy as npp
 cimport geometry
-from geometry cimport shared_ptr
-from geometry cimport dynamic_pointer_cast
-from geometry cimport make_shared
+from .geometry cimport shared_ptr
+from .geometry cimport dynamic_pointer_cast
+from .geometry cimport make_shared
 # C helper function that copies all arguments into a positional list.
 cdef list process_args(list keywords, tuple args, dict kwargs):
    cdef str keyword
@@ -155,7 +157,7 @@ cdef class Test:
     def create_ptrs(self):
         cdef pair [shared_ptr[CTest],shared_ptr[CTest]] ret = self.CTest_.get().create_ptrs()
         return (Test.cyCreateFromShared(ret.first),Test.cyCreateFromShared(ret.second))
-    def __str__(self):
+    def __repr__(self):
         strBuf = RedirectCout()
         self.print_('')
         return strBuf.str()
@@ -462,11 +464,11 @@ def overloadedGlobalFunction_0(args, kwargs):
     try:
         __params = process_args(['a'], args, kwargs)
         a = <int>(__params[0])
-        return_value = pxd_overloadedGlobalFunction(a)
-        return True, ndarray_copy(return_value).squeeze()
     except:
         return False, None
 
+    return_value = pxd_overloadedGlobalFunction(a)
+    return True, ndarray_copy(return_value).squeeze()
 def overloadedGlobalFunction_1(args, kwargs):
     cdef list __params
     cdef VectorXd return_value
@@ -474,8 +476,8 @@ def overloadedGlobalFunction_1(args, kwargs):
         __params = process_args(['a', 'b'], args, kwargs)
         a = <int>(__params[0])
         b = <double>(__params[1])
-        return_value = pxd_overloadedGlobalFunction(a, b)
-        return True, ndarray_copy(return_value).squeeze()
     except:
         return False, None
 
+    return_value = pxd_overloadedGlobalFunction(a, b)
+    return True, ndarray_copy(return_value).squeeze()

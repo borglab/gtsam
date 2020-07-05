@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -11,7 +11,7 @@
 
 /**
  * @file Value.h
- * @brief The interface class for any variable that can be optimized or used in a factor.
+ * @brief The base class for any variable that can be optimized or used in a factor.
  * @author Richard Roberts
  * @date Jan 14, 2012
  */
@@ -27,58 +27,11 @@
 namespace gtsam {
 
   /**
-   * This is the interface class for any value that may be used as a variable
-   * assignment in a factor graph, and which you must derive to create new
-   * variable types to use with gtsam.  Examples of built-in classes
-   * implementing this are mainly in geometry, including Rot3, Pose2, etc.
-   *
-   * This interface specifies pure virtual retract_(), localCoordinates_() and
-   * equals_() functions that work with pointers and references to this interface
-   * class, i.e. the base class.  These functions allow containers, such as
-   * Values can operate generically on Value objects, retracting or computing
-   * local coordinates for many Value objects of different types.
-   *
-   * Inheriting from the DerivedValue class template provides a generic implementation of
-   * the pure virtual functions retract_(), localCoordinates_(), and equals_(), eliminating
-   * the need to implement these functions in your class. Note that you must inherit from
-   * DerivedValue templated on the class you are defining. For example you cannot define
-   * the following
-   * \code
-   * class Rot3 : public DerivedValue<Point3>{ \\classdef }
-   * \endcode
-   *
-   * Using the above practice, here is an example of implementing a typical
-   * class derived from Value:
-   * \code
-     class GTSAM_EXPORT Rot3 : public DerivedValue<Rot3> {
-     public:
-       // Constructor, there is never a need to call the Value base class constructor.
-       Rot3() { ... }
-
-       // Print for unit tests and debugging (virtual, implements Value::print())
-       virtual void print(const std::string& str = "") const;
-
-       // Equals working directly with Rot3 objects (non-virtual, non-overriding!)
-       bool equals(const Rot3& other, double tol = 1e-9) const;
-
-       // Tangent space dimensionality (virtual, implements Value::dim())
-       virtual size_t dim() const {
-         return 3;
-       }
-
-       // retract working directly with Rot3 objects (non-virtual, non-overriding!)
-       Rot3 retract(const Vector& delta) const {
-         // Math to implement a 3D rotation retraction e.g. exponential map
-         return Rot3(result);
-       }
-
-       // localCoordinates working directly with Rot3 objects (non-virtual, non-overriding!)
-       Vector localCoordinates(const Rot3& r2) const {
-         // Math to implement 3D rotation localCoordinates, e.g. logarithm map
-         return Vector(result);
-       }
-     };
-     \endcode
+   * This is the base class for any type to be stored in Values.
+   * Note: As of GTSAM 4.0, Value types should no longer derive from Value or
+   * DerivedValue. Use type traits instead.
+   * See https://bitbucket.org/gtborg/gtsam/wiki/Migrating%20from%20GTSAM%203.X%20to%20GTSAM%204.0#markdown-header-custom-value-types
+   * for current usage and migration details.
    */
   class GTSAM_EXPORT Value {
   public:

@@ -174,7 +174,7 @@ void CombinedImuFactor::print(const string& s,
 //------------------------------------------------------------------------------
 bool CombinedImuFactor::equals(const NonlinearFactor& other, double tol) const {
   const This* e = dynamic_cast<const This*>(&other);
-  return e != NULL && Base::equals(*e, tol) && _PIM_.equals(e->_PIM_, tol);
+  return e != nullptr && Base::equals(*e, tol) && _PIM_.equals(e->_PIM_, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -252,8 +252,8 @@ CombinedImuFactor::CombinedImuFactor(
 : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
     pose_j, vel_j, bias_i, bias_j),
 _PIM_(pim) {
-  boost::shared_ptr<CombinedPreintegratedMeasurements::Params> p =
-  boost::make_shared<CombinedPreintegratedMeasurements::Params>(pim.p());
+  using P = CombinedPreintegratedMeasurements::Params;
+  auto p = boost::allocate_shared<P>(Eigen::aligned_allocator<P>(), pim.p());
   p->n_gravity = n_gravity;
   p->omegaCoriolis = omegaCoriolis;
   p->body_P_sensor = body_P_sensor;

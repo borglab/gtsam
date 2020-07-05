@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #include "stdafx.h"
 #include "GeographicLib/GeodesicLine.hpp"
@@ -46,13 +46,26 @@ GeodesicLine::GeodesicLine( Geodesic^ g, double lat1, double lon1, double azi1,
 }
 
 //*****************************************************************************
+GeodesicLine::GeodesicLine(const GeographicLib::GeodesicLine& gl)
+{
+    try
+    {
+        m_pGeodesicLine = new GeographicLib::GeodesicLine(gl);
+    }
+    catch (std::bad_alloc)
+    {
+        throw gcnew GeographicErr(BADALLOC);
+    }
+}
+
+//*****************************************************************************
 GeodesicLine::GeodesicLine(double lat1, double lon1, double azi1,
                            NETGeographicLib::Mask caps)
 {
     try
     {
         m_pGeodesicLine = new GeographicLib::GeodesicLine(
-            GeographicLib::Geodesic::WGS84, lat1, lon1, azi1,
+            GeographicLib::Geodesic::WGS84(), lat1, lon1, azi1,
             static_cast<unsigned>(caps) );
     }
     catch ( std::bad_alloc )
@@ -291,7 +304,7 @@ void GeodesicLine::ArcPosition(double a12,
 
 //*****************************************************************************
 double GeodesicLine::GenPosition(bool arcmode, double s12_a12,
-    NETGeographicLib::Mask outmask,
+    GeodesicLine::mask outmask,
     [System::Runtime::InteropServices::Out] double% lat2,
     [System::Runtime::InteropServices::Out] double% lon2,
     [System::Runtime::InteropServices::Out] double% azi2,
@@ -342,9 +355,51 @@ double GeodesicLine::Flattening::get()
 { return m_pGeodesicLine->Flattening(); }
 
 //*****************************************************************************
+double GeodesicLine::Distance::get()
+{ return m_pGeodesicLine->Distance(); }
+
+//*****************************************************************************
+double GeodesicLine::Arc::get()
+{ return m_pGeodesicLine->Arc(); }
+
+//*****************************************************************************
 NETGeographicLib::Mask GeodesicLine::Capabilities()
 { return static_cast<NETGeographicLib::Mask>(m_pGeodesicLine->Capabilities()); }
 
 //*****************************************************************************
-bool GeodesicLine::Capabilities(NETGeographicLib::Mask testcaps)
+bool GeodesicLine::Capabilities(GeodesicLine::mask testcaps)
 { return m_pGeodesicLine->Capabilities( static_cast<unsigned>(testcaps) ); }
+
+//*****************************************************************************
+void GeodesicLine::SetDistance(double s13)
+{ m_pGeodesicLine->SetDistance(s13); }
+
+//*****************************************************************************
+void GeodesicLine::SetArc(double a13)
+{ m_pGeodesicLine->SetArc(a13); }
+
+//*****************************************************************************
+void GeodesicLine::GenSetDistance(bool arcmode, double s13_a13)
+{ m_pGeodesicLine->GenSetDistance(arcmode, s13_a13); }
+
+//*****************************************************************************
+void GeodesicLine::AzimuthSinCos(double% sazi1, double% cazi1)
+{
+    double x1, x2;
+    m_pGeodesicLine->Azimuth(x1, x2);
+    sazi1 = x1;
+    cazi1 = x2;
+}
+
+//*****************************************************************************
+void GeodesicLine::EquatorialAzimuthSinCos(double% sazi0, double% cazi0)
+{
+    double x1, x2;
+    m_pGeodesicLine->EquatorialAzimuth(x1, x2);
+    sazi0 = x1;
+    cazi0 = x2;
+}
+
+//*****************************************************************************
+double GeodesicLine::GenDistance(bool arcmode)
+{ return m_pGeodesicLine->GenDistance(arcmode); }

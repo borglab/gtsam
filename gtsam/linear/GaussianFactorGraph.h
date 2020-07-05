@@ -201,7 +201,16 @@ namespace gtsam {
      * \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
      * GaussianFactorGraph::jacobian and GaussianFactorGraph::sparseJacobian.
      */
-    Matrix augmentedJacobian(boost::optional<const Ordering&> optionalOrdering = boost::none) const;
+    Matrix augmentedJacobian(const Ordering& ordering) const;
+    
+    /**
+     * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$
+     * Jacobian matrix, augmented with b with the noise models baked
+     * into A and b.  The negative log-likelihood is
+     * \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
+     * GaussianFactorGraph::jacobian and GaussianFactorGraph::sparseJacobian.
+     */
+    Matrix augmentedJacobian() const;
 
     /**
      * Return the dense Jacobian \f$ A \f$ and right-hand-side \f$ b \f$,
@@ -210,7 +219,16 @@ namespace gtsam {
      * GaussianFactorGraph::augmentedJacobian and
      * GaussianFactorGraph::sparseJacobian.
      */
-    std::pair<Matrix,Vector> jacobian(boost::optional<const Ordering&> optionalOrdering = boost::none) const;
+    std::pair<Matrix,Vector> jacobian(const Ordering& ordering) const;
+
+    /**
+     * Return the dense Jacobian \f$ A \f$ and right-hand-side \f$ b \f$,
+     * with the noise models baked into A and b. The negative log-likelihood
+     * is \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
+     * GaussianFactorGraph::augmentedJacobian and
+     * GaussianFactorGraph::sparseJacobian.
+     */
+    std::pair<Matrix,Vector> jacobian() const;
 
     /**
      * Return a dense \f$ \Lambda \in \mathbb{R}^{n+1 \times n+1} \f$ Hessian
@@ -223,7 +241,20 @@ namespace gtsam {
      and the negative log-likelihood is
      \f$ \frac{1}{2} x^T \Lambda x + \eta^T x + c \f$.
      */
-    Matrix augmentedHessian(boost::optional<const Ordering&> optionalOrdering = boost::none) const;
+    Matrix augmentedHessian(const Ordering& ordering) const;
+
+    /**
+     * Return a dense \f$ \Lambda \in \mathbb{R}^{n+1 \times n+1} \f$ Hessian
+     * matrix, augmented with the information vector \f$ \eta \f$.  The
+     * augmented Hessian is
+     \f[ \left[ \begin{array}{ccc}
+     \Lambda & \eta \\
+     \eta^T & c
+     \end{array} \right] \f]
+     and the negative log-likelihood is
+     \f$ \frac{1}{2} x^T \Lambda x + \eta^T x + c \f$.
+     */
+    Matrix augmentedHessian() const;
 
     /**
      * Return the dense Hessian \f$ \Lambda \f$ and information vector
@@ -231,7 +262,15 @@ namespace gtsam {
      * is \frac{1}{2} x^T \Lambda x + \eta^T x + c.  See also
      * GaussianFactorGraph::augmentedHessian.
      */
-    std::pair<Matrix,Vector> hessian(boost::optional<const Ordering&> optionalOrdering = boost::none) const;
+    std::pair<Matrix,Vector> hessian(const Ordering& ordering) const;
+
+    /**
+     * Return the dense Hessian \f$ \Lambda \f$ and information vector
+     * \f$ \eta \f$, with the noise models baked in. The negative log-likelihood
+     * is \frac{1}{2} x^T \Lambda x + \eta^T x + c.  See also
+     * GaussianFactorGraph::augmentedHessian.
+     */
+    std::pair<Matrix,Vector> hessian() const;
 
     /** Return only the diagonal of the Hessian A'*A, as a VectorValues */
     virtual VectorValues hessianDiagonal() const;
@@ -243,7 +282,14 @@ namespace gtsam {
      *  the dense elimination function specified in \c function (default EliminatePreferCholesky),
      *  followed by back-substitution in the Bayes tree resulting from elimination.  Is equivalent
      *  to calling graph.eliminateMultifrontal()->optimize(). */
-    VectorValues optimize(OptionalOrdering ordering = boost::none,
+    VectorValues optimize(
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+
+    /** Solve the factor graph by performing multifrontal variable elimination in COLAMD order using
+     *  the dense elimination function specified in \c function (default EliminatePreferCholesky),
+     *  followed by back-substitution in the Bayes tree resulting from elimination.  Is equivalent
+     *  to calling graph.eliminateMultifrontal()->optimize(). */
+    VectorValues optimize(const Ordering&,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
     /**
@@ -328,6 +374,12 @@ namespace gtsam {
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
+
+  public:
+
+    /** \deprecated */
+    VectorValues optimize(boost::none_t,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
   };
 

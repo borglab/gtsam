@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #include "stdafx.h"
 #include "GeographicLib/AlbersEqualArea.hpp"
@@ -33,13 +33,13 @@ AlbersEqualArea::AlbersEqualArea( StandardTypes type )
         switch ( type )
         {
         case StandardTypes::CylindricalEqualArea:
-            m_pAlbersEqualArea = new GeographicLib::AlbersEqualArea( GeographicLib::AlbersEqualArea::CylindricalEqualArea );
+            m_pAlbersEqualArea = new GeographicLib::AlbersEqualArea( GeographicLib::AlbersEqualArea::CylindricalEqualArea() );
             break;
         case StandardTypes::AzimuthalEqualAreaNorth:
-            m_pAlbersEqualArea = new GeographicLib::AlbersEqualArea( GeographicLib::AlbersEqualArea::AzimuthalEqualAreaNorth );
+            m_pAlbersEqualArea = new GeographicLib::AlbersEqualArea( GeographicLib::AlbersEqualArea::AzimuthalEqualAreaNorth() );
             break;
         case StandardTypes::AzimuthalEqualAreaSouth:
-            m_pAlbersEqualArea = new GeographicLib::AlbersEqualArea( GeographicLib::AlbersEqualArea::AzimuthalEqualAreaSouth );
+            m_pAlbersEqualArea = new GeographicLib::AlbersEqualArea( GeographicLib::AlbersEqualArea::AzimuthalEqualAreaSouth() );
             break;
         }
     }

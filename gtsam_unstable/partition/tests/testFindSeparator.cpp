@@ -121,7 +121,7 @@ TEST ( Partition, edgePartitionByMetis2 )
   CHECK(A_expected == actual->A);
   CHECK(B_expected == actual->B);
   CHECK(C_expected == actual->C);
-} 
+}
 
 /* ************************************************************************* */
 // x0 - x1 - x2
@@ -179,9 +179,11 @@ TEST ( Partition, findSeparator2 )
 }
 
 /* *************************************************************************/
-//  l1-l8   l9-l16    l17-l24
-//   / |     /    \    |  \
-// x25 x26             x27 x28
+/**
+ *  l1-l8   l9-l16    l17-l24
+ *   / |     /    \    |  \
+ * x25 x26             x27 x28
+ */
 TEST ( Partition, findSeparator3_with_reduced_camera )
 {
   GenericGraph3D graph;

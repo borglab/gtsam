@@ -31,7 +31,7 @@ void OrientedPlane3DirectionPrior::print(const string& s,
 bool OrientedPlane3DirectionPrior::equals(const NonlinearFactor& expected,
     double tol) const {
   const This* e = dynamic_cast<const This*>(&expected);
-  return e != NULL && Base::equals(*e, tol)
+  return e != nullptr && Base::equals(*e, tol)
       && this->measured_p_.equals(e->measured_p_, tol);
 }
 

@@ -2,9 +2,15 @@ namespace Eigen {
 
 /** \page TopicPitfalls Common pitfalls
 
+
 \section TopicPitfalls_template_keyword Compilation error with template methods
 
 See this \link TopicTemplateKeyword page \endlink.
+
+\section TopicPitfalls_aliasing Aliasing
+
+Don't miss this \link TopicAliasing page \endlink on aliasing,
+especially if you got wrong results in statements where the destination appears on the right hand side of the expression.
 
 \section TopicPitfalls_auto_keyword C++11 and the auto keyword
 

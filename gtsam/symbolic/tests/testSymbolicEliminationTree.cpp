@@ -11,7 +11,7 @@
 
 /**
  * @file    testSymbolicEliminationTree.cpp
- * @brief   
+ * @brief
  * @author  Richard Roberts
  * @date Oct 14, 2010
  */
@@ -145,7 +145,7 @@ TEST(EliminationTree, Create2)
   Ordering order = list_of(X(1)) (L(3)) (L(1)) (X(5)) (X(2)) (L(2)) (X(4)) (X(3));
 
   SymbolicEliminationTree actual(graph, order);
-  
+
   EXPECT(assert_equal(expected, actual));
 }
 

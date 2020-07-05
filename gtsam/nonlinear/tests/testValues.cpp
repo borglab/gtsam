@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -279,9 +279,8 @@ TEST(Values, extract_keys)
   config.insert(key3, Pose2());
   config.insert(key4, Pose2());
 
-  KeyVector expected, actual;
-  expected += key1, key2, key3, key4;
-  actual = config.keys();
+  KeyVector expected {key1, key2, key3, key4};
+  KeyVector actual = config.keys();
 
   CHECK(actual.size() == expected.size());
   KeyVector::const_iterator itAct = actual.begin(), itExp = expected.begin();
@@ -384,6 +383,8 @@ TEST(Values, filter) {
     ++ i;
   }
   EXPECT_LONGS_EQUAL(2, (long)i);
+  EXPECT_LONGS_EQUAL(2, (long)values.count<Pose3>());
+  EXPECT_LONGS_EQUAL(2, (long)values.count<Pose2>());
 
   // construct a values with the view
   Values actualSubValues2(pose_filtered);
@@ -586,6 +587,23 @@ TEST(Values, MatrixDynamicInsertFixedRead) {
   Vector3 expected(5.0, 6.0, 7.0);
   CHECK(assert_equal((Vector)expected, values.at<Matrix13>(key1)));
   CHECK_EXCEPTION(values.at<Matrix23>(key1), exception);
+}
+
+TEST(Values, Demangle) {
+  Values values;
+  Matrix13 v; v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  string expected = "Values with 1 values:\nValue v1: (Eigen::Matrix<double, 1, 3, 1, 1, 3>) [\n	5, 6, 7\n]\n\n";
+
+  stringstream buffer;
+  streambuf * old = cout.rdbuf(buffer.rdbuf());
+
+  values.print();
+
+  string actual = buffer.str();
+  cout.rdbuf(old);
+
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

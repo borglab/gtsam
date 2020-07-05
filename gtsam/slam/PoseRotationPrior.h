@@ -2,7 +2,7 @@
  * @file PoseRotationPrior.h
  *
  * @brief Implements a prior on the rotation component of a pose
- * 
+ *
  * @date Jun 14, 2012
  * @author Alex Cunningham
  */
@@ -62,7 +62,7 @@ public:
   /** equals specialized to this factor */
   virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
     const This *e = dynamic_cast<const This*> (&expected);
-    return e != NULL && Base::equals(*e, tol) && measured_.equals(e->measured_, tol);
+    return e != nullptr && Base::equals(*e, tol) && measured_.equals(e->measured_, tol);
   }
 
   /** print contents */

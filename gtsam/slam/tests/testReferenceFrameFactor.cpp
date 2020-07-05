@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -89,7 +89,7 @@ TEST( ReferenceFrameFactor, jacobians_zero ) {
   // get values that are ideal
   Pose2 trans(2.0, 3.0, 0.0);
   Point2 global(5.0, 6.0);
-  Point2 local = trans.transform_from(global);
+  Point2 local = trans.transformFrom(global);
 
   PointReferenceFrameFactor tc(lA1, tA1, lB1);
   Vector actCost = tc.evaluateError(global, trans, local),
@@ -124,8 +124,8 @@ TEST( ReferenceFrameFactor, converge_trans ) {
   Pose2 transIdeal(7.0, 3.0, M_PI/2);
 
   // verify direction
-  EXPECT(assert_equal(local1, transIdeal.transform_from(global1)));
-  EXPECT(assert_equal(local2, transIdeal.transform_from(global2)));
+  EXPECT(assert_equal(local1, transIdeal.transformFrom(global1)));
+  EXPECT(assert_equal(local2, transIdeal.transformFrom(global2)));
 
   // choose transform
   //  Pose2 trans = transIdeal; // ideal - works
@@ -177,7 +177,7 @@ TEST( ReferenceFrameFactor, converge_local ) {
   //  Pose2 trans(1.5, 2.5, 1.0); // larger rotation
   Pose2 trans(1.5, 2.5, 3.1); // significant rotation
 
-  Point2 idealLocal = trans.transform_from(global);
+  Point2 idealLocal = trans.transformFrom(global);
 
   // perturb the initial estimate
   //  Point2 local = idealLocal; // Ideal case - works
@@ -213,7 +213,7 @@ TEST( ReferenceFrameFactor, converge_global ) {
   //  Pose2 trans(1.5, 2.5, 1.0); // larger rotation
   Pose2 trans(1.5, 2.5, 3.1); // significant rotation
 
-  Point2 idealForeign = trans.inverse().transform_from(local);
+  Point2 idealForeign = trans.inverse().transformFrom(local);
 
   // perturb the initial estimate
   //  Point2 global = idealForeign; // Ideal - works

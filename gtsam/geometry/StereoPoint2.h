@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -62,8 +62,8 @@ public:
 
   /** equals */
   bool equals(const StereoPoint2& q, double tol = 1e-9) const {
-    return (fabs(uL_ - q.uL_) < tol && fabs(uR_ - q.uR_) < tol
-        && fabs(v_ - q.v_) < tol);
+    return (std::abs(uL_ - q.uL_) < tol && std::abs(uR_ - q.uR_) < tol
+        && std::abs(v_ - q.v_) < tol);
   }
 
   /// @}

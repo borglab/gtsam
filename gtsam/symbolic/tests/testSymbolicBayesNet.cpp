@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -81,10 +81,7 @@ TEST( SymbolicBayesNet, combine )
 TEST(SymbolicBayesNet, saveGraph) {
   SymbolicBayesNet bn;
   bn += SymbolicConditional(_A_, _B_);
-  std::vector<Key> keys;
-  keys.push_back(_B_);
-  keys.push_back(_C_);
-  keys.push_back(_D_);
+  KeyVector keys {_B_, _C_, _D_};
   bn += SymbolicConditional::FromKeys(keys,2);
   bn += SymbolicConditional(_D_);
 

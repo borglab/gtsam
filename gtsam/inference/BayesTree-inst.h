@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -36,19 +36,20 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CLIQUE>
   BayesTreeCliqueData BayesTree<CLIQUE>::getCliqueData() const {
-    BayesTreeCliqueData data;
-    for(const sharedClique& root: roots_)
-      getCliqueData(data, root);
-    return data;
+    BayesTreeCliqueData stats;
+    for (const sharedClique& root : roots_) getCliqueData(root, &stats);
+    return stats;
   }
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  void BayesTree<CLIQUE>::getCliqueData(BayesTreeCliqueData& data, sharedClique clique) const {
-    data.conditionalSizes.push_back(clique->conditional()->nrFrontals());
-    data.separatorSizes.push_back(clique->conditional()->nrParents());
-    for(sharedClique c: clique->children) {
-      getCliqueData(data, c);
+  template <class CLIQUE>
+  void BayesTree<CLIQUE>::getCliqueData(sharedClique clique,
+                                        BayesTreeCliqueData* stats) const {
+    const auto conditional = clique->conditional();
+    stats->conditionalSizes.push_back(conditional->nrFrontals());
+    stats->separatorSizes.push_back(conditional->nrParents());
+    for (sharedClique c : clique->children) {
+      getCliqueData(c, stats);
     }
   }
 
@@ -124,7 +125,7 @@ namespace gtsam {
   void BayesTree<CLIQUE>::addClique(const sharedClique& clique, const sharedClique& parent_clique) {
     for(Key j: clique->conditional()->frontals())
       nodes_[j] = clique;
-    if (parent_clique != NULL) {
+    if (parent_clique != nullptr) {
       clique->parent_ = parent_clique;
       parent_clique->children.push_back(clique);
     } else {
@@ -133,34 +134,26 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // TODO: Clean up
   namespace {
-    template<class FACTOR, class CLIQUE>
-    int _pushClique(FactorGraph<FACTOR>& fg, const boost::shared_ptr<CLIQUE>& clique) {
-      fg.push_back(clique->conditional_);
+  template <class FACTOR, class CLIQUE>
+  struct _pushCliqueFunctor {
+    _pushCliqueFunctor(FactorGraph<FACTOR>* graph_) : graph(graph_) {}
+    FactorGraph<FACTOR>* graph;
+    int operator()(const boost::shared_ptr<CLIQUE>& clique, int dummy) {
+      graph->push_back(clique->conditional_);
       return 0;
     }
-
-    template<class FACTOR, class CLIQUE>
-    struct _pushCliqueFunctor {
-      _pushCliqueFunctor(FactorGraph<FACTOR>& graph_) : graph(graph_) {}
-      FactorGraph<FACTOR>& graph;
-      int operator()(const boost::shared_ptr<CLIQUE>& clique, int dummy) {
-        graph.push_back(clique->conditional_);
-        return 0;
-      }
-    };
-  }
+  };
+  }  // namespace
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  void BayesTree<CLIQUE>::addFactorsToGraph(FactorGraph<FactorType>& graph) const
-  {
+  template <class CLIQUE>
+  void BayesTree<CLIQUE>::addFactorsToGraph(
+      FactorGraph<FactorType>* graph) const {
     // Traverse the BayesTree and add all conditionals to this graph
-    int data = 0; // Unused
-    _pushCliqueFunctor<FactorType,CLIQUE> functor(graph);
-    treeTraversal::DepthFirstForest(*this, data, functor); // FIXME: sort of works?
-//    treeTraversal::DepthFirstForest(*this, data, boost::bind(&_pushClique<FactorType,CLIQUE>, boost::ref(graph), _1));
+    int data = 0;  // Unused
+    _pushCliqueFunctor<FactorType, CLIQUE> functor(graph);
+    treeTraversal::DepthFirstForest(*this, data, functor);
   }
 
   /* ************************************************************************* */
@@ -269,7 +262,7 @@ namespace gtsam {
 
     // Now, marginalize out everything that is not variable j
     BayesNetType marginalBN = *cliqueMarginal.marginalMultifrontalBayesNet(
-      Ordering(cref_list_of<1,Key>(j)), boost::none, function);
+      Ordering(cref_list_of<1,Key>(j)), function);
 
     // The Bayes net should contain only one conditional for variable j, so return it
     return marginalBN.front();
@@ -344,7 +337,7 @@ namespace gtsam {
       // Get the set of variables to eliminate, which is C1\B.
       gttic(Full_root_factoring);
       boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
-        FastVector<Key> C1_minus_B; {
+        KeyVector C1_minus_B; {
           KeySet C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
           for(const Key j: *B->conditional()) {
             C1_minus_B_set.erase(j); }
@@ -356,7 +349,7 @@ namespace gtsam {
           FactorGraphType(p_C1_Bred).eliminatePartialMultifrontal(Ordering(C1_minus_B), function);
       }
       boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
-        FastVector<Key> C2_minus_B; {
+        KeyVector C2_minus_B; {
           KeySet C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
           for(const Key j: *B->conditional()) {
             C2_minus_B_set.erase(j); }
@@ -390,7 +383,7 @@ namespace gtsam {
     }
 
     // now, marginalize out everything that is not variable j1 or j2
-    return p_BC1C2.marginalMultifrontalBayesNet(Ordering(cref_list_of<2,Key>(j1)(j2)), boost::none, function);
+    return p_BC1C2.marginalMultifrontalBayesNet(Ordering(cref_list_of<2,Key>(j1)(j2)), function);
   }
 
   /* ************************************************************************* */
@@ -434,50 +427,51 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  void BayesTree<CLIQUE>::removePath(sharedClique clique, BayesNetType& bn, Cliques& orphans)
-  {
-    // base case is NULL, if so we do nothing and return empties above
+  template <class CLIQUE>
+  void BayesTree<CLIQUE>::removePath(sharedClique clique, BayesNetType* bn,
+                                     Cliques* orphans) {
+    // base case is nullptr, if so we do nothing and return empties above
     if (clique) {
-
       // remove the clique from orphans in case it has been added earlier
-      orphans.remove(clique);
+      orphans->remove(clique);
 
       // remove me
       this->removeClique(clique);
 
       // remove path above me
-      this->removePath(typename Clique::shared_ptr(clique->parent_.lock()), bn, orphans);
+      this->removePath(typename Clique::shared_ptr(clique->parent_.lock()), bn,
+                       orphans);
 
-      // add children to list of orphans (splice also removed them from clique->children_)
-      orphans.insert(orphans.begin(), clique->children.begin(), clique->children.end());
+      // add children to list of orphans (splice also removed them from
+      // clique->children_)
+      orphans->insert(orphans->begin(), clique->children.begin(),
+                      clique->children.end());
       clique->children.clear();
 
-      bn.push_back(clique->conditional_);
-
+      bn->push_back(clique->conditional_);
     }
   }
 
-  /* ************************************************************************* */
-  template<class CLIQUE>
-  void BayesTree<CLIQUE>::removeTop(const FastVector<Key>& keys, BayesNetType& bn, Cliques& orphans)
-  {
+  /* *************************************************************************
+   */
+  template <class CLIQUE>
+  void BayesTree<CLIQUE>::removeTop(const KeyVector& keys, BayesNetType* bn,
+                                    Cliques* orphans) {
+    gttic(removetop);
     // process each key of the new factor
-    for(const Key& j: keys)
-    {
+    for (const Key& j : keys) {
       // get the clique
-      // TODO: Nodes will be searched again in removeClique
+      // TODO(frank): Nodes will be searched again in removeClique
       typename Nodes::const_iterator node = nodes_.find(j);
-      if(node != nodes_.end()) {
+      if (node != nodes_.end()) {
         // remove path from clique to root
         this->removePath(node->second, bn, orphans);
       }
     }
 
     // Delete cachedShortcuts for each orphan subtree
-    //TODO: Consider Improving
-    for(sharedClique& orphan: orphans)
-      orphan->deleteCachedShortcuts();
+    // TODO(frank): Consider Improving
+    for (sharedClique& orphan : *orphans) orphan->deleteCachedShortcuts();
   }
 
   /* ************************************************************************* */

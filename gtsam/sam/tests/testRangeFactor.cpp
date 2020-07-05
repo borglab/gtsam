@@ -19,7 +19,8 @@
 #include <gtsam/sam/RangeFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -102,9 +103,7 @@ TEST( RangeFactor, ConstructorWithTransform) {
 
   RangeFactorWithTransform2D factor2D(poseKey, pointKey, measurement, model,
       body_P_sensor_2D);
-  KeyVector expected;
-  expected.push_back(2);
-  expected.push_back(1);
+  KeyVector expected {2, 1};
   CHECK(factor2D.keys() == expected);
   RangeFactorWithTransform3D factor3D(poseKey, pointKey, measurement, model,
       body_P_sensor_3D);
@@ -355,11 +354,13 @@ TEST(RangeFactor, Point3) {
 }
 
 /* ************************************************************************* */
-// Do tests with SimpleCamera
+// Do tests with PinholeCamera<Cal3_S2>
 TEST( RangeFactor, Camera) {
-  RangeFactor<SimpleCamera,Point3> factor1(poseKey, pointKey, measurement, model);
-  RangeFactor<SimpleCamera,Pose3> factor2(poseKey, pointKey, measurement, model);
-  RangeFactor<SimpleCamera,SimpleCamera> factor3(poseKey, pointKey, measurement, model);
+  using Camera = PinholeCamera<Cal3_S2>;
+
+  RangeFactor<Camera, Point3> factor1(poseKey, pointKey, measurement, model);
+  RangeFactor<Camera, Pose3>  factor2(poseKey, pointKey, measurement, model);
+  RangeFactor<Camera, Camera> factor3(poseKey, pointKey, measurement, model);
 }
 
 /* ************************************************************************* */

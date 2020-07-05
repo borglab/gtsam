@@ -1,0 +1,15 @@
+.TH @SCRIPT@ 8 "" GeographicLib GeographicLib
+.SH NAME
+@SCRIPT@ \-\- a GeographicLib administrative tool
+.SH DESCRIPTION
+.B @SCRIPT@
+downloads and installs the @DATA@ datasets used by GeographicLib,
+<https://geographiclib.sourceforge.io>.  For documentation, supply the
+.B \-h
+option:
+.PP
+    @SCRIPT@ \-h
+.PP
+By default, the datasets are installed in
+.I @GEOGRAPHICLIB_DATA@/@DATA@
+and the script requires write access to this directory.

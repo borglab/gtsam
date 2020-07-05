@@ -23,16 +23,6 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/config.h>  // for GTSAM_USE_TBB
 
-#ifdef __clang__
-#  pragma clang diagnostic push
-#  pragma clang diagnostic ignored "-Wunused-variable"
-#endif
-#include <boost/random/uniform_on_sphere.hpp>
-#ifdef __clang__
-#  pragma clang diagnostic pop
-#endif
-
-#include <boost/random/variate_generator.hpp>
 #include <iostream>
 #include <limits>
 #include <cmath>
@@ -54,21 +44,25 @@ Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2, 3> H) {
 }
 
 /* ************************************************************************* */
-Unit3 Unit3::Random(boost::mt19937 & rng) {
-  // TODO(dellaert): allow any engine without including all of boost :-(
-  boost::uniform_on_sphere<double> randomDirection(3);
-  // This variate_generator object is required for versions of boost somewhere
-  // around 1.46, instead of drawing directly using boost::uniform_on_sphere(rng).
-  boost::variate_generator<boost::mt19937&, boost::uniform_on_sphere<double> > generator(
-      rng, randomDirection);
-  const vector<double> d = generator();
-  return Unit3(d[0], d[1], d[2]);
+Unit3 Unit3::Random(std::mt19937& rng) {
+  // http://mathworld.wolfram.com/SpherePointPicking.html
+  // Adapted from implementation in boost, but using std <random>
+  std::uniform_real_distribution<double> uniform(-1.0, 1.0);
+  double sqsum;
+  double x, y;
+  do {
+    x = uniform(rng);
+    y = uniform(rng);
+    sqsum = x * x + y * y;
+  } while (sqsum > 1);
+  const double mult = 2 * sqrt(1 - sqsum);
+  return Unit3(x * mult, y * mult, 2 * sqsum - 1);
 }
 
 /* ************************************************************************* */
 // Get the axis of rotation with the minimum projected length of the point
 static Point3 CalculateBestAxis(const Point3& n) {
-  double mx = fabs(n.x()), my = fabs(n.y()), mz = fabs(n.z());
+  double mx = std::abs(n.x()), my = std::abs(n.y()), mz = std::abs(n.z());
   if ((mx <= my) && (mx <= mz)) {
     return Point3(1.0, 0.0, 0.0);
   } else if ((my <= mx) && (my <= mz)) {
@@ -84,7 +78,7 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
   // NOTE(hayk): At some point it seemed like this reproducably resulted in
   // deadlock. However, I don't know why and I can no longer reproduce it.
   // It either was a red herring or there is still a latent bug left to debug.
-  tbb::mutex::scoped_lock lock(B_mutex_);
+  std::unique_lock<std::mutex> lock(B_mutex_);
 #endif
 
   const bool cachedBasis = static_cast<bool>(B_);
@@ -250,19 +244,33 @@ double Unit3::distance(const Unit3& q, OptionalJacobian<1, 2> H) const {
 }
 
 /* ************************************************************************* */
-Unit3 Unit3::retract(const Vector2& v) const {
+Unit3 Unit3::retract(const Vector2& v, OptionalJacobian<2,2> H) const {
   // Compute the 3D xi_hat vector
   const Vector3 xi_hat = basis() * v;
   const double theta = xi_hat.norm();
+  const double c = std::cos(theta);
 
-  // Treat case of very small v differently
+  // Treat case of very small v differently.
+  Matrix23 H_from_point;
   if (theta < std::numeric_limits<double>::epsilon()) {
-    return Unit3(Vector3(std::cos(theta) * p_ + xi_hat));
+    const Unit3 exp_p_xi_hat = Unit3::FromPoint3(c * p_ + xi_hat,
+                                                 H? &H_from_point : nullptr);
+    if (H) { // Jacobian
+      *H = H_from_point *
+          (-p_ * xi_hat.transpose() + Matrix33::Identity()) * basis();
+    }
+    return exp_p_xi_hat;
   }
 
-  const Vector3 exp_p_xi_hat =
-      std::cos(theta) * p_ + xi_hat * (sin(theta) / theta);
-  return Unit3(exp_p_xi_hat);
+  const double st = std::sin(theta) / theta;
+  const Unit3 exp_p_xi_hat = Unit3::FromPoint3(c * p_ + xi_hat * st,
+                                               H? &H_from_point : nullptr);
+  if (H) { // Jacobian
+    *H = H_from_point *
+        (p_ * -st * xi_hat.transpose() + st * Matrix33::Identity() +
+        xi_hat * ((c - st) / std::pow(theta, 2)) * xi_hat.transpose()) * basis();
+  }
+  return exp_p_xi_hat;
 }
 
 /* ************************************************************************* */

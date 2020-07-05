@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -35,18 +35,18 @@ namespace gtsam {
 *   factor.  In each row-block (factor), some of the column-blocks (variables)
 *   may be empty since factors involving different sets of variables are
 *   interleaved.
-*  
+*
 *   VariableSlots describes the 2D block structure of the combined factor.  It
 *   is a map<Key, vector<size_t> >.  The Key is the real
 *   variable index of the combined factor slot.  The vector<size_t> tells, for
 *   each row-block (factor), which column-block (variable slot) from the
 *   component factor appears in this block of the combined factor.
-*  
+*
 *   As an example, if the combined factor contains variables 1, 3, and 5, then
 *   "variableSlots[3][2] == 0" indicates that column-block 1 (corresponding to
 *   variable index 3), row-block 2 (also meaning component factor 2), comes from
 *   column-block 0 of component factor 2.
-*  
+*
 *   \nosubgrouping */
 
 class VariableSlots : public FastMap<Key, FastVector<size_t> > {
@@ -99,7 +99,9 @@ VariableSlots::VariableSlots(const FG& factorGraph)
   // factor does not involve that variable.
   size_t jointFactorPos = 0;
   for(const typename FG::sharedFactor& factor: factorGraph) {
-    assert(factor);
+    if (!factor) {
+      continue;
+    }
     size_t factorVarSlot = 0;
     for(const Key involvedVariable: *factor) {
       // Set the slot in this factor for this variable.  If the
@@ -111,7 +113,7 @@ VariableSlots::VariableSlots(const FG& factorGraph)
       iterator thisVarSlots; bool inserted;
         boost::tie(thisVarSlots, inserted) = this->insert(std::make_pair(involvedVariable, FastVector<size_t>()));
       if(inserted)
-        thisVarSlots->second.resize(factorGraph.size(), Empty);
+        thisVarSlots->second.resize(factorGraph.nrFactors(), Empty);
       thisVarSlots->second[jointFactorPos] = factorVarSlot;
       if(debug) std::cout << "  var " << involvedVariable << " rowblock " << jointFactorPos << " comes from factor's slot " << factorVarSlot << std::endl;
       ++ factorVarSlot;

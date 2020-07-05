@@ -23,11 +23,18 @@ namespace gtsam {
 
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
-struct PreintegrationParams: PreintegratedRotationParams {
+struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   Matrix3 accelerometerCovariance; ///< continuous-time "Covariance" of accelerometer
   Matrix3 integrationCovariance; ///< continuous-time "Covariance" describing integration uncertainty
   bool use2ndOrderCoriolis; ///< Whether to use second order Coriolis integration
   Vector3 n_gravity; ///< Gravity vector in nav frame
+
+  /// Default constructor for serialization only
+  PreintegrationParams()
+      : accelerometerCovariance(I_3x3),
+        integrationCovariance(I_3x3),
+        use2ndOrderCoriolis(false),
+        n_gravity(0, 0, -1) {}
 
   /// The Params constructor insists on getting the navigation frame gravity vector
   /// For convenience, two commonly used conventions are provided by named constructors below
@@ -56,11 +63,10 @@ struct PreintegrationParams: PreintegratedRotationParams {
 
   const Matrix3& getAccelerometerCovariance() const { return accelerometerCovariance; }
   const Matrix3& getIntegrationCovariance()   const { return integrationCovariance; }
+  const Vector3& getGravity()   const { return n_gravity; }
   bool           getUse2ndOrderCoriolis()     const { return use2ndOrderCoriolis; }
 
 protected:
-  /// Default constructor for serialization only: uninitialized!
-  PreintegrationParams() {}
 
   /** Serialization function */
   friend class boost::serialization::access;
@@ -75,8 +81,11 @@ protected:
     ar & BOOST_SERIALIZATION_NVP(n_gravity);
   }
 
+#ifdef GTSAM_USE_QUATERNIONS
+  // Align if we are using Quaternions
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	GTSAM_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 } // namespace gtsam

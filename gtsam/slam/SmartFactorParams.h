@@ -39,7 +39,7 @@ enum DegeneracyMode {
 /*
  *  Parameters for the smart (stereo) projection factors
  */
-struct GTSAM_EXPORT SmartProjectionParams {
+struct SmartProjectionParams {
 
   LinearizationMode linearizationMode; ///< How to linearize the factor
   DegeneracyMode degeneracyMode; ///< How to linearize the factor

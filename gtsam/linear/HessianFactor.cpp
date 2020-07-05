@@ -155,7 +155,7 @@ DenseIndex _getSizeHF(const Vector& m) {
 }
 
 /* ************************************************************************* */
-HessianFactor::HessianFactor(const std::vector<Key>& js,
+HessianFactor::HessianFactor(const KeyVector& js,
     const std::vector<Matrix>& Gs, const std::vector<Vector>& gs, double f) :
     GaussianFactor(js), info_(gs | br::transformed(&_getSizeHF), true) {
   // Get the number of variables
@@ -250,10 +250,10 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) :
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
-    boost::optional<const Scatter&> scatter) {
+    const Scatter& scatter) {
   gttic(HessianFactor_MergeConstructor);
 
-  Allocate(scatter ? *scatter : Scatter(factors));
+  Allocate(scatter);
 
   // Form A' * A
   gttic(update);
@@ -302,12 +302,14 @@ Matrix HessianFactor::information() const {
 }
 
 /* ************************************************************************* */
-VectorValues HessianFactor::hessianDiagonal() const {
-  VectorValues d;
+void HessianFactor::hessianDiagonalAdd(VectorValues &d) const {
   for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
-    d.insert(keys_[j], info_.diagonal(j));
+    auto result = d.emplace(keys_[j], info_.diagonal(j));
+    if(!result.second) {
+      // if emplace fails, it returns an iterator to the existing element, which we add to:
+      result.first->second += info_.diagonal(j);
+    }
   }
-  return d;
 }
 
 /* ************************************************************************* */
@@ -356,7 +358,7 @@ double HessianFactor::error(const VectorValues& c) const {
 }
 
 /* ************************************************************************* */
-void HessianFactor::updateHessian(const FastVector<Key>& infoKeys,
+void HessianFactor::updateHessian(const KeyVector& infoKeys,
                                   SymmetricBlockMatrix* info) const {
   gttic(updateHessian_HessianFactor);
   assert(info);
@@ -436,7 +438,7 @@ VectorValues HessianFactor::gradientAtZero() const {
   VectorValues g;
   size_t n = size();
   for (size_t j = 0; j < n; ++j)
-    g.insert(keys_[j], -info_.aboveDiagonalBlock(j, n));
+    g.emplace(keys_[j], -info_.aboveDiagonalBlock(j, n));
   return g;
 }
 
@@ -486,7 +488,12 @@ boost::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Or
 
     // Erase the eliminated keys in this factor
     keys_.erase(begin(), begin() + nFrontals);
-  } catch (const CholeskyFailed& e) {
+  } catch (const CholeskyFailed&) {
+#ifndef NDEBUG
+    cout << "Partial Cholesky on HessianFactor failed." << endl;
+    keys.print("Frontal keys ");
+    print("HessianFactor:");
+#endif
     throw IndeterminantLinearSystemException(keys.front());
   }
 
@@ -500,7 +507,7 @@ VectorValues HessianFactor::solve() {
 
   // Do Cholesky Factorization
   const size_t n = size();
-  assert(info_.nBlocks() == n + 1);
+  assert(size_t(info_.nBlocks()) == n + 1);
   info_.choleskyPartial(n);
   auto R = info_.triangularView(0, n);
   auto eta = linearTerm();
@@ -513,7 +520,7 @@ VectorValues HessianFactor::solve() {
   std::size_t offset = 0;
   for (DenseIndex j = 0; j < (DenseIndex)n; ++j) {
     const DenseIndex dim = info_.getDim(j);
-    delta.insert(keys_[j], solution.segment(offset, dim));
+    delta.emplace(keys_[j], solution.segment(offset, dim));
     offset += dim;
   }
 

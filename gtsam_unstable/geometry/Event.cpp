@@ -24,15 +24,16 @@ namespace gtsam {
 
 /* ************************************************************************* */
 void Event::print(const std::string& s) const {
-  std::cout << s << "time = " << time_ << "location = " << location_.transpose();
+  std::cout << s << "{'time':" << time_
+            << ", 'location': " << location_.transpose() << "}";
 }
 
 /* ************************************************************************* */
 bool Event::equals(const Event& other, double tol) const {
-  return std::abs(time_ - other.time_) < tol
-      && traits<Point3>::Equals(location_, other.location_, tol);
+  return std::abs(time_ - other.time_) < tol &&
+         traits<Point3>::Equals(location_, other.location_, tol);
 }
 
 /* ************************************************************************* */
 
-} //\ namespace gtsam
+}  // namespace gtsam

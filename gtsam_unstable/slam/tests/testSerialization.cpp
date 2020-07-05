@@ -15,7 +15,6 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 
@@ -48,7 +47,7 @@ Values exampleValues() {
 
 NonlinearFactorGraph exampleGraph() {
   NonlinearFactorGraph graph;
-  graph.add(PriorFactor<Pose2>(234, Pose2(1.0, 2.0, 0.3), noiseModel::Diagonal::Sigmas(Vector::Ones(3))));
+  graph.addPrior(234, Pose2(1.0, 2.0, 0.3), noiseModel::Diagonal::Sigmas(Vector::Ones(3)));
   graph.add(BetweenFactor<Pose2>(234, 567, Pose2(1.0, 2.0, 0.3), noiseModel::Diagonal::Sigmas(Vector::Ones(3))));
   graph.add(BearingRangeFactor<Pose2,Point2>(234, 567, Rot2::fromAngle(0.3), 2.0, noiseModel::Diagonal::Sigmas(Vector::Ones(2))));
   return graph;

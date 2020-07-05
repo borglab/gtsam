@@ -142,7 +142,7 @@ Matrix3 Pose2::adjointMap(const Vector3& v) {
 Matrix3 Pose2::ExpmapDerivative(const Vector3& v) {
   double alpha = v[2];
   Matrix3 J;
-  if (fabs(alpha) > 1e-5) {
+  if (std::abs(alpha) > 1e-5) {
     // Chirikjian11book2, pg. 36
     /* !!!Warning!!! Compare Iserles05an, formula 2.42 and Chirikjian11book2 pg.26
      * Iserles' right-trivialization dexpR is actually the left Jacobian J_l in Chirikjian's notation
@@ -174,7 +174,7 @@ Matrix3 Pose2::LogmapDerivative(const Pose2& p) {
   Vector3 v = Logmap(p);
   double alpha = v[2];
   Matrix3 J;
-  if (fabs(alpha) > 1e-5) {
+  if (std::abs(alpha) > 1e-5) {
     double alphaInv = 1/alpha;
     double halfCotHalfAlpha = 0.5*sin(alpha)/(1-cos(alpha));
     double v1 = v[0], v2 = v[1];
@@ -198,7 +198,7 @@ Pose2 Pose2::inverse() const {
 
 /* ************************************************************************* */
 // see doc/math.lyx, SE(2) section
-Point2 Pose2::transform_to(const Point2& point,
+Point2 Pose2::transformTo(const Point2& point,
     OptionalJacobian<2, 3> Hpose, OptionalJacobian<2, 2> Hpoint) const {
   OptionalJacobian<2, 2> Htranslation = Hpose.cols<2>(0);
   OptionalJacobian<2, 1> Hrotation = Hpose.cols<1>(2);
@@ -209,7 +209,7 @@ Point2 Pose2::transform_to(const Point2& point,
 
 /* ************************************************************************* */
 // see doc/math.lyx, SE(2) section
-Point2 Pose2::transform_from(const Point2& point,
+Point2 Pose2::transformFrom(const Point2& point,
     OptionalJacobian<2, 3> Hpose, OptionalJacobian<2, 2> Hpoint) const {
   OptionalJacobian<2, 2> Htranslation = Hpose.cols<2>(0);
   OptionalJacobian<2, 1> Hrotation = Hpose.cols<1>(2);
@@ -223,7 +223,7 @@ Rot2 Pose2::bearing(const Point2& point,
     OptionalJacobian<1, 3> Hpose, OptionalJacobian<1, 2> Hpoint) const {
   // make temporary matrices
   Matrix23 D_d_pose; Matrix2 D_d_point;
-  Point2 d = transform_to(point, Hpose ? &D_d_pose : 0, Hpoint ? &D_d_point : 0);
+  Point2 d = transformTo(point, Hpose ? &D_d_pose : 0, Hpoint ? &D_d_point : 0);
   if (!Hpose && !Hpoint) return Rot2::relativeBearing(d);
   Matrix12 D_result_d;
   Rot2 result = Rot2::relativeBearing(d, Hpose || Hpoint ? &D_result_d : 0);
@@ -288,7 +288,7 @@ double Pose2::range(const Pose2& pose,
 /* *************************************************************************
  * New explanation, from scan.ml
  * It finds the angle using a linear method:
- * q = Pose2::transform_from(p) = t + R*p
+ * q = Pose2::transformFrom(p) = t + R*p
  * We need to remove the centroids from the data to find the rotation
  * using dp=[dpx;dpy] and q=[dqx;dqy] we have
  *  |dqx|   |c  -s|     |dpx|     |dpx -dpy|     |c|

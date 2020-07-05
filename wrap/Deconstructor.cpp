@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -48,11 +48,11 @@ string Deconstructor::wrapper_fragment(FileWriter& file,
          const string& cppClassName,
          const string& matlabUniqueName,
          int id) const {
-  
+
   const string matlabName = matlab_wrapper_name(matlabUniqueName);
 
   const string wrapFunctionName = matlabUniqueName + "_deconstructor_" + boost::lexical_cast<string>(id);
-    
+
   file.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
   file.oss << "{" << endl;
   file.oss << "  typedef boost::shared_ptr<"  << cppClassName  << "> Shared;" << endl;

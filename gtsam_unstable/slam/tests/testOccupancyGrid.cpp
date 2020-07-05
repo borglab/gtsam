@@ -11,13 +11,12 @@
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/geometry/Pose2.h>
-#include <boost/random/mersenne_twister.hpp>
-//#include <boost/random/uniform_int_distribution.hpp>  // FIXME: does not exist in boost 1.46
-#include <boost/random/uniform_int.hpp> // Old header - should still exist
 
 #include <vector>
+#include <cmath.>
+#include <random>
+
 #include <stdlib.h>
-#include <math.h>
 
 using namespace std;
 using namespace gtsam;
@@ -229,8 +228,8 @@ public:
     Marginals marginals(size);
 
     // NOTE: using older interface for boost.random due to interface changes after boost 1.46
-    boost::mt19937 rng;
-    boost::uniform_int<Index> random_cell(0,size-1);
+    std::mt19937 rng;
+    std::uniform_int_distribution<> random_cell(0, size - 1);
 
     // run Metropolis for the requested number of operations
     // compute initial probability of occupancy grid, P(x_t)

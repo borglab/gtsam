@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -30,7 +30,7 @@ void Cal3_S2Stereo::print(const std::string& s) const {
 
 /* ************************************************************************* */
 bool Cal3_S2Stereo::equals(const Cal3_S2Stereo& other, double tol) const {
-  if (fabs(b_ - other.b_) > tol) return false;
+  if (std::abs(b_ - other.b_) > tol) return false;
   return K_.equals(other.K_,tol);
 }
 

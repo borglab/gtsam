@@ -10,18 +10,30 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   testQuaternion.cpp
+ * @file   testSO3.cpp
  * @brief  Unit tests for SO3, as a GTSAM-adapted Lie Group
  * @author Frank Dellaert
  **/
 
 #include <gtsam/geometry/SO3.h>
-#include <gtsam/base/testLie.h>
+
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/testLie.h>
+
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
+
+//******************************************************************************
+TEST(SO3, Identity) {
+  const SO3 R;
+  EXPECT_LONGS_EQUAL(3, R.rows());
+  EXPECT_LONGS_EQUAL(3, SO3::dimension);
+  EXPECT_LONGS_EQUAL(3, SO3::Dim());
+  EXPECT_LONGS_EQUAL(3, R.dim());
+  EXPECT_LONGS_EQUAL(3, traits<SO3>::GetDimension(R));
+}
 
 //******************************************************************************
 TEST(SO3, Concept) {
@@ -31,13 +43,58 @@ TEST(SO3, Concept) {
 }
 
 //******************************************************************************
-TEST(SO3, Constructor) { SO3 q(Eigen::AngleAxisd(1, Vector3(0, 0, 1))); }
+TEST(SO3, Constructors) {
+  const Vector3 axis(0, 0, 1);
+  const double angle = 2.5;
+  SO3 Q(Eigen::AngleAxisd(angle, axis));
+  SO3 R = SO3::AxisAngle(axis, angle);
+  EXPECT(assert_equal(Q, R));
+}
+
+/* ************************************************************************* */
+TEST(SO3, ClosestTo) {
+  Matrix3 M;
+  M << 0.79067393, 0.6051136, -0.0930814,   //
+      0.4155925, -0.64214347, -0.64324489,  //
+      -0.44948549, 0.47046326, -0.75917576;
+
+  Matrix expected(3, 3);
+  expected << 0.790687, 0.605096, -0.0931312,  //
+      0.415746, -0.642355, -0.643844,          //
+      -0.449411, 0.47036, -0.759468;
+
+  auto actual = SO3::ClosestTo(3 * M);
+  EXPECT(assert_equal(expected, actual.matrix(), 1e-6));
+}
 
 //******************************************************************************
 SO3 id;
-Vector3 z_axis(0, 0, 1);
+Vector3 z_axis(0, 0, 1), v2(1, 2, 0), v3(1, 2, 3);
 SO3 R1(Eigen::AngleAxisd(0.1, z_axis));
 SO3 R2(Eigen::AngleAxisd(0.2, z_axis));
+
+/* ************************************************************************* */
+TEST(SO3, ChordalMean) {
+  std::vector<SO3> rotations = {R1, R1.inverse()};
+  EXPECT(assert_equal(SO3(), SO3::ChordalMean(rotations)));
+}
+
+//******************************************************************************
+TEST(SO3, Hat) {
+  // Check that Hat specialization is equal to dynamic version
+  EXPECT(assert_equal(SO3::Hat(z_axis), SOn::Hat(z_axis)));
+  EXPECT(assert_equal(SO3::Hat(v2), SOn::Hat(v2)));
+  EXPECT(assert_equal(SO3::Hat(v3), SOn::Hat(v3)));
+}
+
+//******************************************************************************
+TEST(SO3, Vee) {
+  // Check that Hat specialization is equal to dynamic version
+  auto X1 = SOn::Hat(z_axis), X2 = SOn::Hat(v2), X3 = SOn::Hat(v3);
+  EXPECT(assert_equal(SO3::Vee(X1), SOn::Vee(X1)));
+  EXPECT(assert_equal(SO3::Vee(X2), SOn::Vee(X2)));
+  EXPECT(assert_equal(SO3::Vee(X3), SOn::Vee(X3)));
+}
 
 //******************************************************************************
 TEST(SO3, Local) {
@@ -50,7 +107,21 @@ TEST(SO3, Local) {
 TEST(SO3, Retract) {
   Vector3 v(0, 0, 0.1);
   SO3 actual = traits<SO3>::Retract(R1, v);
-  EXPECT(actual.isApprox(R2));
+  EXPECT(assert_equal(R2, actual));
+}
+
+//******************************************************************************
+TEST(SO3, Logmap) {
+  Vector3 expected(0, 0, 0.1);
+  Vector3 actual = SO3::Logmap(R1.between(R2));
+  EXPECT(assert_equal((Vector)expected, actual));
+}
+
+//******************************************************************************
+TEST(SO3, Expmap) {
+  Vector3 v(0, 0, 0.1);
+  SO3 actual = R1 * SO3::Expmap(v);
+  EXPECT(assert_equal(R2, actual));
 }
 
 //******************************************************************************
@@ -83,6 +154,34 @@ TEST(SO3, ChartDerivatives) {
 }
 
 /* ************************************************************************* */
+TEST(SO3, ExpmapFunctor) {
+  Vector axis = Vector3(0., 1., 0.);  // rotation around Y
+  double angle = 3.14 / 4.0;
+  Matrix expected(3,3);
+  expected << 0.707388, 0, 0.706825, 0, 1, 0, -0.706825, 0, 0.707388;
+
+  // axis angle version
+  so3::ExpmapFunctor f1(axis, angle);
+  SO3 actual1 = f1.expmap();
+  CHECK(assert_equal(expected, actual1.matrix(), 1e-5));
+
+  // axis angle version, negative angle
+  so3::ExpmapFunctor f2(axis, angle - 2*M_PI);
+  SO3 actual2 = f2.expmap();
+  CHECK(assert_equal(expected, actual2.matrix(), 1e-5));
+
+  // omega version
+  so3::ExpmapFunctor f3(axis * angle);
+  SO3 actual3 = f3.expmap();
+  CHECK(assert_equal(expected, actual3.matrix(), 1e-5));
+
+  // omega version, negative angle
+  so3::ExpmapFunctor f4(axis * (angle - 2*M_PI));
+  SO3 actual4 = f4.expmap();
+  CHECK(assert_equal(expected, actual4.matrix(), 1e-5));
+}
+
+/* ************************************************************************* */
 namespace exmap_derivative {
 static const Vector3 w(0.1, 0.27, -0.2);
 }
@@ -106,7 +205,7 @@ TEST(SO3, ExpmapDerivative) {
   EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-7));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ExpmapDerivative2) {
   const Vector3 theta(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
@@ -117,7 +216,7 @@ TEST(SO3, ExpmapDerivative2) {
                      SO3::ExpmapDerivative(-theta)));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ExpmapDerivative3) {
   const Vector3 theta(10, 20, 30);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
@@ -128,7 +227,7 @@ TEST(SO3, ExpmapDerivative3) {
                      SO3::ExpmapDerivative(-theta)));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ExpmapDerivative4) {
   // Iserles05an (Lie-group Methods) says:
   // scalar is easy: d exp(a(t)) / dt = exp(a(t)) a'(t)
@@ -156,7 +255,7 @@ TEST(SO3, ExpmapDerivative4) {
   }
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ExpmapDerivative5) {
   auto w = [](double t) { return Vector3(2 * t, sin(t), 4 * t * t); };
   auto w_dot = [](double t) { return Vector3(2, cos(t), 8 * t); };
@@ -172,7 +271,7 @@ TEST(SO3, ExpmapDerivative5) {
   }
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ExpmapDerivative6) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
@@ -182,7 +281,7 @@ TEST(SO3, ExpmapDerivative6) {
   EXPECT(assert_equal(Jexpected, Jactual));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, LogmapDerivative) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const SO3 R = SO3::Expmap(thetahat);  // some rotation
@@ -192,7 +291,7 @@ TEST(SO3, LogmapDerivative) {
   EXPECT(assert_equal(Jexpected, Jactual));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, JacobianLogmap) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const SO3 R = SO3::Expmap(thetahat);  // some rotation
@@ -203,7 +302,7 @@ TEST(SO3, JacobianLogmap) {
   EXPECT(assert_equal(Jexpected, Jactual));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ApplyDexp) {
   Matrix aH1, aH2;
   for (bool nearZeroApprox : {true, false}) {
@@ -226,7 +325,7 @@ TEST(SO3, ApplyDexp) {
   }
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(SO3, ApplyInvDexp) {
   Matrix aH1, aH2;
   for (bool nearZeroApprox : {true, false}) {
@@ -248,6 +347,33 @@ TEST(SO3, ApplyInvDexp) {
       }
     }
   }
+}
+
+//******************************************************************************
+TEST(SO3, vec) {
+  const Vector9 expected = Eigen::Map<const Vector9>(R2.matrix().data());
+  Matrix actualH;
+  const Vector9 actual = R2.vec(actualH);
+  CHECK(assert_equal(expected, actual));
+  boost::function<Vector9(const SO3&)> f = [](const SO3& Q) { return Q.vec(); };
+  const Matrix numericalH = numericalDerivative11(f, R2, 1e-5);
+  CHECK(assert_equal(numericalH, actualH));
+}
+
+//******************************************************************************
+TEST(Matrix, compose) {
+  Matrix3 M;
+  M << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  SO3 R = SO3::Expmap(Vector3(1, 2, 3));
+  const Matrix3 expected = M * R.matrix();
+  Matrix actualH;
+  const Matrix3 actual = so3::compose(M, R, actualH);
+  CHECK(assert_equal(expected, actual));
+  boost::function<Matrix3(const Matrix3&)> f = [R](const Matrix3& M) {
+    return so3::compose(M, R);
+  };
+  Matrix numericalH = numericalDerivative11(f, M, 1e-2);
+  CHECK(assert_equal(numericalH, actualH));
 }
 
 //******************************************************************************

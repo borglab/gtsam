@@ -17,12 +17,15 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/inference/LabeledSymbol.h>
 
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/range/adaptor/map.hpp>
+
+#include <sstream>
 
 using namespace std;
 using namespace boost::assign;
@@ -62,7 +65,7 @@ TEST(VectorValues, basics)
   EXPECT(assert_equal(Vector2(2, 3), actual[1]));
   EXPECT(assert_equal(Vector2(4, 5), actual[2]));
   EXPECT(assert_equal(Vector2(6, 7), actual[5]));
-  FastVector<Key> keys = list_of(0)(1)(2)(5);
+  KeyVector keys {0, 1, 2, 5};
   EXPECT(assert_equal((Vector(7) << 1, 2, 3, 4, 5, 6, 7).finished(), actual.vector(keys)));
 
   // Check exceptions
@@ -101,8 +104,7 @@ TEST(VectorValues, subvector)
   init.insert(12, Vector2(4, 5));
   init.insert(13, Vector2(6, 7));
 
-  std::vector<Key> keys;
-  keys += 10, 12, 13;
+  KeyVector keys {10, 12, 13};
   Vector expSubVector = (Vector(5) << 1, 4, 5, 6, 7).finished();
   EXPECT(assert_equal(expSubVector, init.vector(keys)));
 }
@@ -197,7 +199,7 @@ TEST(VectorValues, convert)
   EXPECT(assert_equal(expected, actual2));
 
   // Test other direction, note vector() is not guaranteed to give right result
-  FastVector<Key> keys = list_of(0)(1)(2)(5);
+  KeyVector keys {0, 1, 2, 5};
   EXPECT(assert_equal(x, actual.vector(keys)));
 
   // Test version with dims argument
@@ -222,11 +224,28 @@ TEST(VectorValues, vector_sub)
   expected << 1, 6, 7;
 
   // Test FastVector version
-  FastVector<Key> keys = list_of(0)(5);
+  KeyVector keys {0, 5};
   EXPECT(assert_equal(expected, vv.vector(keys)));
 
   // Test version with dims argument
   EXPECT(assert_equal(expected, vv.vector(dims)));
+}
+
+/* ************************************************************************* */
+TEST(VectorValues, print)
+{
+  VectorValues vv;
+  vv.insert(0, (Vector(1) << 1).finished());
+  vv.insert(1, Vector2(2, 3));
+  vv.insert(2, Vector2(4, 5));
+  vv.insert(5, Vector2(6, 7));
+  vv.insert(7, Vector2(8, 9));
+
+  string expected =
+      "  0: 1\n  1: 2 3\n  2: 4 5\n  5: 6 7\n  7: 8 9\n";
+  stringstream actual;
+  actual << vv;
+  EXPECT(expected == actual.str());
 }
 
 /* ************************************************************************* */

@@ -32,8 +32,8 @@
 namespace gtsam {
 
 // Forward declarations
+struct KeyInfoEntry;
 class KeyInfo;
-class KeyInfoEntry;
 class GaussianFactorGraph;
 class Values;
 class VectorValues;
@@ -41,7 +41,7 @@ class VectorValues;
 /**
  * parameters for iterative linear solvers
  */
-class GTSAM_EXPORT IterativeOptimizationParameters {
+class IterativeOptimizationParameters {
 
 public:
 
@@ -63,27 +63,27 @@ public:
   inline Verbosity verbosity() const {
     return verbosity_;
   }
-  std::string getVerbosity() const;
-  void setVerbosity(const std::string &s);
+  GTSAM_EXPORT std::string getVerbosity() const;
+  GTSAM_EXPORT void setVerbosity(const std::string &s);
 
   /* matlab interface */
-  void print() const;
+  GTSAM_EXPORT void print() const;
 
   /* virtual print function */
-  virtual void print(std::ostream &os) const;
+  GTSAM_EXPORT virtual void print(std::ostream &os) const;
 
   /* for serialization */
   friend std::ostream& operator<<(std::ostream &os,
       const IterativeOptimizationParameters &p);
 
-  static Verbosity verbosityTranslator(const std::string &s);
-  static std::string verbosityTranslator(Verbosity v);
+  GTSAM_EXPORT static Verbosity verbosityTranslator(const std::string &s);
+  GTSAM_EXPORT static std::string verbosityTranslator(Verbosity v);
 };
 
 /**
  * Base class for Iterative Solvers like SubgraphSolver
  */
-class GTSAM_EXPORT IterativeSolver {
+class IterativeSolver {
 public:
   typedef boost::shared_ptr<IterativeSolver> shared_ptr;
   IterativeSolver() {
@@ -92,12 +92,12 @@ public:
   }
 
   /* interface to the nonlinear optimizer, without metadata, damping and initial estimate */
-  VectorValues optimize(const GaussianFactorGraph &gfg,
+  GTSAM_EXPORT VectorValues optimize(const GaussianFactorGraph &gfg,
       boost::optional<const KeyInfo&> = boost::none,
       boost::optional<const std::map<Key, Vector>&> lambda = boost::none);
 
   /* interface to the nonlinear optimizer, without initial estimate */
-  VectorValues optimize(const GaussianFactorGraph &gfg, const KeyInfo &keyInfo,
+  GTSAM_EXPORT VectorValues optimize(const GaussianFactorGraph &gfg, const KeyInfo &keyInfo,
       const std::map<Key, Vector> &lambda);
 
   /* interface to the nonlinear optimizer that the subclasses have to implement */
@@ -109,27 +109,14 @@ public:
 
 /**
  * Handy data structure for iterative solvers
- * key to (index, dimension, colstart)
+ * key to (index, dimension, start)
  */
-class GTSAM_EXPORT KeyInfoEntry: public boost::tuple<Key, size_t, Key> {
-
-public:
-
-  typedef boost::tuple<Key, size_t, Key> Base;
-
+struct GTSAM_EXPORT KeyInfoEntry {
+  size_t index, dim, start;
   KeyInfoEntry() {
   }
   KeyInfoEntry(size_t idx, size_t d, Key start) :
-      Base(idx, d, start) {
-  }
-  size_t index() const {
-    return this->get<0>();
-  }
-  size_t dim() const {
-    return this->get<1>();
-  }
-  size_t colstart() const {
-    return this->get<2>();
+      index(idx), dim(d), start(start) {
   }
 };
 

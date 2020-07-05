@@ -14,3 +14,8 @@ foreach(example_src ${examples_SRCS})
   )
   add_dependencies(all_examples ${example})
 endforeach(example_src)
+
+check_cxx_compiler_flag("-std=c++11" EIGEN_COMPILER_SUPPORT_CPP11)
+if(EIGEN_COMPILER_SUPPORT_CPP11)
+ei_add_target_property(nullary_indexing COMPILE_FLAGS "-std=c++11")
+endif()

@@ -44,9 +44,9 @@ public :
     return "STL";
   }
 
-  static void free_matrix(gene_matrix & A, int N){}
+  static void free_matrix(gene_matrix & /*A*/, int /*N*/){}
 
-  static void free_vector(gene_vector & B){}
+  static void free_vector(gene_vector & /*B*/){}
 
   static inline void matrix_from_stl(gene_matrix & A, stl_matrix & A_stl){
     A = A_stl;

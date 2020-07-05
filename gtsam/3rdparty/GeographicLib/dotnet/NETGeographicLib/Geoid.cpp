@@ -6,7 +6,7 @@
  * GeographicLib is Copyright (c) Charles Karney (2010-2012)
  * <charles@karney.com> and licensed under the MIT/X11 License.
  * For more information, see
- * http://geographiclib.sourceforge.net/
+ * https://geographiclib.sourceforge.io/
  **********************************************************************/
 #include "stdafx.h"
 #include "GeographicLib/Geoid.hpp"
@@ -85,25 +85,6 @@ double Geoid::Height(double lat, double lon)
     try
     {
         return m_pGeoid->operator()( lat, lon );
-    }
-    catch ( const std::exception& err )
-    {
-        throw gcnew GeographicErr( err.what() );
-    }
-}
-
-//*****************************************************************************
-double Geoid::Height(double lat, double lon,
-    [System::Runtime::InteropServices::Out] double% gradn,
-    [System::Runtime::InteropServices::Out] double% grade)
-{
-    try
-    {
-        double lgradn, lgrade;
-        double out = m_pGeoid->operator()( lat, lon, lgradn, lgrade );
-        gradn = lgradn;
-        grade = lgrade;
-        return out;
     }
     catch ( const std::exception& err )
     {

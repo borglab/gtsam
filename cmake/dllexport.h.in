@@ -26,21 +26,30 @@
 //   class __declspec(dllexport) MyClass { ... };
 // When included while compiling other code against GTSAM:
 //   class __declspec(dllimport) MyClass { ... };
+
+#pragma once
+
+// Whether GTSAM is compiled as static or DLL in windows. 
+// This will be used to decide whether include __declspec(dllimport) or not in headers
+#cmakedefine BUILD_SHARED_LIBS
+
 #ifdef _WIN32
-#  ifdef @library_name@_EXPORTS
-#    define @library_name@_EXPORT __declspec(dllexport)
-#    define @library_name@_EXTERN_EXPORT __declspec(dllexport) extern
+#  ifndef BUILD_SHARED_LIBS
+#    define @library_name@_EXPORT
+#    define @library_name@_EXTERN_EXPORT extern
 #  else
-#    ifndef @library_name@_IMPORT_STATIC
+#    ifdef @library_name@_EXPORTS
+#      define @library_name@_EXPORT __declspec(dllexport)
+#      define @library_name@_EXTERN_EXPORT __declspec(dllexport) extern
+#    else
 #      define @library_name@_EXPORT __declspec(dllimport)
 #      define @library_name@_EXTERN_EXPORT __declspec(dllimport)
-#    else /* @library_name@_IMPORT_STATIC */
-#      define @library_name@_EXPORT
-#      define @library_name@_EXTERN_EXPORT extern
-#    endif /* @library_name@_IMPORT_STATIC */
-#  endif /* @library_name@_EXPORTS */
-#else /* _WIN32 */
+#    endif
+#  endif
+#else
 #  define @library_name@_EXPORT
 #  define @library_name@_EXTERN_EXPORT extern
 #endif
+
+#undef BUILD_SHARED_LIBS
 

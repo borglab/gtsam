@@ -61,7 +61,7 @@ int main(int argc, char** argv){
   string calibration_loc = findExampleDataFile("VO_calibration.txt");
   string pose_loc = findExampleDataFile("VO_camera_poses_large.txt");
   string factor_loc = findExampleDataFile("VO_stereo_factors_large.txt");
-  
+
   //read camera calibration info from file
   // focal lengths fx, fy, skew s, principal point u0, v0, baseline b
   cout << "Reading calibration info" << endl;
@@ -97,7 +97,7 @@ int main(int argc, char** argv){
               Eigen::IOFormat(Eigen::StreamPrecision, 0, " ", " ")) << endl;
     }
   }
-  
+
   // camera and landmark keys
   size_t x, l;
 

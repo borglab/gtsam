@@ -125,7 +125,7 @@ for i=1:M % M
     j = TD(k,3);
     range = TD(k,4);
     if addRange
-      factor = RangeFactorPosePoint2(i, symbol('L',j), range, noiseModels.range);
+      factor = RangeFactor2D(i, symbol('L',j), range, noiseModels.range);
       % Throw out obvious outliers based on current landmark estimates
       error=factor.unwhitenedError(landmarkEstimates);
       if k<=minK || abs(error)<5
@@ -146,14 +146,14 @@ for i=1:M % M
     end
     isam.update(newFactors, initial);
     result = isam.calculateEstimate();
-    lastPose = result.at(i);
+    lastPose = result.atPose2(i);
     % update landmark estimates
     if addRange
       landmarkEstimates = Values;
       for jj=1:size(TL,1)
         j=TL(jj,1);
         key = symbol('L',j);
-        landmarkEstimates.insert(key,result.at(key));
+        landmarkEstimates.insert(key,result.atPoint2(key));
       end
     end
     newFactors = NonlinearFactorGraph;
