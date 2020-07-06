@@ -37,4 +37,6 @@ add_dependencies(cythonize_eigency_core cythonize_eigency_conversions)
 add_custom_target(cythonize_eigency)
 add_dependencies(cythonize_eigency cythonize_eigency_conversions cythonize_eigency_core)
 
-add_dependencies(${python_install_target} cythonize_eigency)
+if(TARGET ${python_install_target})
+  add_dependencies(${python_install_target} cythonize_eigency)
+endif()

@@ -41,7 +41,7 @@ execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
 function(wrap_and_install_library_cython interface_header extra_imports install_path libs dependencies)
   # Paths for generated files
   get_filename_component(module_name "${interface_header}" NAME_WE)
-  set(generated_files_path "${GTSAM_CYTHON_INSTALL_PATH}/${module_name}")
+  set(generated_files_path "${install_path}")
   wrap_library_cython("${interface_header}" "${generated_files_path}" "${extra_imports}" "${libs}" "${dependencies}")
 endfunction()
 
@@ -138,7 +138,9 @@ function(cythonize target pyx_file output_lib_we output_dir include_dirs libs in
   endif()
   add_dependencies(${target} ${target}_pyx2cpp)
 
-  add_dependencies(${python_install_target} ${target})
+  if(TARGET ${python_install_target})
+    add_dependencies(${python_install_target} ${target})
+  endif()
 endfunction()
 
 # Internal function that wraps a library and compiles the wrapper
@@ -151,9 +153,12 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
   get_filename_component(module_name "${interface_header}" NAME_WE)
 
   # Wrap module to Cython pyx
-  message(STATUS "Cython wrapper generating ${module_name}.pyx")
+  message(STATUS "Cython wrapper generating ${generated_files_path}/${module_name}.pyx")
   set(generated_pyx "${generated_files_path}/${module_name}.pyx")
-  file(MAKE_DIRECTORY "${generated_files_path}")
+  if(NOT EXISTS ${generated_files_path})
+    file(MAKE_DIRECTORY "${generated_files_path}")
+  endif()
+
   add_custom_command(
     OUTPUT ${generated_pyx}
     DEPENDS ${interface_header} wrap
