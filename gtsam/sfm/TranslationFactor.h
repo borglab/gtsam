@@ -67,8 +67,7 @@ class TranslationFactor : public NoiseModelFactor2<Point3, Point3> {
       boost::optional<Matrix&> H2 = boost::none) const override {
     const Point3 dir = Tb - Ta;
     Matrix33 H_predicted_dir;
-    const Point3 predicted =
-        dir.normalized(H1 || H2 ? &H_predicted_dir : nullptr);
+    const Point3 predicted = normalize(dir, H1 || H2 ? &H_predicted_dir : nullptr);
     if (H1) *H1 = -H_predicted_dir;
     if (H2) *H2 = H_predicted_dir;
     return predicted - measured_w_aZb_;
