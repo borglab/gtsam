@@ -17,12 +17,11 @@
  * @brief unit tests for FunctorizedFactor class
  */
 
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/FunctorizedFactor.h>
 #include <gtsam/nonlinear/factorTesting.h>
-
-#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -32,9 +31,9 @@ auto model = noiseModel::Isotropic::Sigma(9, 1);
 
 /// Functor that takes a matrix and multiplies every element by m
 class MultiplyFunctor {
-  double m_; ///< simple multiplier
+  double m_;  ///< simple multiplier
 
-public:
+ public:
   using argument_type = Matrix;
   using return_type = Matrix;
 
@@ -42,32 +41,33 @@ public:
 
   Matrix operator()(const Matrix &X,
                     OptionalJacobian<-1, -1> H = boost::none) const {
-    if (H)
-      *H = m_ * Matrix::Identity(X.rows() * X.cols(), X.rows() * X.cols());
+    if (H) *H = m_ * Matrix::Identity(X.rows() * X.cols(), X.rows() * X.cols());
     return m_ * X;
   }
 };
 
+/* ************************************************************************* */
 TEST(FunctorizedFactor, Identity) {
-
   Matrix X = Matrix::Identity(3, 3), measurement = Matrix::Identity(3, 3);
 
   double multiplier = 1.0;
 
-  FunctorizedFactor<MultiplyFunctor> factor(key, measurement, model,
-                                            multiplier);
+  FunctorizedFactor<Matrix, Matrix> factor(key, measurement, model,
+                                           MultiplyFunctor(multiplier));
 
   Vector error = factor.evaluateError(X);
 
   EXPECT(assert_equal(Vector::Zero(9), error, 1e-9));
 }
 
+/* ************************************************************************* */
 TEST(FunctorizedFactor, Multiply2) {
   double multiplier = 2.0;
   Matrix X = Matrix::Identity(3, 3);
   Matrix measurement = multiplier * Matrix::Identity(3, 3);
 
-  FunctorizedFactor<MultiplyFunctor> factor(key, measurement, model, multiplier);
+  FunctorizedFactor<Matrix, Matrix> factor(key, measurement, model,
+                                           MultiplyFunctor(multiplier));
 
   Vector error = factor.evaluateError(X);
 
@@ -79,10 +79,10 @@ TEST(FunctorizedFactor, Equality) {
 
   double multiplier = 2.0;
 
-  FunctorizedFactor<MultiplyFunctor> factor1(key, measurement, model,
-                                             multiplier);
-  FunctorizedFactor<MultiplyFunctor> factor2(key, measurement, model,
-                                             multiplier);
+  FunctorizedFactor<Matrix, Matrix> factor1(key, measurement, model,
+                                            MultiplyFunctor(multiplier));
+  FunctorizedFactor<Matrix, Matrix> factor2(key, measurement, model,
+                                            MultiplyFunctor(multiplier));
 
   EXPECT(factor1.equals(factor2));
 }
@@ -94,7 +94,8 @@ TEST(FunctorizedFactor, Jacobians) {
 
   double multiplier = 2.0;
 
-  FunctorizedFactor<MultiplyFunctor> factor(key, X, model, multiplier);
+  FunctorizedFactor<Matrix, Matrix> factor(key, X, model,
+                                           MultiplyFunctor(multiplier));
 
   Values values;
   values.insert<Matrix>(key, X);
@@ -103,12 +104,14 @@ TEST(FunctorizedFactor, Jacobians) {
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
+/* ************************************************************************* */
 TEST(FunctorizedFactor, Print) {
   Matrix X = Matrix::Identity(2, 2);
 
   double multiplier = 2.0;
 
-  FunctorizedFactor<MultiplyFunctor> factor(key, X, model, multiplier);
+  FunctorizedFactor<Matrix, Matrix> factor(key, X, model,
+                                           MultiplyFunctor(multiplier));
 
   // redirect output to buffer so we can compare
   stringstream buffer;
@@ -120,16 +123,54 @@ TEST(FunctorizedFactor, Print) {
   string actual = buffer.str();
   cout.rdbuf(old);
 
-  string expected = "  keys = { X0 }\n"
-                    "  noise model: unit (9) \n"
-                    "FunctorizedFactor(X0)\n"
-                    "  measurement: [\n"
-                    "	1, 0;\n"
-                    " 	0, 1\n"
-                    "]\n"
-                    "  noise model sigmas: 1 1 1 1 1 1 1 1 1\n";
+  string expected =
+      "  keys = { X0 }\n"
+      "  noise model: unit (9) \n"
+      "FunctorizedFactor(X0)\n"
+      "  measurement: [\n"
+      "	1, 0;\n"
+      " 	0, 1\n"
+      "]\n"
+      "  noise model sigmas: 1 1 1 1 1 1 1 1 1\n";
 
   CHECK_EQUAL(expected, actual);
+}
+
+/* ************************************************************************* */
+// Test factor using a std::function type.
+TEST(FunctorizedFactor, Functional) {
+  double multiplier = 2.0;
+  Matrix X = Matrix::Identity(3, 3);
+  Matrix measurement = multiplier * Matrix::Identity(3, 3);
+
+  std::function<Matrix(Matrix, boost::optional<Matrix &>)> functional =
+      MultiplyFunctor(multiplier);
+  FunctorizedFactor<Matrix, Matrix> factor(key, measurement, model, functional);
+
+  Vector error = factor.evaluateError(X);
+
+  EXPECT(assert_equal(Vector::Zero(9), error, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(FunctorizedFactor, Lambda) {
+  double multiplier = 2.0;
+  Matrix X = Matrix::Identity(3, 3);
+  Matrix measurement = multiplier * Matrix::Identity(3, 3);
+
+  auto lambda = [multiplier](const Matrix &X,
+                             OptionalJacobian<-1, -1> H = boost::none) {
+    if (H)
+      *H = multiplier *
+           Matrix::Identity(X.rows() * X.cols(), X.rows() * X.cols());
+    return multiplier * X;
+  };
+  // FunctorizedFactor<Matrix> factor(key, measurement, model, lambda);
+  auto factor = FunctorizedFactor<Matrix>(key, measurement, model, lambda);
+
+  Vector error = factor.evaluateError(X);
+
+  EXPECT(assert_equal(Vector::Zero(9), error, 1e-9));
 }
 
 /* *************************************************************************

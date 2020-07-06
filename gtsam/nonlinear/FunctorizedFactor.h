@@ -27,14 +27,11 @@ namespace gtsam {
 /**
  * Factor which evaluates functor and uses the result to compute
  * error on provided measurement.
- * The provided FUNCTOR should provide two type aliases: `argument_type` which
- * corresponds to the type of input it accepts and `return_type` which indicates
- * the type of the return value. This factor uses those type values to construct
- * the functor.
  *
  * Template parameters are
- * @param FUNCTOR: A class which operates as a functor.
- * 
+ * @param R: The return type of the functor after evaluation.
+ * @param T: The argument type for the functor.
+ *
  * Example:
  *   Key key = Symbol('X', 0);
  *   auto model = noiseModel::Isotropic::Sigma(9, 1);
@@ -48,58 +45,53 @@ namespace gtsam {
  *     MultiplyFunctor(double m) : m_(m) {}
  *     Matrix operator()(const Matrix &X,
  *              OptionalJacobian<-1, -1> H = boost::none) const {
- *       if (H) *H = m_ * Matrix::Identity(X.rows()*X.cols(), X.rows()*X.cols());
- *       return m_ * X;
+ *       if (H) *H = m_ * Matrix::Identity(X.rows()*X.cols(),
+ * X.rows()*X.cols()); return m_ * X;
  *     }
  *   };
  *
  *   Matrix measurement = Matrix::Identity(3, 3);
  *   double multiplier = 2.0;
- *   FunctorizedFactor<MultiplyFunctor> factor(keyX, measurement, model, multiplier);
+ *
+ *   FunctorizedFactor<Matrix, Matrix> factor(keyX, measurement, model,
+ *     MultiplyFunctor(multiplier));
  */
-template <typename FUNCTOR>
-class GTSAM_EXPORT FunctorizedFactor
-    : public NoiseModelFactor1<typename FUNCTOR::argument_type> {
-private:
-  using T = typename FUNCTOR::argument_type;
+template <typename R, typename T>
+class GTSAM_EXPORT FunctorizedFactor : public NoiseModelFactor1<T> {
+ private:
   using Base = NoiseModelFactor1<T>;
 
-  typename FUNCTOR::return_type
-      measured_; ///< value that is compared with functor return value
-  SharedNoiseModel noiseModel_; ///< noise model
-  FUNCTOR func_;                ///< functor instance
+  R measured_;  ///< value that is compared with functor return value
+  SharedNoiseModel noiseModel_;                          ///< noise model
+  std::function<R(T, boost::optional<Matrix &>)> func_;  ///< functor instance
 
-public:
+ public:
   /** default constructor - only use for serialization */
   FunctorizedFactor() {}
 
   /** Construct with given x and the parameters of the basis
    *
-   * @param Args: Variadic template parameter for functor arguments.
-   *
    * @param key: Factor key
-   * @param z: Measurement object of type FUNCTOR::return_type
+   * @param z: Measurement object of type R
    * @param model: Noise model
-   * @param args: Variable number of arguments used to instantiate functor
+   * @param func: The instance of the functor object
    */
-  template <typename... Args>
-  FunctorizedFactor(Key key, const typename FUNCTOR::return_type &z,
-                    const SharedNoiseModel &model, Args &&... args)
-      : Base(model, key), measured_(z), noiseModel_(model),
-        func_(std::forward<Args>(args)...) {}
+  FunctorizedFactor(Key key, const R &z, const SharedNoiseModel &model,
+                    const std::function<R(T, boost::optional<Matrix &>)> func)
+      : Base(model, key), measured_(z), noiseModel_(model), func_(func) {}
 
   virtual ~FunctorizedFactor() {}
 
   /// @return a deep copy of this factor
   virtual NonlinearFactor::shared_ptr clone() const {
     return boost::static_pointer_cast<NonlinearFactor>(
-        NonlinearFactor::shared_ptr(new FunctorizedFactor<FUNCTOR>(*this)));
+        NonlinearFactor::shared_ptr(new FunctorizedFactor<T, R>(*this)));
   }
 
   Vector evaluateError(const T &params,
                        boost::optional<Matrix &> H = boost::none) const {
-    typename FUNCTOR::return_type x = func_(params, H);
-    Vector error = traits<typename FUNCTOR::return_type>::Local(measured_, x);
+    R x = func_(params, H);
+    Vector error = traits<R>::Local(measured_, x);
     return error;
   }
 
@@ -110,22 +102,21 @@ public:
     Base::print(s, keyFormatter);
     std::cout << s << (s != "" ? " " : "") << "FunctorizedFactor("
               << keyFormatter(this->key()) << ")" << std::endl;
-    traits<typename FUNCTOR::return_type>::Print(measured_, "  measurement: ");
+    traits<R>::Print(measured_, "  measurement: ");
     std::cout << "  noise model sigmas: " << noiseModel_->sigmas().transpose()
               << std::endl;
   }
 
   virtual bool equals(const NonlinearFactor &other, double tol = 1e-9) const {
-    const FunctorizedFactor<FUNCTOR> *e =
-        dynamic_cast<const FunctorizedFactor<FUNCTOR> *>(&other);
+    const FunctorizedFactor<T, R> *e =
+        dynamic_cast<const FunctorizedFactor<T, R> *>(&other);
     const bool base = Base::equals(*e, tol);
     return e && Base::equals(other, tol) &&
-           traits<typename FUNCTOR::return_type>::Equals(this->measured_, e->measured_,
-                                                tol);
+           traits<R>::Equals(this->measured_, e->measured_, tol);
   }
   /// @}
 
-private:
+ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -138,8 +129,8 @@ private:
 };
 
 /// traits
-template <typename FUNCTOR>
-struct traits<FunctorizedFactor<FUNCTOR>>
-    : public Testable<FunctorizedFactor<FUNCTOR>> {};
+template <typename T, typename R>
+struct traits<FunctorizedFactor<T, R>>
+    : public Testable<FunctorizedFactor<T, R>> {};
 
-} // namespace gtsam
+}  // namespace gtsam
