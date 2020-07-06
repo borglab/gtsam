@@ -55,7 +55,7 @@
 namespace gtsam {
 
   /// Function to demangle type name of variable, e.g. demangle(typeid(x).name())
-  std::string demangle(const char* name);
+  std::string GTSAM_EXPORT demangle(const char* name);
 
   /// Integer nonlinear key type
   typedef std::uint64_t Key;
