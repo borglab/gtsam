@@ -544,7 +544,7 @@ namespace gtsam {
 #ifdef GTSAM_USE_QUATERNIONS
   // only align if quaternion, Matrix3 has no alignment requirements
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
   };
 

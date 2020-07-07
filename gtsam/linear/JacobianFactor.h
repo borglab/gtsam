@@ -215,8 +215,11 @@ namespace gtsam {
      */
     Matrix information() const override;
 
-    /// Return the diagonal of the Hessian for this factor
-    VectorValues hessianDiagonal() const override;
+    /// Using the base method
+    using Base::hessianDiagonal;
+
+    /// Add the current diagonal to a VectorValues instance
+    void hessianDiagonalAdd(VectorValues& d) const override;
 
     /// Raw memory access version of hessianDiagonal
     void hessianDiagonal(double* d) const override;

@@ -14,7 +14,8 @@ addons:
     - clang-9
     - build-essential pkg-config
     - cmake
-    - libpython-dev python-numpy
+    - python3-dev libpython-dev
+    - python3-numpy
     - libboost-all-dev
 
 # before_install:
@@ -94,7 +95,7 @@ jobs:
     os: linux
     compiler: gcc
     env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF GTSAM_WITH_TBB=ON
-    script: bash .travis.sh -b
+    script: bash .travis.sh -t
 # -------- STAGE 2: TESTS -----------
 # on Mac, GCC
   - stage: test
