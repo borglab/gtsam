@@ -206,11 +206,12 @@ protected:
       boost::optional<Matrix&> E = boost::none) const {
     Vector ue = cameras.reprojectionError(point, measured_, Fs, E);
     if (body_P_sensor_ && Fs) {
-      const Pose3 sensor_P_body = body_P_sensor_->inverse();
+      const Pose3 sensor_T_body = body_P_sensor_->inverse();
       for (size_t i = 0; i < Fs->size(); i++) {
-        const Pose3 w_Pose_body = cameras[i].pose() * sensor_P_body;
+        const Pose3 world_T_body = cameras[i].pose() * sensor_T_body;
         Matrix J(6, 6);
-        const Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
+        // Call compose to compute Jacobian
+        world_T_body.compose(*body_P_sensor_, J);
         Fs->at(i) = Fs->at(i) * J;
       }
     }
