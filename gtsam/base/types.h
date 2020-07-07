@@ -28,6 +28,7 @@
 #include <cstdint>
 
 #include <exception>
+#include <string>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/scalable_allocator.h>
@@ -54,7 +55,7 @@
 namespace gtsam {
 
   /// Function to demangle type name of variable, e.g. demangle(typeid(x).name())
-  std::string demangle(const char* name);
+  std::string GTSAM_EXPORT demangle(const char* name);
 
   /// Integer nonlinear key type
   typedef std::uint64_t Key;
