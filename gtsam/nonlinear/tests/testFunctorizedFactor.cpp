@@ -34,9 +34,6 @@ class MultiplyFunctor {
   double m_;  ///< simple multiplier
 
  public:
-  using argument_type = Matrix;
-  using return_type = Matrix;
-
   MultiplyFunctor(double m) : m_(m) {}
 
   Matrix operator()(const Matrix &X,
@@ -47,13 +44,13 @@ class MultiplyFunctor {
 };
 
 /* ************************************************************************* */
+// Test identity operation for FunctorizedFactor.
 TEST(FunctorizedFactor, Identity) {
   Matrix X = Matrix::Identity(3, 3), measurement = Matrix::Identity(3, 3);
 
   double multiplier = 1.0;
-
-  FunctorizedFactor<Matrix, Matrix> factor(key, measurement, model,
-                                           MultiplyFunctor(multiplier));
+  auto functor = MultiplyFunctor(multiplier);
+  auto factor = MakeFunctorizedFactor<Matrix>(key, measurement, model, functor);
 
   Vector error = factor.evaluateError(X);
 
@@ -61,41 +58,45 @@ TEST(FunctorizedFactor, Identity) {
 }
 
 /* ************************************************************************* */
+// Test FunctorizedFactor with multiplier value of 2.
 TEST(FunctorizedFactor, Multiply2) {
   double multiplier = 2.0;
   Matrix X = Matrix::Identity(3, 3);
   Matrix measurement = multiplier * Matrix::Identity(3, 3);
 
-  FunctorizedFactor<Matrix, Matrix> factor(key, measurement, model,
-                                           MultiplyFunctor(multiplier));
+  auto factor = MakeFunctorizedFactor<Matrix>(key, measurement, model,
+                                              MultiplyFunctor(multiplier));
 
   Vector error = factor.evaluateError(X);
 
   EXPECT(assert_equal(Vector::Zero(9), error, 1e-9));
 }
 
+/* ************************************************************************* */
+// Test equality function for FunctorizedFactor.
 TEST(FunctorizedFactor, Equality) {
   Matrix measurement = Matrix::Identity(2, 2);
 
   double multiplier = 2.0;
 
-  FunctorizedFactor<Matrix, Matrix> factor1(key, measurement, model,
-                                            MultiplyFunctor(multiplier));
-  FunctorizedFactor<Matrix, Matrix> factor2(key, measurement, model,
-                                            MultiplyFunctor(multiplier));
+  auto factor1 = MakeFunctorizedFactor<Matrix>(key, measurement, model,
+                                               MultiplyFunctor(multiplier));
+  auto factor2 = MakeFunctorizedFactor<Matrix>(key, measurement, model,
+                                               MultiplyFunctor(multiplier));
 
   EXPECT(factor1.equals(factor2));
 }
 
-//******************************************************************************
+/* *************************************************************************** */
+// Test Jacobians of FunctorizedFactor.
 TEST(FunctorizedFactor, Jacobians) {
   Matrix X = Matrix::Identity(3, 3);
   Matrix actualH;
 
   double multiplier = 2.0;
 
-  FunctorizedFactor<Matrix, Matrix> factor(key, X, model,
-                                           MultiplyFunctor(multiplier));
+  auto factor =
+      MakeFunctorizedFactor<Matrix>(key, X, model, MultiplyFunctor(multiplier));
 
   Values values;
   values.insert<Matrix>(key, X);
@@ -105,13 +106,14 @@ TEST(FunctorizedFactor, Jacobians) {
 }
 
 /* ************************************************************************* */
+// Test print result of FunctorizedFactor.
 TEST(FunctorizedFactor, Print) {
   Matrix X = Matrix::Identity(2, 2);
 
   double multiplier = 2.0;
 
-  FunctorizedFactor<Matrix, Matrix> factor(key, X, model,
-                                           MultiplyFunctor(multiplier));
+  auto factor =
+      MakeFunctorizedFactor<Matrix>(key, X, model, MultiplyFunctor(multiplier));
 
   // redirect output to buffer so we can compare
   stringstream buffer;
@@ -137,7 +139,7 @@ TEST(FunctorizedFactor, Print) {
 }
 
 /* ************************************************************************* */
-// Test factor using a std::function type.
+// Test FunctorizedFactor using a std::function type.
 TEST(FunctorizedFactor, Functional) {
   double multiplier = 2.0;
   Matrix X = Matrix::Identity(3, 3);
@@ -145,7 +147,8 @@ TEST(FunctorizedFactor, Functional) {
 
   std::function<Matrix(Matrix, boost::optional<Matrix &>)> functional =
       MultiplyFunctor(multiplier);
-  FunctorizedFactor<Matrix, Matrix> factor(key, measurement, model, functional);
+  auto factor =
+      MakeFunctorizedFactor<Matrix>(key, measurement, model, functional);
 
   Vector error = factor.evaluateError(X);
 
@@ -153,6 +156,7 @@ TEST(FunctorizedFactor, Functional) {
 }
 
 /* ************************************************************************* */
+// Test FunctorizedFactor with a lambda function.
 TEST(FunctorizedFactor, Lambda) {
   double multiplier = 2.0;
   Matrix X = Matrix::Identity(3, 3);
@@ -166,15 +170,14 @@ TEST(FunctorizedFactor, Lambda) {
     return multiplier * X;
   };
   // FunctorizedFactor<Matrix> factor(key, measurement, model, lambda);
-  auto factor = FunctorizedFactor<Matrix>(key, measurement, model, lambda);
+  auto factor = MakeFunctorizedFactor<Matrix>(key, measurement, model, lambda);
 
   Vector error = factor.evaluateError(X);
 
   EXPECT(assert_equal(Vector::Zero(9), error, 1e-9));
 }
 
-/* *************************************************************************
- */
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

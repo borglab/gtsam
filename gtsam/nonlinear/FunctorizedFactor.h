@@ -25,8 +25,8 @@
 namespace gtsam {
 
 /**
- * Factor which evaluates functor and uses the result to compute
- * error on provided measurement.
+ * Factor which evaluates provided unary functor and uses the result to compute
+ * error with respect to the provided measurement.
  *
  * Template parameters are
  * @param R: The return type of the functor after evaluation.
@@ -40,13 +40,12 @@ namespace gtsam {
  *   class MultiplyFunctor {
  *     double m_; ///< simple multiplier
  *    public:
- *     using argument_type = Matrix;
- *     using return_type = Matrix;
  *     MultiplyFunctor(double m) : m_(m) {}
  *     Matrix operator()(const Matrix &X,
  *              OptionalJacobian<-1, -1> H = boost::none) const {
- *       if (H) *H = m_ * Matrix::Identity(X.rows()*X.cols(),
- * X.rows()*X.cols()); return m_ * X;
+ *       if (H)
+ *         *H = m_ * Matrix::Identity(X.rows()*X.cols(), X.rows()*X.cols());
+ *       return m_ * X;
  *     }
  *   };
  *
@@ -72,7 +71,7 @@ class GTSAM_EXPORT FunctorizedFactor : public NoiseModelFactor1<T> {
   /** Construct with given x and the parameters of the basis
    *
    * @param key: Factor key
-   * @param z: Measurement object of type R
+   * @param z: Measurement object of same type as that returned by functor
    * @param model: Noise model
    * @param func: The instance of the functor object
    */
@@ -85,7 +84,7 @@ class GTSAM_EXPORT FunctorizedFactor : public NoiseModelFactor1<T> {
   /// @return a deep copy of this factor
   virtual NonlinearFactor::shared_ptr clone() const {
     return boost::static_pointer_cast<NonlinearFactor>(
-        NonlinearFactor::shared_ptr(new FunctorizedFactor<T, R>(*this)));
+        NonlinearFactor::shared_ptr(new FunctorizedFactor<R, T>(*this)));
   }
 
   Vector evaluateError(const T &params,
@@ -108,8 +107,8 @@ class GTSAM_EXPORT FunctorizedFactor : public NoiseModelFactor1<T> {
   }
 
   virtual bool equals(const NonlinearFactor &other, double tol = 1e-9) const {
-    const FunctorizedFactor<T, R> *e =
-        dynamic_cast<const FunctorizedFactor<T, R> *>(&other);
+    const FunctorizedFactor<R, T> *e =
+        dynamic_cast<const FunctorizedFactor<R, T> *>(&other);
     const bool base = Base::equals(*e, tol);
     return e && Base::equals(other, tol) &&
            traits<R>::Equals(this->measured_, e->measured_, tol);
@@ -129,8 +128,21 @@ class GTSAM_EXPORT FunctorizedFactor : public NoiseModelFactor1<T> {
 };
 
 /// traits
-template <typename T, typename R>
-struct traits<FunctorizedFactor<T, R>>
-    : public Testable<FunctorizedFactor<T, R>> {};
+template <typename R, typename T>
+struct traits<FunctorizedFactor<R, T>>
+    : public Testable<FunctorizedFactor<R, T>> {};
+
+/**
+ * Helper function to create a functorized factor.
+ *
+ * Uses function template deduction to identify return type and functor type, so
+ * template list only needs the functor argument type.
+ */
+template <typename T, typename R, typename FUNC>
+FunctorizedFactor<R, T> MakeFunctorizedFactor(Key key, const R &z,
+                                              const SharedNoiseModel &model,
+                                              const FUNC func) {
+  return FunctorizedFactor<R, T>(key, z, model, func);
+}
 
 }  // namespace gtsam
