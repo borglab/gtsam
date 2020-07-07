@@ -12,7 +12,7 @@ Author: Frank Dellaert
 import unittest
 
 import numpy as np
-from gtsam import (SO3, SO4, FrobeniusBetweenFactorSO4, FrobeniusFactorSO4,
+from gtsam import (Rot3, SO3, SO4, FrobeniusBetweenFactorSO4, FrobeniusFactorSO4,
                    FrobeniusWormholeFactor, SOn)
 
 id = SO4()
@@ -43,7 +43,7 @@ class TestFrobeniusFactorSO4(unittest.TestCase):
         """Test creation of a factor that calculates Shonan error."""
         R1 = SO3.Expmap(v1[3:])
         R2 = SO3.Expmap(v2[3:])
-        factor = FrobeniusWormholeFactor(1, 2, R1.between(R2), p=4)
+        factor = FrobeniusWormholeFactor(1, 2, Rot3(R1.between(R2).matrix()), p=4)
         I4 = SOn(4)
         Q1 = I4.retract(v1)
         Q2 = I4.retract(v2)
