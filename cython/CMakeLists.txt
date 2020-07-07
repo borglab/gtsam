@@ -7,7 +7,7 @@ if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   set(python_install_target python-install)
   add_custom_target(${python_install_target}
     COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_CYTHON_INSTALL_PATH}/setup.py install
-    WORKING_DIRECTORY ${GTSAM_CYTHON_INSTALL_FULLPATH})
+    WORKING_DIRECTORY ${GTSAM_CYTHON_INSTALL_PATH})
 
   # build and include the eigency version of eigency
   add_subdirectory(gtsam_eigency)
