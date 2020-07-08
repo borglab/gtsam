@@ -30,6 +30,9 @@
 #include <vector>
 #include <random>
 
+ // For save/load
+#include <boost/serialization/split_member.hpp>
+
 namespace gtsam {
 
 namespace internal {
@@ -293,6 +296,10 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// @}
 
   template <class Archive>
+  friend void save(Archive&, SO&, const unsigned int);
+  template <class Archive>
+  friend void load(Archive&, SO&, const unsigned int);
+  template <class Archive>
   friend void serialize(Archive&, SO&, const unsigned int);
   friend class boost::serialization::access;
   friend class Rot3;  // for serialize
@@ -328,6 +335,16 @@ SOn LieGroup<SOn, Eigen::Dynamic>::compose(const SOn& g, DynamicJacobian H1,
 template <>
 SOn LieGroup<SOn, Eigen::Dynamic>::between(const SOn& g, DynamicJacobian H1,
                                            DynamicJacobian H2) const;
+
+/** Serialization function */
+template<class Archive>
+void serialize(
+  Archive& ar, SOn& Q,
+  const unsigned int file_version
+) {
+  Matrix& M = Q.matrix_;
+  ar& M;
+}
 
 /*
  * Define the traits. internal::LieGroup provides both Lie group and Testable
