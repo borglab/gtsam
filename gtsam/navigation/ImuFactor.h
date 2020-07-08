@@ -87,8 +87,8 @@ public:
 
  /**
    *  Constructor, initializes the class with no measurements
-   *  @param bias Current estimate of acceleration and rotation rate biases
-   *  @param p    Parameters, typically fixed in a single application
+   *  @param p       Parameters, typically fixed in a single application
+   *  @param biasHat Current estimate of acceleration and rotation rate biases
    */
   PreintegratedImuMeasurements(const boost::shared_ptr<PreintegrationParams>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias()) :
