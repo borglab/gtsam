@@ -442,11 +442,11 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
       auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
       if (!p) continue;
       const Pose3& pose = p->value();
-      Point3 t = pose.translation();
-      Rot3 R = pose.rotation();
-      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "  << t.y() << " " << t.z()
-        << " " << R.toQuaternion().x() << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()
-        << " " << R.toQuaternion().w() << endl;
+      const Point3 t = pose.translation();
+      const auto q = pose.rotation().toQuaternion();
+      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "
+             << t.y() << " " << t.z() << " " << q.x() << " " << q.y() << " "
+             << q.z() << " " << q.w() << endl;
   }
 
   // save edges (2D or 3D)
@@ -486,13 +486,12 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
         throw invalid_argument("writeG2o: invalid noise model!");
       }
       Matrix Info = gaussianModel->R().transpose() * gaussianModel->R();
-      Pose3 pose3D = factor3D->measured();
-      Point3 p = pose3D.translation();
-      Rot3 R = pose3D.rotation();
-
-      stream << "EDGE_SE3:QUAT " << factor3D->key1() << " " << factor3D->key2() << " "
-          << p.x() << " "  << p.y() << " " << p.z()  << " " << R.toQuaternion().x()
-          << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()  << " " << R.toQuaternion().w();
+      const Pose3 pose3D = factor3D->measured();
+      const Point3 p = pose3D.translation();
+      const auto q = pose3D.rotation().toQuaternion();
+      stream << "EDGE_SE3:QUAT " << factor3D->key1() << " " << factor3D->key2()
+             << " " << p.x() << " " << p.y() << " " << p.z() << " " << q.x()
+             << " " << q.y() << " " << q.z() << " " << q.w();
 
       Matrix InfoG2o = I_6x6;
       InfoG2o.block(0,0,3,3) = Info.block(3,3,3,3); // cov translation
