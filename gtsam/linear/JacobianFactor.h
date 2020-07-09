@@ -215,8 +215,11 @@ namespace gtsam {
      */
     Matrix information() const override;
 
-    /// Return the diagonal of the Hessian for this factor
-    VectorValues hessianDiagonal() const override;
+    /// Using the base method
+    using Base::hessianDiagonal;
+
+    /// Add the current diagonal to a VectorValues instance
+    void hessianDiagonalAdd(VectorValues& d) const override;
 
     /// Raw memory access version of hessianDiagonal
     void hessianDiagonal(double* d) const override;
@@ -398,7 +401,7 @@ namespace gtsam {
      *  @param keys in some order
      *  @param diemnsions of the variables in same order
      *  @param m output dimension
-     *  @param model noise model (default NULL)
+     *  @param model noise model (default nullptr)
      */
     template<class KEYS, class DIMENSIONS>
     JacobianFactor(const KEYS& keys, const DIMENSIONS& dims, DenseIndex m,

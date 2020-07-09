@@ -24,7 +24,6 @@
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 
 #include <vector>
@@ -78,13 +77,11 @@ TEST(testVisualISAM2, all)
             static auto kPosePrior = noiseModel::Diagonal::Sigmas(
                 (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3))
                     .finished());
-            graph.emplace_shared<PriorFactor<Pose3>>(Symbol('x', 0), poses[0],
-                                                     kPosePrior);
+            graph.addPrior(Symbol('x', 0), poses[0], kPosePrior);
 
             // Add a prior on landmark l0
             static auto kPointPrior = noiseModel::Isotropic::Sigma(3, 0.1);
-            graph.emplace_shared<PriorFactor<Point3>>(Symbol('l', 0), points[0],
-                                                      kPointPrior);
+            graph.addPrior(Symbol('l', 0), points[0], kPointPrior);
 
             // Add initial guesses to all observed landmarks
             // Intentionally initialize the variables off from the ground truth

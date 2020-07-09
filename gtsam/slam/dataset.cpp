@@ -37,6 +37,7 @@
 #include <boost/assign/list_inserter.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/optional.hpp>
 
 #include <cmath>
 #include <fstream>
@@ -252,7 +253,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
   is.seekg(0, ios::beg);
 
   // If asked, create a sampler with random number generator
-  Sampler sampler;
+  std::unique_ptr<Sampler> sampler;
   if (addNoise) {
     noiseModel::Diagonal::shared_ptr noise;
     if (model)
@@ -261,7 +262,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
       throw invalid_argument(
           "gtsam::load2D: invalid noise model for adding noise"
               "(current version assumes diagonal noise model)!");
-    sampler = Sampler(noise);
+    sampler.reset(new Sampler(noise));
   }
 
   // Parse the pose constraints
@@ -289,7 +290,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
         model = modelInFile;
 
       if (addNoise)
-        l1Xl2 = l1Xl2.retract(sampler.sample());
+        l1Xl2 = l1Xl2.retract(sampler->sample());
 
       // Insert vertices if pure odometry file
       if (!initial->exists(id1))
@@ -541,9 +542,15 @@ std::map<Key, Pose3> parse3DPoses(const string& filename) {
 }
 
 /* ************************************************************************* */
-BetweenFactorPose3s parse3DFactors(const string& filename) {
+BetweenFactorPose3s parse3DFactors(const string& filename, 
+    const noiseModel::Diagonal::shared_ptr& corruptingNoise) {
   ifstream is(filename.c_str());
   if (!is) throw invalid_argument("parse3DFactors: can not find file " + filename);
+
+  boost::optional<Sampler> sampler;
+  if (corruptingNoise) {
+    sampler = Sampler(corruptingNoise);
+  }
 
   std::vector<BetweenFactor<Pose3>::shared_ptr> factors;
   while (!is.eof()) {
@@ -585,8 +592,13 @@ BetweenFactorPose3s parse3DFactors(const string& filename) {
       mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0);  // off diagonal
 
       SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
+      auto R12 = Rot3::Quaternion(qw, qx, qy, qz);
+      if (sampler) {
+        R12 = R12.retract(sampler->sample());
+      }
+
       factors.emplace_back(new BetweenFactor<Pose3>(
-          id1, id2, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}), model));
+          id1, id2, Pose3(R12, {x, y, z}), model));
     }
   }
   return factors;

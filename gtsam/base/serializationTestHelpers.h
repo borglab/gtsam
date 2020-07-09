@@ -26,6 +26,7 @@
 #include <gtsam/base/serialization.h>
 
 #include <boost/serialization/serialization.hpp>
+#include <boost/filesystem.hpp>
 
 
 // whether to print the serialized text to stdout
@@ -40,22 +41,37 @@ T create() {
   return T();
 }
 
+// Creates or empties a folder in the build folder and returns the relative path
+boost::filesystem::path resetFilesystem(
+    boost::filesystem::path folder = "actual") {
+  boost::filesystem::remove_all(folder);
+  boost::filesystem::create_directory(folder);
+  return folder;
+}
+
 // Templated round-trip serialization
 template<class T>
 void roundtrip(const T& input, T& output) {
-  // Serialize
   std::string serialized = serialize(input);
   if (verbose) std::cout << serialized << std::endl << std::endl;
-
   deserialize(serialized, output);
 }
 
-// This version requires equality operator
+// Templated round-trip serialization using a file
+template<class T>
+void roundtripFile(const T& input, T& output) {
+  boost::filesystem::path path = resetFilesystem()/"graph.dat";
+  serializeToFile(input, path.string());
+  deserializeFromFile(path.string(), output);
+}
+
+// This version requires equality operator and uses string and file round-trips
 template<class T>
 bool equality(const T& input = T()) {
-  T output = create<T>();
+  T output = create<T>(), outputf = create<T>();
   roundtrip<T>(input,output);
-  return input==output;
+  roundtripFile<T>(input,outputf);
+  return (input==output) && (input==outputf);
 }
 
 // This version requires Testable
@@ -77,20 +93,26 @@ bool equalsDereferenced(const T& input) {
 // Templated round-trip serialization using XML
 template<class T>
 void roundtripXML(const T& input, T& output) {
-  // Serialize
   std::string serialized = serializeXML<T>(input);
   if (verbose) std::cout << serialized << std::endl << std::endl;
-
-  // De-serialize
   deserializeXML(serialized, output);
+}
+
+// Templated round-trip serialization using XML File
+template<class T>
+void roundtripXMLFile(const T& input, T& output) {
+  boost::filesystem::path path = resetFilesystem()/"graph.xml";
+  serializeToXMLFile(input, path.string());
+  deserializeFromXMLFile(path.string(), output);
 }
 
 // This version requires equality operator
 template<class T>
 bool equalityXML(const T& input = T()) {
-  T output = create<T>();
+  T output = create<T>(), outputf = create<T>();
   roundtripXML<T>(input,output);
-  return input==output;
+  roundtripXMLFile<T>(input,outputf);
+  return (input==output) && (input==outputf);
 }
 
 // This version requires Testable
@@ -112,20 +134,26 @@ bool equalsDereferencedXML(const T& input = T()) {
 // Templated round-trip serialization using XML
 template<class T>
 void roundtripBinary(const T& input, T& output) {
-  // Serialize
   std::string serialized = serializeBinary<T>(input);
   if (verbose) std::cout << serialized << std::endl << std::endl;
-
-  // De-serialize
   deserializeBinary(serialized, output);
+}
+
+// Templated round-trip serialization using Binary file
+template<class T>
+void roundtripBinaryFile(const T& input, T& output) {
+  boost::filesystem::path path = resetFilesystem()/"graph.bin";
+  serializeToBinaryFile(input, path.string());
+  deserializeFromBinaryFile(path.string(), output);
 }
 
 // This version requires equality operator
 template<class T>
 bool equalityBinary(const T& input = T()) {
-  T output = create<T>();
+  T output = create<T>(), outputf = create<T>();
   roundtripBinary<T>(input,output);
-  return input==output;
+  roundtripBinaryFile<T>(input,outputf);
+  return (input==output) && (input==outputf);
 }
 
 // This version requires Testable

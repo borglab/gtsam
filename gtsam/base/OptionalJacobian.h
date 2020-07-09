@@ -55,7 +55,7 @@ private:
   }
 
   // Private and very dangerous constructor straight from memory
-  OptionalJacobian(double* data) : map_(NULL) {
+  OptionalJacobian(double* data) : map_(nullptr) {
     if (data) usurp(data);
   }
 
@@ -66,25 +66,25 @@ public:
 
   /// Default constructor acts like boost::none
   OptionalJacobian() :
-      map_(NULL) {
+      map_(nullptr) {
   }
 
   /// Constructor that will usurp data of a fixed-size matrix
   OptionalJacobian(Jacobian& fixed) :
-      map_(NULL) {
+      map_(nullptr) {
     usurp(fixed.data());
   }
 
   /// Constructor that will usurp data of a fixed-size matrix, pointer version
   OptionalJacobian(Jacobian* fixedPtr) :
-      map_(NULL) {
+      map_(nullptr) {
     if (fixedPtr)
       usurp(fixedPtr->data());
   }
 
   /// Constructor that will resize a dynamic matrix (unless already correct)
   OptionalJacobian(Eigen::MatrixXd& dynamic) :
-      map_(NULL) {
+      map_(nullptr) {
     dynamic.resize(Rows, Cols); // no malloc if correct size
     usurp(dynamic.data());
   }
@@ -93,12 +93,12 @@ public:
 
   /// Constructor with boost::none just makes empty
   OptionalJacobian(boost::none_t /*none*/) :
-      map_(NULL) {
+      map_(nullptr) {
   }
 
   /// Constructor compatible with old-style derivatives
   OptionalJacobian(const boost::optional<Eigen::MatrixXd&> optional) :
-      map_(NULL) {
+      map_(nullptr) {
     if (optional) {
       optional->resize(Rows, Cols);
       usurp(optional->data());
@@ -110,11 +110,11 @@ public:
   /// Constructor that will usurp data of a block expression
   /// TODO(frank): unfortunately using a Map makes usurping non-contiguous memory impossible
   //  template <typename Derived, bool InnerPanel>
-  //  OptionalJacobian(Eigen::Block<Derived,Rows,Cols,InnerPanel> block) : map_(NULL) { ?? }
+  //  OptionalJacobian(Eigen::Block<Derived,Rows,Cols,InnerPanel> block) : map_(nullptr) { ?? }
 
   /// Return true is allocated, false if default constructor was used
   operator bool() const {
-    return map_.data() != NULL;
+    return map_.data() != nullptr;
   }
 
   /// De-reference, like boost optional
@@ -173,7 +173,7 @@ public:
 
   /// Default constructor acts like boost::none
   OptionalJacobian() :
-    pointer_(NULL) {
+    pointer_(nullptr) {
   }
 
   /// Construct from pointer to dynamic matrix
@@ -186,12 +186,12 @@ public:
 
   /// Constructor with boost::none just makes empty
   OptionalJacobian(boost::none_t /*none*/) :
-    pointer_(NULL) {
+    pointer_(nullptr) {
   }
 
   /// Constructor compatible with old-style derivatives
   OptionalJacobian(const boost::optional<Eigen::MatrixXd&> optional) :
-      pointer_(NULL) {
+      pointer_(nullptr) {
     if (optional) pointer_ = &(*optional);
   }
 
@@ -199,7 +199,7 @@ public:
 
   /// Return true is allocated, false if default constructor was used
   operator bool() const {
-    return pointer_!=NULL;
+    return pointer_!=nullptr;
   }
 
   /// De-reference, like boost optional

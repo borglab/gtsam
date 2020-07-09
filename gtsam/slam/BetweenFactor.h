@@ -81,7 +81,7 @@ namespace gtsam {
     /** equals */
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
       const This *e =  dynamic_cast<const This*> (&expected);
-      return e != NULL && Base::equals(*e, tol) && traits<T>::Equals(this->measured_, e->measured_, tol);
+      return e != nullptr && Base::equals(*e, tol) && traits<T>::Equals(this->measured_, e->measured_, tol);
     }
 
     /** implement functions needed to derive from Factor */
@@ -126,7 +126,7 @@ namespace gtsam {
 	  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
 	  enum { NeedsToAlign = (sizeof(VALUE) % 16) == 0 };
     public:
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+      GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
   }; // \class BetweenFactor
 
   /// traits

@@ -153,7 +153,7 @@ void Fair::print(const std::string &s="") const
 
 bool Fair::equals(const Base &expected, double tol) const {
   const Fair* p = dynamic_cast<const Fair*> (&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(c_ - p->c_ ) < tol;
 }
 
@@ -190,7 +190,7 @@ void Huber::print(const std::string &s="") const {
 
 bool Huber::equals(const Base &expected, double tol) const {
   const Huber* p = dynamic_cast<const Huber*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(k_ - p->k_) < tol;
 }
 
@@ -223,7 +223,7 @@ void Cauchy::print(const std::string &s="") const {
 
 bool Cauchy::equals(const Base &expected, double tol) const {
   const Cauchy* p = dynamic_cast<const Cauchy*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(ksquared_ - p->ksquared_) < tol;
 }
 
@@ -266,7 +266,7 @@ void Tukey::print(const std::string &s="") const {
 
 bool Tukey::equals(const Base &expected, double tol) const {
   const Tukey* p = dynamic_cast<const Tukey*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(c_ - p->c_) < tol;
 }
 
@@ -296,7 +296,7 @@ void Welsch::print(const std::string &s="") const {
 
 bool Welsch::equals(const Base &expected, double tol) const {
   const Welsch* p = dynamic_cast<const Welsch*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(c_ - p->c_) < tol;
 }
 
@@ -330,7 +330,7 @@ void GemanMcClure::print(const std::string &s="") const {
 
 bool GemanMcClure::equals(const Base &expected, double tol) const {
   const GemanMcClure* p = dynamic_cast<const GemanMcClure*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(c_ - p->c_) < tol;
 }
 
@@ -372,7 +372,7 @@ void DCS::print(const std::string &s="") const {
 
 bool DCS::equals(const Base &expected, double tol) const {
   const DCS* p = dynamic_cast<const DCS*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(c_ - p->c_) < tol;
 }
 
@@ -411,7 +411,7 @@ void L2WithDeadZone::print(const std::string &s="") const {
 
 bool L2WithDeadZone::equals(const Base &expected, double tol) const {
   const L2WithDeadZone* p = dynamic_cast<const L2WithDeadZone*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(k_ - p->k_) < tol;
 }
 

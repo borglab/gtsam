@@ -22,6 +22,7 @@ set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(GtsamMakeConfigFile)
+include(GNUInstallDirs)
 
 # Record the root dir for gtsam - needed during external builds, e.g., ROS
 set(GTSAM_SOURCE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -200,7 +201,7 @@ find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
 # Set up variables if we're using TBB
 if(TBB_FOUND AND GTSAM_WITH_TBB)
     set(GTSAM_USE_TBB 1)  # This will go into config.h
-    if (${TBB_VERSION_MAJOR} GREATER_EQUAL 2020)
+    if ((${TBB_VERSION_MAJOR} GREATER 2020) OR (${TBB_VERSION_MAJOR} EQUAL 2020))
         set(TBB_GREATER_EQUAL_2020 1)
     else()
         set(TBB_GREATER_EQUAL_2020 0)

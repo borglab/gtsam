@@ -382,8 +382,8 @@ TEST( triangulation, StereotriangulateNonlinear ) {
     graph.emplace_shared<StereoFactor>(measurements[1], unit, Symbol('x',2), Symbol('l',1), stereoK);
 
     const SharedDiagonal posePrior = noiseModel::Isotropic::Sigma(6, 1e-9);
-    graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x',1), Pose3(m1), posePrior);
-    graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x',2), Pose3(m2), posePrior);
+    graph.addPrior(Symbol('x',1), Pose3(m1), posePrior);
+    graph.addPrior(Symbol('x',2), Pose3(m2), posePrior);
 
     LevenbergMarquardtOptimizer optimizer(graph, values);
     Values result = optimizer.optimize();

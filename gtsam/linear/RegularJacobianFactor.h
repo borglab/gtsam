@@ -102,10 +102,8 @@ public:
       DMap(y + D * keys_[pos]) += Ab_(pos).transpose() * Ax;
   }
 
-  /// Expose base class hessianDiagonal
-  virtual VectorValues hessianDiagonal() const {
-    return JacobianFactor::hessianDiagonal();
-  }
+  /// Using the base method
+  using GaussianFactor::hessianDiagonal;
 
   /// Raw memory access version of hessianDiagonal
   void hessianDiagonal(double* d) const {

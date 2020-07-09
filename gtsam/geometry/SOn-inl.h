@@ -20,6 +20,10 @@
 
 #include <gtsam/base/Matrix.h>
 
+#include <iostream>
+
+using namespace std;
+
 namespace gtsam {
 
 // Implementation for N>5 just uses dynamic version
@@ -107,6 +111,11 @@ typename SO<N>::VectorN2 SO<N>::vec(
     }
   }
   return X;
+}
+
+template <int N>
+void SO<N>::print(const std::string& s) const {
+    cout << s << matrix_ << endl;
 }
 
 }  // namespace gtsam

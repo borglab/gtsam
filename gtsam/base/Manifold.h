@@ -72,7 +72,7 @@ struct HasManifoldPrereqs {
 
 /// Extra manifold traits for fixed-dimension types
 template<class Class, int N>
-struct ManifoldImpl {
+struct GetDimensionImpl {
   // Compile-time dimensionality
   static int GetDimension(const Class&) {
     return N;
@@ -81,7 +81,7 @@ struct ManifoldImpl {
 
 /// Extra manifold traits for variable-dimension types
 template<class Class>
-struct ManifoldImpl<Class, Eigen::Dynamic> {
+struct GetDimensionImpl<Class, Eigen::Dynamic> {
   // Run-time dimensionality
   static int GetDimension(const Class& m) {
     return m.dim();
@@ -92,7 +92,7 @@ struct ManifoldImpl<Class, Eigen::Dynamic> {
 /// To use this for your class type, define:
 /// template<> struct traits<Class> : public internal::ManifoldTraits<Class> { };
 template<class Class>
-struct ManifoldTraits: ManifoldImpl<Class, Class::dimension> {
+struct ManifoldTraits: GetDimensionImpl<Class, Class::dimension> {
 
   // Check that Class has the necessary machinery
   BOOST_CONCEPT_ASSERT((HasManifoldPrereqs<Class>));
@@ -214,7 +214,7 @@ public:
   enum { NeedsToAlign = (sizeof(M1) % 16) == 0 || (sizeof(M2) % 16) == 0
   };
 public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+	GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 // Define any direct product group to be a model of the multiplicative Group concept

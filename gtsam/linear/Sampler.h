@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @brief sampling that can be parameterized using a NoiseModel to generate samples from
  * @file Sampler.h
- * the given distribution
+ * @brief sampling from a NoiseModel
+ * @author Frank Dellaert
  * @author Alex Cunningham
  */
 
@@ -27,20 +27,20 @@ namespace gtsam {
 /**
  * Sampling structure that keeps internal random number generators for
  * diagonal distributions specified by NoiseModel
- *
- * This is primarily to allow for variable seeds, and does roughly the same
- * thing as sample() in NoiseModel.
  */
 class GTSAM_EXPORT Sampler {
-protected:
+ protected:
   /** noiseModel created at generation */
   noiseModel::Diagonal::shared_ptr model_;
 
   /** generator */
-  std::mt19937_64 generator_;
+  mutable std::mt19937_64 generator_;
 
-public:
+ public:
   typedef boost::shared_ptr<Sampler> shared_ptr;
+
+  /// @name constructors
+  /// @{
 
   /**
    * Create a sampler for the distribution specified by a diagonal NoiseModel
@@ -48,46 +48,53 @@ public:
    *
    * NOTE: do not use zero as a seed, it will break the generator
    */
-  Sampler(const noiseModel::Diagonal::shared_ptr& model, int32_t seed = 42u);
+  explicit Sampler(const noiseModel::Diagonal::shared_ptr& model,
+                   uint_fast64_t seed = 42u);
 
   /**
-   * Create a sampler for a distribution specified by a vector of sigmas directly
+   * Create a sampler for a distribution specified by a vector of sigmas
+   * directly
    *
    * NOTE: do not use zero as a seed, it will break the generator
    */
-  Sampler(const Vector& sigmas, int32_t seed = 42u);
+  explicit Sampler(const Vector& sigmas, uint_fast64_t seed = 42u);
 
-  /**
-   * Create a sampler without a given noisemodel - pass in to sample
-   *
-   * NOTE: do not use zero as a seed, it will break the generator
-   */
-  Sampler(int32_t seed = 42u);
+  /// @}
+  /// @name access functions
+  /// @{
 
-  /** access functions */
-  size_t dim() const { assert(model_.get()); return model_->dim(); }
-  Vector sigmas() const { assert(model_.get()); return model_->sigmas(); }
+  size_t dim() const {
+    assert(model_.get());
+    return model_->dim();
+  }
+
+  Vector sigmas() const {
+    assert(model_.get());
+    return model_->sigmas();
+  }
+
   const noiseModel::Diagonal::shared_ptr& model() const { return model_; }
 
-  /**
-   * sample from distribution
-   * NOTE: not const due to need to update the underlying generator
-   */
-  Vector sample();
+  /// @}
+  /// @name basic functionality
+  /// @{
 
-  /**
-   * Sample from noisemodel passed in as an argument,
-   * can be used without having initialized a model for the system.
-   *
-   * NOTE: not const due to need to update the underlying generator
-   */
-  Vector sampleNewModel(const noiseModel::Diagonal::shared_ptr& model);
+  /// sample from distribution
+  Vector sample() const;
 
-protected:
+  /// @}
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  /// @name Deprecated
+  /// @{
+  explicit Sampler(uint_fast64_t seed = 42u);
+  Vector sampleNewModel(const noiseModel::Diagonal::shared_ptr& model) const;
+  /// @}
+#endif
+
+ protected:
   /** given sigmas for a diagonal model, returns a sample */
-  Vector sampleDiagonal(const Vector& sigmas);
-
+  Vector sampleDiagonal(const Vector& sigmas) const;
 };
 
-} // \namespace gtsam
+}  // namespace gtsam
