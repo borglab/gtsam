@@ -30,9 +30,6 @@
 #include <vector>
 #include <random>
 
- // For save/load
-#include <boost/serialization/split_member.hpp>
-
 namespace gtsam {
 
 namespace internal {
