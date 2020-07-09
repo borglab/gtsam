@@ -150,7 +150,7 @@ public:
     return constant_;
   }
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //-----------------------------------------------------------------------------

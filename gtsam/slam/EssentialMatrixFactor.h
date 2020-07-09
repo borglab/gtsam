@@ -81,7 +81,7 @@ public:
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -201,7 +201,7 @@ public:
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor2
 
@@ -286,7 +286,7 @@ public:
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor3
 

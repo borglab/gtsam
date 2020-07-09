@@ -229,8 +229,8 @@ TEST(FrobeniusWormholeFactor, equivalenceToSO3) {
   auto model = noiseModel::Isotropic::Sigma(6, 1.2);  // wrong dimension
   auto factor3 = FrobeniusBetweenFactor<SO3>(1, 2, R12, model);
   auto factor4 = FrobeniusWormholeFactor(1, 2, Rot3(R12.matrix()), 4, model);
-  const Eigen::Map<Matrix3> E3(factor3.evaluateError(R1, R2).data());
-  const Eigen::Map<Matrix43> E4(
+  const Matrix3 E3(factor3.evaluateError(R1, R2).data());
+  const Matrix43 E4(
       factor4.evaluateError(SOn(Q1.matrix()), SOn(Q2.matrix())).data());
   EXPECT(assert_equal((Matrix)E4.topLeftCorner<3, 3>(), E3, 1e-9));
   EXPECT(assert_equal((Matrix)E4.row(3), Matrix13::Zero(), 1e-9));
