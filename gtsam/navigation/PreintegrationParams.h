@@ -31,7 +31,8 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
 
   /// Default constructor for serialization only
   PreintegrationParams()
-      : accelerometerCovariance(I_3x3),
+      : PreintegratedRotationParams(),
+        accelerometerCovariance(I_3x3),
         integrationCovariance(I_3x3),
         use2ndOrderCoriolis(false),
         n_gravity(0, 0, -1) {}
@@ -39,7 +40,8 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   /// The Params constructor insists on getting the navigation frame gravity vector
   /// For convenience, two commonly used conventions are provided by named constructors below
   PreintegrationParams(const Vector3& n_gravity)
-      : accelerometerCovariance(I_3x3),
+      : PreintegratedRotationParams(),
+        accelerometerCovariance(I_3x3),
         integrationCovariance(I_3x3),
         use2ndOrderCoriolis(false),
         n_gravity(n_gravity) {}
@@ -54,8 +56,8 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
     return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, -g)));
   }
 
-  void print(const std::string& s) const;
-  bool equals(const PreintegratedRotation::Params& other, double tol) const;
+  void print(const std::string& s="") const;
+  bool equals(const PreintegratedRotationParams& other, double tol) const;
 
   void setAccelerometerCovariance(const Matrix3& cov) { accelerometerCovariance = cov; }
   void setIntegrationCovariance(const Matrix3& cov)   { integrationCovariance = cov; }
@@ -73,8 +75,7 @@ protected:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
-    ar & boost::serialization::make_nvp("PreintegratedRotation_Params",
-         boost::serialization::base_object<PreintegratedRotationParams>(*this));
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotationParams);
     ar & bs::make_nvp("accelerometerCovariance", bs::make_array(accelerometerCovariance.data(), accelerometerCovariance.size()));
     ar & bs::make_nvp("integrationCovariance", bs::make_array(integrationCovariance.data(), integrationCovariance.size()));
     ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
