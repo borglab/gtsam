@@ -59,7 +59,7 @@ typedef ManifoldPreintegration PreintegrationType;
  */
 
 /**
- * PreintegratedIMUMeasurements accumulates (integrates) the IMU measurements
+ * PreintegratedImuMeasurements accumulates (integrates) the IMU measurements
  * (rotation rates and accelerations) and the corresponding covariance matrix.
  * The measurements are then used to build the Preintegrated IMU factor.
  * Integration is done incrementally (ideally, one integrates the measurement
