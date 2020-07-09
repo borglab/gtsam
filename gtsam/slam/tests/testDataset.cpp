@@ -234,6 +234,27 @@ TEST( dataSet, readG2o3DNonDiagonalNoise)
 }
 
 /* ************************************************************************* */
+TEST(dataSet, readG2oCheckDeterminants) {
+  const string g2oFile = findExampleDataFile("toyExample.g2o");
+
+  // Check determinants in factors
+  auto factors = parse3DFactors(g2oFile);
+  EXPECT_LONGS_EQUAL(6, factors.size());
+  for (const auto& factor : factors) {
+    const Rot3 R = factor->measured().rotation();
+    EXPECT_DOUBLES_EQUAL(1.0, R.matrix().determinant(), 1e-9);
+  }
+
+  // Check determinants in initial values
+  const map<Key, Pose3> poses = parse3DPoses(g2oFile);
+  EXPECT_LONGS_EQUAL(5, poses.size());
+  for (const auto& key_value : poses) {
+    const Rot3 R = key_value.second.rotation();
+    EXPECT_DOUBLES_EQUAL(1.0, R.matrix().determinant(), 1e-9);
+  }
+}
+
+/* ************************************************************************* */
 static NonlinearFactorGraph expectedGraph(const SharedNoiseModel& model) {
   NonlinearFactorGraph g;
   using Factor = BetweenFactor<Pose2>;
@@ -479,7 +500,7 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
   SfmData readData;
   readBAL(filenameToRead, readData);
 
-  Pose3 poseChange = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.3,0.1,0.3));
+  Pose3 poseChange = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.3,0.1,0.3));
 
   Values value;
   for(size_t i=0; i < readData.number_cameras(); i++){ // for each camera
