@@ -33,7 +33,7 @@ namespace gtsam {
  * isotropic. If it is, we extend to 'Dim' dimensions, otherwise we throw an
  * error. If defaultToUnit == false throws an exception on unexepcted input.
  */
-boost::shared_ptr<noiseModel::Isotropic> ConvertPose3NoiseModel(
+  GTSAM_EXPORT boost::shared_ptr<noiseModel::Isotropic> ConvertPose3NoiseModel(
     const SharedNoiseModel& model, size_t d, bool defaultToUnit = true);
 
 /**
@@ -125,7 +125,7 @@ class FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
  * the SO(p) matrices down to a Stiefel manifold of p*d matrices.
  * TODO(frank): template on D=2 or 3
  */
-class FrobeniusWormholeFactor : public NoiseModelFactor2<SOn, SOn> {
+class GTSAM_EXPORT FrobeniusWormholeFactor : public NoiseModelFactor2<SOn, SOn> {
   Matrix M_;                   ///< measured rotation between R1 and R2
   size_t p_, pp_, dimension_;  ///< dimensionality constants
   Matrix G_;                   ///< matrix of vectorized generators
