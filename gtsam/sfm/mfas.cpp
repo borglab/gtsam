@@ -6,9 +6,8 @@
   All rights reserved.
 */
 
-#include "mfas.h"
+#include <gtsam/sfm/mfas.h>
 
-#include <iostream>
 #include <map>
 #include <set>
 #include <vector>
@@ -54,16 +53,6 @@ void mfasRatio(const std::vector<KeyPair> &edges,
     onbrs[i].push_back(pair<int, double>(j, w));
   }
 
-  for (auto &node : nodes) {
-    std::cout << node << " " << win_deg[node] << " " << wout_deg[node]
-              << std::endl;
-    for (auto it = inbrs[node].begin(); it != inbrs[node].end(); it++)
-      std::cout << it->first << "," << it->second << " ";
-    std::cout << std::endl;
-    for (auto it = onbrs[node].begin(); it != onbrs[node].end(); it++)
-      std::cout << it->first << "," << it->second << " ";
-    std::cout << std::endl;
-  }
   unsigned int ordered_count = 0;
   while (ordered_count < nodes.size()) {
     // choose an unchosen node
@@ -84,7 +73,6 @@ void mfasRatio(const std::vector<KeyPair> &edges,
         }
       }
     }
-    std::cout << "choice is " << choice << std::endl;
     // find its inbrs, adjust their wout_deg
     for (auto it = inbrs[choice].begin(); it != inbrs[choice].end(); ++it)
       wout_deg[it->first] -= it->second;

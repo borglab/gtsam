@@ -1,8 +1,6 @@
+#include <gtsam/sfm/mfas.h>
+
 #include <CppUnitLite/TestHarness.h>
-
-#include <iostream>
-
-#include "gtsam/sfm/mfas.h"
 
 using namespace std;
 using namespace gtsam;
