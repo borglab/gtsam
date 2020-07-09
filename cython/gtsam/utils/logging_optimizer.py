@@ -52,3 +52,4 @@ def gtsam_optimize(optimizer: NonlinearOptimizer,
             gtsam.checkConvergence(params.getRelativeErrorTol(), params.getAbsoluteErrorTol(), params.getErrorTol(),
                                    current_error, new_error)) or (optimizer.lambda_() > params.getlambdaUpperBound())
     optimize(optimizer, check_convergence, hook)
+    return optimizer.values()
