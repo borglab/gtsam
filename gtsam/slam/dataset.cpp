@@ -512,6 +512,11 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
 }
 
 /* ************************************************************************* */
+static Rot3 NormalizedRot3(double w, double x, double y, double z) {
+  const double norm = sqrt(w * w + x * x + y * y + z * z), f = 1.0 / norm;
+  return Rot3::Quaternion(f * w, f * x, f * y, f * z);
+}
+/* ************************************************************************* */
 std::map<Key, Pose3> parse3DPoses(const string& filename) {
   ifstream is(filename.c_str());
   if (!is)
@@ -535,14 +540,15 @@ std::map<Key, Pose3> parse3DPoses(const string& filename) {
       Key id;
       double x, y, z, qx, qy, qz, qw;
       ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
-      poses.emplace(id, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}));
+      poses.emplace(id, Pose3(NormalizedRot3(qw, qx, qy, qz), {x, y, z}));
     }
   }
   return poses;
 }
 
 /* ************************************************************************* */
-BetweenFactorPose3s parse3DFactors(const string& filename, 
+BetweenFactorPose3s parse3DFactors(
+    const string& filename,
     const noiseModel::Diagonal::shared_ptr& corruptingNoise) {
   ifstream is(filename.c_str());
   if (!is) throw invalid_argument("parse3DFactors: can not find file " + filename);
@@ -592,7 +598,7 @@ BetweenFactorPose3s parse3DFactors(const string& filename,
       mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0);  // off diagonal
 
       SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
-      auto R12 = Rot3::Quaternion(qw, qx, qy, qz);
+      auto R12 = NormalizedRot3(qw, qx, qy, qz);
       if (sampler) {
         R12 = R12.retract(sampler->sample());
       }
