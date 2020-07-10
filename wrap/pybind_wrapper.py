@@ -18,20 +18,15 @@ import template_instantiator as instantiator
 
 
 class PybindWrapper(object):
-    def __init__(
-        self,
-        module,
-        module_name,
-        top_module_namespaces='',
-        use_boost=False,
-        ignore_classes=[],
-    ):
+    def __init__(self, module, module_name, top_module_namespaces='', use_boost=False, ignore_classes=[],
+                 module_template=""):
         self.module = module
         self.module_name = module_name
         self.top_module_namespaces = top_module_namespaces
         self.use_boost = use_boost
         self.ignore_classes = ignore_classes
         self._serializing_classes = list()
+        self.module_template = module_template
 
     def _py_args_names(self, args_list):
         names = args_list.args_names()
@@ -363,36 +358,7 @@ class PybindWrapper(object):
                 new_name=new_name,
             )
 
-        return """
-{include_boost}
-
-#include <pybind11/eigen.h>
-#include <pybind11/stl_bind.h>
-#include <pybind11/pybind11.h>
-#include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
-
-{includes}
-#include "wrap/serialization.h"
-#include <boost/serialization/export.hpp>
-
-{boost_class_export}
-
-{hoder_type}
-
-using namespace std;
-
-namespace py = pybind11;
-
-PYBIND11_MODULE({module_name}, m_) {{
-    m_.doc() = "pybind11 wrapper of {module_name}";
-
-{wrapped_namespace}
-
-#include "wrap/specializations.h"
-}}
-
-
-""".format(
+        return self.module_template.format(
             include_boost="#include <boost/shared_ptr.hpp>"
             if self.use_boost
             else "",
@@ -451,6 +417,11 @@ def main():
         help="A space-separated list of classes to ignore. "
         "Class names must include their full namespaces.",
     )
+    arg_parser.add_argument(
+        "--template",
+        type=str,
+        help="The module template file"
+    )
     args = arg_parser.parse_args()
 
     top_module_namespaces = args.top_module_namespaces.split("::")
@@ -462,12 +433,15 @@ def main():
     module = parser.Module.parseString(content)
     instantiator.instantiate_namespace_inplace(module)
 
+    with open(args.template, "r") as f:
+        template_content = f.read()
     wrapper = PybindWrapper(
         module=module,
         module_name=args.module_name,
         use_boost=args.use_boost,
         top_module_namespaces=top_module_namespaces,
         ignore_classes=args.ignore,
+        module_template=template_content,
     )
 
     cc_content = wrapper.wrap()

@@ -29,6 +29,7 @@ if(GTSAM_BUILD_PYTHON)
               "gtsam" # module_name
               "gtsam" # top_namespace
               "${ignore}" # ignore_classes
+              ${PROJECT_SOURCE_DIR}/wrap/pybind_wrapper.tpl
               gtsam # libs
               "gtsam;gtsam_header" # dependencies
               )
@@ -47,11 +48,11 @@ if(GTSAM_BUILD_PYTHON)
                   "${PROJECT_BINARY_DIR}/gtsam")
 
   # Install.
-  install(TARGETS gtsam_py DESTINATION ${GTSAM_PY_INSTALL_PATH})
+  install(TARGETS gtsam_py DESTINATION ${GTSAM_PY_INSTALL_PATH}/gtsam)
   message("PYTHON INSTALL PATH: ${GTSAM_PY_INSTALL_PATH}")
   install_python_files("${PROJECT_BINARY_DIR}/setup.py"
                        "${GTSAM_PY_INSTALL_PATH}")
-  install_python_scripts("${PROJECT_SOURCE_DIR}/python/gtsam/"
+  install_python_scripts("${PROJECT_SOURCE_DIR}/python/gtsam_py/"
                          "${GTSAM_PY_INSTALL_PATH}/gtsam" "*.py")
 
 endif()

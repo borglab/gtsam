@@ -21,6 +21,8 @@ if(NOT DEFINED GTSAM_USE_CUSTOM_PYTHON_LIBRARY)
   endif()
 endif()
 
+set(DIR_OF_GTSAM_PYBIND_CMAKE ${CMAKE_CURRENT_LIST_DIR})
+
 # User-friendly Pybind11 wrapping and installing function. Builds a Pybind11
 # module from the provided interface_header. For example, for the interface
 # header gtsam.h, this will build the wrap module 'gtsam_py.cc'.
@@ -37,6 +39,7 @@ function(pybind_wrap
          module_name
          top_namespace
          ignore_classes
+         module_template
          libs
          dependencies)
   add_custom_command(OUTPUT ${generated_cpp}
@@ -52,6 +55,8 @@ function(pybind_wrap
                              "${top_namespace}"
                              --ignore
                              ${ignore_classes}
+                             --template
+                             ${module_template}
                              --use_boost
                      VERBATIM)
   add_custom_target(pybind_wrap_${module_name} ALL DEPENDS ${generated_cpp})
@@ -118,7 +123,7 @@ function(install_python_scripts
         set(build_type_tag "") # Don't create release mode tag on installed
                                # directory
       else()
-        set(build_type_tag "${build_type}")
+        set(build_type_tag "")
       endif()
       # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if
       # there is one
