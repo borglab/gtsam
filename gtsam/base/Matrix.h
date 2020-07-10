@@ -549,16 +549,32 @@ namespace boost {
   namespace serialization {
 
     // split version - sends sizes ahead
-    template<class Archive>
-    void save(Archive & ar, const gtsam::Matrix & m, unsigned int /*version*/) {
+    template<class Archive,
+             typename Scalar_,
+             int Rows_,
+             int Cols_,
+             int Ops_,
+             int MaxRows_,
+             int MaxCols_>
+    void save(Archive & ar,
+              const Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
+              const unsigned int /*version*/) {
       const size_t rows = m.rows(), cols = m.cols();
       ar << BOOST_SERIALIZATION_NVP(rows);
       ar << BOOST_SERIALIZATION_NVP(cols);
       ar << make_nvp("data", make_array(m.data(), m.size()));
     }
 
-    template<class Archive>
-    void load(Archive & ar, gtsam::Matrix & m, unsigned int /*version*/) {
+    template<class Archive,
+             typename Scalar_,
+             int Rows_,
+             int Cols_,
+             int Ops_,
+             int MaxRows_,
+             int MaxCols_>
+    void load(Archive & ar,
+              Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
+              const unsigned int /*version*/) {
       size_t rows, cols;
       ar >> BOOST_SERIALIZATION_NVP(rows);
       ar >> BOOST_SERIALIZATION_NVP(cols);
@@ -566,8 +582,19 @@ namespace boost {
       ar >> make_nvp("data", make_array(m.data(), m.size()));
     }
 
+    // templated version of BOOST_SERIALIZATION_SPLIT_FREE(Eigen::Matrix);
+    template<class Archive,
+             typename Scalar_,
+             int Rows_,
+             int Cols_,
+             int Ops_,
+             int MaxRows_,
+             int MaxCols_>
+    void serialize(Archive & ar,
+              Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
+              const unsigned int version) {
+      split_free(ar, m, version);
+    }
+
   } // namespace serialization
 } // namespace boost
-
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix);
-
