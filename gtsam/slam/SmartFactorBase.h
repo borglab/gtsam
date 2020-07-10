@@ -207,11 +207,17 @@ protected:
     Vector ue = cameras.reprojectionError(point, measured_, Fs, E);
     if (body_P_sensor_ && Fs) {
       const Pose3 sensor_P_body = body_P_sensor_->inverse();
+      size_t camera_dim = size_t(traits<CAMERA>::dimension);
+      size_t pose_dim = size_t(traits<Pose3>::dimension);
+
       for (size_t i = 0; i < Fs->size(); i++) {
         const Pose3 world_P_body = cameras[i].pose() * sensor_P_body;
-        Matrix J(6, 6);
-        // Call compose to compute Jacobian
-        world_P_body.compose(*body_P_sensor_, J);
+        Matrix J = Matrix::Zero(camera_dim, camera_dim);
+        // Call compose to compute Jacobian for camera extrinsics
+        Matrix H(pose_dim, pose_dim);
+        world_P_body.compose(*body_P_sensor_, H);
+        // Assign extrinsics
+        J.block(0, 0, pose_dim, pose_dim) = H;
         Fs->at(i) = Fs->at(i) * J;
       }
     }
