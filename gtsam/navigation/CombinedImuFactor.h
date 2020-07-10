@@ -63,11 +63,10 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
   Matrix3 biasOmegaCovariance;  ///< continuous-time "Covariance" describing gyroscope bias random walk
   Matrix6 biasAccOmegaInt;     ///< covariance of bias used for pre-integration
 
-  /// Default constructor makes unitialized params struct.
+  /// Default constructor makes uninitialized params struct.
   /// Used for serialization.
   PreintegrationCombinedParams()
-      : PreintegrationParams(),
-        biasAccCovariance(I_3x3),
+      : biasAccCovariance(I_3x3),
         biasOmegaCovariance(I_3x3),
         biasAccOmegaInt(I_6x6) {}
 
@@ -107,12 +106,9 @@ private:
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationParams);
-    ar & bs::make_nvp("biasAccCovariance",
-         bs::make_array(biasAccCovariance.data(), biasAccCovariance.size()));
-    ar & bs::make_nvp("biasOmegaCovariance",
-         bs::make_array(biasOmegaCovariance.data(), biasOmegaCovariance.size()));
-    ar & bs::make_nvp("biasAccOmegaInt", bs::make_array(biasAccOmegaInt.data(),
-                                                        biasAccOmegaInt.size()));
+    ar & BOOST_SERIALIZATION_NVP(biasAccCovariance);
+    ar & BOOST_SERIALIZATION_NVP(biasOmegaCovariance);
+    ar & BOOST_SERIALIZATION_NVP(biasAccOmegaInt);
   }
 
 public:
@@ -242,8 +238,7 @@ public:
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
-    ar& bs::make_nvp("preintMeasCov_", bs::make_array(preintMeasCov_.data(),
-                                                      preintMeasCov_.size()));
+    ar& BOOST_SERIALIZATION_NVP(preintMeasCov_);
   }
 
 public:
@@ -391,4 +386,3 @@ struct traits<CombinedImuFactor> : public Testable<CombinedImuFactor> {};
 
 /// Add Boost serialization export for derived class
 BOOST_CLASS_EXPORT_GUID(gtsam::PreintegrationCombinedParams, "gtsam_PreintegrationCombinedParams");
-// BOOST_CLASS_EXPORT_GUID(gtsam::CombinedImuFactor, "gtsam_CombinedImuFactor");

@@ -133,9 +133,9 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
-    ar & bs::make_nvp("preintegrated_", bs::make_array(preintegrated_.data(), preintegrated_.size()));
-    ar & bs::make_nvp("preintegrated_H_biasAcc_", bs::make_array(preintegrated_H_biasAcc_.data(), preintegrated_H_biasAcc_.size()));
-    ar & bs::make_nvp("preintegrated_H_biasOmega_", bs::make_array(preintegrated_H_biasOmega_.data(), preintegrated_H_biasOmega_.size()));
+    ar & BOOST_SERIALIZATION_NVP(preintegrated_);
+    ar & BOOST_SERIALIZATION_NVP(preintegrated_H_biasAcc_);
+    ar & BOOST_SERIALIZATION_NVP(preintegrated_H_biasOmega_);
   }
 
 public:
