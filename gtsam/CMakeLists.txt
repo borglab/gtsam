@@ -106,6 +106,11 @@ add_library(gtsam ${gtsam_srcs})
 target_link_libraries(gtsam PUBLIC ${GTSAM_BOOST_LIBRARIES})
 target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
 
+if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+  # Suppress warnings if Release build
+  target_compile_options(gtsam PRIVATE -w)
+endif()
+
 # Apply build flags:
 gtsam_apply_build_flags(gtsam)
 
