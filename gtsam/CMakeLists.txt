@@ -189,7 +189,7 @@ set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 # Make sure that ccolamd compiles even in face of warnings
 # and suppress all warnings from 3rd party code if Release build
 if(WIN32)
-  set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w")
+  set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "/w")
 else()
   if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     # Suppress all warnings from 3rd party sources.
