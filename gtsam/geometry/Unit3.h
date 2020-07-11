@@ -90,6 +90,8 @@ public:
   /// Copy assignment
   Unit3& operator=(const Unit3 & u) {
     p_ = u.p_;
+    B_ = u.B_;
+    H_B_ = u.H_B_;
     return *this;
   }
 
