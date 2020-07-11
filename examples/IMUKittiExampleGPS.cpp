@@ -163,7 +163,7 @@ int main(int argc, char* argv[]) {
     vector<GpsMeasurement> gps_measurements;
     loadKittiData(kitti_calibration, imu_measurements, gps_measurements);
 
-    Vector6 BodyP = (Vector(6) << kitti_calibration.body_ptx, kitti_calibration.body_pty, kitti_calibration.body_ptz,
+    Vector6 BodyP = (Vector6() << kitti_calibration.body_ptx, kitti_calibration.body_pty, kitti_calibration.body_ptz,
                                   kitti_calibration.body_prx, kitti_calibration.body_pry, kitti_calibration.body_prz)
                     .finished();
     auto body_T_imu = Pose3::Expmap(BodyP);
@@ -173,28 +173,29 @@ int main(int argc, char* argv[]) {
     }
 
     // Configure different variables
-    double t_offset = gps_measurements[0].time;
+    // double t_offset = gps_measurements[0].time;
     size_t first_gps_pose = 1;
     size_t gps_skip = 10;  // Skip this many GPS measurements each time
     double g = 9.8;
-    auto w_coriolis = Vector3();  // zero vector
+    auto w_coriolis = Vector3::Zero();  // zero vector
 
     // Configure noise models
-    auto noise_model_gps = noiseModel::Diagonal::Precisions((Vector(6) << Vector3::Constant(0),
+    auto noise_model_gps = noiseModel::Diagonal::Precisions((Vector6() << Vector3::Constant(0),
                                                                           Vector3::Constant(1.0/0.07))
                                                             .finished());
 
     // Set initial conditions for the estimated trajectory
     // initial pose is the reference frame (navigation frame)
     auto current_pose_global = Pose3(Rot3(), gps_measurements[first_gps_pose].position);
-    auto current_velocity_global = Vector3();     // the vehicle is stationary at the beginning at position 0,0,0
+    // the vehicle is stationary at the beginning at position 0,0,0
+    Vector3 current_velocity_global = Vector3::Zero();
     auto current_bias = imuBias::ConstantBias();  // init with zero bias
 
-    auto sigma_init_x = noiseModel::Diagonal::Precisions((Vector(6) << Vector3::Constant(0),
+    auto sigma_init_x = noiseModel::Diagonal::Precisions((Vector6() << Vector3::Constant(0),
                                                                        Vector3::Constant(1.0))
                                                          .finished());
     auto sigma_init_v = noiseModel::Diagonal::Sigmas(Vector3::Constant(1000.0));
-    auto sigma_init_b = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.100),
+    auto sigma_init_b = noiseModel::Diagonal::Sigmas((Vector6() << Vector3::Constant(0.100),
                                                                    Vector3::Constant(5.00e-05))
                                                      .finished());
 
@@ -270,7 +271,7 @@ int main(int argc, char* argv[]) {
                                                   previous_bias_key, *current_summarized_measurement);
 
             // Bias evolution as given in the IMU metadata
-            auto sigma_between_b = noiseModel::Diagonal::Sigmas((Vector(6) <<
+            auto sigma_between_b = noiseModel::Diagonal::Sigmas((Vector6() <<
                    Vector3::Constant(sqrt(included_imu_measurement_count) * kitti_calibration.accelerometer_bias_sigma),
                    Vector3::Constant(sqrt(included_imu_measurement_count) * kitti_calibration.gyroscope_bias_sigma))
                  .finished());
@@ -341,6 +342,11 @@ int main(int argc, char* argv[]) {
 
         auto pose_quat = pose.rotation().toQuaternion();
         auto gps = gps_measurements[i].position;
+
+        cout << "State at #" << i << endl;
+        cout << "Pose:" << endl << pose << endl;
+        cout << "Velocity:" << endl << velocity << endl;
+        cout << "Bias:" << endl << bias << endl;
 
         fprintf(fp_out, "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
                 gps_measurements[i].time,
