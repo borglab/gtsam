@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <random>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 using namespace std;
@@ -66,10 +67,21 @@ DiscreteConditional::DiscreteConditional(const Signature& signature)
       BaseConditional(1) {}
 
 /* ******************************************************************************** */
-void DiscreteConditional::print(const std::string& s,
-    const KeyFormatter& formatter) const {
-  std::cout << s << std::endl;
-  Potentials::print(s);
+void DiscreteConditional::print(const string& s,
+                                const KeyFormatter& formatter) const {
+  cout << s << " P( ";
+  for (const_iterator it = beginFrontals(); it != endFrontals(); ++it) {
+    cout << formatter(*it) << " ";
+  }
+  if (nrParents()) {
+    cout << "| ";
+    for (const_iterator it = beginParents(); it != endParents(); ++it) {
+      cout << formatter(*it) << " ";
+    }
+  }
+  cout << ")";
+  Potentials::print("");
+  cout << endl;
 }
 
 /* ******************************************************************************** */
