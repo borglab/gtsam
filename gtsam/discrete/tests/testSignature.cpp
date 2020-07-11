@@ -22,6 +22,7 @@
 #include <gtsam/discrete/Signature.h>
 
 #include <boost/assign/std/vector.hpp>
+#include <vector>
 
 using namespace std;
 using namespace gtsam;
@@ -32,6 +33,11 @@ DiscreteKey X(0, 2), Y(1, 3), Z(2, 2);
 /* ************************************************************************* */
 TEST(testSignature, simple_conditional) {
   Signature sig(X | Y = "1/1 2/3 1/4");
+  Signature::Table table = *sig.table();
+  vector<double> row[3]{{0.5, 0.5}, {0.4, 0.6}, {0.2, 0.8}};
+  CHECK(row[0] == table[0]);
+  CHECK(row[1] == table[1]);
+  CHECK(row[2] == table[2]);
   DiscreteKey actKey = sig.key();
   LONGS_EQUAL(X.first, actKey.first);
 
