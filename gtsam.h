@@ -598,6 +598,7 @@ class SOn {
   // Standard Constructors
   SOn(size_t n);
   static gtsam::SOn FromMatrix(Matrix R);
+  static gtsam::SOn Lift(size_t n, Matrix R);
 
   // Testable
   void print(string s) const;
@@ -2838,6 +2839,34 @@ void writeG2o(const gtsam::NonlinearFactorGraph& graph,
 template<T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose3}>
 virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
   KarcherMeanFactor(const gtsam::KeyVector& keys);
+};
+
+#include <gtsam/slam/FrobeniusFactor.h>
+gtsam::noiseModel::Isotropic* ConvertPose3NoiseModel(
+    gtsam::noiseModel::Base* model, size_t d);
+
+template<T = {gtsam::SO3, gtsam::SO4}>
+virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
+  FrobeniusFactor(size_t key1, size_t key2);
+  FrobeniusFactor(size_t key1, size_t key2, gtsam::noiseModel::Base* model);
+
+  Vector evaluateError(const T& R1, const T& R2);
+};
+
+template<T = {gtsam::SO3, gtsam::SO4}>
+virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
+  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12);
+  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12, gtsam::noiseModel::Base* model);
+
+  Vector evaluateError(const T& R1, const T& R2);
+};
+
+virtual class FrobeniusWormholeFactor : gtsam::NoiseModelFactor {
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
+                          size_t p);
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
+                          size_t p, gtsam::noiseModel::Base* model);
+  Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
 };
 
 //*************************************************************************

@@ -75,8 +75,8 @@ protected:
     namespace bs = ::boost::serialization;
     ar & boost::serialization::make_nvp("PreintegratedRotation_Params",
          boost::serialization::base_object<PreintegratedRotationParams>(*this));
-    ar & bs::make_nvp("accelerometerCovariance", bs::make_array(accelerometerCovariance.data(), accelerometerCovariance.size()));
-    ar & bs::make_nvp("integrationCovariance", bs::make_array(integrationCovariance.data(), integrationCovariance.size()));
+    ar & BOOST_SERIALIZATION_NVP(accelerometerCovariance);
+    ar & BOOST_SERIALIZATION_NVP(integrationCovariance);
     ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
     ar & BOOST_SERIALIZATION_NVP(n_gravity);
   }

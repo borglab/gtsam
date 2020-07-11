@@ -339,11 +339,11 @@ SOn LieGroup<SOn, Eigen::Dynamic>::between(const SOn& g, DynamicJacobian H1,
 /** Serialization function */
 template<class Archive>
 void serialize(
-    Archive &ar, SOn &Q,
-    const unsigned int file_version
-){
+  Archive& ar, SOn& Q,
+  const unsigned int file_version
+) {
   Matrix& M = Q.matrix_;
-  ar & M;
+  ar& M;
 }
 
 /*
