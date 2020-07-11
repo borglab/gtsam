@@ -281,7 +281,7 @@ virtual class Value {
 };
 
 #include <gtsam/base/GenericValue.h>
-template<T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
+template<T = {Vector, Matrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
 virtual class GenericValue : gtsam::Value {
   void serializable() const;
 };
@@ -598,6 +598,7 @@ class SOn {
   // Standard Constructors
   SOn(size_t n);
   static gtsam::SOn FromMatrix(Matrix R);
+  static gtsam::SOn Lift(size_t n, Matrix R);
 
   // Testable
   void print(string s) const;
@@ -2851,6 +2852,34 @@ virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
   KarcherMeanFactor(const gtsam::KeyVector& keys);
 };
 
+#include <gtsam/slam/FrobeniusFactor.h>
+gtsam::noiseModel::Isotropic* ConvertPose3NoiseModel(
+    gtsam::noiseModel::Base* model, size_t d);
+
+template<T = {gtsam::SO3, gtsam::SO4}>
+virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
+  FrobeniusFactor(size_t key1, size_t key2);
+  FrobeniusFactor(size_t key1, size_t key2, gtsam::noiseModel::Base* model);
+
+  Vector evaluateError(const T& R1, const T& R2);
+};
+
+template<T = {gtsam::SO3, gtsam::SO4}>
+virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
+  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12);
+  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12, gtsam::noiseModel::Base* model);
+
+  Vector evaluateError(const T& R1, const T& R2);
+};
+
+virtual class FrobeniusWormholeFactor : gtsam::NoiseModelFactor {
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
+                          size_t p);
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
+                          size_t p, gtsam::noiseModel::Base* model);
+  Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
+};
+
 //*************************************************************************
 // Navigation
 //*************************************************************************
@@ -2971,6 +3000,7 @@ class PreintegratedImuMeasurements {
   gtsam::Rot3 deltaRij() const;
   Vector deltaPij() const;
   Vector deltaVij() const;
+  gtsam::imuBias::ConstantBias biasHat() const;
   Vector biasHatVector() const;
   gtsam::NavState predict(const gtsam::NavState& state_i,
       const gtsam::imuBias::ConstantBias& bias) const;
@@ -3032,6 +3062,7 @@ class PreintegratedCombinedMeasurements {
   gtsam::Rot3 deltaRij() const;
   Vector deltaPij() const;
   Vector deltaVij() const;
+  gtsam::imuBias::ConstantBias biasHat() const;
   Vector biasHatVector() const;
   gtsam::NavState predict(const gtsam::NavState& state_i,
       const gtsam::imuBias::ConstantBias& bias) const;
