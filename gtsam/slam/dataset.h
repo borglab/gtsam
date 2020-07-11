@@ -76,6 +76,7 @@ enum KernelFunctionType {
 
 /// Return type for auxiliary functions
 typedef std::pair<Key, Pose2> IndexedPose;
+typedef std::pair<Key, Point2> IndexedLandmark;
 typedef std::pair<std::pair<Key, Key>, Pose2> IndexedEdge;
 
 /**
@@ -83,8 +84,17 @@ typedef std::pair<std::pair<Key, Key>, Pose2> IndexedEdge;
  * @param is input stream
  * @param tag string parsed from input stream, will only parse if vertex type
  */
-GTSAM_EXPORT boost::optional<IndexedPose> parseVertex(std::istream& is,
+GTSAM_EXPORT boost::optional<IndexedPose> parseVertexPose(std::istream& is,
     const std::string& tag);
+
+/**
+ * Parse G2O landmark vertex "id x y"
+ * @param is input stream
+ * @param tag string parsed from input stream, will only parse if vertex type
+ */
+
+GTSAM_EXPORT boost::optional<IndexedLandmark> parseVertexLandmark(std::istream& is,
+    const std::string& tag)
 
 /**
  * Parse TORO/G2O edge "id1 id2 x y yaw"
@@ -162,8 +172,11 @@ using BetweenFactorPose3s = std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>
 GTSAM_EXPORT BetweenFactorPose3s parse3DFactors(const std::string& filename, 
     const noiseModel::Diagonal::shared_ptr& corruptingNoise=nullptr);
 
-/// Parse vertices in 3D TORO graph file into a map of Pose3s.
+/// Parse vertices in 3D TORO/g2o graph file into a map of Pose3s.
 GTSAM_EXPORT std::map<Key, Pose3> parse3DPoses(const std::string& filename);
+
+/// Parse landmarks in 3D g2o graph file into a map of Point3s.
+GTSAM_EXPORT std::map<Key, Point3> parse3DLandmarks(const string& filename)
 
 /// Load TORO 3D Graph
 GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
