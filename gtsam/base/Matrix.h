@@ -548,6 +548,20 @@ GTSAM_EXPORT Vector columnNormSquare(const Matrix &A);
 namespace boost {
   namespace serialization {
 
+    /**
+     * Ref. https://stackoverflow.com/questions/18382457/eigen-and-boostserialize/22903063#22903063
+     * 
+     * Eigen supports calling resize() on both static and dynamic matrices.
+     * This allows for a uniform API, with resize having no effect if the static matrix
+     * is already the correct size.
+     * https://eigen.tuxfamily.org/dox/group__TutorialMatrixClass.html#TutorialMatrixSizesResizing
+     * 
+     * We use all the Matrix template parameters to ensure wide compatibility.
+     * 
+     * eigen_typekit in ROS uses the same code
+     * http://docs.ros.org/lunar/api/eigen_typekit/html/eigen__mqueue_8cpp_source.html
+     */
+
     // split version - sends sizes ahead
     template<class Archive,
              typename Scalar_,
