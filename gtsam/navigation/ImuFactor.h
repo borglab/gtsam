@@ -164,7 +164,7 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
-    ar & bs::make_nvp("preintMeasCov_", bs::make_array(preintMeasCov_.data(), preintMeasCov_.size()));
+    ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
   }
 };
 
