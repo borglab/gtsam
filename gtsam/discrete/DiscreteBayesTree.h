@@ -42,6 +42,9 @@ namespace gtsam {
     typedef boost::weak_ptr<This> weak_ptr;
     DiscreteBayesTreeClique() {}
     DiscreteBayesTreeClique(const boost::shared_ptr<DiscreteConditional>& conditional) : Base(conditional) {}
+
+    //** evaluate conditional probability of subtree for given Values */
+    double evaluate(const DiscreteConditional::Values & values) const;
   };
 
   /* ************************************************************************* */

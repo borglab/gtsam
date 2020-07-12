@@ -29,10 +29,19 @@ namespace gtsam {
   template class BayesTreeCliqueBase<DiscreteBayesTreeClique, DiscreteFactorGraph>;
   template class BayesTree<DiscreteBayesTreeClique>;
 
+  /* ************************************************************************* */
+  double DiscreteBayesTreeClique::evaluate(
+      const DiscreteConditional::Values& values) const {
+    // evaluate all conditionals and multiply
+    double result = (*conditional_)(values);
+    for (const auto& child : children) {
+      result *= child->evaluate(values);
+    }
+    return result;
+  }
 
   /* ************************************************************************* */
-  bool DiscreteBayesTree::equals(const This& other, double tol) const
-  {
+  bool DiscreteBayesTree::equals(const This& other, double tol) const {
     return Base::equals(other, tol);
   }
 
