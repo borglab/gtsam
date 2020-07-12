@@ -61,10 +61,9 @@ DiscreteConditional::DiscreteConditional(const DecisionTreeFactor& joint,
 }
 
 /* ******************************************************************************** */
-DiscreteConditional::DiscreteConditional(const Signature& signature) :
-        BaseFactor(signature.discreteKeysParentsFirst(), signature.cpt()), BaseConditional(
-            1) {
-}
+DiscreteConditional::DiscreteConditional(const Signature& signature)
+    : BaseFactor(signature.discreteKeys(), signature.cpt()),
+      BaseConditional(1) {}
 
 /* ******************************************************************************** */
 void DiscreteConditional::print(const std::string& s,
