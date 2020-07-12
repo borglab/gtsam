@@ -42,6 +42,9 @@ BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic,
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 
+/// Add Boost serialization export for derived class
+BOOST_CLASS_EXPORT_GUID(gtsam::PreintegrationCombinedParams, "gtsam_PreintegrationCombinedParams");
+
 template <typename P>
 P getPreintegratedMeasurements() {
   // Create default parameters with Z-down and above noise paramaters
