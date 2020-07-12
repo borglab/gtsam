@@ -80,6 +80,12 @@ TEST_UNSAFE(DiscreteBayesTree, ThinTree) {
     bayesTree->saveGraph("/tmp/discreteBayesTree.dot");
   }
 
+  // Check frontals and parents
+  for (size_t i : {13, 14, 9, 3, 2, 8, 1, 0, 10, 5, 4}) {
+    auto clique_i = (*bayesTree)[i];
+    EXPECT_LONGS_EQUAL(i, *(clique_i->conditional_->beginFrontals()));
+  }
+
   auto R = bayesTree->roots().front();
 
   // Check whether BN and BT give the same answer on all configurations
