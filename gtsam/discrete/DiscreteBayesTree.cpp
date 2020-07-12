@@ -45,6 +45,16 @@ namespace gtsam {
     return Base::equals(other, tol);
   }
 
+  /* ************************************************************************* */
+  double DiscreteBayesTree::evaluate(
+      const DiscreteConditional::Values& values) const {
+    double result = 1.0;
+    for (const auto& root : roots_) {
+      result *= root->evaluate(values);
+    }
+    return result;
+  }
+
 } // \namespace gtsam
 
 
