@@ -18,6 +18,7 @@
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteMarginals.h>
+#include <gtsam/inference/BayesNet-inst.h>
 
 #include <iomanip>
 
