@@ -36,6 +36,11 @@ TEST( DiscreteConditional, constructors)
   DiscreteConditional::shared_ptr expected1 = //
       boost::make_shared<DiscreteConditional>(X | Y = "1/1 2/3 1/4");
   EXPECT(expected1);
+  EXPECT_LONGS_EQUAL(0, *(expected1->beginFrontals()));
+  EXPECT_LONGS_EQUAL(2, *(expected1->beginParents()));
+  EXPECT(expected1->endParents() == expected1->beginFrontals());
+  EXPECT(expected1->endFrontals() == expected1->end());
+  
   DecisionTreeFactor f1(X & Y, "0.5 0.4 0.2 0.5 0.6 0.8");
   DiscreteConditional actual1(1, f1);
   EXPECT(assert_equal(*expected1, actual1, 1e-9));

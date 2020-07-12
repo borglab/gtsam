@@ -18,8 +18,10 @@
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/base/Testable.h>
+#include <gtsam/discrete/DiscreteMarginals.h>
 #include <gtsam/base/debug.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -29,9 +31,41 @@
 using namespace boost::assign;
 
 #include <iostream>
+#include <string>
+#include <vector>
 
 using namespace std;
 using namespace gtsam;
+
+/* ************************************************************************* */
+TEST(DiscreteBayesNet, bayesNet) {
+  DiscreteBayesNet bayesNet;
+  DiscreteKey Parent(0, 2), Child(1, 2);
+
+  auto prior = boost::make_shared<DiscreteConditional>(Parent % "6/4");
+  CHECK(assert_equal(Potentials::ADT({Parent}, "0.6 0.4"),
+                     (Potentials::ADT)*prior));
+  bayesNet.push_back(prior);
+
+  auto conditional =
+      boost::make_shared<DiscreteConditional>(Child | Parent = "7/3 8/2");
+  EXPECT_LONGS_EQUAL(1, *(conditional->beginFrontals()));
+  Potentials::ADT expected(Child & Parent, "0.7 0.8 0.3 0.2");
+  CHECK(assert_equal(expected, (Potentials::ADT)*conditional));
+  bayesNet.push_back(conditional);
+
+  DiscreteFactorGraph fg(bayesNet);
+  LONGS_EQUAL(2, fg.back()->size());
+
+  // Check the marginals
+  const double expectedMarginal[2]{0.4, 0.6 * 0.3 + 0.4 * 0.2};
+  DiscreteMarginals marginals(fg);
+  for (size_t j = 0; j < 2; j++) {
+    Vector FT = marginals.marginalProbabilities(DiscreteKey(j, 2));
+    EXPECT_DOUBLES_EQUAL(expectedMarginal[j], FT[1], 1e-3);
+    EXPECT_DOUBLES_EQUAL(FT[0], 1.0 - FT[1], 1e-9);
+  }
+}
 
 /* ************************************************************************* */
 TEST(DiscreteBayesNet, Asia)

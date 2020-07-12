@@ -91,6 +91,22 @@ public:
   bool equals(const DiscreteFactor& other, double tol = 1e-9) const;
 
   /// @}
+  /// @name Parent keys are stored *first* in a DiscreteConditional, so re-jigger:
+  /// @{
+
+  /** Iterator pointing to first frontal key. */
+  typename DecisionTreeFactor::const_iterator beginFrontals() const { return endParents(); }
+
+  /** Iterator pointing past the last frontal key. */
+  typename DecisionTreeFactor::const_iterator endFrontals() const { return end(); }
+
+  /** Iterator pointing to the first parent key. */
+  typename DecisionTreeFactor::const_iterator beginParents() const { return begin(); }
+
+  /** Iterator pointing past the last parent key. */
+  typename DecisionTreeFactor::const_iterator endParents() const { return end() - nrFrontals_; }
+
+  /// @}
   /// @name Standard Interface
   /// @{
 
