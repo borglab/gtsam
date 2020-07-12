@@ -110,16 +110,22 @@ TEST_UNSAFE(DiscreteBayesTree, ThinTree) {
     double px = bayesTree->evaluate(x);
     for (size_t i = 0; i < 15; i++)
       if (x[i]) marginals[i] += px;
-    if (x[12] && x[14]) joint_12_14 += px;
-    if (x[9] && x[12] && x[14]) joint_9_12_14 += px;
-    if (x[8] && x[12] && x[14]) joint_8_12_14 += px;
+    if (x[12] && x[14]) {
+      joint_12_14 += px;
+      if (x[9]) joint_9_12_14 += px;
+      if (x[8]) joint_8_12_14 += px;
+    }
     if (x[8] && x[12]) joint_8_12 += px;
-    if (x[8] && x[2]) joint82 += px;
-    if (x[1] && x[2]) joint12 += px;
-    if (x[2] && x[4]) joint24 += px;
-    if (x[4] && x[5]) joint45 += px;
-    if (x[4] && x[6]) joint46 += px;
-    if (x[4] && x[11]) joint_4_11 += px;
+    if (x[2]) {
+      if (x[8]) joint82 += px;
+      if (x[1]) joint12 += px;
+    }
+    if (x[4]) {
+      if (x[2]) joint24 += px;
+      if (x[5]) joint45 += px;
+      if (x[6]) joint46 += px;
+      if (x[11]) joint_4_11 += px;
+    }
     if (x[11] && x[13]) {
       joint_11_13 += px;
       if (x[8] && x[12]) joint_8_11_12_13 += px;
@@ -135,50 +141,50 @@ TEST_UNSAFE(DiscreteBayesTree, ThinTree) {
   DiscreteFactor::Values all1 = allPosbValues.back();
 
   // check separator marginal P(S0)
-  auto c = (*bayesTree)[0];
+  auto clique = (*bayesTree)[0];
   DiscreteFactorGraph separatorMarginal0 =
-      c->separatorMarginal(EliminateDiscrete);
+      clique->separatorMarginal(EliminateDiscrete);
   DOUBLES_EQUAL(joint_8_12, separatorMarginal0(all1), 1e-9);
 
   // check separator marginal P(S9), should be P(14)
-  c = (*bayesTree)[9];
+  clique = (*bayesTree)[9];
   DiscreteFactorGraph separatorMarginal9 =
-      c->separatorMarginal(EliminateDiscrete);
+      clique->separatorMarginal(EliminateDiscrete);
   DOUBLES_EQUAL(marginals[14], separatorMarginal9(all1), 1e-9);
 
   // check separator marginal of root, should be empty
-  c = (*bayesTree)[11];
+  clique = (*bayesTree)[11];
   DiscreteFactorGraph separatorMarginal11 =
-      c->separatorMarginal(EliminateDiscrete);
+      clique->separatorMarginal(EliminateDiscrete);
   LONGS_EQUAL(0, separatorMarginal11.size());
 
   // check shortcut P(S9||R) to root
-  c = (*bayesTree)[9];
-  DiscreteBayesNet shortcut = c->shortcut(R, EliminateDiscrete);
+  clique = (*bayesTree)[9];
+  DiscreteBayesNet shortcut = clique->shortcut(R, EliminateDiscrete);
   LONGS_EQUAL(1, shortcut.size());
   DOUBLES_EQUAL(joint_11_13_14 / joint_11_13, shortcut.evaluate(all1), 1e-9);
 
   // check shortcut P(S8||R) to root
-  c = (*bayesTree)[8];
-  shortcut = c->shortcut(R, EliminateDiscrete);
+  clique = (*bayesTree)[8];
+  shortcut = clique->shortcut(R, EliminateDiscrete);
   DOUBLES_EQUAL(joint_11_12_13_14 / joint_11_13, shortcut.evaluate(all1), 1e-9);
 
   // check shortcut P(S2||R) to root
-  c = (*bayesTree)[2];
-  shortcut = c->shortcut(R, EliminateDiscrete);
+  clique = (*bayesTree)[2];
+  shortcut = clique->shortcut(R, EliminateDiscrete);
   DOUBLES_EQUAL(joint_9_11_12_13 / joint_11_13, shortcut.evaluate(all1), 1e-9);
 
   // check shortcut P(S0||R) to root
-  c = (*bayesTree)[0];
-  shortcut = c->shortcut(R, EliminateDiscrete);
+  clique = (*bayesTree)[0];
+  shortcut = clique->shortcut(R, EliminateDiscrete);
   DOUBLES_EQUAL(joint_8_11_12_13 / joint_11_13, shortcut.evaluate(all1), 1e-9);
 
   // calculate all shortcuts to root
   DiscreteBayesTree::Nodes cliques = bayesTree->nodes();
-  for (auto c : cliques) {
-    DiscreteBayesNet shortcut = c.second->shortcut(R, EliminateDiscrete);
+  for (auto clique : cliques) {
+    DiscreteBayesNet shortcut = clique.second->shortcut(R, EliminateDiscrete);
     if (debug) {
-      c.second->conditional_->printSignature();
+      clique.second->conditional_->printSignature();
       shortcut.print("shortcut:");
     }
   }
