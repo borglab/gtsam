@@ -35,7 +35,7 @@ static bool debug = false;
 
 /* ************************************************************************* */
 
-TEST_UNSAFE(DiscreteBayesTree, thinTree) {
+TEST_UNSAFE(DiscreteBayesTree, ThinTree) {
   const int nrNodes = 15;
   const size_t nrStates = 2;
 
@@ -94,7 +94,7 @@ TEST_UNSAFE(DiscreteBayesTree, thinTree) {
   }
 
   // Calculate all some marginals for Values==all1
-  Vector marginals = zero(15);
+  Vector marginals = Vector::Zero(15);
   double joint_12_14 = 0, joint_9_12_14 = 0, joint_8_12_14 = 0, joint_8_12 = 0,
          joint82 = 0, joint12 = 0, joint24 = 0, joint45 = 0, joint46 = 0,
          joint_4_11 = 0, joint_11_13 = 0, joint_11_13_14 = 0,
