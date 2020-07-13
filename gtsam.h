@@ -1938,6 +1938,22 @@ virtual class ConjugateGradientParameters : gtsam::IterativeOptimizationParamete
   void print() const;
 };
 
+#include <gtsam/linear/Preconditioner.h>
+virtual class PreconditionerParameters {
+  PreconditionerParameters();
+};
+
+virtual class DummyPreconditionerParameters : gtsam::PreconditionerParameters {
+  DummyPreconditionerParameters();
+};
+
+#include <gtsam/linear/PCGSolver.h>
+virtual class PCGSolverParameters : gtsam::ConjugateGradientParameters {
+  PCGSolverParameters();
+  void print(string s);
+  void setPreconditionerParams(gtsam::PreconditionerParameters* preconditioner);
+};
+
 #include <gtsam/linear/SubgraphSolver.h>
 virtual class SubgraphSolverParameters : gtsam::ConjugateGradientParameters {
   SubgraphSolverParameters();
