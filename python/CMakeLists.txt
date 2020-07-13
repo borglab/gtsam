@@ -4,8 +4,10 @@ if(GTSAM_BUILD_PYTHON)
   configure_file(${PROJECT_SOURCE_DIR}/python/setup.py.in
                  ${PROJECT_BINARY_DIR}/setup.py)
 
-  add_subdirectory(pybind11)
-  include(GtsamPybindWrap)
+  set(WRAP_USE_CUSTOM_PYTHON_LIBRARY GTSAM_USE_CUSTOM_PYTHON_LIBRARY)
+  set(WRAP_PYTHON_VERSION GTSAM_PYTHON_VERSION)
+
+  include(PybindWrap)
 
   add_custom_target(gtsam_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam.h")
 
@@ -32,6 +34,7 @@ if(GTSAM_BUILD_PYTHON)
               ${PROJECT_SOURCE_DIR}/wrap/pybind_wrapper.tpl
               gtsam # libs
               "gtsam;gtsam_header" # dependencies
+              ON # use_boost
               )
 
   set_target_properties(gtsam_py PROPERTIES
@@ -43,16 +46,15 @@ if(GTSAM_BUILD_PYTHON)
         RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
         )
 
+  set(GTSAM_MODULE_PATH ${PROJECT_BINARY_DIR}/gtsam)
+
   # Symlink all tests .py files to build folder.
   create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_py/"
-                  "${PROJECT_BINARY_DIR}/gtsam")
+          "${GTSAM_MODULE_PATH}")
 
-  # Install.
-  install(TARGETS gtsam_py DESTINATION ${GTSAM_PY_INSTALL_PATH}/gtsam)
-  message("PYTHON INSTALL PATH: ${GTSAM_PY_INSTALL_PATH}")
-  install_python_files("${PROJECT_BINARY_DIR}/setup.py"
-                       "${GTSAM_PY_INSTALL_PATH}")
-  install_python_scripts("${PROJECT_SOURCE_DIR}/python/gtsam_py/"
-                         "${GTSAM_PY_INSTALL_PATH}/gtsam" "*.py")
+  set(GTSAM_PYTHON_INSTALL_TARGET python-install)
+  add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
+          COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_BINARY_DIR}/setup.py install
+          WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 
 endif()

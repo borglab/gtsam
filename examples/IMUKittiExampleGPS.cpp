@@ -287,7 +287,11 @@ int main(int argc, char* argv[]) {
                 new_values.insert(current_pose_key, gps_pose);
 
                 printf("################ POSE INCLUDED AT TIME %lf ################\n", t);
+#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
+                std::cout << gps_pose.translation();
+#else
                 gps_pose.translation().print();
+#endif
                 printf("\n\n");
             } else {
                 new_values.insert(current_pose_key, current_pose_global);

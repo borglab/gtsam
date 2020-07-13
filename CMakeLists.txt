@@ -437,17 +437,9 @@ add_subdirectory(CppUnitLite)
 
 # This is the new wrapper
 if(GTSAM_BUILD_PYTHON)
+	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wrap/cmake")
 	add_subdirectory(python)
 endif()
-
-# Build wrap
-if (GTSAM_BUILD_WRAP)
-    add_subdirectory(wrap)
-	# suppress warning of cython line being too long
-	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-misleading-indentation")
-	endif()
-endif(GTSAM_BUILD_WRAP)
 
 # Build GTSAM library
 add_subdirectory(gtsam)
@@ -470,21 +462,6 @@ endif()
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	add_subdirectory(matlab)
 endif()
-
-# Cython wrap
-if (GTSAM_INSTALL_CYTHON_TOOLBOX)
-  set(GTSAM_INSTALL_CYTHON_TOOLBOX 1)
-  # Set up cache options
-  set(GTSAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
-  if(NOT GTSAM_CYTHON_INSTALL_PATH)
-    set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython")
-  endif()
-  set(GTSAM_EIGENCY_INSTALL_PATH ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency)
-  add_subdirectory(cython)
-else()
-  set(GTSAM_INSTALL_CYTHON_TOOLBOX 0) # This will go into config.h
-endif()
-
 
 # Install config and export files
 GtsamMakeConfigFile(GTSAM "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")
@@ -623,12 +600,6 @@ print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install MATLAB toolbox  
 if (${GTSAM_INSTALL_MATLAB_TOOLBOX})
     message(STATUS "  MATLAB root                     : ${MATLAB_ROOT}")
     message(STATUS "  MEX binary                      : ${MEX_COMMAND}")
-endif()
-
-message(STATUS "Cython toolbox flags                                      ")
-print_config_flag(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox          ")
-if(GTSAM_INSTALL_CYTHON_TOOLBOX)
-	message(STATUS "  Python version                  : ${GTSAM_PYTHON_VERSION}")
 endif()
 
 message(STATUS "Python toolbox flags                                      ")
