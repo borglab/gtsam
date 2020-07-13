@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file  DiscreteBayesNet_graph.cpp
+ * @file  DiscreteBayesNet_FG.cpp
  * @brief   Discrete Bayes Net example using Factor Graphs
  * @author  Abhijit
  * @date  Jun 4, 2012
