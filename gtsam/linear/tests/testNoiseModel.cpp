@@ -182,8 +182,9 @@ TEST(NoiseModel, ConstrainedMixed )
   EXPECT(assert_equal(Vector3(0.5, 1.0, 0.5),d->whiten(infeasible)));
   EXPECT(assert_equal(Vector3(0.5, 0.0, 0.5),d->whiten(feasible)));
 
-  DOUBLES_EQUAL(0.5 * (1000.0 + 0.25 + 0.25),d->error(infeasible),1e-9);
-  DOUBLES_EQUAL(0.5 * 0.5,d->error(feasible),1e-9);
+  DOUBLES_EQUAL(0.5 * (1000.0 + 0.25 + 0.25),d->loss(d->squaredMahalanobisDistance(infeasible)),1e-9);
+  DOUBLES_EQUAL(0.5, d->squaredMahalanobisDistance(feasible),1e-9);
+  DOUBLES_EQUAL(0.5 * 0.5, d->loss(0.5),1e-9);
 }
 
 /* ************************************************************************* */
@@ -197,8 +198,9 @@ TEST(NoiseModel, ConstrainedAll )
   EXPECT(assert_equal(Vector3(1.0, 1.0, 1.0),i->whiten(infeasible)));
   EXPECT(assert_equal(Vector3(0.0, 0.0, 0.0),i->whiten(feasible)));
 
-  DOUBLES_EQUAL(0.5 * 1000.0 * 3.0,i->error(infeasible),1e-9);
-  DOUBLES_EQUAL(0.0,i->error(feasible),1e-9);
+  DOUBLES_EQUAL(0.5 * 1000.0 * 3.0,i->loss(i->squaredMahalanobisDistance(infeasible)),1e-9);
+  DOUBLES_EQUAL(0.0, i->squaredMahalanobisDistance(feasible), 1e-9);
+  DOUBLES_EQUAL(0.0, i->loss(0.0),1e-9);
 }
 
 /* ************************************************************************* */
@@ -717,7 +719,8 @@ TEST(NoiseModel, lossFunctionAtZero)
   EQUALITY(cov, gaussian->covariance());\
   EXPECT(assert_equal(white, gaussian->whiten(e)));\
   EXPECT(assert_equal(e, gaussian->unwhiten(white)));\
-  EXPECT_DOUBLES_EQUAL(0.5 * 251, gaussian->error(e), 1e-9);\
+  EXPECT_DOUBLES_EQUAL(251.0, gaussian->squaredMahalanobisDistance(e), 1e-9);\
+  EXPECT_DOUBLES_EQUAL(0.5 * 251.0, gaussian->loss(251.0), 1e-9);\
   Matrix A = R.inverse(); Vector b = e;\
   gaussian->WhitenSystem(A, b);\
   EXPECT(assert_equal(I, A));\
