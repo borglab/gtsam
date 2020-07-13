@@ -88,7 +88,7 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
   }
 
   void print(const std::string& s="") const;
-  bool equals(const PreintegrationParams& other, double tol) const;
+  bool equals(const PreintegratedRotationParams& other, double tol) const;
 
   void setBiasAccCovariance(const Matrix3& cov) { biasAccCovariance=cov; }
   void setBiasOmegaCovariance(const Matrix3& cov) { biasOmegaCovariance=cov; }

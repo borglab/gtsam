@@ -44,7 +44,7 @@ void PreintegrationCombinedParams::print(const string& s) const {
 }
 
 //------------------------------------------------------------------------------
-bool PreintegrationCombinedParams::equals(const PreintegrationParams& other,
+bool PreintegrationCombinedParams::equals(const PreintegratedRotationParams& other,
                                   double tol) const {
   auto e = dynamic_cast<const PreintegrationCombinedParams*>(&other);
   return e != nullptr && PreintegrationParams::equals(other, tol) &&
