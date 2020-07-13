@@ -121,7 +121,7 @@ double NoiseModelFactor::error(const Values& c) const {
     const Vector b = unwhitenedError(c);
     check(noiseModel_, b.size());
     if (noiseModel_)
-      return noiseModel_->error(b);
+      return noiseModel_->loss(noiseModel_->squaredMahalanobisDistance(b));
     else
       return 0.5 * b.squaredNorm();
   } else {
