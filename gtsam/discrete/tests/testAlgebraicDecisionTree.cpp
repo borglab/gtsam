@@ -132,7 +132,7 @@ TEST(ADT, example3)
 
 /** Convert Signature into CPT */
 ADT create(const Signature& signature) {
-  ADT p(signature.discreteKeysParentsFirst(), signature.cpt());
+  ADT p(signature.discreteKeys(), signature.cpt());
   static size_t count = 0;
   const DiscreteKey& key = signature.key();
   string dotfile = (boost::format("CPT-%03d-%d") % ++count % key.first).str();
@@ -181,19 +181,20 @@ TEST(ADT, joint)
   dot(joint, "Asia-ASTLBEX");
   joint = apply(joint, pD, &mul);
   dot(joint, "Asia-ASTLBEXD");
-  EXPECT_LONGS_EQUAL(346, (long)muls);
+  EXPECT_LONGS_EQUAL(346, muls);
   gttoc_(asiaJoint);
   tictoc_getNode(asiaJointNode, asiaJoint);
   elapsed = asiaJointNode->secs() + asiaJointNode->wall();
   tictoc_reset_();
   printCounts("Asia joint");
 
+  // Form P(A,S,T,L) = P(A) P(S) P(T|A) P(L|S)
   ADT pASTL = pA;
   pASTL = apply(pASTL, pS, &mul);
   pASTL = apply(pASTL, pT, &mul);
   pASTL = apply(pASTL, pL, &mul);
 
-  // test combine
+  // test combine to check that P(A) = \sum_{S,T,L} P(A,S,T,L)
   ADT fAa = pASTL.combine(L, &add_).combine(T, &add_).combine(S, &add_);
   EXPECT(assert_equal(pA, fAa));
   ADT fAb = pASTL.combine(S, &add_).combine(T, &add_).combine(L, &add_);

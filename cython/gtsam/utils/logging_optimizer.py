@@ -46,5 +46,7 @@ def gtsam_optimize(optimizer,
     def check_convergence(optimizer, current_error, new_error):
         return (optimizer.iterations() >= params.getMaxIterations()) or (
             gtsam.checkConvergence(params.getRelativeErrorTol(), params.getAbsoluteErrorTol(), params.getErrorTol(),
-                                   current_error, new_error))
+                                   current_error, new_error)) or (
+            isinstance(optimizer, gtsam.LevenbergMarquardtOptimizer) and optimizer.lambda_() > params.getlambdaUpperBound())
     optimize(optimizer, check_convergence, hook)
+    return optimizer.values()

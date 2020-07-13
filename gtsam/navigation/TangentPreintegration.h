@@ -132,9 +132,7 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
-    ar & BOOST_SERIALIZATION_NVP(p_);
-    ar & BOOST_SERIALIZATION_NVP(biasHat_);
-    ar & BOOST_SERIALIZATION_NVP(deltaTij_);
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
     ar & BOOST_SERIALIZATION_NVP(preintegrated_);
     ar & BOOST_SERIALIZATION_NVP(preintegrated_H_biasAcc_);
     ar & BOOST_SERIALIZATION_NVP(preintegrated_H_biasOmega_);
