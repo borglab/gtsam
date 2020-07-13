@@ -429,6 +429,11 @@ if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
   list_append_cache(GTSAM_COMPILE_DEFINITIONS_PRIVATE GTSAM_EXTRA_CONSISTENCY_CHECKS)
 endif()
 
+if(GTSAM_POSE3_EXPMAP)
+	set(GTSAM_ROT3_EXPMAP ON)
+	message(STATUS "Forcing Rot3 full expmap as Pose3 is full expmap to avoid inconsistency!")
+endif()
+
 ###############################################################################
 # Add components
 

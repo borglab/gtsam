@@ -166,7 +166,10 @@ namespace example {
 Camera camera(Pose3(Rot3().retract(Vector3(0.1, 0.2, 0.3)), Point3(0, 5, 0)),
               Cal3Bundler0(1, 0, 0));
 Point3 point(10, 0, -5);  // negative Z-axis convention of Snavely!
-Vector9 P = Camera().localCoordinates(camera);
+Vector9 P = Camera(
+    Pose3(Rot3(), Point3(0, 0, 0)),
+    Cal3Bundler0(0, 0, 0)
+    ).localCoordinates(camera);
 Vector3 X = point;
 Vector2 expectedMeasurement(1.2431567, 1.2525694);
 Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(adapted, P, X);
@@ -178,6 +181,7 @@ Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(adapted, P, X);
 TEST(AdaptAutoDiff, Local) {
   using namespace example;
   Vector9 expectedP = (Vector9() << 0.1, 0.2, 0.3, 0, 5, 0, 1, 0, 0).finished();
+  std::cout << P << std::endl;
   EXPECT(equal_with_abs_tol(expectedP, P));
   Vector3 expectedX(10, 0, -5);  // negative Z-axis convention of Snavely!
   EXPECT(equal_with_abs_tol(expectedX, X));

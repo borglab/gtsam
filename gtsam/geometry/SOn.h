@@ -342,8 +342,9 @@ void serialize(
   Archive& ar, SOn& Q,
   const unsigned int file_version
 ) {
-  Matrix& M = Q.matrix_;
-  ar& M;
+    namespace bs = ::boost::serialization;
+    Matrix &M = Q.matrix_;
+    ar & bs::make_nvp("matrix_", bs::make_array(M.data(), M.size()));
 }
 
 /*
