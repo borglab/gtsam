@@ -49,22 +49,10 @@ class FourierBasis : public Basis<FourierBasis> {
     return D;
   }
 
-  /// Create a Fourier derivative function of Parameters
-  class Derivative {
-   protected:
-    typename FourierBasis::Weights weights_;
-
-    size_t N_;
-
-   public:
-    Derivative(size_t N, double x)
-        : weights_(FourierBasis::CalculateWeights(N - 1, x)), N_(N) {}
-
-    /// Get weights at a given x that calculate the derivative.
-    Weights operator()(const Parameters &c) {
-      return CalculateWeights(N_, x) * DifferentiationMatrix(N_);
-    }
-  };
+  /// Get weights at a given x that calculate the derivative.
+  static Weights DerivativeWeights(size_t N, double x) {
+    return CalculateWeights(N, x) * DifferentiationMatrix(N);
+  }
 
 };  // FourierBasis
 

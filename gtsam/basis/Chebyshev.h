@@ -83,7 +83,7 @@ class Chebyshev1Basis : public Basis<Chebyshev1Basis> {
     typename Chebyshev2Basis::Weights weights_;
 
     Derivative(size_t N, double x)
-        : weights_(Chebyshev2Basis::CalculateWeights(N - 1, x)), N_(N) {
+        : N_(N), weights_(Chebyshev2Basis::CalculateWeights(N - 1, x)) {
       // after the above init, weights_ contains the U_{n-1} values for n=1..N-1
       // Note there is no value for n=0. But we need n*U{n-1}, so correct:
       for (size_t n = 1; n < N; n++) {

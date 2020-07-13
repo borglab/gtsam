@@ -13,15 +13,15 @@
  * @file testChebyshev.cpp
  * @date July 4, 2020
  * @author Varun Agrawal
- * @brief Unit tests for Chebyshev Basis Decompositions
+ * @brief Unit tests for Chebyshev Basis Decompositions via pseudo-spectral
+ *        methods
  */
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/basis/Chebyshev2.h>
+#include <gtsam/basis/FitBasis.h>
 #include <gtsam/nonlinear/factorTesting.h>
-
-#include "../Chebyshev2.h"
-#include "../FitBasis.h"
 
 using namespace std;
 using namespace gtsam;

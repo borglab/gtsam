@@ -11,6 +11,7 @@
 #include <gtsam/base/OptionalJacobian.h>
 
 #include <gtsam/3rdparty/Eigen/unsupported/Eigen/KroneckerProduct>
+#include <iostream>
 
 /*
  *  Concept of a Basis:
@@ -26,11 +27,21 @@ class Basis {
  public:
   /// Call weights for all x in vector, returns M*N matrix where M is the size
   /// of the vector X.
-  static Matrix WeightMatrix(size_t N, const Vector& X); 
+  static Matrix WeightMatrix(size_t N, const Vector& X) {
+    Matrix W(X.size(), N);
+    for (int i = 0; i < X.size(); i++)
+      W.row(i) = DERIVED::CalculateWeights(N, X(i));
+    return W;
+  }
 
   /// Call weights for all x in vector, with interval [a,b]
   /// Returns M*N matrix where M is the size of the vector X.
-  static Matrix WeightMatrix(size_t N, const Vector& X, double a, double b);
+  static Matrix WeightMatrix(size_t N, const Vector& X, double a, double b) {
+    Matrix W(X.size(), N);
+    for (int i = 0; i < X.size(); i++)
+      W.row(i) = DERIVED::CalculateWeights(N, X(i), a, b);
+    return W;
+  }
 
   /**
    * EvaluationFunctor at a given x, applied to Parameters.
@@ -68,7 +79,9 @@ class Basis {
       return apply(f, H);  // might call apply in derived
     }
 
-    void print(const std::string& s = "") const;
+    void print(const std::string& s = "") const {
+      std::cout << s << (s != "" ? " " : "") << weights_ << std::endl;
+    }
   };
 
   /**
@@ -232,7 +245,9 @@ class Basis {
     DerivativeFunctorBase(size_t N, double x, double a, double b)
         : weights_(DERIVED::DerivativeWeights(N, x, a, b)) {}
 
-    void print(const std::string& s = "") const;
+    void print(const std::string& s = "") const {
+      std::cout << s << (s != "" ? " " : "") << weights_ << std::endl;
+    }
   };
 
   /// Given values f at the Chebyshev points, predict derivative at x

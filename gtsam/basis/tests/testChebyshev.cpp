@@ -18,10 +18,9 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/basis/Chebyshev.h>
+#include <gtsam/basis/FitBasis.h>
 #include <gtsam/nonlinear/factorTesting.h>
-
-#include "../Chebyshev.h"
-#include "../FitBasis.h"
 
 using namespace std;
 using namespace gtsam;
@@ -83,8 +82,9 @@ TEST(Chebyshev, Expression) {
   x << -0.7, -0.4, 0.1, 0.3, 0.7, 0.9;
 
   for (size_t i = 0; i < m; i++) {
-    graph.emplace_shared<PredictFactor<Chebyshev1Basis>>(key, x(i), model, N,
-                                                         t(i));
+    auto functor = Chebyshev1Basis::EvaluationFunctor(N, t(i));
+    graph.emplace_shared<PredictFactor<Chebyshev1Basis>>(key, x(i), model,
+                                                         functor);
   }
 
   // Solve

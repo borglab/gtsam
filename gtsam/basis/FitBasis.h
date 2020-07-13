@@ -55,10 +55,11 @@ class FitBasis {
                                              size_t N) {
     NonlinearFactorGraph graph;
     for (const Sample sample : sequence) {
-      graph.emplace_shared<PredictFactor<Basis>>(0, sample.second, model, N,
-                                                 sample.first);
+      auto functor = typename Basis::EvaluationFunctor(N, sample.first);
+      graph.emplace_shared<PredictFactor<Basis>>(0, sample.second, model,
+                                                 functor);
     }
-    return std::move(graph);
+    return graph;
   }
 
   /// Create linear FG from Sequence
