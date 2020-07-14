@@ -20,15 +20,15 @@
 
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/make_shared.h>
 #include <gtsam/dllexport.h>
-
 #include <Eigen/Core>
 
 #include <iostream> // TODO(frank): how to avoid?
-#include <random>
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <random>
 
 namespace gtsam {
 
@@ -54,7 +54,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   using VectorN2 = Eigen::Matrix<double, internal::NSquaredSO(N), 1>;
   using MatrixDD = Eigen::Matrix<double, dimension, dimension>;
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(true)
 
  protected:
   MatrixNN matrix_;  ///< Rotation matrix
@@ -92,6 +92,16 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   template <typename Derived>
   static SO FromMatrix(const Eigen::MatrixBase<Derived>& R) {
     return SO(R);
+  }
+
+  /// Named constructor from lower dimensional matrix
+  template <typename Derived, int N_ = N, typename = IsDynamic<N_>>
+  static SO Lift(size_t n, const Eigen::MatrixBase<Derived> &R) {
+    Matrix Q = Matrix::Identity(n, n);
+    size_t p = R.rows();
+    assert(p < n && R.cols() == p);
+    Q.topLeftCorner(p, p) = R;
+    return SO(Q);
   }
 
   /// Construct dynamic SO(n) from Fixed SO<M>
@@ -148,9 +158,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// @name Testable
   /// @{
 
-  void print(const std::string& s) const {
-    std::cout << s << matrix_ << std::endl;
-  }
+  void print(const std::string& s = std::string()) const;
 
   bool equals(const SO& other, double tol) const {
     return equal_with_abs_tol(matrix_, other.matrix_, tol);
@@ -210,11 +218,11 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
    * etc... For example, the vector-space isomorphic to so(5) is laid out as:
    *   a b c d | u v w | x y | z
    * where the latter elements correspond to "telescoping" sub-algebras:
-   *   0 -z  y -w  d
-   *   z  0 -x  v -c
-   *  -y  x  0 -u  b
-   *   w -v  u  0 -a
-   *  -d  c -b  a  0
+   *   0 -z  y  w -d
+   *   z  0 -x -v  c
+   *  -y  x  0  u -b
+   *  -w  v -u  0  a
+   *   d -c  b -a  0
    * This scheme behaves exactly as expected for SO(2) and SO(3).
    */
   static MatrixNN Hat(const TangentVector& xi);
@@ -285,6 +293,10 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// @}
 
   template <class Archive>
+  friend void save(Archive&, SO&, const unsigned int);
+  template <class Archive>
+  friend void load(Archive&, SO&, const unsigned int);
+  template <class Archive>
   friend void serialize(Archive&, SO&, const unsigned int);
   friend class boost::serialization::access;
   friend class Rot3;  // for serialize
@@ -320,6 +332,16 @@ SOn LieGroup<SOn, Eigen::Dynamic>::compose(const SOn& g, DynamicJacobian H1,
 template <>
 SOn LieGroup<SOn, Eigen::Dynamic>::between(const SOn& g, DynamicJacobian H1,
                                            DynamicJacobian H2) const;
+
+/** Serialization function */
+template<class Archive>
+void serialize(
+  Archive& ar, SOn& Q,
+  const unsigned int file_version
+) {
+  Matrix& M = Q.matrix_;
+  ar& M;
+}
 
 /*
  * Define the traits. internal::LieGroup provides both Lie group and Testable

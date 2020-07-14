@@ -8,7 +8,6 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearISAM.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -116,9 +115,9 @@ TEST(testNonlinearISAM, markov_chain_with_disconnects ) {
 
     // Add a floating landmark constellation
     if (i == 7) {
-      new_factors += PriorFactor<Point2>(lm1, landmark1, model2);
-      new_factors += PriorFactor<Point2>(lm2, landmark2, model2);
-      new_factors += PriorFactor<Point2>(lm3, landmark3, model2);
+      new_factors.addPrior(lm1, landmark1, model2);
+      new_factors.addPrior(lm2, landmark2, model2);
+      new_factors.addPrior(lm3, landmark3, model2);
 
       // Initialize to origin
       new_init.insert(lm1, Point2(0,0));
@@ -193,9 +192,9 @@ TEST(testNonlinearISAM, markov_chain_with_reconnect ) {
 
     // Add a floating landmark constellation
     if (i == 7) {
-      new_factors += PriorFactor<Point2>(lm1, landmark1, model2);
-      new_factors += PriorFactor<Point2>(lm2, landmark2, model2);
-      new_factors += PriorFactor<Point2>(lm3, landmark3, model2);
+      new_factors.addPrior(lm1, landmark1, model2);
+      new_factors.addPrior(lm2, landmark2, model2);
+      new_factors.addPrior(lm3, landmark3, model2);
 
       // Initialize to origin
       new_init.insert(lm1, Point2(0,0));
@@ -296,8 +295,7 @@ TEST(testNonlinearISAM, loop_closures ) {
       if (id == 0) {
         noiseModel::Diagonal::shared_ptr priorNoise =
             noiseModel::Diagonal::Sigmas(Vector3(0.001, 0.001, 0.001));
-        graph.emplace_shared<PriorFactor<Pose2> >(Symbol('x', id),
-            Pose2(0, 0, 0), priorNoise);
+        graph.addPrior(Symbol('x', id), Pose2(0, 0, 0), priorNoise);
       } else {
         isam.update(graph, initialEstimate);
 

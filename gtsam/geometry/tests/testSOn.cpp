@@ -46,7 +46,7 @@ TEST(SOn, SO0) {
   EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::dimension);
   EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::Dim());
   EXPECT_LONGS_EQUAL(0, R.dim());
-  EXPECT_LONGS_EQUAL(-1, traits<SOn>::GetDimension(R));
+  EXPECT_LONGS_EQUAL(0, traits<SOn>::GetDimension(R));
 }
 
 //******************************************************************************
@@ -56,7 +56,7 @@ TEST(SOn, SO5) {
   EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::dimension);
   EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::Dim());
   EXPECT_LONGS_EQUAL(10, R.dim());
-  EXPECT_LONGS_EQUAL(-1, traits<SOn>::GetDimension(R));
+  EXPECT_LONGS_EQUAL(10, traits<SOn>::GetDimension(R));
 }
 
 //******************************************************************************
@@ -95,32 +95,42 @@ TEST(SOn, Random) {
 
 //******************************************************************************
 TEST(SOn, HatVee) {
-  Vector6 v;
-  v << 1, 2, 3, 4, 5, 6;
+  Vector10 v;
+  v << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
 
   Matrix expected2(2, 2);
   expected2 << 0, -1, 1, 0;
   const auto actual2 = SOn::Hat(v.head<1>());
-  CHECK(assert_equal(expected2, actual2));
-  CHECK(assert_equal((Vector)v.head<1>(), SOn::Vee(actual2)));
+  EXPECT(assert_equal(expected2, actual2));
+  EXPECT(assert_equal((Vector)v.head<1>(), SOn::Vee(actual2)));
 
   Matrix expected3(3, 3);
-  expected3 << 0, -3, 2,  //
-      3, 0, -1,           //
-      -2, 1, 0;
+  expected3 << 0, -3,  2, //
+               3,  0, -1, //
+              -2,  1,  0;
   const auto actual3 = SOn::Hat(v.head<3>());
-  CHECK(assert_equal(expected3, actual3));
-  CHECK(assert_equal(skewSymmetric(1, 2, 3), actual3));
-  CHECK(assert_equal((Vector)v.head<3>(), SOn::Vee(actual3)));
+  EXPECT(assert_equal(expected3, actual3));
+  EXPECT(assert_equal(skewSymmetric(1, 2, 3), actual3));
+  EXPECT(assert_equal((Vector)v.head<3>(), SOn::Vee(actual3)));
 
   Matrix expected4(4, 4);
-  expected4 << 0, -6, 5, -3,  //
-      6, 0, -4, 2,            //
-      -5, 4, 0, -1,           //
-      3, -2, 1, 0;
-  const auto actual4 = SOn::Hat(v);
-  CHECK(assert_equal(expected4, actual4));
-  CHECK(assert_equal((Vector)v, SOn::Vee(actual4)));
+  expected4 << 0, -6,  5,  3, //
+               6,  0, -4, -2, //
+              -5,  4,  0,  1, //
+              -3,  2, -1,  0;
+  const auto actual4 = SOn::Hat(v.head<6>());
+  EXPECT(assert_equal(expected4, actual4));
+  EXPECT(assert_equal((Vector)v.head<6>(), SOn::Vee(actual4)));
+
+  Matrix expected5(5, 5);
+  expected5 << 0,-10,  9,  7, -4, //
+              10,  0, -8, -6,  3, //
+              -9,  8,  0,  5, -2, //
+              -7,  6, -5,  0,  1, //
+               4, -3,  2, -1,  0;
+  const auto actual5 = SOn::Hat(v);
+  EXPECT(assert_equal(expected5, actual5));
+  EXPECT(assert_equal((Vector)v, SOn::Vee(actual5)));
 }
 
 //******************************************************************************

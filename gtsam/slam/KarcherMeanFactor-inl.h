@@ -20,7 +20,6 @@
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/KarcherMeanFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 
 using namespace std;
 
@@ -33,7 +32,7 @@ T FindKarcherMeanImpl(const vector<T, ALLOC>& rotations) {
   NonlinearFactorGraph graph;
   static const Key kKey(0);
   for (const auto& R : rotations) {
-    graph.emplace_shared<PriorFactor<T> >(kKey, R);
+    graph.addPrior<T>(kKey, R);
   }
   Values initial;
   initial.insert<T>(kKey, T());

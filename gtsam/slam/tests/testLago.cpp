@@ -22,7 +22,6 @@
 #include <gtsam/slam/lago.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
 
@@ -61,7 +60,7 @@ NonlinearFactorGraph graph() {
   g.add(BetweenFactor<Pose2>(x2, x3, pose2.between(pose3), model));
   g.add(BetweenFactor<Pose2>(x2, x0, pose2.between(pose0), model));
   g.add(BetweenFactor<Pose2>(x0, x3, pose0.between(pose3), model));
-  g.add(PriorFactor<Pose2>(x0, pose0, model));
+  g.addPrior(x0, pose0, model);
   return g;
 }
 }
@@ -167,7 +166,7 @@ TEST( Lago, smallGraphVectorValuesSP ) {
 TEST( Lago, multiplePosePriors ) {
   bool useOdometricPath = false;
   NonlinearFactorGraph g = simpleLago::graph();
-  g.add(PriorFactor<Pose2>(x1, simpleLago::pose1, model));
+  g.addPrior(x1, simpleLago::pose1, model);
   VectorValues initial = lago::initializeOrientations(g, useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
@@ -180,7 +179,7 @@ TEST( Lago, multiplePosePriors ) {
 /* *************************************************************************** */
 TEST( Lago, multiplePosePriorsSP ) {
   NonlinearFactorGraph g = simpleLago::graph();
-  g.add(PriorFactor<Pose2>(x1, simpleLago::pose1, model));
+  g.addPrior(x1, simpleLago::pose1, model);
   VectorValues initial = lago::initializeOrientations(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
@@ -194,7 +193,7 @@ TEST( Lago, multiplePosePriorsSP ) {
 TEST( Lago, multiplePoseAndRotPriors ) {
   bool useOdometricPath = false;
   NonlinearFactorGraph g = simpleLago::graph();
-  g.add(PriorFactor<Rot2>(x1, simpleLago::pose1.theta(), model));
+  g.addPrior(x1, simpleLago::pose1.theta(), model);
   VectorValues initial = lago::initializeOrientations(g, useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
@@ -207,7 +206,7 @@ TEST( Lago, multiplePoseAndRotPriors ) {
 /* *************************************************************************** */
 TEST( Lago, multiplePoseAndRotPriorsSP ) {
   NonlinearFactorGraph g = simpleLago::graph();
-  g.add(PriorFactor<Rot2>(x1, simpleLago::pose1.theta(), model));
+  g.addPrior(x1, simpleLago::pose1.theta(), model);
   VectorValues initial = lago::initializeOrientations(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
@@ -267,7 +266,7 @@ TEST( Lago, largeGraphNoisy_orientations ) {
   // Add prior on the pose having index (key) = 0
   NonlinearFactorGraph graphWithPrior = *g;
   noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances(Vector3(1e-2, 1e-2, 1e-4));
-  graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
+  graphWithPrior.addPrior(0, Pose2(), priorModel);
 
   VectorValues actualVV = lago::initializeOrientations(graphWithPrior);
   Values actual;
@@ -302,7 +301,7 @@ TEST( Lago, largeGraphNoisy ) {
   // Add prior on the pose having index (key) = 0
   NonlinearFactorGraph graphWithPrior = *g;
   noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances(Vector3(1e-2, 1e-2, 1e-4));
-  graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
+  graphWithPrior.addPrior(0, Pose2(), priorModel);
 
   Values actual = lago::initialize(graphWithPrior);
 

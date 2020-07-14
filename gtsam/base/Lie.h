@@ -170,7 +170,7 @@ namespace internal {
 /// Assumes existence of: identity, dimension, localCoordinates, retract,
 /// and additionally Logmap, Expmap, compose, between, and inverse
 template<class Class>
-struct LieGroupTraits {
+struct LieGroupTraits: GetDimensionImpl<Class, Class::dimension> {
   typedef lie_group_tag structure_category;
 
   /// @name Group
@@ -185,8 +185,6 @@ struct LieGroupTraits {
   enum { dimension = Class::dimension };
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
-
-  static int GetDimension(const Class&) {return dimension;}
 
   static TangentVector Local(const Class& origin, const Class& other,
       ChartJacobian Horigin = boost::none, ChartJacobian Hother = boost::none) {

@@ -68,10 +68,10 @@ TEST(NoiseModel, constructors)
   for(Gaussian::shared_ptr mi: m)
     EXPECT(assert_equal(unwhitened,mi->unwhiten(whitened)));
 
-  // test Mahalanobis distance
+  // test squared Mahalanobis distance
   double distance = 5*5+10*10+15*15;
   for(Gaussian::shared_ptr mi: m)
-    DOUBLES_EQUAL(distance,mi->Mahalanobis(unwhitened),1e-9);
+    DOUBLES_EQUAL(distance,mi->squaredMahalanobisDistance(unwhitened),1e-9);
 
   // test R matrix
   for(Gaussian::shared_ptr mi: m)
@@ -182,8 +182,9 @@ TEST(NoiseModel, ConstrainedMixed )
   EXPECT(assert_equal(Vector3(0.5, 1.0, 0.5),d->whiten(infeasible)));
   EXPECT(assert_equal(Vector3(0.5, 0.0, 0.5),d->whiten(feasible)));
 
-  DOUBLES_EQUAL(1000.0 + 0.25 + 0.25,d->distance(infeasible),1e-9);
-  DOUBLES_EQUAL(0.5,d->distance(feasible),1e-9);
+  DOUBLES_EQUAL(0.5 * (1000.0 + 0.25 + 0.25),d->loss(d->squaredMahalanobisDistance(infeasible)),1e-9);
+  DOUBLES_EQUAL(0.5, d->squaredMahalanobisDistance(feasible),1e-9);
+  DOUBLES_EQUAL(0.5 * 0.5, d->loss(0.5),1e-9);
 }
 
 /* ************************************************************************* */
@@ -197,8 +198,9 @@ TEST(NoiseModel, ConstrainedAll )
   EXPECT(assert_equal(Vector3(1.0, 1.0, 1.0),i->whiten(infeasible)));
   EXPECT(assert_equal(Vector3(0.0, 0.0, 0.0),i->whiten(feasible)));
 
-  DOUBLES_EQUAL(1000.0 * 3.0,i->distance(infeasible),1e-9);
-  DOUBLES_EQUAL(0.0,i->distance(feasible),1e-9);
+  DOUBLES_EQUAL(0.5 * 1000.0 * 3.0,i->loss(i->squaredMahalanobisDistance(infeasible)),1e-9);
+  DOUBLES_EQUAL(0.0, i->squaredMahalanobisDistance(feasible), 1e-9);
+  DOUBLES_EQUAL(0.0, i->loss(0.0),1e-9);
 }
 
 /* ************************************************************************* */
@@ -451,7 +453,7 @@ TEST(NoiseModel, WhitenInPlace)
 
 /*
  * These tests are responsible for testing the weight functions for the m-estimators in GTSAM.
- * The weight function is related to the analytic derivative of the residual function. See
+ * The weight function is related to the analytic derivative of the loss function. See
  *  https://members.loria.fr/MOBerger/Enseignement/Master2/Documents/ZhangIVC-97-01.pdf
  * for details. This weight function is required when optimizing cost functions with robust
  * penalties using iteratively re-weighted least squares.
@@ -467,10 +469,10 @@ TEST(NoiseModel, robustFunctionFair)
   DOUBLES_EQUAL(0.3333333333333333, fair->weight(error3), 1e-8);
   DOUBLES_EQUAL(0.8333333333333333, fair->weight(error4), 1e-8);
 
-  DOUBLES_EQUAL(0.441961080151135, fair->residual(error1), 1e-8);
-  DOUBLES_EQUAL(22.534692783297260, fair->residual(error2), 1e-8);
-  DOUBLES_EQUAL(22.534692783297260, fair->residual(error3), 1e-8);
-  DOUBLES_EQUAL(0.441961080151135, fair->residual(error4), 1e-8);
+  DOUBLES_EQUAL(0.441961080151135, fair->loss(error1), 1e-8);
+  DOUBLES_EQUAL(22.534692783297260, fair->loss(error2), 1e-8);
+  DOUBLES_EQUAL(22.534692783297260, fair->loss(error3), 1e-8);
+  DOUBLES_EQUAL(0.441961080151135, fair->loss(error4), 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionHuber)
@@ -483,10 +485,10 @@ TEST(NoiseModel, robustFunctionHuber)
   DOUBLES_EQUAL(0.5, huber->weight(error3), 1e-8);
   DOUBLES_EQUAL(1.0, huber->weight(error4), 1e-8);
 
-  DOUBLES_EQUAL(0.5000, huber->residual(error1), 1e-8);
-  DOUBLES_EQUAL(37.5000, huber->residual(error2), 1e-8);
-  DOUBLES_EQUAL(37.5000, huber->residual(error3), 1e-8);
-  DOUBLES_EQUAL(0.5000, huber->residual(error4), 1e-8);
+  DOUBLES_EQUAL(0.5000, huber->loss(error1), 1e-8);
+  DOUBLES_EQUAL(37.5000, huber->loss(error2), 1e-8);
+  DOUBLES_EQUAL(37.5000, huber->loss(error3), 1e-8);
+  DOUBLES_EQUAL(0.5000, huber->loss(error4), 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionCauchy)
@@ -499,10 +501,10 @@ TEST(NoiseModel, robustFunctionCauchy)
   DOUBLES_EQUAL(0.2000, cauchy->weight(error3), 1e-8);
   DOUBLES_EQUAL(0.961538461538461, cauchy->weight(error4), 1e-8);
 
-  DOUBLES_EQUAL(0.490258914416017, cauchy->residual(error1), 1e-8);
-  DOUBLES_EQUAL(20.117973905426254, cauchy->residual(error2), 1e-8);
-  DOUBLES_EQUAL(20.117973905426254, cauchy->residual(error3), 1e-8);
-  DOUBLES_EQUAL(0.490258914416017, cauchy->residual(error4), 1e-8);
+  DOUBLES_EQUAL(0.490258914416017, cauchy->loss(error1), 1e-8);
+  DOUBLES_EQUAL(20.117973905426254, cauchy->loss(error2), 1e-8);
+  DOUBLES_EQUAL(20.117973905426254, cauchy->loss(error3), 1e-8);
+  DOUBLES_EQUAL(0.490258914416017, cauchy->loss(error4), 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionGemanMcClure)
@@ -514,10 +516,10 @@ TEST(NoiseModel, robustFunctionGemanMcClure)
   DOUBLES_EQUAL(9.80296e-5, gmc->weight(error3), 1e-8);
   DOUBLES_EQUAL(0.25      , gmc->weight(error4), 1e-8);
 
-  DOUBLES_EQUAL(0.2500, gmc->residual(error1), 1e-8);
-  DOUBLES_EQUAL(0.495049504950495, gmc->residual(error2), 1e-8);
-  DOUBLES_EQUAL(0.495049504950495, gmc->residual(error3), 1e-8);
-  DOUBLES_EQUAL(0.2500, gmc->residual(error4), 1e-8);
+  DOUBLES_EQUAL(0.2500, gmc->loss(error1), 1e-8);
+  DOUBLES_EQUAL(0.495049504950495, gmc->loss(error2), 1e-8);
+  DOUBLES_EQUAL(0.495049504950495, gmc->loss(error3), 1e-8);
+  DOUBLES_EQUAL(0.2500, gmc->loss(error4), 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionWelsch)
@@ -530,10 +532,10 @@ TEST(NoiseModel, robustFunctionWelsch)
   DOUBLES_EQUAL(0.018315638888734, welsch->weight(error3), 1e-8);
   DOUBLES_EQUAL(0.960789439152323, welsch->weight(error4), 1e-8);
 
-  DOUBLES_EQUAL(0.490132010595960, welsch->residual(error1), 1e-8);
-  DOUBLES_EQUAL(12.271054513890823, welsch->residual(error2), 1e-8);
-  DOUBLES_EQUAL(12.271054513890823, welsch->residual(error3), 1e-8);
-  DOUBLES_EQUAL(0.490132010595960, welsch->residual(error4), 1e-8);
+  DOUBLES_EQUAL(0.490132010595960, welsch->loss(error1), 1e-8);
+  DOUBLES_EQUAL(12.271054513890823, welsch->loss(error2), 1e-8);
+  DOUBLES_EQUAL(12.271054513890823, welsch->loss(error3), 1e-8);
+  DOUBLES_EQUAL(0.490132010595960, welsch->loss(error4), 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionTukey)
@@ -546,10 +548,10 @@ TEST(NoiseModel, robustFunctionTukey)
   DOUBLES_EQUAL(0.0, tukey->weight(error3), 1e-8);
   DOUBLES_EQUAL(0.9216, tukey->weight(error4), 1e-8);
 
-  DOUBLES_EQUAL(0.480266666666667, tukey->residual(error1), 1e-8);
-  DOUBLES_EQUAL(4.166666666666667, tukey->residual(error2), 1e-8);
-  DOUBLES_EQUAL(4.166666666666667, tukey->residual(error3), 1e-8);
-  DOUBLES_EQUAL(0.480266666666667, tukey->residual(error4), 1e-8);
+  DOUBLES_EQUAL(0.480266666666667, tukey->loss(error1), 1e-8);
+  DOUBLES_EQUAL(4.166666666666667, tukey->loss(error2), 1e-8);
+  DOUBLES_EQUAL(4.166666666666667, tukey->loss(error3), 1e-8);
+  DOUBLES_EQUAL(0.480266666666667, tukey->loss(error4), 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionDCS)
@@ -560,8 +562,8 @@ TEST(NoiseModel, robustFunctionDCS)
   DOUBLES_EQUAL(1.0       , dcs->weight(error1), 1e-8);
   DOUBLES_EQUAL(0.00039211, dcs->weight(error2), 1e-8);
 
-  DOUBLES_EQUAL(0.5         , dcs->residual(error1), 1e-8);
-  DOUBLES_EQUAL(0.9900990099, dcs->residual(error2), 1e-8);
+  DOUBLES_EQUAL(0.5         , dcs->loss(error1), 1e-8);
+  DOUBLES_EQUAL(0.9900990099, dcs->loss(error2), 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionL2WithDeadZone)
@@ -576,12 +578,12 @@ TEST(NoiseModel, robustFunctionL2WithDeadZone)
   DOUBLES_EQUAL(0.00990099009, lsdz->weight(e4), 1e-8);
   DOUBLES_EQUAL(0.9,           lsdz->weight(e5), 1e-8);
 
-  DOUBLES_EQUAL(40.5,    lsdz->residual(e0), 1e-8);
-  DOUBLES_EQUAL(0.00005, lsdz->residual(e1), 1e-8);
-  DOUBLES_EQUAL(0.0,     lsdz->residual(e2), 1e-8);
-  DOUBLES_EQUAL(0.0,     lsdz->residual(e3), 1e-8);
-  DOUBLES_EQUAL(0.00005, lsdz->residual(e4), 1e-8);
-  DOUBLES_EQUAL(40.5,    lsdz->residual(e5), 1e-8);
+  DOUBLES_EQUAL(40.5,    lsdz->loss(e0), 1e-8);
+  DOUBLES_EQUAL(0.00005, lsdz->loss(e1), 1e-8);
+  DOUBLES_EQUAL(0.0,     lsdz->loss(e2), 1e-8);
+  DOUBLES_EQUAL(0.0,     lsdz->loss(e3), 1e-8);
+  DOUBLES_EQUAL(0.00005, lsdz->loss(e4), 1e-8);
+  DOUBLES_EQUAL(40.5,    lsdz->loss(e5), 1e-8);
 }
 
 /* ************************************************************************* */
@@ -665,11 +667,11 @@ TEST(NoiseModel, robustNoiseL2WithDeadZone)
 
 /*
  * TODO(mike): There is currently a bug in GTSAM, where none of the mEstimator classes
- * implement a residual function, and GTSAM calls the weight function to evaluate the
- * total penalty, rather than calling the residual function. The weight function should be
+ * implement a loss function, and GTSAM calls the weight function to evaluate the
+ * total penalty, rather than calling the loss function. The weight function should be
  * used during iteratively reweighted least squares optimization, but should not be used to
  * evaluate the total penalty. The long-term solution is for all mEstimators to implement
- * both a weight and a residual function, and for GTSAM to call the residual function when
+ * both a weight and a loss function, and for GTSAM to call the loss function when
  * evaluating the total penalty. This bug causes the test below to fail, so I'm leaving it
  * commented out until the underlying bug in GTSAM is fixed.
  *
@@ -681,13 +683,44 @@ TEST(NoiseModel, robustNoiseL2WithDeadZone)
 
 }
 
+TEST(NoiseModel, lossFunctionAtZero)
+{
+  const double k = 5.0;
+  auto fair = mEstimator::Fair::Create(k);
+  DOUBLES_EQUAL(fair->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(fair->weight(0), 1, 1e-8);
+  auto huber = mEstimator::Huber::Create(k);
+  DOUBLES_EQUAL(huber->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(huber->weight(0), 1, 1e-8);
+  auto cauchy = mEstimator::Cauchy::Create(k);
+  DOUBLES_EQUAL(cauchy->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(cauchy->weight(0), 1, 1e-8);
+  auto gmc = mEstimator::GemanMcClure::Create(k);
+  DOUBLES_EQUAL(gmc->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(gmc->weight(0), 1, 1e-8);
+  auto welsch = mEstimator::Welsch::Create(k);
+  DOUBLES_EQUAL(welsch->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(welsch->weight(0), 1, 1e-8);
+  auto tukey = mEstimator::Tukey::Create(k);
+  DOUBLES_EQUAL(tukey->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(tukey->weight(0), 1, 1e-8);
+  auto dcs = mEstimator::DCS::Create(k);
+  DOUBLES_EQUAL(dcs->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(dcs->weight(0), 1, 1e-8);
+  // auto lsdz = mEstimator::L2WithDeadZone::Create(k);
+  // DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
+  // DOUBLES_EQUAL(lsdz->weight(0), 1, 1e-8);
+}
+
+
 /* ************************************************************************* */
 #define TEST_GAUSSIAN(gaussian)\
   EQUALITY(info, gaussian->information());\
   EQUALITY(cov, gaussian->covariance());\
   EXPECT(assert_equal(white, gaussian->whiten(e)));\
   EXPECT(assert_equal(e, gaussian->unwhiten(white)));\
-  EXPECT_DOUBLES_EQUAL(251, gaussian->distance(e), 1e-9);\
+  EXPECT_DOUBLES_EQUAL(251.0, gaussian->squaredMahalanobisDistance(e), 1e-9);\
+  EXPECT_DOUBLES_EQUAL(0.5 * 251.0, gaussian->loss(251.0), 1e-9);\
   Matrix A = R.inverse(); Vector b = e;\
   gaussian->WhitenSystem(A, b);\
   EXPECT(assert_equal(I, A));\

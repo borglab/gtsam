@@ -17,6 +17,7 @@
  *  @author Vadim Indelman
  *  @author David Jensen
  *  @author Frank Dellaert
+ *  @author Varun Agrawal
  **/
 
 #pragma once
@@ -26,6 +27,7 @@
 #include <gtsam/navigation/TangentPreintegration.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/serialization.h>
 
 namespace gtsam {
 
@@ -61,10 +63,18 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
   Matrix3 biasOmegaCovariance;  ///< continuous-time "Covariance" describing gyroscope bias random walk
   Matrix6 biasAccOmegaInt;     ///< covariance of bias used for pre-integration
 
+  /// Default constructor makes uninitialized params struct.
+  /// Used for serialization.
+  PreintegrationCombinedParams()
+      : biasAccCovariance(I_3x3),
+        biasOmegaCovariance(I_3x3),
+        biasAccOmegaInt(I_6x6) {}
+
   /// See two named constructors below for good values of n_gravity in body frame
-PreintegrationCombinedParams(const Vector3& n_gravity) :
-  PreintegrationParams(n_gravity), biasAccCovariance(I_3x3), biasOmegaCovariance(
-    I_3x3), biasAccOmegaInt(I_6x6) {
+  PreintegrationCombinedParams(const Vector3& n_gravity) :
+    PreintegrationParams(n_gravity), biasAccCovariance(I_3x3),
+    biasOmegaCovariance(I_3x3), biasAccOmegaInt(I_6x6) {
+
   }
 
   // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
@@ -77,6 +87,9 @@ PreintegrationCombinedParams(const Vector3& n_gravity) :
     return boost::shared_ptr<PreintegrationCombinedParams>(new PreintegrationCombinedParams(Vector3(0, 0, -g)));
   }
 
+  void print(const std::string& s="") const;
+  bool equals(const PreintegratedRotationParams& other, double tol) const;
+
   void setBiasAccCovariance(const Matrix3& cov) { biasAccCovariance=cov; }
   void setBiasOmegaCovariance(const Matrix3& cov) { biasOmegaCovariance=cov; }
   void setBiasAccOmegaInt(const Matrix6& cov) { biasAccOmegaInt=cov; }
@@ -86,23 +99,21 @@ PreintegrationCombinedParams(const Vector3& n_gravity) :
   const Matrix6& getBiasAccOmegaInt() const { return biasAccOmegaInt; }
   
 private:
-  /// Default constructor makes unitialized params struct
-  PreintegrationCombinedParams() {}
 
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
-    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation::Params);
-    ar& BOOST_SERIALIZATION_NVP(biasAccCovariance);
-    ar& BOOST_SERIALIZATION_NVP(biasOmegaCovariance);
-    ar& BOOST_SERIALIZATION_NVP(biasAccOmegaInt);
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    namespace bs = ::boost::serialization;
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationParams);
+    ar & BOOST_SERIALIZATION_NVP(biasAccCovariance);
+    ar & BOOST_SERIALIZATION_NVP(biasOmegaCovariance);
+    ar & BOOST_SERIALIZATION_NVP(biasAccOmegaInt);
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
-
 
 /**
  * PreintegratedCombinedMeasurements integrates the IMU measurements
@@ -128,7 +139,6 @@ public:
    */
   Eigen::Matrix<double, 15, 15> preintMeasCov_;
 
-
   friend class CombinedImuFactor;
 
  public:
@@ -136,11 +146,14 @@ public:
   /// @{
 
   /// Default constructor only for serialization and Cython wrapper
-  PreintegratedCombinedMeasurements() {}
+  PreintegratedCombinedMeasurements() {
+    preintMeasCov_.setZero();
+  }
 
   /**
    *  Default constructor, initializes the class with no measurements
-   *  @param bias Current estimate of acceleration and rotation rate biases
+   *  @param p       Parameters, typically fixed in a single application
+   *  @param biasHat Current estimate of acceleration and rotation rate biases
    */
   PreintegratedCombinedMeasurements(
       const boost::shared_ptr<Params>& p,
@@ -148,6 +161,19 @@ public:
       : PreintegrationType(p, biasHat) {
     preintMeasCov_.setZero();
   }
+
+  /**
+  *  Construct preintegrated directly from members: base class and preintMeasCov
+  *  @param base               PreintegrationType instance
+  *  @param preintMeasCov      Covariance matrix used in noise model.
+  */
+  PreintegratedCombinedMeasurements(const PreintegrationType& base, const Eigen::Matrix<double, 15, 15>& preintMeasCov)
+     : PreintegrationType(base),
+       preintMeasCov_(preintMeasCov) {
+  }
+
+  /// Virtual destructor
+  virtual ~PreintegratedCombinedMeasurements() {}
 
   /// @}
 
@@ -158,19 +184,24 @@ public:
   void resetIntegration() override;
 
   /// const reference to params, shadows definition in base class
-  Params& p() const { return *boost::static_pointer_cast<Params>(this->p_);}
+  Params& p() const { return *boost::static_pointer_cast<Params>(this->p_); }
   /// @}
 
   /// @name Access instance variables
   /// @{
+  /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }
   /// @}
 
   /// @name Testable
   /// @{
+  /// print
   void print(const std::string& s = "Preintegrated Measurements:") const override;
-  bool equals(const PreintegratedCombinedMeasurements& expected, double tol = 1e-9) const;
+  /// equals
+  bool equals(const PreintegratedCombinedMeasurements& expected,
+              double tol = 1e-9) const;
   /// @}
+
 
   /// @name Main functionality
   /// @{
@@ -205,12 +236,13 @@ public:
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    namespace bs = ::boost::serialization;
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
     ar& BOOST_SERIALIZATION_NVP(preintMeasCov_);
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -244,9 +276,6 @@ private:
 
   PreintegratedCombinedMeasurements _PIM_;
 
-  /** Default constructor - only use for serialization */
-  CombinedImuFactor() {}
-
 public:
 
   /** Shorthand for a smart pointer to a factor */
@@ -255,6 +284,9 @@ public:
 #else
   typedef boost::shared_ptr<CombinedImuFactor> shared_ptr;
 #endif
+
+  /** Default constructor - only use for serialization */
+  CombinedImuFactor() {}
 
   /**
    * Constructor
@@ -277,12 +309,17 @@ public:
 
   /** implement functions needed for Testable */
 
+  /// @name Testable
+  /// @{
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                               const CombinedImuFactor&);
   /// print
   virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const;
 
   /// equals
   virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  /// @}
 
   /** Access the preintegrated measurements. */
 
@@ -321,19 +358,31 @@ public:
 #endif
 
 private:
-
   /** Serialization function */
   friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor6",
-         boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(_PIM_);
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(NoiseModelFactor6);
+    ar& BOOST_SERIALIZATION_NVP(_PIM_);
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // class CombinedImuFactor
 
-} /// namespace gtsam
+template <>
+struct traits<PreintegrationCombinedParams>
+    : public Testable<PreintegrationCombinedParams> {};
+
+template <>
+struct traits<PreintegratedCombinedMeasurements>
+    : public Testable<PreintegratedCombinedMeasurements> {};
+
+template <>
+struct traits<CombinedImuFactor> : public Testable<CombinedImuFactor> {};
+
+}  // namespace gtsam
+
+/// Add Boost serialization export key (declaration) for derived class
+BOOST_CLASS_EXPORT_KEY(gtsam::PreintegrationCombinedParams);

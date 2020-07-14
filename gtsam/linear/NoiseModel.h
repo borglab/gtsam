@@ -90,7 +90,27 @@ namespace gtsam {
       /// Unwhiten an error vector.
       virtual Vector unwhiten(const Vector& v) const = 0;
 
-      virtual double distance(const Vector& v) const = 0;
+      /// Squared Mahalanobis distance v'*R'*R*v = <R*v,R*v>
+      virtual double squaredMahalanobisDistance(const Vector& v) const;
+
+      /// Mahalanobis distance
+      virtual double mahalanobisDistance(const Vector& v) const {
+        return std::sqrt(squaredMahalanobisDistance(v));
+      }
+
+      /// loss function, input is Mahalanobis distance
+      virtual double loss(const double squared_distance) const {
+        return 0.5 * squared_distance;
+      }
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+      /// calculate the error value given measurement error vector
+      virtual double error(const Vector& v) const = 0;
+
+      virtual double distance(const Vector& v) {
+        return error(v) * 2;
+      }      
+#endif
 
       virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const = 0;
       virtual void WhitenSystem(Matrix& A, Vector& b) const = 0;
@@ -200,26 +220,30 @@ namespace gtsam {
        */
       static shared_ptr Covariance(const Matrix& covariance, bool smart = true);
 
-      virtual void print(const std::string& name) const;
-      virtual bool equals(const Base& expected, double tol=1e-9) const;
-      virtual Vector sigmas() const;
-      virtual Vector whiten(const Vector& v) const;
-      virtual Vector unwhiten(const Vector& v) const;
+      void print(const std::string& name) const override;
+      bool equals(const Base& expected, double tol=1e-9) const override;
+      Vector sigmas() const override;
+      Vector whiten(const Vector& v) const override;
+      Vector unwhiten(const Vector& v) const override;
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+      virtual double Mahalanobis(const Vector& v) const {
+        return squaredMahalanobisDistance(v);
+      }
 
       /**
-       * Mahalanobis distance v'*R'*R*v = <R*v,R*v>
+       * error value 0.5 * v'*R'*R*v
        */
-      virtual double Mahalanobis(const Vector& v) const;
-
-      inline virtual double distance(const Vector& v) const {
-        return Mahalanobis(v);
+      inline double error(const Vector& v) const override {
+        return 0.5 * squaredMahalanobisDistance(v);
       }
+#endif
 
       /**
        * Multiply a derivative with R (derivative of whiten)
        * Equivalent to whitening each column of the input matrix.
        */
-      virtual Matrix Whiten(const Matrix& H) const;
+      Matrix Whiten(const Matrix& H) const override;
 
       /**
        * In-place version
@@ -234,10 +258,10 @@ namespace gtsam {
       /**
        * Whiten a system, in place as well
        */
-      virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const;
-      virtual void WhitenSystem(Matrix& A, Vector& b) const;
-      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const;
-      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const;
+      void WhitenSystem(std::vector<Matrix>& A, Vector& b) const override;
+      void WhitenSystem(Matrix& A, Vector& b) const override;
+      void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const override;
+      void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const override;
 
       /**
        * Apply appropriately weighted QR factorization to the system [A b]
@@ -257,7 +281,7 @@ namespace gtsam {
       virtual Matrix information() const { return R().transpose() * R(); }
 
       /// Compute covariance matrix
-      virtual Matrix covariance() const { return information().inverse(); }
+      virtual Matrix covariance() const;
 
     private:
       /** Serialization function */
@@ -322,13 +346,13 @@ namespace gtsam {
         return Variances(precisions.array().inverse(), smart);
       }
 
-      virtual void print(const std::string& name) const;
-      virtual Vector sigmas() const { return sigmas_; }
-      virtual Vector whiten(const Vector& v) const;
-      virtual Vector unwhiten(const Vector& v) const;
-      virtual Matrix Whiten(const Matrix& H) const;
-      virtual void WhitenInPlace(Matrix& H) const;
-      virtual void WhitenInPlace(Eigen::Block<Matrix> H) const;
+      void print(const std::string& name) const override;
+      Vector sigmas() const override { return sigmas_; }
+      Vector whiten(const Vector& v) const override;
+      Vector unwhiten(const Vector& v) const override;
+      Matrix Whiten(const Matrix& H) const override;
+      void WhitenInPlace(Matrix& H) const override;
+      void WhitenInPlace(Eigen::Block<Matrix> H) const override;
 
       /**
        * Return standard deviations (sqrt of diagonal)
@@ -350,7 +374,7 @@ namespace gtsam {
       /**
        * Return R itself, but note that Whiten(H) is cheaper than R*H
        */
-      virtual Matrix R() const {
+      Matrix R() const override {
         return invsigmas().asDiagonal();
       }
 
@@ -404,10 +428,10 @@ namespace gtsam {
 
       typedef boost::shared_ptr<Constrained> shared_ptr;
 
-      virtual ~Constrained() {}
+      ~Constrained() {}
 
       /// true if a constrained noise mode, saves slow/clumsy dynamic casting
-      virtual bool isConstrained() const { return true; }
+      bool isConstrained() const override { return true; }
 
       /// Return true if a particular dimension is free or constrained
       bool constrained(size_t i) const;
@@ -459,12 +483,16 @@ namespace gtsam {
         return MixedVariances(precisions.array().inverse());
       }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
       /**
-       * The distance function for a constrained noisemodel,
+       * The error function for a constrained noisemodel,
        * for non-constrained versions, uses sigmas, otherwise
        * uses the penalty function with mu
        */
-      virtual double distance(const Vector& v) const;
+      double error(const Vector& v) const override;
+#endif
+
+      double squaredMahalanobisDistance(const Vector& v) const override;
 
       /** Fully constrained variations */
       static shared_ptr All(size_t dim) {
@@ -481,16 +509,16 @@ namespace gtsam {
         return shared_ptr(new Constrained(Vector::Constant(dim, mu), Vector::Constant(dim,0)));
       }
 
-      virtual void print(const std::string& name) const;
+      void print(const std::string& name) const override;
 
       /// Calculates error vector with weights applied
-      virtual Vector whiten(const Vector& v) const;
+      Vector whiten(const Vector& v) const override;
 
       /// Whitening functions will perform partial whitening on rows
       /// with a non-zero sigma.  Other rows remain untouched.
-      virtual Matrix Whiten(const Matrix& H) const;
-      virtual void WhitenInPlace(Matrix& H) const;
-      virtual void WhitenInPlace(Eigen::Block<Matrix> H) const;
+      Matrix Whiten(const Matrix& H) const override;
+      void WhitenInPlace(Matrix& H) const override;
+      void WhitenInPlace(Eigen::Block<Matrix> H) const override;
 
       /**
        * Apply QR factorization to the system [A b], taking into account constraints
@@ -501,7 +529,7 @@ namespace gtsam {
        * @param Ab is the m*(n+1) augmented system matrix [A b]
        * @return diagonal noise model can be all zeros, mixed, or not-constrained
        */
-      virtual Diagonal::shared_ptr QR(Matrix& Ab) const;
+      Diagonal::shared_ptr QR(Matrix& Ab) const override;
 
       /**
        * Returns a Unit version of a constrained noisemodel in which
@@ -563,14 +591,14 @@ namespace gtsam {
         return Variance(dim, 1.0/precision, smart);
       }
 
-      virtual void print(const std::string& name) const;
-      virtual double Mahalanobis(const Vector& v) const;
-      virtual Vector whiten(const Vector& v) const;
-      virtual Vector unwhiten(const Vector& v) const;
-      virtual Matrix Whiten(const Matrix& H) const;
-      virtual void WhitenInPlace(Matrix& H) const;
-      virtual void whitenInPlace(Vector& v) const;
-      virtual void WhitenInPlace(Eigen::Block<Matrix> H) const;
+      void print(const std::string& name) const override;
+      double squaredMahalanobisDistance(const Vector& v) const override;
+      Vector whiten(const Vector& v) const override;
+      Vector unwhiten(const Vector& v) const override;
+      Matrix Whiten(const Matrix& H) const override;
+      void WhitenInPlace(Matrix& H) const override;
+      void whitenInPlace(Vector& v) const override;
+      void WhitenInPlace(Eigen::Block<Matrix> H) const override;
 
       /**
        * Return standard deviation
@@ -603,7 +631,7 @@ namespace gtsam {
 
       typedef boost::shared_ptr<Unit> shared_ptr;
 
-      virtual ~Unit() {}
+      ~Unit() {}
 
       /**
        * Create a unit covariance noise model
@@ -613,19 +641,19 @@ namespace gtsam {
       }
 
       /// true if a unit noise model, saves slow/clumsy dynamic casting
-      virtual bool isUnit() const { return true; }
+      bool isUnit() const override { return true; }
 
-      virtual void print(const std::string& name) const;
-      virtual double Mahalanobis(const Vector& v) const {return v.dot(v); }
-      virtual Vector whiten(const Vector& v) const { return v; }
-      virtual Vector unwhiten(const Vector& v) const { return v; }
-      virtual Matrix Whiten(const Matrix& H) const { return H; }
-      virtual void WhitenInPlace(Matrix& /*H*/) const {}
-      virtual void WhitenInPlace(Eigen::Block<Matrix> /*H*/) const {}
-      virtual void whitenInPlace(Vector& /*v*/) const {}
-      virtual void unwhitenInPlace(Vector& /*v*/) const {}
-      virtual void whitenInPlace(Eigen::Block<Vector>& /*v*/) const {}
-      virtual void unwhitenInPlace(Eigen::Block<Vector>& /*v*/) const {}
+      void print(const std::string& name) const override;
+      double squaredMahalanobisDistance(const Vector& v) const override {return v.dot(v); }
+      Vector whiten(const Vector& v) const override { return v; }
+      Vector unwhiten(const Vector& v) const override { return v; }
+      Matrix Whiten(const Matrix& H) const override { return H; }
+      void WhitenInPlace(Matrix& /*H*/) const override {}
+      void WhitenInPlace(Eigen::Block<Matrix> /*H*/) const override {}
+      void whitenInPlace(Vector& /*v*/) const override {}
+      void unwhitenInPlace(Vector& /*v*/) const override {}
+      void whitenInPlace(Eigen::Block<Vector>& /*v*/) const override {}
+      void unwhitenInPlace(Eigen::Block<Vector>& /*v*/) const override {}
 
     private:
       /** Serialization function */
@@ -674,10 +702,10 @@ namespace gtsam {
       : Base(noise->dim()), robust_(robust), noise_(noise) {}
 
       /// Destructor
-      virtual ~Robust() {}
+      ~Robust() {}
 
-      virtual void print(const std::string& name) const;
-      virtual bool equals(const Base& expected, double tol=1e-9) const;
+      void print(const std::string& name) const override;
+      bool equals(const Base& expected, double tol=1e-9) const override;
 
       /// Return the contained robust error function
       const RobustModel::shared_ptr& robust() const { return robust_; }
@@ -686,28 +714,36 @@ namespace gtsam {
       const NoiseModel::shared_ptr& noise() const { return noise_; }
 
       // TODO: functions below are dummy but necessary for the noiseModel::Base
-      inline virtual Vector whiten(const Vector& v) const
+      inline Vector whiten(const Vector& v) const override
       { Vector r = v; this->WhitenSystem(r); return r; }
-      inline virtual Matrix Whiten(const Matrix& A) const
+      inline Matrix Whiten(const Matrix& A) const override
       { Vector b; Matrix B=A; this->WhitenSystem(B,b); return B; }
-      inline virtual Vector unwhiten(const Vector& /*v*/) const
+      inline Vector unwhiten(const Vector& /*v*/) const override
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
-      // Fold the use of the m-estimator residual(...) function into distance(...)
-      inline virtual double distance(const Vector& v) const
-      { return robust_->residual(this->unweightedWhiten(v).norm()); }
-      inline virtual double distance_non_whitened(const Vector& v) const
-      { return robust_->residual(v.norm()); }
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+      inline double distance(const Vector& v) override {
+        return robust_->loss(this->unweightedWhiten(v).norm());
+      }
+      // Fold the use of the m-estimator loss(...) function into error(...)
+      inline double error(const Vector& v) const override
+      { return robust_->loss(noise_->mahalanobisDistance(v)); }
+#endif
+
+      double loss(const double squared_distance) const override {
+        return robust_->loss(std::sqrt(squared_distance));
+      }
+
       // TODO: these are really robust iterated re-weighting support functions
       virtual void WhitenSystem(Vector& b) const;
-      virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const;
-      virtual void WhitenSystem(Matrix& A, Vector& b) const;
-      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const;
-      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const;
+      void WhitenSystem(std::vector<Matrix>& A, Vector& b) const override;
+      void WhitenSystem(Matrix& A, Vector& b) const override;
+      void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const override;
+      void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const override;
 
-      virtual Vector unweightedWhiten(const Vector& v) const {
+      Vector unweightedWhiten(const Vector& v) const override {
         return noise_->unweightedWhiten(v);
       }
-      virtual double weight(const Vector& v) const {
+      double weight(const Vector& v) const override {
         // Todo(mikebosse): make the robust weight function input a vector.
         return robust_->weight(v.norm());
       }

@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
   Cal3_S2::shared_ptr K(new Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0));
 
   // Define the camera observation noise model
-  noiseModel::Isotropic::shared_ptr measurementNoise =
+  auto measurementNoise =
       noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
 
   // Create the set of ground-truth landmarks and poses
@@ -80,15 +80,15 @@ int main(int argc, char* argv[]) {
 
   // Add a prior on pose x0. This indirectly specifies where the origin is.
   // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-  noiseModel::Diagonal::shared_ptr noise = noiseModel::Diagonal::Sigmas(
+  auto noise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3)).finished());
-  graph.emplace_shared<PriorFactor<Pose3> >(0, poses[0], noise);
+  graph.addPrior(0, poses[0], noise);
 
   // Because the structure-from-motion problem has a scale ambiguity, the problem is
   // still under-constrained. Here we add a prior on the second pose x1, so this will
   // fix the scale by indicating the distance between x0 and x1.
   // Because these two are fixed, the rest of the poses will be also be fixed.
-  graph.emplace_shared<PriorFactor<Pose3> >(1, poses[1], noise); // add directly to graph
+  graph.addPrior(1, poses[1], noise); // add directly to graph
 
   graph.print("Factor Graph:\n");
 
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
       // The output of point() is in boost::optional<Point3>, as sometimes
       // the triangulation operation inside smart factor will encounter degeneracy.
       boost::optional<Point3> point = smart->point(result);
-      if (point) // ignore if boost::optional return NULL
+      if (point) // ignore if boost::optional return nullptr
         landmark_result.insert(j, *point);
     }
   }

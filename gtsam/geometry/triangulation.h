@@ -22,7 +22,6 @@
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/TriangulationFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
 
@@ -124,7 +123,17 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   return std::make_pair(graph, values);
 }
 
-/// PinholeCamera specific version // TODO: (chris) why does this exist?
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+/// DEPRECATED: PinholeCamera specific version
+template<class CALIBRATION>
+Point3 triangulateNonlinear(
+    const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
+    const Point2Vector& measurements, const Point3& initialEstimate) {
+  return triangulateNonlinear<PinholeCamera<CALIBRATION> > //
+  (cameras, measurements, initialEstimate);
+}
+
+/// DEPRECATED: PinholeCamera specific version
 template<class CALIBRATION>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
@@ -133,6 +142,7 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   return triangulationGraph<PinholeCamera<CALIBRATION> > //
   (cameras, measurements, landmarkKey, initialEstimate);
 }
+#endif
 
 /**
  * Optimize for triangulation
@@ -187,15 +197,6 @@ Point3 triangulateNonlinear(
   return optimize(graph, values, Symbol('p', 0));
 }
 
-/// PinholeCamera specific version  // TODO: (chris) why does this exist?
-template<class CALIBRATION>
-Point3 triangulateNonlinear(
-    const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
-    const Point2Vector& measurements, const Point3& initialEstimate) {
-  return triangulateNonlinear<PinholeCamera<CALIBRATION> > //
-  (cameras, measurements, initialEstimate);
-}
-
 /**
  * Create a 3*4 camera projection matrix from calibration and pose.
  * Functor for partial application on calibration
@@ -214,7 +215,7 @@ struct CameraProjectionMatrix {
 private:
   const Matrix3 K_;
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**

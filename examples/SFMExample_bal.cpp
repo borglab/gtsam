@@ -19,7 +19,6 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/dataset.h> // for loading BAL datasets !
 #include <vector>
@@ -50,7 +49,7 @@ int main (int argc, char* argv[]) {
   NonlinearFactorGraph graph;
 
   // We share *one* noiseModel between all projection factors
-  noiseModel::Isotropic::shared_ptr noise =
+  auto noise =
       noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
 
   // Add measurements to the factor graph
@@ -66,8 +65,8 @@ int main (int argc, char* argv[]) {
 
   // Add a prior on pose x1. This indirectly specifies where the origin is.
   // and a prior on the position of the first landmark to fix the scale
-  graph.emplace_shared<PriorFactor<SfmCamera> >(C(0), mydata.cameras[0],  noiseModel::Isotropic::Sigma(9, 0.1));
-  graph.emplace_shared<PriorFactor<Point3> >    (P(0), mydata.tracks[0].p, noiseModel::Isotropic::Sigma(3, 0.1));
+  graph.addPrior(C(0), mydata.cameras[0],  noiseModel::Isotropic::Sigma(9, 0.1));
+  graph.addPrior(P(0), mydata.tracks[0].p, noiseModel::Isotropic::Sigma(3, 0.1));
 
   // Create initial estimate
   Values initial;

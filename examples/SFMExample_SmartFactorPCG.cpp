@@ -35,13 +35,12 @@ typedef PinholePose<Cal3_S2> Camera;
 
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
-
   // Define the camera calibration parameters
   Cal3_S2::shared_ptr K(new Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0));
 
   // Define the camera observation noise model
-  noiseModel::Isotropic::shared_ptr measurementNoise =
-      noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
+  auto measurementNoise =
+      noiseModel::Isotropic::Sigma(2, 1.0);  // one pixel in u and v
 
   // Create the set of ground-truth landmarks and poses
   vector<Point3> points = createPoints();
@@ -52,17 +51,16 @@ int main(int argc, char* argv[]) {
 
   // Simulated measurements from each camera pose, adding them to the factor graph
   for (size_t j = 0; j < points.size(); ++j) {
-
-    // every landmark represent a single landmark, we use shared pointer to init the factor, and then insert measurements.
+    // every landmark represent a single landmark, we use shared pointer to init
+    // the factor, and then insert measurements.
     SmartFactor::shared_ptr smartfactor(new SmartFactor(measurementNoise, K));
 
     for (size_t i = 0; i < poses.size(); ++i) {
-
       // generate the 2D measurement
       Camera camera(poses[i], K);
       Point2 measurement = camera.project(points[j]);
 
-      // call add() function to add measurement into a single factor, here we need to add:
+      // call add() function to add measurement into a single factor
       smartfactor->add(measurement, i);
     }
 
@@ -72,12 +70,12 @@ int main(int argc, char* argv[]) {
 
   // Add a prior on pose x0. This indirectly specifies where the origin is.
   // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-  noiseModel::Diagonal::shared_ptr noise = noiseModel::Diagonal::Sigmas(
+  auto noise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3)).finished());
-  graph.emplace_shared<PriorFactor<Pose3> >(0, poses[0], noise);
+  graph.addPrior(0, poses[0], noise);
 
   // Fix the scale ambiguity by adding a prior
-  graph.emplace_shared<PriorFactor<Pose3> >(1, poses[0], noise);
+  graph.addPrior(1, poses[0], noise);
 
   // Create the initial estimate to the solution
   Values initialEstimate;
@@ -85,9 +83,9 @@ int main(int argc, char* argv[]) {
   for (size_t i = 0; i < poses.size(); ++i)
     initialEstimate.insert(i, poses[i].compose(delta));
 
-  // We will use LM in the outer optimization loop, but by specifying "Iterative" below
-  // We indicate that an iterative linear solver should be used.
-  // In addition, the *type* of the iterativeParams decides on the type of
+  // We will use LM in the outer optimization loop, but by specifying
+  // "Iterative" below We indicate that an iterative linear solver should be
+  // used. In addition, the *type* of the iterativeParams decides on the type of
   // iterative solver, in this case the SPCG (subgraph PCG)
   LevenbergMarquardtParams parameters;
   parameters.linearSolverType = NonlinearOptimizerParams::Iterative;
@@ -110,11 +108,10 @@ int main(int argc, char* argv[]) {
   result.print("Final results:\n");
   Values landmark_result;
   for (size_t j = 0; j < points.size(); ++j) {
-    SmartFactor::shared_ptr smart = //
-        boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
+    auto smart = boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
     if (smart) {
       boost::optional<Point3> point = smart->point(result);
-      if (point) // ignore if boost::optional return NULL
+      if (point)  // ignore if boost::optional return nullptr
         landmark_result.insert(j, *point);
     }
   }

@@ -21,7 +21,6 @@
 
 #include <gtsam/slam/lago.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/geometry/Pose2.h>
 #include <fstream>
 
@@ -29,7 +28,6 @@ using namespace std;
 using namespace gtsam;
 
 int main(const int argc, const char *argv[]) {
-
   // Read graph from file
   string g2oFile;
   if (argc < 2)
@@ -42,9 +40,8 @@ int main(const int argc, const char *argv[]) {
   boost::tie(graph, initial) = readG2o(g2oFile);
 
   // Add prior on the pose having index (key) = 0
-  noiseModel::Diagonal::shared_ptr priorModel = //
-      noiseModel::Diagonal::Variances(Vector3(1e-6, 1e-6, 1e-8));
-  graph->add(PriorFactor<Pose2>(0, Pose2(), priorModel));
+  auto priorModel = noiseModel::Diagonal::Variances(Vector3(1e-6, 1e-6, 1e-8));
+  graph->addPrior(0, Pose2(), priorModel);
   graph->print();
 
   std::cout << "Computing LAGO estimate" << std::endl;

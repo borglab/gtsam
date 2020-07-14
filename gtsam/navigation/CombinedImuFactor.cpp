@@ -17,9 +17,11 @@
  *  @author Vadim Indelman
  *  @author David Jensen
  *  @author Frank Dellaert
+ *  @author Varun Agrawal
  **/
 
 #include <gtsam/navigation/CombinedImuFactor.h>
+#include <boost/serialization/export.hpp>
 
 /* External or standard includes */
 #include <ostream>
@@ -27,6 +29,31 @@
 namespace gtsam {
 
 using namespace std;
+
+//------------------------------------------------------------------------------
+// Inner class PreintegrationCombinedParams
+//------------------------------------------------------------------------------
+void PreintegrationCombinedParams::print(const string& s) const {
+  PreintegrationParams::print(s);
+  cout << "biasAccCovariance:\n[\n" << biasAccCovariance << "\n]"
+       << endl;
+  cout << "biasOmegaCovariance:\n[\n" << biasOmegaCovariance << "\n]"
+       << endl;
+  cout << "biasAccOmegaInt:\n[\n" << biasAccOmegaInt << "\n]"
+       << endl;
+}
+
+//------------------------------------------------------------------------------
+bool PreintegrationCombinedParams::equals(const PreintegratedRotationParams& other,
+                                  double tol) const {
+  auto e = dynamic_cast<const PreintegrationCombinedParams*>(&other);
+  return e != nullptr && PreintegrationParams::equals(other, tol) &&
+         equal_with_abs_tol(biasAccCovariance, e->biasAccCovariance,
+                            tol) &&
+         equal_with_abs_tol(biasOmegaCovariance, e->biasOmegaCovariance,
+                            tol) &&
+         equal_with_abs_tol(biasAccOmegaInt, e->biasAccOmegaInt, tol);
+}
 
 //------------------------------------------------------------------------------
 // Inner class PreintegratedCombinedMeasurements
@@ -174,7 +201,7 @@ void CombinedImuFactor::print(const string& s,
 //------------------------------------------------------------------------------
 bool CombinedImuFactor::equals(const NonlinearFactor& other, double tol) const {
   const This* e = dynamic_cast<const This*>(&other);
-  return e != NULL && Base::equals(*e, tol) && _PIM_.equals(e->_PIM_, tol);
+  return e != nullptr && Base::equals(*e, tol) && _PIM_.equals(e->_PIM_, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -243,6 +270,13 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i,
 }
 
 //------------------------------------------------------------------------------
+std::ostream& operator<<(std::ostream& os, const CombinedImuFactor& f) {
+  f._PIM_.print("combined preintegrated measurements:\n");
+  os << "  noise model sigmas: " << f.noiseModel_->sigmas().transpose();
+  return os;
+}
+
+//------------------------------------------------------------------------------
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 CombinedImuFactor::CombinedImuFactor(
     Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
@@ -278,4 +312,7 @@ void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
 
 }
  /// namespace gtsam
+
+/// Boost serialization export definition for derived class
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::PreintegrationCombinedParams);
 

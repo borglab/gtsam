@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
   vector<Pose3> poses = {pose1, pose2, pose3, pose4, pose5};
 
   // Add first pose
-  graph.emplace_shared<PriorFactor<Pose3>>(X(0), poses[0], noise);
+  graph.addPrior(X(0), poses[0], noise);
   initialEstimate.insert(X(0), poses[0].compose(delta));
 
   // Create smart factor with measurement from first pose only
@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
     cout << "i = " << i << endl;
 
     // Add prior on new pose
-    graph.emplace_shared<PriorFactor<Pose3>>(X(i), poses[i], noise);
+    graph.addPrior(X(i), poses[i], noise);
     initialEstimate.insert(X(i), poses[i].compose(delta));
 
     // "Simulate" measurement from this pose

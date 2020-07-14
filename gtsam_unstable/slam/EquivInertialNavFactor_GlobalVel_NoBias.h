@@ -153,7 +153,7 @@ public:
   /** equals */
   virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
     const This *e =  dynamic_cast<const This*> (&expected);
-    return e != NULL && Base::equals(*e, tol)
+    return e != nullptr && Base::equals(*e, tol)
     && (delta_pos_in_t0_ - e->delta_pos_in_t0_).norm() < tol
     && (delta_vel_in_t0_ - e->delta_vel_in_t0_).norm() < tol
     && (delta_angles_ - e->delta_angles_).norm() < tol

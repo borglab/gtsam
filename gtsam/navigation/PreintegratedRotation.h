@@ -61,7 +61,7 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
-    ar & bs::make_nvp("gyroscopeCovariance", bs::make_array(gyroscopeCovariance.data(), gyroscopeCovariance.size()));
+    ar & BOOST_SERIALIZATION_NVP(gyroscopeCovariance);
     ar & BOOST_SERIALIZATION_NVP(omegaCoriolis);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor);
   }
@@ -69,7 +69,7 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions
 public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 
@@ -182,7 +182,7 @@ class GTSAM_EXPORT PreintegratedRotation {
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions
   public:
-	  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 

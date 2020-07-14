@@ -37,6 +37,7 @@
 #include <boost/assign/list_inserter.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/optional.hpp>
 
 #include <cmath>
 #include <fstream>
@@ -252,7 +253,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
   is.seekg(0, ios::beg);
 
   // If asked, create a sampler with random number generator
-  Sampler sampler;
+  std::unique_ptr<Sampler> sampler;
   if (addNoise) {
     noiseModel::Diagonal::shared_ptr noise;
     if (model)
@@ -261,7 +262,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
       throw invalid_argument(
           "gtsam::load2D: invalid noise model for adding noise"
               "(current version assumes diagonal noise model)!");
-    sampler = Sampler(noise);
+    sampler.reset(new Sampler(noise));
   }
 
   // Parse the pose constraints
@@ -289,7 +290,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
         model = modelInFile;
 
       if (addNoise)
-        l1Xl2 = l1Xl2.retract(sampler.sample());
+        l1Xl2 = l1Xl2.retract(sampler->sample());
 
       // Insert vertices if pure odometry file
       if (!initial->exists(id1))
@@ -441,11 +442,11 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
       auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
       if (!p) continue;
       const Pose3& pose = p->value();
-      Point3 t = pose.translation();
-      Rot3 R = pose.rotation();
-      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "  << t.y() << " " << t.z()
-        << " " << R.toQuaternion().x() << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()
-        << " " << R.toQuaternion().w() << endl;
+      const Point3 t = pose.translation();
+      const auto q = pose.rotation().toQuaternion();
+      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "
+             << t.y() << " " << t.z() << " " << q.x() << " " << q.y() << " "
+             << q.z() << " " << q.w() << endl;
   }
 
   // save edges (2D or 3D)
@@ -485,13 +486,12 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
         throw invalid_argument("writeG2o: invalid noise model!");
       }
       Matrix Info = gaussianModel->R().transpose() * gaussianModel->R();
-      Pose3 pose3D = factor3D->measured();
-      Point3 p = pose3D.translation();
-      Rot3 R = pose3D.rotation();
-
-      stream << "EDGE_SE3:QUAT " << factor3D->key1() << " " << factor3D->key2() << " "
-          << p.x() << " "  << p.y() << " " << p.z()  << " " << R.toQuaternion().x()
-          << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()  << " " << R.toQuaternion().w();
+      const Pose3 pose3D = factor3D->measured();
+      const Point3 p = pose3D.translation();
+      const auto q = pose3D.rotation().toQuaternion();
+      stream << "EDGE_SE3:QUAT " << factor3D->key1() << " " << factor3D->key2()
+             << " " << p.x() << " " << p.y() << " " << p.z() << " " << q.x()
+             << " " << q.y() << " " << q.z() << " " << q.w();
 
       Matrix InfoG2o = I_6x6;
       InfoG2o.block(0,0,3,3) = Info.block(3,3,3,3); // cov translation
@@ -510,6 +510,11 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
   stream.close();
 }
 
+/* ************************************************************************* */
+static Rot3 NormalizedRot3(double w, double x, double y, double z) {
+  const double norm = sqrt(w * w + x * x + y * y + z * z), f = 1.0 / norm;
+  return Rot3::Quaternion(f * w, f * x, f * y, f * z);
+}
 /* ************************************************************************* */
 std::map<Key, Pose3> parse3DPoses(const string& filename) {
   ifstream is(filename.c_str());
@@ -534,16 +539,23 @@ std::map<Key, Pose3> parse3DPoses(const string& filename) {
       Key id;
       double x, y, z, qx, qy, qz, qw;
       ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
-      poses.emplace(id, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}));
+      poses.emplace(id, Pose3(NormalizedRot3(qw, qx, qy, qz), {x, y, z}));
     }
   }
   return poses;
 }
 
 /* ************************************************************************* */
-BetweenFactorPose3s parse3DFactors(const string& filename) {
+BetweenFactorPose3s parse3DFactors(
+    const string& filename,
+    const noiseModel::Diagonal::shared_ptr& corruptingNoise) {
   ifstream is(filename.c_str());
   if (!is) throw invalid_argument("parse3DFactors: can not find file " + filename);
+
+  boost::optional<Sampler> sampler;
+  if (corruptingNoise) {
+    sampler = Sampler(corruptingNoise);
+  }
 
   std::vector<BetweenFactor<Pose3>::shared_ptr> factors;
   while (!is.eof()) {
@@ -585,8 +597,13 @@ BetweenFactorPose3s parse3DFactors(const string& filename) {
       mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0);  // off diagonal
 
       SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
+      auto R12 = NormalizedRot3(qw, qx, qy, qz);
+      if (sampler) {
+        R12 = R12.retract(sampler->sample());
+      }
+
       factors.emplace_back(new BetweenFactor<Pose3>(
-          id1, id2, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}), model));
+          id1, id2, Pose3(R12, {x, y, z}), model));
     }
   }
   return factors;

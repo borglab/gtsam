@@ -137,12 +137,12 @@ Fair::Fair(double c, const ReweightScheme reweight) : Base(reweight), c_(c) {
   }
 }
 
-double Fair::weight(double error) const {
-  return 1.0 / (1.0 + std::abs(error) / c_);
+double Fair::weight(double distance) const {
+  return 1.0 / (1.0 + std::abs(distance) / c_);
 }
 
-double Fair::residual(double error) const {
-  const double absError = std::abs(error);
+double Fair::loss(double distance) const {
+  const double absError = std::abs(distance);
   const double normalizedError = absError / c_;
   const double c_2 = c_ * c_;
   return c_2 * (normalizedError - std::log1p(normalizedError));
@@ -153,7 +153,7 @@ void Fair::print(const std::string &s="") const
 
 bool Fair::equals(const Base &expected, double tol) const {
   const Fair* p = dynamic_cast<const Fair*> (&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(c_ - p->c_ ) < tol;
 }
 
@@ -170,15 +170,15 @@ Huber::Huber(double k, const ReweightScheme reweight) : Base(reweight), k_(k) {
   }
 }
 
-double Huber::weight(double error) const {
-  const double absError = std::abs(error);
+double Huber::weight(double distance) const {
+  const double absError = std::abs(distance);
   return (absError <= k_) ? (1.0) : (k_ / absError);
 }
 
-double Huber::residual(double error) const {
-  const double absError = std::abs(error);
+double Huber::loss(double distance) const {
+  const double absError = std::abs(distance);
   if (absError <= k_) {  // |x| <= k
-    return error*error / 2;
+    return distance*distance / 2;
   } else { // |x| > k
     return k_ * (absError - (k_/2));
   }
@@ -190,7 +190,7 @@ void Huber::print(const std::string &s="") const {
 
 bool Huber::equals(const Base &expected, double tol) const {
   const Huber* p = dynamic_cast<const Huber*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(k_ - p->k_) < tol;
 }
 
@@ -208,12 +208,12 @@ Cauchy::Cauchy(double k, const ReweightScheme reweight) : Base(reweight), k_(k),
   }
 }
 
-double Cauchy::weight(double error) const {
-  return ksquared_ / (ksquared_ + error*error);
+double Cauchy::weight(double distance) const {
+  return ksquared_ / (ksquared_ + distance*distance);
 }
 
-double Cauchy::residual(double error) const {
-  const double val = std::log1p(error * error / ksquared_);
+double Cauchy::loss(double distance) const {
+  const double val = std::log1p(distance * distance / ksquared_);
   return ksquared_ * val * 0.5;
 }
 
@@ -223,7 +223,7 @@ void Cauchy::print(const std::string &s="") const {
 
 bool Cauchy::equals(const Base &expected, double tol) const {
   const Cauchy* p = dynamic_cast<const Cauchy*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(ksquared_ - p->ksquared_) < tol;
 }
 
@@ -241,18 +241,18 @@ Tukey::Tukey(double c, const ReweightScheme reweight) : Base(reweight), c_(c), c
   }
 }
 
-double Tukey::weight(double error) const {
-  if (std::abs(error) <= c_) {
-    const double one_minus_xc2 = 1.0 - error*error/csquared_;
+double Tukey::weight(double distance) const {
+  if (std::abs(distance) <= c_) {
+    const double one_minus_xc2 = 1.0 - distance*distance/csquared_;
     return one_minus_xc2 * one_minus_xc2;
   }
   return 0.0;
 }
 
-double Tukey::residual(double error) const {
-  double absError = std::abs(error);
+double Tukey::loss(double distance) const {
+  double absError = std::abs(distance);
   if (absError <= c_) {
-    const double one_minus_xc2 = 1.0 - error*error/csquared_;
+    const double one_minus_xc2 = 1.0 - distance*distance/csquared_;
     const double t = one_minus_xc2*one_minus_xc2*one_minus_xc2;
     return csquared_ * (1 - t) / 6.0;
   } else {
@@ -266,7 +266,7 @@ void Tukey::print(const std::string &s="") const {
 
 bool Tukey::equals(const Base &expected, double tol) const {
   const Tukey* p = dynamic_cast<const Tukey*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(c_ - p->c_) < tol;
 }
 
@@ -280,13 +280,13 @@ Tukey::shared_ptr Tukey::Create(double c, const ReweightScheme reweight) {
 
 Welsch::Welsch(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
 
-double Welsch::weight(double error) const {
-  const double xc2 = (error*error)/csquared_;
+double Welsch::weight(double distance) const {
+  const double xc2 = (distance*distance)/csquared_;
   return std::exp(-xc2);
 }
 
-double Welsch::residual(double error) const {
-  const double xc2 = (error*error)/csquared_;
+double Welsch::loss(double distance) const {
+  const double xc2 = (distance*distance)/csquared_;
   return csquared_ * 0.5 * -std::expm1(-xc2);
 }
 
@@ -296,7 +296,7 @@ void Welsch::print(const std::string &s="") const {
 
 bool Welsch::equals(const Base &expected, double tol) const {
   const Welsch* p = dynamic_cast<const Welsch*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(c_ - p->c_) < tol;
 }
 
@@ -311,16 +311,16 @@ GemanMcClure::GemanMcClure(double c, const ReweightScheme reweight)
   : Base(reweight), c_(c) {
 }
 
-double GemanMcClure::weight(double error) const {
+double GemanMcClure::weight(double distance) const {
   const double c2 = c_*c_;
   const double c4 = c2*c2;
-  const double c2error = c2 + error*error;
+  const double c2error = c2 + distance*distance;
   return c4/(c2error*c2error);
 }
 
-double GemanMcClure::residual(double error) const {
+double GemanMcClure::loss(double distance) const {
   const double c2 = c_*c_;
-  const double error2 = error*error;
+  const double error2 = distance*distance;
   return 0.5 * (c2 * error2) / (c2 + error2);
 }
 
@@ -330,7 +330,7 @@ void GemanMcClure::print(const std::string &s="") const {
 
 bool GemanMcClure::equals(const Base &expected, double tol) const {
   const GemanMcClure* p = dynamic_cast<const GemanMcClure*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(c_ - p->c_) < tol;
 }
 
@@ -345,8 +345,8 @@ DCS::DCS(double c, const ReweightScheme reweight)
   : Base(reweight), c_(c) {
 }
 
-double DCS::weight(double error) const {
-  const double e2 = error*error;
+double DCS::weight(double distance) const {
+  const double e2 = distance*distance;
   if (e2 > c_)
   {
     const double w = 2.0*c_/(c_ + e2);
@@ -356,10 +356,10 @@ double DCS::weight(double error) const {
   return 1.0;
 }
 
-double DCS::residual(double error) const {
+double DCS::loss(double distance) const {
   // This is the simplified version of Eq 9 from (Agarwal13icra)
   // after you simplify and cancel terms.
-  const double e2 = error*error;
+  const double e2 = distance*distance;
   const double e4 = e2*e2;
   const double c2 = c_*c_;
 
@@ -372,7 +372,7 @@ void DCS::print(const std::string &s="") const {
 
 bool DCS::equals(const Base &expected, double tol) const {
   const DCS* p = dynamic_cast<const DCS*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(c_ - p->c_) < tol;
 }
 
@@ -391,17 +391,17 @@ L2WithDeadZone::L2WithDeadZone(double k, const ReweightScheme reweight)
   }
 }
 
-double L2WithDeadZone::weight(double error) const {
+double L2WithDeadZone::weight(double distance) const {
   // note that this code is slightly uglier than residual, because there are three distinct
   // cases to handle (left of deadzone, deadzone, right of deadzone) instead of the two
   // cases (deadzone, non-deadzone) in residual.
-  if (std::abs(error) <= k_) return 0.0;
-  else if (error > k_) return (-k_+error)/error;
-  else return (k_+error)/error;
+  if (std::abs(distance) <= k_) return 0.0;
+  else if (distance > k_) return (-k_+distance)/distance;
+  else return (k_+distance)/distance;
 }
 
-double L2WithDeadZone::residual(double error) const {
-  const double abs_error = std::abs(error);
+double L2WithDeadZone::loss(double distance) const {
+  const double abs_error = std::abs(distance);
   return (abs_error < k_) ? 0.0 : 0.5*(k_-abs_error)*(k_-abs_error);
 }
 
@@ -411,7 +411,7 @@ void L2WithDeadZone::print(const std::string &s="") const {
 
 bool L2WithDeadZone::equals(const Base &expected, double tol) const {
   const L2WithDeadZone* p = dynamic_cast<const L2WithDeadZone*>(&expected);
-  if (p == NULL) return false;
+  if (p == nullptr) return false;
   return std::abs(k_ - p->k_) < tol;
 }
 

@@ -44,7 +44,7 @@ public:
 private:
 
   Rot3 R_; ///< Rotation gRp, between global and pose frame
-  Point3 t_; ///< Translation gTp, from global origin to pose frame origin
+  Point3 t_; ///< Translation gPp, from global origin to pose frame origin
 
 public:
 
@@ -355,7 +355,7 @@ public:
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 // Pose3 class

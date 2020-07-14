@@ -1,7 +1,7 @@
 NonlinearFactorGraph graph;
 noiseModel::Diagonal::shared_ptr priorNoise =
   noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-graph.add(PriorFactor<Pose2>(1, Pose2(0, 0, 0), priorNoise));
+graph.addPrior(1, Pose2(0, 0, 0), priorNoise);
 
 // Add odometry factors
 noiseModel::Diagonal::shared_ptr model =

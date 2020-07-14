@@ -19,7 +19,6 @@
 #include <gtsam_unstable/slam/SmartRangeFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -116,8 +115,8 @@ TEST( SmartRangeFactor, optimization ) {
   graph.push_back(f);
   const noiseModel::Base::shared_ptr //
   priorNoise = noiseModel::Diagonal::Sigmas(Vector3(1, 1, M_PI));
-  graph.emplace_shared<PriorFactor<Pose2> >(1, pose1, priorNoise);
-  graph.emplace_shared<PriorFactor<Pose2> >(2, pose2, priorNoise);
+  graph.addPrior(1, pose1, priorNoise);
+  graph.addPrior(2, pose2, priorNoise);
 
   // Try optimizing
   LevenbergMarquardtParams params;

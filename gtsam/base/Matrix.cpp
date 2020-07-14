@@ -144,10 +144,10 @@ void print(const Matrix& A, const string &s, ostream& stream) {
       0, // flags
       ", ", // coeffSeparator
       ";\n", // rowSeparator
-      " \t",  // rowPrefix
+      "\t",  // rowPrefix
       "", // rowSuffix
       "[\n", // matPrefix
-      "\n  ]" // matSuffix
+      "\n]" // matSuffix
       );
   cout << s << A.format(matlab) << endl;
 }

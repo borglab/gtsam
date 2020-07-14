@@ -15,7 +15,7 @@ set (gtsam_subdirs
     sfm
     slam
     smart
-	navigation
+	  navigation
 )
 
 set(gtsam_srcs)
@@ -49,7 +49,7 @@ endif()
 
 # Common headers
 file(GLOB gtsam_core_headers "*.h")
-install(FILES ${gtsam_core_headers} DESTINATION include/gtsam)
+install(FILES ${gtsam_core_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam)
 
 # assemble core libaries
 foreach(subdir ${gtsam_subdirs})
@@ -86,10 +86,10 @@ configure_file(config.h.in config.h)
 set(library_name GTSAM) # For substitution in dllexport.h.in
 configure_file("${GTSAM_SOURCE_DIR}/cmake/dllexport.h.in" "dllexport.h")
 list(APPEND gtsam_srcs "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/dllexport.h")
-install(FILES "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/dllexport.h" DESTINATION include/gtsam)
+install(FILES "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/dllexport.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam)
 
 if(GTSAM_SUPPORT_NESTED_DISSECTION)
-    list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis)
+    list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis-gtsam)
 endif()
 
 # Versions
@@ -172,21 +172,31 @@ if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with 
 	endif()
 endif()
 
+if(WIN32) # library to help with demangling variable names on Windows
+  target_link_libraries(gtsam PRIVATE Dbghelp)
+endif()
+
 install(
 	TARGETS gtsam
 	EXPORT GTSAM-exports
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib
-	RUNTIME DESTINATION bin)
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 list(APPEND GTSAM_EXPORTED_TARGETS gtsam)
 set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 
-# make sure that ccolamd compiles even in face of warnings
+# Make sure that ccolamd compiles even in face of warnings
+# and suppress all warnings from 3rd party code if Release build
 if(WIN32)
-    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w")
+  set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "/w")
 else()
+  if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    # Suppress all warnings from 3rd party sources.
+    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w")
+  else()
     set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-Wno-error")
+  endif()
 endif()
 
 # Create the matlab toolbox for the gtsam library

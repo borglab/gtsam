@@ -8,27 +8,19 @@ from __future__ import print_function
 
 import math
 
-import matplotlib.pyplot as plt
-import numpy as np
-from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
-
 import gtsam
 import gtsam.utils.plot as gtsam_plot
+import matplotlib.pyplot as plt
+import numpy as np
 from gtsam import (ISAM2, BetweenFactorConstantBias, Cal3_S2,
                    ConstantTwistScenario, ImuFactor, NonlinearFactorGraph,
                    PinholeCameraCal3_S2, Point3, Pose3,
                    PriorFactorConstantBias, PriorFactorPose3,
                    PriorFactorVector, Rot3, Values)
-
-
-def X(key):
-    """Create symbol for pose key."""
-    return gtsam.symbol(ord('x'), key)
-
-
-def V(key):
-    """Create symbol for velocity key."""
-    return gtsam.symbol(ord('v'), key)
+from gtsam import symbol_shorthand_B as B
+from gtsam import symbol_shorthand_V as V
+from gtsam import symbol_shorthand_X as X
+from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
 
 
 def vector3(x, y, z):
@@ -115,7 +107,7 @@ def IMU_example():
     newgraph.push_back(PriorFactorPose3(X(0), pose_0, noise))
 
     # Add imu priors
-    biasKey = gtsam.symbol(ord('b'), 0)
+    biasKey = B(0)
     biasnoise = gtsam.noiseModel_Isotropic.Sigma(6, 0.1)
     biasprior = PriorFactorConstantBias(biasKey, gtsam.imuBias_ConstantBias(),
                                         biasnoise)

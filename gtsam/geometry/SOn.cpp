@@ -13,6 +13,7 @@
  * @file    SOn.cpp
  * @brief   Definitions of dynamic specializations of SO(n)
  * @author  Frank Dellaert
+ * @author  Varun Agrawal
  * @date    March 2019
  */
 
@@ -37,11 +38,12 @@ Matrix SOn::Hat(const Vector& xi) {
     const size_t dmin = (n - 1) * (n - 2) / 2;
     X.topLeftCorner(n - 1, n - 1) = Hat(xi.tail(dmin));
 
+    // determine sign of last element (signs alternate)
+    double sign = pow(-1.0, xi.size());
     // Now fill last row and column
-    double sign = 1.0;
     for (size_t i = 0; i < n - 1; i++) {
       const size_t j = n - 2 - i;
-      X(n - 1, j) = sign * xi(i);
+      X(n - 1, j) = -sign * xi(i);
       X(j, n - 1) = -X(n - 1, j);
       sign = -sign;
     }
@@ -66,10 +68,10 @@ Vector SOn::Vee(const Matrix& X) {
     Vector xi(d);
 
     // Fill first n-1 spots from last row of X
-    double sign = 1.0;
+    double sign = pow(-1.0, xi.size());
     for (size_t i = 0; i < n - 1; i++) {
       const size_t j = n - 2 - i;
-      xi(i) = sign * X(n - 1, j);
+      xi(i) = -sign * X(n - 1, j);
       sign = -sign;
     }
 

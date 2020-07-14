@@ -33,7 +33,7 @@
 #include <string>
 
 #ifdef GTSAM_USE_TBB
-#include <tbb/mutex.h>
+#include <mutex> // std::mutex
 #endif
 
 namespace gtsam {
@@ -48,7 +48,7 @@ private:
   mutable boost::optional<Matrix62> H_B_; ///< Cached basis derivative
 
 #ifdef GTSAM_USE_TBB
-  mutable tbb::mutex B_mutex_; ///< Mutex to protect the cached basis.
+  mutable std::mutex B_mutex_; ///< Mutex to protect the cached basis.
 #endif
 
 public:
@@ -90,6 +90,8 @@ public:
   /// Copy assignment
   Unit3& operator=(const Unit3 & u) {
     p_ = u.p_;
+    B_ = u.B_;
+    H_B_ = u.H_B_;
     return *this;
   }
 
@@ -214,7 +216,7 @@ private:
   /// @}
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // Define GTSAM traits
