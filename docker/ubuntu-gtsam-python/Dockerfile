@@ -1,7 +1,7 @@
 #  GTSAM Ubuntu image with Python wrapper support.
 
 # Get the base Ubuntu/GTSAM image from Docker Hub
-FROM dellaert/ubuntu-gtsam:latest
+FROM dellaert/ubuntu-gtsam:bionic
 
 # Install pip
 RUN apt-get install -y python3-pip python3-dev
@@ -25,7 +25,7 @@ RUN cmake \
 RUN make -j4 install && make clean
 
 # Needed to run python wrapper:
-RUN echo 'export PYTHONPATH=/usr/local/cython/:$PYTHONPATH' >> /root/.bashrc 
+RUN echo 'export PYTHONPATH=/usr/local/cython/:$PYTHONPATH' >> /root/.bashrc
 
 # Run bash
 CMD ["bash"]

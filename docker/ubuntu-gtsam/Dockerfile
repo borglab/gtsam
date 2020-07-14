@@ -1,10 +1,10 @@
 # Ubuntu image with GTSAM installed. Configured with  Boost and TBB support.
 
 # Get the base Ubuntu image from Docker Hub
-FROM dellaert/ubuntu-boost-tbb:latest
+FROM dellaert/ubuntu-boost-tbb:bionic
 
 # Install git
-RUN apt-get update && \ 
+RUN apt-get update && \
     apt-get install -y git
 
 # Install compiler
@@ -30,7 +30,7 @@ RUN cmake \
 RUN make -j4 install && make clean
 
 # Needed to link with GTSAM
-RUN echo 'export LD_LIBRARY_PATH=/usr/local/lib:LD_LIBRARY_PATH' >> /root/.bashrc 
+RUN echo 'export LD_LIBRARY_PATH=/usr/local/lib:LD_LIBRARY_PATH' >> /root/.bashrc
 
 # Run bash
 CMD ["bash"]
