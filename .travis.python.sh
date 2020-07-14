@@ -42,6 +42,8 @@ case $WRAPPER in
     ;;
 esac
 
+git submodule update --init --recursive
+
 CURRDIR=$(pwd)
 
 mkdir $CURRDIR/build

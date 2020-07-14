@@ -43,6 +43,7 @@ function configure()
 
   #env
   git clean -fd || true
+  git submodule update --init --recursive
   rm -fr $BUILD_DIR || true
   mkdir $BUILD_DIR && cd $BUILD_DIR
 
