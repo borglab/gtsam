@@ -313,6 +313,3 @@ void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
 }
  /// namespace gtsam
 
-/// Boost serialization export definition for derived class
-BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::PreintegrationCombinedParams);
-
