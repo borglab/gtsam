@@ -19,7 +19,7 @@
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteBayesTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/inference/BayesNet-inst.h>
+#include <gtsam/inference/BayesNet.h>
 
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
