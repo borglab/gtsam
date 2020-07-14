@@ -607,7 +607,7 @@ endif()
 message(STATUS "Cython toolbox flags                                      ")
 print_config_flag(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox          ")
 if(GTSAM_INSTALL_CYTHON_TOOLBOX)
-	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
+	message(STATUS "  Python version                  : ${GTSAM_PYTHON_VERSION}")
 endif()
 message(STATUS "===============================================================")
 
