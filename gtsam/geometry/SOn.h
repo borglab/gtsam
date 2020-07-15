@@ -340,7 +340,7 @@ void serialize(
   const unsigned int file_version
 ) {
   Matrix& M = Q.matrix_;
-  ar& M;
+  ar& BOOST_SERIALIZATION_NVP(M);
 }
 
 /*
