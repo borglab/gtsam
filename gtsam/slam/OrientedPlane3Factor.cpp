@@ -27,7 +27,7 @@ Vector OrientedPlane3Factor::evaluateError(const Pose3& pose,
   Matrix33 predicted_H_plane, error_H_predicted;
   OrientedPlane3 predicted_plane = plane.transform(pose, H2 ? &predicted_H_plane : nullptr,
                                                          H1 ? &predicted_H_pose  : nullptr);
-  Vector3 err = predicted_plane.errorVector(measured_p_, (H1 || H2) ? &error_H_predicted : nullptr);
+  Vector3 err = predicted_plane.error(measured_p_, (H1 || H2) ? &error_H_predicted : nullptr);
 
   // Apply the chain rule to calculate the derivatives.
   if (H1) {
