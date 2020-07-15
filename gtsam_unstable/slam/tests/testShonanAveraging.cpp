@@ -16,9 +16,8 @@
  * @brief  Unit tests for Shonan Averaging algorithm
  */
 
-#include <gtsam_unstable/slam/ShonanAveraging.h>
-
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam_unstable/slam/ShonanAveraging.h>
 
 #include <iostream>
 #include <map>
@@ -53,6 +52,17 @@ TEST(ShonanAveraging, checkConstructor) {
 }
 
 /* ************************************************************************* */
+TEST(ShonanAveraging, checkAllConstructors) {
+  ShonanAveragingParameters parameters;
+  const BetweenFactorPose3s factors;
+  const map<Key, Pose3> poses;
+  const Values values;
+  EXPECT_LONGS_EQUAL(0, ShonanAveraging(factors, poses, parameters).nrPoses());
+  EXPECT_LONGS_EQUAL(0, ShonanAveraging(factors, values, parameters).nrPoses());
+  EXPECT_LONGS_EQUAL(5, ShonanAveraging(g2oFile, parameters).nrPoses());
+}
+
+/* ************************************************************************* */
 TEST(ShonanAveraging, buildGraphAt) {
   auto graph = kShonan.buildGraphAt(5);
   EXPECT_LONGS_EQUAL(6, graph.size());
@@ -68,7 +78,7 @@ TEST(ShonanAveraging, checkOptimality) {
   auto lambdaMin = kShonan.computeMinEigenValue(random);
   // EXPECT_DOUBLES_EQUAL(-5.2964625490657866, lambdaMin,
   //                      1e-4);  // Regression test
-  EXPECT_DOUBLES_EQUAL(-330.13346196100195, lambdaMin,
+  EXPECT_DOUBLES_EQUAL(-330.13332247232307, lambdaMin,
                        1e-4);  // Regression test
   EXPECT(!kShonan.checkOptimality(random));
 }
