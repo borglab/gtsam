@@ -16,27 +16,31 @@
  * @brief  Shonan Averaging algorithm
  */
 
-#include "gtsam/base/Vector.h"
-#include "gtsam/geometry/Rot3.h"
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/slam/dataset.h>
+#pragma once
+
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
+#include <gtsam/slam/dataset.h>
+#include <gtsam_unstable/dllexport.h>
 
 #include <Eigen/Sparse>
-
 #include <map>
 #include <string>
+#include <utility>
 
 namespace gtsam {
 class NonlinearFactorGraph;
 
 /// Parameters governing optimization etc.
-struct ShonanAveragingParameters {
-  bool prior;         // whether to use a prior (default true)
-  bool karcher;       // whether to use Karcher mean prior (default true)
-  std::pair<size_t, Rot3>  anchor;   // which pose to use as anchor if not Karcher (default 0)
+struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
+  bool prior;    // whether to use a prior (default true)
+  bool karcher;  // whether to use Karcher mean prior (default true)
+  std::pair<size_t, Rot3>
+      anchor;         // which pose to use as anchor if not Karcher (default 0)
   double noiseSigma;  // Optional noise Sigma, will be ignored if zero
   double optimalityThreshold;   // threshold used in checkOptimality
   LevenbergMarquardtParams lm;  // LM parameters
@@ -46,13 +50,15 @@ struct ShonanAveragingParameters {
                             double optimalityThreshold = -1e-4);
   void setPrior(bool value) { prior = value; }
   void setKarcher(bool value) { karcher = value; }
-  void setAnchor(size_t index, const gtsam::Rot3& value) { anchor = std::make_pair(index, value); }
+  void setAnchor(size_t index, const gtsam::Rot3& value) {
+    anchor = std::make_pair(index, value);
+  }
   void setNoiseSigma(bool value) { noiseSigma = value; }
   void setOptimalityThreshold(double value) { optimalityThreshold = value; }
-  double getOptimalityThreshold() const { return optimalityThreshold; };
+  double getOptimalityThreshold() const { return optimalityThreshold; }
 };
 
-class ShonanAveraging {
+class GTSAM_UNSTABLE_EXPORT ShonanAveraging {
  public:
   using Sparse = Eigen::SparseMatrix<double>;
 
@@ -83,14 +89,13 @@ class ShonanAveraging {
   ShonanAveraging(const BetweenFactorPose3s& factors,
                   const std::map<Key, Pose3>& poses,
                   const ShonanAveragingParameters& parameters =
-                               ShonanAveragingParameters());
+                      ShonanAveragingParameters());
   /**
    * Construct from factors and values (will ignore all but Pose3 values).
    */
-  ShonanAveraging(const BetweenFactorPose3s& factors,
-                  const Values& values,
+  ShonanAveraging(const BetweenFactorPose3s& factors, const Values& values,
                   const ShonanAveragingParameters& parameters =
-                               ShonanAveragingParameters());
+                      ShonanAveragingParameters());
   /**
    * Construct from a G2O file.
    */
@@ -112,13 +117,13 @@ class ShonanAveraging {
 
   /// Return poses
   const std::map<Key, Pose3>& poses() const { return poses_; }
-    
-  Sparse D() const {return D_;} ///< Sparse version of D
-  Matrix denseD() const {return Matrix(D_);} ///< Dense version of D
-  Sparse Q() const {return Q_;} ///< Sparse version of Q
-  Matrix denseQ() const {return Matrix(Q_);} ///< Dense version of Q
-  Sparse L() const {return L_;} ///< Sparse version of L
-  Matrix denseL() const {return Matrix(L_);} ///< Dense version of L
+
+  Sparse D() const { return D_; }               ///< Sparse version of D
+  Matrix denseD() const { return Matrix(D_); }  ///< Dense version of D
+  Sparse Q() const { return Q_; }               ///< Sparse version of Q
+  Matrix denseQ() const { return Matrix(Q_); }  ///< Dense version of Q
+  Sparse L() const { return L_; }               ///< Sparse version of L
+  Matrix denseL() const { return Matrix(L_); }  ///< Dense version of L
 
   /**
    * Build graph for SO(p)
@@ -167,13 +172,14 @@ class ShonanAveraging {
     return Matrix(computeA(values));
   }
 
-  /** 
+  /**
    * Compute minimum eigenvalue for optimality check.
    * @param values: should be of type SOn
    */
-  double computeMinEigenValue(const Values& values, Vector* minEigenVector = nullptr) const;
+  double computeMinEigenValue(const Values& values,
+                              Vector* minEigenVector = nullptr) const;
 
-  /** 
+  /**
    * Compute minimum eigenvalue for optimality check.
    * @param values: should be of type SOn
    * @return minEigenVector and minEigenValue
@@ -193,7 +199,7 @@ class ShonanAveraging {
    * @return lm optimizer
    */
   boost::shared_ptr<LevenbergMarquardtOptimizer> createOptimizerAt(
-      size_t p, const boost::optional<const Values &> initialEstimate) const;
+      size_t p, const boost::optional<const Values&> initialEstimate) const;
 
   /**
    * Try to optimize at SO(p)
@@ -211,11 +217,9 @@ class ShonanAveraging {
    */
   Values projectFrom(size_t p, const Values& values) const;
 
-  /**
-   * Project pxdN Stiefel manifold matrix S to Rot3^N
-   */
+  /// Project pxdN Stiefel manifold matrix S to Rot3^N
   Values roundSolution(const Matrix S) const;
-  
+
   /**
    * Project from SO(p)^N to Rot3^N
    * Values should be of type SO(p)
@@ -231,17 +235,15 @@ class ShonanAveraging {
   /// Create a tangent direction xi with eigenvector segment v_i
   static Vector MakeATangentVector(size_t p, const Vector& v, size_t i);
 
-  /**
-   * Calculate the riemannian gradient of F(values) at values 
-   */
+  /// Calculate the riemannian gradient of F(values) at values
   Matrix riemannianGradient(size_t p, const Values& values) const;
 
   /**
-   *  Lift up the dimension of values in type SO(p-1) with descent direction provided by minEigenVector
-   * and return new values in type SO(p)
+   * Lift up the dimension of values in type SO(p-1) with descent direction
+   * provided by minEigenVector and return new values in type SO(p)
    */
-  Values dimensionLifting(
-    size_t p, const Values& values, const Vector& minEigenVector) const;
+  Values dimensionLifting(size_t p, const Values& values,
+                          const Vector& minEigenVector) const;
 
   /**
    * Given some values at p-1, return new values at p, by doing a line search
@@ -250,27 +252,35 @@ class ShonanAveraging {
    * @param minEigenVector corresponding to minEigenValue at level p-1
    * @return values of type SO(p)
    */
-  Values initializeWithDescent(size_t p, const Values& values,
-                               const Vector& minEigenVector, double minEigenValue, double gradienTolerance=1e-2, double preconditionedGradNormTolerance=1e-4) const;
+  Values initializeWithDescent(
+      size_t p, const Values& values, const Vector& minEigenVector,
+      double minEigenValue, double gradienTolerance = 1e-2,
+      double preconditionedGradNormTolerance = 1e-4) const;
 
   /**
-   * Optimize at different values of p until convergence, with random init at each level.
+   * Optimize at different values of p until convergence, with random init at
+   * each level.
    * @param pMin value of p to start Riemanian staircase at.
    * @param pMax maximum value of p to try (default: 20)
    * @param withDescent use descent direction from paper.
    * @return (SO(3) values, minimum eigenvalue)
    */
-  std::pair<Values, double> run(size_t pMin, size_t pMax, bool withDescent) const;
+  std::pair<Values, double> run(size_t pMin, size_t pMax,
+                                bool withDescent) const;
 
   /**
-   * Optimize at different values of p until convergence, with random init at each level.
+   * Optimize at different values of p until convergence, with random
+   * initialization at each level.
    */
-  std::pair<Values, double> runWithRandom(size_t pMin = 5, size_t pMax = 20) const;
+  std::pair<Values, double> runWithRandom(size_t pMin = 5,
+                                          size_t pMax = 20) const;
 
   /**
-   * Optimize at different values of p until convergence, with descent direction.
+   * Optimize at different values of p until convergence, with descent
+   * direction derived from Eigenvalue computation.
    */
-  std::pair<Values, double> runWithDescent(size_t pMin = 5, size_t pMax = 20) const;
+  std::pair<Values, double> runWithDescent(size_t pMin = 5,
+                                           size_t pMax = 20) const;
 };
 
 }  // namespace gtsam
