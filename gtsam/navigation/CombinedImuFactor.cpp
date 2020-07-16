@@ -310,6 +310,4 @@ void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
 }
 #endif
 
-}
- /// namespace gtsam
-
+} /// namespace gtsam
