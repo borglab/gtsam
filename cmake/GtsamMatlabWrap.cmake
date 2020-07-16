@@ -236,10 +236,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 			gtsam::ISAM2ThresholdMapValue
 			gtsam::FactorIndices
 			gtsam::FactorIndexSet
-			gtsam::BetweenFactorPose3s
-			gtsam::Point2Vector
-			gtsam::Pose3Vector
-			gtsam::KeyVector)
+			gtsam::BetweenFactorPose3s)
 	add_custom_command(
 		OUTPUT ${generated_cpp_file}
 		DEPENDS ${interfaceHeader} ${module_library_target} ${otherLibraryTargets} ${otherSourcesAndObjects}
