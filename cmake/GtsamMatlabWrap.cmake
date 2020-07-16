@@ -229,7 +229,14 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 				REQUIRED)
 	endif()
 
-	set(_ignore gtsam::BetweenFactorPose3s)
+	set(_ignore gtsam::Point2
+			gtsam::Point3
+			gtsam::LieVector
+			gtsam::LieMatrix
+			gtsam::ISAM2ThresholdMapValue
+			gtsam::FactorIndices
+			gtsam::FactorIndexSet
+			gtsam::BetweenFactorPose3s)
 	add_custom_command(
 		OUTPUT ${generated_cpp_file}
 		DEPENDS ${interfaceHeader} ${module_library_target} ${otherLibraryTargets} ${otherSourcesAndObjects}
