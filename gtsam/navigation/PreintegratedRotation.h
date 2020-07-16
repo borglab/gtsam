@@ -62,8 +62,14 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
     ar & BOOST_SERIALIZATION_NVP(gyroscopeCovariance);
-    ar & BOOST_SERIALIZATION_NVP(omegaCoriolis);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor);
+
+    // Provide support for Eigen::Matrix in boost::optional
+    bool omegaCoriolisFlag = omegaCoriolis.is_initialized();
+    ar & boost::serialization::make_nvp("omegaCoriolisFlag", omegaCoriolisFlag);
+    if (omegaCoriolisFlag) {
+      ar & BOOST_SERIALIZATION_NVP(*omegaCoriolis);
+    }
   }
 
 #ifdef GTSAM_USE_QUATERNIONS

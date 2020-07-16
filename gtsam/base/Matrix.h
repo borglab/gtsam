@@ -610,5 +610,11 @@ namespace boost {
       split_free(ar, m, version);
     }
 
+    // specialized to Matrix for MATLAB wrapper
+    template <class Archive>
+    void serialize(Archive& ar, gtsam::Matrix& m, const unsigned int version) {
+      split_free(ar, m, version);
+    }
+
   } // namespace serialization
 } // namespace boost
