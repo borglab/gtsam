@@ -454,12 +454,11 @@ endif()
 if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   set(GTSAM_INSTALL_CYTHON_TOOLBOX 1)
   # Set up cache options
-  set(GTSAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
-  if(NOT GTSAM_CYTHON_INSTALL_PATH)
-    set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython")
-  endif()
+  # Cython install path appended with Build type (e.g. cython, cythonDebug, etc).
+  # This does not override custom values set from the command line
+  set(GTSAM_CYTHON_INSTALL_PATH "${PROJECT_BINARY_DIR}/cython${GTSAM_BUILD_TAG}" CACHE PATH "Cython toolbox destination, blank defaults to PROJECT_BINARY_DIR/cython<GTSAM_BUILD_TAG>")
   set(GTSAM_EIGENCY_INSTALL_PATH ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency)
-  add_subdirectory(cython)
+  add_subdirectory(cython ${GTSAM_CYTHON_INSTALL_PATH})
 else()
   set(GTSAM_INSTALL_CYTHON_TOOLBOX 0) # This will go into config.h
 endif()
