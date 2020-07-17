@@ -16,11 +16,10 @@
  * @brief  Various factors that minimize some Frobenius norm
  */
 
-#include <gtsam/slam/FrobeniusFactor.h>
-
 #include <gtsam/base/timing.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 
 #include <cmath>
 #include <iostream>
@@ -52,8 +51,8 @@ boost::shared_ptr<noiseModel::Isotropic> ConvertPose3NoiseModel(
 }
 
 //******************************************************************************
-FrobeniusWormholeFactor::FrobeniusWormholeFactor(Key j1, Key j2, const Rot3& R12,
-                                                 size_t p,
+FrobeniusWormholeFactor::FrobeniusWormholeFactor(Key j1, Key j2,
+                                                 const Rot3& R12, size_t p,
                                                  const SharedNoiseModel& model)
     : NoiseModelFactor2<SOn, SOn>(ConvertPose3NoiseModel(model, p * 3), j1, j2),
       M_(R12.matrix()),               // 3*3 in all cases
@@ -79,7 +78,10 @@ Vector FrobeniusWormholeFactor::evaluateError(
 
   const Matrix& M1 = Q1.matrix();
   const Matrix& M2 = Q2.matrix();
-  assert(M1.rows() == p_ && M2.rows() == p_);
+  if (M1.rows() != p_ || M2.rows() != p_)
+    throw std::invalid_argument(
+        "Invalid dimension SOn values passed to "
+        "FrobeniusWormholeFactor::evaluateError");
 
   const size_t dim = 3 * p_;  // Stiefel manifold dimension
   Vector fQ2(dim), hQ1(dim);
