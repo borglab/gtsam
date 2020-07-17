@@ -67,7 +67,9 @@ FrobeniusWormholeFactor::FrobeniusWormholeFactor(Key j1, Key j2,
     const auto X = SOn::Hat(Eigen::VectorXd::Unit(dimension_, j));
     G_.col(j) = Eigen::Map<const Matrix>(X.data(), pp_, 1);
   }
-  assert(noiseModel()->dim() == 3 * p_);
+  if (noiseModel()->dim() != 3 * p_)
+    throw std::invalid_argument(
+        "FrobeniusWormholeFactor: model with incorrect dimension.");
 }
 
 //******************************************************************************
@@ -78,7 +80,7 @@ Vector FrobeniusWormholeFactor::evaluateError(
 
   const Matrix& M1 = Q1.matrix();
   const Matrix& M2 = Q2.matrix();
-  if (M1.rows() != p_ || M2.rows() != p_)
+  if (M1.rows() != static_cast<int>(p_) || M2.rows() != static_cast<int>(p_))
     throw std::invalid_argument(
         "Invalid dimension SOn values passed to "
         "FrobeniusWormholeFactor::evaluateError");
