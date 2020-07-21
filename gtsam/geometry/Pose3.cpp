@@ -19,8 +19,10 @@
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/base/concepts.h>
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
+#include <limits>
+#include <string>
 
 using namespace std;
 
@@ -36,10 +38,10 @@ Pose3::Pose3(const Pose2& pose2) :
 }
 
 /* ************************************************************************* */
-Pose3 Pose3::Create(const Rot3& R, const Point3& t, OptionalJacobian<6, 3> H1,
-                    OptionalJacobian<6, 3> H2) {
-  if (H1) *H1 << I_3x3, Z_3x3;
-  if (H2) *H2 << Z_3x3, R.transpose();
+Pose3 Pose3::Create(const Rot3& R, const Point3& t, OptionalJacobian<6, 3> HR,
+                    OptionalJacobian<6, 3> Ht) {
+  if (HR) *HR << I_3x3, Z_3x3;
+  if (Ht) *Ht << Z_3x3, R.transpose();
   return Pose3(R, t);
 }
 
@@ -72,15 +74,15 @@ Matrix6 Pose3::adjointMap(const Vector6& xi) {
 
 /* ************************************************************************* */
 Vector6 Pose3::adjoint(const Vector6& xi, const Vector6& y,
-    OptionalJacobian<6,6> H) {
-  if (H) {
-    H->setZero();
+    OptionalJacobian<6, 6> Hxi) {
+  if (Hxi) {
+    Hxi->setZero();
     for (int i = 0; i < 6; ++i) {
       Vector6 dxi;
       dxi.setZero();
       dxi(i) = 1.0;
       Matrix6 Gi = adjointMap(dxi);
-      H->col(i) = Gi * y;
+      Hxi->col(i) = Gi * y;
     }
   }
   return adjointMap(xi) * y;
@@ -88,15 +90,15 @@ Vector6 Pose3::adjoint(const Vector6& xi, const Vector6& y,
 
 /* ************************************************************************* */
 Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
-    OptionalJacobian<6,6> H) {
-  if (H) {
-    H->setZero();
+    OptionalJacobian<6, 6> Hxi) {
+  if (Hxi) {
+    Hxi->setZero();
     for (int i = 0; i < 6; ++i) {
       Vector6 dxi;
       dxi.setZero();
       dxi(i) = 1.0;
       Matrix6 GTi = adjointMap(dxi).transpose();
-      H->col(i) = GTi * y;
+      Hxi->col(i) = GTi * y;
     }
   }
   return adjointMap(xi).transpose() * y;
@@ -116,8 +118,8 @@ bool Pose3::equals(const Pose3& pose, double tol) const {
 
 /* ************************************************************************* */
 /** Modified from Murray94book version (which assumes w and v normalized?) */
-Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> H) {
-  if (H) *H = ExpmapDerivative(xi);
+Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
+  if (Hxi) *Hxi = ExpmapDerivative(xi);
 
   // get angular velocity omega and translational velocity v from twist xi
   Vector3 omega(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
@@ -125,8 +127,8 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> H) {
   Rot3 R = Rot3::Expmap(omega);
   double theta2 = omega.dot(omega);
   if (theta2 > std::numeric_limits<double>::epsilon()) {
-    Vector3 t_parallel = omega * omega.dot(v); // translation parallel to axis
-    Vector3 omega_cross_v = omega.cross(v);    // points towards axis
+    Vector3 t_parallel = omega * omega.dot(v);  // translation parallel to axis
+    Vector3 omega_cross_v = omega.cross(v);     // points towards axis
     Vector3 t = (omega_cross_v - R * omega_cross_v + t_parallel) / theta2;
     return Pose3(R, t);
   } else {
@@ -135,10 +137,10 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> H) {
 }
 
 /* ************************************************************************* */
-Vector6 Pose3::Logmap(const Pose3& p, OptionalJacobian<6, 6> H) {
-  if (H) *H = LogmapDerivative(p);
-  const Vector3 w = Rot3::Logmap(p.rotation());
-  const Vector3 T = p.translation();
+Vector6 Pose3::Logmap(const Pose3& pose, OptionalJacobian<6, 6> Hpose) {
+  if (Hpose) *Hpose = LogmapDerivative(pose);
+  const Vector3 w = Rot3::Logmap(pose.rotation());
+  const Vector3 T = pose.translation();
   const double t = w.norm();
   if (t < 1e-10) {
     Vector6 log;
@@ -158,33 +160,33 @@ Vector6 Pose3::Logmap(const Pose3& p, OptionalJacobian<6, 6> H) {
 }
 
 /* ************************************************************************* */
-Pose3 Pose3::ChartAtOrigin::Retract(const Vector6& xi, ChartJacobian H) {
+Pose3 Pose3::ChartAtOrigin::Retract(const Vector6& xi, ChartJacobian Hxi) {
 #ifdef GTSAM_POSE3_EXPMAP
-  return Expmap(xi, H);
+  return Expmap(xi, Hxi);
 #else
   Matrix3 DR;
-  Rot3 R = Rot3::Retract(xi.head<3>(), H ? &DR : 0);
-  if (H) {
-    *H = I_6x6;
-    H->topLeftCorner<3,3>() = DR;
+  Rot3 R = Rot3::Retract(xi.head<3>(), Hxi ? &DR : 0);
+  if (Hxi) {
+    *Hxi = I_6x6;
+    Hxi->topLeftCorner<3, 3>() = DR;
   }
   return Pose3(R, Point3(xi.tail<3>()));
 #endif
 }
 
 /* ************************************************************************* */
-Vector6 Pose3::ChartAtOrigin::Local(const Pose3& T, ChartJacobian H) {
+Vector6 Pose3::ChartAtOrigin::Local(const Pose3& pose, ChartJacobian Hpose) {
 #ifdef GTSAM_POSE3_EXPMAP
-  return Logmap(T, H);
+  return Logmap(pose, Hpose);
 #else
   Matrix3 DR;
-  Vector3 omega = Rot3::LocalCoordinates(T.rotation(), H ? &DR : 0);
-  if (H) {
-    *H = I_6x6;
-    H->topLeftCorner<3,3>() = DR;
+  Vector3 omega = Rot3::LocalCoordinates(pose.rotation(), Hpose ? &DR : 0);
+  if (Hpose) {
+    *Hpose = I_6x6;
+    Hpose->topLeftCorner<3, 3>() = DR;
   }
   Vector6 xi;
-  xi << omega, T.translation();
+  xi << omega, pose.translation();
   return xi;
 #endif
 }
@@ -261,16 +263,16 @@ Matrix6 Pose3::LogmapDerivative(const Pose3& pose) {
 }
 
 /* ************************************************************************* */
-const Point3& Pose3::translation(OptionalJacobian<3, 6> H) const {
-  if (H) *H << Z_3x3, rotation().matrix();
+const Point3& Pose3::translation(OptionalJacobian<3, 6> Hself) const {
+  if (Hself) *Hself << Z_3x3, rotation().matrix();
   return t_;
 }
 
 /* ************************************************************************* */
 
-const Rot3& Pose3::rotation(OptionalJacobian<3, 6> H) const {
-  if (H) {
-    *H << I_3x3, Z_3x3;
+const Rot3& Pose3::rotation(OptionalJacobian<3, 6> Hself) const {
+  if (Hself) {
+    *Hself << I_3x3, Z_3x3;
   }
   return R_;
 }
@@ -284,9 +286,10 @@ Matrix4 Pose3::matrix() const {
 }
 
 /* ************************************************************************* */
-Pose3 Pose3::transformPoseFrom(const Pose3& aTb) const {
+Pose3 Pose3::transformPoseFrom(const Pose3& aTb, OptionalJacobian<6, 6> Hself,
+                                                 OptionalJacobian<6, 6> HaTb) const {
   const Pose3& wTa = *this;
-  return wTa * aTb;
+  return wTa.compose(aTb, Hself, HaTb);
 }
 
 /* ************************************************************************* */
@@ -299,101 +302,101 @@ Pose3 Pose3::transform_to(const Pose3& pose) const {
 #endif
 
 /* ************************************************************************* */
-Pose3 Pose3::transformPoseTo(const Pose3& wTb, OptionalJacobian<6, 6> H1,
-                                               OptionalJacobian<6, 6> H2) const {
-  if (H1) *H1 = -wTb.inverse().AdjointMap() * AdjointMap();
-  if (H2) *H2 = I_6x6;
+Pose3 Pose3::transformPoseTo(const Pose3& wTb, OptionalJacobian<6, 6> Hself,
+                                               OptionalJacobian<6, 6> HwTb) const {
+  if (Hself) *Hself = -wTb.inverse().AdjointMap() * AdjointMap();
+  if (HwTb) *HwTb = I_6x6;
   const Pose3& wTa = *this;
   return wTa.inverse() * wTb;
 }
 
 /* ************************************************************************* */
-Point3 Pose3::transformFrom(const Point3& p, OptionalJacobian<3,6> Dpose,
-    OptionalJacobian<3,3> Dpoint) const {
+Point3 Pose3::transformFrom(const Point3& point, OptionalJacobian<3, 6> Hself,
+    OptionalJacobian<3, 3> Hpoint) const {
   // Only get matrix once, to avoid multiple allocations,
   // as well as multiple conversions in the Quaternion case
   const Matrix3 R = R_.matrix();
-  if (Dpose) {
-    Dpose->leftCols<3>() = R * skewSymmetric(-p.x(), -p.y(), -p.z());
-    Dpose->rightCols<3>() = R;
+  if (Hself) {
+    Hself->leftCols<3>() = R * skewSymmetric(-point.x(), -point.y(), -point.z());
+    Hself->rightCols<3>() = R;
   }
-  if (Dpoint) {
-    *Dpoint = R;
+  if (Hpoint) {
+    *Hpoint = R;
   }
-  return R_ * p + t_;
+  return R_ * point + t_;
 }
 
 /* ************************************************************************* */
-Point3 Pose3::transformTo(const Point3& p, OptionalJacobian<3,6> Dpose,
-    OptionalJacobian<3,3> Dpoint) const {
+Point3 Pose3::transformTo(const Point3& point, OptionalJacobian<3, 6> Hself,
+    OptionalJacobian<3, 3> Hpoint) const {
   // Only get transpose once, to avoid multiple allocations,
   // as well as multiple conversions in the Quaternion case
   const Matrix3 Rt = R_.transpose();
-  const Point3 q(Rt*(p - t_));
-  if (Dpose) {
+  const Point3 q(Rt*(point - t_));
+  if (Hself) {
     const double wx = q.x(), wy = q.y(), wz = q.z();
-    (*Dpose) <<
+    (*Hself) <<
         0.0, -wz, +wy,-1.0, 0.0, 0.0,
         +wz, 0.0, -wx, 0.0,-1.0, 0.0,
         -wy, +wx, 0.0, 0.0, 0.0,-1.0;
   }
-  if (Dpoint) {
-    *Dpoint = Rt;
+  if (Hpoint) {
+    *Hpoint = Rt;
   }
   return q;
 }
 
 /* ************************************************************************* */
-double Pose3::range(const Point3& point, OptionalJacobian<1, 6> H1,
-                    OptionalJacobian<1, 3> H2) const {
+double Pose3::range(const Point3& point, OptionalJacobian<1, 6> Hself,
+                    OptionalJacobian<1, 3> Hpoint) const {
   Matrix36 D_local_pose;
   Matrix3 D_local_point;
-  Point3 local = transformTo(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
-  if (!H1 && !H2) {
+  Point3 local = transformTo(point, Hself ? &D_local_pose : 0, Hpoint ? &D_local_point : 0);
+  if (!Hself && !Hpoint) {
     return local.norm();
   } else {
     Matrix13 D_r_local;
     const double r = norm3(local, D_r_local);
-    if (H1) *H1 = D_r_local * D_local_pose;
-    if (H2) *H2 = D_r_local * D_local_point;
+    if (Hself) *Hself = D_r_local * D_local_pose;
+    if (Hpoint) *Hpoint = D_r_local * D_local_point;
     return r;
   }
 }
 
 /* ************************************************************************* */
-double Pose3::range(const Pose3& pose, OptionalJacobian<1, 6> H1,
-                    OptionalJacobian<1, 6> H2) const {
+double Pose3::range(const Pose3& pose, OptionalJacobian<1, 6> Hself,
+                    OptionalJacobian<1, 6> Hpose) const {
   Matrix13 D_local_point;
-  double r = range(pose.translation(), H1, H2 ? &D_local_point : 0);
-  if (H2) *H2 << Matrix13::Zero(), D_local_point * pose.rotation().matrix();
+  double r = range(pose.translation(), Hself, Hpose ? &D_local_point : 0);
+  if (Hpose) *Hpose << Matrix13::Zero(), D_local_point * pose.rotation().matrix();
   return r;
 }
 
 /* ************************************************************************* */
-Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> H1,
-                     OptionalJacobian<2, 3> H2) const {
+Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> Hself,
+                     OptionalJacobian<2, 3> Hpoint) const {
   Matrix36 D_local_pose;
   Matrix3 D_local_point;
-  Point3 local = transformTo(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
-  if (!H1 && !H2) {
+  Point3 local = transformTo(point, Hself ? &D_local_pose : 0, Hpoint ? &D_local_point : 0);
+  if (!Hself && !Hpoint) {
     return Unit3(local);
   } else {
     Matrix23 D_b_local;
     Unit3 b = Unit3::FromPoint3(local, D_b_local);
-    if (H1) *H1 = D_b_local * D_local_pose;
-    if (H2) *H2 = D_b_local * D_local_point;
+    if (Hself) *Hself = D_b_local * D_local_pose;
+    if (Hpoint) *Hpoint = D_b_local * D_local_point;
     return b;
   }
 }
 
 /* ************************************************************************* */
-Unit3 Pose3::bearing(const Pose3& pose, OptionalJacobian<2, 6> H1,
-                     OptionalJacobian<2, 6> H2) const {
-  if (H2) {
-    H2->setZero();
-    return bearing(pose.translation(), H1, H2.cols<3>(3));
+Unit3 Pose3::bearing(const Pose3& pose, OptionalJacobian<2, 6> Hself,
+                     OptionalJacobian<2, 6> Hpose) const {
+  if (Hpose) {
+    Hpose->setZero();
+    return bearing(pose.translation(), Hself, Hpose.cols<3>(3));
   }
-  return bearing(pose.translation(), H1, boost::none);
+  return bearing(pose.translation(), Hself, boost::none);
 }
 
 /* ************************************************************************* */
