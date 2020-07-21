@@ -1,3 +1,8 @@
+# Set cmake policy to recognize the AppleClang compiler
+# independently from the Clang compiler.
+if(POLICY CMP0025)
+  cmake_policy(SET CMP0025 NEW)
+endif()
 
 # function:  list_append_cache(var [new_values ...])
 # Like "list(APPEND ...)" but working for CACHE variables.

@@ -15,50 +15,52 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/discrete/Potentials.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
+#include <gtsam/discrete/Potentials.h>
+
 #include <boost/format.hpp>
+
+#include <string>
 
 using namespace std;
 
 namespace gtsam {
 
-  // explicit instantiation
-  template class DecisionTree<Key, double> ;
-  template class AlgebraicDecisionTree<Key> ;
+// explicit instantiation
+template class DecisionTree<Key, double>;
+template class AlgebraicDecisionTree<Key>;
 
-  /* ************************************************************************* */
-  double Potentials::safe_div(const double& a, const double& b) {
-    // cout << boost::format("%g / %g = %g\n") % a % b % ((a == 0) ? 0 : (a / b));
-    // The use for safe_div is when we divide the product factor by the sum factor.
-    // If the product or sum is zero, we accord zero probability to the event.
-    return (a == 0 || b == 0) ? 0 : (a / b);
-  }
+/* ************************************************************************* */
+double Potentials::safe_div(const double& a, const double& b) {
+  // cout << boost::format("%g / %g = %g\n") % a % b % ((a == 0) ? 0 : (a / b));
+  // The use for safe_div is when we divide the product factor by the sum
+  // factor. If the product or sum is zero, we accord zero probability to the
+  // event.
+  return (a == 0 || b == 0) ? 0 : (a / b);
+}
 
-  /* ******************************************************************************** */
-  Potentials::Potentials() :
-      ADT(1.0) {
-  }
+/* ********************************************************************************
+ */
+Potentials::Potentials() : ADT(1.0) {}
 
-  /* ******************************************************************************** */
-  Potentials::Potentials(const DiscreteKeys& keys, const ADT& decisionTree) :
-      ADT(decisionTree), cardinalities_(keys.cardinalities()) {
-  }
+/* ********************************************************************************
+ */
+Potentials::Potentials(const DiscreteKeys& keys, const ADT& decisionTree)
+    : ADT(decisionTree), cardinalities_(keys.cardinalities()) {}
 
-  /* ************************************************************************* */
-  bool Potentials::equals(const Potentials& other, double tol) const {
-    return ADT::equals(other, tol);
-  }
+/* ************************************************************************* */
+bool Potentials::equals(const Potentials& other, double tol) const {
+  return ADT::equals(other, tol);
+}
 
-  /* ************************************************************************* */
-  void Potentials::print(const string& s,
-      const KeyFormatter& formatter) const {
-    cout << s << "\n  Cardinalities: ";
-    for(const DiscreteKey& key: cardinalities_)
-      cout << formatter(key.first) << "=" << formatter(key.second) << " ";
-    cout << endl;
-    ADT::print(" ");
-  }
+/* ************************************************************************* */
+void Potentials::print(const string& s, const KeyFormatter& formatter) const {
+  cout << s << "\n  Cardinalities: {";
+  for (const DiscreteKey& key : cardinalities_)
+    cout << formatter(key.first) << ":" << key.second << ", ";
+  cout << "}" << endl;
+  ADT::print(" ");
+}
 //
 //  /* ************************************************************************* */
 //  template<class P>
@@ -95,4 +97,4 @@ namespace gtsam {
 
   /* ************************************************************************* */
 
-} // namespace gtsam
+}  // namespace gtsam

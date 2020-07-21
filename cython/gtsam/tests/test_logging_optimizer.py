@@ -4,6 +4,12 @@ Author: Jing Wu and Frank Dellaert
 """
 # pylint: disable=invalid-name
 
+import sys
+if sys.version_info.major >= 3:
+    from io import StringIO
+else:
+    from cStringIO import StringIO
+
 import unittest
 from datetime import datetime
 
@@ -37,11 +43,24 @@ class TestOptimizeComet(GtsamTestCase):
         self.optimizer = gtsam.GaussNewtonOptimizer(
             graph, initial, self.params)
 
+        self.lmparams = gtsam.LevenbergMarquardtParams()
+        self.lmoptimizer = gtsam.LevenbergMarquardtOptimizer(
+            graph, initial, self.lmparams
+        )
+
+        # setup output capture
+        self.capturedOutput = StringIO()
+        sys.stdout = self.capturedOutput
+
+    def tearDown(self):
+        """Reset print capture."""
+        sys.stdout = sys.__stdout__
+
     def test_simple_printing(self):
         """Test with a simple hook."""
 
         # Provide a hook that just prints
-        def hook(_, error: float):
+        def hook(_, error):
             print(error)
 
         # Only thing we require from optimizer is an iterate method
@@ -49,6 +68,16 @@ class TestOptimizeComet(GtsamTestCase):
 
         # Check that optimizing yields the identity.
         actual = self.optimizer.values()
+        self.gtsamAssertEquals(actual.atRot3(KEY), self.expected, tol=1e-6)
+
+    def test_lm_simple_printing(self):
+        """Make sure we are properly terminating LM"""
+        def hook(_, error):
+            print(error)
+
+        gtsam_optimize(self.lmoptimizer, self.lmparams, hook)
+
+        actual = self.lmoptimizer.values()
         self.gtsamAssertEquals(actual.atRot3(KEY), self.expected, tol=1e-6)
 
     @unittest.skip("Not a test we want run every time, as needs comet.ml account")
@@ -65,7 +94,7 @@ class TestOptimizeComet(GtsamTestCase):
                        + str(time.hour)+":"+str(time.minute)+":"+str(time.second))
 
         # I want to do some comet thing here
-        def hook(optimizer, error: float):
+        def hook(optimizer, error):
             comet.log_metric("Karcher error",
                              error, optimizer.iterations())
 
