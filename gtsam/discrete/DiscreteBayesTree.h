@@ -11,7 +11,8 @@
 
 /**
  * @file    DiscreteBayesTree.h
- * @brief   Discrete Bayes Tree, the result of eliminating a DiscreteJunctionTree
+ * @brief   Discrete Bayes Tree, the result of eliminating a
+ * DiscreteJunctionTree
  * @brief   DiscreteBayesTree
  * @author  Frank Dellaert
  * @author  Richard Roberts
@@ -22,45 +23,62 @@
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/inference/BayesTree.h>
+#include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/BayesTreeCliqueBase.h>
+
+#include <string>
 
 namespace gtsam {
 
-  // Forward declarations
-  class DiscreteConditional;
-  class VectorValues;
+// Forward declarations
+class DiscreteConditional;
+class VectorValues;
 
-  /* ************************************************************************* */
-  /** A clique in a DiscreteBayesTree */
-  class GTSAM_EXPORT DiscreteBayesTreeClique :
-    public BayesTreeCliqueBase<DiscreteBayesTreeClique, DiscreteFactorGraph>
-  {
-  public:
-    typedef DiscreteBayesTreeClique This;
-    typedef BayesTreeCliqueBase<DiscreteBayesTreeClique, DiscreteFactorGraph> Base;
-    typedef boost::shared_ptr<This> shared_ptr;
-    typedef boost::weak_ptr<This> weak_ptr;
-    DiscreteBayesTreeClique() {}
-    DiscreteBayesTreeClique(const boost::shared_ptr<DiscreteConditional>& conditional) : Base(conditional) {}
-  };
+/* ************************************************************************* */
+/** A clique in a DiscreteBayesTree */
+class GTSAM_EXPORT DiscreteBayesTreeClique
+    : public BayesTreeCliqueBase<DiscreteBayesTreeClique, DiscreteFactorGraph> {
+ public:
+  typedef DiscreteBayesTreeClique This;
+  typedef BayesTreeCliqueBase<DiscreteBayesTreeClique, DiscreteFactorGraph>
+      Base;
+  typedef boost::shared_ptr<This> shared_ptr;
+  typedef boost::weak_ptr<This> weak_ptr;
+  DiscreteBayesTreeClique() {}
+  DiscreteBayesTreeClique(
+      const boost::shared_ptr<DiscreteConditional>& conditional)
+      : Base(conditional) {}
 
-  /* ************************************************************************* */
-  /** A Bayes tree representing a Discrete density */
-  class GTSAM_EXPORT DiscreteBayesTree :
-    public BayesTree<DiscreteBayesTreeClique>
-  {
-  private:
-    typedef BayesTree<DiscreteBayesTreeClique> Base;
+  /// print index signature only
+  void printSignature(
+      const std::string& s = "Clique: ",
+      const KeyFormatter& formatter = DefaultKeyFormatter) const {
+    conditional_->printSignature(s, formatter);
+  }
 
-  public:
-    typedef DiscreteBayesTree This;
-    typedef boost::shared_ptr<This> shared_ptr;
+  //** evaluate conditional probability of subtree for given Values */
+  double evaluate(const DiscreteConditional::Values& values) const;
+};
 
-    /** Default constructor, creates an empty Bayes tree */
-    DiscreteBayesTree() {}
+/* ************************************************************************* */
+/** A Bayes tree representing a Discrete density */
+class GTSAM_EXPORT DiscreteBayesTree
+    : public BayesTree<DiscreteBayesTreeClique> {
+ private:
+  typedef BayesTree<DiscreteBayesTreeClique> Base;
 
-    /** Check equality */
-    bool equals(const This& other, double tol = 1e-9) const;
-  };
+ public:
+  typedef DiscreteBayesTree This;
+  typedef boost::shared_ptr<This> shared_ptr;
 
-}
+  /** Default constructor, creates an empty Bayes tree */
+  DiscreteBayesTree() {}
+
+  /** Check equality */
+  bool equals(const This& other, double tol = 1e-9) const;
+
+  //** evaluate probability for given Values */
+  double evaluate(const DiscreteConditional::Values& values) const;
+};
+
+}  // namespace gtsam

@@ -27,7 +27,7 @@ namespace gtsam {
 
 //------------------------------------------------------------------------------
 void PreintegrationParams::print(const string& s) const {
-  PreintegratedRotation::Params::print(s);
+  PreintegratedRotationParams::print(s);
   cout << "accelerometerCovariance:\n[\n" << accelerometerCovariance << "\n]"
        << endl;
   cout << "integrationCovariance:\n[\n" << integrationCovariance << "\n]"
@@ -39,10 +39,10 @@ void PreintegrationParams::print(const string& s) const {
 }
 
 //------------------------------------------------------------------------------
-bool PreintegrationParams::equals(const PreintegratedRotation::Params& other,
+bool PreintegrationParams::equals(const PreintegratedRotationParams& other,
                                   double tol) const {
   auto e = dynamic_cast<const PreintegrationParams*>(&other);
-  return e != nullptr && PreintegratedRotation::Params::equals(other, tol) &&
+  return e != nullptr && PreintegratedRotationParams::equals(other, tol) &&
          use2ndOrderCoriolis == e->use2ndOrderCoriolis &&
          equal_with_abs_tol(accelerometerCovariance, e->accelerometerCovariance,
                             tol) &&

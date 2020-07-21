@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
         Symbol('x', i), corrupted_pose);
   }
   for (size_t j = 0; j < points.size(); ++j) {
-    auto corrupted_point = points[j] + Point3(-0.25, 0.20, 0.15);
+    Point3 corrupted_point = points[j] + Point3(-0.25, 0.20, 0.15);
     initialEstimate.insert<Point3>(Symbol('l', j), corrupted_point);
   }
   initialEstimate.print("Initial Estimates:\n");
