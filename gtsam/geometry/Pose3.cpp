@@ -286,9 +286,10 @@ Matrix4 Pose3::matrix() const {
 }
 
 /* ************************************************************************* */
-Pose3 Pose3::transformPoseFrom(const Pose3& aTb) const {
+Pose3 Pose3::transformPoseFrom(const Pose3& aTb, OptionalJacobian<6, 6> Hself,
+                                                 OptionalJacobian<6, 6> HaTb) const {
   const Pose3& wTa = *this;
-  return wTa * aTb;
+  return wTa.compose(aTb, Hself, HaTb);
 }
 
 /* ************************************************************************* */
@@ -310,28 +311,28 @@ Pose3 Pose3::transformPoseTo(const Pose3& wTb, OptionalJacobian<6, 6> Hself,
 }
 
 /* ************************************************************************* */
-Point3 Pose3::transformFrom(const Point3& p, OptionalJacobian<3, 6> Hself,
+Point3 Pose3::transformFrom(const Point3& point, OptionalJacobian<3, 6> Hself,
     OptionalJacobian<3, 3> Hpoint) const {
   // Only get matrix once, to avoid multiple allocations,
   // as well as multiple conversions in the Quaternion case
   const Matrix3 R = R_.matrix();
   if (Hself) {
-    Hself->leftCols<3>() = R * skewSymmetric(-p.x(), -p.y(), -p.z());
+    Hself->leftCols<3>() = R * skewSymmetric(-point.x(), -point.y(), -point.z());
     Hself->rightCols<3>() = R;
   }
   if (Hpoint) {
     *Hpoint = R;
   }
-  return R_ * p + t_;
+  return R_ * point + t_;
 }
 
 /* ************************************************************************* */
-Point3 Pose3::transformTo(const Point3& p, OptionalJacobian<3, 6> Hself,
+Point3 Pose3::transformTo(const Point3& point, OptionalJacobian<3, 6> Hself,
     OptionalJacobian<3, 3> Hpoint) const {
   // Only get transpose once, to avoid multiple allocations,
   // as well as multiple conversions in the Quaternion case
   const Matrix3 Rt = R_.transpose();
-  const Point3 q(Rt*(p - t_));
+  const Point3 q(Rt*(point - t_));
   if (Hself) {
     const double wx = q.x(), wy = q.y(), wz = q.z();
     (*Hself) <<

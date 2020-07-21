@@ -201,27 +201,27 @@ public:
 
   /**
    * @brief takes point in Pose coordinates and transforms it to world coordinates
-   * @param p point in Pose coordinates
+   * @param point point in Pose coordinates
    * @param Hself optional 3*6 Jacobian wrpt this pose
    * @param Hpoint optional 3*3 Jacobian wrpt point
    * @return point in world coordinates
    */
-  Point3 transformFrom(const Point3& p, OptionalJacobian<3, 6> Hself =
+  Point3 transformFrom(const Point3& point, OptionalJacobian<3, 6> Hself =
       boost::none, OptionalJacobian<3, 3> Hpoint = boost::none) const;
 
   /** syntactic sugar for transformFrom */
-  inline Point3 operator*(const Point3& p) const {
-    return transformFrom(p);
+  inline Point3 operator*(const Point3& point) const {
+    return transformFrom(point);
   }
 
   /**
    * @brief takes point in world coordinates and transforms it to Pose coordinates
-   * @param p point in world coordinates
+   * @param point point in world coordinates
    * @param Hself optional 3*6 Jacobian wrpt this pose
    * @param Hpoint optional 3*3 Jacobian wrpt point
    * @return point in Pose coordinates
    */
-  Point3 transformTo(const Point3& p, OptionalJacobian<3, 6> Hself =
+  Point3 transformTo(const Point3& point, OptionalJacobian<3, 6> Hself =
       boost::none, OptionalJacobian<3, 3> Hpoint = boost::none) const;
 
   /// @}
@@ -252,12 +252,20 @@ public:
   /** convert to 4*4 matrix */
   Matrix4 matrix() const;
 
-  /** receives a pose in local coordinates and transforms it to world coordinates */
-  Pose3 transformPoseFrom(const Pose3& pose) const;
+  /** 
+    * Assuming self == wTa, takes a pose aTb in local coordinates 
+    * and transforms it to world coordinates wTb = wTa * aTb.
+    * This is identical to compose.
+    */
+  Pose3 transformPoseFrom(const Pose3& aTb, OptionalJacobian<6, 6> Hself = boost::none,
+                                            OptionalJacobian<6, 6> HaTb = boost::none) const;
 
-  /** receives a pose in world coordinates and transforms it to local coordinates */
-  Pose3 transformPoseTo(const Pose3& pose, OptionalJacobian<6, 6> Hself = boost::none,
-                                           OptionalJacobian<6, 6> Hpose = boost::none) const;
+  /** 
+   *  Assuming self == wTa, takes a pose wTb in world coordinates 
+   * and transforms it to local coordinates aTb = inv(wTa) * wTb 
+   */
+  Pose3 transformPoseTo(const Pose3& wTb, OptionalJacobian<6, 6> Hself = boost::none,
+                                          OptionalJacobian<6, 6> HwTb = boost::none) const;
 
   /**
    * Calculate range to a landmark
