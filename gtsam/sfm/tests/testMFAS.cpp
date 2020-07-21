@@ -5,12 +5,14 @@
 using namespace std;
 using namespace gtsam;
 
-/* We (partially) use the example from the paper on 1dsfm
+/**
+ * We (partially) use the example from the paper on 1dsfm
  * (https://research.cs.cornell.edu/1dsfm/docs/1DSfM_ECCV14.pdf, Fig 1, Page 5)
  * for the unit tests here. The only change is that we leave out node 4 and use
  * only nodes 0-3. This makes the test easier to understand and also
  * avoids an ambiguity in the ground truth ordering that arises due to
- * insufficient edges in the geaph when using the 4th node. */
+ * insufficient edges in the geaph when using the 4th node.
+ */
 
 // edges in the graph - last edge from node 3 to 0 is an outlier
 vector<KeyPair> graph = {make_pair(3, 2), make_pair(0, 1), make_pair(3, 1),

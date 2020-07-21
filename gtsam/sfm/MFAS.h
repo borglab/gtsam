@@ -25,7 +25,7 @@ namespace gtsam {
 using KeyPair = std::pair<Key, Key>;
 using TranslationEdges = std::map<KeyPair, Unit3>;
 
-/*
+/**
   The MFAS class to solve a Minimum feedback arc set (MFAS)
   problem. We implement the solution from:
   Kyle Wilson and Noah Snavely, "Robust Global Translations with 1DSfM", 
@@ -34,12 +34,13 @@ using TranslationEdges = std::map<KeyPair, Unit3>;
   Given a weighted directed graph, the objective in a Minimum feedback arc set
   problem is to obtain a graph that does not contain any cycles by removing
   edges such that the total weight of removed edges is minimum.
+  @addtogroup SFM
 */
 class MFAS {
  public:
-  /*
+  /**
    * @brief Construct from the nodes in a graph (points in 3D), edges
-   * that are transation directions in 3D and the direction in
+   * that are translation directions in 3D and the direction in
    * which edges are to be projected.
    * @param nodes Nodes in the graph
    * @param relativeTranslations translation directions between nodes
@@ -49,8 +50,8 @@ class MFAS {
        const std::shared_ptr<TranslationEdges> &relativeTranslations,
        const Unit3 &projectionDirection);
 
-  /*
-   * Construct from the nodes in a graph and weighted directed edges
+  /**
+   * @brief Construct from the nodes in a graph and weighted directed edges
    * between the graph. Not recommended for any purpose other than unit testing. 
    * The computeOutlierWeights method will return an empty output if this constructor 
    * is used. 
@@ -62,7 +63,7 @@ class MFAS {
   MFAS(const std::shared_ptr<std::vector<Key>> &nodes,
        const std::map<KeyPair, double> &edgeWeights);
 
-  /*
+  /**
    * @brief Computes the "outlier weights" of the graph. We define the outlier weight
    * of a edge to be zero if the edge in an inlier and the magnitude of its edgeWeight
    * if it is an outlier. This function can only be used when constructing the 
@@ -70,8 +71,8 @@ class MFAS {
    */
   std::map<KeyPair, double> computeOutlierWeights();
 
-  /*
-   * Computes the 1D MFAS ordering of nodes in the graph
+  /**
+   * @brief Computes the 1D MFAS ordering of nodes in the graph
    * @return orderedNodes: vector of nodes in the obtained order
    */
   std::vector<Key> computeOrdering();

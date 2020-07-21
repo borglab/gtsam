@@ -120,7 +120,7 @@ std::map<KeyPair, double> MFAS::computeOutlierWeights() {
 
   for (auto it = start; it != end; it++) {
     // relativeTranslations may have negative weight edges, we make sure all edges
-    // are along the postive direction by flipping them if they are not.
+    // are along the positive direction by flipping them if they are not.
     KeyPair edge = it->first;
     if (positiveEdgeWeights_.find(edge) == positiveEdgeWeights_.end()) {
       std::swap(edge.first, edge.second);
