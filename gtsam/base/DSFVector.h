@@ -55,11 +55,6 @@ public:
 
   /// Merge the sets containing i1 and i2. Does nothing if i1 and i2 are already in the same set.
   void merge(const size_t& i1, const size_t& i2);
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  inline size_t findSet(size_t key) const {return find(key);}
-  inline void makeUnionInPlace(const size_t& i1, const size_t& i2) {return merge(i1,i2);}
-#endif
 };
 
 /**

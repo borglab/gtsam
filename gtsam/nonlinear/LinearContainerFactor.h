@@ -140,21 +140,14 @@ public:
    * Utility function for converting linear graphs to nonlinear graphs
    * consisting of LinearContainerFactors.
    */
-  GTSAM_EXPORT static NonlinearFactorGraph ConvertLinearGraph(const GaussianFactorGraph& linear_graph,
+  GTSAM_EXPORT
+  static NonlinearFactorGraph ConvertLinearGraph(const GaussianFactorGraph& linear_graph,
       const Values& linearizationPoint = Values());
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  GTSAM_EXPORT static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
-      const Values& linearizationPoint = Values()) {
-    return ConvertLinearGraph(linear_graph, linearizationPoint);
-  }
-#endif
+ protected:
+  GTSAM_EXPORT void initializeLinearizationPoint(const Values& linearizationPoint);
 
-protected:
-	GTSAM_EXPORT void initializeLinearizationPoint(const Values& linearizationPoint);
-
-private:
-
+ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>

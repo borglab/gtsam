@@ -29,13 +29,6 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/assign/list_of.hpp>
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-#define ADD_CLONE_NONLINEAR_FACTOR(Derived) \
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const { \
-  return boost::static_pointer_cast<gtsam::NonlinearFactor>( \
-      gtsam::NonlinearFactor::shared_ptr(new Derived(*this))); }
-#endif
-
 namespace gtsam {
 
 using boost::assign::cref_list_of;
@@ -251,21 +244,13 @@ public:
    */
   boost::shared_ptr<GaussianFactor> linearize(const Values& x) const;
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @name Deprecated
-  /// @{
-  SharedNoiseModel get_noiseModel() const { return noiseModel_; }
-  /// @}
-#endif
-
-private:
-
+ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NonlinearFactor",
-        boost::serialization::base_object<Base>(*this));
+         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(noiseModel_);
   }
 

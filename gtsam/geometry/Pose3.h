@@ -326,30 +326,6 @@ public:
   GTSAM_EXPORT
   friend std::ostream &operator<<(std::ostream &os, const Pose3& p);
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @name Deprecated
-  /// @{
-  Point3 transform_from(const Point3& point,
-                        OptionalJacobian<3, 6> Hself = boost::none,
-                        OptionalJacobian<3, 3> Hpoint = boost::none) const {
-    return transformFrom(point, Hself, Hpoint);
-  }
-  Point3 transform_to(const Point3& point,
-                      OptionalJacobian<3, 6> Hself = boost::none,
-                      OptionalJacobian<3, 3> Hpoint = boost::none) const {
-    return transformTo(point, Hself, Hpoint);
-  }
-  Pose3 transform_pose_to(const Pose3& pose,
-                          OptionalJacobian<6, 6> Hself = boost::none,
-                          OptionalJacobian<6, 6> Hpose = boost::none) const {
-    return transformPoseTo(pose, Hself, Hpose);
-  }
-  /** 
-  * @deprecated: this function is neither here not there. */
-  Pose3 transform_to(const Pose3& pose) const;
-  /// @}
-#endif
-
  private:
   /** Serialization function */
   friend class boost::serialization::access;
@@ -379,11 +355,6 @@ template<>
 inline Matrix wedge<Pose3>(const Vector& xi) {
   return Pose3::wedge(xi(0), xi(1), xi(2), xi(3), xi(4), xi(5));
 }
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-// deprecated: use Pose3::Align with point pairs ordered the opposite way
-GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& baPointPairs);
-#endif
 
 // For MATLAB wrapper
 typedef std::vector<Pose3> Pose3Vector;
