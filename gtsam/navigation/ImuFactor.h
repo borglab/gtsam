@@ -59,7 +59,7 @@ typedef ManifoldPreintegration PreintegrationType;
  */
 
 /**
- * PreintegratedIMUMeasurements accumulates (integrates) the IMU measurements
+ * PreintegratedImuMeasurements accumulates (integrates) the IMU measurements
  * (rotation rates and accelerations) and the corresponding covariance matrix.
  * The measurements are then used to build the Preintegrated IMU factor.
  * Integration is done incrementally (ideally, one integrates the measurement
@@ -87,8 +87,8 @@ public:
 
  /**
    *  Constructor, initializes the class with no measurements
-   *  @param bias Current estimate of acceleration and rotation rate biases
-   *  @param p    Parameters, typically fixed in a single application
+   *  @param p       Parameters, typically fixed in a single application
+   *  @param biasHat Current estimate of acceleration and rotation rate biases
    */
   PreintegratedImuMeasurements(const boost::shared_ptr<PreintegrationParams>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias()) :
@@ -164,7 +164,7 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
-    ar & bs::make_nvp("preintMeasCov_", bs::make_array(preintMeasCov_.data(), preintMeasCov_.size()));
+    ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
   }
 };
 
