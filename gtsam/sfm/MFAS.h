@@ -9,8 +9,7 @@
 
  * -------------------------------------------------------------------------- */
 
-#ifndef __MFAS_H__
-#define __MFAS_H__
+#pragma once
 
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/inference/Key.h>
@@ -21,10 +20,6 @@
 
 namespace gtsam {
 
-// used to represent edges between two nodes in the graph
-using KeyPair = std::pair<Key, Key>;
-using TranslationEdges = std::map<KeyPair, Unit3>;
-
 /**
   The MFAS class to solve a Minimum feedback arc set (MFAS)
   problem. We implement the solution from:
@@ -32,77 +27,64 @@ using TranslationEdges = std::map<KeyPair, Unit3>;
   Proceedings of the European Conference on Computer Vision, ECCV 2014
 
   Given a weighted directed graph, the objective in a Minimum feedback arc set
-  problem is to obtain a graph that does not contain any cycles by removing
+  problem is to obtain a directed acyclic graph by removing
   edges such that the total weight of removed edges is minimum.
   @addtogroup SFM
 */
 class MFAS {
  public:
+  // used to represent edges between two nodes in the graph
+  using KeyPair = std::pair<Key, Key>;
+  using TranslationEdges = std::map<KeyPair, Unit3>;
+ private:
+  // pointer to nodes in the graph
+  const std::shared_ptr<std::vector<Key>> nodes_;
+
+  // edges with a direction such that all weights are positive
+  // i.e, edges that originally had negative weights are flipped
+  std::map<KeyPair, double> edgeWeights_;
+
+ public:
   /**
-   * @brief Construct from the nodes in a graph (points in 3D), edges
-   * that are translation directions in 3D and the direction in
-   * which edges are to be projected.
+   * @brief Construct from the nodes in a graph and weighted directed edges
+   * between the graph. A shared pointer to the nodes is used as input parameter. 
+   * This is because, MFAS ordering is usually used to compute the ordering of a 
+   * large graph that is already stored in memory. It is unnecessary to copy the 
+   * set of nodes in this class. 
+   * @param nodes: Nodes in the graph
+   * @param edgeWeights: weights of edges in the graph (map from pair of keys 
+   * to signed double)
+   */
+  MFAS(const std::shared_ptr<std::vector<Key>> &nodes,
+       const std::map<KeyPair, double> &edgeWeights) :
+       nodes_(nodes), edgeWeights_(edgeWeights) {}
+
+  /**
+   * @brief Constructor for using in the context of translation averaging. Here, 
+   * the nodes of the graph are cameras in 3D and the edges have a unit translation 
+   * direction between them. The weights of the edges is computed by projecting 
+   * them along a projection direction. 
    * @param nodes Nodes in the graph
    * @param relativeTranslations translation directions between nodes
    * @param projectionDirection direction in which edges are to be projected
    */
   MFAS(const std::shared_ptr<std::vector<Key>> &nodes,
-       const std::shared_ptr<TranslationEdges> &relativeTranslations,
+       const TranslationEdges& relativeTranslations,
        const Unit3 &projectionDirection);
 
   /**
-   * @brief Construct from the nodes in a graph and weighted directed edges
-   * between the graph. Not recommended for any purpose other than unit testing. 
-   * The computeOutlierWeights method will return an empty output if this constructor 
-   * is used. 
-   * When used in a translation averaging context, these weights are obtained
-   * by projecting edges in a particular direction.
-   * @param nodes: Nodes in the graph
-   * @param edgeWeights: weights of edges in the graph (map from edge to signed double)
-   */
-  MFAS(const std::shared_ptr<std::vector<Key>> &nodes,
-       const std::map<KeyPair, double> &edgeWeights);
-
-  /**
    * @brief Computes the "outlier weights" of the graph. We define the outlier weight
-   * of a edge to be zero if the edge in an inlier and the magnitude of its edgeWeight
-   * if it is an outlier. This function can only be used when constructing the 
+   * of a edge to be zero if the edge is an inlier and the magnitude of its edgeWeight
+   * if it is an outlier.
    * @return outlierWeights: map from an edge to its outlier weight.
    */
-  std::map<KeyPair, double> computeOutlierWeights();
+  std::map<KeyPair, double> computeOutlierWeights() const;
 
   /**
    * @brief Computes the 1D MFAS ordering of nodes in the graph
    * @return orderedNodes: vector of nodes in the obtained order
    */
-  std::vector<Key> computeOrdering();
-
- private:
-  // pointer to nodes in the graph
-  const std::shared_ptr<std::vector<Key>> nodes_;
-  // pointer to translation edges (translation directions between two node points)
-  const std::shared_ptr<TranslationEdges> relativeTranslations_;
-
-  // relative translations when the object is initialized without using the actual
-  // relative translations, but with the weights from projecting in a certain 
-  // direction. This is used for unit testing, but not in practice. 
-  std::shared_ptr<TranslationEdges> relativeTranslationsForWeights_;
-
-  // edges with a direction such that all weights are positive
-  // i.e, edges that originally had negative weights are flipped
-  std::map<KeyPair, double> positiveEdgeWeights_;
-
-  // map from edges to their outlier weight
-  std::map<KeyPair, double> outlierWeights_;
-
-  // nodes arranged in the MFAS order
-  std::vector<Key> orderedNodes_;
-
-  // map from nodes to their position in the MFAS order
-  // used to speed up computation (lookup) when computing outlierWeights_
-  FastMap<Key, int> orderedPositions_;
+  std::vector<Key> computeOrdering() const;
 };
 
 }  // namespace gtsam
-
-#endif  // __MFAS_H__

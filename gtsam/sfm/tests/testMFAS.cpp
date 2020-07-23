@@ -15,7 +15,7 @@ using namespace gtsam;
  */
 
 // edges in the graph - last edge from node 3 to 0 is an outlier
-vector<KeyPair> graph = {make_pair(3, 2), make_pair(0, 1), make_pair(3, 1),
+vector<MFAS::KeyPair> graph = {make_pair(3, 2), make_pair(0, 1), make_pair(3, 1),
                          make_pair(1, 2), make_pair(0, 2), make_pair(3, 0)};
 // nodes in the graph
 vector<Key> nodes = {Key(0), Key(1), Key(2), Key(3)};
@@ -26,9 +26,9 @@ vector<double> weights2 = {0.5, 0.75, -0.25, 0.75, 1, 0.5};
 
 // helper function to obtain map from keypairs to weights from the 
 // vector representations
-std::map<KeyPair, double> getEdgeWeights(const vector<KeyPair> &graph,
+std::map<MFAS::KeyPair, double> getEdgeWeights(const vector<MFAS::KeyPair> &graph,
                                          const vector<double> &weights) {
-  std::map<KeyPair, double> edgeWeights;
+  std::map<MFAS::KeyPair, double> edgeWeights;
   for (size_t i = 0; i < graph.size(); i++) {
     edgeWeights[graph[i]] = weights[i];
   }
@@ -51,7 +51,7 @@ TEST(MFAS, OrderingWeights2) {
     EXPECT_LONGS_EQUAL(gt_ordered_nodes[i], ordered_nodes[i]);
   }
 
-  map<KeyPair, double> outlier_weights = mfas_obj.computeOutlierWeights();
+  map<MFAS::KeyPair, double> outlier_weights = mfas_obj.computeOutlierWeights();
 
   // since edge between 3 and 0 is inconsistent with the ordering, it must have
   // positive outlier weight, other outlier weights must be zero
@@ -81,7 +81,7 @@ TEST(MFAS, OrderingWeights1) {
     EXPECT_LONGS_EQUAL(gt_ordered_nodes[i], ordered_nodes[i]);
   }
 
-  map<KeyPair, double> outlier_weights = mfas_obj.computeOutlierWeights();
+  map<MFAS::KeyPair, double> outlier_weights = mfas_obj.computeOutlierWeights();
 
   // since edge between 3 and 0 is inconsistent with the ordering, it must have
   // positive outlier weight, other outlier weights must be zero

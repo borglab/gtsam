@@ -5,76 +5,53 @@ using std::pair;
 using std::vector;
 
 MFAS::MFAS(const std::shared_ptr<vector<Key>> &nodes,
-           const std::shared_ptr<TranslationEdges> &relativeTranslations,
+           const TranslationEdges& relativeTranslations,
            const Unit3 &projection_direction)
-    : nodes_(nodes), relativeTranslations_(relativeTranslations),
-      relativeTranslationsForWeights_(std::make_shared<TranslationEdges>()) {
-  // iterate over edges and flip all edges that have negative weights,
-  // while storing the magnitude of the weights.
-  for (auto it = relativeTranslations->begin();
-       it != relativeTranslations->end(); it++) {
-    KeyPair edge = it->first;
-    double weight = it->second.dot(projection_direction);
-    if (weight < 0.0) {
-      std::swap(edge.first, edge.second);
-      weight *= -1;
-    }
-    positiveEdgeWeights_[edge] = weight;
+    : nodes_(nodes) {
+  // iterate over edges, obtain weights by projecting
+  // their relativeTranslations along the projection direction
+  for (auto it = relativeTranslations.begin();
+       it != relativeTranslations.end(); it++) {
+    edgeWeights_[it->first] = it->second.dot(projection_direction);
   }
 }
 
-MFAS::MFAS(const std::shared_ptr<std::vector<Key>> &nodes,
-           const std::map<KeyPair, double> &edgeWeights) : nodes_(nodes),
-                                                           relativeTranslations_(std::make_shared<TranslationEdges>()),
-                                                           relativeTranslationsForWeights_(std::make_shared<
-                                                               TranslationEdges>()) {
-  // similar to the above direction constructor, but here weights are
-  // provided as input.
-  for (auto it = edgeWeights.begin(); it != edgeWeights.end(); it++) {
-    KeyPair edge = it->first;
-
-    // When constructed like this, we do not have access to the relative translations. 
-    // So, we store the unswapped edge in the relativeTranslationsForWeights_ map with a default 
-    // Unit3 value. This helps retain the original direction of the edge in the returned result
-    // of computeOutlierWeights
-    relativeTranslationsForWeights_->insert({edge, Unit3()});
-
-    double weight = it->second;
-    if (weight < 0.0) {
-      // change the direction of the edge to make weight positive
-      std::swap(edge.first, edge.second);
-      weight *= -1;
-    }
-    positiveEdgeWeights_[edge] = weight;
-  }
-}
-
-std::vector<Key> MFAS::computeOrdering() {
+std::vector<Key> MFAS::computeOrdering() const {
   FastMap<Key, double> in_weights;    // sum on weights of incoming edges for a node
   FastMap<Key, double> out_weights;   // sum on weights of outgoing edges for a node
   FastMap<Key, vector<Key> > in_neighbors;
   FastMap<Key, vector<Key> > out_neighbors;
 
+  vector<Key> ordered_nodes;            // nodes in MFAS order (result)
+  FastMap<Key, int> ordered_positions;  // map from node to its position in the output order
+
   // populate neighbors and weights
-  for (auto it = positiveEdgeWeights_.begin(); it != positiveEdgeWeights_.end(); it++) {
+  for (auto it = edgeWeights_.begin(); it != edgeWeights_.end(); it++) {
     const KeyPair &edge = it->first;
-    in_weights[edge.second] += it->second;
-    out_weights[edge.first] += it->second;
-    in_neighbors[edge.second].push_back(edge.first);
-    out_neighbors[edge.first].push_back(edge.second);
+    const double weight = it->second;
+    Key edge_source = weight >= 0 ? edge.first : edge.second;
+    Key edge_dest = weight >= 0 ? edge.second : edge.first;
+
+    in_weights[edge_dest] += weight;
+    out_weights[edge_source] += weight;
+    in_neighbors[edge_dest].push_back(edge_source);
+    out_neighbors[edge_source].push_back(edge_dest);
   }
 
   // in each iteration, one node is appended to the ordered list
-  while (orderedNodes_.size() < nodes_->size()) {
+  while (ordered_nodes.size() < nodes_->size()) {
 
     // finding the node with the max heuristic score
     Key choice;
     double max_score = 0.0;
 
     for (const Key &node : *nodes_) {
-      if (orderedPositions_.find(node) == orderedPositions_.end()) {
-        // is this a source
+      // if this node has not been chosen so far
+      if (ordered_positions.find(node) == ordered_positions.end()) {
+        // is this a root node
         if (in_weights[node] < 1e-8) {
+          // TODO(akshay-krishnan) if there are multiple roots, it is better to choose the 
+          // one with highest heuristic. This is missing in the 1dsfm solution. 
           choice = node;
           break;
         } else {
@@ -86,53 +63,54 @@ std::vector<Key> MFAS::computeOrdering() {
         }
       }
     }
-    // find its inbrs, adjust their wout_deg
+    // find its in_neighbors, adjust their out_weights
     for (auto it = in_neighbors[choice].begin();
          it != in_neighbors[choice].end(); ++it)
-      out_weights[*it] -= positiveEdgeWeights_[KeyPair(*it, choice)];
-    // find its onbrs, adjust their win_deg
+      // the edge could be either (*it, choice) with a positive weight or (choice, *it) with a negative weight
+      out_weights[*it] -= edgeWeights_.find(KeyPair(*it, choice)) == edgeWeights_.end() ? -edgeWeights_.at(KeyPair(choice, *it)) : edgeWeights_.at(KeyPair(*it, choice));
+
+    // find its out_neighbors, adjust their in_weights
     for (auto it = out_neighbors[choice].begin();
          it != out_neighbors[choice].end(); ++it)
-      in_weights[*it] -= positiveEdgeWeights_[KeyPair(choice, *it)];
+      in_weights[*it] -= edgeWeights_.find(KeyPair(choice, *it)) == edgeWeights_.end() ? -edgeWeights_.at(KeyPair(*it, choice)) : edgeWeights_.at(KeyPair(choice, *it));
 
-    orderedPositions_[choice] = orderedNodes_.size();
-    orderedNodes_.push_back(choice);
+    ordered_positions[choice] = ordered_nodes.size();
+    ordered_nodes.push_back(choice);
   }
-  return orderedNodes_;
+  return ordered_nodes;
 }
 
-std::map<KeyPair, double> MFAS::computeOutlierWeights() {
-  // if ordering has not been computed yet
-  if (orderedNodes_.size() != nodes_->size()) {
-    computeOrdering();
-  }
-  // iterate over all edges
-  // start and end iterators depend on whether we are using relativeTranslations_ or
-  // relativeTranslationsForWeights_ to store the original edge directions
-  TranslationEdges::iterator start, end;
-  if (relativeTranslationsForWeights_->size() == 0) {
-    start = relativeTranslations_->begin();
-    end = relativeTranslations_->end();
-  } else {
-    start = relativeTranslationsForWeights_->begin();
-    end = relativeTranslationsForWeights_->end();
+std::map<MFAS::KeyPair, double> MFAS::computeOutlierWeights() const {
+  vector<Key> ordered_nodes = computeOrdering();
+  FastMap<Key, int> ordered_positions;
+  std::map<KeyPair, double> outlier_weights;
+
+  // create a map becuase it is much faster to lookup the position of each node
+  // TODO(akshay-krishnan) this is already computed in computeOrdering. Would be nice if 
+  // we could re-use. Either use an optional argument or change the output of
+  // computeOrdering
+  for(unsigned int i = 0; i < ordered_nodes.size(); i++) {
+    ordered_positions[ordered_nodes[i]] = i;
   }
 
-  for (auto it = start; it != end; it++) {
-    // relativeTranslations may have negative weight edges, we make sure all edges
-    // are along the positive direction by flipping them if they are not.
-    KeyPair edge = it->first;
-    if (positiveEdgeWeights_.find(edge) == positiveEdgeWeights_.end()) {
-      std::swap(edge.first, edge.second);
+  // iterate over all edges
+  for (auto it = edgeWeights_.begin(); it != edgeWeights_.end(); it++) {
+    Key edge_source, edge_dest;
+    if(it->second > 0) {
+      edge_source = it->first.first;
+      edge_dest = it->first.second;
+    } else {
+      edge_source = it->first.second;
+      edge_dest = it->first.first;
     }
 
     // if the ordered position of nodes is not consistent with the edge
     // direction for consistency second should be greater than first
-    if (orderedPositions_.at(edge.second) < orderedPositions_.at(edge.first)) {
-      outlierWeights_[it->first] = std::abs(positiveEdgeWeights_[edge]);
+    if (ordered_positions.at(edge_dest) < ordered_positions.at(edge_source)) {
+      outlier_weights[it->first] = std::abs(edgeWeights_.at(it->first));
     } else {
-      outlierWeights_[it->first] = 0;
+      outlier_weights[it->first] = 0;
     }
   }
-  return outlierWeights_;
+  return outlier_weights;
 }
