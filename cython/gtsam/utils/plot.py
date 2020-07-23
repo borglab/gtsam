@@ -267,6 +267,10 @@ def plot_pose3(fignum, pose, axis_length=0.1, P=None):
     plot_pose3_on_axes(axes, pose, P=P,
                        axis_length=axis_length)
 
+    axes.set_xlabel('X axis')
+    axes.set_ylabel('Y axis')
+    axes.set_zlabel('Z axis')
+
 
 def plot_trajectory(fignum, values, scale=1, marginals=None):
     """
