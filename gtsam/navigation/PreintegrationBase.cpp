@@ -28,7 +28,7 @@ using namespace std;
 namespace gtsam {
 
 //------------------------------------------------------------------------------
-PreintegrationBase::PreintegrationBase(const boost::shared_ptr<Params>& p,
+PreintegrationBase::PreintegrationBase(const boost::shared_ptr<const Params>& p,
                                        const Bias& biasHat)
     : p_(p), biasHat_(biasHat), deltaTij_(0.0) {
 }
