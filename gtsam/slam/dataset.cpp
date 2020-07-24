@@ -195,6 +195,13 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
   }
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+/* ************************************************************************* */
+boost::optional<IndexedPose> parseVertex(istream& is, const string& tag) {
+  return parseVertexPose(is, tag);
+}
+#endif
+
 /* ************************************************************************* */
 boost::optional<IndexedPose> parseVertexPose(istream& is, const string& tag) {
   if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {

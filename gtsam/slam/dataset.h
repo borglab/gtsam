@@ -79,6 +79,16 @@ typedef std::pair<Key, Pose2> IndexedPose;
 typedef std::pair<Key, Point2> IndexedLandmark;
 typedef std::pair<std::pair<Key, Key>, Pose2> IndexedEdge;
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+/**
+ * Parse TORO/G2O vertex "id x y yaw"
+ * @param is input stream
+ * @param tag string parsed from input stream, will only parse if vertex type
+ */
+GTSAM_EXPORT boost::optional<IndexedPose> parseVertex(std::istream& is,
+    const std::string& tag);
+#endif
+
 /**
  * Parse TORO/G2O vertex "id x y yaw"
  * @param is input stream
