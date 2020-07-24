@@ -278,6 +278,17 @@ TEST(dataSet, readG2oCheckDeterminants) {
 }
 
 /* ************************************************************************* */
+TEST(dataSet, readG2oLandmarks) {
+  const string g2oFile = findExampleDataFile("example_with_vertices.g2o");
+
+  // Check number of poses and landmarks. Should be 8 each.
+  const map<Key, Pose3> poses = parse3DPoses(g2oFile);
+  EXPECT_LONGS_EQUAL(8, poses.size());
+  const map<Key, Point3> landmarks = parse3DLandmarks(g2oFile);
+  EXPECT_LONGS_EQUAL(8, landmarks.size());
+}
+
+/* ************************************************************************* */
 static NonlinearFactorGraph expectedGraph(const SharedNoiseModel& model) {
   NonlinearFactorGraph g;
   using Factor = BetweenFactor<Pose2>;
