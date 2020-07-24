@@ -31,6 +31,7 @@
 #include <gtsam/slam/FrobeniusFactor.h>
 
 #include <iostream>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -76,7 +77,7 @@ int main(int argc, char* argv[]) {
         keys[0], keys[1], SO3(Tij.rotation().matrix()), model);
   }
 
-  boost::mt19937 rng(42);
+  std::mt19937 rng(42);
 
   // Set parameters to be similar to ceres
   LevenbergMarquardtParams params;
