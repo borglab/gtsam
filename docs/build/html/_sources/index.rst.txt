@@ -3,24 +3,27 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to GTSAM's documentation!
-=================================
+GTSAM Documentation
+===================
 
 .. toctree::
+   :caption: Contents
    :maxdepth: 2
-   :hidden:
-
-   Home <self>
    
-   Getting Started/Initial setup
-   Getting Started/Building the code
-   Getting Started/Hello GTSAM tutorial
-   install
-   first-steps
-   architecture
-   world
-   physics
-   extending
+
+   Home<self>
+   BeginnerGuide
+   KeyConcepts
+   Examples
+   AdvancedConcepts
+   DeveloperGuide
+   
+About GTSAM
+===========
+ 
+Licenses
+========
+
 
 
 
