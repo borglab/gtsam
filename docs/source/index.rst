@@ -8,7 +8,19 @@ Welcome to GTSAM's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :hidden:
+
+   Home <self>
+   
+   Getting Started/Initial setup
+   Getting Started/Building the code
+   Getting Started/Hello GTSAM tutorial
+   install
+   first-steps
+   architecture
+   world
+   physics
+   extending
 
 
 
