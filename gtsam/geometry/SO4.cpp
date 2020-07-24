@@ -35,7 +35,7 @@ namespace gtsam {
 
 // TODO(frank): is this better than SOn::Random?
 // /* *************************************************************************
-// */ static Vector3 randomOmega(boost::mt19937 &rng) {
+// */ static Vector3 randomOmega(std::mt19937 &rng) {
 //   static std::uniform_real_distribution<double> randomAngle(-M_PI, M_PI);
 //   return Unit3::Random(rng).unitVector() * randomAngle(rng);
 // }
@@ -43,7 +43,7 @@ namespace gtsam {
 // /* *************************************************************************
 // */
 // // Create random SO(4) element using direct product of lie algebras.
-// SO4 SO4::Random(boost::mt19937 &rng) {
+// SO4 SO4::Random(std::mt19937 &rng) {
 //   Vector6 delta;
 //   delta << randomOmega(rng), randomOmega(rng);
 //   return SO4::Expmap(delta);
