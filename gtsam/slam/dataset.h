@@ -94,7 +94,7 @@ GTSAM_EXPORT boost::optional<IndexedPose> parseVertexPose(std::istream& is,
  */
 
 GTSAM_EXPORT boost::optional<IndexedLandmark> parseVertexLandmark(std::istream& is,
-    const std::string& tag)
+    const std::string& tag);
 
 /**
  * Parse TORO/G2O edge "id1 id2 x y yaw"
@@ -176,7 +176,7 @@ GTSAM_EXPORT BetweenFactorPose3s parse3DFactors(const std::string& filename,
 GTSAM_EXPORT std::map<Key, Pose3> parse3DPoses(const std::string& filename);
 
 /// Parse landmarks in 3D g2o graph file into a map of Point3s.
-GTSAM_EXPORT std::map<Key, Point3> parse3DLandmarks(const string& filename)
+GTSAM_EXPORT std::map<Key, Point3> parse3DLandmarks(const string& filename);
 
 /// Load TORO 3D Graph
 GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
