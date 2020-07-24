@@ -131,7 +131,7 @@ TEST(FunctorizedFactor, Print) {
       "FunctorizedFactor(X0)\n"
       "  measurement: [\n"
       "	1, 0;\n"
-      " 	0, 1\n"
+      "	0, 1\n"
       "]\n"
       "  noise model sigmas: 1 1 1 1 1 1 1 1 1\n";
 
