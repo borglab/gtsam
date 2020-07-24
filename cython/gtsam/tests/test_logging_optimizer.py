@@ -43,6 +43,11 @@ class TestOptimizeComet(GtsamTestCase):
         self.optimizer = gtsam.GaussNewtonOptimizer(
             graph, initial, self.params)
 
+        self.lmparams = gtsam.LevenbergMarquardtParams()
+        self.lmoptimizer = gtsam.LevenbergMarquardtOptimizer(
+            graph, initial, self.lmparams
+        )
+
         # setup output capture
         self.capturedOutput = StringIO()
         sys.stdout = self.capturedOutput
@@ -63,6 +68,16 @@ class TestOptimizeComet(GtsamTestCase):
 
         # Check that optimizing yields the identity.
         actual = self.optimizer.values()
+        self.gtsamAssertEquals(actual.atRot3(KEY), self.expected, tol=1e-6)
+
+    def test_lm_simple_printing(self):
+        """Make sure we are properly terminating LM"""
+        def hook(_, error):
+            print(error)
+
+        gtsam_optimize(self.lmoptimizer, self.lmparams, hook)
+
+        actual = self.lmoptimizer.values()
         self.gtsamAssertEquals(actual.atRot3(KEY), self.expected, tol=1e-6)
 
     @unittest.skip("Not a test we want run every time, as needs comet.ml account")

@@ -20,13 +20,14 @@
 #include <vector>
 #include <map>
 #include <boost/shared_ptr.hpp>
+#include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 
 namespace gtsam {
 
 /** A Bayes net made from linear-Discrete densities */
-  class GTSAM_EXPORT DiscreteBayesNet: public FactorGraph<DiscreteConditional>
+  class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional>
   {
   public:
 

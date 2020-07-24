@@ -419,6 +419,29 @@ TEST(Pose3, transform_to_rotate) {
 }
 
 /* ************************************************************************* */
+// Check transformPoseFrom and its pushforward
+Pose3 transformPoseFrom_(const Pose3& wTa, const Pose3& aTb) {
+  return wTa.transformPoseFrom(aTb);
+}
+
+TEST(Pose3, transformPoseFrom)
+{
+  Matrix actual = (T2*T2).matrix();
+  Matrix expected = T2.matrix()*T2.matrix();
+  EXPECT(assert_equal(actual, expected, 1e-8));
+
+  Matrix H1, H2;
+  T2.transformPoseFrom(T2, H1, H2);
+
+  Matrix numericalH1 = numericalDerivative21(transformPoseFrom_, T2, T2);
+  EXPECT(assert_equal(numericalH1, H1, 5e-3));
+  EXPECT(assert_equal(T2.inverse().AdjointMap(), H1, 5e-3));
+
+  Matrix numericalH2 = numericalDerivative22(transformPoseFrom_, T2, T2);
+  EXPECT(assert_equal(numericalH2, H2, 1e-4));
+}
+
+/* ************************************************************************* */
 TEST(Pose3, transformTo) {
   Pose3 transform(Rot3::Rodrigues(0, 0, -1.570796), Point3(2, 4, 0));
   Point3 actual = transform.transformTo(Point3(3, 2, 10));

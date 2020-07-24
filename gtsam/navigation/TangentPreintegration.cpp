@@ -68,7 +68,7 @@ Vector9 TangentPreintegration::UpdatePreintegrated(const Vector3& a_body,
   Matrix3 w_tangent_H_theta, invH;
   const Vector3 w_tangent = // angular velocity mapped back to tangent space
       local.applyInvDexp(w_body, A ? &w_tangent_H_theta : 0, C ? &invH : 0);
-  const Rot3 R(local.expmap());
+  const Rot3 R(local.expmap());  // nRb: rotation of body in nav frame
   const Vector3 a_nav = R * a_body;
   const double dt22 = 0.5 * dt * dt;
 
@@ -110,7 +110,7 @@ void TangentPreintegration::update(const Vector3& measuredAcc,
   Vector3 acc = biasHat_.correctAccelerometer(measuredAcc);
   Vector3 omega = biasHat_.correctGyroscope(measuredOmega);
 
-  // Possibly correct for sensor pose
+  // Possibly correct for sensor pose by converting to body frame
   Matrix3 D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega;
   if (p().body_P_sensor)
     boost::tie(acc, omega) = correctMeasurementsBySensorPose(acc, omega,
