@@ -590,7 +590,7 @@ print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default R
 print_config_flag(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency checking    ")
 print_config_flag(${GTSAM_ROT3_EXPMAP}                 "Rot3 retract is full ExpMap     ")
 print_config_flag(${GTSAM_POSE3_EXPMAP}                "Pose3 retract is full ExpMap    ")
-print_config_flag(${GTSAM_ALLOW_DEPRECATED_SINCE_V41}  "Deprecated in GTSAM 4.1 allowed ")
+print_config_flag(${GTSAM_ALLOW_DEPRECATED_SINCE_V41}  "Allow features deprecated in GTSAM 4.1")
 print_config_flag(${GTSAM_TYPEDEF_POINTS_TO_VECTORS}   "Point3 is typedef to Vector3    ")
 print_config_flag(${GTSAM_SUPPORT_NESTED_DISSECTION}   "Metis-based Nested Dissection   ")
 print_config_flag(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space preintegration")
