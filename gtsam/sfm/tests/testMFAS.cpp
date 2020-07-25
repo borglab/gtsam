@@ -1,3 +1,10 @@
+/**
+ *  @file  testMFAS.cpp
+ *  @brief Unit tests for the MFAS class
+ *  @author Akshay Krishnan
+ *  @date July 2020
+ */
+
 #include <gtsam/sfm/MFAS.h>
 #include <iostream>
 #include <CppUnitLite/TestHarness.h>

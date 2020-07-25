@@ -1,3 +1,10 @@
+/**
+ *  @file  MFAS.cpp
+ *  @brief Source file for the MFAS class
+ *  @author Akshay Krishnan
+ *  @date July 2020
+ */
+
 #include <gtsam/sfm/MFAS.h>
 
 using namespace gtsam;
@@ -26,14 +33,20 @@ std::vector<Key> MFAS::computeOrdering() const {
   FastMap<Key, int> ordered_positions;  // map from node to its position in the output order
 
   // populate neighbors and weights
+  // Since the weights could be obtained by projection, they can be either 
+  // negative or positive. Ideally, the weights should be positive in the 
+  // direction of the edge. So, we define the direction of the edge as 
+  // edge.first -> edge.second if weight is positive and 
+  // edge.second -> edge.first if weight is negative. Once we know the
+  // direction, we only use the magnitude of the weights. 
   for (auto it = edgeWeights_.begin(); it != edgeWeights_.end(); it++) {
     const KeyPair &edge = it->first;
     const double weight = it->second;
     Key edge_source = weight >= 0 ? edge.first : edge.second;
     Key edge_dest = weight >= 0 ? edge.second : edge.first;
 
-    in_weights[edge_dest] += weight;
-    out_weights[edge_source] += weight;
+    in_weights[edge_dest] += std::abs(weight);
+    out_weights[edge_source] += std::abs(weight);
     in_neighbors[edge_dest].push_back(edge_source);
     out_neighbors[edge_source].push_back(edge_dest);
   }
