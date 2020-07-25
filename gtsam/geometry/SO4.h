@@ -34,7 +34,7 @@ namespace gtsam {
 using SO4 = SO<4>;
 
 // /// Random SO(4) element (no big claims about uniformity)
-// static SO4 Random(boost::mt19937 &rng);
+// static SO4 Random(std::mt19937 &rng);
 
 // Below are all declarations of SO<4> specializations.
 // They are *defined* in SO4.cpp.
