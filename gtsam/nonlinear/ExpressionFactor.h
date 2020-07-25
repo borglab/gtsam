@@ -25,6 +25,7 @@
 #include <numeric>
 
 namespace gtsam {
+namespace serializationTestHelpers {  template <class T> T create(); }
 
 /**
 
@@ -205,6 +206,7 @@ private:
  BOOST_SERIALIZATION_SPLIT_MEMBER()
 
  friend class boost::serialization::access;
+ template <class TT> friend TT gtsam::serializationTestHelpers::create();
 
  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
  enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
