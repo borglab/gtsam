@@ -117,4 +117,9 @@ namespace gtsam {
 	GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
   };
 
+  /// traits
+  template<class VALUE>
+  struct traits<PriorFactor<VALUE> > : public Testable<PriorFactor<VALUE> > {};
+
+
 } /// namespace gtsam
