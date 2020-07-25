@@ -81,7 +81,7 @@ case $WRAPPER in
 "pybind")
     cd python
     $PYTHON setup.py install --user --prefix=
-    cd $CURRDIR/python/gtsam_py/tests
+    cd $CURRDIR/python/gtsam_py/python/tests
     $PYTHON -m unittest discover
     ;;
 *)
