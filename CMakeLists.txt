@@ -123,7 +123,8 @@ if(GTSAM_BUILD_PYTHON)
 
 	if(GTSAM_UNSTABLE_BUILD_PYTHON)
 		if (NOT GTSAM_BUILD_UNSTABLE)
-			message(FATAL_ERROR "GTSAM_UNSTABLE_BUILD_PYTHON requires the unstable module to be enabled.")
+			message(WARNING "GTSAM_UNSTABLE_BUILD_PYTHON requires the unstable module to be enabled.")
+			set(GTSAM_UNSTABLE_BUILD_PYTHON OFF)
 		endif()
 	endif()
 
@@ -525,6 +526,7 @@ print_config_flag(${BUILD_SHARED_LIBS}                 "Build shared GTSAM libra
 print_config_flag(${GTSAM_BUILD_TYPE_POSTFIXES}        "Put build type in library name ")
 if(GTSAM_UNSTABLE_AVAILABLE)
     print_config_flag(${GTSAM_BUILD_UNSTABLE}          "Build libgtsam_unstable        ")
+	print_config_flag(${GTSAM_UNSTABLE_BUILD_PYTHON}   "Build GTSAM unstable Python    ")
 endif()
 
 if(NOT MSVC AND NOT XCODE_VERSION)
