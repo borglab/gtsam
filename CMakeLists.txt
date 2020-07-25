@@ -101,19 +101,11 @@ endif()
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
-option(GTSAM_INSTALL_CYTHON_TOOLBOX      "Enable/Disable installation of Cython toolbox"  OFF)
-option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab/cython wrap utility (necessary for matlab/cython interface)" ON)
 set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of Python to build the wrappers against.")
 
 # Check / set dependent variables for MATLAB wrapper
-if((GTSAM_INSTALL_MATLAB_TOOLBOX OR GTSAM_INSTALL_CYTHON_TOOLBOX) AND NOT GTSAM_BUILD_WRAP)
-	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX or GTSAM_INSTALL_CYTHON_TOOLBOX is enabled, please also enable GTSAM_BUILD_WRAP")
-endif()
-if((GTSAM_INSTALL_MATLAB_TOOLBOX OR GTSAM_INSTALL_CYTHON_TOOLBOX) AND GTSAM_BUILD_TYPE_POSTFIXES)
+if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_BUILD_TYPE_POSTFIXES)
 		set(CURRENT_POSTFIX ${CMAKE_${CMAKE_BUILD_TYPE_UPPER}_POSTFIX})
-endif()
-if(GTSAM_INSTALL_WRAP AND NOT GTSAM_BUILD_WRAP)
-	message(FATAL_ERROR "GTSAM_INSTALL_WRAP is enabled, please also enable GTSAM_BUILD_WRAP")
 endif()
 
 if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT BUILD_SHARED_LIBS)
@@ -124,21 +116,18 @@ endif()
 #    message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the MATLAB toolbox cannot deal with this yet.  Please turn one of the two options off.")
 #endif()
 
-if(GTSAM_INSTALL_CYTHON_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
-    message(FATAL_ERROR "GTSAM_INSTALL_CYTHON_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the CYTHON toolbox cannot deal with this yet.  Please turn one of the two options off.")
-endif()
-
 if(GTSAM_BUILD_PYTHON)
 	if (NOT GTSAM_TYPEDEF_POINTS_TO_VECTORS)
 		message(FATAL_ERROR "GTSAM_BUILD_PYTHON requires GTSAM_TYPEDEF_POINTS_TO_VECTORS to be enabled but it is not.")
 	endif()
-	set(GTSAM_PY_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/python")
-endif()
 
-if(GTSAM_UNSTABLE_BUILD_PYTHON)
-	if (NOT GTSAM_BUILD_UNSTABLE)
-		message(FATAL_ERROR "GTSAM_UNSTABLE_BUILD_PYTHON requires the unstable module to be enabled.")
+	if(GTSAM_UNSTABLE_BUILD_PYTHON)
+		if (NOT GTSAM_BUILD_UNSTABLE)
+			message(FATAL_ERROR "GTSAM_UNSTABLE_BUILD_PYTHON requires the unstable module to be enabled.")
+		endif()
 	endif()
+
+	set(GTSAM_PY_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/python")
 endif()
 
 # Flags for choosing default packaging tools
@@ -605,7 +594,6 @@ print_config_flag(${GTSAM_ALLOW_DEPRECATED_SINCE_V4}   "Deprecated in GTSAM 4 al
 print_config_flag(${GTSAM_TYPEDEF_POINTS_TO_VECTORS}   "Point3 is typedef to Vector3    ")
 print_config_flag(${GTSAM_SUPPORT_NESTED_DISSECTION}   "Metis-based Nested Dissection   ")
 print_config_flag(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space preintegration")
-print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                      ")
 
 message(STATUS "MATLAB toolbox flags                                      ")
 print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install MATLAB toolbox          ")
