@@ -65,6 +65,7 @@ add_custom_target(uninstall
 # Configurable Options
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
+	option(GTSAM_UNSTABLE_BUILD_PYTHON       "Enable/Disable Python wrapper for libgtsam_unstable" ON)
 endif()
 option(BUILD_SHARED_LIBS                 "Build shared gtsam library, instead of static" ON)
 option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
@@ -132,6 +133,12 @@ if(GTSAM_BUILD_PYTHON)
 		message(FATAL_ERROR "GTSAM_BUILD_PYTHON requires GTSAM_TYPEDEF_POINTS_TO_VECTORS to be enabled but it is not.")
 	endif()
 	set(GTSAM_PY_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/python")
+endif()
+
+if(GTSAM_UNSTABLE_BUILD_PYTHON)
+	if (NOT GTSAM_BUILD_UNSTABLE)
+		message(FATAL_ERROR "GTSAM_UNSTABLE_BUILD_PYTHON requires the unstable module to be enabled.")
+	endif()
 endif()
 
 # Flags for choosing default packaging tools

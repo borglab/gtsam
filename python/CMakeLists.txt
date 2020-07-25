@@ -10,6 +10,7 @@ if(GTSAM_BUILD_PYTHON)
   include(PybindWrap)
 
   add_custom_target(gtsam_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam.h")
+  add_custom_target(gtsam_unstable_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.h")
 
   # ignoring the non-concrete types (type aliases)
   set(ignore
@@ -31,7 +32,7 @@ if(GTSAM_BUILD_PYTHON)
               "gtsam" # module_name
               "gtsam" # top_namespace
               "${ignore}" # ignore_classes
-              ${PROJECT_SOURCE_DIR}/wrap/pybind_wrapper.tpl
+              ${PROJECT_SOURCE_DIR}/python/gtsam_py/gtsam.tpl
               gtsam # libs
               "gtsam;gtsam_header" # dependencies
               ON # use_boost
@@ -49,12 +50,53 @@ if(GTSAM_BUILD_PYTHON)
   set(GTSAM_MODULE_PATH ${PROJECT_BINARY_DIR}/python/gtsam)
 
   # Symlink all tests .py files to build folder.
-  create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_py/"
+  create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_py/python"
           "${GTSAM_MODULE_PATH}")
+
+  if(GTSAM_UNSTABLE_BUILD_PYTHON)
+    set(ignore
+          gtsam::Point2
+          gtsam::Point3
+          gtsam::LieVector
+          gtsam::LieMatrix
+          gtsam::ISAM2ThresholdMapValue
+          gtsam::FactorIndices
+          gtsam::FactorIndexSet
+          gtsam::BetweenFactorPose3s
+          gtsam::Point2Vector
+          gtsam::Pose3Vector
+          gtsam::KeyVector
+          gtsam::FixedLagSmootherKeyTimestampMapValue)
+    pybind_wrap(gtsam_unstable_py # target
+            ${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.h # interface_header
+            "gtsam_unstable.cpp" # generated_cpp
+            "gtsam_unstable" # module_name
+            "gtsam" # top_namespace
+            "${ignore}" # ignore_classes
+            ${PROJECT_SOURCE_DIR}/python/gtsam_unstable_py/gtsam_unstable.tpl
+            gtsam_unstable # libs
+            "gtsam_unstable;gtsam_unstable_header" # dependencies
+            ON # use_boost
+            )
+
+    set_target_properties(gtsam_unstable_py PROPERTIES
+            INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+            INSTALL_RPATH_USE_LINK_PATH TRUE
+            OUTPUT_NAME "gtsam_unstable"
+            LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/python/gtsam_unstable"
+            DEBUG_POSTFIX "" # Otherwise you will have a wrong name
+            RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
+            )
+
+    set(GTSAM_UNSTABLE_MODULE_PATH ${PROJECT_BINARY_DIR}/python/gtsam_unstable)
+
+    # Symlink all tests .py files to build folder.
+    create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable_py/python"
+            "${GTSAM_UNSTABLE_MODULE_PATH}")
+  endif()
 
   set(GTSAM_PYTHON_INSTALL_TARGET python-install)
   add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
           COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_BINARY_DIR}/python/setup.py install
           WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
-
 endif()
