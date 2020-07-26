@@ -105,8 +105,6 @@ if(MSVC)
 else()
   # Common to all configurations, next for each configuration:
 
-  message (STATUS "CMAKE_CXX_COMPILER_VERSION: ${CMAKE_CXX_COMPILER_VERSION}")
-
   if (
       ((CMAKE_CXX_COMPILER_ID MATCHES "Clang") AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0.0)) OR
       (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
