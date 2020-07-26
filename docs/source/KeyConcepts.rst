@@ -17,4 +17,11 @@ Fixed lag smoothing problem
 Filtering problem
 -----------------
 
+IMU Preintegration Factors
+-----------------------------
 
+Solvers
+-----------
+
+Bayes tree
+-------------

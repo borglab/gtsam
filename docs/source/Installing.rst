@@ -1,4 +1,4 @@
-Beginner's Guide
+Installing
 ================
 
 Getting started
