@@ -27,8 +27,13 @@
 namespace gtsam {
 
 /**
-
- * Factor that supports arbitrary expressions via AD
+ * Factor that supports arbitrary expressions via AD.
+ *
+ * Arbitrary instances of this template can be directly inserted into a factor
+ * graph for optimization. However, to enable the correct (de)serialization of
+ * such instances, the user should declare derived classes from this template,
+ * implementing expresion(), serialize(), clone(), print(), and defining the
+ * corresponding `struct traits<NewFactor> : public Testable<NewFactor> {}`.
  */
 template<typename T>
 class ExpressionFactor: public NoiseModelFactor {
