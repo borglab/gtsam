@@ -48,7 +48,7 @@ struct BearingFactor : public ExpressionFactor2<T, A1, A2> {
   }
 
   // Return measurement expression
-  virtual Expression<T> expression(Key key1, Key key2) const {
+  Expression<T> expression(Key key1, Key key2) const override {
     Expression<A1> a1_(key1);
     Expression<A2> a2_(key2);
     return Expression<T>(Bearing<A1, A2>(), a1_, a2_);
@@ -56,7 +56,7 @@ struct BearingFactor : public ExpressionFactor2<T, A1, A2> {
 
   /// print
   void print(const std::string& s = "",
-             const KeyFormatter& kf = DefaultKeyFormatter) const {
+             const KeyFormatter& kf = DefaultKeyFormatter) const override {
     std::cout << s << "BearingFactor" << std::endl;
     Base::print(s, kf);
   }

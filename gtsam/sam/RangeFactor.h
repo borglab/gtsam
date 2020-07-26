@@ -47,13 +47,13 @@ class RangeFactor : public ExpressionFactor2<T, A1, A2> {
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   // Return measurement expression
-  virtual Expression<T> expression(Key key1, Key key2) const {
+  Expression<T> expression(Key key1, Key key2) const override {
     Expression<A1> a1_(key1);
     Expression<A2> a2_(key2);
     return Expression<T>(Range<A1, A2>(), a1_, a2_);
@@ -61,7 +61,7 @@ class RangeFactor : public ExpressionFactor2<T, A1, A2> {
 
   /// print
   void print(const std::string& s = "",
-             const KeyFormatter& kf = DefaultKeyFormatter) const {
+             const KeyFormatter& kf = DefaultKeyFormatter) const override {
     std::cout << s << "RangeFactor" << std::endl;
     Base::print(s, kf);
   }
@@ -107,13 +107,13 @@ class RangeFactorWithTransform : public ExpressionFactor2<T, A1, A2> {
   virtual ~RangeFactorWithTransform() {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   // Return measurement expression
-  virtual Expression<T> expression(Key key1, Key key2) const {
+  Expression<T> expression(Key key1, Key key2) const override {
     Expression<A1> body_T_sensor__(body_T_sensor_);
     Expression<A1> nav_T_body_(key1);
     Expression<A1> nav_T_sensor_(traits<A1>::Compose, nav_T_body_,
@@ -124,7 +124,7 @@ class RangeFactorWithTransform : public ExpressionFactor2<T, A1, A2> {
 
   /** print contents */
   void print(const std::string& s = "",
-             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << "RangeFactorWithTransform" << std::endl;
     this->body_T_sensor_.print("  sensor pose in body frame: ");
     Base::print(s, keyFormatter);

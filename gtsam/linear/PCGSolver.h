@@ -41,7 +41,7 @@ public:
   PCGSolverParameters() {
   }
 
-  virtual void print(std::ostream &os) const;
+  void print(std::ostream &os) const override;
 
   /* interface to preconditioner parameters */
   inline const PreconditionerParameters& preconditioner() const {
@@ -77,9 +77,9 @@ public:
 
   using IterativeSolver::optimize;
 
-  virtual VectorValues optimize(const GaussianFactorGraph &gfg,
+  VectorValues optimize(const GaussianFactorGraph &gfg,
       const KeyInfo &keyInfo, const std::map<Key, Vector> &lambda,
-      const VectorValues &initial);
+      const VectorValues &initial) override;
 
 };
 
