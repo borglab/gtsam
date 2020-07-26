@@ -1,5 +1,9 @@
-Examples in GTSAM
-=================
+C++ Examples
+==============
+
+
+(Some selected examples from source code.)
+
 
 
 Kalman filter example
@@ -12,5 +16,3 @@ Kalman filter example
 
 3D SLAM example
 ------------------
-
-
