@@ -299,7 +299,7 @@ namespace gtsam {
       this->keys_.assign(clique->conditional()->beginParents(), clique->conditional()->endParents());
     }
 
-    void print(const std::string& s="", const KeyFormatter& formatter = DefaultKeyFormatter) const {
+    void print(const std::string& s="", const KeyFormatter& formatter = DefaultKeyFormatter) const override {
       clique->print(s + "stored clique", formatter);
     }
   };

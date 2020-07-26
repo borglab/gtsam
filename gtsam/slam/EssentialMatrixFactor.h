@@ -58,14 +58,14 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   /// print
-  virtual void print(const std::string& s = "",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s);
     std::cout << "  EssentialMatrixFactor with measurements\n  ("
         << vA_.transpose() << ")' and (" << vB_.transpose() << ")'"
@@ -74,7 +74,7 @@ public:
 
   /// vector of errors returns 1D vector
   Vector evaluateError(const EssentialMatrix& E, boost::optional<Matrix&> H =
-      boost::none) const {
+      boost::none) const override {
     Vector error(1);
     error << E.error(vA_, vB_, H);
     return error;
@@ -131,14 +131,14 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   /// print
-  virtual void print(const std::string& s = "",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s);
     std::cout << "  EssentialMatrixFactor2 with measurements\n  ("
         << dP1_.transpose() << ")' and (" << pn_.transpose()
@@ -152,7 +152,7 @@ public:
    */
   Vector evaluateError(const EssentialMatrix& E, const double& d,
       boost::optional<Matrix&> DE = boost::none, boost::optional<Matrix&> Dd =
-          boost::none) const {
+          boost::none) const override {
 
     // We have point x,y in image 1
     // Given a depth Z, the corresponding 3D point P1 = Z*(x,y,1) = (x,y,1)/d
@@ -250,14 +250,14 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   /// print
-  virtual void print(const std::string& s = "",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s);
     std::cout << "  EssentialMatrixFactor3 with rotation " << cRb_ << std::endl;
   }
@@ -269,7 +269,7 @@ public:
    */
   Vector evaluateError(const EssentialMatrix& E, const double& d,
       boost::optional<Matrix&> DE = boost::none, boost::optional<Matrix&> Dd =
-          boost::none) const {
+          boost::none) const override {
     if (!DE) {
       // Convert E from body to camera frame
       EssentialMatrix cameraE = cRb_ * E;

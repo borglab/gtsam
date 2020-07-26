@@ -85,7 +85,7 @@ class UnaryFactor: public NoiseModelFactor1<Pose2> {
   // function, returning a vector of errors when evaluated at the provided variable value. It
   // must also calculate the Jacobians for this measurement function, if requested.
   Vector evaluateError(const Pose2& q,
-                       boost::optional<Matrix&> H = boost::none) const {
+                       boost::optional<Matrix&> H = boost::none) const override {
     // The measurement function for a GPS-like measurement is simple:
     // error_x = pose.x - measurement.x
     // error_y = pose.y - measurement.y
@@ -99,7 +99,7 @@ class UnaryFactor: public NoiseModelFactor1<Pose2> {
   // The second is a 'clone' function that allows the factor to be copied. Under most
   // circumstances, the following code that employs the default copy constructor should
   // work fine.
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new UnaryFactor(*this))); }
 

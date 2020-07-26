@@ -56,7 +56,7 @@ class FrobeniusPrior : public NoiseModelFactor1<Rot> {
 
   /// Error is just Frobenius norm between Rot element and vectorized matrix M.
   Vector evaluateError(const Rot& R,
-                       boost::optional<Matrix&> H = boost::none) const {
+                       boost::optional<Matrix&> H = boost::none) const override {
     return R.vec(H) - vecM_;  // Jacobian is computed only when needed.
   }
 };
@@ -78,7 +78,7 @@ class FrobeniusFactor : public NoiseModelFactor2<Rot, Rot> {
   /// Error is just Frobenius norm between rotation matrices.
   Vector evaluateError(const Rot& R1, const Rot& R2,
                        boost::optional<Matrix&> H1 = boost::none,
-                       boost::optional<Matrix&> H2 = boost::none) const {
+                       boost::optional<Matrix&> H2 = boost::none) const override {
     Vector error = R2.vec(H2) - R1.vec(H1);
     if (H1) *H1 = -*H1;
     return error;
@@ -110,7 +110,7 @@ class FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
   /// Error is Frobenius norm between R1*R12 and R2.
   Vector evaluateError(const Rot& R1, const Rot& R2,
                        boost::optional<Matrix&> H1 = boost::none,
-                       boost::optional<Matrix&> H2 = boost::none) const {
+                       boost::optional<Matrix&> H2 = boost::none) const override {
     const Rot R2hat = R1.compose(R12_);
     Eigen::Matrix<double, Dim, Rot::dimension> vec_H_R2hat;
     Vector error = R2.vec(H2) - R2hat.vec(H1 ? &vec_H_R2hat : nullptr);
@@ -139,7 +139,7 @@ class GTSAM_EXPORT FrobeniusWormholeFactor : public NoiseModelFactor2<SOn, SOn> 
   /// projects down from SO(p) to the Stiefel manifold of px3 matrices.
   Vector evaluateError(const SOn& Q1, const SOn& Q2,
                        boost::optional<Matrix&> H1 = boost::none,
-                       boost::optional<Matrix&> H2 = boost::none) const;
+                       boost::optional<Matrix&> H2 = boost::none) const override;
 };
 
 }  // namespace gtsam

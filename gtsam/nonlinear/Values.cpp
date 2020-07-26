@@ -214,7 +214,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const char* ValuesKeyAlreadyExists::what() const throw() {
+  const char* ValuesKeyAlreadyExists::what() const noexcept {
     if(message_.empty())
       message_ =
           "Attempting to add a key-value pair with key \"" + DefaultKeyFormatter(key_) + "\", key already exists.";
@@ -222,7 +222,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const char* ValuesKeyDoesNotExist::what() const throw() {
+  const char* ValuesKeyDoesNotExist::what() const noexcept {
     if(message_.empty())
       message_ =
           "Attempting to " + std::string(operation_) + " the key \"" +
@@ -231,7 +231,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const char* ValuesIncorrectType::what() const throw() {
+  const char* ValuesIncorrectType::what() const noexcept {
     if(message_.empty()) {
       std::string storedTypeName = demangle(storedTypeId_.name());
       std::string requestedTypeName = demangle(requestedTypeId_.name());
@@ -251,7 +251,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const char* NoMatchFoundForFixed::what() const throw() {
+  const char* NoMatchFoundForFixed::what() const noexcept {
     if(message_.empty()) {
       ostringstream oss;
     oss

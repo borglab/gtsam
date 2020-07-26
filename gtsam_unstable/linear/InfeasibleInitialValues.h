@@ -29,10 +29,10 @@ public:
   InfeasibleInitialValues() {
   }
 
-  virtual ~InfeasibleInitialValues() throw () {
+  virtual ~InfeasibleInitialValues() noexcept {
   }
 
-  virtual const char *what() const throw () {
+  const char *what() const noexcept override {
     if (description_.empty())
       description_ =
           "An infeasible initial value was provided for the solver.\n";

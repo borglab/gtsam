@@ -112,7 +112,7 @@ else()
     $<$<CXX_COMPILER_ID:Clang>:-Wreturn-stack-address   -Werror=return-stack-address>  # Error: return local address
     -Wreturn-type  -Werror=return-type             # Error on missing return()
     -Wformat -Werror=format-security               # Error on wrong printf() arguments
-    -Wsuggest-override -Werror=suggest-override    # Enforce the use of the override keyword
+    $<$<COMPILE_LANGUAGE:CXX>:-Wsuggest-override -Werror=suggest-override>      # Enforce the use of the override keyword
     #
     CACHE STRING "(User editable) Private compiler flags for all configurations.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           -g -fno-inline  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")

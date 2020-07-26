@@ -85,7 +85,7 @@ class GTSAM_EXPORT ISAM2Clique
 
   /** print this node */
   void print(const std::string& s = "",
-             const KeyFormatter& formatter = DefaultKeyFormatter) const;
+             const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
   void optimizeWildfire(const KeySet& replaced, double threshold,
                         KeySet* changed, VectorValues* delta,
