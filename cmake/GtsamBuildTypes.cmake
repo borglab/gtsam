@@ -111,7 +111,7 @@ else()
       ((CMAKE_CXX_COMPILER_ID MATCHES "Clang") AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0.0)) OR
       (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
      )
-    set(flag_override_ -Wsuggest-override -Werror=suggest-override)
+    set(flag_override_ -Wsuggest-override) # -Werror=suggest-override: Add again someday
   endif()
 
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON
