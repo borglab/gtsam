@@ -71,12 +71,12 @@ protected:
           String(description.begin(), description.end())) {
   }
 
-  /// Default destructor doesn't have the throw()
-  virtual ~ThreadsafeException() throw () {
+  /// Default destructor doesn't have the noexcept
+  virtual ~ThreadsafeException() noexcept {
   }
 
 public:
-  virtual const char* what() const throw () {
+  const char* what() const noexcept override {
     return description_ ? description_->c_str() : "";
   }
 };
@@ -113,8 +113,8 @@ public:
 class CholeskyFailed : public gtsam::ThreadsafeException<CholeskyFailed>
 {
 public:
-  CholeskyFailed() throw() {}
-  virtual ~CholeskyFailed() throw() {}
+  CholeskyFailed() noexcept {}
+  virtual ~CholeskyFailed() noexcept {}
 };
 
 } // namespace gtsam

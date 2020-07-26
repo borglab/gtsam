@@ -432,16 +432,16 @@ namespace gtsam {
 
   public:
     /// Construct with the key-value pair attempted to be added
-    ValuesKeyAlreadyExists(Key key) throw() :
+    ValuesKeyAlreadyExists(Key key) noexcept :
       key_(key) {}
 
-    virtual ~ValuesKeyAlreadyExists() throw() {}
+    virtual ~ValuesKeyAlreadyExists() noexcept {}
 
     /// The duplicate key that was attempted to be added
-    Key key() const throw() { return key_; }
+    Key key() const noexcept { return key_; }
 
     /// The message to be displayed to the user
-    GTSAM_EXPORT virtual const char* what() const throw();
+    GTSAM_EXPORT const char* what() const noexcept override;
   };
 
   /* ************************************************************************* */
@@ -455,16 +455,16 @@ namespace gtsam {
 
   public:
     /// Construct with the key that does not exist in the values
-    ValuesKeyDoesNotExist(const char* operation, Key key) throw() :
+    ValuesKeyDoesNotExist(const char* operation, Key key) noexcept :
       operation_(operation), key_(key) {}
 
-    virtual ~ValuesKeyDoesNotExist() throw() {}
+    virtual ~ValuesKeyDoesNotExist() noexcept {}
 
     /// The key that was attempted to be accessed that does not exist
-    Key key() const throw() { return key_; }
+    Key key() const noexcept { return key_; }
 
     /// The message to be displayed to the user
-    GTSAM_EXPORT virtual const char* what() const throw();
+    GTSAM_EXPORT const char* what() const noexcept override;
   };
 
   /* ************************************************************************* */
@@ -480,13 +480,13 @@ namespace gtsam {
   public:
     /// Construct with the key that does not exist in the values
     ValuesIncorrectType(Key key,
-        const std::type_info& storedTypeId, const std::type_info& requestedTypeId) throw() :
+        const std::type_info& storedTypeId, const std::type_info& requestedTypeId) noexcept :
       key_(key), storedTypeId_(storedTypeId), requestedTypeId_(requestedTypeId) {}
 
-    virtual ~ValuesIncorrectType() throw() {}
+    virtual ~ValuesIncorrectType() noexcept {}
 
     /// The key that was attempted to be accessed that does not exist
-    Key key() const throw() { return key_; }
+    Key key() const noexcept { return key_; }
 
     /// The typeid of the value stores in the Values
     const std::type_info& storedTypeId() const { return storedTypeId_; }
@@ -495,18 +495,18 @@ namespace gtsam {
     const std::type_info& requestedTypeId() const { return requestedTypeId_; }
 
     /// The message to be displayed to the user
-    GTSAM_EXPORT virtual const char* what() const throw();
+    GTSAM_EXPORT const char* what() const noexcept override;
   };
 
   /* ************************************************************************* */
   class DynamicValuesMismatched : public std::exception {
 
   public:
-    DynamicValuesMismatched() throw() {}
+    DynamicValuesMismatched() noexcept {}
 
-    virtual ~DynamicValuesMismatched() throw() {}
+    virtual ~DynamicValuesMismatched() noexcept {}
 
-    virtual const char* what() const throw() {
+    const char* what() const noexcept override {
       return "The Values 'this' and the argument passed to Values::localCoordinates have mismatched keys and values";
     }
   };
@@ -522,14 +522,14 @@ namespace gtsam {
     mutable std::string message_;
 
   public:
-    NoMatchFoundForFixed(size_t M1, size_t N1, size_t M2, size_t N2) throw () :
+    NoMatchFoundForFixed(size_t M1, size_t N1, size_t M2, size_t N2) noexcept :
         M1_(M1), N1_(N1), M2_(M2), N2_(N2) {
     }
 
-    virtual ~NoMatchFoundForFixed() throw () {
+    virtual ~NoMatchFoundForFixed() noexcept {
     }
 
-    GTSAM_EXPORT virtual const char* what() const throw ();
+    GTSAM_EXPORT const char* what() const noexcept override;
   };
 
   /* ************************************************************************* */
