@@ -198,4 +198,12 @@ const ValueType& Value::cast() const {
   return dynamic_cast<const GenericValue<ValueType>&>(*this).value();
 }
 
+/** Functional constructor of GenericValue<T> so T can be automatically deduced
+  */
+template<class T>
+GenericValue<T> genericValue(const T& v) {
+  return GenericValue<T>(v);
+}
+
+
 } /* namespace gtsam */
