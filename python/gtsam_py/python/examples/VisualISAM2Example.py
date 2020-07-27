@@ -13,23 +13,13 @@ Author: Duy-Nguyen Ta (C++), Frank Dellaert (Python)
 
 from __future__ import print_function
 
-import matplotlib.pyplot as plt
-import numpy as np
-from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
-
 import gtsam
 import gtsam.utils.plot as gtsam_plot
+import matplotlib.pyplot as plt
+import numpy as np
+from gtsam.gtsam.symbol_shorthand import L, X
 from gtsam.examples import SFMdata
-
-
-def X(i):
-    """Create key for pose i."""
-    return int(gtsam.symbol('x', i))
-
-
-def L(j):
-    """Create key for landmark j."""
-    return int(gtsam.symbol('l', j))
+from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
 
 
 def visual_ISAM2_plot(result):
