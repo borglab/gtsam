@@ -221,9 +221,9 @@ def plot_3d_points(fignum, values, linespec="g*", marginals=None,
     keys = values.keys()
 
     # Plot points and covariance matrices
-    for i in range(keys.size()):
+    for i in range(len(keys)):
         try:
-            key = keys.at(i)
+            key = keys[i]
             point = values.atPoint3(key)
             if marginals is not None:
                 covariance = marginals.marginalCovariance(key)
@@ -319,19 +319,19 @@ def plot_trajectory(fignum, values, scale=1, marginals=None,
         title (string): The title of the plot.
         axis_labels (iterable[string]): List of axis labels to set.
     """
-    pose3Values = gtsam.utilities_allPose3s(values)
+    pose3Values = gtsam.utilities.allPose3s(values)
     keys = gtsam.KeyVector(pose3Values.keys())
     lastIndex = None
 
-    for i in range(keys.size()):
-        key = keys.at(i)
+    for i in range(len(keys)):
+        key = keys[i]
         try:
             pose = pose3Values.atPose3(key)
         except:
             print("Warning: no Pose3 at key: {0}".format(key))
 
         if lastIndex is not None:
-            lastKey = keys.at(lastIndex)
+            lastKey = keys[lastIndex]
             try:
                 lastPose = pose3Values.atPose3(lastKey)
             except:
@@ -350,7 +350,7 @@ def plot_trajectory(fignum, values, scale=1, marginals=None,
 
     # Draw final pose
     if lastIndex is not None:
-        lastKey = keys.at(lastIndex)
+        lastKey = keys[lastIndex]
         try:
             lastPose = pose3Values.atPose3(lastKey)
             if marginals:

@@ -17,10 +17,7 @@ from gtsam import (ISAM2, BetweenFactorConstantBias, Cal3_S2,
                    PinholeCameraCal3_S2, Point3, Pose3,
                    PriorFactorConstantBias, PriorFactorPose3,
                    PriorFactorVector, Rot3, Values)
-from gtsam import symbol_shorthand
-B = symbol_shorthand.B
-V = symbol_shorthand.V
-X = symbol_shorthand.X
+from gtsam.gtsam.symbol_shorthand import B, V, X
 from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
 
 

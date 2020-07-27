@@ -16,6 +16,7 @@ from __future__ import print_function
 import numpy as np
 
 import gtsam
+from gtsam.gtsam.symbol_shorthand import X, L
 
 # Create noise models
 PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
@@ -26,11 +27,11 @@ MEASUREMENT_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.1, 0.2]))
 graph = gtsam.NonlinearFactorGraph()
 
 # Create the keys corresponding to unknown variables in the factor graph
-X1 = gtsam.symbol('x', 1)
-X2 = gtsam.symbol('x', 2)
-X3 = gtsam.symbol('x', 3)
-L1 = gtsam.symbol('l', 4)
-L2 = gtsam.symbol('l', 5)
+X1 = X(1)
+X2 = X(2)
+X3 = X(3)
+L1 = L(4)
+L2 = L(5)
 
 # Add a prior on pose X1 at the origin. A prior factor consists of a mean and a noise model
 graph.add(gtsam.PriorFactorPose2(X1, gtsam.Pose2(0.0, 0.0, 0.0), PRIOR_NOISE))
