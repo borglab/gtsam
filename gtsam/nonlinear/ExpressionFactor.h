@@ -19,9 +19,10 @@
 
 #pragma once
 
+#include <array>
+#include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/Expression.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/base/Testable.h>
 #include <numeric>
 
 namespace gtsam {
@@ -287,4 +288,71 @@ template <typename T, typename A1, typename A2>
 struct traits<ExpressionFactor2<T,A1,A2>> : public Testable<ExpressionFactor2<T,A1,A2>> {};
 // ExpressionFactor2
 
-}// \ namespace gtsam
+/**
+ * N-ary variadic template for ExpressionFactor meant as a base class for N-ary
+ * factors. Enforces an 'expression' method with N keys.
+ * Derived class (an N-factor!) needs to call 'initialize'.
+ *
+ * Does not provide backward compatible 'evaluateError'.
+ *
+ * \tparam T Type for measurements. The rest of template arguments are types
+ *         for the N key-indexed Values.
+ *
+ */
+template <typename T, typename... Args>
+class ExpressionFactorN : public ExpressionFactor<T> {
+public:
+  static const std::size_t NARY_EXPRESSION_SIZE = sizeof...(Args);
+  using ArrayNKeys = std::array<Key, NARY_EXPRESSION_SIZE>;
+
+  /// Destructor
+  virtual ~ExpressionFactorN() = default;
+
+  // Don't provide backward compatible evaluateVector(), due to its problematic
+  // variable length of optional Jacobian arguments. Vector evaluateError(const
+  // Args... args,...);
+
+  /// Recreate expression from given keys_ and measured_, used in load
+  /// Needed to deserialize a derived factor
+  virtual Expression<T> expression(const ArrayNKeys &keys) const {
+    throw std::runtime_error(
+        "ExpressionFactorN::expression not provided: cannot deserialize.");
+  }
+
+protected:
+  /// Default constructor, for serialization
+  ExpressionFactorN() = default;
+
+  /// Constructor takes care of keys, but still need to call initialize
+  ExpressionFactorN(const ArrayNKeys &keys, const SharedNoiseModel &noiseModel,
+                    const T &measurement)
+      : ExpressionFactor<T>(noiseModel, measurement) {
+    for (const auto &key : keys)
+      Factor::keys_.push_back(key);
+  }
+
+private:
+  /// Return an expression that predicts the measurement given Values
+  Expression<T> expression() const override {
+    ArrayNKeys keys;
+    int idx = 0;
+    for (const auto &key : Factor::keys_)
+      keys[idx++] = key;
+    return expression(keys);
+  }
+
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &boost::serialization::make_nvp(
+        "ExpressionFactorN",
+        boost::serialization::base_object<ExpressionFactor<T>>(*this));
+  }
+};
+/// traits
+template <typename T, typename... Args>
+struct traits<ExpressionFactor2<T, Args...>>
+    : public Testable<ExpressionFactorN<T, Args...>> {};
+// ExpressionFactorN
+
+} // namespace gtsam
