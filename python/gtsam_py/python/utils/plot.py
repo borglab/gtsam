@@ -109,7 +109,7 @@ def plot_pose2_on_axes(axes, pose, axis_length=0.1, covariance=None):
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
     t = pose.translation()
-    origin = np.array([t.x(), t.y()])
+    origin = np.array(t)
 
     # draw the camera axes
     x_axis = origin + gRp[:, 0] * axis_length
@@ -155,7 +155,6 @@ def plot_pose2(fignum, pose, axis_length=0.1, covariance=None,
 
     axes.set_xlabel(axis_labels[0])
     axes.set_ylabel(axis_labels[1])
-    axes.set_zlabel(axis_labels[2])
 
     return fig
 
@@ -170,7 +169,7 @@ def plot_point3_on_axes(axes, point, linespec, P=None):
         linespec (string): String representing formatting options for Matplotlib.
         P (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
     """
-    axes.plot([point.x()], [point.y()], [point.z()], linespec)
+    axes.plot([point[0]], [point[1]], [point[2]], linespec)
     if P is not None:
         plot_covariance_ellipse_3d(axes, point, P)
 
