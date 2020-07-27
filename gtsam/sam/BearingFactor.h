@@ -34,8 +34,8 @@ struct Bearing;
  */
 template <typename A1, typename A2,
           typename T = typename Bearing<A1, A2>::result_type>
-struct BearingFactor : public ExpressionFactor2<T, A1, A2> {
-  typedef ExpressionFactor2<T, A1, A2> Base;
+struct BearingFactor : public ExpressionFactorN<T, A1, A2> {
+  typedef ExpressionFactorN<T, A1, A2> Base;
 
   /// default constructor
   BearingFactor() {}
@@ -43,14 +43,14 @@ struct BearingFactor : public ExpressionFactor2<T, A1, A2> {
   /// primary constructor
   BearingFactor(Key key1, Key key2, const T& measured,
                 const SharedNoiseModel& model)
-      : Base(key1, key2, model, measured) {
-    this->initialize(expression(key1, key2));
+      : Base({key1, key2}, model, measured) {
+    this->initialize(expression({key1, key2}));
   }
 
   // Return measurement expression
-  Expression<T> expression(Key key1, Key key2) const override {
-    Expression<A1> a1_(key1);
-    Expression<A2> a2_(key2);
+  Expression<T> expression(const typename Base::ArrayNKeys &keys) const override {
+    Expression<A1> a1_(keys[0]);
+    Expression<A2> a2_(keys[1]);
     return Expression<T>(Bearing<A1, A2>(), a1_, a2_);
   }
 
