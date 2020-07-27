@@ -35,17 +35,17 @@ def run(args):
     graph = gtsam.NonlinearFactorGraph()
 
     # Priors
-    prior = gtsam.noiseModel_Isotropic.Sigma(3, 1)
+    prior = gtsam.noiseModel.Isotropic.Sigma(3, 1)
     graph.add(gtsam.PriorFactorPose2(11, T11, prior))
     graph.add(gtsam.PriorFactorPose2(21, T21, prior))
 
     # Odometry
-    model = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.01, 0.01, 0.3]))
+    model = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.01, 0.01, 0.3]))
     graph.add(gtsam.BetweenFactorPose2(11, 12, T11.between(T12), model))
     graph.add(gtsam.BetweenFactorPose2(21, 22, T21.between(T22), model))
 
     # Range
-    model_rho = gtsam.noiseModel_Isotropic.Sigma(1, 0.01)
+    model_rho = gtsam.noiseModel.Isotropic.Sigma(1, 0.01)
     graph.add(gtsam.RangeFactorPose2(12, 22, 1.0, model_rho))
 
     params = gtsam.DoglegParams()

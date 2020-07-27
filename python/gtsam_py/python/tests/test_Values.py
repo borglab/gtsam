@@ -15,8 +15,7 @@ import numpy as np
 
 import gtsam
 from gtsam import (Cal3_S2, Cal3Bundler, Cal3DS2, EssentialMatrix, Point2,
-                   Point3, Pose2, Pose3, Rot2, Rot3, Unit3, Values,
-                   imuBias_ConstantBias)
+                   Point3, Pose2, Pose3, Rot2, Rot3, Unit3, Values, imuBias)
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -37,7 +36,7 @@ class TestValues(GtsamTestCase):
         values.insert(7, Cal3DS2())
         values.insert(8, Cal3Bundler())
         values.insert(9, E)
-        values.insert(10, imuBias_ConstantBias())
+        values.insert(10, imuBias.ConstantBias())
 
         # Special cases for Vectors and Matrices
         # Note that gtsam's Eigen Vectors and Matrices requires double-precision
@@ -70,8 +69,8 @@ class TestValues(GtsamTestCase):
         self.gtsamAssertEquals(values.atCal3DS2(7), Cal3DS2(), tol)
         self.gtsamAssertEquals(values.atCal3Bundler(8), Cal3Bundler(), tol)
         self.gtsamAssertEquals(values.atEssentialMatrix(9), E, tol)
-        self.gtsamAssertEquals(values.atimuBias_ConstantBias(
-            10), imuBias_ConstantBias(), tol)
+        self.gtsamAssertEquals(values.atConstantBias(
+            10), imuBias.ConstantBias(), tol)
 
         # special cases for Vector and Matrix:
         actualVector = values.atVector(11)

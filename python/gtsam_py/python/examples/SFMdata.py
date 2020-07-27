@@ -33,7 +33,8 @@ def createPoses(K):
     poses = []
     for theta in angles:
         position = gtsam.Point3(radius*np.cos(theta),
-                                radius*np.sin(theta), height)
+                                radius*np.sin(theta),
+                                height)
         camera = gtsam.PinholeCameraCal3_S2.Lookat(position, target, up, K)
         poses.append(camera.pose())
     return poses

@@ -18,7 +18,7 @@ import numpy as np
 from gtsam.utils.test_case import GtsamTestCase
 
 KEY = 0
-MODEL = gtsam.noiseModel_Unit.Create(3)
+MODEL = gtsam.noiseModel.Unit.Create(3)
 
 
 def find_Karcher_mean_Rot3(rotations):
@@ -59,8 +59,8 @@ class TestKarcherMean(GtsamTestCase):
         R12 = R.compose(R.compose(R))
         graph.add(gtsam.BetweenFactorRot3(1, 2, R12, MODEL))
         keys = gtsam.KeyVector()
-        keys.push_back(1)
-        keys.push_back(2)
+        keys.append(1)
+        keys.append(2)
         graph.add(gtsam.KarcherMeanFactorRot3(keys))
 
         initial = gtsam.Values()

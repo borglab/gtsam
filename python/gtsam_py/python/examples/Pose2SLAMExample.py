@@ -29,8 +29,8 @@ def vector3(x, y, z):
 
 
 # Create noise models
-PRIOR_NOISE = gtsam.noiseModel_Diagonal.Sigmas(vector3(0.3, 0.3, 0.1))
-ODOMETRY_NOISE = gtsam.noiseModel_Diagonal.Sigmas(vector3(0.2, 0.2, 0.1))
+PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(vector3(0.3, 0.3, 0.1))
+ODOMETRY_NOISE = gtsam.noiseModel.Diagonal.Sigmas(vector3(0.2, 0.2, 0.1))
 
 # 1. Create a factor graph container and add factors to it
 graph = gtsam.NonlinearFactorGraph()

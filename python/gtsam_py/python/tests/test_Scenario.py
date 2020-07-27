@@ -43,8 +43,11 @@ class TestScenario(GtsamTestCase):
         # R = v/w, so test if loop crests at 2*R
         R = v / w
         T30 = scenario.pose(T)
+        xyz = T30.rotation().xyz()
+        if xyz[0] < 0:
+            xyz = -xyz
         np.testing.assert_almost_equal(
-            np.array([math.pi, 0, math.pi]), T30.rotation().xyz())
+            np.array([math.pi, 0, math.pi]), xyz)
         self.gtsamAssertEquals(gtsam.Point3(
             0, 0, 2.0 * R), T30.translation(), 1e-9)
 

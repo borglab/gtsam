@@ -22,13 +22,13 @@ class TestKalmanFilter(GtsamTestCase):
         F = np.eye(2)
         B = np.eye(2)
         u = np.array([1.0, 0.0])
-        modelQ = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.1, 0.1]))
+        modelQ = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.1, 0.1]))
         Q = 0.01 * np.eye(2)
         H = np.eye(2)
         z1 = np.array([1.0, 0.0])
         z2 = np.array([2.0, 0.0])
         z3 = np.array([3.0, 0.0])
-        modelR = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.1, 0.1]))
+        modelR = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.1, 0.1]))
         R = 0.01 * np.eye(2)
 
         # Create the set of expected output TestValues

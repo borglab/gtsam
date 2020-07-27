@@ -21,7 +21,7 @@ from gtsam.utils.test_case import GtsamTestCase
 from gtsam.utils.logging_optimizer import gtsam_optimize
 
 KEY = 0
-MODEL = gtsam.noiseModel_Unit.Create(3)
+MODEL = gtsam.noiseModel.Unit.Create(3)
 
 
 class TestOptimizeComet(GtsamTestCase):

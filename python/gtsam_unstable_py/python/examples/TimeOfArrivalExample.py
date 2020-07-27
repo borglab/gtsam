@@ -12,7 +12,7 @@ Author: Frank Dellaert
 # pylint: disable=invalid-name, no-name-in-module
 
 from gtsam import (LevenbergMarquardtOptimizer, LevenbergMarquardtParams,
-                   NonlinearFactorGraph, Point3, Values, noiseModel_Isotropic)
+                   NonlinearFactorGraph, Point3, Values, noiseModel)
 from gtsam_unstable import Event, TimeOfArrival, TOAFactor
 
 # units
@@ -64,7 +64,7 @@ def create_graph(microphones, simulatedTOA):
     graph = NonlinearFactorGraph()
 
     # Create a noise model for the TOA error
-    model = noiseModel_Isotropic.Sigma(1, 0.5 * MS)
+    model = noiseModel.Isotropic.Sigma(1, 0.5 * MS)
 
     K = len(microphones)
     key = 0
