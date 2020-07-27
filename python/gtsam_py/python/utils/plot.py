@@ -13,8 +13,9 @@ def set_axes_equal(fignum):
     Make axes of 3D plot have equal scale so that spheres appear as spheres,
     cubes as cubes, etc..  This is one possible solution to Matplotlib's
     ax.set_aspect('equal') and ax.axis('equal') not working for 3D.
-    Input
-      ax: a matplotlib axis, e.g., as output from plt.gca().
+
+    Args:
+      fignum (int): An integer representing the figure number for Matplotlib.
     """
     fig = plt.figure(fignum)
     ax = fig.gca(projection='3d')
@@ -34,7 +35,21 @@ def set_axes_equal(fignum):
 
 
 def ellipsoid(xc, yc, zc, rx, ry, rz, n):
-    """Numpy equivalent of Matlab's ellipsoid function"""
+    """
+    Numpy equivalent of Matlab's ellipsoid function.
+
+    Args:
+        xc (double): Center of ellipsoid in X-axis.
+        yc (double): Center of ellipsoid in Y-axis.
+        zc (double): Center of ellipsoid in Z-axis.
+        rx (double): Radius of ellipsoid in X-axis.
+        ry (double): Radius of ellipsoid in Y-axis.
+        rz (double): Radius of ellipsoid in Z-axis.
+        n (int): The granularity of the ellipsoid plotted. 
+
+    Returns:
+        tuple[numpy.ndarray]: The points in the x, y and z axes to use for the surface plot.
+    """
     u = np.linspace(0, 2*np.pi, n+1)
     v = np.linspace(0, np.pi, n+1)
     x = -rx * np.outer(np.cos(u), np.sin(v)).T
@@ -47,9 +62,18 @@ def ellipsoid(xc, yc, zc, rx, ry, rz, n):
 def plot_covariance_ellipse_3d(axes, origin, P, scale=1, n=8, alpha=0.5):
     """
     Plots a Gaussian as an uncertainty ellipse
+
     Based on Maybeck Vol 1, page 366
     k=2.296 corresponds to 1 std, 68.26% of all probability
     k=11.82 corresponds to 3 std, 99.74% of all probability
+
+    Args:
+        axes (matplotlib.axes.Axes): Matplotlib axes.
+        origin (gtsam.Point3): The origin in the world frame.
+        P (numpy.ndarray): The marginal covariance matrix of the 3D point which will be represented as an ellipse.
+        scale (float): Scaling factor of the radii of the covariance ellipse.
+        n (int): Defines the granularity of the ellipse. Higher values indicate finer ellipses.
+        alpha (float): Transparency value for the plotted surface in the range [0, 1].
     """
     k = 11.82
     U, S, _ = np.linalg.svd(P)
@@ -73,10 +97,19 @@ def plot_covariance_ellipse_3d(axes, origin, P, scale=1, n=8, alpha=0.5):
 
 
 def plot_pose2_on_axes(axes, pose, axis_length=0.1, covariance=None):
-    """Plot a 2D pose on given axis 'axes' with given 'axis_length'."""
+    """
+    Plot a 2D pose on given axis `axes` with given `axis_length`.
+
+    Args:
+        axes (matplotlib.axes.Axes): Matplotlib axes.
+        pose (gtsam.Pose2): The pose to be plotted.
+        axis_length (float): The length of the camera axes.
+        covariance (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+    """
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
-    origin = pose.translation()
+    t = pose.translation()
+    origin = np.array([t.x(), t.y()])
 
     # draw the camera axes
     x_axis = origin + gRp[:, 0] * axis_length
@@ -101,34 +134,89 @@ def plot_pose2_on_axes(axes, pose, axis_length=0.1, covariance=None):
                              np.rad2deg(angle), fill=False)
         axes.add_patch(e1)
 
-def plot_pose2(fignum, pose, axis_length=0.1, covariance=None):
-    """Plot a 2D pose on given figure with given 'axis_length'."""
+
+def plot_pose2(fignum, pose, axis_length=0.1, covariance=None,
+               axis_labels=('X axis', 'Y axis', 'Z axis')):
+    """
+    Plot a 2D pose on given figure with given `axis_length`.
+
+    Args:
+        fignum (int): Integer representing the figure number to use for plotting.
+        pose (gtsam.Pose2): The pose to be plotted.
+        axis_length (float): The length of the camera axes.
+        covariance (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+        axis_labels (iterable[string]): List of axis labels to set.
+    """
     # get figure object
     fig = plt.figure(fignum)
     axes = fig.gca()
-    plot_pose2_on_axes(axes, pose, axis_length, covariance)
+    plot_pose2_on_axes(axes, pose, axis_length=axis_length,
+                       covariance=covariance)
+
+    axes.set_xlabel(axis_labels[0])
+    axes.set_ylabel(axis_labels[1])
+    axes.set_zlabel(axis_labels[2])
+
+    return fig
 
 
 def plot_point3_on_axes(axes, point, linespec, P=None):
-    """Plot a 3D point on given axis 'axes' with given 'linespec' and optional covariance 'P'."""
-    axes.plot([point[0]], [point[1]], [point[2]], linespec)
+    """
+    Plot a 3D point on given axis `axes` with given `linespec`.
+
+    Args:
+        axes (matplotlib.axes.Axes): Matplotlib axes.
+        point (gtsam.Point3): The point to be plotted.
+        linespec (string): String representing formatting options for Matplotlib.
+        P (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+    """
+    axes.plot([point.x()], [point.y()], [point.z()], linespec)
     if P is not None:
-        plot_covariance_ellipse_3d(axes, point.vector(), P)
+        plot_covariance_ellipse_3d(axes, point, P)
 
 
-def plot_point3(fignum, point, linespec, P=None):
-    """Plot a 3D point on given figure with given 'linespec' and optional covariance 'P'."""
+def plot_point3(fignum, point, linespec, P=None,
+                axis_labels=('X axis', 'Y axis', 'Z axis')):
+    """
+    Plot a 3D point on given figure with given `linespec`.
+
+    Args:
+        fignum (int): Integer representing the figure number to use for plotting.
+        point (gtsam.Point3): The point to be plotted.
+        linespec (string): String representing formatting options for Matplotlib.
+        P (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+        axis_labels (iterable[string]): List of axis labels to set.
+
+    Returns:
+        fig: The matplotlib figure.
+
+    """
     fig = plt.figure(fignum)
     axes = fig.gca(projection='3d')
     plot_point3_on_axes(axes, point, linespec, P)
 
+    axes.set_xlabel(axis_labels[0])
+    axes.set_ylabel(axis_labels[1])
+    axes.set_zlabel(axis_labels[2])
 
-def plot_3d_points(fignum, values, linespec="g*", marginals=None):
+    return fig
+
+
+def plot_3d_points(fignum, values, linespec="g*", marginals=None,
+                   title="3D Points", axis_labels=('X axis', 'Y axis', 'Z axis')):
     """
-    Plots the Point3s in 'values', with optional covariances.
+    Plots the Point3s in `values`, with optional covariances.
     Finds all the Point3 objects in the given Values object and plots them.
     If a Marginals object is given, this function will also plot marginal
     covariance ellipses for each point.
+
+    Args:
+        fignum (int): Integer representing the figure number to use for plotting.
+        values (gtsam.Values): Values dictionary consisting of points to be plotted.
+        linespec (string): String representing formatting options for Matplotlib.
+        marginals (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+        title (string): The title of the plot.
+        axis_labels (iterable[string]): List of axis labels to set.
     """
 
     keys = values.keys()
@@ -139,21 +227,30 @@ def plot_3d_points(fignum, values, linespec="g*", marginals=None):
             key = keys.at(i)
             point = values.atPoint3(key)
             if marginals is not None:
-                P = marginals.marginalCovariance(key);
+                covariance = marginals.marginalCovariance(key)
             else:
-                P = None
+                covariance = None
 
-            plot_point3(fignum, point, linespec, P)
+            fig = plot_point3(fignum, point, linespec, covariance,
+                              axis_labels=axis_labels)
 
         except RuntimeError:
             continue
             # I guess it's not a Point3
 
+    fig.suptitle(title)
+    fig.canvas.set_window_title(title.lower())
 
-def plot_pose3_on_axes(axes, pose, P=None, scale=1, axis_length=0.1):
+
+def plot_pose3_on_axes(axes, pose, axis_length=0.1, P=None, scale=1):
     """
-    Plot a 3D pose on given axis 'axes' with given 'axis_length'.
-    Optional 'scale' the pose and plot the covariance 'P'.
+    Plot a 3D pose on given axis `axes` with given `axis_length`.
+
+    Args:
+        axes (matplotlib.axes.Axes): Matplotlib axes.
+        point (gtsam.Point3): The point to be plotted.
+        linespec (string): String representing formatting options for Matplotlib.
+        P (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
     """
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
@@ -172,6 +269,7 @@ def plot_pose3_on_axes(axes, pose, P=None, scale=1, axis_length=0.1):
     line = np.append(origin[np.newaxis], z_axis[np.newaxis], axis=0)
     axes.plot(line[:, 0], line[:, 1], line[:, 2], 'b-')
 
+    # plot the covariance
     if P is not None:
         # covariance matrix in pose coordinate frame
         pPp = P[3:6, 3:6]
@@ -180,16 +278,49 @@ def plot_pose3_on_axes(axes, pose, P=None, scale=1, axis_length=0.1):
         plot_covariance_ellipse_3d(axes, origin, gPp)
 
 
-def plot_pose3(fignum, pose, P, axis_length=0.1):
-    """Plot a 3D pose on given figure with given 'axis_length'."""
+def plot_pose3(fignum, pose, axis_length=0.1, P=None,
+               axis_labels=('X axis', 'Y axis', 'Z axis')):
+    """
+    Plot a 3D pose on given figure with given `axis_length`.
+
+    Args:
+        fignum (int): Integer representing the figure number to use for plotting.
+        pose (gtsam.Pose3): 3D pose to be plotted.
+        linespec (string): String representing formatting options for Matplotlib.
+        P (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+        axis_labels (iterable[string]): List of axis labels to set.
+
+    Returns:
+        fig: The matplotlib figure.
+    """
     # get figure object
     fig = plt.figure(fignum)
     axes = fig.gca(projection='3d')
-    plot_pose3_on_axes(axes, pose, P=P, axis_length=axis_length)
+    plot_pose3_on_axes(axes, pose, P=P,
+                       axis_length=axis_length)
+
+    axes.set_xlabel(axis_labels[0])
+    axes.set_ylabel(axis_labels[1])
+    axes.set_zlabel(axis_labels[2])
+
+    return fig
 
 
-def plot_trajectory(fignum, values, scale=1, marginals=None):
-    pose3Values = gtsam.allPose3s(values)
+def plot_trajectory(fignum, values, scale=1, marginals=None,
+                    title="Plot Trajectory", axis_labels=('X axis', 'Y axis', 'Z axis')):
+    """
+    Plot a complete 3D trajectory using poses in `values`.
+
+    Args:
+        fignum (int): Integer representing the figure number to use for plotting.
+        values (gtsam.Values): Values dict containing the poses.
+        scale (float): Value to scale the poses by.
+        marginals (gtsam.Marginals): Marginalized probability values of the estimation.
+            Used to plot uncertainty bounds.
+        title (string): The title of the plot.
+        axis_labels (iterable[string]): List of axis labels to set.
+    """
+    pose3Values = gtsam.utilities_allPose3s(values)
     keys = gtsam.KeyVector(pose3Values.keys())
     lastIndex = None
 
@@ -209,11 +340,12 @@ def plot_trajectory(fignum, values, scale=1, marginals=None):
                 pass
 
             if marginals:
-                P = marginals.marginalCovariance(lastKey)
+                covariance = marginals.marginalCovariance(lastKey)
             else:
-                P = None
+                covariance = None
 
-            plot_pose3(fignum, lastPose, P, scale)
+            fig = plot_pose3(fignum, lastPose,  P=covariance,
+                             axis_length=scale, axis_labels=axis_labels)
 
         lastIndex = i
 
@@ -223,11 +355,15 @@ def plot_trajectory(fignum, values, scale=1, marginals=None):
         try:
             lastPose = pose3Values.atPose3(lastKey)
             if marginals:
-                P = marginals.marginalCovariance(lastKey)
+                covariance = marginals.marginalCovariance(lastKey)
             else:
-                P = None
+                covariance = None
 
-            plot_pose3(fignum, lastPose, P, scale)
+            fig = plot_pose3(fignum, lastPose, P=covariance,
+                             axis_length=scale, axis_labels=axis_labels)
 
         except:
             pass
+
+    fig.suptitle(title)
+    fig.canvas.set_window_title(title.lower())
