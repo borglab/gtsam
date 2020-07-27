@@ -351,7 +351,7 @@ private:
 };
 /// traits
 template <typename T, typename... Args>
-struct traits<ExpressionFactor2<T, Args...>>
+struct traits<ExpressionFactorN<T, Args...>>
     : public Testable<ExpressionFactorN<T, Args...>> {};
 // ExpressionFactorN
 
