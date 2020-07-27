@@ -50,7 +50,7 @@ public:
   virtual ~PoseRotationPrior() {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
@@ -60,19 +60,19 @@ public:
   // testable
 
   /** equals specialized to this factor */
-  virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
+  bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
     const This *e = dynamic_cast<const This*> (&expected);
     return e != nullptr && Base::equals(*e, tol) && measured_.equals(e->measured_, tol);
   }
 
   /** print contents */
-  void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s + "PoseRotationPrior", keyFormatter);
     measured_.print("Measured Rotation");
   }
 
   /** h(x)-z */
-  Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const {
+  Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const override {
     const Rotation& newR = pose.rotation();
     if (H) {
       *H = Matrix::Zero(rDim, xDim);

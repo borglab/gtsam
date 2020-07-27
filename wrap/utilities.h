@@ -40,7 +40,7 @@ class CantOpenFile : public std::exception {
  public:
  CantOpenFile(const std::string& filename) : what_("Can't open file " + filename) {}
   ~CantOpenFile() throw() {}
-  virtual const char* what() const throw() { return what_.c_str(); }
+  const char* what() const noexcept override { return what_.c_str(); }
 };
 
 class OutputError : public std::exception {
@@ -49,7 +49,7 @@ private:
 public:
   OutputError(const std::string& what) : what_(what) {}
   ~OutputError() throw() {}
-  virtual const char* what() const throw() { return what_.c_str(); }
+  const char* what() const noexcept override { return what_.c_str(); }
 };
 
 class ParseFailed : public std::exception {
@@ -58,7 +58,7 @@ class ParseFailed : public std::exception {
  public:
    ParseFailed(int length) : what_((boost::format("Parse failed at character [%d]")%(length-1)).str()) {}
    ~ParseFailed() throw() {}
-   virtual const char* what() const throw() { return what_.c_str(); }
+   const char* what() const noexcept override { return what_.c_str(); }
 };
 
 class DependencyMissing : public std::exception {
@@ -68,7 +68,7 @@ public:
   DependencyMissing(const std::string& dep, const std::string& loc) :
     what_("Missing dependency '" + dep + "' in " + loc) {}
   ~DependencyMissing() throw() {}
-  virtual const char* what() const throw() { return what_.c_str(); }
+  const char* what() const noexcept override { return what_.c_str(); }
 };
 
 class DuplicateDefinition : public std::exception {
@@ -78,7 +78,7 @@ public:
   DuplicateDefinition(const std::string& name) :
     what_("Duplicate definition of " + name) {}
   ~DuplicateDefinition() throw() {}
-  virtual const char* what() const throw() { return what_.c_str(); }
+  const char* what() const noexcept override { return what_.c_str(); }
 };
 
 class AttributeError : public std::exception {
@@ -88,7 +88,7 @@ public:
   AttributeError(const std::string& name, const std::string& problem) :
     what_("Class " + name + ": " + problem) {}
   ~AttributeError() throw() {}
-  virtual const char* what() const throw() { return what_.c_str(); }
+  const char* what() const noexcept override { return what_.c_str(); }
 };
 
 // "Unique" key to signal calling the matlab object constructor with a raw pointer

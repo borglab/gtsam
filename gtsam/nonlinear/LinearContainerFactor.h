@@ -59,10 +59,10 @@ public:
   // Testable
 
   /** print */
-  GTSAM_EXPORT void print(const std::string& s = "", const KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const;
+  GTSAM_EXPORT void print(const std::string& s = "", const KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const override;
 
   /** Check if two factors are equal */
-  GTSAM_EXPORT bool equals(const NonlinearFactor& f, double tol = 1e-9) const;
+  GTSAM_EXPORT bool equals(const NonlinearFactor& f, double tol = 1e-9) const override;
 
   // NonlinearFactor
 
@@ -74,10 +74,10 @@ public:
    *
    * @return nonlinear error if linearizationPoint present, zero otherwise
    */
-  GTSAM_EXPORT double error(const Values& c) const;
+  GTSAM_EXPORT double error(const Values& c) const override;
 
   /** get the dimension of the factor: rows of linear factor */
-  GTSAM_EXPORT size_t dim() const;
+  GTSAM_EXPORT size_t dim() const override;
 
   /** Extract the linearization point used in recalculating error */
   const boost::optional<Values>& linearizationPoint() const { return linearizationPoint_; }
@@ -98,7 +98,7 @@ public:
    * TODO: better approximation of relinearization
    * TODO: switchable modes for approximation technique
    */
-  GTSAM_EXPORT GaussianFactor::shared_ptr linearize(const Values& c) const;
+  GTSAM_EXPORT GaussianFactor::shared_ptr linearize(const Values& c) const override;
 
   /**
    * Creates an anti-factor directly
@@ -116,7 +116,7 @@ public:
    *
    * Clones the underlying linear factor
    */
-  NonlinearFactor::shared_ptr clone() const {
+  NonlinearFactor::shared_ptr clone() const override {
     return NonlinearFactor::shared_ptr(new LinearContainerFactor(factor_,linearizationPoint_));
   }
 

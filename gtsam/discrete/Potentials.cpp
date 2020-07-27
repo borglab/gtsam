@@ -56,7 +56,7 @@ bool Potentials::equals(const Potentials& other, double tol) const {
 /* ************************************************************************* */
 void Potentials::print(const string& s, const KeyFormatter& formatter) const {
   cout << s << "\n  Cardinalities: {";
-  for (const DiscreteKey& key : cardinalities_)
+  for (const std::pair<const Key,size_t>& key : cardinalities_)
     cout << formatter(key.first) << ":" << key.second << ", ";
   cout << "}" << endl;
   ADT::print(" ");

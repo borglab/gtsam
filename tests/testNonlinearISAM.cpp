@@ -288,7 +288,7 @@ TEST(testNonlinearISAM, loop_closures ) {
       break;
 
     // Check if vertex
-    const auto indexedPose = parseVertex(is, tag);
+    const auto indexedPose = parseVertexPose(is, tag);
     if (indexedPose) {
       Key id = indexedPose->first;
       initialEstimate.insert(Symbol('x', id), indexedPose->second);

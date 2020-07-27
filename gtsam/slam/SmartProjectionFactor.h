@@ -99,7 +99,7 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
+      DefaultKeyFormatter) const override {
     std::cout << s << "SmartProjectionFactor\n";
     std::cout << "linearizationMode:\n" << params_.linearizationMode
         << std::endl;
@@ -110,7 +110,7 @@ public:
   }
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*>(&p);
     return e && params_.linearizationMode == e->params_.linearizationMode
         && Base::equals(p, tol);
@@ -305,8 +305,8 @@ public:
   }
 
   /// linearize
-  virtual boost::shared_ptr<GaussianFactor> linearize(
-      const Values& values) const {
+  boost::shared_ptr<GaussianFactor> linearize(
+      const Values& values) const override {
     return linearizeDamped(values);
   }
 
@@ -409,7 +409,7 @@ public:
   }
 
   /// Calculate total reprojection error
-  virtual double error(const Values& values) const {
+  double error(const Values& values) const override {
     if (this->active(values)) {
       return totalReprojectionError(Base::cameras(values));
     } else { // else of active flag

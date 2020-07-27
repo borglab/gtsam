@@ -51,6 +51,7 @@ class GTSAM_EXPORT ISAM2Clique
 
   /// Default constructor
   ISAM2Clique() : Base() {}
+  virtual ~ISAM2Clique() = default;
 
   /// Copy constructor, does *not* copy solution pointers as these are invalid
   /// in different trees.
@@ -85,7 +86,7 @@ class GTSAM_EXPORT ISAM2Clique
 
   /** print this node */
   void print(const std::string& s = "",
-             const KeyFormatter& formatter = DefaultKeyFormatter) const;
+             const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
   void optimizeWildfire(const KeySet& replaced, double threshold,
                         KeySet* changed, VectorValues* delta,
