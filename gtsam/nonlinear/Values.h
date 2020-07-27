@@ -149,6 +149,13 @@ namespace gtsam {
 
     /** Move constructor */
     Values(Values&& other);
+    
+    /** Constructor from initializer list. Example usage:
+     * \code
+     * Values v = {{k1, genericValue(pose1)}, {k2, genericValue(point2)}};
+     * \endcode
+     */
+    Values(std::initializer_list<ConstKeyValuePair> init);
 
     /** Construct from a Values and an update vector: identical to other.retract(delta) */
     Values(const Values& other, const VectorValues& delta);
