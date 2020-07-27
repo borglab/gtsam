@@ -12,7 +12,7 @@ a single variable with a single factor.
 
 import numpy as np
 import gtsam
-
+from gtsam.gtsam.symbol_shorthand import X
 
 def main():
     """
@@ -33,7 +33,7 @@ def main():
     prior = gtsam.Rot2.fromAngle(np.deg2rad(30))
     prior.print_('goal angle')
     model = gtsam.noiseModel.Isotropic.Sigma(dim=1, sigma=np.deg2rad(1))
-    key = gtsam.symbol('x', 1)
+    key = X(1)
     factor = gtsam.PriorFactorRot2(key, prior, model)
 
     """
