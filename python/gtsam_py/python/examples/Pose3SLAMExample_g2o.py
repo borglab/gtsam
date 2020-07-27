@@ -44,7 +44,7 @@ priorModel = gtsam.noiseModel.Diagonal.Variances(vector6(1e-6, 1e-6, 1e-6,
 
 print("Adding prior to g2o file ")
 graphWithPrior = graph
-firstKey = initial.keys().at(0)
+firstKey = initial.keys()[0]
 graphWithPrior.add(gtsam.PriorFactorPose3(firstKey, gtsam.Pose3(), priorModel))
 
 params = gtsam.GaussNewtonParams()
@@ -66,7 +66,7 @@ else:
     print ("Done!")
 
 if args.plot:
-    resultPoses = gtsam.allPose3s(result)
+    resultPoses = gtsam.utilities.allPose3s(result)
     for i in range(resultPoses.size()):
         plot.plot_pose3(1, resultPoses.atPose3(i))
     plt.show()

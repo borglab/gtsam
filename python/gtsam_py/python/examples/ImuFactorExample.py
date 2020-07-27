@@ -17,10 +17,7 @@ import math
 import gtsam
 import matplotlib.pyplot as plt
 import numpy as np
-from gtsam import symbol_shorthand
-B = symbol_shorthand.B
-V = symbol_shorthand.V
-X = symbol_shorthand.X
+from gtsam.gtsam.symbol_shorthand import B, V, X
 
 from gtsam.utils.plot import plot_pose3
 from mpl_toolkits.mplot3d import Axes3D

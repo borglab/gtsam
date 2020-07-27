@@ -1,18 +1,12 @@
-# THIS FILE IS OUTDATED!
-
-~~These examples are almost identical to the old handwritten python wrapper examples. However, there are just some slight name changes, for example `noiseModel.Diagonal` becomes `noiseModel.Diagonal` etc...~~
-
-~~Also, annoyingly, instead of `gtsam.Symbol('b', 0)` we now need to say `gtsam.symbol('b', 0))`~~
-
 # Porting Progress
 
 | C++ Example Name                                      | Ported |
 |-------------------------------------------------------|--------|
 | CameraResectioning                                    |        |
 | CreateSFMExampleData                                  |        |
-| DiscreteBayesNet_FG                                   | none of the required discrete functionality is exposed through cython |
-| easyPoint2KalmanFilter                                | ExtendedKalmanFilter not exposed through cython |
-| elaboratePoint2KalmanFilter                           | GaussianSequentialSolver not exposed through cython |
+| DiscreteBayesNet_FG                                   | none of the required discrete functionality is exposed through Python |
+| easyPoint2KalmanFilter                                | ExtendedKalmanFilter not exposed through Python |
+| elaboratePoint2KalmanFilter                           | GaussianSequentialSolver not exposed through Python |
 | ImuFactorExample2                                     | X      |
 | ImuFactorsExample                                     |        |
 | ISAM2Example_SmartFactor                              |        |
@@ -26,7 +20,7 @@
 | Pose2SLAMExample_g2o                                  | X      |
 | Pose2SLAMExample_graph                                |        |
 | Pose2SLAMExample_graphviz                             |        |
-| Pose2SLAMExample_lago                                 | lago not exposed through cython |
+| Pose2SLAMExample_lago                                 | lago not exposed through Python |
 | Pose2SLAMStressTest                                   |        |
 | Pose2SLAMwSPCG                                        |        |
 | Pose3SLAMExample_changeKeys                           |        |

@@ -83,7 +83,7 @@ else:
     print ("Done!")
 
 if args.plot:
-    resultPoses = gtsam.extractPose2(result)
+    resultPoses = gtsam.utilities.extractPose2(result)
     for i in range(resultPoses.shape[0]):
         plot.plot_pose2(1, gtsam.Pose2(resultPoses[i, :]))
     plt.show()
