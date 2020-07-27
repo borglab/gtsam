@@ -34,6 +34,9 @@ namespace gtsam {
  * such instances, the user should declare derived classes from this template,
  * implementing expresion(), serialize(), clone(), print(), and defining the
  * corresponding `struct traits<NewFactor> : public Testable<NewFactor> {}`.
+ *
+ * \tparam T Type for measurements.
+ *
  */
 template<typename T>
 class ExpressionFactor: public NoiseModelFactor {
@@ -279,6 +282,9 @@ class ExpressionFactor2 : public ExpressionFactor<T> {
         "ExpressionFactor", boost::serialization::base_object<ExpressionFactor<T> >(*this));
   }
 };
+/// traits
+template <typename T, typename A1, typename A2>
+struct traits<ExpressionFactor2<T,A1,A2>> : public Testable<ExpressionFactor2<T,A1,A2>> {};
 // ExpressionFactor2
 
 }// \ namespace gtsam
