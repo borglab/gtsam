@@ -66,6 +66,20 @@ class BearingRangeFactor
                          Expression<A2>(keys[1]));
   }
 
+  Vector evaluateError(const A1& a1, const A2& a2,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const
+  {
+    std::vector<Matrix> Hs(2);
+    const auto &keys = Factor::keys();
+    const Vector error = unwhitenedError(
+      {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}}, 
+      Hs);
+    if (H1) *H1 = Hs[0];
+    if (H2) *H2 = Hs[1];
+    return error;
+  }
+
   /// print
   void print(const std::string& s = "",
                      const KeyFormatter& kf = DefaultKeyFormatter) const override {

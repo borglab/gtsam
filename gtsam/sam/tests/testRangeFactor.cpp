@@ -47,29 +47,25 @@ double measurement(10.0);
 /* ************************************************************************* */
 Vector factorError2D(const Pose2& pose, const Point2& point,
     const RangeFactor2D& factor) {
-  const auto &keys = factor.keys();
-  return factor.unwhitenedError({{keys[0], genericValue(pose)}, {keys[1], genericValue(point)}});
+  return factor.evaluateError(pose, point);
 }
 
 /* ************************************************************************* */
 Vector factorError3D(const Pose3& pose, const Point3& point,
     const RangeFactor3D& factor) {
-  const auto &keys = factor.keys();
-  return factor.unwhitenedError({{keys[0], genericValue(pose)}, {keys[1], genericValue(point)}});
+  return factor.evaluateError(pose, point);
 }
 
 /* ************************************************************************* */
 Vector factorErrorWithTransform2D(const Pose2& pose, const Point2& point,
     const RangeFactorWithTransform2D& factor) {
-  const auto &keys = factor.keys();
-  return factor.unwhitenedError({{keys[0], genericValue(pose)}, {keys[1], genericValue(point)}});
+  return factor.evaluateError(pose, point);
 }
 
 /* ************************************************************************* */
 Vector factorErrorWithTransform3D(const Pose3& pose, const Point3& point,
     const RangeFactorWithTransform3D& factor) {
-  const auto &keys = factor.keys();
-  return factor.unwhitenedError({{keys[0], genericValue(pose)}, {keys[1], genericValue(point)}});
+  return factor.evaluateError(pose, point);
 }
 
 /* ************************************************************************* */
@@ -262,10 +258,8 @@ TEST( RangeFactor, Jacobian2D ) {
   Point2 point(-4.0, 11.0);
 
   // Use the factor to calculate the Jacobians
-  std::vector<Matrix> actualHs(2);
-  factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}, actualHs); 
-  const Matrix& H1Actual = actualHs.at(0);
-  const Matrix& H2Actual = actualHs.at(1);
+  Matrix H1Actual, H2Actual;
+  factor.evaluateError(pose, point, H1Actual, H2Actual);
 
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
