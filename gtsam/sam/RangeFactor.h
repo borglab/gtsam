@@ -135,9 +135,12 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
   friend class boost::serialization::access;
   template <typename ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    // **IMPORTANT** We need to (de)serialize parameters before the base class,
+    // since it calls expression() and we need all parameters ready at that
+    // point.
+    ar& BOOST_SERIALIZATION_NVP(body_T_sensor_);
     ar& boost::serialization::make_nvp(
         "Base", boost::serialization::base_object<Base>(*this));
-    ar& BOOST_SERIALIZATION_NVP(body_T_sensor_);
   }
 };  // \ RangeFactorWithTransform
 
