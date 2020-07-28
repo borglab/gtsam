@@ -73,40 +73,43 @@ class PreintegrationExample(object):
         self.runner = gtsam.ScenarioRunner(
             self.scenario, self.params, self.dt, self.actualBias)
 
+        fig, self.axes = plt.subplots(4, 3)
+        fig.set_tight_layout(True)
+
     def plotImu(self, t, measuredOmega, measuredAcc):
         plt.figure(IMU_FIG)
 
         # plot angular velocity
         omega_b = self.scenario.omega_b(t)
         for i, (label, color) in enumerate(zip(self.labels, self.colors)):
-            plt.subplot(4, 3, i + 1)
-            plt.scatter(t, omega_b[i], color='k', marker='.')
-            plt.scatter(t, measuredOmega[i], color=color, marker='.')
-            plt.xlabel('angular velocity ' + label)
+            ax = self.axes[0][i]
+            ax.scatter(t, omega_b[i], color='k', marker='.')
+            ax.scatter(t, measuredOmega[i], color=color, marker='.')
+            ax.set_xlabel('angular velocity ' + label)
 
         # plot acceleration in nav
         acceleration_n = self.scenario.acceleration_n(t)
         for i, (label, color) in enumerate(zip(self.labels, self.colors)):
-            plt.subplot(4, 3, i + 4)
-            plt.scatter(t, acceleration_n[i], color=color, marker='.')
-            plt.xlabel('acceleration in nav ' + label)
+            ax = self.axes[1][i]
+            ax.scatter(t, acceleration_n[i], color=color, marker='.')
+            ax.set_xlabel('acceleration in nav ' + label)
 
         # plot acceleration in body
         acceleration_b = self.scenario.acceleration_b(t)
         for i, (label, color) in enumerate(zip(self.labels, self.colors)):
-            plt.subplot(4, 3, i + 7)
-            plt.scatter(t, acceleration_b[i], color=color, marker='.')
-            plt.xlabel('acceleration in body ' + label)
+            ax = self.axes[2][i]
+            ax.scatter(t, acceleration_b[i], color=color, marker='.')
+            ax.set_xlabel('acceleration in body ' + label)
 
         # plot actual specific force, as well as corrupted
         actual = self.runner.actualSpecificForce(t)
         for i, (label, color) in enumerate(zip(self.labels, self.colors)):
-            plt.subplot(4, 3, i + 10)
-            plt.scatter(t, actual[i], color='k', marker='.')
-            plt.scatter(t, measuredAcc[i], color=color, marker='.')
-            plt.xlabel('specific force ' + label)
+            ax = self.axes[3][i]
+            ax.scatter(t, actual[i], color='k', marker='.')
+            ax.scatter(t, measuredAcc[i], color=color, marker='.')
+            ax.set_xlabel('specific force ' + label)
 
-    def plotGroundTruthPose(self, t):
+    def plotGroundTruthPose(self, t, scale=0.3, time_interval=0.01):
         # plot ground truth pose, as well as prediction from integrated IMU measurements
         actualPose = self.scenario.pose(t)
         plot_pose3(POSES_FIG, actualPose, 0.3)
@@ -117,11 +120,10 @@ class PreintegrationExample(object):
         ax.set_ylim3d(-self.maxDim, self.maxDim)
         ax.set_zlim3d(-self.maxDim, self.maxDim)
 
-        plt.pause(0.01)
+        plt.pause(time_interval)
 
-    def run(self):
+    def run(self, T=12):
         # simulate the loop
-        T = 12
         for i, t in enumerate(np.arange(0, T, self.dt)):
             measuredOmega = self.runner.measuredAngularVelocity(t)
             measuredAcc = self.runner.measuredSpecificForce(t)
