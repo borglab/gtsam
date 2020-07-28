@@ -145,6 +145,27 @@ TEST( RangeFactor, EqualsWithTransform ) {
       body_P_sensor_3D);
   CHECK(assert_equal(factor3D_1, factor3D_2));
 }
+/* ************************************************************************* */
+TEST( RangeFactor, EqualsAfterDeserializing) {
+  // Check that the same results are obtained after deserializing:
+  Pose3 body_P_sensor_3D(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
+      Point3(0.25, -0.10, 1.0));
+
+  RangeFactorWithTransform3D factor3D_1(poseKey, pointKey, measurement, model,
+      body_P_sensor_3D), factor3D_2;
+
+  // check with Equal() trait:
+  gtsam::serializationTestHelpers::roundtripXML(factor3D_1, factor3D_2);
+  CHECK(assert_equal(factor3D_1, factor3D_2));
+
+  const Pose3 pose(Rot3::RzRyRx(0.2, -0.3, 1.75), Point3(1.0, 2.0, -3.0));
+  const Point3 point(-2.0, 11.0, 1.0);
+  const Values values = {{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}};
+  
+  const Vector error_1 = factor3D_1.unwhitenedError(values);
+  const Vector error_2 = factor3D_2.unwhitenedError(values);
+  CHECK(assert_equal(error_1, error_2));
+}
 
 /* ************************************************************************* */
 TEST( RangeFactor, Error2D ) {
