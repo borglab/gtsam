@@ -26,7 +26,7 @@ graph, initial = gtsam.readG2o(g2oFile, is3D)
 # Add prior on the first key. TODO: assumes first key ios z
 priorModel = gtsam.noiseModel.Diagonal.Variances(
     np.array([1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4]))
-firstKey = initial.keys().at(0)
+firstKey = initial.keys()[0]
 graph.add(gtsam.PriorFactorPose3(0, gtsam.Pose3(), priorModel))
 
 # Initializing Pose3 - chordal relaxation"

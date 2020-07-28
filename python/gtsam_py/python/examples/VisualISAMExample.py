@@ -16,9 +16,9 @@ import numpy as np
 import gtsam
 from gtsam.examples import SFMdata
 from gtsam import (Cal3_S2, GenericProjectionFactorCal3_S2,
-                         NonlinearFactorGraph, NonlinearISAM, Pose3,
-                         PriorFactorPoint3, PriorFactorPose3, Rot3,
-                         SimpleCamera, Values, Point3)
+                   NonlinearFactorGraph, NonlinearISAM, Pose3,
+                   PriorFactorPoint3, PriorFactorPose3, Rot3,
+                   PinholeCameraCal3_S2, Values, Point3)
 
 
 def symbol(name: str, index: int) -> int:
@@ -37,7 +37,8 @@ def main():
     K = Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0)
 
     # Define the camera observation noise model
-    camera_noise = gtsam.noiseModel.Isotropic.Sigma(2, 1.0)  # one pixel in u and v
+    camera_noise = gtsam.noiseModel.Isotropic.Sigma(
+        2, 1.0)  # one pixel in u and v
 
     # Create the set of ground-truth landmarks
     points = SFMdata.createPoints()
@@ -54,15 +55,17 @@ def main():
 
     # Loop over the different poses, adding the observations to iSAM incrementally
     for i, pose in enumerate(poses):
-        camera = SimpleCamera(pose, K)
+        camera = PinholeCameraCal3_S2(pose, K)
         # Add factors for each landmark observation
         for j, point in enumerate(points):
             measurement = camera.project(point)
-            factor = GenericProjectionFactorCal3_S2(measurement, camera_noise, symbol('x', i), symbol('l', j), K)
+            factor = GenericProjectionFactorCal3_S2(
+                measurement, camera_noise, symbol('x', i), symbol('l', j), K)
             graph.push_back(factor)
 
         # Intentionally initialize the variables off from the ground truth
-        noise = Pose3(r=Rot3.Rodrigues(-0.1, 0.2, 0.25), t=Point3(0.05, -0.10, 0.20))
+        noise = Pose3(r=Rot3.Rodrigues(-0.1, 0.2, 0.25),
+                      t=Point3(0.05, -0.10, 0.20))
         initial_xi = pose.compose(noise)
 
         # Add an initial guess for the current pose
@@ -74,7 +77,8 @@ def main():
         # adding it to iSAM.
         if i == 0:
             # Add a prior on pose x0, with 0.3 rad std on roll,pitch,yaw and 0.1m x,y,z
-            pose_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.3, 0.3, 0.3, 0.1, 0.1, 0.1]))
+            pose_noise = gtsam.noiseModel.Diagonal.Sigmas(
+                np.array([0.3, 0.3, 0.3, 0.1, 0.1, 0.1]))
             factor = PriorFactorPose3(symbol('x', 0), poses[0], pose_noise)
             graph.push_back(factor)
 

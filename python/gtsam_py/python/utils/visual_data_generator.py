@@ -3,6 +3,7 @@ from __future__ import print_function
 import numpy as np
 from math import pi, cos, sin
 import gtsam
+from gtsam import PinholeCameraCal3_S2
 
 
 class Options:
@@ -99,10 +100,10 @@ def generate_data(options):
     for i in range(options.nrCameras):
         theta = i * 2 * pi / options.nrCameras
         t = gtsam.Point3(r * cos(theta), r * sin(theta), height)
-        truth.cameras[i] = gtsam.SimpleCamera.Lookat(t,
-                                                     gtsam.Point3(0, 0, 0),
-                                                     gtsam.Point3(0, 0, 1),
-                                                     truth.K)
+        truth.cameras[i] = PinholeCameraCal3_S2.Lookat(t,
+                                                       gtsam.Point3(0, 0, 0),
+                                                       gtsam.Point3(0, 0, 1),
+                                                       truth.K)
         # Create measurements
         for j in range(nrPoints):
             # All landmarks seen in every frame
