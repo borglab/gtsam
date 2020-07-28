@@ -65,7 +65,7 @@ class RangeFactor : public ExpressionFactorN<T, A1, A2> {
   {
     std::vector<Matrix> Hs(2);
     const auto &keys = Factor::keys();
-    const Vector error = unwhitenedError(
+    const Vector error = Base::unwhitenedError(
       {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}}, 
       Hs);
     if (H1) *H1 = Hs[0];
@@ -134,6 +134,20 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
                                  body_T_sensor__);
     Expression<A2> a2_(keys[1]);
     return Expression<T>(Range<A1, A2>(), nav_T_sensor_, a2_);
+  }
+
+  Vector evaluateError(const A1& a1, const A2& a2,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const
+  {
+    std::vector<Matrix> Hs(2);
+    const auto &keys = Factor::keys();
+    const Vector error = Base::unwhitenedError(
+      {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}}, 
+      Hs);
+    if (H1) *H1 = Hs[0];
+    if (H2) *H2 = Hs[1];
+    return error;
   }
 
   /** print contents */
