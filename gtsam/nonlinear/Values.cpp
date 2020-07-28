@@ -53,6 +53,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Values::Values(std::initializer_list<ConstKeyValuePair> init) {
+    for (const auto &kv : init)
+      insert(kv.key, kv.value);
+  }
+
+  /* ************************************************************************* */
   Values::Values(const Values& other, const VectorValues& delta) {
     for (const_iterator key_value = other.begin(); key_value != other.end(); ++key_value) {
       VectorValues::const_iterator it = delta.find(key_value->key);
