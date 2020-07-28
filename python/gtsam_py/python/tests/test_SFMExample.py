@@ -15,6 +15,7 @@ import numpy as np
 import gtsam
 import gtsam.utils.visual_data_generator as generator
 from gtsam import symbol
+from gtsam.gtsam.noiseModel improt Isotropic, Diagonal
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -34,7 +35,7 @@ class TestSFMExample(GtsamTestCase):
         graph = gtsam.NonlinearFactorGraph()
 
         # Add factors for all measurements
-        measurementNoise = gtsam.noiseModel.Isotropic.Sigma(2, measurementNoiseSigma)
+        measurementNoise = Isotropic.Sigma(2, measurementNoiseSigma)
         for i in range(len(data.Z)):
             for k in range(len(data.Z[i])):
                 j = data.J[i][k]
@@ -42,10 +43,10 @@ class TestSFMExample(GtsamTestCase):
                     data.Z[i][k], measurementNoise,
                     symbol('x', i), symbol('p', j), data.K))
 
-        posePriorNoise = gtsam.noiseModel.Diagonal.Sigmas(poseNoiseSigmas)
+        posePriorNoise = Diagonal.Sigmas(poseNoiseSigmas)
         graph.add(gtsam.PriorFactorPose3(symbol('x', 0),
                                    truth.cameras[0].pose(), posePriorNoise))
-        pointPriorNoise = gtsam.noiseModel.Isotropic.Sigma(3, pointNoiseSigma)
+        pointPriorNoise = Isotropic.Sigma(3, pointNoiseSigma)
         graph.add(gtsam.PriorFactorPoint3(symbol('p', 0),
                                     truth.points[0], pointPriorNoise))
 

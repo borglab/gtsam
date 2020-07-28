@@ -15,10 +15,11 @@ from __future__ import print_function
 import unittest
 
 import gtsam
-from gtsam import (DoglegOptimizer, DoglegParams, GaussNewtonOptimizer,
+from gtsam import (DoglegOptimizer, DoglegParams,
+                   DummyPreconditionerParameters, GaussNewtonOptimizer,
                    GaussNewtonParams, LevenbergMarquardtOptimizer,
                    LevenbergMarquardtParams, NonlinearFactorGraph, Ordering,
-                   Point2, PriorFactorPoint2, Values)
+                   PCGSolverParameters, Point2, PriorFactorPoint2, Values)
 from gtsam.utils.test_case import GtsamTestCase
 
 KEY1 = 1
@@ -57,6 +58,16 @@ class TestScenario(GtsamTestCase):
         # Levenberg-Marquardt
         lmParams = LevenbergMarquardtParams.CeresDefaults()
         lmParams.setOrdering(ordering)
+        actual2 = LevenbergMarquardtOptimizer(
+            fg, initial_values, lmParams).optimize()
+        self.assertAlmostEqual(0, fg.error(actual2))
+
+        # Levenberg-Marquardt
+        lmParams = LevenbergMarquardtParams.CeresDefaults()
+        lmParams.setLinearSolverType("ITERATIVE")
+        cgParams = PCGSolverParameters()
+        cgParams.setPreconditionerParams(DummyPreconditionerParameters())
+        lmParams.setIterativeParams(cgParams)
         actual2 = LevenbergMarquardtOptimizer(
             fg, initial_values, lmParams).optimize()
         self.assertAlmostEqual(0, fg.error(actual2))

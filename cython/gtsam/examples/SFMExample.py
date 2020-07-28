@@ -20,7 +20,7 @@ from gtsam.gtsam import (Cal3_S2, DoglegOptimizer,
                          GenericProjectionFactorCal3_S2, Marginals,
                          NonlinearFactorGraph, PinholeCameraCal3_S2, Point3,
                          Pose3, PriorFactorPoint3, PriorFactorPose3, Rot3,
-                         SimpleCamera, Values)
+                         PinholeCameraCal3_S2, Values)
 from gtsam.utils import plot
 
 

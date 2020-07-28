@@ -15,17 +15,18 @@ from __future__ import print_function
 import unittest
 
 import gtsam
+import numpy as np
+from gtsam.gtsam.symbol_shorthand import X
 from gtsam.utils.test_case import GtsamTestCase
 
-import numpy as np
 
 def create_graph():
     """Create a basic linear factor graph for testing"""
     graph = gtsam.GaussianFactorGraph()
     
-    x0 = gtsam.symbol('x', 0)
-    x1 = gtsam.symbol('x', 1)
-    x2 = gtsam.symbol('x', 2)
+    x0 = X(0)
+    x1 = X(1)
+    x2 = X(2)
     
     BETWEEN_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.ones(1))
     PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.ones(1))
