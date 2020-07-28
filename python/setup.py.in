@@ -15,17 +15,19 @@ package_data = {
     ]
 }
 
+# Cleaner to read in the contents rather than copy them over.
+readme_contents = open("${PROJECT_SOURCE_DIR}/README.md").read()
+
 setup(
     name='gtsam',
     description='Georgia Tech Smoothing And Mapping library',
     url='https://gtsam.org/',
-    version=
-    '${GTSAM_VERSION_STRING}',  # https://www.python.org/dev/peps/pep-0440/
+    version='${GTSAM_VERSION_STRING}',  # https://www.python.org/dev/peps/pep-0440/
     author='Frank Dellaert et. al.',
     author_email='frank.dellaert@gtsam.org',
     license='Simplified BSD license',
     keywords='slam sam robotics localization mapping optimization',
-    long_description='''${README_CONTENTS}''',
+    long_description=readme_contents,
     # https://pypi.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         'Development Status :: 5 - Production/Stable',
