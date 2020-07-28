@@ -37,7 +37,7 @@ public:
       boost::optional<const Qualified> instName = boost::none, bool verbose =
           false);
 
-  virtual bool isStatic() const {
+  bool isStatic() const override {
     return false;
   }
 
@@ -64,10 +64,10 @@ public:
 private:
 
   // Emit method header
-  void proxy_header(FileWriter& proxyFile) const;
+  void proxy_header(FileWriter& proxyFile) const override;
 
-  virtual std::string wrapper_call(FileWriter& wrapperFile, Str cppClassName,
-      Str matlabUniqueName, const ArgumentList& args) const;
+  std::string wrapper_call(FileWriter& wrapperFile, Str cppClassName,
+      Str matlabUniqueName, const ArgumentList& args) const override;
 };
 
 } // \namespace wrap

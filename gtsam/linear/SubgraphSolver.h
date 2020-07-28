@@ -38,7 +38,7 @@ struct GTSAM_EXPORT SubgraphSolverParameters
   explicit SubgraphSolverParameters(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
     : builderParams(p) {}
   void print() const { Base::print(); }
-  virtual void print(std::ostream &os) const {
+  void print(std::ostream &os) const override {
     Base::print(os);
   }
 };

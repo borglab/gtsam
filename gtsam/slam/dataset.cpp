@@ -11,7 +11,10 @@
 /**
  * @file dataset.cpp
  * @date Jan 22, 2010
- * @author Kai Ni, Luca Carlone, Frank Dellaert
+ * @author Kai Ni
+ * @author Luca Carlone
+ * @author Frank Dellaert
+ * @author Varun Agrawal
  * @brief utility functions for loading datasets
  */
 
@@ -70,8 +73,8 @@ string findExampleDataFile(const string& name) {
   namesToSearch.push_back(name + ".xml");
 
   // Find first name that exists
-  for(const fs::path& root: rootsToSearch) {
-    for(const fs::path& name: namesToSearch) {
+  for(const fs::path root: rootsToSearch) {
+    for(const fs::path name: namesToSearch) {
       if (fs::is_regular_file(root / name))
         return (root / name).string();
     }
@@ -192,13 +195,32 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
   }
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
 /* ************************************************************************* */
 boost::optional<IndexedPose> parseVertex(istream& is, const string& tag) {
+  return parseVertexPose(is, tag);
+}
+#endif
+
+/* ************************************************************************* */
+boost::optional<IndexedPose> parseVertexPose(istream& is, const string& tag) {
   if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {
     Key id;
     double x, y, yaw;
     is >> id >> x >> y >> yaw;
     return IndexedPose(id, Pose2(x, y, yaw));
+  } else {
+    return boost::none;
+  }
+}
+
+/* ************************************************************************* */
+boost::optional<IndexedLandmark> parseVertexLandmark(istream& is, const string& tag) {
+  if (tag == "VERTEX_XY") {
+    Key id;
+    double x, y;
+    is >> id >> x >> y;
+    return IndexedLandmark(id, Point2(x, y));
   } else {
     return boost::none;
   }
@@ -232,12 +254,12 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
 
   string tag;
 
-  // load the poses
+  // load the poses and landmarks
   while (!is.eof()) {
     if (!(is >> tag))
       break;
 
-    const auto indexed_pose = parseVertex(is, tag);
+    const auto indexed_pose = parseVertexPose(is, tag);
     if (indexed_pose) {
       Key id = indexed_pose->first;
 
@@ -246,6 +268,16 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
         continue;
 
       initial->insert(id, indexed_pose->second);
+    }
+    const auto indexed_landmark = parseVertexLandmark(is, tag);
+    if (indexed_landmark) {
+      Key id = indexed_landmark->first;
+
+      // optional filter
+      if (maxID && id >= maxID)
+        continue;
+
+      initial->insert(id, indexed_landmark->second);
     }
     is.ignore(LINESIZE, '\n');
   }
@@ -429,7 +461,7 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
     const string& filename) {
   fstream stream(filename.c_str(), fstream::out);
 
-  // save 2D & 3D poses
+  // save 2D poses
   for (const auto& key_value : estimate) {
     auto p = dynamic_cast<const GenericValue<Pose2>*>(&key_value.value);
     if (!p) continue;
@@ -438,15 +470,34 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
         << pose.y() << " " << pose.theta() << endl;
   }
 
+  // save 3D poses
   for(const auto& key_value: estimate) {
-      auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
-      if (!p) continue;
-      const Pose3& pose = p->value();
-      const Point3 t = pose.translation();
-      const auto q = pose.rotation().toQuaternion();
-      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "
-             << t.y() << " " << t.z() << " " << q.x() << " " << q.y() << " "
-             << q.z() << " " << q.w() << endl;
+    auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
+    if (!p) continue;
+    const Pose3& pose = p->value();
+    const Point3 t = pose.translation();
+    const auto q = pose.rotation().toQuaternion();
+    stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "
+            << t.y() << " " << t.z() << " " << q.x() << " " << q.y() << " "
+            << q.z() << " " << q.w() << endl;
+  }
+
+  // save 2D landmarks
+  for(const auto& key_value: estimate) {
+    auto p = dynamic_cast<const GenericValue<Point2>*>(&key_value.value);
+    if (!p) continue;
+    const Point2& point = p->value();
+    stream << "VERTEX_XY " << key_value.key << " " << point.x() << " "
+        << point.y() << endl;
+  }
+
+  // save 3D landmarks
+  for(const auto& key_value: estimate) {
+    auto p = dynamic_cast<const GenericValue<Point3>*>(&key_value.value);
+    if (!p) continue;
+    const Point3& point = p->value();
+    stream << "VERTEX_TRACKXYZ " << key_value.key << " " << point.x() << " "
+        << point.y() << " " << point.z() << endl;
   }
 
   // save edges (2D or 3D)
@@ -515,6 +566,7 @@ static Rot3 NormalizedRot3(double w, double x, double y, double z) {
   const double norm = sqrt(w * w + x * x + y * y + z * z), f = 1.0 / norm;
   return Rot3::Quaternion(f * w, f * x, f * y, f * z);
 }
+
 /* ************************************************************************* */
 std::map<Key, Pose3> parse3DPoses(const string& filename) {
   ifstream is(filename.c_str());
@@ -543,6 +595,30 @@ std::map<Key, Pose3> parse3DPoses(const string& filename) {
     }
   }
   return poses;
+}
+
+/* ************************************************************************* */
+std::map<Key, Point3> parse3DLandmarks(const string& filename) {
+  ifstream is(filename.c_str());
+  if (!is)
+    throw invalid_argument("parse3DLandmarks: can not find file " + filename);
+
+  std::map<Key, Point3> landmarks;
+  while (!is.eof()) {
+    char buf[LINESIZE];
+    is.getline(buf, LINESIZE);
+    istringstream ls(buf);
+    string tag;
+    ls >> tag;
+
+    if (tag == "VERTEX_TRACKXYZ") {
+      Key id;
+      double x, y, z;
+      ls >> id >> x >> y >> z;
+      landmarks.emplace(id, Point3(x, y, z));
+    }
+  }
+  return landmarks;
 }
 
 /* ************************************************************************* */
@@ -617,10 +693,15 @@ GraphAndValues load3D(const string& filename) {
     graph->push_back(factor);
   }
 
-  const auto poses = parse3DPoses(filename);
   Values::shared_ptr initial(new Values);
+
+  const auto poses = parse3DPoses(filename);
   for (const auto& key_pose : poses) {
     initial->insert(key_pose.first, key_pose.second);
+  }
+  const auto landmarks = parse3DLandmarks(filename);
+  for (const auto& key_landmark : landmarks) {
+    initial->insert(key_landmark.first, key_landmark.second);
   }
 
   return make_pair(graph, initial);
