@@ -10,12 +10,11 @@ A script validating the Preintegration of IMU measurements
 
 import math
 
+import gtsam
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
-
-import gtsam
 from gtsam.utils.plot import plot_pose3
+from mpl_toolkits.mplot3d import Axes3D
 
 IMU_FIG = 1
 POSES_FIG = 2

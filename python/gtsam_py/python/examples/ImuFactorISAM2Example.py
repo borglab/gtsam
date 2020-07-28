@@ -8,11 +8,9 @@ from __future__ import print_function
 
 import math
 
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
-import numpy as np
-
 import gtsam
+import matplotlib.pyplot as plt
+import numpy as np
 from gtsam import (ISAM2, BetweenFactorConstantBias, Cal3_S2,
                    ConstantTwistScenario, ImuFactor, NonlinearFactorGraph,
                    PinholeCameraCal3_S2, Point3, Pose3,
@@ -20,6 +18,7 @@ from gtsam import (ISAM2, BetweenFactorConstantBias, Cal3_S2,
                    PriorFactorVector, Rot3, Values)
 from gtsam.gtsam.symbol_shorthand import B, V, X
 from gtsam.utils import plot
+from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
 
 
 def vector3(x, y, z):

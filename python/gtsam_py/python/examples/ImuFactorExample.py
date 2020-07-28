@@ -15,14 +15,12 @@ from __future__ import print_function
 import argparse
 import math
 
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import numpy as np
-
 import gtsam
+import matplotlib.pyplot as plt
+import numpy as np
 from gtsam.gtsam.symbol_shorthand import B, V, X
 from gtsam.utils.plot import plot_pose3
-
+from mpl_toolkits.mplot3d import Axes3D
 
 from PreintegrationExample import POSES_FIG, PreintegrationExample
 
