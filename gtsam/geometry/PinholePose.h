@@ -107,9 +107,9 @@ public:
 
     // If needed, apply chain rule
     if (Dpose)
-    *Dpose = Dpi_pn * *Dpose;
+      *Dpose = Dpi_pn * *Dpose;
     if (Dpoint)
-    *Dpoint = Dpi_pn * *Dpoint;
+      *Dpoint = Dpi_pn * *Dpoint;
 
     return pi;
   }
@@ -361,7 +361,7 @@ public:
   }
 
   /// return calibration
-  virtual const CALIBRATION& calibration() const {
+  const CALIBRATION& calibration() const override {
     return *K_;
   }
 

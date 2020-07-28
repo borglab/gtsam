@@ -151,7 +151,7 @@ public:
   }
 
   /** equals */
-  virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
+  bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
     const This *e =  dynamic_cast<const This*> (&expected);
     return e != nullptr && Base::equals(*e, tol)
     && (delta_pos_in_t0_ - e->delta_pos_in_t0_).norm() < tol

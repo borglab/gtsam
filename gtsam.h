@@ -598,6 +598,7 @@ class SOn {
   // Standard Constructors
   SOn(size_t n);
   static gtsam::SOn FromMatrix(Matrix R);
+  static gtsam::SOn Lift(size_t n, Matrix R);
 
   // Testable
   void print(string s) const;
@@ -1458,7 +1459,7 @@ virtual class Null: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double loss(double error) const;
 };
 
 virtual class Fair: gtsam::noiseModel::mEstimator::Base {
@@ -1469,7 +1470,7 @@ virtual class Fair: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double loss(double error) const;
 };
 
 virtual class Huber: gtsam::noiseModel::mEstimator::Base {
@@ -1480,7 +1481,7 @@ virtual class Huber: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double loss(double error) const;
 };
 
 virtual class Cauchy: gtsam::noiseModel::mEstimator::Base {
@@ -1491,7 +1492,7 @@ virtual class Cauchy: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double loss(double error) const;
 };
 
 virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
@@ -1502,7 +1503,7 @@ virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double loss(double error) const;
 };
 
 virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
@@ -1513,7 +1514,7 @@ virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double loss(double error) const;
 };
 
 virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
@@ -1524,7 +1525,7 @@ virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double loss(double error) const;
 };
 
 virtual class DCS: gtsam::noiseModel::mEstimator::Base {
@@ -1535,7 +1536,7 @@ virtual class DCS: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double loss(double error) const;
 };
 
 virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
@@ -1546,7 +1547,7 @@ virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double loss(double error) const;
 };
 
 }///\namespace mEstimator
@@ -1935,6 +1936,22 @@ virtual class ConjugateGradientParameters : gtsam::IterativeOptimizationParamete
   void setEpsilon_rel(double value);
   void setEpsilon_abs(double value);
   void print() const;
+};
+
+#include <gtsam/linear/Preconditioner.h>
+virtual class PreconditionerParameters {
+  PreconditionerParameters();
+};
+
+virtual class DummyPreconditionerParameters : gtsam::PreconditionerParameters {
+  DummyPreconditionerParameters();
+};
+
+#include <gtsam/linear/PCGSolver.h>
+virtual class PCGSolverParameters : gtsam::ConjugateGradientParameters {
+  PCGSolverParameters();
+  void print(string s);
+  void setPreconditionerParams(gtsam::PreconditionerParameters* preconditioner);
 };
 
 #include <gtsam/linear/SubgraphSolver.h>
@@ -2833,6 +2850,34 @@ void writeG2o(const gtsam::NonlinearFactorGraph& graph,
 template<T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose3}>
 virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
   KarcherMeanFactor(const gtsam::KeyVector& keys);
+};
+
+#include <gtsam/slam/FrobeniusFactor.h>
+gtsam::noiseModel::Isotropic* ConvertPose3NoiseModel(
+    gtsam::noiseModel::Base* model, size_t d);
+
+template<T = {gtsam::SO3, gtsam::SO4}>
+virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
+  FrobeniusFactor(size_t key1, size_t key2);
+  FrobeniusFactor(size_t key1, size_t key2, gtsam::noiseModel::Base* model);
+
+  Vector evaluateError(const T& R1, const T& R2);
+};
+
+template<T = {gtsam::SO3, gtsam::SO4}>
+virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
+  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12);
+  FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12, gtsam::noiseModel::Base* model);
+
+  Vector evaluateError(const T& R1, const T& R2);
+};
+
+virtual class FrobeniusWormholeFactor : gtsam::NoiseModelFactor {
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
+                          size_t p);
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
+                          size_t p, gtsam::noiseModel::Base* model);
+  Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
 };
 
 //*************************************************************************

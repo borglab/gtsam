@@ -112,17 +112,17 @@ public:
   virtual ~LinearizedJacobianFactor() {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   // Testable
 
   /** print function */
-  virtual void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /** equals function with optional tolerance */
-  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   // access functions
   const constBVector b() const { return Ab_(size()).col(0); }
@@ -130,17 +130,17 @@ public:
   const constABlock A(Key key) const { return Ab_(std::find(begin(), end(), key) - begin()); }
 
   /** get the dimension of the factor (number of rows on linearization) */
-  size_t dim() const { return Ab_.rows(); };
+  size_t dim() const override { return Ab_.rows(); };
 
   /** Calculate the error of the factor */
-  double error(const Values& c) const;
+  double error(const Values& c) const override;
 
   /**
    * linearize to a GaussianFactor
    * Reimplemented from NoiseModelFactor to directly copy out the
    * matrices and only update the RHS b with an updated residual
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const;
+  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const override;
 
   /** (A*x-b) */
   Vector error_vector(const Values& c) const;
@@ -202,17 +202,17 @@ public:
   virtual ~LinearizedHessianFactor() {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   // Testable
 
   /** print function */
-  virtual void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /** equals function with optional tolerance */
-  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /** Return the constant term \f$ f \f$ as described above
    * @return The constant term \f$ f \f$
@@ -261,17 +261,17 @@ public:
   }
 
   /** get the dimension of the factor (number of rows on linearization) */
-  size_t dim() const { return info_.rows() - 1; }
+  size_t dim() const override { return info_.rows() - 1; }
 
   /** Calculate the error of the factor */
-  double error(const Values& c) const;
+  double error(const Values& c) const override;
 
   /**
    * linearize to a GaussianFactor
    * Reimplemented from NoiseModelFactor to directly copy out the
    * matrices and only update the RHS b with an updated residual
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const;
+  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const override;
 
 private:
   /** Serialization function */

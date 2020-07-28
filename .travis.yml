@@ -1,6 +1,5 @@
 language: cpp
 cache: ccache
-sudo: required
 dist: xenial
 
 addons:
@@ -33,7 +32,7 @@ stages:
 
 env:
   global:
-    - MAKEFLAGS="-j2"
+    - MAKEFLAGS="-j3"
     - CCACHE_SLOPPINESS=pch_defines,time_macros
 
 # Compile stage without building examples/tests to populate the caches.

@@ -72,9 +72,9 @@ A Lie group is both a manifold *and* a group. Hence, a LIE_GROUP type should imp
 However, we now also need to be able to evaluate the derivatives of compose and inverse. 
 Hence, we have the following extra valid static functions defined in the struct `gtsam::traits<T>`:
 
-* `r = traits<T>::Compose(p,q,Hq,Hp)`
+* `r = traits<T>::Compose(p,q,Hp,Hq)`
 * `q = traits<T>::Inverse(p,Hp)`
-* `r = traits<T>::Between(p,q,Hq,H2p)`
+* `r = traits<T>::Between(p,q,Hp,Hq)`
 
 where above the *H* arguments stand for optional Jacobian arguments. 
 That makes it possible to create factors implementing priors (PriorFactor) or relations between two instances of a Lie group type (BetweenFactor).

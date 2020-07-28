@@ -60,7 +60,7 @@ namespace simulated2D {
       virtual ~ScalarCoordConstraint1() {}
 
       /// @return a deep copy of this factor
-      virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+      gtsam::NonlinearFactor::shared_ptr clone() const override {
         return boost::static_pointer_cast<gtsam::NonlinearFactor>(
             gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
@@ -87,8 +87,8 @@ namespace simulated2D {
        * @param x is the estimate of the constrained variable being evaluated
        * @param H is an optional Jacobian, linearized at x
        */
-      virtual double value(const Point& x, boost::optional<Matrix&> H =
-          boost::none) const {
+      double value(const Point& x, boost::optional<Matrix&> H =
+          boost::none) const override {
         if (H) {
           Matrix D = Matrix::Zero(1, traits<Point>::GetDimension(x));
           D(0, IDX) = 1.0;
@@ -128,7 +128,7 @@ namespace simulated2D {
       virtual ~MaxDistanceConstraint() {}
 
       /// @return a deep copy of this factor
-      virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+      gtsam::NonlinearFactor::shared_ptr clone() const override {
         return boost::static_pointer_cast<gtsam::NonlinearFactor>(
             gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
@@ -150,9 +150,9 @@ namespace simulated2D {
        * @param H2 is an optional Jacobian in x2
        * @return the distance between the variables
        */
-      virtual double value(const Point& x1, const Point& x2,
+      double value(const Point& x1, const Point& x2,
           boost::optional<Matrix&> H1 = boost::none,
-          boost::optional<Matrix&> H2 = boost::none) const {
+          boost::optional<Matrix&> H2 = boost::none) const override {
         if (H1) *H1 = numericalDerivative21(range_trait<Point,Point>, x1, x2, 1e-5);
         if (H1) *H2 = numericalDerivative22(range_trait<Point,Point>, x1, x2, 1e-5);
         return range_trait(x1, x2);
@@ -177,7 +177,7 @@ namespace simulated2D {
       virtual ~MinDistanceConstraint() {}
 
       /// @return a deep copy of this factor
-      virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+      gtsam::NonlinearFactor::shared_ptr clone() const override {
         return boost::static_pointer_cast<gtsam::NonlinearFactor>(
             gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
@@ -200,9 +200,9 @@ namespace simulated2D {
        * @param H2 is an optional Jacobian in x2
        * @return the distance between the variables
        */
-      virtual double value(const Pose& x1, const Point& x2,
+      double value(const Pose& x1, const Point& x2,
           boost::optional<Matrix&> H1 = boost::none,
-          boost::optional<Matrix&> H2 = boost::none) const {
+          boost::optional<Matrix&> H2 = boost::none) const override {
         if (H1) *H1 = numericalDerivative21(range_trait<Pose,Point>, x1, x2, 1e-5);
         if (H1) *H2 = numericalDerivative22(range_trait<Pose,Point>, x1, x2, 1e-5);
         return range_trait(x1, x2);

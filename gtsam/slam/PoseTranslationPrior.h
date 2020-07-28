@@ -54,12 +54,12 @@ public:
   const Translation& measured() const { return measured_; }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** h(x)-z */
-  Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const {
+  Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const override {
     const Translation& newTrans = pose.translation();
     const Rotation& R = pose.rotation();
     const int tDim = traits<Translation>::GetDimension(newTrans);
@@ -74,13 +74,13 @@ public:
   }
 
   /** equals specialized to this factor */
-  virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
+  bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
     const This *e = dynamic_cast<const This*> (&expected);
     return e != nullptr && Base::equals(*e, tol) && traits<Translation>::Equals(measured_, e->measured_, tol);
   }
 
   /** print contents */
-  void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s + "PoseTranslationPrior", keyFormatter);
     traits<Translation>::Print(measured_, "Measured Translation");
   }

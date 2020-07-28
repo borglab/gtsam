@@ -34,7 +34,7 @@ cmake $CURRDIR -DCMAKE_BUILD_TYPE=Release \
 
 make -j$(nproc) install
 
-cd $CURRDIR/../gtsam_install/cython
+cd cython
 
 sudo $PYTHON setup.py install
 

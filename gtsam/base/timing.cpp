@@ -89,7 +89,7 @@ void TimingOutline::print(const std::string& outline) const {
     childOrder[child.second->myOrder_] = child.second;
   }
   // Print children
-  for(const ChildOrder::value_type order_child: childOrder) {
+  for(const ChildOrder::value_type& order_child: childOrder) {
     std::string childOutline(outline);
     childOutline += "|   ";
     order_child.second->print(childOutline);

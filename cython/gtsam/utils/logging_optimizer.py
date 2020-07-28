@@ -4,15 +4,11 @@ Author: Jing Wu and Frank Dellaert
 """
 # pylint: disable=invalid-name
 
-from typing import TypeVar
-
 from gtsam import NonlinearOptimizer, NonlinearOptimizerParams
 import gtsam
 
-T = TypeVar('T')
 
-
-def optimize(optimizer: T, check_convergence, hook):
+def optimize(optimizer, check_convergence, hook):
     """ Given an optimizer and a convergence check, iterate until convergence.
         After each iteration, hook(optimizer, error) is called.
         After the function, use values and errors to get the result.
@@ -36,8 +32,8 @@ def optimize(optimizer: T, check_convergence, hook):
         current_error = new_error
 
 
-def gtsam_optimize(optimizer: NonlinearOptimizer,
-                   params: NonlinearOptimizerParams,
+def gtsam_optimize(optimizer,
+                   params,
                    hook):
     """ Given an optimizer and params, iterate until convergence.
         After each iteration, hook(optimizer) is called.
@@ -50,5 +46,7 @@ def gtsam_optimize(optimizer: NonlinearOptimizer,
     def check_convergence(optimizer, current_error, new_error):
         return (optimizer.iterations() >= params.getMaxIterations()) or (
             gtsam.checkConvergence(params.getRelativeErrorTol(), params.getAbsoluteErrorTol(), params.getErrorTol(),
-                                   current_error, new_error))
+                                   current_error, new_error)) or (
+            isinstance(optimizer, gtsam.LevenbergMarquardtOptimizer) and optimizer.lambda_() > params.getlambdaUpperBound())
     optimize(optimizer, check_convergence, hook)
+    return optimizer.values()
