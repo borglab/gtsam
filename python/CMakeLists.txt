@@ -1,8 +1,10 @@
+set(GTSAM_PYTHON_BUILD_DIRECTORY ${PROJECT_BINARY_DIR}/python)
+
 if(GTSAM_BUILD_PYTHON)
   # Generate setup.py.
   file(READ "${PROJECT_SOURCE_DIR}/README.md" README_CONTENTS)
   configure_file(${PROJECT_SOURCE_DIR}/python/setup.py.in
-                 ${PROJECT_BINARY_DIR}/python/setup.py)
+                 ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py)
 
   set(WRAP_USE_CUSTOM_PYTHON_LIBRARY ${GTSAM_USE_CUSTOM_PYTHON_LIBRARY})
   set(WRAP_PYTHON_VERSION ${GTSAM_PYTHON_VERSION})
@@ -42,12 +44,12 @@ if(GTSAM_BUILD_PYTHON)
         INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
         INSTALL_RPATH_USE_LINK_PATH TRUE
         OUTPUT_NAME "gtsam"
-        LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/python/gtsam"
+        LIBRARY_OUTPUT_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam"
         DEBUG_POSTFIX "" # Otherwise you will have a wrong name
         RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
         )
 
-  set(GTSAM_MODULE_PATH ${PROJECT_BINARY_DIR}/python/gtsam)
+  set(GTSAM_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam)
 
   # Symlink all tests .py files to build folder.
   create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_py/python"
@@ -83,12 +85,12 @@ if(GTSAM_BUILD_PYTHON)
             INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
             INSTALL_RPATH_USE_LINK_PATH TRUE
             OUTPUT_NAME "gtsam_unstable"
-            LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/python/gtsam_unstable"
+            LIBRARY_OUTPUT_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable"
             DEBUG_POSTFIX "" # Otherwise you will have a wrong name
             RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
             )
 
-    set(GTSAM_UNSTABLE_MODULE_PATH ${PROJECT_BINARY_DIR}/python/gtsam_unstable)
+    set(GTSAM_UNSTABLE_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable)
 
     # Symlink all tests .py files to build folder.
     create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable_py/python"
@@ -97,6 +99,6 @@ if(GTSAM_BUILD_PYTHON)
 
   set(GTSAM_PYTHON_INSTALL_TARGET python-install)
   add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-          COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_BINARY_DIR}/python/setup.py install
-          WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+          COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py install
+          WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
 endif()
