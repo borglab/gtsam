@@ -295,7 +295,7 @@ struct traits<ExpressionFactorN<T, Args...>>
 // ExpressionFactorN
 
 
-#if defined(GTSAM_ALLOW_DEPRECATED_SINCE_V4)
+#if defined(GTSAM_ALLOW_DEPRECATED_SINCE_V41)
 /**
  * Binary specialization of ExpressionFactor meant as a base class for binary
  * factors. Enforces an 'expression' method with two keys, and provides
