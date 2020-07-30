@@ -71,10 +71,13 @@ typedef FastSet<FactorIndex> FactorIndexSet;
     /// The keys involved in this factor
     KeyVector keys_;
 
+    /// Whether this factor is active (default=true) and should be included in optimizations.
+    bool active_ = true;
+
     /// @name Standard Constructors
     /// @{
 
-    /** Default constructor for I/O */
+    /** Default constructor for serialization */
     Factor() {}
 
     /** Construct factor from container of keys.  This constructor is used internally from derived factor
@@ -128,6 +131,13 @@ typedef FastSet<FactorIndex> FactorIndexSet;
     */
     size_t size() const { return keys_.size(); }
 
+    /// See NonLinearFactor::active().
+    bool active() const { return active_; }
+
+    /// Changes the default "active" status of this factor.
+    void active(bool newActiveValue) { active_ = newActiveValue; }
+
+
     /// @}
 
 
@@ -163,8 +173,9 @@ typedef FastSet<FactorIndex> FactorIndexSet;
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int /*version*/) {
+    void serialize(Archive & ar, const unsigned int version) {
       ar & BOOST_SERIALIZATION_NVP(keys_);
+      if (version>=1) ar & BOOST_SERIALIZATION_NVP(active_);
     }
 
     /// @}
@@ -172,3 +183,5 @@ typedef FastSet<FactorIndex> FactorIndexSet;
   };
 
 }
+
+BOOST_CLASS_VERSION(gtsam::Factor, 1)

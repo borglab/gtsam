@@ -19,6 +19,8 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/expressions.h>
 #include <gtsam/nonlinear/expressionTesting.h>
+#include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/expressions.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -96,6 +98,47 @@ TEST(ExpressionTesting, Issue16) {
   EXPECT(assert_equal(Vector3(Z_3x1), err));
   EXPECT(internal::testExpressionJacobians(
       "ScaleAndCompare", err_expr, values, numerical_step, tol));
+}
+
+/* ************************************************************************* */
+TEST(FactorTesting, Active) {
+  NonlinearFactorGraph fg;
+  const Key k1 = 1, k2 = 2;
+
+  fg.emplace_shared<PriorFactor<double>>(k1, 10.0);
+  fg.emplace_shared<PriorFactor<double>>(k2, 20.0);
+  fg.emplace_shared<PriorFactor<double>>(k1, 30.0);
+  fg.emplace_shared<PriorFactor<double>>(k2, 30.0);
+  
+  const Values initValues = {{k1, genericValue(0.0)},{k2, genericValue(0.0)}};
+  
+  // 1) All factors enabled:
+  {
+    for (size_t i=0;i<4;i++) EXPECT(fg.at(i)->active(initValues));
+
+    LevenbergMarquardtOptimizer optimizer(fg, initValues);
+    const auto &values = optimizer.optimize();
+
+    EXPECT(std::abs(values.at<double>(k1) - 20.0) < 1e-5);
+    EXPECT(std::abs(values.at<double>(k2) - 25.0) < 1e-5);
+  }
+
+  // 2) Disable some factors:
+  {
+    fg.at(2)->active(false);
+    fg.at(3)->active(false);
+
+    EXPECT(fg.at(0)->active(initValues));
+    EXPECT(fg.at(1)->active(initValues));
+    EXPECT(!fg.at(2)->active(initValues));
+    EXPECT(!fg.at(3)->active(initValues));
+
+    LevenbergMarquardtOptimizer optimizer(fg, initValues);
+    const auto &values = optimizer.optimize();
+
+    EXPECT(std::abs(values.at<double>(k1) - 10.0) < 1e-5);
+    EXPECT(std::abs(values.at<double>(k2) - 20.0) < 1e-5);
+  }
 }
 
 /* ************************************************************************* */

@@ -102,15 +102,19 @@ public:
 
   /**
    * Checks whether a factor should be used based on a set of values.
-   * This is primarily used to implment inequality constraints that
+   * This is primarily used to implement inequality constraints that
    * require a variable active set. For all others, the default implementation
-   * returning true solves this problem.
+   * returns the base Factor's active status, which defaults to true but
+   * can be manually overriden with Factor::active(bool).
    *
    * In an inequality/bounding constraint, this active() returns true
    * when the constraint is *NOT* fulfilled.
-   * @return true if the constraint is active
+   * @return true if the factor/constraint is active
    */
-  virtual bool active(const Values& /*c*/) const { return true; }
+  virtual bool active(const Values& /*c*/) const { return Factor::active(); }
+
+  /// Changes the default "active" status of this factor.
+  void active(bool newActiveValue) { Factor::active(newActiveValue); }
 
   /** linearize to a GaussianFactor */
   virtual boost::shared_ptr<GaussianFactor>
