@@ -17,8 +17,8 @@ noiseOdom = noiseModel.Diagonal.Sigmas([0.1; 0.1; 0.05]);
 % True values
 b1 = Pose2(0,0,0);
 b2 = Pose2(2,0,0);
-l1 = Point2(0,1);
-l2 = Point2(2,1);
+l1 = [0, 1]';
+l2 = [2, 1]';
 
 % Create a graph
 graph = NonlinearFactorGraph;

@@ -30,7 +30,7 @@ for i=1:n
         v = textscan(line_i,'%s %d %f %f %f %f %f %f',1);
         i1=v{2};
         if (~successive && i1<N || successive && i1==0)
-            t = gtsam.Point3(v{3}, v{4}, v{5});
+            t = [v{3}  v{4}  v{5}]';
             R = gtsam.Rot3.Ypr(v{8}, -v{7}, v{6});
             initial.insert(i1, gtsam.Pose3(R,t));
         end
@@ -40,7 +40,7 @@ for i=1:n
         i2=e{3};
         if i1<N && i2<N
             if ~successive || abs(i2-i1)==1
-                t = gtsam.Point3(e{4}, e{5}, e{6});
+                t = [e{4}  e{5}  e{6}]';
                 R = gtsam.Rot3.Ypr(e{9}, e{8}, e{7});
                 dpose = gtsam.Pose3(R,t);
                 graph.add(BetweenFactorPose3(i1, i2, dpose, model));

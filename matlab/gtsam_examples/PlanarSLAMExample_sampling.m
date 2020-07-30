@@ -43,8 +43,8 @@ sample = Values;
 sample.insert(i1, Pose2(0,0,0));
 sample.insert(i2, Pose2(2,0,0));
 sample.insert(i3, Pose2(4,0,0));
-sample.insert(j1, Point2(2,2));
-sample.insert(j2, Point2(4,2));
+sample.insert(j1, [2, 2]');
+sample.insert(j2, [4, 2]');
 
 %% Calculate and plot Covariance Ellipses
 cla;hold on

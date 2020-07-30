@@ -16,11 +16,11 @@ finalPositionBody = velocity1Body * deltaT + 0.5 * acc_body * deltaT * deltaT;
 finalVelocityBody = velocity1Body + acc_body * deltaT; 
 
 %% Express the integrated quantities in the global frame
-finalVelocityGlobal = initialVelocityGlobal + (initialPoseGlobal.rotation().rotate(Point3(finalVelocityBody)).vector() );
-finalPosition = initialPoseGlobal.translation().vector() + initialPoseGlobal.rotation().rotate( Point3(finalPositionBody)).vector() ;
+finalVelocityGlobal = initialVelocityGlobal + (initialPoseGlobal.rotation().rotate(finalVelocityBody) );
+finalPosition = initialPoseGlobal.translation().vector() + initialPoseGlobal.rotation().rotate(finalPositionBody) ;
 finalRotation = initialPoseGlobal.rotation.compose(imu2in1);
 % Include position and rotation in a pose
-finalPose = Pose3(finalRotation, Point3(finalPosition) );
+finalPose = Pose3(finalRotation, finalPosition );
 
 end
 

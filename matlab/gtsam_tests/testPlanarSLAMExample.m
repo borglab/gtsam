@@ -51,8 +51,8 @@ initialEstimate = Values;
 initialEstimate.insert(i1, Pose2(0.5, 0.0, 0.2));
 initialEstimate.insert(i2, Pose2(2.3, 0.1,-0.2));
 initialEstimate.insert(i3, Pose2(4.1, 0.1, 0.1));
-initialEstimate.insert(j1, Point2(1.8, 2.1));
-initialEstimate.insert(j2, Point2(4.1, 1.8));
+initialEstimate.insert(j1, [1.8,  2.1]');
+initialEstimate.insert(j2, [4.1,  1.8]');
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
 optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate);

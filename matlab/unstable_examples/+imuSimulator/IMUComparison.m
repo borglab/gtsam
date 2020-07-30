@@ -92,7 +92,7 @@ for t = times
       % Predict movement in a straight line (bad initialization)
       if lastSummaryIndex > 0
           initialPose = isam.calculateEstimate(symbol('x',lastSummaryIndex)) ...
-              .compose(Pose3(Rot3, Point3(  velocity * t - lastSummaryTime)  ));
+              .compose(Pose3(Rot3, velocity * t - lastSummaryTime  ));
           initialVel = isam.calculateEstimate(symbol('v',lastSummaryIndex));
       else
           initialPose = Pose3;

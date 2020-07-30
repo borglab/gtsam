@@ -9,9 +9,9 @@ finalRotation = initialPoseGlobal.rotation.compose(imu2in1);
 
 intermediateRotation = initialPoseGlobal.rotation.compose( Rot3.Expmap(acc_omegaIMU(4:6) * deltaT/2 ));
 % Integrate positions (equation (1) in Lupton)
-accelGlobal = intermediateRotation.rotate(Point3(acc_omegaIMU(1:3))).vector;
-finalPosition = Point3(initialPoseGlobal.translation.vector ...
-    + initialVelocityGlobal * deltaT + 0.5 * accelGlobal * deltaT * deltaT);
+accelGlobal = intermediateRotation.rotate(acc_omegaIMU(1:3));
+finalPosition = initialPoseGlobal.translation ...
+    + initialVelocityGlobal * deltaT + 0.5 * accelGlobal * deltaT * deltaT;
 finalVelocityGlobal = initialVelocityGlobal + accelGlobal * deltaT;
 
 % Include position and rotation in a pose

@@ -40,7 +40,7 @@ options.camera.fov = 120;
 % fps for image
 options.camera.fps = 25;
 % camera pixel resolution
-options.camera.resolution = Point2(752, 480);
+options.camera.resolution = [752 480]';
 % camera horizon
 options.camera.horizon = 60;
 % camera baseline
@@ -62,7 +62,7 @@ options.camera.stereoK = Cal3_S2Stereo(options.camera.f, options.camera.f, 0, ..
 % write video output
 options.writeVideo = true;
 % the testing field size (unit: meter)
-options.fieldSize = Point2([100, 100]');
+options.fieldSize = [100 100]';
 % camera flying speed (unit: meter / second)
 options.speed = 20;
 % camera flying height
@@ -80,21 +80,21 @@ options.plot.POINTS_COV = true;
 %% This is for tests
 if options.enableTests
     % test1: visibility test in monocular camera 
-    cylinders{1}.centroid = Point3(30, 50, 5);
-    cylinders{2}.centroid = Point3(50, 50, 5);
-    cylinders{3}.centroid = Point3(70, 50, 5);
+    cylinders{1}.centroid = [30 50 5]';
+    cylinders{2}.centroid = [50 50 5]';
+    cylinders{3}.centroid = [70 50 5]';
 
     for i = 1:3
         cylinders{i}.radius = 5;
         cylinders{i}.height = 10;
 
-        cylinders{i}.Points{1} = cylinders{i}.centroid.compose(Point3(-cylinders{i}.radius, 0, 0));
-        cylinders{i}.Points{2} = cylinders{i}.centroid.compose(Point3(cylinders{i}.radius, 0, 0));
+        cylinders{i}.Points{1} = cylinders{i}.centroid.compose([-cylinders{i}.radius,  0,  0]');
+        cylinders{i}.Points{2} = cylinders{i}.centroid.compose([cylinders{i}.radius,  0,  0]');
     end
 
-    camera = PinholeCameraCal3_S2.Lookat(Point3(10, 50, 10), ... 
-        Point3(options.fieldSize.x/2, options.fieldSize.y/2, 0), ...
-        Point3([0,0,1]'), options.monoK); 
+    camera = PinholeCameraCal3_S2.Lookat([10  50  10]', ...
+        [options.fieldSize.x/2  options.fieldSize.y/2  0]', ...
+        [0 0 1]', options.monoK);
 
     pose = camera.pose;
     prjMonoResult = cylinderSampleProjection(options.camera.monoK, pose, ...
@@ -138,7 +138,7 @@ end
 KMono = Cal3_S2(525,525,0,320,240);
 cameraPoses = cell(0);
 theta = 0;
-t = Point3(5, 5, options.height);
+t = [5,  5,  options.height]';
 i = 0;
 while 1
     i = i+1;
@@ -155,8 +155,8 @@ while 1
     %t = Point3([(i-1)*(options.fieldSize.x - 10)/options.poseNum + 10, ...
     %    15, 10]');
     camera = PinholeCameraCal3_S2.Lookat(t, ... 
-        Point3(options.fieldSize.x/2, options.fieldSize.y/2, 0), ...
-        Point3([0,0,1]'), options.camera.monoK);    
+        [options.fieldSize.x/2,  options.fieldSize.y/2,  0]', ...
+        [0,0,1]', options.camera.monoK);
     cameraPoses{end+1} = camera.pose;
 end
 

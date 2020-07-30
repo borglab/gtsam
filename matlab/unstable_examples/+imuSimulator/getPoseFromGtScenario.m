@@ -18,7 +18,7 @@ dY = gtECEF(2) - initialPositionECEF(2);
 dZ = gtECEF(3) - initialPositionECEF(3);
 [xlt, ylt, zlt] = imuSimulator.ct2ENU(dX, dY, dZ,Org_lat, Org_lon);
 
-gtPosition = Point3([xlt, ylt, zlt]');
+gtPosition = [xlt, ylt, zlt]';
 % use the gtsam.Rot3.Ypr constructor (yaw, pitch, roll) from the ground truth data
 %   yaw = measured positively to the right
 %   pitch = measured positively up

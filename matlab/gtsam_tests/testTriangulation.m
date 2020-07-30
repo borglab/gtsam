@@ -17,15 +17,15 @@ sharedCal = Cal3_S2(1500, 1200, 0, 640, 480);
 
 %% Looking along X-axis, 1 meter above ground plane (x-y)
 upright = Rot3.Ypr(-pi / 2, 0., -pi / 2);
-pose1 = Pose3(upright, Point3(0, 0, 1));
+pose1 = Pose3(upright, [0, 0, 1]');
 camera1 = PinholeCameraCal3_S2(pose1, sharedCal);
 
 %% create second camera 1 meter to the right of first camera
-pose2 = pose1.compose(Pose3(Rot3(), Point3(1, 0, 0)));
+pose2 = pose1.compose(Pose3(Rot3(), [1, 0, 0]'));
 camera2 = PinholeCameraCal3_S2(pose2, sharedCal);
 
 %% landmark ~5 meters infront of camera
-landmark =Point3 (5, 0.5, 1.2);
+landmark = [5, 0.5, 1.2]';
 
 %% 1. Project two landmarks into two cameras and triangulate
 z1 = camera1.project(landmark);

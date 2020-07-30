@@ -24,14 +24,14 @@ end
 
 %% generate some landmarks
 nrPoints = 8;
- landmarks = {Point3([20 15 1]'),...
-        Point3([22 7 -1]'),...
-        Point3([20 20 6]'),...
-        Point3([24 19 -4]'),...
-        Point3([26 17 -2]'),...
-        Point3([12 15 4]'),...
-        Point3([25 11 -6]'),...
-        Point3([23 10 4]')};
+ landmarks = {[20 15 1]',...
+        [22 7 -1]',...
+        [20 20 6]',...
+        [24 19 -4]',...
+        [26 17 -2]',...
+        [12 15 4]',...
+        [25 11 -6]',...
+        [23 10 4]'};
 
 curvature = 5.0;
 transformKey = 1000;
@@ -41,7 +41,7 @@ fg = NonlinearFactorGraph;
 initial = Values;
 
 %% intial landmarks and camera trajectory shifted in + y-direction
-y_shift = Point3(0,1,0);
+y_shift = [0, 1, 0]';
 
 % insert shifted points
 for i=1:nrPoints
@@ -55,11 +55,11 @@ hold on;
 %% initial pose priors
 pose_cov = noiseModel.Diagonal.Sigmas([1*pi/180; 1*pi/180; 1*pi/180; 0.1; 0.1; 0.1]);
 fg.add(PriorFactorPose3(1, Pose3(),pose_cov));
-fg.add(PriorFactorPose3(2, Pose3(Rot3(),Point3(1,0,0)),pose_cov));
+fg.add(PriorFactorPose3(2, Pose3(Rot3(),[1, 0, 0]'),pose_cov));
 
 %% Actual camera translation coincides with odometry, but -90deg Z-X rotation
 camera_transform = Pose3(Rot3.RzRyRx(-pi/2, 0, -pi/2),y_shift);
-actual_transform = Pose3(Rot3.RzRyRx(-pi/2, 0, -pi/2),Point3());
+actual_transform = Pose3(Rot3.RzRyRx(-pi/2, 0, -pi/2), [0, 0, 0]');
 initial.insert(transformKey,camera_transform);
 
 trans_cov = noiseModel.Diagonal.Sigmas([5*pi/180; 5*pi/180; 5*pi/180; 20; 20; 20]);
@@ -70,8 +70,8 @@ fg.add(PriorFactorPose3(transformKey,camera_transform,trans_cov));
 initial.insert(1, Pose3());
 
 
-move_forward = Pose3(Rot3(),Point3(1,0,0));
-move_circle = Pose3(Rot3.RzRyRx(0.0,0.0,curvature*pi/180),Point3(1,0,0));
+move_forward = Pose3(Rot3(),[1, 0, 0]');
+move_circle = Pose3(Rot3.RzRyRx(0.0,0.0,curvature*pi/180),[1, 0, 0]');
 covariance = noiseModel.Diagonal.Sigmas([5*pi/180; 5*pi/180; 5*pi/180; 0.05; 0.05; 0.05]);
 z_cov = noiseModel.Diagonal.Sigmas([1.0;1.0]);
     

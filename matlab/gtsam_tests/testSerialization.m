@@ -21,8 +21,8 @@ j1 = symbol('l',1); j2 = symbol('l',2);
 pose1=Pose2(0.5, 0.0, 0.2);
 pose2=Pose2(2.3, 0.1,-0.2);
 pose3=Pose2(4.1, 0.1, 0.1);
-landmark1=Point2(1.8, 2.1);
-landmark2=Point2(4.1, 1.8);
+landmark1=[1.8,  2.1]';
+landmark2=[4.1,  1.8]';
 
 serialized_pose1 = pose1.string_serialize();
 pose1ds = Pose2.string_deserialize(serialized_pose1);

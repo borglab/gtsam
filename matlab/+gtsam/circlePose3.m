@@ -25,7 +25,7 @@ dtheta = 2*pi()/numPoses;
 gRo = gtsam.Rot3([0, 1, 0 ; 1, 0, 0 ; 0, 0, -1]);
 for i = 1:numPoses
     key = gtsam.symbol(symbolChar, i-1);
-    gti = gtsam.Point3(radius*cos(theta), radius*sin(theta), 0);
+    gti = [radius*cos(theta) radius*sin(theta) 0]';
     oRi = gtsam.Rot3.Yaw(-theta);  % negative yaw goes counterclockwise, with Z down !
     gTi = gtsam.Pose3(gRo.compose(oRi), gti);
     values.insert(key, gTi);
