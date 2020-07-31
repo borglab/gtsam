@@ -12,7 +12,7 @@ a single variable with a single factor.
 
 import numpy as np
 import gtsam
-from gtsam.gtsam.symbol_shorthand import X
+from gtsam.symbol_shorthand import X
 
 def main():
     """

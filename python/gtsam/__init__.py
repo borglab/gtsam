@@ -1,6 +1,5 @@
 from .gtsam import *
 
-
 def _init():
     import numpy as np
 

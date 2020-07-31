@@ -15,7 +15,7 @@ import numpy as np
 import gtsam
 import gtsam.utils.visual_data_generator as generator
 from gtsam import symbol
-from gtsam.gtsam.noiseModel import Isotropic, Diagonal
+from gtsam.noiseModel import Isotropic, Diagonal
 from gtsam.utils.test_case import GtsamTestCase
 
 

@@ -16,7 +16,7 @@ import unittest
 
 import gtsam
 import numpy as np
-from gtsam.gtsam.symbol_shorthand import X
+from gtsam.symbol_shorthand import X
 from gtsam.utils.test_case import GtsamTestCase
 
 

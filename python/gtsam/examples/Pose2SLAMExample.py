@@ -27,7 +27,6 @@ def vector3(x, y, z):
     """Create 3d double numpy array."""
     return np.array([x, y, z], dtype=np.float)
 
-
 # Create noise models
 PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(vector3(0.3, 0.3, 0.1))
 ODOMETRY_NOISE = gtsam.noiseModel.Diagonal.Sigmas(vector3(0.2, 0.2, 0.1))

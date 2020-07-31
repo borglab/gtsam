@@ -16,7 +16,7 @@ from __future__ import print_function
 import numpy as np
 
 import gtsam
-from gtsam.gtsam.symbol_shorthand import X, L
+from gtsam.symbol_shorthand import X, L
 
 # Create noise models
 PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
