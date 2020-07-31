@@ -24,7 +24,7 @@ using namespace std;
 namespace gtsam {
 
 //------------------------------------------------------------------------------
-TangentPreintegration::TangentPreintegration(const boost::shared_ptr<const Params>& p,
+TangentPreintegration::TangentPreintegration(const boost::shared_ptr<Params>& p,
     const Bias& biasHat) :
     PreintegrationBase(p, biasHat) {
   resetIntegration();
