@@ -244,7 +244,7 @@ TEST(Similarity3, GroupAction) {
       &Similarity3::transformFrom, _1, _2, boost::none, boost::none);
 
   Point3 q(1, 2, 3);
-  for (const auto T : { T1, T2, T3, T4, T5, T6 }) {
+  for (const auto& T : { T1, T2, T3, T4, T5, T6 }) {
     Point3 q(1, 0, 0);
     Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(f, T, q);
     Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(f, T, q);

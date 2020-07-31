@@ -87,8 +87,8 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
     return boost::shared_ptr<PreintegrationCombinedParams>(new PreintegrationCombinedParams(Vector3(0, 0, -g)));
   }
 
-  void print(const std::string& s="") const;
-  bool equals(const PreintegratedRotationParams& other, double tol) const;
+  void print(const std::string& s="") const override;
+  bool equals(const PreintegratedRotationParams& other, double tol) const override;
 
   void setBiasAccCovariance(const Matrix3& cov) { biasAccCovariance=cov; }
   void setBiasOmegaCovariance(const Matrix3& cov) { biasOmegaCovariance=cov; }
@@ -294,7 +294,7 @@ public:
   virtual ~CombinedImuFactor() {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const;
+  gtsam::NonlinearFactor::shared_ptr clone() const override;
 
   /** implement functions needed for Testable */
 
@@ -303,11 +303,11 @@ public:
   GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
                                                const CombinedImuFactor&);
   /// print
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const;
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) const override;
 
   /// equals
-  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
   /// @}
 
   /** Access the preintegrated measurements. */
@@ -325,7 +325,7 @@ public:
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
           boost::none, boost::optional<Matrix&> H3 = boost::none,
       boost::optional<Matrix&> H4 = boost::none, boost::optional<Matrix&> H5 =
-          boost::none, boost::optional<Matrix&> H6 = boost::none) const;
+          boost::none, boost::optional<Matrix&> H6 = boost::none) const override;
 
  private:
   /** Serialization function */

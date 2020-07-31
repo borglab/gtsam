@@ -69,7 +69,7 @@ public:
   /// @{
 
   /// print with optional string
-  virtual void print(const std::string& s = "") const ;
+  virtual void print(const std::string& s = "") const;
 
   /// assert equality up to a tolerance
   bool equals(const Cal3DS2_Base& K, double tol = 10e-9) const;

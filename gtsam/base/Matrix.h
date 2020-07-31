@@ -73,6 +73,10 @@ GTSAM_MAKE_MATRIX_DEFS(9);
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
 
+// Matrix formatting arguments when printing.
+// Akin to Matlab style.
+const Eigen::IOFormat& matlabFormat();
+
 /**
  * equals with a tolerance
  */

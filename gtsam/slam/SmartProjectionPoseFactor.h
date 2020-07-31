@@ -103,13 +103,13 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
+      DefaultKeyFormatter) const override {
     std::cout << s << "SmartProjectionPoseFactor, z = \n ";
     Base::print("", keyFormatter);
   }
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*>(&p);
     return e && Base::equals(p, tol);
   }
@@ -117,7 +117,7 @@ public:
   /**
    * error calculates the error of the factor.
    */
-  virtual double error(const Values& values) const {
+  double error(const Values& values) const override {
     if (this->active(values)) {
       return this->totalReprojectionError(cameras(values));
     } else { // else of active flag
@@ -136,7 +136,7 @@ public:
    * to keys involved in this factor
    * @return vector of Values
    */
-  typename Base::Cameras cameras(const Values& values) const {
+  typename Base::Cameras cameras(const Values& values) const override {
     typename Base::Cameras cameras;
     for (const Key& k : this->keys_) {
       const Pose3 world_P_sensor_k =

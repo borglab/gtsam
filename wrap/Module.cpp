@@ -248,7 +248,7 @@ void Module::parseMarkup(const std::string& data) {
   // Create type attributes table and check validity
   typeAttributes.addClasses(expandedClasses);
   typeAttributes.addForwardDeclarations(forward_declarations);
-  for (const TypedefPair p: typedefs)
+  for (const TypedefPair& p: typedefs)
     typeAttributes.addType(p.newType);
   // add Eigen types as template arguments are also checked ?
   vector<ForwardDeclaration> eigen;

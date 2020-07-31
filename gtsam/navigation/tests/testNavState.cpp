@@ -207,6 +207,18 @@ TEST(NavState, CorrectPIM) {
 }
 
 /* ************************************************************************* */
+TEST(NavState, Stream)
+{
+  NavState state;
+
+  std::ostringstream os;
+  os << state;
+  string expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\np: [0, 0, 0]'\nv: [0, 0, 0]'";
+  EXPECT(os.str() == expected);
+}
+
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

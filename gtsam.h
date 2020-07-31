@@ -2996,6 +2996,7 @@ class PreintegratedImuMeasurements {
   void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
 
   Matrix preintMeasCov() const;
+  Vector preintegrated() const;
   double deltaTij() const;
   gtsam::Rot3 deltaRij() const;
   Vector deltaPij() const;

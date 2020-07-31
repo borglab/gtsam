@@ -101,7 +101,7 @@ namespace gtsam {
     virtual ~MultiProjectionFactor() {}
 
     /// @return a deep copy of this factor
-    virtual NonlinearFactor::shared_ptr clone() const {
+    NonlinearFactor::shared_ptr clone() const override {
       return boost::static_pointer_cast<NonlinearFactor>(
           NonlinearFactor::shared_ptr(new This(*this))); }
 
@@ -110,7 +110,7 @@ namespace gtsam {
      * @param s optional string naming the factor
      * @param keyFormatter optional formatter useful for printing Symbols
      */
-    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "MultiProjectionFactor, z = ";
       std::cout << measured_ << "measurements, z = ";
       if(this->body_P_sensor_)
@@ -119,7 +119,7 @@ namespace gtsam {
     }
 
     /// equals
-    virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+    bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
       const This *e = dynamic_cast<const This*>(&p);
       return e
           && Base::equals(p, tol)
@@ -129,7 +129,7 @@ namespace gtsam {
     }
 
     /// Evaluate error h(x)-z and optionally derivatives
-    Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const{
+    Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const override {
 
       Vector a;
       return a;

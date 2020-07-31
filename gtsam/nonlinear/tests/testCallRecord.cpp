@@ -98,7 +98,8 @@ struct Record: public internal::CallRecordImplementor<Record, Cols> {
   friend struct internal::CallRecordImplementor;
 };
 
-internal::JacobianMap & NJM= *static_cast<internal::JacobianMap *>(nullptr);
+internal::JacobianMap* NJM_ptr = static_cast<internal::JacobianMap *>(nullptr);
+internal::JacobianMap & NJM = *NJM_ptr;
 
 /* ************************************************************************* */
 typedef Eigen::Matrix<double, Eigen::Dynamic, Cols> DynRowMat;

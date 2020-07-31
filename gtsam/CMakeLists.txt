@@ -14,7 +14,6 @@ set (gtsam_subdirs
     sam
     sfm
     slam
-    smart
 	  navigation
 )
 

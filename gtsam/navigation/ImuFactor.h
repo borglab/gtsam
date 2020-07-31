@@ -200,14 +200,14 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const;
+  gtsam::NonlinearFactor::shared_ptr clone() const override;
 
   /// @name Testable
   /// @{
   GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ImuFactor&);
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const;
-  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) const override;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
   /// @}
 
   /** Access the preintegrated measurements. */
@@ -224,7 +224,7 @@ public:
       const imuBias::ConstantBias& bias_i, boost::optional<Matrix&> H1 =
           boost::none, boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none, boost::optional<Matrix&> H4 =
-          boost::none, boost::optional<Matrix&> H5 = boost::none) const;
+          boost::none, boost::optional<Matrix&> H5 = boost::none) const override;
 
 #ifdef GTSAM_TANGENT_PREINTEGRATION
   /// Merge two pre-integrated measurement classes
@@ -278,14 +278,14 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const;
+  gtsam::NonlinearFactor::shared_ptr clone() const override;
 
   /// @name Testable
   /// @{
   GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ImuFactor2&);
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const;
-  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) const override;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
   /// @}
 
   /** Access the preintegrated measurements. */
@@ -301,7 +301,7 @@ public:
                        const imuBias::ConstantBias& bias_i,  //
                        boost::optional<Matrix&> H1 = boost::none,
                        boost::optional<Matrix&> H2 = boost::none,
-                       boost::optional<Matrix&> H3 = boost::none) const;
+                       boost::optional<Matrix&> H3 = boost::none) const override;
 
 private:
 
