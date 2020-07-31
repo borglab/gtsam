@@ -1,6 +1,7 @@
 import gtsam
+import math
 import numpy as np
-from math import pi, cos, sin
+from math import pi
 
 
 def circlePose3(numPoses=8, radius=1.0, symbolChar='\0'):
@@ -25,7 +26,7 @@ def circlePose3(numPoses=8, radius=1.0, symbolChar='\0'):
         np.array([[0., 1., 0.], [1., 0., 0.], [0., 0., -1.]], order='F'))
     for i in range(numPoses):
         key = gtsam.symbol(symbolChar, i)
-        gti = gtsam.Point3(radius * cos(theta), radius * sin(theta), 0)
+        gti = gtsam.Point3(radius * math.cos(theta), radius * math.sin(theta), 0)
         oRi = gtsam.Rot3.Yaw(
             -theta)  # negative yaw goes counterclockwise, with Z down !
         gTi = gtsam.Pose3(gRo.compose(oRi), gti)

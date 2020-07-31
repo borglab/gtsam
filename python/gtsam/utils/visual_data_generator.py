@@ -1,7 +1,8 @@
 from __future__ import print_function
 
 import numpy as np
-from math import pi, cos, sin
+import math
+from math import pi
 import gtsam
 from gtsam import PinholeCameraCal3_S2
 
@@ -85,7 +86,7 @@ def generate_data(options):
         r = 10
         for j in range(len(truth.points)):
             theta = j * 2 * pi / nrPoints
-            truth.points[j] = gtsam.Point3(r * cos(theta), r * sin(theta), 0)
+            truth.points[j] = gtsam.Point3(r * math.cos(theta), r * math.sin(theta), 0)
     else:  # 3D landmarks as vertices of a cube
         truth.points = [
             gtsam.Point3(10, 10, 10), gtsam.Point3(-10, 10, 10),
@@ -99,7 +100,7 @@ def generate_data(options):
     r = 40
     for i in range(options.nrCameras):
         theta = i * 2 * pi / options.nrCameras
-        t = gtsam.Point3(r * cos(theta), r * sin(theta), height)
+        t = gtsam.Point3(r * math.cos(theta), r * math.sin(theta), height)
         truth.cameras[i] = PinholeCameraCal3_S2.Lookat(t,
                                                        gtsam.Point3(0, 0, 0),
                                                        gtsam.Point3(0, 0, 1),
