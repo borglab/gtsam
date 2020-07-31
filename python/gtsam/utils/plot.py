@@ -109,7 +109,7 @@ def plot_pose2_on_axes(axes, pose, axis_length=0.1, covariance=None):
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
     t = pose.translation()
-    origin = np.array(t)
+    origin = t
 
     # draw the camera axes
     x_axis = origin + gRp[:, 0] * axis_length
@@ -221,9 +221,8 @@ def plot_3d_points(fignum, values, linespec="g*", marginals=None,
     keys = values.keys()
 
     # Plot points and covariance matrices
-    for i in range(len(keys)):
+    for key in keys:
         try:
-            key = keys[i]
             point = values.atPoint3(key)
             if marginals is not None:
                 covariance = marginals.marginalCovariance(key)
@@ -321,17 +320,15 @@ def plot_trajectory(fignum, values, scale=1, marginals=None,
     """
     pose3Values = gtsam.utilities.allPose3s(values)
     keys = gtsam.KeyVector(pose3Values.keys())
-    lastIndex = None
+    lastKey = None
 
-    for i in range(len(keys)):
-        key = keys[i]
+    for key in keys:
         try:
             pose = pose3Values.atPose3(key)
         except:
             print("Warning: no Pose3 at key: {0}".format(key))
 
-        if lastIndex is not None:
-            lastKey = keys[lastIndex]
+        if lastKey is not None:
             try:
                 lastPose = pose3Values.atPose3(lastKey)
             except:
@@ -346,11 +343,10 @@ def plot_trajectory(fignum, values, scale=1, marginals=None,
             fig = plot_pose3(fignum, lastPose,  P=covariance,
                              axis_length=scale, axis_labels=axis_labels)
 
-        lastIndex = i
+        lastKey = key
 
     # Draw final pose
-    if lastIndex is not None:
-        lastKey = keys[lastIndex]
+    if lastKey is not None:
         try:
             lastPose = pose3Values.atPose3(lastKey)
             if marginals:
@@ -390,10 +386,9 @@ def plot_incremental_trajectory(fignum, values, start=0,
     pose3Values = gtsam.utilities.allPose3s(values)
     keys = gtsam.KeyVector(pose3Values.keys())
 
-    for i in range(start, len(keys)):
-        key = keys[i]
+    for key in keys[start:]:
         if values.exists(key):
-            pose_i = values.atPose3(keys[i])
+            pose_i = values.atPose3(key)
             plot_pose3(fignum, pose_i, scale)
 
     # Update the plot space to encompass all plotted points

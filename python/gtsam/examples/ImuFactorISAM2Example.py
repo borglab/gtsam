@@ -1,6 +1,6 @@
 """
 iSAM2 example with ImuFactor.
-Author: Frank Dellaert, Varun Agrawal
+Author: Robert Truax (C++), Frank Dellaert, Varun Agrawal
 """
 # pylint: disable=invalid-name, E1101
 

@@ -17,7 +17,7 @@ import gtsam.utils.visual_data_generator as generator
 from gtsam import symbol
 from gtsam.noiseModel import Isotropic, Diagonal
 from gtsam.utils.test_case import GtsamTestCase
-
+from gtsam.symbol_shorthand import X, P
 
 class TestSFMExample(GtsamTestCase):
 
@@ -41,23 +41,23 @@ class TestSFMExample(GtsamTestCase):
                 j = data.J[i][k]
                 graph.add(gtsam.GenericProjectionFactorCal3_S2(
                     data.Z[i][k], measurementNoise,
-                    symbol('x', i), symbol('p', j), data.K))
+                    X(i), P(j), data.K))
 
         posePriorNoise = Diagonal.Sigmas(poseNoiseSigmas)
-        graph.add(gtsam.PriorFactorPose3(symbol('x', 0),
+        graph.add(gtsam.PriorFactorPose3(X(0),
                                    truth.cameras[0].pose(), posePriorNoise))
         pointPriorNoise = Isotropic.Sigma(3, pointNoiseSigma)
-        graph.add(gtsam.PriorFactorPoint3(symbol('p', 0),
+        graph.add(gtsam.PriorFactorPoint3(P(0),
                                     truth.points[0], pointPriorNoise))
 
         # Initial estimate
         initialEstimate = gtsam.Values()
         for i in range(len(truth.cameras)):
             pose_i = truth.cameras[i].pose()
-            initialEstimate.insert(symbol('x', i), pose_i)
+            initialEstimate.insert(X(i), pose_i)
         for j in range(len(truth.points)):
             point_j = truth.points[j]
-            initialEstimate.insert(symbol('p', j), point_j)
+            initialEstimate.insert(P(j), point_j)
 
         # Optimization
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initialEstimate)
@@ -67,16 +67,16 @@ class TestSFMExample(GtsamTestCase):
 
         # Marginalization
         marginals = gtsam.Marginals(graph, result)
-        marginals.marginalCovariance(symbol('p', 0))
-        marginals.marginalCovariance(symbol('x', 0))
+        marginals.marginalCovariance(P(0))
+        marginals.marginalCovariance(X(0))
 
         # Check optimized results, should be equal to ground truth
         for i in range(len(truth.cameras)):
-            pose_i = result.atPose3(symbol('x', i))
+            pose_i = result.atPose3(X(i))
             self.gtsamAssertEquals(pose_i, truth.cameras[i].pose(), 1e-5)
 
         for j in range(len(truth.points)):
-            point_j = result.atPoint3(symbol('p', j))
+            point_j = result.atPoint3(P(j))
             self.gtsamAssertEquals(point_j, truth.points[j], 1e-5)
 
 if __name__ == "__main__":

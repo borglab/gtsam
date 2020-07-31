@@ -5,8 +5,8 @@
 | CameraResectioning                                    |        |
 | CreateSFMExampleData                                  |        |
 | DiscreteBayesNet_FG                                   | none of the required discrete functionality is exposed through Python |
-| easyPoint2KalmanFilter                                | ExtendedKalmanFilter not exposed through Python |
-| elaboratePoint2KalmanFilter                           | GaussianSequentialSolver not exposed through Python |
+| easyPoint2KalmanFilter                                | ExtendedKalmanFilter not yet exposed through Python |
+| elaboratePoint2KalmanFilter                           | GaussianSequentialSolver not yet exposed through Python |
 | ImuFactorExample2                                     | X      |
 | ImuFactorsExample                                     |        |
 | ISAM2Example_SmartFactor                              |        |
@@ -20,7 +20,7 @@
 | Pose2SLAMExample_g2o                                  | X      |
 | Pose2SLAMExample_graph                                |        |
 | Pose2SLAMExample_graphviz                             |        |
-| Pose2SLAMExample_lago                                 | lago not exposed through Python |
+| Pose2SLAMExample_lago                                 | lago not yet exposed through Python |
 | Pose2SLAMStressTest                                   |        |
 | Pose2SLAMwSPCG                                        |        |
 | Pose3SLAMExample_changeKeys                           |        |
@@ -42,8 +42,8 @@
 | StereoVOExample                                       |        |
 | StereoVOExample_large                                 |        |
 | TimeTBB                                               |        |
-| UGM_chain                                             | discrete functionality not exposed |
-| UGM_small                                             | discrete functionality not exposed |
+| UGM_chain                                             | discrete functionality not yet exposed |
+| UGM_small                                             | discrete functionality not yet exposed |
 | VisualISAM2Example                                    | X      |
 | VisualISAMExample                                     | X      |
 
