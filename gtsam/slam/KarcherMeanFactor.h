@@ -45,10 +45,14 @@ T FindKarcherMean(std::initializer_list<T>&& rotations);
  * */
 template <class T>
 class KarcherMeanFactor : public NonlinearFactor {
+  // Compile time dimension: can be -1
+  enum {D = traits<T>::dimension};
+
+  // Runtime dimension: always >=0 
+  size_t d_;
+
   /// Constant Jacobian made of d*d identity matrices
   boost::shared_ptr<JacobianFactor> jacobian_;
-
-  enum {D = traits<T>::dimension};
 
  public:
   /// Construct from given keys.
@@ -62,7 +66,7 @@ class KarcherMeanFactor : public NonlinearFactor {
   double error(const Values& c) const override { return 0; }
 
   /// get the dimension of the factor (number of rows on linearization)
-  size_t dim() const override { return D; }
+  size_t dim() const override { return d_; }
 
   /// linearize to a GaussianFactor
   boost::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
