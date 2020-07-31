@@ -4,7 +4,7 @@ import numpy as np
 import math
 from math import pi
 import gtsam
-from gtsam import PinholeCameraCal3_S2
+from gtsam import Point3, Pose3, PinholeCameraCal3_S2, Cal3_S2
 
 
 class Options:
@@ -12,7 +12,7 @@ class Options:
     Options to generate test scenario
     """
 
-    def __init__(self, triangle=False, nrCameras=3, K=gtsam.Cal3_S2()):
+    def __init__(self, triangle=False, nrCameras=3, K=Cal3_S2()):
         """
         Options to generate test scenario
         @param triangle: generate a triangle scene with 3 points if True, otherwise
@@ -29,10 +29,10 @@ class GroundTruth:
     Object holding generated ground-truth data
     """
 
-    def __init__(self, K=gtsam.Cal3_S2(), nrCameras=3, nrPoints=4):
+    def __init__(self, K=Cal3_S2(), nrCameras=3, nrPoints=4):
         self.K = K
-        self.cameras = [gtsam.Pose3()] * nrCameras
-        self.points = [gtsam.Point3(0, 0, 0)] * nrPoints
+        self.cameras = [Pose3()] * nrCameras
+        self.points = [Point3(0, 0, 0)] * nrPoints
 
     def print_(self, s=""):
         print(s)
@@ -54,11 +54,11 @@ class Data:
     class NoiseModels:
         pass
 
-    def __init__(self, K=gtsam.Cal3_S2(), nrCameras=3, nrPoints=4):
+    def __init__(self, K=Cal3_S2(), nrCameras=3, nrPoints=4):
         self.K = K
         self.Z = [x[:] for x in [[gtsam.Point2()] * nrPoints] * nrCameras]
         self.J = [x[:] for x in [[0] * nrPoints] * nrCameras]
-        self.odometry = [gtsam.Pose3()] * nrCameras
+        self.odometry = [Pose3()] * nrCameras
 
         # Set Noise parameters
         self.noiseModels = Data.NoiseModels()
@@ -75,7 +75,7 @@ class Data:
 def generate_data(options):
     """ Generate ground-truth and measurement data. """
 
-    K = gtsam.Cal3_S2(500, 500, 0, 640. / 2., 480. / 2.)
+    K = Cal3_S2(500, 500, 0, 640. / 2., 480. / 2.)
     nrPoints = 3 if options.triangle else 8
 
     truth = GroundTruth(K=K, nrCameras=options.nrCameras, nrPoints=nrPoints)
@@ -86,13 +86,13 @@ def generate_data(options):
         r = 10
         for j in range(len(truth.points)):
             theta = j * 2 * pi / nrPoints
-            truth.points[j] = gtsam.Point3(r * math.cos(theta), r * math.sin(theta), 0)
+            truth.points[j] = Point3(r * math.cos(theta), r * math.sin(theta), 0)
     else:  # 3D landmarks as vertices of a cube
         truth.points = [
-            gtsam.Point3(10, 10, 10), gtsam.Point3(-10, 10, 10),
-            gtsam.Point3(-10, -10, 10), gtsam.Point3(10, -10, 10),
-            gtsam.Point3(10, 10, -10), gtsam.Point3(-10, 10, -10),
-            gtsam.Point3(-10, -10, -10), gtsam.Point3(10, -10, -10)
+            Point3(10, 10, 10), Point3(-10, 10, 10),
+            Point3(-10, -10, 10), Point3(10, -10, 10),
+            Point3(10, 10, -10), Point3(-10, 10, -10),
+            Point3(-10, -10, -10), Point3(10, -10, -10)
         ]
 
     # Create camera cameras on a circle around the triangle
@@ -100,10 +100,10 @@ def generate_data(options):
     r = 40
     for i in range(options.nrCameras):
         theta = i * 2 * pi / options.nrCameras
-        t = gtsam.Point3(r * math.cos(theta), r * math.sin(theta), height)
+        t = Point3(r * math.cos(theta), r * math.sin(theta), height)
         truth.cameras[i] = PinholeCameraCal3_S2.Lookat(t,
-                                                       gtsam.Point3(0, 0, 0),
-                                                       gtsam.Point3(0, 0, 1),
+                                                       Point3(0, 0, 0),
+                                                       Point3(0, 0, 1),
                                                        truth.K)
         # Create measurements
         for j in range(nrPoints):
