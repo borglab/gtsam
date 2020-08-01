@@ -24,6 +24,7 @@
 #include <gtsam/slam/FrobeniusFactor.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 #include <gtsam_unstable/slam/ShonanAveraging.h>
+#include <gtsam_unstable/slam/ShonanGaugeFactor.h>
 
 #include <Eigen/Eigenvalues>
 #include <algorithm>
@@ -38,19 +39,11 @@ namespace gtsam {
 static std::mt19937 kRandomNumberGenerator(42);
 
 /* ************************************************************************* */
-ShonanAveragingParameters::ShonanAveragingParameters(const string& verbosity,
-                                                     const std::string& method,
-                                                     double noiseSigma,
-                                                     double optimalityThreshold)
-    : prior(true),
-      karcher(true),
-      noiseSigma(noiseSigma),
-      optimalityThreshold(optimalityThreshold) {
-  lm.setVerbosityLM(verbosity);
-
-  // Set parameters to be similar to ceres
-  LevenbergMarquardtParams::SetCeresDefaults(&lm);
-
+ShonanAveragingParameters::ShonanAveragingParameters(
+    const LevenbergMarquardtParams &_lm, const std::string &method,
+    double noiseSigma, double optimalityThreshold)
+    : prior(true), karcher(true), fixGauge(false), noiseSigma(noiseSigma),
+      optimalityThreshold(optimalityThreshold), lm(_lm) {
   // By default, we will do conjugate gradient
   lm.linearSolverType = LevenbergMarquardtParams::Iterative;
 
@@ -172,6 +165,12 @@ ShonanAveraging::createOptimizerAt(
     }
   }
 
+  // Add gauge factors for p>d_+1
+  if (parameters_.fixGauge && p>d_+1) {
+    for (auto key: graph.keys())
+      graph.emplace_shared<ShonanGaugeFactor>(key, p);
+  }
+
   // Optimize
   auto optimizer = boost::make_shared<LevenbergMarquardtOptimizer>(
       graph, initial, parameters_.lm);
@@ -189,8 +188,7 @@ Values ShonanAveraging::tryOptimizingAt(
 
 /* ************************************************************************* */
 // Project to pxdN Stiefel manifold
-static Matrix StiefelElementMatrix(const Values& values) {
-  constexpr size_t d = 3;  // for now only for 3D rotations
+static Matrix StiefelElementMatrix(const Values &values, size_t d = 3) {
   const size_t N = values.size();
   const size_t p = values.at<SOn>(0).rows();
   Matrix S(p, N * d);
@@ -613,11 +611,10 @@ bool ShonanAveraging::checkOptimality(const Values& values) const {
 }
 
 /* ************************************************************************* */
-Vector ShonanAveraging::MakeATangentVector(size_t p, const Vector& v,
-                                           size_t i) {
+Vector ShonanAveraging::MakeATangentVector(size_t p, const Vector &v, size_t i,
+                                           size_t d) {
   // Create a tangent direction xi with eigenvector segment v_i
   const size_t dimension = p * (p - 1) / 2;
-  constexpr size_t d = 3;  // for now only for 3D rotations
   const auto v_i = v.segment(i * d, d);
   Vector xi = Vector::Zero(dimension);
   double sign = pow(-1.0, round((p + 1) / 2) + 1);
@@ -631,7 +628,6 @@ Vector ShonanAveraging::MakeATangentVector(size_t p, const Vector& v,
 /* ************************************************************************* */
 Matrix ShonanAveraging::riemannianGradient(size_t p,
                                            const Values& values) const {
-  constexpr size_t d = 3;  // for now only for 3D rotations
   Matrix S_dot = StiefelElementMatrix(values);
   // calculate the gradient of F(Q_dot) at Q_dot
   Matrix euclideanGradient = 2 * (L_ * (S_dot.transpose())).transpose();
@@ -639,15 +635,15 @@ Matrix ShonanAveraging::riemannianGradient(size_t p,
   // "\t" << euclideanGradient.cols() << endl;
 
   // project the gradient onto the entire euclidean space
-  Matrix symBlockDiagProduct(p, d * nrPoses());
+  Matrix symBlockDiagProduct(p, d_ * nrPoses());
   for (size_t i = 0; i < nrPoses(); i++) {
     // Compute block product
-    Matrix P = S_dot.block(0, i * d, p, d).transpose() *
-               euclideanGradient.block(0, i * d, p, d);
+    Matrix P = S_dot.block(0, i * d_, p, d_).transpose() *
+               euclideanGradient.block(0, i * d_, p, d_);
     // Symmetrize this block
     Matrix S = .5 * (P + P.transpose());
     // Compute S_dot * S and set corresponding block
-    symBlockDiagProduct.block(0, i * d, p, d) = S_dot.block(0, i * d, p, d) * S;
+    symBlockDiagProduct.block(0, i * d_, p, d_) = S_dot.block(0, i * d_, p, d_) * S;
   }
   Matrix riemannianGradient = euclideanGradient - symBlockDiagProduct;
   return riemannianGradient;
@@ -676,9 +672,9 @@ Values ShonanAveraging::initializeWithDescent(
     double minEigenValue, double gradienTolerance,
     double preconditionedGradNormTolerance) const {
   double funcVal = costAt(p - 1, values);
-  double alphaMin = 1e-6;
+  double alphaMin = 1e-2;
   double alpha =
-      std::max(16 * alphaMin, 10 * gradienTolerance / fabs(minEigenValue));
+      std::max(1024 * alphaMin, 10 * gradienTolerance / fabs(minEigenValue));
   vector<double> alphas;
   vector<double> fvals;
   // line search

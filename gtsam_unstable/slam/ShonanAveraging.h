@@ -39,23 +39,29 @@ class NonlinearFactorGraph;
 struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
   bool prior;    // whether to use a prior (default true)
   bool karcher;  // whether to use Karcher mean prior (default true)
+  bool fixGauge; // whether to use gauge factors for p>d+1 (default false)
   std::pair<size_t, Rot3>
-      anchor;         // which pose to use as anchor if not Karcher (default 0)
-  double noiseSigma;  // Optional noise Sigma, will be ignored if zero
-  double optimalityThreshold;   // threshold used in checkOptimality
-  LevenbergMarquardtParams lm;  // LM parameters
-  ShonanAveragingParameters(const std::string& verbosity = "SILENT",
-                            const std::string& method = "JACOBI",
+      anchor;        // which pose to use as anchor if not Karcher (default 0)
+  double noiseSigma; // Optional noise Sigma, will be ignored if zero
+  double optimalityThreshold;  // threshold used in checkOptimality
+  LevenbergMarquardtParams lm; // LM parameters
+
+  ShonanAveragingParameters(const LevenbergMarquardtParams &lm =
+                                LevenbergMarquardtParams::CeresDefaults(),
+                            const std::string &method = "JACOBI",
                             double noiseSigma = 0,
                             double optimalityThreshold = -1e-4);
+
   void setPrior(bool value) { prior = value; }
   void setKarcher(bool value) { karcher = value; }
-  void setAnchor(size_t index, const gtsam::Rot3& value) {
+  void setFixGauge(bool value) { fixGauge = value; }
+  void setAnchor(size_t index, const gtsam::Rot3 &value) {
     anchor = std::make_pair(index, value);
   }
   void setNoiseSigma(bool value) { noiseSigma = value; }
   void setOptimalityThreshold(double value) { optimalityThreshold = value; }
   double getOptimalityThreshold() const { return optimalityThreshold; }
+  LevenbergMarquardtParams getLMParams() const { return lm; }
 };
 
 class GTSAM_UNSTABLE_EXPORT ShonanAveraging {
@@ -233,7 +239,8 @@ class GTSAM_UNSTABLE_EXPORT ShonanAveraging {
   double cost(const Values& values) const;
 
   /// Create a tangent direction xi with eigenvector segment v_i
-  static Vector MakeATangentVector(size_t p, const Vector& v, size_t i);
+  static Vector MakeATangentVector(size_t p, const Vector &v, size_t i,
+                                   size_t d = 3);
 
   /// Calculate the riemannian gradient of F(values) at values
   Matrix riemannianGradient(size_t p, const Values& values) const;

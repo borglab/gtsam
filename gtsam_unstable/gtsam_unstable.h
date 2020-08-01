@@ -323,14 +323,16 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
 
 #include <gtsam_unstable/slam/ShonanAveraging.h>
 class ShonanAveragingParameters {
-  ShonanAveragingParameters(string verbosity);
-  ShonanAveragingParameters(string verbosity, string method);
+  ShonanAveragingParameters(const gtsam::LevenbergMarquardtParams& lm);
+  ShonanAveragingParameters(const gtsam::LevenbergMarquardtParams& lm, string method);
   void setPrior(bool value);
   void setKarcher(bool value);
+  void setFixGauge(bool value);
   void setAnchor(size_t index, const gtsam::Rot3& value);
   void setNoiseSigma(double value);
   void setOptimalityThreshold(double value);
   double getOptimalityThreshold() const;
+  gtsam::LevenbergMarquardtParams getLMParams() const;
 };
 
 class ShonanAveraging {
