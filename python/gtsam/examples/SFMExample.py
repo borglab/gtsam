@@ -13,14 +13,15 @@ from __future__ import print_function
 import gtsam
 import matplotlib.pyplot as plt
 import numpy as np
-from gtsam import symbol_shorthand_L as L
-from gtsam import symbol_shorthand_X as X
+from gtsam import symbol_shorthand
+L = symbol_shorthand.L
+X = symbol_shorthand.X
+
 from gtsam.examples import SFMdata
-from gtsam.gtsam import (Cal3_S2, DoglegOptimizer,
+from gtsam import (Cal3_S2, DoglegOptimizer,
                          GenericProjectionFactorCal3_S2, Marginals,
                          NonlinearFactorGraph, PinholeCameraCal3_S2, Point3,
-                         Pose3, PriorFactorPoint3, PriorFactorPose3, Rot3,
-                         PinholeCameraCal3_S2, Values)
+                         Pose3, PriorFactorPoint3, PriorFactorPose3, Rot3, Values)
 from gtsam.utils import plot
 
 
@@ -56,7 +57,7 @@ def main():
     K = Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0)
 
     # Define the camera observation noise model
-    measurement_noise = gtsam.noiseModel_Isotropic.Sigma(2, 1.0)  # one pixel in u and v
+    measurement_noise = gtsam.noiseModel.Isotropic.Sigma(2, 1.0)  # one pixel in u and v
 
     # Create the set of ground-truth landmarks
     points = SFMdata.createPoints()
@@ -69,7 +70,7 @@ def main():
 
     # Add a prior on pose x1. This indirectly specifies where the origin is.
     # 0.3 rad std on roll,pitch,yaw and 0.1m on x,y,z
-    pose_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.3, 0.3, 0.3, 0.1, 0.1, 0.1]))
+    pose_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.3, 0.3, 0.3, 0.1, 0.1, 0.1]))
     factor = PriorFactorPose3(X(0), poses[0], pose_noise)
     graph.push_back(factor)
 
@@ -85,7 +86,7 @@ def main():
     # Because the structure-from-motion problem has a scale ambiguity, the problem is still under-constrained
     # Here we add a prior on the position of the first landmark. This fixes the scale by indicating the distance
     # between the first camera and the first landmark. All other landmark positions are interpreted using this scale.
-    point_noise = gtsam.noiseModel_Isotropic.Sigma(3, 0.1)
+    point_noise = gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
     factor = PriorFactorPoint3(L(0), points[0], point_noise)
     graph.push_back(factor)
     graph.print_('Factor Graph:\n')
@@ -97,7 +98,7 @@ def main():
         transformed_pose = pose.retract(0.1*np.random.randn(6,1))
         initial_estimate.insert(X(i), transformed_pose)
     for j, point in enumerate(points):
-        transformed_point = Point3(point.vector() + 0.1*np.random.randn(3))
+        transformed_point = point + 0.1*np.random.randn(3)
         initial_estimate.insert(L(j), transformed_point)
     initial_estimate.print_('Initial Estimates:\n')
 
