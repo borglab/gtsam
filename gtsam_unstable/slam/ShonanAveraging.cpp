@@ -116,12 +116,13 @@ ShonanAveraging::ShonanAveraging(const string& g2oFile,
 /* ************************************************************************* */
 NonlinearFactorGraph ShonanAveraging::buildGraphAt(size_t p) const {
   NonlinearFactorGraph graph;
-  for (const auto& factor : factors_) {
-    const auto& keys = factor->keys();
-    const auto& Tij = factor->measured();
-    const auto& model = factor->noiseModel();
+  auto G = boost::make_shared<Matrix>(SOn::VectorizedGenerators(p));
+  for (const auto &factor : factors_) {
+    const auto &keys = factor->keys();
+    const auto &Tij = factor->measured();
+    const auto &model = factor->noiseModel();
     graph.emplace_shared<FrobeniusWormholeFactor>(keys[0], keys[1],
-                                                  Tij.rotation(), p, model);
+                                                  Tij.rotation(), p, model, G);
   }
   return graph;
 }
@@ -156,7 +157,7 @@ ShonanAveraging::createOptimizerAt(
   // Prior is only added here as depends on initial value (and cost is zero)
   if (parameters_.prior) {
     if (parameters_.karcher) {
-      const size_t dim = p * (p - 1) / 2;
+      const size_t dim = SOn::Dimension(p);
       graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
     } else {
       graph.emplace_shared<PriorFactor<SOn>>(
