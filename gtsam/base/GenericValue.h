@@ -84,7 +84,7 @@ public:
 
   /// Virtual print function, uses traits
   void print(const std::string& str) const override {
-    std::cout << "(" << demangle(typeid(T).name()) << ") ";
+    std::cout << "(" << demangle(typeid(T).name()) << ")\n";
     traits<T>::Print(value_, str);
   }
 
