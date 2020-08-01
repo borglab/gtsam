@@ -34,7 +34,7 @@ if(GTSAM_BUILD_PYTHON)
               "gtsam" # module_name
               "gtsam" # top_namespace
               "${ignore}" # ignore_classes
-              ${PROJECT_SOURCE_DIR}/python/gtsam_py/gtsam.tpl
+              ${PROJECT_SOURCE_DIR}/python/gtsam/gtsam.tpl
               gtsam # libs
               "gtsam;gtsam_header" # dependencies
               ON # use_boost
@@ -52,7 +52,7 @@ if(GTSAM_BUILD_PYTHON)
   set(GTSAM_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam)
 
   # Symlink all tests .py files to build folder.
-  create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_py/python"
+  create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
           "${GTSAM_MODULE_PATH}")
 
   if(GTSAM_UNSTABLE_BUILD_PYTHON)
@@ -75,7 +75,7 @@ if(GTSAM_BUILD_PYTHON)
             "gtsam_unstable" # module_name
             "gtsam" # top_namespace
             "${ignore}" # ignore_classes
-            ${PROJECT_SOURCE_DIR}/python/gtsam_unstable_py/gtsam_unstable.tpl
+            ${PROJECT_SOURCE_DIR}/python/gtsam_unstable/gtsam_unstable.tpl
             gtsam_unstable # libs
             "gtsam_unstable;gtsam_unstable_header" # dependencies
             ON # use_boost
@@ -93,7 +93,7 @@ if(GTSAM_BUILD_PYTHON)
     set(GTSAM_UNSTABLE_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable)
 
     # Symlink all tests .py files to build folder.
-    create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable_py/python"
+    create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable"
             "${GTSAM_UNSTABLE_MODULE_PATH}")
   endif()
 
