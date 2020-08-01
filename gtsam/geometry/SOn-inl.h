@@ -26,13 +26,13 @@ using namespace std;
 
 namespace gtsam {
 
-// Implementation for N>5 just uses dynamic version
+// Implementation for N>=5 just uses dynamic version
 template <int N>
 typename SO<N>::MatrixNN SO<N>::Hat(const TangentVector& xi) {
   return SOn::Hat(xi);
 }
 
-// Implementation for N>5 just uses dynamic version
+// Implementation for N>=5 just uses dynamic version
 template <int N>
 typename SO<N>::TangentVector SO<N>::Vee(const MatrixNN& X) {
   return SOn::Vee(X);
@@ -99,12 +99,8 @@ typename SO<N>::VectorN2 SO<N>::vec(
   if (H) {
     // Calculate P matrix of vectorized generators
     // TODO(duy): Should we refactor this as the jacobian of Hat?
+    Matrix P = VectorizedGenerators(n);
     const size_t d = dim();
-    Matrix P(n2, d);
-    for (size_t j = 0; j < d; j++) {
-      const auto X = Hat(Eigen::VectorXd::Unit(d, j));
-      P.col(j) = Eigen::Map<const Matrix>(X.data(), n2, 1);
-    }
     H->resize(n2, d);
     for (size_t i = 0; i < n; i++) {
       H->block(i * n, 0, n, d) = matrix_ * P.block(i * n, 0, n, d);

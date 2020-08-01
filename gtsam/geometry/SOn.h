@@ -290,7 +290,34 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
    * */
   VectorN2 vec(OptionalJacobian<internal::NSquaredSO(N), dimension> H =
                    boost::none) const;
-  /// @}
+
+  /// Calculate N^2 x dim matrix of vectorized Lie algebra generators for SO(N)
+  template <int N_ = N, typename = IsFixed<N_>>
+  static Matrix VectorizedGenerators() {
+    constexpr size_t N2 = static_cast<size_t>(N * N);
+    Matrix G(N2, dimension);
+    for (size_t j = 0; j < dimension; j++) {
+      const auto X = Hat(Vector::Unit(dimension, j));
+      G.col(j) = Eigen::Map<const Matrix>(X.data(), N2, 1);
+    }
+    return G;
+  }
+
+  /// Calculate n^2 x dim matrix of vectorized Lie algebra generators for SO(n)
+  template <int N_ = N, typename = IsDynamic<N_>>
+  static Matrix VectorizedGenerators(size_t n = 0) {
+    const size_t n2 = n * n, dim = Dimension(n);
+    Matrix G(n2, dim);
+    for (size_t j = 0; j < dim; j++) {
+      const auto X = Hat(Vector::Unit(dim, j));
+      G.col(j) = Eigen::Map<const Matrix>(X.data(), n2, 1);
+    }
+    return G;
+  }
+
+  /// @{
+  /// @name Serialization
+  /// @{
 
   template <class Archive>
   friend void save(Archive&, SO&, const unsigned int);
@@ -300,6 +327,8 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   friend void serialize(Archive&, SO&, const unsigned int);
   friend class boost::serialization::access;
   friend class Rot3;  // for serialize
+
+  /// @}
 };
 
 using SOn = SO<Eigen::Dynamic>;
