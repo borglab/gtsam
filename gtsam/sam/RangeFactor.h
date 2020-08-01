@@ -32,18 +32,18 @@ struct Range;
  * @addtogroup SAM
  */
 template <typename A1, typename A2 = A1, typename T = double>
-class RangeFactor : public ExpressionFactor2<T, A1, A2> {
+class RangeFactor : public ExpressionFactorN<T, A1, A2> {
  private:
   typedef RangeFactor<A1, A2> This;
-  typedef ExpressionFactor2<T, A1, A2> Base;
+  typedef ExpressionFactorN<T, A1, A2> Base;
 
  public:
   /// default constructor
   RangeFactor() {}
 
   RangeFactor(Key key1, Key key2, T measured, const SharedNoiseModel& model)
-      : Base(key1, key2, model, measured) {
-    this->initialize(expression(key1, key2));
+      : Base({key1, key2}, model, measured) {
+    this->initialize(expression({key1, key2}));
   }
 
   /// @return a deep copy of this factor
@@ -53,10 +53,24 @@ class RangeFactor : public ExpressionFactor2<T, A1, A2> {
   }
 
   // Return measurement expression
-  Expression<T> expression(Key key1, Key key2) const override {
-    Expression<A1> a1_(key1);
-    Expression<A2> a2_(key2);
+  Expression<T> expression(const typename Base::ArrayNKeys& keys) const override {
+    Expression<A1> a1_(keys[0]);
+    Expression<A2> a2_(keys[1]);
     return Expression<T>(Range<A1, A2>(), a1_, a2_);
+  }
+  
+  Vector evaluateError(const A1& a1, const A2& a2,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const
+  {
+    std::vector<Matrix> Hs(2);
+    const auto &keys = Factor::keys();
+    const Vector error = Base::unwhitenedError(
+      {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}}, 
+      Hs);
+    if (H1) *H1 = Hs[0];
+    if (H2) *H2 = Hs[1];
+    return error;
   }
 
   /// print
@@ -86,10 +100,10 @@ struct traits<RangeFactor<A1, A2, T> >
  */
 template <typename A1, typename A2 = A1,
           typename T = typename Range<A1, A2>::result_type>
-class RangeFactorWithTransform : public ExpressionFactor2<T, A1, A2> {
+class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
  private:
   typedef RangeFactorWithTransform<A1, A2> This;
-  typedef ExpressionFactor2<T, A1, A2> Base;
+  typedef ExpressionFactorN<T, A1, A2> Base;
 
   A1 body_T_sensor_;  ///< The pose of the sensor in the body frame
 
@@ -100,8 +114,8 @@ class RangeFactorWithTransform : public ExpressionFactor2<T, A1, A2> {
   RangeFactorWithTransform(Key key1, Key key2, T measured,
                            const SharedNoiseModel& model,
                            const A1& body_T_sensor)
-      : Base(key1, key2, model, measured), body_T_sensor_(body_T_sensor) {
-    this->initialize(expression(key1, key2));
+      : Base({key1, key2}, model, measured), body_T_sensor_(body_T_sensor) {
+    this->initialize(expression({key1, key2}));
   }
 
   virtual ~RangeFactorWithTransform() {}
@@ -113,13 +127,27 @@ class RangeFactorWithTransform : public ExpressionFactor2<T, A1, A2> {
   }
 
   // Return measurement expression
-  Expression<T> expression(Key key1, Key key2) const override {
+  Expression<T> expression(const typename Base::ArrayNKeys& keys) const override {
     Expression<A1> body_T_sensor__(body_T_sensor_);
-    Expression<A1> nav_T_body_(key1);
+    Expression<A1> nav_T_body_(keys[0]);
     Expression<A1> nav_T_sensor_(traits<A1>::Compose, nav_T_body_,
                                  body_T_sensor__);
-    Expression<A2> a2_(key2);
+    Expression<A2> a2_(keys[1]);
     return Expression<T>(Range<A1, A2>(), nav_T_sensor_, a2_);
+  }
+
+  Vector evaluateError(const A1& a1, const A2& a2,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const
+  {
+    std::vector<Matrix> Hs(2);
+    const auto &keys = Factor::keys();
+    const Vector error = Base::unwhitenedError(
+      {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}}, 
+      Hs);
+    if (H1) *H1 = Hs[0];
+    if (H2) *H2 = Hs[1];
+    return error;
   }
 
   /** print contents */
@@ -135,9 +163,12 @@ class RangeFactorWithTransform : public ExpressionFactor2<T, A1, A2> {
   friend class boost::serialization::access;
   template <typename ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    // **IMPORTANT** We need to (de)serialize parameters before the base class,
+    // since it calls expression() and we need all parameters ready at that
+    // point.
+    ar& BOOST_SERIALIZATION_NVP(body_T_sensor_);
     ar& boost::serialization::make_nvp(
         "Base", boost::serialization::base_object<Base>(*this));
-    ar& BOOST_SERIALIZATION_NVP(body_T_sensor_);
   }
 };  // \ RangeFactorWithTransform
 

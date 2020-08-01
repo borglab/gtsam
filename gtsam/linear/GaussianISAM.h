@@ -20,6 +20,7 @@
 
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/inference/ISAM.h>
+#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 
@@ -42,5 +43,9 @@ namespace gtsam {
     /// @}
 
   };
+
+  /// traits
+  template <>
+  struct traits<GaussianISAM> : public Testable<GaussianISAM> {};
 
 }
