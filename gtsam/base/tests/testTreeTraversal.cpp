@@ -19,11 +19,11 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/treeTraversal-inst.h>
 
-#include <vector>
-#include <list>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/assign/std/list.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
+#include <list>
+#include <vector>
 
 using boost::assign::operator+=;
 using namespace std;
@@ -55,15 +55,16 @@ TestForest makeTestForest() {
   forest.roots_.push_back(boost::make_shared<TestNode>(1));
   forest.roots_[0]->children.push_back(boost::make_shared<TestNode>(2));
   forest.roots_[0]->children.push_back(boost::make_shared<TestNode>(3));
-  forest.roots_[0]->children[1]->children.push_back(boost::make_shared<TestNode>(4));
+  forest.roots_[0]->children[1]->children.push_back(
+      boost::make_shared<TestNode>(4));
   return forest;
 }
 
 /* ************************************************************************* */
 struct PreOrderVisitor {
-  // This visitor stores the nodes visited so the visit order can be checked later.  It also returns
-  // the current node index as the data and checks that the parent index properly matches the index
-  // referenced in the node.
+  // This visitor stores the nodes visited so the visit order can be checked
+  // later.  It also returns the current node index as the data and checks that
+  // the parent index properly matches the index referenced in the node.
   std::list<int> visited;
   bool parentsMatched;
   PreOrderVisitor() : parentsMatched(true) {}
@@ -71,22 +72,28 @@ struct PreOrderVisitor {
     visited.push_back(node->data);
     // Check parent index
     const int expectedParentIndex =
-      node->data == 0 ? -1 :
-      node->data == 1 ? -1 :
-      node->data == 2 ? 0 :
-      node->data == 3 ? 0 :
-      node->data == 4 ? 3 :
-      node->data == 10 ? 0 :
-      (parentsMatched = false, -1);
-    if(expectedParentIndex != parentData)
-      parentsMatched = false;
+        node->data == 0
+            ? -1
+            : node->data == 1
+                  ? -1
+                  : node->data == 2
+                        ? 0
+                        : node->data == 3
+                              ? 0
+                              : node->data == 4
+                                    ? 3
+                                    : node->data == 10
+                                          ? 0
+                                          : (parentsMatched = false, -1);
+    if (expectedParentIndex != parentData) parentsMatched = false;
     return node->data;
   }
 };
 
 /* ************************************************************************* */
 struct PostOrderVisitor {
-  // This visitor stores the nodes visited so the visit order can be checked later.
+  // This visitor stores the nodes visited so the visit order can be checked
+  // later.
   std::list<int> visited;
   void operator()(const TestNode::shared_ptr& node, int myData) {
     visited.push_back(node->data);
@@ -104,8 +111,7 @@ std::list<int> getPreorder(const TestForest& forest) {
 }
 
 /* ************************************************************************* */
-TEST(treeTraversal, DepthFirst)
-{
+TEST(treeTraversal, DepthFirst) {
   // Get test forest
   TestForest testForest = makeTestForest();
 
@@ -119,7 +125,8 @@ TEST(treeTraversal, DepthFirst)
   PreOrderVisitor preVisitor;
   PostOrderVisitor postVisitor;
   int rootData = -1;
-  treeTraversal::DepthFirstForest(testForest, rootData, preVisitor, postVisitor);
+  treeTraversal::DepthFirstForest(testForest, rootData, preVisitor,
+                                  postVisitor);
 
   EXPECT(preVisitor.parentsMatched);
   EXPECT(assert_container_equality(preOrderExpected, preVisitor.visited));
@@ -127,8 +134,7 @@ TEST(treeTraversal, DepthFirst)
 }
 
 /* ************************************************************************* */
-TEST(treeTraversal, CloneForest)
-{
+TEST(treeTraversal, CloneForest) {
   // Get test forest
   TestForest testForest1 = makeTestForest();
   TestForest testForest2;
@@ -151,7 +157,8 @@ TEST(treeTraversal, CloneForest)
   std::list<int> preOrder1ModActual = getPreorder(testForest1);
   std::list<int> preOrder2ModActual = getPreorder(testForest2);
   EXPECT(assert_container_equality(preOrder1Expected, preOrder1ModActual));
-  EXPECT(assert_container_equality(preOrderModifiedExpected, preOrder2ModActual));
+  EXPECT(
+      assert_container_equality(preOrderModifiedExpected, preOrder2ModActual));
 }
 
 /* ************************************************************************* */
@@ -160,4 +167,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

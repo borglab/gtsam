@@ -19,15 +19,15 @@
 
 #include <gtsam/base/Vector.h>
 #include <boost/optional.hpp>
-#include <stdexcept>
-#include <cstdarg>
-#include <limits>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
 #include <cmath>
+#include <cstdarg>
 #include <cstdio>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <sstream>
+#include <stdexcept>
 #include <vector>
 
 using namespace std;
@@ -36,37 +36,39 @@ namespace gtsam {
 
 /* *************************************************************************
  * References:
- * 1. https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+ * 1.
+ * https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
  * 2. https://floating-point-gui.de/errors/comparison/
  * ************************************************************************* */
 bool fpEqual(double a, double b, double tol) {
   using std::abs;
-  using std::isnan;
   using std::isinf;
+  using std::isnan;
 
   double DOUBLE_MIN_NORMAL = numeric_limits<double>::min() + 1.0;
   double larger = (abs(b) > abs(a)) ? abs(b) : abs(a);
 
   // handle NaNs
-  if(std::isnan(a) || isnan(b)) {
+  if (std::isnan(a) || isnan(b)) {
     return isnan(a) && isnan(b);
   }
   // handle inf
-  else if(isinf(a) || isinf(b)) {
+  else if (isinf(a) || isinf(b)) {
     return isinf(a) && isinf(b);
   }
   // If the two values are zero or both are extremely close to it
   // relative error is less meaningful here
-  else if(a == 0 || b == 0 || (abs(a) + abs(b)) < DOUBLE_MIN_NORMAL) {
-    return abs(a-b) <= tol * DOUBLE_MIN_NORMAL;
+  else if (a == 0 || b == 0 || (abs(a) + abs(b)) < DOUBLE_MIN_NORMAL) {
+    return abs(a - b) <= tol * DOUBLE_MIN_NORMAL;
   }
   // Check if the numbers are really close
   // Needed when comparing numbers near zero or tol is in vicinity
-  else if(abs(a-b) <= tol) {
+  else if (abs(a - b) <= tol) {
     return true;
   }
   // Use relative error
-  else if(abs(a-b) <= tol * min(larger, std::numeric_limits<double>::max())) {
+  else if (abs(a - b) <=
+           tol * min(larger, std::numeric_limits<double>::max())) {
     return true;
   }
 
@@ -74,74 +76,69 @@ bool fpEqual(double a, double b, double tol) {
 }
 
 /* ************************************************************************* */
-//3 argument call
+// 3 argument call
 void print(const Vector& v, const string& s, ostream& stream) {
   size_t n = v.size();
 
   stream << s << "[";
-  for(size_t i=0; i<n; i++) {
-      stream << setprecision(9) << v(i) << (i<n-1 ? "; " : "");
+  for (size_t i = 0; i < n; i++) {
+    stream << setprecision(9) << v(i) << (i < n - 1 ? "; " : "");
   }
   stream << "];" << endl;
 }
 
 /* ************************************************************************* */
-//1 or 2 argument call
-void print(const Vector& v, const string& s) {
-    print(v, s, cout);
-}
+// 1 or 2 argument call
+void print(const Vector& v, const string& s) { print(v, s, cout); }
 
 /* ************************************************************************* */
-void save(const Vector& v, const string &s, const string& filename) {
+void save(const Vector& v, const string& s, const string& filename) {
   fstream stream(filename.c_str(), fstream::out | fstream::app);
   print(v, s + "=", stream);
   stream.close();
 }
 
 /* ************************************************************************* */
-bool operator==(const Vector& vec1,const Vector& vec2) {
+bool operator==(const Vector& vec1, const Vector& vec2) {
   if (vec1.size() != vec2.size()) return false;
   size_t m = vec1.size();
-  for(size_t i=0; i<m; i++)
-    if(vec1[i] != vec2[i])
-      return false;
+  for (size_t i = 0; i < m; i++)
+    if (vec1[i] != vec2[i]) return false;
   return true;
 }
 
 /* ************************************************************************* */
 bool greaterThanOrEqual(const Vector& vec1, const Vector& vec2) {
   size_t m = vec1.size();
-  for(size_t i=0; i<m; i++)
-    if(!(vec1[i] >= vec2[i]))
-      return false;
+  for (size_t i = 0; i < m; i++)
+    if (!(vec1[i] >= vec2[i])) return false;
   return true;
 }
 
 /* ************************************************************************* */
 bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol) {
-  if (vec1.size()!=vec2.size()) return false;
+  if (vec1.size() != vec2.size()) return false;
   size_t m = vec1.size();
-  for(size_t i=0; i<m; ++i) {
-    if (!fpEqual(vec1[i], vec2[i], tol))
-      return false;
+  for (size_t i = 0; i < m; ++i) {
+    if (!fpEqual(vec1[i], vec2[i], tol)) return false;
   }
   return true;
 }
 
 /* ************************************************************************* */
-bool equal_with_abs_tol(const SubVector& vec1, const SubVector& vec2, double tol) {
-  if (vec1.size()!=vec2.size()) return false;
+bool equal_with_abs_tol(const SubVector& vec1, const SubVector& vec2,
+                        double tol) {
+  if (vec1.size() != vec2.size()) return false;
   size_t m = vec1.size();
-  for(size_t i=0; i<m; ++i) {
-    if (!fpEqual(vec1[i], vec2[i], tol))
-      return false;
+  for (size_t i = 0; i < m; ++i) {
+    if (!fpEqual(vec1[i], vec2[i], tol)) return false;
   }
   return true;
 }
 
 /* ************************************************************************* */
 bool assert_equal(const Vector& expected, const Vector& actual, double tol) {
-  if (equal_with_abs_tol(expected,actual,tol)) return true;
+  if (equal_with_abs_tol(expected, actual, tol)) return true;
   cout << "not equal:" << endl;
   print(expected, "expected");
   print(actual, "actual");
@@ -150,7 +147,7 @@ bool assert_equal(const Vector& expected, const Vector& actual, double tol) {
 
 /* ************************************************************************* */
 bool assert_inequal(const Vector& expected, const Vector& actual, double tol) {
-  if (!equal_with_abs_tol(expected,actual,tol)) return true;
+  if (!equal_with_abs_tol(expected, actual, tol)) return true;
   cout << "Erroneously equal:" << endl;
   print(expected, "expected");
   print(actual, "actual");
@@ -158,8 +155,9 @@ bool assert_inequal(const Vector& expected, const Vector& actual, double tol) {
 }
 
 /* ************************************************************************* */
-bool assert_equal(const SubVector& expected, const SubVector& actual, double tol) {
-  if (equal_with_abs_tol(expected,actual,tol)) return true;
+bool assert_equal(const SubVector& expected, const SubVector& actual,
+                  double tol) {
+  if (equal_with_abs_tol(expected, actual, tol)) return true;
   cout << "not equal:" << endl;
   print(static_cast<Vector>(expected), "expected");
   print(static_cast<Vector>(actual), "actual");
@@ -167,8 +165,9 @@ bool assert_equal(const SubVector& expected, const SubVector& actual, double tol
 }
 
 /* ************************************************************************* */
-bool assert_equal(const ConstSubVector& expected, const ConstSubVector& actual, double tol) {
-  if (equal_with_abs_tol(Vector(expected),Vector(actual),tol)) return true;
+bool assert_equal(const ConstSubVector& expected, const ConstSubVector& actual,
+                  double tol) {
+  if (equal_with_abs_tol(Vector(expected), Vector(actual), tol)) return true;
   cout << "not equal:" << endl;
   print(Vector(expected), "expected");
   print(Vector(actual), "actual");
@@ -177,62 +176,64 @@ bool assert_equal(const ConstSubVector& expected, const ConstSubVector& actual, 
 
 /* ************************************************************************* */
 bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol) {
-  if (vec1.size()!=vec2.size()) return false;
-  bool flag = false;   double scale = 1.0;
+  if (vec1.size() != vec2.size()) return false;
+  bool flag = false;
+  double scale = 1.0;
   size_t m = vec1.size();
-  for(size_t i=0; i<m; i++) {
-    if((std::abs(vec1[i])>tol && std::abs(vec2[i])<tol) || (std::abs(vec1[i])<tol && std::abs(vec2[i])>tol))
+  for (size_t i = 0; i < m; i++) {
+    if ((std::abs(vec1[i]) > tol && std::abs(vec2[i]) < tol) ||
+        (std::abs(vec1[i]) < tol && std::abs(vec2[i]) > tol))
       return false;
-    if(vec1[i] == 0 && vec2[i] == 0) continue;
+    if (vec1[i] == 0 && vec2[i] == 0) continue;
     if (!flag) {
       scale = vec1[i] / vec2[i];
-      flag = true ;
-    }
-    else if (std::abs(vec1[i] - vec2[i]*scale) > tol) return false;
+      flag = true;
+    } else if (std::abs(vec1[i] - vec2[i] * scale) > tol)
+      return false;
   }
   return flag;
 }
 
 /* ************************************************************************* */
-Vector ediv_(const Vector &a, const Vector &b) {
+Vector ediv_(const Vector& a, const Vector& b) {
   size_t n = a.size();
-  assert (b.size()==a.size());
+  assert(b.size() == a.size());
   Vector c(n);
-  for( size_t i = 0; i < n; i++ ) {
+  for (size_t i = 0; i < n; i++) {
     const double &ai = a(i), &bi = b(i);
-    c(i) = (bi==0.0 && ai==0.0) ? 0.0 : ai/bi;
+    c(i) = (bi == 0.0 && ai == 0.0) ? 0.0 : ai / bi;
   }
   return c;
 }
 
 /* ************************************************************************* */
 // imperative version, pass in x
-double houseInPlace(Vector &v) {
+double houseInPlace(Vector& v) {
   const double x0 = v(0);
-  const double x02 = x0*x0;
+  const double x02 = x0 * x0;
 
   // old code - GSL verison was actually a bit slower
   const double sigma = v.squaredNorm() - x02;
 
   v(0) = 1.0;
 
-  if( sigma == 0.0 )
+  if (sigma == 0.0)
     return 0.0;
   else {
     double mu = sqrt(x02 + sigma);
-    if( x0 <= 0.0 )
+    if (x0 <= 0.0)
       v(0) = x0 - mu;
     else
       v(0) = -sigma / (x0 + mu);
 
-    const double v02 = v(0)*v(0);
+    const double v02 = v(0) * v(0);
     v = v / v(0);
     return 2.0 * v02 / (sigma + v02);
   }
 }
 
 /* ************************************************************************* */
-pair<double, Vector > house(const Vector &x) {
+pair<double, Vector> house(const Vector& x) {
   Vector v(x);
   double beta = houseInPlace(v);
   return make_pair(beta, v);
@@ -242,8 +243,7 @@ pair<double, Vector > house(const Vector &x) {
 // Fast version *no error checking* !
 // Pass in initialized vector of size m or will crash !
 double weightedPseudoinverse(const Vector& a, const Vector& weights,
-    Vector& pseudo) {
-
+                             Vector& pseudo) {
   size_t m = weights.size();
   static const double inf = std::numeric_limits<double>::infinity();
 
@@ -257,7 +257,7 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
       // Basically, instead of doing a normal QR step with the weighted
       // pseudoinverse, we enforce the constraint by turning
       // ax + AS = b into x + (A/a)S = b/a, for the first row where a!=0
-      pseudo = Vector::Unit(m,i)*(1.0/a[i]);
+      pseudo = Vector::Unit(m, i) * (1.0 / a[i]);
       return inf;
     }
   }
@@ -267,27 +267,26 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
   double precision = 0;
   for (size_t i = 0; i < m; i++) {
     double ai = a[i];
-    if (!isZero[i]) // also catches remaining sigma==0 rows
+    if (!isZero[i])  // also catches remaining sigma==0 rows
       precision += weights[i] * (ai * ai);
   }
 
   // precision = a'inv(Sigma)a
   if (precision < 1e-9)
-    for (size_t i = 0; i < m; i++)
-      pseudo[i] = 0;
+    for (size_t i = 0; i < m; i++) pseudo[i] = 0;
   else {
     // emul(precisions,a)/precision
     double variance = 1.0 / precision;
     for (size_t i = 0; i < m; i++)
       pseudo[i] = isZero[i] ? 0 : variance * weights[i] * a[i];
   }
-  return precision; // sum of weights
+  return precision;  // sum of weights
 }
 
 /* ************************************************************************* */
 // Slow version with error checking
-pair<Vector, double>
-weightedPseudoinverse(const Vector& a, const Vector& weights) {
+pair<Vector, double> weightedPseudoinverse(const Vector& a,
+                                           const Vector& weights) {
   DenseIndex m = weights.size();
   if (a.size() != m)
     throw invalid_argument("a and weights have different sizes!");
@@ -297,17 +296,14 @@ weightedPseudoinverse(const Vector& a, const Vector& weights) {
 }
 
 /* ************************************************************************* */
-Vector concatVectors(const std::list<Vector>& vs)
-{
+Vector concatVectors(const std::list<Vector>& vs) {
   size_t dim = 0;
-  for(Vector v: vs)
-  dim += v.size();
+  for (Vector v : vs) dim += v.size();
 
   Vector A(dim);
   size_t index = 0;
-  for(Vector v: vs) {
-    for(int d = 0; d < v.size(); d++)
-      A(d+index) = v(d);
+  for (Vector v : vs) {
+    for (int d = 0; d < v.size(); d++) A(d + index) = v(d);
     index += v.size();
   }
 
@@ -315,12 +311,11 @@ Vector concatVectors(const std::list<Vector>& vs)
 }
 
 /* ************************************************************************* */
-Vector concatVectors(size_t nrVectors, ...)
-{
+Vector concatVectors(size_t nrVectors, ...) {
   va_list ap;
   list<Vector> vs;
   va_start(ap, nrVectors);
-  for( size_t i = 0 ; i < nrVectors ; i++) {
+  for (size_t i = 0; i < nrVectors; i++) {
     Vector* V = va_arg(ap, Vector*);
     vs.push_back(*V);
   }
@@ -328,4 +323,4 @@ Vector concatVectors(size_t nrVectors, ...)
   return concatVectors(vs);
 }
 
-} // namespace gtsam
+}  // namespace gtsam

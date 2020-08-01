@@ -28,7 +28,6 @@ namespace gtsam {
  * gtsam::traits.
  */
 struct LieVector : public Vector {
-
   enum { dimension = Eigen::Dynamic };
 
   /** default constructor - should be unnecessary */
@@ -43,7 +42,7 @@ struct LieVector : public Vector {
 // Currently TMP constructor causes ICE on MSVS 2013
 #if (_MSC_VER < 1800)
   /** initialize from a fixed size normal vector */
-  template<int N>
+  template <int N>
   LieVector(const Eigen::Matrix<double, N, 1>& v) : Vector(v) {}
 #endif
 
@@ -57,40 +56,38 @@ struct LieVector : public Vector {
 
   /// @name Testable
   /// @{
-  void print(const std::string& name="") const {
+  void print(const std::string& name = "") const {
     gtsam::print(vector(), name);
   }
-  bool equals(const LieVector& expected, double tol=1e-5) const {
+  bool equals(const LieVector& expected, double tol = 1e-5) const {
     return gtsam::equal(vector(), expected.vector(), tol);
   }
   /// @}
 
   /// @name Group
   /// @{
-  LieVector compose(const LieVector& q) { return (*this)+q;}
-  LieVector between(const LieVector& q) { return q-(*this);}
-  LieVector inverse() { return -(*this);}
+  LieVector compose(const LieVector& q) { return (*this) + q; }
+  LieVector between(const LieVector& q) { return q - (*this); }
+  LieVector inverse() { return -(*this); }
   /// @}
 
   /// @name Manifold
   /// @{
-  Vector localCoordinates(const LieVector& q) { return between(q).vector();}
-  LieVector retract(const Vector& v) {return compose(LieVector(v));}
+  Vector localCoordinates(const LieVector& q) { return between(q).vector(); }
+  LieVector retract(const Vector& v) { return compose(LieVector(v)); }
   /// @}
 
   /// @name Lie Group
   /// @{
-  static Vector Logmap(const LieVector& p) {return p.vector();}
-  static LieVector Expmap(const Vector& v) { return LieVector(v);}
+  static Vector Logmap(const LieVector& p) { return p.vector(); }
+  static LieVector Expmap(const Vector& v) { return LieVector(v); }
   /// @}
 
   /// @name VectorSpace requirements
   /// @{
 
   /** get the underlying vector */
-  Vector vector() const {
-    return static_cast<Vector>(*this);
-  }
+  Vector vector() const { return static_cast<Vector>(*this); }
 
   /** Returns dimensionality of the tangent space */
   size_t dim() const { return this->size(); }
@@ -103,19 +100,17 @@ struct LieVector : public Vector {
 
   /// @}
 
-private:
-
+ private:
   // Serialization function
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("Vector",
-       boost::serialization::base_object<Vector>(*this));
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp(
+        "Vector", boost::serialization::base_object<Vector>(*this));
   }
 };
 
-
-template<>
+template <>
 struct traits<LieVector> : public internal::VectorSpace<LieVector> {};
 
-} // \namespace gtsam
+}  // namespace gtsam

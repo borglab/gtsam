@@ -113,10 +113,10 @@ class DSFMap {
 };
 
 /// Small utility class for representing a wrappable pairs of ints.
-class IndexPair : public std::pair<size_t,size_t> {
+class IndexPair : public std::pair<size_t, size_t> {
  public:
-  inline IndexPair(): std::pair<size_t,size_t>(0,0) {}
-  inline IndexPair(size_t i, size_t j) : std::pair<size_t,size_t>(i,j) {}
+  inline IndexPair() : std::pair<size_t, size_t>(0, 0) {}
+  inline IndexPair(size_t i, size_t j) : std::pair<size_t, size_t>(i, j) {}
   inline size_t i() const { return first; };
   inline size_t j() const { return second; };
 };

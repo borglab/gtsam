@@ -18,27 +18,26 @@
 
 #pragma once
 
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Manifold.h>
-#include <gtsam/base/Testable.h>
-#include <CppUnitLite/TestResult.h>
-#include <CppUnitLite/Test.h>
 #include <CppUnitLite/Failure.h>
+#include <CppUnitLite/Test.h>
+#include <CppUnitLite/TestResult.h>
+#include <gtsam/base/Manifold.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 // Do a full concept check and test the invertibility of local() vs. retract().
-template<typename T>
-void testDefaultChart(TestResult& result_,
-                      const std::string& name_,
+template <typename T>
+void testDefaultChart(TestResult& result_, const std::string& name_,
                       const T& value) {
-
   GTSAM_CONCEPT_TESTABLE_TYPE(T);
 
   typedef typename gtsam::DefaultChart<T> Chart;
   typedef typename Chart::vector Vector;
 
-  // First, check the basic chart concept. This checks that the interface is satisfied.
-  // The rest of the function is even more detailed, checking the correctness of the chart.
+  // First, check the basic chart concept. This checks that the interface is
+  // satisfied. The rest of the function is even more detailed, checking the
+  // correctness of the chart.
   BOOST_CONCEPT_ASSERT((ChartConcept<Chart>));
 
   T other = value;
@@ -66,4 +65,4 @@ void testDefaultChart(TestResult& result_,
 /// \brief Perform a concept check on the default chart for a type.
 /// \param value An instantiation of the type to be tested.
 #define CHECK_CHART_CONCEPT(value) \
-    { gtsam::testDefaultChart(result_, name_, value); }
+  { gtsam::testDefaultChart(result_, name_, value); }

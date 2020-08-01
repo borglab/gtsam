@@ -11,7 +11,8 @@
 
 /**
  * @file    FastMap.h
- * @brief   A thin wrapper around std::map that uses boost's fast_pool_allocator.
+ * @brief   A thin wrapper around std::map that uses boost's
+ * fast_pool_allocator.
  * @author  Richard Roberts
  * @date    Oct 17, 2010
  */
@@ -24,20 +25,18 @@
 #ifdef GTSAM_USE_TBB
 
 // Include TBB header
-#  include <tbb/concurrent_unordered_map.h>
-#  undef min // TBB seems to include Windows.h which defines these macros that cause problems
-#  undef max
-#  undef ERROR
+#include <tbb/concurrent_unordered_map.h>
+#undef min  // TBB seems to include Windows.h which defines these macros that
+            // cause problems
+#undef max
+#undef ERROR
 
-#include <functional> // std::hash()
+#include <functional>  // std::hash()
 
 // Use TBB concurrent_unordered_map for ConcurrentMap
 template <typename KEY, typename VALUE>
-using ConcurrentMapBase = tbb::concurrent_unordered_map<
-  KEY,
-  VALUE,
-  std::hash<KEY>
-  >;
+using ConcurrentMapBase =
+    tbb::concurrent_unordered_map<KEY, VALUE, std::hash<KEY> >;
 
 #else
 
@@ -64,22 +63,20 @@ namespace gtsam {
  * percent.
  * @addtogroup base
  */
-template<typename KEY, typename VALUE>
-class ConcurrentMap : public ConcurrentMapBase<KEY,VALUE> {
-
-public:
-
-  typedef ConcurrentMapBase<KEY,VALUE> Base;
+template <typename KEY, typename VALUE>
+class ConcurrentMap : public ConcurrentMapBase<KEY, VALUE> {
+ public:
+  typedef ConcurrentMapBase<KEY, VALUE> Base;
 
   /** Default constructor */
   ConcurrentMap() {}
 
   /** Constructor from a range, passes through to base class */
-  template<typename INPUTITERATOR>
+  template <typename INPUTITERATOR>
   ConcurrentMap(INPUTITERATOR first, INPUTITERATOR last) : Base(first, last) {}
 
   /** Copy constructor from another ConcurrentMap */
-  ConcurrentMap(const ConcurrentMap<KEY,VALUE>& x) : Base(x) {}
+  ConcurrentMap(const ConcurrentMap<KEY, VALUE>& x) : Base(x) {}
 
   /** Copy constructor from the base map class */
   ConcurrentMap(const Base& x) : Base(x) {}
@@ -88,37 +85,43 @@ public:
   bool exists(const KEY& e) const { return this->count(e); }
 
 #ifndef GTSAM_USE_TBB
-  // If we're not using TBB and this is actually a FastMap, we need to add these functions and hide
-  // the original erase functions.
-  void unsafe_erase(typename Base::iterator position) { ((Base*)this)->erase(position); }
-  typename Base::size_type unsafe_erase(const KEY& k) { return ((Base*)this)->erase(k); }
-  void unsafe_erase(typename Base::iterator first, typename Base::iterator last) {
-    return ((Base*)this)->erase(first, last); }
-private:
+  // If we're not using TBB and this is actually a FastMap, we need to add these
+  // functions and hide the original erase functions.
+  void unsafe_erase(typename Base::iterator position) {
+    ((Base*)this)->erase(position);
+  }
+  typename Base::size_type unsafe_erase(const KEY& k) {
+    return ((Base*)this)->erase(k);
+  }
+  void unsafe_erase(typename Base::iterator first,
+                    typename Base::iterator last) {
+    return ((Base*)this)->erase(first, last);
+  }
+
+ private:
   void erase() {}
-public:
+
+ public:
 #endif
 
-private:
+ private:
   /** Serialization function */
   friend class boost::serialization::access;
-  template<class Archive>
-  void save(Archive& ar, const unsigned int /*version*/) const
-  {
+  template <class Archive>
+  void save(Archive& ar, const unsigned int /*version*/) const {
     // Copy to an STL container and serialize that
     FastVector<std::pair<KEY, VALUE> > map(this->size());
     std::copy(this->begin(), this->end(), map.begin());
-    ar & BOOST_SERIALIZATION_NVP(map);
+    ar& BOOST_SERIALIZATION_NVP(map);
   }
-  template<class Archive>
-  void load(Archive& ar, const unsigned int /*version*/)
-  {
+  template <class Archive>
+  void load(Archive& ar, const unsigned int /*version*/) {
     // Load into STL container and then fill our map
     FastVector<std::pair<KEY, VALUE> > map;
-    ar & BOOST_SERIALIZATION_NVP(map);
+    ar& BOOST_SERIALIZATION_NVP(map);
     this->insert(map.begin(), map.end());
   }
   BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
-}
+}  // namespace gtsam

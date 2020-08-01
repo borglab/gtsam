@@ -18,8 +18,8 @@
 #pragma once
 
 #include <gtsam/base/FastMap.h>
+#include <gtsam/config.h>  // for GTSAM_USE_TBB
 #include <gtsam/dllexport.h>
-#include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/smart_ptr/weak_ptr.hpp>
@@ -28,30 +28,33 @@
 #include <cstddef>
 #include <string>
 
-// This file contains the GTSAM timing instrumentation library, a low-overhead method for
-// learning at a medium-fine level how much time various components of an algorithm take
-// in CPU and wall time.
+// This file contains the GTSAM timing instrumentation library, a low-overhead
+// method for learning at a medium-fine level how much time various components
+// of an algorithm take in CPU and wall time.
 //
-// The output of this instrumentation is a call-tree-like printout containing statistics
-// about each instrumented code block.  To print this output at any time, call
-// tictoc_print() or tictoc_print_().
+// The output of this instrumentation is a call-tree-like printout containing
+// statistics about each instrumented code block.  To print this output at any
+// time, call tictoc_print() or tictoc_print_().
 //
-// An overall point to be aware of is that there are two versions of each function - one
-// ending in an underscore '_' and one without the trailing underscore.  The underscore
-// versions always are active, but the versions without an underscore are active only when
-// GTSAM_ENABLE_TIMING is defined (automatically defined in our CMake Timing build type).
-// GTSAM algorithms are all instrumented with the non-underscore versions, so generally
-// you should use the underscore versions in your own code to leave out the GTSAM detail.
+// An overall point to be aware of is that there are two versions of each
+// function - one ending in an underscore '_' and one without the trailing
+// underscore.  The underscore versions always are active, but the versions
+// without an underscore are active only when GTSAM_ENABLE_TIMING is defined
+// (automatically defined in our CMake Timing build type). GTSAM algorithms are
+// all instrumented with the non-underscore versions, so generally you should
+// use the underscore versions in your own code to leave out the GTSAM detail.
 //
-// gttic and gttoc start and stop a timed section, respectively.  gttic creates a *scoped*
-// object - when it goes out of scope gttoc is called automatically.  Thus, you do not
-// need to call gttoc if you are timing an entire function (see basic use examples below).
-// However, you must be *aware* of this scoped nature - putting gttic inside of an if(...)
-// block, for example, will only time code until the closing brace '}'.  See advanced
-// usage below if you need to avoid this.
+// gttic and gttoc start and stop a timed section, respectively.  gttic creates
+// a *scoped* object - when it goes out of scope gttoc is called automatically.
+// Thus, you do not need to call gttoc if you are timing an entire function (see
+// basic use examples below). However, you must be *aware* of this scoped nature
+// - putting gttic inside of an if(...) block, for example, will only time code
+// until the closing brace '}'.  See advanced usage below if you need to avoid
+// this.
 //
-// Multiple calls nest automatically - each gttic nests under the previous gttic called
-// for which gttoc has not been called (or the previous gttic did not go out of scope).
+// Multiple calls nest automatically - each gttic nests under the previous gttic
+// called for which gttoc has not been called (or the previous gttic did not go
+// out of scope).
 //
 // Basic usage examples are as follows:
 //
@@ -75,23 +78,26 @@
 //
 // - Timing functions calling/called by other functions:
 //   void oneStep() {
-//     gttic_(oneStep); // Will automatically nest under the gttic label of the calling function
+//     gttic_(oneStep); // Will automatically nest under the gttic label of the
+//     calling function
 //     .......
 //   }
 //   void algorithm() {
 //     gttic_(algorithm);
-//     oneStep(); // gttic's inside this function will automatically nest inside our 'algorithm' label
-//     twoStep(); // gttic's inside this function will automatically nest inside our 'algorithm' label
+//     oneStep(); // gttic's inside this function will automatically nest inside
+//     our 'algorithm' label twoStep(); // gttic's inside this function will
+//     automatically nest inside our 'algorithm' label
 //   }
 //
 //
 // Advanced usage:
 //
-// - "Finishing iterations" - to get correct min/max times for each call, you must define
-//   in your code what constitutes an iteration.  A single sum for the min/max times is
-//   accumulated within each iteration.  If you don't care about min/max times, you don't
-//   need to worry about this.  For example:
-//   void myOuterLoop() {
+// - "Finishing iterations" - to get correct min/max times for each call, you
+// must define
+//   in your code what constitutes an iteration.  A single sum for the min/max
+//   times is accumulated within each iteration.  If you don't care about
+//   min/max times, you don't need to worry about this.  For example: void
+//   myOuterLoop() {
 //     while(true) {
 //       iterateMyAlgorithm();
 //       tictoc_finishedIteration_();
@@ -99,174 +105,196 @@
 //     }
 //   }
 //
-// - Stopping timing a section in a different scope than it is started.  Normally, a gttoc
-//   statement goes out of scope at end of C++ scope.  However, you can use longtic and
-//   longtoc to start and stop timing with the specified label at any point, without regard
-//   too scope.  Note that if you use these, it may become difficult to ensure that you
-//   have matching gttic/gttoc statments.  You may want to consider reorganizing your timing
-//   outline to match the scope of your code.
+// - Stopping timing a section in a different scope than it is started.
+// Normally, a gttoc
+//   statement goes out of scope at end of C++ scope.  However, you can use
+//   longtic and longtoc to start and stop timing with the specified label at
+//   any point, without regard too scope.  Note that if you use these, it may
+//   become difficult to ensure that you have matching gttic/gttoc statments.
+//   You may want to consider reorganizing your timing outline to match the
+//   scope of your code.
 
 // Automatically use the new Boost timers if version is recent enough.
 #if BOOST_VERSION >= 104800
-#  ifndef GTSAM_DISABLE_NEW_TIMERS
-#    define GTSAM_USING_NEW_BOOST_TIMERS
-#  endif
+#ifndef GTSAM_DISABLE_NEW_TIMERS
+#define GTSAM_USING_NEW_BOOST_TIMERS
+#endif
 #endif
 
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
-#  include <boost/timer/timer.hpp>
+#include <boost/timer/timer.hpp>
 #else
-#  include <boost/timer.hpp>
-#  include <gtsam/base/types.h>
+#include <gtsam/base/types.h>
+#include <boost/timer.hpp>
 #endif
 
 #ifdef GTSAM_USE_TBB
-#  include <tbb/tick_count.h>
-#  undef min
-#  undef max
-#  undef ERROR
+#include <tbb/tick_count.h>
+#undef min
+#undef max
+#undef ERROR
 #endif
 
 namespace gtsam {
 
-  namespace internal {
-    // Generate/retrieve a unique global ID number that will be used to look up tic/toc statements
-    GTSAM_EXPORT size_t getTicTocID(const char *description);
+namespace internal {
+// Generate/retrieve a unique global ID number that will be used to look up
+// tic/toc statements
+GTSAM_EXPORT size_t getTicTocID(const char* description);
 
-    // Create new TimingOutline child for gCurrentTimer, make it gCurrentTimer, and call tic method
-    GTSAM_EXPORT void tic(size_t id, const char *label);
+// Create new TimingOutline child for gCurrentTimer, make it gCurrentTimer, and
+// call tic method
+GTSAM_EXPORT void tic(size_t id, const char* label);
 
-    // Call toc on gCurrentTimer and then set gCurrentTimer to the parent of gCurrentTimer
-    GTSAM_EXPORT void toc(size_t id, const char *label);
+// Call toc on gCurrentTimer and then set gCurrentTimer to the parent of
+// gCurrentTimer
+GTSAM_EXPORT void toc(size_t id, const char* label);
 
-    /**
-     * Timing Entry, arranged in a tree
-     */
-    class TimingOutline {
-    protected:
-      size_t id_;
-      size_t t_;
-      size_t tWall_;
-      double t2_ ; ///< cache the \sum t_i^2
-      size_t tIt_;
-      size_t tMax_;
-      size_t tMin_;
-      size_t n_;
-      size_t myOrder_;
-      size_t lastChildOrder_;
-      std::string label_;
+/**
+ * Timing Entry, arranged in a tree
+ */
+class TimingOutline {
+ protected:
+  size_t id_;
+  size_t t_;
+  size_t tWall_;
+  double t2_;  ///< cache the \sum t_i^2
+  size_t tIt_;
+  size_t tMax_;
+  size_t tMin_;
+  size_t n_;
+  size_t myOrder_;
+  size_t lastChildOrder_;
+  std::string label_;
 
-      // Tree structure
-      boost::weak_ptr<TimingOutline> parent_; ///< parent pointer
-      typedef FastMap<size_t, boost::shared_ptr<TimingOutline> > ChildMap;
-      ChildMap children_; ///< subtrees
+  // Tree structure
+  boost::weak_ptr<TimingOutline> parent_;  ///< parent pointer
+  typedef FastMap<size_t, boost::shared_ptr<TimingOutline> > ChildMap;
+  ChildMap children_;  ///< subtrees
 
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
-      boost::timer::cpu_timer timer_;
+  boost::timer::cpu_timer timer_;
 #else
-      boost::timer timer_;
-      gtsam::ValueWithDefault<bool,false> timerActive_;
+  boost::timer timer_;
+  gtsam::ValueWithDefault<bool, false> timerActive_;
 #endif
 #ifdef GTSAM_USE_TBB
-      tbb::tick_count tbbTimer_;
+  tbb::tick_count tbbTimer_;
 #endif
-      void add(size_t usecs, size_t usecsWall);
+  void add(size_t usecs, size_t usecsWall);
 
-    public:
-      /// Constructor
-      GTSAM_EXPORT TimingOutline(const std::string& label, size_t myId);
-      GTSAM_EXPORT size_t time() const; ///< time taken, including children
-      double secs() const { return double(time()) / 1000000.0;} ///< time taken, in seconds, including children
-      double self() const { return double(t_)     / 1000000.0;} ///< self time only, in seconds
-      double wall() const { return double(tWall_) / 1000000.0;} ///< wall time, in seconds
-      double min()  const { return double(tMin_)  / 1000000.0;} ///< min time, in seconds
-      double max()  const { return double(tMax_)  / 1000000.0;} ///< max time, in seconds
-      double mean() const { return self() / double(n_); } ///< mean self time, in seconds
-      GTSAM_EXPORT void print(const std::string& outline = "") const;
-      GTSAM_EXPORT void print2(const std::string& outline = "", const double parentTotal = -1.0) const;
-      GTSAM_EXPORT const boost::shared_ptr<TimingOutline>&
-        child(size_t child, const std::string& label, const boost::weak_ptr<TimingOutline>& thisPtr);
-      GTSAM_EXPORT void tic();
-      GTSAM_EXPORT void toc();
-      GTSAM_EXPORT void finishedIteration();
+ public:
+  /// Constructor
+  GTSAM_EXPORT TimingOutline(const std::string& label, size_t myId);
+  GTSAM_EXPORT size_t time() const;  ///< time taken, including children
+  double secs() const {
+    return double(time()) / 1000000.0;
+  }  ///< time taken, in seconds, including children
+  double self() const {
+    return double(t_) / 1000000.0;
+  }  ///< self time only, in seconds
+  double wall() const {
+    return double(tWall_) / 1000000.0;
+  }  ///< wall time, in seconds
+  double min() const {
+    return double(tMin_) / 1000000.0;
+  }  ///< min time, in seconds
+  double max() const {
+    return double(tMax_) / 1000000.0;
+  }  ///< max time, in seconds
+  double mean() const {
+    return self() / double(n_);
+  }  ///< mean self time, in seconds
+  GTSAM_EXPORT void print(const std::string& outline = "") const;
+  GTSAM_EXPORT void print2(const std::string& outline = "",
+                           const double parentTotal = -1.0) const;
+  GTSAM_EXPORT const boost::shared_ptr<TimingOutline>& child(
+      size_t child, const std::string& label,
+      const boost::weak_ptr<TimingOutline>& thisPtr);
+  GTSAM_EXPORT void tic();
+  GTSAM_EXPORT void toc();
+  GTSAM_EXPORT void finishedIteration();
 
-      GTSAM_EXPORT friend void toc(size_t id, const char *label);
-    }; // \TimingOutline
+  GTSAM_EXPORT friend void toc(size_t id, const char* label);
+};  // \TimingOutline
 
-    /**
-     * Small class that calls internal::tic at construction, and internol::toc when destroyed
-     */
-    class GTSAM_EXPORT AutoTicToc {
-     private:
-      size_t id_;
-      const char* label_;
-      bool isSet_;
+/**
+ * Small class that calls internal::tic at construction, and internol::toc when
+ * destroyed
+ */
+class GTSAM_EXPORT AutoTicToc {
+ private:
+  size_t id_;
+  const char* label_;
+  bool isSet_;
 
-     public:
-      AutoTicToc(size_t id, const char* label)
-          : id_(id), label_(label), isSet_(true) {
-        tic(id_, label_);
-      }
-      void stop() {
-        toc(id_, label_);
-        isSet_ = false;
-      }
-      ~AutoTicToc() {
-        if (isSet_) stop();
-      }
-    };
-
-    GTSAM_EXTERN_EXPORT boost::shared_ptr<TimingOutline> gTimingRoot;
-    GTSAM_EXTERN_EXPORT boost::weak_ptr<TimingOutline> gCurrentTimer;
+ public:
+  AutoTicToc(size_t id, const char* label)
+      : id_(id), label_(label), isSet_(true) {
+    tic(id_, label_);
   }
+  void stop() {
+    toc(id_, label_);
+    isSet_ = false;
+  }
+  ~AutoTicToc() {
+    if (isSet_) stop();
+  }
+};
 
-// Tic and toc functions that are always active (whether or not ENABLE_TIMING is defined)
-// There is a trick being used here to achieve near-zero runtime overhead, in that a
-// static variable is created for each tic/toc statement storing an integer ID, but the
-// integer ID is only looked up by string once when the static variable is initialized
-// as the program starts.
+GTSAM_EXTERN_EXPORT boost::shared_ptr<TimingOutline> gTimingRoot;
+GTSAM_EXTERN_EXPORT boost::weak_ptr<TimingOutline> gCurrentTimer;
+}  // namespace internal
+
+// Tic and toc functions that are always active (whether or not ENABLE_TIMING is
+// defined) There is a trick being used here to achieve near-zero runtime
+// overhead, in that a static variable is created for each tic/toc statement
+// storing an integer ID, but the integer ID is only looked up by string once
+// when the static variable is initialized as the program starts.
 
 // tic
-#define gttic_(label) \
+#define gttic_(label)                                                          \
   static const size_t label##_id_tic = ::gtsam::internal::getTicTocID(#label); \
   ::gtsam::internal::AutoTicToc label##_obj(label##_id_tic, #label)
 
 // toc
-#define gttoc_(label) \
-  label##_obj.stop()
+#define gttoc_(label) label##_obj.stop()
 
 // tic
-#define longtic_(label) \
+#define longtic_(label)                                                        \
   static const size_t label##_id_tic = ::gtsam::internal::getTicTocID(#label); \
   ::gtsam::internal::ticInternal(label##_id_tic, #label)
 
 // toc
-#define longtoc_(label) \
+#define longtoc_(label)                                                        \
   static const size_t label##_id_toc = ::gtsam::internal::getTicTocID(#label); \
   ::gtsam::internal::tocInternal(label##_id_toc, #label)
 
 // indicate iteration is finished
 inline void tictoc_finishedIteration_() {
-  ::gtsam::internal::gTimingRoot->finishedIteration(); }
+  ::gtsam::internal::gTimingRoot->finishedIteration();
+}
 
 // print
-inline void tictoc_print_() {
-  ::gtsam::internal::gTimingRoot->print(); }
+inline void tictoc_print_() { ::gtsam::internal::gTimingRoot->print(); }
 
 // print mean and standard deviation
-inline void tictoc_print2_() {
-  ::gtsam::internal::gTimingRoot->print2(); }
+inline void tictoc_print2_() { ::gtsam::internal::gTimingRoot->print2(); }
 
 // get a node by label and assign it to variable
-#define tictoc_getNode(variable, label) \
-  static const size_t label##_id_getnode = ::gtsam::internal::getTicTocID(#label); \
+#define tictoc_getNode(variable, label)                                      \
+  static const size_t label##_id_getnode =                                   \
+      ::gtsam::internal::getTicTocID(#label);                                \
   const boost::shared_ptr<const ::gtsam::internal::TimingOutline> variable = \
-  ::gtsam::internal::gCurrentTimer.lock()->child(label##_id_getnode, #label, ::gtsam::internal::gCurrentTimer);
+      ::gtsam::internal::gCurrentTimer.lock()->child(                        \
+          label##_id_getnode, #label, ::gtsam::internal::gCurrentTimer);
 
 // reset
 inline void tictoc_reset_() {
-  ::gtsam::internal::gTimingRoot.reset(new ::gtsam::internal::TimingOutline("Total", ::gtsam::internal::getTicTocID("Total")));
-  ::gtsam::internal::gCurrentTimer = ::gtsam::internal::gTimingRoot; }
+  ::gtsam::internal::gTimingRoot.reset(new ::gtsam::internal::TimingOutline(
+      "Total", ::gtsam::internal::getTicTocID("Total")));
+  ::gtsam::internal::gCurrentTimer = ::gtsam::internal::gTimingRoot;
+}
 
 #ifdef ENABLE_TIMING
 #define gttic(label) gttic_(label)
@@ -286,4 +314,4 @@ inline void tictoc_reset_() {
 #define tictoc_reset() ((void)0)
 #endif
 
-}
+}  // namespace gtsam

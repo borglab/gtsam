@@ -15,13 +15,13 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/deprecated/LieScalar.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/deprecated/LieScalar.h>
 
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST( testTestableAssertions, optional ) {
+TEST(testTestableAssertions, optional) {
   typedef boost::optional<LieScalar> OptionalScalar;
   LieScalar x(1.0);
   OptionalScalar ox(x), dummy = boost::none;
@@ -31,5 +31,8 @@ TEST( testTestableAssertions, optional ) {
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */

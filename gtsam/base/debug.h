@@ -20,7 +20,6 @@
 #include <gtsam/global_includes.h>
 #include <string>
 
-
 // This file defines granular debugging flags that may be switched on and off
 // at run time.  Typical usage is 'if(ISDEBUG("myFunction"))' to check if the
 // 'myFunction' flag is enabled, and SETDEBUG("myFunction", true) to enable
@@ -42,15 +41,16 @@
 #endif
 
 namespace gtsam {
-  GTSAM_EXTERN_EXPORT FastMap<std::string, ValueWithDefault<bool,false> > debugFlags;
+GTSAM_EXTERN_EXPORT FastMap<std::string, ValueWithDefault<bool, false> >
+    debugFlags;
 
-  // Non-guarded use led to crashes, and solved in commit cd35db2
-  bool GTSAM_EXPORT guardedIsDebug(const std::string& s);
-  void GTSAM_EXPORT guardedSetDebug(const std::string& s, const bool v);
+// Non-guarded use led to crashes, and solved in commit cd35db2
+bool GTSAM_EXPORT guardedIsDebug(const std::string& s);
+void GTSAM_EXPORT guardedSetDebug(const std::string& s, const bool v);
 
-  // function to check if compiled version has debug information
-  bool GTSAM_EXPORT isDebugVersion();
-}
+// function to check if compiled version has debug information
+bool GTSAM_EXPORT isDebugVersion();
+}  // namespace gtsam
 
 #undef ISDEBUG
 #undef SETDEBUG
@@ -58,12 +58,11 @@ namespace gtsam {
 #ifdef GTSAM_ENABLE_DEBUG
 
 #define ISDEBUG(S) (gtsam::guardedIsDebug(S))
-#define SETDEBUG(S,V) ((void)(gtsam::guardedSetDebug(S,V)))
+#define SETDEBUG(S, V) ((void)(gtsam::guardedSetDebug(S, V)))
 
 #else
 
 #define ISDEBUG(S) (false)
-#define SETDEBUG(S,V) ((void)false)
+#define SETDEBUG(S, V) ((void)false)
 
 #endif
-

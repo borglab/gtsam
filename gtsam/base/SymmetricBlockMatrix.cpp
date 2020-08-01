@@ -11,16 +11,17 @@
 
 /**
  * @file    SymmetricBlockMatrix.cpp
- * @brief   Access to matrices via blocks of pre-defined sizes.  Used in GaussianFactor and GaussianConditional.
+ * @brief   Access to matrices via blocks of pre-defined sizes.  Used in
+ * GaussianFactor and GaussianConditional.
  * @author  Richard Roberts
  * @date    Sep 18, 2010
  */
 
 #include <gtsam/base/SymmetricBlockMatrix.h>
+#include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 #include <gtsam/base/cholesky.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/base/ThreadsafeException.h>
 
 namespace gtsam {
 
@@ -30,8 +31,9 @@ SymmetricBlockMatrix SymmetricBlockMatrix::LikeActiveViewOf(
   SymmetricBlockMatrix result;
   result.variableColOffsets_.resize(other.nBlocks() + 1);
   for (size_t i = 0; i < result.variableColOffsets_.size(); ++i)
-    result.variableColOffsets_[i] = other.variableColOffsets_[other.blockStart_
-        + i] - other.variableColOffsets_[other.blockStart_];
+    result.variableColOffsets_[i] =
+        other.variableColOffsets_[other.blockStart_ + i] -
+        other.variableColOffsets_[other.blockStart_];
   result.matrix_.resize(other.cols(), other.cols());
   result.assertInvariants();
   return result;
@@ -43,8 +45,9 @@ SymmetricBlockMatrix SymmetricBlockMatrix::LikeActiveViewOf(
   SymmetricBlockMatrix result;
   result.variableColOffsets_.resize(other.nBlocks() + 1);
   for (size_t i = 0; i < result.variableColOffsets_.size(); ++i)
-    result.variableColOffsets_[i] = other.variableColOffsets_[other.blockStart_
-        + i] - other.variableColOffsets_[other.blockStart_];
+    result.variableColOffsets_[i] =
+        other.variableColOffsets_[other.blockStart_ + i] -
+        other.variableColOffsets_[other.blockStart_];
   result.matrix_.resize(other.cols(), other.cols());
   result.assertInvariants();
   return result;
@@ -90,5 +93,4 @@ VerticalBlockMatrix SymmetricBlockMatrix::split(DenseIndex nFrontals) {
 
 /* ************************************************************************* */
 
-} //\ namespace gtsam
-
+}  // namespace gtsam

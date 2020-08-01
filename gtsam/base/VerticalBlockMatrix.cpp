@@ -11,13 +11,13 @@
 
 /**
  * @file    VerticalBlockMatrix.cpp
- * @brief   A matrix with column blocks of pre-defined sizes.  Used in JacobianFactor and
- *        GaussianConditional.
+ * @brief   A matrix with column blocks of pre-defined sizes.  Used in
+ * JacobianFactor and GaussianConditional.
  * @author  Richard Roberts
  * @date    Sep 18, 2010 */
 
-#include <gtsam/base/VerticalBlockMatrix.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
+#include <gtsam/base/VerticalBlockMatrix.h>
 
 namespace gtsam {
 
@@ -27,8 +27,9 @@ VerticalBlockMatrix VerticalBlockMatrix::LikeActiveViewOf(
   VerticalBlockMatrix result;
   result.variableColOffsets_.resize(other.nBlocks() + 1);
   for (size_t i = 0; i < result.variableColOffsets_.size(); ++i)
-    result.variableColOffsets_[i] = other.variableColOffsets_[other.blockStart_
-        + i] - other.variableColOffsets_[other.blockStart_];
+    result.variableColOffsets_[i] =
+        other.variableColOffsets_[other.blockStart_ + i] -
+        other.variableColOffsets_[other.blockStart_];
   result.matrix_.resize(other.rows(), result.variableColOffsets_.back());
   result.rowEnd_ = other.rows();
   result.assertInvariants();
@@ -41,12 +42,13 @@ VerticalBlockMatrix VerticalBlockMatrix::LikeActiveViewOf(
   VerticalBlockMatrix result;
   result.variableColOffsets_.resize(other.nBlocks() + 1);
   for (size_t i = 0; i < result.variableColOffsets_.size(); ++i)
-    result.variableColOffsets_[i] = other.variableColOffsets_[other.blockStart_
-        + i] - other.variableColOffsets_[other.blockStart_];
+    result.variableColOffsets_[i] =
+        other.variableColOffsets_[other.blockStart_ + i] -
+        other.variableColOffsets_[other.blockStart_];
   result.matrix_.resize(height, result.variableColOffsets_.back());
   result.rowEnd_ = height;
   result.assertInvariants();
   return result;
 }
 
-}
+}  // namespace gtsam

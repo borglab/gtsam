@@ -20,7 +20,7 @@
 #ifdef _MSC_VER
 #pragma message("LieScalar.h is deprecated. Please use double/float instead.")
 #else
-  #warning "LieScalar.h is deprecated. Please use double/float instead."
+#warning "LieScalar.h is deprecated. Please use double/float instead."
 #endif
 
 #include <gtsam/base/deprecated/LieScalar.h>

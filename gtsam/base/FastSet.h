@@ -11,17 +11,18 @@
 
 /**
  * @file    FastSet.h
- * @brief   A thin wrapper around std::set that uses boost's fast_pool_allocator.
+ * @brief   A thin wrapper around std::set that uses boost's
+ * fast_pool_allocator.
  * @author  Richard Roberts
  * @date    Oct 17, 2010
  */
 
 #pragma once
 
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/set.hpp>
 #include <gtsam/base/FastDefaultAllocator.h>
 #include <gtsam/base/Testable.h>
+#include <boost/serialization/nvp.hpp>
+#include <boost/serialization/set.hpp>
 
 #include <functional>
 #include <set>
@@ -41,42 +42,35 @@ namespace gtsam {
  * we've seen that the fast_pool_allocator can lead to speedups of several %.
  * @addtogroup base
  */
-template<typename VALUE>
-class FastSet: public std::set<VALUE, std::less<VALUE>,
-    typename internal::FastDefaultAllocator<VALUE>::type> {
+template <typename VALUE>
+class FastSet
+    : public std::set<VALUE, std::less<VALUE>,
+                      typename internal::FastDefaultAllocator<VALUE>::type> {
+  BOOST_CONCEPT_ASSERT((IsTestable<VALUE>));
 
-  BOOST_CONCEPT_ASSERT ((IsTestable<VALUE> ));
-
-public:
-
+ public:
   typedef std::set<VALUE, std::less<VALUE>,
-  typename internal::FastDefaultAllocator<VALUE>::type> Base;
+                   typename internal::FastDefaultAllocator<VALUE>::type>
+      Base;
 
   /** Default constructor */
-  FastSet() {
-  }
+  FastSet() {}
 
   /** Constructor from a range, passes through to base class */
-  template<typename INPUTITERATOR>
-  explicit FastSet(INPUTITERATOR first, INPUTITERATOR last) :
-  Base(first, last) {
-  }
+  template <typename INPUTITERATOR>
+  explicit FastSet(INPUTITERATOR first, INPUTITERATOR last)
+      : Base(first, last) {}
 
   /** Constructor from a iterable container, passes through to base class */
-  template<typename INPUTCONTAINER>
-  explicit FastSet(const INPUTCONTAINER& container) :
-  Base(container.begin(), container.end()) {
-  }
+  template <typename INPUTCONTAINER>
+  explicit FastSet(const INPUTCONTAINER& container)
+      : Base(container.begin(), container.end()) {}
 
   /** Copy constructor from another FastSet */
-  FastSet(const FastSet<VALUE>& x) :
-  Base(x) {
-  }
+  FastSet(const FastSet<VALUE>& x) : Base(x) {}
 
   /** Copy constructor from the base set class */
-  FastSet(const Base& x) :
-  Base(x) {
-  }
+  FastSet(const Base& x) : Base(x) {}
 
 #ifdef GTSAM_ALLOCATOR_BOOSTPOOL
   /** Copy constructor from a standard STL container */
@@ -84,8 +78,7 @@ public:
     // This if statement works around a bug in boost pool allocator and/or
     // STL vector where if the size is zero, the pool allocator will allocate
     // huge amounts of memory.
-    if(x.size() > 0)
-    Base::insert(x.begin(), x.end());
+    if (x.size() > 0) Base::insert(x.begin(), x.end());
   }
 #endif
 
@@ -95,14 +88,13 @@ public:
   }
 
   /** Handy 'exists' function */
-  bool exists(const VALUE& e) const {
-    return this->find(e) != this->end();
-  }
+  bool exists(const VALUE& e) const { return this->find(e) != this->end(); }
 
   /** Print to implement Testable: pretty basic */
   void print(const std::string& str = "") const {
-    for (typename Base::const_iterator it = this->begin(); it != this->end(); ++it)
-    traits<VALUE>::Print(*it, str);
+    for (typename Base::const_iterator it = this->begin(); it != this->end();
+         ++it)
+      traits<VALUE>::Print(*it, str);
   }
 
   /** Check for equality within tolerance to implement Testable */
@@ -110,7 +102,7 @@ public:
     typename Base::const_iterator it1 = this->begin(), it2 = other.begin();
     while (it1 != this->end()) {
       if (it2 == other.end() || !traits<VALUE>::Equals(*it2, *it2, tol))
-      return false;
+        return false;
       ++it1;
       ++it2;
     }
@@ -118,17 +110,15 @@ public:
   }
 
   /** insert another set: handy for MATLAB access */
-  void merge(const FastSet& other) {
-    Base::insert(other.begin(), other.end());
-  }
+  void merge(const FastSet& other) { Base::insert(other.begin(), other.end()); }
 
-private:
+ private:
   /** Serialization function */
   friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
 };
 
-}
+}  // namespace gtsam

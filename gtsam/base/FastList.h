@@ -11,7 +11,8 @@
 
 /**
  * @file    FastList.h
- * @brief   A thin wrapper around std::list that uses boost's fast_pool_allocator.
+ * @brief   A thin wrapper around std::list that uses boost's
+ * fast_pool_allocator.
  * @author  Richard Roberts
  * @date    Oct 22, 2010
  */
@@ -19,10 +20,10 @@
 #pragma once
 
 #include <gtsam/base/FastDefaultAllocator.h>
-#include <list>
-#include <boost/utility/enable_if.hpp>
-#include <boost/serialization/nvp.hpp>
 #include <boost/serialization/list.hpp>
+#include <boost/serialization/nvp.hpp>
+#include <boost/utility/enable_if.hpp>
+#include <list>
 
 namespace gtsam {
 
@@ -32,21 +33,23 @@ namespace gtsam {
  * convenience to avoid having lengthy types in the code.  Through timing,
  * we've seen that the fast_pool_allocator can lead to speedups of several
  * percent.
-   * @addtogroup base
+ * @addtogroup base
  */
-template<typename VALUE>
-class FastList: public std::list<VALUE, typename internal::FastDefaultAllocator<VALUE>::type> {
-
-public:
-
-  typedef std::list<VALUE, typename internal::FastDefaultAllocator<VALUE>::type> Base;
+template <typename VALUE>
+class FastList
+    : public std::list<VALUE,
+                       typename internal::FastDefaultAllocator<VALUE>::type> {
+ public:
+  typedef std::list<VALUE, typename internal::FastDefaultAllocator<VALUE>::type>
+      Base;
 
   /** Default constructor */
   FastList() {}
 
   /** Constructor from a range, passes through to base class */
-  template<typename INPUTITERATOR>
-  explicit FastList(INPUTITERATOR first, INPUTITERATOR last) : Base(first, last) {}
+  template <typename INPUTITERATOR>
+  explicit FastList(INPUTITERATOR first, INPUTITERATOR last)
+      : Base(first, last) {}
 
   /** Copy constructor from another FastList */
   FastList(const FastList<VALUE>& x) : Base(x) {}
@@ -60,8 +63,7 @@ public:
     // This if statement works around a bug in boost pool allocator and/or
     // STL vector where if the size is zero, the pool allocator will allocate
     // huge amounts of memory.
-    if(x.size() > 0)
-      Base::assign(x.begin(), x.end());
+    if (x.size() > 0) Base::assign(x.begin(), x.end());
   }
 #endif
 
@@ -70,14 +72,13 @@ public:
     return std::list<VALUE>(this->begin(), this->end());
   }
 
-private:
+ private:
   /** Serialization function */
   friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
-
 };
 
-}
+}  // namespace gtsam

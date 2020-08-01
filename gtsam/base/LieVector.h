@@ -11,7 +11,8 @@
 
 /**
  * @file LieVector.h
- * @brief Deprecation warning for LieVector, see deprecated/LieVector.h for details.
+ * @brief Deprecation warning for LieVector, see deprecated/LieVector.h for
+ * details.
  * @author Paul Drews
  */
 

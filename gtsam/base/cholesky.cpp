@@ -11,7 +11,8 @@
 
 /**
  * @file    cholesky.cpp
- * @brief   Efficient incomplete Cholesky on rank-deficient matrices, todo: constrained Cholesky
+ * @brief   Efficient incomplete Cholesky on rank-deficient matrices
+ *          TODO: constrained Cholesky
  * @author  Richard Roberts
  * @author  Frank Dellaert
  * @date    Nov 5, 2010
@@ -58,16 +59,17 @@ static inline int choleskyStep(Matrix& ATA, size_t k, size_t order) {
       V *= betainv;
 
       // Update A(k+1:end, k+1:end) <- A(k+1:end, k+1:end) - v*v' / alpha
-      ATA.block(k + 1, k + 1, order - (k + 1), order - (k + 1)) -= V.transpose() * V;
-      //      ATA.bottomRightCorner(order-(k+1), order-(k+1)).selfadjointView<Eigen::Upper>()
+      ATA.block(k + 1, k + 1, order - (k + 1), order - (k + 1)) -=
+          V.transpose() * V;
+      //      ATA.bottomRightCorner(order-(k+1),
+      //      order-(k+1)).selfadjointView<Eigen::Upper>()
       //          .rankUpdate(V.adjoint(), -1);
     }
     return 1;
   } else {
     // For zero pivots, add the underconstrained variable prior
     ATA(k, k) = underconstrainedPrior;
-    for (size_t j = k + 1; j < order; ++j)
-      ATA(k, j) = 0.0;
+    for (size_t j = k + 1; j < order; ++j) ATA(k, j) = 0.0;
     return 0;
   }
 }
@@ -81,8 +83,7 @@ pair<size_t, bool> choleskyCareful(Matrix& ATA, int order) {
   const size_t n = ATA.rows();
 
   // Negative order means factor the entire matrix
-  if (order < 0)
-    order = int(n);
+  if (order < 0) order = int(n);
 
   assert(size_t(order) <= n);
 
@@ -107,8 +108,7 @@ pair<size_t, bool> choleskyCareful(Matrix& ATA, int order) {
 /* ************************************************************************* */
 bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
   gttic(choleskyPartial);
-  if (nFrontal == 0)
-    return true;
+  if (nFrontal == 0) return true;
 
   assert(ABC.cols() == ABC.rows());
   assert(size_t(ABC.rows()) >= topleft);
@@ -118,22 +118,21 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
   // Create views on blocks
   auto A = ABC.block(topleft, topleft, nFrontal, nFrontal);
   auto B = ABC.block(topleft, topleft + nFrontal, nFrontal, n - nFrontal);
-  auto C = ABC.block(topleft + nFrontal, topleft + nFrontal, n - nFrontal, n - nFrontal);
+  auto C = ABC.block(topleft + nFrontal, topleft + nFrontal, n - nFrontal,
+                     n - nFrontal);
 
   // Compute Cholesky factorization A = R'*R, overwrites A.
   gttic(LLT);
   Eigen::LLT<Matrix, Eigen::Upper> llt(A);
   Eigen::ComputationInfo lltResult = llt.info();
-  if (lltResult != Eigen::Success)
-    return false;
+  if (lltResult != Eigen::Success) return false;
   auto R = A.triangularView<Eigen::Upper>();
   R = llt.matrixU();
   gttoc(LLT);
 
   // Compute S = inv(R') * B
   gttic(compute_S);
-  if (nFrontal < n)
-    R.transpose().solveInPlace(B);
+  if (nFrontal < n) R.transpose().solveInPlace(B);
   gttoc(compute_S);
 
   // Compute L = C - S' * S
@@ -145,7 +144,8 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
   // Check last diagonal element - Eigen does not check it
   if (nFrontal >= 2) {
     int exp2, exp1;
-    // NOTE(gareth): R is already the size of A, so we don't need to add topleft here.
+    // NOTE(gareth): R is already the size of A, so we don't need to add topleft
+    // here.
     (void)frexp(R(nFrontal - 2, nFrontal - 2), &exp2);
     (void)frexp(R(nFrontal - 1, nFrontal - 1), &exp1);
     return (exp2 - exp1 < underconstrainedExponentDifference);

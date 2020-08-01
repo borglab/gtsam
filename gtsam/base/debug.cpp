@@ -17,10 +17,10 @@
  */
 
 #include <gtsam/base/debug.h>
-#include <gtsam/config.h> // for GTSAM_USE_TBB
+#include <gtsam/config.h>  // for GTSAM_USE_TBB
 
 #ifdef GTSAM_USE_TBB
-#include <mutex> // std::mutex, std::unique_lock
+#include <mutex>  // std::mutex, std::unique_lock
 #endif
 
 namespace gtsam {
@@ -55,7 +55,6 @@ bool isDebugVersion() {
   // debug
   return true;
 #endif
-
 }
 
-}
+}  // namespace gtsam

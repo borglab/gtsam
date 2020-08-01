@@ -11,7 +11,8 @@
 
 /**
  * @file serialization.h
- * @brief Convenience functions for serializing data structures via boost.serialization
+ * @brief Convenience functions for serializing data structures via
+ * boost.serialization
  * @author Alex Cunningham
  * @author Richard Roberts
  * @date Feb 7, 2012
@@ -19,25 +20,25 @@
 
 #pragma once
 
-#include <sstream>
 #include <fstream>
+#include <sstream>
 #include <string>
 
 // includes for standard serialization types
+#include <boost/serialization/deque.hpp>
+#include <boost/serialization/list.hpp>
+#include <boost/serialization/map.hpp>
 #include <boost/serialization/optional.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/deque.hpp>
 #include <boost/serialization/weak_ptr.hpp>
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/export.hpp>
 
 namespace gtsam {
@@ -115,7 +116,7 @@ void deserialize(const std::string& serialized, T& output) {
 /// serializes to a stream in XML
 template <class T>
 void serializeToXMLStream(const T& input, std::ostream& out_archive_stream,
-                  const std::string& name = "data") {
+                          const std::string& name = "data") {
   boost::archive::xml_oarchive out_archive(out_archive_stream);
   out_archive << boost::serialization::make_nvp(name.c_str(), input);
 }
@@ -123,7 +124,7 @@ void serializeToXMLStream(const T& input, std::ostream& out_archive_stream,
 /// deserializes from a stream in XML
 template <class T>
 void deserializeFromXMLStream(std::istream& in_archive_stream, T& output,
-                    const std::string& name = "data") {
+                              const std::string& name = "data") {
   boost::archive::xml_iarchive in_archive(in_archive_stream);
   in_archive >> boost::serialization::make_nvp(name.c_str(), output);
 }
@@ -131,7 +132,7 @@ void deserializeFromXMLStream(std::istream& in_archive_stream, T& output,
 /// serializes to a string in XML
 template <class T>
 std::string serializeToXMLString(const T& input,
-                         const std::string& name = "data") {
+                                 const std::string& name = "data") {
   std::ostringstream out_archive_stream;
   serializeToXMLStream(input, out_archive_stream, name);
   return out_archive_stream.str();
@@ -140,7 +141,7 @@ std::string serializeToXMLString(const T& input,
 /// deserializes from a string in XML
 template <class T>
 void deserializeFromXMLString(const std::string& serialized, T& output,
-                    const std::string& name = "data") {
+                              const std::string& name = "data") {
   std::istringstream in_archive_stream(serialized);
   deserializeFromXMLStream(in_archive_stream, output, name);
 }
@@ -169,8 +170,7 @@ bool deserializeFromXMLFile(const std::string& filename, T& output,
 
 /// serializes to a string in XML
 template <class T>
-std::string serializeXML(const T& input,
-                         const std::string& name = "data") {
+std::string serializeXML(const T& input, const std::string& name = "data") {
   return serializeToXMLString(input, name);
 }
 
@@ -189,7 +189,7 @@ void deserializeXML(const std::string& serialized, T& output,
 /// serializes to a stream in binary
 template <class T>
 void serializeToBinaryStream(const T& input, std::ostream& out_archive_stream,
-                     const std::string& name = "data") {
+                             const std::string& name = "data") {
   boost::archive::binary_oarchive out_archive(out_archive_stream);
   out_archive << boost::serialization::make_nvp(name.c_str(), input);
 }
@@ -197,7 +197,7 @@ void serializeToBinaryStream(const T& input, std::ostream& out_archive_stream,
 /// deserializes from a stream in binary
 template <class T>
 void deserializeFromBinaryStream(std::istream& in_archive_stream, T& output,
-                       const std::string& name = "data") {
+                                 const std::string& name = "data") {
   boost::archive::binary_iarchive in_archive(in_archive_stream);
   in_archive >> boost::serialization::make_nvp(name.c_str(), output);
 }
@@ -205,7 +205,7 @@ void deserializeFromBinaryStream(std::istream& in_archive_stream, T& output,
 /// serializes to a string in binary
 template <class T>
 std::string serializeToBinaryString(const T& input,
-                            const std::string& name = "data") {
+                                    const std::string& name = "data") {
   std::ostringstream out_archive_stream;
   serializeToBinaryStream(input, out_archive_stream, name);
   return out_archive_stream.str();
@@ -214,7 +214,7 @@ std::string serializeToBinaryString(const T& input,
 /// deserializes from a string in binary
 template <class T>
 void deserializeFromBinaryString(const std::string& serialized, T& output,
-                       const std::string& name = "data") {
+                                 const std::string& name = "data") {
   std::istringstream in_archive_stream(serialized);
   deserializeFromBinaryStream(in_archive_stream, output, name);
 }
@@ -243,8 +243,7 @@ bool deserializeFromBinaryFile(const std::string& filename, T& output,
 
 /// serializes to a string in binary
 template <class T>
-std::string serializeBinary(const T& input,
-                            const std::string& name = "data") {
+std::string serializeBinary(const T& input, const std::string& name = "data") {
   return serializeToBinaryString(input, name);
 }
 
