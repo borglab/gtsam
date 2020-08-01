@@ -29,14 +29,14 @@ namespace gtsam {
  * The ShonanGaugeFactor creates a constraint on a single SO(n) to avoid moving
  * in the stabilizer.
  *
- * Details: SO(n) contains the n*3 Stiefel matrices of orthogonal frames: we
+ * Details: SO(p) contains the p*3 Stiefel matrices of orthogonal frames: we
  * take those to be the 3 columns on the left.
- * The n*n skew symmetric matrices associated with so(n) can be partitioned as
+ * The P*P skew-symmetric matrices associated with so(p) can be partitioned as
  * (Appendix B in the ECCV paper):
  * | [w] -K' |
  * |  K  [g] |
  * where w is the SO(3) space, K are the extra Stiefel diemnsions (wormhole!)
- * and (g)amma are extra dimensions in SO(n) that do not modify the cost
+ * and (g)amma are extra dimensions in SO(p) that do not modify the cost
  * function. The latter corresponds to rotations SO(p-d), and so the first few
  * values of p-d for d==3 with their corresponding dimensionality are {0:0, 1:0,
  * 2:1, 3:3, ...}
@@ -64,7 +64,11 @@ public:
     rows_ = SOn::Dimension(q);    // dimensionality of SO(q), the gauge
 
     // Create constant Jacobian as a rows_*P matrix: there are rows_ penalized
-    // dimensions!
+    // dimensions, but it is a bit tricky to find them among the P columns.
+    // The key is to look at how skew-symmetric matrices are laid out in SOn.h:
+    // the first tangent dimension will always be included, but beyond that we
+    // have to be careful. We always need to skip the d top-rows of the skew-
+    // symmetric matrix as they below to K, part of the Stiefel manifold.
     Matrix A(rows_, P);
     A.setZero();
     size_t i = 0, j = 0, n = p - 1 - d;
