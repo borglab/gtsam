@@ -258,6 +258,13 @@ TEST(ShonanAveraging, runWithRandomKlausKarcher) {
 }
 
 /* ************************************************************************* */
+TEST(ShonanAveraging, Random2DGraph) {
+  const BetweenFactorPose3s factors;
+  const std::map<Key, Pose3> poses;
+  const ShonanAveraging shonan(factors, poses);
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
