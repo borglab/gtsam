@@ -401,11 +401,6 @@ namespace gtsam {
 
     /* ************************************************************************* */
 
-    /** number of variables attached to this factor */
-    std::size_t size() const {
-      return 1;
-    }
-
     size_t dim() const override {
       return model_inlier_->R().rows() + model_inlier_->R().cols();
     }

@@ -67,9 +67,11 @@ namespace gtsam {
       return boost::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
-    /** implement functions needed for Testable */
+    /// @}
+    /// @name Testable
+    /// @{
 
-    /** print */
+    /// print with optional string
     void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "BetweenFactor("
           << keyFormatter(this->key1()) << ","
@@ -78,15 +80,17 @@ namespace gtsam {
       this->noiseModel_->print("  noise model: ");
     }
 
-    /** equals */
+    /// assert equality up to a tolerance
     bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
       const This *e =  dynamic_cast<const This*> (&expected);
       return e != nullptr && Base::equals(*e, tol) && traits<T>::Equals(this->measured_, e->measured_, tol);
     }
 
-    /** implement functions needed to derive from Factor */
+    /// @}
+    /// @name NoiseModelFactor2 methods 
+    /// @{
 
-    /** vector of errors */
+    /// evaluate error, returns vector of errors size of tangent space
     Vector evaluateError(const T& p1, const T& p2, boost::optional<Matrix&> H1 =
       boost::none, boost::optional<Matrix&> H2 = boost::none) const override {
       T hx = traits<T>::Between(p1, p2, H1, H2); // h(x)
@@ -102,15 +106,15 @@ namespace gtsam {
 #endif
     }
 
-    /** return the measured */
+    /// @}
+    /// @name Standard interface 
+    /// @{
+
+    /// return the measurement
     const VALUE& measured() const {
       return measured_;
     }
-
-    /** number of variables attached to this factor */
-    std::size_t size() const {
-      return 2;
-    }
+    /// @}
 
   private:
 

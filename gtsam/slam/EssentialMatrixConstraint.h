@@ -87,11 +87,6 @@ public:
     return measuredE_;
   }
 
-  /** number of variables attached to this factor */
-  std::size_t size() const {
-    return 2;
-  }
-
 private:
 
   /** Serialization function */
