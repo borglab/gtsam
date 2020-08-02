@@ -1,5 +1,7 @@
 # README - Georgia Tech Smoothing and Mapping Library
 
+**As of August 1, develop is officially in "Pre 4.1" mode, and features deprecated in 4.0 were removed. Use the last 4.0.3 release if you need those features. However, most are easily converted and can be tracked down (in 4.0.3) by disabling the cmake flag GTSAM_ALLOW_DEPRECATED_SINCE_V4**
+
 ## What is GTSAM?
 
 GTSAM is a C++ library that implements smoothing and
