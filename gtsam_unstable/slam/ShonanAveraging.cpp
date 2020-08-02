@@ -202,14 +202,14 @@ static Matrix StiefelElementMatrix(const Values &values, size_t d = 3) {
 
 /* ************************************************************************* */
 Values ShonanAveraging::projectFrom(size_t p, const Values& values) const {
-  Values Rot3_values;
+  Values rot3Values;
   for (size_t j = 0; j < nrPoses(); j++) {
     const SOn Q = values.at<SOn>(j);
     assert(Q.rows() == p);
     const Rot3 R = Rot3::ClosestTo(Q.matrix().topLeftCorner(d_, d_));
-    Rot3_values.insert(j, R);
+    rot3Values.insert(j, R);
   }
-  return Rot3_values;
+  return rot3Values;
 }
 
 /* ************************************************************************* */
@@ -225,36 +225,32 @@ Values ShonanAveraging::roundSolution(const Matrix S) const {
   auto& diagonal = Sigma_d.diagonal();
   for (size_t i = 0; i < d_; ++i) diagonal(i) = sigmas(i);
 
-  // First, construct a rank-d truncated singular value decomposition for S
+  // Now, construct a rank-d truncated singular value decomposition for S
   Matrix R = Sigma_d * svd.matrixV().leftCols(d_).transpose();
-  Vector determinants(N);
 
-  size_t ng0 = 0;  // This will count the number of blocks whose
-
-  // determinants have positive sign
+  // Count the number of blocks whose determinants have positive sign
+  size_t numPositiveBlocks = 0;
   for (size_t i = 0; i < N; ++i) {
     // Compute the determinant of the ith dxd block of R
-    determinants(i) = R.block(0, i * d_, d_, d_).determinant();
-    if (determinants(i) > 0) ++ng0;
+    double determinant = R.block(0, i * d_, d_, d_).determinant();
+    if (determinant > 0) ++numPositiveBlocks;
   }
 
-  if (ng0 < N / 2) {
-    // Less than half of the total number of blocks have the correct sign,
-    // so reverse their orientations Get a reflection matrix that we can use
-    // to reverse the signs of those blocks of R that have the wrong
-    // determinant
+  if (numPositiveBlocks < N / 2) {
+    // Less than half of the total number of blocks have the correct sign.
+    // To reverse their orientations, multiply with a reflection matrix.
     Matrix reflector = Matrix::Identity(d_, d_);
     reflector(d_ - 1, d_ - 1) = -1;
     R = reflector * R;
   }
 
   // Finally, project each dxd rotation block to SO(d)
-  Values Rot3_values;
+  Values rot3Values;
   for (size_t i = 0; i < N; ++i) {
     const Rot3 Ri = Rot3::ClosestTo(R.block(0, i * d_, d_, d_));
-    Rot3_values.insert(i, Ri);
+    rot3Values.insert(i, Ri);
   }
-  return Rot3_values;
+  return rot3Values;
 }
 
 /* ************************************************************************* */
@@ -615,7 +611,7 @@ bool ShonanAveraging::checkOptimality(const Values& values) const {
 Vector ShonanAveraging::MakeATangentVector(size_t p, const Vector &v, size_t i,
                                            size_t d) {
   // Create a tangent direction xi with eigenvector segment v_i
-  const size_t dimension = p * (p - 1) / 2;
+  const size_t dimension = SOn::Dimension(p);
   const auto v_i = v.segment(i * d, d);
   Vector xi = Vector::Zero(dimension);
   double sign = pow(-1.0, round((p + 1) / 2) + 1);
