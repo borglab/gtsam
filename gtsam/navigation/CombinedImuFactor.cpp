@@ -149,29 +149,6 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
 }
 
 //------------------------------------------------------------------------------
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-PreintegratedCombinedMeasurements::PreintegratedCombinedMeasurements(
-    const imuBias::ConstantBias& biasHat, const Matrix3& measuredAccCovariance,
-    const Matrix3& measuredOmegaCovariance,
-    const Matrix3& integrationErrorCovariance, const Matrix3& biasAccCovariance,
-    const Matrix3& biasOmegaCovariance, const Matrix6& biasAccOmegaInt,
-    const bool use2ndOrderIntegration) {
-  if (!use2ndOrderIntegration)
-  throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
-  biasHat_ = biasHat;
-  boost::shared_ptr<Params> p = Params::MakeSharedD();
-  p->gyroscopeCovariance = measuredOmegaCovariance;
-  p->accelerometerCovariance = measuredAccCovariance;
-  p->integrationCovariance = integrationErrorCovariance;
-  p->biasAccCovariance = biasAccCovariance;
-  p->biasOmegaCovariance = biasOmegaCovariance;
-  p->biasAccOmegaInt = biasAccOmegaInt;
-  p_ = p;
-  resetIntegration();
-  preintMeasCov_.setZero();
-}
-#endif
-//------------------------------------------------------------------------------
 // CombinedImuFactor methods
 //------------------------------------------------------------------------------
 CombinedImuFactor::CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j,
@@ -275,41 +252,6 @@ std::ostream& operator<<(std::ostream& os, const CombinedImuFactor& f) {
   os << "  noise model sigmas: " << f.noiseModel_->sigmas().transpose();
   return os;
 }
-
-//------------------------------------------------------------------------------
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-CombinedImuFactor::CombinedImuFactor(
-    Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
-    const CombinedPreintegratedMeasurements& pim, const Vector3& n_gravity,
-    const Vector3& omegaCoriolis, const boost::optional<Pose3>& body_P_sensor,
-    const bool use2ndOrderCoriolis)
-: Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
-    pose_j, vel_j, bias_i, bias_j),
-_PIM_(pim) {
-  using P = CombinedPreintegratedMeasurements::Params;
-  auto p = boost::allocate_shared<P>(Eigen::aligned_allocator<P>(), pim.p());
-  p->n_gravity = n_gravity;
-  p->omegaCoriolis = omegaCoriolis;
-  p->body_P_sensor = body_P_sensor;
-  p->use2ndOrderCoriolis = use2ndOrderCoriolis;
-  _PIM_.p_ = p;
-}
-
-void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
-    Pose3& pose_j, Vector3& vel_j,
-    const imuBias::ConstantBias& bias_i,
-    CombinedPreintegratedMeasurements& pim,
-    const Vector3& n_gravity,
-    const Vector3& omegaCoriolis,
-    const bool use2ndOrderCoriolis) {
-  // use deprecated predict
-  PoseVelocityBias pvb = pim.predict(pose_i, vel_i, bias_i, n_gravity,
-      omegaCoriolis, use2ndOrderCoriolis);
-  pose_j = pvb.pose;
-  vel_j = pvb.velocity;
-}
-#endif
-
 }
  /// namespace gtsam
 

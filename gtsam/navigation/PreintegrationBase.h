@@ -32,25 +32,6 @@
 
 namespace gtsam {
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-/// @deprecated
-struct PoseVelocityBias {
-  Pose3 pose;
-  Vector3 velocity;
-  imuBias::ConstantBias bias;
-  PoseVelocityBias(const Pose3& _pose, const Vector3& _velocity,
-      const imuBias::ConstantBias _bias) :
-      pose(_pose), velocity(_velocity), bias(_bias) {
-  }
-  PoseVelocityBias(const NavState& navState, const imuBias::ConstantBias _bias) :
-      pose(navState.pose()), velocity(navState.velocity()), bias(_bias) {
-  }
-  NavState navState() const {
-    return NavState(pose, velocity);
-  }
-};
-#endif
-
 /**
  * PreintegrationBase is the base class for PreintegratedMeasurements
  * (in ImuFactor) and CombinedPreintegratedMeasurements (in CombinedImuFactor).
@@ -63,11 +44,6 @@ class GTSAM_EXPORT PreintegrationBase {
   typedef PreintegrationParams Params;
 
  protected:
-  /// Parameters. Declared mutable only for deprecated predict method.
-  /// TODO(frank): make const once deprecated method is removed
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  mutable
-#endif
   boost::shared_ptr<Params> p_;
 
   /// Acceleration and gyro bias used for preintegration
@@ -117,16 +93,11 @@ class GTSAM_EXPORT PreintegrationBase {
   }
 
   /// const reference to params
-  const Params& p() const {
-    return *boost::static_pointer_cast<Params>(p_);
+  Params& p() const {
+    return *p_;
   }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  void set_body_P_sensor(const Pose3& body_P_sensor) {
-    p_->body_P_sensor = body_P_sensor;
-  }
-#endif
-/// @}
+  /// @}
 
   /// @name Instance variables access
   /// @{
@@ -200,18 +171,6 @@ class GTSAM_EXPORT PreintegrationBase {
           boost::none, OptionalJacobian<9, 3> H2 = boost::none,
       OptionalJacobian<9, 6> H3 = boost::none, OptionalJacobian<9, 3> H4 =
           boost::none, OptionalJacobian<9, 6> H5 = boost::none) const;
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @name Deprecated
-  /// @{
-
-  /// @deprecated predict
-  PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
-      const imuBias::ConstantBias& bias_i, const Vector3& n_gravity,
-      const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false) const;
-
-  /// @}
-#endif
 
  private:
   /** Serialization function */

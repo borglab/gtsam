@@ -107,32 +107,6 @@ void PreintegratedImuMeasurements::mergeWith(const PreintegratedImuMeasurements&
 }
 #endif
 //------------------------------------------------------------------------------
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-PreintegratedImuMeasurements::PreintegratedImuMeasurements(
-    const imuBias::ConstantBias& biasHat, const Matrix3& measuredAccCovariance,
-    const Matrix3& measuredOmegaCovariance,
-    const Matrix3& integrationErrorCovariance, bool use2ndOrderIntegration) {
-  if (!use2ndOrderIntegration)
-  throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
-  biasHat_ = biasHat;
-  boost::shared_ptr<Params> p = Params::MakeSharedD();
-  p->gyroscopeCovariance = measuredOmegaCovariance;
-  p->accelerometerCovariance = measuredAccCovariance;
-  p->integrationCovariance = integrationErrorCovariance;
-  p_ = p;
-  resetIntegration();
-}
-
-void PreintegratedImuMeasurements::integrateMeasurement(
-    const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
-    boost::optional<Pose3> body_P_sensor) {
-  // modify parameters to accommodate deprecated method:-(
-  p_->body_P_sensor = body_P_sensor;
-  integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-}
-#endif
-
-//------------------------------------------------------------------------------
 // ImuFactor methods
 //------------------------------------------------------------------------------
 ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
@@ -218,43 +192,15 @@ ImuFactor::shared_ptr ImuFactor::Merge(const shared_ptr& f01,
   // return new factor
   auto pim02 =
   Merge(f01->preintegratedMeasurements(), f12->preintegratedMeasurements());
-  return boost::make_shared<ImuFactor>(f01->key1(),// P0
-      f01->key2(),// V0
-      f12->key3(),// P2
-      f12->key4(),// V2
-      f01->key5(),// B
+  return boost::make_shared<ImuFactor>(f01->key1(),  // P0
+      f01->key2(),  // V0
+      f12->key3(),  // P2
+      f12->key4(),  // V2
+      f01->key5(),  // B
       pim02);
 }
 #endif
 
-//------------------------------------------------------------------------------
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
-    const PreintegratedImuMeasurements& pim, const Vector3& n_gravity,
-    const Vector3& omegaCoriolis, const boost::optional<Pose3>& body_P_sensor,
-    const bool use2ndOrderCoriolis) :
-Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
-    pose_j, vel_j, bias), _PIM_(pim) {
-  boost::shared_ptr<PreintegrationParams> p = boost::make_shared<
-  PreintegrationParams>(pim.p());
-  p->n_gravity = n_gravity;
-  p->omegaCoriolis = omegaCoriolis;
-  p->body_P_sensor = body_P_sensor;
-  p->use2ndOrderCoriolis = use2ndOrderCoriolis;
-  _PIM_.p_ = p;
-}
-
-void ImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
-    Pose3& pose_j, Vector3& vel_j, const imuBias::ConstantBias& bias_i,
-    PreintegratedImuMeasurements& pim, const Vector3& n_gravity,
-    const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis) {
-  // use deprecated predict
-  PoseVelocityBias pvb = pim.predict(pose_i, vel_i, bias_i, n_gravity,
-      omegaCoriolis, use2ndOrderCoriolis);
-  pose_j = pvb.pose;
-  vel_j = pvb.velocity;
-}
-#endif
 //------------------------------------------------------------------------------
 // ImuFactor2 methods
 //------------------------------------------------------------------------------

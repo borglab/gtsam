@@ -194,21 +194,5 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
 }
 
 //------------------------------------------------------------------------------
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
-    const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
-    const Vector3& n_gravity, const Vector3& omegaCoriolis,
-    const bool use2ndOrderCoriolis) const {
-// NOTE(frank): parameters are supposed to be constant, below is only provided for compatibility
-  boost::shared_ptr<Params> q = boost::make_shared<Params>(p());
-  q->n_gravity = n_gravity;
-  q->omegaCoriolis = omegaCoriolis;
-  q->use2ndOrderCoriolis = use2ndOrderCoriolis;
-  p_ = q;
-  return PoseVelocityBias(predict(NavState(pose_i, vel_i), bias_i), bias_i);
-}
-
-#endif
-//------------------------------------------------------------------------------
 
 }  // namespace gtsam
