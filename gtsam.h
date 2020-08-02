@@ -2369,6 +2369,7 @@ virtual class NonlinearOptimizer {
   double error() const;
   int iterations() const;
   gtsam::Values values() const;
+  gtsam::NonlinearFactorGraph graph() const;
   gtsam::GaussianFactorGraph* iterate() const;
 };
 
