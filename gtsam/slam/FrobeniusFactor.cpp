@@ -32,7 +32,7 @@ namespace gtsam {
 
 //******************************************************************************
 boost::shared_ptr<noiseModel::Isotropic> ConvertPose3NoiseModel(
-    const SharedNoiseModel& model, size_t d, bool defaultToUnit) {
+    const SharedNoiseModel &model, size_t d, bool defaultToUnit) {
   double sigma = 1.0;
   if (model != nullptr) {
     if (model->dim() != 6) {
@@ -56,26 +56,29 @@ FrobeniusWormholeFactor::FrobeniusWormholeFactor(
     Key j1, Key j2, const Rot3 &R12, size_t p, const SharedNoiseModel &model,
     const boost::shared_ptr<Matrix> &G)
     : NoiseModelFactor2<SOn, SOn>(ConvertPose3NoiseModel(model, p * 3), j1, j2),
-      M_(R12.matrix()), // 3*3 in all cases
-      p_(p),            // 4 for SO(4)
-      pp_(p * p),       // 16 for SO(4)
+      M_(R12.matrix()),  // 3*3 in all cases
+      p_(p),             // 4 for SO(4)
+      pp_(p * p),        // 16 for SO(4)
       G_(G) {
   if (noiseModel()->dim() != 3 * p_)
     throw std::invalid_argument(
         "FrobeniusWormholeFactor: model with incorrect dimension.");
   if (!G) {
     G_ = boost::make_shared<Matrix>();
-    *G_ = SOn::VectorizedGenerators(p); // expensive!
+    *G_ = SOn::VectorizedGenerators(p);  // expensive!
   }
-  if (G_->rows() != pp_ || G_->cols() != SOn::Dimension(p))
-    throw std::invalid_argument("FrobeniusWormholeFactor: passed in generators "
-                                "of incorrect dimension.");
+  if (static_cast<size_t>(G_->rows()) != pp_ ||
+      static_cast<size_t>(G_->cols()) != SOn::Dimension(p))
+    throw std::invalid_argument(
+        "FrobeniusWormholeFactor: passed in generators "
+        "of incorrect dimension.");
 }
 
 //******************************************************************************
-void FrobeniusWormholeFactor::print(const std::string &s, const KeyFormatter &keyFormatter) const {
-  std::cout << s << "FrobeniusWormholeFactor<" << p_ << ">(" << keyFormatter(key1()) << ","
-            << keyFormatter(key2()) << ")\n";
+void FrobeniusWormholeFactor::print(const std::string &s,
+                                    const KeyFormatter &keyFormatter) const {
+  std::cout << s << "FrobeniusWormholeFactor<" << p_ << ">("
+            << keyFormatter(key1()) << "," << keyFormatter(key2()) << ")\n";
   traits<Matrix>::Print(M_, "  M: ");
   noiseModel_->print("  noise model: ");
 }
@@ -90,12 +93,12 @@ bool FrobeniusWormholeFactor::equals(const NonlinearFactor &expected,
 
 //******************************************************************************
 Vector FrobeniusWormholeFactor::evaluateError(
-    const SOn& Q1, const SOn& Q2, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+    const SOn &Q1, const SOn &Q2, boost::optional<Matrix &> H1,
+    boost::optional<Matrix &> H2) const {
   gttic(FrobeniusWormholeFactorP_evaluateError);
 
-  const Matrix& M1 = Q1.matrix();
-  const Matrix& M2 = Q2.matrix();
+  const Matrix &M1 = Q1.matrix();
+  const Matrix &M2 = Q2.matrix();
   assert(M1.rows() == p_ && M2.rows() == p_);
 
   const size_t dim = 3 * p_;  // Stiefel manifold dimension
