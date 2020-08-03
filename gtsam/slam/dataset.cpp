@@ -73,8 +73,8 @@ string findExampleDataFile(const string& name) {
   namesToSearch.push_back(name + ".xml");
 
   // Find first name that exists
-  for(const fs::path& root: rootsToSearch) {
-    for(const fs::path& name: namesToSearch) {
+  for(const fs::path root: rootsToSearch) {
+    for(const fs::path name: namesToSearch) {
       if (fs::is_regular_file(root / name))
         return (root / name).string();
     }

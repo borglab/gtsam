@@ -103,15 +103,6 @@ namespace gtsam {
         return 0.5 * squared_distance;
       }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-      /// calculate the error value given measurement error vector
-      virtual double error(const Vector& v) const = 0;
-
-      virtual double distance(const Vector& v) {
-        return error(v) * 2;
-      }      
-#endif
-
       virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const = 0;
       virtual void WhitenSystem(Matrix& A, Vector& b) const = 0;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const = 0;
@@ -225,19 +216,6 @@ namespace gtsam {
       Vector sigmas() const override;
       Vector whiten(const Vector& v) const override;
       Vector unwhiten(const Vector& v) const override;
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-      virtual double Mahalanobis(const Vector& v) const {
-        return squaredMahalanobisDistance(v);
-      }
-
-      /**
-       * error value 0.5 * v'*R'*R*v
-       */
-      inline double error(const Vector& v) const override {
-        return 0.5 * squaredMahalanobisDistance(v);
-      }
-#endif
 
       /**
        * Multiply a derivative with R (derivative of whiten)
@@ -483,15 +461,6 @@ namespace gtsam {
         return MixedVariances(precisions.array().inverse());
       }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-      /**
-       * The error function for a constrained noisemodel,
-       * for non-constrained versions, uses sigmas, otherwise
-       * uses the penalty function with mu
-       */
-      double error(const Vector& v) const override;
-#endif
-
       double squaredMahalanobisDistance(const Vector& v) const override;
 
       /** Fully constrained variations */
@@ -720,14 +689,6 @@ namespace gtsam {
       { Vector b; Matrix B=A; this->WhitenSystem(B,b); return B; }
       inline Vector unwhiten(const Vector& /*v*/) const override
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-      inline double distance(const Vector& v) override {
-        return robust_->loss(this->unweightedWhiten(v).norm());
-      }
-      // Fold the use of the m-estimator loss(...) function into error(...)
-      inline double error(const Vector& v) const override
-      { return robust_->loss(noise_->mahalanobisDistance(v)); }
-#endif
 
       double loss(const double squared_distance) const override {
         return robust_->loss(std::sqrt(squared_distance));

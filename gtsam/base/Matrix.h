@@ -23,14 +23,11 @@
 // \callgraph
 
 #pragma once
+
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/config.h>
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-#include <Eigen/Core>
-#include <Eigen/Cholesky>
-#include <Eigen/LU>
-#endif
+
 #include <boost/format.hpp>
 #include <boost/function.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -75,6 +72,10 @@ GTSAM_MAKE_MATRIX_DEFS(9);
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
+
+// Matrix formatting arguments when printing.
+// Akin to Matlab style.
+const Eigen::IOFormat& matlabFormat();
 
 /**
  * equals with a tolerance
@@ -516,23 +517,6 @@ struct MultiplyWithInverseFunction {
  private:
   const Operator phi_;
 };
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-inline Matrix zeros( size_t m, size_t n ) { return Matrix::Zero(m,n); }
-inline Matrix ones( size_t m, size_t n ) { return Matrix::Ones(m,n); }
-inline Matrix eye( size_t m, size_t n) { return Matrix::Identity(m, n); }
-inline Matrix eye( size_t m ) { return eye(m,m); }
-inline Matrix diag(const Vector& v) { return v.asDiagonal(); }
-inline void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) { e += alpha * A * x; }
-inline void multiplyAdd(const Matrix& A, const Vector& x, Vector& e) { e += A * x; }
-inline void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x) { x += alpha * A.transpose() * e; }
-inline void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) { x += A.transpose() * e; }
-inline void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x) { x += alpha * A.transpose() * e; }
-inline void insertColumn(Matrix& A, const Vector& col, size_t j) { A.col(j) = col; }
-inline void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j) { A.col(j).segment(i, col.size()) = col; }
-inline void solve(Matrix& A, Matrix& B) { B = A.fullPivLu().solve(B); }
-inline Matrix inverse(const Matrix& A) { return A.inverse(); }
-#endif
 
 GTSAM_EXPORT Matrix LLt(const Matrix& A);
 

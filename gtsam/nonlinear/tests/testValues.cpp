@@ -600,7 +600,7 @@ TEST(Values, Demangle) {
   Values values;
   Matrix13 v; v << 5.0, 6.0, 7.0;
   values.insert(key1, v);
-  string expected = "Values with 1 values:\nValue v1: (Eigen::Matrix<double, 1, 3, 1, 1, 3>) [\n	5, 6, 7\n]\n\n";
+  string expected = "Values with 1 values:\nValue v1: (Eigen::Matrix<double, 1, 3, 1, 1, 3>)\n[\n	5, 6, 7\n]\n\n";
 
   stringstream buffer;
   streambuf * old = cout.rdbuf(buffer.rdbuf());
@@ -614,25 +614,34 @@ TEST(Values, Demangle) {
 }
 
 /* ************************************************************************* */
-TEST(Values, ValuesSerializationRoundtrip) {
-  Values values;
-  Vector3 v; v << 5.0, 6.0, 7.0;
-  values.insert(key1, v);
-  Vector3 expected(5.0, 6.0, 7.0);
+TEST(Values, brace_initializer) {
+  const Pose2 poseA(1.0, 2.0, 0.3), poseC(.0, .0, .0);
+  const Pose3 poseB(Pose2(0.1, 0.2, 0.3));
 
-  std::ostringstream out_archive_stream;
-  boost::archive::text_oarchive out_archive(out_archive_stream);
-  out_archive << values;
-  auto serialized = out_archive_stream.str();
-
-  std::istringstream in_archive_stream(serialized);
-  boost::archive::text_iarchive in_archive(in_archive_stream);
-  Values deserialized;
-  in_archive >> deserialized;
-  
-  CHECK(assert_equal((Vector)expected, deserialized.at<Vector3>(key1)));
-  CHECK_EXCEPTION(values.at<Matrix23>(key1), exception);
+  {
+    Values values;
+    EXPECT_LONGS_EQUAL(0, values.size());
+    values = { {key1, genericValue(1.0)} };
+    EXPECT_LONGS_EQUAL(1, values.size());
+    CHECK(values.at<double>(key1) == 1.0);
+  }
+  {
+    Values values = { {key1, genericValue(poseA)}, {key2, genericValue(poseB)} };
+    EXPECT_LONGS_EQUAL(2, values.size());
+    EXPECT(assert_equal(values.at<Pose2>(key1), poseA));
+    EXPECT(assert_equal(values.at<Pose3>(key2), poseB));
+  }
+  // Test exception: duplicated key:
+  {
+    Values values;
+    CHECK_EXCEPTION((values = {
+      {key1, genericValue(poseA)},
+      {key2, genericValue(poseB)},
+      {key1, genericValue(poseC)} 
+      }), std::exception);
+  }
 }
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

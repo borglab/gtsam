@@ -87,8 +87,8 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
     return boost::shared_ptr<PreintegrationCombinedParams>(new PreintegrationCombinedParams(Vector3(0, 0, -g)));
   }
 
-  void print(const std::string& s="") const;
-  bool equals(const PreintegratedRotationParams& other, double tol) const;
+  void print(const std::string& s="") const override;
+  bool equals(const PreintegratedRotationParams& other, double tol) const override;
 
   void setBiasAccCovariance(const Matrix3& cov) { biasAccCovariance=cov; }
   void setBiasOmegaCovariance(const Matrix3& cov) { biasOmegaCovariance=cov; }
@@ -220,17 +220,6 @@ public:
 
   /// @}
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// deprecated constructor
-  /// NOTE(frank): assumes Z-Down convention, only second order integration supported
-  PreintegratedCombinedMeasurements(const imuBias::ConstantBias& biasHat,
-      const Matrix3& measuredAccCovariance,
-      const Matrix3& measuredOmegaCovariance,
-      const Matrix3& integrationErrorCovariance,
-      const Matrix3& biasAccCovariance, const Matrix3& biasOmegaCovariance,
-      const Matrix6& biasAccOmegaInt, const bool use2ndOrderIntegration = true);
-#endif
-
  private:
   /// Serialization function
   friend class boost::serialization::access;
@@ -305,7 +294,7 @@ public:
   virtual ~CombinedImuFactor() {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const;
+  gtsam::NonlinearFactor::shared_ptr clone() const override;
 
   /** implement functions needed for Testable */
 
@@ -314,11 +303,11 @@ public:
   GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
                                                const CombinedImuFactor&);
   /// print
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const;
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) const override;
 
   /// equals
-  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
   /// @}
 
   /** Access the preintegrated measurements. */
@@ -336,28 +325,9 @@ public:
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
           boost::none, boost::optional<Matrix&> H3 = boost::none,
       boost::optional<Matrix&> H4 = boost::none, boost::optional<Matrix&> H5 =
-          boost::none, boost::optional<Matrix&> H6 = boost::none) const;
+          boost::none, boost::optional<Matrix&> H6 = boost::none) const override;
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @deprecated typename
-  typedef gtsam::PreintegratedCombinedMeasurements CombinedPreintegratedMeasurements;
-
-  /// @deprecated constructor
-  CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i,
-                    Key bias_j, const CombinedPreintegratedMeasurements& pim,
-                    const Vector3& n_gravity, const Vector3& omegaCoriolis,
-                    const boost::optional<Pose3>& body_P_sensor = boost::none,
-                    const bool use2ndOrderCoriolis = false);
-
-  // @deprecated use PreintegrationBase::predict
-  static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j,
-                      Vector3& vel_j, const imuBias::ConstantBias& bias_i,
-                      CombinedPreintegratedMeasurements& pim,
-                      const Vector3& n_gravity, const Vector3& omegaCoriolis,
-                      const bool use2ndOrderCoriolis = false);
-#endif
-
-private:
+ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

@@ -106,9 +106,7 @@ Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
 
 /* ************************************************************************* */
 void Pose3::print(const string& s) const {
-  cout << s;
-  R_.print("R:\n");
-  cout << t_ << ";" << endl;
+  cout << (s.empty() ? s : s + " ") << *this << endl;
 }
 
 /* ************************************************************************* */
@@ -293,15 +291,6 @@ Pose3 Pose3::transformPoseFrom(const Pose3& aTb, OptionalJacobian<6, 6> Hself,
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-Pose3 Pose3::transform_to(const Pose3& pose) const {
-  Rot3 cRv = R_ * Rot3(pose.R_.inverse());
-  Point3 t = pose.transform_to(t_);
-  return Pose3(cRv, t);
-}
-#endif
-
-/* ************************************************************************* */
 Pose3 Pose3::transformPoseTo(const Pose3& wTb, OptionalJacobian<6, 6> Hself,
                                                OptionalJacobian<6, 6> HwTb) const {
   if (Hself) *Hself = -wTb.inverse().AdjointMap() * AdjointMap();
@@ -439,9 +428,9 @@ boost::optional<Pose3> align(const vector<Point3Pair>& baPointPairs) {
 
 /* ************************************************************************* */
 std::ostream &operator<<(std::ostream &os, const Pose3& pose) {
-  os << pose.rotation() << "\n";
-  const Point3& t = pose.translation();
-  os << '[' << t.x() << ", " << t.y() << ", " << t.z() << "]\';\n";
+  // Both Rot3 and Point3 have ostream definitions so we use them.
+  os << "R: " << pose.rotation() << "\n";
+  os << "t: " << pose.translation();
   return os;
 }
 

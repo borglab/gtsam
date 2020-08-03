@@ -2374,6 +2374,7 @@ virtual class NonlinearOptimizer {
   double error() const;
   int iterations() const;
   gtsam::Values values() const;
+  gtsam::NonlinearFactorGraph graph() const;
   gtsam::GaussianFactorGraph* iterate() const;
 };
 
@@ -3001,6 +3002,7 @@ class PreintegratedImuMeasurements {
   void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
 
   Matrix preintMeasCov() const;
+  Vector preintegrated() const;
   double deltaTij() const;
   gtsam::Rot3 deltaRij() const;
   Vector deltaPij() const;

@@ -254,7 +254,7 @@ namespace gtsam {
     /// @{
 
     /** print */
-    void print(const std::string& s="R") const;
+    void print(const std::string& s="") const;
 
     /** equals with an tolerance */
     bool equals(const Rot3& p, double tol = 1e-9) const;
@@ -499,23 +499,6 @@ namespace gtsam {
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Rot3& p);
 
     /// @}
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-    /// @name Deprecated
-    /// @{
-    static Rot3 rodriguez(const Point3&  axis, double angle) { return AxisAngle(axis, angle); }
-    static Rot3 rodriguez(const Unit3&   axis, double angle) { return AxisAngle(axis, angle); }
-    static Rot3 rodriguez(const Vector3& w)                  { return Rodrigues(w); }
-    static Rot3 rodriguez(double wx, double wy, double wz)   { return Rodrigues(wx, wy, wz); }
-    static Rot3 yaw  (double t) { return Yaw(t); }
-    static Rot3 pitch(double t) { return Pitch(t); }
-    static Rot3 roll (double t) { return Roll(t); }
-    static Rot3 ypr(double y, double p, double r) { return Ypr(r,p,y);}
-    static Rot3 quaternion(double w, double x, double y, double z) {
-      return Rot3::Quaternion(w, x, y, z);
-    }
-  /// @}
-#endif
 
    private:
     /** Serialization function */

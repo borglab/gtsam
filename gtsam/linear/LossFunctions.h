@@ -82,10 +82,6 @@ class GTSAM_EXPORT Base {
    */
   virtual double loss(double distance) const { return 0; };
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  virtual double residual(double distance) const { return loss(distance); };
-#endif
-
   /*
    * This method is responsible for returning the weight function for a given
    * amount of error. The weight function is related to the analytic derivative
@@ -134,10 +130,10 @@ class GTSAM_EXPORT Null : public Base {
 
   Null(const ReweightScheme reweight = Block) : Base(reweight) {}
   ~Null() {}
-  double weight(double /*error*/) const { return 1.0; }
-  double loss(double distance) const { return 0.5 * distance * distance; }
-  void print(const std::string &s) const;
-  bool equals(const Base & /*expected*/, double /*tol*/) const { return true; }
+  double weight(double /*error*/) const override { return 1.0; }
+  double loss(double distance) const override { return 0.5 * distance * distance; }
+  void print(const std::string &s) const override;
+  bool equals(const Base & /*expected*/, double /*tol*/) const override { return true; }
   static shared_ptr Create();
 
  private:
@@ -278,14 +274,6 @@ class GTSAM_EXPORT Welsch : public Base {
     ar &BOOST_SERIALIZATION_NVP(c_);
   }
 };
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-/// @name Deprecated
-/// @{
-// Welsh implements the "Welsch" robust error model (Zhang97ivc)
-// This was misspelled in previous versions of gtsam and should be
-// removed in the future.
-using Welsh = Welsch;
-#endif
 
 /// GemanMcClure implements the "Geman-McClure" robust error model
 /// (Zhang97ivc).

@@ -13,12 +13,11 @@
  * @file    timeFrobeniusFactor.cpp
  * @brief   time FrobeniusFactor with BAL file
  * @author  Frank Dellaert
- * @date    June 6, 2015
+ * @date    2019
  */
 
 #include <gtsam/base/timing.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/SO4.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
@@ -51,10 +50,7 @@ int main(int argc, char* argv[]) {
     if (argc > 1)
       g2oFile = argv[argc - 1];
     else
-      g2oFile =
-          "/Users/dellaert/git/2019c-notes-shonanrotationaveraging/matlabCode/"
-          "datasets/randomTorus3D.g2o";
-    // g2oFile = findExampleDataFile("sphere_smallnoise.graph");
+      g2oFile = findExampleDataFile("sphere_smallnoise.graph");
   } catch (const exception& e) {
     cerr << e.what() << '\n';
     exit(1);
@@ -66,15 +62,16 @@ int main(int argc, char* argv[]) {
 
   // Build graph
   NonlinearFactorGraph graph;
-  // graph.add(NonlinearEquality<SO4>(0, SO4()));
+  // graph.add(NonlinearEquality<SOn>(0, SOn::identity(4)));
   auto priorModel = noiseModel::Isotropic::Sigma(6, 10000);
-  graph.add(PriorFactor<SO4>(0, SO4(), priorModel));
+  graph.add(PriorFactor<SOn>(0, SOn::identity(4), priorModel));
+  auto G = boost::make_shared<Matrix>(SOn::VectorizedGenerators(4));
   for (const auto& factor : factors) {
     const auto& keys = factor->keys();
     const auto& Tij = factor->measured();
     const auto& model = factor->noiseModel();
     graph.emplace_shared<FrobeniusWormholeFactor>(
-        keys[0], keys[1], Rot3(Tij.rotation().matrix()), 4, model);
+        keys[0], keys[1], Rot3(Tij.rotation().matrix()), 4, model, G);
   }
 
   std::mt19937 rng(42);
@@ -95,9 +92,9 @@ int main(int argc, char* argv[]) {
   for (size_t i = 0; i < 100; i++) {
     gttic_(optimize);
     Values initial;
-    initial.insert(0, SO4());
+    initial.insert(0, SOn::identity(4));
     for (size_t j = 1; j < poses.size(); j++) {
-      initial.insert(j, SO4::Random(rng));
+      initial.insert(j, SOn::Random(rng, 4));
     }
     LevenbergMarquardtOptimizer lm(graph, initial, params);
     Values result = lm.optimize();
