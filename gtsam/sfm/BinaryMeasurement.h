@@ -18,6 +18,13 @@
  * @brief Binary measurement for representing edges in the epipolar graph
  */
 
+#include <ostream>
+
+
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Lie.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/NoiseModel.h>
 
@@ -71,22 +78,17 @@ public:
     }
 
     /** equals */
-    bool equals(const BetweenMeasurement& expected, double tol=1e-9) const {
-      const BetweenMeasurement<VALUE> *e =  dynamic_cast<const  BetweenMeasurement<VALUE>*> (&expected);
-      return e != nullptr && key1_ == expected.key1() && 
-             key2_ == expected.key2() 
+    bool equals(const BinaryMeasurement& expected, double tol=1e-9) const {
+      const BinaryMeasurement<VALUE> *e =  dynamic_cast<const  BinaryMeasurement<VALUE>*> (&expected);
+      return e != nullptr && key1_ == e->key1_ && 
+             key2_ == e->key2_
              && traits<VALUE>::Equals(this->measured_, e->measured_, tol) && 
-             noiseModel_.equals(expected.noiseModel());
+             noiseModel_->equals(expected.noiseModel());
     }
 
     /** return the measured */
-    const VALUE& measured() const {
+    VALUE measured() const {
       return measured_;
-    }
-
-    /** number of variables attached to this measurement */
-    std::size_t size() const {
-      return 2;
     }
   }; // \class BetweenMeasurement
 }
