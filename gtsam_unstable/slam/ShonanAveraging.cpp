@@ -41,9 +41,9 @@ static std::mt19937 kRandomNumberGenerator(42);
 /* ************************************************************************* */
 ShonanAveragingParameters::ShonanAveragingParameters(
     const LevenbergMarquardtParams &_lm, const std::string &method,
-    double noiseSigma, double optimalityThreshold)
-    : prior(true), karcher(true), fixGauge(false), noiseSigma(noiseSigma),
-      optimalityThreshold(optimalityThreshold), lm(_lm) {
+    double optimalityThreshold, double alpha, double beta, double gamma)
+    : lm(_lm), optimalityThreshold(optimalityThreshold), alpha(alpha),
+      beta(beta), gamma(gamma) {
   // By default, we will do conjugate gradient
   lm.linearSolverType = LevenbergMarquardtParams::Iterative;
 
@@ -82,9 +82,6 @@ ShonanAveraging::ShonanAveraging(const BetweenFactorPose3s& factors,
                                  const std::map<Key, Pose3>& poses,
                                  const ShonanAveragingParameters& parameters)
     : parameters_(parameters), factors_(factors), poses_(poses), d_(3) {
-  // TODO(frank): add noise here rather than when parsing
-  auto corruptingNoise =
-      noiseModel::Isotropic::Sigma(d_, parameters.noiseSigma);
   Q_ = buildQ();
   D_ = buildD();
   L_ = D_ - Q_;
@@ -93,9 +90,8 @@ ShonanAveraging::ShonanAveraging(const BetweenFactorPose3s& factors,
 /* ************************************************************************* */
 // Copy poses from Values
 static std::map<Key, Pose3> PoseMapFromValues(const Values& values) {
-  Values::ConstFiltered<Pose3> pose_filtered = values.filter<Pose3>();
   std::map<Key, Pose3> poses;
-  for (const auto& it : pose_filtered) {
+  for (const auto& it : values.filter<Pose3>()) {
     poses[it.key] = it.value;
   }
   return poses;
@@ -145,7 +141,7 @@ double ShonanAveraging::costAt(size_t p, const Values& values) const {
 /* ************************************************************************* */
 boost::shared_ptr<LevenbergMarquardtOptimizer>
 ShonanAveraging::createOptimizerAt(
-    size_t p, const boost::optional<const Values&> initialEstimate) const {
+    size_t p, const boost::optional<Values> &initialEstimate) const {
   // Build graph
   auto graph = buildGraphAt(p);
 
@@ -154,22 +150,26 @@ ShonanAveraging::createOptimizerAt(
   const Values initial =
       initialEstimate ? *initialEstimate : initializeRandomlyAt(p);
 
-  // Prior is only added here as depends on initial value (and cost is zero)
-  if (parameters_.prior) {
-    if (parameters_.karcher) {
-      const size_t dim = SOn::Dimension(p);
-      graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
-    } else {
-      graph.emplace_shared<PriorFactor<SOn>>(
-          parameters_.anchor.first,
-          SOn::Lift(p, parameters_.anchor.second.matrix()));
-    }
+  const size_t dim = SOn::Dimension(p);
+
+  // Anchor prior is only added here as depends on initial value (and cost is zero)
+  if (parameters_.alpha > 0) {
+    size_t i;
+    Rot3 value;
+    std::tie(i, value) = parameters_.anchor;
+    auto model = noiseModel::Isotropic::Precision(dim, parameters_.alpha);
+    graph.emplace_shared<PriorFactor<SOn>>(i, SOn::Lift(p, value.matrix()), model);
+  }
+  
+  // TODO(frank): add Karcher prior when building graph?
+  if (parameters_.beta > 0) {
+    graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
   }
 
-  // Add gauge factors for p>d_+1
-  if (parameters_.fixGauge && p>d_+1) {
-    for (auto key: graph.keys())
-      graph.emplace_shared<ShonanGaugeFactor>(key, p);
+  // TODO(frank): definitely add Gauge factors when building graph?
+  if (parameters_.gamma > 0 && p > d_ + 1) {
+    for (auto key : graph.keys())
+      graph.emplace_shared<ShonanGaugeFactor>(key, p, d_, parameters_.gamma);
   }
 
   // Optimize
@@ -180,7 +180,7 @@ ShonanAveraging::createOptimizerAt(
 
 /* ************************************************************************* */
 Values ShonanAveraging::tryOptimizingAt(
-    size_t p, const boost::optional<const Values&> initialEstimate) const {
+    size_t p, const boost::optional<Values>& initialEstimate) const {
   boost::shared_ptr<LevenbergMarquardtOptimizer> lm =
       createOptimizerAt(p, initialEstimate);
   Values result = lm->optimize();
@@ -193,9 +193,8 @@ static Matrix StiefelElementMatrix(const Values &values, size_t d = 3) {
   const size_t N = values.size();
   const size_t p = values.at<SOn>(0).rows();
   Matrix S(p, N * d);
-  for (size_t j = 0; j < N; j++) {
-    const SOn Q = values.at<SOn>(j);
-    S.block(0, j * d, p, d) = Q.matrix().leftCols(d);  // project Qj to Stiefel
+  for (const auto& it: values.filter<SOn>()) {
+    S.block(0, it.key * d, p, d) = it.value.matrix().leftCols(d);  // project Qj to Stiefel
   }
   return S;
 }
@@ -203,11 +202,10 @@ static Matrix StiefelElementMatrix(const Values &values, size_t d = 3) {
 /* ************************************************************************* */
 Values ShonanAveraging::projectFrom(size_t p, const Values& values) const {
   Values rot3Values;
-  for (size_t j = 0; j < nrPoses(); j++) {
-    const SOn Q = values.at<SOn>(j);
-    assert(Q.rows() == p);
-    const Rot3 R = Rot3::ClosestTo(Q.matrix().topLeftCorner(d_, d_));
-    rot3Values.insert(j, R);
+  for (const auto& it: values.filter<SOn>()) {
+    assert(it.value.rows() == p);
+    const Rot3 R = Rot3::ClosestTo(it.value.matrix().topLeftCorner(d_, d_));
+    rot3Values.insert(it.key, R);
   }
   return rot3Values;
 }
@@ -273,9 +271,8 @@ double ShonanAveraging::cost(const Values& values) const {
   }
   // Finally, project each dxd rotation block to SO(d)
   Values SO3_values;
-  const size_t N = nrPoses();
-  for (size_t i = 0; i < N; ++i) {
-    SO3_values.insert(i, SO3(values.at<Rot3>(i).matrix()));
+  for (const auto& it: values.filter<Rot3>()) {
+    SO3_values.insert(it.key, SO3(it.value.matrix()));
   }
   return graph.error(SO3_values);
 }
@@ -647,20 +644,17 @@ Matrix ShonanAveraging::riemannianGradient(size_t p,
 }
 
 /* ************************************************************************* */
-Values ShonanAveraging::dimensionLifting(size_t p, const Values& values,
-                                         const Vector& minEigenVector) const {
-  Values newValues;
-  // for all poses, initialize with the eigenvector segment v_i
-  for (size_t i = 0; i < nrPoses(); i++) {
-    // Initialize SO(p) with topleft block the old value Q \in SO(p-1)
-    auto Q = SOn::Lift(p, values.at<SOn>(i).matrix());
+Values ShonanAveraging::LiftwithDescent(size_t p, const Values &values,
+                                        const Vector &minEigenVector) {
+  Values lifted = LiftTo<SOn>(p, values);
+  for (auto it : lifted.filter<SOn>()) {
     // Create a tangent direction xi with eigenvector segment v_i
-    const Vector xi = MakeATangentVector(p, minEigenVector, i);
+    // Assumes key is 0-based integer
+    const Vector xi = MakeATangentVector(p, minEigenVector, it.key);
     // Move the old value in the descent direction
-    const SOn Qplus = Q.retract(xi);
-    newValues.insert(i, Qplus);
+    it.value = it.value.retract(xi);
   }
-  return newValues;
+  return lifted;
 }
 
 /* ************************************************************************* */
@@ -676,7 +670,7 @@ Values ShonanAveraging::initializeWithDescent(
   vector<double> fvals;
   // line search
   while ((alpha >= alphaMin)) {
-    Values Qplus = dimensionLifting(p, values, alpha * minEigenVector);
+    Values Qplus = LiftwithDescent(p, values, alpha * minEigenVector);
     double funcValTest = costAt(p, Qplus);
     Matrix gradTest = riemannianGradient(p, Qplus);
     double gradTestNorm = gradTest.norm();
@@ -694,44 +688,49 @@ Values ShonanAveraging::initializeWithDescent(
   double fMin = fvals[minIdx];
   double aMin = alphas[minIdx];
   if (fMin < funcVal) {
-    Values Qplus = dimensionLifting(p, values, aMin * minEigenVector);
+    Values Qplus = LiftwithDescent(p, values, aMin * minEigenVector);
     return Qplus;
   }
 
-  return dimensionLifting(p, values, alpha * minEigenVector);
+  return LiftwithDescent(p, values, alpha * minEigenVector);
 }
 
 /* ************************************************************************* */
-std::pair<Values, double> ShonanAveraging::run(size_t pMin, size_t pMax,
-                                               bool withDescent) const {
+std::pair<Values, double>
+ShonanAveraging::run(size_t pMin, size_t pMax, bool withDescent,
+                     const boost::optional<Values>& initialEstimate) const {
   Values Qstar;
-  Vector minEigenVector;
-  double minEigenValue = 0;
+  Values initial = (initialEstimate) ? LiftTo<Rot3>(pMin, *initialEstimate)
+                                     : initializeRandomlyAt(pMin);
   for (size_t p = pMin; p <= pMax; p++) {
-    const Values initial =
-        (p > pMin && withDescent)
-            ? initializeWithDescent(p, Qstar, minEigenVector, minEigenValue)
-            : initializeRandomlyAt(p);
     Qstar = tryOptimizingAt(p, initial);
-    minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
+    Vector minEigenVector;
+    double minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
     if (minEigenValue > parameters_.optimalityThreshold) {
       const Values SO3Values = roundSolution(Qstar);
       return std::make_pair(SO3Values, minEigenValue);
+    }
+    if (p != pMax) {
+      initial = withDescent ? initializeWithDescent(
+                                  p + 1, Qstar, minEigenVector, minEigenValue)
+                            : initializeRandomlyAt(p + 1);
     }
   }
   throw std::runtime_error("Shonan::run did not converge for given pMax");
 }
 
 /* ************************************************************************* */
-std::pair<Values, double> ShonanAveraging::runWithRandom(size_t pMin,
-                                                         size_t pMax) const {
-  return run(pMin, pMax, false);
+std::pair<Values, double> ShonanAveraging::runWithRandom(
+    size_t pMin, size_t pMax,
+    const boost::optional<Values>& initialEstimate) const {
+  return run(pMin, pMax, false, initialEstimate);
 }
 
 /* ************************************************************************* */
-std::pair<Values, double> ShonanAveraging::runWithDescent(size_t pMin,
-                                                          size_t pMax) const {
-  return run(pMin, pMax, true);
+std::pair<Values, double> ShonanAveraging::runWithDescent(
+    size_t pMin, size_t pMax,
+    const boost::optional<Values>& initialEstimate) const {
+  return run(pMin, pMax, true, initialEstimate);
 }
 
 /* ************************************************************************* */

@@ -142,12 +142,27 @@ TEST(ShonanAveraging, MakeATangentVector) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, dimensionLifting) {
+TEST(ShonanAveraging, LiftTo) {
+  auto I = genericValue(Rot3());
+  Values initial {{0, I}, {1, I}, {2, I}};
+  Values lifted = ShonanAveraging::LiftTo<Rot3>(5, initial);
+  EXPECT(assert_equal(SOn(5), lifted.at<SOn>(0)));
+}
+
+/* ************************************************************************* */
+TEST(ShonanAveraging, LiftwithDescent) {
   const Values Qstar3 = kShonan.tryOptimizingAt(3);
   Vector minEigenVector;
   kShonan.computeMinEigenValue(Qstar3, &minEigenVector);
-  Values initialQ4 = kShonan.dimensionLifting(4, Qstar3, minEigenVector);
+  Values initialQ4 =
+      ShonanAveraging::LiftwithDescent(4, Qstar3, minEigenVector);
   EXPECT_LONGS_EQUAL(5, initialQ4.size());
+  Matrix expected(4, 4);
+  expected << 0.65649, -0.556278, -0.509486, -0.000102, //
+      0.0460064, -0.596212, 0.710175, 0.371573,             //
+      -0.737652, -0.460499, -0.447739, 0.208182,            //
+      0.15091, 0.350752, -0.188693, 0.904762;
+  EXPECT(assert_equal(SOn(expected), initialQ4.at<SOn>(0), 1e-5));
 }
 
 /* ************************************************************************* */
@@ -175,7 +190,7 @@ TEST(ShonanAveraging, runWithRandomKlaus) {
 
   // Initialize a Shonan instance without the Karcher mean
   ShonanAveragingParameters parameters;
-  parameters.setKarcher(false);
+  parameters.setKarcherWeight(0);
   static const ShonanAveraging shonan(g2oFile, parameters);
 
   // Check nr poses
@@ -264,6 +279,30 @@ TEST(ShonanAveraging, Random2DGraph) {
   const ShonanAveraging shonan(factors, poses);
 }
 
+/* ************************************************************************* */
+// Test alpha/beta/gamma prior weighting.
+TEST(ShonanAveraging, PriorWeights) {
+  string g2oFile = findExampleDataFile("Klaus3.g2o");
+  auto lmParams = LevenbergMarquardtParams::CeresDefaults();
+  auto params = ShonanAveragingParameters(lmParams);
+  EXPECT_DOUBLES_EQUAL(0, params.alpha, 1e-9);
+  EXPECT_DOUBLES_EQUAL(1, params.beta, 1e-9);
+  EXPECT_DOUBLES_EQUAL(0, params.gamma, 1e-9);
+  double alpha = 100.0, beta = 200.0, gamma = 300.0;
+  params.setAnchorWeight(alpha);
+  params.setKarcherWeight(beta);
+  params.setGaugesWeight(gamma);
+  EXPECT_DOUBLES_EQUAL(alpha, params.alpha, 1e-9);
+  EXPECT_DOUBLES_EQUAL(beta, params.beta, 1e-9);
+  EXPECT_DOUBLES_EQUAL(gamma, params.gamma, 1e-9);
+  params.setKarcherWeight(0);
+  const ShonanAveraging shonan(g2oFile, params);
+  auto I = genericValue(Rot3());
+  Values initial {{0, I}, {1, I}, {2, I}};
+  EXPECT_DOUBLES_EQUAL(3.0756, shonan.cost(initial), 1e-4);
+  auto result = shonan.runWithDescent(3, 3, initial);
+  EXPECT_DOUBLES_EQUAL(0.0015, shonan.cost(result.first), 1e-4);
+}
 /* ************************************************************************* */
 int main() {
   TestResult tr;

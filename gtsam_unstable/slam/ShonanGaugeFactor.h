@@ -49,11 +49,16 @@ class ShonanGaugeFactor : public NonlinearFactor {
   size_t rows_;
 
   /// Constant Jacobian
-  boost::shared_ptr<JacobianFactor> jacobian_;
+  boost::shared_ptr<JacobianFactor> whitenedJacobian_;
 
 public:
-  /// Construct from key for an SO(p) matrix, for base dimension d (2 or 3)
-  ShonanGaugeFactor(Key key, size_t p, size_t d = 3)
+  /**
+   * Construct from key for an SO(p) matrix, for base dimension d (2 or 3)
+   * If parameter gamma is given, it acts as a precision = 1/sigma^2, and
+   * the Jacobian will be multiplied with 1/sigma = sqrt(gamma).
+   */
+  ShonanGaugeFactor(Key key, size_t p, size_t d = 3,
+                    boost::optional<double> gamma = boost::none)
       : NonlinearFactor(boost::assign::cref_list_of<1>(key)) {
     if (p < d) {
       throw std::invalid_argument("ShonanGaugeFactor must have p>=d.");
@@ -71,15 +76,17 @@ public:
     // symmetric matrix as they below to K, part of the Stiefel manifold.
     Matrix A(rows_, P);
     A.setZero();
+    double invSigma = gamma ? std::sqrt(*gamma) : 1.0;
     size_t i = 0, j = 0, n = p - 1 - d;
     while (i < rows_) {
-      A.block(i, j, n, n) = Matrix::Identity(n, n);
+      A.block(i, j, n, n) = invSigma * Matrix::Identity(n, n);
       i += n;
       j += n + d; // skip d columns
       n -= 1;
     }
     // TODO(frank): assign the right one in the right columns
-    jacobian_ = boost::make_shared<JacobianFactor>(key, A, Vector::Zero(rows_));
+    whitenedJacobian_ =
+        boost::make_shared<JacobianFactor>(key, A, Vector::Zero(rows_));
   }
 
   /// Destructor
@@ -93,7 +100,7 @@ public:
 
   /// linearize to a GaussianFactor
   boost::shared_ptr<GaussianFactor> linearize(const Values &c) const override {
-    return jacobian_;
+    return whitenedJacobian_;
   }
 };
 // \ShonanGaugeFactor

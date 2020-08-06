@@ -37,31 +37,38 @@ class NonlinearFactorGraph;
 
 /// Parameters governing optimization etc.
 struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
-  bool prior;    // whether to use a prior (default true)
-  bool karcher;  // whether to use Karcher mean prior (default true)
-  bool fixGauge; // whether to use gauge factors for p>d+1 (default false)
-  std::pair<size_t, Rot3>
-      anchor;        // which pose to use as anchor if not Karcher (default 0)
-  double noiseSigma; // Optional noise Sigma, will be ignored if zero
-  double optimalityThreshold;  // threshold used in checkOptimality
+  using Anchor = std::pair<size_t, Rot3>;
   LevenbergMarquardtParams lm; // LM parameters
+  double optimalityThreshold;  // threshold used in checkOptimality
+  Anchor anchor;               // pose to use as anchor if not Karcher
+  double alpha;                // weight of anchor-based prior (default 0)
+  double beta;                 // weight of Karcher-based prior (default 1)
+  double gamma;                // weight of gauge-fixing factors (default 0)
 
   ShonanAveragingParameters(const LevenbergMarquardtParams &lm =
                                 LevenbergMarquardtParams::CeresDefaults(),
                             const std::string &method = "JACOBI",
-                            double noiseSigma = 0,
-                            double optimalityThreshold = -1e-4);
+                            double optimalityThreshold = -1e-4,
+                            double alpha = 0.0, double beta = 1.0,
+                            double gamma = 0.0);
 
-  void setPrior(bool value) { prior = value; }
-  void setKarcher(bool value) { karcher = value; }
-  void setFixGauge(bool value) { fixGauge = value; }
-  void setAnchor(size_t index, const gtsam::Rot3 &value) {
-    anchor = std::make_pair(index, value);
-  }
-  void setNoiseSigma(bool value) { noiseSigma = value; }
+  LevenbergMarquardtParams getLMParams() const { return lm; }
+
   void setOptimalityThreshold(double value) { optimalityThreshold = value; }
   double getOptimalityThreshold() const { return optimalityThreshold; }
-  LevenbergMarquardtParams getLMParams() const { return lm; }
+
+  void setAnchor(size_t index, const gtsam::Rot3 &value) {
+    anchor = {index, value};
+  }
+
+  void setAnchorWeight(double value) { alpha = value; }
+  double getAnchorWeight() { return alpha; }
+
+  void setKarcherWeight(double value) { beta = value; }
+  double getKarcherWeight() { return beta; }
+
+  void setGaugesWeight(double value) { gamma = value; }
+  double getGaugesWeight() { return gamma; }
 };
 
 /**
@@ -186,8 +193,8 @@ public:
    * Lift up the dimension of values in type SO(p-1) with descent direction
    * provided by minEigenVector and return new values in type SO(p)
    */
-  Values dimensionLifting(size_t p, const Values &values,
-                          const Vector &minEigenVector) const;
+  static Values LiftwithDescent(size_t p, const Values &values,
+                                const Vector &minEigenVector);
 
   /**
    * Given some values at p-1, return new values at p, by doing a line search
@@ -249,8 +256,8 @@ public:
    * @param initial optional initial SO(p) values
    * @return lm optimizer
    */
-  boost::shared_ptr<LevenbergMarquardtOptimizer> createOptimizerAt(
-      size_t p, const boost::optional<const Values &> initialEstimate) const;
+  boost::shared_ptr<LevenbergMarquardtOptimizer>
+  createOptimizerAt(size_t p, const boost::optional<Values> &shonan) const;
 
   /**
    * Try to optimize at SO(p)
@@ -258,9 +265,9 @@ public:
    * @param initial optional initial SO(p) values
    * @return SO(p) values
    */
-  Values tryOptimizingAt(
-      size_t p,
-      const boost::optional<const Values &> initial = boost::none) const;
+  Values
+  tryOptimizingAt(size_t p,
+                  const boost::optional<Values> &initial = boost::none) const;
 
   /**
    * Project from SO(p) to Rot3
@@ -273,6 +280,15 @@ public:
    * Values should be of type SO(p)
    */
   Values roundSolution(const Values &values) const;
+
+  /// Lift Values of type T to SO(p)
+  template <class T> static Values LiftTo(size_t p, const Values &values) {
+    Values result;
+    for (const auto &it : values.filter<T>()) {
+      result.insert(it.key, SOn::Lift(p, it.value.matrix()));
+    }
+    return result;
+  }
 
   /// @}
   /// @name Basic API
@@ -289,10 +305,12 @@ public:
    * @param pMin value of p to start Riemanian staircase at.
    * @param pMax maximum value of p to try (default: 20)
    * @param withDescent use descent direction from paper.
+   * @param initial optional initial Rot3 values
    * @return (Rot3 values, minimum eigenvalue)
    */
-  std::pair<Values, double> run(size_t pMin, size_t pMax,
-                                bool withDescent) const;
+  std::pair<Values, double>
+  run(size_t pMin, size_t pMax, bool withDescent,
+      const boost::optional<Values> &initialEstimate = boost::none) const;
 
   /**
    * Optimize at different values of p until convergence, with random
@@ -300,10 +318,12 @@ public:
    *
    * @param pMin value of p to start Riemanian staircase at.
    * @param pMax maximum value of p to try (default: 20)
+   * @param initial optional initial Rot3 values
    * @return (Rot3 values, minimum eigenvalue)
    */
-  std::pair<Values, double> runWithRandom(size_t pMin = 5,
-                                          size_t pMax = 20) const;
+  std::pair<Values, double> runWithRandom(
+      size_t pMin = 5, size_t pMax = 20,
+      const boost::optional<Values> &initialEstimate = boost::none) const;
 
   /**
    * Optimize at different values of p until convergence, with descent
@@ -311,10 +331,12 @@ public:
    *
    * @param pMin value of p to start Riemanian staircase at.
    * @param pMax maximum value of p to try (default: 20)
+   * @param initial optional initial Rot3 values
    * @return (Rot3 values, minimum eigenvalue)
    */
-  std::pair<Values, double> runWithDescent(size_t pMin = 5,
-                                           size_t pMax = 20) const;
+  std::pair<Values, double> runWithDescent(
+      size_t pMin = 5, size_t pMax = 20,
+      const boost::optional<Values> &initialEstimate = boost::none) const;
   /// @}
 };
 

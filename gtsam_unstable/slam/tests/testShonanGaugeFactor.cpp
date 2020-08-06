@@ -81,14 +81,15 @@ TEST(ShonanAveraging, GaugeFactorSO7) {
 // Check ShonanGaugeFactor for SO(6), with base SO(2)
 TEST(ShonanAveraging, GaugeFactorSO6over2) {
   constexpr Key key(602);
-  ShonanGaugeFactor factor(key, 6, 2); // For SO(6), base SO(2)
-  Matrix A = Matrix::Zero(6, 15);      // SO(6-2) = SO(4) == 6-dimensional gauge
-  A(0, 0) = 1; // first 3 of 6^th skew column, which has 5 non-zero entries
-  A(1, 1) = 1;
-  A(2, 2) = 1; // then we skip only 2 tangent dimensions
-  A(3, 5) = 1; // first 2 of 5^th skew column, which has 4 non-zero entries
-  A(4, 6) = 1; // then we skip only 2 tangent dimensions
-  A(5, 9) = 1; // first of 4th skew colum, which has 3 non-zero entries above
+  double gamma = 4;
+  ShonanGaugeFactor factor(key, 6, 2, gamma); // For SO(6), base SO(2)
+  Matrix A = Matrix::Zero(6, 15); // SO(6-2) = SO(4) == 6-dimensional gauge
+  A(0, 0) = 2; // first 3 of 6^th skew column, which has 5 non-zero entries
+  A(1, 1) = 2;
+  A(2, 2) = 2; // then we skip only 2 tangent dimensions
+  A(3, 5) = 2; // first 2 of 5^th skew column, which has 4 non-zero entries
+  A(4, 6) = 2; // then we skip only 2 tangent dimensions
+  A(5, 9) = 2; // first of 4th skew colum, which has 3 non-zero entries above
                // diagonal.
   JacobianFactor linearized(key, A, Vector::Zero(6));
   Values values;
