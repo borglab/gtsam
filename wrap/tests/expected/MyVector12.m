@@ -12,9 +12,9 @@ classdef MyVector12 < handle
     function obj = MyVector12(varargin)
       if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
         my_ptr = varargin{2};
-        geometry_wrapper(79, my_ptr);
+        geometry_wrapper(81, my_ptr);
       elseif nargin == 0
-        my_ptr = geometry_wrapper(80);
+        my_ptr = geometry_wrapper(82);
       else
         error('Arguments do not match any overload of MyVector12 constructor');
       end
@@ -22,7 +22,7 @@ classdef MyVector12 < handle
     end
 
     function delete(obj)
-      geometry_wrapper(81, obj.ptr_MyVector12);
+      geometry_wrapper(83, obj.ptr_MyVector12);
     end
 
     function display(obj), obj.print(''); end

@@ -17,6 +17,9 @@
 %templatedMethodPoint3(Point3 t) : returns gtsam::Point3
 %templatedMethodVector(Vector t) : returns Vector
 %
+%-------Static Methods-------
+%NamedConstructor() : returns MyTemplatePoint2
+%
 classdef MyTemplatePoint2 < MyBase
   properties
     ptr_MyTemplatePoint2 = 0
@@ -152,5 +155,11 @@ classdef MyTemplatePoint2 < MyBase
   end
 
   methods(Static = true)
+    function varargout = NamedConstructor(varargin)
+      % NAMEDCONSTRUCTOR usage: NamedConstructor() : returns MyTemplatePoint2
+      % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
+      geometry_wrapper(61, varargin{:});
+    end
+
   end
 end

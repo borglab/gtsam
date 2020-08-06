@@ -110,6 +110,9 @@ virtual class MyTemplate : MyBase {
   template<ARG = {gtsam::Point2, gtsam::Point3, Vector, Matrix}>
   ARG templatedMethod(const ARG& t);
 
+  // This tests for the code generation for "This" self references
+  static This NamedConstructor();
+
   // Stress test templates and pointer combinations
   void accept_T(const T& value) const;
   void accept_Tptr(T* value) const;
