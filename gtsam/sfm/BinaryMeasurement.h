@@ -91,4 +91,7 @@ public:
       return measured_;
     }
   }; // \class BetweenMeasurement
+
+  using BinaryMeasurementUnit3s = std::vector<gtsam::BinaryMeasurement<Unit3>::shared_ptr>;
+  using BinaryMeasurementRot3s = std::vector<gtsam::BinaryMeasurement<Rot3>::shared_ptr>;
 }
