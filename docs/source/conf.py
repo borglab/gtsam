@@ -14,7 +14,8 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-import subprocess, os
+import subprocess
+import os
 
 read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 
@@ -22,7 +23,6 @@ if read_the_docs_build:
     subprocess.call('cd ..; mkdir -p build/html/doxygen/; doxygen', shell=True)
 
 # -- Project information -----------------------------------------------------
-
 project = u'GTSAM'
 copyright = u'2020, The GTSAM authors'
 author = u'The GTSAM authors'
@@ -60,7 +60,7 @@ exclude_patterns = []
 html_theme = 'sphinx_rtd_theme'
 
 html_theme_options = {
-#    'analytics_id': 'UA-XXXXXXX-1',  #  Provided by Google in your dashboard
+    # 'analytics_id': 'UA-XXXXXXX-1',  #  Provided by Google in your dashboard
     'display_version': True,
     # Toc options
     'collapse_navigation': True,
