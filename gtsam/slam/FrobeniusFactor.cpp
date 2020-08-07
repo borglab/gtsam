@@ -67,7 +67,8 @@ FrobeniusWormholeFactor::FrobeniusWormholeFactor(
     G_ = boost::make_shared<Matrix>();
     *G_ = SOn::VectorizedGenerators(p); // expensive!
   }
-  if (G_->rows() != pp_ || G_->cols() != SOn::Dimension(p))
+  if (static_cast<size_t>(G_->rows()) != pp_ ||
+      static_cast<size_t>(G_->cols()) != SOn::Dimension(p))
     throw std::invalid_argument("FrobeniusWormholeFactor: passed in generators "
                                 "of incorrect dimension.");
 }
