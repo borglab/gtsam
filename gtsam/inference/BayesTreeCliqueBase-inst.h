@@ -91,7 +91,7 @@ namespace gtsam {
   template<class DERIVED, class FACTORGRAPH>
   size_t BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::numCachedSeparatorMarginals() const
   {
-      std::lock_guard<std::mutex> marginalLock(cachedSeparatorMarginalMutex_);
+    std::lock_guard<std::mutex> marginalLock(cachedSeparatorMarginalMutex_);
     if (!cachedSeparatorMarginal_)
       return 0;
 

@@ -93,7 +93,7 @@ namespace gtsam {
 
     /// This stores the Cached separator marginal P(S)
     mutable boost::optional<FactorGraphType> cachedSeparatorMarginal_;
-    /// This protects Cached seperator marginal P(S) from concurent read/writes
+    /// This protects Cached seperator marginal P(S) from concurrent read/writes
     /// as many the functions which access it are const (hence the mutable)
     /// leading to the false impression that these const functions are thread-safe
     /// which is not true due to these mutable values. This is fixed by applying this mutex.
