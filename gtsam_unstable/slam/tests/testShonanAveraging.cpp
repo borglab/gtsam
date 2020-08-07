@@ -26,10 +26,10 @@ using namespace std;
 using namespace gtsam;
 
 string g2oFile = findExampleDataFile("toyExample.g2o");
-static const ShonanAveraging kShonan(g2oFile);
+static const ShonanAveraging3 kShonan(g2oFile);
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, checkConstructor) {
+TEST(ShonanAveraging3, checkConstructor) {
   EXPECT_LONGS_EQUAL(5, kShonan.nrPoses());
 
   EXPECT_LONGS_EQUAL(15, kShonan.D().rows());
@@ -52,24 +52,24 @@ TEST(ShonanAveraging, checkConstructor) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, checkAllConstructors) {
+TEST(ShonanAveraging3, checkAllConstructors) {
   ShonanAveragingParameters parameters;
   const BetweenFactorPose3s factors;
   const map<Key, Pose3> poses;
   const Values values;
-  EXPECT_LONGS_EQUAL(0, ShonanAveraging(factors, poses, parameters).nrPoses());
-  EXPECT_LONGS_EQUAL(0, ShonanAveraging(factors, values, parameters).nrPoses());
-  EXPECT_LONGS_EQUAL(5, ShonanAveraging(g2oFile, parameters).nrPoses());
+  EXPECT_LONGS_EQUAL(0, ShonanAveraging3(factors, poses, parameters).nrPoses());
+  EXPECT_LONGS_EQUAL(0, ShonanAveraging3(factors, values, parameters).nrPoses());
+  EXPECT_LONGS_EQUAL(5, ShonanAveraging3(g2oFile, parameters).nrPoses());
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, buildGraphAt) {
+TEST(ShonanAveraging3, buildGraphAt) {
   auto graph = kShonan.buildGraphAt(5);
   EXPECT_LONGS_EQUAL(6, graph.size());
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, checkOptimality) {
+TEST(ShonanAveraging3, checkOptimality) {
   const Values random = kShonan.initializeRandomlyAt(4);
   auto Lambda = kShonan.computeLambda(random);
   EXPECT_LONGS_EQUAL(15, Lambda.rows());
@@ -84,7 +84,7 @@ TEST(ShonanAveraging, checkOptimality) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, tryOptimizingAt3) {
+TEST(ShonanAveraging3, tryOptimizingAt3) {
   const Values initial = kShonan.initializeRandomlyAt(3);
   EXPECT(!kShonan.checkOptimality(initial));
   const Values result = kShonan.tryOptimizingAt(3, initial);
@@ -98,7 +98,7 @@ TEST(ShonanAveraging, tryOptimizingAt3) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, tryOptimizingAt4) {
+TEST(ShonanAveraging3, tryOptimizingAt4) {
   const Values result = kShonan.tryOptimizingAt(4);
   EXPECT(kShonan.checkOptimality(result));
   EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(4, result), 1e-3);
@@ -110,7 +110,7 @@ TEST(ShonanAveraging, tryOptimizingAt4) {
 }
 
 /* ************************************************************************* */
-// TEST(ShonanAveraging, tryOptimizingAt5) {
+// TEST(ShonanAveraging3, tryOptimizingAt5) {
 //   const Values result = kShonan.tryOptimizingAt(5);
 //   EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(5, result), 1e-3);
 //   auto lambdaMin = kShonan.computeMinEigenValue(result);
@@ -119,7 +119,7 @@ TEST(ShonanAveraging, tryOptimizingAt4) {
 // }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, runWithRandom) {
+TEST(ShonanAveraging3, runWithRandom) {
   auto result = kShonan.runWithRandom(5);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result.first), 1e-3);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
@@ -127,7 +127,7 @@ TEST(ShonanAveraging, runWithRandom) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, MakeATangentVector) {
+TEST(ShonanAveraging3, MakeATangentVector) {
   Vector9 v;
   v << 1, 2, 3, 4, 5, 6, 7, 8, 9;
   Matrix expected(5, 5);
@@ -136,26 +136,26 @@ TEST(ShonanAveraging, MakeATangentVector) {
       0, 0, 0, 0, -6,          //
       0, 0, 0, 0, 0,           //
       4, 5, 6, 0, 0;
-  const Vector xi_1 = ShonanAveraging::MakeATangentVector(5, v, 1);
+  const Vector xi_1 = ShonanAveraging3::MakeATangentVector(5, v, 1);
   const auto actual = SOn::Hat(xi_1);
   CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, LiftTo) {
+TEST(ShonanAveraging3, LiftTo) {
   auto I = genericValue(Rot3());
   Values initial {{0, I}, {1, I}, {2, I}};
-  Values lifted = ShonanAveraging::LiftTo<Rot3>(5, initial);
+  Values lifted = ShonanAveraging3::LiftTo<Rot3>(5, initial);
   EXPECT(assert_equal(SOn(5), lifted.at<SOn>(0)));
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, LiftwithDescent) {
+TEST(ShonanAveraging3, LiftwithDescent) {
   const Values Qstar3 = kShonan.tryOptimizingAt(3);
   Vector minEigenVector;
   kShonan.computeMinEigenValue(Qstar3, &minEigenVector);
   Values initialQ4 =
-      ShonanAveraging::LiftwithDescent(4, Qstar3, minEigenVector);
+      ShonanAveraging3::LiftwithDescent(4, Qstar3, minEigenVector);
   EXPECT_LONGS_EQUAL(5, initialQ4.size());
   Matrix expected(4, 4);
   expected << 0.65649, -0.556278, -0.509486, -0.000102, //
@@ -166,7 +166,7 @@ TEST(ShonanAveraging, LiftwithDescent) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, initializeWithDescent) {
+TEST(ShonanAveraging3, initializeWithDescent) {
   const Values Qstar3 = kShonan.tryOptimizingAt(3);
   Vector minEigenVector;
   double lambdaMin = kShonan.computeMinEigenValue(Qstar3, &minEigenVector);
@@ -176,7 +176,7 @@ TEST(ShonanAveraging, initializeWithDescent) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, runWithDescent) {
+TEST(ShonanAveraging3, runWithDescent) {
   auto result = kShonan.runWithDescent(5);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result.first), 1e-3);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
@@ -184,14 +184,14 @@ TEST(ShonanAveraging, runWithDescent) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, runWithRandomKlaus) {
+TEST(ShonanAveraging3, runWithRandomKlaus) {
   // Load 3 pose example taken in Klaus by Shicong
   string g2oFile = findExampleDataFile("Klaus3.g2o");
 
   // Initialize a Shonan instance without the Karcher mean
   ShonanAveragingParameters parameters;
   parameters.setKarcherWeight(0);
-  static const ShonanAveraging shonan(g2oFile, parameters);
+  static const ShonanAveraging3 shonan(g2oFile, parameters);
 
   // Check nr poses
   EXPECT_LONGS_EQUAL(3, shonan.nrPoses());
@@ -245,12 +245,12 @@ TEST(ShonanAveraging, runWithRandomKlaus) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, runWithRandomKlausKarcher) {
+TEST(ShonanAveraging3, runWithRandomKlausKarcher) {
   // Load 3 pose example taken in Klaus by Shicong
   string g2oFile = findExampleDataFile("Klaus3.g2o");
 
   // Initialize a Shonan instance with the Karcher mean (default true)
-  static const ShonanAveraging shonan(g2oFile);
+  static const ShonanAveraging3 shonan(g2oFile);
   const auto &poses = shonan.poses();
   const Rot3 wR0 = poses.at(0).rotation();
   const Rot3 wR1 = poses.at(1).rotation();
@@ -273,15 +273,16 @@ TEST(ShonanAveraging, runWithRandomKlausKarcher) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging, Random2DGraph) {
+TEST(ShonanAveraging3, Random2DGraph) {
   const BetweenFactorPose3s factors;
   const std::map<Key, Pose3> poses;
-  const ShonanAveraging shonan(factors, poses);
+  const ShonanAveragingParameters parameters;
+  const ShonanAveraging3 shonan(factors, poses);
 }
 
 /* ************************************************************************* */
 // Test alpha/beta/gamma prior weighting.
-TEST(ShonanAveraging, PriorWeights) {
+TEST(ShonanAveraging3, PriorWeights) {
   string g2oFile = findExampleDataFile("Klaus3.g2o");
   auto lmParams = LevenbergMarquardtParams::CeresDefaults();
   auto params = ShonanAveragingParameters(lmParams);
@@ -296,7 +297,7 @@ TEST(ShonanAveraging, PriorWeights) {
   EXPECT_DOUBLES_EQUAL(beta, params.beta, 1e-9);
   EXPECT_DOUBLES_EQUAL(gamma, params.gamma, 1e-9);
   params.setKarcherWeight(0);
-  const ShonanAveraging shonan(g2oFile, params);
+  const ShonanAveraging3 shonan(g2oFile, params);
   auto I = genericValue(Rot3());
   Values initial {{0, I}, {1, I}, {2, I}};
   EXPECT_DOUBLES_EQUAL(3.0756, shonan.cost(initial), 1e-4);

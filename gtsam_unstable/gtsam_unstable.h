@@ -337,11 +337,11 @@ class ShonanAveragingParameters {
   double getGaugesWeight();
 };
 
-class ShonanAveraging {
-  ShonanAveraging(string g2oFile);
-  ShonanAveraging(string g2oFile, const gtsam::ShonanAveragingParameters& parameters);
-  ShonanAveraging(const gtsam::BetweenFactorPose3s& factors, const gtsam::Values& values);  
-  ShonanAveraging(const gtsam::BetweenFactorPose3s& factors, const gtsam::Values& values, const gtsam::ShonanAveragingParameters& parameters);
+class ShonanAveraging3 {
+  ShonanAveraging3(string g2oFile);
+  ShonanAveraging3(string g2oFile, const gtsam::ShonanAveragingParameters& parameters);
+  ShonanAveraging3(const gtsam::BetweenFactorPose3s& factors, const gtsam::Values& values);  
+  ShonanAveraging3(const gtsam::BetweenFactorPose3s& factors, const gtsam::Values& values, const gtsam::ShonanAveragingParameters& parameters);
   size_t nrPoses() const;
   size_t nrMeasurements() const;
   gtsam::Pose3 measured(size_t i);

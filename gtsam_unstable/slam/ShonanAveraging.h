@@ -75,7 +75,11 @@ struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
  * Class that implements Shonan Averaging from our ECCV'20 paper. Please cite!
  * Note: The "basic" API uses all Rot3 values, whereas the different levels and
  * "advanced" API at SO(p) needs Values of type SOn<Dynamic>.
+ *
+ * The template parameter d is typically 2 or 3.
+ * Currently d=3 is specialized in the .cpp file.
  */
+template <size_t d>
 class GTSAM_UNSTABLE_EXPORT ShonanAveraging {
 public:
   using Sparse = Eigen::SparseMatrix<double>;
@@ -84,7 +88,6 @@ private:
   ShonanAveragingParameters parameters_;
   BetweenFactorPose3s factors_;
   std::map<Key, Pose3> poses_;
-  size_t d_; // dimensionality (typically 2 or 3)
   Sparse D_; // Sparse (diagonal) degree matrix
   Sparse Q_; // Sparse measurement matrix, == \tilde{R} in Eriksson18cvpr
   Sparse L_; // connection Laplacian L = D - Q, needed for optimality check
@@ -180,11 +183,10 @@ public:
                               Vector *minEigenVector = nullptr) const;
 
   /// Project pxdN Stiefel manifold matrix S to Rot3^N
-  Values roundSolution(const Matrix S) const;
+  Values roundSolutionS(const Matrix &S) const;
 
   /// Create a tangent direction xi with eigenvector segment v_i
-  static Vector MakeATangentVector(size_t p, const Vector &v, size_t i,
-                                   size_t d = 3);
+  static Vector MakeATangentVector(size_t p, const Vector &v, size_t i);
 
   /// Calculate the riemannian gradient of F(values) at values
   Matrix riemannianGradient(size_t p, const Values &values) const;
@@ -339,5 +341,7 @@ public:
       const boost::optional<Values> &initialEstimate = boost::none) const;
   /// @}
 };
+
+using ShonanAveraging3 = ShonanAveraging<3>;
 
 } // namespace gtsam

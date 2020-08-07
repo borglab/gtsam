@@ -38,6 +38,8 @@ namespace gtsam {
 
 static std::mt19937 kRandomNumberGenerator(42);
 
+using Sparse = Eigen::SparseMatrix<double>;
+
 /* ************************************************************************* */
 ShonanAveragingParameters::ShonanAveragingParameters(
     const LevenbergMarquardtParams &_lm, const std::string &method,
@@ -78,10 +80,11 @@ ShonanAveragingParameters::ShonanAveragingParameters(
 }
 
 /* ************************************************************************* */
-ShonanAveraging::ShonanAveraging(const BetweenFactorPose3s& factors,
-                                 const std::map<Key, Pose3>& poses,
-                                 const ShonanAveragingParameters& parameters)
-    : parameters_(parameters), factors_(factors), poses_(poses), d_(3) {
+template <size_t d>
+ShonanAveraging<d>::ShonanAveraging(const BetweenFactorPose3s &factors,
+                                    const std::map<Key, Pose3> &poses,
+                                    const ShonanAveragingParameters &parameters)
+    : parameters_(parameters), factors_(factors), poses_(poses) {
   Q_ = buildQ();
   D_ = buildD();
   L_ = D_ - Q_;
@@ -89,28 +92,31 @@ ShonanAveraging::ShonanAveraging(const BetweenFactorPose3s& factors,
 
 /* ************************************************************************* */
 // Copy poses from Values
-static std::map<Key, Pose3> PoseMapFromValues(const Values& values) {
+static std::map<Key, Pose3> PoseMapFromValues(const Values &values) {
   std::map<Key, Pose3> poses;
-  for (const auto& it : values.filter<Pose3>()) {
+  for (const auto &it : values.filter<Pose3>()) {
     poses[it.key] = it.value;
   }
   return poses;
 }
 
 /* ************************************************************************* */
-ShonanAveraging::ShonanAveraging(const BetweenFactorPose3s& factors,
-                                 const Values& values,
-                                 const ShonanAveragingParameters& parameters)
+template <size_t d>
+ShonanAveraging<d>::ShonanAveraging(const BetweenFactorPose3s &factors,
+                                    const Values &values,
+                                    const ShonanAveragingParameters &parameters)
     : ShonanAveraging(factors, PoseMapFromValues(values), parameters) {}
 
 /* ************************************************************************* */
-ShonanAveraging::ShonanAveraging(const string& g2oFile,
-                                 const ShonanAveragingParameters& parameters)
+template <size_t d>
+ShonanAveraging<d>::ShonanAveraging(const string &g2oFile,
+                                    const ShonanAveragingParameters &parameters)
     : ShonanAveraging(parse3DFactors(g2oFile), parse3DPoses(g2oFile),
                       parameters) {}
 
 /* ************************************************************************* */
-NonlinearFactorGraph ShonanAveraging::buildGraphAt(size_t p) const {
+template <size_t d>
+NonlinearFactorGraph ShonanAveraging<d>::buildGraphAt(size_t p) const {
   NonlinearFactorGraph graph;
   auto G = boost::make_shared<Matrix>(SOn::VectorizedGenerators(p));
   for (const auto &factor : factors_) {
@@ -124,7 +130,8 @@ NonlinearFactorGraph ShonanAveraging::buildGraphAt(size_t p) const {
 }
 
 /* ************************************************************************* */
-Values ShonanAveraging::initializeRandomlyAt(size_t p) const {
+template <size_t d>
+Values ShonanAveraging<d>::initializeRandomlyAt(size_t p) const {
   Values initial;
   for (size_t j = 0; j < nrPoses(); j++) {
     initial.insert(j, SOn::Random(kRandomNumberGenerator, p));
@@ -133,17 +140,19 @@ Values ShonanAveraging::initializeRandomlyAt(size_t p) const {
 }
 
 /* ************************************************************************* */
-double ShonanAveraging::costAt(size_t p, const Values& values) const {
+template <size_t d>
+double ShonanAveraging<d>::costAt(size_t p, const Values& values) const {
   const NonlinearFactorGraph graph = buildGraphAt(p);
   return graph.error(values);
 }
 
 /* ************************************************************************* */
+template <size_t d>
 boost::shared_ptr<LevenbergMarquardtOptimizer>
-ShonanAveraging::createOptimizerAt(
+ShonanAveraging<d>::createOptimizerAt(
     size_t p, const boost::optional<Values> &initialEstimate) const {
   // Build graph
-  auto graph = buildGraphAt(p);
+  NonlinearFactorGraph graph = buildGraphAt(p);
 
   // Initialize randomly if no initial estimate is given
   // TODO(frank): add option to do chordal init
@@ -167,9 +176,9 @@ ShonanAveraging::createOptimizerAt(
   }
 
   // TODO(frank): definitely add Gauge factors when building graph?
-  if (parameters_.gamma > 0 && p > d_ + 1) {
+  if (parameters_.gamma > 0 && p > d + 1) {
     for (auto key : graph.keys())
-      graph.emplace_shared<ShonanGaugeFactor>(key, p, d_, parameters_.gamma);
+      graph.emplace_shared<ShonanGaugeFactor>(key, p, d, parameters_.gamma);
   }
 
   // Optimize
@@ -179,7 +188,8 @@ ShonanAveraging::createOptimizerAt(
 }
 
 /* ************************************************************************* */
-Values ShonanAveraging::tryOptimizingAt(
+template <size_t d>
+Values ShonanAveraging<d>::tryOptimizingAt(
     size_t p, const boost::optional<Values>& initialEstimate) const {
   boost::shared_ptr<LevenbergMarquardtOptimizer> lm =
       createOptimizerAt(p, initialEstimate);
@@ -189,78 +199,83 @@ Values ShonanAveraging::tryOptimizingAt(
 
 /* ************************************************************************* */
 // Project to pxdN Stiefel manifold
-static Matrix StiefelElementMatrix(const Values &values, size_t d = 3) {
+template <size_t d=3>
+static Matrix StiefelElementMatrix(const Values &values) {
   const size_t N = values.size();
   const size_t p = values.at<SOn>(0).rows();
   Matrix S(p, N * d);
   for (const auto& it: values.filter<SOn>()) {
-    S.block(0, it.key * d, p, d) = it.value.matrix().leftCols(d);  // project Qj to Stiefel
+    S.middleCols<d>(it.key * d) = it.value.matrix().leftCols<d>();  // project Qj to Stiefel
   }
   return S;
 }
 
 /* ************************************************************************* */
-Values ShonanAveraging::projectFrom(size_t p, const Values& values) const {
+template <size_t d>
+Values ShonanAveraging<d>::projectFrom(size_t p, const Values& values) const {
   Values rot3Values;
   for (const auto& it: values.filter<SOn>()) {
     assert(it.value.rows() == p);
-    const Rot3 R = Rot3::ClosestTo(it.value.matrix().topLeftCorner(d_, d_));
+    const Rot3 R = Rot3::ClosestTo(it.value.matrix().topLeftCorner<d, d>());
     rot3Values.insert(it.key, R);
   }
   return rot3Values;
 }
 
 /* ************************************************************************* */
-Values ShonanAveraging::roundSolution(const Matrix S) const {
+template <size_t d>
+Values ShonanAveraging<d>::roundSolutionS(const Matrix &S) const {
   const size_t N = nrPoses();
   // First, compute a thin SVD of S
   Eigen::JacobiSVD<Matrix> svd(S, Eigen::ComputeThinV);
-  Vector sigmas = svd.singularValues();
+  const Vector sigmas = svd.singularValues();
 
   // Construct a diagonal matrix comprised of the first d singular values
-  using DiagonalMatrix = Eigen::DiagonalMatrix<double, Eigen::Dynamic>;
-  DiagonalMatrix Sigma_d(d_);
-  auto& diagonal = Sigma_d.diagonal();
-  for (size_t i = 0; i < d_; ++i) diagonal(i) = sigmas(i);
+  using DiagonalMatrix = Eigen::DiagonalMatrix<double, d>;
+  DiagonalMatrix Sigma_d;
+  Sigma_d.diagonal() = sigmas;
 
   // Now, construct a rank-d truncated singular value decomposition for S
-  Matrix R = Sigma_d * svd.matrixV().leftCols(d_).transpose();
+  Matrix R = Sigma_d * svd.matrixV().leftCols<d>().transpose();
 
   // Count the number of blocks whose determinants have positive sign
   size_t numPositiveBlocks = 0;
   for (size_t i = 0; i < N; ++i) {
     // Compute the determinant of the ith dxd block of R
-    double determinant = R.block(0, i * d_, d_, d_).determinant();
+    double determinant = R.middleCols<d>(d * i).determinant();
     if (determinant > 0) ++numPositiveBlocks;
   }
 
   if (numPositiveBlocks < N / 2) {
     // Less than half of the total number of blocks have the correct sign.
     // To reverse their orientations, multiply with a reflection matrix.
-    Matrix reflector = Matrix::Identity(d_, d_);
-    reflector(d_ - 1, d_ - 1) = -1;
+    DiagonalMatrix reflector;
+    reflector.setIdentity();
+    reflector.diagonal()(d - 1) = -1;
     R = reflector * R;
   }
 
   // Finally, project each dxd rotation block to SO(d)
   Values rot3Values;
   for (size_t i = 0; i < N; ++i) {
-    const Rot3 Ri = Rot3::ClosestTo(R.block(0, i * d_, d_, d_));
+    const Rot3 Ri = Rot3::ClosestTo(R.middleCols<d>(d * i));
     rot3Values.insert(i, Ri);
   }
   return rot3Values;
 }
 
 /* ************************************************************************* */
-Values ShonanAveraging::roundSolution(const Values& values) const {
+template <size_t d>
+Values ShonanAveraging<d>::roundSolution(const Values& values) const {
   // Project to pxdN Stiefel manifold...
   Matrix S = StiefelElementMatrix(values);
   // ...and call version above.
-  return roundSolution(S);
+  return roundSolutionS(S);
 }
 
 /* ************************************************************************* */
-double ShonanAveraging::cost(const Values& values) const {
+template <size_t d>
+double ShonanAveraging<d>::cost(const Values& values) const {
   NonlinearFactorGraph graph;
   for (const auto& factor : factors_) {
     const auto& keys = factor->keys();
@@ -287,45 +302,46 @@ static double Kappa(const BetweenFactor<Pose3>::shared_ptr& factor) {
 }
 
 /* ************************************************************************* */
-ShonanAveraging::Sparse ShonanAveraging::buildD() const {
+template <size_t d>
+Sparse ShonanAveraging<d>::buildD() const {
   // Each measurement contributes 2*d elements along the diagonal of the
   // degree matrix.
-  const size_t stride = 2 * d_;
+  static constexpr size_t stride = 2 * d;
 
   // Reserve space for triplets
   std::vector<Eigen::Triplet<double>> triplets;
   triplets.reserve(stride * factors_.size());
 
-  for (const auto& factor : factors_) {
+  for (const auto &factor : factors_) {
     // Get pose keys
-    const auto& keys = factor->keys();
-    size_t i = keys[0];
-    size_t j = keys[1];
+    const auto &keys = factor->keys();
 
     // Get kappa from noise model
     double kappa = Kappa(factor);
 
-    for (size_t k = 0; k < d_; k++) {
+    const size_t di = d * keys[0], dj = d * keys[1];
+    for (size_t k = 0; k < d; k++) {
       // Elements of ith block-diagonal
-      triplets.emplace_back(d_ * i + k, d_ * i + k, kappa);
+      triplets.emplace_back(di + k, di + k, kappa);
       // Elements of jth block-diagonal
-      triplets.emplace_back(d_ * j + k, d_ * j + k, kappa);
+      triplets.emplace_back(dj + k, dj + k, kappa);
     }
   }
 
   // Construct and return a sparse matrix from these triplets
-  const size_t N = nrPoses();
-  Sparse D(d_ * N, d_ * N);
+  const size_t dN = d * nrPoses();
+  Sparse D(dN, dN);
   D.setFromTriplets(triplets.begin(), triplets.end());
 
   return D;
 }
 
 /* ************************************************************************* */
-ShonanAveraging::Sparse ShonanAveraging::buildQ() const {
+template <size_t d>
+Sparse ShonanAveraging<d>::buildQ() const {
   // Each measurement contributes 2*d^2 elements on a pair of symmetric
   // off-diagonal blocks
-  const size_t stride = 2 * d_ * d_;
+  static constexpr size_t stride = 2 * d * d;
 
   // Reserve space for triplets
   std::vector<Eigen::Triplet<double>> triplets;
@@ -334,8 +350,6 @@ ShonanAveraging::Sparse ShonanAveraging::buildQ() const {
   for (const auto& factor : factors_) {
     // Get pose keys
     const auto& keys = factor->keys();
-    size_t i = keys[0];
-    size_t j = keys[1];
 
     // Extract rotation measurement
     const auto& Tij = factor->measured();
@@ -344,28 +358,30 @@ ShonanAveraging::Sparse ShonanAveraging::buildQ() const {
     // Get kappa from noise model
     double kappa = Kappa(factor);
 
-    for (size_t r = 0; r < d_; r++) {
-      for (size_t c = 0; c < d_; c++) {
+    const size_t di = d * keys[0], dj = d * keys[1];
+    for (size_t r = 0; r < d; r++) {
+      for (size_t c = 0; c < d; c++) {
         // Elements of ij block
-        triplets.emplace_back(i * d_ + r, j * d_ + c, kappa * Rij(r, c));
+        triplets.emplace_back(di + r, dj + c, kappa * Rij(r, c));
         // Elements of ji block
-        triplets.emplace_back(j * d_ + r, i * d_ + c, kappa * Rij(c, r));
+        triplets.emplace_back(dj + r, di + c, kappa * Rij(c, r));
       }
     }
   }
 
   // Construct and return a sparse matrix from these triplets
-  const size_t N = nrPoses();
-  Sparse Q(d_ * N, d_ * N);
+  const size_t dN = d * nrPoses();
+  Sparse Q(dN, dN);
   Q.setFromTriplets(triplets.begin(), triplets.end());
 
   return Q;
 }
 
 /* ************************************************************************* */
-ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Matrix& S) const {
-  // Each pose contributes 2*d_ elements along the diagonal of Lambda
-  const size_t stride = d_ * d_;
+template<size_t d>
+Sparse ShonanAveraging<d>::computeLambda(const Matrix& S) const {
+  // Each pose contributes 2*d elements along the diagonal of Lambda
+  static constexpr size_t stride = d * d;
 
   // Reserve space for triplets
   const size_t N = nrPoses();
@@ -377,23 +393,24 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(const Matrix& S) const {
 
   for (size_t j = 0; j < N; j++) {
     // Compute B, the building block for the j^th diagonal block of Lambda
-    Matrix B = QSt.middleRows(d_ * j, d_) * S.middleCols(d_ * j, d_);
+    const size_t dj = d * j;
+    Matrix B = QSt.middleRows(dj, d) * S.middleCols<d>(dj);
 
     // Elements of jth block-diagonal
-    for (size_t r = 0; r < d_; r++)
-      for (size_t c = 0; c < d_; c++)
-        triplets.emplace_back(j * d_ + r, j * d_ + c,
-                              0.5 * (B(r, c) + B(c, r)));
+    for (size_t r = 0; r < d; r++)
+      for (size_t c = 0; c < d; c++)
+        triplets.emplace_back(dj + r, dj + c, 0.5 * (B(r, c) + B(c, r)));
   }
 
   // Construct and return a sparse matrix from these triplets
-  Sparse Lambda(d_ * N, d_ * N);
+  Sparse Lambda(d * N, d * N);
   Lambda.setFromTriplets(triplets.begin(), triplets.end());
   return Lambda;
 }
 
 /* ************************************************************************* */
-ShonanAveraging::Sparse ShonanAveraging::computeLambda(
+template<size_t d>
+Sparse ShonanAveraging<d>::computeLambda(
     const Values& values) const {
   // Project to pxdN Stiefel manifold...
   Matrix S = StiefelElementMatrix(values);
@@ -402,7 +419,8 @@ ShonanAveraging::Sparse ShonanAveraging::computeLambda(
 }
 
 /* ************************************************************************* */
-ShonanAveraging::Sparse ShonanAveraging::computeA(const Values& values) const {
+template<size_t d>
+Sparse ShonanAveraging<d>::computeA(const Values& values) const {
   assert(values.size() == nrPoses());
   const Matrix S = StiefelElementMatrix(values);
   auto Lambda = computeLambda(S);
@@ -414,8 +432,6 @@ ShonanAveraging::Sparse ShonanAveraging::computeA(const Values& values) const {
 
 #include "Spectra/SymEigsSolver.h"
 
-using SparseMatrix = ShonanAveraging::Sparse;
-
 /** This is a lightweight struct used in conjunction with Spectra to compute
  * the minimum eigenvalue and eigenvector of a sparse matrix A; it has a single
  * nontrivial function, perform_op(x,y), that computes and returns the product
@@ -423,13 +439,13 @@ using SparseMatrix = ShonanAveraging::Sparse;
 struct MatrixProdFunctor {
   // Const reference to an externally-held matrix whose minimum-eigenvalue we
   // want to compute
-  const SparseMatrix& A_;
+  const Sparse& A_;
 
   // Spectral shift
   double sigma_;
 
   // Constructor
-  explicit MatrixProdFunctor(const SparseMatrix& A, double sigma = 0)
+  explicit MatrixProdFunctor(const Sparse& A, double sigma = 0)
       : A_(A), sigma_(sigma) {}
 
   int rows() const { return A_.rows(); }
@@ -474,7 +490,7 @@ struct MatrixProdFunctor {
 //   - for numLanczosVectors, 20 is a good default value
 
 static bool SparseMinimumEigenValue(
-    const SparseMatrix& A, const Matrix& S, double* minEigenValue,
+    const Sparse& A, const Matrix& S, double* minEigenValue,
     Vector* minEigenVector = 0, size_t* numIterations = 0,
     size_t maxIterations = 1000,
     double minEigenvalueNonnegativityTolerance = 10e-4,
@@ -561,13 +577,15 @@ static bool SparseMinimumEigenValue(
 }
 
 /* ************************************************************************* */
-ShonanAveraging::Sparse ShonanAveraging::computeA(const Matrix& S) const {
+template<size_t d>
+Sparse ShonanAveraging<d>::computeA(const Matrix& S) const {
   auto Lambda = computeLambda(S);
   return Lambda - Q_;
 }
 
 /* ************************************************************************* */
-double ShonanAveraging::computeMinEigenValue(const Values& values,
+template<size_t d>
+double ShonanAveraging<d>::computeMinEigenValue(const Values& values,
                                              Vector* minEigenVector) const {
   assert(values.size() == nrPoses());
   const Matrix S = StiefelElementMatrix(values);
@@ -591,7 +609,8 @@ double ShonanAveraging::computeMinEigenValue(const Values& values,
 }
 
 /* ************************************************************************* */
-std::pair<double, Vector> ShonanAveraging::computeMinEigenVector(
+template<size_t d>
+std::pair<double, Vector> ShonanAveraging<d>::computeMinEigenVector(
     const Values& values) const {
   Vector minEigenVector;
   double minEigenValue = computeMinEigenValue(values, &minEigenVector);
@@ -599,17 +618,19 @@ std::pair<double, Vector> ShonanAveraging::computeMinEigenVector(
 }
 
 /* ************************************************************************* */
-bool ShonanAveraging::checkOptimality(const Values& values) const {
+template<size_t d>
+bool ShonanAveraging<d>::checkOptimality(const Values& values) const {
   double minEigenValue = computeMinEigenValue(values);
   return minEigenValue > parameters_.optimalityThreshold;
 }
 
 /* ************************************************************************* */
-Vector ShonanAveraging::MakeATangentVector(size_t p, const Vector &v, size_t i,
-                                           size_t d) {
+/// Create a tangent direction xi with eigenvector segment v_i
+template<size_t d>
+Vector ShonanAveraging<d>::MakeATangentVector(size_t p, const Vector &v, size_t i) {
   // Create a tangent direction xi with eigenvector segment v_i
   const size_t dimension = SOn::Dimension(p);
-  const auto v_i = v.segment(i * d, d);
+  const auto v_i = v.segment<d>(d * i);
   Vector xi = Vector::Zero(dimension);
   double sign = pow(-1.0, round((p + 1) / 2) + 1);
   for (size_t j = 0; j < d; j++) {
@@ -620,8 +641,9 @@ Vector ShonanAveraging::MakeATangentVector(size_t p, const Vector &v, size_t i,
 }
 
 /* ************************************************************************* */
-Matrix ShonanAveraging::riemannianGradient(size_t p,
-                                           const Values& values) const {
+template <size_t d>
+Matrix ShonanAveraging<d>::riemannianGradient(size_t p,
+                                              const Values &values) const {
   Matrix S_dot = StiefelElementMatrix(values);
   // calculate the gradient of F(Q_dot) at Q_dot
   Matrix euclideanGradient = 2 * (L_ * (S_dot.transpose())).transpose();
@@ -629,23 +651,25 @@ Matrix ShonanAveraging::riemannianGradient(size_t p,
   // "\t" << euclideanGradient.cols() << endl;
 
   // project the gradient onto the entire euclidean space
-  Matrix symBlockDiagProduct(p, d_ * nrPoses());
+  Matrix symBlockDiagProduct(p, d * nrPoses());
   for (size_t i = 0; i < nrPoses(); i++) {
     // Compute block product
-    Matrix P = S_dot.block(0, i * d_, p, d_).transpose() *
-               euclideanGradient.block(0, i * d_, p, d_);
+    const size_t di = d * i;
+    const Matrix P = S_dot.middleCols<d>(di).transpose() *
+                     euclideanGradient.middleCols<d>(di);
     // Symmetrize this block
     Matrix S = .5 * (P + P.transpose());
     // Compute S_dot * S and set corresponding block
-    symBlockDiagProduct.block(0, i * d_, p, d_) = S_dot.block(0, i * d_, p, d_) * S;
+    symBlockDiagProduct.middleCols<d>(di) = S_dot.middleCols<d>(di) * S;
   }
   Matrix riemannianGradient = euclideanGradient - symBlockDiagProduct;
   return riemannianGradient;
 }
 
 /* ************************************************************************* */
-Values ShonanAveraging::LiftwithDescent(size_t p, const Values &values,
-                                        const Vector &minEigenVector) {
+template <size_t d>
+Values ShonanAveraging<d>::LiftwithDescent(size_t p, const Values &values,
+                                           const Vector &minEigenVector) {
   Values lifted = LiftTo<SOn>(p, values);
   for (auto it : lifted.filter<SOn>()) {
     // Create a tangent direction xi with eigenvector segment v_i
@@ -658,7 +682,8 @@ Values ShonanAveraging::LiftwithDescent(size_t p, const Values &values,
 }
 
 /* ************************************************************************* */
-Values ShonanAveraging::initializeWithDescent(
+template<size_t d>
+Values ShonanAveraging<d>::initializeWithDescent(
     size_t p, const Values& values, const Vector& minEigenVector,
     double minEigenValue, double gradienTolerance,
     double preconditionedGradNormTolerance) const {
@@ -696,8 +721,9 @@ Values ShonanAveraging::initializeWithDescent(
 }
 
 /* ************************************************************************* */
+template<size_t d>
 std::pair<Values, double>
-ShonanAveraging::run(size_t pMin, size_t pMax, bool withDescent,
+ShonanAveraging<d>::run(size_t pMin, size_t pMax, bool withDescent,
                      const boost::optional<Values>& initialEstimate) const {
   Values Qstar;
   Values initial = (initialEstimate) ? LiftTo<Rot3>(pMin, *initialEstimate)
@@ -720,18 +746,24 @@ ShonanAveraging::run(size_t pMin, size_t pMax, bool withDescent,
 }
 
 /* ************************************************************************* */
-std::pair<Values, double> ShonanAveraging::runWithRandom(
+template<size_t d>
+std::pair<Values, double> ShonanAveraging<d>::runWithRandom(
     size_t pMin, size_t pMax,
     const boost::optional<Values>& initialEstimate) const {
   return run(pMin, pMax, false, initialEstimate);
 }
 
 /* ************************************************************************* */
-std::pair<Values, double> ShonanAveraging::runWithDescent(
+template<size_t d>
+std::pair<Values, double> ShonanAveraging<d>::runWithDescent(
     size_t pMin, size_t pMax,
     const boost::optional<Values>& initialEstimate) const {
   return run(pMin, pMax, true, initialEstimate);
 }
+
+/* ************************************************************************* */
+// Explicit instantiation for d=3
+template class ShonanAveraging<3>;
 
 /* ************************************************************************* */
 }  // namespace gtsam
