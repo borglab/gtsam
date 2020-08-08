@@ -27,7 +27,6 @@
 using namespace std;
 using namespace gtsam;
 
-// Keys are deliberately *not* in sorted order to test that case.
 static const Key kKey1(2), kKey2(1);
 
 // Create noise models for unit3 and rot3
@@ -43,14 +42,24 @@ TEST(BinaryMeasurement, Unit3) {
   EXPECT_LONGS_EQUAL(unit3Measurement.key1(), kKey1);
   EXPECT_LONGS_EQUAL(unit3Measurement.key2(), kKey2);
   EXPECT(unit3Measurement.measured().equals(unit3Measured));
+
+  BinaryMeasurement<Unit3> unit3MeasurementCopy(kKey1, kKey2, unit3Measured,
+                                                unit3_model);
+  EXPECT(unit3Measurement.equals(unit3MeasurementCopy));
 }
 
 TEST(BinaryMeasurement, Rot3) {
+  // testing the accessors
   BinaryMeasurement<Rot3> rot3Measurement(kKey1, kKey2, rot3Measured,
-                                            rot3_model);
+                                          rot3_model);
   EXPECT_LONGS_EQUAL(rot3Measurement.key1(), kKey1);
   EXPECT_LONGS_EQUAL(rot3Measurement.key2(), kKey2);
   EXPECT(rot3Measurement.measured().equals(rot3Measured));
+
+  // testing the equals function
+  BinaryMeasurement<Rot3> rot3MeasurementCopy(kKey1, kKey2, rot3Measured,
+                                              rot3_model);
+  EXPECT(rot3Measurement.equals(rot3MeasurementCopy));
 }
 
 /* ************************************************************************* */

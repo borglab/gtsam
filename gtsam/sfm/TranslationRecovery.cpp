@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file TranslationRecovery.h
+ * @file TranslationRecovery.cpp
  * @author Frank Dellaert
  * @date March 2020
- * @brief test recovering translations when rotations are given.
+ * @brief Source code for recovering translations when rotations are given
  */
 
 #include <gtsam/sfm/TranslationRecovery.h>
@@ -37,15 +37,15 @@ NonlinearFactorGraph TranslationRecovery::buildGraph() const {
 
   // Add all relative translation edges
   for (auto edge : relativeTranslations_) {
-    graph.emplace_shared<TranslationFactor>(edge.key1(), edge.key2(), 
-      edge.measured(), edge.noiseModel());
+    graph.emplace_shared<TranslationFactor>(edge.key1(), edge.key2(),
+                                            edge.measured(), edge.noiseModel());
   }
 
   return graph;
 }
 
 void TranslationRecovery::addPrior(const double scale,
-                                   NonlinearFactorGraph* graph) const {
+                                   NonlinearFactorGraph *graph) const {
   //TODO(akshay-krishnan): make this an input argument                                     
   auto priorNoiseModel = noiseModel::Isotropic::Sigma(3, 0.01);
   auto edge = relativeTranslations_.begin();
@@ -82,7 +82,7 @@ Values TranslationRecovery::run(const double scale) const {
 }
 
 TranslationRecovery::TranslationEdges TranslationRecovery::SimulateMeasurements(
-    const Values& poses, const vector<KeyPair>& edges) {
+    const Values &poses, const vector<KeyPair> &edges) {
   auto edgeNoiseModel = noiseModel::Isotropic::Sigma(3, 0.01);
   TranslationEdges relativeTranslations;
   for (auto edge : edges) {

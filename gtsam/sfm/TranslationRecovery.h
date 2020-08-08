@@ -13,7 +13,7 @@
  * @file TranslationRecovery.h
  * @author Frank Dellaert
  * @date March 2020
- * @brief test recovering translations when rotations are given.
+ * @brief Recovering translations in an epipolar graph when rotations are given.
  */
 
 #include <gtsam/geometry/Unit3.h>
@@ -66,8 +66,8 @@ class TranslationRecovery {
    * used to modify the parameters for the LM optimizer. By default, uses the
    * default LM parameters. 
    */
-  TranslationRecovery(const TranslationEdges& relativeTranslations,
-                      const LevenbergMarquardtParams& lmParams = LevenbergMarquardtParams())
+  TranslationRecovery(const TranslationEdges &relativeTranslations,
+                      const LevenbergMarquardtParams &lmParams = LevenbergMarquardtParams())
       : relativeTranslations_(relativeTranslations), params_(lmParams) {
     params_.setVerbosityLM("Summary");
   }
@@ -85,7 +85,7 @@ class TranslationRecovery {
    * @param scale scale for first relative translation which fixes gauge.
    * @param graph factor graph to which prior is added.
    */
-  void addPrior(const double scale, NonlinearFactorGraph* graph) const;
+  void addPrior(const double scale, NonlinearFactorGraph *graph) const;
 
   /**
    * @brief Create random initial translations.
@@ -112,6 +112,6 @@ class TranslationRecovery {
    * direction between the cameras.
    */
   static TranslationEdges SimulateMeasurements(
-      const Values& poses, const std::vector<KeyPair>& edges);
+      const Values &poses, const std::vector<KeyPair> &edges);
 };
 }  // namespace gtsam

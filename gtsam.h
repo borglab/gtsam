@@ -2894,28 +2894,6 @@ class BinaryMeasurement {
 typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
 typedef gtsam::BinaryMeasurement<gtsam::Rot3> BinaryMeasurementRot3;
 
-// std::vector<gtsam::BinaryMeasurement<Unit3>::shared_ptr>
-class BinaryMeasurementUnit3s
-{
-  BinaryMeasurementUnit3s();
-  size_t size() const;
-  gtsam::BinaryMeasurementUnit3* at(size_t i) const;
-  void push_back(const gtsam::BinaryMeasurementUnit3* measurement);
-};
-
-// std::vector<gtsam::BinaryMeasurement<Rot3>::shared_ptr>
-class BinaryMeasurementRot3s
-{
-  BinaryMeasurementRot3s();
-  size_t size() const;
-  gtsam::BinaryMeasurementRot3* at(size_t i) const;
-  void push_back(const gtsam::BinaryMeasurementRot3* measurement);
-};
-
-#include <gtsam/sfm/TranslationRecovery.h>
-class TranslationRecovery {
-  TranslationRecovery()
-}
 //*************************************************************************
 // Navigation
 //*************************************************************************
