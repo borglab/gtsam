@@ -95,6 +95,7 @@ Point3 Similarity3::operator*(const Point3& p) const {
   return transformFrom(p);
 }
 
+// Refer to: http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf Chapter 3
 Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
   const size_t n = abPointPairs.size();
   if (n < 3) throw std::runtime_error("input should have at least 3 pairs of points");  // we need at least three pairs
@@ -138,6 +139,8 @@ Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
   return Similarity3(aRb, aTb, s);
 }
 
+//  Use the geodesic L2 mean to solve the mean of rotations,
+//  Refer to: http://users.cecs.anu.edu.au/~hongdong/rotationaveraging.pdf (on page 18)
 Rot3 Similarity3::rotationAveraging(const std::vector<Rot3>& rotations, double error) {
   Rot3 R = rotations[0];
   const size_t n = rotations.size();
