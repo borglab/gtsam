@@ -102,14 +102,14 @@ public:
       OptionalJacobian<3, 7> H1 = boost::none, //
       OptionalJacobian<3, 3> H2 = boost::none) const;
 
-  /// Action on a pose T
+  /// Action on a pose T, R = R*T.R, t = s(R*T.t+t)
   GTSAM_UNSTABLE_EXPORT Pose3 transformFrom(const Pose3& T) const;
 
   /** syntactic sugar for transformFrom */
   GTSAM_UNSTABLE_EXPORT Point3 operator*(const Point3& p) const;
 
   /**
-   *  Create Similarity3 by aligning two point pairs
+   *  Create Similarity3 by aligning at least three point pairs
    */
   GTSAM_UNSTABLE_EXPORT static Similarity3 Align(const std::vector<Point3Pair>& abPointPairs);
 
@@ -119,7 +119,7 @@ public:
   GTSAM_UNSTABLE_EXPORT static Rot3 rotationAveraging(const std::vector<Rot3>& rotations, double error = 1e-10);
 
   /**
-   *  Create Similarity3 by aligning two pose pairs
+   *  Create Similarity3 by aligning at least two pose pairs
    */
   GTSAM_UNSTABLE_EXPORT static Similarity3 Align(const std::vector<Pose3Pair>& abPosePairs);
 
