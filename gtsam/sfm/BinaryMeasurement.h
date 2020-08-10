@@ -15,7 +15,7 @@
  * @file BinaryMeasurement.h
  * @author Akshay Krishnan
  * @date July 2020
- * @brief Binary measurement for representing edges in the epipolar graph. 
+ * @brief Binary measurement represents a measurement between two keys in a graph.
  * A binary measurement is similar to a BetweenFactor, except that it does not contain 
  * an error function. It is a measurement (along with a noise model) from one key to 
  * another. Note that the direction is important. A measurement from key1 to key2 is not
