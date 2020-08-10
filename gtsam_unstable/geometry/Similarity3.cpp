@@ -97,7 +97,7 @@ Point3 Similarity3::operator*(const Point3& p) const {
 
 Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
   const size_t n = abPointPairs.size();
-  if (n < 3) throw std::runtime_error("less than 3 pairs");  // we need at least three pairs
+  if (n < 3) throw std::runtime_error("input should have at least 3 pairs of points");  // we need at least three pairs
 
   // calculate centroids
   Point3 aCentroid(0, 0, 0), bCentroid(0, 0, 0);
@@ -111,9 +111,11 @@ Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
 
   // Add to form H matrix
   Matrix3 H = Z_3x3;
+  vector<Point3Pair> d_abPairs;
   for (const Point3Pair& abPair : abPointPairs) {
     Point3 da = abPair.first - aCentroid;
     Point3 db = abPair.second - bCentroid;
+    d_abPairs.push_back(make_pair(da,db));
     H += da * db.transpose();
   }
 
@@ -123,9 +125,9 @@ Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
   // Calculate scale
   double x = 0;
   double y = 0;
-  for (const Point3Pair& abPair : abPointPairs) {
-    Point3 da = abPair.first - aCentroid;
-    Point3 db = abPair.second - bCentroid;
+  for (const Point3Pair& d_abPair : d_abPairs) {
+    Point3 da = d_abPair.first;
+    Point3 db = d_abPair.second;
     Vector3 Rdb = aRb * db;
     y += da.transpose() * Rdb;
     x += Rdb.transpose() * Rdb;
@@ -153,9 +155,9 @@ Rot3 Similarity3::rotationAveraging(const std::vector<Rot3>& rotations, double e
 
 Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
   const size_t n = abPosePairs.size();
-  if (n < 2) throw std::runtime_error("less than 2 pairs");  // we need at least two pairs
+  if (n < 2) throw std::runtime_error("input should have at least 2 pairs of poses");  // we need at least two pairs
 
-  // calculate centroids
+  // calculate rotation and centroids
   Point3 aCentroid(0, 0, 0), bCentroid(0, 0, 0);
   vector<Rot3> rotationList;
   for (const Pose3Pair& abPair : abPosePairs) {
