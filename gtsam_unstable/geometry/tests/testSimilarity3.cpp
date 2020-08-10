@@ -51,6 +51,8 @@ static const Similarity3 T4(R, P, s);
 static const Similarity3 T5(R, P, 10);
 static const Similarity3 T6(Rot3(), Point3(1, 1, 0), 2); // Simpler transform
 
+const double degree = M_PI / 180;
+
 //******************************************************************************
 TEST(Similarity3, Concepts) {
   BOOST_CONCEPT_ASSERT((IsGroup<Similarity3 >));
@@ -253,6 +255,107 @@ TEST(Similarity3, GroupAction) {
     EXPECT(assert_equal(H1, actualH1));
     EXPECT(assert_equal(H2, actualH2));
   }
+}
+
+//******************************************************************************
+// Group action on Pose3
+TEST(Similarity3, GroupActionPose3) {
+  Similarity3 bTa(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
+
+  // Create source poses
+  Pose3 Ta1 = Pose3(Rot3(), Point3(0, 0, 0));
+  Pose3 Ta2 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, 1), Point3(4, 0, 0));
+
+  // Create destination poses
+  Pose3 expectedTb1 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
+  Pose3 expectedTb2 = Pose3(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
+
+  EXPECT(assert_equal(expectedTb1, bTa.transformFrom(Ta1)));
+  EXPECT(assert_equal(expectedTb2, bTa.transformFrom(Ta2)));
+}
+
+//******************************************************************************
+// Align with Point3 Pairs
+TEST(Similarity3, AlignPoint3_1) {
+  Similarity3 expected(Rot3::Rz(-90 * degree), Point3(3, 4, 5), 2.0);
+
+  Point3 p1 = Point3(0, 0, 0);
+  Point3 p2 = Point3(3, 0, 0);
+  Point3 p3 = Point3(3, 0, 4);
+
+  Point3Pair ab1(make_pair(expected.transformFrom(p1), p1));
+  Point3Pair ab2(make_pair(expected.transformFrom(p2), p2));
+  Point3Pair ab3(make_pair(expected.transformFrom(p3), p3));
+
+  vector<Point3Pair> correspondences{ab1, ab2, ab3};
+
+  Similarity3 actual = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected, actual));
+}
+
+TEST(Similarity3, AlignPoint3_2) {
+  Similarity3 expected(Rot3(), Point3(10, 10, 0), 1.0);
+
+  Point3 p1 = Point3(0, 0, 0);
+  Point3 p2 = Point3(20, 10, 0);
+  Point3 p3 = Point3(10, 20, 0);
+
+  Point3Pair ab1(make_pair(expected.transformFrom(p1), p1));
+  Point3Pair ab2(make_pair(expected.transformFrom(p2), p2));
+  Point3Pair ab3(make_pair(expected.transformFrom(p3), p3));
+
+  vector<Point3Pair> correspondences{ab1, ab2, ab3};
+
+  Similarity3 actual = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected, actual));
+}
+
+TEST(Similarity3, AlignPoint3_3) {
+  Similarity3 expected(Rot3::RzRyRx(0.3, 0.2, 0.1), Point3(20, 10, 5), 1.0);
+
+  Point3 p1 = Point3(0, 0, 1);
+  Point3 p2 = Point3(10, 0, 2);
+  Point3 p3 = Point3(20, -10, 30);
+
+  Point3Pair ab1(make_pair(expected.transformFrom(p1), p1));
+  Point3Pair ab2(make_pair(expected.transformFrom(p2), p2));
+  Point3Pair ab3(make_pair(expected.transformFrom(p3), p3));
+
+  vector<Point3Pair> correspondences{ab1, ab2, ab3};
+
+  Similarity3 actual = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected, actual));
+}
+
+//******************************************************************************
+// Rotation Averaging
+TEST(Similarity3, RotationAveraging) {
+  Rot3 expected = Rot3::Rx(90 * degree);
+  vector<Rot3> rotations{Rot3(), Rot3::Rx(90 * degree), Rot3::Rx(180 * degree)};
+  Rot3 actual = Similarity3::rotationAveraging(rotations);
+  EXPECT(assert_equal(expected, actual));
+}
+
+//******************************************************************************
+// Align with Pose3 Pairs
+TEST(Similarity3, AlignPose3) {
+  Similarity3 expected(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
+
+  // Create source poses
+  Pose3 Ta1 = Pose3(Rot3(), Point3(0, 0, 0));
+  Pose3 Ta2 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, 1), Point3(4, 0, 0));
+
+  // Create destination poses
+  Pose3 Tb1 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
+  Pose3 Tb2 = Pose3(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
+
+  Pose3Pair bTa1(make_pair(Tb1, Ta1));
+  Pose3Pair bTa2(make_pair(Tb2, Ta2));
+
+  vector<Pose3Pair> correspondences{bTa1, bTa2};
+
+  Similarity3 actual = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected, actual));
 }
 
 //******************************************************************************

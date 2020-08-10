@@ -85,8 +85,103 @@ Point3 Similarity3::transformFrom(const Point3& p, //
   return s_ * q;
 }
 
+Pose3 Similarity3::transformFrom(const Pose3& T) const {
+  Rot3 R = R_.compose(T.rotation());
+  Point3 t = Point3(s_ * (R_.matrix() * T.translation().vector() + t_.vector()));
+  return Pose3(R, t);
+}
+
 Point3 Similarity3::operator*(const Point3& p) const {
   return transformFrom(p);
+}
+
+Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
+  const size_t n = abPointPairs.size();
+  if (n < 3) throw std::runtime_error("less than 3 pairs");  // we need at least three pairs
+
+  // calculate centroids
+  Point3 aCentroid(0, 0, 0), bCentroid(0, 0, 0);
+  for (const Point3Pair& abPair : abPointPairs) {
+    aCentroid += abPair.first;
+    bCentroid += abPair.second;
+  }
+  double f = 1.0 / n;
+  aCentroid *= f;
+  bCentroid *= f;
+
+  // Add to form H matrix
+  Matrix3 H = Z_3x3;
+  for (const Point3Pair& abPair : abPointPairs) {
+    Point3 da = abPair.first - aCentroid;
+    Point3 db = abPair.second - bCentroid;
+    H += da * db.transpose();
+  }
+
+  // ClosestTo finds rotation matrix closest to H in Frobenius sense
+  Rot3 aRb = Rot3::ClosestTo(H);
+
+  // Calculate scale
+  double x = 0;
+  double y = 0;
+  for (const Point3Pair& abPair : abPointPairs) {
+    Point3 da = abPair.first - aCentroid;
+    Point3 db = abPair.second - bCentroid;
+    Vector3 Rdb = aRb * db;
+    y += da.transpose() * Rdb;
+    x += Rdb.transpose() * Rdb;
+  }
+  double s = y / x;
+
+  Point3 aTb = (Point3(aCentroid) - s * (aRb * Point3(bCentroid))) / s;
+  return Similarity3(aRb, aTb, s);
+}
+
+Rot3 Similarity3::rotationAveraging(const std::vector<Rot3>& rotations, double error) {
+  Rot3 R = rotations[0];
+  const size_t n = rotations.size();
+  Vector3 r;
+  r << 0, 0, 0;
+  while (1) {
+    for (const Rot3 R_i : rotations) {
+      r += Rot3::Logmap(R.inverse().compose(R_i));
+    }
+    r /= n;
+    if (r.norm() < error) return R;
+    R = R.compose(Rot3::Expmap(r));
+  }
+}
+
+Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
+  const size_t n = abPosePairs.size();
+  if (n < 2) throw std::runtime_error("less than 2 pairs");  // we need at least two pairs
+
+  // calculate centroids
+  Point3 aCentroid(0, 0, 0), bCentroid(0, 0, 0);
+  vector<Rot3> rotationList;
+  for (const Pose3Pair& abPair : abPosePairs) {
+    aCentroid += abPair.first.translation();
+    bCentroid += abPair.second.translation();
+    rotationList.push_back(abPair.first.rotation().compose(abPair.second.rotation().inverse()));
+  }
+  double f = 1.0 / n;
+  aCentroid *= f;
+  bCentroid *= f;
+  Rot3 aRb = Similarity3::rotationAveraging(rotationList);
+
+  // Calculate scale
+  double x = 0;
+  double y = 0;
+  for (const Pose3Pair& abPair : abPosePairs) {
+    Point3 da = abPair.first.translation() - aCentroid;
+    Point3 db = abPair.second.translation() - bCentroid;
+    Vector3 Rdb = aRb * db;
+    y += da.transpose() * Rdb;
+    x += Rdb.transpose() * Rdb;
+  }
+  double s = y / x;
+
+  Point3 aTb = (Point3(aCentroid) - s * (aRb * Point3(bCentroid))) / s;
+  return Similarity3(aRb, aTb, s);
 }
 
 Matrix4 Similarity3::wedge(const Vector7& xi) {
