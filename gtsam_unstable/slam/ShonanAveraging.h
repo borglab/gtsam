@@ -20,9 +20,10 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam_unstable/dllexport.h>
@@ -30,10 +31,12 @@
 #include <Eigen/Sparse>
 #include <map>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 namespace gtsam {
 class NonlinearFactorGraph;
+class LevenbergMarquardtOptimizer;
 
 /// Parameters governing optimization etc.
 struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
@@ -84,10 +87,17 @@ class GTSAM_UNSTABLE_EXPORT ShonanAveraging {
 public:
   using Sparse = Eigen::SparseMatrix<double>;
 
+  // Select Rot2 or Rot3 interface based template parameter d
+  using Rot = std::conditional<d==2, Rot2, Rot3>::type;
+
+  // We store SO(d) BetweenFactors to get noise model
+  // TODO(frank): use BinaryMeasurement?
+  using Factors = std::vector<BetweenFactor<Rot>::shared_ptr>;
+
 private:
   ShonanAveragingParameters parameters_;
-  BetweenFactorPose3s factors_;
-  std::map<Key, Pose3> poses_;
+  Factors factors_;
+  size_t nrUnknowns_;
   Sparse D_; // Sparse (diagonal) degree matrix
   Sparse Q_; // Sparse measurement matrix, == \tilde{R} in Eriksson18cvpr
   Sparse L_; // connection Laplacian L = D - Q, needed for optimality check
@@ -105,14 +115,13 @@ public:
   /// @name Standard Constructors
   /// @{
 
-  /// Construct from factors and poses.
-  ShonanAveraging(const BetweenFactorPose3s &factors,
-                  const std::map<Key, Pose3> &poses,
+  /// Construct from factors and number of poses.
+  ShonanAveraging(const Factors &factors, const size_t nrUnknowns,
                   const ShonanAveragingParameters &parameters =
                       ShonanAveragingParameters());
 
-  /// Construct from factors and values (will ignore all but Pose3 values).
-  ShonanAveraging(const BetweenFactorPose3s &factors, const Values &values,
+  /// Construct from factors alone (calculates number of poses).
+  ShonanAveraging(const Factors &factors,
                   const ShonanAveragingParameters &parameters =
                       ShonanAveragingParameters());
 
@@ -126,7 +135,7 @@ public:
   /// @{
 
   /// Return number of poses
-  size_t nrPoses() const { return poses_.size(); }
+  size_t nrUnknowns() const { return nrUnknowns_; }
 
   /// Return number of measurements
   size_t nrMeasurements() const { return factors_.size(); }
@@ -136,9 +145,6 @@ public:
 
   /// Keys for k^th measurement, as a vector of Key values.
   const KeyVector &keys(size_t i) const { return factors_[i]->keys(); }
-
-  /// Return poses
-  const std::map<Key, Pose3> &poses() const { return poses_; }
 
   /// @}
   /// @name Matrix API (advanced use, debugging)
@@ -272,13 +278,13 @@ public:
                   const boost::optional<Values> &initial = boost::none) const;
 
   /**
-   * Project from SO(p) to Rot3
+   * Project from SO(p) to Rot2 or Rot3
    * Values should be of type SO(p)
    */
   Values projectFrom(size_t p, const Values &values) const;
 
   /**
-   * Project from SO(p)^N to Rot3^N
+   * Project from SO(p)^N to Rot2^N or Rot3^N
    * Values should be of type SO(p)
    */
   Values roundSolution(const Values &values) const;
@@ -342,6 +348,8 @@ public:
   /// @}
 };
 
+// Explicit instantiation for d=2 and d=3 in .cpp file:
+using ShonanAveraging2 = ShonanAveraging<2>;
 using ShonanAveraging3 = ShonanAveraging<3>;
 
 } // namespace gtsam

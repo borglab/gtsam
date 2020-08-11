@@ -110,15 +110,6 @@ TEST(ShonanAveraging3, tryOptimizingAt4) {
 }
 
 /* ************************************************************************* */
-// TEST(ShonanAveraging3, tryOptimizingAt5) {
-//   const Values result = kShonan.tryOptimizingAt(5);
-//   EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(5, result), 1e-3);
-//   auto lambdaMin = kShonan.computeMinEigenValue(result);
-//   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, lambdaMin,
-//                        1e-4);  // Regression test
-// }
-
-/* ************************************************************************* */
 TEST(ShonanAveraging3, runWithRandom) {
   auto result = kShonan.runWithRandom(5);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result.first), 1e-3);
@@ -273,11 +264,31 @@ TEST(ShonanAveraging3, runWithRandomKlausKarcher) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging3, Random2DGraph) {
-  const BetweenFactorPose3s factors;
-  const std::map<Key, Pose3> poses;
-  const ShonanAveragingParameters parameters;
-  const ShonanAveraging3 shonan(factors, poses);
+TEST(ShonanAveraging2, runWithRandomKlausKarcher) {
+  // Load 3 pose example taken in Klaus by Shicong
+  string g2oFile = findExampleDataFile("Klaus3.g2o");
+
+  // Initialize a Shonan instance with the Karcher mean (default true)
+  static const ShonanAveraging2 shonan(g2oFile);
+  const auto &poses = shonan.poses();
+  const Rot2 wR0 = poses.at(0).rotation();
+  const Rot2 wR1 = poses.at(1).rotation();
+  const Rot2 wR2 = poses.at(2).rotation();
+
+  // Run Shonan (with Karcher mean prior)
+  auto result = shonan.runWithRandom(5);
+  EXPECT_DOUBLES_EQUAL(0, shonan.cost(result.first), 1e-2);
+  EXPECT_DOUBLES_EQUAL(-1.361402670507772e-05, result.second,
+                       1e-4);  // Regression test
+
+  // Get Shonan solution in new frame R (R for result)
+  const Rot2 rR0 = result.first.at<Rot2>(0);
+  const Rot2 rR1 = result.first.at<Rot2>(1);
+  const Rot2 rR2 = result.first.at<Rot2>(2);
+
+  const Rot2 rRw = rR0 * wR0.inverse();
+  EXPECT(assert_equal(rRw * wR1, rR1, 0.1))
+  EXPECT(assert_equal(rRw * wR2, rR2, 0.1))
 }
 
 /* ************************************************************************* */

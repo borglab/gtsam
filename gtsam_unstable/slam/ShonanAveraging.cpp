@@ -16,6 +16,8 @@
  * @brief  Shonan Averaging algorithm
  */
 
+#include <gtsam_unstable/slam/ShonanAveraging.h>
+
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -23,10 +25,11 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/FrobeniusFactor.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
-#include <gtsam_unstable/slam/ShonanAveraging.h>
 #include <gtsam_unstable/slam/ShonanGaugeFactor.h>
 
+#include <SymEigsSolver.h>
 #include <Eigen/Eigenvalues>
+
 #include <algorithm>
 #include <complex>
 #include <iostream>
@@ -81,38 +84,39 @@ ShonanAveragingParameters::ShonanAveragingParameters(
 
 /* ************************************************************************* */
 template <size_t d>
-ShonanAveraging<d>::ShonanAveraging(const BetweenFactorPose3s &factors,
-                                    const std::map<Key, Pose3> &poses,
+ShonanAveraging<d>::ShonanAveraging(const Factors &factors,
+                                    const size_t nrUnknowns,
                                     const ShonanAveragingParameters &parameters)
-    : parameters_(parameters), factors_(factors), poses_(poses) {
+    : parameters_(parameters), factors_(factors), nrUnknowns_(nrUnknowns) {
   Q_ = buildQ();
   D_ = buildD();
   L_ = D_ - Q_;
 }
 
 /* ************************************************************************* */
-// Copy poses from Values
-static std::map<Key, Pose3> PoseMapFromValues(const Values &values) {
-  std::map<Key, Pose3> poses;
-  for (const auto &it : values.filter<Pose3>()) {
-    poses[it.key] = it.value;
+// Calculate number of poses referenced by factors
+template <size_t d>
+static size_t
+NrPosesReferenced(const typename ShonanAveraging<d>::Factors &factors) {
+  std::set<Key> keys;
+  for (const auto &factor : factors) {
+    keys.insert(factor->key1());
+    keys.insert(factor->key2());
   }
-  return poses;
+  return keys.size();
 }
 
 /* ************************************************************************* */
 template <size_t d>
-ShonanAveraging<d>::ShonanAveraging(const BetweenFactorPose3s &factors,
-                                    const Values &values,
+ShonanAveraging<d>::ShonanAveraging(const Factors &factors,
                                     const ShonanAveragingParameters &parameters)
-    : ShonanAveraging(factors, PoseMapFromValues(values), parameters) {}
+    : ShonanAveraging(factors, NrPosesReferenced<d>(factors), parameters) {}
 
 /* ************************************************************************* */
 template <size_t d>
 ShonanAveraging<d>::ShonanAveraging(const string &g2oFile,
                                     const ShonanAveragingParameters &parameters)
-    : ShonanAveraging(parse3DFactors(g2oFile), parse3DPoses(g2oFile),
-                      parameters) {}
+    : ShonanAveraging(parse3DFactors(g2oFile), parameters) {}
 
 /* ************************************************************************* */
 template <size_t d>
@@ -121,10 +125,10 @@ NonlinearFactorGraph ShonanAveraging<d>::buildGraphAt(size_t p) const {
   auto G = boost::make_shared<Matrix>(SOn::VectorizedGenerators(p));
   for (const auto &factor : factors_) {
     const auto &keys = factor->keys();
-    const auto &Tij = factor->measured();
+    const auto &Rij = factor->measured();
     const auto &model = factor->noiseModel();
-    graph.emplace_shared<FrobeniusWormholeFactor>(keys[0], keys[1],
-                                                  Tij.rotation(), p, model, G);
+    graph.emplace_shared<FrobeniusWormholeFactor>(keys[0], keys[1], Rij, p,
+                                                  model, G);
   }
   return graph;
 }
@@ -133,7 +137,7 @@ NonlinearFactorGraph ShonanAveraging<d>::buildGraphAt(size_t p) const {
 template <size_t d>
 Values ShonanAveraging<d>::initializeRandomlyAt(size_t p) const {
   Values initial;
-  for (size_t j = 0; j < nrPoses(); j++) {
+  for (size_t j = 0; j < nrUnknowns(); j++) {
     initial.insert(j, SOn::Random(kRandomNumberGenerator, p));
   }
   return initial;
@@ -211,21 +215,34 @@ static Matrix StiefelElementMatrix(const Values &values) {
 }
 
 /* ************************************************************************* */
-template <size_t d>
-Values ShonanAveraging<d>::projectFrom(size_t p, const Values& values) const {
-  Values rot3Values;
-  for (const auto& it: values.filter<SOn>()) {
+template <>
+Values ShonanAveraging<2>::projectFrom(size_t p, const Values &values) const {
+  Values result;
+  for (const auto &it : values.filter<SOn>()) {
     assert(it.value.rows() == p);
-    const Rot3 R = Rot3::ClosestTo(it.value.matrix().topLeftCorner<d, d>());
-    rot3Values.insert(it.key, R);
+    const auto &M = it.value.matrix();
+    const Rot2 R = Rot2::atan2(M(1, 0), M(0, 0));
+    result.insert(it.key, R);
   }
-  return rot3Values;
+  return result;
+}
+
+template <>
+Values ShonanAveraging<3>::projectFrom(size_t p, const Values &values) const {
+  Values result;
+  for (const auto &it : values.filter<SOn>()) {
+    assert(it.value.rows() == p);
+    const auto &M = it.value.matrix();
+    const Rot3 R = Rot3::ClosestTo(M.topLeftCorner<3, 3>());
+    result.insert(it.key, R);
+  }
+  return result;
 }
 
 /* ************************************************************************* */
 template <size_t d>
-Values ShonanAveraging<d>::roundSolutionS(const Matrix &S) const {
-  const size_t N = nrPoses();
+static Matrix RoundSolutionS(const Matrix &S) {
+  const size_t N = S.cols()/d;
   // First, compute a thin SVD of S
   Eigen::JacobiSVD<Matrix> svd(S, Eigen::ComputeThinV);
   const Vector sigmas = svd.singularValues();
@@ -255,13 +272,34 @@ Values ShonanAveraging<d>::roundSolutionS(const Matrix &S) const {
     R = reflector * R;
   }
 
-  // Finally, project each dxd rotation block to SO(d)
-  Values rot3Values;
-  for (size_t i = 0; i < N; ++i) {
-    const Rot3 Ri = Rot3::ClosestTo(R.middleCols<d>(d * i));
-    rot3Values.insert(i, Ri);
+  return R;
+}
+
+/* ************************************************************************* */
+template <> Values ShonanAveraging<2>::roundSolutionS(const Matrix &S) const {
+  // Round to a 2*2N matrix
+  Matrix R = RoundSolutionS<2>(S);
+
+  // Finally, project each dxd rotation block to SO(2)
+  Values values;
+  for (size_t j = 0; j < nrUnknowns(); ++j) {
+    const Rot2 Ri = Rot2::atan2(R(1, 2 * j), R(0, 2 * j));
+    values.insert(j, Ri);
   }
-  return rot3Values;
+  return values;
+}
+
+template <> Values ShonanAveraging<3>::roundSolutionS(const Matrix &S) const {
+  // Round to a 3*3N matrix
+  Matrix R = RoundSolutionS<3>(S);
+
+  // Finally, project each dxd rotation block to SO(3)
+  Values values;
+  for (size_t j = 0; j < nrUnknowns(); ++j) {
+    const Rot3 Ri = Rot3::ClosestTo(R.middleCols<3>(3 * j));
+    values.insert(j, Ri);
+  }
+  return values;
 }
 
 /* ************************************************************************* */
@@ -275,18 +313,18 @@ Values ShonanAveraging<d>::roundSolution(const Values& values) const {
 
 /* ************************************************************************* */
 template <size_t d>
-double ShonanAveraging<d>::cost(const Values& values) const {
+double ShonanAveraging<d>::cost(const Values &values) const {
   NonlinearFactorGraph graph;
-  for (const auto& factor : factors_) {
-    const auto& keys = factor->keys();
-    const auto& Tij = factor->measured();
-    const auto& model = factor->noiseModel();
-    graph.emplace_shared<FrobeniusBetweenFactor<SO3>>(
-        keys[0], keys[1], SO3(Tij.rotation().matrix()), model);
+  for (const auto &factor : factors_) {
+    const auto &keys = factor->keys();
+    const auto &Rij = factor->measured();
+    const auto &model = factor->noiseModel();
+    graph.emplace_shared<FrobeniusBetweenFactor<SO3>>(keys[0], keys[1],
+                                                      SO3(Rij.matrix()), model);
   }
   // Finally, project each dxd rotation block to SO(d)
   Values SO3_values;
-  for (const auto& it: values.filter<Rot3>()) {
+  for (const auto &it : values.filter<Rot3>()) {
     SO3_values.insert(it.key, SO3(it.value.matrix()));
   }
   return graph.error(SO3_values);
@@ -329,7 +367,7 @@ Sparse ShonanAveraging<d>::buildD() const {
   }
 
   // Construct and return a sparse matrix from these triplets
-  const size_t dN = d * nrPoses();
+  const size_t dN = d * nrUnknowns();
   Sparse D(dN, dN);
   D.setFromTriplets(triplets.begin(), triplets.end());
 
@@ -352,8 +390,7 @@ Sparse ShonanAveraging<d>::buildQ() const {
     const auto& keys = factor->keys();
 
     // Extract rotation measurement
-    const auto& Tij = factor->measured();
-    const Matrix3 Rij = Tij.rotation().matrix();
+    const Matrix3 Rij = factor->measured().matrix();
 
     // Get kappa from noise model
     double kappa = Kappa(factor);
@@ -370,7 +407,7 @@ Sparse ShonanAveraging<d>::buildQ() const {
   }
 
   // Construct and return a sparse matrix from these triplets
-  const size_t dN = d * nrPoses();
+  const size_t dN = d * nrUnknowns();
   Sparse Q(dN, dN);
   Q.setFromTriplets(triplets.begin(), triplets.end());
 
@@ -384,7 +421,7 @@ Sparse ShonanAveraging<d>::computeLambda(const Matrix& S) const {
   static constexpr size_t stride = d * d;
 
   // Reserve space for triplets
-  const size_t N = nrPoses();
+  const size_t N = nrUnknowns();
   std::vector<Eigen::Triplet<double>> triplets;
   triplets.reserve(stride * N);
 
@@ -421,7 +458,7 @@ Sparse ShonanAveraging<d>::computeLambda(
 /* ************************************************************************* */
 template<size_t d>
 Sparse ShonanAveraging<d>::computeA(const Values& values) const {
-  assert(values.size() == nrPoses());
+  assert(values.size() == nrUnknowns());
   const Matrix S = StiefelElementMatrix(values);
   auto Lambda = computeLambda(S);
   return Lambda - Q_;
@@ -429,8 +466,6 @@ Sparse ShonanAveraging<d>::computeA(const Values& values) const {
 
 /* ************************************************************************* */
 /// MINIMUM EIGENVALUE COMPUTATIONS
-
-#include "SymEigsSolver.h"
 
 /** This is a lightweight struct used in conjunction with Spectra to compute
  * the minimum eigenvalue and eigenvector of a sparse matrix A; it has a single
@@ -587,7 +622,7 @@ Sparse ShonanAveraging<d>::computeA(const Matrix& S) const {
 template<size_t d>
 double ShonanAveraging<d>::computeMinEigenValue(const Values& values,
                                              Vector* minEigenVector) const {
-  assert(values.size() == nrPoses());
+  assert(values.size() == nrUnknowns());
   const Matrix S = StiefelElementMatrix(values);
   auto A = computeA(S);
 #ifdef SLOW_EIGEN_COMPUTATION
@@ -651,8 +686,8 @@ Matrix ShonanAveraging<d>::riemannianGradient(size_t p,
   // "\t" << euclideanGradient.cols() << endl;
 
   // project the gradient onto the entire euclidean space
-  Matrix symBlockDiagProduct(p, d * nrPoses());
-  for (size_t i = 0; i < nrPoses(); i++) {
+  Matrix symBlockDiagProduct(p, d * nrUnknowns());
+  for (size_t i = 0; i < nrUnknowns(); i++) {
     // Compute block product
     const size_t di = d * i;
     const Matrix P = S_dot.middleCols<d>(di).transpose() *
@@ -762,7 +797,8 @@ std::pair<Values, double> ShonanAveraging<d>::runWithDescent(
 }
 
 /* ************************************************************************* */
-// Explicit instantiation for d=3
+// Explicit instantiation for d=2 and d=3
+template class ShonanAveraging<2>;
 template class ShonanAveraging<3>;
 
 /* ************************************************************************* */
