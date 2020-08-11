@@ -430,7 +430,7 @@ Sparse ShonanAveraging<d>::computeA(const Values& values) const {
 /* ************************************************************************* */
 /// MINIMUM EIGENVALUE COMPUTATIONS
 
-#include "Spectra/SymEigsSolver.h"
+#include "SymEigsSolver.h"
 
 /** This is a lightweight struct used in conjunction with Spectra to compute
  * the minimum eigenvalue and eigenvector of a sparse matrix A; it has a single
