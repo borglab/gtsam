@@ -2854,7 +2854,7 @@ virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
 };
 
 #include <gtsam/slam/FrobeniusFactor.h>
-gtsam::noiseModel::Isotropic* ConvertPose3NoiseModel(
+gtsam::noiseModel::Isotropic* ConvertNoiseModel(
     gtsam::noiseModel::Base* model, size_t d);
 
 template<T = {gtsam::SO3, gtsam::SO4}>

@@ -18,23 +18,27 @@
 
 #pragma once
 
+#include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SOn.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
+#include <type_traits>
+
 namespace gtsam {
 
 /**
- * When creating (any) FrobeniusFactor we convert a 6-dimensional Pose3
- * BetweenFactor noise model into an 9 or 16-dimensional isotropic noise
+ * When creating (any) FrobeniusFactor we can convert a Rot/Pose
+ * BetweenFactor noise model into a n-dimensional isotropic noise
  * model used to weight the Frobenius norm.  If the noise model passed is
- * null we return a Dim-dimensional isotropic noise model with sigma=1.0. If
- * not, we we check if the 3-dimensional noise model on rotations is
- * isotropic. If it is, we extend to 'Dim' dimensions, otherwise we throw an
+ * null we return a n-dimensional isotropic noise model with sigma=1.0. If
+ * not, we we check if the d-dimensional noise model on rotations is
+ * isotropic. If it is, we extend to 'n' dimensions, otherwise we throw an
  * error. If defaultToUnit == false throws an exception on unexepcted input.
  */
-  GTSAM_EXPORT boost::shared_ptr<noiseModel::Isotropic> ConvertPose3NoiseModel(
-    const SharedNoiseModel& model, size_t d, bool defaultToUnit = true);
+GTSAM_EXPORT boost::shared_ptr<noiseModel::Isotropic>
+ConvertNoiseModel(const SharedNoiseModel &model, size_t n,
+                  bool defaultToUnit = true);
 
 /**
  * FrobeniusPrior calculates the Frobenius norm between a given matrix and an
@@ -50,7 +54,7 @@ class FrobeniusPrior : public NoiseModelFactor1<Rot> {
   /// Constructor
   FrobeniusPrior(Key j, const MatrixNN& M,
                  const SharedNoiseModel& model = nullptr)
-      : NoiseModelFactor1<Rot>(ConvertPose3NoiseModel(model, Dim), j) {
+      : NoiseModelFactor1<Rot>(ConvertNoiseModel(model, Dim), j) {
     vecM_ << Eigen::Map<const Matrix>(M.data(), Dim, 1);
   }
 
@@ -72,7 +76,7 @@ class FrobeniusFactor : public NoiseModelFactor2<Rot, Rot> {
  public:
   /// Constructor
   FrobeniusFactor(Key j1, Key j2, const SharedNoiseModel& model = nullptr)
-      : NoiseModelFactor2<Rot, Rot>(ConvertPose3NoiseModel(model, Dim), j1,
+      : NoiseModelFactor2<Rot, Rot>(ConvertNoiseModel(model, Dim), j1,
                                     j2) {}
 
   /// Error is just Frobenius norm between rotation matrices.
@@ -106,7 +110,7 @@ GTSAM_EXPORT class FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
   FrobeniusBetweenFactor(Key j1, Key j2, const Rot& R12,
                          const SharedNoiseModel& model = nullptr)
       : NoiseModelFactor2<Rot, Rot>(
-            ConvertPose3NoiseModel(model, Dim), j1, j2),
+            ConvertNoiseModel(model, Dim), j1, j2),
         R12_(R12),
         R2hat_H_R1_(R12.inverse().AdjointMap()) {}
 
@@ -156,20 +160,24 @@ GTSAM_EXPORT class FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
  * the SO(p) matrices down to a Stiefel manifold of p*d matrices.
  * TODO(frank): template on D=2 or 3
  */
+template <size_t d>
 class GTSAM_EXPORT FrobeniusWormholeFactor
     : public NoiseModelFactor2<SOn, SOn> {
   Matrix M_;                    ///< measured rotation between R1 and R2
   size_t p_, pp_;               ///< dimensionality constants
   boost::shared_ptr<Matrix> G_; ///< matrix of vectorized generators
 
+  // Select Rot2 or Rot3 interface based template parameter d
+  using Rot = typename std::conditional<d==2, Rot2, Rot3>::type;
+
 public:
   /// @name Constructor
   /// @{
 
-  /// Constructor. Note we convert to 3*p-dimensional noise model.
+  /// Constructor. Note we convert to d*p-dimensional noise model.
   /// To save memory and mallocs, pass in the vectorized Lie algebra generators:
   ///    G = boost::make_shared<Matrix>(SOn::VectorizedGenerators(p));
-  FrobeniusWormholeFactor(Key j1, Key j2, const Rot3 &R12, size_t p = 4,
+  FrobeniusWormholeFactor(Key j1, Key j2, const Rot &R12, size_t p,
                           const SharedNoiseModel &model = nullptr,
                           const boost::shared_ptr<Matrix> &G = nullptr);
 
@@ -197,5 +205,9 @@ public:
                        boost::optional<Matrix&> H2 = boost::none) const override;
   /// @}
 };
+
+// Explicit instantiation for d=2 and d=3 in .cpp file:
+using FrobeniusWormholeFactor2 = FrobeniusWormholeFactor<2>;
+using FrobeniusWormholeFactor3 = FrobeniusWormholeFactor<3>;
 
 }  // namespace gtsam

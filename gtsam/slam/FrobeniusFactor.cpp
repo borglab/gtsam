@@ -30,31 +30,39 @@ using namespace std;
 namespace gtsam {
 
 //******************************************************************************
-boost::shared_ptr<noiseModel::Isotropic> ConvertPose3NoiseModel(
-    const SharedNoiseModel& model, size_t d, bool defaultToUnit) {
+boost::shared_ptr<noiseModel::Isotropic>
+ConvertNoiseModel(const SharedNoiseModel &model, size_t d, bool defaultToUnit) {
   double sigma = 1.0;
   if (model != nullptr) {
-    if (model->dim() != 6) {
-      if (!defaultToUnit)
-        throw std::runtime_error("Can only convert Pose3 noise models");
-    } else {
-      auto sigmas = model->sigmas().head(3).eval();
-      if (sigmas(1) != sigmas(0) || sigmas(2) != sigmas(0)) {
-        if (!defaultToUnit)
+    auto sigmas = model->sigmas();
+    size_t n = sigmas.size();
+    if (n == 1) {
+      sigma = sigmas(0); // Rot2
+      goto exit;
+    }
+    if (n == 3 || n == 6) {
+      sigma = sigmas(2); // Pose2, Rot3, or Pose3
+      if (sigmas(0) != sigma || sigmas(1) != sigma) {
+        if (!defaultToUnit) {
           throw std::runtime_error("Can only convert isotropic rotation noise");
-      } else {
-        sigma = sigmas(0);
+        }
       }
+      goto exit;
+    }
+    if (!defaultToUnit) {
+      throw std::runtime_error("Can only convert Pose2/Pose3 noise models");
     }
   }
+exit:
   return noiseModel::Isotropic::Sigma(d, sigma);
 }
 
 //******************************************************************************
-FrobeniusWormholeFactor::FrobeniusWormholeFactor(
-    Key j1, Key j2, const Rot3 &R12, size_t p, const SharedNoiseModel &model,
+template <size_t d>
+FrobeniusWormholeFactor<d>::FrobeniusWormholeFactor(
+    Key j1, Key j2, const Rot &R12, size_t p, const SharedNoiseModel &model,
     const boost::shared_ptr<Matrix> &G)
-    : NoiseModelFactor2<SOn, SOn>(ConvertPose3NoiseModel(model, p * 3), j1, j2),
+    : NoiseModelFactor2<SOn, SOn>(ConvertNoiseModel(model, p * 3), j1, j2),
       M_(R12.matrix()), // 3*3 in all cases
       p_(p),            // 4 for SO(4)
       pp_(p * p),       // 16 for SO(4)
@@ -72,7 +80,8 @@ FrobeniusWormholeFactor::FrobeniusWormholeFactor(
 }
 
 //******************************************************************************
-void FrobeniusWormholeFactor::print(const std::string &s, const KeyFormatter &keyFormatter) const {
+template <size_t d>
+void FrobeniusWormholeFactor<d>::print(const std::string &s, const KeyFormatter &keyFormatter) const {
   std::cout << s << "FrobeniusWormholeFactor<" << p_ << ">(" << keyFormatter(key1()) << ","
             << keyFormatter(key2()) << ")\n";
   traits<Matrix>::Print(M_, "  M: ");
@@ -80,7 +89,8 @@ void FrobeniusWormholeFactor::print(const std::string &s, const KeyFormatter &ke
 }
 
 //******************************************************************************
-bool FrobeniusWormholeFactor::equals(const NonlinearFactor &expected,
+template <size_t d>
+bool FrobeniusWormholeFactor<d>::equals(const NonlinearFactor &expected,
                                      double tol) const {
   auto e = dynamic_cast<const FrobeniusWormholeFactor *>(&expected);
   return e != nullptr && NoiseModelFactor2<SOn, SOn>::equals(*e, tol) &&
@@ -88,7 +98,8 @@ bool FrobeniusWormholeFactor::equals(const NonlinearFactor &expected,
 }
 
 //******************************************************************************
-Vector FrobeniusWormholeFactor::evaluateError(
+template <size_t d>
+Vector FrobeniusWormholeFactor<d>::evaluateError(
     const SOn& Q1, const SOn& Q2, boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2) const {
   gttic(FrobeniusWormholeFactorP_evaluateError);
@@ -98,7 +109,7 @@ Vector FrobeniusWormholeFactor::evaluateError(
   if (M1.rows() != static_cast<int>(p_) || M2.rows() != static_cast<int>(p_))
     throw std::invalid_argument(
         "Invalid dimension SOn values passed to "
-        "FrobeniusWormholeFactor::evaluateError");
+        "FrobeniusWormholeFactor<d>::evaluateError");
 
   const size_t dim = 3 * p_;  // Stiefel manifold dimension
   Vector fQ2(dim), hQ1(dim);
@@ -130,6 +141,11 @@ Vector FrobeniusWormholeFactor::evaluateError(
 
   return fQ2 - hQ1;
 }
+
+/* ************************************************************************* */
+// Explicit instantiation for d=2 and d=3
+template class FrobeniusWormholeFactor<2>;
+template class FrobeniusWormholeFactor<3>;
 
 //******************************************************************************
 

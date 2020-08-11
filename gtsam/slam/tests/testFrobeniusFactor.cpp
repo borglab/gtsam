@@ -201,7 +201,7 @@ SO3 R12 = R1.between(R2);
 }  // namespace submanifold
 
 /* ************************************************************************* */
-TEST(FrobeniusWormholeFactor, evaluateError) {
+TEST(FrobeniusWormholeFactor3, evaluateError) {
   auto model = noiseModel::Isotropic::Sigma(6, 1.2);  // dimension = 6 not 16
   for (const size_t p : {5, 4, 3}) {
     Matrix M = Matrix::Identity(p, p);
@@ -210,7 +210,7 @@ TEST(FrobeniusWormholeFactor, evaluateError) {
     M.topLeftCorner(3, 3) = submanifold::R2.matrix();
     SOn Q2(M);
     auto factor =
-        FrobeniusWormholeFactor(1, 2, Rot3(::so3::R12.matrix()), p, model);
+        FrobeniusWormholeFactor3(1, 2, Rot3(::so3::R12.matrix()), p, model);
     Matrix H1, H2;
     factor.evaluateError(Q1, Q2, H1, H2);
 
@@ -223,12 +223,12 @@ TEST(FrobeniusWormholeFactor, evaluateError) {
 }
 
 /* ************************************************************************* */
-TEST(FrobeniusWormholeFactor, equivalenceToSO3) {
+TEST(FrobeniusWormholeFactor3, equivalenceToSO3) {
   using namespace ::submanifold;
   auto R12 = ::so3::R12.retract(Vector3(0.1, 0.2, -0.1));
   auto model = noiseModel::Isotropic::Sigma(6, 1.2);  // wrong dimension
   auto factor3 = FrobeniusBetweenFactor<SO3>(1, 2, R12, model);
-  auto factor4 = FrobeniusWormholeFactor(1, 2, Rot3(R12.matrix()), 4, model);
+  auto factor4 = FrobeniusWormholeFactor3(1, 2, Rot3(R12.matrix()), 4, model);
   const Matrix3 E3(factor3.evaluateError(R1, R2).data());
   const Matrix43 E4(
       factor4.evaluateError(SOn(Q1.matrix()), SOn(Q2.matrix())).data());
