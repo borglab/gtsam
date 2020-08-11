@@ -51,11 +51,6 @@ class Point3 : public Vector3 {
     /// @name Standard Constructors
     /// @{
 
-    // Deprecated default constructor initializes to zero, in contrast to new behavior below
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-    Point3() { setZero(); }
-#endif
-
     using Vector3::Vector3;
 
     /// @}
@@ -118,27 +113,7 @@ class Point3 : public Vector3 {
     /// Output stream operator
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Point3& p);
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-    /// @name Deprecated
-    /// @{
-    Point3 inverse() const { return -(*this);}
-    Point3 compose(const Point3& q) const { return (*this)+q;}
-    Point3 between(const Point3& q) const { return q-(*this);}
-    Vector3 localCoordinates(const Point3& q) const { return between(q);}
-    Point3 retract(const Vector3& v) const { return compose(Point3(v));}
-    static Vector3 Logmap(const Point3& p) { return p;}
-    static Point3 Expmap(const Vector3& v) { return Point3(v);}
-    inline double dist(const Point3& q) const { return (q - *this).norm(); }
-    Point3 normalize(OptionalJacobian<3, 3> H = boost::none) const { return normalized(H);}
-	GTSAM_EXPORT Point3 add(const Point3& q, OptionalJacobian<3, 3> H1 = boost::none,
-               OptionalJacobian<3, 3> H2 = boost::none) const;
-	GTSAM_EXPORT Point3 sub(const Point3& q, OptionalJacobian<3, 3> H1 = boost::none,
-               OptionalJacobian<3, 3> H2 = boost::none) const;
-  /// @}
-#endif
-
-  private:
-
+   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>

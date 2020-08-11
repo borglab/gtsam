@@ -324,13 +324,4 @@ GTSAM_EXPORT Values initialCamerasEstimate(const SfmData& db);
  */
 GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfmData& db);
 
-/// Aliases for backwards compatibility
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-typedef SfmMeasurement SfM_Measurement;
-typedef SiftIndex SIFT_Index;
-typedef SfmTrack SfM_Track;
-typedef SfmCamera SfM_Camera;
-typedef SfmData SfM_data;
-#endif
-
-} // namespace gtsam
+}  // namespace gtsam

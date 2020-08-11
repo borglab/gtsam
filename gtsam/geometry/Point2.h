@@ -46,12 +46,7 @@ public:
   /// @{
 
   /// default constructor
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-    // Deprecated default constructor initializes to zero, in contrast to new behavior below
-    Point2() { setZero(); }
-#else
-    Point2() {}
-#endif
+  Point2() {}
 
   using Vector2::Vector2;
 
@@ -113,25 +108,7 @@ public:
   /// Streaming
   GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Point2& p);
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @name Deprecated
-  /// @{
-  Point2 inverse() const { return -(*this); }
-  Point2 compose(const Point2& q) const { return (*this)+q;}
-  Point2 between(const Point2& q) const { return q-(*this);}
-  Vector2 localCoordinates(const Point2& q) const { return between(q);}
-  Point2 retract(const Vector2& v) const { return compose(Point2(v));}
-  static Vector2 Logmap(const Point2& p) { return p;}
-  static Point2 Expmap(const Vector2& v) { return Point2(v);}
-  inline double dist(const Point2& p2) const {return distance(p2);}
-  GTSAM_EXPORT static boost::optional<Point2> CircleCircleIntersection(double R_d, double r_d, double tol = 1e-9);
-  GTSAM_EXPORT static std::list<Point2> CircleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2> fh);
-  GTSAM_EXPORT static std::list<Point2> CircleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2, double tol = 1e-9);
-  /// @}
-#endif
-
-private:
-
+ private:
   /// @name Advanced Interface
   /// @{
 

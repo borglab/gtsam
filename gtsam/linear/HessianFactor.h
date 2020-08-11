@@ -354,16 +354,7 @@ namespace gtsam {
       /// Solve the system A'*A delta = A'*b in-place, return delta as VectorValues
     VectorValues solve();
 
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-    /// @name Deprecated
-    /// @{
-    const SymmetricBlockMatrix& matrixObject() const { return info_; }
-    /// @}
-#endif
-
-  private:
-
+ private:
     /// Allocate for given scatter pattern
     void Allocate(const Scatter& scatter);
 
