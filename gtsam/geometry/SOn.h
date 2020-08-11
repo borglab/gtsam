@@ -227,9 +227,10 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
    */
   static MatrixNN Hat(const TangentVector& xi);
 
-  /**
-   * Inverse of Hat. See note about xi element order in Hat.
-   */
+  /// In-place version of Hat (see details there), implements recursion.
+  static void Hat(const Vector &xi, Eigen::Ref<MatrixNN> X);
+
+  /// Inverse of Hat. See note about xi element order in Hat.
   static TangentVector Vee(const MatrixNN& X);
 
   // Chart at origin

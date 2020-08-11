@@ -105,29 +105,29 @@ TEST(SOn, HatVee) {
   EXPECT(assert_equal((Vector)v.head<1>(), SOn::Vee(actual2)));
 
   Matrix expected3(3, 3);
-  expected3 << 0, -3,  2, //
-               3,  0, -1, //
-              -2,  1,  0;
+  expected3 << 0, -3, 2, //
+      3, 0, -1,          //
+      -2, 1, 0;
   const auto actual3 = SOn::Hat(v.head<3>());
   EXPECT(assert_equal(expected3, actual3));
   EXPECT(assert_equal(skewSymmetric(1, 2, 3), actual3));
   EXPECT(assert_equal((Vector)v.head<3>(), SOn::Vee(actual3)));
 
   Matrix expected4(4, 4);
-  expected4 << 0, -6,  5,  3, //
-               6,  0, -4, -2, //
-              -5,  4,  0,  1, //
-              -3,  2, -1,  0;
+  expected4 << 0, -6, 5, 3, //
+      6, 0, -4, -2,         //
+      -5, 4, 0, 1,          //
+      -3, 2, -1, 0;
   const auto actual4 = SOn::Hat(v.head<6>());
   EXPECT(assert_equal(expected4, actual4));
   EXPECT(assert_equal((Vector)v.head<6>(), SOn::Vee(actual4)));
 
   Matrix expected5(5, 5);
-  expected5 << 0,-10,  9,  7, -4, //
-              10,  0, -8, -6,  3, //
-              -9,  8,  0,  5, -2, //
-              -7,  6, -5,  0,  1, //
-               4, -3,  2, -1,  0;
+  expected5 << 0, -10, 9, 7, -4, //
+      10, 0, -8, -6, 3,          //
+      -9, 8, 0, 5, -2,           //
+      -7, 6, -5, 0, 1,           //
+      4, -3, 2, -1, 0;
   const auto actual5 = SOn::Hat(v);
   EXPECT(assert_equal(expected5, actual5));
   EXPECT(assert_equal((Vector)v, SOn::Vee(actual5)));
@@ -160,13 +160,29 @@ TEST(SOn, RetractLocal) {
 }
 
 //******************************************************************************
+
+Matrix RetractJacobian(size_t n) { return SOn::VectorizedGenerators(n); }
+
+/// Test Jacobian of Retract at origin
+TEST(SOn, RetractJacobian) {
+  Matrix actualH = RetractJacobian(3);
+  boost::function<Matrix(const Vector &)> h = [](const Vector &v) {
+    return SOn::ChartAtOrigin::Retract(v).matrix();
+  };
+  Vector3 v;
+  v.setZero();
+  const Matrix expectedH = numericalDerivative11<Matrix, Vector, 3>(h, v, 1e-5);
+  CHECK(assert_equal(expectedH, actualH));
+}
+
+//******************************************************************************
 TEST(SOn, vec) {
   Vector10 v;
   v << 0, 0, 0, 0, 1, 2, 3, 4, 5, 6;
   SOn Q = SOn::ChartAtOrigin::Retract(v);
   Matrix actualH;
   const Vector actual = Q.vec(actualH);
-  boost::function<Vector(const SOn&)> h = [](const SOn& Q) { return Q.vec(); };
+  boost::function<Vector(const SOn &)> h = [](const SOn &Q) { return Q.vec(); };
   const Matrix H = numericalDerivative11<Vector, SOn, 10>(h, Q, 1e-5);
   CHECK(assert_equal(H, actualH));
 }
