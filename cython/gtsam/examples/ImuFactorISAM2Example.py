@@ -1,6 +1,6 @@
 """
-iSAM2 example with ImuFactor.
-Author: Frank Dellaert, Varun Agrawal
+ImuFactor example with iSAM2.
+Authors: Robert Truax (C++), Frank Dellaert, Varun Agrawal (Python)
 """
 # pylint: disable=invalid-name, E1101
 
