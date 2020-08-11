@@ -31,13 +31,10 @@
  * Note that for GPS correction, we're only using the position not the
  * rotation. The rotation is provided in the file for ground truth comparison.
  *
- *  Usage: ./ImuFactorsExample [data_csv_path] [-c]
- *  optional arguments:
- *    data_csv_path           path to the CSV file with the IMU data.
- *    -c                      use CombinedImuFactor
- *  Note: Define USE_LM to use Levenberg Marquardt Optimizer
- *        By default ISAM2 is used
+ *  See usage: ./ImuFactorsExample --help
  */
+
+#include <boost/program_options.hpp>
 
 // GTSAM related includes.
 #include <gtsam/inference/Symbol.h>
@@ -54,15 +51,35 @@
 #include <fstream>
 #include <iostream>
 
-// Uncomment the following to use Levenberg Marquardt Optimizer
-// #define USE_LM
-
 using namespace gtsam;
 using namespace std;
 
 using symbol_shorthand::B;  // Bias  (ax,ay,az,gx,gy,gz)
 using symbol_shorthand::V;  // Vel   (xdot,ydot,zdot)
 using symbol_shorthand::X;  // Pose3 (x,y,z,r,p,y)
+
+namespace po = boost::program_options;
+
+po::variables_map parseOptions(int argc, char* argv[]) {
+  po::options_description desc;
+  desc.add_options()("help,h", "produce help message")(
+      "data_csv_path", po::value<string>()->default_value("imuAndGPSdata.csv"),
+      "path to the CSV file with the IMU data")(
+      "output_filename",
+      po::value<string>()->default_value("imuFactorExampleResults.csv"),
+      "path to the result file to use")("use_isam", po::bool_switch(),
+                                        "use ISAM as the optimizer");
+
+  po::variables_map vm;
+  po::store(po::parse_command_line(argc, argv, desc), vm);
+
+  if (vm.count("help")) {
+    cout << desc << "\n";
+    exit(1);
+  }
+
+  return vm;
+}
 
 boost::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
   // We use the sensor specs to build the noise model for the IMU factor.
@@ -102,22 +119,11 @@ int main(int argc, char* argv[]) {
 
   bool use_isam = false;
 
-  if (argc == 4) {
-    data_filename = argv[1];
-    output_filename = argv[2];
-    use_isam = atoi(argv[3]);
+  po::variables_map var_map = parseOptions(argc, argv);
 
-  } else if (argc == 3) {
-    data_filename = argv[1];
-    output_filename = argv[2];
-  } else if (argc == 2) {
-    data_filename = argv[1];
-    output_filename = "imuFactorExampleResults.csv";
-  } else {
-    printf("using default files\n");
-    data_filename = findExampleDataFile("imuAndGPSdata.csv");
-    output_filename = "imuFactorExampleResults.csv";
-  }
+  data_filename = findExampleDataFile(var_map["data_csv_path"].as<string>());
+  output_filename = var_map["output_filename"].as<string>();
+  use_isam = var_map["use_isam"].as<bool>();
 
   ISAM2* isam2;
   if (use_isam) {

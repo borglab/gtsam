@@ -29,11 +29,10 @@
  * Note that for GPS correction, we're only using the position not the
  * rotation. The rotation is provided in the file for ground truth comparison.
  *
- *  Usage: ./CombinedImuFactorsExample [data_csv_path] [-c]
- *  optional arguments:
- *    data_csv_path           path to the CSV file with the IMU data.
- *    -c                      use CombinedImuFactor
+ *  See usage: ./CombinedImuFactorsExample --help
  */
+
+#include <boost/program_options.hpp>
 
 // GTSAM related includes.
 #include <gtsam/inference/Symbol.h>
@@ -55,6 +54,29 @@ using namespace std;
 using symbol_shorthand::B;  // Bias  (ax,ay,az,gx,gy,gz)
 using symbol_shorthand::V;  // Vel   (xdot,ydot,zdot)
 using symbol_shorthand::X;  // Pose3 (x,y,z,r,p,y)
+
+namespace po = boost::program_options;
+
+po::variables_map parseOptions(int argc, char* argv[]) {
+  po::options_description desc;
+  desc.add_options()("help,h", "produce help message")(
+      "data_csv_path", po::value<string>()->default_value("imuAndGPSdata.csv"),
+      "path to the CSV file with the IMU data")(
+      "output_filename",
+      po::value<string>()->default_value("imuFactorExampleResults.csv"),
+      "path to the result file to use")("use_isam", po::bool_switch(),
+                                        "use ISAM as the optimizer");
+
+  po::variables_map vm;
+  po::store(po::parse_command_line(argc, argv, desc), vm);
+
+  if (vm.count("help")) {
+    cout << desc << "\n";
+    exit(1);
+  }
+
+  return vm;
+}
 
 Vector10 readInitialState(ifstream& file) {
   string value;
@@ -106,17 +128,10 @@ boost::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
 
 int main(int argc, char* argv[]) {
   string data_filename, output_filename;
-  if (argc == 3) {
-    data_filename = argv[1];
-    output_filename = argv[2];
-  } else if (argc == 2) {
-    data_filename = argv[1];
-    output_filename = "imuFactorExampleResults.csv";
-  } else {
-    printf("using default CSV file\n");
-    data_filename = findExampleDataFile("imuAndGPSdata.csv");
-    output_filename = "imuFactorExampleResults.csv";
-  }
+  po::variables_map var_map = parseOptions(argc, argv);
+
+  data_filename = findExampleDataFile(var_map["data_csv_path"].as<string>());
+  output_filename = var_map["output_filename"].as<string>();
 
   // Set up output file for plotting errors
   FILE* fp_out = fopen(output_filename.c_str(), "w+");
@@ -265,7 +280,8 @@ int main(int argc, char* argv[]) {
 
       // display statistics
       cout << "Position error:" << current_position_error << "\t "
-           << "Angular error:" << current_orientation_error << "\n" << endl;
+           << "Angular error:" << current_orientation_error << "\n"
+           << endl;
 
       fprintf(fp_out, "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
               output_time, result_position(0), result_position(1),
