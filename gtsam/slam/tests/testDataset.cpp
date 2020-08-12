@@ -89,20 +89,38 @@ TEST( dataSet, parseEdge)
 }
 
 /* ************************************************************************* */
-TEST( dataSet, load2D)
-{
+TEST(dataSet, load2D) {
   ///< The structure where we will save the SfM data
   const string filename = findExampleDataFile("w100.graph");
   NonlinearFactorGraph::shared_ptr graph;
   Values::shared_ptr initial;
   boost::tie(graph, initial) = load2D(filename);
-  EXPECT_LONGS_EQUAL(300,graph->size());
-  EXPECT_LONGS_EQUAL(100,initial->size());
-  noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(3);
-  BetweenFactor<Pose2> expected(1, 0, Pose2(-0.99879,0.0417574,-0.00818381), model);
-  BetweenFactor<Pose2>::shared_ptr actual = boost::dynamic_pointer_cast<
-      BetweenFactor<Pose2> >(graph->at(0));
+  EXPECT_LONGS_EQUAL(300, graph->size());
+  EXPECT_LONGS_EQUAL(100, initial->size());
+  auto model = noiseModel::Unit::Create(3);
+  BetweenFactor<Pose2> expected(1, 0, Pose2(-0.99879, 0.0417574, -0.00818381),
+                                model);
+  BetweenFactor<Pose2>::shared_ptr actual =
+      boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(0));
   EXPECT(assert_equal(expected, *actual));
+
+  // // Check factor parsing
+  // const auto actualFactors = parse2DFactors(filename);
+  // for (size_t i : {0, 1, 2, 3, 4, 5}) {
+  //   EXPECT(assert_equal(
+  //       *boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(i)),
+  //       *actualFactors[i], 1e-5));
+  // }
+
+  // Check pose parsing
+  const auto actualPoses = parse2DPoses(filename);
+  for (size_t j : {0, 1, 2, 3, 4}) {
+    EXPECT(assert_equal(initial->at<Pose2>(j), actualPoses.at(j), 1e-5));
+  }
+
+  // Check landmark parsing
+  const auto actualLandmarks = parse2DLandmarks(filename);
+  EXPECT_LONGS_EQUAL(0, actualLandmarks.size());
 }
 
 /* ************************************************************************* */
