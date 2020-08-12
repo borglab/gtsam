@@ -105,10 +105,10 @@ string createRewrittenFileName(const string& name) {
 }
 
 /* ************************************************************************* */
-GraphAndValues load2D(pair<string, SharedNoiseModel> dataset, int maxID,
+GraphAndValues load2D(pair<string, SharedNoiseModel> dataset, Key maxNr,
     bool addNoise, bool smart, NoiseFormat noiseFormat,
     KernelFunctionType kernelFunctionType) {
-  return load2D(dataset.first, dataset.second, maxID, addNoise, smart,
+  return load2D(dataset.first, dataset.second, maxNr, addNoise, smart,
       noiseFormat, kernelFunctionType);
 }
 
@@ -227,6 +227,54 @@ boost::optional<IndexedLandmark> parseVertexLandmark(istream& is, const string& 
 }
 
 /* ************************************************************************* */
+// Parse types T into a Key-indexed map
+template <typename T>
+static map<Key, T> parseIntoMap(const string &filename, Key maxNr = 0) {
+  ifstream is(filename.c_str());
+  if (!is)
+    throw invalid_argument("parse: can not find file " + filename);
+
+  map<Key, T> result;
+  string tag;
+  while (!is.eof()) {
+    boost::optional<pair<Key, T>> indexed_t;
+    is >> indexed_t;
+    if (indexed_t) {
+      // optional filter
+      if (maxNr && indexed_t->first >= maxNr)
+        continue;
+      result.insert(*indexed_t);
+    }
+    is.ignore(LINESIZE, '\n');
+  }
+  return result;
+}
+
+/* ************************************************************************* */
+istream &operator>>(istream &is, boost::optional<IndexedPose> &indexed) {
+  string tag;
+  is >> tag;
+  indexed = parseVertexPose(is, tag);
+  return is;
+}
+
+map<Key, Pose2> parse2DPoses(const string &filename, Key maxNr) {
+  return parseIntoMap<Pose2>(filename, maxNr);
+}
+
+/* ************************************************************************* */
+istream &operator>>(istream &is, boost::optional<IndexedLandmark> &indexed) {
+  string tag;
+  is >> tag;
+  indexed = parseVertexLandmark(is, tag);
+  return is;
+}
+
+map<Key, Point2> parse2DLandmarks(const string &filename, Key maxNr) {
+  return parseIntoMap<Point2>(filename, maxNr);
+}
+
+/* ************************************************************************* */
 boost::optional<IndexedEdge> parseEdge(istream& is, const string& tag) {
   if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "EDGE_SE2")
       || (tag == "ODOMETRY")) {
@@ -241,48 +289,26 @@ boost::optional<IndexedEdge> parseEdge(istream& is, const string& tag) {
 }
 
 /* ************************************************************************* */
-GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
-    bool addNoise, bool smart, NoiseFormat noiseFormat,
-    KernelFunctionType kernelFunctionType) {
+GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
+                      bool addNoise, bool smart, NoiseFormat noiseFormat,
+                      KernelFunctionType kernelFunctionType) {
+
+  Values::shared_ptr initial(new Values);
+
+  const auto poses = parse2DPoses(filename, maxNr);
+  for (const auto& key_pose : poses) {
+    initial->insert(key_pose.first, key_pose.second);
+  }
+  const auto landmarks = parse2DLandmarks(filename, maxNr);
+  for (const auto& key_landmark : landmarks) {
+    initial->insert(key_landmark.first, key_landmark.second);
+  }
 
   ifstream is(filename.c_str());
   if (!is)
     throw invalid_argument("load2D: can not find file " + filename);
 
-  Values::shared_ptr initial(new Values);
   NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
-
-  string tag;
-
-  // load the poses and landmarks
-  while (!is.eof()) {
-    if (!(is >> tag))
-      break;
-
-    const auto indexed_pose = parseVertexPose(is, tag);
-    if (indexed_pose) {
-      Key id = indexed_pose->first;
-
-      // optional filter
-      if (maxID && id >= maxID)
-        continue;
-
-      initial->insert(id, indexed_pose->second);
-    }
-    const auto indexed_landmark = parseVertexLandmark(is, tag);
-    if (indexed_landmark) {
-      Key id = indexed_landmark->first;
-
-      // optional filter
-      if (maxID && id >= maxID)
-        continue;
-
-      initial->insert(id, indexed_landmark->second);
-    }
-    is.ignore(LINESIZE, '\n');
-  }
-  is.clear(); /* clears the end-of-file and error flags */
-  is.seekg(0, ios::beg);
 
   // If asked, create a sampler with random number generator
   std::unique_ptr<Sampler> sampler;
@@ -302,6 +328,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
   bool haveLandmark = false;
   const bool useModelInFile = !model;
   while (!is.eof()) {
+    string tag;
     if (!(is >> tag))
       break;
 
@@ -315,7 +342,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
           kernelFunctionType);
 
       // optional filter
-      if (maxID && (id1 >= maxID || id2 >= maxID))
+      if (maxNr && (id1 >= maxNr || id2 >= maxNr))
         continue;
 
       if (useModelInFile)
@@ -375,7 +402,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
     if (tag == "LANDMARK" || tag == "BR") {
 
       // optional filter
-      if (maxID && id1 >= maxID)
+      if (maxNr && id1 >= maxNr)
         continue;
 
       // Create noise model
@@ -404,8 +431,8 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
 
 /* ************************************************************************* */
 GraphAndValues load2D_robust(const string& filename,
-    noiseModel::Base::shared_ptr& model, int maxID) {
-  return load2D(filename, model, maxID);
+    noiseModel::Base::shared_ptr& model, Key maxNr) {
+  return load2D(filename, model, maxNr);
 }
 
 /* ************************************************************************* */
@@ -448,10 +475,10 @@ GraphAndValues readG2o(const string& g2oFile, const bool is3D,
     return load3D(g2oFile);
   } else {
     // just call load2D
-    int maxID = 0;
+    Key maxNr = 0;
     bool addNoise = false;
     bool smart = true;
-    return load2D(g2oFile, SharedNoiseModel(), maxID, addNoise, smart,
+    return load2D(g2oFile, SharedNoiseModel(), maxNr, addNoise, smart,
                   NoiseFormatG2O, kernelFunctionType);
   }
 }
@@ -516,8 +543,8 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
       Pose2 pose = factor->measured(); //.inverse();
       stream << "EDGE_SE2 " << factor->key1() << " " << factor->key2() << " "
           << pose.x() << " " << pose.y() << " " << pose.theta();
-      for (int i = 0; i < 3; i++){
-        for (int j = i; j < 3; j++){
+      for (size_t i = 0; i < 3; i++){
+        for (size_t j = i; j < 3; j++){
           stream << " " << Info(i, j);
         }
       }
@@ -545,13 +572,13 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
              << " " << q.y() << " " << q.z() << " " << q.w();
 
       Matrix InfoG2o = I_6x6;
-      InfoG2o.block(0,0,3,3) = Info.block(3,3,3,3); // cov translation
-      InfoG2o.block(3,3,3,3) = Info.block(0,0,3,3); // cov rotation
-      InfoG2o.block(0,3,3,3) = Info.block(0,3,3,3); // off diagonal
-      InfoG2o.block(3,0,3,3) = Info.block(3,0,3,3); // off diagonal
+      InfoG2o.block<3, 3>(0, 0) = Info.block<3, 3>(3, 3); // cov translation
+      InfoG2o.block<3, 3>(3, 3) = Info.block<3, 3>(0, 0); // cov rotation
+      InfoG2o.block<3, 3>(0, 3) = Info.block<3, 3>(0, 3); // off diagonal
+      InfoG2o.block<3, 3>(3, 0) = Info.block<3, 3>(3, 0); // off diagonal
 
-      for (int i = 0; i < 6; i++){
-        for (int j = i; j < 6; j++){
+      for (size_t i = 0; i < 6; i++){
+        for (size_t j = i; j < 6; j++){
           stream << " " << InfoG2o(i, j);
         }
       }
@@ -562,126 +589,157 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
 }
 
 /* ************************************************************************* */
-static Rot3 NormalizedRot3(double w, double x, double y, double z) {
+// parse quaternion in x,y,z,w order, and normalize to unit length
+istream &operator>>(istream &is, Quaternion &q) {
+  double x, y, z, w;
+  is >> x >> y >> z >> w;
   const double norm = sqrt(w * w + x * x + y * y + z * z), f = 1.0 / norm;
-  return Rot3::Quaternion(f * w, f * x, f * y, f * z);
+  q = Quaternion(f * w, f * x, f * y, f * z);
+  return is;
 }
 
 /* ************************************************************************* */
-std::map<Key, Pose3> parse3DPoses(const string& filename) {
+// parse Rot3 from roll, pitch, yaw
+istream &operator>>(istream &is, Rot3 &R) {
+  double yaw, pitch, roll;
+  is >> roll >> pitch >> yaw;  // notice order !
+  R = Rot3::Ypr(yaw, pitch, roll);
+  return is;
+}
+
+/* ************************************************************************* */
+istream &operator>>(istream &is, boost::optional<pair<Key, Pose3>> &indexed) {
+  string tag;
+  is >> tag;
+  if (tag == "VERTEX3") {
+    Key id;
+    double x, y, z;
+    Rot3 R;
+    is >> id >> x >> y >> z >> R;
+    indexed.reset({id, Pose3(R, {x, y, z})});
+  } else if (tag == "VERTEX_SE3:QUAT") {
+    Key id;
+    double x, y, z;
+    Quaternion q;
+    is >> id >> x >> y >> z >> q;
+    indexed.reset({id, Pose3(q, {x, y, z})});
+  }
+  return is;
+}
+
+map<Key, Pose3> parse3DPoses(const string &filename, Key maxNr) {
+  return parseIntoMap<Pose3>(filename, maxNr);
+}
+
+/* ************************************************************************* */
+istream &operator>>(istream &is, boost::optional<pair<Key, Point3>> &indexed) {
+  string tag;
+  is >> tag;
+  if (tag == "VERTEX_TRACKXYZ") {
+    Key id;
+    double x, y, z;
+    is >> id >> x >> y >> z;
+    indexed.reset({id, Point3(x, y, z)});
+  }
+  return is;
+}
+
+map<Key, Point3> parse3DLandmarks(const string &filename, Key maxNr) {
+  return parseIntoMap<Point3>(filename, maxNr);
+}
+
+/* ************************************************************************* */
+// Parse BetweenFactor<T> shared pointers into a vector
+template <typename T>
+static vector<boost::shared_ptr<BetweenFactor<T>>>
+parseIntoVector(const string &filename, Key maxNr = 0) {
   ifstream is(filename.c_str());
   if (!is)
-    throw invalid_argument("parse3DPoses: can not find file " + filename);
+    throw invalid_argument("parse: can not find file " + filename);
 
-  std::map<Key, Pose3> poses;
+  vector<boost::shared_ptr<BetweenFactor<T>>> result;
+  string tag;
   while (!is.eof()) {
-    char buf[LINESIZE];
-    is.getline(buf, LINESIZE);
-    istringstream ls(buf);
-    string tag;
-    ls >> tag;
-
-    if (tag == "VERTEX3") {
-      Key id;
-      double x, y, z, roll, pitch, yaw;
-      ls >> id >> x >> y >> z >> roll >> pitch >> yaw;
-      poses.emplace(id, Pose3(Rot3::Ypr(yaw, pitch, roll), {x, y, z}));
+    boost::shared_ptr<BetweenFactor<T>> shared;
+    is >> shared;
+    if (shared) {
+      // optional filter
+      if (maxNr && (shared->key1() >= maxNr || shared->key1() >= maxNr))
+        continue;
+      result.push_back(shared);
     }
-    if (tag == "VERTEX_SE3:QUAT") {
-      Key id;
-      double x, y, z, qx, qy, qz, qw;
-      ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
-      poses.emplace(id, Pose3(NormalizedRot3(qw, qx, qy, qz), {x, y, z}));
-    }
+    is.ignore(LINESIZE, '\n');
   }
-  return poses;
+  return result;
 }
 
 /* ************************************************************************* */
-std::map<Key, Point3> parse3DLandmarks(const string& filename) {
-  ifstream is(filename.c_str());
-  if (!is)
-    throw invalid_argument("parse3DLandmarks: can not find file " + filename);
-
-  std::map<Key, Point3> landmarks;
-  while (!is.eof()) {
-    char buf[LINESIZE];
-    is.getline(buf, LINESIZE);
-    istringstream ls(buf);
-    string tag;
-    ls >> tag;
-
-    if (tag == "VERTEX_TRACKXYZ") {
-      Key id;
-      double x, y, z;
-      ls >> id >> x >> y >> z;
-      landmarks.emplace(id, Point3(x, y, z));
-    }
+// Parse a symmetric covariance matrix (onlyupper-triangular part is stored)
+istream &operator>>(istream &is, Matrix6 &m) {
+  for (size_t i = 0; i < 6; i++)
+    for (size_t j = i; j < 6; j++){
+      is >> m(i, j);
+      m(j,i) = m(i,j);
   }
-  return landmarks;
+  return is;
 }
 
 /* ************************************************************************* */
-BetweenFactorPose3s parse3DFactors(
-    const string& filename,
-    const noiseModel::Diagonal::shared_ptr& corruptingNoise) {
-  ifstream is(filename.c_str());
-  if (!is) throw invalid_argument("parse3DFactors: can not find file " + filename);
+istream &operator>>(istream &is,
+                    boost::shared_ptr<BetweenFactor<Pose3>> &shared) {
+  string tag;
+  is >> tag;
 
-  boost::optional<Sampler> sampler;
+  Matrix6 m;
+  if (tag == "EDGE3") {
+    Key id1, id2;
+    double x, y, z;
+    Rot3 R;
+    is >> id1 >> id2 >> x >> y >> z >> R;
+    Pose3 pose(R, {x, y, z});
+
+    is >> m;
+    SharedNoiseModel model = noiseModel::Gaussian::Information(m);
+    shared.reset(new BetweenFactor<Pose3>(id1, id2, pose, model));
+  }
+  if (tag == "EDGE_SE3:QUAT") {
+    Key id1, id2;
+    double x, y, z;
+    Quaternion q;
+    is >> id1 >> id2 >> x >> y >> z >> q;
+    Pose3 pose(q, {x, y, z});
+
+    // EDGE_SE3:QUAT stores covariance in t,R order, unlike GTSAM:
+    is >> m;
+    Matrix6 mgtsam;
+    mgtsam.block<3, 3>(0, 0) = m.block<3, 3>(3, 3); // cov rotation
+    mgtsam.block<3, 3>(3, 3) = m.block<3, 3>(0, 0); // cov translation
+    mgtsam.block<3, 3>(0, 3) = m.block<3, 3>(0, 3); // off diagonal
+    mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0); // off diagonal
+    SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
+
+    shared.reset(new BetweenFactor<Pose3>(id1, id2, pose, model));
+  }
+  return is;
+}
+
+/* ************************************************************************* */
+BetweenFactorPose3s
+parse3DFactors(const string &filename,
+               const noiseModel::Diagonal::shared_ptr &corruptingNoise,
+               Key maxNr) {
+  auto factors =  parseIntoVector<Pose3>(filename, maxNr);
+
   if (corruptingNoise) {
-    sampler = Sampler(corruptingNoise);
-  }
-
-  std::vector<BetweenFactor<Pose3>::shared_ptr> factors;
-  while (!is.eof()) {
-    char buf[LINESIZE];
-    is.getline(buf, LINESIZE);
-    istringstream ls(buf);
-    string tag;
-    ls >> tag;
-
-    if (tag == "EDGE3") {
-      Key id1, id2;
-      double x, y, z, roll, pitch, yaw;
-      ls >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
-      Matrix m(6, 6);
-      for (size_t i = 0; i < 6; i++)
-        for (size_t j = i; j < 6; j++) ls >> m(i, j);
-      SharedNoiseModel model = noiseModel::Gaussian::Information(m);
-      factors.emplace_back(new BetweenFactor<Pose3>(
-          id1, id2, Pose3(Rot3::Ypr(yaw, pitch, roll), {x, y, z}), model));
-    }
-    if (tag == "EDGE_SE3:QUAT") {
-      Key id1, id2;
-      double x, y, z, qx, qy, qz, qw;
-      ls >> id1 >> id2 >> x >> y >> z >> qx >> qy >> qz >> qw;
-      Matrix m(6, 6);
-      for (size_t i = 0; i < 6; i++) {
-        for (size_t j = i; j < 6; j++) {
-          double mij;
-          ls >> mij;
-          m(i, j) = mij;
-          m(j, i) = mij;
-        }
-      }
-      Matrix mgtsam(6, 6);
-
-      mgtsam.block<3, 3>(0, 0) = m.block<3, 3>(3, 3);  // cov rotation
-      mgtsam.block<3, 3>(3, 3) = m.block<3, 3>(0, 0);  // cov translation
-      mgtsam.block<3, 3>(0, 3) = m.block<3, 3>(0, 3);  // off diagonal
-      mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0);  // off diagonal
-
-      SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
-      auto R12 = NormalizedRot3(qw, qx, qy, qz);
-      if (sampler) {
-        R12 = R12.retract(sampler->sample());
-      }
-
-      factors.emplace_back(new BetweenFactor<Pose3>(
-          id1, id2, Pose3(R12, {x, y, z}), model));
+    Sampler sampler(corruptingNoise);
+    for (auto factor : factors) {
+      auto pose = factor->measured();
+      factor.reset(new BetweenFactor<Pose3>(factor->key1(), factor->key2(),
+                                            pose.retract(sampler.sample()),
+                                            factor->noiseModel()));
     }
   }
+
   return factors;
 }
 
