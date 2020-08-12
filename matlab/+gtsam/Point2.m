@@ -4,7 +4,9 @@ function pt = Point2(varargin)
         pt = [varargin{1} varargin{2}]';
     elseif nargin == 1
         pt = varargin{1};
+    elseif nargin == 0
+        pt = [0 0]';
     else
-        error('Arguments do not match any overload of MyVector3 constructor');
+        error('Arguments do not match any overload of Point2 shim');
     end
 end
