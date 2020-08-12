@@ -44,7 +44,8 @@ static std::mt19937 kRandomNumberGenerator(42);
 using Sparse = Eigen::SparseMatrix<double>;
 
 /* ************************************************************************* */
-ShonanAveragingParameters::ShonanAveragingParameters(
+template <size_t d>
+ShonanAveragingParameters<d>::ShonanAveragingParameters(
     const LevenbergMarquardtParams &_lm, const std::string &method,
     double optimalityThreshold, double alpha, double beta, double gamma)
     : lm(_lm), optimalityThreshold(optimalityThreshold), alpha(alpha),
@@ -83,21 +84,15 @@ ShonanAveragingParameters::ShonanAveragingParameters(
 }
 
 /* ************************************************************************* */
-template <size_t d>
-ShonanAveraging<d>::ShonanAveraging(const Factors &factors,
-                                    const size_t nrUnknowns,
-                                    const ShonanAveragingParameters &parameters)
-    : parameters_(parameters), factors_(factors), nrUnknowns_(nrUnknowns) {
-  Q_ = buildQ();
-  D_ = buildD();
-  L_ = D_ - Q_;
-}
+// Explicit instantiation for d=2 and d=3
+template struct ShonanAveragingParameters<2>;
+template struct ShonanAveragingParameters<3>;
 
 /* ************************************************************************* */
-// Calculate number of poses referenced by factors
+// Calculate number of unknown rotations referenced by factors
 template <size_t d>
 static size_t
-NrPosesReferenced(const typename ShonanAveraging<d>::Factors &factors) {
+NrUnknowns(const typename ShonanAveraging<d>::Factors &factors) {
   std::set<Key> keys;
   for (const auto &factor : factors) {
     keys.insert(factor->key1());
@@ -109,26 +104,25 @@ NrPosesReferenced(const typename ShonanAveraging<d>::Factors &factors) {
 /* ************************************************************************* */
 template <size_t d>
 ShonanAveraging<d>::ShonanAveraging(const Factors &factors,
-                                    const ShonanAveragingParameters &parameters)
-    : ShonanAveraging(factors, NrPosesReferenced<d>(factors), parameters) {}
-
-/* ************************************************************************* */
-template <size_t d>
-ShonanAveraging<d>::ShonanAveraging(const string &g2oFile,
-                                    const ShonanAveragingParameters &parameters)
-    : ShonanAveraging(parse3DFactors(g2oFile), parameters) {}
+                                    const Parameters &parameters)
+    : parameters_(parameters), factors_(factors),
+      nrUnknowns_(NrUnknowns<d>(factors)) {
+  Q_ = buildQ();
+  D_ = buildD();
+  L_ = D_ - Q_;
+}
 
 /* ************************************************************************* */
 template <size_t d>
 NonlinearFactorGraph ShonanAveraging<d>::buildGraphAt(size_t p) const {
   NonlinearFactorGraph graph;
-  auto G = boost::make_shared<Matrix>(SOn::VectorizedGenerators(p));
+  auto G = boost::make_shared<Matrix>(SO<-1>::VectorizedGenerators(p));
   for (const auto &factor : factors_) {
     const auto &keys = factor->keys();
     const auto &Rij = factor->measured();
     const auto &model = factor->noiseModel();
-    graph.emplace_shared<FrobeniusWormholeFactor>(keys[0], keys[1], Rij, p,
-                                                  model, G);
+    graph.emplace_shared<FrobeniusWormholeFactor<d>>(keys[0], keys[1], Rij, p,
+                                                     model, G);
   }
   return graph;
 }
@@ -168,7 +162,7 @@ ShonanAveraging<d>::createOptimizerAt(
   // Anchor prior is only added here as depends on initial value (and cost is zero)
   if (parameters_.alpha > 0) {
     size_t i;
-    Rot3 value;
+    Rot value;
     std::tie(i, value) = parameters_.anchor;
     auto model = noiseModel::Isotropic::Precision(dim, parameters_.alpha);
     graph.emplace_shared<PriorFactor<SOn>>(i, SOn::Lift(p, value.matrix()), model);
@@ -208,7 +202,7 @@ static Matrix StiefelElementMatrix(const Values &values) {
   const size_t N = values.size();
   const size_t p = values.at<SOn>(0).rows();
   Matrix S(p, N * d);
-  for (const auto& it: values.filter<SOn>()) {
+  for (const auto it: values.filter<SOn>()) {
     S.middleCols<d>(it.key * d) = it.value.matrix().leftCols<d>();  // project Qj to Stiefel
   }
   return S;
@@ -218,7 +212,7 @@ static Matrix StiefelElementMatrix(const Values &values) {
 template <>
 Values ShonanAveraging<2>::projectFrom(size_t p, const Values &values) const {
   Values result;
-  for (const auto &it : values.filter<SOn>()) {
+  for (const auto it : values.filter<SOn>()) {
     assert(it.value.rows() == p);
     const auto &M = it.value.matrix();
     const Rot2 R = Rot2::atan2(M(1, 0), M(0, 0));
@@ -230,7 +224,7 @@ Values ShonanAveraging<2>::projectFrom(size_t p, const Values &values) const {
 template <>
 Values ShonanAveraging<3>::projectFrom(size_t p, const Values &values) const {
   Values result;
-  for (const auto &it : values.filter<SOn>()) {
+  for (const auto it : values.filter<SOn>()) {
     assert(it.value.rows() == p);
     const auto &M = it.value.matrix();
     const Rot3 R = Rot3::ClosestTo(M.topLeftCorner<3, 3>());
@@ -250,7 +244,7 @@ static Matrix RoundSolutionS(const Matrix &S) {
   // Construct a diagonal matrix comprised of the first d singular values
   using DiagonalMatrix = Eigen::DiagonalMatrix<double, d>;
   DiagonalMatrix Sigma_d;
-  Sigma_d.diagonal() = sigmas;
+  Sigma_d.diagonal() = sigmas.head<d>();
 
   // Now, construct a rank-d truncated singular value decomposition for S
   Matrix R = Sigma_d * svd.matrixV().leftCols<d>().transpose();
@@ -319,22 +313,27 @@ double ShonanAveraging<d>::cost(const Values &values) const {
     const auto &keys = factor->keys();
     const auto &Rij = factor->measured();
     const auto &model = factor->noiseModel();
-    graph.emplace_shared<FrobeniusBetweenFactor<SO3>>(keys[0], keys[1],
-                                                      SO3(Rij.matrix()), model);
+    graph.emplace_shared<FrobeniusBetweenFactor<SO<d>>>(
+        keys[0], keys[1], SO<d>(Rij.matrix()), model);
   }
   // Finally, project each dxd rotation block to SO(d)
-  Values SO3_values;
-  for (const auto &it : values.filter<Rot3>()) {
-    SO3_values.insert(it.key, SO3(it.value.matrix()));
+  Values result;
+  for (const auto it : values.filter<Rot>()) {
+    result.insert(it.key, SO<d>(it.value.matrix()));
   }
-  return graph.error(SO3_values);
+  return graph.error(result);
 }
 
 /* ************************************************************************* */
 // Get kappa from noise model
-static double Kappa(const BetweenFactor<Pose3>::shared_ptr& factor) {
-  const auto& model = factor->noiseModel();
-  const auto& isotropic = ConvertPose3NoiseModel(model, 3);
+template <typename T>
+static double Kappa(const typename BetweenFactor<T>::shared_ptr& factor) {
+  const auto &isotropic =
+      boost::dynamic_pointer_cast<noiseModel::Isotropic>(factor->noiseModel());
+  if (!isotropic) {
+    throw std::invalid_argument(
+        "Shonan averaging noise models must be isotropic.");
+  }
   const double sigma = isotropic->sigma();
   return 1.0 / (sigma * sigma);
 }
@@ -355,7 +354,7 @@ Sparse ShonanAveraging<d>::buildD() const {
     const auto &keys = factor->keys();
 
     // Get kappa from noise model
-    double kappa = Kappa(factor);
+    double kappa = Kappa<Rot>(factor);
 
     const size_t di = d * keys[0], dj = d * keys[1];
     for (size_t k = 0; k < d; k++) {
@@ -390,10 +389,10 @@ Sparse ShonanAveraging<d>::buildQ() const {
     const auto& keys = factor->keys();
 
     // Extract rotation measurement
-    const Matrix3 Rij = factor->measured().matrix();
+    const auto Rij = factor->measured().matrix();
 
     // Get kappa from noise model
-    double kappa = Kappa(factor);
+    double kappa = Kappa<Rot>(factor);
 
     const size_t di = d * keys[0], dj = d * keys[1];
     for (size_t r = 0; r < d; r++) {
@@ -761,7 +760,7 @@ std::pair<Values, double>
 ShonanAveraging<d>::run(size_t pMin, size_t pMax, bool withDescent,
                      const boost::optional<Values>& initialEstimate) const {
   Values Qstar;
-  Values initial = (initialEstimate) ? LiftTo<Rot3>(pMin, *initialEstimate)
+  Values initial = (initialEstimate) ? LiftTo<Rot>(pMin, *initialEstimate)
                                      : initializeRandomlyAt(pMin);
   for (size_t p = pMin; p <= pMax; p++) {
     Qstar = tryOptimizingAt(p, initial);
@@ -798,7 +797,7 @@ std::pair<Values, double> ShonanAveraging<d>::runWithDescent(
 
 /* ************************************************************************* */
 // Explicit instantiation for d=2 and d=3
-template class ShonanAveraging<2>;
+//template class ShonanAveraging<2>;
 template class ShonanAveraging<3>;
 
 /* ************************************************************************* */

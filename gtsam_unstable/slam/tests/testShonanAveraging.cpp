@@ -18,19 +18,42 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/slam/ShonanAveraging.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 
+#include <algorithm>
 #include <iostream>
 #include <map>
 
 using namespace std;
 using namespace gtsam;
 
-string g2oFile = findExampleDataFile("toyExample.g2o");
-static const ShonanAveraging3 kShonan(g2oFile);
+// Convert Pose3 constraints to Rot3 constraints
+ShonanAveraging3::Factors
+betweenFactorRot3s(const BetweenFactorPose3s &factors3) {
+  ShonanAveraging3::Factors result;
+  result.reserve(factors3.size());
+  for (auto f : factors3) {
+    result.emplace_back(
+        new BetweenFactor<Rot3>(f->key1(), f->key2(), f->measured().rotation(),
+                                ConvertNoiseModel(f->noiseModel(), 3)));
+  }
+  return result;
+}
+
+ShonanAveraging3 fromExampleName(
+    const std::string &name,
+    ShonanAveraging3::Parameters parameters = ShonanAveraging3::Parameters()) {
+  string g2oFile = findExampleDataFile(name);
+  auto factors3 = parse3DFactors(g2oFile);
+  auto factors = betweenFactorRot3s(factors3);
+  return ShonanAveraging3(factors, parameters);
+}
+
+static const ShonanAveraging3 kShonan = fromExampleName("toyExample.g2o");
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, checkConstructor) {
-  EXPECT_LONGS_EQUAL(5, kShonan.nrPoses());
+  EXPECT_LONGS_EQUAL(5, kShonan.nrUnknowns());
 
   EXPECT_LONGS_EQUAL(15, kShonan.D().rows());
   EXPECT_LONGS_EQUAL(15, kShonan.D().cols());
@@ -49,17 +72,6 @@ TEST(ShonanAveraging3, checkConstructor) {
   auto L = kShonan.denseL();
   EXPECT_LONGS_EQUAL(15, L.rows());
   EXPECT_LONGS_EQUAL(15, L.cols());
-}
-
-/* ************************************************************************* */
-TEST(ShonanAveraging3, checkAllConstructors) {
-  ShonanAveragingParameters parameters;
-  const BetweenFactorPose3s factors;
-  const map<Key, Pose3> poses;
-  const Values values;
-  EXPECT_LONGS_EQUAL(0, ShonanAveraging3(factors, poses, parameters).nrPoses());
-  EXPECT_LONGS_EQUAL(0, ShonanAveraging3(factors, values, parameters).nrPoses());
-  EXPECT_LONGS_EQUAL(5, ShonanAveraging3(g2oFile, parameters).nrPoses());
 }
 
 /* ************************************************************************* */
@@ -175,23 +187,28 @@ TEST(ShonanAveraging3, runWithDescent) {
 }
 
 /* ************************************************************************* */
+namespace klaus {
+// The data in the file is the Colmap solution
+const Rot3 wR0(0.9992281076190063, -0.02676080288219576, -0.024497002638379624,
+               -0.015064701622500615);
+const Rot3 wR1(0.998239108728862, -0.049543805396343954, -0.03232420352077356,
+               -0.004386230477751116);
+const Rot3 wR2(0.9925378735259738, -0.07993768981394891, 0.0825062894866454,
+               -0.04088089479075661);
+} // namespace klaus
+
 TEST(ShonanAveraging3, runWithRandomKlaus) {
-  // Load 3 pose example taken in Klaus by Shicong
-  string g2oFile = findExampleDataFile("Klaus3.g2o");
+  using namespace klaus;
 
   // Initialize a Shonan instance without the Karcher mean
-  ShonanAveragingParameters parameters;
+  ShonanAveraging3::Parameters parameters;
   parameters.setKarcherWeight(0);
-  static const ShonanAveraging3 shonan(g2oFile, parameters);
+
+  // Load 3 pose example taken in Klaus by Shicong
+  static const ShonanAveraging3 shonan = fromExampleName("Klaus3.g2o", parameters);
 
   // Check nr poses
-  EXPECT_LONGS_EQUAL(3, shonan.nrPoses());
-
-  // The data in the file is the Colmap solution
-  const auto &poses = shonan.poses();
-  const Rot3 wR0 = poses.at(0).rotation();
-  const Rot3 wR1 = poses.at(1).rotation();
-  const Rot3 wR2 = poses.at(2).rotation();
+  EXPECT_LONGS_EQUAL(3, shonan.nrUnknowns());
 
   // Colmap uses the Y-down vision frame, and the first 3 rotations are close to
   // identity. We check that below. Note tolerance is quite high.
@@ -201,9 +218,9 @@ TEST(ShonanAveraging3, runWithRandomKlaus) {
   EXPECT(assert_equal(identity, wR2, 0.2));
 
   // Get measurements
-  const Rot3 R01 = shonan.measured(0).rotation();
-  const Rot3 R12 = shonan.measured(1).rotation();
-  const Rot3 R02 = shonan.measured(2).rotation();
+  const Rot3 R01 = shonan.measured(0);
+  const Rot3 R12 = shonan.measured(1);
+  const Rot3 R02 = shonan.measured(2);
 
   // Regression test to make sure data did not change.
   EXPECT(assert_equal(Rot3(0.9995433591728293, -0.022048798853273946,
@@ -237,15 +254,10 @@ TEST(ShonanAveraging3, runWithRandomKlaus) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, runWithRandomKlausKarcher) {
+  using namespace klaus;
+  
   // Load 3 pose example taken in Klaus by Shicong
-  string g2oFile = findExampleDataFile("Klaus3.g2o");
-
-  // Initialize a Shonan instance with the Karcher mean (default true)
-  static const ShonanAveraging3 shonan(g2oFile);
-  const auto &poses = shonan.poses();
-  const Rot3 wR0 = poses.at(0).rotation();
-  const Rot3 wR1 = poses.at(1).rotation();
-  const Rot3 wR2 = poses.at(2).rotation();
+  static const ShonanAveraging3 shonan = fromExampleName("Klaus3.g2o");
 
   // Run Shonan (with Karcher mean prior)
   auto result = shonan.runWithRandom(5);
@@ -265,38 +277,13 @@ TEST(ShonanAveraging3, runWithRandomKlausKarcher) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging2, runWithRandomKlausKarcher) {
-  // Load 3 pose example taken in Klaus by Shicong
-  string g2oFile = findExampleDataFile("Klaus3.g2o");
-
-  // Initialize a Shonan instance with the Karcher mean (default true)
-  static const ShonanAveraging2 shonan(g2oFile);
-  const auto &poses = shonan.poses();
-  const Rot2 wR0 = poses.at(0).rotation();
-  const Rot2 wR1 = poses.at(1).rotation();
-  const Rot2 wR2 = poses.at(2).rotation();
-
-  // Run Shonan (with Karcher mean prior)
-  auto result = shonan.runWithRandom(5);
-  EXPECT_DOUBLES_EQUAL(0, shonan.cost(result.first), 1e-2);
-  EXPECT_DOUBLES_EQUAL(-1.361402670507772e-05, result.second,
-                       1e-4);  // Regression test
-
-  // Get Shonan solution in new frame R (R for result)
-  const Rot2 rR0 = result.first.at<Rot2>(0);
-  const Rot2 rR1 = result.first.at<Rot2>(1);
-  const Rot2 rR2 = result.first.at<Rot2>(2);
-
-  const Rot2 rRw = rR0 * wR0.inverse();
-  EXPECT(assert_equal(rRw * wR1, rR1, 0.1))
-  EXPECT(assert_equal(rRw * wR2, rR2, 0.1))
 }
 
 /* ************************************************************************* */
 // Test alpha/beta/gamma prior weighting.
 TEST(ShonanAveraging3, PriorWeights) {
-  string g2oFile = findExampleDataFile("Klaus3.g2o");
   auto lmParams = LevenbergMarquardtParams::CeresDefaults();
-  auto params = ShonanAveragingParameters(lmParams);
+  ShonanAveraging3::Parameters params(lmParams);
   EXPECT_DOUBLES_EQUAL(0, params.alpha, 1e-9);
   EXPECT_DOUBLES_EQUAL(1, params.beta, 1e-9);
   EXPECT_DOUBLES_EQUAL(0, params.gamma, 1e-9);
@@ -308,7 +295,7 @@ TEST(ShonanAveraging3, PriorWeights) {
   EXPECT_DOUBLES_EQUAL(beta, params.beta, 1e-9);
   EXPECT_DOUBLES_EQUAL(gamma, params.gamma, 1e-9);
   params.setKarcherWeight(0);
-  const ShonanAveraging3 shonan(g2oFile, params);
+  static const ShonanAveraging3 shonan = fromExampleName("Klaus3.g2o", params);
   auto I = genericValue(Rot3());
   Values initial {{0, I}, {1, I}, {2, I}};
   EXPECT_DOUBLES_EQUAL(3.0756, shonan.cost(initial), 1e-4);

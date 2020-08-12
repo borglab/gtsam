@@ -22,8 +22,6 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam_unstable/dllexport.h>
@@ -39,8 +37,13 @@ class NonlinearFactorGraph;
 class LevenbergMarquardtOptimizer;
 
 /// Parameters governing optimization etc.
+template <size_t d>
 struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
-  using Anchor = std::pair<size_t, Rot3>;
+  // Select Rot2 or Rot3 interface based template parameter d
+  using Rot = typename std::conditional<d==2, Rot2, Rot3>::type;
+  using Anchor = std::pair<size_t, Rot>;
+
+  // Paremeters themselves:
   LevenbergMarquardtParams lm; // LM parameters
   double optimalityThreshold;  // threshold used in checkOptimality
   Anchor anchor;               // pose to use as anchor if not Karcher
@@ -60,7 +63,7 @@ struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
   void setOptimalityThreshold(double value) { optimalityThreshold = value; }
   double getOptimalityThreshold() const { return optimalityThreshold; }
 
-  void setAnchor(size_t index, const gtsam::Rot3 &value) {
+  void setAnchor(size_t index, const Rot &value) {
     anchor = {index, value};
   }
 
@@ -87,15 +90,16 @@ class GTSAM_UNSTABLE_EXPORT ShonanAveraging {
 public:
   using Sparse = Eigen::SparseMatrix<double>;
 
-  // Select Rot2 or Rot3 interface based template parameter d
-  using Rot = std::conditional<d==2, Rot2, Rot3>::type;
+  // Define the Parameters type and use its typedef of the rotation type:
+  using Parameters = ShonanAveragingParameters<d>;
+  using Rot = typename Parameters::Rot;
 
   // We store SO(d) BetweenFactors to get noise model
   // TODO(frank): use BinaryMeasurement?
-  using Factors = std::vector<BetweenFactor<Rot>::shared_ptr>;
+  using Factors = std::vector<typename BetweenFactor<Rot>::shared_ptr>;
 
 private:
-  ShonanAveragingParameters parameters_;
+  Parameters parameters_;
   Factors factors_;
   size_t nrUnknowns_;
   Sparse D_; // Sparse (diagonal) degree matrix
@@ -115,33 +119,23 @@ public:
   /// @name Standard Constructors
   /// @{
 
-  /// Construct from factors and number of poses.
-  ShonanAveraging(const Factors &factors, const size_t nrUnknowns,
-                  const ShonanAveragingParameters &parameters =
-                      ShonanAveragingParameters());
-
-  /// Construct from factors alone (calculates number of poses).
+  /// Construct from set of relative measurements (given as BetweenFactor<Rot3> for now)
+  /// NoiseModel *must* be isotropic.
   ShonanAveraging(const Factors &factors,
-                  const ShonanAveragingParameters &parameters =
-                      ShonanAveragingParameters());
-
-  /// Construct from a G2O file.
-  explicit ShonanAveraging(const std::string &g2oFile,
-                           const ShonanAveragingParameters &parameters =
-                               ShonanAveragingParameters());
+                  const Parameters &parameters = Parameters());
 
   /// @}
   /// @name Query properties
   /// @{
 
-  /// Return number of poses
+  /// Return number of unknowns
   size_t nrUnknowns() const { return nrUnknowns_; }
 
   /// Return number of measurements
   size_t nrMeasurements() const { return factors_.size(); }
 
-  /// k^th measurement, as a Pose3.
-  const Pose3 &measured(size_t i) const { return factors_[i]->measured(); }
+  /// k^th measurement, as a Rot.
+  const Rot &measured(size_t i) const { return factors_[i]->measured(); }
 
   /// Keys for k^th measurement, as a vector of Key values.
   const KeyVector &keys(size_t i) const { return factors_[i]->keys(); }
@@ -292,7 +286,7 @@ public:
   /// Lift Values of type T to SO(p)
   template <class T> static Values LiftTo(size_t p, const Values &values) {
     Values result;
-    for (const auto &it : values.filter<T>()) {
+    for (const auto it : values.filter<T>()) {
       result.insert(it.key, SOn::Lift(p, it.value.matrix()));
     }
     return result;
