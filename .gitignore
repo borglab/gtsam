@@ -21,3 +21,4 @@ cython/gtsam_wrapper.pxd
 /CMakeSettings.json
 # for QtCreator:
 CMakeLists.txt.user*
+xcode/
