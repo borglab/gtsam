@@ -39,8 +39,8 @@ using namespace std;
 using namespace gtsam;
 
 //******************************************************************************
-// Test dhynamic with n=0
-TEST(SOn, SO0) {
+// Test dynamic with n=0
+TEST(SOn, SOn0) {
   const auto R = SOn(0);
   EXPECT_LONGS_EQUAL(0, R.rows());
   EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::dimension);
@@ -50,13 +50,36 @@ TEST(SOn, SO0) {
 }
 
 //******************************************************************************
-TEST(SOn, SO5) {
+// Test dynamic with n=5
+TEST(SOn, SOn5) {
   const auto R = SOn(5);
   EXPECT_LONGS_EQUAL(5, R.rows());
   EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::dimension);
   EXPECT_LONGS_EQUAL(Eigen::Dynamic, SOn::Dim());
   EXPECT_LONGS_EQUAL(10, R.dim());
   EXPECT_LONGS_EQUAL(10, traits<SOn>::GetDimension(R));
+}
+
+//******************************************************************************
+// Test fixed with n=2
+TEST(SOn, SO0) {
+  const auto R = SO<2>();
+  EXPECT_LONGS_EQUAL(2, R.rows());
+  EXPECT_LONGS_EQUAL(1, SO<2>::dimension);
+  EXPECT_LONGS_EQUAL(1, SO<2>::Dim());
+  EXPECT_LONGS_EQUAL(1, R.dim());
+  EXPECT_LONGS_EQUAL(1, traits<SO<2>>::GetDimension(R));
+}
+
+//******************************************************************************
+// Test fixed with n=5
+TEST(SOn, SO5) {
+  const auto R = SO<5>();
+  EXPECT_LONGS_EQUAL(5, R.rows());
+  EXPECT_LONGS_EQUAL(10, SO<5>::dimension);
+  EXPECT_LONGS_EQUAL(10, SO<5>::Dim());
+  EXPECT_LONGS_EQUAL(10, R.dim());
+  EXPECT_LONGS_EQUAL(10, traits<SO<5>>::GetDimension(R));
 }
 
 //******************************************************************************
@@ -185,6 +208,23 @@ TEST(SOn, vec) {
   boost::function<Vector(const SOn &)> h = [](const SOn &Q) { return Q.vec(); };
   const Matrix H = numericalDerivative11<Vector, SOn, 10>(h, Q, 1e-5);
   CHECK(assert_equal(H, actualH));
+}
+
+//******************************************************************************
+TEST(SOn, VectorizedGenerators) {
+  // Default fixed
+  auto actual2 = SO<2>::VectorizedGenerators();
+  CHECK(actual2.rows()==4 && actual2.cols()==1)
+
+  // Specialized
+  auto actual3 = SO<3>::VectorizedGenerators();
+  CHECK(actual3.rows()==9 && actual3.cols()==3)
+  auto actual4 = SO<4>::VectorizedGenerators();
+  CHECK(actual4.rows()==16 && actual4.cols()==6)
+  
+  // Dynamic
+  auto actual5 = SOn::VectorizedGenerators(5);
+  CHECK(actual5.rows()==25 && actual5.cols()==10)
 }
 
 //******************************************************************************
