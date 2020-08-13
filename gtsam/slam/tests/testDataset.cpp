@@ -104,13 +104,13 @@ TEST(dataSet, load2D) {
       boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(0));
   EXPECT(assert_equal(expected, *actual));
 
-  // // Check factor parsing
-  // const auto actualFactors = parse2DFactors(filename);
-  // for (size_t i : {0, 1, 2, 3, 4, 5}) {
-  //   EXPECT(assert_equal(
-  //       *boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(i)),
-  //       *actualFactors[i], 1e-5));
-  // }
+  // Check factor parsing
+  const auto actualFactors = parse2DFactors(filename);
+  for (size_t i : {0, 1, 2, 3, 4, 5}) {
+    EXPECT(assert_equal(
+        *boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(i)),
+        *actualFactors[i], 1e-5));
+  }
 
   // Check pose parsing
   const auto actualPoses = parse2DPoses(filename);

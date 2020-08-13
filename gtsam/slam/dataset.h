@@ -77,16 +77,6 @@ typedef std::pair<Key, Pose2> IndexedPose;
 typedef std::pair<Key, Point2> IndexedLandmark;
 typedef std::pair<std::pair<Key, Key>, Pose2> IndexedEdge;
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
-/**
- * Parse TORO/G2O vertex "id x y yaw"
- * @param is input stream
- * @param tag string parsed from input stream, will only parse if vertex type
- */
-GTSAM_EXPORT boost::optional<IndexedPose> parseVertex(std::istream& is,
-    const std::string& tag);
-#endif
-
 /**
  * Parse TORO/G2O vertex "id x y yaw"
  * @param is input stream
@@ -118,7 +108,8 @@ using BetweenFactorPose2s =
 /// Parse edges in 2D g2o graph file into a set of BetweenFactors.
 GTSAM_EXPORT BetweenFactorPose2s parse2DFactors(
     const std::string &filename,
-    const noiseModel::Diagonal::shared_ptr &corruptingNoise = nullptr);
+    const noiseModel::Diagonal::shared_ptr &corruptingNoise = nullptr,
+    Key maxNr = 0);
 
 /// Parse vertices in 2D g2o graph file into a map of Pose2s.
 GTSAM_EXPORT std::map<Key, Pose2> parse2DPoses(const std::string &filename,
@@ -343,4 +334,15 @@ GTSAM_EXPORT Values initialCamerasEstimate(const SfmData& db);
  */
 GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfmData& db);
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+/**
+ * Parse TORO/G2O vertex "id x y yaw"
+ * @param is input stream
+ * @param tag string parsed from input stream, will only parse if vertex type
+ */
+GTSAM_EXPORT boost::optional<IndexedPose> parseVertex(std::istream &is,
+                                                      const std::string &tag) {
+  return parseVertexPose(is, tag);
+}
+#endif
 }  // namespace gtsam
