@@ -50,9 +50,9 @@ for i = 1:cylinderNum
         visible = true;
         for k = 1:cylinderNum
 
-            rayCameraToPoint = pose.translation().between(sampledPoint3).vector();
-            rayCameraToCylinder = pose.translation().between(cylinders{k}.centroid).vector();
-            rayCylinderToPoint = cylinders{k}.centroid.between(sampledPoint3).vector();
+            rayCameraToPoint = pose.translation().between(sampledPoint3);
+            rayCameraToCylinder = pose.translation().between(cylinders{k}.centroid);
+            rayCylinderToPoint = cylinders{k}.centroid.between(sampledPoint3);
 
             % Condition 1: all points in front of the cylinders'
             % surfaces are visible
