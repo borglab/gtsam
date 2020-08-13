@@ -38,7 +38,7 @@ function configure()
   set -e   # Make sure any error makes the script to return an error code
   set -x   # echo
 
-  SOURCE_DIR=`pwd`
+  SOURCE_DIR=$GITHUB_WORKSPACE
   BUILD_DIR=build
 
   #env

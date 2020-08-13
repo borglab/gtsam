@@ -28,14 +28,14 @@ case $WRAPPER in
     BUILD_PYBIND="OFF"
     TYPEDEF_POINTS_TO_VECTORS="OFF"
 
-    sudo $PYTHON -m pip install -r ./cython/requirements.txt
+    sudo $PYTHON -m pip install -r $GITHUB_WORKSPACE/cython/requirements.txt
     ;;
 "pybind")
     BUILD_CYTHON="OFF"
     BUILD_PYBIND="ON"
     TYPEDEF_POINTS_TO_VECTORS="ON"
 
-    sudo $PYTHON -m pip install -r ./python/requirements.txt
+    sudo $PYTHON -m pip install -r $GITHUB_WORKSPACE/python/requirements.txt
     ;;
 *)
     exit 126
@@ -44,12 +44,10 @@ esac
 
 git submodule update --init --recursive
 
-CURRDIR=$(pwd)
+mkdir $GITHUB_WORKSPACE/build
+cd $GITHUB_WORKSPACE/build
 
-mkdir $CURRDIR/build
-cd $CURRDIR/build
-
-cmake $CURRDIR -DCMAKE_BUILD_TYPE=Release \
+cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_UNSTABLE=ON \
     -DGTSAM_USE_QUATERNIONS=OFF \
     -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
@@ -60,7 +58,7 @@ cmake $CURRDIR -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_PYTHON_VERSION=$PYTHON_VERSION \
     -DPYTHON_EXECUTABLE:FILEPATH=$(which $PYTHON) \
     -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=OFF \
-    -DCMAKE_INSTALL_PREFIX=$CURRDIR/../gtsam_install
+    -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/../gtsam_install
 
 make -j$(nproc) install &
 
@@ -73,15 +71,15 @@ done
 
 case $WRAPPER in
 "cython")
-    cd $CURRDIR/../gtsam_install/cython
+    cd $GITHUB_WORKSPACE/../gtsam_install/cython
     $PYTHON setup.py install --user --prefix=
-    cd $CURRDIR/cython/gtsam/tests
+    cd $GITHUB_WORKSPACE/cython/gtsam/tests
     $PYTHON -m unittest discover
     ;;
 "pybind")
     cd python
     $PYTHON setup.py install --user --prefix=
-    cd $CURRDIR/python/gtsam/tests
+    cd $GITHUB_WORKSPACE/python/gtsam/tests
     $PYTHON -m unittest discover
     ;;
 *)

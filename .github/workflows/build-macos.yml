@@ -1,4 +1,4 @@
-name: CI macOS
+name: macOS CI
 
 on: [pull_request]
 
