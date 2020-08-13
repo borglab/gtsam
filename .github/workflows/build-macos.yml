@@ -46,4 +46,4 @@ jobs:
       - name: Build (macOS)
         if: runner.os == 'macOS'
         run: |
-          bash nix.sh -t
+          bash .github/scripts/nix.sh -t
