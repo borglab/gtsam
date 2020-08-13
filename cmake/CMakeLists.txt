@@ -17,7 +17,6 @@ install(FILES
   GtsamBuildTypes.cmake
   GtsamMakeConfigFile.cmake
   GtsamMatlabWrap.cmake
-  GtsamPybindWrap.cmake
   GtsamTesting.cmake
   GtsamPrinting.cmake
   FindCython.cmake

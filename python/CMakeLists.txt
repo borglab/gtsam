@@ -11,8 +11,8 @@ if(GTSAM_BUILD_PYTHON)
 
   include(PybindWrap)
 
-  add_custom_target(gtsam_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam.h")
-  add_custom_target(gtsam_unstable_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.h")
+  add_custom_target(gtsam_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam/gtsam.i")
+  add_custom_target(gtsam_unstable_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i")
 
   # ignoring the non-concrete types (type aliases)
   set(ignore
@@ -29,7 +29,7 @@ if(GTSAM_BUILD_PYTHON)
       gtsam::KeyVector)
 
   pybind_wrap(gtsam_py # target
-              ${PROJECT_SOURCE_DIR}/gtsam.h # interface_header
+              ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i # interface_header
               "gtsam.cpp" # generated_cpp
               "gtsam" # module_name
               "gtsam" # top_namespace
@@ -70,7 +70,7 @@ if(GTSAM_BUILD_PYTHON)
           gtsam::KeyVector
           gtsam::FixedLagSmootherKeyTimestampMapValue)
     pybind_wrap(gtsam_unstable_py # target
-            ${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.h # interface_header
+            ${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i # interface_header
             "gtsam_unstable.cpp" # generated_cpp
             "gtsam_unstable" # module_name
             "gtsam" # top_namespace

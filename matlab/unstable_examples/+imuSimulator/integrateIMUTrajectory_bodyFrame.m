@@ -3,7 +3,7 @@ function [ finalPose, finalVelocityGlobal ] = integrateIMUTrajectory_bodyFrame( 
 
 % Before integrating in the body frame we need to compensate for the Coriolis 
 % effect
-acc_body =  acc_omegaIMU(1:3) - Point3(cross(acc_omegaIMU(4:6), velocity1Body)).vector;
+acc_body =  acc_omegaIMU(1:3) - Point3(cross(acc_omegaIMU(4:6), velocity1Body));
 % after compensating for coriolis this will be essentially zero
 % since we are moving at constant body velocity 
 

@@ -237,7 +237,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
         COMMAND
 			${PYTHON_EXECUTABLE}
 			${CMAKE_SOURCE_DIR}/wrap/matlab_wrapper.py
-            --src ${matlab_h_path}.h
+            --src ${interfaceHeader}
 			--module_name ${moduleName}
             --out ${generated_files_path}
 			--top_module_namespaces ${moduleName}
