@@ -46,7 +46,7 @@ ostream& operator<<(ostream& os, const PreintegrationBase& pim) {
 
 //------------------------------------------------------------------------------
 void PreintegrationBase::print(const string& s) const {
-  cout << s << *this << endl;
+  cout << (s == "" ? s : s + "\n") << *this << endl;
 }
 
 //------------------------------------------------------------------------------
