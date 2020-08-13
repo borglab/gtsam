@@ -202,7 +202,7 @@ SO3 R12 = R1.between(R2);
 
 /* ************************************************************************* */
 TEST(FrobeniusWormholeFactor3, evaluateError) {
-  auto model = noiseModel::Isotropic::Sigma(6, 1.2);  // dimension = 6 not 16
+  auto model = noiseModel::Isotropic::Sigma(3, 1.2);
   for (const size_t p : {5, 4, 3}) {
     Matrix M = Matrix::Identity(p, p);
     M.topLeftCorner(3, 3) = submanifold::R1.matrix();
@@ -234,6 +234,28 @@ TEST(FrobeniusWormholeFactor3, equivalenceToSO3) {
       factor4.evaluateError(SOn(Q1.matrix()), SOn(Q2.matrix())).data());
   EXPECT(assert_equal((Matrix)E4.topLeftCorner<3, 3>(), E3, 1e-9));
   EXPECT(assert_equal((Matrix)E4.row(3), Matrix13::Zero(), 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(FrobeniusWormholeFactor2, evaluateError) {
+  auto model = noiseModel::Isotropic::Sigma(1, 1.2);
+  const Rot2 R1(0.3), R2(0.5), R12(0.2);
+  for (const size_t p : {5, 4, 3, 2}) {
+    Matrix M = Matrix::Identity(p, p);
+    M.topLeftCorner(2, 2) = R1.matrix();
+    SOn Q1(M);
+    M.topLeftCorner(2, 2) = R2.matrix();
+    SOn Q2(M);
+    auto factor = FrobeniusWormholeFactor2(1, 2, R12, p, model);
+    Matrix H1, H2;
+    factor.evaluateError(Q1, Q2, H1, H2);
+
+    // Test derivatives
+    Values values;
+    values.insert(1, Q1);
+    values.insert(2, Q2);
+    EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+  }
 }
 
 /* ************************************************************************* */

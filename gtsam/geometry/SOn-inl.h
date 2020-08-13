@@ -60,8 +60,9 @@ typename SO<N>::TangentVector SO<N>::ChartAtOrigin::Local(const SO& R,
 
 template <int N>
 typename SO<N>::MatrixDD SO<N>::AdjointMap() const {
+  if (N==2) return I_1x1; // SO(2) case
   throw std::runtime_error(
-      "SO<N>::AdjointMap only implemented for SO3 and SO4.");
+      "SO<N>::AdjointMap only implemented for SO2, SO3 and SO4.");
 }
 
 template <int N>
@@ -89,8 +90,7 @@ template <int N>
 typename SO<N>::VectorN2 SO<N>::vec(
     OptionalJacobian<internal::NSquaredSO(N), dimension> H) const {
   // Vectorize
-  VectorN2 X;
-  X << Eigen::Map<const MatrixNN>(matrix_.data());
+  VectorN2 X = Eigen::Map<const VectorN2>(matrix_.data());
 
   // If requested, calculate H as (I \oplus Q) * P,
   // where Q is the N*N rotation matrix, and P is calculated below.

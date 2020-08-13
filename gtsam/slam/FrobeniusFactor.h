@@ -156,9 +156,8 @@ GTSAM_EXPORT class FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
 
 /**
  * FrobeniusWormholeFactor is a BetweenFactor that moves in SO(p), but will
- * land on the SO(3) sub-manifold of SO(p) at the global minimum. It projects
+ * land on the SO(d) sub-manifold of SO(p) at the global minimum. It projects
  * the SO(p) matrices down to a Stiefel manifold of p*d matrices.
- * TODO(frank): template on D=2 or 3
  */
 template <size_t d>
 class GTSAM_EXPORT FrobeniusWormholeFactor
@@ -204,6 +203,12 @@ public:
                        boost::optional<Matrix&> H1 = boost::none,
                        boost::optional<Matrix&> H2 = boost::none) const override;
   /// @}
+
+  private:
+    /// Calculate Jacobians if asked, Only implemented for d=2 and 3 in .cpp
+    void fillJacobians(const Matrix &M1, const Matrix &M2,
+                       boost::optional<Matrix &> H1,
+                       boost::optional<Matrix &> H2) const;
 };
 
 // Explicit instantiation for d=2 and d=3 in .cpp file:
