@@ -108,10 +108,10 @@ string createRewrittenFileName(const string &name) {
 }
 
 /* ************************************************************************* */
-GraphAndValues load2D(pair<string, SharedNoiseModel> dataset, Key maxNr,
+GraphAndValues load2D(pair<string, SharedNoiseModel> dataset, Key maxKey,
                       bool addNoise, bool smart, NoiseFormat noiseFormat,
                       KernelFunctionType kernelFunctionType) {
-  return load2D(dataset.first, dataset.second, maxNr, addNoise, smart,
+  return load2D(dataset.first, dataset.second, maxKey, addNoise, smart,
                 noiseFormat, kernelFunctionType);
 }
 
@@ -200,16 +200,6 @@ createNoiseModel(const Vector6 v, bool smart, NoiseFormat noiseFormat,
 }
 
 /* ************************************************************************* */
-// Read noise parameters and interpret them according to flags
-static SharedNoiseModel readNoiseModel(istream &is, bool smart,
-                                       NoiseFormat noiseFormat,
-                                       KernelFunctionType kernelFunctionType) {
-  Vector6 v;
-  is >> v(0) >> v(1) >> v(2) >> v(3) >> v(4) >> v(5);
-  return createNoiseModel(v, smart, noiseFormat, kernelFunctionType);
-}
-
-/* ************************************************************************* */
 boost::optional<IndexedPose> parseVertexPose(istream &is, const string &tag) {
   if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {
     Key id;
@@ -237,7 +227,7 @@ boost::optional<IndexedLandmark> parseVertexLandmark(istream &is,
 /* ************************************************************************* */
 // Parse types T into a Key-indexed map
 template <typename T>
-static map<Key, T> parseIntoMap(const string &filename, Key maxNr = 0) {
+static map<Key, T> parseIntoMap(const string &filename, Key maxKey = 0) {
   ifstream is(filename.c_str());
   if (!is)
     throw invalid_argument("parse: can not find file " + filename);
@@ -249,7 +239,7 @@ static map<Key, T> parseIntoMap(const string &filename, Key maxNr = 0) {
     is >> indexed_t;
     if (indexed_t) {
       // optional filter
-      if (maxNr && indexed_t->first >= maxNr)
+      if (maxKey && indexed_t->first >= maxKey)
         continue;
       result.insert(*indexed_t);
     }
@@ -266,8 +256,8 @@ istream &operator>>(istream &is, boost::optional<IndexedPose> &indexed) {
   return is;
 }
 
-map<Key, Pose2> parse2DPoses(const string &filename, Key maxNr) {
-  return parseIntoMap<Pose2>(filename, maxNr);
+map<Key, Pose2> parse2DPoses(const string &filename, Key maxKey) {
+  return parseIntoMap<Pose2>(filename, maxKey);
 }
 
 /* ************************************************************************* */
@@ -278,8 +268,8 @@ istream &operator>>(istream &is, boost::optional<IndexedLandmark> &indexed) {
   return is;
 }
 
-map<Key, Point2> parse2DLandmarks(const string &filename, Key maxNr) {
-  return parseIntoMap<Point2>(filename, maxNr);
+map<Key, Point2> parse2DLandmarks(const string &filename, Key maxKey) {
+  return parseIntoMap<Point2>(filename, maxKey);
 }
 
 /* ************************************************************************* */
@@ -360,19 +350,26 @@ boost::shared_ptr<Sampler> createSampler(const SharedNoiseModel &model) {
 // Small functor to process the edge into a BetweenFactor<Pose2>::shared_ptr
 struct ProcessPose2 {
   // The arguments
-  Key maxNr = 0;
+  Key maxKey;
   SharedNoiseModel model;
   boost::shared_ptr<Sampler> sampler;
 
   // Arguments for parsing noise model
-  bool smart = true;
-  NoiseFormat noiseFormat = NoiseFormatAUTO;
-  KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE;
+  bool smart;
+  NoiseFormat noiseFormat;
+  KernelFunctionType kernelFunctionType;
+
+  ProcessPose2(Key maxKey = 0, SharedNoiseModel model = nullptr,
+               boost::shared_ptr<Sampler> sampler = nullptr, bool smart = true,
+               NoiseFormat noiseFormat = NoiseFormatAUTO,
+               KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE)
+      : maxKey(maxKey), model(model), sampler(sampler), smart(smart),
+        noiseFormat(noiseFormat), kernelFunctionType(kernelFunctionType) {}
 
   // The actual function
   BetweenFactor<Pose2>::shared_ptr operator()(const Measurement2 &edge) {
     // optional filter
-    if (maxNr && (edge.id1 >= maxNr || edge.id2 >= maxNr))
+    if (maxKey && (edge.id1 >= maxKey || edge.id2 >= maxKey))
       return nullptr;
 
     // Get pose and optionally add noise
@@ -394,90 +391,32 @@ struct ProcessPose2 {
 BetweenFactorPose2s
 parse2DFactors(const string &filename,
                const noiseModel::Diagonal::shared_ptr &corruptingNoise,
-               Key maxNr) {
-  ProcessPose2 process;
-  process.maxNr = maxNr;
-  if (corruptingNoise) {
-    process.sampler = createSampler(corruptingNoise);
-  }
+               Key maxKey) {
+  ProcessPose2 process(maxKey, nullptr,
+                       corruptingNoise ? createSampler(corruptingNoise)
+                                       : nullptr);
+
   return parseToVector<Measurement2, BetweenFactor<Pose2>::shared_ptr>(filename,
                                                                        process);
 }
 
 /* ************************************************************************* */
-GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
-                      bool addNoise, bool smart, NoiseFormat noiseFormat,
-                      KernelFunctionType kernelFunctionType) {
-
-  Values::shared_ptr initial(new Values);
-
-  const auto poses = parse2DPoses(filename, maxNr);
-  for (const auto &key_pose : poses) {
-    initial->insert(key_pose.first, key_pose.second);
-  }
-  const auto landmarks = parse2DLandmarks(filename, maxNr);
-  for (const auto &key_landmark : landmarks) {
-    initial->insert(key_landmark.first, key_landmark.second);
-  }
-
+static void parseOthers(const string &filename, Key maxKey,
+                        NonlinearFactorGraph::shared_ptr graph,
+                        Values::shared_ptr initial) {
+  // Do a pass to get other types of measurements
   ifstream is(filename.c_str());
   if (!is)
     throw invalid_argument("load2D: can not find file " + filename);
 
-  NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
-
-  // If asked, create a sampler with random number generator
-  boost::shared_ptr<Sampler> sampler;
-  if (addNoise) {
-    noiseModel::Diagonal::shared_ptr noise;
-    if (model)
-      noise = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
-    if (!noise)
-      throw invalid_argument(
-          "gtsam::load2D: invalid noise model for adding noise"
-          "(current version assumes diagonal noise model)!");
-    sampler.reset(new Sampler(noise));
-  }
-
-  // Parse the pose constraints
   Key id1, id2;
-  bool haveLandmark = false;
-  const bool useModelInFile = !model;
   while (!is.eof()) {
     string tag;
     if (!(is >> tag))
       break;
 
-    auto between_pose = parseEdge(is, tag);
-    if (between_pose) {
-      std::tie(id1, id2) = between_pose->first;
-      Pose2 l1Xl2 = between_pose->second;
-
-      // read noise model
-      SharedNoiseModel modelInFile =
-          readNoiseModel(is, smart, noiseFormat, kernelFunctionType);
-
-      // optional filter
-      if (maxNr && (id1 >= maxNr || id2 >= maxNr))
-        continue;
-
-      if (useModelInFile)
-        model = modelInFile;
-
-      if (addNoise)
-        l1Xl2 = l1Xl2.retract(sampler->sample());
-
-      // Insert vertices if pure odometry file
-      if (!initial->exists(id1))
-        initial->insert(id1, Pose2());
-      if (!initial->exists(id2))
-        initial->insert(id2, initial->at<Pose2>(id1) * l1Xl2);
-
-      NonlinearFactor::shared_ptr factor(
-          new BetweenFactor<Pose2>(id1, id2, l1Xl2, model));
-      graph->push_back(factor);
-    }
     // Parse measurements
+    bool haveLandmark = false;
     double bearing, range, bearing_std, range_std;
 
     // A bearing-range measurement
@@ -485,8 +424,7 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
       is >> id1 >> id2 >> bearing >> range >> bearing_std >> range_std;
     }
 
-    // A landmark measurement, TODO Frank says: don't know why is converted to
-    // bearing-range
+    // A landmark measurement, converted to bearing-range
     if (tag == "LANDMARK") {
       double lmx, lmy;
       double v1, v2, v3;
@@ -521,7 +459,7 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
     if (tag == "LANDMARK" || tag == "BR") {
 
       // optional filter
-      if (maxNr && id1 >= maxNr)
+      if (maxKey && id1 >= maxKey)
         continue;
 
       // Create noise model
@@ -545,14 +483,53 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
     }
     is.ignore(LINESIZE, '\n');
   }
+}
+
+/* ************************************************************************* */
+GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxKey,
+                      bool addNoise, bool smart, NoiseFormat noiseFormat,
+                      KernelFunctionType kernelFunctionType) {
+
+  Values::shared_ptr initial(new Values);
+
+  const auto poses = parse2DPoses(filename, maxKey);
+  for (const auto &key_pose : poses) {
+    initial->insert(key_pose.first, key_pose.second);
+  }
+  const auto landmarks = parse2DLandmarks(filename, maxKey);
+  for (const auto &key_landmark : landmarks) {
+    initial->insert(key_landmark.first, key_landmark.second);
+  }
+
+  // Parse the pose constraints
+  ProcessPose2 process(maxKey, model, addNoise ? createSampler(model) : nullptr,
+                       smart, noiseFormat, kernelFunctionType);
+  auto factors = parseToVector<Measurement2, BetweenFactor<Pose2>::shared_ptr>(
+      filename, process);
+
+  // Add factors into the graph and add poses if necessary
+  auto graph = boost::make_shared<NonlinearFactorGraph>();
+  for (const auto &f : factors) {
+    graph->push_back(f);
+
+    // Insert vertices if pure odometry file
+    Key id1 = f->key1(), id2 = f->key2();
+    if (!initial->exists(id1))
+      initial->insert(id1, Pose2());
+    if (!initial->exists(id2))
+      initial->insert(id2, initial->at<Pose2>(id1) * f->measured());
+  }
+
+  // Do a pass to parse landmarks and bearing-range measurements
+  parseOthers(filename, maxKey, graph, initial);
 
   return make_pair(graph, initial);
 }
 
 /* ************************************************************************* */
 GraphAndValues load2D_robust(const string &filename,
-                             noiseModel::Base::shared_ptr &model, Key maxNr) {
-  return load2D(filename, model, maxNr);
+                             noiseModel::Base::shared_ptr &model, Key maxKey) {
+  return load2D(filename, model, maxKey);
 }
 
 /* ************************************************************************* */
@@ -595,10 +572,10 @@ GraphAndValues readG2o(const string &g2oFile, const bool is3D,
     return load3D(g2oFile);
   } else {
     // just call load2D
-    Key maxNr = 0;
+    Key maxKey = 0;
     bool addNoise = false;
     bool smart = true;
-    return load2D(g2oFile, SharedNoiseModel(), maxNr, addNoise, smart,
+    return load2D(g2oFile, SharedNoiseModel(), maxKey, addNoise, smart,
                   NoiseFormatG2O, kernelFunctionType);
   }
 }
@@ -751,8 +728,8 @@ istream &operator>>(istream &is, boost::optional<pair<Key, Pose3>> &indexed) {
   return is;
 }
 
-map<Key, Pose3> parse3DPoses(const string &filename, Key maxNr) {
-  return parseIntoMap<Pose3>(filename, maxNr);
+map<Key, Pose3> parse3DPoses(const string &filename, Key maxKey) {
+  return parseIntoMap<Pose3>(filename, maxKey);
 }
 
 /* ************************************************************************* */
@@ -768,8 +745,8 @@ istream &operator>>(istream &is, boost::optional<pair<Key, Point3>> &indexed) {
   return is;
 }
 
-map<Key, Point3> parse3DLandmarks(const string &filename, Key maxNr) {
-  return parseIntoMap<Point3>(filename, maxNr);
+map<Key, Point3> parse3DLandmarks(const string &filename, Key maxKey) {
+  return parseIntoMap<Point3>(filename, maxKey);
 }
 
 /* ************************************************************************* */
@@ -826,14 +803,14 @@ istream &operator>>(istream &is, boost::optional<Measurement3> &edge) {
 // Small functor to process the edge into a BetweenFactor<Pose3>::shared_ptr
 struct ProcessPose3 {
   // The arguments
-  Key maxNr = 0;
+  Key maxKey = 0;
   SharedNoiseModel model;
   boost::shared_ptr<Sampler> sampler;
 
   // The actual function
   BetweenFactor<Pose3>::shared_ptr operator()(const Measurement3 &edge) {
     // optional filter
-    if (maxNr && (edge.id1 >= maxNr || edge.id2 >= maxNr))
+    if (maxKey && (edge.id1 >= maxKey || edge.id2 >= maxKey))
       return nullptr;
 
     // Get pose and optionally add noise
@@ -851,9 +828,9 @@ struct ProcessPose3 {
 BetweenFactorPose3s
 parse3DFactors(const string &filename,
                const noiseModel::Diagonal::shared_ptr &corruptingNoise,
-               Key maxNr) {
+               Key maxKey) {
   ProcessPose3 process;
-  process.maxNr = maxNr;
+  process.maxKey = maxKey;
   if (corruptingNoise) {
     process.sampler = createSampler(corruptingNoise);
   }

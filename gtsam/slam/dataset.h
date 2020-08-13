@@ -109,15 +109,15 @@ using BetweenFactorPose2s =
 GTSAM_EXPORT BetweenFactorPose2s parse2DFactors(
     const std::string &filename,
     const noiseModel::Diagonal::shared_ptr &corruptingNoise = nullptr,
-    Key maxNr = 0);
+    Key maxKey = 0);
 
 /// Parse vertices in 2D g2o graph file into a map of Pose2s.
 GTSAM_EXPORT std::map<Key, Pose2> parse2DPoses(const std::string &filename,
-                                               Key maxNr = 0);
+                                               Key maxKey = 0);
 
 /// Parse landmarks in 2D g2o graph file into a map of Point2s.
 GTSAM_EXPORT std::map<Key, Point2> parse2DLandmarks(const string &filename,
-                                                    Key maxNr = 0);
+                                                    Key maxKey = 0);
 
 /// Return type for load functions
 using GraphAndValues =
@@ -126,12 +126,12 @@ using GraphAndValues =
 /**
  * Load TORO 2D Graph
  * @param dataset/model pair as constructed by [dataset]
- * @param maxNr if non-zero cut out vertices >= maxNr
+ * @param maxKey if non-zero cut out vertices >= maxKey
  * @param addNoise add noise to the edges
  * @param smart try to reduce complexity of covariance to cheapest model
  */
 GTSAM_EXPORT GraphAndValues load2D(
-    std::pair<std::string, SharedNoiseModel> dataset, Key maxNr = 0,
+    std::pair<std::string, SharedNoiseModel> dataset, Key maxKey = 0,
     bool addNoise = false,
     bool smart = true, //
     NoiseFormat noiseFormat = NoiseFormatAUTO,
@@ -141,7 +141,7 @@ GTSAM_EXPORT GraphAndValues load2D(
  * Load TORO/G2O style graph files
  * @param filename
  * @param model optional noise model to use instead of one specified by file
- * @param maxNr if non-zero cut out vertices >= maxNr
+ * @param maxKey if non-zero cut out vertices >= maxKey
  * @param addNoise add noise to the edges
  * @param smart try to reduce complexity of covariance to cheapest model
  * @param noiseFormat how noise parameters are stored
@@ -149,13 +149,13 @@ GTSAM_EXPORT GraphAndValues load2D(
  * @return graph and initial values
  */
 GTSAM_EXPORT GraphAndValues load2D(const std::string& filename,
-    SharedNoiseModel model = SharedNoiseModel(), Key maxNr = 0, bool addNoise =
+    SharedNoiseModel model = SharedNoiseModel(), Key maxKey = 0, bool addNoise =
         false, bool smart = true, NoiseFormat noiseFormat = NoiseFormatAUTO, //
     KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
 /// @deprecated load2D now allows for arbitrary models and wrapping a robust kernel
 GTSAM_EXPORT GraphAndValues load2D_robust(const std::string& filename,
-    noiseModel::Base::shared_ptr& model, Key maxNr = 0);
+    noiseModel::Base::shared_ptr& model, Key maxKey = 0);
 
 /** save 2d graph */
 GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph,
@@ -188,15 +188,15 @@ using BetweenFactorPose3s = std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>
 GTSAM_EXPORT BetweenFactorPose3s parse3DFactors(
     const std::string &filename,
     const noiseModel::Diagonal::shared_ptr &corruptingNoise = nullptr,
-    Key maxNr = 0);
+    Key maxKey = 0);
 
 /// Parse vertices in 3D TORO/g2o graph file into a map of Pose3s.
 GTSAM_EXPORT std::map<Key, Pose3> parse3DPoses(const std::string &filename,
-                                               Key maxNr = 0);
+                                               Key maxKey = 0);
 
 /// Parse landmarks in 3D g2o graph file into a map of Point3s.
 GTSAM_EXPORT std::map<Key, Point3> parse3DLandmarks(const std::string &filename,
-                                                    Key maxNr = 0);
+                                                    Key maxKey = 0);
 
 /// Load TORO 3D Graph
 GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
@@ -340,8 +340,8 @@ GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfmData& db);
  * @param is input stream
  * @param tag string parsed from input stream, will only parse if vertex type
  */
-GTSAM_EXPORT boost::optional<IndexedPose> parseVertex(std::istream &is,
-                                                      const std::string &tag) {
+inline boost::optional<IndexedPose> parseVertex(std::istream &is,
+                                                const std::string &tag) {
   return parseVertexPose(is, tag);
 }
 #endif
