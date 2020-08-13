@@ -21,21 +21,25 @@
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/dataset.h>
+
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Rot3.h>
+
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/Values-inl.h>
+
+#include <gtsam/linear/Sampler.h>
+
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Values-inl.h>
-#include <gtsam/linear/Sampler.h>
+
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/types.h>
 #include <gtsam/base/Value.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/types.h>
 
 #include <boost/assign/list_inserter.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -56,7 +60,7 @@ using namespace gtsam::symbol_shorthand;
 namespace gtsam {
 
 /* ************************************************************************* */
-string findExampleDataFile(const string& name) {
+string findExampleDataFile(const string &name) {
   // Search source tree and installed location
   vector<string> rootsToSearch;
 
@@ -73,88 +77,88 @@ string findExampleDataFile(const string& name) {
   namesToSearch.push_back(name + ".xml");
 
   // Find first name that exists
-  for(const fs::path root: rootsToSearch) {
-    for(const fs::path name: namesToSearch) {
+  for (const fs::path root : rootsToSearch) {
+    for (const fs::path name : namesToSearch) {
       if (fs::is_regular_file(root / name))
         return (root / name).string();
     }
   }
 
   // If we did not return already, then we did not find the file
-  throw invalid_argument(
-      "gtsam::findExampleDataFile could not find a matching file in\n"
-      GTSAM_SOURCE_TREE_DATASET_DIR " or\n"
-      GTSAM_INSTALLED_DATASET_DIR " named\n" + name + ", " + name
-          + ".graph, or " + name + ".txt");
+  throw invalid_argument("gtsam::findExampleDataFile could not find a matching "
+                         "file in\n" GTSAM_SOURCE_TREE_DATASET_DIR
+                         " or\n" GTSAM_INSTALLED_DATASET_DIR " named\n" +
+                         name + ", " + name + ".graph, or " + name + ".txt");
 }
 
 /* ************************************************************************* */
-string createRewrittenFileName(const string& name) {
+string createRewrittenFileName(const string &name) {
   // Search source tree and installed location
   if (!exists(fs::path(name))) {
     throw invalid_argument(
-        "gtsam::createRewrittenFileName could not find a matching file in\n"
-            + name);
+        "gtsam::createRewrittenFileName could not find a matching file in\n" +
+        name);
   }
 
   fs::path p(name);
-  fs::path newpath = fs::path(p.parent_path().string())
-      / fs::path(p.stem().string() + "-rewritten.txt");
+  fs::path newpath = fs::path(p.parent_path().string()) /
+                     fs::path(p.stem().string() + "-rewritten.txt");
 
   return newpath.string();
 }
 
 /* ************************************************************************* */
 GraphAndValues load2D(pair<string, SharedNoiseModel> dataset, Key maxNr,
-    bool addNoise, bool smart, NoiseFormat noiseFormat,
-    KernelFunctionType kernelFunctionType) {
+                      bool addNoise, bool smart, NoiseFormat noiseFormat,
+                      KernelFunctionType kernelFunctionType) {
   return load2D(dataset.first, dataset.second, maxNr, addNoise, smart,
-      noiseFormat, kernelFunctionType);
+                noiseFormat, kernelFunctionType);
 }
 
 /* ************************************************************************* */
-// Read noise parameters and interpret them according to flags
-static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
-    NoiseFormat noiseFormat, KernelFunctionType kernelFunctionType) {
-  double v1, v2, v3, v4, v5, v6;
-  is >> v1 >> v2 >> v3 >> v4 >> v5 >> v6;
-
+// Interpret noise parameters according to flags
+static SharedNoiseModel
+createNoiseModel(const Vector6 v, bool smart, NoiseFormat noiseFormat,
+                 KernelFunctionType kernelFunctionType) {
   if (noiseFormat == NoiseFormatAUTO) {
     // Try to guess covariance matrix layout
-    if (v1 != 0.0 && v2 == 0.0 && v3 != 0.0 && v4 != 0.0 && v5 == 0.0
-        && v6 == 0.0) {
-      // NoiseFormatGRAPH
+    if (v(0) != 0.0 && v(1) == 0.0 && v(2) != 0.0 && //
+        v(3) != 0.0 && v(4) == 0.0 && v(5) == 0.0) {
       noiseFormat = NoiseFormatGRAPH;
-    } else if (v1 != 0.0 && v2 == 0.0 && v3 == 0.0 && v4 != 0.0 && v5 == 0.0
-        && v6 != 0.0) {
-      // NoiseFormatCOV
+    } else if (v(0) != 0.0 && v(1) == 0.0 && v(2) == 0.0 && //
+               v(3) != 0.0 && v(4) == 0.0 && v(5) != 0.0) {
       noiseFormat = NoiseFormatCOV;
     } else {
       throw std::invalid_argument(
-          "load2D: unrecognized covariance matrix format in dataset file. Please specify the noise format.");
+          "load2D: unrecognized covariance matrix format in dataset file. "
+          "Please specify the noise format.");
     }
   }
 
   // Read matrix and check that diagonal entries are non-zero
-  Matrix M(3, 3);
+  Matrix3 M;
   switch (noiseFormat) {
   case NoiseFormatG2O:
   case NoiseFormatCOV:
-    // i.e., [ v1 v2 v3; v2' v4 v5; v3' v5' v6 ]
-    if (v1 == 0.0 || v4 == 0.0 || v6 == 0.0)
+    // i.e., [v(0)  v(1)  v(2);
+    //        v(1)' v(3)  v(4);
+    //        v(2)' v(4)' v(5) ]
+    if (v(0) == 0.0 || v(3) == 0.0 || v(5) == 0.0)
       throw runtime_error(
           "load2D::readNoiseModel looks like this is not G2O matrix order");
-    M << v1, v2, v3, v2, v4, v5, v3, v5, v6;
+    M << v(0), v(1), v(2), v(1), v(3), v(4), v(2), v(4), v(5);
     break;
   case NoiseFormatTORO:
   case NoiseFormatGRAPH:
     // http://www.openslam.org/toro.html
     // inf_ff inf_fs inf_ss inf_rr inf_fr inf_sr
-    // i.e., [ v1 v2 v5; v2' v3 v6; v5' v6' v4 ]
-    if (v1 == 0.0 || v3 == 0.0 || v4 == 0.0)
+    // i.e., [v(0)  v(1)  v(4);
+    //        v(1)' v(2)  v(5);
+    //        v(4)' v(5)' v(3) ]
+    if (v(0) == 0.0 || v(2) == 0.0 || v(3) == 0.0)
       throw invalid_argument(
           "load2D::readNoiseModel looks like this is not TORO matrix order");
-    M << v1, v2, v5, v2, v3, v6, v5, v6, v4;
+    M << v(0), v(1), v(4), v(1), v(2), v(5), v(4), v(5), v(3);
     break;
   default:
     throw runtime_error("load2D: invalid noise format");
@@ -195,15 +199,18 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
   }
 }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
 /* ************************************************************************* */
-boost::optional<IndexedPose> parseVertex(istream& is, const string& tag) {
-  return parseVertexPose(is, tag);
+// Read noise parameters and interpret them according to flags
+static SharedNoiseModel readNoiseModel(istream &is, bool smart,
+                                       NoiseFormat noiseFormat,
+                                       KernelFunctionType kernelFunctionType) {
+  Vector6 v;
+  is >> v(0) >> v(1) >> v(2) >> v(3) >> v(4) >> v(5);
+  return createNoiseModel(v, smart, noiseFormat, kernelFunctionType);
 }
-#endif
 
 /* ************************************************************************* */
-boost::optional<IndexedPose> parseVertexPose(istream& is, const string& tag) {
+boost::optional<IndexedPose> parseVertexPose(istream &is, const string &tag) {
   if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {
     Key id;
     double x, y, yaw;
@@ -215,7 +222,8 @@ boost::optional<IndexedPose> parseVertexPose(istream& is, const string& tag) {
 }
 
 /* ************************************************************************* */
-boost::optional<IndexedLandmark> parseVertexLandmark(istream& is, const string& tag) {
+boost::optional<IndexedLandmark> parseVertexLandmark(istream &is,
+                                                     const string &tag) {
   if (tag == "VERTEX_XY") {
     Key id;
     double x, y;
@@ -275,9 +283,37 @@ map<Key, Point2> parse2DLandmarks(const string &filename, Key maxNr) {
 }
 
 /* ************************************************************************* */
-boost::optional<IndexedEdge> parseEdge(istream& is, const string& tag) {
-  if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "EDGE_SE2")
-      || (tag == "ODOMETRY")) {
+// Parse a file by first parsing the `Parsed` type and then processing it with
+// the supplied `process` function. Result is put in a vector evaluates to true.
+// Requires: a stream >> operator for boost::optional<Parsed>
+template <typename Parsed, typename Output>
+static vector<Output>
+parseToVector(const string &filename,
+              const std::function<Output(const Parsed &)> process) {
+  ifstream is(filename.c_str());
+  if (!is)
+    throw invalid_argument("parse: can not find file " + filename);
+
+  vector<Output> result;
+  string tag;
+  while (!is.eof()) {
+    boost::optional<Parsed> parsed;
+    is >> parsed;
+    if (parsed) {
+      Output factor = process(*parsed); // can return nullptr
+      if (factor) {
+        result.push_back(factor);
+      }
+    }
+    is.ignore(LINESIZE, '\n');
+  }
+  return result;
+}
+
+/* ************************************************************************* */
+boost::optional<IndexedEdge> parseEdge(istream &is, const string &tag) {
+  if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "EDGE_SE2") ||
+      (tag == "ODOMETRY")) {
 
     Key id1, id2;
     double x, y, yaw;
@@ -289,6 +325,86 @@ boost::optional<IndexedEdge> parseEdge(istream& is, const string& tag) {
 }
 
 /* ************************************************************************* */
+struct Measurement2 {
+  Key id1, id2;
+  Pose2 pose;
+  Vector6 v; // 6 noise model parameters for edge
+};
+
+istream &operator>>(istream &is, boost::optional<Measurement2> &edge) {
+  string tag;
+  is >> tag;
+  if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "EDGE_SE2") ||
+      (tag == "ODOMETRY")) {
+    Key id1, id2;
+    double x, y, yaw;
+    Vector6 v;
+    is >> id1 >> id2 >> x >> y >> yaw >> //
+        v(0) >> v(1) >> v(2) >> v(3) >> v(4) >> v(5);
+    edge.reset({id1, id2, Pose2(x, y, yaw), v});
+  }
+  return is;
+}
+
+/* ************************************************************************* */
+// Create a sampler
+boost::shared_ptr<Sampler> createSampler(const SharedNoiseModel &model) {
+  auto noise = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+  if (!noise)
+    throw invalid_argument("gtsam::load: invalid noise model for adding noise"
+                           "(current version assumes diagonal noise model)!");
+  return boost::shared_ptr<Sampler>(new Sampler(noise));
+}
+
+/* ************************************************************************* */
+// Small functor to process the edge into a BetweenFactor<Pose2>::shared_ptr
+struct ProcessPose2 {
+  // The arguments
+  Key maxNr = 0;
+  SharedNoiseModel model;
+  boost::shared_ptr<Sampler> sampler;
+
+  // Arguments for parsing noise model
+  bool smart = true;
+  NoiseFormat noiseFormat = NoiseFormatAUTO;
+  KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE;
+
+  // The actual function
+  BetweenFactor<Pose2>::shared_ptr operator()(const Measurement2 &edge) {
+    // optional filter
+    if (maxNr && (edge.id1 >= maxNr || edge.id2 >= maxNr))
+      return nullptr;
+
+    // Get pose and optionally add noise
+    Pose2 T12 = edge.pose;
+    if (sampler)
+      T12 = T12.retract(sampler->sample());
+
+    // Create factor
+    // If model is nullptr we use the model from the file
+    return boost::make_shared<BetweenFactor<Pose2>>(
+        edge.id1, edge.id2, T12,
+        model
+            ? model
+            : createNoiseModel(edge.v, smart, noiseFormat, kernelFunctionType));
+  }
+};
+
+/* ************************************************************************* */
+BetweenFactorPose2s
+parse2DFactors(const string &filename,
+               const noiseModel::Diagonal::shared_ptr &corruptingNoise,
+               Key maxNr) {
+  ProcessPose2 process;
+  process.maxNr = maxNr;
+  if (corruptingNoise) {
+    process.sampler = createSampler(corruptingNoise);
+  }
+  return parseToVector<Measurement2, BetweenFactor<Pose2>::shared_ptr>(filename,
+                                                                       process);
+}
+
+/* ************************************************************************* */
 GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
                       bool addNoise, bool smart, NoiseFormat noiseFormat,
                       KernelFunctionType kernelFunctionType) {
@@ -296,11 +412,11 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
   Values::shared_ptr initial(new Values);
 
   const auto poses = parse2DPoses(filename, maxNr);
-  for (const auto& key_pose : poses) {
+  for (const auto &key_pose : poses) {
     initial->insert(key_pose.first, key_pose.second);
   }
   const auto landmarks = parse2DLandmarks(filename, maxNr);
-  for (const auto& key_landmark : landmarks) {
+  for (const auto &key_landmark : landmarks) {
     initial->insert(key_landmark.first, key_landmark.second);
   }
 
@@ -311,7 +427,7 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
   NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
 
   // If asked, create a sampler with random number generator
-  std::unique_ptr<Sampler> sampler;
+  boost::shared_ptr<Sampler> sampler;
   if (addNoise) {
     noiseModel::Diagonal::shared_ptr noise;
     if (model)
@@ -319,7 +435,7 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
     if (!noise)
       throw invalid_argument(
           "gtsam::load2D: invalid noise model for adding noise"
-              "(current version assumes diagonal noise model)!");
+          "(current version assumes diagonal noise model)!");
     sampler.reset(new Sampler(noise));
   }
 
@@ -335,11 +451,11 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
     auto between_pose = parseEdge(is, tag);
     if (between_pose) {
       std::tie(id1, id2) = between_pose->first;
-      Pose2& l1Xl2 = between_pose->second;
+      Pose2 l1Xl2 = between_pose->second;
 
       // read noise model
-      SharedNoiseModel modelInFile = readNoiseModel(is, smart, noiseFormat,
-          kernelFunctionType);
+      SharedNoiseModel modelInFile =
+          readNoiseModel(is, smart, noiseFormat, kernelFunctionType);
 
       // optional filter
       if (maxNr && (id1 >= maxNr || id2 >= maxNr))
@@ -369,7 +485,8 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
       is >> id1 >> id2 >> bearing >> range >> bearing_std >> range_std;
     }
 
-    // A landmark measurement, TODO Frank says: don't know why is converted to bearing-range
+    // A landmark measurement, TODO Frank says: don't know why is converted to
+    // bearing-range
     if (tag == "LANDMARK") {
       double lmx, lmy;
       double v1, v2, v3;
@@ -380,8 +497,9 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
       bearing = atan2(lmy, lmx);
       range = sqrt(lmx * lmx + lmy * lmy);
 
-      // In our experience, the x-y covariance on landmark sightings is not very good, so assume
-      // it describes the uncertainty at a range of 10m, and convert that to bearing/range uncertainty.
+      // In our experience, the x-y covariance on landmark sightings is not
+      // very good, so assume it describes the uncertainty at a range of 10m,
+      // and convert that to bearing/range uncertainty.
       if (std::abs(v1 - v3) < 1e-4) {
         bearing_std = sqrt(v1 / 10.0);
         range_std = sqrt(v1);
@@ -389,10 +507,11 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
         bearing_std = 1;
         range_std = 1;
         if (!haveLandmark) {
-          cout
-              << "Warning: load2D is a very simple dataset loader and is ignoring the\n"
-                  "non-uniform covariance on LANDMARK measurements in this file."
-              << endl;
+          cout << "Warning: load2D is a very simple dataset loader and is "
+                  "ignoring the\n"
+                  "non-uniform covariance on LANDMARK measurements in this "
+                  "file."
+               << endl;
           haveLandmark = true;
         }
       }
@@ -407,11 +526,12 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
 
       // Create noise model
       noiseModel::Diagonal::shared_ptr measurementNoise =
-          noiseModel::Diagonal::Sigmas((Vector(2) << bearing_std, range_std).finished());
+          noiseModel::Diagonal::Sigmas(
+              (Vector(2) << bearing_std, range_std).finished());
 
       // Add to graph
       *graph += BearingRangeFactor<Pose2, Point2>(id1, L(id2), bearing, range,
-          measurementNoise);
+                                                  measurementNoise);
 
       // Insert poses or points if they do not exist yet
       if (!initial->exists(id1))
@@ -430,46 +550,46 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model, Key maxNr,
 }
 
 /* ************************************************************************* */
-GraphAndValues load2D_robust(const string& filename,
-    noiseModel::Base::shared_ptr& model, Key maxNr) {
+GraphAndValues load2D_robust(const string &filename,
+                             noiseModel::Base::shared_ptr &model, Key maxNr) {
   return load2D(filename, model, maxNr);
 }
 
 /* ************************************************************************* */
-void save2D(const NonlinearFactorGraph& graph, const Values& config,
-    const noiseModel::Diagonal::shared_ptr model, const string& filename) {
+void save2D(const NonlinearFactorGraph &graph, const Values &config,
+            const noiseModel::Diagonal::shared_ptr model,
+            const string &filename) {
 
   fstream stream(filename.c_str(), fstream::out);
 
   // save poses
-
-  for(const Values::ConstKeyValuePair& key_value: config) {
-    const Pose2& pose = key_value.value.cast<Pose2>();
+  for (const Values::ConstKeyValuePair &key_value : config) {
+    const Pose2 &pose = key_value.value.cast<Pose2>();
     stream << "VERTEX2 " << key_value.key << " " << pose.x() << " " << pose.y()
-        << " " << pose.theta() << endl;
+           << " " << pose.theta() << endl;
   }
 
   // save edges
-  Matrix R = model->R();
-  Matrix RR = trans(R) * R; //prod(trans(R),R);
-  for(boost::shared_ptr<NonlinearFactor> factor_: graph) {
-    boost::shared_ptr<BetweenFactor<Pose2> > factor =
-        boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
+  // TODO(frank): why don't we use model in factor?
+  Matrix3 R = model->R();
+  Matrix3 RR = R.transpose() * R;
+  for (auto f : graph) {
+    auto factor = boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(f);
     if (!factor)
       continue;
 
-    Pose2 pose = factor->measured().inverse();
+    const Pose2 pose = factor->measured().inverse();
     stream << "EDGE2 " << factor->key2() << " " << factor->key1() << " "
-        << pose.x() << " " << pose.y() << " " << pose.theta() << " " << RR(0, 0)
-        << " " << RR(0, 1) << " " << RR(1, 1) << " " << RR(2, 2) << " "
-        << RR(0, 2) << " " << RR(1, 2) << endl;
+           << pose.x() << " " << pose.y() << " " << pose.theta() << " "
+           << RR(0, 0) << " " << RR(0, 1) << " " << RR(1, 1) << " " << RR(2, 2)
+           << " " << RR(0, 2) << " " << RR(1, 2) << endl;
   }
 
   stream.close();
 }
 
 /* ************************************************************************* */
-GraphAndValues readG2o(const string& g2oFile, const bool is3D,
+GraphAndValues readG2o(const string &g2oFile, const bool is3D,
                        KernelFunctionType kernelFunctionType) {
   if (is3D) {
     return load3D(g2oFile);
@@ -484,86 +604,90 @@ GraphAndValues readG2o(const string& g2oFile, const bool is3D,
 }
 
 /* ************************************************************************* */
-void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
-    const string& filename) {
+void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
+              const string &filename) {
   fstream stream(filename.c_str(), fstream::out);
 
   // save 2D poses
-  for (const auto& key_value : estimate) {
-    auto p = dynamic_cast<const GenericValue<Pose2>*>(&key_value.value);
-    if (!p) continue;
-    const Pose2& pose = p->value();
+  for (const auto &key_value : estimate) {
+    auto p = dynamic_cast<const GenericValue<Pose2> *>(&key_value.value);
+    if (!p)
+      continue;
+    const Pose2 &pose = p->value();
     stream << "VERTEX_SE2 " << key_value.key << " " << pose.x() << " "
-        << pose.y() << " " << pose.theta() << endl;
+           << pose.y() << " " << pose.theta() << endl;
   }
 
   // save 3D poses
-  for(const auto& key_value: estimate) {
-    auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
-    if (!p) continue;
-    const Pose3& pose = p->value();
+  for (const auto &key_value : estimate) {
+    auto p = dynamic_cast<const GenericValue<Pose3> *>(&key_value.value);
+    if (!p)
+      continue;
+    const Pose3 &pose = p->value();
     const Point3 t = pose.translation();
     const auto q = pose.rotation().toQuaternion();
     stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "
-            << t.y() << " " << t.z() << " " << q.x() << " " << q.y() << " "
-            << q.z() << " " << q.w() << endl;
+           << t.y() << " " << t.z() << " " << q.x() << " " << q.y() << " "
+           << q.z() << " " << q.w() << endl;
   }
 
   // save 2D landmarks
-  for(const auto& key_value: estimate) {
-    auto p = dynamic_cast<const GenericValue<Point2>*>(&key_value.value);
-    if (!p) continue;
-    const Point2& point = p->value();
+  for (const auto &key_value : estimate) {
+    auto p = dynamic_cast<const GenericValue<Point2> *>(&key_value.value);
+    if (!p)
+      continue;
+    const Point2 &point = p->value();
     stream << "VERTEX_XY " << key_value.key << " " << point.x() << " "
-        << point.y() << endl;
+           << point.y() << endl;
   }
 
   // save 3D landmarks
-  for(const auto& key_value: estimate) {
-    auto p = dynamic_cast<const GenericValue<Point3>*>(&key_value.value);
-    if (!p) continue;
-    const Point3& point = p->value();
+  for (const auto &key_value : estimate) {
+    auto p = dynamic_cast<const GenericValue<Point3> *>(&key_value.value);
+    if (!p)
+      continue;
+    const Point3 &point = p->value();
     stream << "VERTEX_TRACKXYZ " << key_value.key << " " << point.x() << " "
-        << point.y() << " " << point.z() << endl;
+           << point.y() << " " << point.z() << endl;
   }
 
   // save edges (2D or 3D)
-  for(const auto& factor_: graph) {
-    boost::shared_ptr<BetweenFactor<Pose2> > factor =
-        boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
-    if (factor){
+  for (const auto &factor_ : graph) {
+    boost::shared_ptr<BetweenFactor<Pose2>> factor =
+        boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(factor_);
+    if (factor) {
       SharedNoiseModel model = factor->noiseModel();
       boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
           boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
-      if (!gaussianModel){
+      if (!gaussianModel) {
         model->print("model\n");
         throw invalid_argument("writeG2o: invalid noise model!");
       }
-      Matrix Info = gaussianModel->R().transpose() * gaussianModel->R();
+      Matrix3 Info = gaussianModel->R().transpose() * gaussianModel->R();
       Pose2 pose = factor->measured(); //.inverse();
       stream << "EDGE_SE2 " << factor->key1() << " " << factor->key2() << " "
-          << pose.x() << " " << pose.y() << " " << pose.theta();
-      for (size_t i = 0; i < 3; i++){
-        for (size_t j = i; j < 3; j++){
+             << pose.x() << " " << pose.y() << " " << pose.theta();
+      for (size_t i = 0; i < 3; i++) {
+        for (size_t j = i; j < 3; j++) {
           stream << " " << Info(i, j);
         }
       }
       stream << endl;
     }
 
-    boost::shared_ptr< BetweenFactor<Pose3> > factor3D =
-        boost::dynamic_pointer_cast< BetweenFactor<Pose3> >(factor_);
+    boost::shared_ptr<BetweenFactor<Pose3>> factor3D =
+        boost::dynamic_pointer_cast<BetweenFactor<Pose3>>(factor_);
 
-    if (factor3D){
+    if (factor3D) {
       SharedNoiseModel model = factor3D->noiseModel();
 
       boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
           boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
-      if (!gaussianModel){
+      if (!gaussianModel) {
         model->print("model\n");
         throw invalid_argument("writeG2o: invalid noise model!");
       }
-      Matrix Info = gaussianModel->R().transpose() * gaussianModel->R();
+      Matrix6 Info = gaussianModel->R().transpose() * gaussianModel->R();
       const Pose3 pose3D = factor3D->measured();
       const Point3 p = pose3D.translation();
       const auto q = pose3D.rotation().toQuaternion();
@@ -571,14 +695,14 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
              << " " << p.x() << " " << p.y() << " " << p.z() << " " << q.x()
              << " " << q.y() << " " << q.z() << " " << q.w();
 
-      Matrix InfoG2o = I_6x6;
+      Matrix6 InfoG2o = I_6x6;
       InfoG2o.block<3, 3>(0, 0) = Info.block<3, 3>(3, 3); // cov translation
       InfoG2o.block<3, 3>(3, 3) = Info.block<3, 3>(0, 0); // cov rotation
       InfoG2o.block<3, 3>(0, 3) = Info.block<3, 3>(0, 3); // off diagonal
       InfoG2o.block<3, 3>(3, 0) = Info.block<3, 3>(3, 0); // off diagonal
 
-      for (size_t i = 0; i < 6; i++){
-        for (size_t j = i; j < 6; j++){
+      for (size_t i = 0; i < 6; i++) {
+        for (size_t j = i; j < 6; j++) {
           stream << " " << InfoG2o(i, j);
         }
       }
@@ -602,7 +726,7 @@ istream &operator>>(istream &is, Quaternion &q) {
 // parse Rot3 from roll, pitch, yaw
 istream &operator>>(istream &is, Rot3 &R) {
   double yaw, pitch, roll;
-  is >> roll >> pitch >> yaw;  // notice order !
+  is >> roll >> pitch >> yaw; // notice order !
   R = Rot3::Ypr(yaw, pitch, roll);
   return is;
 }
@@ -649,68 +773,42 @@ map<Key, Point3> parse3DLandmarks(const string &filename, Key maxNr) {
 }
 
 /* ************************************************************************* */
-// Parse BetweenFactor<T> shared pointers into a vector
-template <typename T>
-static vector<boost::shared_ptr<BetweenFactor<T>>>
-parseIntoVector(const string &filename, Key maxNr = 0) {
-  ifstream is(filename.c_str());
-  if (!is)
-    throw invalid_argument("parse: can not find file " + filename);
-
-  vector<boost::shared_ptr<BetweenFactor<T>>> result;
-  string tag;
-  while (!is.eof()) {
-    boost::shared_ptr<BetweenFactor<T>> shared;
-    is >> shared;
-    if (shared) {
-      // optional filter
-      if (maxNr && (shared->key1() >= maxNr || shared->key1() >= maxNr))
-        continue;
-      result.push_back(shared);
-    }
-    is.ignore(LINESIZE, '\n');
-  }
-  return result;
-}
-
-/* ************************************************************************* */
 // Parse a symmetric covariance matrix (onlyupper-triangular part is stored)
 istream &operator>>(istream &is, Matrix6 &m) {
   for (size_t i = 0; i < 6; i++)
-    for (size_t j = i; j < 6; j++){
+    for (size_t j = i; j < 6; j++) {
       is >> m(i, j);
-      m(j,i) = m(i,j);
-  }
+      m(j, i) = m(i, j);
+    }
   return is;
 }
 
 /* ************************************************************************* */
-istream &operator>>(istream &is,
-                    boost::shared_ptr<BetweenFactor<Pose3>> &shared) {
+struct Measurement3 {
+  Key id1, id2;
+  Pose3 pose;
+  SharedNoiseModel model;
+};
+
+istream &operator>>(istream &is, boost::optional<Measurement3> &edge) {
   string tag;
   is >> tag;
-
   Matrix6 m;
   if (tag == "EDGE3") {
     Key id1, id2;
     double x, y, z;
     Rot3 R;
-    is >> id1 >> id2 >> x >> y >> z >> R;
-    Pose3 pose(R, {x, y, z});
-
-    is >> m;
-    SharedNoiseModel model = noiseModel::Gaussian::Information(m);
-    shared.reset(new BetweenFactor<Pose3>(id1, id2, pose, model));
+    is >> id1 >> id2 >> x >> y >> z >> R >> m;
+    edge.reset(
+        {id1, id2, Pose3(R, {x, y, z}), noiseModel::Gaussian::Information(m)});
   }
   if (tag == "EDGE_SE3:QUAT") {
     Key id1, id2;
     double x, y, z;
     Quaternion q;
-    is >> id1 >> id2 >> x >> y >> z >> q;
-    Pose3 pose(q, {x, y, z});
+    is >> id1 >> id2 >> x >> y >> z >> q >> m;
 
     // EDGE_SE3:QUAT stores covariance in t,R order, unlike GTSAM:
-    is >> m;
     Matrix6 mgtsam;
     mgtsam.block<3, 3>(0, 0) = m.block<3, 3>(3, 3); // cov rotation
     mgtsam.block<3, 3>(3, 3) = m.block<3, 3>(0, 0); // cov translation
@@ -718,47 +816,67 @@ istream &operator>>(istream &is,
     mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0); // off diagonal
     SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
 
-    shared.reset(new BetweenFactor<Pose3>(id1, id2, pose, model));
+    edge.reset({id1, id2, Pose3(q, {x, y, z}),
+                noiseModel::Gaussian::Information(mgtsam)});
   }
   return is;
 }
+
+/* ************************************************************************* */
+// Small functor to process the edge into a BetweenFactor<Pose3>::shared_ptr
+struct ProcessPose3 {
+  // The arguments
+  Key maxNr = 0;
+  SharedNoiseModel model;
+  boost::shared_ptr<Sampler> sampler;
+
+  // The actual function
+  BetweenFactor<Pose3>::shared_ptr operator()(const Measurement3 &edge) {
+    // optional filter
+    if (maxNr && (edge.id1 >= maxNr || edge.id2 >= maxNr))
+      return nullptr;
+
+    // Get pose and optionally add noise
+    Pose3 T12 = edge.pose;
+    if (sampler)
+      T12 = T12.retract(sampler->sample());
+
+    // Create factor
+    return boost::make_shared<BetweenFactor<Pose3>>(edge.id1, edge.id2, T12,
+                                                    edge.model);
+  }
+};
 
 /* ************************************************************************* */
 BetweenFactorPose3s
 parse3DFactors(const string &filename,
                const noiseModel::Diagonal::shared_ptr &corruptingNoise,
                Key maxNr) {
-  auto factors =  parseIntoVector<Pose3>(filename, maxNr);
-
+  ProcessPose3 process;
+  process.maxNr = maxNr;
   if (corruptingNoise) {
-    Sampler sampler(corruptingNoise);
-    for (auto factor : factors) {
-      auto pose = factor->measured();
-      factor.reset(new BetweenFactor<Pose3>(factor->key1(), factor->key2(),
-                                            pose.retract(sampler.sample()),
-                                            factor->noiseModel()));
-    }
+    process.sampler = createSampler(corruptingNoise);
   }
-
-  return factors;
+  return parseToVector<Measurement3, BetweenFactor<Pose3>::shared_ptr>(filename,
+                                                                       process);
 }
 
 /* ************************************************************************* */
-GraphAndValues load3D(const string& filename) {
+GraphAndValues load3D(const string &filename) {
   const auto factors = parse3DFactors(filename);
   NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
-  for (const auto& factor : factors) {
+  for (const auto &factor : factors) {
     graph->push_back(factor);
   }
 
   Values::shared_ptr initial(new Values);
 
   const auto poses = parse3DPoses(filename);
-  for (const auto& key_pose : poses) {
+  for (const auto &key_pose : poses) {
     initial->insert(key_pose.first, key_pose.second);
   }
   const auto landmarks = parse3DLandmarks(filename);
-  for (const auto& key_landmark : landmarks) {
+  for (const auto &key_landmark : landmarks) {
     initial->insert(key_landmark.first, key_landmark.second);
   }
 
@@ -766,7 +884,8 @@ GraphAndValues load3D(const string& filename) {
 }
 
 /* ************************************************************************* */
-Rot3 openGLFixedRotation() { // this is due to different convention for cameras in gtsam and openGL
+Rot3 openGLFixedRotation() { // this is due to different convention for
+                             // cameras in gtsam and openGL
   /* R = [ 1   0   0
    *       0  -1   0
    *       0   0  -1]
@@ -779,7 +898,7 @@ Rot3 openGLFixedRotation() { // this is due to different convention for cameras 
 }
 
 /* ************************************************************************* */
-Pose3 openGL2gtsam(const Rot3& R, double tx, double ty, double tz) {
+Pose3 openGL2gtsam(const Rot3 &R, double tx, double ty, double tz) {
   Rot3 R90 = openGLFixedRotation();
   Rot3 wRc = (R.inverse()).compose(R90);
 
@@ -788,7 +907,7 @@ Pose3 openGL2gtsam(const Rot3& R, double tx, double ty, double tz) {
 }
 
 /* ************************************************************************* */
-Pose3 gtsam2openGL(const Rot3& R, double tx, double ty, double tz) {
+Pose3 gtsam2openGL(const Rot3 &R, double tx, double ty, double tz) {
   Rot3 R90 = openGLFixedRotation();
   Rot3 cRw_openGL = R90.compose(R.inverse());
   Point3 t_openGL = cRw_openGL.rotate(Point3(-tx, -ty, -tz));
@@ -796,13 +915,13 @@ Pose3 gtsam2openGL(const Rot3& R, double tx, double ty, double tz) {
 }
 
 /* ************************************************************************* */
-Pose3 gtsam2openGL(const Pose3& PoseGTSAM) {
+Pose3 gtsam2openGL(const Pose3 &PoseGTSAM) {
   return gtsam2openGL(PoseGTSAM.rotation(), PoseGTSAM.x(), PoseGTSAM.y(),
-      PoseGTSAM.z());
+                      PoseGTSAM.z());
 }
 
 /* ************************************************************************* */
-bool readBundler(const string& filename, SfmData &data) {
+bool readBundler(const string &filename, SfmData &data) {
   // Load the data file
   ifstream is(filename.c_str(), ifstream::in);
   if (!is) {
@@ -837,7 +956,7 @@ bool readBundler(const string& filename, SfmData &data) {
     // Check for all-zero R, in which case quit
     if (r11 == 0 && r12 == 0 && r13 == 0) {
       cout << "Error in readBundler: zero rotation matrix for pose " << i
-          << endl;
+           << endl;
       return false;
     }
 
@@ -889,7 +1008,7 @@ bool readBundler(const string& filename, SfmData &data) {
 }
 
 /* ************************************************************************* */
-bool readBAL(const string& filename, SfmData &data) {
+bool readBAL(const string &filename, SfmData &data) {
   // Load the data file
   ifstream is(filename.c_str(), ifstream::in);
   if (!is) {
@@ -937,7 +1056,7 @@ bool readBAL(const string& filename, SfmData &data) {
     // Get the 3D position
     float x, y, z;
     is >> x >> y >> z;
-    SfmTrack& track = data.tracks[j];
+    SfmTrack &track = data.tracks[j];
     track.p = Point3(x, y, z);
     track.r = 0.4f;
     track.g = 0.4f;
@@ -949,7 +1068,7 @@ bool readBAL(const string& filename, SfmData &data) {
 }
 
 /* ************************************************************************* */
-bool writeBAL(const string& filename, SfmData &data) {
+bool writeBAL(const string &filename, SfmData &data) {
   // Open the output file
   ofstream os;
   os.open(filename.c_str());
@@ -967,29 +1086,32 @@ bool writeBAL(const string& filename, SfmData &data) {
 
   // Write observations
   os << data.number_cameras() << " " << data.number_tracks() << " "
-      << nrObservations << endl;
+     << nrObservations << endl;
   os << endl;
 
   for (size_t j = 0; j < data.number_tracks(); j++) { // for each 3D point j
-    const SfmTrack& track = data.tracks[j];
+    const SfmTrack &track = data.tracks[j];
 
-    for (size_t k = 0; k < track.number_measurements(); k++) { // for each observation of the 3D point j
+    for (size_t k = 0; k < track.number_measurements();
+         k++) { // for each observation of the 3D point j
       size_t i = track.measurements[k].first; // camera id
       double u0 = data.cameras[i].calibration().u0();
       double v0 = data.cameras[i].calibration().v0();
 
       if (u0 != 0 || v0 != 0) {
-        cout
-            << "writeBAL has not been tested for calibration with nonzero (u0,v0)"
-            << endl;
+        cout << "writeBAL has not been tested for calibration with nonzero "
+                "(u0,v0)"
+             << endl;
       }
 
-      double pixelBALx = track.measurements[k].second.x() - u0; // center of image is the origin
-      double pixelBALy = -(track.measurements[k].second.y() - v0); // center of image is the origin
+      double pixelBALx = track.measurements[k].second.x() -
+                         u0; // center of image is the origin
+      double pixelBALy = -(track.measurements[k].second.y() -
+                           v0); // center of image is the origin
       Point2 pixelMeasurement(pixelBALx, pixelBALy);
-      os << i /*camera id*/<< " " << j /*point id*/<< " "
-          << pixelMeasurement.x() /*u of the pixel*/<< " "
-          << pixelMeasurement.y() /*v of the pixel*/<< endl;
+      os << i /*camera id*/ << " " << j /*point id*/ << " "
+         << pixelMeasurement.x() /*u of the pixel*/ << " "
+         << pixelMeasurement.y() /*v of the pixel*/ << endl;
     }
   }
   os << endl;
@@ -1022,15 +1144,17 @@ bool writeBAL(const string& filename, SfmData &data) {
   return true;
 }
 
-bool writeBALfromValues(const string& filename, const SfmData &data,
-    Values& values) {
+bool writeBALfromValues(const string &filename, const SfmData &data,
+                        Values &values) {
   using Camera = PinholeCamera<Cal3Bundler>;
   SfmData dataValues = data;
 
   // Store poses or cameras in SfmData
   size_t nrPoses = values.count<Pose3>();
-  if (nrPoses == dataValues.number_cameras()) { // we only estimated camera poses
-    for (size_t i = 0; i < dataValues.number_cameras(); i++) { // for each camera
+  if (nrPoses ==
+      dataValues.number_cameras()) { // we only estimated camera poses
+    for (size_t i = 0; i < dataValues.number_cameras();
+         i++) { // for each camera
       Key poseKey = symbol('x', i);
       Pose3 pose = values.at<Pose3>(poseKey);
       Cal3Bundler K = dataValues.cameras[i].calibration();
@@ -1039,29 +1163,29 @@ bool writeBALfromValues(const string& filename, const SfmData &data,
     }
   } else {
     size_t nrCameras = values.count<Camera>();
-    if (nrCameras == dataValues.number_cameras()) { // we only estimated camera poses and calibration
-      for (size_t i = 0; i < nrCameras; i++) { // for each camera
-        Key cameraKey = i; // symbol('c',i);
+    if (nrCameras == dataValues.number_cameras()) { // we only estimated camera
+                                                    // poses and calibration
+      for (size_t i = 0; i < nrCameras; i++) {      // for each camera
+        Key cameraKey = i;                          // symbol('c',i);
         Camera camera = values.at<Camera>(cameraKey);
         dataValues.cameras[i] = camera;
       }
     } else {
-      cout
-          << "writeBALfromValues: different number of cameras in SfM_dataValues (#cameras "
-          << dataValues.number_cameras() << ") and values (#cameras "
-          << nrPoses << ", #poses " << nrCameras << ")!!"
-          << endl;
+      cout << "writeBALfromValues: different number of cameras in "
+              "SfM_dataValues (#cameras "
+           << dataValues.number_cameras() << ") and values (#cameras "
+           << nrPoses << ", #poses " << nrCameras << ")!!" << endl;
       return false;
     }
   }
 
   // Store 3D points in SfmData
-  size_t nrPoints = values.count<Point3>(), nrTracks = dataValues.number_tracks();
+  size_t nrPoints = values.count<Point3>(),
+         nrTracks = dataValues.number_tracks();
   if (nrPoints != nrTracks) {
-    cout
-        << "writeBALfromValues: different number of points in SfM_dataValues (#points= "
-        << nrTracks << ") and values (#points "
-        << nrPoints << ")!!" << endl;
+    cout << "writeBALfromValues: different number of points in "
+            "SfM_dataValues (#points= "
+         << nrTracks << ") and values (#points " << nrPoints << ")!!" << endl;
   }
 
   for (size_t j = 0; j < nrTracks; j++) { // for each point
@@ -1073,7 +1197,7 @@ bool writeBALfromValues(const string& filename, const SfmData &data,
       dataValues.tracks[j].r = 1.0;
       dataValues.tracks[j].g = 0.0;
       dataValues.tracks[j].b = 0.0;
-      dataValues.tracks[j].p = Point3(0,0,0);
+      dataValues.tracks[j].p = Point3(0, 0, 0);
     }
   }
 
@@ -1081,22 +1205,22 @@ bool writeBALfromValues(const string& filename, const SfmData &data,
   return writeBAL(filename, dataValues);
 }
 
-Values initialCamerasEstimate(const SfmData& db) {
+Values initialCamerasEstimate(const SfmData &db) {
   Values initial;
   size_t i = 0; // NO POINTS:  j = 0;
-  for(const SfmCamera& camera: db.cameras)
+  for (const SfmCamera &camera : db.cameras)
     initial.insert(i++, camera);
   return initial;
 }
 
-Values initialCamerasAndPointsEstimate(const SfmData& db) {
+Values initialCamerasAndPointsEstimate(const SfmData &db) {
   Values initial;
   size_t i = 0, j = 0;
-  for(const SfmCamera& camera: db.cameras)
+  for (const SfmCamera &camera : db.cameras)
     initial.insert((i++), camera);
-  for(const SfmTrack& track: db.tracks)
+  for (const SfmTrack &track : db.tracks)
     initial.insert(P(j++), track.p);
   return initial;
 }
 
-} // \namespace gtsam
+} // namespace gtsam
