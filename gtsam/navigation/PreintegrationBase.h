@@ -116,7 +116,7 @@ class GTSAM_EXPORT PreintegrationBase {
   /// @name Testable
   /// @{
   GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const PreintegrationBase& pim);
-  virtual void print(const std::string& s) const;
+  virtual void print(const std::string& s="") const;
   /// @}
 
   /// @name Main functionality
