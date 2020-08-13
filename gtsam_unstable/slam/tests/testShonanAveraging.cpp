@@ -19,6 +19,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/slam/ShonanAveraging.h>
 #include <gtsam/slam/FrobeniusFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 #include <algorithm>
 #include <iostream>
@@ -27,25 +28,42 @@
 using namespace std;
 using namespace gtsam;
 
-// Convert Pose3 constraints to Rot3 constraints
-ShonanAveraging3::Factors
-betweenFactorRot3s(const BetweenFactorPose3s &factors3) {
-  ShonanAveraging3::Factors result;
-  result.reserve(factors3.size());
-  for (auto f : factors3) {
-    result.emplace_back(
-        new BetweenFactor<Rot3>(f->key1(), f->key2(), f->measured().rotation(),
-                                ConvertNoiseModel(f->noiseModel(), 3)));
+template<size_t d>
+using Rot = typename std::conditional<d==2, Rot2, Rot3>::type;
+
+template<size_t d>
+using Pose = typename std::conditional<d==2, Pose2, Pose3>::type;
+
+// Convert Pose constraints to Rot constraints
+template <size_t d>
+typename ShonanAveraging<d>::Factors
+betweenFactorRots(const std::vector<typename BetweenFactor<Pose<d>>::shared_ptr>
+                      &poseFactors) {
+  typename ShonanAveraging<d>::Factors result;
+  result.reserve(poseFactors.size());
+  for (auto f : poseFactors) {
+    result.emplace_back(new BetweenFactor<Rot<d>>(
+        f->key1(), f->key2(), f->measured().rotation(),
+        ConvertNoiseModel(f->noiseModel(), SO<d>::dimension)));
   }
   return result;
+}
+
+ShonanAveraging2 fromExampleName2(
+    const std::string &name,
+    ShonanAveraging2::Parameters parameters = ShonanAveraging2::Parameters()) {
+  string g2oFile = findExampleDataFile(name);
+  auto poseFactors = parse2DFactors(g2oFile);
+  auto factors = betweenFactorRots<2>(poseFactors);
+  return ShonanAveraging2(factors, parameters);
 }
 
 ShonanAveraging3 fromExampleName(
     const std::string &name,
     ShonanAveraging3::Parameters parameters = ShonanAveraging3::Parameters()) {
   string g2oFile = findExampleDataFile(name);
-  auto factors3 = parse3DFactors(g2oFile);
-  auto factors = betweenFactorRot3s(factors3);
+  auto poseFactors = parse3DFactors(g2oFile);
+  auto factors = betweenFactorRots<3>(poseFactors);
   return ShonanAveraging3(factors, parameters);
 }
 
@@ -277,6 +295,16 @@ TEST(ShonanAveraging3, runWithRandomKlausKarcher) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging2, runWithRandomKlausKarcher) {
+  // Load 2D toy example
+  auto lmParams = LevenbergMarquardtParams::CeresDefaults();
+  lmParams.setVerbosityLM("SUMMARY");
+  static const ShonanAveraging2 shonan = fromExampleName2("noisyToyGraph.txt");
+  EXPECT_LONGS_EQUAL(4, shonan.nrUnknowns());
+  NonlinearFactorGraph graph = shonan.buildGraphAt(2);
+  EXPECT_LONGS_EQUAL(5, graph.size());
+  auto result = shonan.runWithRandom(2);
+  EXPECT_DOUBLES_EQUAL(0.0008211, shonan.cost(result.first), 1e-6);
+  EXPECT_DOUBLES_EQUAL(0, result.second, 1e-10); // certificate!
 }
 
 /* ************************************************************************* */

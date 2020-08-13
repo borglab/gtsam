@@ -107,6 +107,14 @@ ShonanAveraging<d>::ShonanAveraging(const Factors &factors,
                                     const Parameters &parameters)
     : parameters_(parameters), factors_(factors),
       nrUnknowns_(NrUnknowns<d>(factors)) {
+  for (const auto &factor : factors_) {
+    const auto &model = factor->noiseModel();
+    if(model && model->dim()!=SO<d>::dimension) {
+      factor->print("Factor with incorrect noise model:\n");
+      throw std::invalid_argument("ShonanAveraging: factors passed to "
+                                  "constructor have incorrect dimension.");
+    }
+  }
   Q_ = buildQ();
   D_ = buildD();
   L_ = D_ - Q_;
@@ -197,7 +205,7 @@ Values ShonanAveraging<d>::tryOptimizingAt(
 
 /* ************************************************************************* */
 // Project to pxdN Stiefel manifold
-template <size_t d=3>
+template <size_t d>
 static Matrix StiefelElementMatrix(const Values &values) {
   const size_t N = values.size();
   const size_t p = values.at<SOn>(0).rows();
@@ -300,7 +308,7 @@ template <> Values ShonanAveraging<3>::roundSolutionS(const Matrix &S) const {
 template <size_t d>
 Values ShonanAveraging<d>::roundSolution(const Values& values) const {
   // Project to pxdN Stiefel manifold...
-  Matrix S = StiefelElementMatrix(values);
+  Matrix S = StiefelElementMatrix<d>(values);
   // ...and call version above.
   return roundSolutionS(S);
 }
@@ -449,7 +457,7 @@ template<size_t d>
 Sparse ShonanAveraging<d>::computeLambda(
     const Values& values) const {
   // Project to pxdN Stiefel manifold...
-  Matrix S = StiefelElementMatrix(values);
+  Matrix S = StiefelElementMatrix<d>(values);
   // ...and call version above.
   return computeLambda(S);
 }
@@ -458,7 +466,7 @@ Sparse ShonanAveraging<d>::computeLambda(
 template<size_t d>
 Sparse ShonanAveraging<d>::computeA(const Values& values) const {
   assert(values.size() == nrUnknowns());
-  const Matrix S = StiefelElementMatrix(values);
+  const Matrix S = StiefelElementMatrix<d>(values);
   auto Lambda = computeLambda(S);
   return Lambda - Q_;
 }
@@ -622,7 +630,7 @@ template<size_t d>
 double ShonanAveraging<d>::computeMinEigenValue(const Values& values,
                                              Vector* minEigenVector) const {
   assert(values.size() == nrUnknowns());
-  const Matrix S = StiefelElementMatrix(values);
+  const Matrix S = StiefelElementMatrix<d>(values);
   auto A = computeA(S);
 #ifdef SLOW_EIGEN_COMPUTATION
   Eigen::EigenSolver<Matrix> solver(Matrix(A), false);
@@ -678,7 +686,7 @@ Vector ShonanAveraging<d>::MakeATangentVector(size_t p, const Vector &v, size_t 
 template <size_t d>
 Matrix ShonanAveraging<d>::riemannianGradient(size_t p,
                                               const Values &values) const {
-  Matrix S_dot = StiefelElementMatrix(values);
+  Matrix S_dot = StiefelElementMatrix<d>(values);
   // calculate the gradient of F(Q_dot) at Q_dot
   Matrix euclideanGradient = 2 * (L_ * (S_dot.transpose())).transpose();
   // cout << "euclidean gradient rows and cols" << euclideanGradient.rows() <<
@@ -797,7 +805,7 @@ std::pair<Values, double> ShonanAveraging<d>::runWithDescent(
 
 /* ************************************************************************* */
 // Explicit instantiation for d=2 and d=3
-//template class ShonanAveraging<2>;
+template class ShonanAveraging<2>;
 template class ShonanAveraging<3>;
 
 /* ************************************************************************* */
