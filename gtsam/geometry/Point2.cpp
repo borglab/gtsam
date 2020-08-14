@@ -79,18 +79,6 @@ ostream &operator<<(ostream &os, const Point2& p) {
   return os;
 }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-boost::optional<Point2> CircleCircleIntersection(double R_d, double r_d, double tol) {
-  return circleCircleIntersection(R_d, r_d, tol);
-}
-std::list<Point2> CircleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2> fh) {
-  return circleCircleIntersection(c1, c2, fh);
-}
-std::list<Point2> CircleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2, double tol) {
-  return circleCircleIntersection(c1, r1, c2, r2, tol);
-}
-#endif
-
 #endif // GTSAM_TYPEDEF_POINTS_TO_VECTORS
 
 /* ************************************************************************* */

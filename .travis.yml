@@ -87,14 +87,14 @@ jobs:
   - stage: special
     os: linux
     compiler: clang
-    env: CC=clang-9 CXX=clang++-9 CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF GTSAM_ALLOW_DEPRECATED_SINCE_V4=ON
+    env: CC=clang-9 CXX=clang++-9 CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF GTSAM_ALLOW_DEPRECATED_SINCE_V41=ON
     script: bash .travis.sh -b
 # on Linux, with GTSAM_WITH_TBB on to make sure GTSAM still compiles/tests
-  - stage: special
-    os: linux
-    compiler: gcc
-    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF GTSAM_WITH_TBB=ON
-    script: bash .travis.sh -t
+  # - stage: special
+  #   os: linux
+  #   compiler: gcc
+  #   env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF GTSAM_WITH_TBB=ON
+  #   script: bash .travis.sh -t
 # -------- STAGE 2: TESTS -----------
 # on Mac, GCC
   - stage: test

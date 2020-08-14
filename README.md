@@ -1,5 +1,7 @@
 # README - Georgia Tech Smoothing and Mapping Library
 
+**As of August 1, develop is officially in "Pre 4.1" mode, and features deprecated in 4.0 were removed. Use the last 4.0.3 release if you need those features. However, most are easily converted and can be tracked down (in 4.0.3) by disabling the cmake flag GTSAM_ALLOW_DEPRECATED_SINCE_V4**
+
 ## What is GTSAM?
 
 GTSAM is a C++ library that implements smoothing and
@@ -44,9 +46,12 @@ Optional prerequisites - used automatically if findable by CMake:
 
 ## GTSAM 4 Compatibility
 
-GTSAM 4 introduces several new features, most notably Expressions and a Python toolbox. We also deprecate some legacy functionality and wrongly named methods, but by default the flag GTSAM_ALLOW_DEPRECATED_SINCE_V4 is enabled, allowing anyone to just pull V4 and compile. To build the python toolbox, however, you will have to explicitly disable that flag.
+GTSAM 4 introduces several new features, most notably Expressions and a Python toolbox. It also introduces traits, a C++ technique that allows optimizing with non-GTSAM types. That opens the door to retiring geometric types such as Point2 and Point3 to pure Eigen types, which we also do. A significant change which will not trigger a compile error is that zero-initializing of Point2 and Point3 is deprecated, so please be aware that this might render functions using their default constructor incorrect.
 
-Also, GTSAM 4 introduces traits, a C++ technique that allows optimizing with non-GTSAM types. That opens the door to retiring geometric types such as Point2 and Point3 to pure Eigen types, which we also do. A significant change which will not trigger a compile error is that zero-initializing of Point2 and Point3 is deprecated, so please be aware that this might render functions using their default constructor incorrect.
+GTSAM 4 also deprecated some legacy functionality and wrongly named methods. If you are on a 4.0.X release, you can define the flag GTSAM_ALLOW_DEPRECATED_SINCE_V4 to use the deprecated methods.
+
+GTSAM 4.1 added a new pybind wrapper, and **removed** the deprecated functionality. There is a flag GTSAM_ALLOW_DEPRECATED_SINCE_V41 for newly deprecated methods since the 4.1 release, which is on by default, allowing anyone to just pull version 4.1 and compile.
+
 
 ## Wrappers
 

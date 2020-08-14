@@ -128,17 +128,9 @@ namespace gtsam {
     /** Scale the values in \c gy according to the sigmas for the frontal variables in this
      *  conditional. */
     void scaleFrontalsBySigma(VectorValues& gy) const;
-//    __declspec(deprecated) void scaleFrontalsBySigma(VectorValues& gy) const; // FIXME: depreciated flag doesn't appear to exist?
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-    /// @name Deprecated
-    /// @{
-    constABlock get_R() const { return R(); }
-    constABlock get_S() const { return S(); }
-    constABlock get_S(const_iterator it) const { return S(it); }
-    const constBVector get_d() const { return d(); }
-    /// @}
-#endif
+    // FIXME: deprecated flag doesn't appear to exist?
+    // __declspec(deprecated) void scaleFrontalsBySigma(VectorValues& gy) const; 
 
    private:
     /** Serialization function */

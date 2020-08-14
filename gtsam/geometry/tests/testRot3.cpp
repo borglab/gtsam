@@ -608,7 +608,8 @@ TEST( Rot3, stream)
   Rot3 R;
   std::ostringstream os;
   os << R;
-  EXPECT(os.str() == "\n|1, 0, 0|\n|0, 1, 0|\n|0, 0, 1|\n");
+  string expected = "[\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]";
+  EXPECT(os.str() == expected);
 }
 
 /* ************************************************************************* */

@@ -2369,6 +2369,7 @@ virtual class NonlinearOptimizer {
   double error() const;
   int iterations() const;
   gtsam::Values values() const;
+  gtsam::NonlinearFactorGraph graph() const;
   gtsam::GaussianFactorGraph* iterate() const;
 };
 
@@ -2568,10 +2569,12 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
-
-
 #include <gtsam/nonlinear/NonlinearEquality.h>
-template<T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias}>
+template <T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2,
+               gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2,
+               gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera,
+               gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2,
+               gtsam::imuBias::ConstantBias}>
 virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // Constructor - forces exact evaluation
   NonlinearEquality(size_t j, const T& feasible);
@@ -2581,7 +2584,6 @@ virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // enabling serialization functionality
   void serialize() const;
 };
-
 
 #include <gtsam/sam/RangeFactor.h>
 template<POSE, POINT>
@@ -2880,6 +2882,19 @@ virtual class FrobeniusWormholeFactor : gtsam::NoiseModelFactor {
   Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
 };
 
+#include <gtsam/sfm/BinaryMeasurement.h>
+template<T>
+class BinaryMeasurement {
+  BinaryMeasurement(size_t key1, size_t key2, const T& measured,
+                    const gtsam::noiseModel::Base* model);
+  size_t key1() const;
+  size_t key2() const;
+  T measured() const;
+};
+
+typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
+typedef gtsam::BinaryMeasurement<gtsam::Rot3> BinaryMeasurementRot3;
+
 //*************************************************************************
 // Navigation
 //*************************************************************************
@@ -2996,6 +3011,7 @@ class PreintegratedImuMeasurements {
   void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
 
   Matrix preintMeasCov() const;
+  Vector preintegrated() const;
   double deltaTij() const;
   gtsam::Rot3 deltaRij() const;
   Vector deltaPij() const;

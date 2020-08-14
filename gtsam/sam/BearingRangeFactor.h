@@ -33,10 +33,10 @@ template <typename A1, typename A2,
           typename B = typename Bearing<A1, A2>::result_type,
           typename R = typename Range<A1, A2>::result_type>
 class BearingRangeFactor
-    : public ExpressionFactor2<BearingRange<A1, A2>, A1, A2> {
+    : public ExpressionFactorN<BearingRange<A1, A2>, A1, A2> {
  private:
   typedef BearingRange<A1, A2> T;
-  typedef ExpressionFactor2<T, A1, A2> Base;
+  typedef ExpressionFactorN<T, A1, A2> Base;
   typedef BearingRangeFactor<A1, A2> This;
 
  public:
@@ -48,8 +48,8 @@ class BearingRangeFactor
   /// primary constructor
   BearingRangeFactor(Key key1, Key key2, const B& measuredBearing,
                      const R& measuredRange, const SharedNoiseModel& model)
-      : Base(key1, key2, model, T(measuredBearing, measuredRange)) {
-    this->initialize(expression(key1, key2));
+      : Base({key1, key2}, model, T(measuredBearing, measuredRange)) {
+    this->initialize(expression({key1, key2}));
   }
 
   virtual ~BearingRangeFactor() {}
@@ -61,9 +61,23 @@ class BearingRangeFactor
   }
 
   // Return measurement expression
-  Expression<T> expression(Key key1, Key key2) const override {
-    return Expression<T>(T::Measure, Expression<A1>(key1),
-                         Expression<A2>(key2));
+  Expression<T> expression(const typename Base::ArrayNKeys& keys) const override {
+    return Expression<T>(T::Measure, Expression<A1>(keys[0]),
+                         Expression<A2>(keys[1]));
+  }
+
+  Vector evaluateError(const A1& a1, const A2& a2,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const
+  {
+    std::vector<Matrix> Hs(2);
+    const auto &keys = Factor::keys();
+    const Vector error = unwhitenedError(
+      {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}}, 
+      Hs);
+    if (H1) *H1 = Hs[0];
+    if (H2) *H2 = Hs[1];
+    return error;
   }
 
   /// print
