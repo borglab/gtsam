@@ -459,11 +459,12 @@ TEST(NonlinearOptimizer, RobustMeanCalculation) {
   init.insert(0, 100.0);
   expected.insert(0, 3.33333333);
 
-  LevenbergMarquardtParams params;
+  DoglegParams params_dl;
+  params_dl.setRelativeErrorTol(1e-10);
 
   auto gn_result = GaussNewtonOptimizer(fg, init).optimize();
-  auto lm_result = LevenbergMarquardtOptimizer(fg, init, params).optimize();
-  auto dl_result = DoglegOptimizer(fg, init).optimize();
+  auto lm_result = LevenbergMarquardtOptimizer(fg, init).optimize();
+  auto dl_result = DoglegOptimizer(fg, init, params_dl).optimize();
 
   EXPECT(assert_equal(expected, gn_result, tol));
   EXPECT(assert_equal(expected, lm_result, tol));
@@ -509,8 +510,8 @@ class IterativeLM : public LevenbergMarquardtOptimizer {
         initial_(initialValues) {}
 
   /// Solve that uses conjugate gradient
-  virtual VectorValues solve(const GaussianFactorGraph& gfg,
-                             const NonlinearOptimizerParams& params) const {
+  VectorValues solve(const GaussianFactorGraph& gfg,
+                             const NonlinearOptimizerParams& params) const override {
     VectorValues zeros = initial_.zeroVectors();
     return conjugateGradientDescent(gfg, zeros, cgParams_);
   }

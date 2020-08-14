@@ -70,7 +70,7 @@ public:
   }
 
   /// equals implementing generic Value interface
-  virtual bool equals_(const Value& p, double tol = 1e-9) const {
+  bool equals_(const Value& p, double tol = 1e-9) const override {
     // Cast the base class Value pointer to a templated generic class pointer
     const GenericValue& genericValue2 = static_cast<const GenericValue&>(p);
     // Return the result of using the equals traits for the derived class
@@ -83,15 +83,15 @@ public:
   }
 
   /// Virtual print function, uses traits
-  virtual void print(const std::string& str) const {
-    std::cout << "(" << demangle(typeid(T).name()) << ") ";
+  void print(const std::string& str) const override {
+    std::cout << "(" << demangle(typeid(T).name()) << ")\n";
     traits<T>::Print(value_, str);
   }
 
     /**
      * Create a duplicate object returned as a pointer to the generic Value interface.
      */
-    virtual Value* clone_() const {
+    Value* clone_() const override {
       GenericValue* ptr = new GenericValue(*this); // calls copy constructor to fill in
       return ptr;
     }
@@ -99,19 +99,19 @@ public:
     /**
      * Destroy and deallocate this object, only if it was originally allocated using clone_().
      */
-    virtual void deallocate_() const {
+    void deallocate_() const override {
       delete this;
     }
 
     /**
      * Clone this value (normal clone on the heap, delete with 'delete' operator)
      */
-    virtual boost::shared_ptr<Value> clone() const {
+    boost::shared_ptr<Value> clone() const override {
 		return boost::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
     }
 
     /// Generic Value interface version of retract
-    virtual Value* retract_(const Vector& delta) const {
+    Value* retract_(const Vector& delta) const override {
       // Call retract on the derived class using the retract trait function
       const T retractResult = traits<T>::Retract(GenericValue<T>::value(), delta);
 
@@ -122,7 +122,7 @@ public:
     }
 
     /// Generic Value interface version of localCoordinates
-    virtual Vector localCoordinates_(const Value& value2) const {
+    Vector localCoordinates_(const Value& value2) const override {
       // Cast the base class Value pointer to a templated generic class pointer
       const GenericValue<T>& genericValue2 =
           static_cast<const GenericValue<T>&>(value2);
@@ -142,12 +142,12 @@ public:
     }
 
     /// Return run-time dimensionality
-    virtual size_t dim() const {
+    size_t dim() const override {
       return traits<T>::GetDimension(value_);
     }
 
     /// Assignment operator
-    virtual Value& operator=(const Value& rhs) {
+    Value& operator=(const Value& rhs) override {
       // Cast the base class Value pointer to a derived class pointer
       const GenericValue& derivedRhs = static_cast<const GenericValue&>(rhs);
 
@@ -197,5 +197,13 @@ template<typename ValueType>
 const ValueType& Value::cast() const {
   return dynamic_cast<const GenericValue<ValueType>&>(*this).value();
 }
+
+/** Functional constructor of GenericValue<T> so T can be automatically deduced
+  */
+template<class T>
+GenericValue<T> genericValue(const T& v) {
+  return GenericValue<T>(v);
+}
+
 
 } /* namespace gtsam */

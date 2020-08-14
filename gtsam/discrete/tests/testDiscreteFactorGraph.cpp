@@ -19,7 +19,7 @@
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteBayesTree.h>
-#include <gtsam/inference/BayesNet-inst.h>
+#include <gtsam/inference/BayesNet.h>
 
 #include <CppUnitLite/TestHarness.h>
 

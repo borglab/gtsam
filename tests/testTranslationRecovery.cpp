@@ -49,15 +49,17 @@ TEST(TranslationRecovery, BAL) {
       poses, {{0, 1}, {0, 2}, {1, 2}});
 
   // Check
-  const Pose3 wTa = poses.at<Pose3>(0), wTb = poses.at<Pose3>(1),
-              wTc = poses.at<Pose3>(2);
-  const Point3 Ta = wTa.translation(), Tb = wTb.translation(),
-               Tc = wTc.translation();
-  const Rot3 aRw = wTa.rotation().inverse();
-  const Unit3 w_aZb = relativeTranslations.at({0, 1});
-  EXPECT(assert_equal(Unit3(Tb - Ta), w_aZb));
-  const Unit3 w_aZc = relativeTranslations.at({0, 2});
-  EXPECT(assert_equal(Unit3(Tc - Ta), w_aZc));
+  Unit3 w_aZb_stored; // measurement between 0 and 1 stored for next unit test
+  for(auto& unitTranslation : relativeTranslations) {
+    const Pose3 wTa = poses.at<Pose3>(unitTranslation.key1()), 
+                wTb = poses.at<Pose3>(unitTranslation.key2());
+    const Point3 Ta = wTa.translation(), Tb = wTb.translation();
+    const Unit3 w_aZb = unitTranslation.measured();
+    EXPECT(assert_equal(Unit3(Tb - Ta), w_aZb));
+    if(unitTranslation.key1() == 0 && unitTranslation.key2() == 1) {
+      w_aZb_stored = unitTranslation.measured();
+    }
+  }
 
   TranslationRecovery algorithm(relativeTranslations);
   const auto graph = algorithm.buildGraph();
@@ -69,10 +71,14 @@ TEST(TranslationRecovery, BAL) {
 
   // Check result for first two translations, determined by prior
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(2 * w_aZb.point3()), result.at<Point3>(1)));
+  EXPECT(assert_equal(Point3(2 * w_aZb_stored.point3()), result.at<Point3>(1)));
 
   // Check that the third translations is correct
-  Point3 expected = (Tc - Ta) * (scale / (Tb - Ta).norm());
+  Point3 Ta = poses.at<Pose3>(0).translation();
+  Point3 Tb = poses.at<Pose3>(1).translation();
+  Point3 Tc = poses.at<Pose3>(2).translation();
+  Point3 expected = 
+      (Tc - Ta) * (scale / (Tb - Ta).norm());
   EXPECT(assert_equal(expected, result.at<Point3>(2), 1e-4));
 
   // TODO(frank): how to get stats back?

@@ -61,7 +61,7 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
@@ -69,27 +69,22 @@ public:
   /** implement functions needed for Testable */
 
   /** print */
-  virtual void print(const std::string& s = "",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  void print(const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /** equals */
-  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /** implement functions needed to derive from Factor */
 
   /** vector of errors */
-  virtual Vector evaluateError(const Pose3& p1, const Pose3& p2,
+  Vector evaluateError(const Pose3& p1, const Pose3& p2,
       boost::optional<Matrix&> Hp1 = boost::none, //
-      boost::optional<Matrix&> Hp2 = boost::none) const;
+      boost::optional<Matrix&> Hp2 = boost::none) const override;
 
   /** return the measured */
   const EssentialMatrix& measured() const {
     return measuredE_;
-  }
-
-  /** number of variables attached to this factor */
-  std::size_t size() const {
-    return 2;
   }
 
 private:

@@ -51,8 +51,6 @@ TEST(TranslationFactor, ZeroError) {
   // Verify we get the expected error
   Vector expected = (Vector3() << 0, 0, 0).finished();
   EXPECT(assert_equal(expected, actualError, 1e-9));
-
-
 }
 
 /* ************************************************************************* */
@@ -67,13 +65,13 @@ TEST(TranslationFactor, NonZeroError) {
   Vector actualError(factor.evaluateError(T1, T2));
 
   // verify we get the expected error
-  Vector expected = (Vector3() << -1, 1/sqrt(2), 1/sqrt(2)).finished();
+  Vector expected = (Vector3() << -1, 1 / sqrt(2), 1 / sqrt(2)).finished();
   EXPECT(assert_equal(expected, actualError, 1e-9));
 }
 
 /* ************************************************************************* */
-Vector factorError(const Point3& T1, const Point3& T2,
-                   const TranslationFactor& factor) {
+Vector factorError(const Point3 &T1, const Point3 &T2,
+                   const TranslationFactor &factor) {
   return factor.evaluateError(T1, T2);
 }
 

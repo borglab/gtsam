@@ -60,7 +60,7 @@ public:
   /// @{
 
   /// print with optional string
-  virtual void print(const std::string& s = "") const ;
+  void print(const std::string& s = "") const override;
 
   /// assert equality up to a tolerance
   bool equals(const Cal3DS2& K, double tol = 10e-9) const;
@@ -86,7 +86,7 @@ public:
   /// @{
 
   /// @return a deep copy of this object
-  virtual boost::shared_ptr<Base> clone() const {
+  boost::shared_ptr<Base> clone() const override {
     return boost::shared_ptr<Base>(new Cal3DS2(*this));
   }
 
