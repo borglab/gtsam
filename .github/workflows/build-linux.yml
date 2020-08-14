@@ -32,7 +32,7 @@ jobs:
             compiler: gcc
             version: "9"
 
-          - name: ubuntu-18.04-clang-9
+          - name: ubuntu-18.04-clang-10
             os: ubuntu-18.04
             compiler: clang
             version: "10"
