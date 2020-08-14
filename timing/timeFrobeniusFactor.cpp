@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
 
   // Read G2O file
   const auto factors = parse3DFactors(g2oFile);
-  const auto poses = parse3DPoses(g2oFile);
+  const auto poses = parseVariables<Pose3>(g2oFile);
 
   // Build graph
   NonlinearFactorGraph graph;

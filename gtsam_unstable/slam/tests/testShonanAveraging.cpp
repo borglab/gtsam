@@ -298,8 +298,12 @@ TEST(ShonanAveraging2, runWithRandomKlausKarcher) {
   // Load 2D toy example
   auto lmParams = LevenbergMarquardtParams::CeresDefaults();
   lmParams.setVerbosityLM("SUMMARY");
-  static const ShonanAveraging2 shonan = fromExampleName2("noisyToyGraph.txt");
+  string g2oFile = findExampleDataFile("noisyToyGraph.txt");
+  auto factors = parseFactors<Rot2>(g2oFile);
+  return ShonanAveraging2(factors, parameters);
   EXPECT_LONGS_EQUAL(4, shonan.nrUnknowns());
+
+  // Check graph building
   NonlinearFactorGraph graph = shonan.buildGraphAt(2);
   EXPECT_LONGS_EQUAL(5, graph.size());
   auto result = shonan.runWithRandom(2);

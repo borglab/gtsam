@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <gtsam/sfm/BinaryMeasurement.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
@@ -72,6 +73,34 @@ enum KernelFunctionType {
   KernelFunctionTypeNONE, KernelFunctionTypeHUBER, KernelFunctionTypeTUKEY
 };
 
+/**
+ * Parse variables in 2D g2o graph file into a map.
+ * Instantiated in .cpp T equal to Pose2, Pose3
+ */
+template <typename T>
+GTSAM_EXPORT std::map<Key, T> parseVariables(const std::string &filename,
+                                             Key maxKey = 0);
+
+/**
+ * Parse edges in 2D g2o graph file into a set of binary measuremnts.
+ * Instantiated in .cpp for T equal to Pose2, Pose3
+ */
+template <typename T>
+GTSAM_EXPORT std::vector<BinaryMeasurement<T>>
+parseMeasurements(const std::string &filename,
+                        const noiseModel::Diagonal::shared_ptr &model = nullptr,
+                        Key maxKey = 0);
+
+/**
+ * Parse edges in 2D g2o graph file into a set of BetweenFactors.
+ * Instantiated in .cpp T equal to Pose2, Pose3
+ */
+template <typename T>
+GTSAM_EXPORT std::vector<typename BetweenFactor<T>::shared_ptr>
+parseFactors(const std::string &filename,
+             const noiseModel::Diagonal::shared_ptr &model = nullptr,
+             Key maxKey = 0);
+
 /// Return type for auxiliary functions
 typedef std::pair<Key, Pose2> IndexedPose;
 typedef std::pair<Key, Point2> IndexedLandmark;
@@ -90,7 +119,6 @@ GTSAM_EXPORT boost::optional<IndexedPose> parseVertexPose(std::istream& is,
  * @param is input stream
  * @param tag string parsed from input stream, will only parse if vertex type
  */
-
 GTSAM_EXPORT boost::optional<IndexedLandmark> parseVertexLandmark(std::istream& is,
     const std::string& tag);
 
@@ -101,23 +129,6 @@ GTSAM_EXPORT boost::optional<IndexedLandmark> parseVertexLandmark(std::istream& 
  */
 GTSAM_EXPORT boost::optional<IndexedEdge> parseEdge(std::istream& is,
     const std::string& tag);
-
-using BetweenFactorPose2s =
-    std::vector<gtsam::BetweenFactor<Pose2>::shared_ptr>;
-
-/// Parse edges in 2D g2o graph file into a set of BetweenFactors.
-GTSAM_EXPORT BetweenFactorPose2s parse2DFactors(
-    const std::string &filename,
-    const noiseModel::Diagonal::shared_ptr &corruptingNoise = nullptr,
-    Key maxKey = 0);
-
-/// Parse vertices in 2D g2o graph file into a map of Pose2s.
-GTSAM_EXPORT std::map<Key, Pose2> parse2DPoses(const std::string &filename,
-                                               Key maxKey = 0);
-
-/// Parse landmarks in 2D g2o graph file into a map of Point2s.
-GTSAM_EXPORT std::map<Key, Point2> parse2DLandmarks(const string &filename,
-                                                    Key maxKey = 0);
 
 /// Return type for load functions
 using GraphAndValues =
@@ -182,21 +193,6 @@ GTSAM_EXPORT GraphAndValues readG2o(const std::string& g2oFile, const bool is3D 
  */
 GTSAM_EXPORT void writeG2o(const NonlinearFactorGraph& graph,
     const Values& estimate, const std::string& filename);
-
-/// Parse edges in 3D TORO graph file into a set of BetweenFactors.
-using BetweenFactorPose3s = std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>;
-GTSAM_EXPORT BetweenFactorPose3s parse3DFactors(
-    const std::string &filename,
-    const noiseModel::Diagonal::shared_ptr &corruptingNoise = nullptr,
-    Key maxKey = 0);
-
-/// Parse vertices in 3D TORO/g2o graph file into a map of Pose3s.
-GTSAM_EXPORT std::map<Key, Pose3> parse3DPoses(const std::string &filename,
-                                               Key maxKey = 0);
-
-/// Parse landmarks in 3D g2o graph file into a map of Point3s.
-GTSAM_EXPORT std::map<Key, Point3> parse3DLandmarks(const std::string &filename,
-                                                    Key maxKey = 0);
 
 /// Load TORO 3D Graph
 GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
@@ -335,14 +331,21 @@ GTSAM_EXPORT Values initialCamerasEstimate(const SfmData& db);
 GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfmData& db);
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
-/**
- * Parse TORO/G2O vertex "id x y yaw"
- * @param is input stream
- * @param tag string parsed from input stream, will only parse if vertex type
- */
 inline boost::optional<IndexedPose> parseVertex(std::istream &is,
                                                 const std::string &tag) {
   return parseVertexPose(is, tag);
 }
+
+GTSAM_EXPORT std::map<Key, Pose3> parse3DPoses(const std::string &filename,
+                                               Key maxKey = 0);
+
+GTSAM_EXPORT std::map<Key, Point3> parse3DLandmarks(const std::string &filename,
+                                                    Key maxKey = 0);
+
+using BetweenFactorPose3s = std::vector<BetweenFactor<Pose3>::shared_ptr>;
+GTSAM_EXPORT BetweenFactorPose3s parse3DFactors(
+    const std::string &filename,
+    const noiseModel::Diagonal::shared_ptr &model = nullptr, Key maxKey = 0);
+
 #endif
 }  // namespace gtsam
