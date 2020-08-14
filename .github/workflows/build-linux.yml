@@ -17,16 +17,11 @@ jobs:
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
-        name: [ubuntu-18.04-gcc-5, ubuntu-18.04-gcc-9, ubuntu-18.04-clang-10]
+        name: [ubuntu-18.04-gcc-9, ubuntu-18.04-clang-10]
 
         build_type: [Debug, Release]
         build_unstable: [ON, OFF]
         include:
-          - name: ubuntu-18.04-gcc-5
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "5"
-
           - name: ubuntu-18.04-gcc-9
             os: ubuntu-18.04
             compiler: gcc
@@ -51,7 +46,6 @@ jobs:
           fi
           sudo apt-get -y update
           sudo apt-get -y upgrade
-          sudo apt install cmake g++-${{ matrix.version }} clang-${{ matrix.version }} build-essential pkg-config libpython-dev python-numpy libboost-all-dev
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
@@ -62,6 +56,9 @@ jobs:
             echo "::set-env name=CC::clang-${{ matrix.version }}"
             echo "::set-env name=CXX::clang++-${{ matrix.version }}"
           fi
+
+          sudo apt-get install cmake build-essential pkg-config libpython-dev python-numpy libboost-all-dev
+
       - name: Build (Linux)
         if: runner.os == 'Linux'
         run: |
