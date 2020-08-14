@@ -104,8 +104,16 @@ TEST(dataSet, load2D) {
       boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(0));
   EXPECT(assert_equal(expected, *actual));
 
-  // Check factor parsing
-  const auto actualFactors = parse2DFactors(filename);
+  // Check binary measurements, Pose2
+  auto measurements = parseMeasurements<Pose2>(filename, nullptr, 5);
+  EXPECT_LONGS_EQUAL(4, measurements.size());
+
+  // Check binary measurements, Rot2
+  auto measurements2 = parseMeasurements<Rot2>(filename);
+  EXPECT_LONGS_EQUAL(300, measurements2.size());
+
+  // // Check factor parsing
+  const auto actualFactors = parseFactors<Pose2>(filename);
   for (size_t i : {0, 1, 2, 3, 4, 5}) {
     EXPECT(assert_equal(
         *boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(i)),
@@ -113,13 +121,13 @@ TEST(dataSet, load2D) {
   }
 
   // Check pose parsing
-  const auto actualPoses = parse2DPoses(filename);
+  const auto actualPoses = parseVariables<Pose2>(filename);
   for (size_t j : {0, 1, 2, 3, 4}) {
     EXPECT(assert_equal(initial->at<Pose2>(j), actualPoses.at(j), 1e-5));
   }
 
   // Check landmark parsing
-  const auto actualLandmarks = parse2DLandmarks(filename);
+  const auto actualLandmarks = parseVariables<Point2>(filename);
   EXPECT_LONGS_EQUAL(0, actualLandmarks.size());
 }
 
@@ -202,7 +210,7 @@ TEST(dataSet, readG2o3D) {
   }
 
   // Check factor parsing
-  const auto actualFactors = parse3DFactors(g2oFile);
+  const auto actualFactors = parseFactors<Pose3>(g2oFile);
   for (size_t i : {0, 1, 2, 3, 4, 5}) {
     EXPECT(assert_equal(
         *boost::dynamic_pointer_cast<BetweenFactor<Pose3>>(expectedGraph[i]),
@@ -210,7 +218,7 @@ TEST(dataSet, readG2o3D) {
   }
 
   // Check pose parsing
-  const auto actualPoses = parse3DPoses(g2oFile);
+  const auto actualPoses = parseVariables<Pose3>(g2oFile);
   for (size_t j : {0, 1, 2, 3, 4}) {
     EXPECT(assert_equal(poses[j], actualPoses.at(j), 1e-5));
   }
@@ -277,7 +285,7 @@ TEST(dataSet, readG2oCheckDeterminants) {
   const string g2oFile = findExampleDataFile("toyExample.g2o");
 
   // Check determinants in factors
-  auto factors = parse3DFactors(g2oFile);
+  auto factors = parseFactors<Pose3>(g2oFile);
   EXPECT_LONGS_EQUAL(6, factors.size());
   for (const auto& factor : factors) {
     const Rot3 R = factor->measured().rotation();
@@ -285,7 +293,7 @@ TEST(dataSet, readG2oCheckDeterminants) {
   }
 
   // Check determinants in initial values
-  const map<Key, Pose3> poses = parse3DPoses(g2oFile);
+  const map<Key, Pose3> poses = parseVariables<Pose3>(g2oFile);
   EXPECT_LONGS_EQUAL(5, poses.size());
   for (const auto& key_value : poses) {
     const Rot3 R = key_value.second.rotation();
@@ -300,7 +308,7 @@ TEST(dataSet, readG2oLandmarks) {
   const string g2oFile = findExampleDataFile("example_with_vertices.g2o");
 
   // Check number of poses and landmarks. Should be 8 each.
-  const map<Key, Pose3> poses = parse3DPoses(g2oFile);
+  const map<Key, Pose3> poses = parseVariables<Pose3>(g2oFile);
   EXPECT_LONGS_EQUAL(8, poses.size());
   const map<Key, Point3> landmarks = parse3DLandmarks(g2oFile);
   EXPECT_LONGS_EQUAL(8, landmarks.size());
