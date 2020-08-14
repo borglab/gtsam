@@ -4,17 +4,17 @@
 function install_tbb()
 {
   TBB_BASEURL=https://github.com/oneapi-src/oneTBB/releases/download
-  TBB_VERSION=4.4.2
-  TBB_DIR=tbb44_20151115oss
+  TBB_VERSION=4.4.5
+  TBB_DIR=tbb44_20160526oss
   TBB_SAVEPATH="/tmp/tbb.tgz"
 
-  if [ "$TRAVIS_OS_NAME" == "linux" ]; then
+  if [ "$(uname)" == "Linux" ]; then
     OS_SHORT="lin"
     TBB_LIB_DIR="intel64/gcc4.4"
     SUDO="sudo"
 
-  elif [ "$TRAVIS_OS_NAME" == "osx" ]; then
-    OS_SHORT="lin"
+  elif [ "$(uname)" == "Darwin" ]; then
+    OS_SHORT="osx"
     TBB_LIB_DIR=""
     SUDO=""
 
@@ -46,7 +46,7 @@ function configure()
   rm -fr $BUILD_DIR || true
   mkdir $BUILD_DIR && cd $BUILD_DIR
 
-  install_tbb
+  [ "${GTSAM_WITH_TBB:-OFF}" = "ON" ] && install_tbb
 
   if [ ! -z "$GCC_VERSION" ]; then
     export CC=gcc-$GCC_VERSION
@@ -61,9 +61,9 @@ function configure()
       -DGTSAM_WITH_TBB=${GTSAM_WITH_TBB:-OFF} \
       -DGTSAM_USE_QUATERNIONS=${GTSAM_USE_QUATERNIONS:-OFF} \
       -DGTSAM_BUILD_EXAMPLES_ALWAYS=${GTSAM_BUILD_EXAMPLES_ALWAYS:-ON} \
-      -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=${GTSAM_ALLOW_DEPRECATED_SINCE_V41:-OFF} \
+      -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=${GTSAM_ALLOW_DEPRECATED_SINCE_V4:-OFF} \
       -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
-      -DCMAKE_VERBOSE_MAKEFILE=OFF
+      -DCMAKE_VERBOSE_MAKEFILE=ON
 }
 
 
