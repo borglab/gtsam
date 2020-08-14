@@ -58,7 +58,7 @@ cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_PYTHON_VERSION=$PYTHON_VERSION \
     -DPYTHON_EXECUTABLE:FILEPATH=$(which $PYTHON) \
     -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=OFF \
-    -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/../gtsam_install
+    -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gtsam_install
 
 make -j$(nproc) install &
 
@@ -71,9 +71,9 @@ done
 
 case $WRAPPER in
 "cython")
-    cd $GITHUB_WORKSPACE/../gtsam_install/cython
+    cd $GITHUB_WORKSPACE/build/cython
     $PYTHON setup.py install --user --prefix=
-    cd $GITHUB_WORKSPACE/cython/gtsam/tests
+    cd $GITHUB_WORKSPACE/build/cython/gtsam/tests
     $PYTHON -m unittest discover
     ;;
 "pybind")
