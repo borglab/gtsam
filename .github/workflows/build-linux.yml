@@ -17,7 +17,7 @@ jobs:
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
-        name: [ubuntu-18.04-gcc-5, ubuntu-18.04-gcc-9, ubuntu-18.04-clang-9]
+        name: [ubuntu-18.04-gcc-5, ubuntu-18.04-gcc-9, ubuntu-18.04-clang-10]
 
         build_type: [Debug, Release]
         build_unstable: [ON, OFF]
@@ -35,7 +35,7 @@ jobs:
           - name: ubuntu-18.04-clang-9
             os: ubuntu-18.04
             compiler: clang
-            version: "9"
+            version: "10"
 
     steps:
       - name: Checkout
@@ -43,13 +43,15 @@ jobs:
       - name: Install (Linux)
         if: runner.os == 'Linux'
         run: |
-          # LLVM 9 is not in Bionic's repositories so we add the official LLVM repository.
-          if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
-            sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
+          # LLVM 10 is not in Bionic's repositories so we add the official LLVM repository.
+          if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "10" ]; then
+            # Add server key so that the package can be trusted.
+            sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 15CF4D18AF4F7421
+            sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
           fi
           sudo apt-get -y update
           sudo apt-get -y upgrade
-          sudo apt install cmake g++-9 clang-9 build-essential pkg-config libpython-dev python-numpy libboost-all-dev
+          sudo apt install cmake g++-${{ matrix.version }} clang-${{ matrix.version }} build-essential pkg-config libpython-dev python-numpy libboost-all-dev
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
