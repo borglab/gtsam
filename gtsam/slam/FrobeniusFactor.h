@@ -92,7 +92,7 @@ class FrobeniusFactor : public NoiseModelFactor2<Rot, Rot> {
  * and in fact only SO3 and SO4 really work, as we need SO<N>::AdjointMap.
  */
 template <class Rot>
-GTSAM_EXPORT class FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
+class GTSAM_EXPORT FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
   Rot R12_;  ///< measured rotation between R1 and R2
   Eigen::Matrix<double, Rot::dimension, Rot::dimension>
       R2hat_H_R1_;  ///< fixed derivative of R2hat wrpt R1
