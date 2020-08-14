@@ -167,10 +167,11 @@ gtsam::NonlinearFactor::shared_ptr CombinedImuFactor::clone() const {
 //------------------------------------------------------------------------------
 void CombinedImuFactor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  cout << s << "CombinedImuFactor(" << keyFormatter(this->key1()) << ","
-      << keyFormatter(this->key2()) << "," << keyFormatter(this->key3()) << ","
-      << keyFormatter(this->key4()) << "," << keyFormatter(this->key5()) << ","
-      << keyFormatter(this->key6()) << ")\n";
+  cout << (s == "" ? s : s + "\n") << "CombinedImuFactor("
+       << keyFormatter(this->key1()) << "," << keyFormatter(this->key2()) << ","
+       << keyFormatter(this->key3()) << "," << keyFormatter(this->key4()) << ","
+       << keyFormatter(this->key5()) << "," << keyFormatter(this->key6())
+       << ")\n";
   _PIM_.print("  preintegrated measurements:");
   this->noiseModel_->print("  noise model: ");
 }

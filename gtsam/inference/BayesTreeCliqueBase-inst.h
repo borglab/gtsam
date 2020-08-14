@@ -91,6 +91,7 @@ namespace gtsam {
   template<class DERIVED, class FACTORGRAPH>
   size_t BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::numCachedSeparatorMarginals() const
   {
+    std::lock_guard<std::mutex> marginalLock(cachedSeparatorMarginalMutex_);
     if (!cachedSeparatorMarginal_)
       return 0;
 
@@ -144,6 +145,7 @@ namespace gtsam {
   typename BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::FactorGraphType
   BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::separatorMarginal(
       Eliminate function) const {
+    std::lock_guard<std::mutex> marginalLock(cachedSeparatorMarginalMutex_);
     gttic(BayesTreeCliqueBase_separatorMarginal);
     // Check if the Separator marginal was already calculated
     if (!cachedSeparatorMarginal_) {
@@ -206,6 +208,8 @@ namespace gtsam {
     // When a shortcut is requested, all of the shortcuts between it and the
     // root are also generated. So, if this clique's cached shortcut is set,
     // recursively call over all child cliques. Otherwise, it is unnecessary.
+    
+    std::lock_guard<std::mutex> marginalLock(cachedSeparatorMarginalMutex_);
     if (cachedSeparatorMarginal_) {
       for(derived_ptr& child: children) {
         child->deleteCachedShortcuts();
