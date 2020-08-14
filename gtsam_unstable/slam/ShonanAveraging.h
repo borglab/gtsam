@@ -23,6 +23,7 @@
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
+#include <gtsam/sfm/BinaryMeasurement.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam_unstable/dllexport.h>
 
@@ -37,10 +38,9 @@ class NonlinearFactorGraph;
 class LevenbergMarquardtOptimizer;
 
 /// Parameters governing optimization etc.
-template <size_t d>
-struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
+template <size_t d> struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
   // Select Rot2 or Rot3 interface based template parameter d
-  using Rot = typename std::conditional<d==2, Rot2, Rot3>::type;
+  using Rot = typename std::conditional<d == 2, Rot2, Rot3>::type;
   using Anchor = std::pair<size_t, Rot>;
 
   // Paremeters themselves:
@@ -63,9 +63,7 @@ struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
   void setOptimalityThreshold(double value) { optimalityThreshold = value; }
   double getOptimalityThreshold() const { return optimalityThreshold; }
 
-  void setAnchor(size_t index, const Rot &value) {
-    anchor = {index, value};
-  }
+  void setAnchor(size_t index, const Rot &value) { anchor = {index, value}; }
 
   void setAnchorWeight(double value) { alpha = value; }
   double getAnchorWeight() { return alpha; }
@@ -85,8 +83,7 @@ struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
  * The template parameter d is typically 2 or 3.
  * Currently d=3 is specialized in the .cpp file.
  */
-template <size_t d>
-class GTSAM_UNSTABLE_EXPORT ShonanAveraging {
+template <size_t d> class GTSAM_UNSTABLE_EXPORT ShonanAveraging {
 public:
   using Sparse = Eigen::SparseMatrix<double>;
 
@@ -96,11 +93,11 @@ public:
 
   // We store SO(d) BetweenFactors to get noise model
   // TODO(frank): use BinaryMeasurement?
-  using Factors = std::vector<typename BetweenFactor<Rot>::shared_ptr>;
+  using Measurements = std::vector<BinaryMeasurement<Rot>>;
 
 private:
   Parameters parameters_;
-  Factors factors_;
+  Measurements measurements_;
   size_t nrUnknowns_;
   Sparse D_; // Sparse (diagonal) degree matrix
   Sparse Q_; // Sparse measurement matrix, == \tilde{R} in Eriksson18cvpr
@@ -119,9 +116,9 @@ public:
   /// @name Standard Constructors
   /// @{
 
-  /// Construct from set of relative measurements (given as BetweenFactor<Rot3> for now)
-  /// NoiseModel *must* be isotropic.
-  ShonanAveraging(const Factors &factors,
+  /// Construct from set of relative measurements (given as BetweenFactor<Rot3>
+  /// for now) NoiseModel *must* be isotropic.
+  ShonanAveraging(const Measurements &factors,
                   const Parameters &parameters = Parameters());
 
   /// @}
@@ -132,13 +129,13 @@ public:
   size_t nrUnknowns() const { return nrUnknowns_; }
 
   /// Return number of measurements
-  size_t nrMeasurements() const { return factors_.size(); }
+  size_t nrMeasurements() const { return measurements_.size(); }
 
   /// k^th measurement, as a Rot.
-  const Rot &measured(size_t i) const { return factors_[i]->measured(); }
+  const Rot &measured(size_t i) const { return measurements_[i].measured(); }
 
   /// Keys for k^th measurement, as a vector of Key values.
-  const KeyVector &keys(size_t i) const { return factors_[i]->keys(); }
+  const KeyVector &keys(size_t i) const { return measurements_[i].keys(); }
 
   /// @}
   /// @name Matrix API (advanced use, debugging)

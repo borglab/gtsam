@@ -34,37 +34,12 @@ using Rot = typename std::conditional<d==2, Rot2, Rot3>::type;
 template<size_t d>
 using Pose = typename std::conditional<d==2, Pose2, Pose3>::type;
 
-// Convert Pose constraints to Rot constraints
-template <size_t d>
-typename ShonanAveraging<d>::Factors
-betweenFactorRots(const std::vector<typename BetweenFactor<Pose<d>>::shared_ptr>
-                      &poseFactors) {
-  typename ShonanAveraging<d>::Factors result;
-  result.reserve(poseFactors.size());
-  for (auto f : poseFactors) {
-    result.emplace_back(new BetweenFactor<Rot<d>>(
-        f->key1(), f->key2(), f->measured().rotation(),
-        ConvertNoiseModel(f->noiseModel(), SO<d>::dimension)));
-  }
-  return result;
-}
-
-ShonanAveraging2 fromExampleName2(
-    const std::string &name,
-    ShonanAveraging2::Parameters parameters = ShonanAveraging2::Parameters()) {
-  string g2oFile = findExampleDataFile(name);
-  auto poseFactors = parse2DFactors(g2oFile);
-  auto factors = betweenFactorRots<2>(poseFactors);
-  return ShonanAveraging2(factors, parameters);
-}
-
 ShonanAveraging3 fromExampleName(
     const std::string &name,
     ShonanAveraging3::Parameters parameters = ShonanAveraging3::Parameters()) {
   string g2oFile = findExampleDataFile(name);
-  auto poseFactors = parse3DFactors(g2oFile);
-  auto factors = betweenFactorRots<3>(poseFactors);
-  return ShonanAveraging3(factors, parameters);
+  auto measurements = parseMeasurements<Rot3>(g2oFile);
+  return ShonanAveraging3(measurements, parameters);
 }
 
 static const ShonanAveraging3 kShonan = fromExampleName("toyExample.g2o");
@@ -299,8 +274,9 @@ TEST(ShonanAveraging2, runWithRandomKlausKarcher) {
   auto lmParams = LevenbergMarquardtParams::CeresDefaults();
   lmParams.setVerbosityLM("SUMMARY");
   string g2oFile = findExampleDataFile("noisyToyGraph.txt");
-  auto factors = parseFactors<Rot2>(g2oFile);
-  return ShonanAveraging2(factors, parameters);
+  ShonanAveraging2::Parameters parameters(lmParams);
+  auto measurements = parseMeasurements<Rot2>(g2oFile);
+  ShonanAveraging2 shonan(measurements, parameters);
   EXPECT_LONGS_EQUAL(4, shonan.nrUnknowns());
 
   // Check graph building

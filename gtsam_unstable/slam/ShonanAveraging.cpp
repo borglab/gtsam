@@ -27,8 +27,8 @@
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 #include <gtsam_unstable/slam/ShonanGaugeFactor.h>
 
-#include <SymEigsSolver.h>
 #include <Eigen/Eigenvalues>
+#include <SymEigsSolver.h>
 
 #include <algorithm>
 #include <complex>
@@ -89,29 +89,29 @@ template struct ShonanAveragingParameters<2>;
 template struct ShonanAveragingParameters<3>;
 
 /* ************************************************************************* */
-// Calculate number of unknown rotations referenced by factors
+// Calculate number of unknown rotations referenced by measurements
 template <size_t d>
 static size_t
-NrUnknowns(const typename ShonanAveraging<d>::Factors &factors) {
+NrUnknowns(const typename ShonanAveraging<d>::Measurements &measurements) {
   std::set<Key> keys;
-  for (const auto &factor : factors) {
-    keys.insert(factor->key1());
-    keys.insert(factor->key2());
+  for (const auto &measurement : measurements) {
+    keys.insert(measurement.key1());
+    keys.insert(measurement.key2());
   }
   return keys.size();
 }
 
 /* ************************************************************************* */
 template <size_t d>
-ShonanAveraging<d>::ShonanAveraging(const Factors &factors,
+ShonanAveraging<d>::ShonanAveraging(const Measurements &measurements,
                                     const Parameters &parameters)
-    : parameters_(parameters), factors_(factors),
-      nrUnknowns_(NrUnknowns<d>(factors)) {
-  for (const auto &factor : factors_) {
-    const auto &model = factor->noiseModel();
-    if(model && model->dim()!=SO<d>::dimension) {
-      factor->print("Factor with incorrect noise model:\n");
-      throw std::invalid_argument("ShonanAveraging: factors passed to "
+    : parameters_(parameters), measurements_(measurements),
+      nrUnknowns_(NrUnknowns<d>(measurements)) {
+  for (const auto &measurement : measurements_) {
+    const auto &model = measurement.noiseModel();
+    if (model && model->dim() != SO<d>::dimension) {
+      measurement.print("Factor with incorrect noise model:\n");
+      throw std::invalid_argument("ShonanAveraging: measurements passed to "
                                   "constructor have incorrect dimension.");
     }
   }
@@ -125,10 +125,10 @@ template <size_t d>
 NonlinearFactorGraph ShonanAveraging<d>::buildGraphAt(size_t p) const {
   NonlinearFactorGraph graph;
   auto G = boost::make_shared<Matrix>(SO<-1>::VectorizedGenerators(p));
-  for (const auto &factor : factors_) {
-    const auto &keys = factor->keys();
-    const auto &Rij = factor->measured();
-    const auto &model = factor->noiseModel();
+  for (const auto &measurement : measurements_) {
+    const auto &keys = measurement.keys();
+    const auto &Rij = measurement.measured();
+    const auto &model = measurement.noiseModel();
     graph.emplace_shared<FrobeniusWormholeFactor<d>>(keys[0], keys[1], Rij, p,
                                                      model, G);
   }
@@ -147,7 +147,7 @@ Values ShonanAveraging<d>::initializeRandomlyAt(size_t p) const {
 
 /* ************************************************************************* */
 template <size_t d>
-double ShonanAveraging<d>::costAt(size_t p, const Values& values) const {
+double ShonanAveraging<d>::costAt(size_t p, const Values &values) const {
   const NonlinearFactorGraph graph = buildGraphAt(p);
   return graph.error(values);
 }
@@ -167,21 +167,23 @@ ShonanAveraging<d>::createOptimizerAt(
 
   const size_t dim = SOn::Dimension(p);
 
-  // Anchor prior is only added here as depends on initial value (and cost is zero)
+  // Anchor prior is only added here as depends on initial value (and cost is
+  // zero)
   if (parameters_.alpha > 0) {
     size_t i;
     Rot value;
     std::tie(i, value) = parameters_.anchor;
     auto model = noiseModel::Isotropic::Precision(dim, parameters_.alpha);
-    graph.emplace_shared<PriorFactor<SOn>>(i, SOn::Lift(p, value.matrix()), model);
+    graph.emplace_shared<PriorFactor<SOn>>(i, SOn::Lift(p, value.matrix()),
+                                           model);
   }
-  
+
   // TODO(frank): add Karcher prior when building graph?
   if (parameters_.beta > 0) {
     graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
   }
 
-  // TODO(frank): definitely add Gauge factors when building graph?
+  // TODO(frank): definitely add Gauge measurements when building graph?
   if (parameters_.gamma > 0 && p > d + 1) {
     for (auto key : graph.keys())
       graph.emplace_shared<ShonanGaugeFactor>(key, p, d, parameters_.gamma);
@@ -196,7 +198,7 @@ ShonanAveraging<d>::createOptimizerAt(
 /* ************************************************************************* */
 template <size_t d>
 Values ShonanAveraging<d>::tryOptimizingAt(
-    size_t p, const boost::optional<Values>& initialEstimate) const {
+    size_t p, const boost::optional<Values> &initialEstimate) const {
   boost::shared_ptr<LevenbergMarquardtOptimizer> lm =
       createOptimizerAt(p, initialEstimate);
   Values result = lm->optimize();
@@ -205,13 +207,13 @@ Values ShonanAveraging<d>::tryOptimizingAt(
 
 /* ************************************************************************* */
 // Project to pxdN Stiefel manifold
-template <size_t d>
-static Matrix StiefelElementMatrix(const Values &values) {
+template <size_t d> static Matrix StiefelElementMatrix(const Values &values) {
   const size_t N = values.size();
   const size_t p = values.at<SOn>(0).rows();
   Matrix S(p, N * d);
-  for (const auto it: values.filter<SOn>()) {
-    S.middleCols<d>(it.key * d) = it.value.matrix().leftCols<d>();  // project Qj to Stiefel
+  for (const auto it : values.filter<SOn>()) {
+    S.middleCols<d>(it.key * d) =
+        it.value.matrix().leftCols<d>(); // project Qj to Stiefel
   }
   return S;
 }
@@ -242,9 +244,8 @@ Values ShonanAveraging<3>::projectFrom(size_t p, const Values &values) const {
 }
 
 /* ************************************************************************* */
-template <size_t d>
-static Matrix RoundSolutionS(const Matrix &S) {
-  const size_t N = S.cols()/d;
+template <size_t d> static Matrix RoundSolutionS(const Matrix &S) {
+  const size_t N = S.cols() / d;
   // First, compute a thin SVD of S
   Eigen::JacobiSVD<Matrix> svd(S, Eigen::ComputeThinV);
   const Vector sigmas = svd.singularValues();
@@ -262,7 +263,8 @@ static Matrix RoundSolutionS(const Matrix &S) {
   for (size_t i = 0; i < N; ++i) {
     // Compute the determinant of the ith dxd block of R
     double determinant = R.middleCols<d>(d * i).determinant();
-    if (determinant > 0) ++numPositiveBlocks;
+    if (determinant > 0)
+      ++numPositiveBlocks;
   }
 
   if (numPositiveBlocks < N / 2) {
@@ -306,7 +308,7 @@ template <> Values ShonanAveraging<3>::roundSolutionS(const Matrix &S) const {
 
 /* ************************************************************************* */
 template <size_t d>
-Values ShonanAveraging<d>::roundSolution(const Values& values) const {
+Values ShonanAveraging<d>::roundSolution(const Values &values) const {
   // Project to pxdN Stiefel manifold...
   Matrix S = StiefelElementMatrix<d>(values);
   // ...and call version above.
@@ -317,10 +319,10 @@ Values ShonanAveraging<d>::roundSolution(const Values& values) const {
 template <size_t d>
 double ShonanAveraging<d>::cost(const Values &values) const {
   NonlinearFactorGraph graph;
-  for (const auto &factor : factors_) {
-    const auto &keys = factor->keys();
-    const auto &Rij = factor->measured();
-    const auto &model = factor->noiseModel();
+  for (const auto &measurement : measurements_) {
+    const auto &keys = measurement.keys();
+    const auto &Rij = measurement.measured();
+    const auto &model = measurement.noiseModel();
     graph.emplace_shared<FrobeniusBetweenFactor<SO<d>>>(
         keys[0], keys[1], SO<d>(Rij.matrix()), model);
   }
@@ -335,9 +337,9 @@ double ShonanAveraging<d>::cost(const Values &values) const {
 /* ************************************************************************* */
 // Get kappa from noise model
 template <typename T>
-static double Kappa(const typename BetweenFactor<T>::shared_ptr& factor) {
-  const auto &isotropic =
-      boost::dynamic_pointer_cast<noiseModel::Isotropic>(factor->noiseModel());
+static double Kappa(const BinaryMeasurement<T> &measurement) {
+  const auto &isotropic = boost::dynamic_pointer_cast<noiseModel::Isotropic>(
+      measurement.noiseModel());
   if (!isotropic) {
     throw std::invalid_argument(
         "Shonan averaging noise models must be isotropic.");
@@ -347,22 +349,21 @@ static double Kappa(const typename BetweenFactor<T>::shared_ptr& factor) {
 }
 
 /* ************************************************************************* */
-template <size_t d>
-Sparse ShonanAveraging<d>::buildD() const {
+template <size_t d> Sparse ShonanAveraging<d>::buildD() const {
   // Each measurement contributes 2*d elements along the diagonal of the
   // degree matrix.
   static constexpr size_t stride = 2 * d;
 
   // Reserve space for triplets
   std::vector<Eigen::Triplet<double>> triplets;
-  triplets.reserve(stride * factors_.size());
+  triplets.reserve(stride * measurements_.size());
 
-  for (const auto &factor : factors_) {
+  for (const auto &measurement : measurements_) {
     // Get pose keys
-    const auto &keys = factor->keys();
+    const auto &keys = measurement.keys();
 
     // Get kappa from noise model
-    double kappa = Kappa<Rot>(factor);
+    double kappa = Kappa<Rot>(measurement);
 
     const size_t di = d * keys[0], dj = d * keys[1];
     for (size_t k = 0; k < d; k++) {
@@ -382,25 +383,24 @@ Sparse ShonanAveraging<d>::buildD() const {
 }
 
 /* ************************************************************************* */
-template <size_t d>
-Sparse ShonanAveraging<d>::buildQ() const {
+template <size_t d> Sparse ShonanAveraging<d>::buildQ() const {
   // Each measurement contributes 2*d^2 elements on a pair of symmetric
   // off-diagonal blocks
   static constexpr size_t stride = 2 * d * d;
 
   // Reserve space for triplets
   std::vector<Eigen::Triplet<double>> triplets;
-  triplets.reserve(stride * factors_.size());
+  triplets.reserve(stride * measurements_.size());
 
-  for (const auto& factor : factors_) {
+  for (const auto &measurement : measurements_) {
     // Get pose keys
-    const auto& keys = factor->keys();
+    const auto &keys = measurement.keys();
 
     // Extract rotation measurement
-    const auto Rij = factor->measured().matrix();
+    const auto Rij = measurement.measured().matrix();
 
     // Get kappa from noise model
-    double kappa = Kappa<Rot>(factor);
+    double kappa = Kappa<Rot>(measurement);
 
     const size_t di = d * keys[0], dj = d * keys[1];
     for (size_t r = 0; r < d; r++) {
@@ -422,8 +422,8 @@ Sparse ShonanAveraging<d>::buildQ() const {
 }
 
 /* ************************************************************************* */
-template<size_t d>
-Sparse ShonanAveraging<d>::computeLambda(const Matrix& S) const {
+template <size_t d>
+Sparse ShonanAveraging<d>::computeLambda(const Matrix &S) const {
   // Each pose contributes 2*d elements along the diagonal of Lambda
   static constexpr size_t stride = d * d;
 
@@ -453,9 +453,8 @@ Sparse ShonanAveraging<d>::computeLambda(const Matrix& S) const {
 }
 
 /* ************************************************************************* */
-template<size_t d>
-Sparse ShonanAveraging<d>::computeLambda(
-    const Values& values) const {
+template <size_t d>
+Sparse ShonanAveraging<d>::computeLambda(const Values &values) const {
   // Project to pxdN Stiefel manifold...
   Matrix S = StiefelElementMatrix<d>(values);
   // ...and call version above.
@@ -463,8 +462,8 @@ Sparse ShonanAveraging<d>::computeLambda(
 }
 
 /* ************************************************************************* */
-template<size_t d>
-Sparse ShonanAveraging<d>::computeA(const Values& values) const {
+template <size_t d>
+Sparse ShonanAveraging<d>::computeA(const Values &values) const {
   assert(values.size() == nrUnknowns());
   const Matrix S = StiefelElementMatrix<d>(values);
   auto Lambda = computeLambda(S);
@@ -481,20 +480,20 @@ Sparse ShonanAveraging<d>::computeA(const Values& values) const {
 struct MatrixProdFunctor {
   // Const reference to an externally-held matrix whose minimum-eigenvalue we
   // want to compute
-  const Sparse& A_;
+  const Sparse &A_;
 
   // Spectral shift
   double sigma_;
 
   // Constructor
-  explicit MatrixProdFunctor(const Sparse& A, double sigma = 0)
+  explicit MatrixProdFunctor(const Sparse &A, double sigma = 0)
       : A_(A), sigma_(sigma) {}
 
   int rows() const { return A_.rows(); }
   int cols() const { return A_.cols(); }
 
   // Matrix-vector multiplication operation
-  void perform_op(const double* x, double* y) const {
+  void perform_op(const double *x, double *y) const {
     // Wrap the raw arrays as Eigen Vector types
     Eigen::Map<const Vector> X(x, rows());
     Eigen::Map<Vector> Y(y, rows());
@@ -531,12 +530,12 @@ struct MatrixProdFunctor {
 //   - We've been using 10^-4 for the nonnegativity tolerance
 //   - for numLanczosVectors, 20 is a good default value
 
-static bool SparseMinimumEigenValue(
-    const Sparse& A, const Matrix& S, double* minEigenValue,
-    Vector* minEigenVector = 0, size_t* numIterations = 0,
-    size_t maxIterations = 1000,
-    double minEigenvalueNonnegativityTolerance = 10e-4,
-    Eigen::Index numLanczosVectors = 20) {
+static bool
+SparseMinimumEigenValue(const Sparse &A, const Matrix &S, double *minEigenValue,
+                        Vector *minEigenVector = 0, size_t *numIterations = 0,
+                        size_t maxIterations = 1000,
+                        double minEigenvalueNonnegativityTolerance = 10e-4,
+                        Eigen::Index numLanczosVectors = 20) {
   // a. Estimate the largest-magnitude eigenvalue of this matrix using Lanczos
   MatrixProdFunctor lmOperator(A);
   Spectra::SymEigsSolver<double, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN,
@@ -548,7 +547,8 @@ static bool SparseMinimumEigenValue(
       maxIterations, 1e-4, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN);
 
   // Check convergence and bail out if necessary
-  if (lmConverged != 1) return false;
+  if (lmConverged != 1)
+    return false;
 
   const double lmEigenValue = lmEigenValueSolver.eigenvalues()(0);
 
@@ -558,7 +558,7 @@ static bool SparseMinimumEigenValue(
     *minEigenValue = lmEigenValue;
     if (minEigenVector) {
       *minEigenVector = lmEigenValueSolver.eigenvectors(1);
-      minEigenVector->normalize();  // Ensure that this is a unit vector
+      minEigenVector->normalize(); // Ensure that this is a unit vector
     }
     return true;
   }
@@ -595,7 +595,7 @@ static bool SparseMinimumEigenValue(
   Vector perturbation(v0.size());
   perturbation.setRandom();
   perturbation.normalize();
-  Vector xinit = v0 + (.03 * v0.norm()) * perturbation;  // Perturb v0 by ~3%
+  Vector xinit = v0 + (.03 * v0.norm()) * perturbation; // Perturb v0 by ~3%
 
   // Use this to initialize the eigensolver
   minEigenValueSolver.init(xinit.data());
@@ -607,28 +607,29 @@ static bool SparseMinimumEigenValue(
       maxIterations, minEigenvalueNonnegativityTolerance / lmEigenValue,
       Spectra::SELECT_EIGENVALUE::LARGEST_MAGN);
 
-  if (minConverged != 1) return false;
+  if (minConverged != 1)
+    return false;
 
   *minEigenValue = minEigenValueSolver.eigenvalues()(0) + 2 * lmEigenValue;
   if (minEigenVector) {
     *minEigenVector = minEigenValueSolver.eigenvectors(1);
-    minEigenVector->normalize();  // Ensure that this is a unit vector
+    minEigenVector->normalize(); // Ensure that this is a unit vector
   }
-  if (numIterations) *numIterations = minEigenValueSolver.num_iterations();
+  if (numIterations)
+    *numIterations = minEigenValueSolver.num_iterations();
   return true;
 }
 
 /* ************************************************************************* */
-template<size_t d>
-Sparse ShonanAveraging<d>::computeA(const Matrix& S) const {
+template <size_t d> Sparse ShonanAveraging<d>::computeA(const Matrix &S) const {
   auto Lambda = computeLambda(S);
   return Lambda - Q_;
 }
 
 /* ************************************************************************* */
-template<size_t d>
-double ShonanAveraging<d>::computeMinEigenValue(const Values& values,
-                                             Vector* minEigenVector) const {
+template <size_t d>
+double ShonanAveraging<d>::computeMinEigenValue(const Values &values,
+                                                Vector *minEigenVector) const {
   assert(values.size() == nrUnknowns());
   const Matrix S = StiefelElementMatrix<d>(values);
   auto A = computeA(S);
@@ -651,25 +652,26 @@ double ShonanAveraging<d>::computeMinEigenValue(const Values& values,
 }
 
 /* ************************************************************************* */
-template<size_t d>
-std::pair<double, Vector> ShonanAveraging<d>::computeMinEigenVector(
-    const Values& values) const {
+template <size_t d>
+std::pair<double, Vector>
+ShonanAveraging<d>::computeMinEigenVector(const Values &values) const {
   Vector minEigenVector;
   double minEigenValue = computeMinEigenValue(values, &minEigenVector);
   return std::make_pair(minEigenValue, minEigenVector);
 }
 
 /* ************************************************************************* */
-template<size_t d>
-bool ShonanAveraging<d>::checkOptimality(const Values& values) const {
+template <size_t d>
+bool ShonanAveraging<d>::checkOptimality(const Values &values) const {
   double minEigenValue = computeMinEigenValue(values);
   return minEigenValue > parameters_.optimalityThreshold;
 }
 
 /* ************************************************************************* */
 /// Create a tangent direction xi with eigenvector segment v_i
-template<size_t d>
-Vector ShonanAveraging<d>::MakeATangentVector(size_t p, const Vector &v, size_t i) {
+template <size_t d>
+Vector ShonanAveraging<d>::MakeATangentVector(size_t p, const Vector &v,
+                                              size_t i) {
   // Create a tangent direction xi with eigenvector segment v_i
   const size_t dimension = SOn::Dimension(p);
   const auto v_i = v.segment<d>(d * i);
@@ -724,9 +726,9 @@ Values ShonanAveraging<d>::LiftwithDescent(size_t p, const Values &values,
 }
 
 /* ************************************************************************* */
-template<size_t d>
+template <size_t d>
 Values ShonanAveraging<d>::initializeWithDescent(
-    size_t p, const Values& values, const Vector& minEigenVector,
+    size_t p, const Values &values, const Vector &minEigenVector,
     double minEigenValue, double gradienTolerance,
     double preconditionedGradNormTolerance) const {
   double funcVal = costAt(p - 1, values);
@@ -763,10 +765,10 @@ Values ShonanAveraging<d>::initializeWithDescent(
 }
 
 /* ************************************************************************* */
-template<size_t d>
+template <size_t d>
 std::pair<Values, double>
 ShonanAveraging<d>::run(size_t pMin, size_t pMax, bool withDescent,
-                     const boost::optional<Values>& initialEstimate) const {
+                        const boost::optional<Values> &initialEstimate) const {
   Values Qstar;
   Values initial = (initialEstimate) ? LiftTo<Rot>(pMin, *initialEstimate)
                                      : initializeRandomlyAt(pMin);
@@ -788,18 +790,18 @@ ShonanAveraging<d>::run(size_t pMin, size_t pMax, bool withDescent,
 }
 
 /* ************************************************************************* */
-template<size_t d>
+template <size_t d>
 std::pair<Values, double> ShonanAveraging<d>::runWithRandom(
     size_t pMin, size_t pMax,
-    const boost::optional<Values>& initialEstimate) const {
+    const boost::optional<Values> &initialEstimate) const {
   return run(pMin, pMax, false, initialEstimate);
 }
 
 /* ************************************************************************* */
-template<size_t d>
+template <size_t d>
 std::pair<Values, double> ShonanAveraging<d>::runWithDescent(
     size_t pMin, size_t pMax,
-    const boost::optional<Values>& initialEstimate) const {
+    const boost::optional<Values> &initialEstimate) const {
   return run(pMin, pMax, true, initialEstimate);
 }
 
@@ -809,4 +811,4 @@ template class ShonanAveraging<2>;
 template class ShonanAveraging<3>;
 
 /* ************************************************************************* */
-}  // namespace gtsam
+} // namespace gtsam
