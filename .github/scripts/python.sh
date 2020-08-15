@@ -71,9 +71,9 @@ done
 
 case $WRAPPER in
 "cython")
-    cd $GITHUB_WORKSPACE/gtsam_install/cython
+    cd $GITHUB_WORKSPACE/build/cython
     $PYTHON setup.py install --user --prefix=
-    cd $GITHUB_WORKSPACE/gtsam_install/cython/gtsam/tests
+    cd $GITHUB_WORKSPACE/build/cython/gtsam/tests
     $PYTHON -m unittest discover
     ;;
 "pybind")
