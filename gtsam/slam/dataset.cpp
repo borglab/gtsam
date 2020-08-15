@@ -53,7 +53,9 @@
 
 using namespace std;
 namespace fs = boost::filesystem;
-using namespace gtsam::symbol_shorthand;
+using gtsam::symbol_shorthand::L;
+using gtsam::symbol_shorthand::P;
+using gtsam::symbol_shorthand::X;
 
 #define LINESIZE 81920
 
@@ -127,19 +129,16 @@ static void parseLines(const string &filename, Parser<T> parse) {
 }
 
 /* ************************************************************************* */
-// Parse types T into a Key-indexed map
+// Parse types T into a size_t-indexed map
 template <typename T>
-map<Key, T> parseToMap(const string &filename, Parser<pair<Key, T>> parse,
-                       Key maxKey) {
-  ifstream is(filename.c_str());
-  if (!is)
-    throw invalid_argument("parse: can not find file " + filename);
-
-  map<Key, T> result;
-  Parser<pair<Key, T>> emplace = [&result, parse](istream &is,
-                                                  const string &tag) {
-    if (auto t = parse(is, tag))
-      result.emplace(*t);
+map<size_t, T> parseToMap(const string &filename, Parser<pair<size_t, T>> parse,
+                          size_t maxIndex) {
+  map<size_t, T> result;
+  Parser<pair<size_t, T>> emplace = [&](istream &is, const string &tag) {
+    if (auto t = parse(is, tag)) {
+      if (!maxIndex || t->first <= maxIndex)
+        result.emplace(*t);
+    }
     return boost::none;
   };
   parseLines(filename, emplace);
@@ -148,7 +147,6 @@ map<Key, T> parseToMap(const string &filename, Parser<pair<Key, T>> parse,
 
 /* ************************************************************************* */
 // Parse a file and push results on a vector
-// TODO(frank): do we need this *and* parseMeasurements?
 template <typename T>
 static vector<T> parseToVector(const string &filename, Parser<T> parse) {
   vector<T> result;
@@ -164,7 +162,7 @@ static vector<T> parseToVector(const string &filename, Parser<T> parse) {
 /* ************************************************************************* */
 boost::optional<IndexedPose> parseVertexPose(istream &is, const string &tag) {
   if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {
-    Key id;
+    size_t id;
     double x, y, yaw;
     is >> id >> x >> y >> yaw;
     return IndexedPose(id, Pose2(x, y, yaw));
@@ -174,16 +172,16 @@ boost::optional<IndexedPose> parseVertexPose(istream &is, const string &tag) {
 }
 
 template <>
-std::map<Key, Pose2> parseVariables<Pose2>(const std::string &filename,
-                                           Key maxKey) {
-  return parseToMap<Pose2>(filename, parseVertexPose, maxKey);
+std::map<size_t, Pose2> parseVariables<Pose2>(const std::string &filename,
+                                              size_t maxIndex) {
+  return parseToMap<Pose2>(filename, parseVertexPose, maxIndex);
 }
 
 /* ************************************************************************* */
 boost::optional<IndexedLandmark> parseVertexLandmark(istream &is,
                                                      const string &tag) {
   if (tag == "VERTEX_XY") {
-    Key id;
+    size_t id;
     double x, y;
     is >> id >> x >> y;
     return IndexedLandmark(id, Point2(x, y));
@@ -193,9 +191,9 @@ boost::optional<IndexedLandmark> parseVertexLandmark(istream &is,
 }
 
 template <>
-std::map<Key, Point2> parseVariables<Point2>(const std::string &filename,
-                                             Key maxKey) {
-  return parseToMap<Point2>(filename, parseVertexLandmark, maxKey);
+std::map<size_t, Point2> parseVariables<Point2>(const std::string &filename,
+                                                size_t maxIndex) {
+  return parseToMap<Point2>(filename, parseVertexLandmark, maxIndex);
 }
 
 /* ************************************************************************* */
@@ -287,10 +285,10 @@ boost::optional<IndexedEdge> parseEdge(istream &is, const string &tag) {
   if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "EDGE_SE2") ||
       (tag == "ODOMETRY")) {
 
-    Key id1, id2;
+    size_t id1, id2;
     double x, y, yaw;
     is >> id1 >> id2 >> x >> y >> yaw;
-    return IndexedEdge(pair<Key, Key>(id1, id2), Pose2(x, y, yaw));
+    return IndexedEdge({id1, id2}, Pose2(x, y, yaw));
   } else {
     return boost::none;
   }
@@ -323,7 +321,7 @@ template <typename T> struct ParseFactor : ParseMeasurement<T> {
 template <> struct ParseMeasurement<Pose2> {
   // The arguments
   boost::shared_ptr<Sampler> sampler;
-  Key maxKey;
+  size_t maxIndex;
 
   // For noise model creation
   bool smart;
@@ -345,9 +343,9 @@ template <> struct ParseMeasurement<Pose2> {
     is >> v(0) >> v(1) >> v(2) >> v(3) >> v(4) >> v(5);
 
     // optional filter
-    Key id1, id2;
+    size_t id1, id2;
     tie(id1, id2) = edge->first;
-    if (maxKey && (id1 >= maxKey || id2 >= maxKey))
+    if (maxIndex && (id1 > maxIndex || id2 > maxIndex))
       return boost::none;
 
     // Get pose and optionally add noise
@@ -378,9 +376,11 @@ boost::shared_ptr<Sampler> createSampler(const SharedNoiseModel &model) {
 template <>
 std::vector<BinaryMeasurement<Pose2>>
 parseMeasurements(const std::string &filename,
-                  const noiseModel::Diagonal::shared_ptr &model, Key maxKey) {
-  ParseMeasurement<Pose2> parse{model ? createSampler(model) : nullptr, maxKey,
-                                true, NoiseFormatAUTO, KernelFunctionTypeNONE};
+                  const noiseModel::Diagonal::shared_ptr &model,
+                  size_t maxIndex) {
+  ParseMeasurement<Pose2> parse{model ? createSampler(model) : nullptr,
+                                maxIndex, true, NoiseFormatAUTO,
+                                KernelFunctionTypeNONE};
   return parseToVector<BinaryMeasurement<Pose2>>(filename, parse);
 }
 
@@ -403,8 +403,9 @@ static BinaryMeasurement<Rot2> convert(const BinaryMeasurement<Pose2> &p) {
 template <>
 std::vector<BinaryMeasurement<Rot2>>
 parseMeasurements(const std::string &filename,
-                  const noiseModel::Diagonal::shared_ptr &model, Key maxKey) {
-  auto poses = parseMeasurements<Pose2>(filename, model, maxKey);
+                  const noiseModel::Diagonal::shared_ptr &model,
+                  size_t maxIndex) {
+  auto poses = parseMeasurements<Pose2>(filename, model, maxIndex);
   std::vector<BinaryMeasurement<Rot2>> result;
   result.reserve(poses.size());
   for (const auto &p : poses)
@@ -417,8 +418,9 @@ parseMeasurements(const std::string &filename,
 template <>
 std::vector<BetweenFactor<Pose2>::shared_ptr>
 parseFactors<Pose2>(const std::string &filename,
-                    const noiseModel::Diagonal::shared_ptr &model, Key maxKey) {
-  ParseFactor<Pose2> parse({model ? createSampler(model) : nullptr, maxKey,
+                    const noiseModel::Diagonal::shared_ptr &model,
+                    size_t maxIndex) {
+  ParseFactor<Pose2> parse({model ? createSampler(model) : nullptr, maxIndex,
                             true, NoiseFormatAUTO, KernelFunctionTypeNONE,
                             nullptr});
   return parseToVector<BetweenFactor<Pose2>::shared_ptr>(filename, parse);
@@ -429,7 +431,7 @@ using BearingRange2D = BearingRange<Pose2, Point2>;
 
 template <> struct ParseMeasurement<BearingRange2D> {
   // arguments
-  Key maxKey;
+  size_t maxIndex;
 
   // The actual parser
   boost::optional<BinaryMeasurement<BearingRange2D>>
@@ -437,7 +439,7 @@ template <> struct ParseMeasurement<BearingRange2D> {
     if (tag != "BR" && tag != "LANDMARK")
       return boost::none;
 
-    Key id1, id2;
+    size_t id1, id2;
     is >> id1 >> id2;
     double bearing, range, bearing_std, range_std;
 
@@ -470,7 +472,7 @@ template <> struct ParseMeasurement<BearingRange2D> {
     }
 
     // optional filter
-    if (maxKey && id1 >= maxKey)
+    if (maxIndex && id1 > maxIndex)
       return boost::none;
 
     // Create noise model
@@ -484,30 +486,37 @@ template <> struct ParseMeasurement<BearingRange2D> {
 
 /* ************************************************************************* */
 GraphAndValues load2D(const string &filename, SharedNoiseModel model,
-                      Key maxKey, bool addNoise, bool smart,
+                      size_t maxIndex, bool addNoise, bool smart,
                       NoiseFormat noiseFormat,
                       KernelFunctionType kernelFunctionType) {
 
-  auto graph = boost::make_shared<NonlinearFactorGraph>();
+  // Single pass for poses and landmarks.
   auto initial = boost::make_shared<Values>();
+  Parser<int> insert = [maxIndex, &initial](istream &is, const string &tag) {
+    if (auto indexedPose = parseVertexPose(is, tag)) {
+      if (!maxIndex || indexedPose->first <= maxIndex)
+        initial->insert(indexedPose->first, indexedPose->second);
+    } else if (auto indexedLandmark = parseVertexLandmark(is, tag)) {
+      if (!maxIndex || indexedLandmark->first <= maxIndex)
+        initial->insert(L(indexedLandmark->first), indexedLandmark->second);
+    }
+    return 0;
+  };
+  parseLines(filename, insert);
 
-  // TODO(frank): do a single pass
-  const auto poses = parseVariables<Pose2>(filename, maxKey);
-  for (const auto &key_pose : poses) {
-    initial->insert(key_pose.first, key_pose.second);
-  }
+  // Single pass for Pose2 and bearing-range factors.
+  auto graph = boost::make_shared<NonlinearFactorGraph>();
 
-  const auto landmarks = parseVariables<Point2>(filename, maxKey);
-  for (const auto &key_landmark : landmarks) {
-    initial->insert(L(key_landmark.first), key_landmark.second);
-  }
-
-  // Create parser for Pose2 and bearing/range
+  // Instantiate factor parser
   ParseFactor<Pose2> parseBetweenFactor(
-      {addNoise ? createSampler(model) : nullptr, maxKey, smart, noiseFormat,
+      {addNoise ? createSampler(model) : nullptr, maxIndex, smart, noiseFormat,
        kernelFunctionType, model});
-  ParseMeasurement<BearingRange2D> parseBearingRange{maxKey};
 
+  // Instantiate bearing-range parser
+  ParseMeasurement<BearingRange2D> parseBearingRange{maxIndex};
+
+  // Combine in a single parser that adds factors to `graph`, but also inserts
+  // new variables into `initial` when needed.
   Parser<int> parse = [&](istream &is, const string &tag) {
     if (auto f = parseBetweenFactor(is, tag)) {
       graph->push_back(*f);
@@ -537,23 +546,24 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model,
     return 0;
   };
 
-  parseLines<int>(filename, parse);
+  parseLines(filename, parse);
 
   return make_pair(graph, initial);
 }
 
 /* ************************************************************************* */
-GraphAndValues load2D(pair<string, SharedNoiseModel> dataset, Key maxKey,
+GraphAndValues load2D(pair<string, SharedNoiseModel> dataset, size_t maxIndex,
                       bool addNoise, bool smart, NoiseFormat noiseFormat,
                       KernelFunctionType kernelFunctionType) {
-  return load2D(dataset.first, dataset.second, maxKey, addNoise, smart,
+  return load2D(dataset.first, dataset.second, maxIndex, addNoise, smart,
                 noiseFormat, kernelFunctionType);
 }
 
 /* ************************************************************************* */
 GraphAndValues load2D_robust(const string &filename,
-                             noiseModel::Base::shared_ptr &model, Key maxKey) {
-  return load2D(filename, model, maxKey);
+                             noiseModel::Base::shared_ptr &model,
+                             size_t maxIndex) {
+  return load2D(filename, model, maxIndex);
 }
 
 /* ************************************************************************* */
@@ -596,10 +606,10 @@ GraphAndValues readG2o(const string &g2oFile, const bool is3D,
     return load3D(g2oFile);
   } else {
     // just call load2D
-    Key maxKey = 0;
+    size_t maxIndex = 0;
     bool addNoise = false;
     bool smart = true;
-    return load2D(g2oFile, SharedNoiseModel(), maxKey, addNoise, smart,
+    return load2D(g2oFile, SharedNoiseModel(), maxIndex, addNoise, smart,
                   NoiseFormatG2O, kernelFunctionType);
   }
 }
@@ -609,13 +619,16 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
               const string &filename) {
   fstream stream(filename.c_str(), fstream::out);
 
+  // Use a lambda here to more easily modify behavior in future.
+  auto index = [](gtsam::Key key) { return Symbol(key).index(); };
+
   // save 2D poses
   for (const auto key_value : estimate) {
     auto p = dynamic_cast<const GenericValue<Pose2> *>(&key_value.value);
     if (!p)
       continue;
     const Pose2 &pose = p->value();
-    stream << "VERTEX_SE2 " << key_value.key << " " << pose.x() << " "
+    stream << "VERTEX_SE2 " << index(key_value.key) << " " << pose.x() << " "
            << pose.y() << " " << pose.theta() << endl;
   }
 
@@ -627,7 +640,7 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
     const Pose3 &pose = p->value();
     const Point3 t = pose.translation();
     const auto q = pose.rotation().toQuaternion();
-    stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "
+    stream << "VERTEX_SE3:QUAT " << index(key_value.key) << " " << t.x() << " "
            << t.y() << " " << t.z() << " " << q.x() << " " << q.y() << " "
            << q.z() << " " << q.w() << endl;
   }
@@ -638,7 +651,7 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
     if (!p)
       continue;
     const Point2 &point = p->value();
-    stream << "VERTEX_XY " << key_value.key << " " << point.x() << " "
+    stream << "VERTEX_XY " << index(key_value.key) << " " << point.x() << " "
            << point.y() << endl;
   }
 
@@ -648,26 +661,25 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
     if (!p)
       continue;
     const Point3 &point = p->value();
-    stream << "VERTEX_TRACKXYZ " << key_value.key << " " << point.x() << " "
-           << point.y() << " " << point.z() << endl;
+    stream << "VERTEX_TRACKXYZ " << index(key_value.key) << " " << point.x()
+           << " " << point.y() << " " << point.z() << endl;
   }
 
   // save edges (2D or 3D)
   for (const auto &factor_ : graph) {
-    boost::shared_ptr<BetweenFactor<Pose2>> factor =
-        boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(factor_);
+    auto factor = boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(factor_);
     if (factor) {
       SharedNoiseModel model = factor->noiseModel();
-      boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
-          boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+      auto gaussianModel = boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
       if (!gaussianModel) {
         model->print("model\n");
         throw invalid_argument("writeG2o: invalid noise model!");
       }
       Matrix3 Info = gaussianModel->R().transpose() * gaussianModel->R();
       Pose2 pose = factor->measured(); //.inverse();
-      stream << "EDGE_SE2 " << factor->key1() << " " << factor->key2() << " "
-             << pose.x() << " " << pose.y() << " " << pose.theta();
+      stream << "EDGE_SE2 " << index(factor->key1()) << " "
+             << index(factor->key2()) << " " << pose.x() << " " << pose.y()
+             << " " << pose.theta();
       for (size_t i = 0; i < 3; i++) {
         for (size_t j = i; j < 3; j++) {
           stream << " " << Info(i, j);
@@ -676,8 +688,7 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
       stream << endl;
     }
 
-    boost::shared_ptr<BetweenFactor<Pose3>> factor3D =
-        boost::dynamic_pointer_cast<BetweenFactor<Pose3>>(factor_);
+    auto factor3D = boost::dynamic_pointer_cast<BetweenFactor<Pose3>>(factor_);
 
     if (factor3D) {
       SharedNoiseModel model = factor3D->noiseModel();
@@ -692,9 +703,10 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
       const Pose3 pose3D = factor3D->measured();
       const Point3 p = pose3D.translation();
       const auto q = pose3D.rotation().toQuaternion();
-      stream << "EDGE_SE3:QUAT " << factor3D->key1() << " " << factor3D->key2()
-             << " " << p.x() << " " << p.y() << " " << p.z() << " " << q.x()
-             << " " << q.y() << " " << q.z() << " " << q.w();
+      stream << "EDGE_SE3:QUAT " << index(factor3D->key1()) << " "
+             << index(factor3D->key2()) << " " << p.x() << " " << p.y() << " "
+             << p.z() << " " << q.x() << " " << q.y() << " " << q.z() << " "
+             << q.w();
 
       Matrix6 InfoG2o = I_6x6;
       InfoG2o.block<3, 3>(0, 0) = Info.block<3, 3>(3, 3); // cov translation
@@ -733,16 +745,16 @@ istream &operator>>(istream &is, Rot3 &R) {
 }
 
 /* ************************************************************************* */
-boost::optional<pair<Key, Pose3>> parseVertexPose3(istream &is,
-                                                   const string &tag) {
+boost::optional<pair<size_t, Pose3>> parseVertexPose3(istream &is,
+                                                      const string &tag) {
   if (tag == "VERTEX3") {
-    Key id;
+    size_t id;
     double x, y, z;
     Rot3 R;
     is >> id >> x >> y >> z >> R;
     return make_pair(id, Pose3(R, {x, y, z}));
   } else if (tag == "VERTEX_SE3:QUAT") {
-    Key id;
+    size_t id;
     double x, y, z;
     Quaternion q;
     is >> id >> x >> y >> z >> q;
@@ -752,16 +764,16 @@ boost::optional<pair<Key, Pose3>> parseVertexPose3(istream &is,
 }
 
 template <>
-std::map<Key, Pose3> parseVariables<Pose3>(const std::string &filename,
-                                           Key maxKey) {
-  return parseToMap<Pose3>(filename, parseVertexPose3, maxKey);
+std::map<size_t, Pose3> parseVariables<Pose3>(const std::string &filename,
+                                              size_t maxIndex) {
+  return parseToMap<Pose3>(filename, parseVertexPose3, maxIndex);
 }
 
 /* ************************************************************************* */
-boost::optional<pair<Key, Point3>> parseVertexPoint3(istream &is,
-                                                     const string &tag) {
+boost::optional<pair<size_t, Point3>> parseVertexPoint3(istream &is,
+                                                        const string &tag) {
   if (tag == "VERTEX_TRACKXYZ") {
-    Key id;
+    size_t id;
     double x, y, z;
     is >> id >> x >> y >> z;
     return make_pair(id, Point3(x, y, z));
@@ -770,9 +782,9 @@ boost::optional<pair<Key, Point3>> parseVertexPoint3(istream &is,
 }
 
 template <>
-std::map<Key, Point3> parseVariables<Point3>(const std::string &filename,
-                                             Key maxKey) {
-  return parseToMap<Point3>(filename, parseVertexPoint3, maxKey);
+std::map<size_t, Point3> parseVariables<Point3>(const std::string &filename,
+                                                size_t maxIndex) {
+  return parseToMap<Point3>(filename, parseVertexPoint3, maxIndex);
 }
 
 /* ************************************************************************* */
@@ -791,7 +803,7 @@ istream &operator>>(istream &is, Matrix6 &m) {
 template <> struct ParseMeasurement<Pose3> {
   // The arguments
   boost::shared_ptr<Sampler> sampler;
-  Key maxKey;
+  size_t maxIndex;
 
   // The actual parser
   boost::optional<BinaryMeasurement<Pose3>> operator()(istream &is,
@@ -800,9 +812,9 @@ template <> struct ParseMeasurement<Pose3> {
       return boost::none;
 
     // parse ids and optionally filter
-    Key id1, id2;
+    size_t id1, id2;
     is >> id1 >> id2;
-    if (maxKey && (id1 >= maxKey || id2 >= maxKey))
+    if (maxIndex && (id1 > maxIndex || id2 > maxIndex))
       return boost::none;
 
     Matrix6 m;
@@ -847,8 +859,10 @@ template <> struct ParseMeasurement<Pose3> {
 template <>
 std::vector<BinaryMeasurement<Pose3>>
 parseMeasurements(const std::string &filename,
-                  const noiseModel::Diagonal::shared_ptr &model, Key maxKey) {
-  ParseMeasurement<Pose3> parse{model ? createSampler(model) : nullptr, maxKey};
+                  const noiseModel::Diagonal::shared_ptr &model,
+                  size_t maxIndex) {
+  ParseMeasurement<Pose3> parse{model ? createSampler(model) : nullptr,
+                                maxIndex};
   return parseToVector<BinaryMeasurement<Pose3>>(filename, parse);
 }
 
@@ -872,8 +886,9 @@ static BinaryMeasurement<Rot3> convert(const BinaryMeasurement<Pose3> &p) {
 template <>
 std::vector<BinaryMeasurement<Rot3>>
 parseMeasurements(const std::string &filename,
-                  const noiseModel::Diagonal::shared_ptr &model, Key maxKey) {
-  auto poses = parseMeasurements<Pose3>(filename, model, maxKey);
+                  const noiseModel::Diagonal::shared_ptr &model,
+                  size_t maxIndex) {
+  auto poses = parseMeasurements<Pose3>(filename, model, maxIndex);
   std::vector<BinaryMeasurement<Rot3>> result;
   result.reserve(poses.size());
   for (const auto &p : poses)
@@ -886,8 +901,9 @@ parseMeasurements(const std::string &filename,
 template <>
 std::vector<BetweenFactor<Pose3>::shared_ptr>
 parseFactors<Pose3>(const std::string &filename,
-                    const noiseModel::Diagonal::shared_ptr &model, Key maxKey) {
-  ParseFactor<Pose3> parse({model ? createSampler(model) : nullptr, maxKey});
+                    const noiseModel::Diagonal::shared_ptr &model,
+                    size_t maxIndex) {
+  ParseFactor<Pose3> parse({model ? createSampler(model) : nullptr, maxIndex});
   return parseToVector<BetweenFactor<Pose3>::shared_ptr>(filename, parse);
 }
 
@@ -896,21 +912,22 @@ GraphAndValues load3D(const string &filename) {
   auto graph = boost::make_shared<NonlinearFactorGraph>();
   auto initial = boost::make_shared<Values>();
 
-  // TODO(frank): do a single pass
-  const auto factors = parseFactors<Pose3>(filename);
-  for (const auto &factor : factors) {
-    graph->push_back(factor);
-  }
+  // Instantiate factor parser. maxIndex is always zero for load3D.
+  ParseFactor<Pose3> parseFactor({nullptr, 0});
 
-  const auto poses = parseVariables<Pose3>(filename);
-  for (const auto &key_pose : poses) {
-    initial->insert(key_pose.first, key_pose.second);
-  }
-  
-  const auto landmarks = parseVariables<Point3>(filename);
-  for (const auto &key_landmark : landmarks) {
-    initial->insert(key_landmark.first, key_landmark.second);
-  }
+  // Single pass for variables and factors. Unlike 2D version, does *not* insert
+  // variables into `initial` if referenced but not present.
+  Parser<int> parse = [&](istream &is, const string &tag) {
+    if (auto indexedPose = parseVertexPose3(is, tag)) {
+      initial->insert(indexedPose->first, indexedPose->second);
+    } else if (auto indexedLandmark = parseVertexPoint3(is, tag)) {
+      initial->insert(L(indexedLandmark->first), indexedLandmark->second);
+    } else if (auto factor = parseFactor(is, tag)) {
+      graph->push_back(*factor);
+    }
+    return 0;
+  };
+  parseLines(filename, parse);
 
   return make_pair(graph, initial);
 }
@@ -1187,8 +1204,7 @@ bool writeBALfromValues(const string &filename, const SfmData &data,
       dataValues.number_cameras()) { // we only estimated camera poses
     for (size_t i = 0; i < dataValues.number_cameras();
          i++) { // for each camera
-      Key poseKey = symbol('x', i);
-      Pose3 pose = values.at<Pose3>(poseKey);
+      Pose3 pose = values.at<Pose3>(X(i));
       Cal3Bundler K = dataValues.cameras[i].calibration();
       Camera camera(pose, K);
       dataValues.cameras[i] = camera;
@@ -1255,20 +1271,22 @@ Values initialCamerasAndPointsEstimate(const SfmData &db) {
   return initial;
 }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
-std::map<Key, Pose3> parse3DPoses(const std::string &filename, Key maxKey) {
-  return parseVariables<Pose3>(filename, maxKey);
-}
-
-std::map<Key, Point3> parse3DLandmarks(const std::string &filename,
-                                       Key maxKey) {
-  return parseVariables<Point3>(filename, maxKey);
-}
-
+// To be deprecated when pybind wrapper is merged:
 BetweenFactorPose3s
 parse3DFactors(const std::string &filename,
-               const noiseModel::Diagonal::shared_ptr &model, Key maxKey) {
-  return parseFactors<Pose3>(filename, model, maxKey);
+               const noiseModel::Diagonal::shared_ptr &model, size_t maxIndex) {
+  return parseFactors<Pose3>(filename, model, maxIndex);
+}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+std::map<size_t, Pose3> parse3DPoses(const std::string &filename,
+                                     size_t maxIndex) {
+  return parseVariables<Pose3>(filename, maxIndex);
+}
+
+std::map<size_t, Point3> parse3DLandmarks(const std::string &filename,
+                                          size_t maxIndex) {
+  return parseVariables<Point3>(filename, maxIndex);
 }
 #endif
 } // namespace gtsam
