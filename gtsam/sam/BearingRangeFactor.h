@@ -48,15 +48,15 @@ class BearingRangeFactor
   /// Construct from BearingRange instance
   BearingRangeFactor(Key key1, Key key2, const T &bearingRange,
                      const SharedNoiseModel &model)
-      : Base({key1, key2}, model, T(bearingRange)) {
-    this->initialize(expression({key1, key2}));
+      : Base({{key1, key2}}, model, T(bearingRange)) {
+    this->initialize(expression({{key1, key2}}));
   }
 
   /// Construct from separate bearing and range
   BearingRangeFactor(Key key1, Key key2, const B &measuredBearing,
                      const R &measuredRange, const SharedNoiseModel &model)
-      : Base({key1, key2}, model, T(measuredBearing, measuredRange)) {
-    this->initialize(expression({key1, key2}));
+      : Base({{key1, key2}}, model, T(measuredBearing, measuredRange)) {
+    this->initialize(expression({{key1, key2}}));
   }
 
   virtual ~BearingRangeFactor() {}
