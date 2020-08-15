@@ -224,7 +224,7 @@ TEST(dataSet, readG2o3D) {
   }
 
   // Check landmark parsing
-  const auto actualLandmarks = parse3DLandmarks(g2oFile);
+  const auto actualLandmarks = parseVariables<Point3>(g2oFile);
   for (size_t j : {0, 1, 2, 3, 4}) {
     EXPECT(assert_equal(poses[j], actualPoses.at(j), 1e-5));
   }
@@ -299,7 +299,7 @@ TEST(dataSet, readG2oCheckDeterminants) {
     const Rot3 R = key_value.second.rotation();
     EXPECT_DOUBLES_EQUAL(1.0, R.matrix().determinant(), 1e-9);
   }
-  const map<Key, Point3> landmarks = parse3DLandmarks(g2oFile);
+  const map<Key, Point3> landmarks = parseVariables<Point3>(g2oFile);
   EXPECT_LONGS_EQUAL(0, landmarks.size());
 }
 
@@ -310,7 +310,7 @@ TEST(dataSet, readG2oLandmarks) {
   // Check number of poses and landmarks. Should be 8 each.
   const map<Key, Pose3> poses = parseVariables<Pose3>(g2oFile);
   EXPECT_LONGS_EQUAL(8, poses.size());
-  const map<Key, Point3> landmarks = parse3DLandmarks(g2oFile);
+  const map<Key, Point3> landmarks = parseVariables<Point3>(g2oFile);
   EXPECT_LONGS_EQUAL(8, landmarks.size());
 }
 

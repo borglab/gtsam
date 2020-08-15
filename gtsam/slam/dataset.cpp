@@ -907,7 +907,7 @@ GraphAndValues load3D(const string &filename) {
     initial->insert(key_pose.first, key_pose.second);
   }
   
-  const auto landmarks = parse3DLandmarks(filename);
+  const auto landmarks = parseVariables<Point3>(filename);
   for (const auto &key_landmark : landmarks) {
     initial->insert(key_landmark.first, key_landmark.second);
   }
