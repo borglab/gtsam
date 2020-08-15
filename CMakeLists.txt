@@ -602,8 +602,7 @@ print_enabled_config(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install MATLAB toolbo
 message(STATUS "Python toolbox flags                                      ")
 print_enabled_config(${GTSAM_BUILD_PYTHON}                "Build Python module with pybind ")
 if(GTSAM_BUILD_PYTHON)
-	message(STATUS "  Python version                  : ${GTSAM_PYTHON_VERSION}")
-	message(STATUS "  Python module install path      : ${GTSAM_PY_INSTALL_PATH}")
+	print_config("Python version" ${GTSAM_PYTHON_VERSION})
 endif()
 
 message(STATUS "===============================================================")
