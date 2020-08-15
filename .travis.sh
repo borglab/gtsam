@@ -67,7 +67,8 @@ function configure()
       -DBOOST_ROOT=$BOOST_ROOT \
       -DBoost_NO_SYSTEM_PATHS=ON \
       -DBOOST_INCLUDEDIR="$BOOST_ROOT/include" \
-      -DBOOST_LIBRARYDIR="$BOOST_ROOT/lib"
+      -DBOOST_LIBRARYDIR="$BOOST_ROOT/lib" \
+      -DBoost_NO_BOOST_CMAKE=ON
 }
 
 
