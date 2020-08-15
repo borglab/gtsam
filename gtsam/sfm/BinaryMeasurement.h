@@ -74,7 +74,7 @@ public:
   bool equals(const BinaryMeasurement &expected, double tol = 1e-9) const {
     const BinaryMeasurement<T> *e =
         dynamic_cast<const BinaryMeasurement<T> *>(&expected);
-    return e != nullptr && Factor::equals(e) &&
+    return e != nullptr && Factor::equals(*e) &&
            traits<T>::Equals(this->measured_, e->measured_, tol) &&
            noiseModel_->equals(*expected.noiseModel());
   }
