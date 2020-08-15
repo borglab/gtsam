@@ -1,4 +1,4 @@
-name: CI macOS
+name: macOS CI
 
 on: [pull_request]
 
@@ -48,4 +48,4 @@ jobs:
       - name: Build (macOS)
         if: runner.os == 'macOS'
         run: |
-          bash .travis.sh -t
+          bash .github/scripts/nix.sh -t

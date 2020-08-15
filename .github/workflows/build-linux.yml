@@ -52,9 +52,8 @@ jobs:
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
           fi
           sudo apt-get -y update
-          sudo apt-get -y upgrade
 
-          sudo apt install cmake g++-9 clang-9 build-essential pkg-config libpython-dev python-numpy
+          sudo apt install cmake build-essential pkg-config libpython-dev python-numpy
           
           echo "::set-env name=BOOST_ROOT::$(echo $BOOST_ROOT_1_69_0)"
           
@@ -74,4 +73,4 @@ jobs:
       - name: Build (Linux)
         if: runner.os == 'Linux'
         run: |
-          bash .travis.sh -t
+          bash .github/scripts/nix.sh -t
