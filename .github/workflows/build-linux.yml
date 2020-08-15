@@ -12,6 +12,8 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+      LD_LIBRARY_PATH: /usr/local/lib
+
     strategy:
       fail-fast: false
       matrix:
