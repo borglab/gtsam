@@ -64,7 +64,7 @@ jobs:
             sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
             echo "::set-env name=CC::clang-${{ matrix.version }}"
             echo "::set-env name=CXX::clang++-${{ matrix.version }}"
-            echo "::set-env name=BOOST_ROOT:$BOOST_ROOT_1_69_0"
+            echo "::set-env name=BOOST_ROOT::$BOOST_ROOT_1_69_0"
             echo "BOOST_ROOT env set to $BOOST_ROOT"
           fi
       - name: Build (Linux)
