@@ -48,4 +48,4 @@ jobs:
       - name: Build (macOS)
         if: runner.os == 'macOS'
         run: |
-          bash .github/scripts/nix.sh -t
+          bash .github/scripts/unix.sh -t
