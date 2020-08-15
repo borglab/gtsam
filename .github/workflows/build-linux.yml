@@ -1,4 +1,4 @@
-name: CI Linux
+name: Linux CI
 
 on: [push, pull_request]
 
@@ -73,4 +73,4 @@ jobs:
       - name: Build (Linux)
         if: runner.os == 'Linux'
         run: |
-          bash .github/scripts/nix.sh -t
+          bash .github/scripts/unix.sh -t
