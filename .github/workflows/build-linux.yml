@@ -57,7 +57,7 @@ jobs:
             echo "::set-env name=CXX::clang++-${{ matrix.version }}"
           fi
 
-          sudo apt-get install cmake build-essential pkg-config libpython-dev python-numpy libboost-all-dev
+          sudo apt-get install -y cmake build-essential pkg-config libpython-dev python-numpy libboost-all-dev wget
 
       - name: Build (Linux)
         if: runner.os == 'Linux'
