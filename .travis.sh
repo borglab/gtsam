@@ -66,9 +66,7 @@ function configure()
       -DCMAKE_VERBOSE_MAKEFILE=ON \
       -DBOOST_ROOT=$BOOST_ROOT \
       -DBoost_NO_SYSTEM_PATHS=ON \
-      -DBOOST_INCLUDEDIR="$BOOST_ROOT/include" \
-      -DBOOST_LIBRARYDIR="$BOOST_ROOT/lib" \
-      -DBoost_NO_BOOST_CMAKE=ON
+      -DBoost_ARCHITECTURE=-x64
 }
 
 
