@@ -866,7 +866,7 @@ static BinaryMeasurement<Rot3> convert(const BinaryMeasurement<Pose3> &p) {
   const Matrix6 M = gaussian->covariance();
   return BinaryMeasurement<Rot3>(
       p.key1(), p.key2(), p.measured().rotation(),
-      noiseModel::Gaussian::Covariance(M.block<3, 3>(3, 3), true));
+      noiseModel::Gaussian::Covariance(M.block<3, 3>(0, 0), true));
 }
 
 template <>
