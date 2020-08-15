@@ -1,4 +1,4 @@
-name: Cython CI
+name: Python CI
 
 on: [pull_request]
 
