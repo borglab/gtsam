@@ -272,7 +272,7 @@ TEST(ShonanAveraging3, runWithRandomKlausKarcher) {
 TEST(ShonanAveraging2, runWithRandomKlausKarcher) {
   // Load 2D toy example
   auto lmParams = LevenbergMarquardtParams::CeresDefaults();
-  lmParams.setVerbosityLM("SUMMARY");
+  // lmParams.setVerbosityLM("SUMMARY");
   string g2oFile = findExampleDataFile("noisyToyGraph.txt");
   ShonanAveraging2::Parameters parameters(lmParams);
   auto measurements = parseMeasurements<Rot2>(g2oFile);
@@ -304,6 +304,14 @@ TEST(ShonanAveraging3, PriorWeights) {
   EXPECT_DOUBLES_EQUAL(gamma, params.gamma, 1e-9);
   params.setKarcherWeight(0);
   static const ShonanAveraging3 shonan = fromExampleName("Klaus3.g2o", params);
+  for (auto i : {0,1,2}) {
+    const auto& m = shonan.measurement(i);
+    auto isotropic =
+        boost::static_pointer_cast<noiseModel::Isotropic>(m.noiseModel());
+    CHECK(isotropic != nullptr);
+    EXPECT_LONGS_EQUAL(3, isotropic->dim());
+    EXPECT_DOUBLES_EQUAL(0.2, isotropic->sigma(), 1e-9);
+  }
   auto I = genericValue(Rot3());
   Values initial{{0, I}, {1, I}, {2, I}};
   EXPECT_DOUBLES_EQUAL(3.0756, shonan.cost(initial), 1e-4);

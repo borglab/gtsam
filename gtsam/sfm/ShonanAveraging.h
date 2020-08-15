@@ -131,11 +131,16 @@ public:
   /// Return number of measurements
   size_t nrMeasurements() const { return measurements_.size(); }
 
+  /// k^th binary measurement
+  const BinaryMeasurement<Rot> &measurement(size_t k) const {
+    return measurements_[k];
+  }
+
   /// k^th measurement, as a Rot.
-  const Rot &measured(size_t i) const { return measurements_[i].measured(); }
+  const Rot &measured(size_t k) const { return measurements_[k].measured(); }
 
   /// Keys for k^th measurement, as a vector of Key values.
-  const KeyVector &keys(size_t i) const { return measurements_[i].keys(); }
+  const KeyVector &keys(size_t k) const { return measurements_[k].keys(); }
 
   /// @}
   /// @name Matrix API (advanced use, debugging)
