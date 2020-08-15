@@ -17,7 +17,7 @@ if [[ $(uname) == "Darwin" ]]; then
     brew install wget
 else
     # Install a system package required by our library
-    sudo apt-get install wget libicu-dev python3-pip python3-setuptools
+    sudo apt-get install -y wget libicu-dev python3-pip python3-setuptools
 fi
 
 PATH=$PATH:$($PYTHON -c "import site; print(site.USER_BASE)")/bin
@@ -28,26 +28,26 @@ case $WRAPPER in
     BUILD_PYBIND="OFF"
     TYPEDEF_POINTS_TO_VECTORS="OFF"
 
-    $PYTHON -m pip install --user -r ./cython/requirements.txt
+    sudo $PYTHON -m pip install -r $GITHUB_WORKSPACE/cython/requirements.txt
     ;;
 "pybind")
     BUILD_CYTHON="OFF"
     BUILD_PYBIND="ON"
     TYPEDEF_POINTS_TO_VECTORS="ON"
 
-    $PYTHON -m pip install --user -r ./wrap/python/requirements.txt
+    sudo $PYTHON -m pip install -r $GITHUB_WORKSPACE/python/requirements.txt
     ;;
 *)
     exit 126
     ;;
 esac
 
-CURRDIR=$(pwd)
+git submodule update --init --recursive
 
-mkdir $CURRDIR/build
-cd $CURRDIR/build
+mkdir $GITHUB_WORKSPACE/build
+cd $GITHUB_WORKSPACE/build
 
-cmake $CURRDIR -DCMAKE_BUILD_TYPE=Release \
+cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_UNSTABLE=ON \
     -DGTSAM_USE_QUATERNIONS=OFF \
     -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
@@ -56,22 +56,30 @@ cmake $CURRDIR -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_BUILD_PYTHON=${BUILD_PYBIND} \
     -DGTSAM_TYPEDEF_POINTS_TO_VECTORS=${TYPEDEF_POINTS_TO_VECTORS} \
     -DGTSAM_PYTHON_VERSION=$PYTHON_VERSION \
-    -DGTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF \
     -DPYTHON_EXECUTABLE:FILEPATH=$(which $PYTHON) \
-    -DCMAKE_INSTALL_PREFIX=$CURRDIR/../gtsam_install
+    -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=OFF \
+    -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gtsam_install
 
-make -j$(nproc) install
+make -j$(nproc) install &
+
+while ps -p $! > /dev/null
+do
+  sleep 60
+  now=$(date +%s)
+  printf "%d seconds have elapsed\n" $(( (now - start) ))
+done
 
 case $WRAPPER in
 "cython")
-    cd $CURRDIR/../gtsam_install/cython
+    cd $GITHUB_WORKSPACE/gtsam_install/cython
     $PYTHON setup.py install --user --prefix=
-    cd $CURRDIR/cython/gtsam/tests
+    cd $GITHUB_WORKSPACE/gtsam_install/cython/gtsam/tests
     $PYTHON -m unittest discover
     ;;
 "pybind")
+    cd python
     $PYTHON setup.py install --user --prefix=
-    cd $CURRDIR/wrap/python/gtsam_py/tests
+    cd $GITHUB_WORKSPACE/wrap/python/gtsam_py/tests
     $PYTHON -m unittest discover
     ;;
 *)
