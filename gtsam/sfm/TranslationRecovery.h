@@ -13,15 +13,16 @@
  * @file TranslationRecovery.h
  * @author Frank Dellaert
  * @date March 2020
- * @brief test recovering translations when rotations are given.
+ * @brief Recovering translations in an epipolar graph when rotations are given.
  */
 
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/sfm/BinaryMeasurement.h>
 
-#include <map>
 #include <utility>
+#include <vector>
 
 namespace gtsam {
 
@@ -48,7 +49,7 @@ namespace gtsam {
 class TranslationRecovery {
  public:
   using KeyPair = std::pair<Key, Key>;
-  using TranslationEdges = std::map<KeyPair, Unit3>;
+  using TranslationEdges = std::vector<BinaryMeasurement<Unit3>>;
 
  private:
   TranslationEdges relativeTranslations_;
@@ -59,13 +60,14 @@ class TranslationRecovery {
    * @brief Construct a new Translation Recovery object
    *
    * @param relativeTranslations the relative translations, in world coordinate
-   * frames, indexed in a map by a pair of Pose keys.
+   * frames, vector of BinaryMeasurements of Unit3, where each key of a measurement 
+   * is a point in 3D. 
    * @param lmParams (optional) gtsam::LavenbergMarquardtParams that can be
    * used to modify the parameters for the LM optimizer. By default, uses the
    * default LM parameters. 
    */
-  TranslationRecovery(const TranslationEdges& relativeTranslations,
-                      const LevenbergMarquardtParams& lmParams = LevenbergMarquardtParams())
+  TranslationRecovery(const TranslationEdges &relativeTranslations,
+                      const LevenbergMarquardtParams &lmParams = LevenbergMarquardtParams())
       : relativeTranslations_(relativeTranslations), params_(lmParams) {
     params_.setVerbosityLM("Summary");
   }
@@ -83,7 +85,7 @@ class TranslationRecovery {
    * @param scale scale for first relative translation which fixes gauge.
    * @param graph factor graph to which prior is added.
    */
-  void addPrior(const double scale, NonlinearFactorGraph* graph) const;
+  void addPrior(const double scale, NonlinearFactorGraph *graph) const;
 
   /**
    * @brief Create random initial translations.
@@ -105,10 +107,11 @@ class TranslationRecovery {
    *
    * @param poses SE(3) ground truth poses stored as Values
    * @param edges pairs (a,b) for which a measurement w_aZb will be generated.
-   * @return TranslationEdges map from a KeyPair to the simulated Unit3
-   * translation direction measurement between the cameras in KeyPair.
+   * @return TranslationEdges vector of binary measurements where the keys are 
+   * the cameras and the measurement is the simulated Unit3 translation 
+   * direction between the cameras.
    */
   static TranslationEdges SimulateMeasurements(
-      const Values& poses, const std::vector<KeyPair>& edges);
+      const Values &poses, const std::vector<KeyPair> &edges);
 };
 }  // namespace gtsam

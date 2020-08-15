@@ -303,8 +303,8 @@ public:
   GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
                                                const CombinedImuFactor&);
   /// print
-  void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const override;
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
 
   /// equals
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
