@@ -17,9 +17,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam_unstable/slam/ShonanAveraging.h>
-#include <gtsam/slam/FrobeniusFactor.h>
+#include <gtsam/sfm/ShonanAveraging.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 
 #include <algorithm>
 #include <iostream>
@@ -28,18 +28,17 @@
 using namespace std;
 using namespace gtsam;
 
-template<size_t d>
-using Rot = typename std::conditional<d==2, Rot2, Rot3>::type;
+template <size_t d>
+using Rot = typename std::conditional<d == 2, Rot2, Rot3>::type;
 
-template<size_t d>
-using Pose = typename std::conditional<d==2, Pose2, Pose3>::type;
+template <size_t d>
+using Pose = typename std::conditional<d == 2, Pose2, Pose3>::type;
 
 ShonanAveraging3 fromExampleName(
     const std::string &name,
     ShonanAveraging3::Parameters parameters = ShonanAveraging3::Parameters()) {
   string g2oFile = findExampleDataFile(name);
-  auto measurements = parseMeasurements<Rot3>(g2oFile);
-  return ShonanAveraging3(measurements, parameters);
+  return ShonanAveraging3(g2oFile, parameters);
 }
 
 static const ShonanAveraging3 kShonan = fromExampleName("toyExample.g2o");
@@ -84,7 +83,7 @@ TEST(ShonanAveraging3, checkOptimality) {
   // EXPECT_DOUBLES_EQUAL(-5.2964625490657866, lambdaMin,
   //                      1e-4);  // Regression test
   EXPECT_DOUBLES_EQUAL(-330.13332247232307, lambdaMin,
-                       1e-4);  // Regression test
+                       1e-4); // Regression test
   EXPECT(!kShonan.checkOptimality(random));
 }
 
@@ -96,7 +95,7 @@ TEST(ShonanAveraging3, tryOptimizingAt3) {
   EXPECT(kShonan.checkOptimality(result));
   auto lambdaMin = kShonan.computeMinEigenValue(result);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, lambdaMin,
-                       1e-4);  // Regression test
+                       1e-4); // Regression test
   EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(3, result), 1e-4);
   const Values SO3Values = kShonan.roundSolution(result);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(SO3Values), 1e-4);
@@ -109,7 +108,7 @@ TEST(ShonanAveraging3, tryOptimizingAt4) {
   EXPECT_DOUBLES_EQUAL(0, kShonan.costAt(4, result), 1e-3);
   auto lambdaMin = kShonan.computeMinEigenValue(result);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, lambdaMin,
-                       1e-4);  // Regression test
+                       1e-4); // Regression test
   const Values SO3Values = kShonan.roundSolution(result);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(SO3Values), 1e-4);
 }
@@ -119,7 +118,7 @@ TEST(ShonanAveraging3, runWithRandom) {
   auto result = kShonan.runWithRandom(5);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result.first), 1e-3);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
-                       1e-4);  // Regression test
+                       1e-4); // Regression test
 }
 
 /* ************************************************************************* */
@@ -127,10 +126,10 @@ TEST(ShonanAveraging3, MakeATangentVector) {
   Vector9 v;
   v << 1, 2, 3, 4, 5, 6, 7, 8, 9;
   Matrix expected(5, 5);
-  expected << 0, 0, 0, 0, -4,  //
-      0, 0, 0, 0, -5,          //
-      0, 0, 0, 0, -6,          //
-      0, 0, 0, 0, 0,           //
+  expected << 0, 0, 0, 0, -4, //
+      0, 0, 0, 0, -5,         //
+      0, 0, 0, 0, -6,         //
+      0, 0, 0, 0, 0,          //
       4, 5, 6, 0, 0;
   const Vector xi_1 = ShonanAveraging3::MakeATangentVector(5, v, 1);
   const auto actual = SOn::Hat(xi_1);
@@ -140,7 +139,7 @@ TEST(ShonanAveraging3, MakeATangentVector) {
 /* ************************************************************************* */
 TEST(ShonanAveraging3, LiftTo) {
   auto I = genericValue(Rot3());
-  Values initial {{0, I}, {1, I}, {2, I}};
+  Values initial{{0, I}, {1, I}, {2, I}};
   Values lifted = ShonanAveraging3::LiftTo<Rot3>(5, initial);
   EXPECT(assert_equal(SOn(5), lifted.at<SOn>(0)));
 }
@@ -155,8 +154,8 @@ TEST(ShonanAveraging3, LiftwithDescent) {
   EXPECT_LONGS_EQUAL(5, initialQ4.size());
   Matrix expected(4, 4);
   expected << 0.65649, -0.556278, -0.509486, -0.000102, //
-      0.0460064, -0.596212, 0.710175, 0.371573,             //
-      -0.737652, -0.460499, -0.447739, 0.208182,            //
+      0.0460064, -0.596212, 0.710175, 0.371573,         //
+      -0.737652, -0.460499, -0.447739, 0.208182,        //
       0.15091, 0.350752, -0.188693, 0.904762;
   EXPECT(assert_equal(SOn(expected), initialQ4.at<SOn>(0), 1e-5));
 }
@@ -176,7 +175,7 @@ TEST(ShonanAveraging3, runWithDescent) {
   auto result = kShonan.runWithDescent(5);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result.first), 1e-3);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
-                       1e-4);  // Regression test
+                       1e-4); // Regression test
 }
 
 /* ************************************************************************* */
@@ -198,7 +197,8 @@ TEST(ShonanAveraging3, runWithRandomKlaus) {
   parameters.setKarcherWeight(0);
 
   // Load 3 pose example taken in Klaus by Shicong
-  static const ShonanAveraging3 shonan = fromExampleName("Klaus3.g2o", parameters);
+  static const ShonanAveraging3 shonan =
+      fromExampleName("Klaus3.g2o", parameters);
 
   // Check nr poses
   EXPECT_LONGS_EQUAL(3, shonan.nrUnknowns());
@@ -229,7 +229,7 @@ TEST(ShonanAveraging3, runWithRandomKlaus) {
   auto result = shonan.runWithRandom(5);
   EXPECT_DOUBLES_EQUAL(0, shonan.cost(result.first), 1e-2);
   EXPECT_DOUBLES_EQUAL(-9.2259161494467889e-05, result.second,
-                       1e-4);  // Regression
+                       1e-4); // Regression
 
   // Get Shonan solution in new frame R (R for result)
   const Rot3 rR0 = result.first.at<Rot3>(0);
@@ -248,7 +248,7 @@ TEST(ShonanAveraging3, runWithRandomKlaus) {
 /* ************************************************************************* */
 TEST(ShonanAveraging3, runWithRandomKlausKarcher) {
   using namespace klaus;
-  
+
   // Load 3 pose example taken in Klaus by Shicong
   static const ShonanAveraging3 shonan = fromExampleName("Klaus3.g2o");
 
@@ -256,7 +256,7 @@ TEST(ShonanAveraging3, runWithRandomKlausKarcher) {
   auto result = shonan.runWithRandom(5);
   EXPECT_DOUBLES_EQUAL(0, shonan.cost(result.first), 1e-2);
   EXPECT_DOUBLES_EQUAL(-1.361402670507772e-05, result.second,
-                       1e-4);  // Regression test
+                       1e-4); // Regression test
 
   // Get Shonan solution in new frame R (R for result)
   const Rot3 rR0 = result.first.at<Rot3>(0);
@@ -305,7 +305,7 @@ TEST(ShonanAveraging3, PriorWeights) {
   params.setKarcherWeight(0);
   static const ShonanAveraging3 shonan = fromExampleName("Klaus3.g2o", params);
   auto I = genericValue(Rot3());
-  Values initial {{0, I}, {1, I}, {2, I}};
+  Values initial{{0, I}, {1, I}, {2, I}};
   EXPECT_DOUBLES_EQUAL(3.0756, shonan.cost(initial), 1e-4);
   auto result = shonan.runWithDescent(3, 3, initial);
   EXPECT_DOUBLES_EQUAL(0.0015, shonan.cost(result.first), 1e-4);

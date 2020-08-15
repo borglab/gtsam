@@ -118,7 +118,7 @@ public:
 
   /// Construct from set of relative measurements (given as BetweenFactor<Rot3>
   /// for now) NoiseModel *must* be isotropic.
-  ShonanAveraging(const Measurements &factors,
+  ShonanAveraging(const Measurements &measurements,
                   const Parameters &parameters = Parameters());
 
   /// @}
@@ -339,8 +339,24 @@ public:
   /// @}
 };
 
-// Explicit instantiation for d=2 and d=3 in .cpp file:
-using ShonanAveraging2 = ShonanAveraging<2>;
-using ShonanAveraging3 = ShonanAveraging<3>;
+// Subclasses for d=2 and d=3 that explicitly instantiate, as well as provide a
+// convenience interface with file access.
 
+class ShonanAveraging2 : public ShonanAveraging<2> {
+public:
+  ShonanAveraging2(const Measurements &measurements,
+                   const Parameters &parameters = Parameters());
+  ShonanAveraging2(string g2oFile, const Parameters &parameters = Parameters());
+};
+
+class ShonanAveraging3 : public ShonanAveraging<3> {
+public:
+  ShonanAveraging3(const Measurements &measurements,
+                   const Parameters &parameters = Parameters());
+  ShonanAveraging3(string g2oFile, const Parameters &parameters = Parameters());
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+  ShonanAveraging3(const BetweenFactorPose3s &factors,
+                   const Parameters &parameters = Parameters());
+#endif
+};
 } // namespace gtsam

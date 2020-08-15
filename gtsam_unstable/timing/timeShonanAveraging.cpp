@@ -22,7 +22,7 @@
 #include "gtsam/geometry/Point3.h"
 #include "gtsam/geometry/Rot3.h"
 #include <gtsam/base/timing.h>
-#include <gtsam_unstable/slam/ShonanAveraging.h>
+#include <gtsam/sfm/ShonanAveraging.h>
 
 #include <CppUnitLite/TestHarness.h>
 

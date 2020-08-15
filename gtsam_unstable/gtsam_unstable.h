@@ -321,59 +321,6 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
   void serializable() const; // enabling serialization functionality
 };
 
-#include <gtsam_unstable/slam/ShonanAveraging.h>
-class ShonanAveragingParameters {
-  ShonanAveragingParameters(const gtsam::LevenbergMarquardtParams& lm);
-  ShonanAveragingParameters(const gtsam::LevenbergMarquardtParams& lm, string method);
-  gtsam::LevenbergMarquardtParams getLMParams() const;
-  void setOptimalityThreshold(double value);
-  double getOptimalityThreshold() const;
-  void setAnchor(size_t index, const gtsam::Rot3& value);
-  void setAnchorWeight(double value);
-  double getAnchorWeight() const;
-  void setKarcherWeight(double value);
-  double getKarcherWeight();
-  void setGaugesWeight(double value);
-  double getGaugesWeight();
-};
-
-class ShonanAveraging3 {
-  ShonanAveraging3(string g2oFile);
-  ShonanAveraging3(string g2oFile, const gtsam::ShonanAveragingParameters& parameters);
-  ShonanAveraging3(const gtsam::BetweenFactorPose3s& factors, const gtsam::Values& values);  
-  ShonanAveraging3(const gtsam::BetweenFactorPose3s& factors, const gtsam::Values& values, const gtsam::ShonanAveragingParameters& parameters);
-  size_t nrPoses() const;
-  size_t nrMeasurements() const;
-  gtsam::Pose3 measured(size_t i);
-  gtsam::KeyVector keys(size_t i);
-  Matrix denseD() const;
-  Matrix denseQ() const;
-  Matrix denseL() const;
-  gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
-  gtsam::Values initializeRandomlyAt(size_t p) const;
-  gtsam::Values initializeWithDescent(size_t p, const gtsam::Values& values,
-                               const Vector& minEigenVector, double minEigenValue) const;
-  double costAt(size_t p, const gtsam::Values& values) const;
-  gtsam::LevenbergMarquardtOptimizer* createOptimizerAt(size_t p, const gtsam::Values& initial);
-  gtsam::Values tryOptimizingAt(size_t p) const;
-  gtsam::Values tryOptimizingAt(size_t p, const gtsam::Values& initial) const;
-  gtsam::Values projectFrom(size_t p, const gtsam::Values& values) const;
-  gtsam::Values roundSolution(const gtsam::Values& values) const;
-  double cost(const gtsam::Values& values) const;
-  Matrix computeLambda_(const gtsam::Values& values) const;
-  Matrix computeLambda_(Matrix S) const;
-  Matrix computeA_(const gtsam::Values& values) const;
-  double computeMinEigenValue(const gtsam::Values& values) const;
-  pair<double, Vector> computeMinEigenVector(const gtsam::Values& values) const;
-  bool checkOptimality(const gtsam::Values& values) const;
-  pair<gtsam::Values, double> runWithRandom() const;
-  pair<gtsam::Values, double> runWithRandom(size_t min_p) const;
-  pair<gtsam::Values, double> runWithRandom(size_t min_p, size_t max_p) const;
-  pair<gtsam::Values, double> runWithDescent() const;
-  pair<gtsam::Values, double> runWithDescent(size_t min_p) const;
-  pair<gtsam::Values, double> runWithDescent(size_t min_p, size_t max_p) const;
-};
-
 #include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactorEM.h>
 template<T = {gtsam::Pose2}>
 virtual class TransformBtwRobotsUnaryFactorEM : gtsam::NonlinearFactor {

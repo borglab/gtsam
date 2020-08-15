@@ -2874,12 +2874,12 @@ virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
   Vector evaluateError(const T& R1, const T& R2);
 };
 
-virtual class FrobeniusWormholeFactor : gtsam::NoiseModelFactor {
-  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
+virtual class FrobeniusWormholeFactor3 : gtsam::NoiseModelFactor {
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3 &R12,
                           size_t p);
-  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
-                          size_t p, gtsam::noiseModel::Base* model);
-  Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
+  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3 &R12,
+                          size_t p, gtsam::noiseModel::Base *model);
+  Vector evaluateError(const gtsam::SOn &Q1, const gtsam::SOn &Q2);
 };
 
 #include <gtsam/sfm/BinaryMeasurement.h>
@@ -2894,6 +2894,91 @@ class BinaryMeasurement {
 
 typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
 typedef gtsam::BinaryMeasurement<gtsam::Rot3> BinaryMeasurementRot3;
+
+#include <gtsam/sfm/ShonanAveraging.h>
+
+virtual class ShonanAveragingParameters {
+  gtsam::LevenbergMarquardtParams getLMParams() const;
+  
+  void setOptimalityThreshold(double value);
+  double getOptimalityThreshold() const;
+  
+  void setAnchor(size_t index, const gtsam::Rot3& value);
+  
+  void setAnchorWeight(double value);
+  double getAnchorWeight() const;
+  
+  void setKarcherWeight(double value);
+  double getKarcherWeight();
+  
+  void setGaugesWeight(double value);
+  double getGaugesWeight();
+};
+
+virtual class ShonanAveragingParameters2 : gtsam::ShonanAveragingParameters {
+  ShonanAveragingParameters2(const gtsam::LevenbergMarquardtParams& lm);
+  ShonanAveragingParameters2(const gtsam::LevenbergMarquardtParams& lm, string method);
+};
+
+virtual class ShonanAveragingParameters3 : gtsam::ShonanAveragingParameters {
+  ShonanAveragingParameters3(const gtsam::LevenbergMarquardtParams& lm);
+  ShonanAveragingParameters3(const gtsam::LevenbergMarquardtParams& lm, string method);
+};
+
+virtual class ShonanAveraging {
+  // Query properties
+  size_t nrUnknowns() const;
+  size_t nrMeasurements() const;
+  gtsam::Pose3 measured(size_t i);
+  gtsam::KeyVector keys(size_t i);
+
+  // Matrix API (advanced use, debugging)
+  Matrix denseD() const;
+  Matrix denseQ() const;
+  Matrix denseL() const;
+  // Matrix computeLambda_(Matrix S) const;
+  Matrix computeLambda_(const gtsam::Values& values) const;
+  Matrix computeA_(const gtsam::Values& values) const;
+  double computeMinEigenValue(const gtsam::Values& values) const;
+  gtsam::Values initializeWithDescent(size_t p, const gtsam::Values& values,
+                               const Vector& minEigenVector, double minEigenValue) const;
+
+  // Advanced API
+  gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
+  gtsam::Values initializeRandomlyAt(size_t p) const;
+  double costAt(size_t p, const gtsam::Values& values) const;
+  pair<double, Vector> computeMinEigenVector(const gtsam::Values& values) const;
+  bool checkOptimality(const gtsam::Values& values) const;
+  gtsam::LevenbergMarquardtOptimizer* createOptimizerAt(size_t p, const gtsam::Values& initial);
+  // gtsam::Values tryOptimizingAt(size_t p) const;
+  gtsam::Values tryOptimizingAt(size_t p, const gtsam::Values& initial) const;
+  gtsam::Values projectFrom(size_t p, const gtsam::Values& values) const;
+  gtsam::Values roundSolution(const gtsam::Values& values) const;
+
+  // Basic API
+  double cost(const gtsam::Values& values) const;
+  // pair<gtsam::Values, double> runWithRandom() const;
+  // pair<gtsam::Values, double> runWithRandom(size_t min_p) const;
+  pair<gtsam::Values, double> runWithRandom(size_t min_p, size_t max_p) const;
+  // pair<gtsam::Values, double> runWithDescent() const;
+  // pair<gtsam::Values, double> runWithDescent(size_t min_p) const;
+  pair<gtsam::Values, double> runWithDescent(size_t min_p, size_t max_p) const;
+};
+
+virtual class ShonanAveraging2 : gtsam::ShonanAveraging {
+  ShonanAveraging2(string g2oFile);
+  ShonanAveraging2(string g2oFile,
+                   const gtsam::ShonanAveragingParameters2 &parameters);
+};
+
+virtual class ShonanAveraging3 : gtsam::ShonanAveraging {
+  ShonanAveraging3(string g2oFile);
+  ShonanAveraging3(string g2oFile,
+                   const gtsam::ShonanAveragingParameters &parameters);
+  ShonanAveraging3(const gtsam::BetweenFactorPose3s &factors);
+  ShonanAveraging3(const gtsam::BetweenFactorPose3s &factors,
+                   const gtsam::ShonanAveragingParameters &parameters);
+};
 
 //*************************************************************************
 // Navigation

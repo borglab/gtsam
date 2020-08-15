@@ -16,16 +16,16 @@
  * @brief  Shonan Averaging algorithm
  */
 
-#include <gtsam_unstable/slam/ShonanAveraging.h>
+#include <gtsam/sfm/ShonanAveraging.h>
 
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/sfm/ShonanGaugeFactor.h>
 #include <gtsam/slam/FrobeniusFactor.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
-#include <gtsam_unstable/slam/ShonanGaugeFactor.h>
 
 #include <Eigen/Eigenvalues>
 #include <SymEigsSolver.h>
@@ -183,7 +183,7 @@ ShonanAveraging<d>::createOptimizerAt(
     graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
   }
 
-  // TODO(frank): definitely add Gauge measurements when building graph?
+  // TODO(frank): definitely add Gauge factors when building graph?
   if (parameters_.gamma > 0 && p > d + 1) {
     for (auto key : graph.keys())
       graph.emplace_shared<ShonanGaugeFactor>(key, p, d, parameters_.gamma);
@@ -806,9 +806,58 @@ std::pair<Values, double> ShonanAveraging<d>::runWithDescent(
 }
 
 /* ************************************************************************* */
-// Explicit instantiation for d=2 and d=3
+// Explicit instantiation for d=2
 template class ShonanAveraging<2>;
+
+ShonanAveraging2::ShonanAveraging2(const Measurements &measurements,
+                                   const Parameters &parameters)
+    : ShonanAveraging<2>(measurements, parameters) {}
+ShonanAveraging2::ShonanAveraging2(string g2oFile, const Parameters &parameters)
+    : ShonanAveraging<2>(parseMeasurements<Rot2>(g2oFile), parameters) {}
+
+/* ************************************************************************* */
+// Explicit instantiation for d=3
 template class ShonanAveraging<3>;
+
+ShonanAveraging3::ShonanAveraging3(const Measurements &measurements,
+                                   const Parameters &parameters)
+    : ShonanAveraging<3>(measurements, parameters) {}
+
+ShonanAveraging3::ShonanAveraging3(string g2oFile, const Parameters &parameters)
+    : ShonanAveraging<3>(parseMeasurements<Rot3>(g2oFile), parameters) {}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+// Support legacy constructor below:
+
+// Extract Rot3 measurement from Pose3 betweenfactors
+// Modeled after similar function in dataset.cpp
+static BinaryMeasurement<Rot3>
+convert(const BetweenFactor<Pose3>::shared_ptr &f) {
+  auto gaussian =
+      boost::dynamic_pointer_cast<noiseModel::Gaussian>(f->noiseModel());
+  if (!gaussian)
+    throw std::invalid_argument(
+        "parseMeasurements<Rot3> can only convert Pose3 measurements "
+        "with Gaussian noise models.");
+  const Matrix6 M = gaussian->covariance();
+  return BinaryMeasurement<Rot3>(
+      f->key1(), f->key2(), f->measured().rotation(),
+      noiseModel::Gaussian::Covariance(M.block<3, 3>(3, 3), true));
+}
+
+static ShonanAveraging3::Measurements
+convert(const BetweenFactorPose3s &factors) {
+  ShonanAveraging3::Measurements result;
+  result.reserve(factors.size());
+  for (auto f : factors)
+    result.push_back(convert(f));
+  return result;
+}
+
+ShonanAveraging3::ShonanAveraging3(const BetweenFactorPose3s &factors,
+                                   const Parameters &parameters)
+    : ShonanAveraging<3>(convert(factors), parameters) {}
+#endif
 
 /* ************************************************************************* */
 } // namespace gtsam
