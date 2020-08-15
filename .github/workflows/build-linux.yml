@@ -56,6 +56,8 @@ jobs:
 
           sudo apt install cmake g++-9 clang-9 build-essential pkg-config libpython-dev python-numpy
           
+          echo "::set-env name=BOOST_ROOT::$(echo $BOOST_ROOT_1_69_0)"
+          
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
             echo "::set-env name=CC::gcc-${{ matrix.version }}"
@@ -64,9 +66,11 @@ jobs:
             sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
             echo "::set-env name=CC::clang-${{ matrix.version }}"
             echo "::set-env name=CXX::clang++-${{ matrix.version }}"
-            echo "::set-env name=BOOST_ROOT::$BOOST_ROOT_1_69_0"
-            echo "BOOST_ROOT env set to $BOOST_ROOT"
           fi
+      - name: Check Boost version
+        if: runner.os == 'Linux'
+        run: |
+          echo "BOOST_ROOT = $BOOST_ROOT"
       - name: Build (Linux)
         if: runner.os == 'Linux'
         run: |
