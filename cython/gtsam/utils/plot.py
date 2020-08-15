@@ -155,7 +155,6 @@ def plot_pose2(fignum, pose, axis_length=0.1, covariance=None,
 
     axes.set_xlabel(axis_labels[0])
     axes.set_ylabel(axis_labels[1])
-    axes.set_zlabel(axis_labels[2])
 
     return fig
 
