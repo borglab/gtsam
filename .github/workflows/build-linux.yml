@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    name: ${{ matrix.name }} ${{ matrix.build_type }} ${{ matrix.build_unstable }}
+    name: ${{ matrix.name }} ${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
 
     env:
@@ -25,7 +25,7 @@ jobs:
         ]
 
         build_type: [Debug, Release]
-        build_unstable: [ON, OFF]
+        build_unstable: [ON]
         include:
           - name: ubuntu-18.04-gcc-5
             os: ubuntu-18.04
