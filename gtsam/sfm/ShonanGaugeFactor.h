@@ -44,8 +44,8 @@ namespace gtsam {
  * The ShonanGaugeFactor adds a unit Jacobian to these extra dimensions,
  * essentially restricting the optimization to the Stiefel manifold.
  */
-class ShonanGaugeFactor : public NonlinearFactor {
-  // Row dimension, eqaul to the dimensionality of SO(p-d)
+class GTSAM_EXPORT ShonanGaugeFactor : public NonlinearFactor {
+  // Row dimension, equal to the dimensionality of SO(p-d)
   size_t rows_;
 
   /// Constant Jacobian

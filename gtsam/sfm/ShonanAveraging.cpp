@@ -826,8 +826,7 @@ ShonanAveraging3::ShonanAveraging3(const Measurements &measurements,
 ShonanAveraging3::ShonanAveraging3(string g2oFile, const Parameters &parameters)
     : ShonanAveraging<3>(parseMeasurements<Rot3>(g2oFile), parameters) {}
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
-// Support legacy constructor below:
+  // TODO(frank): Deprecate after we land pybind wrapper
 
 // Extract Rot3 measurement from Pose3 betweenfactors
 // Modeled after similar function in dataset.cpp
@@ -846,7 +845,7 @@ convert(const BetweenFactor<Pose3>::shared_ptr &f) {
 }
 
 static ShonanAveraging3::Measurements
-convert(const BetweenFactorPose3s &factors) {
+extractRot3Measurements(const BetweenFactorPose3s &factors) {
   ShonanAveraging3::Measurements result;
   result.reserve(factors.size());
   for (auto f : factors)
@@ -856,8 +855,7 @@ convert(const BetweenFactorPose3s &factors) {
 
 ShonanAveraging3::ShonanAveraging3(const BetweenFactorPose3s &factors,
                                    const Parameters &parameters)
-    : ShonanAveraging<3>(convert(factors), parameters) {}
-#endif
+    : ShonanAveraging<3>(extractRot3Measurements(factors), parameters) {}
 
 /* ************************************************************************* */
 } // namespace gtsam

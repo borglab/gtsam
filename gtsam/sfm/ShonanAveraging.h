@@ -38,7 +38,7 @@ class NonlinearFactorGraph;
 class LevenbergMarquardtOptimizer;
 
 /// Parameters governing optimization etc.
-template <size_t d> struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
+template <size_t d> struct GTSAM_EXPORT ShonanAveragingParameters {
   // Select Rot2 or Rot3 interface based template parameter d
   using Rot = typename std::conditional<d == 2, Rot2, Rot3>::type;
   using Anchor = std::pair<size_t, Rot>;
@@ -75,6 +75,9 @@ template <size_t d> struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
   double getGaugesWeight() { return gamma; }
 };
 
+using ShonanAveragingParameters2 = ShonanAveragingParameters<2>;
+using ShonanAveragingParameters3 = ShonanAveragingParameters<3>;
+
 /**
  * Class that implements Shonan Averaging from our ECCV'20 paper. Please cite!
  * Note: The "basic" API uses all Rot3 values, whereas the different levels and
@@ -83,7 +86,7 @@ template <size_t d> struct GTSAM_UNSTABLE_EXPORT ShonanAveragingParameters {
  * The template parameter d is typically 2 or 3.
  * Currently d=3 is specialized in the .cpp file.
  */
-template <size_t d> class GTSAM_UNSTABLE_EXPORT ShonanAveraging {
+template <size_t d> class GTSAM_EXPORT ShonanAveraging {
 public:
   using Sparse = Eigen::SparseMatrix<double>;
 
@@ -359,9 +362,9 @@ public:
   ShonanAveraging3(const Measurements &measurements,
                    const Parameters &parameters = Parameters());
   ShonanAveraging3(string g2oFile, const Parameters &parameters = Parameters());
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+
+  // TODO(frank): Deprecate after we land pybind wrapper
   ShonanAveraging3(const BetweenFactorPose3s &factors,
                    const Parameters &parameters = Parameters());
-#endif
 };
 } // namespace gtsam

@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
     const auto& keys = factor->keys();
     const auto& Tij = factor->measured();
     const auto& model = factor->noiseModel();
-    graph.emplace_shared<FrobeniusWormholeFactor>(
+    graph.emplace_shared<FrobeniusWormholeFactor3>(
         keys[0], keys[1], Rot3(Tij.rotation().matrix()), 4, model, G);
   }
 
