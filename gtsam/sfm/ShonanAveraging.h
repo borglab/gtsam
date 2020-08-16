@@ -25,7 +25,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/sfm/BinaryMeasurement.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam_unstable/dllexport.h>
+#include <gtsam/dllexport.h>
 
 #include <Eigen/Sparse>
 #include <map>
