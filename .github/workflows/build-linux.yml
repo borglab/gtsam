@@ -72,8 +72,6 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           echo "BOOST_ROOT = $BOOST_ROOT"
-          echo "LD_LIBRARY_PATH = $LD_LIBRARY_PATH"
-          ls $LD_LIBRARY_PATH
       - name: Build (Linux)
         if: runner.os == 'Linux'
         run: |
