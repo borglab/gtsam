@@ -2955,7 +2955,6 @@ class ShonanAveraging2 {
 
   // Advanced API
   gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
-  gtsam::Values initializeRandomlyAt(size_t p) const;
   double costAt(size_t p, const gtsam::Values& values) const;
   pair<double, Vector> computeMinEigenVector(const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
@@ -2967,12 +2966,8 @@ class ShonanAveraging2 {
 
   // Basic API
   double cost(const gtsam::Values& values) const;
-  // pair<gtsam::Values, double> runWithRandom() const;
-  // pair<gtsam::Values, double> runWithRandom(size_t min_p) const;
-  pair<gtsam::Values, double> runWithRandom(size_t min_p, size_t max_p) const;
-  // pair<gtsam::Values, double> runWithDescent() const;
-  // pair<gtsam::Values, double> runWithDescent(size_t min_p) const;
-  pair<gtsam::Values, double> runWithDescent(size_t min_p, size_t max_p) const;
+  gtsam::Values initializeRandomly() const;
+  pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p, size_t max_p) const;
 };
 
 class ShonanAveraging3 {
@@ -3004,7 +2999,6 @@ class ShonanAveraging3 {
 
   // Advanced API
   gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
-  gtsam::Values initializeRandomlyAt(size_t p) const;
   double costAt(size_t p, const gtsam::Values& values) const;
   pair<double, Vector> computeMinEigenVector(const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
@@ -3016,12 +3010,8 @@ class ShonanAveraging3 {
 
   // Basic API
   double cost(const gtsam::Values& values) const;
-  // pair<gtsam::Values, double> runWithRandom() const;
-  // pair<gtsam::Values, double> runWithRandom(size_t min_p) const;
-  pair<gtsam::Values, double> runWithRandom(size_t min_p, size_t max_p) const;
-  // pair<gtsam::Values, double> runWithDescent() const;
-  // pair<gtsam::Values, double> runWithDescent(size_t min_p) const;
-  pair<gtsam::Values, double> runWithDescent(size_t min_p, size_t max_p) const;
+  gtsam::Values initializeRandomly() const;
+  pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p, size_t max_p) const;
 };
 
 //*************************************************************************

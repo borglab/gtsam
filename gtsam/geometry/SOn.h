@@ -98,8 +98,8 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   template <typename Derived, int N_ = N, typename = IsDynamic<N_>>
   static SO Lift(size_t n, const Eigen::MatrixBase<Derived> &R) {
     Matrix Q = Matrix::Identity(n, n);
-    size_t p = R.rows();
-    assert(p <= n && R.cols() == p);
+    const int p = R.rows();
+    assert(p >= 0 && p <= static_cast<int>(n) && R.cols() == p);
     Q.topLeftCorner(p, p) = R;
     return SO(Q);
   }
@@ -208,7 +208,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
 
   // Calculate run-time dimensionality of manifold.
   // Available as dimension or Dim() for fixed N.
-  size_t dim() const { return Dimension(matrix_.rows()); }
+  size_t dim() const { return Dimension(static_cast<size_t>(matrix_.rows())); }
 
   /**
    * Hat operator creates Lie algebra element corresponding to d-vector, where d

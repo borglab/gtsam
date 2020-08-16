@@ -40,6 +40,7 @@
 
 namespace gtsam {
 
+// In Wrappers we have no access to this so have a default ready
 static std::mt19937 kRandomNumberGenerator(42);
 
 using Sparse = Eigen::SparseMatrix<double>;
@@ -132,17 +133,20 @@ NonlinearFactorGraph ShonanAveraging<d>::buildGraphAt(size_t p) const {
     const auto &model = measurement.noiseModel();
     graph.emplace_shared<ShonanFactor<d>>(keys[0], keys[1], Rij, p, model, G);
   }
-  return graph;
-}
 
-/* ************************************************************************* */
-template <size_t d>
-Values ShonanAveraging<d>::initializeRandomlyAt(size_t p) const {
-  Values initial;
-  for (size_t j = 0; j < nrUnknowns(); j++) {
-    initial.insert(j, SOn::Random(kRandomNumberGenerator, p));
+  // Possibly add Karcher prior
+  if (parameters_.beta > 0) {
+    const size_t dim = SOn::Dimension(p);
+    graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
   }
-  return initial;
+
+  // Possibly add gauge factors - they are probably useless as gradient is zero
+  if (parameters_.gamma > 0 && p > d + 1) {
+    for (auto key : graph.keys())
+      graph.emplace_shared<ShonanGaugeFactor>(key, p, d, parameters_.gamma);
+  }
+
+  return graph;
 }
 
 /* ************************************************************************* */
@@ -155,59 +159,38 @@ double ShonanAveraging<d>::costAt(size_t p, const Values &values) const {
 /* ************************************************************************* */
 template <size_t d>
 boost::shared_ptr<LevenbergMarquardtOptimizer>
-ShonanAveraging<d>::createOptimizerAt(
-    size_t p, const boost::optional<Values> &initialEstimate) const {
+ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
   // Build graph
   NonlinearFactorGraph graph = buildGraphAt(p);
 
-  // Initialize randomly if no initial estimate is given
-  // TODO(frank): add option to do chordal init
-  const Values initial =
-      initialEstimate ? *initialEstimate : initializeRandomlyAt(p);
-
-  const size_t dim = SOn::Dimension(p);
-
-  // Anchor prior is only added here as depends on initial value (and cost is
-  // zero)
+  // Anchor prior is added here as depends on initial value (and cost is zero)
   if (parameters_.alpha > 0) {
     size_t i;
     Rot value;
+    const size_t dim = SOn::Dimension(p);
     std::tie(i, value) = parameters_.anchor;
     auto model = noiseModel::Isotropic::Precision(dim, parameters_.alpha);
     graph.emplace_shared<PriorFactor<SOn>>(i, SOn::Lift(p, value.matrix()),
                                            model);
   }
 
-  // TODO(frank): add Karcher prior when building graph?
-  if (parameters_.beta > 0) {
-    graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
-  }
-
-  // TODO(frank): definitely add Gauge factors when building graph?
-  if (parameters_.gamma > 0 && p > d + 1) {
-    for (auto key : graph.keys())
-      graph.emplace_shared<ShonanGaugeFactor>(key, p, d, parameters_.gamma);
-  }
-
   // Optimize
-  auto optimizer = boost::make_shared<LevenbergMarquardtOptimizer>(
-      graph, initial, parameters_.lm);
-  return optimizer;
+  return boost::make_shared<LevenbergMarquardtOptimizer>(graph, initial,
+                                                         parameters_.lm);
 }
 
 /* ************************************************************************* */
 template <size_t d>
-Values ShonanAveraging<d>::tryOptimizingAt(
-    size_t p, const boost::optional<Values> &initialEstimate) const {
-  boost::shared_ptr<LevenbergMarquardtOptimizer> lm =
-      createOptimizerAt(p, initialEstimate);
-  Values result = lm->optimize();
-  return result;
+Values ShonanAveraging<d>::tryOptimizingAt(size_t p,
+                                           const Values &initial) const {
+  auto lm = createOptimizerAt(p, initial);
+  return lm->optimize();
 }
 
 /* ************************************************************************* */
 // Project to pxdN Stiefel manifold
-template <size_t d> static Matrix StiefelElementMatrix(const Values &values) {
+template <size_t d>
+Matrix ShonanAveraging<d>::StiefelElementMatrix(const Values &values) {
   const size_t N = values.size();
   const size_t p = values.at<SOn>(0).rows();
   Matrix S(p, N * d);
@@ -310,7 +293,7 @@ template <> Values ShonanAveraging<3>::roundSolutionS(const Matrix &S) const {
 template <size_t d>
 Values ShonanAveraging<d>::roundSolution(const Values &values) const {
   // Project to pxdN Stiefel manifold...
-  Matrix S = StiefelElementMatrix<d>(values);
+  Matrix S = StiefelElementMatrix(values);
   // ...and call version above.
   return roundSolutionS(S);
 }
@@ -456,7 +439,7 @@ Sparse ShonanAveraging<d>::computeLambda(const Matrix &S) const {
 template <size_t d>
 Sparse ShonanAveraging<d>::computeLambda(const Values &values) const {
   // Project to pxdN Stiefel manifold...
-  Matrix S = StiefelElementMatrix<d>(values);
+  Matrix S = StiefelElementMatrix(values);
   // ...and call version above.
   return computeLambda(S);
 }
@@ -465,7 +448,7 @@ Sparse ShonanAveraging<d>::computeLambda(const Values &values) const {
 template <size_t d>
 Sparse ShonanAveraging<d>::computeA(const Values &values) const {
   assert(values.size() == nrUnknowns());
-  const Matrix S = StiefelElementMatrix<d>(values);
+  const Matrix S = StiefelElementMatrix(values);
   auto Lambda = computeLambda(S);
   return Lambda - Q_;
 }
@@ -557,7 +540,7 @@ SparseMinimumEigenValue(const Sparse &A, const Matrix &S, double *minEigenValue,
     // minimum eigenvalue, so just return this solution
     *minEigenValue = lmEigenValue;
     if (minEigenVector) {
-      *minEigenVector = lmEigenValueSolver.eigenvectors(1);
+      *minEigenVector = lmEigenValueSolver.eigenvectors(1).col(0);
       minEigenVector->normalize(); // Ensure that this is a unit vector
     }
     return true;
@@ -612,7 +595,7 @@ SparseMinimumEigenValue(const Sparse &A, const Matrix &S, double *minEigenValue,
 
   *minEigenValue = minEigenValueSolver.eigenvalues()(0) + 2 * lmEigenValue;
   if (minEigenVector) {
-    *minEigenVector = minEigenValueSolver.eigenvectors(1);
+    *minEigenVector = minEigenValueSolver.eigenvectors(1).col(0);
     minEigenVector->normalize(); // Ensure that this is a unit vector
   }
   if (numIterations)
@@ -631,23 +614,15 @@ template <size_t d>
 double ShonanAveraging<d>::computeMinEigenValue(const Values &values,
                                                 Vector *minEigenVector) const {
   assert(values.size() == nrUnknowns());
-  const Matrix S = StiefelElementMatrix<d>(values);
+  const Matrix S = StiefelElementMatrix(values);
   auto A = computeA(S);
-#ifdef SLOW_EIGEN_COMPUTATION
-  Eigen::EigenSolver<Matrix> solver(Matrix(A), false);
-  auto lambdas = solver.eigenvalues();
-  double minEigenValue = lambdas(0).real();
-  for (size_t i = 1; i < lambdas.size(); i++) {
-    minEigenValue = min(lambdas(i).real(), minEigenValue);
-  }
-#else
+
   double minEigenValue;
   bool success = SparseMinimumEigenValue(A, S, &minEigenValue, minEigenVector);
   if (!success) {
     throw std::runtime_error(
         "SparseMinimumEigenValue failed to compute minimum eigenvalue.");
   }
-#endif
   return minEigenValue;
 }
 
@@ -688,7 +663,7 @@ Vector ShonanAveraging<d>::MakeATangentVector(size_t p, const Vector &v,
 template <size_t d>
 Matrix ShonanAveraging<d>::riemannianGradient(size_t p,
                                               const Values &values) const {
-  Matrix S_dot = StiefelElementMatrix<d>(values);
+  Matrix S_dot = StiefelElementMatrix(values);
   // calculate the gradient of F(Q_dot) at Q_dot
   Matrix euclideanGradient = 2 * (L_ * (S_dot.transpose())).transpose();
   // cout << "euclidean gradient rows and cols" << euclideanGradient.rows() <<
@@ -766,43 +741,48 @@ Values ShonanAveraging<d>::initializeWithDescent(
 
 /* ************************************************************************* */
 template <size_t d>
-std::pair<Values, double>
-ShonanAveraging<d>::run(size_t pMin, size_t pMax, bool withDescent,
-                        const boost::optional<Values> &initialEstimate) const {
+Values ShonanAveraging<d>::initializeRandomly(std::mt19937 &rng) const {
+  Values initial;
+  for (size_t j = 0; j < nrUnknowns(); j++) {
+    initial.insert(j, Rot::Random(rng));
+  }
+  return initial;
+}
+
+/* ************************************************************************* */
+template <size_t d>
+Values ShonanAveraging<d>::initializeRandomly() const {
+  return ShonanAveraging<d>::initializeRandomly(kRandomNumberGenerator);
+}
+
+/* ************************************************************************* */
+template <size_t d>
+std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
+                                                  size_t pMin,
+                                                  size_t pMax) const {
   Values Qstar;
-  Values initial = (initialEstimate) ? LiftTo<Rot>(pMin, *initialEstimate)
-                                     : initializeRandomlyAt(pMin);
+  Values initialSOp = LiftTo<Rot>(pMin, initialEstimate);  // lift to pMin!
   for (size_t p = pMin; p <= pMax; p++) {
-    Qstar = tryOptimizingAt(p, initial);
+    // Optimize until convergence at this level
+    Qstar = tryOptimizingAt(p, initialSOp);
+
+    // Check certificate of global optimzality
     Vector minEigenVector;
     double minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
     if (minEigenValue > parameters_.optimalityThreshold) {
+      // If at global optimum, round and return solution
       const Values SO3Values = roundSolution(Qstar);
       return std::make_pair(SO3Values, minEigenValue);
     }
+
+    // Not at global optimimum yet, so check whether we will go to next level
     if (p != pMax) {
-      initial = withDescent ? initializeWithDescent(
-                                  p + 1, Qstar, minEigenVector, minEigenValue)
-                            : initializeRandomlyAt(p + 1);
+      // Calculate initial estimate for next level by following minEigenVector
+      initialSOp =
+          initializeWithDescent(p + 1, Qstar, minEigenVector, minEigenValue);
     }
   }
   throw std::runtime_error("Shonan::run did not converge for given pMax");
-}
-
-/* ************************************************************************* */
-template <size_t d>
-std::pair<Values, double> ShonanAveraging<d>::runWithRandom(
-    size_t pMin, size_t pMax,
-    const boost::optional<Values> &initialEstimate) const {
-  return run(pMin, pMax, false, initialEstimate);
-}
-
-/* ************************************************************************* */
-template <size_t d>
-std::pair<Values, double> ShonanAveraging<d>::runWithDescent(
-    size_t pMin, size_t pMax,
-    const boost::optional<Values> &initialEstimate) const {
-  return run(pMin, pMax, true, initialEstimate);
 }
 
 /* ************************************************************************* */

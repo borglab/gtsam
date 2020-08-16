@@ -180,6 +180,9 @@ public:
     return Matrix(computeA(values));
   }
 
+  /// Project to pxdN Stiefel manifold
+  static Matrix StiefelElementMatrix(const Values &values);
+
   /**
    * Compute minimum eigenvalue for optimality check.
    * @param values: should be of type SOn
@@ -226,12 +229,6 @@ public:
   NonlinearFactorGraph buildGraphAt(size_t p) const;
 
   /**
-   * Initialize randomly at SO(p)
-   * @param p the dimensionality of the rotation manifold to optimize over
-   */
-  Values initializeRandomlyAt(size_t p) const;
-
-  /**
    * Calculate cost for SO(p)
    * Values should be of type SO(p)
    */
@@ -260,21 +257,19 @@ public:
   /**
    * Try to create optimizer at SO(p)
    * @param p the dimensionality of the rotation manifold to optimize over
-   * @param initial optional initial SO(p) values
+   * @param initial initial SO(p) values
    * @return lm optimizer
    */
-  boost::shared_ptr<LevenbergMarquardtOptimizer>
-  createOptimizerAt(size_t p, const boost::optional<Values> &shonan) const;
+  boost::shared_ptr<LevenbergMarquardtOptimizer> createOptimizerAt(
+      size_t p, const Values &initial) const;
 
   /**
    * Try to optimize at SO(p)
    * @param p the dimensionality of the rotation manifold to optimize over
-   * @param initial optional initial SO(p) values
+   * @param initial initial SO(p) values
    * @return SO(p) values
    */
-  Values
-  tryOptimizingAt(size_t p,
-                  const boost::optional<Values> &initial = boost::none) const;
+  Values tryOptimizingAt(size_t p, const Values &initial) const;
 
   /**
    * Project from SO(p) to Rot2 or Rot3
@@ -308,42 +303,26 @@ public:
   double cost(const Values &values) const;
 
   /**
+   * Initialize randomly at SO(d)
+   * @param rng random number generator
+   * Example:
+   *   std::mt19937 rng(42);
+   *   Values initial = initializeRandomly(rng, p);
+   */
+  Values initializeRandomly(std::mt19937 &rng) const;
+
+  /// Random initialization for wrapper, fixed random seed. 
+  Values initializeRandomly() const;
+
+  /**
    * Optimize at different values of p until convergence.
-   * @param pMin value of p to start Riemanian staircase at.
-   * @param pMax maximum value of p to try (default: 20)
-   * @param withDescent use descent direction from paper.
-   * @param initial optional initial Rot3 values
+   * @param initial initial Rot3 values
+   * @param pMin value of p to start Riemanian staircase at (default: d).
+   * @param pMax maximum value of p to try (default: 10)
    * @return (Rot3 values, minimum eigenvalue)
    */
-  std::pair<Values, double>
-  run(size_t pMin, size_t pMax, bool withDescent,
-      const boost::optional<Values> &initialEstimate = boost::none) const;
-
-  /**
-   * Optimize at different values of p until convergence, with random
-   * initialization at each level.
-   *
-   * @param pMin value of p to start Riemanian staircase at.
-   * @param pMax maximum value of p to try (default: 20)
-   * @param initial optional initial Rot3 values
-   * @return (Rot3 values, minimum eigenvalue)
-   */
-  std::pair<Values, double> runWithRandom(
-      size_t pMin = 5, size_t pMax = 20,
-      const boost::optional<Values> &initialEstimate = boost::none) const;
-
-  /**
-   * Optimize at different values of p until convergence, with descent
-   * direction derived from Eigenvalue computation.
-   *
-   * @param pMin value of p to start Riemanian staircase at.
-   * @param pMax maximum value of p to try (default: 20)
-   * @param initial optional initial Rot3 values
-   * @return (Rot3 values, minimum eigenvalue)
-   */
-  std::pair<Values, double> runWithDescent(
-      size_t pMin = 5, size_t pMax = 20,
-      const boost::optional<Values> &initialEstimate = boost::none) const;
+  std::pair<Values, double> run(const Values &initialEstimate = boost::none,
+                                size_t pMin = d, size_t pMax = 10) const;
   /// @}
 };
 

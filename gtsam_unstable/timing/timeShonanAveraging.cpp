@@ -141,17 +141,20 @@ int main(int argc, char* argv[]) {
     // increase p value and try optimize using Shonan Algorithm. use chrono for
     // timing
     size_t pMin = 3;
-    bool withDescent = true;
     Values Qstar;
     Vector minEigenVector;
     double CostP = 0, Cost3 = 0, lambdaMin = 0, suBound = 0;
     cout << "(int)p" << "\t" << "time1" << "\t" << "costP" << "\t" << "cost3" << "\t"
         << "time2" << "\t" << "MinEigenvalue" << "\t" << "SuBound" << endl;
 
+    const Values randomRotations = kShonan.initializeRandomly(kRandomNumberGenerator);
+
     for (size_t p = pMin; p < 6; p++) {
         // Randomly initialize at lowest level, initialize by line search after that
-        const Values initial = 
-            (p > pMin && withDescent) ? kShonan.initializeWithDescent( p, Qstar, minEigenVector, lambdaMin) : kShonan.initializeRandomlyAt(p);
+        const Values initial =
+            (p > pMin) ? kShonan.initializeWithDescent(p, Qstar, minEigenVector,
+                                                       lambdaMin)
+                       : ShonanAveraging::LiftTo<Rot3>(pMin, randomRotations);
         chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
         // optimizing
         const Values result = kShonan.tryOptimizingAt(p, initial);
