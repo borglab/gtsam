@@ -2874,10 +2874,12 @@ virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
   Vector evaluateError(const T& R1, const T& R2);
 };
 
-virtual class FrobeniusWormholeFactor3 : gtsam::NoiseModelFactor {
-  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3 &R12,
+#include <gtsam/sfm/ShonanFactor.h>
+
+virtual class ShonanFactor3 : gtsam::NoiseModelFactor {
+  ShonanFactor(size_t key1, size_t key2, const gtsam::Rot3 &R12,
                           size_t p);
-  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3 &R12,
+  ShonanFactor(size_t key1, size_t key2, const gtsam::Rot3 &R12,
                           size_t p, gtsam::noiseModel::Base *model);
   Vector evaluateError(const gtsam::SOn &Q1, const gtsam::SOn &Q2);
 };

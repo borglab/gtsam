@@ -26,6 +26,7 @@
 #include <gtsam/sfm/ShonanGaugeFactor.h>
 #include <gtsam/slam/FrobeniusFactor.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
+#include <gtsam/sfm/ShonanFactor.h>
 
 #include <Eigen/Eigenvalues>
 #include <SymEigsSolver.h>
@@ -129,8 +130,7 @@ NonlinearFactorGraph ShonanAveraging<d>::buildGraphAt(size_t p) const {
     const auto &keys = measurement.keys();
     const auto &Rij = measurement.measured();
     const auto &model = measurement.noiseModel();
-    graph.emplace_shared<FrobeniusWormholeFactor<d>>(keys[0], keys[1], Rij, p,
-                                                     model, G);
+    graph.emplace_shared<ShonanFactor<d>>(keys[0], keys[1], Rij, p, model, G);
   }
   return graph;
 }
@@ -826,7 +826,7 @@ ShonanAveraging3::ShonanAveraging3(const Measurements &measurements,
 ShonanAveraging3::ShonanAveraging3(string g2oFile, const Parameters &parameters)
     : ShonanAveraging<3>(parseMeasurements<Rot3>(g2oFile), parameters) {}
 
-  // TODO(frank): Deprecate after we land pybind wrapper
+// TODO(frank): Deprecate after we land pybind wrapper
 
 // Extract Rot3 measurement from Pose3 betweenfactors
 // Modeled after similar function in dataset.cpp
