@@ -321,8 +321,8 @@ public:
    * @param pMax maximum value of p to try (default: 10)
    * @return (Rot3 values, minimum eigenvalue)
    */
-  std::pair<Values, double> run(const Values &initialEstimate = boost::none,
-                                size_t pMin = d, size_t pMax = 10) const;
+  std::pair<Values, double> run(const Values &initialEstimate, size_t pMin = d,
+                                size_t pMax = 10) const;
   /// @}
 };
 
