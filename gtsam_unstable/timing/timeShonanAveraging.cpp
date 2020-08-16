@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
     // ShonanAveragingParameters parameters;
     // double sigmaNoiseInRadians = 0 * M_PI / 180;
     // parameters.setNoiseSigma(sigmaNoiseInRadians);
-    static const ShonanAveraging kShonan(g2oFile);
+    static const ShonanAveraging3 kShonan(g2oFile);
 
     // increase p value and try optimize using Shonan Algorithm. use chrono for
     // timing
@@ -174,6 +174,6 @@ int main(int argc, char* argv[]) {
                  lambdaMin, suBound, &csvFile);
     }
     saveResult(name, kShonan.roundSolution(Qstar));
-    saveG2oResult(name, kShonan.roundSolution(Qstar), kShonan.Poses());
+    // saveG2oResult(name, kShonan.roundSolution(Qstar), kShonan.Poses());
     return 0;
 }
