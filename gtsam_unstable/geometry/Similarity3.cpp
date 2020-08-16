@@ -87,7 +87,7 @@ Point3 Similarity3::transformFrom(const Point3& p, //
 
 Pose3 Similarity3::transformFrom(const Pose3& T) const {
   Rot3 R = R_.compose(T.rotation());
-  Point3 t = Point3(s_ * (R_.matrix() * T.translation().vector() + t_.vector()));
+  Point3 t = Point3(s_ * (R_ * T.translation() + t_));
   return Pose3(R, t);
 }
 
