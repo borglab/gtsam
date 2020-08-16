@@ -1,5 +1,10 @@
 #!/bin/bash
 
+##########################################################
+# Build and test GTSAM for *nix based systems.
+# Specifically Linux and macOS.
+##########################################################
+
 # install TBB with _debug.so files
 function install_tbb()
 {

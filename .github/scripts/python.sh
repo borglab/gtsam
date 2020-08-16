@@ -1,4 +1,9 @@
 #!/bin/bash
+
+##########################################################
+# Build and test the GTSAM Python wrapper.
+##########################################################
+
 set -x -e
 
 if [ -z ${PYTHON_VERSION+x} ]; then
@@ -77,7 +82,7 @@ case $WRAPPER in
     $PYTHON -m unittest discover
     ;;
 "pybind")
-    cd python
+    cd $GITHUB_WORKSPACE/python
     $PYTHON setup.py install --user --prefix=
     cd $GITHUB_WORKSPACE/wrap/python/gtsam_py/tests
     $PYTHON -m unittest discover
