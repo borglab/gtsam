@@ -68,10 +68,10 @@ int main(int argc, char* argv[]) {
   auto G = boost::make_shared<Matrix>(SOn::VectorizedGenerators(4));
   for (const auto &m : measurements) {
     const auto &keys = m.keys();
-    const Rot3 &Tij = m.measured();
+    const Rot3 &Rij = m.measured();
     const auto &model = m.noiseModel();
     graph.emplace_shared<FrobeniusWormholeFactor>(
-        keys[0], keys[1], Tij, 4, model, G);
+        keys[0], keys[1], Rij, 4, model, G);
   }
 
   std::mt19937 rng(42);

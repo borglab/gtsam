@@ -77,7 +77,7 @@ enum KernelFunctionType {
  * Parse variables in a line-based text format (like g2o) into a map.
  * Instantiated in .cpp Pose2, Point2, Pose3, and Point3.
  * Note the map keys are integer indices, *not* gtsam::Keys. This is is
- * different below where landmarks will use be L(index) symbols.
+ * different below where landmarks will use L(index) symbols.
  */
 template <typename T>
 GTSAM_EXPORT std::map<size_t, T> parseVariables(const std::string &filename,
@@ -136,7 +136,7 @@ GTSAM_EXPORT boost::optional<IndexedEdge> parseEdge(std::istream& is,
 
 /// Return type for load functions, which return a graph and initial values. For
 /// landmarks, the gtsam::Symbol L(index) is used to insert into the Values.
-/// Bearing-range measurements also refer tio landmarks with L(index).
+/// Bearing-range measurements also refer to landmarks with L(index).
 using GraphAndValues =
     std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr>;
 

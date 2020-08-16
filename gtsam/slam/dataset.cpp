@@ -110,19 +110,21 @@ string createRewrittenFileName(const string &name) {
 }
 
 /* ************************************************************************* */
-// Parse a file by calling the parse(is, tag) function for every line.
+// Type for parser functions used in parseLines below.
 template <typename T>
 using Parser =
     std::function<boost::optional<T>(istream &is, const string &tag)>;
 
+// Parse a file by calling the parse(is, tag) function for every line.
+// The result of calling the function is ignored, so typically parse function
+// works via a side effect, like adding a factor into a graph etc.
 template <typename T>
 static void parseLines(const string &filename, Parser<T> parse) {
   ifstream is(filename.c_str());
   if (!is)
     throw invalid_argument("parse: can not find file " + filename);
-  while (!is.eof()) {
-    string tag;
-    is >> tag;
+  string tag;
+  while (is >> tag) {
     parse(is, tag); // ignore return value
     is.ignore(LINESIZE, '\n');
   }
@@ -164,7 +166,9 @@ boost::optional<IndexedPose> parseVertexPose(istream &is, const string &tag) {
   if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {
     size_t id;
     double x, y, yaw;
-    is >> id >> x >> y >> yaw;
+    if (!(is >> id >> x >> y >> yaw)) {
+      throw std::runtime_error("parseVertexPose encountered malformed line");
+    }
     return IndexedPose(id, Pose2(x, y, yaw));
   } else {
     return boost::none;
@@ -183,7 +187,10 @@ boost::optional<IndexedLandmark> parseVertexLandmark(istream &is,
   if (tag == "VERTEX_XY") {
     size_t id;
     double x, y;
-    is >> id >> x >> y;
+    if (!(is >> id >> x >> y)) {
+      throw std::runtime_error(
+          "parseVertexLandmark encountered malformed line");
+    }
     return IndexedLandmark(id, Point2(x, y));
   } else {
     return boost::none;
@@ -287,7 +294,9 @@ boost::optional<IndexedEdge> parseEdge(istream &is, const string &tag) {
 
     size_t id1, id2;
     double x, y, yaw;
-    is >> id1 >> id2 >> x >> y >> yaw;
+    if (!(is >> id1 >> id2 >> x >> y >> yaw)) {
+      throw std::runtime_error("parseEdge encountered malformed line");
+    }
     return IndexedEdge({id1, id2}, Pose2(x, y, yaw));
   } else {
     return boost::none;
@@ -295,8 +304,8 @@ boost::optional<IndexedEdge> parseEdge(istream &is, const string &tag) {
 }
 
 /* ************************************************************************* */
-// Measurement parsers are implemented as a functor, as they has several options
-// to filter and create the measurement model.
+// Measurement parsers are implemented as a functor, as they have several
+// options to filter and create the measurement model.
 template <typename T> struct ParseMeasurement;
 
 /* ************************************************************************* */
@@ -670,7 +679,8 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
     auto factor = boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(factor_);
     if (factor) {
       SharedNoiseModel model = factor->noiseModel();
-      auto gaussianModel = boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+      auto gaussianModel =
+          boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
       if (!gaussianModel) {
         model->print("model\n");
         throw invalid_argument("writeG2o: invalid noise model!");
