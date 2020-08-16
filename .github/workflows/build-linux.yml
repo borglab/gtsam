@@ -12,7 +12,6 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
-      LD_LIBRARY_PATH: /usr/local/lib
 
     strategy:
       fail-fast: false
@@ -58,6 +57,7 @@ jobs:
           sudo apt install cmake build-essential pkg-config libpython-dev python-numpy
           
           echo "::set-env name=BOOST_ROOT::$(echo $BOOST_ROOT_1_69_0)"
+          echo "::set-env name=LD_LIBRARY_PATH::$(echo $BOOST_ROOT_1_69_0/lib)"
           
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
