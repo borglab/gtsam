@@ -79,12 +79,18 @@ using ShonanAveragingParameters2 = ShonanAveragingParameters<2>;
 using ShonanAveragingParameters3 = ShonanAveragingParameters<3>;
 
 /**
- * Class that implements Shonan Averaging from our ECCV'20 paper. Please cite!
+ * Class that implements Shonan Averaging from our ECCV'20 paper.
  * Note: The "basic" API uses all Rot3 values, whereas the different levels and
  * "advanced" API at SO(p) needs Values of type SOn<Dynamic>.
  *
  * The template parameter d is typically 2 or 3.
  * Currently d=3 is specialized in the .cpp file.
+ *
+ * If you use this code in your work, please consider citing our paper:
+ *    Shonan Rotation Averaging, Global Optimality by Surfing SO(p)^n
+ *    Frank Dellaert, David M. Rosen, Jing Wu, Robert Mahony, and Luca Carlone,
+ *    European Computer Vision Conference, 2020.
+ * You can view our ECCV spotlight video at https://youtu.be/5ppaqMyHtE0
  */
 template <size_t d> class GTSAM_EXPORT ShonanAveraging {
 public:
