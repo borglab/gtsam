@@ -397,7 +397,7 @@ namespace gtsam {
     template<class ValueType>
     size_t count() const {
       size_t i = 0;
-      for (const auto& key_value : *this) {
+      for (const auto key_value : *this) {
         if (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value))
           ++i;
       }
