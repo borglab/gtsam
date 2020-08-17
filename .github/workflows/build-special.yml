@@ -1,6 +1,6 @@
 name: Special Cases CI
 
-on: pull_request
+on: [pull_request]
 
 jobs:
   build:
@@ -15,19 +15,20 @@ jobs:
 
     strategy:
       fail-fast: false
+
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
             ubuntu-gcc-deprecated,
-            ubuntu-gcc-quaternions,
-            ubuntu-gcc-points-vector,
-            macos-xcode-deprecated,
-            macos-xcode-quaternions,
-            macos-xcode-points-vector
-            ubuntu-clang-deprecated,
-            ubuntu-clang-quaternions,
-            ubuntu-clang-points-vector,
+            # ubuntu-gcc-quaternions,
+            # ubuntu-gcc-points-vector,
+            # macos-xcode-deprecated,
+            # macos-xcode-quaternions,
+            # macos-xcode-points-vector
+            # ubuntu-clang-deprecated,
+            # ubuntu-clang-quaternions,
+            # ubuntu-clang-points-vector
           ]
 
         build_type: [Debug, Release]
@@ -39,53 +40,53 @@ jobs:
             version: "9"
             type: deprecated
 
-          - name: ubuntu-gcc-quaternions
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "9"
-            type: quaternions
+          # - name: ubuntu-gcc-quaternions
+          #   os: ubuntu-18.04
+          #   compiler: gcc
+          #   version: "9"
+          #   type: quaternions
 
-          - name: ubuntu-gcc-points-vector
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "9"
-            type: points-vector
+          # - name: ubuntu-gcc-points-vector
+          #   os: ubuntu-18.04
+          #   compiler: gcc
+          #   version: "9"
+          #   type: points-vector
 
-          - name: macos-xcode-deprecated
-            os: macOS-10.15
-            compiler: xcode
-            version: "11.3.1"
-            type: deprecated
+          # - name: macos-xcode-deprecated
+          #   os: macOS-10.15
+          #   compiler: xcode
+          #   version: "11.3.1"
+          #   type: deprecated
 
-          - name: macos-xcode-quaternions
-            os: macOS-10.15
-            compiler: xcode
-            version: "11.3.1"
-            type: quaternions
+          # - name: macos-xcode-quaternions
+          #   os: macOS-10.15
+          #   compiler: xcode
+          #   version: "11.3.1"
+          #   type: quaternions
 
-          - name: macos-xcode-points-vector
-            os: macOS-10.15
-            compiler: xcode
-            version: "11.3.1"
-            type: points-vector
+          # - name: macos-xcode-points-vector
+          #   os: macOS-10.15
+          #   compiler: xcode
+          #   version: "11.3.1"
+          #   type: points-vector
 
-          - name: ubuntu-clang-deprecated
-            os: ubuntu-18.04
-            compiler: clang
-            version: "9"
-            type: deprecated
+          # - name: ubuntu-clang-deprecated
+          #   os: ubuntu-18.04
+          #   compiler: clang
+          #   version: "9"
+          #   type: deprecated
 
-          - name: ubuntu-clang-quaternions
-            os: ubuntu-18.04
-            compiler: clang
-            version: "9"
-            type: quaternions
+          # - name: ubuntu-clang-quaternions
+          #   os: ubuntu-18.04
+          #   compiler: clang
+          #   version: "9"
+          #   type: quaternions
 
-          - name: ubuntu-clang-points-vector
-            os: ubuntu-18.04
-            compiler: clang
-            version: "9"
-            type: points-vector
+          # - name: ubuntu-clang-points-vector
+          #   os: ubuntu-18.04
+          #   compiler: clang
+          #   version: "9"
+          #   type: points-vector
 
     steps:
       - name: Checkout
