@@ -11,8 +11,8 @@
 
 /**
  * @file   ShonanAveraging.h
- * @date   March 2019
- * @author Frank Dellaert
+ * @date   March 2019 - August 2020
+ * @author Frank Dellaert, David Rosen, and Jing Wu
  * @brief  Shonan Averaging algorithm
  */
 
@@ -80,11 +80,12 @@ using ShonanAveragingParameters3 = ShonanAveragingParameters<3>;
 
 /**
  * Class that implements Shonan Averaging from our ECCV'20 paper.
- * Note: The "basic" API uses all Rot3 values, whereas the different levels and
- * "advanced" API at SO(p) needs Values of type SOn<Dynamic>.
+ * Note: The "basic" API uses all Rot values (Rot2 or Rot3, depending on value
+ * of d), whereas the different levels and "advanced" API at SO(p) needs Values
+ * of type SOn<Dynamic>.
  *
- * The template parameter d is typically 2 or 3.
- * Currently d=3 is specialized in the .cpp file.
+ * The template parameter d can be 2 or 3.
+ * Both are specialized in the .cpp file.
  *
  * If you use this code in your work, please consider citing our paper:
  *    Shonan Rotation Averaging, Global Optimality by Surfing SO(p)^n

@@ -11,8 +11,8 @@
 
 /**
  * @file   ShonanAveraging.cpp
- * @date   March 2019
- * @author Frank Dellaert
+ * @date   March 2019 - August 2020
+ * @author Frank Dellaert, David Rosen, and Jing Wu
  * @brief  Shonan Averaging algorithm
  */
 
