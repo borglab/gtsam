@@ -144,54 +144,44 @@ TEST(ShonanAveraging3, LiftTo) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging3, LiftwithDescent) {
-  ShonanAveraging3::Parameters parameters;
-  // remove gauge so eigenvalue well defined:
-  parameters.setAnchorWeight(1000);
-  parameters.setKarcherWeight(1000);
-  parameters.setGaugesWeight(1000);
-  string g2oFile = findExampleDataFile("Klaus3.g2o");
-  auto shonan = ShonanAveraging3(g2oFile, parameters);
-
+TEST(ShonanAveraging3, CheckWithEigen) {
   // control randomness
   static std::mt19937 rng(0);
-  const Values randomRotations = shonan.initializeRandomly(rng);
+  Vector descentDirection = Vector::Random(15); // for use below
+  const Values randomRotations = kShonan.initializeRandomly(rng);
   Values random = ShonanAveraging3::LiftTo<Rot3>(3, randomRotations);
 
   // Optimize
-  const Values Qstar3 = shonan.tryOptimizingAt(3, random);
+  const Values Qstar3 = kShonan.tryOptimizingAt(3, random);
 
   // Compute Eigenvalue with Spectra solver
-  double lambda = shonan.computeMinEigenValue(Qstar3);
+  double lambda = kShonan.computeMinEigenValue(Qstar3);
 
-  // Check Eigenvalue with slow Eigen version, converts matrix A to dense matrix
-  // :-(
-  bool computeEigenvectors = true;
+  // Check Eigenvalue with slow Eigen version, converts matrix A to dense matrix!
   const Matrix S = ShonanAveraging3::StiefelElementMatrix(Qstar3);
-  auto A = shonan.computeA(S);
+  auto A = kShonan.computeA(S);
+  bool computeEigenvectors = false;
   Eigen::EigenSolver<Matrix> eigenSolver(Matrix(A), computeEigenvectors);
   auto lambdas = eigenSolver.eigenvalues().real();
-  int index = 0;
   double minEigenValue = lambdas(0);
   for (int i = 1; i < lambdas.size(); i++)
-    if (lambdas(i) < minEigenValue) {
-      minEigenValue = lambdas(i);
-      index = i;
-    }
+      minEigenValue = min(lambdas(i), minEigenValue);
+
+  // Actual check
   EXPECT_DOUBLES_EQUAL(minEigenValue, lambda, 1e-12);
 
-  // Get predictable eigenvector from Eigen
-  Vector minEigenVector = eigenSolver.eigenvectors().col(index).real();
+  // Construct test descent direction (as minEigenVector is not predictable
+  // across platforms, being one from a basically flat 3d- subspace)
 
-  // Check descent with eigen version
+  // Check descent
   Values initialQ4 =
-      ShonanAveraging3::LiftwithDescent(4, Qstar3, minEigenVector);
-  EXPECT_LONGS_EQUAL(3, initialQ4.size());
+      ShonanAveraging3::LiftwithDescent(4, Qstar3, descentDirection);
+  EXPECT_LONGS_EQUAL(5, initialQ4.size());
   Matrix expected(4, 4);
-  expected << 0.88891, 0.0257057, -0.0639449, -0.452868,  //
-      0.0257057, 0.994052, 0.0147965, 0.104791,           //
-      -0.0639455, 0.0147967, 0.963192, -0.260678,         //
-      0.452868, -0.104791, 0.260678, 0.846154;
+  expected << 0.0459224, -0.688689, -0.216922, 0.690321, //
+      0.92381, 0.191931, 0.255854, 0.21042,              //
+      -0.376669, 0.301589, 0.687953, 0.542111,           //
+      -0.0508588, 0.630804, -0.643587, 0.43046;
   EXPECT(assert_equal(SOn(expected), initialQ4.at<SOn>(0), 1e-5));
 }
 
