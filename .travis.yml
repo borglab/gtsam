@@ -112,11 +112,11 @@ jobs:
     compiler: gcc
     env: CMAKE_BUILD_TYPE=Release
     script: bash .travis.sh -t
-  - stage: test
-    os: linux
-    compiler: gcc
-    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
-    script: bash .travis.sh -t
+  # - stage: test
+  #   os: linux
+  #   compiler: gcc
+  #   env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
+  #   script: bash .travis.sh -t
   - stage: test
     os: linux
     compiler: clang
