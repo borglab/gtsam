@@ -66,6 +66,7 @@ add_custom_target(uninstall
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 	option(GTSAM_UNSTABLE_BUILD_PYTHON       "Enable/Disable Python wrapper for libgtsam_unstable" ON)
+	option(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX "Enable/Disable MATLAB wrapper for libgtsam_unstable" ON)
 endif()
 option(BUILD_SHARED_LIBS                 "Build shared gtsam library, instead of static" ON)
 option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
@@ -518,6 +519,7 @@ print_enabled_config(${GTSAM_BUILD_TYPE_POSTFIXES}        "Put build type in lib
 if(GTSAM_UNSTABLE_AVAILABLE)
 	print_enabled_config(${GTSAM_BUILD_UNSTABLE}          "Build libgtsam_unstable        ")
 	print_enabled_config(${GTSAM_UNSTABLE_BUILD_PYTHON}   "Build GTSAM unstable Python    ")
+	print_enabled_config(${GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX} "Build MATLAB Toolbox for unstable")
 endif()
 
 if(NOT MSVC AND NOT XCODE_VERSION)
