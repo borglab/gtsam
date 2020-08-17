@@ -2797,16 +2797,16 @@ class SfmData {
 
 string findExampleDataFile(string name);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
-    gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);
+    gtsam::noiseModel::Diagonal* model, int maxIndex, bool addNoise, bool smart);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
-    gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise);
+    gtsam::noiseModel::Diagonal* model, int maxIndex, bool addNoise);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
-    gtsam::noiseModel::Diagonal* model, int maxID);
+    gtsam::noiseModel::Diagonal* model, int maxIndex);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D_robust(string filename,
-    gtsam::noiseModel::Base* model);
+    gtsam::noiseModel::Base* model, int maxIndex);
 void save2D(const gtsam::NonlinearFactorGraph& graph,
     const gtsam::Values& config, gtsam::noiseModel::Diagonal* model,
     string filename);
@@ -2816,8 +2816,8 @@ class BetweenFactorPose3s
 {
   BetweenFactorPose3s();
   size_t size() const;
-  gtsam::BetweenFactorPose3* at(size_t i) const;
-  void push_back(const gtsam::BetweenFactorPose3* factor);
+  gtsam::BetweenFactor<gtsam::Pose3>* at(size_t i) const;
+  void push_back(const gtsam::BetweenFactor<gtsam::Pose3>* factor);
 };
 
 #include <gtsam/slam/InitializePose3.h>
@@ -2877,9 +2877,9 @@ virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
 #include <gtsam/sfm/ShonanFactor.h>
 
 virtual class ShonanFactor3 : gtsam::NoiseModelFactor {
-  ShonanFactor(size_t key1, size_t key2, const gtsam::Rot3 &R12,
+  ShonanFactor3(size_t key1, size_t key2, const gtsam::Rot3 &R12,
                           size_t p);
-  ShonanFactor(size_t key1, size_t key2, const gtsam::Rot3 &R12,
+  ShonanFactor3(size_t key1, size_t key2, const gtsam::Rot3 &R12,
                           size_t p, gtsam::noiseModel::Base *model);
   Vector evaluateError(const gtsam::SOn &Q1, const gtsam::SOn &Q2);
 };

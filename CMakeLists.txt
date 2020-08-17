@@ -65,6 +65,7 @@ add_custom_target(uninstall
 # Configurable Options
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
+	option(GTSAM_UNSTABLE_BUILD_PYTHON       "Enable/Disable Python wrapper for libgtsam_unstable" ON)
 endif()
 option(BUILD_SHARED_LIBS                 "Build shared gtsam library, instead of static" ON)
 option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
@@ -75,6 +76,7 @@ option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TB
 option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" OFF)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" OFF)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION  "Throw exception when a triangulated point is behind a camera" ON)
+option(GTSAM_BUILD_PYTHON                "Enable/Disable building & installation of Python module with pybind11" OFF)
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V41  "Allow use of methods/functions deprecated in GTSAM 4.1" ON)
 option(GTSAM_TYPEDEF_POINTS_TO_VECTORS   "Typedef Point2 and Point3 to Eigen::Vector equivalents" OFF)
 option(GTSAM_SUPPORT_NESTED_DISSECTION   "Support Metis-based nested dissection" ON)
@@ -99,36 +101,43 @@ endif()
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
-option(GTSAM_INSTALL_CYTHON_TOOLBOX      "Enable/Disable installation of Cython toolbox"  OFF)
-option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab/cython wrap utility (necessary for matlab/cython interface)" ON)
-set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of python to build the cython wrapper for (or Default)")
+set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of Python to build the wrappers against.")
 
 # Check / set dependent variables for MATLAB wrapper
-if((GTSAM_INSTALL_MATLAB_TOOLBOX OR GTSAM_INSTALL_CYTHON_TOOLBOX) AND NOT GTSAM_BUILD_WRAP)
-	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX or GTSAM_INSTALL_CYTHON_TOOLBOX is enabled, please also enable GTSAM_BUILD_WRAP")
-endif()
-if((GTSAM_INSTALL_MATLAB_TOOLBOX OR GTSAM_INSTALL_CYTHON_TOOLBOX) AND GTSAM_BUILD_TYPE_POSTFIXES)
+if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_BUILD_TYPE_POSTFIXES)
 		set(CURRENT_POSTFIX ${CMAKE_${CMAKE_BUILD_TYPE_UPPER}_POSTFIX})
-endif()
-if(GTSAM_INSTALL_WRAP AND NOT GTSAM_BUILD_WRAP)
-	message(FATAL_ERROR "GTSAM_INSTALL_WRAP is enabled, please also enable GTSAM_BUILD_WRAP")
 endif()
 
 if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT BUILD_SHARED_LIBS)
 	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and BUILD_SHARED_LIBS=OFF. The MATLAB wrapper cannot be compiled with a static GTSAM library because mex modules are themselves shared libraries.  If you want a self-contained mex module, enable GTSAM_MEX_BUILD_STATIC_MODULE instead of BUILD_SHARED_LIBS=OFF.")
 endif()
 
-if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
-    message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the MATLAB toolbox cannot deal with this yet.  Please turn one of the two options off.")
-endif()
+if(GTSAM_BUILD_PYTHON)
+	if (NOT GTSAM_TYPEDEF_POINTS_TO_VECTORS)
+		message(FATAL_ERROR "GTSAM_BUILD_PYTHON requires GTSAM_TYPEDEF_POINTS_TO_VECTORS to be enabled but it is not.")
+	endif()
 
-if(GTSAM_INSTALL_CYTHON_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
-    message(FATAL_ERROR "GTSAM_INSTALL_CYTHON_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the CYTHON toolbox cannot deal with this yet.  Please turn one of the two options off.")
+	if(GTSAM_UNSTABLE_BUILD_PYTHON)
+		if (NOT GTSAM_BUILD_UNSTABLE)
+			message(WARNING "GTSAM_UNSTABLE_BUILD_PYTHON requires the unstable module to be enabled.")
+			set(GTSAM_UNSTABLE_BUILD_PYTHON OFF)
+		endif()
+	endif()
+
+	set(GTSAM_PY_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/python")
 endif()
 
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
 set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
+
+if (CMAKE_GENERATOR STREQUAL "Ninja" AND
+    ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9) OR
+     (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.5)))
+    # Force colored warnings in Ninja's output, if the compiler has -fdiagnostics-color support.
+    # Rationale in https://github.com/ninja-build/ninja/issues/814
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+endif()
 
 ###############################################################################
 # Find boost
@@ -419,14 +428,11 @@ endif()
 # Build CppUnitLite
 add_subdirectory(CppUnitLite)
 
-# Build wrap
-if (GTSAM_BUILD_WRAP)
-    add_subdirectory(wrap)
-	# suppress warning of cython line being too long
-	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-misleading-indentation")
-	endif()
-endif(GTSAM_BUILD_WRAP)
+# This is the new wrapper
+if(GTSAM_BUILD_PYTHON)
+	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wrap/cmake")
+	add_subdirectory(python)
+endif()
 
 # Build GTSAM library
 add_subdirectory(gtsam)
@@ -449,20 +455,6 @@ endif()
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	add_subdirectory(matlab)
 endif()
-
-# Cython wrap
-if (GTSAM_INSTALL_CYTHON_TOOLBOX)
-  set(GTSAM_INSTALL_CYTHON_TOOLBOX 1)
-  # Set up cache options
-  # Cython install path appended with Build type (e.g. cython, cythonDebug, etc).
-  # This does not override custom values set from the command line
-  set(GTSAM_CYTHON_INSTALL_PATH "${PROJECT_BINARY_DIR}/cython${GTSAM_BUILD_TAG}" CACHE PATH "Cython toolbox destination, blank defaults to PROJECT_BINARY_DIR/cython<GTSAM_BUILD_TAG>")
-  set(GTSAM_EIGENCY_INSTALL_PATH ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency)
-  add_subdirectory(cython ${GTSAM_CYTHON_INSTALL_PATH})
-else()
-  set(GTSAM_INSTALL_CYTHON_TOOLBOX 0) # This will go into config.h
-endif()
-
 
 # Install config and export files
 GtsamMakeConfigFile(GTSAM "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")
@@ -524,7 +516,8 @@ endif()
 print_enabled_config(${BUILD_SHARED_LIBS}                 "Build shared GTSAM libraries")
 print_enabled_config(${GTSAM_BUILD_TYPE_POSTFIXES}        "Put build type in library name")
 if(GTSAM_UNSTABLE_AVAILABLE)
-    print_enabled_config(${GTSAM_BUILD_UNSTABLE}          "Build libgtsam_unstable")
+	print_enabled_config(${GTSAM_BUILD_UNSTABLE}          "Build libgtsam_unstable        ")
+	print_enabled_config(${GTSAM_UNSTABLE_BUILD_PYTHON}   "Build GTSAM unstable Python    ")
 endif()
 
 if(NOT MSVC AND NOT XCODE_VERSION)
@@ -594,20 +587,15 @@ print_enabled_config(${GTSAM_ALLOW_DEPRECATED_SINCE_V41}  "Allow features deprec
 print_enabled_config(${GTSAM_TYPEDEF_POINTS_TO_VECTORS}   "Point3 is typedef to Vector3    ")
 print_enabled_config(${GTSAM_SUPPORT_NESTED_DISSECTION}   "Metis-based Nested Dissection   ")
 print_enabled_config(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space preintegration")
-print_enabled_config(${GTSAM_BUILD_WRAP}                  "Build Wrap                      ")
 
 message(STATUS "MATLAB toolbox flags")
 print_enabled_config(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install MATLAB toolbox          ")
-if (${GTSAM_INSTALL_MATLAB_TOOLBOX})
-    print_config("MATLAB root" "${MATLAB_ROOT}")
-    print_config("MEX binary" "${MEX_COMMAND}")
+message(STATUS "Python toolbox flags                                      ")
+print_enabled_config(${GTSAM_BUILD_PYTHON}                "Build Python module with pybind ")
+if(GTSAM_BUILD_PYTHON)
+	print_config("Python version" ${GTSAM_PYTHON_VERSION})
 endif()
 
-message(STATUS "Cython toolbox flags                                      ")
-print_enabled_config(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox          ")
-if(GTSAM_INSTALL_CYTHON_TOOLBOX)
-    print_config("Python version" "${GTSAM_PYTHON_VERSION}")
-endif()
 message(STATUS "===============================================================")
 
 # Print warnings at the end
