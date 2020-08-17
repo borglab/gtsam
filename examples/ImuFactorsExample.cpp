@@ -154,10 +154,10 @@ int main(int argc, char* argv[]) {
   getline(file, value, ',');  // i
   for (int i = 0; i < 9; i++) {
     getline(file, value, ',');
-    initial_state(i) = atof(value.c_str());
+    initial_state(i) = stof(value.c_str());
   }
   getline(file, value, '\n');
-  initial_state(9) = atof(value.c_str());
+  initial_state(9) = stof(value.c_str());
   cout << "initial state:\n" << initial_state.transpose() << "\n\n";
 
   // Assemble initial quaternion through GTSAM constructor
@@ -211,16 +211,16 @@ int main(int argc, char* argv[]) {
   while (file.good()) {
     // Parse out first value
     getline(file, value, ',');
-    int type = atoi(value.c_str());
+    int type = stoi(value.c_str());
 
     if (type == 0) {  // IMU measurement
       Vector6 imu;
       for (int i = 0; i < 5; ++i) {
         getline(file, value, ',');
-        imu(i) = atof(value.c_str());
+        imu(i) = stof(value.c_str());
       }
       getline(file, value, '\n');
-      imu(5) = atof(value.c_str());
+      imu(5) = stof(value.c_str());
 
       // Adding the IMU preintegration.
       preintegrated->integrateMeasurement(imu.head<3>(), imu.tail<3>(), dt);
@@ -229,10 +229,10 @@ int main(int argc, char* argv[]) {
       Vector7 gps;
       for (int i = 0; i < 6; ++i) {
         getline(file, value, ',');
-        gps(i) = atof(value.c_str());
+        gps(i) = stof(value.c_str());
       }
       getline(file, value, '\n');
-      gps(6) = atof(value.c_str());
+      gps(6) = stof(value.c_str());
 
       correction_count++;
 
