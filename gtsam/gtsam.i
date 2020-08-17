@@ -618,6 +618,9 @@ class SOn {
   // Other methods
   Vector vec() const;
   Matrix matrix() const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 #include <gtsam/geometry/Rot3.h>
@@ -2171,7 +2174,11 @@ class Values {
   // void insert(size_t j, const gtsam::Value& value);
   // void update(size_t j, const gtsam::Value& val);
   // gtsam::Value at(size_t j) const;
-
+  
+  // The order is important: Vector has to precede Point2/Point3 so `atVector`
+  // can work for those fixed-size vectors.
+  void insert(size_t j, Vector vector);
+  void insert(size_t j, Matrix matrix);
   void insert(size_t j, const gtsam::Point2& point2);
   void insert(size_t j, const gtsam::Point3& point3);
   void insert(size_t j, const gtsam::Rot2& rot2);
@@ -2188,8 +2195,6 @@ class Values {
   void insert(size_t j, const gtsam::PinholeCameraCal3_S2& simple_camera);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert(size_t j, const gtsam::NavState& nav_state);
-  void insert(size_t j, Vector vector);
-  void insert(size_t j, Matrix matrix);
 
   void update(size_t j, const gtsam::Point2& point2);
   void update(size_t j, const gtsam::Point3& point3);
