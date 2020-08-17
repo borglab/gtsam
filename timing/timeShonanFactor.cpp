@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    timeFrobeniusFactor.cpp
- * @brief   time FrobeniusFactor with BAL file
+ * @file    timeShonanFactor.cpp
+ * @brief   time ShonanFactor with BAL file
  * @author  Frank Dellaert
  * @date    2019
  */
@@ -27,7 +27,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam/slam/FrobeniusFactor.h>
+#include <gtsam/sfm/ShonanFactor.h>
 
 #include <iostream>
 #include <random>
@@ -42,7 +42,7 @@ static SharedNoiseModel gNoiseModel = noiseModel::Unit::Create(2);
 int main(int argc, char* argv[]) {
   // primitive argument parsing:
   if (argc > 3) {
-    throw runtime_error("Usage: timeFrobeniusFactor [g2oFile]");
+    throw runtime_error("Usage: timeShonanFactor [g2oFile]");
   }
 
   string g2oFile;
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
     const auto &keys = m.keys();
     const Rot3 &Rij = m.measured();
     const auto &model = m.noiseModel();
-    graph.emplace_shared<FrobeniusWormholeFactor>(
+    graph.emplace_shared<ShonanFactor3>(
         keys[0], keys[1], Rij, 4, model, G);
   }
 

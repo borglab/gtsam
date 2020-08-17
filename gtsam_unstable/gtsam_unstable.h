@@ -12,10 +12,14 @@ class gtsam::Point2Vector;
 class gtsam::Rot2;
 class gtsam::Pose2;
 class gtsam::Point3;
+class gtsam::SO3;
+class gtsam::SO4;
+class gtsam::SOn;
 class gtsam::Rot3;
 class gtsam::Pose3;
 virtual class gtsam::noiseModel::Base;
 virtual class gtsam::noiseModel::Gaussian;
+virtual class gtsam::noiseModel::Isotropic;
 virtual class gtsam::imuBias::ConstantBias;
 virtual class gtsam::NonlinearFactor;
 virtual class gtsam::NoiseModelFactor;
@@ -39,6 +43,7 @@ class gtsam::KeyVector;
 class gtsam::LevenbergMarquardtParams;
 class gtsam::ISAM2Params;
 class gtsam::GaussianDensity;
+class gtsam::LevenbergMarquardtOptimizer;
 
 namespace gtsam {
 
@@ -281,7 +286,6 @@ virtual class PriorFactor : gtsam::NoiseModelFactor {
 
   void serializable() const; // enabling serialization functionality
 };
-
 
 #include <gtsam/slam/BetweenFactor.h>
 template<T = {gtsam::PoseRTV}>
