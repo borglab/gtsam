@@ -30,6 +30,8 @@ jobs:
             ubuntu-clang-points-vector,
           ]
 
+        build_type: [Debug, Release]
+
         include:
           - name: ubuntu-gcc-deprecated
             os: ubuntu-18.04
@@ -47,7 +49,7 @@ jobs:
             os: ubuntu-18.04
             compiler: gcc
             version: "9"
-            type: point-vector
+            type: points-vector
 
           - name: macos-xcode-deprecated
             os: macOS-10.15
@@ -65,7 +67,7 @@ jobs:
             os: macOS-10.15
             compiler: xcode
             version: "11.3.1"
-            type: point-vector
+            type: points-vector
 
           - name: ubuntu-clang-deprecated
             os: ubuntu-18.04
@@ -83,7 +85,7 @@ jobs:
             os: ubuntu-18.04
             compiler: clang
             version: "9"
-            type: point-vector
+            type: points-vector
 
     steps:
       - name: Checkout
@@ -135,19 +137,13 @@ jobs:
       - name: Set Use Quaternions Flag
         if: matrix.type == 'quaternions'
         env:
-            GTSAM_USE_QUATERNIONS: ON
+          GTSAM_USE_QUATERNIONS: ON
 
       - name: Set Typedef Points to Vector Flag
-        if: matrix.type == 'deprecated'
+        if: matrix.type == 'points-vector'
         env:
-            GTSAM_TYPEDEF_POINTS_TO_VECTOR: ON
+          GTSAM_TYPEDEF_POINTS_TO_VECTOR: ON
 
-      - name: Build (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          bash .github/scripts/unix.sh -t
-
-      - name: Build (macOS)
-        if: runner.os == 'macOS'
+      - name: Build
         run: |
           bash .github/scripts/unix.sh -t
