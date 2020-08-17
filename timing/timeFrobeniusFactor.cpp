@@ -57,8 +57,8 @@ int main(int argc, char* argv[]) {
   }
 
   // Read G2O file
-  const auto factors = parse3DFactors(g2oFile);
-  const auto poses = parse3DPoses(g2oFile);
+  const auto measurements = parseMeasurements<Rot3>(g2oFile);
+  const auto poses = parseVariables<Pose3>(g2oFile);
 
   // Build graph
   NonlinearFactorGraph graph;
@@ -66,12 +66,12 @@ int main(int argc, char* argv[]) {
   auto priorModel = noiseModel::Isotropic::Sigma(6, 10000);
   graph.add(PriorFactor<SOn>(0, SOn::identity(4), priorModel));
   auto G = boost::make_shared<Matrix>(SOn::VectorizedGenerators(4));
-  for (const auto& factor : factors) {
-    const auto& keys = factor->keys();
-    const auto& Tij = factor->measured();
-    const auto& model = factor->noiseModel();
+  for (const auto &m : measurements) {
+    const auto &keys = m.keys();
+    const Rot3 &Rij = m.measured();
+    const auto &model = m.noiseModel();
     graph.emplace_shared<FrobeniusWormholeFactor>(
-        keys[0], keys[1], Rot3(Tij.rotation().matrix()), 4, model, G);
+        keys[0], keys[1], Rij, 4, model, G);
   }
 
   std::mt19937 rng(42);
