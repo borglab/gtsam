@@ -47,8 +47,6 @@ case $WRAPPER in
     ;;
 esac
 
-git submodule update --init --recursive
-
 mkdir $GITHUB_WORKSPACE/build
 cd $GITHUB_WORKSPACE/build
 
