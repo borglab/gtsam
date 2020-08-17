@@ -77,7 +77,7 @@ class MatlabWrapper(object):
         self.module_name = module_name
         self.top_module_namespace = top_module_namespace
         self.ignore_classes = ignore_classes
-        self.verbose = True
+        self.verbose = False
 
     def _debug(self, message):
         if not self.verbose:
