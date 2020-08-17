@@ -106,17 +106,18 @@ Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
     aCentroid += abPair.first;
     bCentroid += abPair.second;
   }
-  double f = 1.0 / n;
+  const double f = 1.0 / n;
   aCentroid *= f;
   bCentroid *= f;
 
   // Add to form H matrix
   Matrix3 H = Z_3x3;
   vector<Point3Pair> d_abPairs;
+  d_abPairs.reserve(n);
   for (const Point3Pair& abPair : abPointPairs) {
     Point3 da = abPair.first - aCentroid;
     Point3 db = abPair.second - bCentroid;
-    d_abPairs.push_back(make_pair(da,db));
+    d_abPairs.emplace_back(da, db);
     H += da * db.transpose();
   }
 
@@ -135,7 +136,7 @@ Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
   }
   double s = y / x;
 
-  Point3 aTb = (Point3(aCentroid) - s * (aRb * Point3(bCentroid))) / s;
+  Point3 aTb = (aCentroid - s * (aRb * bCentroid)) / s;
   return Similarity3(aRb, aTb, s);
 }
 
@@ -166,9 +167,9 @@ Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
   for (const Pose3Pair& abPair : abPosePairs) {
     aCentroid += abPair.first.translation();
     bCentroid += abPair.second.translation();
-    rotationList.push_back(abPair.first.rotation().compose(abPair.second.rotation().inverse()));
+    rotationList.emplace_back(abPair.first.rotation().compose(abPair.second.rotation().inverse()));
   }
-  double f = 1.0 / n;
+  const double f = 1.0 / n;
   aCentroid *= f;
   bCentroid *= f;
   Rot3 aRb = Similarity3::rotationAveraging(rotationList);
@@ -185,7 +186,7 @@ Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
   }
   double s = y / x;
 
-  Point3 aTb = (Point3(aCentroid) - s * (aRb * Point3(bCentroid))) / s;
+  Point3 aTb = (aCentroid - s * (aRb * bCentroid)) / s;
   return Similarity3(aRb, aTb, s);
 }
 

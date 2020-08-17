@@ -260,71 +260,65 @@ TEST(Similarity3, GroupAction) {
 //******************************************************************************
 // Group action on Pose3
 TEST(Similarity3, GroupActionPose3) {
-  Similarity3 bTa(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
+  Similarity3 bSa(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
 
   // Create source poses
   Pose3 Ta1 = Pose3(Rot3(), Point3(0, 0, 0));
   Pose3 Ta2 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, 1), Point3(4, 0, 0));
 
   // Create destination poses
-  Pose3 expectedTb1 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
-  Pose3 expectedTb2 = Pose3(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
+  Pose3 expected_Tb1 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
+  Pose3 expected_Tb2 = Pose3(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
 
-  EXPECT(assert_equal(expectedTb1, bTa.transformFrom(Ta1)));
-  EXPECT(assert_equal(expectedTb2, bTa.transformFrom(Ta2)));
+  EXPECT(assert_equal(expected_Tb1, bSa.transformFrom(Ta1)));
+  EXPECT(assert_equal(expected_Tb2, bSa.transformFrom(Ta2)));
 }
 
 //******************************************************************************
 // Align with Point3 Pairs
 TEST(Similarity3, AlignPoint3_1) {
-  Similarity3 expected(Rot3::Rz(-90 * degree), Point3(3, 4, 5), 2.0);
+  Similarity3 expected_aSb(Rot3::Rz(-90 * degree), Point3(3, 4, 5), 2.0);
 
-  Point3 p1 = Point3(0, 0, 0);
-  Point3 p2 = Point3(3, 0, 0);
-  Point3 p3 = Point3(3, 0, 4);
+  Point3 b1(0, 0, 0), b2(3, 0, 0), b3(3, 0, 4);
 
-  Point3Pair ab1(make_pair(expected.transformFrom(p1), p1));
-  Point3Pair ab2(make_pair(expected.transformFrom(p2), p2));
-  Point3Pair ab3(make_pair(expected.transformFrom(p3), p3));
+  Point3Pair ab1(make_pair(expected_aSb.transformFrom(b1), b1));
+  Point3Pair ab2(make_pair(expected_aSb.transformFrom(b2), b2));
+  Point3Pair ab3(make_pair(expected_aSb.transformFrom(b3), b3));
 
   vector<Point3Pair> correspondences{ab1, ab2, ab3};
 
-  Similarity3 actual = Similarity3::Align(correspondences);
-  EXPECT(assert_equal(expected, actual));
+  Similarity3 actual_aSb = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected_aSb, actual_aSb));
 }
 
 TEST(Similarity3, AlignPoint3_2) {
-  Similarity3 expected(Rot3(), Point3(10, 10, 0), 1.0);
+  Similarity3 expected_aSb(Rot3(), Point3(10, 10, 0), 1.0);
 
-  Point3 p1 = Point3(0, 0, 0);
-  Point3 p2 = Point3(20, 10, 0);
-  Point3 p3 = Point3(10, 20, 0);
+  Point3 b1(0, 0, 0), b2(20, 10, 0), b3(10, 20, 0);
 
-  Point3Pair ab1(make_pair(expected.transformFrom(p1), p1));
-  Point3Pair ab2(make_pair(expected.transformFrom(p2), p2));
-  Point3Pair ab3(make_pair(expected.transformFrom(p3), p3));
+  Point3Pair ab1(make_pair(expected_aSb.transformFrom(b1), b1));
+  Point3Pair ab2(make_pair(expected_aSb.transformFrom(b2), b2));
+  Point3Pair ab3(make_pair(expected_aSb.transformFrom(b3), b3));
 
   vector<Point3Pair> correspondences{ab1, ab2, ab3};
 
-  Similarity3 actual = Similarity3::Align(correspondences);
-  EXPECT(assert_equal(expected, actual));
+  Similarity3 actual_aSb = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected_aSb, actual_aSb));
 }
 
 TEST(Similarity3, AlignPoint3_3) {
-  Similarity3 expected(Rot3::RzRyRx(0.3, 0.2, 0.1), Point3(20, 10, 5), 1.0);
+  Similarity3 expected_aSb(Rot3::RzRyRx(0.3, 0.2, 0.1), Point3(20, 10, 5), 1.0);
 
-  Point3 p1 = Point3(0, 0, 1);
-  Point3 p2 = Point3(10, 0, 2);
-  Point3 p3 = Point3(20, -10, 30);
+  Point3 b1(0, 0, 1), b2(10, 0, 2), b3(20, -10, 30);
 
-  Point3Pair ab1(make_pair(expected.transformFrom(p1), p1));
-  Point3Pair ab2(make_pair(expected.transformFrom(p2), p2));
-  Point3Pair ab3(make_pair(expected.transformFrom(p3), p3));
+  Point3Pair ab1(make_pair(expected_aSb.transformFrom(b1), b1));
+  Point3Pair ab2(make_pair(expected_aSb.transformFrom(b2), b2));
+  Point3Pair ab3(make_pair(expected_aSb.transformFrom(b3), b3));
 
   vector<Point3Pair> correspondences{ab1, ab2, ab3};
 
-  Similarity3 actual = Similarity3::Align(correspondences);
-  EXPECT(assert_equal(expected, actual));
+  Similarity3 actual_aSb = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected_aSb, actual_aSb));
 }
 
 //******************************************************************************
@@ -339,7 +333,7 @@ TEST(Similarity3, RotationAveraging) {
 //******************************************************************************
 // Align with Pose3 Pairs
 TEST(Similarity3, AlignPose3) {
-  Similarity3 expected(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
+  Similarity3 expected_aSb(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
 
   // Create source poses
   Pose3 Ta1 = Pose3(Rot3(), Point3(0, 0, 0));
@@ -354,8 +348,8 @@ TEST(Similarity3, AlignPose3) {
 
   vector<Pose3Pair> correspondences{bTa1, bTa2};
 
-  Similarity3 actual = Similarity3::Align(correspondences);
-  EXPECT(assert_equal(expected, actual));
+  Similarity3 actual_aSb = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected_aSb, actual_aSb));
 }
 
 //******************************************************************************
