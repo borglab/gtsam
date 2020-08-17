@@ -133,16 +133,19 @@ jobs:
         if: matrix.type == 'deprecated'
         env:
           GTSAM_ALLOW_DEPRECATED_SINCE_V41: ON
+        run: echo "Allow deprecated since version 4.1"
 
       - name: Set Use Quaternions Flag
         if: matrix.type == 'quaternions'
         env:
           GTSAM_USE_QUATERNIONS: ON
+        run: echo "Use Quaternions for rotations"
 
       - name: Set Typedef Points to Vector Flag
         if: matrix.type == 'points-vector'
         env:
           GTSAM_TYPEDEF_POINTS_TO_VECTOR: ON
+        run: echo "Typedef Points to Vector"
 
       - name: Build
         run: |
