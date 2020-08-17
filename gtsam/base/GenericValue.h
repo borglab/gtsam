@@ -30,6 +30,14 @@
 #include <iostream>
 #include <typeinfo> // operator typeid
 
+#ifdef _WIN32
+#define GENERICVALUE_VISIBILITY
+#else
+// This will trigger a LNKxxxx on MSVC, so disable for MSVC build
+// Please refer to https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md
+#define GENERICVALUE_VISIBILITY GTSAM_EXPORT
+#endif
+
 namespace gtsam {
 
 /**
@@ -84,7 +92,7 @@ public:
 
   /// Virtual print function, uses traits
   void print(const std::string& str) const override {
-    std::cout << "(" << demangle(typeid(T).name()) << ") ";
+    std::cout << "(" << demangle(typeid(T).name()) << ")\n";
     traits<T>::Print(value_, str);
   }
 
@@ -197,5 +205,13 @@ template<typename ValueType>
 const ValueType& Value::cast() const {
   return dynamic_cast<const GenericValue<ValueType>&>(*this).value();
 }
+
+/** Functional constructor of GenericValue<T> so T can be automatically deduced
+  */
+template<class T>
+GenericValue<T> genericValue(const T& v) {
+  return GenericValue<T>(v);
+}
+
 
 } /* namespace gtsam */

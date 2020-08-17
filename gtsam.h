@@ -2369,6 +2369,7 @@ virtual class NonlinearOptimizer {
   double error() const;
   int iterations() const;
   gtsam::Values values() const;
+  gtsam::NonlinearFactorGraph graph() const;
   gtsam::GaussianFactorGraph* iterate() const;
 };
 
@@ -2568,10 +2569,12 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
-
-
 #include <gtsam/nonlinear/NonlinearEquality.h>
-template<T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias}>
+template <T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2,
+               gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2,
+               gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera,
+               gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2,
+               gtsam::imuBias::ConstantBias}>
 virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // Constructor - forces exact evaluation
   NonlinearEquality(size_t j, const T& feasible);
@@ -2581,7 +2584,6 @@ virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // enabling serialization functionality
   void serialize() const;
 };
-
 
 #include <gtsam/sam/RangeFactor.h>
 template<POSE, POINT>
@@ -2853,7 +2855,7 @@ virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
 };
 
 #include <gtsam/slam/FrobeniusFactor.h>
-gtsam::noiseModel::Isotropic* ConvertPose3NoiseModel(
+gtsam::noiseModel::Isotropic* ConvertNoiseModel(
     gtsam::noiseModel::Base* model, size_t d);
 
 template<T = {gtsam::SO3, gtsam::SO4}>
@@ -2872,12 +2874,144 @@ virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
   Vector evaluateError(const T& R1, const T& R2);
 };
 
-virtual class FrobeniusWormholeFactor : gtsam::NoiseModelFactor {
-  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
+#include <gtsam/sfm/ShonanFactor.h>
+
+virtual class ShonanFactor3 : gtsam::NoiseModelFactor {
+  ShonanFactor(size_t key1, size_t key2, const gtsam::Rot3 &R12,
                           size_t p);
-  FrobeniusWormholeFactor(size_t key1, size_t key2, const gtsam::Rot3& R12,
-                          size_t p, gtsam::noiseModel::Base* model);
-  Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
+  ShonanFactor(size_t key1, size_t key2, const gtsam::Rot3 &R12,
+                          size_t p, gtsam::noiseModel::Base *model);
+  Vector evaluateError(const gtsam::SOn &Q1, const gtsam::SOn &Q2);
+};
+
+#include <gtsam/sfm/BinaryMeasurement.h>
+template<T>
+class BinaryMeasurement {
+  BinaryMeasurement(size_t key1, size_t key2, const T& measured,
+                    const gtsam::noiseModel::Base* model);
+  size_t key1() const;
+  size_t key2() const;
+  T measured() const;
+};
+
+typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
+typedef gtsam::BinaryMeasurement<gtsam::Rot3> BinaryMeasurementRot3;
+
+#include <gtsam/sfm/ShonanAveraging.h>
+
+// TODO(frank): copy/pasta below until we have integer template paremeters in wrap!
+
+class ShonanAveragingParameters2 {
+  ShonanAveragingParameters2(const gtsam::LevenbergMarquardtParams& lm);
+  ShonanAveragingParameters2(const gtsam::LevenbergMarquardtParams& lm, string method);
+  gtsam::LevenbergMarquardtParams getLMParams() const;  
+  void setOptimalityThreshold(double value);
+  double getOptimalityThreshold() const;
+  void setAnchor(size_t index, const gtsam::Rot2& value);
+  void setAnchorWeight(double value);
+  double getAnchorWeight() const;
+  void setKarcherWeight(double value);
+  double getKarcherWeight();
+  void setGaugesWeight(double value);
+  double getGaugesWeight();
+};
+
+class ShonanAveragingParameters3 {
+  ShonanAveragingParameters3(const gtsam::LevenbergMarquardtParams& lm);
+  ShonanAveragingParameters3(const gtsam::LevenbergMarquardtParams& lm, string method);
+  gtsam::LevenbergMarquardtParams getLMParams() const;  
+  void setOptimalityThreshold(double value);
+  double getOptimalityThreshold() const;
+  void setAnchor(size_t index, const gtsam::Rot3& value);
+  void setAnchorWeight(double value);
+  double getAnchorWeight() const;
+  void setKarcherWeight(double value);
+  double getKarcherWeight();
+  void setGaugesWeight(double value);
+  double getGaugesWeight();
+};
+
+class ShonanAveraging2 {
+  ShonanAveraging2(string g2oFile);
+  ShonanAveraging2(string g2oFile,
+                   const gtsam::ShonanAveragingParameters2 &parameters);
+
+  // Query properties
+  size_t nrUnknowns() const;
+  size_t nrMeasurements() const;
+  gtsam::Rot2 measured(size_t i);
+  gtsam::KeyVector keys(size_t i);
+
+  // Matrix API (advanced use, debugging)
+  Matrix denseD() const;
+  Matrix denseQ() const;
+  Matrix denseL() const;
+  // Matrix computeLambda_(Matrix S) const;
+  Matrix computeLambda_(const gtsam::Values& values) const;
+  Matrix computeA_(const gtsam::Values& values) const;
+  double computeMinEigenValue(const gtsam::Values& values) const;
+  gtsam::Values initializeWithDescent(size_t p, const gtsam::Values& values,
+                               const Vector& minEigenVector, double minEigenValue) const;
+
+  // Advanced API
+  gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
+  double costAt(size_t p, const gtsam::Values& values) const;
+  pair<double, Vector> computeMinEigenVector(const gtsam::Values& values) const;
+  bool checkOptimality(const gtsam::Values& values) const;
+  gtsam::LevenbergMarquardtOptimizer* createOptimizerAt(size_t p, const gtsam::Values& initial);
+  // gtsam::Values tryOptimizingAt(size_t p) const;
+  gtsam::Values tryOptimizingAt(size_t p, const gtsam::Values& initial) const;
+  gtsam::Values projectFrom(size_t p, const gtsam::Values& values) const;
+  gtsam::Values roundSolution(const gtsam::Values& values) const;
+
+  // Basic API
+  double cost(const gtsam::Values& values) const;
+  gtsam::Values initializeRandomly() const;
+  pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p, size_t max_p) const;
+};
+
+class ShonanAveraging3 {
+  ShonanAveraging3(string g2oFile);
+  ShonanAveraging3(string g2oFile,
+                   const gtsam::ShonanAveragingParameters3 &parameters);
+  
+  // TODO(frank): deprecate once we land pybind wrapper
+  ShonanAveraging3(const gtsam::BetweenFactorPose3s &factors);
+  ShonanAveraging3(const gtsam::BetweenFactorPose3s &factors,
+                   const gtsam::ShonanAveragingParameters3 &parameters);
+
+  // Query properties
+  size_t nrUnknowns() const;
+  size_t nrMeasurements() const;
+  gtsam::Rot3 measured(size_t i);
+  gtsam::KeyVector keys(size_t i);
+
+  // Matrix API (advanced use, debugging)
+  Matrix denseD() const;
+  Matrix denseQ() const;
+  Matrix denseL() const;
+  // Matrix computeLambda_(Matrix S) const;
+  Matrix computeLambda_(const gtsam::Values& values) const;
+  Matrix computeA_(const gtsam::Values& values) const;
+  double computeMinEigenValue(const gtsam::Values& values) const;
+  gtsam::Values initializeWithDescent(size_t p, const gtsam::Values& values,
+                               const Vector& minEigenVector, double minEigenValue) const;
+
+  // Advanced API
+  gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
+  double costAt(size_t p, const gtsam::Values& values) const;
+  pair<double, Vector> computeMinEigenVector(const gtsam::Values& values) const;
+  bool checkOptimality(const gtsam::Values& values) const;
+  gtsam::LevenbergMarquardtOptimizer* createOptimizerAt(size_t p, const gtsam::Values& initial);
+  // gtsam::Values tryOptimizingAt(size_t p) const;
+  gtsam::Values tryOptimizingAt(size_t p, const gtsam::Values& initial) const;
+  gtsam::Values projectFrom(size_t p, const gtsam::Values& values) const;
+  gtsam::Values roundSolution(const gtsam::Values& values) const;
+
+  // Basic API
+  double cost(const gtsam::Values& values) const;
+  gtsam::Values initializeRandomly() const;
+  pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p, size_t max_p) const;
 };
 
 //*************************************************************************
@@ -2996,6 +3130,7 @@ class PreintegratedImuMeasurements {
   void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
 
   Matrix preintMeasCov() const;
+  Vector preintegrated() const;
   double deltaTij() const;
   gtsam::Rot3 deltaRij() const;
   Vector deltaPij() const;

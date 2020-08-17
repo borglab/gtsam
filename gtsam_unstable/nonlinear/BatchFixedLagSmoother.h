@@ -117,15 +117,6 @@ public:
       const NonlinearFactorGraph& graph, const Values& theta, const KeyVector& keys,
       const GaussianFactorGraph::Eliminate& eliminateFunction = EliminatePreferCholesky);
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  static NonlinearFactorGraph calculateMarginalFactors(
-      const NonlinearFactorGraph& graph, const Values& theta, const std::set<Key>& keys,
-      const GaussianFactorGraph::Eliminate& eliminateFunction = EliminatePreferCholesky) {
-    KeyVector keyVector(keys.begin(), keys.end());
-    return CalculateMarginalFactors(graph, theta, keyVector, eliminateFunction);
-  }
-#endif
-
 protected:
 
   /** A typedef defining an Key-Factor mapping **/

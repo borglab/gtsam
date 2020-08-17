@@ -593,7 +593,7 @@ TEST(Values, Demangle) {
   Values values;
   Matrix13 v; v << 5.0, 6.0, 7.0;
   values.insert(key1, v);
-  string expected = "Values with 1 values:\nValue v1: (Eigen::Matrix<double, 1, 3, 1, 1, 3>) [\n	5, 6, 7\n]\n\n";
+  string expected = "Values with 1 values:\nValue v1: (Eigen::Matrix<double, 1, 3, 1, 1, 3>)\n[\n	5, 6, 7\n]\n\n";
 
   stringstream buffer;
   streambuf * old = cout.rdbuf(buffer.rdbuf());
@@ -605,6 +605,36 @@ TEST(Values, Demangle) {
 
   EXPECT(assert_equal(expected, actual));
 }
+
+/* ************************************************************************* */
+TEST(Values, brace_initializer) {
+  const Pose2 poseA(1.0, 2.0, 0.3), poseC(.0, .0, .0);
+  const Pose3 poseB(Pose2(0.1, 0.2, 0.3));
+
+  {
+    Values values;
+    EXPECT_LONGS_EQUAL(0, values.size());
+    values = { {key1, genericValue(1.0)} };
+    EXPECT_LONGS_EQUAL(1, values.size());
+    CHECK(values.at<double>(key1) == 1.0);
+  }
+  {
+    Values values = { {key1, genericValue(poseA)}, {key2, genericValue(poseB)} };
+    EXPECT_LONGS_EQUAL(2, values.size());
+    EXPECT(assert_equal(values.at<Pose2>(key1), poseA));
+    EXPECT(assert_equal(values.at<Pose3>(key2), poseB));
+  }
+  // Test exception: duplicated key:
+  {
+    Values values;
+    CHECK_EXCEPTION((values = {
+      {key1, genericValue(poseA)},
+      {key2, genericValue(poseB)},
+      {key1, genericValue(poseC)} 
+      }), std::exception);
+  }
+}
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

@@ -164,37 +164,6 @@ TEST( NavState, Manifold ) {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-TEST(NavState, Update) {
-  Vector3 omega(M_PI / 100.0, 0.0, 0.0);
-  Vector3 acc(0.1, 0.0, 0.0);
-  double dt = 10;
-  Matrix9 aF;
-  Matrix93 aG1, aG2;
-  boost::function<NavState(const NavState&, const Vector3&, const Vector3&)> update =
-  boost::bind(&NavState::update, _1, _2, _3, dt, boost::none,
-      boost::none, boost::none);
-  Vector3 b_acc = kAttitude * acc;
-  NavState expected(kAttitude.expmap(dt * omega),
-      kPosition + Point3((kVelocity + b_acc * dt / 2) * dt),
-      kVelocity + b_acc * dt);
-  NavState actual = kState1.update(acc, omega, dt, aF, aG1, aG2);
-  EXPECT(assert_equal(expected, actual));
-  EXPECT(assert_equal(numericalDerivative31(update, kState1, acc, omega, 1e-7), aF, 1e-7));
-  EXPECT(assert_equal(numericalDerivative32(update, kState1, acc, omega, 1e-7), aG1, 1e-7));
-  EXPECT(assert_equal(numericalDerivative33(update, kState1, acc, omega, 1e-7), aG2, 1e-7));
-
-  // Try different values
-  omega = Vector3(0.1, 0.2, 0.3);
-  acc = Vector3(0.4, 0.5, 0.6);
-  kState1.update(acc, omega, dt, aF, aG1, aG2);
-  EXPECT(assert_equal(numericalDerivative31(update, kState1, acc, omega, 1e-7), aF, 1e-7));
-  EXPECT(assert_equal(numericalDerivative32(update, kState1, acc, omega, 1e-7), aG1, 1e-7));
-  EXPECT(assert_equal(numericalDerivative33(update, kState1, acc, omega, 1e-7), aG2, 1e-7));
-}
-#endif
-
-/* ************************************************************************* */
 static const double dt = 2.0;
 boost::function<Vector9(const NavState&, const bool&)> coriolis = boost::bind(
     &NavState::coriolis, _1, dt, kOmegaCoriolis, _2, boost::none);
@@ -236,6 +205,25 @@ TEST(NavState, CorrectPIM) {
   EXPECT(assert_equal(numericalDerivative21(correctPIM, kState1, xi), aH1));
   EXPECT(assert_equal(numericalDerivative22(correctPIM, kState1, xi), aH2));
 }
+
+/* ************************************************************************* */
+TEST(NavState, Stream)
+{
+  NavState state;
+
+  std::ostringstream os;
+  os << state;
+
+  string expected;
+#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
+  expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\np: 0\n0\n0\nv: 0\n0\n0";
+#else
+  expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\np: [0, 0, 0]'\nv: [0, 0, 0]'";
+#endif
+
+  EXPECT(os.str() == expected);
+}
+
 
 /* ************************************************************************* */
 int main() {

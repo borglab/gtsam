@@ -29,13 +29,6 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/assign/list_of.hpp>
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-#define ADD_CLONE_NONLINEAR_FACTOR(Derived) \
-  gtsam::NonlinearFactor::shared_ptr clone() const override { \
-  return boost::static_pointer_cast<gtsam::NonlinearFactor>( \
-      gtsam::NonlinearFactor::shared_ptr(new Derived(*this))); }
-#endif
-
 namespace gtsam {
 
 using boost::assign::cref_list_of;
@@ -251,21 +244,13 @@ public:
    */
   boost::shared_ptr<GaussianFactor> linearize(const Values& x) const override;
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @name Deprecated
-  /// @{
-  SharedNoiseModel get_noiseModel() const { return noiseModel_; }
-  /// @}
-#endif
-
-private:
-
+ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NonlinearFactor",
-        boost::serialization::base_object<Base>(*this));
+         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(noiseModel_);
   }
 
@@ -296,6 +281,8 @@ protected:
   typedef NoiseModelFactor1<VALUE> This;
 
 public:
+  /// @name Constructors
+  /// @{
 
   /** Default constructor for I/O only */
   NoiseModelFactor1() {}
@@ -309,16 +296,23 @@ public:
    *  @param noiseModel shared pointer to noise model
    *  @param key1 by which to look up X value in Values
    */
-  NoiseModelFactor1(const SharedNoiseModel& noiseModel, Key key1) :
-    Base(noiseModel, cref_list_of<1>(key1)) {}
+  NoiseModelFactor1(const SharedNoiseModel &noiseModel, Key key1)
+      : Base(noiseModel, cref_list_of<1>(key1)) {}
 
-  /** Calls the 1-key specific version of evaluateError, which is pure virtual
-   *  so must be implemented in the derived class.
+  /// @}
+  /// @name NoiseModelFactor methods
+  /// @{
+
+  /**
+   * Calls the 1-key specific version of evaluateError below, which is pure
+   * virtual so must be implemented in the derived class.
    */
-  Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const override {
-    if(this->active(x)) {
-      const X& x1 = x.at<X>(keys_[0]);
-      if(H) {
+  Vector unwhitenedError(
+      const Values &x,
+      boost::optional<std::vector<Matrix> &> H = boost::none) const override {
+    if (this->active(x)) {
+      const X &x1 = x.at<X>(keys_[0]);
+      if (H) {
         return evaluateError(x1, (*H)[0]);
       } else {
         return evaluateError(x1);
@@ -328,16 +322,22 @@ public:
     }
   }
 
+  /// @}
+  /// @name Virtual methods
+  /// @{
+
   /**
    *  Override this method to finish implementing a unary factor.
    *  If the optional Matrix reference argument is specified, it should compute
    *  both the function evaluation and its derivative in X.
    */
-  virtual Vector evaluateError(const X& x, boost::optional<Matrix&> H =
-      boost::none) const = 0;
+  virtual Vector
+  evaluateError(const X &x,
+                boost::optional<Matrix &> H = boost::none) const = 0;
+
+  /// @}
 
 private:
-
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>

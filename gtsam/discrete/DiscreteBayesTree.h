@@ -45,6 +45,7 @@ class GTSAM_EXPORT DiscreteBayesTreeClique
   typedef boost::shared_ptr<This> shared_ptr;
   typedef boost::weak_ptr<This> weak_ptr;
   DiscreteBayesTreeClique() {}
+  virtual ~DiscreteBayesTreeClique() {}
   DiscreteBayesTreeClique(
       const boost::shared_ptr<DiscreteConditional>& conditional)
       : Base(conditional) {}

@@ -73,7 +73,7 @@ public:
    * @brief vector of errors
    */
   Vector evaluateError(const Rot2& nRb,
-      boost::optional<Matrix&> H = boost::none) const {
+      boost::optional<Matrix&> H = boost::none) const override {
     // measured bM = nRb� * nM + b
     Point3 hx = unrotate(nRb, nM_, H) + bias_;
     return (hx - measured_);
@@ -111,7 +111,7 @@ public:
    * @brief vector of errors
    */
   Vector evaluateError(const Rot3& nRb,
-      boost::optional<Matrix&> H = boost::none) const {
+      boost::optional<Matrix&> H = boost::none) const override {
     // measured bM = nRb� * nM + b
     Point3 hx = nRb.unrotate(nM_, H, boost::none) + bias_;
     return (hx - measured_);
@@ -150,7 +150,7 @@ public:
    */
   Vector evaluateError(const Point3& nM, const Point3& bias,
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none) const {
+          boost::none) const override {
     // measured bM = nRb� * nM + b, where b is unknown bias
     Point3 hx = bRn_.rotate(nM, boost::none, H1) + bias;
     if (H2)
@@ -192,7 +192,7 @@ public:
   Vector evaluateError(const double& scale, const Unit3& direction,
       const Point3& bias, boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 =
-          boost::none) const {
+          boost::none) const override {
     // measured bM = nRb� * nM + b, where b is unknown bias
     Unit3 rotated = bRn_.rotate(direction, boost::none, H2);
     Point3 hx = scale * rotated.point3() + bias;
