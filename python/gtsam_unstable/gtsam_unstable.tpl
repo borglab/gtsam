@@ -1,3 +1,13 @@
+/**
+ * @file  gtsam.cpp
+ * @brief   The auto-generated wrapper C++ source code.
+ * @author  Duy-Nguyen Ta, Fan Jiang, Matthew Sklar
+ * @date  Aug. 18, 2020
+ *
+ * ** THIS FILE IS AUTO-GENERATED, DO NOT MODIFY! **
+ */
+
+// Include relevant boost libraries required by GTSAM
 {include_boost}
 
 #include <pybind11/eigen.h>
@@ -6,6 +16,7 @@
 #include "gtsam/base/serialization.h"
 #include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 
+// These are the included headers listed in `gtsam_unstable.i`
 {includes}
 #include <boost/serialization/export.hpp>
 
@@ -22,6 +33,7 @@ namespace py = pybind11;
 PYBIND11_MODULE({module_name}, m_) {{
     m_.doc() = "pybind11 wrapper of {module_name}";
 
+    // Note here we need to import the dependent library
     py::module::import("gtsam");
 
 {wrapped_namespace}
