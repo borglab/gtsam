@@ -592,6 +592,10 @@ print_enabled_config(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space pre
 
 message(STATUS "MATLAB toolbox flags")
 print_enabled_config(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install MATLAB toolbox          ")
+if (${GTSAM_INSTALL_MATLAB_TOOLBOX})
+    print_config("MATLAB root" "${MATLAB_ROOT}")
+    print_config("MEX binary" "${MEX_COMMAND}")
+endif()
 message(STATUS "Python toolbox flags                                      ")
 print_enabled_config(${GTSAM_BUILD_PYTHON}                "Build Python module with pybind ")
 if(GTSAM_BUILD_PYTHON)
