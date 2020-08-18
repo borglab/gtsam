@@ -2,7 +2,7 @@
 
 # Python Wrapper
 
-This is the Python wrapper around the GTSAM C++ library. We use Cython to generate the bindings to the underlying C++ code.
+This is the Python wrapper around the GTSAM C++ library. We use our custom [wrap library](https://github.com/borglab/wrap) to generate the bindings to the underlying C++ code.
 
 ## Requirements
 
@@ -10,22 +10,19 @@ This is the Python wrapper around the GTSAM C++ library. We use Cython to genera
   use the `-DGTSAM_PYTHON_VERSION=3.6` option when running `cmake` otherwise the default interpreter will be used.
 - If the interpreter is inside an environment (such as an anaconda environment or virtualenv environment),
   then the environment should be active while building GTSAM.
-- This wrapper needs `Cython(>=0.25.2)`, `backports_abc(>=0.5)`, and `numpy(>=1.11.0)`. These can be installed as follows:
+- This wrapper needs `pyparsing(>=2.4.2)`, and `numpy(>=1.11.0)`. These can be installed as follows:
 
   ```bash
-  pip install -r <gtsam_folder>/cython/requirements.txt
+  pip install -r <gtsam_folder>/python/requirements.txt
   ```
-
-- For compatibility with GTSAM's Eigen version, it contains its own cloned version of [Eigency](https://github.com/wouterboomsma/eigency.git),
-  named `gtsam_eigency`, to interface between C++'s Eigen and Python's numpy.
 
 ## Install
 
-- Run cmake with the `GTSAM_INSTALL_CYTHON_TOOLBOX` cmake flag enabled to configure building the wrapper. The wrapped module will be built and copied to the directory defined by `GTSAM_CYTHON_INSTALL_PATH`, which is by default `<PROJECT_BINARY_DIR>/cython` in Release mode and `<PROJECT_BINARY_DIR>/cython<CMAKE_BUILD_TYPE>` for other modes.
+- Run cmake with the `GTSAM_BUILD_PYTHON` cmake flag enabled to configure building the wrapper. The wrapped module will be built and copied to the directory `<PROJECT_BINARY_DIR>/python`.
 
-- Build GTSAM and the wrapper with `make`.
+- Build GTSAM and the wrapper with `make` (or `ninja` if you use `-GNinja`).
 
-- To install, simply run `make python-install`.
+- To install, simply run `make python-install` (`ninja python-install`).
   - The same command can be used to install into a virtual environment if it is active.
   - **NOTE**: if you don't want GTSAM to install to a system directory such as `/usr/local`, pass `-DCMAKE_INSTALL_PREFIX="./install"` to cmake to install GTSAM to a subdirectory of the build directory.
 
@@ -33,11 +30,11 @@ This is the Python wrapper around the GTSAM C++ library. We use Cython to genera
 
 ## Unit Tests
 
-The Cython toolbox also has a small set of unit tests located in the
+The Python toolbox also has a small set of unit tests located in the
 test directory. To run them:
 
   ```bash
-  cd <GTSAM_CYTHON_INSTALL_PATH>
+  cd <GTSAM_SOURCE_DIRECTORY>/python/gtsam/tests
   python -m unittest discover
   ```
 
@@ -58,29 +55,10 @@ See the tests for examples.
 - Vector/Matrix:
 
   - GTSAM expects double-precision floating point vectors and matrices.
-    Hence, you should pass numpy matrices with `dtype=float`, or `float64`.
+    Hence, you should pass numpy matrices with `dtype=float`, or `float64`, to avoid any conversion needed.
   - Also, GTSAM expects _column-major_ matrices, unlike the default storage
-    scheme in numpy. Hence, you should pass column-major matrices to GTSAM using
-    the flag order='F'. And you always get column-major matrices back.
-    For more details, see [this link](https://github.com/wouterboomsma/eigency#storage-layout---why-arrays-are-sometimes-transposed).
-  - Passing row-major matrices of different dtype, e.g. `int`, will also work
-    as the wrapper converts them to column-major and dtype float for you,
-    using numpy.array.astype(float, order='F', copy=False).
-    However, this will result a copy if your matrix is not in the expected type
+    scheme in numpy. But this is only performance-related as `pybind11` should translate them when needed. However, this will result a copy if your matrix is not in the expected type
     and storage order.
-
-- Inner namespace: Classes in inner namespace will be prefixed by <innerNamespace>\_ in Python.
-
-  Examples: `noiseModel_Gaussian`, `noiseModel_mEstimator_Tukey`
-
-- Casting from a base class to a derive class must be done explicitly.
-
-  Examples:
-
-  ```python
-  noiseBase = factor.noiseModel()
-  noiseGaussian = dynamic_cast_noiseModel_Gaussian_noiseModel_Base(noiseBase)
-  ```
 
 ## Wrapping Custom GTSAM-based Project
 
