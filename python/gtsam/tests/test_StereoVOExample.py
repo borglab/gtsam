@@ -28,11 +28,11 @@ class TestStereoVOExample(GtsamTestCase):
         #  - No noise on measurements
 
         ## Create keys for variables
-        x1 = symbol(ord('x'),1) 
-        x2 = symbol(ord('x'),2) 
-        l1 = symbol(ord('l'),1) 
-        l2 = symbol(ord('l'),2) 
-        l3 = symbol(ord('l'),3)
+        x1 = symbol('x',1) 
+        x2 = symbol('x',2) 
+        l1 = symbol('l',1) 
+        l2 = symbol('l',2) 
+        l3 = symbol('l',3)
 
         ## Create graph container and add factors to it
         graph = gtsam.NonlinearFactorGraph()
@@ -44,7 +44,7 @@ class TestStereoVOExample(GtsamTestCase):
         ## Create realistic calibration and measurement noise model
         # format: fx fy skew cx cy baseline
         K = gtsam.Cal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2)
-        stereo_model = gtsam.noiseModel_Diagonal.Sigmas(np.array([1.0, 1.0, 1.0]))
+        stereo_model = gtsam.noiseModel.Diagonal.Sigmas(np.array([1.0, 1.0, 1.0]))
 
         ## Add measurements
         # pose 1

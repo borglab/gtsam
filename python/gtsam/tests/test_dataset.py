@@ -15,7 +15,7 @@ from __future__ import print_function
 import unittest
 
 import gtsam
-from gtsam import BetweenFactorPose3, BetweenFactorPose3s
+from gtsam import BetweenFactorPose3
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -37,8 +37,8 @@ class TestDataset(GtsamTestCase):
     def test_parse3Dfactors(self):
         """Test parsing into data structure."""
         factors = gtsam.parse3DFactors(self.pose3_example_g2o_file)
-        self.assertEqual(factors.size(), 6)
-        self.assertIsInstance(factors.at(0), BetweenFactorPose3)
+        self.assertEqual(len(factors), 6)
+        self.assertIsInstance(factors[0], BetweenFactorPose3)
 
 
 if __name__ == '__main__':

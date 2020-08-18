@@ -32,7 +32,7 @@ class TestScenarioRunner(GtsamTestCase):
 
         dt = 0.1
         params = gtsam.PreintegrationParams.MakeSharedU(self.g)
-        bias = gtsam.imuBias_ConstantBias()
+        bias = gtsam.imuBias.ConstantBias()
         runner = gtsam.ScenarioRunner(
             scenario, params, dt, bias)
 

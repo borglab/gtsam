@@ -21,8 +21,8 @@ import matplotlib.pyplot as plt
 import gtsam.utils.plot as gtsam_plot
 
 # Create noise models
-ODOMETRY_NOISE = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
-PRIOR_NOISE = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
+ODOMETRY_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
+PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
 
 # Create an empty nonlinear factor graph
 graph = gtsam.NonlinearFactorGraph()

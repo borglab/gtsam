@@ -23,14 +23,14 @@ class TestPriorFactor(GtsamTestCase):
 
         key = 5
         priorPose3 = gtsam.Pose3()
-        model = gtsam.noiseModel_Unit.Create(6)
+        model = gtsam.noiseModel.Unit.Create(6)
         factor = gtsam.PriorFactorPose3(key, priorPose3, model)
         values.insert(key, priorPose3)
         self.assertEqual(factor.error(values), 0)
 
         key = 3
         priorVector = np.array([0., 0., 0.])
-        model = gtsam.noiseModel_Unit.Create(3)
+        model = gtsam.noiseModel.Unit.Create(3)
         factor = gtsam.PriorFactorVector(key, priorVector, model)
         values.insert(key, priorVector)
         self.assertEqual(factor.error(values), 0)
@@ -45,14 +45,14 @@ class TestPriorFactor(GtsamTestCase):
         # define and add Pose3 prior
         key = 5
         priorPose3 = gtsam.Pose3()
-        model = gtsam.noiseModel_Unit.Create(6)
+        model = gtsam.noiseModel.Unit.Create(6)
         graph.addPriorPose3(key, priorPose3, model)
         self.assertEqual(graph.size(), 1)
 
         # define and add Vector prior
         key = 3
         priorVector = np.array([0., 0., 0.])
-        model = gtsam.noiseModel_Unit.Create(3)
+        model = gtsam.noiseModel.Unit.Create(3)
         graph.addPriorVector(key, priorVector, model)
         self.assertEqual(graph.size(), 2)
 

@@ -26,8 +26,8 @@ lon0 = -84.30626
 h0 = 274
 
 # Create noise models
-GPS_NOISE = gtsam.noiseModel_Isotropic.Sigma(3, 0.1)
-PRIOR_NOISE = gtsam.noiseModel_Isotropic.Sigma(6, 0.25)
+GPS_NOISE = gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
+PRIOR_NOISE = gtsam.noiseModel.Isotropic.Sigma(6, 0.25)
 
 # Create an empty nonlinear factor graph
 graph = gtsam.NonlinearFactorGraph()

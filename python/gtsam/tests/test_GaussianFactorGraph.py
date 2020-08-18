@@ -16,7 +16,7 @@ import unittest
 
 import gtsam
 import numpy as np
-from gtsam import symbol_shorthand_X as X
+from gtsam.symbol_shorthand import X
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -28,8 +28,8 @@ def create_graph():
     x1 = X(1)
     x2 = X(2)
     
-    BETWEEN_NOISE = gtsam.noiseModel_Diagonal.Sigmas(np.ones(1))
-    PRIOR_NOISE = gtsam.noiseModel_Diagonal.Sigmas(np.ones(1))
+    BETWEEN_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.ones(1))
+    PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.ones(1))
 
     graph.add(x1, np.eye(1), x0, -np.eye(1), np.ones(1), BETWEEN_NOISE)
     graph.add(x2, np.eye(1), x1, -np.eye(1), 2*np.ones(1), BETWEEN_NOISE)

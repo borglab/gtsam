@@ -17,8 +17,7 @@ import gtsam
 import gtsam.utils.plot as gtsam_plot
 import matplotlib.pyplot as plt
 import numpy as np
-from gtsam import symbol_shorthand_L as L
-from gtsam import symbol_shorthand_X as X
+from gtsam.symbol_shorthand import L, X
 from gtsam.examples import SFMdata
 from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
 
@@ -64,7 +63,7 @@ def visual_ISAM2_example():
     K = gtsam.Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0)
 
     # Define the camera observation noise model
-    measurement_noise = gtsam.noiseModel_Isotropic.Sigma(
+    measurement_noise = gtsam.noiseModel.Isotropic.Sigma(
         2, 1.0)  # one pixel in u and v
 
     # Create the set of ground-truth landmarks
@@ -110,12 +109,12 @@ def visual_ISAM2_example():
         # at least twice before adding it to iSAM.
         if i == 0:
             # Add a prior on pose x0
-            pose_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array(
+            pose_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array(
                 [0.1, 0.1, 0.1, 0.3, 0.3, 0.3]))  # 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
             graph.push_back(gtsam.PriorFactorPose3(X(0), poses[0], pose_noise))
 
             # Add a prior on landmark l0
-            point_noise = gtsam.noiseModel_Isotropic.Sigma(3, 0.1)
+            point_noise = gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
             graph.push_back(gtsam.PriorFactorPoint3(
                 L(0), points[0], point_noise))  # add directly to graph
 
@@ -123,7 +122,7 @@ def visual_ISAM2_example():
             # Intentionally initialize the variables off from the ground truth
             for j, point in enumerate(points):
                 initial_estimate.insert(L(j), gtsam.Point3(
-                    point.x()-0.25, point.y()+0.20, point.z()+0.15))
+                    point[0]-0.25, point[1]+0.20, point[2]+0.15))
         else:
             # Update iSAM with the new factors
             isam.update(graph, initial_estimate)

@@ -16,13 +16,6 @@ import gtsam
 import gtsam_unstable
 from gtsam.utils.test_case import GtsamTestCase
 
-
-def _timestamp_key_value(key, value):
-    return gtsam_unstable.FixedLagSmootherKeyTimestampMapValue(
-        key, value
-    )
-
-
 class TestFixedLagSmootherExample(GtsamTestCase):
     '''
     Tests the fixed lag smoother wrapper
@@ -47,14 +40,14 @@ class TestFixedLagSmootherExample(GtsamTestCase):
 
         # Create  a prior on the first pose, placing it at the origin
         prior_mean = gtsam.Pose2(0, 0, 0)
-        prior_noise = gtsam.noiseModel_Diagonal.Sigmas(
+        prior_noise = gtsam.noiseModel.Diagonal.Sigmas(
             np.array([0.3, 0.3, 0.1]))
         X1 = 0
         new_factors.push_back(
             gtsam.PriorFactorPose2(
                 X1, prior_mean, prior_noise))
         new_values.insert(X1, prior_mean)
-        new_timestamps.insert(_timestamp_key_value(X1, 0.0))
+        new_timestamps.insert((X1, 0.0))
 
         delta_time = 0.25
         time = 0.25
@@ -80,11 +73,11 @@ class TestFixedLagSmootherExample(GtsamTestCase):
         # and its two odometers measure the change. The smoothed
         # result is then compared to the ground truth
         while time <= 3.0:
-            previous_key = 1000 * (time - delta_time)
-            current_key = 1000 * time
+            previous_key = int(1000 * (time - delta_time))
+            current_key = int(1000 * time)
 
             # assign current key to the current timestamp
-            new_timestamps.insert(_timestamp_key_value(current_key, time))
+            new_timestamps.insert((current_key, time))
 
             # Add a guess for this pose to the new values
             # Assume that the robot moves at 2 m/s. Position is time[s] *
@@ -95,7 +88,7 @@ class TestFixedLagSmootherExample(GtsamTestCase):
             # Add odometry factors from two different sources with different
             # error stats
             odometry_measurement_1 = gtsam.Pose2(0.61, -0.08, 0.02)
-            odometry_noise_1 = gtsam.noiseModel_Diagonal.Sigmas(
+            odometry_noise_1 = gtsam.noiseModel.Diagonal.Sigmas(
                 np.array([0.1, 0.1, 0.05]))
             new_factors.push_back(
                 gtsam.BetweenFactorPose2(
@@ -105,7 +98,7 @@ class TestFixedLagSmootherExample(GtsamTestCase):
                     odometry_noise_1))
 
             odometry_measurement_2 = gtsam.Pose2(0.47, 0.03, 0.01)
-            odometry_noise_2 = gtsam.noiseModel_Diagonal.Sigmas(
+            odometry_noise_2 = gtsam.noiseModel.Diagonal.Sigmas(
                 np.array([0.05, 0.05, 0.05]))
             new_factors.push_back(
                 gtsam.BetweenFactorPose2(

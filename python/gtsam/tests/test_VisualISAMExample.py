@@ -46,11 +46,11 @@ class TestVisualISAMExample(GtsamTestCase):
             isam, result = visual_isam.step(data, isam, result, truth, currentPose)
 
         for i in range(len(truth.cameras)):
-            pose_i = result.atPose3(symbol(ord('x'), i))
+            pose_i = result.atPose3(symbol('x', i))
             self.gtsamAssertEquals(pose_i, truth.cameras[i].pose(), 1e-5)
 
         for j in range(len(truth.points)):
-            point_j = result.atPoint3(symbol(ord('l'), j))
+            point_j = result.atPoint3(symbol('l', j))
             self.gtsamAssertEquals(point_j, truth.points[j], 1e-5)
 
 if __name__ == "__main__":

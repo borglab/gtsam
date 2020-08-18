@@ -109,7 +109,7 @@ def plot_pose2_on_axes(axes, pose, axis_length=0.1, covariance=None):
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
     t = pose.translation()
-    origin = np.array([t.x(), t.y()])
+    origin = t
 
     # draw the camera axes
     x_axis = origin + gRp[:, 0] * axis_length
@@ -169,9 +169,9 @@ def plot_point3_on_axes(axes, point, linespec, P=None):
         linespec (string): String representing formatting options for Matplotlib.
         P (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
     """
-    axes.plot([point.x()], [point.y()], [point.z()], linespec)
+    axes.plot([point[0]], [point[1]], [point[2]], linespec)
     if P is not None:
-        plot_covariance_ellipse_3d(axes, point.vector(), P)
+        plot_covariance_ellipse_3d(axes, point, P)
 
 
 def plot_point3(fignum, point, linespec, P=None,
@@ -221,9 +221,8 @@ def plot_3d_points(fignum, values, linespec="g*", marginals=None,
     keys = values.keys()
 
     # Plot points and covariance matrices
-    for i in range(keys.size()):
+    for key in keys:
         try:
-            key = keys.at(i)
             point = values.atPoint3(key)
             if marginals is not None:
                 covariance = marginals.marginalCovariance(key)
@@ -253,7 +252,7 @@ def plot_pose3_on_axes(axes, pose, axis_length=0.1, P=None, scale=1):
     """
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
-    origin = pose.translation().vector()
+    origin = pose.translation()
 
     # draw the camera axes
     x_axis = origin + gRp[:, 0] * axis_length
@@ -319,19 +318,17 @@ def plot_trajectory(fignum, values, scale=1, marginals=None,
         title (string): The title of the plot.
         axis_labels (iterable[string]): List of axis labels to set.
     """
-    pose3Values = gtsam.utilities_allPose3s(values)
+    pose3Values = gtsam.utilities.allPose3s(values)
     keys = gtsam.KeyVector(pose3Values.keys())
-    lastIndex = None
+    lastKey = None
 
-    for i in range(keys.size()):
-        key = keys.at(i)
+    for key in keys:
         try:
             pose = pose3Values.atPose3(key)
         except:
             print("Warning: no Pose3 at key: {0}".format(key))
 
-        if lastIndex is not None:
-            lastKey = keys.at(lastIndex)
+        if lastKey is not None:
             try:
                 lastPose = pose3Values.atPose3(lastKey)
             except:
@@ -346,11 +343,10 @@ def plot_trajectory(fignum, values, scale=1, marginals=None,
             fig = plot_pose3(fignum, lastPose,  P=covariance,
                              axis_length=scale, axis_labels=axis_labels)
 
-        lastIndex = i
+        lastKey = key
 
     # Draw final pose
-    if lastIndex is not None:
-        lastKey = keys.at(lastIndex)
+    if lastKey is not None:
         try:
             lastPose = pose3Values.atPose3(lastKey)
             if marginals:
@@ -366,3 +362,40 @@ def plot_trajectory(fignum, values, scale=1, marginals=None,
 
     fig.suptitle(title)
     fig.canvas.set_window_title(title.lower())
+
+
+def plot_incremental_trajectory(fignum, values, start=0,
+                                scale=1, marginals=None,
+                                time_interval=0.0):
+    """
+    Incrementally plot a complete 3D trajectory using poses in `values`.
+
+    Args:
+        fignum (int): Integer representing the figure number to use for plotting.
+        values (gtsam.Values): Values dict containing the poses.
+        start (int): Starting index to start plotting from.
+        scale (float): Value to scale the poses by.
+        marginals (gtsam.Marginals): Marginalized probability values of the estimation.
+            Used to plot uncertainty bounds.
+        time_interval (float): Time in seconds to pause between each rendering.
+            Used to create animation effect.
+    """
+    fig = plt.figure(fignum)
+    axes = fig.gca(projection='3d')
+
+    pose3Values = gtsam.utilities.allPose3s(values)
+    keys = gtsam.KeyVector(pose3Values.keys())
+
+    for key in keys[start:]:
+        if values.exists(key):
+            pose_i = values.atPose3(key)
+            plot_pose3(fignum, pose_i, scale)
+
+    # Update the plot space to encompass all plotted points
+    axes.autoscale()
+
+    # Set the 3 axes equal
+    set_axes_equal(fignum)
+
+    # Pause for a fixed amount of seconds
+    plt.pause(time_interval)

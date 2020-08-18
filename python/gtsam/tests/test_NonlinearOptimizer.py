@@ -15,11 +15,11 @@ from __future__ import print_function
 import unittest
 
 import gtsam
-from gtsam import (DoglegOptimizer, DoglegParams, GaussNewtonOptimizer,
+from gtsam import (DoglegOptimizer, DoglegParams,
+                   DummyPreconditionerParameters, GaussNewtonOptimizer,
                    GaussNewtonParams, LevenbergMarquardtOptimizer,
-                   LevenbergMarquardtParams, PCGSolverParameters,
-                   DummyPreconditionerParameters, NonlinearFactorGraph, Ordering,
-                   Point2, PriorFactorPoint2, Values)
+                   LevenbergMarquardtParams, NonlinearFactorGraph, Ordering,
+                   PCGSolverParameters, Point2, PriorFactorPoint2, Values)
 from gtsam.utils.test_case import GtsamTestCase
 
 KEY1 = 1
@@ -30,7 +30,7 @@ class TestScenario(GtsamTestCase):
     def test_optimize(self):
         """Do trivial test with three optimizer variants."""
         fg = NonlinearFactorGraph()
-        model = gtsam.noiseModel_Unit.Create(2)
+        model = gtsam.noiseModel.Unit.Create(2)
         fg.add(PriorFactorPoint2(KEY1, Point2(0, 0), model))
 
         # test error at minimum

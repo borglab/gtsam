@@ -13,15 +13,15 @@ Author: Alex Cunningham (C++), Kevin Deng & Frank Dellaert (Python)
 
 from __future__ import print_function
 
-import gtsam
 import numpy as np
-from gtsam import symbol_shorthand_L as L
-from gtsam import symbol_shorthand_X as X
+
+import gtsam
+from gtsam.symbol_shorthand import X, L
 
 # Create noise models
-PRIOR_NOISE = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
-ODOMETRY_NOISE = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
-MEASUREMENT_NOISE = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.1, 0.2]))
+PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.3, 0.3, 0.1]))
+ODOMETRY_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
+MEASUREMENT_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.1, 0.2]))
 
 # Create an empty nonlinear factor graph
 graph = gtsam.NonlinearFactorGraph()

@@ -24,7 +24,7 @@ class TestValues(GtsamTestCase):
 
     def setUp(self):
 
-        model = gtsam.noiseModel_Isotropic.Sigma(6, 0.1)
+        model = gtsam.noiseModel.Isotropic.Sigma(6, 0.1)
 
         # We consider a small graph:
         #                            symbolic FG
@@ -64,9 +64,8 @@ class TestValues(GtsamTestCase):
 
     def test_orientations(self):
         pose3Graph = gtsam.InitializePose3.buildPose3graph(self.graph)
-
         initial = gtsam.InitializePose3.computeOrientationsChordal(pose3Graph)
-
+    
         # comparison is up to M_PI, that's why we add some multiples of 2*M_PI
         self.gtsamAssertEquals(initial.atRot3(x0), self.R0, 1e-6)
         self.gtsamAssertEquals(initial.atRot3(x1), self.R1, 1e-6)
@@ -77,7 +76,7 @@ class TestValues(GtsamTestCase):
         g2oFile = gtsam.findExampleDataFile("pose3example-grid")
         is3D = True
         inputGraph, expectedValues = gtsam.readG2o(g2oFile, is3D)
-        priorModel = gtsam.noiseModel_Unit.Create(6)
+        priorModel = gtsam.noiseModel.Unit.Create(6)
         inputGraph.add(gtsam.PriorFactorPose3(0, Pose3(), priorModel))
 
         initial = gtsam.InitializePose3.initialize(inputGraph)

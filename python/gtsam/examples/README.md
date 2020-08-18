@@ -1,17 +1,12 @@
-These examples are almost identical to the old handwritten python wrapper
-examples. However, there are just some slight name changes, for example
-`noiseModel.Diagonal` becomes `noiseModel_Diagonal` etc...
-Also, instead of `gtsam.Symbol('b', 0)` we can simply say `gtsam.symbol_shorthand_B(0)` or `B(0)` if we use python aliasing.
-
 # Porting Progress
 
 | C++ Example Name                                      | Ported |
 |-------------------------------------------------------|--------|
 | CameraResectioning                                    |        |
 | CreateSFMExampleData                                  |        |
-| DiscreteBayesNet_FG                                   | none of the required discrete functionality is exposed through cython |
-| easyPoint2KalmanFilter                                | ExtendedKalmanFilter not exposed through cython |
-| elaboratePoint2KalmanFilter                           | GaussianSequentialSolver not exposed through cython |
+| DiscreteBayesNet_FG                                   | none of the required discrete functionality is exposed through Python |
+| easyPoint2KalmanFilter                                | ExtendedKalmanFilter not yet exposed through Python |
+| elaboratePoint2KalmanFilter                           | GaussianSequentialSolver not yet exposed through Python |
 | ImuFactorExample2                                     | X      |
 | ImuFactorsExample                                     |        |
 | ISAM2Example_SmartFactor                              |        |
@@ -25,7 +20,7 @@ Also, instead of `gtsam.Symbol('b', 0)` we can simply say `gtsam.symbol_shorthan
 | Pose2SLAMExample_g2o                                  | X      |
 | Pose2SLAMExample_graph                                |        |
 | Pose2SLAMExample_graphviz                             |        |
-| Pose2SLAMExample_lago                                 | lago not exposed through cython |
+| Pose2SLAMExample_lago                                 | lago not yet exposed through Python |
 | Pose2SLAMStressTest                                   |        |
 | Pose2SLAMwSPCG                                        |        |
 | Pose3SLAMExample_changeKeys                           |        |
@@ -47,8 +42,8 @@ Also, instead of `gtsam.Symbol('b', 0)` we can simply say `gtsam.symbol_shorthan
 | StereoVOExample                                       |        |
 | StereoVOExample_large                                 |        |
 | TimeTBB                                               |        |
-| UGM_chain                                             | discrete functionality not exposed |
-| UGM_small                                             | discrete functionality not exposed |
+| UGM_chain                                             | discrete functionality not yet exposed |
+| UGM_small                                             | discrete functionality not yet exposed |
 | VisualISAM2Example                                    | X      |
 | VisualISAMExample                                     | X      |
 
