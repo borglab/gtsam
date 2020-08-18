@@ -133,6 +133,18 @@ endif()
 # paths so that the compiler uses GTSAM headers in our source directory instead
 # of any previously installed GTSAM headers.
 target_include_directories(gtsam BEFORE PUBLIC
+  # main gtsam includes:
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include/>
+  # config.h
+  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+  # unit tests:
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/CppUnitLite>
+)
+# 3rdparty libraries: use the "system" flag so they are included via "-isystem"
+# and warnings (and warnings-considered-errors) in those headers are not 
+# reported as warnings/errors in our targets:
+target_include_directories(gtsam SYSTEM BEFORE PUBLIC
   # SuiteSparse_config
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SuiteSparse_config>
   $<INSTALL_INTERFACE:include/gtsam/3rdparty/SuiteSparse_config>
@@ -141,13 +153,6 @@ target_include_directories(gtsam BEFORE PUBLIC
   # CCOLAMD
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Include>
   $<INSTALL_INTERFACE:include/gtsam/3rdparty/CCOLAMD>
-  # main gtsam includes:
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include/>
-  # config.h
-  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-  # unit tests:
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/CppUnitLite>
 )
 if(GTSAM_SUPPORT_NESTED_DISSECTION)
   target_include_directories(gtsam BEFORE PUBLIC
