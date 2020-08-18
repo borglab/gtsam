@@ -1,26 +1,27 @@
 from .gtsam import *
 
-try:
-    import gtsam_unstable
+
+def _init():
+    """This function is to add shims for the long-gone Point2 and Point3 types"""
+
+    import numpy as np
+
+    global Point2  # export function
+
+    def Point2(x=0, y=0):
+        """Shim for the deleted Point2 type."""
+        return np.array([x, y], dtype=float)
+
+    global Point3  # export function
+
+    def Point3(x=0, y=0, z=0):
+        """Shim for the deleted Point3 type."""
+        return np.array([x, y, z], dtype=float)
+
+    # for interactive debugging
+    if __name__ == "__main__":
+        # we want all definitions accessible
+        globals().update(locals())
 
 
-    def _deprecated_wrapper(item, name):
-        def wrapper(*args, **kwargs):
-            from warnings import warn
-            message = ('importing the unstable item "{}" directly from gtsam is deprecated. '.format(name) +
-                       'Please import it from gtsam_unstable.')
-            warn(message)
-            return item(*args, **kwargs)
-        return wrapper
-
-
-    for name in dir(gtsam_unstable):
-        if not name.startswith('__'):
-            item = getattr(gtsam_unstable, name)
-            if callable(item):
-                item = _deprecated_wrapper(item, name)
-            globals()[name] = item
-
-except ImportError:
-    pass
-
+_init()
