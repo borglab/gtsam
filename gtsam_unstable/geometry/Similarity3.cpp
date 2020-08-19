@@ -61,8 +61,8 @@ void Similarity3::print(const std::string& s) const {
 Similarity3 Similarity3::identity() {
   return Similarity3();
 }
-Similarity3 Similarity3::operator*(const Similarity3& T) const {
-  return Similarity3(R_ * T.R_, ((1.0 / T.s_) * t_) + R_ * T.t_, s_ * T.s_);
+Similarity3 Similarity3::operator*(const Similarity3& S) const {
+  return Similarity3(R_ * S.R_, ((1.0 / S.s_) * t_) + R_ * S.t_, s_ * S.s_);
 }
 
 Similarity3 Similarity3::inverse() const {

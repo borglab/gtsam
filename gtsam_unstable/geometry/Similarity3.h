@@ -88,7 +88,7 @@ public:
   GTSAM_UNSTABLE_EXPORT static Similarity3 identity();
 
   /// Composition
-  GTSAM_UNSTABLE_EXPORT Similarity3 operator*(const Similarity3& T) const;
+  GTSAM_UNSTABLE_EXPORT Similarity3 operator*(const Similarity3& S) const;
 
   /// Return the inverse
   GTSAM_UNSTABLE_EXPORT Similarity3 inverse() const;
