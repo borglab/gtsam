@@ -2960,6 +2960,7 @@ class ShonanAveraging2 {
 
   // Advanced API
   gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
+  gtsam::Values initializeRandomlyAt(size_t p) const;
   double costAt(size_t p, const gtsam::Values& values) const;
   pair<double, Vector> computeMinEigenVector(const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
@@ -3004,6 +3005,7 @@ class ShonanAveraging3 {
 
   // Advanced API
   gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
+  gtsam::Values initializeRandomlyAt(size_t p) const;
   double costAt(size_t p, const gtsam::Values& values) const;
   pair<double, Vector> computeMinEigenVector(const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
