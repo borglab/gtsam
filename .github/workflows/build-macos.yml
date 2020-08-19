@@ -45,7 +45,7 @@ jobs:
             echo "::set-env name=CC::clang"
             echo "::set-env name=CXX::clang++"
           fi
-      - name: Build (macOS)
+      - name: Build and Test (macOS)
         if: runner.os == 'macOS'
         run: |
           bash .github/scripts/unix.sh -t
