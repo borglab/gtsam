@@ -34,10 +34,11 @@ jobs:
             compiler: gcc
             version: "5"
 
-          - name: ubuntu-18.04-gcc-9
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "9"
+          # TODO Disabled for now because of timeouts
+          # - name: ubuntu-18.04-gcc-9
+          #   os: ubuntu-18.04
+          #   compiler: gcc
+          #   version: "9"
 
           - name: ubuntu-18.04-clang-9
             os: ubuntu-18.04
