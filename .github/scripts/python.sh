@@ -47,8 +47,6 @@ case $WRAPPER in
     ;;
 esac
 
-git submodule update --init --recursive
-
 mkdir $GITHUB_WORKSPACE/build
 cd $GITHUB_WORKSPACE/build
 
@@ -82,9 +80,9 @@ case $WRAPPER in
     $PYTHON -m unittest discover
     ;;
 "pybind")
-    cd $GITHUB_WORKSPACE/python
+    cd $GITHUB_WORKSPACE/build/python
     $PYTHON setup.py install --user --prefix=
-    cd $GITHUB_WORKSPACE/wrap/python/gtsam_py/tests
+    cd $GITHUB_WORKSPACE/python/gtsam/tests
     $PYTHON -m unittest discover
     ;;
 *)

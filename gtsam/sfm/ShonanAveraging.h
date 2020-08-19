@@ -236,6 +236,15 @@ public:
   NonlinearFactorGraph buildGraphAt(size_t p) const;
 
   /**
+   * Create initial Values of type SO(p)
+   * @param p the dimensionality of the rotation manifold 
+   */
+  Values initializeRandomlyAt(size_t p, std::mt19937 &rng) const;
+
+  /// Version of initializeRandomlyAt with fixed random seed. 
+  Values initializeRandomlyAt(size_t p) const;
+
+  /**
    * Calculate cost for SO(p)
    * Values should be of type SO(p)
    */

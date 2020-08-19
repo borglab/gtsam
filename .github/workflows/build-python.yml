@@ -27,7 +27,7 @@ jobs:
 
         build_type: [Debug, Release]
         python_version: [3]
-        wrapper: [cython]
+        wrapper: [pybind]
         include:
           - name: ubuntu-18.04-gcc-5
             os: ubuntu-18.04

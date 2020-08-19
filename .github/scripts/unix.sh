@@ -47,7 +47,6 @@ function configure()
   BUILD_DIR=$GITHUB_WORKSPACE/build
 
   #env
-  git submodule update --init --recursive
   rm -fr $BUILD_DIR || true
   mkdir $BUILD_DIR && cd $BUILD_DIR
 
