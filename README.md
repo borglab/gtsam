@@ -20,7 +20,7 @@ matrices.
 | Windows      | MSVC      | ![Windows CI](https://github.com/borglab/gtsam/workflows/Windows%20CI/badge.svg) |
 
 
-On top of the C++ library, GTSAM includes [wrappers for MATLAB & Python](##Wrappers).
+On top of the C++ library, GTSAM includes [wrappers for MATLAB & Python](#wrappers).
 
 
 ## Quickstart
