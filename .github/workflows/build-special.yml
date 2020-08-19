@@ -19,16 +19,11 @@ jobs:
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
-        name: [
+        name:
+          [
             ubuntu-gcc-deprecated,
             ubuntu-gcc-quaternions,
             ubuntu-gcc-points-vector,
-            macos-xcode-deprecated,
-            macos-xcode-quaternions,
-            macos-xcode-points-vector,
-            ubuntu-clang-deprecated,
-            ubuntu-clang-quaternions,
-            ubuntu-clang-points-vector
           ]
 
         build_type: [Debug, Release]
@@ -49,42 +44,6 @@ jobs:
           - name: ubuntu-gcc-points-vector
             os: ubuntu-18.04
             compiler: gcc
-            version: "9"
-            flag: points-vector
-
-          - name: macos-xcode-deprecated
-            os: macOS-10.15
-            compiler: xcode
-            version: "11.3.1"
-            flag: deprecated
-
-          - name: macos-xcode-quaternions
-            os: macOS-10.15
-            compiler: xcode
-            version: "11.3.1"
-            flag: quaternions
-
-          - name: macos-xcode-points-vector
-            os: macOS-10.15
-            compiler: xcode
-            version: "11.3.1"
-            flag: points-vector
-
-          - name: ubuntu-clang-deprecated
-            os: ubuntu-18.04
-            compiler: clang
-            version: "9"
-            flag: deprecated
-
-          - name: ubuntu-clang-quaternions
-            os: ubuntu-18.04
-            compiler: clang
-            version: "9"
-            flag: quaternions
-
-          - name: ubuntu-clang-points-vector
-            os: ubuntu-18.04
-            compiler: clang
             version: "9"
             flag: points-vector
 
