@@ -77,6 +77,7 @@ string findExampleDataFile(const string &name) {
   namesToSearch.push_back(name + ".txt");
   namesToSearch.push_back(name + ".out");
   namesToSearch.push_back(name + ".xml");
+  namesToSearch.push_back(name + ".g2o");
 
   // Find first name that exists
   for (const fs::path root : rootsToSearch) {
@@ -87,10 +88,12 @@ string findExampleDataFile(const string &name) {
   }
 
   // If we did not return already, then we did not find the file
-  throw invalid_argument("gtsam::findExampleDataFile could not find a matching "
-                         "file in\n" GTSAM_SOURCE_TREE_DATASET_DIR
-                         " or\n" GTSAM_INSTALLED_DATASET_DIR " named\n" +
-                         name + ", " + name + ".graph, or " + name + ".txt");
+  throw invalid_argument(
+      "gtsam::findExampleDataFile could not find a matching "
+      "file in\n" GTSAM_SOURCE_TREE_DATASET_DIR
+      " or\n" GTSAM_INSTALLED_DATASET_DIR " named\n" +
+      name + ", " + name + ".g2o, " + ", " + name + ".graph, or " + name +
+      ".txt");
 }
 
 /* ************************************************************************* */
