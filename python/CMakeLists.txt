@@ -103,4 +103,5 @@ endif()
 set(GTSAM_PYTHON_INSTALL_TARGET python-install)
 add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
         COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py install
+        DEPENDS gtsam_py gtsam_unstable_py
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
