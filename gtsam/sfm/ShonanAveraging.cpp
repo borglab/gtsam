@@ -750,9 +750,22 @@ Values ShonanAveraging<d>::initializeRandomly(std::mt19937 &rng) const {
 }
 
 /* ************************************************************************* */
+template <size_t d> Values ShonanAveraging<d>::initializeRandomly() const {
+  return initializeRandomly(kRandomNumberGenerator);
+}
+
+/* ************************************************************************* */
 template <size_t d>
-Values ShonanAveraging<d>::initializeRandomly() const {
-  return ShonanAveraging<d>::initializeRandomly(kRandomNumberGenerator);
+Values ShonanAveraging<d>::initializeRandomlyAt(size_t p,
+                                                std::mt19937 &rng) const {
+  const Values randomRotations = initializeRandomly(rng);
+  return LiftTo<Rot3>(p, randomRotations); // lift to p!
+}
+
+/* ************************************************************************* */
+template <size_t d>
+Values ShonanAveraging<d>::initializeRandomlyAt(size_t p) const {
+  return initializeRandomlyAt(p, kRandomNumberGenerator);
 }
 
 /* ************************************************************************* */
