@@ -72,7 +72,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           echo "BOOST_ROOT = $BOOST_ROOT"
-      - name: Build (Linux)
+      - name: Build and Test (Linux)
         if: runner.os == 'Linux'
         run: |
           bash .github/scripts/unix.sh -t
