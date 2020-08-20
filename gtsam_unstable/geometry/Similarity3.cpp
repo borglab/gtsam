@@ -54,8 +54,8 @@ bool Similarity3::operator==(const Similarity3& other) const {
 void Similarity3::print(const std::string& s) const {
   std::cout << std::endl;
   std::cout << s;
-  rotation().print("R:\n");
-  std::cout << "t: " << translation().transpose() << "s: " << scale() << std::endl;
+  rotation().print("\nR:\n");
+  std::cout << "t: " << translation().transpose() << " s: " << scale() << std::endl;
 }
 
 Similarity3 Similarity3::identity() {
