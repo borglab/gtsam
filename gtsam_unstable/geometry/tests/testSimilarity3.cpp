@@ -263,12 +263,12 @@ TEST(Similarity3, GroupActionPose3) {
   Similarity3 bSa(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
 
   // Create source poses
-  Pose3 Ta1 = Pose3(Rot3(), Point3(0, 0, 0));
-  Pose3 Ta2 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, 1), Point3(4, 0, 0));
+  Pose3 Ta1(Rot3(), Point3(0, 0, 0));
+  Pose3 Ta2(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, 1), Point3(4, 0, 0));
 
   // Create destination poses
-  Pose3 expected_Tb1 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
-  Pose3 expected_Tb2 = Pose3(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
+  Pose3 expected_Tb1(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
+  Pose3 expected_Tb2(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
 
   EXPECT(assert_equal(expected_Tb1, bSa.transformFrom(Ta1)));
   EXPECT(assert_equal(expected_Tb2, bSa.transformFrom(Ta2)));
@@ -280,12 +280,12 @@ TEST(Similarity3, GroupActionPose3_Compatibility) {
   Similarity3 cSa(Rot3::Ry(270 * degree), Point3(0, 1, -2), 6.0);
 
   // Create poses
-  Pose3 Ta1 = Pose3(Rot3(), Point3(0, 0, 0));
-  Pose3 Ta2 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, 1), Point3(4, 0, 0));
-  Pose3 Tb1 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
-  Pose3 Tb2 = Pose3(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
-  Pose3 Tc1 = Pose3(Rot3(0, 0, -1, 0, 1, 0, 1, 0, 0), Point3(0, 6, -12));
-  Pose3 Tc2 = Pose3(Rot3(0, 0, -1, 0, 1, 0, -1, 0, 0), Point3(0, 6, 12));
+  Pose3 Ta1(Rot3(), Point3(0, 0, 0));
+  Pose3 Ta2(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, 1), Point3(4, 0, 0));
+  Pose3 Tb1(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
+  Pose3 Tb2(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
+  Pose3 Tc1(Rot3(0, 0, -1, 0, 1, 0, 1, 0, 0), Point3(0, 6, -12));
+  Pose3 Tc2(Rot3(0, 0, -1, 0, 1, 0, -1, 0, 0), Point3(0, 6, 12));
 
   EXPECT(assert_equal(Tc1, cSb.transformFrom(Tb1)));
   EXPECT(assert_equal(Tc2, cSb.transformFrom(Tb2)));
@@ -347,12 +347,12 @@ TEST(Similarity3, AlignPose3) {
   Similarity3 expected_aSb(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
 
   // Create source poses
-  Pose3 Ta1 = Pose3(Rot3(), Point3(0, 0, 0));
-  Pose3 Ta2 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, 1), Point3(4, 0, 0));
+  Pose3 Ta1(Rot3(), Point3(0, 0, 0));
+  Pose3 Ta2(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, 1), Point3(4, 0, 0));
 
   // Create destination poses
-  Pose3 Tb1 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
-  Pose3 Tb2 = Pose3(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
+  Pose3 Tb1(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
+  Pose3 Tb2(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
 
   Pose3Pair bTa1(make_pair(Tb1, Ta1));
   Pose3Pair bTa2(make_pair(Tb2, Ta2));
