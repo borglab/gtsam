@@ -50,6 +50,13 @@ jobs:
             compiler: xcode
             version: "11.3.1"
 
+          - name: ubuntu-18.04-gcc-5
+            os: ubuntu-18.04
+            compiler: gcc
+            version: "5"
+            env:
+              GTSAM_WITH_TBB: ON
+
     steps:
       - name: Checkout
         uses: actions/checkout@master

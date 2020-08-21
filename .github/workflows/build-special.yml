@@ -23,7 +23,7 @@ jobs:
           [
             ubuntu-gcc-deprecated,
             ubuntu-gcc-quaternions,
-            ubuntu-gcc-points-vector,
+            ubuntu-gcc-tbb,
           ]
 
         build_type: [Debug, Release]
@@ -41,11 +41,11 @@ jobs:
             version: "9"
             flag: quaternions
 
-          - name: ubuntu-gcc-points-vector
+          - name: ubuntu-gcc-tbb
             os: ubuntu-18.04
             compiler: gcc
             version: "9"
-            flag: points-vector
+            flag: tbb
 
     steps:
       - name: Checkout
@@ -101,11 +101,11 @@ jobs:
           GTSAM_USE_QUATERNIONS: ON
         run: echo "Use Quaternions for rotations"
 
-      - name: Set Typedef Points to Vector Flag
-        if: matrix.flag == 'points-vector'
+      - name: Set GTSAM_WITH_TBB Flag
+        if: matrix.flag == 'tbb'
         env:
-          GTSAM_TYPEDEF_POINTS_TO_VECTOR: ON
-        run: echo "Typedef Points to Vector"
+          GTSAM_WITH_TBB: ON
+        run: echo "GTSAM Uses TBB"
 
       - name: Build & Test
         run: |
