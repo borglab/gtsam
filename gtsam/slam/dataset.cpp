@@ -77,6 +77,7 @@ string findExampleDataFile(const string &name) {
   namesToSearch.push_back(name + ".txt");
   namesToSearch.push_back(name + ".out");
   namesToSearch.push_back(name + ".xml");
+  namesToSearch.push_back(name + ".g2o");
 
   // Find first name that exists
   for (const fs::path root : rootsToSearch) {
@@ -87,10 +88,12 @@ string findExampleDataFile(const string &name) {
   }
 
   // If we did not return already, then we did not find the file
-  throw invalid_argument("gtsam::findExampleDataFile could not find a matching "
-                         "file in\n" GTSAM_SOURCE_TREE_DATASET_DIR
-                         " or\n" GTSAM_INSTALLED_DATASET_DIR " named\n" +
-                         name + ", " + name + ".graph, or " + name + ".txt");
+  throw invalid_argument(
+      "gtsam::findExampleDataFile could not find a matching "
+      "file in\n" GTSAM_SOURCE_TREE_DATASET_DIR
+      " or\n" GTSAM_INSTALLED_DATASET_DIR " named\n" +
+      name + ", " + name + ".g2o, " + ", " + name + ".graph, or " + name +
+      ".txt");
 }
 
 /* ************************************************************************* */
@@ -1281,7 +1284,13 @@ Values initialCamerasAndPointsEstimate(const SfmData &db) {
   return initial;
 }
 
-// To be deprecated when pybind wrapper is merged:
+// Wrapper-friendly versions of parseFactors<Pose2> and parseFactors<Pose2>
+BetweenFactorPose2s
+parse2DFactors(const std::string &filename,
+               const noiseModel::Diagonal::shared_ptr &model, size_t maxIndex) {
+  return parseFactors<Pose2>(filename, model, maxIndex);
+}
+
 BetweenFactorPose3s
 parse3DFactors(const std::string &filename,
                const noiseModel::Diagonal::shared_ptr &model, size_t maxIndex) {

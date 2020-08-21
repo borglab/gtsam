@@ -302,7 +302,7 @@ TEST(ShonanAveraging3, runKlausKarcher) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging2, runKlausKarcher) {
+TEST(ShonanAveraging2, noisyToyGraph) {
   // Load 2D toy example
   auto lmParams = LevenbergMarquardtParams::CeresDefaults();
   // lmParams.setVerbosityLM("SUMMARY");

@@ -341,7 +341,13 @@ GTSAM_EXPORT Values initialCamerasEstimate(const SfmData& db);
  */
 GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfmData& db);
 
-// To be deprecated when pybind wrapper is merged:
+// Wrapper-friendly versions of parseFactors<Pose2> and parseFactors<Pose2>
+using BetweenFactorPose2s = std::vector<BetweenFactor<Pose2>::shared_ptr>;
+GTSAM_EXPORT BetweenFactorPose2s
+parse2DFactors(const std::string &filename,
+               const noiseModel::Diagonal::shared_ptr &model = nullptr,
+               size_t maxIndex = 0);
+
 using BetweenFactorPose3s = std::vector<BetweenFactor<Pose3>::shared_ptr>;
 GTSAM_EXPORT BetweenFactorPose3s
 parse3DFactors(const std::string &filename,

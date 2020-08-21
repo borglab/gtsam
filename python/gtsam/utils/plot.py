@@ -1,9 +1,11 @@
 """Various plotting utlities."""
 
-import numpy as np
+# pylint: disable=no-member, invalid-name
+
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib import patches
-from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=unused-import
 
 import gtsam
 
@@ -307,58 +309,47 @@ def plot_pose3(fignum, pose, axis_length=0.1, P=None,
 def plot_trajectory(fignum, values, scale=1, marginals=None,
                     title="Plot Trajectory", axis_labels=('X axis', 'Y axis', 'Z axis')):
     """
-    Plot a complete 3D trajectory using poses in `values`.
+    Plot a complete 2D/3D trajectory using poses in `values`.
 
     Args:
         fignum (int): Integer representing the figure number to use for plotting.
-        values (gtsam.Values): Values dict containing the poses.
+        values (gtsam.Values): Values containing some Pose2 and/or Pose3 values.
         scale (float): Value to scale the poses by.
         marginals (gtsam.Marginals): Marginalized probability values of the estimation.
             Used to plot uncertainty bounds.
         title (string): The title of the plot.
         axis_labels (iterable[string]): List of axis labels to set.
     """
-    pose3Values = gtsam.utilities.allPose3s(values)
-    keys = gtsam.KeyVector(pose3Values.keys())
-    lastKey = None
+    fig = plt.figure(fignum)
+    axes = fig.gca(projection='3d')
 
-    for key in keys:
-        try:
-            pose = pose3Values.atPose3(key)
-        except:
-            print("Warning: no Pose3 at key: {0}".format(key))
+    axes.set_xlabel(axis_labels[0])
+    axes.set_ylabel(axis_labels[1])
+    axes.set_zlabel(axis_labels[2])
 
-        if lastKey is not None:
-            try:
-                lastPose = pose3Values.atPose3(lastKey)
-            except:
-                print("Warning: no Pose3 at key: {0}".format(lastKey))
-                pass
+    # Plot 2D poses, if any
+    poses = gtsam.utilities.allPose2s(values)
+    for key in poses.keys():
+        pose = poses.atPose2(key)
+        if marginals:
+            covariance = marginals.marginalCovariance(key)
+        else:
+            covariance = None
 
-            if marginals:
-                covariance = marginals.marginalCovariance(lastKey)
-            else:
-                covariance = None
+        plot_pose2_on_axes(axes, pose, covariance=covariance,
+                           axis_length=scale)
 
-            fig = plot_pose3(fignum, lastPose,  P=covariance,
-                             axis_length=scale, axis_labels=axis_labels)
+    # Then 3D poses, if any
+    poses = gtsam.utilities.allPose3s(values)
+    for key in poses.keys():
+        pose = poses.atPose3(key)
+        if marginals:
+            covariance = marginals.marginalCovariance(key)
+        else:
+            covariance = None
 
-        lastKey = key
-
-    # Draw final pose
-    if lastKey is not None:
-        try:
-            lastPose = pose3Values.atPose3(lastKey)
-            if marginals:
-                covariance = marginals.marginalCovariance(lastKey)
-            else:
-                covariance = None
-
-            fig = plot_pose3(fignum, lastPose, P=covariance,
-                             axis_length=scale, axis_labels=axis_labels)
-
-        except:
-            pass
+        plot_pose3_on_axes(axes, pose, P=covariance,
+                           axis_length=scale)
 
     fig.suptitle(title)
     fig.canvas.set_window_title(title.lower())
@@ -383,8 +374,8 @@ def plot_incremental_trajectory(fignum, values, start=0,
     fig = plt.figure(fignum)
     axes = fig.gca(projection='3d')
 
-    pose3Values = gtsam.utilities.allPose3s(values)
-    keys = gtsam.KeyVector(pose3Values.keys())
+    poses = gtsam.utilities.allPose3s(values)
+    keys = gtsam.KeyVector(poses.keys())
 
     for key in keys[start:]:
         if values.exists(key):

@@ -34,19 +34,17 @@
 using namespace std;
 using namespace gtsam;
 
-// string g2oFile = findExampleDataFile("toyExample.g2o");
-
 // save a single line of timing info to an output stream
 void saveData(size_t p, double time1, double costP, double cost3, double time2,
               double min_eigenvalue, double suBound, std::ostream* os) {
-    *os << (int)p << "\t" << time1 << "\t" << costP << "\t" << cost3 << "\t"
-        << time2 << "\t" << min_eigenvalue << "\t" << suBound << endl;
+  *os << static_cast<int>(p) << "\t" << time1 << "\t" << costP << "\t" << cost3
+      << "\t" << time2 << "\t" << min_eigenvalue << "\t" << suBound << endl;
 }
 
 void checkR(const Matrix& R) {
     Matrix R2 = R.transpose();
     Matrix actual_R = R2 * R;
-    assert_equal(Rot3(),Rot3(actual_R));
+    assert_equal(Rot3(), Rot3(actual_R));
 }
 
 void saveResult(string name, const Values& values) {
@@ -82,7 +80,8 @@ void saveG2oResult(string name, const Values& values, std::map<Key, Pose3> poses
         myfile << i << " ";
         myfile << poses[i].x() << " " << poses[i].y() << " " << poses[i].z() << " ";
         Vector quaternion = Rot3(R).quaternion();
-        myfile << quaternion(3) << " " << quaternion(2) << " " << quaternion(1) << " " << quaternion(0);
+        myfile << quaternion(3) << " " << quaternion(2) << " " << quaternion(1)
+               << " " << quaternion(0);
         myfile << "\n";
     }
     myfile.close();
@@ -109,20 +108,19 @@ void saveResultQuat(const Values& values) {
 int main(int argc, char* argv[]) {
     // primitive argument parsing:
     if (argc > 3) {
-        throw runtime_error("Usage: timeShonanAveraging  [g2oFile]");
+        throw runtime_error("Usage: timeShonanAveraging [g2oFile]");
     }
 
     string g2oFile;
     try {
-        if (argc > 1)
-            g2oFile = argv[argc - 1];
-        else
-            g2oFile = string(
-                "/home/jingwu/git/SESync/data/sphere2500.g2o");
+      if (argc > 1)
+        g2oFile = argv[argc - 1];
+      else
+        g2oFile = findExampleDataFile("sphere2500");
 
     } catch (const exception& e) {
-        cerr << e.what() << '\n';
-        exit(1);
+      cerr << e.what() << '\n';
+      exit(1);
     }
 
     // Create a csv output file
@@ -147,14 +145,14 @@ int main(int argc, char* argv[]) {
     cout << "(int)p" << "\t" << "time1" << "\t" << "costP" << "\t" << "cost3" << "\t"
         << "time2" << "\t" << "MinEigenvalue" << "\t" << "SuBound" << endl;
 
-    const Values randomRotations = kShonan.initializeRandomly(kRandomNumberGenerator);
+    const Values randomRotations = kShonan.initializeRandomly();
 
-    for (size_t p = pMin; p < 6; p++) {
+    for (size_t p = pMin; p <= 7; p++) {
         // Randomly initialize at lowest level, initialize by line search after that
         const Values initial =
             (p > pMin) ? kShonan.initializeWithDescent(p, Qstar, minEigenVector,
                                                        lambdaMin)
-                       : ShonanAveraging::LiftTo<Rot3>(pMin, randomRotations);
+                       : ShonanAveraging3::LiftTo<Rot3>(pMin, randomRotations);
         chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
         // optimizing
         const Values result = kShonan.tryOptimizingAt(p, initial);
