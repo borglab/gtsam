@@ -23,6 +23,7 @@ jobs:
           # ubuntu-18.04-gcc-9,  # TODO Disabled for now because of timeouts
           ubuntu-18.04-clang-9,
           macOS-10.15-xcode-11.3.1,
+          ubuntu-18.04-gcc-5-tbb,
         ]
 
         build_type: [Debug, Release]
@@ -50,7 +51,7 @@ jobs:
             compiler: xcode
             version: "11.3.1"
 
-          - name: ubuntu-18.04-gcc-5
+          - name: ubuntu-18.04-gcc-5-tbb
             os: ubuntu-18.04
             compiler: gcc
             version: "5"
