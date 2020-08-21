@@ -60,6 +60,16 @@ See the tests for examples.
     scheme in numpy. But this is only performance-related as `pybind11` should translate them when needed. However, this will result a copy if your matrix is not in the expected type
     and storage order.
 
+## Porting Notes
+
+Q: What are those `gtsam.tpl`, `gtsam/specializations.h` and `gtsam/preamble.h`? What is the `ignore` entry doing in the `CMakeLists.txt`?
+
+A: In pybind11 we have built-in STL binding, however for the MATLAB wrapper we still need the shim types (`KeyVector`, etc.) to be able to access STL containers.
+Thus for the Python wrapper, we explicitly blacklist those shim types ("ignore" them), and rely on Pybind11's STL binding to gain access. This is enabled by `specializations.h`.
+
+However, only using the specializations creates another problem: each Python operation into the STL containers results in a copy. To avoid this, we need to make the types
+opaque, hence the `preamble.h` file.
+
 ## Wrapping Custom GTSAM-based Project
 
 Please refer to the template project and the corresponding tutorial available [here](https://github.com/borglab/GTSAM-project-python).
