@@ -15,12 +15,16 @@ Date: August 2020
 # pylint: disable=invalid-name, E1101
 
 import argparse
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 import gtsam
+from gtsam.utils import plot
 
-
-def estimate_poses_given_rot(factors: gtsam.BetweenFactorPose3s, rotations: gtsam.Values, d: int = 3):
+def estimate_poses_given_rot(factors: gtsam.BetweenFactorPose3s,
+                             rotations: gtsam.Values,
+                             d: int = 3):
     """ Estimate Poses from measurements, given rotations. From SfmProblem in shonan.
 
     Arguments:
@@ -31,22 +35,26 @@ def estimate_poses_given_rot(factors: gtsam.BetweenFactorPose3s, rotations: gtsa
         Values -- Estimated Poses
     """
 
+    I_d = np.eye(d)
+
     def R(j):
         return rotations.atRot3(j) if d == 3 else rotations.atRot2(j)
 
+    def pose(R, t):
+        return gtsam.Pose3(R, t) if d == 3 else gtsam.Pose2(R, t)
+
     graph = gtsam.GaussianFactorGraph()
-    model = gtsam.noiseModel.Unit.Create(3)
+    model = gtsam.noiseModel.Unit.Create(d)
 
     # Add a factor anchoring t_0
-    I3 = np.eye(3)
-    graph.add(0, I3, np.zeros((3,)), model)
+    graph.add(0, I_d, np.zeros((d,)), model)
 
     # Add a factor saying t_j - t_i = Ri*t_ij for all edges (i,j)
     for factor in factors:
         keys = factor.keys()
         i, j, Tij = keys[0], keys[1], factor.measured()
         measured = R(i).rotate(Tij.translation())
-        graph.add(j, I3, i, -I3, measured.vector(), model)
+        graph.add(j, I_d, i, -I_d, measured, model)
 
     # Solve linear system
     translations = graph.optimize()
@@ -54,10 +62,11 @@ def estimate_poses_given_rot(factors: gtsam.BetweenFactorPose3s, rotations: gtsa
     # Convert to Values.
     result = gtsam.Values()
     for j in range(rotations.size()):
-        tj = gtsam.Point3(translations.at(j))
-        result.insert(j, gtsam.Pose3(R(j), tj))
+        tj = translations.at(j)
+        result.insert(j, pose(R(j), tj))
 
     return result
+
 
 def run(args):
     """Run Shonan averaging and then recover translations linearly before saving result."""
@@ -74,21 +83,32 @@ def run(args):
     if args.dimension == 2:
         print("Running Shonan averaging for SO(2) on ", input_file)
         shonan = gtsam.ShonanAveraging2(input_file)
+        if shonan.nrUnknowns() == 0:
+            raise ValueError("No 2D pose constraints found, try -d 3.")
         initial = shonan.initializeRandomly()
         rotations, _ = shonan.run(initial, 2, 10)
+        factors = gtsam.parse2DFactors(input_file)
     elif args.dimension == 3:
         print("Running Shonan averaging for SO(3) on ", input_file)
         shonan = gtsam.ShonanAveraging3(input_file)
+        if shonan.nrUnknowns() == 0:
+            raise ValueError("No 3D pose constraints found, try -d 2.")
         initial = shonan.initializeRandomly()
         rotations, _ = shonan.run(initial, 3, 10)
+        factors = gtsam.parse3DFactors(input_file)
     else:
         raise ValueError("Can only run SO(2) or SO(3) averaging")
 
-    factors = gtsam.parse3DFactors(input_file)
+    print("Recovering translations")
     poses = estimate_poses_given_rot(factors, rotations, args.dimension)
+
     print("Writing result to ", args.output_file)
     gtsam.writeG2o(gtsam.NonlinearFactorGraph(), poses, args.output_file)
-    print(poses)
+
+    plot.plot_trajectory(1, poses, scale=0.2)
+    plot.set_axes_equal(1)
+    plt.show()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -100,5 +120,6 @@ if __name__ == "__main__":
                         help='Write solution to the specified file')
     parser.add_argument('-d', '--dimension', type=int, default=3,
                         help='Optimize over 2D or 3D rotations')
+    parser.add_argument("-p", "--plot", action="store_true", default=True,
+                        help="Plot result")
     run(parser.parse_args())
-
