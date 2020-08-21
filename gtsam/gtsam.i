@@ -2816,7 +2816,19 @@ void save2D(const gtsam::NonlinearFactorGraph& graph,
     const gtsam::Values& config, gtsam::noiseModel::Diagonal* model,
     string filename);
 
+// std::vector<gtsam::BetweenFactor<Pose2>::shared_ptr>
+// Ignored by pybind -> will be List[BetweenFactorPose2]
+class BetweenFactorPose2s
+{
+  BetweenFactorPose2s();
+  size_t size() const;
+  gtsam::BetweenFactor<gtsam::Pose2>* at(size_t i) const;
+  void push_back(const gtsam::BetweenFactor<gtsam::Pose2>* factor);
+};
+gtsam::BetweenFactorPose2s parse2DFactors(string filename);
+
 // std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>
+// Ignored by pybind -> will be List[BetweenFactorPose3]
 class BetweenFactorPose3s
 {
   BetweenFactorPose3s();
@@ -2824,6 +2836,14 @@ class BetweenFactorPose3s
   gtsam::BetweenFactor<gtsam::Pose3>* at(size_t i) const;
   void push_back(const gtsam::BetweenFactor<gtsam::Pose3>* factor);
 };
+gtsam::BetweenFactorPose3s parse3DFactors(string filename);
+
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load3D(string filename);
+
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename, bool is3D);
+void writeG2o(const gtsam::NonlinearFactorGraph& graph,
+    const gtsam::Values& estimate, string filename);
 
 #include <gtsam/slam/InitializePose3.h>
 class InitializePose3 {
@@ -2844,14 +2864,6 @@ class InitializePose3 {
                                   bool useGradient);
   static gtsam::Values initialize(const gtsam::NonlinearFactorGraph& graph);
 };
-
-gtsam::BetweenFactorPose3s parse3DFactors(string filename);
-pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load3D(string filename);
-
-pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename);
-pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename, bool is3D);
-void writeG2o(const gtsam::NonlinearFactorGraph& graph,
-    const gtsam::Values& estimate, string filename);
 
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 template<T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose3}>
@@ -3376,6 +3388,7 @@ namespace utilities {
   gtsam::KeySet createKeySet(string s, Vector I);
   Matrix extractPoint2(const gtsam::Values& values);
   Matrix extractPoint3(const gtsam::Values& values);
+  gtsam::Values allPose2s(gtsam::Values& values);
   Matrix extractPose2(const gtsam::Values& values);
   gtsam::Values allPose3s(gtsam::Values& values);
   Matrix extractPose3(const gtsam::Values& values);

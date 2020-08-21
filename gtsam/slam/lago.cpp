@@ -17,6 +17,8 @@
  */
 
 #include <gtsam/slam/lago.h>
+
+#include <gtsam/slam/InitializePose.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/inference/Symbol.h>
@@ -33,7 +35,6 @@ namespace lago {
 static const Matrix I = I_1x1;
 static const Matrix I3 = I_3x3;
 
-static const Key keyAnchor = symbol('Z', 9999999);
 static const noiseModel::Diagonal::shared_ptr priorOrientationNoise =
     noiseModel::Diagonal::Sigmas((Vector(1) << 0).finished());
 static const noiseModel::Diagonal::shared_ptr priorPose2Noise =
@@ -79,7 +80,7 @@ key2doubleMap computeThetasToRoot(const key2doubleMap& deltaThetaMap,
   key2doubleMap thetaToRootMap;
 
   // Orientation of the roo
-  thetaToRootMap.insert(pair<Key, double>(keyAnchor, 0.0));
+  thetaToRootMap.insert(pair<Key, double>(initialize::kAnchorKey, 0.0));
 
   // for all nodes in the tree
   for(const key2doubleMap::value_type& it: deltaThetaMap) {
@@ -189,33 +190,8 @@ GaussianFactorGraph buildLinearOrientationGraph(
     lagoGraph.add(key1, -I, key2, I, deltaThetaRegularized, model_deltaTheta);
   }
   // prior on the anchor orientation
-  lagoGraph.add(keyAnchor, I, (Vector(1) << 0.0).finished(), priorOrientationNoise);
+  lagoGraph.add(initialize::kAnchorKey, I, (Vector(1) << 0.0).finished(), priorOrientationNoise);
   return lagoGraph;
-}
-
-/* ************************************************************************* */
-// Select the subgraph of betweenFactors and transforms priors into between wrt a fictitious node
-static NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph) {
-  gttic(lago_buildPose2graph);
-  NonlinearFactorGraph pose2Graph;
-
-  for(const boost::shared_ptr<NonlinearFactor>& factor: graph) {
-
-    // recast to a between on Pose2
-    boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
-        boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
-    if (pose2Between)
-      pose2Graph.add(pose2Between);
-
-    // recast PriorFactor<Pose2> to BetweenFactor<Pose2>
-    boost::shared_ptr<PriorFactor<Pose2> > pose2Prior =
-        boost::dynamic_pointer_cast<PriorFactor<Pose2> >(factor);
-    if (pose2Prior)
-      pose2Graph.add(
-          BetweenFactor<Pose2>(keyAnchor, pose2Prior->keys()[0],
-              pose2Prior->prior(), pose2Prior->noiseModel()));
-  }
-  return pose2Graph;
 }
 
 /* ************************************************************************* */
@@ -223,7 +199,7 @@ static PredecessorMap<Key> findOdometricPath(
     const NonlinearFactorGraph& pose2Graph) {
 
   PredecessorMap<Key> tree;
-  Key minKey = keyAnchor; // this initialization does not matter
+  Key minKey = initialize::kAnchorKey; // this initialization does not matter
   bool minUnassigned = true;
 
   for(const boost::shared_ptr<NonlinearFactor>& factor: pose2Graph) {
@@ -240,8 +216,8 @@ static PredecessorMap<Key> findOdometricPath(
         minKey = key1;
     }
   }
-  tree.insert(minKey, keyAnchor);
-  tree.insert(keyAnchor, keyAnchor); // root
+  tree.insert(minKey, initialize::kAnchorKey);
+  tree.insert(initialize::kAnchorKey, initialize::kAnchorKey); // root
   return tree;
 }
 
@@ -284,7 +260,7 @@ VectorValues initializeOrientations(const NonlinearFactorGraph& graph,
 
   // We "extract" the Pose2 subgraph of the original graph: this
   // is done to properly model priors and avoiding operating on a larger graph
-  NonlinearFactorGraph pose2Graph = buildPose2graph(graph);
+  NonlinearFactorGraph pose2Graph = initialize::buildPoseGraph<Pose2>(graph);
 
   // Get orientations from relative orientation measurements
   return computeOrientations(pose2Graph, useOdometricPath);
@@ -338,7 +314,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
     }
   }
   // add prior
-  linearPose2graph.add(keyAnchor, I3, Vector3(0.0, 0.0, 0.0),
+  linearPose2graph.add(initialize::kAnchorKey, I3, Vector3(0.0, 0.0, 0.0),
       priorPose2Noise);
 
   // optimize
@@ -348,7 +324,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
   Values initialGuessLago;
   for(const VectorValues::value_type& it: posesLago) {
     Key key = it.first;
-    if (key != keyAnchor) {
+    if (key != initialize::kAnchorKey) {
       const Vector& poseVector = it.second;
       Pose2 poseLago = Pose2(poseVector(0), poseVector(1),
           orientationsLago.at(key)(0) + poseVector(2));
@@ -364,7 +340,7 @@ Values initialize(const NonlinearFactorGraph& graph, bool useOdometricPath) {
 
   // We "extract" the Pose2 subgraph of the original graph: this
   // is done to properly model priors and avoiding operating on a larger graph
-  NonlinearFactorGraph pose2Graph = buildPose2graph(graph);
+  NonlinearFactorGraph pose2Graph = initialize::buildPoseGraph<Pose2>(graph);
 
   // Get orientations from relative orientation measurements
   VectorValues orientationsLago = computeOrientations(pose2Graph,
@@ -385,7 +361,7 @@ Values initialize(const NonlinearFactorGraph& graph,
   // for all nodes in the tree
   for(const VectorValues::value_type& it: orientations) {
     Key key = it.first;
-    if (key != keyAnchor) {
+    if (key != initialize::kAnchorKey) {
       const Pose2& pose = initialGuess.at<Pose2>(key);
       const Vector& orientation = it.second;
       Pose2 poseLago = Pose2(pose.x(), pose.y(), orientation(0));
