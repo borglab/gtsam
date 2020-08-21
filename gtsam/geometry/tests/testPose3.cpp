@@ -1043,11 +1043,7 @@ TEST(Pose3, print) {
   // Add expected rotation
   expected << "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\n";
 
-#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
   expected << "t: 1 2 3\n";
-#else
-  expected << "t: [" << translation.x() << ", " << translation.y() << ", " << translation.z() << "]'\n";
-#endif
 
   // reset cout to the original stream
   std::cout.rdbuf(oldbuf);
