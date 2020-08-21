@@ -172,7 +172,7 @@ GTSAM_EXPORT GraphAndValues load2D(const std::string& filename,
 
 /// @deprecated load2D now allows for arbitrary models and wrapping a robust kernel
 GTSAM_EXPORT GraphAndValues load2D_robust(const std::string& filename,
-    noiseModel::Base::shared_ptr& model, size_t maxIndex = 0);
+    const noiseModel::Base::shared_ptr& model, size_t maxIndex = 0);
 
 /** save 2d graph */
 GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph,

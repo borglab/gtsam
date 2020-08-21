@@ -541,7 +541,6 @@ TEST(NonlinearOptimizer, subclass_solver) {
 }
 
 /* ************************************************************************* */
-#include <wrap/utilities.h>
 TEST( NonlinearOptimizer, logfile )
 {
   NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());

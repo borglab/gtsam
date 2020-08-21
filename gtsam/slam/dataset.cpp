@@ -570,7 +570,7 @@ GraphAndValues load2D(pair<string, SharedNoiseModel> dataset, size_t maxIndex,
 
 /* ************************************************************************* */
 GraphAndValues load2D_robust(const string &filename,
-                             noiseModel::Base::shared_ptr &model,
+                             const noiseModel::Base::shared_ptr &model,
                              size_t maxIndex) {
   return load2D(filename, model, maxIndex);
 }

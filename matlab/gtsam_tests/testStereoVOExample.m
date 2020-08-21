@@ -65,4 +65,4 @@ pose_x1 = result.atPose3(x1);
 CHECK('pose_x1.equals(first_pose,1e-4)',pose_x1.equals(first_pose,1e-4));
 
 point_l1 = result.atPoint3(l1);
-CHECK('point_1.equals(expected_l1,1e-4)',point_l1.equals(expected_l1,1e-4));
+CHECK('point_1.equals(expected_l1,1e-4)',norm(point_l1 - expected_l1) < 1e-4);
