@@ -857,19 +857,11 @@ TEST( Pose3, adjointTranspose) {
 }
 
 /* ************************************************************************* */
-TEST( Pose3, stream)
-{
-  Pose3 T;
+TEST( Pose3, stream) {
   std::ostringstream os;
-  os << T;
+  os << Pose3();
 
-  string expected;
-#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
-  expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\nt: 0 0 0";;
-#else
-  expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\nt: [0, 0, 0]'";
-#endif
-
+  string expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\nt: 0 0 0";
   EXPECT(os.str() == expected);
 }
 
@@ -1042,7 +1034,6 @@ TEST(Pose3, print) {
 
   // Add expected rotation
   expected << "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\n";
-
   expected << "t: 1 2 3\n";
 
   // reset cout to the original stream

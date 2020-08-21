@@ -215,11 +215,7 @@ TEST(NavState, Stream)
   os << state;
 
   string expected;
-#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
   expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\np: 0\n0\n0\nv: 0\n0\n0";
-#else
-  expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\np: [0, 0, 0]'\nv: [0, 0, 0]'";
-#endif
 
   EXPECT(os.str() == expected);
 }
