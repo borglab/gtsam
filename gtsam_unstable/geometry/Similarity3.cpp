@@ -140,23 +140,6 @@ Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
   return Similarity3(aRb, aTb, s);
 }
 
-//  Use the geodesic L2 mean to solve the mean of rotations,
-//  Refer to: http://users.cecs.anu.edu.au/~hongdong/rotationaveraging.pdf (on page 18)
-Rot3 Similarity3::rotationAveraging(const std::vector<Rot3>& rotations, double error) {
-  Rot3 R = rotations[0];
-  const size_t n = rotations.size();
-  Vector3 r;
-  r << 0, 0, 0;
-  while (1) {
-    for (const Rot3 R_i : rotations) {
-      r += Rot3::Logmap(R.inverse().compose(R_i));
-    }
-    r /= n;
-    if (r.norm() < error) return R;
-    R = R.compose(Rot3::Expmap(r));
-  }
-}
-
 Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
   const size_t n = abPosePairs.size();
   if (n < 2) throw std::runtime_error("input should have at least 2 pairs of poses");  // we need at least two pairs
@@ -172,7 +155,7 @@ Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
   const double f = 1.0 / n;
   aCentroid *= f;
   bCentroid *= f;
-  Rot3 aRb = Similarity3::rotationAveraging(rotationList);
+  const Rot3 aRb = FindKarcherMean<Rot3>(rotationList);
 
   // Calculate scale
   double x = 0;

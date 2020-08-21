@@ -322,15 +322,6 @@ TEST(Similarity3, AlignPoint3_3) {
 }
 
 //******************************************************************************
-// Rotation Averaging
-TEST(Similarity3, RotationAveraging) {
-  Rot3 expected = Rot3::Rx(90 * degree);
-  vector<Rot3> rotations{Rot3(), Rot3::Rx(90 * degree), Rot3::Rx(180 * degree)};
-  Rot3 actual = Similarity3::rotationAveraging(rotations);
-  EXPECT(assert_equal(expected, actual));
-}
-
-//******************************************************************************
 // Align with Pose3 Pairs
 TEST(Similarity3, AlignPose3) {
   Similarity3 expected_aSb(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);

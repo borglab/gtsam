@@ -23,6 +23,9 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Manifold.h>
 #include <gtsam_unstable/dllexport.h>
+#include <gtsam/slam/KarcherMeanFactor-inl.h>
+#include <gtsam/slam/KarcherMeanFactor.h>
+
 
 namespace gtsam {
 
@@ -112,12 +115,7 @@ public:
    *  Create Similarity3 by aligning at least three point pairs
    */
   GTSAM_UNSTABLE_EXPORT static Similarity3 Align(const std::vector<Point3Pair>& abPointPairs);
-
-  /**
-   *  Calculate the average rotation from a list of rotations
-   */
-  GTSAM_UNSTABLE_EXPORT static Rot3 rotationAveraging(const std::vector<Rot3>& rotations, double error = 1e-10);
-
+  
   /**
    *  Create Similarity3 by aligning at least two pose pairs
    */
