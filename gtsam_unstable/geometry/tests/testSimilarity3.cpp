@@ -274,6 +274,26 @@ TEST(Similarity3, GroupActionPose3) {
   EXPECT(assert_equal(expected_Tb2, bSa.transformFrom(Ta2)));
 }
 
+TEST(Similarity3, GroupActionPose3_Compatibility) {
+  Similarity3 bSa(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
+  Similarity3 cSb(Rot3::Ry(90 * degree), Point3(-10, -4, 0), 3.0);
+  Similarity3 cSa(Rot3::Ry(270 * degree), Point3(0, 1, -2), 6.0);
+
+  // Create poses
+  Pose3 Ta1 = Pose3(Rot3(), Point3(0, 0, 0));
+  Pose3 Ta2 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, 1), Point3(4, 0, 0));
+  Pose3 Tb1 = Pose3(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
+  Pose3 Tb2 = Pose3(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
+  Pose3 Tc1 = Pose3(Rot3(0, 0, -1, 0, 1, 0, 1, 0, 0), Point3(0, 6, -12));
+  Pose3 Tc2 = Pose3(Rot3(0, 0, -1, 0, 1, 0, -1, 0, 0), Point3(0, 6, 12));
+
+  EXPECT(assert_equal(Tc1, cSb.transformFrom(Tb1)));
+  EXPECT(assert_equal(Tc2, cSb.transformFrom(Tb2)));
+
+  EXPECT(assert_equal(cSa.transformFrom(Ta1), cSb.transformFrom(Tb1)));
+  EXPECT(assert_equal(cSa.transformFrom(Ta2), cSb.transformFrom(Tb2)));
+}
+
 //******************************************************************************
 // Align with Point3 Pairs
 TEST(Similarity3, AlignPoint3_1) {
