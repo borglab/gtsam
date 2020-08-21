@@ -309,11 +309,11 @@ def plot_pose3(fignum, pose, axis_length=0.1, P=None,
 def plot_trajectory(fignum, values, scale=1, marginals=None,
                     title="Plot Trajectory", axis_labels=('X axis', 'Y axis', 'Z axis')):
     """
-    Plot a complete 3D trajectory using poses in `values`.
+    Plot a complete 2D/3D trajectory using poses in `values`.
 
     Args:
         fignum (int): Integer representing the figure number to use for plotting.
-        values (gtsam.Values): Values dict containing the poses.
+        values (gtsam.Values): Values containing some Pose2 and/or Pose3 values.
         scale (float): Value to scale the poses by.
         marginals (gtsam.Marginals): Marginalized probability values of the estimation.
             Used to plot uncertainty bounds.
