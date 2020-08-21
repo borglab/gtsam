@@ -55,8 +55,7 @@ jobs:
             os: ubuntu-18.04
             compiler: gcc
             version: "5"
-            env:
-              GTSAM_WITH_TBB: ON
+            flag: tbb
 
     steps:
       - name: Checkout
@@ -94,6 +93,11 @@ jobs:
             echo "::set-env name=CC::clang"
             echo "::set-env name=CXX::clang++"
           fi
+      - name: Set GTSAM_WITH_TBB Flag
+        if: matrix.flag == 'tbb'
+        run: |
+          echo "::set-env name=GTSAM_WITH_TBB::ON"
+          echo "GTSAM Uses TBB"
       - name: Build (Linux)
         if: runner.os == 'Linux'
         run: |
