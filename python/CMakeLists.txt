@@ -26,6 +26,7 @@ set(ignore
     gtsam::ISAM2ThresholdMapValue
     gtsam::FactorIndices
     gtsam::FactorIndexSet
+    gtsam::BetweenFactorPose2s
     gtsam::BetweenFactorPose3s
     gtsam::Point2Vector
     gtsam::Pose3Vector

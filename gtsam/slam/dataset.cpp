@@ -1284,7 +1284,13 @@ Values initialCamerasAndPointsEstimate(const SfmData &db) {
   return initial;
 }
 
-// To be deprecated when pybind wrapper is merged:
+// Wrapper-friendly versions of parseFactors<Pose2> and parseFactors<Pose2>
+BetweenFactorPose2s
+parse2DFactors(const std::string &filename,
+               const noiseModel::Diagonal::shared_ptr &model, size_t maxIndex) {
+  return parseFactors<Pose2>(filename, model, maxIndex);
+}
+
 BetweenFactorPose3s
 parse3DFactors(const std::string &filename,
                const noiseModel::Diagonal::shared_ptr &model, size_t maxIndex) {
