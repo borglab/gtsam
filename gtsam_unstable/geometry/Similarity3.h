@@ -199,9 +199,12 @@ public:
   /// @name Helper functions
   /// @{
 
-  /// Calculate expmap and logmap coefficients.
 private:
+  /// Calculate expmap and logmap coefficients.
   static Matrix3 GetV(Vector3 w, double lambda);
+
+  /// Calculate scale and translation with point pairs, rotation, and centroids.
+  static Similarity3 GetSim3(const std::vector<Point3Pair>& abPointPairs, const Point3 aCentroid, const Point3 bCentroid, const Rot3 aRb);
 
   /// @}
 };

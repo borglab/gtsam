@@ -96,6 +96,22 @@ Point3 Similarity3::operator*(const Point3& p) const {
 }
 
 // Refer to: http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf Chapter 3
+Similarity3 Similarity3::GetSim3(const std::vector<Point3Pair>& abPointPairs, const Point3 aCentroid, const Point3 bCentroid, const Rot3 aRb) {
+  double x = 0;
+  double y = 0;
+  for (const Point3Pair& abPair : abPointPairs) {
+    Point3 da = abPair.first - aCentroid;
+    Point3 db = abPair.second - bCentroid;
+    Vector3 Rdb = aRb * db;
+    y += da.transpose() * Rdb;
+    x += Rdb.transpose() * Rdb;
+  }
+  double s = y / x;
+  Point3 aTb = (aCentroid - s * (aRb * bCentroid)) / s;
+  return Similarity3(aRb, aTb, s);
+}
+
+// Refer to: http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf Chapter 3
 Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
   const size_t n = abPointPairs.size();
   if (n < 3) throw std::runtime_error("input should have at least 3 pairs of points");  // we need at least three pairs
@@ -112,32 +128,16 @@ Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
 
   // Add to form H matrix
   Matrix3 H = Z_3x3;
-  vector<Point3Pair> d_abPairs;
-  d_abPairs.reserve(n);
   for (const Point3Pair& abPair : abPointPairs) {
     Point3 da = abPair.first - aCentroid;
     Point3 db = abPair.second - bCentroid;
-    d_abPairs.emplace_back(da, db);
     H += da * db.transpose();
   }
 
   // ClosestTo finds rotation matrix closest to H in Frobenius sense
   Rot3 aRb = Rot3::ClosestTo(H);
 
-  // Calculate scale
-  double x = 0;
-  double y = 0;
-  for (const Point3Pair& d_abPair : d_abPairs) {
-    Point3 da = d_abPair.first;
-    Point3 db = d_abPair.second;
-    Vector3 Rdb = aRb * db;
-    y += da.transpose() * Rdb;
-    x += Rdb.transpose() * Rdb;
-  }
-  double s = y / x;
-
-  Point3 aTb = (aCentroid - s * (aRb * bCentroid)) / s;
-  return Similarity3(aRb, aTb, s);
+  return GetSim3(abPointPairs, aCentroid, bCentroid, aRb);
 }
 
 Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
@@ -147,30 +147,20 @@ Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
   // calculate rotation and centroids
   Point3 aCentroid(0, 0, 0), bCentroid(0, 0, 0);
   vector<Rot3> rotationList;
+  vector<Point3Pair> abPointPairs;
+  abPointPairs.reserve(n);
   for (const Pose3Pair& abPair : abPosePairs) {
     aCentroid += abPair.first.translation();
     bCentroid += abPair.second.translation();
     rotationList.emplace_back(abPair.first.rotation().compose(abPair.second.rotation().inverse()));
+    abPointPairs.emplace_back(abPair.first.translation(), abPair.second.translation());
   }
   const double f = 1.0 / n;
   aCentroid *= f;
   bCentroid *= f;
   const Rot3 aRb = FindKarcherMean<Rot3>(rotationList);
 
-  // Calculate scale
-  double x = 0;
-  double y = 0;
-  for (const Pose3Pair& abPair : abPosePairs) {
-    Point3 da = abPair.first.translation() - aCentroid;
-    Point3 db = abPair.second.translation() - bCentroid;
-    Vector3 Rdb = aRb * db;
-    y += da.transpose() * Rdb;
-    x += Rdb.transpose() * Rdb;
-  }
-  double s = y / x;
-
-  Point3 aTb = (aCentroid - s * (aRb * bCentroid)) / s;
-  return Similarity3(aRb, aTb, s);
+  return GetSim3(abPointPairs, aCentroid, bCentroid, aRb);
 }
 
 Matrix4 Similarity3::wedge(const Vector7& xi) {
