@@ -274,6 +274,8 @@ TEST(Similarity3, GroupActionPose3) {
   EXPECT(assert_equal(expected_Tb2, bSa.transformFrom(Ta2)));
 }
 
+// Test left group action compatibility.
+// cSa*Ta = cSb*bSa*Ta
 TEST(Similarity3, GroupActionPose3_Compatibility) {
   Similarity3 bSa(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
   Similarity3 cSb(Rot3::Ry(90 * degree), Point3(-10, -4, 0), 3.0);

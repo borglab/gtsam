@@ -23,8 +23,6 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Manifold.h>
 #include <gtsam_unstable/dllexport.h>
-#include <gtsam/slam/KarcherMeanFactor-inl.h>
-#include <gtsam/slam/KarcherMeanFactor.h>
 
 
 namespace gtsam {
@@ -113,7 +111,8 @@ public:
    * |Rs*R Rs*t+ts|   |Rs*R s(Rs*t+ts)|
    * | 0      1/s | = |  0       1    |
    * 
-   * This group action satisfies the compatibility condition.
+   * This group action satisfies the compatibility condition. 
+   * For more details, refer to: https://en.wikipedia.org/wiki/Group_action
    */
   GTSAM_UNSTABLE_EXPORT Pose3 transformFrom(const Pose3& T) const;
 
