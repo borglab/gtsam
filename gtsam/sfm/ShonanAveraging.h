@@ -20,12 +20,13 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/dllexport.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/sfm/BinaryMeasurement.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam/dllexport.h>
 
 #include <Eigen/Sparse>
 #include <map>
@@ -200,8 +201,8 @@ public:
   /// Project pxdN Stiefel manifold matrix S to Rot3^N
   Values roundSolutionS(const Matrix &S) const;
 
-  /// Create a tangent direction xi with eigenvector segment v_i
-  static Vector MakeATangentVector(size_t p, const Vector &v, size_t i);
+  /// Create a VectorValues with eigenvector v_i
+  static VectorValues MakeATangentVectorValues(size_t p, const Vector &v);
 
   /// Calculate the riemannian gradient of F(values) at values
   Matrix riemannianGradient(size_t p, const Values &values) const;

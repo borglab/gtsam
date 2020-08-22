@@ -643,20 +643,26 @@ bool ShonanAveraging<d>::checkOptimality(const Values &values) const {
 }
 
 /* ************************************************************************* */
-/// Create a tangent direction xi with eigenvector segment v_i
+/// Create a VectorValues with eigenvector v
 template <size_t d>
-Vector ShonanAveraging<d>::MakeATangentVector(size_t p, const Vector &v,
-                                              size_t i) {
+VectorValues ShonanAveraging<d>::MakeATangentVectorValues(size_t p,
+                                                          const Vector &v) {
+  VectorValues delta;
   // Create a tangent direction xi with eigenvector segment v_i
   const size_t dimension = SOn::Dimension(p);
-  const auto v_i = v.segment<d>(d * i);
-  Vector xi = Vector::Zero(dimension);
-  double sign = pow(-1.0, round((p + 1) / 2) + 1);
-  for (size_t j = 0; j < d; j++) {
-    xi(j + p - d - 1) = sign * v_i(d - j - 1);
-    sign = -sign;
+  for (size_t i = 0; i < v.size() / d; i++) {
+    // Create a tangent direction xi with eigenvector segment v_i
+    // Assumes key is 0-based integer
+    const auto v_i = v.segment<d>(d * i);
+    Vector xi = Vector::Zero(dimension);
+    double sign = pow(-1.0, round((p + 1) / 2) + 1);
+    for (size_t j = 0; j < d; j++) {
+      xi(j + p - d - 1) = sign * v_i(d - j - 1);
+      sign = -sign;
+    }
+    delta.insert(i, xi);
   }
-  return xi;
+  return delta;
 }
 
 /* ************************************************************************* */
@@ -690,14 +696,8 @@ template <size_t d>
 Values ShonanAveraging<d>::LiftwithDescent(size_t p, const Values &values,
                                            const Vector &minEigenVector) {
   Values lifted = LiftTo<SOn>(p, values);
-  for (auto it : lifted.filter<SOn>()) {
-    // Create a tangent direction xi with eigenvector segment v_i
-    // Assumes key is 0-based integer
-    const Vector xi = MakeATangentVector(p, minEigenVector, it.key);
-    // Move the old value in the descent direction
-    it.value = it.value.retract(xi);
-  }
-  return lifted;
+  VectorValues delta = MakeATangentVectorValues(p, minEigenVector);
+  return lifted.retract(delta);
 }
 
 /* ************************************************************************* */

@@ -121,7 +121,7 @@ TEST(ShonanAveraging3, tryOptimizingAt4) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging3, MakeATangentVector) {
+TEST(ShonanAveraging3, MakeATangentVectorValues) {
   Vector9 v;
   v << 1, 2, 3, 4, 5, 6, 7, 8, 9;
   Matrix expected(5, 5);
@@ -130,8 +130,8 @@ TEST(ShonanAveraging3, MakeATangentVector) {
       0, 0, 0, 0, -6,         //
       0, 0, 0, 0, 0,          //
       4, 5, 6, 0, 0;
-  const Vector xi_1 = ShonanAveraging3::MakeATangentVector(5, v, 1);
-  const auto actual = SOn::Hat(xi_1);
+  const VectorValues delta = ShonanAveraging3::MakeATangentVectorValues(5, v);
+  const auto actual = SOn::Hat(delta[1]);
   CHECK(assert_equal(expected, actual));
 }
 
