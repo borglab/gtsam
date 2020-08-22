@@ -22,6 +22,8 @@
 #include <gtsam/base/Lie.h>
 #include <boost/optional.hpp>
 
+#include <random>
+
 namespace gtsam {
 
   /**
@@ -78,6 +80,14 @@ namespace gtsam {
 
     /** Named constructor that behaves as atan2, i.e., y,x order (!) and normalizes */
     static Rot2 atan2(double y, double x);
+
+    /**
+     * Random, generates random angle \in [-p,pi]
+     * Example:
+     *   std::mt19937 engine(42);
+     *   Unit3 unit = Unit3::Random(engine);
+     */
+    static Rot2 Random(std::mt19937 & rng);
 
     /// @}
     /// @name Testable

@@ -1,7 +1,8 @@
-# install CCOLAMD headers
+# install CCOLAMD and SuiteSparse_config headers
 install(FILES CCOLAMD/Include/ccolamd.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/CCOLAMD)
 install(FILES SuiteSparse_config/SuiteSparse_config.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/SuiteSparse_config)
 
+# install Eigen unless System Eigen is used
 if(NOT GTSAM_USE_SYSTEM_EIGEN)
 	# Find plain .h files
 	file(GLOB_RECURSE eigen_headers "${CMAKE_CURRENT_SOURCE_DIR}/Eigen/Eigen/*.h")

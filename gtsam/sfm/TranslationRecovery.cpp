@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file TranslationRecovery.h
+ * @file TranslationRecovery.cpp
  * @author Frank Dellaert
  * @date March 2020
- * @brief test recovering translations when rotations are given.
+ * @brief Source code for recovering translations when rotations are given
  */
 
 #include <gtsam/sfm/TranslationRecovery.h>
@@ -33,30 +33,25 @@ using namespace gtsam;
 using namespace std;
 
 NonlinearFactorGraph TranslationRecovery::buildGraph() const {
-  auto noiseModel = noiseModel::Isotropic::Sigma(3, 0.01);
   NonlinearFactorGraph graph;
 
   // Add all relative translation edges
   for (auto edge : relativeTranslations_) {
-    Key a, b;
-    tie(a, b) = edge.first;
-    const Unit3 w_aZb = edge.second;
-    graph.emplace_shared<TranslationFactor>(a, b, w_aZb, noiseModel);
+    graph.emplace_shared<TranslationFactor>(edge.key1(), edge.key2(),
+                                            edge.measured(), edge.noiseModel());
   }
 
   return graph;
 }
 
 void TranslationRecovery::addPrior(const double scale,
-                                   NonlinearFactorGraph* graph) const {
-  auto noiseModel = noiseModel::Isotropic::Sigma(3, 0.01);
+                                   NonlinearFactorGraph *graph) const {
+  //TODO(akshay-krishnan): make this an input argument                                     
+  auto priorNoiseModel = noiseModel::Isotropic::Sigma(3, 0.01);
   auto edge = relativeTranslations_.begin();
-  Key a, b;
-  tie(a, b) = edge->first;
-  const Unit3 w_aZb = edge->second;
-  graph->emplace_shared<PriorFactor<Point3> >(a, Point3(0, 0, 0), noiseModel);
-  graph->emplace_shared<PriorFactor<Point3> >(b, scale * w_aZb.point3(),
-                                              noiseModel);
+  graph->emplace_shared<PriorFactor<Point3> >(edge->key1(), Point3(0, 0, 0), priorNoiseModel);
+  graph->emplace_shared<PriorFactor<Point3> >(edge->key2(), scale * edge->measured().point3(),
+                                              edge->noiseModel());
 }
 
 Values TranslationRecovery::initalizeRandomly() const {
@@ -71,10 +66,8 @@ Values TranslationRecovery::initalizeRandomly() const {
 
   // Loop over measurements and add a random translation
   for (auto edge : relativeTranslations_) {
-    Key a, b;
-    tie(a, b) = edge.first;
-    insert(a);
-    insert(b);
+    insert(edge.key1());
+    insert(edge.key2());
   }
   return initial;
 }
@@ -89,7 +82,8 @@ Values TranslationRecovery::run(const double scale) const {
 }
 
 TranslationRecovery::TranslationEdges TranslationRecovery::SimulateMeasurements(
-    const Values& poses, const vector<KeyPair>& edges) {
+    const Values &poses, const vector<KeyPair> &edges) {
+  auto edgeNoiseModel = noiseModel::Isotropic::Sigma(3, 0.01);
   TranslationEdges relativeTranslations;
   for (auto edge : edges) {
     Key a, b;
@@ -97,7 +91,7 @@ TranslationRecovery::TranslationEdges TranslationRecovery::SimulateMeasurements(
     const Pose3 wTa = poses.at<Pose3>(a), wTb = poses.at<Pose3>(b);
     const Point3 Ta = wTa.translation(), Tb = wTb.translation();
     const Unit3 w_aZb(Tb - Ta);
-    relativeTranslations[edge] = w_aZb;
+    relativeTranslations.emplace_back(a, b, w_aZb, edgeNoiseModel);
   }
   return relativeTranslations;
 }

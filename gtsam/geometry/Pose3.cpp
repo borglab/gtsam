@@ -430,7 +430,7 @@ boost::optional<Pose3> align(const vector<Point3Pair>& baPointPairs) {
 std::ostream &operator<<(std::ostream &os, const Pose3& pose) {
   // Both Rot3 and Point3 have ostream definitions so we use them.
   os << "R: " << pose.rotation() << "\n";
-  os << "t: " << pose.translation();
+  os << "t: " << pose.translation().transpose();
   return os;
 }
 

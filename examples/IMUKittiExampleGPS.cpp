@@ -287,7 +287,7 @@ int main(int argc, char* argv[]) {
                 new_values.insert(current_pose_key, gps_pose);
 
                 printf("################ POSE INCLUDED AT TIME %lf ################\n", t);
-                gps_pose.translation().print();
+                cout << gps_pose.translation();
                 printf("\n\n");
             } else {
                 new_values.insert(current_pose_key, current_pose_global);

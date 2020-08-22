@@ -1,0 +1,171 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.11">
+  <compounddef id="classgtsam_1_1JacobianFactorQ" kind="class" language="C++" prot="public">
+    <compoundname>gtsam::JacobianFactorQ</compoundname>
+    <basecompoundref prot="public" virt="non-virtual">RegularJacobianFactor&lt; D &gt;</basecompoundref>
+    <includes refid="JacobianFactorQ_8h" local="no">JacobianFactorQ.h</includes>
+    <templateparamlist>
+      <param>
+        <type>size_t</type>
+        <declname>D</declname>
+        <defname>D</defname>
+      </param>
+      <param>
+        <type>size_t</type>
+        <declname>ZDim</declname>
+        <defname>ZDim</defname>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="private-type">
+      <memberdef kind="typedef" id="classgtsam_1_1JacobianFactorQ_1abb244ea915349e3beb40b669fe8317c4" prot="private" static="no">
+        <type>RegularJacobianFactor&lt; D &gt;</type>
+        <definition>typedef RegularJacobianFactor&lt;D&gt; gtsam::JacobianFactorQ&lt; D, ZDim &gt;::Base</definition>
+        <argsstring></argsstring>
+        <name>Base</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/JacobianFactorQ.h" line="29" column="1" bodyfile="tests/doc-test-files/JacobianFactorQ.h" bodystart="29" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="classgtsam_1_1JacobianFactorQ_1aa64b12e917e0c89d0d0e9782ea9e06a4" prot="private" static="no">
+        <type>Eigen::Matrix&lt; double, ZDim, D &gt;</type>
+        <definition>typedef Eigen::Matrix&lt;double, ZDim, D&gt; gtsam::JacobianFactorQ&lt; D, ZDim &gt;::MatrixZD</definition>
+        <argsstring></argsstring>
+        <name>MatrixZD</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/JacobianFactorQ.h" line="30" column="1" bodyfile="tests/doc-test-files/JacobianFactorQ.h" bodystart="30" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="classgtsam_1_1JacobianFactorQ_1a2dbb8aa1aaf1d46d64181c5aeeb1a06c" prot="private" static="no">
+        <type>std::pair&lt; Key, Matrix &gt;</type>
+        <definition>typedef std::pair&lt;Key, Matrix&gt; gtsam::JacobianFactorQ&lt; D, ZDim &gt;::KeyMatrix</definition>
+        <argsstring></argsstring>
+        <name>KeyMatrix</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/JacobianFactorQ.h" line="31" column="1" bodyfile="tests/doc-test-files/JacobianFactorQ.h" bodystart="31" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classgtsam_1_1JacobianFactorQ_1a4dd3fbba46a6dff75bcf902931a3b769" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>gtsam::JacobianFactorQ&lt; D, ZDim &gt;::JacobianFactorQ</definition>
+        <argsstring>()</argsstring>
+        <name>JacobianFactorQ</name>
+        <briefdescription>
+<para>Default constructor. </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/JacobianFactorQ.h" line="36" column="1" bodyfile="tests/doc-test-files/JacobianFactorQ.h" bodystart="36" bodyend="37"/>
+      </memberdef>
+      <memberdef kind="function" id="classgtsam_1_1JacobianFactorQ_1abfb38e58b5b2d1293cf374b7eca2b2d4" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>gtsam::JacobianFactorQ&lt; D, ZDim &gt;::JacobianFactorQ</definition>
+        <argsstring>(const KeyVector &amp;keys, const SharedDiagonal &amp;model=SharedDiagonal())</argsstring>
+        <name>JacobianFactorQ</name>
+        <param>
+          <type>const KeyVector &amp;</type>
+          <declname>keys</declname>
+        </param>
+        <param>
+          <type>const SharedDiagonal &amp;</type>
+          <declname>model</declname>
+          <defval>SharedDiagonal()</defval>
+        </param>
+        <briefdescription>
+<para>Empty constructor with keys. </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/JacobianFactorQ.h" line="40" column="1" bodyfile="tests/doc-test-files/JacobianFactorQ.h" bodystart="40" bodyend="50"/>
+      </memberdef>
+      <memberdef kind="function" id="classgtsam_1_1JacobianFactorQ_1a549fef1272025c45472f2e4294bd319e" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>gtsam::JacobianFactorQ&lt; D, ZDim &gt;::JacobianFactorQ</definition>
+        <argsstring>(const KeyVector &amp;keys, const std::vector&lt; MatrixZD, Eigen::aligned_allocator&lt; MatrixZD &gt; &gt; &amp;FBlocks, const Matrix &amp;E, const Matrix3 &amp;P, const Vector &amp;b, const SharedDiagonal &amp;model=SharedDiagonal())</argsstring>
+        <name>JacobianFactorQ</name>
+        <param>
+          <type>const KeyVector &amp;</type>
+          <declname>keys</declname>
+        </param>
+        <param>
+          <type>const std::vector&lt; MatrixZD, Eigen::aligned_allocator&lt; MatrixZD &gt; &gt; &amp;</type>
+          <declname>FBlocks</declname>
+        </param>
+        <param>
+          <type>const Matrix &amp;</type>
+          <declname>E</declname>
+        </param>
+        <param>
+          <type>const Matrix3 &amp;</type>
+          <declname>P</declname>
+        </param>
+        <param>
+          <type>const Vector &amp;</type>
+          <declname>b</declname>
+        </param>
+        <param>
+          <type>const SharedDiagonal &amp;</type>
+          <declname>model</declname>
+          <defval>SharedDiagonal()</defval>
+        </param>
+        <briefdescription>
+<para>Constructor. </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/JacobianFactorQ.h" line="53" column="1" bodyfile="tests/doc-test-files/JacobianFactorQ.h" bodystart="53" bodyend="72"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para>JacobianFactor for Schur complement that uses Q noise model </para>    </detaileddescription>
+    <inheritancegraph>
+      <node id="83">
+        <label>gtsam::JacobianFactorQ&lt; D, ZDim &gt;</label>
+        <link refid="classgtsam_1_1JacobianFactorQ"/>
+        <childnode refid="84" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="84">
+        <label>RegularJacobianFactor&lt; D &gt;</label>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="85">
+        <label>gtsam::JacobianFactorQ&lt; D, ZDim &gt;</label>
+        <link refid="classgtsam_1_1JacobianFactorQ"/>
+        <childnode refid="86" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="86">
+        <label>RegularJacobianFactor&lt; D &gt;</label>
+      </node>
+    </collaborationgraph>
+    <location file="tests/doc-test-files/JacobianFactorQ.h" line="27" column="1" bodyfile="tests/doc-test-files/JacobianFactorQ.h" bodystart="27" bodyend="73"/>
+    <listofallmembers>
+      <member refid="classgtsam_1_1JacobianFactorQ_1abb244ea915349e3beb40b669fe8317c4" prot="private" virt="non-virtual"><scope>gtsam::JacobianFactorQ</scope><name>Base</name></member>
+      <member refid="classgtsam_1_1JacobianFactorQ_1a4dd3fbba46a6dff75bcf902931a3b769" prot="public" virt="non-virtual"><scope>gtsam::JacobianFactorQ</scope><name>JacobianFactorQ</name></member>
+      <member refid="classgtsam_1_1JacobianFactorQ_1abfb38e58b5b2d1293cf374b7eca2b2d4" prot="public" virt="non-virtual"><scope>gtsam::JacobianFactorQ</scope><name>JacobianFactorQ</name></member>
+      <member refid="classgtsam_1_1JacobianFactorQ_1a549fef1272025c45472f2e4294bd319e" prot="public" virt="non-virtual"><scope>gtsam::JacobianFactorQ</scope><name>JacobianFactorQ</name></member>
+      <member refid="classgtsam_1_1JacobianFactorQ_1a2dbb8aa1aaf1d46d64181c5aeeb1a06c" prot="private" virt="non-virtual"><scope>gtsam::JacobianFactorQ</scope><name>KeyMatrix</name></member>
+      <member refid="classgtsam_1_1JacobianFactorQ_1aa64b12e917e0c89d0d0e9782ea9e06a4" prot="private" virt="non-virtual"><scope>gtsam::JacobianFactorQ</scope><name>MatrixZD</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>
