@@ -105,7 +105,16 @@ public:
       OptionalJacobian<3, 7> H1 = boost::none, //
       OptionalJacobian<3, 3> H2 = boost::none) const;
 
-  /// Action on a pose T, R = R*T.R, t = s(R*T.t+t)
+  /** 
+   * Action on a pose T.
+   * |Rs  ts|   |R t|   |Rs*R Rs*t+ts| 
+   * |0  1/s| * |0 1| = | 0      1/s |, the result is still a Sim3 object.
+   * To retrieve a Pose3, we normalized the scale value into 1.
+   * |Rs*R Rs*t+ts|   |Rs*R s(Rs*t+ts)|
+   * | 0      1/s | = |  0       1    |
+   * 
+   * This group action satisfies the compatibility condition.
+   */
   GTSAM_UNSTABLE_EXPORT Pose3 transformFrom(const Pose3& T) const;
 
   /** syntactic sugar for transformFrom */
