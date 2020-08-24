@@ -111,7 +111,7 @@ class PreintegrationExample(object):
     def plotGroundTruthPose(self, t, scale=0.3, time_interval=0.01):
         # plot ground truth pose, as well as prediction from integrated IMU measurements
         actualPose = self.scenario.pose(t)
-        plot_pose3(POSES_FIG, actualPose, 0.3)
+        plot_pose3(POSES_FIG, actualPose, scale)
         t = actualPose.translation()
         self.maxDim = max([max(np.abs(t)), self.maxDim])
         ax = plt.gca()

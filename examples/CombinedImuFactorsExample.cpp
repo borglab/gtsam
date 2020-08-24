@@ -10,17 +10,15 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file ImuFactorsExample
- * @brief Test example for using GTSAM ImuFactor and ImuCombinedFactor
+ * @file CombinedImuFactorsExample
+ * @brief Test example for using GTSAM ImuCombinedFactor
  * navigation code.
- * @author Garrett (ghemann@gmail.com), Luca Carlone
+ * @author Varun Agrawal
  */
 
 /**
- * Example of use of the imuFactors (imuFactor and combinedImuFactor) in
+ * Example of use of the CombinedImuFactor in
  * conjunction with GPS
- *  - imuFactor is used by default. You can test combinedImuFactor by
- *  appending a `-c` flag at the end (see below for example command).
  *  - we read IMU and GPS data from a CSV file, with the following format:
  *  A row starting with "i" is the first initial position formatted with
  *  N, E, D, qx, qY, qZ, qW, velN, velE, velD
@@ -31,7 +29,7 @@
  * Note that for GPS correction, we're only using the position not the
  * rotation. The rotation is provided in the file for ground truth comparison.
  *
- *  See usage: ./ImuFactorsExample --help
+ *  See usage: ./CombinedImuFactorsExample --help
  */
 
 #include <boost/program_options.hpp>
@@ -41,7 +39,6 @@
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/GPSFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
-#include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -81,6 +78,21 @@ po::variables_map parseOptions(int argc, char* argv[]) {
   return vm;
 }
 
+Vector10 readInitialState(ifstream& file) {
+  string value;
+  // Format is (N,E,D,qX,qY,qZ,qW,velN,velE,velD)
+  Vector10 initial_state;
+  getline(file, value, ',');  // i
+  for (int i = 0; i < 9; i++) {
+    getline(file, value, ',');
+    initial_state(i) = stof(value.c_str());
+  }
+  getline(file, value, '\n');
+  initial_state(9) = stof(value.c_str());
+
+  return initial_state;
+}
+
 boost::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
   // We use the sensor specs to build the noise model for the IMU factor.
   double accel_noise_sigma = 0.0003924;
@@ -116,26 +128,10 @@ boost::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
 
 int main(int argc, char* argv[]) {
   string data_filename, output_filename;
-
-  bool use_isam = false;
-
   po::variables_map var_map = parseOptions(argc, argv);
 
   data_filename = findExampleDataFile(var_map["data_csv_path"].as<string>());
   output_filename = var_map["output_filename"].as<string>();
-  use_isam = var_map["use_isam"].as<bool>();
-
-  ISAM2* isam2;
-  if (use_isam) {
-    printf("Using ISAM2\n");
-    ISAM2Params parameters;
-    parameters.relinearizeThreshold = 0.01;
-    parameters.relinearizeSkip = 1;
-    isam2 = new ISAM2(parameters);
-
-  } else {
-    printf("Using Levenberg Marquardt Optimizer\n");
-  }
 
   // Set up output file for plotting errors
   FILE* fp_out = fopen(output_filename.c_str(), "w+");
@@ -147,33 +143,28 @@ int main(int argc, char* argv[]) {
   // From there, we'll iterate through the file and we'll preintegrate the IMU
   // or add in the GPS given the input.
   ifstream file(data_filename.c_str());
-  string value;
 
-  // Format is (N,E,D,qX,qY,qZ,qW,velN,velE,velD)
-  Vector10 initial_state;
-  getline(file, value, ',');  // i
-  for (int i = 0; i < 9; i++) {
-    getline(file, value, ',');
-    initial_state(i) = stof(value.c_str());
-  }
-  getline(file, value, '\n');
-  initial_state(9) = stof(value.c_str());
+  Vector10 initial_state = readInitialState(file);
   cout << "initial state:\n" << initial_state.transpose() << "\n\n";
 
   // Assemble initial quaternion through GTSAM constructor
-  // ::quaternion(w,x,y,z);
+  // ::Quaternion(w,x,y,z);
   Rot3 prior_rotation = Rot3::Quaternion(initial_state(6), initial_state(3),
                                          initial_state(4), initial_state(5));
   Point3 prior_point(initial_state.head<3>());
   Pose3 prior_pose(prior_rotation, prior_point);
   Vector3 prior_velocity(initial_state.tail<3>());
+
   imuBias::ConstantBias prior_imu_bias;  // assume zero initial bias
 
+  int index = 0;
+
   Values initial_values;
-  int correction_count = 0;
-  initial_values.insert(X(correction_count), prior_pose);
-  initial_values.insert(V(correction_count), prior_velocity);
-  initial_values.insert(B(correction_count), prior_imu_bias);
+
+  // insert pose at initialization
+  initial_values.insert(X(index), prior_pose);
+  initial_values.insert(V(index), prior_velocity);
+  initial_values.insert(B(index), prior_imu_bias);
 
   // Assemble prior noise model and add it the graph.`
   auto pose_noise_model = noiseModel::Diagonal::Sigmas(
@@ -183,15 +174,16 @@ int main(int argc, char* argv[]) {
   auto bias_noise_model = noiseModel::Isotropic::Sigma(6, 1e-3);
 
   // Add all prior factors (pose, velocity, bias) to the graph.
-  NonlinearFactorGraph* graph = new NonlinearFactorGraph();
-  graph->addPrior(X(correction_count), prior_pose, pose_noise_model);
-  graph->addPrior(V(correction_count), prior_velocity, velocity_noise_model);
-  graph->addPrior(B(correction_count), prior_imu_bias, bias_noise_model);
+  NonlinearFactorGraph graph;
+  graph.addPrior<Pose3>(X(index), prior_pose, pose_noise_model);
+  graph.addPrior<Vector3>(V(index), prior_velocity, velocity_noise_model);
+  graph.addPrior<imuBias::ConstantBias>(B(index), prior_imu_bias,
+                                        bias_noise_model);
 
   auto p = imuParams();
 
   std::shared_ptr<PreintegrationType> preintegrated =
-      std::make_shared<PreintegratedImuMeasurements>(p, prior_imu_bias);
+      std::make_shared<PreintegratedCombinedMeasurements>(p, prior_imu_bias);
 
   assert(preintegrated);
 
@@ -210,6 +202,7 @@ int main(int argc, char* argv[]) {
   // All priors have been set up, now iterate through the data file.
   while (file.good()) {
     // Parse out first value
+    string value;
     getline(file, value, ',');
     int type = stoi(value.c_str());
 
@@ -234,66 +227,52 @@ int main(int argc, char* argv[]) {
       getline(file, value, '\n');
       gps(6) = stof(value.c_str());
 
-      correction_count++;
+      index++;
 
       // Adding IMU factor and GPS factor and optimizing.
-      auto preint_imu =
-          dynamic_cast<const PreintegratedImuMeasurements&>(*preintegrated);
-      ImuFactor imu_factor(X(correction_count - 1), V(correction_count - 1),
-                           X(correction_count), V(correction_count),
-                           B(correction_count - 1), preint_imu);
-      graph->add(imu_factor);
-      imuBias::ConstantBias zero_bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
-      graph->add(BetweenFactor<imuBias::ConstantBias>(
-          B(correction_count - 1), B(correction_count), zero_bias,
-          bias_noise_model));
+      auto preint_imu_combined =
+          dynamic_cast<const PreintegratedCombinedMeasurements&>(
+              *preintegrated);
+      CombinedImuFactor imu_factor(X(index - 1), V(index - 1), X(index),
+                                   V(index), B(index - 1), B(index),
+                                   preint_imu_combined);
+      graph.add(imu_factor);
 
       auto correction_noise = noiseModel::Isotropic::Sigma(3, 1.0);
-      GPSFactor gps_factor(X(correction_count),
+      GPSFactor gps_factor(X(index),
                            Point3(gps(0),   // N,
                                   gps(1),   // E,
                                   gps(2)),  // D,
                            correction_noise);
-      graph->add(gps_factor);
+      graph.add(gps_factor);
 
       // Now optimize and compare results.
       prop_state = preintegrated->predict(prev_state, prev_bias);
-      initial_values.insert(X(correction_count), prop_state.pose());
-      initial_values.insert(V(correction_count), prop_state.v());
-      initial_values.insert(B(correction_count), prev_bias);
+      initial_values.insert(X(index), prop_state.pose());
+      initial_values.insert(V(index), prop_state.v());
+      initial_values.insert(B(index), prev_bias);
 
-      Values result;
-
-      if (use_isam) {
-        isam2->update(*graph, initial_values);
-        isam2->update();
-        result = isam2->calculateEstimate();
-
-        // reset the graph
-        graph->resize(0);
-        initial_values.clear();
-
-      } else {
-        LevenbergMarquardtOptimizer optimizer(*graph, initial_values);
-        result = optimizer.optimize();
-      }
+      LevenbergMarquardtParams params;
+      params.setVerbosityLM("SUMMARY");
+      LevenbergMarquardtOptimizer optimizer(graph, initial_values, params);
+      Values result = optimizer.optimize();
 
       // Overwrite the beginning of the preintegration for the next step.
-      prev_state = NavState(result.at<Pose3>(X(correction_count)),
-                            result.at<Vector3>(V(correction_count)));
-      prev_bias = result.at<imuBias::ConstantBias>(B(correction_count));
+      prev_state =
+          NavState(result.at<Pose3>(X(index)), result.at<Vector3>(V(index)));
+      prev_bias = result.at<imuBias::ConstantBias>(B(index));
 
       // Reset the preintegration object.
       preintegrated->resetIntegrationAndSetBias(prev_bias);
 
       // Print out the position and orientation error for comparison.
-      Vector3 gtsam_position = prev_state.pose().translation();
-      Vector3 position_error = gtsam_position - gps.head<3>();
+      Vector3 result_position = prev_state.pose().translation();
+      Vector3 position_error = result_position - gps.head<3>();
       current_position_error = position_error.norm();
 
-      Quaternion gtsam_quat = prev_state.pose().rotation().toQuaternion();
+      Quaternion result_quat = prev_state.pose().rotation().toQuaternion();
       Quaternion gps_quat(gps(6), gps(3), gps(4), gps(5));
-      Quaternion quat_error = gtsam_quat * gps_quat.inverse();
+      Quaternion quat_error = result_quat * gps_quat.inverse();
       quat_error.normalize();
       Vector3 euler_angle_error(quat_error.x() * 2, quat_error.y() * 2,
                                 quat_error.z() * 2);
@@ -301,13 +280,14 @@ int main(int argc, char* argv[]) {
 
       // display statistics
       cout << "Position error:" << current_position_error << "\t "
-           << "Angular error:" << current_orientation_error << "\n";
+           << "Angular error:" << current_orientation_error << "\n"
+           << endl;
 
       fprintf(fp_out, "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
-              output_time, gtsam_position(0), gtsam_position(1),
-              gtsam_position(2), gtsam_quat.x(), gtsam_quat.y(), gtsam_quat.z(),
-              gtsam_quat.w(), gps(0), gps(1), gps(2), gps_quat.x(),
-              gps_quat.y(), gps_quat.z(), gps_quat.w());
+              output_time, result_position(0), result_position(1),
+              result_position(2), result_quat.x(), result_quat.y(),
+              result_quat.z(), result_quat.w(), gps(0), gps(1), gps(2),
+              gps_quat.x(), gps_quat.y(), gps_quat.z(), gps_quat.w());
 
       output_time += 1.0;
 
