@@ -211,8 +211,8 @@ private:
   /// Calculate expmap and logmap coefficients.
   static Matrix3 GetV(Vector3 w, double lambda);
 
-  /// Calculate scale and translation with point pairs, rotation, and centroids.
-  static Similarity3 GetSim3(const std::vector<Point3Pair>& abPointPairs, const Point3 aCentroid, const Point3 bCentroid, const Rot3 aRb);
+  /// This methods estimates the similarity transform from point pairs, given a known or estimated rotation.
+  static Similarity3 AlignGivenR(const std::vector<Point3Pair>& abPointPairs, const Rot3& aRb);
 
   /// @}
 };
