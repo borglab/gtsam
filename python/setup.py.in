@@ -27,6 +27,7 @@ setup(
     author_email='frank.dellaert@gtsam.org',
     license='Simplified BSD license',
     keywords='slam sam robotics localization mapping optimization',
+    long_description_content_type='text/markdown',
     long_description=readme_contents,
     # https://pypi.org/pypi?%3Aaction=list_classifiers
     classifiers=[
