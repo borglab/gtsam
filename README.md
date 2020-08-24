@@ -13,7 +13,6 @@ mapping (SAM) in robotics and vision, using Factor Graphs and Bayes
 Networks as the underlying computing paradigm rather than sparse
 matrices.
 
-<!-- This double colon is to make sure this text is valid restructureText for generating proper pypi packages!!! -->
 The current support matrix is::
 
 | Platform     | Compiler  | Build Status  |
