@@ -75,6 +75,19 @@ double dot(const Point3 &p, const Point3 &q, OptionalJacobian<1, 3> H1,
   return p.x() * q.x() + p.y() * q.y() + p.z() * q.z();
 }
 
+Point3Pair mean(const std::vector<Point3Pair> &abPointPairs) {
+  const size_t n = abPointPairs.size();
+  Point3 aCentroid(0, 0, 0), bCentroid(0, 0, 0);
+  for (const Point3Pair &abPair : abPointPairs) {
+    aCentroid += abPair.first;
+    bCentroid += abPair.second;
+  }
+  const double f = 1.0 / n;
+  aCentroid *= f;
+  bCentroid *= f;
+  return make_pair(aCentroid, bCentroid);
+}
+
 /* ************************************************************************* */
 ostream &operator<<(ostream &os, const gtsam::Point3Pair &p) {
   os << p.first << " <-> " << p.second;
