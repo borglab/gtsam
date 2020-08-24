@@ -13,7 +13,7 @@ mapping (SAM) in robotics and vision, using Factor Graphs and Bayes
 Networks as the underlying computing paradigm rather than sparse
 matrices.
 
-The current support matrix is::
+The current support matrix is:
 
 | Platform     | Compiler  | Build Status  |
 |:------------:|:---------:|:-------------:|
