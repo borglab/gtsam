@@ -643,19 +643,18 @@ bool ShonanAveraging<d>::checkOptimality(const Values &values) const {
 }
 
 /* ************************************************************************* */
-/// Create a VectorValues with eigenvector v
 template <size_t d>
-VectorValues ShonanAveraging<d>::MakeATangentVectorValues(size_t p,
-                                                          const Vector &v) {
+VectorValues ShonanAveraging<d>::TangentVectorValues(size_t p,
+                                                     const Vector &v) {
   VectorValues delta;
   // Create a tangent direction xi with eigenvector segment v_i
   const size_t dimension = SOn::Dimension(p);
+  double sign0 = pow(-1.0, round((p + 1) / 2) + 1);
   for (size_t i = 0; i < v.size() / d; i++) {
-    // Create a tangent direction xi with eigenvector segment v_i
     // Assumes key is 0-based integer
     const auto v_i = v.segment<d>(d * i);
     Vector xi = Vector::Zero(dimension);
-    double sign = pow(-1.0, round((p + 1) / 2) + 1);
+    double sign = sign0;
     for (size_t j = 0; j < d; j++) {
       xi(j + p - d - 1) = sign * v_i(d - j - 1);
       sign = -sign;
@@ -696,7 +695,7 @@ template <size_t d>
 Values ShonanAveraging<d>::LiftwithDescent(size_t p, const Values &values,
                                            const Vector &minEigenVector) {
   Values lifted = LiftTo<SOn>(p, values);
-  VectorValues delta = MakeATangentVectorValues(p, minEigenVector);
+  VectorValues delta = TangentVectorValues(p, minEigenVector);
   return lifted.retract(delta);
 }
 

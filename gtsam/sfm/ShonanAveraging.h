@@ -202,7 +202,7 @@ public:
   Values roundSolutionS(const Matrix &S) const;
 
   /// Create a VectorValues with eigenvector v_i
-  static VectorValues MakeATangentVectorValues(size_t p, const Vector &v);
+  static VectorValues TangentVectorValues(size_t p, const Vector &v);
 
   /// Calculate the riemannian gradient of F(values) at values
   Matrix riemannianGradient(size_t p, const Values &values) const;
