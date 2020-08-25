@@ -121,18 +121,17 @@ TEST(ShonanAveraging3, tryOptimizingAt4) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging3, MakeATangentVectorValues) {
+TEST(ShonanAveraging3, TangentVectorValues) {
   Vector9 v;
   v << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  Matrix expected(5, 5);
-  expected << 0, 0, 0, 0, -4, //
-      0, 0, 0, 0, -5,         //
-      0, 0, 0, 0, -6,         //
-      0, 0, 0, 0, 0,          //
-      4, 5, 6, 0, 0;
-  const VectorValues delta = ShonanAveraging3::MakeATangentVectorValues(5, v);
-  const auto actual = SOn::Hat(delta[1]);
-  CHECK(assert_equal(expected, actual));
+  Vector expected0(10), expected1(10), expected2(10);
+  expected0 << 0, 3, -2, 1, 0, 0, 0, 0, 0, 0;
+  expected1 << 0, 6, -5, 4, 0, 0, 0, 0, 0, 0;
+  expected2 << 0, 9, -8, 7, 0, 0, 0, 0, 0, 0;
+  const VectorValues xi = ShonanAveraging3::TangentVectorValues(5, v);
+  EXPECT(assert_equal(expected0, xi[0]));
+  EXPECT(assert_equal(expected1, xi[1]));
+  EXPECT(assert_equal(expected2, xi[2]));
 }
 
 /* ************************************************************************* */
@@ -158,17 +157,18 @@ TEST(ShonanAveraging3, CheckWithEigen) {
   double lambda = kShonan.computeMinEigenValue(Qstar3);
 
   // Check Eigenvalue with slow Eigen version, converts matrix A to dense matrix!
-  // const Matrix S = ShonanAveraging3::StiefelElementMatrix(Qstar3);
-  // auto A = kShonan.computeA(S);
-  // bool computeEigenvectors = false;
-  // Eigen::EigenSolver<Matrix> eigenSolver(Matrix(A), computeEigenvectors);
-  // auto lambdas = eigenSolver.eigenvalues().real();
-  // double minEigenValue = lambdas(0);
-  // for (int i = 1; i < lambdas.size(); i++)
-  //     minEigenValue = min(lambdas(i), minEigenValue);
+  const Matrix S = ShonanAveraging3::StiefelElementMatrix(Qstar3);
+  auto A = kShonan.computeA(S);
+  bool computeEigenvectors = false;
+  Eigen::EigenSolver<Matrix> eigenSolver(Matrix(A), computeEigenvectors);
+  auto lambdas = eigenSolver.eigenvalues().real();
+  double minEigenValue = lambdas(0);
+  for (int i = 1; i < lambdas.size(); i++)
+      minEigenValue = min(lambdas(i), minEigenValue);
 
   // Actual check
   EXPECT_DOUBLES_EQUAL(0, lambda, 1e-11);
+  EXPECT_DOUBLES_EQUAL(0, minEigenValue, 1e-11);
 
   // Construct test descent direction (as minEigenVector is not predictable
   // across platforms, being one from a basically flat 3d- subspace)
