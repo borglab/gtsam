@@ -158,17 +158,17 @@ TEST(ShonanAveraging3, CheckWithEigen) {
   double lambda = kShonan.computeMinEigenValue(Qstar3);
 
   // Check Eigenvalue with slow Eigen version, converts matrix A to dense matrix!
-  const Matrix S = ShonanAveraging3::StiefelElementMatrix(Qstar3);
-  auto A = kShonan.computeA(S);
-  bool computeEigenvectors = false;
-  Eigen::EigenSolver<Matrix> eigenSolver(Matrix(A), computeEigenvectors);
-  auto lambdas = eigenSolver.eigenvalues().real();
-  double minEigenValue = lambdas(0);
-  for (int i = 1; i < lambdas.size(); i++)
-      minEigenValue = min(lambdas(i), minEigenValue);
+  // const Matrix S = ShonanAveraging3::StiefelElementMatrix(Qstar3);
+  // auto A = kShonan.computeA(S);
+  // bool computeEigenvectors = false;
+  // Eigen::EigenSolver<Matrix> eigenSolver(Matrix(A), computeEigenvectors);
+  // auto lambdas = eigenSolver.eigenvalues().real();
+  // double minEigenValue = lambdas(0);
+  // for (int i = 1; i < lambdas.size(); i++)
+  //     minEigenValue = min(lambdas(i), minEigenValue);
 
   // Actual check
-  EXPECT_DOUBLES_EQUAL(minEigenValue, lambda, 1e-12);
+  EXPECT_DOUBLES_EQUAL(0, lambda, 1e-11);
 
   // Construct test descent direction (as minEigenVector is not predictable
   // across platforms, being one from a basically flat 3d- subspace)
