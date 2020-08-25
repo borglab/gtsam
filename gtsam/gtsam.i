@@ -2925,6 +2925,7 @@ class ShonanAveragingParameters2 {
   void setOptimalityThreshold(double value);
   double getOptimalityThreshold() const;
   void setAnchor(size_t index, const gtsam::Rot2& value);
+  pair<size_t, gtsam::Rot2> getAnchor();
   void setAnchorWeight(double value);
   double getAnchorWeight() const;
   void setKarcherWeight(double value);
@@ -2940,6 +2941,7 @@ class ShonanAveragingParameters3 {
   void setOptimalityThreshold(double value);
   double getOptimalityThreshold() const;
   void setAnchor(size_t index, const gtsam::Rot3& value);
+  pair<size_t, gtsam::Rot3> getAnchor();
   void setAnchorWeight(double value);
   double getAnchorWeight() const;
   void setKarcherWeight(double value);
