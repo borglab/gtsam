@@ -186,10 +186,10 @@ mxArray* wrap<double>(const double& value) {
 
 // wrap a const Eigen vector into a double vector
 mxArray* wrap_Vector(const gtsam::Vector& v) {
-  int m = v.size();
-  mxArray *result = mxCreateDoubleMatrix(m, 1, mxREAL);
-  double *data = mxGetPr(result);
-  for (int i=0;i<m;i++) data[i]=v(i);
+  size_t m = v.size();
+  mxArray* result = mxCreateDoubleMatrix(m, 1, mxREAL);
+  double* data = mxGetPr(result);
+  for (size_t i = 0; i < m; i++) data[i] = v(i);
   return result;
 }
 
@@ -213,15 +213,16 @@ mxArray* wrap<gtsam::Point3 >(const gtsam::Point3& v) {
 
 // wrap a const Eigen MATRIX into a double matrix
 mxArray* wrap_Matrix(const gtsam::Matrix& A) {
-  int m = A.rows(), n = A.cols();
+  size_t m = A.rows(), n = A.cols();
 #ifdef DEBUG_WRAP
-  mexPrintf("wrap_Matrix called with A = \n", m,n);
+  mexPrintf("wrap_Matrix called with A = \n", m, n);
   gtsam::print(A);
 #endif
-  mxArray *result = mxCreateDoubleMatrix(m, n, mxREAL);
-  double *data = mxGetPr(result);
+  mxArray* result = mxCreateDoubleMatrix(m, n, mxREAL);
+  double* data = mxGetPr(result);
   // converts from column-major to row-major
-  for (int j=0;j<n;j++) for (int i=0;i<m;i++,data++) *data = A(i,j);
+  for (size_t j = 0; j < n; j++)
+    for (size_t i = 0; i < m; i++, data++) *data = A(i, j);
   return result;
 }
 
