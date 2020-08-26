@@ -47,7 +47,7 @@ constexpr int NSquaredSO(int N) { return (N < 0) ? Eigen::Dynamic : N * N; }
  * Template paramater N can be a fixed integer or can be Eigen::Dynamic
  */
 template <int N>
-class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
+class GTSAM_EXPORT SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
  public:
   enum { dimension = internal::DimensionSO(N) };
   using MatrixNN = Eigen::Matrix<double, N, N>;
@@ -204,7 +204,9 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   static size_t Dimension(size_t n) { return n * (n - 1) / 2; }
 
   // Calculate ambient dimension n from manifold dimensionality d.
-  static size_t AmbientDim(size_t d) { return (1 + std::sqrt(1 + 8 * d)) / 2; }
+  static size_t AmbientDim(size_t d) {
+    return static_cast<size_t>(1 + std::sqrt(1 + 8 * d)) / 2;
+  }
 
   // Calculate run-time dimensionality of manifold.
   // Available as dimension or Dim() for fixed N.
