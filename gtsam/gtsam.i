@@ -3033,6 +3033,17 @@ class ShonanAveraging3 {
   pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p, size_t max_p) const;
 };
 
+#include <gtsam/sfm/TranslationRecovery.h>
+class TranslationRecovery {
+  TranslationRecovery(const BinaryMeasurementsUnit3& relativeTranslations,
+                      const LevenbergMarquardtParams& lmParams);
+  TranslationRecovery(
+      const BinaryMeasurementsUnit3&
+          relativeTranslations);  // default LevenbergMarquardtParams
+  gtsam::Values run(const double scale) const;
+  gtsam::Values run() const;    // default scale = 1.0
+};
+
 //*************************************************************************
 // Navigation
 //*************************************************************************
