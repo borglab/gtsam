@@ -1,4 +1,6 @@
+from . import utils
 from .gtsam import *
+from .utils import findExampleDataFile
 
 
 def _init():

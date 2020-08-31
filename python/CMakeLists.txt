@@ -4,6 +4,10 @@ if (NOT GTSAM_BUILD_PYTHON)
     return()
 endif()
 
+# Common directory for storing data/datasets stored with the package.
+# This will store the data in the Python site package directly.
+set(GTSAM_PYTHON_DATASET_DIR "./gtsam/Data")
+
 # Generate setup.py.
 file(READ "${PROJECT_SOURCE_DIR}/README.md" README_CONTENTS)
 configure_file(${PROJECT_SOURCE_DIR}/python/setup.py.in
