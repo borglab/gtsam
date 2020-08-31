@@ -89,8 +89,8 @@ Matrix7 NavState::matrix() const {
 //------------------------------------------------------------------------------
 ostream& operator<<(ostream& os, const NavState& state) {
   os << "R: " << state.attitude() << "\n";
-  os << "p: " << state.position() << "\n";
-  os << "v: " << Point3(state.velocity());
+  os << "p: " << state.position().transpose() << "\n";
+  os << "v: " << state.velocity().transpose();
   return os;
 }
 

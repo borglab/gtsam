@@ -24,12 +24,6 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-ostream &operator<<(ostream &os, const Point2& p) {
-  os << p.transpose();
-  return os;
-}
-
-/* ************************************************************************* */
 double norm2(const Point2& p, OptionalJacobian<1,2> H) {
   double r = std::sqrt(p.x() * p.x() + p.y() * p.y());
   if (H) {

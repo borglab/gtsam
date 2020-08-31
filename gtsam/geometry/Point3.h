@@ -33,8 +33,6 @@ namespace gtsam {
 /// it is now possible to just typedef Point3 to Vector3
 typedef Vector3 Point3;
 
-GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const gtsam::Point3 &p);
-
 // Convenience typedef
 typedef std::pair<Point3, Point3> Point3Pair;
 GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const gtsam::Point3Pair &p);
