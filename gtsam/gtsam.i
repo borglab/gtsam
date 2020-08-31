@@ -2914,6 +2914,13 @@ class BinaryMeasurement {
 typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
 typedef gtsam::BinaryMeasurement<gtsam::Rot3> BinaryMeasurementRot3;
 
+class BinaryMeasurementsUnit3 {
+  BinaryMeasurementsUnit3();
+  size_t size() const;
+  gtsam::BinaryMeasurement<gtsam::Unit3> at(size_t idx) const;
+  void push_back(const gtsam::BinaryMeasurement<gtsam::Unit3> measurement);
+};
+
 #include <gtsam/sfm/ShonanAveraging.h>
 
 // TODO(frank): copy/pasta below until we have integer template paremeters in wrap!
@@ -3035,11 +3042,10 @@ class ShonanAveraging3 {
 
 #include <gtsam/sfm/TranslationRecovery.h>
 class TranslationRecovery {
-  TranslationRecovery(const BinaryMeasurementsUnit3& relativeTranslations,
-                      const LevenbergMarquardtParams& lmParams);
+  TranslationRecovery(const gtsam::BinaryMeasurementsUnit3 &relativeTranslations,
+                      const gtsam::LevenbergMarquardtParams &lmParams);
   TranslationRecovery(
-      const BinaryMeasurementsUnit3&
-          relativeTranslations);  // default LevenbergMarquardtParams
+      const gtsam::BinaryMeasurementsUnit3 & relativeTranslations);  // default LevenbergMarquardtParams
   gtsam::Values run(const double scale) const;
   gtsam::Values run() const;    // default scale = 1.0
 };
