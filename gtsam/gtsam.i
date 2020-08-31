@@ -2800,7 +2800,6 @@ class SfmData {
   gtsam::SfmTrack track(size_t idx) const;
 };
 
-string findExampleDataFile(string name);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model, int maxIndex, bool addNoise, bool smart);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
