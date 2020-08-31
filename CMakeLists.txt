@@ -428,14 +428,6 @@ add_subdirectory(CppUnitLite)
 if(GTSAM_BUILD_PYTHON)
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wrap/cmake")
     add_subdirectory(python)
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        # Common directory which always has write access
-        # This is because the exact location of the Python installation may vary
-        # depending on various factors such as python version and use of virtual envs.
-        set(GTSAM_PYTHON_DATASET_DIR "/tmp/gtsam_example_data")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set(GTSAM_PYTHON_DATASET_DIR "$ENV{LOCALAPPDATA}/gtsam_example_data")
-    endif()
 endif()
 
 # Build GTSAM library
