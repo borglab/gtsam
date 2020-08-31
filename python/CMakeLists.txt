@@ -4,16 +4,9 @@ if (NOT GTSAM_BUILD_PYTHON)
     return()
 endif()
 
-# Common directory for storing data stored with the package.
-# This is because the exact location of the Python installation may vary
-# depending on various factors such as python version and use of virtual envs.
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    # Easy directory with write access.
-    set(GTSAM_PYTHON_DATASET_DIR "/tmp/gtsam_example_data")
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    # %LocalAppData% directory in Windows.
-    set(GTSAM_PYTHON_DATASET_DIR "$ENV{LOCALAPPDATA}/gtsam_example_data")
-endif()
+# Common directory for storing data/datasets stored with the package.
+# This will store the data in the Python site package directly.
+set(GTSAM_PYTHON_DATASET_DIR "./gtsam/Data")
 
 # Generate setup.py.
 file(READ "${PROJECT_SOURCE_DIR}/README.md" README_CONTENTS)
