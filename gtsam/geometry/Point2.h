@@ -26,6 +26,8 @@ namespace gtsam {
 /// it is now possible to just typedef Point2 to Vector2
 typedef Vector2 Point2;
 
+GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const gtsam::Point2 &p);
+
 /// Distance of the point from the origin, with Jacobian
 GTSAM_EXPORT double norm2(const Point2& p, OptionalJacobian<1, 2> H = boost::none);
 

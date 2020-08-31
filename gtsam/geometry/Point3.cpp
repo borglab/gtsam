@@ -23,6 +23,12 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
+ostream &operator<<(ostream &os, const Point3& p) {
+  os << p.transpose();
+  return os;
+}
+
+/* ************************************************************************* */
 double distance3(const Point3 &p1, const Point3 &q, OptionalJacobian<1, 3> H1,
                  OptionalJacobian<1, 3> H2) {
   double d = (q - p1).norm();
