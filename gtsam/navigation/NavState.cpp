@@ -228,18 +228,27 @@ Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
     dP(xi) -= (0.5 * dt2) * omega_cross2_t;
     dV(xi) -= dt * omega_cross2_t;
   }
+
+  // NOTE(tim): position and velocity changes dP and dV are in nav frame; need
+  // to put them into local frame for subsequent retract
+  dP(xi) = nRb.unrotate(dP(xi));
+  dV(xi) = nRb.unrotate(dV(xi));
+
+
   if (H) {
     H->setZero();
     const Matrix3 Omega = skewSymmetric(omega);
     const Matrix3 D_cross_state = Omega * R();
     H->setZero();
     D_R_R(H) << D_dP_R;
-    D_t_v(H) << (-dt2) * D_cross_state;
-    D_v_v(H) << (-2.0 * dt) * D_cross_state;
+    D_t_v(H) << nRb.matrix().transpose() * (-dt2) * D_cross_state;
+    D_t_R(H) << skewSymmetric(dP(xi));
+    D_v_v(H) << nRb.matrix().transpose() * (-2.0 * dt) * D_cross_state;
+    D_v_R(H) << skewSymmetric(dV(xi));
     if (secondOrder) {
       const Matrix3 D_cross2_state = Omega * D_cross_state;
-      D_t_t(H) -= (0.5 * dt2) * D_cross2_state;
-      D_v_t(H) -= dt * D_cross2_state;
+      D_t_t(H) -= nRb.matrix().transpose() * (0.5 * dt2) * D_cross2_state;
+      D_v_t(H) -= nRb.matrix().transpose() * dt * D_cross2_state;
     }
   }
   return xi;
