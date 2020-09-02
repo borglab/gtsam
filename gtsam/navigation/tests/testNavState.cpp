@@ -193,7 +193,7 @@ TEST(NavState, Coriolis2) {
 }
 
 TEST(NavState, Coriolis3) {
-  /** Consider a massless plate with an attached nav frame at 
+  /** Consider a massless planet with an attached nav frame at 
    *  n_omega = [0 0 1]', and a body at position n_t = [1 0 0]', travelling with 
    *  velocity n_v = [0 1 0]'. Orient the body so that it is not instantaneously
    *  aligned with the nav frame (i.e., nRb != I_3x3). Test that first and 
