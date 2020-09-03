@@ -1130,6 +1130,13 @@ bool readBAL(const string &filename, SfmData &data) {
 }
 
 /* ************************************************************************* */
+SfmData readBAL(const string &filename) {
+  SfmData data;
+  readBAL(filename, data);
+  return data;
+}
+
+/* ************************************************************************* */
 bool writeBAL(const string &filename, SfmData &data) {
   // Open the output file
   ofstream os;
