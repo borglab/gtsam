@@ -283,7 +283,7 @@ GTSAM_EXPORT bool readBAL(const std::string& filename, SfmData &data);
  * @param filename The name of the BAL file.
  * @return SfM structure where the data is stored.
  */
-GTSAM_EXPORT SfmData readBAL(const std::string& filename);
+GTSAM_EXPORT SfmData readBal(const std::string& filename);
 
 /**
  * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a

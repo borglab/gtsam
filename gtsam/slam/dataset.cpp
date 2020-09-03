@@ -1130,7 +1130,7 @@ bool readBAL(const string &filename, SfmData &data) {
 }
 
 /* ************************************************************************* */
-SfmData readBAL(const string &filename) {
+SfmData readBal(const string &filename) {
   SfmData data;
   readBAL(filename, data);
   return data;
