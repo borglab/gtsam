@@ -181,6 +181,9 @@ public:
     static Vector6 Local(const Pose3& pose, ChartJacobian Hpose = boost::none);
   };
 
+  static Matrix3 computeQforExpmapDerivative(
+      const Vector6& xi, double nearZeroThreshold = 1e-5);
+
   using LieGroup<Pose3, 6>::inverse; // version with derivative
 
   /**

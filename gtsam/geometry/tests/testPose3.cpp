@@ -818,6 +818,15 @@ TEST( Pose3, LogmapDerivative) {
   EXPECT(assert_equal(expectedH, actualH));
 }
 
+TEST( Pose3, computeQforExpmapDerivative) {
+  Vector6 w = Vector6::Random();
+  w.head<3>().normalize();
+  w.head<3>() = w.head<3>() * 0.09;
+  Matrix3 Qexact = Pose3::computeQforExpmapDerivative(w);
+  Matrix3 Qapprox = Pose3::computeQforExpmapDerivative(w, 0.1);
+  EXPECT(assert_equal(Qapprox, Qexact, 1e-5));
+}
+
 /* ************************************************************************* */
 Vector6 testDerivAdjoint(const Vector6& xi, const Vector6& v) {
   return Pose3::adjointMap(xi) * v;
