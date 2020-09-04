@@ -230,8 +230,8 @@ Matrix3 Pose3::computeQforExpmapDerivative(const Vector6& xi, double nearZeroThr
   }
   else {
     Q = -0.5*V + 1./6.*(W*V + V*W - W*V*W)
-        + 1./24.*(W*W*V + V*W*W - 3*W*V*W)
-        - 0.5*(1./24. + 3./120.)*(W*V*W*W + W*W*V*W);
+        - 1./24.*(W*W*V + V*W*W - 3*W*V*W)
+        + 1./120.*(W*V*W*W + W*W*V*W);
   }
 #endif
 
