@@ -2918,7 +2918,7 @@ class BinaryMeasurementsUnit3 {
   BinaryMeasurementsUnit3();
   size_t size() const;
   gtsam::BinaryMeasurement<gtsam::Unit3> at(size_t idx) const;
-  void push_back(const gtsam::BinaryMeasurement<gtsam::Unit3> measurement);
+  void push_back(const gtsam::BinaryMeasurement<gtsam::Unit3>& measurement);
 };
 
 #include <gtsam/sfm/ShonanAveraging.h>
