@@ -120,4 +120,12 @@ class IndexPair : public std::pair<size_t,size_t> {
   inline size_t i() const { return first; };
   inline size_t j() const { return second; };
 };
+
+typedef std::vector<IndexPair> IndexPairVector;
+typedef std::set<IndexPair> IndexPairSet;
+
+inline IndexPairVector IndexPairSetAsArray(IndexPairSet& set) { return IndexPairVector(set.begin(), set.end()); }
+
+typedef std::map<IndexPair, IndexPairSet> IndexPairSetMap;
+typedef DSFMap<IndexPair> DSFMapIndexPair;
 }  // namespace gtsam
