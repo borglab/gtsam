@@ -21,6 +21,7 @@
 #include <cstdlib>  // Provides size_t
 #include <map>
 #include <set>
+#include <vector>
 
 namespace gtsam {
 
