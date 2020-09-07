@@ -30,6 +30,8 @@ set(ignore
     gtsam::ISAM2ThresholdMapValue
     gtsam::FactorIndices
     gtsam::FactorIndexSet
+    gtsam::IndexPairSetMap
+    gtsam::IndexPairVector
     gtsam::BetweenFactorPose2s
     gtsam::BetweenFactorPose3s
     gtsam::Point2Vector
