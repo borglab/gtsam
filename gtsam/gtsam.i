@@ -2914,13 +2914,6 @@ class BinaryMeasurement {
 typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
 typedef gtsam::BinaryMeasurement<gtsam::Rot3> BinaryMeasurementRot3;
 
-class BinaryMeasurementsUnit3 {
-  BinaryMeasurementsUnit3();
-  size_t size() const;
-  gtsam::BinaryMeasurement<gtsam::Unit3> at(size_t idx) const;
-  void push_back(const gtsam::BinaryMeasurement<gtsam::Unit3>& measurement);
-};
-
 #include <gtsam/sfm/ShonanAveraging.h>
 
 // TODO(frank): copy/pasta below until we have integer template paremeters in wrap!
