@@ -166,7 +166,7 @@ if(MSVC AND BUILD_SHARED_LIBS)
 endif()
 
 # Store these in variables so they are automatically replicated in GTSAMConfig.cmake and such.
-set(BOOST_FIND_MINIMUM_VERSION 1.43)
+set(BOOST_FIND_MINIMUM_VERSION 1.58)
 set(BOOST_FIND_MINIMUM_COMPONENTS serialization system filesystem thread program_options date_time timer chrono regex)
 
 find_package(Boost ${BOOST_FIND_MINIMUM_VERSION} COMPONENTS ${BOOST_FIND_MINIMUM_COMPONENTS})
@@ -174,7 +174,7 @@ find_package(Boost ${BOOST_FIND_MINIMUM_VERSION} COMPONENTS ${BOOST_FIND_MINIMUM
 # Required components
 if(NOT Boost_SERIALIZATION_LIBRARY OR NOT Boost_SYSTEM_LIBRARY OR NOT Boost_FILESYSTEM_LIBRARY OR
     NOT Boost_THREAD_LIBRARY OR NOT Boost_DATE_TIME_LIBRARY)
-  message(FATAL_ERROR "Missing required Boost components >= v1.43, please install/upgrade Boost or configure your search paths.")
+  message(FATAL_ERROR "Missing required Boost components >= v1.58, please install/upgrade Boost or configure your search paths.")
 endif()
 
 option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
@@ -490,7 +490,7 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME "gtsam-${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION
 
 # Deb-package specific cpack
 set(CPACK_DEBIAN_PACKAGE_NAME "libgtsam-dev")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev (>= 1.43)") #Example: "libc6 (>= 2.3.1-6), libgcc1 (>= 1:3.4.2-12)")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev (>= 1.58)") #Example: "libc6 (>= 2.3.1-6), libgcc1 (>= 1:3.4.2-12)")
 
 
 ###############################################################################

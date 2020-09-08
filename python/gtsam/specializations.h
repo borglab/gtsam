@@ -10,3 +10,5 @@ py::bind_vector<std::vector<gtsam::Pose3> >(m_, "Pose3Vector");
 py::bind_vector<std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose3> > > >(m_, "BetweenFactorPose3s");
 py::bind_vector<std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose2> > > >(m_, "BetweenFactorPose2s");
 py::bind_vector<std::vector<gtsam::BinaryMeasurement<gtsam::Unit3> > >(m_, "BinaryMeasurementsUnit3");
+py::bind_map<gtsam::IndexPairSetMap>(m_, "IndexPairSetMap");
+py::bind_vector<gtsam::IndexPairVector>(m_, "IndexPairVector");

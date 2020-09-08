@@ -82,7 +82,8 @@ Rot3 Rot3::Rz(double t) {
 
 /* ************************************************************************* */
 // Considerably faster than composing matrices above !
-Rot3 Rot3::RzRyRx(double x, double y, double z) {
+Rot3 Rot3::RzRyRx(double x, double y, double z, OptionalJacobian<3, 1> Hx,
+                  OptionalJacobian<3, 1> Hy, OptionalJacobian<3, 1> Hz) {
   double cx=cos(x),sx=sin(x);
   double cy=cos(y),sy=sin(y);
   double cz=cos(z),sz=sin(z);
@@ -97,6 +98,9 @@ Rot3 Rot3::RzRyRx(double x, double y, double z) {
   double s_c = sx * cz;
   double c_c = cx * cz;
   double ssc = ss_ * cz, csc = cs_ * cz, sss = ss_ * sz, css = cs_ * sz;
+  if (Hx) (*Hx) << 1, 0, 0;
+  if (Hy) (*Hy) << 0, cx, -sx;
+  if (Hz) (*Hz) << -sy, sc_, cc_;
   return Rot3(
       _cc,- c_s + ssc,  s_s + csc,
       _cs,  c_c + sss, -s_c + css,

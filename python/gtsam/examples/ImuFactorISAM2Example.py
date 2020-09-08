@@ -1,6 +1,6 @@
 """
-iSAM2 example with ImuFactor.
-Author: Robert Truax (C++), Frank Dellaert, Varun Agrawal
+ImuFactor example with iSAM2.
+Authors: Robert Truax (C++), Frank Dellaert, Varun Agrawal (Python)
 """
 # pylint: disable=invalid-name, E1101
 
@@ -8,9 +8,11 @@ from __future__ import print_function
 
 import math
 
-import gtsam
 import matplotlib.pyplot as plt
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
+
+import gtsam
 from gtsam import (ISAM2, BetweenFactorConstantBias, Cal3_S2,
                    ConstantTwistScenario, ImuFactor, NonlinearFactorGraph,
                    PinholeCameraCal3_S2, Point3, Pose3,
@@ -18,7 +20,6 @@ from gtsam import (ISAM2, BetweenFactorConstantBias, Cal3_S2,
                    PriorFactorVector, Rot3, Values)
 from gtsam.symbol_shorthand import B, V, X
 from gtsam.utils import plot
-from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
 
 
 def vector3(x, y, z):
@@ -58,7 +59,6 @@ def get_camera(radius):
 
 def get_scenario(radius, pose_0, angular_velocity, delta_t):
     """Create the set of ground-truth landmarks and poses"""
-
     angular_velocity_vector = vector3(0, -angular_velocity, 0)
     linear_velocity_vector = vector3(radius * angular_velocity, 0, 0)
     scenario = ConstantTwistScenario(

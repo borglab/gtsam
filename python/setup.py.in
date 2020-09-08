@@ -1,3 +1,4 @@
+import glob
 import os
 import sys
 
@@ -8,6 +9,11 @@ except ImportError:
 
 packages = find_packages(where=".")
 print("PACKAGES: ", packages)
+
+data_path = '${GTSAM_SOURCE_DIR}/examples/Data/'
+data_files_and_directories = glob.glob(data_path + '**', recursive=True)
+data_files = [x for x in data_files_and_directories if not os.path.isdir(x)]
+
 package_data = {
     '': [
         './*.so',
@@ -27,6 +33,7 @@ setup(
     author_email='frank.dellaert@gtsam.org',
     license='Simplified BSD license',
     keywords='slam sam robotics localization mapping optimization',
+    long_description_content_type='text/markdown',
     long_description=readme_contents,
     # https://pypi.org/pypi?%3Aaction=list_classifiers
     classifiers=[
@@ -43,6 +50,7 @@ setup(
     ],
     packages=packages,
     package_data=package_data,
+    data_files=[('${GTSAM_PYTHON_DATASET_DIR}', data_files),],
     test_suite="gtsam.tests",
     install_requires=["numpy"],
     zip_safe=False,

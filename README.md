@@ -13,6 +13,8 @@ mapping (SAM) in robotics and vision, using Factor Graphs and Bayes
 Networks as the underlying computing paradigm rather than sparse
 matrices.
 
+The current support matrix is:
+
 | Platform     | Compiler  | Build Status  |
 |:------------:|:---------:|:-------------:|
 | Ubuntu 18.04 | gcc/clang | ![Linux CI](https://github.com/borglab/gtsam/workflows/Linux%20CI/badge.svg) |
@@ -38,7 +40,7 @@ $ make install
 
 Prerequisites:
 
-- [Boost](http://www.boost.org/users/download/) >= 1.43 (Ubuntu: `sudo apt-get install libboost-all-dev`)
+- [Boost](http://www.boost.org/users/download/) >= 1.58 (Ubuntu: `sudo apt-get install libboost-all-dev`)
 - [CMake](http://www.cmake.org/cmake/resources/software.html) >= 3.0 (Ubuntu: `sudo apt-get install cmake`)
 - A modern compiler, i.e., at least gcc 4.7.3 on Linux.
 

@@ -16,26 +16,25 @@
  * @brief  Shonan Averaging algorithm
  */
 
-#include <gtsam/sfm/ShonanAveraging.h>
-
+#include <SymEigsSolver.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/sfm/ShonanAveraging.h>
+#include <gtsam/sfm/ShonanFactor.h>
 #include <gtsam/sfm/ShonanGaugeFactor.h>
 #include <gtsam/slam/FrobeniusFactor.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
-#include <gtsam/sfm/ShonanFactor.h>
 
 #include <Eigen/Eigenvalues>
-#include <SymEigsSolver.h>
-
 #include <algorithm>
 #include <complex>
 #include <iostream>
 #include <map>
 #include <random>
+#include <set>
 #include <vector>
 
 namespace gtsam {
@@ -50,8 +49,11 @@ template <size_t d>
 ShonanAveragingParameters<d>::ShonanAveragingParameters(
     const LevenbergMarquardtParams &_lm, const std::string &method,
     double optimalityThreshold, double alpha, double beta, double gamma)
-    : lm(_lm), optimalityThreshold(optimalityThreshold), alpha(alpha),
-      beta(beta), gamma(gamma) {
+    : lm(_lm),
+      optimalityThreshold(optimalityThreshold),
+      alpha(alpha),
+      beta(beta),
+      gamma(gamma) {
   // By default, we will do conjugate gradient
   lm.linearSolverType = LevenbergMarquardtParams::Iterative;
 
@@ -92,29 +94,40 @@ template struct ShonanAveragingParameters<3>;
 
 /* ************************************************************************* */
 // Calculate number of unknown rotations referenced by measurements
+// Throws exception of keys are not numbered as expected (may change in future).
 template <size_t d>
-static size_t
-NrUnknowns(const typename ShonanAveraging<d>::Measurements &measurements) {
+static size_t NrUnknowns(
+    const typename ShonanAveraging<d>::Measurements &measurements) {
+  Key maxKey = 0;
   std::set<Key> keys;
   for (const auto &measurement : measurements) {
-    keys.insert(measurement.key1());
-    keys.insert(measurement.key2());
+    for (const Key &key : measurement.keys()) {
+      maxKey = std::max(key, maxKey);
+      keys.insert(key);
+    }
   }
-  return keys.size();
+  size_t N = keys.size();
+  if (maxKey != N - 1) {
+    throw std::invalid_argument(
+        "As of now, ShonanAveraging expects keys numbered 0..N-1");
+  }
+  return N;
 }
 
 /* ************************************************************************* */
 template <size_t d>
 ShonanAveraging<d>::ShonanAveraging(const Measurements &measurements,
                                     const Parameters &parameters)
-    : parameters_(parameters), measurements_(measurements),
+    : parameters_(parameters),
+      measurements_(measurements),
       nrUnknowns_(NrUnknowns<d>(measurements)) {
   for (const auto &measurement : measurements_) {
     const auto &model = measurement.noiseModel();
     if (model && model->dim() != SO<d>::dimension) {
       measurement.print("Factor with incorrect noise model:\n");
-      throw std::invalid_argument("ShonanAveraging: measurements passed to "
-                                  "constructor have incorrect dimension.");
+      throw std::invalid_argument(
+          "ShonanAveraging: measurements passed to "
+          "constructor have incorrect dimension.");
     }
   }
   Q_ = buildQ();
@@ -196,7 +209,7 @@ Matrix ShonanAveraging<d>::StiefelElementMatrix(const Values &values) {
   Matrix S(p, N * d);
   for (const auto it : values.filter<SOn>()) {
     S.middleCols<d>(it.key * d) =
-        it.value.matrix().leftCols<d>(); // project Qj to Stiefel
+        it.value.matrix().leftCols<d>();  // project Qj to Stiefel
   }
   return S;
 }
@@ -227,7 +240,8 @@ Values ShonanAveraging<3>::projectFrom(size_t p, const Values &values) const {
 }
 
 /* ************************************************************************* */
-template <size_t d> static Matrix RoundSolutionS(const Matrix &S) {
+template <size_t d>
+static Matrix RoundSolutionS(const Matrix &S) {
   const size_t N = S.cols() / d;
   // First, compute a thin SVD of S
   Eigen::JacobiSVD<Matrix> svd(S, Eigen::ComputeThinV);
@@ -246,8 +260,7 @@ template <size_t d> static Matrix RoundSolutionS(const Matrix &S) {
   for (size_t i = 0; i < N; ++i) {
     // Compute the determinant of the ith dxd block of R
     double determinant = R.middleCols<d>(d * i).determinant();
-    if (determinant > 0)
-      ++numPositiveBlocks;
+    if (determinant > 0) ++numPositiveBlocks;
   }
 
   if (numPositiveBlocks < N / 2) {
@@ -263,7 +276,8 @@ template <size_t d> static Matrix RoundSolutionS(const Matrix &S) {
 }
 
 /* ************************************************************************* */
-template <> Values ShonanAveraging<2>::roundSolutionS(const Matrix &S) const {
+template <>
+Values ShonanAveraging<2>::roundSolutionS(const Matrix &S) const {
   // Round to a 2*2N matrix
   Matrix R = RoundSolutionS<2>(S);
 
@@ -276,7 +290,8 @@ template <> Values ShonanAveraging<2>::roundSolutionS(const Matrix &S) const {
   return values;
 }
 
-template <> Values ShonanAveraging<3>::roundSolutionS(const Matrix &S) const {
+template <>
+Values ShonanAveraging<3>::roundSolutionS(const Matrix &S) const {
   // Round to a 3*3N matrix
   Matrix R = RoundSolutionS<3>(S);
 
@@ -332,7 +347,8 @@ static double Kappa(const BinaryMeasurement<T> &measurement) {
 }
 
 /* ************************************************************************* */
-template <size_t d> Sparse ShonanAveraging<d>::buildD() const {
+template <size_t d>
+Sparse ShonanAveraging<d>::buildD() const {
   // Each measurement contributes 2*d elements along the diagonal of the
   // degree matrix.
   static constexpr size_t stride = 2 * d;
@@ -366,7 +382,8 @@ template <size_t d> Sparse ShonanAveraging<d>::buildD() const {
 }
 
 /* ************************************************************************* */
-template <size_t d> Sparse ShonanAveraging<d>::buildQ() const {
+template <size_t d>
+Sparse ShonanAveraging<d>::buildQ() const {
   // Each measurement contributes 2*d^2 elements on a pair of symmetric
   // off-diagonal blocks
   static constexpr size_t stride = 2 * d * d;
@@ -513,12 +530,12 @@ struct MatrixProdFunctor {
 //   - We've been using 10^-4 for the nonnegativity tolerance
 //   - for numLanczosVectors, 20 is a good default value
 
-static bool
-SparseMinimumEigenValue(const Sparse &A, const Matrix &S, double *minEigenValue,
-                        Vector *minEigenVector = 0, size_t *numIterations = 0,
-                        size_t maxIterations = 1000,
-                        double minEigenvalueNonnegativityTolerance = 10e-4,
-                        Eigen::Index numLanczosVectors = 20) {
+static bool SparseMinimumEigenValue(
+    const Sparse &A, const Matrix &S, double *minEigenValue,
+    Vector *minEigenVector = 0, size_t *numIterations = 0,
+    size_t maxIterations = 1000,
+    double minEigenvalueNonnegativityTolerance = 10e-4,
+    Eigen::Index numLanczosVectors = 20) {
   // a. Estimate the largest-magnitude eigenvalue of this matrix using Lanczos
   MatrixProdFunctor lmOperator(A);
   Spectra::SymEigsSolver<double, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN,
@@ -530,8 +547,7 @@ SparseMinimumEigenValue(const Sparse &A, const Matrix &S, double *minEigenValue,
       maxIterations, 1e-4, Spectra::SELECT_EIGENVALUE::LARGEST_MAGN);
 
   // Check convergence and bail out if necessary
-  if (lmConverged != 1)
-    return false;
+  if (lmConverged != 1) return false;
 
   const double lmEigenValue = lmEigenValueSolver.eigenvalues()(0);
 
@@ -541,7 +557,7 @@ SparseMinimumEigenValue(const Sparse &A, const Matrix &S, double *minEigenValue,
     *minEigenValue = lmEigenValue;
     if (minEigenVector) {
       *minEigenVector = lmEigenValueSolver.eigenvectors(1).col(0);
-      minEigenVector->normalize(); // Ensure that this is a unit vector
+      minEigenVector->normalize();  // Ensure that this is a unit vector
     }
     return true;
   }
@@ -578,7 +594,7 @@ SparseMinimumEigenValue(const Sparse &A, const Matrix &S, double *minEigenValue,
   Vector perturbation(v0.size());
   perturbation.setRandom();
   perturbation.normalize();
-  Vector xinit = v0 + (.03 * v0.norm()) * perturbation; // Perturb v0 by ~3%
+  Vector xinit = v0 + (.03 * v0.norm()) * perturbation;  // Perturb v0 by ~3%
 
   // Use this to initialize the eigensolver
   minEigenValueSolver.init(xinit.data());
@@ -590,21 +606,20 @@ SparseMinimumEigenValue(const Sparse &A, const Matrix &S, double *minEigenValue,
       maxIterations, minEigenvalueNonnegativityTolerance / lmEigenValue,
       Spectra::SELECT_EIGENVALUE::LARGEST_MAGN);
 
-  if (minConverged != 1)
-    return false;
+  if (minConverged != 1) return false;
 
   *minEigenValue = minEigenValueSolver.eigenvalues()(0) + 2 * lmEigenValue;
   if (minEigenVector) {
     *minEigenVector = minEigenValueSolver.eigenvectors(1).col(0);
-    minEigenVector->normalize(); // Ensure that this is a unit vector
+    minEigenVector->normalize();  // Ensure that this is a unit vector
   }
-  if (numIterations)
-    *numIterations = minEigenValueSolver.num_iterations();
+  if (numIterations) *numIterations = minEigenValueSolver.num_iterations();
   return true;
 }
 
 /* ************************************************************************* */
-template <size_t d> Sparse ShonanAveraging<d>::computeA(const Matrix &S) const {
+template <size_t d>
+Sparse ShonanAveraging<d>::computeA(const Matrix &S) const {
   auto Lambda = computeLambda(S);
   return Lambda - Q_;
 }
@@ -628,8 +643,8 @@ double ShonanAveraging<d>::computeMinEigenValue(const Values &values,
 
 /* ************************************************************************* */
 template <size_t d>
-std::pair<double, Vector>
-ShonanAveraging<d>::computeMinEigenVector(const Values &values) const {
+std::pair<double, Vector> ShonanAveraging<d>::computeMinEigenVector(
+    const Values &values) const {
   Vector minEigenVector;
   double minEigenValue = computeMinEigenValue(values, &minEigenVector);
   return std::make_pair(minEigenValue, minEigenVector);
@@ -643,20 +658,25 @@ bool ShonanAveraging<d>::checkOptimality(const Values &values) const {
 }
 
 /* ************************************************************************* */
-/// Create a tangent direction xi with eigenvector segment v_i
 template <size_t d>
-Vector ShonanAveraging<d>::MakeATangentVector(size_t p, const Vector &v,
-                                              size_t i) {
+VectorValues ShonanAveraging<d>::TangentVectorValues(size_t p,
+                                                     const Vector &v) {
+  VectorValues delta;
   // Create a tangent direction xi with eigenvector segment v_i
   const size_t dimension = SOn::Dimension(p);
-  const auto v_i = v.segment<d>(d * i);
-  Vector xi = Vector::Zero(dimension);
-  double sign = pow(-1.0, round((p + 1) / 2) + 1);
-  for (size_t j = 0; j < d; j++) {
-    xi(j + p - d - 1) = sign * v_i(d - j - 1);
-    sign = -sign;
+  double sign0 = pow(-1.0, round((p + 1) / 2) + 1);
+  for (size_t i = 0; i < v.size() / d; i++) {
+    // Assumes key is 0-based integer
+    const auto v_i = v.segment<d>(d * i);
+    Vector xi = Vector::Zero(dimension);
+    double sign = sign0;
+    for (size_t j = 0; j < d; j++) {
+      xi(j + p - d - 1) = sign * v_i(d - j - 1);
+      sign = -sign;
+    }
+    delta.insert(i, xi);
   }
-  return xi;
+  return delta;
 }
 
 /* ************************************************************************* */
@@ -690,14 +710,8 @@ template <size_t d>
 Values ShonanAveraging<d>::LiftwithDescent(size_t p, const Values &values,
                                            const Vector &minEigenVector) {
   Values lifted = LiftTo<SOn>(p, values);
-  for (auto it : lifted.filter<SOn>()) {
-    // Create a tangent direction xi with eigenvector segment v_i
-    // Assumes key is 0-based integer
-    const Vector xi = MakeATangentVector(p, minEigenVector, it.key);
-    // Move the old value in the descent direction
-    it.value = it.value.retract(xi);
-  }
-  return lifted;
+  VectorValues delta = TangentVectorValues(p, minEigenVector);
+  return lifted.retract(delta);
 }
 
 /* ************************************************************************* */
@@ -750,7 +764,8 @@ Values ShonanAveraging<d>::initializeRandomly(std::mt19937 &rng) const {
 }
 
 /* ************************************************************************* */
-template <size_t d> Values ShonanAveraging<d>::initializeRandomly() const {
+template <size_t d>
+Values ShonanAveraging<d>::initializeRandomly() const {
   return initializeRandomly(kRandomNumberGenerator);
 }
 
@@ -759,7 +774,7 @@ template <size_t d>
 Values ShonanAveraging<d>::initializeRandomlyAt(size_t p,
                                                 std::mt19937 &rng) const {
   const Values randomRotations = initializeRandomly(rng);
-  return LiftTo<Rot3>(p, randomRotations); // lift to p!
+  return LiftTo<Rot3>(p, randomRotations);  // lift to p!
 }
 
 /* ************************************************************************* */
@@ -823,8 +838,8 @@ ShonanAveraging3::ShonanAveraging3(string g2oFile, const Parameters &parameters)
 
 // Extract Rot3 measurement from Pose3 betweenfactors
 // Modeled after similar function in dataset.cpp
-static BinaryMeasurement<Rot3>
-convert(const BetweenFactor<Pose3>::shared_ptr &f) {
+static BinaryMeasurement<Rot3> convert(
+    const BetweenFactor<Pose3>::shared_ptr &f) {
   auto gaussian =
       boost::dynamic_pointer_cast<noiseModel::Gaussian>(f->noiseModel());
   if (!gaussian)
@@ -837,12 +852,11 @@ convert(const BetweenFactor<Pose3>::shared_ptr &f) {
       noiseModel::Gaussian::Covariance(M.block<3, 3>(3, 3), true));
 }
 
-static ShonanAveraging3::Measurements
-extractRot3Measurements(const BetweenFactorPose3s &factors) {
+static ShonanAveraging3::Measurements extractRot3Measurements(
+    const BetweenFactorPose3s &factors) {
   ShonanAveraging3::Measurements result;
   result.reserve(factors.size());
-  for (auto f : factors)
-    result.push_back(convert(f));
+  for (auto f : factors) result.push_back(convert(f));
   return result;
 }
 
@@ -851,4 +865,4 @@ ShonanAveraging3::ShonanAveraging3(const BetweenFactorPose3s &factors,
     : ShonanAveraging<3>(extractRot3Measurements(factors), parameters) {}
 
 /* ************************************************************************* */
-} // namespace gtsam
+}  // namespace gtsam

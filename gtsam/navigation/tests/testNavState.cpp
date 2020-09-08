@@ -192,6 +192,49 @@ TEST(NavState, Coriolis2) {
   EXPECT(assert_equal(numericalDerivative21(coriolis, state2, true), aH));
 }
 
+TEST(NavState, Coriolis3) {
+  /** Consider a massless planet with an attached nav frame at 
+   *  n_omega = [0 0 1]', and a body at position n_t = [1 0 0]', travelling with 
+   *  velocity n_v = [0 1 0]'. Orient the body so that it is not instantaneously
+   *  aligned with the nav frame (i.e., nRb != I_3x3). Test that first and 
+   *  second order Coriolis corrections are as expected.
+   */
+
+  // Get true first and second order coriolis accelerations
+  double dt = 2.0, dt2 = dt * dt;
+  Vector3 n_omega(0.0, 0.0, 1.0), n_t(1.0, 0.0, 0.0), n_v(0.0, 1.0, 0.0);
+  Vector3 n_aCorr1 = -2.0 * n_omega.cross(n_v),
+          n_aCorr2 = -n_omega.cross(n_omega.cross(n_t));
+  Rot3 nRb = Rot3(-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0),
+       bRn = nRb.inverse();
+
+  // Get expected first and second order corrections in the nav frame
+  Vector3 n_dP1e = 0.5 * dt2 * n_aCorr1, 
+          n_dP2e = 0.5 * dt2 * (n_aCorr1 + n_aCorr2),
+          n_dV1e = dt * n_aCorr1, 
+          n_dV2e = dt * (n_aCorr1 + n_aCorr2);
+
+  // Get expected first and second order corrections in the body frame
+  Vector3 dRe = -dt * (bRn * n_omega),
+          b_dP1e = bRn * n_dP1e, b_dP2e = bRn * n_dP2e,
+          b_dV1e = bRn * n_dV1e, b_dV2e = bRn * n_dV2e;
+
+  // Get actual first and scond order corrections in body frame
+  NavState kState2(nRb, n_t, n_v);
+  Vector9 dXi1a = kState2.coriolis(dt, n_omega, false),
+          dXi2a = kState2.coriolis(dt, n_omega, true);
+  Vector3 dRa = NavState::dR(dXi1a),
+          b_dP1a = NavState::dP(dXi1a), b_dV1a = NavState::dV(dXi1a),
+          b_dP2a = NavState::dP(dXi2a), b_dV2a = NavState::dV(dXi2a);
+
+  EXPECT(assert_equal(dRe, dRa));
+  EXPECT(assert_equal(b_dP1e, b_dP1a));
+  EXPECT(assert_equal(b_dV1e, b_dV1a));
+  EXPECT(assert_equal(b_dP2e, b_dP2a));
+  EXPECT(assert_equal(b_dV2e, b_dV2a));
+
+}
+
 /* ************************************************************************* */
 TEST(NavState, CorrectPIM) {
   Vector9 xi;
@@ -215,7 +258,7 @@ TEST(NavState, Stream)
   os << state;
 
   string expected;
-  expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\np: 0\n0\n0\nv: 0\n0\n0";
+  expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\np: 0 0 0\nv: 0 0 0";
 
   EXPECT(os.str() == expected);
 }
