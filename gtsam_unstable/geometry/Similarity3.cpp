@@ -99,9 +99,8 @@ Point3 Similarity3::operator*(const Point3& p) const {
 // Refer to: http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf Chapter 3
 Similarity3 Similarity3::AlignGivenR(const std::vector<Point3Pair>& abPointPairs, const Rot3& aRb) {
   // calculate centroids
-  const Point3Pair centroids = mean(abPointPairs);
-  const Point3 aCentroid = centroids.first;
-  const Point3 bCentroid = centroids.second;
+  Point3 aCentroid, bCentroid;
+  std::tie(aCentroid, bCentroid) = mean(abPointPairs);
 
   // calculate scale
   double x = 0;
@@ -128,9 +127,8 @@ Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
   if (n < 3) throw std::runtime_error("input should have at least 3 pairs of points");  // we need at least three pairs
 
   // calculate centroids
-  const Point3Pair centroids = mean(abPointPairs);
-  const Point3 aCentroid = centroids.first;
-  const Point3 bCentroid = centroids.second;
+  Point3 aCentroid, bCentroid;
+  std::tie(aCentroid, bCentroid) = mean(abPointPairs);
 
   // Add to form H matrix
   Matrix3 H = Z_3x3;
@@ -152,7 +150,7 @@ Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
   const size_t n = abPosePairs.size();
   if (n < 2) throw std::runtime_error("input should have at least 2 pairs of poses");  // we need at least two pairs
 
-  // calculate rotation and centroids
+  // calculate rotation
   vector<Rot3> rotationList;
   vector<Point3Pair> abPointPairs;
   abPointPairs.reserve(n);
