@@ -671,6 +671,15 @@ class SOn {
   void serialize() const;
 };
 
+#include <gtsam/geometry/Quaternion.h>
+class Quaternion {
+  double w() const;
+  double x() const;
+  double y() const;
+  double z() const;
+  Vector coeffs() const;
+};
+
 #include <gtsam/geometry/Rot3.h>
 class Rot3 {
   // Standard Constructors and Named Constructors
@@ -707,7 +716,7 @@ class Rot3 {
   gtsam::Rot3 between(const gtsam::Rot3& p2) const;
 
   // Manifold
-  //gtsam::Rot3 retractCayley(Vector v) const; // FIXME, does not exist in both Matrix and Quaternion options
+  //gtsam::Rot3 retractCayley(Vector v) const; // TODO, does not exist in both Matrix and Quaternion options
   gtsam::Rot3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Rot3& p) const;
 
@@ -728,7 +737,7 @@ class Rot3 {
   double pitch() const;
   double yaw() const;
   pair<gtsam::Unit3, double> axisAngle() const;
-//  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
+  gtsam::Quaternion toQuaternion() const;
   Vector quaternion() const;
   gtsam::Rot3 slerp(double t, const gtsam::Rot3& other) const;
 
@@ -796,7 +805,7 @@ class Pose3 {
   Pose3();
   Pose3(const gtsam::Pose3& other);
   Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
-  Pose3(const gtsam::Pose2& pose2); // FIXME: shadows Pose3(Pose3 pose)
+  Pose3(const gtsam::Pose2& pose2);
   Pose3(Matrix mat);
 
   // Testable
@@ -1063,7 +1072,7 @@ class Cal3Bundler {
   double v0() const;
   Vector vector() const;
   Vector k() const;
-  //Matrix K() const; //FIXME: Uppercase
+  Matrix K() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -1182,7 +1191,7 @@ gtsam::SimpleCamera simpleCamera(const Matrix& P);
 // Some typedefs for common camera types
 // PinholeCameraCal3_S2 is the same as SimpleCamera above
 typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
-// due to lack of jacobians of Cal3DS2_Base::calibrate, PinholeCamera does not apply to Cal3DS2/Unified
+//TODO (Issue 237) due to lack of jacobians of Cal3DS2_Base::calibrate, PinholeCamera does not apply to Cal3DS2/Unified
 //typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
 //typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 //typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
@@ -1378,7 +1387,7 @@ class SymbolicBayesTree {
 // //  const std::list<derived_ptr>& children() const { return children_; }
 // //  derived_ptr parent() const { return parent_.lock(); }
 //
-//   // FIXME: need wrapped versions graphs, BayesNet
+//   // TODO: need wrapped versions graphs, BayesNet
 // //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
 // //  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
 // //  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
@@ -2177,7 +2186,7 @@ virtual class NonlinearFactor {
   bool active(const gtsam::Values& c) const;
   gtsam::GaussianFactor* linearize(const gtsam::Values& c) const;
   gtsam::NonlinearFactor* clone() const;
-  // gtsam::NonlinearFactor* rekey(const gtsam::KeyVector& newKeys) const; //FIXME: Conversion from KeyVector to std::vector does not happen
+  // gtsam::NonlinearFactor* rekey(const gtsam::KeyVector& newKeys) const; //TODO: Conversion from KeyVector to std::vector does not happen
 };
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -2241,6 +2250,7 @@ class Values {
   void insert(size_t j, const gtsam::Cal3Bundler& cal3bundler);
   void insert(size_t j, const gtsam::EssentialMatrix& essential_matrix);
   void insert(size_t j, const gtsam::PinholeCameraCal3_S2& simple_camera);
+  // void insert(size_t j, const gtsam::PinholeCameraCal3Bundler& camera);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert(size_t j, const gtsam::NavState& nav_state);
 
@@ -2257,12 +2267,14 @@ class Values {
   void update(size_t j, const gtsam::Cal3DS2& cal3ds2);
   void update(size_t j, const gtsam::Cal3Bundler& cal3bundler);
   void update(size_t j, const gtsam::EssentialMatrix& essential_matrix);
+  void update(size_t j, const gtsam::PinholeCameraCal3_S2& simple_camera);
+  // void update(size_t j, const gtsam::PinholeCameraCal3Bundler& camera);
   void update(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void update(size_t j, const gtsam::NavState& nav_state);
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
 
-  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias, gtsam::NavState, Vector, Matrix}>
+  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias, gtsam::NavState, Vector, Matrix}>
   T at(size_t j);
 
   /// version for double
@@ -2746,7 +2758,7 @@ virtual class GeneralSFMFactor : gtsam::NoiseModelFactor {
   gtsam::Point2 measured() const;
 };
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
-// due to lack of jacobians of Cal3DS2_Base::calibrate, GeneralSFMFactor does not apply to Cal3DS2
+//TODO (Issue 237) due to lack of jacobians of Cal3DS2_Base::calibrate, GeneralSFMFactor does not apply to Cal3DS2
 //typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
 
 template<CALIBRATION = {gtsam::Cal3_S2}>
@@ -2847,6 +2859,10 @@ class SfmData {
   // gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
   gtsam::SfmTrack track(size_t idx) const;
 };
+
+gtsam::SfmData readBal(string filename);
+gtsam::Values initialCamerasEstimate(const gtsam::SfmData& db);
+gtsam::Values initialCamerasAndPointsEstimate(const gtsam::SfmData& db);
 
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
     gtsam::noiseModel::Diagonal* model, int maxIndex, bool addNoise, bool smart);
