@@ -283,7 +283,7 @@ GTSAM_EXPORT bool readBAL(const std::string& filename, SfmData &data);
  * @param filename The name of the BAL file.
  * @return SfM structure where the data is stored.
  */
-GTSAM_EXPORT SfmData readBAL(const std::string& filename);
+GTSAM_EXPORT SfmData readBal(const std::string& filename);
 
 /**
  * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a
@@ -362,6 +362,7 @@ parse3DFactors(const std::string &filename,
                const noiseModel::Diagonal::shared_ptr &model = nullptr,
                size_t maxIndex = 0);
 
+using BinaryMeasurementsUnit3 = std::vector<BinaryMeasurement<Unit3>>;
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
 inline boost::optional<IndexedPose> parseVertex(std::istream &is,
                                                 const std::string &tag) {

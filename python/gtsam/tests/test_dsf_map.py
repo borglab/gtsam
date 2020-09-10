@@ -35,6 +35,20 @@ class TestDSFMap(GtsamTestCase):
         dsf.merge(pair1, pair2)
         self.assertEqual(key(dsf.find(pair1)), key(dsf.find(pair2)))
 
+    def test_sets(self):
+        from gtsam import IndexPair
+        dsf = gtsam.DSFMapIndexPair()
+        dsf.merge(IndexPair(0, 1), IndexPair(1,2))
+        dsf.merge(IndexPair(0, 1), IndexPair(3,4))
+        dsf.merge(IndexPair(4,5), IndexPair(6,8))
+        sets = dsf.sets()
+
+        for i in sets:
+            s = sets[i]
+            for val in gtsam.IndexPairSetAsArray(s):
+                val.i()
+                val.j()
+
 
 if __name__ == '__main__':
     unittest.main()

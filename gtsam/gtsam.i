@@ -259,11 +259,59 @@ class IndexPair {
   size_t j() const;
 };
 
-template<KEY = {gtsam::IndexPair}>
-class DSFMap {
-  DSFMap();
-  KEY find(const KEY& key) const;
-  void merge(const KEY& x, const KEY& y);
+// template<KEY = {gtsam::IndexPair}>
+// class DSFMap {
+//   DSFMap();
+//   KEY find(const KEY& key) const;
+//   void merge(const KEY& x, const KEY& y);
+//   std::map<KEY, Set> sets();
+// };
+
+class IndexPairSet {
+  IndexPairSet();
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  void insert(gtsam::IndexPair key);
+  bool erase(gtsam::IndexPair key); // returns true if value was removed
+  bool count(gtsam::IndexPair key) const; // returns true if value exists
+};
+
+class IndexPairVector {
+  IndexPairVector();
+  IndexPairVector(const gtsam::IndexPairVector& other);
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  gtsam::IndexPair at(size_t i) const;
+  void push_back(gtsam::IndexPair key) const;
+};
+
+gtsam::IndexPairVector IndexPairSetAsArray(gtsam::IndexPairSet& set);
+
+class IndexPairSetMap {
+  IndexPairSetMap();
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  gtsam::IndexPairSet at(gtsam::IndexPair& key);
+};
+
+class DSFMapIndexPair {
+  DSFMapIndexPair();
+  gtsam::IndexPair find(const gtsam::IndexPair& key) const;
+  void merge(const gtsam::IndexPair& x, const gtsam::IndexPair& y);
+  gtsam::IndexPairSetMap sets();
 };
 
 #include <gtsam/base/Matrix.h>
@@ -2929,6 +2977,13 @@ class BinaryMeasurement {
 typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
 typedef gtsam::BinaryMeasurement<gtsam::Rot3> BinaryMeasurementRot3;
 
+class BinaryMeasurementsUnit3 {
+  BinaryMeasurementsUnit3();
+  size_t size() const;
+  gtsam::BinaryMeasurement<gtsam::Unit3> at(size_t idx) const;
+  void push_back(const gtsam::BinaryMeasurement<gtsam::Unit3>& measurement);
+};
+
 #include <gtsam/sfm/ShonanAveraging.h>
 
 // TODO(frank): copy/pasta below until we have integer template paremeters in wrap!
@@ -3048,6 +3103,16 @@ class ShonanAveraging3 {
   double cost(const gtsam::Values& values) const;
   gtsam::Values initializeRandomly() const;
   pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p, size_t max_p) const;
+};
+
+#include <gtsam/sfm/TranslationRecovery.h>
+class TranslationRecovery {
+  TranslationRecovery(const gtsam::BinaryMeasurementsUnit3 &relativeTranslations,
+                      const gtsam::LevenbergMarquardtParams &lmParams);
+  TranslationRecovery(
+      const gtsam::BinaryMeasurementsUnit3 & relativeTranslations);  // default LevenbergMarquardtParams
+  gtsam::Values run(const double scale) const;
+  gtsam::Values run() const;    // default scale = 1.0
 };
 
 //*************************************************************************
