@@ -795,6 +795,100 @@ TEST(Rot3, Ypr_derivative) {
 }
 
 /* ************************************************************************* */
+Vector3 RQ_proxy(Matrix3 const& R) {
+  const auto RQ_ypr = RQ(R);
+  return RQ_ypr.second;
+}
+
+TEST(Rot3, RQ_derivative) {
+  const auto aa = Vector3{1.0, 0.7, 0.8};
+  const auto R = Rot3::Expmap(aa).matrix();
+  const auto num = numericalDerivative11(RQ_proxy, R);
+  Matrix39 calc;
+  RQ(R, calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+Vector3 xyz_proxy(Rot3 const& R) { return R.xyz(); }
+
+TEST(Rot3, xyz_derivative) {
+  const auto aa = Vector3{-0.6, 0.3, 0.2};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(xyz_proxy, R);
+  Matrix3 calc;
+  R.xyz(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+Vector3 ypr_proxy(Rot3 const& R) { return R.ypr(); }
+
+TEST(Rot3, ypr_derivative) {
+  const auto aa = Vector3{0.1, -0.3, -0.2};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(ypr_proxy, R);
+  Matrix3 calc;
+  R.ypr(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+Vector3 rpy_proxy(Rot3 const& R) { return R.rpy(); }
+
+TEST(Rot3, rpy_derivative) {
+  const auto aa = Vector3{1.2, 0.3, -0.9};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(rpy_proxy, R);
+  Matrix3 calc;
+  R.rpy(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+double roll_proxy(Rot3 const& R) { return R.roll(); }
+
+TEST(Rot3, roll_derivative) {
+  const auto aa = Vector3{0.8, -0.8, 0.8};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(roll_proxy, R);
+  Matrix13 calc;
+  R.roll(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+double pitch_proxy(Rot3 const& R) { return R.pitch(); }
+
+TEST(Rot3, pitch_derivative) {
+  const auto aa = Vector3{0.01, 0.1, 0.0};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(pitch_proxy, R);
+  Matrix13 calc;
+  R.pitch(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+double yaw_proxy(Rot3 const& R) { return R.yaw(); }
+
+TEST(Rot3, yaw_derivative) {
+  const auto aa = Vector3{0.0, 0.1, 0.6};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(yaw_proxy, R);
+  Matrix13 calc;
+  R.yaw(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
