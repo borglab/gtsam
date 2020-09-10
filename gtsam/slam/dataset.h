@@ -362,6 +362,7 @@ parse3DFactors(const std::string &filename,
                const noiseModel::Diagonal::shared_ptr &model = nullptr,
                size_t maxIndex = 0);
 
+using BinaryMeasurementsUnit3 = std::vector<BinaryMeasurement<Unit3>>;
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
 inline boost::optional<IndexedPose> parseVertex(std::istream &is,
                                                 const std::string &tag) {
