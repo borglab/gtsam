@@ -28,7 +28,7 @@ currentVelocityGlobal = velocity;
 %% Prepare data structures for actual trajectory and estimates
 % Actual trajectory
 positions = zeros(3, length(times)+1);
-positions(:,1) = currentPoseGlobal.translation.vector;
+positions(:,1) = currentPoseGlobal.translation;
 poses(1).p = positions(:,1);
 poses(1).R = currentPoseGlobal.rotation.matrix;
 
@@ -112,7 +112,7 @@ for t = times
   end
   
   %% Store data in some structure for statistics and plots
-  positions(:,i) = currentPoseGlobal.translation.vector;
+  positions(:,i) = currentPoseGlobal.translation;
   i = i + 1;
 end
 

@@ -66,11 +66,11 @@ namespace gtsam {
     }
 
     // print
-    virtual void print(const std::string& s = "",
-        const KeyFormatter& formatter = DefaultKeyFormatter) const;
+    void print(const std::string& s = "",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
     /// equals
-    bool equals(const DiscreteFactor& other, double tol) const {
+    bool equals(const DiscreteFactor& other, double tol) const override {
       if(!dynamic_cast<const Domain*>(&other))
         return false;
       else {
@@ -84,20 +84,20 @@ namespace gtsam {
     }
 
     /// Calculate value
-    virtual double operator()(const Values& values) const;
+    double operator()(const Values& values) const override;
 
     /// Convert into a decisiontree
-    virtual DecisionTreeFactor toDecisionTreeFactor() const;
+    DecisionTreeFactor toDecisionTreeFactor() const override;
 
     /// Multiply into a decisiontree
-    virtual DecisionTreeFactor operator*(const DecisionTreeFactor& f) const;
+    DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
     /*
      * Ensure Arc-consistency
      * @param j domain to be checked
      * @param domains all other domains
      */
-    bool ensureArcConsistency(size_t j, std::vector<Domain>& domains) const;
+    bool ensureArcConsistency(size_t j, std::vector<Domain>& domains) const override;
 
     /**
      *  Check for a value in domain that does not occur in any other connected domain.
@@ -107,12 +107,11 @@ namespace gtsam {
     bool checkAllDiff(const KeyVector keys, std::vector<Domain>& domains);
 
     /// Partially apply known values
-    virtual Constraint::shared_ptr partiallyApply(
-        const Values& values) const;
+    Constraint::shared_ptr partiallyApply(const Values& values) const override;
 
     /// Partially apply known values, domain version
-    virtual Constraint::shared_ptr partiallyApply(
-        const std::vector<Domain>& domains) const;
+    Constraint::shared_ptr partiallyApply(
+        const std::vector<Domain>& domains) const override;
   };
 
 } // namespace gtsam

@@ -164,37 +164,6 @@ TEST( NavState, Manifold ) {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-TEST(NavState, Update) {
-  Vector3 omega(M_PI / 100.0, 0.0, 0.0);
-  Vector3 acc(0.1, 0.0, 0.0);
-  double dt = 10;
-  Matrix9 aF;
-  Matrix93 aG1, aG2;
-  boost::function<NavState(const NavState&, const Vector3&, const Vector3&)> update =
-  boost::bind(&NavState::update, _1, _2, _3, dt, boost::none,
-      boost::none, boost::none);
-  Vector3 b_acc = kAttitude * acc;
-  NavState expected(kAttitude.expmap(dt * omega),
-      kPosition + Point3((kVelocity + b_acc * dt / 2) * dt),
-      kVelocity + b_acc * dt);
-  NavState actual = kState1.update(acc, omega, dt, aF, aG1, aG2);
-  EXPECT(assert_equal(expected, actual));
-  EXPECT(assert_equal(numericalDerivative31(update, kState1, acc, omega, 1e-7), aF, 1e-7));
-  EXPECT(assert_equal(numericalDerivative32(update, kState1, acc, omega, 1e-7), aG1, 1e-7));
-  EXPECT(assert_equal(numericalDerivative33(update, kState1, acc, omega, 1e-7), aG2, 1e-7));
-
-  // Try different values
-  omega = Vector3(0.1, 0.2, 0.3);
-  acc = Vector3(0.4, 0.5, 0.6);
-  kState1.update(acc, omega, dt, aF, aG1, aG2);
-  EXPECT(assert_equal(numericalDerivative31(update, kState1, acc, omega, 1e-7), aF, 1e-7));
-  EXPECT(assert_equal(numericalDerivative32(update, kState1, acc, omega, 1e-7), aG1, 1e-7));
-  EXPECT(assert_equal(numericalDerivative33(update, kState1, acc, omega, 1e-7), aG2, 1e-7));
-}
-#endif
-
-/* ************************************************************************* */
 static const double dt = 2.0;
 boost::function<Vector9(const NavState&, const bool&)> coriolis = boost::bind(
     &NavState::coriolis, _1, dt, kOmegaCoriolis, _2, boost::none);
@@ -223,6 +192,49 @@ TEST(NavState, Coriolis2) {
   EXPECT(assert_equal(numericalDerivative21(coriolis, state2, true), aH));
 }
 
+TEST(NavState, Coriolis3) {
+  /** Consider a massless planet with an attached nav frame at 
+   *  n_omega = [0 0 1]', and a body at position n_t = [1 0 0]', travelling with 
+   *  velocity n_v = [0 1 0]'. Orient the body so that it is not instantaneously
+   *  aligned with the nav frame (i.e., nRb != I_3x3). Test that first and 
+   *  second order Coriolis corrections are as expected.
+   */
+
+  // Get true first and second order coriolis accelerations
+  double dt = 2.0, dt2 = dt * dt;
+  Vector3 n_omega(0.0, 0.0, 1.0), n_t(1.0, 0.0, 0.0), n_v(0.0, 1.0, 0.0);
+  Vector3 n_aCorr1 = -2.0 * n_omega.cross(n_v),
+          n_aCorr2 = -n_omega.cross(n_omega.cross(n_t));
+  Rot3 nRb = Rot3(-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0),
+       bRn = nRb.inverse();
+
+  // Get expected first and second order corrections in the nav frame
+  Vector3 n_dP1e = 0.5 * dt2 * n_aCorr1, 
+          n_dP2e = 0.5 * dt2 * (n_aCorr1 + n_aCorr2),
+          n_dV1e = dt * n_aCorr1, 
+          n_dV2e = dt * (n_aCorr1 + n_aCorr2);
+
+  // Get expected first and second order corrections in the body frame
+  Vector3 dRe = -dt * (bRn * n_omega),
+          b_dP1e = bRn * n_dP1e, b_dP2e = bRn * n_dP2e,
+          b_dV1e = bRn * n_dV1e, b_dV2e = bRn * n_dV2e;
+
+  // Get actual first and scond order corrections in body frame
+  NavState kState2(nRb, n_t, n_v);
+  Vector9 dXi1a = kState2.coriolis(dt, n_omega, false),
+          dXi2a = kState2.coriolis(dt, n_omega, true);
+  Vector3 dRa = NavState::dR(dXi1a),
+          b_dP1a = NavState::dP(dXi1a), b_dV1a = NavState::dV(dXi1a),
+          b_dP2a = NavState::dP(dXi2a), b_dV2a = NavState::dV(dXi2a);
+
+  EXPECT(assert_equal(dRe, dRa));
+  EXPECT(assert_equal(b_dP1e, b_dP1a));
+  EXPECT(assert_equal(b_dV1e, b_dV1a));
+  EXPECT(assert_equal(b_dP2e, b_dP2a));
+  EXPECT(assert_equal(b_dV2e, b_dV2a));
+
+}
+
 /* ************************************************************************* */
 TEST(NavState, CorrectPIM) {
   Vector9 xi;
@@ -236,6 +248,21 @@ TEST(NavState, CorrectPIM) {
   EXPECT(assert_equal(numericalDerivative21(correctPIM, kState1, xi), aH1));
   EXPECT(assert_equal(numericalDerivative22(correctPIM, kState1, xi), aH2));
 }
+
+/* ************************************************************************* */
+TEST(NavState, Stream)
+{
+  NavState state;
+
+  std::ostringstream os;
+  os << state;
+
+  string expected;
+  expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\np: 0 0 0\nv: 0 0 0";
+
+  EXPECT(os.str() == expected);
+}
+
 
 /* ************************************************************************* */
 int main() {

@@ -700,9 +700,10 @@ inline typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative65(Y (*
  * @return m*n Jacobian computed via central differencing
  */
 template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
-typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative66(
-    boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h, const X1& x1,
-    const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
+typename internal::FixedSizeMatrix<Y, X6>::type numericalDerivative66(
+    boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h,
+    const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6,
+    double delta = 1e-5) {
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),

@@ -154,12 +154,23 @@ namespace gtsam {
     static Rot3 Rz(double t);
 
     /// Rotations around Z, Y, then X axes as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis.
-    static Rot3 RzRyRx(double x, double y, double z);
+    static Rot3 RzRyRx(double x, double y, double z,
+                       OptionalJacobian<3, 1> Hx = boost::none,
+                       OptionalJacobian<3, 1> Hy = boost::none,
+                       OptionalJacobian<3, 1> Hz = boost::none);
 
     /// Rotations around Z, Y, then X axes as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis.
-    inline static Rot3 RzRyRx(const Vector& xyz) {
+    inline static Rot3 RzRyRx(const Vector& xyz,
+                              OptionalJacobian<3, 3> H = boost::none) {
       assert(xyz.size() == 3);
-      return RzRyRx(xyz(0), xyz(1), xyz(2));
+      Rot3 out;
+      if (H) {
+        Vector3 Hx, Hy, Hz;
+        out = RzRyRx(xyz(0), xyz(1), xyz(2), Hx, Hy, Hz);
+        (*H) << Hx, Hy, Hz;
+      } else
+        out = RzRyRx(xyz(0), xyz(1), xyz(2));
+      return out;
     }
 
     /// Positive yaw is to right (as in aircraft heading). See ypr
@@ -185,7 +196,12 @@ namespace gtsam {
      * Positive pitch is down (decreasing aircraft altitude).
      * Positive roll is to right (decreasing yaw in aircraft).
      */
-    static Rot3 Ypr(double y, double p, double r) { return RzRyRx(r,p,y);}
+    static Rot3 Ypr(double y, double p, double r,
+                    OptionalJacobian<3, 1> Hy = boost::none,
+                    OptionalJacobian<3, 1> Hp = boost::none,
+                    OptionalJacobian<3, 1> Hr = boost::none) {
+      return RzRyRx(r, p, y, Hr, Hp, Hy);
+    }
 
     /** Create from Quaternion coefficients */
     static Rot3 Quaternion(double w, double x, double y, double z) {
@@ -254,7 +270,7 @@ namespace gtsam {
     /// @{
 
     /** print */
-    void print(const std::string& s="R") const;
+    void print(const std::string& s="") const;
 
     /** equals with an tolerance */
     bool equals(const Rot3& p, double tol = 1e-9) const;
@@ -499,23 +515,6 @@ namespace gtsam {
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Rot3& p);
 
     /// @}
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-    /// @name Deprecated
-    /// @{
-    static Rot3 rodriguez(const Point3&  axis, double angle) { return AxisAngle(axis, angle); }
-    static Rot3 rodriguez(const Unit3&   axis, double angle) { return AxisAngle(axis, angle); }
-    static Rot3 rodriguez(const Vector3& w)                  { return Rodrigues(w); }
-    static Rot3 rodriguez(double wx, double wy, double wz)   { return Rodrigues(wx, wy, wz); }
-    static Rot3 yaw  (double t) { return Yaw(t); }
-    static Rot3 pitch(double t) { return Pitch(t); }
-    static Rot3 roll (double t) { return Roll(t); }
-    static Rot3 ypr(double y, double p, double r) { return Ypr(r,p,y);}
-    static Rot3 quaternion(double w, double x, double y, double z) {
-      return Rot3::Quaternion(w, x, y, z);
-    }
-  /// @}
-#endif
 
    private:
     /** Serialization function */

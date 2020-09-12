@@ -53,6 +53,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Values::Values(std::initializer_list<ConstKeyValuePair> init) {
+    for (const auto &kv : init)
+      insert(kv.key, kv.value);
+  }
+
+  /* ************************************************************************* */
   Values::Values(const Values& other, const VectorValues& delta) {
     for (const_iterator key_value = other.begin(); key_value != other.end(); ++key_value) {
       VectorValues::const_iterator it = delta.find(key_value->key);
@@ -69,7 +75,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void Values::print(const string& str, const KeyFormatter& keyFormatter) const {
-    cout << str << "Values with " << size() << " values:" << endl;
+    cout << str << (str == "" ? "" : "\n");
+    cout << "Values with " << size() << " values:\n";
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
       cout << "Value " << keyFormatter(key_value->key) << ": ";
       key_value->value.print("");
@@ -214,7 +221,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const char* ValuesKeyAlreadyExists::what() const throw() {
+  const char* ValuesKeyAlreadyExists::what() const noexcept {
     if(message_.empty())
       message_ =
           "Attempting to add a key-value pair with key \"" + DefaultKeyFormatter(key_) + "\", key already exists.";
@@ -222,7 +229,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const char* ValuesKeyDoesNotExist::what() const throw() {
+  const char* ValuesKeyDoesNotExist::what() const noexcept {
     if(message_.empty())
       message_ =
           "Attempting to " + std::string(operation_) + " the key \"" +
@@ -231,7 +238,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const char* ValuesIncorrectType::what() const throw() {
+  const char* ValuesIncorrectType::what() const noexcept {
     if(message_.empty()) {
       std::string storedTypeName = demangle(storedTypeId_.name());
       std::string requestedTypeName = demangle(requestedTypeId_.name());
@@ -251,7 +258,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  const char* NoMatchFoundForFixed::what() const throw() {
+  const char* NoMatchFoundForFixed::what() const noexcept {
     if(message_.empty()) {
       ostringstream oss;
     oss

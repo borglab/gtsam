@@ -43,17 +43,32 @@ TEST(dataSet, findExampleDataFile) {
 }
 
 /* ************************************************************************* */
-TEST( dataSet, parseVertex)
+TEST( dataSet, parseVertexPose)
 {
   const string str = "VERTEX2 1 2.000000 3.000000 4.000000";
   istringstream is(str);
   string tag;
   EXPECT(is >> tag);
-  const auto actual = parseVertex(is, tag);
+  const auto actual = parseVertexPose(is, tag);
   EXPECT(actual);
   if (actual) {
     EXPECT_LONGS_EQUAL(1, actual->first);
     EXPECT(assert_equal(Pose2(2, 3, 4), actual->second));
+  }
+}
+
+/* ************************************************************************* */
+TEST( dataSet, parseVertexLandmark)
+{
+  const string str = "VERTEX_XY 1 2.000000 3.000000";
+  istringstream is(str);
+  string tag;
+  EXPECT(is >> tag);
+  const auto actual = parseVertexLandmark(is, tag);
+  EXPECT(actual);
+  if (actual) {
+    EXPECT_LONGS_EQUAL(1, actual->first);
+    EXPECT(assert_equal(Point2(2, 3), actual->second));
   }
 }
 
@@ -67,38 +82,73 @@ TEST( dataSet, parseEdge)
   const auto actual = parseEdge(is, tag);
   EXPECT(actual);
   if (actual) {
-    pair<Key, Key> expected(0, 1);
+    pair<size_t, size_t> expected(0, 1);
     EXPECT(expected == actual->first);
     EXPECT(assert_equal(Pose2(2, 3, 4), actual->second));
   }
 }
 
 /* ************************************************************************* */
-TEST( dataSet, load2D)
-{
+TEST(dataSet, load2D) {
   ///< The structure where we will save the SfM data
   const string filename = findExampleDataFile("w100.graph");
   NonlinearFactorGraph::shared_ptr graph;
   Values::shared_ptr initial;
   boost::tie(graph, initial) = load2D(filename);
-  EXPECT_LONGS_EQUAL(300,graph->size());
-  EXPECT_LONGS_EQUAL(100,initial->size());
-  noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(3);
-  BetweenFactor<Pose2> expected(1, 0, Pose2(-0.99879,0.0417574,-0.00818381), model);
-  BetweenFactor<Pose2>::shared_ptr actual = boost::dynamic_pointer_cast<
-      BetweenFactor<Pose2> >(graph->at(0));
+  EXPECT_LONGS_EQUAL(300, graph->size());
+  EXPECT_LONGS_EQUAL(100, initial->size());
+  auto model = noiseModel::Unit::Create(3);
+  BetweenFactor<Pose2> expected(1, 0, Pose2(-0.99879, 0.0417574, -0.00818381),
+                                model);
+  BetweenFactor<Pose2>::shared_ptr actual =
+      boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(0));
   EXPECT(assert_equal(expected, *actual));
+
+  // Check binary measurements, Pose2
+  size_t maxIndex = 5;
+  auto measurements = parseMeasurements<Pose2>(filename, nullptr, maxIndex);
+  EXPECT_LONGS_EQUAL(5, measurements.size());
+
+  // Check binary measurements, Rot2
+  auto measurements2 = parseMeasurements<Rot2>(filename);
+  EXPECT_LONGS_EQUAL(300, measurements2.size());
+
+  // // Check factor parsing
+  const auto actualFactors = parseFactors<Pose2>(filename);
+  for (size_t i : {0, 1, 2, 3, 4, 5}) {
+    EXPECT(assert_equal(
+        *boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(i)),
+        *actualFactors[i], 1e-5));
+  }
+
+  // Check pose parsing
+  const auto actualPoses = parseVariables<Pose2>(filename);
+  for (size_t j : {0, 1, 2, 3, 4}) {
+    EXPECT(assert_equal(initial->at<Pose2>(j), actualPoses.at(j), 1e-5));
+  }
+
+  // Check landmark parsing
+  const auto actualLandmarks = parseVariables<Point2>(filename);
+  EXPECT_LONGS_EQUAL(0, actualLandmarks.size());
 }
 
 /* ************************************************************************* */
-TEST( dataSet, load2DVictoriaPark)
-{
+TEST(dataSet, load2DVictoriaPark) {
   const string filename = findExampleDataFile("victoria_park.txt");
   NonlinearFactorGraph::shared_ptr graph;
   Values::shared_ptr initial;
+
+  // Load all
   boost::tie(graph, initial) = load2D(filename);
-  EXPECT_LONGS_EQUAL(10608,graph->size());
-  EXPECT_LONGS_EQUAL(7120,initial->size());
+  EXPECT_LONGS_EQUAL(10608, graph->size());
+  EXPECT_LONGS_EQUAL(7120, initial->size());
+
+  // Restrict keys
+  size_t maxIndex = 5;
+  boost::tie(graph, initial) = load2D(filename, nullptr, maxIndex);
+  EXPECT_LONGS_EQUAL(5, graph->size());
+  EXPECT_LONGS_EQUAL(6, initial->size()); // file has 0 as well
+  EXPECT_LONGS_EQUAL(L(5), graph->at(4)->keys()[1]);
 }
 
 /* ************************************************************************* */
@@ -169,7 +219,7 @@ TEST(dataSet, readG2o3D) {
   }
 
   // Check factor parsing
-  const auto actualFactors = parse3DFactors(g2oFile);
+  const auto actualFactors = parseFactors<Pose3>(g2oFile);
   for (size_t i : {0, 1, 2, 3, 4, 5}) {
     EXPECT(assert_equal(
         *boost::dynamic_pointer_cast<BetweenFactor<Pose3>>(expectedGraph[i]),
@@ -177,7 +227,13 @@ TEST(dataSet, readG2o3D) {
   }
 
   // Check pose parsing
-  const auto actualPoses = parse3DPoses(g2oFile);
+  const auto actualPoses = parseVariables<Pose3>(g2oFile);
+  for (size_t j : {0, 1, 2, 3, 4}) {
+    EXPECT(assert_equal(poses[j], actualPoses.at(j), 1e-5));
+  }
+
+  // Check landmark parsing
+  const auto actualLandmarks = parseVariables<Point3>(g2oFile);
   for (size_t j : {0, 1, 2, 3, 4}) {
     EXPECT(assert_equal(poses[j], actualPoses.at(j), 1e-5));
   }
@@ -238,7 +294,7 @@ TEST(dataSet, readG2oCheckDeterminants) {
   const string g2oFile = findExampleDataFile("toyExample.g2o");
 
   // Check determinants in factors
-  auto factors = parse3DFactors(g2oFile);
+  auto factors = parseFactors<Pose3>(g2oFile);
   EXPECT_LONGS_EQUAL(6, factors.size());
   for (const auto& factor : factors) {
     const Rot3 R = factor->measured().rotation();
@@ -246,12 +302,28 @@ TEST(dataSet, readG2oCheckDeterminants) {
   }
 
   // Check determinants in initial values
-  const map<Key, Pose3> poses = parse3DPoses(g2oFile);
+  const map<size_t, Pose3> poses = parseVariables<Pose3>(g2oFile);
   EXPECT_LONGS_EQUAL(5, poses.size());
   for (const auto& key_value : poses) {
     const Rot3 R = key_value.second.rotation();
     EXPECT_DOUBLES_EQUAL(1.0, R.matrix().determinant(), 1e-9);
   }
+  const map<size_t, Point3> landmarks = parseVariables<Point3>(g2oFile);
+  EXPECT_LONGS_EQUAL(0, landmarks.size());
+}
+
+/* ************************************************************************* */
+TEST(dataSet, readG2oLandmarks) {
+  const string g2oFile = findExampleDataFile("example_with_vertices.g2o");
+
+  // Check number of poses and landmarks. Should be 8 each.
+  const map<size_t, Pose3> poses = parseVariables<Pose3>(g2oFile);
+  EXPECT_LONGS_EQUAL(8, poses.size());
+  const map<size_t, Point3> landmarks = parseVariables<Point3>(g2oFile);
+  EXPECT_LONGS_EQUAL(8, landmarks.size());
+
+  auto graphAndValues = load3D(g2oFile);
+  EXPECT(graphAndValues.second->exists(L(0)));
 }
 
 /* ************************************************************************* */
@@ -504,14 +576,12 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
 
   Values value;
   for(size_t i=0; i < readData.number_cameras(); i++){ // for each camera
-    Key poseKey = symbol('x',i);
     Pose3 pose = poseChange.compose(readData.cameras[i].pose());
-    value.insert(poseKey, pose);
+    value.insert(X(i), pose);
   }
   for(size_t j=0; j < readData.number_tracks(); j++){ // for each point
-    Key pointKey = P(j);
     Point3 point = poseChange.transformFrom( readData.tracks[j].p );
-    value.insert(pointKey, point);
+    value.insert(P(j), point);
   }
 
   // Write values and readData to a file
@@ -536,13 +606,11 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
   EXPECT(assert_equal(expected,actual,12));
 
   Pose3 expectedPose = camera0.pose();
-  Key poseKey = symbol('x',0);
-  Pose3 actualPose = value.at<Pose3>(poseKey);
+  Pose3 actualPose = value.at<Pose3>(X(0));
   EXPECT(assert_equal(expectedPose,actualPose, 1e-7));
 
   Point3 expectedPoint = track0.p;
-  Key pointKey = P(0);
-  Point3 actualPoint = value.at<Point3>(pointKey);
+  Point3 actualPoint = value.at<Point3>(P(0));
   EXPECT(assert_equal(expectedPoint,actualPoint, 1e-6));
 }
 

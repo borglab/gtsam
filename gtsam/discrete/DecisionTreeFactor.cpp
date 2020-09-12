@@ -69,7 +69,7 @@ namespace gtsam {
     for(Key j: f.keys()) cs[j] = f.cardinality(j);
     // Convert map into keys
     DiscreteKeys keys;
-    for(const DiscreteKey& key: cs)
+    for(const std::pair<const Key,size_t>& key: cs)
       keys.push_back(key);
     // apply operand
     ADT result = ADT::apply(f, op);

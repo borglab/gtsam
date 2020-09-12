@@ -25,9 +25,9 @@ for i = 0:measurement_keys.size-1
     key_index = gtsam.symbolIndex(key);
     p = landmarks.atPoint3(gtsam.symbol('l',key_index));
     
-    x(i+1) = p.x;
-    y(i+1) = p.y;
-    z(i+1) = p.z;
+    x(i+1) = p(1);
+    y(i+1) = p(2);
+    z(i+1) = p(3);
     
 end
 

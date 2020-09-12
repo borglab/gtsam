@@ -50,8 +50,8 @@ result = optimizer.optimize();
 % Check result
 CHECK('error',result.atPose2(100).equals(b1,1e-5))
 CHECK('error',result.atPose2(10).equals(origin,1e-5))
-CHECK('error',result.atPoint2(1).equals(Point2(0,1),1e-5))
-CHECK('error',result.atPoint2(2).equals(Point2(0,1),1e-5))
+CHECK('error',result.atPoint2(1) - Point2(0,1) < 1e-5)
+CHECK('error',result.atPoint2(2) - Point2(0,1) < 1e-5)
 CHECK('error',result.atPose2(20).equals(origin,1e-5))
 CHECK('error',result.atPose2(200).equals(b2,1e-5))
 

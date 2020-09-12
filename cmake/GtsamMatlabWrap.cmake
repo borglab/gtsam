@@ -23,6 +23,11 @@ else()
 	file(GLOB matlab_bin_directories "/usr/local/MATLAB/*/bin")
 	set(mex_program_name "mex")
 endif()
+
+if(GTSAM_CUSTOM_MATLAB_PATH)
+	set(matlab_bin_directories ${GTSAM_CUSTOM_MATLAB_PATH})
+endif()
+
 # Run find_program explicitly putting $PATH after our predefined program
 # directories using 'ENV PATH' and 'NO_SYSTEM_ENVIRONMENT_PATH' - this prevents
 # finding the LaTeX mex program (totally unrelated to MATLAB Mex) when LaTeX is
@@ -209,15 +214,34 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 
 	# Set up generation of module source file
 	file(MAKE_DIRECTORY "${generated_files_path}")
+
+	if(GTSAM_PYTHON_VERSION STREQUAL "Default")
+		find_package(PythonInterp REQUIRED)
+		find_package(PythonLibs REQUIRED)
+	else()
+		find_package(PythonInterp
+				${GTSAM_PYTHON_VERSION}
+				EXACT
+				REQUIRED)
+		find_package(PythonLibs
+				${GTSAM_PYTHON_VERSION}
+				EXACT
+				REQUIRED)
+	endif()
+
+	set(_ignore gtsam::Point2
+			gtsam::Point3)
 	add_custom_command(
 		OUTPUT ${generated_cpp_file}
-		DEPENDS ${interfaceHeader} wrap ${module_library_target} ${otherLibraryTargets} ${otherSourcesAndObjects}
-        COMMAND 
-            wrap --matlab
-            ${modulePath}
-            ${moduleName} 
-            ${generated_files_path} 
-            ${matlab_h_path} 
+		DEPENDS ${interfaceHeader} ${module_library_target} ${otherLibraryTargets} ${otherSourcesAndObjects}
+        COMMAND
+			${PYTHON_EXECUTABLE}
+			${CMAKE_SOURCE_DIR}/wrap/matlab_wrapper.py
+            --src ${interfaceHeader}
+			--module_name ${moduleName}
+            --out ${generated_files_path}
+			--top_module_namespaces ${moduleName}
+			--ignore ${_ignore}
 		VERBATIM
 		WORKING_DIRECTORY ${generated_files_path})
 		

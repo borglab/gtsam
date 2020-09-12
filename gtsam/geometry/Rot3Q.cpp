@@ -67,10 +67,23 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::RzRyRx(double x, double y, double z) { return Rot3(
-      gtsam::Quaternion(Eigen::AngleAxisd(z, Eigen::Vector3d::UnitZ())) *
-      gtsam::Quaternion(Eigen::AngleAxisd(y, Eigen::Vector3d::UnitY())) *
-      gtsam::Quaternion(Eigen::AngleAxisd(x, Eigen::Vector3d::UnitX())));
+  Rot3 Rot3::RzRyRx(double x, double y, double z, OptionalJacobian<3, 1> Hx,
+                    OptionalJacobian<3, 1> Hy, OptionalJacobian<3, 1> Hz) {
+    if (Hx) (*Hx) << 1, 0, 0;
+
+    if (Hy or Hz) {
+      const auto cx = cos(x), sx = sin(x);
+      if (Hy) (*Hy) << 0, cx, -sx;
+      if (Hz) {
+        const auto cy = cos(y), sy = sin(y);
+        (*Hz) << -sy, sx * cy, cx * cy;
+      }
+    }
+
+    return Rot3(
+        gtsam::Quaternion(Eigen::AngleAxisd(z, Eigen::Vector3d::UnitZ())) *
+        gtsam::Quaternion(Eigen::AngleAxisd(y, Eigen::Vector3d::UnitY())) *
+        gtsam::Quaternion(Eigen::AngleAxisd(x, Eigen::Vector3d::UnitX())));
   }
 
   /* ************************************************************************* */

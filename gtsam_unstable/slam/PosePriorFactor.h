@@ -56,14 +56,14 @@ namespace gtsam {
     }
 
     /// @return a deep copy of this factor
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    gtsam::NonlinearFactor::shared_ptr clone() const override {
       return boost::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
 
     /** print */
-    virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "PriorFactor on " << keyFormatter(this->key()) << "\n";
       prior_.print("  prior mean: ");
       if(this->body_P_sensor_)
@@ -72,7 +72,7 @@ namespace gtsam {
     }
 
     /** equals */
-    virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
+    bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
       const This* e = dynamic_cast<const This*> (&expected);
       return e != nullptr
           && Base::equals(*e, tol)
@@ -83,7 +83,7 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const POSE& p, boost::optional<Matrix&> H = boost::none) const {
+    Vector evaluateError(const POSE& p, boost::optional<Matrix&> H = boost::none) const override {
       if(body_P_sensor_) {
         // manifold equivalent of h(x)-z -> log(z,h(x))
         return prior_.localCoordinates(p.compose(*body_P_sensor_, H));

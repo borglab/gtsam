@@ -510,8 +510,8 @@ class IterativeLM : public LevenbergMarquardtOptimizer {
         initial_(initialValues) {}
 
   /// Solve that uses conjugate gradient
-  virtual VectorValues solve(const GaussianFactorGraph& gfg,
-                             const NonlinearOptimizerParams& params) const {
+  VectorValues solve(const GaussianFactorGraph& gfg,
+                             const NonlinearOptimizerParams& params) const override {
     VectorValues zeros = initial_.zeroVectors();
     return conjugateGradientDescent(gfg, zeros, cgParams_);
   }
@@ -541,7 +541,6 @@ TEST(NonlinearOptimizer, subclass_solver) {
 }
 
 /* ************************************************************************* */
-#include <wrap/utilities.h>
 TEST( NonlinearOptimizer, logfile )
 {
   NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
