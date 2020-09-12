@@ -28,7 +28,7 @@ struct GraphNode {
   unordered_set<Key> outNeighbors;  // Nodes to which there is an outgoing edge
 
   // Heuristic for the node that is to select nodes in MFAS.
-  double heuristic() { return (outWeightSum + 1) / (inWeightSum + 1); }
+  double heuristic() const { return (outWeightSum + 1) / (inWeightSum + 1); }
 };
 
 // A graph is a map from key to GraphNode. This function returns the graph from
@@ -42,8 +42,8 @@ unordered_map<Key, GraphNode> graphFromEdges(
     // is the direction of positive weight. This means that the edges is from
     // edge.first -> edge.second if weight is positive and edge.second ->
     // edge.first if weight is negative.
-    MFAS::KeyPair& edge = edgeWeight.first;
-    double& weight = edgeWeight.second;
+    const MFAS::KeyPair& edge = edgeWeight.first;
+    const double& weight = edgeWeight.second;
 
     Key edgeSource = weight >= 0 ? edge.first : edge.second;
     Key edgeDest = weight >= 0 ? edge.second : edge.first;
@@ -140,7 +140,7 @@ vector<Key> MFAS::computeOrdering() const {
   return ordering;
 }
 
-std::map<KeyPair, double> MFAS::computeOutlierWeights() const {
+map<MFAS::KeyPair, double> MFAS::computeOutlierWeights() const {
   // Find the ordering.
   vector<Key> ordering = computeOrdering();
 
