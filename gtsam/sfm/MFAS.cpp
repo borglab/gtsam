@@ -82,12 +82,12 @@ Key selectNextNodeInOrdering(const unordered_map<Key, GraphNode>& graph) {
 }
 
 // Returns the absolute weight of the edge between node1 and node2.
-double absWeightOfEdge(const Key node1, const Key node2,
+double absWeightOfEdge(const Key key1, const Key key2,
                        const map<MFAS::KeyPair, double>& edgeWeights) {
   // Check the direction of the edge before returning.
-  return edgeWeights_.find(MFAS::KeyPair(node1, node2)) != edgeWeights_.end()
-             ? std::abs(edgeWeights_.at(MFAS::KeyPair(node1, node2)))
-             : std::abs(edgeWeights_.at(MFAS::KeyPair(node2, node1)));
+  return edgeWeights.find(MFAS::KeyPair(key1, key2)) != edgeWeights.end()
+             ? std::abs(edgeWeights.at(MFAS::KeyPair(key1, key2)))
+             : std::abs(edgeWeights.at(MFAS::KeyPair(key2, key1)));
 }
 
 // Removes a node from the graph and updates edge weights of its neighbors.
@@ -157,16 +157,16 @@ map<MFAS::KeyPair, double> MFAS::computeOutlierWeights() const {
     // Find edge source and destination.
     Key source = edgeWeight.first.first;
     Key dest = edgeWeight.first.second;
-    if (weight < 0) {
+    if (edgeWeight.second < 0) {
       std::swap(source, dest);
     }
 
     // If the direction is not consistent with the ordering (i.e dest occurs
     // before src), it is an outlier edge, and has non-zero outlier weight.
     if (orderingPositions.at(dest) < orderingPositions.at(source)) {
-      outlierWeights[edge] = std::abs(edgeWeight.second);
+      outlierWeights[edgeWeight.first] = std::abs(edgeWeight.second);
     } else {
-      outlierWeights[edge] = 0;
+      outlierWeights[edgeWeight.first] = 0;
     }
   }
   return outlierWeights;
