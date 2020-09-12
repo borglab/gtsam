@@ -22,7 +22,7 @@ using namespace gtsam;
  */
 
 // edges in the graph - last edge from node 3 to 0 is an outlier
-vector<MFAS::KeyPair> graph = {make_pair(3, 2), make_pair(0, 1), make_pair(3, 1),
+vector<MFAS::KeyPair> edges = {make_pair(3, 2), make_pair(0, 1), make_pair(3, 1),
                          make_pair(1, 2), make_pair(0, 2), make_pair(3, 0)};
 // nodes in the graph
 vector<Key> nodes = {Key(0), Key(1), Key(2), Key(3)};
@@ -33,11 +33,11 @@ vector<double> weights2 = {0.5, 0.75, -0.25, 0.75, 1, 0.5};
 
 // helper function to obtain map from keypairs to weights from the 
 // vector representations
-std::map<MFAS::KeyPair, double> getEdgeWeights(const vector<MFAS::KeyPair> &graph,
+map<MFAS::KeyPair, double> getEdgeWeights(const vector<MFAS::KeyPair> &edges,
                                          const vector<double> &weights) {
-  std::map<MFAS::KeyPair, double> edgeWeights;
-  for (size_t i = 0; i < graph.size(); i++) {
-    edgeWeights[graph[i]] = weights[i];
+  map<MFAS::KeyPair, double> edgeWeights;
+  for (size_t i = 0; i < edges.size(); i++) {
+    edgeWeights[edges[i]] = weights[i];
   }
   cout << "returning edge weights " << edgeWeights.size() << endl;
   return edgeWeights;
@@ -46,7 +46,7 @@ std::map<MFAS::KeyPair, double> getEdgeWeights(const vector<MFAS::KeyPair> &grap
 // test the ordering and the outlierWeights function using weights2 - outlier
 // edge is rejected when projected in a direction that gives weights2
 TEST(MFAS, OrderingWeights2) {
-  MFAS mfas_obj(make_shared<vector<Key>>(nodes), getEdgeWeights(graph, weights2));
+  MFAS mfas_obj(make_shared<vector<Key>>(nodes), getEdgeWeights(edges, weights2));
 
   vector<Key> ordered_nodes = mfas_obj.computeOrdering();
 
@@ -62,7 +62,7 @@ TEST(MFAS, OrderingWeights2) {
 
   // since edge between 3 and 0 is inconsistent with the ordering, it must have
   // positive outlier weight, other outlier weights must be zero
-  for (auto &edge : graph) {
+  for (auto &edge : edges) {
     if (edge == make_pair(Key(3), Key(0)) ||
         edge == make_pair(Key(0), Key(3))) {
       EXPECT_DOUBLES_EQUAL(outlier_weights[edge], 0.5, 1e-6);
@@ -76,7 +76,7 @@ TEST(MFAS, OrderingWeights2) {
 // weights1 (outlier edge is accepted when projected in a direction that
 // produces weights1)
 TEST(MFAS, OrderingWeights1) {
-  MFAS mfas_obj(make_shared<vector<Key>>(nodes), getEdgeWeights(graph, weights1));
+  MFAS mfas_obj(make_shared<vector<Key>>(nodes), getEdgeWeights(edges, weights1));
 
   vector<Key> ordered_nodes = mfas_obj.computeOrdering();
 
@@ -92,7 +92,7 @@ TEST(MFAS, OrderingWeights1) {
 
   // since edge between 3 and 0 is inconsistent with the ordering, it must have
   // positive outlier weight, other outlier weights must be zero
-  for (auto &edge : graph) {
+  for (auto &edge : edges) {
     EXPECT_DOUBLES_EQUAL(outlier_weights[edge], 0, 1e-6);
   }
 }

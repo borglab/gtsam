@@ -7,123 +7,162 @@
 
 #include <gtsam/sfm/MFAS.h>
 
+#include <algorithm>
+#include <map>
+#include <unordered_map>
+#include <vector>
+
 using namespace gtsam;
+using MFAS::KeyPair;
+using std::map;
 using std::pair;
+using std::unordered_map;
 using std::vector;
 
-MFAS::MFAS(const std::shared_ptr<vector<Key>> &nodes,
+// A node in the graph.
+struct GraphNode {
+  double inWeightSum;        // Sum of absolute weights of incoming edges.
+  double outWeightSum;       // Sum of absolute weights of outgoing edges.
+  vector<Key> inNeighbors;   // Nodes from which there is an incoming edge.
+  vector<Key> outNeighbors;  // Nodes to which there is an outgoing edge.
+
+  // Heuristic for the node that is to select nodes in MFAS.
+  double heuristic() { return (outWeightSum + 1) / (inWeightSum + 1); }
+};
+
+// A graph is a map from key to GraphNode. This function returns the graph from
+// the edgeWeights between keys.
+unordered_map<Key, GraphNode> graphFromEdges(
+    const map<KeyPair, double>& edgeWeights) {
+  unordered_map<Key, GraphNode> graph;
+
+  for (const auto& [edge, weight] : edgeWeights) {
+    // The weights can be either negative or positive. The direction of the edge
+    // is the direction of positive weight. This means that the edges is from
+    // edge.first -> edge.second if weight is positive and edge.second ->
+    // edge.first if weight is negative.
+    Key edgeSource = weight >= 0 ? edge.first : edge.second;
+    Key edgeDest = weight >= 0 ? edge.second : edge.first;
+
+    // Update the in weight and neighbors for the destination.
+    graph[edgeDest].inWeightSum += std::abs(weight);
+    graph[edgeDest].inNeighbors.push_back(edgeSource);
+
+    // Update the out weight and neighbors for the source.
+    graph[edgeSource].outWeightSum += std::abs(weight);
+    graph[edgeSource].outNeighbors.push_back(edgeDest);
+  }
+  return graph;
+}
+
+// Selects the next node in the ordering from the graph.
+Key selectNextNodeInOrdering(const unordered_map<Key, GraphNode>& graph) {
+  // Find the root nodes in the graph.
+  for (const auto& [key, node] : graph) {
+    // It is a root node if the inWeightSum is close to zero.
+    if (node.inWeightSum < 1e-8) {
+      // TODO(akshay-krishnan) if there are multiple roots, it is better to
+      // choose the one with highest heuristic. This is missing in the 1dsfm
+      // solution.
+      return key;
+    }
+  }
+  // If there are no root nodes, return the node with the highest heuristic.
+  return std::max_element(graph.begin(), graph.end(),
+                          [](const std::pair<Key, GraphNode>& node1,
+                             const std::pair<Key, GraphNode>& node2) {
+                            return node1.second.heuristic() <
+                                   node2.second.heuristic();
+                          })
+      ->first;
+}
+
+// Returns the absolute weight of the edge between node1 and node2.
+double absWeightOfEdge(const Key node1, const Key node2,
+                       const map<KeyPair, double>& edgeWeights) {
+  // Check the direction of the edge before returning.
+  return edgeWeights_.find(KeyPair(node1, node2)) != edgeWeights_.end()
+             ? std::abs(edgeWeights_.at(KeyPair(node1, node2)))
+             : std::abs(edgeWeights_.at(KeyPair(node2, node1)));
+}
+
+// Removes a node from the graph and updates edge weights of its neighbors.
+void removeNodeFromGraph(const Key node, const map<KeyPair, double> edgeWeights,
+                         unordered_map<Key, GraphNode>& graph) {
+  // Update the outweights and outNeighbors of node's inNeighbors
+  for (const Key neighbor : graph[node].inNeighbors) {
+    // the edge could be either (*it, choice) with a positive weight or
+    // (choice, *it) with a negative weight
+    graph[neighbor].outWeightSum -=
+        absWeightOfEdge(node, neighbor, edgeWeights);
+    graph[neighbor].outNeighbors.erase(graph[neighbor].outNeighbors.find(node));
+  }
+  // Update the inWeights and inNeighbors of node's outNeighbors
+  for (const Key neighbor : graph[node].outNeighbors) {
+    graph[neighbor].inWeightSum -= absWeightOfEdge(node, neighbor, edgeWeights);
+    graph[neighbor].inNeighbors.erase(graph[neighbor].inNeighbors.find(node));
+  }
+  // Erase node.
+  graph.erase(node);
+}
+
+MFAS::MFAS(const std::shared_ptr<vector<Key>>& nodes,
            const TranslationEdges& relativeTranslations,
-           const Unit3 &projection_direction)
+           const Unit3& projectionDirection)
     : nodes_(nodes) {
-  // iterate over edges, obtain weights by projecting
+  // Iterate over edges, obtain weights by projecting
   // their relativeTranslations along the projection direction
-  for (auto it = relativeTranslations.begin();
-       it != relativeTranslations.end(); it++) {
-    edgeWeights_[it->first] = it->second.dot(projection_direction);
+  for (const auto& measurement : relativeTranslations) {
+    edgeWeights_[std::make_pair(measurement.key1(), measurement.key2())] =
+        measurement.measured().dot(projectionDirection);
   }
 }
 
-std::vector<Key> MFAS::computeOrdering() const {
-  FastMap<Key, double> in_weights;    // sum on weights of incoming edges for a node
-  FastMap<Key, double> out_weights;   // sum on weights of outgoing edges for a node
-  FastMap<Key, vector<Key> > in_neighbors;
-  FastMap<Key, vector<Key> > out_neighbors;
+vector<Key> MFAS::computeOrdering() const {
+  vector<Key> ordering;  // Nodes in MFAS order (result).
 
-  vector<Key> ordered_nodes;            // nodes in MFAS order (result)
-  FastMap<Key, int> ordered_positions;  // map from node to its position in the output order
+  // A graph is an unordered map from keys to nodes. Each node contains a list
+  // of its adjacent nodes. Create the graph from the edgeWeights.
+  unordered_map<Key, GraphNode> graph = graphFromEdges(edgeWeights_);
 
-  // populate neighbors and weights
-  // Since the weights could be obtained by projection, they can be either 
-  // negative or positive. Ideally, the weights should be positive in the 
-  // direction of the edge. So, we define the direction of the edge as 
-  // edge.first -> edge.second if weight is positive and 
-  // edge.second -> edge.first if weight is negative. Once we know the
-  // direction, we only use the magnitude of the weights. 
-  for (auto it = edgeWeights_.begin(); it != edgeWeights_.end(); it++) {
-    const KeyPair &edge = it->first;
-    const double weight = it->second;
-    Key edge_source = weight >= 0 ? edge.first : edge.second;
-    Key edge_dest = weight >= 0 ? edge.second : edge.first;
-
-    in_weights[edge_dest] += std::abs(weight);
-    out_weights[edge_source] += std::abs(weight);
-    in_neighbors[edge_dest].push_back(edge_source);
-    out_neighbors[edge_source].push_back(edge_dest);
+  // In each iteration, one node is removed from the graph and appended to the
+  // ordering.
+  while (!graph.empty()) {
+    Key selection = selectNextNodeInOrdering(graph);
+    removeNodeFromGraph(selection, edgeWeights_, graph);
+    ordering.push_back(selection);
   }
-
-  // in each iteration, one node is appended to the ordered list
-  while (ordered_nodes.size() < nodes_->size()) {
-
-    // finding the node with the max heuristic score
-    Key choice;
-    double max_score = 0.0;
-
-    for (const Key &node : *nodes_) {
-      // if this node has not been chosen so far
-      if (ordered_positions.find(node) == ordered_positions.end()) {
-        // is this a root node
-        if (in_weights[node] < 1e-8) {
-          // TODO(akshay-krishnan) if there are multiple roots, it is better to choose the 
-          // one with highest heuristic. This is missing in the 1dsfm solution. 
-          choice = node;
-          break;
-        } else {
-          double score = (out_weights[node] + 1) / (in_weights[node] + 1);
-          if (score > max_score) {
-            max_score = score;
-            choice = node;
-          }
-        }
-      }
-    }
-    // find its in_neighbors, adjust their out_weights
-    for (auto it = in_neighbors[choice].begin();
-         it != in_neighbors[choice].end(); ++it)
-      // the edge could be either (*it, choice) with a positive weight or (choice, *it) with a negative weight
-      out_weights[*it] -= edgeWeights_.find(KeyPair(*it, choice)) == edgeWeights_.end() ? -edgeWeights_.at(KeyPair(choice, *it)) : edgeWeights_.at(KeyPair(*it, choice));
-
-    // find its out_neighbors, adjust their in_weights
-    for (auto it = out_neighbors[choice].begin();
-         it != out_neighbors[choice].end(); ++it)
-      in_weights[*it] -= edgeWeights_.find(KeyPair(choice, *it)) == edgeWeights_.end() ? -edgeWeights_.at(KeyPair(*it, choice)) : edgeWeights_.at(KeyPair(choice, *it));
-
-    ordered_positions[choice] = ordered_nodes.size();
-    ordered_nodes.push_back(choice);
-  }
-  return ordered_nodes;
+  return ordering;
 }
 
-std::map<MFAS::KeyPair, double> MFAS::computeOutlierWeights() const {
-  vector<Key> ordered_nodes = computeOrdering();
-  FastMap<Key, int> ordered_positions;
-  std::map<KeyPair, double> outlier_weights;
+std::map<KeyPair, double> MFAS::computeOutlierWeights() const {
+  // Find the ordering.
+  vector<Key> ordering = computeOrdering();
 
-  // create a map becuase it is much faster to lookup the position of each node
-  // TODO(akshay-krishnan) this is already computed in computeOrdering. Would be nice if 
-  // we could re-use. Either use an optional argument or change the output of
-  // computeOrdering
-  for(unsigned int i = 0; i < ordered_nodes.size(); i++) {
-    ordered_positions[ordered_nodes[i]] = i;
+  // Create a map from the node key to its position in the ordering. This makes
+  // it easier to lookup positions of different nodes.
+  unordered_map<Key, int> orderingPositions;
+  for (size_t i = 0; i < ordering.size(); i++) {
+    orderingPositions[ordering[i]] = i;
   }
 
-  // iterate over all edges
-  for (auto it = edgeWeights_.begin(); it != edgeWeights_.end(); it++) {
-    Key edge_source, edge_dest;
-    if(it->second > 0) {
-      edge_source = it->first.first;
-      edge_dest = it->first.second;
-    } else {
-      edge_source = it->first.second;
-      edge_dest = it->first.first;
+  map<KeyPair, double> outlierWeights;
+  // Check if the direction of each edge is consistent with the ordering.
+  for (const auto& [edge, weight] : edgeWeights_) {
+    // Find edge source and destination.
+    Key source = edge.first;
+    Key dest = edge.second;
+    if (weight < 0) {
+      std::swap(source, dest);
     }
 
-    // if the ordered position of nodes is not consistent with the edge
-    // direction for consistency second should be greater than first
-    if (ordered_positions.at(edge_dest) < ordered_positions.at(edge_source)) {
-      outlier_weights[it->first] = std::abs(edgeWeights_.at(it->first));
+    // If the direction is not consistent with the ordering (i.e dest occurs
+    // before src), it is an outlier edge, and has non-zero outlier weight.
+    if (orderingPositions.at(dest) < orderingPositions.at(source)) {
+      outlierWeights[edge] = std::abs(weight);
     } else {
-      outlier_weights[it->first] = 0;
+      outlierWeights[edge] = 0;
     }
   }
-  return outlier_weights;
+  return outlierWeights;
 }
