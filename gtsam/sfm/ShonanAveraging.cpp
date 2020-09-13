@@ -17,6 +17,7 @@
  */
 
 #include <SymEigsSolver.h>
+#include <cmath>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -470,38 +471,55 @@ Sparse ShonanAveraging<d>::computeA(const Values &values) const {
   return Lambda - Q_;
 }
 
-/* ************************************************************************* */
-/// MINIMUM EIGENVALUE COMPUTATIONS
+// Alg.6 from paper Distributed Certifiably Correct Pose-Graph Optimization
+static bool PowerMinimumEigenValue(
+    const Sparse &A, const Matrix &S, double *minEigenValue,
+    Vector *minEigenVector = 0, size_t *numIterations = 0,
+    size_t maxIterations = 1000,
+    double minEigenvalueNonnegativityTolerance = 10e-4,
+    Eigen::Index numLanczosVectors = 20) {
 
-/** This is a lightweight struct used in conjunction with Spectra to compute
- * the minimum eigenvalue and eigenvector of a sparse matrix A; it has a single
- * nontrivial function, perform_op(x,y), that computes and returns the product
- * y = (A + sigma*I) x */
-struct MatrixProdFunctor {
-  // Const reference to an externally-held matrix whose minimum-eigenvalue we
-  // want to compute
-  const Sparse &A_;
+  // a. Compute dominant eigenpair of S using power method
+  MatrixProdFunctor lmOperator(A, 1, std::min(numLanczosVectors, A.rows()));
+  lmOperator.init();
 
-  // Spectral shift
-  double sigma_;
+  const int lmConverged = lmEigenValueSolver.compute(
+      maxIterations, 1e-4);
 
-  // Constructor
-  explicit MatrixProdFunctor(const Sparse &A, double sigma = 0)
-      : A_(A), sigma_(sigma) {}
+  // Check convergence and bail out if necessary
+  if (lmConverged != 1) return false;
 
-  int rows() const { return A_.rows(); }
-  int cols() const { return A_.cols(); }
+  const double lmEigenValue = lmEigenValueSolver.eigenvalues()(0);
 
-  // Matrix-vector multiplication operation
-  void perform_op(const double *x, double *y) const {
-    // Wrap the raw arrays as Eigen Vector types
-    Eigen::Map<const Vector> X(x, rows());
-    Eigen::Map<Vector> Y(y, rows());
-
-    // Do the multiplication using wrapped Eigen vectors
-    Y = A_ * X + sigma_ * X;
+  if (lmEigenValue < 0) {
+    // The largest-magnitude eigenvalue is negative, and therefore also the
+    // minimum eigenvalue, so just return this solution
+    *minEigenValue = lmEigenValue;
+    if (minEigenVector) {
+      *minEigenVector = lmEigenValueSolver.eigenvectors().col(0);
+      minEigenVector->normalize();  // Ensure that this is a unit vector
+    }
+    return true;
   }
-};
+
+  Matrix C = lmEigenValue * Matrix::Identity(A.rows(), A.cols()) - A;
+  MatrixProdFunctor minShiftedOperator(
+      C, 1, std::min(numLanczosVectors, A.rows()));
+  minShiftedOperator.init();
+
+  const int minConverged = minShiftedOperator.compute(
+      maxIterations, minEigenvalueNonnegativityTolerance / lmEigenValue);
+
+  if (minConverged != 1) return false;
+
+  *minEigenValue = lmEigenValue - minShiftedOperator.eigenvalues()(0);
+  if (minEigenVector) {
+    *minEigenVector = minShiftedOperator.eigenvectors().col(0);
+    minEigenVector->normalize();  // Ensure that this is a unit vector
+  }
+  if (numIterations) *numIterations = minShiftedOperator.num_iterations();
+  return true;
+}
 
 /// Function to compute the minimum eigenvalue of A using Lanczos in Spectra.
 /// This does 2 things:
