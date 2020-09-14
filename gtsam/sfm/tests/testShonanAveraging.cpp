@@ -121,18 +121,17 @@ TEST(ShonanAveraging3, tryOptimizingAt4) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging3, MakeATangentVector) {
+TEST(ShonanAveraging3, TangentVectorValues) {
   Vector9 v;
   v << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  Matrix expected(5, 5);
-  expected << 0, 0, 0, 0, -4, //
-      0, 0, 0, 0, -5,         //
-      0, 0, 0, 0, -6,         //
-      0, 0, 0, 0, 0,          //
-      4, 5, 6, 0, 0;
-  const Vector xi_1 = ShonanAveraging3::MakeATangentVector(5, v, 1);
-  const auto actual = SOn::Hat(xi_1);
-  CHECK(assert_equal(expected, actual));
+  Vector expected0(10), expected1(10), expected2(10);
+  expected0 << 0, 3, -2, 1, 0, 0, 0, 0, 0, 0;
+  expected1 << 0, 6, -5, 4, 0, 0, 0, 0, 0, 0;
+  expected2 << 0, 9, -8, 7, 0, 0, 0, 0, 0, 0;
+  const VectorValues xi = ShonanAveraging3::TangentVectorValues(5, v);
+  EXPECT(assert_equal(expected0, xi[0]));
+  EXPECT(assert_equal(expected1, xi[1]));
+  EXPECT(assert_equal(expected2, xi[2]));
 }
 
 /* ************************************************************************* */
@@ -168,7 +167,8 @@ TEST(ShonanAveraging3, CheckWithEigen) {
       minEigenValue = min(lambdas(i), minEigenValue);
 
   // Actual check
-  EXPECT_DOUBLES_EQUAL(minEigenValue, lambda, 1e-12);
+  EXPECT_DOUBLES_EQUAL(0, lambda, 1e-11);
+  EXPECT_DOUBLES_EQUAL(0, minEigenValue, 1e-11);
 
   // Construct test descent direction (as minEigenVector is not predictable
   // across platforms, being one from a basically flat 3d- subspace)

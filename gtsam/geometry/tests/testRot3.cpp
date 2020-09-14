@@ -744,6 +744,57 @@ TEST(Rot3, axisAngle) {
 }
 
 /* ************************************************************************* */
+Rot3 RzRyRx_proxy(double const& a, double const& b, double const& c) {
+  return Rot3::RzRyRx(a, b, c);
+}
+
+TEST(Rot3, RzRyRx_scalars_derivative) {
+  const auto x = 0.1, y = 0.4, z = 0.2;
+  const auto num_x = numericalDerivative31(RzRyRx_proxy, x, y, z);
+  const auto num_y = numericalDerivative32(RzRyRx_proxy, x, y, z);
+  const auto num_z = numericalDerivative33(RzRyRx_proxy, x, y, z);
+
+  Vector3 act_x, act_y, act_z;
+  Rot3::RzRyRx(x, y, z, act_x, act_y, act_z);
+
+  CHECK(assert_equal(num_x, act_x));
+  CHECK(assert_equal(num_y, act_y));
+  CHECK(assert_equal(num_z, act_z));
+}
+
+/* ************************************************************************* */
+Rot3 RzRyRx_proxy(Vector3 const& xyz) { return Rot3::RzRyRx(xyz); }
+
+TEST(Rot3, RzRyRx_vector_derivative) {
+  const auto xyz = Vector3{-0.3, 0.1, 0.7};
+  const auto num = numericalDerivative11(RzRyRx_proxy, xyz);
+
+  Matrix3 act;
+  Rot3::RzRyRx(xyz, act);
+
+  CHECK(assert_equal(num, act));
+}
+
+/* ************************************************************************* */
+Rot3 Ypr_proxy(double const& y, double const& p, double const& r) {
+  return Rot3::Ypr(y, p, r);
+}
+
+TEST(Rot3, Ypr_derivative) {
+  const auto y = 0.7, p = -0.3, r = 0.1;
+  const auto num_y = numericalDerivative31(Ypr_proxy, y, p, r);
+  const auto num_p = numericalDerivative32(Ypr_proxy, y, p, r);
+  const auto num_r = numericalDerivative33(Ypr_proxy, y, p, r);
+
+  Vector3 act_y, act_p, act_r;
+  Rot3::Ypr(y, p, r, act_y, act_p, act_r);
+
+  CHECK(assert_equal(num_y, act_y));
+  CHECK(assert_equal(num_p, act_p));
+  CHECK(assert_equal(num_r, act_r));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

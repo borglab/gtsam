@@ -4,6 +4,10 @@ if (NOT GTSAM_BUILD_PYTHON)
     return()
 endif()
 
+# Common directory for storing data/datasets stored with the package.
+# This will store the data in the Python site package directly.
+set(GTSAM_PYTHON_DATASET_DIR "./gtsam/Data")
+
 # Generate setup.py.
 file(READ "${PROJECT_SOURCE_DIR}/README.md" README_CONTENTS)
 configure_file(${PROJECT_SOURCE_DIR}/python/setup.py.in
@@ -26,11 +30,14 @@ set(ignore
     gtsam::ISAM2ThresholdMapValue
     gtsam::FactorIndices
     gtsam::FactorIndexSet
+    gtsam::IndexPairSetMap
+    gtsam::IndexPairVector
     gtsam::BetweenFactorPose2s
     gtsam::BetweenFactorPose3s
     gtsam::Point2Vector
     gtsam::Pose3Vector
-    gtsam::KeyVector)
+    gtsam::KeyVector
+    gtsam::BinaryMeasurementsUnit3)
 
 pybind_wrap(gtsam_py # target
             ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i # interface_header
@@ -72,7 +79,8 @@ set(ignore
         gtsam::Point2Vector
         gtsam::Pose3Vector
         gtsam::KeyVector
-        gtsam::FixedLagSmootherKeyTimestampMapValue)
+        gtsam::FixedLagSmootherKeyTimestampMapValue
+        gtsam::BinaryMeasurementsUnit3)
 pybind_wrap(gtsam_unstable_py # target
         ${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i # interface_header
         "gtsam_unstable.cpp" # generated_cpp

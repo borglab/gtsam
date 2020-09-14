@@ -13,7 +13,7 @@ $ make install
 ## Important Installation Notes
 
 1. GTSAM requires the following libraries to be installed on your system:
-    - BOOST version 1.43 or greater (install through Linux repositories or MacPorts)
+    - BOOST version 1.58 or greater (install through Linux repositories or MacPorts)
     - Cmake version 3.0 or higher
     - Support for XCode 4.3 command line tools on Mac requires CMake 2.8.8 or higher
 
