@@ -211,8 +211,12 @@ private:
   /// Calculate expmap and logmap coefficients.
   static Matrix3 GetV(Vector3 w, double lambda);
 
-  /// This methods estimates the similarity transform from point pairs, given a known or estimated rotation.
+  /// This method estimates the similarity transform from point pairs, given a known or estimated rotation.
   static Similarity3 AlignGivenR(const std::vector<Point3Pair>& abPointPairs, const Rot3& aRb);
+
+  /// This method estimates the similarity transform from differences point pairs, given a known or estimated rotation and point centroids.
+  static Similarity3 AlignGivenR(const std::vector<Point3Pair>& d_abPointPairs, const Rot3& aRb, const Point3& aCentroid, const Point3& bCentroid);
+
 
   /// @}
 };

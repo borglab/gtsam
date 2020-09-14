@@ -103,13 +103,30 @@ Similarity3 Similarity3::AlignGivenR(const std::vector<Point3Pair>& abPointPairs
   std::tie(aCentroid, bCentroid) = mean(abPointPairs);
 
   // calculate scale
-  double x = 0;
-  double y = 0;
+  double x = 0, y = 0;
   Point3 aPoint, bPoint;
   for (const Point3Pair& abPair : abPointPairs) {
     std::tie(aPoint, bPoint) = abPair;
     const Point3 da = aPoint - aCentroid;
     const Point3 db = bPoint - bCentroid;
+    Vector3 Rdb = aRb * db;
+    y += da.transpose() * Rdb;
+    x += Rdb.transpose() * Rdb;
+  }
+  const double s = y / x;
+
+  // calculate translation
+  const Point3 aTb = (aCentroid - s * (aRb * bCentroid)) / s;
+  return Similarity3(aRb, aTb, s);
+}
+
+// Refer to: http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf Chapter 3
+Similarity3 Similarity3::AlignGivenR(const std::vector<Point3Pair>& d_abPointPairs, const Rot3& aRb, const Point3& aCentroid, const Point3& bCentroid) {
+  // calculate scale
+  double x = 0, y = 0;
+  Point3 da, db;
+  for (const Point3Pair& d_abPair : d_abPointPairs) {
+    std::tie(da, db) = d_abPair;
     Vector3 Rdb = aRb * db;
     y += da.transpose() * Rdb;
     x += Rdb.transpose() * Rdb;
@@ -133,17 +150,19 @@ Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
   // Add to form H matrix
   Matrix3 H = Z_3x3;
   Point3 aPoint, bPoint;
+  std::vector<Point3Pair> d_abPointPairs;
   for (const Point3Pair& abPair : abPointPairs) {
     std::tie(aPoint, bPoint) = abPair;
     Point3 da = aPoint - aCentroid;
     Point3 db = bPoint - bCentroid;
+    d_abPointPairs.emplace_back(da, db);
     H += da * db.transpose();
   }
 
   // ClosestTo finds rotation matrix closest to H in Frobenius sense
   Rot3 aRb = Rot3::ClosestTo(H);
 
-  return AlignGivenR(abPointPairs, aRb);
+  return AlignGivenR(d_abPointPairs, aRb, aCentroid, bCentroid);
 }
 
 Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
