@@ -480,31 +480,30 @@ static bool PowerMinimumEigenValue(
     Eigen::Index numLanczosVectors = 20) {
 
   // a. Compute dominant eigenpair of S using power method
-  MatrixProdFunctor lmOperator(A, 1, std::min(numLanczosVectors, A.rows()));
+  PowerFunctor lmOperator(A, 1, std::min(numLanczosVectors, A.rows()));
   lmOperator.init();
 
-  const int lmConverged = lmEigenValueSolver.compute(
-      maxIterations, 1e-4);
+  const int lmConverged = lmOperator.compute(
+      maxIterations, 1e-5);
 
   // Check convergence and bail out if necessary
   if (lmConverged != 1) return false;
 
-  const double lmEigenValue = lmEigenValueSolver.eigenvalues()(0);
+  const double lmEigenValue = lmOperator.eigenvalues()(0);
 
   if (lmEigenValue < 0) {
     // The largest-magnitude eigenvalue is negative, and therefore also the
     // minimum eigenvalue, so just return this solution
     *minEigenValue = lmEigenValue;
     if (minEigenVector) {
-      *minEigenVector = lmEigenValueSolver.eigenvectors().col(0);
+      *minEigenVector = lmOperator.eigenvectors().col(0);
       minEigenVector->normalize();  // Ensure that this is a unit vector
     }
     return true;
   }
 
-  Matrix C = lmEigenValue * Matrix::Identity(A.rows(), A.cols()) - A;
-  MatrixProdFunctor minShiftedOperator(
-      C, 1, std::min(numLanczosVectors, A.rows()));
+  Sparse C = lmEigenValue * Matrix::Identity(A.rows(), A.cols()) - A;
+  PowerFunctor minShiftedOperator(C, 1, std::min(numLanczosVectors, C.rows()));
   minShiftedOperator.init();
 
   const int minConverged = minShiftedOperator.compute(
@@ -520,6 +519,36 @@ static bool PowerMinimumEigenValue(
   if (numIterations) *numIterations = minShiftedOperator.num_iterations();
   return true;
 }
+
+/** This is a lightweight struct used in conjunction with Spectra to compute
+ * the minimum eigenvalue and eigenvector of a sparse matrix A; it has a single
+ * nontrivial function, perform_op(x,y), that computes and returns the product
+ * y = (A + sigma*I) x */
+struct MatrixProdFunctor {
+  // Const reference to an externally-held matrix whose minimum-eigenvalue we
+  // want to compute
+  const Sparse &A_;
+
+  // Spectral shift
+  double sigma_;
+
+  // Constructor
+  explicit MatrixProdFunctor(const Sparse &A, double sigma = 0)
+      : A_(A), sigma_(sigma) {}
+
+  int rows() const { return A_.rows(); }
+  int cols() const { return A_.cols(); }
+
+  // Matrix-vector multiplication operation
+  void perform_op(const double *x, double *y) const {
+    // Wrap the raw arrays as Eigen Vector types
+    Eigen::Map<const Vector> X(x, rows());
+    Eigen::Map<Vector> Y(y, rows());
+
+    // Do the multiplication using wrapped Eigen vectors
+    Y = A_ * X + sigma_ * X;
+  }
+};
 
 /// Function to compute the minimum eigenvalue of A using Lanczos in Spectra.
 /// This does 2 things:
@@ -655,6 +684,23 @@ double ShonanAveraging<d>::computeMinEigenValue(const Values &values,
   if (!success) {
     throw std::runtime_error(
         "SparseMinimumEigenValue failed to compute minimum eigenvalue.");
+  }
+  return minEigenValue;
+}
+
+/* ************************************************************************* */
+template <size_t d>
+double ShonanAveraging<d>::computeMinEigenValueAP(const Values &values,
+                                                Vector *minEigenVector) const {
+  assert(values.size() == nrUnknowns());
+  const Matrix S = StiefelElementMatrix(values);
+  auto A = computeA(S);
+
+  double minEigenValue;
+  bool success = PowerMinimumEigenValue(A, S, &minEigenValue, minEigenVector);
+  if (!success) {
+    throw std::runtime_error(
+        "PowerMinimumEigenValue failed to compute minimum eigenvalue.");
   }
   return minEigenValue;
 }

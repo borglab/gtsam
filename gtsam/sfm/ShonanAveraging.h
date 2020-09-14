@@ -26,6 +26,7 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/sfm/BinaryMeasurement.h>
+#include <gtsam/sfm/PowerMethod.h>
 #include <gtsam/slam/dataset.h>
 
 #include <Eigen/Sparse>
@@ -201,6 +202,13 @@ class GTSAM_EXPORT ShonanAveraging {
    */
   double computeMinEigenValue(const Values &values,
                               Vector *minEigenVector = nullptr) const;
+
+  /**
+   * Compute minimum eigenvalue with accelerated power method.
+   * @param values: should be of type SOn
+   */
+  double computeMinEigenValueAP(const Values &values,
+                                Vector *minEigenVector = nullptr) const;
 
   /// Project pxdN Stiefel manifold matrix S to Rot3^N
   Values roundSolutionS(const Matrix &S) const;
