@@ -171,6 +171,9 @@ Vector3 Rot3::xyz(OptionalJacobian<3, 3> H) const {
 
     Matrix39 qHm;
     boost::tie(I, q) = RQ(m, qHm);
+
+    // TODO : Explore whether this expression can be optimized as both
+    // qHm and mH are super-sparse
     *H = qHm * mH;
   } else
     boost::tie(I, q) = RQ(matrix());
@@ -266,6 +269,10 @@ pair<Matrix3, Vector3> RQ(const Matrix3& A, OptionalJacobian<3, 9> H) {
   const Matrix3 R = C * Qz;
 
   if (H) {
+    if (std::abs(y - M_PI / 2) < 1e-2)
+      throw std::runtime_error(
+          "Rot3::RQ : Derivative undefined at singularity (gimbal lock)");
+
     auto atan_d1 = [](double y, double x) { return x / (x * x + y * y); };
     auto atan_d2 = [](double y, double x) { return -y / (x * x + y * y); };
 
