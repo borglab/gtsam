@@ -13,17 +13,19 @@
 
 class VirtClass  {
 public:
-    virtual ~VirtClass() {}
+    virtual ~VirtClass() = default;
+    VirtClass() = default;
+    VirtClass(const VirtClass&) = delete;
     virtual void virtual_func() {}
     virtual void pure_virtual_func() = 0;
 };
 
 class PyVirtClass : public VirtClass {
     void virtual_func() override {
-        PYBIND11_OVERLOAD(void, VirtClass, virtual_func,);
+        PYBIND11_OVERRIDE(void, VirtClass, virtual_func,);
     }
     void pure_virtual_func() override {
-        PYBIND11_OVERLOAD_PURE(void, VirtClass, pure_virtual_func,);
+        PYBIND11_OVERRIDE_PURE(void, VirtClass, pure_virtual_func,);
     }
 };
 
