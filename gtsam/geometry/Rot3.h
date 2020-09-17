@@ -441,19 +441,19 @@ namespace gtsam {
      * Use RQ to calculate xyz angle representation
      * @return a vector containing x,y,z s.t. R = Rot3::RzRyRx(x,y,z)
      */
-    Vector3 xyz() const;
+    Vector3 xyz(OptionalJacobian<3, 3> H = boost::none) const;
 
     /**
      * Use RQ to calculate yaw-pitch-roll angle representation
      * @return a vector containing ypr s.t. R = Rot3::Ypr(y,p,r)
      */
-    Vector3 ypr() const;
+    Vector3 ypr(OptionalJacobian<3, 3> H = boost::none) const;
 
     /**
      * Use RQ to calculate roll-pitch-yaw angle representation
      * @return a vector containing rpy s.t. R = Rot3::Ypr(y,p,r)
      */
-    Vector3 rpy() const;
+    Vector3 rpy(OptionalJacobian<3, 3> H = boost::none) const;
 
     /**
      * Accessor to get to component of angle representations
@@ -461,7 +461,7 @@ namespace gtsam {
      * you should instead use xyz() or ypr()
      * TODO: make this more efficient
      */
-    inline double roll() const  { return xyz()(0); }
+    double roll(OptionalJacobian<1, 3> H = boost::none) const;
 
     /**
      * Accessor to get to component of angle representations
@@ -469,7 +469,7 @@ namespace gtsam {
      * you should instead use xyz() or ypr()
      * TODO: make this more efficient
      */
-    inline double pitch() const { return xyz()(1); }
+    double pitch(OptionalJacobian<1, 3> H = boost::none) const;
 
     /**
      * Accessor to get to component of angle representations
@@ -477,7 +477,7 @@ namespace gtsam {
      * you should instead use xyz() or ypr()
      * TODO: make this more efficient
      */
-    inline double yaw() const   { return xyz()(2); }
+    double yaw(OptionalJacobian<1, 3> H = boost::none) const;
 
     /// @}
     /// @name Advanced Interface
@@ -557,7 +557,8 @@ namespace gtsam {
    * @return an upper triangular matrix R
    * @return a vector [thetax, thetay, thetaz] in radians.
    */
-  GTSAM_EXPORT std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
+  GTSAM_EXPORT std::pair<Matrix3, Vector3> RQ(
+      const Matrix3& A, OptionalJacobian<3, 9> H = boost::none);
 
   template<>
   struct traits<Rot3> : public internal::LieGroup<Rot3> {};
