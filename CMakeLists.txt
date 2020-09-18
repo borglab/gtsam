@@ -127,7 +127,11 @@ if(GTSAM_BUILD_PYTHON)
     endif()
 
     if(${GTSAM_PYTHON_VERSION} STREQUAL "Default")
-        set(GTSAM_PYTHON_VERSION "${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}" CACHE STRING "The version of Python to build the wrappers against." FORCE)
+        set(GTSAM_PYTHON_VERSION "${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}"
+                CACHE
+                STRING
+                "The version of Python to build the wrappers against."
+                FORCE)
     endif()
 
     if(GTSAM_UNSTABLE_BUILD_PYTHON)
