@@ -68,9 +68,7 @@ class TranslationRecovery {
    */
   TranslationRecovery(const TranslationEdges &relativeTranslations,
                       const LevenbergMarquardtParams &lmParams = LevenbergMarquardtParams())
-      : relativeTranslations_(relativeTranslations), params_(lmParams) {
-    params_.setVerbosityLM("Summary");
-  }
+      : relativeTranslations_(relativeTranslations), params_(lmParams) {}
 
   /**
    * @brief Build the factor graph to do the optimization.
@@ -84,8 +82,11 @@ class TranslationRecovery {
    *
    * @param scale scale for first relative translation which fixes gauge.
    * @param graph factor graph to which prior is added.
+   * @param priorNoiseModel the noise model to use with the prior.
    */
-  void addPrior(const double scale, NonlinearFactorGraph *graph) const;
+  void addPrior(const double scale, NonlinearFactorGraph *graph,
+                const SharedNoiseModel &priorNoiseModel =
+                    noiseModel::Isotropic::Sigma(3, 0.01)) const;
 
   /**
    * @brief Create random initial translations.

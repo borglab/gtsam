@@ -40,7 +40,12 @@ class TestTranslationRecovery(unittest.TestCase):
     def test_run(self):
         gt_poses = ExampleValues()
         measurements = SimulateMeasurements(gt_poses, [[0, 1], [0, 2], [1, 2]])
-        algorithm = gtsam.TranslationRecovery(measurements)
+
+        # Set verbosity to Silent for tests
+        lmParams = gtsam.LevenbergMarquardtParams()
+        lmParams.setVerbosityLM("silent")
+
+        algorithm = gtsam.TranslationRecovery(measurements, lmParams)
         scale = 2.0
         result = algorithm.run(scale)
 
