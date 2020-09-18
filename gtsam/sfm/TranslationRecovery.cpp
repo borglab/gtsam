@@ -45,9 +45,8 @@ NonlinearFactorGraph TranslationRecovery::buildGraph() const {
 }
 
 void TranslationRecovery::addPrior(const double scale,
-                                   NonlinearFactorGraph *graph) const {
-  //TODO(akshay-krishnan): make this an input argument                                     
-  auto priorNoiseModel = noiseModel::Isotropic::Sigma(3, 0.01);
+                                   NonlinearFactorGraph *graph,
+                                   const SharedNoiseModel &priorNoiseModel) const {
   auto edge = relativeTranslations_.begin();
   graph->emplace_shared<PriorFactor<Point3> >(edge->key1(), Point3(0, 0, 0), priorNoiseModel);
   graph->emplace_shared<PriorFactor<Point3> >(edge->key2(), scale * edge->measured().point3(),
