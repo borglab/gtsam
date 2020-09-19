@@ -361,7 +361,6 @@ class LieScalar {
   // Lie group
   static gtsam::LieScalar Expmap(Vector v);
   static Vector Logmap(const gtsam::LieScalar& p);
-  Vector logmap(const gtsam::LieScalar& p);
 };
 
 #include <gtsam/base/deprecated/LieVector.h>
@@ -509,7 +508,6 @@ class StereoPoint2 {
   // Lie Group
   static gtsam::StereoPoint2 Expmap(Vector v);
   static Vector Logmap(const gtsam::StereoPoint2& p);
-  Vector logmap(const gtsam::StereoPoint2& p);
 
   // Standard Interface
   Vector vector() const;
@@ -3151,7 +3149,6 @@ class ConstantBias {
   // Lie Group
   static gtsam::imuBias::ConstantBias Expmap(Vector v);
   static Vector Logmap(const gtsam::imuBias::ConstantBias& b);
-  Vector logmap(const gtsam::imuBias::ConstantBias& b);
 
   // Standard Interface
   Vector vector() const;
