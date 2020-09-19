@@ -108,4 +108,6 @@ class MFAS {
   std::map<KeyPair, double> computeOutlierWeights() const;
 };
 
+typedef std::map<std::pair<Key, Key>, double> KeyPairDoubleMap;
+
 }  // namespace gtsam

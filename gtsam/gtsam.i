@@ -3105,6 +3105,27 @@ class ShonanAveraging3 {
   pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p, size_t max_p) const;
 };
 
+#include <gtsam/sfm/MFAS.h>
+
+class KeyPairDoubleMap {
+  KeyPairDoubleMap();
+  KeyPairDoubleMap(const gtsam::KeyPairDoubleMap& other);
+
+  size_t size() const;
+  bool empty() const;
+  void clear();
+  size_t at(pair<size_t, size_t>) const;
+};
+
+class MFAS {
+  MFAS(const KeyVector*& nodes,
+       const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
+       const gtsam::Unit3& projectionDirection);
+
+  KeyPairDoubleMap computeOutlierWeights() const;
+  KeyVector computeOrdering() const;
+};
+
 #include <gtsam/sfm/TranslationRecovery.h>
 class TranslationRecovery {
   TranslationRecovery(const gtsam::BinaryMeasurementsUnit3 &relativeTranslations,
