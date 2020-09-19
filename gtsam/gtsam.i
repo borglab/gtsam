@@ -361,6 +361,7 @@ class LieScalar {
   // Lie group
   static gtsam::LieScalar Expmap(Vector v);
   static Vector Logmap(const gtsam::LieScalar& p);
+  Vector logmap(const gtsam::LieScalar& p);
 };
 
 #include <gtsam/base/deprecated/LieVector.h>
@@ -390,6 +391,7 @@ class LieVector {
   // Lie group
   static gtsam::LieVector Expmap(Vector v);
   static Vector Logmap(const gtsam::LieVector& p);
+  Vector logmap(const gtsam::LieVector& p);
 
   // enabling serialization functionality
   void serialize() const;
@@ -422,6 +424,7 @@ class LieMatrix {
   // Lie group
   static gtsam::LieMatrix Expmap(Vector v);
   static Vector Logmap(const gtsam::LieMatrix& p);
+  Vector logmap(const gtsam::LieMatrix& p);
 
   // enabling serialization functionality
   void serialize() const;
@@ -506,6 +509,7 @@ class StereoPoint2 {
   // Lie Group
   static gtsam::StereoPoint2 Expmap(Vector v);
   static Vector Logmap(const gtsam::StereoPoint2& p);
+  Vector logmap(const gtsam::StereoPoint2& p);
 
   // Standard Interface
   Vector vector() const;
@@ -567,6 +571,7 @@ class Rot2 {
   // Lie Group
   static gtsam::Rot2 Expmap(Vector v);
   static Vector Logmap(const gtsam::Rot2& p);
+  Vector logmap(const gtsam::Rot2& p);
 
   // Group Action on Point2
   gtsam::Point2 rotate(const gtsam::Point2& point) const;
@@ -727,6 +732,7 @@ class Rot3 {
   // Standard Interface
   static gtsam::Rot3 Expmap(Vector v);
   static Vector Logmap(const gtsam::Rot3& p);
+  Vector logmap(const gtsam::Rot3& p);
   Matrix matrix() const;
   Matrix transpose() const;
   gtsam::Point3 column(size_t index) const;
@@ -772,6 +778,7 @@ class Pose2 {
   // Lie Group
   static gtsam::Pose2 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose2& p);
+  Vector logmap(const gtsam::Pose2& p);
   static Matrix ExpmapDerivative(Vector v);
   static Matrix LogmapDerivative(const gtsam::Pose2& v);
   Matrix AdjointMap() const;
@@ -825,6 +832,7 @@ class Pose3 {
   // Lie Group
   static gtsam::Pose3 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose3& pose);
+  Vector logmap(const gtsam::Pose3& pose);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
   static Matrix adjointMap_(Vector xi);
@@ -3143,6 +3151,7 @@ class ConstantBias {
   // Lie Group
   static gtsam::imuBias::ConstantBias Expmap(Vector v);
   static Vector Logmap(const gtsam::imuBias::ConstantBias& b);
+  Vector logmap(const gtsam::imuBias::ConstantBias& b);
 
   // Standard Interface
   Vector vector() const;
