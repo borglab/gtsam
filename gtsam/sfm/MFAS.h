@@ -22,6 +22,8 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/sfm/BinaryMeasurement.h>
 
+#include <boost/shared_ptr.hpp>
+
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -57,7 +59,7 @@ class MFAS {
 
  private:
   // pointer to nodes in the graph
-  const std::shared_ptr<std::vector<Key>> nodes_;
+  const boost::shared_ptr<std::vector<Key>> nodes_;
 
   // edges with a direction such that all weights are positive
   // i.e, edges that originally had negative weights are flipped
@@ -74,7 +76,7 @@ class MFAS {
    * @param nodes: Nodes in the graph
    * @param edgeWeights: weights of edges in the graph
    */
-  MFAS(const std::shared_ptr<std::vector<Key>> &nodes,
+  MFAS(const boost::shared_ptr<std::vector<Key>> nodes,
        const std::map<KeyPair, double> &edgeWeights)
       : nodes_(nodes), edgeWeights_(edgeWeights) {}
 
@@ -88,7 +90,7 @@ class MFAS {
    * @param relativeTranslations translation directions between the cameras
    * @param projectionDirection direction in which edges are to be projected
    */
-  MFAS(const std::shared_ptr<std::vector<Key>> &nodes,
+  MFAS(const boost::shared_ptr<std::vector<Key>> nodes,
        const TranslationEdges &relativeTranslations,
        const Unit3 &projectionDirection);
 

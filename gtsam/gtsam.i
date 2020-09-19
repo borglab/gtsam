@@ -3114,16 +3114,16 @@ class KeyPairDoubleMap {
   size_t size() const;
   bool empty() const;
   void clear();
-  size_t at(pair<size_t, size_t>) const;
+  size_t at(const pair<size_t, size_t>& keypair) const;
 };
 
 class MFAS {
-  MFAS(const KeyVector*& nodes,
+  MFAS(const gtsam::KeyVector* nodes,
        const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
        const gtsam::Unit3& projectionDirection);
 
-  KeyPairDoubleMap computeOutlierWeights() const;
-  KeyVector computeOrdering() const;
+  gtsam::KeyPairDoubleMap computeOutlierWeights() const;
+  gtsam::KeyVector computeOrdering() const;
 };
 
 #include <gtsam/sfm/TranslationRecovery.h>

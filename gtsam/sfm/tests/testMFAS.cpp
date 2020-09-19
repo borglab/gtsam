@@ -6,8 +6,12 @@
  */
 
 #include <gtsam/sfm/MFAS.h>
-#include <iostream>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <CppUnitLite/TestHarness.h>
+
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;
@@ -46,7 +50,7 @@ map<MFAS::KeyPair, double> getEdgeWeights(const vector<MFAS::KeyPair> &edges,
 // test the ordering and the outlierWeights function using weights2 - outlier
 // edge is rejected when projected in a direction that gives weights2
 TEST(MFAS, OrderingWeights2) {
-  MFAS mfas_obj(make_shared<vector<Key>>(nodes), getEdgeWeights(edges, weights2));
+  MFAS mfas_obj(boost::make_shared<vector<Key>>(nodes), getEdgeWeights(edges, weights2));
 
   vector<Key> ordered_nodes = mfas_obj.computeOrdering();
 
@@ -76,7 +80,7 @@ TEST(MFAS, OrderingWeights2) {
 // weights1 (outlier edge is accepted when projected in a direction that
 // produces weights1)
 TEST(MFAS, OrderingWeights1) {
-  MFAS mfas_obj(make_shared<vector<Key>>(nodes), getEdgeWeights(edges, weights1));
+  MFAS mfas_obj(boost::make_shared<vector<Key>>(nodes), getEdgeWeights(edges, weights1));
 
   vector<Key> ordered_nodes = mfas_obj.computeOrdering();
 

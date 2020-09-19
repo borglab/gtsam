@@ -7,6 +7,8 @@
 
 #include <gtsam/sfm/MFAS.h>
 
+#include <boost/shared_ptr.hpp>
+
 #include <algorithm>
 #include <map>
 #include <unordered_map>
@@ -111,7 +113,7 @@ void removeNodeFromGraph(const Key node,
   graph.erase(node);
 }
 
-MFAS::MFAS(const std::shared_ptr<vector<Key>>& nodes,
+MFAS::MFAS(const boost::shared_ptr<vector<Key>> nodes,
            const TranslationEdges& relativeTranslations,
            const Unit3& projectionDirection)
     : nodes_(nodes) {
