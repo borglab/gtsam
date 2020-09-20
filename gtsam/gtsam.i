@@ -2972,6 +2972,7 @@ class BinaryMeasurement {
   size_t key1() const;
   size_t key2() const;
   T measured() const;
+  gtsam::noiseModel::Base* noiseModel() const;
 };
 
 typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
@@ -3118,8 +3119,7 @@ class KeyPairDoubleMap {
 };
 
 class MFAS {
-  MFAS(const gtsam::KeyVector* nodes,
-       const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
+  MFAS(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
        const gtsam::Unit3& projectionDirection);
 
   gtsam::KeyPairDoubleMap computeOutlierWeights() const;
