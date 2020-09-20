@@ -41,21 +41,37 @@ ShonanAveraging3 fromExampleName(
 static const ShonanAveraging3 kShonan = fromExampleName("toyExample.g2o");
 
 /* ************************************************************************* */
-TEST(PowerMethod, initialize) {
+TEST(PowerMethod, powerIteration) {
+  // test power accelerated iteration
   gtsam::Sparse A(6, 6);
   A.coeffRef(0, 0) = 6;
-  PowerFunctor pf(A, 1, A.rows());
-  pf.init();
-  pf.compute(20, 1e-4);
-  EXPECT_LONGS_EQUAL(6, pf.eigenvectors().cols());
-  EXPECT_LONGS_EQUAL(6, pf.eigenvectors().rows());
+  Matrix S = Matrix66::Zero();
+  PowerFunctor apf(A, S, 1, A.rows(), true);
+  apf.init();
+  apf.compute(20, 1e-4);
+  EXPECT_LONGS_EQUAL(6, apf.eigenvectors().cols());
+  EXPECT_LONGS_EQUAL(6, apf.eigenvectors().rows());
 
   const Vector6 x1 = (Vector(6) << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished();
-  Vector6 actual = pf.eigenvectors().col(0);
-  actual(0) = abs(actual(0));
-  EXPECT(assert_equal(x1, actual));
+  Vector6 actual0 = apf.eigenvectors().col(0);
+  actual0(0) = abs(actual0(0));
+  EXPECT(assert_equal(x1, actual0));
 
   const double ev1 = 6.0;
+  EXPECT_DOUBLES_EQUAL(ev1, apf.eigenvalues()(0), 1e-5);
+
+  // test power iteration, beta is set to 0
+  PowerFunctor pf(A, S, 1, A.rows());
+  pf.init();
+  pf.compute(20, 1e-4);
+  // for power method, only 5 ritz vectors converge with 20 iteration
+  EXPECT_LONGS_EQUAL(5, pf.eigenvectors().cols());
+  EXPECT_LONGS_EQUAL(6, pf.eigenvectors().rows());
+
+  Vector6 actual1 = apf.eigenvectors().col(0);
+  actual1(0) = abs(actual1(0));
+  EXPECT(assert_equal(x1, actual1));
+
   EXPECT_DOUBLES_EQUAL(ev1, pf.eigenvalues()(0), 1e-5);
 }
 

@@ -480,7 +480,7 @@ static bool PowerMinimumEigenValue(
     Eigen::Index numLanczosVectors = 20) {
 
   // a. Compute dominant eigenpair of S using power method
-  PowerFunctor lmOperator(A, 1, std::min(numLanczosVectors, A.rows()));
+  PowerFunctor lmOperator(A, S, 1, A.rows());
   lmOperator.init();
 
   const int lmConverged = lmOperator.compute(
@@ -503,7 +503,7 @@ static bool PowerMinimumEigenValue(
   }
 
   Sparse C = lmEigenValue * Matrix::Identity(A.rows(), A.cols()) - A;
-  PowerFunctor minShiftedOperator(C, 1, std::min(numLanczosVectors, C.rows()));
+  PowerFunctor minShiftedOperator(C, S, 1, C.rows(), true);
   minShiftedOperator.init();
 
   const int minConverged = minShiftedOperator.compute(
