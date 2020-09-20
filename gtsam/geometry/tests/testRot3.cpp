@@ -795,6 +795,122 @@ TEST(Rot3, Ypr_derivative) {
 }
 
 /* ************************************************************************* */
+Vector3 RQ_proxy(Matrix3 const& R) {
+  const auto RQ_ypr = RQ(R);
+  return RQ_ypr.second;
+}
+
+TEST(Rot3, RQ_derivative) {
+  using VecAndErr = std::pair<Vector3, double>;
+  std::vector<VecAndErr> test_xyz;
+  // Test zeros and a couple of random values
+  test_xyz.push_back(VecAndErr{{0, 0, 0}, error});
+  test_xyz.push_back(VecAndErr{{0, 0.5, -0.5}, error});
+  test_xyz.push_back(VecAndErr{{0.3, 0, 0.2}, error});
+  test_xyz.push_back(VecAndErr{{-0.6, 1.3, 0}, error});
+  test_xyz.push_back(VecAndErr{{1.0, 0.7, 0.8}, error});
+  test_xyz.push_back(VecAndErr{{3.0, 0.7, -0.6}, error});
+  test_xyz.push_back(VecAndErr{{M_PI / 2, 0, 0}, error});
+  test_xyz.push_back(VecAndErr{{0, 0, M_PI / 2}, error});
+
+  // Test close to singularity
+  test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1e-1, 0}, 1e-8});
+  test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1e-1, 0}, 1e-8});
+  test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1.1e-2, 0}, 1e-4});
+  test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1.1e-2, 0}, 1e-4});
+
+  for (auto const& vec_err : test_xyz) {
+    auto const& xyz = vec_err.first;
+
+    const auto R = Rot3::RzRyRx(xyz).matrix();
+    const auto num = numericalDerivative11(RQ_proxy, R);
+    Matrix39 calc;
+    RQ(R, calc).second;
+
+    const auto err = vec_err.second;
+    CHECK(assert_equal(num, calc, err));
+  }
+}
+
+/* ************************************************************************* */
+Vector3 xyz_proxy(Rot3 const& R) { return R.xyz(); }
+
+TEST(Rot3, xyz_derivative) {
+  const auto aa = Vector3{-0.6, 0.3, 0.2};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(xyz_proxy, R);
+  Matrix3 calc;
+  R.xyz(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+Vector3 ypr_proxy(Rot3 const& R) { return R.ypr(); }
+
+TEST(Rot3, ypr_derivative) {
+  const auto aa = Vector3{0.1, -0.3, -0.2};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(ypr_proxy, R);
+  Matrix3 calc;
+  R.ypr(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+Vector3 rpy_proxy(Rot3 const& R) { return R.rpy(); }
+
+TEST(Rot3, rpy_derivative) {
+  const auto aa = Vector3{1.2, 0.3, -0.9};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(rpy_proxy, R);
+  Matrix3 calc;
+  R.rpy(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+double roll_proxy(Rot3 const& R) { return R.roll(); }
+
+TEST(Rot3, roll_derivative) {
+  const auto aa = Vector3{0.8, -0.8, 0.8};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(roll_proxy, R);
+  Matrix13 calc;
+  R.roll(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+double pitch_proxy(Rot3 const& R) { return R.pitch(); }
+
+TEST(Rot3, pitch_derivative) {
+  const auto aa = Vector3{0.01, 0.1, 0.0};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(pitch_proxy, R);
+  Matrix13 calc;
+  R.pitch(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+double yaw_proxy(Rot3 const& R) { return R.yaw(); }
+
+TEST(Rot3, yaw_derivative) {
+  const auto aa = Vector3{0.0, 0.1, 0.6};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(yaw_proxy, R);
+  Matrix13 calc;
+  R.yaw(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
