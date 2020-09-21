@@ -4,7 +4,6 @@
   All Rights Reserved
   Authors: Frank Dellaert, et al. (see THANKS for the full author list)
 
-
   See LICENSE for the license information
 
   Solve a structure-from-motion problem from a "Bundle Adjustment in the Large" file
@@ -21,20 +20,12 @@ import numpy as np
 from gtsam import symbol_shorthand
 from gtsam import readBal
 
-L = symbol_shorthand.L
-X = symbol_shorthand.X
+C = symbol_shorthand.C
+P = symbol_shorthand.P
 
 import pdb
 
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/slam/dataset.h> // for loading BAL datasets !
-
-
-# using symbol_shorthand::C;
-# using symbol_shorthand::P;
 
 # We will be using a projection factor that ties a SFM_Camera to a 3D point.
 # An SFM_Camera is defined in datase.h as a camera with unknown Cal3Bundler calibration
@@ -65,8 +56,8 @@ def run(args):
     pdb.set_trace()
     for t_idx in range(mydata.number_tracks()):
         track = mydata.track(t_idx) # SfmTrack
+        # retrieve the SfmMeasurement objects
         for m_idx in range(track.number_measurements()):
-            # retrieve the SfmMeasurement
             # i represents the camera index, and uv is the 2d measurement
             i, uv = track.measurement(0) # 
             #graph.emplace_shared<MyFactor>(uv, noise, C(i), P(j)) # note use of shorthand symbols C and P
@@ -76,18 +67,33 @@ def run(args):
 
     # # Add a prior on pose x1. This indirectly specifies where the origin is.
     # # and a prior on the position of the first landmark to fix the scale
-    # graph.addPrior(C(0), mydata.cameras[0],  gtsam.noiseModel.Isotropic.Sigma(9, 0.1))
-    # graph.addPrior(P(0), mydata.tracks[0].p, gtsam.noiseModel.Isotropic.Sigma(3, 0.1))
+    
+
+    graph.push_back(gtsam.PriorFactorVector(
+            C(0), mydata.camera(0), gtsam.noiseModel.Isotropic.Sigma(9, 0.1)))
+    # # graph.addPrior(P(0), mydata.track(0).p, 
+    # equivalent of addPrior
+    graph.push_back(gtsam.PriorFactorVector(
+            P(0), mydata.track(0)[1], gtsam.noiseModel.Isotropic.Sigma(3, 0.1)))
 
     # # Create initial estimate
     initial = gtsam.Values()
+    
     i = 0
+    # add each SfmCamera
+    for cam_idx in range(mydata.number_cameras()):
+        camera = mydata.camera(0)
+        initial.insert(C(i), camera)
+        i += 1
+
     j = 0
-    # for(const SfmCamera& camera: mydata.cameras) initial.insert(C(i++), camera)
-    # for(const SfmTrack& track: mydata.tracks)    initial.insert(P(j++), track.p)
+    # add each SfmTrack
+    for t_idx in range(mydata.number_tracks()):
+        track = mydata.track(0)  
+        initial.insert(P(j), track.p)
+        j += 1
 
     # Optimize the graph and print results
-    # Values result;
     try:
         params = gtsam.LevenbergMarquardtParams()
         params.setVerbosityLM("ERROR")
