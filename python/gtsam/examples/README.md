@@ -7,7 +7,7 @@
 | DiscreteBayesNet_FG                                   | none of the required discrete functionality is exposed through Python |
 | easyPoint2KalmanFilter                                | ExtendedKalmanFilter not yet exposed through Python |
 | elaboratePoint2KalmanFilter                           | GaussianSequentialSolver not yet exposed through Python |
-| ImuFactorExample2                                     | X      |
+| ImuFactorExample2                                     | :heavy_check_mark:      |
 | ImuFactorsExample                                     |        |
 | ISAM2Example_SmartFactor                              |        |
 | ISAM2_SmartFactorStereo_IMU                           |        |
