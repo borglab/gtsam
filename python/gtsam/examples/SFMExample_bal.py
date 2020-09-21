@@ -81,8 +81,8 @@ def run(args):
 
     # # Create initial estimate
     initial = gtsam.Values()
-    # i = 0
-    # j = 0;
+    i = 0
+    j = 0
     # for(const SfmCamera& camera: mydata.cameras) initial.insert(C(i++), camera)
     # for(const SfmTrack& track: mydata.tracks)    initial.insert(P(j++), track.p)
 
