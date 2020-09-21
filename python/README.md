@@ -7,7 +7,10 @@ This is the Python wrapper around the GTSAM C++ library. We use our custom [wrap
 ## Requirements
 
 - If you want to build the GTSAM python library for a specific python version (eg 3.6),
-  use the `-DGTSAM_PYTHON_VERSION=3.6` option when running `cmake` otherwise the default interpreter will be used.
+  use the `-DGTSAM_PYTHON_VERSION=3.6` option when running `cmake` otherwise the default interpreter will be used. For example:
+  ```bash
+  cmake .. -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=3.6.10
+  ```
 - If the interpreter is inside an environment (such as an anaconda environment or virtualenv environment),
   then the environment should be active while building GTSAM.
 - This wrapper needs `pyparsing(>=2.4.2)`, and `numpy(>=1.11.0)`. These can be installed as follows:
