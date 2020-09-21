@@ -13,7 +13,7 @@
 | HMMExample                                            |        |
 | ImuFactorsExample2                                    | :heavy_check_mark:      |
 | ImuFactorsExample                                     |        |
-| IMUKittiExampleGPS.cpp                                |        |
+| IMUKittiExampleGPS                                    |        |
 | InverseKinematicsExampleExpressions.cpp               |        |
 | ISAM2Example_SmartFactor                              |        |
 | ISAM2_SmartFactorStereo_IMU                           |        |
@@ -29,11 +29,11 @@
 | Pose2SLAMExample_lago                                 | lago not yet exposed through Python |
 | Pose2SLAMStressTest                                   |        |
 | Pose2SLAMwSPCG                                        |        |
-| Pose3Localization.cpp                                 |        |
+| Pose3Localization                                 |        |
 | Pose3SLAMExample_changeKeys                           |        |
 | Pose3SLAMExampleExpressions_BearingRangeWithTransform |        |
 | Pose3SLAMExample_g2o                                  | :heavy_check_mark:      |
-| Pose3SLAMExample_initializePose3Chordal               |        |
+| Pose3SLAMExample_initializePose3Chordal               | :heavy_check_mark:        |
 | Pose3SLAMExample_initializePose3Gradient              |        |
 | RangeISAMExample_plaza2                               |        |
 | SelfCalibrationExample                                |        |
@@ -45,7 +45,7 @@
 | SFMExampleExpressions                                 |        |
 | SFMExample_SmartFactor                                |        |
 | SFMExample_SmartFactorPCG                             |        |
-| ShonanAveragingCLI.cpp                                |        |
+| ShonanAveragingCLI                                    | :heavy_check_mark:       |
 | SimpleRotation                                        | :heavy_check_mark:      |
 | SolverComparer                                        |        |
 | StereoVOExample                                       |        |
@@ -57,5 +57,8 @@
 | VisualISAMExample                                     | :heavy_check_mark:      |
 
 Extra Examples (with no C++ equivalent)
+- DogLegOptimizerExample
+- GPSFactorExample
 - PlanarManipulatorExample
+- PreintegrationExample
 - SFMData
