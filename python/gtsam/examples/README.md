@@ -39,7 +39,7 @@
 | SelfCalibrationExample                                |        |
 | SFMdata                                               |        |     
 | SFMExample_bal_COLAMD_METIS                           |        |
-| SFMExample_bal                                        | :heavy_check_mark:       |
+| SFMExample_bal                                        |       |
 | SFMExample                                            | :heavy_check_mark:      |
 | SFMExampleExpressions_bal                             |        |
 | SFMExampleExpressions                                 |        |
