@@ -390,7 +390,6 @@ class LieVector {
   // Lie group
   static gtsam::LieVector Expmap(Vector v);
   static Vector Logmap(const gtsam::LieVector& p);
-  Vector logmap(const gtsam::LieVector& p);
 
   // enabling serialization functionality
   void serialize() const;
@@ -423,7 +422,6 @@ class LieMatrix {
   // Lie group
   static gtsam::LieMatrix Expmap(Vector v);
   static Vector Logmap(const gtsam::LieMatrix& p);
-  Vector logmap(const gtsam::LieMatrix& p);
 
   // enabling serialization functionality
   void serialize() const;
