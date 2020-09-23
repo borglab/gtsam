@@ -120,14 +120,14 @@ public:
   /**
    * Convert a pixel coordinate to ideal coordinate xy
    * @param p point in image coordinates
+   * @param tol optional tolerance threshold value for iterative minimization
    * @param Dcal optional 2*3 Jacobian wrpt Cal3Bundler parameters
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
-   * @param tol optional tolerance threshold value for iterative minimization
    * @return point in intrinsic coordinates
    */
-  Point2 calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal = boost::none,
-                   OptionalJacobian<2, 2> Dp = boost::none,
-                   const double tol = 1e-5) const;
+  Point2 calibrate(const Point2& pi, const double tol = 1e-5,
+                   OptionalJacobian<2, 3> Dcal = boost::none,
+                   OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
   Matrix2 D2d_intrinsic(const Point2& p) const;

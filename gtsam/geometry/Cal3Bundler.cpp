@@ -94,9 +94,9 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p, //
 }
 
 /* ************************************************************************* */
-Point2 Cal3Bundler::calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal,
-                              OptionalJacobian<2, 2> Dp,
-                              const double tol) const {
+Point2 Cal3Bundler::calibrate(const Point2& pi, const double tol,
+                              OptionalJacobian<2, 3> Dcal,
+                              OptionalJacobian<2, 2> Dp) const {
   // Copied from Cal3DS2 :-(
   // but specialized with k1,k2 non-zero only and fx=fy and s=0
   const Point2 invKPi((pi.x() - u0_)/f_, (pi.y() - v0_)/f_);
