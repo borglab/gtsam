@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/geometry/Point2.h>
+#include <gtsam/base/Clonable.h>
 
 namespace gtsam {
 
@@ -36,8 +37,9 @@ namespace gtsam {
  *                      p1 (rr + 2 Pn.y^2) + 2*p2 Pn.x Pn.y  ]
  * pi = K*Pn
  */
-class GTSAM_EXPORT Cal3DS2_Base {
-
+class GTSAM_EXPORT Cal3DS2_Base :
+  virtual Clonable<Cal3DS2_Base>,
+  virtual ClonableImpl<Cal3DS2_Base> {
 protected:
 
   double fx_, fy_, s_, u0_, v0_ ; // focal length, skew and principal point
@@ -135,16 +137,6 @@ public:
   Matrix29 D2d_calibration(const Point2& p) const ;
 
   /// @}
-  /// @name Clone
-  /// @{
-
-  /// @return a deep copy of this object
-  virtual boost::shared_ptr<Cal3DS2_Base> clone() const {
-    return boost::shared_ptr<Cal3DS2_Base>(new Cal3DS2_Base(*this));
-  }
-
-  /// @}
-
 private:
 
   /// @name Advanced Interface

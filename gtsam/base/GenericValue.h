@@ -22,6 +22,7 @@
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/types.h>
 #include <gtsam/base/Value.h>
+#include <gtsam/base/Clonable.h>
 
 #include <boost/make_shared.hpp>
 #include <boost/pool/pool_alloc.hpp>
@@ -44,8 +45,10 @@ namespace gtsam {
  * Wraps any type T so it can play as a Value
  */
 template<class T>
-class GenericValue: public Value {
-
+class GenericValue: 
+  public Value, 
+  virtual Clonable<GenericValue<T>>,
+  public ClonableAlignedImpl<GenericValue<T>> {
 public:
 
   typedef T type;
@@ -109,13 +112,6 @@ public:
      */
     void deallocate_() const override {
       delete this;
-    }
-
-    /**
-     * Clone this value (normal clone on the heap, delete with 'delete' operator)
-     */
-    boost::shared_ptr<Value> clone() const override {
-		return boost::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
     }
 
     /// Generic Value interface version of retract

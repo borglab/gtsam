@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/geometry/Cal3DS2_Base.h>
+#include <gtsam/base/Clonable.h>
 
 namespace gtsam {
 
@@ -29,7 +30,9 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
+class GTSAM_EXPORT Cal3DS2 :
+  public Cal3DS2_Base,
+  public ClonableImpl<Cal3DS2, Cal3DS2_Base> {
 
   typedef Cal3DS2_Base Base;
 
@@ -82,16 +85,6 @@ public:
   static size_t Dim() { return dimension; }
 
   /// @}
-  /// @name Clone
-  /// @{
-
-  /// @return a deep copy of this object
-  boost::shared_ptr<Base> clone() const override {
-    return boost::shared_ptr<Base>(new Cal3DS2(*this));
-  }
-
-  /// @}
-
 
 private:
 

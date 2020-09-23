@@ -20,6 +20,7 @@
 
 #include <gtsam/config.h>      // Configuration from CMake
 
+#include <gtsam/base/Clonable.h>
 #include <gtsam/base/Vector.h>
 #include <boost/serialization/assume_abstract.hpp>
 #include <memory>
@@ -33,7 +34,7 @@ namespace gtsam {
    * See https://bitbucket.org/gtborg/gtsam/wiki/Migrating%20from%20GTSAM%203.X%20to%20GTSAM%204.0#markdown-header-custom-value-types
    * for current usage and migration details.
    */
-  class GTSAM_EXPORT Value {
+  class GTSAM_EXPORT Value : virtual Clonable<Value> {
   public:
 
     /** Clone this value in a special memory pool, must be deleted with Value::deallocate_, *not* with the 'delete' operator. */
@@ -41,9 +42,6 @@ namespace gtsam {
 
     /** Deallocate a raw pointer of this value */
     virtual void deallocate_() const = 0;
-
-    /** Clone this value (normal clone on the heap, delete with 'delete' operator) */
-    virtual boost::shared_ptr<Value> clone() const = 0;
 
     /** Compare this Value with another for equality. */
     virtual bool equals_(const Value& other, double tol = 1e-9) const = 0;

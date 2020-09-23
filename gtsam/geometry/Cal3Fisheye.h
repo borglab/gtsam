@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/geometry/Point2.h>
+#include <gtsam/base/Clonable.h>
 
 #include <string>
 
@@ -44,15 +45,14 @@ namespace gtsam {
  *   K = [fx s u0; 0 fy v0 ;0 0 1]
  *   [u; v; 1] = K*[x_d; y_d; 1]
  */
-class GTSAM_EXPORT Cal3Fisheye {
+class GTSAM_EXPORT Cal3Fisheye :
+  virtual Clonable<Cal3Fisheye>, public ClonableImpl<Cal3Fisheye> {
  private:
   double fx_, fy_, s_, u0_, v0_;  // focal length, skew and principal point
   double k1_, k2_, k3_, k4_;      // fisheye distortion coefficients
 
  public:
   enum { dimension = 9 };
-  typedef boost::shared_ptr<Cal3Fisheye>
-      shared_ptr;  ///< shared pointer to fisheye calibration object
 
   /// @name Standard Constructors
   /// @{
@@ -166,15 +166,6 @@ class GTSAM_EXPORT Cal3Fisheye {
 
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return 9; }
-
-  /// @}
-  /// @name Clone
-  /// @{
-
-  /// @return a deep copy of this object
-  virtual boost::shared_ptr<Cal3Fisheye> clone() const {
-    return boost::shared_ptr<Cal3Fisheye>(new Cal3Fisheye(*this));
-  }
 
   /// @}
 
