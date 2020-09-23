@@ -233,7 +233,7 @@ struct SfmTrack {
   SiftIndex siftIndex(size_t idx) const {
     return siftIndices[idx];
   }
-  Point3 get3dPoint() const {
+  Point3 point3() const {
     return p;
   }
 };

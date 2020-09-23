@@ -2847,7 +2847,7 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 
 #include <gtsam/slam/dataset.h>
 class SfmTrack {
-  Point3 get3dPoint() const;
+  Point3 point3() const;
   size_t number_measurements() const;
   pair<size_t, gtsam::Point2> measurement(size_t idx) const;
   pair<size_t, size_t> siftIndex(size_t idx) const;
