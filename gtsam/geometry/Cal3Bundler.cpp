@@ -122,6 +122,39 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, const double tol) const {
 }
 
 /* ************************************************************************* */
+Point2 Cal3Bundler::calibrate(const Point2& p, OptionalJacobian<2, 3> Dcal,
+                              OptionalJacobian<2, 2> Dp) const {
+  Point2 pn = calibrate(p, 1e-5);
+
+  // Approximate the jacobians via a single iteration of g.
+  if (Dcal) {
+    const double u = p.x(), v = p.y(), x = (u - u0_) / f_, y = (v - v0_) / f_;
+    const double xx = x * x, yy = y * y;
+    const double rr = xx + yy;
+    const double g = (1 + k1_ * rr + k2_ * rr * rr);
+    const double inv_f = 1 / f_, inv_g = 1 / g;
+
+    *Dcal << -inv_f * x, -x * inv_g * rr, -x * inv_g * rr * rr, -inv_f * y,
+        -y * inv_g * rr, -y * inv_g * rr * rr;
+  }
+  if (Dp) {
+    const double u = p.x(), v = p.y(), x = (u - u0_) / f_, y = (v - v0_) / f_;
+    const double xx = x * x, yy = y * y;
+    const double rr = xx + yy;
+    const double g = (1 + k1_ * rr + k2_ * rr * rr);
+    const double inv_f = 1 / f_, inv_g = 1 / g;
+
+    const double dg_du = (2 * k1_ * x * inv_f) + (4 * k2_ * rr * x * inv_f);
+    const double dg_dv = (2 * k1_ * y * inv_f) + (4 * k2_ * rr * y * inv_f);
+
+    *Dp << (inv_f * inv_g) - (pn.x() * inv_g * dg_du), -pn.x() * inv_g * dg_dv,
+        -pn.y() * inv_g * dg_du, (inv_f * inv_g) - (pn.x() * inv_g * dg_dv);
+  }
+
+  return pn;
+}
+
+/* ************************************************************************* */
 Matrix2 Cal3Bundler::D2d_intrinsic(const Point2& p) const {
   Matrix2 Dp;
   uncalibrate(p, boost::none, Dp);

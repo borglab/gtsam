@@ -120,6 +120,16 @@ public:
   /// Convert a pixel coordinate to ideal coordinate
   Point2 calibrate(const Point2& pi, const double tol = 1e-5) const;
 
+  /**
+   * Convert image coordinates uv to intrinsic coordinates xy
+   * @param p point in image coordinates
+   * @param Dcal optional 2*3 Jacobian wrpt Cal3Bundler parameters
+   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
+   * @return point in intrinsic coordinates
+   */
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 3> Dcal = boost::none,
+                   OptionalJacobian<2, 2> Dp = boost::none) const;
+
   /// @deprecated might be removed in next release, use uncalibrate
   Matrix2 D2d_intrinsic(const Point2& p) const;
 
