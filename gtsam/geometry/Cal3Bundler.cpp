@@ -94,7 +94,9 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p, //
 }
 
 /* ************************************************************************* */
-Point2 Cal3Bundler::calibrate(const Point2& pi, const double tol) const {
+Point2 Cal3Bundler::calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal,
+                              OptionalJacobian<2, 2> Dp,
+                              const double tol) const {
   // Copied from Cal3DS2 :-(
   // but specialized with k1,k2 non-zero only and fx=fy and s=0
   const Point2 invKPi((pi.x() - u0_)/f_, (pi.y() - v0_)/f_);
@@ -118,32 +120,18 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, const double tol) const {
     throw std::runtime_error(
         "Cal3Bundler::calibrate fails to converge. need a better initialization");
 
-  return pn;
-}
-
-/* ************************************************************************* */
-Point2 Cal3Bundler::calibrate(const Point2& p, OptionalJacobian<2, 3> Dcal,
-                              OptionalJacobian<2, 2> Dp) const {
-  Point2 pn = calibrate(p, 1e-5);
+  const double x = invKPi.x(), y = invKPi.y();
+  const double xx = x * x, yy = y * y;
+  const double rr = xx + yy;
+  const double g = (1 + k1_ * rr + k2_ * rr * rr);
+  const double inv_f = 1 / f_, inv_g = 1 / g;
 
   // Approximate the jacobians via a single iteration of g.
   if (Dcal) {
-    const double u = p.x(), v = p.y(), x = (u - u0_) / f_, y = (v - v0_) / f_;
-    const double xx = x * x, yy = y * y;
-    const double rr = xx + yy;
-    const double g = (1 + k1_ * rr + k2_ * rr * rr);
-    const double inv_f = 1 / f_, inv_g = 1 / g;
-
     *Dcal << -inv_f * x, -x * inv_g * rr, -x * inv_g * rr * rr, -inv_f * y,
         -y * inv_g * rr, -y * inv_g * rr * rr;
   }
   if (Dp) {
-    const double u = p.x(), v = p.y(), x = (u - u0_) / f_, y = (v - v0_) / f_;
-    const double xx = x * x, yy = y * y;
-    const double rr = xx + yy;
-    const double g = (1 + k1_ * rr + k2_ * rr * rr);
-    const double inv_f = 1 / f_, inv_g = 1 / g;
-
     const double dg_du = (2 * k1_ * x * inv_f) + (4 * k2_ * rr * x * inv_f);
     const double dg_dv = (2 * k1_ * y * inv_f) + (4 * k2_ * rr * y * inv_f);
 
