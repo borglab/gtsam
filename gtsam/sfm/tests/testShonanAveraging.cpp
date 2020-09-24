@@ -346,7 +346,7 @@ TEST(ShonanAveraging2, noisyToyGraphWithHuber) {
 
   // test result
   auto initial = shonan.initializeRandomly(kRandomNumberGenerator);
-  auto result = shonan.run(initial, 2,3);
+  auto result = shonan.run(initial, 2,2);
   EXPECT_DOUBLES_EQUAL(0.0008211, shonan.cost(result.first), 1e-6);
   EXPECT_DOUBLES_EQUAL(0, result.second, 1e-10); // certificate!
 }
