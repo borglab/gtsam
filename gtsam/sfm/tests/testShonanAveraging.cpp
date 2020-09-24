@@ -330,23 +330,25 @@ TEST(ShonanAveraging2, noisyToyGraphWithHuber) {
   auto measurements = parseMeasurements<Rot2>(g2oFile);
   parameters.setUseHuber(true);
   parameters.print();
-  std::cout << "1" << std::endl;
   ShonanAveraging2 shonan(measurements, parameters);
   EXPECT_LONGS_EQUAL(4, shonan.nrUnknowns());
 
   // Check graph building
-  std::cout << "2" << std::endl;
-//  NonlinearFactorGraph graph = shonan.buildGraphAt(2);
-//  graph.print();
-//  EXPECT_LONGS_EQUAL(6, graph.size());
-  std::cout << "3" << std::endl;
+  NonlinearFactorGraph graph = shonan.buildGraphAt(2);
+  EXPECT_LONGS_EQUAL(6, graph.size());
 
+  // test that each factor is actually robust
+  for (size_t i=0; i<=4; i++) { // note: last is the Gauge factor and is not robust
+	  const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
+			  boost::dynamic_pointer_cast<NoiseModelFactor>(graph[i])->noiseModel());
+	  EXPECT(robust); // we expect the factors to be use a robust noise model (in particular, Huber)
+  }
+
+  // test result
   auto initial = shonan.initializeRandomly(kRandomNumberGenerator);
-  std::cout << "4" << std::endl;
   auto result = shonan.run(initial, 2,3);
-  std::cout << "5" << std::endl;
-//  EXPECT_DOUBLES_EQUAL(0.0008211, shonan.cost(result.first), 1e-6);
-//  EXPECT_DOUBLES_EQUAL(0, result.second, 1e-10); // certificate!
+  EXPECT_DOUBLES_EQUAL(0.0008211, shonan.cost(result.first), 1e-6);
+  EXPECT_DOUBLES_EQUAL(0, result.second, 1e-10); // certificate!
 }
 
 /* ************************************************************************* */

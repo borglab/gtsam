@@ -34,7 +34,7 @@ namespace gtsam {
  * isotropic. If it is, we extend to 'n' dimensions, otherwise we throw an
  * error. If defaultToUnit == false throws an exception on unexepcted input.
  */
-GTSAM_EXPORT boost::shared_ptr<noiseModel::Isotropic>
+GTSAM_EXPORT SharedNoiseModel
 ConvertNoiseModel(const SharedNoiseModel &model, size_t n,
                   bool defaultToUnit = true);
 

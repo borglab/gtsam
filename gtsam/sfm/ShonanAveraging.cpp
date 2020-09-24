@@ -139,35 +139,25 @@ ShonanAveraging<d>::ShonanAveraging(const Measurements &measurements,
 /* ************************************************************************* */
 template <size_t d>
 NonlinearFactorGraph ShonanAveraging<d>::buildGraphAt(size_t p) const {
-	std::cout << "zz0" << std::endl;
 	NonlinearFactorGraph graph;
   auto G = boost::make_shared<Matrix>(SO<-1>::VectorizedGenerators(p));
 
-  std::cout << "zz1" << std::endl;
   for (const auto &measurement : measurements_) {
     const auto &keys = measurement.keys();
     const auto &Rij = measurement.measured();
     const auto &model = measurement.noiseModel();
-    measurement.print("measurement");
-    std::cout << "zzzz1" << std::endl;
-    model->print();
-    std::cout << "zzzz2" << std::endl;
     graph.emplace_shared<ShonanFactor<d>>(keys[0], keys[1], Rij, p, model, G);
-    std::cout << "zzzz3" << std::endl;
   }
-
   // Possibly add Karcher prior
   if (parameters_.beta > 0) {
     const size_t dim = SOn::Dimension(p);
     graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
   }
-  std::cout << "zz2" << std::endl;
   // Possibly add gauge factors - they are probably useless as gradient is zero
   if (parameters_.gamma > 0 && p > d + 1) {
     for (auto key : graph.keys())
       graph.emplace_shared<ShonanGaugeFactor>(key, p, d, parameters_.gamma);
   }
-  std::cout << "z3" << std::endl;
   return graph;
 }
 
@@ -185,7 +175,6 @@ ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
   // Build graph
   NonlinearFactorGraph graph = buildGraphAt(p);
 
-  std::cout << "yy1" << std::endl;
   // Anchor prior is added here as depends on initial value (and cost is zero)
   if (parameters_.alpha > 0) {
     size_t i;
@@ -196,7 +185,6 @@ ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
     graph.emplace_shared<PriorFactor<SOn>>(i, SOn::Lift(p, value.matrix()),
                                            model);
   }
-  std::cout << "yy2" << std::endl;
   // Optimize
   return boost::make_shared<LevenbergMarquardtOptimizer>(graph, initial,
                                                          parameters_.lm);
@@ -206,9 +194,7 @@ ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
 template <size_t d>
 Values ShonanAveraging<d>::tryOptimizingAt(size_t p,
                                            const Values &initial) const {
-	 std::cout << "xx1" << std::endl;
 	auto lm = createOptimizerAt(p, initial);
-	std::cout << "xx2" << std::endl;
   return lm->optimize();
 }
 
@@ -814,29 +800,23 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
   Values initialSOp = LiftTo<Rot>(pMin, initialEstimate);  // lift to pMin!
   for (size_t p = pMin; p <= pMax; p++) {
     // Optimize until convergence at this level
-	  std::cout << "4a" << std::endl;
     Qstar = tryOptimizingAt(p, initialSOp);
-    std::cout << "4aa" << std::endl;
     if(parameters_.useHuber){ // in this case, there is no optimality verification
-    	std::cout << "4aaa" << std::endl;
     	if(pMin!=pMax)
     		 std::cout << "When using robust norm, Shonan only tests a single rank" << std::endl;
     	const Values SO3Values = roundSolution(Qstar);
     	return std::make_pair(SO3Values, 0);
     }
 
-    std::cout << "4b" << std::endl;
     // Check certificate of global optimzality
     Vector minEigenVector;
     double minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
-    std::cout << "4bb" << std::endl;
     if (minEigenValue > parameters_.optimalityThreshold) {
       // If at global optimum, round and return solution
       const Values SO3Values = roundSolution(Qstar);
       return std::make_pair(SO3Values, minEigenValue);
     }
 
-    std::cout << "4c" << std::endl;
     // Not at global optimimum yet, so check whether we will go to next level
     if (p != pMax) {
       // Calculate initial estimate for next level by following minEigenVector
@@ -844,7 +824,6 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
           initializeWithDescent(p + 1, Qstar, minEigenVector, minEigenValue);
     }
   }
-  std::cout << "4d" << std::endl;
   throw std::runtime_error("Shonan::run did not converge for given pMax");
 }
 

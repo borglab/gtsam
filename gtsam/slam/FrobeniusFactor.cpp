@@ -23,18 +23,18 @@ using namespace std;
 namespace gtsam {
 
 //******************************************************************************
-boost::shared_ptr<noiseModel::Isotropic>
+SharedNoiseModel
 ConvertNoiseModel(const SharedNoiseModel &model, size_t d, bool defaultToUnit) {
   double sigma = 1.0;
-  std::cout << "111111" << std::endl;
   if (model != nullptr) {
 	const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(model);
 	Vector sigmas;
-	if(robust)
-		sigmas[0] = 1;
-	else
-		sigmas = model->sigmas();
+	if(robust){
+		sigma = 1; // Rot2
+		goto exit;
+	} //else:
 
+	sigmas = model->sigmas();
     size_t n = sigmas.size();
     if (n == 1) {
       sigma = sigmas(0); // Rot2
