@@ -337,14 +337,24 @@ double ShonanAveraging<d>::cost(const Values &values) const {
 // Get kappa from noise model
 template <typename T>
 static double Kappa(const BinaryMeasurement<T> &measurement) {
-  const auto &isotropic = boost::dynamic_pointer_cast<noiseModel::Isotropic>(
-      measurement.noiseModel());
-  if (!isotropic) {
-    throw std::invalid_argument(
-        "Shonan averaging noise models must be isotropic.");
-  }
-  const double sigma = isotropic->sigma();
-  return 1.0 / (sigma * sigma);
+	const auto &isotropic = boost::dynamic_pointer_cast<noiseModel::Isotropic>(
+			measurement.noiseModel());
+	double sigma;
+	if (isotropic) {
+		sigma = isotropic->sigma();
+	} else{
+		const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
+				measurement.noiseModel());
+		if (robust) {
+			std::cout << "Verification of optimality does not work with robust cost function" << std::endl;
+			sigma = 1; // setting arbitrary value
+		}else{
+			throw std::invalid_argument(
+					"Shonan averaging noise models must be isotropic (but robust losses are allowed).");
+
+		}
+	}
+	return 1.0 / (sigma * sigma);
 }
 
 /* ************************************************************************* */
