@@ -314,14 +314,6 @@ class DSFMapIndexPair {
   gtsam::IndexPairSetMap sets();
 };
 
-#include <gtsam/base/FastList.h>
-template<VALUE> 
-class FastList {};
-
-#include <gtsam/base/FastMap.h>
-template<KEY, VALUE> 
-class FastMap {};
-
 #include <gtsam/base/Matrix.h>
 bool linear_independent(Matrix A, Matrix B, double tol);
 
@@ -2575,10 +2567,9 @@ class ISAM2 {
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices);
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices, const gtsam::KeyGroupMap& constrainedKeys);
-  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices, gtsam::FastMap<gtsam::Key,int>& constrainedKeys);
-  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices, gtsam::FastMap<gtsam::Key,int>& constrainedKeys, const gtsam::FastList<gtsam::Key>& noRelinKeys);
-  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices, gtsam::FastMap<gtsam::Key,int>& constrainedKeys, const gtsam::FastList<gtsam::Key>& noRelinKeys, const gtsam::FastList<gtsam::Key>& extraReelimKeys);
-  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices, gtsam::FastMap<gtsam::Key,int>& constrainedKeys, const gtsam::FastList<gtsam::Key>& noRelinKeys, const gtsam::FastList<gtsam::Key>& extraReelimKeys, bool force_relinearize);
+  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices, gtsam::KeyGroupMap& constrainedKeys, const gtsam::KeyList& noRelinKeys);
+  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices, gtsam::KeyGroupMap& constrainedKeys, const gtsam::KeyList& noRelinKeys, const gtsam::KeyList& extraReelimKeys);
+  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices, gtsam::KeyGroupMap& constrainedKeys, const gtsam::KeyList& noRelinKeys, const gtsam::KeyList& extraReelimKeys, bool force_relinearize);
 
   gtsam::Values getLinearizationPoint() const;
   gtsam::Values calculateEstimate() const;
@@ -2710,7 +2701,8 @@ class BearingRange {
   BearingRange(const BEARING& b, const RANGE& r);
   BEARING bearing() const;
   RANGE range() const;
-  static gtsam::BearingRange Measure(const POSE& pose, const POINT& point);
+  //TODO need to update wrap to allow self referencing of class
+  // static gtsam::BearingRange<POSE, POINT, BEARING, RANGE> Measure(const POSE& pose, const POINT& point);
   static BEARING MeasureBearing(const POSE& pose, const POINT& point);
   static RANGE MeasureRange(const POSE& pose, const POINT& point);
   void print(string s) const;
