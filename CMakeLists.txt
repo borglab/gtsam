@@ -14,6 +14,11 @@ set (GTSAM_VERSION_PATCH 0)
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
 
+set (CMAKE_PROJECT_VERSION ${GTSAM_VERSION_STRING})
+set (CMAKE_PROJECT_VERSION_MAJOR ${GTSAM_VERSION_MAJOR})
+set (CMAKE_PROJECT_VERSION_MINOR ${GTSAM_VERSION_MINOR})
+set (CMAKE_PROJECT_VERSION_PATCH ${GTSAM_VERSION_PATCH})
+
 ###############################################################################
 # Gather information, perform checks, set defaults
 
@@ -113,6 +118,22 @@ if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT BUILD_SHARED_LIBS)
 endif()
 
 if(GTSAM_BUILD_PYTHON)
+    # Get info about the Python3 interpreter
+    # https://cmake.org/cmake/help/latest/module/FindPython3.html#module:FindPython3
+    find_package(Python3 COMPONENTS Interpreter Development)
+
+    if(NOT ${Python3_FOUND})
+        message(FATAL_ERROR "Cannot find Python3 interpreter. Please install Python >= 3.6.")
+    endif()
+
+    if(${GTSAM_PYTHON_VERSION} STREQUAL "Default")
+        set(GTSAM_PYTHON_VERSION "${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}"
+                CACHE
+                STRING
+                "The version of Python to build the wrappers against."
+                FORCE)
+    endif()
+
     if(GTSAM_UNSTABLE_BUILD_PYTHON)
         if (NOT GTSAM_BUILD_UNSTABLE)
             message(WARNING "GTSAM_UNSTABLE_BUILD_PYTHON requires the unstable module to be enabled.")
@@ -529,9 +550,9 @@ print_build_options_for_target(gtsam)
 print_config("Use System Eigen" "${GTSAM_USE_SYSTEM_EIGEN} (Using version: ${GTSAM_EIGEN_VERSION})")
 
 if(GTSAM_USE_TBB)
-    print_config("Use Intel TBB" "Yes")
+    print_config("Use Intel TBB" "Yes (Version: ${TBB_VERSION})")
 elseif(TBB_FOUND)
-    print_config("Use Intel TBB" "TBB found but GTSAM_WITH_TBB is disabled")
+    print_config("Use Intel TBB" "TBB (Version: ${TBB_VERSION}) found but GTSAM_WITH_TBB is disabled")
 else()
     print_config("Use Intel TBB" "TBB not found")
 endif()
