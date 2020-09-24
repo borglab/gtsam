@@ -1053,7 +1053,7 @@ class Cal3_S2Stereo {
 class Cal3Bundler {
   // Standard Constructors
   Cal3Bundler();
-  Cal3Bundler(double fx, double k1, double k2, double u0, double v0);
+  Cal3Bundler(double fx, double k1, double k2, double u0, double v0, double tol);
 
   // Testable
   void print(string s) const;
@@ -1066,7 +1066,7 @@ class Cal3Bundler {
   Vector localCoordinates(const gtsam::Cal3Bundler& c) const;
 
   // Action on Point2
-  gtsam::Point2 calibrate(const gtsam::Point2& p, double tol) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
 
   // Standard Interface
