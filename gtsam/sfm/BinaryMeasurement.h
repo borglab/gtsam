@@ -71,6 +71,11 @@ public:
     this->noiseModel_->print("  noise model: ");
   }
 
+  void makeNoiseModelRobust(){
+	  this->noiseModel_ = noiseModel::Robust::Create(
+	            noiseModel::mEstimator::Huber::Create(1.345), this->noiseModel_);
+  }
+
   bool equals(const BinaryMeasurement &expected, double tol = 1e-9) const {
     const BinaryMeasurement<T> *e =
         dynamic_cast<const BinaryMeasurement<T> *>(&expected);

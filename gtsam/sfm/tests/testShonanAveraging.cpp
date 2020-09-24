@@ -322,6 +322,30 @@ TEST(ShonanAveraging2, noisyToyGraph) {
 }
 
 /* ************************************************************************* */
+TEST(ShonanAveraging2, noisyToyGraphWithHuber) {
+  // Load 2D toy example
+  auto lmParams = LevenbergMarquardtParams::CeresDefaults();
+  string g2oFile = findExampleDataFile("noisyToyGraph.txt");
+  ShonanAveraging2::Parameters parameters(lmParams);
+  auto measurements = parseMeasurements<Rot2>(g2oFile);
+  std::cout << "----- changing huber before " << std::endl;
+  parameters.setUseHuber(true);
+  parameters.print();
+  std::cout << "----- changing huber after " << std::endl;
+  ShonanAveraging2 shonan(measurements, parameters);
+  EXPECT_LONGS_EQUAL(4, shonan.nrUnknowns());
+
+  // Check graph building
+  NonlinearFactorGraph graph = shonan.buildGraphAt(2);
+  graph.print();
+  EXPECT_LONGS_EQUAL(6, graph.size());
+  auto initial = shonan.initializeRandomly(kRandomNumberGenerator);
+  auto result = shonan.run(initial, 2);
+  EXPECT_DOUBLES_EQUAL(0.0008211, shonan.cost(result.first), 1e-6);
+  EXPECT_DOUBLES_EQUAL(0, result.second, 1e-10); // certificate!
+}
+
+/* ************************************************************************* */
 // Test alpha/beta/gamma prior weighting.
 TEST(ShonanAveraging3, PriorWeights) {
   auto lmParams = LevenbergMarquardtParams::CeresDefaults();

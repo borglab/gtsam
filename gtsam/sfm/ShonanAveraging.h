@@ -53,6 +53,7 @@ struct GTSAM_EXPORT ShonanAveragingParameters {
   double alpha;                 // weight of anchor-based prior (default 0)
   double beta;                  // weight of Karcher-based prior (default 1)
   double gamma;                 // weight of gauge-fixing factors (default 0)
+  bool useHuber; 				// if enabled, the Huber loss is used in the optimization (default is false)
 
   ShonanAveragingParameters(const LevenbergMarquardtParams &lm =
                                 LevenbergMarquardtParams::CeresDefaults(),
@@ -77,6 +78,18 @@ struct GTSAM_EXPORT ShonanAveragingParameters {
 
   void setGaugesWeight(double value) { gamma = value; }
   double getGaugesWeight() { return gamma; }
+
+  void setUseHuber(bool value) { useHuber = value; }
+  bool getUseHuber() { return useHuber; }
+
+  void print() const {
+	  std::cout << " ShonanAveragingParameters: " << std::endl;
+	  std::cout << " alpha: " << alpha  << std::endl;
+	  std::cout << " beta: " << beta  << std::endl;
+	  std::cout << " gamma: " << gamma  << std::endl;
+	  std::cout << " useHuber: " << useHuber  << std::endl;
+	  std::cout << " --------------------------" << std::endl;
+  }
 };
 
 using ShonanAveragingParameters2 = ShonanAveragingParameters<2>;
