@@ -328,10 +328,8 @@ TEST(ShonanAveraging2, noisyToyGraphWithHuber) {
   string g2oFile = findExampleDataFile("noisyToyGraph.txt");
   ShonanAveraging2::Parameters parameters(lmParams);
   auto measurements = parseMeasurements<Rot2>(g2oFile);
-  std::cout << "----- changing huber before " << std::endl;
   parameters.setUseHuber(true);
   parameters.print();
-  std::cout << "----- changing huber after " << std::endl;
   ShonanAveraging2 shonan(measurements, parameters);
   EXPECT_LONGS_EQUAL(4, shonan.nrUnknowns());
 

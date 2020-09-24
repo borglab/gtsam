@@ -164,6 +164,15 @@ class GTSAM_EXPORT ShonanAveraging {
     return measurements_[k];
   }
 
+  /// wrap factors with robust Huber loss
+  static Measurements makeNoiseModelRobust(Measurements measurements){
+	  Measurements robustMeasurements = measurements;
+	  for (auto &measurement : robustMeasurements) {
+		  measurement.makeNoiseModelRobust();
+	  }
+	  return robustMeasurements;
+  }
+
   /// k^th measurement, as a Rot.
   const Rot &measured(size_t k) const { return measurements_[k].measured(); }
 

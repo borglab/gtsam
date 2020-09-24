@@ -820,15 +820,13 @@ template class ShonanAveraging<2>;
 
 ShonanAveraging2::ShonanAveraging2(const Measurements &measurements,
                                    const Parameters &parameters)
-    : ShonanAveraging<2>(measurements, parameters) {
-	if (parameters.useHuber == true)
-		std::cout << "Parameter useHuber is disregarded when you pass measurements to ShonanAveraging2."
-				"Pass g2o file as input to enable this functionality" << std::endl;
-}
+    : ShonanAveraging<2>(parameters.useHuber?
+    		makeNoiseModelRobust(measurements) : measurements, parameters) {}
 
 ShonanAveraging2::ShonanAveraging2(string g2oFile, const Parameters &parameters)
-    : ShonanAveraging<2>(parseMeasurements<Rot2>(g2oFile,
-    		parameters.useHuber? nullptr : nullptr), parameters) {}
+    : ShonanAveraging<2>(parameters.useHuber?
+    		makeNoiseModelRobust( parseMeasurements<Rot2>(g2oFile) ) :
+    				parseMeasurements<Rot2>(g2oFile), parameters) {}
 
 /* ************************************************************************* */
 // Explicit instantiation for d=3
@@ -836,22 +834,20 @@ template class ShonanAveraging<3>;
 
 ShonanAveraging3::ShonanAveraging3(const Measurements &measurements,
                                    const Parameters &parameters)
-    : ShonanAveraging<3>(measurements, parameters) {
-	if (parameters.useHuber == true)
-			std::cout << "Parameter useHuber is disregarded when you pass measurements to ShonanAveraging2."
-					"Pass g2o file as input to enable this functionality" << std::endl;
-}
+    : ShonanAveraging<3>(parameters.useHuber?
+    		makeNoiseModelRobust(measurements) : measurements, parameters) {}
 
 ShonanAveraging3::ShonanAveraging3(string g2oFile, const Parameters &parameters)
-    : ShonanAveraging<3>(parseMeasurements<Rot3>(g2oFile,
-    		parameters.useHuber? nullptr : nullptr), parameters) {}
+    : ShonanAveraging<3>(parameters.useHuber?
+    		makeNoiseModelRobust( parseMeasurements<Rot3>(g2oFile) ) :
+			parseMeasurements<Rot3>(g2oFile), parameters) {}
 
 // TODO(frank): Deprecate after we land pybind wrapper
 
 // Extract Rot3 measurement from Pose3 betweenfactors
 // Modeled after similar function in dataset.cpp
 static BinaryMeasurement<Rot3> convert(
-    const BetweenFactor<Pose3>::shared_ptr &f, bool useHuber = false) {
+    const BetweenFactor<Pose3>::shared_ptr &f) {
   auto gaussian =
       boost::dynamic_pointer_cast<noiseModel::Gaussian>(f->noiseModel());
   if (!gaussian)
@@ -859,32 +855,23 @@ static BinaryMeasurement<Rot3> convert(
         "parseMeasurements<Rot3> can only convert Pose3 measurements "
         "with Gaussian noise models.");
   const Matrix6 M = gaussian->covariance();
-  if(!useHuber){
-	  return BinaryMeasurement<Rot3>(
-			  f->key1(), f->key2(), f->measured().rotation(),
-			  noiseModel::Gaussian::Covariance(M.block<3, 3>(3, 3), true));
-  }else{ // wrap noise mode in Huber loss
-	  std::cout << "setting robust huber loss " << std::endl;
-	  return BinaryMeasurement<Rot3>(
-			  f->key1(), f->key2(), f->measured().rotation(),
-			  noiseModel::Robust::Create(
-			            noiseModel::mEstimator::Huber::Create(1.345),
-						noiseModel::Gaussian::Covariance(M.block<3, 3>(3, 3), true)));
-  }
+  return BinaryMeasurement<Rot3>(
+		  f->key1(), f->key2(), f->measured().rotation(),
+		  noiseModel::Gaussian::Covariance(M.block<3, 3>(3, 3), true));
 }
 
 static ShonanAveraging3::Measurements extractRot3Measurements(
-    const BetweenFactorPose3s &factors, bool useHuber = false) {
+    const BetweenFactorPose3s &factors) {
   ShonanAveraging3::Measurements result;
   result.reserve(factors.size());
-  for (auto f : factors) result.push_back(convert(f,useHuber));
+  for (auto f : factors) result.push_back(convert(f));
   return result;
 }
 
 ShonanAveraging3::ShonanAveraging3(const BetweenFactorPose3s &factors,
                                    const Parameters &parameters)
     : ShonanAveraging<3>(parameters.useHuber?
-    		extractRot3Measurements(factors) :
+    		makeNoiseModelRobust( extractRot3Measurements(factors) ):
 			extractRot3Measurements(factors), parameters) {}
 
 /* ************************************************************************* */
