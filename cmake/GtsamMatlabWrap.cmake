@@ -215,19 +215,15 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	# Set up generation of module source file
 	file(MAKE_DIRECTORY "${generated_files_path}")
 
-	if(GTSAM_PYTHON_VERSION STREQUAL "Default")
-		find_package(PythonInterp REQUIRED)
-		find_package(PythonLibs REQUIRED)
-	else()
-		find_package(PythonInterp
-				${GTSAM_PYTHON_VERSION}
-				EXACT
-				REQUIRED)
-		find_package(PythonLibs
-				${GTSAM_PYTHON_VERSION}
-				EXACT
-				REQUIRED)
-	endif()
+    find_package(PythonInterp
+            ${GTSAM_PYTHON_VERSION}
+            EXACT
+            REQUIRED)
+    find_package(PythonLibs
+            ${GTSAM_PYTHON_VERSION}
+            EXACT
+            REQUIRED)
+
 
 	set(_ignore gtsam::Point2
 			gtsam::Point3)

@@ -27,15 +27,24 @@ set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHON_VERSION})
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../pybind11 pybind11)
 
-# User-friendly Pybind11 wrapping and installing function. Builds a Pybind11
-# module from the provided interface_header. For example, for the interface
-# header gtsam.h, this will build the wrap module 'gtsam_py.cc'.
+# User-friendly Pybind11 wrapping and installing function.
+# Builds a Pybind11 module from the provided interface_header.
+# For example, for the interface header gtsam.h, this will
+# build the wrap module 'gtsam_py.cc'.
 #
 # Arguments:
 # ~~~
+# target: The Make target
 # interface_header:  The relative path to the wrapper interface definition file.
-# install_path: destination to install the library libs: libraries to link with
-# dependencies: Dependencies which need to be built before the wrapper
+# generated_cpp: The name of the cpp file which is generated from the tpl file.
+# module_name: The name of the Python module to use.
+# top_namespace: The C++ namespace under which the code to be wrapped exists.
+# ignore_classes: CMake list of classes to ignore from wrapping.
+# install_path: Destination to install the library.
+# module_template: The template file (.tpl) from which to generate the Pybind11 module.
+# libs: Libraries to link with.
+# dependencies: Dependencies which need to be built before the wrapper.
+# use_boost (optional): Flag indicating whether to include Boost.
 function(pybind_wrap
          target
          interface_header

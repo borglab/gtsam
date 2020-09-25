@@ -40,7 +40,7 @@ $ make install
 
 Prerequisites:
 
-- [Boost](http://www.boost.org/users/download/) >= 1.43 (Ubuntu: `sudo apt-get install libboost-all-dev`)
+- [Boost](http://www.boost.org/users/download/) >= 1.58 (Ubuntu: `sudo apt-get install libboost-all-dev`)
 - [CMake](http://www.cmake.org/cmake/resources/software.html) >= 3.0 (Ubuntu: `sudo apt-get install cmake`)
 - A modern compiler, i.e., at least gcc 4.7.3 on Linux.
 
@@ -62,7 +62,7 @@ GTSAM 4.1 added a new pybind wrapper, and **removed** the deprecated functionali
 
 ## Wrappers
 
-We provide support for [MATLAB](matlab/README.md) and [Python](cython/README.md) wrappers for GTSAM. Please refer to the linked documents for more details.
+We provide support for [MATLAB](matlab/README.md) and [Python](python/README.md) wrappers for GTSAM. Please refer to the linked documents for more details.
 
 ## The Preintegrated IMU Factor
 

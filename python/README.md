@@ -18,8 +18,10 @@ This is the Python wrapper around the GTSAM C++ library. We use our custom [wrap
 
 ## Install
 
-- Run cmake with the `GTSAM_BUILD_PYTHON` cmake flag enabled to configure building the wrapper. The wrapped module will be built and copied to the directory `<PROJECT_BINARY_DIR>/python`.
-
+- Run cmake with the `GTSAM_BUILD_PYTHON` cmake flag enabled to configure building the wrapper. The wrapped module will be built and copied to the directory `<PROJECT_BINARY_DIR>/python`. For example, if your local Python version is 3.6.10, then you should run:
+  ```bash
+  cmake .. -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=3.6.10
+  ```
 - Build GTSAM and the wrapper with `make` (or `ninja` if you use `-GNinja`).
 
 - To install, simply run `make python-install` (`ninja python-install`).
