@@ -23,6 +23,67 @@
 
 namespace gtsam {
 
+namespace{
+  /// Subtract centroids from point pairs.
+  static std::vector<Point3Pair> subtractCentroids(const std::vector<Point3Pair>& abPointPairs, const Point3& aCentroid, const Point3& bCentroid) {
+    std::vector<Point3Pair> d_abPointPairs;
+    Point3 aPoint, bPoint;
+    for (const Point3Pair& abPair : abPointPairs) {
+      std::tie(aPoint, bPoint) = abPair;
+      Point3 da = aPoint - aCentroid;
+      Point3 db = bPoint - bCentroid;
+      d_abPointPairs.emplace_back(da, db);
+    }
+    return d_abPointPairs;
+  }
+
+  /// Form inner products x and y.
+  static std::pair<double, double> getXY(const std::vector<Point3Pair>& d_abPointPairs, const Rot3& aRb) {
+    double x = 0, y = 0;
+    Point3 da, db;
+    for (const Point3Pair& d_abPair : d_abPointPairs) {
+      std::tie(da, db) = d_abPair;
+      Vector3 Rdb = aRb * db;
+      y += da.transpose() * Rdb;
+      x += Rdb.transpose() * Rdb;
+    }
+    return std::make_pair(x, y);
+  }
+
+  /// Form outer product H.
+  static Matrix3 calculateH(const std::vector<Point3Pair>& d_abPointPairs) {
+    Matrix3 H = Z_3x3;
+    Point3 da, db;
+    for (const Point3Pair& d_abPair : d_abPointPairs) {
+      std::tie(da, db) = d_abPair;
+      H += da * db.transpose();
+    }
+    return H;
+  }
+
+  /// This method estimates the similarity transform from differences point pairs, given a known or estimated rotation and point centroids.
+  static Similarity3 align(const std::vector<Point3Pair>& d_abPointPairs, const Rot3& aRb, const Point3& aCentroid, const Point3& bCentroid) {
+    double x, y;
+    std::tie(x, y) = getXY(d_abPointPairs, aRb);
+    const double s = y / x;
+    // calculate translation
+    const Point3 aTb = (aCentroid - s * (aRb * bCentroid)) / s;
+    return Similarity3(aRb, aTb, s);
+  }
+
+  /// This method estimates the similarity transform from point pairs, given a known or estimated rotation.
+  static Similarity3 alignGivenR(const std::vector<Point3Pair>& abPointPairs, const Rot3& aRb) {
+    // Refer to: http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf Chapter 3
+    // calculate centroids
+    Point3 aCentroid, bCentroid;
+    std::tie(aCentroid, bCentroid) = mean(abPointPairs);
+    // substract centroids
+    std::vector<Point3Pair> d_abPointPairs = subtractCentroids(abPointPairs, aCentroid, bCentroid);
+    return align(d_abPointPairs, aRb, aCentroid, bCentroid);
+  }
+}
+
+
 Similarity3::Similarity3() :
     t_(0,0,0), s_(1) {
 }
@@ -96,59 +157,6 @@ Point3 Similarity3::operator*(const Point3& p) const {
   return transformFrom(p);
 }
 
-std::vector<Point3Pair> Similarity3::SubtractCentroids(const std::vector<Point3Pair>& abPointPairs, const Point3& aCentroid, const Point3& bCentroid) {
-  std::vector<Point3Pair> d_abPointPairs;
-  Point3 aPoint, bPoint;
-  for (const Point3Pair& abPair : abPointPairs) {
-    std::tie(aPoint, bPoint) = abPair;
-    Point3 da = aPoint - aCentroid;
-    Point3 db = bPoint - bCentroid;
-    d_abPointPairs.emplace_back(da, db);
-  }
-  return d_abPointPairs;
-}
-
-std::pair<double, double> Similarity3::GetXY(const std::vector<Point3Pair>& d_abPointPairs, const Rot3& aRb) {
-  double x = 0, y = 0;
-  Point3 da, db;
-  for (const Point3Pair& d_abPair : d_abPointPairs) {
-    std::tie(da, db) = d_abPair;
-    Vector3 Rdb = aRb * db;
-    y += da.transpose() * Rdb;
-    x += Rdb.transpose() * Rdb;
-  }
-  return std::make_pair(x, y);
-}
-
-Matrix3 Similarity3::GetH(const std::vector<Point3Pair>& d_abPointPairs) {
-  Matrix3 H = Z_3x3;
-  Point3 da, db;
-  for (const Point3Pair& d_abPair : d_abPointPairs) {
-    std::tie(da, db) = d_abPair;
-    H += da * db.transpose();
-  }
-  return H;
-}
-
-Similarity3 Similarity3::AlignGivenRandCentroids(const std::vector<Point3Pair>& d_abPointPairs, const Rot3& aRb, const Point3& aCentroid, const Point3& bCentroid) {
-  double x, y;
-  std::tie(x, y) = GetXY(d_abPointPairs, aRb);
-  const double s = y / x;
-  // calculate translation
-  const Point3 aTb = (aCentroid - s * (aRb * bCentroid)) / s;
-  return Similarity3(aRb, aTb, s);
-}
-
-Similarity3 Similarity3::AlignGivenR(const std::vector<Point3Pair>& abPointPairs, const Rot3& aRb) {
-  // Refer to: http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf Chapter 3
-  // calculate centroids
-  Point3 aCentroid, bCentroid;
-  std::tie(aCentroid, bCentroid) = mean(abPointPairs);
-  // substract centroids
-  std::vector<Point3Pair> d_abPointPairs = SubtractCentroids(abPointPairs, aCentroid, bCentroid);
-  return AlignGivenRandCentroids(d_abPointPairs, aRb, aCentroid, bCentroid);
-}
-
 Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
   // Refer to: http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf Chapter 3
   const size_t n = abPointPairs.size();
@@ -157,12 +165,12 @@ Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
   Point3 aCentroid, bCentroid;
   std::tie(aCentroid, bCentroid) = mean(abPointPairs);
   // substract centroids
-  std::vector<Point3Pair> d_abPointPairs = SubtractCentroids(abPointPairs, aCentroid, bCentroid);
+  std::vector<Point3Pair> d_abPointPairs = subtractCentroids(abPointPairs, aCentroid, bCentroid);
   // form H matrix
-  Matrix3 H = GetH(d_abPointPairs);
+  Matrix3 H = calculateH(d_abPointPairs);
   // ClosestTo finds rotation matrix closest to H in Frobenius sense
   Rot3 aRb = Rot3::ClosestTo(H);
-  return AlignGivenRandCentroids(d_abPointPairs, aRb, aCentroid, bCentroid);
+  return align(d_abPointPairs, aRb, aCentroid, bCentroid);
 }
 
 Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
@@ -181,7 +189,7 @@ Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
   }
   const Rot3 aRb = FindKarcherMean<Rot3>(rotationList);
 
-  return AlignGivenR(abPointPairs, aRb);
+  return alignGivenR(abPointPairs, aRb);
 }
 
 Matrix4 Similarity3::wedge(const Vector7& xi) {

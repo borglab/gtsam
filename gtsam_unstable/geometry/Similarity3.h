@@ -211,21 +211,6 @@ private:
   /// Calculate expmap and logmap coefficients.
   static Matrix3 GetV(Vector3 w, double lambda);
 
-  /// Subtract centroids from point pairs.
-  static std::vector<Point3Pair> SubtractCentroids(const std::vector<Point3Pair>& abPointPairs, const Point3& aCentroid, const Point3& bCentroid);
-
-  /// Form inner products x and y.
-  static std::pair<double, double> GetXY(const std::vector<Point3Pair>& d_abPointPairs, const Rot3& aRb);
-
-  /// Form outer product H.
-  static Matrix3 GetH(const std::vector<Point3Pair>& d_abPointPairs);
-
-  /// This method estimates the similarity transform from differences point pairs, given a known or estimated rotation and point centroids.
-  static Similarity3 AlignGivenRandCentroids(const std::vector<Point3Pair>& d_abPointPairs, const Rot3& aRb, const Point3& aCentroid, const Point3& bCentroid);
-
-  /// This method estimates the similarity transform from point pairs, given a known or estimated rotation.
-  static Similarity3 AlignGivenR(const std::vector<Point3Pair>& abPointPairs, const Rot3& aRb);
-
   /// @}
 };
 
