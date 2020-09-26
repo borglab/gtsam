@@ -43,9 +43,9 @@ namespace{
     Point3 da, db;
     for (const Point3Pair& d_abPair : d_abPointPairs) {
       std::tie(da, db) = d_abPair;
-      Vector3 Rdb = aRb * db;
-      y += da.transpose() * Rdb;
-      x += Rdb.transpose() * Rdb;
+      const Vector3 da_prime = aRb * db;
+      y += da.transpose() * da_prime;
+      x += da_prime.transpose() * da_prime;
     }
     const double s = y / x;
     return s;
