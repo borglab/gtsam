@@ -30,11 +30,11 @@ ConvertNoiseModel(const SharedNoiseModel &model, size_t d, bool defaultToUnit) {
 	const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(model);
 	Vector sigmas;
 	if(robust){
-		sigma = 1; // Rot2
-		goto exit;
-	} //else:
+		sigmas = robust->noise()->sigmas();
+	} else{
+		sigmas = model->sigmas();
+	}
 
-	sigmas = model->sigmas();
     size_t n = sigmas.size();
     if (n == 1) {
       sigma = sigmas(0); // Rot2
