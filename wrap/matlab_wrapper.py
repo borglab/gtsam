@@ -210,18 +210,26 @@ class MatlabWrapper(object):
         else:
             formatted_type_name += name
 
-        if len(type_name.instantiations) == 1:
-            if separator == "::":  # C++
-                formatted_type_name += '<{}>'.format(cls._format_type_name(type_name.instantiations[0],
-                                                                            include_namespace=include_namespace,
-                                                                            constructor=constructor, method=method))
-            else:
+        if separator == "::":  # C++
+            templates = []
+            for idx in range(len(type_name.instantiations)):
+                template = '{}'.format(cls._format_type_name(type_name.instantiations[idx],
+                                                             include_namespace=include_namespace,
+                                                             constructor=constructor, method=method))
+                templates.append(template)
+
+            if len(templates) > 0:  # If there are no templates
+                formatted_type_name += '<{}>'.format(','.join(templates))
+
+        else:
+            for idx in range(len(type_name.instantiations)):
                 formatted_type_name += '{}'.format(cls._format_type_name(
-                    type_name.instantiations[0],
+                    type_name.instantiations[idx],
                     separator=separator,
                     include_namespace=False,
                     constructor=constructor, method=method
                 ))
+
         return formatted_type_name
 
     @classmethod

@@ -567,6 +567,7 @@ class Rot2 {
   // Lie Group
   static gtsam::Rot2 Expmap(Vector v);
   static Vector Logmap(const gtsam::Rot2& p);
+  Vector logmap(const gtsam::Rot2& p);
 
   // Group Action on Point2
   gtsam::Point2 rotate(const gtsam::Point2& point) const;
@@ -727,6 +728,7 @@ class Rot3 {
   // Standard Interface
   static gtsam::Rot3 Expmap(Vector v);
   static Vector Logmap(const gtsam::Rot3& p);
+  Vector logmap(const gtsam::Rot3& p);
   Matrix matrix() const;
   Matrix transpose() const;
   gtsam::Point3 column(size_t index) const;
@@ -772,6 +774,7 @@ class Pose2 {
   // Lie Group
   static gtsam::Pose2 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose2& p);
+  Vector logmap(const gtsam::Pose2& p);
   static Matrix ExpmapDerivative(Vector v);
   static Matrix LogmapDerivative(const gtsam::Pose2& v);
   Matrix AdjointMap() const;
@@ -825,6 +828,7 @@ class Pose3 {
   // Lie Group
   static gtsam::Pose3 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose3& pose);
+  Vector logmap(const gtsam::Pose3& pose);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
   static Matrix adjointMap_(Vector xi);
@@ -2847,6 +2851,7 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 
 #include <gtsam/slam/dataset.h>
 class SfmTrack {
+  Point3 point3() const;
   size_t number_measurements() const;
   pair<size_t, gtsam::Point2> measurement(size_t idx) const;
   pair<size_t, size_t> siftIndex(size_t idx) const;

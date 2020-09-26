@@ -104,7 +104,7 @@ class ImuFactorExample(PreintegrationExample):
 
                 if verbose:
                     print(factor)
-                    print(pim.predict(actual_state_i, self.actualBias))
+                    print(pim.predict(initial_state_i, self.actualBias))
 
                 pim.resetIntegration()
 
@@ -125,7 +125,7 @@ class ImuFactorExample(PreintegrationExample):
                 i += 1
 
         # add priors on end
-        # self.addPrior(num_poses - 1, graph)
+        self.addPrior(num_poses - 1, graph)
 
         initial.print_("Initial values:")
 
