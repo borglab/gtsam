@@ -190,15 +190,7 @@ Vector6 Pose3::ChartAtOrigin::Local(const Pose3& pose, ChartJacobian Hpose) {
 }
 
 /* ************************************************************************* */
-/**
- * Compute the 3x3 bottom-left block Q of the SE3 Expmap derivative matrix
- *  J(xi) = [J_(w) Z_3x3;
- *             Q   J_(w)]
- *  where J_(w) is the SO3 Expmap derivative.
- *  (see Chirikjian11book2, pg 44, eq 10.95.
- *  The closed-form formula is similar to formula 102 in Barfoot14tro)
- */
-static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
+Matrix3 Pose3::ComputeQforExpmapDerivative(const Vector6& xi, double nearZeroThreshold) {
   const auto w = xi.head<3>();
   const auto v = xi.tail<3>();
   const Matrix3 V = skewSymmetric(v);
@@ -220,7 +212,7 @@ static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
 #else
   // The closed-form formula in Barfoot14tro eq. (102)
   double phi = w.norm();
-  if (std::abs(phi)>1e-5) {
+  if (std::abs(phi)>nearZeroThreshold) {
     const double sinPhi = sin(phi), cosPhi = cos(phi);
     const double phi2 = phi * phi, phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
     // Invert the sign of odd-order terms to have the right Jacobian
@@ -230,8 +222,8 @@ static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
   }
   else {
     Q = -0.5*V + 1./6.*(W*V + V*W - W*V*W)
-        + 1./24.*(W*W*V + V*W*W - 3*W*V*W)
-        - 0.5*(1./24. + 3./120.)*(W*V*W*W + W*W*V*W);
+        - 1./24.*(W*W*V + V*W*W - 3*W*V*W)
+        + 1./120.*(W*V*W*W + W*W*V*W);
   }
 #endif
 
@@ -242,7 +234,7 @@ static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
 Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
   const Vector3 w = xi.head<3>();
   const Matrix3 Jw = Rot3::ExpmapDerivative(w);
-  const Matrix3 Q = computeQforExpmapDerivative(xi);
+  const Matrix3 Q = ComputeQforExpmapDerivative(xi);
   Matrix6 J;
   J << Jw, Z_3x3, Q, Jw;
   return J;
@@ -253,7 +245,7 @@ Matrix6 Pose3::LogmapDerivative(const Pose3& pose) {
   const Vector6 xi = Logmap(pose);
   const Vector3 w = xi.head<3>();
   const Matrix3 Jw = Rot3::LogmapDerivative(w);
-  const Matrix3 Q = computeQforExpmapDerivative(xi);
+  const Matrix3 Q = ComputeQforExpmapDerivative(xi);
   const Matrix3 Q2 = -Jw*Q*Jw;
   Matrix6 J;
   J << Jw, Z_3x3, Q2, Jw;
