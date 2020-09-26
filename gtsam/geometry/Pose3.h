@@ -181,6 +181,18 @@ public:
     static Vector6 Local(const Pose3& pose, ChartJacobian Hpose = boost::none);
   };
 
+  /**
+  * Compute the 3x3 bottom-left block Q of SE3 Expmap right derivative matrix
+  *  J_r(xi) = [J_(w) Z_3x3;
+  *             Q_r   J_(w)]
+  *  where J_(w) is the SO3 Expmap right derivative.
+  *  (see Chirikjian11book2, pg 44, eq 10.95.
+  *  The closed-form formula is identical to formula 102 in Barfoot14tro where
+  *  Q_l of the SE3 Expmap left derivative matrix is given.
+  */
+  static Matrix3 ComputeQforExpmapDerivative(
+      const Vector6& xi, double nearZeroThreshold = 1e-5);
+
   using LieGroup<Pose3, 6>::inverse; // version with derivative
 
   /**
