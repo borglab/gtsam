@@ -37,8 +37,8 @@ namespace{
     return d_abPointPairs;
   }
 
-  /// Form inner products x and y.
-  static std::pair<double, double> getXY(const std::vector<Point3Pair>& d_abPointPairs, const Rot3& aRb) {
+  /// Form inner products x and y and calculate scale.
+  static const double calculateScale(const std::vector<Point3Pair>& d_abPointPairs, const Rot3& aRb) {
     double x = 0, y = 0;
     Point3 da, db;
     for (const Point3Pair& d_abPair : d_abPointPairs) {
@@ -47,7 +47,8 @@ namespace{
       y += da.transpose() * Rdb;
       x += Rdb.transpose() * Rdb;
     }
-    return std::make_pair(x, y);
+    const double s = y / x;
+    return s;
   }
 
   /// Form outer product H.
@@ -63,9 +64,7 @@ namespace{
 
   /// This method estimates the similarity transform from differences point pairs, given a known or estimated rotation and point centroids.
   static Similarity3 align(const std::vector<Point3Pair>& d_abPointPairs, const Rot3& aRb, const Point3& aCentroid, const Point3& bCentroid) {
-    double x, y;
-    std::tie(x, y) = getXY(d_abPointPairs, aRb);
-    const double s = y / x;
+    const double s = calculateScale(d_abPointPairs, aRb);
     // calculate translation
     const Point3 aTb = (aCentroid - s * (aRb * bCentroid)) / s;
     return Similarity3(aRb, aTb, s);
