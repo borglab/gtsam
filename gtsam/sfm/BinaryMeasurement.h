@@ -71,8 +71,11 @@ public:
     this->noiseModel_->print("  noise model: ");
   }
 
+  // TODO: make this more general?
   void makeNoiseModelRobust(){
-	  this->noiseModel_ = noiseModel::Robust::Create(
+	  const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_);
+	  if(!robust) // make robust
+		  this->noiseModel_ = noiseModel::Robust::Create(
 	            noiseModel::mEstimator::Huber::Create(1.345), this->noiseModel_);
   }
 
