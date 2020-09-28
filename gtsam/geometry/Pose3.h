@@ -368,6 +368,9 @@ inline Matrix wedge<Pose3>(const Vector& xi) {
   return Pose3::wedge(xi(0), xi(1), xi(2), xi(3), xi(4), xi(5));
 }
 
+// Convenience typedef
+using Pose3Pair = std::pair<Pose3, Pose3>;
+
 // For MATLAB wrapper
 typedef std::vector<Pose3> Pose3Vector;
 

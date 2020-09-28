@@ -26,6 +26,7 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
 #include <boost/serialization/nvp.hpp>
+#include <numeric>
 
 namespace gtsam {
 
@@ -57,6 +58,17 @@ GTSAM_EXPORT Point3 cross(const Point3& p, const Point3& q,
 GTSAM_EXPORT double dot(const Point3& p, const Point3& q,
                         OptionalJacobian<1, 3> H_p = boost::none,
                         OptionalJacobian<1, 3> H_q = boost::none);
+
+/// mean
+template <class CONTAINER>
+GTSAM_EXPORT Point3 mean(const CONTAINER& points) {
+  Point3 sum(0, 0, 0);
+  sum = std::accumulate(points.begin(), points.end(), sum);
+  return sum / points.size();
+}
+
+/// mean of Point3 pair 
+GTSAM_EXPORT Point3Pair mean(const std::vector<Point3Pair>& abPointPairs);
 
 template <typename A1, typename A2>
 struct Range;
