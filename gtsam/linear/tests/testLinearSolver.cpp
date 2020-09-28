@@ -16,7 +16,9 @@
  */
 
 #include <gtsam/linear/LinearSolver.h>
+#include <gtsam/linear/JacobianGlobalConstraintFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
@@ -74,6 +76,78 @@ TEST(EigenOptimizer, optimizeEigenCholesky) {
   auto solver = LinearSolver::fromLinearSolverParams(params);
   VectorValues actual = solver->solve(A);
   EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(EigenOptimizer, optimizeGlobalConstraintSequential1D) {
+  VectorValues expected;
+  Key x1 = 0, x2 = 1, x3 = 2;
+  expected.insert(x1, Vector1(2.57142857));
+  expected.insert(x2, Vector1(1.64285714));
+  expected.insert(x3, Vector1(5.78571429));
+
+
+  SharedDiagonal unit1 = noiseModel::Unit::Create(1);
+  GaussianFactorGraph gfg;
+  gfg.emplace_shared<JacobianGlobalConstraintFactor>(
+      x1, I_1x1, x2, I_1x1, x3, I_1x1, Vector1(10.0), unit1);
+  gfg.emplace_shared<JacobianFactor>(x1, I_1x1, x2, -I_1x1, Vector1(1.0), unit1);
+  gfg.emplace_shared<JacobianFactor>(x2, I_1x1, x3, -I_1x1, Vector1(-4.0), unit1);
+  gfg.emplace_shared<JacobianFactor>(x3, I_1x1, Vector1(6.0), unit1);
+
+  // solve
+  LinearSolverParams params;
+  params.ordering = Ordering::Colamd(gfg);
+  params.linearSolverType = LinearSolverParams::GLOBALCONSTRAINT_SEQUENTIAL_QR;
+  auto solver = LinearSolver::fromLinearSolverParams(params);
+  VectorValues actual = solver->solve(gfg);
+  EXPECT(assert_equal(expected, actual, 1e-7));
+}
+
+/* ************************************************************************* */
+TEST(EigenOptimizer, optimizeGlobalConstraintSequential2D) {
+  Key x1 = 0, x2 = 1, x3 = 2;
+
+  // no constraints - don't segfault!
+  SharedDiagonal unit2 = noiseModel::Unit::Create(2);
+  GaussianFactorGraph gfg;
+  gfg.emplace_shared<JacobianFactor>(x1, I_2x2, x2, -1*I_2x2, Vector2(0.0, -2.0), unit2);
+  gfg.emplace_shared<JacobianFactor>(x2, I_2x2, x3, -1*I_2x2, Vector2(-3.0, 1.0), unit2);
+  gfg.emplace_shared<JacobianFactor>(x3, I_2x2, x1, -1*I_2x2, Vector2(3.0, 1.0), unit2);
+
+  // check that no segfault occurs
+  LinearSolverParams params;
+  params.ordering = Ordering::Colamd(gfg);
+  params.linearSolverType = LinearSolverParams::GLOBALCONSTRAINT_SEQUENTIAL_QR;
+  auto solver = LinearSolver::fromLinearSolverParams(params);
+  solver->solve(gfg); // don't segfault!
+
+  // underconstrained H
+  gfg.emplace_shared<JacobianGlobalConstraintFactor>(
+      x1, I_2x2, x2, I_2x2, x3, I_2x2, Vector2(0.0, 0.0),
+      noiseModel::Constrained::All(2));
+
+  // Solve with Normal Elimination QR
+  params.linearSolverType = LinearSolverParams::SEQUENTIAL_QR;
+  VectorValues expected =
+      gfg.eliminateSequential(*params.ordering, params.getEliminationFunction(),
+                              boost::none, params.orderingType)->optimize();
+
+  // Solve with global constraint
+  VectorValues actual = solver->solve(gfg);
+  EXPECT(assert_equal(expected, actual));
+
+  // ----- overcontrained H -----
+  gfg.emplace_shared<JacobianFactor>(x1, I_2x2, x2, I_2x2, x3, -1*I_2x2, Vector2(-3.0, 0.0), unit2);
+  // solve with Elimination QR
+  expected =
+      gfg.eliminateSequential(*params.ordering, params.getEliminationFunction(),
+                              boost::none, params.orderingType)->optimize();
+
+  // Solve with global constraint
+  actual = solver->solve(gfg);
+  EXPECT(assert_equal(expected, actual));
+
 }
 
 /* ************************************************************************* */

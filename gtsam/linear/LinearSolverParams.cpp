@@ -50,6 +50,10 @@ std::string LinearSolverParams::linearSolverTranslator(
       return "SUITESPARSE_CHOLESKY";
     case CUSPARSE_CHOLESKY:
       return "CUSPARSE_CHOLESKY";
+    case GLOBALCONSTRAINT_SEQUENTIAL_QR:
+      return "GLOBALCONSTRAINT_SEQUENTIAL_QR";
+    case GLOBALCONSTRAINT_SEQUENTIAL_CHOLESKY:
+      return "GLOBALCONSTRAINT_SEQUENTIAL_CHOLESKY";
     default:
       throw std::invalid_argument(
           "Unknown linear solver type in SuccessiveLinearizationOptimizer");
@@ -79,6 +83,10 @@ LinearSolverParams::LinearSolverType LinearSolverParams::linearSolverTranslator(
     return LinearSolverParams::SUITESPARSE_CHOLESKY;
   if (linearSolverType == "CUSPARSE_CHOLESKY")
     return LinearSolverParams::CUSPARSE_CHOLESKY;
+  if (linearSolverType == "GLOBALCONSTRAINT_SEQUENTIAL_QR")
+    return LinearSolverParams::GLOBALCONSTRAINT_SEQUENTIAL_QR;
+  if (linearSolverType == "GLOBALCONSTRAINT_SEQUENTIAL_CHOLESKY")
+    return LinearSolverParams::GLOBALCONSTRAINT_SEQUENTIAL_CHOLESKY;
   throw std::invalid_argument(
       "Unknown linear solver type in SuccessiveLinearizationOptimizer");
 }

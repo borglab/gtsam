@@ -39,6 +39,8 @@ public:
     EIGEN_CHOLESKY,
     SUITESPARSE_CHOLESKY,
     CUSPARSE_CHOLESKY,
+    GLOBALCONSTRAINT_SEQUENTIAL_QR,
+    GLOBALCONSTRAINT_SEQUENTIAL_CHOLESKY
   } LinearSolverType;
 
   LinearSolverType linearSolverType = LinearSolverParams::MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
@@ -54,7 +56,9 @@ public:
 
   inline bool isSequential() const {
     return (linearSolverType == SEQUENTIAL_CHOLESKY)
-           || (linearSolverType == SEQUENTIAL_QR);
+           || (linearSolverType == SEQUENTIAL_QR)
+           || (linearSolverType == GLOBALCONSTRAINT_SEQUENTIAL_CHOLESKY)
+           || (linearSolverType == GLOBALCONSTRAINT_SEQUENTIAL_QR);
   }
 
   inline bool isCholmod() const {
@@ -81,14 +85,21 @@ public:
     return (linearSolverType == CUSPARSE_CHOLESKY);
   }
 
+  inline bool isGlobalConstraintSequential() const {
+    return (linearSolverType == GLOBALCONSTRAINT_SEQUENTIAL_CHOLESKY)
+           || (linearSolverType == GLOBALCONSTRAINT_SEQUENTIAL_QR);
+  }
+
   GaussianFactorGraph::Eliminate getEliminationFunction() const {
     switch (linearSolverType) {
       case MULTIFRONTAL_CHOLESKY:
       case SEQUENTIAL_CHOLESKY:
+      case GLOBALCONSTRAINT_SEQUENTIAL_CHOLESKY:
         return EliminatePreferCholesky;
 
       case MULTIFRONTAL_QR:
       case SEQUENTIAL_QR:
+      case GLOBALCONSTRAINT_SEQUENTIAL_QR:
         return EliminateQR;
 
       default:
