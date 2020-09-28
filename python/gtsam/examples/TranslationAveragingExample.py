@@ -89,7 +89,7 @@ def estimate_poses(relative_translations: gtsam.BinaryMeasurementsUnit3,
 
     # Compute average of outlier weights. Each outlier weight is a map from a pair of Keys (camera IDs) to a weight,
     # where weights are proportional to the probability of the edge being an outlier.
-    avg_outlier_weights = defaultdict(lambda: 0.0)
+    avg_outlier_weights = defaultdict(float)
     for outlier_weight_dict in outlier_weights:
         for keypair, weight in outlier_weight_dict.items():
             avg_outlier_weights[keypair] += weight / len(outlier_weights)
