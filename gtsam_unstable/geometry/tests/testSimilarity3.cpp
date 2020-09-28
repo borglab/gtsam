@@ -264,11 +264,11 @@ TEST(Similarity3, GroupActionPose3) {
 
   // Create source poses
   Pose3 Ta1(Rot3(), Point3(0, 0, 0));
-  Pose3 Ta2(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, 1), Point3(4, 0, 0));
+  Pose3 Ta2(Rot3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Point3(4, 0, 0));
 
   // Create destination poses
   Pose3 expected_Tb1(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
-  Pose3 expected_Tb2(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
+  Pose3 expected_Tb2(Rot3(1, 0, 0, 0, -1, 0, 0, 0, -1), Point3(-4, 6, 10));
 
   EXPECT(assert_equal(expected_Tb1, bSa.transformFrom(Ta1)));
   EXPECT(assert_equal(expected_Tb2, bSa.transformFrom(Ta2)));
@@ -283,11 +283,11 @@ TEST(Similarity3, GroupActionPose3_Compatibility) {
 
   // Create poses
   Pose3 Ta1(Rot3(), Point3(0, 0, 0));
-  Pose3 Ta2(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, 1), Point3(4, 0, 0));
+  Pose3 Ta2(Rot3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Point3(4, 0, 0));
   Pose3 Tb1(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
-  Pose3 Tb2(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
+  Pose3 Tb2(Rot3(1, 0, 0, 0, -1, 0, 0, 0, -1), Point3(-4, 6, 10));
   Pose3 Tc1(Rot3(0, 0, -1, 0, 1, 0, 1, 0, 0), Point3(0, 6, -12));
-  Pose3 Tc2(Rot3(0, 0, -1, 0, 1, 0, -1, 0, 0), Point3(0, 6, 12));
+  Pose3 Tc2(Rot3(0, 0, -1, 0, -1, 0, -1, 0, 0), Point3(0, 6, 12));
 
   EXPECT(assert_equal(Tc1, cSb.transformFrom(Tb1)));
   EXPECT(assert_equal(Tc2, cSb.transformFrom(Tb2)));
@@ -350,11 +350,11 @@ TEST(Similarity3, AlignPose3) {
 
   // Create source poses
   Pose3 Ta1(Rot3(), Point3(0, 0, 0));
-  Pose3 Ta2(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, 1), Point3(4, 0, 0));
+  Pose3 Ta2(Rot3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Point3(4, 0, 0));
 
   // Create destination poses
   Pose3 Tb1(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
-  Pose3 Tb2(Rot3(1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(-4, 6, 10));
+  Pose3 Tb2(Rot3(1, 0, 0, 0, -1, 0, 0, 0, -1), Point3(-4, 6, 10));
 
   Pose3Pair bTa1(make_pair(Tb1, Ta1));
   Pose3Pair bTa2(make_pair(Tb2, Ta2));
