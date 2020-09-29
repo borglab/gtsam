@@ -121,23 +121,23 @@ Point2 Cal3Bundler::calibrate(const Point2& pi,
     throw std::runtime_error(
         "Cal3Bundler::calibrate fails to converge. need a better initialization");
 
-  x = invKPi.x(), y = invKPi.y();
-  const double xx = x * x, yy = y * y;
-  const double rr = xx + yy;
-  const double g = (1 + k1_ * rr + k2_ * rr * rr);
-  const double inv_f = 1 / f_, inv_g = 1 / g;
+  // We make use of the Implicit Function Theorem to compute the Jacobians from uncalibrate
+  // Given f(pi, pn) = uncalibrate(pn) - pi, and g(pi) = calibrate, we can easily compute the Jacobians
+  // df/pi = -I (pn and pi are independent args)
+  // Dcal = -inv(H_uncal_pn) * df/pi = -inv(H_uncal_pn) * (-I) = inv(H_uncal_pn)
+  // Dp = -inv(H_uncal_pn) * df/K = -inv(H_uncal_pn) * H_uncal_K
+  Matrix H_uncal_K, H_uncal_pn;
 
-  // Approximate the jacobians via a single iteration of g.
-  if (Dcal) {
-    *Dcal << -inv_f * x, -x * inv_g * rr, -x * inv_g * rr * rr, -inv_f * y,
-        -y * inv_g * rr, -y * inv_g * rr * rr;
+  if (Dcal || Dp) {
+    // Compute uncalibrate Jacobians
+    uncalibrate(pn, H_uncal_K, H_uncal_pn);
+  }
+
+  if (Dcal) { 
+    *Dcal = -H_uncal_pn.inverse() * H_uncal_K;
   }
   if (Dp) {
-    const double dg_du = (2 * k1_ * x * inv_f) + (4 * k2_ * rr * x * inv_f);
-    const double dg_dv = (2 * k1_ * y * inv_f) + (4 * k2_ * rr * y * inv_f);
-
-    *Dp << (inv_f * inv_g) - (pn.x() * inv_g * dg_du), -pn.x() * inv_g * dg_dv,
-        -pn.y() * inv_g * dg_du, (inv_f * inv_g) - (pn.x() * inv_g * dg_dv);
+    *Dp = H_uncal_pn.inverse();
   }
 
   return pn;
