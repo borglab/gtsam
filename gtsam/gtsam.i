@@ -1053,6 +1053,7 @@ class Cal3_S2Stereo {
 class Cal3Bundler {
   // Standard Constructors
   Cal3Bundler();
+  Cal3Bundler(double fx, double k1, double k2, double u0, double v0);
   Cal3Bundler(double fx, double k1, double k2, double u0, double v0, double tol);
 
   // Testable
