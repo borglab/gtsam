@@ -126,20 +126,17 @@ Point2 Cal3Bundler::calibrate(const Point2& pi,
   // df/pi = -I (pn and pi are independent args)
   // Dcal = -inv(H_uncal_pn) * df/pi = -inv(H_uncal_pn) * (-I) = inv(H_uncal_pn)
   // Dp = -inv(H_uncal_pn) * df/K = -inv(H_uncal_pn) * H_uncal_K
-  Matrix H_uncal_K, H_uncal_pn;
+  Matrix23 H_uncal_K;
+  Matrix22 H_uncal_pn;
 
   if (Dcal || Dp) {
     // Compute uncalibrate Jacobians
-    uncalibrate(pn, H_uncal_K, H_uncal_pn);
-  }
+    uncalibrate(pn, Dcal ? &H_uncal_K : nullptr, H_uncal_pn);
 
-  if (Dcal) { 
-    *Dcal = -H_uncal_pn.inverse() * H_uncal_K;
-  }
-  if (Dp) {
-    *Dp = H_uncal_pn.inverse();
-  }
+    if (Dp) *Dp = H_uncal_pn.inverse();
+    if (Dcal) *Dcal = -H_uncal_pn.inverse() * H_uncal_K;
 
+  }
   return pn;
 }
 
