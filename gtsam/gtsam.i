@@ -2462,6 +2462,8 @@ class ISAM2Result {
   size_t getVariablesRelinearized() const;
   size_t getVariablesReeliminated() const;
   size_t getCliques() const;
+  double getErrorBefore() const;
+  double getErrorAfter() const;
 };
 
 class ISAM2 {
