@@ -52,11 +52,13 @@ TEST( Cal3Bundler, calibrate )
   Point2 pn(0.5, 0.5);
   Point2 pi = K.uncalibrate(pn);
   Point2 pn_hat = K.calibrate(pi);
-  CHECK( traits<Point2>::Equals(pn, pn_hat, 1e-5));
+  CHECK(traits<Point2>::Equals(pn, pn_hat, 1e-5));
 }
 
 /* ************************************************************************* */
 Point2 uncalibrate_(const Cal3Bundler& k, const Point2& pt) { return k.uncalibrate(pt); }
+
+Point2 calibrate_(const Cal3Bundler& k, const Point2& pt) { return k.calibrate(pt); }
 
 /* ************************************************************************* */
 TEST( Cal3Bundler, Duncalibrate)
@@ -69,11 +71,20 @@ TEST( Cal3Bundler, Duncalibrate)
   Matrix numerical2 = numericalDerivative22(uncalibrate_, K, p);
   CHECK(assert_equal(numerical1,Dcal,1e-7));
   CHECK(assert_equal(numerical2,Dp,1e-7));
-  CHECK(assert_equal(numerical1,K.D2d_calibration(p),1e-7));
-  CHECK(assert_equal(numerical2,K.D2d_intrinsic(p),1e-7));
-  Matrix Dcombined(2,5);
-  Dcombined << Dp, Dcal;
-  CHECK(assert_equal(Dcombined,K.D2d_intrinsic_calibration(p),1e-7));
+}
+
+/* ************************************************************************* */
+TEST( Cal3Bundler, Dcalibrate)
+{
+  Matrix Dcal, Dp;
+  Point2 pn(0.5, 0.5);
+  Point2 pi = K.uncalibrate(pn);
+  Point2 actual = K.calibrate(pi, Dcal, Dp);
+  CHECK(assert_equal(pn, actual, 1e-7));
+  Matrix numerical1 = numericalDerivative21(calibrate_, K, pi);
+  Matrix numerical2 = numericalDerivative22(calibrate_, K, pi);
+  CHECK(assert_equal(numerical1,Dcal,1e-5));
+  CHECK(assert_equal(numerical2,Dp,1e-5));
 }
 
 /* ************************************************************************* */
