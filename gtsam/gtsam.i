@@ -1201,7 +1201,7 @@ typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
 //TODO (Issue 237) due to lack of jacobians of Cal3DS2_Base::calibrate, PinholeCamera does not apply to Cal3DS2/Unified
 //typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
 //typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
-//typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
+typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
 
 #include <gtsam/geometry/StereoCamera.h>
 class StereoCamera {
@@ -2862,8 +2862,7 @@ class SfmTrack {
 class SfmData {
   size_t number_cameras() const;
   size_t number_tracks() const;
-  //TODO(Varun) Need to fix issue #237 first before this can work
-  // gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
+  gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
   gtsam::SfmTrack track(size_t idx) const;
 };
 
