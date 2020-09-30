@@ -25,7 +25,7 @@
  * Read 3D dataset sphere25000.txt and output to shonan.g2o (default)
  * ./ShonanAveragingCLI -i spere2500.txt
  *
- * If you prefer using a robust Huber loss, you can add the option "-h true", for instance"
+ * If you prefer using a robust Huber loss, you can add the option "-h true", for instance
  * ./ShonanAveragingCLI -i spere2500.txt -u true
  */
 
