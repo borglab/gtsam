@@ -132,9 +132,7 @@ public:
    * Apply this pose's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a body-fixed velocity, transforming it to the spatial frame
    * \f$ \xi^s = g*\xi^b*g^{-1} = Ad_g * \xi^b \f$
    */
-  Vector6 Adjoint(const Vector6& xi_b) const {
-    return AdjointMap() * xi_b;
-  } /// FIXME Not tested - marked as incorrect
+  Vector6 Adjoint(const Vector6& xi_b) const;
 
   /**
    * Compute the [ad(w,v)] operator as defined in [Kobilarov09siggraph], pg 11

@@ -52,14 +52,35 @@ Pose3 Pose3::inverse() const {
 }
 
 /* ************************************************************************* */
-// Calculate Adjoint map
-// Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
 Matrix6 Pose3::AdjointMap() const {
-  const Matrix3 R = R_.matrix();
-  Matrix3 A = skewSymmetric(t_.x(), t_.y(), t_.z()) * R;
+  const Matrix3 R = R_.matrix(), T = skewSymmetric(t_);
   Matrix6 adj;
-  adj << R, Z_3x3, A, R;
+  adj << R, Z_3x3, T * R, R;
   return adj;
+}
+
+/* ************************************************************************* */
+Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_pose,
+                       OptionalJacobian<6, 6> H_xi) const {
+  Vector6 result;
+  auto omega_b = xi_b.head<3>();
+  Matrix3 H1, H2;
+  auto omega_w = R_.rotate(omega_b, H_pose ? H1 : nullptr);
+  auto v_b = xi_b.tail<3>();
+  const Matrix3 T = skewSymmetric(t_);
+  result << omega_w, T * omega_w + R_.rotate(v_b, H_pose ? H2 : nullptr);
+  if (H_pose) {
+    // 6*6 matrix, 3 first columns are wrpt R_, 3 last columns wrpt t_
+    H_pose->topRows<3>() << H1, Z_3x3;
+    H_pose->bottomRows<3>() << T * H1 + H2, skewSymmetric(-omega_w);
+  }
+  if (H_xi) {
+    // This is just the 6*6 AdjointMap matrix, but since we already have some
+    // components of it we recompose it here.
+    const Matrix3 R = R_.matrix();
+    H_xi << R, Z_3x3, T * R, R;
+  }
+  return result;
 }
 
 /* ************************************************************************* */
