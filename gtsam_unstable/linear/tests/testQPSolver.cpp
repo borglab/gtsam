@@ -157,21 +157,21 @@ TEST(QPSolver, iterate) {
   currentSolution.insert(X(1), Z_1x1);
   currentSolution.insert(X(2), Z_1x1);
 
-  std::vector<VectorValues> expecteds(4), expectedDuals(4);
-  expecteds[0].insert(X(1), kZero);
-  expecteds[0].insert(X(2), kZero);
+  std::vector<VectorValues> expected(4), expectedDuals(4);
+  expected[0].insert(X(1), kZero);
+  expected[0].insert(X(2), kZero);
   expectedDuals[0].insert(1, (Vector(1) << 3).finished());
   expectedDuals[0].insert(2, kZero);
 
-  expecteds[1].insert(X(1), (Vector(1) << 1.5).finished());
-  expecteds[1].insert(X(2), kZero);
+  expected[1].insert(X(1), (Vector(1) << 1.5).finished());
+  expected[1].insert(X(2), kZero);
   expectedDuals[1].insert(3, (Vector(1) << 1.5).finished());
 
-  expecteds[2].insert(X(1), (Vector(1) << 1.5).finished());
-  expecteds[2].insert(X(2), (Vector(1) << 0.75).finished());
+  expected[2].insert(X(1), (Vector(1) << 1.5).finished());
+  expected[2].insert(X(2), (Vector(1) << 0.75).finished());
 
-  expecteds[3].insert(X(1), (Vector(1) << 1.5).finished());
-  expecteds[3].insert(X(2), (Vector(1) << 0.5).finished());
+  expected[3].insert(X(1), (Vector(1) << 1.5).finished());
+  expected[3].insert(X(2), (Vector(1) << 0.5).finished());
 
   auto workingSet =
       solver.identifyActiveConstraints(qp.inequalities, currentSolution);
@@ -186,12 +186,12 @@ TEST(QPSolver, iterate) {
     // Forst10book do not follow exactly what we implemented from Nocedal06book.
     // Specifically, we do not re-identify active constraints and
     // do not recompute dual variables after every step!!!
-    //    CHECK(assert_equal(expecteds[it], state.values, 1e-10));
+    //    CHECK(assert_equal(expected[it], state.values, 1e-10));
     //    CHECK(assert_equal(expectedDuals[it], state.duals, 1e-10));
     it++;
   }
 
-  CHECK(assert_equal(expecteds[3], state.values, 1e-10));
+  CHECK(assert_equal(expected[3], state.values, 1e-10));
 }
 
 /* ************************************************************************* */
