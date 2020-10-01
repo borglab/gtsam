@@ -25,13 +25,13 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Cal3Bundler::Cal3Bundler() :
-    f_(1), k1_(0), k2_(0), u0_(0), v0_(0) {
+    f_(1), k1_(0), k2_(0), u0_(0), v0_(0), tol_(1e-5) {
 }
 
 /* ************************************************************************* */
-Cal3Bundler::Cal3Bundler(double f, double k1, double k2, double u0, double v0) :
-    f_(f), k1_(k1), k2_(k2), u0_(u0), v0_(v0) {
-}
+Cal3Bundler::Cal3Bundler(double f, double k1, double k2, double u0, double v0,
+                         double tol)
+    : f_(f), k1_(k1), k2_(k2), u0_(u0), v0_(v0), tol_(tol) {}
 
 /* ************************************************************************* */
 Matrix3 Cal3Bundler::K() const {
@@ -94,21 +94,24 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p, //
 }
 
 /* ************************************************************************* */
-Point2 Cal3Bundler::calibrate(const Point2& pi, const double tol) const {
+Point2 Cal3Bundler::calibrate(const Point2& pi,
+                              OptionalJacobian<2, 3> Dcal,
+                              OptionalJacobian<2, 2> Dp) const {
   // Copied from Cal3DS2 :-(
   // but specialized with k1,k2 non-zero only and fx=fy and s=0
-  const Point2 invKPi((pi.x() - u0_)/f_, (pi.y() - v0_)/f_);
+  double x = (pi.x() - u0_)/f_, y = (pi.y() - v0_)/f_;
+  const Point2 invKPi(x, y);
 
   // initialize by ignoring the distortion at all, might be problematic for pixels around boundary
-  Point2 pn = invKPi;
+  Point2 pn(x, y);
 
   // iterate until the uncalibrate is close to the actual pixel coordinate
   const int maxIterations = 10;
   int iteration;
   for (iteration = 0; iteration < maxIterations; ++iteration) {
-    if (distance2(uncalibrate(pn), pi) <= tol)
+    if (distance2(uncalibrate(pn), pi) <= tol_)
       break;
-    const double x = pn.x(), y = pn.y(), xx = x * x, yy = y * y;
+    const double px = pn.x(), py = pn.y(), xx = px * px, yy = py * py;
     const double rr = xx + yy;
     const double g = (1 + k1_ * rr + k2_ * rr * rr);
     pn = invKPi / g;
@@ -117,6 +120,25 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, const double tol) const {
   if (iteration >= maxIterations)
     throw std::runtime_error(
         "Cal3Bundler::calibrate fails to converge. need a better initialization");
+
+  // We make use of the Implicit Function Theorem to compute the Jacobians from uncalibrate
+  // Given f(pi, pn) = uncalibrate(pn) - pi, and g(pi) = calibrate, we can easily compute the Jacobians
+  // df/pi = -I (pn and pi are independent args)
+  // Dcal = -inv(H_uncal_pn) * df/pi = -inv(H_uncal_pn) * (-I) = inv(H_uncal_pn)
+  // Dp = -inv(H_uncal_pn) * df/K = -inv(H_uncal_pn) * H_uncal_K
+  Matrix23 H_uncal_K;
+  Matrix22 H_uncal_pn, H_uncal_pn_inv;
+
+  if (Dcal || Dp) {
+    // Compute uncalibrate Jacobians
+    uncalibrate(pn, Dcal ? &H_uncal_K : nullptr, H_uncal_pn);
+
+    H_uncal_pn_inv = H_uncal_pn.inverse();
+
+    if (Dp) *Dp = H_uncal_pn_inv;
+    if (Dcal) *Dcal = -H_uncal_pn_inv * H_uncal_K;
+
+  }
 
   return pn;
 }

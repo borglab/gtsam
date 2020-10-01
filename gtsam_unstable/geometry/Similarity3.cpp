@@ -23,10 +23,14 @@
 
 namespace gtsam {
 
+using std::vector;
+using PointPairs = vector<Point3Pair>;
+
 namespace {
 /// Subtract centroids from point pairs.
-static std::vector<Point3Pair> subtractCentroids(const std::vector<Point3Pair>& abPointPairs, const Point3Pair& centroids) {
-  std::vector<Point3Pair> d_abPointPairs;
+static PointPairs subtractCentroids(const PointPairs &abPointPairs,
+                                    const Point3Pair &centroids) {
+  PointPairs d_abPointPairs;
   for (const Point3Pair& abPair : abPointPairs) {
     Point3 da = abPair.first - centroids.first;
     Point3 db = abPair.second - centroids.second;
@@ -36,7 +40,8 @@ static std::vector<Point3Pair> subtractCentroids(const std::vector<Point3Pair>& 
 }
 
 /// Form inner products x and y and calculate scale.
-static const double calculateScale(const std::vector<Point3Pair>& d_abPointPairs, const Rot3& aRb) {
+static const double calculateScale(const PointPairs &d_abPointPairs,
+                                   const Rot3 &aRb) {
   double x = 0, y = 0;
   Point3 da, db;
   for (const Point3Pair& d_abPair : d_abPointPairs) {
@@ -50,7 +55,7 @@ static const double calculateScale(const std::vector<Point3Pair>& d_abPointPairs
 }
 
 /// Form outer product H.
-static Matrix3 calculateH(const std::vector<Point3Pair>& d_abPointPairs) {
+static Matrix3 calculateH(const PointPairs &d_abPointPairs) {
   Matrix3 H = Z_3x3;
   for (const Point3Pair& d_abPair : d_abPointPairs) {
     H += d_abPair.first * d_abPair.second.transpose();
@@ -59,7 +64,8 @@ static Matrix3 calculateH(const std::vector<Point3Pair>& d_abPointPairs) {
 }
 
 /// This method estimates the similarity transform from differences point pairs, given a known or estimated rotation and point centroids.
-static Similarity3 align(const std::vector<Point3Pair>& d_abPointPairs, const Rot3& aRb, const Point3Pair& centroids) {
+static Similarity3 align(const PointPairs &d_abPointPairs, const Rot3 &aRb,
+                         const Point3Pair &centroids) {
   const double s = calculateScale(d_abPointPairs, aRb);
   const Point3 aTb = (centroids.first - s * (aRb * centroids.second)) / s;
   return Similarity3(aRb, aTb, s);
@@ -67,8 +73,9 @@ static Similarity3 align(const std::vector<Point3Pair>& d_abPointPairs, const Ro
 
 /// This method estimates the similarity transform from point pairs, given a known or estimated rotation.
 // Refer to: http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf Chapter 3
-static Similarity3 alignGivenR(const std::vector<Point3Pair>& abPointPairs, const Rot3& aRb) {
-  auto centroids = mean(abPointPairs);
+static Similarity3 alignGivenR(const PointPairs &abPointPairs,
+                               const Rot3 &aRb) {
+  auto centroids = means(abPointPairs);
   auto d_abPointPairs = subtractCentroids(abPointPairs, centroids);
   return align(d_abPointPairs, aRb, centroids);
 }
@@ -147,10 +154,12 @@ Point3 Similarity3::operator*(const Point3& p) const {
   return transformFrom(p);
 }
 
-Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
-  // Refer to: http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf Chapter 3
-  if (abPointPairs.size() < 3) throw std::runtime_error("input should have at least 3 pairs of points");
-  auto centroids = mean(abPointPairs);
+Similarity3 Similarity3::Align(const PointPairs &abPointPairs) {
+  // Refer to Chapter 3 of
+  // http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
+  if (abPointPairs.size() < 3)
+    throw std::runtime_error("input should have at least 3 pairs of points");
+  auto centroids = means(abPointPairs);
   auto d_abPointPairs = subtractCentroids(abPointPairs, centroids);
   Matrix3 H = calculateH(d_abPointPairs);
   // ClosestTo finds rotation matrix closest to H in Frobenius sense
@@ -158,17 +167,18 @@ Similarity3 Similarity3::Align(const std::vector<Point3Pair>& abPointPairs) {
   return align(d_abPointPairs, aRb, centroids);
 }
 
-Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
+Similarity3 Similarity3::Align(const vector<Pose3Pair> &abPosePairs) {
   const size_t n = abPosePairs.size();
-  if (n < 2) throw std::runtime_error("input should have at least 2 pairs of poses");
+  if (n < 2)
+    throw std::runtime_error("input should have at least 2 pairs of poses");
 
   // calculate rotation
   vector<Rot3> rotations;
-  vector<Point3Pair> abPointPairs;
+  PointPairs abPointPairs;
   rotations.reserve(n);
   abPointPairs.reserve(n);
   Pose3 wTa, wTb;
-  for (const Pose3Pair& abPair : abPosePairs) {
+  for (const Pose3Pair &abPair : abPosePairs) {
     std::tie(wTa, wTb) = abPair;
     rotations.emplace_back(wTa.rotation().compose(wTb.rotation().inverse()));
     abPointPairs.emplace_back(wTa.translation(), wTb.translation());
@@ -178,7 +188,7 @@ Similarity3 Similarity3::Align(const std::vector<Pose3Pair>& abPosePairs) {
   return alignGivenR(abPointPairs, aRb);
 }
 
-Matrix4 Similarity3::wedge(const Vector7& xi) {
+Matrix4 Similarity3::wedge(const Vector7 &xi) {
   // http://www.ethaneade.org/latex2html/lie/node29.html
   const auto w = xi.head<3>();
   const auto u = xi.segment<3>(3);
@@ -217,12 +227,13 @@ Matrix3 Similarity3::GetV(Vector3 w, double lambda) {
     W = 1.0 / 24.0 - theta2 / 720.0;
   }
   const double lambda2 = lambda * lambda, lambda3 = lambda2 * lambda;
+  const double expMinLambda = exp(-lambda);
   double A, alpha = 0.0, beta, mu;
   if (lambda2 > 1e-9) {
-    A = (1.0 - exp(-lambda)) / lambda;
+    A = (1.0 - expMinLambda) / lambda;
     alpha = 1.0 / (1.0 + theta2 / lambda2);
-    beta = (exp(-lambda) - 1 + lambda) / lambda2;
-    mu = (1 - lambda + (0.5 * lambda2) - exp(-lambda)) / lambda3;
+    beta = (expMinLambda - 1 + lambda) / lambda2;
+    mu = (1 - lambda + (0.5 * lambda2) - expMinLambda) / lambda3;
   } else {
     A = 1.0 - lambda / 2.0 + lambda2 / 6.0;
     beta = 0.5 - lambda / 6.0 + lambda2 / 24.0 - lambda3 / 120.0;
