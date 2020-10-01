@@ -67,8 +67,8 @@ GTSAM_EXPORT Point3 mean(const CONTAINER& points) {
   return sum / points.size();
 }
 
-/// mean of Point3 pair 
-GTSAM_EXPORT Point3Pair mean(const std::vector<Point3Pair>& abPointPairs);
+/// mean of Point3 pair
+GTSAM_EXPORT Point3Pair means(const std::vector<Point3Pair> &abPointPairs);
 
 template <typename A1, typename A2>
 struct Range;
