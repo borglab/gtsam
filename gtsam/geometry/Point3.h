@@ -62,6 +62,7 @@ GTSAM_EXPORT double dot(const Point3& p, const Point3& q,
 /// mean
 template <class CONTAINER>
 GTSAM_EXPORT Point3 mean(const CONTAINER& points) {
+  if (points.size() == 0) throw std::invalid_argument("Point3::mean input container is empty");
   Point3 sum(0, 0, 0);
   sum = std::accumulate(points.begin(), points.end(), sum);
   return sum / points.size();

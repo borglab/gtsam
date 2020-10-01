@@ -33,6 +33,7 @@ private:
   double f_; ///< focal length
   double k1_, k2_; ///< radial distortion
   double u0_, v0_; ///< image center, not a parameter to be optimized but a constant
+  double tol_; ///< tolerance value when calibrating
 
 public:
 
@@ -51,8 +52,10 @@ public:
    *  @param k2 second radial distortion coefficient (quartic)
    *  @param u0 optional image center (default 0), considered a constant
    *  @param v0 optional image center (default 0), considered a constant
+   *  @param tol optional calibration tolerance value
    */
-  Cal3Bundler(double f, double k1, double k2, double u0 = 0, double v0 = 0);
+  Cal3Bundler(double f, double k1, double k2, double u0 = 0, double v0 = 0,
+              double tol = 1e-5);
 
   virtual ~Cal3Bundler() {}
 
@@ -117,8 +120,17 @@ public:
   Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal = boost::none,
       OptionalJacobian<2, 2> Dp = boost::none) const;
 
-  /// Convert a pixel coordinate to ideal coordinate
-  Point2 calibrate(const Point2& pi, const double tol = 1e-5) const;
+  /**
+   * Convert a pixel coordinate to ideal coordinate xy
+   * @param p point in image coordinates
+   * @param tol optional tolerance threshold value for iterative minimization
+   * @param Dcal optional 2*3 Jacobian wrpt Cal3Bundler parameters
+   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
+   * @return point in intrinsic coordinates
+   */
+  Point2 calibrate(const Point2& pi,
+                   OptionalJacobian<2, 3> Dcal = boost::none,
+                   OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
   Matrix2 D2d_intrinsic(const Point2& p) const;
@@ -164,6 +176,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(k2_);
     ar & BOOST_SERIALIZATION_NVP(u0_);
     ar & BOOST_SERIALIZATION_NVP(v0_);
+    ar & BOOST_SERIALIZATION_NVP(tol_);
   }
 
   /// @}
