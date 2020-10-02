@@ -15,7 +15,7 @@ Date: September 2020
 """
 
 from collections import defaultdict
-from typing import Tuple, List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -28,59 +28,48 @@ OUTLIER_WEIGHT_THRESHOLD = 0.1
 
 
 def get_data() -> Tuple[gtsam.Values, List[gtsam.BinaryMeasurementUnit3]]:
-    """"Returns global rotations and unit translation directions between 8 cameras 
-    that lie on a circle and face the center. The poses of 8 cameras are obtained from SFMdata 
-    and the unit translations directions between some camera pairs are computed from their 
+    """"Returns global rotations and unit translation directions between 8 cameras
+    that lie on a circle and face the center. The poses of 8 cameras are obtained from SFMdata
+    and the unit translations directions between some camera pairs are computed from their
     global translations. """
     # Using toy dataset in SfMdata for example.
-    wTc = SFMdata.createPoses(gtsam.Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0))
+    wTc_list = SFMdata.createPoses(gtsam.Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0))
     # Rotations of the cameras in the world frame.
     wRc_values = gtsam.Values()
     # Normalized translation directions from camera i to camera j
     # in the coordinate frame of camera i.
     i_iZj_list = []
-    for i in range(0, len(wTc) - 2):
+    for i in range(0, len(wTc_list) - 2):
         # Add the rotation.
-        wRc_values.insert(i, wTc[i].rotation())
+        wRi = wTc_list[i].rotation()
+        wRc_values.insert(i, wRi)
         # Create unit translation measurements with next two poses.
         for j in range(i + 1, i + 3):
-            i_iZj = gtsam.Unit3(wTc[i].rotation().unrotate(
-                wTc[j].translation() - wTc[i].translation()))
+            # Compute the translation from pose i to pose j, in the world reference frame.
+            w_itj = wTc_list[j].translation() - wTc_list[i].translation()
+            # Obtain the translation in the camera i's reference frame.
+            i_itj = wRi.unrotate(w_itj)
+            # Compute the normalized unit translation direction.
+            i_iZj = gtsam.Unit3(i_itj)
             i_iZj_list.append(gtsam.BinaryMeasurementUnit3(
                 i, j, i_iZj, gtsam.noiseModel.Isotropic.Sigma(3, 0.01)))
     # Add the last two rotations.
-    wRc_values.insert(len(wTc) - 1, wTc[-1].rotation())
-    wRc_values.insert(len(wTc) - 2, wTc[-2].rotation())
-    return (wRc_values, i_iZj_list)
+    wRc_values.insert(len(wTc_list) - 1, wTc_list[-1].rotation())
+    wRc_values.insert(len(wTc_list) - 2, wTc_list[-2].rotation())
+    return wRc_values, i_iZj_list
 
 
-def estimate_poses(i_iZj_list: gtsam.BinaryMeasurementsUnit3,
-                   wRc_values: gtsam.Values) -> gtsam.Values:
-    """Estimate poses given rotations and normalized translation directions between cameras.
+def prune_to_inliers(w_iZj_list: gtsam.BinaryMeasurementsUnit3) -> gtsam.BinaryMeasurementsUnit3:
+    """Removes outliers from a list of Unit3 measurements that are the 
+    translation directions from camera i to camera j in the world frame."""
 
-    Args:
-        iZj_list -- List of normalized translation direction measurements between camera pairs, 
-                    Z here refers to measurements. The measurements are of camera j with reference 
-                    to camera i (iZj), in camera i's coordinate frame (i_). iZj represents a unit 
-                    vector to j in i's frame and is not a transformation. 
-        wRc_values -- Rotations of the cameras in the world frame.
+    # Indices of measurements that are to be used as projection directions.
+    # These are randomly chosen. All sampled directions must be unique.
+    num_directions_to_sample = min(
+        MAX_1DSFM_PROJECTION_DIRECTIONS, len(w_iZj_list))
+    sampled_indices = np.random.choice(
+        len(w_iZj_list), num_directions_to_sample, replace=False)
 
-    Returns:
-        Values -- Estimated poses.
-    """
-
-    # Convert the translation direction measurements to world frame using the rotations.
-    w_iZj_list = gtsam.BinaryMeasurementsUnit3()
-    for i_iZj in i_iZj_list:
-        w_iZj = gtsam.Unit3(wRc_values.atRot3(i_iZj.key1())
-                                      .rotate(i_iZj.measured().point3()))
-        w_iZj_list.append(gtsam.BinaryMeasurementUnit3(
-            i_iZj.key1(), i_iZj.key2(), w_iZj, i_iZj.noiseModel()))
-
-    # Indices of measurements that are to be used as projection directions. 
-    # These are randomly chosen.
-    sampled_indices = np.random.choice(len(w_iZj_list), min(
-        MAX_1DSFM_PROJECTION_DIRECTIONS, len(w_iZj_list)), replace=False)
     # Sample projection directions from the measurements.
     projection_directions = [w_iZj_list[idx].measured()
                              for idx in sampled_indices]
@@ -91,8 +80,8 @@ def estimate_poses(i_iZj_list: gtsam.BinaryMeasurementsUnit3,
         algorithm = gtsam.MFAS(w_iZj_list, direction)
         outlier_weights.append(algorithm.computeOutlierWeights())
 
-    # Compute average of outlier weights. Each outlier weight is a map from a pair of Keys 
-    # (camera IDs) to a weight, where weights are proportional to the probability of the edge 
+    # Compute average of outlier weights. Each outlier weight is a map from a pair of Keys
+    # (camera IDs) to a weight, where weights are proportional to the probability of the edge
     # being an outlier.
     avg_outlier_weights = defaultdict(float)
     for outlier_weight_dict in outlier_weights:
@@ -101,8 +90,37 @@ def estimate_poses(i_iZj_list: gtsam.BinaryMeasurementsUnit3,
 
     # Remove w_relative_tranlsations that have weight greater than threshold, these are outliers.
     w_iZj_inliers = gtsam.BinaryMeasurementsUnit3()
-    [w_iZj_inliers.append(Z) for Z in w_iZj_list
-        if avg_outlier_weights[(Z.key1(), Z.key2())] < OUTLIER_WEIGHT_THRESHOLD]
+    [w_iZj_inliers.append(Z) for Z in w_iZj_list if avg_outlier_weights[(
+        Z.key1(), Z.key2())] < OUTLIER_WEIGHT_THRESHOLD]
+
+    return w_iZj_inliers
+
+
+def estimate_poses(i_iZj_list: gtsam.BinaryMeasurementsUnit3,
+                   wRc_values: gtsam.Values) -> gtsam.Values:
+    """Estimate poses given rotations and normalized translation directions between cameras.
+
+    Args:
+        i_iZj_list: List of normalized translation direction measurements between camera pairs, 
+                    Z here refers to measurements. The measurements are of camera j with reference 
+                    to camera i (iZj), in camera i's coordinate frame (i_). iZj represents a unit 
+                    vector to j in i's frame and is not a transformation. 
+        wRc_values: Rotations of the cameras in the world frame.
+
+    Returns:
+        Values: Estimated poses.
+    """
+
+    # Convert the translation direction measurements to world frame using the rotations.
+    w_iZj_list = gtsam.BinaryMeasurementsUnit3()
+    for i_iZj in i_iZj_list:
+        w_iZj = gtsam.Unit3(wRc_values.atRot3(i_iZj.key1())
+                                      .rotate(i_iZj.measured().point3()))
+        w_iZj_list.append(gtsam.BinaryMeasurementUnit3(
+            i_iZj.key1(), i_iZj.key2(), w_iZj, i_iZj.noiseModel()))
+
+    # Remove the outliers in the unit translation directions.
+    w_iZj_inliers = prune_to_inliers(w_iZj_list)
 
     # Run the optimizer to obtain translations for normalized directions.
     wtc_values = gtsam.TranslationRecovery(w_iZj_inliers).run()
@@ -115,8 +133,8 @@ def estimate_poses(i_iZj_list: gtsam.BinaryMeasurementsUnit3,
 
 
 def main():
-    wRc_values, w_iZj_list = get_data()
-    wTc_values = estimate_poses(w_iZj_list, wRc_values)
+    wRc_values, i_iZj_list = get_data()
+    wTc_values = estimate_poses(i_iZj_list, wRc_values)
     print("**** Translation averaging output ****")
     print(wTc_values)
     print("**************************************")
