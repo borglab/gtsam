@@ -17,11 +17,13 @@
  * @author Ivan Dario Jimenez
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/linear/QPSParser.h>
 #include <gtsam_unstable/linear/QPSolver.h>
+
+#include <gtsam/base/Testable.h>
+#include <gtsam/inference/Symbol.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;

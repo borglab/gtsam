@@ -16,9 +16,9 @@
  * @author Duy-Nguyen Ta
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <boost/foreach.hpp>
-#include <boost/range/adaptor/map.hpp>
+#include <gtsam_unstable/linear/LPInitSolver.h>
+#include <gtsam_unstable/linear/LPSolver.h>
+
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/inference/Symbol.h>
@@ -28,8 +28,10 @@
 #include <gtsam_unstable/linear/InequalityFactorGraph.h>
 #include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 
-#include <gtsam_unstable/linear/LPInitSolver.h>
-#include <gtsam_unstable/linear/LPSolver.h>
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/foreach.hpp>
+#include <boost/range/adaptor/map.hpp>
 
 using namespace std;
 using namespace gtsam;
