@@ -90,7 +90,7 @@ def prune_to_inliers(w_iZj_list: gtsam.BinaryMeasurementsUnit3) -> gtsam.BinaryM
 
     # Remove w_iZj that have weight greater than threshold, these are outliers.
     w_iZj_inliers = gtsam.BinaryMeasurementsUnit3()
-    [w_iZj_inliers.append(Z) for w_iZj in w_iZj_list if avg_outlier_weights[(
+    [w_iZj_inliers.append(w_iZj) for w_iZj in w_iZj_list if avg_outlier_weights[(
         w_iZj.key1(), w_iZj.key2())] < OUTLIER_WEIGHT_THRESHOLD]
 
     return w_iZj_inliers
