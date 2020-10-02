@@ -166,22 +166,22 @@ TEST (Point3, normalize) {
 
 //*************************************************************************
 TEST(Point3, mean) {
-  Point3 expected_a_mean(2, 2, 2);
+  Point3 expected(2, 2, 2);
   Point3 a1(0, 0, 0), a2(1, 2, 3), a3(5, 4, 3);
   std::vector<Point3> a_points{a1, a2, a3};
-  Point3 actual_a_mean = mean(a_points);
-  EXPECT(assert_equal(expected_a_mean, actual_a_mean));
+  Point3 actual = mean(a_points);
+  EXPECT(assert_equal(expected, actual));
 }
 
 TEST(Point3, mean_pair) {
   Point3 a_mean(2, 2, 2), b_mean(-1, 1, 0);
-  Point3Pair expected_mean = std::make_pair(a_mean, b_mean);
+  Point3Pair expected = std::make_pair(a_mean, b_mean);
   Point3 a1(0, 0, 0), a2(1, 2, 3), a3(5, 4, 3);
   Point3 b1(-1, 0, 0), b2(-2, 4, 0), b3(0, -1, 0);
-  std::vector<Point3Pair> point_pairs{{a1,b1},{a2,b2},{a3,b3}};
-  Point3Pair actual_mean = mean(point_pairs);
-  EXPECT(assert_equal(expected_mean.first, actual_mean.first));
-  EXPECT(assert_equal(expected_mean.second, actual_mean.second));
+  std::vector<Point3Pair> point_pairs{{a1, b1}, {a2, b2}, {a3, b3}};
+  Point3Pair actual = means(point_pairs);
+  EXPECT(assert_equal(expected.first, actual.first));
+  EXPECT(assert_equal(expected.second, actual.second));
 }
 
 //*************************************************************************

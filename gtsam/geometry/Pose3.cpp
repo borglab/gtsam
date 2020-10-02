@@ -24,9 +24,10 @@
 #include <limits>
 #include <string>
 
-using namespace std;
-
 namespace gtsam {
+
+using std::vector;
+using Point3Pairs = vector<Point3Pair>;
 
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose3);
@@ -212,18 +213,20 @@ Matrix3 Pose3::ComputeQforExpmapDerivative(const Vector6& xi, double nearZeroThr
 #else
   // The closed-form formula in Barfoot14tro eq. (102)
   double phi = w.norm();
-  if (std::abs(phi)>nearZeroThreshold) {
-    const double sinPhi = sin(phi), cosPhi = cos(phi);
-    const double phi2 = phi * phi, phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
+  const Matrix3 WVW = W * V * W;
+  if (std::abs(phi) > nearZeroThreshold) {
+    const double s = sin(phi), c = cos(phi);
+    const double phi2 = phi * phi, phi3 = phi2 * phi, phi4 = phi3 * phi,
+                 phi5 = phi4 * phi;
     // Invert the sign of odd-order terms to have the right Jacobian
-    Q = -0.5*V + (phi-sinPhi)/phi3*(W*V + V*W - W*V*W)
-            + (1-phi2/2-cosPhi)/phi4*(W*W*V + V*W*W - 3*W*V*W)
-            - 0.5*((1-phi2/2-cosPhi)/phi4 - 3*(phi-sinPhi-phi3/6.)/phi5)*(W*V*W*W + W*W*V*W);
-  }
-  else {
-    Q = -0.5*V + 1./6.*(W*V + V*W - W*V*W)
-        - 1./24.*(W*W*V + V*W*W - 3*W*V*W)
-        + 1./120.*(W*V*W*W + W*W*V*W);
+    Q = -0.5 * V + (phi - s) / phi3 * (W * V + V * W - WVW) +
+        (1 - phi2 / 2 - c) / phi4 * (W * W * V + V * W * W - 3 * WVW) -
+        0.5 * ((1 - phi2 / 2 - c) / phi4 - 3 * (phi - s - phi3 / 6.) / phi5) *
+            (WVW * W + W * WVW);
+  } else {
+    Q = -0.5 * V + 1. / 6. * (W * V + V * W - WVW) -
+        1. / 24. * (W * W * V + V * W * W - 3 * WVW) +
+        1. / 120. * (WVW * W + W * WVW);
   }
 #endif
 
@@ -381,39 +384,33 @@ Unit3 Pose3::bearing(const Pose3& pose, OptionalJacobian<2, 6> Hself,
 }
 
 /* ************************************************************************* */
-boost::optional<Pose3> Pose3::Align(const std::vector<Point3Pair>& abPointPairs) {
+boost::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
   const size_t n = abPointPairs.size();
-  if (n < 3)
-    return boost::none;  // we need at least three pairs
+  if (n < 3) {
+    return boost::none; // we need at least three pairs
+  }
 
   // calculate centroids
-  Point3 aCentroid(0,0,0), bCentroid(0,0,0);
-  for(const Point3Pair& abPair: abPointPairs) {
-    aCentroid += abPair.first;
-    bCentroid += abPair.second;
-  }
-  double f = 1.0 / n;
-  aCentroid *= f;
-  bCentroid *= f;
+  const auto centroids = means(abPointPairs);
 
   // Add to form H matrix
   Matrix3 H = Z_3x3;
-  for(const Point3Pair& abPair: abPointPairs) {
-    Point3 da = abPair.first - aCentroid;
-    Point3 db = abPair.second - bCentroid;
+  for (const Point3Pair &abPair : abPointPairs) {
+    const Point3 da = abPair.first - centroids.first;
+    const Point3 db = abPair.second - centroids.second;
     H += da * db.transpose();
-    }
+  }
 
   // ClosestTo finds rotation matrix closest to H in Frobenius sense
-  Rot3 aRb = Rot3::ClosestTo(H);
-  Point3 aTb = Point3(aCentroid) - aRb * Point3(bCentroid);
+  const Rot3 aRb = Rot3::ClosestTo(H);
+  const Point3 aTb = centroids.first - aRb * centroids.second;
   return Pose3(aRb, aTb);
 }
 
-boost::optional<Pose3> align(const vector<Point3Pair>& baPointPairs) {
-  vector<Point3Pair> abPointPairs;
-  for (const Point3Pair& baPair: baPointPairs) {
-    abPointPairs.push_back(make_pair(baPair.second, baPair.first));
+boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
+  Point3Pairs abPointPairs;
+  for (const Point3Pair &baPair : baPointPairs) {
+    abPointPairs.emplace_back(baPair.second, baPair.first);
   }
   return Pose3::Align(abPointPairs);
 }
