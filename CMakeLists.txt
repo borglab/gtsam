@@ -118,15 +118,15 @@ if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT BUILD_SHARED_LIBS)
 endif()
 
 if(GTSAM_BUILD_PYTHON)
-    # Get info about the Python3 interpreter
-    # https://cmake.org/cmake/help/latest/module/FindPython3.html#module:FindPython3
-    find_package(Python3 COMPONENTS Interpreter Development)
-
-    if(NOT ${Python3_FOUND})
-        message(FATAL_ERROR "Cannot find Python3 interpreter. Please install Python >= 3.6.")
-    endif()
-
     if(${GTSAM_PYTHON_VERSION} STREQUAL "Default")
+        # Get info about the Python3 interpreter
+        # https://cmake.org/cmake/help/latest/module/FindPython3.html#module:FindPython3
+        find_package(Python3 COMPONENTS Interpreter Development)
+
+        if(NOT ${Python3_FOUND})
+            message(FATAL_ERROR "Cannot find Python3 interpreter. Please install Python >= 3.6.")
+        endif()
+
         set(GTSAM_PYTHON_VERSION "${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}"
                 CACHE
                 STRING
