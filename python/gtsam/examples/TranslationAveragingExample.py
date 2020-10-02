@@ -32,8 +32,8 @@ def get_data() -> Tuple[gtsam.Values, List[gtsam.BinaryMeasurementUnit3]]:
     that lie on a circle and face the center. The poses of 8 cameras are obtained from SFMdata
     and the unit translations directions between some camera pairs are computed from their
     global translations. """
-    # Using toy dataset in SfMdata for example.
-    wTc_list = SFMdata.createPoses(gtsam.Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0))
+    fx, fy, s, u0, v0 = 50.0, 50.0, 0.0, 50.0, 50.0
+    wTc_list = SFMdata.createPoses(gtsam.Cal3_S2(fx, fy, s, u0, v0))
     # Rotations of the cameras in the world frame.
     wRc_values = gtsam.Values()
     # Normalized translation directions from camera i to camera j
@@ -88,10 +88,10 @@ def prune_to_inliers(w_iZj_list: gtsam.BinaryMeasurementsUnit3) -> gtsam.BinaryM
         for keypair, weight in outlier_weight_dict.items():
             avg_outlier_weights[keypair] += weight / len(outlier_weights)
 
-    # Remove w_relative_tranlsations that have weight greater than threshold, these are outliers.
+    # Remove w_iZj that have weight greater than threshold, these are outliers.
     w_iZj_inliers = gtsam.BinaryMeasurementsUnit3()
-    [w_iZj_inliers.append(Z) for Z in w_iZj_list if avg_outlier_weights[(
-        Z.key1(), Z.key2())] < OUTLIER_WEIGHT_THRESHOLD]
+    [w_iZj_inliers.append(Z) for w_iZj in w_iZj_list if avg_outlier_weights[(
+        w_iZj.key1(), w_iZj.key2())] < OUTLIER_WEIGHT_THRESHOLD]
 
     return w_iZj_inliers
 
@@ -108,7 +108,7 @@ def estimate_poses(i_iZj_list: gtsam.BinaryMeasurementsUnit3,
         wRc_values: Rotations of the cameras in the world frame.
 
     Returns:
-        Values: Estimated poses.
+        gtsam.Values: Estimated poses.
     """
 
     # Convert the translation direction measurements to world frame using the rotations.
