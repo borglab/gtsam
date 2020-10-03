@@ -6,7 +6,7 @@
  */
 
 #include <gtsam/sfm/MFAS.h>
-#include <iostream>
+
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -39,14 +39,13 @@ map<MFAS::KeyPair, double> getEdgeWeights(const vector<MFAS::KeyPair> &edges,
   for (size_t i = 0; i < edges.size(); i++) {
     edgeWeights[edges[i]] = weights[i];
   }
-  cout << "returning edge weights " << edgeWeights.size() << endl;
   return edgeWeights;
 }
 
 // test the ordering and the outlierWeights function using weights2 - outlier
 // edge is rejected when projected in a direction that gives weights2
 TEST(MFAS, OrderingWeights2) {
-  MFAS mfas_obj(make_shared<vector<Key>>(nodes), getEdgeWeights(edges, weights2));
+  MFAS mfas_obj(getEdgeWeights(edges, weights2));
 
   vector<Key> ordered_nodes = mfas_obj.computeOrdering();
 
@@ -76,7 +75,7 @@ TEST(MFAS, OrderingWeights2) {
 // weights1 (outlier edge is accepted when projected in a direction that
 // produces weights1)
 TEST(MFAS, OrderingWeights1) {
-  MFAS mfas_obj(make_shared<vector<Key>>(nodes), getEdgeWeights(edges, weights1));
+  MFAS mfas_obj(getEdgeWeights(edges, weights1));
 
   vector<Key> ordered_nodes = mfas_obj.computeOrdering();
 

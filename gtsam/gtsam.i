@@ -2885,6 +2885,7 @@ class BinaryMeasurement {
   size_t key1() const;
   size_t key2() const;
   T measured() const;
+  gtsam::noiseModel::Base* noiseModel() const;
 };
 
 typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
@@ -3016,6 +3017,26 @@ class ShonanAveraging3 {
   double cost(const gtsam::Values& values) const;
   gtsam::Values initializeRandomly() const;
   pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p, size_t max_p) const;
+};
+
+#include <gtsam/sfm/MFAS.h>
+
+class KeyPairDoubleMap {
+  KeyPairDoubleMap();
+  KeyPairDoubleMap(const gtsam::KeyPairDoubleMap& other);
+
+  size_t size() const;
+  bool empty() const;
+  void clear();
+  size_t at(const pair<size_t, size_t>& keypair) const;
+};
+
+class MFAS {
+  MFAS(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
+       const gtsam::Unit3& projectionDirection);
+
+  gtsam::KeyPairDoubleMap computeOutlierWeights() const;
+  gtsam::KeyVector computeOrdering() const;
 };
 
 #include <gtsam/sfm/TranslationRecovery.h>
