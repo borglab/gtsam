@@ -12,7 +12,6 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       PYTHON_VERSION: ${{ matrix.python_version }}
-      WRAPPER: ${{ matrix.wrapper }}
     strategy:
       fail-fast: false
       matrix:
@@ -28,7 +27,6 @@ jobs:
 
         build_type: [Debug, Release]
         python_version: [3]
-        wrapper: [pybind]
         include:
           - name: ubuntu-18.04-gcc-5
             os: ubuntu-18.04

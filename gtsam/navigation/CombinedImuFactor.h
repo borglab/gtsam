@@ -145,7 +145,7 @@ public:
   /// @name Constructors
   /// @{
 
-  /// Default constructor only for serialization and Cython wrapper
+  /// Default constructor only for serialization and wrappers
   PreintegratedCombinedMeasurements() {
     preintMeasCov_.setZero();
   }
