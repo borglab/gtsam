@@ -59,7 +59,7 @@ def get_data() -> Tuple[gtsam.Values, List[gtsam.BinaryMeasurementUnit3]]:
     return wRc_values, i_iZj_list
 
 
-def prune_to_inliers(w_iZj_list: gtsam.BinaryMeasurementsUnit3) -> gtsam.BinaryMeasurementsUnit3:
+def filter_outliers(w_iZj_list: gtsam.BinaryMeasurementsUnit3) -> gtsam.BinaryMeasurementsUnit3:
     """Removes outliers from a list of Unit3 measurements that are the 
     translation directions from camera i to camera j in the world frame."""
 
@@ -120,7 +120,7 @@ def estimate_poses(i_iZj_list: gtsam.BinaryMeasurementsUnit3,
             i_iZj.key1(), i_iZj.key2(), w_iZj, i_iZj.noiseModel()))
 
     # Remove the outliers in the unit translation directions.
-    w_iZj_inliers = prune_to_inliers(w_iZj_list)
+    w_iZj_inliers = filter_outliers(w_iZj_list)
 
     # Run the optimizer to obtain translations for normalized directions.
     wtc_values = gtsam.TranslationRecovery(w_iZj_inliers).run()

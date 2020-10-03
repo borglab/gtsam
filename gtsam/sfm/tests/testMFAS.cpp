@@ -9,8 +9,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <iostream>
-
 using namespace std;
 using namespace gtsam;
 

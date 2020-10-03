@@ -7,8 +7,6 @@
 
 #include <gtsam/sfm/MFAS.h>
 
-#include <boost/shared_ptr.hpp>
-
 #include <algorithm>
 #include <map>
 #include <unordered_map>
