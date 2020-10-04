@@ -109,8 +109,34 @@ Rot3 Rot3::RzRyRx(double x, double y, double z, OptionalJacobian<3, 1> Hx,
 }
 
 /* ************************************************************************* */
+Rot3 Rot3::normalize(const Rot3& R) const {
+  /// Implementation from here: https://stackoverflow.com/a/23082112/1236990
+  /// Theory: https://drive.google.com/file/d/0B9rLLz1XQKmaZTlQdV81QjNoZTA/view
+
+  /// Essentially, this computes the orthogonalization error, distributes the
+  /// error to the x and y rows, and then performs a Taylor expansion to
+  /// orthogonalize.
+
+  Matrix3 rot = R.matrix(), rot_new;
+
+  if (std::fabs(rot.determinant()-1) < 1e-12) return R;
+
+  Vector3 x = rot.block<1, 3>(0, 0), y = rot.block<1, 3>(1, 0);
+  double error = x.dot(y);
+
+  Vector3 x_ort = x - (error / 2) * y, y_ort = y - (error / 2) * x;
+  Vector3 z_ort = x_ort.cross(y_ort);
+
+  rot_new.block<1, 3>(0, 0) = 0.5 * (3 - x_ort.dot(x_ort)) * x_ort;
+  rot_new.block<1, 3>(1, 0) = 0.5 * (3 - y_ort.dot(y_ort)) * y_ort;
+  rot_new.block<1, 3>(2, 0) = 0.5 * (3 - z_ort.dot(z_ort)) * z_ort;
+
+  return Rot3(rot_new);
+}
+
+/* ************************************************************************* */
 Rot3 Rot3::operator*(const Rot3& R2) const {
-  return Rot3(rot_*R2.rot_);
+  return normalize(Rot3(rot_*R2.rot_));
 }
 
 /* ************************************************************************* */

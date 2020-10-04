@@ -430,6 +430,13 @@ namespace gtsam {
      */
     Matrix3 transpose() const;
 
+    /**
+     * Normalize rotation so that its determinant is 1.
+     * This means either re-orthogonalizing the Matrix representation or
+     * normalizing the quaternion representation.
+     */
+    Rot3 normalize(const Rot3& R) const;
+
     /// @deprecated, this is base 1, and was just confusing
     Point3 column(int index) const;
 
