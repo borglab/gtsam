@@ -923,7 +923,7 @@ TEST(Rot3, determinant) {
     R_01 = R_w0.between(R_w1);
     R_w2 = R_w1 * R_01;
     R_w0 = R_w1;
-    R_w1 = R_w2;
+    R_w1 = R_w2.normalized();
     actual = R_w2.matrix().determinant();
 
     EXPECT_DOUBLES_EQUAL(expected, actual, 1e-7);

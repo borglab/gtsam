@@ -435,7 +435,7 @@ namespace gtsam {
      * This means either re-orthogonalizing the Matrix representation or
      * normalizing the quaternion representation.
      */
-    Rot3 normalize(const Rot3& R) const;
+    Rot3 normalized() const;
 
     /// @deprecated, this is base 1, and was just confusing
     Point3 column(int index) const;
