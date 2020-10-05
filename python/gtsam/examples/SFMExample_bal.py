@@ -18,7 +18,9 @@ import numpy as np
 
 import gtsam
 from gtsam import (
+    #GeneralSFMFactorCal3Bundler,
     PinholeCameraCal3Bundler,
+    PriorFactorSfmCamera,
     readBal,
     symbol_shorthand
 )
@@ -28,14 +30,10 @@ P = symbol_shorthand.P
 
 import pdb
 
-#include <gtsam/slam/GeneralSFMFactor.h>
-
 # We will be using a projection factor that ties a SFM_Camera to a 3D point.
-# An SFM_Camera is defined in datase.h as a camera with unknown Cal3Bundler calibration
+# An SFM_Camera is defined in dataset.h as a camera with unknown Cal3Bundler calibration
 # and has a total of 9 free parameters
-#typedef GeneralSFMFactor<SfmCamera,Point3> MyFactor;
 
-PinholeCameraCal3Bundler
 def run(args):
     """ Run LM optimization with BAL input data and report resulting error """
     # Find default file, but if an argument is given, try loading a file
@@ -64,17 +62,23 @@ def run(args):
         for m_idx in range(track.number_measurements()):
             # i represents the camera index, and uv is the 2d measurement
             i, uv = track.measurement(m_idx)
-            #graph.emplace_shared<MyFactor>(uv, noise, C(i), P(j)) # note use of shorthand symbols C and P
-            #graph.add
+            # note use of shorthand symbols C and P
+            #graph.add(GeneralSFMFactorCal3Bundler(uv, noise, C(i), P(j)))
         j += 1
     pdb.set_trace()
 
     # # Add a prior on pose x1. This indirectly specifies where the origin is.
     # # and a prior on the position of the first landmark to fix the scale
-    graph.push_back(gtsam.PriorFactorVector(
-            C(0), mydata.camera(0), gtsam.noiseModel.Isotropic.Sigma(9, 0.1)))
-    graph.push_back(gtsam.PriorFactorVector(
-            P(0), mydata.track(0).point3(), gtsam.noiseModel.Isotropic.Sigma(3, 0.1)))
+    graph.push_back(
+        gtsam.PriorFactorSfmCamera(
+            C(0), mydata.camera(0), gtsam.noiseModel.Isotropic.Sigma(9, 0.1)
+        )
+    )
+    graph.push_back(
+        gtsam.PriorFactorPoint3(
+            P(0), mydata.track(0).point3(), gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
+        )
+    )
 
     # # Create initial estimate
     initial = gtsam.Values()
