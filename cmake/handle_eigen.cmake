@@ -1,6 +1,22 @@
 ###############################################################################
 # Option for using system Eigen or GTSAM-bundled Eigen
 
+# Default: Use system Eigen if it's present:
+find_package(Eigen3 QUIET)
+if (Eigen3_FOUND)
+  set(SYS_EIGEN3_DEFAULT_ ON)
+else()
+  set(SYS_EIGEN3_DEFAULT_ OFF)
+endif()
+option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" ${SYS_EIGEN3_DEFAULT_})
+unset(SYS_EIGEN3_DEFAULT_)
+
+if(NOT GTSAM_USE_SYSTEM_EIGEN)
+  # This option only makes sense if using the embedded copy of Eigen, it is
+  # used to decide whether to *install* the "unsupported" module:
+  option(GTSAM_WITH_EIGEN_UNSUPPORTED "Install Eigen's unsupported modules" OFF)
+endif()
+
 # Switch for using system Eigen or GTSAM-bundled Eigen
 if(GTSAM_USE_SYSTEM_EIGEN)
     find_package(Eigen3 REQUIRED)
