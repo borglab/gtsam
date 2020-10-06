@@ -87,6 +87,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Rot3 Rot3::normalized() const {
+    return Rot3(quaternion_.normalized());
+  }
+  /* ************************************************************************* */
   Rot3 Rot3::operator*(const Rot3& R2) const {
     return Rot3(quaternion_ * R2.quaternion_);
   }
