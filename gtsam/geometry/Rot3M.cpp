@@ -111,7 +111,6 @@ Rot3 Rot3::RzRyRx(double x, double y, double z, OptionalJacobian<3, 1> Hx,
 /* ************************************************************************* */
 Rot3 Rot3::normalized() const {
   /// Implementation from here: https://stackoverflow.com/a/23082112/1236990
-  /// Theory: https://drive.google.com/file/d/0B9rLLz1XQKmaZTlQdV81QjNoZTA/view
 
   /// Essentially, this computes the orthogonalization error, distributes the
   /// error to the x and y rows, and then performs a Taylor expansion to
