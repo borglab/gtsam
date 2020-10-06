@@ -263,3 +263,17 @@ function(gtsam_apply_build_flags target_name_)
   target_compile_options(${target_name_} PRIVATE ${GTSAM_COMPILE_OPTIONS_PRIVATE})
 
 endfunction(gtsam_apply_build_flags)
+
+
+if(NOT MSVC AND NOT XCODE_VERSION)
+  # Set the build type to upper case for downstream use
+  string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPER)
+
+  # Set the GTSAM_BUILD_TAG variable.
+  # If build type is Release, set to blank (""), else set to the build type.
+  if(${CMAKE_BUILD_TYPE_UPPER} STREQUAL "RELEASE")
+   set(GTSAM_BUILD_TAG "") # Don't create release mode tag on installed directory
+  else()
+   set(GTSAM_BUILD_TAG "${CMAKE_BUILD_TYPE}")
+  endif()
+endif()
