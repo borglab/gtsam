@@ -1,15 +1,7 @@
 ###############################################################################
 # Option for using system Eigen or GTSAM-bundled Eigen
 
-# Default: Use system Eigen if it's present:
-find_package(Eigen3 QUIET)
-if (Eigen3_FOUND)
-  set(SYS_EIGEN3_DEFAULT_ ON)
-else()
-  set(SYS_EIGEN3_DEFAULT_ OFF)
-endif()
-option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" ${SYS_EIGEN3_DEFAULT_})
-unset(SYS_EIGEN3_DEFAULT_)
+option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
 
 if(NOT GTSAM_USE_SYSTEM_EIGEN)
   # This option only makes sense if using the embedded copy of Eigen, it is
