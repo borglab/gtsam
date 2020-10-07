@@ -40,7 +40,7 @@ PYBIND11_MODULE(geometry_py, m_) {
         .def("vectorConfusion",[](gtsam::Point2* self){return self->vectorConfusion();})
 .def("serialize",
     [](gtsam::Point2* self){
-        return gtsam::serialize(self);
+        return gtsam::serialize(*self);
     }
 )
 .def("deserialize",
@@ -54,7 +54,7 @@ PYBIND11_MODULE(geometry_py, m_) {
         .def("norm",[](gtsam::Point3* self){return self->norm();})
 .def("serialize",
     [](gtsam::Point3* self){
-        return gtsam::serialize(self);
+        return gtsam::serialize(*self);
     }
 )
 .def("deserialize",

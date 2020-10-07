@@ -69,7 +69,7 @@ class PybindWrapper(object):
             return textwrap.dedent('''
                     .def("serialize",
                         []({class_inst} self){{
-                            return gtsam::serialize(self);
+                            return gtsam::serialize(*self);
                         }}
                     )
                     .def("deserialize",
