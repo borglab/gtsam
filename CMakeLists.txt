@@ -38,21 +38,21 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
 
-include(cmake/handle_boost.cmake)            # Boost
-include(cmake/handle_ccache.cmake)           # ccache
-include(cmake/handle_cpack.cmake)            # CPack
-include(cmake/handle_eigen.cmake)            # Eigen3
-include(cmake/handle_general_options.cmake)  # CMake build options
-include(cmake/handle_mkl.cmake)              # MKL
-include(cmake/handle_openmp.cmake)           # OpenMP
-include(cmake/handle_perftools.cmake)        # Google perftools
-include(cmake/handle_python.cmake)           # Python options and commands
-include(cmake/handle_tbb.cmake)              # TBB
-include(cmake/handle_uninstall.cmake)        # for "make uninstall"
+include(cmake/HandleBoost.cmake)            # Boost
+include(cmake/HandleCCache.cmake)           # ccache
+include(cmake/HandleCPack.cmake)            # CPack
+include(cmake/HandleEigen.cmake)            # Eigen3
+include(cmake/HandleGeneralOptions.cmake)  # CMake build options
+include(cmake/HandleMKL.cmake)              # MKL
+include(cmake/HandleOpenMP.cmake)           # OpenMP
+include(cmake/HandlePerfTools.cmake)        # Google perftools
+include(cmake/HandlePython.cmake)           # Python options and commands
+include(cmake/HandleTBB.cmake)              # TBB
+include(cmake/HandleUninstall.cmake)        # for "make uninstall"
 
-include(cmake/handle_allocators.cmake)       # Must be after tbb, pertools
+include(cmake/HandleAllocators.cmake)       # Must be after tbb, pertools
 
-include(cmake/handle_global_build_flags.cmake) # Build flags
+include(cmake/HandleGlobalBuildFlags.cmake) # Build flags
 
 ###############################################################################
 # Add components
@@ -104,10 +104,10 @@ endif()
 add_subdirectory(cmake)
 
 # Print configuration variables
-include(cmake/handle_print_configuration.cmake)
+include(cmake/HandlePrintConfiguration.cmake)
 
 # Print warnings at the end
-include(cmake/handle_final_checks.cmake)
+include(cmake/HandleFinalChecks.cmake)
 
 # Include CPack *after* all flags
 include(CPack)
