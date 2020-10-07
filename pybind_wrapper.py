@@ -74,8 +74,8 @@ class PybindWrapper(object):
                     )
                     .def("deserialize",
                         []({class_inst} self, string serialized){{
-                            return gtsam::deserialize(serialized, self);
-                        }})
+                            gtsam::deserialize(serialized, *self);
+                        }}, py::arg("serialized"))
                     '''.format(class_inst=cpp_class + '*'))
 
         is_method = isinstance(method, instantiator.InstantiatedMethod)
