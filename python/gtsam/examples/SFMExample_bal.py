@@ -19,9 +19,9 @@ import numpy as np
 
 import gtsam
 from gtsam import (
-    GeneralSFMFactorSfmCamera,
-    SfmCamera,
-    PriorFactorSfmCamera,
+    GeneralSFMFactorCal3Bundler,
+    PinholeCameraCal3Bundler,
+    PriorFactorPinholeCameraCal3Bundler,
     readBal,
     symbol_shorthand
 )
@@ -31,10 +31,6 @@ P = symbol_shorthand.P
 
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-
-# We will be using a projection factor that ties a SFM_Camera to a 3D point.
-# An SfmCamera is defined in dataset.h as a pinhole camera with unknown Cal3Bundler calibration
-# and has a total of 9 free parameters
 
 def run(args):
     """ Run LM optimization with BAL input data and report resulting error """
@@ -63,13 +59,13 @@ def run(args):
             # i represents the camera index, and uv is the 2d measurement
             i, uv = track.measurement(m_idx)
             # note use of shorthand symbols C and P
-            graph.add(GeneralSFMFactorSfmCamera(uv, noise, C(i), P(j)))
+            graph.add(GeneralSFMFactorCal3Bundler(uv, noise, C(i), P(j)))
         j += 1
 
     # # Add a prior on pose x1. This indirectly specifies where the origin is.
     # # and a prior on the position of the first landmark to fix the scale
     graph.push_back(
-        gtsam.PriorFactorSfmCamera(
+        gtsam.PriorFactorPinholeCameraCal3Bundler(
             C(0), mydata.camera(0), gtsam.noiseModel.Isotropic.Sigma(9, 0.1)
         )
     )
@@ -83,7 +79,7 @@ def run(args):
     initial = gtsam.Values()
     
     i = 0
-    # add each SfmCamera
+    # add each PinholeCameraCal3Bundler
     for cam_idx in range(mydata.number_cameras()):
         camera = mydata.camera(cam_idx)
         initial.insert(C(i), camera)
