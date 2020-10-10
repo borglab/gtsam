@@ -7,11 +7,12 @@
   See LICENSE for the license information
 
   Solve a structure-from-motion problem from a "Bundle Adjustment in the Large" file
-  Author: John Lambert
+  Author: Frank Dellaert (Python: Akshay Krishan, John Lambert)
 """
 
 import argparse
 import logging
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,7 +29,8 @@ from gtsam import (
 C = symbol_shorthand.C
 P = symbol_shorthand.P
 
-import pdb
+
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 # We will be using a projection factor that ties a SFM_Camera to a 3D point.
 # An SfmCamera is defined in dataset.h as a pinhole camera with unknown Cal3Bundler calibration
@@ -42,7 +44,6 @@ def run(args):
     else:
         input_file = gtsam.findExampleDataFile("dubrovnik-3-7-pre")
 
-    pdb.set_trace()
     # # Load the SfM data from file
     mydata = readBal(input_file)
     logging.info(f"read {mydata.number_tracks()} tracks on {mydata.number_cameras()} cameras\n")
@@ -55,7 +56,6 @@ def run(args):
 
     # Add measurements to the factor graph
     j = 0
-    pdb.set_trace()
     for t_idx in range(mydata.number_tracks()):
         track = mydata.track(t_idx) # SfmTrack
         # retrieve the SfmMeasurement objects
@@ -65,7 +65,6 @@ def run(args):
             # note use of shorthand symbols C and P
             graph.add(GeneralSFMFactorSfmCamera(uv, noise, C(i), P(j)))
         j += 1
-    pdb.set_trace()
 
     # # Add a prior on pose x1. This indirectly specifies where the origin is.
     # # and a prior on the position of the first landmark to fix the scale
