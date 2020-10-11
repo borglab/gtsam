@@ -210,6 +210,7 @@ GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
 
 /// A measurement with its camera index
 typedef std::pair<size_t, Point2> SfmMeasurement;
+typedef std::vector<SfmMeasurement> SfmMeasurements;
 
 /// SfmTrack
 typedef std::pair<size_t, size_t> SiftIndex;
@@ -219,15 +220,16 @@ struct SfmTrack {
   SfmTrack(): p(0,0,0) {}
   Point3 p; ///< 3D position of the point
   float r, g, b; ///< RGB color of the 3D point
-  std::vector<SfmMeasurement> measurements; ///< The 2D image projections (id,(u,v))
+  std::vector<SfmMeasurement> Measurements; ///< The 2D image projections (id,(u,v))
   std::vector<SiftIndex> siftIndices;
+  
   /// Total number of measurements in this track
   size_t number_measurements() const {
-    return measurements.size();
+    return Measurements.size();
   }
   /// Get the measurement (camera index, Point2) at pose index `idx`
   SfmMeasurement measurement(size_t idx) const {
-    return measurements[idx];
+    return Measurements[idx];
   }
   /// Get the SIFT feature index corresponding to the measurement at `idx`
   SiftIndex siftIndex(size_t idx) const {
@@ -236,13 +238,27 @@ struct SfmTrack {
   Point3 point3() const {
     return p;
   }
+  void add_measurement(pair<size_t, gtsam::Point2> m) {
+    Measurements.push_back(m);
+  }
+
+  SfmMeasurements& measurements() {
+    return Measurements;
+  }
+
+  void clear() {
+    Measurements.clear();
+  }
+
 };
+
 
 /// Define the structure for the camera poses
 typedef PinholeCamera<Cal3Bundler> SfmCamera;
 
 /// Define the structure for SfM data
 struct SfmData {
+  std::vector<SfmMeasurement> Measurements;
   std::vector<SfmCamera> cameras; ///< Set of cameras
   std::vector<SfmTrack> tracks; ///< Sparse set of points
   size_t number_cameras() const {
@@ -259,6 +275,14 @@ struct SfmData {
   /// The track formed by series of landmark measurements
   SfmTrack track(size_t idx) const {
     return tracks[idx];
+  }
+
+  void add_track(SfmTrack t) {
+    tracks.push_back(t);
+  }
+  /// Delete track at `idx`
+  void delete_track(size_t idx){
+    tracks[idx].clear();
   }
 };
 

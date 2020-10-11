@@ -2759,21 +2759,34 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/dataset.h>
+class SfmMeasurement{};
+class SiftIndex{ };
+class SfmMeasurements{};
+
 class SfmTrack {
+  SfmTrack();
   Point3 point3() const;
   size_t number_measurements() const;
-  pair<size_t, gtsam::Point2> measurement(size_t idx) const;
-  pair<size_t, size_t> siftIndex(size_t idx) const;
+  gtsam::SfmMeasurement measurement(size_t idx) const;
+  gtsam::SiftIndex siftIndex(size_t idx) const;
+  // gtsam::Measurements add_measurement(pair<size_t, gtsam::Point2> m);
+  void add_measurement(pair<size_t, gtsam::Point2> m);
+  SfmMeasurements& measurements();
 };
 
 class SfmData {
+  SfmData();
   size_t number_cameras() const;
   size_t number_tracks() const;
   gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
   gtsam::SfmTrack track(size_t idx) const;
+  // std::vector<gtsam::SfmTrack> add_track(gtsam::SfmTrack t);
+  void add_track(gtsam::SfmTrack t);
+  void delete_track(size_t idx);
 };
 
 gtsam::SfmData readBal(string filename);
+bool writeBAL(string filename, gtsam::SfmData& data);
 gtsam::Values initialCamerasEstimate(const gtsam::SfmData& db);
 gtsam::Values initialCamerasAndPointsEstimate(const gtsam::SfmData& db);
 

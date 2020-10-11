@@ -36,6 +36,8 @@ set(ignore
     gtsam::BetweenFactorPose3s
     gtsam::Point2Vector
     gtsam::Pose3Vector
+    gtsam::SfmMeasurement
+    gtsam::SiftIndex
     gtsam::KeyVector
     gtsam::BinaryMeasurementsUnit3
     gtsam::KeyPairDoubleMap)

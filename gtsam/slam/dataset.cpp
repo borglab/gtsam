@@ -1052,13 +1052,13 @@ bool readBundler(const string &filename, SfmData &data) {
     size_t nvisible = 0;
     is >> nvisible;
 
-    track.measurements.reserve(nvisible);
+    track.Measurements.reserve(nvisible);
     track.siftIndices.reserve(nvisible);
     for (size_t k = 0; k < nvisible; k++) {
       size_t cam_idx = 0, point_idx = 0;
       float u, v;
       is >> cam_idx >> point_idx >> u >> v;
-      track.measurements.emplace_back(cam_idx, Point2(u, -v));
+      track.Measurements.emplace_back(cam_idx, Point2(u, -v));
       track.siftIndices.emplace_back(cam_idx, point_idx);
     }
 
@@ -1089,7 +1089,7 @@ bool readBAL(const string &filename, SfmData &data) {
     size_t i = 0, j = 0;
     float u, v;
     is >> i >> j >> u >> v;
-    data.tracks[j].measurements.emplace_back(i, Point2(u, -v));
+    data.tracks[j].Measurements.emplace_back(i, Point2(u, -v));
   }
 
   // Get the information for the camera poses
@@ -1163,7 +1163,7 @@ bool writeBAL(const string &filename, SfmData &data) {
 
     for (size_t k = 0; k < track.number_measurements();
          k++) { // for each observation of the 3D point j
-      size_t i = track.measurements[k].first; // camera id
+      size_t i = track.Measurements[k].first; // camera id
       double u0 = data.cameras[i].calibration().u0();
       double v0 = data.cameras[i].calibration().v0();
 
@@ -1173,9 +1173,9 @@ bool writeBAL(const string &filename, SfmData &data) {
              << endl;
       }
 
-      double pixelBALx = track.measurements[k].second.x() -
+      double pixelBALx = track.Measurements[k].second.x() -
                          u0; // center of image is the origin
-      double pixelBALy = -(track.measurements[k].second.y() -
+      double pixelBALy = -(track.Measurements[k].second.y() -
                            v0); // center of image is the origin
       Point2 pixelMeasurement(pixelBALx, pixelBALy);
       os << i /*camera id*/ << " " << j /*point id*/ << " "
