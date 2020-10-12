@@ -45,16 +45,13 @@ public:
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /// evaluateError
-  Vector evaluateError(const Pose3& pose, const OrientedPlane3& plane,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none) const override {
-    OrientedPlane3 predicted_plane = OrientedPlane3::Transform(plane, pose, H1,
-        H2);
-    Vector err(3);
-    err << predicted_plane.error(measured_p_);
-    return (err);
+  Vector evaluateError(
+      const Pose3& pose, const OrientedPlane3& plane,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const override {
+    auto predicted_plane = OrientedPlane3::Transform(plane, pose, H1, H2);
+    return predicted_plane.error(measured_p_);
   }
-  ;
 };
 
 // TODO: Convert this factor to dimension two, three dimensions is redundant for direction prior
