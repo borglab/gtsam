@@ -19,6 +19,7 @@
 
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/geometry/Point2.h>
+
 #include <iostream>
 
 using namespace std;
@@ -28,7 +29,7 @@ namespace gtsam {
 /* ************************************************************************* */
 void OrientedPlane3::print(const string& s) const {
   Vector4 coeffs = planeCoefficients();
-  cout << s << " : " << coeffs << endl;
+  cout << s << " : " << coeffs.transpose() << endl;
 }
 
 /* ************************************************************************* */
@@ -42,15 +43,14 @@ OrientedPlane3 OrientedPlane3::transform(const Pose3& xr, OptionalJacobian<3, 3>
   double pred_d = n_.unitVector().dot(xr.translation()) + d_;
 
   if (Hr) {
-    *Hr = Matrix::Zero(3,6);
+    Hr->setZero();
     Hr->block<2, 3>(0, 0) = D_rotated_plane;
     Hr->block<1, 3>(2, 3) = unit_vec;
   }
   if (Hp) {
-    Vector2 hpp = n_.basis().transpose() * xr.translation();
-    *Hp = Z_3x3;
+    Hp->setZero();
     Hp->block<2, 2>(0, 0) = D_rotated_pose;
-    Hp->block<1, 2>(2, 0) = hpp;
+    Hp->block<1, 2>(2, 0) = n_.basis().transpose() * xr.translation();
     (*Hp)(2, 2) = 1;
   }
 
