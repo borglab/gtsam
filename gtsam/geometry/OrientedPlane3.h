@@ -24,6 +24,9 @@
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Pose3.h>
 
+#include <algorithm>
+#include <string>
+
 namespace gtsam {
 
 /**
@@ -58,9 +61,8 @@ public:
   }
 
   /// Construct from a vector of plane coefficients
-  OrientedPlane3(const Vector4& vec) :
-    n_(vec(0), vec(1), vec(2)), d_(vec(3)) {
-  }
+  explicit OrientedPlane3(const Vector4& vec)
+      : n_(vec(0), vec(1), vec(2)), d_(vec(3)) {}
 
   /// Construct from four numbers of plane coeffcients (a, b, c, d)
   OrientedPlane3(double a, double b, double c, double d) {
