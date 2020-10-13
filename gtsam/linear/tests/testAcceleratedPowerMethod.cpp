@@ -76,7 +76,10 @@ TEST(AcceleratedPowerMethod, useFactorGraph) {
 
   // Get eigenvalues and eigenvectors with Eigen
   auto L = fg.hessian();
+  cout << L.first << endl;
   Eigen::EigenSolver<Matrix> solver(L.first);
+  cout << solver.eigenvalues() << endl;
+  cout << solver.eigenvectors() << endl;
 
   // Check that we get zero eigenvalue and "constant" eigenvector
   EXPECT_DOUBLES_EQUAL(0.0, solver.eigenvalues()[0].real(), 1e-9);

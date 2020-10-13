@@ -75,10 +75,8 @@ class PowerMethod {
     return y;
   }
 
+  // Update the vector by dot product with A_
   Vector update() const { return update(ritzVector_); }
-
-  // Update the ritzVector_
-  void updateRitz(const Vector &ritz) { ritzVector_ = ritz; }
 
   // Perturb the initial ritzvector
   void perturb() {
@@ -87,10 +85,11 @@ class PowerMethod {
     std::uniform_real_distribution<double> uniform01(0.0, 1.0);
 
     int n = dim_;
-    Vector disturb(n);
-    for (int i = 0; i < n; ++i) {
-      disturb(i) = uniform01(rng);
-    }
+    // Vector disturb(n);
+    // for (int i = 0; i < n; ++i) {
+    //   disturb(i) = uniform01(rng);
+    // }
+    Vector disturb = Vector::Random(n);
     disturb.normalize();
 
     Vector x0 = ritzVector_;

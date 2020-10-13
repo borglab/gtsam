@@ -70,9 +70,7 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
 
     // initialize Ritz eigen vector and previous vector
     previousVector_ = update(x0, x00, beta_);
-    this->updateRitz(update(previousVector_, x0, beta_));
     this->ritzVector_ = update(previousVector_, x0, beta_);
-    // this->updateRitz(update(previousVector_, x0, beta_));
     this->perturb();
 
     // set beta
