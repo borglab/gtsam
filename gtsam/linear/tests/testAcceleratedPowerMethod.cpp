@@ -12,17 +12,17 @@
 /**
  * testPowerMethod.cpp
  *
- * @file   testPowerMethod.cpp
+ * @file   testAcceleratedPowerMethod.cpp
  * @date   Sept 2020
  * @author Jing Wu
- * @brief  Check eigenvalue and eigenvector computed by power method
+ * @brief  Check eigenvalue and eigenvector computed by accelerated power method
  */
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/sfm/PowerMethod.h>
+#include <gtsam/linear/AcceleratedPowerMethod.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -38,40 +38,34 @@ using namespace gtsam;
 using symbol_shorthand::X;
 
 /* ************************************************************************* */
-TEST(PowerMethod, powerIteration) {
+TEST(AcceleratedPowerMethod, acceleratedPowerIteration) {
   // test power iteration, beta is set to 0
   Sparse A(6, 6);
   A.coeffRef(0, 0) = 6;
-  Matrix S = Matrix66::Zero();
-  PowerMethod<Sparse> apf(A, S.row(0));
+  A.coeffRef(0, 0) = 5;
+  A.coeffRef(0, 0) = 4;
+  A.coeffRef(0, 0) = 3;
+  A.coeffRef(0, 0) = 2;
+  A.coeffRef(0, 0) = 1;
+  Vector initial = Vector6::Zero();
+  const Vector6 x1 = (Vector(6) << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished();
+  const double ev1 = 1.0;
+
+  // test accelerated power iteration
+  AcceleratedPowerMethod<Sparse> apf(A, initial);
   apf.compute(20, 1e-4);
   EXPECT_LONGS_EQUAL(1, apf.eigenvectors().cols());
   EXPECT_LONGS_EQUAL(6, apf.eigenvectors().rows());
 
-  const Vector6 x1 = (Vector(6) << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished();
-  Vector6 actual0 = apf.eigenvectors().col(0);
-  actual0(0) = abs(actual0(0));
-  EXPECT(assert_equal(x1, actual0));
-
-  const double ev1 = 6.0;
-  EXPECT_DOUBLES_EQUAL(ev1, apf.eigenvalues(), 1e-5);
-
-  // test power accelerated iteration
-  AcceleratedPowerMethod<Sparse> pf(A, S.row(0));
-  pf.compute(20, 1e-4);
-  // for power method, only 5 ritz vectors converge with 20 iterations
-  EXPECT_LONGS_EQUAL(1, pf.eigenvectors().cols());
-  EXPECT_LONGS_EQUAL(6, pf.eigenvectors().rows());
-
-  Vector6 actual1 = apf.eigenvectors().col(0);
-  actual1(0) = abs(actual1(0));
+  Vector6 actual1 = apf.eigenvectors();
+  // actual1(0) = abs (actual1(0));
   EXPECT(assert_equal(x1, actual1));
 
-  EXPECT_DOUBLES_EQUAL(ev1, pf.eigenvalues(), 1e-5);
+  EXPECT_DOUBLES_EQUAL(ev1, apf.eigenvalues(), 1e-5);
 }
 
 /* ************************************************************************* */
-TEST(PowerMethod, useFactorGraph) {
+TEST(AcceleratedPowerMethod, useFactorGraph) {
   // Let's make a scalar synchronization graph with 4 nodes
   GaussianFactorGraph fg;
   auto model = noiseModel::Unit::Create(1);
@@ -82,10 +76,7 @@ TEST(PowerMethod, useFactorGraph) {
 
   // Get eigenvalues and eigenvectors with Eigen
   auto L = fg.hessian();
-  cout << L.first << endl;
   Eigen::EigenSolver<Matrix> solver(L.first);
-  cout << solver.eigenvalues() << endl;
-  cout << solver.eigenvectors() << endl;
 
   // Check that we get zero eigenvalue and "constant" eigenvector
   EXPECT_DOUBLES_EQUAL(0.0, solver.eigenvalues()[0].real(), 1e-9);
@@ -93,13 +84,19 @@ TEST(PowerMethod, useFactorGraph) {
   for (size_t j = 0; j < 3; j++)
     EXPECT_DOUBLES_EQUAL(-0.5, v0[j].real(), 1e-9);
 
-  // test power iteration, beta is set to 0
-  Matrix S = Matrix44::Zero();
-  // PowerMethod<Matrix> pf(L.first, S.row(0));
-  AcceleratedPowerMethod<Matrix> pf(L.first, S.row(0));
-  pf.compute(20, 1e-4);
-  cout << pf.eigenvalues() << endl;
-  cout << pf.eigenvectors() << endl;
+  size_t maxIdx = 0;
+  for (auto i =0; i<solver.eigenvalues().rows(); ++i) {
+    if (solver.eigenvalues()(i).real() >= solver.eigenvalues()(maxIdx).real()) maxIdx = i;
+  }
+  // Store the max eigenvalue and its according eigenvector
+  const auto ev1 = solver.eigenvalues()(maxIdx).real();
+  auto ev2 = solver.eigenvectors().col(maxIdx).real();
+
+  Vector initial = Vector4::Zero();
+  AcceleratedPowerMethod<Matrix> apf(L.first, initial);
+  apf.compute(20, 1e-4);
+  EXPECT_DOUBLES_EQUAL(ev1, apf.eigenvalues(), 1e-8);
+  EXPECT(assert_equal(ev2, apf.eigenvectors(), 3e-5));
 }
 
 /* ************************************************************************* */

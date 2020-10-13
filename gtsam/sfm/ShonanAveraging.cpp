@@ -471,16 +471,23 @@ Sparse ShonanAveraging<d>::computeA(const Values &values) const {
   return Lambda - Q_;
 }
 
-// Alg.6 from paper Distributed Certifiably Correct Pose-Graph Optimization
+/* ************************************************************************* */
+/// MINIMUM EIGENVALUE COMPUTATIONS
+// Alg.6 from paper Distributed Certifiably Correct Pose-Graph Optimization, 
+// it takes in the certificate matrix A as input, the maxIterations and the 
+// minEigenvalueNonnegativityTolerance is set to 1000 and 10e-4 ad default, 
+// there are two parts
+// in this algorithm:
+// (1) 
 static bool PowerMinimumEigenValue(
     const Sparse &A, const Matrix &S, double *minEigenValue,
     Vector *minEigenVector = 0, size_t *numIterations = 0,
     size_t maxIterations = 1000,
-    double minEigenvalueNonnegativityTolerance = 10e-4,
-    Eigen::Index numLanczosVectors = 20) {
+    double minEigenvalueNonnegativityTolerance = 10e-4) {
 
   // a. Compute dominant eigenpair of S using power method
-  PowerMethod<Sparse> lmOperator(A, S.row(0));
+  const boost::optional<Vector> initial(S.row(0));
+  PowerMethod<Sparse> lmOperator(A, initial);
 
   const int lmConverged = lmOperator.compute(
       maxIterations, 1e-5);
@@ -501,8 +508,8 @@ static bool PowerMinimumEigenValue(
     return true;
   }
 
-  Sparse C = lmEigenValue * Matrix::Identity(A.rows(), A.cols()) - A;
-  AcceleratedPowerMethod<Sparse> minShiftedOperator(C, S.row(0));
+  const Sparse C = lmEigenValue * Matrix::Identity(A.rows(), A.cols()) - A;
+  AcceleratedPowerMethod<Sparse> minShiftedOperator(C, initial);
 
   const int minConverged = minShiftedOperator.compute(
       maxIterations, minEigenvalueNonnegativityTolerance / lmEigenValue);
