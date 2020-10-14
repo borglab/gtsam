@@ -97,7 +97,7 @@ def run(args):
     except Exception as e:
         logging.exception("LM Optimization failed")
         return
-
+    # Error drops from 2764.22 to 0.046
     logging.info(f"final error: {graph.error(result)}")
 
 
