@@ -34,11 +34,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 def run(args):
     """ Run LM optimization with BAL input data and report resulting error """
-    # Find default file, but if an argument is given, try loading a file
-    if args.input_file:
-        input_file = args.input_file
-    else:
-        input_file = gtsam.findExampleDataFile("dubrovnik-3-7-pre")
+    input_file = gtsam.findExampleDataFile(args.input_file)
 
     # # Load the SfM data from file
     mydata = readBal(input_file)
@@ -62,13 +58,13 @@ def run(args):
             graph.add(GeneralSFMFactorCal3Bundler(uv, noise, C(i), P(j)))
         j += 1
 
-    # # Add a prior on pose x1. This indirectly specifies where the origin is.
-    # # and a prior on the position of the first landmark to fix the scale
+    # Add a prior on pose x1. This indirectly specifies where the origin is.
     graph.push_back(
         gtsam.PriorFactorPinholeCameraCal3Bundler(
             C(0), mydata.camera(0), gtsam.noiseModel.Isotropic.Sigma(9, 0.1)
         )
     )
+    # Also add a prior on the position of the first landmark to fix the scale
     graph.push_back(
         gtsam.PriorFactorPoint3(
             P(0), mydata.track(0).point3(), gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
@@ -107,7 +103,7 @@ def run(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input_file', type=str, default="",
+    parser.add_argument('-i', '--input_file', type=str, default="dubrovnik-3-7-pre",
                         help='Read SFM data from the specified BAL file')
     run(parser.parse_args())
 
