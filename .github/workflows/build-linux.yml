@@ -52,6 +52,7 @@ jobs:
           if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
             # pool.sks-keyservers.net is the SKS GPG global keyserver pool
             # 15CF4D18AF4F7421 is the GPG key for the LLVM apt repository
+            # This key is not in the keystore by default for Ubuntu so we need to add it.
             gpg --keyserver pool.sks-keyservers.net --recv-key 15CF4D18AF4F7421
             gpg -a --export 15CF4D18AF4F7421 | sudo apt-key add -
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
