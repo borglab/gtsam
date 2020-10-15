@@ -7,7 +7,7 @@
   See LICENSE for the license information
 
   Solve a structure-from-motion problem from a "Bundle Adjustment in the Large" file
-  Author: Frank Dellaert (Python: Akshay Krishan, John Lambert)
+  Author: Frank Dellaert (Python: Akshay Krishnan, John Lambert)
 """
 
 import argparse
