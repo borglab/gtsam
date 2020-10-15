@@ -93,9 +93,9 @@
  *        - Add "void serializable()" to a class if you only want the class to be serialized as a
  *          part of a container (such as noisemodel). This version does not require a publicly
  *          accessible default constructor.
- *   Forward declarations and class definitions for Cython:
- *     - Need to specify the base class (both this forward class and base class are declared in an external cython header)
- *       This is so Cython can generate proper inheritance.
+ *   Forward declarations and class definitions for Pybind:
+ *     - Need to specify the base class (both this forward class and base class are declared in an external Pybind header)
+ *       This is so Pybind can generate proper inheritance.
  *       Example when wrapping a gtsam-based project:
  *          // forward declarations
  *          virtual class gtsam::NonlinearFactor
@@ -104,7 +104,7 @@
  *          #include <MyFactor.h>
  *          virtual class MyFactor : gtsam::NoiseModelFactor {...};
  *    - *DO NOT* re-define overriden function already declared in the external (forward-declared) base class
- *        - This will cause an ambiguity problem in Cython pxd header file
+ *        - This will cause an ambiguity problem in Pybind header file
  */
 
 /**
@@ -2887,6 +2887,7 @@ class BinaryMeasurement {
   size_t key1() const;
   size_t key2() const;
   T measured() const;
+  gtsam::noiseModel::Base* noiseModel() const;
 };
 
 typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
@@ -3018,6 +3019,26 @@ class ShonanAveraging3 {
   double cost(const gtsam::Values& values) const;
   gtsam::Values initializeRandomly() const;
   pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p, size_t max_p) const;
+};
+
+#include <gtsam/sfm/MFAS.h>
+
+class KeyPairDoubleMap {
+  KeyPairDoubleMap();
+  KeyPairDoubleMap(const gtsam::KeyPairDoubleMap& other);
+
+  size_t size() const;
+  bool empty() const;
+  void clear();
+  size_t at(const pair<size_t, size_t>& keypair) const;
+};
+
+class MFAS {
+  MFAS(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
+       const gtsam::Unit3& projectionDirection);
+
+  gtsam::KeyPairDoubleMap computeOutlierWeights() const;
+  gtsam::KeyVector computeOrdering() const;
 };
 
 #include <gtsam/sfm/TranslationRecovery.h>

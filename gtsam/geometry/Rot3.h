@@ -262,8 +262,28 @@ namespace gtsam {
     static Rot3 AlignTwoPairs(const Unit3& a_p, const Unit3& b_p,  //
                               const Unit3& a_q, const Unit3& b_q);
 
-    /// Static, named constructor that finds Rot3 element closest to M in Frobenius norm.
+    /**
+     * Static, named constructor that finds Rot3 element closest to M in Frobenius norm.
+     * 
+     * Uses Full SVD to compute the orthogonal matrix, thus is highly accurate and robust.
+     * 
+     * N. J. Higham. Matrix nearness problems and applications.
+     * In M. J. C. Gover and S. Barnett, editors, Applications of Matrix Theory, pages 1–27.
+     * Oxford University Press, 1989.
+     */
     static Rot3 ClosestTo(const Matrix3& M) { return Rot3(SO3::ClosestTo(M)); }
+
+    /**
+     * Normalize rotation so that its determinant is 1.
+     * This means either re-orthogonalizing the Matrix representation or
+     * normalizing the quaternion representation.
+     *
+     * This method is akin to `ClosestTo` but uses a computationally cheaper
+     * algorithm.
+     * 
+     * Ref: https://drive.google.com/file/d/0B9rLLz1XQKmaZTlQdV81QjNoZTA/view
+     */
+    Rot3 normalized() const;
 
     /// @}
     /// @name Testable

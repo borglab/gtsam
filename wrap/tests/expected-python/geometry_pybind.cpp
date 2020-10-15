@@ -40,13 +40,13 @@ PYBIND11_MODULE(geometry_py, m_) {
         .def("vectorConfusion",[](gtsam::Point2* self){return self->vectorConfusion();})
 .def("serialize",
     [](gtsam::Point2* self){
-        return gtsam::serialize(self);
+        return gtsam::serialize(*self);
     }
 )
 .def("deserialize",
     [](gtsam::Point2* self, string serialized){
-        return gtsam::deserialize(serialized, self);
-    })
+        gtsam::deserialize(serialized, *self);
+    }, py::arg("serialized"))
 ;
 
     py::class_<gtsam::Point3, std::shared_ptr<gtsam::Point3>>(m_gtsam, "Point3")
@@ -54,13 +54,13 @@ PYBIND11_MODULE(geometry_py, m_) {
         .def("norm",[](gtsam::Point3* self){return self->norm();})
 .def("serialize",
     [](gtsam::Point3* self){
-        return gtsam::serialize(self);
+        return gtsam::serialize(*self);
     }
 )
 .def("deserialize",
     [](gtsam::Point3* self, string serialized){
-        return gtsam::deserialize(serialized, self);
-    })
+        gtsam::deserialize(serialized, *self);
+    }, py::arg("serialized"))
 
         .def_static("staticFunction",[](){return gtsam::Point3::staticFunction();})
         .def_static("StaticFunctionRet",[]( double z){return gtsam::Point3::StaticFunctionRet(z);}, py::arg("z"));

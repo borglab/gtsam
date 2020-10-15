@@ -111,10 +111,8 @@ void removeNodeFromGraph(const Key node,
   graph.erase(node);
 }
 
-MFAS::MFAS(const std::shared_ptr<vector<Key>>& nodes,
-           const TranslationEdges& relativeTranslations,
-           const Unit3& projectionDirection)
-    : nodes_(nodes) {
+MFAS::MFAS(const TranslationEdges& relativeTranslations,
+           const Unit3& projectionDirection) {
   // Iterate over edges, obtain weights by projecting
   // their relativeTranslations along the projection direction
   for (const auto& measurement : relativeTranslations) {

@@ -48,8 +48,13 @@ jobs:
       - name: Install (Linux)
         if: runner.os == 'Linux'
         run: |
-          # LLVM 9 is not in Bionic's repositories so we add the official LLVM repository.
+          # LLVM (clang) 9 is not in Bionic's repositories so we add the official LLVM repository.
           if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
+            # pool.sks-keyservers.net is the SKS GPG global keyserver pool
+            # 15CF4D18AF4F7421 is the GPG key for the LLVM apt repository
+            # This key is not in the keystore by default for Ubuntu so we need to add it.
+            gpg --keyserver pool.sks-keyservers.net --recv-key 15CF4D18AF4F7421
+            gpg -a --export 15CF4D18AF4F7421 | sudo apt-key add -
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
           fi
           sudo apt-get -y update

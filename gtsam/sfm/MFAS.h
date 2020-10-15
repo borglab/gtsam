@@ -56,40 +56,28 @@ class MFAS {
   using TranslationEdges = std::vector<BinaryMeasurement<Unit3>>;
 
  private:
-  // pointer to nodes in the graph
-  const std::shared_ptr<std::vector<Key>> nodes_;
-
   // edges with a direction such that all weights are positive
   // i.e, edges that originally had negative weights are flipped
   std::map<KeyPair, double> edgeWeights_;
 
  public:
   /**
-   * @brief Construct from the nodes in a graph and weighted directed edges
+   * @brief Construct from the weighted directed edges
    * between the nodes. Each node is identified by a Key.
-   * A shared pointer to the nodes is used as input parameter
-   * because, MFAS ordering is usually used to compute the ordering of a
-   * large graph that is already stored in memory. It is unnecessary to make a
-   * copy of the nodes in this class.
-   * @param nodes: Nodes in the graph
    * @param edgeWeights: weights of edges in the graph
    */
-  MFAS(const std::shared_ptr<std::vector<Key>> &nodes,
-       const std::map<KeyPair, double> &edgeWeights)
-      : nodes_(nodes), edgeWeights_(edgeWeights) {}
+  MFAS(const std::map<KeyPair, double> &edgeWeights)
+      : edgeWeights_(edgeWeights) {}
 
   /**
    * @brief Constructor to be used in the context of translation averaging.
    * Here, the nodes of the graph are cameras in 3D and the edges have a unit
    * translation direction between them. The weights of the edges is computed by
    * projecting them along a projection direction.
-   * @param nodes cameras in the epipolar graph (each camera is identified by a
-   * Key)
    * @param relativeTranslations translation directions between the cameras
    * @param projectionDirection direction in which edges are to be projected
    */
-  MFAS(const std::shared_ptr<std::vector<Key>> &nodes,
-       const TranslationEdges &relativeTranslations,
+  MFAS(const TranslationEdges &relativeTranslations,
        const Unit3 &projectionDirection);
 
   /**
@@ -99,7 +87,7 @@ class MFAS {
   std::vector<Key> computeOrdering() const;
 
   /**
-   * @brief Computes the "outlier weights" of the graph. We define the outlier
+   * @brief Computes the outlier weights of the graph. We define the outlier
    * weight of a edge to be zero if the edge is an inlier and the magnitude of
    * its edgeWeight if it is an outlier. This function internally calls
    * computeOrdering and uses the obtained ordering to identify outlier edges.
@@ -107,5 +95,7 @@ class MFAS {
    */
   std::map<KeyPair, double> computeOutlierWeights() const;
 };
+
+typedef std::map<std::pair<Key, Key>, double> KeyPairDoubleMap;
 
 }  // namespace gtsam

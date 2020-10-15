@@ -75,18 +75,16 @@ double dot(const Point3 &p, const Point3 &q, OptionalJacobian<1, 3> H1,
   return p.x() * q.x() + p.y() * q.y() + p.z() * q.z();
 }
 
-Point3Pair mean(const std::vector<Point3Pair> &abPointPairs) {
+Point3Pair means(const std::vector<Point3Pair> &abPointPairs) {
   const size_t n = abPointPairs.size();
   if (n == 0) throw std::invalid_argument("Point3::mean input Point3Pair vector is empty");
-  Point3 aCentroid(0, 0, 0), bCentroid(0, 0, 0);
+  Point3 aSum(0, 0, 0), bSum(0, 0, 0);
   for (const Point3Pair &abPair : abPointPairs) {
-    aCentroid += abPair.first;
-    bCentroid += abPair.second;
+    aSum += abPair.first;
+    bSum += abPair.second;
   }
   const double f = 1.0 / n;
-  aCentroid *= f;
-  bCentroid *= f;
-  return make_pair(aCentroid, bCentroid);
+  return {aSum * f, bSum * f};
 }
 
 /* ************************************************************************* */

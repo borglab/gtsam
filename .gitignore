@@ -9,12 +9,6 @@
 *.txt.user
 *.txt.user.6d59f0c
 *.pydevproject
-cython/venv
-cython/gtsam.cpp
-cython/gtsam.cpython-35m-darwin.so
-cython/gtsam.pyx
-cython/gtsam.so
-cython/gtsam_wrapper.pxd
 .vscode
 .env
 /.vs/
