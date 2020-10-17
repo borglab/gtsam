@@ -36,14 +36,14 @@ def run(args):
     """ Run LM optimization with BAL input data and report resulting error """
     input_file = gtsam.findExampleDataFile(args.input_file)
 
-    # # Load the SfM data from file
+    # Load the SfM data from file
     mydata = readBal(input_file)
     logging.info(f"read {mydata.number_tracks()} tracks on {mydata.number_cameras()} cameras\n")
 
-    # # Create a factor graph
+    # Create a factor graph
     graph = gtsam.NonlinearFactorGraph()
 
-    # # We share *one* noiseModel between all projection factors
+    # We share *one* noiseModel between all projection factors
     noise = gtsam.noiseModel.Isotropic.Sigma(2, 1.0) # one pixel in u and v
 
     # Add measurements to the factor graph
@@ -71,7 +71,7 @@ def run(args):
         )
     )
 
-    # # Create initial estimate
+    # Create initial estimate
     initial = gtsam.Values()
     
     i = 0
@@ -97,7 +97,7 @@ def run(args):
     except Exception as e:
         logging.exception("LM Optimization failed")
         return
-    # Error drops from 2764.22 to 0.046
+    # Error drops from ~2764.22 to ~0.046
     logging.info(f"final error: {graph.error(result)}")
 
 
@@ -106,6 +106,4 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--input_file', type=str, default="dubrovnik-3-7-pre",
                         help='Read SFM data from the specified BAL file')
     run(parser.parse_args())
-
-
 
