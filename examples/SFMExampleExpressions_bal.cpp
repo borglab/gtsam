@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
   for (const SfmTrack& track : mydata.tracks) {
     // Leaf expression for j^th point
     Point3_ point_('p', j);
-    for (const SfmMeasurement& m : track.measurements) {
+    for (const SfmMeasurement& m : track.Measurements) {
       size_t i = m.first;
       Point2 uv = m.second;
       // Leaf expression for i^th camera

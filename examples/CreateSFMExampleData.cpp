@@ -51,7 +51,7 @@ void createExampleBALFile(const string& filename, const vector<Point3>& P,
 
     // Project points in both cameras
     for (size_t i = 0; i < 2; i++)
-    track.measurements.push_back(make_pair(i, data.cameras[i].project(p)));
+    track.Measurements.push_back(make_pair(i, data.cameras[i].project(p)));
 
     // Add track to data
     data.tracks.push_back(track);

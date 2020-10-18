@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
   // Add measurements to the factor graph
   size_t j = 0;
   for (const SfmTrack& track : mydata.tracks) {
-    for (const SfmMeasurement& m : track.measurements) {
+    for (const SfmMeasurement& m : track.Measurements) {
       size_t i = m.first;
       Point2 uv = m.second;
       graph.emplace_shared<MyFactor>(
