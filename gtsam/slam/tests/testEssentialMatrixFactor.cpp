@@ -46,10 +46,10 @@ EssentialMatrix trueE(trueRotation, trueDirection);
 double baseline = 0.1; // actual baseline of the camera
 
 Point2 pA(size_t i) {
-  return data.tracks[i].measurements[0].second;
+  return data.tracks[i].Measurements[0].second;
 }
 Point2 pB(size_t i) {
-  return data.tracks[i].measurements[1].second;
+  return data.tracks[i].Measurements[1].second;
 }
 Vector vA(size_t i) {
   return EssentialMatrix::Homogeneous(pA(i));
@@ -367,10 +367,10 @@ EssentialMatrix trueE(aRb, Unit3(aTb));
 double baseline = 10; // actual baseline of the camera
 
 Point2 pA(size_t i) {
-  return data.tracks[i].measurements[0].second;
+  return data.tracks[i].Measurements[0].second;
 }
 Point2 pB(size_t i) {
-  return data.tracks[i].measurements[1].second;
+  return data.tracks[i].Measurements[1].second;
 }
 
 boost::shared_ptr<Cal3Bundler> //

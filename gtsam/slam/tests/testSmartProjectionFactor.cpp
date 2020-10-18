@@ -283,14 +283,14 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
 
   SfmTrack track1;
   for (size_t i = 0; i < 3; ++i) {
-    track1.measurements.emplace_back(i + 1, measurements_cam1.at(i));
+    track1.Measurements.emplace_back(i + 1, measurements_cam1.at(i));
   }
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(unit2));
   smartFactor1->add(track1);
 
   SfmTrack track2;
   for (size_t i = 0; i < 3; ++i) {
-    track2.measurements.emplace_back(i + 1, measurements_cam2.at(i));
+    track2.Measurements.emplace_back(i + 1, measurements_cam2.at(i));
   }
   SmartFactor::shared_ptr smartFactor2(new SmartFactor(unit2));
   smartFactor2->add(track2);
