@@ -37,6 +37,7 @@ set(ignore
     gtsam::Point2Vector
     gtsam::Pose3Vector
     gtsam::SfmMeasurement
+    gtsam::SfmCamera
     gtsam::SiftIndex
     gtsam::KeyVector
     gtsam::BinaryMeasurementsUnit3

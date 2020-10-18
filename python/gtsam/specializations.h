@@ -15,3 +15,4 @@ py::bind_vector<gtsam::IndexPairVector>(m_, "IndexPairVector");
 py::bind_map<gtsam::KeyPairDoubleMap>(m_, "KeyPairDoubleMap");
 py::bind_vector<std::vector<gtsam::SfmMeasurement> >(m_, "Measurement");
 py::bind_vector<std::vector<gtsam::SiftIndex> >(m_, "SiftIndexVector");
+py::bind_vector<std::vector<gtsam::SfmCamera> >(m_, "cameras");

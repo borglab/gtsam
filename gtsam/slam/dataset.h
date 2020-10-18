@@ -227,6 +227,11 @@ struct SfmTrack {
   size_t number_measurements() const {
     return Measurements.size();
   }
+  /// Set 3D point
+  void setP(Point3& p_){
+    p = p_;
+  }
+
   /// Get the measurement (camera index, Point2) at pose index `idx`
   SfmMeasurement measurement(size_t idx) const {
     return Measurements[idx];
@@ -244,10 +249,6 @@ struct SfmTrack {
 
   SfmMeasurements& measurements() {
     return Measurements;
-  }
-
-  void clear() {
-    Measurements.clear();
   }
 
 };
@@ -280,9 +281,9 @@ struct SfmData {
   void add_track(SfmTrack t) {
     tracks.push_back(t);
   }
-  /// Delete track at `idx`
-  void delete_track(size_t idx){
-    tracks[idx].clear();
+
+  void add_camera(SfmCamera cam){
+    cameras.push_back(cam);
   }
 };
 
