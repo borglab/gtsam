@@ -37,8 +37,8 @@ def run(args):
     input_file = gtsam.findExampleDataFile(args.input_file)
 
     # # Load the SfM data from file
-    mydata = readBal(input_file)
-    logging.info(f"read {mydata.number_tracks()} tracks on {mydata.number_cameras()} cameras\n")
+    scene_data = readBal(input_file)
+    logging.info(f"read {scene_data.number_tracks()} tracks on {scene_data.number_cameras()} cameras\n")
 
     # # Create a factor graph
     graph = gtsam.NonlinearFactorGraph()
@@ -48,8 +48,8 @@ def run(args):
 
     # Add measurements to the factor graph
     j = 0
-    for t_idx in range(mydata.number_tracks()):
-        track = mydata.track(t_idx) # SfmTrack
+    for t_idx in range(scene_data.number_tracks()):
+        track = scene_data.track(t_idx) # SfmTrack
         # retrieve the SfmMeasurement objects
         for m_idx in range(track.number_measurements()):
             # i represents the camera index, and uv is the 2d measurement
@@ -61,13 +61,13 @@ def run(args):
     # Add a prior on pose x1. This indirectly specifies where the origin is.
     graph.push_back(
         gtsam.PriorFactorPinholeCameraCal3Bundler(
-            C(0), mydata.camera(0), gtsam.noiseModel.Isotropic.Sigma(9, 0.1)
+            C(0), scene_data.camera(0), gtsam.noiseModel.Isotropic.Sigma(9, 0.1)
         )
     )
     # Also add a prior on the position of the first landmark to fix the scale
     graph.push_back(
         gtsam.PriorFactorPoint3(
-            P(0), mydata.track(0).point3(), gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
+            P(0), scene_data.track(0).point3(), gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
         )
     )
 
@@ -76,15 +76,15 @@ def run(args):
     
     i = 0
     # add each PinholeCameraCal3Bundler
-    for cam_idx in range(mydata.number_cameras()):
-        camera = mydata.camera(cam_idx)
+    for cam_idx in range(scene_data.number_cameras()):
+        camera = scene_data.camera(cam_idx)
         initial.insert(C(i), camera)
         i += 1
 
     j = 0
     # add each SfmTrack
-    for t_idx in range(mydata.number_tracks()):
-        track = mydata.track(t_idx)  
+    for t_idx in range(scene_data.number_tracks()):
+        track = scene_data.track(t_idx)  
         initial.insert(P(j), track.point3())
         j += 1
 
@@ -103,8 +103,17 @@ def run(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input_file', type=str, default="dubrovnik-3-7-pre",
-                        help='Read SFM data from the specified BAL file')
+    parser.add_argument(
+        '-i',
+        '--input_file',
+        type=str,
+        default="dubrovnik-3-7-pre",
+        help='Read SFM data from the specified BAL file'
+        'The data format is described here: https://grail.cs.washington.edu/projects/bal/.'
+        'BAL files contain (nrPoses, nrPoints, nrObservations), followed by (i,j,u,v) tuples, '
+        'then (wx,wy,wz,tx,ty,tz,f,k1,k1) as Bundler camera calibrations w/ Rodrigues vector'
+        'and (x,y,z) 3d point initializations.'
+    )
     run(parser.parse_args())
 
 
