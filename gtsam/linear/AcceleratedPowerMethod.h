@@ -63,16 +63,10 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
       const Operator &A, const boost::optional<Vector> initial = boost::none,
       const double initialBeta = 0.0)
       : PowerMethod<Operator>(A, initial) {
-    Vector x0;
-    // initialize ritz vector
-    x0 = initial ? initial.get() : Vector::Random(this->dim_);
-    Vector x00 = Vector::Random(this->dim_);
-    x0.normalize();
-    x00.normalize();
-
     // initialize Ritz eigen vector and previous vector
-    previousVector_ = powerIteration(x0, x00, beta_);
-    this->ritzVector_ = powerIteration(previousVector_, x0, beta_);
+    this->ritzVector_ = initial ? initial.get() : Vector::Random(this->dim_);
+    this->ritzVector_.normalize();
+    previousVector_ = Vector::Zero(this->dim_);
 
     // initialize beta_
     if (!initialBeta) {
@@ -80,9 +74,10 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
     } else {
       beta_ = initialBeta;
     }
-    }
+  }
 
-  // Update the ritzVector with beta and previous two ritzVector
+  // Update the ritzVector with beta and previous two ritzVector, and return
+  // x_{k+1} = A * x_k - \beta * x_{k-1} / || A * x_k - \beta * x_{k-1} ||
   Vector powerIteration(const Vector &x1, const Vector &x0,
                         const double beta) const {
     Vector y = this->A_ * x1 - beta * x0;
@@ -90,7 +85,8 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
     return y;
   }
 
-  // Update the ritzVector with beta and previous two ritzVector
+  // Update the ritzVector with beta and previous two ritzVector, and return
+  // x_{k+1} = A * x_k - \beta * x_{k-1} / || A * x_k - \beta * x_{k-1} ||
   Vector powerIteration() const {
     Vector y = powerIteration(this->ritzVector_, previousVector_, beta_);
     previousVector_ = this->ritzVector_;
@@ -101,8 +97,8 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
   void estimateBeta() {
     // set beta
     Vector init_resid = this->ritzVector_;
-    const double up = init_resid.transpose() * this->A_ * init_resid;
-    const double down = init_resid.transpose().dot(init_resid);
+    const double up = init_resid.dot( this->A_ * init_resid );
+    const double down = init_resid.dot(init_resid);
     const double mu = up / down;
     double maxBeta = mu * mu / 4;
     size_t maxIndex;
@@ -111,11 +107,12 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
 
     Matrix R = Matrix::Zero(this->dim_, 10);
     for (size_t i = 0; i < 10; i++) {
+      Vector x0 = Vector::Random(this->dim_);
+      x0.normalize();
+      Vector x00 = Vector::Zero(this->dim_);
       for (size_t k = 0; k < betas.size(); ++k) {
         for (size_t j = 1; j < 10; j++) {
           if (j < 2) {
-            Vector x0 = this->ritzVector_;
-            Vector x00 = previousVector_;
             R.col(0) = powerIteration(x0, x00, betas[k]);
             R.col(1) = powerIteration(R.col(0), x0, betas[k]);
           } else {
@@ -123,8 +120,8 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
           }
         }
         const Vector x = R.col(9);
-        const double up = x.transpose() * this->A_ * x;
-        const double down = x.transpose().dot(x);
+        const double up = x.dot(this->A_ * x);
+        const double down = x.dot(x);
         const double mu = up / down;
         if (mu * mu / 4 > maxBeta) {
           maxIndex = k;

@@ -515,42 +515,42 @@ static bool PowerMinimumEigenValue(
     double minEigenvalueNonnegativityTolerance = 10e-4) {
 
   // a. Compute dominant eigenpair of S using power method
-  PowerMethod<Sparse> lmOperator(A);
+  PowerMethod<Sparse> pmOperator(A);
 
-  const bool lmConverged = lmOperator.compute(
+  const bool pmConverged = pmOperator.compute(
       maxIterations, 1e-5);
 
   // Check convergence and bail out if necessary
-  if (!lmConverged) return false;
+  if (!pmConverged) return false;
 
-  const double lmEigenValue = lmOperator.eigenvalue();
+  const double pmEigenValue = pmOperator.eigenvalue();
 
-  if (lmEigenValue < 0) {
+  if (pmEigenValue < 0) {
     // The largest-magnitude eigenvalue is negative, and therefore also the
     // minimum eigenvalue, so just return this solution
-    *minEigenValue = lmEigenValue;
+    *minEigenValue = pmEigenValue;
     if (minEigenVector) {
-      *minEigenVector = lmOperator.eigenvector();
+      *minEigenVector = pmOperator.eigenvector();
       minEigenVector->normalize();  // Ensure that this is a unit vector
     }
     return true;
   }
 
-  const Sparse C = lmEigenValue * Matrix::Identity(A.rows(), A.cols()) - A;
+  const Sparse C = pmEigenValue * Matrix::Identity(A.rows(), A.cols()) - A;
   const boost::optional<Vector> initial = perturb(S.row(0));
-  AcceleratedPowerMethod<Sparse> minShiftedOperator(C, initial);
+  AcceleratedPowerMethod<Sparse> apmShiftedOperator(C, initial);
 
-  const bool minConverged = minShiftedOperator.compute(
-      maxIterations, minEigenvalueNonnegativityTolerance / lmEigenValue);
+  const bool minConverged = apmShiftedOperator.compute(
+      maxIterations, minEigenvalueNonnegativityTolerance / pmEigenValue);
 
   if (!minConverged) return false;
 
-  *minEigenValue = lmEigenValue - minShiftedOperator.eigenvalue();
+  *minEigenValue = pmEigenValue - apmShiftedOperator.eigenvalue();
   if (minEigenVector) {
-    *minEigenVector = minShiftedOperator.eigenvector();
+    *minEigenVector = apmShiftedOperator.eigenvector();
     minEigenVector->normalize();  // Ensure that this is a unit vector
   }
-  if (numIterations) *numIterations = minShiftedOperator.nrIterations();
+  if (numIterations) *numIterations = apmShiftedOperator.nrIterations();
   return true;
 }
 

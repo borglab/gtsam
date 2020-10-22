@@ -61,19 +61,19 @@ class PowerMethod {
     // initialize Ritz eigen value
     ritzValue_ = 0.0;
 
-    // initialize Ritz eigen vectors
+    // initialize Ritz eigen vector
     ritzVector_ = Vector::Zero(dim_);
     ritzVector_ = powerIteration(x0);
   }
 
-  // Update the vector by dot product with A_
+  // Update the vector by dot product with A_, and return A * x / || A * x ||
   Vector powerIteration(const Vector &x) const {
     Vector y = A_ * x;
     y.normalize();
     return y;
   }
 
-  // Update the vector by dot product with A_
+  //  Update the vector by dot product with A_, and return A * x / || A * x ||
   Vector powerIteration() const { return powerIteration(ritzVector_); }
 
   // After Perform power iteration on a single Ritz value, if the error is less

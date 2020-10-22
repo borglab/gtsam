@@ -96,7 +96,7 @@ TEST(AcceleratedPowerMethod, useFactorGraph) {
   AcceleratedPowerMethod<Matrix> apf(L.first, initial);
   apf.compute(50, 1e-4);
   EXPECT_DOUBLES_EQUAL(ev1, apf.eigenvalue(), 1e-8);
-  EXPECT(assert_equal(ev2, apf.eigenvector(), 3e-5));
+  EXPECT(assert_equal(ev2, apf.eigenvector(), 4e-5));
 }
 
 /* ************************************************************************* */
