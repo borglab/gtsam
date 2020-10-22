@@ -228,7 +228,7 @@ struct SfmTrack {
     return measurements.size();
   }
   /// Set 3D point
-  void setP(Point3& p_){
+  void setP(const Point3& p_){
     p = p_;
   }
 
@@ -243,13 +243,10 @@ struct SfmTrack {
   Point3 point3() const {
     return p;
   }
-  void add_measurement(pair<size_t, gtsam::Point2>& m) const{
+  void add_measurement(const pair<size_t, gtsam::Point2>& m) {
     measurements.push_back(m);
   }
 
-  SfmMeasurements& measurements() {
-    return measurements;
-  }
 
 };
 
@@ -278,11 +275,11 @@ struct SfmData {
     return tracks[idx];
   }
 
-  void add_track(SfmTrack& t) const {
+  void add_track(const SfmTrack& t)  {
     tracks.push_back(t);
   }
 
-  void add_camera(SfmCamera& cam) const{
+  void add_camera(const SfmCamera& cam){
     cameras.push_back(cam);
   }
 };
