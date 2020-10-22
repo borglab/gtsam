@@ -80,8 +80,7 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
     } else {
       beta_ = initialBeta;
     }
-    
-  }
+    }
 
   // Update the ritzVector with beta and previous two ritzVector
   Vector powerIteration(const Vector &x1, const Vector &x0,

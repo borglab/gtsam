@@ -18,18 +18,16 @@
  * @brief  Check eigenvalue and eigenvector computed by power method
  */
 
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/PowerMethod.h>
 
-#include <CppUnitLite/TestHarness.h>
-
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
-
 #include <iostream>
 #include <random>
 
@@ -68,7 +66,7 @@ TEST(PowerMethod, useFactorGraph) {
   for (size_t j = 0; j < 3; j++) {
     fg.add(X(j), -I_1x1, X(j + 1), I_1x1, Vector1::Zero(), model);
   }
-  fg.add(X(3), -I_1x1, X(0), I_1x1, Vector1::Zero(), model); // extra row
+  fg.add(X(3), -I_1x1, X(0), I_1x1, Vector1::Zero(), model);  // extra row
 
   // Get eigenvalues and eigenvectors with Eigen
   auto L = fg.hessian();
@@ -77,12 +75,12 @@ TEST(PowerMethod, useFactorGraph) {
   // Check that we get zero eigenvalue and "constant" eigenvector
   EXPECT_DOUBLES_EQUAL(0.0, solver.eigenvalues()[0].real(), 1e-9);
   auto v0 = solver.eigenvectors().col(0);
-  for (size_t j = 0; j < 3; j++)
-    EXPECT_DOUBLES_EQUAL(-0.5, v0[j].real(), 1e-9);
+  for (size_t j = 0; j < 3; j++) EXPECT_DOUBLES_EQUAL(-0.5, v0[j].real(), 1e-9);
 
   size_t maxIdx = 0;
-  for (auto i =0; i<solver.eigenvalues().rows(); ++i) {
-    if (solver.eigenvalues()(i).real() >= solver.eigenvalues()(maxIdx).real()) maxIdx = i;
+  for (auto i = 0; i < solver.eigenvalues().rows(); ++i) {
+    if (solver.eigenvalues()(i).real() >= solver.eigenvalues()(maxIdx).real())
+      maxIdx = i;
   }
   // Store the max eigenvalue and its according eigenvector
   const auto ev1 = solver.eigenvalues()(maxIdx).real();
@@ -92,7 +90,7 @@ TEST(PowerMethod, useFactorGraph) {
   PowerMethod<Matrix> pf(L.first, initial);
   pf.compute(50, 1e-4);
   EXPECT_DOUBLES_EQUAL(ev1, pf.eigenvalue(), 1e-8);
-  auto actual2  = pf.eigenvector();
+  auto actual2 = pf.eigenvector();
   EXPECT(assert_equal(-ev2, actual2, 3e-5));
 }
 

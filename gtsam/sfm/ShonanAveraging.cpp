@@ -482,6 +482,9 @@ Sparse ShonanAveraging<d>::computeA(const Matrix &S) const {
 // Perturb the initial initialVector by adding a spherically-uniformly
 // distributed random vector with 0.03*||initialVector||_2 magnitude to
 // initialVector
+// ref : Part III. C, Rosen, D. and Carlone, L., 2017, September. Computational
+// enhancements for certifiably correct SLAM. In Proceedings of the
+// International Conference on Intelligent Robots and Systems.
 Vector perturb(const Vector &initialVector) {
   // generate a 0.03*||x_0||_2 as stated in David's paper
   int n = initialVector.rows();

@@ -89,14 +89,16 @@ class PowerMethod {
   // Return the number of iterations
   size_t nrIterations() const { return nrIterations_; }
 
-  // Start the power/accelerated iteration, after updated the ritz vector,
-  // calculate the ritz error, repeat this operation until the ritz error converge
-  int compute(size_t maxIterations, double tol) {
+  // Start the power/accelerated iteration, after performing the
+  // power/accelerated power iteration, calculate the ritz error, repeat this
+  // operation until the ritz error converge. If converged return true, else
+  // false.
+  bool compute(size_t maxIterations, double tol) {
     // Starting
     bool isConverged = false;
 
     for (size_t i = 0; i < maxIterations; i++) {
-      ++nrIterations_ ;
+      ++nrIterations_;
       ritzVector_ = powerIteration();
       isConverged = converged(tol);
       if (isConverged) return isConverged;
