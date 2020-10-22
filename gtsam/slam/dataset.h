@@ -256,7 +256,6 @@ typedef PinholeCamera<Cal3Bundler> SfmCamera;
 
 /// Define the structure for SfM data
 struct SfmData {
-  std::vector<SfmMeasurement> measurements; ///<Set of measurements in a track
   std::vector<SfmCamera> cameras; ///< Set of cameras
   std::vector<SfmTrack> tracks; ///< Sparse set of points
   size_t number_cameras() const {
