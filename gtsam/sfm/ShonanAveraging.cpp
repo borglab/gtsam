@@ -472,13 +472,39 @@ Sparse ShonanAveraging<d>::computeA(const Values &values) const {
 }
 
 /* ************************************************************************* */
+template <size_t d>
+Sparse ShonanAveraging<d>::computeA(const Matrix &S) const {
+  auto Lambda = computeLambda(S);
+  return Lambda - Q_;
+}
+
+/* ************************************************************************* */
+// Perturb the initial initialVector by adding a spherically-uniformly
+// distributed random vector with 0.03*||initialVector||_2 magnitude to
+// initialVector
+Vector perturb(const Vector &initialVector) {
+  // generate a 0.03*||x_0||_2 as stated in David's paper
+  int n = initialVector.rows();
+  Vector disturb = Vector::Random(n);
+  disturb.normalize();
+
+  double magnitude = initialVector.norm();
+  Vector perturbedVector = initialVector + 0.03 * magnitude * disturb;
+  perturbedVector.normalize();
+  return perturbedVector;
+}
+
+/* ************************************************************************* */
 /// MINIMUM EIGENVALUE COMPUTATIONS
-// Alg.6 from paper Distributed Certifiably Correct Pose-Graph Optimization, 
-// it takes in the certificate matrix A as input, the maxIterations and the 
-// minEigenvalueNonnegativityTolerance is set to 1000 and 10e-4 ad default, 
+// Alg.6 from paper Distributed Certifiably Correct Pose-Graph Optimization,
+// it takes in the certificate matrix A as input, the maxIterations and the
+// minEigenvalueNonnegativityTolerance is set to 1000 and 10e-4 ad default,
 // there are two parts
 // in this algorithm:
-// (1) 
+// (1) compute the maximum eigenpair (\lamda_dom, \vect{v}_dom) of A by power
+// method. if \lamda_dom is less than zero, then return the eigenpair. (2)
+// compute the maximum eigenpair (\theta, \vect{v}) of C = \lamda_dom * I - A by
+// accelerated power method. Then return (\lamda_dom - \theta, \vect{v}).
 static bool PowerMinimumEigenValue(
     const Sparse &A, const Matrix &S, double *minEigenValue,
     Vector *minEigenVector = 0, size_t *numIterations = 0,
@@ -486,39 +512,39 @@ static bool PowerMinimumEigenValue(
     double minEigenvalueNonnegativityTolerance = 10e-4) {
 
   // a. Compute dominant eigenpair of S using power method
-  const boost::optional<Vector> initial(S.row(0));
-  PowerMethod<Sparse> lmOperator(A, initial);
+  PowerMethod<Sparse> lmOperator(A);
 
-  const int lmConverged = lmOperator.compute(
+  const bool lmConverged = lmOperator.compute(
       maxIterations, 1e-5);
 
   // Check convergence and bail out if necessary
-  if (lmConverged != 1) return false;
+  if (!lmConverged) return false;
 
-  const double lmEigenValue = lmOperator.eigenvalues();
+  const double lmEigenValue = lmOperator.eigenvalue();
 
   if (lmEigenValue < 0) {
     // The largest-magnitude eigenvalue is negative, and therefore also the
     // minimum eigenvalue, so just return this solution
     *minEigenValue = lmEigenValue;
     if (minEigenVector) {
-      *minEigenVector = lmOperator.eigenvectors();
+      *minEigenVector = lmOperator.eigenvector();
       minEigenVector->normalize();  // Ensure that this is a unit vector
     }
     return true;
   }
 
   const Sparse C = lmEigenValue * Matrix::Identity(A.rows(), A.cols()) - A;
+  const boost::optional<Vector> initial = perturb(S.row(0));
   AcceleratedPowerMethod<Sparse> minShiftedOperator(C, initial);
 
-  const int minConverged = minShiftedOperator.compute(
+  const bool minConverged = minShiftedOperator.compute(
       maxIterations, minEigenvalueNonnegativityTolerance / lmEigenValue);
 
-  if (minConverged != 1) return false;
+  if (!minConverged) return false;
 
-  *minEigenValue = lmEigenValue - minShiftedOperator.eigenvalues();
+  *minEigenValue = lmEigenValue - minShiftedOperator.eigenvalue();
   if (minEigenVector) {
-    *minEigenVector = minShiftedOperator.eigenvectors();
+    *minEigenVector = minShiftedOperator.eigenvector();
     minEigenVector->normalize();  // Ensure that this is a unit vector
   }
   if (numIterations) *numIterations = minShiftedOperator.nrIterations();
@@ -667,13 +693,6 @@ static bool SparseMinimumEigenValue(
   }
   if (numIterations) *numIterations = minEigenValueSolver.num_iterations();
   return true;
-}
-
-/* ************************************************************************* */
-template <size_t d>
-Sparse ShonanAveraging<d>::computeA(const Matrix &S) const {
-  auto Lambda = computeLambda(S);
-  return Lambda - Q_;
 }
 
 /* ************************************************************************* */

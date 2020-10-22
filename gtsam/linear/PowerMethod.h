@@ -46,8 +46,8 @@ class PowerMethod {
 
   size_t nrIterations_;  // number of iterations
 
-  double ritzValue_;   // all Ritz eigenvalues
-  Vector ritzVector_;  // all Ritz eigenvectors
+  double ritzValue_;   // Ritz eigenvalue
+  Vector ritzVector_;  // Ritz eigenvector
 
  public:
   // Constructor
@@ -55,85 +55,61 @@ class PowerMethod {
                        const boost::optional<Vector> initial = boost::none)
       : A_(A), dim_(A.rows()), nrIterations_(0) {
     Vector x0;
-    x0 = initial ? Vector::Random(dim_) : initial.get();
+    x0 = initial ? initial.get() : Vector::Random(dim_);
     x0.normalize();
 
-    // initialize Ritz eigen values
+    // initialize Ritz eigen value
     ritzValue_ = 0.0;
 
     // initialize Ritz eigen vectors
     ritzVector_ = Vector::Zero(dim_);
-
-    ritzVector_.col(0) = update(x0);
-    perturb();
+    ritzVector_ = powerIteration(x0);
   }
 
   // Update the vector by dot product with A_
-  Vector update(const Vector &x) const {
+  Vector powerIteration(const Vector &x) const {
     Vector y = A_ * x;
     y.normalize();
     return y;
   }
 
   // Update the vector by dot product with A_
-  Vector update() const { return update(ritzVector_); }
+  Vector powerIteration() const { return powerIteration(ritzVector_); }
 
-  // Perturb the initial ritzvector
-  void perturb() {
-    // generate a 0.03*||x_0||_2 as stated in David's paper
-    std::mt19937 rng(42);
-    std::uniform_real_distribution<double> uniform01(0.0, 1.0);
-
-    int n = dim_;
-    // Vector disturb(n);
-    // for (int i = 0; i < n; ++i) {
-    //   disturb(i) = uniform01(rng);
-    // }
-    Vector disturb = Vector::Random(n);
-    disturb.normalize();
-
-    Vector x0 = ritzVector_;
-    double magnitude = x0.norm();
-    ritzVector_ = x0 + 0.03 * magnitude * disturb;
-  }
-
-  // Perform power iteration on a single Ritz value
-  // Updates ritzValue_
-  bool iterateOne(double tol) {
+  // After Perform power iteration on a single Ritz value, if the error is less
+  // than the tol then return true else false
+  bool converged(double tol) {
     const Vector x = ritzVector_;
-    double theta = x.transpose() * A_ * x;
-
     // store the Ritz eigen value
-    ritzValue_ = theta;
-
-    const Vector diff = A_ * x - theta * x;
-    double error = diff.norm();
+    ritzValue_ = x.dot(A_ * x);
+    double error = (A_ * x - ritzValue_ * x).norm();
     return error < tol;
   }
 
   // Return the number of iterations
   size_t nrIterations() const { return nrIterations_; }
 
-  // Start the iteration until the ritz error converge
-  int compute(int maxIterations, double tol) {
+  // Start the power/accelerated iteration, after updated the ritz vector,
+  // calculate the ritz error, repeat this operation until the ritz error converge
+  int compute(size_t maxIterations, double tol) {
     // Starting
-    int nrConverged = 0;
+    bool isConverged = false;
 
-    for (int i = 0; i < maxIterations; i++) {
-      nrIterations_ += 1;
-      ritzVector_ = update();
-      nrConverged = iterateOne(tol);
-      if (nrConverged) break;
+    for (size_t i = 0; i < maxIterations; i++) {
+      ++nrIterations_ ;
+      ritzVector_ = powerIteration();
+      isConverged = converged(tol);
+      if (isConverged) return isConverged;
     }
 
-    return std::min(1, nrConverged);
+    return isConverged;
   }
 
   // Return the eigenvalue
-  double eigenvalues() const { return ritzValue_; }
+  double eigenvalue() const { return ritzValue_; }
 
   // Return the eigenvector
-  const Vector eigenvectors() const { return ritzVector_; }
+  Vector eigenvector() const { return ritzVector_; }
 };
 
 }  // namespace gtsam

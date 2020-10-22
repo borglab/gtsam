@@ -34,7 +34,7 @@ using Sparse = Eigen::SparseMatrix<double>;
 template <class Operator>
 class AcceleratedPowerMethod : public PowerMethod<Operator> {
   /**
-   * \brief Compute maximum Eigenpair with power method
+   * \brief Compute maximum Eigenpair with accelerated power method
    *
    * References :
    * 1) Rosen, D. and Carlone, L., 2017, September. Computational
@@ -46,8 +46,9 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
    * stochastic power iteration,” in Proc. Mach. Learn. Res., no. 84, 2018, pp.
    * 58–67
    *
-   * It performs the following iteration: \f$ x_{k+1} = A * x_k + \beta *
-   * x_{k-1} \f$ where A is the certificate matrix, x is the Ritz vector
+   * It performs the following iteration: \f$ x_{k+1} = A * x_k - \beta *
+   * x_{k-1} \f$ where A is the aim matrix we want to get eigenpair of, x is the
+   * Ritz vector
    *
    */
 
@@ -59,46 +60,52 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
   // Constructor from aim matrix A (given as Matrix or Sparse), optional intial
   // vector as ritzVector
   explicit AcceleratedPowerMethod(
-      const Operator &A, const boost::optional<Vector> initial = boost::none)
+      const Operator &A, const boost::optional<Vector> initial = boost::none,
+      const double initialBeta = 0.0)
       : PowerMethod<Operator>(A, initial) {
     Vector x0;
     // initialize ritz vector
-    x0 = initial ? Vector::Random(this->dim_) : initial.get();
+    x0 = initial ? initial.get() : Vector::Random(this->dim_);
     Vector x00 = Vector::Random(this->dim_);
     x0.normalize();
     x00.normalize();
 
     // initialize Ritz eigen vector and previous vector
-    previousVector_ = update(x0, x00, beta_);
-    this->ritzVector_ = update(previousVector_, x0, beta_);
-    this->perturb();
+    previousVector_ = powerIteration(x0, x00, beta_);
+    this->ritzVector_ = powerIteration(previousVector_, x0, beta_);
 
-    // set beta
-    Vector init_resid = this->ritzVector_;
-    const double up = init_resid.transpose() * this->A_ * init_resid;
-    const double down = init_resid.transpose().dot(init_resid);
-    const double mu = up / down;
-    beta_ = mu * mu / 4;
-    setBeta();
+    // initialize beta_
+    if (!initialBeta) {
+      estimateBeta();
+    } else {
+      beta_ = initialBeta;
+    }
+    
   }
 
   // Update the ritzVector with beta and previous two ritzVector
-  Vector update(const Vector &x1, const Vector &x0, const double beta) const {
+  Vector powerIteration(const Vector &x1, const Vector &x0,
+                        const double beta) const {
     Vector y = this->A_ * x1 - beta * x0;
     y.normalize();
     return y;
   }
 
   // Update the ritzVector with beta and previous two ritzVector
-  Vector update() const {
-    Vector y = update(this->ritzVector_, previousVector_, beta_);
+  Vector powerIteration() const {
+    Vector y = powerIteration(this->ritzVector_, previousVector_, beta_);
     previousVector_ = this->ritzVector_;
     return y;
   }
 
   // Tuning the momentum beta using the Best Heavy Ball algorithm in Ref(3)
-  void setBeta() {
-    double maxBeta = beta_;
+  void estimateBeta() {
+    // set beta
+    Vector init_resid = this->ritzVector_;
+    const double up = init_resid.transpose() * this->A_ * init_resid;
+    const double down = init_resid.transpose().dot(init_resid);
+    const double mu = up / down;
+    double maxBeta = mu * mu / 4;
     size_t maxIndex;
     std::vector<double> betas = {2 / 3 * maxBeta, 0.99 * maxBeta, maxBeta,
                                  1.01 * maxBeta, 1.5 * maxBeta};
@@ -110,10 +117,10 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
           if (j < 2) {
             Vector x0 = this->ritzVector_;
             Vector x00 = previousVector_;
-            R.col(0) = update(x0, x00, betas[k]);
-            R.col(1) = update(R.col(0), x0, betas[k]);
+            R.col(0) = powerIteration(x0, x00, betas[k]);
+            R.col(1) = powerIteration(R.col(0), x0, betas[k]);
           } else {
-            R.col(j) = update(R.col(j - 1), R.col(j - 2), betas[k]);
+            R.col(j) = powerIteration(R.col(j - 1), R.col(j - 2), betas[k]);
           }
         }
         const Vector x = R.col(9);
