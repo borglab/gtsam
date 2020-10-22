@@ -42,26 +42,24 @@ TEST(AcceleratedPowerMethod, acceleratedPowerIteration) {
   // test power iteration, beta is set to 0
   Sparse A(6, 6);
   A.coeffRef(0, 0) = 6;
-  A.coeffRef(0, 0) = 5;
-  A.coeffRef(0, 0) = 4;
-  A.coeffRef(0, 0) = 3;
-  A.coeffRef(0, 0) = 2;
-  A.coeffRef(0, 0) = 1;
-  Vector initial = Vector6::Zero();
+  A.coeffRef(1, 1) = 5;
+  A.coeffRef(2, 2) = 4;
+  A.coeffRef(3, 3) = 3;
+  A.coeffRef(4, 4) = 2;
+  A.coeffRef(5, 5) = 1;
+  Vector initial = Vector6::Random();
   const Vector6 x1 = (Vector(6) << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished();
-  const double ev1 = 1.0;
+  const double ev1 = 6.0;
 
   // test accelerated power iteration
   AcceleratedPowerMethod<Sparse> apf(A, initial);
-  apf.compute(20, 1e-4);
-  EXPECT_LONGS_EQUAL(1, apf.eigenvectors().cols());
-  EXPECT_LONGS_EQUAL(6, apf.eigenvectors().rows());
+  apf.compute(50, 1e-4);
+  EXPECT_LONGS_EQUAL(6, apf.eigenvector().rows());
 
-  Vector6 actual1 = apf.eigenvectors();
-  // actual1(0) = abs (actual1(0));
-  EXPECT(assert_equal(x1, actual1));
+  Vector6 actual1 = apf.eigenvector();
+  EXPECT(assert_equal(x1, actual1, 1e-4));
 
-  EXPECT_DOUBLES_EQUAL(ev1, apf.eigenvalues(), 1e-5);
+  EXPECT_DOUBLES_EQUAL(ev1, apf.eigenvalue(), 1e-5);
 }
 
 /* ************************************************************************* */
@@ -76,10 +74,7 @@ TEST(AcceleratedPowerMethod, useFactorGraph) {
 
   // Get eigenvalues and eigenvectors with Eigen
   auto L = fg.hessian();
-  cout << L.first << endl;
   Eigen::EigenSolver<Matrix> solver(L.first);
-  cout << solver.eigenvalues() << endl;
-  cout << solver.eigenvectors() << endl;
 
   // Check that we get zero eigenvalue and "constant" eigenvector
   EXPECT_DOUBLES_EQUAL(0.0, solver.eigenvalues()[0].real(), 1e-9);
@@ -95,11 +90,11 @@ TEST(AcceleratedPowerMethod, useFactorGraph) {
   const auto ev1 = solver.eigenvalues()(maxIdx).real();
   auto ev2 = solver.eigenvectors().col(maxIdx).real();
 
-  Vector initial = Vector4::Zero();
+  Vector initial = Vector4::Random();
   AcceleratedPowerMethod<Matrix> apf(L.first, initial);
-  apf.compute(20, 1e-4);
-  EXPECT_DOUBLES_EQUAL(ev1, apf.eigenvalues(), 1e-8);
-  EXPECT(assert_equal(ev2, apf.eigenvectors(), 3e-5));
+  apf.compute(50, 1e-4);
+  EXPECT_DOUBLES_EQUAL(ev1, apf.eigenvalue(), 1e-8);
+  EXPECT(assert_equal(-ev2, apf.eigenvector(), 3e-5));
 }
 
 /* ************************************************************************* */

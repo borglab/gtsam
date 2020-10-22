@@ -42,23 +42,22 @@ TEST(PowerMethod, powerIteration) {
   // test power iteration, beta is set to 0
   Sparse A(6, 6);
   A.coeffRef(0, 0) = 6;
-  A.coeffRef(0, 0) = 5;
-  A.coeffRef(0, 0) = 4;
-  A.coeffRef(0, 0) = 3;
-  A.coeffRef(0, 0) = 2;
-  A.coeffRef(0, 0) = 1;
-  Vector initial = Vector6::Zero();
+  A.coeffRef(1, 1) = 5;
+  A.coeffRef(2, 2) = 4;
+  A.coeffRef(3, 3) = 3;
+  A.coeffRef(4, 4) = 2;
+  A.coeffRef(5, 5) = 1;
+  Vector initial = Vector6::Random();
   PowerMethod<Sparse> pf(A, initial);
-  pf.compute(20, 1e-4);
-  EXPECT_LONGS_EQUAL(1, pf.eigenvectors().cols());
-  EXPECT_LONGS_EQUAL(6, pf.eigenvectors().rows());
+  pf.compute(50, 1e-4);
+  EXPECT_LONGS_EQUAL(6, pf.eigenvector().rows());
 
   const Vector6 x1 = (Vector(6) << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished();
-  Vector6 actual0 = pf.eigenvectors();
-  EXPECT(assert_equal(x1, actual0));
+  Vector6 actual0 = pf.eigenvector();
+  EXPECT(assert_equal(x1, actual0, 1e-4));
 
-  const double ev1 = 1.0;
-  EXPECT_DOUBLES_EQUAL(ev1, pf.eigenvalues(), 1e-5);
+  const double ev1 = 6.0;
+  EXPECT_DOUBLES_EQUAL(ev1, pf.eigenvalue(), 1e-5);
 }
 
 /* ************************************************************************* */
@@ -89,12 +88,12 @@ TEST(PowerMethod, useFactorGraph) {
   const auto ev1 = solver.eigenvalues()(maxIdx).real();
   auto ev2 = solver.eigenvectors().col(maxIdx).real();
 
-  Vector initial = Vector4::Zero();
+  Vector initial = Vector4::Random();
   PowerMethod<Matrix> pf(L.first, initial);
-  pf.compute(20, 1e-4);
-  EXPECT_DOUBLES_EQUAL(ev1, pf.eigenvalues(), 1e-8);
-  // auto actual2  = pf.eigenvectors();
-  // EXPECT(assert_equal(ev2, actual2, 3e-5));
+  pf.compute(50, 1e-4);
+  EXPECT_DOUBLES_EQUAL(ev1, pf.eigenvalue(), 1e-8);
+  auto actual2  = pf.eigenvector();
+  EXPECT(assert_equal(-ev2, actual2, 3e-5));
 }
 
 /* ************************************************************************* */
