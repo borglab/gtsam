@@ -12,4 +12,3 @@ PYBIND11_MAKE_OPAQUE(std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::P
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::IndexPair>);
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::SfmMeasurement>);
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::SiftIndex>);
-PYBIND11_MAKE_OPAQUE(std::vector<gtsam::SfmCamera>);

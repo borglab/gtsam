@@ -166,9 +166,9 @@ TEST( dataSet, Balbianello)
   EXPECT_LONGS_EQUAL(3,track0.number_measurements());
 
   // Check projection of a given point
-  EXPECT_LONGS_EQUAL(0,track0.Measurements[0].first);
+  EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
   const SfmCamera& camera0 = mydata.cameras[0];
-  Point2 expected = camera0.project(track0.p), actual = track0.Measurements[0].second;
+  Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
   EXPECT(assert_equal(expected,actual,1));
 }
 
@@ -476,9 +476,9 @@ TEST( dataSet, readBAL_Dubrovnik)
   EXPECT_LONGS_EQUAL(3,track0.number_measurements());
 
   // Check projection of a given point
-  EXPECT_LONGS_EQUAL(0,track0.Measurements[0].first);
+  EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
   const SfmCamera& camera0 = mydata.cameras[0];
-  Point2 expected = camera0.project(track0.p), actual = track0.Measurements[0].second;
+  Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
   EXPECT(assert_equal(expected,actual,12));
 }
 
@@ -557,8 +557,8 @@ TEST( dataSet, writeBAL_Dubrovnik)
 
     // check measurements
     for (size_t k = 0; k < actualTrack.number_measurements(); k++){
-      EXPECT_LONGS_EQUAL(expectedTrack.Measurements[k].first,actualTrack.Measurements[k].first);
-      EXPECT(assert_equal(expectedTrack.Measurements[k].second,actualTrack.Measurements[k].second));
+      EXPECT_LONGS_EQUAL(expectedTrack.measurements[k].first,actualTrack.measurements[k].first);
+      EXPECT(assert_equal(expectedTrack.measurements[k].second,actualTrack.measurements[k].second));
     }
   }
 }
@@ -600,9 +600,9 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
   EXPECT_LONGS_EQUAL(3,track0.number_measurements());
 
   // Check projection of a given point
-  EXPECT_LONGS_EQUAL(0,track0.Measurements[0].first);
+  EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
   const SfmCamera& camera0 = writtenData.cameras[0];
-  Point2 expected = camera0.project(track0.p), actual = track0.Measurements[0].second;
+  Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
   EXPECT(assert_equal(expected,actual,12));
 
   Pose3 expectedPose = camera0.pose();

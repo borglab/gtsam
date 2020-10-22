@@ -2759,11 +2759,20 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/dataset.h>
-// Dummy classes, for MATLAB wrappers
-class SfmMeasurement{};
-class SiftIndex{ };
-class SfmMeasurements{};
-class SfmCamera{};
+class SfmMeasurement{
+  SfmMeasurement();
+  size_t i() const;
+  Point2 j() const;
+};
+class SiftIndex{
+  SiftIndex();
+  size_t i() const;
+  size_t j() const;
+ };
+class SfmMeasurements{
+  SfmMeasurements();
+
+};
 
 class SfmTrack {
   SfmTrack();
@@ -2772,7 +2781,7 @@ class SfmTrack {
   void setP(gtsam::Point3& p_);
   gtsam::SfmMeasurement measurement(size_t idx) const;
   gtsam::SiftIndex siftIndex(size_t idx) const;
-  void add_measurement(pair<size_t, gtsam::Point2> m);
+  void add_measurement(const pair<size_t, gtsam::Point2>& m);
   SfmMeasurements& measurements();
 };
 
@@ -2782,8 +2791,8 @@ class SfmData {
   size_t number_tracks() const;
   gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
   gtsam::SfmTrack track(size_t idx) const;
-  void add_track(gtsam::SfmTrack t);
-  void add_camera(gtsam::SfmCamera cam);
+  void add_track(const gtsam::SfmTrack& t) ;
+  void add_camera(const gtsam::SfmCamer& cam);
 };
 
 gtsam::SfmData readBal(string filename);

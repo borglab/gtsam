@@ -220,12 +220,12 @@ struct SfmTrack {
   SfmTrack(): p(0,0,0) {}
   Point3 p; ///< 3D position of the point
   float r, g, b; ///< RGB color of the 3D point
-  std::vector<SfmMeasurement> Measurements; ///< The 2D image projections (id,(u,v))
+  std::vector<SfmMeasurement> measurements; ///< The 2D image projections (id,(u,v))
   std::vector<SiftIndex> siftIndices;
   
   /// Total number of measurements in this track
   size_t number_measurements() const {
-    return Measurements.size();
+    return measurements.size();
   }
   /// Set 3D point
   void setP(Point3& p_){
@@ -234,7 +234,7 @@ struct SfmTrack {
 
   /// Get the measurement (camera index, Point2) at pose index `idx`
   SfmMeasurement measurement(size_t idx) const {
-    return Measurements[idx];
+    return measurements[idx];
   }
   /// Get the SIFT feature index corresponding to the measurement at `idx`
   SiftIndex siftIndex(size_t idx) const {
@@ -243,12 +243,12 @@ struct SfmTrack {
   Point3 point3() const {
     return p;
   }
-  void add_measurement(pair<size_t, gtsam::Point2> m) {
-    Measurements.push_back(m);
+  void add_measurement(pair<size_t, gtsam::Point2>& m) const{
+    measurements.push_back(m);
   }
 
   SfmMeasurements& measurements() {
-    return Measurements;
+    return measurements;
   }
 
 };
@@ -259,7 +259,7 @@ typedef PinholeCamera<Cal3Bundler> SfmCamera;
 
 /// Define the structure for SfM data
 struct SfmData {
-  std::vector<SfmMeasurement> Measurements;
+  std::vector<SfmMeasurement> measurements; ///<Set of measurements in a track
   std::vector<SfmCamera> cameras; ///< Set of cameras
   std::vector<SfmTrack> tracks; ///< Sparse set of points
   size_t number_cameras() const {
@@ -278,11 +278,11 @@ struct SfmData {
     return tracks[idx];
   }
 
-  void add_track(SfmTrack t) {
+  void add_track(SfmTrack& t) const {
     tracks.push_back(t);
   }
 
-  void add_camera(SfmCamera cam){
+  void add_camera(SfmCamera& cam) const{
     cameras.push_back(cam);
   }
 };
