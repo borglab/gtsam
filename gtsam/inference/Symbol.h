@@ -162,6 +162,12 @@ inline Key W(std::uint64_t j) { return Symbol('w', j); }
 inline Key X(std::uint64_t j) { return Symbol('x', j); }
 inline Key Y(std::uint64_t j) { return Symbol('y', j); }
 inline Key Z(std::uint64_t j) { return Symbol('z', j); }
+
+/** Generates symbol shorthands with alternative names different than the
+ * one-letter predefined ones. */
+inline std::function<Key(std::uint64_t)> alternativeName(const char c) {
+	return [c](std::uint64_t j) { return gtsam::Symbol(c, j); };
+}
 }
 
 /// traits

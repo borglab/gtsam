@@ -41,6 +41,25 @@ TEST(Key, KeySymbolConversion) {
 }
 
 /* ************************************************************************* */
+TEST(Key, SymbolAlternativeNames) {
+  const auto x1 = gtsam::symbol_shorthand::X(1);
+  const auto v1 = gtsam::symbol_shorthand::V(1);
+  const auto a1 = gtsam::symbol_shorthand::A(1);
+
+  const auto Z = gtsam::symbol_shorthand::alternativeName('x');
+  const auto DZ = gtsam::symbol_shorthand::alternativeName('v');
+  const auto DDZ = gtsam::symbol_shorthand::alternativeName('a');
+
+  const auto z1 = Z(1);
+  const auto dz1 = DZ(1);
+  const auto ddz1 = DDZ(1);
+
+  EXPECT(assert_equal(x1, z1));
+  EXPECT(assert_equal(v1, dz1));
+  EXPECT(assert_equal(a1, ddz1));
+}
+
+/* ************************************************************************* */
 template<int KeySize>
 Key KeyTestValue();
 
