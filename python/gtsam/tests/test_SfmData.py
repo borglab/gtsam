@@ -17,7 +17,6 @@ import unittest
 import numpy as np
 
 import gtsam
-#from gtsam import SfmCamera
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -57,7 +56,6 @@ class TestSfmData(GtsamTestCase):
 
     def test_data(self):
         """Test functions in SfmData"""
-        #cam1 = gtsam.SfmCamera(1500, 1200, 0, 640, 480)
         # Create new track with 3 measurements
         track2 = gtsam.SfmTrack()
         i1, i2, i3 = 3,5,6
