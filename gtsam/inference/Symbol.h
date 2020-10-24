@@ -162,6 +162,7 @@ inline Key W(std::uint64_t j) { return Symbol('w', j); }
 inline Key X(std::uint64_t j) { return Symbol('x', j); }
 inline Key Y(std::uint64_t j) { return Symbol('y', j); }
 inline Key Z(std::uint64_t j) { return Symbol('z', j); }
+}
 
 /** Generates symbol shorthands with alternative names different than the
  * one-letter predefined ones. */
@@ -171,7 +172,6 @@ public:
   SymbolGenerator(const char c) : c_(c) {}
   Symbol operator()(const std::uint64_t j) const { return Symbol(c_, j); }
 };
-}
 
 /// traits
 template<> struct traits<Symbol> : public Testable<Symbol> {};

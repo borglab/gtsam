@@ -46,9 +46,9 @@ TEST(Key, SymbolGenerator) {
   const auto v1 = gtsam::symbol_shorthand::V(1);
   const auto a1 = gtsam::symbol_shorthand::A(1);
 
-  const auto Z = gtsam::symbol_shorthand::SymbolGenerator('x');
-  const auto DZ = gtsam::symbol_shorthand::SymbolGenerator('v');
-  const auto DDZ = gtsam::symbol_shorthand::SymbolGenerator('a');
+  const auto Z = gtsam::SymbolGenerator('x');
+  const auto DZ = gtsam::SymbolGenerator('v');
+  const auto DDZ = gtsam::SymbolGenerator('a');
 
   const auto z1 = Z(1);
   const auto dz1 = DZ(1);
