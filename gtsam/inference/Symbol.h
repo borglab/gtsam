@@ -165,13 +165,15 @@ inline Key Z(std::uint64_t j) { return Symbol('z', j); }
 
 /** Generates symbol shorthands with alternative names different than the
  * one-letter predefined ones. */
-inline std::function<Key(std::uint64_t)> alternativeName(const char c) {
-	return [c](std::uint64_t j) { return gtsam::Symbol(c, j); };
-}
+class SymbolGenerator {
+  const char c_;
+public:
+  SymbolGenerator(const char c) : c_(c) {}
+  Symbol operator()(const std::uint64_t j) const { return Symbol(c_, j); }
+};
 }
 
 /// traits
 template<> struct traits<Symbol> : public Testable<Symbol> {};
 
 } // \ namespace gtsam
-
