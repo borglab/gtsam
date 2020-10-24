@@ -13,5 +13,3 @@ py::bind_vector<std::vector<gtsam::BinaryMeasurement<gtsam::Unit3> > >(m_, "Bina
 py::bind_map<gtsam::IndexPairSetMap>(m_, "IndexPairSetMap");
 py::bind_vector<gtsam::IndexPairVector>(m_, "IndexPairVector");
 py::bind_map<gtsam::KeyPairDoubleMap>(m_, "KeyPairDoubleMap");
-//py::bind_vector<std::vector<gtsam::SfmMeasurement> >(m_, "Measurement");
-//py::bind_vector<std::vector<gtsam::SiftIndex> >(m_, "SiftIndexVector");

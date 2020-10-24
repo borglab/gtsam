@@ -210,9 +210,8 @@ GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
 
 /// A measurement with its camera index
 typedef std::pair<size_t, Point2> SfmMeasurement;
-typedef std::vector<SfmMeasurement> SfmMeasurements;
 
-/// SfmTrack
+/// Sift index for SfmTrack
 typedef std::pair<size_t, size_t> SiftIndex;
 
 /// Define the structure for the 3D points
@@ -228,10 +227,9 @@ struct SfmTrack {
     return measurements.size();
   }
   /// Set 3D point
-  void setP(const Point3& p_){
+  void set_point3(const Point3& p_){
     p = p_;
   }
-
   /// Get the measurement (camera index, Point2) at pose index `idx`
   SfmMeasurement measurement(size_t idx) const {
     return measurements[idx];
@@ -240,14 +238,14 @@ struct SfmTrack {
   SiftIndex siftIndex(size_t idx) const {
     return siftIndices[idx];
   }
+  /// Get 3D point
   Point3 point3() const {
     return p;
   }
+  /// Add measurement to track
   void add_measurement(const pair<size_t, gtsam::Point2>& m) {
     measurements.push_back(m);
   }
-
-
 };
 
 
@@ -273,11 +271,11 @@ struct SfmData {
   SfmTrack track(size_t idx) const {
     return tracks[idx];
   }
-
+  /// Add a track to SfmData
   void add_track(const SfmTrack& t)  {
     tracks.push_back(t);
   }
-
+  /// Add a camera to SfmData
   void add_camera(const SfmCamera& cam){
     cameras.push_back(cam);
   }

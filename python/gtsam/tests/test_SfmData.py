@@ -32,11 +32,12 @@ class TestSfmData(GtsamTestCase):
     def test_tracks(self):
         """Test functions in SfmTrack"""
         # measurement is of format (camera_idx, imgPoint)
-        # create camera indices for two cameras
-        i1, i2 = np.random.randint(5), np.random.randint(5)
-        # create imgPoint for cameras i1 and i2
-        uv_i1 = gtsam.Point2(np.random.randint(5), np.random.randint(5))
-        uv_i2 = gtsam.Point2(np.random.randint(5), np.random.randint(5))
+        # create arbitrary camera indices for two cameras
+        i1, i2 = 4,5
+        # create arbitrary image measurements for cameras i1 and i2
+        uv_i1 = gtsam.Point2(12.6, 82)
+        # translating point uv_i1 along X-axis
+        uv_i2 = gtsam.Point2(24.88, 82)
         m_i1 = (i1, uv_i1)
         m_i2 = (i2, uv_i2)
         # add measurements to the track
@@ -47,7 +48,7 @@ class TestSfmData(GtsamTestCase):
         # camera_idx in the first measurement of the track corresponds to i1
         self.assertEqual(self.tracks.measurement(0)[0], i1)
         # Set arbitrary 3D point corresponding to the track
-        self.tracks.setP(gtsam.Point3(2.5, 3.3, 1.2))
+        self.tracks.set_point3(gtsam.Point3(2.5, 3.3, 1.2))
         np.testing.assert_array_almost_equal(
             gtsam.Point3(2.5,3.3,1.2), 
             self.tracks.point3()
@@ -59,10 +60,11 @@ class TestSfmData(GtsamTestCase):
         #cam1 = gtsam.SfmCamera(1500, 1200, 0, 640, 480)
         # Create new track with 3 measurements
         track2 = gtsam.SfmTrack()
-        i1, i2, i3 = np.random.randint(5), np.random.randint(5), np.random.randint(5)
-        uv_i1 = gtsam.Point2(np.random.randint(5), np.random.randint(5))
-        uv_i2 = gtsam.Point2(np.random.randint(5), np.random.randint(5))
-        uv_i3 = gtsam.Point2(np.random.randint(5), np.random.randint(5))
+        i1, i2, i3 = 3,5,6
+        uv_i1 = gtsam.Point2(21.23, 45.64)
+        # translating along X-axis
+        uv_i2 = gtsam.Point2(45.7, 45.64)
+        uv_i3 = gtsam.Point2(68.35, 45.64)
         m_i1, m_i2, m_i3 = (i1, uv_i1),  (i2, uv_i2), (i3, uv_i3)
         # add measurements to the track
         track2.add_measurement(m_i1)
