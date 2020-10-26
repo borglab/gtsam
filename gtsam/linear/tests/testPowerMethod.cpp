@@ -45,14 +45,16 @@ TEST(PowerMethod, powerIteration) {
   A.coeffRef(3, 3) = 3;
   A.coeffRef(4, 4) = 2;
   A.coeffRef(5, 5) = 1;
-  Vector initial = Vector6::Random();
+  Vector initial = (Vector(6) << 0.24434602, 0.22829942, 0.70094486, 0.15463092, 0.55871359,
+       0.2465342).finished();
   PowerMethod<Sparse> pf(A, initial);
-  pf.compute(50, 1e-4);
+  pf.compute(100, 1e-5);
   EXPECT_LONGS_EQUAL(6, pf.eigenvector().rows());
 
-  const Vector6 x1 = (Vector(6) << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished();
-  Vector6 actual0 = pf.eigenvector();
-  EXPECT(assert_equal(x1, actual0, 1e-4));
+  Vector6 actual1 = pf.eigenvector();
+  const double ritzValue = actual1.dot(A * actual1);
+  const double ritzResidual = (A * actual1 - ritzValue * actual1).norm();
+  EXPECT_DOUBLES_EQUAL(0, ritzResidual, 1e-5);
 
   const double ev1 = 6.0;
   EXPECT_DOUBLES_EQUAL(ev1, pf.eigenvalue(), 1e-5);
@@ -77,6 +79,7 @@ TEST(PowerMethod, useFactorGraph) {
   auto v0 = solver.eigenvectors().col(0);
   for (size_t j = 0; j < 3; j++) EXPECT_DOUBLES_EQUAL(-0.5, v0[j].real(), 1e-9);
 
+  // find the index of the max eigenvalue
   size_t maxIdx = 0;
   for (auto i = 0; i < solver.eigenvalues().rows(); ++i) {
     if (solver.eigenvalues()(i).real() >= solver.eigenvalues()(maxIdx).real())
@@ -91,7 +94,7 @@ TEST(PowerMethod, useFactorGraph) {
   pf.compute(50, 1e-4);
   EXPECT_DOUBLES_EQUAL(ev1, pf.eigenvalue(), 1e-8);
   auto actual2 = pf.eigenvector();
-  EXPECT(assert_equal(-ev2, actual2, 3e-5));
+  EXPECT(assert_equal(ev2, actual2, 3e-5));
 }
 
 /* ************************************************************************* */

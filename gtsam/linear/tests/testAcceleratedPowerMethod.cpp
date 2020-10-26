@@ -45,17 +45,19 @@ TEST(AcceleratedPowerMethod, acceleratedPowerIteration) {
   A.coeffRef(3, 3) = 3;
   A.coeffRef(4, 4) = 2;
   A.coeffRef(5, 5) = 1;
-  Vector initial = Vector6::Random();
-  const Vector6 x1 = (Vector(6) << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished();
+  Vector initial = (Vector(6) << 0.24434602, 0.22829942, 0.70094486, 0.15463092, 0.55871359,
+       0.2465342).finished();
   const double ev1 = 6.0;
 
   // test accelerated power iteration
   AcceleratedPowerMethod<Sparse> apf(A, initial);
-  apf.compute(50, 1e-4);
+  apf.compute(100, 1e-5);
   EXPECT_LONGS_EQUAL(6, apf.eigenvector().rows());
 
   Vector6 actual1 = apf.eigenvector();
-  EXPECT(assert_equal(x1, actual1, 1e-4));
+  const double ritzValue = actual1.dot(A * actual1);
+  const double ritzResidual = (A * actual1 - ritzValue * actual1).norm();
+  EXPECT_DOUBLES_EQUAL(0, ritzResidual, 1e-5);
 
   EXPECT_DOUBLES_EQUAL(ev1, apf.eigenvalue(), 1e-5);
 }
@@ -79,6 +81,7 @@ TEST(AcceleratedPowerMethod, useFactorGraph) {
   auto v0 = solver.eigenvectors().col(0);
   for (size_t j = 0; j < 3; j++) EXPECT_DOUBLES_EQUAL(-0.5, v0[j].real(), 1e-9);
 
+  // find the index of the max eigenvalue
   size_t maxIdx = 0;
   for (auto i = 0; i < solver.eigenvalues().rows(); ++i) {
     if (solver.eigenvalues()(i).real() >= solver.eigenvalues()(maxIdx).real())
@@ -86,7 +89,6 @@ TEST(AcceleratedPowerMethod, useFactorGraph) {
   }
   // Store the max eigenvalue and its according eigenvector
   const auto ev1 = solver.eigenvalues()(maxIdx).real();
-  auto ev2 = solver.eigenvectors().col(maxIdx).real();
 
   Vector disturb = Vector4::Random();
   disturb.normalize();
@@ -94,9 +96,16 @@ TEST(AcceleratedPowerMethod, useFactorGraph) {
   double magnitude = initial.norm();
   initial += 0.03 * magnitude * disturb;
   AcceleratedPowerMethod<Matrix> apf(L.first, initial);
-  apf.compute(50, 1e-4);
+  apf.compute(100, 1e-5);
+  // Check if the eigenvalue is the maximum eigen value
   EXPECT_DOUBLES_EQUAL(ev1, apf.eigenvalue(), 1e-8);
-  EXPECT(assert_equal(ev2, apf.eigenvector(), 4e-5));
+
+  // Check if the according ritz residual converged to the threshold
+  Vector actual1 = apf.eigenvector();
+  const double ritzValue = actual1.dot(L.first * actual1);
+  const double ritzResidual = (L.first * actual1 - ritzValue * actual1).norm();
+  EXPECT_DOUBLES_EQUAL(0, ritzResidual, 1e-5);
+  // Check 
 }
 
 /* ************************************************************************* */
