@@ -509,7 +509,7 @@ Vector perturb(const Vector &initialVector) {
 // compute the maximum eigenpair (\theta, \vect{v}) of C = \lamda_dom * I - A by
 // accelerated power method. Then return (\lamda_dom - \theta, \vect{v}).
 static bool PowerMinimumEigenValue(
-    const Sparse &A, const Matrix &S, double *minEigenValue,
+    const Sparse &A, const Matrix &S, double &minEigenValue,
     Vector *minEigenVector = 0, size_t *numIterations = 0,
     size_t maxIterations = 1000,
     double minEigenvalueNonnegativityTolerance = 10e-4) {
@@ -528,7 +528,7 @@ static bool PowerMinimumEigenValue(
   if (pmEigenValue < 0) {
     // The largest-magnitude eigenvalue is negative, and therefore also the
     // minimum eigenvalue, so just return this solution
-    *minEigenValue = pmEigenValue;
+    minEigenValue = pmEigenValue;
     if (minEigenVector) {
       *minEigenVector = pmOperator.eigenvector();
       minEigenVector->normalize();  // Ensure that this is a unit vector
@@ -545,7 +545,7 @@ static bool PowerMinimumEigenValue(
 
   if (!minConverged) return false;
 
-  *minEigenValue = pmEigenValue - apmShiftedOperator.eigenvalue();
+  minEigenValue = pmEigenValue - apmShiftedOperator.eigenvalue();
   if (minEigenVector) {
     *minEigenVector = apmShiftedOperator.eigenvector();
     minEigenVector->normalize();  // Ensure that this is a unit vector
@@ -723,8 +723,8 @@ double ShonanAveraging<d>::computeMinEigenValueAP(const Values &values,
   const Matrix S = StiefelElementMatrix(values);
   auto A = computeA(S);
 
-  double minEigenValue;
-  bool success = PowerMinimumEigenValue(A, S, &minEigenValue, minEigenVector);
+  double minEigenValue = 0;
+  bool success = PowerMinimumEigenValue(A, S, minEigenValue, minEigenVector);
   if (!success) {
     throw std::runtime_error(
         "PowerMinimumEigenValue failed to compute minimum eigenvalue.");

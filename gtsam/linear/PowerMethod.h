@@ -66,23 +66,24 @@ class PowerMethod {
     ritzVector_ = powerIteration(x0);
   }
 
-  // Update the vector by dot product with A_, and return A * x / || A * x ||
+  // Run power iteration on the vector, and return A * x / || A * x ||
   Vector powerIteration(const Vector &x) const {
     Vector y = A_ * x;
     y.normalize();
     return y;
   }
 
-  //  Update the vector by dot product with A_, and return A * x / || A * x ||
+  // Run power iteration on the vector, and return A * x / || A * x ||
   Vector powerIteration() const { return powerIteration(ritzVector_); }
 
-  // After Perform power iteration on a single Ritz value, if the error is less
-  // than the tol then return true else false
-  bool converged(double tol) {
+  // After Perform power iteration on a single Ritz value, check if the Ritz
+  // residual for the current Ritz pair is less than the required convergence
+  // tol, return true if yes, else false
+  bool converged(double tol) const {
     const Vector x = ritzVector_;
     // store the Ritz eigen value
-    ritzValue_ = x.dot(A_ * x);
-    double error = (A_ * x - ritzValue_ * x).norm();
+    const double ritzValue = x.dot(A_ * x);
+    const double error = (A_ * x - ritzValue * x).norm();
     return error < tol;
   }
 
@@ -90,18 +91,20 @@ class PowerMethod {
   size_t nrIterations() const { return nrIterations_; }
 
   // Start the power/accelerated iteration, after performing the
-  // power/accelerated power iteration, calculate the ritz error, repeat this
+  // power/accelerated iteration, calculate the ritz error, repeat this
   // operation until the ritz error converge. If converged return true, else
   // false.
   bool compute(size_t maxIterations, double tol) {
     // Starting
     bool isConverged = false;
 
-    for (size_t i = 0; i < maxIterations; i++) {
+    for (size_t i = 0; i < maxIterations && !isConverged; i++) {
       ++nrIterations_;
+      // update the ritzVector after power iteration
       ritzVector_ = powerIteration();
+      // update the ritzValue 
+      ritzValue_ = ritzVector_.dot(A_ * ritzVector_);
       isConverged = converged(tol);
-      if (isConverged) return isConverged;
     }
 
     return isConverged;

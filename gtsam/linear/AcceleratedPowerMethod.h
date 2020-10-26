@@ -61,7 +61,7 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
   // vector as ritzVector
   explicit AcceleratedPowerMethod(
       const Operator &A, const boost::optional<Vector> initial = boost::none,
-      const double initialBeta = 0.0)
+      double initialBeta = 0.0)
       : PowerMethod<Operator>(A, initial) {
     // initialize Ritz eigen vector and previous vector
     this->ritzVector_ = initial ? initial.get() : Vector::Random(this->dim_);
@@ -76,60 +76,96 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
     }
   }
 
-  // Update the ritzVector with beta and previous two ritzVector, and return
-  // x_{k+1} = A * x_k - \beta * x_{k-1} / || A * x_k - \beta * x_{k-1} ||
-  Vector powerIteration(const Vector &x1, const Vector &x0,
+  // Run accelerated power iteration on the ritzVector with beta and previous
+  // two ritzVector, and return x_{k+1} = A * x_k - \beta * x_{k-1} / || A * x_k
+  // - \beta * x_{k-1} ||
+  Vector acceleratedPowerIteration (const Vector &x1, const Vector &x0,
                         const double beta) const {
     Vector y = this->A_ * x1 - beta * x0;
     y.normalize();
     return y;
   }
 
-  // Update the ritzVector with beta and previous two ritzVector, and return
-  // x_{k+1} = A * x_k - \beta * x_{k-1} / || A * x_k - \beta * x_{k-1} ||
-  Vector powerIteration() const {
-    Vector y = powerIteration(this->ritzVector_, previousVector_, beta_);
-    previousVector_ = this->ritzVector_;
+  // Run accelerated power iteration on the ritzVector with beta and previous
+  // two ritzVector, and return x_{k+1} = A * x_k - \beta * x_{k-1} / || A * x_k
+  // - \beta * x_{k-1} ||
+  Vector acceleratedPowerIteration () const {
+    Vector y = acceleratedPowerIteration(this->ritzVector_, previousVector_, beta_);
     return y;
   }
 
   // Tuning the momentum beta using the Best Heavy Ball algorithm in Ref(3)
   void estimateBeta() {
     // set beta
-    Vector init_resid = this->ritzVector_;
-    const double up = init_resid.dot( this->A_ * init_resid );
-    const double down = init_resid.dot(init_resid);
+    Vector initVector = this->ritzVector_;
+    const double up = initVector.dot( this->A_ * initVector );
+    const double down = initVector.dot(initVector);
     const double mu = up / down;
     double maxBeta = mu * mu / 4;
     size_t maxIndex;
-    std::vector<double> betas = {2 / 3 * maxBeta, 0.99 * maxBeta, maxBeta,
-                                 1.01 * maxBeta, 1.5 * maxBeta};
+    std::vector<double> betas;
 
     Matrix R = Matrix::Zero(this->dim_, 10);
-    for (size_t i = 0; i < 10; i++) {
-      Vector x0 = Vector::Random(this->dim_);
-      x0.normalize();
-      Vector x00 = Vector::Zero(this->dim_);
+    size_t T = 10;
+    // run T times of iteration to find the beta that has the largest Rayleigh quotient
+    for (size_t t = 0; t < T; t++) {
+      // after each t iteration, reset the betas with the current maxBeta
+      betas = {2 / 3 * maxBeta, 0.99 * maxBeta, maxBeta, 1.01 * maxBeta,
+               1.5 * maxBeta};
+      // iterate through every beta value
       for (size_t k = 0; k < betas.size(); ++k) {
+        // initialize x0 and x00 in each iteration of each beta
+        Vector x0 = initVector;
+        Vector x00 = Vector::Zero(this->dim_);
+        // run 10 steps of accelerated power iteration with this beta 
         for (size_t j = 1; j < 10; j++) {
           if (j < 2) {
-            R.col(0) = powerIteration(x0, x00, betas[k]);
-            R.col(1) = powerIteration(R.col(0), x0, betas[k]);
+            R.col(0) = acceleratedPowerIteration(x0, x00, betas[k]);
+            R.col(1) = acceleratedPowerIteration(R.col(0), x0, betas[k]);
           } else {
-            R.col(j) = powerIteration(R.col(j - 1), R.col(j - 2), betas[k]);
+            R.col(j) = acceleratedPowerIteration(R.col(j - 1), R.col(j - 2), betas[k]);
           }
         }
+        // compute the Rayleigh quotient for the randomly sampled vector after
+        // 10 steps of power accelerated iteration
         const Vector x = R.col(9);
         const double up = x.dot(this->A_ * x);
         const double down = x.dot(x);
         const double mu = up / down;
+        // store the momentum with largest Rayleigh quotient and its according index of beta_
         if (mu * mu / 4 > maxBeta) {
+          // save the max beta index
           maxIndex = k;
           maxBeta = mu * mu / 4;
         }
       }
     }
+    // set beta_ to momentum with largest Rayleigh quotient
     beta_ = betas[maxIndex];
+  }
+
+  // Start the accelerated iteration, after performing the
+  // accelerated iteration, calculate the ritz error, repeat this
+  // operation until the ritz error converge. If converged return true, else
+  // false.
+  bool compute(size_t maxIterations, double tol) {
+    // Starting
+    bool isConverged = false;
+
+    for (size_t i = 0; i < maxIterations; i++) {
+      ++(this->nrIterations_);
+      Vector tmp = this->ritzVector_;
+      // update the ritzVector after accelerated power iteration
+      this->ritzVector_ = acceleratedPowerIteration();
+      // update the previousVector with ritzVector
+      previousVector_ = tmp;
+      // update the ritzValue 
+      this->ritzValue_ = this->ritzVector_.dot(this->A_ * this->ritzVector_);
+      isConverged = this->converged(tol);
+      if (isConverged) return isConverged;
+    }
+
+    return isConverged;
   }
 };
 
