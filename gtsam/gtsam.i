@@ -2762,12 +2762,12 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 
 class SfmTrack {
   SfmTrack();
-  Point3 point3() const;
+  SfmTrack(const gtsam::Point3& pt);
+  const Point3& point3() const;
   size_t number_measurements() const;
-  void set_point3(gtsam::Point3& p_);
   pair<size_t, gtsam::Point2> measurement(size_t idx) const;
   pair<size_t, size_t> siftIndex(size_t idx) const;
-  void add_measurement(const pair<size_t, gtsam::Point2>& m);
+  void add_measurement(size_t idx, const gtsam::Point2& m);
 };
 
 class SfmData {

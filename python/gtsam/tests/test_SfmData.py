@@ -26,7 +26,8 @@ class TestSfmData(GtsamTestCase):
     def setUp(self):
         """Initialize SfmData and SfmTrack"""
         self.data = gtsam.SfmData()
-        self.tracks = gtsam.SfmTrack()
+        # initialize SfmTrack with 3D point
+        self.tracks = gtsam.SfmTrack(gtsam.Point3(2.5, 3.3, 1.2))
 
     def test_tracks(self):
         """Test functions in SfmTrack"""
@@ -37,17 +38,14 @@ class TestSfmData(GtsamTestCase):
         uv_i1 = gtsam.Point2(12.6, 82)
         # translating point uv_i1 along X-axis
         uv_i2 = gtsam.Point2(24.88, 82)
-        m_i1 = (i1, uv_i1)
-        m_i2 = (i2, uv_i2)
         # add measurements to the track
-        self.tracks.add_measurement(m_i1)
-        self.tracks.add_measurement(m_i2)
+        self.tracks.add_measurement(i1, uv_i1)
+        self.tracks.add_measurement(i2, uv_i2)
         # Number of measurements in the track is 2
         self.assertEqual(self.tracks.number_measurements(), 2)
         # camera_idx in the first measurement of the track corresponds to i1
-        self.assertEqual(self.tracks.measurement(0)[0], i1)
-        # Set arbitrary 3D point corresponding to the track
-        self.tracks.set_point3(gtsam.Point3(2.5, 3.3, 1.2))
+        cam_idx, img_measurement = self.tracks.measurement(0)
+        self.assertEqual(cam_idx, i1)
         np.testing.assert_array_almost_equal(
             gtsam.Point3(2.5,3.3,1.2), 
             self.tracks.point3()
@@ -63,17 +61,17 @@ class TestSfmData(GtsamTestCase):
         # translating along X-axis
         uv_i2 = gtsam.Point2(45.7, 45.64)
         uv_i3 = gtsam.Point2(68.35, 45.64)
-        m_i1, m_i2, m_i3 = (i1, uv_i1),  (i2, uv_i2), (i3, uv_i3)
         # add measurements to the track
-        track2.add_measurement(m_i1)
-        track2.add_measurement(m_i2)
-        track2.add_measurement(m_i3)
+        track2.add_measurement(i1, uv_i1)
+        track2.add_measurement(i2, uv_i2)
+        track2.add_measurement(i3, uv_i3)
         self.data.add_track(self.tracks)
         self.data.add_track(track2)
         # Number of tracks in SfmData is 2
         self.assertEqual(self.data.number_tracks(), 2)
         # camera idx of first measurement of second track corresponds to i1
-        self.assertEqual(self.data.track(1).measurement(0)[0], i1)
+        cam_idx, img_measurement = self.data.track(1).measurement(0)
+        self.assertEqual(cam_idx, i1)
 
 if __name__ == '__main__':
     unittest.main()

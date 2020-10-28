@@ -217,6 +217,7 @@ typedef std::pair<size_t, size_t> SiftIndex;
 /// Define the structure for the 3D points
 struct SfmTrack {
   SfmTrack(): p(0,0,0) {}
+  SfmTrack(const gtsam::Point3& pt) : p(pt) {}
   Point3 p; ///< 3D position of the point
   float r, g, b; ///< RGB color of the 3D point
   std::vector<SfmMeasurement> measurements; ///< The 2D image projections (id,(u,v))
@@ -225,10 +226,6 @@ struct SfmTrack {
   /// Total number of measurements in this track
   size_t number_measurements() const {
     return measurements.size();
-  }
-  /// Set 3D point
-  void set_point3(const Point3& p_){
-    p = p_;
   }
   /// Get the measurement (camera index, Point2) at pose index `idx`
   SfmMeasurement measurement(size_t idx) const {
@@ -239,12 +236,12 @@ struct SfmTrack {
     return siftIndices[idx];
   }
   /// Get 3D point
-  Point3 point3() const {
+  const Point3& point3() const {
     return p;
   }
-  /// Add measurement to track
-  void add_measurement(const pair<size_t, gtsam::Point2>& m) {
-    measurements.push_back(m);
+  /// Add measurement (camera_idx, Point2) to track
+  void add_measurement(size_t idx, const gtsam::Point2& m) {
+    measurements.emplace_back(idx, m);
   }
 };
 
