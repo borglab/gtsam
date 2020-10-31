@@ -158,9 +158,8 @@ void DepthFirstForestParallel(FOREST& forest, DATA& rootData,
   // Typedefs
   typedef typename FOREST::Node Node;
 
-  tbb::task::spawn_root_and_wait(
-      internal::CreateRootTask<Node>(forest.roots(), rootData, visitorPre,
-          visitorPost, problemSizeThreshold));
+  internal::CreateRootTask<Node>(forest.roots(), rootData, visitorPre,
+      visitorPost, problemSizeThreshold);
 #else
   DepthFirstForest(forest, rootData, visitorPre, visitorPost);
 #endif
