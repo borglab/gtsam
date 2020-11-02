@@ -77,8 +77,8 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
   }
 
   // Run accelerated power iteration on the ritzVector with beta and previous
-  // two ritzVector, and return x_{k+1} = A * x_k - \beta * x_{k-1} / || A * x_k
-  // - \beta * x_{k-1} ||
+  // two ritzVector, and return y = (A * x0 - \beta * x00) / || A * x0
+  // - \beta * x00 ||
   Vector acceleratedPowerIteration (const Vector &x1, const Vector &x0,
                         const double beta) const {
     Vector y = this->A_ * x1 - beta * x0;
@@ -87,8 +87,8 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
   }
 
   // Run accelerated power iteration on the ritzVector with beta and previous
-  // two ritzVector, and return x_{k+1} = A * x_k - \beta * x_{k-1} / || A * x_k
-  // - \beta * x_{k-1} ||
+  // two ritzVector, and return y = (A * x0 - \beta * x00) / || A * x0
+  // - \beta * x00 ||
   Vector acceleratedPowerIteration () const {
     Vector y = acceleratedPowerIteration(this->ritzVector_, previousVector_, beta_);
     return y;
@@ -96,7 +96,7 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
 
   // Tuning the momentum beta using the Best Heavy Ball algorithm in Ref(3)
   void estimateBeta() {
-    // set beta
+    // set initial estimation of maxBeta
     Vector initVector = this->ritzVector_;
     const double up = initVector.dot( this->A_ * initVector );
     const double down = initVector.dot(initVector);
@@ -152,7 +152,7 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
     // Starting
     bool isConverged = false;
 
-    for (size_t i = 0; i < maxIterations; i++) {
+    for (size_t i = 0; i < maxIterations && !isConverged; i++) {
       ++(this->nrIterations_);
       Vector tmp = this->ritzVector_;
       // update the ritzVector after accelerated power iteration
@@ -162,7 +162,6 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
       // update the ritzValue 
       this->ritzValue_ = this->ritzVector_.dot(this->A_ * this->ritzVector_);
       isConverged = this->converged(tol);
-      if (isConverged) return isConverged;
     }
 
     return isConverged;
