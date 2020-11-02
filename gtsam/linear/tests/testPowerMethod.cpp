@@ -82,14 +82,15 @@ TEST(PowerMethod, useFactorGraph) {
   }
   // Store the max eigenvalue and its according eigenvector
   const auto ev1 = solver.eigenvalues()(maxIdx).real();
-  auto ev2 = solver.eigenvectors().col(maxIdx).real();
 
   Vector initial = Vector4::Random();
   PowerMethod<Matrix> pf(L.first, initial);
-  pf.compute(50, 1e-4);
+  pf.compute(100, 1e-5);
   EXPECT_DOUBLES_EQUAL(ev1, pf.eigenvalue(), 1e-8);
   auto actual2 = pf.eigenvector();
-  EXPECT(assert_equal(ev2, actual2, 3e-5));
+  const double ritzValue = actual2.dot(L.first * actual2);
+  const double ritzResidual = (L.first * actual2 - ritzValue * actual2).norm();
+  EXPECT_DOUBLES_EQUAL(0, ritzResidual, 1e-5);
 }
 
 /* ************************************************************************* */
