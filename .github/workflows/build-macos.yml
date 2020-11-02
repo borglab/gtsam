@@ -35,7 +35,7 @@ jobs:
       - name: Install (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install cmake ninja boost
+          brew install cmake ninja boost@1.60
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             brew install gcc@${{ matrix.version }}
             echo "::set-env name=CC::gcc-${{ matrix.version }}"
