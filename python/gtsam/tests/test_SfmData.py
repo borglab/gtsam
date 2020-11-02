@@ -27,7 +27,7 @@ class TestSfmData(GtsamTestCase):
         """Initialize SfmData and SfmTrack"""
         self.data = gtsam.SfmData()
         # initialize SfmTrack with 3D point
-        self.tracks = gtsam.SfmTrack(gtsam.Point3(2.5, 3.3, 1.2))
+        self.tracks = gtsam.SfmTrack()
 
     def test_tracks(self):
         """Test functions in SfmTrack"""
@@ -47,7 +47,7 @@ class TestSfmData(GtsamTestCase):
         cam_idx, img_measurement = self.tracks.measurement(0)
         self.assertEqual(cam_idx, i1)
         np.testing.assert_array_almost_equal(
-            gtsam.Point3(2.5,3.3,1.2), 
+            gtsam.Point3(0.,0.,0.), 
             self.tracks.point3()
         )
 
@@ -55,13 +55,15 @@ class TestSfmData(GtsamTestCase):
     def test_data(self):
         """Test functions in SfmData"""
         # Create new track with 3 measurements
-        track2 = gtsam.SfmTrack()
         i1, i2, i3 = 3,5,6
         uv_i1 = gtsam.Point2(21.23, 45.64)
         # translating along X-axis
         uv_i2 = gtsam.Point2(45.7, 45.64)
         uv_i3 = gtsam.Point2(68.35, 45.64)
-        # add measurements to the track
+        # add measurements and arbitrary point to the track
+        measurements = [(i1, uv_i1), (i2, uv_i2), (i3, uv_i3)]
+        pt = gtsam.Point3(1.0, 6.0, 2.0)
+        track2 = gtsam.SfmTrack(pt)
         track2.add_measurement(i1, uv_i1)
         track2.add_measurement(i2, uv_i2)
         track2.add_measurement(i3, uv_i3)
