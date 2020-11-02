@@ -74,11 +74,6 @@ TEST(PowerMethod, useFactorGraph) {
   auto L = fg.hessian();
   Eigen::EigenSolver<Matrix> solver(L.first);
 
-  // Check that we get zero eigenvalue and "constant" eigenvector
-  EXPECT_DOUBLES_EQUAL(0.0, solver.eigenvalues()[0].real(), 1e-9);
-  auto v0 = solver.eigenvectors().col(0);
-  for (size_t j = 0; j < 3; j++) EXPECT_DOUBLES_EQUAL(-0.5, v0[j].real(), 1e-9);
-
   // find the index of the max eigenvalue
   size_t maxIdx = 0;
   for (auto i = 0; i < solver.eigenvalues().rows(); ++i) {
