@@ -35,7 +35,9 @@ jobs:
       - name: Install (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install cmake ninja boost
+          brew tap ProfFan/robotics
+          brew install cmake ninja
+          brew install ProfFan/robotics/boost
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             brew install gcc@${{ matrix.version }}
             echo "::set-env name=CC::gcc-${{ matrix.version }}"
