@@ -93,6 +93,12 @@ namespace gtsam {
     /// image center in y
     inline double py() const { return K_.py();}
 
+    /// image center in x
+    inline double u0() const { return K_.px(); }
+
+    /// image center in y
+    inline double v0() const { return K_.py(); }
+
     /// return the principal point
     Point2 principalPoint() const { return K_.principalPoint();}
 

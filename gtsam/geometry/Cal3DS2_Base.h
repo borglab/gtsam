@@ -93,6 +93,12 @@ public:
   /// image center in y
   inline double py() const { return v0_;}
 
+  /// image center in x
+  inline double u0() const { return u0_; }
+
+  /// image center in y
+  inline double v0() const { return v0_; }
+
   /// First distortion coefficient
   inline double k1() const { return k1_;}
 

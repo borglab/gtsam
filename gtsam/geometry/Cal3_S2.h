@@ -118,6 +118,12 @@ public:
     return v0_;
   }
 
+  /// image center in x
+  inline double u0() const { return u0_; }
+
+  /// image center in y
+  inline double v0() const { return v0_; }
+
   /// return the principal point
   Point2 principalPoint() const {
     return Point2(u0_, v0_);

@@ -597,6 +597,7 @@ class Rot3 {
   Rot3(double R11, double R12, double R13,
       double R21, double R22, double R23,
       double R31, double R32, double R33);
+  Rot3(double w, double x, double y, double z);
 
   static gtsam::Rot3 Rx(double t);
   static gtsam::Rot3 Ry(double t);
@@ -848,6 +849,8 @@ class Cal3_S2 {
   double skew() const;
   double px() const;
   double py() const;
+  double u0() const;
+  double v0() const;
   gtsam::Point2 principalPoint() const;
   Vector vector() const;
   Matrix K() const;
@@ -872,6 +875,8 @@ virtual class Cal3DS2_Base {
   double skew() const;
   double px() const;
   double py() const;
+  double u0() const;
+  double v0() const;
   double k1() const;
   double k2() const;
   Matrix K() const;
@@ -950,6 +955,8 @@ class Cal3_S2Stereo {
   double skew() const;
   double px() const;
   double py() const;
+  double u0() const;
+  double v0() const;
   gtsam::Point2 principalPoint() const;
   double baseline() const;
 };
@@ -2761,7 +2768,16 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/dataset.h>
+
 class SfmTrack {
+  SfmTrack();
+
+  double r;
+  double g;
+  double b;
+  //TODO Need to close wrap#10 to allow this to work.
+  // std::vector<pair<size_t, gtsam::Point2>> measurements;
+
   Point3 point3() const;
   size_t number_measurements() const;
   pair<size_t, gtsam::Point2> measurement(size_t idx) const;
