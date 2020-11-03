@@ -849,8 +849,6 @@ class Cal3_S2 {
   double skew() const;
   double px() const;
   double py() const;
-  double u0() const;
-  double v0() const;
   gtsam::Point2 principalPoint() const;
   Vector vector() const;
   Matrix K() const;
@@ -875,8 +873,6 @@ virtual class Cal3DS2_Base {
   double skew() const;
   double px() const;
   double py() const;
-  double u0() const;
-  double v0() const;
   double k1() const;
   double k2() const;
   Matrix K() const;
@@ -955,8 +951,6 @@ class Cal3_S2Stereo {
   double skew() const;
   double px() const;
   double py() const;
-  double u0() const;
-  double v0() const;
   gtsam::Point2 principalPoint() const;
   double baseline() const;
 };
@@ -987,8 +981,8 @@ class Cal3Bundler {
   double fy() const;
   double k1() const;
   double k2() const;
-  double u0() const;
-  double v0() const;
+  double px() const;
+  double py() const;
   Vector vector() const;
   Vector k() const;
   Matrix K() const;
