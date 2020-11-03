@@ -1163,6 +1163,19 @@ TEST(Matrix , IsVectorSpace) {
   BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector5>));
 }
 
+TEST(Matrix, AbsoluteError) {
+  double a = 2000, b = 1997, tol=1e-1;
+  bool isEqual;
+
+  // Test absolute error
+  isEqual = fpEqual(a, b, tol, true);
+  EXPECT(isEqual == false);
+
+  // Test relative error
+  isEqual = fpEqual(a, b, tol, false);
+  EXPECT(isEqual == true);
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
