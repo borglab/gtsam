@@ -87,7 +87,8 @@ static_assert(
  *
  * Return true if two numbers are close wrt tol.
  */
-GTSAM_EXPORT bool fpEqual(double a, double b, double tol);
+GTSAM_EXPORT bool fpEqual(double a, double b, double tol,
+                          bool absolute = false);
 
 /**
  * print without optional string, must specify cout yourself

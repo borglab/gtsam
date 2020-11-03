@@ -39,7 +39,7 @@ namespace gtsam {
  * 1. https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
  * 2. https://floating-point-gui.de/errors/comparison/
  * ************************************************************************* */
-bool fpEqual(double a, double b, double tol) {
+bool fpEqual(double a, double b, double tol, bool absolute) {
   using std::abs;
   using std::isnan;
   using std::isinf;
@@ -66,7 +66,9 @@ bool fpEqual(double a, double b, double tol) {
     return true;
   }
   // Use relative error
-  else if(abs(a-b) <= tol * min(larger, std::numeric_limits<double>::max())) {
+  else if (abs(a - b) <=
+               tol * min(larger, std::numeric_limits<double>::max()) &&
+           !absolute) {
     return true;
   }
 
