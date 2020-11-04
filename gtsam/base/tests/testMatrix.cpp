@@ -1169,11 +1169,11 @@ TEST(Matrix, AbsoluteError) {
 
   // Test absolute error
   isEqual = fpEqual(a, b, tol, true);
-  EXPECT(isEqual == false);
+  EXPECT(!isEqual);
 
   // Test relative error
   isEqual = fpEqual(a, b, tol, false);
-  EXPECT(isEqual == true);
+  EXPECT(isEqual);
 }
 
 /* ************************************************************************* */
