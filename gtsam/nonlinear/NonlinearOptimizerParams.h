@@ -33,22 +33,19 @@ namespace gtsam {
  */
 class GTSAM_EXPORT NonlinearOptimizerParams {
 public:
+  NonlinearOptimizerParams() = default;
+
   /** See NonlinearOptimizerParams::verbosity */
   enum Verbosity {
     SILENT, TERMINATION, ERROR, VALUES, DELTA, LINEAR
   };
 
-  size_t maxIterations; ///< The maximum iterations to stop iterating (default 100)
-  double relativeErrorTol; ///< The maximum relative error decrease to stop iterating (default 1e-5)
-  double absoluteErrorTol; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
-  double errorTol; ///< The maximum total error to stop iterating (default 0.0)
-  Verbosity verbosity; ///< The printing verbosity during optimization (default SILENT)
-  Ordering::OrderingType orderingType; ///< The method of ordering use during variable elimination (default COLAMD)
-
-  NonlinearOptimizerParams() :
-      maxIterations(100), relativeErrorTol(1e-5), absoluteErrorTol(1e-5), errorTol(
-          0.0), verbosity(SILENT), orderingType(Ordering::COLAMD),
-          linearSolverType(MULTIFRONTAL_CHOLESKY) {}
+  size_t maxIterations = 100; ///< The maximum iterations to stop iterating (default 100)
+  double relativeErrorTol = 1e-5; ///< The maximum relative error decrease to stop iterating (default 1e-5)
+  double absoluteErrorTol = 1e-5; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
+  double errorTol = 0.0; ///< The maximum total error to stop iterating (default 0.0)
+  Verbosity verbosity = SILENT; ///< The printing verbosity during optimization (default SILENT)
+  Ordering::OrderingType orderingType = Ordering::COLAMD; ///< The method of ordering use during variable elimination (default COLAMD)
 
   virtual ~NonlinearOptimizerParams() {
   }
@@ -71,6 +68,15 @@ public:
   static Verbosity verbosityTranslator(const std::string &s) ;
   static std::string verbosityTranslator(Verbosity value) ;
 
+  /** Type for an optional user-provided hook to be called after each 
+   * internal optimizer iteration */
+  using IterationHook = std::function<
+    void(size_t /*iteration*/, double/*errorBefore*/, double/*errorAfter*/)>;
+
+  /** Optional user-provided iteration hook to be called after each 
+   * optimization iteration (Default: empty) */
+  IterationHook iterationHook;
+
   /** See NonlinearOptimizerParams::linearSolverType */
   enum LinearSolverType {
     MULTIFRONTAL_CHOLESKY,
@@ -81,7 +87,7 @@ public:
     CHOLMOD, /* Experimental Flag */
   };
 
-  LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
+  LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
   boost::optional<Ordering> ordering; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
 
