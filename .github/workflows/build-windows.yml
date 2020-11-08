@@ -50,17 +50,17 @@ jobs:
             # See: https://github.com/DaanDeMeyer/doctest/runs/231595515
             # See: https://github.community/t5/GitHub-Actions/Something-is-wrong-with-the-chocolatey-installed-version-of-gcc/td-p/32413
             scoop install gcc --global
-            echo "::set-env name=CC::gcc"
-            echo "::set-env name=CXX::g++"
+            echo "CC=gcc" >> $GITHUB_ENV
+            echo "CXX=g++" >> $GITHUB_ENV
           } elseif ("${{ matrix.compiler }}" -eq "clang") {
-            echo "::set-env name=CC::clang"
-            echo "::set-env name=CXX::clang++"
+            echo "CC=clang" >> $GITHUB_ENV
+            echo "CXX=clang++" >> $GITHUB_ENV
           } else {
-            echo "::set-env name=CC::${{ matrix.compiler }}"
-            echo "::set-env name=CXX::${{ matrix.compiler }}"
+            echo "CC=${{ matrix.compiler }}" >> $GITHUB_ENV
+            echo "CXX=${{ matrix.compiler }}" >> $GITHUB_ENV
           }
           # Scoop modifies the PATH so we make the modified PATH global.
-          echo "::set-env name=PATH::$env:PATH"
+          echo "$env" >> $GITHUB_PATH
       - name: Build (Windows)
         if: runner.os == 'Windows'
         run: |
