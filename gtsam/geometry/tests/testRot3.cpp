@@ -911,6 +911,26 @@ TEST(Rot3, yaw_derivative) {
 }
 
 /* ************************************************************************* */
+TEST(Rot3, determinant) {
+  size_t degree = 1;
+  Rot3 R_w0;  // Zero rotation
+  Rot3 R_w1 = Rot3::Ry(degree * M_PI / 180);
+
+  Rot3 R_01, R_w2;
+  double actual, expected = 1.0;
+
+  for (size_t i = 2; i < 360; ++i) {
+    R_01 = R_w0.between(R_w1);
+    R_w2 = R_w1 * R_01;
+    R_w0 = R_w1;
+    R_w1 = R_w2.normalized();
+    actual = R_w2.matrix().determinant();
+
+    EXPECT_DOUBLES_EQUAL(expected, actual, 1e-7);
+  }
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
