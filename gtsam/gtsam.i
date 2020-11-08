@@ -2763,6 +2763,13 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 class SfmTrack {
   SfmTrack();
   SfmTrack(const gtsam::Point3& pt);
+
+  double r;
+  double g;
+  double b;
+  // TODO Need to close wrap#10 to allow this to work.
+  // std::vector<pair<size_t, gtsam::Point2>> measurements;
+
   const Point3& point3() const;
   size_t number_measurements() const;
   pair<size_t, gtsam::Point2> measurement(size_t idx) const;
