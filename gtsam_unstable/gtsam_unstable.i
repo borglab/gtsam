@@ -5,8 +5,6 @@
 // specify the classes from gtsam we are using
 virtual class gtsam::Value;
 class gtsam::Vector6;
-class gtsam::LieScalar;
-class gtsam::LieVector;
 class gtsam::Point2;
 class gtsam::Point2Vector;
 class gtsam::Rot2;
@@ -476,14 +474,12 @@ virtual class DGroundConstraint : gtsam::NonlinearFactor {
   DGroundConstraint(size_t key, Vector constraint, const gtsam::noiseModel::Base* model);
 };
 
-#include <gtsam/base/deprecated/LieScalar.h>
-
 #include <gtsam_unstable/dynamics/VelocityConstraint3.h>
 virtual class VelocityConstraint3 : gtsam::NonlinearFactor {
   /** Standard constructor */
   VelocityConstraint3(size_t key1, size_t key2, size_t velKey, double dt);
 
-  Vector evaluateError(const gtsam::LieScalar& x1, const gtsam::LieScalar& x2, const gtsam::LieScalar& v) const;
+  Vector evaluateError(const double& x1, const double& x2, const double& v) const;
 };
 
 #include <gtsam_unstable/dynamics/Pendulum.h>
@@ -491,7 +487,7 @@ virtual class PendulumFactor1 : gtsam::NonlinearFactor {
   /** Standard constructor */
   PendulumFactor1(size_t k1, size_t k, size_t velKey, double dt);
 
-  Vector evaluateError(const gtsam::LieScalar& qk1, const gtsam::LieScalar& qk, const gtsam::LieScalar& v) const;
+  Vector evaluateError(const double& qk1, const double& qk, const double& v) const;
 };
 
 #include <gtsam_unstable/dynamics/Pendulum.h>
@@ -499,21 +495,21 @@ virtual class PendulumFactor2 : gtsam::NonlinearFactor {
   /** Standard constructor */
   PendulumFactor2(size_t vk1, size_t vk, size_t qKey, double dt, double L, double g);
 
-  Vector evaluateError(const gtsam::LieScalar& vk1, const gtsam::LieScalar& vk, const gtsam::LieScalar& q) const;
+  Vector evaluateError(const double& vk1, const double& vk, const double& q) const;
 };
 
 virtual class PendulumFactorPk : gtsam::NonlinearFactor {
   /** Standard constructor */
   PendulumFactorPk(size_t pk, size_t qk, size_t qk1, double h, double m, double r, double g, double alpha);
 
-  Vector evaluateError(const gtsam::LieScalar& pk, const gtsam::LieScalar& qk, const gtsam::LieScalar& qk1) const;
+  Vector evaluateError(const double& pk, const double& qk, const double& qk1) const;
 };
 
 virtual class PendulumFactorPk1 : gtsam::NonlinearFactor {
   /** Standard constructor */
   PendulumFactorPk1(size_t pk1, size_t qk, size_t qk1, double h, double m, double r, double g, double alpha);
 
-  Vector evaluateError(const gtsam::LieScalar& pk1, const gtsam::LieScalar& qk, const gtsam::LieScalar& qk1) const;
+  Vector evaluateError(const double& pk1, const double& qk, const double& qk1) const;
 };
 
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>

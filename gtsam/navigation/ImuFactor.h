@@ -80,7 +80,7 @@ protected:
 
 public:
 
-  /// Default constructor for serialization and Cython wrapper
+  /// Default constructor for serialization and wrappers
   PreintegratedImuMeasurements() {
     preintMeasCov_.setZero();
   }

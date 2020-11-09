@@ -37,7 +37,8 @@ set(ignore
     gtsam::Point2Vector
     gtsam::Pose3Vector
     gtsam::KeyVector
-    gtsam::BinaryMeasurementsUnit3)
+    gtsam::BinaryMeasurementsUnit3
+    gtsam::KeyPairDoubleMap)
 
 pybind_wrap(gtsam_py # target
             ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i # interface_header
@@ -80,7 +81,9 @@ set(ignore
         gtsam::Pose3Vector
         gtsam::KeyVector
         gtsam::FixedLagSmootherKeyTimestampMapValue
-        gtsam::BinaryMeasurementsUnit3)
+        gtsam::BinaryMeasurementsUnit3
+        gtsam::KeyPairDoubleMap)
+        
 pybind_wrap(gtsam_unstable_py # target
         ${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i # interface_header
         "gtsam_unstable.cpp" # generated_cpp

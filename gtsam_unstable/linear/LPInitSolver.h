@@ -21,7 +21,6 @@
 
 #include <gtsam_unstable/linear/LP.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <CppUnitLite/Test.h>
 
 namespace gtsam {
 /**
@@ -83,7 +82,7 @@ private:
       const InequalityFactorGraph& inequalities) const;
 
   // friend class for unit-testing private methods
-  FRIEND_TEST(LPInitSolver, initialization);
+  friend class LPInitSolverInitializationTest;
 };
 
 }

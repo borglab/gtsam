@@ -51,6 +51,8 @@ static const Similarity3 T4(R, P, s);
 static const Similarity3 T5(R, P, 10);
 static const Similarity3 T6(Rot3(), Point3(1, 1, 0), 2); // Simpler transform
 
+const double degree = M_PI / 180;
+
 //******************************************************************************
 TEST(Similarity3, Concepts) {
   BOOST_CONCEPT_ASSERT((IsGroup<Similarity3 >));
@@ -253,6 +255,114 @@ TEST(Similarity3, GroupAction) {
     EXPECT(assert_equal(H1, actualH1));
     EXPECT(assert_equal(H2, actualH2));
   }
+}
+
+//******************************************************************************
+// Group action on Pose3
+TEST(Similarity3, GroupActionPose3) {
+  Similarity3 bSa(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
+
+  // Create source poses
+  Pose3 Ta1(Rot3(), Point3(0, 0, 0));
+  Pose3 Ta2(Rot3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Point3(4, 0, 0));
+
+  // Create destination poses
+  Pose3 expected_Tb1(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
+  Pose3 expected_Tb2(Rot3(1, 0, 0, 0, -1, 0, 0, 0, -1), Point3(-4, 6, 10));
+
+  EXPECT(assert_equal(expected_Tb1, bSa.transformFrom(Ta1)));
+  EXPECT(assert_equal(expected_Tb2, bSa.transformFrom(Ta2)));
+}
+
+// Test left group action compatibility.
+// cSa*Ta = cSb*bSa*Ta
+TEST(Similarity3, GroupActionPose3_Compatibility) {
+  Similarity3 bSa(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
+  Similarity3 cSb(Rot3::Ry(90 * degree), Point3(-10, -4, 0), 3.0);
+  Similarity3 cSa(Rot3::Ry(270 * degree), Point3(0, 1, -2), 6.0);
+
+  // Create poses
+  Pose3 Ta1(Rot3(), Point3(0, 0, 0));
+  Pose3 Ta2(Rot3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Point3(4, 0, 0));
+  Pose3 Tb1(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
+  Pose3 Tb2(Rot3(1, 0, 0, 0, -1, 0, 0, 0, -1), Point3(-4, 6, 10));
+  Pose3 Tc1(Rot3(0, 0, -1, 0, 1, 0, 1, 0, 0), Point3(0, 6, -12));
+  Pose3 Tc2(Rot3(0, 0, -1, 0, -1, 0, -1, 0, 0), Point3(0, 6, 12));
+
+  EXPECT(assert_equal(Tc1, cSb.transformFrom(Tb1)));
+  EXPECT(assert_equal(Tc2, cSb.transformFrom(Tb2)));
+
+  EXPECT(assert_equal(cSa.transformFrom(Ta1), cSb.transformFrom(Tb1)));
+  EXPECT(assert_equal(cSa.transformFrom(Ta2), cSb.transformFrom(Tb2)));
+}
+
+//******************************************************************************
+// Align with Point3 Pairs
+TEST(Similarity3, AlignPoint3_1) {
+  Similarity3 expected_aSb(Rot3::Rz(-90 * degree), Point3(3, 4, 5), 2.0);
+
+  Point3 b1(0, 0, 0), b2(3, 0, 0), b3(3, 0, 4);
+
+  Point3Pair ab1(make_pair(expected_aSb.transformFrom(b1), b1));
+  Point3Pair ab2(make_pair(expected_aSb.transformFrom(b2), b2));
+  Point3Pair ab3(make_pair(expected_aSb.transformFrom(b3), b3));
+
+  vector<Point3Pair> correspondences{ab1, ab2, ab3};
+
+  Similarity3 actual_aSb = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected_aSb, actual_aSb));
+}
+
+TEST(Similarity3, AlignPoint3_2) {
+  Similarity3 expected_aSb(Rot3(), Point3(10, 10, 0), 1.0);
+
+  Point3 b1(0, 0, 0), b2(20, 10, 0), b3(10, 20, 0);
+
+  Point3Pair ab1(make_pair(expected_aSb.transformFrom(b1), b1));
+  Point3Pair ab2(make_pair(expected_aSb.transformFrom(b2), b2));
+  Point3Pair ab3(make_pair(expected_aSb.transformFrom(b3), b3));
+
+  vector<Point3Pair> correspondences{ab1, ab2, ab3};
+
+  Similarity3 actual_aSb = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected_aSb, actual_aSb));
+}
+
+TEST(Similarity3, AlignPoint3_3) {
+  Similarity3 expected_aSb(Rot3::RzRyRx(0.3, 0.2, 0.1), Point3(20, 10, 5), 1.0);
+
+  Point3 b1(0, 0, 1), b2(10, 0, 2), b3(20, -10, 30);
+
+  Point3Pair ab1(make_pair(expected_aSb.transformFrom(b1), b1));
+  Point3Pair ab2(make_pair(expected_aSb.transformFrom(b2), b2));
+  Point3Pair ab3(make_pair(expected_aSb.transformFrom(b3), b3));
+
+  vector<Point3Pair> correspondences{ab1, ab2, ab3};
+
+  Similarity3 actual_aSb = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected_aSb, actual_aSb));
+}
+
+//******************************************************************************
+// Align with Pose3 Pairs
+TEST(Similarity3, AlignPose3) {
+  Similarity3 expected_aSb(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
+
+  // Create source poses
+  Pose3 Ta1(Rot3(), Point3(0, 0, 0));
+  Pose3 Ta2(Rot3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Point3(4, 0, 0));
+
+  // Create destination poses
+  Pose3 Tb1(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
+  Pose3 Tb2(Rot3(1, 0, 0, 0, -1, 0, 0, 0, -1), Point3(-4, 6, 10));
+
+  Pose3Pair bTa1(make_pair(Tb1, Ta1));
+  Pose3Pair bTa2(make_pair(Tb2, Ta2));
+
+  vector<Pose3Pair> correspondences{bTa1, bTa2};
+
+  Similarity3 actual_aSb = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected_aSb, actual_aSb));
 }
 
 //******************************************************************************

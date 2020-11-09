@@ -47,6 +47,11 @@ public:
     return Base::equals(other, tol);
   }
 
+  /// Add a linear inequality, forwards arguments to LinearInequality.
+  template <class... Args> void add(Args &&... args) {
+    emplace_shared<LinearInequality>(std::forward<Args>(args)...);
+  }
+
   /**
    * Compute error of a guess.
    * Infinity error if it violates an inequality; zero otherwise. */

@@ -12,3 +12,4 @@ py::bind_vector<std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose2>
 py::bind_vector<std::vector<gtsam::BinaryMeasurement<gtsam::Unit3> > >(m_, "BinaryMeasurementsUnit3");
 py::bind_map<gtsam::IndexPairSetMap>(m_, "IndexPairSetMap");
 py::bind_vector<gtsam::IndexPairVector>(m_, "IndexPairVector");
+py::bind_map<gtsam::KeyPairDoubleMap>(m_, "KeyPairDoubleMap");
