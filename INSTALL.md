@@ -1,5 +1,7 @@
 # Quickstart
 
+## Linux & macOS
+
 In the root library folder execute:
 
 ```sh
@@ -9,6 +11,13 @@ $ cmake ..
 $ make check # (optional, runs unit tests)
 $ make install
 ```
+
+## Windows
+
+#### Setup
+
+#### Compilation
+
 
 ## Important Installation Notes
 
