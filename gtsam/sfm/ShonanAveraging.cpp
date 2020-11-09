@@ -54,7 +54,7 @@ ShonanAveragingParameters<d>::ShonanAveragingParameters(
       alpha(alpha),
       beta(beta),
       gamma(gamma),
-	  useHuber(false){
+      useHuber(false) {
   // By default, we will do conjugate gradient
   lm.linearSolverType = LevenbergMarquardtParams::Iterative;
 
@@ -139,7 +139,7 @@ ShonanAveraging<d>::ShonanAveraging(const Measurements &measurements,
 /* ************************************************************************* */
 template <size_t d>
 NonlinearFactorGraph ShonanAveraging<d>::buildGraphAt(size_t p) const {
-	NonlinearFactorGraph graph;
+  NonlinearFactorGraph graph;
   auto G = boost::make_shared<Matrix>(SO<-1>::VectorizedGenerators(p));
 
   for (const auto &measurement : measurements_) {
@@ -194,7 +194,7 @@ ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
 template <size_t d>
 Values ShonanAveraging<d>::tryOptimizingAt(size_t p,
                                            const Values &initial) const {
-	auto lm = createOptimizerAt(p, initial);
+  auto lm = createOptimizerAt(p, initial);
   return lm->optimize();
 }
 
@@ -334,24 +334,26 @@ double ShonanAveraging<d>::cost(const Values &values) const {
 // Get kappa from noise model
 template <typename T>
 static double Kappa(const BinaryMeasurement<T> &measurement) {
-	const auto &isotropic = boost::dynamic_pointer_cast<noiseModel::Isotropic>(
-			measurement.noiseModel());
-	double sigma;
-	if (isotropic) {
-		sigma = isotropic->sigma();
-	} else{
-		const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
-				measurement.noiseModel());
-		if (robust) {
-			std::cout << "Verification of optimality does not work with robust cost function" << std::endl;
-			sigma = 1; // setting arbitrary value
-		}else{
-			throw std::invalid_argument(
-					"Shonan averaging noise models must be isotropic (but robust losses are allowed).");
-
-		}
-	}
-	return 1.0 / (sigma * sigma);
+  const auto &isotropic = boost::dynamic_pointer_cast<noiseModel::Isotropic>(
+      measurement.noiseModel());
+  double sigma;
+  if (isotropic) {
+    sigma = isotropic->sigma();
+  } else {
+    const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
+        measurement.noiseModel());
+    if (robust) {
+      std::cout << "Verification of optimality does not work with robust cost "
+                   "function"
+                << std::endl;
+      sigma = 1;  // setting arbitrary value
+    } else {
+      throw std::invalid_argument(
+          "Shonan averaging noise models must be isotropic (but robust losses "
+          "are allowed).");
+    }
+  }
+  return 1.0 / (sigma * sigma);
 }
 
 /* ************************************************************************* */
@@ -802,10 +804,10 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
     // Optimize until convergence at this level
     Qstar = tryOptimizingAt(p, initialSOp);
     if(parameters_.useHuber){ // in this case, there is no optimality verification
-    	if(pMin!=pMax)
-    		 std::cout << "When using robust norm, Shonan only tests a single rank" << std::endl;
-    	const Values SO3Values = roundSolution(Qstar);
-    	return std::make_pair(SO3Values, 0);
+      if(pMin!=pMax)
+         std::cout << "When using robust norm, Shonan only tests a single rank" << std::endl;
+      const Values SO3Values = roundSolution(Qstar);
+      return std::make_pair(SO3Values, 0);
     }
 
     // Check certificate of global optimzality
@@ -833,13 +835,17 @@ template class ShonanAveraging<2>;
 
 ShonanAveraging2::ShonanAveraging2(const Measurements &measurements,
                                    const Parameters &parameters)
-    : ShonanAveraging<2>(parameters.useHuber?
-    		makeNoiseModelRobust(measurements) : measurements, parameters) {}
+    : ShonanAveraging<2>(parameters.useHuber
+                             ? makeNoiseModelRobust(measurements)
+                             : measurements,
+                         parameters) {}
 
 ShonanAveraging2::ShonanAveraging2(string g2oFile, const Parameters &parameters)
-    : ShonanAveraging<2>(parameters.useHuber?
-    		makeNoiseModelRobust( parseMeasurements<Rot2>(g2oFile) ) :
-    				parseMeasurements<Rot2>(g2oFile), parameters) {}
+    : ShonanAveraging<2>(
+          parameters.useHuber
+              ? makeNoiseModelRobust(parseMeasurements<Rot2>(g2oFile))
+              : parseMeasurements<Rot2>(g2oFile),
+          parameters) {}
 
 /* ************************************************************************* */
 // Explicit instantiation for d=3
@@ -848,12 +854,14 @@ template class ShonanAveraging<3>;
 ShonanAveraging3::ShonanAveraging3(const Measurements &measurements,
                                    const Parameters &parameters)
     : ShonanAveraging<3>(parameters.useHuber?
-    		makeNoiseModelRobust(measurements) : measurements, parameters) {}
+        makeNoiseModelRobust(measurements) : measurements, parameters) {}
 
 ShonanAveraging3::ShonanAveraging3(string g2oFile, const Parameters &parameters)
-    : ShonanAveraging<3>(parameters.useHuber?
-    		makeNoiseModelRobust( parseMeasurements<Rot3>(g2oFile) ) :
-			parseMeasurements<Rot3>(g2oFile), parameters) {}
+    : ShonanAveraging<3>(
+          parameters.useHuber
+              ? makeNoiseModelRobust(parseMeasurements<Rot3>(g2oFile))
+              : parseMeasurements<Rot3>(g2oFile),
+          parameters) {}
 
 // TODO(frank): Deprecate after we land pybind wrapper
 
@@ -869,8 +877,8 @@ static BinaryMeasurement<Rot3> convert(
         "with Gaussian noise models.");
   const Matrix6 M = gaussian->covariance();
   return BinaryMeasurement<Rot3>(
-		  f->key1(), f->key2(), f->measured().rotation(),
-		  noiseModel::Gaussian::Covariance(M.block<3, 3>(3, 3), true));
+      f->key1(), f->key2(), f->measured().rotation(),
+      noiseModel::Gaussian::Covariance(M.block<3, 3>(3, 3), true));
 }
 
 static ShonanAveraging3::Measurements extractRot3Measurements(
@@ -883,9 +891,11 @@ static ShonanAveraging3::Measurements extractRot3Measurements(
 
 ShonanAveraging3::ShonanAveraging3(const BetweenFactorPose3s &factors,
                                    const Parameters &parameters)
-    : ShonanAveraging<3>(parameters.useHuber?
-    		makeNoiseModelRobust( extractRot3Measurements(factors) ):
-			extractRot3Measurements(factors), parameters) {}
+    : ShonanAveraging<3>(
+          parameters.useHuber
+              ? makeNoiseModelRobust(extractRot3Measurements(factors))
+              : extractRot3Measurements(factors),
+          parameters) {}
 
 /* ************************************************************************* */
 }  // namespace gtsam

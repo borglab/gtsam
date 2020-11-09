@@ -53,7 +53,8 @@ struct GTSAM_EXPORT ShonanAveragingParameters {
   double alpha;                 // weight of anchor-based prior (default 0)
   double beta;                  // weight of Karcher-based prior (default 1)
   double gamma;                 // weight of gauge-fixing factors (default 0)
-  bool useHuber; 				// if enabled, the Huber loss is used in the optimization (default is false)
+  bool useHuber;  // if enabled, the Huber loss is used in the optimization
+                  // (default is false)
 
   ShonanAveragingParameters(const LevenbergMarquardtParams &lm =
                                 LevenbergMarquardtParams::CeresDefaults(),
@@ -83,12 +84,12 @@ struct GTSAM_EXPORT ShonanAveragingParameters {
   bool getUseHuber() { return useHuber; }
 
   void print() const {
-	  std::cout << " ShonanAveragingParameters: " << std::endl;
-	  std::cout << " alpha: " << alpha  << std::endl;
-	  std::cout << " beta: " << beta  << std::endl;
-	  std::cout << " gamma: " << gamma  << std::endl;
-	  std::cout << " useHuber: " << useHuber  << std::endl;
-	  std::cout << " --------------------------" << std::endl;
+    std::cout << " ShonanAveragingParameters: " << std::endl;
+    std::cout << " alpha: " << alpha  << std::endl;
+    std::cout << " beta: " << beta  << std::endl;
+    std::cout << " gamma: " << gamma  << std::endl;
+    std::cout << " useHuber: " << useHuber  << std::endl;
+    std::cout << " --------------------------" << std::endl;
   }
 };
 
@@ -120,7 +121,6 @@ class GTSAM_EXPORT ShonanAveraging {
   using Rot = typename Parameters::Rot;
 
   // We store SO(d) BetweenFactors to get noise model
-  // TODO(frank): use BinaryMeasurement?
   using Measurements = std::vector<BinaryMeasurement<Rot>>;
 
  private:
@@ -165,12 +165,12 @@ class GTSAM_EXPORT ShonanAveraging {
   }
 
   /// wrap factors with robust Huber loss
-  static Measurements makeNoiseModelRobust(Measurements measurements){
-	  Measurements robustMeasurements = measurements;
-	  for (auto &measurement : robustMeasurements) {
-		  measurement.makeNoiseModelRobust();
-	  }
-	  return robustMeasurements;
+  Measurements makeNoiseModelRobust(const Measurements& measurements) const {
+    Measurements robustMeasurements = measurements;
+    for (auto &measurement : robustMeasurements) {
+      measurement = BinaryMeasurement<Rot>(measurement, true);
+    }
+    return robustMeasurements;
   }
 
   /// k^th measurement, as a Rot.

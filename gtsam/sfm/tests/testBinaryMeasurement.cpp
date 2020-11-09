@@ -67,20 +67,19 @@ TEST(BinaryMeasurement, Rot3) {
 /* ************************************************************************* */
 TEST(BinaryMeasurement, Rot3MakeRobust) {
   BinaryMeasurement<Rot3> rot3Measurement(kKey1, kKey2, rot3Measured,
-                                          rot3_model);
-  rot3Measurement.makeNoiseModelRobust();
+                                          rot3_model, true);
 
   EXPECT_LONGS_EQUAL(rot3Measurement.key1(), kKey1);
   EXPECT_LONGS_EQUAL(rot3Measurement.key2(), kKey2);
   EXPECT(rot3Measurement.measured().equals(rot3Measured));
   const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
-		  rot3Measurement.noiseModel());
+      rot3Measurement.noiseModel());
   EXPECT(robust);
 
   // test that if we call it again nothing changes:
-  rot3Measurement.makeNoiseModelRobust();
+  rot3Measurement = BinaryMeasurement<Rot3>(rot3Measurement, true);
   const auto &robust2 = boost::dynamic_pointer_cast<noiseModel::Robust>(
-		  rot3Measurement.noiseModel());
+      rot3Measurement.noiseModel());
   EXPECT(robust2);
 }
 
