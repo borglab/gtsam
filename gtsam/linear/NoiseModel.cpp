@@ -241,10 +241,7 @@ void Gaussian::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const
 /* ************************************************************************* */
 // Diagonal
 /* ************************************************************************* */
-Diagonal::Diagonal() :
-    Gaussian(1) // TODO: Frank asks: really sure about this?
-{
-}
+Diagonal::Diagonal() : Gaussian(1) {}
 
 /* ************************************************************************* */
 Diagonal::Diagonal(const Vector& sigmas)
@@ -256,31 +253,41 @@ Diagonal::Diagonal(const Vector& sigmas)
 
 /* ************************************************************************* */
 Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
+  bool diagonal = false;
   if (smart) {
     // check whether all the same entry
     size_t n = variances.size();
     for (size_t j = 1; j < n; j++)
-      if (variances(j) != variances(0)) goto full;
-    return Isotropic::Variance(n, variances(0), true);
+      if (variances(j) != variances(0)) diagonal = true;
   }
-  full: return shared_ptr(new Diagonal(variances.cwiseSqrt()));
+  if (diagonal) {
+    return shared_ptr(new Diagonal(variances.cwiseSqrt()));
+  } else {
+    return Isotropic::Variance(variances.size(), variances(0), true);
+  }
 }
 
 /* ************************************************************************* */
 Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
+  bool diagonal = false;
   if (smart) {
     size_t n = sigmas.size();
-    if (n==0) goto full;
-    // look for zeros to make a constraint
-    for (size_t j=0; j< n; ++j)
-      if (sigmas(j)<1e-8)
-        return Constrained::MixedSigmas(sigmas);
-    // check whether all the same entry
-    for (size_t j = 1; j < n; j++)
-      if (sigmas(j) != sigmas(0)) goto full;
-    return Isotropic::Sigma(n, sigmas(0), true);
+    if (n == 0) {
+      diagonal = true;
+    } else {
+      // look for zeros to make a constraint
+      for (size_t j = 0; j < n; ++j)
+        if (sigmas(j) < 1e-8) return Constrained::MixedSigmas(sigmas);
+      // check whether all the same entry
+      for (size_t j = 1; j < n; j++)
+        if (sigmas(j) != sigmas(0)) diagonal = true;
+    }
   }
-  full: return Diagonal::shared_ptr(new Diagonal(sigmas));
+  if (diagonal) {
+    return Diagonal::shared_ptr(new Diagonal(sigmas));
+  } else {
+    return Isotropic::Sigma(sigmas.size(), sigmas(0), true);
+  }
 }
 
 /* ************************************************************************* */

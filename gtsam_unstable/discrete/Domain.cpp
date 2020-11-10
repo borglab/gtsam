@@ -58,18 +58,21 @@ namespace gtsam {
 
   /* ************************************************************************* */
   bool Domain::checkAllDiff(const KeyVector keys, vector<Domain>& domains) {
+    bool found = false;
     Key j = keys_[0];
     // for all values in this domain
     for(size_t value: values_) {
       // for all connected domains
-      for(Key k: keys)
+      for(Key k: keys) {
         // if any domain contains the value we cannot make this domain singleton
         if (k!=j && domains[k].contains(value))
-          goto found;
-      values_.clear();
-      values_.insert(value);
-      return true; // we changed it
-      found:;
+          found = true;
+      }
+      if (!found) {
+        values_.clear();
+        values_.insert(value);
+        return true; // we changed it
+      }
     }
     return false; // we did not change it
   }
