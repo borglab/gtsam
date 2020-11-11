@@ -60,7 +60,7 @@ jobs:
             echo "CXX=${{ matrix.compiler }}" >> $GITHUB_ENV
           }
           # Scoop modifies the PATH so we make the modified PATH global.
-          echo "$env" >> $GITHUB_PATH
+          echo "$env:PATH" >> $GITHUB_PATH
       - name: Build (Windows)
         if: runner.os == 'Windows'
         run: |
