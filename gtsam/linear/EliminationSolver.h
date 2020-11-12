@@ -23,6 +23,7 @@
 #pragma once
 
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/LinearSolver.h>
 #include <gtsam/linear/LinearSolverParams.h>
 #include <gtsam/linear/VectorValues.h>
@@ -32,7 +33,9 @@
 namespace gtsam {
 
 /**
- * variable elimination based linear solver wrapper class
+ * Variable elimination based linear solver backend wrapper for GTSAM.
+ * This class is a wrapper for factor graph elimination methods to follow the
+ * "LinearSolver" unified API.
  */
 class GTSAM_EXPORT EliminationSolver : public LinearSolver {
  public:
@@ -46,7 +49,43 @@ class GTSAM_EXPORT EliminationSolver : public LinearSolver {
            params_.linearSolverType == LinearSolverParams::SEQUENTIAL_CHOLESKY;
   };
 
-  VectorValues solve(const GaussianFactorGraph &gfg) override;
+  /**
+   * Solve the Gaussian factor graph using variable elimination.
+   * @param gfg the factor graph to solve
+   * @returns the solution
+   */
+  VectorValues solve(const GaussianFactorGraph &gfg) override {
+    switch (params_.linearSolverType) {
+      case LinearSolverParams::MULTIFRONTAL_QR:
+        return params_.ordering ? gfg.optimize(*params_.ordering, EliminateQR)
+                                : gfg.optimize(EliminateQR);
+      case LinearSolverParams::MULTIFRONTAL_CHOLESKY:
+        return params_.ordering
+                   ? gfg.optimize(*params_.ordering, EliminatePreferCholesky)
+                   : gfg.optimize(EliminatePreferCholesky);
+      case LinearSolverParams::SEQUENTIAL_QR:
+        return params_.ordering
+                   ? gfg.eliminateSequential(*params_.ordering, EliminateQR,
+                                             boost::none, params_.orderingType)
+                         ->optimize()
+                   : gfg.eliminateSequential(EliminateQR, boost::none,
+                                             params_.orderingType)
+                         ->optimize();
+      case LinearSolverParams::SEQUENTIAL_CHOLESKY:
+        return params_.ordering
+                   ? gfg.eliminateSequential(*params_.ordering,
+                                             EliminatePreferCholesky,
+                                             boost::none, params_.orderingType)
+                         ->optimize()
+                   : gfg.eliminateSequential(EliminatePreferCholesky,
+                                             boost::none, params_.orderingType)
+                         ->optimize();
+      default:
+        throw std::runtime_error(
+            "EliminationSolver::solve: Solver type is invalid for "
+            "EliminationSolver");
+    }
+  };
 
  protected:
   LinearSolverParams params_;
