@@ -25,9 +25,11 @@ jobs:
         build_type: [Debug, Release]
         build_unstable: [ON]
         include:
-          - name: windows-2016-cl
-            os: windows-2016
-            compiler: cl
+
+          #TODO This build keeps timing out, need to understand why.
+          # - name: windows-2016-cl
+          #   os: windows-2016
+          #   compiler: cl
 
           - name: windows-2019-cl
             os: windows-2019
