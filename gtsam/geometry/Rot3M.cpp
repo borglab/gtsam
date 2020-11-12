@@ -176,17 +176,13 @@ Vector3 Rot3::CayleyChart::Local(const Rot3& R, OptionalJacobian<3,3> H) {
   if (H) throw std::runtime_error("Rot3::CayleyChart::Local Derivative");
   // Create a fixed-size matrix
   Matrix3 A = R.matrix();
-  // Mathematica closed form optimization (procrastination?) gone wild:
-  const double a = A(0, 0), b = A(0, 1), c = A(0, 2);
-  const double d = A(1, 0), e = A(1, 1), f = A(1, 2);
-  const double g = A(2, 0), h = A(2, 1), i = A(2, 2);
-  const double di = d * i, ce = c * e, cd = c * d, fg = f * g;
-  const double M = 1 + e - f * h + i + e * i;
-  const double K = -4.0 / (cd * h + M + a * M - g * (c + ce) - b * (d + di - fg));
-  const double x = a * f - cd + f;
-  const double y = b * f - ce - c;
-  const double z = fg - di - d;
-  return K * Vector3(x, y, z);
+  const Matrix3 P = A + I_3x3;
+  // Check if (A+I) is invertible. Same as checking for -1 eigenvalue.
+  if (P.determinant() == 0.0) {
+    throw std::runtime_error("Rot3::CayleyChart::Local Invalid Rotation");
+  }
+  Matrix3 Pinv = (A + I_3x3).inverse();
+  return SO3::Vee(Pinv * (A - I_3x3)) * 2;
 }
 
 /* ************************************************************************* */
