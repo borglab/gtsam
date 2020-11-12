@@ -40,12 +40,12 @@ jobs:
           brew install ProfFan/robotics/boost
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             brew install gcc@${{ matrix.version }}
-            echo "::set-env name=CC::gcc-${{ matrix.version }}"
-            echo "::set-env name=CXX::g++-${{ matrix.version }}"
+            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
+            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
           else
             sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-            echo "::set-env name=CC::clang"
-            echo "::set-env name=CXX::clang++"
+            echo "CC=clang" >> $GITHUB_ENV
+            echo "CXX=clang++" >> $GITHUB_ENV
           fi
       - name: Build and Test (macOS)
         if: runner.os == 'macOS'
