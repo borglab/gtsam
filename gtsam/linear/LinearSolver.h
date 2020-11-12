@@ -45,6 +45,13 @@ class GTSAM_EXPORT LinearSolver {
   };
 
   /**
+   * Alias for `solve`
+   * @param gfg the GFG to be optimized
+   * @return the optimization result in VectorValues
+   */
+  VectorValues operator()(const GaussianFactorGraph &gfg) { return solve(gfg); }
+
+  /**
    * Factor method for generating a LinearSolver from LinearSolverParams
    * @param params LinearSolverParams linear optimizer parameters
    * @return pointer to a LinearSolver object

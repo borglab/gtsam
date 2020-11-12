@@ -110,7 +110,8 @@ namespace gtsam {
   }
 #else
   VectorValues SuiteSparseSolver::solve(const gtsam::GaussianFactorGraph &gfg) {
-    throw std::invalid_argument("This GTSAM is compiled without Cholmod support");
+    throw std::invalid_argument(
+        "This GTSAM is compiled without SuiteSparse support");
   }
 #endif
 }

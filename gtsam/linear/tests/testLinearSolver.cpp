@@ -41,7 +41,7 @@ static GaussianFactorGraph createSimpleGaussianFactorGraph() {
 }
 
 /* ************************************************************************* */
-TEST(EigenOptimizer, optimizeEigenQR) {
+TEST(LinearOptimizer, solver) {
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
 
   VectorValues expected;
@@ -50,30 +50,63 @@ TEST(EigenOptimizer, optimizeEigenQR) {
   expected.insert(1, Vector2(-0.1, 0.1));
 
   LinearSolverParams params;
+  params.ordering = Ordering::Colamd(gfg);
+
+  // these tests are not wrapped in a for loop to enable easier debugging
+  // multifrontal cholesky
+  params.linearSolverType = LinearSolverParams::MULTIFRONTAL_CHOLESKY;
+  auto solver = LinearSolver::fromLinearSolverParams(params);
+  VectorValues actual = (*solver)(gfg);
+  EXPECT(assert_equal(expected, actual));
+  actual = solver->solve(gfg);
+  EXPECT(assert_equal(expected, actual));
+
+  // multifrontal qr
+  params.linearSolverType = LinearSolverParams::MULTIFRONTAL_QR;
+  actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
+  EXPECT(assert_equal(expected, actual));
+
+  // sequential cholesky
+  params.linearSolverType = LinearSolverParams::SEQUENTIAL_CHOLESKY;
+  actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
+  EXPECT(assert_equal(expected, actual));
+
+  // sequential qr
+  params.linearSolverType = LinearSolverParams::SEQUENTIAL_QR;
+  actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
+  EXPECT(assert_equal(expected, actual));
+
+  // // iterative
+  // params.linearSolverType = LinearSolverParams::Iterative;
+  // actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
+  // EXPECT(assert_equal(expected, actual));
+
+  // // cholmod
+  // params.linearSolverType = LinearSolverParams::CHOLMOD;
+  // actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
+  // EXPECT(assert_equal(expected, actual));
+
+  // eigen qr
   params.linearSolverType = LinearSolverParams::EIGEN_QR;
-  params.ordering = Ordering::Colamd(gfg);
-
-  auto solver = LinearSolver::fromLinearSolverParams(params);
-  VectorValues actual = solver->solve(gfg);
+  actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
-}
 
-/* ************************************************************************* */
-TEST(EigenOptimizer, optimizeEigenCholesky) {
-  GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
-
-  VectorValues expected;
-  expected.insert(2, Vector2(-0.1, -0.1));
-  expected.insert(0, Vector2(0.1, -0.2));
-  expected.insert(1, Vector2(-0.1, 0.1));
-
-  LinearSolverParams params;
+  // eigen cholesky
   params.linearSolverType = LinearSolverParams::EIGEN_CHOLESKY;
-  params.ordering = Ordering::Colamd(gfg);
-
-  auto solver = LinearSolver::fromLinearSolverParams(params);
-  VectorValues actual = solver->solve(gfg);
+  actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
+
+  // suitesparse cholesky
+  params.linearSolverType = LinearSolverParams::SUITESPARSE_CHOLESKY;
+  actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
+  EXPECT(assert_equal(expected, actual));
+
+  // cusparse cholesky
+  // #ifdef GTSAM_USE_CUSPARSE
+  params.linearSolverType = LinearSolverParams::CUSPARSE_CHOLESKY;
+  actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
+  EXPECT(assert_equal(expected, actual));
+  // #endif
 }
 
 /* ************************************************************************* */

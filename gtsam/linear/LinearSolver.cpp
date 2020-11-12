@@ -15,6 +15,7 @@
  * @author  Fan Jiang
  */
 
+#include <gtsam/linear/EliminationSolver.h>
 #include <gtsam/linear/LinearSolver.h>
 #include <gtsam/linear/SparseEigenSolver.h>
 #include <gtsam/linear/SuiteSparseSolver.h>
@@ -26,20 +27,28 @@ LinearSolver::LinearSolver() = default;
 
 boost::shared_ptr<LinearSolver> LinearSolver::fromLinearSolverParams(
     const LinearSolverParams &params) {
-  if (params.linearSolverType == LinearSolverParams::EIGEN_QR) {
-    return boost::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(
-        SparseEigenSolver::SparseEigenSolverType::QR, *params.ordering));
-  } else if (params.linearSolverType == LinearSolverParams::EIGEN_CHOLESKY) {
-    return boost::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(
-        SparseEigenSolver::SparseEigenSolverType::CHOLESKY, *params.ordering));
-  } else if (params.linearSolverType == LinearSolverParams::SUITESPARSE_CHOLESKY) {
-    return boost::shared_ptr<SuiteSparseSolver>(new SuiteSparseSolver(
-        SuiteSparseSolver::SuiteSparseSolverType::CHOLESKY, *params.ordering));
-  } else if (params.linearSolverType == LinearSolverParams::CUSPARSE_CHOLESKY) {
-    return boost::shared_ptr<CuSparseSolver>(new CuSparseSolver(
-        CuSparseSolver::CuSparseSolverType::CHOLESKY, *params.ordering));
+  switch (params.linearSolverType) {
+    case LinearSolverParams::MULTIFRONTAL_QR:
+    case LinearSolverParams::MULTIFRONTAL_CHOLESKY:
+    case LinearSolverParams::SEQUENTIAL_QR:
+    case LinearSolverParams::SEQUENTIAL_CHOLESKY:
+      return boost::make_shared<EliminationSolver>(params);
+    case LinearSolverParams::EIGEN_QR:
+      return boost::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(
+          SparseEigenSolver::SparseEigenSolverType::QR, *params.ordering));
+    case LinearSolverParams::EIGEN_CHOLESKY:
+      return boost::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(
+          SparseEigenSolver::SparseEigenSolverType::CHOLESKY,
+          *params.ordering));
+    case LinearSolverParams::SUITESPARSE_CHOLESKY:
+      return boost::shared_ptr<SuiteSparseSolver>(new SuiteSparseSolver(
+          SuiteSparseSolver::SuiteSparseSolverType::CHOLESKY,
+          *params.ordering));
+    case LinearSolverParams::CUSPARSE_CHOLESKY:
+      return boost::shared_ptr<CuSparseSolver>(new CuSparseSolver(
+          CuSparseSolver::CuSparseSolverType::CHOLESKY, *params.ordering));
+    default:
+      throw std::runtime_error("Invalid parameters passed");
   }
-
-  throw std::runtime_error("Invalid parameters passed");
 }
 }  // namespace gtsam
