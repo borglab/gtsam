@@ -33,8 +33,10 @@ endif()
 
 # Enable GTSAM_ROT3_EXPMAP if GTSAM_POSE3_EXPMAP is enabled, and vice versa.
 if(GTSAM_POSE3_EXPMAP)
+    message(STATUS "GTSAM_POSE3_EXPMAP=ON, enabling GTSAM_ROT3_EXPMAP as well")
     set(GTSAM_ROT3_EXPMAP 1 CACHE BOOL "" FORCE)
 elseif(GTSAM_ROT3_EXPMAP)
+    message(STATUS "GTSAM_ROT3_EXPMAP=ON, enabling GTSAM_POSE3_EXPMAP as well")
     set(GTSAM_POSE3_EXPMAP 1 CACHE BOOL "" FORCE)
 endif()
 
