@@ -185,7 +185,7 @@ Vector3 Rot3::CayleyChart::Local(const Rot3& R, OptionalJacobian<3,3> H) {
   // Mathematica closed form optimization.
   // The following are the essential computations for the following algorithm
   // 1. Compute the inverse of P = (A+I), using a closed-form formula since P is 3x3 
-  // 2. Compute the Cayley transform C = P^{-1} * (A-I)
+  // 2. Compute the Cayley transform C = 2 * P^{-1} * (A-I)
   // 3. C is skew-symmetric, so we pick out the computations corresponding only to x, y, and z.
   const double a = A(0, 0), b = A(0, 1), c = A(0, 2);
   const double d = A(1, 0), e = A(1, 1), f = A(1, 2);
