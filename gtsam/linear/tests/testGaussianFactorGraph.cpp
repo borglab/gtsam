@@ -71,18 +71,19 @@ TEST(GaussianFactorGraph, initialization) {
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, sparseJacobian) {
   // Create factor graph:
-  // x1 x2 x3 x4 x3  b
+  // x1 x2 x3 x4 x5  b
   //  1  2  3  0  0  4
   //  5  6  7  0  0  8
   //  9 10  0 11 12 13
   //  0  0  0 14 15 16
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 0.5);
-  const Key x3 = 0, y2 = 1;
-  // const Symbol x3('x', 5), y2('p', 3);
-  gfg.add(x3, (Matrix(2, 3) << 1, 2, 3, 5, 6, 7).finished(), Vector2(4, 8), model);
-  gfg.add(x3, (Matrix(2, 3) << 9, 10, 0, 0, 0, 0).finished(), y2,
-          (Matrix(2, 2) << 11, 12, 14, 15.).finished(), Vector2(13, 16), model);
+  const Key x123 = 0, x45 = 1;
+  gfg.add(x123, (Matrix(2, 3) << 1, 2, 3, 5, 6, 7).finished(),
+          Vector2(4, 8), model);
+  gfg.add(x123, (Matrix(2, 3) << 9, 10, 0, 0, 0, 0).finished(),
+          x45,  (Matrix(2, 2) << 11, 12, 14, 15.).finished(),
+          Vector2(13, 16), model);
 
   auto entries = gfg.sparseJacobian();
   // Check the triplets size...
@@ -107,12 +108,12 @@ TEST(GaussianFactorGraph, sparseJacobian) {
       3, 6,26,
       4, 6,32).finished();
   Matrix expectedMatlab = expectedT.transpose();
-  Matrix matlab = gfg.sparseJacobian_();
+  Matrix actual = gfg.sparseJacobian_();
 
-  EXPECT(assert_equal(expectedMatlab, matlab));
+  EXPECT(assert_equal(expectedMatlab, actual));
 
   // Call sparseJacobian with optional ordering...
-  auto ordering = Ordering(list_of(y2)(x3));
+  auto ordering = Ordering(list_of(x45)(x123));
   entries = gfg.sparseJacobian(ordering);
   // Check the triplets size... 
   EXPECT_LONGS_EQUAL(16, entries.size());
@@ -142,9 +143,9 @@ TEST(GaussianFactorGraph, sparseJacobian) {
       3, 6,26,
       4, 6,32).finished();
   expectedMatlab = expectedT.transpose();
-  matlab = gfg.sparseJacobian_(ordering);
+  actual = gfg.sparseJacobian_(ordering);
 
-  EXPECT(assert_equal(expectedMatlab, matlab));
+  EXPECT(assert_equal(expectedMatlab, actual));
 }
 
 /* ************************************************************************* */

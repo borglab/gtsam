@@ -42,7 +42,7 @@ static GaussianFactorGraph createSimpleGaussianFactorGraph() {
 
 /* ************************************************************************* */
 TEST(EigenOptimizer, optimizeEigenQR) {
-  GaussianFactorGraph A = createSimpleGaussianFactorGraph();
+  GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
 
   VectorValues expected;
   expected.insert(2, Vector2(-0.1, -0.1));
@@ -51,16 +51,16 @@ TEST(EigenOptimizer, optimizeEigenQR) {
 
   LinearSolverParams params;
   params.linearSolverType = LinearSolverParams::EIGEN_QR;
-  params.ordering = Ordering::Colamd(A);
+  params.ordering = Ordering::Colamd(gfg);
 
   auto solver = LinearSolver::fromLinearSolverParams(params);
-  VectorValues actual = solver->solve(A);
+  VectorValues actual = solver->solve(gfg);
   EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
 TEST(EigenOptimizer, optimizeEigenCholesky) {
-  GaussianFactorGraph A = createSimpleGaussianFactorGraph();
+  GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
 
   VectorValues expected;
   expected.insert(2, Vector2(-0.1, -0.1));
@@ -69,10 +69,10 @@ TEST(EigenOptimizer, optimizeEigenCholesky) {
 
   LinearSolverParams params;
   params.linearSolverType = LinearSolverParams::EIGEN_CHOLESKY;
-  params.ordering = Ordering::Colamd(A);
+  params.ordering = Ordering::Colamd(gfg);
 
   auto solver = LinearSolver::fromLinearSolverParams(params);
-  VectorValues actual = solver->solve(A);
+  VectorValues actual = solver->solve(gfg);
   EXPECT(assert_equal(expected, actual));
 }
 

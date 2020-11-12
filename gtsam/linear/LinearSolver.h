@@ -45,9 +45,8 @@ class GTSAM_EXPORT LinearSolver {
   };
 
   /**
-   * Factor method for generating a LinearSolver from legacy
-   * NonlinearOptimizerParams
-   * @param nonlinear optimizer parameters
+   * Factor method for generating a LinearSolver from LinearSolverParams
+   * @param params LinearSolverParams linear optimizer parameters
    * @return pointer to a LinearSolver object
    */
   static boost::shared_ptr<LinearSolver> fromLinearSolverParams(
