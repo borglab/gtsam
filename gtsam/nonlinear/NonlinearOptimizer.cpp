@@ -130,56 +130,7 @@ VectorValues NonlinearOptimizer::solve(
     const GaussianFactorGraph& gfg,
     const NonlinearOptimizerParams& params) const {
   // solution of linear solver is an update to the linearization point
-  VectorValues delta;
-
-  // Check which solver we are using
-  if (params.isMultifrontal()) {
-    // Multifrontal QR or Cholesky (decided by params.getEliminationFunction())
-    if (params.ordering)
-      delta = gfg.optimize(*params.ordering, params.getEliminationFunction());
-    else
-      delta = gfg.optimize(params.getEliminationFunction());
-  } else if (params.isSequential()) {
-    // Sequential QR or Cholesky (decided by params.getEliminationFunction())
-    if (params.ordering)
-      delta = gfg.eliminateSequential(*params.ordering, params.getEliminationFunction(),
-                                      boost::none, params.orderingType)->optimize();
-    else
-      delta = gfg.eliminateSequential(params.getEliminationFunction(), boost::none,
-                                      params.orderingType)->optimize();
-  } else if (params.isIterative()) {
-    // Conjugate Gradient -> needs params.iterativeParams
-    if (!params.iterativeParams)
-      throw std::runtime_error(
-          "NonlinearOptimizer::solve: cg parameter has to be assigned ...");
-
-    if (auto pcg = boost::dynamic_pointer_cast<PCGSolverParameters>(
-            params.iterativeParams)) {
-      delta = PCGSolver(*pcg).optimize(gfg);
-    } else if (auto spcg =
-                   boost::dynamic_pointer_cast<SubgraphSolverParameters>(
-                       params.iterativeParams)) {
-      if (!params.ordering)
-        throw std::runtime_error("SubgraphSolver needs an ordering");
-      delta = SubgraphSolver(gfg, *spcg, *params.ordering).optimize();
-    } else {
-      throw std::runtime_error(
-          "NonlinearOptimizer::solve: special cg parameter type is not handled "
-          "in LM solver ...");
-    }
-  } else if (params.isEigenQR() || params.isEigenCholesky() || params.isSuiteSparseCholesky() || params.isCuSparseCholesky()) {
-      LinearSolverParams lsparams;
-      lsparams.ordering = params.ordering;
-      lsparams.linearSolverType = params.linearSolverType;
-      auto solver = LinearSolver::fromLinearSolverParams(lsparams);
-      delta = solver->solve(gfg);
-  } else {
-    throw std::runtime_error(
-        "NonlinearOptimizer::solve: Optimization parameter is invalid");
-  }
-
-  // return update
-  return delta;
+  return LinearSolver::fromLinearSolverParams(params)->solve(gfg);
 }
 
 /* ************************************************************************* */
