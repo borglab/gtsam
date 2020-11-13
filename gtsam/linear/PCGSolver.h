@@ -38,8 +38,10 @@ public:
   typedef ConjugateGradientParameters Base;
   typedef boost::shared_ptr<PCGSolverParameters> shared_ptr;
 
-  PCGSolverParameters() {
-  }
+  PCGSolverParameters() {}
+  PCGSolverParameters(
+      boost::shared_ptr<PreconditionerParameters> preconditioner)
+      : preconditioner_(preconditioner){};
 
   virtual void print(std::ostream &os) const;
 

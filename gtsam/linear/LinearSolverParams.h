@@ -19,22 +19,29 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/Ordering.h>
-#include <gtsam/linear/SubgraphSolver.h>
 
 #include <boost/optional.hpp>
 
 namespace gtsam {
 
+// forward declaration
+class IterativeOptimizationParameters;
+
 struct GTSAM_EXPORT LinearSolverParams {
-public:
+ public:
   // Type of solver
   typedef enum LinearSolverType {
     MULTIFRONTAL_CHOLESKY,
     MULTIFRONTAL_QR,
     SEQUENTIAL_CHOLESKY,
     SEQUENTIAL_QR,
-    Iterative, /* Experimental Flag */
-    CHOLMOD,   /* Experimental Flag */
+    Iterative, /* Experimental Flag - donotuse: for backwards compatibility
+                  only. Use PCG or SUBGRAPH instead */
+    CHOLMOD,   /* Experimental Flag - donotuse: for backwards compatibility. use
+                  SUITESPARSE_CHOLESKY or PCG/SUBGRAPH w/ iterativeParams instead
+                */
+    PCG,
+    SUBGRAPH,
     EIGEN_QR,
     EIGEN_CHOLESKY,
     SUITESPARSE_CHOLESKY,
@@ -45,11 +52,11 @@ public:
   Ordering::OrderingType orderingType = Ordering::COLAMD; ///< The method of ordering use during variable elimination (default COLAMD)
   boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
 
-  IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
+  boost::shared_ptr<IterativeOptimizationParameters> iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
 
   inline bool isMultifrontal() const {
-    return (linearSolverType == MULTIFRONTAL_CHOLESKY)
-           || (linearSolverType == MULTIFRONTAL_QR);
+    return (linearSolverType == MULTIFRONTAL_CHOLESKY) ||
+           (linearSolverType == MULTIFRONTAL_QR);
   }
 
   inline bool isSequential() const {

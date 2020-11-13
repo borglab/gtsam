@@ -20,6 +20,8 @@
 
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/linear/LinearSolver.h>
+#include <gtsam/linear/LinearSolverParams.h>
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_ptr.hpp>
@@ -83,8 +85,8 @@ public:
 /**
  * Base class for Iterative Solvers like SubgraphSolver
  */
-class IterativeSolver {
-public:
+class IterativeSolver : public LinearSolver {
+ public:
   typedef boost::shared_ptr<IterativeSolver> shared_ptr;
   IterativeSolver() {
   }
@@ -105,6 +107,20 @@ public:
       const KeyInfo &keyInfo, const std::map<Key, Vector> &lambda,
       const VectorValues &initial) = 0;
 
+  /* satisfies LinearSolver interface */
+  bool isIterative() override { return true; };
+
+  /* satisfies LinearSolver interface */
+  bool isSequential() override { return false; };
+
+  /* satisfies LinearSolver interface */
+  VectorValues solve(const GaussianFactorGraph &gfg) override {
+    return optimize(gfg);
+  };
+
+  /* constructs PCGSolver or SubgraphSolver pointer */
+  static boost::shared_ptr<LinearSolver> fromLinearSolverParams(
+      const LinearSolverParams &params);
 };
 
 /**

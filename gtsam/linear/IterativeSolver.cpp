@@ -19,7 +19,12 @@
 #include <gtsam/linear/IterativeSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/LinearSolver.h>
+#include <gtsam/linear/PCGSolver.h>
+#include <gtsam/linear/SubgraphSolver.h>
+
 #include <boost/algorithm/string.hpp>
+
 #include <iostream>
 
 using namespace std;
@@ -95,6 +100,27 @@ VectorValues IterativeSolver::optimize(const GaussianFactorGraph &gfg,
     const KeyInfo &keyInfo, const std::map<Key, Vector> &lambda) {
   return optimize(gfg, keyInfo, lambda, keyInfo.x0());
 }
+
+/*****************************************************************************/
+boost::shared_ptr<LinearSolver> IterativeSolver::fromLinearSolverParams(
+    const LinearSolverParams &params) {
+  if (!params.iterativeParams) {
+    throw std::runtime_error(
+        "NonlinearOptimizer::solve: cg parameter has to be assigned ...");
+  } else if (auto pcg = boost::dynamic_pointer_cast<PCGSolverParameters>(
+                 params.iterativeParams)) {
+    return boost::make_shared<PCGSolver>(*pcg);
+  } else if (auto spcg = boost::dynamic_pointer_cast<SubgraphSolverParameters>(
+                 params.iterativeParams)) {
+    if (!params.ordering)
+      throw std::runtime_error("SubgraphSolver needs an ordering");
+    return boost::make_shared<SubgraphSolverWrapper>(*spcg, *params.ordering);
+  } else {
+    throw std::runtime_error(
+        "NonlinearOptimizer::solve: special cg parameter type is not handled "
+        "in LM solver ...");
+  }
+};
 
 /****************************************************************************/
 KeyInfo::KeyInfo(const GaussianFactorGraph &fg, const Ordering &ordering) :

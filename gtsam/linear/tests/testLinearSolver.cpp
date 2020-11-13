@@ -16,6 +16,9 @@
  */
 
 #include <gtsam/linear/LinearSolver.h>
+#include <gtsam/linear/PCGSolver.h>
+#include <gtsam/linear/SubgraphSolver.h>
+#include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -76,15 +79,34 @@ TEST(LinearOptimizer, solver) {
   actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
 
-  // // iterative
-  // params.linearSolverType = LinearSolverParams::Iterative;
-  // actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
-  // EXPECT(assert_equal(expected, actual));
+  // iterative
+  params.linearSolverType = LinearSolverParams::Iterative;
+  params.iterativeParams = boost::make_shared<PCGSolverParameters>(
+      boost::make_shared<DummyPreconditionerParameters>());
+  actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
+  EXPECT(assert_equal(expected, actual));
+  params.iterativeParams = boost::make_shared<SubgraphSolverParameters>();
+  actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
+  EXPECT(assert_equal(expected, actual));
 
-  // // cholmod
+  // // cholmod - this flag exists for backwards compatibility but doesn't really
+  // // correspond to any meaningful action
   // params.linearSolverType = LinearSolverParams::CHOLMOD;
   // actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   // EXPECT(assert_equal(expected, actual));
+
+  // PCG
+  params.linearSolverType = LinearSolverParams::PCG;
+  params.iterativeParams = boost::make_shared<PCGSolverParameters>(
+      boost::make_shared<DummyPreconditionerParameters>());
+  actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
+  EXPECT(assert_equal(expected, actual));
+
+  // Subgraph
+  params.linearSolverType = LinearSolverParams::SUBGRAPH;
+  params.iterativeParams = boost::make_shared<SubgraphSolverParameters>();
+  actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
+  EXPECT(assert_equal(expected, actual));
 
   // eigen qr
   params.linearSolverType = LinearSolverParams::EIGEN_QR;
@@ -97,16 +119,18 @@ TEST(LinearOptimizer, solver) {
   EXPECT(assert_equal(expected, actual));
 
   // suitesparse cholesky
+  #ifdef GTSAM_USE_SUITESPARSE
   params.linearSolverType = LinearSolverParams::SUITESPARSE_CHOLESKY;
   actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
+  #endif
 
   // cusparse cholesky
-  // #ifdef GTSAM_USE_CUSPARSE
+  #ifdef GTSAM_USE_CUSPARSE
   params.linearSolverType = LinearSolverParams::CUSPARSE_CHOLESKY;
   actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
-  // #endif
+  #endif
 }
 
 /* ************************************************************************* */

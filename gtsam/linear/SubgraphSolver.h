@@ -21,6 +21,8 @@
 
 #include <gtsam/linear/ConjugateGradientSolver.h>
 #include <gtsam/linear/SubgraphBuilder.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/LinearSolver.h>
 
 #include <map>
 #include <utility>  // pair
@@ -153,6 +155,28 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
                  const GaussianFactorGraph &, const Parameters &);
   /// @}
 #endif
+};
+
+/**
+ * This class is a wrapper around SubgraphSolver to more cleanly satisfy the
+ * LinearSolver interface.  Specifically, rather than partitioning the
+ * subgraph during construction, instead the partitioning will occur during
+ * "solve" since the GaussianFactorGraph is needed to partition the graph.
+ */
+class GTSAM_EXPORT SubgraphSolverWrapper : public LinearSolver {
+ public:
+  SubgraphSolverWrapper(const SubgraphSolverParameters &parameters,
+                        const Ordering &ordering)
+      : parameters_(parameters), ordering_(ordering) {};
+
+  /// satisfies LinearSolver interface to solve the GaussianFactorGraph.
+  VectorValues solve(const GaussianFactorGraph &gfg) override {
+    return SubgraphSolver(gfg, parameters_, ordering_).optimize();
+  };
+
+ protected:
+  SubgraphSolverParameters parameters_;
+  Ordering ordering_;
 };
 
 }  // namespace gtsam
