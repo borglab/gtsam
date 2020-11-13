@@ -24,6 +24,7 @@ jobs:
             ubuntu-gcc-deprecated,
             ubuntu-gcc-quaternions,
             ubuntu-gcc-tbb,
+            ubuntu-cayleymap,
           ]
 
         build_type: [Debug, Release]
@@ -46,6 +47,12 @@ jobs:
             compiler: gcc
             version: "9"
             flag: tbb
+
+          - name: ubuntu-cayleymap
+            os: ubuntu-18.04
+            compiler: gcc
+            version: "9"
+            flag: cayley
 
     steps:
       - name: Checkout
@@ -108,6 +115,13 @@ jobs:
         run: |
           echo "GTSAM_WITH_TBB=ON" >> $GITHUB_ENV
           echo "GTSAM Uses TBB"
+
+      - name: Use Cayley Transform for Rot3
+        if: matrix.flag == 'cayley'
+        run: |
+          echo "GTSAM_POSE3_EXPMAP=OFF" >> $GITHUB_ENV
+          echo "GTSAM_ROT3_EXPMAP=OFF" >> $GITHUB_ENV
+          echo "GTSAM Uses Cayley map for Rot3"
 
       - name: Build & Test
         run: |
