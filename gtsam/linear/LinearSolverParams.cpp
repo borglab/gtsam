@@ -42,6 +42,10 @@ std::string LinearSolverParams::linearSolverTranslator(
       return "ITERATIVE";
     case CHOLMOD:
       return "CHOLMOD";
+    case PCG:
+      return "PCG";
+    case SUBGRAPH:
+      return "SUBGRAPH";
     case EIGEN_QR:
       return "EIGEN_QR";
     case EIGEN_CHOLESKY:
@@ -71,6 +75,10 @@ LinearSolverParams::LinearSolverType LinearSolverParams::linearSolverTranslator(
     return LinearSolverParams::Iterative;
   if (linearSolverType == "CHOLMOD")
     return LinearSolverParams::CHOLMOD;
+  if (linearSolverType == "PCG")
+    return LinearSolverParams::PCG;
+  if (linearSolverType == "SUBGRAPH")
+    return LinearSolverParams::SUBGRAPH;
   if (linearSolverType == "EIGEN_CHOLESKY")
     return LinearSolverParams::EIGEN_CHOLESKY;
   if (linearSolverType == "EIGEN_QR")

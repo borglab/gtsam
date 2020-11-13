@@ -179,8 +179,7 @@ TEST(NonlinearOptimizer, optimization_method) {
 
   // Test all linear solvers
   typedef LinearSolverParams LSP;
-  for (int solver = LSP::MULTIFRONTAL_CHOLESKY;
-       solver != LSP::LAST; solver++) {
+  for (int solver = LSP::MULTIFRONTAL_CHOLESKY; solver != LSP::LAST; solver++) {
     if (solver == LSP::CHOLMOD) continue;  // CHOLMOD is an undefined option
 #ifndef GTSAM_USE_SUITESPARSE
     if (solver == LSP::SUITESPARSE_CHOLESKY) continue;

@@ -44,7 +44,7 @@ static GaussianFactorGraph createSimpleGaussianFactorGraph() {
 }
 
 /* ************************************************************************* */
-TEST(LinearOptimizer, solver) {
+TEST(LinearOptimizer, solverCheckIndividually) {
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
 
   VectorValues expected;
@@ -53,7 +53,7 @@ TEST(LinearOptimizer, solver) {
   expected.insert(1, Vector2(-0.1, 0.1));
 
   LinearSolverParams params;
-  params.ordering = Ordering::Colamd(gfg);
+  params.orderingType = Ordering::COLAMD;
 
   // Below we solve with different backend linear solver choices
   // Note: these tests are not in a for loop to enable easier debugging
@@ -82,11 +82,15 @@ TEST(LinearOptimizer, solver) {
   EXPECT(assert_equal(expected, actual));
 
   // Iterative - either PCGSolver or SubgraphSolver
-  params.linearSolverType = LinearSolverParams::Iterative;
-  params.iterativeParams = boost::make_shared<PCGSolverParameters>(
-      boost::make_shared<DummyPreconditionerParameters>());
+  // first PCGSolver
+  params = LinearSolverParams(
+      LinearSolverParams::Iterative, Ordering::COLAMD,
+      boost::make_shared<PCGSolverParameters>(
+          boost::make_shared<DummyPreconditionerParameters>()));
   actual = LinearSolver::FromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
+  // then SubgraphSolver
+  params.ordering = Ordering::Colamd(gfg);
   params.iterativeParams = boost::make_shared<SubgraphSolverParameters>();
   actual = LinearSolver::FromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
@@ -98,14 +102,16 @@ TEST(LinearOptimizer, solver) {
   // EXPECT(assert_equal(expected, actual));
 
   // PCG - Preconditioned Conjugate Gradient, an iterative method
-  params.linearSolverType = LinearSolverParams::PCG;
-  params.iterativeParams = boost::make_shared<PCGSolverParameters>(
-      boost::make_shared<DummyPreconditionerParameters>());
+  params = LinearSolverParams(
+      LinearSolverParams::PCG, Ordering::COLAMD,
+      boost::make_shared<PCGSolverParameters>(
+          boost::make_shared<DummyPreconditionerParameters>()));
   actual = LinearSolver::FromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
 
   // Subgraph - SPCG, see SubgraphSolver.h
   params.linearSolverType = LinearSolverParams::SUBGRAPH;
+  params.ordering = Ordering::Colamd(gfg);
   params.iterativeParams = boost::make_shared<SubgraphSolverParameters>();
   actual = LinearSolver::FromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
@@ -133,6 +139,48 @@ TEST(LinearOptimizer, solver) {
   actual = LinearSolver::FromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
   #endif
+}
+
+// creates a dummy iterativeParams object for the appropriate solver type
+IterativeOptimizationParameters::shared_ptr createIterativeParams(int solver) {
+  typedef LinearSolverParams LSP;
+  return (solver == LSP::Iterative) || (solver == LSP::PCG)
+             ? boost::make_shared<PCGSolverParameters>(
+                   boost::make_shared<DummyPreconditionerParameters>())
+             : (solver == LSP::SUBGRAPH)
+                   ? boost::make_shared<SubgraphSolverParameters>()
+                   : boost::make_shared<IterativeOptimizationParameters>();
+}
+
+/* ************************************************************************* */
+TEST(LinearOptimizer, solverCheckWithLoop) {
+  // the same as the previous test except in a loop for consistency
+  GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
+
+  VectorValues expected;
+  expected.insert(2, Vector2(-0.1, -0.1));
+  expected.insert(0, Vector2(0.1, -0.2));
+  expected.insert(1, Vector2(-0.1, 0.1));
+
+  LinearSolverParams params;
+  params.ordering = Ordering::Colamd(gfg);
+
+  // Test all linear solvers
+  typedef LinearSolverParams LSP;
+  for (int solver = LSP::MULTIFRONTAL_CHOLESKY; solver != LSP::LAST; solver++) {
+    if (solver == LSP::CHOLMOD) continue;  // CHOLMOD is an undefined option
+#ifndef GTSAM_USE_SUITESPARSE
+    if (solver == LSP::SUITESPARSE_CHOLESKY) continue;
+#endif
+#ifndef GTSAM_USE_CUSPARSE
+    if (solver == LSP::CUSPARSE_CHOLESKY) continue;
+#endif
+    auto params = LinearSolverParams(static_cast<LSP::LinearSolverType>(solver),
+                                     Ordering::Colamd(gfg),
+                                     createIterativeParams(solver));
+    auto actual = LinearSolver::FromLinearSolverParams(params)->solve(gfg);
+    EXPECT(assert_equal(expected, actual));
+  }
 }
 
 /* ************************************************************************* */

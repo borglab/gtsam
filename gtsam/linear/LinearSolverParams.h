@@ -49,7 +49,38 @@ struct GTSAM_EXPORT LinearSolverParams {
     LAST /* for iterating over enum */
   } LinearSolverType;
 
-  LinearSolverType linearSolverType = LinearSolverParams::MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
+  /// Construct a params object from the solver and ordering types
+  LinearSolverParams(LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY,
+                     Ordering::OrderingType orderingType = Ordering::COLAMD)
+      : linearSolverType(linearSolverType),
+        orderingType(orderingType) {};
+  /// Construct a params object from the solver type and custom ordering
+  LinearSolverParams(LinearSolverType linearSolverType,
+                     boost::optional<Ordering> ordering)
+      : linearSolverType(linearSolverType),
+        orderingType(Ordering::CUSTOM),
+        ordering(ordering) {};
+  /// Construct a params object from the solver and ordering types as well as
+  /// the iterative parameters
+  LinearSolverParams(
+      LinearSolverType linearSolverType,
+      Ordering::OrderingType orderingType,
+      boost::shared_ptr<IterativeOptimizationParameters> iterativeParams)
+      : linearSolverType(linearSolverType),
+        orderingType(orderingType),
+        iterativeParams(iterativeParams) {};
+  /// Construct a params object from the solver type, custom ordering, and the
+  /// iterative parameters
+  LinearSolverParams(
+      LinearSolverType linearSolverType,
+      boost::optional<Ordering> ordering,
+      boost::shared_ptr<IterativeOptimizationParameters> iterativeParams)
+      : linearSolverType(linearSolverType),
+        orderingType(Ordering::CUSTOM),
+        ordering(ordering),
+        iterativeParams(iterativeParams) {};
+
+  LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
   Ordering::OrderingType orderingType = Ordering::COLAMD; ///< The method of ordering use during variable elimination (default COLAMD)
   boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
 
