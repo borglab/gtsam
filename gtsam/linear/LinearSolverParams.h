@@ -46,6 +46,7 @@ struct GTSAM_EXPORT LinearSolverParams {
     EIGEN_CHOLESKY,
     SUITESPARSE_CHOLESKY,
     CUSPARSE_CHOLESKY,
+    LAST /* for iterating over enum */
   } LinearSolverType;
 
   LinearSolverType linearSolverType = LinearSolverParams::MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
@@ -69,7 +70,8 @@ struct GTSAM_EXPORT LinearSolverParams {
   }
 
   inline bool isIterative() const {
-    return (linearSolverType == Iterative);
+    return (linearSolverType == Iterative) || (linearSolverType == PCG) ||
+           (linearSolverType == SUBGRAPH);
   }
 
   inline bool isEigenQR() const {

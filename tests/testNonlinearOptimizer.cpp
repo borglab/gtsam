@@ -25,6 +25,10 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/LinearSolverParams.h>
+#include <gtsam/linear/PCGSolver.h>
+#include <gtsam/linear/SubgraphSolver.h>
+#include <gtsam/linear/Preconditioner.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Matrix.h>
@@ -161,28 +165,25 @@ TEST(NonlinearOptimizer, optimization_method) {
   Values c0;
   c0.insert(X(1), x0);
 
-  // Below we solve with different backend linear solver choices
   LevenbergMarquardtParams params;
 
-  // Multifrontal QR, will be parallel if TBB installed
-  params.linearSolverType = NonlinearOptimizerParams::MULTIFRONTAL_QR;
-  Values actualMFQR = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
-  DOUBLES_EQUAL(0, fg.error(actualMFQR), tol);
-
-  // Multifrontal Cholesky (more sensitive to conditioning, but faster)
-  params.linearSolverType = NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY;
-  Values actualMFChol = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
-  DOUBLES_EQUAL(0, fg.error(actualMFChol), tol);
-
-  // Test sparse Eigen QR solver
-  params.linearSolverType = NonlinearOptimizerParams::EIGEN_QR;
-  Values actualEigenQR = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
-  DOUBLES_EQUAL(0, fg.error(actualEigenQR), tol);
-
-  // Test sparse Eigen Cholesky solver
-  params.linearSolverType = NonlinearOptimizerParams::EIGEN_CHOLESKY;
-  Values actualEigenCholesky = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
-  DOUBLES_EQUAL(0, fg.error(actualEigenCholesky), tol);
+  // Test all linear solvers
+  typedef LinearSolverParams LSP;
+  for (int solver = LSP::MULTIFRONTAL_CHOLESKY;
+       solver != LSP::LAST; solver++) {
+    if (solver == LSP::CHOLMOD) continue;
+    params.linearSolverType =
+        static_cast<LSP::LinearSolverType>(solver);
+    params.iterativeParams =
+        (solver == LSP::Iterative) || (solver == LSP::PCG)
+            ? boost::make_shared<PCGSolverParameters>(
+                  boost::make_shared<DummyPreconditionerParameters>())
+            : (solver == LSP::SUBGRAPH)
+                  ? boost::make_shared<SubgraphSolverParameters>()
+                  : boost::make_shared<IterativeOptimizationParameters>();
+    Values actual = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
+    DOUBLES_EQUAL(0, fg.error(actual), tol);
+  }
 }
 
 /* ************************************************************************* */

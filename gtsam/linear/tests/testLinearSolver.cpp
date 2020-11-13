@@ -55,8 +55,10 @@ TEST(LinearOptimizer, solver) {
   LinearSolverParams params;
   params.ordering = Ordering::Colamd(gfg);
 
-  // these tests are not wrapped in a for loop to enable easier debugging
-  // multifrontal cholesky
+  // Below we solve with different backend linear solver choices
+  // Note: these tests are not in a for loop to enable easier debugging
+
+  // Multifrontal Cholesky (more sensitive to conditioning, but faster)
   params.linearSolverType = LinearSolverParams::MULTIFRONTAL_CHOLESKY;
   auto solver = LinearSolver::fromLinearSolverParams(params);
   VectorValues actual = (*solver)(gfg);
@@ -64,22 +66,22 @@ TEST(LinearOptimizer, solver) {
   actual = solver->solve(gfg);
   EXPECT(assert_equal(expected, actual));
 
-  // multifrontal qr
+  // Multifrontal QR, will be parallel if TBB installed
   params.linearSolverType = LinearSolverParams::MULTIFRONTAL_QR;
   actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
 
-  // sequential cholesky
+  // Sequential Cholesky (more sensitive to conditioning, but faster)
   params.linearSolverType = LinearSolverParams::SEQUENTIAL_CHOLESKY;
   actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
 
-  // sequential qr
+  // Sequential QR, not parallelized
   params.linearSolverType = LinearSolverParams::SEQUENTIAL_QR;
   actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
 
-  // iterative
+  // Iterative - either PCGSolver or SubgraphSolver
   params.linearSolverType = LinearSolverParams::Iterative;
   params.iterativeParams = boost::make_shared<PCGSolverParameters>(
       boost::make_shared<DummyPreconditionerParameters>());
@@ -95,37 +97,37 @@ TEST(LinearOptimizer, solver) {
   // actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   // EXPECT(assert_equal(expected, actual));
 
-  // PCG
+  // PCG - Preconditioned Conjugate Gradient, an iterative method
   params.linearSolverType = LinearSolverParams::PCG;
   params.iterativeParams = boost::make_shared<PCGSolverParameters>(
       boost::make_shared<DummyPreconditionerParameters>());
   actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
 
-  // Subgraph
+  // Subgraph - SPCG, see SubgraphSolver.h
   params.linearSolverType = LinearSolverParams::SUBGRAPH;
   params.iterativeParams = boost::make_shared<SubgraphSolverParameters>();
   actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
 
-  // eigen qr
+  // Sparse Eigen QR
   params.linearSolverType = LinearSolverParams::EIGEN_QR;
   actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
 
-  // eigen cholesky
+  // Sparse Eigen Cholesky
   params.linearSolverType = LinearSolverParams::EIGEN_CHOLESKY;
   actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
 
-  // suitesparse cholesky
+  // SuiteSparse Cholesky
   #ifdef GTSAM_USE_SUITESPARSE
   params.linearSolverType = LinearSolverParams::SUITESPARSE_CHOLESKY;
   actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
   #endif
 
-  // cusparse cholesky
+  // CuSparse Cholesky
   #ifdef GTSAM_USE_CUSPARSE
   params.linearSolverType = LinearSolverParams::CUSPARSE_CHOLESKY;
   actual = LinearSolver::fromLinearSolverParams(params)->solve(gfg);
