@@ -102,7 +102,7 @@ VectorValues IterativeSolver::optimize(const GaussianFactorGraph &gfg,
 }
 
 /*****************************************************************************/
-boost::shared_ptr<LinearSolver> IterativeSolver::fromLinearSolverParams(
+boost::shared_ptr<LinearSolver> IterativeSolver::FromLinearSolverParams(
     const LinearSolverParams &params) {
   if (!params.iterativeParams) {
     throw std::runtime_error(

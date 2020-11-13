@@ -56,7 +56,7 @@ class GTSAM_EXPORT LinearSolver {
    * @param params LinearSolverParams linear optimizer parameters
    * @return pointer to a LinearSolver object
    */
-  static boost::shared_ptr<LinearSolver> fromLinearSolverParams(
+  static boost::shared_ptr<LinearSolver> FromLinearSolverParams(
       const LinearSolverParams &params);
 
  protected:

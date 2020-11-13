@@ -28,7 +28,7 @@ namespace gtsam {
 
 LinearSolver::LinearSolver() = default;
 
-boost::shared_ptr<LinearSolver> LinearSolver::fromLinearSolverParams(
+boost::shared_ptr<LinearSolver> LinearSolver::FromLinearSolverParams(
     const LinearSolverParams &params) {
   switch (params.linearSolverType) {
     case LinearSolverParams::MULTIFRONTAL_QR:
@@ -37,11 +37,11 @@ boost::shared_ptr<LinearSolver> LinearSolver::fromLinearSolverParams(
     case LinearSolverParams::SEQUENTIAL_CHOLESKY:
       return boost::make_shared<EliminationSolver>(params);
     case LinearSolverParams::Iterative:
-      return IterativeSolver::fromLinearSolverParams(params);
+      return IterativeSolver::FromLinearSolverParams(params);
     case LinearSolverParams::PCG:
       if (!params.iterativeParams)
         throw std::runtime_error(
-            "LinearSolver::fromLinearSolverParams: iterative params has to be "
+            "LinearSolver::FromLinearSolverParams: iterative params has to be "
             "assigned ...");
       return boost::make_shared<PCGSolver>(
           *boost::static_pointer_cast<PCGSolverParameters>(
@@ -49,11 +49,11 @@ boost::shared_ptr<LinearSolver> LinearSolver::fromLinearSolverParams(
     case LinearSolverParams::SUBGRAPH:
       if (!params.iterativeParams)
         throw std::runtime_error(
-            "LinearSolver::fromLinearSolverParams: iterative params has to be "
+            "LinearSolver::FromLinearSolverParams: iterative params has to be "
             "assigned ...");
       if (!params.ordering)
         throw std::runtime_error(
-            "LinearSolver::fromLinearSolverParams: SubgraphSolver needs an "
+            "LinearSolver::FromLinearSolverParams: SubgraphSolver needs an "
             "ordering");
       return boost::make_shared<SubgraphSolverWrapper>(
           *boost::static_pointer_cast<SubgraphSolverParameters>(
