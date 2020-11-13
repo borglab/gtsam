@@ -155,6 +155,16 @@ TEST( NonlinearOptimizer, SimpleDLOptimizer )
   DOUBLES_EQUAL(0,fg.error(actual),tol);
 }
 
+IterativeOptimizationParameters::shared_ptr createIterativeParams(int solver) {
+  typedef LinearSolverParams LSP;
+  return (solver == LSP::Iterative) || (solver == LSP::PCG)
+             ? boost::make_shared<PCGSolverParameters>(
+                   boost::make_shared<DummyPreconditionerParameters>())
+             : (solver == LSP::SUBGRAPH)
+                   ? boost::make_shared<SubgraphSolverParameters>()
+                   : boost::make_shared<IterativeOptimizationParameters>();
+}
+
 /* ************************************************************************* */
 TEST(NonlinearOptimizer, optimization_method) {
   // Create nonlinear example
@@ -171,15 +181,15 @@ TEST(NonlinearOptimizer, optimization_method) {
   typedef LinearSolverParams LSP;
   for (int solver = LSP::MULTIFRONTAL_CHOLESKY;
        solver != LSP::LAST; solver++) {
-    if (solver == LSP::CHOLMOD) continue;
+    if (solver == LSP::CHOLMOD) continue;  // CHOLMOD is an undefined option
+#ifndef GTSAM_USE_SUITESPARSE
+    if (solver == LSP::SUITESPARSE_CHOLESKY) continue;
+#endif
+#ifndef GTSAM_USE_CUSPARSE
+    if (solver == LSP::CUSPARSE_CHOLESKY) continue;
+#endif
     params.linearSolverType = static_cast<LSP::LinearSolverType>(solver);
-    params.iterativeParams =
-        (solver == LSP::Iterative) || (solver == LSP::PCG)
-            ? boost::make_shared<PCGSolverParameters>(
-                  boost::make_shared<DummyPreconditionerParameters>())
-            : (solver == LSP::SUBGRAPH)
-                  ? boost::make_shared<SubgraphSolverParameters>()
-                  : boost::make_shared<IterativeOptimizationParameters>();
+    params.iterativeParams = createIterativeParams(solver);
     Values actual = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
     DOUBLES_EQUAL(0, fg.error(actual), tol);
   }
