@@ -130,7 +130,7 @@ VectorValues NonlinearOptimizer::solve(
     const GaussianFactorGraph& gfg,
     const NonlinearOptimizerParams& params) const {
   // solution of linear solver is an update to the linearization point
-  return LinearSolver::fromLinearSolverParams(params)->solve(gfg);
+  return LinearSolver::fromLinearSolverParams(params.linearSolverParams)->solve(gfg);
 }
 
 /* ************************************************************************* */

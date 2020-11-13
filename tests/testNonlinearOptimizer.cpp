@@ -172,8 +172,7 @@ TEST(NonlinearOptimizer, optimization_method) {
   for (int solver = LSP::MULTIFRONTAL_CHOLESKY;
        solver != LSP::LAST; solver++) {
     if (solver == LSP::CHOLMOD) continue;
-    params.linearSolverType =
-        static_cast<LSP::LinearSolverType>(solver);
+    params.linearSolverType = static_cast<LSP::LinearSolverType>(solver);
     params.iterativeParams =
         (solver == LSP::Iterative) || (solver == LSP::PCG)
             ? boost::make_shared<PCGSolverParameters>(

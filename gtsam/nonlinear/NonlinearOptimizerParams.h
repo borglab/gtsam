@@ -29,11 +29,14 @@
 
 namespace gtsam {
 
+// forward declaration
+class IterativeOptimizationParameters;
+
 /** The common parameters for Nonlinear optimizers.  Most optimizers
  * deriving from NonlinearOptimizer also subclass the parameters.
  */
-class GTSAM_EXPORT NonlinearOptimizerParams: public LinearSolverParams {
-public:
+class GTSAM_EXPORT NonlinearOptimizerParams {
+ public:
   /** See NonlinearOptimizerParams::verbosity */
   enum Verbosity {
     SILENT, TERMINATION, ERROR, VALUES, DELTA, LINEAR
@@ -45,9 +48,12 @@ public:
   double errorTol; ///< The maximum total error to stop iterating (default 0.0)
   Verbosity verbosity; ///< The printing verbosity during optimization (default SILENT)
 
-  NonlinearOptimizerParams() :
-      maxIterations(100), relativeErrorTol(1e-5), absoluteErrorTol(1e-5), errorTol(
-          0.0), verbosity(SILENT) {}
+  NonlinearOptimizerParams()
+      : maxIterations(100),
+        relativeErrorTol(1e-5),
+        absoluteErrorTol(1e-5),
+        errorTol(0.0),
+        verbosity(SILENT) {}
 
   virtual ~NonlinearOptimizerParams() {
   }
@@ -69,6 +75,83 @@ public:
 
   static Verbosity verbosityTranslator(const std::string &s) ;
   static std::string verbosityTranslator(Verbosity value) ;
+
+  /// The parameters for the linear backend solver
+  LinearSolverParams linearSolverParams;
+
+  /**
+   * @name Linear Properties for Backwards Compatibility
+   * These member variables and functions reference LinearSolverParams
+   */
+  ///@{
+
+  /** See LinearSolverParams::LinearSolverType */
+  typedef LinearSolverParams::LinearSolverType LinearSolverType;
+  static constexpr LinearSolverType MULTIFRONTAL_CHOLESKY = LinearSolverParams::MULTIFRONTAL_CHOLESKY;
+  static constexpr LinearSolverType MULTIFRONTAL_QR = LinearSolverParams::MULTIFRONTAL_QR;
+  static constexpr LinearSolverType SEQUENTIAL_CHOLESKY = LinearSolverParams::SEQUENTIAL_CHOLESKY;
+  static constexpr LinearSolverType SEQUENTIAL_QR = LinearSolverParams::SEQUENTIAL_QR;
+  static constexpr LinearSolverType Iterative = LinearSolverParams::Iterative; /* Experimental Flag */
+  static constexpr LinearSolverType CHOLMOD = LinearSolverParams::CHOLMOD; /* Experimental Flag */
+  static constexpr LinearSolverType PCG = LinearSolverParams::PCG;
+  static constexpr LinearSolverType SUBGRAPH = LinearSolverParams::SUBGRAPH;
+  static constexpr LinearSolverType EIGEN_QR = LinearSolverParams::EIGEN_QR;
+  static constexpr LinearSolverType EIGEN_CHOLESKY = LinearSolverParams::EIGEN_CHOLESKY;
+  static constexpr LinearSolverType SUITESPARSE_CHOLESKY = LinearSolverParams::SUITESPARSE_CHOLESKY;
+  static constexpr LinearSolverType CUSPARSE_CHOLESKY = LinearSolverParams::CUSPARSE_CHOLESKY;
+  static constexpr LinearSolverType LAST = LinearSolverParams::LAST;
+
+  LinearSolverType &linearSolverType {linearSolverParams.linearSolverType}; ///< The type of linear solver to use in the nonlinear optimizer
+  Ordering::OrderingType &orderingType {linearSolverParams.orderingType};
+  boost::optional<Ordering> &ordering {linearSolverParams.ordering}; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
+  boost::shared_ptr<IterativeOptimizationParameters> &iterativeParams {linearSolverParams.iterativeParams}; ///< The container for iterativeOptimization parameters. used in CG Solvers.
+
+  inline bool isMultifrontal() const {
+    return linearSolverParams.isMultifrontal();
+  }
+
+  inline bool isSequential() const {
+    return linearSolverParams.isSequential();
+  }
+
+  inline bool isCholmod() const {
+    return linearSolverParams.isCholmod();
+  }
+
+  inline bool isIterative() const {
+    return linearSolverParams.isIterative();
+  }
+
+  GaussianFactorGraph::Eliminate getEliminationFunction() const {
+    return linearSolverParams.getEliminationFunction();
+  }
+
+  std::string getLinearSolverType() const {
+    return linearSolverParams.getLinearSolverType();
+  }
+
+  void setLinearSolverType(const std::string& solver) {
+    linearSolverParams.setLinearSolverType(solver);
+  }
+
+  void setIterativeParams(const boost::shared_ptr<IterativeOptimizationParameters> params) {
+    linearSolverParams.setIterativeParams(params);
+  }
+
+  void setOrdering(const Ordering& ordering) {
+    linearSolverParams.setOrdering(ordering);
+  }
+
+  std::string getOrderingType() const {
+    return linearSolverParams.getOrderingType();
+  }
+
+  // Note that if you want to use a custom ordering, you must set the ordering directly, this will switch to custom type
+  void setOrderingType(const std::string& ordering){
+    linearSolverParams.setOrderingType(ordering);
+  }
+
+  ///@}
 };
 
 // For backward compatibility:
