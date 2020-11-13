@@ -55,6 +55,41 @@ class GTSAM_EXPORT NonlinearOptimizerParams {
         errorTol(0.0),
         verbosity(SILENT) {}
 
+  // copy constructor
+  NonlinearOptimizerParams(const NonlinearOptimizerParams& other)
+      : maxIterations(other.maxIterations),
+        relativeErrorTol(other.relativeErrorTol),
+        absoluteErrorTol(other.absoluteErrorTol),
+        errorTol(other.errorTol),
+        verbosity(other.verbosity),
+        linearSolverParams(other.linearSolverParams) {}
+
+  // move constructor
+  NonlinearOptimizerParams(NonlinearOptimizerParams&& other) noexcept
+      : maxIterations(other.maxIterations),
+        relativeErrorTol(other.relativeErrorTol),
+        absoluteErrorTol(other.absoluteErrorTol),
+        errorTol(other.errorTol),
+        verbosity(other.verbosity),
+        linearSolverParams(std::move(other.linearSolverParams)) {}
+
+  // copy assignment
+  NonlinearOptimizerParams& operator=(const NonlinearOptimizerParams& other) {
+    return *this = NonlinearOptimizerParams(other);
+  }
+
+  // move assignment
+  NonlinearOptimizerParams& operator=(
+      NonlinearOptimizerParams&& other) noexcept {
+    maxIterations = other.maxIterations;
+    relativeErrorTol = other.relativeErrorTol;
+    absoluteErrorTol = other.absoluteErrorTol;
+    errorTol = other.errorTol;
+    verbosity = other.verbosity;
+    std::swap(linearSolverParams, other.linearSolverParams);
+    return *this;
+  }
+
   virtual ~NonlinearOptimizerParams() {
   }
   virtual void print(const std::string& str = "") const;

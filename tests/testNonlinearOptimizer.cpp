@@ -257,6 +257,56 @@ TEST(NonlinearOptimizer, NullFactor) {
   DOUBLES_EQUAL(0,fg.error(actual3),tol);
 }
 
+TEST(NonlinearOptimizerParams, RuleOfFive) {
+  // test copy and move constructors.
+  NonlinearOptimizerParams params;
+  typedef LinearSolverParams LSP;
+  params.maxIterations = 2;
+  params.linearSolverType = LSP::MULTIFRONTAL_QR;
+
+  // test copy's
+  auto params2 = params;                                 // copy-assignment
+  auto params3{params};                                  // copy-constructor
+  EXPECT(params2.maxIterations == params.maxIterations);
+  EXPECT(params2.linearSolverType == params.linearSolverType);
+  EXPECT(params.linearSolverType ==
+         params.linearSolverParams.linearSolverType);
+  EXPECT(params2.linearSolverType ==
+         params2.linearSolverParams.linearSolverType);
+  EXPECT(params3.maxIterations == params.maxIterations);
+  EXPECT(params3.linearSolverType == params.linearSolverType);
+  EXPECT(params3.linearSolverType ==
+         params3.linearSolverParams.linearSolverType);
+  params2.linearSolverType = LSP::MULTIFRONTAL_CHOLESKY;
+  params3.linearSolverType = LSP::SEQUENTIAL_QR;
+  EXPECT(params.linearSolverType == LSP::MULTIFRONTAL_QR);
+  EXPECT(params.linearSolverParams.linearSolverType == LSP::MULTIFRONTAL_QR);
+  EXPECT(params2.linearSolverType == LSP::MULTIFRONTAL_CHOLESKY);
+  EXPECT(params2.linearSolverParams.linearSolverType == LSP::MULTIFRONTAL_CHOLESKY);
+  EXPECT(params3.linearSolverType == LSP::SEQUENTIAL_QR);
+  EXPECT(params3.linearSolverParams.linearSolverType == LSP::SEQUENTIAL_QR);
+
+  // test move's
+  NonlinearOptimizerParams params4 = std::move(params2);  // move-constructor
+  NonlinearOptimizerParams params5;
+  params5 = std::move(params3);                           // move-assignment
+  EXPECT(params4.linearSolverType == LSP::MULTIFRONTAL_CHOLESKY);
+  EXPECT(params4.linearSolverParams.linearSolverType == LSP::MULTIFRONTAL_CHOLESKY);
+  EXPECT(params5.linearSolverType == LSP::SEQUENTIAL_QR);
+  EXPECT(params5.linearSolverParams.linearSolverType == LSP::SEQUENTIAL_QR);
+  params4.linearSolverType = LSP::SEQUENTIAL_CHOLESKY;
+  params5.linearSolverType = LSP::EIGEN_QR;
+  EXPECT(params4.linearSolverType == LSP::SEQUENTIAL_CHOLESKY);
+  EXPECT(params4.linearSolverParams.linearSolverType == LSP::SEQUENTIAL_CHOLESKY);
+  EXPECT(params5.linearSolverType == LSP::EIGEN_QR);
+  EXPECT(params5.linearSolverParams.linearSolverType == LSP::EIGEN_QR);
+
+  // test destructor
+  {
+    NonlinearOptimizerParams params6;
+  }
+}
+
 /* ************************************************************************* */
 TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
