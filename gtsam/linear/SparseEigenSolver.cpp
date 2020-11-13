@@ -22,6 +22,7 @@
 
 #include <gtsam/base/timing.h>
 #include <gtsam/linear/SparseEigenSolver.h>
+#include <gtsam/linear/LinearSolverParams.h>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
@@ -227,5 +228,7 @@ namespace gtsam {
   SparseEigenSolver::SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType type, const Ordering &ordering) {
     solverType = type;
     this->ordering = ordering;
+    linearSolverType = (type == QR) ? LinearSolverParams::EIGEN_QR
+                                    : LinearSolverParams::EIGEN_CHOLESKY;
   }
 }  // namespace gtsam

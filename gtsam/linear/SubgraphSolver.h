@@ -23,6 +23,7 @@
 #include <gtsam/linear/SubgraphBuilder.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/LinearSolver.h>
+#include <gtsam/linear/LinearSolverParams.h>
 
 #include <map>
 #include <utility>  // pair
@@ -167,7 +168,9 @@ class GTSAM_EXPORT SubgraphSolverWrapper : public LinearSolver {
  public:
   SubgraphSolverWrapper(const SubgraphSolverParameters &parameters,
                         const Ordering &ordering)
-      : parameters_(parameters), ordering_(ordering) {};
+      : parameters_(parameters), ordering_(ordering) {
+    linearSolverType = LinearSolverParams::SUBGRAPH;
+  };
 
   /// satisfies LinearSolver interface to solve the GaussianFactorGraph.
   VectorValues solve(const GaussianFactorGraph &gfg) override {

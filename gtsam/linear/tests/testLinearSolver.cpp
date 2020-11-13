@@ -167,19 +167,26 @@ TEST(LinearOptimizer, solverCheckWithLoop) {
 
   // Test all linear solvers
   typedef LinearSolverParams LSP;
-  for (int solver = LSP::MULTIFRONTAL_CHOLESKY; solver != LSP::LAST; solver++) {
-    if (solver == LSP::CHOLMOD) continue;  // CHOLMOD is an undefined option
+  for (int solverType = LSP::MULTIFRONTAL_CHOLESKY; solverType != LSP::LAST;
+       solverType++) {
+    if (solverType == LSP::CHOLMOD) continue;  // CHOLMOD is an undefined option
 #ifndef GTSAM_USE_SUITESPARSE
-    if (solver == LSP::SUITESPARSE_CHOLESKY) continue;
+    if (solverType == LSP::SUITESPARSE_CHOLESKY) continue;
 #endif
 #ifndef GTSAM_USE_CUSPARSE
-    if (solver == LSP::CUSPARSE_CHOLESKY) continue;
+    if (solverType == LSP::CUSPARSE_CHOLESKY) continue;
 #endif
-    auto params = LinearSolverParams(static_cast<LSP::LinearSolverType>(solver),
+    auto params = LinearSolverParams(static_cast<LSP::LinearSolverType>(solverType),
                                      Ordering::Colamd(gfg),
-                                     createIterativeParams(solver));
-    auto actual = LinearSolver::FromLinearSolverParams(params)->solve(gfg);
+                                     createIterativeParams(solverType));
+    auto linearSolver = LinearSolver::FromLinearSolverParams(params);
+    auto actual = (*linearSolver)(gfg);
     EXPECT(assert_equal(expected, actual));
+    if (solverType == LSP::Iterative) {  // iterative defaults to PCG
+      EXPECT(LSP::PCG == linearSolver->linearSolverType);
+    } else {
+      EXPECT(solverType == linearSolver->linearSolverType);
+    }
   }
 }
 

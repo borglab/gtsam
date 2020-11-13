@@ -18,6 +18,7 @@
  */
 
 #include <gtsam/linear/PCGSolver.h>
+#include <gtsam/linear/LinearSolverParams.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/VectorValues.h>
@@ -43,6 +44,7 @@ void PCGSolverParameters::print(ostream &os) const {
 PCGSolver::PCGSolver(const PCGSolverParameters &p) {
   parameters_ = p;
   preconditioner_ = createPreconditioner(p.preconditioner_);
+  linearSolverType = LinearSolverParams::PCG;
 }
 
 /*****************************************************************************/

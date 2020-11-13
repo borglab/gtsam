@@ -19,6 +19,7 @@
  */
 
 #include "gtsam/linear/CuSparseSolver.h"
+#include "gtsam/linear/LinearSolverParams.h"
 
 #ifdef GTSAM_USE_CUSPARSE
 #include <cusolverSp.h>
@@ -35,6 +36,7 @@ namespace gtsam {
                                               const Ordering &ordering) {
     solverType = type;
     this->ordering = ordering;
+    linearSolverType = LinearSolverParams::CUSPARSE_CHOLESKY;
   }
 
   bool CuSparseSolver::isIterative() {

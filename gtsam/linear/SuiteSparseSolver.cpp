@@ -18,9 +18,9 @@
  * @author Fan Jiang
  */
 
-#include "gtsam/linear/SuiteSparseSolver.h"
-
-#include "gtsam/linear/SparseEigenSolver.h"
+#include <gtsam/linear/SuiteSparseSolver.h>
+#include <gtsam/linear/LinearSolverParams.h>
+#include <gtsam/linear/SparseEigenSolver.h>
 
 #ifdef GTSAM_USE_SUITESPARSE
 #include <Eigen/CholmodSupport>
@@ -31,6 +31,7 @@ namespace gtsam {
                                               const Ordering &ordering) {
     solverType = type;
     this->ordering = ordering;
+    linearSolverType = LinearSolverParams::SUITESPARSE_CHOLESKY;
   }
 
   bool SuiteSparseSolver::isIterative() {
