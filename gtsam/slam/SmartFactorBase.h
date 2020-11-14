@@ -81,7 +81,7 @@ protected:
   mutable FBlocks Fs;
 
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -150,7 +150,7 @@ protected:
   }
 
   /// get the dimension (number of rows!) of the factor
-  virtual size_t dim() const {
+  size_t dim() const override {
     return ZDim * this->measured_.size();
   }
 
@@ -173,7 +173,7 @@ protected:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
+      DefaultKeyFormatter) const override {
     std::cout << s << "SmartFactorBase, z = \n";
     for (size_t k = 0; k < measured_.size(); ++k) {
       std::cout << "measurement, p = " << measured_[k] << "\t";
@@ -185,7 +185,7 @@ protected:
   }
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*>(&p);
 
     bool areMeasurementsEqual = true;
@@ -207,10 +207,18 @@ protected:
     Vector ue = cameras.reprojectionError(point, measured_, Fs, E);
     if (body_P_sensor_ && Fs) {
       const Pose3 sensor_P_body = body_P_sensor_->inverse();
+      constexpr int camera_dim = traits<CAMERA>::dimension;
+      constexpr int pose_dim = traits<Pose3>::dimension;
+
       for (size_t i = 0; i < Fs->size(); i++) {
-        const Pose3 w_Pose_body = cameras[i].pose() * sensor_P_body;
-        Matrix J(6, 6);
-        const Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
+        const Pose3 world_P_body = cameras[i].pose() * sensor_P_body;
+        Eigen::Matrix<double, camera_dim, camera_dim> J;
+        J.setZero();
+        Eigen::Matrix<double, pose_dim, pose_dim> H;
+        // Call compose to compute Jacobian for camera extrinsics
+        world_P_body.compose(*body_P_sensor_, H);
+        // Assign extrinsics part of the Jacobian
+        J.template block<pose_dim, pose_dim>(0, 0) = H;
         Fs->at(i) = Fs->at(i) * J;
       }
     }

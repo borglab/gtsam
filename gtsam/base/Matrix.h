@@ -23,14 +23,11 @@
 // \callgraph
 
 #pragma once
+
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/config.h>
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-#include <Eigen/Core>
-#include <Eigen/Cholesky>
-#include <Eigen/LU>
-#endif
+
 #include <boost/format.hpp>
 #include <boost/function.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -75,6 +72,10 @@ GTSAM_MAKE_MATRIX_DEFS(9);
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
+
+// Matrix formatting arguments when printing.
+// Akin to Matlab style.
+const Eigen::IOFormat& matlabFormat();
 
 /**
  * equals with a tolerance
@@ -517,23 +518,6 @@ struct MultiplyWithInverseFunction {
   const Operator phi_;
 };
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-inline Matrix zeros( size_t m, size_t n ) { return Matrix::Zero(m,n); }
-inline Matrix ones( size_t m, size_t n ) { return Matrix::Ones(m,n); }
-inline Matrix eye( size_t m, size_t n) { return Matrix::Identity(m, n); }
-inline Matrix eye( size_t m ) { return eye(m,m); }
-inline Matrix diag(const Vector& v) { return v.asDiagonal(); }
-inline void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) { e += alpha * A * x; }
-inline void multiplyAdd(const Matrix& A, const Vector& x, Vector& e) { e += A * x; }
-inline void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x) { x += alpha * A.transpose() * e; }
-inline void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) { x += A.transpose() * e; }
-inline void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x) { x += alpha * A.transpose() * e; }
-inline void insertColumn(Matrix& A, const Vector& col, size_t j) { A.col(j) = col; }
-inline void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j) { A.col(j).segment(i, col.size()) = col; }
-inline void solve(Matrix& A, Matrix& B) { B = A.fullPivLu().solve(B); }
-inline Matrix inverse(const Matrix& A) { return A.inverse(); }
-#endif
-
 GTSAM_EXPORT Matrix LLt(const Matrix& A);
 
 GTSAM_EXPORT Matrix RtR(const Matrix& A);
@@ -548,17 +532,47 @@ GTSAM_EXPORT Vector columnNormSquare(const Matrix &A);
 namespace boost {
   namespace serialization {
 
+    /**
+     * Ref. https://stackoverflow.com/questions/18382457/eigen-and-boostserialize/22903063#22903063
+     * 
+     * Eigen supports calling resize() on both static and dynamic matrices.
+     * This allows for a uniform API, with resize having no effect if the static matrix
+     * is already the correct size.
+     * https://eigen.tuxfamily.org/dox/group__TutorialMatrixClass.html#TutorialMatrixSizesResizing
+     * 
+     * We use all the Matrix template parameters to ensure wide compatibility.
+     * 
+     * eigen_typekit in ROS uses the same code
+     * http://docs.ros.org/lunar/api/eigen_typekit/html/eigen__mqueue_8cpp_source.html
+     */
+
     // split version - sends sizes ahead
-    template<class Archive>
-    void save(Archive & ar, const gtsam::Matrix & m, unsigned int /*version*/) {
+    template<class Archive,
+             typename Scalar_,
+             int Rows_,
+             int Cols_,
+             int Ops_,
+             int MaxRows_,
+             int MaxCols_>
+    void save(Archive & ar,
+              const Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
+              const unsigned int /*version*/) {
       const size_t rows = m.rows(), cols = m.cols();
       ar << BOOST_SERIALIZATION_NVP(rows);
       ar << BOOST_SERIALIZATION_NVP(cols);
       ar << make_nvp("data", make_array(m.data(), m.size()));
     }
 
-    template<class Archive>
-    void load(Archive & ar, gtsam::Matrix & m, unsigned int /*version*/) {
+    template<class Archive,
+             typename Scalar_,
+             int Rows_,
+             int Cols_,
+             int Ops_,
+             int MaxRows_,
+             int MaxCols_>
+    void load(Archive & ar,
+              Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
+              const unsigned int /*version*/) {
       size_t rows, cols;
       ar >> BOOST_SERIALIZATION_NVP(rows);
       ar >> BOOST_SERIALIZATION_NVP(cols);
@@ -566,8 +580,25 @@ namespace boost {
       ar >> make_nvp("data", make_array(m.data(), m.size()));
     }
 
+    // templated version of BOOST_SERIALIZATION_SPLIT_FREE(Eigen::Matrix);
+    template<class Archive,
+             typename Scalar_,
+             int Rows_,
+             int Cols_,
+             int Ops_,
+             int MaxRows_,
+             int MaxCols_>
+    void serialize(Archive & ar,
+              Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
+              const unsigned int version) {
+      split_free(ar, m, version);
+    }
+
+    // specialized to Matrix for MATLAB wrapper
+    template <class Archive>
+    void serialize(Archive& ar, gtsam::Matrix& m, const unsigned int version) {
+      split_free(ar, m, version);
+    }
+
   } // namespace serialization
 } // namespace boost
-
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix);
-

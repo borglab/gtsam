@@ -1,0 +1,17 @@
+# This triggers Python builds on `gtsam-manylinux-build`
+name: Trigger Python Builds
+on:
+  push:
+    branches:
+      - develop
+jobs:
+  triggerPython:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository Dispatch
+        uses: ProfFan/repository-dispatch@master
+        with:
+          token: ${{ secrets.PYTHON_CI_REPO_ACCESS_TOKEN }}
+          repository: borglab/gtsam-manylinux-build
+          event-type: python-wrapper
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'

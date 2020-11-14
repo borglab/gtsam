@@ -40,6 +40,13 @@ Rot2 Rot2::atan2(double y, double x) {
 }
 
 /* ************************************************************************* */
+Rot2 Rot2::Random(std::mt19937& rng) {
+  uniform_real_distribution<double> randomAngle(-M_PI, M_PI);
+  double angle = randomAngle(rng);
+  return fromAngle(angle);
+}
+
+/* ************************************************************************* */
 void Rot2::print(const string& s) const {
   cout << s << ": " << theta() << endl;
 }

@@ -51,10 +51,10 @@ graph.add(GenericStereoFactor3D(StereoPoint2(320, 270, 115), stereo_model, x2, l
 initialEstimate = Values;
 initialEstimate.insert(x1, first_pose);
 % noisy estimate for pose 2
-initialEstimate.insert(x2, Pose3(Rot3(), Point3(0.1,-.1,1.1)));
-initialEstimate.insert(l1, Point3( 1,  1, 5));
-initialEstimate.insert(l2, Point3(-1,  1, 5));
-initialEstimate.insert(l3, Point3( 0,-.5, 5));
+initialEstimate.insert(x2, Pose3(Rot3(), [0.1, -.1, 1.1]'));
+initialEstimate.insert(l1, [ 1,  1, 5]');
+initialEstimate.insert(l2, [-1,  1, 5]');
+initialEstimate.insert(l3, [ 0,-.5, 5]');
 
 %% optimize
 fprintf(1,'Optimizing\n'); tic

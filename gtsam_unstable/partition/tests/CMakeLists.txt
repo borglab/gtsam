@@ -1,2 +1,6 @@
 set(ignore_test "testNestedDissection.cpp")
-gtsamAddTestsGlob(partition "test*.cpp" "${ignore_test}" "gtsam_unstable;gtsam;metis-gtsam")
+if (NOT GTSAM_USE_SUITESPARSE)
+    gtsamAddTestsGlob(partition "test*.cpp" "${ignore_test}" "gtsam_unstable;gtsam;metis-gtsam")
+else()
+    gtsamAddTestsGlob(partition "test*.cpp" "${ignore_test}" "gtsam_unstable;gtsam;metis")
+endif()

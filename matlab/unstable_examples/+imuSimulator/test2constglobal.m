@@ -21,12 +21,12 @@ positions = zeros(3, length(times)+1);
 
 i = 2;
 for t = times
-    velocity1body = currentPoseGlobal.rotation.unrotate(Point3(currentVelocityGlobal)).vector;
+    velocity1body = currentPoseGlobal.rotation.unrotate(Point3(currentVelocityGlobal));
     R = Rot3.Expmap(omega * deltaT);
-    velocity2body = currentPoseGlobal.rotation.compose(R).unrotate(Point3(currentVelocityGlobal)).vector;
+    velocity2body = currentPoseGlobal.rotation.compose(R).unrotate(Point3(currentVelocityGlobal));
     [ currentPoseGlobal, currentVelocityGlobal ] = imuSimulator.integrateTrajectory(currentPoseGlobal, omega, velocity1body, velocity2body, deltaT);
     
-    positions(:,i) = currentPoseGlobal.translation.vector;
+    positions(:,i) = currentPoseGlobal.translation;
     i = i + 1;
 end
 
