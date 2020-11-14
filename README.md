@@ -50,6 +50,8 @@ Optional prerequisites - used automatically if findable by CMake:
 - [Intel Math Kernel Library (MKL)](http://software.intel.com/en-us/intel-mkl) (Ubuntu: [installing using APT](https://software.intel.com/en-us/articles/installing-intel-free-libs-and-python-apt-repo))
     - See [INSTALL.md](INSTALL.md) for more installation information
     - Note that MKL may not provide a speedup in all cases. Make sure to benchmark your problem with and without MKL.
+- [SuiteSparse](https://people.engr.tamu.edu/davis/suitesparse.html) (Ubuntu: `sudo apt-get install libsuitesparse-dev`)
+- [cuSPARSE](https://docs.nvidia.com/cuda/cusparse/index.html) (comes with [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit))
 
 ## GTSAM 4 Compatibility
 
