@@ -235,7 +235,7 @@ TEST(OrientedPlane3Factor, Issue561) {
     params.setOrdering(ordering);
     params.setLinearSolverType("SEQUENTIAL_QR");  // abundance of caution
     params.setVerbosity("TERMINATION");  // show info about stopping conditions
-    GaussNewtonOptimizer optimizer(graph, initialEstimate);
+    GaussNewtonOptimizer optimizer(graph, initialEstimate, params);
     Values result = optimizer.optimize();
     EXPECT_DOUBLES_EQUAL(0, graph.error(result), 0.1);
   } catch (IndeterminantLinearSystemException e) {
