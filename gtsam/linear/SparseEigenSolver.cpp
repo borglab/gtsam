@@ -146,18 +146,18 @@ namespace gtsam {
                                              Ab.col(cols));
   }
 
-  bool SparseEigenSolver::isIterative() {
+  bool SparseEigenSolver::isIterative() const {
     return false;
   }
 
-  bool SparseEigenSolver::isSequential() {
+  bool SparseEigenSolver::isSequential() const {
     return false;
   }
 
-  VectorValues SparseEigenSolver::solve(const GaussianFactorGraph &gfg) {
-    if (solverType == QR) {
+  VectorValues SparseEigenSolver::solve(const GaussianFactorGraph &gfg) const {
+    if (solverType_ == QR) {
       gttic_(EigenOptimizer_optimizeEigenQR);
-      auto Ab_pair = obtainSparseMatrix(gfg, ordering);
+      auto Ab_pair = obtainSparseMatrix(gfg, ordering_);
 
       // Solve A*x = b using sparse QR from Eigen
       gttic_(EigenOptimizer_optimizeEigenQR_create_solver);
@@ -169,9 +169,9 @@ namespace gtsam {
       gttoc_(EigenOptimizer_optimizeEigenQR_solve);
 
       return VectorValues(x, gfg.getKeyDimMap());
-    } else if (solverType == CHOLESKY) {
+    } else if (solverType_ == CHOLESKY) {
       gttic_(EigenOptimizer_optimizeEigenCholesky);
-      SpMat Ab = sparseJacobianEigen(gfg, ordering);
+      SpMat Ab = sparseJacobianEigen(gfg, ordering_);
       auto rows = Ab.rows(), cols = Ab.cols();
       auto A = Ab.block(0, 0, rows, cols - 1);
       auto At = A.transpose();
@@ -209,7 +209,7 @@ namespace gtsam {
 
       {
         size_t currentColIndex = 0;
-        for (const auto key : ordering) {
+        for (const auto key : ordering_) {
           columnIndices[key] = currentColIndex;
           currentColIndex += dims[key];
         }
@@ -225,10 +225,10 @@ namespace gtsam {
     throw std::exception();
   }
 
-  SparseEigenSolver::SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType type, const Ordering &ordering) {
-    solverType = type;
-    this->ordering = ordering;
-    linearSolverType = (type == QR) ? LinearSolverParams::EIGEN_QR
-                                    : LinearSolverParams::EIGEN_CHOLESKY;
+  SparseEigenSolver::SparseEigenSolver(
+      SparseEigenSolver::SparseEigenSolverType type, const Ordering &ordering)
+      : solverType_(type), ordering_(ordering) {
+    linearSolverType_ = (type == QR) ? LinearSolverParams::EIGEN_QR
+                                     : LinearSolverParams::EIGEN_CHOLESKY;
   }
 }  // namespace gtsam

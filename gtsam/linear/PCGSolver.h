@@ -81,7 +81,7 @@ public:
 
   VectorValues optimize(const GaussianFactorGraph &gfg,
       const KeyInfo &keyInfo, const std::map<Key, Vector> &lambda,
-      const VectorValues &initial) override;
+      const VectorValues &initial) const override;
 
 };
 

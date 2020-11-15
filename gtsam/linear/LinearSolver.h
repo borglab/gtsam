@@ -28,19 +28,19 @@ class GTSAM_EXPORT LinearSolver {
   LinearSolver(LinearSolver &) = delete;
 
   // TODO: Remove this and use trait functions instead?
-  LinearSolverParams::LinearSolverType linearSolverType =
+  LinearSolverParams::LinearSolverType linearSolverType_ =
       LinearSolverParams::MULTIFRONTAL_CHOLESKY;  ///< The type of this instance
 
-  virtual bool isIterative() { return false; };
+  virtual bool isIterative() const { return false; };
 
-  virtual bool isSequential() { return false; };
+  virtual bool isSequential() const { return false; };
 
   /**
    * Solve a Gaussian Factor Graph with the solver
    * @param gfg the GFG to be optimized
    * @return the optimization result in VectorValues
    */
-  virtual VectorValues solve(const GaussianFactorGraph &gfg) {
+  virtual VectorValues solve(const GaussianFactorGraph &gfg) const {
     throw std::runtime_error("BUG_CHECK: Calling solve of the base class!");
   };
 
@@ -49,7 +49,9 @@ class GTSAM_EXPORT LinearSolver {
    * @param gfg the GFG to be optimized
    * @return the optimization result in VectorValues
    */
-  VectorValues operator()(const GaussianFactorGraph &gfg) { return solve(gfg); }
+  VectorValues operator()(const GaussianFactorGraph &gfg) const {
+    return solve(gfg);
+  }
 
   /**
    * Factor method for generating a LinearSolver from LinearSolverParams

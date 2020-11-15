@@ -21,36 +21,35 @@
 #pragma once
 
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/LinearSolver.h>
+#include <gtsam/linear/VectorValues.h>
+
 #include <string>
 
 namespace gtsam {
 
-  /**
-   * Eigen SparseSolver based Backend class
-   */
-  class GTSAM_EXPORT SuiteSparseSolver : public LinearSolver {
-  public:
+/**
+ * Eigen SparseSolver based Backend class
+ */
+class GTSAM_EXPORT SuiteSparseSolver : public LinearSolver {
+ public:
+  typedef enum {
+    QR,
+    CHOLESKY
+  } SuiteSparseSolverType;
 
-    typedef enum {
-      QR,
-      CHOLESKY
-    } SuiteSparseSolverType;
+ protected:
+  SuiteSparseSolverType solverType_ = QR;
+  Ordering ordering_;
 
+ public:
+  explicit SuiteSparseSolver(SuiteSparseSolver::SuiteSparseSolverType type,
+                             const Ordering &ordering);
 
-    explicit SuiteSparseSolver(SuiteSparseSolver::SuiteSparseSolverType type, const Ordering &ordering);
+  bool isIterative() const override;
 
-    bool isIterative() override;
+  bool isSequential() const override;
 
-    bool isSequential() override;
-
-    VectorValues solve(const GaussianFactorGraph &gfg) override;
-
-  protected:
-
-    SuiteSparseSolverType solverType = QR;
-
-    Ordering ordering;
-  };
+  VectorValues solve(const GaussianFactorGraph &gfg) const override;
+};
 }  // namespace gtsam

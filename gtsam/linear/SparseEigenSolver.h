@@ -23,40 +23,39 @@
 #pragma once
 
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/LinearSolver.h>
+#include <gtsam/linear/VectorValues.h>
+
 #include <Eigen/Sparse>
 #include <string>
 
 namespace gtsam {
 
-  /**
-   * Eigen SparseSolver based Backend class
-   */
-  class GTSAM_EXPORT SparseEigenSolver : public LinearSolver {
-  public:
+/**
+ * Eigen SparseSolver based Backend class
+ */
+class GTSAM_EXPORT SparseEigenSolver : public LinearSolver {
+ public:
+  typedef enum {
+    QR,
+    CHOLESKY
+  } SparseEigenSolverType;
 
-    typedef enum {
-      QR,
-      CHOLESKY
-    } SparseEigenSolverType;
+ protected:
+  SparseEigenSolverType solverType_ = QR;
+  Ordering ordering_;
 
+ public:
+  explicit SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType type,
+                             const Ordering &ordering);
 
-    explicit SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType type, const Ordering &ordering);
+  bool isIterative() const override;
 
-    bool isIterative() override;
+  bool isSequential() const override;
 
-    bool isSequential() override;
+  VectorValues solve(const GaussianFactorGraph &gfg) const override;
 
-    VectorValues solve(const GaussianFactorGraph &gfg) override;
-
-    static Eigen::SparseMatrix<double>
-    sparseJacobianEigen(const GaussianFactorGraph &gfg, const Ordering &ordering);
-
-  protected:
-
-    SparseEigenSolverType solverType = QR;
-
-    Ordering ordering;
-  };
+  static Eigen::SparseMatrix<double> sparseJacobianEigen(
+      const GaussianFactorGraph &gfg, const Ordering &ordering);
+};
 }  // namespace gtsam

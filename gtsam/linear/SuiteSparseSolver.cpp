@@ -27,29 +27,29 @@
 #endif
 
 namespace gtsam {
-  SuiteSparseSolver::SuiteSparseSolver(SuiteSparseSolver::SuiteSparseSolverType type,
-                                              const Ordering &ordering) {
-    solverType = type;
-    this->ordering = ordering;
-    linearSolverType = LinearSolverParams::SUITESPARSE_CHOLESKY;
+  SuiteSparseSolver::SuiteSparseSolver(
+      SuiteSparseSolver::SuiteSparseSolverType type, const Ordering &ordering)
+      : solverType_(type), ordering_(ordering) {
+    linearSolverType_ = LinearSolverParams::SUITESPARSE_CHOLESKY;
   }
 
-  bool SuiteSparseSolver::isIterative() {
+  bool SuiteSparseSolver::isIterative() const {
     return false;
   }
 
-  bool SuiteSparseSolver::isSequential() {
+  bool SuiteSparseSolver::isSequential() const {
     return false;
   }
 
 #ifdef GTSAM_USE_SUITESPARSE
-  VectorValues SuiteSparseSolver::solve(const gtsam::GaussianFactorGraph &gfg) {
-    if (solverType == QR) {
+  VectorValues SuiteSparseSolver::solve(
+      const gtsam::GaussianFactorGraph &gfg) const {
+    if (solverType_ == QR) {
       throw std::invalid_argument("This solver does not support QR.");
-    } else if (solverType == CHOLESKY) {
+    } else if (solverType_ == CHOLESKY) {
       gttic_(SuiteSparseSolver_optimizeEigenCholesky);
       Eigen::SparseMatrix<double>
-          Ab = SparseEigenSolver::sparseJacobianEigen(gfg, ordering);
+          Ab = SparseEigenSolver::sparseJacobianEigen(gfg, ordering_);
       auto rows = Ab.rows(), cols = Ab.cols();
       auto A = Ab.block(0, 0, rows, cols - 1);
       auto At = A.transpose();
@@ -94,7 +94,7 @@ namespace gtsam {
 
       {
         size_t currentColIndex = 0;
-        for (const auto key : ordering) {
+        for (const auto key : ordering_) {
           columnIndices[key] = currentColIndex;
           currentColIndex += dims[key];
         }
@@ -110,7 +110,8 @@ namespace gtsam {
     throw std::exception();
   }
 #else
-  VectorValues SuiteSparseSolver::solve(const gtsam::GaussianFactorGraph &gfg) {
+  VectorValues SuiteSparseSolver::solve(
+      const gtsam::GaussianFactorGraph &gfg) const {
     throw std::invalid_argument(
         "This GTSAM is compiled without SuiteSparse support");
   }

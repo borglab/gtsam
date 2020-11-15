@@ -33,17 +33,16 @@
 
 namespace gtsam {
   CuSparseSolver::CuSparseSolver(CuSparseSolver::CuSparseSolverType type,
-                                              const Ordering &ordering) {
-    solverType = type;
-    this->ordering = ordering;
-    linearSolverType = LinearSolverParams::CUSPARSE_CHOLESKY;
+                                const Ordering &ordering)
+      : solverType_(type), ordering_(ordering) {
+    linearSolverType_ = LinearSolverParams::CUSPARSE_CHOLESKY;
   }
 
-  bool CuSparseSolver::isIterative() {
+  bool CuSparseSolver::isIterative() const {
     return false;
   }
 
-  bool CuSparseSolver::isSequential() {
+  bool CuSparseSolver::isSequential() const {
     return false;
   }
 
@@ -111,14 +110,15 @@ namespace gtsam {
         cudaMemcpyHostToDevice));
   }
 
-  VectorValues CuSparseSolver::solve(const gtsam::GaussianFactorGraph &gfg) {
-    if (solverType == QR) {
+  VectorValues CuSparseSolver::solve(
+      const gtsam::GaussianFactorGraph &gfg) const {
+    if (solverType_ == QR) {
       throw std::invalid_argument("This solver does not support QR.");
-    } else if (solverType == CHOLESKY) {
+    } else if (solverType_ == CHOLESKY) {
       gttic_(CuSparseSolver_optimizeEigenCholesky);
 
       Eigen::SparseMatrix<double>
-          Ab = SparseEigenSolver::sparseJacobianEigen(gfg, ordering);
+          Ab = SparseEigenSolver::sparseJacobianEigen(gfg, ordering_);
       auto rows = Ab.rows(), cols = Ab.cols();
       Eigen::SparseMatrix<double> A = Ab.block(0, 0, rows, cols - 1);
 //
@@ -247,7 +247,7 @@ namespace gtsam {
 
       {
         size_t currentColIndex = 0;
-        for (const auto key : ordering) {
+        for (const auto key : ordering_) {
           columnIndices[key] = currentColIndex;
           currentColIndex += dims[key];
         }
@@ -263,7 +263,8 @@ namespace gtsam {
     throw std::exception();
   }
 #else
-  VectorValues CuSparseSolver::solve(const gtsam::GaussianFactorGraph &gfg) {
+  VectorValues CuSparseSolver::solve(
+      const gtsam::GaussianFactorGraph &gfg) const {
     throw std::invalid_argument("This GTSAM is compiled without CUDA support");
   }
 #endif

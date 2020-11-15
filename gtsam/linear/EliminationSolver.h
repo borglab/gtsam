@@ -38,15 +38,18 @@ namespace gtsam {
  * "LinearSolver" unified API.
  */
 class GTSAM_EXPORT EliminationSolver : public LinearSolver {
+ protected:
+  LinearSolverParams params_;
+
  public:
   explicit EliminationSolver(const LinearSolverParams &params)
       : params_(params) {
-    linearSolverType = params.linearSolverType;
+    linearSolverType_ = params.linearSolverType;
   };
 
-  bool isIterative() override { return false; };
+  bool isIterative() const override { return false; };
 
-  bool isSequential() override {
+  bool isSequential() const override {
     return params_.linearSolverType == LinearSolverParams::SEQUENTIAL_QR ||
            params_.linearSolverType == LinearSolverParams::SEQUENTIAL_CHOLESKY;
   };
@@ -56,7 +59,7 @@ class GTSAM_EXPORT EliminationSolver : public LinearSolver {
    * @param gfg the factor graph to solve
    * @returns the solution
    */
-  VectorValues solve(const GaussianFactorGraph &gfg) override {
+  VectorValues solve(const GaussianFactorGraph &gfg) const override {
     switch (params_.linearSolverType) {
       case LinearSolverParams::MULTIFRONTAL_QR:
         return params_.ordering ? gfg.optimize(*params_.ordering, EliminateQR)
@@ -88,9 +91,6 @@ class GTSAM_EXPORT EliminationSolver : public LinearSolver {
             "EliminationSolver");
     }
   };
-
- protected:
-  LinearSolverParams params_;
 };
 
 }  // namespace gtsam

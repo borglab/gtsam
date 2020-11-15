@@ -127,7 +127,7 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
   VectorValues optimize(const GaussianFactorGraph &gfg,
                         const KeyInfo &keyInfo,
                         const std::map<Key, Vector> &lambda,
-                        const VectorValues &initial) override;
+                        const VectorValues &initial) const override;
 
   /// @}
   /// @name Implement interface
@@ -152,11 +152,11 @@ class GTSAM_EXPORT SubgraphSolverWrapper : public LinearSolver {
   SubgraphSolverWrapper(const SubgraphSolverParameters &parameters,
                         const Ordering &ordering)
       : parameters_(parameters), ordering_(ordering) {
-    linearSolverType = LinearSolverParams::SUBGRAPH;
+    linearSolverType_ = LinearSolverParams::SUBGRAPH;
   };
 
   /// satisfies LinearSolver interface to solve the GaussianFactorGraph.
-  VectorValues solve(const GaussianFactorGraph &gfg) override {
+  VectorValues solve(const GaussianFactorGraph &gfg) const override {
     return SubgraphSolver(gfg, parameters_, ordering_).optimize();
   };
 

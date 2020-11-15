@@ -96,25 +96,25 @@ class IterativeSolver : public LinearSolver {
   /* interface to the nonlinear optimizer, without metadata, damping and initial estimate */
   GTSAM_EXPORT VectorValues optimize(const GaussianFactorGraph &gfg,
       boost::optional<const KeyInfo&> = boost::none,
-      boost::optional<const std::map<Key, Vector>&> lambda = boost::none);
+      boost::optional<const std::map<Key, Vector>&> lambda = boost::none) const;
 
   /* interface to the nonlinear optimizer, without initial estimate */
   GTSAM_EXPORT VectorValues optimize(const GaussianFactorGraph &gfg, const KeyInfo &keyInfo,
-      const std::map<Key, Vector> &lambda);
+      const std::map<Key, Vector> &lambda) const;
 
   /* interface to the nonlinear optimizer that the subclasses have to implement */
   virtual VectorValues optimize(const GaussianFactorGraph &gfg,
       const KeyInfo &keyInfo, const std::map<Key, Vector> &lambda,
-      const VectorValues &initial) = 0;
+      const VectorValues &initial) const = 0;
 
   /* satisfies LinearSolver interface */
-  bool isIterative() override { return true; };
+  bool isIterative() const override { return true; };
 
   /* satisfies LinearSolver interface */
-  bool isSequential() override { return false; };
+  bool isSequential() const override { return false; };
 
   /* satisfies LinearSolver interface */
-  VectorValues solve(const GaussianFactorGraph &gfg) override {
+  VectorValues solve(const GaussianFactorGraph &gfg) const override {
     return optimize(gfg);
   };
 
