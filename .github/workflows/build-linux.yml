@@ -83,3 +83,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           bash .github/scripts/unix.sh -t
+      - name: Upload build directory
+        uses: actions/upload-artifact@v2
+          with:
+            name: gtsam-${{ matrix.name }}
+            path: $GITHUB_WORKSPACE/build/
