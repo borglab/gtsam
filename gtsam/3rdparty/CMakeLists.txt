@@ -50,7 +50,7 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 endif()
 
 option(GTSAM_BUILD_METIS_EXECUTABLES "Build metis library executables" OFF)
-if(GTSAM_SUPPORT_NESTED_DISSECTION AND NOT GTSAM_USE_SUITESPARSE)
+if(GTSAM_SUPPORT_NESTED_DISSECTION AND NOT GTSAM_USE_SUITESPARSE)  # SuiteSparse comes with its own version of METIS
 	add_subdirectory(metis)
 endif()
 

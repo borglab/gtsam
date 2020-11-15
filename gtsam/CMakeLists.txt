@@ -87,7 +87,7 @@ configure_file("${GTSAM_SOURCE_DIR}/cmake/dllexport.h.in" "dllexport.h")
 list(APPEND gtsam_srcs "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/dllexport.h")
 install(FILES "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/dllexport.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam)
 
-if(GTSAM_SUPPORT_NESTED_DISSECTION AND NOT GTSAM_USE_SUITESPARSE)
+if(GTSAM_SUPPORT_NESTED_DISSECTION AND NOT GTSAM_USE_SUITESPARSE)  # SuiteSparse comes with its own version of METIS
     list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis-gtsam)
 endif()
 
