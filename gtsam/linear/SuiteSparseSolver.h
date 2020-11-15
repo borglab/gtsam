@@ -14,6 +14,9 @@
  *
  * @brief SuiteSparse based linear solver backend for GTSAM
  *
+ * Generates a sparse matrix with given ordering and calls the SuiteSparse
+ * solver to solve it.
+ *
  * @date Jun 2020
  * @author Fan Jiang
  */
@@ -50,6 +53,10 @@ class GTSAM_EXPORT SuiteSparseSolver : public LinearSolver {
 
   bool isSequential() const override;
 
+  /** Solves the GaussianFactorGraph using a sparse matrix solver
+   *
+   * Uses elimination ordering during sparse matrix generation
+   */
   VectorValues solve(const GaussianFactorGraph &gfg) const override;
 };
 }  // namespace gtsam

@@ -14,6 +14,9 @@
  *
  * @brief Eigen SparseSolver based linear solver backend for GTSAM
  *
+ * Generates a sparse matrix with given ordering and calls the Eigen sparse
+ * matrix solver to solve it.
+ *
  * @date Aug 2019
  * @author Mandy Xie
  * @author Fan Jiang
@@ -53,8 +56,14 @@ class GTSAM_EXPORT SparseEigenSolver : public LinearSolver {
 
   bool isSequential() const override;
 
+  /** Solves the GaussianFactorGraph using a sparse matrix solver
+   *
+   * Uses elimination ordering during sparse matrix generation in `solve(gfg)`
+   */
   VectorValues solve(const GaussianFactorGraph &gfg) const override;
 
+  /// Returns sparse matrix with given variable ordering for sparse matrix
+  /// solvers
   static Eigen::SparseMatrix<double> sparseJacobianEigen(
       const GaussianFactorGraph &gfg, const Ordering &ordering);
 };

@@ -117,6 +117,7 @@ namespace gtsam {
     } else if (solverType_ == CHOLESKY) {
       gttic_(CuSparseSolver_optimizeEigenCholesky);
 
+      // ordering is used here
       Eigen::SparseMatrix<double>
           Ab = SparseEigenSolver::sparseJacobianEigen(gfg, ordering_);
       auto rows = Ab.rows(), cols = Ab.cols();

@@ -112,7 +112,7 @@ namespace gtsam {
   }
 
 
-  /// obtain sparse matrix for eigen sparse solver
+  /// obtain sparse matrix with given variable ordering for eigen sparse solver
   std::pair<SpMat, Eigen::VectorXd> obtainSparseMatrix(
       const GaussianFactorGraph &gfg,
       const Ordering &ordering) {
@@ -157,6 +157,8 @@ namespace gtsam {
   VectorValues SparseEigenSolver::solve(const GaussianFactorGraph &gfg) const {
     if (solverType_ == QR) {
       gttic_(EigenOptimizer_optimizeEigenQR);
+
+      // this is where ordering is used
       auto Ab_pair = obtainSparseMatrix(gfg, ordering_);
 
       // Solve A*x = b using sparse QR from Eigen

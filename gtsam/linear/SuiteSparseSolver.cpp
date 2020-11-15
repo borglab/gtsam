@@ -48,6 +48,8 @@ namespace gtsam {
       throw std::invalid_argument("This solver does not support QR.");
     } else if (solverType_ == CHOLESKY) {
       gttic_(SuiteSparseSolver_optimizeEigenCholesky);
+
+      // this is where ordering is used
       Eigen::SparseMatrix<double>
           Ab = SparseEigenSolver::sparseJacobianEigen(gfg, ordering_);
       auto rows = Ab.rows(), cols = Ab.cols();
