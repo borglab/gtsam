@@ -146,7 +146,7 @@ function(install_python_scripts
       else()
         set(build_type_tag "")
       endif()
-      # Split up filename to strip trailing '/' in WRAP_CYTHON_INSTALL_PATH if
+      # Split up filename to strip trailing '/' in GTSAM_PY_INSTALL_PATH if
       # there is one
       get_filename_component(location "${dest_directory}" PATH)
       get_filename_component(name "${dest_directory}" NAME)

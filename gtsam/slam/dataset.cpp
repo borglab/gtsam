@@ -1164,8 +1164,8 @@ bool writeBAL(const string &filename, SfmData &data) {
     for (size_t k = 0; k < track.number_measurements();
          k++) { // for each observation of the 3D point j
       size_t i = track.measurements[k].first; // camera id
-      double u0 = data.cameras[i].calibration().u0();
-      double v0 = data.cameras[i].calibration().v0();
+      double u0 = data.cameras[i].calibration().px();
+      double v0 = data.cameras[i].calibration().py();
 
       if (u0 != 0 || v0 != 0) {
         cout << "writeBAL has not been tested for calibration with nonzero "
