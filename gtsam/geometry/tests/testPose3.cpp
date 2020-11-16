@@ -18,6 +18,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/testLie.h>
 #include <gtsam/base/lieProxies.h>
+#include <gtsam/base/TestableAssertions.h>
 
 #include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
@@ -1028,32 +1029,13 @@ TEST(Pose3, Create) {
 }
 
 /* ************************************************************************* */
-TEST(Pose3, print) {
-  std::stringstream redirectStream;
-  std::streambuf* ssbuf = redirectStream.rdbuf();
-  std::streambuf* oldbuf  = std::cout.rdbuf();
-  // redirect cout to redirectStream
-  std::cout.rdbuf(ssbuf);
-
+TEST(Pose3, Print) {
   Pose3 pose(Rot3::identity(), Point3(1, 2, 3));
-  // output is captured to redirectStream
-  pose.print();
 
   // Generate the expected output
-  std::stringstream expected;
-  Point3 translation(1, 2, 3);
+  std::string expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\nt: 1 2 3\n";
 
-  // Add expected rotation
-  expected << "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\n";
-  expected << "t: 1 2 3\n";
-
-  // reset cout to the original stream
-  std::cout.rdbuf(oldbuf);
-
-  // Get substring corresponding to translation part
-  std::string actual = redirectStream.str();
-
-  CHECK_EQUAL(expected.str(), actual);
+  EXPECT(assert_print_equal(expected, pose));
 }
 
 /* ************************************************************************* */
