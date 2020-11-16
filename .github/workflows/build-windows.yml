@@ -79,5 +79,5 @@ jobs:
       - name: Upload build directory
         uses: actions/upload-artifact@v2
         with:
-          name: gtsam-${{ matrix.name }}
+          name: gtsam-${{ matrix.name }}-${{ matrix.build_type }}
           path: ${{ github.workspace }}/build/
