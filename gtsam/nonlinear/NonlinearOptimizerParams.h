@@ -80,7 +80,9 @@ public:
    *  // ...
    *  lmOpts.iterationHook = &foo;
    * \endcode
-   * or to a C++11 lambda:
+   * or to a C++11 lambda (preferred if you need to capture additional
+   * context variables, such that the optimizer object itself, the factor graph,
+   * etc.):
    * \code
    *  lmOpts.iterationHook = [&](size_t iter, double oldError, double newError)
    *  {
