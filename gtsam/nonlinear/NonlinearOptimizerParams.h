@@ -33,8 +33,6 @@ namespace gtsam {
  */
 class GTSAM_EXPORT NonlinearOptimizerParams {
 public:
-  NonlinearOptimizerParams() = default;
-
   /** See NonlinearOptimizerParams::verbosity */
   enum Verbosity {
     SILENT, TERMINATION, ERROR, VALUES, DELTA, LINEAR
@@ -46,10 +44,6 @@ public:
   double errorTol = 0.0; ///< The maximum total error to stop iterating (default 0.0)
   Verbosity verbosity = SILENT; ///< The printing verbosity during optimization (default SILENT)
   Ordering::OrderingType orderingType = Ordering::COLAMD; ///< The method of ordering use during variable elimination (default COLAMD)
-
-  virtual ~NonlinearOptimizerParams() {
-  }
-  virtual void print(const std::string& str = "") const;
 
   size_t getMaxIterations() const { return maxIterations; }
   double getRelativeErrorTol() const { return relativeErrorTol; }
@@ -68,13 +62,33 @@ public:
   static Verbosity verbosityTranslator(const std::string &s) ;
   static std::string verbosityTranslator(Verbosity value) ;
 
-  /** Type for an optional user-provided hook to be called after each 
-   * internal optimizer iteration */
+  /** Type for an optional user-provided hook to be called after each
+   * internal optimizer iteration. See iterationHook below. */
   using IterationHook = std::function<
     void(size_t /*iteration*/, double/*errorBefore*/, double/*errorAfter*/)>;
 
-  /** Optional user-provided iteration hook to be called after each 
-   * optimization iteration (Default: empty) */
+  /** Optional user-provided iteration hook to be called after each
+   * optimization iteration (Default: none).
+   * Note that `IterationHook` is defined as a std::function<> with this
+   * signature:
+   * \code
+   *  void(size_t iteration, double errorBefore, double errorAfter)
+   * \endcode
+   * which allows binding by means of a reference to a regular function:
+   * \code
+   *  void foo(size_t iteration, double errorBefore, double errorAfter);
+   *  // ...
+   *  lmOpts.iterationHook = &foo;
+   * \endcode
+   * or to a C++11 lambda:
+   * \code
+   *  lmOpts.iterationHook = [&](size_t iter, double oldError, double newError)
+   *  {
+   *    // ...
+   *  };
+   * \endcode
+   * or to the result of a properly-formed `std::bind` call.
+   */
   IterationHook iterationHook;
 
   /** See NonlinearOptimizerParams::linearSolverType */
@@ -90,6 +104,12 @@ public:
   LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
   boost::optional<Ordering> ordering; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
+
+  NonlinearOptimizerParams() = default;
+  virtual ~NonlinearOptimizerParams() {
+  }
+
+  virtual void print(const std::string& str = "") const;
 
   inline bool isMultifrontal() const {
     return (linearSolverType == MULTIFRONTAL_CHOLESKY)
