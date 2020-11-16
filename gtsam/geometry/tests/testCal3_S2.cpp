@@ -16,6 +16,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3_S2.h>
 
@@ -125,6 +126,16 @@ TEST(Cal3_S2, between) {
   EXPECT(assert_equal(-I_5x5, H1));
   EXPECT(assert_equal(I_5x5, H2));
 
+}
+
+/* ************************************************************************* */
+TEST(Cal3_S2, Print) {
+  Cal3_S2 cal(5, 5, 5, 5, 5);
+  std::stringstream os;
+  os << "{fx: " << cal.fx() << ", fy: " << cal.fy() << ", s:" << cal.skew() << ", px:" << cal.px()
+     << ", py:" << cal.py() << "}";
+
+  EXPECT(assert_stdout_equal(os.str(), cal));
 }
 
 /* ************************************************************************* */
