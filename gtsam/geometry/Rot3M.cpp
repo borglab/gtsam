@@ -176,7 +176,17 @@ Vector3 Rot3::CayleyChart::Local(const Rot3& R, OptionalJacobian<3,3> H) {
   if (H) throw std::runtime_error("Rot3::CayleyChart::Local Derivative");
   // Create a fixed-size matrix
   Matrix3 A = R.matrix();
-  // Mathematica closed form optimization (procrastination?) gone wild:
+
+  // Check if (A+I) is invertible. Same as checking for -1 eigenvalue.
+  if ((A + I_3x3).determinant() == 0.0) {
+    throw std::runtime_error("Rot3::CayleyChart::Local Invalid Rotation");
+  }
+
+  // Mathematica closed form optimization.
+  // The following are the essential computations for the following algorithm
+  // 1. Compute the inverse of P = (A+I), using a closed-form formula since P is 3x3 
+  // 2. Compute the Cayley transform C = 2 * P^{-1} * (A-I)
+  // 3. C is skew-symmetric, so we pick out the computations corresponding only to x, y, and z.
   const double a = A(0, 0), b = A(0, 1), c = A(0, 2);
   const double d = A(1, 0), e = A(1, 1), f = A(1, 2);
   const double g = A(2, 0), h = A(2, 1), i = A(2, 2);

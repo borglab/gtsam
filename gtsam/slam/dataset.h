@@ -211,16 +211,18 @@ GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
 /// A measurement with its camera index
 typedef std::pair<size_t, Point2> SfmMeasurement;
 
-/// SfmTrack
+/// Sift index for SfmTrack
 typedef std::pair<size_t, size_t> SiftIndex;
 
 /// Define the structure for the 3D points
 struct SfmTrack {
   SfmTrack(): p(0,0,0) {}
+  SfmTrack(const gtsam::Point3& pt) : p(pt) {}
   Point3 p; ///< 3D position of the point
   float r, g, b; ///< RGB color of the 3D point
   std::vector<SfmMeasurement> measurements; ///< The 2D image projections (id,(u,v))
   std::vector<SiftIndex> siftIndices;
+  
   /// Total number of measurements in this track
   size_t number_measurements() const {
     return measurements.size();
@@ -233,10 +235,16 @@ struct SfmTrack {
   SiftIndex siftIndex(size_t idx) const {
     return siftIndices[idx];
   }
-  Point3 point3() const {
+  /// Get 3D point
+  const Point3& point3() const {
     return p;
   }
+  /// Add measurement (camera_idx, Point2) to track
+  void add_measurement(size_t idx, const gtsam::Point2& m) {
+    measurements.emplace_back(idx, m);
+  }
 };
+
 
 /// Define the structure for the camera poses
 typedef PinholeCamera<Cal3Bundler> SfmCamera;
@@ -259,6 +267,14 @@ struct SfmData {
   /// The track formed by series of landmark measurements
   SfmTrack track(size_t idx) const {
     return tracks[idx];
+  }
+  /// Add a track to SfmData
+  void add_track(const SfmTrack& t)  {
+    tracks.push_back(t);
+  }
+  /// Add a camera to SfmData
+  void add_camera(const SfmCamera& cam){
+    cameras.push_back(cam);
   }
 };
 
