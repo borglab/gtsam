@@ -31,15 +31,33 @@ namespace gtsam {
 
 using Sparse = Eigen::SparseMatrix<double>;
 
-/* ************************************************************************* */
-/// MINIMUM EIGENVALUE COMPUTATIONS
-
-// Template argument Operator just needs multiplication operator
+/**
+ * \brief Compute maximum Eigenpair with power method
+ *
+ * References :
+ * 1) Rosen, D. and Carlone, L., 2017, September. Computational
+ * enhancements for certifiably correct SLAM. In Proceedings of the
+ * International Conference on Intelligent Robots and Systems.
+ * 2) Yulun Tian and Kasra Khosoussi and David M. Rosen and Jonathan P. How,
+ * 2020, Aug, Distributed Certifiably Correct Pose-Graph Optimization, Arxiv
+ * 3) C. de Sa, B. He, I. Mitliagkas, C. Ré, and P. Xu, “Accelerated
+ * stochastic power iteration,” in Proc. Mach. Learn. Res., no. 84, 2018, pp.
+ * 58–67
+ *
+ * It performs the following iteration: \f$ x_{k+1} = A * x_k  \f$ 
+ * where A is the aim matrix we want to get eigenpair of, x is the
+ * Ritz vector
+ * 
+ * Template argument Operator just needs multiplication operator
+ *
+ */
 template <class Operator>
 class PowerMethod {
  protected:
-  // Const reference to an externally-held matrix whose minimum-eigenvalue we
-  // want to compute
+  /**
+   * Const reference to an externally-held matrix whose minimum-eigenvalue we
+   * want to compute
+   */
   const Operator &A_;
 
   const int dim_;  // dimension of Matrix A
@@ -50,7 +68,10 @@ class PowerMethod {
   Vector ritzVector_;  // Ritz eigenvector
 
  public:
-  // Constructor
+  /// @name Standard Constructors
+  /// @{
+
+  /// Construct from the aim matrix and intial ritz vector
   explicit PowerMethod(const Operator &A,
                        const boost::optional<Vector> initial = boost::none)
       : A_(A), dim_(A.rows()), nrIterations_(0) {
@@ -62,23 +83,30 @@ class PowerMethod {
     ritzValue_ = 0.0;
 
     // initialize Ritz eigen vector
-    ritzVector_ = Vector::Zero(dim_);
     ritzVector_ = powerIteration(x0);
   }
 
-  // Run power iteration on the vector, and return A * x / || A * x ||
+  /**
+   * Run power iteration to get ritzVector with previous ritzVector x, and
+   * return A * x / || A * x ||
+   */
   Vector powerIteration(const Vector &x) const {
     Vector y = A_ * x;
     y.normalize();
     return y;
   }
 
-  // Run power iteration on the vector, and return A * x / || A * x ||
+  /**
+   * Run power iteration to get ritzVector with previous ritzVector x, and
+   * return A * x / || A * x ||
+   */  
   Vector powerIteration() const { return powerIteration(ritzVector_); }
 
-  // After Perform power iteration on a single Ritz value, check if the Ritz
-  // residual for the current Ritz pair is less than the required convergence
-  // tol, return true if yes, else false
+  /**
+   * After Perform power iteration on a single Ritz value, check if the Ritz
+   * residual for the current Ritz pair is less than the required convergence
+   * tol, return true if yes, else false
+   */
   bool converged(double tol) const {
     const Vector x = ritzVector_;
     // store the Ritz eigen value
@@ -87,13 +115,15 @@ class PowerMethod {
     return error < tol;
   }
 
-  // Return the number of iterations
+  /// Return the number of iterations
   size_t nrIterations() const { return nrIterations_; }
 
-  // Start the power/accelerated iteration, after performing the
-  // power/accelerated iteration, calculate the ritz error, repeat this
-  // operation until the ritz error converge. If converged return true, else
-  // false.
+  /**
+   * Start the power/accelerated iteration, after performing the
+   * power/accelerated iteration, calculate the ritz error, repeat this
+   * operation until the ritz error converge. If converged return true, else
+   * false.
+   */
   bool compute(size_t maxIterations, double tol) {
     // Starting
     bool isConverged = false;
@@ -110,10 +140,10 @@ class PowerMethod {
     return isConverged;
   }
 
-  // Return the eigenvalue
+  /// Return the eigenvalue
   double eigenvalue() const { return ritzValue_; }
 
-  // Return the eigenvector
+  /// Return the eigenvector
   Vector eigenvector() const { return ritzVector_; }
 };
 

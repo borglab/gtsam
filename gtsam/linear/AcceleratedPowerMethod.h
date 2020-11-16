@@ -19,46 +19,44 @@
 
 #pragma once
 
-// #include <gtsam/base/Matrix.h>
-// #include <gtsam/base/Vector.h>
 #include <gtsam/linear/PowerMethod.h>
 
 namespace gtsam {
 
 using Sparse = Eigen::SparseMatrix<double>;
 
-/* ************************************************************************* */
-/// MINIMUM EIGENVALUE COMPUTATIONS
-
-// Template argument Operator just needs multiplication operator
+/**
+ * \brief Compute maximum Eigenpair with accelerated power method
+ *
+ * References :
+ * 1) Rosen, D. and Carlone, L., 2017, September. Computational
+ * enhancements for certifiably correct SLAM. In Proceedings of the
+ * International Conference on Intelligent Robots and Systems.
+ * 2) Yulun Tian and Kasra Khosoussi and David M. Rosen and Jonathan P. How,
+ * 2020, Aug, Distributed Certifiably Correct Pose-Graph Optimization, Arxiv
+ * 3) C. de Sa, B. He, I. Mitliagkas, C. Ré, and P. Xu, “Accelerated
+ * stochastic power iteration,” in Proc. Mach. Learn. Res., no. 84, 2018, pp.
+ * 58–67
+ *
+ * It performs the following iteration: \f$ x_{k+1} = A * x_k - \beta *
+ * x_{k-1} \f$ where A is the aim matrix we want to get eigenpair of, x is the
+ * Ritz vector
+ * 
+ * Template argument Operator just needs multiplication operator
+ *
+ */
 template <class Operator>
 class AcceleratedPowerMethod : public PowerMethod<Operator> {
-  /**
-   * \brief Compute maximum Eigenpair with accelerated power method
-   *
-   * References :
-   * 1) Rosen, D. and Carlone, L., 2017, September. Computational
-   * enhancements for certifiably correct SLAM. In Proceedings of the
-   * International Conference on Intelligent Robots and Systems.
-   * 2) Yulun Tian and Kasra Khosoussi and David M. Rosen and Jonathan P. How,
-   * 2020, Aug, Distributed Certifiably Correct Pose-Graph Optimization, Arxiv
-   * 3) C. de Sa, B. He, I. Mitliagkas, C. Ré, and P. Xu, “Accelerated
-   * stochastic power iteration,” in Proc. Mach. Learn. Res., no. 84, 2018, pp.
-   * 58–67
-   *
-   * It performs the following iteration: \f$ x_{k+1} = A * x_k - \beta *
-   * x_{k-1} \f$ where A is the aim matrix we want to get eigenpair of, x is the
-   * Ritz vector
-   *
-   */
 
   double beta_ = 0;  // a Polyak momentum term
 
   Vector previousVector_;  // store previous vector
 
  public:
-  // Constructor from aim matrix A (given as Matrix or Sparse), optional intial
-  // vector as ritzVector
+  /**
+   * Constructor from aim matrix A (given as Matrix or Sparse), optional intial
+   * vector as ritzVector
+   */
   explicit AcceleratedPowerMethod(
       const Operator &A, const boost::optional<Vector> initial = boost::none,
       double initialBeta = 0.0)
@@ -70,15 +68,16 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
 
     // initialize beta_
     if (!initialBeta) {
-      estimateBeta();
-    } else {
+      beta_ = estimateBeta();
+    } else
       beta_ = initialBeta;
-    }
   }
 
-  // Run accelerated power iteration on the ritzVector with beta and previous
-  // two ritzVector, and return y = (A * x0 - \beta * x00) / || A * x0
-  // - \beta * x00 ||
+  /**
+   * Run accelerated power iteration to get ritzVector with beta and previous
+   * two ritzVector x0 and x00, and return y = (A * x0 - \beta * x00) / || A * x0
+   * - \beta * x00 ||
+   */
   Vector acceleratedPowerIteration (const Vector &x1, const Vector &x0,
                         const double beta) const {
     Vector y = this->A_ * x1 - beta * x0;
@@ -86,16 +85,18 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
     return y;
   }
 
-  // Run accelerated power iteration on the ritzVector with beta and previous
-  // two ritzVector, and return y = (A * x0 - \beta * x00) / || A * x0
-  // - \beta * x00 ||
+  /**
+   * Run accelerated power iteration to get ritzVector with beta and previous
+   * two ritzVector x0 and x00, and return y = (A * x0 - \beta * x00) / || A * x0
+   * - \beta * x00 ||
+   */
   Vector acceleratedPowerIteration () const {
     Vector y = acceleratedPowerIteration(this->ritzVector_, previousVector_, beta_);
     return y;
   }
 
-  // Tuning the momentum beta using the Best Heavy Ball algorithm in Ref(3)
-  void estimateBeta() {
+  /// Tuning the momentum beta using the Best Heavy Ball algorithm in Ref(3)
+  double estimateBeta() const {
     // set initial estimation of maxBeta
     Vector initVector = this->ritzVector_;
     const double up = initVector.dot( this->A_ * initVector );
@@ -106,7 +107,7 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
     std::vector<double> betas;
 
     Matrix R = Matrix::Zero(this->dim_, 10);
-    size_t T = 10;
+    const size_t T = 10;
     // run T times of iteration to find the beta that has the largest Rayleigh quotient
     for (size_t t = 0; t < T; t++) {
       // after each t iteration, reset the betas with the current maxBeta
@@ -141,13 +142,15 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
       }
     }
     // set beta_ to momentum with largest Rayleigh quotient
-    beta_ = betas[maxIndex];
+    return betas[maxIndex];
   }
 
-  // Start the accelerated iteration, after performing the
-  // accelerated iteration, calculate the ritz error, repeat this
-  // operation until the ritz error converge. If converged return true, else
-  // false.
+  /**
+   * Start the accelerated iteration, after performing the
+   * accelerated iteration, calculate the ritz error, repeat this
+   * operation until the ritz error converge. If converged return true, else
+   * false.
+   */
   bool compute(size_t maxIterations, double tol) {
     // Starting
     bool isConverged = false;
