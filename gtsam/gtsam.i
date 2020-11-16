@@ -2767,6 +2767,8 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 
 class SfmTrack {
   SfmTrack();
+  SfmTrack(const gtsam::Point3& pt);
+  const Point3& point3() const;
 
   double r;
   double g;
@@ -2774,20 +2776,24 @@ class SfmTrack {
   // TODO Need to close wrap#10 to allow this to work.
   // std::vector<pair<size_t, gtsam::Point2>> measurements;
 
-  Point3 point3() const;
   size_t number_measurements() const;
   pair<size_t, gtsam::Point2> measurement(size_t idx) const;
   pair<size_t, size_t> siftIndex(size_t idx) const;
+  void add_measurement(size_t idx, const gtsam::Point2& m);
 };
 
 class SfmData {
+  SfmData();
   size_t number_cameras() const;
   size_t number_tracks() const;
   gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
   gtsam::SfmTrack track(size_t idx) const;
+  void add_track(const gtsam::SfmTrack& t) ;
+  void add_camera(const gtsam::SfmCamera& cam);
 };
 
 gtsam::SfmData readBal(string filename);
+bool writeBAL(string filename, gtsam::SfmData& data);
 gtsam::Values initialCamerasEstimate(const gtsam::SfmData& db);
 gtsam::Values initialCamerasAndPointsEstimate(const gtsam::SfmData& db);
 

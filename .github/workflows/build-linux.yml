@@ -63,17 +63,17 @@ jobs:
 
           sudo apt install cmake build-essential pkg-config libpython-dev python-numpy
           
-          echo "::set-env name=BOOST_ROOT::$(echo $BOOST_ROOT_1_69_0)"
-          echo "::set-env name=LD_LIBRARY_PATH::$(echo $BOOST_ROOT_1_69_0/lib)"
+          echo "BOOST_ROOT=$(echo $BOOST_ROOT_1_72_0)" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$(echo $BOOST_ROOT_1_72_0/lib)" >> $GITHUB_ENV
           
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
-            echo "::set-env name=CC::gcc-${{ matrix.version }}"
-            echo "::set-env name=CXX::g++-${{ matrix.version }}"
+            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
+            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
           else
             sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
-            echo "::set-env name=CC::clang-${{ matrix.version }}"
-            echo "::set-env name=CXX::clang++-${{ matrix.version }}"
+            echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
+            echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
           fi
       - name: Check Boost version
         if: runner.os == 'Linux'

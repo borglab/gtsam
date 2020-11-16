@@ -1,4 +1,5 @@
-if(GTSAM_BUILD_PYTHON)
+# Set Python version if either Python or MATLAB wrapper is requested.
+if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
     if(${GTSAM_PYTHON_VERSION} STREQUAL "Default")
         # Get info about the Python3 interpreter
         # https://cmake.org/cmake/help/latest/module/FindPython3.html#module:FindPython3
@@ -14,7 +15,9 @@ if(GTSAM_BUILD_PYTHON)
                 "The version of Python to build the wrappers against."
                 FORCE)
     endif()
+endif()
 
+if(GTSAM_BUILD_PYTHON)
     if(GTSAM_UNSTABLE_BUILD_PYTHON)
         if (NOT GTSAM_BUILD_UNSTABLE)
             message(WARNING "GTSAM_UNSTABLE_BUILD_PYTHON requires the unstable module to be enabled.")
