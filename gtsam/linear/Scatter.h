@@ -58,7 +58,7 @@ class Scatter : public FastVector<SlotEntry> {
    GTSAM_EXPORT explicit Scatter(const GaussianFactorGraph& gfg, const Ordering& ordering);
 
   /// Add a key/dim pair
-   GTSAM_EXPORT void add(Key key, size_t dim);
+  void add(Key key, size_t dim);
 
  private:
   /// Find the SlotEntry with the right key (linear time worst case)

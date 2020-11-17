@@ -45,6 +45,8 @@ include(cmake/HandleEigen.cmake)            # Eigen3
 include(cmake/HandleGeneralOptions.cmake)  # CMake build options
 include(cmake/HandleMKL.cmake)              # MKL
 include(cmake/HandleOpenMP.cmake)           # OpenMP
+include(cmake/HandleSuiteSparse.cmake)      # SuiteSparse sparse linear solver
+include(cmake/HandleCuSparse.cmake)         # cuSPARSE sparse linear solver
 include(cmake/HandlePerfTools.cmake)        # Google perftools
 include(cmake/HandlePython.cmake)           # Python options and commands
 include(cmake/HandleTBB.cmake)              # TBB

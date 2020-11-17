@@ -87,7 +87,7 @@ configure_file("${GTSAM_SOURCE_DIR}/cmake/dllexport.h.in" "dllexport.h")
 list(APPEND gtsam_srcs "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/dllexport.h")
 install(FILES "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/dllexport.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam)
 
-if(GTSAM_SUPPORT_NESTED_DISSECTION)
+if(GTSAM_SUPPORT_NESTED_DISSECTION AND NOT GTSAM_USE_SUITESPARSE)  # SuiteSparse comes with its own version of METIS
     list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis-gtsam)
 endif()
 
@@ -127,6 +127,15 @@ endif()
 
 if(GTSAM_USE_TBB)
   target_include_directories(gtsam PUBLIC ${TBB_INCLUDE_DIRS})
+endif()
+
+# CHOLMOD include dir:
+if (GTSAM_USE_SUITESPARSE)
+    target_include_directories(gtsam PUBLIC ${CHOLMOD_INCLUDE_DIR})
+endif()
+
+if(GTSAM_USE_CUSPARSE)
+    target_include_directories(gtsam PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
 endif()
 
 # Add includes for source directories 'BEFORE' boost and any system include
