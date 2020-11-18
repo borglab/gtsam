@@ -1164,15 +1164,15 @@ TEST(Matrix , IsVectorSpace) {
 }
 
 TEST(Matrix, AbsoluteError) {
-  double a = 2000, b = 1997, tol=1e-1;
+  double a = 2000, b = 1997, tol = 1e-1;
   bool isEqual;
 
-  // Test absolute error
-  isEqual = fpEqual(a, b, tol, true);
+  // Test only absolute error
+  isEqual = fpEqual(a, b, tol, false);
   EXPECT(!isEqual);
 
-  // Test relative error
-  isEqual = fpEqual(a, b, tol, false);
+  // Test relative error as well
+  isEqual = fpEqual(a, b, tol);
   EXPECT(isEqual);
 }
 

@@ -85,10 +85,13 @@ static_assert(
  * respectively for the comparison to be true.
  * If one is NaN/Inf and the other is not, returns false.
  *
+ * The `check_relative` flag toggles checking for relative error as well. By
+ * default, the flag is true.
+ *
  * Return true if two numbers are close wrt tol.
  */
 GTSAM_EXPORT bool fpEqual(double a, double b, double tol,
-                          bool absolute = false);
+                          bool check_relative = true);
 
 /**
  * print without optional string, must specify cout yourself
