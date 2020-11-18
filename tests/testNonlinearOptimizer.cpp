@@ -567,6 +567,58 @@ TEST( NonlinearOptimizer, logfile )
 }
 
 /* ************************************************************************* */
+TEST( NonlinearOptimizer, iterationHook_LM )
+{
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
+
+  Point2 x0(3,3);
+  Values c0;
+  c0.insert(X(1), x0);
+
+  // Levenberg-Marquardt
+  LevenbergMarquardtParams lmParams;
+  size_t lastIterCalled = 0;
+  lmParams.iterationHook = [&](size_t iteration, double oldError, double newError)
+  {
+    // Tests:
+    lastIterCalled = iteration;
+    EXPECT(newError<oldError);
+    
+    // Example of evolution printout:
+    //std::cout << "iter: " << iteration << " error: " << oldError << " => " << newError <<"\n";
+  };
+  LevenbergMarquardtOptimizer(fg, c0, lmParams).optimize();
+  
+  EXPECT(lastIterCalled>5);
+}
+/* ************************************************************************* */
+TEST( NonlinearOptimizer, iterationHook_CG )
+{
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
+
+  Point2 x0(3,3);
+  Values c0;
+  c0.insert(X(1), x0);
+
+  // Levenberg-Marquardt
+  NonlinearConjugateGradientOptimizer::Parameters cgParams;
+  size_t lastIterCalled = 0;
+  cgParams.iterationHook = [&](size_t iteration, double oldError, double newError)
+  {
+    // Tests:
+    lastIterCalled = iteration;
+    EXPECT(newError<oldError);
+    
+    // Example of evolution printout:
+    //std::cout << "iter: " << iteration << " error: " << oldError << " => " << newError <<"\n";
+  };
+  NonlinearConjugateGradientOptimizer(fg, c0, cgParams).optimize();
+  
+  EXPECT(lastIterCalled>5);
+}
+
+
+/* ************************************************************************* */
 //// Minimal traits example
 struct MyType : public Vector3 {
   using Vector3::Vector3;

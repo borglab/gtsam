@@ -1,3 +1,5 @@
+include(CheckCXXCompilerFlag) # for check_cxx_compiler_flag()
+
 # Set cmake policy to recognize the AppleClang compiler
 # independently from the Clang compiler.
 if(POLICY CMP0025)
@@ -105,11 +107,14 @@ if(MSVC)
 else()
   # Common to all configurations, next for each configuration:
 
-  if (
-      ((CMAKE_CXX_COMPILER_ID MATCHES "Clang") AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0.0)) OR
-      (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-     )
-    set(flag_override_ -Wsuggest-override) # -Werror=suggest-override: Add again someday
+  if (NOT MSVC)
+    check_cxx_compiler_flag(-Wsuggest-override COMPILER_HAS_WSUGGEST_OVERRIDE)
+    check_cxx_compiler_flag(-Wmissing COMPILER_HAS_WMISSING_OVERRIDE)
+    if (COMPILER_HAS_WSUGGEST_OVERRIDE)
+      set(flag_override_ -Wsuggest-override) # -Werror=suggest-override: Add again someday
+    elseif(COMPILER_HAS_WMISSING_OVERRIDE)
+      set(flag_override_ -Wmissing-override) # -Werror=missing-override: Add again someday
+    endif()
   endif()
 
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON

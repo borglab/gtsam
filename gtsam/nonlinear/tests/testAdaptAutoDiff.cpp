@@ -41,7 +41,7 @@ struct Cal3Bundler0 : public Cal3Bundler {
                double v0 = 0)
       : Cal3Bundler(f, k1, k2, u0, v0) {}
   Cal3Bundler0 retract(const Vector& d) const {
-    return Cal3Bundler0(fx() + d(0), k1() + d(1), k2() + d(2), u0(), v0());
+    return Cal3Bundler0(fx() + d(0), k1() + d(1), k2() + d(2), px(), py());
   }
   Vector3 localCoordinates(const Cal3Bundler0& T2) const {
     return T2.vector() - vector();
