@@ -46,10 +46,17 @@ option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab 
 set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of Python to build the wrappers against.")
 
 # Check / set dependent variables for MATLAB wrapper
-if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_BUILD_TYPE_POSTFIXES)
-    set(CURRENT_POSTFIX ${CMAKE_${CMAKE_BUILD_TYPE_UPPER}_POSTFIX})
-endif()
+if(GTSAM_INSTALL_MATLAB_TOOLBOX)
+    find_package(Matlab COMPONENTS MEX_COMPILER REQUIRED)
+    if(NOT Matlab_MEX_COMPILER)
+        message(FATAL_ERROR "Cannot find MEX compiler binary. Please check your Matlab installation and ensure MEX in installed as well.")
+    endif()
 
-if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT BUILD_SHARED_LIBS)
-    message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and BUILD_SHARED_LIBS=OFF. The MATLAB wrapper cannot be compiled with a static GTSAM library because mex modules are themselves shared libraries.  If you want a self-contained mex module, enable GTSAM_MEX_BUILD_STATIC_MODULE instead of BUILD_SHARED_LIBS=OFF.")
+    if(GTSAM_BUILD_TYPE_POSTFIXES)
+        set(CURRENT_POSTFIX ${CMAKE_${CMAKE_BUILD_TYPE_UPPER}_POSTFIX})
+    endif()
+
+    if(NOT BUILD_SHARED_LIBS)
+        message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and BUILD_SHARED_LIBS=OFF. The MATLAB wrapper cannot be compiled with a static GTSAM library because mex modules are themselves shared libraries.  If you want a self-contained mex module, enable GTSAM_MEX_BUILD_STATIC_MODULE instead of BUILD_SHARED_LIBS=OFF.")
+    endif()
 endif()
