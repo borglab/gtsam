@@ -84,7 +84,7 @@ class MFAS {
    * @brief Computes the 1D MFAS ordering of nodes in the graph
    * @return orderedNodes: vector of nodes in the obtained order
    */
-  std::vector<Key> computeOrdering() const;
+  KeyVector computeOrdering() const;
 
   /**
    * @brief Computes the outlier weights of the graph. We define the outlier

@@ -597,6 +597,7 @@ class Rot3 {
   Rot3(double R11, double R12, double R13,
       double R21, double R22, double R23,
       double R31, double R32, double R33);
+  Rot3(double w, double x, double y, double z);
 
   static gtsam::Rot3 Rx(double t);
   static gtsam::Rot3 Ry(double t);
@@ -980,8 +981,8 @@ class Cal3Bundler {
   double fy() const;
   double k1() const;
   double k2() const;
-  double u0() const;
-  double v0() const;
+  double px() const;
+  double py() const;
   Vector vector() const;
   Vector k() const;
   Matrix K() const;
@@ -2157,6 +2158,7 @@ class Values {
   void insert(size_t j, const gtsam::SOn& P);
   void insert(size_t j, const gtsam::Rot3& rot3);
   void insert(size_t j, const gtsam::Pose3& pose3);
+  void insert(size_t j, const gtsam::Unit3& unit3);
   void insert(size_t j, const gtsam::Cal3_S2& cal3_s2);
   void insert(size_t j, const gtsam::Cal3DS2& cal3ds2);
   void insert(size_t j, const gtsam::Cal3Bundler& cal3bundler);
@@ -2175,6 +2177,7 @@ class Values {
   void update(size_t j, const gtsam::SOn& P);
   void update(size_t j, const gtsam::Rot3& rot3);
   void update(size_t j, const gtsam::Pose3& pose3);
+  void update(size_t j, const gtsam::Unit3& unit3);
   void update(size_t j, const gtsam::Cal3_S2& cal3_s2);
   void update(size_t j, const gtsam::Cal3DS2& cal3ds2);
   void update(size_t j, const gtsam::Cal3Bundler& cal3bundler);
@@ -2186,7 +2189,7 @@ class Values {
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
 
-  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::imuBias::ConstantBias, gtsam::NavState, Vector, Matrix}>
+  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose3, gtsam::Unit3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::imuBias::ConstantBias, gtsam::NavState, Vector, Matrix}>
   T at(size_t j);
 
   /// version for double
@@ -2529,7 +2532,7 @@ class NonlinearISAM {
 #include <gtsam/geometry/StereoPoint2.h>
 
 #include <gtsam/nonlinear/PriorFactor.h>
-template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias, gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
+template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Unit3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias, gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
@@ -2761,21 +2764,36 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/dataset.h>
+
 class SfmTrack {
-  Point3 point3() const;
+  SfmTrack();
+  SfmTrack(const gtsam::Point3& pt);
+  const Point3& point3() const;
+
+  double r;
+  double g;
+  double b;
+  // TODO Need to close wrap#10 to allow this to work.
+  // std::vector<pair<size_t, gtsam::Point2>> measurements;
+
   size_t number_measurements() const;
   pair<size_t, gtsam::Point2> measurement(size_t idx) const;
   pair<size_t, size_t> siftIndex(size_t idx) const;
+  void add_measurement(size_t idx, const gtsam::Point2& m);
 };
 
 class SfmData {
+  SfmData();
   size_t number_cameras() const;
   size_t number_tracks() const;
   gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
   gtsam::SfmTrack track(size_t idx) const;
+  void add_track(const gtsam::SfmTrack& t) ;
+  void add_camera(const gtsam::SfmCamera& cam);
 };
 
 gtsam::SfmData readBal(string filename);
+bool writeBAL(string filename, gtsam::SfmData& data);
 gtsam::Values initialCamerasEstimate(const gtsam::SfmData& db);
 gtsam::Values initialCamerasAndPointsEstimate(const gtsam::SfmData& db);
 
