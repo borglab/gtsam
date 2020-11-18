@@ -361,8 +361,12 @@ TEST(Similarity3, AlignPose3) {
 
   vector<Pose3Pair> correspondences{bTa1, bTa2};
 
+  // Cayley transform cannot accommodate 180 degree rotations,
+  // hence we only test for Expmap
+#ifdef GTSAM_ROT3_EXPMAP
   Similarity3 actual_aSb = Similarity3::Align(correspondences);
   EXPECT(assert_equal(expected_aSb, actual_aSb));
+#endif
 }
 
 //******************************************************************************
