@@ -18,16 +18,19 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          windows-2016-cl,
+          #TODO This build keeps timing out, need to understand why.
+          # windows-2016-cl,
           windows-2019-cl,
         ]
 
         build_type: [Debug, Release]
         build_unstable: [ON]
         include:
-          - name: windows-2016-cl
-            os: windows-2016
-            compiler: cl
+
+          #TODO This build keeps timing out, need to understand why.
+          # - name: windows-2016-cl
+          #   os: windows-2016
+          #   compiler: cl
 
           - name: windows-2019-cl
             os: windows-2019
@@ -50,17 +53,17 @@ jobs:
             # See: https://github.com/DaanDeMeyer/doctest/runs/231595515
             # See: https://github.community/t5/GitHub-Actions/Something-is-wrong-with-the-chocolatey-installed-version-of-gcc/td-p/32413
             scoop install gcc --global
-            echo "::set-env name=CC::gcc"
-            echo "::set-env name=CXX::g++"
+            echo "CC=gcc" >> $GITHUB_ENV
+            echo "CXX=g++" >> $GITHUB_ENV
           } elseif ("${{ matrix.compiler }}" -eq "clang") {
-            echo "::set-env name=CC::clang"
-            echo "::set-env name=CXX::clang++"
+            echo "CC=clang" >> $GITHUB_ENV
+            echo "CXX=clang++" >> $GITHUB_ENV
           } else {
-            echo "::set-env name=CC::${{ matrix.compiler }}"
-            echo "::set-env name=CXX::${{ matrix.compiler }}"
+            echo "CC=${{ matrix.compiler }}" >> $GITHUB_ENV
+            echo "CXX=${{ matrix.compiler }}" >> $GITHUB_ENV
           }
           # Scoop modifies the PATH so we make the modified PATH global.
-          echo "::set-env name=PATH::$env:PATH"
+          echo "$env:PATH" >> $GITHUB_PATH
       - name: Build (Windows)
         if: runner.os == 'Windows'
         run: |

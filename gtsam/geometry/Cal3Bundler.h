@@ -98,6 +98,17 @@ public:
     return k2_;
   }
 
+  /// image center in x
+  inline double px() const {
+    return u0_;
+  }
+
+  /// image center in y
+  inline double py() const {
+    return v0_;
+  }
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
   /// get parameter u0
   inline double u0() const {
     return u0_;
@@ -107,6 +118,7 @@ public:
   inline double v0() const {
     return v0_;
   }
+#endif
 
 
   /**
