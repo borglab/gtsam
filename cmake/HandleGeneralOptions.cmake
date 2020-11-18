@@ -24,6 +24,7 @@ option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available"
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" OFF)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION  "Throw exception when a triangulated point is behind a camera" ON)
 option(GTSAM_BUILD_PYTHON                "Enable/Disable building & installation of Python module with pybind11" OFF)
+option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V41  "Allow use of methods/functions deprecated in GTSAM 4.1" ON)
 option(GTSAM_SUPPORT_NESTED_DISSECTION   "Support Metis-based nested dissection" ON)
 option(GTSAM_TANGENT_PREINTEGRATION      "Use new ImuFactor with integration on tangent space" ON)
@@ -40,9 +41,7 @@ elseif(GTSAM_ROT3_EXPMAP)
     set(GTSAM_POSE3_EXPMAP 1 CACHE BOOL "" FORCE)
 endif()
 
-# Options relating to MATLAB wrapper
-# TODO: Check for matlab mex binary before handling building of binaries
-option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
+# Set the default Python version. This is later updated in HandlePython.cmake.
 set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of Python to build the wrappers against.")
 
 # Check / set dependent variables for MATLAB wrapper
