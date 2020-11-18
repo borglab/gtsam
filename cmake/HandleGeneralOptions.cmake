@@ -31,6 +31,15 @@ if(NOT MSVC AND NOT XCODE_VERSION)
     option(GTSAM_BUILD_WITH_CCACHE           "Use ccache compiler cache" ON)
 endif()
 
+# Enable GTSAM_ROT3_EXPMAP if GTSAM_POSE3_EXPMAP is enabled, and vice versa.
+if(GTSAM_POSE3_EXPMAP)
+    message(STATUS "GTSAM_POSE3_EXPMAP=ON, enabling GTSAM_ROT3_EXPMAP as well")
+    set(GTSAM_ROT3_EXPMAP 1 CACHE BOOL "" FORCE)
+elseif(GTSAM_ROT3_EXPMAP)
+    message(STATUS "GTSAM_ROT3_EXPMAP=ON, enabling GTSAM_POSE3_EXPMAP as well")
+    set(GTSAM_POSE3_EXPMAP 1 CACHE BOOL "" FORCE)
+endif()
+
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)

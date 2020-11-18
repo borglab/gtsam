@@ -526,7 +526,7 @@ namespace gtsam {
 
     /**
      * @brief Spherical Linear intERPolation between *this and other
-     * @param s a value between 0 and 1
+     * @param t a value between 0 and 1
      * @param other final point of iterpolation geodesic on manifold
      */
     Rot3 slerp(double t, const Rot3& other) const;

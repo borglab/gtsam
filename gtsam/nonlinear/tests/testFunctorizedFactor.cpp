@@ -19,6 +19,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/FunctorizedFactor.h>
 #include <gtsam/nonlinear/factorTesting.h>
@@ -115,16 +116,6 @@ TEST(FunctorizedFactor, Print) {
   auto factor =
       MakeFunctorizedFactor<Matrix>(key, X, model, MultiplyFunctor(multiplier));
 
-  // redirect output to buffer so we can compare
-  stringstream buffer;
-  streambuf *old = cout.rdbuf(buffer.rdbuf());
-
-  factor.print();
-
-  // get output string and reset stdout
-  string actual = buffer.str();
-  cout.rdbuf(old);
-
   string expected =
       "  keys = { X0 }\n"
       "  noise model: unit (9) \n"
@@ -135,7 +126,7 @@ TEST(FunctorizedFactor, Print) {
       "]\n"
       "  noise model sigmas: 1 1 1 1 1 1 1 1 1\n";
 
-  CHECK_EQUAL(expected, actual);
+  EXPECT(assert_print_equal(expected, factor));
 }
 
 /* ************************************************************************* */
