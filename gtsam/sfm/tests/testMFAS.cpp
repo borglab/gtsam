@@ -6,7 +6,7 @@
  */
 
 #include <gtsam/sfm/MFAS.h>
-#include <iostream>
+
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -25,7 +25,7 @@ using namespace gtsam;
 vector<MFAS::KeyPair> edges = {make_pair(3, 2), make_pair(0, 1), make_pair(3, 1),
                          make_pair(1, 2), make_pair(0, 2), make_pair(3, 0)};
 // nodes in the graph
-vector<Key> nodes = {Key(0), Key(1), Key(2), Key(3)};
+KeyVector nodes = {Key(0), Key(1), Key(2), Key(3)};
 // weights from projecting in direction-1 (bad direction, outlier accepted)
 vector<double> weights1 = {2, 1.5, 0.5, 0.25, 1, 0.75};
 // weights from projecting in direction-2 (good direction, outlier rejected)
@@ -39,19 +39,18 @@ map<MFAS::KeyPair, double> getEdgeWeights(const vector<MFAS::KeyPair> &edges,
   for (size_t i = 0; i < edges.size(); i++) {
     edgeWeights[edges[i]] = weights[i];
   }
-  cout << "returning edge weights " << edgeWeights.size() << endl;
   return edgeWeights;
 }
 
 // test the ordering and the outlierWeights function using weights2 - outlier
 // edge is rejected when projected in a direction that gives weights2
 TEST(MFAS, OrderingWeights2) {
-  MFAS mfas_obj(make_shared<vector<Key>>(nodes), getEdgeWeights(edges, weights2));
+  MFAS mfas_obj(getEdgeWeights(edges, weights2));
 
-  vector<Key> ordered_nodes = mfas_obj.computeOrdering();
+  KeyVector ordered_nodes = mfas_obj.computeOrdering();
 
   // ground truth (expected) ordering in this example
-  vector<Key> gt_ordered_nodes = {0, 1, 3, 2};
+  KeyVector gt_ordered_nodes = {0, 1, 3, 2};
 
   // check if the expected ordering is obtained
   for (size_t i = 0; i < ordered_nodes.size(); i++) {
@@ -76,12 +75,12 @@ TEST(MFAS, OrderingWeights2) {
 // weights1 (outlier edge is accepted when projected in a direction that
 // produces weights1)
 TEST(MFAS, OrderingWeights1) {
-  MFAS mfas_obj(make_shared<vector<Key>>(nodes), getEdgeWeights(edges, weights1));
+  MFAS mfas_obj(getEdgeWeights(edges, weights1));
 
-  vector<Key> ordered_nodes = mfas_obj.computeOrdering();
+  KeyVector ordered_nodes = mfas_obj.computeOrdering();
 
   // "ground truth" expected ordering in this example
-  vector<Key> gt_ordered_nodes = {3, 0, 1, 2};
+  KeyVector gt_ordered_nodes = {3, 0, 1, 2};
 
   // check if the expected ordering is obtained
   for (size_t i = 0; i < ordered_nodes.size(); i++) {

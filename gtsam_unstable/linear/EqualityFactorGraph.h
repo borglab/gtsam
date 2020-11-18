@@ -31,6 +31,11 @@ class EqualityFactorGraph: public FactorGraph<LinearEquality> {
 public:
   typedef boost::shared_ptr<EqualityFactorGraph> shared_ptr;
 
+  /// Add a linear inequality, forwards arguments to LinearInequality.
+  template <class... Args> void add(Args &&... args) {
+    emplace_shared<LinearEquality>(std::forward<Args>(args)...);
+  }
+
   /// Compute error of a guess.
   double error(const VectorValues& x) const {
     double total_error = 0.;
