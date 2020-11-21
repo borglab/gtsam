@@ -232,7 +232,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 		DEPENDS ${interfaceHeader} ${module_library_target} ${otherLibraryTargets} ${otherSourcesAndObjects}
         COMMAND
 			${PYTHON_EXECUTABLE}
-			${CMAKE_SOURCE_DIR}/wrap/matlab_wrapper.py
+			${CMAKE_SOURCE_DIR}/wrap/gtwrap/matlab_wrapper.py
             --src ${interfaceHeader}
 			--module_name ${moduleName}
             --out ${generated_files_path}

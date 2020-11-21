@@ -62,6 +62,7 @@ add_subdirectory(CppUnitLite)
 
 # This is the new wrapper
 if(GTSAM_BUILD_PYTHON)
+    add_subdirectory(wrap)
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wrap/cmake")
     add_subdirectory(python)
 endif()
