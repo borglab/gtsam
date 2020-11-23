@@ -100,31 +100,95 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
+  /// instantiate explicit template functions with sparse matrix representations
+
+  // Boost Tuples
+  template std::tuple<size_t, size_t, SparseMatrixBoostTriplets>
+  GaussianFactorGraph::sparseJacobian<SparseMatrixBoostTriplets>(
+      const Ordering& ordering) const;
+
+  // Eigen Triplets
+  template std::tuple<size_t, size_t, SparseMatrixEigenTriplets>
+  GaussianFactorGraph::sparseJacobian<SparseMatrixEigenTriplets>(
+      const Ordering& ordering) const;
+
+  // Eigen Sparse Matrix (template specialized)
+  template <>
+  std::tuple<size_t, size_t, SparseMatrixEigen>
+  GaussianFactorGraph::sparseJacobian<SparseMatrixEigen>(
+      const Ordering& ordering) const {
+    gttic_(GaussianFactorGraph_sparseJacobian);
+    gttic_(obtainSparseJacobian);
+    size_t rows, cols;
+    SparseMatrixEigenTriplets entries;
+    std::tie(rows, cols, entries) =
+        sparseJacobian<SparseMatrixEigenTriplets>(ordering);
+    gttoc_(obtainSparseJacobian);
+    gttic_(convertSparseJacobian);
+    SparseMatrixEigen Ab(rows, cols);
+    Ab.reserve(entries.size());
+    for (auto entry : entries) {
+      Ab.insert(entry.row(), entry.col()) = entry.value();
+    }
+    Ab.makeCompressed();
+    // TODO(gerry): benchmark to see if setFromTriplets is faster
+    // Ab.setFromTriplets(entries.begin(), entries.end());
+    return std::make_tuple(rows, cols, Ab);
+  }
+
+  // Eigen Matrix in "matlab" format (template specialized)
+  template <>
+  std::tuple<size_t, size_t, Matrix>
+  GaussianFactorGraph::sparseJacobian<Matrix>(const Ordering& ordering) const {
+    gttic_(GaussianFactorGraph_sparseJacobian);
+    // call sparseJacobian
+    size_t nrows, ncols;
+    SparseMatrixBoostTriplets result;
+    std::tie(nrows, ncols, result) =
+        sparseJacobian<SparseMatrixBoostTriplets>(ordering);
+
+    // translate to base 1 matrix
+    size_t nzmax = result.size();
+    Matrix IJS(3, nzmax);
+    for (size_t k = 0; k < result.size(); k++) {
+      const auto& entry = result[k];
+      IJS(0, k) = double(entry.get<0>() + 1);
+      IJS(1, k) = double(entry.get<1>() + 1);
+      IJS(2, k) = entry.get<2>();
+    }
+    return std::make_tuple(nrows, ncols, IJS);
+  }
+
+  /* ************************************************************************* */
+  // sparse matrix representation template `XXXEntries` must satisfy
+  // `XXXEntries.emplace_back(int i, int j, double s)` to compile
+  template <typename Entries>
+  std::tuple<size_t, size_t, Entries> GaussianFactorGraph::sparseJacobian(
+      const Ordering& ordering) const {
+    gttic_(GaussianFactorGraph_sparseJacobian);
     // First find dimensions of each variable
-    typedef std::map<Key, size_t> KeySizeMap;
-    KeySizeMap dims;
+    std::map<Key, size_t> dims;
     for (const sharedFactor& factor : *this) {
       if (!static_cast<bool>(factor))
         continue;
 
-      for (GaussianFactor::const_iterator key = factor->begin();
-          key != factor->end(); ++key) {
-        dims[*key] = factor->getDim(key);
+      for (auto it = factor->begin(); it != factor->end(); ++it) {
+        dims[*it] = factor->getDim(it);
       }
     }
 
     // Compute first scalar column of each variable
     size_t currentColIndex = 0;
-    KeySizeMap columnIndices = dims;
-    for (const KeySizeMap::value_type& col : dims) {
-      columnIndices[col.first] = currentColIndex;
-      currentColIndex += dims[col.first];
+    std::map<Key, size_t> columnIndices;
+    for (const auto key : ordering) {
+      columnIndices[key] = currentColIndex;
+      currentColIndex += dims[key];
     }
 
     // Iterate over all factors, adding sparse scalar entries
-    typedef boost::tuple<size_t, size_t, double> triplet;
-    vector<triplet> entries;
+    Entries entries;
+    entries.reserve(60 * size());
+
     size_t row = 0;
     for (const sharedFactor& factor : *this) {
       if (!static_cast<bool>(factor)) continue;
@@ -154,38 +218,23 @@ namespace gtsam {
           for (size_t j = 0; j < (size_t) whitenedA.cols(); j++) {
             double s = whitenedA(i, j);
             if (std::abs(s) > 1e-12)
-              entries.push_back(boost::make_tuple(row + i, column_start + j, s));
+              entries.emplace_back(row + i, column_start + j, s);
           }
       }
 
       JacobianFactor::constBVector whitenedb(whitened.getb());
       size_t bcolumn = currentColIndex;
-      for (size_t i = 0; i < (size_t) whitenedb.size(); i++)
-        entries.push_back(boost::make_tuple(row + i, bcolumn, whitenedb(i)));
+      for (size_t i = 0; i < (size_t) whitenedb.size(); i++) {
+        double s = whitenedb(i);
+        if (std::abs(s) > 1e-12)
+          entries.emplace_back(row + i, bcolumn, s);
+      }
 
       // Increment row index
       row += jacobianFactor->rows();
     }
-    return vector<triplet>(entries.begin(), entries.end());
-  }
 
-  /* ************************************************************************* */
-  Matrix GaussianFactorGraph::sparseJacobian_() const {
-
-    // call sparseJacobian
-    typedef boost::tuple<size_t, size_t, double> triplet;
-    vector<triplet> result = sparseJacobian();
-
-    // translate to base 1 matrix
-    size_t nzmax = result.size();
-    Matrix IJS(3,nzmax);
-    for (size_t k = 0; k < result.size(); k++) {
-      const triplet& entry = result[k];
-      IJS(0,k) = double(entry.get<0>() + 1);
-      IJS(1,k) = double(entry.get<1>() + 1);
-      IJS(2,k) = entry.get<2>();
-    }
-    return IJS;
+    return std::make_tuple(row, currentColIndex+1, entries);
   }
 
   /* ************************************************************************* */
@@ -492,12 +541,4 @@ namespace gtsam {
     }
     return e;
   }
-
-  /* ************************************************************************* */
-  /** \deprecated */
-  VectorValues GaussianFactorGraph::optimize(boost::none_t,
-    const Eliminate& function) const {
-      return optimize(function);
-  }
-
 } // namespace gtsam
