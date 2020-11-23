@@ -176,4 +176,3 @@ Vector KeyInfo::x0vector() const {
 }
 
 }
-
