@@ -24,21 +24,22 @@ namespace gtsam {
 
 /** Common Interface Class for all linear solvers */
 class GTSAM_EXPORT LinearSolver {
+ protected:
+  // default constructor needed in order to delete copy constructor
+  LinearSolver() = default;
  public:
   LinearSolver(LinearSolver &) = delete;
 
-  virtual bool isIterative() const { return false; };
+  virtual bool isIterative() const = 0;
 
-  virtual bool isSequential() const { return false; };
+  virtual bool isSequential() const = 0;
 
   /**
    * Solve a Gaussian Factor Graph with the solver
    * @param gfg the GFG to be optimized
    * @return the optimization result in VectorValues
    */
-  virtual VectorValues solve(const GaussianFactorGraph &gfg) const {
-    throw std::runtime_error("BUG_CHECK: Calling solve of the base class!");
-  };
+  virtual VectorValues solve(const GaussianFactorGraph &gfg) const = 0;
 
   /**
    * Alias for `solve`
@@ -50,17 +51,13 @@ class GTSAM_EXPORT LinearSolver {
   }
 
   /**
-   * Factor method for generating a LinearSolver from LinearSolverParams
+   * Factor method for generating a derived class of LinearSolver from
+   * LinearSolverParams
    * @param params LinearSolverParams linear optimizer parameters
-   * @return pointer to a LinearSolver object
+   * @return pointer to a LinearSolver-derived object
    */
   static boost::shared_ptr<LinearSolver> FromLinearSolverParams(
       const LinearSolverParams &params);
-
- protected:
-  LinearSolver();
-
-  virtual ~LinearSolver() = default;
 };
 
 }  // namespace gtsam

@@ -146,12 +146,19 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
  * LinearSolver interface.  Specifically, rather than partitioning the
  * subgraph during construction, instead the partitioning will occur during
  * "solve" since the GaussianFactorGraph is needed to partition the graph.
+ * TODO(gerry): figure out a better IterativeSolver API solution
  */
 class GTSAM_EXPORT SubgraphSolverWrapper : public LinearSolver {
  public:
   SubgraphSolverWrapper(const SubgraphSolverParameters &parameters,
                         const Ordering &ordering)
       : parameters_(parameters), ordering_(ordering) {};
+
+  /* satisfies LinearSolver interface */
+  bool isIterative() const override { return true; };
+
+  /* satisfies LinearSolver interface */
+  bool isSequential() const override { return false; };
 
   /// satisfies LinearSolver interface to solve the GaussianFactorGraph.
   VectorValues solve(const GaussianFactorGraph &gfg) const override {

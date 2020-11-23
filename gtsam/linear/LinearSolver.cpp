@@ -26,8 +26,6 @@
 
 namespace gtsam {
 
-LinearSolver::LinearSolver() = default;
-
 boost::shared_ptr<LinearSolver> LinearSolver::FromLinearSolverParams(
     const LinearSolverParams &params) {
   switch (params.linearSolverType) {
