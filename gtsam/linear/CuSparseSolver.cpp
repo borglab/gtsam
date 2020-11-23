@@ -34,9 +34,7 @@
 namespace gtsam {
   CuSparseSolver::CuSparseSolver(CuSparseSolver::CuSparseSolverType type,
                                 const Ordering &ordering)
-      : solverType_(type), ordering_(ordering) {
-    linearSolverType_ = LinearSolverParams::CUSPARSE_CHOLESKY;
-  }
+      : solverType_(type), ordering_(ordering) {}
 
   bool CuSparseSolver::isIterative() const {
     return false;

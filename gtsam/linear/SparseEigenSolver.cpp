@@ -229,8 +229,5 @@ namespace gtsam {
 
   SparseEigenSolver::SparseEigenSolver(
       SparseEigenSolver::SparseEigenSolverType type, const Ordering &ordering)
-      : solverType_(type), ordering_(ordering) {
-    linearSolverType_ = (type == QR) ? LinearSolverParams::EIGEN_QR
-                                     : LinearSolverParams::EIGEN_CHOLESKY;
-  }
+      : solverType_(type), ordering_(ordering) {}
 }  // namespace gtsam

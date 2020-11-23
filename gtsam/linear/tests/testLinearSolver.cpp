@@ -182,11 +182,6 @@ TEST(LinearOptimizer, solverCheckWithLoop) {
     auto linearSolver = LinearSolver::FromLinearSolverParams(params);
     auto actual = (*linearSolver)(gfg);
     EXPECT(assert_equal(expected, actual));
-    if (solverType == LSP::Iterative) {  // iterative defaults to PCG
-      EXPECT(LSP::PCG == linearSolver->linearSolverType_);
-    } else {
-      EXPECT(solverType == linearSolver->linearSolverType_);
-    }
   }
 }
 

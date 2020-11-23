@@ -29,9 +29,7 @@
 namespace gtsam {
   SuiteSparseSolver::SuiteSparseSolver(
       SuiteSparseSolver::SuiteSparseSolverType type, const Ordering &ordering)
-      : solverType_(type), ordering_(ordering) {
-    linearSolverType_ = LinearSolverParams::SUITESPARSE_CHOLESKY;
-  }
+      : solverType_(type), ordering_(ordering) {}
 
   bool SuiteSparseSolver::isIterative() const {
     return false;

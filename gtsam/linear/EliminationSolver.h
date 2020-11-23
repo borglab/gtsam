@@ -43,9 +43,7 @@ class GTSAM_EXPORT EliminationSolver : public LinearSolver {
 
  public:
   explicit EliminationSolver(const LinearSolverParams &params)
-      : params_(params) {
-    linearSolverType_ = params.linearSolverType;
-  };
+      : params_(params) {};
 
   bool isIterative() const override { return false; };
 

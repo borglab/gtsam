@@ -27,10 +27,6 @@ class GTSAM_EXPORT LinearSolver {
  public:
   LinearSolver(LinearSolver &) = delete;
 
-  // TODO: Remove this and use trait functions instead?
-  LinearSolverParams::LinearSolverType linearSolverType_ =
-      LinearSolverParams::MULTIFRONTAL_CHOLESKY;  ///< The type of this instance
-
   virtual bool isIterative() const { return false; };
 
   virtual bool isSequential() const { return false; };

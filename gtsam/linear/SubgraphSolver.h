@@ -151,9 +151,7 @@ class GTSAM_EXPORT SubgraphSolverWrapper : public LinearSolver {
  public:
   SubgraphSolverWrapper(const SubgraphSolverParameters &parameters,
                         const Ordering &ordering)
-      : parameters_(parameters), ordering_(ordering) {
-    linearSolverType_ = LinearSolverParams::SUBGRAPH;
-  };
+      : parameters_(parameters), ordering_(ordering) {};
 
   /// satisfies LinearSolver interface to solve the GaussianFactorGraph.
   VectorValues solve(const GaussianFactorGraph &gfg) const override {
