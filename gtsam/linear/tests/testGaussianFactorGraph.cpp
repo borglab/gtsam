@@ -88,7 +88,7 @@ TEST(GaussianFactorGraph, initialization) {
   Matrix actualIJS = fg.sparseJacobian_();
   EQUALITY(expectedIJS, actualIJS);
   auto actualTuple = fg.sparseJacobian<Matrix>();
-  EQUALITY(expectedIJS, std::get<2>(actualTuple));
+  EQUALITY(expectedIJS, actualTuple);
 }
 
 /* ************************************************************************* */
@@ -132,42 +132,43 @@ TEST(GaussianFactorGraph, sparseJacobian) {
   auto actualMatrix = gfg.sparseJacobian_();
   EXPECT(assert_equal(expectedMatlab, actualMatrix));
   // templated version
-  auto actual = gfg.sparseJacobian<Matrix>();
-  EXPECT(assert_equal(4, std::get<0>(actual)));
-  EXPECT(assert_equal(6, std::get<1>(actual)));
-  EXPECT(assert_equal(expectedMatlab, std::get<2>(actual)));
+  size_t nrows, ncols;
+  auto actual = gfg.sparseJacobian<Matrix>(nrows, ncols);
+  EXPECT(assert_equal(4, nrows));
+  EXPECT(assert_equal(6, ncols));
+  EXPECT(assert_equal(expectedMatlab, actual));
 
   // BoostTriplets
-  auto boostActual = gfg.sparseJacobian<BoostTriplets>();
+  auto boostActual = gfg.sparseJacobian<BoostTriplets>(nrows, ncols);
   // check the triplets size...
-  EXPECT_LONGS_EQUAL(16, std::get<2>(boostActual).size());
-  EXPECT(assert_equal(4, std::get<0>(boostActual)));
-  EXPECT(assert_equal(6, std::get<1>(boostActual)));
+  EXPECT_LONGS_EQUAL(16, boostActual.size());
+  EXPECT(assert_equal(4, nrows));
+  EXPECT(assert_equal(6, ncols));
   // check content
   for (int i = 0; i < 16; i++) {
     EXPECT(triplet_equal(
         BoostTriplet(expectedT(i, 0) - 1, expectedT(i, 1) - 1, expectedT(i, 2)),
-        std::get<2>(boostActual).at(i)));
+        boostActual.at(i)));
   }
   // EigenTriplets
-  auto eigenActual = gfg.sparseJacobian<EigenTriplets>();
-  EXPECT_LONGS_EQUAL(16, std::get<2>(eigenActual).size());
-  EXPECT(assert_equal(4, std::get<0>(eigenActual)));
-  EXPECT(assert_equal(6, std::get<1>(eigenActual)));
+  auto eigenActual = gfg.sparseJacobian<EigenTriplets>(nrows, ncols);
+  EXPECT_LONGS_EQUAL(16, eigenActual.size());
+  EXPECT(assert_equal(4, nrows));
+  EXPECT(assert_equal(6, ncols));
   for (int i = 0; i < 16; i++) {
     EXPECT(triplet_equal(
         EigenTriplet(expectedT(i, 0) - 1, expectedT(i, 1) - 1, expectedT(i, 2)),
-        std::get<2>(eigenActual).at(i)));
+        eigenActual.at(i)));
   }
   // Sparse Matrix
-  auto sparseResult = gfg.sparseJacobian<SparseMatrixEigen>();
-  EXPECT_LONGS_EQUAL(16, std::get<2>(sparseResult).nonZeros());
-  EXPECT(assert_equal(4, std::get<0>(sparseResult)));
-  EXPECT(assert_equal(6, std::get<1>(sparseResult)));
-  SparseMatrixEigen Ab(std::get<0>(eigenActual), std::get<1>(eigenActual));
-  auto eigenEntries = std::get<2>(eigenActual);
+  auto sparseResult = gfg.sparseJacobian<SparseMatrixEigen>(nrows, ncols);
+  EXPECT_LONGS_EQUAL(16, sparseResult.nonZeros());
+  EXPECT(assert_equal(4, nrows));
+  EXPECT(assert_equal(6, ncols));
+  SparseMatrixEigen Ab(nrows, ncols);
+  auto eigenEntries = eigenActual;
   Ab.setFromTriplets(eigenEntries.begin(), eigenEntries.end());
-  EXPECT(assert_equal(Matrix(Ab), Matrix(std::get<2>(sparseResult))));
+  EXPECT(assert_equal(Matrix(Ab), Matrix(sparseResult)));
 
   // Call sparseJacobian with optional ordering...
   auto ordering = Ordering(list_of(x45)(x123));
@@ -197,31 +198,31 @@ TEST(GaussianFactorGraph, sparseJacobian) {
       3, 6, 26.,
       4, 6, 32.).finished();
   expectedMatlab = expectedT.transpose();
-  actual = gfg.sparseJacobian<Matrix>(ordering);
+  actual = gfg.sparseJacobian<Matrix>(ordering, nrows, ncols);
 
-  EXPECT(assert_equal(4, std::get<0>(actual)));
-  EXPECT(assert_equal(6, std::get<1>(actual)));
-  EXPECT(assert_equal(expectedMatlab, std::get<2>(actual)));
+  EXPECT(assert_equal(4, nrows));
+  EXPECT(assert_equal(6, ncols));
+  EXPECT(assert_equal(expectedMatlab, actual));
 
   // BoostTriplets with optional ordering
-  boostActual = gfg.sparseJacobian<BoostTriplets>(ordering);
-  EXPECT_LONGS_EQUAL(16, std::get<2>(boostActual).size());
-  EXPECT(assert_equal(4, std::get<0>(boostActual)));
-  EXPECT(assert_equal(6, std::get<1>(boostActual)));
+  boostActual = gfg.sparseJacobian<BoostTriplets>(ordering, nrows, ncols);
+  EXPECT_LONGS_EQUAL(16, boostActual.size());
+  EXPECT(assert_equal(4, nrows));
+  EXPECT(assert_equal(6, ncols));
   for (int i = 0; i < 16; i++) {
     EXPECT(triplet_equal(
         BoostTriplet(expectedT(i, 0) - 1, expectedT(i, 1) - 1, expectedT(i, 2)),
-        std::get<2>(boostActual).at(i)));
+        boostActual.at(i)));
   }
   // EigenTriplets with optional ordering
-  eigenActual = gfg.sparseJacobian<EigenTriplets>(ordering);
-  EXPECT_LONGS_EQUAL(16, std::get<2>(eigenActual).size());
-  EXPECT(assert_equal(4, std::get<0>(eigenActual)));
-  EXPECT(assert_equal(6, std::get<1>(eigenActual)));
+  eigenActual = gfg.sparseJacobian<EigenTriplets>(ordering, nrows, ncols);
+  EXPECT_LONGS_EQUAL(16, eigenActual.size());
+  EXPECT(assert_equal(4, nrows));
+  EXPECT(assert_equal(6, ncols));
   for (int i = 0; i < 16; i++) {
     EXPECT(triplet_equal(
         EigenTriplet(expectedT(i, 0) - 1, expectedT(i, 1) - 1, expectedT(i, 2)),
-        std::get<2>(eigenActual).at(i)));
+        eigenActual.at(i)));
   }
 }
 

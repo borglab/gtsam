@@ -185,8 +185,8 @@ namespace gtsam {
      * where i(k) and j(k) are the base 0 row and column indices, s(k) a double.
      * The standard deviations are baked into A and b
      */
-    std::vector<boost::tuple<size_t, size_t, double> > sparseJacobian() const {
-      return std::get<2>(sparseJacobian<SparseMatrixBoostTriplets>());
+    SparseMatrixBoostTriplets sparseJacobian() const {
+      return sparseJacobian<SparseMatrixBoostTriplets>();
     }
 
     /**
@@ -195,50 +195,52 @@ namespace gtsam {
      * The standard deviations are baked into A and b
      */
     Matrix sparseJacobian_() const {
-      return std::get<2>(sparseJacobian<Matrix>());
-    }
-
-    /**
-     * Generates an m-by-n sparse Jacobian matrix, where i(k) and j(k) are the
-     * base 0 row and column indices, s(k) a double. Column ordering is taken as
-     * default.  The return type is a sparse matrix representation templated
-     * type which may be:
-     *  1. vector<boost::tuple<size_t, size_t, double>> is a vector of 3-tuples
-     * (i, j, s)
-     *  2. vector<Eigen::Triplet<double>> is a vector of Eigen-triples (i, j, s)
-     *  3. Eigen::SparseMatrix<double> is an Eigen format sparse matrix
-     *  4. Matrix (i/j will be 1-indexed instead of 0-indexed, for matlab) is a
-     * 3xK matrix [I;J;S]
-     * The standard deviations are baked into A and b
-     * @return 3-tuple with the dimensions of the Jacobian as the first 2
-     * elements and the sparse matrix in one of the 4 form above as the 3rd
-     * element.
-     */
-    template <typename Entries>
-    std::tuple<size_t, size_t, Entries> sparseJacobian() const {
-      Ordering ord(this->keys());
-      return sparseJacobian<Entries>(ord);
+      return sparseJacobian<Matrix>();
     }
 
     /**
      * Generates an m-by-n sparse Jacobian matrix, where i(k) and j(k) are the
      * base 0 row and column indices, s(k) a double. The return type is a sparse
      * matrix representation templated type which may be:
-     *  1. vector<boost::tuple<size_t, size_t, double>> is a vector of 3-tuples
-     * (i, j, s)
-     *  2. vector<Eigen::Triplet<double>> is a vector of Eigen-triples (i, j, s)
-     *  3. Eigen::SparseMatrix<double> is an Eigen format sparse matrix
+     *  1. SparseMatrixBoostTriplets is a vector of 3-tuples (i, j, s)
+     * (vector<boost::tuple<size_t, size_t, double>>)
+     *  2. SparseMatrixEigenTriplets is a vector of Eigen-triples (i, j, s)
+     * (vector<Eigen::Triplet<double>>)
+     *  3. SparseMatrixEigen is an Eigen format sparse matrix
+     * (Eigen::SparseMatrix<double>)
      *  4. Matrix (i/j will be 1-indexed instead of 0-indexed, for matlab) is a
      * 3xK matrix [I;J;S]
      * The standard deviations are baked into A and b
      * @param ordering the column ordering
-     * @return 3-tuple with the dimensions of the Jacobian as the first 2
-     * elements and the sparse matrix in one of the 4 form above as the 3rd
-     * element.
+     * @param[out] nrows The number of rows in the Jacobian
+     * @param[out] ncols The number of columns in the Jacobian
+     * @return the sparse matrix in one of the 4 forms above
      */
     template <typename Entries>
-    std::tuple<size_t, size_t, Entries> sparseJacobian(
-        const Ordering& ordering) const;
+    Entries sparseJacobian(const Ordering& ordering, size_t& nrows,
+                           size_t& ncols) const;
+
+    /// Generates an m-by-n sparse Jacobian without outputting m and n
+    template <typename Entries>
+    Entries sparseJacobian(const Ordering& ordering) const {
+      size_t dummy1, dummy2;
+      return sparseJacobian<Entries>(ordering, dummy1, dummy2);
+    }
+
+    /// Generates an m-by-n sparse Jacobian matrix with default Ordering
+    template <typename Entries>
+    Entries sparseJacobian(size_t &nrows, size_t &ncols) const {
+      Ordering ord(this->keys());
+      return sparseJacobian<Entries>(ord, nrows, ncols);
+    }
+
+    /// Generates an m-by-n sparse Jacobian with default Ordering and without
+    /// outputting m and n
+    template <typename Entries>
+    Entries sparseJacobian() const {
+      size_t dummy1, dummy2;
+      return sparseJacobian<Entries>(dummy1, dummy2);
+    }
 
     /**
      * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$
