@@ -50,7 +50,8 @@ class GTSAM_EXPORT SparseEigenSolver : public LinearSolver {
 
  public:
   explicit SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType type,
-                             const Ordering &ordering);
+                             const Ordering &ordering)
+      : solverType_(type), ordering_(ordering) {}
 
   /** Solves the GaussianFactorGraph using a sparse matrix solver
    *

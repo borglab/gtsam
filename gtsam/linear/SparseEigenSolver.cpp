@@ -146,80 +146,90 @@ namespace gtsam {
                                              Ab.col(cols));
   }
 
+  // Solves using sparse QR (used when solverType_ == QR)
+  VectorValues solveQr(const GaussianFactorGraph &gfg,
+                       const Ordering &ordering) {
+    gttic_(EigenOptimizer_optimizeEigenQR);
+
+    // this is where ordering is used
+    auto Ab_pair = obtainSparseMatrix(gfg, ordering);
+
+    // Solve A*x = b using sparse QR from Eigen
+    gttic_(EigenOptimizer_optimizeEigenQR_create_solver);
+    Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<Eigen::Index>> solver(Ab_pair.first);
+    gttoc_(EigenOptimizer_optimizeEigenQR_create_solver);
+
+    gttic_(EigenOptimizer_optimizeEigenQR_solve);
+    Eigen::VectorXd x = solver.solve(Ab_pair.second);
+    gttoc_(EigenOptimizer_optimizeEigenQR_solve);
+
+    return VectorValues(x, gfg.getKeyDimMap());
+  }
+
+  // Solves using sparse Cholesky (used when solverType_ == CHOLESKY)
+  VectorValues solveCholesky(const GaussianFactorGraph &gfg,
+                             const Ordering &ordering) {
+    gttic_(EigenOptimizer_optimizeEigenCholesky);
+    SpMat Ab = SparseEigenSolver::sparseJacobianEigen(gfg, ordering);
+    auto rows = Ab.rows(), cols = Ab.cols();
+    auto A = Ab.block(0, 0, rows, cols - 1);
+    auto At = A.transpose();
+    auto b = Ab.col(cols - 1);
+
+    SpMat AtA(A.cols(), A.cols());
+    AtA.selfadjointView<Eigen::Upper>().rankUpdate(At);
+
+    gttic_(EigenOptimizer_optimizeEigenCholesky_create_solver);
+    // Solve A*x = b using sparse Cholesky from Eigen
+    Eigen::SimplicialLDLT<SpMat, Eigen::Upper,
+                          Eigen::NaturalOrdering<Eigen::Index>>
+        solver(AtA);
+
+    gttoc_(EigenOptimizer_optimizeEigenCholesky_create_solver);
+
+    gttic_(EigenOptimizer_optimizeEigenCholesky_solve);
+    Eigen::VectorXd x = solver.solve(At * b);
+    gttoc_(EigenOptimizer_optimizeEigenCholesky_solve);
+
+    // NOTE: b is reordered now, so we need to transform back the order.
+    // First find dimensions of each variable
+    std::map<Key, size_t> dims;
+    for (const boost::shared_ptr<GaussianFactor> &factor : gfg) {
+      if (!static_cast<bool>(factor)) continue;
+
+      for (auto it = factor->begin(); it != factor->end(); ++it) {
+        dims[*it] = factor->getDim(it);
+      }
+    }
+
+    VectorValues vv;
+
+    std::map<Key, size_t> columnIndices;
+
+    {
+      size_t currentColIndex = 0;
+      for (const auto key : ordering) {
+        columnIndices[key] = currentColIndex;
+        currentColIndex += dims[key];
+      }
+    }
+
+    for (const pair<const Key, unsigned long> keyDim : dims) {
+      vv.insert(keyDim.first,
+                x.segment(columnIndices[keyDim.first], keyDim.second));
+    }
+
+    return vv;
+  }
+
   VectorValues SparseEigenSolver::solve(const GaussianFactorGraph &gfg) const {
     if (solverType_ == QR) {
-      gttic_(EigenOptimizer_optimizeEigenQR);
-
-      // this is where ordering is used
-      auto Ab_pair = obtainSparseMatrix(gfg, ordering_);
-
-      // Solve A*x = b using sparse QR from Eigen
-      gttic_(EigenOptimizer_optimizeEigenQR_create_solver);
-      Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<Eigen::Index>> solver(Ab_pair.first);
-      gttoc_(EigenOptimizer_optimizeEigenQR_create_solver);
-
-      gttic_(EigenOptimizer_optimizeEigenQR_solve);
-      Eigen::VectorXd x = solver.solve(Ab_pair.second);
-      gttoc_(EigenOptimizer_optimizeEigenQR_solve);
-
-      return VectorValues(x, gfg.getKeyDimMap());
+      return solveQr(gfg, ordering_);
     } else if (solverType_ == CHOLESKY) {
-      gttic_(EigenOptimizer_optimizeEigenCholesky);
-      SpMat Ab = sparseJacobianEigen(gfg, ordering_);
-      auto rows = Ab.rows(), cols = Ab.cols();
-      auto A = Ab.block(0, 0, rows, cols - 1);
-      auto At = A.transpose();
-      auto b = Ab.col(cols - 1);
-
-      SpMat AtA(A.cols(), A.cols());
-      AtA.selfadjointView<Eigen::Upper>().rankUpdate(At);
-
-      gttic_(EigenOptimizer_optimizeEigenCholesky_create_solver);
-      // Solve A*x = b using sparse Cholesky from Eigen
-      Eigen::SimplicialLDLT<SpMat, Eigen::Upper, Eigen::NaturalOrdering<Eigen::Index>>
-          solver(AtA);
-
-      gttoc_(EigenOptimizer_optimizeEigenCholesky_create_solver);
-
-      gttic_(EigenOptimizer_optimizeEigenCholesky_solve);
-      Eigen::VectorXd x = solver.solve(At * b);
-      gttoc_(EigenOptimizer_optimizeEigenCholesky_solve);
-
-      // NOTE: b is reordered now, so we need to transform back the order.
-      // First find dimensions of each variable
-      std::map<Key, size_t> dims;
-      for (const boost::shared_ptr<GaussianFactor> &factor : gfg) {
-        if (!static_cast<bool>(factor))
-          continue;
-
-        for (auto it = factor->begin(); it != factor->end(); ++it) {
-          dims[*it] = factor->getDim(it);
-        }
-      }
-
-      VectorValues vv;
-
-      std::map<Key, size_t> columnIndices;
-
-      {
-        size_t currentColIndex = 0;
-        for (const auto key : ordering_) {
-          columnIndices[key] = currentColIndex;
-          currentColIndex += dims[key];
-        }
-      }
-
-      for (const pair<const Key, unsigned long> keyDim : dims) {
-        vv.insert(keyDim.first, x.segment(columnIndices[keyDim.first], keyDim.second));
-      }
-
-      return vv;
+      return solveCholesky(gfg, ordering_);
     }
 
     throw std::exception();
   }
 
-  SparseEigenSolver::SparseEigenSolver(
-      SparseEigenSolver::SparseEigenSolverType type, const Ordering &ordering)
-      : solverType_(type), ordering_(ordering) {}
 }  // namespace gtsam
