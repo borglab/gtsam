@@ -12,7 +12,7 @@
 /**
  * @file    LinearSolver.h
  * @brief   Common Interface for Linear Solvers
- * @author  Fan Jiang
+ * @author  Fan Jiang, Gerry Chen, Mandy Xie, and Frank Dellaert
  */
 
 #pragma once

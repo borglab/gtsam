@@ -12,7 +12,7 @@
 /**
  * @file    testLinearSolver.cpp
  * @brief   Tests for Common Interface for Linear Solvers
- * @author  Fan Jiang
+ * @author  Fan Jiang and Gerry Chen
  */
 
 #include <gtsam/linear/LinearSolver.h>

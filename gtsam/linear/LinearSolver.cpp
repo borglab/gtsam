@@ -12,7 +12,7 @@
 /**
  * @file    LinearSolver.cpp
  * @brief   Common Interface for Linear Solvers
- * @author  Fan Jiang
+ * @author  Fan Jiang, Gerry Chen, Mandy Xie, and Frank Dellaert
  */
 
 #include <gtsam/linear/LinearSolver.h>
