@@ -81,8 +81,7 @@ typedef Eigen::Block<const Matrix> ConstSubMatrix;
 typedef std::vector<boost::tuple<size_t, size_t, double>>
     SparseMatrixBoostTriplets;
 typedef std::vector<Eigen::Triplet<double>> SparseMatrixEigenTriplets;
-typedef Eigen::SparseMatrix<double, Eigen::ColMajor, Eigen::Index>
-    SparseMatrixEigen;
+typedef Eigen::SparseMatrix<double, Eigen::ColMajor> SparseMatrixEigen;
 
 // Matrix formatting arguments when printing.
 // Akin to Matlab style.

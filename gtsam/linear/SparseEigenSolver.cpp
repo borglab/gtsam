@@ -44,7 +44,7 @@ namespace gtsam {
 
     // Solve A*x = b using sparse QR from Eigen
     gttic_(create_solver);
-    Eigen::SparseQR<SparseMatrixEigen, Eigen::NaturalOrdering<Eigen::Index>>
+    Eigen::SparseQR<SparseMatrixEigen, Eigen::NaturalOrdering<int>>
         solver(Ab.block(0, 0, rows, cols - 1));
     gttoc_(create_solver);
 
@@ -75,7 +75,7 @@ namespace gtsam {
     gttic_(create_solver);
     // Solve A*x = b using sparse Cholesky from Eigen
     Eigen::SimplicialLDLT<SparseMatrixEigen, Eigen::Upper,
-                          Eigen::NaturalOrdering<Eigen::Index>>
+                          Eigen::NaturalOrdering<int>>
         solver(AtA);
     gttoc_(create_solver);
 
