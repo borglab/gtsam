@@ -80,11 +80,16 @@ struct GTSAM_EXPORT LinearSolverParams {
         ordering(ordering),
         iterativeParams(iterativeParams) {};
 
-  LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
-  Ordering::OrderingType orderingType = Ordering::COLAMD; ///< The method of ordering use during variable elimination (default COLAMD)
-  boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
+  /// The type of linear solver to use in the nonlinear optimizer
+  /// (default: MULTIFRONTAL_CHOLESKY)
+  LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY;
+  /// The method of ordering use during variable elimination (default: COLAMD)
+  Ordering::OrderingType orderingType = Ordering::COLAMD;
+  /// The variable elimination ordering, or empty to use COLAMD (default: empty)
+  boost::optional<Ordering> ordering;
 
-  boost::shared_ptr<IterativeOptimizationParameters> iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
+  /// The container for iterativeOptimization parameters. used in CG Solvers.
+  boost::shared_ptr<IterativeOptimizationParameters> iterativeParams;
 
   inline bool isMultifrontal() const {
     return (linearSolverType == MULTIFRONTAL_CHOLESKY) ||
@@ -161,11 +166,19 @@ struct GTSAM_EXPORT LinearSolverParams {
     orderingType = orderingTypeTranslator(ordering);
   }
 
-private:
+ private:
+  /**
+   * @name These functions convert between the string-name and enum versions of
+   * these enums.  For example,
+   * "SEQUENTIAL_CHOLESKY" <-> LinearSolverType::SEQUENTIAL_CHOLESKY
+   * "METIS" <-> Ordering::METIS
+   * @{
+   */
   std::string linearSolverTranslator(LinearSolverType linearSolverType) const;
   LinearSolverType linearSolverTranslator(const std::string& linearSolverType) const;
   std::string orderingTypeTranslator(Ordering::OrderingType type) const;
   Ordering::OrderingType orderingTypeTranslator(const std::string& type) const;
+  /**@}*/
 };
 
 }  // namespace gtsam

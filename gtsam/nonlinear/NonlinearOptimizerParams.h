@@ -115,8 +115,10 @@ class GTSAM_EXPORT NonlinearOptimizerParams {
   LinearSolverParams linearSolverParams;
 
   /**
-   * @name Linear Properties for Backwards Compatibility
-   * These member variables and functions reference LinearSolverParams
+   * @name Linear Properties (for Backwards Compatibility)
+   * These member variables and functions reference LinearSolverParams but must
+   * be accessible as members of NonlinearOptimizerParams for backwards
+   * compatibility reasons
    */
   ///@{
 
@@ -136,10 +138,16 @@ class GTSAM_EXPORT NonlinearOptimizerParams {
   static constexpr LinearSolverType CUSPARSE_CHOLESKY = LinearSolverParams::CUSPARSE_CHOLESKY;
   static constexpr LinearSolverType LAST = LinearSolverParams::LAST;
 
-  LinearSolverType &linearSolverType {linearSolverParams.linearSolverType}; ///< The type of linear solver to use in the nonlinear optimizer
+  /// The type of linear solver to use in the nonlinear optimizer
+  /// (default: MULTIFRONTAL_CHOLESKY)
+  LinearSolverType &linearSolverType {linearSolverParams.linearSolverType};
+  /// The method of ordering use during variable elimination (default: COLAMD)
   Ordering::OrderingType &orderingType {linearSolverParams.orderingType};
-  boost::optional<Ordering> &ordering {linearSolverParams.ordering}; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
-  boost::shared_ptr<IterativeOptimizationParameters> &iterativeParams {linearSolverParams.iterativeParams}; ///< The container for iterativeOptimization parameters. used in CG Solvers.
+  /// The variable elimination ordering, or empty to use COLAMD (default: empty)
+  boost::optional<Ordering> &ordering {linearSolverParams.ordering};
+  /// The container for iterativeOptimization parameters. used in CG Solvers.
+  boost::shared_ptr<IterativeOptimizationParameters>& iterativeParams{
+      linearSolverParams.iterativeParams};
 
   inline bool isMultifrontal() const {
     return linearSolverParams.isMultifrontal();
