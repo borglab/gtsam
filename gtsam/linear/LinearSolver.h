@@ -47,12 +47,12 @@ class GTSAM_EXPORT LinearSolver {
   }
 
   /**
-   * Factor method for generating a derived class of LinearSolver from
+   * Factory method for generating a derived class of LinearSolver from
    * LinearSolverParams
    * @param params LinearSolverParams linear optimizer parameters
    * @return pointer to a LinearSolver-derived object
    */
-  static boost::shared_ptr<LinearSolver> FromLinearSolverParams(
+  static boost::shared_ptr<LinearSolver> CreateFromParameters(
       const LinearSolverParams &params);
 };
 

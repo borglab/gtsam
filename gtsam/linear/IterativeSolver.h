@@ -113,7 +113,7 @@ class IterativeSolver : public LinearSolver {
   };
 
   /* constructs PCGSolver or SubgraphSolver pointer */
-  static boost::shared_ptr<LinearSolver> FromLinearSolverParams(
+  static boost::shared_ptr<LinearSolver> CreateFromParameters(
       const LinearSolverParams &params);
 };
 
