@@ -18,6 +18,7 @@
  * @author Mandy Xie
  * @author Fan Jiang
  * @author Frank Dellaert
+ * @author Gerry Chen
  */
 
 #include <gtsam/base/timing.h>
@@ -31,137 +32,25 @@ using namespace std;
 
 namespace gtsam {
 
-  using SpMat = Eigen::SparseMatrix<double, Eigen::ColMajor, Eigen::Index>;
-
-  Eigen::SparseMatrix<double>
-  SparseEigenSolver::sparseJacobianEigen(
-      const GaussianFactorGraph &gfg,
-      const Ordering &ordering) {
-    // First find dimensions of each variable
-    std::map<Key, size_t> dims;
-    for (const boost::shared_ptr<GaussianFactor> &factor : gfg) {
-      if (!static_cast<bool>(factor))
-        continue;
-
-      for (auto it = factor->begin(); it != factor->end(); ++it) {
-        dims[*it] = factor->getDim(it);
-      }
-    }
-
-    // Compute first scalar column of each variable
-    size_t currentColIndex = 0;
-    std::map<Key, size_t> columnIndices;
-    for (const auto key : ordering) {
-      columnIndices[key] = currentColIndex;
-      currentColIndex += dims[key];
-    }
-
-    // Iterate over all factors, adding sparse scalar entries
-    vector<Eigen::Triplet<double>> entries;
-    entries.reserve(60 * gfg.size());
-
-    size_t row = 0;
-    for (const boost::shared_ptr<GaussianFactor> &factor : gfg) {
-      if (!static_cast<bool>(factor)) continue;
-
-      // Convert to JacobianFactor if necessary
-      JacobianFactor::shared_ptr jacobianFactor(
-          boost::dynamic_pointer_cast<JacobianFactor>(factor));
-      if (!jacobianFactor) {
-        HessianFactor::shared_ptr hessian(
-            boost::dynamic_pointer_cast<HessianFactor>(factor));
-        if (hessian)
-          jacobianFactor.reset(new JacobianFactor(*hessian));
-        else
-          throw invalid_argument(
-              "GaussianFactorGraph contains a factor that is neither a JacobianFactor nor a HessianFactor.");
-      }
-
-      // Whiten the factor and add entries for it
-      // iterate over all variables in the factor
-      const JacobianFactor whitened(jacobianFactor->whiten());
-      for (JacobianFactor::const_iterator key = whitened.begin();
-           key < whitened.end(); ++key) {
-        JacobianFactor::constABlock whitenedA = whitened.getA(key);
-        // find first column index for this key
-        size_t column_start = columnIndices[*key];
-        for (size_t i = 0; i < (size_t) whitenedA.rows(); i++)
-          for (size_t j = 0; j < (size_t) whitenedA.cols(); j++) {
-            double s = whitenedA(i, j);
-            if (std::abs(s) > 1e-12)
-              entries.emplace_back(row + i, column_start + j, s);
-          }
-      }
-
-      JacobianFactor::constBVector whitenedb(whitened.getb());
-      size_t bcolumn = currentColIndex;
-      for (size_t i = 0; i < (size_t) whitenedb.size(); i++) {
-        double s = whitenedb(i);
-        if (std::abs(s) > 1e-12)
-          entries.emplace_back(row + i, bcolumn, s);
-      }
-
-      // Increment row index
-      row += jacobianFactor->rows();
-    }
-
-    // ...and make a sparse matrix with it.
-    Eigen::SparseMatrix<double, Eigen::ColMajor> Ab(row + 1, currentColIndex + 1);
-    Ab.setFromTriplets(entries.begin(), entries.end());
-    return Ab;
-  }
-
-
-  /// obtain sparse matrix with given variable ordering for eigen sparse solver
-  std::pair<SpMat, Eigen::VectorXd> obtainSparseMatrix(
-      const GaussianFactorGraph &gfg,
-      const Ordering &ordering) {
-
-    gttic_(EigenOptimizer_obtainSparseMatrix);
-
-    // Get sparse entries of Jacobian [A|b] augmented with RHS b.
-    auto entries = gfg.sparseJacobian(ordering);
-
-    gttic_(EigenOptimizer_convertSparse);
-    // Convert boost tuples to Eigen triplets
-    vector<Eigen::Triplet<double>> triplets;
-    triplets.reserve(entries.size());
-    size_t rows = 0, cols = 0;
-    for (const auto &e : entries) {
-      size_t temp_rows = e.get<0>(), temp_cols = e.get<1>();
-      triplets.emplace_back(temp_rows, temp_cols, e.get<2>());
-      rows = std::max(rows, temp_rows);
-      cols = std::max(cols, temp_cols);
-    }
-
-    // ...and make a sparse matrix with it.
-    SpMat Ab(rows + 1, cols + 1);
-    Ab.setFromTriplets(triplets.begin(), triplets.end());
-    Ab.makeCompressed();
-    gttoc_(EigenOptimizer_convertSparse);
-
-    gttoc_(EigenOptimizer_obtainSparseMatrix);
-
-    return make_pair<SpMat, Eigen::VectorXd>(Ab.block(0, 0, rows + 1, cols),
-                                             Ab.col(cols));
-  }
-
   // Solves using sparse QR (used when solverType_ == QR)
   VectorValues solveQr(const GaussianFactorGraph &gfg,
                        const Ordering &ordering) {
     gttic_(EigenOptimizer_optimizeEigenQR);
 
-    // this is where ordering is used
-    auto Ab_pair = obtainSparseMatrix(gfg, ordering);
+    // get sparse matrix from factor graph + ordering
+    size_t rows, cols;
+    SparseMatrixEigen Ab;
+    std::tie(rows, cols, Ab) = gfg.sparseJacobian<SparseMatrixEigen>(ordering);
 
     // Solve A*x = b using sparse QR from Eigen
-    gttic_(EigenOptimizer_optimizeEigenQR_create_solver);
-    Eigen::SparseQR<SpMat, Eigen::NaturalOrdering<Eigen::Index>> solver(Ab_pair.first);
-    gttoc_(EigenOptimizer_optimizeEigenQR_create_solver);
+    gttic_(create_solver);
+    Eigen::SparseQR<SparseMatrixEigen, Eigen::NaturalOrdering<Eigen::Index>>
+        solver(Ab.block(0, 0, rows, cols - 1));
+    gttoc_(create_solver);
 
-    gttic_(EigenOptimizer_optimizeEigenQR_solve);
-    Eigen::VectorXd x = solver.solve(Ab_pair.second);
-    gttoc_(EigenOptimizer_optimizeEigenQR_solve);
+    gttic_(solve);
+    Eigen::VectorXd x = solver.solve(Ab.col(cols-1));
+    gttoc_(solve);
 
     return VectorValues(x, gfg.getKeyDimMap());
   }
@@ -170,26 +59,29 @@ namespace gtsam {
   VectorValues solveCholesky(const GaussianFactorGraph &gfg,
                              const Ordering &ordering) {
     gttic_(EigenOptimizer_optimizeEigenCholesky);
-    SpMat Ab = SparseEigenSolver::sparseJacobianEigen(gfg, ordering);
-    auto rows = Ab.rows(), cols = Ab.cols();
+
+    // get sparse matrices A|b from factor graph + ordering
+    size_t rows, cols;
+    SparseMatrixEigen Ab;
+    std::tie(rows, cols, Ab) = gfg.sparseJacobian<SparseMatrixEigen>(ordering);
+
     auto A = Ab.block(0, 0, rows, cols - 1);
     auto At = A.transpose();
     auto b = Ab.col(cols - 1);
 
-    SpMat AtA(A.cols(), A.cols());
+    SparseMatrixEigen AtA(A.cols(), A.cols());
     AtA.selfadjointView<Eigen::Upper>().rankUpdate(At);
 
-    gttic_(EigenOptimizer_optimizeEigenCholesky_create_solver);
+    gttic_(create_solver);
     // Solve A*x = b using sparse Cholesky from Eigen
-    Eigen::SimplicialLDLT<SpMat, Eigen::Upper,
+    Eigen::SimplicialLDLT<SparseMatrixEigen, Eigen::Upper,
                           Eigen::NaturalOrdering<Eigen::Index>>
         solver(AtA);
+    gttoc_(create_solver);
 
-    gttoc_(EigenOptimizer_optimizeEigenCholesky_create_solver);
-
-    gttic_(EigenOptimizer_optimizeEigenCholesky_solve);
+    gttic_(solve);
     Eigen::VectorXd x = solver.solve(At * b);
-    gttoc_(EigenOptimizer_optimizeEigenCholesky_solve);
+    gttoc_(solve);
 
     // NOTE: b is reordered now, so we need to transform back the order.
     // First find dimensions of each variable

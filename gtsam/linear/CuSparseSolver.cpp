@@ -29,7 +29,7 @@
 
 #endif
 
-#include "gtsam/linear/SparseEigenSolver.h"
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
   CuSparseSolver::CuSparseSolver(const Ordering &ordering)
@@ -65,9 +65,8 @@ namespace gtsam {
 
 #define CHECK_CUSPARSE_ERROR(code) checkCuSparseError(code, ____LOCATION)
 
-  void EigenSparseToCuSparseTranspose(
-      const Eigen::SparseMatrix<double> &mat, int **row, int **col, double **val)
-  {
+  void EigenSparseToCuSparseTranspose(const SparseMatrixEigen &mat, int **row,
+                                      int **col, double **val) {
     const int num_non0  = mat.nonZeros();
     const int num_outer = mat.cols() + 1;
 
@@ -104,10 +103,10 @@ namespace gtsam {
     gttic_(CuSparseSolver_optimizeEigenCholesky);
 
     // ordering is used here
-    Eigen::SparseMatrix<double>
-        Ab = SparseEigenSolver::sparseJacobianEigen(gfg, ordering_);
-    auto rows = Ab.rows(), cols = Ab.cols();
-    Eigen::SparseMatrix<double> A = Ab.block(0, 0, rows, cols - 1);
+    size_t rows, cols;
+    SparseMatrixEigen Ab;
+    std::tie(rows, cols, Ab) = gfg.sparseJacobian<SparseMatrixEigen>(ordering_);
+    SparseMatrixEigen A = Ab.block(0, 0, rows, cols - 1);
 //
 //      // CSC in Eigen, CSR in CUDA, so A becomes At
 //      int *At_row(NULL), *At_col(NULL);
@@ -159,8 +158,7 @@ namespace gtsam {
     auto At = A.transpose();
     Matrix b = At * Ab.col(cols - 1);
 
-    Eigen::SparseMatrix<double>
-        AtA(A.cols(), A.cols());
+    SparseMatrixEigen AtA(A.cols(), A.cols());
     AtA.selfadjointView<Eigen::Upper>().rankUpdate(At);
     AtA.makeCompressed();
 

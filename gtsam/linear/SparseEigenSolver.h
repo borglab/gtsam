@@ -21,6 +21,7 @@
  * @author Mandy Xie
  * @author Fan Jiang
  * @author Frank Dellaert
+ * @author Gerry Chen
  */
 
 #pragma once
@@ -58,10 +59,5 @@ class GTSAM_EXPORT SparseEigenSolver : public LinearSolver {
    * Uses elimination ordering during sparse matrix generation in `solve(gfg)`
    */
   VectorValues solve(const GaussianFactorGraph &gfg) const override;
-
-  /// Returns sparse matrix with given variable ordering for sparse matrix
-  /// solvers
-  static Eigen::SparseMatrix<double> sparseJacobianEigen(
-      const GaussianFactorGraph &gfg, const Ordering &ordering);
 };
 }  // namespace gtsam

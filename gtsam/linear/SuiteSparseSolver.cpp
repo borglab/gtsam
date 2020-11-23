@@ -20,7 +20,7 @@
 
 #include <gtsam/linear/SuiteSparseSolver.h>
 #include <gtsam/linear/LinearSolverParams.h>
-#include <gtsam/linear/SparseEigenSolver.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 #ifdef GTSAM_USE_SUITESPARSE
 #include <Eigen/CholmodSupport>
@@ -35,23 +35,21 @@ namespace gtsam {
       const gtsam::GaussianFactorGraph &gfg) const {
     gttic_(SuiteSparseSolver_optimizeEigenCholesky);
 
-    // this is where ordering is used
-    Eigen::SparseMatrix<double>
-        Ab = SparseEigenSolver::sparseJacobianEigen(gfg, ordering_);
-    auto rows = Ab.rows(), cols = Ab.cols();
+    // sparse Jacobian
+    size_t rows, cols;
+    SparseMatrixEigen Ab;
+    std::tie(rows, cols, Ab) =
+        gfg.sparseJacobian<SparseMatrixEigen>(ordering_);
     auto A = Ab.block(0, 0, rows, cols - 1);
     auto At = A.transpose();
     auto b = Ab.col(cols - 1);
 
-    Eigen::SparseMatrix<double>
-        AtA(A.cols(), A.cols());
+    SparseMatrixEigen AtA(A.cols(), A.cols());
     AtA.selfadjointView<Eigen::Upper>().rankUpdate(At);
 
     gttic_(SuiteSparseSolver_optimizeEigenCholesky_create_solver);
     // Solve A*x = b using sparse Cholesky from Eigen
-    Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double>
-        , Eigen::Upper>
-        solver;
+    Eigen::CholmodSupernodalLLT<SparseMatrixEigen, Eigen::Upper> solver;
     solver.cholmod().nmethods = 1;
     solver.cholmod().method[0].ordering = CHOLMOD_NATURAL;
     solver.cholmod().postorder = false;
