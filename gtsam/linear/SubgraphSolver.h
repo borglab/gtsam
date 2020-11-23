@@ -37,6 +37,7 @@ class SubgraphPreconditioner;
 
 struct GTSAM_EXPORT SubgraphSolverParameters
     : public ConjugateGradientParameters {
+  typedef boost::shared_ptr<SubgraphSolverParameters> shared_ptr;
   SubgraphBuilderParameters builderParams;
   explicit SubgraphSolverParameters(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
     : builderParams(p) {}
@@ -153,6 +154,19 @@ class GTSAM_EXPORT SubgraphSolverWrapper : public LinearSolver {
   SubgraphSolverWrapper(const SubgraphSolverParameters &parameters,
                         const Ordering &ordering)
       : parameters_(parameters), ordering_(ordering) {};
+  SubgraphSolverWrapper(const LinearSolverParams &params) {
+    if (!params.iterativeParams)
+      throw std::runtime_error(
+          "SubgraphSolverWrapper::SubgraphSolverWrapper: iterative params has "
+          "to be assigned ...");
+    if (!params.ordering)
+      throw std::runtime_error(
+          "SubgraphSolverWrapper::SubgraphSolverWrapper: SubgraphSolver needs "
+          "an ordering");
+    parameters_ = *boost::static_pointer_cast<SubgraphSolverParameters>(
+        params.iterativeParams);
+    ordering_ = *params.ordering;
+  };
 
   /// satisfies LinearSolver interface to solve the GaussianFactorGraph.
   VectorValues solve(const GaussianFactorGraph &gfg) const override {

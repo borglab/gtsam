@@ -74,8 +74,8 @@ protected:
 public:
   /* Interface to initialize a solver without a problem */
   PCGSolver(const PCGSolverParameters &p);
-  virtual ~PCGSolver() {
-  }
+  PCGSolver(const LinearSolverParams &p);
+  virtual ~PCGSolver() {}
 
   using IterativeSolver::optimize;
 

@@ -27,8 +27,8 @@ void LinearSolverParams::setIterativeParams(
 
 
 /* ************************************************************************* */
-std::string LinearSolverParams::linearSolverTranslator(
-    LinearSolverType linearSolverType) const {
+std::string LinearSolverParams::LinearSolverTranslator(
+    LinearSolverType linearSolverType) {
   switch (linearSolverType) {
     case MULTIFRONTAL_CHOLESKY:
       return "MULTIFRONTAL_CHOLESKY";
@@ -50,10 +50,10 @@ std::string LinearSolverParams::linearSolverTranslator(
       return "EIGEN_QR";
     case EIGEN_CHOLESKY:
       return "EIGEN_CHOLESKY";
-    case SUITESPARSE_CHOLESKY:
-      return "SUITESPARSE_CHOLESKY";
-    case CUSPARSE_CHOLESKY:
-      return "CUSPARSE_CHOLESKY";
+    case SUITESPARSE:
+      return "SUITESPARSE";
+    case CUSPARSE:
+      return "CUSPARSE";
     default:
       throw std::invalid_argument(
           "Unknown linear solver type in SuccessiveLinearizationOptimizer");
@@ -61,8 +61,8 @@ std::string LinearSolverParams::linearSolverTranslator(
 }
 
 /* ************************************************************************* */
-LinearSolverParams::LinearSolverType LinearSolverParams::linearSolverTranslator(
-    const std::string &linearSolverType) const {
+LinearSolverParams::LinearSolverType LinearSolverParams::LinearSolverTranslator(
+    const std::string &linearSolverType) {
   if (linearSolverType == "MULTIFRONTAL_CHOLESKY")
     return LinearSolverParams::MULTIFRONTAL_CHOLESKY;
   if (linearSolverType == "MULTIFRONTAL_QR")
@@ -83,40 +83,41 @@ LinearSolverParams::LinearSolverType LinearSolverParams::linearSolverTranslator(
     return LinearSolverParams::EIGEN_CHOLESKY;
   if (linearSolverType == "EIGEN_QR")
     return LinearSolverParams::EIGEN_QR;
-  if (linearSolverType == "SUITESPARSE_CHOLESKY")
-    return LinearSolverParams::SUITESPARSE_CHOLESKY;
-  if (linearSolverType == "CUSPARSE_CHOLESKY")
-    return LinearSolverParams::CUSPARSE_CHOLESKY;
+  if (linearSolverType == "SUITESPARSE")
+    return LinearSolverParams::SUITESPARSE;
+  if (linearSolverType == "CUSPARSE")
+    return LinearSolverParams::CUSPARSE;
   throw std::invalid_argument(
       "Unknown linear solver type in SuccessiveLinearizationOptimizer");
 }
 
 /* ************************************************************************* */
-std::string LinearSolverParams::orderingTypeTranslator(
-    Ordering::OrderingType type) const {
+std::string LinearSolverParams::OrderingTypeTranslator(
+    Ordering::OrderingType type) {
   switch (type) {
     case Ordering::METIS:
       return "METIS";
     case Ordering::COLAMD:
       return "COLAMD";
+    case Ordering::CUSTOM:
+      return "CUSTOM";
     default:
-      if (ordering)
-        return "CUSTOM";
-      else
-        throw std::invalid_argument(
-            "Invalid ordering type: You must provide an ordering for a custom ordering type. See setOrdering");
+      throw std::invalid_argument(
+          "Invalid ordering type: see setOrdering or setOrderingType");
   }
 }
 
 /* ************************************************************************* */
-Ordering::OrderingType LinearSolverParams::orderingTypeTranslator(
-    const std::string &type) const {
+Ordering::OrderingType LinearSolverParams::OrderingTypeTranslator(
+    const std::string &type) {
   if (type == "METIS")
     return Ordering::METIS;
   if (type == "COLAMD")
     return Ordering::COLAMD;
+  if (type == "CUSTOM")
+    return Ordering::CUSTOM;
   throw std::invalid_argument(
-      "Invalid ordering type: You must provide an ordering for a custom ordering type. See setOrdering");
+      "Invalid ordering type: see setOrdering or setOrderingType");
 }
 
 }

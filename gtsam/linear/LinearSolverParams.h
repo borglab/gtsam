@@ -38,16 +38,25 @@ struct GTSAM_EXPORT LinearSolverParams {
     Iterative, /* Experimental Flag - donotuse: for backwards compatibility
                   only. Use PCG or SUBGRAPH instead */
     CHOLMOD,   /* Experimental Flag - donotuse: for backwards compatibility. use
-                  SUITESPARSE_CHOLESKY or PCG/SUBGRAPH w/ iterativeParams instead
-                */
+                  SUITESPARSE or PCG/SUBGRAPH w/ iterativeParams instead */
     PCG,
     SUBGRAPH,
     EIGEN_QR,
     EIGEN_CHOLESKY,
-    SUITESPARSE_CHOLESKY,
-    CUSPARSE_CHOLESKY,
+    SUITESPARSE,
+    CUSPARSE,
     LAST /* for iterating over enum */
   } LinearSolverType;
+
+  /// The type of linear solver to use in the nonlinear optimizer
+  /// (default: MULTIFRONTAL_CHOLESKY)
+  LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY;
+  /// The method of ordering use during variable elimination (default: COLAMD)
+  Ordering::OrderingType orderingType = Ordering::COLAMD;
+  /// The variable elimination ordering, or empty to use COLAMD (default: empty)
+  boost::optional<Ordering> ordering;
+  /// The container for iterativeOptimization parameters. used in CG Solvers.
+  boost::shared_ptr<IterativeOptimizationParameters> iterativeParams;
 
   /// Construct a params object from the solver and ordering types
   LinearSolverParams(LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY,
@@ -80,17 +89,6 @@ struct GTSAM_EXPORT LinearSolverParams {
         ordering(ordering),
         iterativeParams(iterativeParams) {};
 
-  /// The type of linear solver to use in the nonlinear optimizer
-  /// (default: MULTIFRONTAL_CHOLESKY)
-  LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY;
-  /// The method of ordering use during variable elimination (default: COLAMD)
-  Ordering::OrderingType orderingType = Ordering::COLAMD;
-  /// The variable elimination ordering, or empty to use COLAMD (default: empty)
-  boost::optional<Ordering> ordering;
-
-  /// The container for iterativeOptimization parameters. used in CG Solvers.
-  boost::shared_ptr<IterativeOptimizationParameters> iterativeParams;
-
   inline bool isMultifrontal() const {
     return (linearSolverType == MULTIFRONTAL_CHOLESKY) ||
            (linearSolverType == MULTIFRONTAL_QR);
@@ -118,12 +116,12 @@ struct GTSAM_EXPORT LinearSolverParams {
     return (linearSolverType == EIGEN_CHOLESKY);
   }
 
-  inline bool isSuiteSparseCholesky() const {
-    return (linearSolverType == SUITESPARSE_CHOLESKY);
+  inline bool isSuiteSparse() const {
+    return (linearSolverType == SUITESPARSE);
   }
 
-  inline bool isCuSparseCholesky() const {
-    return (linearSolverType == CUSPARSE_CHOLESKY);
+  inline bool isCuSparse() const {
+    return (linearSolverType == CUSPARSE);
   }
 
   GaussianFactorGraph::Eliminate getEliminationFunction() const {
@@ -143,11 +141,11 @@ struct GTSAM_EXPORT LinearSolverParams {
   }
 
   std::string getLinearSolverType() const {
-    return linearSolverTranslator(linearSolverType);
+    return LinearSolverTranslator(linearSolverType);
   }
 
   void setLinearSolverType(const std::string& solver) {
-    linearSolverType = linearSolverTranslator(solver);
+    linearSolverType = LinearSolverTranslator(solver);
   }
 
   void setIterativeParams(const boost::shared_ptr<IterativeOptimizationParameters> params);
@@ -158,12 +156,13 @@ struct GTSAM_EXPORT LinearSolverParams {
   }
 
   std::string getOrderingType() const {
-    return orderingTypeTranslator(orderingType);
+    return OrderingTypeTranslator(orderingType);
   }
 
-  // Note that if you want to use a custom ordering, you must set the ordering directly, this will switch to custom type
+  // Note that if you want to use a custom ordering, you must set the ordering
+  // directly, this will switch to custom type
   void setOrderingType(const std::string& ordering){
-    orderingType = orderingTypeTranslator(ordering);
+    orderingType = OrderingTypeTranslator(ordering);
   }
 
  private:
@@ -174,10 +173,12 @@ struct GTSAM_EXPORT LinearSolverParams {
    * "METIS" <-> Ordering::METIS
    * @{
    */
-  std::string linearSolverTranslator(LinearSolverType linearSolverType) const;
-  LinearSolverType linearSolverTranslator(const std::string& linearSolverType) const;
-  std::string orderingTypeTranslator(Ordering::OrderingType type) const;
-  Ordering::OrderingType orderingTypeTranslator(const std::string& type) const;
+  static std::string LinearSolverTranslator(
+      const LinearSolverType linearSolverType);
+  static LinearSolverType LinearSolverTranslator(
+      const std::string& linearSolverType);
+  static std::string OrderingTypeTranslator(const Ordering::OrderingType type);
+  static Ordering::OrderingType OrderingTypeTranslator(const std::string& type);
   /**@}*/
 };
 

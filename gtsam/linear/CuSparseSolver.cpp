@@ -32,9 +32,8 @@
 #include "gtsam/linear/SparseEigenSolver.h"
 
 namespace gtsam {
-  CuSparseSolver::CuSparseSolver(CuSparseSolver::CuSparseSolverType type,
-                                const Ordering &ordering)
-      : solverType_(type), ordering_(ordering) {}
+  CuSparseSolver::CuSparseSolver(const Ordering &ordering)
+      : ordering_(ordering) {}
 
 #ifdef GTSAM_USE_CUSPARSE
 
@@ -102,16 +101,13 @@ namespace gtsam {
 
   VectorValues CuSparseSolver::solve(
       const gtsam::GaussianFactorGraph &gfg) const {
-    if (solverType_ == QR) {
-      throw std::invalid_argument("This solver does not support QR.");
-    } else if (solverType_ == CHOLESKY) {
-      gttic_(CuSparseSolver_optimizeEigenCholesky);
+    gttic_(CuSparseSolver_optimizeEigenCholesky);
 
-      // ordering is used here
-      Eigen::SparseMatrix<double>
-          Ab = SparseEigenSolver::sparseJacobianEigen(gfg, ordering_);
-      auto rows = Ab.rows(), cols = Ab.cols();
-      Eigen::SparseMatrix<double> A = Ab.block(0, 0, rows, cols - 1);
+    // ordering is used here
+    Eigen::SparseMatrix<double>
+        Ab = SparseEigenSolver::sparseJacobianEigen(gfg, ordering_);
+    auto rows = Ab.rows(), cols = Ab.cols();
+    Eigen::SparseMatrix<double> A = Ab.block(0, 0, rows, cols - 1);
 //
 //      // CSC in Eigen, CSR in CUDA, so A becomes At
 //      int *At_row(NULL), *At_col(NULL);
@@ -157,101 +153,98 @@ namespace gtsam {
 //
 //      CHECK_CUSPARSE_ERROR(cusparseSetPointerMode(cspHandle, CUSPARSE_POINTER_MODE_HOST));
 
-      //--------------------------------------------------------------------------
-      // SpGEMM Computation
+    //--------------------------------------------------------------------------
+    // SpGEMM Computation
 
-      auto At = A.transpose();
-      Matrix b = At * Ab.col(cols - 1);
+    auto At = A.transpose();
+    Matrix b = At * Ab.col(cols - 1);
 
-      Eigen::SparseMatrix<double>
-          AtA(A.cols(), A.cols());
-      AtA.selfadjointView<Eigen::Upper>().rankUpdate(At);
-      AtA.makeCompressed();
+    Eigen::SparseMatrix<double>
+        AtA(A.cols(), A.cols());
+    AtA.selfadjointView<Eigen::Upper>().rankUpdate(At);
+    AtA.makeCompressed();
 
-      gttic_(CuSparseSolver_optimizeEigenCholesky_solve);
+    gttic_(CuSparseSolver_optimizeEigenCholesky_solve);
 
-      // Create the cuSolver object
-      cusolverSpHandle_t solverHandle;
-      CHECK_CUSOLVER_ERROR(cusolverSpCreate(&solverHandle));
+    // Create the cuSolver object
+    cusolverSpHandle_t solverHandle;
+    CHECK_CUSOLVER_ERROR(cusolverSpCreate(&solverHandle));
 
-      // Create the matrix descriptor
-      cusparseMatDescr_t descrA;
-      CHECK_CUSPARSE_ERROR(cusparseCreateMatDescr(&descrA));
-      CHECK_CUSPARSE_ERROR(cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL));
+    // Create the matrix descriptor
+    cusparseMatDescr_t descrA;
+    CHECK_CUSPARSE_ERROR(cusparseCreateMatDescr(&descrA));
+    CHECK_CUSPARSE_ERROR(cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL));
 
-      int *AtA_row(NULL), *AtA_col(NULL);
-      double *AtA_val(NULL);
+    int *AtA_row(NULL), *AtA_col(NULL);
+    double *AtA_val(NULL);
 
-      EigenSparseToCuSparseTranspose(AtA, &AtA_row, &AtA_col, &AtA_val);
+    EigenSparseToCuSparseTranspose(AtA, &AtA_row, &AtA_col, &AtA_val);
 
 //      std::cout << "Base of AtA: " << AtA.outerIndexPtr()[0] << std::endl;
 
-      double *x_gpu(NULL), *b_gpu(NULL);
+    double *x_gpu(NULL), *b_gpu(NULL);
 
-      CHECK_CUDA_ERROR(cudaMalloc(&x_gpu, sizeof(double) * AtA.cols()));
-      CHECK_CUDA_ERROR(cudaMalloc(&b_gpu, sizeof(double) * AtA.cols()));
+    CHECK_CUDA_ERROR(cudaMalloc(&x_gpu, sizeof(double) * AtA.cols()));
+    CHECK_CUDA_ERROR(cudaMalloc(&b_gpu, sizeof(double) * AtA.cols()));
 
-      CHECK_CUDA_ERROR(cudaMemcpy(b_gpu, b.data(),
-                 sizeof(double) * AtA.cols(),
-                 cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpy(b_gpu, b.data(),
+                sizeof(double) * AtA.cols(),
+                cudaMemcpyHostToDevice));
 
-      int singularity = 0;
-      const double tol = 0.00001;
+    int singularity = 0;
+    const double tol = 0.00001;
 
-      // no internal reordering, so only lower part (upper part of CSC) is used
-      CHECK_CUSOLVER_ERROR(cusolverSpDcsrlsvchol(
-          solverHandle, AtA.rows(), AtA.nonZeros(), descrA,
-          AtA_val, AtA_row, AtA_col, b_gpu, tol, 0, x_gpu, &singularity));
+    // no internal reordering, so only lower part (upper part of CSC) is used
+    CHECK_CUSOLVER_ERROR(cusolverSpDcsrlsvchol(
+        solverHandle, AtA.rows(), AtA.nonZeros(), descrA,
+        AtA_val, AtA_row, AtA_col, b_gpu, tol, 0, x_gpu, &singularity));
 
-      Vector x;
-      x.resize(A.cols());
-      CHECK_CUDA_ERROR(cudaMemcpy(x.data(), x_gpu, sizeof(double) * A.cols(),
-                                 cudaMemcpyDeviceToHost));
+    Vector x;
+    x.resize(A.cols());
+    CHECK_CUDA_ERROR(cudaMemcpy(x.data(), x_gpu, sizeof(double) * A.cols(),
+                                cudaMemcpyDeviceToHost));
 
-      cudaFree(AtA_val);
-      cudaFree(AtA_row);
-      cudaFree(AtA_col);
-      cudaFree(b_gpu);
-      cudaFree(x_gpu);
-      cusolverSpDestroy(solverHandle);
+    cudaFree(AtA_val);
+    cudaFree(AtA_row);
+    cudaFree(AtA_col);
+    cudaFree(b_gpu);
+    cudaFree(x_gpu);
+    cusolverSpDestroy(solverHandle);
 
-      if (singularity != -1)
-        throw std::runtime_error(std::string("ILS in CUDA Solver, singularity: ") + std::to_string(singularity));
+    if (singularity != -1)
+      throw std::runtime_error(std::string("ILS in CUDA Solver, singularity: ") + std::to_string(singularity));
 
-      gttoc_(CuSparseSolver_optimizeEigenCholesky_solve);
+    gttoc_(CuSparseSolver_optimizeEigenCholesky_solve);
 
-      // NOTE: b is reordered now, so we need to transform back the order.
-      // First find dimensions of each variable
-      std::map<Key, size_t> dims;
-      for (const boost::shared_ptr<GaussianFactor> &factor : gfg) {
-        if (!static_cast<bool>(factor))
-          continue;
+    // NOTE: b is reordered now, so we need to transform back the order.
+    // First find dimensions of each variable
+    std::map<Key, size_t> dims;
+    for (const boost::shared_ptr<GaussianFactor> &factor : gfg) {
+      if (!static_cast<bool>(factor))
+        continue;
 
-        for (auto it = factor->begin(); it != factor->end(); ++it) {
-          dims[*it] = factor->getDim(it);
-        }
+      for (auto it = factor->begin(); it != factor->end(); ++it) {
+        dims[*it] = factor->getDim(it);
       }
-
-      VectorValues vv;
-
-      std::map<Key, size_t> columnIndices;
-
-      {
-        size_t currentColIndex = 0;
-        for (const auto key : ordering_) {
-          columnIndices[key] = currentColIndex;
-          currentColIndex += dims[key];
-        }
-      }
-
-      for (const std::pair<const Key, unsigned long> keyDim : dims) {
-        vv.insert(keyDim.first, x.segment(columnIndices[keyDim.first], keyDim.second));
-      }
-
-      return vv;
     }
 
-    throw std::exception();
+    VectorValues vv;
+
+    std::map<Key, size_t> columnIndices;
+
+    {
+      size_t currentColIndex = 0;
+      for (const auto key : ordering_) {
+        columnIndices[key] = currentColIndex;
+        currentColIndex += dims[key];
+      }
+    }
+
+    for (const std::pair<const Key, unsigned long> keyDim : dims) {
+      vv.insert(keyDim.first, x.segment(columnIndices[keyDim.first], keyDim.second));
+    }
+
+    return vv;
   }
 #else
   VectorValues CuSparseSolver::solve(

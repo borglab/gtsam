@@ -35,19 +35,11 @@ namespace gtsam {
  * Eigen SparseSolver based Backend class
  */
 class GTSAM_EXPORT SuiteSparseSolver : public LinearSolver {
- public:
-  typedef enum {
-    QR,
-    CHOLESKY
-  } SuiteSparseSolverType;
-
  protected:
-  SuiteSparseSolverType solverType_ = QR;
   Ordering ordering_;
 
  public:
-  explicit SuiteSparseSolver(SuiteSparseSolver::SuiteSparseSolverType type,
-                             const Ordering &ordering);
+  explicit SuiteSparseSolver(const Ordering &ordering);
 
   /** Solves the GaussianFactorGraph using a sparse matrix solver
    *

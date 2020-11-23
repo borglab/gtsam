@@ -45,6 +45,16 @@ PCGSolver::PCGSolver(const PCGSolverParameters &p)
     : parameters_(p),
       preconditioner_(createPreconditioner(p.preconditioner_)) {}
 
+PCGSolver::PCGSolver(const LinearSolverParams &params) {
+  if (!params.iterativeParams)
+    throw std::runtime_error(
+        "LinearSolver::CreateFromParameters: iterative params has to be "
+        "assigned ...");
+  parameters_ =
+      *boost::static_pointer_cast<PCGSolverParameters>(params.iterativeParams);
+  preconditioner_ = createPreconditioner(parameters_.preconditioner_);
+}
+
 void PCGSolverParameters::setPreconditionerParams(const boost::shared_ptr<PreconditionerParameters> preconditioner) {
   preconditioner_ = preconditioner;
 }

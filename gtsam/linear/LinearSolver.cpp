@@ -37,40 +37,19 @@ boost::shared_ptr<LinearSolver> LinearSolver::CreateFromParameters(
     case LinearSolverParams::Iterative:
       return IterativeSolver::CreateFromParameters(params);
     case LinearSolverParams::PCG:
-      if (!params.iterativeParams)
-        throw std::runtime_error(
-            "LinearSolver::CreateFromParameters: iterative params has to be "
-            "assigned ...");
-      return boost::make_shared<PCGSolver>(
-          *boost::static_pointer_cast<PCGSolverParameters>(
-              params.iterativeParams));
+      return boost::make_shared<PCGSolver>(params);
     case LinearSolverParams::SUBGRAPH:
-      if (!params.iterativeParams)
-        throw std::runtime_error(
-            "LinearSolver::CreateFromParameters: iterative params has to be "
-            "assigned ...");
-      if (!params.ordering)
-        throw std::runtime_error(
-            "LinearSolver::CreateFromParameters: SubgraphSolver needs an "
-            "ordering");
-      return boost::make_shared<SubgraphSolverWrapper>(
-          *boost::static_pointer_cast<SubgraphSolverParameters>(
-              params.iterativeParams),
-          *params.ordering);
+      return boost::make_shared<SubgraphSolverWrapper>(params);
     case LinearSolverParams::EIGEN_QR:
-      return boost::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(
-          SparseEigenSolver::SparseEigenSolverType::QR, *params.ordering));
+      return boost::make_shared<SparseEigenSolver>(
+          SparseEigenSolver::SparseEigenSolverType::QR, *params.ordering);
     case LinearSolverParams::EIGEN_CHOLESKY:
-      return boost::shared_ptr<SparseEigenSolver>(new SparseEigenSolver(
-          SparseEigenSolver::SparseEigenSolverType::CHOLESKY,
-          *params.ordering));
-    case LinearSolverParams::SUITESPARSE_CHOLESKY:
-      return boost::shared_ptr<SuiteSparseSolver>(new SuiteSparseSolver(
-          SuiteSparseSolver::SuiteSparseSolverType::CHOLESKY,
-          *params.ordering));
-    case LinearSolverParams::CUSPARSE_CHOLESKY:
-      return boost::shared_ptr<CuSparseSolver>(new CuSparseSolver(
-          CuSparseSolver::CuSparseSolverType::CHOLESKY, *params.ordering));
+      return boost::make_shared<SparseEigenSolver>(
+          SparseEigenSolver::SparseEigenSolverType::CHOLESKY, *params.ordering);
+    case LinearSolverParams::SUITESPARSE:
+      return boost::make_shared<SuiteSparseSolver>(*params.ordering);
+    case LinearSolverParams::CUSPARSE:
+      return boost::make_shared<CuSparseSolver>(*params.ordering);
     case LinearSolverParams::CHOLMOD:
     default:
       throw std::runtime_error("Invalid parameters passed");

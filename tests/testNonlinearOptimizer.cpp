@@ -182,10 +182,10 @@ TEST(NonlinearOptimizer, optimization_method) {
   for (int solver = LSP::MULTIFRONTAL_CHOLESKY; solver != LSP::LAST; solver++) {
     if (solver == LSP::CHOLMOD) continue;  // CHOLMOD is an undefined option
 #ifndef GTSAM_USE_SUITESPARSE
-    if (solver == LSP::SUITESPARSE_CHOLESKY) continue;
+    if (solver == LSP::SUITESPARSE) continue;
 #endif
 #ifndef GTSAM_USE_CUSPARSE
-    if (solver == LSP::CUSPARSE_CHOLESKY) continue;
+    if (solver == LSP::CUSPARSE) continue;
 #endif
     params.linearSolverType = static_cast<LSP::LinearSolverType>(solver);
     params.iterativeParams = createIterativeParams(solver);

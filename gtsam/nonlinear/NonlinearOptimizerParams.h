@@ -134,8 +134,8 @@ class GTSAM_EXPORT NonlinearOptimizerParams {
   static constexpr LinearSolverType SUBGRAPH = LinearSolverParams::SUBGRAPH;
   static constexpr LinearSolverType EIGEN_QR = LinearSolverParams::EIGEN_QR;
   static constexpr LinearSolverType EIGEN_CHOLESKY = LinearSolverParams::EIGEN_CHOLESKY;
-  static constexpr LinearSolverType SUITESPARSE_CHOLESKY = LinearSolverParams::SUITESPARSE_CHOLESKY;
-  static constexpr LinearSolverType CUSPARSE_CHOLESKY = LinearSolverParams::CUSPARSE_CHOLESKY;
+  static constexpr LinearSolverType SUITESPARSE = LinearSolverParams::SUITESPARSE;
+  static constexpr LinearSolverType CUSPARSE = LinearSolverParams::CUSPARSE;
   static constexpr LinearSolverType LAST = LinearSolverParams::LAST;
 
   /// The type of linear solver to use in the nonlinear optimizer

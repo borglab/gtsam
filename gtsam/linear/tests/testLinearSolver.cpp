@@ -129,14 +129,14 @@ TEST(LinearOptimizer, solverCheckIndividually) {
 
   // SuiteSparse Cholesky
   #ifdef GTSAM_USE_SUITESPARSE
-  params.linearSolverType = LinearSolverParams::SUITESPARSE_CHOLESKY;
+  params.linearSolverType = LinearSolverParams::SUITESPARSE;
   actual = LinearSolver::CreateFromParameters(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
   #endif
 
   // CuSparse Cholesky
   #ifdef GTSAM_USE_CUSPARSE
-  params.linearSolverType = LinearSolverParams::CUSPARSE_CHOLESKY;
+  params.linearSolverType = LinearSolverParams::CUSPARSE;
   actual = LinearSolver::CreateFromParameters(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
   #endif
@@ -172,10 +172,10 @@ TEST(LinearOptimizer, solverCheckWithLoop) {
        solverType++) {
     if (solverType == LSP::CHOLMOD) continue;  // CHOLMOD is an undefined option
 #ifndef GTSAM_USE_SUITESPARSE
-    if (solverType == LSP::SUITESPARSE_CHOLESKY) continue;
+    if (solverType == LSP::SUITESPARSE) continue;
 #endif
 #ifndef GTSAM_USE_CUSPARSE
-    if (solverType == LSP::CUSPARSE_CHOLESKY) continue;
+    if (solverType == LSP::CUSPARSE) continue;
 #endif
     auto params = LinearSolverParams(
         static_cast<LSP::LinearSolverType>(solverType), Ordering::Colamd(gfg),
@@ -184,6 +184,24 @@ TEST(LinearOptimizer, solverCheckWithLoop) {
     auto actual = (*linearSolver)(gfg);
     EXPECT(assert_equal(expected, actual));
   }
+}
+
+/* ************************************************************************* */
+// assert Iterative, PCG, and Subgraph will throw errors if iterativeParams not
+// set
+TEST(LinearOptimizer, IterativeThrowError) {
+  LinearSolverParams params;
+  params.orderingType = Ordering::COLAMD;
+
+  params.linearSolverType = LinearSolverParams::Iterative;
+  CHECK_EXCEPTION(LinearSolver::CreateFromParameters(params),
+                  std::runtime_error)
+  params.linearSolverType = LinearSolverParams::PCG;
+  CHECK_EXCEPTION(LinearSolver::CreateFromParameters(params),
+                  std::runtime_error)
+  params.linearSolverType = LinearSolverParams::SUBGRAPH;
+  CHECK_EXCEPTION(LinearSolver::CreateFromParameters(params),
+                  std::runtime_error)
 }
 
 /* ************************************************************************* */
