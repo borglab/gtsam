@@ -45,13 +45,6 @@ class GTSAM_EXPORT EliminationSolver : public LinearSolver {
   explicit EliminationSolver(const LinearSolverParams &params)
       : params_(params) {};
 
-  bool isIterative() const override { return false; };
-
-  bool isSequential() const override {
-    return params_.linearSolverType == LinearSolverParams::SEQUENTIAL_QR ||
-           params_.linearSolverType == LinearSolverParams::SEQUENTIAL_CHOLESKY;
-  };
-
   /**
    * Solve the Gaussian factor graph using variable elimination.
    * @param gfg the factor graph to solve

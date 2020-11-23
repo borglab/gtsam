@@ -49,10 +49,6 @@ class GTSAM_EXPORT CuSparseSolver : public LinearSolver {
   explicit CuSparseSolver(CuSparseSolver::CuSparseSolverType type,
                           const Ordering &ordering);
 
-  bool isIterative() const override;
-
-  bool isSequential() const override;
-
   /** Solves the GaussianFactorGraph using a sparse matrix solver
    *
    * Uses elimination ordering during sparse matrix generation

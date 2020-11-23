@@ -108,12 +108,6 @@ class IterativeSolver : public LinearSolver {
       const VectorValues &initial) const = 0;
 
   /* satisfies LinearSolver interface */
-  bool isIterative() const override { return true; };
-
-  /* satisfies LinearSolver interface */
-  bool isSequential() const override { return false; };
-
-  /* satisfies LinearSolver interface */
   VectorValues solve(const GaussianFactorGraph &gfg) const override {
     return optimize(gfg);
   };

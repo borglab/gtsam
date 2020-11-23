@@ -146,14 +146,6 @@ namespace gtsam {
                                              Ab.col(cols));
   }
 
-  bool SparseEigenSolver::isIterative() const {
-    return false;
-  }
-
-  bool SparseEigenSolver::isSequential() const {
-    return false;
-  }
-
   VectorValues SparseEigenSolver::solve(const GaussianFactorGraph &gfg) const {
     if (solverType_ == QR) {
       gttic_(EigenOptimizer_optimizeEigenQR);

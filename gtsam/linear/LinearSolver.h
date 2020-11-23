@@ -30,10 +30,6 @@ class GTSAM_EXPORT LinearSolver {
  public:
   LinearSolver(LinearSolver &) = delete;
 
-  virtual bool isIterative() const = 0;
-
-  virtual bool isSequential() const = 0;
-
   /**
    * Solve a Gaussian Factor Graph with the solver
    * @param gfg the GFG to be optimized

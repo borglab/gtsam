@@ -31,14 +31,6 @@ namespace gtsam {
       SuiteSparseSolver::SuiteSparseSolverType type, const Ordering &ordering)
       : solverType_(type), ordering_(ordering) {}
 
-  bool SuiteSparseSolver::isIterative() const {
-    return false;
-  }
-
-  bool SuiteSparseSolver::isSequential() const {
-    return false;
-  }
-
 #ifdef GTSAM_USE_SUITESPARSE
   VectorValues SuiteSparseSolver::solve(
       const gtsam::GaussianFactorGraph &gfg) const {

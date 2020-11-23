@@ -154,12 +154,6 @@ class GTSAM_EXPORT SubgraphSolverWrapper : public LinearSolver {
                         const Ordering &ordering)
       : parameters_(parameters), ordering_(ordering) {};
 
-  /* satisfies LinearSolver interface */
-  bool isIterative() const override { return true; };
-
-  /* satisfies LinearSolver interface */
-  bool isSequential() const override { return false; };
-
   /// satisfies LinearSolver interface to solve the GaussianFactorGraph.
   VectorValues solve(const GaussianFactorGraph &gfg) const override {
     return SubgraphSolver(gfg, parameters_, ordering_).optimize();

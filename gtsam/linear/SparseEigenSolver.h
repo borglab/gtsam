@@ -52,10 +52,6 @@ class GTSAM_EXPORT SparseEigenSolver : public LinearSolver {
   explicit SparseEigenSolver(SparseEigenSolver::SparseEigenSolverType type,
                              const Ordering &ordering);
 
-  bool isIterative() const override;
-
-  bool isSequential() const override;
-
   /** Solves the GaussianFactorGraph using a sparse matrix solver
    *
    * Uses elimination ordering during sparse matrix generation in `solve(gfg)`

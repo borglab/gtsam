@@ -36,14 +36,6 @@ namespace gtsam {
                                 const Ordering &ordering)
       : solverType_(type), ordering_(ordering) {}
 
-  bool CuSparseSolver::isIterative() const {
-    return false;
-  }
-
-  bool CuSparseSolver::isSequential() const {
-    return false;
-  }
-
 #ifdef GTSAM_USE_CUSPARSE
 
 #define S1(x) #x
