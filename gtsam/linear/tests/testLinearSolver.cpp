@@ -95,11 +95,12 @@ TEST(LinearOptimizer, solverCheckIndividually) {
   actual = LinearSolver::CreateFromParameters(params)->solve(gfg);
   EXPECT(assert_equal(expected, actual));
 
-  // // cholmod - this flag exists for backwards compatibility but doesn't really
-  // // correspond to any meaningful action
-  // params.linearSolverType = LinearSolverParams::CHOLMOD;
-  // actual = LinearSolver::CreateFromParameters(params)->solve(gfg);
-  // EXPECT(assert_equal(expected, actual));
+  // cholmod - this flag exists for backwards compatibility but doesn't really
+  // correspond to any meaningful action
+  // TODO: merge CHOLMOD and SuiteSparse ?
+  params.linearSolverType = LinearSolverParams::CHOLMOD;
+  THROWS_EXCEPTION(actual =
+                       LinearSolver::CreateFromParameters(params)->solve(gfg);)
 
   // PCG - Preconditioned Conjugate Gradient, an iterative method
   params = LinearSolverParams(
