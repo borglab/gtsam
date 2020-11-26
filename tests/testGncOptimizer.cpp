@@ -12,7 +12,7 @@
 /**
  * @file    testGncOptimizer.cpp
  * @brief   Unit tests for GncOptimizer class
- * @author  Jignnan Shi
+ * @author  Jingnan Shi
  * @author  Luca Carlone
  * @author  Frank Dellaert
  */
@@ -21,12 +21,21 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <tests/smallExample.h>
 
+#include <CppUnitLite/TestHarness.h>
+
+using namespace std;
+using namespace gtsam;
+
+using symbol_shorthand::X;
+using symbol_shorthand::L;
+
 /* ************************************************************************* */
 template <class BaseOptimizerParameters>
 class GncParams {
-  using BaseOptimizer = BaseOptimizerParameters::OptimizerType;
-  GncParams(const BaseOptimizerParameters& baseOptimizerParams)
-      : baseOptimizerParams(baseOptimizerParams) {}
+public:
+
+  // using BaseOptimizer = BaseOptimizerParameters::OptimizerType;
+  GncParams(const BaseOptimizerParameters& baseOptimizerParams): baseOptimizerParams(baseOptimizerParams) {}
 
   BaseOptimizerParameters baseOptimizerParams;
 
@@ -34,64 +43,64 @@ class GncParams {
 };
 
 /* ************************************************************************* */
-template <class GncParameters>
-class GncOptimizer {
- public:
-  // types etc
+//template <class GncParameters>
+//class GncOptimizer {
+// public:
+//  // types etc
+//
+// private:
+//  FG INITIAL GncParameters params_;
+//
+// public:
+//  GncOptimizer(FG, INITIAL, const GncParameters& params) : params(params) {
+//    // Check that all noise models are Gaussian
+//  }
+//
+//  Values optimize() const {
+//    NonlinearFactorGraph currentGraph = graph_;
+//    for (i : {1, 2, 3}) {
+//      BaseOptimizer::Optimizer baseOptimizer(currentGraph, initial);
+//      VALUES currentSolution = baseOptimizer.optimize();
+//      if (converged) {
+//        return currentSolution;
+//      }
+//      graph_i = this->makeGraph(currentSolution);
+//    }
+//  }
+//
+//  NonlinearFactorGraph makeGraph(const Values& currentSolution) const {
+//    // calculate some weights
+//    this->calculateWeights();
+//    // copy the graph with new weights
+//
+//  }
+//};
 
- private:
-  FG INITIAL GncParameters params_;
-
- public:
-  GncOptimizer(FG, INITIAL, const GncParameters& params) : params(params) {
-    // Check that all noise models are Gaussian
-  }
-
-  Values optimize() const {
-    NonlinearFactorGraph currentGraph = graph_;
-    for (i : {1, 2, 3}) {
-      BaseOptimizer::Optimizer baseOptimizer(currentGraph, initial);
-      VALUES currentSolution = baseOptimizer.optimize();
-      if (converged) {
-        return currentSolution;
-      }
-      graph_i = this->makeGraph(currentSolution);
-    }
-  }
-
-  NonlinearFactorGraph makeGraph(const Values& currentSolution) const {
-    // calculate some weights
-    this->calculateWeights();
-    // copy the graph with new weights
-    
-  }
-};
-
-/* ************************************************************************* */
-TEST(GncOptimizer, calculateWeights) {
-}
-
-/* ************************************************************************* */
-TEST(GncOptimizer, copyGraph) {
-}
+///* ************************************************************************* */
+//TEST(GncOptimizer, calculateWeights) {
+//}
+//
+///* ************************************************************************* */
+//TEST(GncOptimizer, copyGraph) {
+//}
 
 /* ************************************************************************* */
 TEST(GncOptimizer, makeGraph) {
   // has to have Gaussian noise models !
-  auto fg = example::createReallyNonlinearFactorGraph();
+  auto fg = example::createReallyNonlinearFactorGraph(); // just a unary factor on a 2D point
 
   Point2 p0(3, 3);
   Values initial;
   initial.insert(X(1), p0);
 
   LevenbergMarquardtParams lmParams;
-  GncParams gncParams(lmParams);
-  auto gnc = GncOptimizer(fg, initial, gncParams);
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+//  auto gnc = GncOptimizer(fg, initial, gncParams);
 
-  NonlinearFactorGraph actual = gnc.makeGraph(initial);
+//  NonlinearFactorGraph actual = gnc.makeGraph(initial);
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST(GncOptimizer, optimize) {
   // has to have Gaussian noise models !
   auto fg = example::createReallyNonlinearFactorGraph();
