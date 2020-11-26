@@ -88,20 +88,28 @@ void NonlinearOptimizer::defaultOptimize() {
   }
 
   // Iterative loop
+  double newError = currentError; // used to avoid repeated calls to error()
   do {
     // Do next iteration
-    currentError = error(); // TODO(frank): don't do this twice at first !? Computed above!
+    currentError = newError;
     iterate();
     tictoc_finishedIteration();
+
+    // Update newError for either printouts or conditional-end checks:
+    newError = error();
+
+    // User hook:
+    if (params.iterationHook)
+      params.iterationHook(iterations(), currentError, newError);
 
     // Maybe show output
     if (params.verbosity >= NonlinearOptimizerParams::VALUES)
       values().print("newValues");
     if (params.verbosity >= NonlinearOptimizerParams::ERROR)
-      cout << "newError: " << error() << endl;
+      cout << "newError: " << newError << endl;
   } while (iterations() < params.maxIterations &&
            !checkConvergence(params.relativeErrorTol, params.absoluteErrorTol, params.errorTol,
-                             currentError, error(), params.verbosity) && std::isfinite(currentError));
+                             currentError, newError, params.verbosity) && std::isfinite(currentError));
 
   // Printing if verbose
   if (params.verbosity >= NonlinearOptimizerParams::TERMINATION) {
