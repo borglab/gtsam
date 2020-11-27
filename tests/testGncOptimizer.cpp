@@ -18,6 +18,7 @@
  */
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <tests/smallExample.h>
 
@@ -37,44 +38,51 @@ public:
   // using BaseOptimizer = BaseOptimizerParameters::OptimizerType;
   GncParams(const BaseOptimizerParameters& baseOptimizerParams): baseOptimizerParams(baseOptimizerParams) {}
 
+  // default constructor
+  GncParams(): baseOptimizerParams() {}
+
   BaseOptimizerParameters baseOptimizerParams;
 
   /// any other specific GNC parameters:
 };
 
 /* ************************************************************************* */
-//template <class GncParameters>
-//class GncOptimizer {
-// public:
-//  // types etc
-//
-// private:
-//  FG INITIAL GncParameters params_;
-//
-// public:
-//  GncOptimizer(FG, INITIAL, const GncParameters& params) : params(params) {
-//    // Check that all noise models are Gaussian
-//  }
-//
+template<class GncParameters>
+class GncOptimizer {
+public:
+  // types etc
+
+private:
+  NonlinearFactorGraph nfg_;
+  Values state_;
+  GncParameters params_;
+
+public:
+  GncOptimizer(const NonlinearFactorGraph& graph,
+      const Values& initialValues, const GncParameters& params = GncParameters()) :
+        nfg_(graph), state_(initialValues), params_(params) {
+    // TODO: Check that all noise models are Gaussian
+  }
+
 //  Values optimize() const {
 //    NonlinearFactorGraph currentGraph = graph_;
-//    for (i : {1, 2, 3}) {
-//      BaseOptimizer::Optimizer baseOptimizer(currentGraph, initial);
-//      VALUES currentSolution = baseOptimizer.optimize();
-//      if (converged) {
-//        return currentSolution;
-//      }
-//      graph_i = this->makeGraph(currentSolution);
+//  for (i : {1, 2, 3}) {
+//    BaseOptimizer::Optimizer baseOptimizer(currentGraph, initial);
+//    VALUES currentSolution = baseOptimizer.optimize();
+//    if (converged) {
+//      return currentSolution;
 //    }
+//    graph_i = this->makeGraph(currentSolution);
 //  }
+//}
+
+//NonlinearFactorGraph makeGraph(const Values& currentSolution) const {
+//  // calculate some weights
+//  this->calculateWeights();
+//  // copy the graph with new weights
 //
-//  NonlinearFactorGraph makeGraph(const Values& currentSolution) const {
-//    // calculate some weights
-//    this->calculateWeights();
-//    // copy the graph with new weights
-//
-//  }
-//};
+//}
+};
 
 ///* ************************************************************************* */
 //TEST(GncOptimizer, calculateWeights) {
@@ -83,6 +91,32 @@ public:
 ///* ************************************************************************* */
 //TEST(GncOptimizer, copyGraph) {
 //}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, gncParamsConstructor) {
+
+  //check params are correctly parsed
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams1(lmParams);
+  CHECK(lmParams.equals(gncParams1.baseOptimizerParams));
+
+  // check also default constructor
+  GncParams<LevenbergMarquardtParams> gncParams1b;
+  CHECK(lmParams.equals(gncParams1b.baseOptimizerParams));
+
+  // and check params become different if we change lmParams
+  lmParams.setVerbosity("DELTA");
+  CHECK(!lmParams.equals(gncParams1.baseOptimizerParams));
+
+  // and same for GN
+  GaussNewtonParams gnParams;
+  GncParams<GaussNewtonParams> gncParams2(gnParams);
+  CHECK(gnParams.equals(gncParams2.baseOptimizerParams));
+
+  // check default constructor
+  GncParams<GaussNewtonParams> gncParams2b;
+  CHECK(gnParams.equals(gncParams2b.baseOptimizerParams));
+}
 
 /* ************************************************************************* */
 TEST(GncOptimizer, makeGraph) {
@@ -95,7 +129,7 @@ TEST(GncOptimizer, makeGraph) {
 
   LevenbergMarquardtParams lmParams;
   GncParams<LevenbergMarquardtParams> gncParams(lmParams);
-//  auto gnc = GncOptimizer(fg, initial, gncParams);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
 
 //  NonlinearFactorGraph actual = gnc.makeGraph(initial);
 }
