@@ -104,8 +104,8 @@ class TestVisualISAMExample(GtsamTestCase):
         optimize = True
         rank_tol = 1e-9
 
-        triangulated_landmark = triangulatePoint3(cameras, measurements, rank_tol, optimize)
-        self.gtsamAssertEquals(landmark, triangulated_landmark, 1e-2)
+        actual = triangulatePoint3(cameras, measurements, rank_tol, optimize)
+        self.gtsamAssertEquals(landmark, actual, 1e-2)
 
     def test_distinct_Ks_Bundler(self):
         K1 = Cal3Bundler(1500, 0, 0, 640, 480)
@@ -132,8 +132,8 @@ class TestVisualISAMExample(GtsamTestCase):
         optimize = True
         rank_tol = 1e-9
 
-        triangulated_landmark = triangulatePoint3(cameras, measurements, rank_tol, optimize)
-        self.gtsamAssertEquals(landmark, triangulated_landmark, 1e-2) 
+        actual = triangulatePoint3(cameras, measurements, rank_tol, optimize)
+        self.gtsamAssertEquals(landmark, actual, 1e-2) 
 
         
 
