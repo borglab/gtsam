@@ -369,8 +369,9 @@ inline NonlinearFactorGraph sharedNonRobustFactorGraphWithOutliers() {
   boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
   Point2 z(0.0, 0.0);
   double sigma = 0.1;
-  boost::shared_ptr<smallOptimize::UnaryFactor> factor(
-      new smallOptimize::UnaryFactor(z, noiseModel::Isotropic::Sigma(2,sigma), X(1)));
+
+  boost::shared_ptr<PriorFactor<Point2>> factor(
+      new PriorFactor<Point2>(X(1), z, noiseModel::Isotropic::Sigma(2,sigma)));
   // 3 noiseless inliers
   fg->push_back(factor);
   fg->push_back(factor);
@@ -378,8 +379,8 @@ inline NonlinearFactorGraph sharedNonRobustFactorGraphWithOutliers() {
 
   // 1 outlier
   Point2 z_out(1.0, 0.0);
-  boost::shared_ptr<smallOptimize::UnaryFactor> factor_out(
-      new smallOptimize::UnaryFactor(z_out, noiseModel::Isotropic::Sigma(2,sigma), X(1)));
+  boost::shared_ptr<PriorFactor<Point2>> factor_out(
+      new PriorFactor<Point2>(X(1), z_out, noiseModel::Isotropic::Sigma(2,sigma)));
   fg->push_back(factor_out);
 
   return *fg;
@@ -393,8 +394,8 @@ inline NonlinearFactorGraph sharedRobustFactorGraphWithOutliers() {
   double sigma = 0.1;
   auto gmNoise = noiseModel::Robust::Create(
             noiseModel::mEstimator::GemanMcClure::Create(1.0), noiseModel::Isotropic::Sigma(2,sigma));
-  boost::shared_ptr<smallOptimize::UnaryFactor> factor(
-      new smallOptimize::UnaryFactor(z, gmNoise, X(1)));
+  boost::shared_ptr<PriorFactor<Point2>> factor(
+      new PriorFactor<Point2>(X(1), z, gmNoise));
   // 3 noiseless inliers
   fg->push_back(factor);
   fg->push_back(factor);
@@ -402,8 +403,8 @@ inline NonlinearFactorGraph sharedRobustFactorGraphWithOutliers() {
 
   // 1 outlier
   Point2 z_out(1.0, 0.0);
-  boost::shared_ptr<smallOptimize::UnaryFactor> factor_out(
-      new smallOptimize::UnaryFactor(z_out, gmNoise, X(1)));
+  boost::shared_ptr<PriorFactor<Point2>> factor_out(
+      new PriorFactor<Point2>(X(1), z_out, gmNoise));
   fg->push_back(factor_out);
 
   return *fg;
