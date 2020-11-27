@@ -112,14 +112,18 @@ private:
 public:
   GncOptimizer(const NonlinearFactorGraph& graph,
       const Values& initialValues, const GncParameters& params = GncParameters()) :
-        nfg_(graph), state_(initialValues), params_(params) {
+        state_(initialValues), params_(params) {
 
     // make sure all noiseModels are Gaussian or convert to Gaussian
-    for (size_t i = 0; i < nfg_.size(); i++) {
-      if(nfg_[i]){
-        // NonlinearFactor factor = nfg_[i]->clone();
-        nfg_[i]->
-
+    for (size_t i = 0; i < graph.size(); i++) {
+      if(graph[i]){
+        auto &factor = boost::dynamic_pointer_cast<NoiseModelFactor>(nfg_[i]);
+        auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(factor->noiseModel());
+        if(robust){ // if the factor has a robust loss, we have to change it:
+          nfg_.push_back(factor->cloneWithNewNoiseModel(factor->noiseModel()));
+        }{ // else we directly push it back
+          nfg_.push_back(factor);
+        }
       }
     }
   }
