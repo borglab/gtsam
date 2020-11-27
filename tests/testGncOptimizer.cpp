@@ -195,7 +195,7 @@ public:
   Vector calculateWeights(const Values currentEstimate, const double mu){
     Vector weights = Vector::Zero(nfg_.size());
     switch(params_.lossType) {
-    case GncParameters::GM:
+    case GncParameters::GM: // use eq (12) in GNC paper
       for (size_t k = 0; k < nfg_.size(); k++) {
         if(nfg_[k]){
           double u2_k = nfg_[k]->error(currentEstimate); // squared (and whitened) residual
@@ -315,10 +315,29 @@ TEST(GncOptimizer, checkMuConvergence) {
   CHECK(gnc.checkMuConvergence(mu));
 }
 
-///* ************************************************************************* */
-//TEST(GncOptimizer, calculateWeights) {
-//}
-//
+/* ************************************************************************* */
+TEST(GncOptimizer, calculateWeights) {
+  // has to have Gaussian noise models !
+    auto fg = example::sharedNonRobustFactorGraphWithOutliers();
+
+    Point2 p0(0, 0);
+    Values initial;
+    initial.insert(X(1), p0);
+
+    // we have 4 factors, 3 with zero errors (inliers), 1 with error 50 = 0.5 * 1/sigma^2 || [1;0] - [0;0] ||^2 (outlier)
+    Vector weights_expected = Vector::Zero(4);
+    weights_expected[0] = 1.0; // zero error
+    weights_expected[1] = 1.0; // zero error
+    weights_expected[2] = 1.0; // zero error
+    weights_expected[3] = std::pow(1.0 / (50.0 + 1.0),2); // outlier, error = 50
+
+    GaussNewtonParams gnParams;
+    GncParams<GaussNewtonParams> gncParams(gnParams);
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
+    double mu = 1.0;
+    Vector weights_actual = gnc.calculateWeights(initial,mu);
+    CHECK(assert_equal(weights_expected, weights_actual, tol));
+}
 
 /* ************************************************************************* *
 TEST(GncOptimizer, makeGraph) {
