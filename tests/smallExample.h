@@ -342,8 +342,23 @@ struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
     return (h(x) - z_);
   }
 
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+        return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+            gtsam::NonlinearFactor::shared_ptr(new UnaryFactor(*this))); }
 };
 
+}
+
+/* ************************************************************************* */
+inline NonlinearFactorGraph nonlinearFactorGraphWithGivenSigma(const double sigma) {
+  using symbol_shorthand::X;
+  using symbol_shorthand::L;
+  boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
+  Point2 z(1.0, 0.0);
+  boost::shared_ptr<smallOptimize::UnaryFactor> factor(
+      new smallOptimize::UnaryFactor(z, noiseModel::Isotropic::Sigma(2,sigma), X(1)));
+  fg->push_back(factor);
+  return *fg;
 }
 
 /* ************************************************************************* */
