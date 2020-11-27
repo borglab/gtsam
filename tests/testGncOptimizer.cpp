@@ -113,7 +113,15 @@ public:
   GncOptimizer(const NonlinearFactorGraph& graph,
       const Values& initialValues, const GncParameters& params = GncParameters()) :
         nfg_(graph), state_(initialValues), params_(params) {
-    // TODO: Check that all noise models are Gaussian
+
+    // make sure all noiseModels are Gaussian or convert to Gaussian
+    for (size_t i = 0; i < nfg_.size(); i++) {
+      if(nfg_[i]){
+        // NonlinearFactor factor = nfg_[i]->clone();
+        nfg_[i]->
+
+      }
+    }
   }
 
   NonlinearFactorGraph getFactors() const { return NonlinearFactorGraph(nfg_); }
@@ -199,7 +207,7 @@ public:
       for (size_t k = 0; k < nfg_.size(); k++) {
         if(nfg_[k]){
           double u2_k = nfg_[k]->error(currentEstimate); // squared (and whitened) residual
-          weights[k] = std::pow( ( mu*mu )/( u2_k + mu*mu ) , 2);
+          weights[k] = std::pow( ( mu*params_.barcSq )/( u2_k + mu*params_.barcSq ) , 2);
         }
       }
       return weights;
@@ -257,6 +265,25 @@ TEST(GncOptimizer, gncConstructor) {
   CHECK(gnc.getFactors().equals(fg));
   CHECK(gnc.getState().equals(initial));
   CHECK(gnc.getParams().equals(gncParams));
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, gncConstructorWithRobustGraphAsInput) {
+  // simple graph with Gaussian noise model
+  auto fg = example::createReallyNonlinearFactorGraph();
+  // same graph with robust noise model
+  auto fg_robust = example::sharedRobustFactorGraphWithOutliers();
+
+  Point2 p0(3, 3);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg_robust, initial, gncParams);
+
+  // make sure that when parsing the graph is transformed into one without robust loss
+  CHECK( fg.equals(gnc.getFactors()) );
 }
 
 /* ************************************************************************* */
@@ -337,22 +364,33 @@ TEST(GncOptimizer, calculateWeights) {
     double mu = 1.0;
     Vector weights_actual = gnc.calculateWeights(initial,mu);
     CHECK(assert_equal(weights_expected, weights_actual, tol));
+
+    mu = 2.0;
+    double barcSq = 5.0;
+    weights_expected[3] = std::pow(mu*barcSq / (50.0 + mu*barcSq),2); // outlier, error = 50
+    gncParams.setInlierThreshold(barcSq);
+    auto gnc2 = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
+    weights_actual = gnc2.calculateWeights(initial,mu);
+    CHECK(assert_equal(weights_expected, weights_actual, tol));
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST(GncOptimizer, makeGraph) {
-  // has to have Gaussian noise models !
-  auto fg = example::createReallyNonlinearFactorGraph(); // just a unary factor on a 2D point
-
-  Point2 p0(3, 3);
-  Values initial;
-  initial.insert(X(1), p0);
-
-  LevenbergMarquardtParams lmParams;
-  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
-  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
-
-//  NonlinearFactorGraph actual = gnc.makeGraph(initial);
+//  // simple graph with Gaussian noise model
+//  auto fg = example::createReallyNonlinearFactorGraph();
+//  // same graph with robust noise model
+//  auto fg_robust = example::sharedRobustFactorGraphWithOutliers();
+//
+//  Point2 p0(3, 3);
+//  Values initial;
+//  initial.insert(X(1), p0);
+//
+//  LevenbergMarquardtParams lmParams;
+//  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+//  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg_robust, initial, gncParams);
+//
+//  // make sure that when parsing the graph is transformed into one without robust loss
+//  CHECK( fg.equals(gnc.getFactors()) );
 }
 
 /* ************************************************************************* */
