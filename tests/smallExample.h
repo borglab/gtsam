@@ -364,6 +364,53 @@ inline NonlinearFactorGraph createReallyNonlinearFactorGraph() {
 }
 
 /* ************************************************************************* */
+inline NonlinearFactorGraph sharedNonRobustFactorGraphWithOutliers() {
+  using symbol_shorthand::X;
+  boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
+  Point2 z(0.0, 0.0);
+  double sigma = 0.1;
+  boost::shared_ptr<smallOptimize::UnaryFactor> factor(
+      new smallOptimize::UnaryFactor(z, noiseModel::Isotropic::Sigma(2,sigma), X(1)));
+  // 3 noiseless inliers
+  fg->push_back(factor);
+  fg->push_back(factor);
+  fg->push_back(factor);
+
+  // 1 outlier
+  Point2 z_out(1.0, 0.0);
+  boost::shared_ptr<smallOptimize::UnaryFactor> factor_out(
+      new smallOptimize::UnaryFactor(z_out, noiseModel::Isotropic::Sigma(2,sigma), X(1)));
+  fg->push_back(factor_out);
+
+  return *fg;
+}
+
+/* ************************************************************************* */
+inline NonlinearFactorGraph sharedRobustFactorGraphWithOutliers() {
+  using symbol_shorthand::X;
+  boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
+  Point2 z(0.0, 0.0);
+  double sigma = 0.1;
+  auto gmNoise = noiseModel::Robust::Create(
+            noiseModel::mEstimator::GemanMcClure::Create(1.0), noiseModel::Isotropic::Sigma(2,sigma));
+  boost::shared_ptr<smallOptimize::UnaryFactor> factor(
+      new smallOptimize::UnaryFactor(z, gmNoise, X(1)));
+  // 3 noiseless inliers
+  fg->push_back(factor);
+  fg->push_back(factor);
+  fg->push_back(factor);
+
+  // 1 outlier
+  Point2 z_out(1.0, 0.0);
+  boost::shared_ptr<smallOptimize::UnaryFactor> factor_out(
+      new smallOptimize::UnaryFactor(z_out, gmNoise, X(1)));
+  fg->push_back(factor_out);
+
+  return *fg;
+}
+
+
+/* ************************************************************************* */
 inline std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T) {
   using namespace impl;
   using symbol_shorthand::X;
