@@ -15,6 +15,9 @@
  * @author  Jingnan Shi
  * @author  Luca Carlone
  * @author  Frank Dellaert
+ *
+ * Implementation of the paper: Yang, Antonante, Tzoumas, Carlone, "Graduated Non-Convexity for Robust Spatial Perception:
+ * From Non-Minimal Solvers to Global Outlier Rejection", RAL, 2020. (arxiv version: https://arxiv.org/pdf/1909.08605.pdf)
  */
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -190,11 +193,22 @@ public:
 
   /// calculate gnc weights
   Vector calculateWeights(const Values currentEstimate, const double mu){
-    Vector weights = Vector::Ones(nfg_.size());
-    return weights;
+    Vector weights = Vector::Zero(nfg_.size());
+    switch(params_.lossType) {
+    case GncParameters::GM:
+      for (size_t k = 0; k < nfg_.size(); k++) {
+        if(nfg_[k]){
+          double u2_k = nfg_[k]->error(currentEstimate); // squared (and whitened) residual
+          weights[k] = std::pow( ( mu*mu )/( u2_k + mu*mu ) , 2);
+        }
+      }
+      return weights;
+    default:
+      throw std::runtime_error(
+          "GncOptimizer::calculateWeights: called with unknown loss type.");
+    }
   }
 };
-
 
 /* ************************************************************************* */
 TEST(GncOptimizer, gncParamsConstructor) {
@@ -245,10 +259,62 @@ TEST(GncOptimizer, gncConstructor) {
   CHECK(gnc.getParams().equals(gncParams));
 }
 
-///* ************************************************************************* */
-//TEST(GncOptimizer, calculateWeights) {
-//}
-//
+/* ************************************************************************* */
+TEST(GncOptimizer, initializeMu) {
+  // has to have Gaussian noise models !
+  auto fg = example::createReallyNonlinearFactorGraph();
+
+  Point2 p0(3, 3);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  gncParams.setLossType(GncParams<LevenbergMarquardtParams>::RobustLossType::GM);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+  EXPECT_DOUBLES_EQUAL(gnc.initializeMu(), 2 * 198.999, 1e-3); // according to rmk 5 in the gnc paper: m0 = 2 rmax^2 / barcSq (barcSq=1 in this example)
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, updateMu) {
+  // has to have Gaussian noise models !
+  auto fg = example::createReallyNonlinearFactorGraph();
+
+  Point2 p0(3, 3);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  gncParams.setLossType(GncParams<LevenbergMarquardtParams>::RobustLossType::GM);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+
+  double mu = 5.0;
+  EXPECT_DOUBLES_EQUAL(gnc.updateMu(mu), mu / 1.4, tol);
+
+  // check it correctly saturates to 1 for GM
+  mu = 1.2;
+  EXPECT_DOUBLES_EQUAL(gnc.updateMu(mu), 1.0, tol);
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, checkMuConvergence) {
+  // has to have Gaussian noise models !
+  auto fg = example::createReallyNonlinearFactorGraph();
+
+  Point2 p0(3, 3);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  gncParams.setLossType(GncParams<LevenbergMarquardtParams>::RobustLossType::GM);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+
+  double mu = 1.0;
+  CHECK(gnc.checkMuConvergence(mu));
+}
+
 ///* ************************************************************************* */
 //TEST(GncOptimizer, calculateWeights) {
 //}
