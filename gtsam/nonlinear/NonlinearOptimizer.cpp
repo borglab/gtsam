@@ -94,6 +94,13 @@ void NonlinearOptimizer::defaultOptimize() {
     iterate();
     tictoc_finishedIteration();
 
+    // Update newError for either printouts or conditional-end checks:
+    newError = error();
+
+    // User hook:
+    if (params.iterationHook)
+      params.iterationHook(iterations(), currentError, newError);
+
     // Maybe show output
     if (params.verbosity >= NonlinearOptimizerParams::VALUES)
       values().print("newValues");

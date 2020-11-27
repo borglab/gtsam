@@ -1181,7 +1181,7 @@ gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
     const gtsam::Point2Vector& measurements, double rank_tol,
     bool optimize);
-    
+
 //*************************************************************************
 // Symbolic
 //*************************************************************************
@@ -2795,6 +2795,7 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 class SfmTrack {
   SfmTrack();
   SfmTrack(const gtsam::Point3& pt);
+  const Point3& point3() const;
 
   double r;
   double g;
@@ -2802,7 +2803,6 @@ class SfmTrack {
   // TODO Need to close wrap#10 to allow this to work.
   // std::vector<pair<size_t, gtsam::Point2>> measurements;
 
-  const Point3& point3() const;
   size_t number_measurements() const;
   pair<size_t, gtsam::Point2> measurement(size_t idx) const;
   pair<size_t, size_t> siftIndex(size_t idx) const;
