@@ -253,9 +253,6 @@ TEST(GncOptimizer, gncConstructor) {
 //TEST(GncOptimizer, calculateWeights) {
 //}
 //
-///* ************************************************************************* */
-//TEST(GncOptimizer, copyGraph) {
-//}
 
 /* ************************************************************************* *
 TEST(GncOptimizer, makeGraph) {
@@ -274,7 +271,7 @@ TEST(GncOptimizer, makeGraph) {
 }
 
 /* ************************************************************************* */
-TEST(GncOptimizer, optimize) {
+TEST(GncOptimizer, optimizeSimple) {
   // has to have Gaussian noise models !
   auto fg = example::createReallyNonlinearFactorGraph();
 
@@ -286,10 +283,38 @@ TEST(GncOptimizer, optimize) {
   GncParams<LevenbergMarquardtParams> gncParams(lmParams);
   auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
 
-  gncParams.print("");
-
   Values actual = gnc.optimize();
   DOUBLES_EQUAL(0, fg.error(actual), tol);
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, optimize) {
+  // has to have Gaussian noise models !
+  auto fg = example::sharedNonRobustFactorGraphWithOutliers();
+
+  Point2 p0(1, 0);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  // try with nonrobust cost function and standard GN
+  GaussNewtonParams gnParams;
+  GaussNewtonOptimizer gn(fg, initial, gnParams);
+  Values gn_results = gn.optimize();
+  // converges to incorrect point due to lack of robustness to an outlier, ideal solution is Point2(0,0)
+  CHECK(assert_equal(gn_results.at<Point2>(X(1)), Point2(1.31812,0.0), 1e-3));
+
+  // try with robust loss function and standard GN
+  auto fg_robust = example::sharedRobustFactorGraphWithOutliers(); // same as fg, but with factors wrapped in Geman McClure losses
+  GaussNewtonOptimizer gn2(fg_robust, initial, gnParams);
+  Values gn2_results = gn2.optimize();
+  // converges to incorrect point, this time due to the nonconvexity of the loss
+  CHECK(assert_equal(gn2_results.at<Point2>(X(1)), Point2(1.18712,0.0), 1e-3));
+
+  // .. but graduated nonconvexity ensures both robustness and convergence in the face of nonconvexity
+  GncParams<GaussNewtonParams> gncParams(gnParams);
+  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
+  Values gnc_result = gnc.optimize();
+  CHECK(assert_equal(gnc_result.at<Point2>(X(1)), Point2(0.0,0.0), 1e-3));
 }
 
 /* ************************************************************************* */
