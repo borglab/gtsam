@@ -1175,17 +1175,13 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
     gtsam::Cal3Bundler* sharedCal, const gtsam::Point2Vector& measurements,
     double rank_tol, bool optimize);
-
-//********PROBLEM PT HERE*****************************************************//
-gtsam::Point3 triangulatePoint3(
-    const gtsam::CameraSetCal3_S2& cameras,
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
     const gtsam::Point2Vector& measurements, double rank_tol,
     bool optimize);
-
-gtsam::Point3 triangulatePoint3(
-    const gtsam::CameraSetCal3Bundler& cameras,
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
     const gtsam::Point2Vector& measurements, double rank_tol,
     bool optimize);
+    
 //*************************************************************************
 // Symbolic
 //*************************************************************************
