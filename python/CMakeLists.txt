@@ -38,6 +38,8 @@ set(ignore
     gtsam::Pose3Vector
     gtsam::KeyVector
     gtsam::BinaryMeasurementsUnit3
+    gtsam::CameraSetCal3Bundler
+    gtsam::CameraSetCal3_S2
     gtsam::KeyPairDoubleMap)
 
 pybind_wrap(gtsam_py # target

@@ -1108,6 +1108,32 @@ typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
 //typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
 
+class CameraSetCal3Bundler {
+  CameraSetCal3Bundler();
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  gtsam::PinholeCameraCal3Bundler at(size_t i) const;
+  void push_back(gtsam::PinholeCameraCal3Bundler& cam) const;
+};
+
+class CameraSetCal3_S2 {
+  CameraSetCal3_S2();
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  gtsam::PinholeCameraCal3_S2 at(size_t i) const;
+  void push_back(gtsam::PinholeCameraCal3_S2& cam) const;
+};
+
 #include <gtsam/geometry/StereoCamera.h>
 class StereoCamera {
   // Standard Constructors and Named Constructors
@@ -1149,7 +1175,13 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
     gtsam::Cal3Bundler* sharedCal, const gtsam::Point2Vector& measurements,
     double rank_tol, bool optimize);
-
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
+    const gtsam::Point2Vector& measurements, double rank_tol,
+    bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
+    const gtsam::Point2Vector& measurements, double rank_tol,
+    bool optimize);
+    
 //*************************************************************************
 // Symbolic
 //*************************************************************************
