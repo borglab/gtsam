@@ -38,8 +38,12 @@ static double tol = 1e-7;
 template <class BaseOptimizerParameters>
 class GncParams {
 public:
+  /** Verbosity levels */
+  enum VerbosityGNC {
+    SILENT = 0, SUMMARY, VALUES
+  };
 
-  /** See NonlinearOptimizerParams::verbosity */
+  /** Choice of robust loss function for GNC */
   enum RobustLossType {
     GM /*Geman McClure*/, TLS /*Truncated least squares*/
   };
@@ -51,7 +55,8 @@ public:
     lossType(GM),      /* default loss*/
     maxIterations(100), /* maximum number of iterations*/
     barcSq(1.0), /* a factor is considered an inlier if factor.error() < barcSq. Note that factor.error() whitens by the covariance*/
-    muStep(1.4){}/* multiplicative factor to reduce/increase the mu in gnc */
+    muStep(1.4), /* multiplicative factor to reduce/increase the mu in gnc */
+    verbosityGNC(SILENT){}/* verbosity level */
 
   // default constructor
   GncParams(): baseOptimizerParams() {}
@@ -62,16 +67,18 @@ public:
   size_t maxIterations;
   double barcSq;
   double muStep;
+  VerbosityGNC verbosityGNC;
 
-  void setLossType(RobustLossType type){ lossType = type; }
-  void setMaxIterations(size_t maxIter){
+  void setLossType(const RobustLossType type){ lossType = type; }
+  void setMaxIterations(const size_t maxIter){
     std::cout
     << "setMaxIterations: changing the max number of iterations might lead to less accurate solutions and is not recommended! "
     << std::endl;
     maxIterations = maxIter;
   }
-  void setInlierThreshold(double inth){ barcSq = inth; }
-  void setMuStep(double step){ muStep = step; }
+  void setInlierThreshold(const double inth){ barcSq = inth; }
+  void setMuStep(const double step){ muStep = step; }
+  void setVerbosityGNC(const VerbosityGNC verbosity) { verbosityGNC = verbosity; }
 
   /// equals
   bool equals(const GncParams& other, double tol = 1e-9) const {
@@ -79,7 +86,8 @@ public:
         && lossType == other.lossType
         && maxIterations == other.maxIterations
         && std::fabs(barcSq - other.barcSq) <= tol
-        && std::fabs(muStep - other.muStep) <= tol;
+        && std::fabs(muStep - other.muStep) <= tol
+        && verbosityGNC == other.verbosityGNC;
   }
 
   /// print function
@@ -94,6 +102,7 @@ public:
     std::cout << "maxIterations: " << maxIterations << "\n";
     std::cout << "barcSq: " << barcSq << "\n";
     std::cout << "muStep: " << muStep << "\n";
+    std::cout << "verbosityGNC: " << verbosityGNC << "\n";
     baseOptimizerParams.print(str);
   }
 };
@@ -143,16 +152,31 @@ public:
     Values result = baseOptimizer.optimize();
     double mu = initializeMu();
     for(size_t iter=0; iter < params_.maxIterations; iter++){
+
+      // display info
+      if (params_.verbosityGNC >= GncParameters::VerbosityGNC::VALUES){
+        result.print("result\n");
+        std::cout << "mu: " << mu << std::endl;
+        std::cout << "weights: " << weights << std::endl;
+      }
       // weights update
       weights = calculateWeights(result, mu);
 
       // variable/values update
       NonlinearFactorGraph graph_iter = this->makeWeightedGraph(weights);
       GaussNewtonOptimizer baseOptimizer_iter(graph_iter, state_);
-      Values result = baseOptimizer.optimize();
+      result = baseOptimizer.optimize();
 
       // stopping condition
-      if( checkMuConvergence(mu) ) { break; }
+      if( checkMuConvergence(mu) ) {
+        // display info
+        if (params_.verbosityGNC >= GncParameters::VerbosityGNC::SUMMARY){
+          std::cout << "final iterations: " << iter << std::endl;
+          std::cout << "final mu: " << mu << std::endl;
+          std::cout << "final weights: " << weights << std::endl;
+        }
+        break;
+      }
 
       // otherwise update mu
       mu = updateMu(mu);
@@ -160,7 +184,7 @@ public:
     return result;
   }
 
-  /// initialize the gnc parameter mu such that loss is approximately convex
+  /// initialize the gnc parameter mu such that loss is approximately convex (remark 5 in GNC paper)
   double initializeMu() const {
     // compute largest error across all factors
     double rmax_sq = 0.0;
@@ -305,9 +329,7 @@ TEST(GncOptimizer, gncConstructorWithRobustGraphAsInput) {
   LevenbergMarquardtParams lmParams;
   GncParams<LevenbergMarquardtParams> gncParams(lmParams);
   auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg_robust, initial, gncParams);
-//  fg.print("fg\n");
-//  fg_robust.print("fg_robust\n");
-//  gnc.getFactors().print("gnc\n");
+
   // make sure that when parsing the graph is transformed into one without robust loss
   CHECK( fg.equals(gnc.getFactors()) );
 }
@@ -470,6 +492,7 @@ TEST(GncOptimizer, optimize) {
 
   // .. but graduated nonconvexity ensures both robustness and convergence in the face of nonconvexity
   GncParams<GaussNewtonParams> gncParams(gnParams);
+  gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::VerbosityGNC::VALUES);
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   Values gnc_result = gnc.optimize();
   CHECK(assert_equal(Point2(0.0,0.0), gnc_result.at<Point2>(X(1)), 1e-3));
