@@ -147,7 +147,7 @@ public:
       weights = calculateWeights(result, mu);
 
       // variable/values update
-      NonlinearFactorGraph graph_iter = this->makeGraph(weights);
+      NonlinearFactorGraph graph_iter = this->makeWeightedGraph(weights);
       GaussNewtonOptimizer baseOptimizer_iter(graph_iter, state_);
       Values result = baseOptimizer.optimize();
 
@@ -202,8 +202,25 @@ public:
   }
 
   /// create a graph where each factor is weighted by the gnc weights
-  NonlinearFactorGraph makeGraph(const Vector& weights) const {
-   return NonlinearFactorGraph(nfg_);
+  NonlinearFactorGraph makeWeightedGraph(const Vector& weights) const {
+    // make sure all noiseModels are Gaussian or convert to Gaussian
+    NonlinearFactorGraph newGraph;
+    newGraph.resize(nfg_.size());
+    for (size_t i = 0; i < nfg_.size(); i++) {
+      if(nfg_[i]){
+        NoiseModelFactor::shared_ptr factor = boost::dynamic_pointer_cast<NoiseModelFactor>(nfg_[i]);
+        noiseModel::Gaussian::shared_ptr noiseModel = boost::dynamic_pointer_cast<noiseModel::Gaussian>(factor->noiseModel());
+        if(noiseModel){
+          Matrix newInfo = weights[i] * noiseModel->information();
+          SharedNoiseModel newNoiseModel = noiseModel::Gaussian::Information(newInfo);
+          newGraph[i] = factor->cloneWithNewNoiseModel(newNoiseModel);
+        }else{
+          throw std::runtime_error(
+                    "GncOptimizer::makeWeightedGraph: unexpected non-Gaussian noise model.");
+        }
+      }
+    }
+    return newGraph;
   }
 
   /// calculate gnc weights
@@ -384,22 +401,31 @@ TEST(GncOptimizer, calculateWeights) {
 }
 
 /* ************************************************************************* */
-TEST(GncOptimizer, makeGraph) {
-//  // simple graph with Gaussian noise model
-//  auto fg = example::createReallyNonlinearFactorGraph();
-//  // same graph with robust noise model
-//  auto fg_robust = example::sharedRobustFactorGraphWithOutliers();
-//
-//  Point2 p0(3, 3);
-//  Values initial;
-//  initial.insert(X(1), p0);
-//
-//  LevenbergMarquardtParams lmParams;
-//  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
-//  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg_robust, initial, gncParams);
-//
-//  // make sure that when parsing the graph is transformed into one without robust loss
-//  CHECK( fg.equals(gnc.getFactors()) );
+TEST(GncOptimizer, makeWeightedGraph) {
+  // create original factor
+    double sigma1 = 0.1;
+    NonlinearFactorGraph nfg = example::nonlinearFactorGraphWithGivenSigma(sigma1);
+
+    // create expected
+    double sigma2 = 10;
+    NonlinearFactorGraph expected = example::nonlinearFactorGraphWithGivenSigma(sigma2);
+
+    // create weights
+    Vector weights = Vector::Ones(1); // original info:1/0.1^2 = 100. New info: 1/10^2 = 0.01. Ratio is 10-4
+    weights[0] = 1e-4;
+
+    // create actual
+    Point2 p0(3, 3);
+    Values initial;
+    initial.insert(X(1), p0);
+
+    LevenbergMarquardtParams lmParams;
+    GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+    auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(nfg, initial, gncParams);
+    NonlinearFactorGraph actual = gnc.makeWeightedGraph(weights);
+
+    // check it's all good
+    CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
