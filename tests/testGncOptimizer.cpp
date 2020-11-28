@@ -20,6 +20,8 @@
  * From Non-Minimal Solvers to Global Outlier Rejection", RAL, 2020. (arxiv version: https://arxiv.org/pdf/1909.08605.pdf)
  */
 
+#include <gtsam/slam/dataset.h>
+
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -577,6 +579,42 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
   DOUBLES_EQUAL(1.0, finalWeights[0], tol);
   DOUBLES_EQUAL(1.0, finalWeights[1], tol);
   DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, optimizeSmallPoseGraph) {
+  /// load small pose graph
+  const string filename = findExampleDataFile("w100.graph");
+  NonlinearFactorGraph::shared_ptr graph;
+  Values::shared_ptr initial;
+  boost::tie(graph, initial) = load2D(filename);
+  // Add a Gaussian prior on first poses
+  Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
+  SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.01, 0.01, 0.01));
+  graph -> addPrior(0, priorMean, priorNoise);
+
+  /// get expected values by optimizing outlier-free graph
+  Values expected = LevenbergMarquardtOptimizer(*graph, *initial).optimize();
+
+  // add a few outliers
+  SharedDiagonal betweenNoise = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.01));
+  graph->push_back( BetweenFactor<Pose2>(90 , 50 , Pose2(), betweenNoise) ); // some arbitrary and incorrect between factor
+
+  /// get expected values by optimizing outlier-free graph
+  Values expectedWithOutliers = LevenbergMarquardtOptimizer(*graph, *initial).optimize();
+  // as expected, the following test fails due to the presence of an outlier!
+  // CHECK(assert_equal(expected, expectedWithOutliers, 1e-3));
+
+  // GNC
+  // Note: in difficult instances, we set the odometry measurements to be inliers,
+  // but this problem is simple enought to succeed even without that assumption
+  // std::vector<size_t> knownInliers;
+  GncParams<GaussNewtonParams> gncParams = GncParams<GaussNewtonParams>();
+  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(*graph, *initial, gncParams);
+  Values actual = gnc.optimize();
+
+  // compare
+  CHECK(assert_equal(expected, actual, 1e-3)); // yay! we are robust to outliers!
 }
 
 /* ************************************************************************* */
