@@ -51,34 +51,34 @@ public:
   using BaseOptimizer = GaussNewtonOptimizer; // BaseOptimizerParameters::OptimizerType;
 
   GncParams(const BaseOptimizerParameters& baseOptimizerParams):
-    baseOptimizerParams(baseOptimizerParams),
-    lossType(GM),      /* default loss*/
-    maxIterations(100), /* maximum number of iterations*/
-    barcSq(1.0), /* a factor is considered an inlier if factor.error() < barcSq. Note that factor.error() whitens by the covariance*/
-    muStep(1.4), /* multiplicative factor to reduce/increase the mu in gnc */
-    verbosityGNC(SILENT){}/* verbosity level */
+    baseOptimizerParams(baseOptimizerParams) {}
 
   // default constructor
   GncParams(): baseOptimizerParams() {}
 
   BaseOptimizerParameters baseOptimizerParams;
   /// any other specific GNC parameters:
-  RobustLossType lossType;
-  size_t maxIterations;
-  double barcSq;
-  double muStep;
-  VerbosityGNC verbosityGNC;
+  RobustLossType lossType = GM; /* default loss*/
+  size_t maxIterations = 100; /* maximum number of iterations*/
+  double barcSq = 1.0; /* a factor is considered an inlier if factor.error() < barcSq. Note that factor.error() whitens by the covariance*/
+  double muStep = 1.4; /* multiplicative factor to reduce/increase the mu in gnc */
+  VerbosityGNC verbosityGNC = SILENT;  /* verbosity level */
+  std::vector<size_t> knownInliers = std::vector<size_t>(); /* slots in the factor graph corresponding to measurements that we know are inliers */
 
   void setLossType(const RobustLossType type){ lossType = type; }
   void setMaxIterations(const size_t maxIter){
     std::cout
-    << "setMaxIterations: changing the max number of iterations might lead to less accurate solutions and is not recommended! "
+    << "setMaxIterations: changing the max nr of iters might lead to less accurate solutions and is not recommended! "
     << std::endl;
     maxIterations = maxIter;
   }
   void setInlierThreshold(const double inth){ barcSq = inth; }
   void setMuStep(const double step){ muStep = step; }
   void setVerbosityGNC(const VerbosityGNC verbosity) { verbosityGNC = verbosity; }
+  void setKnownInliers(const std::vector<size_t> knownIn) {
+    for(size_t i=0; i<knownIn.size(); i++)
+      knownInliers.push_back(knownIn[i]);
+  }
 
   /// equals
   bool equals(const GncParams& other, double tol = 1e-9) const {
@@ -87,7 +87,8 @@ public:
         && maxIterations == other.maxIterations
         && std::fabs(barcSq - other.barcSq) <= tol
         && std::fabs(muStep - other.muStep) <= tol
-        && verbosityGNC == other.verbosityGNC;
+        && verbosityGNC == other.verbosityGNC
+        && knownInliers == other.knownInliers;
   }
 
   /// print function
@@ -103,6 +104,8 @@ public:
     std::cout << "barcSq: " << barcSq << "\n";
     std::cout << "muStep: " << muStep << "\n";
     std::cout << "verbosityGNC: " << verbosityGNC << "\n";
+    for(size_t i=0; i< knownInliers.size(); i++)
+      std::cout << "knownInliers: " << knownInliers[i] << "\n";
     baseOptimizerParams.print(str);
   }
 };
@@ -117,6 +120,7 @@ private:
   NonlinearFactorGraph nfg_;
   Values state_;
   GncParameters params_;
+  Vector weights_; // this could be a local variable in optimize, but it is useful to make it accessible from outside
 
 public:
   GncOptimizer(const NonlinearFactorGraph& graph,
@@ -140,14 +144,16 @@ public:
     }
   }
 
+  /// getter functions
   NonlinearFactorGraph getFactors() const { return NonlinearFactorGraph(nfg_); }
   Values getState() const { return Values(state_); }
   GncParameters getParams() const { return GncParameters(params_); }
+  Vector getWeights() const {return weights_;}
 
   /// implement GNC main loop, including graduating nonconvexity with mu
   Values optimize() {
     // start by assuming all measurements are inliers
-    Vector weights = Vector::Ones(nfg_.size());
+    weights_ = Vector::Ones(nfg_.size());
     GaussNewtonOptimizer baseOptimizer(nfg_,state_);
     Values result = baseOptimizer.optimize();
     double mu = initializeMu();
@@ -157,13 +163,13 @@ public:
       if (params_.verbosityGNC >= GncParameters::VerbosityGNC::VALUES){
         result.print("result\n");
         std::cout << "mu: " << mu << std::endl;
-        std::cout << "weights: " << weights << std::endl;
+        std::cout << "weights: " << weights_ << std::endl;
       }
       // weights update
-      weights = calculateWeights(result, mu);
+      weights_ = calculateWeights(result, mu);
 
       // variable/values update
-      NonlinearFactorGraph graph_iter = this->makeWeightedGraph(weights);
+      NonlinearFactorGraph graph_iter = this->makeWeightedGraph(weights_);
       GaussNewtonOptimizer baseOptimizer_iter(graph_iter, state_);
       result = baseOptimizer_iter.optimize();
 
@@ -173,7 +179,7 @@ public:
         if (params_.verbosityGNC >= GncParameters::VerbosityGNC::SUMMARY){
           std::cout << "final iterations: " << iter << std::endl;
           std::cout << "final mu: " << mu << std::endl;
-          std::cout << "final weights: " << weights << std::endl;
+          std::cout << "final weights: " << weights_ << std::endl;
         }
         break;
       }
@@ -249,10 +255,20 @@ public:
 
   /// calculate gnc weights
   Vector calculateWeights(const Values currentEstimate, const double mu){
-    Vector weights = Vector::Zero(nfg_.size());
+    Vector weights = Vector::Ones(nfg_.size());
+
+    // do not update the weights that the user has decided are known inliers
+    std::vector<size_t> allWeights;
+    for (size_t k = 0; k < nfg_.size(); k++) {allWeights.push_back(k);}
+    std::vector<size_t> unknownWeights;
+    std::set_difference(allWeights.begin(), allWeights.end(),
+        params_.knownInliers.begin(), params_.knownInliers.end(),
+        std::inserter(unknownWeights, unknownWeights.begin()));
+
+    // update weights of known inlier/outlier measurements
     switch(params_.lossType) {
     case GncParameters::GM: // use eq (12) in GNC paper
-      for (size_t k = 0; k < nfg_.size(); k++) {
+      for (size_t k : unknownWeights) {
         if(nfg_[k]){
           double u2_k = nfg_[k]->error(currentEstimate); // squared (and whitened) residual
           weights[k] = std::pow( ( mu*params_.barcSq )/( u2_k + mu*params_.barcSq ) , 2);
@@ -496,6 +512,36 @@ TEST(GncOptimizer, optimize) {
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   Values gnc_result = gnc.optimize();
   CHECK(assert_equal(Point2(0.0,0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, optimizeWithKnownInliers) {
+  // has to have Gaussian noise models !
+  auto fg = example::sharedNonRobustFactorGraphWithOutliers();
+
+  Point2 p0(1, 0);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  std::vector<size_t> knownInliers;
+  knownInliers.push_back(0);
+  knownInliers.push_back(1);
+  knownInliers.push_back(2);
+
+  // nonconvexity with known inliers
+  GncParams<GaussNewtonParams> gncParams = GncParams<GaussNewtonParams>();
+  gncParams.setKnownInliers(knownInliers);
+  // gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::VerbosityGNC::VALUES);
+  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
+
+  Values gnc_result = gnc.optimize();
+  CHECK(assert_equal(Point2(0.0,0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+
+  // check weights were actually fixed:
+  Vector finalWeights = gnc.getWeights();
+  DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+  DOUBLES_EQUAL(1.0, finalWeights[1], tol);
+  DOUBLES_EQUAL(1.0, finalWeights[2], tol);
 }
 
 /* ************************************************************************* */
