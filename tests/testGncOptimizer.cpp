@@ -115,14 +115,17 @@ public:
         state_(initialValues), params_(params) {
 
     // make sure all noiseModels are Gaussian or convert to Gaussian
+    nfg_.resize(graph.size());
     for (size_t i = 0; i < graph.size(); i++) {
       if(graph[i]){
-        auto &factor = boost::dynamic_pointer_cast<NoiseModelFactor>(nfg_[i]);
-        auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(factor->noiseModel());
+        NoiseModelFactor::shared_ptr factor = boost::dynamic_pointer_cast<NoiseModelFactor>(graph[i]);
+        noiseModel::Robust::shared_ptr robust = boost::dynamic_pointer_cast<noiseModel::Robust>(factor->noiseModel());
         if(robust){ // if the factor has a robust loss, we have to change it:
-          nfg_.push_back(factor->cloneWithNewNoiseModel(factor->noiseModel()));
-        }{ // else we directly push it back
-          nfg_.push_back(factor);
+          SharedNoiseModel gaussianNoise = robust->noise();
+          NoiseModelFactor::shared_ptr gaussianFactor = factor->cloneWithNewNoiseModel(gaussianNoise);
+          nfg_[i] = gaussianFactor;
+        } else{ // else we directly push it back
+          nfg_[i] = factor;
         }
       }
     }
@@ -274,7 +277,7 @@ TEST(GncOptimizer, gncConstructor) {
 /* ************************************************************************* */
 TEST(GncOptimizer, gncConstructorWithRobustGraphAsInput) {
   // simple graph with Gaussian noise model
-  auto fg = example::createReallyNonlinearFactorGraph();
+  auto fg = example::sharedNonRobustFactorGraphWithOutliers();
   // same graph with robust noise model
   auto fg_robust = example::sharedRobustFactorGraphWithOutliers();
 
@@ -285,7 +288,9 @@ TEST(GncOptimizer, gncConstructorWithRobustGraphAsInput) {
   LevenbergMarquardtParams lmParams;
   GncParams<LevenbergMarquardtParams> gncParams(lmParams);
   auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg_robust, initial, gncParams);
-
+//  fg.print("fg\n");
+//  fg_robust.print("fg_robust\n");
+//  gnc.getFactors().print("gnc\n");
   // make sure that when parsing the graph is transformed into one without robust loss
   CHECK( fg.equals(gnc.getFactors()) );
 }
