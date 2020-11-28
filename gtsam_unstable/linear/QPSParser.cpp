@@ -81,7 +81,7 @@ class QPSVisitor {
       varname_to_key;  // Variable QPS string name to key
   std::unordered_map<Key, std::unordered_map<Key, Matrix11>>
       H;                 // H from hessian
-  double f;              // Constant term of quadratic cost
+  double f = 0;          // Constant term of quadratic cost
   std::string obj_name;  // the objective function has a name in the QPS
   std::string name_;     // the quadratic program has a name in the QPS
   std::unordered_map<Key, double>
@@ -175,10 +175,11 @@ class QPSVisitor {
     string var_ = fromChars<1>(vars);
     string row_ = fromChars<3>(vars);
     double coefficient = at_c<5>(vars);
-    if (row_ == obj_name)
+    if (row_ == obj_name) {
       f = -coefficient;
-    else
+    } else {
       b[row_] = coefficient;
+    }
 
     if (debug) {
       cout << "Added RHS for Var: " << var_ << " Row: " << row_
@@ -194,15 +195,17 @@ class QPSVisitor {
     string row2_ = fromChars<7>(vars);
     double coefficient1 = at_c<5>(vars);
     double coefficient2 = at_c<9>(vars);
-    if (row1_ == obj_name)
+    if (row1_ == obj_name) {
       f = -coefficient1;
-    else
+    } else {
       b[row1_] = coefficient1;
+    }
 
-    if (row2_ == obj_name)
+    if (row2_ == obj_name) {
       f = -coefficient2;
-    else
+    } else {
       b[row2_] = coefficient2;
+    }
 
     if (debug) {
       cout << "Added RHS for Var: " << var_ << " Row: " << row1_
