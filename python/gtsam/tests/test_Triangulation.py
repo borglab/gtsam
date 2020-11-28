@@ -15,7 +15,9 @@ import numpy as np
 import gtsam as g
 from gtsam.utils.test_case import GtsamTestCase
 from gtsam import Cal3_S2, Cal3Bundler, Rot3, Pose3, \
-    PinholeCameraCal3_S2, Point3, Point2Vector, Pose3Vector, triangulatePoint3, CameraSetCal3_S2, CameraSetCal3Bundler, PinholeCameraCal3Bundler
+    PinholeCameraCal3_S2, PinholeCameraCal3Bundler, Point3, \
+    Point2Vector, Pose3Vector, triangulatePoint3, \
+    CameraSetCal3_S2, CameraSetCal3Bundler
 
 class TestVisualISAMExample(GtsamTestCase):
     def setUp(self):
@@ -80,39 +82,45 @@ class TestVisualISAMExample(GtsamTestCase):
         # self.gtsamAssertEquals(landmark, triangulated_landmark,1e-9)
 
     def test_distinct_Ks(self):
+        # two cameras
         K1 = Cal3_S2(1500, 1200, 0, 640, 480)
         camera1 = PinholeCameraCal3_S2(self.pose1, K1)
 
         K2 = Cal3_S2(1600, 1300, 0, 650, 440)
         camera2 = PinholeCameraCal3_S2(self.pose2, K2)
 
+        cameras = CameraSetCal3_S2()
+        cameras.append(camera1)
+        cameras.append(camera2)
+
         # landmark ~5 meters infront of camera
         landmark = Point3(5, 0.5, 1.2)
 
         # 1. Project two landmarks into two cameras and triangulate
         z1 = camera1.project(landmark)
         z2 = camera2.project(landmark)
-        # two cameras
+        
         measurements = Point2Vector()
-        cameras = CameraSetCal3_S2()
-
         measurements.append(z1)
         measurements.append(z2)
-        cameras.append(camera1)
-        cameras.append(camera2)
 
         optimize = True
         rank_tol = 1e-9
 
         triangulated_landmark = triangulatePoint3(cameras, measurements, rank_tol, optimize)
-        self.gtsamAssertEquals(landmark, triangulated_landmark, 1e-2)
+        self.gtsamAssertEquals(landmark, triangulated_landmark, 1e-9)
 
     def test_distinct_Ks_Bundler(self):
+        # two cameras
         K1 = Cal3Bundler(1500, 0, 0, 640, 480)
         camera1 = PinholeCameraCal3Bundler(self.pose1, K1)
 
-        K2 = Cal3Bundler(1500, 0, 0, 640, 480)
+        K2 = Cal3Bundler(1600, 0, 0, 650, 440)
         camera2 = PinholeCameraCal3Bundler(self.pose2, K2)
+
+        cameras = CameraSetCal3Bundler()
+        cameras.append(camera1)
+        cameras.append(camera2)
 
         # landmark ~5 meters infront of camera
         landmark = Point3(5, 0.5, 1.2)
@@ -120,22 +128,16 @@ class TestVisualISAMExample(GtsamTestCase):
         # 1. Project two landmarks into two cameras and triangulate
         z1 = camera1.project(landmark)
         z2 = camera2.project(landmark)
-        # two cameras
-        measurements = Point2Vector()
-        cameras = CameraSetCal3Bundler()
 
+        measurements = Point2Vector()
         measurements.append(z1)
         measurements.append(z2)
-        cameras.append(camera1)
-        cameras.append(camera2)
 
         optimize = True
         rank_tol = 1e-9
 
         triangulated_landmark = triangulatePoint3(cameras, measurements, rank_tol, optimize)
-        self.gtsamAssertEquals(landmark, triangulated_landmark, 1e-2) 
-
-        
+        self.gtsamAssertEquals(landmark, triangulated_landmark, 1e-9) 
 
 if __name__ == "__main__":
     unittest.main()
