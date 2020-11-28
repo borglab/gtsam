@@ -48,7 +48,7 @@ public:
     GM /*Geman McClure*/, TLS /*Truncated least squares*/
   };
 
-  // using BaseOptimizer = GaussNewtonOptimizer; // BaseOptimizerParameters::OptimizerType;
+  using BaseOptimizer = GaussNewtonOptimizer; // BaseOptimizerParameters::OptimizerType;
 
   GncParams(const BaseOptimizerParameters& baseOptimizerParams):
     baseOptimizerParams(baseOptimizerParams),
@@ -165,7 +165,7 @@ public:
       // variable/values update
       NonlinearFactorGraph graph_iter = this->makeWeightedGraph(weights);
       GaussNewtonOptimizer baseOptimizer_iter(graph_iter, state_);
-      result = baseOptimizer.optimize();
+      result = baseOptimizer_iter.optimize();
 
       // stopping condition
       if( checkMuConvergence(mu) ) {
@@ -492,7 +492,7 @@ TEST(GncOptimizer, optimize) {
 
   // .. but graduated nonconvexity ensures both robustness and convergence in the face of nonconvexity
   GncParams<GaussNewtonParams> gncParams(gnParams);
-  gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::VerbosityGNC::VALUES);
+  // gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::VerbosityGNC::SUMMARY);
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   Values gnc_result = gnc.optimize();
   CHECK(assert_equal(Point2(0.0,0.0), gnc_result.at<Point2>(X(1)), 1e-3));
