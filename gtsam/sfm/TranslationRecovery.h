@@ -23,6 +23,8 @@
 
 #include <utility>
 #include <vector>
+#include <set>
+#include <map>
 
 namespace gtsam {
 
@@ -54,6 +56,7 @@ class TranslationRecovery {
  private:
   TranslationEdges relativeTranslations_;
   LevenbergMarquardtParams params_;
+  std::map<Key, std::set<Key>> sameTranslationNodes_;
 
  public:
   /**
@@ -67,8 +70,7 @@ class TranslationRecovery {
    * default LM parameters. 
    */
   TranslationRecovery(const TranslationEdges &relativeTranslations,
-                      const LevenbergMarquardtParams &lmParams = LevenbergMarquardtParams())
-      : relativeTranslations_(relativeTranslations), params_(lmParams) {}
+                      const LevenbergMarquardtParams &lmParams = LevenbergMarquardtParams());
 
   /**
    * @brief Build the factor graph to do the optimization.
