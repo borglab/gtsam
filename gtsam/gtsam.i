@@ -1119,7 +1119,7 @@ class CameraSetCal3Bundler {
 
   // structure specific methods
   gtsam::PinholeCameraCal3Bundler at(size_t i) const;
-  void push_back(gtsam::PinholeCameraCal3Bundler& cam) const;
+  void push_back(const gtsam::PinholeCameraCal3Bundler& cam);
 };
 
 class CameraSetCal3_S2 {
@@ -1132,7 +1132,7 @@ class CameraSetCal3_S2 {
 
   // structure specific methods
   gtsam::PinholeCameraCal3_S2 at(size_t i) const;
-  void push_back(gtsam::PinholeCameraCal3_S2& cam) const;
+  void push_back(const gtsam::PinholeCameraCal3_S2& cam);
 };
 
 #include <gtsam/geometry/StereoCamera.h>
