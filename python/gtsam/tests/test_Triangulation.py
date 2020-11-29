@@ -65,21 +65,6 @@ class TestVisualISAMExample(GtsamTestCase):
 
         triangulated_landmark = triangulatePoint3(poses,sharedCal, measurements, rank_tol, optimize)
         self.gtsamAssertEquals(self.landmark, triangulated_landmark,1e-2)
-        #
-        # # two Poses with Bundler Calibration
-        # bundlerCal = Cal3Bundler(1500, 0, 0, 640, 480)
-        # camera1 = PinholeCameraCal3Bundler(pose1, bundlerCal)
-        # camera2 = PinholeCameraCal3Bundler(pose2, bundlerCal)
-        #
-        # z1 = camera1.project(self.landmark)
-        # z2 = camera2.project(self.landmark)
-        #
-        # measurements = Point2Vector()
-        # measurements.append(z1)
-        # measurements.append(z2)
-        #
-        # triangulated_landmark = triangulatePoint3(poses,bundlerCal, measurements, rank_tol, optimize)
-        # self.gtsamAssertEquals(self.landmark, triangulated_landmark,1e-9)
 
     def test_distinct_Ks(self):
         # two cameras
