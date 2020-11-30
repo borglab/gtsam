@@ -98,6 +98,9 @@ TEST(ShonanAveraging3, checkSubgraph) {
       gtsam::LevenbergMarquardtParams::CeresDefaults(), "SUBGRAPH");
   ShonanAveraging3::Measurements measurements;
 
+  // The toyExample.g2o has 5 vertices, from 0-4
+  // The edges are: 1-2, 2-3, 3-4, 3-1, 1-4, 0-1,
+  // which can build a connected graph
   auto subgraphShonan = fromExampleName("toyExample.g2o", params);
 
   // Create initial random estimation
