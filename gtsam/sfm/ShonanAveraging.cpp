@@ -346,6 +346,7 @@ static double Kappa(const BinaryMeasurement<T> &measurement) {
       std::cout << "Verification of optimality does not work with robust cost "
                    "function"
                 << std::endl;
+      sigma = 1;  // setting arbitrary value
     } else {
       throw std::invalid_argument(
           "Shonan averaging noise models must be isotropic (but robust losses "
