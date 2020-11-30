@@ -31,9 +31,8 @@ namespace gtsam {
   /// Also needed as forward declarations in the wrapper.
   using PinholeCameraCal3_S2 = gtsam::PinholeCamera<gtsam::Cal3_S2>;
   using PinholeCameraCal3Bundler = gtsam::PinholeCamera<gtsam::Cal3Bundler>;
-  //TODO Need to fix issue 621 for this to work with wrapper
-  // using PinholeCameraCal3DS2 = gtsam::PinholeCamera<gtsam::Cal3DS2>;
-  // using PinholeCameraCal3Unified = gtsam::PinholeCamera<gtsam::Cal3Unified>;
+  using PinholeCameraCal3DS2 = gtsam::PinholeCamera<gtsam::Cal3DS2>;
+  using PinholeCameraCal3Unified = gtsam::PinholeCamera<gtsam::Cal3Unified>;
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
 /**
