@@ -11,7 +11,7 @@
 
 /**
  * @file TranslationRecovery.cpp
- * @author Frank Dellaert
+ * @author Frank Dellaert, Akshay Krishnan
  * @date March 2020
  * @brief Source code for recovering translations when rotations are given
  */

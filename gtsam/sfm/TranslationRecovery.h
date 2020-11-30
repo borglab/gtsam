@@ -16,15 +16,15 @@
  * @brief Recovering translations in an epipolar graph when rotations are given.
  */
 
+#include <map>
+#include <set>
+#include <utility>
+#include <vector>
+
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/BinaryMeasurement.h>
-
-#include <utility>
-#include <vector>
-#include <set>
-#include <map>
 
 namespace gtsam {
 
@@ -63,14 +63,15 @@ class TranslationRecovery {
    * @brief Construct a new Translation Recovery object
    *
    * @param relativeTranslations the relative translations, in world coordinate
-   * frames, vector of BinaryMeasurements of Unit3, where each key of a measurement 
-   * is a point in 3D. 
+   * frames, vector of BinaryMeasurements of Unit3, where each key of a
+   * measurement is a point in 3D.
    * @param lmParams (optional) gtsam::LavenbergMarquardtParams that can be
    * used to modify the parameters for the LM optimizer. By default, uses the
-   * default LM parameters. 
+   * default LM parameters.
    */
-  TranslationRecovery(const TranslationEdges &relativeTranslations,
-                      const LevenbergMarquardtParams &lmParams = LevenbergMarquardtParams());
+  TranslationRecovery(
+      const TranslationEdges &relativeTranslations,
+      const LevenbergMarquardtParams &lmParams = LevenbergMarquardtParams());
 
   /**
    * @brief Build the factor graph to do the optimization.
@@ -110,8 +111,8 @@ class TranslationRecovery {
    *
    * @param poses SE(3) ground truth poses stored as Values
    * @param edges pairs (a,b) for which a measurement w_aZb will be generated.
-   * @return TranslationEdges vector of binary measurements where the keys are 
-   * the cameras and the measurement is the simulated Unit3 translation 
+   * @return TranslationEdges vector of binary measurements where the keys are
+   * the cameras and the measurement is the simulated Unit3 translation
    * direction between the cameras.
    */
   static TranslationEdges SimulateMeasurements(
