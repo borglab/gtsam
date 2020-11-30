@@ -69,13 +69,13 @@ class PybindWrapper(object):
             return textwrap.dedent('''
                     .def("serialize",
                         []({class_inst} self){{
-                            return gtsam::serialize(self);
+                            return gtsam::serialize(*self);
                         }}
                     )
                     .def("deserialize",
                         []({class_inst} self, string serialized){{
-                            return gtsam::deserialize(serialized, self);
-                        }})
+                            gtsam::deserialize(serialized, *self);
+                        }}, py::arg("serialized"))
                     '''.format(class_inst=cpp_class + '*'))
 
         is_method = isinstance(method, instantiator.InstantiatedMethod)
