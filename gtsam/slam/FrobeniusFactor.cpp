@@ -26,7 +26,6 @@ namespace gtsam {
 SharedNoiseModel
 ConvertNoiseModel(const SharedNoiseModel &model, size_t d, bool defaultToUnit) {
   double sigma = 1.0;
-  bool exit = false;
 
   if (model != nullptr) {
     const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(model);
@@ -40,7 +39,7 @@ ConvertNoiseModel(const SharedNoiseModel &model, size_t d, bool defaultToUnit) {
     size_t n = sigmas.size();
     if (n == 1) {
       sigma = sigmas(0); // Rot2
-      exit = true;
+      goto exit;
     }
     else if (n == 3 || n == 6) {
       sigma = sigmas(2); // Pose2, Rot3, or Pose3
@@ -49,13 +48,13 @@ ConvertNoiseModel(const SharedNoiseModel &model, size_t d, bool defaultToUnit) {
           throw std::runtime_error("Can only convert isotropic rotation noise");
         }
       }
-      exit = true;
+      goto exit;
     }
-    if (!defaultToUnit && !exit) {
+    if (!defaultToUnit) {
       throw std::runtime_error("Can only convert Pose2/Pose3 noise models");
     }
   }
-
+  exit:
   auto isoModel = noiseModel::Isotropic::Sigma(d, sigma);
   const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(model);
   if (robust) {
