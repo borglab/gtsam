@@ -66,8 +66,10 @@ TEST(BinaryMeasurement, Rot3) {
 
 /* ************************************************************************* */
 TEST(BinaryMeasurement, Rot3MakeRobust) {
+  auto huber_model = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Huber::Create(1.345), rot3_model);
   BinaryMeasurement<Rot3> rot3Measurement(kKey1, kKey2, rot3Measured,
-                                          rot3_model, true);
+                                          huber_model);
 
   EXPECT_LONGS_EQUAL(rot3Measurement.key1(), kKey1);
   EXPECT_LONGS_EQUAL(rot3Measurement.key2(), kKey2);
@@ -75,12 +77,6 @@ TEST(BinaryMeasurement, Rot3MakeRobust) {
   const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
       rot3Measurement.noiseModel());
   EXPECT(robust);
-
-  // test that if we call it again nothing changes:
-  rot3Measurement = BinaryMeasurement<Rot3>(rot3Measurement, true);
-  const auto &robust2 = boost::dynamic_pointer_cast<noiseModel::Robust>(
-      rot3Measurement.noiseModel());
-  EXPECT(robust2);
 }
 
 /* ************************************************************************* */

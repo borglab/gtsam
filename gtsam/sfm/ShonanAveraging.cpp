@@ -343,8 +343,9 @@ static double Kappa(const BinaryMeasurement<T> &measurement) {
     const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
         measurement.noiseModel());
     if (robust) {
-      throw std::runtime_error(
-          "Verification of optimality does not work with robust cost function");
+      std::cout << "Verification of optimality does not work with robust cost "
+                   "function"
+                << std::endl;
     } else {
       throw std::invalid_argument(
           "Shonan averaging noise models must be isotropic (but robust losses "
