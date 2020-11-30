@@ -807,15 +807,15 @@ TEST(Rot3, RQ_derivative) {
   test_xyz.push_back(VecAndErr{{0, 0, 0}, error});
   test_xyz.push_back(VecAndErr{{0, 0.5, -0.5}, error});
   test_xyz.push_back(VecAndErr{{0.3, 0, 0.2}, error});
-  test_xyz.push_back(VecAndErr{{-0.6, 1.3, 0}, error});
+  test_xyz.push_back(VecAndErr{{-0.6, 1.3, 0}, 1e-8});
   test_xyz.push_back(VecAndErr{{1.0, 0.7, 0.8}, error});
   test_xyz.push_back(VecAndErr{{3.0, 0.7, -0.6}, error});
   test_xyz.push_back(VecAndErr{{M_PI / 2, 0, 0}, error});
   test_xyz.push_back(VecAndErr{{0, 0, M_PI / 2}, error});
 
   // Test close to singularity
-  test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1e-1, 0}, 1e-8});
-  test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1e-1, 0}, 1e-8});
+  test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1e-1, 0}, 1e-7});
+  test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1e-1, 0}, 1e-7});
   test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1.1e-2, 0}, 1e-4});
   test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1.1e-2, 0}, 1e-4});
 
@@ -908,6 +908,26 @@ TEST(Rot3, yaw_derivative) {
   R.yaw(calc);
 
   CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, determinant) {
+  size_t degree = 1;
+  Rot3 R_w0;  // Zero rotation
+  Rot3 R_w1 = Rot3::Ry(degree * M_PI / 180);
+
+  Rot3 R_01, R_w2;
+  double actual, expected = 1.0;
+
+  for (size_t i = 2; i < 360; ++i) {
+    R_01 = R_w0.between(R_w1);
+    R_w2 = R_w1 * R_01;
+    R_w0 = R_w1;
+    R_w1 = R_w2.normalized();
+    actual = R_w2.matrix().determinant();
+
+    EXPECT_DOUBLES_EQUAL(expected, actual, 1e-7);
+  }
 }
 
 /* ************************************************************************* */
