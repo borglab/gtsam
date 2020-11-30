@@ -343,10 +343,8 @@ static double Kappa(const BinaryMeasurement<T> &measurement) {
     const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
         measurement.noiseModel());
     if (robust) {
-      std::cout << "Verification of optimality does not work with robust cost "
-                   "function"
-                << std::endl;
-      sigma = 1;  // setting arbitrary value
+      throw std::runtime_error(
+          "Verification of optimality does not work with robust cost function");
     } else {
       throw std::invalid_argument(
           "Shonan averaging noise models must be isotropic (but robust losses "
@@ -804,8 +802,10 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
     // Optimize until convergence at this level
     Qstar = tryOptimizingAt(p, initialSOp);
     if(parameters_.useHuber){ // in this case, there is no optimality verification
-      if(pMin!=pMax)
-         std::cout << "When using robust norm, Shonan only tests a single rank" << std::endl;
+      if (pMin != pMax) {
+        throw std::runtime_error(
+            "When using robust norm, Shonan only tests a single rank");
+      }
       const Values SO3Values = roundSolution(Qstar);
       return std::make_pair(SO3Values, 0);
     }
@@ -876,9 +876,11 @@ static BinaryMeasurement<Rot3> convert(
         "parseMeasurements<Rot3> can only convert Pose3 measurements "
         "with Gaussian noise models.");
   const Matrix6 M = gaussian->covariance();
-  return BinaryMeasurement<Rot3>(
-      f->key1(), f->key2(), f->measured().rotation(),
-      noiseModel::Gaussian::Covariance(M.block<3, 3>(3, 3), true));
+  auto model = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Huber::Create(1.345),
+      noiseModel::Gaussian::Covariance(M.block<3, 3>(3, 3)));
+  return BinaryMeasurement<Rot3>(f->key1(), f->key2(), f->measured().rotation(),
+                                 model);
 }
 
 static ShonanAveraging3::Measurements extractRot3Measurements(
