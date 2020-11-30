@@ -17,6 +17,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/sfm/ShonanAveraging.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/FrobeniusFactor.h>
@@ -329,7 +330,11 @@ TEST(ShonanAveraging2, noisyToyGraphWithHuber) {
   ShonanAveraging2::Parameters parameters(lmParams);
   auto measurements = parseMeasurements<Rot2>(g2oFile);
   parameters.setUseHuber(true);
-  parameters.print();
+  string parameters_print =
+      " ShonanAveragingParameters: \n alpha: 0\n beta: 1\n gamma: 0\n "
+      "useHuber: 1\n";
+  assert_print_equal(parameters_print, parameters);
+
   ShonanAveraging2 shonan(measurements, parameters);
   EXPECT_LONGS_EQUAL(4, shonan.nrUnknowns());
 
