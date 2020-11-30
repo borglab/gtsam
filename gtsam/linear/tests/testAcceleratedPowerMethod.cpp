@@ -63,7 +63,7 @@ TEST(AcceleratedPowerMethod, acceleratedPowerIteration) {
 }
 
 /* ************************************************************************* */
-TEST(AcceleratedPowerMethod, useFactorGraph) {
+TEST(AcceleratedPowerMethod, useFactorGraphSparse) {
   // Let's make a scalar synchronization graph with 4 nodes
   GaussianFactorGraph fg;
   auto model = noiseModel::Unit::Create(1);
@@ -86,6 +86,54 @@ TEST(AcceleratedPowerMethod, useFactorGraph) {
   const auto ev1 = solver.eigenvalues()(maxIdx).real();
 
   Vector disturb = Vector4::Random();
+  disturb.normalize();
+  Vector initial = L.first.row(0);
+  double magnitude = initial.norm();
+  initial += 0.03 * magnitude * disturb;
+  AcceleratedPowerMethod<Matrix> apf(L.first, initial);
+  apf.compute(100, 1e-5);
+  // Check if the eigenvalue is the maximum eigen value
+  EXPECT_DOUBLES_EQUAL(ev1, apf.eigenvalue(), 1e-8);
+
+  // Check if the according ritz residual converged to the threshold
+  Vector actual1 = apf.eigenvector();
+  const double ritzValue = actual1.dot(L.first * actual1);
+  const double ritzResidual = (L.first * actual1 - ritzValue * actual1).norm();
+  EXPECT_DOUBLES_EQUAL(0, ritzResidual, 1e-5);
+}
+
+/* ************************************************************************* */
+TEST(AcceleratedPowerMethod, useFactorGraphDense) {
+  // Let's make a scalar synchronization graph with 10 nodes
+  GaussianFactorGraph fg;
+  auto model = noiseModel::Unit::Create(1);
+  // Each node has an edge with all the others
+  for (size_t j = 0; j < 10; j++) {
+    fg.add(X(j), -I_1x1, X((j + 1)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 2)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 3)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 4)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 5)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 6)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 7)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 8)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 9)%10 ), I_1x1, Vector1::Zero(), model);
+  }
+
+  // Get eigenvalues and eigenvectors with Eigen
+  auto L = fg.hessian();
+  Eigen::EigenSolver<Matrix> solver(L.first);
+
+  // find the index of the max eigenvalue
+  size_t maxIdx = 0;
+  for (auto i = 0; i < solver.eigenvalues().rows(); ++i) {
+    if (solver.eigenvalues()(i).real() >= solver.eigenvalues()(maxIdx).real())
+      maxIdx = i;
+  }
+  // Store the max eigenvalue and its according eigenvector
+  const auto ev1 = solver.eigenvalues()(maxIdx).real();
+
+  Vector disturb = Vector10::Random();
   disturb.normalize();
   Vector initial = L.first.row(0);
   double magnitude = initial.norm();

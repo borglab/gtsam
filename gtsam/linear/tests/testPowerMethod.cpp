@@ -61,7 +61,7 @@ TEST(PowerMethod, powerIteration) {
 }
 
 /* ************************************************************************* */
-TEST(PowerMethod, useFactorGraph) {
+TEST(PowerMethod, useFactorGraphSparse) {
   // Let's make a scalar synchronization graph with 4 nodes
   GaussianFactorGraph fg;
   auto model = noiseModel::Unit::Create(1);
@@ -84,6 +84,47 @@ TEST(PowerMethod, useFactorGraph) {
   const auto ev1 = solver.eigenvalues()(maxIdx).real();
 
   Vector initial = Vector4::Random();
+  PowerMethod<Matrix> pf(L.first, initial);
+  pf.compute(100, 1e-5);
+  EXPECT_DOUBLES_EQUAL(ev1, pf.eigenvalue(), 1e-8);
+  auto actual2 = pf.eigenvector();
+  const double ritzValue = actual2.dot(L.first * actual2);
+  const double ritzResidual = (L.first * actual2 - ritzValue * actual2).norm();
+  EXPECT_DOUBLES_EQUAL(0, ritzResidual, 1e-5);
+}
+
+/* ************************************************************************* */
+TEST(PowerMethod, useFactorGraphDense) {
+  // Let's make a scalar synchronization graph with 10 nodes
+  GaussianFactorGraph fg;
+  auto model = noiseModel::Unit::Create(1);
+  // Each node has an edge with all the others
+  for (size_t j = 0; j < 10; j++) {
+    fg.add(X(j), -I_1x1, X((j + 1)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 2)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 3)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 4)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 5)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 6)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 7)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 8)%10 ), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + 9)%10 ), I_1x1, Vector1::Zero(), model);
+  }
+
+  // Get eigenvalues and eigenvectors with Eigen
+  auto L = fg.hessian();
+  Eigen::EigenSolver<Matrix> solver(L.first);
+
+  // find the index of the max eigenvalue
+  size_t maxIdx = 0;
+  for (auto i = 0; i < solver.eigenvalues().rows(); ++i) {
+    if (solver.eigenvalues()(i).real() >= solver.eigenvalues()(maxIdx).real())
+      maxIdx = i;
+  }
+  // Store the max eigenvalue and its according eigenvector
+  const auto ev1 = solver.eigenvalues()(maxIdx).real();
+
+  Vector initial = Vector10::Random();
   PowerMethod<Matrix> pf(L.first, initial);
   pf.compute(100, 1e-5);
   EXPECT_DOUBLES_EQUAL(ev1, pf.eigenvalue(), 1e-8);
