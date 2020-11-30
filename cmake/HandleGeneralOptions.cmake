@@ -24,6 +24,7 @@ option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available"
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" OFF)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION  "Throw exception when a triangulated point is behind a camera" ON)
 option(GTSAM_BUILD_PYTHON                "Enable/Disable building & installation of Python module with pybind11" OFF)
+option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V41  "Allow use of methods/functions deprecated in GTSAM 4.1" ON)
 option(GTSAM_SUPPORT_NESTED_DISSECTION   "Support Metis-based nested dissection" ON)
 option(GTSAM_TANGENT_PREINTEGRATION      "Use new ImuFactor with integration on tangent space" ON)
@@ -31,16 +32,14 @@ if(NOT MSVC AND NOT XCODE_VERSION)
     option(GTSAM_BUILD_WITH_CCACHE           "Use ccache compiler cache" ON)
 endif()
 
-# Options relating to MATLAB wrapper
-# TODO: Check for matlab mex binary before handling building of binaries
-option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
+# Enable GTSAM_ROT3_EXPMAP if GTSAM_POSE3_EXPMAP is enabled, and vice versa.
+if(GTSAM_POSE3_EXPMAP)
+    message(STATUS "GTSAM_POSE3_EXPMAP=ON, enabling GTSAM_ROT3_EXPMAP as well")
+    set(GTSAM_ROT3_EXPMAP 1 CACHE BOOL "" FORCE)
+elseif(GTSAM_ROT3_EXPMAP)
+    message(STATUS "GTSAM_ROT3_EXPMAP=ON, enabling GTSAM_POSE3_EXPMAP as well")
+    set(GTSAM_POSE3_EXPMAP 1 CACHE BOOL "" FORCE)
+endif()
+
+# Set the default Python version. This is later updated in HandlePython.cmake.
 set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "The version of Python to build the wrappers against.")
-
-# Check / set dependent variables for MATLAB wrapper
-if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_BUILD_TYPE_POSTFIXES)
-    set(CURRENT_POSTFIX ${CMAKE_${CMAKE_BUILD_TYPE_UPPER}_POSTFIX})
-endif()
-
-if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT BUILD_SHARED_LIBS)
-    message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and BUILD_SHARED_LIBS=OFF. The MATLAB wrapper cannot be compiled with a static GTSAM library because mex modules are themselves shared libraries.  If you want a self-contained mex module, enable GTSAM_MEX_BUILD_STATIC_MODULE instead of BUILD_SHARED_LIBS=OFF.")
-endif()

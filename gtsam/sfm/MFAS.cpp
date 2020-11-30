@@ -121,8 +121,8 @@ MFAS::MFAS(const TranslationEdges& relativeTranslations,
   }
 }
 
-vector<Key> MFAS::computeOrdering() const {
-  vector<Key> ordering;  // Nodes in MFAS order (result).
+KeyVector MFAS::computeOrdering() const {
+  KeyVector ordering;  // Nodes in MFAS order (result).
 
   // A graph is an unordered map from keys to nodes. Each node contains a list
   // of its adjacent nodes. Create the graph from the edgeWeights.
@@ -140,7 +140,7 @@ vector<Key> MFAS::computeOrdering() const {
 
 map<MFAS::KeyPair, double> MFAS::computeOutlierWeights() const {
   // Find the ordering.
-  vector<Key> ordering = computeOrdering();
+  KeyVector ordering = computeOrdering();
 
   // Create a map from the node key to its position in the ordering. This makes
   // it easier to lookup positions of different nodes.
