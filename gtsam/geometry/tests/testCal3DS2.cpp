@@ -74,11 +74,25 @@ TEST( Cal3DS2, Duncalibrate2)
   CHECK(assert_equal(numerical,separate,1e-5));
 }
 
-/* ************************************************************************* */
-TEST( Cal3DS2, assert_equal)
-{
-  CHECK(assert_equal(K,K,1e-5));
+Point2 calibrate_(const Cal3DS2& k, const Point2& pt) {
+  return k.calibrate(pt);
 }
+
+/* ************************************************************************* */
+TEST( Cal3DS2, Dcalibrate)
+{
+  Point2 pn(0.5, 0.5);
+  Point2 pi = K.uncalibrate(pn);
+  Matrix Dcal, Dp;
+  K.calibrate(pi, Dcal, Dp);
+  Matrix numerical1 = numericalDerivative21(calibrate_, K, pi, 1e-7);
+  CHECK(assert_equal(numerical1, Dcal, 1e-5));
+  Matrix numerical2 = numericalDerivative22(calibrate_, K, pi, 1e-7);
+  CHECK(assert_equal(numerical2, Dp, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Cal3DS2, assert_equal) { CHECK(assert_equal(K, K, 1e-5)); }
 
 /* ************************************************************************* */
 TEST( Cal3DS2, retract)
