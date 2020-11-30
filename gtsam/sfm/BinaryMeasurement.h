@@ -47,41 +47,10 @@ private:
 
  public:
   BinaryMeasurement(Key key1, Key key2, const T &measured,
-                    const SharedNoiseModel &model = nullptr,
-                    bool useHuber = false)
+                    const SharedNoiseModel &model = nullptr)
       : Factor(std::vector<Key>({key1, key2})),
         measured_(measured),
-        noiseModel_(model) {
-    if (useHuber) {
-      const auto &robust =
-          boost::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_);
-      if (!robust) {
-        // make robust
-        this->noiseModel_ = noiseModel::Robust::Create(
-            noiseModel::mEstimator::Huber::Create(1.345), this->noiseModel_);
-      }
-    }
-  }
-
-  /**
-   * Copy constructor to allow for making existing BinaryMeasurements as robust
-   * in a functional way.
-   * 
-   * @param measurement BinaryMeasurement object.
-   * @param useHuber Boolean flag indicating whether to use Huber noise model.
-   */
-  BinaryMeasurement(const BinaryMeasurement& measurement, bool useHuber = false) {
-    *this = measurement;
-    if (useHuber) {
-      const auto &robust =
-          boost::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_);
-      if (!robust) {
-        // make robust
-        this->noiseModel_ = noiseModel::Robust::Create(
-            noiseModel::mEstimator::Huber::Create(1.345), this->noiseModel_);
-      }
-    }
-  }
+        noiseModel_(model) {}
 
   /// @name Standard Interface
   /// @{
