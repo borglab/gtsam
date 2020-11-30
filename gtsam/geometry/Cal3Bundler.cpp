@@ -124,8 +124,8 @@ Point2 Cal3Bundler::calibrate(const Point2& pi,
   // We make use of the Implicit Function Theorem to compute the Jacobians from uncalibrate
   // Given f(pi, pn) = uncalibrate(pn) - pi, and g(pi) = calibrate, we can easily compute the Jacobians
   // df/pi = -I (pn and pi are independent args)
-  // Dcal = -inv(H_uncal_pn) * df/pi = -inv(H_uncal_pn) * (-I) = inv(H_uncal_pn)
-  // Dp = -inv(H_uncal_pn) * df/K = -inv(H_uncal_pn) * H_uncal_K
+  // Dp = -inv(H_uncal_pn) * df/pi = -inv(H_uncal_pn) * (-I) = inv(H_uncal_pn)
+  // Dcal = -inv(H_uncal_pn) * df/K = -inv(H_uncal_pn) * H_uncal_K
   Matrix23 H_uncal_K;
   Matrix22 H_uncal_pn, H_uncal_pn_inv;
 
