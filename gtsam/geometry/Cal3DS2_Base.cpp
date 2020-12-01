@@ -25,25 +25,6 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-Cal3DS2_Base::Cal3DS2_Base(const Vector& v)
-    : fx_(v(0)),
-      fy_(v(1)),
-      s_(v(2)),
-      u0_(v(3)),
-      v0_(v(4)),
-      k1_(v(5)),
-      k2_(v(6)),
-      p1_(v(7)),
-      p2_(v(8)) {}
-
-/* ************************************************************************* */
-Matrix3 Cal3DS2_Base::K() const {
-    Matrix3 K;
-    K << fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0;
-    return K;
-}
-
-/* ************************************************************************* */
 Vector9 Cal3DS2_Base::vector() const {
   Vector9 v;
   v << fx_, fy_, s_, u0_, v0_, k1_, k2_, p1_, p2_;
@@ -58,11 +39,10 @@ void Cal3DS2_Base::print(const std::string& s_) const {
 
 /* ************************************************************************* */
 bool Cal3DS2_Base::equals(const Cal3DS2_Base& K, double tol) const {
-  if (std::abs(fx_ - K.fx_) > tol || std::abs(fy_ - K.fy_) > tol || std::abs(s_ - K.s_) > tol ||
-      std::abs(u0_ - K.u0_) > tol || std::abs(v0_ - K.v0_) > tol || std::abs(k1_ - K.k1_) > tol ||
-      std::abs(k2_ - K.k2_) > tol || std::abs(p1_ - K.p1_) > tol || std::abs(p2_ - K.p2_) > tol)
-    return false;
-  return true;
+  const Cal3* base = dynamic_cast<const Cal3*>(&K);
+  return Cal3::equals(*base, tol) && std::fabs(k1_ - K.k1_) < tol &&
+         std::fabs(k2_ - K.k2_) < tol && std::fabs(p1_ - K.p1_) < tol &&
+         std::fabs(p2_ - K.p2_) < tol;
 }
 
 /* ************************************************************************* */

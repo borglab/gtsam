@@ -13,6 +13,7 @@
  * @file Cal3DS2.cpp
  * @date Feb 28, 2010
  * @author ydjian
+ * @author Varun Agrawal
  */
 
 #include <gtsam/base/Vector.h>
@@ -30,11 +31,8 @@ void Cal3DS2::print(const std::string& s_) const {
 
 /* ************************************************************************* */
 bool Cal3DS2::equals(const Cal3DS2& K, double tol) const {
-  if (std::abs(fx_ - K.fx_) > tol || std::abs(fy_ - K.fy_) > tol || std::abs(s_ - K.s_) > tol ||
-      std::abs(u0_ - K.u0_) > tol || std::abs(v0_ - K.v0_) > tol || std::abs(k1_ - K.k1_) > tol ||
-      std::abs(k2_ - K.k2_) > tol || std::abs(p1_ - K.p1_) > tol || std::abs(p2_ - K.p2_) > tol)
-    return false;
-  return true;
+  const Cal3DS2_Base* base = dynamic_cast<const Cal3DS2_Base*>(&K);
+  return Cal3DS2_Base::equals(*base, tol);
 }
 
 /* ************************************************************************* */

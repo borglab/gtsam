@@ -26,8 +26,8 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-Cal3Unified::Cal3Unified(const Vector &v):
-    Base(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]), xi_(v[9]) {}
+Cal3Unified::Cal3Unified(const Vector& v)
+    : Base(v(0), v(1), v(2), v(3), v(4), v(5), v(6), v(7), v(8)), xi_(v(9)) {}
 
 /* ************************************************************************* */
 Vector10 Cal3Unified::vector() const {
@@ -44,12 +44,8 @@ void Cal3Unified::print(const std::string& s) const {
 
 /* ************************************************************************* */
 bool Cal3Unified::equals(const Cal3Unified& K, double tol) const {
-  if (std::abs(fx_ - K.fx_) > tol || std::abs(fy_ - K.fy_) > tol || std::abs(s_ - K.s_) > tol ||
-      std::abs(u0_ - K.u0_) > tol || std::abs(v0_ - K.v0_) > tol || std::abs(k1_ - K.k1_) > tol ||
-      std::abs(k2_ - K.k2_) > tol || std::abs(p1_ - K.p1_) > tol || std::abs(p2_ - K.p2_) > tol ||
-      std::abs(xi_ - K.xi_) > tol)
-    return false;
-  return true;
+  const Cal3DS2_Base* base = dynamic_cast<const Cal3DS2_Base*>(&K);
+  return Cal3DS2_Base::equals(*base, tol) && std::fabs(xi_ - K.xi_) < tol;
 }
 
 /* ************************************************************************* */
@@ -144,7 +140,6 @@ Vector10 Cal3Unified::localCoordinates(const Cal3Unified& T2) const {
   return T2.vector() - vector();
 }
 
-}
 /* ************************************************************************* */
 
-
+}  // \ namespace gtsam
