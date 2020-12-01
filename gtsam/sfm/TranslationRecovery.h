@@ -54,8 +54,14 @@ class TranslationRecovery {
   using TranslationEdges = std::vector<BinaryMeasurement<Unit3>>;
 
  private:
+  // Translation directions between camera pairs.
   TranslationEdges relativeTranslations_;
+
+  // Parameters used by the LM Optimizer.
   LevenbergMarquardtParams params_;
+
+  // Map from a key in the graph to a set of keys that share the same
+  // translation.
   std::map<Key, std::set<Key>> sameTranslationNodes_;
 
  public:
