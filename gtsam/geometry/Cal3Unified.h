@@ -14,6 +14,7 @@
  * @brief Unified Calibration Model, see Mei07icra for details
  * @date Mar 8, 2014
  * @author Jing Dong
+ * @author Varun Agrawal
  */
 
 /**
@@ -99,7 +100,8 @@ public:
       OptionalJacobian<2,2> Dp = boost::none) const ;
 
   /// Conver a pixel coordinate to ideal coordinate
-  Point2 calibrate(const Point2& p, const double tol=1e-5) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 10> Dcal = boost::none,
+                   OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /// Convert a 3D point to normalized unit plane
   Point2 spaceToNPlane(const Point2& p) const;

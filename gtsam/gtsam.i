@@ -881,7 +881,7 @@ virtual class Cal3DS2_Base {
 
   // Action on Point2
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 calibrate(const gtsam::Point2& p, double tol) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -1064,9 +1064,8 @@ class PinholeCamera {
 // Some typedefs for common camera types
 // PinholeCameraCal3_S2 is the same as SimpleCamera above
 typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
-//TODO (Issue 621) due to lack of jacobians of Cal3DS2_Base::calibrate, PinholeCamera does not apply to Cal3DS2/Unified
-//typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
-//typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
+typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
+typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
 
 #include <gtsam/geometry/StereoCamera.h>
@@ -2634,8 +2633,7 @@ virtual class GeneralSFMFactor : gtsam::NoiseModelFactor {
   gtsam::Point2 measured() const;
 };
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
-//TODO (Issue 621) due to lack of jacobians of Cal3DS2_Base::calibrate, GeneralSFMFactor does not apply to Cal3DS2
-//typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3> GeneralSFMFactorCal3Bundler;
 
 template<CALIBRATION = {gtsam::Cal3_S2}>

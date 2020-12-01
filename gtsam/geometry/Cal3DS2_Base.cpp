@@ -13,6 +13,7 @@
  * @file Cal3DS2_Base.cpp
  * @date Feb 28, 2010
  * @author ydjian
+ * @author Varun Agrawal
  */
 
 #include <gtsam/base/Vector.h>
@@ -24,8 +25,16 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-Cal3DS2_Base::Cal3DS2_Base(const Vector &v):
-    fx_(v[0]), fy_(v[1]), s_(v[2]), u0_(v[3]), v0_(v[4]), k1_(v[5]), k2_(v[6]), p1_(v[7]), p2_(v[8]){}
+Cal3DS2_Base::Cal3DS2_Base(const Vector& v)
+    : fx_(v(0)),
+      fy_(v(1)),
+      s_(v(2)),
+      u0_(v(3)),
+      v0_(v(4)),
+      k1_(v(5)),
+      k2_(v(6)),
+      p1_(v(7)),
+      p2_(v(8)) {}
 
 /* ************************************************************************* */
 Matrix3 Cal3DS2_Base::K() const {
@@ -94,9 +103,8 @@ static Matrix2 D2dintrinsic(double x, double y, double rr,
 }
 
 /* ************************************************************************* */
-Point2 Cal3DS2_Base::uncalibrate(const Point2& p,
-    OptionalJacobian<2,9> H1, OptionalJacobian<2,2> H2) const {
-
+Point2 Cal3DS2_Base::uncalibrate(const Point2& p, OptionalJacobian<2, 9> Dcal,
+                                 OptionalJacobian<2, 2> Dp) const {
   //  rr = x^2 + y^2;
   //  g = (1 + k(1)*rr + k(2)*rr^2);
   //  dp = [2*k(3)*x*y + k(4)*(rr + 2*x^2); 2*k(4)*x*y + k(3)*(rr + 2*y^2)];
@@ -115,37 +123,44 @@ Point2 Cal3DS2_Base::uncalibrate(const Point2& p,
   const double pny = g * y + dy;
 
   Matrix2 DK;
-  if (H1 || H2) DK << fx_, s_, 0.0, fy_;
+  if (Dcal || Dp) {
+    DK << fx_, s_, 0.0, fy_;
+  }
 
   // Derivative for calibration
-  if (H1)
-    *H1 = D2dcalibration(x, y, xx, yy, xy, rr, r4, pnx, pny, DK);
+  if (Dcal) {
+    *Dcal = D2dcalibration(x, y, xx, yy, xy, rr, r4, pnx, pny, DK);
+  }
 
   // Derivative for points
-  if (H2)
-    *H2 = D2dintrinsic(x, y, rr, g, k1_, k2_, p1_, p2_, DK);
+  if (Dp) {
+    *Dp = D2dintrinsic(x, y, rr, g, k1_, k2_, p1_, p2_, DK);
+  }
 
   // Regular uncalibrate after distortion
   return Point2(fx_ * pnx + s_ * pny + u0_, fy_ * pny + v0_);
 }
 
 /* ************************************************************************* */
-Point2 Cal3DS2_Base::calibrate(const Point2& pi, const double tol) const {
+Point2 Cal3DS2_Base::calibrate(const Point2& pi, OptionalJacobian<2, 9> Dcal,
+                               OptionalJacobian<2, 2> Dp) const {
   // Use the following fixed point iteration to invert the radial distortion.
   // pn_{t+1} = (inv(K)*pi - dp(pn_{t})) / g(pn_{t})
 
-  const Point2 invKPi ((1 / fx_) * (pi.x() - u0_ - (s_ / fy_) * (pi.y() - v0_)),
-                       (1 / fy_) * (pi.y() - v0_));
+  const Point2 invKPi((1 / fx_) * (pi.x() - u0_ - (s_ / fy_) * (pi.y() - v0_)),
+                      (1 / fy_) * (pi.y() - v0_));
 
-  // initialize by ignoring the distortion at all, might be problematic for pixels around boundary
+  // initialize by ignoring the distortion at all, might be problematic for
+  // pixels around boundary
   Point2 pn = invKPi;
 
   // iterate until the uncalibrate is close to the actual pixel coordinate
   const int maxIterations = 10;
   int iteration;
   for (iteration = 0; iteration < maxIterations; ++iteration) {
-    if (distance2(uncalibrate(pn), pi) <= tol) break;
-    const double x = pn.x(), y = pn.y(), xy = x * y, xx = x * x, yy = y * y;
+    if (distance2(uncalibrate(pn), pi) <= tol_) break;
+    const double px = pn.x(), py = pn.y(), xy = px * py, xx = px * px,
+                 yy = py * py;
     const double rr = xx + yy;
     const double g = (1 + k1_ * rr + k2_ * rr * rr);
     const double dx = 2 * p1_ * xy + p2_ * (rr + 2 * xx);
@@ -153,8 +168,11 @@ Point2 Cal3DS2_Base::calibrate(const Point2& pi, const double tol) const {
     pn = (invKPi - Point2(dx, dy)) / g;
   }
 
-  if ( iteration >= maxIterations )
-    throw std::runtime_error("Cal3DS2::calibrate fails to converge. need a better initialization");
+  if (iteration >= maxIterations)
+    throw std::runtime_error(
+        "Cal3DS2::calibrate fails to converge. need a better initialization");
+
+  calibrateJacobians<Cal3DS2_Base, dimension>(*this, pn, Dcal, Dp);
 
   return pn;
 }
