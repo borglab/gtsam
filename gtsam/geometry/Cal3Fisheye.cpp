@@ -122,14 +122,15 @@ Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
 }
 
 /* ************************************************************************* */
-Point2 Cal3Fisheye::calibrate(const Point2& uv, const double tol) const {
+Point2 Cal3Fisheye::calibrate(const Point2& uv, OptionalJacobian<2, 9> Dcal,
+                              OptionalJacobian<2, 2> Dp) const {
   // initial gues just inverts the pinhole model
   const double u = uv.x(), v = uv.y();
   const double yd = (v - v0_) / fy_;
   const double xd = (u - s_ * yd - u0_) / fx_;
   Point2 pi(xd, yd);
 
-  // Perform newtons method, break when solution converges past tol,
+  // Perform newtons method, break when solution converges past tol_,
   // throw exception if max iterations are reached
   const int maxIterations = 10;
   int iteration;
@@ -140,7 +141,7 @@ Point2 Cal3Fisheye::calibrate(const Point2& uv, const double tol) const {
     const Point2 uv_hat = uncalibrate(pi, boost::none, jac);
 
     // Test convergence
-    if ((uv_hat - uv).norm() < tol) break;
+    if ((uv_hat - uv).norm() < tol_) break;
 
     // Newton's method update step
     pi = pi - jac.inverse() * (uv_hat - uv);
@@ -150,6 +151,8 @@ Point2 Cal3Fisheye::calibrate(const Point2& uv, const double tol) const {
     throw std::runtime_error(
         "Cal3Fisheye::calibrate fails to converge. need a better "
         "initialization");
+
+  calibrateJacobians<Cal3Fisheye, dimension>(*this, pi, Dcal, Dp);
 
   return pi;
 }
