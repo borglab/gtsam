@@ -89,7 +89,7 @@ TEST(TranslationRecovery, BAL) {
   // EXPECT_DOUBLES_EQUAL(0.0199833, actualError, 1e-5);
 }
 
-TEST(TranslationRecovery, TwoPointTest) {
+TEST(TranslationRecovery, TwoPoseTest) {
   // Create a dataset with 2 poses.
   // __      __
   // \/      \/
@@ -114,14 +114,14 @@ TEST(TranslationRecovery, TwoPointTest) {
   EXPECT_LONGS_EQUAL(1, graph.size());
 
   // Run translation recovery
-  const auto result = algorithm.run(/*scale=*/2.0);
+  const auto result = algorithm.run(/*scale=*/3.0);
 
   // Check result for first two translations, determined by prior
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(2, 0, 0), result.at<Point3>(1)));
+  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1)));
 }
 
-TEST(TranslationRecovery, ThreePointTest) {
+TEST(TranslationRecovery, ThreePoseTest) {
   // Create a dataset with 3 poses.
   // __      __
   // \/      \/
@@ -151,15 +151,15 @@ TEST(TranslationRecovery, ThreePointTest) {
   const auto graph = algorithm.buildGraph();
   EXPECT_LONGS_EQUAL(3, graph.size());
 
-  const auto result = algorithm.run(/*scale=*/2.0);
+  const auto result = algorithm.run(/*scale=*/3.0);
 
   // Check result
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(2, 0, 0), result.at<Point3>(1)));
-  EXPECT(assert_equal(Point3(1, -1, 0), result.at<Point3>(3)));
+  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1)));
+  EXPECT(assert_equal(Point3(1.5, -1.5, 0), result.at<Point3>(3)));
 }
 
-TEST(TranslationRecovery, TwoPointsAndZeroTranslation) {
+TEST(TranslationRecovery, ThreePosesIncludingZeroTranslation) {
   // Create a dataset with 3 poses.
   // __      __
   // \/      \/
@@ -188,15 +188,15 @@ TEST(TranslationRecovery, TwoPointsAndZeroTranslation) {
   EXPECT_LONGS_EQUAL(1, graph.size()); 
 
   // Run translation recovery
-  const auto result = algorithm.run(/*scale=*/2.0);
+  const auto result = algorithm.run(/*scale=*/3.0);
 
   // Check result
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(2, 0, 0), result.at<Point3>(1)));
-  EXPECT(assert_equal(Point3(2, 0, 0), result.at<Point3>(2)));
+  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1)));
+  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(2)));
 }
 
-TEST(TranslationRecovery, ThreePointsAndZeroTranslation) {
+TEST(TranslationRecovery, FourPosesIncludingZeroTranslation) {
   // Create a dataset with 4 poses.
   // __      __
   // \/      \/
@@ -229,13 +229,13 @@ TEST(TranslationRecovery, ThreePointsAndZeroTranslation) {
   EXPECT_LONGS_EQUAL(3, graph.size());
 
   // Run translation recovery
-  const auto result = algorithm.run(/*scale=*/2.0);
+  const auto result = algorithm.run(/*scale=*/4.0);
 
   // Check result
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(2, 0, 0), result.at<Point3>(1)));
-  EXPECT(assert_equal(Point3(2, 0, 0), result.at<Point3>(2)));
-  EXPECT(assert_equal(Point3(1, -1, 0), result.at<Point3>(3)));
+  EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(1)));
+  EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(2)));
+  EXPECT(assert_equal(Point3(2, -2, 0), result.at<Point3>(3)));
 }
 
 /* ************************************************************************* */
