@@ -39,9 +39,13 @@ TranslationRecovery::TranslationRecovery(
     const TranslationRecovery::TranslationEdges &relativeTranslations,
     const LevenbergMarquardtParams &lmParams)
     : params_(lmParams) {
-  TranslationEdges tempRelativeTranslations;
-  DSFMap<Key> sameTranslationDSF;
+  // Some relative translations may be zero. We treat nodes that have a zero
+  // relativeTranslation as a single node.
 
+  // A DSFMap is used to find sets of nodes that have a zero relative
+  // translation. Add the nodes in each edge to the DSFMap, and merge nodes that
+  // are connected by a zero relative translation.
+  DSFMap<Key> sameTranslationDSF;
   for (const auto &edge : relativeTranslations) {
     Key key1 = sameTranslationDSF.find(edge.key1());
     Key key2 = sameTranslationDSF.find(edge.key2());
@@ -49,6 +53,7 @@ TranslationRecovery::TranslationRecovery(
       sameTranslationDSF.merge(key1, key2);
     }
   }
+  // Use only those edges for which two keys have a distinct root in the DSFMap.
   for (const auto &edge : relativeTranslations) {
     Key key1 = sameTranslationDSF.find(edge.key1());
     Key key2 = sameTranslationDSF.find(edge.key2());
@@ -56,6 +61,7 @@ TranslationRecovery::TranslationRecovery(
     relativeTranslations_.emplace_back(key1, key2, edge.measured(),
                                        edge.noiseModel());
   }
+  // Store the DSF map for post-processing results.
   sameTranslationNodes_ = sameTranslationDSF.sets();
 }
 
@@ -106,9 +112,13 @@ Values TranslationRecovery::run(const double scale) const {
   LevenbergMarquardtOptimizer lm(graph, initial, params_);
   Values result = lm.optimize();
 
-  for (const auto &sameTranslationKeys : sameTranslationNodes_) {
-    Key optimizedKey = sameTranslationKeys.first;
-    std::set<Key> duplicateKeys = sameTranslationKeys.second;
+  // Nodes that were not optimized are stored in sameTranslationNodes_ as a map
+  // from a key that was optimized to keys that were not optimized. Iterate over
+  // map and add results for keys not optimized.
+  for (const auto &optimizedAndDuplicateKeys : sameTranslationNodes_) {
+    Key optimizedKey = optimizedAndDuplicateKeys.first;
+    std::set<Key> duplicateKeys = optimizedAndDuplicateKeys.second;
+    // Add the result for the duplicate key if it does not already exist.
     for (const Key duplicateKey : duplicateKeys) {
       if (result.exists(duplicateKey)) continue;
       result.insert<Point3>(duplicateKey, result.at<Point3>(optimizedKey));
