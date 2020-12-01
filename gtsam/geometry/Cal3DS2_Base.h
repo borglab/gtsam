@@ -41,9 +41,9 @@ namespace gtsam {
  */
 class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
  protected:
-  double k1_, k2_;     // radial 2nd-order and 4th-order
-  double p1_, p2_;     // tangential distortion
-  double tol_ = 1e-5;  // tolerance value when calibrating
+  double k1_, k2_;     ///< radial 2nd-order and 4th-order
+  double p1_, p2_;     ///< tangential distortion
+  double tol_ = 1e-5;  ///< tolerance value when calibrating
 
  public:
   enum { dimension = 9 };

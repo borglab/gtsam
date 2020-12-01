@@ -68,7 +68,7 @@ void calibrateJacobians(const Cal& calibration, const Point2& pn,
  */
 class GTSAM_EXPORT Cal3 {
  protected:
-  double fx_, fy_, s_, u0_, v0_;
+  double fx_, fy_, s_, u0_, v0_;  ///< focal length, skew and principal point
 
  public:
   enum { dimension = 5 };
@@ -113,7 +113,7 @@ class GTSAM_EXPORT Cal3 {
                                                const Cal3& cal);
 
   /// print with optional string
-  virtual void print(const std::string& s = "Cal3") const;
+  virtual void print(const std::string& s = "") const;
 
   /// Check if equal up to specified tolerance
   bool equals(const Cal3& K, double tol = 10e-9) const;

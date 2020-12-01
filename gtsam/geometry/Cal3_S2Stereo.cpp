@@ -32,7 +32,7 @@ void Cal3_S2Stereo::print(const std::string& s) const {
 /* ************************************************************************* */
 bool Cal3_S2Stereo::equals(const Cal3_S2Stereo& other, double tol) const {
   const Cal3_S2* base = dynamic_cast<const Cal3_S2*>(&other);
-  return Cal3_S2::equals(*base, tol) && (std::abs(b_ - other.baseline()) < tol);
+  return Cal3_S2::equals(*base, tol) && (std::fabs(b_ - other.baseline()) < tol);
 }
 
 /* ************************************************************************* */

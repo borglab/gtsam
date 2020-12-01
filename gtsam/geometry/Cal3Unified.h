@@ -47,7 +47,7 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
 
 private:
 
-  double xi_;  // mirror parameter
+  double xi_;  ///< mirror parameter
 
 public:
 
