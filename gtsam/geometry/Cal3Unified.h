@@ -42,8 +42,8 @@ namespace gtsam {
  */
 class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
 
-  typedef Cal3Unified This;
-  typedef Cal3DS2_Base Base;
+  using This = Cal3Unified;
+  using Base = Cal3DS2_Base;
 
 private:
 

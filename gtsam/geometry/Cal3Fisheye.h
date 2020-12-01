@@ -53,8 +53,8 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
 
  public:
   enum { dimension = 9 };
-  typedef boost::shared_ptr<Cal3Fisheye>
-      shared_ptr;  ///< shared pointer to fisheye calibration object
+  ///< shared pointer to fisheye calibration object
+  using shared_ptr = boost::shared_ptr<Cal3Fisheye>;
 
   /// @name Standard Constructors
   /// @{
