@@ -24,16 +24,17 @@ using namespace std;
 
 /* ************************************************************************* */
 void Cal3_S2Stereo::print(const std::string& s) const {
-     K_.print(s+"K: ");
-     std::cout << s << "Baseline: " << b_ << std::endl;
-   }
+  std::cout << s << (s != "" ? " " : "");
+  print("K: ");
+  std::cout << "Baseline: " << b_ << std::endl;
+}
 
 /* ************************************************************************* */
 bool Cal3_S2Stereo::equals(const Cal3_S2Stereo& other, double tol) const {
-  if (std::abs(b_ - other.b_) > tol) return false;
-  return K_.equals(other.K_,tol);
+  const Cal3_S2* base = dynamic_cast<const Cal3_S2*>(&other);
+  return Cal3_S2::equals(*base, tol) && (std::abs(b_ - other.baseline()) < tol);
 }
 
 /* ************************************************************************* */
 
-} // namespace gtsam
+}  // namespace gtsam
