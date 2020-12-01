@@ -62,11 +62,11 @@ void Cal3::print(const std::string& s) const { gtsam::print((Matrix)K(), s); }
 
 /* ************************************************************************* */
 bool Cal3::equals(const Cal3& K, double tol) const {
-  return (std::abs(fx_ - K.fx_) < tol) && (std::abs(fy_ - K.fy_) < tol) &&
-         (std::abs(s_ - K.s_) < tol) && (std::abs(u0_ - K.u0_) < tol) &&
-         (std::abs(v0_ - K.v0_) < tol);
+  return (std::fabs(fx_ - K.fx_) < tol) && (std::fabs(fy_ - K.fy_) < tol) &&
+         (std::fabs(s_ - K.s_) < tol) && (std::fabs(u0_ - K.u0_) < tol) &&
+         (std::fabs(v0_ - K.v0_) < tol);
 }
 
 /* ************************************************************************* */
 
-}  // namespace gtsam
+}  // \ namespace gtsam

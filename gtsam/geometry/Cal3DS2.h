@@ -32,7 +32,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
 
-  typedef Cal3DS2_Base Base;
+  using Base = Cal3DS2_Base;
 
 public:
 
