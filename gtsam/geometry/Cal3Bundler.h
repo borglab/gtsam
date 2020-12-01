@@ -28,15 +28,17 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Cal3Bundler {
+class GTSAM_EXPORT Cal3Bundler : public Cal3 {
 
-private:
+ private:
   double f_; ///< focal length
   double k1_, k2_; ///< radial distortion
-  double u0_, v0_; ///< image center, not a parameter to be optimized but a constant
   double tol_; ///< tolerance value when calibrating
 
-public:
+  // NOTE: image center parameters (u0, v0) are not optimized
+  // but are constants.
+
+ public:
 
   enum { dimension = 3 };
 
@@ -44,7 +46,7 @@ public:
   /// @{
 
   /// Default constructor
-  Cal3Bundler();
+  Cal3Bundler() : Cal3(), f_(1), k1_(0), k2_(0), tol_(1e-5) {}
 
   /**
    *  Constructor
@@ -56,7 +58,8 @@ public:
    *  @param tol optional calibration tolerance value
    */
   Cal3Bundler(double f, double k1, double k2, double u0 = 0, double v0 = 0,
-              double tol = 1e-5);
+              double tol = 1e-5)
+      : Cal3(f, f, 0, u0, v0), f_(f), k1_(k1), k2_(k2), tol_(tol) {}
 
   virtual ~Cal3Bundler() {}
 
@@ -65,7 +68,7 @@ public:
   /// @{
 
   /// print with optional string
-  void print(const std::string& s = "") const;
+  void print(const std::string& s = "") const override;
 
   /// assert equality up to a tolerance
   bool equals(const Cal3Bundler& K, double tol = 10e-9) const;
@@ -73,11 +76,6 @@ public:
   /// @}
   /// @name Standard Interface
   /// @{
-
-  Matrix3 K() const; ///< Standard 3*3 calibration matrix
-  Vector4 k() const; ///< Radial distortion parameters (4 of them, 2 0)
-
-  Vector3 vector() const;
 
   /// focal length x
   inline double fx() const {
@@ -109,6 +107,11 @@ public:
     return v0_;
   }
 
+  Matrix3 K() const; ///< Standard 3*3 calibration matrix
+  Vector4 k() const; ///< Radial distortion parameters (4 of them, 2 0)
+
+  Vector3 vector() const;
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
   /// get parameter u0
   inline double u0() const {
@@ -121,12 +124,11 @@ public:
   }
 #endif
 
-
   /**
    * @brief: convert intrinsic coordinates xy to image coordinates uv
    * Version of uncalibrate with derivatives
    * @param p point in intrinsic coordinates
-   * @param Dcal optional 2*3 Jacobian wrpt CalBundler parameters
+   * @param Dcal optional 2*3 Jacobian wrpt Cal3Bundler parameters
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
@@ -158,23 +160,23 @@ public:
   /// @name Manifold
   /// @{
 
+  /// return DOF, dimensionality of tangent space
+  virtual size_t dim() const { return dimension; }
+
+  /// return DOF, dimensionality of tangent space
+  static size_t Dim() { return dimension; }
+
   /// Update calibration with tangent space delta
-  Cal3Bundler retract(const Vector& d) const;
+  inline Cal3Bundler retract(const Vector& d) const {
+    return Cal3Bundler(f_ + d(0), k1_ + d(1), k2_ + d(2), u0_, v0_);
+  }
 
   /// Calculate local coordinates to another calibration
-  Vector3 localCoordinates(const Cal3Bundler& T2) const;
-
-  /// dimensionality
-  virtual size_t dim() const {
-    return 3;
+  Vector3 localCoordinates(const Cal3Bundler& T2) const {
+    return T2.vector() - vector();
   }
 
-  /// dimensionality
-  static size_t Dim() {
-    return 3;
-  }
-
-private:
+ private:
 
   /// @}
   /// @name Advanced Interface
@@ -184,12 +186,12 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(f_);
-    ar & BOOST_SERIALIZATION_NVP(k1_);
-    ar & BOOST_SERIALIZATION_NVP(k2_);
-    ar & BOOST_SERIALIZATION_NVP(u0_);
-    ar & BOOST_SERIALIZATION_NVP(v0_);
-    ar & BOOST_SERIALIZATION_NVP(tol_);
+    ar& boost::serialization::make_nvp(
+        "Cal3Bundler", boost::serialization::base_object<Cal3>(*this));
+    ar& BOOST_SERIALIZATION_NVP(f_);
+    ar& BOOST_SERIALIZATION_NVP(k1_);
+    ar& BOOST_SERIALIZATION_NVP(k2_);
+    ar& BOOST_SERIALIZATION_NVP(tol_);
   }
 
   /// @}
