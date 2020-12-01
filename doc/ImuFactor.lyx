@@ -1,5 +1,5 @@
-#LyX 2.0 created this file. For more info see http://www.lyx.org/
-\lyxformat 413
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
 \begin_document
 \begin_header
 \textclass article
@@ -12,13 +12,13 @@
 \font_roman default
 \font_sans default
 \font_typewriter default
+\font_math auto
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
-
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -29,15 +29,24 @@
 \use_hyperref false
 \papersize default
 \use_geometry true
-\use_amsmath 1
-\use_esint 1
-\use_mhchem 1
-\use_mathdots 1
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
 \cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
+\justification true
 \use_refstyle 1
 \index Index
 \shortcut idx
@@ -244,7 +253,7 @@ X(t)=\left\{ R_{0},P_{0}+V_{0}t,V_{0}\right\}
 then the differential equation describing the trajectory is
 \begin_inset Formula 
 \[
-\dot{X}(t)=\left[0_{3x3},V_{0},0_{3x1}\right],\,\,\,\,\, X(0)=\left\{ R_{0},P_{0},V_{0}\right\} 
+\dot{X}(t)=\left[0_{3x3},V_{0},0_{3x1}\right],\,\,\,\,\,X(0)=\left\{ R_{0},P_{0},V_{0}\right\} 
 \]
 
 \end_inset
@@ -602,7 +611,7 @@ key "Iserles00an"
 ,
 \begin_inset Formula 
 \begin{equation}
-\dot{R}(t)=F(R,t),\,\,\,\, R(0)=R_{0}\label{eq:diffSo3}
+\dot{R}(t)=F(R,t),\,\,\,\,R(0)=R_{0}\label{eq:diffSo3}
 \end{equation}
 
 \end_inset
@@ -947,8 +956,8 @@ Or, as another way to state this, if we solve the differential equations
 \begin_inset Formula 
 \begin{eqnarray*}
 \dot{\theta}(t) & = & H(\theta)^{-1}\,\omega^{b}(t)\\
-\dot{p}(t) & = & R_{0}^{T}\, V_{0}+v(t)\\
-\dot{v}(t) & = & R_{0}^{T}\, g+R_{b}^{0}(t)a^{b}(t)
+\dot{p}(t) & = & R_{0}^{T}\,V_{0}+v(t)\\
+\dot{v}(t) & = & R_{0}^{T}\,g+R_{b}^{0}(t)a^{b}(t)
 \end{eqnarray*}
 
 \end_inset
@@ -1015,7 +1024,7 @@ v(t)=v_{g}(t)+v_{a}(t)
 evolving as
 \begin_inset Formula 
 \begin{eqnarray*}
-\dot{v}_{g}(t) & = & R_{i}^{T}\, g\\
+\dot{v}_{g}(t) & = & R_{i}^{T}\,g\\
 \dot{v}_{a}(t) & = & R_{b}^{i}(t)a^{b}(t)
 \end{eqnarray*}
 
@@ -1041,7 +1050,7 @@ p(t)=p_{i}(t)+p_{g}(t)+p_{v}(t)
 evolving as
 \begin_inset Formula 
 \begin{eqnarray*}
-\dot{p}_{i}(t) & = & R_{i}^{T}\, V_{i}\\
+\dot{p}_{i}(t) & = & R_{i}^{T}\,V_{i}\\
 \dot{p}_{g}(t) & = & v_{g}(t)=R_{i}^{T}gt\\
 \dot{p}_{v}(t) & = & v_{a}(t)
 \end{eqnarray*}
@@ -1096,7 +1105,7 @@ Predict the NavState
  from
 \begin_inset Formula 
 \[
-X_{j}=\mathcal{R}_{X_{i}}(\zeta(t_{ij}))=\left\{ \Phi_{R_{0}}\left(\theta(t_{ij})\right),P_{i}+V_{i}t_{ij}+\frac{gt_{ij}^{2}}{2}+R_{i}\, p_{v}(t_{ij}),V_{i}+gt_{ij}+R_{i}\, v_{a}(t_{ij})\right\} 
+X_{j}=\mathcal{R}_{X_{i}}(\zeta(t_{ij}))=\left\{ \Phi_{R_{0}}\left(\theta(t_{ij})\right),P_{i}+V_{i}t_{ij}+\frac{gt_{ij}^{2}}{2}+R_{i}\,p_{v}(t_{ij}),V_{i}+gt_{ij}+R_{i}\,v_{a}(t_{ij})\right\} 
 \]
 
 \end_inset
@@ -1372,12 +1381,153 @@ B_{k}=\left[\begin{array}{c}
 0_{3\times3}\\
 R_{k}\frac{\Delta_{t}}{2}^{2}\\
 R_{k}\Delta_{t}
-\end{array}\right],\,\,\,\, C_{k}=\left[\begin{array}{c}
+\end{array}\right],\,\,\,\,C_{k}=\left[\begin{array}{c}
 H(\theta_{k})^{-1}\Delta_{t}\\
 0_{3\times3}\\
 0_{3\times3}
 \end{array}\right]
 \]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Units
+\end_layout
+
+\begin_layout Standard
+The units of the IMU are as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="2">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Parameter
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Units
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+gyro_noise_sigma
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $rad/s/\sqrt{Hz}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+accel_noise_sigma
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $m/s^{2}/\sqrt{Hz}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+gyro_bias_rw_sigma
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $rad/s$
+\end_inset
+
+ or 
+\begin_inset Formula $rad\sqrt{Hz}/s$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+accel_bias_rw_sigma
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $m/s^{2}$
+\end_inset
+
+or 
+\begin_inset Formula $m\sqrt{Hz}/s^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
 
 \end_inset
 
