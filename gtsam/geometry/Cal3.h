@@ -30,7 +30,7 @@ namespace gtsam {
  * Jacobians of `calibrate` using `uncalibrate`.
  * This is useful when there are iterative operations in the `calibrate`
  * function which make computing jacobians difficult.
- * 
+ *
  * Given f(pi, pn) = uncalibrate(pn) - pi, and g(pi) = calibrate, we can
  * easily compute the Jacobians:
  * df/pi = -I (pn and pi are independent args)
@@ -61,6 +61,133 @@ void calibrateJacobians(const Cal& calibration, const Point2& pn,
   }
 }
 
-//TODO(Varun) Make common base class for all calibration models.
+/**
+ * @brief Common base class for all calibration models.
+ * @addtogroup geometry
+ * \nosubgrouping
+ */
+class GTSAM_EXPORT Cal3 {
+ protected:
+  double fx_, fy_, s_, u0_, v0_;
+
+ public:
+  enum { dimension = 5 };
+  typedef boost::shared_ptr<Cal3>
+      shared_ptr;  ///< shared pointer to calibration object
+
+  /// @name Standard Constructors
+  /// @{
+
+  /// Create a default calibration that leaves coordinates unchanged
+  Cal3() : fx_(1), fy_(1), s_(0), u0_(0), v0_(0) {}
+
+  /// constructor from doubles
+  Cal3(double fx, double fy, double s, double u0, double v0)
+      : fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0) {}
+
+  /// constructor from vector
+  Cal3(const Vector& d)
+      : fx_(d(0)), fy_(d(1)), s_(d(2)), u0_(d(3)), v0_(d(4)) {}
+
+  /**
+   * Easy constructor, takes fov in degrees, asssumes zero skew, unit aspect
+   * @param fov field of view in degrees
+   * @param w image width
+   * @param h image height
+   */
+  Cal3(double fov, int w, int h);
+
+  /// @}
+  /// @name Advanced Constructors
+  /// @{
+
+  /// load calibration from location (default name is calibration_info.txt)
+  Cal3(const std::string& path);
+
+  /// @}
+  /// @name Testable
+  /// @{
+
+  /// Output stream operator
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                               const Cal3& cal);
+
+  /// print with optional string
+  virtual void print(const std::string& s = "Cal3") const;
+
+  /// Check if equal up to specified tolerance
+  bool equals(const Cal3& K, double tol = 10e-9) const;
+
+  /// @}
+  /// @name Standard Interface
+  /// @{
+
+  /// focal length x
+  inline double fx() const { return fx_; }
+
+  /// focal length y
+  inline double fy() const { return fy_; }
+
+  /// aspect ratio
+  inline double aspectRatio() const { return fx_ / fy_; }
+
+  /// skew
+  inline double skew() const { return s_; }
+
+  /// image center in x
+  inline double px() const { return u0_; }
+
+  /// image center in y
+  inline double py() const { return v0_; }
+
+  /// return the principal point
+  Point2 principalPoint() const { return Point2(u0_, v0_); }
+
+  /// vectorized form (column-wise)
+  Vector5 vector() const {
+    Vector5 v;
+    v << fx_, fy_, s_, u0_, v0_;
+    return v;
+  }
+
+  /// return calibration matrix K
+  Matrix3 K() const {
+    Matrix3 K;
+    K << fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0;
+    return K;
+  }
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+  /** @deprecated The following function has been deprecated, use K above */
+  Matrix3 matrix() const { return K(); }
+#endif
+
+  /// return inverted calibration matrix inv(K)
+  Matrix3 matrix_inverse() const {
+    const double fxy = fx_ * fy_, sv0 = s_ * v0_, fyu0 = fy_ * u0_;
+    Matrix3 K_inverse;
+    K_inverse << 1.0 / fx_, -s_ / fxy, (sv0 - fyu0) / fxy, 0.0, 1.0 / fy_,
+        -v0_ / fy_, 0.0, 0.0, 1.0;
+    return K_inverse;
+  }
+
+  /// @}
+  /// @name Advanced Interface
+  /// @{
+
+ private:
+  /// Serialization function
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_NVP(fx_);
+    ar& BOOST_SERIALIZATION_NVP(fy_);
+    ar& BOOST_SERIALIZATION_NVP(s_);
+    ar& BOOST_SERIALIZATION_NVP(u0_);
+    ar& BOOST_SERIALIZATION_NVP(v0_);
+  }
+
+  /// @}
+};
 
 }  // \ namespace gtsam
