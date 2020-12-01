@@ -34,8 +34,7 @@ Cal3DS2_Base::Cal3DS2_Base(const Vector& v)
       k1_(v(5)),
       k2_(v(6)),
       p1_(v(7)),
-      p2_(v(8)),
-      tol_(1e-5) {}
+      p2_(v(8)) {}
 
 /* ************************************************************************* */
 Matrix3 Cal3DS2_Base::K() const {
@@ -173,24 +172,7 @@ Point2 Cal3DS2_Base::calibrate(const Point2& pi, OptionalJacobian<2, 9> Dcal,
     throw std::runtime_error(
         "Cal3DS2::calibrate fails to converge. need a better initialization");
 
-  // We make use of the Implicit Function Theorem to compute the Jacobians from uncalibrate
-  // Given f(pi, pn) = uncalibrate(pn) - pi, and g(pi) = calibrate, we can easily compute the Jacobians
-  // df/pi = -I (pn and pi are independent args)
-  // Dp = -inv(H_uncal_pn) * df/pi = -inv(H_uncal_pn) * (-I) = inv(H_uncal_pn)
-  // Dcal = -inv(H_uncal_pn) * df/K = -inv(H_uncal_pn) * H_uncal_K
-  Matrix29 H_uncal_K;
-  Matrix22 H_uncal_pn, H_uncal_pn_inv;
-
-  if (Dcal || Dp) {
-    // Compute uncalibrate Jacobians
-    uncalibrate(pn, Dcal ? &H_uncal_K : nullptr, H_uncal_pn);
-
-    H_uncal_pn_inv = H_uncal_pn.inverse();
-
-    if (Dp) *Dp = H_uncal_pn_inv;
-    if (Dcal) *Dcal = -H_uncal_pn_inv * H_uncal_K;
-
-  }
+  calibrateJacobians<Cal3DS2_Base, dimension>(*this, pn, Dcal, Dp);
 
   return pn;
 }

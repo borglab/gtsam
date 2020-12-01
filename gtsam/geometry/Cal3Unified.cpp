@@ -111,24 +111,7 @@ Point2 Cal3Unified::calibrate(const Point2& pi, OptionalJacobian<2, 10> Dcal,
   // call nplane to space
   Point2 pn = this->nPlaneToSpace(pnplane);
 
-  // We make use of the Implicit Function Theorem to compute the Jacobians from uncalibrate
-  // Given f(pi, pn) = uncalibrate(pn) - pi, and g(pi) = calibrate, we can easily compute the Jacobians
-  // df/pi = -I (pn and pi are independent args)
-  // Dp = -inv(H_uncal_pn) * df/pi = -inv(H_uncal_pn) * (-I) = inv(H_uncal_pn)
-  // Dcal = -inv(H_uncal_pn) * df/K = -inv(H_uncal_pn) * H_uncal_K
-  Eigen::Matrix<double, 2, 10> H_uncal_K;
-  Matrix22 H_uncal_pn, H_uncal_pn_inv;
-
-  if (Dcal || Dp) {
-    // Compute uncalibrate Jacobians
-    uncalibrate(pn, Dcal ? &H_uncal_K : nullptr, H_uncal_pn);
-
-    H_uncal_pn_inv = H_uncal_pn.inverse();
-
-    if (Dp) *Dp = H_uncal_pn_inv;
-    if (Dcal) *Dcal = -H_uncal_pn_inv * H_uncal_K;
-
-  }
+  calibrateJacobians<Cal3Unified, dimension>(*this, pn, Dcal, Dp);
 
   return pn;
 }
