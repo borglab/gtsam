@@ -28,14 +28,15 @@ namespace gtsam {
    * \nosubgrouping
    */
   class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
-  private:
+   private:
     double b_;
 
-  public:
+   public:
 
     enum { dimension = 6 };
+
     ///< shared pointer to stereo calibration object
-    typedef boost::shared_ptr<Cal3_S2Stereo> shared_ptr;
+    using shared_ptr = boost::shared_ptr<Cal3_S2Stereo>;
 
     /// @name Standard Constructors
     /// @
@@ -111,7 +112,7 @@ namespace gtsam {
     /// @name Advanced Interface
     /// @{
 
-  private:
+   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>
