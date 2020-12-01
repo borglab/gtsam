@@ -14,6 +14,7 @@
  * @brief Calibration of a camera with radial distortion, calculations in base class Cal3DS2_Base
  * @date Feb 28, 2010
  * @author ydjian
+ * @autho Varun Agrawal
  */
 
 #pragma once
