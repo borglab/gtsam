@@ -24,16 +24,6 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-Cal3Bundler::Cal3Bundler() :
-    f_(1), k1_(0), k2_(0), u0_(0), v0_(0), tol_(1e-5) {
-}
-
-/* ************************************************************************* */
-Cal3Bundler::Cal3Bundler(double f, double k1, double k2, double u0, double v0,
-                         double tol)
-    : f_(f), k1_(k1), k2_(k2), u0_(u0), v0_(v0), tol_(tol) {}
-
-/* ************************************************************************* */
 Matrix3 Cal3Bundler::K() const {
   Matrix3 K;
   K << f_, 0, u0_, 0, f_, v0_, 0, 0, 1;
@@ -59,11 +49,9 @@ void Cal3Bundler::print(const std::string& s) const {
 
 /* ************************************************************************* */
 bool Cal3Bundler::equals(const Cal3Bundler& K, double tol) const {
-  if (std::abs(f_ - K.f_) > tol || std::abs(k1_ - K.k1_) > tol
-      || std::abs(k2_ - K.k2_) > tol || std::abs(u0_ - K.u0_) > tol
-      || std::abs(v0_ - K.v0_) > tol)
-    return false;
-  return true;
+  return (std::fabs(f_ - K.f_) < tol && std::fabs(k1_ - K.k1_) < tol &&
+          std::fabs(k2_ - K.k2_) < tol && std::fabs(u0_ - K.u0_) < tol &&
+          std::fabs(v0_ - K.v0_) < tol);
 }
 
 /* ************************************************************************* */
@@ -150,14 +138,4 @@ Matrix25 Cal3Bundler::D2d_intrinsic_calibration(const Point2& p) const {
   return H;
 }
 
-/* ************************************************************************* */
-Cal3Bundler Cal3Bundler::retract(const Vector& d) const {
-  return Cal3Bundler(f_ + d(0), k1_ + d(1), k2_ + d(2), u0_, v0_);
-}
-
-/* ************************************************************************* */
-Vector3 Cal3Bundler::localCoordinates(const Cal3Bundler& T2) const {
-  return T2.vector() - vector();
-}
-
-}
+}  // \ namespace gtsam
