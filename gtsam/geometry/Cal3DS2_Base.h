@@ -19,42 +19,10 @@
 
 #pragma once
 
+#include <gtsam/geometry/Cal3.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
-
-/**
- * Function which makes use of the Implicit Function Theorem to compute the
- * Jacobians of `calibrate` using `uncalibrate`.
- * Given f(pi, pn) = uncalibrate(pn) - pi, and g(pi) = calibrate, we can
- * easily compute the Jacobians:
- * df/pi = -I (pn and pi are independent args)
- * Dp = -inv(H_uncal_pn) * df/pi = -inv(H_uncal_pn) * (-I) = inv(H_uncal_pn)
- * Dcal = -inv(H_uncal_pn) * df/K = -inv(H_uncal_pn) * H_uncal_K
- *
- * @tparam T Calibration model.
- * @tparam Dim The number of parameters in the calibration model.
- * @param p Calibrated point.
- * @param Dcal optional 2*p Jacobian wrpt `p` Cal3DS2 parameters.
- * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates.
- */
-template <typename T, size_t Dim>
-void calibrateJacobians(const T& calibration, const Point2& pn,
-                        OptionalJacobian<2, Dim> Dcal = boost::none,
-                        OptionalJacobian<2, 2> Dp = boost::none) {
-  if (Dcal || Dp) {
-    Eigen::Matrix<double, 2, Dim> H_uncal_K;
-    Matrix22 H_uncal_pn, H_uncal_pn_inv;
-
-    // Compute uncalibrate Jacobians
-    calibration.uncalibrate(pn, H_uncal_K, H_uncal_pn);
-
-    H_uncal_pn_inv = H_uncal_pn.inverse();
-
-    if (Dp) *Dp = H_uncal_pn_inv;
-    if (Dcal) *Dcal = -H_uncal_pn_inv * H_uncal_K;
-  }
-}
 
 /**
  * @brief Calibration of a camera with radial distortion

@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam/geometry/Cal3DS2_Base.h>
+#include <gtsam/geometry/Cal3.h>
 #include <gtsam/geometry/Point2.h>
 
 #include <string>
