@@ -81,10 +81,10 @@ public:
   Vector localCoordinates(const Cal3DS2& T2) const ;
 
   /// Return dimensions of calibration manifold object
-  virtual size_t dim() const { return dimension ; }
+  virtual size_t dim() const override { return Dim(); }
 
   /// Return dimensions of calibration manifold object
-  static size_t Dim() { return dimension; }
+  inline static size_t Dim() { return dimension; }
 
   /// @}
   /// @name Clone

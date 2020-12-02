@@ -115,10 +115,7 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
   /// @{
 
   /// return DOF, dimensionality of tangent space
-  inline size_t dim() const { return dimension; }
-
-  /// return DOF, dimensionality of tangent space
-  static size_t Dim() { return dimension; }
+  inline static size_t Dim() { return dimension; }
 
   /// Given 5-dim tangent vector, create new calibration
   inline Cal3_S2 retract(const Vector& d) const {

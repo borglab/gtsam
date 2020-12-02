@@ -14,6 +14,7 @@
  * @brief Calibration used by Bundler
  * @date Sep 25, 2010
  * @author Yong Dian Jian
+ * @author Varun Agrawal
  */
 
 #pragma once
@@ -31,11 +32,11 @@ namespace gtsam {
 class GTSAM_EXPORT Cal3Bundler : public Cal3 {
 
  private:
-  double f_ = 1.0f;               ///< focal length
   double k1_ = 0.0f, k2_ = 0.0f;  ///< radial distortion
   double tol_ = 1e-5;             ///< tolerance value when calibrating
 
-  // NOTE: image center parameters (u0, v0) are not optimized
+  // NOTE: We use the base class fx to represent the common focal length.
+  // Also, image center parameters (u0, v0) are not optimized
   // but are treated as constants.
 
  public:
@@ -59,7 +60,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
    */
   Cal3Bundler(double f, double k1, double k2, double u0 = 0, double v0 = 0,
               double tol = 1e-5)
-      : Cal3(f, f, 0, u0, v0), f_(f), k1_(k1), k2_(k2), tol_(tol) {}
+      : Cal3(f, f, 0, u0, v0), k1_(k1), k2_(k2), tol_(tol) {}
 
   virtual ~Cal3Bundler() {}
 
@@ -81,16 +82,6 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   /// @name Standard Interface
   /// @{
 
-  /// focal length x
-  inline double fx() const {
-    return f_;
-  }
-
-  /// focal length y
-  inline double fy() const {
-    return f_;
-  }
-
   /// distorsion parameter k1
   inline double k1() const {
     return k1_;
@@ -111,7 +102,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
     return v0_;
   }
 
-  Matrix3 K() const; ///< Standard 3*3 calibration matrix
+  Matrix3 K() const override; ///< Standard 3*3 calibration matrix
   Vector4 k() const; ///< Radial distortion parameters (4 of them, 2 0)
 
   Vector3 vector() const;
@@ -165,14 +156,14 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   /// @{
 
   /// return DOF, dimensionality of tangent space
-  virtual size_t dim() const { return dimension; }
+  virtual size_t dim() const override { return Dim(); }
 
   /// return DOF, dimensionality of tangent space
-  static size_t Dim() { return dimension; }
+  inline static size_t Dim() { return dimension; }
 
   /// Update calibration with tangent space delta
   inline Cal3Bundler retract(const Vector& d) const {
-    return Cal3Bundler(f_ + d(0), k1_ + d(1), k2_ + d(2), u0_, v0_);
+    return Cal3Bundler(fx_ + d(0), k1_ + d(1), k2_ + d(2), u0_, v0_);
   }
 
   /// Calculate local coordinates to another calibration
@@ -192,7 +183,6 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   void serialize(Archive & ar, const unsigned int /*version*/) {
     ar& boost::serialization::make_nvp(
         "Cal3Bundler", boost::serialization::base_object<Cal3>(*this));
-    ar& BOOST_SERIALIZATION_NVP(f_);
     ar& BOOST_SERIALIZATION_NVP(k1_);
     ar& BOOST_SERIALIZATION_NVP(k2_);
     ar& BOOST_SERIALIZATION_NVP(tol_);

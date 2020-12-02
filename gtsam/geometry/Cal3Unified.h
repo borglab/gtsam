@@ -34,10 +34,10 @@ namespace gtsam {
  *
  * Similar to Cal3DS2, does distortion but has additional mirror parameter xi
  * K = [ fx s u0 ; 0 fy v0 ; 0 0 1 ]
- * Pn = [ P.x / (1 + xi * \sqrt{P.x^2 + P.y^2 + 1}), P.y / (1 + xi * \sqrt{P.x^2 + P.y^2 + 1})]
- * rr = Pn.x^2 + Pn.y^2
- * \hat{pn} = (1 + k1*rr + k2*rr^2 ) pn + [ 2*k3 pn.x pn.y + k4 (rr + 2 Pn.x^2) ;
- *                      k3 (rr + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
+ * Pn = [ P.x / (1 + xi * \sqrt{P.x² + P.y² + 1}), P.y / (1 + xi * \sqrt{P.x² + P.y² + 1})]
+ * r² = Pn.x² + Pn.y²
+ * \hat{pn} = (1 + k1*r² + k2*r⁴ ) pn + [ 2*k3 pn.x pn.y + k4 (r² + 2 Pn.x²) ;
+ *                      k3 (rr + 2 Pn.y²) + 2*k4 pn.x pn.y  ]
  * pi = K*pn
  */
 class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
@@ -127,10 +127,10 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
   Vector localCoordinates(const Cal3Unified& T2) const ;
 
   /// Return dimensions of calibration manifold object
-  virtual size_t dim() const { return dimension ; }
+  virtual size_t dim() const override { return Dim(); }
 
   /// Return dimensions of calibration manifold object
-  static size_t Dim() { return dimension; }
+  inline static size_t Dim() { return dimension; }
 
   /// @}
 
