@@ -60,6 +60,10 @@ public:
   /// @name Testable
   /// @{
 
+  /// Output stream operator
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                               const Cal3DS2& cal);
+
   /// print with optional string
   void print(const std::string& s = "") const override;
 

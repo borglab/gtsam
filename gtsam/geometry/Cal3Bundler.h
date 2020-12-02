@@ -67,6 +67,10 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   /// @name Testable
   /// @{
 
+  /// Output stream operator
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                               const Cal3Bundler& cal);
+
   /// print with optional string
   void print(const std::string& s = "") const override;
 

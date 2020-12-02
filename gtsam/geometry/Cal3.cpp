@@ -49,8 +49,8 @@ Cal3::Cal3(const std::string& path)
 
 /* ************************************************************************* */
 std::ostream& operator<<(std::ostream& os, const Cal3& cal) {
-  os << "{ fx: " << cal.fx() << ", fy: " << cal.fy() << ", s: " << cal.skew()
-     << ", px: " << cal.px() << ", py: " << cal.py() << " }";
+  os << "fx: " << cal.fx() << ", fy: " << cal.fy() << ", s: " << cal.skew()
+     << ", px: " << cal.px() << ", py: " << cal.py();
   return os;
 }
 
