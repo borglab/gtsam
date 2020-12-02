@@ -56,7 +56,7 @@ class TestVisualISAMExample(GtsamTestCase):
         rank_tol = 1e-9
 
         triangulated_landmark = triangulatePoint3(poses,sharedCal, measurements, rank_tol, optimize)
-        self.gtsamAssertEquals(self.landmark, triangulated_landmark,1e-9)
+        self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9)
 
         # 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
         measurements = Point2Vector()
