@@ -14,10 +14,12 @@
  * @brief Calibration of a camera with radial distortion
  * @date Feb 28, 2010
  * @author ydjian
+ * @author Varun Agrawal
  */
 
 #pragma once
 
+#include <gtsam/geometry/Cal3.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -39,22 +41,43 @@ namespace gtsam {
 class GTSAM_EXPORT Cal3DS2_Base {
 
 protected:
-
-  double fx_, fy_, s_, u0_, v0_ ; // focal length, skew and principal point
-  double k1_, k2_ ; // radial 2nd-order and 4th-order
-  double p1_, p2_ ; // tangential distortion
+ double fx_, fy_, s_, u0_, v0_;  // focal length, skew and principal point
+ double k1_, k2_;                // radial 2nd-order and 4th-order
+ double p1_, p2_;                // tangential distortion
+ double tol_ = 1e-5;             // tolerance value when calibrating
 
 public:
+
+  enum { dimension = 9 };
 
   /// @name Standard Constructors
   /// @{
 
-  /// Default Constructor with only unit focal length
-  Cal3DS2_Base() : fx_(1), fy_(1), s_(0), u0_(0), v0_(0), k1_(0), k2_(0), p1_(0), p2_(0) {}
+ /// Default Constructor with only unit focal length
+ Cal3DS2_Base()
+     : fx_(1),
+       fy_(1),
+       s_(0),
+       u0_(0),
+       v0_(0),
+       k1_(0),
+       k2_(0),
+       p1_(0),
+       p2_(0),
+       tol_(1e-5) {}
 
-  Cal3DS2_Base(double fx, double fy, double s, double u0, double v0,
-      double k1, double k2, double p1 = 0.0, double p2 = 0.0) :
-  fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0), k1_(k1), k2_(k2), p1_(p1), p2_(p2) {}
+ Cal3DS2_Base(double fx, double fy, double s, double u0, double v0, double k1,
+              double k2, double p1 = 0.0, double p2 = 0.0, double tol = 1e-5)
+     : fx_(fx),
+       fy_(fy),
+       s_(s),
+       u0_(u0),
+       v0_(v0),
+       k1_(k1),
+       k2_(k2),
+       p1_(p1),
+       p2_(p2),
+       tol_(tol) {}
 
   virtual ~Cal3DS2_Base() {}
 
@@ -72,7 +95,7 @@ public:
   virtual void print(const std::string& s = "") const;
 
   /// assert equality up to a tolerance
-  bool equals(const Cal3DS2_Base& K, double tol = 10e-9) const;
+  bool equals(const Cal3DS2_Base& K, double tol = 1e-8) const;
 
   /// @}
   /// @name Standard Interface
@@ -121,12 +144,12 @@ public:
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in (distorted) image coordinates
    */
-  Point2 uncalibrate(const Point2& p,
-       OptionalJacobian<2,9> Dcal = boost::none,
-       OptionalJacobian<2,2> Dp = boost::none) const ;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = boost::none,
+                     OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /// Convert (distorted) image coordinates uv to intrinsic coordinates xy
-  Point2 calibrate(const Point2& p, const double tol=1e-5) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = boost::none,
+                   OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /// Derivative of uncalibrate wrpt intrinsic coordinates
   Matrix2 D2d_intrinsic(const Point2& p) const ;
@@ -164,6 +187,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(k2_);
     ar & BOOST_SERIALIZATION_NVP(p1_);
     ar & BOOST_SERIALIZATION_NVP(p2_);
+    ar & BOOST_SERIALIZATION_NVP(tol_);
   }
 
   /// @}

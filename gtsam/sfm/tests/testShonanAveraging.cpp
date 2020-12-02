@@ -92,6 +92,27 @@ TEST(ShonanAveraging3, checkOptimality) {
 }
 
 /* ************************************************************************* */
+TEST(ShonanAveraging3, checkSubgraph) {
+  // Create parameter with solver set to SUBGRAPH
+  auto params = ShonanAveragingParameters3(
+      gtsam::LevenbergMarquardtParams::CeresDefaults(), "SUBGRAPH");
+  ShonanAveraging3::Measurements measurements;
+
+  // The toyExample.g2o has 5 vertices, from 0-4
+  // The edges are: 1-2, 2-3, 3-4, 3-1, 1-4, 0-1,
+  // which can build a connected graph
+  auto subgraphShonan = fromExampleName("toyExample.g2o", params);
+
+  // Create initial random estimation
+  Values initial;
+  initial = subgraphShonan.initializeRandomly(kRandomNumberGenerator);
+
+  // Run Shonan with SUBGRAPH solver
+  auto result = subgraphShonan.run(initial, 3, 3);
+  EXPECT_DOUBLES_EQUAL(1e-11, subgraphShonan.cost(result.first), 1e-4);
+}
+
+/* ************************************************************************* */
 TEST(ShonanAveraging3, tryOptimizingAt3) {
   const Values randomRotations = kShonan.initializeRandomly(kRandomNumberGenerator);
   Values initial = ShonanAveraging3::LiftTo<Rot3>(3, randomRotations);  // convert to SOn

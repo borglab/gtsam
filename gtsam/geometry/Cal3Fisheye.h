@@ -14,10 +14,12 @@
  * @brief Calibration of a fisheye camera
  * @date Apr 8, 2020
  * @author ghaggin
+ * @author Varun Agrawal
  */
 
 #pragma once
 
+#include <gtsam/geometry/Cal3.h>
 #include <gtsam/geometry/Point2.h>
 
 #include <string>
@@ -48,6 +50,7 @@ class GTSAM_EXPORT Cal3Fisheye {
  private:
   double fx_, fy_, s_, u0_, v0_;  // focal length, skew and principal point
   double k1_, k2_, k3_, k4_;      // fisheye distortion coefficients
+  double tol_ = 1e-5;             // tolerance value when calibrating
 
  public:
   enum { dimension = 9 };
@@ -59,11 +62,11 @@ class GTSAM_EXPORT Cal3Fisheye {
 
   /// Default Constructor with only unit focal length
   Cal3Fisheye()
-      : fx_(1), fy_(1), s_(0), u0_(0), v0_(0), k1_(0), k2_(0), k3_(0), k4_(0) {}
+      : fx_(1), fy_(1), s_(0), u0_(0), v0_(0), k1_(0), k2_(0), k3_(0), k4_(0), tol_(1e-5) {}
 
   Cal3Fisheye(const double fx, const double fy, const double s, const double u0,
               const double v0, const double k1, const double k2,
-              const double k3, const double k4)
+              const double k3, const double k4, double tol = 1e-5)
       : fx_(fx),
         fy_(fy),
         s_(s),
@@ -72,7 +75,8 @@ class GTSAM_EXPORT Cal3Fisheye {
         k1_(k1),
         k2_(k2),
         k3_(k3),
-        k4_(k4) {}
+        k4_(k4),
+        tol_(tol) {}
 
   virtual ~Cal3Fisheye() {}
 
@@ -139,7 +143,8 @@ class GTSAM_EXPORT Cal3Fisheye {
 
   /// Convert (distorted) image coordinates [u;v] to intrinsic coordinates [x_i,
   /// y_i]
-  Point2 calibrate(const Point2& p, const double tol = 1e-5) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = boost::none,
+                   OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /// @}
   /// @name Testable

@@ -13,6 +13,7 @@
  * @file Cal3Unified.cpp
  * @date Mar 8, 2014
  * @author Jing Dong
+ * @author Varun Agrawal
  */
 
 #include <gtsam/base/Vector.h>
@@ -54,8 +55,8 @@ bool Cal3Unified::equals(const Cal3Unified& K, double tol) const {
 /* ************************************************************************* */
 // todo: make a fixed sized jacobian version of this
 Point2 Cal3Unified::uncalibrate(const Point2& p,
-       OptionalJacobian<2,10> H1,
-       OptionalJacobian<2,2> H2) const {
+       OptionalJacobian<2,10> Dcal,
+       OptionalJacobian<2,2> Dp) const {
 
   // this part of code is modified from Cal3DS2,
   // since the second part of this model (after project to normalized plane)
@@ -78,16 +79,16 @@ Point2 Cal3Unified::uncalibrate(const Point2& p,
   Point2 puncalib = Base::uncalibrate(m, H1base, H2base);
 
   // Inlined derivative for calibration
-  if (H1) {
+  if (Dcal) {
     // part1
     Vector2 DU;
     DU << -xs * sqrt_nx * xi_sqrt_nx2, //
         -ys * sqrt_nx * xi_sqrt_nx2;
-    *H1 << H1base, H2base * DU;
+    *Dcal << H1base, H2base * DU;
   }
 
   // Inlined derivative for points
-  if (H2) {
+  if (Dp) {
     // part1
     const double denom = 1.0 * xi_sqrt_nx2 / sqrt_nx;
     const double mid = -(xi * xs*ys) * denom;
@@ -95,20 +96,24 @@ Point2 Cal3Unified::uncalibrate(const Point2& p,
     DU << (sqrt_nx + xi*(ys*ys + 1)) * denom, mid, //
         mid, (sqrt_nx + xi*(xs*xs + 1)) * denom;
 
-    *H2 << H2base * DU;
+    *Dp << H2base * DU;
   }
 
   return puncalib;
 }
 
 /* ************************************************************************* */
-Point2 Cal3Unified::calibrate(const Point2& pi, const double tol) const {
-
+Point2 Cal3Unified::calibrate(const Point2& pi, OptionalJacobian<2, 10> Dcal,
+                              OptionalJacobian<2, 2> Dp) const {
   // calibrate point to Nplane use base class::calibrate()
-  Point2 pnplane = Base::calibrate(pi, tol);
+  Point2 pnplane = Base::calibrate(pi);
 
   // call nplane to space
-  return this->nPlaneToSpace(pnplane);
+  Point2 pn = this->nPlaneToSpace(pnplane);
+
+  calibrateJacobians<Cal3Unified, dimension>(*this, pn, Dcal, Dp);
+
+  return pn;
 }
 /* ************************************************************************* */
 Point2 Cal3Unified::nPlaneToSpace(const Point2& p) const {

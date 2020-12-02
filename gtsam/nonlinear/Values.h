@@ -187,8 +187,8 @@ namespace gtsam {
      * Dynamic matrices/vectors can be retrieved as fixed-size, but not vice-versa.
      * @return The stored value
      */
-    template<typename ValueType>
-    ValueType at(Key j) const;
+    template <typename ValueType>
+    const ValueType at(Key j) const;
 
     /// version for double
     double atDouble(size_t key) const { return at<double>(key);}
