@@ -103,7 +103,15 @@ class GTSAM_EXPORT Cal3 {
   /// @name Advanced Constructors
   /// @{
 
-  /// load calibration from location (default name is calibration_info.txt)
+  /**
+   * Load calibration parameters from `calibration_info.txt` file located in
+   * `path` directory.
+   *
+   * The contents of calibration file should be the 5 parameters in order:
+   * `fx, fy, s, u0, v0`
+   *
+   * @param path path to directory containing `calibration_info.txt`.
+   */
   Cal3(const std::string& path);
 
   /// @}

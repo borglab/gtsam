@@ -33,12 +33,11 @@ Cal3::Cal3(double fov, int w, int h)
 }
 
 /* ************************************************************************* */
-Cal3::Cal3(const std::string& path)
-    : fx_(320), fy_(320), s_(0), u0_(320), v0_(140) {
+Cal3::Cal3(const std::string& path) {
   const auto buffer = path + std::string("/calibration_info.txt");
   std::ifstream infile(buffer, std::ios::in);
 
-  if (infile) {
+  if (infile && !infile.eof()) {
     infile >> fx_ >> fy_ >> s_ >> u0_ >> v0_;
   } else {
     throw std::runtime_error("Cal3: Unable to load the calibration");
