@@ -11,11 +11,12 @@
 
 /**
  * @file  testCal3Bundler.cpp
- * @brief Unit tests for transform derivatives
+ * @brief Unit tests for Bundler calibration model.
  */
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 
@@ -28,7 +29,7 @@ static Cal3Bundler K(500, 1e-3, 1e-3, 1000, 2000);
 static Point2 p(2,3);
 
 /* ************************************************************************* */
-TEST( Cal3Bundler, vector)
+TEST(Cal3Bundler, vector)
 {
   Cal3Bundler K;
   Vector expected(3);
@@ -37,7 +38,7 @@ TEST( Cal3Bundler, vector)
 }
 
 /* ************************************************************************* */
-TEST( Cal3Bundler, uncalibrate)
+TEST(Cal3Bundler, uncalibrate)
 {
   Vector v = K.vector() ;
   double r = p.x()*p.x() + p.y()*p.y() ;
@@ -47,7 +48,7 @@ TEST( Cal3Bundler, uncalibrate)
   CHECK(assert_equal(expected,actual));
 }
 
-TEST( Cal3Bundler, calibrate )
+TEST(Cal3Bundler, calibrate )
 {
   Point2 pn(0.5, 0.5);
   Point2 pi = K.uncalibrate(pn);
@@ -61,7 +62,7 @@ Point2 uncalibrate_(const Cal3Bundler& k, const Point2& pt) { return k.uncalibra
 Point2 calibrate_(const Cal3Bundler& k, const Point2& pt) { return k.calibrate(pt); }
 
 /* ************************************************************************* */
-TEST( Cal3Bundler, Duncalibrate)
+TEST(Cal3Bundler, Duncalibrate)
 {
   Matrix Dcal, Dp;
   Point2 actual = K.uncalibrate(p, Dcal, Dp);
@@ -74,7 +75,7 @@ TEST( Cal3Bundler, Duncalibrate)
 }
 
 /* ************************************************************************* */
-TEST( Cal3Bundler, Dcalibrate)
+TEST(Cal3Bundler, Dcalibrate)
 {
   Matrix Dcal, Dp;
   Point2 pn(0.5, 0.5);
@@ -88,20 +89,30 @@ TEST( Cal3Bundler, Dcalibrate)
 }
 
 /* ************************************************************************* */
-TEST( Cal3Bundler, assert_equal)
+TEST(Cal3Bundler, assert_equal)
 {
   CHECK(assert_equal(K,K,1e-7));
 }
 
 /* ************************************************************************* */
-TEST( Cal3Bundler, retract)
+TEST(Cal3Bundler, retract)
 {
   Cal3Bundler expected(510, 2e-3, 2e-3, 1000, 2000);
-  Vector d(3);
+  Vector3 d;
   d << 10, 1e-3, 1e-3;
   Cal3Bundler actual = K.retract(d);
   CHECK(assert_equal(expected,actual,1e-7));
   CHECK(assert_equal(d,K.localCoordinates(actual),1e-7));
+}
+
+/* ************************************************************************* */
+TEST(Cal3_S2, Print) {
+  Cal3Bundler cal(1, 2, 3, 4, 5);
+  std::stringstream os;
+  os << "f: " << cal.fx() << ", k1: " << cal.k1() << ", k2: " << cal.k2()
+     << ", px: " << cal.px() << ", py: " << cal.py();
+
+  EXPECT(assert_stdout_equal(os.str(), cal));
 }
 
 /* ************************************************************************* */

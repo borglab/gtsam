@@ -10,12 +10,13 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file  testCal3DFisheye.cpp
+ * @file  testCal3Fisheye.cpp
  * @brief Unit tests for fisheye calibration class
  * @author ghaggin
  */
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Point3.h>
@@ -196,6 +197,17 @@ TEST(Cal3Fisheye, Dcalibrate)
   CHECK(assert_equal(numerical1,Dcal,1e-5));
   Matrix numerical2 = numericalDerivative22(calibrate_, K, pi);
   CHECK(assert_equal(numerical2,Dp,1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Cal3Fisheye, Print) {
+  Cal3Fisheye cal(1, 2, 3, 4, 5, 6, 7, 8, 9);
+  std::stringstream os;
+  os << "fx: " << cal.fx() << ", fy: " << cal.fy() << ", s: " << cal.skew()
+     << ", px: " << cal.px() << ", py: " << cal.py() << ", k1: " << cal.k1()
+     << ", k2: " << cal.k2() << ", k3: " << cal.k3() << ", k4: " << cal.k4();
+
+  EXPECT(assert_stdout_equal(os.str(), cal));
 }
 
 /* ************************************************************************* */

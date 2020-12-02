@@ -11,7 +11,7 @@
 
 /**
  * @file  testCal3_S2.cpp
- * @brief Unit tests for transform derivatives
+ * @brief Unit tests for basic Cal3_S2 calibration model.
  */
 
 #include <CppUnitLite/TestHarness.h>
@@ -31,7 +31,7 @@ static Point2 p_uv(1320.3, 1740);
 static Point2 p_xy(2, 3);
 
 /* ************************************************************************* */
-TEST( Cal3_S2, easy_constructor)
+TEST(Cal3_S2, easy_constructor)
 {
   Cal3_S2 expected(554.256, 554.256, 0, 640 / 2, 480 / 2);
 
@@ -43,7 +43,7 @@ TEST( Cal3_S2, easy_constructor)
 }
 
 /* ************************************************************************* */
-TEST( Cal3_S2, calibrate)
+TEST(Cal3_S2, calibrate)
 {
   Point2 intrinsic(2,3);
   Point2 expectedimage(1320.3, 1740);
@@ -53,7 +53,7 @@ TEST( Cal3_S2, calibrate)
 }
 
 /* ************************************************************************* */
-TEST( Cal3_S2, calibrate_homogeneous) {
+TEST(Cal3_S2, calibrate_homogeneous) {
   Vector3 intrinsic(2, 3, 1);
   Vector3 image(1320.3, 1740, 1);
   CHECK(assert_equal((Vector)intrinsic,(Vector)K.calibrate(image)));
@@ -61,7 +61,7 @@ TEST( Cal3_S2, calibrate_homogeneous) {
 
 /* ************************************************************************* */
 Point2 uncalibrate_(const Cal3_S2& k, const Point2& pt) { return k.uncalibrate(pt); }
-TEST( Cal3_S2, Duncalibrate1)
+TEST(Cal3_S2, Duncalibrate1)
 {
   Matrix25 computed; K.uncalibrate(p, computed, boost::none);
   Matrix numerical = numericalDerivative21(uncalibrate_, K, p);
@@ -69,7 +69,7 @@ TEST( Cal3_S2, Duncalibrate1)
 }
 
 /* ************************************************************************* */
-TEST( Cal3_S2, Duncalibrate2)
+TEST(Cal3_S2, Duncalibrate2)
 {
   Matrix computed; K.uncalibrate(p, boost::none, computed);
   Matrix numerical = numericalDerivative22(uncalibrate_, K, p);
@@ -98,7 +98,7 @@ TEST(Cal3_S2, Dcalibrate2)
 }
 
 /* ************************************************************************* */
-TEST( Cal3_S2, assert_equal)
+TEST(Cal3_S2, assert_equal)
 {
   CHECK(assert_equal(K,K,1e-9));
 
@@ -107,7 +107,7 @@ TEST( Cal3_S2, assert_equal)
 }
 
 /* ************************************************************************* */
-TEST( Cal3_S2, retract)
+TEST(Cal3_S2, retract)
 {
   Cal3_S2 expected(500+1, 500+2, 0.1+3, 640 / 2+4, 480 / 2+5);
   Vector d(5);
@@ -131,8 +131,8 @@ TEST(Cal3_S2, between) {
 TEST(Cal3_S2, Print) {
   Cal3_S2 cal(5, 5, 5, 5, 5);
   std::stringstream os;
-  os << "{ fx: " << cal.fx() << ", fy: " << cal.fy() << ", s: " << cal.skew()
-     << ", px: " << cal.px() << ", py: " << cal.py() << " }";
+  os << "fx: " << cal.fx() << ", fy: " << cal.fy() << ", s: " << cal.skew()
+     << ", px: " << cal.px() << ", py: " << cal.py();
 
   EXPECT(assert_stdout_equal(os.str(), cal));
 }
