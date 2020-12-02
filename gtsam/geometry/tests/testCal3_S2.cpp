@@ -131,8 +131,8 @@ TEST(Cal3_S2, between) {
 TEST(Cal3_S2, Print) {
   Cal3_S2 cal(5, 5, 5, 5, 5);
   std::stringstream os;
-  os << "{fx: " << cal.fx() << ", fy: " << cal.fy() << ", s:" << cal.skew() << ", px:" << cal.px()
-     << ", py:" << cal.py() << "}";
+  os << "{ fx: " << cal.fx() << ", fy: " << cal.fy() << ", s: " << cal.skew()
+     << ", px: " << cal.px() << ", py: " << cal.py() << " }";
 
   EXPECT(assert_stdout_equal(os.str(), cal));
 }

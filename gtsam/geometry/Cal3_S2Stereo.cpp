@@ -20,7 +20,14 @@
 #include <iostream>
 
 namespace gtsam {
-using namespace std;
+
+/* ************************************************************************* */
+std::ostream& operator<<(std::ostream& os, const Cal3_S2Stereo& cal) {
+  os << "{ fx: " << cal.fx() << ", fy: " << cal.fy() << ", s: " << cal.skew()
+     << ", px: " << cal.px() << ", py: " << cal.py()
+     << ", b: " << cal.baseline() << " }";
+  return os;
+}
 
 /* ************************************************************************* */
 void Cal3_S2Stereo::print(const std::string& s) const {
@@ -32,7 +39,7 @@ void Cal3_S2Stereo::print(const std::string& s) const {
 /* ************************************************************************* */
 bool Cal3_S2Stereo::equals(const Cal3_S2Stereo& other, double tol) const {
   const Cal3_S2* base = dynamic_cast<const Cal3_S2*>(&other);
-  return Cal3_S2::equals(*base, tol) && (std::fabs(b_ - other.baseline()) < tol);
+  return (Cal3_S2::equals(*base, tol) && std::fabs(b_ - other.baseline()) < tol);
 }
 
 /* ************************************************************************* */
