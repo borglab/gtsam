@@ -111,6 +111,9 @@ TEST(Cal3_S2Stereo, assert_equal) {
 TEST(Cal3_S2Stereo, retract) {
   Cal3_S2Stereo expected(500 + 1, 500 + 2, 0.1 + 3, 640 / 2 + 4, 480 / 2 + 5,
                          7);
+  EXPECT_LONGS_EQUAL(Cal3_S2Stereo::Dim(), 6);
+  EXPECT_LONGS_EQUAL(expected.dim(), 6);
+
   Vector6 d;
   d << 1, 2, 3, 4, 5, 6;
   Cal3_S2Stereo actual = K.retract(d);

@@ -96,11 +96,14 @@ TEST(Cal3DS2, Dcalibrate)
 TEST(Cal3DS2, assert_equal) { CHECK(assert_equal(K, K, 1e-5)); }
 
 /* ************************************************************************* */
-TEST(Cal3DS2, retract)
-{
+TEST(Cal3DS2, retract) {
   Cal3DS2 expected(500 + 1, 100 + 2, 0.1 + 3, 320 + 4, 240 + 5, 1e-3 + 6,
       2.0 * 1e-3 + 7, 3.0 * 1e-3 + 8, 4.0 * 1e-3 + 9);
-  Vector d(9);
+
+  EXPECT_LONGS_EQUAL(Cal3DS2::Dim(), 9);
+  EXPECT_LONGS_EQUAL(expected.dim(), 9);
+
+  Vector9 d;
   d << 1,2,3,4,5,6,7,8,9;
   Cal3DS2 actual = K.retract(d);
   CHECK(assert_equal(expected,actual,1e-7));

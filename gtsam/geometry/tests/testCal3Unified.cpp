@@ -106,11 +106,14 @@ TEST(Cal3Unified, assert_equal)
 }
 
 /* ************************************************************************* */
-TEST(Cal3Unified, retract)
-{
+TEST(Cal3Unified, retract) {
   Cal3Unified expected(100 + 2, 105 + 3, 0.0 + 4, 320 + 5, 240 + 6,
       1e-3 + 7, 2.0*1e-3 + 8, 3.0*1e-3 + 9, 4.0*1e-3 + 10, 0.1 + 1);
-  Vector d(10);
+
+  EXPECT_LONGS_EQUAL(Cal3Unified::Dim(), 10);
+  EXPECT_LONGS_EQUAL(expected.dim(), 10);
+
+  Vector10 d;
   d << 2, 3, 4, 5, 6, 7, 8, 9, 10, 1;
   Cal3Unified actual = K.retract(d);
   CHECK(assert_equal(expected,actual,1e-9));

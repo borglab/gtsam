@@ -93,6 +93,9 @@ TEST(Cal3Bundler, retract) {
   Cal3Bundler expected(510, 2e-3, 2e-3, 1000, 2000);
   EXPECT_LONGS_EQUAL(3, expected.dim());
 
+  EXPECT_LONGS_EQUAL(Cal3Bundler::Dim(), 3);
+  EXPECT_LONGS_EQUAL(expected.dim(), 3);
+
   Vector3 d;
   d << 10, 1e-3, 1e-3;
   Cal3Bundler actual = K.retract(d);
