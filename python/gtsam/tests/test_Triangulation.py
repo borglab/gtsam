@@ -75,8 +75,8 @@ class TestVisualISAMExample(GtsamTestCase):
         camera2 = PinholeCameraCal3_S2(self.pose2, K2)
 
         cameras = CameraSetCal3_S2()
-        cameras.append(camera1)
-        cameras.append(camera2)
+        cameras.push_back(camera1)
+        cameras.push_back(camera2)
 
         # Project two landmarks into two cameras and triangulate
         z1 = camera1.project(self.landmark)
@@ -101,8 +101,8 @@ class TestVisualISAMExample(GtsamTestCase):
         camera2 = PinholeCameraCal3Bundler(self.pose2, K2)
 
         cameras = CameraSetCal3Bundler()
-        cameras.append(camera1)
-        cameras.append(camera2)
+        cameras.push_back(camera1)
+        cameras.push_back(camera2)
 
         # Project two landmarks into two cameras and triangulate
         z1 = camera1.project(self.landmark)

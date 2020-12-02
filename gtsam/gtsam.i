@@ -1068,18 +1068,18 @@ typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
 typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
 
-template<T = {gtsam::PinholeCameraCal3Bundler, gtsam::PinholeCameraCal3_S2}>
+template<T>
 class CameraSet {
   CameraSet();
 
-  // // common STL methods
-  // size_t size() const;
-  // bool empty() const;
-  // void clear();
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
 
-  // // structure specific methods
-  // T at(size_t i) const;
-  // void push_back(const T& cam);
+  // structure specific methods
+  T at(size_t i) const;
+  void push_back(const T& cam);
 };
 
 typedef gtsam::CameraSet<gtsam::PinholeCameraCal3_S2> CameraSetCal3_S2;
