@@ -43,6 +43,13 @@ Vector3 Cal3Bundler::vector() const {
 }
 
 /* ************************************************************************* */
+std::ostream& operator<<(std::ostream& os, const Cal3Bundler& cal) {
+  os << "f: " << cal.fx() << ", k1: " << cal.k1() << ", k2: " << cal.k2()
+     << ", px: " << cal.px() << ", py: " << cal.py();
+  return os;
+}
+
+/* ************************************************************************* */
 void Cal3Bundler::print(const std::string& s) const {
   gtsam::print((Vector)(Vector(5) << f_, k1_, k2_, u0_, v0_).finished(), s + ".K");
 }

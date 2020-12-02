@@ -140,6 +140,14 @@ Point2 Cal3Fisheye::calibrate(const Point2& uv, OptionalJacobian<2, 9> Dcal,
 }
 
 /* ************************************************************************* */
+std::ostream& operator<<(std::ostream& os, const Cal3Fisheye& cal) {
+  os << (Cal3&)cal;
+  os << ", k1: " << cal.k1() << ", k2: " << cal.k2() << ", k3: " << cal.k3()
+     << ", k4: " << cal.k4();
+  return os;
+}
+
+/* ************************************************************************* */
 void Cal3Fisheye::print(const std::string& s_) const {
   gtsam::print((Matrix)K(), s_ + ".K");
   gtsam::print(Vector(k()), s_ + ".k");

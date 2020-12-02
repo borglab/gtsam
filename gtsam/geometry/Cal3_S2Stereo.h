@@ -61,6 +61,10 @@ namespace gtsam {
     /// @name Testable
     /// @{
 
+    /// Output stream operator
+    GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                                 const Cal3_S2Stereo& cal);
+
     /// print with optional string
     void print(const std::string& s = "") const override;
 
@@ -83,7 +87,7 @@ namespace gtsam {
     /// vectorized form (column-wise)
     Vector6 vector() const {
       Vector6 v;
-      v << vector(), b_;
+      v << Cal3_S2::vector(), b_;
       return v;
     }
 
@@ -107,7 +111,6 @@ namespace gtsam {
     Vector6 localCoordinates(const Cal3_S2Stereo& T2) const {
       return T2.vector() - vector();
     }
-
 
     /// @}
     /// @name Advanced Interface

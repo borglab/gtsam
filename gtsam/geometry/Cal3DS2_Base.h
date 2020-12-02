@@ -80,6 +80,10 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   /// @name Testable
   /// @{
 
+  /// Output stream operator
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                               const Cal3DS2_Base& cal);
+
   /// print with optional string
   void print(const std::string& s = "") const override;
 

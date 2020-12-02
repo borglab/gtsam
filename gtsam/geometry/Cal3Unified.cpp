@@ -33,6 +33,13 @@ Vector10 Cal3Unified::vector() const {
 }
 
 /* ************************************************************************* */
+std::ostream& operator<<(std::ostream& os, const Cal3Unified& cal) {
+  os << (Cal3DS2_Base&)cal;
+  os << ", xi: " << cal.xi();
+  return os;
+}
+
+/* ************************************************************************* */
 void Cal3Unified::print(const std::string& s) const {
   Base::print(s);
   gtsam::print((Vector)(Vector(1) << xi_).finished(), s + ".xi");

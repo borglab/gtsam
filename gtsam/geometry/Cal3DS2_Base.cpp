@@ -32,6 +32,14 @@ Vector9 Cal3DS2_Base::vector() const {
 }
 
 /* ************************************************************************* */
+std::ostream& operator<<(std::ostream& os, const Cal3DS2_Base& cal) {
+  os << (Cal3&)cal;
+  os << ", k1: " << cal.k1() << ", k2: " << cal.k2() << ", p1: " << cal.p1()
+     << ", p2: " << cal.p2();
+  return os;
+}
+
+/* ************************************************************************* */
 void Cal3DS2_Base::print(const std::string& s_) const {
   gtsam::print((Matrix)K(), s_ + ".K");
   gtsam::print(Vector(k()), s_ + ".k");

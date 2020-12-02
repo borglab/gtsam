@@ -137,6 +137,10 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @name Testable
   /// @{
 
+  /// Output stream operator
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                               const Cal3Fisheye& cal);
+
   /// print with optional string
   virtual void print(const std::string& s = "") const override;
 

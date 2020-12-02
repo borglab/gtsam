@@ -25,8 +25,8 @@ namespace gtsam {
 
 /* ************************************************************************* */
 std::ostream& operator<<(std::ostream& os, const Cal3_S2& cal) {
-  os << "{ fx: " << cal.fx() << ", fy: " << cal.fy() << ", s: " << cal.skew()
-     << ", px: " << cal.px() << ", py: " << cal.py() << " }";
+  // Use the base class version since it is identical.
+  os << (Cal3&)cal;
   return os;
 }
 

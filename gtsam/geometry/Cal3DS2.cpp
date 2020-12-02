@@ -25,6 +25,12 @@
 namespace gtsam {
 
 /* ************************************************************************* */
+std::ostream& operator<<(std::ostream& os, const Cal3DS2& cal) {
+  os << (Cal3DS2_Base&)cal;
+  return os;
+}
+
+/* ************************************************************************* */
 void Cal3DS2::print(const std::string& s_) const {
   Base::print(s_);
 }
