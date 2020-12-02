@@ -30,7 +30,6 @@ namespace gtsam {
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3Bundler : public Cal3 {
-
  private:
   double k1_ = 0.0f, k2_ = 0.0f;  ///< radial distortion
   double tol_ = 1e-5;             ///< tolerance value when calibrating
@@ -40,7 +39,6 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   // but are treated as constants.
 
  public:
-
   enum { dimension = 3 };
 
   /// @name Standard Constructors
@@ -83,40 +81,28 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   /// @{
 
   /// distorsion parameter k1
-  inline double k1() const {
-    return k1_;
-  }
+  inline double k1() const { return k1_; }
 
   /// distorsion parameter k2
-  inline double k2() const {
-    return k2_;
-  }
+  inline double k2() const { return k2_; }
 
   /// image center in x
-  inline double px() const {
-    return u0_;
-  }
+  inline double px() const { return u0_; }
 
   /// image center in y
-  inline double py() const {
-    return v0_;
-  }
+  inline double py() const { return v0_; }
 
-  Matrix3 K() const override; ///< Standard 3*3 calibration matrix
-  Vector4 k() const; ///< Radial distortion parameters (4 of them, 2 0)
+  Matrix3 K() const override;  ///< Standard 3*3 calibration matrix
+  Vector4 k() const;  ///< Radial distortion parameters (4 of them, 2 0)
 
   Vector3 vector() const;
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
   /// get parameter u0
-  inline double u0() const {
-    return u0_;
-  }
+  inline double u0() const { return u0_; }
 
   /// get parameter v0
-  inline double v0() const {
-    return v0_;
-  }
+  inline double v0() const { return v0_; }
 #endif
 
   /**
@@ -128,7 +114,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
    * @return point in image coordinates
    */
   Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal = boost::none,
-      OptionalJacobian<2, 2> Dp = boost::none) const;
+                     OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /**
    * Convert a pixel coordinate to ideal coordinate xy
@@ -138,8 +124,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in intrinsic coordinates
    */
-  Point2 calibrate(const Point2& pi,
-                   OptionalJacobian<2, 3> Dcal = boost::none,
+  Point2 calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal = boost::none,
                    OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
@@ -172,15 +157,14 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   }
 
  private:
-
   /// @}
   /// @name Advanced Interface
   /// @{
 
   /** Serialization function */
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int /*version*/) {
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int /*version*/) {
     ar& boost::serialization::make_nvp(
         "Cal3Bundler", boost::serialization::base_object<Cal3>(*this));
     ar& BOOST_SERIALIZATION_NVP(k1_);
@@ -189,13 +173,12 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   }
 
   /// @}
-
 };
 
-template<>
+template <>
 struct traits<Cal3Bundler> : public internal::Manifold<Cal3Bundler> {};
 
-template<>
+template <>
 struct traits<const Cal3Bundler> : public internal::Manifold<Cal3Bundler> {};
 
-} // namespace gtsam
+}  // namespace gtsam

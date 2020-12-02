@@ -16,11 +16,11 @@
  * @author Varun Agrawal
  */
 
-#include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Cal3DS2.h>
 
 namespace gtsam {
 
@@ -31,9 +31,7 @@ std::ostream& operator<<(std::ostream& os, const Cal3DS2& cal) {
 }
 
 /* ************************************************************************* */
-void Cal3DS2::print(const std::string& s_) const {
-  Base::print(s_);
-}
+void Cal3DS2::print(const std::string& s_) const { Base::print(s_); }
 
 /* ************************************************************************* */
 bool Cal3DS2::equals(const Cal3DS2& K, double tol) const {
@@ -50,8 +48,5 @@ Cal3DS2 Cal3DS2::retract(const Vector& d) const {
 Vector Cal3DS2::localCoordinates(const Cal3DS2& T2) const {
   return T2.vector() - vector();
 }
-
 }
 /* ************************************************************************* */
-
-
