@@ -1109,31 +1109,22 @@ typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
 //typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
 
-class CameraSetCal3Bundler {
-  CameraSetCal3Bundler();
+template<T = {gtsam::PinholeCameraCal3Bundler, gtsam::PinholeCameraCal3_S2}>
+class CameraSet {
+  CameraSet();
 
-  // common STL methods
-  size_t size() const;
-  bool empty() const;
-  void clear();
+  // // common STL methods
+  // size_t size() const;
+  // bool empty() const;
+  // void clear();
 
-  // structure specific methods
-  gtsam::PinholeCameraCal3Bundler at(size_t i) const;
-  void push_back(const gtsam::PinholeCameraCal3Bundler& cam);
+  // // structure specific methods
+  // T at(size_t i) const;
+  void push_back(const T& cam);
 };
 
-class CameraSetCal3_S2 {
-  CameraSetCal3_S2();
-
-  // common STL methods
-  size_t size() const;
-  bool empty() const;
-  void clear();
-
-  // structure specific methods
-  gtsam::PinholeCameraCal3_S2 at(size_t i) const;
-  void push_back(const gtsam::PinholeCameraCal3_S2& cam);
-};
+typedef gtsam::CameraSet<gtsam::PinholeCameraCal3_S2> CameraSetCal3_S2;
+typedef gtsam::CameraSet<gtsam::PinholeCameraCal3Bundler> CameraSetCal3Bundler;
 
 #include <gtsam/geometry/StereoCamera.h>
 class StereoCamera {
@@ -1166,7 +1157,6 @@ class StereoCamera {
 
 #include <gtsam/geometry/triangulation.h>
 
-// Templates appear not yet supported for free functions
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
     gtsam::Cal3_S2* sharedCal, const gtsam::Point2Vector& measurements,
     double rank_tol, bool optimize);
