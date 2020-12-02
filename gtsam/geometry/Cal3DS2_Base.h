@@ -33,11 +33,10 @@ namespace gtsam {
  * http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html
  * but using only k1,k2,p1, and p2 coefficients.
  * K = [ fx s u0 ; 0 fy v0 ; 0 0 1 ]
- * rr = Pn.x^2 + Pn.y^2
- * \hat{Pn} = (1 + k1*rr + k2*rr^2 ) Pn + [ 2*p1 Pn.x Pn.y + p2 (rr + 2 Pn.x^2)
- * ;
- *                      p1 (rr + 2 Pn.y^2) + 2*p2 Pn.x Pn.y  ]
- * pi = K*Pn
+ * r² = P.x² + P.y²
+ * P̂ = (1 + k1*r² + k2*r⁴) P + [ (2*p1 P.x P.y) + p2 (r² + 2 Pn.x²)
+ *                            p1 (r² + 2 Pn.y²) + (2*p2 Pn.x Pn.y) ]
+ * pi = K*P̂
  */
 class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
  protected:
@@ -131,6 +130,12 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
 
   /// Derivative of uncalibrate wrpt the calibration parameters
   Matrix29 D2d_calibration(const Point2& p) const;
+
+  /// return DOF, dimensionality of tangent space
+  virtual size_t dim() const override { return Dim(); }
+
+  /// return DOF, dimensionality of tangent space
+  inline static size_t Dim() { return dimension; }
 
   /// @}
   /// @name Clone

@@ -25,8 +25,9 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Matrix3 Cal3Bundler::K() const {
+  // This function is needed to ensure skew = 0;
   Matrix3 K;
-  K << f_, 0, u0_, 0, f_, v0_, 0, 0, 1;
+  K << fx_, 0, u0_, 0, fy_, v0_, 0, 0, 1.0;
   return K;
 }
 
@@ -39,7 +40,7 @@ Vector4 Cal3Bundler::k() const {
 
 /* ************************************************************************* */
 Vector3 Cal3Bundler::vector() const {
-  return Vector3(f_, k1_, k2_);
+  return Vector3(fx_, k1_, k2_);
 }
 
 /* ************************************************************************* */
@@ -51,12 +52,13 @@ std::ostream& operator<<(std::ostream& os, const Cal3Bundler& cal) {
 
 /* ************************************************************************* */
 void Cal3Bundler::print(const std::string& s) const {
-  gtsam::print((Vector)(Vector(5) << f_, k1_, k2_, u0_, v0_).finished(), s + ".K");
+  gtsam::print((Vector)(Vector(5) << fx_, k1_, k2_, u0_, v0_).finished(), s + ".K");
 }
 
 /* ************************************************************************* */
 bool Cal3Bundler::equals(const Cal3Bundler& K, double tol) const {
-  return (std::fabs(f_ - K.f_) < tol && std::fabs(k1_ - K.k1_) < tol &&
+  const Cal3* base = dynamic_cast<const Cal3*>(&K);
+  return (Cal3::equals(*base, tol) && std::fabs(k1_ - K.k1_) < tol &&
           std::fabs(k2_ - K.k2_) < tol && std::fabs(u0_ - K.u0_) < tol &&
           std::fabs(v0_ - K.v0_) < tol);
 }
@@ -64,13 +66,15 @@ bool Cal3Bundler::equals(const Cal3Bundler& K, double tol) const {
 /* ************************************************************************* */
 Point2 Cal3Bundler::uncalibrate(const Point2& p, //
     OptionalJacobian<2, 3> Dcal, OptionalJacobian<2, 2> Dp) const {
-  //  r = x^2 + y^2;
-  //  g = (1 + k(1)*r + k(2)*r^2);
+  //  r = x² + y²;
+  //  g = (1 + k(1)*r + k(2)*r²);
   //  pi(:,i) = g * pn(:,i)
   const double x = p.x(), y = p.y();
   const double r = x * x + y * y;
   const double g = 1. + (k1_ + k2_ * r) * r;
   const double u = g * x, v = g * y;
+
+  const double f_ = fx_;
 
   // Derivatives make use of intermediate variables above
   if (Dcal) {
@@ -92,9 +96,9 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p, //
 Point2 Cal3Bundler::calibrate(const Point2& pi,
                               OptionalJacobian<2, 3> Dcal,
                               OptionalJacobian<2, 2> Dp) const {
-  // Copied from Cal3DS2 :-(
-  // but specialized with k1,k2 non-zero only and fx=fy and s=0
-  double x = (pi.x() - u0_)/f_, y = (pi.y() - v0_)/f_;
+  // Copied from Cal3DS2
+  // but specialized with k1, k2 non-zero only and fx=fy and s=0
+  double x = (pi.x() - u0_) / fx_, y = (pi.y() - v0_) / fx_;
   const Point2 invKPi(x, y);
 
   // initialize by ignoring the distortion at all, might be problematic for pixels around boundary

@@ -27,7 +27,6 @@ namespace gtsam {
 Cal3::Cal3(double fov, int w, int h)
     : s_(0), u0_((double)w / 2.0), v0_((double)h / 2.0) {
   double a = fov * M_PI / 360.0;  // fov/2 in radians
-  // old formula: fx_ = (double) w * tan(a);
   fx_ = double(w) / (2.0 * tan(a));
   fy_ = fx_;
 }
@@ -61,6 +60,14 @@ bool Cal3::equals(const Cal3& K, double tol) const {
   return (std::fabs(fx_ - K.fx_) < tol && std::fabs(fy_ - K.fy_) < tol &&
           std::fabs(s_ - K.s_) < tol && std::fabs(u0_ - K.u0_) < tol &&
           std::fabs(v0_ - K.v0_) < tol);
+}
+
+Matrix3 Cal3::inverse() const {
+  const double fxy = fx_ * fy_, sv0 = s_ * v0_, fyu0 = fy_ * u0_;
+  Matrix3 K_inverse;
+  K_inverse << 1.0 / fx_, -s_ / fxy, (sv0 - fyu0) / fxy, 0.0, 1.0 / fy_,
+      -v0_ / fy_, 0.0, 0.0, 1.0;
+  return K_inverse;
 }
 
 /* ************************************************************************* */

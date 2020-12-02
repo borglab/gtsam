@@ -38,9 +38,9 @@ namespace gtsam {
  * Intrinsic coordinates:
  *   [x_i;y_i] = [x/z; y/z]
  * Distorted coordinates:
- *   r^2 = (x_i)^2 + (y_i)^2
+ *   r² = (x_i)² + (y_i)²
  *   th = atan(r)
- *   th_d = th(1 + k1*th^2 + k2*th^4 + k3*th^6 + k4*th^8)
+ *   th_d = th(1 + k1*th² + k2*th⁴ + k3*th⁶ + k4*th⁸)
  *   [x_d; y_d] = (th_d / r)*[x_i; y_i]
  * Pixel coordinates:
  *   K = [fx s u0; 0 fy v0 ;0 0 1]
@@ -152,10 +152,10 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @{
 
   /// Return dimensions of calibration manifold object
-  virtual size_t dim() const { return dimension; }
+  virtual size_t dim() const override { return Dim(); }
 
   /// Return dimensions of calibration manifold object
-  static size_t Dim() { return dimension; }
+  inline static size_t Dim() { return dimension; }
 
   /// Given delta vector, update calibration
   inline Cal3Fisheye retract(const Vector& d) const {

@@ -93,9 +93,9 @@ static Matrix2 D2dintrinsic(double x, double y, double rr,
 /* ************************************************************************* */
 Point2 Cal3DS2_Base::uncalibrate(const Point2& p, OptionalJacobian<2, 9> Dcal,
                                  OptionalJacobian<2, 2> Dp) const {
-  //  rr = x^2 + y^2;
-  //  g = (1 + k(1)*rr + k(2)*rr^2);
-  //  dp = [2*k(3)*x*y + k(4)*(rr + 2*x^2); 2*k(4)*x*y + k(3)*(rr + 2*y^2)];
+  //  r² = x² + y²;
+  //  g = (1 + k(1)*r² + k(2)*r⁴);
+  //  dp = [2*k(3)*x*y + k(4)*(r² + 2*x²); 2*k(4)*x*y + k(3)*(r² + 2*y²)];
   //  pi(:,i) = g * pn(:,i) + dp;
   const double x = p.x(), y = p.y(), xy = x * y, xx = x * x, yy = y * y;
   const double rr = xx + yy;

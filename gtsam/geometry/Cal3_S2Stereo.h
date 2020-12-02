@@ -79,7 +79,7 @@ namespace gtsam {
     const Cal3_S2& calibration() const { return *this; }
 
     /// return calibration matrix K, same for left and right
-    Matrix3 K() const { return K(); }
+    Matrix3 K() const override { return Cal3_S2::K(); }
 
     /// return baseline
     inline double baseline() const { return b_; }
@@ -96,10 +96,10 @@ namespace gtsam {
     /// @{
 
     /// return DOF, dimensionality of tangent space
-    inline size_t dim() const { return dimension; }
+    inline size_t dim() const override { return Dim(); }
 
     /// return DOF, dimensionality of tangent space
-    static size_t Dim() { return dimension; }
+    inline static size_t Dim() { return dimension; }
 
     /// Given 6-dim tangent vector, create new calibration
     inline Cal3_S2Stereo retract(const Vector& d) const {
