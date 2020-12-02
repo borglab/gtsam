@@ -497,9 +497,6 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
 }
 
 // Vector of Cameras - used by the Python/MATLAB wrapper
-//typedef CameraSet<PinholeCamera<Cal3Bundler>> CameraSetCal3Bundler;
-//typedef CameraSet<PinholeCamera<Cal3_S2>> CameraSetCal3_S2;
-
 using CameraSetCal3Bundler = CameraSet<PinholeCamera<Cal3Bundler>>;
 using CameraSetCal3_S2 = CameraSet<PinholeCamera<Cal3_S2>>;
 
