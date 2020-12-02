@@ -11,7 +11,8 @@
 
 /**
  * @file Cal3DS2.h
- * @brief Calibration of a camera with radial distortion, calculations in base class Cal3DS2_Base
+ * @brief Calibration of a camera with radial distortion, calculations in base
+ * class Cal3DS2_Base
  * @date Feb 28, 2010
  * @author ydjian
  * @autho Varun Agrawal
@@ -31,11 +32,9 @@ namespace gtsam {
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
-
   using Base = Cal3DS2_Base;
 
-public:
-
+ public:
   enum { dimension = 9 };
 
   /// @name Standard Constructors
@@ -54,7 +53,7 @@ public:
   /// @name Advanced Constructors
   /// @{
 
-  Cal3DS2(const Vector9 &v) : Base(v) {}
+  Cal3DS2(const Vector9& v) : Base(v) {}
 
   /// @}
   /// @name Testable
@@ -75,10 +74,10 @@ public:
   /// @{
 
   /// Given delta vector, update calibration
-  Cal3DS2 retract(const Vector& d) const ;
+  Cal3DS2 retract(const Vector& d) const;
 
   /// Given a different calibration, calculate update to obtain it
-  Vector localCoordinates(const Cal3DS2& T2) const ;
+  Vector localCoordinates(const Cal3DS2& T2) const;
 
   /// Return dimensions of calibration manifold object
   virtual size_t dim() const override { return Dim(); }
@@ -97,30 +96,24 @@ public:
 
   /// @}
 
-
-private:
-
+ private:
   /// @name Advanced Interface
   /// @{
 
   /** Serialization function */
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int /*version*/)
-  {
-    ar & boost::serialization::make_nvp("Cal3DS2",
-        boost::serialization::base_object<Cal3DS2_Base>(*this));
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp(
+        "Cal3DS2", boost::serialization::base_object<Cal3DS2_Base>(*this));
   }
 
   /// @}
-
 };
 
-template<>
+template <>
 struct traits<Cal3DS2> : public internal::Manifold<Cal3DS2> {};
 
-template<>
+template <>
 struct traits<const Cal3DS2> : public internal::Manifold<Cal3DS2> {};
-
 }
-

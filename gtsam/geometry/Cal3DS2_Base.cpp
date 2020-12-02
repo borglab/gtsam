@@ -16,11 +16,11 @@
  * @author Varun Agrawal
  */
 
-#include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/geometry/Cal3DS2_Base.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Cal3DS2_Base.h>
 
 namespace gtsam {
 
@@ -54,23 +54,23 @@ bool Cal3DS2_Base::equals(const Cal3DS2_Base& K, double tol) const {
 }
 
 /* ************************************************************************* */
-static Matrix29 D2dcalibration(double x, double y, double xx,
-    double yy, double xy, double rr, double r4, double pnx, double pny,
-    const Matrix2& DK) {
+static Matrix29 D2dcalibration(double x, double y, double xx, double yy,
+                               double xy, double rr, double r4, double pnx,
+                               double pny, const Matrix2& DK) {
   Matrix25 DR1;
   DR1 << pnx, 0.0, pny, 1.0, 0.0, 0.0, pny, 0.0, 0.0, 1.0;
   Matrix24 DR2;
-  DR2 << x * rr, x * r4, 2 * xy, rr + 2 * xx, //
-         y * rr, y * r4, rr + 2 * yy, 2 * xy;
+  DR2 << x * rr, x * r4, 2 * xy, rr + 2 * xx,  //
+      y * rr, y * r4, rr + 2 * yy, 2 * xy;
   Matrix29 D;
   D << DR1, DK * DR2;
   return D;
 }
 
 /* ************************************************************************* */
-static Matrix2 D2dintrinsic(double x, double y, double rr,
-    double g, double k1, double k2, double p1, double p2,
-    const Matrix2& DK) {
+static Matrix2 D2dintrinsic(double x, double y, double rr, double g, double k1,
+                            double k2, double p1, double p2,
+                            const Matrix2& DK) {
   const double drdx = 2. * x;
   const double drdy = 2. * y;
   const double dgdx = k1 * drdx + k2 * 2. * rr * drdx;
@@ -84,8 +84,8 @@ static Matrix2 D2dintrinsic(double x, double y, double rr,
   const double dDydy = 2. * p2 * x + p1 * (drdy + 4. * y);
 
   Matrix2 DR;
-  DR << g + x * dgdx + dDxdx, x * dgdy + dDxdy, //
-        y * dgdx + dDydx, g + y * dgdy + dDydy;
+  DR << g + x * dgdx + dDxdx, x * dgdy + dDxdy,  //
+      y * dgdx + dDydx, g + y * dgdy + dDydy;
 
   return DK * DR;
 }
@@ -100,7 +100,7 @@ Point2 Cal3DS2_Base::uncalibrate(const Point2& p, OptionalJacobian<2, 9> Dcal,
   const double x = p.x(), y = p.y(), xy = x * y, xx = x * x, yy = y * y;
   const double rr = xx + yy;
   const double r4 = rr * rr;
-  const double g = 1. + k1_ * rr + k2_ * r4; // scaling factor
+  const double g = 1. + k1_ * rr + k2_ * r4;  // scaling factor
 
   // tangential component
   const double dx = 2. * p1_ * xy + p2_ * (rr + 2. * xx);
@@ -190,8 +190,5 @@ Matrix29 Cal3DS2_Base::D2d_calibration(const Point2& p) const {
   DK << fx_, s_, 0.0, fy_;
   return D2dcalibration(x, y, xx, yy, xy, rr, r4, pnx, pny, DK);
 }
-
 }
 /* ************************************************************************* */
-
-

@@ -15,11 +15,11 @@
  * @author ydjian
  */
 
-#include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Cal3Bundler.h>
 
 namespace gtsam {
 
@@ -39,9 +39,7 @@ Vector4 Cal3Bundler::k() const {
 }
 
 /* ************************************************************************* */
-Vector3 Cal3Bundler::vector() const {
-  return Vector3(fx_, k1_, k2_);
-}
+Vector3 Cal3Bundler::vector() const { return Vector3(fx_, k1_, k2_); }
 
 /* ************************************************************************* */
 std::ostream& operator<<(std::ostream& os, const Cal3Bundler& cal) {
@@ -52,7 +50,8 @@ std::ostream& operator<<(std::ostream& os, const Cal3Bundler& cal) {
 
 /* ************************************************************************* */
 void Cal3Bundler::print(const std::string& s) const {
-  gtsam::print((Vector)(Vector(5) << fx_, k1_, k2_, u0_, v0_).finished(), s + ".K");
+  gtsam::print((Vector)(Vector(5) << fx_, k1_, k2_, u0_, v0_).finished(),
+               s + ".K");
 }
 
 /* ************************************************************************* */
@@ -64,8 +63,8 @@ bool Cal3Bundler::equals(const Cal3Bundler& K, double tol) const {
 }
 
 /* ************************************************************************* */
-Point2 Cal3Bundler::uncalibrate(const Point2& p, //
-    OptionalJacobian<2, 3> Dcal, OptionalJacobian<2, 2> Dp) const {
+Point2 Cal3Bundler::uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal,
+                                OptionalJacobian<2, 2> Dp) const {
   //  r = x² + y²;
   //  g = (1 + k(1)*r + k(2)*r²);
   //  pi(:,i) = g * pn(:,i)
@@ -93,23 +92,22 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p, //
 }
 
 /* ************************************************************************* */
-Point2 Cal3Bundler::calibrate(const Point2& pi,
-                              OptionalJacobian<2, 3> Dcal,
+Point2 Cal3Bundler::calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal,
                               OptionalJacobian<2, 2> Dp) const {
   // Copied from Cal3DS2
   // but specialized with k1, k2 non-zero only and fx=fy and s=0
   double x = (pi.x() - u0_) / fx_, y = (pi.y() - v0_) / fx_;
   const Point2 invKPi(x, y);
 
-  // initialize by ignoring the distortion at all, might be problematic for pixels around boundary
+  // initialize by ignoring the distortion at all, might be problematic for
+  // pixels around boundary
   Point2 pn(x, y);
 
   // iterate until the uncalibrate is close to the actual pixel coordinate
   const int maxIterations = 10;
   int iteration;
   for (iteration = 0; iteration < maxIterations; ++iteration) {
-    if (distance2(uncalibrate(pn), pi) <= tol_)
-      break;
+    if (distance2(uncalibrate(pn), pi) <= tol_) break;
     const double px = pn.x(), py = pn.y(), xx = px * px, yy = py * py;
     const double rr = xx + yy;
     const double g = (1 + k1_ * rr + k2_ * rr * rr);
@@ -118,7 +116,8 @@ Point2 Cal3Bundler::calibrate(const Point2& pi,
 
   if (iteration >= maxIterations)
     throw std::runtime_error(
-        "Cal3Bundler::calibrate fails to converge. need a better initialization");
+        "Cal3Bundler::calibrate fails to converge. need a better "
+        "initialization");
 
   calibrateJacobians<Cal3Bundler, dimension>(*this, pn, Dcal, Dp);
 
