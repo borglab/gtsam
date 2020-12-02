@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
   output_filename = var_map["output_filename"].as<string>();
   use_isam = var_map["use_isam"].as<bool>();
 
-  ISAM2* isam2;
+  ISAM2* isam2 = 0;
   if (use_isam) {
     printf("Using ISAM2\n");
     ISAM2Params parameters;

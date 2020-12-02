@@ -121,24 +121,7 @@ Point2 Cal3Bundler::calibrate(const Point2& pi,
     throw std::runtime_error(
         "Cal3Bundler::calibrate fails to converge. need a better initialization");
 
-  // We make use of the Implicit Function Theorem to compute the Jacobians from uncalibrate
-  // Given f(pi, pn) = uncalibrate(pn) - pi, and g(pi) = calibrate, we can easily compute the Jacobians
-  // df/pi = -I (pn and pi are independent args)
-  // Dcal = -inv(H_uncal_pn) * df/pi = -inv(H_uncal_pn) * (-I) = inv(H_uncal_pn)
-  // Dp = -inv(H_uncal_pn) * df/K = -inv(H_uncal_pn) * H_uncal_K
-  Matrix23 H_uncal_K;
-  Matrix22 H_uncal_pn, H_uncal_pn_inv;
-
-  if (Dcal || Dp) {
-    // Compute uncalibrate Jacobians
-    uncalibrate(pn, Dcal ? &H_uncal_K : nullptr, H_uncal_pn);
-
-    H_uncal_pn_inv = H_uncal_pn.inverse();
-
-    if (Dp) *Dp = H_uncal_pn_inv;
-    if (Dcal) *Dcal = -H_uncal_pn_inv * H_uncal_K;
-
-  }
+  calibrateJacobians<Cal3Bundler, dimension>(*this, pn, Dcal, Dp);
 
   return pn;
 }

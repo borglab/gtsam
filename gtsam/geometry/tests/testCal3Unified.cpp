@@ -82,6 +82,22 @@ TEST( Cal3Unified, Duncalibrate2)
   CHECK(assert_equal(numerical,computed,1e-6));
 }
 
+Point2 calibrate_(const Cal3Unified& k, const Point2& pt) {
+  return k.calibrate(pt);
+}
+
+/* ************************************************************************* */
+TEST( Cal3Unified, Dcalibrate)
+{
+  Point2 pi = K.uncalibrate(p);
+  Matrix Dcal, Dp;
+  K.calibrate(pi, Dcal, Dp);
+  Matrix numerical1 = numericalDerivative21(calibrate_, K, pi);
+  CHECK(assert_equal(numerical1,Dcal,1e-5));
+  Matrix numerical2 = numericalDerivative22(calibrate_, K, pi);
+  CHECK(assert_equal(numerical2,Dp,1e-5));
+}
+
 /* ************************************************************************* */
 TEST( Cal3Unified, assert_equal)
 {

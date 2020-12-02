@@ -29,8 +29,8 @@ namespace imuBias {
 
 class GTSAM_EXPORT ConstantBias {
 private:
-  Vector3 biasAcc_;
-  Vector3 biasGyro_;
+  Vector3 biasAcc_; ///< The units for stddev are σ = m/s² or m √Hz/s²
+  Vector3 biasGyro_; ///< The units for stddev are σ = rad/s or rad √Hz/s
 
 public:
   /// dimension of the variable - used to autodetect sizes
