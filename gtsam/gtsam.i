@@ -1079,7 +1079,7 @@ class CameraSet {
 
   // // structure specific methods
   // T at(size_t i) const;
-  void push_back(const T& cam);
+  // void push_back(const T& cam);
 };
 
 typedef gtsam::CameraSet<gtsam::PinholeCameraCal3_S2> CameraSetCal3_S2;
