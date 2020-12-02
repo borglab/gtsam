@@ -42,14 +42,14 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
   /// @{
 
   /// Create a default calibration that leaves coordinates unchanged
-  Cal3_S2() : Cal3() {}
+  Cal3_S2() = default;
 
   /// constructor from doubles
   Cal3_S2(double fx, double fy, double s, double u0, double v0)
       : Cal3(fx, fy, s, u0, v0) {}
 
   /// constructor from vector
-  Cal3_S2(const Vector& d) : Cal3(d) {}
+  Cal3_S2(const Vector5& d) : Cal3(d) {}
 
   /**
    * Easy constructor, takes fov in degrees, asssumes zero skew, unit aspect

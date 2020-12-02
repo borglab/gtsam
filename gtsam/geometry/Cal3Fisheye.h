@@ -48,8 +48,9 @@ namespace gtsam {
  */
 class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
  private:
-  double k1_, k2_, k3_, k4_;  ///< fisheye distortion coefficients
-  double tol_ = 1e-5;         ///< tolerance value when calibrating
+  double k1_ = 0.0f, k2_ = 0.0f;  ///< fisheye distortion coefficients
+  double k3_ = 0.0f, k4_ = 0.0f;  ///< fisheye distortion coefficients
+  double tol_ = 1e-5;             ///< tolerance value when calibrating
 
  public:
   enum { dimension = 9 };
@@ -60,7 +61,7 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @{
 
   /// Default Constructor with only unit focal length
-  Cal3Fisheye() : Cal3(), k1_(0), k2_(0), k3_(0), k4_(0), tol_(1e-5) {}
+  Cal3Fisheye() = default;
 
   Cal3Fisheye(const double fx, const double fy, const double s, const double u0,
               const double v0, const double k1, const double k2,

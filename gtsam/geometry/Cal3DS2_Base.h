@@ -41,9 +41,9 @@ namespace gtsam {
  */
 class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
  protected:
-  double k1_, k2_;     ///< radial 2nd-order and 4th-order
-  double p1_, p2_;     ///< tangential distortion
-  double tol_ = 1e-5;  ///< tolerance value when calibrating
+  double k1_ = 0.0f, k2_ = 0.0f;  ///< radial 2nd-order and 4th-order
+  double p1_ = 0.0f, p2_ = 0.0f;  ///< tangential distortion
+  double tol_ = 1e-5;             ///< tolerance value when calibrating
 
  public:
   enum { dimension = 9 };
@@ -52,7 +52,7 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   /// @{
 
   /// Default Constructor with only unit focal length
-  Cal3DS2_Base() : Cal3(), k1_(0), k2_(0), p1_(0), p2_(0), tol_(1e-5) {}
+  Cal3DS2_Base() = default;
 
   Cal3DS2_Base(double fx, double fy, double s, double u0, double v0, double k1,
                double k2, double p1 = 0.0, double p2 = 0.0, double tol = 1e-5)
@@ -69,7 +69,7 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   /// @name Advanced Constructors
   /// @{
 
-  Cal3DS2_Base(const Vector& v)
+  Cal3DS2_Base(const Vector9& v)
       : Cal3(v(0), v(1), v(2), v(3), v(4)),
         k1_(v(5)),
         k2_(v(6)),
