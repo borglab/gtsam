@@ -22,12 +22,11 @@
 #include <iostream>
 
 namespace gtsam {
-using namespace std;
 
 /* ************************************************************************* */
-ostream& operator<<(ostream& os, const Cal3_S2& cal) {
-  os << "{fx: " << cal.fx() << ", fy: " << cal.fy() << ", s:" << cal.skew()
-     << ", px:" << cal.px() << ", py:" << cal.py() << "}";
+std::ostream& operator<<(std::ostream& os, const Cal3_S2& cal) {
+  os << "{ fx: " << cal.fx() << ", fy: " << cal.fy() << ", s: " << cal.skew()
+     << ", px: " << cal.px() << ", py: " << cal.py() << " }";
   return os;
 }
 
@@ -68,7 +67,7 @@ Point2 Cal3_S2::calibrate(const Point2& p, OptionalJacobian<2, 5> Dcal,
 }
 
 /* ************************************************************************* */
-Vector3 Cal3_S2::calibrate(const Vector3& p) const { return matrix_inverse() * p; }
+Vector3 Cal3_S2::calibrate(const Vector3& p) const { return inverse() * p; }
 
 /* ************************************************************************* */
 

@@ -165,7 +165,7 @@ class GTSAM_EXPORT Cal3 {
 #endif
 
   /// Return inverted calibration matrix inv(K)
-  Matrix3 matrix_inverse() const {
+  Matrix3 inverse() const {
     const double fxy = fx_ * fy_, sv0 = s_ * v0_, fyu0 = fy_ * u0_;
     Matrix3 K_inverse;
     K_inverse << 1.0 / fx_, -s_ / fxy, (sv0 - fyu0) / fxy, 0.0, 1.0 / fy_,
