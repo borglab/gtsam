@@ -24,7 +24,9 @@ namespace gtsam {
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
 struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
-  Matrix3 accelerometerCovariance; ///< continuous-time "Covariance" of accelerometer
+  /// Continuous-time "Covariance" of accelerometer
+  /// The units for stddev are σ = m/s²/√Hz
+  Matrix3 accelerometerCovariance;
   Matrix3 integrationCovariance; ///< continuous-time "Covariance" describing integration uncertainty
   bool use2ndOrderCoriolis; ///< Whether to use second order Coriolis integration
   Vector3 n_gravity; ///< Gravity vector in nav frame
