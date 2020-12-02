@@ -10,12 +10,13 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file  testCal3Unify.cpp
- * @brief Unit tests for transform derivatives
+ * @file  testCal3Unified.cpp
+ * @brief Unit tests for Cal3Unified calibration model.
  */
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3Unified.h>
 
@@ -39,7 +40,7 @@ static Cal3Unified K(100, 105, 0.0, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3
 static Point2 p(0.5, 0.7);
 
 /* ************************************************************************* */
-TEST( Cal3Unified, uncalibrate)
+TEST(Cal3Unified, uncalibrate)
 {
   Point2 p_i(364.7791831734982, 305.6677211952602) ;
   Point2 q = K.uncalibrate(p);
@@ -47,7 +48,7 @@ TEST( Cal3Unified, uncalibrate)
 }
 
 /* ************************************************************************* */
-TEST( Cal3Unified, spaceNplane)
+TEST(Cal3Unified, spaceNplane)
 {
   Point2 q = K.spaceToNPlane(p);
   CHECK(assert_equal(Point2(0.441731600049497, 0.618424240069295), q));
@@ -55,7 +56,7 @@ TEST( Cal3Unified, spaceNplane)
 }
 
 /* ************************************************************************* */
-TEST( Cal3Unified, calibrate)
+TEST(Cal3Unified, calibrate)
 {
   Point2 pi = K.uncalibrate(p);
   Point2 pn_hat = K.calibrate(pi);
@@ -65,7 +66,7 @@ TEST( Cal3Unified, calibrate)
 Point2 uncalibrate_(const Cal3Unified& k, const Point2& pt) { return k.uncalibrate(pt); }
 
 /* ************************************************************************* */
-TEST( Cal3Unified, Duncalibrate1)
+TEST(Cal3Unified, Duncalibrate1)
 {
   Matrix computed;
   K.uncalibrate(p, computed, boost::none);
@@ -74,7 +75,7 @@ TEST( Cal3Unified, Duncalibrate1)
 }
 
 /* ************************************************************************* */
-TEST( Cal3Unified, Duncalibrate2)
+TEST(Cal3Unified, Duncalibrate2)
 {
   Matrix computed;
   K.uncalibrate(p, boost::none, computed);
@@ -87,7 +88,7 @@ Point2 calibrate_(const Cal3Unified& k, const Point2& pt) {
 }
 
 /* ************************************************************************* */
-TEST( Cal3Unified, Dcalibrate)
+TEST(Cal3Unified, Dcalibrate)
 {
   Point2 pi = K.uncalibrate(p);
   Matrix Dcal, Dp;
@@ -99,13 +100,13 @@ TEST( Cal3Unified, Dcalibrate)
 }
 
 /* ************************************************************************* */
-TEST( Cal3Unified, assert_equal)
+TEST(Cal3Unified, assert_equal)
 {
   CHECK(assert_equal(K,K,1e-9));
 }
 
 /* ************************************************************************* */
-TEST( Cal3Unified, retract)
+TEST(Cal3Unified, retract)
 {
   Cal3Unified expected(100 + 2, 105 + 3, 0.0 + 4, 320 + 5, 240 + 6,
       1e-3 + 7, 2.0*1e-3 + 8, 3.0*1e-3 + 9, 4.0*1e-3 + 10, 0.1 + 1);
@@ -117,7 +118,7 @@ TEST( Cal3Unified, retract)
 }
 
 /* ************************************************************************* */
-TEST( Cal3Unified, DerivedValue)
+TEST(Cal3Unified, DerivedValue)
 {
   Values values;
   Cal3Unified cal(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
@@ -127,6 +128,18 @@ TEST( Cal3Unified, DerivedValue)
   Cal3Unified calafter = values.at<Cal3Unified>(key);
 
   CHECK(assert_equal(cal,calafter,1e-9));
+}
+
+/* ************************************************************************* */
+TEST(Cal3Unified, Print) {
+  Cal3Unified cal(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+  std::stringstream os;
+  os << "fx: " << cal.fx() << ", fy: " << cal.fy() << ", s: " << cal.skew()
+     << ", px: " << cal.px() << ", py: " << cal.py() << ", k1: " << cal.k1()
+     << ", k2: " << cal.k2() << ", p1: " << cal.p1() << ", p2: " << cal.p2()
+     << ", xi: " << cal.xi();
+
+  EXPECT(assert_stdout_equal(os.str(), cal));
 }
 
 /* ************************************************************************* */

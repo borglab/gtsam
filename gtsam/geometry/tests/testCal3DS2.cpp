@@ -11,12 +11,13 @@
 
 /**
  * @file  testCal3DS2.cpp
- * @brief Unit tests for transform derivatives
+ * @brief Unit tests for Cal3DS2 calibration model.
  */
 
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3DS2.h>
 
@@ -29,7 +30,7 @@ static Cal3DS2 K(500, 100, 0.1, 320, 240, 1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3);
 static Point2 p(2,3);
 
 /* ************************************************************************* */
-TEST( Cal3DS2, uncalibrate)
+TEST(Cal3DS2, uncalibrate)
 {
   Vector k = K.k() ;
   double r = p.x()*p.x() + p.y()*p.y() ;
@@ -43,7 +44,7 @@ TEST( Cal3DS2, uncalibrate)
   CHECK(assert_equal(q,p_i));
 }
 
-TEST( Cal3DS2, calibrate )
+TEST(Cal3DS2, calibrate )
 {
   Point2 pn(0.5, 0.5);
   Point2 pi = K.uncalibrate(pn);
@@ -54,7 +55,7 @@ TEST( Cal3DS2, calibrate )
 Point2 uncalibrate_(const Cal3DS2& k, const Point2& pt) { return k.uncalibrate(pt); }
 
 /* ************************************************************************* */
-TEST( Cal3DS2, Duncalibrate1)
+TEST(Cal3DS2, Duncalibrate1)
 {
   Matrix computed;
   K.uncalibrate(p, computed, boost::none);
@@ -65,7 +66,7 @@ TEST( Cal3DS2, Duncalibrate1)
 }
 
 /* ************************************************************************* */
-TEST( Cal3DS2, Duncalibrate2)
+TEST(Cal3DS2, Duncalibrate2)
 {
   Matrix computed; K.uncalibrate(p, boost::none, computed);
   Matrix numerical = numericalDerivative22(uncalibrate_, K, p, 1e-7);
@@ -79,7 +80,7 @@ Point2 calibrate_(const Cal3DS2& k, const Point2& pt) {
 }
 
 /* ************************************************************************* */
-TEST( Cal3DS2, Dcalibrate)
+TEST(Cal3DS2, Dcalibrate)
 {
   Point2 pn(0.5, 0.5);
   Point2 pi = K.uncalibrate(pn);
@@ -95,7 +96,7 @@ TEST( Cal3DS2, Dcalibrate)
 TEST(Cal3DS2, assert_equal) { CHECK(assert_equal(K, K, 1e-5)); }
 
 /* ************************************************************************* */
-TEST( Cal3DS2, retract)
+TEST(Cal3DS2, retract)
 {
   Cal3DS2 expected(500 + 1, 100 + 2, 0.1 + 3, 320 + 4, 240 + 5, 1e-3 + 6,
       2.0 * 1e-3 + 7, 3.0 * 1e-3 + 8, 4.0 * 1e-3 + 9);
@@ -104,6 +105,17 @@ TEST( Cal3DS2, retract)
   Cal3DS2 actual = K.retract(d);
   CHECK(assert_equal(expected,actual,1e-7));
   CHECK(assert_equal(d,K.localCoordinates(actual),1e-7));
+}
+
+/* ************************************************************************* */
+TEST(Cal3DS2, Print) {
+  Cal3DS2 cal(1, 2, 3, 4, 5, 6, 7, 8, 9);
+  std::stringstream os;
+  os << "fx: " << cal.fx() << ", fy: " << cal.fy() << ", s: " << cal.skew()
+     << ", px: " << cal.px() << ", py: " << cal.py() << ", k1: " << cal.k1()
+     << ", k2: " << cal.k2() << ", p1: " << cal.p1() << ", p2: " << cal.p2();
+
+  EXPECT(assert_stdout_equal(os.str(), cal));
 }
 
 /* ************************************************************************* */
