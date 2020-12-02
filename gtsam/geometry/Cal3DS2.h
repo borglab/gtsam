@@ -42,11 +42,11 @@ public:
   /// @{
 
   /// Default Constructor with only unit focal length
-  Cal3DS2() : Base() {}
+  Cal3DS2() = default;
 
-  Cal3DS2(double fx, double fy, double s, double u0, double v0,
-      double k1, double k2, double p1 = 0.0, double p2 = 0.0, double tol = 1e-5) :
-        Base(fx, fy, s, u0, v0, k1, k2, p1, p2, tol) {}
+  Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1,
+          double k2, double p1 = 0.0, double p2 = 0.0, double tol = 1e-5)
+      : Base(fx, fy, s, u0, v0, k1, k2, p1, p2, tol) {}
 
   virtual ~Cal3DS2() {}
 
@@ -54,7 +54,7 @@ public:
   /// @name Advanced Constructors
   /// @{
 
-  Cal3DS2(const Vector &v) : Base(v) {}
+  Cal3DS2(const Vector9 &v) : Base(v) {}
 
   /// @}
   /// @name Testable

@@ -45,11 +45,10 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
   using This = Cal3Unified;
   using Base = Cal3DS2_Base;
 
-private:
+ private:
+  double xi_ = 0.0f;  ///< mirror parameter
 
-  double xi_;  ///< mirror parameter
-
-public:
+ public:
 
   enum { dimension = 10 };
 
@@ -57,11 +56,11 @@ public:
   /// @{
 
   /// Default Constructor with only unit focal length
-  Cal3Unified() : Base(), xi_(0) {}
+  Cal3Unified() = default;
 
-  Cal3Unified(double fx, double fy, double s, double u0, double v0,
-      double k1, double k2, double p1 = 0.0, double p2 = 0.0, double xi = 0.0) :
-        Base(fx, fy, s, u0, v0, k1, k2, p1, p2), xi_(xi) {}
+  Cal3Unified(double fx, double fy, double s, double u0, double v0, double k1,
+              double k2, double p1 = 0.0, double p2 = 0.0, double xi = 0.0)
+      : Base(fx, fy, s, u0, v0, k1, k2, p1, p2), xi_(xi) {}
 
   virtual ~Cal3Unified() {}
 
@@ -69,7 +68,8 @@ public:
   /// @name Advanced Constructors
   /// @{
 
-  Cal3Unified(const Vector &v) ;
+  Cal3Unified(const Vector10& v)
+      : Base(v(0), v(1), v(2), v(3), v(4), v(5), v(6), v(7), v(8)), xi_(v(9)) {}
 
   /// @}
   /// @name Testable
@@ -87,6 +87,9 @@ public:
 
   /// mirror parameter
   inline double xi() const { return xi_;}
+
+  /// Return all parameters as a vector
+  Vector10 vector() const ;
 
   /**
    * convert intrinsic coordinates xy to image coordinates uv
@@ -117,16 +120,13 @@ public:
   Cal3Unified retract(const Vector& d) const ;
 
   /// Given a different calibration, calculate update to obtain it
-  Vector10 localCoordinates(const Cal3Unified& T2) const ;
+  Vector localCoordinates(const Cal3Unified& T2) const ;
 
   /// Return dimensions of calibration manifold object
   virtual size_t dim() const { return dimension ; }
 
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return dimension; }
-
-  /// Return all parameters as a vector
-  Vector10 vector() const ;
 
   /// @}
 

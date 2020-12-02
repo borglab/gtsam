@@ -68,7 +68,9 @@ void calibrateJacobians(const Cal& calibration, const Point2& pn,
  */
 class GTSAM_EXPORT Cal3 {
  protected:
-  double fx_, fy_, s_, u0_, v0_;  ///< focal length, skew and principal point
+  double fx_ = 1.0f, fy_ = 1.0f;  ///< focal length
+  double s_ = 0.0f;               ///< skew
+  double u0_ = 0.0f, v0_ = 0.0f;  ///< principal point
 
  public:
   enum { dimension = 5 };
@@ -79,14 +81,14 @@ class GTSAM_EXPORT Cal3 {
   /// @{
 
   /// Create a default calibration that leaves coordinates unchanged
-  Cal3() : fx_(1), fy_(1), s_(0), u0_(0), v0_(0) {}
+  Cal3() = default;
 
   /// constructor from doubles
   Cal3(double fx, double fy, double s, double u0, double v0)
       : fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0) {}
 
   /// constructor from vector
-  Cal3(const Vector& d)
+  Cal3(const Vector5& d)
       : fx_(d(0)), fy_(d(1)), s_(d(2)), u0_(d(3)), v0_(d(4)) {}
 
   /**
@@ -162,7 +164,7 @@ class GTSAM_EXPORT Cal3 {
   Matrix3 matrix() const { return K(); }
 #endif
 
-  /// return inverted calibration matrix inv(K)
+  /// Return inverted calibration matrix inv(K)
   Matrix3 matrix_inverse() const {
     const double fxy = fx_ * fy_, sv0 = s_ * v0_, fyu0 = fy_ * u0_;
     Matrix3 K_inverse;

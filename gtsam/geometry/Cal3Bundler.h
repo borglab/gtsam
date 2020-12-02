@@ -31,12 +31,12 @@ namespace gtsam {
 class GTSAM_EXPORT Cal3Bundler : public Cal3 {
 
  private:
-  double f_; ///< focal length
-  double k1_, k2_; ///< radial distortion
-  double tol_; ///< tolerance value when calibrating
+  double f_ = 1.0f;               ///< focal length
+  double k1_ = 0.0f, k2_ = 0.0f;  ///< radial distortion
+  double tol_ = 1e-5;             ///< tolerance value when calibrating
 
   // NOTE: image center parameters (u0, v0) are not optimized
-  // but are constants.
+  // but are treated as constants.
 
  public:
 
@@ -46,7 +46,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   /// @{
 
   /// Default constructor
-  Cal3Bundler() : Cal3(), f_(1), k1_(0), k2_(0), tol_(1e-5) {}
+  Cal3Bundler() = default;
 
   /**
    *  Constructor

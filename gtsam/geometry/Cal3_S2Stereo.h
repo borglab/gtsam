@@ -29,7 +29,7 @@ namespace gtsam {
    */
   class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
    private:
-    double b_;
+    double b_ = 1.0f;  ///< Stereo baseline.
 
    public:
 
@@ -42,7 +42,7 @@ namespace gtsam {
     /// @
 
     /// default calibration leaves coordinates unchanged
-    Cal3_S2Stereo() : Cal3_S2(1, 1, 0, 0, 0), b_(1.0) {}
+    Cal3_S2Stereo() = default;
 
     /// constructor from doubles
     Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0,
@@ -50,7 +50,7 @@ namespace gtsam {
         : Cal3_S2(fx, fy, s, u0, v0), b_(b) {}
 
     /// constructor from vector
-    Cal3_S2Stereo(const Vector& d)
+    Cal3_S2Stereo(const Vector6& d)
         : Cal3_S2(d(0), d(1), d(2), d(3), d(4)), b_(d(5)) {}
 
     /// easy constructor; field-of-view in degrees, assumes zero skew
@@ -61,6 +61,7 @@ namespace gtsam {
     /// @name Testable
     /// @{
 
+    /// print with optional string
     void print(const std::string& s = "") const override;
 
     /// Check if equal up to specified tolerance
