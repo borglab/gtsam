@@ -16,10 +16,10 @@
  * @author Varun Agrawal
  */
 
-#include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/geometry/Point2.h>
+#include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Cal3Unified.h>
+#include <gtsam/geometry/Point2.h>
 
 #include <cmath>
 
@@ -53,10 +53,8 @@ bool Cal3Unified::equals(const Cal3Unified& K, double tol) const {
 
 /* ************************************************************************* */
 // todo: make a fixed sized jacobian version of this
-Point2 Cal3Unified::uncalibrate(const Point2& p,
-       OptionalJacobian<2,10> Dcal,
-       OptionalJacobian<2,2> Dp) const {
-
+Point2 Cal3Unified::uncalibrate(const Point2& p, OptionalJacobian<2, 10> Dcal,
+                                OptionalJacobian<2, 2> Dp) const {
   // this part of code is modified from Cal3DS2,
   // since the second part of this model (after project to normalized plane)
   // is same as Cal3DS2
@@ -69,19 +67,19 @@ Point2 Cal3Unified::uncalibrate(const Point2& p,
   const double sqrt_nx = sqrt(xs * xs + ys * ys + 1.0);
   const double xi_sqrt_nx = 1.0 / (1 + xi * sqrt_nx);
   const double xi_sqrt_nx2 = xi_sqrt_nx * xi_sqrt_nx;
-  const double x = xs * xi_sqrt_nx, y = ys * xi_sqrt_nx; // points on NPlane
+  const double x = xs * xi_sqrt_nx, y = ys * xi_sqrt_nx;  // points on NPlane
 
   // Part2: project NPlane point to pixel plane: use Cal3DS2
-  Point2 m(x,y);
+  Point2 m(x, y);
   Matrix29 H1base;
-  Matrix2 H2base;    // jacobians from Base class
+  Matrix2 H2base;  // jacobians from Base class
   Point2 puncalib = Base::uncalibrate(m, H1base, H2base);
 
   // Inlined derivative for calibration
   if (Dcal) {
     // part1
     Vector2 DU;
-    DU << -xs * sqrt_nx * xi_sqrt_nx2, //
+    DU << -xs * sqrt_nx * xi_sqrt_nx2,  //
         -ys * sqrt_nx * xi_sqrt_nx2;
     *Dcal << H1base, H2base * DU;
   }
@@ -90,10 +88,10 @@ Point2 Cal3Unified::uncalibrate(const Point2& p,
   if (Dp) {
     // part1
     const double denom = 1.0 * xi_sqrt_nx2 / sqrt_nx;
-    const double mid = -(xi * xs*ys) * denom;
+    const double mid = -(xi * xs * ys) * denom;
     Matrix2 DU;
-    DU << (sqrt_nx + xi*(ys*ys + 1)) * denom, mid, //
-        mid, (sqrt_nx + xi*(xs*xs + 1)) * denom;
+    DU << (sqrt_nx + xi * (ys * ys + 1)) * denom, mid,  //
+        mid, (sqrt_nx + xi * (xs * xs + 1)) * denom;
 
     *Dp << H2base * DU;
   }
@@ -116,7 +114,6 @@ Point2 Cal3Unified::calibrate(const Point2& pi, OptionalJacobian<2, 10> Dcal,
 }
 /* ************************************************************************* */
 Point2 Cal3Unified::nPlaneToSpace(const Point2& p) const {
-
   const double x = p.x(), y = p.y();
   const double xy2 = x * x + y * y;
   const double sq_xy = (xi_ + sqrt(1 + (1 - xi_ * xi_) * xy2)) / (xy2 + 1);
@@ -126,7 +123,6 @@ Point2 Cal3Unified::nPlaneToSpace(const Point2& p) const {
 
 /* ************************************************************************* */
 Point2 Cal3Unified::spaceToNPlane(const Point2& p) const {
-
   const double x = p.x(), y = p.y();
   const double sq_xy = 1 + xi_ * sqrt(x * x + y * y + 1);
 
