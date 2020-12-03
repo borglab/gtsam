@@ -22,135 +22,116 @@
 
 namespace gtsam {
 
-  /**
-   * @brief The most common 5DOF 3D->2D calibration, stereo version
-   * @addtogroup geometry
-   * \nosubgrouping
-   */
-  class GTSAM_EXPORT Cal3_S2Stereo {
-  private:
+/**
+ * @brief The most common 5DOF 3D->2D calibration, stereo version
+ * @addtogroup geometry
+ * \nosubgrouping
+ */
+class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
+ private:
+  double b_ = 1.0f;  ///< Stereo baseline.
 
-    Cal3_S2 K_;
-    double b_;
+ public:
+  enum { dimension = 6 };
 
-  public:
+  ///< shared pointer to stereo calibration object
+  using shared_ptr = boost::shared_ptr<Cal3_S2Stereo>;
 
-    enum { dimension = 6 };
-    typedef boost::shared_ptr<Cal3_S2Stereo> shared_ptr;  ///< shared pointer to stereo calibration object
+  /// @name Standard Constructors
+  /// @
 
-    /// @name Standard Constructors
-    /// @
+  /// default calibration leaves coordinates unchanged
+  Cal3_S2Stereo() = default;
 
-    /// default calibration leaves coordinates unchanged
-    Cal3_S2Stereo() :
-      K_(1, 1, 0, 0, 0), b_(1.0) {
-    }
+  /// constructor from doubles
+  Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0, double b)
+      : Cal3_S2(fx, fy, s, u0, v0), b_(b) {}
 
-    /// constructor from doubles
-    Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0, double b) :
-      K_(fx, fy, s, u0, v0), b_(b) {
-    }
+  /// constructor from vector
+  Cal3_S2Stereo(const Vector6& d)
+      : Cal3_S2(d(0), d(1), d(2), d(3), d(4)), b_(d(5)) {}
 
-    /// constructor from vector
-    Cal3_S2Stereo(const Vector &d): K_(d(0), d(1), d(2), d(3), d(4)), b_(d(5)){}
+  /// easy constructor; field-of-view in degrees, assumes zero skew
+  Cal3_S2Stereo(double fov, int w, int h, double b)
+      : Cal3_S2(fov, w, h), b_(b) {}
 
-    /// easy constructor; field-of-view in degrees, assumes zero skew
-    Cal3_S2Stereo(double fov, int w, int h, double b) :
-      K_(fov, w, h), b_(b) {
-    }
+  /// @}
+  /// @name Testable
+  /// @{
 
-    /// @}
-    /// @name Testable
-    /// @{
+  /// Output stream operator
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                               const Cal3_S2Stereo& cal);
 
-    void print(const std::string& s = "") const;
+  /// print with optional string
+  void print(const std::string& s = "") const override;
 
-    /// Check if equal up to specified tolerance
-    bool equals(const Cal3_S2Stereo& other, double tol = 10e-9) const;
+  /// Check if equal up to specified tolerance
+  bool equals(const Cal3_S2Stereo& other, double tol = 10e-9) const;
 
-   /// @}
-    /// @name Standard Interface
-    /// @{
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
-    /// return calibration, same for left and right
-    const Cal3_S2& calibration() const { return K_;}
+  /// return calibration, same for left and right
+  const Cal3_S2& calibration() const { return *this; }
 
-    /// return calibration matrix K, same for left and right
-    Matrix matrix() const { return K_.matrix();}
+  /// return calibration matrix K, same for left and right
+  Matrix3 K() const override { return Cal3_S2::K(); }
 
-    /// focal length x
-    inline double fx() const { return K_.fx();}
+  /// return baseline
+  inline double baseline() const { return b_; }
 
-    /// focal length x
-    inline double fy() const { return K_.fy();}
+  /// vectorized form (column-wise)
+  Vector6 vector() const {
+    Vector6 v;
+    v << Cal3_S2::vector(), b_;
+    return v;
+  }
 
-    /// skew
-    inline double skew() const { return K_.skew();}
+  /// @}
+  /// @name Manifold
+  /// @{
 
-    /// image center in x
-    inline double px() const { return K_.px();}
+  /// return DOF, dimensionality of tangent space
+  inline size_t dim() const override { return Dim(); }
 
-    /// image center in y
-    inline double py() const { return K_.py();}
+  /// return DOF, dimensionality of tangent space
+  inline static size_t Dim() { return dimension; }
 
-    /// return the principal point
-    Point2 principalPoint() const { return K_.principalPoint();}
+  /// Given 6-dim tangent vector, create new calibration
+  inline Cal3_S2Stereo retract(const Vector& d) const {
+    return Cal3_S2Stereo(fx() + d(0), fy() + d(1), skew() + d(2), px() + d(3),
+                         py() + d(4), b_ + d(5));
+  }
 
-    /// return baseline
-    inline double baseline() const { return b_; }
+  /// Unretraction for the calibration
+  Vector6 localCoordinates(const Cal3_S2Stereo& T2) const {
+    return T2.vector() - vector();
+  }
 
-    /// vectorized form (column-wise)
-    Vector6 vector() const {
-      Vector6 v;
-      v << K_.vector(), b_;
-      return v;
-    }
+  /// @}
+  /// @name Advanced Interface
+  /// @{
 
-    /// @}
-    /// @name Manifold
-    /// @{
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp(
+        "Cal3_S2", boost::serialization::base_object<Cal3_S2>(*this));
+    ar& BOOST_SERIALIZATION_NVP(b_);
+  }
+  /// @}
+};
 
-    /// return DOF, dimensionality of tangent space
-    inline size_t dim() const { return dimension; }
+// Define GTSAM traits
+template <>
+struct traits<Cal3_S2Stereo> : public internal::Manifold<Cal3_S2Stereo> {};
 
-    /// return DOF, dimensionality of tangent space
-    static size_t Dim() { return dimension; }
+template <>
+struct traits<const Cal3_S2Stereo> : public internal::Manifold<Cal3_S2Stereo> {
+};
 
-    /// Given 6-dim tangent vector, create new calibration
-    inline Cal3_S2Stereo retract(const Vector& d) const {
-      return Cal3_S2Stereo(K_.fx() + d(0), K_.fy() + d(1), K_.skew() + d(2), K_.px() + d(3), K_.py() + d(4), b_ + d(5));
-    }
-
-    /// Unretraction for the calibration
-    Vector6 localCoordinates(const Cal3_S2Stereo& T2) const {
-      return T2.vector() - vector();
-    }
-
-
-    /// @}
-    /// @name Advanced Interface
-    /// @{
-
-  private:
-    /** Serialization function */
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int /*version*/)
-    {
-      ar & BOOST_SERIALIZATION_NVP(K_);
-      ar & BOOST_SERIALIZATION_NVP(b_);
-    }
-    /// @}
-
-  };
-
-  // Define GTSAM traits
-  template<>
-  struct traits<Cal3_S2Stereo> : public internal::Manifold<Cal3_S2Stereo> {
-  };
-
-  template<>
-  struct traits<const Cal3_S2Stereo> : public internal::Manifold<Cal3_S2Stereo> {
-  };
-
-} // \ namespace gtsam
+}  // \ namespace gtsam
