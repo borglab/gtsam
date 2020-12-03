@@ -812,7 +812,7 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
       return std::make_pair(SO3Values, 0);
     }
 
-    // Check certificate of global optimzality
+    // Check certificate of global optimality
     Vector minEigenVector;
     double minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
     if (minEigenValue > parameters_.optimalityThreshold) {
@@ -837,17 +837,13 @@ template class ShonanAveraging<2>;
 
 ShonanAveraging2::ShonanAveraging2(const Measurements &measurements,
                                    const Parameters &parameters)
-    : ShonanAveraging<2>(parameters.useHuber
-                             ? makeNoiseModelRobust(measurements)
-                             : measurements,
+    : ShonanAveraging<2>(maybeRobust(measurements, parameters.getUseHuber()),
                          parameters) {}
 
 ShonanAveraging2::ShonanAveraging2(string g2oFile, const Parameters &parameters)
-    : ShonanAveraging<2>(
-          parameters.useHuber
-              ? makeNoiseModelRobust(parseMeasurements<Rot2>(g2oFile))
-              : parseMeasurements<Rot2>(g2oFile),
-          parameters) {}
+    : ShonanAveraging<2>(maybeRobust(parseMeasurements<Rot2>(g2oFile),
+                                     parameters.getUseHuber()),
+                         parameters) {}
 
 /* ************************************************************************* */
 // Explicit instantiation for d=3
@@ -855,15 +851,13 @@ template class ShonanAveraging<3>;
 
 ShonanAveraging3::ShonanAveraging3(const Measurements &measurements,
                                    const Parameters &parameters)
-    : ShonanAveraging<3>(parameters.useHuber?
-        makeNoiseModelRobust(measurements) : measurements, parameters) {}
+    : ShonanAveraging<3>(maybeRobust(measurements, parameters.getUseHuber()),
+                         parameters) {}
 
 ShonanAveraging3::ShonanAveraging3(string g2oFile, const Parameters &parameters)
-    : ShonanAveraging<3>(
-          parameters.useHuber
-              ? makeNoiseModelRobust(parseMeasurements<Rot3>(g2oFile))
-              : parseMeasurements<Rot3>(g2oFile),
-          parameters) {}
+    : ShonanAveraging<3>(maybeRobust(parseMeasurements<Rot3>(g2oFile),
+                                     parameters.getUseHuber()),
+                         parameters) {}
 
 // TODO(frank): Deprecate after we land pybind wrapper
 
@@ -895,11 +889,9 @@ static ShonanAveraging3::Measurements extractRot3Measurements(
 
 ShonanAveraging3::ShonanAveraging3(const BetweenFactorPose3s &factors,
                                    const Parameters &parameters)
-    : ShonanAveraging<3>(
-          parameters.useHuber
-              ? makeNoiseModelRobust(extractRot3Measurements(factors))
-              : extractRot3Measurements(factors),
-          parameters) {}
+    : ShonanAveraging<3>(maybeRobust(extractRot3Measurements(factors),
+                                     parameters.getUseHuber()),
+                         parameters) {}
 
 /* ************************************************************************* */
 }  // namespace gtsam
