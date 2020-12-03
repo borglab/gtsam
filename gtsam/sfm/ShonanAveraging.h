@@ -389,6 +389,22 @@ class GTSAM_EXPORT ShonanAveraging {
   std::pair<Values, double> run(const Values &initialEstimate, size_t pMin = d,
                                 size_t pMax = 10) const;
   /// @}
+
+  /**
+   * Helper function to convert measurements to robust noise model
+   * if flag is set.
+   *
+   * @tparam T the type of measurement, e.g. Rot3.
+   * @param measurements vector of BinaryMeasurements of type T.
+   * @param useRobustModel flag indicating whether use robust noise model
+   * instead.
+   */
+  template <typename T>
+  inline std::vector<BinaryMeasurement<T>> maybeRobust(
+      const std::vector<BinaryMeasurement<T>> &measurements,
+      bool useRobustModel = false) const {
+    return useRobustModel ? makeNoiseModelRobust(measurements) : measurements;
+  }
 };
 
 // Subclasses for d=2 and d=3 that explicitly instantiate, as well as provide a
