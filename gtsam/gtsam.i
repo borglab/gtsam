@@ -852,8 +852,7 @@ class Cal3_S2 {
   gtsam::Point2 principalPoint() const;
   Vector vector() const;
   Matrix K() const;
-  Matrix matrix() const;
-  Matrix matrix_inverse() const;
+  Matrix inverse() const;
 
   // enabling serialization functionality
   void serialize() const;
