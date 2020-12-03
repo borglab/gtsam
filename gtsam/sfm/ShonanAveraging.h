@@ -69,19 +69,19 @@ struct GTSAM_EXPORT ShonanAveragingParameters {
   double getOptimalityThreshold() const { return optimalityThreshold; }
 
   void setAnchor(size_t index, const Rot &value) { anchor = {index, value}; }
-  std::pair<size_t, Rot> getAnchor() { return anchor; }
+  std::pair<size_t, Rot> getAnchor() const { return anchor; }
 
   void setAnchorWeight(double value) { alpha = value; }
-  double getAnchorWeight() { return alpha; }
+  double getAnchorWeight() const { return alpha; }
 
   void setKarcherWeight(double value) { beta = value; }
-  double getKarcherWeight() { return beta; }
+  double getKarcherWeight() const { return beta; }
 
   void setGaugesWeight(double value) { gamma = value; }
-  double getGaugesWeight() { return gamma; }
+  double getGaugesWeight() const { return gamma; }
 
   void setUseHuber(bool value) { useHuber = value; }
-  bool getUseHuber() { return useHuber; }
+  bool getUseHuber() const { return useHuber; }
 
   /// Print the parameters and flags used for rotation averaging.
   void print() const {
