@@ -80,7 +80,7 @@ class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
    * @param p point in image coordinates
    * @return point in intrinsic coordinates
    */
-  using Cal3_S2::calibrate;
+  Vector3 calibrate(const Vector3& p) const { return Cal3_S2::calibrate(p); }
 
   /// @}
   /// @name Testable
