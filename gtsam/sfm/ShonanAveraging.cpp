@@ -332,8 +332,9 @@ double ShonanAveraging<d>::cost(const Values &values) const {
 
 /* ************************************************************************* */
 // Get kappa from noise model
-template <typename T>
-static double Kappa(const BinaryMeasurement<T> &measurement) {
+template <typename T, size_t d>
+static double Kappa(const BinaryMeasurement<T> &measurement,
+                    const ShonanAveragingParameters<d> &parameters) {
   const auto &isotropic = boost::dynamic_pointer_cast<noiseModel::Isotropic>(
       measurement.noiseModel());
   double sigma;
@@ -343,10 +344,13 @@ static double Kappa(const BinaryMeasurement<T> &measurement) {
     const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
         measurement.noiseModel());
     if (robust) {
-      std::cout << "Verification of optimality does not work with robust cost "
-                   "function"
-                << std::endl;
-      sigma = 1;  // setting arbitrary value
+      if (parameters.getUseHuber()) {
+        // Cannot verify optimality, setting arbitrary value
+        sigma = 1;
+      } else {
+        throw std::invalid_argument(
+            "Robust cost function is invalid unless useHuber is set.");
+      }
     } else {
       throw std::invalid_argument(
           "Shonan averaging noise models must be isotropic (but robust losses "
@@ -372,7 +376,7 @@ Sparse ShonanAveraging<d>::buildD() const {
     const auto &keys = measurement.keys();
 
     // Get kappa from noise model
-    double kappa = Kappa<Rot>(measurement);
+    double kappa = Kappa<Rot, d>(measurement, parameters_);
 
     const size_t di = d * keys[0], dj = d * keys[1];
     for (size_t k = 0; k < d; k++) {
@@ -410,7 +414,7 @@ Sparse ShonanAveraging<d>::buildQ() const {
     const auto Rij = measurement.measured().matrix();
 
     // Get kappa from noise model
-    double kappa = Kappa<Rot>(measurement);
+    double kappa = Kappa<Rot, d>(measurement, parameters_);
 
     const size_t di = d * keys[0], dj = d * keys[1];
     for (size_t r = 0; r < d; r++) {
@@ -803,7 +807,8 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
   for (size_t p = pMin; p <= pMax; p++) {
     // Optimize until convergence at this level
     Qstar = tryOptimizingAt(p, initialSOp);
-    if(parameters_.useHuber){ // in this case, there is no optimality verification
+    if (parameters_
+            .useHuber) {  // in this case, there is no optimality verification
       if (pMin != pMax) {
         throw std::runtime_error(
             "When using robust norm, Shonan only tests a single rank");
