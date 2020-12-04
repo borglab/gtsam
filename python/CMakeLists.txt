@@ -82,6 +82,8 @@ set(ignore
         gtsam::KeyVector
         gtsam::FixedLagSmootherKeyTimestampMapValue
         gtsam::BinaryMeasurementsUnit3
+        gtsam::CameraSetCal3_S2
+        gtsam::CameraSetCal3Bundler
         gtsam::KeyPairDoubleMap)
         
 pybind_wrap(gtsam_unstable_py # target

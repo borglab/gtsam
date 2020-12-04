@@ -1072,18 +1072,19 @@ template<T>
 class CameraSet {
   CameraSet();
 
-  // common STL methods
-  size_t size() const;
-  bool empty() const;
-  void clear();
+  // // common STL methods
+  // size_t size() const;
+  // bool empty() const;
+  // void clear();
 
   // structure specific methods
   T at(size_t i) const;
   void push_back(const T& cam);
 };
 
-typedef gtsam::CameraSet<gtsam::PinholeCameraCal3_S2> CameraSetCal3_S2;
-typedef gtsam::CameraSet<gtsam::PinholeCameraCal3Bundler> CameraSetCal3Bundler;
+// typedefs added here for shorter type name and to enforce uniformity in naming conventions
+//typedef gtsam::CameraSet<gtsam::PinholeCameraCal3_S2> CameraSetCal3_S2;
+//typedef gtsam::CameraSet<gtsam::PinholeCameraCal3Bundler> CameraSetCal3Bundler;
 
 #include <gtsam/geometry/StereoCamera.h>
 class StereoCamera {
@@ -1116,6 +1117,7 @@ class StereoCamera {
 
 #include <gtsam/geometry/triangulation.h>
 
+// Templates appear not yet supported for free functions - issue raised at borglab/wrap#14 to add support
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
     gtsam::Cal3_S2* sharedCal, const gtsam::Point2Vector& measurements,
     double rank_tol, bool optimize);
