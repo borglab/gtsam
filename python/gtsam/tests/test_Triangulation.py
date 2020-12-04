@@ -18,104 +18,92 @@ from gtsam import Cal3_S2, Cal3Bundler, Rot3, Pose3, \
     PinholeCameraCal3_S2, PinholeCameraCal3Bundler, Point3, \
     Point2Vector, Pose3Vector, triangulatePoint3, \
     CameraSetCal3_S2, CameraSetCal3Bundler
+from numpy.core.records import array
 
 class TestVisualISAMExample(GtsamTestCase):
+    """ Tests for triangulation with shared and individual calibrations """
+
     def setUp(self):
-        # Set up two camera poses
+        """ Set up two camera poses """
         # Looking along X-axis, 1 meter above ground plane (x-y)
         upright = Rot3.Ypr(-np.pi / 2, 0., -np.pi / 2)
-        self.pose1 = Pose3(upright, Point3(0, 0, 1))
+        pose1 = Pose3(upright, Point3(0, 0, 1))
 
         # create second camera 1 meter to the right of first camera
-        self.pose2 = self.pose1.compose(Pose3(Rot3(), Point3(1, 0, 0)))
+        pose2 = pose1.compose(Pose3(Rot3(), Point3(1, 0, 0)))
+        # twoPoses
+        self.poses = Pose3Vector()
+        self.poses.append(pose1)
+        self.poses.append(pose2)
 
         # landmark ~5 meters infront of camera
         self.landmark = Point3(5, 0.5, 1.2)
+    
+    def generate_measurements(self, calibration, camera_model, *cal_params):
+        """ Generate vector of measurements for given calibration and camera model
+        Args: 
+            calibration: Camera calibration e.g. Cal3_S2
+            camera_model: Camera model e.g. PinholeCameraCal3_S2
+            cal_params: (list of) camera parameters e.g. K1, K2
+        Returns:
+            vector of measurements and cameras
+        """
+
+        cameras = []
+        measurements = Point2Vector()    
+        for k, pose in zip(cal_params, self.poses):
+            K = calibration(*k)
+            camera = camera_model(pose, K)
+            cameras.append(camera)
+            z = camera.project(self.landmark)
+            measurements.append(z) 
+
+        return measurements, cameras
 
     
     def test_TriangulationExample(self):
+        """ Tests triangulation with shared Cal3_S2 calibration"""
         # Some common constants
-        sharedCal = Cal3_S2(1500, 1200, 0, 640, 480)        
-        camera1 = PinholeCameraCal3_S2(self.pose1, sharedCal)
-        camera2 = PinholeCameraCal3_S2(self.pose2, sharedCal)
+        sharedCal = (1500, 1200, 0, 640, 480) 
+        measurements, _ = self.generate_measurements(Cal3_S2, PinholeCameraCal3_S2, sharedCal, sharedCal)
 
-        # 1. Project two landmarks into two cameras and triangulate
-        z1 = camera1.project(self.landmark)
-        z2 = camera2.project(self.landmark)
-
-        # twoPoses
-        poses = Pose3Vector()
-        measurements = Point2Vector()
-
-        poses.append(self.pose1)
-        poses.append(self.pose2)
-        measurements.append(z1)
-        measurements.append(z2)
-
-        optimize = True
-        rank_tol = 1e-9
-
-        triangulated_landmark = triangulatePoint3(poses,sharedCal, measurements, rank_tol, optimize)
+        triangulated_landmark = triangulatePoint3(self.poses,Cal3_S2(sharedCal), measurements, rank_tol=1e-9, optimize=True)
         self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9)
 
         # 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
-        measurements = Point2Vector()
-        measurements.append(z1 - np.array([0.1, 0.5]))
-        measurements.append(z2 - np.array([-0.2, 0.3]))
+        measurements_noisy = Point2Vector()
+        measurements_noisy.append(measurements[0] - np.array([0.1, 0.5]))
+        measurements_noisy.append(measurements[1] - np.array([-0.2, 0.3]))
 
-        triangulated_landmark = triangulatePoint3(poses,sharedCal, measurements, rank_tol, optimize)
+        triangulated_landmark = triangulatePoint3(self.poses,Cal3_S2(sharedCal), measurements_noisy, rank_tol=1e-9, optimize=True)
         self.gtsamAssertEquals(self.landmark, triangulated_landmark,1e-2)
 
     def test_distinct_Ks(self):
+        """ Tests triangulation with individual Cal3_S2 calibrations """
         # two cameras
-        K1 = Cal3_S2(1500, 1200, 0, 640, 480)
-        camera1 = PinholeCameraCal3_S2(self.pose1, K1)
+        K1 = (1500, 1200, 0, 640, 480)
+        K2 = (1600, 1300, 0, 650, 440)
 
-        K2 = Cal3_S2(1600, 1300, 0, 650, 440)
-        camera2 = PinholeCameraCal3_S2(self.pose2, K2)
-
+        measurements, camera_list = self.generate_measurements(Cal3_S2, PinholeCameraCal3_S2, K1, K2)
         cameras = CameraSetCal3_S2()
-        cameras.push_back(camera1)
-        cameras.push_back(camera2)
+        for camera in camera_list:
+            cameras.append(camera)
 
-        # Project two landmarks into two cameras and triangulate
-        z1 = camera1.project(self.landmark)
-        z2 = camera2.project(self.landmark)
-        
-        measurements = Point2Vector()
-        measurements.append(z1)
-        measurements.append(z2)
-
-        optimize = True
-        rank_tol = 1e-9
-
-        triangulated_landmark = triangulatePoint3(cameras, measurements, rank_tol, optimize)
+        triangulated_landmark = triangulatePoint3(cameras, measurements, rank_tol=1e-9, optimize=True)
         self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9)
 
     def test_distinct_Ks_Bundler(self):
+        """ Tests triangulation with individual Cal3Bundler calibrations"""
         # two cameras
-        K1 = Cal3Bundler(1500, 0, 0, 640, 480)
-        camera1 = PinholeCameraCal3Bundler(self.pose1, K1)
+        K1 = (1500, 0, 0, 640, 480)
+        K2 = (1600, 0, 0, 650, 440)
 
-        K2 = Cal3Bundler(1600, 0, 0, 650, 440)
-        camera2 = PinholeCameraCal3Bundler(self.pose2, K2)
-
+        measurements, camera_list = self.generate_measurements(Cal3Bundler, PinholeCameraCal3Bundler, K1, K2)
         cameras = CameraSetCal3Bundler()
-        cameras.push_back(camera1)
-        cameras.push_back(camera2)
+        for camera in camera_list:
+            cameras.append(camera)
 
-        # Project two landmarks into two cameras and triangulate
-        z1 = camera1.project(self.landmark)
-        z2 = camera2.project(self.landmark)
-
-        measurements = Point2Vector()
-        measurements.append(z1)
-        measurements.append(z2)
-
-        optimize = True
-        rank_tol = 1e-9
-
-        triangulated_landmark = triangulatePoint3(cameras, measurements, rank_tol, optimize)
+        triangulated_landmark = triangulatePoint3(cameras, measurements, rank_tol=1e-9, optimize=True)
         self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9) 
 
 if __name__ == "__main__":
