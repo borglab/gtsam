@@ -54,7 +54,39 @@ TEST(Cal3_S2Stereo, Calibrate) {
 TEST(Cal3_S2Stereo, CalibrateHomogeneous) {
   Vector3 intrinsic(2, 3, 1);
   Vector3 image(1320.3, 1740, 1);
-  CHECK(assert_equal((Vector)intrinsic, (Vector)K.calibrate(image)));
+  CHECK(assert_equal(intrinsic, K.calibrate(image)));
+}
+
+/* ************************************************************************* */
+Point2 uncalibrate_(const Cal3_S2Stereo& k, const Point2& pt) {
+  return k.uncalibrate(pt);
+}
+
+TEST(Cal3_S2Stereo, Duncalibrate) {
+  Matrix26 Dcal;
+  Matrix22 Dp;
+  K.uncalibrate(p, Dcal, Dp);
+
+  Matrix numerical1 = numericalDerivative21(uncalibrate_, K, p);
+  CHECK(assert_equal(numerical1, Dcal, 1e-8));
+  Matrix numerical2 = numericalDerivative22(uncalibrate_, K, p);
+  CHECK(assert_equal(numerical2, Dp, 1e-9));
+}
+
+Point2 calibrate_(const Cal3_S2Stereo& K, const Point2& pt) {
+  return K.calibrate(pt);
+}
+/* ************************************************************************* */
+TEST(Cal3_S2Stereo, Dcalibrate) {
+  Matrix26 Dcal;
+  Matrix22 Dp;
+  Point2 expected = K.calibrate(p_uv, Dcal, Dp);
+  CHECK(assert_equal(expected, p_xy, 1e-8));
+
+  Matrix numerical1 = numericalDerivative21(calibrate_, K, p_uv);
+  CHECK(assert_equal(numerical1, Dcal, 1e-8));
+  Matrix numerical2 = numericalDerivative22(calibrate_, K, p_uv);
+  CHECK(assert_equal(numerical2, Dp, 1e-8));
 }
 
 /* ************************************************************************* */
