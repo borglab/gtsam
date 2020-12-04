@@ -14,11 +14,10 @@ import numpy as np
 
 import gtsam as g
 from gtsam.utils.test_case import GtsamTestCase
-from gtsam import Cal3_S2, Cal3Bundler, Rot3, Pose3, \
-    PinholeCameraCal3_S2, PinholeCameraCal3Bundler, Point3, \
-    Point2Vector, Pose3Vector, triangulatePoint3, \
-    CameraSetCal3_S2, CameraSetCal3Bundler
-from numpy.core.records import array
+from gtsam import Cal3_S2, Cal3Bundler,  CameraSetCal3_S2,\
+    CameraSetCal3Bundler, PinholeCameraCal3_S2, PinholeCameraCal3Bundler, \
+    Point3, Pose3, Point2Vector, Pose3Vector, Rot3, triangulatePoint3
+    
 
 class TestVisualISAMExample(GtsamTestCase):
     """ Tests for triangulation with shared and individual calibrations """
@@ -48,7 +47,6 @@ class TestVisualISAMExample(GtsamTestCase):
         Returns:
             vector of measurements and cameras
         """
-
         cameras = []
         measurements = Point2Vector()    
         for k, pose in zip(cal_params, self.poses):
@@ -85,6 +83,8 @@ class TestVisualISAMExample(GtsamTestCase):
         K2 = (1600, 1300, 0, 650, 440)
 
         measurements, camera_list = self.generate_measurements(Cal3_S2, PinholeCameraCal3_S2, K1, K2)
+
+        # convert list to CameraSet object
         cameras = CameraSetCal3_S2()
         for camera in camera_list:
             cameras.append(camera)
@@ -99,6 +99,8 @@ class TestVisualISAMExample(GtsamTestCase):
         K2 = (1600, 0, 0, 650, 440)
 
         measurements, camera_list = self.generate_measurements(Cal3Bundler, PinholeCameraCal3Bundler, K1, K2)
+
+        # convert list to CameraSet object
         cameras = CameraSetCal3Bundler()
         for camera in camera_list:
             cameras.append(camera)
