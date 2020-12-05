@@ -55,6 +55,33 @@ class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
   Cal3_S2Stereo(double fov, int w, int h, double b)
       : Cal3_S2(fov, w, h), b_(b) {}
 
+  /**
+   * Convert intrinsic coordinates xy to image coordinates uv, fixed derivaitves
+   * @param p point in intrinsic coordinates
+   * @param Dcal optional 2*6 Jacobian wrpt Cal3_S2Stereo parameters
+   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
+   * @return point in image coordinates
+   */
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 6> Dcal = boost::none,
+                     OptionalJacobian<2, 2> Dp = boost::none) const;
+
+  /**
+   * Convert image coordinates uv to intrinsic coordinates xy
+   * @param p point in image coordinates
+   * @param Dcal optional 2*6 Jacobian wrpt Cal3_S2Stereo parameters
+   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
+   * @return point in intrinsic coordinates
+   */
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 6> Dcal = boost::none,
+                   OptionalJacobian<2, 2> Dp = boost::none) const;
+
+  /**
+   * Convert homogeneous image coordinates to intrinsic coordinates
+   * @param p point in image coordinates
+   * @return point in intrinsic coordinates
+   */
+  Vector3 calibrate(const Vector3& p) const { return Cal3_S2::calibrate(p); }
+
   /// @}
   /// @name Testable
   /// @{
