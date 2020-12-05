@@ -810,7 +810,7 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
   for (size_t p = pMin; p <= pMax; p++) {
     // Optimize until convergence at this level
     Qstar = tryOptimizingAt(p, initialSOp);
-    if (parameters_.getUseHuber() || parameters_.getCertifyOptimality()) {
+    if (parameters_.getUseHuber() || !parameters_.getCertifyOptimality()) {
       // in this case, there is no optimality verification
       if (pMin != pMax) {
         throw std::runtime_error(
