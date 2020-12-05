@@ -11,7 +11,7 @@
 
 /**
  * @file    NonlinearFactorGraph.h
- * @brief   Factor Graph Constsiting of non-linear factors
+ * @brief   Factor Graph consisting of non-linear factors
  * @author  Frank Dellaert
  * @author  Carlos Nieto
  * @author  Christian Potthast
@@ -113,6 +113,11 @@ namespace gtsam {
 
     /** Write the graph in GraphViz format for visualization */
     void saveGraph(std::ostream& stm, const Values& values = Values(),
+      const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  
+    /** Write the graph in GraphViz format to file for visualization */
+    void saveGraph(const std::string& file, const Values& values = Values(),
       const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
