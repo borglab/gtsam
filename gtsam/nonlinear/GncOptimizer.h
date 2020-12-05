@@ -48,16 +48,18 @@ public:
 
   using BaseOptimizer = GaussNewtonOptimizer; // BaseOptimizerParameters::OptimizerType;
 
+  /// Constructor
   GncParams(const BaseOptimizerParameters& baseOptimizerParams) :
       baseOptimizerParams(baseOptimizerParams) {
   }
 
-  // default constructor
+  /// Default constructor
   GncParams() :
       baseOptimizerParams() {
   }
 
-  BaseOptimizerParameters baseOptimizerParams;
+  /// GNC parameters
+  BaseOptimizerParameters baseOptimizerParams; /*optimization parameters used to solve the weighted least squares problem at each GNC iteration*/
   /// any other specific GNC parameters:
   RobustLossType lossType = GM; /* default loss*/
   size_t maxIterations = 100; /* maximum number of iterations*/
@@ -66,29 +68,41 @@ public:
   VerbosityGNC verbosityGNC = SILENT; /* verbosity level */
   std::vector<size_t> knownInliers = std::vector<size_t>(); /* slots in the factor graph corresponding to measurements that we know are inliers */
 
+  /// Set the robust loss function to be used in GNC (chosen among the ones in RobustLossType)
   void setLossType(const RobustLossType type) {
     lossType = type;
   }
+  /// Set the maximum number of iterations in GNC (changing the max nr of iters might lead to less accurate solutions and is not recommended)
   void setMaxIterations(const size_t maxIter) {
     std::cout
         << "setMaxIterations: changing the max nr of iters might lead to less accurate solutions and is not recommended! "
         << std::endl;
     maxIterations = maxIter;
   }
+  /** Set the maximum weighted residual error for an inlier. For a factor in the form f(x) = 0.5 * || r(x) ||^2_Omega,
+   * the inlier threshold is the largest value of f(x) for the corresponding measurement to be considered an inlier.
+   * */
   void setInlierThreshold(const double inth) {
     barcSq = inth;
   }
+  /// Set the graduated non-convexity step: at each GNC iteration, mu is updated as mu <- mu * muStep
   void setMuStep(const double step) {
     muStep = step;
   }
+  /// Set the verbosity level
   void setVerbosityGNC(const VerbosityGNC verbosity) {
     verbosityGNC = verbosity;
   }
+  /** (Optional) Provide a vector of measurements that must be considered inliers. The enties in the vector
+   * corresponds to the slots in the factor graph. For instance, if you have a nonlinear factor graph nfg,
+   * and you provide  knownIn = {0, 2, 15}, GNC will not apply outlier rejection to nfg[0], nfg[2], and nfg[15].
+   * This functionality is commonly used in SLAM when one may assume the odometry is outlier free, and
+   * only apply GNC to prune outliers from the loop closures
+   * */
   void setKnownInliers(const std::vector<size_t> knownIn) {
     for (size_t i = 0; i < knownIn.size(); i++)
       knownInliers.push_back(knownIn[i]);
   }
-
   /// equals
   bool equals(const GncParams& other, double tol = 1e-9) const {
     return baseOptimizerParams.equals(other.baseOptimizerParams)
@@ -98,7 +112,6 @@ public:
         && verbosityGNC == other.verbosityGNC
         && knownInliers == other.knownInliers;
   }
-
   /// print function
   void print(const std::string& str) const {
     std::cout << str << "\n";
@@ -132,6 +145,7 @@ private:
   Vector weights_; // this could be a local variable in optimize, but it is useful to make it accessible from outside
 
 public:
+  /// Constructor
   GncOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
       const GncParameters& params = GncParameters()) :
       state_(initialValues), params_(params) {
@@ -156,21 +170,23 @@ public:
     }
   }
 
-  /// getter functions
+  /// Access a copy of the internal factor graph
   NonlinearFactorGraph getFactors() const {
     return NonlinearFactorGraph(nfg_);
   }
+  /// Access a copy of the internal values
   Values getState() const {
     return Values(state_);
   }
+  /// Access a copy of the parameters
   GncParameters getParams() const {
     return GncParameters(params_);
   }
+  /// Access a copy of the GNC weights
   Vector getWeights() const {
     return weights_;
   }
-
-  /// implement GNC main loop, including graduating nonconvexity with mu
+  /// Compute optimal solution using graduated non-convexity
   Values optimize() {
     // start by assuming all measurements are inliers
     weights_ = Vector::Ones(nfg_.size());
@@ -203,7 +219,6 @@ public:
         }
         break;
       }
-
       // otherwise update mu
       mu = updateMu(mu);
     }
