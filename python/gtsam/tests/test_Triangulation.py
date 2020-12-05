@@ -38,18 +38,22 @@ class TestVisualISAMExample(GtsamTestCase):
         # landmark ~5 meters infront of camera
         self.landmark = Point3(5, 0.5, 1.2)
     
-    def generate_measurements(self, calibration, camera_model, *cal_params):
+    def generate_measurements(self, calibration, camera_model, camera_set, *cal_params):
         """ Generate vector of measurements for given calibration and camera model
         Args: 
             calibration: Camera calibration e.g. Cal3_S2
             camera_model: Camera model e.g. PinholeCameraCal3_S2
             cal_params: (list of) camera parameters e.g. K1, K2
+            camera_set: Cameraset object (for individual calibrations)
         Returns:
-            list of measurements and cameras
+            list of measurements and list/CameraSet object for cameras
         """
-        cameras = []
+        if camera_set is not None:
+            cameras = camera_set()
+        else:
+            cameras = []
         measurements = Point2Vector() 
-           
+
         for k, pose in zip(cal_params, self.poses):
             K = calibration(*k)
             camera = camera_model(pose, K)
@@ -65,7 +69,7 @@ class TestVisualISAMExample(GtsamTestCase):
         # Some common constants
         sharedCal = (1500, 1200, 0, 640, 480) 
 
-        measurements, _ = self.generate_measurements(Cal3_S2, PinholeCameraCal3_S2, sharedCal, sharedCal)
+        measurements, _ = self.generate_measurements(Cal3_S2, PinholeCameraCal3_S2, None, sharedCal, sharedCal)
 
         triangulated_landmark = triangulatePoint3(self.poses, Cal3_S2(sharedCal), measurements, rank_tol=1e-9, optimize=True)
         self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9)
@@ -84,12 +88,7 @@ class TestVisualISAMExample(GtsamTestCase):
         K1 = (1500, 1200, 0, 640, 480)
         K2 = (1600, 1300, 0, 650, 440)
 
-        measurements, camera_list = self.generate_measurements(Cal3_S2, PinholeCameraCal3_S2, K1, K2)
-
-        # convert list to CameraSet object
-        cameras = CameraSetCal3_S2()
-        for camera in camera_list:
-            cameras.append(camera)
+        measurements, cameras = self.generate_measurements(Cal3_S2, PinholeCameraCal3_S2, CameraSetCal3_S2, K1, K2)
 
         triangulated_landmark = triangulatePoint3(cameras, measurements, rank_tol=1e-9, optimize=True)
         self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9)
@@ -100,12 +99,7 @@ class TestVisualISAMExample(GtsamTestCase):
         K1 = (1500, 0, 0, 640, 480)
         K2 = (1600, 0, 0, 650, 440)
 
-        measurements, camera_list = self.generate_measurements(Cal3Bundler, PinholeCameraCal3Bundler, K1, K2)
-
-        # convert list to CameraSet object
-        cameras = CameraSetCal3Bundler()
-        for camera in camera_list:
-            cameras.append(camera)
+        measurements, cameras = self.generate_measurements(Cal3Bundler, PinholeCameraCal3Bundler, CameraSetCal3Bundler, K1, K2)
 
         triangulated_landmark = triangulatePoint3(cameras, measurements, rank_tol=1e-9, optimize=True)
         self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9) 
