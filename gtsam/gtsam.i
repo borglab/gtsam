@@ -849,43 +849,41 @@ namespace gtsam
   };
 
 #include <gtsam/geometry/Cal3_S2.h>
-  class Cal3_S2
-  {
-    // Standard Constructors
-    Cal3_S2();
-    Cal3_S2(double fx, double fy, double s, double u0, double v0);
-    Cal3_S2(Vector v);
-    Cal3_S2(double fov, int w, int h);
+class Cal3_S2 {
+  // Standard Constructors
+  Cal3_S2();
+  Cal3_S2(double fx, double fy, double s, double u0, double v0);
+  Cal3_S2(Vector v);
+  Cal3_S2(double fov, int w, int h);
 
-    // Testable
-    void print(string s) const;
-    bool equals(const gtsam::Cal3_S2 &rhs, double tol) const;
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::Cal3_S2& rhs, double tol) const;
 
-    // Manifold
-    static size_t Dim();
-    size_t dim() const;
-    gtsam::Cal3_S2 retract(Vector v) const;
-    Vector localCoordinates(const gtsam::Cal3_S2 &c) const;
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Cal3_S2 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Cal3_S2& c) const;
 
-    // Action on Point2
-    gtsam::Point2 calibrate(const gtsam::Point2 &p) const;
-    gtsam::Point2 uncalibrate(const gtsam::Point2 &p) const;
+  // Action on Point2
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
 
-    // Standard Interface
-    double fx() const;
-    double fy() const;
-    double skew() const;
-    double px() const;
-    double py() const;
-    gtsam::Point2 principalPoint() const;
-    Vector vector() const;
-    Matrix K() const;
-    Matrix matrix() const;
-    Matrix matrix_inverse() const;
+  // Standard Interface
+  double fx() const;
+  double fy() const;
+  double skew() const;
+  double px() const;
+  double py() const;
+  gtsam::Point2 principalPoint() const;
+  Vector vector() const;
+  Matrix K() const;
+  Matrix inverse() const;
 
-    // enabling serialization functionality
-    void serialize() const;
-  };
+  // enabling serialization functionality
+  void serialize() const;
+};
 
 #include <gtsam/geometry/Cal3DS2_Base.h>
   virtual class Cal3DS2_Base

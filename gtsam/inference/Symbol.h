@@ -167,10 +167,11 @@ inline Key Z(std::uint64_t j) { return Symbol('z', j); }
 /** Generates symbol shorthands with alternative names different than the
  * one-letter predefined ones. */
 class SymbolGenerator {
-  const char c_;
+  const unsigned char c_;
 public:
-  SymbolGenerator(const char c) : c_(c) {}
+  constexpr SymbolGenerator(const unsigned char c) : c_(c) {}
   Symbol operator()(const std::uint64_t j) const { return Symbol(c_, j); }
+  constexpr unsigned char chr() const { return c_; }
 };
 
 /// traits
