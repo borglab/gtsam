@@ -59,10 +59,11 @@ Point2 Cal3_S2::calibrate(const Point2& p, OptionalJacobian<2, 5> Dcal,
   double inv_fx_s_inv_fy = inv_fx * s_ * inv_fy;
 
   Point2 point(inv_fx * (delta_u - s_ * inv_fy_delta_v), inv_fy_delta_v);
-  if (Dcal)
+  if (Dcal) {
     *Dcal << -inv_fx * point.x(), inv_fx * s_ * inv_fy * inv_fy_delta_v,
         -inv_fx * point.y(), -inv_fx, inv_fx_s_inv_fy, 0, -inv_fy * point.y(),
         0, 0, -inv_fy;
+  }
   if (Dp) *Dp << inv_fx, -inv_fx_s_inv_fy, 0, inv_fy;
   return point;
 }
