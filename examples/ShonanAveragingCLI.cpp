@@ -27,7 +27,7 @@
  *
  * If you prefer using a robust Huber loss, you can add the option "-h true",
  * for instance
- * ./ShonanAveragingCLI -i spere2500.txt -u true
+ * ./ShonanAveragingCLI -i spere2500.txt -h true
  */
 
 #include <gtsam/base/timing.h>
