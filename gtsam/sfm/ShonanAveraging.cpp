@@ -811,7 +811,7 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
             .useHuber) {  // in this case, there is no optimality verification
       if (pMin != pMax) {
         throw std::runtime_error(
-            "When using robust norm, Shonan only tests a single rank");
+            "When using robust norm, Shonan only tests a single rank. Set pMin = pMax");
       }
       const Values SO3Values = roundSolution(Qstar);
       return std::make_pair(SO3Values, 0);
