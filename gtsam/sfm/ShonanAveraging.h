@@ -47,14 +47,16 @@ struct GTSAM_EXPORT ShonanAveragingParameters {
   using Anchor = std::pair<size_t, Rot>;
 
   // Paremeters themselves:
-  LevenbergMarquardtParams lm;  // LM parameters
-  double optimalityThreshold;   // threshold used in checkOptimality
-  Anchor anchor;                // pose to use as anchor if not Karcher
-  double alpha;                 // weight of anchor-based prior (default 0)
-  double beta;                  // weight of Karcher-based prior (default 1)
-  double gamma;                 // weight of gauge-fixing factors (default 0)
-  bool useHuber;  // if enabled, the Huber loss is used in the optimization
-                  // (default is false)
+  LevenbergMarquardtParams lm;  ///< LM parameters
+  double optimalityThreshold;   ///< threshold used in checkOptimality
+  Anchor anchor;                ///< pose to use as anchor if not Karcher
+  double alpha;                 ///< weight of anchor-based prior (default 0)
+  double beta;                  ///< weight of Karcher-based prior (default 1)
+  double gamma;                 ///< weight of gauge-fixing factors (default 0)
+  ///< if enabled, the Huber loss is used (default false)
+  bool useHuber;
+  ///< if enabled solution optimality is certified (default true)
+  bool certifyOptimality;
 
   ShonanAveragingParameters(const LevenbergMarquardtParams &lm =
                                 LevenbergMarquardtParams::CeresDefaults(),
@@ -82,6 +84,9 @@ struct GTSAM_EXPORT ShonanAveragingParameters {
 
   void setUseHuber(bool value) { useHuber = value; }
   bool getUseHuber() const { return useHuber; }
+
+  void setCertifyOptimality(bool value) { certifyOptimality = value; }
+  bool getCertifyOptimality() const { return certifyOptimality; }
 
   /// Print the parameters and flags used for rotation averaging.
   void print() const {
@@ -166,7 +171,7 @@ class GTSAM_EXPORT ShonanAveraging {
 
   /**
    * Update factors to use robust Huber loss.
-   * 
+   *
    * @param measurements Vector of BinaryMeasurements.
    * @param k Huber noise model threshold.
    */
@@ -174,7 +179,6 @@ class GTSAM_EXPORT ShonanAveraging {
                                     double k = 1.345) const {
     Measurements robustMeasurements;
     for (auto &measurement : measurements) {
-
       auto model = measurement.noiseModel();
       const auto &robust =
           boost::dynamic_pointer_cast<noiseModel::Robust>(model);
@@ -189,7 +193,7 @@ class GTSAM_EXPORT ShonanAveraging {
             noiseModel::mEstimator::Huber::Create(k), model);
       }
       BinaryMeasurement<Rot> meas(measurement.key1(), measurement.key2(),
-                                      measurement.measured(), robust_model);
+                                  measurement.measured(), robust_model);
       robustMeasurements.push_back(meas);
     }
     return robustMeasurements;

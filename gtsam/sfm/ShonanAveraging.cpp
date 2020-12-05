@@ -54,7 +54,8 @@ ShonanAveragingParameters<d>::ShonanAveragingParameters(
       alpha(alpha),
       beta(beta),
       gamma(gamma),
-      useHuber(false) {
+      useHuber(false),
+      certifyOptimality(true) {
   // By default, we will do conjugate gradient
   lm.linearSolverType = LevenbergMarquardtParams::Iterative;
 
@@ -343,13 +344,15 @@ static double Kappa(const BinaryMeasurement<T> &measurement,
   } else {
     const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
         measurement.noiseModel());
+    // Check if noise model is robust
     if (robust) {
-      if (parameters.getUseHuber()) {
-        // Cannot verify optimality, setting arbitrary value
-        sigma = 1;
-      } else {
+      // If robust, check if optimality certificate is expected
+      if (parameters.getCertifyOptimality()) {
         throw std::invalid_argument(
-            "Robust cost function is invalid unless useHuber is set.");
+            "Verification of optimality does not work with robust cost.");
+      } else {
+        // Optimality certificate not required, so setting default sigma
+        sigma = 1;
       }
     } else {
       throw std::invalid_argument(
@@ -807,30 +810,30 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
   for (size_t p = pMin; p <= pMax; p++) {
     // Optimize until convergence at this level
     Qstar = tryOptimizingAt(p, initialSOp);
-    if (parameters_
-            .useHuber) {  // in this case, there is no optimality verification
+    if (parameters_.getUseHuber() || parameters_.getCertifyOptimality()) {
+      // in this case, there is no optimality verification
       if (pMin != pMax) {
         throw std::runtime_error(
             "When using robust norm, Shonan only tests a single rank. Set pMin = pMax");
       }
       const Values SO3Values = roundSolution(Qstar);
       return std::make_pair(SO3Values, 0);
-    }
+    } else {
+      // Check certificate of global optimality
+      Vector minEigenVector;
+      double minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
+      if (minEigenValue > parameters_.optimalityThreshold) {
+        // If at global optimum, round and return solution
+        const Values SO3Values = roundSolution(Qstar);
+        return std::make_pair(SO3Values, minEigenValue);
+      }
 
-    // Check certificate of global optimality
-    Vector minEigenVector;
-    double minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
-    if (minEigenValue > parameters_.optimalityThreshold) {
-      // If at global optimum, round and return solution
-      const Values SO3Values = roundSolution(Qstar);
-      return std::make_pair(SO3Values, minEigenValue);
-    }
-
-    // Not at global optimimum yet, so check whether we will go to next level
-    if (p != pMax) {
-      // Calculate initial estimate for next level by following minEigenVector
-      initialSOp =
-          initializeWithDescent(p + 1, Qstar, minEigenVector, minEigenValue);
+      // Not at global optimimum yet, so check whether we will go to next level
+      if (p != pMax) {
+        // Calculate initial estimate for next level by following minEigenVector
+        initialSOp =
+            initializeWithDescent(p + 1, Qstar, minEigenVector, minEigenValue);
+      }
     }
   }
   throw std::runtime_error("Shonan::run did not converge for given pMax");
