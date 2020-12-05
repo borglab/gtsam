@@ -330,6 +330,8 @@ TEST(ShonanAveraging2, noisyToyGraphWithHuber) {
   ShonanAveraging2::Parameters parameters(lmParams);
   auto measurements = parseMeasurements<Rot2>(g2oFile);
   parameters.setUseHuber(true);
+  parameters.setCertifyOptimality(false);
+
   string parameters_print =
       " ShonanAveragingParameters: \n alpha: 0\n beta: 1\n gamma: 0\n "
       "useHuber: 1\n";
