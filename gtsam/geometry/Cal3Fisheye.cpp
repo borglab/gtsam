@@ -13,6 +13,7 @@
  * @file Cal3Fisheye.cpp
  * @date Apr 8, 2020
  * @author ghaggin
+ * @author Varun Agrawal
  */
 
 #include <gtsam/base/Matrix.h>
@@ -24,29 +25,10 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-Cal3Fisheye::Cal3Fisheye(const Vector9& v)
-    : fx_(v[0]),
-      fy_(v[1]),
-      s_(v[2]),
-      u0_(v[3]),
-      v0_(v[4]),
-      k1_(v[5]),
-      k2_(v[6]),
-      k3_(v[7]),
-      k4_(v[8]) {}
-
-/* ************************************************************************* */
 Vector9 Cal3Fisheye::vector() const {
   Vector9 v;
   v << fx_, fy_, s_, u0_, v0_, k1_, k2_, k3_, k4_;
   return v;
-}
-
-/* ************************************************************************* */
-Matrix3 Cal3Fisheye::K() const {
-  Matrix3 K;
-  K << fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0;
-  return K;
 }
 
 /* ************************************************************************* */
@@ -158,6 +140,14 @@ Point2 Cal3Fisheye::calibrate(const Point2& uv, OptionalJacobian<2, 9> Dcal,
 }
 
 /* ************************************************************************* */
+std::ostream& operator<<(std::ostream& os, const Cal3Fisheye& cal) {
+  os << (Cal3&)cal;
+  os << ", k1: " << cal.k1() << ", k2: " << cal.k2() << ", k3: " << cal.k3()
+     << ", k4: " << cal.k4();
+  return os;
+}
+
+/* ************************************************************************* */
 void Cal3Fisheye::print(const std::string& s_) const {
   gtsam::print((Matrix)K(), s_ + ".K");
   gtsam::print(Vector(k()), s_ + ".k");
@@ -165,24 +155,12 @@ void Cal3Fisheye::print(const std::string& s_) const {
 
 /* ************************************************************************* */
 bool Cal3Fisheye::equals(const Cal3Fisheye& K, double tol) const {
-  if (std::abs(fx_ - K.fx_) > tol || std::abs(fy_ - K.fy_) > tol ||
-      std::abs(s_ - K.s_) > tol || std::abs(u0_ - K.u0_) > tol ||
-      std::abs(v0_ - K.v0_) > tol || std::abs(k1_ - K.k1_) > tol ||
-      std::abs(k2_ - K.k2_) > tol || std::abs(k3_ - K.k3_) > tol ||
-      std::abs(k4_ - K.k4_) > tol)
-    return false;
-  return true;
+  const Cal3* base = dynamic_cast<const Cal3*>(&K);
+  return Cal3::equals(*base, tol) && std::fabs(k1_ - K.k1_) < tol &&
+         std::fabs(k2_ - K.k2_) < tol && std::fabs(k3_ - K.k3_) < tol &&
+         std::fabs(k4_ - K.k4_) < tol;
 }
 
 /* ************************************************************************* */
-Cal3Fisheye Cal3Fisheye::retract(const Vector& d) const {
-  return Cal3Fisheye(vector() + d);
-}
 
-/* ************************************************************************* */
-Vector Cal3Fisheye::localCoordinates(const Cal3Fisheye& T2) const {
-  return T2.vector() - vector();
-}
-
-}  // namespace gtsam
-/* ************************************************************************* */
+}  // \ namespace gtsam
