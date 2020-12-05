@@ -14,10 +14,11 @@ import numpy as np
 
 import gtsam as g
 from gtsam.utils.test_case import GtsamTestCase
-from gtsam import Cal3_S2, Cal3Bundler,  CameraSetCal3_S2,\
-    CameraSetCal3Bundler, PinholeCameraCal3_S2, PinholeCameraCal3Bundler, \
-    Point3, Pose3, Point2Vector, Pose3Vector, Rot3, triangulatePoint3
-    
+from gtsam import Cal3_S2, Cal3Bundler, Rot3, Pose3, \
+    PinholeCameraCal3_S2, PinholeCameraCal3Bundler, Point3, \
+    Point2Vector, Pose3Vector, triangulatePoint3, \
+    CameraSetCal3_S2, CameraSetCal3Bundler
+from numpy.core.records import array
 
 class TestVisualISAMExample(GtsamTestCase):
     """ Tests for triangulation with shared and individual calibrations """
