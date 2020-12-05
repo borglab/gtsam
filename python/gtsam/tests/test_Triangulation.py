@@ -10,14 +10,14 @@ Author: Frank Dellaert & Fan Jiang (Python)
 """
 import unittest
 
-import gtsam as g
 import numpy as np
+
+import gtsam
 from gtsam import (Cal3_S2, Cal3Bundler, CameraSetCal3_S2,
                    CameraSetCal3Bundler, PinholeCameraCal3_S2,
                    PinholeCameraCal3Bundler, Point2Vector, Point3, Pose3,
-                   Pose3Vector, Rot3, triangulatePoint3)
+                   Pose3Vector, Rot3)
 from gtsam.utils.test_case import GtsamTestCase
-from numpy.core.records import array
 
 
 class TestVisualISAMExample(GtsamTestCase):
@@ -75,11 +75,11 @@ class TestVisualISAMExample(GtsamTestCase):
                                                      PinholeCameraCal3_S2,
                                                      (sharedCal, sharedCal))
 
-        triangulated_landmark = triangulatePoint3(self.poses,
-                                                  Cal3_S2(sharedCal),
-                                                  measurements,
-                                                  rank_tol=1e-9,
-                                                  optimize=True)
+        triangulated_landmark = gtsam.triangulatePoint3(self.poses,
+                                                        Cal3_S2(sharedCal),
+                                                        measurements,
+                                                        rank_tol=1e-9,
+                                                        optimize=True)
         self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9)
 
         # Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
@@ -87,11 +87,11 @@ class TestVisualISAMExample(GtsamTestCase):
         measurements_noisy.append(measurements[0] - np.array([0.1, 0.5]))
         measurements_noisy.append(measurements[1] - np.array([-0.2, 0.3]))
 
-        triangulated_landmark = triangulatePoint3(self.poses,
-                                                  Cal3_S2(sharedCal),
-                                                  measurements_noisy,
-                                                  rank_tol=1e-9,
-                                                  optimize=True)
+        triangulated_landmark = gtsam.triangulatePoint3(self.poses,
+                                                        Cal3_S2(sharedCal),
+                                                        measurements_noisy,
+                                                        rank_tol=1e-9,
+                                                        optimize=True)
 
         self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-2)
 
@@ -106,8 +106,10 @@ class TestVisualISAMExample(GtsamTestCase):
                                                            (K1, K2),
                                                            camera_set=CameraSetCal3_S2)
 
-        triangulated_landmark = triangulatePoint3(
-            cameras, measurements, rank_tol=1e-9, optimize=True)
+        triangulated_landmark = gtsam.triangulatePoint3(cameras,
+                                                        measurements,
+                                                        rank_tol=1e-9,
+                                                        optimize=True)
         self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9)
 
     def test_distinct_Ks_Bundler(self):
@@ -121,10 +123,10 @@ class TestVisualISAMExample(GtsamTestCase):
                                                            (K1, K2),
                                                            camera_set=CameraSetCal3Bundler)
 
-        triangulated_landmark = triangulatePoint3(cameras,
-                                                  measurements,
-                                                  rank_tol=1e-9,
-                                                  optimize=True)
+        triangulated_landmark = gtsam.triangulatePoint3(cameras,
+                                                        measurements,
+                                                        rank_tol=1e-9,
+                                                        optimize=True)
         self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9)
 
 
