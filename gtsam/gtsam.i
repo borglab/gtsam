@@ -1112,10 +1112,6 @@ namespace gtsam
     void push_back(const T &cam);
   };
 
-  // typedefs added here for shorter type name and to enforce uniformity in naming conventions
-  //typedef gtsam::CameraSet<gtsam::PinholeCameraCal3_S2> CameraSetCal3_S2;
-  //typedef gtsam::CameraSet<gtsam::PinholeCameraCal3Bundler> CameraSetCal3Bundler;
-
 #include <gtsam/geometry/StereoCamera.h>
   class StereoCamera
   {

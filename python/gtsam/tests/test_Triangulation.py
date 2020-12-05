@@ -45,10 +45,11 @@ class TestVisualISAMExample(GtsamTestCase):
             camera_model: Camera model e.g. PinholeCameraCal3_S2
             cal_params: (list of) camera parameters e.g. K1, K2
         Returns:
-            vector of measurements and cameras
+            list of measurements and cameras
         """
         cameras = []
-        measurements = Point2Vector()    
+        measurements = Point2Vector() 
+           
         for k, pose in zip(cal_params, self.poses):
             K = calibration(*k)
             camera = camera_model(pose, K)
@@ -63,22 +64,23 @@ class TestVisualISAMExample(GtsamTestCase):
         """ Tests triangulation with shared Cal3_S2 calibration"""
         # Some common constants
         sharedCal = (1500, 1200, 0, 640, 480) 
+
         measurements, _ = self.generate_measurements(Cal3_S2, PinholeCameraCal3_S2, sharedCal, sharedCal)
 
-        triangulated_landmark = triangulatePoint3(self.poses,Cal3_S2(sharedCal), measurements, rank_tol=1e-9, optimize=True)
+        triangulated_landmark = triangulatePoint3(self.poses, Cal3_S2(sharedCal), measurements, rank_tol=1e-9, optimize=True)
         self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-9)
 
-        # 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
+        # Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
         measurements_noisy = Point2Vector()
         measurements_noisy.append(measurements[0] - np.array([0.1, 0.5]))
         measurements_noisy.append(measurements[1] - np.array([-0.2, 0.3]))
 
-        triangulated_landmark = triangulatePoint3(self.poses,Cal3_S2(sharedCal), measurements_noisy, rank_tol=1e-9, optimize=True)
-        self.gtsamAssertEquals(self.landmark, triangulated_landmark,1e-2)
+        triangulated_landmark = triangulatePoint3(self.poses, Cal3_S2(sharedCal), measurements_noisy, rank_tol=1e-9, optimize=True)
+        self.gtsamAssertEquals(self.landmark, triangulated_landmark, 1e-2)
 
     def test_distinct_Ks(self):
         """ Tests triangulation with individual Cal3_S2 calibrations """
-        # two cameras
+        # two camera parameters
         K1 = (1500, 1200, 0, 640, 480)
         K2 = (1600, 1300, 0, 650, 440)
 
@@ -94,7 +96,7 @@ class TestVisualISAMExample(GtsamTestCase):
 
     def test_distinct_Ks_Bundler(self):
         """ Tests triangulation with individual Cal3Bundler calibrations"""
-        # two cameras
+        # two camera parameters
         K1 = (1500, 0, 0, 640, 480)
         K2 = (1600, 0, 0, 650, 440)
 
