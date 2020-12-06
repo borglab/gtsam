@@ -82,8 +82,8 @@ Vector3 OrientedPlane3::error(const OrientedPlane3& plane,
 Vector3 OrientedPlane3::errorVector(const OrientedPlane3& other, OptionalJacobian<3, 3> H1,
                                     OptionalJacobian<3, 3> H2) const {
   Matrix22 H_n_error_this, H_n_error_other;
-  Vector2 n_error = n_.errorVector(other.normal(), H1 ? &H_n_error_this : 0,
-                                   H2 ? &H_n_error_other : 0);
+  Vector2 n_error = n_.errorVector(other.n_, H1 ? &H_n_error_this : 0,
+                                    H2 ? &H_n_error_other : 0);
 
   double d_error = d_ - other.d_;
 
