@@ -176,6 +176,8 @@ struct ISAM2Result {
   size_t getVariablesRelinearized() const { return variablesRelinearized; }
   size_t getVariablesReeliminated() const { return variablesReeliminated; }
   size_t getCliques() const { return cliques; }
+  double getErrorBefore() const { return errorBefore ? *errorBefore : std::nan(""); }
+  double getErrorAfter() const { return errorAfter ? *errorAfter : std::nan(""); }
 };
 
 }  // namespace gtsam

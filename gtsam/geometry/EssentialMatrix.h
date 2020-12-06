@@ -176,17 +176,6 @@ class EssentialMatrix {
 
   /// @}
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @name Deprecated
-  /// @{
-  Point3 transform_to(const Point3& p,
-      OptionalJacobian<3, 5> DE = boost::none,
-      OptionalJacobian<3, 3> Dpoint = boost::none) const {
-    return transformTo(p, DE, Dpoint);
-  };
-  /// @}
-#endif
-
  private:
   /// @name Advanced Interface
   /// @{
@@ -212,7 +201,7 @@ class EssentialMatrix {
   /// @}
 
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template<>

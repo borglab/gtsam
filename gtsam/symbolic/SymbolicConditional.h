@@ -105,7 +105,7 @@ namespace gtsam {
     /// @name Testable
 
     /** Print with optional formatter */
-    void print(const std::string& str = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    virtual void print(const std::string& str = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** Check equality */
     bool equals(const This& c, double tol = 1e-9) const;

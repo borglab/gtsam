@@ -66,23 +66,6 @@ SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab1,
                      parameters) {}
 
 /**************************************************************************************************/
-// deprecated variants
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1,
-                               const GaussianFactorGraph &Ab2,
-                               const Parameters &parameters)
-    : SubgraphSolver(Rc1, boost::make_shared<GaussianFactorGraph>(Ab2),
-                     parameters) {}
-
-SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab1,
-                               const GaussianFactorGraph &Ab2,
-                               const Parameters &parameters,
-                               const Ordering &ordering)
-    : SubgraphSolver(Ab1, boost::make_shared<GaussianFactorGraph>(Ab2),
-                     parameters, ordering) {}
-#endif
-
-/**************************************************************************************************/
 VectorValues SubgraphSolver::optimize() const {
   VectorValues ybar = conjugateGradients<SubgraphPreconditioner, VectorValues,
       Errors>(*pc_, pc_->zero(), parameters_);

@@ -421,21 +421,11 @@ JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
 /* ************************************************************************* */
 void JacobianFactor::print(const string& s,
     const KeyFormatter& formatter) const {
-  static const Eigen::IOFormat matlab(
-      Eigen::StreamPrecision, // precision
-      0, // flags
-      " ", // coeffSeparator
-      ";\n", // rowSeparator
-      "\t",  // rowPrefix
-      "", // rowSuffix
-      "[\n", // matPrefix
-      "\n  ]" // matSuffix
-      );
   if (!s.empty())
     cout << s << "\n";
   for (const_iterator key = begin(); key != end(); ++key) {
     cout << boost::format("  A[%1%] = ") % formatter(*key);
-    cout << getA(key).format(matlab) << endl;
+    cout << getA(key).format(matlabFormat()) << endl;
   }
   cout << formatMatrixIndented("  b = ", getb(), true) << "\n";
   if (model_)
@@ -515,7 +505,7 @@ Vector JacobianFactor::error_vector(const VectorValues& c) const {
 double JacobianFactor::error(const VectorValues& c) const {
   Vector e = unweighted_error(c);
   // Use the noise model distance function to get the correct error if available.
-  if (model_) return 0.5 * model_->distance(e);
+  if (model_) return 0.5 * model_->squaredMahalanobisDistance(e);
   return 0.5 * e.dot(e);
 }
 

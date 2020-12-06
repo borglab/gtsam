@@ -383,7 +383,7 @@ Subgraph SubgraphBuilder::operator()(const GaussianFactorGraph &gfg) const {
   const vector<size_t> tree = buildTree(gfg, forward_ordering, weights);
   if (tree.size() != n - 1) {
     throw std::runtime_error(
-        "SubgraphBuilder::operator() failure: tree.size() != n-1");
+        "SubgraphBuilder::operator() failure: tree.size() != n-1, might be caused by disconnected graph");
   }
 
   // Downweight the tree edges to zero.

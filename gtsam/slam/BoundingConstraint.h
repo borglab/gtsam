@@ -58,14 +58,14 @@ struct BoundingConstraint1: public NoiseModelFactor1<VALUE> {
       boost::none) const = 0;
 
   /** active when constraint *NOT* met */
-  bool active(const Values& c) const {
+  bool active(const Values& c) const override {
     // note: still active at equality to avoid zigzagging
     double x = value(c.at<X>(this->key()));
     return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
   }
 
   Vector evaluateError(const X& x, boost::optional<Matrix&> H =
-      boost::none) const {
+      boost::none) const override {
     Matrix D;
     double error = value(x, D) - threshold_;
     if (H) {
@@ -126,7 +126,7 @@ struct BoundingConstraint2: public NoiseModelFactor2<VALUE1, VALUE2> {
       boost::optional<Matrix&> H2 = boost::none) const = 0;
 
   /** active when constraint *NOT* met */
-  bool active(const Values& c) const {
+  bool active(const Values& c) const override {
     // note: still active at equality to avoid zigzagging
     double x = value(c.at<X1>(this->key1()), c.at<X2>(this->key2()));
     return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
@@ -134,7 +134,7 @@ struct BoundingConstraint2: public NoiseModelFactor2<VALUE1, VALUE2> {
 
   Vector evaluateError(const X1& x1, const X2& x2,
       boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const {
+      boost::optional<Matrix&> H2 = boost::none) const override {
     Matrix D1, D2;
     double error = value(x1, x2, D1, D2) - threshold_;
     if (H1) {

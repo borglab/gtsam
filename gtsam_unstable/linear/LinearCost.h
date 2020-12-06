@@ -88,18 +88,18 @@ public:
   }
 
   /** equals */
-  virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const {
+  bool equals(const GaussianFactor& lf, double tol = 1e-9) const override {
     return Base::equals(lf, tol);
   }
 
   /** print */
-  virtual void print(const std::string& s = "", const KeyFormatter& formatter =
-      DefaultKeyFormatter) const {
+  void print(const std::string& s = "", const KeyFormatter& formatter =
+      DefaultKeyFormatter) const override {
     Base::print(s + " LinearCost: ", formatter);
   }
 
   /** Clone this LinearCost */
-  virtual GaussianFactor::shared_ptr clone() const {
+  GaussianFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast < GaussianFactor
         > (boost::make_shared < LinearCost > (*this));
   }
@@ -110,7 +110,7 @@ public:
   }
 
   /** Special error for single-valued inequality constraints. */
-  virtual double error(const VectorValues& c) const {
+  double error(const VectorValues& c) const override {
     return error_vector(c)[0];
   }
 };

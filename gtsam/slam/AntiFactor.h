@@ -52,20 +52,20 @@ namespace gtsam {
     virtual ~AntiFactor() {}
 
     /// @return a deep copy of this factor
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    gtsam::NonlinearFactor::shared_ptr clone() const override {
       return boost::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
 
     /** print */
-    virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "AntiFactor version of:" << std::endl;
       factor_->print(s, keyFormatter);
     }
 
     /** equals */
-    virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
+    bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
       const This *e =  dynamic_cast<const This*> (&expected);
       return e != nullptr && Base::equals(*e, tol) && this->factor_->equals(*e->factor_, tol);
     }
@@ -77,16 +77,16 @@ namespace gtsam {
      * For the AntiFactor, this will have the same magnitude of the original factor,
      * but the opposite sign.
      */
-    double error(const Values& c) const { return -factor_->error(c); }
+    double error(const Values& c) const override { return -factor_->error(c); }
 
     /** get the dimension of the factor (same as the original factor) */
-    size_t dim() const { return factor_->dim(); }
+    size_t dim() const override { return factor_->dim(); }
 
     /**
      * Checks whether this factor should be used based on a set of values.
      * The AntiFactor will have the same 'active' profile as the original factor.
      */
-    bool active(const Values& c) const { return factor_->active(c); }
+    bool active(const Values& c) const override { return factor_->active(c); }
 
     /**
      * Linearize to a GaussianFactor. The AntiFactor always returns a Hessian Factor
@@ -94,7 +94,7 @@ namespace gtsam {
      * returns a Jacobian instead of a full Hessian), but with the opposite sign. This
      * effectively cancels the effect of the original factor on the factor graph.
      */
-    boost::shared_ptr<GaussianFactor> linearize(const Values& c) const {
+    boost::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
 
       // Generate the linearized factor from the contained nonlinear factor
       GaussianFactor::shared_ptr gaussianFactor = factor_->linearize(c);
