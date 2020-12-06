@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testGncOptimizer.cpp
- * @brief   Unit tests for GncOptimizer class
+ * @file    GncOptimizer.cpp
+ * @brief   The GncOptimizer class
  * @author  Jingnan Shi
  * @author  Luca Carlone
  * @author  Frank Dellaert
