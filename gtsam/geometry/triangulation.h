@@ -18,8 +18,10 @@
 
 #pragma once
 
-#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/CameraSet.h>
+#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/TriangulationFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -493,6 +495,10 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
       return TriangulationResult::BehindCamera();
     }
 }
+
+// Vector of Cameras - used by the Python/MATLAB wrapper
+using CameraSetCal3Bundler = CameraSet<PinholeCamera<Cal3Bundler>>;
+using CameraSetCal3_S2 = CameraSet<PinholeCamera<Cal3_S2>>;
 
 } // \namespace gtsam
 
