@@ -84,8 +84,8 @@ public:
   /** implement functions needed for Testable */
 
   /** print */
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) const override {
     std::cout << s << "BetweenFactorEM(" << keyFormatter(key1_) << ","
         << keyFormatter(key2_) << ")\n";
     measured_.print("  measured: ");
@@ -97,7 +97,7 @@ public:
   }
 
   /** equals */
-  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& f, double tol = 1e-9) const override {
     const This *t = dynamic_cast<const This*>(&f);
 
     if (t && Base::equals(f))
@@ -114,7 +114,7 @@ public:
   /** implement functions needed to derive from Factor */
 
   /* ************************************************************************* */
-  virtual double error(const Values& x) const {
+  double error(const Values &x) const override {
     return whitenedError(x).squaredNorm();
   }
 
@@ -125,8 +125,7 @@ public:
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
   /* This version of linearize recalculates the noise model each time */
-  virtual boost::shared_ptr<GaussianFactor> linearize(
-      const Values& x) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values &x) const override {
     // Only linearize if the factor is active
     if (!this->active(x))
       return boost::shared_ptr<JacobianFactor>();
@@ -403,12 +402,7 @@ public:
     return measured_;
   }
 
-  /** number of variables attached to this factor */
-  std::size_t size() const {
-    return 2;
-  }
-
-  virtual size_t dim() const {
+  size_t dim() const override {
     return model_inlier_->R().rows() + model_inlier_->R().cols();
   }
 

@@ -169,6 +169,12 @@ class ExecutionTrace {
       content.ptr->reverseAD2(dTdA, jacobians);
   }
 
+  ~ExecutionTrace() {
+    if (kind == Function) {
+      content.ptr->~CallRecord<Dim>();
+    }
+  }
+
   /// Define type so we can apply it as a meta-function
   typedef ExecutionTrace<T> type;
 };

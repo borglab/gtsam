@@ -33,14 +33,14 @@ namespace gtsam {
     }
 
     // print
-    virtual void print(const std::string& s = "",
-        const KeyFormatter& formatter = DefaultKeyFormatter) const {
+    void print(const std::string& s = "",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override {
       std::cout << s << "BinaryAllDiff on " << formatter(keys_[0]) << " and "
           << formatter(keys_[1]) << std::endl;
     }
 
     /// equals
-    bool equals(const DiscreteFactor& other, double tol) const {
+    bool equals(const DiscreteFactor& other, double tol) const override {
       if(!dynamic_cast<const BinaryAllDiff*>(&other))
         return false;
       else {
@@ -50,12 +50,12 @@ namespace gtsam {
     }
 
     /// Calculate value
-    virtual double operator()(const Values& values) const {
+    double operator()(const Values& values) const override {
       return (double) (values.at(keys_[0]) != values.at(keys_[1]));
     }
 
     /// Convert into a decisiontree
-    virtual DecisionTreeFactor toDecisionTreeFactor() const {
+    DecisionTreeFactor toDecisionTreeFactor() const override {
       DiscreteKeys keys;
       keys.push_back(DiscreteKey(keys_[0],cardinality0_));
       keys.push_back(DiscreteKey(keys_[1],cardinality1_));
@@ -68,7 +68,7 @@ namespace gtsam {
     }
 
     /// Multiply into a decisiontree
-    virtual DecisionTreeFactor operator*(const DecisionTreeFactor& f) const {
+    DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override {
       // TODO: can we do this more efficiently?
       return toDecisionTreeFactor() * f;
     }
@@ -79,20 +79,20 @@ namespace gtsam {
      * @param domains all other domains
      */
     ///
-    bool ensureArcConsistency(size_t j, std::vector<Domain>& domains) const {
+    bool ensureArcConsistency(size_t j, std::vector<Domain>& domains) const override {
 //      throw std::runtime_error(
 //          "BinaryAllDiff::ensureArcConsistency not implemented");
       return false;
     }
 
     /// Partially apply known values
-    virtual Constraint::shared_ptr partiallyApply(const Values&) const {
+    Constraint::shared_ptr partiallyApply(const Values&) const override {
       throw std::runtime_error("BinaryAllDiff::partiallyApply not implemented");
     }
 
     /// Partially apply known values, domain version
-    virtual Constraint::shared_ptr partiallyApply(
-        const std::vector<Domain>&) const {
+    Constraint::shared_ptr partiallyApply(
+        const std::vector<Domain>&) const override {
       throw std::runtime_error("BinaryAllDiff::partiallyApply not implemented");
     }
   };

@@ -459,11 +459,12 @@ TEST(NonlinearOptimizer, RobustMeanCalculation) {
   init.insert(0, 100.0);
   expected.insert(0, 3.33333333);
 
-  LevenbergMarquardtParams params;
+  DoglegParams params_dl;
+  params_dl.setRelativeErrorTol(1e-10);
 
   auto gn_result = GaussNewtonOptimizer(fg, init).optimize();
-  auto lm_result = LevenbergMarquardtOptimizer(fg, init, params).optimize();
-  auto dl_result = DoglegOptimizer(fg, init).optimize();
+  auto lm_result = LevenbergMarquardtOptimizer(fg, init).optimize();
+  auto dl_result = DoglegOptimizer(fg, init, params_dl).optimize();
 
   EXPECT(assert_equal(expected, gn_result, tol));
   EXPECT(assert_equal(expected, lm_result, tol));
@@ -509,8 +510,8 @@ class IterativeLM : public LevenbergMarquardtOptimizer {
         initial_(initialValues) {}
 
   /// Solve that uses conjugate gradient
-  virtual VectorValues solve(const GaussianFactorGraph& gfg,
-                             const NonlinearOptimizerParams& params) const {
+  VectorValues solve(const GaussianFactorGraph& gfg,
+                             const NonlinearOptimizerParams& params) const override {
     VectorValues zeros = initial_.zeroVectors();
     return conjugateGradientDescent(gfg, zeros, cgParams_);
   }
@@ -540,7 +541,6 @@ TEST(NonlinearOptimizer, subclass_solver) {
 }
 
 /* ************************************************************************* */
-#include <wrap/utilities.h>
 TEST( NonlinearOptimizer, logfile )
 {
   NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
@@ -565,6 +565,58 @@ TEST( NonlinearOptimizer, logfile )
 //  actual << ifs2.rdbuf();
 //  EXPECT(actual.str()==expected.str());
 }
+
+/* ************************************************************************* */
+TEST( NonlinearOptimizer, iterationHook_LM )
+{
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
+
+  Point2 x0(3,3);
+  Values c0;
+  c0.insert(X(1), x0);
+
+  // Levenberg-Marquardt
+  LevenbergMarquardtParams lmParams;
+  size_t lastIterCalled = 0;
+  lmParams.iterationHook = [&](size_t iteration, double oldError, double newError)
+  {
+    // Tests:
+    lastIterCalled = iteration;
+    EXPECT(newError<oldError);
+    
+    // Example of evolution printout:
+    //std::cout << "iter: " << iteration << " error: " << oldError << " => " << newError <<"\n";
+  };
+  LevenbergMarquardtOptimizer(fg, c0, lmParams).optimize();
+  
+  EXPECT(lastIterCalled>5);
+}
+/* ************************************************************************* */
+TEST( NonlinearOptimizer, iterationHook_CG )
+{
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
+
+  Point2 x0(3,3);
+  Values c0;
+  c0.insert(X(1), x0);
+
+  // Levenberg-Marquardt
+  NonlinearConjugateGradientOptimizer::Parameters cgParams;
+  size_t lastIterCalled = 0;
+  cgParams.iterationHook = [&](size_t iteration, double oldError, double newError)
+  {
+    // Tests:
+    lastIterCalled = iteration;
+    EXPECT(newError<oldError);
+    
+    // Example of evolution printout:
+    //std::cout << "iter: " << iteration << " error: " << oldError << " => " << newError <<"\n";
+  };
+  NonlinearConjugateGradientOptimizer(fg, c0, cgParams).optimize();
+  
+  EXPECT(lastIterCalled>5);
+}
+
 
 /* ************************************************************************* */
 //// Minimal traits example

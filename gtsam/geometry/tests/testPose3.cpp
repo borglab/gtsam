@@ -18,6 +18,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/testLie.h>
 #include <gtsam/base/lieProxies.h>
+#include <gtsam/base/TestableAssertions.h>
 
 #include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
@@ -419,6 +420,29 @@ TEST(Pose3, transform_to_rotate) {
 }
 
 /* ************************************************************************* */
+// Check transformPoseFrom and its pushforward
+Pose3 transformPoseFrom_(const Pose3& wTa, const Pose3& aTb) {
+  return wTa.transformPoseFrom(aTb);
+}
+
+TEST(Pose3, transformPoseFrom)
+{
+  Matrix actual = (T2*T2).matrix();
+  Matrix expected = T2.matrix()*T2.matrix();
+  EXPECT(assert_equal(actual, expected, 1e-8));
+
+  Matrix H1, H2;
+  T2.transformPoseFrom(T2, H1, H2);
+
+  Matrix numericalH1 = numericalDerivative21(transformPoseFrom_, T2, T2);
+  EXPECT(assert_equal(numericalH1, H1, 5e-3));
+  EXPECT(assert_equal(T2.inverse().AdjointMap(), H1, 5e-3));
+
+  Matrix numericalH2 = numericalDerivative22(transformPoseFrom_, T2, T2);
+  EXPECT(assert_equal(numericalH2, H2, 1e-4));
+}
+
+/* ************************************************************************* */
 TEST(Pose3, transformTo) {
   Pose3 transform(Rot3::Rodrigues(0, 0, -1.570796), Point3(2, 4, 0));
   Point3 actual = transform.transformTo(Point3(3, 2, 10));
@@ -784,6 +808,17 @@ TEST(Pose3, ExpmapDerivative2) {
   }
 }
 
+TEST( Pose3, ExpmapDerivativeQr) {
+  Vector6 w = Vector6::Random();
+  w.head<3>().normalize();
+  w.head<3>() = w.head<3>() * 0.9e-2;
+  Matrix3 actualQr = Pose3::ComputeQforExpmapDerivative(w, 0.01);
+  Matrix expectedH = numericalDerivative21<Pose3, Vector6,
+      OptionalJacobian<6, 6> >(&Pose3::Expmap, w, boost::none);
+  Matrix3 expectedQr = expectedH.bottomLeftCorner<3, 3>();
+  EXPECT(assert_equal(expectedQr, actualQr, 1e-6));
+}
+
 /* ************************************************************************* */
 TEST( Pose3, LogmapDerivative) {
   Matrix6 actualH;
@@ -834,12 +869,12 @@ TEST( Pose3, adjointTranspose) {
 }
 
 /* ************************************************************************* */
-TEST( Pose3, stream)
-{
-  Pose3 T;
+TEST( Pose3, stream) {
   std::ostringstream os;
-  os << T;
-  EXPECT(os.str() == "\n|1, 0, 0|\n|0, 1, 0|\n|0, 0, 1|\n\n[0, 0, 0]';\n");
+  os << Pose3();
+
+  string expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\nt: 0 0 0";
+  EXPECT(os.str() == expected);
 }
 
 //******************************************************************************
@@ -872,9 +907,9 @@ TEST(Pose3 , ChartDerivatives) {
   Pose3 id;
   if (ROT3_DEFAULT_COORDINATES_MODE == Rot3::EXPMAP) {
     CHECK_CHART_DERIVATIVES(id,id);
-//    CHECK_CHART_DERIVATIVES(id,T2);
-//    CHECK_CHART_DERIVATIVES(T2,id);
-//    CHECK_CHART_DERIVATIVES(T2,T3);
+    CHECK_CHART_DERIVATIVES(id,T2);
+    CHECK_CHART_DERIVATIVES(T2,id);
+    CHECK_CHART_DERIVATIVES(T2,T3);
   }
 }
 
@@ -994,36 +1029,13 @@ TEST(Pose3, Create) {
 }
 
 /* ************************************************************************* */
-TEST(Pose3, print) {
-  std::stringstream redirectStream;
-  std::streambuf* ssbuf = redirectStream.rdbuf();
-  std::streambuf* oldbuf  = std::cout.rdbuf();
-  // redirect cout to redirectStream
-  std::cout.rdbuf(ssbuf);
-
+TEST(Pose3, Print) {
   Pose3 pose(Rot3::identity(), Point3(1, 2, 3));
-  // output is captured to redirectStream
-  pose.print();
 
   // Generate the expected output
-  std::stringstream expected;
-  Point3 translation(1, 2, 3);
+  std::string expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\nt: 1 2 3\n";
 
-#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
-  expected << "1\n"
-              "2\n"
-              "3;\n";
-#else
-  expected << '[' << translation.x() << ", " << translation.y() << ", " << translation.z() << "]\';";
-#endif
-
-  // reset cout to the original stream
-  std::cout.rdbuf(oldbuf);
-
-  // Get substring corresponding to translation part
-  std::string actual = redirectStream.str().substr(38, 11);
-
-  CHECK_EQUAL(expected.str(), actual);
+  EXPECT(assert_print_equal(expected, pose));
 }
 
 /* ************************************************************************* */

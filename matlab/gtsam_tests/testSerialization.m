@@ -28,10 +28,6 @@ serialized_pose1 = pose1.string_serialize();
 pose1ds = Pose2.string_deserialize(serialized_pose1);
 CHECK('pose1ds.equals(pose1, 1e-9)', pose1ds.equals(pose1, 1e-9));
 
-serialized_landmark1 = landmark1.string_serialize();
-landmark1ds = Point2.string_deserialize(serialized_landmark1);
-CHECK('landmark1ds.equals(landmark1, 1e-9)', landmark1ds.equals(landmark1, 1e-9));
-
 %% Create and serialize Values
 values = Values;
 values.insert(i1, pose1);

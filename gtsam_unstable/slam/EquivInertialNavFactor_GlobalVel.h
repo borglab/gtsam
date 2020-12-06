@@ -133,7 +133,7 @@ public:
   /** implement functions needed for Testable */
 
   /** print */
-  virtual void print(const std::string& s = "EquivInertialNavFactor_GlobalVel", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s = "EquivInertialNavFactor_GlobalVel", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << "("
         << keyFormatter(this->key1()) << ","
         << keyFormatter(this->key2()) << ","
@@ -153,7 +153,7 @@ public:
   }
 
   /** equals */
-  virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
+  bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
     const This *e =  dynamic_cast<const This*> (&expected);
     return e != nullptr && Base::equals(*e, tol)
     && (delta_pos_in_t0_ - e->delta_pos_in_t0_).norm() < tol
@@ -302,7 +302,7 @@ public:
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none,
       boost::optional<Matrix&> H4 = boost::none,
-      boost::optional<Matrix&> H5 = boost::none) const {
+      boost::optional<Matrix&> H5 = boost::none) const override {
 
     // TODO: Write analytical derivative calculations
     // Jacobian w.r.t. Pose1

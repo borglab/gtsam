@@ -289,22 +289,6 @@ public:
 
   /// @}
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @name Deprecated
-  /// @{
-  Point2 transform_from(const Point2& point,
-                        OptionalJacobian<2, 3> Dpose = boost::none,
-                        OptionalJacobian<2, 2> Dpoint = boost::none) const {
-    return transformFrom(point, Dpose, Dpoint);
-  }
-  Point2 transform_to(const Point2& point,
-                      OptionalJacobian<2, 3> Dpose = boost::none,
-                      OptionalJacobian<2, 2> Dpoint = boost::none) const {
-    return transformTo(point, Dpose, Dpoint);
-  }
-    /// @}
-#endif
-
  private:
 
   // Serialization function
@@ -317,7 +301,7 @@ public:
 
 public:
   // Align for Point2, which is either derived from, or is typedef, of Vector2
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 }; // Pose2
 
 /** specialization for pose2 wedge function (generic template in Lie.h) */

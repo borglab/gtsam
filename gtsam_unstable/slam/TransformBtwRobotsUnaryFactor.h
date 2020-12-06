@@ -81,13 +81,13 @@ namespace gtsam {
 
 
     /** Clone */
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const { return boost::make_shared<This>(*this); }
+    gtsam::NonlinearFactor::shared_ptr clone() const override { return boost::make_shared<This>(*this); }
 
 
     /** implement functions needed for Testable */
 
     /** print */
-    virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "TransformBtwRobotsUnaryFactor("
           << keyFormatter(key_) << ")\n";
       std::cout << "MR between factor keys: "
@@ -99,7 +99,7 @@ namespace gtsam {
     }
 
     /** equals */
-    virtual bool equals(const NonlinearFactor& f, double tol=1e-9) const {
+    bool equals(const NonlinearFactor& f, double tol=1e-9) const override {
       const This *t =  dynamic_cast<const This*> (&f);
 
       if(t && Base::equals(f))
@@ -128,7 +128,7 @@ namespace gtsam {
     }
 
     /* ************************************************************************* */
-    virtual double error(const gtsam::Values& x) const {
+    double error(const gtsam::Values& x) const override {
       return whitenedError(x).squaredNorm();
     }
 
@@ -139,7 +139,7 @@ namespace gtsam {
      * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
      */
     /* This version of linearize recalculates the noise model each time */
-    virtual boost::shared_ptr<gtsam::GaussianFactor> linearize(const gtsam::Values& x) const {
+    boost::shared_ptr<gtsam::GaussianFactor> linearize(const gtsam::Values& x) const override {
       // Only linearize if the factor is active
       if (!this->active(x))
         return boost::shared_ptr<gtsam::JacobianFactor>();
@@ -203,12 +203,7 @@ namespace gtsam {
 
     /* ************************************************************************* */
 
-    /** number of variables attached to this factor */
-    std::size_t size() const {
-      return 1;
-    }
-
-    virtual size_t dim() const {
+    size_t dim() const override {
       return model_->R().rows() + model_->R().cols();
     }
 

@@ -24,14 +24,17 @@ namespace gtsam {
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
 struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
-  Matrix3 accelerometerCovariance; ///< continuous-time "Covariance" of accelerometer
+  /// Continuous-time "Covariance" of accelerometer
+  /// The units for stddev are σ = m/s²/√Hz
+  Matrix3 accelerometerCovariance;
   Matrix3 integrationCovariance; ///< continuous-time "Covariance" describing integration uncertainty
   bool use2ndOrderCoriolis; ///< Whether to use second order Coriolis integration
   Vector3 n_gravity; ///< Gravity vector in nav frame
 
   /// Default constructor for serialization only
   PreintegrationParams()
-      : accelerometerCovariance(I_3x3),
+      : PreintegratedRotationParams(),
+        accelerometerCovariance(I_3x3),
         integrationCovariance(I_3x3),
         use2ndOrderCoriolis(false),
         n_gravity(0, 0, -1) {}
@@ -39,7 +42,8 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   /// The Params constructor insists on getting the navigation frame gravity vector
   /// For convenience, two commonly used conventions are provided by named constructors below
   PreintegrationParams(const Vector3& n_gravity)
-      : accelerometerCovariance(I_3x3),
+      : PreintegratedRotationParams(),
+        accelerometerCovariance(I_3x3),
         integrationCovariance(I_3x3),
         use2ndOrderCoriolis(false),
         n_gravity(n_gravity) {}
@@ -54,8 +58,8 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
     return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, -g)));
   }
 
-  void print(const std::string& s) const;
-  bool equals(const PreintegratedRotation::Params& other, double tol) const;
+  void print(const std::string& s="") const override;
+  bool equals(const PreintegratedRotationParams& other, double tol) const override;
 
   void setAccelerometerCovariance(const Matrix3& cov) { accelerometerCovariance = cov; }
   void setIntegrationCovariance(const Matrix3& cov)   { integrationCovariance = cov; }
@@ -73,10 +77,9 @@ protected:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
-    ar & boost::serialization::make_nvp("PreintegratedRotation_Params",
-         boost::serialization::base_object<PreintegratedRotationParams>(*this));
-    ar & bs::make_nvp("accelerometerCovariance", bs::make_array(accelerometerCovariance.data(), accelerometerCovariance.size()));
-    ar & bs::make_nvp("integrationCovariance", bs::make_array(integrationCovariance.data(), integrationCovariance.size()));
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotationParams);
+    ar & BOOST_SERIALIZATION_NVP(accelerometerCovariance);
+    ar & BOOST_SERIALIZATION_NVP(integrationCovariance);
     ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
     ar & BOOST_SERIALIZATION_NVP(n_gravity);
   }
@@ -84,7 +87,7 @@ protected:
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions
 public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 

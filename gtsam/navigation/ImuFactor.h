@@ -59,7 +59,7 @@ typedef ManifoldPreintegration PreintegrationType;
  */
 
 /**
- * PreintegratedIMUMeasurements accumulates (integrates) the IMU measurements
+ * PreintegratedImuMeasurements accumulates (integrates) the IMU measurements
  * (rotation rates and accelerations) and the corresponding covariance matrix.
  * The measurements are then used to build the Preintegrated IMU factor.
  * Integration is done incrementally (ideally, one integrates the measurement
@@ -80,15 +80,15 @@ protected:
 
 public:
 
-  /// Default constructor for serialization and Cython wrapper
+  /// Default constructor for serialization and wrappers
   PreintegratedImuMeasurements() {
     preintMeasCov_.setZero();
   }
 
  /**
    *  Constructor, initializes the class with no measurements
-   *  @param bias Current estimate of acceleration and rotation rate biases
-   *  @param p    Parameters, typically fixed in a single application
+   *  @param p       Parameters, typically fixed in a single application
+   *  @param biasHat Current estimate of acceleration and rotation rate biases
    */
   PreintegratedImuMeasurements(const boost::shared_ptr<PreintegrationParams>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias()) :
@@ -140,31 +140,14 @@ public:
   void mergeWith(const PreintegratedImuMeasurements& pim, Matrix9* H1, Matrix9* H2);
 #endif
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @deprecated constructor
-  /// NOTE(frank): assumes Z-Down convention, only second order integration supported
-  PreintegratedImuMeasurements(const imuBias::ConstantBias& biasHat,
-      const Matrix3& measuredAccCovariance,
-      const Matrix3& measuredOmegaCovariance,
-      const Matrix3& integrationErrorCovariance,
-      bool use2ndOrderIntegration = true);
-
-  /// @deprecated version of integrateMeasurement with body_P_sensor
-  /// Use parameters instead
-  void integrateMeasurement(const Vector3& measuredAcc,
-      const Vector3& measuredOmega, double dt,
-      boost::optional<Pose3> body_P_sensor);
-#endif
-
-private:
-
+ private:
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
-    ar & bs::make_nvp("preintMeasCov_", bs::make_array(preintMeasCov_.data(), preintMeasCov_.size()));
+    ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
   }
 };
 
@@ -217,14 +200,14 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const;
+  gtsam::NonlinearFactor::shared_ptr clone() const override;
 
   /// @name Testable
   /// @{
   GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ImuFactor&);
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const;
-  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
   /// @}
 
   /** Access the preintegrated measurements. */
@@ -241,7 +224,7 @@ public:
       const imuBias::ConstantBias& bias_i, boost::optional<Matrix&> H1 =
           boost::none, boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none, boost::optional<Matrix&> H4 =
-          boost::none, boost::optional<Matrix&> H5 = boost::none) const;
+          boost::none, boost::optional<Matrix&> H5 = boost::none) const override;
 
 #ifdef GTSAM_TANGENT_PREINTEGRATION
   /// Merge two pre-integrated measurement classes
@@ -253,27 +236,7 @@ public:
   static shared_ptr Merge(const shared_ptr& f01, const shared_ptr& f12);
 #endif
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @deprecated typename
-  typedef PreintegratedImuMeasurements PreintegratedMeasurements;
-
-  /// @deprecated constructor, in the new one gravity, coriolis settings are in PreintegrationParams
-  ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
-      const PreintegratedMeasurements& preintegratedMeasurements,
-      const Vector3& n_gravity, const Vector3& omegaCoriolis,
-      const boost::optional<Pose3>& body_P_sensor = boost::none,
-      const bool use2ndOrderCoriolis = false);
-
-  /// @deprecated use PreintegrationBase::predict,
-  /// in the new one gravity, coriolis settings are in PreintegrationParams
-  static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j,
-      Vector3& vel_j, const imuBias::ConstantBias& bias_i,
-      PreintegratedMeasurements& pim, const Vector3& n_gravity,
-      const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
-#endif
-
-private:
-
+ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -315,14 +278,14 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const;
+  gtsam::NonlinearFactor::shared_ptr clone() const override;
 
   /// @name Testable
   /// @{
   GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ImuFactor2&);
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const;
-  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
   /// @}
 
   /** Access the preintegrated measurements. */
@@ -338,7 +301,7 @@ public:
                        const imuBias::ConstantBias& bias_i,  //
                        boost::optional<Matrix&> H1 = boost::none,
                        boost::optional<Matrix&> H2 = boost::none,
-                       boost::optional<Matrix&> H3 = boost::none) const;
+                       boost::optional<Matrix&> H3 = boost::none) const override;
 
 private:
 
