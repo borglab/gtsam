@@ -1067,6 +1067,15 @@ typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
 typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
 
+template<T>
+class CameraSet {
+  CameraSet();
+
+  // structure specific methods
+  T at(size_t i) const;
+  void push_back(const T& cam);
+};
+
 #include <gtsam/geometry/StereoCamera.h>
 class StereoCamera {
   // Standard Constructors and Named Constructors
@@ -1098,7 +1107,7 @@ class StereoCamera {
 
 #include <gtsam/geometry/triangulation.h>
 
-// Templates appear not yet supported for free functions
+// Templates appear not yet supported for free functions - issue raised at borglab/wrap#14 to add support
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
     gtsam::Cal3_S2* sharedCal, const gtsam::Point2Vector& measurements,
     double rank_tol, bool optimize);
@@ -1108,6 +1117,12 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
     gtsam::Cal3Bundler* sharedCal, const gtsam::Point2Vector& measurements,
     double rank_tol, bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
+    const gtsam::Point2Vector& measurements, double rank_tol,
+    bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
+    const gtsam::Point2Vector& measurements, double rank_tol,
+    bool optimize);
     
 //*************************************************************************
 // Symbolic
