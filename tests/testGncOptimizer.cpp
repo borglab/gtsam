@@ -139,7 +139,7 @@ TEST(GncOptimizer, initializeMu) {
 }
 
 /* ************************************************************************* */
-TEST(GncOptimizer, updateMu) {
+TEST(GncOptimizer, updateMuGM) {
   // has to have Gaussian noise models !
   auto fg = example::createReallyNonlinearFactorGraph();
 
@@ -151,6 +151,7 @@ TEST(GncOptimizer, updateMu) {
   GncParams<LevenbergMarquardtParams> gncParams(lmParams);
   gncParams.setLossType(
       GncParams<LevenbergMarquardtParams>::RobustLossType::GM);
+  gncParams.setMuStep(1.4);
   auto gnc =
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
 
@@ -160,6 +161,27 @@ TEST(GncOptimizer, updateMu) {
   // check it correctly saturates to 1 for GM
   mu = 1.2;
   EXPECT_DOUBLES_EQUAL(gnc.updateMu(mu), 1.0, tol);
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, updateMuTLS) {
+  // has to have Gaussian noise models !
+  auto fg = example::createReallyNonlinearFactorGraph();
+
+  Point2 p0(3, 3);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  gncParams.setMuStep(1.4);
+  gncParams.setLossType(
+      GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
+  auto gnc =
+      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+
+  double mu = 5.0;
+  EXPECT_DOUBLES_EQUAL(gnc.updateMu(mu), mu * 1.4, tol);
 }
 
 /* ************************************************************************* */
