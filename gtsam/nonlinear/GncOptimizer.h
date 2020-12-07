@@ -340,7 +340,7 @@ public:
 
     // update weights of known inlier/outlier measurements
     switch (params_.lossType) {
-    case GncParameters::GM: // use eq (12) in GNC paper
+    case GncParameters::GM: { // use eq (12) in GNC paper
       for (size_t k : unknownWeights) {
         if (nfg_[k]) {
           double u2_k = nfg_[k]->error(currentEstimate); // squared (and whitened) residual
@@ -349,22 +349,25 @@ public:
         }
       }
       return weights;
-    case GncParameters::TLS: // use eq (14) in GNC paper
+    }
+    case GncParameters::TLS: { // use eq (14) in GNC paper
       double upperbound = (mu + 1) / mu * params_.barcSq;
-      double lowerbound = mu / (mu +1 ) * params_.barcSq;
+      double lowerbound = mu / (mu + 1) * params_.barcSq;
       for (size_t k : unknownWeights) {
         if (nfg_[k]) {
-          double u2_k = nfg_[k]->error(currentEstimate); // squared (and whitened) residual
-          if (u2_k >= upperbound ) {
+          double u2_k = nfg_[k]->error(
+              currentEstimate); // squared (and whitened) residual
+          if (u2_k >= upperbound) {
             weights[k] = 0;
           } else if (u2_k <= lowerbound) {
             weights[k] = 1;
           } else {
-            weights[k] = std::sqrt(params_.barcSq * mu * (mu + 1) / u2_k ) - mu;
+            weights[k] = std::sqrt(params_.barcSq * mu * (mu + 1) / u2_k) - mu;
           }
         }
       }
       return weights;
+    }
     default:
       throw std::runtime_error(
           "GncOptimizer::calculateWeights: called with unknown loss type.");
