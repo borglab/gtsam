@@ -135,7 +135,7 @@ TEST(GncOptimizer, initializeMu) {
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
   // according to rmk 5 in the gnc paper: m0 =  barcSq / (2 * rmax^2 - barcSq)
   // (barcSq=1 in this example)
-  EXPECT_DOUBLES_EQUAL(gnc_gm.initializeMu(), 1 / (2 * 198.999 - 1), 1e-3);
+  EXPECT_DOUBLES_EQUAL(gnc_tls.initializeMu(), 1 / (2 * 198.999 - 1), 1e-3);
 }
 
 /* ************************************************************************* */
@@ -185,7 +185,7 @@ TEST(GncOptimizer, updateMuTLS) {
 }
 
 /* ************************************************************************* */
-TEST(GncOptimizer, checkMuConvergence) {
+TEST(GncOptimizer, checkMuConvergenceGM) {
   // has to have Gaussian noise models !
   auto fg = example::createReallyNonlinearFactorGraph();
 
@@ -202,8 +202,26 @@ TEST(GncOptimizer, checkMuConvergence) {
 
   double mu = 1.0;
   CHECK(gnc.checkMuConvergence(mu, 0));
+}
 
-  // TODO: test relative mu convergence
+/* ************************************************************************* */
+TEST(GncOptimizer, checkMuConvergenceTLS) {
+  // has to have Gaussian noise models !
+  auto fg = example::createReallyNonlinearFactorGraph();
+
+  Point2 p0(3, 3);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  gncParams.setLossType(
+      GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
+  auto gnc =
+      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+
+  double mu = 1.0;
+  CHECK(gnc.checkMuConvergence(mu, mu));
 }
 
 /* ************************************************************************* */
