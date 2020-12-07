@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    GncOptimizer.cpp
+ * @file    GncOptimizer.h
  * @brief   The GncOptimizer class
  * @author  Jingnan Shi
  * @author  Luca Carlone
