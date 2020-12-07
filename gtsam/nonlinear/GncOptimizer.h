@@ -203,9 +203,11 @@ public:
     double mu = initializeMu();
     double mu_prev = mu;
 
-    // handle the degenerate case for TLS cost that corresponds to small
-    // maximum residual error at initialization
-    if (mu <= 0 && params_.lossType == GncParameters::TLS) {
+    // handle the degenerate case that corresponds to small
+    // maximum residual errors at initialization
+    // For GM: if residual error is small, mu -> 0
+    // For TLS: if residual error is small, mu -> -1
+    if (mu <= 0) {
       if (params_.verbosityGNC >= GncParameters::VerbosityGNC::SUMMARY) {
         std::cout << "GNC Optimizer stopped because maximum residual at "
                      "initialization is small." << std::endl;
@@ -230,6 +232,10 @@ public:
       GaussNewtonOptimizer baseOptimizer_iter(graph_iter, state_);
       result = baseOptimizer_iter.optimize();
 
+      // update mu
+      mu_prev = mu;
+      mu = updateMu(mu);
+
       // stopping condition
       if (checkMuConvergence(mu, mu_prev)) {
         // display info
@@ -240,9 +246,6 @@ public:
         }
         break;
       }
-      // otherwise update mu
-      mu_prev = mu;
-      mu = updateMu(mu);
     }
     return result;
   }
