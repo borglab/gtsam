@@ -119,6 +119,9 @@ public:
     case GM:
       std::cout << "lossType: Geman McClure" << "\n";
       break;
+    case TLS:
+      std::cout << "lossType: Truncated Least-squares" << "\n";
+      break;
     default:
       throw std::runtime_error("GncParams::print: unknown loss type.");
     }
@@ -193,6 +196,18 @@ public:
     GaussNewtonOptimizer baseOptimizer(nfg_, state_);
     Values result = baseOptimizer.optimize();
     double mu = initializeMu();
+
+    // handle the degenerate case for TLS cost that corresponds to small
+    // maximum residual error at initialization
+    if (mu <= 0 && params_.lossType == GncParameters::TLS) {
+      if (params_.verbosityGNC >= GncParameters::VerbosityGNC::SUMMARY) {
+        std::cout << "GNC Optimizer stopped because maximum residual at "
+                     "initialization is small." << std::endl;
+        result.print("result\n");
+      }
+      return result;
+    }
+
     for (size_t iter = 0; iter < params_.maxIterations; iter++) {
 
       // display info
@@ -238,6 +253,11 @@ public:
     switch (params_.lossType) {
     case GncParameters::GM:
       return 2 * rmax_sq / params_.barcSq; // initial mu
+    case GncParameters::TLS:
+      // initialize mu to the value specified in Remark 5 in GNC paper
+      // degenerate case: residual is close to zero so mu approximately equals
+      // to -1
+      return params_.barcSq / (2 * rmax_sq - params_.barcSq);
     default:
       throw std::runtime_error(
           "GncOptimizer::initializeMu: called with unknown loss type.");
@@ -249,6 +269,9 @@ public:
     switch (params_.lossType) {
     case GncParameters::GM:
       return std::max(1.0, mu / params_.muStep); // reduce mu, but saturate at 1
+    case GncParameters::TLS:
+      // increases mu at each iteration
+      return mu * params_.muStep;
     default:
       throw std::runtime_error(
           "GncOptimizer::updateMu: called with unknown loss type.");
@@ -260,6 +283,7 @@ public:
     switch (params_.lossType) {
     case GncParameters::GM:
       return std::fabs(mu - 1.0) < 1e-9; // mu=1 recovers the original GM function
+      // TODO: Add TLS
     default:
       throw std::runtime_error(
           "GncOptimizer::checkMuConvergence: called with unknown loss type.");
@@ -317,6 +341,7 @@ public:
         }
       }
       return weights;
+      // TODO: Add TLS
     default:
       throw std::runtime_error(
           "GncOptimizer::calculateWeights: called with unknown loss type.");
