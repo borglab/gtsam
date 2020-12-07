@@ -162,7 +162,9 @@ TEST(GncOptimizer, checkMuConvergence) {
       gncParams);
 
   double mu = 1.0;
-  CHECK(gnc.checkMuConvergence(mu));
+  CHECK(gnc.checkMuConvergence(mu, 0));
+
+  // TODO: test relative mu convergence
 }
 
 /* ************************************************************************* */
