@@ -2056,6 +2056,7 @@ class NonlinearFactorGraph {
 
   // enabling serialization functionality
   void serialize() const;
+  void saveGraph(const string& s) const;
 };
 
 #include <gtsam/nonlinear/NonlinearFactor.h>

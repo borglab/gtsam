@@ -34,6 +34,7 @@
 #endif
 
 #include <cmath>
+#include <fstream>
 #include <limits>
 
 using namespace std;
@@ -254,6 +255,16 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
   }
 
   stm << "}\n";
+}
+
+/* ************************************************************************* */
+void NonlinearFactorGraph::saveGraph(
+    const std::string& file, const Values& values,
+    const GraphvizFormatting& graphvizFormatting,
+    const KeyFormatter& keyFormatter) const {
+  std::ofstream of(file);
+  saveGraph(of, values, graphvizFormatting, keyFormatter);
+  of.close();
 }
 
 /* ************************************************************************* */
