@@ -111,12 +111,17 @@ namespace gtsam {
     /** Test equality */
     bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;
 
-    /** Write the graph in GraphViz format for visualization */
+    /// Write the graph in GraphViz format for visualization
     void saveGraph(std::ostream& stm, const Values& values = Values(),
       const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
-  
-    /** Write the graph in GraphViz format to file for visualization */
+
+    /**
+     * Write the graph in GraphViz format to file for visualization.
+     *
+     * This is a wrapper friendly version since wrapped languages don't have
+     * access to C++ streams.
+     */
     void saveGraph(const std::string& file, const Values& values = Values(),
       const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
