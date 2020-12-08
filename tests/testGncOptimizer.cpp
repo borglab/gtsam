@@ -225,7 +225,7 @@ TEST(GncOptimizer, checkMuConvergenceTLS) {
 }
 
 /* ************************************************************************* */
-TEST(GncOptimizer, calculateWeights) {
+TEST(GncOptimizer, calculateWeightsGM) {
   auto fg = example::sharedNonRobustFactorGraphWithOutliers();
 
   Point2 p0(0, 0);
@@ -242,6 +242,8 @@ TEST(GncOptimizer, calculateWeights) {
 
   GaussNewtonParams gnParams;
   GncParams<GaussNewtonParams> gncParams(gnParams);
+  gncParams.setLossType(
+      GncParams<GaussNewtonParams>::RobustLossType::GM);
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   double mu = 1.0;
   Vector weights_actual = gnc.calculateWeights(initial, mu);
@@ -255,6 +257,31 @@ TEST(GncOptimizer, calculateWeights) {
   auto gnc2 =
       GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   weights_actual = gnc2.calculateWeights(initial, mu);
+  CHECK(assert_equal(weights_expected, weights_actual, tol));
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, calculateWeightsTLS) {
+  auto fg = example::sharedNonRobustFactorGraphWithOutliers();
+
+  Point2 p0(0, 0);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  // we have 4 factors, 3 with zero errors (inliers), 1 with error
+  Vector weights_expected = Vector::Zero(4);
+  weights_expected[0] = 1.0;                             // zero error
+  weights_expected[1] = 1.0;                             // zero error
+  weights_expected[2] = 1.0;                             // zero error
+  weights_expected[3] = 0;                               // outliers
+
+  GaussNewtonParams gnParams;
+  GncParams<GaussNewtonParams> gncParams(gnParams);
+  gncParams.setLossType(
+      GncParams<GaussNewtonParams>::RobustLossType::TLS);
+  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
+  double mu = 1.0;
+  Vector weights_actual = gnc.calculateWeights(initial, mu);
   CHECK(assert_equal(weights_expected, weights_actual, tol));
 }
 
