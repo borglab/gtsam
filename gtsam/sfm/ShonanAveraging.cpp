@@ -349,7 +349,7 @@ static double Kappa(const BinaryMeasurement<T> &measurement,
       // If robust, check if optimality certificate is expected
       if (parameters.getCertifyOptimality()) {
         throw std::invalid_argument(
-            "Verification of optimality does not work with robust cost.");
+            "Certification of optimality does not work with robust cost.");
       } else {
         // Optimality certificate not required, so setting default sigma
         sigma = 1;
@@ -811,7 +811,7 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
     // Optimize until convergence at this level
     Qstar = tryOptimizingAt(p, initialSOp);
     if (parameters_.getUseHuber() || !parameters_.getCertifyOptimality()) {
-      // in this case, there is no optimality verification
+      // in this case, there is no optimality certification
       if (pMin != pMax) {
         throw std::runtime_error(
             "When using robust norm, Shonan only tests a single rank. Set pMin = pMax");
