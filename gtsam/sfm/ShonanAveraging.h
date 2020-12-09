@@ -46,7 +46,7 @@ struct GTSAM_EXPORT ShonanAveragingParameters {
   using Rot = typename std::conditional<d == 2, Rot2, Rot3>::type;
   using Anchor = std::pair<size_t, Rot>;
 
-  // Paremeters themselves:
+  // Parameters themselves:
   LevenbergMarquardtParams lm;  ///< LM parameters
   double optimalityThreshold;   ///< threshold used in checkOptimality
   Anchor anchor;                ///< pose to use as anchor if not Karcher
