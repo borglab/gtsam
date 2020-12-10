@@ -13,8 +13,8 @@ import argparse
 import re
 import textwrap
 
-import interface_parser as parser
-import template_instantiator as instantiator
+import gtwrap.interface_parser as parser
+import gtwrap.template_instantiator as instantiator
 
 
 class PybindWrapper(object):
