@@ -2,8 +2,8 @@ import os
 import argparse
 import textwrap
 
-import interface_parser as parser
-import template_instantiator as instantiator
+import gtwrap.interface_parser as parser
+import gtwrap.template_instantiator as instantiator
 
 from functools import reduce
 from functools import partial

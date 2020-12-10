@@ -1,2 +1,5 @@
 __pycache__/
 .vscode/
+*build*
+*.egg-info
+cmake/PybindWrap.cmake
