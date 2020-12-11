@@ -35,19 +35,21 @@ using Sparse = Eigen::SparseMatrix<double>;
  * \brief Compute maximum Eigenpair with power method
  *
  * References :
- * 1) Rosen, D. and Carlone, L., 2017, September. Computational
+ * 1) G. Golub and C. V. Loan, Matrix Computations, 3rd ed. Baltimore, Johns
+ * Hopkins University Press, 1996, pp.405-411
+ * 2) Rosen, D. and Carlone, L., 2017, September. Computational
  * enhancements for certifiably correct SLAM. In Proceedings of the
  * International Conference on Intelligent Robots and Systems.
- * 2) Yulun Tian and Kasra Khosoussi and David M. Rosen and Jonathan P. How,
+ * 3) Yulun Tian and Kasra Khosoussi and David M. Rosen and Jonathan P. How,
  * 2020, Aug, Distributed Certifiably Correct Pose-Graph Optimization, Arxiv
- * 3) C. de Sa, B. He, I. Mitliagkas, C. Ré, and P. Xu, “Accelerated
+ * 4) C. de Sa, B. He, I. Mitliagkas, C. Ré, and P. Xu, “Accelerated
  * stochastic power iteration,” in Proc. Mach. Learn. Res., no. 84, 2018, pp.
  * 58–67
  *
- * It performs the following iteration: \f$ x_{k+1} = A * x_k  \f$ 
+ * It performs the following iteration: \f$ x_{k+1} = A * x_k  \f$
  * where A is the aim matrix we want to get eigenpair of, x is the
  * Ritz vector
- * 
+ *
  * Template argument Operator just needs multiplication operator
  *
  */
