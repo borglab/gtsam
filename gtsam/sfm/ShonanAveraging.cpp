@@ -485,7 +485,7 @@ Sparse ShonanAveraging<d>::computeA(const Matrix &S) const {
 // ref : Part III. C, Rosen, D. and Carlone, L., 2017, September. Computational
 // enhancements for certifiably correct SLAM. In Proceedings of the
 // International Conference on Intelligent Robots and Systems.
-Vector perturb(const Vector &initialVector) {
+static Vector perturb(const Vector &initialVector) {
   // generate a 0.03*||x_0||_2 as stated in David's paper
   int n = initialVector.rows();
   Vector disturb = Vector::Random(n);
