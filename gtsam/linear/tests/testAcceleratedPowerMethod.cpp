@@ -24,6 +24,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/AcceleratedPowerMethod.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/tests/powerMethodExample.h>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -33,7 +34,6 @@
 
 using namespace std;
 using namespace gtsam;
-using symbol_shorthand::X;
 
 /* ************************************************************************* */
 TEST(AcceleratedPowerMethod, acceleratedPowerIteration) {
@@ -65,12 +65,7 @@ TEST(AcceleratedPowerMethod, acceleratedPowerIteration) {
 /* ************************************************************************* */
 TEST(AcceleratedPowerMethod, useFactorGraphSparse) {
   // Let's make a scalar synchronization graph with 4 nodes
-  GaussianFactorGraph fg;
-  auto model = noiseModel::Unit::Create(1);
-  for (size_t j = 0; j < 3; j++) {
-    fg.add(X(j), -I_1x1, X(j + 1), I_1x1, Vector1::Zero(), model);
-  }
-  fg.add(X(3), -I_1x1, X(0), I_1x1, Vector1::Zero(), model);  // extra row
+  GaussianFactorGraph fg = gtsam::linear::test::example::createSparseGraph();
 
   // Get eigenvalues and eigenvectors with Eigen
   auto L = fg.hessian();
@@ -105,20 +100,7 @@ TEST(AcceleratedPowerMethod, useFactorGraphSparse) {
 /* ************************************************************************* */
 TEST(AcceleratedPowerMethod, useFactorGraphDense) {
   // Let's make a scalar synchronization graph with 10 nodes
-  GaussianFactorGraph fg;
-  auto model = noiseModel::Unit::Create(1);
-  // Each node has an edge with all the others
-  for (size_t j = 0; j < 10; j++) {
-    fg.add(X(j), -I_1x1, X((j + 1)%10 ), I_1x1, Vector1::Zero(), model);
-    fg.add(X(j), -I_1x1, X((j + 2)%10 ), I_1x1, Vector1::Zero(), model);
-    fg.add(X(j), -I_1x1, X((j + 3)%10 ), I_1x1, Vector1::Zero(), model);
-    fg.add(X(j), -I_1x1, X((j + 4)%10 ), I_1x1, Vector1::Zero(), model);
-    fg.add(X(j), -I_1x1, X((j + 5)%10 ), I_1x1, Vector1::Zero(), model);
-    fg.add(X(j), -I_1x1, X((j + 6)%10 ), I_1x1, Vector1::Zero(), model);
-    fg.add(X(j), -I_1x1, X((j + 7)%10 ), I_1x1, Vector1::Zero(), model);
-    fg.add(X(j), -I_1x1, X((j + 8)%10 ), I_1x1, Vector1::Zero(), model);
-    fg.add(X(j), -I_1x1, X((j + 9)%10 ), I_1x1, Vector1::Zero(), model);
-  }
+  GaussianFactorGraph fg = gtsam::linear::test::example::createDenseGraph();
 
   // Get eigenvalues and eigenvectors with Eigen
   auto L = fg.hessian();
