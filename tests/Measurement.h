@@ -3,21 +3,23 @@
 #include <Eigen/Core>
 #include <string>
 
-namespace drs {
+namespace gtsam {
 
-///
-/// \brief This is the base class for all measurement types.
-///
+/**
+ * \brief This is the base class for all measurement types.
+ */
 class Measurement {
-public:
+ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  uint64_t dt;      ///< Time since the last message of this type (nanoseconds).
-  uint64_t time;    ///< ROS time message recieved (nanoseconds).
-  std::string type; ///< The type of message (to enable dynamic/static casting).
+  size_t dt;    ///< Time since the last message of this type (nanoseconds).
+  size_t time;  ///< ROS time message recieved (nanoseconds).
+  ///< The type of message (to enable dynamic/static casting).
+  std::string type;
+
+  Measurement() : dt(0), time(0), type("UNDEFINED") {}
+  Measurement(std::string _type) : dt(0), time(0), type(_type) {}
 
   virtual ~Measurement() {}
-  Measurement();
-  Measurement(std::string _type);
 };
 
-} // namespace drs
+}  // namespace gtsam
