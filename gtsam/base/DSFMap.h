@@ -21,6 +21,7 @@
 #include <cstdlib>  // Provides size_t
 #include <map>
 #include <set>
+#include <vector>
 
 namespace gtsam {
 
@@ -115,9 +116,17 @@ class DSFMap {
 /// Small utility class for representing a wrappable pairs of ints.
 class IndexPair : public std::pair<size_t,size_t> {
  public:
-  IndexPair(): std::pair<size_t,size_t>(0,0) {}
-  IndexPair(size_t i, size_t j) : std::pair<size_t,size_t>(i,j) {}
+  inline IndexPair(): std::pair<size_t,size_t>(0,0) {}
+  inline IndexPair(size_t i, size_t j) : std::pair<size_t,size_t>(i,j) {}
   inline size_t i() const { return first; };
   inline size_t j() const { return second; };
 };
+
+typedef std::vector<IndexPair> IndexPairVector;
+typedef std::set<IndexPair> IndexPairSet;
+
+inline IndexPairVector IndexPairSetAsArray(IndexPairSet& set) { return IndexPairVector(set.begin(), set.end()); }
+
+typedef std::map<IndexPair, IndexPairSet> IndexPairSetMap;
+typedef DSFMap<IndexPair> DSFMapIndexPair;
 }  // namespace gtsam

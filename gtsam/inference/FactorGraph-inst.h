@@ -55,8 +55,8 @@ bool FactorGraph<FACTOR>::equals(const This& fg, double tol) const {
   // check whether the factors are the same, in same order.
   for (size_t i = 0; i < factors_.size(); i++) {
     sharedFactor f1 = factors_[i], f2 = fg.factors_[i];
-    if (f1 == NULL && f2 == NULL) continue;
-    if (f1 == NULL || f2 == NULL) return false;
+    if (f1 == nullptr && f2 == nullptr) continue;
+    if (f1 == nullptr || f2 == nullptr) return false;
     if (!f1->equals(*f2, tol)) return false;
   }
   return true;

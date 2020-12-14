@@ -35,7 +35,7 @@ class AttitudeFactor {
 
 protected:
 
-  const Unit3 nZ_, bRef_; ///< Position measurement in
+  Unit3 nZ_, bRef_; ///< Position measurement in
 
 public:
 
@@ -56,12 +56,19 @@ public:
   Vector attitudeError(const Rot3& p,
       OptionalJacobian<2,3> H = boost::none) const;
 
+  const Unit3& nZ() const {
+    return nZ_;
+  }
+  const Unit3& bRef() const {
+    return bRef_;
+  }
+
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("nZ_", const_cast<Unit3&>(nZ_));
-    ar & boost::serialization::make_nvp("bRef_", const_cast<Unit3&>(bRef_));
+    ar & boost::serialization::make_nvp("nZ_",  nZ_);
+    ar & boost::serialization::make_nvp("bRef_", bRef_);
   }
 };
 
@@ -101,28 +108,22 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   /** print */
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const;
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) const override;
 
   /** equals */
-  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /** vector of errors */
-  virtual Vector evaluateError(const Rot3& nRb, //
-      boost::optional<Matrix&> H = boost::none) const {
+  Vector evaluateError(const Rot3& nRb, //
+      boost::optional<Matrix&> H = boost::none) const override {
     return attitudeError(nRb, H);
-  }
-  Unit3 nZ() const {
-    return nZ_;
-  }
-  Unit3 bRef() const {
-    return bRef_;
   }
 
 private:
@@ -138,7 +139,7 @@ private:
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// traits
@@ -181,21 +182,21 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   /** print */
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const;
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) const override;
 
   /** equals */
-  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /** vector of errors */
-  virtual Vector evaluateError(const Pose3& nTb, //
-      boost::optional<Matrix&> H = boost::none) const {
+  Vector evaluateError(const Pose3& nTb, //
+      boost::optional<Matrix&> H = boost::none) const override {
     Vector e = attitudeError(nTb.rotation(), H);
     if (H) {
       Matrix H23 = *H;
@@ -203,12 +204,6 @@ public:
       H->block<2,3>(0,0) = H23;
     }
     return e;
-  }
-  Unit3 nZ() const {
-    return nZ_;
-  }
-  Unit3 bRef() const {
-    return bRef_;
   }
 
 private:
@@ -224,7 +219,7 @@ private:
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// traits

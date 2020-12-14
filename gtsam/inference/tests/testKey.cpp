@@ -41,6 +41,31 @@ TEST(Key, KeySymbolConversion) {
 }
 
 /* ************************************************************************* */
+TEST(Key, SymbolGenerator) {
+  const auto x1 = gtsam::symbol_shorthand::X(1);
+  const auto v1 = gtsam::symbol_shorthand::V(1);
+  const auto a1 = gtsam::symbol_shorthand::A(1);
+
+  const auto Z = gtsam::SymbolGenerator('x');
+  const auto DZ = gtsam::SymbolGenerator('v');
+  const auto DDZ = gtsam::SymbolGenerator('a');
+
+  const auto z1 = Z(1);
+  const auto dz1 = DZ(1);
+  const auto ddz1 = DDZ(1);
+
+  EXPECT(assert_equal(x1, z1));
+  EXPECT(assert_equal(v1, dz1));
+  EXPECT(assert_equal(a1, ddz1));
+}
+
+/* ************************************************************************* */
+TEST(Key, SymbolGeneratorConstexpr) {
+  constexpr auto Z = gtsam::SymbolGenerator('x');
+  EXPECT(assert_equal(Z.chr(), 'x'));
+}
+
+/* ************************************************************************* */
 template<int KeySize>
 Key KeyTestValue();
 
@@ -106,4 +131,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

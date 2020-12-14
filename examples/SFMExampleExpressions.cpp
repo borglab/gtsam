@@ -27,7 +27,7 @@
 #include <gtsam/nonlinear/ExpressionFactorGraph.h>
 
 // Header order is close to far
-#include <examples/SFMdata.h>
+#include "SFMdata.h"
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/Values.h>
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
   // Simulated measurements from each camera pose, adding them to the factor graph
   for (size_t i = 0; i < poses.size(); ++i) {
     Pose3_ x('x', i);
-    SimpleCamera camera(poses[i], K);
+    PinholeCamera<Cal3_S2> camera(poses[i], K);
     for (size_t j = 0; j < points.size(); ++j) {
       Point2 measurement = camera.project(points[j]);
       // Below an expression for the prediction of the measurement:

@@ -4,7 +4,7 @@
 
 /* SuiteSparse configuration : memory manager and printf functions. */
 
-/* Copyright (c) 2013, Timothy A. Davis.  No licensing restrictions
+/* Copyright (c) 2013-2018, Timothy A. Davis.  No licensing restrictions
  * apply to this file or to the SuiteSparse_config directory.
  * Author: Timothy A. Davis.
  */

@@ -50,49 +50,6 @@ double distance2(const Point2& p, const Point2& q, OptionalJacobian<1, 2> H1,
   }
 }
 
-#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
-
-/* ************************************************************************* */
-void Point2::print(const string& s) const {
-  cout << s << *this << endl;
-}
-
-/* ************************************************************************* */
-bool Point2::equals(const Point2& q, double tol) const {
-  return (std::abs(x() - q.x()) < tol && std::abs(y() - q.y()) < tol);
-}
-
-/* ************************************************************************* */
-double Point2::norm(OptionalJacobian<1,2> H) const {
-  return gtsam::norm2(*this, H);
-}
-
-/* ************************************************************************* */
-double Point2::distance(const Point2& point, OptionalJacobian<1,2> H1,
-    OptionalJacobian<1,2> H2) const {
-  return gtsam::distance2(*this, point, H1, H2);
-}
-
-/* ************************************************************************* */
-ostream &operator<<(ostream &os, const Point2& p) {
-  os << '(' << p.x() << ", " << p.y() << ')';
-  return os;
-}
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-boost::optional<Point2> CircleCircleIntersection(double R_d, double r_d, double tol) {
-  return circleCircleIntersection(R_d, r_d, tol);
-}
-std::list<Point2> CircleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2> fh) {
-  return circleCircleIntersection(c1, c2, fh);
-}
-std::list<Point2> CircleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2, double tol) {
-  return circleCircleIntersection(c1, r1, c2, r2, tol);
-}
-#endif
-
-#endif // GTSAM_TYPEDEF_POINTS_TO_VECTORS
-
 /* ************************************************************************* */
 // Math inspired by http://paulbourke.net/geometry/circlesphere/
 boost::optional<Point2> circleCircleIntersection(double R_d, double r_d,

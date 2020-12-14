@@ -66,7 +66,7 @@ boost::function<bool(Key)> Symbol::ChrTest(unsigned char c) {
   return bind(&Symbol::chr, bind(make, _1)) == c;
 }
 
-std::ostream &operator<<(std::ostream &os, const Symbol &symbol) {
+GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const Symbol &symbol) {
   os << StreamedKey(symbol);
   return os;
 }

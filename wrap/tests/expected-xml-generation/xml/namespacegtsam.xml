@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.11">
+  <compounddef id="namespacegtsam" kind="namespace" language="C++">
+    <compoundname>gtsam</compoundname>
+    <innerclass refid="classgtsam_1_1JacobianFactorQ" prot="public">gtsam::JacobianFactorQ</innerclass>
+    <innerclass refid="classgtsam_1_1NoiseModelFactor" prot="public">gtsam::NoiseModelFactor</innerclass>
+    <innerclass refid="classgtsam_1_1NoiseModelFactor1" prot="public">gtsam::NoiseModelFactor1</innerclass>
+    <innerclass refid="classgtsam_1_1NoiseModelFactor2" prot="public">gtsam::NoiseModelFactor2</innerclass>
+    <innerclass refid="classgtsam_1_1NoiseModelFactor3" prot="public">gtsam::NoiseModelFactor3</innerclass>
+    <innerclass refid="classgtsam_1_1NoiseModelFactor4" prot="public">gtsam::NoiseModelFactor4</innerclass>
+    <innerclass refid="classgtsam_1_1NoiseModelFactor5" prot="public">gtsam::NoiseModelFactor5</innerclass>
+    <innerclass refid="classgtsam_1_1NoiseModelFactor6" prot="public">gtsam::NoiseModelFactor6</innerclass>
+    <innerclass refid="classgtsam_1_1NonlinearFactor" prot="public">gtsam::NonlinearFactor</innerclass>
+    <innerclass refid="structgtsam_1_1traits_3_01JacobianFactorQ_3_01D_00_01ZDim_01_4_01_4" prot="public">gtsam::traits&lt; JacobianFactorQ&lt; D, ZDim &gt; &gt;</innerclass>
+    <innerclass refid="structgtsam_1_1traits_3_01NonlinearFactor_01_4" prot="public">gtsam::traits&lt; NonlinearFactor &gt;</innerclass>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="tests/doc-test-files/JacobianFactorQ.h" line="22" column="1"/>
+  </compounddef>
+</doxygen>

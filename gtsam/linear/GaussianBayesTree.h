@@ -41,6 +41,7 @@ namespace gtsam {
     typedef boost::shared_ptr<This> shared_ptr;
     typedef boost::weak_ptr<This> weak_ptr;
     GaussianBayesTreeClique() {}
+    virtual ~GaussianBayesTreeClique() {}
     GaussianBayesTreeClique(const boost::shared_ptr<GaussianConditional>& conditional) : Base(conditional) {}
   };
 
@@ -106,7 +107,7 @@ namespace gtsam {
      * @return A VectorValues storing the gradient. */
     VectorValues gradientAtZero() const;
 
-    /** Mahalanobis norm error. */
+    /** 0.5 * sum of squared Mahalanobis distances. */
     double error(const VectorValues& x) const;
 
     /** Computes the determinant of a GassianBayesTree, as if the Bayes tree is reorganized into a

@@ -60,15 +60,18 @@ for j=1:2
     S{j}=chol(Q{j}); % for sampling
 end
 
-plot([sample.atPose2(i1).x; sample.atPoint2(j1).x],[sample.atPose2(i1).y; sample.atPoint2(j1).y], 'c-');
-plot([sample.atPose2(i2).x; sample.atPoint2(j1).x],[sample.atPose2(i2).y; sample.atPoint2(j1).y], 'c-');
-plot([sample.atPose2(i3).x; sample.atPoint2(j2).x],[sample.atPose2(i3).y; sample.atPoint2(j2).y], 'c-');
+p_j1 = sample.atPoint2(j1);
+p_j2 = sample.atPoint2(j2);
+
+plot([sample.atPose2(i1).x; p_j1(1)],[sample.atPose2(i1).y; p_j1(2)], 'c-');
+plot([sample.atPose2(i2).x; p_j1(1)],[sample.atPose2(i2).y; p_j1(2)], 'c-');
+plot([sample.atPose2(i3).x; p_j2(1)],[sample.atPose2(i3).y; p_j2(2)], 'c-');
 view(2); axis auto; axis equal
 
 %% Do Sampling on point 2
 N=1000;
 for s=1:N
     delta = S{2}*randn(2,1);
-    proposedPoint = Point2(point{2}.x+delta(1),point{2}.y+delta(2));
+    proposedPoint = Point2(point{2} + delta);
     plotPoint2(proposedPoint,'k.')
 end

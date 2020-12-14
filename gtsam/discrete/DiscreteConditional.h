@@ -24,6 +24,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 
+#include <string>
+
 namespace gtsam {
 
 /**
@@ -60,7 +62,11 @@ public:
 
   /** construct P(X|Y)=P(X,Y)/P(Y) from P(X,Y) and P(Y) */
   DiscreteConditional(const DecisionTreeFactor& joint,
-      const DecisionTreeFactor& marginal, const boost::optional<Ordering>& orderedKeys = boost::none);
+      const DecisionTreeFactor& marginal);
+
+  /** construct P(X|Y)=P(X,Y)/P(Y) from P(X,Y) and P(Y) */
+  DiscreteConditional(const DecisionTreeFactor& joint,
+      const DecisionTreeFactor& marginal, const Ordering& orderedKeys);
 
   /**
    * Combine several conditional into a single one.
@@ -79,17 +85,24 @@ public:
 
   /// GTSAM-style print
   void print(const std::string& s = "Discrete Conditional: ",
-      const KeyFormatter& formatter = DefaultKeyFormatter) const;
+      const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
   /// GTSAM-style equals
-  bool equals(const DiscreteFactor& other, double tol = 1e-9) const;
+  bool equals(const DiscreteFactor& other, double tol = 1e-9) const override;
 
   /// @}
   /// @name Standard Interface
   /// @{
 
+  /// print index signature only
+  void printSignature(
+      const std::string& s = "Discrete Conditional: ",
+      const KeyFormatter& formatter = DefaultKeyFormatter) const {
+    static_cast<const BaseConditional*>(this)->print(s, formatter);
+  }
+
   /// Evaluate, just look up in AlgebraicDecisonTree
-  virtual double operator()(const Values& values) const {
+  double operator()(const Values& values) const override {
     return Potentials::operator()(values);
   }
 

@@ -24,9 +24,13 @@
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
 
 using gtsam::Vector;
 using gtsam::Matrix;
+using gtsam::Point2;
+using gtsam::Point3;
 
 extern "C" {
 #include <mex.h>
@@ -195,6 +199,18 @@ mxArray* wrap<gtsam::Vector >(const gtsam::Vector& v) {
   return wrap_Vector(v);
 }
 
+// specialization to Eigen vector -> double vector
+template<>
+mxArray* wrap<gtsam::Point2 >(const gtsam::Point2& v) {
+  return wrap_Vector(v);
+}
+
+// specialization to Eigen vector -> double vector
+template<>
+mxArray* wrap<gtsam::Point3 >(const gtsam::Point3& v) {
+  return wrap_Vector(v);
+}
+
 // wrap a const Eigen MATRIX into a double matrix
 mxArray* wrap_Matrix(const gtsam::Matrix& A) {
   int m = A.rows(), n = A.cols();
@@ -311,6 +327,41 @@ gtsam::Vector unwrap< gtsam::Vector >(const mxArray* array) {
 #endif
   return v;
 }
+
+// specialization to Point2
+template<>
+gtsam::Point2 unwrap< gtsam::Point2 >(const mxArray* array) {
+  int m = mxGetM(array), n = mxGetN(array);
+  if (mxIsDouble(array)==false || n!=1) error("unwrap<vector>: not a vector");
+#ifdef DEBUG_WRAP
+  mexPrintf("unwrap< gtsam::Vector > called with %dx%d argument\n", m,n);
+#endif
+  double* data = (double*)mxGetData(array);
+  gtsam::Vector v(m);
+  for (int i=0;i<m;i++,data++) v(i) = *data;
+#ifdef DEBUG_WRAP
+  gtsam::print(v);
+#endif
+  return v;
+}
+
+// specialization to Point3
+template<>
+gtsam::Point3 unwrap< gtsam::Point3 >(const mxArray* array) {
+  int m = mxGetM(array), n = mxGetN(array);
+  if (mxIsDouble(array)==false || n!=1) error("unwrap<vector>: not a vector");
+#ifdef DEBUG_WRAP
+  mexPrintf("unwrap< gtsam::Vector > called with %dx%d argument\n", m,n);
+#endif
+  double* data = (double*)mxGetData(array);
+  gtsam::Vector v(m);
+  for (int i=0;i<m;i++,data++) v(i) = *data;
+#ifdef DEBUG_WRAP
+  gtsam::print(v);
+#endif
+  return v;
+}
+
 
 // specialization to Eigen matrix
 template<>

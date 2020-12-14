@@ -36,7 +36,6 @@
 // Here we will use Between factors for the relative motion described by odometry measurements.
 // We will also use a Between Factor to encode the loop closure constraint
 // Also, we will initialize the robot at the origin using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 // When the factors are created, we will add them to a Factor Graph. As the factors we are using
@@ -65,21 +64,20 @@ using namespace std;
 using namespace gtsam;
 
 int main(int argc, char** argv) {
-
   // 1. Create a factor graph container and add factors to it
   NonlinearFactorGraph graph;
 
   // 2a. Add a prior on the first pose, setting it to the origin
   // A prior factor consists of a mean and a noise model (covariance matrix)
-  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-  graph.emplace_shared<PriorFactor<Pose2> >(1, Pose2(0, 0, 0), priorNoise);
+  auto priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
+  graph.addPrior(1, Pose2(0, 0, 0), priorNoise);
 
   // For simplicity, we will use the same noise model for odometry and loop closures
-  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
+  auto model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
 
   // 2b. Add odometry factors
   // Create odometry (Between) factors between consecutive poses
-  graph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(2, 0, 0     ), model);
+  graph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(2, 0, 0), model);
   graph.emplace_shared<BetweenFactor<Pose2> >(2, 3, Pose2(2, 0, M_PI_2), model);
   graph.emplace_shared<BetweenFactor<Pose2> >(3, 4, Pose2(2, 0, M_PI_2), model);
   graph.emplace_shared<BetweenFactor<Pose2> >(4, 5, Pose2(2, 0, M_PI_2), model);
@@ -89,17 +87,17 @@ int main(int argc, char** argv) {
   // these constraints may be identified in many ways, such as appearance-based techniques
   // with camera images. We will use another Between Factor to enforce this constraint:
   graph.emplace_shared<BetweenFactor<Pose2> >(5, 2, Pose2(2, 0, M_PI_2), model);
-  graph.print("\nFactor Graph:\n"); // print
+  graph.print("\nFactor Graph:\n");  // print
 
   // 3. Create the data structure to hold the initialEstimate estimate to the solution
   // For illustrative purposes, these have been deliberately set to incorrect values
   Values initialEstimate;
-  initialEstimate.insert(1, Pose2(0.5, 0.0,  0.2   ));
-  initialEstimate.insert(2, Pose2(2.3, 0.1, -0.2   ));
-  initialEstimate.insert(3, Pose2(4.1, 0.1,  M_PI_2));
-  initialEstimate.insert(4, Pose2(4.0, 2.0,  M_PI  ));
+  initialEstimate.insert(1, Pose2(0.5, 0.0, 0.2));
+  initialEstimate.insert(2, Pose2(2.3, 0.1, -0.2));
+  initialEstimate.insert(3, Pose2(4.1, 0.1, M_PI_2));
+  initialEstimate.insert(4, Pose2(4.0, 2.0, M_PI));
   initialEstimate.insert(5, Pose2(2.1, 2.1, -M_PI_2));
-  initialEstimate.print("\nInitial Estimate:\n"); // print
+  initialEstimate.print("\nInitial Estimate:\n");  // print
 
   // 4. Optimize the initial values using a Gauss-Newton nonlinear optimizer
   // The optimizer accepts an optional set of configuration parameters,
