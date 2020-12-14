@@ -39,7 +39,7 @@ public:
 
   /** default constructor */
   IncrementalFixedLagSmoother(double smootherLag = 0.0,
-      const ISAM2Params& parameters = ISAM2Params()) :
+      const ISAM2Params& parameters = DefaultISAM2Params()) :
       FixedLagSmoother(smootherLag), isam_(parameters) {
   }
 
@@ -114,6 +114,14 @@ public:
   const ISAM2Result& getISAM2Result() const{ return isamResult_; }
 
 protected:
+
+  /** Create default parameters */
+  static ISAM2Params DefaultISAM2Params() {
+    ISAM2Params params;
+    params.findUnusedFactorSlots = true;
+    return params;
+  }
+
   /** An iSAM2 object used to perform inference. The smoother lag is controlled
    * by what factors are removed each iteration */
   ISAM2 isam_;

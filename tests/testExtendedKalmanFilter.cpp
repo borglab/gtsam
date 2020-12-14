@@ -14,7 +14,7 @@
  * @author Stephen Williams
  */
 
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -153,29 +153,29 @@ public:
   }
 
   /* print */
-  virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << ": NonlinearMotionModel\n";
     std::cout << "  TestKey1: " << keyFormatter(key1()) << std::endl;
     std::cout << "  TestKey2: " << keyFormatter(key2()) << std::endl;
   }
 
   /** Check if two factors are equal. Note type is IndexFactor and needs cast. */
-  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& f, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*> (&f);
-    return (e != NULL) && (key1() == e->key1()) && (key2() == e->key2());
+    return (e != nullptr) && (key1() == e->key1()) && (key2() == e->key2());
   }
 
   /**
    * calculate the error of the factor
    * Override for systems with unusual noise models
    */
-  virtual double error(const Values& c) const {
+  double error(const Values& c) const override {
     Vector w = whitenedError(c);
     return 0.5 * w.dot(w);
   }
 
   /** get the dimension of the factor (number of rows on linearization) */
-  size_t dim() const {
+  size_t dim() const override {
     return 2;
   }
 
@@ -189,14 +189,14 @@ public:
    * Ax-b \approx h(x1+dx1,x2+dx2)-z = h(x1,x2) + A2*dx1 + A2*dx2 - z
    * Hence b = z - h(x1,x2) = - error_vector(x)
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
     const X1& x1 = c.at<X1>(key1());
     const X2& x2 = c.at<X2>(key2());
     Matrix A1, A2;
     Vector b = -evaluateError(x1, x2, A1, A2);
     SharedDiagonal constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-    if (constrained.get() != NULL) {
+    if (constrained.get() != nullptr) {
       return JacobianFactor::shared_ptr(new JacobianFactor(key1(), A1, key2(),
           A2, b, constrained));
     }
@@ -212,7 +212,7 @@ public:
   /** vector of errors */
   Vector evaluateError(const Point2& p1, const Point2& p2,
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none) const {
+          boost::none) const override {
 
     // error = p2 - f(p1)
     // H1 = d error / d p1 = -d f/ d p1 = -F
@@ -284,28 +284,28 @@ public:
   }
 
   /* print */
-  virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << ": NonlinearMeasurementModel\n";
     std::cout << "  TestKey: " << keyFormatter(key()) << std::endl;
   }
 
   /** Check if two factors are equal. Note type is IndexFactor and needs cast. */
-  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& f, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*> (&f);
-    return (e != NULL) && Base::equals(f);
+    return (e != nullptr) && Base::equals(f);
   }
 
   /**
    * calculate the error of the factor
    * Override for systems with unusual noise models
    */
-  virtual double error(const Values& c) const {
+  double error(const Values& c) const override {
     Vector w = whitenedError(c);
     return 0.5 * w.dot(w);
   }
 
   /** get the dimension of the factor (number of rows on linearization) */
-  size_t dim() const {
+  size_t dim() const override {
     return 1;
   }
 
@@ -319,13 +319,13 @@ public:
    * Ax-b \approx h(x1+dx1)-z = h(x1) + A1*dx1 - z
    * Hence b = z - h(x1) = - error_vector(x)
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
     const X& x1 = c.at<X>(key());
     Matrix A1;
     Vector b = -evaluateError(x1, A1);
     SharedDiagonal constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-    if (constrained.get() != NULL) {
+    if (constrained.get() != nullptr) {
       return JacobianFactor::shared_ptr(new JacobianFactor(key(), A1, b, constrained));
     }
     // "Whiten" the system before converting to a Gaussian Factor
@@ -336,7 +336,7 @@ public:
   }
 
   /** vector of errors */
-  Vector evaluateError(const Point2& p, boost::optional<Matrix&> H1 = boost::none) const {
+  Vector evaluateError(const Point2& p, boost::optional<Matrix&> H1 = boost::none) const override {
     // error = z - h(p)
     // H = d error / d p = -d h/ d p = -H
     Vector z_hat = h(p);

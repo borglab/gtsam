@@ -22,8 +22,11 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 #include <gtsam/global_includes.h>
+#include <gtsam/inference/VariableSlots.h>
 
 #include <boost/make_shared.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/split_member.hpp>
 
 namespace gtsam {
 
@@ -152,27 +155,50 @@ namespace gtsam {
      * structure computed for \c graph is already available, providing it will reduce the amount of
      * computation performed. */
     explicit JacobianFactor(
+      const GaussianFactorGraph& graph);
+
+    /**
+     * Build a dense joint factor from all the factors in a factor graph.  If a VariableSlots
+     * structure computed for \c graph is already available, providing it will reduce the amount of
+     * computation performed. */
+    explicit JacobianFactor(
       const GaussianFactorGraph& graph,
-      boost::optional<const Ordering&> ordering = boost::none,
-      boost::optional<const VariableSlots&> p_variableSlots = boost::none);
+      const VariableSlots& p_variableSlots);
+    
+    /**
+     * Build a dense joint factor from all the factors in a factor graph.  If a VariableSlots
+     * structure computed for \c graph is already available, providing it will reduce the amount of
+     * computation performed. */
+    explicit JacobianFactor(
+      const GaussianFactorGraph& graph,
+      const Ordering& ordering);
+    
+    /**
+     * Build a dense joint factor from all the factors in a factor graph.  If a VariableSlots
+     * structure computed for \c graph is already available, providing it will reduce the amount of
+     * computation performed. */
+    explicit JacobianFactor(
+      const GaussianFactorGraph& graph,
+      const Ordering& ordering,
+      const VariableSlots& p_variableSlots);
 
     /** Virtual destructor */
     virtual ~JacobianFactor() {}
 
     /** Clone this JacobianFactor */
-    virtual GaussianFactor::shared_ptr clone() const {
+    GaussianFactor::shared_ptr clone() const override {
       return boost::static_pointer_cast<GaussianFactor>(
           boost::make_shared<JacobianFactor>(*this));
     }
 
     // Implementing Testable interface
-    virtual void print(const std::string& s = "",
-      const KeyFormatter& formatter = DefaultKeyFormatter) const;
-    virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
+    void print(const std::string& s = "",
+      const KeyFormatter& formatter = DefaultKeyFormatter) const override;
+    bool equals(const GaussianFactor& lf, double tol = 1e-9) const override;
 
     Vector unweighted_error(const VectorValues& c) const; /** (A*x-b) */
     Vector error_vector(const VectorValues& c) const; /** (A*x-b)/sigma */
-    virtual double error(const VectorValues& c) const; /**  0.5*(A*x-b)'*D*(A*x-b) */
+    double error(const VectorValues& c) const override; /**  0.5*(A*x-b)'*D*(A*x-b) */
 
     /** Return the augmented information matrix represented by this GaussianFactor.
      * The augmented information matrix contains the information matrix with an
@@ -182,26 +208,29 @@ namespace gtsam {
      * augmented information matrix is described in more detail in HessianFactor,
      * which in fact stores an augmented information matrix.
      */
-    virtual Matrix augmentedInformation() const;
+    Matrix augmentedInformation() const override;
 
     /** Return the non-augmented information matrix represented by this
      * GaussianFactor.
      */
-    virtual Matrix information() const;
+    Matrix information() const override;
 
-    /// Return the diagonal of the Hessian for this factor
-    virtual VectorValues hessianDiagonal() const;
+    /// Using the base method
+    using Base::hessianDiagonal;
+
+    /// Add the current diagonal to a VectorValues instance
+    void hessianDiagonalAdd(VectorValues& d) const override;
 
     /// Raw memory access version of hessianDiagonal
-    virtual void hessianDiagonal(double* d) const;
+    void hessianDiagonal(double* d) const override;
 
     /// Return the block diagonal of the Hessian for this factor
-    virtual std::map<Key,Matrix> hessianBlockDiagonal() const;
+    std::map<Key,Matrix> hessianBlockDiagonal() const override;
 
     /**
      * @brief Returns (dense) A,b pair associated with factor, bakes in the weights
      */
-    virtual std::pair<Matrix, Vector> jacobian() const;
+    std::pair<Matrix, Vector> jacobian() const override;
 
     /**
      * @brief Returns (dense) A,b pair associated with factor, does not bake in weights
@@ -211,7 +240,7 @@ namespace gtsam {
     /** Return (dense) matrix associated with factor.  The returned system is an augmented matrix:
     *   [A b]
     *  weights are baked in */
-    virtual Matrix augmentedJacobian() const;
+    Matrix augmentedJacobian() const override;
 
     /** Return (dense) matrix associated with factor.  The returned system is an augmented matrix:
     *   [A b]
@@ -229,10 +258,10 @@ namespace gtsam {
      * stored stored in this factor.
      * @return a HessianFactor with negated Hessian matrices
      */
-    virtual GaussianFactor::shared_ptr negate() const;
+    GaussianFactor::shared_ptr negate() const override;
 
     /** Check if the factor is empty.  TODO: How should this be defined? */
-    virtual bool empty() const { return size() == 0 /*|| rows() == 0*/; }
+    bool empty() const override { return size() == 0 /*|| rows() == 0*/; }
 
     /** is noise model constrained ? */
     bool isConstrained() const {
@@ -242,7 +271,9 @@ namespace gtsam {
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
      */
-    virtual DenseIndex getDim(const_iterator variable) const { return Ab_(variable - begin()).cols(); }
+    DenseIndex getDim(const_iterator variable) const override { 
+      return Ab_(variable - begin()).cols(); 
+    }
 
     /**
      * return the number of rows in the corresponding linear system
@@ -283,17 +314,19 @@ namespace gtsam {
      * @param scatter A mapping from variable index to slot index in this HessianFactor
      * @param info The information matrix to be updated
      */
-    void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info) const;
+    void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info) const override;
 
     /** Return A*x */
     Vector operator*(const VectorValues& x) const;
 
-    /** x += A'*e.  If x is initially missing any values, they are created and assumed to start as
-     *  zero vectors. */
-    void transposeMultiplyAdd(double alpha, const Vector& e, VectorValues& x) const;
+    /** x += alpha * A'*e.  If x is initially missing any values, they are
+     * created and assumed to start as zero vectors. */
+    void transposeMultiplyAdd(double alpha, const Vector& e,
+                              VectorValues& x) const;
 
     /** y += alpha * A'*A*x */
-    void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
+    void multiplyHessianAdd(double alpha, const VectorValues& x,
+                            VectorValues& y) const override;
 
     /**
      * Raw memory access version of multiplyHessianAdd y += alpha * A'*A*x
@@ -307,13 +340,13 @@ namespace gtsam {
         const std::vector<size_t>& accumulatedDims) const;
 
     /// A'*b for Jacobian
-    VectorValues gradientAtZero() const;
+    VectorValues gradientAtZero() const override;
 
     /// A'*b for Jacobian (raw memory version)
-    virtual void gradientAtZero(double* d) const;
+    void gradientAtZero(double* d) const override;
 
     /// Compute the gradient wrt a key at any values
-    Vector gradient(Key key, const VectorValues& x) const;
+    Vector gradient(Key key, const VectorValues& x) const override;
 
     /** Return a whitened version of the factor, i.e. with unit diagonal noise model. */
     JacobianFactor whiten() const;
@@ -356,11 +389,19 @@ namespace gtsam {
 
   private:
 
+    /**
+     * Helper function for public constructors:
+     * Build a dense joint factor from all the factors in a factor graph.  Takes in
+     * ordered variable slots */
+    void JacobianFactorHelper(
+      const GaussianFactorGraph& graph,
+      const FastVector<VariableSlots::const_iterator>& orderedSlots);
+
     /** Unsafe Constructor that creates an uninitialized Jacobian of right size
      *  @param keys in some order
      *  @param diemnsions of the variables in same order
      *  @param m output dimension
-     *  @param model noise model (default NULL)
+     *  @param model noise model (default nullptr)
      */
     template<class KEYS, class DIMENSIONS>
     JacobianFactor(const KEYS& keys, const DIMENSIONS& dims, DenseIndex m,
@@ -374,19 +415,49 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-      ar & BOOST_SERIALIZATION_NVP(Ab_);
-      ar & BOOST_SERIALIZATION_NVP(model_);
+    void save(ARCHIVE & ar, const unsigned int version) const {
+      // TODO(fan): This is a hack for Boost < 1.66
+      // We really need to introduce proper versioning in the archives
+      // As otherwise this will not read objects serialized by older
+      // versions of GTSAM
+      ar << BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar << BOOST_SERIALIZATION_NVP(Ab_);
+      bool model_null = false;
+      if(model_.get() == nullptr) {
+        model_null = true;
+        ar << boost::serialization::make_nvp("model_null", model_null);
+      } else {
+        ar << boost::serialization::make_nvp("model_null", model_null);
+        ar << BOOST_SERIALIZATION_NVP(model_);
+      }
     }
-  }; // JacobianFactor
 
+    template<class ARCHIVE>
+    void load(ARCHIVE & ar, const unsigned int version) {
+      // invoke serialization of the base class
+      ar >> BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar >> BOOST_SERIALIZATION_NVP(Ab_);
+      if (version < 1) {
+        ar >> BOOST_SERIALIZATION_NVP(model_);
+      } else {
+        bool model_null;
+        ar >> BOOST_SERIALIZATION_NVP(model_null);
+        if (!model_null) {
+          ar >> BOOST_SERIALIZATION_NVP(model_);
+        }
+      }
+    }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+  }; // JacobianFactor
 /// traits
 template<>
 struct traits<JacobianFactor> : public Testable<JacobianFactor> {
 };
 
 } // \ namespace gtsam
+
+BOOST_CLASS_VERSION(gtsam::JacobianFactor, 1)
 
 #include <gtsam/linear/JacobianFactor-inl.h>
 

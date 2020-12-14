@@ -13,7 +13,7 @@ $ make install
 ## Important Installation Notes
 
 1. GTSAM requires the following libraries to be installed on your system:
-    - BOOST version 1.43 or greater (install through Linux repositories or MacPorts)
+    - BOOST version 1.58 or greater (install through Linux repositories or MacPorts)
     - Cmake version 3.0 or higher
     - Support for XCode 4.3 command line tools on Mac requires CMake 2.8.8 or higher
 
@@ -173,7 +173,7 @@ NOTE:  If _GLIBCXX_DEBUG is used to compile gtsam, anything that links against g
 Intel has a guide for installing MKL on Linux through APT repositories at <https://software.intel.com/en-us/articles/installing-intel-free-libs-and-python-apt-repo>.
 
 After following the instructions, add the following to your `~/.bashrc` (and afterwards, open a new terminal before compiling GTSAM):
-`LD_PRELOAD` need only be set if you are building the cython wrapper to use GTSAM from python.
+`LD_PRELOAD` need only be set if you are building the python wrapper to use GTSAM from python.
 ```sh
 source /opt/intel/mkl/bin/mklvars.sh intel64
 export LD_PRELOAD="$LD_PRELOAD:/opt/intel/mkl/lib/intel64/libmkl_core.so:/opt/intel/mkl/lib/intel64/libmkl_sequential.so"
@@ -190,6 +190,6 @@ Failing to specify `LD_PRELOAD` may lead to errors such as:
 `ImportError: /opt/intel/mkl/lib/intel64/libmkl_vml_avx2.so: undefined symbol: mkl_serv_getenv`
 or
 `Intel MKL FATAL ERROR: Cannot load libmkl_avx2.so or libmkl_def.so.`
-when importing GTSAM using the cython wrapper in python.
+when importing GTSAM using the python wrapper.
 
 

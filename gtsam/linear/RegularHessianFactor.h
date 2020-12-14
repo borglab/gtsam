@@ -77,8 +77,14 @@ public:
 
   /// Construct from a GaussianFactorGraph
   RegularHessianFactor(const GaussianFactorGraph& factors,
-                       boost::optional<const Scatter&> scatter = boost::none)
+                       const Scatter& scatter)
       : HessianFactor(factors, scatter) {
+    checkInvariants();
+  }
+
+  /// Construct from a GaussianFactorGraph
+  RegularHessianFactor(const GaussianFactorGraph& factors)
+      : HessianFactor(factors) {
     checkInvariants();
   }
 
@@ -103,8 +109,8 @@ private:
 public:
 
   /** y += alpha * A'*A*x */
-  virtual void multiplyHessianAdd(double alpha, const VectorValues& x,
-      VectorValues& y) const {
+  void multiplyHessianAdd(double alpha, const VectorValues& x,
+      VectorValues& y) const override {
     HessianFactor::multiplyHessianAdd(alpha, x, y);
   }
 
@@ -176,7 +182,7 @@ public:
   }
 
   /** Return the diagonal of the Hessian for this factor (raw memory version) */
-  virtual void hessianDiagonal(double* d) const {
+  void hessianDiagonal(double* d) const override {
 
     // Loop over all variables in the factor
     for (DenseIndex pos = 0; pos < (DenseIndex) size(); ++pos) {
@@ -187,7 +193,7 @@ public:
   }
 
   /// Add gradient at zero to d TODO: is it really the goal to add ??
-  virtual void gradientAtZero(double* d) const {
+  void gradientAtZero(double* d) const override {
 
     // Loop over all variables in the factor
     for (DenseIndex pos = 0; pos < (DenseIndex) size(); ++pos) {

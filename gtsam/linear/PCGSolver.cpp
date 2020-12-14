@@ -45,6 +45,17 @@ PCGSolver::PCGSolver(const PCGSolverParameters &p) {
   preconditioner_ = createPreconditioner(p.preconditioner_);
 }
 
+void PCGSolverParameters::setPreconditionerParams(const boost::shared_ptr<PreconditionerParameters> preconditioner) {
+  preconditioner_ = preconditioner;
+}
+
+void PCGSolverParameters::print(const std::string &s) const {
+  std::cout << s << std::endl;;
+  std::ostringstream os;
+  print(os);
+  std::cout << os.str() << std::endl;
+}
+
 /*****************************************************************************/
 VectorValues PCGSolver::optimize(const GaussianFactorGraph &gfg,
     const KeyInfo &keyInfo, const std::map<Key, Vector> &lambda,

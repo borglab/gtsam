@@ -33,7 +33,7 @@ y_shift = Point3(0,1,0);
 
 % insert shifted points
 for i=1:nrPoints
-   initial.insert(100+i,landmarks{i}.compose(y_shift)); 
+   initial.insert(100+i,landmarks{i} + y_shift); 
 end
 
 figure(1);
@@ -73,7 +73,7 @@ for i=1:20
     % generate some camera measurements
     cam_pose = initial.atPose3(i).compose(actual_transform);
     gtsam.plotPose3(cam_pose);
-    cam = SimpleCamera(cam_pose,K);
+    cam = PinholeCameraCal3_S2(cam_pose,K);
     i
     for j=1:nrPoints
         % All landmarks seen in every frame

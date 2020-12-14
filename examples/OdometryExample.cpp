@@ -29,7 +29,6 @@
 // have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.
 // Here we will use Between factors for the relative motion described by odometry measurements.
 // Also, we will initialize the robot at the origin using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 // When the factors are created, we will add them to a Factor Graph. As the factors we are using
@@ -57,24 +56,23 @@ using namespace std;
 using namespace gtsam;
 
 int main(int argc, char** argv) {
-
   // Create an empty nonlinear factor graph
   NonlinearFactorGraph graph;
 
   // Add a prior on the first pose, setting it to the origin
   // A prior factor consists of a mean and a noise model (covariance matrix)
-  Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
-  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-  graph.emplace_shared<PriorFactor<Pose2> >(1, priorMean, priorNoise);
+  Pose2 priorMean(0.0, 0.0, 0.0);  // prior at origin
+  auto priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
+  graph.addPrior(1, priorMean, priorNoise);
 
   // Add odometry factors
   Pose2 odometry(2.0, 0.0, 0.0);
   // For simplicity, we will use the same noise model for each odometry factor
-  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
+  auto odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
   // Create odometry (Between) factors between consecutive poses
   graph.emplace_shared<BetweenFactor<Pose2> >(1, 2, odometry, odometryNoise);
   graph.emplace_shared<BetweenFactor<Pose2> >(2, 3, odometry, odometryNoise);
-  graph.print("\nFactor Graph:\n"); // print
+  graph.print("\nFactor Graph:\n");  // print
 
   // Create the data structure to hold the initialEstimate estimate to the solution
   // For illustrative purposes, these have been deliberately set to incorrect values
@@ -82,7 +80,7 @@ int main(int argc, char** argv) {
   initial.insert(1, Pose2(0.5, 0.0, 0.2));
   initial.insert(2, Pose2(2.3, 0.1, -0.2));
   initial.insert(3, Pose2(4.1, 0.1, 0.1));
-  initial.print("\nInitial Estimate:\n"); // print
+  initial.print("\nInitial Estimate:\n");  // print
 
   // optimize using Levenberg-Marquardt optimization
   Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();

@@ -154,8 +154,8 @@ protected:
 public: /// Just for testing...
 
   /// Builds a dual graph from the current working set.
-  GaussianFactorGraph::shared_ptr buildDualGraph(
-      const InequalityFactorGraph& workingSet, const VectorValues& delta) const;
+  GaussianFactorGraph buildDualGraph(const InequalityFactorGraph &workingSet,
+                                     const VectorValues &delta) const;
 
   /**
    * Build a working graph of cost, equality and active inequality constraints

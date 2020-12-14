@@ -92,7 +92,14 @@ namespace gtsam {
      * Will return upper-triangular matrix only when using 'ordering' above.
      * In case Bayes net is incomplete zero columns are added to the end.
      */
-    std::pair<Matrix, Vector> matrix(boost::optional<const Ordering&> ordering = boost::none) const;
+    std::pair<Matrix, Vector> matrix(const Ordering& ordering) const;
+
+    /**
+     * Return (dense) upper-triangular matrix representation
+     * Will return upper-triangular matrix only when using 'ordering' above.
+     * In case Bayes net is incomplete zero columns are added to the end.
+     */
+    std::pair<Matrix, Vector> matrix() const;
 
     /**
      * Optimize along the gradient direction, with a closed-form computation to perform the line
@@ -136,7 +143,7 @@ namespace gtsam {
      *        allocateVectorValues */
     VectorValues gradientAtZero() const;
 
-    /** Mahalanobis norm error. */
+    /** 0.5 * sum of squared Mahalanobis distances. */
     double error(const VectorValues& x) const;
 
     /**

@@ -190,33 +190,62 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Matrix GaussianFactorGraph::augmentedJacobian(
-      boost::optional<const Ordering&> optionalOrdering) const {
+      const Ordering& ordering) const {
     // combine all factors
-    JacobianFactor combined(*this, optionalOrdering);
+    JacobianFactor combined(*this, ordering);
+    return combined.augmentedJacobian();
+  }
+
+  /* ************************************************************************* */
+  Matrix GaussianFactorGraph::augmentedJacobian() const {
+    // combine all factors
+    JacobianFactor combined(*this);
     return combined.augmentedJacobian();
   }
 
   /* ************************************************************************* */
   pair<Matrix, Vector> GaussianFactorGraph::jacobian(
-      boost::optional<const Ordering&> optionalOrdering) const {
-    Matrix augmented = augmentedJacobian(optionalOrdering);
+      const Ordering& ordering) const {
+    Matrix augmented = augmentedJacobian(ordering);
+    return make_pair(augmented.leftCols(augmented.cols() - 1),
+        augmented.col(augmented.cols() - 1));
+  }
+
+  /* ************************************************************************* */
+  pair<Matrix, Vector> GaussianFactorGraph::jacobian() const {
+    Matrix augmented = augmentedJacobian();
     return make_pair(augmented.leftCols(augmented.cols() - 1),
         augmented.col(augmented.cols() - 1));
   }
 
   /* ************************************************************************* */
   Matrix GaussianFactorGraph::augmentedHessian(
-      boost::optional<const Ordering&> optionalOrdering) const {
+      const Ordering& ordering) const {
     // combine all factors and get upper-triangular part of Hessian
-    Scatter scatter(*this, optionalOrdering);
+    Scatter scatter(*this, ordering);
+    HessianFactor combined(*this, scatter);
+    return combined.info().selfadjointView();;
+  }
+
+  /* ************************************************************************* */
+  Matrix GaussianFactorGraph::augmentedHessian() const {
+    // combine all factors and get upper-triangular part of Hessian
+    Scatter scatter(*this);
     HessianFactor combined(*this, scatter);
     return combined.info().selfadjointView();;
   }
 
   /* ************************************************************************* */
   pair<Matrix, Vector> GaussianFactorGraph::hessian(
-      boost::optional<const Ordering&> optionalOrdering) const {
-    Matrix augmented = augmentedHessian(optionalOrdering);
+      const Ordering& ordering) const {
+    Matrix augmented = augmentedHessian(ordering);
+    size_t n = augmented.rows() - 1;
+    return make_pair(augmented.topLeftCorner(n, n), augmented.topRightCorner(n, 1));
+  }
+
+  /* ************************************************************************* */
+  pair<Matrix, Vector> GaussianFactorGraph::hessian() const {
+    Matrix augmented = augmentedHessian();
     size_t n = augmented.rows() - 1;
     return make_pair(augmented.topLeftCorner(n, n), augmented.topRightCorner(n, 1));
   }
@@ -226,8 +255,7 @@ namespace gtsam {
     VectorValues d;
     for (const sharedFactor& factor : *this) {
       if(factor){
-        VectorValues di = factor->hessianDiagonal();
-        d.addInPlace_(di);
+        factor->hessianDiagonalAdd(d);
       }
     }
     return d;
@@ -253,8 +281,13 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  VectorValues GaussianFactorGraph::optimize(OptionalOrdering ordering, const Eliminate& function) const
-  {
+  VectorValues GaussianFactorGraph::optimize(const Eliminate& function) const {
+    gttic(GaussianFactorGraph_optimize);
+    return BaseEliminateable::eliminateMultifrontal(function)->optimize();
+  }
+
+  /* ************************************************************************* */
+  VectorValues GaussianFactorGraph::optimize(const Ordering& ordering, const Eliminate& function) const {
     gttic(GaussianFactorGraph_optimize);
     return BaseEliminateable::eliminateMultifrontal(ordering, function)->optimize();
   }
@@ -458,6 +491,13 @@ namespace gtsam {
       e.push_back(Ai->error_vector(x));
     }
     return e;
+  }
+
+  /* ************************************************************************* */
+  /** \deprecated */
+  VectorValues GaussianFactorGraph::optimize(boost::none_t,
+    const Eliminate& function) const {
+      return optimize(function);
   }
 
 } // namespace gtsam

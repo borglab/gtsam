@@ -91,7 +91,7 @@ public:
   virtual ~GenericStereoFactor() {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
@@ -100,7 +100,7 @@ public:
    * @param s optional string naming the factor
    * @param keyFormatter optional formatter useful for printing Symbols
    */
-  void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
     measured_.print(s + ".z");
     if(this->body_P_sensor_)
@@ -110,7 +110,7 @@ public:
   /**
    * equals
    */
-  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& f, double tol = 1e-9) const override {
     const GenericStereoFactor* e = dynamic_cast<const GenericStereoFactor*> (&f);
     return e
         && Base::equals(f)
@@ -120,7 +120,7 @@ public:
 
   /** h(x)-z */
   Vector evaluateError(const Pose3& pose, const Point3& point,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const override {
     try {
       if(body_P_sensor_) {
         if(H1) {

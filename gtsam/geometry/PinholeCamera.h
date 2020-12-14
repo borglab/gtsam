@@ -175,7 +175,7 @@ public:
   }
 
   /// return calibration
-  const Calibration& calibration() const {
+  const Calibration& calibration() const override {
     return K_;
   }
 
@@ -325,7 +325,7 @@ private:
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // manifold traits

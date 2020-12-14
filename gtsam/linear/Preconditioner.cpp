@@ -145,7 +145,7 @@ void BlockJacobiPreconditioner::build(
 
   /* getting the block diagonals over the factors */
   std::map<Key, Matrix> hessianMap =gfg.hessianBlockDiagonal();
-  for ( const Matrix hessian: hessianMap | boost::adaptors::map_values)
+  for (const Matrix& hessian: hessianMap | boost::adaptors::map_values)
     blocks.push_back(hessian);
 
   /* if necessary, allocating the memory for cacheing the factorization results */
@@ -183,21 +183,21 @@ void BlockJacobiPreconditioner::clean() {
 }
 
 /***************************************************************************************/
-boost::shared_ptr<Preconditioner> createPreconditioner(const boost::shared_ptr<PreconditionerParameters> parameters) {
-
-  if ( DummyPreconditionerParameters::shared_ptr dummy = boost::dynamic_pointer_cast<DummyPreconditionerParameters>(parameters) ) {
+boost::shared_ptr<Preconditioner> createPreconditioner(
+    const boost::shared_ptr<PreconditionerParameters> params) {
+  using boost::dynamic_pointer_cast;
+  if (dynamic_pointer_cast<DummyPreconditionerParameters>(params)) {
     return boost::make_shared<DummyPreconditioner>();
-  }
-  else if ( BlockJacobiPreconditionerParameters::shared_ptr blockJacobi = boost::dynamic_pointer_cast<BlockJacobiPreconditionerParameters>(parameters) ) {
+  } else if (dynamic_pointer_cast<BlockJacobiPreconditionerParameters>(
+                 params)) {
     return boost::make_shared<BlockJacobiPreconditioner>();
-  }
-  else if ( SubgraphPreconditionerParameters::shared_ptr subgraph = boost::dynamic_pointer_cast<SubgraphPreconditionerParameters>(parameters) ) {
+  } else if (auto subgraph =
+                 dynamic_pointer_cast<SubgraphPreconditionerParameters>(
+                     params)) {
     return boost::make_shared<SubgraphPreconditioner>(*subgraph);
   }
 
-  throw invalid_argument("createPreconditioner: unexpected preconditioner parameter type");
+  throw invalid_argument(
+      "createPreconditioner: unexpected preconditioner parameter type");
 }
-
-}
-
-
+}  // namespace gtsam

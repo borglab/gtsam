@@ -38,7 +38,7 @@ Vector RelativeElevationFactor::evaluateError(const Pose3& pose, const Point3& p
 /* ************************************************************************* */
 bool RelativeElevationFactor::equals(const NonlinearFactor& expected, double tol) const {
   const This *e = dynamic_cast<const This*> (&expected);
-  return e != NULL && Base::equals(*e, tol) && std::abs(this->measured_ - e->measured_) < tol;
+  return e != nullptr && Base::equals(*e, tol) && std::abs(this->measured_ - e->measured_) < tol;
 }
 
 /* ************************************************************************* */

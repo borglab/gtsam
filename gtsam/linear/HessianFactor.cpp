@@ -250,10 +250,10 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) :
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
-    boost::optional<const Scatter&> scatter) {
+    const Scatter& scatter) {
   gttic(HessianFactor_MergeConstructor);
 
-  Allocate(scatter ? *scatter : Scatter(factors));
+  Allocate(scatter);
 
   // Form A' * A
   gttic(update);
@@ -302,12 +302,14 @@ Matrix HessianFactor::information() const {
 }
 
 /* ************************************************************************* */
-VectorValues HessianFactor::hessianDiagonal() const {
-  VectorValues d;
+void HessianFactor::hessianDiagonalAdd(VectorValues &d) const {
   for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
-    d.emplace(keys_[j], info_.diagonal(j));
+    auto result = d.emplace(keys_[j], info_.diagonal(j));
+    if(!result.second) {
+      // if emplace fails, it returns an iterator to the existing element, which we add to:
+      result.first->second += info_.diagonal(j);
+    }
   }
-  return d;
 }
 
 /* ************************************************************************* */

@@ -25,20 +25,20 @@ for i = 1:cylinderNum
         % For Cheirality Exception
         sampledPoint3 = cylinders{i}.Points{j};
         sampledPoint3local = pose.transformTo(sampledPoint3);
-        if sampledPoint3local.z < 0
+        if sampledPoint3local(3) < 0
             continue; 
         end
         
         % measurements 
-        Z.du = K.fx() * K.baseline() / sampledPoint3local.z;  
-        Z.uL = K.fx() * sampledPoint3local.x / sampledPoint3local.z + K.px();
+        Z.du = K.fx() * K.baseline() / sampledPoint3local(3);  
+        Z.uL = K.fx() * sampledPoint3local(1) / sampledPoint3local(3) + K.px();
         Z.uR = Z.uL + Z.du;
-        Z.v = K.fy() / sampledPoint3local.z + K.py();
+        Z.v = K.fy() / sampledPoint3local(3) + K.py();
 
         % ignore points not visible in the scene
-        if Z.uL < 0 || Z.uL >= imageSize.x || ...
-                Z.uR < 0 || Z.uR >= imageSize.x || ...
-                Z.v < 0 || Z.v >= imageSize.y 
+        if Z.uL < 0 || Z.uL >= imageSize(1) || ...
+                Z.uR < 0 || Z.uR >= imageSize(1) || ...
+                Z.v < 0 || Z.v >= imageSize(2) 
             continue;       
         end            
 
@@ -54,9 +54,9 @@ for i = 1:cylinderNum
         visible = true;
         for k = 1:cylinderNum
 
-            rayCameraToPoint = pose.translation().between(sampledPoint3).vector();
-            rayCameraToCylinder = pose.translation().between(cylinders{k}.centroid).vector();
-            rayCylinderToPoint = cylinders{k}.centroid.between(sampledPoint3).vector();
+            rayCameraToPoint = sampledPoint3 - pose.translation();
+            rayCameraToCylinder = cylinders{k}.centroid - pose.translation();
+            rayCylinderToPoint = sampledPoint3 - cylinders{k}.centroid;
 
             % Condition 1: all points in front of the cylinders'
             % surfaces are visible

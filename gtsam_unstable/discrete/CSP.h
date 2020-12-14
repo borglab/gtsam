@@ -60,7 +60,10 @@ namespace gtsam {
 //    }
 
     /// Find the best total assignment - can be expensive
-    sharedValues optimalAssignment(OptionalOrdering ordering = boost::none) const;
+    sharedValues optimalAssignment() const;
+
+    /// Find the best total assignment - can be expensive
+    sharedValues optimalAssignment(const Ordering& ordering) const;
 
 //    /*
 //     * Perform loopy belief propagation

@@ -125,7 +125,7 @@ namespace gtsam {
   void BayesTree<CLIQUE>::addClique(const sharedClique& clique, const sharedClique& parent_clique) {
     for(Key j: clique->conditional()->frontals())
       nodes_[j] = clique;
-    if (parent_clique != NULL) {
+    if (parent_clique != nullptr) {
       clique->parent_ = parent_clique;
       parent_clique->children.push_back(clique);
     } else {
@@ -262,7 +262,7 @@ namespace gtsam {
 
     // Now, marginalize out everything that is not variable j
     BayesNetType marginalBN = *cliqueMarginal.marginalMultifrontalBayesNet(
-      Ordering(cref_list_of<1,Key>(j)), boost::none, function);
+      Ordering(cref_list_of<1,Key>(j)), function);
 
     // The Bayes net should contain only one conditional for variable j, so return it
     return marginalBN.front();
@@ -383,7 +383,7 @@ namespace gtsam {
     }
 
     // now, marginalize out everything that is not variable j1 or j2
-    return p_BC1C2.marginalMultifrontalBayesNet(Ordering(cref_list_of<2,Key>(j1)(j2)), boost::none, function);
+    return p_BC1C2.marginalMultifrontalBayesNet(Ordering(cref_list_of<2,Key>(j1)(j2)), function);
   }
 
   /* ************************************************************************* */
@@ -430,7 +430,7 @@ namespace gtsam {
   template <class CLIQUE>
   void BayesTree<CLIQUE>::removePath(sharedClique clique, BayesNetType* bn,
                                      Cliques* orphans) {
-    // base case is NULL, if so we do nothing and return empties above
+    // base case is nullptr, if so we do nothing and return empties above
     if (clique) {
       // remove the clique from orphans in case it has been added earlier
       orphans->remove(clique);

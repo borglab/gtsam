@@ -91,7 +91,7 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
 
   assert((size_t)count == variableIndex.nEntries());
 
-  //double* knobs = NULL; /* colamd arg 6: parameters (uses defaults if NULL) */
+  //double* knobs = nullptr; /* colamd arg 6: parameters (uses defaults if nullptr) */
   double knobs[CCOLAMD_KNOBS];
   ccolamd_set_defaults(knobs);
   knobs[CCOLAMD_DENSE_ROW] = -1;
@@ -213,11 +213,21 @@ Ordering Ordering::Metis(const MetisIndex& met) {
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
   gttic(Ordering_METIS);
 
+  idx_t size = met.nValues();
+  if (size == 0)
+  {
+    return Ordering();
+  }
+
+  if (size == 1)
+  {
+    return Ordering(KeyVector(1, met.intToKey(0)));
+  }
+
   vector<idx_t> xadj = met.xadj();
   vector<idx_t> adj = met.adj();
   vector<idx_t> perm, iperm;
 
-  idx_t size = met.nValues();
   for (idx_t i = 0; i < size; i++) {
     perm.push_back(0);
     iperm.push_back(0);
@@ -225,7 +235,7 @@ Ordering Ordering::Metis(const MetisIndex& met) {
 
   int outputError;
 
-  outputError = METIS_NodeND(&size, &xadj[0], &adj[0], NULL, NULL, &perm[0],
+  outputError = METIS_NodeND(&size, &xadj[0], &adj[0], nullptr, nullptr, &perm[0],
       &iperm[0]);
   Ordering result;
 
