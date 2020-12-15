@@ -34,7 +34,7 @@ using namespace gtsam;
  * acceleration input.
  */
 TEST(TestImuPreintegration, LoadedSimulationData) {
-  Eigen::Vector3d finalPos;
+  Vector3 finalPos(0, 0, 0);
 
   vector<ImuMeasurement> imuMeasurements;
 
@@ -72,10 +72,8 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
 
   // Assume a Z-up navigation (assuming we are performing optimization in the
   // IMU frame).
-  boost::shared_ptr<PreintegratedCombinedMeasurements::Params>
-      imuPreintegratedParams =
-          PreintegratedCombinedMeasurements::Params::MakeSharedU(
-              gravity);
+  auto imuPreintegratedParams =
+      PreintegratedCombinedMeasurements::Params::MakeSharedU(gravity);
   imuPreintegratedParams->accelerometerCovariance =
       I_3x3 * pow(accNoiseSigma, 2);
   imuPreintegratedParams->biasAccCovariance = I_3x3 * pow(accBiasRwSigma, 2);
@@ -86,29 +84,29 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
 
   // Initial state
   Pose3 priorPose;
-  Vector3 priorVelocity;
+  Vector3 priorVelocity(0, 0, 0);
   imuBias::ConstantBias priorImuBias;
   PreintegratedCombinedMeasurements imuPreintegrated;
-  Eigen::Vector3d position;
-  Eigen::Vector3d velocity;
+  Vector3 position(0, 0, 0);
+  Vector3 velocity(0, 0, 0);
   NavState propState;
 
   NavState initialNavState(priorPose, priorVelocity);
 
   // Bias estimated by my Algorithm
-  priorImuBias = imuBias::ConstantBias(
-      Eigen::Vector3d(-0.0314648, 0.0219921, 6.95945e-05),
-      Eigen::Vector3d(4.88581e-08, -1.04971e-09, -0.000122868));
+  priorImuBias =
+      imuBias::ConstantBias(Vector3(-0.0314648, 0.0219921, 6.95945e-05),
+                            Vector3(4.88581e-08, -1.04971e-09, -0.000122868));
 
   // zero bias
-  // priorImuBias = imuBias::ConstantBias(Eigen::Vector3d(0,0,0),
-  //                                             Eigen::Vector3d(0,0,0));
+  // priorImuBias = imuBias::ConstantBias(Vector3(0, 0, 0), Vector3(0, 0, 0));
 
-  imuPreintegrated = PreintegratedCombinedMeasurements(
-      imuPreintegratedParams, priorImuBias);
+  imuPreintegrated =
+      PreintegratedCombinedMeasurements(imuPreintegratedParams, priorImuBias);
 
   // Put header row in output csv
-  outputFile << "X Position,"
+  outputFile << "Time [s],"
+             << "X Position,"
              << "Y Position,"
              << "Z Position,"
              << "X Velocity,"
@@ -128,11 +126,13 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
     // cout << "IMU Position " << position.transpose() << endl;
     // cout << "IMU Velocity " << velocity.transpose() << endl;
 
+    size_t time = imuMeasurements[n].time - imuMeasurements[0].time;
+
     // Write to csv
-    outputFile << to_string(position.x()) << "," << to_string(position.y())
-               << "," << to_string(position.z()) << ","
-               << to_string(velocity.x()) << "," << to_string(velocity.y())
-               << "," << to_string(velocity.z()) << ","
+    outputFile << time << "," << to_string(position.x()) << ","
+               << to_string(position.y()) << "," << to_string(position.z())
+               << "," << to_string(velocity.x()) << ","
+               << to_string(velocity.y()) << "," << to_string(velocity.z())
                << "\n";
   }
 
