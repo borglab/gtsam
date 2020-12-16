@@ -2738,7 +2738,7 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
 #include <gtsam/slam/dataset.h>
 	
 /// A measurement with its camera index
-typedef std::pair<size_t, Point2> SfmMeasurement;
+typedef std::pair<size_t, gtsam::Point2> SfmMeasurement;
 
 class SfmTrack {
   SfmTrack();
