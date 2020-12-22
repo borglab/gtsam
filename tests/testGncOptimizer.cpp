@@ -29,6 +29,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/nonlinear/GncOptimizer.h>
+#include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/slam/dataset.h>
 #include <tests/smallExample.h>
 
@@ -283,6 +284,75 @@ TEST(GncOptimizer, calculateWeightsTLS) {
   double mu = 1.0;
   Vector weights_actual = gnc.calculateWeights(initial, mu);
   CHECK(assert_equal(weights_expected, weights_actual, tol));
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, calculateWeightsTLS2) {
+
+  // create values
+  Point2 x_val(0.0, 0.0);
+  Point2 x_prior(1.0, 0.0);
+  Values initial;
+  initial.insert(X(1), x_val);
+
+  // create very simple factor graph with a single factor 0.5 * 1/sigma^2 * || x - [1;0] ||^2
+  double sigma = 1;
+  SharedDiagonal noise =
+      noiseModel::Diagonal::Sigmas(Vector2(sigma, sigma));
+  NonlinearFactorGraph nfg;
+  nfg.add(PriorFactor<Point2>(X(1),x_prior,noise));
+
+  // cost of the factor:
+  DOUBLES_EQUAL(0.5 * 1/(sigma*sigma), nfg.error(initial), tol);
+
+  // check the TLS weights are correct: CASE 1: residual below barcsq
+  {
+  // expected:
+  Vector weights_expected = Vector::Zero(1);
+  weights_expected[0] = 1.0;  // inlier
+  // actual:
+  GaussNewtonParams gnParams;
+  GncParams<GaussNewtonParams> gncParams(gnParams);
+  gncParams.setLossType(
+      GncParams<GaussNewtonParams>::RobustLossType::TLS);
+  gncParams.setInlierThreshold(0.51); // if inlier threshold is slightly larger than 0.5, then measurement is inlier
+  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
+  double mu = 1e6;
+  Vector weights_actual = gnc.calculateWeights(initial, mu);
+  CHECK(assert_equal(weights_expected, weights_actual, tol));
+  }
+  // check the TLS weights are correct: CASE 2: residual above barcsq
+  {
+  // expected:
+  Vector weights_expected = Vector::Zero(1);
+  weights_expected[0] = 0.0;  // outlier
+  // actual:
+  GaussNewtonParams gnParams;
+  GncParams<GaussNewtonParams> gncParams(gnParams);
+  gncParams.setLossType(
+      GncParams<GaussNewtonParams>::RobustLossType::TLS);
+  gncParams.setInlierThreshold(0.49); // if inlier threshold is slightly below 0.5, then measurement is outlier
+  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
+  double mu = 1e6; // very large mu recovers original TLS cost
+  Vector weights_actual = gnc.calculateWeights(initial, mu);
+  CHECK(assert_equal(weights_expected, weights_actual, tol));
+  }
+  // check the TLS weights are correct: CASE 2: residual at barcsq
+  {
+    // expected:
+    Vector weights_expected = Vector::Zero(1);
+    weights_expected[0] = 0.5;  // undecided
+    // actual:
+    GaussNewtonParams gnParams;
+    GncParams<GaussNewtonParams> gncParams(gnParams);
+    gncParams.setLossType(
+        GncParams<GaussNewtonParams>::RobustLossType::TLS);
+    gncParams.setInlierThreshold(0.5); // if inlier threshold is slightly below 0.5, then measurement is outlier
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
+    double mu = 1e6; // very large mu recovers original TLS cost
+    Vector weights_actual = gnc.calculateWeights(initial, mu);
+    CHECK(assert_equal(weights_expected, weights_actual, 1e-5));
+  }
 }
 
 /* ************************************************************************* */
