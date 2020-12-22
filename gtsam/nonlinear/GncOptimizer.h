@@ -83,8 +83,11 @@ public:
   }
   /** Set the maximum weighted residual error for an inlier. For a factor in the form f(x) = 0.5 * || r(x) ||^2_Omega,
    * the inlier threshold is the largest value of f(x) for the corresponding measurement to be considered an inlier.
+   * In other words, an inlier at x is such that 0.5 * || r(x) ||^2_Omega <= barcSq.
+   * Assuming a isotropic measurement covariance sigma^2 * Identity, the cost becomes: 0.5 * 1/sigma^2 || r(x) ||^2 <= barcSq.
+   * Hence || r(x) ||^2 <= 2 * barcSq * sigma^2
    * */
-  void setInlierThreshold(const double inth) {
+  void setInlierCostThreshold(const double inth) {
     barcSq = inth;
   }
   /// Set the graduated non-convexity step: at each GNC iteration, mu is updated as mu <- mu * muStep
