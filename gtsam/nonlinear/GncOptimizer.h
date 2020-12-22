@@ -66,7 +66,7 @@ public:
   size_t maxIterations = 100; /* maximum number of iterations*/
   double barcSq = 1.0; /* a factor is considered an inlier if factor.error() < barcSq. Note that factor.error() whitens by the covariance*/
   double muStep = 1.4; /* multiplicative factor to reduce/increase the mu in gnc */
-  double relativeMuTol = 1e-5; ///< The maximum relative mu decrease to stop iterating
+  double relativeCostTol = 1e-5; ///< The maximum relative cost change to stop iterating
   VerbosityGNC verbosityGNC = SILENT; /* verbosity level */
   std::vector<size_t> knownInliers = std::vector<size_t>(); /* slots in the factor graph corresponding to measurements that we know are inliers */
 
@@ -95,8 +95,7 @@ public:
     muStep = step;
   }
   /// Set the maximum relative difference in mu values to stop iterating
-  void setRelativeMuTol(double value) {
-    relativeMuTol = value;
+  void setRelativeMuTol(double value) { relativeCostTol = value;
   }
   /// Set the verbosity level
   void setVerbosityGNC(const VerbosityGNC verbosity) {
@@ -206,7 +205,8 @@ public:
     BaseOptimizer baseOptimizer(nfg_, state_);
     Values result = baseOptimizer.optimize();
     double mu = initializeMu();
-    double mu_prev = mu;
+    double cost = calculateWeightedCost();
+    double prev_cost = cost;
 
     // handle the degenerate case that corresponds to small
     // maximum residual errors at initialization
@@ -232,17 +232,17 @@ public:
       // weights update
       weights_ = calculateWeights(result, mu);
 
+      // update cost
+      prev_cost = cost;
+      cost = calculateWeightedCost();
+
       // variable/values update
       NonlinearFactorGraph graph_iter = this->makeWeightedGraph(weights_);
       BaseOptimizer baseOptimizer_iter(graph_iter, state_);
       result = baseOptimizer_iter.optimize();
 
-      // update mu
-      mu_prev = mu;
-      mu = updateMu(mu);
-
       // stopping condition
-      if (checkMuConvergence(mu, mu_prev)) {
+      if (checkConvergence(mu, cost, prev_cost)) {
         // display info
         if (params_.verbosityGNC >= GncParameters::VerbosityGNC::SUMMARY) {
           std::cout << "final iterations: " << iter << std::endl;
@@ -251,6 +251,9 @@ public:
         }
         break;
       }
+
+      // update mu
+      mu = updateMu(mu);
     }
     return result;
   }
@@ -295,18 +298,52 @@ public:
     }
   }
 
+  /// calculated sum of weighted squared residuals
+  double calculateWeightedCost() const {
+    double cost = 0;
+    for (size_t i = 0; i < nfg_.size(); i++) {
+      cost += weights_[i] * nfg_[i]->error(state_);
+    }
+    return cost;
+  }
+
   /// check if we have reached the value of mu for which the surrogate loss matches the original loss
-  bool checkMuConvergence(const double mu, const double mu_prev) const {
+  bool checkMuConvergence(const double mu) const {
     switch (params_.lossType) {
     case GncParameters::GM:
       return std::fabs(mu - 1.0) < 1e-9; // mu=1 recovers the original GM function
-    case GncParameters::TLS:
-      return std::fabs(mu - mu_prev) < params_.relativeMuTol;
     default:
       throw std::runtime_error(
           "GncOptimizer::checkMuConvergence: called with unknown loss type.");
     }
   }
+
+  /// check convergence of relative cost differences
+  bool checkCostConvergence(const double cost, const double prev_cost) const {
+    switch (params_.lossType) {
+    case GncParameters::TLS:
+      return std::fabs(cost - prev_cost) < params_.relativeCostTol;
+    default:
+      throw std::runtime_error(
+          "GncOptimizer::checkMuConvergence: called with unknown loss type.");
+    }
+  }
+
+  /// check for convergence between consecutive GNC iterations
+  bool checkConvergence(const double mu,
+                        const double cost,
+                        const double prev_cost) const {
+    switch (params_.lossType) {
+    case GncParameters::GM:
+      return checkMuConvergence(mu);
+    case GncParameters::TLS:
+      return checkCostConvergence(cost, prev_cost);
+    default:
+      throw std::runtime_error(
+          "GncOptimizer::checkMuConvergence: called with unknown loss type.");
+    }
+  }
+
 
   /// create a graph where each factor is weighted by the gnc weights
   NonlinearFactorGraph makeWeightedGraph(const Vector& weights) const {
