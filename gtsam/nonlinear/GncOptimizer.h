@@ -36,6 +36,9 @@ namespace gtsam {
 template<class BaseOptimizerParameters>
 class GncParams {
 public:
+  //typedef BaseOptimizerParameters::OptimizerType GncOptimizerType;
+  typedef BaseOptimizerParameters::OptimizerType OptimizerType;
+
   /** Verbosity levels */
   enum VerbosityGNC {
     SILENT = 0, SUMMARY, VALUES
@@ -45,8 +48,6 @@ public:
   enum RobustLossType {
     GM /*Geman McClure*/, TLS /*Truncated least squares*/
   };
-
-  using BaseOptimizer = GaussNewtonOptimizer; // BaseOptimizerParameters::OptimizerType;
 
   /// Constructor
   GncParams(const BaseOptimizerParameters& baseOptimizerParams) :
@@ -145,6 +146,11 @@ template<class GncParameters>
 class GncOptimizer {
 public:
   // types etc
+//  typedef BaseOptimizerParameters::OptimizerType GncOptimizerType;
+ // typedef GncParameters::BaseOptimizerParameters::OptimizerType BaseOptimizer; //
+  //typedef BaseOptimizerParameters::OptimizerType BaseOptimizer;
+  //typedef GaussNewtonOptimizer BaseOptimizer;
+  typedef GncParameters::OptimizerType BaseOptimizer;
 
 private:
   NonlinearFactorGraph nfg_;
@@ -198,7 +204,7 @@ public:
   Values optimize() {
     // start by assuming all measurements are inliers
     weights_ = Vector::Ones(nfg_.size());
-    GaussNewtonOptimizer baseOptimizer(nfg_, state_);
+    BaseOptimizer baseOptimizer(nfg_, state_);
     Values result = baseOptimizer.optimize();
     double mu = initializeMu();
     double mu_prev = mu;
@@ -229,7 +235,7 @@ public:
 
       // variable/values update
       NonlinearFactorGraph graph_iter = this->makeWeightedGraph(weights_);
-      GaussNewtonOptimizer baseOptimizer_iter(graph_iter, state_);
+      BaseOptimizer baseOptimizer_iter(graph_iter, state_);
       result = baseOptimizer_iter.optimize();
 
       // update mu
