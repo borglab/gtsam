@@ -264,11 +264,12 @@ public:
     // set initial mu
     switch (params_.lossType) {
     case GncParameters::GM:
+      // surrogate cost is convex for large mu
       return 2 * rmax_sq / params_.barcSq; // initial mu
     case GncParameters::TLS:
-      // initialize mu to the value specified in Remark 5 in GNC paper
-      // degenerate case: residual is close to zero so mu approximately equals
-      // to -1
+      // initialize mu to the value specified in Remark 5 in GNC paper.
+      // surrogate cost is convex for mu close to zero
+      // degenerate case: 2 * rmax_sq - params_.barcSq < 0 (handled in the main loop)
       return params_.barcSq / (2 * rmax_sq - params_.barcSq);
     default:
       throw std::runtime_error(
@@ -280,9 +281,10 @@ public:
   double updateMu(const double mu) const {
     switch (params_.lossType) {
     case GncParameters::GM:
-      return std::max(1.0, mu / params_.muStep); // reduce mu, but saturate at 1
+      // reduce mu, but saturate at 1 (original cost is recovered for mu -> 1)
+      return std::max(1.0, mu / params_.muStep);
     case GncParameters::TLS:
-      // increases mu at each iteration
+      // increases mu at each iteration (original cost is recovered for mu -> inf)
       return mu * params_.muStep;
     default:
       throw std::runtime_error(
