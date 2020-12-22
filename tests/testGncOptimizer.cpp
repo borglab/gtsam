@@ -254,7 +254,7 @@ TEST(GncOptimizer, calculateWeightsGM) {
   double barcSq = 5.0;
   weights_expected[3] =
       std::pow(mu * barcSq / (50.0 + mu * barcSq), 2); // outlier, error = 50
-  gncParams.setInlierThreshold(barcSq);
+  gncParams.setInlierCostThreshold(barcSq);
   auto gnc2 =
       GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   weights_actual = gnc2.calculateWeights(initial, mu);
@@ -315,7 +315,7 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
   GncParams<GaussNewtonParams> gncParams(gnParams);
   gncParams.setLossType(
       GncParams<GaussNewtonParams>::RobustLossType::TLS);
-  gncParams.setInlierThreshold(0.51); // if inlier threshold is slightly larger than 0.5, then measurement is inlier
+  gncParams.setInlierCostThreshold(0.51); // if inlier threshold is slightly larger than 0.5, then measurement is inlier
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
   double mu = 1e6;
   Vector weights_actual = gnc.calculateWeights(initial, mu);
@@ -331,7 +331,7 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
   GncParams<GaussNewtonParams> gncParams(gnParams);
   gncParams.setLossType(
       GncParams<GaussNewtonParams>::RobustLossType::TLS);
-  gncParams.setInlierThreshold(0.49); // if inlier threshold is slightly below 0.5, then measurement is outlier
+  gncParams.setInlierCostThreshold(0.49); // if inlier threshold is slightly below 0.5, then measurement is outlier
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
   double mu = 1e6; // very large mu recovers original TLS cost
   Vector weights_actual = gnc.calculateWeights(initial, mu);
@@ -347,7 +347,7 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
     GncParams<GaussNewtonParams> gncParams(gnParams);
     gncParams.setLossType(
         GncParams<GaussNewtonParams>::RobustLossType::TLS);
-    gncParams.setInlierThreshold(0.5); // if inlier threshold is slightly below 0.5, then measurement is outlier
+    gncParams.setInlierCostThreshold(0.5); // if inlier threshold is slightly below 0.5, then measurement is outlier
     auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
     double mu = 1e6; // very large mu recovers original TLS cost
     Vector weights_actual = gnc.calculateWeights(initial, mu);
