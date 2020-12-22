@@ -36,8 +36,8 @@ namespace gtsam {
 template<class BaseOptimizerParameters>
 class GncParams {
 public:
-  //typedef BaseOptimizerParameters::OptimizerType GncOptimizerType;
-  typedef BaseOptimizerParameters::OptimizerType OptimizerType;
+  /** For each parameter, specify the corresponding optimizer: e.g., GaussNewtonParams -> GaussNewtonOptimizer */
+  typedef typename BaseOptimizerParameters::OptimizerType OptimizerType;
 
   /** Verbosity levels */
   enum VerbosityGNC {
@@ -145,12 +145,8 @@ public:
 template<class GncParameters>
 class GncOptimizer {
 public:
-  // types etc
-//  typedef BaseOptimizerParameters::OptimizerType GncOptimizerType;
- // typedef GncParameters::BaseOptimizerParameters::OptimizerType BaseOptimizer; //
-  //typedef BaseOptimizerParameters::OptimizerType BaseOptimizer;
-  //typedef GaussNewtonOptimizer BaseOptimizer;
-  typedef GncParameters::OptimizerType BaseOptimizer;
+  /** For each parameter, specify the corresponding optimizer: e.g., GaussNewtonParams -> GaussNewtonOptimizer */
+  typedef typename GncParameters::OptimizerType BaseOptimizer;
 
 private:
   NonlinearFactorGraph nfg_;
