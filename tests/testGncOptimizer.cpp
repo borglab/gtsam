@@ -202,7 +202,7 @@ TEST(GncOptimizer, checkMuConvergenceGM) {
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
 
   double mu = 1.0;
-  CHECK(gnc.checkMuConvergence(mu, 0));
+  CHECK(gnc.checkMuConvergence(mu));
 }
 
 /* ************************************************************************* */
@@ -222,7 +222,7 @@ TEST(GncOptimizer, checkMuConvergenceTLS) {
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
 
   double mu = 1.0;
-  CHECK(gnc.checkMuConvergence(mu, mu));
+  CHECK(gnc.checkMuConvergence(mu));
 }
 
 /* ************************************************************************* */
