@@ -1,51 +1,64 @@
+# Check / set dependent variables for MATLAB wrapper
+if(GTSAM_INSTALL_MATLAB_TOOLBOX)
+    find_package(Matlab COMPONENTS MEX_COMPILER REQUIRED)
+    if(NOT Matlab_MEX_COMPILER)
+        message(FATAL_ERROR "Cannot find MEX compiler binary. Please check your Matlab installation and ensure MEX in installed as well.")
+        endif()
+
+    if(GTSAM_BUILD_TYPE_POSTFIXES)
+        set(CURRENT_POSTFIX ${CMAKE_${CMAKE_BUILD_TYPE_UPPER}_POSTFIX})
+    endif()
+
+    if(NOT BUILD_SHARED_LIBS)
+        message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and BUILD_SHARED_LIBS=OFF. The MATLAB wrapper cannot be compiled with a static GTSAM library because mex modules are themselves shared libraries.  If you want a self-contained mex module, enable GTSAM_MEX_BUILD_STATIC_MODULE instead of BUILD_SHARED_LIBS=OFF.")
+    endif()
+endif()
+
 # Set up cache options
 option(GTSAM_MEX_BUILD_STATIC_MODULE "Build MATLAB wrapper statically (increases build time)" OFF)
 set(GTSAM_BUILD_MEX_BINARY_FLAGS "" CACHE STRING "Extra flags for running Matlab MEX compilation")
 set(GTSAM_TOOLBOX_INSTALL_PATH "" CACHE PATH "Matlab toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/gtsam_toolbox")
 if(NOT GTSAM_TOOLBOX_INSTALL_PATH)
-	set(GTSAM_TOOLBOX_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/gtsam_toolbox")
+    set(GTSAM_TOOLBOX_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/gtsam_toolbox")
 endif()
 
 # GTSAM_MEX_BUILD_STATIC_MODULE is not for Windows - on Windows any static
 # are already compiled into the library by the linker
 if(GTSAM_MEX_BUILD_STATIC_MODULE AND WIN32)
-	message(FATAL_ERROR "GTSAM_MEX_BUILD_STATIC_MODULE should not be set on Windows - the linker already automatically compiles in any dependent static libraries.  To create a standalone toolbox pacakge, simply ensure that CMake finds the static versions of all dependent libraries (Boost, etc).")
+    message(FATAL_ERROR "GTSAM_MEX_BUILD_STATIC_MODULE should not be set on Windows - the linker already automatically compiles in any dependent static libraries. To create a standalone toolbox pacakge, simply ensure that CMake finds the static versions of all dependent libraries (Boost, etc).")
 endif()
 
-# Try to automatically configure mex path
-if(APPLE)
-	file(GLOB matlab_bin_directories "/Applications/MATLAB*/bin")
-	set(mex_program_name "mex")
-elseif(WIN32)
-	file(GLOB matlab_bin_directories "C:/Program Files*/MATLAB/*/bin")
-	set(mex_program_name "mex.bat")
-else()
-	file(GLOB matlab_bin_directories "/usr/local/MATLAB/*/bin")
-	set(mex_program_name "mex")
-endif()
+set(MEX_COMMAND ${Matlab_MEX_COMPILER} CACHE PATH "Path to MATLAB MEX compiler")
+set(MATLAB_ROOT ${Matlab_ROOT_DIR} CACHE PATH "Path to MATLAB installation root (e.g. /usr/local/MATLAB/R2012a)")
 
+# Try to automatically configure mex path from provided custom `bin` path.
 if(GTSAM_CUSTOM_MATLAB_PATH)
-	set(matlab_bin_directories ${GTSAM_CUSTOM_MATLAB_PATH})
-endif()
+    set(matlab_bin_directory ${GTSAM_CUSTOM_MATLAB_PATH})
 
-# Run find_program explicitly putting $PATH after our predefined program
-# directories using 'ENV PATH' and 'NO_SYSTEM_ENVIRONMENT_PATH' - this prevents
-# finding the LaTeX mex program (totally unrelated to MATLAB Mex) when LaTeX is
-# on the system path.
-list(REVERSE matlab_bin_directories) # Reverse list so the highest version (sorted alphabetically) is preferred
-find_program(MEX_COMMAND ${mex_program_name}
-	PATHS ${matlab_bin_directories} ENV PATH
-	NO_DEFAULT_PATH)
-mark_as_advanced(FORCE MEX_COMMAND)
-# Now that we have mex, trace back to find the Matlab installation root
-get_filename_component(MEX_COMMAND "${MEX_COMMAND}" REALPATH)
-get_filename_component(mex_path "${MEX_COMMAND}" PATH)
-if(mex_path MATCHES ".*/win64$")
-	get_filename_component(MATLAB_ROOT "${mex_path}/../.." ABSOLUTE)
-else()
-	get_filename_component(MATLAB_ROOT "${mex_path}/.." ABSOLUTE)
+    if(WIN32)
+        set(mex_program_name "mex.bat")
+    else()
+        set(mex_program_name "mex")
+    endif()
+
+    # Run find_program explicitly putting $PATH after our predefined program
+    # directories using 'ENV PATH' and 'NO_SYSTEM_ENVIRONMENT_PATH' - this prevents
+    # finding the LaTeX mex program (totally unrelated to MATLAB Mex) when LaTeX is
+    # on the system path.
+    find_program(MEX_COMMAND ${mex_program_name}
+       PATHS ${matlab_bin_directory} ENV PATH
+       NO_DEFAULT_PATH)
+
+    mark_as_advanced(FORCE MEX_COMMAND)
+    # Now that we have mex, trace back to find the Matlab installation root
+    get_filename_component(MEX_COMMAND "${MEX_COMMAND}" REALPATH)
+    get_filename_component(mex_path "${MEX_COMMAND}" PATH)
+    if(mex_path MATCHES ".*/win64$")
+       get_filename_component(MATLAB_ROOT "${mex_path}/../.." ABSOLUTE)
+    else()
+       get_filename_component(MATLAB_ROOT "${mex_path}/.." ABSOLUTE)
+    endif()
 endif()
-set(MATLAB_ROOT "${MATLAB_ROOT}" CACHE PATH "Path to MATLAB installation root (e.g. /usr/local/MATLAB/R2012a)")
 
 
 # User-friendly wrapping function.  Builds a mex module from the provided

@@ -43,7 +43,6 @@ typedef PriorFactor<Pose3>                PriorFactorPose3;
 typedef PriorFactor<Cal3_S2>              PriorFactorCal3_S2;
 typedef PriorFactor<Cal3DS2>              PriorFactorCal3DS2;
 typedef PriorFactor<CalibratedCamera>     PriorFactorCalibratedCamera;
-typedef PriorFactor<SimpleCamera>         PriorFactorSimpleCamera;
 typedef PriorFactor<PinholeCameraCal3_S2> PriorFactorPinholeCameraCal3_S2;
 typedef PriorFactor<StereoCamera>         PriorFactorStereoCamera;
 
@@ -68,7 +67,6 @@ typedef NonlinearEquality<Pose3>                  NonlinearEqualityPose3;
 typedef NonlinearEquality<Cal3_S2>                NonlinearEqualityCal3_S2;
 typedef NonlinearEquality<Cal3DS2>                NonlinearEqualityCal3DS2;
 typedef NonlinearEquality<CalibratedCamera>       NonlinearEqualityCalibratedCamera;
-typedef NonlinearEquality<SimpleCamera>           NonlinearEqualitySimpleCamera;
 typedef NonlinearEquality<PinholeCameraCal3_S2>   NonlinearEqualityPinholeCameraCal3_S2;
 typedef NonlinearEquality<StereoCamera>           NonlinearEqualityStereoCamera;
 
@@ -77,10 +75,8 @@ typedef RangeFactor<Pose3, Point3>                              RangeFactor3D;
 typedef RangeFactor<Pose2, Pose2>                               RangeFactorPose2;
 typedef RangeFactor<Pose3, Pose3>                               RangeFactorPose3;
 typedef RangeFactor<CalibratedCamera, Point3>                   RangeFactorCalibratedCameraPoint;
-typedef RangeFactor<SimpleCamera, Point3>                       RangeFactorSimpleCameraPoint;
 typedef RangeFactor<PinholeCameraCal3_S2, Point3>               RangeFactorPinholeCameraCal3_S2Point;
 typedef RangeFactor<CalibratedCamera, CalibratedCamera>         RangeFactorCalibratedCamera;
-typedef RangeFactor<SimpleCamera, SimpleCamera>                 RangeFactorSimpleCamera;
 typedef RangeFactor<PinholeCameraCal3_S2, PinholeCameraCal3_S2> RangeFactorPinholeCameraCal3_S2;
 
 typedef BearingRangeFactor<Pose2, Point2>  BearingRangeFactor2D;
@@ -90,7 +86,7 @@ typedef GenericProjectionFactor<Pose3, Point3, Cal3_S2> GenericProjectionFactorC
 typedef GenericProjectionFactor<Pose3, Point3, Cal3DS2> GenericProjectionFactorCal3DS2;
 
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
-//typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
 
 typedef gtsam::GeneralSFMFactor2<gtsam::Cal3_S2> GeneralSFMFactor2Cal3_S2;
 
@@ -129,7 +125,6 @@ GTSAM_VALUE_EXPORT(gtsam::Cal3_S2);
 GTSAM_VALUE_EXPORT(gtsam::Cal3DS2);
 GTSAM_VALUE_EXPORT(gtsam::Cal3_S2Stereo);
 GTSAM_VALUE_EXPORT(gtsam::CalibratedCamera);
-GTSAM_VALUE_EXPORT(gtsam::SimpleCamera);
 GTSAM_VALUE_EXPORT(gtsam::PinholeCameraCal3_S2);
 GTSAM_VALUE_EXPORT(gtsam::StereoCamera);
 
@@ -150,7 +145,6 @@ BOOST_CLASS_EXPORT_GUID(PriorFactorPose3, "gtsam::PriorFactorPose3");
 BOOST_CLASS_EXPORT_GUID(PriorFactorCal3_S2, "gtsam::PriorFactorCal3_S2");
 BOOST_CLASS_EXPORT_GUID(PriorFactorCal3DS2, "gtsam::PriorFactorCal3DS2");
 BOOST_CLASS_EXPORT_GUID(PriorFactorCalibratedCamera, "gtsam::PriorFactorCalibratedCamera");
-BOOST_CLASS_EXPORT_GUID(PriorFactorSimpleCamera, "gtsam::PriorFactorSimpleCamera");
 BOOST_CLASS_EXPORT_GUID(PriorFactorStereoCamera, "gtsam::PriorFactorStereoCamera");
 
 BOOST_CLASS_EXPORT_GUID(BetweenFactorLieVector, "gtsam::BetweenFactorLieVector");
@@ -174,7 +168,6 @@ BOOST_CLASS_EXPORT_GUID(NonlinearEqualityPose3, "gtsam::NonlinearEqualityPose3")
 BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCal3_S2, "gtsam::NonlinearEqualityCal3_S2");
 BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCal3DS2, "gtsam::NonlinearEqualityCal3DS2");
 BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCalibratedCamera, "gtsam::NonlinearEqualityCalibratedCamera");
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualitySimpleCamera, "gtsam::NonlinearEqualitySimpleCamera");
 BOOST_CLASS_EXPORT_GUID(NonlinearEqualityStereoCamera, "gtsam::NonlinearEqualityStereoCamera");
 
 BOOST_CLASS_EXPORT_GUID(RangeFactor2D, "gtsam::RangeFactor2D");
@@ -182,9 +175,7 @@ BOOST_CLASS_EXPORT_GUID(RangeFactor3D, "gtsam::RangeFactor3D");
 BOOST_CLASS_EXPORT_GUID(RangeFactorPose2, "gtsam::RangeFactorPose2");
 BOOST_CLASS_EXPORT_GUID(RangeFactorPose3, "gtsam::RangeFactorPose3");
 BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCameraPoint, "gtsam::RangeFactorCalibratedCameraPoint");
-BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCameraPoint, "gtsam::RangeFactorSimpleCameraPoint");
 BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCamera, "gtsam::RangeFactorCalibratedCamera");
-BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCamera, "gtsam::RangeFactorSimpleCamera");
 
 BOOST_CLASS_EXPORT_GUID(BearingRangeFactor2D, "gtsam::BearingRangeFactor2D");
 
@@ -192,11 +183,27 @@ BOOST_CLASS_EXPORT_GUID(GenericProjectionFactorCal3_S2, "gtsam::GenericProjectio
 BOOST_CLASS_EXPORT_GUID(GenericProjectionFactorCal3DS2, "gtsam::GenericProjectionFactorCal3DS2");
 
 BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3_S2, "gtsam::GeneralSFMFactorCal3_S2");
-//BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3DS2, "gtsam::GeneralSFMFactorCal3DS2");
+BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3DS2, "gtsam::GeneralSFMFactorCal3DS2");
 
 BOOST_CLASS_EXPORT_GUID(GeneralSFMFactor2Cal3_S2, "gtsam::GeneralSFMFactor2Cal3_S2");
 
 BOOST_CLASS_EXPORT_GUID(GenericStereoFactor3D, "gtsam::GenericStereoFactor3D");
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+
+typedef PriorFactor<SimpleCamera>               PriorFactorSimpleCamera;
+typedef NonlinearEquality<SimpleCamera>         NonlinearEqualitySimpleCamera;
+typedef RangeFactor<SimpleCamera, Point3>       RangeFactorSimpleCameraPoint;
+typedef RangeFactor<SimpleCamera, SimpleCamera> RangeFactorSimpleCamera;
+
+GTSAM_VALUE_EXPORT(gtsam::SimpleCamera);
+BOOST_CLASS_EXPORT_GUID(PriorFactorSimpleCamera, "gtsam::PriorFactorSimpleCamera");
+BOOST_CLASS_EXPORT_GUID(NonlinearEqualitySimpleCamera, "gtsam::NonlinearEqualitySimpleCamera");
+BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCameraPoint, "gtsam::RangeFactorSimpleCameraPoint");
+BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCamera, "gtsam::RangeFactorSimpleCamera");
+
+#endif
+
 
 /* ************************************************************************* */
 // Actual implementations of functions
