@@ -67,13 +67,8 @@ set(GTSAM_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam)
 create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
         "${GTSAM_MODULE_PATH}")
 
-
-# Add custom target so we can install with `make python-install`
-set(GTSAM_PYTHON_INSTALL_TARGET python-install)
-add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-        COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py install
-        DEPENDS gtsam_py
-        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
+# Add gtsam as a dependency to the install target
+set(GTSAM_PYTHON_DEPENDENCIES gtsam_py)
 
 
 if(GTSAM_UNSTABLE_BUILD_PYTHON)
@@ -121,5 +116,13 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             "${GTSAM_UNSTABLE_MODULE_PATH}")
 
     # Add gtsam_unstable to the install target
-    add_dependencies(${GTSAM_PYTHON_INSTALL_TARGTE} gtsam_unstable_py)
+    list(APPEND GTSAM_PYTHON_DEPENDENCIES gtsam_unstable_py)
+
 endif()
+
+# Add custom target so we can install with `make python-install`
+set(GTSAM_PYTHON_INSTALL_TARGET python-install)
+add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
+        COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py install
+        DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
+        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
