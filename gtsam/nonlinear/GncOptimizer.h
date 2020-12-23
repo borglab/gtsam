@@ -95,7 +95,7 @@ public:
     muStep = step;
   }
   /// Set the maximum relative difference in mu values to stop iterating
-  void setRelativeMuTol(double value) { relativeCostTol = value;
+  void setRelativeCostTol(double value) { relativeCostTol = value;
   }
   /// Set the verbosity level
   void setVerbosityGNC(const VerbosityGNC verbosity) {
