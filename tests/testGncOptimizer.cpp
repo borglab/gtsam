@@ -206,7 +206,7 @@ TEST(GncOptimizer, checkMuConvergenceGM) {
 }
 
 /* ************************************************************************* */
-TEST(GncOptimizer, checkMuConvergenceTLS) {
+TEST(GncOptimizer, checkConvergenceTLS) {
   // has to have Gaussian noise models !
   auto fg = example::createReallyNonlinearFactorGraph();
 
@@ -216,13 +216,14 @@ TEST(GncOptimizer, checkMuConvergenceTLS) {
 
   LevenbergMarquardtParams lmParams;
   GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  gncParams.setRelativeCostTol(1e-5);
   gncParams.setLossType(
       GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
   auto gnc =
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
 
-  double mu = 1.0;
-  CHECK(gnc.checkMuConvergence(mu));
+  CHECK(gnc.checkCostConvergence(1.0, 1.0));
+  CHECK(!gnc.checkCostConvergence(1.0, 2.0));
 }
 
 /* ************************************************************************* */
