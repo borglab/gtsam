@@ -62,11 +62,12 @@ public:
   /// GNC parameters
   BaseOptimizerParameters baseOptimizerParams; /*optimization parameters used to solve the weighted least squares problem at each GNC iteration*/
   /// any other specific GNC parameters:
-  RobustLossType lossType = GM; /* default loss*/
+  RobustLossType lossType = TLS; /* default loss*/
   size_t maxIterations = 100; /* maximum number of iterations*/
   double barcSq = 1.0; /* a factor is considered an inlier if factor.error() < barcSq. Note that factor.error() whitens by the covariance*/
   double muStep = 1.4; /* multiplicative factor to reduce/increase the mu in gnc */
-  double relativeCostTol = 1e-5; ///< The maximum relative cost change to stop iterating
+  double relativeCostTol = 1e-5; ///< if relative cost change if below this threshold, stop iterating
+  double weightsTol = 1e-4; ///< if the weights are within weightsTol from being binary, stop iterating (only for TLS)
   VerbosityGNC verbosityGNC = SILENT; /* verbosity level */
   std::vector<size_t> knownInliers = std::vector<size_t>(); /* slots in the factor graph corresponding to measurements that we know are inliers */
 
@@ -96,6 +97,9 @@ public:
   }
   /// Set the maximum relative difference in mu values to stop iterating
   void setRelativeCostTol(double value) { relativeCostTol = value;
+  }
+  /// Set the maximum difference between the weights and their rounding in {0,1} to stop iterating
+  void setWeightsTol(double value) { weightsTol = value;
   }
   /// Set the verbosity level
   void setVerbosityGNC(const VerbosityGNC verbosity) {
@@ -136,6 +140,8 @@ public:
     std::cout << "maxIterations: " << maxIterations << "\n";
     std::cout << "barcSq: " << barcSq << "\n";
     std::cout << "muStep: " << muStep << "\n";
+    std::cout << "relativeCostTol: " << relativeCostTol << "\n";
+    std::cout << "weightsTol: " << weightsTol << "\n";
     std::cout << "verbosityGNC: " << verbosityGNC << "\n";
     for (size_t i = 0; i < knownInliers.size(); i++)
       std::cout << "knownInliers: " << knownInliers[i] << "\n";
@@ -205,8 +211,8 @@ public:
     BaseOptimizer baseOptimizer(nfg_, state_);
     Values result = baseOptimizer.optimize();
     double mu = initializeMu();
-    double cost = calculateWeightedCost();
-    double prev_cost = cost;
+    double prev_cost = nfg_.error(result);
+    double cost = 0.0; // this will be updated in the main loop
 
     // handle the degenerate case that corresponds to small
     // maximum residual errors at initialization
@@ -215,16 +221,21 @@ public:
     if (mu <= 0) {
       if (params_.verbosityGNC >= GncParameters::VerbosityGNC::SUMMARY) {
         std::cout << "GNC Optimizer stopped because maximum residual at "
-                     "initialization is small." << std::endl;
+            "initialization is small." << std::endl;
+      }
+      if (params_.verbosityGNC >= GncParameters::VerbosityGNC::VALUES) {
         result.print("result\n");
+        std::cout << "mu: " << mu << std::endl;
       }
       return result;
     }
 
-    for (size_t iter = 0; iter < params_.maxIterations; iter++) {
+    size_t iter;
+    for (iter = 0; iter < params_.maxIterations; iter++) {
 
       // display info
       if (params_.verbosityGNC >= GncParameters::VerbosityGNC::VALUES) {
+        std::cout << "iter: " << iter << std::endl;
         result.print("result\n");
         std::cout << "mu: " << mu << std::endl;
         std::cout << "weights: " << weights_ << std::endl;
@@ -232,28 +243,34 @@ public:
       // weights update
       weights_ = calculateWeights(result, mu);
 
-      // update cost
-      prev_cost = cost;
-      cost = calculateWeightedCost();
-
       // variable/values update
       NonlinearFactorGraph graph_iter = this->makeWeightedGraph(weights_);
       BaseOptimizer baseOptimizer_iter(graph_iter, state_);
       result = baseOptimizer_iter.optimize();
 
       // stopping condition
-      if (checkConvergence(mu, cost, prev_cost)) {
-        // display info
-        if (params_.verbosityGNC >= GncParameters::VerbosityGNC::SUMMARY) {
-          std::cout << "final iterations: " << iter << std::endl;
-          std::cout << "final mu: " << mu << std::endl;
-          std::cout << "final weights: " << weights_ << std::endl;
-        }
-        break;
-      }
+      cost = graph_iter.error(result);
+      if (checkConvergence(mu, weights_, cost, prev_cost)) { break; }
 
       // update mu
       mu = updateMu(mu);
+
+      // get ready for next iteration
+      prev_cost = cost;
+
+      // display info
+      if (params_.verbosityGNC >= GncParameters::VerbosityGNC::VALUES) {
+        std::cout << "previous cost: " << prev_cost << std::endl;
+        std::cout << "current cost: " << cost << std::endl;
+      }
+    }
+    // display info
+    if (params_.verbosityGNC >= GncParameters::VerbosityGNC::SUMMARY) {
+      std::cout << "final iterations: " << iter << std::endl;
+      std::cout << "final mu: " << mu << std::endl;
+      std::cout << "final weights: " << weights_ << std::endl;
+      std::cout << "previous cost: " << prev_cost << std::endl;
+      std::cout << "current cost: " << cost << std::endl;
     }
     return result;
   }
@@ -276,7 +293,9 @@ public:
       // initialize mu to the value specified in Remark 5 in GNC paper.
       // surrogate cost is convex for mu close to zero
       // degenerate case: 2 * rmax_sq - params_.barcSq < 0 (handled in the main loop)
-      return params_.barcSq / (2 * rmax_sq - params_.barcSq);
+      // according to remark mu = params_.barcSq / (2 * rmax_sq - params_.barcSq) = params_.barcSq/ excessResidual
+      // however, if the denominator is 0 or negative, we return mu = -1 which leads to termination of the main GNC loop
+      return (2 * rmax_sq - params_.barcSq) > 0 ? params_.barcSq / (2 * rmax_sq - params_.barcSq)  :  -1;
     default:
       throw std::runtime_error(
           "GncOptimizer::initializeMu: called with unknown loss type.");
@@ -298,52 +317,67 @@ public:
     }
   }
 
-  /// calculated sum of weighted squared residuals
-  double calculateWeightedCost() const {
-    double cost = 0;
-    for (size_t i = 0; i < nfg_.size(); i++) {
-      cost += weights_[i] * nfg_[i]->error(state_);
-    }
-    return cost;
-  }
-
   /// check if we have reached the value of mu for which the surrogate loss matches the original loss
   bool checkMuConvergence(const double mu) const {
+    bool muConverged = false;
     switch (params_.lossType) {
     case GncParameters::GM:
-      return std::fabs(mu - 1.0) < 1e-9; // mu=1 recovers the original GM function
+      muConverged = std::fabs(mu - 1.0) < 1e-9; // mu=1 recovers the original GM function
+      break;
+    case GncParameters::TLS:
+      muConverged = false; // for TLS there is no stopping condition on mu (it must tend to infinity)
+      break;
     default:
       throw std::runtime_error(
           "GncOptimizer::checkMuConvergence: called with unknown loss type.");
     }
+    if (muConverged && params_.verbosityGNC >= GncParameters::VerbosityGNC::SUMMARY)
+      std::cout << "muConverged = true " << std::endl;
+    return muConverged;
   }
 
   /// check convergence of relative cost differences
   bool checkCostConvergence(const double cost, const double prev_cost) const {
-    switch (params_.lossType) {
-    case GncParameters::TLS:
-      return std::fabs(cost - prev_cost) < params_.relativeCostTol;
-    default:
-      throw std::runtime_error(
-          "GncOptimizer::checkMuConvergence: called with unknown loss type.");
-    }
+    bool costConverged = std::fabs(cost - prev_cost) / std::max(prev_cost,1e-7)  < params_.relativeCostTol;
+    if (costConverged && params_.verbosityGNC >= GncParameters::VerbosityGNC::SUMMARY)
+      std::cout << "checkCostConvergence = true " << std::endl;
+    return costConverged;
   }
+
+  /// check convergence of weights to binary values
+  bool checkWeightsConvergence(const Vector& weights) const {
+      bool weightsConverged = false;
+      switch (params_.lossType) {
+      case GncParameters::GM:
+        weightsConverged = false; // for GM, there is no clear binary convergence for the weights
+        break;
+      case GncParameters::TLS:
+        weightsConverged = true;
+        for(size_t i=0; i<weights.size(); i++){
+          if( std::fabs ( weights[i] - std::round(weights[i]) ) > params_.weightsTol ){
+            weightsConverged = false;
+            break;
+          }
+        }
+        break;
+      default:
+        throw std::runtime_error(
+            "GncOptimizer::checkWeightsConvergence: called with unknown loss type.");
+      }
+      if (weightsConverged && params_.verbosityGNC >= GncParameters::VerbosityGNC::SUMMARY)
+        std::cout << "weightsConverged = true " << std::endl;
+      return weightsConverged;
+    }
 
   /// check for convergence between consecutive GNC iterations
   bool checkConvergence(const double mu,
+                        const Vector& weights,
                         const double cost,
                         const double prev_cost) const {
-    switch (params_.lossType) {
-    case GncParameters::GM:
-      return checkMuConvergence(mu);
-    case GncParameters::TLS:
-      return checkCostConvergence(cost, prev_cost);
-    default:
-      throw std::runtime_error(
-          "GncOptimizer::checkMuConvergence: called with unknown loss type.");
-    }
+    return checkCostConvergence(cost,prev_cost) ||
+        checkWeightsConvergence(weights) ||
+        checkMuConvergence(mu);
   }
-
 
   /// create a graph where each factor is weighted by the gnc weights
   NonlinearFactorGraph makeWeightedGraph(const Vector& weights) const {

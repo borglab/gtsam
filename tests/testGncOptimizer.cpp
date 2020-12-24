@@ -66,7 +66,7 @@ TEST(GncOptimizer, gncParamsConstructor) {
 
   // change something at the gncParams level
   GncParams<GaussNewtonParams> gncParams2c(gncParams2b);
-  gncParams2c.setLossType(GncParams<GaussNewtonParams>::RobustLossType::TLS);
+  gncParams2c.setLossType(GncParams<GaussNewtonParams>::RobustLossType::GM);
   CHECK(!gncParams2c.equals(gncParams2b.baseOptimizerParams));
 }
 
@@ -186,7 +186,7 @@ TEST(GncOptimizer, updateMuTLS) {
 }
 
 /* ************************************************************************* */
-TEST(GncOptimizer, checkMuConvergenceGM) {
+TEST(GncOptimizer, checkMuConvergence) {
   // has to have Gaussian noise models !
   auto fg = example::createReallyNonlinearFactorGraph();
 
@@ -194,6 +194,7 @@ TEST(GncOptimizer, checkMuConvergenceGM) {
   Values initial;
   initial.insert(X(1), p0);
 
+  {
   LevenbergMarquardtParams lmParams;
   GncParams<LevenbergMarquardtParams> gncParams(lmParams);
   gncParams.setLossType(
@@ -203,6 +204,112 @@ TEST(GncOptimizer, checkMuConvergenceGM) {
 
   double mu = 1.0;
   CHECK(gnc.checkMuConvergence(mu));
+  }
+  {
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  gncParams.setLossType(
+      GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
+  auto gnc =
+      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+
+  double mu = 1.0;
+  CHECK(!gnc.checkMuConvergence(mu)); //always false for TLS
+  }
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, checkCostConvergence) {
+  // has to have Gaussian noise models !
+  auto fg = example::createReallyNonlinearFactorGraph();
+
+  Point2 p0(3, 3);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  {
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  gncParams.setRelativeCostTol(0.49);
+  auto gnc =
+      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+
+  double prev_cost = 1.0;
+  double cost = 0.5;
+  // relative cost reduction = 0.5 > 0.49, hence checkCostConvergence = false
+  CHECK(!gnc.checkCostConvergence(cost, prev_cost));
+  }
+  {
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  gncParams.setRelativeCostTol(0.51);
+  auto gnc =
+      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+
+  double prev_cost = 1.0;
+  double cost = 0.5;
+  // relative cost reduction = 0.5 < 0.51, hence checkCostConvergence = true
+  CHECK(gnc.checkCostConvergence(cost, prev_cost));
+  }
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, checkWeightsConvergence) {
+  // has to have Gaussian noise models !
+  auto fg = example::createReallyNonlinearFactorGraph();
+
+  Point2 p0(3, 3);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  {
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  gncParams.setLossType(
+      GncParams<LevenbergMarquardtParams>::RobustLossType::GM);
+  auto gnc =
+      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+
+  Vector weights = Vector::Ones(fg.size());
+  CHECK(!gnc.checkWeightsConvergence(weights)); //always false for GM
+  }
+  {
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  gncParams.setLossType(
+      GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
+  auto gnc =
+      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+
+  Vector weights = Vector::Ones(fg.size());
+  // weights are binary, so checkWeightsConvergence = true
+  CHECK(gnc.checkWeightsConvergence(weights));
+  }
+  {
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  gncParams.setLossType(
+      GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
+  auto gnc =
+      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+
+  Vector weights = Vector::Ones(fg.size());
+  weights[0] = 0.9; // more than weightsTol = 1e-4 from 1, hence checkWeightsConvergence = false
+  CHECK(!gnc.checkWeightsConvergence(weights));
+  }
+  {
+  LevenbergMarquardtParams lmParams;
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  gncParams.setLossType(
+      GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
+  gncParams.setWeightsTol(0.1);
+  auto gnc =
+      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+
+  Vector weights = Vector::Ones(fg.size());
+  weights[0] = 0.9; // exactly weightsTol = 0.1 from 1, hence checkWeightsConvergence = true
+  CHECK(gnc.checkWeightsConvergence(weights));
+  }
 }
 
 /* ************************************************************************* */
@@ -455,9 +562,12 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
   knownInliers.push_back(2);
 
   // nonconvexity with known inliers
+  {
   GncParams<GaussNewtonParams> gncParams;
   gncParams.setKnownInliers(knownInliers);
-  // gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::VerbosityGNC::VALUES);
+  gncParams.setLossType(
+        GncParams<GaussNewtonParams>::RobustLossType::GM);
+  //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::VerbosityGNC::SUMMARY);
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
 
   Values gnc_result = gnc.optimize();
@@ -468,6 +578,45 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
   DOUBLES_EQUAL(1.0, finalWeights[0], tol);
   DOUBLES_EQUAL(1.0, finalWeights[1], tol);
   DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+  }
+  {
+  GncParams<GaussNewtonParams> gncParams;
+  gncParams.setKnownInliers(knownInliers);
+  gncParams.setLossType(
+        GncParams<GaussNewtonParams>::RobustLossType::TLS);
+  // gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::VerbosityGNC::SUMMARY);
+  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
+
+  Values gnc_result = gnc.optimize();
+  CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+
+  // check weights were actually fixed:
+  Vector finalWeights = gnc.getWeights();
+  DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+  DOUBLES_EQUAL(1.0, finalWeights[1], tol);
+  DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+  DOUBLES_EQUAL(0.0, finalWeights[3], tol);
+  }
+  {
+  // if we set the threshold large, they are all inliers
+  GncParams<GaussNewtonParams> gncParams;
+  gncParams.setKnownInliers(knownInliers);
+  gncParams.setLossType(
+        GncParams<GaussNewtonParams>::RobustLossType::TLS);
+  //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::VerbosityGNC::VALUES);
+  gncParams.setInlierCostThreshold( 100.0 );
+  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
+
+  Values gnc_result = gnc.optimize();
+  CHECK(assert_equal(Point2(0.25, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+
+  // check weights were actually fixed:
+  Vector finalWeights = gnc.getWeights();
+  DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+  DOUBLES_EQUAL(1.0, finalWeights[1], tol);
+  DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+  DOUBLES_EQUAL(1.0, finalWeights[3], tol);
+  }
 }
 
 /* ************************************************************************* */
