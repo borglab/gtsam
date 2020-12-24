@@ -66,7 +66,7 @@ public:
   size_t maxIterations = 100; /* maximum number of iterations*/
   double barcSq = 1.0; /* a factor is considered an inlier if factor.error() < barcSq. Note that factor.error() whitens by the covariance*/
   double muStep = 1.4; /* multiplicative factor to reduce/increase the mu in gnc */
-  double relativeCostTol = 1e-5; ///< if relative cost change if below this threshold, stop iterating
+  double relativeCostTol = 1e-5; ///< if relative cost change is below this threshold, stop iterating
   double weightsTol = 1e-4; ///< if the weights are within weightsTol from being binary, stop iterating (only for TLS)
   VerbosityGNC verbosityGNC = SILENT; /* verbosity level */
   std::vector<size_t> knownInliers = std::vector<size_t>(); /* slots in the factor graph corresponding to measurements that we know are inliers */
@@ -111,7 +111,7 @@ public:
    * This functionality is commonly used in SLAM when one may assume the odometry is outlier free, and
    * only apply GNC to prune outliers from the loop closures
    * */
-  void setKnownInliers(const std::vector<size_t> knownIn) {
+  void setKnownInliers(const std::vector<size_t>& knownIn) {
     for (size_t i = 0; i < knownIn.size(); i++)
       knownInliers.push_back(knownIn[i]);
   }
@@ -338,7 +338,7 @@ public:
 
   /// check convergence of relative cost differences
   bool checkCostConvergence(const double cost, const double prev_cost) const {
-    bool costConverged = std::fabs(cost - prev_cost) / std::max(prev_cost,1e-7)  < params_.relativeCostTol;
+    bool costConverged = std::fabs(cost - prev_cost) / std::max(prev_cost,1e-7) < params_.relativeCostTol;
     if (costConverged && params_.verbosityGNC >= GncParameters::VerbosityGNC::SUMMARY)
       std::cout << "checkCostConvergence = true " << std::endl;
     return costConverged;
@@ -406,7 +406,7 @@ public:
   }
 
   /// calculate gnc weights
-  Vector calculateWeights(const Values currentEstimate, const double mu) {
+  Vector calculateWeights(const Values& currentEstimate, const double mu) {
     Vector weights = Vector::Ones(nfg_.size());
 
     // do not update the weights that the user has decided are known inliers
