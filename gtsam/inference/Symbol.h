@@ -80,6 +80,9 @@ public:
   /** Create a string from the key */
   operator std::string() const;
 
+  /// Return string representation of the key
+  std::string string() const { return std::string(*this); };
+
   /** Comparison for use in maps */
   bool operator<(const Symbol& comp) const {
     return c_ < comp.c_ || (comp.c_ == c_ && j_ < comp.j_);
