@@ -1936,6 +1936,21 @@ class KalmanFilter {
 //*************************************************************************
 
 #include <gtsam/inference/Symbol.h>
+
+class Symbol {
+  Symbol();
+  Symbol(char c, uint64_t j);
+  Symbol(size_t key);
+
+  size_t key() const;
+  void print(const string& s) const;
+  bool equals(const gtsam::Symbol& expected, double tol) const;
+
+  char chr() const;
+  uint64_t index() const;
+  string string() const;
+};
+
 size_t symbol(char chr, size_t index);
 char symbolChr(size_t key);
 size_t symbolIndex(size_t key);
