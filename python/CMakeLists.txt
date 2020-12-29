@@ -13,9 +13,6 @@ file(READ "${PROJECT_SOURCE_DIR}/README.md" README_CONTENTS)
 configure_file(${PROJECT_SOURCE_DIR}/python/setup.py.in
                 ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py)
 
-set(WRAP_USE_CUSTOM_PYTHON_LIBRARY ${GTSAM_USE_CUSTOM_PYTHON_LIBRARY})
-set(WRAP_PYTHON_VERSION ${GTSAM_PYTHON_VERSION})
-
 include(PybindWrap)
 
 add_custom_target(gtsam_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam/gtsam.i")
