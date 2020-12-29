@@ -42,7 +42,7 @@ public:
 
   static VerbosityLM verbosityLMTranslator(const std::string &s);
   static std::string verbosityLMTranslator(VerbosityLM value);
-  typedef LevenbergMarquardtOptimizer OptimizerType;
+  using OptimizerType = LevenbergMarquardtOptimizer;
 
 public:
 
