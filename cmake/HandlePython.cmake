@@ -1,22 +1,4 @@
-# Set Python version if either Python or MATLAB wrapper is requested.
-if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
-    if(${GTSAM_PYTHON_VERSION} STREQUAL "Default")
-        # Get info about the Python3 interpreter
-        # https://cmake.org/cmake/help/latest/module/FindPython3.html#module:FindPython3
-        find_package(Python3 COMPONENTS Interpreter Development)
-
-        if(NOT ${Python3_FOUND})
-            message(FATAL_ERROR "Cannot find Python3 interpreter. Please install Python >= 3.6.")
-        endif()
-
-        set(GTSAM_PYTHON_VERSION "${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}"
-                CACHE
-                STRING
-                "The version of Python to build the wrappers against."
-                FORCE)
-    endif()
-endif()
-
+# Check for build of Unstable modules
 if(GTSAM_BUILD_PYTHON)
     if(GTSAM_UNSTABLE_BUILD_PYTHON)
         if (NOT GTSAM_BUILD_UNSTABLE)
