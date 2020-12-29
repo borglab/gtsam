@@ -66,7 +66,7 @@ TEST(GncOptimizer, gncParamsConstructor) {
 
   // change something at the gncParams level
   GncParams<GaussNewtonParams> gncParams2c(gncParams2b);
-  gncParams2c.setLossType(GncParams<GaussNewtonParams>::RobustLossType::GM);
+  gncParams2c.setLossType(GncParams<GaussNewtonParams>::GncLossType::GM);
   CHECK(!gncParams2c.equals(gncParams2b.baseOptimizerParams));
 }
 
@@ -119,7 +119,7 @@ TEST(GncOptimizer, initializeMu) {
   // testing GM mu initialization
   GncParams<LevenbergMarquardtParams> gncParams;
   gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::RobustLossType::GM);
+      GncParams<LevenbergMarquardtParams>::GncLossType::GM);
   auto gnc_gm =
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
   // according to rmk 5 in the gnc paper: m0 = 2 rmax^2 / barcSq
@@ -128,7 +128,7 @@ TEST(GncOptimizer, initializeMu) {
 
   // testing TLS mu initialization
   gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
+      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
   auto gnc_tls =
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
   // according to rmk 5 in the gnc paper: m0 =  barcSq / (2 * rmax^2 - barcSq)
@@ -147,7 +147,7 @@ TEST(GncOptimizer, updateMuGM) {
 
   GncParams<LevenbergMarquardtParams> gncParams;
   gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::RobustLossType::GM);
+      GncParams<LevenbergMarquardtParams>::GncLossType::GM);
   gncParams.setMuStep(1.4);
   auto gnc =
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
@@ -172,7 +172,7 @@ TEST(GncOptimizer, updateMuTLS) {
   GncParams<LevenbergMarquardtParams> gncParams;
   gncParams.setMuStep(1.4);
   gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
+      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
   auto gnc =
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
 
@@ -192,7 +192,7 @@ TEST(GncOptimizer, checkMuConvergence) {
   {
   GncParams<LevenbergMarquardtParams> gncParams;
   gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::RobustLossType::GM);
+      GncParams<LevenbergMarquardtParams>::GncLossType::GM);
   auto gnc =
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
 
@@ -202,7 +202,7 @@ TEST(GncOptimizer, checkMuConvergence) {
   {
   GncParams<LevenbergMarquardtParams> gncParams;
   gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
+      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
   auto gnc =
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
 
@@ -256,7 +256,7 @@ TEST(GncOptimizer, checkWeightsConvergence) {
   {
   GncParams<LevenbergMarquardtParams> gncParams;
   gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::RobustLossType::GM);
+      GncParams<LevenbergMarquardtParams>::GncLossType::GM);
   auto gnc =
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
 
@@ -266,7 +266,7 @@ TEST(GncOptimizer, checkWeightsConvergence) {
   {
   GncParams<LevenbergMarquardtParams> gncParams;
   gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
+      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
   auto gnc =
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
 
@@ -277,7 +277,7 @@ TEST(GncOptimizer, checkWeightsConvergence) {
   {
   GncParams<LevenbergMarquardtParams> gncParams;
   gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
+      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
   auto gnc =
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
 
@@ -288,7 +288,7 @@ TEST(GncOptimizer, checkWeightsConvergence) {
   {
   GncParams<LevenbergMarquardtParams> gncParams;
   gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
+      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
   gncParams.setWeightsTol(0.1);
   auto gnc =
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
@@ -311,7 +311,7 @@ TEST(GncOptimizer, checkConvergenceTLS) {
   GncParams<LevenbergMarquardtParams> gncParams;
   gncParams.setRelativeCostTol(1e-5);
   gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::RobustLossType::TLS);
+      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
   auto gnc =
       GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
 
@@ -338,7 +338,7 @@ TEST(GncOptimizer, calculateWeightsGM) {
   GaussNewtonParams gnParams;
   GncParams<GaussNewtonParams> gncParams(gnParams);
   gncParams.setLossType(
-      GncParams<GaussNewtonParams>::RobustLossType::GM);
+      GncParams<GaussNewtonParams>::GncLossType::GM);
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   double mu = 1.0;
   Vector weights_actual = gnc.calculateWeights(initial, mu);
@@ -373,7 +373,7 @@ TEST(GncOptimizer, calculateWeightsTLS) {
   GaussNewtonParams gnParams;
   GncParams<GaussNewtonParams> gncParams(gnParams);
   gncParams.setLossType(
-      GncParams<GaussNewtonParams>::RobustLossType::TLS);
+      GncParams<GaussNewtonParams>::GncLossType::TLS);
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   double mu = 1.0;
   Vector weights_actual = gnc.calculateWeights(initial, mu);
@@ -408,7 +408,7 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
   GaussNewtonParams gnParams;
   GncParams<GaussNewtonParams> gncParams(gnParams);
   gncParams.setLossType(
-      GncParams<GaussNewtonParams>::RobustLossType::TLS);
+      GncParams<GaussNewtonParams>::GncLossType::TLS);
   gncParams.setInlierCostThreshold(0.51); // if inlier threshold is slightly larger than 0.5, then measurement is inlier
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
   double mu = 1e6;
@@ -424,7 +424,7 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
   GaussNewtonParams gnParams;
   GncParams<GaussNewtonParams> gncParams(gnParams);
   gncParams.setLossType(
-      GncParams<GaussNewtonParams>::RobustLossType::TLS);
+      GncParams<GaussNewtonParams>::GncLossType::TLS);
   gncParams.setInlierCostThreshold(0.49); // if inlier threshold is slightly below 0.5, then measurement is outlier
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
   double mu = 1e6; // very large mu recovers original TLS cost
@@ -440,7 +440,7 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
     GaussNewtonParams gnParams;
     GncParams<GaussNewtonParams> gncParams(gnParams);
     gncParams.setLossType(
-        GncParams<GaussNewtonParams>::RobustLossType::TLS);
+        GncParams<GaussNewtonParams>::GncLossType::TLS);
     gncParams.setInlierCostThreshold(0.5); // if inlier threshold is slightly below 0.5, then measurement is outlier
     auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
     double mu = 1e6; // very large mu recovers original TLS cost
@@ -552,7 +552,7 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
   GncParams<GaussNewtonParams> gncParams;
   gncParams.setKnownInliers(knownInliers);
   gncParams.setLossType(
-        GncParams<GaussNewtonParams>::RobustLossType::GM);
+        GncParams<GaussNewtonParams>::GncLossType::GM);
   //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::SUMMARY);
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
 
@@ -569,7 +569,7 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
   GncParams<GaussNewtonParams> gncParams;
   gncParams.setKnownInliers(knownInliers);
   gncParams.setLossType(
-        GncParams<GaussNewtonParams>::RobustLossType::TLS);
+        GncParams<GaussNewtonParams>::GncLossType::TLS);
   // gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::SUMMARY);
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
 
@@ -588,7 +588,7 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
   GncParams<GaussNewtonParams> gncParams;
   gncParams.setKnownInliers(knownInliers);
   gncParams.setLossType(
-        GncParams<GaussNewtonParams>::RobustLossType::TLS);
+        GncParams<GaussNewtonParams>::GncLossType::TLS);
   //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::VALUES);
   gncParams.setInlierCostThreshold( 100.0 );
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);

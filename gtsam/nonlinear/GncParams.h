@@ -44,7 +44,7 @@ public:
   };
 
   /** Choice of robust loss function for GNC */
-  enum RobustLossType {
+  enum GncLossType {
     GM /*Geman McClure*/, TLS /*Truncated least squares*/
   };
 
@@ -61,7 +61,7 @@ public:
   /// GNC parameters
   BaseOptimizerParameters baseOptimizerParams; /*optimization parameters used to solve the weighted least squares problem at each GNC iteration*/
   /// any other specific GNC parameters:
-  RobustLossType lossType = TLS; /* default loss*/
+  GncLossType lossType = TLS; /* default loss*/
   size_t maxIterations = 100; /* maximum number of iterations*/
   double barcSq = 1.0; /* a factor is considered an inlier if factor.error() < barcSq. Note that factor.error() whitens by the covariance*/
   double muStep = 1.4; /* multiplicative factor to reduce/increase the mu in gnc */
@@ -70,8 +70,8 @@ public:
   Verbosity verbosity = SILENT; /* verbosity level */
   std::vector<size_t> knownInliers = std::vector<size_t>(); /* slots in the factor graph corresponding to measurements that we know are inliers */
 
-  /// Set the robust loss function to be used in GNC (chosen among the ones in RobustLossType)
-  void setLossType(const RobustLossType type) {
+  /// Set the robust loss function to be used in GNC (chosen among the ones in GncLossType)
+  void setLossType(const GncLossType type) {
     lossType = type;
   }
   /// Set the maximum number of iterations in GNC (changing the max nr of iters might lead to less accurate solutions and is not recommended)
@@ -101,8 +101,8 @@ public:
   void setWeightsTol(double value) { weightsTol = value;
   }
   /// Set the verbosity level
-  void setVerbosityGNC(const Verbosity verbosity) {
-    verbosity = verbosity;
+  void setVerbosityGNC(const Verbosity value) {
+    verbosity = value;
   }
   /** (Optional) Provide a vector of measurements that must be considered inliers. The enties in the vector
    * corresponds to the slots in the factor graph. For instance, if you have a nonlinear factor graph nfg,
