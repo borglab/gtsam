@@ -73,16 +73,16 @@ TEST(GncOptimizer, gncParamsConstructor) {
 /* ************************************************************************* */
 TEST(GncOptimizer, gncConstructor) {
   // has to have Gaussian noise models !
-  auto fg = example::createReallyNonlinearFactorGraph(); // just a unary factor
-                                                         // on a 2D point
+  auto fg = example::createReallyNonlinearFactorGraph();  // just a unary factor
+                                                          // on a 2D point
 
   Point2 p0(3, 3);
   Values initial;
   initial.insert(X(1), p0);
 
   GncParams<LevenbergMarquardtParams> gncParams;
-  auto gnc =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                               gncParams);
 
   CHECK(gnc.getFactors().equals(fg));
   CHECK(gnc.getState().equals(initial));
@@ -100,8 +100,9 @@ TEST(GncOptimizer, gncConstructorWithRobustGraphAsInput) {
   initial.insert(X(1), p0);
 
   GncParams<LevenbergMarquardtParams> gncParams;
-  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(
-      fg_robust, initial, gncParams);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg_robust,
+                                                               initial,
+                                                               gncParams);
 
   // make sure that when parsing the graph is transformed into one without
   // robust loss
@@ -118,19 +119,17 @@ TEST(GncOptimizer, initializeMu) {
 
   // testing GM mu initialization
   GncParams<LevenbergMarquardtParams> gncParams;
-  gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::GncLossType::GM);
-  auto gnc_gm =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+  gncParams.setLossType(GncParams<LevenbergMarquardtParams>::GncLossType::GM);
+  auto gnc_gm = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                                  gncParams);
   // according to rmk 5 in the gnc paper: m0 = 2 rmax^2 / barcSq
   // (barcSq=1 in this example)
   EXPECT_DOUBLES_EQUAL(gnc_gm.initializeMu(), 2 * 198.999, 1e-3);
 
   // testing TLS mu initialization
-  gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
-  auto gnc_tls =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+  gncParams.setLossType(GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
+  auto gnc_tls = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                                   gncParams);
   // according to rmk 5 in the gnc paper: m0 =  barcSq / (2 * rmax^2 - barcSq)
   // (barcSq=1 in this example)
   EXPECT_DOUBLES_EQUAL(gnc_tls.initializeMu(), 1 / (2 * 198.999 - 1), 1e-3);
@@ -146,11 +145,10 @@ TEST(GncOptimizer, updateMuGM) {
   initial.insert(X(1), p0);
 
   GncParams<LevenbergMarquardtParams> gncParams;
-  gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::GncLossType::GM);
+  gncParams.setLossType(GncParams<LevenbergMarquardtParams>::GncLossType::GM);
   gncParams.setMuStep(1.4);
-  auto gnc =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                               gncParams);
 
   double mu = 5.0;
   EXPECT_DOUBLES_EQUAL(gnc.updateMu(mu), mu / 1.4, tol);
@@ -171,10 +169,9 @@ TEST(GncOptimizer, updateMuTLS) {
 
   GncParams<LevenbergMarquardtParams> gncParams;
   gncParams.setMuStep(1.4);
-  gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
-  auto gnc =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+  gncParams.setLossType(GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                               gncParams);
 
   double mu = 5.0;
   EXPECT_DOUBLES_EQUAL(gnc.updateMu(mu), mu * 1.4, tol);
@@ -190,24 +187,23 @@ TEST(GncOptimizer, checkMuConvergence) {
   initial.insert(X(1), p0);
 
   {
-  GncParams<LevenbergMarquardtParams> gncParams;
-  gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::GncLossType::GM);
-  auto gnc =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+    GncParams<LevenbergMarquardtParams> gncParams;
+    gncParams.setLossType(GncParams<LevenbergMarquardtParams>::GncLossType::GM);
+    auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                                 gncParams);
 
-  double mu = 1.0;
-  CHECK(gnc.checkMuConvergence(mu));
+    double mu = 1.0;
+    CHECK(gnc.checkMuConvergence(mu));
   }
   {
-  GncParams<LevenbergMarquardtParams> gncParams;
-  gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
-  auto gnc =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+    GncParams<LevenbergMarquardtParams> gncParams;
+    gncParams.setLossType(
+        GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
+    auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                                 gncParams);
 
-  double mu = 1.0;
-  CHECK(!gnc.checkMuConvergence(mu)); //always false for TLS
+    double mu = 1.0;
+    CHECK(!gnc.checkMuConvergence(mu));  //always false for TLS
   }
 }
 
@@ -221,26 +217,26 @@ TEST(GncOptimizer, checkCostConvergence) {
   initial.insert(X(1), p0);
 
   {
-  GncParams<LevenbergMarquardtParams> gncParams;
-  gncParams.setRelativeCostTol(0.49);
-  auto gnc =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+    GncParams<LevenbergMarquardtParams> gncParams;
+    gncParams.setRelativeCostTol(0.49);
+    auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                                 gncParams);
 
-  double prev_cost = 1.0;
-  double cost = 0.5;
-  // relative cost reduction = 0.5 > 0.49, hence checkCostConvergence = false
-  CHECK(!gnc.checkCostConvergence(cost, prev_cost));
+    double prev_cost = 1.0;
+    double cost = 0.5;
+    // relative cost reduction = 0.5 > 0.49, hence checkCostConvergence = false
+    CHECK(!gnc.checkCostConvergence(cost, prev_cost));
   }
   {
-  GncParams<LevenbergMarquardtParams> gncParams;
-  gncParams.setRelativeCostTol(0.51);
-  auto gnc =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+    GncParams<LevenbergMarquardtParams> gncParams;
+    gncParams.setRelativeCostTol(0.51);
+    auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                                 gncParams);
 
-  double prev_cost = 1.0;
-  double cost = 0.5;
-  // relative cost reduction = 0.5 < 0.51, hence checkCostConvergence = true
-  CHECK(gnc.checkCostConvergence(cost, prev_cost));
+    double prev_cost = 1.0;
+    double cost = 0.5;
+    // relative cost reduction = 0.5 < 0.51, hence checkCostConvergence = true
+    CHECK(gnc.checkCostConvergence(cost, prev_cost));
   }
 }
 
@@ -254,48 +250,47 @@ TEST(GncOptimizer, checkWeightsConvergence) {
   initial.insert(X(1), p0);
 
   {
-  GncParams<LevenbergMarquardtParams> gncParams;
-  gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::GncLossType::GM);
-  auto gnc =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+    GncParams<LevenbergMarquardtParams> gncParams;
+    gncParams.setLossType(GncParams<LevenbergMarquardtParams>::GncLossType::GM);
+    auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                                 gncParams);
 
-  Vector weights = Vector::Ones(fg.size());
-  CHECK(!gnc.checkWeightsConvergence(weights)); //always false for GM
+    Vector weights = Vector::Ones(fg.size());
+    CHECK(!gnc.checkWeightsConvergence(weights));  //always false for GM
   }
   {
-  GncParams<LevenbergMarquardtParams> gncParams;
-  gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
-  auto gnc =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+    GncParams<LevenbergMarquardtParams> gncParams;
+    gncParams.setLossType(
+        GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
+    auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                                 gncParams);
 
-  Vector weights = Vector::Ones(fg.size());
-  // weights are binary, so checkWeightsConvergence = true
-  CHECK(gnc.checkWeightsConvergence(weights));
+    Vector weights = Vector::Ones(fg.size());
+    // weights are binary, so checkWeightsConvergence = true
+    CHECK(gnc.checkWeightsConvergence(weights));
   }
   {
-  GncParams<LevenbergMarquardtParams> gncParams;
-  gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
-  auto gnc =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+    GncParams<LevenbergMarquardtParams> gncParams;
+    gncParams.setLossType(
+        GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
+    auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                                 gncParams);
 
-  Vector weights = Vector::Ones(fg.size());
-  weights[0] = 0.9; // more than weightsTol = 1e-4 from 1, hence checkWeightsConvergence = false
-  CHECK(!gnc.checkWeightsConvergence(weights));
+    Vector weights = Vector::Ones(fg.size());
+    weights[0] = 0.9;  // more than weightsTol = 1e-4 from 1, hence checkWeightsConvergence = false
+    CHECK(!gnc.checkWeightsConvergence(weights));
   }
   {
-  GncParams<LevenbergMarquardtParams> gncParams;
-  gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
-  gncParams.setWeightsTol(0.1);
-  auto gnc =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+    GncParams<LevenbergMarquardtParams> gncParams;
+    gncParams.setLossType(
+        GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
+    gncParams.setWeightsTol(0.1);
+    auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                                 gncParams);
 
-  Vector weights = Vector::Ones(fg.size());
-  weights[0] = 0.9; // exactly weightsTol = 0.1 from 1, hence checkWeightsConvergence = true
-  CHECK(gnc.checkWeightsConvergence(weights));
+    Vector weights = Vector::Ones(fg.size());
+    weights[0] = 0.9;  // exactly weightsTol = 0.1 from 1, hence checkWeightsConvergence = true
+    CHECK(gnc.checkWeightsConvergence(weights));
   }
 }
 
@@ -310,10 +305,9 @@ TEST(GncOptimizer, checkConvergenceTLS) {
 
   GncParams<LevenbergMarquardtParams> gncParams;
   gncParams.setRelativeCostTol(1e-5);
-  gncParams.setLossType(
-      GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
-  auto gnc =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+  gncParams.setLossType(GncParams<LevenbergMarquardtParams>::GncLossType::TLS);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                               gncParams);
 
   CHECK(gnc.checkCostConvergence(1.0, 1.0));
   CHECK(!gnc.checkCostConvergence(1.0, 2.0));
@@ -333,12 +327,11 @@ TEST(GncOptimizer, calculateWeightsGM) {
   weights_expected[0] = 1.0;                             // zero error
   weights_expected[1] = 1.0;                             // zero error
   weights_expected[2] = 1.0;                             // zero error
-  weights_expected[3] = std::pow(1.0 / (50.0 + 1.0), 2); // outlier, error = 50
+  weights_expected[3] = std::pow(1.0 / (50.0 + 1.0), 2);  // outlier, error = 50
 
   GaussNewtonParams gnParams;
   GncParams<GaussNewtonParams> gncParams(gnParams);
-  gncParams.setLossType(
-      GncParams<GaussNewtonParams>::GncLossType::GM);
+  gncParams.setLossType(GncParams<GaussNewtonParams>::GncLossType::GM);
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   double mu = 1.0;
   Vector weights_actual = gnc.calculateWeights(initial, mu);
@@ -346,11 +339,10 @@ TEST(GncOptimizer, calculateWeightsGM) {
 
   mu = 2.0;
   double barcSq = 5.0;
-  weights_expected[3] =
-      std::pow(mu * barcSq / (50.0 + mu * barcSq), 2); // outlier, error = 50
+  weights_expected[3] = std::pow(mu * barcSq / (50.0 + mu * barcSq), 2);  // outlier, error = 50
   gncParams.setInlierCostThreshold(barcSq);
-  auto gnc2 =
-      GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
+  auto gnc2 = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
+                                                         gncParams);
   weights_actual = gnc2.calculateWeights(initial, mu);
   CHECK(assert_equal(weights_expected, weights_actual, tol));
 }
@@ -372,8 +364,7 @@ TEST(GncOptimizer, calculateWeightsTLS) {
 
   GaussNewtonParams gnParams;
   GncParams<GaussNewtonParams> gncParams(gnParams);
-  gncParams.setLossType(
-      GncParams<GaussNewtonParams>::GncLossType::TLS);
+  gncParams.setLossType(GncParams<GaussNewtonParams>::GncLossType::TLS);
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   double mu = 1.0;
   Vector weights_actual = gnc.calculateWeights(initial, mu);
@@ -391,45 +382,44 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
 
   // create very simple factor graph with a single factor 0.5 * 1/sigma^2 * || x - [1;0] ||^2
   double sigma = 1;
-  SharedDiagonal noise =
-      noiseModel::Diagonal::Sigmas(Vector2(sigma, sigma));
+  SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(sigma, sigma));
   NonlinearFactorGraph nfg;
-  nfg.add(PriorFactor<Point2>(X(1),x_prior,noise));
+  nfg.add(PriorFactor<Point2>(X(1), x_prior, noise));
 
   // cost of the factor:
-  DOUBLES_EQUAL(0.5 * 1/(sigma*sigma), nfg.error(initial), tol);
+  DOUBLES_EQUAL(0.5 * 1 / (sigma * sigma), nfg.error(initial), tol);
 
   // check the TLS weights are correct: CASE 1: residual below barcsq
   {
-  // expected:
-  Vector weights_expected = Vector::Zero(1);
-  weights_expected[0] = 1.0;  // inlier
-  // actual:
-  GaussNewtonParams gnParams;
-  GncParams<GaussNewtonParams> gncParams(gnParams);
-  gncParams.setLossType(
-      GncParams<GaussNewtonParams>::GncLossType::TLS);
-  gncParams.setInlierCostThreshold(0.51); // if inlier threshold is slightly larger than 0.5, then measurement is inlier
-  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
-  double mu = 1e6;
-  Vector weights_actual = gnc.calculateWeights(initial, mu);
-  CHECK(assert_equal(weights_expected, weights_actual, tol));
+    // expected:
+    Vector weights_expected = Vector::Zero(1);
+    weights_expected[0] = 1.0;  // inlier
+    // actual:
+    GaussNewtonParams gnParams;
+    GncParams<GaussNewtonParams> gncParams(gnParams);
+    gncParams.setLossType(GncParams<GaussNewtonParams>::GncLossType::TLS);
+    gncParams.setInlierCostThreshold(0.51);  // if inlier threshold is slightly larger than 0.5, then measurement is inlier
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
+                                                          gncParams);
+    double mu = 1e6;
+    Vector weights_actual = gnc.calculateWeights(initial, mu);
+    CHECK(assert_equal(weights_expected, weights_actual, tol));
   }
   // check the TLS weights are correct: CASE 2: residual above barcsq
   {
-  // expected:
-  Vector weights_expected = Vector::Zero(1);
-  weights_expected[0] = 0.0;  // outlier
-  // actual:
-  GaussNewtonParams gnParams;
-  GncParams<GaussNewtonParams> gncParams(gnParams);
-  gncParams.setLossType(
-      GncParams<GaussNewtonParams>::GncLossType::TLS);
-  gncParams.setInlierCostThreshold(0.49); // if inlier threshold is slightly below 0.5, then measurement is outlier
-  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
-  double mu = 1e6; // very large mu recovers original TLS cost
-  Vector weights_actual = gnc.calculateWeights(initial, mu);
-  CHECK(assert_equal(weights_expected, weights_actual, tol));
+    // expected:
+    Vector weights_expected = Vector::Zero(1);
+    weights_expected[0] = 0.0;  // outlier
+    // actual:
+    GaussNewtonParams gnParams;
+    GncParams<GaussNewtonParams> gncParams(gnParams);
+    gncParams.setLossType(GncParams<GaussNewtonParams>::GncLossType::TLS);
+    gncParams.setInlierCostThreshold(0.49);  // if inlier threshold is slightly below 0.5, then measurement is outlier
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
+                                                          gncParams);
+    double mu = 1e6;  // very large mu recovers original TLS cost
+    Vector weights_actual = gnc.calculateWeights(initial, mu);
+    CHECK(assert_equal(weights_expected, weights_actual, tol));
   }
   // check the TLS weights are correct: CASE 2: residual at barcsq
   {
@@ -439,11 +429,11 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
     // actual:
     GaussNewtonParams gnParams;
     GncParams<GaussNewtonParams> gncParams(gnParams);
-    gncParams.setLossType(
-        GncParams<GaussNewtonParams>::GncLossType::TLS);
-    gncParams.setInlierCostThreshold(0.5); // if inlier threshold is slightly below 0.5, then measurement is outlier
-    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
-    double mu = 1e6; // very large mu recovers original TLS cost
+    gncParams.setLossType(GncParams<GaussNewtonParams>::GncLossType::TLS);
+    gncParams.setInlierCostThreshold(0.5);  // if inlier threshold is slightly below 0.5, then measurement is outlier
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
+                                                          gncParams);
+    double mu = 1e6;  // very large mu recovers original TLS cost
     Vector weights_actual = gnc.calculateWeights(initial, mu);
     CHECK(assert_equal(weights_expected, weights_actual, 1e-5));
   }
@@ -453,17 +443,16 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
 TEST(GncOptimizer, makeWeightedGraph) {
   // create original factor
   double sigma1 = 0.1;
-  NonlinearFactorGraph nfg =
-      example::nonlinearFactorGraphWithGivenSigma(sigma1);
+  NonlinearFactorGraph nfg = example::nonlinearFactorGraphWithGivenSigma(
+      sigma1);
 
   // create expected
   double sigma2 = 10;
-  NonlinearFactorGraph expected =
-      example::nonlinearFactorGraphWithGivenSigma(sigma2);
+  NonlinearFactorGraph expected = example::nonlinearFactorGraphWithGivenSigma(
+      sigma2);
 
   // create weights
-  Vector weights = Vector::Ones(
-      1); // original info:1/0.1^2 = 100. New info: 1/10^2 = 0.01. Ratio is 10-4
+  Vector weights = Vector::Ones(1);  // original info:1/0.1^2 = 100. New info: 1/10^2 = 0.01. Ratio is 10-4
   weights[0] = 1e-4;
 
   // create actual
@@ -491,8 +480,8 @@ TEST(GncOptimizer, optimizeSimple) {
 
   LevenbergMarquardtParams lmParams;
   GncParams<LevenbergMarquardtParams> gncParams(lmParams);
-  auto gnc =
-      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                               gncParams);
 
   Values actual = gnc.optimize();
   DOUBLES_EQUAL(0, fg.error(actual), tol);
@@ -515,15 +504,13 @@ TEST(GncOptimizer, optimize) {
   CHECK(assert_equal(Point2(0.25, 0.0), gn_results.at<Point2>(X(1)), 1e-3));
 
   // try with robust loss function and standard GN
-  auto fg_robust =
-      example::sharedRobustFactorGraphWithOutliers(); // same as fg, but with
-                                                      // factors wrapped in
-                                                      // Geman McClure losses
+  auto fg_robust = example::sharedRobustFactorGraphWithOutliers();  // same as fg, but with
+                                                                    // factors wrapped in
+                                                                    // Geman McClure losses
   GaussNewtonOptimizer gn2(fg_robust, initial, gnParams);
   Values gn2_results = gn2.optimize();
   // converges to incorrect point, this time due to the nonconvexity of the loss
-  CHECK(
-      assert_equal(Point2(0.999706, 0.0), gn2_results.at<Point2>(X(1)), 1e-3));
+  CHECK(assert_equal(Point2(0.999706, 0.0), gn2_results.at<Point2>(X(1)), 1e-3));
 
   // .. but graduated nonconvexity ensures both robustness and convergence in
   // the face of nonconvexity
@@ -549,59 +536,59 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
 
   // nonconvexity with known inliers
   {
-  GncParams<GaussNewtonParams> gncParams;
-  gncParams.setKnownInliers(knownInliers);
-  gncParams.setLossType(
-        GncParams<GaussNewtonParams>::GncLossType::GM);
-  //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::SUMMARY);
-  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
+    GncParams<GaussNewtonParams> gncParams;
+    gncParams.setKnownInliers(knownInliers);
+    gncParams.setLossType(GncParams<GaussNewtonParams>::GncLossType::GM);
+    //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::SUMMARY);
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
+                                                          gncParams);
 
-  Values gnc_result = gnc.optimize();
-  CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+    Values gnc_result = gnc.optimize();
+    CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
 
-  // check weights were actually fixed:
-  Vector finalWeights = gnc.getWeights();
-  DOUBLES_EQUAL(1.0, finalWeights[0], tol);
-  DOUBLES_EQUAL(1.0, finalWeights[1], tol);
-  DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+    // check weights were actually fixed:
+    Vector finalWeights = gnc.getWeights();
+    DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[1], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[2], tol);
   }
   {
-  GncParams<GaussNewtonParams> gncParams;
-  gncParams.setKnownInliers(knownInliers);
-  gncParams.setLossType(
-        GncParams<GaussNewtonParams>::GncLossType::TLS);
-  // gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::SUMMARY);
-  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
+    GncParams<GaussNewtonParams> gncParams;
+    gncParams.setKnownInliers(knownInliers);
+    gncParams.setLossType(GncParams<GaussNewtonParams>::GncLossType::TLS);
+    // gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::SUMMARY);
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
+                                                          gncParams);
 
-  Values gnc_result = gnc.optimize();
-  CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+    Values gnc_result = gnc.optimize();
+    CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
 
-  // check weights were actually fixed:
-  Vector finalWeights = gnc.getWeights();
-  DOUBLES_EQUAL(1.0, finalWeights[0], tol);
-  DOUBLES_EQUAL(1.0, finalWeights[1], tol);
-  DOUBLES_EQUAL(1.0, finalWeights[2], tol);
-  DOUBLES_EQUAL(0.0, finalWeights[3], tol);
+    // check weights were actually fixed:
+    Vector finalWeights = gnc.getWeights();
+    DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[1], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+    DOUBLES_EQUAL(0.0, finalWeights[3], tol);
   }
   {
-  // if we set the threshold large, they are all inliers
-  GncParams<GaussNewtonParams> gncParams;
-  gncParams.setKnownInliers(knownInliers);
-  gncParams.setLossType(
-        GncParams<GaussNewtonParams>::GncLossType::TLS);
-  //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::VALUES);
-  gncParams.setInlierCostThreshold( 100.0 );
-  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
+    // if we set the threshold large, they are all inliers
+    GncParams<GaussNewtonParams> gncParams;
+    gncParams.setKnownInliers(knownInliers);
+    gncParams.setLossType(GncParams<GaussNewtonParams>::GncLossType::TLS);
+    //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::VALUES);
+    gncParams.setInlierCostThreshold(100.0);
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
+                                                          gncParams);
 
-  Values gnc_result = gnc.optimize();
-  CHECK(assert_equal(Point2(0.25, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+    Values gnc_result = gnc.optimize();
+    CHECK(assert_equal(Point2(0.25, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
 
-  // check weights were actually fixed:
-  Vector finalWeights = gnc.getWeights();
-  DOUBLES_EQUAL(1.0, finalWeights[0], tol);
-  DOUBLES_EQUAL(1.0, finalWeights[1], tol);
-  DOUBLES_EQUAL(1.0, finalWeights[2], tol);
-  DOUBLES_EQUAL(1.0, finalWeights[3], tol);
+    // check weights were actually fixed:
+    Vector finalWeights = gnc.getWeights();
+    DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[1], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[3], tol);
   }
 }
 
@@ -613,24 +600,22 @@ TEST(GncOptimizer, optimizeSmallPoseGraph) {
   Values::shared_ptr initial;
   boost::tie(graph, initial) = load2D(filename);
   // Add a Gaussian prior on first poses
-  Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
-  SharedDiagonal priorNoise =
-      noiseModel::Diagonal::Sigmas(Vector3(0.01, 0.01, 0.01));
+  Pose2 priorMean(0.0, 0.0, 0.0);  // prior at origin
+  SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(
+      Vector3(0.01, 0.01, 0.01));
   graph->addPrior(0, priorMean, priorNoise);
 
   /// get expected values by optimizing outlier-free graph
   Values expected = LevenbergMarquardtOptimizer(*graph, *initial).optimize();
 
   // add a few outliers
-  SharedDiagonal betweenNoise =
-      noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.01));
-  graph->push_back(BetweenFactor<Pose2>(
-      90, 50, Pose2(),
-      betweenNoise)); // some arbitrary and incorrect between factor
+  SharedDiagonal betweenNoise = noiseModel::Diagonal::Sigmas(
+      Vector3(0.1, 0.1, 0.01));
+  graph->push_back(BetweenFactor<Pose2>(90, 50, Pose2(), betweenNoise));  // some arbitrary and incorrect between factor
 
   /// get expected values by optimizing outlier-free graph
-  Values expectedWithOutliers =
-      LevenbergMarquardtOptimizer(*graph, *initial).optimize();
+  Values expectedWithOutliers = LevenbergMarquardtOptimizer(*graph, *initial)
+      .optimize();
   // as expected, the following test fails due to the presence of an outlier!
   // CHECK(assert_equal(expected, expectedWithOutliers, 1e-3));
 
@@ -639,13 +624,12 @@ TEST(GncOptimizer, optimizeSmallPoseGraph) {
   // inliers, but this problem is simple enought to succeed even without that
   // assumption std::vector<size_t> knownInliers;
   GncParams<GaussNewtonParams> gncParams;
-  auto gnc =
-      GncOptimizer<GncParams<GaussNewtonParams>>(*graph, *initial, gncParams);
+  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(*graph, *initial,
+                                                        gncParams);
   Values actual = gnc.optimize();
 
   // compare
-  CHECK(
-      assert_equal(expected, actual, 1e-3)); // yay! we are robust to outliers!
+  CHECK(assert_equal(expected, actual, 1e-3));  // yay! we are robust to outliers!
 }
 
 /* ************************************************************************* */

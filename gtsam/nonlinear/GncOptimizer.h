@@ -34,21 +34,22 @@ namespace gtsam {
 /* ************************************************************************* */
 template<class GncParameters>
 class GncOptimizer {
-public:
-  /** For each parameter, specify the corresponding optimizer: e.g., GaussNewtonParams -> GaussNewtonOptimizer */
+ public:
+  /// For each parameter, specify the corresponding optimizer: e.g., GaussNewtonParams -> GaussNewtonOptimizer.
   typedef typename GncParameters::OptimizerType BaseOptimizer;
 
-private:
-  NonlinearFactorGraph nfg_;
-  Values state_;
-  GncParameters params_;
-  Vector weights_; // this could be a local variable in optimize, but it is useful to make it accessible from outside
+ private:
+  NonlinearFactorGraph nfg_; ///< Original factor graph to be solved by GNC.
+  Values state_; ///< Initial values to be used at each iteration by GNC.
+  GncParameters params_; ///< GNC parameters.
+  Vector weights_;  ///< Weights associated to each factor in GNC (this could be a local variable in optimize, but it is useful to make it accessible from outside).
 
-public:
-  /// Constructor
+ public:
+  /// Constructor.
   GncOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
-      const GncParameters& params = GncParameters()) :
-      state_(initialValues), params_(params) {
+               const GncParameters& params = GncParameters())
+      : state_(initialValues),
+        params_(params) {
 
     // make sure all noiseModels are Gaussian or convert to Gaussian
     nfg_.resize(graph.size());
@@ -58,35 +59,39 @@ public:
             NoiseModelFactor>(graph[i]);
         noiseModel::Robust::shared_ptr robust = boost::dynamic_pointer_cast<
             noiseModel::Robust>(factor->noiseModel());
-        if (robust) { // if the factor has a robust loss, we have to change it:
+        if (robust) {  // if the factor has a robust loss, we have to change it:
           SharedNoiseModel gaussianNoise = robust->noise();
-          NoiseModelFactor::shared_ptr gaussianFactor =
-              factor->cloneWithNewNoiseModel(gaussianNoise);
+          NoiseModelFactor::shared_ptr gaussianFactor = factor
+              ->cloneWithNewNoiseModel(gaussianNoise);
           nfg_[i] = gaussianFactor;
-        } else { // else we directly push it back
+        } else {  // else we directly push it back
           nfg_[i] = factor;
         }
       }
     }
   }
 
-  /// Access a copy of the internal factor graph
+  /// Access a copy of the internal factor graph.
   NonlinearFactorGraph getFactors() const {
     return NonlinearFactorGraph(nfg_);
   }
-  /// Access a copy of the internal values
+
+  /// Access a copy of the internal values.
   Values getState() const {
     return Values(state_);
   }
-  /// Access a copy of the parameters
+
+  /// Access a copy of the parameters.
   GncParameters getParams() const {
     return GncParameters(params_);
   }
-  /// Access a copy of the GNC weights
+
+  /// Access a copy of the GNC weights.
   Vector getWeights() const {
     return weights_;
   }
-  /// Compute optimal solution using graduated non-convexity
+
+  /// Compute optimal solution using graduated non-convexity.
   Values optimize() {
     // start by assuming all measurements are inliers
     weights_ = Vector::Ones(nfg_.size());
@@ -94,7 +99,7 @@ public:
     Values result = baseOptimizer.optimize();
     double mu = initializeMu();
     double prev_cost = nfg_.error(result);
-    double cost = 0.0; // this will be updated in the main loop
+    double cost = 0.0;  // this will be updated in the main loop
 
     // handle the degenerate case that corresponds to small
     // maximum residual errors at initialization
@@ -103,7 +108,8 @@ public:
     if (mu <= 0) {
       if (params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
         std::cout << "GNC Optimizer stopped because maximum residual at "
-            "initialization is small." << std::endl;
+                  "initialization is small."
+                  << std::endl;
       }
       if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
         result.print("result\n");
@@ -132,7 +138,9 @@ public:
 
       // stopping condition
       cost = graph_iter.error(result);
-      if (checkConvergence(mu, weights_, cost, prev_cost)) { break; }
+      if (checkConvergence(mu, weights_, cost, prev_cost)) {
+        break;
+      }
 
       // update mu
       mu = updateMu(mu);
@@ -157,7 +165,7 @@ public:
     return result;
   }
 
-  /// initialize the gnc parameter mu such that loss is approximately convex (remark 5 in GNC paper)
+  /// Initialize the gnc parameter mu such that loss is approximately convex (remark 5 in GNC paper).
   double initializeMu() const {
     // compute largest error across all factors
     double rmax_sq = 0.0;
@@ -168,75 +176,80 @@ public:
     }
     // set initial mu
     switch (params_.lossType) {
-    case GncParameters::GM:
-      // surrogate cost is convex for large mu
-      return 2 * rmax_sq / params_.barcSq; // initial mu
-    case GncParameters::TLS:
-      // initialize mu to the value specified in Remark 5 in GNC paper.
-      // surrogate cost is convex for mu close to zero
-      // degenerate case: 2 * rmax_sq - params_.barcSq < 0 (handled in the main loop)
-      // according to remark mu = params_.barcSq / (2 * rmax_sq - params_.barcSq) = params_.barcSq/ excessResidual
-      // however, if the denominator is 0 or negative, we return mu = -1 which leads to termination of the main GNC loop
-      return (2 * rmax_sq - params_.barcSq) > 0 ? params_.barcSq / (2 * rmax_sq - params_.barcSq)  :  -1;
-    default:
-      throw std::runtime_error(
-          "GncOptimizer::initializeMu: called with unknown loss type.");
+      case GncParameters::GM:
+        // surrogate cost is convex for large mu
+        return 2 * rmax_sq / params_.barcSq;  // initial mu
+      case GncParameters::TLS:
+        /* initialize mu to the value specified in Remark 5 in GNC paper.
+         surrogate cost is convex for mu close to zero
+         degenerate case: 2 * rmax_sq - params_.barcSq < 0 (handled in the main loop)
+         according to remark mu = params_.barcSq / (2 * rmax_sq - params_.barcSq) = params_.barcSq/ excessResidual
+         however, if the denominator is 0 or negative, we return mu = -1 which leads to termination of the main GNC loop
+         */
+        return
+            (2 * rmax_sq - params_.barcSq) > 0 ?
+                params_.barcSq / (2 * rmax_sq - params_.barcSq) : -1;
+      default:
+        throw std::runtime_error(
+            "GncOptimizer::initializeMu: called with unknown loss type.");
     }
   }
 
-  /// update the gnc parameter mu to gradually increase nonconvexity
+  /// Update the gnc parameter mu to gradually increase nonconvexity.
   double updateMu(const double mu) const {
     switch (params_.lossType) {
-    case GncParameters::GM:
-      // reduce mu, but saturate at 1 (original cost is recovered for mu -> 1)
-      return std::max(1.0, mu / params_.muStep);
-    case GncParameters::TLS:
-      // increases mu at each iteration (original cost is recovered for mu -> inf)
-      return mu * params_.muStep;
-    default:
-      throw std::runtime_error(
-          "GncOptimizer::updateMu: called with unknown loss type.");
+      case GncParameters::GM:
+        // reduce mu, but saturate at 1 (original cost is recovered for mu -> 1)
+        return std::max(1.0, mu / params_.muStep);
+      case GncParameters::TLS:
+        // increases mu at each iteration (original cost is recovered for mu -> inf)
+        return mu * params_.muStep;
+      default:
+        throw std::runtime_error(
+            "GncOptimizer::updateMu: called with unknown loss type.");
     }
   }
 
-  /// check if we have reached the value of mu for which the surrogate loss matches the original loss
+  /// Check if we have reached the value of mu for which the surrogate loss matches the original loss.
   bool checkMuConvergence(const double mu) const {
     bool muConverged = false;
     switch (params_.lossType) {
-    case GncParameters::GM:
-      muConverged = std::fabs(mu - 1.0) < 1e-9; // mu=1 recovers the original GM function
-      break;
-    case GncParameters::TLS:
-      muConverged = false; // for TLS there is no stopping condition on mu (it must tend to infinity)
-      break;
-    default:
-      throw std::runtime_error(
-          "GncOptimizer::checkMuConvergence: called with unknown loss type.");
+      case GncParameters::GM:
+        muConverged = std::fabs(mu - 1.0) < 1e-9;  // mu=1 recovers the original GM function
+        break;
+      case GncParameters::TLS:
+        muConverged = false;  // for TLS there is no stopping condition on mu (it must tend to infinity)
+        break;
+      default:
+        throw std::runtime_error(
+            "GncOptimizer::checkMuConvergence: called with unknown loss type.");
     }
     if (muConverged && params_.verbosity >= GncParameters::Verbosity::SUMMARY)
       std::cout << "muConverged = true " << std::endl;
     return muConverged;
   }
 
-  /// check convergence of relative cost differences
+  /// Check convergence of relative cost differences.
   bool checkCostConvergence(const double cost, const double prev_cost) const {
-    bool costConverged = std::fabs(cost - prev_cost) / std::max(prev_cost,1e-7) < params_.relativeCostTol;
+    bool costConverged = std::fabs(cost - prev_cost) / std::max(prev_cost, 1e-7)
+        < params_.relativeCostTol;
     if (costConverged && params_.verbosity >= GncParameters::Verbosity::SUMMARY)
       std::cout << "checkCostConvergence = true " << std::endl;
     return costConverged;
   }
 
-  /// check convergence of weights to binary values
+  /// Check convergence of weights to binary values.
   bool checkWeightsConvergence(const Vector& weights) const {
-      bool weightsConverged = false;
-      switch (params_.lossType) {
+    bool weightsConverged = false;
+    switch (params_.lossType) {
       case GncParameters::GM:
-        weightsConverged = false; // for GM, there is no clear binary convergence for the weights
+        weightsConverged = false;  // for GM, there is no clear binary convergence for the weights
         break;
       case GncParameters::TLS:
         weightsConverged = true;
-        for(size_t i=0; i<weights.size(); i++){
-          if( std::fabs ( weights[i] - std::round(weights[i]) ) > params_.weightsTol ){
+        for (size_t i = 0; i < weights.size(); i++) {
+          if (std::fabs(weights[i] - std::round(weights[i]))
+              > params_.weightsTol) {
             weightsConverged = false;
             break;
           }
@@ -245,23 +258,21 @@ public:
       default:
         throw std::runtime_error(
             "GncOptimizer::checkWeightsConvergence: called with unknown loss type.");
-      }
-      if (weightsConverged && params_.verbosity >= GncParameters::Verbosity::SUMMARY)
-        std::cout << "weightsConverged = true " << std::endl;
-      return weightsConverged;
     }
-
-  /// check for convergence between consecutive GNC iterations
-  bool checkConvergence(const double mu,
-                        const Vector& weights,
-                        const double cost,
-                        const double prev_cost) const {
-    return checkCostConvergence(cost,prev_cost) ||
-        checkWeightsConvergence(weights) ||
-        checkMuConvergence(mu);
+    if (weightsConverged
+        && params_.verbosity >= GncParameters::Verbosity::SUMMARY)
+      std::cout << "weightsConverged = true " << std::endl;
+    return weightsConverged;
   }
 
-  /// create a graph where each factor is weighted by the gnc weights
+  /// Check for convergence between consecutive GNC iterations.
+  bool checkConvergence(const double mu, const Vector& weights,
+                        const double cost, const double prev_cost) const {
+    return checkCostConvergence(cost, prev_cost)
+        || checkWeightsConvergence(weights) || checkMuConvergence(mu);
+  }
+
+  /// Create a graph where each factor is weighted by the gnc weights.
   NonlinearFactorGraph makeWeightedGraph(const Vector& weights) const {
     // make sure all noiseModels are Gaussian or convert to Gaussian
     NonlinearFactorGraph newGraph;
@@ -287,7 +298,7 @@ public:
     return newGraph;
   }
 
-  /// calculate gnc weights
+  /// Calculate gnc weights.
   Vector calculateWeights(const Values& currentEstimate, const double mu) {
     Vector weights = Vector::Ones(nfg_.size());
 
@@ -298,42 +309,43 @@ public:
     }
     std::vector<size_t> unknownWeights;
     std::set_difference(allWeights.begin(), allWeights.end(),
-        params_.knownInliers.begin(), params_.knownInliers.end(),
-        std::inserter(unknownWeights, unknownWeights.begin()));
+                        params_.knownInliers.begin(),
+                        params_.knownInliers.end(),
+                        std::inserter(unknownWeights, unknownWeights.begin()));
 
     // update weights of known inlier/outlier measurements
     switch (params_.lossType) {
-    case GncParameters::GM: { // use eq (12) in GNC paper
-      for (size_t k : unknownWeights) {
-        if (nfg_[k]) {
-          double u2_k = nfg_[k]->error(currentEstimate); // squared (and whitened) residual
-          weights[k] = std::pow(
-              (mu * params_.barcSq) / (u2_k + mu * params_.barcSq), 2);
-        }
-      }
-      return weights;
-    }
-    case GncParameters::TLS: { // use eq (14) in GNC paper
-      double upperbound = (mu + 1) / mu * params_.barcSq;
-      double lowerbound = mu / (mu + 1) * params_.barcSq;
-      for (size_t k : unknownWeights) {
-        if (nfg_[k]) {
-          double u2_k = nfg_[k]->error(
-              currentEstimate); // squared (and whitened) residual
-          if (u2_k >= upperbound) {
-            weights[k] = 0;
-          } else if (u2_k <= lowerbound) {
-            weights[k] = 1;
-          } else {
-            weights[k] = std::sqrt(params_.barcSq * mu * (mu + 1) / u2_k) - mu;
+      case GncParameters::GM: {  // use eq (12) in GNC paper
+        for (size_t k : unknownWeights) {
+          if (nfg_[k]) {
+            double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
+            weights[k] = std::pow(
+                (mu * params_.barcSq) / (u2_k + mu * params_.barcSq), 2);
           }
         }
+        return weights;
       }
-      return weights;
-    }
-    default:
-      throw std::runtime_error(
-          "GncOptimizer::calculateWeights: called with unknown loss type.");
+      case GncParameters::TLS: {  // use eq (14) in GNC paper
+        double upperbound = (mu + 1) / mu * params_.barcSq;
+        double lowerbound = mu / (mu + 1) * params_.barcSq;
+        for (size_t k : unknownWeights) {
+          if (nfg_[k]) {
+            double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
+            if (u2_k >= upperbound) {
+              weights[k] = 0;
+            } else if (u2_k <= lowerbound) {
+              weights[k] = 1;
+            } else {
+              weights[k] = std::sqrt(params_.barcSq * mu * (mu + 1) / u2_k)
+                  - mu;
+            }
+          }
+        }
+        return weights;
+      }
+      default:
+        throw std::runtime_error(
+            "GncOptimizer::calculateWeights: called with unknown loss type.");
     }
   }
 };
