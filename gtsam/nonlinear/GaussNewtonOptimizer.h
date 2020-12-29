@@ -29,7 +29,7 @@ class GaussNewtonOptimizer;
  */
 class GTSAM_EXPORT GaussNewtonParams : public NonlinearOptimizerParams {
 public:
-  typedef GaussNewtonOptimizer OptimizerType;
+  using OptimizerType = GaussNewtonOptimizer;
 };
 
 /**
