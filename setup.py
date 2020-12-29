@@ -1,8 +1,5 @@
 """Setup file for the GTwrap package"""
 
-import os
-import sys
-
 try:
     from setuptools import find_packages, setup
 except ImportError:
@@ -14,10 +11,10 @@ setup(
     name='gtwrap',
     description='Library to wrap C++ with Python and Matlab',
     version='1.0.0',
-    author="",
-    author_email="",
-    license='',
-    keywords="",
+    author="Frank Dellaert et. al.",
+    author_email="dellaert@gatech.edu",
+    license='BSD',
+    keywords="wrap, bindings, cpp, python",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     python_requires=">=3.6",
@@ -35,5 +32,5 @@ setup(
     ],
     packages=packages,
     platforms="any",
-    # install_requires=["gtsam>=4", "opencv"],
+    install_requires=open("requirements.txt").readlines(),
 )
