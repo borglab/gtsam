@@ -77,6 +77,7 @@ class GncParams {
   void setLossType(const GncLossType type) {
     lossType = type;
   }
+
   /// Set the maximum number of iterations in GNC (changing the max nr of iters might lead to less accurate solutions and is not recommended).
   void setMaxIterations(const size_t maxIter) {
     std::cout
@@ -84,6 +85,7 @@ class GncParams {
         << std::endl;
     maxIterations = maxIter;
   }
+
   /** Set the maximum weighted residual error for an inlier. For a factor in the form f(x) = 0.5 * || r(x) ||^2_Omega,
    * the inlier threshold is the largest value of f(x) for the corresponding measurement to be considered an inlier.
    * In other words, an inlier at x is such that 0.5 * || r(x) ||^2_Omega <= barcSq.
@@ -93,22 +95,27 @@ class GncParams {
   void setInlierCostThreshold(const double inth) {
     barcSq = inth;
   }
+
   /// Set the graduated non-convexity step: at each GNC iteration, mu is updated as mu <- mu * muStep.
   void setMuStep(const double step) {
     muStep = step;
   }
+
   /// Set the maximum relative difference in mu values to stop iterating.
   void setRelativeCostTol(double value) {
     relativeCostTol = value;
   }
+
   /// Set the maximum difference between the weights and their rounding in {0,1} to stop iterating.
   void setWeightsTol(double value) {
     weightsTol = value;
   }
+
   /// Set the verbosity level.
   void setVerbosityGNC(const Verbosity value) {
     verbosity = value;
   }
+
   /** (Optional) Provide a vector of measurements that must be considered inliers. The enties in the vector
    * corresponds to the slots in the factor graph. For instance, if you have a nonlinear factor graph nfg,
    * and you provide  knownIn = {0, 2, 15}, GNC will not apply outlier rejection to nfg[0], nfg[2], and nfg[15].
@@ -119,6 +126,7 @@ class GncParams {
     for (size_t i = 0; i < knownIn.size(); i++)
       knownInliers.push_back(knownIn[i]);
   }
+
   /// Equals.
   bool equals(const GncParams& other, double tol = 1e-9) const {
     return baseOptimizerParams.equals(other.baseOptimizerParams)
@@ -127,6 +135,7 @@ class GncParams {
         && std::fabs(muStep - other.muStep) <= tol
         && verbosity == other.verbosity && knownInliers == other.knownInliers;
   }
+
   /// Print.
   void print(const std::string& str) const {
     std::cout << str << "\n";

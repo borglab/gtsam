@@ -57,39 +57,25 @@ class GncOptimizer {
       if (graph[i]) {
         NoiseModelFactor::shared_ptr factor = boost::dynamic_pointer_cast<
             NoiseModelFactor>(graph[i]);
-        noiseModel::Robust::shared_ptr robust = boost::dynamic_pointer_cast<
+        auto robust = boost::dynamic_pointer_cast<
             noiseModel::Robust>(factor->noiseModel());
-        if (robust) {  // if the factor has a robust loss, we have to change it:
-          SharedNoiseModel gaussianNoise = robust->noise();
-          NoiseModelFactor::shared_ptr gaussianFactor = factor
-              ->cloneWithNewNoiseModel(gaussianNoise);
-          nfg_[i] = gaussianFactor;
-        } else {  // else we directly push it back
-          nfg_[i] = factor;
-        }
+        // if the factor has a robust loss, we remove the robust loss
+        nfg_[i] = robust ? factor-> cloneWithNewNoiseModel(robust->noise()) : factor;
       }
     }
   }
 
   /// Access a copy of the internal factor graph.
-  NonlinearFactorGraph getFactors() const {
-    return NonlinearFactorGraph(nfg_);
-  }
+  const NonlinearFactorGraph& getFactors() const { return nfg_; }
 
   /// Access a copy of the internal values.
-  Values getState() const {
-    return Values(state_);
-  }
+  const Values& getState() const { return state_; }
 
   /// Access a copy of the parameters.
-  GncParameters getParams() const {
-    return GncParameters(params_);
-  }
+  const GncParameters& getParams() const { return params_;}
 
   /// Access a copy of the GNC weights.
-  Vector getWeights() const {
-    return weights_;
-  }
+  const Vector& getWeights() const { return weights_;}
 
   /// Compute optimal solution using graduated non-convexity.
   Values optimize() {
@@ -279,15 +265,14 @@ class GncOptimizer {
     newGraph.resize(nfg_.size());
     for (size_t i = 0; i < nfg_.size(); i++) {
       if (nfg_[i]) {
-        NoiseModelFactor::shared_ptr factor = boost::dynamic_pointer_cast<
+        auto factor = boost::dynamic_pointer_cast<
             NoiseModelFactor>(nfg_[i]);
-        noiseModel::Gaussian::shared_ptr noiseModel =
+        auto noiseModel =
             boost::dynamic_pointer_cast<noiseModel::Gaussian>(
                 factor->noiseModel());
         if (noiseModel) {
           Matrix newInfo = weights[i] * noiseModel->information();
-          SharedNoiseModel newNoiseModel = noiseModel::Gaussian::Information(
-              newInfo);
+          auto newNoiseModel = noiseModel::Gaussian::Information(newInfo);
           newGraph[i] = factor->cloneWithNewNoiseModel(newNoiseModel);
         } else {
           throw std::runtime_error(
