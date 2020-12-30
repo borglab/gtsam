@@ -1016,6 +1016,20 @@ TEST(Pose3, TransformCovariance6) {
 TEST(Pose3, interpolate) {
   EXPECT(assert_equal(T2, interpolate(T2,T3, 0.0)));
   EXPECT(assert_equal(T3, interpolate(T2,T3, 1.0)));
+
+  // Example from Peter Corke
+  // https://robotacademy.net.au/lesson/interpolating-pose-in-3d/
+  double s = 0.0759; // corresponds to the 10th element when calling `ctraj` in the video
+  Pose3 O;
+  Pose3 F(Rot3::Roll(0.6).compose(Rot3::Pitch(0.8)).compose(Rot3::Yaw(1.4)), Point3(1, 2, 3));
+
+  // The expected answer matches the result presented in the video.
+  Pose3 expected1(interpolate(O.rotation(), F.rotation(), s), interpolate(O.translation(), F.translation(), s));
+  EXPECT(assert_equal(expected1, O.interpolate(F, s)));
+
+  // Non-trivial interpolation
+  Pose3 expected2(interpolate(T2.rotation(), T3.rotation(), s), interpolate(T2.translation(), T3.translation(), s));
+  EXPECT(assert_equal(expected2, T2.interpolate(T3, s)));
 }
 
 /* ************************************************************************* */

@@ -112,6 +112,19 @@ public:
     return Pose3(R_ * T.R_, t_ + R_ * T.t_);
   }
 
+  /**
+   * Interpolation between two poses.
+   *
+   * *NOTE* This should be used instead of gtsam::interpolate.
+   * 
+   * @param T Final point of interpolation.
+   * @param t A value in [0, 1].
+   */
+  Pose3 interpolate(const Pose3& T, double t) const {
+    return Pose3(gtsam::interpolate(R_, T.R_, t),
+                 gtsam::interpolate(t_, T.t_, t));
+  }
+
   /// @}
   /// @name Lie Group
   /// @{
