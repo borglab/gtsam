@@ -2599,6 +2599,7 @@ virtual class BearingFactor : gtsam::NoiseModelFactor {
 };
 
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
+typedef gtsam::BearingFactor<gtsam::Pose3, gtsam::Point3, gtsam::Unit3> BearingFactor3D;
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Pose2, gtsam::Rot2> BearingFactorPose2;
 
 #include <gtsam/geometry/BearingRange.h>
