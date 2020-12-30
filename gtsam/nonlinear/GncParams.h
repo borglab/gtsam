@@ -32,6 +32,12 @@
 namespace gtsam {
 
 /* ************************************************************************* */
+/// Choice of robust loss function for GNC.
+enum GncLossType {
+  GM /*Geman McClure*/,
+  TLS /*Truncated least squares*/
+};
+
 template<class BaseOptimizerParameters>
 class GncParams {
  public:
@@ -43,12 +49,6 @@ class GncParams {
     SILENT = 0,
     SUMMARY,
     VALUES
-  };
-
-  /// Choice of robust loss function for GNC.
-  enum GncLossType {
-    GM /*Geman McClure*/,
-    TLS /*Truncated least squares*/
   };
 
   /// Constructor.
