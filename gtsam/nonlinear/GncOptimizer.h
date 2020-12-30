@@ -176,10 +176,10 @@ class GncOptimizer {
     }
     // set initial mu
     switch (params_.lossType) {
-      case GncParameters::GM:
+      case GncLossType::GM:
         // surrogate cost is convex for large mu
         return 2 * rmax_sq / params_.barcSq;  // initial mu
-      case GncParameters::TLS:
+      case GncLossType::TLS:
         /* initialize mu to the value specified in Remark 5 in GNC paper.
          surrogate cost is convex for mu close to zero
          degenerate case: 2 * rmax_sq - params_.barcSq < 0 (handled in the main loop)
@@ -198,10 +198,10 @@ class GncOptimizer {
   /// Update the gnc parameter mu to gradually increase nonconvexity.
   double updateMu(const double mu) const {
     switch (params_.lossType) {
-      case GncParameters::GM:
+      case GncLossType::GM:
         // reduce mu, but saturate at 1 (original cost is recovered for mu -> 1)
         return std::max(1.0, mu / params_.muStep);
-      case GncParameters::TLS:
+      case GncLossType::TLS:
         // increases mu at each iteration (original cost is recovered for mu -> inf)
         return mu * params_.muStep;
       default:
@@ -214,10 +214,10 @@ class GncOptimizer {
   bool checkMuConvergence(const double mu) const {
     bool muConverged = false;
     switch (params_.lossType) {
-      case GncParameters::GM:
+      case GncLossType::GM:
         muConverged = std::fabs(mu - 1.0) < 1e-9;  // mu=1 recovers the original GM function
         break;
-      case GncParameters::TLS:
+      case GncLossType::TLS:
         muConverged = false;  // for TLS there is no stopping condition on mu (it must tend to infinity)
         break;
       default:
@@ -242,10 +242,10 @@ class GncOptimizer {
   bool checkWeightsConvergence(const Vector& weights) const {
     bool weightsConverged = false;
     switch (params_.lossType) {
-      case GncParameters::GM:
+      case GncLossType::GM:
         weightsConverged = false;  // for GM, there is no clear binary convergence for the weights
         break;
-      case GncParameters::TLS:
+      case GncLossType::TLS:
         weightsConverged = true;
         for (size_t i = 0; i < weights.size(); i++) {
           if (std::fabs(weights[i] - std::round(weights[i]))
@@ -315,7 +315,7 @@ class GncOptimizer {
 
     // update weights of known inlier/outlier measurements
     switch (params_.lossType) {
-      case GncParameters::GM: {  // use eq (12) in GNC paper
+      case GncLossType::GM: {  // use eq (12) in GNC paper
         for (size_t k : unknownWeights) {
           if (nfg_[k]) {
             double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
@@ -325,7 +325,7 @@ class GncOptimizer {
         }
         return weights;
       }
-      case GncParameters::TLS: {  // use eq (14) in GNC paper
+      case GncLossType::TLS: {  // use eq (14) in GNC paper
         double upperbound = (mu + 1) / mu * params_.barcSq;
         double lowerbound = mu / (mu + 1) * params_.barcSq;
         for (size_t k : unknownWeights) {
