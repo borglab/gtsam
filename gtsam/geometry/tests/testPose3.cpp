@@ -1019,17 +1019,17 @@ TEST(Pose3, interpolate) {
 
   // Example from Peter Corke
   // https://robotacademy.net.au/lesson/interpolating-pose-in-3d/
-  double s = 0.0759; // corresponds to the 10th element when calling `ctraj` in the video
+  double t = 0.0759; // corresponds to the 10th element when calling `ctraj` in the video
   Pose3 O;
   Pose3 F(Rot3::Roll(0.6).compose(Rot3::Pitch(0.8)).compose(Rot3::Yaw(1.4)), Point3(1, 2, 3));
 
   // The expected answer matches the result presented in the video.
-  Pose3 expected1(interpolate(O.rotation(), F.rotation(), s), interpolate(O.translation(), F.translation(), s));
-  EXPECT(assert_equal(expected1, O.interpolate(F, s)));
+  Pose3 expected1(interpolate(O.rotation(), F.rotation(), t), interpolate(O.translation(), F.translation(), t));
+  EXPECT(assert_equal(expected1, interpolate(O, F, t)));
 
   // Non-trivial interpolation
-  Pose3 expected2(interpolate(T2.rotation(), T3.rotation(), s), interpolate(T2.translation(), T3.translation(), s));
-  EXPECT(assert_equal(expected2, T2.interpolate(T3, s)));
+  Pose3 expected2(interpolate(T2.rotation(), T3.rotation(), t), interpolate(T2.translation(), T3.translation(), t));
+  EXPECT(assert_equal(expected2, interpolate(T2, T3, t)));
 }
 
 /* ************************************************************************* */
