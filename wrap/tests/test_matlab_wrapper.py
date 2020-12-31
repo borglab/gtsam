@@ -10,9 +10,9 @@ import filecmp
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import template_instantiator as instantiator
-import interface_parser as parser
-from matlab_wrapper import MatlabWrapper
+import gtwrap.template_instantiator as instantiator
+import gtwrap.interface_parser as parser
+from gtwrap.matlab_wrapper import MatlabWrapper
 
 
 class TestWrap(unittest.TestCase):

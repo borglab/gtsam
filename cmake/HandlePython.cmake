@@ -42,6 +42,7 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
   endif()
 endif()
 
+# Check for build of Unstable modules
 if(GTSAM_BUILD_PYTHON)
     if(GTSAM_UNSTABLE_BUILD_PYTHON)
         if (NOT GTSAM_BUILD_UNSTABLE)
