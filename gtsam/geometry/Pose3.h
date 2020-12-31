@@ -113,8 +113,14 @@ public:
   }
 
   /**
-   * Interpolation between two poses via individual rotation and translation
+   * Interpolate between two poses via individual rotation and translation
    * interpolation.
+   *
+   * The interpolate method, defined in Lie.h, operates on the tangent space of
+   * Pose3, thus leading to a screw motion. This method, in contrast,
+   * individually interpolates the rotation and translation components to give
+   * shortest distance interpolation (as is seen in many common
+   * implementations).
    *
    * @param T End point of interpolation.
    * @param t A value in [0, 1].
