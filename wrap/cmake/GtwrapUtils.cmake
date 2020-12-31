@@ -19,26 +19,32 @@ function(get_python_version)
     set(Python_VERSION_MINOR
         ${PYTHON_VERSION_MINOR}
         PARENT_SCOPE)
+    set(Python_VERSION_PATCH
+        ${PYTHON_VERSION_PATCH}
+        PARENT_SCOPE)
     set(Python_EXECUTABLE
         ${PYTHON_EXECUTABLE}
         PARENT_SCOPE)
 
   else()
-    # Get info about the Python3 interpreter
-    # https://cmake.org/cmake/help/latest/module/FindPython3.html#module:FindPython3
-    find_package(Python3 COMPONENTS Interpreter Development)
+    # Get info about the Python interpreter
+    # https://cmake.org/cmake/help/latest/module/FindPython.html#module:FindPython
+    find_package(Python COMPONENTS Interpreter Development)
 
-    if(NOT ${Python3_FOUND})
+    if(NOT ${Python_FOUND})
       message(
         FATAL_ERROR
-          "Cannot find Python3 interpreter. Please install Python >= 3.6.")
+          "Cannot find Python interpreter. Please install Python>=3.6.")
     endif()
 
     set(Python_VERSION_MAJOR
-        ${Python3_VERSION_MAJOR}
+        ${Python_VERSION_MAJOR}
         PARENT_SCOPE)
     set(Python_VERSION_MINOR
-        ${Python3_VERSION_MINOR}
+        ${Python_VERSION_MINOR}
+        PARENT_SCOPE)
+    set(Python_VERSION_PATCH
+        ${Python_VERSION_PATCH}
         PARENT_SCOPE)
 
   endif()
@@ -54,28 +60,28 @@ function(gtwrap_get_python_version WRAP_PYTHON_VERSION)
   unset(Python_INCLUDE_DIRS CACHE)
   unset(Python_VERSION_MAJOR CACHE)
   unset(Python_VERSION_MINOR CACHE)
+  unset(Python_VERSION_PATCH CACHE)
 
   # Allow override
   if(${WRAP_PYTHON_VERSION} STREQUAL "Default")
     # Check for Python3 or Python2 in order
     get_python_version()
 
+    # Set the wrapper python version
     set(WRAP_PYTHON_VERSION
-        "${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}"
+        "${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}.${Python_VERSION_PATCH}"
         CACHE STRING "The version of Python to build the wrappers against."
               FORCE)
 
-    # message("========= ${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}")
-    # message("========= WRAP_PYTHON_VERSION=${WRAP_PYTHON_VERSION}")
-    # message("========= Python_EXECUTABLE=${Python_EXECUTABLE}")
-
   else()
+    # Find the Python that best matches the python version specified.
     find_package(
       Python ${WRAP_PYTHON_VERSION}
       COMPONENTS Interpreter Development
       EXACT REQUIRED)
   endif()
 
+  # Set variables' scope so we can access them from the calling function.
   set(WRAP_PYTHON_VERSION
       ${WRAP_PYTHON_VERSION}
       PARENT_SCOPE)
