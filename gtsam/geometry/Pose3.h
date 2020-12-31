@@ -112,6 +112,25 @@ public:
     return Pose3(R_ * T.R_, t_ + R_ * T.t_);
   }
 
+  /**
+   * Interpolate between two poses via individual rotation and translation
+   * interpolation.
+   *
+   * The default "interpolate" method defined in Lie.h minimizes the geodesic
+   * distance on the manifold, leading to a screw motion interpolation in
+   * Cartesian space, which might not be what is expected.
+   * In contrast, this method executes a straight line interpolation for the
+   * translation, while still using interpolate (aka "slerp") for the rotational
+   * component. This might be more intuitive in many applications.
+   *
+   * @param T End point of interpolation.
+   * @param t A value in [0, 1].
+   */
+  Pose3 interpolateRt(const Pose3& T, double t) const {
+    return Pose3(interpolate<Rot3>(R_, T.R_, t),
+                 interpolate<Point3>(t_, T.t_, t));
+  }
+
   /// @}
   /// @name Lie Group
   /// @{
