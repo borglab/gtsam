@@ -423,11 +423,4 @@ std::ostream &operator<<(std::ostream &os, const Pose3& pose) {
   return os;
 }
 
-/* ************************************************************************* */
-template <>
-Pose3 interpolate<Pose3>(const Pose3& X, const Pose3& Y, double t) {
-  return Pose3(interpolate<Rot3>(X.rotation(), Y.rotation(), t),
-               interpolate<Point3>(X.translation(), Y.translation(), t));
-}
-
 } // namespace gtsam

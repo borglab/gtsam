@@ -1024,7 +1024,7 @@ TEST(Pose3, interpolate) {
   // This interpolation is easy to calculate by hand.
   double t = 0.5;
   Pose3 expected0(Rot3::Rz(M_PI_4), Point3(0.5, 0, 0));
-  EXPECT(assert_equal(expected0, interpolate(start, end, t)));
+  EXPECT(assert_equal(expected0, start.interpolateRt(end, t)));
 
   // Example from Peter Corke
   // https://robotacademy.net.au/lesson/interpolating-pose-in-3d/
@@ -1037,11 +1037,11 @@ TEST(Pose3, interpolate) {
   // The expected answer matches the result presented in the video.
   Pose3 expected1(interpolate(O.rotation(), F.rotation(), t),
                   interpolate(O.translation(), F.translation(), t));
-  EXPECT(assert_equal(expected1, interpolate(O, F, t)));
+  EXPECT(assert_equal(expected1, O.interpolateRt(F, t)));
 
-  // Non-trivial interpolation
+  // Non-trivial interpolation, translation value taken from output.
   Pose3 expected2(interpolate(T2.rotation(), T3.rotation(), t),
-                  interpolate(T2.translation(), T3.translation(), t));
+                  Point3(3.39016299515, -7.62798017104, 5.03165553689));
   EXPECT(assert_equal(expected2, interpolate(T2, T3, t)));
 }
 

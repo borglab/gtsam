@@ -112,6 +112,18 @@ public:
     return Pose3(R_ * T.R_, t_ + R_ * T.t_);
   }
 
+  /**
+   * Interpolation between two poses via individual rotation and translation
+   * interpolation.
+   *
+   * @param T End point of interpolation.
+   * @param t A value in [0, 1].
+   */
+  Pose3 interpolateRt(const Pose3& T, double t) {
+    return Pose3(interpolate<Rot3>(R_, T.R_, t),
+                 interpolate<Point3>(t_, T.t_, t));
+  }
+
   /// @}
   /// @name Lie Group
   /// @{
@@ -355,18 +367,6 @@ public:
 #endif
 };
 // Pose3 class
-
-/**
- * Interpolation between two poses via template specialization.
- *
- * *NOTE* This should be used instead of gtsam::interpolate.
- * 
- * @param X Start point of interpolation.
- * @param Y End point of interpolation.
- * @param t A value in [0, 1].
- */
-template <>
-Pose3 interpolate<Pose3>(const Pose3& X, const Pose3& Y, double t);
 
 /**
  * wedge for Pose3:
