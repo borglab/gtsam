@@ -1041,8 +1041,8 @@ TEST(Pose3, interpolate) {
 
   // Non-trivial interpolation, translation value taken from output.
   Pose3 expected2(interpolate(T2.rotation(), T3.rotation(), t),
-                  Point3(3.39016299515, -7.62798017104, 5.03165553689));
-  EXPECT(assert_equal(expected2, interpolate(T2, T3, t)));
+                  interpolate(T2.translation(), T3.translation(), t));
+  EXPECT(assert_equal(expected2, T2.interpolateRt(T3, t)));
 }
 
 /* ************************************************************************* */
