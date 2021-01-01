@@ -12,7 +12,8 @@ package_data = {
     '': [
         "./*.so",
         "./*.dll",
-        "Data/**/*"
+        "Data/*"  # Add the data files to the package
+        "Data/**/*"  # Add the data files in subdirectories
     ]
 }
 
