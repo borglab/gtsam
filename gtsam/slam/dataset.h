@@ -30,7 +30,9 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/types.h>
+#include <gtsam/base/Testable.h>
 
+#include <boost/serialization/vector.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <string>
 #include <utility> // for pair
@@ -243,6 +245,25 @@ struct SfmTrack {
   void add_measurement(size_t idx, const gtsam::Point2& m) {
     measurements.emplace_back(idx, m);
   }
+  
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    ar & p;
+    ar & r;
+    ar & g;
+    ar & b;
+    ar & measurements;
+    ar & siftIndices;
+  }
+
+  /// assert equality up to a tolerance
+  bool equals(const SfmTrack &sfmTrack, double tol = 1e-9) const {
+    return true;
+  }
+
+  // inline bool SfmTrack::operator == (const SfmTrack& rhs) const{
+  //   return p==rhs.p;
+  // }
 };
 
 
@@ -250,32 +271,70 @@ struct SfmTrack {
 typedef PinholeCamera<Cal3Bundler> SfmCamera;
 
 /// Define the structure for SfM data
-struct SfmData {
-  std::vector<SfmCamera> cameras; ///< Set of cameras
-  std::vector<SfmTrack> tracks; ///< Sparse set of points
-  size_t number_cameras() const {
-    return cameras.size();
-  }
-  /// The number of reconstructed 3D points
-  size_t number_tracks() const {
-    return tracks.size();
-  }
-  /// The camera pose at frame index `idx`
-  SfmCamera camera(size_t idx) const {
-    return cameras[idx];
-  }
-  /// The track formed by series of landmark measurements
-  SfmTrack track(size_t idx) const {
-    return tracks[idx];
-  }
-  /// Add a track to SfmData
-  void add_track(const SfmTrack& t)  {
-    tracks.push_back(t);
-  }
-  /// Add a camera to SfmData
-  void add_camera(const SfmCamera& cam){
-    cameras.push_back(cam);
-  }
+class GTSAM_EXPORT SfmData {
+  public:
+    std::vector<SfmCamera> cameras; ///< Set of cameras
+    std::vector<SfmTrack> tracks; ///< Sparse set of points
+    size_t number_cameras() const {
+      return cameras.size();
+    }
+    /// The number of reconstructed 3D points
+    size_t number_tracks() const {
+      return tracks.size();
+    }
+    /// The camera pose at frame index `idx`
+    SfmCamera camera(size_t idx) const {
+      return cameras[idx];
+    }
+    /// The track formed by series of landmark measurements
+    SfmTrack track(size_t idx) const {
+      return tracks[idx];
+    }
+    /// Add a track to SfmData
+    void add_track(const SfmTrack& t)  {
+      tracks.push_back(t);
+    }
+    /// Add a camera to SfmData
+    void add_camera(const SfmCamera& cam){
+      cameras.push_back(cam);
+    }
+
+    /// @}
+    /// @name Testable
+    /// @{
+
+    /// assert equality up to a tolerance
+    bool equals(const SfmData &sfmData, double tol = 1e-9) const {
+      // check number of cameras and tracks
+      if (number_cameras() != sfmData.number_cameras() || number_tracks() != sfmData.number_tracks()){
+        return false;
+      }
+
+      // check each camera
+      for(size_t cam_idx = 0; cam_idx < number_cameras(); cam_idx++){
+        if(!camera(cam_idx).equals(sfmData.camera(cam_idx), tol)){
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    /// print
+    void print(const std::string& s = "") const;
+
+  private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /*version*/) {
+      // ar & cameras;
+      // ar & tracks;
+    }
+
+  // inline bool SfmData::operator == (const SfmData& rhs) const{
+  //   return cameras==rhs.cameras && tracks==rhs.tracks;
+  // }
 };
 
 /**
