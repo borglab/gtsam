@@ -62,7 +62,8 @@ create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
 
 # Common directory for data/datasets stored with the package.
 # This will store the data in the Python site package directly.
-file(COPY "${PROJECT_SOURCE_DIR}/examples/Data" DESTINATION "${GTSAM_MODULE_PATH}")
+message(STATUS "==================== ${PROJECT_SOURCE_DIR}    |||   ${GTSAM_SOURCE_DIR}")
+file(COPY "${GTSAM_SOURCE_DIR}/examples/Data" DESTINATION "${GTSAM_MODULE_PATH}")
 
 # Add gtsam as a dependency to the install target
 set(GTSAM_PYTHON_DEPENDENCIES gtsam_py)
