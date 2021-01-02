@@ -15,6 +15,16 @@ file(COPY ${PROJECT_SOURCE_DIR}/python/MANIFEST.in
 
 include(PybindWrap)
 
+############################################################
+## Load the necessary files to compile the wrapper
+
+# Load the pybind11 code
+add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
+# Set the wrapping script variables
+set(PYBIND_WRAP_SCRIPT "${PROJECT_SOURCE_DIR}/wrap/scripts/pybind_wrap.py")
+set(MATLAB_WRAP_SCRIPT "${PROJECT_SOURCE_DIR}/wrap/scripts/matlab_wrap.py")
+############################################################
+
 add_custom_target(gtsam_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam/gtsam.i")
 add_custom_target(gtsam_unstable_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i")
 
