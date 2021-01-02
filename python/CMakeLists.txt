@@ -4,14 +4,14 @@ if (NOT GTSAM_BUILD_PYTHON)
     return()
 endif()
 
-# Common directory for storing data/datasets stored with the package.
-# This will store the data in the Python site package directly.
-set(GTSAM_PYTHON_DATASET_DIR "./gtsam/Data")
-
 # Generate setup.py.
 file(READ "${PROJECT_SOURCE_DIR}/README.md" README_CONTENTS)
 configure_file(${PROJECT_SOURCE_DIR}/python/setup.py.in
                 ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py)
+
+# Supply MANIFEST.in for older versions of Python
+file(COPY ${PROJECT_SOURCE_DIR}/python/MANIFEST.in
+     DESTINATION ${GTSAM_PYTHON_BUILD_DIRECTORY})
 
 include(PybindWrap)
 
@@ -63,6 +63,10 @@ set(GTSAM_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam)
 # Symlink all tests .py files to build folder.
 create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
         "${GTSAM_MODULE_PATH}")
+
+# Common directory for data/datasets stored with the package.
+# This will store the data in the Python site package directly.
+file(COPY "${GTSAM_SOURCE_DIR}/examples/Data" DESTINATION "${GTSAM_MODULE_PATH}")
 
 # Add gtsam as a dependency to the install target
 set(GTSAM_PYTHON_DEPENDENCIES gtsam_py)

@@ -1,8 +1,5 @@
 """Setup file to install the GTSAM package."""
 
-import glob
-import os
-
 try:
     from setuptools import setup, find_packages
 except ImportError:
@@ -11,14 +8,12 @@ except ImportError:
 packages = find_packages(where=".")
 print("PACKAGES: ", packages)
 
-data_path = '${GTSAM_SOURCE_DIR}/examples/Data/'
-data_files_and_directories = glob.glob(data_path + '**', recursive=True)
-data_files = [x for x in data_files_and_directories if not os.path.isdir(x)]
-
 package_data = {
     '': [
-        './*.so',
-        './*.dll',
+        "./*.so",
+        "./*.dll",
+        "Data/*"  # Add the data files to the package
+        "Data/**/*"  # Add the data files in subdirectories
     ]
 }
 
@@ -50,8 +45,8 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     packages=packages,
+    include_package_data=True,
     package_data=package_data,
-    data_files=[('${GTSAM_PYTHON_DATASET_DIR}', data_files),],
     test_suite="gtsam.tests",
     install_requires=open("${GTSAM_SOURCE_DIR}/python/requirements.txt").readlines(),
     zip_safe=False,
