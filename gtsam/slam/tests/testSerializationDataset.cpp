@@ -18,8 +18,6 @@
 
 #include <gtsam/slam/dataset.h>
 
-#include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
 
@@ -35,6 +33,20 @@ TEST(dataSet, sfmDataSerialization){
   CHECK(readBAL(filename, mydata));
 
   EXPECT(equalsObj(mydata));
+  // EXPECT(equalsXML(mydata));
+  // EXPECT(equalsBinary(mydata));
+}
+
+/* ************************************************************************* */
+TEST(dataSet, sfmTrackSerialization){
+  // Test the serialization of SfmData
+  const string filename = findExampleDataFile("dubrovnik-3-7-pre");
+  SfmData mydata;
+  CHECK(readBAL(filename, mydata));
+
+  SfmTrack track = mydata.track(0);
+
+  EXPECT(equalsObj(track));
   // EXPECT(equalsXML(mydata));
   // EXPECT(equalsBinary(mydata));
 }
