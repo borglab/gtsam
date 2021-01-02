@@ -10,5 +10,14 @@ else()
   set(SCRIPT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/cmake")
 endif()
 
+# Standard includes
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+include(CMakeDependentOption)
+
+# Load the pybind11 code from the library installation path
+add_subdirectory(${CMAKE_INSTALL_FULL_LIBDIR}/pybind11 pybind11)
+
+# Load all the CMake scripts from the standard location
 include(${SCRIPT_INSTALL_DIR}/gtwrap/PybindWrap.cmake)
 include(${SCRIPT_INSTALL_DIR}/gtwrap/GtwrapUtils.cmake)
