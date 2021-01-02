@@ -39,7 +39,7 @@ TEST(dataSet, sfmDataSerialization){
 
 /* ************************************************************************* */
 TEST(dataSet, sfmTrackSerialization){
-  // Test the serialization of SfmData
+  // Test the serialization of SfmTrack
   const string filename = findExampleDataFile("dubrovnik-3-7-pre");
   SfmData mydata;
   CHECK(readBAL(filename, mydata));
@@ -47,8 +47,8 @@ TEST(dataSet, sfmTrackSerialization){
   SfmTrack track = mydata.track(0);
 
   EXPECT(equalsObj(track));
-  // EXPECT(equalsXML(mydata));
-  // EXPECT(equalsBinary(mydata));
+  // EXPECT(equalsXML(track));
+  // EXPECT(equalsBinary(track));
 }
 
 /* ************************************************************************* */
