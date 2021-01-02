@@ -28,32 +28,37 @@ jobs:
         ]
 
         build_type: [Debug, Release]
-        python_version: [3.6.9]
+
         include:
           - name: ubuntu-18.04-gcc-5
             os: ubuntu-18.04
             compiler: gcc
             version: "5"
+            python_version: 3.6.9
 
           - name: ubuntu-18.04-gcc-9
             os: ubuntu-18.04
             compiler: gcc
             version: "9"
+            python_version: 3.6.9
 
           - name: ubuntu-18.04-clang-9
             os: ubuntu-18.04
             compiler: clang
             version: "9"
+            python_version: 3.6.9
 
           - name: macOS-10.15-xcode-11.3.1
             os: macOS-10.15
             compiler: xcode
             version: "11.3.1"
+            python_version: 3.9.1
 
           - name: ubuntu-18.04-gcc-5-tbb
             os: ubuntu-18.04
             compiler: gcc
             version: "5"
+            python_version: 3.6.9
             flag: tbb
 
     steps:
