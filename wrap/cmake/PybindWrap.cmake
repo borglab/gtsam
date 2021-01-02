@@ -1,5 +1,8 @@
 set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHON_VERSION})
 
+# Load the pybind11 code from the library installation path
+add_subdirectory(${CMAKE_INSTALL_FULL_LIBDIR}/pybind11 pybind11)
+
 # User-friendly Pybind11 wrapping and installing function.
 # Builds a Pybind11 module from the provided interface_header.
 # For example, for the interface header gtsam.h, this will
