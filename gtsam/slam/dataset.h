@@ -29,8 +29,9 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/types.h>
+
 
 #include <boost/serialization/vector.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
@@ -224,7 +225,7 @@ struct SfmTrack {
   float r, g, b; ///< RGB color of the 3D point
   std::vector<SfmMeasurement> measurements; ///< The 2D image projections (id,(u,v))
   std::vector<SiftIndex> siftIndices;
-  
+
   /// Total number of measurements in this track
   size_t number_measurements() const {
     return measurements.size();
@@ -245,7 +246,7 @@ struct SfmTrack {
   void add_measurement(size_t idx, const gtsam::Point2& m) {
     measurements.emplace_back(idx, m);
   }
-  
+
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & p;
@@ -258,12 +259,45 @@ struct SfmTrack {
 
   /// assert equality up to a tolerance
   bool equals(const SfmTrack &sfmTrack, double tol = 1e-9) const {
+    if(!p.isApprox(sfmTrack.p)){
+      return false;
+    }
+
+    // TODO: compare RGB values
+
+    // compare size of vectors
+    if(number_measurements() != sfmTrack.number_measurements() ||
+      siftIndices.size() != sfmTrack.siftIndices.size()){
+      return false;
+    }
+
+    // compare measurements (order sensitive)
+    for(size_t idx=0; idx<number_measurements(); idx++){
+      SfmMeasurement measurement = measurements[idx];
+      SfmMeasurement otherMeasurement = sfmTrack.measurements[idx];
+
+      if(measurement.first != otherMeasurement.first || !measurement.second.isApprox(otherMeasurement.second)){
+        return false;
+      }
+    }
+
     return true;
+  }
+
+  /// print
+  void print(const std::string& s = "") const {
+    cout << "Track with " << measurements.size() << "measurements\n";
   }
 
   // inline bool SfmTrack::operator == (const SfmTrack& rhs) const{
   //   return p==rhs.p;
   // }
+};
+
+/* ************************************************************************* */
+/// traits
+template<>
+struct traits<SfmTrack> : public Testable<SfmTrack> {
 };
 
 
@@ -321,20 +355,29 @@ class GTSAM_EXPORT SfmData {
     }
 
     /// print
-    void print(const std::string& s = "") const;
+    void print(const std::string& s = "") const {
+      cout << "Number of cameras = " << number_cameras() << "\n";
+      cout << "Number of tracks = " << number_tracks() << "\n";
+    }
 
   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /*version*/) {
-      // ar & cameras;
-      // ar & tracks;
+      ar & cameras;
+      ar & tracks;
     }
 
   // inline bool SfmData::operator == (const SfmData& rhs) const{
   //   return cameras==rhs.cameras && tracks==rhs.tracks;
   // }
+};
+
+/* ************************************************************************* */
+/// traits
+template<>
+struct traits<SfmData> : public Testable<SfmData> {
 };
 
 /**
