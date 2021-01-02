@@ -247,6 +247,8 @@ struct SfmTrack {
     measurements.emplace_back(idx, m);
   }
 
+  /** Serialization function */
+  friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & p;
@@ -259,24 +261,40 @@ struct SfmTrack {
 
   /// assert equality up to a tolerance
   bool equals(const SfmTrack &sfmTrack, double tol = 1e-9) const {
-    if(!p.isApprox(sfmTrack.p)){
+    // check the 3D point
+    if (!p.isApprox(sfmTrack.p)) {
       return false;
     }
 
-    // TODO: compare RGB values
+    // check the RGB values
+    if (r!=sfmTrack.r || g!=sfmTrack.g || b!=sfmTrack.b) {
+      return false;
+    }
 
-    // compare size of vectors
-    if(number_measurements() != sfmTrack.number_measurements() ||
-      siftIndices.size() != sfmTrack.siftIndices.size()){
+    // compare size of vectors for measurements and siftIndices
+    if (number_measurements() != sfmTrack.number_measurements() ||
+        siftIndices.size() != sfmTrack.siftIndices.size()) {
       return false;
     }
 
     // compare measurements (order sensitive)
-    for(size_t idx=0; idx<number_measurements(); idx++){
+    for (size_t idx = 0; idx < number_measurements(); ++idx) {
       SfmMeasurement measurement = measurements[idx];
       SfmMeasurement otherMeasurement = sfmTrack.measurements[idx];
 
-      if(measurement.first != otherMeasurement.first || !measurement.second.isApprox(otherMeasurement.second)){
+      if (measurement.first != otherMeasurement.first ||
+          !measurement.second.isApprox(otherMeasurement.second)) {
+        return false;
+      }
+    }
+
+    // compare sift indices (order sensitive)
+    for (size_t idx = 0; idx < siftIndices.size(); ++idx) {
+      SiftIndex index = siftIndices[idx];
+      SiftIndex otherIndex = sfmTrack.siftIndices[idx];
+
+      if (index.first != otherIndex.first ||
+          index.second != otherIndex.second) {
         return false;
       }
     }
@@ -288,10 +306,6 @@ struct SfmTrack {
   void print(const std::string& s = "") const {
     cout << "Track with " << measurements.size() << "measurements\n";
   }
-
-  // inline bool SfmTrack::operator == (const SfmTrack& rhs) const{
-  //   return p==rhs.p;
-  // }
 };
 
 /* ************************************************************************* */
@@ -305,73 +319,75 @@ struct traits<SfmTrack> : public Testable<SfmTrack> {
 typedef PinholeCamera<Cal3Bundler> SfmCamera;
 
 /// Define the structure for SfM data
-class GTSAM_EXPORT SfmData {
-  public:
-    std::vector<SfmCamera> cameras; ///< Set of cameras
-    std::vector<SfmTrack> tracks; ///< Sparse set of points
-    size_t number_cameras() const {
-      return cameras.size();
-    }
-    /// The number of reconstructed 3D points
-    size_t number_tracks() const {
-      return tracks.size();
-    }
-    /// The camera pose at frame index `idx`
-    SfmCamera camera(size_t idx) const {
-      return cameras[idx];
-    }
-    /// The track formed by series of landmark measurements
-    SfmTrack track(size_t idx) const {
-      return tracks[idx];
-    }
-    /// Add a track to SfmData
-    void add_track(const SfmTrack& t)  {
-      tracks.push_back(t);
-    }
-    /// Add a camera to SfmData
-    void add_camera(const SfmCamera& cam){
-      cameras.push_back(cam);
+struct SfmData {
+  std::vector<SfmCamera> cameras; ///< Set of cameras
+  std::vector<SfmTrack> tracks; ///< Sparse set of points
+  size_t number_cameras() const {
+    return cameras.size();
+  }
+  /// The number of reconstructed 3D points
+  size_t number_tracks() const {
+    return tracks.size();
+  }
+  /// The camera pose at frame index `idx`
+  SfmCamera camera(size_t idx) const {
+    return cameras[idx];
+  }
+  /// The track formed by series of landmark measurements
+  SfmTrack track(size_t idx) const {
+    return tracks[idx];
+  }
+  /// Add a track to SfmData
+  void add_track(const SfmTrack& t) {
+    tracks.push_back(t);
+  }
+  /// Add a camera to SfmData
+  void add_camera(const SfmCamera& cam) {
+    cameras.push_back(cam);
+  }
+
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int /*version*/) {
+    ar & cameras;
+    ar & tracks;
+  }
+
+  /// @}
+  /// @name Testable
+  /// @{
+
+  /// assert equality up to a tolerance
+  bool equals(const SfmData &sfmData, double tol = 1e-9) const {
+    // check number of cameras and tracks
+    if (number_cameras() != sfmData.number_cameras() ||
+        number_tracks() != sfmData.number_tracks()) {
+      return false;
     }
 
-    /// @}
-    /// @name Testable
-    /// @{
-
-    /// assert equality up to a tolerance
-    bool equals(const SfmData &sfmData, double tol = 1e-9) const {
-      // check number of cameras and tracks
-      if (number_cameras() != sfmData.number_cameras() || number_tracks() != sfmData.number_tracks()){
+    // check each camera
+    for (size_t i = 0; i < number_cameras(); ++i) {
+      if (!camera(i).equals(sfmData.camera(i), tol)) {
         return false;
       }
+    }
 
-      // check each camera
-      for(size_t cam_idx = 0; cam_idx < number_cameras(); cam_idx++){
-        if(!camera(cam_idx).equals(sfmData.camera(cam_idx), tol)){
-          return false;
-        }
+    // check each track
+    for (size_t j = 0; j < number_tracks(); ++j) {
+      if (!track(j).equals(sfmData.track(j), tol)) {
+        return false;
       }
-
-      return true;
     }
 
-    /// print
-    void print(const std::string& s = "") const {
-      cout << "Number of cameras = " << number_cameras() << "\n";
-      cout << "Number of tracks = " << number_tracks() << "\n";
-    }
+    return true;
+  }
 
-  private:
-    /** Serialization function */
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int /*version*/) {
-      ar & cameras;
-      ar & tracks;
-    }
-
-  // inline bool SfmData::operator == (const SfmData& rhs) const{
-  //   return cameras==rhs.cameras && tracks==rhs.tracks;
-  // }
+  /// print
+  void print(const std::string& s = "") const {
+    cout << "Number of cameras = " << number_cameras() << "\n";
+    cout << "Number of tracks = " << number_tracks() << "\n";
+  }
 };
 
 /* ************************************************************************* */
