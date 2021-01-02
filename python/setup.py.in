@@ -45,6 +45,7 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     packages=packages,
+    include_package_data=True,
     package_data=package_data,
     test_suite="gtsam.tests",
     install_requires=open("${GTSAM_SOURCE_DIR}/python/requirements.txt").readlines(),

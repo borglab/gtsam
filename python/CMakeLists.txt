@@ -9,6 +9,10 @@ file(READ "${PROJECT_SOURCE_DIR}/README.md" README_CONTENTS)
 configure_file(${PROJECT_SOURCE_DIR}/python/setup.py.in
                 ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py)
 
+# Supply MANIFEST.in for older versions of Python
+file(COPY ${PROJECT_SOURCE_DIR}/python/MANIFEST.in
+     DESTINATION ${GTSAM_PYTHON_BUILD_DIRECTORY})
+
 include(PybindWrap)
 
 add_custom_target(gtsam_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam/gtsam.i")
@@ -62,7 +66,6 @@ create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
 
 # Common directory for data/datasets stored with the package.
 # This will store the data in the Python site package directly.
-message(STATUS "==================== ${PROJECT_SOURCE_DIR}    |||   ${GTSAM_SOURCE_DIR}")
 file(COPY "${GTSAM_SOURCE_DIR}/examples/Data" DESTINATION "${GTSAM_MODULE_PATH}")
 
 # Add gtsam as a dependency to the install target
