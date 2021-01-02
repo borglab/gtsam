@@ -1,7 +1,5 @@
 set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHON_VERSION})
 
-add_subdirectory(@GTWRAP_SOURCE_DIR@/pybind11 pybind11)
-
 # User-friendly Pybind11 wrapping and installing function.
 # Builds a Pybind11 module from the provided interface_header.
 # For example, for the interface header gtsam.h, this will
@@ -40,7 +38,7 @@ function(pybind_wrap
   
   add_custom_command(OUTPUT ${generated_cpp}
                      COMMAND ${PYTHON_EXECUTABLE}
-                             @GTWRAP_SOURCE_DIR@/gtwrap/pybind_wrapper.py
+                             ${CMAKE_INSTALL_FULL_BINDIR}/pybind_wrap.py
                              --src
                              ${interface_header}
                              --out
@@ -64,9 +62,9 @@ function(pybind_wrap
   # ~~~
   add_custom_command(OUTPUT ${generated_cpp}
                      DEPENDS ${interface_header}
-                             @GTWRAP_SOURCE_DIR@/gtwrap/interface_parser.py
-                             @GTWRAP_SOURCE_DIR@/gtwrap/pybind_wrapper.py
-                             @GTWRAP_SOURCE_DIR@/gtwrap/template_instantiator.py
+                            #  @GTWRAP_SOURCE_DIR@/gtwrap/interface_parser.py
+                            #  @GTWRAP_SOURCE_DIR@/gtwrap/pybind_wrapper.py
+                            #  @GTWRAP_SOURCE_DIR@/gtwrap/template_instantiator.py
                      APPEND)
 
   pybind11_add_module(${target} ${generated_cpp})

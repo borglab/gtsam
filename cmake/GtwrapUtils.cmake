@@ -1,6 +1,6 @@
 # Utilities to help with wrapping.
 
-function(get_python_version)
+macro(get_python_version)
   if(${CMAKE_VERSION} VERSION_LESS "3.12.0")
     # Use older version of cmake's find_python
     find_package(PythonInterp)
@@ -37,23 +37,13 @@ function(get_python_version)
           "Cannot find Python interpreter. Please install Python>=3.6.")
     endif()
 
-    set(Python_VERSION_MAJOR
-        ${Python_VERSION_MAJOR}
-        PARENT_SCOPE)
-    set(Python_VERSION_MINOR
-        ${Python_VERSION_MINOR}
-        PARENT_SCOPE)
-    set(Python_VERSION_PATCH
-        ${Python_VERSION_PATCH}
-        PARENT_SCOPE)
-
   endif()
-endfunction()
+endmacro()
 
 # Set the Python version for the wrapper and set the paths to the executable and
 # include/library directories. WRAP_PYTHON_VERSION can be "Default" or a
 # specific major.minor version.
-function(gtwrap_get_python_version WRAP_PYTHON_VERSION)
+macro(gtwrap_get_python_version WRAP_PYTHON_VERSION)
   # Unset these cached variables to avoid surprises when the python in the
   # current environment are different from the cached!
   unset(Python_EXECUTABLE CACHE)
@@ -81,21 +71,4 @@ function(gtwrap_get_python_version WRAP_PYTHON_VERSION)
       EXACT REQUIRED)
   endif()
 
-  # Set variables' scope so we can access them from the calling function.
-  set(WRAP_PYTHON_VERSION
-      ${WRAP_PYTHON_VERSION}
-      PARENT_SCOPE)
-  set(Python_FOUND
-      ${Python_FOUND}
-      PARENT_SCOPE)
-  set(Python_EXECUTABLE
-      ${Python_EXECUTABLE}
-      PARENT_SCOPE)
-  set(Python_INCLUDE_DIRS
-      ${Python_INCLUDE_DIRS}
-      PARENT_SCOPE)
-  set(Python_LIBRARY_DIRS
-      ${Python_LIBRARY_DIRS}
-      PARENT_SCOPE)
-
-endfunction()
+endmacro()
