@@ -303,7 +303,8 @@ struct SfmTrack {
 
   /// print
   void print(const std::string& s = "") const {
-    cout << "Track with " << measurements.size() << "measurements\n";
+    cout << "Track with " << measurements.size();
+    cout << " measurements of point " << p << "\n";
   }
 };
 
