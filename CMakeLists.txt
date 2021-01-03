@@ -41,8 +41,15 @@ find_package(
   COMPONENTS Interpreter
   REQUIRED)
 
+# Detect virtualenv and set Pip args accordingly
+# https://www.scivision.dev/cmake-install-python-package/
+if(DEFINED ENV{VIRTUAL_ENV} OR DEFINED ENV{CONDA_PREFIX})
+  set(_pip_args)
+else()
+  set(_pip_args "--user")
+endif()
 #TODO add correct flags for virtualenv
 
 # Finally install the gtwrap python package.
-execute_process(COMMAND ${Python_EXECUTABLE} setup.py install
+execute_process(COMMAND ${Python_EXECUTABLE} -m pip install . ${_pip_args}
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
