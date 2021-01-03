@@ -217,95 +217,94 @@ typedef std::pair<size_t, Point2> SfmMeasurement;
 typedef std::pair<size_t, size_t> SiftIndex;
 
 /// Define the structure for the 3D points
-class GTSAM_EXPORT SfmTrack {
-  public:
-    SfmTrack(): p(0,0,0) {}
-    SfmTrack(const gtsam::Point3& pt) : p(pt) {}
-    Point3 p; ///< 3D position of the point
-    float r, g, b; ///< RGB color of the 3D point
-    std::vector<SfmMeasurement> measurements; ///< The 2D image projections (id,(u,v))
-    std::vector<SiftIndex> siftIndices;
+struct SfmTrack {
+  SfmTrack(): p(0,0,0) {}
+  SfmTrack(const gtsam::Point3& pt) : p(pt) {}
+  Point3 p; ///< 3D position of the point
+  float r, g, b; ///< RGB color of the 3D point
+  std::vector<SfmMeasurement> measurements; ///< The 2D image projections (id,(u,v))
+  std::vector<SiftIndex> siftIndices;
 
-    /// Total number of measurements in this track
-    size_t number_measurements() const {
-      return measurements.size();
-    }
-    /// Get the measurement (camera index, Point2) at pose index `idx`
-    SfmMeasurement measurement(size_t idx) const {
-      return measurements[idx];
-    }
-    /// Get the SIFT feature index corresponding to the measurement at `idx`
-    SiftIndex siftIndex(size_t idx) const {
-      return siftIndices[idx];
-    }
-    /// Get 3D point
-    const Point3& point3() const {
-      return p;
-    }
-    /// Add measurement (camera_idx, Point2) to track
-    void add_measurement(size_t idx, const gtsam::Point2& m) {
-      measurements.emplace_back(idx, m);
+  /// Total number of measurements in this track
+  size_t number_measurements() const {
+    return measurements.size();
+  }
+  /// Get the measurement (camera index, Point2) at pose index `idx`
+  SfmMeasurement measurement(size_t idx) const {
+    return measurements[idx];
+  }
+  /// Get the SIFT feature index corresponding to the measurement at `idx`
+  SiftIndex siftIndex(size_t idx) const {
+    return siftIndices[idx];
+  }
+  /// Get 3D point
+  const Point3& point3() const {
+    return p;
+  }
+  /// Add measurement (camera_idx, Point2) to track
+  void add_measurement(size_t idx, const gtsam::Point2& m) {
+    measurements.emplace_back(idx, m);
+  }
+
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    ar & BOOST_SERIALIZATION_NVP(p);
+    ar & BOOST_SERIALIZATION_NVP(r);
+    ar & BOOST_SERIALIZATION_NVP(g);
+    ar & BOOST_SERIALIZATION_NVP(b);
+    ar & BOOST_SERIALIZATION_NVP(measurements);
+    ar & BOOST_SERIALIZATION_NVP(siftIndices);
+  }
+
+  /// assert equality up to a tolerance
+  bool equals(const SfmTrack &sfmTrack, double tol = 1e-9) const {
+    // check the 3D point
+    if (!p.isApprox(sfmTrack.p)) {
+      return false;
     }
 
-    /** Serialization function */
-    friend class boost::serialization::access;
-    template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_NVP(p);
-      ar & BOOST_SERIALIZATION_NVP(r);
-      ar & BOOST_SERIALIZATION_NVP(g);
-      ar & BOOST_SERIALIZATION_NVP(b);
-      ar & BOOST_SERIALIZATION_NVP(measurements);
-      ar & BOOST_SERIALIZATION_NVP(siftIndices);
+    // check the RGB values
+    if (r!=sfmTrack.r || g!=sfmTrack.g || b!=sfmTrack.b) {
+      return false;
     }
 
-    /// assert equality up to a tolerance
-    bool equals(const SfmTrack &sfmTrack, double tol = 1e-9) const {
-      // check the 3D point
-      if (!p.isApprox(sfmTrack.p)) {
+    // compare size of vectors for measurements and siftIndices
+    if (number_measurements() != sfmTrack.number_measurements() ||
+        siftIndices.size() != sfmTrack.siftIndices.size()) {
+      return false;
+    }
+
+    // compare measurements (order sensitive)
+    for (size_t idx = 0; idx < number_measurements(); ++idx) {
+      SfmMeasurement measurement = measurements[idx];
+      SfmMeasurement otherMeasurement = sfmTrack.measurements[idx];
+
+      if (measurement.first != otherMeasurement.first ||
+          !measurement.second.isApprox(otherMeasurement.second)) {
         return false;
       }
-
-      // check the RGB values
-      if (r!=sfmTrack.r || g!=sfmTrack.g || b!=sfmTrack.b) {
-        return false;
-      }
-
-      // compare size of vectors for measurements and siftIndices
-      if (number_measurements() != sfmTrack.number_measurements() ||
-          siftIndices.size() != sfmTrack.siftIndices.size()) {
-        return false;
-      }
-
-      // compare measurements (order sensitive)
-      for (size_t idx = 0; idx < number_measurements(); ++idx) {
-        SfmMeasurement measurement = measurements[idx];
-        SfmMeasurement otherMeasurement = sfmTrack.measurements[idx];
-
-        if (measurement.first != otherMeasurement.first ||
-            !measurement.second.isApprox(otherMeasurement.second)) {
-          return false;
-        }
-      }
-
-      // compare sift indices (order sensitive)
-      for (size_t idx = 0; idx < siftIndices.size(); ++idx) {
-        SiftIndex index = siftIndices[idx];
-        SiftIndex otherIndex = sfmTrack.siftIndices[idx];
-
-        if (index.first != otherIndex.first ||
-            index.second != otherIndex.second) {
-          return false;
-        }
-      }
-
-      return true;
     }
 
-    /// print
-    void print(const std::string& s = "") const {
-      cout << "Track with " << measurements.size() << "measurements\n";
+    // compare sift indices (order sensitive)
+    for (size_t idx = 0; idx < siftIndices.size(); ++idx) {
+      SiftIndex index = siftIndices[idx];
+      SiftIndex otherIndex = sfmTrack.siftIndices[idx];
+
+      if (index.first != otherIndex.first ||
+          index.second != otherIndex.second) {
+        return false;
+      }
     }
+
+    return true;
+  }
+
+  /// print
+  void print(const std::string& s = "") const {
+    cout << "Track with " << measurements.size() << "measurements\n";
+  }
 };
 
 /* ************************************************************************* */
