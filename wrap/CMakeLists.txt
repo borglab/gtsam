@@ -46,7 +46,7 @@ find_package(
 if(DEFINED ENV{VIRTUAL_ENV} OR DEFINED ENV{CONDA_PREFIX})
   set(_pip_args)
 else()
-  set(_pip_args "--user")
+  set(_pip_args "--user --prefix=")
 endif()
 
 # Finally install the gtwrap python package.
