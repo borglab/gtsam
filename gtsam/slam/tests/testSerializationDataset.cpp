@@ -26,19 +26,19 @@ using namespace gtsam;
 using namespace gtsam::serializationTestHelpers;
 
 /* ************************************************************************* */
-TEST(dataSet, sfmDataSerialization){
+TEST(dataSet, sfmDataSerialization) {
   // Test the serialization of SfmData
   const string filename = findExampleDataFile("dubrovnik-3-7-pre");
   SfmData mydata;
   CHECK(readBAL(filename, mydata));
 
   EXPECT(equalsObj(mydata));
-  // EXPECT(equalsXML(mydata));
-  // EXPECT(equalsBinary(mydata));
+  EXPECT(equalsXML(mydata));
+  EXPECT(equalsBinary(mydata));
 }
 
 /* ************************************************************************* */
-TEST(dataSet, sfmTrackSerialization){
+TEST(dataSet, sfmTrackSerialization) {
   // Test the serialization of SfmTrack
   const string filename = findExampleDataFile("dubrovnik-3-7-pre");
   SfmData mydata;
@@ -47,8 +47,8 @@ TEST(dataSet, sfmTrackSerialization){
   SfmTrack track = mydata.track(0);
 
   EXPECT(equalsObj(track));
-  // EXPECT(equalsXML(track));
-  // EXPECT(equalsBinary(track));
+  EXPECT(equalsXML(track));
+  EXPECT(equalsBinary(track));
 }
 
 /* ************************************************************************* */
