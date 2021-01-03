@@ -76,9 +76,3 @@ jobs:
           cmake --build build --config ${{ matrix.build_type }} --target check.base
           cmake --build build --config ${{ matrix.build_type }} --target check.base_unstable
           cmake --build build --config ${{ matrix.build_type }} --target check.linear
-      - name: Upload build directory
-        uses: actions/upload-artifact@v2
-        if: matrix.build_type == 'Release'
-        with:
-          name: gtsam-${{ matrix.name }}-${{ matrix.build_type }}
-          path: ${{ github.workspace }}/build/
