@@ -1698,7 +1698,7 @@ def generate_content(cc_content, path, verbose=False):
             for sub_content in c:
                 import sys
                 _debug("sub object: {}".format(sub_content[1][0][0]))
-                _generate_content(sub_content[1], path_to_folder)
+                generate_content(sub_content[1], path_to_folder)
         elif type(c[1]) == list:
             path_to_folder = path + '/' + c[0]
 
