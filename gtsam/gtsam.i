@@ -2768,6 +2768,12 @@ class SfmTrack {
   pair<size_t, gtsam::Point2> measurement(size_t idx) const;
   pair<size_t, size_t> siftIndex(size_t idx) const;
   void add_measurement(size_t idx, const gtsam::Point2& m);
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enabling function to compare objects
+  bool equals(const gtsam::SfmTrack& expected, double tol) const;
 };
 
 class SfmData {
@@ -2778,6 +2784,12 @@ class SfmData {
   gtsam::SfmTrack track(size_t idx) const;
   void add_track(const gtsam::SfmTrack& t) ;
   void add_camera(const gtsam::SfmCamera& cam);
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enabling function to compare objects
+  bool equals(const gtsam::SfmData& expected, double tol) const;
 };
 
 gtsam::SfmData readBal(string filename);
