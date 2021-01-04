@@ -32,6 +32,7 @@ TEST(dataSet, sfmDataSerialization) {
   SfmData mydata;
   CHECK(readBAL(filename, mydata));
 
+  // round-trip equality check on serialization and subsequent deserialization
   EXPECT(equalsObj(mydata));
   EXPECT(equalsXML(mydata));
   EXPECT(equalsBinary(mydata));
@@ -46,6 +47,7 @@ TEST(dataSet, sfmTrackSerialization) {
 
   SfmTrack track = mydata.track(0);
 
+  // round-trip equality check on serialization and subsequent deserialization
   EXPECT(equalsObj(track));
   EXPECT(equalsXML(track));
   EXPECT(equalsBinary(track));
