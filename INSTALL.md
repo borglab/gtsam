@@ -72,12 +72,12 @@ execute commands as follows for an out-of-source build:
 
 # Windows Installation
 
-This section details how to build and install GTSAM using Visual Studio.
+This section details how to build a GTSAM `.sln` file using Visual Studio.
 
 ### Prerequisites
 
 - Visual Studio with C++ CMake tools for Windows
-- Python >= 3.6 (we prefer Anaconda)
+- All the other pre-requisites listed above.
 
 ### Steps
 
@@ -90,9 +90,9 @@ This section details how to build and install GTSAM using Visual Studio.
   - Update the `Build root` to `${projectDir}\build\${name}`.
   - You can optionally create a new configuration for a `Release` build.
   - Set the necessary CMake variables for your use case.
-  - Click on `Show advanved settings`.
+  - Click on `Show advanced settings`.
   - For `CMake generator`, select a version which matches `Visual Studio <Version> <Year> Win64`, e.g. `Visual Studio 16 2019 Win64`.
-  - Save.
+  - Save the settings (Ctrl + S).
 4. Click on `Project -> Generate Cache`. This will generate the CMake build files (as seen in the Output window).
 5. The last step will generate a `GTSAM.sln` file in the `build` directory. At this point, GTSAM can be used as a regular Visual Studio project.
 
