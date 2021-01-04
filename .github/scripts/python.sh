@@ -43,7 +43,7 @@ if [ -z ${PYTHON_VERSION+x} ]; then
     exit 127
 fi
 
-PYTHON="python${PYTHON_MAJOR_VERSION}"
+PYTHON="python${PYTHON_VERSION}"
 
 if [[ $(uname) == "Darwin" ]]; then
     brew install wget
@@ -66,8 +66,7 @@ mkdir $GITHUB_WORKSPACE/build
 cd $GITHUB_WORKSPACE/build
 
 cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release \
-    -DGTSAM_BUILD_TESTS=OFF \
-    -DGTSAM_BUILD_UNSTABLE=ON \
+    -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_UNSTABLE=ON \
     -DGTSAM_USE_QUATERNIONS=OFF \
     -DGTSAM_WITH_TBB=${GTSAM_WITH_TBB:-OFF} \
     -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
