@@ -244,6 +244,12 @@ public:
    */
   boost::shared_ptr<GaussianFactor> linearize(const Values& x) const override;
 
+  /**
+   * Creates a shared_ptr clone of the
+   * factor with a new noise model
+   */
+  shared_ptr cloneWithNewNoiseModel(const SharedNoiseModel newNoise) const;
+
  private:
   /** Serialization function */
   friend class boost::serialization::access;
