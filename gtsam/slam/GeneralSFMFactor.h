@@ -128,6 +128,7 @@ public:
       if (H1) *H1 = JacobianC::Zero();
       if (H2) *H2 = JacobianL::Zero();
       // TODO warn if verbose output asked for
+      e;
       return Z_2x1;
     }
   }
@@ -150,6 +151,7 @@ public:
       H2.setZero();
       b.setZero();
       // TODO warn if verbose output asked for
+      e;
     }
 
     // Whiten the system if needed
