@@ -20,9 +20,8 @@ include(PybindWrap)
 
 # Load the pybind11 code
 add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
-# Set the wrapping script variables
+# Set the wrapping script variable
 set(PYBIND_WRAP_SCRIPT "${PROJECT_SOURCE_DIR}/wrap/scripts/pybind_wrap.py")
-set(MATLAB_WRAP_SCRIPT "${PROJECT_SOURCE_DIR}/wrap/scripts/matlab_wrap.py")
 ############################################################
 
 add_custom_target(gtsam_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam/gtsam.i")
