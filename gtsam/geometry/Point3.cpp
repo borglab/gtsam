@@ -75,6 +75,14 @@ double dot(const Point3 &p, const Point3 &q, OptionalJacobian<1, 3> H1,
   return p.x() * q.x() + p.y() * q.y() + p.z() * q.z();
 }
 
+template <class CONTAINER>
+Point3 mean(const CONTAINER& points) {
+  if (points.size() == 0) throw std::invalid_argument("Point3::mean input container is empty");
+  Point3 sum(0, 0, 0);
+  sum = std::accumulate(points.begin(), points.end(), sum);
+  return sum / points.size();
+}
+
 Point3Pair means(const std::vector<Point3Pair> &abPointPairs) {
   const size_t n = abPointPairs.size();
   if (n == 0) throw std::invalid_argument("Point3::mean input Point3Pair vector is empty");
