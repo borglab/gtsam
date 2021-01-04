@@ -2771,6 +2771,9 @@ class SfmTrack {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enabling function to compare objects
+  bool equals(const gtsam::SfmTrack& expected, double tol) const;
 };
 
 class SfmData {
@@ -2784,6 +2787,9 @@ class SfmData {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enabling function to compare objects
+  bool equals(const gtsam::SfmData& expected, double tol) const;
 };
 
 gtsam::SfmData readBal(string filename);
