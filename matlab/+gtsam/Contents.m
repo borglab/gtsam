@@ -94,10 +94,12 @@
 %   Rot2                              - class Rot2, see Doxygen page for details
 %   Rot3                              - class Rot3, see Doxygen page for details
 %   SimpleCamera                      - class SimpleCamera, see Doxygen page for details
+%   PinholeCameraCal3_S2              - class PinholeCameraCal3_S2, see Doxygen page for details
 %   StereoPoint2                      - class StereoPoint2, see Doxygen page for details
 % 
 %% SLAM and SFM
 %   BearingFactor2D                   - class BearingFactor2D, see Doxygen page for details
+%   BearingFactor3D                   - class BearingFactor3D, see Doxygen page for details
 %   BearingRangeFactor2D              - class BearingRangeFactor2D, see Doxygen page for details
 %   BetweenFactorLieMatrix            - class BetweenFactorLieMatrix, see Doxygen page for details
 %   BetweenFactorLieScalar            - class BetweenFactorLieScalar, see Doxygen page for details

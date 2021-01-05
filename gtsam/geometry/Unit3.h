@@ -27,13 +27,13 @@
 #include <gtsam/dllexport.h>
 
 #include <boost/optional.hpp>
-#include <boost/random/mersenne_twister.hpp>
 #include <boost/serialization/nvp.hpp>
 
+#include <random>
 #include <string>
 
 #ifdef GTSAM_USE_TBB
-#include <tbb/mutex.h>
+#include <mutex> // std::mutex
 #endif
 
 namespace gtsam {
@@ -48,7 +48,7 @@ private:
   mutable boost::optional<Matrix62> H_B_; ///< Cached basis derivative
 
 #ifdef GTSAM_USE_TBB
-  mutable tbb::mutex B_mutex_; ///< Mutex to protect the cached basis.
+  mutable std::mutex B_mutex_; ///< Mutex to protect the cached basis.
 #endif
 
 public:
@@ -90,6 +90,8 @@ public:
   /// Copy assignment
   Unit3& operator=(const Unit3 & u) {
     p_ = u.p_;
+    B_ = u.B_;
+    H_B_ = u.H_B_;
     return *this;
   }
 
@@ -97,8 +99,13 @@ public:
   GTSAM_EXPORT static Unit3 FromPoint3(const Point3& point, //
       OptionalJacobian<2, 3> H = boost::none);
 
-  /// Random direction, using boost::uniform_on_sphere
-  GTSAM_EXPORT static Unit3 Random(boost::mt19937 & rng);
+  /**
+   * Random direction, using boost::uniform_on_sphere
+   * Example:
+   *   std::mt19937 engine(42);
+   *   Unit3 unit = Unit3::Random(engine);
+   */
+  GTSAM_EXPORT static Unit3 Random(std::mt19937 & rng);
 
   /// @}
 
@@ -209,7 +216,7 @@ private:
   /// @}
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // Define GTSAM traits

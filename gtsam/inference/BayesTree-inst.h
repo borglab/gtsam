@@ -125,7 +125,7 @@ namespace gtsam {
   void BayesTree<CLIQUE>::addClique(const sharedClique& clique, const sharedClique& parent_clique) {
     for(Key j: clique->conditional()->frontals())
       nodes_[j] = clique;
-    if (parent_clique != NULL) {
+    if (parent_clique != nullptr) {
       clique->parent_ = parent_clique;
       parent_clique->children.push_back(clique);
     } else {
@@ -430,7 +430,7 @@ namespace gtsam {
   template <class CLIQUE>
   void BayesTree<CLIQUE>::removePath(sharedClique clique, BayesNetType* bn,
                                      Cliques* orphans) {
-    // base case is NULL, if so we do nothing and return empties above
+    // base case is nullptr, if so we do nothing and return empties above
     if (clique) {
       // remove the clique from orphans in case it has been added earlier
       orphans->remove(clique);

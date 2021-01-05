@@ -77,6 +77,14 @@ bool NoiseModelFactor::equals(const NonlinearFactor& f, double tol) const {
 }
 
 /* ************************************************************************* */
+NoiseModelFactor::shared_ptr NoiseModelFactor::cloneWithNewNoiseModel(
+    const SharedNoiseModel newNoise) const {
+  NoiseModelFactor::shared_ptr new_factor = boost::dynamic_pointer_cast<NoiseModelFactor>(clone());
+  new_factor->noiseModel_ = newNoise;
+  return new_factor;
+}
+
+/* ************************************************************************* */
 static void check(const SharedNoiseModel& noiseModel, size_t m) {
   if (noiseModel && m != noiseModel->dim())
     throw std::invalid_argument(
@@ -121,7 +129,7 @@ double NoiseModelFactor::error(const Values& c) const {
     const Vector b = unwhitenedError(c);
     check(noiseModel_, b.size());
     if (noiseModel_)
-      return 0.5 * noiseModel_->squaredDistance(b);
+      return noiseModel_->loss(noiseModel_->squaredMahalanobisDistance(b));
     else
       return 0.5 * b.squaredNorm();
   } else {

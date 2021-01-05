@@ -18,7 +18,8 @@
 
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <boost/make_shared.hpp>
 
 using namespace gtsam;
@@ -45,9 +46,9 @@ public:
   }
 
   /// evaluate the error
-  virtual Vector evaluateError(const Pose3& pose, boost::optional<Matrix&> H =
-      boost::none) const {
-    SimpleCamera camera(pose, *K_);
+  Vector evaluateError(const Pose3& pose, boost::optional<Matrix&> H =
+      boost::none) const override {
+    PinholeCamera<Cal3_S2> camera(pose, *K_);
     return camera.project(P_, H, boost::none, boost::none) - p_;
   }
 };

@@ -162,7 +162,7 @@ private:
     NeedsToAlign = (sizeof(B) % 16) == 0 || (sizeof(R) % 16) == 0
   };
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 // Declare this to be both Testable and a Manifold
@@ -187,8 +187,8 @@ struct HasBearing {
 };
 
 // Similar helper class for to implement Range traits for classes with a range method
-// For classes with overloaded range methods, such as SimpleCamera, this can even be templated:
-//   template <typename T> struct Range<SimpleCamera, T> : HasRange<SimpleCamera, T, double> {};
+// For classes with overloaded range methods, such as PinholeCamera, this can even be templated:
+//   template <typename T> struct Range<PinholeCamera, T> : HasRange<PinholeCamera, T, double> {};
 template <class A1, typename A2, class RT>
 struct HasRange {
   typedef RT result_type;

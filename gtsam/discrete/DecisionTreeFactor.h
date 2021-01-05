@@ -69,23 +69,23 @@ namespace gtsam {
     /// @{
 
     /// equality
-    bool equals(const DiscreteFactor& other, double tol = 1e-9) const;
+    bool equals(const DiscreteFactor& other, double tol = 1e-9) const override;
 
     // print
-    virtual void print(const std::string& s = "DecisionTreeFactor:\n",
-        const KeyFormatter& formatter = DefaultKeyFormatter) const;
+    void print(const std::string& s = "DecisionTreeFactor:\n",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
     /// @}
     /// @name Standard Interface
     /// @{
 
     /// Value is just look up in AlgebraicDecisonTree
-    virtual double operator()(const Values& values) const {
+    double operator()(const Values& values) const override {
       return Potentials::operator()(values);
     }
 
     /// multiply two factors
-    DecisionTreeFactor operator*(const DecisionTreeFactor& f) const {
+    DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override {
       return apply(f, ADT::Ring::mul);
     }
 
@@ -95,7 +95,7 @@ namespace gtsam {
     }
 
     /// Convert into a decisiontree
-    virtual DecisionTreeFactor toDecisionTreeFactor() const {
+    DecisionTreeFactor toDecisionTreeFactor() const override {
       return *this;
     }
 

@@ -88,20 +88,28 @@ void NonlinearOptimizer::defaultOptimize() {
   }
 
   // Iterative loop
+  double newError = currentError; // used to avoid repeated calls to error()
   do {
     // Do next iteration
-    currentError = error();
+    currentError = newError;
     iterate();
     tictoc_finishedIteration();
+
+    // Update newError for either printouts or conditional-end checks:
+    newError = error();
+
+    // User hook:
+    if (params.iterationHook)
+      params.iterationHook(iterations(), currentError, newError);
 
     // Maybe show output
     if (params.verbosity >= NonlinearOptimizerParams::VALUES)
       values().print("newValues");
     if (params.verbosity >= NonlinearOptimizerParams::ERROR)
-      cout << "newError: " << error() << endl;
+      cout << "newError: " << newError << endl;
   } while (iterations() < params.maxIterations &&
            !checkConvergence(params.relativeErrorTol, params.absoluteErrorTol, params.errorTol,
-                             currentError, error(), params.verbosity) && std::isfinite(currentError));
+                             currentError, newError, params.verbosity) && std::isfinite(currentError));
 
   // Printing if verbose
   if (params.verbosity >= NonlinearOptimizerParams::TERMINATION) {
@@ -147,13 +155,15 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
   } else if (params.isIterative()) {
     // Conjugate Gradient -> needs params.iterativeParams
     if (!params.iterativeParams)
-      throw std::runtime_error("NonlinearOptimizer::solve: cg parameter has to be assigned ...");
+      throw std::runtime_error(
+          "NonlinearOptimizer::solve: cg parameter has to be assigned ...");
 
-    if (boost::shared_ptr<PCGSolverParameters> pcg =
-            boost::dynamic_pointer_cast<PCGSolverParameters>(params.iterativeParams)) {
+    if (auto pcg = boost::dynamic_pointer_cast<PCGSolverParameters>(
+            params.iterativeParams)) {
       delta = PCGSolver(*pcg).optimize(gfg);
-    } else if (boost::shared_ptr<SubgraphSolverParameters> spcg =
-                   boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams)) {
+    } else if (auto spcg =
+                   boost::dynamic_pointer_cast<SubgraphSolverParameters>(
+                       params.iterativeParams)) {
       if (!params.ordering)
         throw std::runtime_error("SubgraphSolver needs an ordering");
       delta = SubgraphSolver(gfg, *spcg, *params.ordering).optimize();

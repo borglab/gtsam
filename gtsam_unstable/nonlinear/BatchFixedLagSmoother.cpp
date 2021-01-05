@@ -39,7 +39,7 @@ bool BatchFixedLagSmoother::equals(const FixedLagSmoother& rhs,
     double tol) const {
   const BatchFixedLagSmoother* e =
       dynamic_cast<const BatchFixedLagSmoother*>(&rhs);
-  return e != NULL && FixedLagSmoother::equals(*e, tol)
+  return e != nullptr && FixedLagSmoother::equals(*e, tol)
       && factors_.equals(e->factors_, tol) && theta_.equals(e->theta_, tol);
 }
 
@@ -59,7 +59,7 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   // Add the new variables to theta
   theta_.insert(newTheta);
   // Add new variables to the end of the ordering
-  for (const auto& key_value : newTheta) {
+  for (const auto key_value : newTheta) {
     ordering_.push_back(key_value.key);
   }
   // Augment Delta
@@ -145,7 +145,7 @@ void BatchFixedLagSmoother::removeFactors(
     } else {
       // TODO: Throw an error??
       cout << "Attempting to remove a factor from slot " << slot
-          << ", but it is already NULL." << endl;
+          << ", but it is already nullptr." << endl;
     }
   }
 }
@@ -267,7 +267,7 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
           // Put the linearization points and deltas back for specific variables
           if (enforceConsistency_ && (linearKeys_.size() > 0)) {
             theta_.update(linearKeys_);
-            for(const auto& key_value: linearKeys_) {
+            for(const auto key_value: linearKeys_) {
               delta_.at(key_value.key) = newDelta.at(key_value.key);
             }
           }
@@ -370,7 +370,7 @@ void BatchFixedLagSmoother::PrintSymbolicFactor(
       cout << " " << DefaultKeyFormatter(key);
     }
   } else {
-    cout << " NULL";
+    cout << " nullptr";
   }
   cout << " )" << endl;
 }

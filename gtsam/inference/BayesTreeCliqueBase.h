@@ -24,6 +24,7 @@
 #include <boost/optional.hpp>
 
 #include <string>
+#include <mutex>
 
 namespace gtsam {
 
@@ -75,16 +76,36 @@ namespace gtsam {
     /** Construct from a conditional, leaving parent and child pointers uninitialized */
     BayesTreeCliqueBase(const sharedConditional& conditional) : conditional_(conditional), problemSize_(1) {}
 
+    /** Shallow copy constructor */
+    BayesTreeCliqueBase(const BayesTreeCliqueBase& c) : conditional_(c.conditional_), parent_(c.parent_), children(c.children), problemSize_(c.problemSize_), is_root(c.is_root) {}
+
+    /** Shallow copy assignment constructor */
+    BayesTreeCliqueBase& operator=(const BayesTreeCliqueBase& c) {
+      conditional_ = c.conditional_;
+      parent_ = c.parent_;
+      children = c.children;
+      problemSize_ = c.problemSize_;
+      is_root = c.is_root;
+      return *this;
+    }
+
     /// @}
 
-    /// This stores the Cached separator margnal P(S)
+    /// This stores the Cached separator marginal P(S)
     mutable boost::optional<FactorGraphType> cachedSeparatorMarginal_;
+    /// This protects Cached seperator marginal P(S) from concurrent read/writes
+    /// as many the functions which access it are const (hence the mutable)
+    /// leading to the false impression that these const functions are thread-safe
+    /// which is not true due to these mutable values. This is fixed by applying this mutex.
+    mutable std::mutex cachedSeparatorMarginalMutex_;
 
   public:
     sharedConditional conditional_;
     derived_weak_ptr parent_;
     FastVector<derived_ptr> children;
     int problemSize_;
+
+    bool is_root = false;
 
     /// Fill the elimination result produced during elimination.  Here this just stores the
     /// conditional and ignores the remaining factor, but this is overridden in ISAM2Clique
@@ -98,7 +119,7 @@ namespace gtsam {
     bool equals(const DERIVED& other, double tol = 1e-9) const;
 
     /** print this node */
-    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /// @}
     /// @name Standard Interface
@@ -142,7 +163,9 @@ namespace gtsam {
     void deleteCachedShortcuts();
 
     const boost::optional<FactorGraphType>& cachedSeparatorMarginal() const {
-      return cachedSeparatorMarginal_; }
+      std::lock_guard<std::mutex> marginalLock(cachedSeparatorMarginalMutex_);
+      return cachedSeparatorMarginal_; 
+    }
 
     friend class BayesTree<DerivedType>;
 
@@ -157,7 +180,10 @@ namespace gtsam {
     KeyVector shortcut_indices(const derived_ptr& B, const FactorGraphType& p_Cp_B) const;
 
     /** Non-recursive delete cached shortcuts and marginals - internal only. */
-    void deleteCachedShortcutsNonRecursive() { cachedSeparatorMarginal_ = boost::none; }
+    void deleteCachedShortcutsNonRecursive() { 
+      std::lock_guard<std::mutex> marginalLock(cachedSeparatorMarginalMutex_);
+      cachedSeparatorMarginal_ = boost::none; 
+    }
 
   private:
 
@@ -165,8 +191,14 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      if(!parent_.lock()) {
+        is_root = true;
+      }
+      ar & BOOST_SERIALIZATION_NVP(is_root);
       ar & BOOST_SERIALIZATION_NVP(conditional_);
-      ar & BOOST_SERIALIZATION_NVP(parent_);
+      if (!is_root) { // TODO(fan): Workaround for boost/serialization #119
+        ar & BOOST_SERIALIZATION_NVP(parent_);
+      }
       ar & BOOST_SERIALIZATION_NVP(children);
     }
 

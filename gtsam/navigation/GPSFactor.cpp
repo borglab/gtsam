@@ -32,7 +32,7 @@ void GPSFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
 //***************************************************************************
 bool GPSFactor::equals(const NonlinearFactor& expected, double tol) const {
   const This* e = dynamic_cast<const This*>(&expected);
-  return e != NULL && Base::equals(*e, tol) && traits<Point3>::Equals(nT_, e->nT_, tol);
+  return e != nullptr && Base::equals(*e, tol) && traits<Point3>::Equals(nT_, e->nT_, tol);
 }
 
 //***************************************************************************
@@ -73,7 +73,7 @@ void GPSFactor2::print(const string& s, const KeyFormatter& keyFormatter) const 
 //***************************************************************************
 bool GPSFactor2::equals(const NonlinearFactor& expected, double tol) const {
   const This* e = dynamic_cast<const This*>(&expected);
-  return e != NULL && Base::equals(*e, tol) &&
+  return e != nullptr && Base::equals(*e, tol) &&
          traits<Point3>::Equals(nT_, e->nT_, tol);
 }
 

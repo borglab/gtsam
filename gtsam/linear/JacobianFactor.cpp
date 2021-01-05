@@ -421,21 +421,11 @@ JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
 /* ************************************************************************* */
 void JacobianFactor::print(const string& s,
     const KeyFormatter& formatter) const {
-  static const Eigen::IOFormat matlab(
-      Eigen::StreamPrecision, // precision
-      0, // flags
-      " ", // coeffSeparator
-      ";\n", // rowSeparator
-      "\t",  // rowPrefix
-      "", // rowSuffix
-      "[\n", // matPrefix
-      "\n  ]" // matSuffix
-      );
   if (!s.empty())
     cout << s << "\n";
   for (const_iterator key = begin(); key != end(); ++key) {
     cout << boost::format("  A[%1%] = ") % formatter(*key);
-    cout << getA(key).format(matlab) << endl;
+    cout << getA(key).format(matlabFormat()) << endl;
   }
   cout << formatMatrixIndented("  b = ", getb(), true) << "\n";
   if (model_)
@@ -513,8 +503,10 @@ Vector JacobianFactor::error_vector(const VectorValues& c) const {
 
 /* ************************************************************************* */
 double JacobianFactor::error(const VectorValues& c) const {
-  Vector weighted = error_vector(c);
-  return 0.5 * weighted.dot(weighted);
+  Vector e = unweighted_error(c);
+  // Use the noise model distance function to get the correct error if available.
+  if (model_) return 0.5 * model_->squaredMahalanobisDistance(e);
+  return 0.5 * e.dot(e);
 }
 
 /* ************************************************************************* */
@@ -540,21 +532,31 @@ Matrix JacobianFactor::information() const {
 }
 
 /* ************************************************************************* */
-VectorValues JacobianFactor::hessianDiagonal() const {
-  VectorValues d;
+void JacobianFactor::hessianDiagonalAdd(VectorValues& d) const {
   for (size_t pos = 0; pos < size(); ++pos) {
     Key j = keys_[pos];
     size_t nj = Ab_(pos).cols();
-    Vector dj(nj);
+    auto result = d.emplace(j, nj);
+
+    Vector& dj = result.first->second;
+
     for (size_t k = 0; k < nj; ++k) {
-      Vector column_k = Ab_(pos).col(k);
-      if (model_)
-        model_->whitenInPlace(column_k);
-      dj(k) = dot(column_k, column_k);
+      Eigen::Ref<const Vector> column_k = Ab_(pos).col(k);
+      if (model_) {
+        Vector column_k_copy = column_k;
+        model_->whitenInPlace(column_k_copy);
+        if(!result.second)
+          dj(k) += dot(column_k_copy, column_k_copy);
+        else
+          dj(k) = dot(column_k_copy, column_k_copy);
+      } else {
+        if (!result.second)
+          dj(k) += dot(column_k, column_k);
+        else
+          dj(k) = dot(column_k, column_k);
+      }
     }
-    d.emplace(j, dj);
   }
-  return d;
 }
 
 /* ************************************************************************* */
@@ -838,7 +840,7 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFronta
 
   if (!model_) {
     throw std::invalid_argument(
-        "JacobianFactor::splitConditional cannot be  given a NULL noise model");
+        "JacobianFactor::splitConditional cannot be  given a nullptr noise model");
   }
 
   if (nrFrontals > size()) {
