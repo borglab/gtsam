@@ -825,7 +825,7 @@ TEST(Rot3, RQ_derivative) {
     const auto R = Rot3::RzRyRx(xyz).matrix();
     const auto num = numericalDerivative11(RQ_proxy, R);
     Matrix39 calc;
-    RQ(R, calc).second;
+    auto dummy = RQ(R, calc).second;
 
     const auto err = vec_err.second;
     CHECK(assert_equal(num, calc, err));
