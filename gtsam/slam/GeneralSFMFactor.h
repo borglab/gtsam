@@ -130,7 +130,7 @@ public:
     catch( CheiralityException& e) {
       if (H1) *H1 = JacobianC::Zero();
       if (H2) *H2 = JacobianL::Zero();
-      std::cerr << e.what() << std::endl;
+      //TODO Print the exception via logging
       return Z_2x1;
     }
   }
@@ -152,7 +152,7 @@ public:
       H1.setZero();
       H2.setZero();
       b.setZero();
-      std::cerr << e.what() << std::endl;
+      //TODO Print the exception via logging
     }
 
     // Whiten the system if needed
