@@ -354,7 +354,7 @@ class ShonanAveraging2 : public ShonanAveraging<2> {
  public:
   ShonanAveraging2(const Measurements &measurements,
                    const Parameters &parameters = Parameters());
-  explicit ShonanAveraging2(string g2oFile,
+  explicit ShonanAveraging2(std::string g2oFile,
                             const Parameters &parameters = Parameters());
 };
 
@@ -362,7 +362,7 @@ class ShonanAveraging3 : public ShonanAveraging<3> {
  public:
   ShonanAveraging3(const Measurements &measurements,
                    const Parameters &parameters = Parameters());
-  explicit ShonanAveraging3(string g2oFile,
+  explicit ShonanAveraging3(std::string g2oFile,
                             const Parameters &parameters = Parameters());
 
   // TODO(frank): Deprecate after we land pybind wrapper
