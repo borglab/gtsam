@@ -70,7 +70,6 @@ class GeneralSFMFactor: public NoiseModelFactor2<CAMERA, LANDMARK> {
 protected:
 
   Point2 measured_; ///< the 2D measurement
-  bool verbose_; ///< Flag for print verbosity
 
 public:
 
@@ -88,10 +87,8 @@ public:
    * @param landmarkKey is the index of the landmark
    */
   GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model,
-                   Key cameraKey, Key landmarkKey, bool verbose = false)
-      : Base(model, cameraKey, landmarkKey),
-        measured_(measured),
-        verbose_(verbose) {}
+                   Key cameraKey, Key landmarkKey)
+      : Base(model, cameraKey, landmarkKey), measured_(measured) {}
 
   GeneralSFMFactor() : measured_(0.0, 0.0) {}  ///< default constructor
   ///< constructor that takes a Point2
@@ -133,9 +130,7 @@ public:
     catch( CheiralityException& e) {
       if (H1) *H1 = JacobianC::Zero();
       if (H2) *H2 = JacobianL::Zero();
-      if (verbose_) {
-        std::cout << e.what() << std::endl;
-      }
+      std::cerr << e.what() << std::endl;
       return Z_2x1;
     }
   }
@@ -157,9 +152,7 @@ public:
       H1.setZero();
       H2.setZero();
       b.setZero();
-      if (verbose_) {
-        std::cout << e.what() << std::endl;
-      }
+      std::cerr << e.what() << std::endl;
     }
 
     // Whiten the system if needed
