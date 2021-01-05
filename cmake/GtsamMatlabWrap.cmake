@@ -240,12 +240,16 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 
 	set(_ignore gtsam::Point2
 			gtsam::Point3)
-	add_custom_command(
+
+    # set the matlab wrapping script variable
+    set(MATLAB_WRAP_SCRIPT "${GTSAM_SOURCE_DIR}/wrap/scripts/matlab_wrap.py")
+
+    add_custom_command(
 		OUTPUT ${generated_cpp_file}
 		DEPENDS ${interfaceHeader} ${module_library_target} ${otherLibraryTargets} ${otherSourcesAndObjects}
         COMMAND
 			${PYTHON_EXECUTABLE}
-			${CMAKE_SOURCE_DIR}/wrap/matlab_wrapper.py
+			${MATLAB_WRAP_SCRIPT}
             --src ${interfaceHeader}
 			--module_name ${moduleName}
             --out ${generated_files_path}
