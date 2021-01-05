@@ -217,7 +217,7 @@ namespace gtsam {
   /** Constructor from a Filtered view copies out all values */
   template<class ValueType>
   Values::Values(const Values::Filtered<ValueType>& view) {
-    for(const typename Filtered<ValueType>::KeyValuePair& key_value: view) {
+    for(const auto key_value: view) {
       Key key = key_value.key;
       insert(key, static_cast<const ValueType&>(key_value.value));
     }
@@ -226,7 +226,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class ValueType>
   Values::Values(const Values::ConstFiltered<ValueType>& view) {
-    for(const typename ConstFiltered<ValueType>::KeyValuePair& key_value: view) {
+    for(const auto key_value: view) {
       Key key = key_value.key;
       insert(key, static_cast<const ValueType&>(key_value.value));
     }
