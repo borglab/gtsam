@@ -175,9 +175,7 @@ TEST(Values, basic_functions)
 {
   Values values;
   const Values& values_c = values;
-  Matrix23 M1, M2;
-  M1 << 0, 0, 0, 0, 0, 0;
-  M2 << 0, 0, 0, 0, 0, 0;
+  Matrix23 M1 = Matrix23::Zero(), M2 = Matrix23::Zero();
   values.insert(2, Vector3(0, 0, 0));
   values.insert(4, Vector3(0, 0, 0));
   values.insert(6, M1);
