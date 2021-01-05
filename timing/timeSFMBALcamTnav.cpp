@@ -29,12 +29,12 @@ using namespace gtsam;
 
 int main(int argc, char* argv[]) {
   // parse options and read BAL file
-  SfM_data db = preamble(argc, argv);
+  SfmData db = preamble(argc, argv);
 
   // Build graph using conventional GeneralSFMFactor
   NonlinearFactorGraph graph;
   for (size_t j = 0; j < db.number_tracks(); j++) {
-    for (const SfM_Measurement& m: db.tracks[j].measurements) {
+    for (const SfmMeasurement& m: db.tracks[j].measurements) {
       size_t i = m.first;
       Point2 z = m.second;
       Pose3_ camTnav_(C(i));
@@ -49,12 +49,12 @@ int main(int argc, char* argv[]) {
 
   Values initial;
   size_t i = 0, j = 0;
-  for (const SfM_Camera& camera: db.cameras) {
+  for (const SfmCamera& camera: db.cameras) {
     initial.insert(C(i), camera.pose().inverse());  // inverse !!!
     initial.insert(K(i), camera.calibration());
     i += 1;
   }
-  for (const SfM_Track& track: db.tracks)
+  for (const SfmTrack& track: db.tracks)
     initial.insert(P(j++), track.p);
 
   bool separateCalibration = true;

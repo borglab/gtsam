@@ -11,6 +11,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Line3.h>
 #include <gtsam/geometry/PinholeCamera.h>
 
 namespace gtsam {
@@ -31,6 +32,7 @@ typedef Expression<Point3> Point3_;
 typedef Expression<Unit3> Unit3_;
 typedef Expression<Rot3> Rot3_;
 typedef Expression<Pose3> Pose3_;
+typedef Expression<Line3> Line3_;
 
 inline Point3_ transformTo(const Pose3_& x, const Point3_& p) {
   return Point3_(x, &Pose3::transformTo, p);
@@ -38,6 +40,12 @@ inline Point3_ transformTo(const Pose3_& x, const Point3_& p) {
 
 inline Point3_ transformFrom(const Pose3_& x, const Point3_& p) {
   return Point3_(x, &Pose3::transformFrom, p);
+}
+
+inline Line3_ transformTo(const Pose3_ &wTc, const Line3_ &wL) {
+  Line3 (*f)(const Pose3 &, const Line3 &,
+             OptionalJacobian<4, 6>, OptionalJacobian<4, 4>) = &transformTo;
+  return Line3_(f, wTc, wL);
 }
 
 namespace internal {
@@ -66,30 +74,6 @@ inline Point3_ unrotate(const Rot3_& x, const Point3_& p) {
 inline Unit3_ unrotate(const Rot3_& x, const Unit3_& p) {
   return Unit3_(x, &Rot3::unrotate, p);
 }
-
-#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
-namespace internal {
-// define a rotate and unrotate for Vector3
-inline Vector3 rotate(const Rot3& R, const Vector3& v,
-               OptionalJacobian<3, 3> H1 = boost::none,
-               OptionalJacobian<3, 3> H2 = boost::none) {
-  return R.rotate(v, H1, H2);
-}
-inline Vector3 unrotate(const Rot3& R, const Vector3& v,
-                 OptionalJacobian<3, 3> H1 = boost::none,
-                 OptionalJacobian<3, 3> H2 = boost::none) {
-  return R.unrotate(v, H1, H2);
-}
-}  // namespace internal
-inline Expression<Vector3> rotate(const Rot3_& R,
-                                  const Expression<Vector3>& v) {
-  return Expression<Vector3>(internal::rotate, R, v);
-}
-inline Expression<Vector3> unrotate(const Rot3_& R,
-                                    const Expression<Vector3>& v) {
-  return Expression<Vector3>(internal::unrotate, R, v);
-}
-#endif
 
 // Projection
 

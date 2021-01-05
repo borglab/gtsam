@@ -35,9 +35,6 @@ namespace gtsam {
 template <class Class, int N>
 struct LieGroup {
 
-  BOOST_STATIC_ASSERT_MSG(N != Eigen::Dynamic,
-      "LieGroup not yet specialized for dynamically sized types.");
-
   enum { dimension = N };
   typedef OptionalJacobian<N, N> ChartJacobian;
   typedef Eigen::Matrix<double, N, N> Jacobian;
@@ -160,7 +157,6 @@ struct LieGroup {
     if (H2) *H2 = D_v_h;
     return v;
   }
-
 };
 
 /// tag to assert a type is a Lie group
@@ -174,7 +170,7 @@ namespace internal {
 /// Assumes existence of: identity, dimension, localCoordinates, retract,
 /// and additionally Logmap, Expmap, compose, between, and inverse
 template<class Class>
-struct LieGroupTraits {
+struct LieGroupTraits: GetDimensionImpl<Class, Class::dimension> {
   typedef lie_group_tag structure_category;
 
   /// @name Group
@@ -189,11 +185,6 @@ struct LieGroupTraits {
   enum { dimension = Class::dimension };
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
-
-  BOOST_STATIC_ASSERT_MSG(dimension != Eigen::Dynamic,
-      "LieGroupTraits not yet specialized for dynamically sized types.");
-
-  static int GetDimension(const Class&) {return dimension;}
 
   static TangentVector Local(const Class& origin, const Class& other,
       ChartJacobian Horigin = boost::none, ChartJacobian Hother = boost::none) {
@@ -335,6 +326,21 @@ T interpolate(const T& X, const T& Y, double t) {
   assert(t >= 0 && t <= 1);
   return traits<T>::Compose(X, traits<T>::Expmap(t * traits<T>::Logmap(traits<T>::Between(X, Y))));
 }
+
+/**
+ * Functor for transforming covariance of T.
+ * T needs to satisfy the Lie group concept.
+ */
+template<class T>
+class TransformCovariance
+{
+private:
+  typename T::Jacobian adjointMap_;
+public:
+  explicit TransformCovariance(const T &X) : adjointMap_{X.AdjointMap()} {}
+  typename T::Jacobian operator()(const typename T::Jacobian &covariance)
+  { return adjointMap_ * covariance * adjointMap_.transpose(); }
+};
 
 } // namespace gtsam
 

@@ -11,7 +11,7 @@
 
 /**
  * @file    NonlinearFactorGraph.h
- * @brief   Factor Graph Constsiting of non-linear factors
+ * @brief   Factor Graph consisting of non-linear factors
  * @author  Frank Dellaert
  * @author  Carlos Nieto
  * @author  Christian Potthast
@@ -24,6 +24,7 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/inference/FactorGraph.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 
 #include <boost/shared_ptr.hpp>
 #include <functional>
@@ -103,13 +104,25 @@ namespace gtsam {
 
     /** print errors along with factors*/
     void printErrors(const Values& values, const std::string& str = "NonlinearFactorGraph: ",
-                     const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+      const std::function<bool(const Factor* /*factor*/, double /*whitenedError*/, size_t /*index*/)>&
+        printCondition = [](const Factor *,double, size_t) {return true;}) const;
 
     /** Test equality */
     bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;
 
-    /** Write the graph in GraphViz format for visualization */
+    /// Write the graph in GraphViz format for visualization
     void saveGraph(std::ostream& stm, const Values& values = Values(),
+      const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    /**
+     * Write the graph in GraphViz format to file for visualization.
+     *
+     * This is a wrapper friendly version since wrapped languages don't have
+     * access to C++ streams.
+     */
+    void saveGraph(const std::string& file, const Values& values = Values(),
       const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
@@ -200,6 +213,33 @@ namespace gtsam {
     void addExpressionFactor(const SharedNoiseModel& R, const T& z,
                              const Expression<T>& h) {
       push_back(boost::make_shared<ExpressionFactor<T> >(R, z, h));
+    }
+
+    /**
+     * Convenience method which adds a PriorFactor to the factor graph.
+     * @param key    Variable key
+     * @param prior  The variable's prior value
+     * @param model  Noise model for prior factor
+     */
+    template<typename T>
+    void addPrior(Key key, const T& prior,
+                  const SharedNoiseModel& model = nullptr) {
+      emplace_shared<PriorFactor<T>>(key, prior, model);
+    }
+
+    /**
+     * Convenience method which adds a PriorFactor to the factor graph.
+     * @param key         Variable key
+     * @param prior       The variable's prior value
+     * @param covariance  Covariance matrix.
+     * 
+     * Note that the smart noise model associated with the prior factor
+     * automatically picks the right noise model (e.g. a diagonal noise model
+     * if the provided covariance matrix is diagonal).
+     */
+    template<typename T>
+    void addPrior(Key key, const T& prior, const Matrix& covariance) {
+      emplace_shared<PriorFactor<T>>(key, prior, covariance);
     }
 
   private:

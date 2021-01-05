@@ -100,7 +100,10 @@ namespace gtsam {
     virtual Matrix information() const = 0;
 
     /// Return the diagonal of the Hessian for this factor
-    virtual VectorValues hessianDiagonal() const = 0;
+    VectorValues hessianDiagonal() const;
+
+    /// Add the current diagonal to a VectorValues instance
+    virtual void hessianDiagonalAdd(VectorValues& d) const = 0;
 
     /// Raw memory access version of hessianDiagonal
     virtual void hessianDiagonal(double* d) const = 0;

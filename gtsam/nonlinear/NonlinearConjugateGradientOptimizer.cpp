@@ -43,7 +43,8 @@ static VectorValues gradientInPlace(const NonlinearFactorGraph &nfg,
 
 NonlinearConjugateGradientOptimizer::NonlinearConjugateGradientOptimizer(
     const NonlinearFactorGraph& graph, const Values& initialValues, const Parameters& params)
-    : Base(graph, std::unique_ptr<State>(new State(initialValues, graph.error(initialValues)))) {}
+    : Base(graph, std::unique_ptr<State>(new State(initialValues, graph.error(initialValues)))),
+    params_(params) {}
 
 double NonlinearConjugateGradientOptimizer::System::error(const State& state) const {
   return graph_.error(state);

@@ -81,7 +81,7 @@ protected:
 
 public:
   /** A shared pointer to this class */
-  typedef boost::shared_ptr<const NonlinearOptimizer> shared_ptr;
+  using shared_ptr = boost::shared_ptr<const NonlinearOptimizer>;
 
   /// @name Standard interface
   /// @{
@@ -105,14 +105,17 @@ public:
    */
   const Values& optimizeSafely();
 
-  /// return error
+  /// return error in current optimizer state
   double error() const;
 
-  /// return number of iterations
+  /// return number of iterations in current optimizer state
   size_t iterations() const;
 
-  /// return values
-  const Values& values() const;
+  /// return values in current optimizer state
+  const Values &values() const;
+
+  /// return the graph with nonlinear factors
+  const NonlinearFactorGraph &graph() const { return graph_; }
 
   /// @}
 

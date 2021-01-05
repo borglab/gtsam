@@ -23,16 +23,6 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/config.h>  // for GTSAM_USE_TBB
 
-#ifdef __clang__
-#  pragma clang diagnostic push
-#  pragma clang diagnostic ignored "-Wunused-variable"
-#endif
-#include <boost/random/uniform_on_sphere.hpp>
-#ifdef __clang__
-#  pragma clang diagnostic pop
-#endif
-
-#include <boost/random/variate_generator.hpp>
 #include <iostream>
 #include <limits>
 #include <cmath>
@@ -54,15 +44,19 @@ Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2, 3> H) {
 }
 
 /* ************************************************************************* */
-Unit3 Unit3::Random(boost::mt19937 & rng) {
-  // TODO(dellaert): allow any engine without including all of boost :-(
-  boost::uniform_on_sphere<double> randomDirection(3);
-  // This variate_generator object is required for versions of boost somewhere
-  // around 1.46, instead of drawing directly using boost::uniform_on_sphere(rng).
-  boost::variate_generator<boost::mt19937&, boost::uniform_on_sphere<double> > generator(
-      rng, randomDirection);
-  const vector<double> d = generator();
-  return Unit3(d[0], d[1], d[2]);
+Unit3 Unit3::Random(std::mt19937& rng) {
+  // http://mathworld.wolfram.com/SpherePointPicking.html
+  // Adapted from implementation in boost, but using std <random>
+  std::uniform_real_distribution<double> uniform(-1.0, 1.0);
+  double sqsum;
+  double x, y;
+  do {
+    x = uniform(rng);
+    y = uniform(rng);
+    sqsum = x * x + y * y;
+  } while (sqsum > 1);
+  const double mult = 2 * sqrt(1 - sqsum);
+  return Unit3(x * mult, y * mult, 2 * sqsum - 1);
 }
 
 /* ************************************************************************* */
@@ -84,7 +78,7 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
   // NOTE(hayk): At some point it seemed like this reproducably resulted in
   // deadlock. However, I don't know why and I can no longer reproduce it.
   // It either was a red herring or there is still a latent bug left to debug.
-  tbb::mutex::scoped_lock lock(B_mutex_);
+  std::unique_lock<std::mutex> lock(B_mutex_);
 #endif
 
   const bool cachedBasis = static_cast<bool>(B_);

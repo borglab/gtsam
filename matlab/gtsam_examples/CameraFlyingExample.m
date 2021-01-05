@@ -46,7 +46,7 @@ options.camera.horizon = 60;
 % camera baseline
 options.camera.baseline = 0.05;
 % camera focal length
-options.camera.f = round(options.camera.resolution.x * options.camera.horizon / ...
+options.camera.f = round(options.camera.resolution(1) * options.camera.horizon / ...
     options.camera.fov);
 % camera focal baseline
 options.camera.fB = options.camera.f * options.camera.baseline;
@@ -54,15 +54,15 @@ options.camera.fB = options.camera.f * options.camera.baseline;
 options.camera.disparity = options.camera.fB / options.camera.horizon;
 % Monocular Camera Calibration
 options.camera.monoK = Cal3_S2(options.camera.f, options.camera.f, 0, ...
-    options.camera.resolution.x/2, options.camera.resolution.y/2);
+    options.camera.resolution(1)/2, options.camera.resolution(2)/2);
 % Stereo Camera Calibration
 options.camera.stereoK = Cal3_S2Stereo(options.camera.f, options.camera.f, 0, ...
-    options.camera.resolution.x/2, options.camera.resolution.y/2, options.camera.disparity);
+    options.camera.resolution(1)/2, options.camera.resolution(2)/2, options.camera.disparity);
 
 % write video output
 options.writeVideo = true;
 % the testing field size (unit: meter)
-options.fieldSize = Point2([100, 100]');
+options.fieldSize = Point2(100, 100);
 % camera flying speed (unit: meter / second)
 options.speed = 20;
 % camera flying height
@@ -92,7 +92,7 @@ if options.enableTests
         cylinders{i}.Points{2} = cylinders{i}.centroid.compose(Point3(cylinders{i}.radius, 0, 0));
     end
 
-    camera = SimpleCamera.Lookat(Point3(10, 50, 10), ... 
+    camera = PinholeCameraCal3_S2.Lookat(Point3(10, 50, 10), ... 
         Point3(options.fieldSize.x/2, options.fieldSize.y/2, 0), ...
         Point3([0,0,1]'), options.monoK); 
 
@@ -113,14 +113,14 @@ theta = 0;
 i = 1;
 while i <= cylinderNum
     theta = theta + 2*pi/10;
-    x = 40 * rand * cos(theta) + options.fieldSize.x/2;
-    y = 20 * rand * sin(theta) + options.fieldSize.y/2;
-    baseCentroid{i} = Point2([x, y]');
+    x = 40 * rand * cos(theta) + options.fieldSize(1)/2;
+    y = 20 * rand * sin(theta) + options.fieldSize(2)/2;
+    baseCentroid{i} = Point2(x, y);
     
     % prevent two cylinders interact with each other
     regenerate = false;
     for j = 1:i-1
-        if i > 1 && baseCentroid{i}.dist(baseCentroid{j}) < options.cylinder.radius * 2
+        if i > 1 && norm(baseCentroid{i} - baseCentroid{j}) < options.cylinder.radius * 2
             regenerate = true;
             break;
         end
@@ -146,17 +146,17 @@ while 1
     angle = 0.1*pi*(rand-0.5);
     inc_t = Point3(distance * cos(angle), ...
         distance * sin(angle), 0);
-    t = t.compose(inc_t);
+    t = t + inc_t;
     
-    if t.x > options.fieldSize.x - 10 || t.y > options.fieldSize.y - 10;
+    if t(1) > options.fieldSize(1) - 10 || t(2) > options.fieldSize(2) - 10;
         break;
     end
     
     %t = Point3([(i-1)*(options.fieldSize.x - 10)/options.poseNum + 10, ...
     %    15, 10]');
-    camera = SimpleCamera.Lookat(t, ... 
-        Point3(options.fieldSize.x/2, options.fieldSize.y/2, 0), ...
-        Point3([0,0,1]'), options.camera.monoK);    
+    camera = PinholeCameraCal3_S2.Lookat(t, ... 
+        Point3(options.fieldSize(1)/2, options.fieldSize(2)/2, 0), ...
+        Point3(0,0,1), options.camera.monoK);    
     cameraPoses{end+1} = camera.pose;
 end
 

@@ -54,7 +54,7 @@ initialEstimate.print(sprintf('\nInitial estimate:\n'));
 %% Optimize using Levenberg-Marquardt optimization with SubgraphSolver
 params = gtsam.LevenbergMarquardtParams;
 subgraphParams = gtsam.SubgraphSolverParameters;
-params.setLinearSolverType('CONJUGATE_GRADIENT');
+params.setLinearSolverType('ITERATIVE');
 params.setIterativeParams(subgraphParams);
 optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initialEstimate);
 result = optimizer.optimize();

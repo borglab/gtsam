@@ -48,7 +48,7 @@ class GTSAM_EXPORT ScenarioRunner {
   const Bias estimatedBias_;
 
   // Create two samplers for acceleration and omega noise
-  mutable Sampler gyroSampler_, accSampler_;
+  Sampler gyroSampler_, accSampler_;
 
  public:
   ScenarioRunner(const Scenario& scenario, const SharedParams& p,
@@ -104,15 +104,6 @@ class GTSAM_EXPORT ScenarioRunner {
 
   /// Estimate covariance of sampled noise for sanity-check
   Matrix6 estimateNoiseCovariance(size_t N = 1000) const;
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @name Deprecated
-  /// @{
-  ScenarioRunner(const Scenario* scenario, const SharedParams& p,
-                 double imuSampleTime = 1.0 / 100.0, const Bias& bias = Bias())
-      : ScenarioRunner(*scenario, p, imuSampleTime, bias) {}
-  /// @}
-#endif
 };
 
 }  // namespace gtsam

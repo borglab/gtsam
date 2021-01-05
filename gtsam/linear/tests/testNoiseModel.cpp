@@ -68,10 +68,10 @@ TEST(NoiseModel, constructors)
   for(Gaussian::shared_ptr mi: m)
     EXPECT(assert_equal(unwhitened,mi->unwhiten(whitened)));
 
-  // test Mahalanobis squaredDistance
-  double squaredDistance = 5*5+10*10+15*15;
+  // test squared Mahalanobis distance
+  double distance = 5*5+10*10+15*15;
   for(Gaussian::shared_ptr mi: m)
-    DOUBLES_EQUAL(squaredDistance,mi->Mahalanobis(unwhitened),1e-9);
+    DOUBLES_EQUAL(distance,mi->squaredMahalanobisDistance(unwhitened),1e-9);
 
   // test R matrix
   for(Gaussian::shared_ptr mi: m)
@@ -182,8 +182,9 @@ TEST(NoiseModel, ConstrainedMixed )
   EXPECT(assert_equal(Vector3(0.5, 1.0, 0.5),d->whiten(infeasible)));
   EXPECT(assert_equal(Vector3(0.5, 0.0, 0.5),d->whiten(feasible)));
 
-  DOUBLES_EQUAL(1000.0 + 0.25 + 0.25,d->squaredDistance(infeasible),1e-9);
-  DOUBLES_EQUAL(0.5,d->squaredDistance(feasible),1e-9);
+  DOUBLES_EQUAL(0.5 * (1000.0 + 0.25 + 0.25),d->loss(d->squaredMahalanobisDistance(infeasible)),1e-9);
+  DOUBLES_EQUAL(0.5, d->squaredMahalanobisDistance(feasible),1e-9);
+  DOUBLES_EQUAL(0.5 * 0.5, d->loss(0.5),1e-9);
 }
 
 /* ************************************************************************* */
@@ -197,8 +198,9 @@ TEST(NoiseModel, ConstrainedAll )
   EXPECT(assert_equal(Vector3(1.0, 1.0, 1.0),i->whiten(infeasible)));
   EXPECT(assert_equal(Vector3(0.0, 0.0, 0.0),i->whiten(feasible)));
 
-  DOUBLES_EQUAL(1000.0 * 3.0,i->squaredDistance(infeasible),1e-9);
-  DOUBLES_EQUAL(0.0,i->squaredDistance(feasible),1e-9);
+  DOUBLES_EQUAL(0.5 * 1000.0 * 3.0,i->loss(i->squaredMahalanobisDistance(infeasible)),1e-9);
+  DOUBLES_EQUAL(0.0, i->squaredMahalanobisDistance(feasible), 1e-9);
+  DOUBLES_EQUAL(0.0, i->loss(0.0),1e-9);
 }
 
 /* ************************************************************************* */
@@ -451,7 +453,7 @@ TEST(NoiseModel, WhitenInPlace)
 
 /*
  * These tests are responsible for testing the weight functions for the m-estimators in GTSAM.
- * The weight function is related to the analytic derivative of the residual function. See
+ * The weight function is related to the analytic derivative of the loss function. See
  *  https://members.loria.fr/MOBerger/Enseignement/Master2/Documents/ZhangIVC-97-01.pdf
  * for details. This weight function is required when optimizing cost functions with robust
  * penalties using iteratively re-weighted least squares.
@@ -660,26 +662,45 @@ TEST(NoiseModel, robustNoiseL2WithDeadZone)
 {
   double dead_zone_size = 1.0;
   SharedNoiseModel robust = noiseModel::Robust::Create(
-    noiseModel::mEstimator::L2WithDeadZone::Create(dead_zone_size),
-    Unit::Create(3));
-
-/*
- * TODO(mike): There is currently a bug in GTSAM, where none of the mEstimator classes
- * implement a residual function, and GTSAM calls the weight function to evaluate the
- * total penalty, rather than calling the residual function. The weight function should be
- * used during iteratively reweighted least squares optimization, but should not be used to
- * evaluate the total penalty. The long-term solution is for all mEstimators to implement
- * both a weight and a residual function, and for GTSAM to call the residual function when
- * evaluating the total penalty. This bug causes the test below to fail, so I'm leaving it
- * commented out until the underlying bug in GTSAM is fixed.
- *
- */
+      noiseModel::mEstimator::L2WithDeadZone::Create(dead_zone_size),
+      Unit::Create(3));
 
   for (int i = 0; i < 5; i++) {
     Vector3 error = Vector3(i, 0, 0);
-    DOUBLES_EQUAL(0.5*max(0,i-1)*max(0,i-1), robust->squaredDistance(error), 1e-8);
+    DOUBLES_EQUAL(std::fmax(0, i - dead_zone_size) * i,
+                  robust->squaredMahalanobisDistance(error), 1e-8);
   }
 }
+
+TEST(NoiseModel, lossFunctionAtZero)
+{
+  const double k = 5.0;
+  auto fair = mEstimator::Fair::Create(k);
+  DOUBLES_EQUAL(fair->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(fair->weight(0), 1, 1e-8);
+  auto huber = mEstimator::Huber::Create(k);
+  DOUBLES_EQUAL(huber->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(huber->weight(0), 1, 1e-8);
+  auto cauchy = mEstimator::Cauchy::Create(k);
+  DOUBLES_EQUAL(cauchy->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(cauchy->weight(0), 1, 1e-8);
+  auto gmc = mEstimator::GemanMcClure::Create(k);
+  DOUBLES_EQUAL(gmc->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(gmc->weight(0), 1, 1e-8);
+  auto welsch = mEstimator::Welsch::Create(k);
+  DOUBLES_EQUAL(welsch->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(welsch->weight(0), 1, 1e-8);
+  auto tukey = mEstimator::Tukey::Create(k);
+  DOUBLES_EQUAL(tukey->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(tukey->weight(0), 1, 1e-8);
+  auto dcs = mEstimator::DCS::Create(k);
+  DOUBLES_EQUAL(dcs->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(dcs->weight(0), 1, 1e-8);
+  auto lsdz = mEstimator::L2WithDeadZone::Create(k);
+  DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
+}
+
 
 /* ************************************************************************* */
 #define TEST_GAUSSIAN(gaussian)\
@@ -687,7 +708,8 @@ TEST(NoiseModel, robustNoiseL2WithDeadZone)
   EQUALITY(cov, gaussian->covariance());\
   EXPECT(assert_equal(white, gaussian->whiten(e)));\
   EXPECT(assert_equal(e, gaussian->unwhiten(white)));\
-  EXPECT_DOUBLES_EQUAL(251, gaussian->squaredDistance(e), 1e-9);\
+  EXPECT_DOUBLES_EQUAL(251.0, gaussian->squaredMahalanobisDistance(e), 1e-9);\
+  EXPECT_DOUBLES_EQUAL(0.5 * 251.0, gaussian->loss(251.0), 1e-9);\
   Matrix A = R.inverse(); Vector b = e;\
   gaussian->WhitenSystem(A, b);\
   EXPECT(assert_equal(I, A));\

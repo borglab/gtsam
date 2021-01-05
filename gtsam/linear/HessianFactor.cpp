@@ -302,12 +302,14 @@ Matrix HessianFactor::information() const {
 }
 
 /* ************************************************************************* */
-VectorValues HessianFactor::hessianDiagonal() const {
-  VectorValues d;
+void HessianFactor::hessianDiagonalAdd(VectorValues &d) const {
   for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
-    d.emplace(keys_[j], info_.diagonal(j));
+    auto result = d.emplace(keys_[j], info_.diagonal(j));
+    if(!result.second) {
+      // if emplace fails, it returns an iterator to the existing element, which we add to:
+      result.first->second += info_.diagonal(j);
+    }
   }
-  return d;
 }
 
 /* ************************************************************************* */

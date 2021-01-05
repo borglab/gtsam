@@ -39,9 +39,9 @@ endif()
 add_dependencies(blas eigen_blas eigen_blas_static)
 
 install(TARGETS eigen_blas eigen_blas_static
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 if(EIGEN_Fortran_COMPILER_WORKS)
 

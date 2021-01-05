@@ -25,8 +25,8 @@
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/sam/RangeFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -216,8 +216,8 @@ TEST(testNonlinearFactorGraph, eliminate) {
 
   // Priors
   auto prior = noiseModel::Isotropic::Sigma(3, 1);
-  graph.add(PriorFactor<Pose2>(11, T11, prior));
-  graph.add(PriorFactor<Pose2>(21, T21, prior));
+  graph.addPrior(11, T11, prior);
+  graph.addPrior(21, T21, prior);
 
   // Odometry
   auto model = noiseModel::Diagonal::Sigmas(Vector3(0.01, 0.01, 0.3));
@@ -240,6 +240,73 @@ TEST(testNonlinearFactorGraph, eliminate) {
   ordering += 11, 21, 12, 22;
   auto bn = linearized->eliminateSequential(ordering);
   EXPECT_LONGS_EQUAL(4, bn->size());
+}
+
+/* ************************************************************************* */
+TEST(testNonlinearFactorGraph, addPrior) {
+  Key k(0);
+
+  // Factor graph.
+  auto graph = NonlinearFactorGraph();
+
+  // Add a prior factor for key k.
+  auto model_double = noiseModel::Isotropic::Sigma(1, 1);
+  graph.addPrior<double>(k, 10, model_double);
+
+  // Assert the graph has 0 error with the correct values.
+  Values values;
+  values.insert(k, 10.0);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(values), 1e-16);
+
+  // Assert the graph has some error with incorrect values.
+  values.clear();
+  values.insert(k, 11.0);
+  EXPECT(0 != graph.error(values));
+
+  // Clear the factor graph and values.
+  values.clear();
+  graph.erase(graph.begin(), graph.end());
+
+  // Add a Pose3 prior to the factor graph. Use a gaussian noise model by
+  // providing the covariance matrix.
+  Eigen::DiagonalMatrix<double, 6, 6> covariance_pose3;
+  covariance_pose3.setIdentity();
+  Pose3 pose{Rot3(), Point3(0, 0, 0)};
+  graph.addPrior(k, pose, covariance_pose3);
+
+  // Assert the graph has 0 error with the correct values.
+  values.insert(k, pose);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(values), 1e-16);
+
+  // Assert the graph has some error with incorrect values.
+  values.clear();
+  Pose3 pose_incorrect{Rot3::RzRyRx(-M_PI, M_PI, -M_PI / 8), Point3(1, 2, 3)};
+  values.insert(k, pose_incorrect);
+  EXPECT(0 != graph.error(values));
+}
+
+TEST(NonlinearFactorGraph, printErrors)
+{
+  const NonlinearFactorGraph fg = createNonlinearFactorGraph();
+  const Values c = createValues();
+
+  // Test that it builds with default parameters.
+  // We cannot check the output since (at present) output is fixed to std::cout.
+  fg.printErrors(c);
+
+  // Second round: using callback filter to check that we actually visit all factors:
+  std::vector<bool> visited;
+  visited.assign(fg.size(), false);
+  const auto testFilter =
+      [&](const gtsam::Factor *f, double error, size_t index) {
+        EXPECT(f!=nullptr);
+        EXPECT(error>=.0);
+        visited.at(index)=true;
+        return false; // do not print
+      };
+  fg.printErrors(c,"Test graph: ", gtsam::DefaultKeyFormatter,testFilter);
+
+  for (bool visit : visited) EXPECT(visit==true);
 }
 
 /* ************************************************************************* */

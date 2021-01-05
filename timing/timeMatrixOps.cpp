@@ -16,25 +16,25 @@
  * @date    Sep 18, 2010
  */
 
-#include <boost/random.hpp>
-#include <boost/timer.hpp>
 #include <boost/format.hpp>
 #include <boost/lambda/lambda.hpp>
 
+#include <gtsam/base/timing.h>
 #include <gtsam/base/Matrix.h>
 
 #include <iostream>
+#include <random>
 #include <vector>
 #include <utility>
 
 using namespace std;
 //namespace ublas = boost::numeric::ublas;
 //using namespace Eigen;
-using boost::timer;
 using boost::format;
 using namespace boost::lambda;
 
-static boost::variate_generator<boost::mt19937, boost::uniform_real<> > rng(boost::mt19937(), boost::uniform_real<>(-1.0, 0.0));
+static std::mt19937 rng;
+static std::uniform_real_distribution<> uniform(-1.0, 0.0);
 //typedef ublas::matrix<double> matrix;
 //typedef ublas::matrix_range<matrix> matrix_range;
 //typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix;
@@ -54,8 +54,8 @@ int main(int argc, char* argv[]) {
     volatile size_t n=300;
     volatile size_t nReps = 1000;
     assert(m > n);
-    boost::variate_generator<boost::mt19937, boost::uniform_int<size_t> > rni(boost::mt19937(), boost::uniform_int<size_t>(0,m-1));
-    boost::variate_generator<boost::mt19937, boost::uniform_int<size_t> > rnj(boost::mt19937(), boost::uniform_int<size_t>(0,n-1));
+    std::uniform_int_distribution<size_t> uniform_i(0,m-1);
+    std::uniform_int_distribution<size_t> uniform_j(0,n-1);
     gtsam::Matrix mat((int)m,(int)n);
     gtsam::SubMatrix full = mat.block(0, 0, m, n);
     gtsam::SubMatrix top = mat.block(0, 0, n, n);
@@ -68,7 +68,6 @@ int main(int argc, char* argv[]) {
     cout << endl;
 
     {
-      timer tim;
       double basicTime, fullTime, topTime, blockTime;
 
       cout << "Row-major matrix, row-major assignment:" << endl;
@@ -77,45 +76,56 @@ int main(int argc, char* argv[]) {
       for(size_t rep=0; rep<1000; ++rep)
         for(size_t i=0; i<(size_t)mat.rows(); ++i)
           for(size_t j=0; j<(size_t)mat.cols(); ++j)
-            mat(i,j) = rng();
+            mat(i,j) = uniform(rng);
 
-      tim.restart();
+      gttic_(basicTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t i=0; i<(size_t)mat.rows(); ++i)
           for(size_t j=0; j<(size_t)mat.cols(); ++j)
-            mat(i,j) = rng();
-      basicTime = tim.elapsed();
+            mat(i,j) = uniform(rng);
+      gttoc_(basicTime);
+      tictoc_getNode(basicTimeNode, basicTime);
+      basicTime = basicTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Basic: %1% mus/element") % double(1000000 * basicTime / double(mat.rows()*mat.cols()*nReps)) << endl;
 
-      tim.restart();
+      gttic_(fullTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t i=0; i<(size_t)full.rows(); ++i)
           for(size_t j=0; j<(size_t)full.cols(); ++j)
-            full(i,j) = rng();
-      fullTime = tim.elapsed();
+            full(i,j) = uniform(rng);
+      gttoc_(fullTime);
+      tictoc_getNode(fullTimeNode, fullTime);
+      fullTime = fullTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Full:  %1% mus/element") % double(1000000 * fullTime / double(full.rows()*full.cols()*nReps)) << endl;
 
-      tim.restart();
+      gttic_(topTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t i=0; i<(size_t)top.rows(); ++i)
           for(size_t j=0; j<(size_t)top.cols(); ++j)
-            top(i,j) = rng();
-      topTime = tim.elapsed();
+            top(i,j) = uniform(rng);
+      gttoc_(topTime);
+      tictoc_getNode(topTimeNode, topTime);
+      topTime = topTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Top:   %1% mus/element") % double(1000000 * topTime / double(top.rows()*top.cols()*nReps)) << endl;
 
-      tim.restart();
+      gttic_(blockTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t i=0; i<(size_t)block.rows(); ++i)
           for(size_t j=0; j<(size_t)block.cols(); ++j)
-            block(i,j) = rng();
-      blockTime = tim.elapsed();
+            block(i,j) = uniform(rng);
+      gttoc_(blockTime);
+      tictoc_getNode(blockTimeNode, blockTime);
+      blockTime = blockTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Block: %1% mus/element") % double(1000000 * blockTime / double(block.rows()*block.cols()*nReps)) << endl;
 
       cout << endl;
     }
 
     {
-      timer tim;
       double basicTime, fullTime, topTime, blockTime;
 
       cout << "Row-major matrix, column-major assignment:" << endl;
@@ -124,45 +134,56 @@ int main(int argc, char* argv[]) {
       for(size_t rep=0; rep<1000; ++rep)
         for(size_t j=0; j<(size_t)mat.cols(); ++j)
           for(size_t i=0; i<(size_t)mat.rows(); ++i)
-            mat(i,j) = rng();
+            mat(i,j) = uniform(rng);
 
-      tim.restart();
+      gttic_(basicTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t j=0; j<(size_t)mat.cols(); ++j)
           for(size_t i=0; i<(size_t)mat.rows(); ++i)
-            mat(i,j) = rng();
-      basicTime = tim.elapsed();
+            mat(i,j) = uniform(rng);
+      gttoc_(basicTime);
+      tictoc_getNode(basicTimeNode, basicTime);
+      basicTime = basicTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Basic: %1% mus/element") % double(1000000 * basicTime / double(mat.rows()*mat.cols()*nReps)) << endl;
 
-      tim.restart();
+      gttic_(fullTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t j=0; j<(size_t)full.cols(); ++j)
           for(size_t i=0; i<(size_t)full.rows(); ++i)
-            full(i,j) = rng();
-      fullTime = tim.elapsed();
+            full(i,j) = uniform(rng);
+      gttoc_(fullTime);
+      tictoc_getNode(fullTimeNode, fullTime);
+      fullTime = fullTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Full:  %1% mus/element") % double(1000000 * fullTime / double(full.rows()*full.cols()*nReps)) << endl;
 
-      tim.restart();
+      gttic_(topTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t j=0; j<(size_t)top.cols(); ++j)
           for(size_t i=0; i<(size_t)top.rows(); ++i)
-            top(i,j) = rng();
-      topTime = tim.elapsed();
+            top(i,j) = uniform(rng);
+      gttoc_(topTime);
+      tictoc_getNode(topTimeNode, topTime);
+      topTime = topTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Top:   %1% mus/element") % double(1000000 * topTime / double(top.rows()*top.cols()*nReps)) << endl;
 
-      tim.restart();
+      gttic_(blockTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t j=0; j<(size_t)block.cols(); ++j)
           for(size_t i=0; i<(size_t)block.rows(); ++i)
-            block(i,j) = rng();
-      blockTime = tim.elapsed();
+            block(i,j) = uniform(rng);
+      gttoc_(blockTime);
+      tictoc_getNode(blockTimeNode, blockTime);
+      blockTime = blockTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Block: %1% mus/element") % double(1000000 * blockTime / double(block.rows()*block.cols()*nReps)) << endl;
 
       cout << endl;
     }
 
     {
-      timer tim;
       double basicTime, fullTime, topTime, blockTime;
       typedef pair<size_t,size_t> ij_t;
       vector<ij_t> ijs(100000);
@@ -170,32 +191,48 @@ int main(int argc, char* argv[]) {
       cout << "Row-major matrix, random assignment:" << endl;
 
       // Do a few initial assignments to let any cache effects stabilize
-      for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni(),rnj()));
+      for_each(ijs.begin(), ijs.end(), _1 = make_pair(uniform_i(rng),uniform_j(rng)));
       for(size_t rep=0; rep<1000; ++rep)
-        for(const ij_t& ij: ijs) { mat(ij.first, ij.second) = rng(); }
+        for(const ij_t& ij: ijs) { mat(ij.first, ij.second) = uniform(rng); }
 
-      for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni(),rnj()));
+      gttic_(basicTime);
+      for_each(ijs.begin(), ijs.end(), _1 = make_pair(uniform_i(rng),uniform_j(rng)));
       for(size_t rep=0; rep<1000; ++rep)
-        for(const ij_t& ij: ijs) { mat(ij.first, ij.second) = rng(); }
-      basicTime = tim.elapsed();
+        for(const ij_t& ij: ijs) { mat(ij.first, ij.second) = uniform(rng); }
+      gttoc_(basicTime);
+      tictoc_getNode(basicTimeNode, basicTime);
+      basicTime = basicTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Basic: %1% mus/element") % double(1000000 * basicTime / double(ijs.size()*nReps)) << endl;
 
-      for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni(),rnj()));
+      gttic_(fullTime);
+      for_each(ijs.begin(), ijs.end(), _1 = make_pair(uniform_i(rng),uniform_j(rng)));
       for(size_t rep=0; rep<1000; ++rep)
-        for(const ij_t& ij: ijs) { full(ij.first, ij.second) = rng(); }
-      fullTime = tim.elapsed();
+        for(const ij_t& ij: ijs) { full(ij.first, ij.second) = uniform(rng); }
+      gttoc_(fullTime);
+      tictoc_getNode(fullTimeNode, fullTime);
+      fullTime = fullTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Full:  %1% mus/element") % double(1000000 * fullTime / double(ijs.size()*nReps)) << endl;
 
-      for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni()%top.rows(),rnj()));
+      gttic_(topTime);
+      for_each(ijs.begin(), ijs.end(), _1 = make_pair(uniform_i(rng)%top.rows(),uniform_j(rng)));
       for(size_t rep=0; rep<1000; ++rep)
-        for(const ij_t& ij: ijs) { top(ij.first, ij.second) = rng(); }
-      topTime = tim.elapsed();
+        for(const ij_t& ij: ijs) { top(ij.first, ij.second) = uniform(rng); }
+      gttoc_(topTime);
+      tictoc_getNode(topTimeNode, topTime);
+      topTime = topTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Top:   %1% mus/element") % double(1000000 * topTime / double(ijs.size()*nReps)) << endl;
 
-      for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni()%block.rows(),rnj()%block.cols()));
+      gttic_(blockTime);
+      for_each(ijs.begin(), ijs.end(), _1 = make_pair(uniform_i(rng)%block.rows(),uniform_j(rng)%block.cols()));
       for(size_t rep=0; rep<1000; ++rep)
-        for(const ij_t& ij: ijs) { block(ij.first, ij.second) = rng(); }
-      blockTime = tim.elapsed();
+        for(const ij_t& ij: ijs) { block(ij.first, ij.second) = uniform(rng); }
+      gttoc_(blockTime);
+      tictoc_getNode(blockTimeNode, blockTime);
+      blockTime = blockTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Block: %1% mus/element") % double(1000000 * blockTime / double(ijs.size()*nReps)) << endl;
 
       cout << endl;
@@ -214,7 +251,7 @@ int main(int argc, char* argv[]) {
 //    matrix mat(5,5);
 //    for(size_t j=0; j<(size_t)mat.cols(); ++j)
 //      for(size_t i=0; i<(size_t)mat.rows(); ++i)
-//        mat(i,j) = rng();
+//        mat(i,j) = uniform(rng);
 //
 //    tri = ublas::triangular_adaptor<matrix, ublas::upper>(mat);
 //    cout << "  Assigned from triangular adapter: " << tri << endl;
@@ -223,13 +260,13 @@ int main(int argc, char* argv[]) {
 //
 //    for(size_t j=0; j<(size_t)mat.cols(); ++j)
 //      for(size_t i=0; i<(size_t)mat.rows(); ++i)
-//        mat(i,j) = rng();
+//        mat(i,j) = uniform(rng);
 //    mat = tri;
 //    cout << "  Assign matrix from triangular: " << mat << endl;
 //
 //    for(size_t j=0; j<(size_t)mat.cols(); ++j)
 //      for(size_t i=0; i<(size_t)mat.rows(); ++i)
-//        mat(i,j) = rng();
+//        mat(i,j) = uniform(rng);
 //    (ublas::triangular_adaptor<matrix, ublas::upper>(mat)) = tri;
 //    cout << "  Assign triangular adaptor from triangular: " << mat << endl;
 //  }
@@ -245,7 +282,7 @@ int main(int argc, char* argv[]) {
 //    matrix mat(5,7);
 //    for(size_t j=0; j<(size_t)mat.cols(); ++j)
 //      for(size_t i=0; i<(size_t)mat.rows(); ++i)
-//        mat(i,j) = rng();
+//        mat(i,j) = uniform(rng);
 //
 //    tri = ublas::triangular_adaptor<matrix, ublas::upper>(mat);
 //    cout << "  Assigned from triangular adapter: " << tri << endl;
@@ -254,13 +291,13 @@ int main(int argc, char* argv[]) {
 //
 //    for(size_t j=0; j<(size_t)mat.cols(); ++j)
 //      for(size_t i=0; i<(size_t)mat.rows(); ++i)
-//        mat(i,j) = rng();
+//        mat(i,j) = uniform(rng);
 //    mat = tri;
 //    cout << "  Assign matrix from triangular: " << mat << endl;
 //
 //    for(size_t j=0; j<(size_t)mat.cols(); ++j)
 //      for(size_t i=0; i<(size_t)mat.rows(); ++i)
-//        mat(i,j) = rng();
+//        mat(i,j) = uniform(rng);
 //    mat = ublas::triangular_adaptor<matrix, ublas::upper>(mat);
 //    cout << "  Assign matrix from triangular adaptor of self: " << mat << endl;
 //  }

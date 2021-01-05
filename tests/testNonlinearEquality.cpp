@@ -16,7 +16,7 @@
 
 #include <tests/simulated2DConstraints.h>
 
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -28,7 +28,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -527,10 +527,10 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
   Rot3 faceTowardsY(Point3(1, 0, 0), Point3(0, 0, -1), Point3(0, 1, 0));
 
   Pose3 poseLeft(faceTowardsY, Point3(0, 0, 0));  // origin, left camera
-  SimpleCamera leftCamera(poseLeft, K);
+  PinholeCamera<Cal3_S2> leftCamera(poseLeft, K);
 
   Pose3 poseRight(faceTowardsY, Point3(2, 0, 0));  // 2 units to the right
-  SimpleCamera rightCamera(poseRight, K);
+  PinholeCamera<Cal3_S2> rightCamera(poseRight, K);
 
   Point3 landmark(1, 5, 0); //centered between the cameras, 5 units away
 

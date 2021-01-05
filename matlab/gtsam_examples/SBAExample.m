@@ -46,8 +46,8 @@ end
 
 %% Add Gaussian priors for a pose and a landmark to constrain the system
 cameraPriorNoise  = noiseModel.Diagonal.Sigmas(cameraNoiseSigmas);
-firstCamera = SimpleCamera(truth.cameras{1}.pose, truth.K);
-graph.add(PriorFactorSimpleCamera(symbol('c',1), firstCamera, cameraPriorNoise));
+firstCamera = PinholeCameraCal3_S2(truth.cameras{1}.pose, truth.K);
+graph.add(PriorFactorPinholeCameraCal3_S2(symbol('c',1), firstCamera, cameraPriorNoise));
 
 pointPriorNoise  = noiseModel.Isotropic.Sigma(3,pointNoiseSigma);
 graph.add(PriorFactorPoint3(symbol('p',1), truth.points{1}, pointPriorNoise));
@@ -60,11 +60,11 @@ graph.print(sprintf('\nFactor graph:\n'));
 initialEstimate = Values;
 for i=1:size(truth.cameras,2)
     pose_i = truth.cameras{i}.pose.retract(0.1*randn(6,1));
-    camera_i = SimpleCamera(pose_i, truth.K);
+    camera_i = PinholeCameraCal3_S2(pose_i, truth.K);
     initialEstimate.insert(symbol('c',i), camera_i);
 end
 for j=1:size(truth.points,2)
-    point_j = Point3(truth.points{j}.vector() + 0.1*randn(3,1));
+    point_j = Point3(truth.points{j} + 0.1*randn(3,1));
     initialEstimate.insert(symbol('p',j), point_j);
 end
 initialEstimate.print(sprintf('\nInitial estimate:\n  '));

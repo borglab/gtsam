@@ -19,8 +19,8 @@
 
 #ifdef GTSAM_USE_QUATERNIONS
 
-#include <boost/math/constants/constants.hpp>
 #include <gtsam/geometry/Rot3.h>
+#include <boost/math/constants/constants.hpp>
 #include <cmath>
 
 using namespace std;
@@ -67,21 +67,42 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::RzRyRx(double x, double y, double z) { return Rot3(
-      gtsam::Quaternion(Eigen::AngleAxisd(z, Eigen::Vector3d::UnitZ())) *
-      gtsam::Quaternion(Eigen::AngleAxisd(y, Eigen::Vector3d::UnitY())) *
-      gtsam::Quaternion(Eigen::AngleAxisd(x, Eigen::Vector3d::UnitX())));
+  Rot3 Rot3::RzRyRx(double x, double y, double z, OptionalJacobian<3, 1> Hx,
+                    OptionalJacobian<3, 1> Hy, OptionalJacobian<3, 1> Hz) {
+    if (Hx) (*Hx) << 1, 0, 0;
+
+    if (Hy or Hz) {
+      const auto cx = cos(x), sx = sin(x);
+      if (Hy) (*Hy) << 0, cx, -sx;
+      if (Hz) {
+        const auto cy = cos(y), sy = sin(y);
+        (*Hz) << -sy, sx * cy, cx * cy;
+      }
+    }
+
+    return Rot3(
+        gtsam::Quaternion(Eigen::AngleAxisd(z, Eigen::Vector3d::UnitZ())) *
+        gtsam::Quaternion(Eigen::AngleAxisd(y, Eigen::Vector3d::UnitY())) *
+        gtsam::Quaternion(Eigen::AngleAxisd(x, Eigen::Vector3d::UnitX())));
   }
 
+  /* ************************************************************************* */
+  Rot3 Rot3::normalized() const {
+    return Rot3(quaternion_.normalized());
+  }
   /* ************************************************************************* */
   Rot3 Rot3::operator*(const Rot3& R2) const {
     return Rot3(quaternion_ * R2.quaternion_);
   }
 
   /* ************************************************************************* */
-  // TODO: Could we do this? It works in Rot3M but not here, probably because
-  // here we create an intermediate value by calling matrix()
-  // const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
+  // TODO: Maybe use return type `const Eigen::Transpose<const Matrix3>`?
+  // It works in Rot3M but not here, because of some weird behavior
+  // due to Eigen's expression templates which needs more investigation.
+  // For example, if we use matrix(), the value returned has a 1e-10,
+  // and if we use quaternion_.toRotationMatrix(), the matrix is arbitrary.
+  // Using eval() here doesn't help, it only helps if we use it in
+  // the downstream code.
   Matrix3 Rot3::transpose() const {
     return matrix().transpose();
   }

@@ -1,3 +1,10 @@
+include(CheckCXXCompilerFlag) # for check_cxx_compiler_flag()
+
+# Set cmake policy to recognize the AppleClang compiler
+# independently from the Clang compiler.
+if(POLICY CMP0025)
+  cmake_policy(SET CMP0025 NEW)
+endif()
 
 # function:  list_append_cache(var [new_values ...])
 # Like "list(APPEND ...)" but working for CACHE variables.
@@ -81,6 +88,11 @@ if(MSVC)
     WINDOWS_LEAN_AND_MEAN
     NOMINMAX
 	)
+  # Avoid literally hundreds to thousands of warnings:
+  list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC
+	/wd4267 # warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  )
+
 endif()
 
 # Other (non-preprocessor macros) compiler flags:
@@ -94,8 +106,27 @@ if(MSVC)
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          /MD /O2  CACHE STRING "(User editable) Private compiler flags for Timing configuration.")
 else()
   # Common to all configurations, next for each configuration:
-  # "-fPIC" is to ensure proper code generation for shared libraries
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          -Wall -fPIC CACHE STRING "(User editable) Private compiler flags for all configurations.")
+
+  if (NOT MSVC)
+    check_cxx_compiler_flag(-Wsuggest-override COMPILER_HAS_WSUGGEST_OVERRIDE)
+    check_cxx_compiler_flag(-Wmissing COMPILER_HAS_WMISSING_OVERRIDE)
+    if (COMPILER_HAS_WSUGGEST_OVERRIDE)
+      set(flag_override_ -Wsuggest-override) # -Werror=suggest-override: Add again someday
+    elseif(COMPILER_HAS_WMISSING_OVERRIDE)
+      set(flag_override_ -Wmissing-override) # -Werror=missing-override: Add again someday
+    endif()
+  endif()
+
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON
+    -Wall                                          # Enable common warnings
+    -fPIC                                          # ensure proper code generation for shared libraries
+    $<$<CXX_COMPILER_ID:GNU>:-Wreturn-local-addr -Werror=return-local-addr>            # Error: return local address
+    $<$<CXX_COMPILER_ID:Clang>:-Wreturn-stack-address   -Werror=return-stack-address>  # Error: return local address
+    -Wreturn-type  -Werror=return-type             # Error on missing return()
+    -Wformat -Werror=format-security               # Error on wrong printf() arguments
+    $<$<COMPILE_LANGUAGE:CXX>:${flag_override_}>   # Enforce the use of the override keyword
+    #
+    CACHE STRING "(User editable) Private compiler flags for all configurations.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           -g -fno-inline  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  -g -O3  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         -O3  CACHE STRING "(User editable) Private compiler flags for Release configuration.")
@@ -237,3 +268,17 @@ function(gtsam_apply_build_flags target_name_)
   target_compile_options(${target_name_} PRIVATE ${GTSAM_COMPILE_OPTIONS_PRIVATE})
 
 endfunction(gtsam_apply_build_flags)
+
+
+if(NOT MSVC AND NOT XCODE_VERSION)
+  # Set the build type to upper case for downstream use
+  string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPER)
+
+  # Set the GTSAM_BUILD_TAG variable.
+  # If build type is Release, set to blank (""), else set to the build type.
+  if(${CMAKE_BUILD_TYPE_UPPER} STREQUAL "RELEASE")
+   set(GTSAM_BUILD_TAG "") # Don't create release mode tag on installed directory
+  else()
+   set(GTSAM_BUILD_TAG "${CMAKE_BUILD_TYPE}")
+  endif()
+endif()

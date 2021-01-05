@@ -53,7 +53,7 @@ y_shift = Point3(0,0.5,0);
 
 % insert shifted points
 for i=1:nrPoints
-   initial.insert(100+i,landmarks{i}.compose(y_shift)); 
+   initial.insert(100+i,landmarks{i} + y_shift); 
 end
 
 figure(1);
@@ -134,7 +134,7 @@ for i=1:steps
     end
     if i == 2
         fg.add(PriorFactorPose3(2, Pose3(Rot3(),Point3(1,0,0)),pose_cov));
-        fg.add(PriorFactorLieVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
+        fg.add(PriorFactorVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
         fg.add(PriorFactorConstantBias(currentBiasKey, currentBias, sigma_init_b));
     end
     if i > 1
@@ -144,7 +144,7 @@ for i=1:steps
             step = move_circle;
         end
         
-        initial.insert(i,result.at(i-1).compose(step));
+        initial.insert(i,result.atPose3(i-1).compose(step));
         fg.add(BetweenFactorPose3(i-1,i, step, covariance));
         
         deltaT = 1;
@@ -158,10 +158,13 @@ for i=1:steps
     
         [ currentIMUPoseGlobal, currentVelocityGlobal ] = imuSimulator.integrateTrajectory( ...
     currentIMUPoseGlobal, omega, velocity, velocity, deltaT);
-
-        currentSummarizedMeasurement = gtsam.ImuFactorPreintegratedMeasurements( ...
-        currentBias, IMU_metadata.AccelerometerSigma.^2 * eye(3), ...
-        IMU_metadata.GyroscopeSigma.^2 * eye(3), IMU_metadata.IntegrationSigma.^2 * eye(3));
+        
+        params = gtsam.PreintegrationParams.MakeSharedD(9.81);
+        params.setAccelerometerCovariance(IMU_metadata.AccelerometerSigma.^2 * eye(3));
+        params.setGyroscopeCovariance(IMU_metadata.GyroscopeSigma.^2 * eye(3));
+        params.setIntegrationCovariance(IMU_metadata.IntegrationSigma.^2 * eye(3));
+        currentSummarizedMeasurement = gtsam.PreintegratedImuMeasurements( ...
+        params, currentBias);
     
         accMeas = acc_omega(1:3)-g;
         omegaMeas = acc_omega(4:6);
@@ -171,7 +174,7 @@ for i=1:steps
         fg.add(ImuFactor( ...
         i-1, currentVelKey-1, ...
         i, currentVelKey, ...
-        currentBiasKey, currentSummarizedMeasurement, g, w_coriolis));
+        currentBiasKey, currentSummarizedMeasurement));
     
         % Bias evolution as given in the IMU metadata
         fg.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, imuBias.ConstantBias(zeros(3,1), zeros(3,1)), ...
@@ -182,7 +185,7 @@ for i=1:steps
     % generate some camera measurements
     cam_pose = currentIMUPoseGlobal.compose(actual_transform);
 %     gtsam.plotPose3(cam_pose);
-    cam = SimpleCamera(cam_pose,K);
+    cam = PinholeCameraCal3_S2(cam_pose,K);
     i
 %     result
     for j=1:nrPoints
@@ -204,8 +207,8 @@ for i=1:steps
         initial = Values;
         fg = NonlinearFactorGraph;
         
-        currentVelocityGlobal = isam.calculateEstimate(currentVelKey);
-        currentBias = isam.calculateEstimate(currentBiasKey);
+        currentVelocityGlobal = isam.calculateEstimate().atVector(currentVelKey);
+        currentBias = isam.calculateEstimate().atConstantBias(currentBiasKey);
         
         %% Compute some marginals
         marginal = isam.marginalCovariance(calibrationKey);
@@ -249,10 +252,10 @@ for i=1:steps
     gtsam.plotPose3(currentIMUPoseGlobal, [], 2);
     
     %% plot results
-    result_camera_transform = result.at(transformKey);
+    result_camera_transform = result.atPose3(transformKey);
     for j=1:i
-      gtsam.plotPose3(result.at(j),[],0.5);
-      gtsam.plotPose3(result.at(j).compose(result_camera_transform),[],0.5);
+      gtsam.plotPose3(result.atPose3(j),[],0.5);
+      gtsam.plotPose3(result.atPose3(j).compose(result_camera_transform),[],0.5);
     end
     
     xlabel('x (m)');
@@ -265,14 +268,15 @@ for i=1:steps
 %     axis equal
     
     for l=101:100+nrPoints
-        plotPoint3(result.at(l),'g');
+        plotPoint3(result.atPoint3(l),'g');
     end
     
-    ty = result.at(transformKey).translation().y();
-    fx = result.at(calibrationKey).fx();
-    fy = result.at(calibrationKey).fy();
-    px = result.at(calibrationKey).px();
-    py = result.at(calibrationKey).py();
+    t = result.atPose3(transformKey).translation();
+    ty = t(2);
+    fx = result.atCal3_S2(calibrationKey).fx();
+    fy = result.atCal3_S2(calibrationKey).fy();
+    px = result.atCal3_S2(calibrationKey).px();
+    py = result.atCal3_S2(calibrationKey).py();
     text(1,5,5,sprintf('Y-Transform(0.0): %0.2f',ty));
     text(1,5,3,sprintf('fx(900): %.0f',fx));
     text(1,5,1,sprintf('fy(900): %.0f',fy));
@@ -342,10 +346,10 @@ end
 fprintf('Cheirality Exception count: %d\n', cheirality_exception_count);
 
 disp('Transform after optimization');
-result.at(transformKey)
+result.atPose3(transformKey)
 
 disp('Calibration after optimization');
-result.at(calibrationKey)
+result.atCal3_S2(calibrationKey)
 
 disp('Bias after optimization');
 currentBias

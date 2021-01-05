@@ -45,13 +45,17 @@ namespace gtsam {
 
   /* ************************************************************************* */
   VectorValues::VectorValues(const Vector& x, const Dims& dims) {
-    typedef pair<Key, size_t> Pair;
+    using Pair = pair<const Key, size_t>;
     size_t j = 0;
     for (const Pair& v : dims) {
       Key key;
       size_t n;
       boost::tie(key, n) = v;
+#ifdef TBB_GREATER_EQUAL_2020
       values_.emplace(key, x.segment(j, n));
+#else
+      values_.insert(std::make_pair(key, x.segment(j, n)));
+#endif
       j += n;
     }
   }
@@ -60,7 +64,11 @@ namespace gtsam {
   VectorValues::VectorValues(const Vector& x, const Scatter& scatter) {
     size_t j = 0;
     for (const SlotEntry& v : scatter) {
+#ifdef TBB_GREATER_EQUAL_2020
       values_.emplace(v.key, x.segment(j, v.dimension));
+#else
+      values_.insert(std::make_pair(v.key, x.segment(j, v.dimension)));
+#endif
       j += v.dimension;
     }
   }
@@ -70,7 +78,11 @@ namespace gtsam {
   {
     VectorValues result;
     for(const KeyValuePair& v: other)
+#ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(v.first, Vector::Zero(v.second.size()));
+#else
+      result.values_.insert(std::make_pair(v.first, Vector::Zero(v.second.size())));
+#endif
     return result;
   }
 
@@ -80,16 +92,6 @@ namespace gtsam {
     if(!result.second)
       throw std::invalid_argument(
       "Requested to insert variable '" + DefaultKeyFormatter(key_value.first)
-      + "' already in this VectorValues.");
-    return result.first;
-  }
-
-  /* ************************************************************************* */
-  VectorValues::iterator VectorValues::emplace(Key j, const Vector& value) {
-    std::pair<iterator, bool> result = values_.emplace(j, value);
-    if(!result.second)
-      throw std::invalid_argument(
-      "Requested to emplace variable '" + DefaultKeyFormatter(j)
       + "' already in this VectorValues.");
     return result.first;
   }
@@ -129,7 +131,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  ostream& operator<<(ostream& os, const VectorValues& v) {
+  GTSAM_EXPORT ostream& operator<<(ostream& os, const VectorValues& v) {
     // Change print depending on whether we are using TBB
 #ifdef GTSAM_USE_TBB
     map<Key, Vector> sorted;
@@ -159,7 +161,7 @@ namespace gtsam {
   bool VectorValues::equals(const VectorValues& x, double tol) const {
     if(this->size() != x.size())
       return false;
-    for(const auto& values: boost::combine(*this, x)) {
+    for(const auto values: boost::combine(*this, x)) {
       if(values.get<0>().first != values.get<1>().first ||
         !equal_with_abs_tol(values.get<0>().second, values.get<1>().second, tol))
         return false;
@@ -231,7 +233,7 @@ namespace gtsam {
     double result = 0.0;
     typedef boost::tuple<value_type, value_type> ValuePair;
     using boost::adaptors::map_values;
-    for(const ValuePair& values: boost::combine(*this, v)) {
+    for(const ValuePair values: boost::combine(*this, v)) {
       assert_throw(values.get<0>().first == values.get<1>().first,
         invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
       assert_throw(values.get<0>().second.size() == values.get<1>().second.size(),
@@ -266,7 +268,11 @@ namespace gtsam {
     VectorValues result;
     // The result.end() hint here should result in constant-time inserts
     for(const_iterator j1 = begin(), j2 = c.begin(); j1 != end(); ++j1, ++j2)
+#ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(j1->first, j1->second + j2->second);
+#else
+      result.values_.insert(std::make_pair(j1->first, j1->second + j2->second));
+#endif
 
     return result;
   }
@@ -324,7 +330,11 @@ namespace gtsam {
     VectorValues result;
     // The result.end() hint here should result in constant-time inserts
     for(const_iterator j1 = begin(), j2 = c.begin(); j1 != end(); ++j1, ++j2)
+#ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(j1->first, j1->second - j2->second);
+#else
+      result.values_.insert(std::make_pair(j1->first, j1->second - j2->second));
+#endif
 
     return result;
   }
@@ -340,7 +350,11 @@ namespace gtsam {
   {
     VectorValues result;
     for(const VectorValues::KeyValuePair& key_v: v)
+#ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(key_v.first, a * key_v.second);
+#else
+      result.values_.insert(std::make_pair(key_v.first, a * key_v.second));
+#endif
     return result;
   }
 

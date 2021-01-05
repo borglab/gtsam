@@ -255,8 +255,7 @@ namespace gtsam {
     VectorValues d;
     for (const sharedFactor& factor : *this) {
       if(factor){
-        VectorValues di = factor->hessianDiagonal();
-        d.addInPlace_(di);
+        factor->hessianDiagonalAdd(d);
       }
     }
     return d;

@@ -335,7 +335,7 @@ TEST(Values, filter) {
   int i = 0;
   Values::Filtered<Value> filtered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
   EXPECT_LONGS_EQUAL(2, (long)filtered.size());
-  for(const Values::Filtered<>::KeyValuePair& key_value: filtered) {
+  for(const auto key_value: filtered) {
     if(i == 0) {
       LONGS_EQUAL(2, (long)key_value.key);
       try {key_value.value.cast<Pose2>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose2");}
@@ -370,7 +370,7 @@ TEST(Values, filter) {
   i = 0;
   Values::ConstFiltered<Pose3> pose_filtered = values.filter<Pose3>();
   EXPECT_LONGS_EQUAL(2, (long)pose_filtered.size());
-  for(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value: pose_filtered) {
+  for(const auto key_value: pose_filtered) {
     if(i == 0) {
       EXPECT_LONGS_EQUAL(1, (long)key_value.key);
       EXPECT(assert_equal(pose1, key_value.value));
@@ -408,7 +408,7 @@ TEST(Values, Symbol_filter) {
   values.insert(Symbol('y', 3), pose3);
 
   int i = 0;
-  for(const Values::Filtered<Value>::KeyValuePair& key_value: values.filter(Symbol::ChrTest('y'))) {
+  for(const auto key_value: values.filter(Symbol::ChrTest('y'))) {
     if(i == 0) {
       LONGS_EQUAL(Symbol('y', 1), (long)key_value.key);
       EXPECT(assert_equal(pose1, key_value.value.cast<Pose3>()));
@@ -588,6 +588,45 @@ TEST(Values, MatrixDynamicInsertFixedRead) {
   CHECK(assert_equal((Vector)expected, values.at<Matrix13>(key1)));
   CHECK_EXCEPTION(values.at<Matrix23>(key1), exception);
 }
+
+TEST(Values, Demangle) {
+  Values values;
+  Matrix13 v; v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  string expected = "Values with 1 values:\nValue v1: (Eigen::Matrix<double, 1, 3, 1, 1, 3>)\n[\n	5, 6, 7\n]\n\n";
+
+  EXPECT(assert_print_equal(expected, values));
+}
+
+/* ************************************************************************* */
+TEST(Values, brace_initializer) {
+  const Pose2 poseA(1.0, 2.0, 0.3), poseC(.0, .0, .0);
+  const Pose3 poseB(Pose2(0.1, 0.2, 0.3));
+
+  {
+    Values values;
+    EXPECT_LONGS_EQUAL(0, values.size());
+    values = { {key1, genericValue(1.0)} };
+    EXPECT_LONGS_EQUAL(1, values.size());
+    CHECK(values.at<double>(key1) == 1.0);
+  }
+  {
+    Values values = { {key1, genericValue(poseA)}, {key2, genericValue(poseB)} };
+    EXPECT_LONGS_EQUAL(2, values.size());
+    EXPECT(assert_equal(values.at<Pose2>(key1), poseA));
+    EXPECT(assert_equal(values.at<Pose3>(key2), poseB));
+  }
+  // Test exception: duplicated key:
+  {
+    Values values;
+    CHECK_EXCEPTION((values = {
+      {key1, genericValue(poseA)},
+      {key2, genericValue(poseB)},
+      {key1, genericValue(poseC)} 
+      }), std::exception);
+  }
+}
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
