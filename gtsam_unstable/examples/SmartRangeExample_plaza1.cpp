@@ -188,7 +188,8 @@ int main(int argc, char** argv) {
             smartFactors[j]->addRange(i, range);
             printf("adding range %g for %d",range,(int)j);
           } catch (const invalid_argument& e) {
-            printf("warning: omitting duplicate range %g for %d",range,(int)j);
+            printf("warning: omitting duplicate range %g for %d: %s", range,
+                   (int)j, e.what());
           }
           cout << endl;
         }
