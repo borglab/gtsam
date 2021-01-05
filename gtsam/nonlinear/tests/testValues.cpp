@@ -175,10 +175,11 @@ TEST(Values, basic_functions)
 {
   Values values;
   const Values& values_c = values;
-  values.insert(2, Vector3());
-  values.insert(4, Vector3());
-  values.insert(6, Matrix23());
-  values.insert(8, Matrix23());
+  Matrix23 M1 = Matrix23::Zero(), M2 = Matrix23::Zero();
+  values.insert(2, Vector3(0, 0, 0));
+  values.insert(4, Vector3(0, 0, 0));
+  values.insert(6, M1);
+  values.insert(8, M2);
 
   // find
   EXPECT_LONGS_EQUAL(4, values.find(4)->key);

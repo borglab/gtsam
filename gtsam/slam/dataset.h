@@ -303,8 +303,8 @@ struct SfmTrack {
 
   /// print
   void print(const std::string& s = "") const {
-    cout << "Track with " << measurements.size();
-    cout << " measurements of point " << p << "\n";
+    std::cout << "Track with " << measurements.size();
+    std::cout << " measurements of point " << p << std::endl;
   }
 };
 
@@ -385,8 +385,8 @@ struct SfmData {
 
   /// print
   void print(const std::string& s = "") const {
-    cout << "Number of cameras = " << number_cameras() << "\n";
-    cout << "Number of tracks = " << number_tracks() << "\n";
+    std::cout << "Number of cameras = " << number_cameras() << std::endl;
+    std::cout << "Number of tracks = " << number_tracks() << std::endl;
   }
 };
 
