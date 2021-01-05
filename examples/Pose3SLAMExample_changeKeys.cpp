@@ -55,7 +55,7 @@ int main(const int argc, const char *argv[]) {
     std::cout << "Rewriting input to file: " << inputFileRewritten << std::endl;
     // Additional: rewrite input with simplified keys 0,1,...
     Values simpleInitial;
-    for(const Values::ConstKeyValuePair& key_value: *initial) {
+    for(const auto key_value: *initial) {
       Key key;
       if(add)
         key = key_value.key + firstKey;

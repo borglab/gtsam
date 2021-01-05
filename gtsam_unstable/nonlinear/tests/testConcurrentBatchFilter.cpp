@@ -64,7 +64,7 @@ NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph,
 
 
   std::set<Key> KeysToKeep;
-  for(const Values::ConstKeyValuePair& key_value: linPoint) { // we cycle over all the keys of factorGraph
+  for(const auto key_value: linPoint) { // we cycle over all the keys of factorGraph
     KeysToKeep.insert(key_value.key);
   } // so far we are keeping all keys, but we want to delete the ones that we are going to marginalize
   for(Key key: keysToMarginalize) {
