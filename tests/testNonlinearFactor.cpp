@@ -102,6 +102,82 @@ TEST( NonlinearFactor, NonlinearFactor )
 }
 
 /* ************************************************************************* */
+TEST(NonlinearFactor, Weight) {
+  // create a values structure for the non linear factor graph
+  Values values;
+
+  // Instantiate a concrete class version of a NoiseModelFactor
+  PriorFactor<Point2> factor1(X(1), Point2(0, 0));
+  values.insert(X(1), Point2(0.1, 0.1));
+
+  CHECK(assert_equal(1.0, factor1.weight(values)));
+
+  // Factor with noise model
+  auto noise = noiseModel::Isotropic::Sigma(2, 0.2);
+  PriorFactor<Point2> factor2(X(2), Point2(1, 1), noise);
+  values.insert(X(2), Point2(1.1, 1.1));
+
+  CHECK(assert_equal(1.0, factor2.weight(values)));
+
+  Point2 estimate(3, 3), prior(1, 1);
+  double distance = (estimate - prior).norm();
+
+  auto gaussian = noiseModel::Isotropic::Sigma(2, 0.2);
+
+  PriorFactor<Point2> factor;
+
+  // vector to store all the robust models in so we can test iteratively.
+  vector<noiseModel::Robust::shared_ptr> robust_models;
+
+  // Fair noise model
+  auto fair = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Fair::Create(1.3998), gaussian);
+  robust_models.push_back(fair);
+
+  // Huber noise model
+  auto huber = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Huber::Create(1.345), gaussian);
+  robust_models.push_back(huber);
+
+  // Cauchy noise model
+  auto cauchy = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Cauchy::Create(0.1), gaussian);
+  robust_models.push_back(cauchy);
+
+  // Tukey noise model
+  auto tukey = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Tukey::Create(4.6851), gaussian);
+  robust_models.push_back(tukey);
+
+  // Welsch noise model
+  auto welsch = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Welsch::Create(2.9846), gaussian);
+  robust_models.push_back(welsch);
+
+  // Geman-McClure noise model
+  auto gm = noiseModel::Robust::Create(
+      noiseModel::mEstimator::GemanMcClure::Create(1.0), gaussian);
+  robust_models.push_back(gm);
+
+  // DCS noise model
+  auto dcs = noiseModel::Robust::Create(
+      noiseModel::mEstimator::DCS::Create(1.0), gaussian);
+  robust_models.push_back(dcs);
+
+  // L2WithDeadZone noise model
+  auto l2 = noiseModel::Robust::Create(
+      noiseModel::mEstimator::L2WithDeadZone::Create(1.0), gaussian);
+  robust_models.push_back(l2);
+
+  for(auto&& model: robust_models) {
+    factor = PriorFactor<Point2>(X(3), prior, model);
+    values.clear();
+    values.insert(X(3), estimate);
+    CHECK(assert_equal(model->robust()->weight(distance), factor.weight(values)));
+  }
+}
+
+/* ************************************************************************* */
 TEST( NonlinearFactor, linearize_f1 )
 {
   Values c = createNoisyValues();
