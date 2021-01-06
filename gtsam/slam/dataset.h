@@ -227,7 +227,7 @@ struct SfmTrack {
   std::vector<SiftIndex> siftIndices;
   
   /// Get RGB values describing 3d point
-  Point3 rgb() const { return Point3(r, g, b); }
+  const Point3 rgb() const { return Point3(r, g, b); }
 
   /// Total number of measurements in this track
   size_t number_measurements() const {
