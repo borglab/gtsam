@@ -225,6 +225,9 @@ struct SfmTrack {
   float r, g, b; ///< RGB color of the 3D point
   std::vector<SfmMeasurement> measurements; ///< The 2D image projections (id,(u,v))
   std::vector<SiftIndex> siftIndices;
+  
+  /// Get RGB values describing 3d point
+  Point3 rgb() const { return Point3(r, g, b); }
 
   /// Total number of measurements in this track
   size_t number_measurements() const {
