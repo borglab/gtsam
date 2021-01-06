@@ -221,7 +221,7 @@ struct SfmTrack {
   SfmTrack(): p(0,0,0) {}
   SfmTrack(const gtsam::Point3& pt) : p(pt) {}
   Point3 p; ///< 3D position of the point
-  float r, g, b; ///< RGB color of the 3D point
+  float r = 0, g = 0, b = 0; ///< RGB color of the 3D point
   std::vector<SfmMeasurement> measurements; ///< The 2D image projections (id,(u,v))
   std::vector<SiftIndex> siftIndices;
 
