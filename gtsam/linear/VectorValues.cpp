@@ -161,7 +161,7 @@ namespace gtsam {
   bool VectorValues::equals(const VectorValues& x, double tol) const {
     if(this->size() != x.size())
       return false;
-    for(const auto& values: boost::combine(*this, x)) {
+    for(const auto values: boost::combine(*this, x)) {
       if(values.get<0>().first != values.get<1>().first ||
         !equal_with_abs_tol(values.get<0>().second, values.get<1>().second, tol))
         return false;
@@ -233,7 +233,7 @@ namespace gtsam {
     double result = 0.0;
     typedef boost::tuple<value_type, value_type> ValuePair;
     using boost::adaptors::map_values;
-    for(const ValuePair& values: boost::combine(*this, v)) {
+    for(const ValuePair values: boost::combine(*this, v)) {
       assert_throw(values.get<0>().first == values.get<1>().first,
         invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
       assert_throw(values.get<0>().second.size() == values.get<1>().second.size(),

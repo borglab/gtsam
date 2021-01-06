@@ -1,4 +1,4 @@
-import interface_parser as parser
+import gtwrap.interface_parser as parser
 
 
 def instantiate_type(ctype, template_typenames, instantiations, cpp_typename, instantiated_class=None):

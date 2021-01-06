@@ -560,7 +560,7 @@ TEST( ConcurrentBatchSmoother, synchronize_3 )
   GaussianFactorGraph::shared_ptr linearFactors = allFactors.linearize(allValues);
 
   KeySet eliminateKeys = linearFactors->keys();
-  for(const Values::ConstKeyValuePair& key_value: filterSeparatorValues) {
+  for(const auto key_value: filterSeparatorValues) {
     eliminateKeys.erase(key_value.key);
   }
   KeyVector variables(eliminateKeys.begin(), eliminateKeys.end());

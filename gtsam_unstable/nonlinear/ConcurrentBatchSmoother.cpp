@@ -61,7 +61,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearF
     theta_.insert(newTheta);
 
     // Add new variables to the end of the ordering
-    for(const Values::ConstKeyValuePair& key_value: newTheta) {
+    for(const auto key_value: newTheta) {
       ordering_.push_back(key_value.key);
     }
 
@@ -135,7 +135,7 @@ void ConcurrentBatchSmoother::synchronize(const NonlinearFactorGraph& smootherFa
   removeFactors(filterSummarizationSlots_);
 
   // Insert new linpoints into the values, augment the ordering, and store new dims to augment delta
-  for(const Values::ConstKeyValuePair& key_value: smootherValues) {
+  for(const auto key_value: smootherValues) {
     std::pair<Values::iterator, bool> iter_inserted = theta_.tryInsert(key_value.key, key_value.value);
     if(iter_inserted.second) {
       // If the insert succeeded
@@ -146,7 +146,7 @@ void ConcurrentBatchSmoother::synchronize(const NonlinearFactorGraph& smootherFa
       iter_inserted.first->value = key_value.value;
     }
   }
-  for(const Values::ConstKeyValuePair& key_value: separatorValues) {
+  for(const auto key_value: separatorValues) {
     std::pair<Values::iterator, bool> iter_inserted = theta_.tryInsert(key_value.key, key_value.value);
     if(iter_inserted.second) {
       // If the insert succeeded
@@ -322,7 +322,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
           // Put the linearization points and deltas back for specific variables
           if(separatorValues_.size() > 0) {
             theta_.update(separatorValues_);
-            for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
+            for(const auto key_value: separatorValues_) {
               delta_.at(key_value.key) = newDelta.at(key_value.key);
             }
           }
@@ -372,7 +372,7 @@ void ConcurrentBatchSmoother::updateSmootherSummarization() {
 
   // Get the set of separator keys
   gtsam::KeySet separatorKeys;
-  for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
+  for(const auto key_value: separatorValues_) {
     separatorKeys.insert(key_value.key);
   }
 
