@@ -99,6 +99,9 @@ class GTSAM_EXPORT Cal3 {
    */
   Cal3(double fov, int w, int h);
 
+  /// Virtual destructor
+  virtual ~Cal3() {}
+
   /// @}
   /// @name Advanced Constructors
   /// @{

@@ -10,9 +10,9 @@ import filecmp
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import template_instantiator as instantiator
-import interface_parser as parser
-from matlab_wrapper import MatlabWrapper
+import gtwrap.template_instantiator as instantiator
+import gtwrap.interface_parser as parser
+from gtwrap.matlab_wrapper import MatlabWrapper
 
 
 class TestWrap(unittest.TestCase):
@@ -20,7 +20,7 @@ class TestWrap(unittest.TestCase):
     MATLAB_TEST_DIR = TEST_DIR + "expected-matlab/"
     MATLAB_ACTUAL_DIR = TEST_DIR + "actual-matlab/"
 
-    def _generate_content(self, cc_content, path=''):
+    def generate_content(self, cc_content, path=''):
         """Generate files and folders from matlab wrapper content.
 
         Keyword arguments:
@@ -48,7 +48,7 @@ class TestWrap(unittest.TestCase):
                 for sub_content in c:
                     import sys
                     print("sub object: {}".format(sub_content[1][0][0]), file=sys.stderr)
-                    self._generate_content(sub_content[1], path_to_folder)
+                    self.generate_content(sub_content[1], path_to_folder)
             elif type(c[1]) == list:
                 path_to_folder = path + '/' + c[0]
 
@@ -104,7 +104,7 @@ class TestWrap(unittest.TestCase):
 
         cc_content = wrapper.wrap()
 
-        self._generate_content(cc_content)
+        self.generate_content(cc_content)
 
         def compare_and_diff(file):
             output = self.MATLAB_ACTUAL_DIR + file

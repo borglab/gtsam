@@ -62,6 +62,11 @@ add_subdirectory(CppUnitLite)
 
 # This is the new wrapper
 if(GTSAM_BUILD_PYTHON)
+    # Need to set this for the wrap package so we don't use the default value.
+    set(WRAP_PYTHON_VERSION ${GTSAM_PYTHON_VERSION}
+        CACHE STRING "The Python version to use for wrapping")
+
+    add_subdirectory(wrap)
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wrap/cmake")
     add_subdirectory(python)
 endif()

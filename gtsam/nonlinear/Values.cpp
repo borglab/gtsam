@@ -206,7 +206,7 @@ namespace gtsam {
   /* ************************************************************************* */
   size_t Values::dim() const {
     size_t result = 0;
-    for(const ConstKeyValuePair& key_value: *this) {
+    for(const auto key_value: *this) {
       result += key_value.value.dim();
     }
     return result;
@@ -215,7 +215,7 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues Values::zeroVectors() const {
     VectorValues result;
-    for(const ConstKeyValuePair& key_value: *this)
+    for(const auto key_value: *this)
       result.insert(key_value.key, Vector::Zero(key_value.value.dim()));
     return result;
   }

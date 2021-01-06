@@ -202,11 +202,11 @@ int main(int argc, char** argv) {
   // Write result to file
   Values result = isam.calculateEstimate();
   ofstream os2("rangeResultLM.txt");
-  for(const Values::ConstFiltered<Point2>::KeyValuePair& it: result.filter<Point2>())
+  for(const auto it: result.filter<Point2>())
     os2 << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t1"
         << endl;
   ofstream os("rangeResult.txt");
-  for(const Values::ConstFiltered<Pose2>::KeyValuePair& it: result.filter<Pose2>())
+  for(const auto it: result.filter<Pose2>())
     os << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t"
         << it.value.theta() << endl;
   exit(0);
