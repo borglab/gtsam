@@ -28,11 +28,15 @@ install(FILES cmake/gtwrapConfig.cmake cmake/PybindWrap.cmake
 
 # Install wrapping scripts as binaries to `CMAKE_INSTALL_PREFIX/bin` so they can
 # be invoked for wrapping.
-install(PROGRAMS scripts/pybind_wrap.py scripts/matlab_wrap.py TYPE BIN)
+# We use DESTINATION (instead of TYPE) so we can support older CMake versions.
+install(PROGRAMS scripts/pybind_wrap.py scripts/matlab_wrap.py
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Install pybind11 directory to `CMAKE_INSTALL_PREFIX/lib/pybind11` This will
 # allow the gtwrapConfig.cmake file to load it later.
-install(DIRECTORY pybind11 TYPE LIB)
+# We use DESTINATION (instead of TYPE) so we can support older CMake versions.
+install(DIRECTORY pybind11
+        DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # ##############################################################################
 # Install the Python package
