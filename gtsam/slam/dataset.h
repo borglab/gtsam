@@ -218,12 +218,16 @@ typedef std::pair<size_t, size_t> SiftIndex;
 
 /// Define the structure for the 3D points
 struct SfmTrack {
-  SfmTrack(): p(0,0,0) {}
-  SfmTrack(const gtsam::Point3& pt) : p(pt) {}
+  SfmTrack(float r = 0, float g = 0, float b = 0): p(0,0,0), r(r), g(g), b(b) {}
+  SfmTrack(const gtsam::Point3& pt, float r = 0, float g = 0, float b = 0) : p(pt), r(r), g(g), b(b) {}
+ 
   Point3 p; ///< 3D position of the point
   float r, g, b; ///< RGB color of the 3D point
   std::vector<SfmMeasurement> measurements; ///< The 2D image projections (id,(u,v))
   std::vector<SiftIndex> siftIndices;
+  
+  /// Get RGB values describing 3d point
+  const Point3 rgb() const { return Point3(r, g, b); }
 
   /// Total number of measurements in this track
   size_t number_measurements() const {
