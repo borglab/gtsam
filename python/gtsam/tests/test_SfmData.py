@@ -75,5 +75,12 @@ class TestSfmData(GtsamTestCase):
         cam_idx, img_measurement = self.data.track(1).measurement(0)
         self.assertEqual(cam_idx, i1)
 
+        
+    def test_serialize(self):
+        """Test that serialization works for SfmData objects"""
+        self.assertTrue(isinstance(self.data, gtsam.SfmData))
+        serialized_data = self.data.serialize()
+        self.assertTrue(isinstance(serialized_data, str))
+        
 if __name__ == '__main__':
     unittest.main()
