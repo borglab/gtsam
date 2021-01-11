@@ -53,9 +53,9 @@ struct GTSAM_EXPORT ShonanAveragingParameters {
   double alpha;                 ///< weight of anchor-based prior (default 0)
   double beta;                  ///< weight of Karcher-based prior (default 1)
   double gamma;                 ///< weight of gauge-fixing factors (default 0)
-  ///< if enabled, the Huber loss is used (default false)
+  /// if enabled, the Huber loss is used (default false)
   bool useHuber;
-  ///< if enabled solution optimality is certified (default true)
+  /// if enabled solution optimality is certified (default true)
   bool certifyOptimality;
 
   ShonanAveragingParameters(const LevenbergMarquardtParams &lm =
