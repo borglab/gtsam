@@ -26,15 +26,20 @@
 namespace gtsam {
 
 /**
- * When creating (any) FrobeniusFactor we can convert a Rot/Pose
- * BetweenFactor noise model into a n-dimensional isotropic noise
- * model used to weight the Frobenius norm.  If the noise model passed is
- * null we return a n-dimensional isotropic noise model with sigma=1.0. If
- * not, we we check if the d-dimensional noise model on rotations is
+ * When creating (any) FrobeniusFactor we can convert a Rot/Pose BetweenFactor
+ * noise model into a n-dimensional isotropic noise
+ * model used to weight the Frobenius norm.
+ * If the noise model passed is null we return a n-dimensional isotropic noise
+ * model with sigma=1.0.
+ * If not, we we check if the d-dimensional noise model on rotations is
  * isotropic. If it is, we extend to 'n' dimensions, otherwise we throw an
- * error. If defaultToUnit == false throws an exception on unexepcted input.
+ * error.
+ * If the noise model is a robust error model, we use the sigmas of the
+ * underlying noise model.
+ *
+ * If defaultToUnit == false throws an exception on unexepcted input.
  */
-GTSAM_EXPORT boost::shared_ptr<noiseModel::Isotropic>
+GTSAM_EXPORT SharedNoiseModel
 ConvertNoiseModel(const SharedNoiseModel &model, size_t n,
                   bool defaultToUnit = true);
 
