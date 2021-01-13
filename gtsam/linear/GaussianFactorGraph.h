@@ -66,7 +66,7 @@ namespace gtsam {
     public FactorGraph<GaussianFactor>,
     public EliminateableFactorGraph<GaussianFactorGraph>
   {
-  public:
+   public:
 
     typedef GaussianFactorGraph This; ///< Typedef to this class
     typedef FactorGraph<GaussianFactor> Base; ///< Typedef to base factor graph type
@@ -401,7 +401,7 @@ namespace gtsam {
 
     /// @}
 
-  private:
+   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -409,7 +409,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
 
-  public:
+   public:
 
     /** \deprecated */
     VectorValues optimize(boost::none_t,
@@ -429,9 +429,8 @@ namespace gtsam {
   //GTSAM_EXPORT void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
   //GTSAM_EXPORT void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
 
-/// traits
-template<>
-struct traits<GaussianFactorGraph> : public Testable<GaussianFactorGraph> {
-};
+  /// traits
+  template<>
+  struct traits<GaussianFactorGraph> : public Testable<GaussianFactorGraph> {};
 
 } // \ namespace gtsam
