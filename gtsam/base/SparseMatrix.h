@@ -29,8 +29,8 @@ typedef Eigen::SparseMatrix<double, Eigen::ColMajor, int> SparseMatrixEigen;
 
 class SparseMatrix {
  public:
-  /** Returns the sparse jacobian of a factor graph as a vector of boost tuples
-   * (row, col, entry).  Equivalent to graph.sparseJacobian().
+  /** Returns the sparse augmented jacobian of a factor graph as a vector of
+   * boost tuples (row, col, entry).  Equivalent to graph.sparseJacobian().
    * The standard deviations are baked into A and b
    */
   template <typename... Args>
@@ -39,9 +39,9 @@ class SparseMatrix {
     return graph.sparseJacobian(std::forward<Args>(args)...);
   }
 
-  /** Returns the sparse jacobian of a factor graph as a matlab `sparse`
-   * -compatible 3xm matrix with each column representing an entry of the form
-   * [row; col; entry].  graph.sparseJacobian_().
+  /** Returns the sparse augmented jacobian of a factor graph as a matlab
+   * `sparse` -compatible 3xm matrix with each column representing an entry of
+   * the form [row; col; entry].  graph.sparseJacobian_().
    * The standard deviations are baked into A and b
    */
   template <typename... Args>
@@ -50,7 +50,8 @@ class SparseMatrix {
     return graph.sparseJacobian_(std::forward<Args>(args)...);
   }
 
-  /** Returns the sparse jacobian of a factor graph as an Eigen::SparseMatrix
+  /** Returns the sparse augmented jacobian of a factor graph as an
+   * Eigen::SparseMatrix
    * The standard deviations are baked into A and b
    */
   static SparseMatrixEigen JacobianEigen(const GaussianFactorGraph& graph,
