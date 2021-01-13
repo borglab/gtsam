@@ -25,6 +25,9 @@
  * Read 3D dataset sphere25000.txt and output to shonan.g2o (default)
  * ./ShonanAveragingCLI -i spere2500.txt
  *
+ * If you prefer using a robust Huber loss, you can add the option "-h true",
+ * for instance
+ * ./ShonanAveragingCLI -i spere2500.txt -h true
  */
 
 #include <gtsam/base/timing.h>
@@ -43,7 +46,8 @@ int main(int argc, char* argv[]) {
   string datasetName;
   string inputFile;
   string outputFile;
-  int d, seed;
+  int d, seed, pMin;
+  bool useHuberLoss;
   po::options_description desc(
       "Shonan Rotation Averaging CLI reads a *pose* graph, extracts the "
       "rotation constraints, and runs the Shonan algorithm.");
@@ -58,6 +62,10 @@ int main(int argc, char* argv[]) {
       "Write solution to the specified file")(
       "dimension,d", po::value<int>(&d)->default_value(3),
       "Optimize over 2D or 3D rotations")(
+      "useHuberLoss,h", po::value<bool>(&useHuberLoss)->default_value(false),
+      "set True to use Huber loss")("pMin,p",
+                                    po::value<int>(&pMin)->default_value(3),
+                                    "set to use desired rank pMin")(
       "seed,s", po::value<int>(&seed)->default_value(42),
       "Random seed for initial estimate");
   po::variables_map vm;
@@ -85,11 +93,14 @@ int main(int argc, char* argv[]) {
   NonlinearFactorGraph::shared_ptr inputGraph;
   Values::shared_ptr posesInFile;
   Values poses;
+  auto lmParams = LevenbergMarquardtParams::CeresDefaults();
   if (d == 2) {
     cout << "Running Shonan averaging for SO(2) on " << inputFile << endl;
-    ShonanAveraging2 shonan(inputFile);
+    ShonanAveraging2::Parameters parameters(lmParams);
+    parameters.setUseHuber(useHuberLoss);
+    ShonanAveraging2 shonan(inputFile, parameters);
     auto initial = shonan.initializeRandomly(rng);
-    auto result = shonan.run(initial);
+    auto result = shonan.run(initial, pMin);
 
     // Parse file again to set up translation problem, adding a prior
     boost::tie(inputGraph, posesInFile) = load2D(inputFile);
@@ -101,9 +112,11 @@ int main(int argc, char* argv[]) {
     poses = initialize::computePoses<Pose2>(result.first, &poseGraph);
   } else if (d == 3) {
     cout << "Running Shonan averaging for SO(3) on " << inputFile << endl;
-    ShonanAveraging3 shonan(inputFile);
+    ShonanAveraging3::Parameters parameters(lmParams);
+    parameters.setUseHuber(useHuberLoss);
+    ShonanAveraging3 shonan(inputFile, parameters);
     auto initial = shonan.initializeRandomly(rng);
-    auto result = shonan.run(initial);
+    auto result = shonan.run(initial, pMin);
 
     // Parse file again to set up translation problem, adding a prior
     boost::tie(inputGraph, posesInFile) = load3D(inputFile);
@@ -118,7 +131,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
   cout << "Writing result to " << outputFile << endl;
-  writeG2o(NonlinearFactorGraph(), poses, outputFile);
+  writeG2o(*inputGraph, poses, outputFile);
   return 0;
 }
 

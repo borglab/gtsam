@@ -586,7 +586,7 @@ void save2D(const NonlinearFactorGraph &graph, const Values &config,
   fstream stream(filename.c_str(), fstream::out);
 
   // save poses
-  for (const Values::ConstKeyValuePair key_value : config) {
+  for (const auto key_value : config) {
     const Pose2 &pose = key_value.value.cast<Pose2>();
     stream << "VERTEX2 " << key_value.key << " " << pose.x() << " " << pose.y()
            << " " << pose.theta() << endl;
