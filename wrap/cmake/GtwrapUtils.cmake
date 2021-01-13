@@ -8,7 +8,7 @@ macro(get_python_version)
     if(NOT ${PYTHONINTERP_FOUND})
       message(
         FATAL_ERROR
-          "Cannot find Python interpreter. Please install Python >= 3.6.")
+          "Cannot find Python interpreter. Please install Python>=3.5.")
     endif()
 
     find_package(PythonLibs ${PYTHON_VERSION_STRING})
@@ -34,7 +34,7 @@ macro(get_python_version)
     if(NOT ${Python_FOUND})
       message(
         FATAL_ERROR
-          "Cannot find Python interpreter. Please install Python>=3.6.")
+          "Cannot find Python interpreter. Please install Python>=3.5.")
     endif()
 
   endif()
