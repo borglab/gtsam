@@ -28,8 +28,6 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/config.h>
 
-#include <Eigen/Sparse>
-
 #include <boost/format.hpp>
 #include <boost/function.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -77,11 +75,11 @@ GTSAM_MAKE_MATRIX_DEFS(9);
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
 
-// Sparse Matrix Formats
+/// Sparse matrix representation as vector of tuples.
+/// See SparseMatrix.h for additional representations SparseMatrixEigenTriplets
+/// and SparseMatrixEigen
 typedef std::vector<boost::tuple<size_t, size_t, double>>
     SparseMatrixBoostTriplets;
-typedef std::vector<Eigen::Triplet<double>> SparseMatrixEigenTriplets;
-typedef Eigen::SparseMatrix<double, Eigen::ColMajor> SparseMatrixEigen;
 
 // Matrix formatting arguments when printing.
 // Akin to Matlab style.

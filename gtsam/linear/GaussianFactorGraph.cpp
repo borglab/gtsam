@@ -100,68 +100,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  /// instantiate explicit template functions with sparse matrix representations
-
-  // Boost Triplets
-  template SparseMatrixBoostTriplets
-  GaussianFactorGraph::sparseJacobian<SparseMatrixBoostTriplets>(
-      const Ordering& ordering, size_t& nrows, size_t& ncols) const;
-
-  // Eigen Triplets
-  template SparseMatrixEigenTriplets
-  GaussianFactorGraph::sparseJacobian<SparseMatrixEigenTriplets>(
-      const Ordering& ordering, size_t& nrows, size_t& ncols) const;
-
-  // Eigen Sparse Matrix (template specialized)
-  template <>
-  SparseMatrixEigen GaussianFactorGraph::sparseJacobian<SparseMatrixEigen>(
+  SparseMatrixBoostTriplets GaussianFactorGraph::sparseJacobian(
       const Ordering& ordering, size_t& nrows, size_t& ncols) const {
-    gttic_(GaussianFactorGraph_sparseJacobian);
-    gttic_(obtainSparseJacobian);
-    auto entries =
-        sparseJacobian<SparseMatrixEigenTriplets>(ordering, nrows, ncols);
-    gttoc_(obtainSparseJacobian);
-    gttic_(convertSparseJacobian);
-    SparseMatrixEigen Ab(nrows, ncols);
-    Ab.reserve(entries.size());
-    for (auto entry : entries) {
-      Ab.insert(entry.row(), entry.col()) = entry.value();
-    }
-    Ab.makeCompressed();
-    // TODO(gerry): benchmark to see if setFromTriplets is faster
-    // Ab.setFromTriplets(entries.begin(), entries.end());
-    return Ab;
-  }
-
-  // Eigen Matrix in "matlab" format (template specialized)
-  template <>
-  Matrix GaussianFactorGraph::sparseJacobian<Matrix>(const Ordering& ordering,
-                                                     size_t& nrows,
-                                                     size_t& ncols) const {
-    gttic_(GaussianFactorGraph_sparseJacobian);
-    // call sparseJacobian
-    auto result =
-        sparseJacobian<SparseMatrixBoostTriplets>(ordering, nrows, ncols);
-
-    // translate to base 1 matrix
-    size_t nzmax = result.size();
-    Matrix IJS(3, nzmax);
-    for (size_t k = 0; k < result.size(); k++) {
-      const auto& entry = result[k];
-      IJS(0, k) = double(entry.get<0>() + 1);
-      IJS(1, k) = double(entry.get<1>() + 1);
-      IJS(2, k) = entry.get<2>();
-    }
-    return IJS;
-  }
-
-  /* ************************************************************************* */
-  // sparse matrix representation template `XXXEntries` must satisfy
-  // `XXXEntries.emplace_back(int i, int j, double s)` to compile
-  template <typename Entries>
-  Entries GaussianFactorGraph::sparseJacobian(const Ordering& ordering,
-                                              size_t& nrows,
-                                              size_t& ncols) const {
     gttic_(GaussianFactorGraph_sparseJacobian);
     // First find dimensions of each variable
     std::map<Key, size_t> dims;
@@ -183,7 +123,7 @@ namespace gtsam {
     }
 
     // Iterate over all factors, adding sparse scalar entries
-    Entries entries;
+    SparseMatrixBoostTriplets entries;
     entries.reserve(60 * size());
 
     nrows = 0;
@@ -223,8 +163,7 @@ namespace gtsam {
       size_t bcolumn = ncols;
       for (size_t i = 0; i < (size_t) whitenedb.size(); i++) {
         double s = whitenedb(i);
-        if (std::abs(s) > 1e-12)
-          entries.emplace_back(nrows + i, bcolumn, s);
+        if (std::abs(s) > 1e-12) entries.emplace_back(nrows + i, bcolumn, s);
       }
 
       // Increment row index
@@ -233,6 +172,63 @@ namespace gtsam {
 
     ncols++;  // +1 for b-column
     return entries;
+  }
+
+  /* ************************************************************************* */
+  SparseMatrixBoostTriplets GaussianFactorGraph::sparseJacobian(
+      const Ordering& ordering) const {
+    size_t dummy1, dummy2;
+    return sparseJacobian(ordering, dummy1, dummy2);
+  }
+
+  /* ************************************************************************* */
+  SparseMatrixBoostTriplets GaussianFactorGraph::sparseJacobian(
+      size_t& nrows, size_t& ncols) const {
+    return sparseJacobian(Ordering(this->keys()), nrows, ncols);
+  }
+
+  /* ************************************************************************* */
+  SparseMatrixBoostTriplets GaussianFactorGraph::sparseJacobian() const {
+    size_t dummy1, dummy2;
+    return sparseJacobian(dummy1, dummy2);
+  }
+
+  /* ************************************************************************* */
+  Matrix GaussianFactorGraph::sparseJacobian_(
+      const Ordering& ordering, size_t& nrows, size_t& ncols) const {
+    gttic_(GaussianFactorGraph_sparseJacobian);
+    // call sparseJacobian
+    auto result = sparseJacobian(ordering, nrows, ncols);
+
+    // translate to base 1 matrix
+    size_t nzmax = result.size();
+    Matrix IJS(3, nzmax);
+    for (size_t k = 0; k < result.size(); k++) {
+      const auto& entry = result[k];
+      IJS(0, k) = double(entry.get<0>() + 1);
+      IJS(1, k) = double(entry.get<1>() + 1);
+      IJS(2, k) = entry.get<2>();
+    }
+    return IJS;
+  }
+
+  /* ************************************************************************* */
+  Matrix GaussianFactorGraph::sparseJacobian_(
+      const Ordering& ordering) const {
+    size_t dummy1, dummy2;
+    return sparseJacobian_(ordering, dummy1, dummy2);
+  }
+
+  /* ************************************************************************* */
+  Matrix GaussianFactorGraph::sparseJacobian_(
+      size_t& nrows, size_t& ncols) const {
+    return sparseJacobian_(Ordering(this->keys()), nrows, ncols);
+  }
+
+  /* ************************************************************************* */
+  Matrix GaussianFactorGraph::sparseJacobian_() const {
+    size_t dummy1, dummy2;
+    return sparseJacobian_(dummy1, dummy2);
   }
 
   /* ************************************************************************* */

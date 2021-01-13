@@ -25,8 +25,8 @@
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
+#include <gtsam/base/SparseMatrix.h>
 
-#include <Eigen/Sparse>
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/list.hpp>  // for operator +=
 using namespace boost::assign;
@@ -37,9 +37,6 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-// static SharedDiagonal
-//  sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1), sigma_02 = noiseModel::Isotropic::Sigma(2,0.2),
-//  constraintModel = noiseModel::Constrained::All(2);
 typedef SparseMatrixBoostTriplets BoostTriplets;
 typedef BoostTriplets::value_type BoostTriplet;
 bool triplet_equal(BoostTriplet a, BoostTriplet b) {
@@ -51,17 +48,6 @@ bool triplet_equal(BoostTriplet a, BoostTriplet b) {
       "(" << a.get<0>() << ", " << a.get<1>() << ") = " << a.get<2>() << endl;
   cout << "\tactual:   "
       "(" << b.get<0>() << ", " << b.get<1>() << ") = " << b.get<2>() << endl;
-  return false;
-}
-typedef SparseMatrixEigenTriplets EigenTriplets;
-typedef EigenTriplets::value_type EigenTriplet;
-bool triplet_equal(EigenTriplet a, EigenTriplet b) {
-  if (a.row() == b.row() && a.col() == b.col() && a.value() == b.value())
-    return true;
-
-  cout << "not equal:" << endl;
-  cout << "\texpected: (" << a.row() << ", " << a.col() << ") = " << a.value() << endl;
-  cout << "\tactual:   (" << b.row() << ", " << b.col() << ") = " << b.value() << endl;
   return false;
 }
 
@@ -87,8 +73,6 @@ TEST(GaussianFactorGraph, initialization) {
       10., 10., -1., -1., -10., -10., 10., 10., 2., -1., -5., -5., 5., 5., 1., -5., -5., 5., 5., -1., 1.5).finished();
   Matrix actualIJS = fg.sparseJacobian_();
   EQUALITY(expectedIJS, actualIJS);
-  auto actualTuple = fg.sparseJacobian<Matrix>();
-  EQUALITY(expectedIJS, actualTuple);
 }
 
 /* ************************************************************************* */
@@ -129,17 +113,16 @@ TEST(GaussianFactorGraph, sparseJacobian) {
 
   // matrix form (matlab)
   Matrix expectedMatlab = expectedT.transpose();
-  auto actualMatrix = gfg.sparseJacobian_();
-  EXPECT(assert_equal(expectedMatlab, actualMatrix));
-  // templated version
+  EXPECT(assert_equal(expectedMatlab, gfg.sparseJacobian_()));
+  EXPECT(assert_equal(expectedMatlab, SparseMatrix::JacobianMatrix(gfg)));
+  // rows/cols
   size_t nrows, ncols;
-  auto actual = gfg.sparseJacobian<Matrix>(nrows, ncols);
+  gfg.sparseJacobian_(nrows, ncols);
   EXPECT(assert_equal(4, nrows));
   EXPECT(assert_equal(6, ncols));
-  EXPECT(assert_equal(expectedMatlab, actual));
 
   // BoostTriplets
-  auto boostActual = gfg.sparseJacobian<BoostTriplets>(nrows, ncols);
+  auto boostActual = gfg.sparseJacobian(nrows, ncols);
   // check the triplets size...
   EXPECT_LONGS_EQUAL(16, boostActual.size());
   EXPECT(assert_equal(4, nrows));
@@ -150,25 +133,12 @@ TEST(GaussianFactorGraph, sparseJacobian) {
         BoostTriplet(expectedT(i, 0) - 1, expectedT(i, 1) - 1, expectedT(i, 2)),
         boostActual.at(i)));
   }
-  // EigenTriplets
-  auto eigenActual = gfg.sparseJacobian<EigenTriplets>(nrows, ncols);
-  EXPECT_LONGS_EQUAL(16, eigenActual.size());
-  EXPECT(assert_equal(4, nrows));
-  EXPECT(assert_equal(6, ncols));
-  for (int i = 0; i < 16; i++) {
-    EXPECT(triplet_equal(
-        EigenTriplet(expectedT(i, 0) - 1, expectedT(i, 1) - 1, expectedT(i, 2)),
-        eigenActual.at(i)));
-  }
   // Sparse Matrix
-  auto sparseResult = gfg.sparseJacobian<SparseMatrixEigen>(nrows, ncols);
+  auto sparseResult = SparseMatrix::JacobianEigen(gfg, nrows, ncols);
   EXPECT_LONGS_EQUAL(16, sparseResult.nonZeros());
   EXPECT(assert_equal(4, nrows));
   EXPECT(assert_equal(6, ncols));
-  SparseMatrixEigen Ab(nrows, ncols);
-  auto eigenEntries = eigenActual;
-  Ab.setFromTriplets(eigenEntries.begin(), eigenEntries.end());
-  EXPECT(assert_equal(Matrix(Ab), Matrix(sparseResult)));
+  EXPECT(assert_equal(gfg.augmentedJacobian(), Matrix(sparseResult)));
 
   // Call sparseJacobian with optional ordering...
   auto ordering = Ordering(list_of(x45)(x123));
@@ -198,14 +168,14 @@ TEST(GaussianFactorGraph, sparseJacobian) {
       3, 6, 26.,
       4, 6, 32.).finished();
   expectedMatlab = expectedT.transpose();
-  actual = gfg.sparseJacobian<Matrix>(ordering, nrows, ncols);
+  auto actual = gfg.sparseJacobian_(ordering, nrows, ncols);
 
   EXPECT(assert_equal(4, nrows));
   EXPECT(assert_equal(6, ncols));
   EXPECT(assert_equal(expectedMatlab, actual));
 
   // BoostTriplets with optional ordering
-  boostActual = gfg.sparseJacobian<BoostTriplets>(ordering, nrows, ncols);
+  boostActual = gfg.sparseJacobian(ordering, nrows, ncols);
   EXPECT_LONGS_EQUAL(16, boostActual.size());
   EXPECT(assert_equal(4, nrows));
   EXPECT(assert_equal(6, ncols));
@@ -214,16 +184,9 @@ TEST(GaussianFactorGraph, sparseJacobian) {
         BoostTriplet(expectedT(i, 0) - 1, expectedT(i, 1) - 1, expectedT(i, 2)),
         boostActual.at(i)));
   }
-  // EigenTriplets with optional ordering
-  eigenActual = gfg.sparseJacobian<EigenTriplets>(ordering, nrows, ncols);
-  EXPECT_LONGS_EQUAL(16, eigenActual.size());
-  EXPECT(assert_equal(4, nrows));
-  EXPECT(assert_equal(6, ncols));
-  for (int i = 0; i < 16; i++) {
-    EXPECT(triplet_equal(
-        EigenTriplet(expectedT(i, 0) - 1, expectedT(i, 1) - 1, expectedT(i, 2)),
-        eigenActual.at(i)));
-  }
+  // Eigen Sparse with optional ordering
+  EXPECT(assert_equal(gfg.augmentedJacobian(ordering),
+                      Matrix(SparseMatrix::JacobianEigen(gfg, ordering))));
 }
 
 /* ************************************************************************* */

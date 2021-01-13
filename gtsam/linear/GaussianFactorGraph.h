@@ -181,66 +181,52 @@ namespace gtsam {
     ///@{
 
     /**
-     * Return vector of i, j, and s to generate an m-by-n sparse Jacobian matrix,
-     * where i(k) and j(k) are the base 0 row and column indices, s(k) a double.
-     * The standard deviations are baked into A and b
-     */
-    SparseMatrixBoostTriplets sparseJacobian() const {
-      return sparseJacobian<SparseMatrixBoostTriplets>();
-    }
-
-    /**
-     * Matrix version of sparseJacobian: generates a 3*m matrix with [i,j,s] entries
-     * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
-     * The standard deviations are baked into A and b
-     */
-    Matrix sparseJacobian_() const {
-      return sparseJacobian<Matrix>();
-    }
-
-    /**
-     * Generates an m-by-n sparse Jacobian matrix, where i(k) and j(k) are the
-     * base 0 row and column indices, s(k) a double. The return type is a sparse
-     * matrix representation templated type which may be:
-     *  1. SparseMatrixBoostTriplets is a vector of 3-tuples (i, j, s)
-     * (vector<boost::tuple<size_t, size_t, double>>)
-     *  2. SparseMatrixEigenTriplets is a vector of Eigen-triples (i, j, s)
-     * (vector<Eigen::Triplet<double>>)
-     *  3. SparseMatrixEigen is an Eigen format sparse matrix
-     * (Eigen::SparseMatrix<double>)
-     *  4. Matrix (i/j will be 1-indexed instead of 0-indexed, for matlab) is a
-     * 3xK matrix [I;J;S]
-     * The standard deviations are baked into A and b
+     * Return vector of i, j, and s to generate an m-by-n sparse augmented
+     * Jacobian matrix, where i(k) and j(k) are the base 0 row and column
+     * indices, s(k) a double. The standard deviations are baked into A and b
      * @param ordering the column ordering
      * @param[out] nrows The number of rows in the Jacobian
      * @param[out] ncols The number of columns in the Jacobian
      * @return the sparse matrix in one of the 4 forms above
      */
-    template <typename Entries>
-    Entries sparseJacobian(const Ordering& ordering, size_t& nrows,
-                           size_t& ncols) const;
+    SparseMatrixBoostTriplets sparseJacobian(const Ordering& ordering,
+                                             size_t& nrows,
+                                             size_t& ncols) const;
 
-    /// Generates an m-by-n sparse Jacobian without outputting m and n
-    template <typename Entries>
-    Entries sparseJacobian(const Ordering& ordering) const {
-      size_t dummy1, dummy2;
-      return sparseJacobian<Entries>(ordering, dummy1, dummy2);
-    }
+    /// Returns a sparse augmented Jacobian without outputting its dimensions
+    SparseMatrixBoostTriplets sparseJacobian(
+        const Ordering& ordering) const;
 
-    /// Generates an m-by-n sparse Jacobian matrix with default Ordering
-    template <typename Entries>
-    Entries sparseJacobian(size_t &nrows, size_t &ncols) const {
-      Ordering ord(this->keys());
-      return sparseJacobian<Entries>(ord, nrows, ncols);
-    }
+    /// Returns a sparse augmented Jacobian with default Ordering
+    SparseMatrixBoostTriplets sparseJacobian(size_t& nrows,
+                                             size_t& ncols) const;
 
-    /// Generates an m-by-n sparse Jacobian with default Ordering and without
-    /// outputting m and n
-    template <typename Entries>
-    Entries sparseJacobian() const {
-      size_t dummy1, dummy2;
-      return sparseJacobian<Entries>(dummy1, dummy2);
-    }
+    /// Returns a sparse augmented Jacobian without with default ordering and
+    /// outputting its dimensions
+    SparseMatrixBoostTriplets sparseJacobian() const;
+
+    /**
+     * Matrix version of sparseJacobian: generates a 3*m matrix with [i,j,s]
+     * entries such that S(i(k),j(k)) = s(k), which can be given to MATLAB's
+     * sparse.
+     * The standard deviations are baked into A and b
+     */
+    Matrix sparseJacobian_(const Ordering& ordering,
+                                              size_t& nrows,
+                                              size_t& ncols) const;
+
+    /// Returns a matrix-form sparse augmented Jacobian without outputting its
+    /// dimensions
+    Matrix sparseJacobian_(
+        const Ordering& ordering) const;
+
+    /// Returns a matrix-form sparse augmented Jacobian with default Ordering
+    Matrix sparseJacobian_(size_t& nrows,
+                                              size_t& ncols) const;
+
+    /// Returns a matrix-form sparse augmented Jacobian with default ordering
+    /// and without outputting its dimensions
+    Matrix sparseJacobian_() const;
 
     /**
      * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$
