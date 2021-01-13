@@ -68,7 +68,7 @@ macro(gtwrap_get_python_version WRAP_PYTHON_VERSION)
     find_package(
       Python ${WRAP_PYTHON_VERSION}
       COMPONENTS Interpreter Development
-      EXACT REQUIRED)
+      EXACT)
   endif()
 
 endmacro()
