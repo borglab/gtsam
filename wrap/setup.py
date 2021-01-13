@@ -17,7 +17,7 @@ setup(
     keywords="wrap, bindings, cpp, python",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    python_requires=">=3.6",
+    python_requires=">=3.5",
     # https://pypi.org/classifiers
     classifiers=[
         'Development Status :: 4 - Beta',
