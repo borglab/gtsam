@@ -27,7 +27,7 @@ namespace gtsam {
 //  note: Eigen only supports signed (e.g. not size_t) StorageIndex
 typedef Eigen::SparseMatrix<double, Eigen::ColMajor, int> SparseMatrixEigen;
 
-class SparseMatrix {
+class GTSAM_EXPORT SparseMatrix {
  public:
   /** Returns the sparse augmented jacobian of a factor graph as a vector of
    * boost tuples (row, col, entry).  Equivalent to graph.sparseJacobian().
