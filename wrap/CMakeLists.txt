@@ -43,7 +43,7 @@ install(DIRECTORY pybind11
 find_package(
   Python ${WRAP_PYTHON_VERSION}
   COMPONENTS Interpreter
-  REQUIRED)
+  EXACT)
 
 # Detect virtualenv and set Pip args accordingly
 # https://www.scivision.dev/cmake-install-python-package/
