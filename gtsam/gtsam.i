@@ -2933,9 +2933,14 @@ class ShonanAveragingParameters2 {
   void setAnchorWeight(double value);
   double getAnchorWeight() const;
   void setKarcherWeight(double value);
-  double getKarcherWeight();
+  double getKarcherWeight() const;
   void setGaugesWeight(double value);
-  double getGaugesWeight();
+  double getGaugesWeight() const;
+  void setUseHuber(bool value);
+  bool getUseHuber() const;
+  void setCertifyOptimality(bool value);
+  bool getCertifyOptimality() const;
+  void print() const;
 };
 
 class ShonanAveragingParameters3 {
@@ -2949,9 +2954,14 @@ class ShonanAveragingParameters3 {
   void setAnchorWeight(double value);
   double getAnchorWeight() const;
   void setKarcherWeight(double value);
-  double getKarcherWeight();
+  double getKarcherWeight() const;
   void setGaugesWeight(double value);
-  double getGaugesWeight();
+  double getGaugesWeight() const;
+  void setUseHuber(bool value);
+  bool getUseHuber() const;
+  void setCertifyOptimality(bool value);
+  bool getCertifyOptimality() const;
+  void print() const;
 };
 
 class ShonanAveraging2 {
