@@ -22,21 +22,18 @@
 namespace gtsam {
 
 template <>
-GTSAM_EXPORT
-Matrix SOn::Hat(const Vector& xi) {
+GTSAM_EXPORT void SOn::Hat(const Vector &xi, Eigen::Ref<Matrix> X) {
   size_t n = AmbientDim(xi.size());
-  if (n < 2) throw std::invalid_argument("SO<N>::Hat: n<2 not supported");
-
-  Matrix X(n, n);  // allocate space for n*n skew-symmetric matrix
-  X.setZero();
-  if (n == 2) {
+  if (n < 2)
+    throw std::invalid_argument("SO<N>::Hat: n<2 not supported");
+  else if (n == 2) {
     // Handle SO(2) case as recursion bottom
     assert(xi.size() == 1);
     X << 0, -xi(0), xi(0), 0;
   } else {
     // Recursively call SO(n-1) call for top-left block
     const size_t dmin = (n - 1) * (n - 2) / 2;
-    X.topLeftCorner(n - 1, n - 1) = Hat(xi.tail(dmin));
+    Hat(xi.tail(dmin), X.topLeftCorner(n - 1, n - 1));
 
     // determine sign of last element (signs alternate)
     double sign = pow(-1.0, xi.size());
@@ -47,7 +44,14 @@ Matrix SOn::Hat(const Vector& xi) {
       X(j, n - 1) = -X(n - 1, j);
       sign = -sign;
     }
+    X(n - 1, n - 1) = 0; // bottom-right
   }
+}
+
+template <> GTSAM_EXPORT Matrix SOn::Hat(const Vector &xi) {
+  size_t n = AmbientDim(xi.size());
+  Matrix X(n, n); // allocate space for n*n skew-symmetric matrix
+  SOn::Hat(xi, X);
   return X;
 }
 
@@ -97,6 +101,29 @@ SOn LieGroup<SOn, Eigen::Dynamic>::between(const SOn& g, DynamicJacobian H1,
   if (H1) *H1 = -result.inverse().AdjointMap();
   if (H2) *H2 = SOn::IdentityJacobian(g.rows());
   return result;
+}
+
+// Dynamic version of vec
+template <> typename SOn::VectorN2 SOn::vec(DynamicJacobian H) const {
+  const size_t n = rows(), n2 = n * n;
+
+  // Vectorize
+  VectorN2 X(n2);
+  X << Eigen::Map<const Matrix>(matrix_.data(), n2, 1);
+
+  // If requested, calculate H as (I \oplus Q) * P,
+  // where Q is the N*N rotation matrix, and P is calculated below.
+  if (H) {
+    // Calculate P matrix of vectorized generators
+    // TODO(duy): Should we refactor this as the jacobian of Hat?
+    Matrix P = SOn::VectorizedGenerators(n);
+    const size_t d = dim();
+    H->resize(n2, d);
+    for (size_t i = 0; i < n; i++) {
+      H->block(i * n, 0, n, d) = matrix_ * P.block(i * n, 0, n, d);
+    }
+  }
+  return X;
 }
 
 }  // namespace gtsam

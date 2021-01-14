@@ -19,9 +19,11 @@
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Manifold.h>
 #include <gtsam_unstable/dllexport.h>
+
 
 namespace gtsam {
 
@@ -87,7 +89,7 @@ public:
   GTSAM_UNSTABLE_EXPORT static Similarity3 identity();
 
   /// Composition
-  GTSAM_UNSTABLE_EXPORT Similarity3 operator*(const Similarity3& T) const;
+  GTSAM_UNSTABLE_EXPORT Similarity3 operator*(const Similarity3& S) const;
 
   /// Return the inverse
   GTSAM_UNSTABLE_EXPORT Similarity3 inverse() const;
@@ -101,8 +103,31 @@ public:
       OptionalJacobian<3, 7> H1 = boost::none, //
       OptionalJacobian<3, 3> H2 = boost::none) const;
 
+  /** 
+   * Action on a pose T.
+   * |Rs  ts|   |R t|   |Rs*R Rs*t+ts| 
+   * |0  1/s| * |0 1| = | 0      1/s |, the result is still a Sim3 object.
+   * To retrieve a Pose3, we normalized the scale value into 1.
+   * |Rs*R Rs*t+ts|   |Rs*R s(Rs*t+ts)|
+   * | 0      1/s | = |  0       1    |
+   * 
+   * This group action satisfies the compatibility condition. 
+   * For more details, refer to: https://en.wikipedia.org/wiki/Group_action
+   */
+  GTSAM_UNSTABLE_EXPORT Pose3 transformFrom(const Pose3& T) const;
+
   /** syntactic sugar for transformFrom */
   GTSAM_UNSTABLE_EXPORT Point3 operator*(const Point3& p) const;
+
+  /**
+   *  Create Similarity3 by aligning at least three point pairs
+   */
+  GTSAM_UNSTABLE_EXPORT static Similarity3 Align(const std::vector<Point3Pair>& abPointPairs);
+  
+  /**
+   *  Create Similarity3 by aligning at least two pose pairs
+   */
+  GTSAM_UNSTABLE_EXPORT static Similarity3 Align(const std::vector<Pose3Pair>& abPosePairs);
 
   /// @}
   /// @name Lie Group
@@ -182,8 +207,8 @@ public:
   /// @name Helper functions
   /// @{
 
-  /// Calculate expmap and logmap coefficients.
 private:
+  /// Calculate expmap and logmap coefficients.
   static Matrix3 GetV(Vector3 w, double lambda);
 
   /// @}

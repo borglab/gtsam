@@ -10,27 +10,30 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  InitializePose3.h
+ *  @file  InitializePose3.cpp
  *  @author Luca Carlone
  *  @author Frank Dellaert
  *  @date   August, 2014
  */
 
 #include <gtsam/slam/InitializePose3.h> 
+
+#include <gtsam/slam/InitializePose.h> 
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/timing.h>
 
 #include <boost/math/special_functions.hpp>
 
+#include <utility>
+
 using namespace std;
 
 namespace gtsam {
-
-static const Key kAnchorKey = symbol('Z', 9999999);
 
 /* ************************************************************************* */
 GaussianFactorGraph InitializePose3::buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
@@ -62,7 +65,7 @@ GaussianFactorGraph InitializePose3::buildLinearOrientationGraph(const Nonlinear
   }
   // prior on the anchor orientation
   linearGraph.add(
-      kAnchorKey, I_9x9,
+      initialize::kAnchorKey, I_9x9,
       (Vector(9) << 1.0, 0.0, 0.0, /*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0)
           .finished(),
           noiseModel::Isotropic::Precision(9, 1));
@@ -78,7 +81,7 @@ Values InitializePose3::normalizeRelaxedRotations(
   Values validRot3;
   for(const auto& it: relaxedRot3) {
     Key key = it.first;
-    if (key != kAnchorKey) {
+    if (key != initialize::kAnchorKey) {
       Matrix3 M;
       M << Eigen::Map<const Matrix3>(it.second.data()); // Recover M from vectorized
 
@@ -91,24 +94,10 @@ Values InitializePose3::normalizeRelaxedRotations(
 }
 
 /* ************************************************************************* */
-NonlinearFactorGraph InitializePose3::buildPose3graph(const NonlinearFactorGraph& graph) {
+NonlinearFactorGraph InitializePose3::buildPose3graph(
+    const NonlinearFactorGraph& graph) {
   gttic(InitializePose3_buildPose3graph);
-  NonlinearFactorGraph pose3Graph;
-
-  for(const auto& factor: graph) {
-
-    // recast to a between on Pose3
-    const auto pose3Between = boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
-    if (pose3Between)
-      pose3Graph.add(pose3Between);
-
-    // recast PriorFactor<Pose3> to BetweenFactor<Pose3>
-    const auto pose3Prior = boost::dynamic_pointer_cast<PriorFactor<Pose3> >(factor);
-    if (pose3Prior)
-      pose3Graph.emplace_shared<BetweenFactor<Pose3> >(kAnchorKey, pose3Prior->keys()[0],
-              pose3Prior->prior(), pose3Prior->noiseModel());
-  }
-  return pose3Graph;
+  return initialize::buildPoseGraph<Pose3>(graph);
 }
 
 /* ************************************************************************* */
@@ -134,8 +123,8 @@ Values InitializePose3::computeOrientationsGradient(
 
   // this works on the inverse rotations, according to Tron&Vidal,2011
   Values inverseRot;
-  inverseRot.insert(kAnchorKey, Rot3());
-  for(const auto& key_value: givenGuess) {
+  inverseRot.insert(initialize::kAnchorKey, Rot3());
+  for(const auto key_value: givenGuess) {
     Key key = key_value.key;
     const Pose3& pose = givenGuess.at<Pose3>(key);
     inverseRot.insert(key, pose.rotation().inverse());
@@ -145,12 +134,12 @@ Values InitializePose3::computeOrientationsGradient(
   KeyVectorMap adjEdgesMap;
   KeyRotMap factorId2RotMap;
 
-  createSymbolicGraph(adjEdgesMap, factorId2RotMap, pose3Graph);
+  createSymbolicGraph(pose3Graph, &adjEdgesMap, &factorId2RotMap);
 
   // calculate max node degree & allocate gradient
   size_t maxNodeDeg = 0;
   VectorValues grad;
-  for(const auto& key_value: inverseRot) {
+  for(const auto key_value: inverseRot) {
     Key key = key_value.key;
     grad.insert(key,Z_3x1);
     size_t currNodeDeg = (adjEdgesMap.at(key)).size();
@@ -173,7 +162,7 @@ Values InitializePose3::computeOrientationsGradient(
     //////////////////////////////////////////////////////////////////////////
     // compute the gradient at each node
     maxGrad = 0;
-    for (const auto& key_value : inverseRot) {
+    for (const auto key_value : inverseRot) {
       Key key = key_value.key;
       Vector gradKey = Z_3x1;
       // collect the gradient for each edge incident on key
@@ -212,11 +201,11 @@ Values InitializePose3::computeOrientationsGradient(
   } // enf of gradient iterations
 
   // Return correct rotations
-  const Rot3& Rref = inverseRot.at<Rot3>(kAnchorKey); // This will be set to the identity as so far we included no prior
+  const Rot3& Rref = inverseRot.at<Rot3>(initialize::kAnchorKey); // This will be set to the identity as so far we included no prior
   Values estimateRot;
-  for(const auto& key_value: inverseRot) {
+  for(const auto key_value: inverseRot) {
     Key key = key_value.key;
-    if (key != kAnchorKey) {
+    if (key != initialize::kAnchorKey) {
       const Rot3& R = inverseRot.at<Rot3>(key);
       if(setRefFrame)
         estimateRot.insert(key, Rref.compose(R.inverse()));
@@ -228,32 +217,34 @@ Values InitializePose3::computeOrientationsGradient(
 }
 
 /* ************************************************************************* */
-void InitializePose3::createSymbolicGraph(KeyVectorMap& adjEdgesMap, KeyRotMap& factorId2RotMap,
-                         const NonlinearFactorGraph& pose3Graph) {
+void InitializePose3::createSymbolicGraph(
+    const NonlinearFactorGraph& pose3Graph, KeyVectorMap* adjEdgesMap,
+    KeyRotMap* factorId2RotMap) {
   size_t factorId = 0;
-  for(const auto& factor: pose3Graph) {
-    auto pose3Between = boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
-    if (pose3Between){
+  for (const auto& factor : pose3Graph) {
+    auto pose3Between =
+        boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
+    if (pose3Between) {
       Rot3 Rij = pose3Between->measured().rotation();
-      factorId2RotMap.insert(pair<Key, Rot3 >(factorId,Rij));
+      factorId2RotMap->emplace(factorId, Rij);
 
       Key key1 = pose3Between->key1();
-      if (adjEdgesMap.find(key1) != adjEdgesMap.end()){  // key is already in
-        adjEdgesMap.at(key1).push_back(factorId);
-      }else{
+      if (adjEdgesMap->find(key1) != adjEdgesMap->end()) {  // key is already in
+        adjEdgesMap->at(key1).push_back(factorId);
+      } else {
         vector<size_t> edge_id;
         edge_id.push_back(factorId);
-        adjEdgesMap.insert(pair<Key, vector<size_t> >(key1, edge_id));
+        adjEdgesMap->emplace(key1, edge_id);
       }
       Key key2 = pose3Between->key2();
-      if (adjEdgesMap.find(key2) != adjEdgesMap.end()){  // key is already in
-        adjEdgesMap.at(key2).push_back(factorId);
-      }else{
+      if (adjEdgesMap->find(key2) != adjEdgesMap->end()) {  // key is already in
+        adjEdgesMap->at(key2).push_back(factorId);
+      } else {
         vector<size_t> edge_id;
         edge_id.push_back(factorId);
-        adjEdgesMap.insert(pair<Key, vector<size_t> >(key2, edge_id));
+        adjEdgesMap->emplace(key2, edge_id);
       }
-    }else{
+    } else {
       cout << "Error in createSymbolicGraph" << endl;
     }
     factorId++;
@@ -293,50 +284,16 @@ Values InitializePose3::initializeOrientations(const NonlinearFactorGraph& graph
 }
 
 ///* ************************************************************************* */
-Values InitializePose3::computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
+Values InitializePose3::computePoses(const Values& initialRot,
+                                      NonlinearFactorGraph* posegraph,
+                                      bool singleIter) {
   gttic(InitializePose3_computePoses);
-
-  // put into Values structure
-  Values initialPose;
-  for (const auto& key_value : initialRot) {
-    Key key = key_value.key;
-    const Rot3& rot = initialRot.at<Rot3>(key);
-    Pose3 initializedPose = Pose3(rot, Point3(0, 0, 0));
-    initialPose.insert(key, initializedPose);
-  }
-
-  // add prior
-  noiseModel::Unit::shared_ptr priorModel = noiseModel::Unit::Create(6);
-  initialPose.insert(kAnchorKey, Pose3());
-  pose3graph.emplace_shared<PriorFactor<Pose3> >(kAnchorKey, Pose3(), priorModel);
-
-  // Create optimizer
-  GaussNewtonParams params;
-  bool singleIter = true;
-  if (singleIter) {
-    params.maxIterations = 1;
-  } else {
-    cout << " \n\n\n\n  performing more than 1 GN iterations \n\n\n" << endl;
-    params.setVerbosity("TERMINATION");
-  }
-  GaussNewtonOptimizer optimizer(pose3graph, initialPose, params);
-  Values GNresult = optimizer.optimize();
-
-  // put into Values structure
-  Values estimate;
-  for (const auto& key_value : GNresult) {
-    Key key = key_value.key;
-    if (key != kAnchorKey) {
-      const Pose3& pose = GNresult.at<Pose3>(key);
-      estimate.insert(key, pose);
-    }
-  }
-  return estimate;
+  return initialize::computePoses<Pose3>(initialRot, posegraph, singleIter);
 }
 
 /* ************************************************************************* */
-Values InitializePose3::initialize(const NonlinearFactorGraph& graph, const Values& givenGuess,
-                  bool useGradient) {
+Values InitializePose3::initialize(const NonlinearFactorGraph& graph,
+                                   const Values& givenGuess, bool useGradient) {
   gttic(InitializePose3_initialize);
   Values initialValues;
 
@@ -352,7 +309,7 @@ Values InitializePose3::initialize(const NonlinearFactorGraph& graph, const Valu
     orientations = computeOrientationsChordal(pose3Graph);
 
   // Compute the full poses (1 GN iteration on full poses)
-  return computePoses(pose3Graph, orientations);
+  return computePoses(orientations, &pose3Graph);
 }
 
 /* ************************************************************************* */

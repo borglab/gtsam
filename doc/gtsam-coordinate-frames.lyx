@@ -2291,15 +2291,11 @@ uncalibration
  used in the residual).
 \end_layout
 
-\begin_layout Standard
-\begin_inset Note Note
-status collapsed
-
 \begin_layout Section
 Noise models of prior factors
 \end_layout
 
-\begin_layout Plain Layout
+\begin_layout Standard
 The simplest way to describe noise models is by an example.
  Let's take a prior factor on a 3D pose 
 \begin_inset Formula $x\in\SE 3$
@@ -2353,7 +2349,7 @@ e\left(x\right)=\norm{h\left(x\right)}_{\Sigma}^{2}=h\left(x\right)^{\t}\Sigma^{
  useful answer out quickly ]
 \end_layout
 
-\begin_layout Plain Layout
+\begin_layout Standard
 The density induced by a noise model on the prior factor is Gaussian in
  the tangent space about the linearization point.
  Suppose that the pose is linearized at 
@@ -2431,7 +2427,7 @@ Here we see that the update
 .
 \end_layout
 
-\begin_layout Plain Layout
+\begin_layout Standard
 This means that to draw random pose samples, we actually draw random samples
  of 
 \begin_inset Formula $\delta x$
@@ -2456,7 +2452,7 @@ This means that to draw random pose samples, we actually draw random samples
 Noise models of between factors
 \end_layout
 
-\begin_layout Plain Layout
+\begin_layout Standard
 The noise model of a BetweenFactor is a bit more complicated.
  The unwhitened error is
 \begin_inset Formula 
@@ -2512,11 +2508,6 @@ If we hold the second pose fixed, the covariance is applied as follows (actually
 e\left(\delta x_{1}\right) & \approx\norm{\log\left(z^{-1}\left(x_{1}\exp\delta x_{1}\right)^{-1}x_{2}\right)}_{\Sigma}^{2}\\
  & =\norm{\log\left(z^{-1}\exp-\delta x_{1}x_{1}^{-1}x_{2}\right)}_{\Sigma}^{2}
 \end{align*}
-
-\end_inset
-
-
-\end_layout
 
 \end_inset
 

@@ -31,7 +31,7 @@ public:
   virtual ~VelocityConstraint3() {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new VelocityConstraint3(*this))); }
 
@@ -39,7 +39,7 @@ public:
   Vector evaluateError(const double& x1, const double& x2, const double& v,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const {
+      boost::optional<Matrix&> H3 = boost::none) const override {
     const size_t p = 1;
     if (H1) *H1 = Matrix::Identity(p,p);
     if (H2) *H2 = -Matrix::Identity(p,p);
