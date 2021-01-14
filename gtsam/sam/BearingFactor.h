@@ -34,8 +34,8 @@ struct Bearing;
  */
 template <typename A1, typename A2,
           typename T = typename Bearing<A1, A2>::result_type>
-struct BearingFactor : public ExpressionFactor2<T, A1, A2> {
-  typedef ExpressionFactor2<T, A1, A2> Base;
+struct BearingFactor : public ExpressionFactorN<T, A1, A2> {
+  typedef ExpressionFactorN<T, A1, A2> Base;
 
   /// default constructor
   BearingFactor() {}
@@ -43,23 +43,38 @@ struct BearingFactor : public ExpressionFactor2<T, A1, A2> {
   /// primary constructor
   BearingFactor(Key key1, Key key2, const T& measured,
                 const SharedNoiseModel& model)
-      : Base(key1, key2, model, measured) {
-    this->initialize(expression(key1, key2));
+      : Base({key1, key2}, model, measured) {
+    this->initialize(expression({key1, key2}));
   }
 
   // Return measurement expression
-  virtual Expression<T> expression(Key key1, Key key2) const {
-    Expression<A1> a1_(key1);
-    Expression<A2> a2_(key2);
+  Expression<T> expression(const typename Base::ArrayNKeys &keys) const override {
+    Expression<A1> a1_(keys[0]);
+    Expression<A2> a2_(keys[1]);
     return Expression<T>(Bearing<A1, A2>(), a1_, a2_);
   }
 
   /// print
   void print(const std::string& s = "",
-             const KeyFormatter& kf = DefaultKeyFormatter) const {
+             const KeyFormatter& kf = DefaultKeyFormatter) const override {
     std::cout << s << "BearingFactor" << std::endl;
     Base::print(s, kf);
   }
+  
+  Vector evaluateError(const A1& a1, const A2& a2,
+    boost::optional<Matrix&> H1 = boost::none,
+    boost::optional<Matrix&> H2 = boost::none) const
+  {
+    std::vector<Matrix> Hs(2);
+    const auto &keys = Factor::keys();
+    const Vector error = unwhitenedError(
+      {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}}, 
+      Hs);
+    if (H1) *H1 = Hs[0];
+    if (H2) *H2 = Hs[1];
+    return error;
+  }
+
 
  private:
   friend class boost::serialization::access;

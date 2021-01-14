@@ -29,7 +29,9 @@ namespace gtsam {
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
 struct GTSAM_EXPORT PreintegratedRotationParams {
-  Matrix3 gyroscopeCovariance;  ///< continuous-time "Covariance" of gyroscope measurements
+  /// Continuous-time "Covariance" of gyroscope measurements
+  /// The units for stddev are σ = rad/s/√Hz
+  Matrix3 gyroscopeCovariance;
   boost::optional<Vector3> omegaCoriolis;  ///< Coriolis constant
   boost::optional<Pose3> body_P_sensor;    ///< The pose of the sensor in the body frame
 
@@ -61,15 +63,21 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
-    ar & bs::make_nvp("gyroscopeCovariance", bs::make_array(gyroscopeCovariance.data(), gyroscopeCovariance.size()));
-    ar & BOOST_SERIALIZATION_NVP(omegaCoriolis);
+    ar & BOOST_SERIALIZATION_NVP(gyroscopeCovariance);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor);
+
+    // Provide support for Eigen::Matrix in boost::optional
+    bool omegaCoriolisFlag = omegaCoriolis.is_initialized();
+    ar & boost::serialization::make_nvp("omegaCoriolisFlag", omegaCoriolisFlag);
+    if (omegaCoriolisFlag) {
+      ar & BOOST_SERIALIZATION_NVP(*omegaCoriolis);
+    }
   }
 
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions
 public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 
@@ -182,7 +190,7 @@ class GTSAM_EXPORT PreintegratedRotation {
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions
   public:
-	  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 

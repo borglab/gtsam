@@ -80,6 +80,9 @@ public:
   /** Create a string from the key */
   operator std::string() const;
 
+  /// Return string representation of the key
+  std::string string() const { return std::string(*this); };
+
   /** Comparison for use in maps */
   bool operator<(const Symbol& comp) const {
     return c_ < comp.c_ || (comp.c_ == c_ && j_ < comp.j_);
@@ -164,8 +167,17 @@ inline Key Y(std::uint64_t j) { return Symbol('y', j); }
 inline Key Z(std::uint64_t j) { return Symbol('z', j); }
 }
 
+/** Generates symbol shorthands with alternative names different than the
+ * one-letter predefined ones. */
+class SymbolGenerator {
+  const unsigned char c_;
+public:
+  constexpr SymbolGenerator(const unsigned char c) : c_(c) {}
+  Symbol operator()(const std::uint64_t j) const { return Symbol(c_, j); }
+  constexpr unsigned char chr() const { return c_; }
+};
+
 /// traits
 template<> struct traits<Symbol> : public Testable<Symbol> {};
 
 } // \ namespace gtsam
-

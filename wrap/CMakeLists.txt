@@ -1,45 +1,59 @@
-# Build/install Wrap
+cmake_minimum_required(VERSION 3.9)
 
-set(WRAP_BOOST_LIBRARIES
-  Boost::system
-  Boost::filesystem
-  Boost::thread
-)
+# Set the project name and version
+project(GTwrap VERSION 1.0)
 
-# Allow for disabling serialization to handle errors related to Clang's linker
-option(GTSAM_WRAP_SERIALIZATION "If enabled, allows for wrapped objects to be saved via boost.serialization" ON)
+# ##############################################################################
+# General configuration
 
-# Build the executable itself
-file(GLOB wrap_srcs "*.cpp")
-file(GLOB wrap_headers "*.h")
-list(REMOVE_ITEM wrap_srcs ${CMAKE_CURRENT_SOURCE_DIR}/wrap.cpp)
-add_library(wrap_lib STATIC ${wrap_srcs} ${wrap_headers})
-target_include_directories(wrap_lib PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-)
-if (NOT GTSAM_WRAP_SERIALIZATION)
-  target_compile_definitions(wrap_lib PUBLIC -DWRAP_DISABLE_SERIALIZE)
+set(WRAP_PYTHON_VERSION
+    "Default"
+    CACHE STRING "The Python version to use for wrapping")
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GtwrapUtils.cmake)
+gtwrap_get_python_version(${WRAP_PYTHON_VERSION})
+
+# ##############################################################################
+# Install the CMake file to be used by other projects
+if(WIN32 AND NOT CYGWIN)
+  set(SCRIPT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/CMake")
+else()
+  set(SCRIPT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/cmake")
 endif()
 
-# Apply build flags:
-gtsam_apply_build_flags(wrap_lib)
+# Install scripts to the standard CMake script directory.
+install(FILES cmake/gtwrapConfig.cmake cmake/PybindWrap.cmake
+              cmake/GtwrapUtils.cmake
+        DESTINATION "${SCRIPT_INSTALL_DIR}/gtwrap")
 
-target_link_libraries(wrap_lib ${WRAP_BOOST_LIBRARIES})
-gtsam_assign_source_folders(${wrap_srcs} ${wrap_headers})
-add_executable(wrap wrap.cpp)
-target_link_libraries(wrap PRIVATE wrap_lib)
+# Install wrapping scripts as binaries to `CMAKE_INSTALL_PREFIX/bin` so they can
+# be invoked for wrapping.
+# We use DESTINATION (instead of TYPE) so we can support older CMake versions.
+install(PROGRAMS scripts/pybind_wrap.py scripts/matlab_wrap.py
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-# Set folder in Visual Studio
-file(RELATIVE_PATH relative_path "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-set_target_properties(wrap_lib wrap PROPERTIES FOLDER "${relative_path}")
+# Install pybind11 directory to `CMAKE_INSTALL_PREFIX/lib/pybind11` This will
+# allow the gtwrapConfig.cmake file to load it later.
+# We use DESTINATION (instead of TYPE) so we can support older CMake versions.
+install(DIRECTORY pybind11
+        DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-# Install wrap binary and export target
-install(TARGETS wrap EXPORT GTSAM-exports DESTINATION ${CMAKE_INSTALL_BINDIR})
-list(APPEND GTSAM_EXPORTED_TARGETS wrap)
-set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
+# ##############################################################################
+# Install the Python package
+find_package(
+  Python ${WRAP_PYTHON_VERSION}
+  COMPONENTS Interpreter
+  EXACT)
 
-# Install matlab header
-install(FILES matlab.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wrap)
+# Detect virtualenv and set Pip args accordingly
+# https://www.scivision.dev/cmake-install-python-package/
+if(DEFINED ENV{VIRTUAL_ENV} OR DEFINED ENV{CONDA_PREFIX})
+  set(_pip_args)
+else()
+  set(_pip_args "--user")
+endif()
+#TODO add correct flags for virtualenv
 
-# Build tests
-add_subdirectory(tests)
+# Finally install the gtwrap python package.
+execute_process(COMMAND ${Python_EXECUTABLE} -m pip install . ${_pip_args}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

@@ -58,20 +58,22 @@ T FindKarcherMean(std::initializer_list<T>&& rotations) {
 
 template <class T>
 template <typename CONTAINER>
-KarcherMeanFactor<T>::KarcherMeanFactor(const CONTAINER& keys, int d)
-    : NonlinearFactor(keys) {
+KarcherMeanFactor<T>::KarcherMeanFactor(const CONTAINER &keys, int d,
+                                        boost::optional<double> beta)
+    : NonlinearFactor(keys), d_(static_cast<size_t>(d)) {
   if (d <= 0) {
     throw std::invalid_argument(
         "KarcherMeanFactor needs dimension for dynamic types.");
   }
-  // Create the constant Jacobian made of D*D identity matrices,
-  // where D is the dimensionality of the manifold.
-  const auto I = Eigen::MatrixXd::Identity(d, d);
+  // Create the constant Jacobian made of d*d identity matrices,
+  // where d is the dimensionality of the manifold.
+  Matrix A = Matrix::Identity(d, d);
+  if (beta) A *= std::sqrt(*beta);
   std::map<Key, Matrix> terms;
   for (Key j : keys) {
-    terms[j] = I;
+    terms[j] = A;
   }
-  jacobian_ =
-      boost::make_shared<JacobianFactor>(terms, Eigen::VectorXd::Zero(d));
+  whitenedJacobian_ =
+      boost::make_shared<JacobianFactor>(terms, Vector::Zero(d));
 }
 }  // namespace gtsam

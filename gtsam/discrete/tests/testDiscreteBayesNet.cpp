@@ -18,110 +18,135 @@
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/base/Testable.h>
+#include <gtsam/discrete/DiscreteMarginals.h>
 #include <gtsam/base/debug.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/map.hpp>
+
 #include <boost/assign/list_inserter.hpp>
+#include <boost/assign/std/map.hpp>
 
 using namespace boost::assign;
 
 #include <iostream>
+#include <string>
+#include <vector>
 
 using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST(DiscreteBayesNet, Asia)
-{
+TEST(DiscreteBayesNet, bayesNet) {
+  DiscreteBayesNet bayesNet;
+  DiscreteKey Parent(0, 2), Child(1, 2);
+
+  auto prior = boost::make_shared<DiscreteConditional>(Parent % "6/4");
+  CHECK(assert_equal(Potentials::ADT({Parent}, "0.6 0.4"),
+                     (Potentials::ADT)*prior));
+  bayesNet.push_back(prior);
+
+  auto conditional =
+      boost::make_shared<DiscreteConditional>(Child | Parent = "7/3 8/2");
+  EXPECT_LONGS_EQUAL(1, *(conditional->beginFrontals()));
+  Potentials::ADT expected(Child & Parent, "0.7 0.8 0.3 0.2");
+  CHECK(assert_equal(expected, (Potentials::ADT)*conditional));
+  bayesNet.push_back(conditional);
+
+  DiscreteFactorGraph fg(bayesNet);
+  LONGS_EQUAL(2, fg.back()->size());
+
+  // Check the marginals
+  const double expectedMarginal[2]{0.4, 0.6 * 0.3 + 0.4 * 0.2};
+  DiscreteMarginals marginals(fg);
+  for (size_t j = 0; j < 2; j++) {
+    Vector FT = marginals.marginalProbabilities(DiscreteKey(j, 2));
+    EXPECT_DOUBLES_EQUAL(expectedMarginal[j], FT[1], 1e-3);
+    EXPECT_DOUBLES_EQUAL(FT[0], 1.0 - FT[1], 1e-9);
+  }
+}
+
+/* ************************************************************************* */
+TEST(DiscreteBayesNet, Asia) {
   DiscreteBayesNet asia;
-//  DiscreteKey A("Asia"), S("Smoking"), T("Tuberculosis"), L("LungCancer"), B(
-//      "Bronchitis"), E("Either"), X("XRay"), D("Dyspnoea");
-  DiscreteKey A(0,2), S(4,2), T(3,2), L(6,2), B(7,2), E(5,2), X(2,2), D(1,2);
+  DiscreteKey Asia(0, 2), Smoking(4, 2), Tuberculosis(3, 2), LungCancer(6, 2),
+      Bronchitis(7, 2), Either(5, 2), XRay(2, 2), Dyspnea(1, 2);
 
-  // TODO: make a version that doesn't use the parser
-  asia.add(A % "99/1");
-  asia.add(S % "50/50");
+  asia.add(Asia % "99/1");
+  asia.add(Smoking % "50/50");
 
-  asia.add(T | A = "99/1 95/5");
-  asia.add(L | S = "99/1 90/10");
-  asia.add(B | S = "70/30 40/60");
+  asia.add(Tuberculosis | Asia = "99/1 95/5");
+  asia.add(LungCancer | Smoking = "99/1 90/10");
+  asia.add(Bronchitis | Smoking = "70/30 40/60");
 
-  asia.add((E | T, L) = "F T T T");
+  asia.add((Either | Tuberculosis, LungCancer) = "F T T T");
 
-  asia.add(X | E = "95/5 2/98");
-  // next lines are same as asia.add((D | E, B) = "9/1 2/8 3/7 1/9");
-  DiscreteConditional::shared_ptr actual =
-      boost::make_shared<DiscreteConditional>((D | E, B) = "9/1 2/8 3/7 1/9");
-  asia.push_back(actual);
-  //  GTSAM_PRINT(asia);
+  asia.add(XRay | Either = "95/5 2/98");
+  asia.add((Dyspnea | Either, Bronchitis) = "9/1 2/8 3/7 1/9");
 
   // Convert to factor graph
   DiscreteFactorGraph fg(asia);
-//    GTSAM_PRINT(fg);
-  LONGS_EQUAL(3,fg.back()->size());
-  Potentials::ADT expected(B & D & E, "0.9 0.3 0.1 0.7 0.2 0.1 0.8 0.9");
-  CHECK(assert_equal(expected,(Potentials::ADT)*actual));
+  LONGS_EQUAL(3, fg.back()->size());
+
+  // Check the marginals we know (of the parent-less nodes)
+  DiscreteMarginals marginals(fg);
+  Vector2 va(0.99, 0.01), vs(0.5, 0.5);
+  EXPECT(assert_equal(va, marginals.marginalProbabilities(Asia)));
+  EXPECT(assert_equal(vs, marginals.marginalProbabilities(Smoking)));
 
   // Create solver and eliminate
   Ordering ordering;
-  ordering += Key(0),Key(1),Key(2),Key(3),Key(4),Key(5),Key(6),Key(7);
+  ordering += Key(0), Key(1), Key(2), Key(3), Key(4), Key(5), Key(6), Key(7);
   DiscreteBayesNet::shared_ptr chordal = fg.eliminateSequential(ordering);
-//    GTSAM_PRINT(*chordal);
-  DiscreteConditional expected2(B % "11/9");
-  CHECK(assert_equal(expected2,*chordal->back()));
+  DiscreteConditional expected2(Bronchitis % "11/9");
+  EXPECT(assert_equal(expected2, *chordal->back()));
 
   // solve
   DiscreteFactor::sharedValues actualMPE = chordal->optimize();
   DiscreteFactor::Values expectedMPE;
-  insert(expectedMPE)(A.first, 0)(D.first, 0)(X.first, 0)(T.first, 0)(S.first,
-      0)(E.first, 0)(L.first, 0)(B.first, 0);
+  insert(expectedMPE)(Asia.first, 0)(Dyspnea.first, 0)(XRay.first, 0)(
+      Tuberculosis.first, 0)(Smoking.first, 0)(Either.first, 0)(
+      LungCancer.first, 0)(Bronchitis.first, 0);
   EXPECT(assert_equal(expectedMPE, *actualMPE));
 
-  // add evidence, we were in Asia and we have Dispnoea
-  fg.add(A, "0 1");
-  fg.add(D, "0 1");
-//  fg.product().dot("fg");
+  // add evidence, we were in Asia and we have dyspnea
+  fg.add(Asia, "0 1");
+  fg.add(Dyspnea, "0 1");
 
   // solve again, now with evidence
   DiscreteBayesNet::shared_ptr chordal2 = fg.eliminateSequential(ordering);
-//  GTSAM_PRINT(*chordal2);
   DiscreteFactor::sharedValues actualMPE2 = chordal2->optimize();
   DiscreteFactor::Values expectedMPE2;
-  insert(expectedMPE2)(A.first, 1)(D.first, 1)(X.first, 0)(T.first, 0)(S.first,
-      1)(E.first, 0)(L.first, 0)(B.first, 1);
+  insert(expectedMPE2)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 0)(
+      Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 0)(
+      LungCancer.first, 0)(Bronchitis.first, 1);
   EXPECT(assert_equal(expectedMPE2, *actualMPE2));
 
   // now sample from it
   DiscreteFactor::Values expectedSample;
   SETDEBUG("DiscreteConditional::sample", false);
-  insert(expectedSample)(A.first, 1)(D.first, 1)(X.first, 1)(T.first, 0)(
-      S.first, 1)(E.first, 1)(L.first, 1)(B.first, 0);
+  insert(expectedSample)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 1)(
+      Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 1)(
+      LungCancer.first, 1)(Bronchitis.first, 0);
   DiscreteFactor::sharedValues actualSample = chordal2->sample();
   EXPECT(assert_equal(expectedSample, *actualSample));
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(DiscreteBayesNet, Sugar)
-{
-  DiscreteKey T(0,2), L(1,2), E(2,2), D(3,2), C(8,3), S(7,2);
+TEST_UNSAFE(DiscreteBayesNet, Sugar) {
+  DiscreteKey T(0, 2), L(1, 2), E(2, 2), C(8, 3), S(7, 2);
 
   DiscreteBayesNet bn;
-
-  // test some mistakes
-  //  add(bn, D);
-  //  add(bn, D | E);
-  //  add(bn, D | E = "blah");
 
   // try logic
   bn.add((E | T, L) = "OR");
   bn.add((E | T, L) = "AND");
 
-  //  // try multivalued
- bn.add(C % "1/1/2");
- bn.add(C | S = "1/1/2 5/2/3");
+  // try multivalued
+  bn.add(C % "1/1/2");
+  bn.add(C | S = "1/1/2 5/2/3");
 }
 
 /* ************************************************************************* */
@@ -130,4 +155,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

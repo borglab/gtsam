@@ -111,13 +111,13 @@ public:
   virtual ~DummyPreconditioner() {}
 
   /* Computation Interfaces for raw vector */
-  virtual void solve(const Vector& y, Vector &x) const { x = y; }
-  virtual void transposeSolve(const Vector& y, Vector& x) const { x = y; }
-  virtual void build(
+  void solve(const Vector& y, Vector &x) const override { x = y; }
+  void transposeSolve(const Vector& y, Vector& x) const  override { x = y; }
+  void build(
     const GaussianFactorGraph &gfg,
     const KeyInfo &info,
     const std::map<Key,Vector> &lambda
-    )  {}
+    ) override {}
 };
 
 /*******************************************************************************************/
@@ -135,13 +135,13 @@ public:
   virtual ~BlockJacobiPreconditioner() ;
 
   /* Computation Interfaces for raw vector */
-  virtual void solve(const Vector& y, Vector &x) const;
-  virtual void transposeSolve(const Vector& y, Vector& x) const ;
-  virtual void build(
+  void solve(const Vector& y, Vector &x) const override;
+  void transposeSolve(const Vector& y, Vector& x) const override;
+  void build(
     const GaussianFactorGraph &gfg,
     const KeyInfo &info,
     const std::map<Key,Vector> &lambda
-    ) ;
+    ) override;
 
 protected:
 

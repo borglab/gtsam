@@ -2,6 +2,10 @@
 
 include(GtsamMatlabWrap)
 
+# Record the root dir for gtsam - needed during external builds, e.g., ROS
+set(GTSAM_SOURCE_ROOT_DIR ${GTSAM_SOURCE_DIR})
+message(STATUS "GTSAM_SOURCE_ROOT_DIR: [${GTSAM_SOURCE_ROOT_DIR}]")
+
 # Tests
 #message(STATUS "Installing Matlab Toolbox")
 install_matlab_scripts("${GTSAM_SOURCE_ROOT_DIR}/matlab/" "*.m;*.fig")
@@ -21,7 +25,7 @@ install_matlab_scripts("${GTSAM_SOURCE_ROOT_DIR}/matlab/" "README-gtsam-toolbox.
 file(GLOB matlab_examples_data_graph "${GTSAM_SOURCE_ROOT_DIR}/examples/Data/*.graph")
 file(GLOB matlab_examples_data_mat "${GTSAM_SOURCE_ROOT_DIR}/examples/Data/*.mat")
 file(GLOB matlab_examples_data_txt "${GTSAM_SOURCE_ROOT_DIR}/examples/Data/*.txt")
-set(matlab_examples_data ${matlab_examples_data_graph} ${matlab_examples_data_mat} ${matlab_examples_data_txt}) 
+set(matlab_examples_data ${matlab_examples_data_graph} ${matlab_examples_data_mat} ${matlab_examples_data_txt})
 if(GTSAM_BUILD_TYPE_POSTFIXES)
 	foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
 		string(TOUPPER "${build_type}" build_type_upper)
@@ -38,4 +42,3 @@ if(GTSAM_BUILD_TYPE_POSTFIXES)
 else()
 	install(FILES ${matlab_examples_data} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples/Data)
 endif()
-

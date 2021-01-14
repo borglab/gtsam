@@ -217,7 +217,7 @@ namespace gtsam {
   /** Constructor from a Filtered view copies out all values */
   template<class ValueType>
   Values::Values(const Values::Filtered<ValueType>& view) {
-    for(const typename Filtered<ValueType>::KeyValuePair& key_value: view) {
+    for(const auto key_value: view) {
       Key key = key_value.key;
       insert(key, static_cast<const ValueType&>(key_value.value));
     }
@@ -226,7 +226,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class ValueType>
   Values::Values(const Values::ConstFiltered<ValueType>& view) {
-    for(const typename ConstFiltered<ValueType>::KeyValuePair& key_value: view) {
+    for(const auto key_value: view) {
       Key key = key_value.key;
       insert(key, static_cast<const ValueType&>(key_value.value));
     }
@@ -338,19 +338,18 @@ namespace gtsam {
    }  // internal
 
    /* ************************************************************************* */
-   template<typename ValueType>
-   ValueType Values::at(Key j) const {
+   template <typename ValueType>
+   const ValueType Values::at(Key j) const {
      // Find the item
      KeyValueMap::const_iterator item = values_.find(j);
 
      // Throw exception if it does not exist
-     if(item == values_.end())
-       throw ValuesKeyDoesNotExist("at", j);
+     if (item == values_.end()) throw ValuesKeyDoesNotExist("at", j);
 
-    // Check the type and throw exception if incorrect
-    // h() split in two lines to avoid internal compiler error (MSVC2017)
-    auto h = internal::handle<ValueType>();
-    return h(j,item->second);
+     // Check the type and throw exception if incorrect
+     // h() split in two lines to avoid internal compiler error (MSVC2017)
+     auto h = internal::handle<ValueType>();
+     return h(j, item->second);
   }
 
   /* ************************************************************************* */

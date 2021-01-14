@@ -72,17 +72,6 @@ class ISAM : public BAYESTREE {
       const Eliminate& function = EliminationTraitsType::DefaultEliminate);
 
   /// @}
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @name Deprecated
-  /// @{
-  void update_internal(
-      const FactorGraphType& newFactors, Cliques& orphans,
-      const Eliminate& function = EliminationTraitsType::DefaultEliminate) {
-    updateInternal(newFactors, &orphans, function);
-  }
-  /// @}
-#endif
 };
 
 }  // namespace gtsam

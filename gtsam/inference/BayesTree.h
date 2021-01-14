@@ -249,25 +249,6 @@ namespace gtsam {
     // Friend JunctionTree because it directly fills roots and nodes index.
     template<class BAYESRTEE, class GRAPH> friend class EliminatableClusterTree;
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-   public:
-    /// @name Deprecated
-    /// @{
-    void removePath(sharedClique clique, BayesNetType& bn, Cliques& orphans) {
-      removePath(clique, &bn, &orphans);
-    }
-    void removeTop(const KeyVector& keys, BayesNetType& bn, Cliques& orphans) {
-      removeTop(keys, &bn, &orphans);
-    }
-    void getCliqueData(BayesTreeCliqueData& stats, sharedClique clique) const {
-      getCliqueData(clique, &stats);
-    }
-    void addFactorsToGraph(FactorGraph<FactorType>& graph) const{
-      addFactorsToGraph(& graph);
-    }
-    /// @}
-#endif
-
    private:
     /** Serialization function */
     friend class boost::serialization::access;
@@ -299,7 +280,7 @@ namespace gtsam {
       this->keys_.assign(clique->conditional()->beginParents(), clique->conditional()->endParents());
     }
 
-    void print(const std::string& s="", const KeyFormatter& formatter = DefaultKeyFormatter) const {
+    void print(const std::string& s="", const KeyFormatter& formatter = DefaultKeyFormatter) const override {
       clique->print(s + "stored clique", formatter);
     }
   };

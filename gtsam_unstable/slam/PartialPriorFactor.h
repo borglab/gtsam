@@ -85,20 +85,20 @@ namespace gtsam {
     }
 
     /// @return a deep copy of this factor
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    gtsam::NonlinearFactor::shared_ptr clone() const override {
       return boost::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
 
     /** print */
-    virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       Base::print(s, keyFormatter);
       gtsam::print(prior_, "prior");
     }
 
     /** equals */
-    virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
+    bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
       const This *e = dynamic_cast<const This*> (&expected);
       return e != nullptr && Base::equals(*e, tol) &&
           gtsam::equal_with_abs_tol(this->prior_, e->prior_, tol) &&
@@ -108,7 +108,7 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const {
+    Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const override {
       if (H) (*H) = H_;
       // FIXME: this was originally the generic retraction - may not produce same results
       Vector full_logmap = T::Logmap(p);

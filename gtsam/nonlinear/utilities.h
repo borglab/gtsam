@@ -107,6 +107,11 @@ Matrix extractPoint3(const Values& values) {
   return result;
 }
 
+/// Extract all Pose3 values
+Values allPose2s(const Values& values) {
+  return values.filter<Pose2>();
+}
+
 /// Extract all Pose2 values into a single matrix [x y theta]
 Matrix extractPose2(const Values& values) {
   Values::ConstFiltered<Pose2> poses = values.filter<Pose2>();

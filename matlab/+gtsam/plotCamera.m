@@ -1,7 +1,7 @@
 function plotCamera(pose, axisLength)
 	hold on
 
-    C = pose.translation().vector();
+    C = pose.translation();
     R = pose.rotation().matrix();
     
     xAxis = C+R(:,1)*axisLength;

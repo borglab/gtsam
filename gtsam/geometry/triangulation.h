@@ -18,8 +18,10 @@
 
 #pragma once
 
-#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/CameraSet.h>
+#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/TriangulationFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -123,27 +125,6 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   return std::make_pair(graph, values);
 }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-/// DEPRECATED: PinholeCamera specific version
-template<class CALIBRATION>
-Point3 triangulateNonlinear(
-    const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
-    const Point2Vector& measurements, const Point3& initialEstimate) {
-  return triangulateNonlinear<PinholeCamera<CALIBRATION> > //
-  (cameras, measurements, initialEstimate);
-}
-
-/// DEPRECATED: PinholeCamera specific version
-template<class CALIBRATION>
-std::pair<NonlinearFactorGraph, Values> triangulationGraph(
-    const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
-    const Point2Vector& measurements, Key landmarkKey,
-    const Point3& initialEstimate) {
-  return triangulationGraph<PinholeCamera<CALIBRATION> > //
-  (cameras, measurements, landmarkKey, initialEstimate);
-}
-#endif
-
 /**
  * Optimize for triangulation
  * @param graph nonlinear factors for projection
@@ -215,7 +196,7 @@ struct CameraProjectionMatrix {
 private:
   const Matrix3 K_;
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -514,6 +495,10 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
       return TriangulationResult::BehindCamera();
     }
 }
+
+// Vector of Cameras - used by the Python/MATLAB wrapper
+using CameraSetCal3Bundler = CameraSet<PinholeCamera<Cal3Bundler>>;
+using CameraSetCal3_S2 = CameraSet<PinholeCamera<Cal3_S2>>;
 
 } // \namespace gtsam
 

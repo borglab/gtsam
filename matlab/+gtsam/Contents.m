@@ -99,6 +99,7 @@
 % 
 %% SLAM and SFM
 %   BearingFactor2D                   - class BearingFactor2D, see Doxygen page for details
+%   BearingFactor3D                   - class BearingFactor3D, see Doxygen page for details
 %   BearingRangeFactor2D              - class BearingRangeFactor2D, see Doxygen page for details
 %   BetweenFactorLieMatrix            - class BetweenFactorLieMatrix, see Doxygen page for details
 %   BetweenFactorLieScalar            - class BetweenFactorLieScalar, see Doxygen page for details
