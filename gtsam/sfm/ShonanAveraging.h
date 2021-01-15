@@ -414,7 +414,7 @@ class GTSAM_EXPORT ShonanAveraging {
 // Subclasses for d=2 and d=3 that explicitly instantiate, as well as provide a
 // convenience interface with file access.
 
-class ShonanAveraging2 : public ShonanAveraging<2> {
+class GTSAM_EXPORT ShonanAveraging2 : public ShonanAveraging<2> {
  public:
   ShonanAveraging2(const Measurements &measurements,
                    const Parameters &parameters = Parameters());
@@ -422,7 +422,7 @@ class ShonanAveraging2 : public ShonanAveraging<2> {
                             const Parameters &parameters = Parameters());
 };
 
-class ShonanAveraging3 : public ShonanAveraging<3> {
+class GTSAM_EXPORT ShonanAveraging3 : public ShonanAveraging<3> {
  public:
   ShonanAveraging3(const Measurements &measurements,
                    const Parameters &parameters = Parameters());
