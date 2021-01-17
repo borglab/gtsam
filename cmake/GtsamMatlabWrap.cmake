@@ -146,7 +146,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
             endif()
         endif()
     endforeach()
-    
+
     ## CHRIS: Temporary fix. On my system the get_target_property above returned Not-found for gtsam module
     ## This needs to be fixed!!
     if(UNIX AND NOT APPLE)
@@ -159,7 +159,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
         endif()
       endif()
     endif()
-    
+
     #message("AUTOMATIC DEPENDENCIES:  ${automaticDependencies}")
     ## CHRIS: End temporary fix
 
@@ -213,7 +213,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
             endif()
 		endif()
 	endforeach()
-    
+
     # Check libraries for conflicting versions built-in to MATLAB
     set(dependentLibraries "")
     if(NOT "${otherLibraryTargets}" STREQUAL "")
@@ -257,7 +257,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 			--ignore ${_ignore}
 		VERBATIM
 		WORKING_DIRECTORY ${generated_files_path})
-		
+
 	# Set up building of mex module
 	string(REPLACE ";" " " extraMexFlagsSpaced "${extraMexFlags}")
 	string(REPLACE ";" " " mexFlagsSpaced "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
@@ -295,8 +295,8 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 	endif()
 
     # Hacking around output issue with custom command
-    # Deletes generated build folder 
-    add_custom_target(wrap_${moduleName}_matlab_distclean 
+    # Deletes generated build folder
+    add_custom_target(wrap_${moduleName}_matlab_distclean
 	    COMMAND cmake -E remove_directory ${generated_files_path}
 		COMMAND cmake -E remove_directory ${compiled_mex_modules_root})
 endfunction()
@@ -347,17 +347,17 @@ function(check_conflicting_libraries_internal libraries)
                 set(mxLibPath "${MATLAB_ROOT}/bin/glnx86")
             endif()
         endif()
-        
+
         # List matlab's built-in libraries
         file(GLOB matlabLibs RELATIVE "${mxLibPath}" "${mxLibPath}/lib*")
-        
+
         # Convert to base names
         set(matlabLibNames "")
         foreach(lib ${matlabLibs})
             get_filename_component(libName "${lib}" NAME_WE)
             list(APPEND matlabLibNames "${libName}")
         endforeach()
-        
+
         # Get names of link libraries
         set(linkLibNames "")
         foreach(lib ${libraries})
@@ -379,10 +379,10 @@ function(check_conflicting_libraries_internal libraries)
                 endif()
             endif()
         endforeach()
-        
+
         # Remove duplicates
         list(REMOVE_DUPLICATES linkLibNames)
-        
+
         set(conflictingLibs "")
         foreach(lib ${linkLibNames})
             list(FIND matlabLibNames "${lib}" libPos)
@@ -393,7 +393,7 @@ function(check_conflicting_libraries_internal libraries)
                 set(conflictingLibs "${conflictingLibs}${lib}")
             endif()
         endforeach()
-        
+
         if(NOT "${conflictingLibs}" STREQUAL "")
             message(WARNING "GTSAM links to the libraries [ ${conflictingLibs} ] on your system, but "
                 "MATLAB is distributed with its own versions of these libraries which may conflict. "
@@ -435,4 +435,3 @@ function(install_matlab_scripts source_directory patterns)
 	endif()
 
 endfunction()
-
