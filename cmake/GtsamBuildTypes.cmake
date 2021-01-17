@@ -204,9 +204,9 @@ endif()
 
 # Make common binary output directory when on Windows
 if(WIN32)
-  set(RUNTIME_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
-  set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
-  set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/lib")
+  set(RUNTIME_OUTPUT_PATH "${GTSAM_BINARY_DIR}/bin")
+  set(EXECUTABLE_OUTPUT_PATH "${GTSAM_BINARY_DIR}/bin")
+  set(LIBRARY_OUTPUT_PATH "${GTSAM_BINARY_DIR}/lib")
 endif()
 
 # Set up build type list for cmake-gui
