@@ -1,7 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corpo
- * ation,
+ * GTSAM Copyright 2010, Georgia Tech Research Corpoation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -30,10 +29,9 @@ namespace gtsam {
  * @addtogroup SLAM
  *
  * If you are using the factor, please cite:
- * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating
- * conditionally
- * independent sets in factor graphs: a unifying perspective based on smart
- * factors,
+ * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert,
+ * Eliminating conditionally independent sets in factor graphs:
+ * a unifying perspective based on smart factors,
  * Int. Conf. on Robotics and Automation (ICRA), 2014.
  *
  */
