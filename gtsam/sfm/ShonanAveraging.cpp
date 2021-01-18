@@ -880,9 +880,7 @@ static BinaryMeasurement<Rot3> convert(
         "parseMeasurements<Rot3> can only convert Pose3 measurements "
         "with Gaussian noise models.");
   const Matrix6 M = gaussian->covariance();
-  auto model = noiseModel::Robust::Create(
-      noiseModel::mEstimator::Huber::Create(1.345),
-      noiseModel::Gaussian::Covariance(M.block<3, 3>(3, 3)));
+  auto model = noiseModel::Gaussian::Covariance(M.block<3, 3>(3, 3));
   return BinaryMeasurement<Rot3>(f->key1(), f->key2(), f->measured().rotation(),
                                  model);
 }
