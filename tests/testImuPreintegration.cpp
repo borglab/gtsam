@@ -64,8 +64,6 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
     measurement.I_a_WI = {results[29], results[30], results[31]};
     measurement.I_w_WI = {results[17], results[18], results[19]};
     imuMeasurements.push_back(measurement);
-
-    // cout << "IMU measurement " << measurement << endl;
   }
 
   // Assume a Z-up navigation (assuming we are performing optimization in the
@@ -92,8 +90,8 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
   NavState initialNavState(priorPose, priorVelocity);
 
   // Assume zero bias for simulated data
-  priorImuBias = imuBias::ConstantBias(Eigen::Vector3d(0,0,0),
-                                              Eigen::Vector3d(0,0,0));
+  priorImuBias =
+      imuBias::ConstantBias(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0));
 
   imuPreintegrated =
       PreintegratedCombinedMeasurements(imuPreintegratedParams, priorImuBias);
@@ -107,8 +105,6 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
     propState = imuPreintegrated.predict(initialNavState, priorImuBias);
     position = propState.pose().translation();
     velocity = propState.velocity();
-    // cout << "IMU Position " << position.transpose() << endl;
-    // cout << "IMU Velocity " << velocity.transpose() << endl;
   }
 
   Vector3 rotation = propState.pose().rotation().rpy();
