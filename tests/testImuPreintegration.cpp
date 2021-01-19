@@ -49,8 +49,6 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
   double rate = 400.0;  // Hz
 
   string inFileString = findExampleDataFile("quadraped_imu_data.csv");
-  ofstream outputFile;
-  outputFile.open("imu_preint_output.csv", ios::out);
   ifstream inputFile(inFileString);
   string line;
   while (getline(inputFile, line)) {
@@ -95,26 +93,12 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
 
   NavState initialNavState(priorPose, priorVelocity);
 
-  // Bias estimated by my Algorithm
-  priorImuBias = imuBias::ConstantBias(
-      Eigen::Vector3d(-0.0314648, 0.0219921, 6.95945e-05),
-      Eigen::Vector3d(4.88581e-08, -1.04971e-09, -0.000122868));
-
-  // zero bias
-  // priorImuBias = imuBias::ConstantBias(Eigen::Vector3d(0,0,0),
-  //                                             Eigen::Vector3d(0,0,0));
+  // Assume zero bias for simulated data
+  priorImuBias = imuBias::ConstantBias(Eigen::Vector3d(0,0,0),
+                                              Eigen::Vector3d(0,0,0));
 
   imuPreintegrated = PreintegratedCombinedMeasurements(
       imuPreintegratedParams, priorImuBias);
-
-  // Put header row in output csv
-  outputFile << "X Position,"
-             << "Y Position,"
-             << "Z Position,"
-             << "X Velocity,"
-             << "Y Velocity,"
-             << "Z Velocity,"
-             << "\n";
 
   // start at 1 to skip header
   for (size_t n = 1; n < imuMeasurements.size(); n++) {
@@ -127,16 +111,7 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
     velocity = propState.velocity();
     // cout << "IMU Position " << position.transpose() << endl;
     // cout << "IMU Velocity " << velocity.transpose() << endl;
-
-    // Write to csv
-    outputFile << to_string(position.x()) << "," << to_string(position.y())
-               << "," << to_string(position.z()) << ","
-               << to_string(velocity.x()) << "," << to_string(velocity.y())
-               << "," << to_string(velocity.z()) << ","
-               << "\n";
   }
-
-  outputFile.close();
 
   Vector3 rotation = propState.pose().rotation().rpy();
 
