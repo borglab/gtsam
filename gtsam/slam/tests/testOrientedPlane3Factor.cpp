@@ -239,7 +239,7 @@ TEST(OrientedPlane3Factor, Issue561) {
     Values result = optimizer.optimize();
     EXPECT_DOUBLES_EQUAL(0, graph.error(result), 0.1);
   } catch (const IndeterminantLinearSystemException &e) {
-    std::cerr << "CAPTURED THE EXCEPTION: " << e.nearbyVariable() << std::endl;
+    std::cerr << "CAPTURED THE EXCEPTION: " << DefaultKeyFormatter(e.nearbyVariable()) << std::endl;
     EXPECT(false); // fail if this happens
   }
 }
@@ -287,6 +287,42 @@ TEST(OrientedPlane3Factor, Issue561Simplified) {
   initialEstimate.insert(P(2), p2);
   initialEstimate.insert(X(0), x0);
 
+  // For testing only
+  HessianFactor::shared_ptr hessianFactor = graph.linearizeToHessianFactor(initialEstimate);
+  const auto hessian = hessianFactor->hessianBlockDiagonal();
+
+  Matrix hessianP1 = hessian.at(P(1)),
+         hessianP2 = hessian.at(P(2)),
+	 hessianX0 = hessian.at(X(0));
+
+  Eigen::JacobiSVD<Matrix> svdP1(hessianP1, Eigen::ComputeThinU),
+	                   svdP2(hessianP2, Eigen::ComputeThinU),
+			   svdX0(hessianX0, Eigen::ComputeThinU);
+
+  double conditionNumberP1 = svdP1.singularValues()[0] / svdP1.singularValues()[2],
+         conditionNumberP2 = svdP2.singularValues()[0] / svdP2.singularValues()[2],
+	 conditionNumberX0 = svdX0.singularValues()[0] / svdX0.singularValues()[5];
+
+  std::cout << "Hessian P1:\n" << hessianP1 << "\n"
+	    << "Condition number:\n" << conditionNumberP1 << "\n"
+	    << "Singular values:\n" << svdP1.singularValues().transpose() << "\n"
+	    << "SVD U:\n" << svdP1.matrixU() << "\n" << std::endl;
+
+  std::cout << "Hessian P2:\n" << hessianP2 << "\n"
+	    << "Condition number:\n" << conditionNumberP2 << "\n"
+	    << "Singular values:\n" << svdP2.singularValues().transpose() << "\n"
+	    << "SVD U:\n" << svdP2.matrixU() << "\n" << std::endl;
+
+  std::cout << "Hessian X0:\n" << hessianX0 << "\n"
+	    << "Condition number:\n" << conditionNumberX0 << "\n"
+	    << "Singular values:\n" << svdX0.singularValues().transpose() << "\n"
+	    << "SVD U:\n" << svdX0.matrixU() << "\n" << std::endl;
+
+  // std::cout << "Hessian P2:\n" << hessianP2 << std::endl;
+  // std::cout << "Hessian X0:\n" << hessianX0 << std::endl;
+  
+  // For testing only
+
   // Optimize
   try {
     GaussNewtonParams params;
@@ -302,7 +338,7 @@ TEST(OrientedPlane3Factor, Issue561Simplified) {
     EXPECT(p1.equals(result.at<Plane>(P(1))));
     EXPECT(p2.equals(result.at<Plane>(P(2))));
   } catch (const IndeterminantLinearSystemException &e) {
-    std::cerr << "CAPTURED THE EXCEPTION: " << e.nearbyVariable() << std::endl;
+    std::cerr << "CAPTURED THE EXCEPTION: " << DefaultKeyFormatter(e.nearbyVariable()) << std::endl;
     EXPECT(false); // fail if this happens
   }
 }
