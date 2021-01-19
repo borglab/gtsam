@@ -2623,6 +2623,8 @@ virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
       const BEARING& measuredBearing, const RANGE& measuredRange,
       const gtsam::noiseModel::Base* noiseModel);
 
+  BearingRange<POSE, POINT, BEARING, RANGE> measured() const;
+
   // enabling serialization functionality
   void serialize() const;
 };
