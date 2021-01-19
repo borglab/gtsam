@@ -12,7 +12,7 @@
 /**
  * @file SparseEigen.h
  *
- * @brief Utilities for converting to Eigen's sparse matrix representations
+ * @brief Utilities for creating Eigen sparse matrices (gtsam::SparseEigen)
  *
  * @date Aug 2019
  * @author Mandy Xie
