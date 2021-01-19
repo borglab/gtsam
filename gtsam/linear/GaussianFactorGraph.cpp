@@ -100,7 +100,9 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
+  SparseMatrixBoostTriplets GaussianFactorGraph::sparseJacobian(
+      const Ordering& ordering, size_t& nrows, size_t& ncols) const {
+    gttic_(GaussianFactorGraph_sparseJacobian);
     // First find dimensions of each variable
     typedef std::map<Key, size_t> KeySizeMap;
     KeySizeMap dims;
@@ -108,24 +110,24 @@ namespace gtsam {
       if (!static_cast<bool>(factor))
         continue;
 
-      for (GaussianFactor::const_iterator key = factor->begin();
-          key != factor->end(); ++key) {
-        dims[*key] = factor->getDim(key);
+      for (auto it = factor->begin(); it != factor->end(); ++it) {
+        dims[*it] = factor->getDim(it);
       }
     }
 
     // Compute first scalar column of each variable
-    size_t currentColIndex = 0;
+    ncols = 0;
     KeySizeMap columnIndices = dims;
-    for (const KeySizeMap::value_type& col : dims) {
-      columnIndices[col.first] = currentColIndex;
-      currentColIndex += dims[col.first];
+    for (const auto key : ordering) {
+      columnIndices[key] = ncols;
+      ncols += dims[key];
     }
 
     // Iterate over all factors, adding sparse scalar entries
-    typedef boost::tuple<size_t, size_t, double> triplet;
-    vector<triplet> entries;
-    size_t row = 0;
+    SparseMatrixBoostTriplets entries;
+    entries.reserve(60 * size());
+
+    nrows = 0;
     for (const sharedFactor& factor : *this) {
       if (!static_cast<bool>(factor)) continue;
 
@@ -154,38 +156,79 @@ namespace gtsam {
           for (size_t j = 0; j < (size_t) whitenedA.cols(); j++) {
             double s = whitenedA(i, j);
             if (std::abs(s) > 1e-12)
-              entries.emplace_back(row + i, column_start + j, s);
+              entries.emplace_back(nrows + i, column_start + j, s);
           }
       }
 
       JacobianFactor::constBVector whitenedb(whitened.getb());
-      size_t bcolumn = currentColIndex;
-      for (size_t i = 0; i < (size_t) whitenedb.size(); i++)
-        entries.push_back(boost::make_tuple(row + i, bcolumn, whitenedb(i)));
+      for (size_t i = 0; i < (size_t) whitenedb.size(); i++) {
+        double s = whitenedb(i);
+        if (std::abs(s) > 1e-12) entries.emplace_back(nrows + i, ncols, s);
+      }
 
       // Increment row index
-      row += jacobianFactor->rows();
+      nrows += jacobianFactor->rows();
     }
-    return vector<triplet>(entries.begin(), entries.end());
+
+    ncols++;  // +1 for b-column
+    return entries;
+  }
+
+  /* ************************************************************************* */
+  SparseMatrixBoostTriplets GaussianFactorGraph::sparseJacobian(
+      const Ordering& ordering) const {
+    size_t dummy1, dummy2;
+    return sparseJacobian(ordering, dummy1, dummy2);
+  }
+
+  /* ************************************************************************* */
+  SparseMatrixBoostTriplets GaussianFactorGraph::sparseJacobian(
+      size_t& nrows, size_t& ncols) const {
+    return sparseJacobian(Ordering(this->keys()), nrows, ncols);
+  }
+
+  /* ************************************************************************* */
+  SparseMatrixBoostTriplets GaussianFactorGraph::sparseJacobian() const {
+    size_t dummy1, dummy2;
+    return sparseJacobian(dummy1, dummy2);
+  }
+
+  /* ************************************************************************* */
+  Matrix GaussianFactorGraph::sparseJacobian_(
+      const Ordering& ordering, size_t& nrows, size_t& ncols) const {
+    gttic_(GaussianFactorGraph_sparseJacobian_matrix);
+    // call sparseJacobian
+    auto result = sparseJacobian(ordering, nrows, ncols);
+
+    // translate to base 1 matrix
+    size_t nzmax = result.size();
+    Matrix IJS(3, nzmax);
+    for (size_t k = 0; k < result.size(); k++) {
+      const auto& entry = result[k];
+      IJS(0, k) = double(entry.get<0>() + 1);
+      IJS(1, k) = double(entry.get<1>() + 1);
+      IJS(2, k) = entry.get<2>();
+    }
+    return IJS;
+  }
+
+  /* ************************************************************************* */
+  Matrix GaussianFactorGraph::sparseJacobian_(
+      const Ordering& ordering) const {
+    size_t dummy1, dummy2;
+    return sparseJacobian_(ordering, dummy1, dummy2);
+  }
+
+  /* ************************************************************************* */
+  Matrix GaussianFactorGraph::sparseJacobian_(
+      size_t& nrows, size_t& ncols) const {
+    return sparseJacobian_(Ordering(this->keys()), nrows, ncols);
   }
 
   /* ************************************************************************* */
   Matrix GaussianFactorGraph::sparseJacobian_() const {
-
-    // call sparseJacobian
-    typedef boost::tuple<size_t, size_t, double> triplet;
-    vector<triplet> result = sparseJacobian();
-
-    // translate to base 1 matrix
-    size_t nzmax = result.size();
-    Matrix IJS(3,nzmax);
-    for (size_t k = 0; k < result.size(); k++) {
-      const triplet& entry = result[k];
-      IJS(0,k) = double(entry.get<0>() + 1);
-      IJS(1,k) = double(entry.get<1>() + 1);
-      IJS(2,k) = entry.get<2>();
-    }
-    return IJS;
+    size_t dummy1, dummy2;
+    return sparseJacobian_(dummy1, dummy2);
   }
 
   /* ************************************************************************* */

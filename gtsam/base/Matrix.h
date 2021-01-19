@@ -33,6 +33,8 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 
+#include <vector>
+
 /**
  * Matrix is a typedef in the gtsam namespace
  * TODO: make a version to work with matlab wrapping
@@ -72,6 +74,12 @@ GTSAM_MAKE_MATRIX_DEFS(9);
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
+
+/// Sparse matrix representation as vector of tuples.
+/// See SparseMatrix.h for additional representations SparseMatrixEigenTriplets
+/// and SparseMatrixEigen
+typedef std::vector<boost::tuple<size_t, size_t, double>>
+    SparseMatrixBoostTriplets;
 
 // Matrix formatting arguments when printing.
 // Akin to Matlab style.
