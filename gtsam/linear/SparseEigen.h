@@ -30,7 +30,9 @@
 
 namespace gtsam {
 
-typedef Eigen::SparseMatrix<double> SparseEigen;
+/// Eigen-format sparse matrix.  Note: ColMajor is ~20% faster since
+/// InnerIndices must be sorted
+typedef Eigen::SparseMatrix<double, Eigen::ColMajor> SparseEigen;
 
 /// Constructs an Eigen-format SparseMatrix of a GaussianFactorGraph
 SparseEigen sparseJacobianEigen(
