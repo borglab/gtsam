@@ -154,7 +154,7 @@ namespace gtsam {
           for (size_t j = 0; j < (size_t) whitenedA.cols(); j++) {
             double s = whitenedA(i, j);
             if (std::abs(s) > 1e-12)
-              entries.push_back(boost::make_tuple(row + i, column_start + j, s));
+              entries.emplace_back(row + i, column_start + j, s);
           }
       }
 
