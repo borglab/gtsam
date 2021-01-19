@@ -69,10 +69,7 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
     previousVector_ = Vector::Zero(this->dim_);
 
     // initialize beta_
-    if (!initialBeta) {
-      beta_ = estimateBeta();
-    } else
-      beta_ = initialBeta;
+    beta_ = initialBeta;
   }
 
   /**
@@ -97,8 +94,11 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
     return y;
   }
 
-  /// Tuning the momentum beta using the Best Heavy Ball algorithm in Ref(3)
-  double estimateBeta() const {
+  /**
+   * Tuning the momentum beta using the Best Heavy Ball algorithm in Ref(3), T
+   * is the iteration time to find beta with largest Rayleigh quotient
+   */
+  double estimateBeta(const size_t T = 10) const {
     // set initial estimation of maxBeta
     Vector initVector = this->ritzVector_;
     const double up = initVector.dot( this->A_ * initVector );
@@ -109,7 +109,6 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
     std::vector<double> betas;
 
     Matrix R = Matrix::Zero(this->dim_, 10);
-    const size_t T = 10;
     // run T times of iteration to find the beta that has the largest Rayleigh quotient
     for (size_t t = 0; t < T; t++) {
       // after each t iteration, reset the betas with the current maxBeta
@@ -120,13 +119,14 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
         // initialize x0 and x00 in each iteration of each beta
         Vector x0 = initVector;
         Vector x00 = Vector::Zero(this->dim_);
-        // run 10 steps of accelerated power iteration with this beta 
+        // run 10 steps of accelerated power iteration with this beta
         for (size_t j = 1; j < 10; j++) {
           if (j < 2) {
             R.col(0) = acceleratedPowerIteration(x0, x00, betas[k]);
             R.col(1) = acceleratedPowerIteration(R.col(0), x0, betas[k]);
           } else {
-            R.col(j) = acceleratedPowerIteration(R.col(j - 1), R.col(j - 2), betas[k]);
+            R.col(j) = acceleratedPowerIteration(R.col(j - 1), R.col(j - 2),
+  betas[k]);
           }
         }
         // compute the Rayleigh quotient for the randomly sampled vector after
