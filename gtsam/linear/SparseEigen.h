@@ -102,7 +102,7 @@ SpMat sparseJacobianEigen(
   }
 
   // ...and make a sparse matrix with it.
-  SpMat Ab(row + 1, currentColIndex + 1);
+  SpMat Ab(row, currentColIndex + 1);
   Ab.setFromTriplets(entries.begin(), entries.end());
   return Ab;
 }
