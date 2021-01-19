@@ -34,7 +34,7 @@ using namespace gtsam;
  * acceleration input.
  */
 TEST(TestImuPreintegration, LoadedSimulationData) {
-  Eigen::Vector3d finalPos;
+  Vector3 finalPos(0, 0, 0);
 
   vector<ImuMeasurement> imuMeasurements;
 
@@ -70,10 +70,8 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
 
   // Assume a Z-up navigation (assuming we are performing optimization in the
   // IMU frame).
-  boost::shared_ptr<PreintegratedCombinedMeasurements::Params>
-      imuPreintegratedParams =
-          PreintegratedCombinedMeasurements::Params::MakeSharedU(
-              gravity);
+  auto imuPreintegratedParams =
+      PreintegratedCombinedMeasurements::Params::MakeSharedU(gravity);
   imuPreintegratedParams->accelerometerCovariance =
       I_3x3 * pow(accNoiseSigma, 2);
   imuPreintegratedParams->biasAccCovariance = I_3x3 * pow(accBiasRwSigma, 2);
@@ -84,11 +82,11 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
 
   // Initial state
   Pose3 priorPose;
-  Vector3 priorVelocity;
+  Vector3 priorVelocity(0, 0, 0);
   imuBias::ConstantBias priorImuBias;
   PreintegratedCombinedMeasurements imuPreintegrated;
-  Eigen::Vector3d position;
-  Eigen::Vector3d velocity;
+  Vector3 position(0, 0, 0);
+  Vector3 velocity(0, 0, 0);
   NavState propState;
 
   NavState initialNavState(priorPose, priorVelocity);
@@ -97,8 +95,8 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
   priorImuBias = imuBias::ConstantBias(Eigen::Vector3d(0,0,0),
                                               Eigen::Vector3d(0,0,0));
 
-  imuPreintegrated = PreintegratedCombinedMeasurements(
-      imuPreintegratedParams, priorImuBias);
+  imuPreintegrated =
+      PreintegratedCombinedMeasurements(imuPreintegratedParams, priorImuBias);
 
   // start at 1 to skip header
   for (size_t n = 1; n < imuMeasurements.size(); n++) {
