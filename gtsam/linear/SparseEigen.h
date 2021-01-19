@@ -32,8 +32,13 @@ namespace gtsam {
 
 typedef Eigen::SparseMatrix<double> SpMat;
 
+/// Constructs an Eigen-format SparseMatrix of a GaussianFactorGraph
 SpMat sparseJacobianEigen(
     const GaussianFactorGraph &gfg, const Ordering &ordering) {
+  // TODO(gerry): eliminate copy/pasta by making GaussianFactorGraph version
+  // more general, or by creating an Eigen::Triplet compatible wrapper for
+  // boost::tuple return type
+
   // First find dimensions of each variable
   std::map<Key, size_t> dims;
   for (const boost::shared_ptr<GaussianFactor> &factor : gfg) {
@@ -110,37 +115,5 @@ SpMat sparseJacobianEigen(
 SpMat sparseJacobianEigen(const GaussianFactorGraph &gfg) {
   return sparseJacobianEigen(gfg, Ordering(gfg.keys()));
 }
-
-// /// obtain sparse matrix for eigen sparse solver
-// std::pair<SpMat, Eigen::VectorXd> obtainSparseMatrix(
-//     const GaussianFactorGraph &gfg, const Ordering &ordering) {
-//   gttic_(EigenOptimizer_obtainSparseMatrix);
-
-//   // Get sparse entries of Jacobian [A|b] augmented with RHS b.
-//   auto entries = gfg.sparseJacobian(ordering);
-
-//   gttic_(EigenOptimizer_convertSparse);
-//   // Convert boost tuples to Eigen triplets
-//   vector<Eigen::Triplet<double>> triplets;
-//   triplets.reserve(entries.size());
-//   size_t rows = 0, cols = 0;
-//   for (const auto &e : entries) {
-//     size_t temp_rows = e.get<0>(), temp_cols = e.get<1>();
-//     triplets.emplace_back(temp_rows, temp_cols, e.get<2>());
-//     rows = std::max(rows, temp_rows);
-//     cols = std::max(cols, temp_cols);
-//   }
-
-//   // ...and make a sparse matrix with it.
-//   SpMat Ab(rows + 1, cols + 1);
-//   Ab.setFromTriplets(triplets.begin(), triplets.end());
-//   Ab.makeCompressed();
-//   gttoc_(EigenOptimizer_convertSparse);
-
-//   gttoc_(EigenOptimizer_obtainSparseMatrix);
-
-//   return make_pair<SpMat, Eigen::VectorXd>(Ab.block(0, 0, rows + 1, cols),
-//                                            Ab.col(cols));
-// }
 
 }  // namespace gtsam
