@@ -82,6 +82,29 @@ TEST(GaussianFactorGraph, sparseJacobian) {
   //  5  6  7  0  0  8
   //  9 10  0 11 12 13
   //  0  0  0 14 15 16
+
+  // Expected
+  Matrix expected = (Matrix(16, 3) <<
+      1., 1., 2.,
+      1., 2., 4.,
+      1., 3., 6.,
+      2., 1.,10.,
+      2., 2.,12.,
+      2., 3.,14.,
+      1., 6., 8.,
+      2., 6.,16.,
+      3., 1.,18.,
+      3., 2.,20.,
+      3., 4.,22.,
+      3., 5.,24.,
+      4., 4.,28.,
+      4., 5.,30.,
+      3., 6.,26.,
+      4., 6.,32.).finished();
+
+  // expected: in matlab format - NOTE the transpose!)
+  Matrix expectedMatlab = expected.transpose();
+
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 0.5);
   const Key x123 = 0, x45 = 1;
@@ -91,28 +114,9 @@ TEST(GaussianFactorGraph, sparseJacobian) {
           x45,  (Matrix(2, 2) << 11, 12, 14, 15.).finished(),
           Vector2(13, 16), model);
 
-  // Check version for MATLAB - NOTE that we transpose this!
-  Matrix expectedT = (Matrix(16, 3) <<
-      1, 1,  2.,
-      1, 2,  4.,
-      1, 3,  6.,
-      2, 1, 10.,
-      2, 2, 12.,
-      2, 3, 14.,
-      1, 6,  8.,
-      2, 6, 16.,
-      3, 1, 18.,
-      3, 2, 20.,
-      3, 4, 22.,
-      3, 5, 24.,
-      4, 4, 28.,
-      4, 5, 30.,
-      3, 6, 26.,
-      4, 6, 32.).finished();
+  Matrix actual = gfg.sparseJacobian_();
 
-  // matrix form (matlab)
-  Matrix expectedMatlab = expectedT.transpose();
-  EXPECT(assert_equal(expectedMatlab, gfg.sparseJacobian_()));
+  EXPECT(assert_equal(expected, actual));
 
   // BoostTriplets
   auto boostActual = gfg.sparseJacobian();
@@ -121,7 +125,7 @@ TEST(GaussianFactorGraph, sparseJacobian) {
   // check content
   for (int i = 0; i < 16; i++) {
     EXPECT(triplet_equal(
-        BoostTriplet(expectedT(i, 0) - 1, expectedT(i, 1) - 1, expectedT(i, 2)),
+        BoostTriplet(expected(i, 0) - 1, expected(i, 1) - 1, expected(i, 2)),
         boostActual.at(i)));
   }
 }
