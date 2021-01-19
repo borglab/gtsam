@@ -66,10 +66,11 @@ TEST(GaussianFactorGraph, initialization) {
   // Test sparse, which takes a vector and returns a matrix, used in MATLAB
   // Note that this the augmented vector and the RHS is in column 7
   Matrix expectedIJS =
-      (Matrix(3, 22) << 1., 2., 1., 2., 3., 4., 3., 4., 3., 4., 5., 6., 5., 6., 5., 6., 7., 8., 7.,
-       8., 7., 8., 1., 2., 7., 7., 1., 2., 3., 4., 7., 7., 1., 2., 5., 6., 7., 7., 3., 4., 5., 6.,
-       7., 7., 10., 10., -1., -1., -10., -10., 10., 10., 2., -1., -5., -5., 5., 5., 0., 1., -5.,
-       -5., 5., 5., -1., 1.5).finished();
+      (Matrix(3, 21) <<
+      1., 2., 1., 2., 3., 4., 3., 4., 3., 4., 5., 6., 5., 6., 6., 7., 8., 7., 8., 7., 8.,
+      1., 2., 7., 7., 1., 2., 3., 4., 7., 7., 1., 2., 5., 6., 7., 3., 4., 5., 6., 7., 7.,
+      10., 10., -1., -1., -10., -10., 10., 10., 2., -1., -5., -5., 5., 5.,
+        1., -5., -5., 5., 5., -1., 1.5).finished();
   Matrix actualIJS = fg.sparseJacobian_();
   EQUALITY(expectedIJS, actualIJS);
 }
