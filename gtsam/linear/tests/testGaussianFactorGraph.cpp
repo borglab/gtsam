@@ -116,7 +116,7 @@ TEST(GaussianFactorGraph, sparseJacobian) {
 
   Matrix actual = gfg.sparseJacobian_();
 
-  EXPECT(assert_equal(expected, actual));
+  EXPECT(assert_equal(expectedMatlab, actual));
 
   // BoostTriplets
   auto boostActual = gfg.sparseJacobian();
