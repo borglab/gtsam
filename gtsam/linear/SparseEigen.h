@@ -38,6 +38,7 @@ SparseEigen sparseJacobianEigen(
   // TODO(gerry): eliminate copy/pasta by making GaussianFactorGraph version
   // more general, or by creating an Eigen::Triplet compatible wrapper for
   // boost::tuple return type
+  gttic_(SparseEigen_sparseJacobianEigen);
 
   // First find dimensions of each variable
   std::map<Key, size_t> dims;
@@ -113,6 +114,7 @@ SparseEigen sparseJacobianEigen(
 }
 
 SparseEigen sparseJacobianEigen(const GaussianFactorGraph &gfg) {
+  gttic_(SparseEigen_sparseJacobianEigen_defaultOrdering);
   return sparseJacobianEigen(gfg, Ordering(gfg.keys()));
 }
 
