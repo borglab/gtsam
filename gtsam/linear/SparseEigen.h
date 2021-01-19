@@ -30,10 +30,10 @@
 
 namespace gtsam {
 
-typedef Eigen::SparseMatrix<double> SpMat;
+typedef Eigen::SparseMatrix<double> SparseEigen;
 
 /// Constructs an Eigen-format SparseMatrix of a GaussianFactorGraph
-SpMat sparseJacobianEigen(
+SparseEigen sparseJacobianEigen(
     const GaussianFactorGraph &gfg, const Ordering &ordering) {
   // TODO(gerry): eliminate copy/pasta by making GaussianFactorGraph version
   // more general, or by creating an Eigen::Triplet compatible wrapper for
@@ -107,12 +107,12 @@ SpMat sparseJacobianEigen(
   }
 
   // ...and make a sparse matrix with it.
-  SpMat Ab(row, currentColIndex + 1);
+  SparseEigen Ab(row, currentColIndex + 1);
   Ab.setFromTriplets(entries.begin(), entries.end());
   return Ab;
 }
 
-SpMat sparseJacobianEigen(const GaussianFactorGraph &gfg) {
+SparseEigen sparseJacobianEigen(const GaussianFactorGraph &gfg) {
   return sparseJacobianEigen(gfg, Ordering(gfg.keys()));
 }
 
