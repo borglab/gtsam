@@ -181,9 +181,26 @@ namespace gtsam {
     ///@{
 
     /**
+     * Populates a container of triplets: (i, j, s) to generate an m-by-n sparse
+     * augmented Jacobian matrix, where i(k) and j(k) are the base 0 row and
+     * column indices, s(k) a double.
+     * The standard deviations are baked into A and b
+     * @param entries a container of triplets (i, j, s) which supports
+     * `emplace_back(size_t, size_t, double)`
+     * @param ordering the column ordering
+     * @param[out] nrows The number of rows in the Jacobian
+     * @param[out] ncols The number of columns in the Jacobian
+     * @return the sparse matrix in one of the 4 forms above
+     */
+    template <typename T>
+    void sparseJacobianInPlace(T& entries, const Ordering& ordering,
+                               size_t& nrows, size_t& ncols) const;
+
+    /**
      * Return vector of i, j, and s to generate an m-by-n sparse augmented
      * Jacobian matrix, where i(k) and j(k) are the base 0 row and column
-     * indices, s(k) a double. The standard deviations are baked into A and b
+     * indices, s(k) a double.
+     * The standard deviations are baked into A and b
      * @param ordering the column ordering
      * @param[out] nrows The number of rows in the Jacobian
      * @param[out] ncols The number of columns in the Jacobian
@@ -435,3 +452,5 @@ struct traits<GaussianFactorGraph> : public Testable<GaussianFactorGraph> {
 };
 
 } // \ namespace gtsam
+
+#include <gtsam/linear/GaussianFactorGraph-impl.h>
