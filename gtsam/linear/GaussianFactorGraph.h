@@ -180,6 +180,9 @@ namespace gtsam {
     ///@name Linear Algebra
     ///@{
 
+    typedef std::vector<boost::tuple<size_t, size_t, double>>
+        SparseMatrixBoostTriplets;  ///< Sparse matrix representation as vector of tuples.
+
     /**
      * Populates a container of triplets: (i, j, s) to generate an m-by-n sparse
      * augmented Jacobian matrix, where i(k) and j(k) are the base 0 row and

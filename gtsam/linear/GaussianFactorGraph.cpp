@@ -99,30 +99,31 @@ namespace gtsam {
     return result;
   }
 
+  using BoostTriplets = GaussianFactorGraph::SparseMatrixBoostTriplets;
   /* ************************************************************************* */
-  SparseMatrixBoostTriplets GaussianFactorGraph::sparseJacobian(
+  BoostTriplets GaussianFactorGraph::sparseJacobian(
       const Ordering& ordering, size_t& nrows, size_t& ncols) const {
-    SparseMatrixBoostTriplets entries;
+    BoostTriplets entries;
     entries.reserve(60 * size());
     sparseJacobianInPlace(entries, ordering, nrows, ncols);
     return entries;
   }
 
   /* ************************************************************************* */
-  SparseMatrixBoostTriplets GaussianFactorGraph::sparseJacobian(
+  BoostTriplets GaussianFactorGraph::sparseJacobian(
       const Ordering& ordering) const {
     size_t dummy1, dummy2;
     return sparseJacobian(ordering, dummy1, dummy2);
   }
 
   /* ************************************************************************* */
-  SparseMatrixBoostTriplets GaussianFactorGraph::sparseJacobian(
+  BoostTriplets GaussianFactorGraph::sparseJacobian(
       size_t& nrows, size_t& ncols) const {
     return sparseJacobian(Ordering(this->keys()), nrows, ncols);
   }
 
   /* ************************************************************************* */
-  SparseMatrixBoostTriplets GaussianFactorGraph::sparseJacobian() const {
+  BoostTriplets GaussianFactorGraph::sparseJacobian() const {
     size_t dummy1, dummy2;
     return sparseJacobian(dummy1, dummy2);
   }
