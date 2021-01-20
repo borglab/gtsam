@@ -39,14 +39,22 @@ SparseEigen sparseJacobianEigen(
     const GaussianFactorGraph &gfg, const Ordering &ordering) {
   gttic_(SparseEigen_sparseJacobianEigen);
   // intermediate `entries` vector is kind of unavoidable due to how expensive
-  // factor->rows() is, which prevents us from populating SparseEigen directly
+  // factor->rows() is, which prevents us from populating SparseEigen directly.
+  // Triplet is about 11% faster than boost tuple.
   std::vector<Eigen::Triplet<double>> entries;
   entries.reserve(60 * gfg.size());
   size_t nrows, ncols;
   gfg.sparseJacobianInPlace(entries, ordering, nrows, ncols);
-  // create sparse matrix
+  // declare sparse matrix
   SparseEigen Ab(nrows, ncols);
-  Ab.setFromTriplets(entries.begin(), entries.end());
+  // See Eigen::set_from_triplets.  This is about 5% faster.
+  // pass 1: count the nnz per inner-vector
+  std::vector<int> nnz(ncols, 0);
+  for (const auto &entry : entries) nnz[entry.col()]++;
+  // pass 2: insert the elements
+  Ab.reserve(nnz);
+  for (const auto &entry : entries)
+    Ab.insert(entry.row(), entry.col()) = entry.value();
   return Ab;
 }
 
