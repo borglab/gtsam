@@ -180,10 +180,12 @@ namespace gtsam {
     ///@name Linear Algebra
     ///@{
 
+    /// Sparse matrix representation as vector of tuples.
     typedef std::vector<boost::tuple<size_t, size_t, double>>
-        SparseMatrixBoostTriplets;  ///< Sparse matrix representation as vector of tuples.
-    typedef std::vector<std::tuple<int, int, double>>
-        SparseMatrixGtsamTriplets;  ///< Sparse matrix representation as vector of SparseTriplet's.
+        SparseMatrixBoostTriplets;
+    /// Sparse matrix representation as vector of slightly more efficient
+    /// tuples.
+    typedef std::vector<std::tuple<int, int, double>> SparseMatrixGtsamTriplets;
 
     /**
      * Return vector of i, j, and s to generate an m-by-n sparse augmented
@@ -430,13 +432,6 @@ namespace gtsam {
     /// @}
 
   private:
-    /** Serialization function */
-    friend class boost::serialization::access;
-    template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    }
-
     /** Performs in-place population of a sparse jacobian.  Contains the
      * common functionality amongst different sparseJacobian functions.
      * @param entries a container of triplets that supports
@@ -444,6 +439,13 @@ namespace gtsam {
     template <typename T>
     void sparseJacobianInPlace(T& entries, const Ordering& ordering,
                                size_t& nrows, size_t& ncols) const;
+
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    }
 
    public:
 
