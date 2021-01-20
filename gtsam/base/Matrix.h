@@ -33,8 +33,6 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 
-#include <vector>
-
 /**
  * Matrix is a typedef in the gtsam namespace
  * TODO: make a version to work with matlab wrapping
