@@ -32,7 +32,7 @@ namespace gtsam {
 
 /// Eigen-format sparse matrix.  Note: ColMajor is ~20% faster since
 /// InnerIndices must be sorted
-typedef Eigen::SparseMatrix<double, Eigen::ColMajor> SparseEigen;
+typedef Eigen::SparseMatrix<double, Eigen::ColMajor, int> SparseEigen;
 
 /// Constructs an Eigen-format SparseMatrix of a GaussianFactorGraph
 SparseEigen sparseJacobianEigen(
@@ -40,21 +40,18 @@ SparseEigen sparseJacobianEigen(
   gttic_(SparseEigen_sparseJacobianEigen);
   // intermediate `entries` vector is kind of unavoidable due to how expensive
   // factor->rows() is, which prevents us from populating SparseEigen directly.
-  // Triplet is about 11% faster than boost tuple.
-  std::vector<Eigen::Triplet<double>> entries;
-  entries.reserve(60 * gfg.size());
   size_t nrows, ncols;
-  gfg.sparseJacobianInPlace(entries, ordering, nrows, ncols);
+  auto entries = gfg.sparseJacobianFast(ordering, nrows, ncols);
   // declare sparse matrix
   SparseEigen Ab(nrows, ncols);
   // See Eigen::set_from_triplets.  This is about 5% faster.
   // pass 1: count the nnz per inner-vector
   std::vector<int> nnz(ncols, 0);
-  for (const auto &entry : entries) nnz[entry.col()]++;
-  // pass 2: insert the elements
+  for (const auto &entry : entries) nnz[std::get<1>(entry)]++;
   Ab.reserve(nnz);
+  // pass 2: insert the elements
   for (const auto &entry : entries)
-    Ab.insert(entry.row(), entry.col()) = entry.value();
+    Ab.insert(std::get<0>(entry), std::get<1>(entry)) = std::get<2>(entry);
   return Ab;
 }
 

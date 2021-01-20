@@ -99,8 +99,82 @@ namespace gtsam {
     return result;
   }
 
-  using BoostTriplets = GaussianFactorGraph::SparseMatrixBoostTriplets;
   /* ************************************************************************* */
+  template <typename T>
+  void GaussianFactorGraph::sparseJacobianInPlace(T& entries,
+                                                  const Ordering& ordering,
+                                                  size_t& nrows,
+                                                  size_t& ncols) const {
+    gttic_(GaussianFactorGraph_sparseJacobianInPlace);
+    // First find dimensions of each variable
+    typedef std::map<Key, size_t> KeySizeMap;
+    KeySizeMap dims;
+    for (const sharedFactor& factor : *this) {
+      if (!static_cast<bool>(factor)) continue;
+
+      for (auto it = factor->begin(); it != factor->end(); ++it) {
+        dims[*it] = factor->getDim(it);
+      }
+    }
+
+    // Compute first scalar column of each variable
+    ncols = 0;
+    KeySizeMap columnIndices = dims;
+    for (const auto key : ordering) {
+      columnIndices[key] = ncols;
+      ncols += dims[key];
+    }
+
+    // Iterate over all factors, adding sparse scalar entries
+    nrows = 0;
+    for (const sharedFactor& factor : *this) {
+      if (!static_cast<bool>(factor)) continue;
+
+      // Convert to JacobianFactor if necessary
+      JacobianFactor::shared_ptr jacobianFactor(
+          boost::dynamic_pointer_cast<JacobianFactor>(factor));
+      if (!jacobianFactor) {
+        HessianFactor::shared_ptr hessian(
+            boost::dynamic_pointer_cast<HessianFactor>(factor));
+        if (hessian)
+          jacobianFactor.reset(new JacobianFactor(*hessian));
+        else
+          throw std::invalid_argument(
+              "GaussianFactorGraph contains a factor that is neither a "
+              "JacobianFactor nor a HessianFactor.");
+      }
+
+      // Whiten the factor and add entries for it
+      // iterate over all variables in the factor
+      const JacobianFactor whitened(jacobianFactor->whiten());
+      for (JacobianFactor::const_iterator key = whitened.begin();
+           key < whitened.end(); ++key) {
+        JacobianFactor::constABlock whitenedA = whitened.getA(key);
+        // find first column index for this key
+        size_t column_start = columnIndices[*key];
+        for (size_t i = 0; i < (size_t)whitenedA.rows(); i++)
+          for (size_t j = 0; j < (size_t)whitenedA.cols(); j++) {
+            double s = whitenedA(i, j);
+            if (std::abs(s) > 1e-12)
+              entries.emplace_back(nrows + i, column_start + j, s);
+          }
+      }
+
+      JacobianFactor::constBVector whitenedb(whitened.getb());
+      for (size_t i = 0; i < (size_t)whitenedb.size(); i++) {
+        double s = whitenedb(i);
+        if (std::abs(s) > 1e-12) entries.emplace_back(nrows + i, ncols, s);
+      }
+
+      // Increment row index
+      nrows += jacobianFactor->rows();
+    }
+
+    ncols++;  // +1 for b-column
+  }
+
+  /* ************************************************************************* */
+  using BoostTriplets = GaussianFactorGraph::SparseMatrixBoostTriplets;
   BoostTriplets GaussianFactorGraph::sparseJacobian(
       const Ordering& ordering, size_t& nrows, size_t& ncols) const {
     BoostTriplets entries;
@@ -164,6 +238,35 @@ namespace gtsam {
   Matrix GaussianFactorGraph::sparseJacobian_() const {
     size_t dummy1, dummy2;
     return sparseJacobian_(dummy1, dummy2);
+  }
+
+  /* ************************************************************************* */
+  using GtsamTriplets = GaussianFactorGraph::SparseMatrixGtsamTriplets;
+  GtsamTriplets GaussianFactorGraph::sparseJacobianFast(
+      const Ordering& ordering, size_t& nrows, size_t& ncols) const {
+    GtsamTriplets entries;
+    entries.reserve(60 * size());
+    sparseJacobianInPlace(entries, ordering, nrows, ncols);
+    return entries;
+  }
+
+  /* ************************************************************************* */
+  GtsamTriplets GaussianFactorGraph::sparseJacobianFast(
+      const Ordering& ordering) const {
+    size_t dummy1, dummy2;
+    return sparseJacobianFast(ordering, dummy1, dummy2);
+  }
+
+  /* ************************************************************************* */
+  GtsamTriplets GaussianFactorGraph::sparseJacobianFast(
+      size_t& nrows, size_t& ncols) const {
+    return sparseJacobianFast(Ordering(this->keys()), nrows, ncols);
+  }
+
+  /* ************************************************************************* */
+  GtsamTriplets GaussianFactorGraph::sparseJacobianFast() const {
+    size_t dummy1, dummy2;
+    return sparseJacobianFast(dummy1, dummy2);
   }
 
   /* ************************************************************************* */
