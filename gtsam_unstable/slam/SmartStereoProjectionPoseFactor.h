@@ -113,12 +113,13 @@ class SmartStereoProjectionPoseFactor : public SmartStereoProjectionFactor {
    * print
    * @param s optional string naming the factor
    * @param keyFormatter optional formatter useful for printing Symbols
-   */ void print(
-      const std::string& s = "",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+   */
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const;
+  virtual bool equals(const NonlinearFactor& p,
+                      double tol = 1e-9) const override;
 
   /**
    * error calculates the error of the factor.
@@ -155,4 +156,4 @@ template <>
 struct traits<SmartStereoProjectionPoseFactor>
     : public Testable<SmartStereoProjectionPoseFactor> {};
 
-}  // \ namespace gtsam
+}  // namespace gtsam
