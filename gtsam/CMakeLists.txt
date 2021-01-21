@@ -134,15 +134,15 @@ endif()
 # of any previously installed GTSAM headers.
 target_include_directories(gtsam BEFORE PUBLIC
   # main gtsam includes:
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include/>
   # config.h
-  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+  $<BUILD_INTERFACE:${GTSAM_BINARY_DIR}>
   # unit tests:
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/CppUnitLite>
+  $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/CppUnitLite>
 )
 # 3rdparty libraries: use the "system" flag so they are included via "-isystem"
-# and warnings (and warnings-considered-errors) in those headers are not 
+# and warnings (and warnings-considered-errors) in those headers are not
 # reported as warnings/errors in our targets:
 target_include_directories(gtsam SYSTEM BEFORE PUBLIC
   # SuiteSparse_config
@@ -156,9 +156,9 @@ target_include_directories(gtsam SYSTEM BEFORE PUBLIC
 )
 if(GTSAM_SUPPORT_NESTED_DISSECTION)
   target_include_directories(gtsam BEFORE PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/include>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib>
+    $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/include>
+    $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis>
+    $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib>
     $<INSTALL_INTERFACE:include/gtsam/3rdparty/metis/>
   )
 endif()

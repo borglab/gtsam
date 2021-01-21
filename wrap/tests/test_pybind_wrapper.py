@@ -14,9 +14,9 @@ import os.path as path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.normpath(os.path.abspath(os.path.join(__file__, '../../../build/wrap'))))
 
-from pybind_wrapper import PybindWrapper
-import interface_parser as parser
-import template_instantiator as instantiator
+from gtwrap.pybind_wrapper import PybindWrapper
+import gtwrap.interface_parser as parser
+import gtwrap.template_instantiator as instantiator
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

@@ -36,9 +36,18 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-// static SharedDiagonal
-//  sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1), sigma_02 = noiseModel::Isotropic::Sigma(2,0.2),
-//  constraintModel = noiseModel::Constrained::All(2);
+typedef boost::tuple<size_t, size_t, double> BoostTriplet;
+bool triplet_equal(BoostTriplet a, BoostTriplet b) {
+  if (a.get<0>() == b.get<0>() && a.get<1>() == b.get<1>() &&
+      a.get<2>() == b.get<2>()) return true;
+
+  cout << "not equal:" << endl;
+  cout << "\texpected: "
+      "(" << a.get<0>() << ", " << a.get<1>() << ") = " << a.get<2>() << endl;
+  cout << "\tactual:   "
+      "(" << b.get<0>() << ", " << b.get<1>() << ") = " << b.get<2>() << endl;
+  return false;
+}
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, initialization) {
@@ -74,8 +83,8 @@ TEST(GaussianFactorGraph, sparseJacobian) {
   //  9 10  0 11 12 13
   //  0  0  0 14 15 16
 
-  // Expected - NOTE that we transpose this!
-  Matrix expectedT = (Matrix(16, 3) <<
+  // Expected
+  Matrix expected = (Matrix(16, 3) <<
       1., 1., 2.,
       1., 2., 4.,
       1., 3., 6.,
@@ -93,17 +102,32 @@ TEST(GaussianFactorGraph, sparseJacobian) {
       3., 6.,26.,
       4., 6.,32.).finished();
 
-  Matrix expected = expectedT.transpose();
+  // expected: in matlab format - NOTE the transpose!)
+  Matrix expectedMatlab = expected.transpose();
 
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 0.5);
-  gfg.add(0, (Matrix(2, 3) << 1., 2., 3., 5., 6., 7.).finished(), Vector2(4., 8.), model);
-  gfg.add(0, (Matrix(2, 3) << 9., 10., 0., 0., 0., 0.).finished(), 1,
-          (Matrix(2, 2) << 11., 12., 14., 15.).finished(), Vector2(13., 16.), model);
+  const Key x123 = 0, x45 = 1;
+  gfg.add(x123, (Matrix(2, 3) << 1, 2, 3, 5, 6, 7).finished(),
+          Vector2(4, 8), model);
+  gfg.add(x123, (Matrix(2, 3) << 9, 10, 0, 0, 0, 0).finished(),
+          x45,  (Matrix(2, 2) << 11, 12, 14, 15.).finished(),
+          Vector2(13, 16), model);
 
   Matrix actual = gfg.sparseJacobian_();
 
-  EXPECT(assert_equal(expected, actual));
+  EXPECT(assert_equal(expectedMatlab, actual));
+
+  // BoostTriplets
+  auto boostActual = gfg.sparseJacobian();
+  // check the triplets size...
+  EXPECT_LONGS_EQUAL(16, boostActual.size());
+  // check content
+  for (int i = 0; i < 16; i++) {
+    EXPECT(triplet_equal(
+        BoostTriplet(expected(i, 0) - 1, expected(i, 1) - 1, expected(i, 2)),
+        boostActual.at(i)));
+  }
 }
 
 /* ************************************************************************* */
