@@ -238,8 +238,108 @@ TEST(OrientedPlane3Factor, Issue561) {
     GaussNewtonOptimizer optimizer(graph, initialEstimate, params);
     Values result = optimizer.optimize();
     EXPECT_DOUBLES_EQUAL(0, graph.error(result), 0.1);
-  } catch (IndeterminantLinearSystemException e) {
-    std::cerr << "CAPTURED THE EXCEPTION: " << e.nearbyVariable() << std::endl;
+  } catch (const IndeterminantLinearSystemException &e) {
+    std::cerr << "CAPTURED THE EXCEPTION: " << DefaultKeyFormatter(e.nearbyVariable()) << std::endl;
+    EXPECT(false); // fail if this happens
+  }
+}
+
+/* ************************************************************************* */
+// Simplified version of the test by Marco Camurri to debug issue #561
+TEST(OrientedPlane3Factor, Issue561Simplified) {
+  // Typedefs
+  using symbol_shorthand::P;  //< Planes
+  using symbol_shorthand::X;  //< Pose3 (x,y,z,r,p,y)
+  using Plane = OrientedPlane3;
+
+  NonlinearFactorGraph graph;
+
+  // Setup prior factors
+  Pose3 x0_prior(Rot3::identity(), Vector3(99, 0, 0));
+  auto x0_noise = noiseModel::Isotropic::Sigma(6, 0.01);
+  graph.addPrior<Pose3>(X(0), x0_prior, x0_noise);
+
+  // Two horizontal planes with different heights.
+  const Plane p1(0,0,1,1), p2(0,0,1,2);
+
+  auto p1_noise = noiseModel::Diagonal::Sigmas(Vector3{1, 1, 5});
+  graph.addPrior<Plane>(P(1), p1, p1_noise);
+
+  // ADDING THIS PRIOR MAKES OPTIMIZATION FAIL
+  auto p2_noise = noiseModel::Diagonal::Sigmas(Vector3{1, 1, 5});
+  graph.addPrior<Plane>(P(2), p2, p2_noise);
+
+  // First plane factor
+  const auto x0_p1_noise = noiseModel::Isotropic::Sigma(3, 0.05);
+  graph.emplace_shared<OrientedPlane3Factor>(p1.planeCoefficients(),
+                                             x0_p1_noise, X(0), P(1));
+
+  // Second plane factor
+  const auto x0_p2_noise = noiseModel::Isotropic::Sigma(3, 0.05);
+  graph.emplace_shared<OrientedPlane3Factor>(p2.planeCoefficients(),
+                                             x0_p2_noise, X(0), P(2));
+
+  // Initial values
+  // Just offset the initial pose by 1m. This is what we are trying to optimize.
+  Values initialEstimate;
+  Pose3 x0 = x0_prior.compose(Pose3(Rot3::identity(), Vector3(1,0,0)));
+  initialEstimate.insert(P(1), p1);
+  initialEstimate.insert(P(2), p2);
+  initialEstimate.insert(X(0), x0);
+
+  // For testing only
+  HessianFactor::shared_ptr hessianFactor = graph.linearizeToHessianFactor(initialEstimate);
+  const auto hessian = hessianFactor->hessianBlockDiagonal();
+
+  Matrix hessianP1 = hessian.at(P(1)),
+         hessianP2 = hessian.at(P(2)),
+	 hessianX0 = hessian.at(X(0));
+
+  Eigen::JacobiSVD<Matrix> svdP1(hessianP1, Eigen::ComputeThinU),
+	                   svdP2(hessianP2, Eigen::ComputeThinU),
+			   svdX0(hessianX0, Eigen::ComputeThinU);
+
+  double conditionNumberP1 = svdP1.singularValues()[0] / svdP1.singularValues()[2],
+         conditionNumberP2 = svdP2.singularValues()[0] / svdP2.singularValues()[2],
+	 conditionNumberX0 = svdX0.singularValues()[0] / svdX0.singularValues()[5];
+
+  std::cout << "Hessian P1:\n" << hessianP1 << "\n"
+	    << "Condition number:\n" << conditionNumberP1 << "\n"
+	    << "Singular values:\n" << svdP1.singularValues().transpose() << "\n"
+	    << "SVD U:\n" << svdP1.matrixU() << "\n" << std::endl;
+
+  std::cout << "Hessian P2:\n" << hessianP2 << "\n"
+	    << "Condition number:\n" << conditionNumberP2 << "\n"
+	    << "Singular values:\n" << svdP2.singularValues().transpose() << "\n"
+	    << "SVD U:\n" << svdP2.matrixU() << "\n" << std::endl;
+
+  std::cout << "Hessian X0:\n" << hessianX0 << "\n"
+	    << "Condition number:\n" << conditionNumberX0 << "\n"
+	    << "Singular values:\n" << svdX0.singularValues().transpose() << "\n"
+	    << "SVD U:\n" << svdX0.matrixU() << "\n" << std::endl;
+
+  // std::cout << "Hessian P2:\n" << hessianP2 << std::endl;
+  // std::cout << "Hessian X0:\n" << hessianX0 << std::endl;
+  
+  // For testing only
+
+  // Optimize
+  try {
+    GaussNewtonParams params;
+    //GTSAM_PRINT(graph);
+    //Ordering ordering = list_of(P(1))(P(2))(X(0));  // make sure P1 eliminated first
+    //params.setOrdering(ordering);
+    // params.setLinearSolverType("SEQUENTIAL_QR");  // abundance of caution
+    params.setVerbosity("TERMINATION");  // show info about stopping conditions
+    GaussNewtonOptimizer optimizer(graph, initialEstimate, params);
+    Values result = optimizer.optimize();
+    EXPECT_DOUBLES_EQUAL(0, graph.error(result), 0.1);
+    EXPECT(x0_prior.equals(result.at<Pose3>(X(0))));
+    EXPECT(p1.equals(result.at<Plane>(P(1))));
+    EXPECT(p2.equals(result.at<Plane>(P(2))));
+  } catch (const IndeterminantLinearSystemException &e) {
+    std::cerr << "CAPTURED THE EXCEPTION: " << DefaultKeyFormatter(e.nearbyVariable()) << std::endl;
+    EXPECT(false); // fail if this happens
   }
 }
 
