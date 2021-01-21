@@ -18,8 +18,6 @@ namespace gtsam {
 class OrientedPlane3Factor: public NoiseModelFactor2<Pose3, OrientedPlane3> {
 
 protected:
-  Key poseKey_;
-  Key landmarkKey_;
   Vector measured_coeffs_;
   OrientedPlane3 measured_p_;
 
@@ -32,11 +30,16 @@ public:
   }
   virtual ~OrientedPlane3Factor() {}
 
-  /// Constructor with measured plane coefficients (a,b,c,d), noise model, pose symbol
-  OrientedPlane3Factor(const Vector&z, const SharedGaussian& noiseModel,
-      const Key& pose, const Key& landmark) :
-      Base(noiseModel, pose, landmark), poseKey_(pose), landmarkKey_(landmark), measured_coeffs_(
-          z) {
+  /** Constructor with measured plane (a,b,c,d) coefficients
+   * @param z measured plane (a,b,c,d) coefficients as 4D vector
+   * @param noiseModel noiseModel Gaussian noise model
+   * @param poseKey Key or symbol for unknown pose
+   * @param landmarkKey Key or symbol for unknown planar landmark
+   * @return the transformed plane
+   */
+  OrientedPlane3Factor(const Vector& z, const SharedGaussian& noiseModel,
+                       Key poseKey, Key landmarkKey)
+      : Base(noiseModel, poseKey, landmarkKey), measured_coeffs_(z) {
     measured_p_ = OrientedPlane3(Unit3(z(0), z(1), z(2)), z(3));
   }
 
