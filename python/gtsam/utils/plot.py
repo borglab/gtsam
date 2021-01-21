@@ -36,18 +36,15 @@ def set_axes_equal(fignum):
     ax.set_zlim3d([origin[2] - radius, origin[2] + radius])
 
 
-def ellipsoid(xc, yc, zc, rx, ry, rz, n):
+def ellipsoid(rx, ry, rz, n):
     """
     Numpy equivalent of Matlab's ellipsoid function.
 
     Args:
-        xc (double): Center of ellipsoid in X-axis.
-        yc (double): Center of ellipsoid in Y-axis.
-        zc (double): Center of ellipsoid in Z-axis.
         rx (double): Radius of ellipsoid in X-axis.
         ry (double): Radius of ellipsoid in Y-axis.
         rz (double): Radius of ellipsoid in Z-axis.
-        n (int): The granularity of the ellipsoid plotted. 
+        n (int): The granularity of the ellipsoid plotted.
 
     Returns:
         tuple[numpy.ndarray]: The points in the x, y and z axes to use for the surface plot.
@@ -72,7 +69,8 @@ def plot_covariance_ellipse_3d(axes, origin, P, scale=1, n=8, alpha=0.5):
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
         origin (gtsam.Point3): The origin in the world frame.
-        P (numpy.ndarray): The marginal covariance matrix of the 3D point which will be represented as an ellipse.
+        P (numpy.ndarray): The marginal covariance matrix of the 3D point
+            which will be represented as an ellipse.
         scale (float): Scaling factor of the radii of the covariance ellipse.
         n (int): Defines the granularity of the ellipse. Higher values indicate finer ellipses.
         alpha (float): Transparency value for the plotted surface in the range [0, 1].
@@ -85,7 +83,7 @@ def plot_covariance_ellipse_3d(axes, origin, P, scale=1, n=8, alpha=0.5):
     rx, ry, rz = radii
 
     # generate data for "unrotated" ellipsoid
-    xc, yc, zc = ellipsoid(0, 0, 0, rx, ry, rz, n)
+    xc, yc, zc = ellipsoid(rx, ry, rz, n)
 
     # rotate data with orientation matrix U and center c
     data = np.kron(U[:, 0:1], xc) + np.kron(U[:, 1:2], yc) + \
@@ -106,7 +104,8 @@ def plot_pose2_on_axes(axes, pose, axis_length=0.1, covariance=None):
         axes (matplotlib.axes.Axes): Matplotlib axes.
         pose (gtsam.Pose2): The pose to be plotted.
         axis_length (float): The length of the camera axes.
-        covariance (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+        covariance (numpy.ndarray): Marginal covariance matrix to plot
+            the uncertainty of the estimation.
     """
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
@@ -146,7 +145,8 @@ def plot_pose2(fignum, pose, axis_length=0.1, covariance=None,
         fignum (int): Integer representing the figure number to use for plotting.
         pose (gtsam.Pose2): The pose to be plotted.
         axis_length (float): The length of the camera axes.
-        covariance (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+        covariance (numpy.ndarray): Marginal covariance matrix to plot
+            the uncertainty of the estimation.
         axis_labels (iterable[string]): List of axis labels to set.
     """
     # get figure object
@@ -215,7 +215,8 @@ def plot_3d_points(fignum, values, linespec="g*", marginals=None,
         fignum (int): Integer representing the figure number to use for plotting.
         values (gtsam.Values): Values dictionary consisting of points to be plotted.
         linespec (string): String representing formatting options for Matplotlib.
-        marginals (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+        marginals (numpy.ndarray): Marginal covariance matrix to plot the
+            uncertainty of the estimation.
         title (string): The title of the plot.
         axis_labels (iterable[string]): List of axis labels to set.
     """
@@ -238,6 +239,7 @@ def plot_3d_points(fignum, values, linespec="g*", marginals=None,
             continue
             # I guess it's not a Point3
 
+    fig = plt.figure(fignum)
     fig.suptitle(title)
     fig.canvas.set_window_title(title.lower())
 

@@ -66,7 +66,7 @@ ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(cons
   // Also, mark the separator keys as fixed linearization points
   FastMap<Key,int> constrainedKeys;
   FastList<Key> noRelinKeys;
-  for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
+  for(const auto key_value: separatorValues_) {
     constrainedKeys[key_value.key] = 1;
     noRelinKeys.push_back(key_value.key);
   }
@@ -82,12 +82,12 @@ ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(cons
       Values values(newTheta);
       // Unfortunately, we must be careful here, as some of the smoother values
       // and/or separator values may have been added previously
-      for(const Values::ConstKeyValuePair& key_value: smootherValues_) {
+      for(const auto key_value: smootherValues_) {
         if(!isam2_.getLinearizationPoint().exists(key_value.key)) {
           values.insert(key_value.key, smootherValues_.at(key_value.key));
         }
       }
-      for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
+      for(const auto key_value: separatorValues_) {
         if(!isam2_.getLinearizationPoint().exists(key_value.key)) {
           values.insert(key_value.key, separatorValues_.at(key_value.key));
         }
@@ -246,7 +246,7 @@ void ConcurrentIncrementalSmoother::updateSmootherSummarization() {
 
   // Get the set of separator keys
   KeySet separatorKeys;
-  for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
+  for(const auto key_value: separatorValues_) {
     separatorKeys.insert(key_value.key);
   }
 

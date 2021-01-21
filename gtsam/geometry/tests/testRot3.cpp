@@ -807,15 +807,15 @@ TEST(Rot3, RQ_derivative) {
   test_xyz.push_back(VecAndErr{{0, 0, 0}, error});
   test_xyz.push_back(VecAndErr{{0, 0.5, -0.5}, error});
   test_xyz.push_back(VecAndErr{{0.3, 0, 0.2}, error});
-  test_xyz.push_back(VecAndErr{{-0.6, 1.3, 0}, error});
+  test_xyz.push_back(VecAndErr{{-0.6, 1.3, 0}, 1e-8});
   test_xyz.push_back(VecAndErr{{1.0, 0.7, 0.8}, error});
   test_xyz.push_back(VecAndErr{{3.0, 0.7, -0.6}, error});
   test_xyz.push_back(VecAndErr{{M_PI / 2, 0, 0}, error});
   test_xyz.push_back(VecAndErr{{0, 0, M_PI / 2}, error});
 
   // Test close to singularity
-  test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1e-1, 0}, 1e-8});
-  test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1e-1, 0}, 1e-8});
+  test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1e-1, 0}, 1e-7});
+  test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1e-1, 0}, 1e-7});
   test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1.1e-2, 0}, 1e-4});
   test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1.1e-2, 0}, 1e-4});
 
@@ -825,7 +825,7 @@ TEST(Rot3, RQ_derivative) {
     const auto R = Rot3::RzRyRx(xyz).matrix();
     const auto num = numericalDerivative11(RQ_proxy, R);
     Matrix39 calc;
-    RQ(R, calc).second;
+    auto dummy = RQ(R, calc).second;
 
     const auto err = vec_err.second;
     CHECK(assert_equal(num, calc, err));

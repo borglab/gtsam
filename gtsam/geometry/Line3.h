@@ -103,6 +103,27 @@ class Line3 {
   Point3 point(double distance = 0) const;
 
   /**
+   * Return the rotation of the line.
+   */
+  inline Rot3 R() const {
+    return R_;
+  }
+
+  /**
+   * Return the x-coordinate of the intersection of the line with the xy plane.
+   */
+  inline double a() const {
+    return a_;
+  }
+
+  /**
+   * Return the y-coordinate of the intersection of the line with the xy plane.
+   */
+  inline double b() const {
+    return b_;
+  }
+
+  /**
    * Transform a line from world to camera frame
    * @param wTc - Pose3 of camera in world frame
    * @param wL - Line3 in world frame

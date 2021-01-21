@@ -43,7 +43,7 @@ int main(const int argc, const char* argv[]) {
   auto priorModel = noiseModel::Diagonal::Variances(
       (Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
   Key firstKey = 0;
-  for (const Values::ConstKeyValuePair& key_value : *initial) {
+  for (const auto key_value : *initial) {
     std::cout << "Adding prior to g2o file " << std::endl;
     firstKey = key_value.key;
     graph->addPrior(firstKey, Pose3(), priorModel);
@@ -74,7 +74,7 @@ int main(const int argc, const char* argv[]) {
 
   // Calculate and print marginal covariances for all variables
   Marginals marginals(*graph, result);
-  for (const auto& key_value : result) {
+  for (const auto key_value : result) {
     auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
     if (!p) continue;
     std::cout << marginals.marginalCovariance(key_value.key) << endl;

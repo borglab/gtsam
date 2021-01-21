@@ -36,6 +36,7 @@ static SharedNoiseModel rot3_model(noiseModel::Isotropic::Sigma(3, 0.05));
 const Unit3 unit3Measured(Vector3(1, 1, 1));
 const Rot3 rot3Measured;
 
+/* ************************************************************************* */
 TEST(BinaryMeasurement, Unit3) {
   BinaryMeasurement<Unit3> unit3Measurement(kKey1, kKey2, unit3Measured,
                                             unit3_model);
@@ -48,6 +49,7 @@ TEST(BinaryMeasurement, Unit3) {
   EXPECT(unit3Measurement.equals(unit3MeasurementCopy));
 }
 
+/* ************************************************************************* */
 TEST(BinaryMeasurement, Rot3) {
   // testing the accessors
   BinaryMeasurement<Rot3> rot3Measurement(kKey1, kKey2, rot3Measured,
@@ -60,6 +62,21 @@ TEST(BinaryMeasurement, Rot3) {
   BinaryMeasurement<Rot3> rot3MeasurementCopy(kKey1, kKey2, rot3Measured,
                                               rot3_model);
   EXPECT(rot3Measurement.equals(rot3MeasurementCopy));
+}
+
+/* ************************************************************************* */
+TEST(BinaryMeasurement, Rot3MakeRobust) {
+  auto huber_model = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Huber::Create(1.345), rot3_model);
+  BinaryMeasurement<Rot3> rot3Measurement(kKey1, kKey2, rot3Measured,
+                                          huber_model);
+
+  EXPECT_LONGS_EQUAL(rot3Measurement.key1(), kKey1);
+  EXPECT_LONGS_EQUAL(rot3Measurement.key2(), kKey2);
+  EXPECT(rot3Measurement.measured().equals(rot3Measured));
+  const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
+      rot3Measurement.noiseModel());
+  EXPECT(robust);
 }
 
 /* ************************************************************************* */

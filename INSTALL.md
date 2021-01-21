@@ -70,7 +70,34 @@ execute commands as follows for an out-of-source build:
   This will build the library and unit tests, run all of the unit tests,
   and then install the library itself.
 
-## CMake Configuration Options and Details
+# Windows Installation
+
+This section details how to build a GTSAM `.sln` file using Visual Studio.
+
+### Prerequisites
+
+- Visual Studio with C++ CMake tools for Windows
+- All the other pre-requisites listed above.
+
+### Steps
+
+1. Open Visual Studio.
+2. Select `Open a local folder` and select the GTSAM source directory.
+3. Go to `Project -> CMake Settings`.
+  - (Optional) Set `Configuration name`.
+  - (Optional) Set `Configuration type`.
+  - Set the `Toolset` to `msvc_x64_x64`. If you know what toolset you require, then skip this step.
+  - Update the `Build root` to `${projectDir}\build\${name}`.
+  - You can optionally create a new configuration for a `Release` build.
+  - Set the necessary CMake variables for your use case.
+  - Click on `Show advanced settings`.
+  - For `CMake generator`, select a version which matches `Visual Studio <Version> <Year> Win64`, e.g. `Visual Studio 16 2019 Win64`.
+  - Save the settings (Ctrl + S).
+4. Click on `Project -> Generate Cache`. This will generate the CMake build files (as seen in the Output window).
+5. The last step will generate a `GTSAM.sln` file in the `build` directory. At this point, GTSAM can be used as a regular Visual Studio project.
+
+
+# CMake Configuration Options and Details
 
 GTSAM has a number of options that can be configured, which is best done with
 one of the following:
@@ -78,7 +105,7 @@ one of the following:
   - ccmake      the curses GUI for cmake
   - cmake-gui   a real GUI for cmake
 
-### Important Options:
+## Important Options:
 
 #### CMAKE_BUILD_TYPE
 We support several build configurations for GTSAM (case insensitive)

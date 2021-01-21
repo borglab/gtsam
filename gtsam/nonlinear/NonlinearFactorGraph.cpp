@@ -34,6 +34,7 @@
 #endif
 
 #include <cmath>
+#include <fstream>
 #include <limits>
 
 using namespace std;
@@ -257,6 +258,16 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
 }
 
 /* ************************************************************************* */
+void NonlinearFactorGraph::saveGraph(
+    const std::string& file, const Values& values,
+    const GraphvizFormatting& graphvizFormatting,
+    const KeyFormatter& keyFormatter) const {
+  std::ofstream of(file);
+  saveGraph(of, values, graphvizFormatting, keyFormatter);
+  of.close();
+}
+
+/* ************************************************************************* */
 double NonlinearFactorGraph::error(const Values& values) const {
   gttic(NonlinearFactorGraph_error);
   double total_error = 0.;
@@ -365,7 +376,7 @@ static Scatter scatterFromValues(const Values& values) {
   scatter.reserve(values.size());
 
   // use "natural" ordering with keys taken from the initial values
-  for (const auto& key_value : values) {
+  for (const auto key_value : values) {
     scatter.add(key_value.key, key_value.value.dim());
   }
 

@@ -1,31 +1,4 @@
-# Unset these cached variables to avoid surprises when the python in the current
-# environment are different from the cached!
-unset(PYTHON_EXECUTABLE CACHE)
-unset(PYTHON_INCLUDE_DIR CACHE)
-unset(PYTHON_MAJOR_VERSION CACHE)
-
-# Allow override from command line
-if(NOT DEFINED WRAP_USE_CUSTOM_PYTHON_LIBRARY)
-  if(WRAP_PYTHON_VERSION STREQUAL "Default")
-    find_package(PythonInterp REQUIRED)
-    find_package(PythonLibs REQUIRED)
-  else()
-    find_package(PythonInterp
-                ${WRAP_PYTHON_VERSION}
-                EXACT
-                REQUIRED)
-    find_package(PythonLibs
-                ${WRAP_PYTHON_VERSION}
-                EXACT
-                REQUIRED)
-  endif()
-endif()
-
-set(DIR_OF_WRAP_PYBIND_CMAKE ${CMAKE_CURRENT_LIST_DIR})
-
 set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHON_VERSION})
-
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../pybind11 pybind11)
 
 # User-friendly Pybind11 wrapping and installing function.
 # Builds a Pybind11 module from the provided interface_header.
@@ -65,7 +38,7 @@ function(pybind_wrap
   
   add_custom_command(OUTPUT ${generated_cpp}
                      COMMAND ${PYTHON_EXECUTABLE}
-                             ${CMAKE_SOURCE_DIR}/wrap/pybind_wrapper.py
+                             ${PYBIND_WRAP_SCRIPT}
                              --src
                              ${interface_header}
                              --out
@@ -89,9 +62,9 @@ function(pybind_wrap
   # ~~~
   add_custom_command(OUTPUT ${generated_cpp}
                      DEPENDS ${interface_header}
-                             ${CMAKE_SOURCE_DIR}/wrap/interface_parser.py
-                             ${CMAKE_SOURCE_DIR}/wrap/pybind_wrapper.py
-                             ${CMAKE_SOURCE_DIR}/wrap/template_instantiator.py
+                            #  @GTWRAP_SOURCE_DIR@/gtwrap/interface_parser.py
+                            #  @GTWRAP_SOURCE_DIR@/gtwrap/pybind_wrapper.py
+                            #  @GTWRAP_SOURCE_DIR@/gtwrap/template_instantiator.py
                      APPEND)
 
   pybind11_add_module(${target} ${generated_cpp})

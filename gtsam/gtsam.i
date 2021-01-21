@@ -329,7 +329,7 @@ virtual class Value {
 };
 
 #include <gtsam/base/GenericValue.h>
-template<T = {Vector, Matrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
+template<T = {Vector, Matrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::CalibratedCamera, gtsam::imuBias::ConstantBias}>
 virtual class GenericValue : gtsam::Value {
   void serializable() const;
 };
@@ -852,8 +852,7 @@ class Cal3_S2 {
   gtsam::Point2 principalPoint() const;
   Vector vector() const;
   Matrix K() const;
-  Matrix matrix() const;
-  Matrix matrix_inverse() const;
+  Matrix inverse() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -881,7 +880,7 @@ virtual class Cal3DS2_Base {
 
   // Action on Point2
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 calibrate(const gtsam::Point2& p, double tol) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -1059,55 +1058,23 @@ class PinholeCamera {
   void serialize() const;
 };
 
+// Forward declaration of PinholeCameraCalX is defined here.
 #include <gtsam/geometry/SimpleCamera.h>
-virtual class SimpleCamera {
-  // Standard Constructors and Named Constructors
-  SimpleCamera();
-  SimpleCamera(const gtsam::Pose3& pose);
-  SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& K);
-  static gtsam::SimpleCamera Level(const gtsam::Cal3_S2& K, const gtsam::Pose2& pose, double height);
-  static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height);
-  static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
-      const gtsam::Point3& upVector, const gtsam::Cal3_S2& K);
-  static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
-      const gtsam::Point3& upVector);
-
-  // Testable
-  void print(string s) const;
-  bool equals(const gtsam::SimpleCamera& camera, double tol) const;
-
-  // Standard Interface
-  gtsam::Pose3 pose() const;
-  gtsam::Cal3_S2 calibration() const;
-
-  // Manifold
-  gtsam::SimpleCamera retract(Vector d) const;
-  Vector localCoordinates(const gtsam::SimpleCamera& T2) const;
-  size_t dim() const;
-  static size_t Dim();
-
-  // Transformations and measurement functions
-  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
-  pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
-  gtsam::Point2 project(const gtsam::Point3& point);
-  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
-  double range(const gtsam::Point3& point);
-  double range(const gtsam::Pose3& pose);
-
-  // enabling serialization functionality
-  void serialize() const;
-
-};
-
-gtsam::SimpleCamera simpleCamera(const Matrix& P);
-
 // Some typedefs for common camera types
 // PinholeCameraCal3_S2 is the same as SimpleCamera above
 typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
-//TODO (Issue 237) due to lack of jacobians of Cal3DS2_Base::calibrate, PinholeCamera does not apply to Cal3DS2/Unified
-//typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
-//typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
+typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
+typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
+
+template<T>
+class CameraSet {
+  CameraSet();
+
+  // structure specific methods
+  T at(size_t i) const;
+  void push_back(const T& cam);
+};
 
 #include <gtsam/geometry/StereoCamera.h>
 class StereoCamera {
@@ -1140,7 +1107,7 @@ class StereoCamera {
 
 #include <gtsam/geometry/triangulation.h>
 
-// Templates appear not yet supported for free functions
+// Templates appear not yet supported for free functions - issue raised at borglab/wrap#14 to add support
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
     gtsam::Cal3_S2* sharedCal, const gtsam::Point2Vector& measurements,
     double rank_tol, bool optimize);
@@ -1150,7 +1117,13 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
     gtsam::Cal3Bundler* sharedCal, const gtsam::Point2Vector& measurements,
     double rank_tol, bool optimize);
-
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
+    const gtsam::Point2Vector& measurements, double rank_tol,
+    bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
+    const gtsam::Point2Vector& measurements, double rank_tol,
+    bool optimize);
+    
 //*************************************************************************
 // Symbolic
 //*************************************************************************
@@ -1963,6 +1936,21 @@ class KalmanFilter {
 //*************************************************************************
 
 #include <gtsam/inference/Symbol.h>
+
+class Symbol {
+  Symbol();
+  Symbol(char c, uint64_t j);
+  Symbol(size_t key);
+
+  size_t key() const;
+  void print(const string& s) const;
+  bool equals(const gtsam::Symbol& expected, double tol) const;
+
+  char chr() const;
+  uint64_t index() const;
+  string string() const;
+};
+
 size_t symbol(char chr, size_t index);
 char symbolChr(size_t key);
 size_t symbolIndex(size_t key);
@@ -2069,7 +2057,7 @@ class NonlinearFactorGraph {
   gtsam::KeySet keys() const;
   gtsam::KeyVector keyVector() const;
 
-  template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::imuBias::ConstantBias}>
+  template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::imuBias::ConstantBias}>
   void addPrior(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
 
   // NonlinearFactorGraph
@@ -2083,6 +2071,7 @@ class NonlinearFactorGraph {
 
   // enabling serialization functionality
   void serialize() const;
+  void saveGraph(const string& s) const;
 };
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -2493,7 +2482,7 @@ class ISAM2 {
   template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                      gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
                      gtsam::Cal3Bundler, gtsam::EssentialMatrix,
-                     gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, 
+                     gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, 
                      Vector, Matrix}>
   VALUE calculateEstimate(size_t key) const;
   gtsam::Values calculateBestEstimate() const;
@@ -2527,12 +2516,11 @@ class NonlinearISAM {
 //*************************************************************************
 // Nonlinear factor types
 //*************************************************************************
-#include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/StereoPoint2.h>
 
 #include <gtsam/nonlinear/PriorFactor.h>
-template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Unit3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias, gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
+template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Unit3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::CalibratedCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias, gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
@@ -2556,7 +2544,7 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
 template <T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2,
                gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2,
                gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera,
-               gtsam::SimpleCamera, gtsam::PinholeCameraCal3_S2,
+               gtsam::PinholeCameraCal3_S2,
                gtsam::imuBias::ConstantBias}>
 virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // Constructor - forces exact evaluation
@@ -2611,6 +2599,7 @@ virtual class BearingFactor : gtsam::NoiseModelFactor {
 };
 
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
+typedef gtsam::BearingFactor<gtsam::Pose3, gtsam::Point3, gtsam::Unit3> BearingFactor3D;
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Pose2, gtsam::Rot2> BearingFactorPose2;
 
 #include <gtsam/geometry/BearingRange.h>
@@ -2633,6 +2622,8 @@ virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
   BearingRangeFactor(size_t poseKey, size_t pointKey,
       const BEARING& measuredBearing, const RANGE& measuredRange,
       const gtsam::noiseModel::Base* noiseModel);
+
+  BearingRange<POSE, POINT, BEARING, RANGE> measured() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -2675,11 +2666,10 @@ virtual class GeneralSFMFactor : gtsam::NoiseModelFactor {
   gtsam::Point2 measured() const;
 };
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
-//TODO (Issue 237) due to lack of jacobians of Cal3DS2_Base::calibrate, GeneralSFMFactor does not apply to Cal3DS2
-//typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3> GeneralSFMFactorCal3Bundler;
 
-template<CALIBRATION = {gtsam::Cal3_S2}>
+template<CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler}>
 virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
   GeneralSFMFactor2(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model, size_t poseKey, size_t landmarkKey, size_t calibKey);
   gtsam::Point2 measured() const;
@@ -2780,6 +2770,12 @@ class SfmTrack {
   pair<size_t, gtsam::Point2> measurement(size_t idx) const;
   pair<size_t, size_t> siftIndex(size_t idx) const;
   void add_measurement(size_t idx, const gtsam::Point2& m);
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enabling function to compare objects
+  bool equals(const gtsam::SfmTrack& expected, double tol) const;
 };
 
 class SfmData {
@@ -2790,6 +2786,12 @@ class SfmData {
   gtsam::SfmTrack track(size_t idx) const;
   void add_track(const gtsam::SfmTrack& t) ;
   void add_camera(const gtsam::SfmCamera& cam);
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enabling function to compare objects
+  bool equals(const gtsam::SfmData& expected, double tol) const;
 };
 
 gtsam::SfmData readBal(string filename);
@@ -2933,9 +2935,14 @@ class ShonanAveragingParameters2 {
   void setAnchorWeight(double value);
   double getAnchorWeight() const;
   void setKarcherWeight(double value);
-  double getKarcherWeight();
+  double getKarcherWeight() const;
   void setGaugesWeight(double value);
-  double getGaugesWeight();
+  double getGaugesWeight() const;
+  void setUseHuber(bool value);
+  bool getUseHuber() const;
+  void setCertifyOptimality(bool value);
+  bool getCertifyOptimality() const;
+  void print() const;
 };
 
 class ShonanAveragingParameters3 {
@@ -2949,9 +2956,14 @@ class ShonanAveragingParameters3 {
   void setAnchorWeight(double value);
   double getAnchorWeight() const;
   void setKarcherWeight(double value);
-  double getKarcherWeight();
+  double getKarcherWeight() const;
   void setGaugesWeight(double value);
-  double getGaugesWeight();
+  double getGaugesWeight() const;
+  void setUseHuber(bool value);
+  bool getUseHuber() const;
+  void setCertifyOptimality(bool value);
+  bool getCertifyOptimality() const;
+  void print() const;
 };
 
 class ShonanAveraging2 {
