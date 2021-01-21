@@ -56,8 +56,8 @@ public:
   }
 
   /// Construct from a Unit3 and a distance
-  OrientedPlane3(const Unit3& s, double d) :
-    n_(s), d_(d) {
+  OrientedPlane3(const Unit3& n, double d) :
+    n_(n), d_(d) {
   }
 
   /// Construct from a vector of plane coefficients
@@ -66,8 +66,7 @@ public:
 
   /// Construct from four numbers of plane coeffcients (a, b, c, d)
   OrientedPlane3(double a, double b, double c, double d) {
-    Point3 p(a, b, c);
-    n_ = Unit3(p);
+    n_ = Unit3(a, b, c);
     d_ = d;
   }
 
@@ -112,9 +111,15 @@ public:
 
   /** Computes the error between two planes.
    *  The error is a norm 1 difference in tangent space.
-   * @param the other plane
+   * @param plane The other plane
    */
-  Vector3 error(const OrientedPlane3& plane) const;
+  Vector3 error(const OrientedPlane3& plane,
+                OptionalJacobian<3,3> H1 = boost::none,
+                OptionalJacobian<3,3> H2 = boost::none) const;
+
+  static Vector3 Error(const OrientedPlane3& plane1, const OrientedPlane3& plane2) {
+    return plane1.error(plane2);
+  }
 
   /** Computes the error between the two planes, with derivatives.
    *  This uses Unit3::errorVector, as opposed to the other .error() in this class, which uses
