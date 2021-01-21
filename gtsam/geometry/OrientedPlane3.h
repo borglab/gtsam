@@ -96,9 +96,9 @@ public:
 
   /** Computes the error between two planes.
    *  The error is a norm 1 difference in tangent space.
-   * @param plane The other plane
+   * @param other The other plane
    */
-  Vector3 error(const OrientedPlane3& plane,
+  Vector3 error(const OrientedPlane3& other,
                 OptionalJacobian<3, 3> H1 = boost::none,
                 OptionalJacobian<3, 3> H2 = boost::none) const;
 
@@ -106,7 +106,7 @@ public:
    *  This uses Unit3::errorVector, as opposed to the other .error() in this class, which uses
    *  Unit3::localCoordinates. This one has correct derivatives.
    *  NOTE(hayk): The derivatives are zero when normals are exactly orthogonal.
-   * @param the other plane
+   * @param other the other plane
    */
   Vector3 errorVector(const OrientedPlane3& other, OptionalJacobian<3, 3> H1 = boost::none, //
                       OptionalJacobian<3, 3> H2 = boost::none) const;
