@@ -2,7 +2,7 @@
  * OrientedPlane3Factor.cpp
  *
  *  Created on: Jan 29, 2014
- *      Author: Natesh Srinivasan
+ *  Author: Natesh Srinivasan
  */
 
 #include "OrientedPlane3Factor.h"
@@ -17,6 +17,28 @@ void OrientedPlane3Factor::print(const string& s,
   cout << "OrientedPlane3Factor Factor on " << keyFormatter(landmarkKey_) << "\n";
   measured_p_.print("Measured Plane");
   this->noiseModel_->print("  noise model: ");
+}
+
+//***************************************************************************
+Vector OrientedPlane3Factor::evaluateError(const Pose3& pose,
+    const OrientedPlane3& plane, boost::optional<Matrix&> H1,
+    boost::optional<Matrix&> H2) const {
+  Matrix36 predicted_H_pose;
+  Matrix33 predicted_H_plane, error_H_predicted;
+  OrientedPlane3 predicted_plane = plane.transform(pose, H2 ? &predicted_H_plane : nullptr,
+                                                         H1 ? &predicted_H_pose  : nullptr);
+  Vector3 err = predicted_plane.error(
+      measured_p_, (H1 || H2) ? &error_H_predicted : nullptr);
+
+  // Apply the chain rule to calculate the derivatives.
+  if (H1) {
+    *H1 = error_H_predicted * predicted_H_pose;
+  }
+  if (H2) {
+    *H2 = error_H_predicted * predicted_H_plane;
+  }
+
+  return err;
 }
 
 //***************************************************************************
