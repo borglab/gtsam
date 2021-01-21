@@ -45,10 +45,11 @@ private:
   T measured_;                  ///< The measurement
   SharedNoiseModel noiseModel_; ///< Noise model
 
-public:
+ public:
   BinaryMeasurement(Key key1, Key key2, const T &measured,
                     const SharedNoiseModel &model = nullptr)
-      : Factor(std::vector<Key>({key1, key2})), measured_(measured),
+      : Factor(std::vector<Key>({key1, key2})),
+        measured_(measured),
         noiseModel_(model) {}
 
   /// @name Standard Interface
