@@ -47,9 +47,9 @@ public:
   /// evaluateError
   Vector evaluateError(
       const Pose3& pose, const OrientedPlane3& plane,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const override {
-    auto predicted_plane = OrientedPlane3::Transform(plane, pose, H1, H2);
+      boost::optional<Matrix&> Hpose = boost::none,
+      boost::optional<Matrix&> Hplane = boost::none) const override {
+    auto predicted_plane = plane.transform(pose, Hplane, Hpose);
     return predicted_plane.error(measured_p_);
   }
 };
