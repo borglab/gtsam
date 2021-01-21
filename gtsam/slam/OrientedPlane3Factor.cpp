@@ -27,7 +27,7 @@ Vector OrientedPlane3Factor::evaluateError(const Pose3& pose,
   Matrix33 predicted_H_plane, error_H_predicted;
   OrientedPlane3 predicted_plane = plane.transform(pose, H2 ? &predicted_H_plane : nullptr,
                                                          H1 ? &predicted_H_pose  : nullptr);
-  Vector3 err = predicted_plane.error(
+  Vector3 err = predicted_plane.errorVector(
       measured_p_, (H1 || H2) ? &error_H_predicted : nullptr);
 
   // Apply the chain rule to calculate the derivatives.
@@ -44,7 +44,7 @@ Vector OrientedPlane3Factor::evaluateError(const Pose3& pose,
 //***************************************************************************
 void OrientedPlane3DirectionPrior::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  cout << "Prior Factor on " << keyFormatter(landmarkKey_) << "\n";
+  cout << "Prior Factor on " << keyFormatter(key()) << "\n";
   measured_p_.print("Measured Plane");
   this->noiseModel_->print("  noise model: ");
 }
@@ -58,26 +58,17 @@ bool OrientedPlane3DirectionPrior::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-
-Vector OrientedPlane3DirectionPrior::evaluateError(const OrientedPlane3& plane,
-    boost::optional<Matrix&> H) const {
-
+Vector OrientedPlane3DirectionPrior::evaluateError(
+    const OrientedPlane3& plane, boost::optional<Matrix&> H) const {
+  Unit3 n_hat_p = measured_p_.normal();
+  Unit3 n_hat_q = plane.normal();
+  Matrix2 H_p;
+  Vector e = n_hat_p.error(n_hat_q, H ? &H_p : nullptr);
   if (H) {
-    Matrix H_p;
-    Unit3 n_hat_p = measured_p_.normal();
-    Unit3 n_hat_q = plane.normal();
-    Vector e = n_hat_p.error(n_hat_q, H_p);
     H->resize(2, 3);
-    H->block<2, 2>(0, 0) << H_p;
-    H->block<2, 1>(0, 2) << Z_2x1;
-    return e;
-  } else {
-    Unit3 n_hat_p = measured_p_.normal();
-    Unit3 n_hat_q = plane.normal();
-    Vector e = n_hat_p.error(n_hat_q);
-    return e;
+    *H << H_p, Z_2x1;
   }
-
+  return e;
 }
-}
 
+}  // namespace gtsam
