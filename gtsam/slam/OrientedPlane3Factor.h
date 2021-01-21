@@ -16,15 +16,11 @@ namespace gtsam {
  * Factor to measure a planar landmark from a given pose
  */
 class OrientedPlane3Factor: public NoiseModelFactor2<Pose3, OrientedPlane3> {
-
-protected:
-  Vector measured_coeffs_;
+ protected:
   OrientedPlane3 measured_p_;
-
   typedef NoiseModelFactor2<Pose3, OrientedPlane3> Base;
 
-public:
-
+ public:
   /// Constructor
   OrientedPlane3Factor() {
   }
@@ -37,11 +33,9 @@ public:
    * @param landmarkKey Key or symbol for unknown planar landmark
    * @return the transformed plane
    */
-  OrientedPlane3Factor(const Vector& z, const SharedGaussian& noiseModel,
+  OrientedPlane3Factor(const Vector4& z, const SharedGaussian& noiseModel,
                        Key poseKey, Key landmarkKey)
-      : Base(noiseModel, poseKey, landmarkKey), measured_coeffs_(z) {
-    measured_p_ = OrientedPlane3(Unit3(z(0), z(1), z(2)), z(3));
-  }
+      : Base(noiseModel, poseKey, landmarkKey), measured_p_(z) {}
 
   /// print
   void print(const std::string& s = "OrientedPlane3Factor",
@@ -55,24 +49,21 @@ public:
 };
 
 // TODO: Convert this factor to dimension two, three dimensions is redundant for direction prior
-class OrientedPlane3DirectionPrior: public NoiseModelFactor1<OrientedPlane3> {
-protected:
-  OrientedPlane3 measured_p_; /// measured plane parameters
-  Key landmarkKey_;
+class OrientedPlane3DirectionPrior : public NoiseModelFactor1<OrientedPlane3> {
+ protected:
+  OrientedPlane3 measured_p_;  /// measured plane parameters
   typedef NoiseModelFactor1<OrientedPlane3> Base;
-public:
 
+ public:
   typedef OrientedPlane3DirectionPrior This;
   /// Constructor
   OrientedPlane3DirectionPrior() {
   }
 
   /// Constructor with measured plane coefficients (a,b,c,d), noise model, landmark symbol
-  OrientedPlane3DirectionPrior(Key key, const Vector&z,
-      const SharedGaussian& noiseModel) :
-      Base(noiseModel, key), landmarkKey_(key) {
-    measured_p_ = OrientedPlane3(Unit3(z(0), z(1), z(2)), z(3));
-  }
+  OrientedPlane3DirectionPrior(Key key, const Vector4& z,
+                               const SharedGaussian& noiseModel)
+      : Base(noiseModel, key), measured_p_(z) {}
 
   /// print
   void print(const std::string& s = "OrientedPlane3DirectionPrior",
