@@ -60,28 +60,21 @@ OrientedPlane3 OrientedPlane3::transform(const Pose3& xr,
 }
 
 /* ************************************************************************* */
-Vector3 OrientedPlane3::error(const OrientedPlane3& plane,
+Vector3 OrientedPlane3::error(const OrientedPlane3& other,
                               OptionalJacobian<3, 3> H1,
                               OptionalJacobian<3, 3> H2) const {
-  // Numerically calculate the derivative since this function doesn't provide
-  // one.
+  Vector2 n_error = -n_.localCoordinates(other.n_);
+  
   const auto f = boost::bind(&Unit3::localCoordinates, _1, _2);
-
-  Vector2 n_error = -n_.localCoordinates(plane.n_);
-
   if (H1) {
-    *H1 = I_3x3;
-    H1->block<2, 2>(0, 0) =
-        -numericalDerivative21<Vector2, Unit3, Unit3>(f, n_, plane.n_);
-    ;
+    Matrix2 H_n_error_this = -numericalDerivative21<Vector2, Unit3, Unit3>(f, n_, other.n_);
+    *H1 << H_n_error_this, Z_2x1, 0, 0, 1;
   }
   if (H2) {
-    *H2 = -I_3x3;
-    H2->block<2, 2>(0, 0) =
-        -numericalDerivative22<Vector2, Unit3, Unit3>(f, n_, plane.n_);
-    ;
+    Matrix H_n_error_other = -numericalDerivative22<Vector2, Unit3, Unit3>(f, n_, other.n_);
+    *H2 << H_n_error_other, Z_2x1, 0, 0, -1;
   }
-  return Vector3(n_error(0), n_error(1), d_ - plane.d_);
+  return Vector3(n_error(0), n_error(1), d_ - other.d_);
 }
 
 /* ************************************************************************* */
