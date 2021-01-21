@@ -17,11 +17,11 @@
  * @brief  A plane, represented by a normal direction and perpendicular distance
  */
 
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/geometry/Point2.h>
 
 #include <iostream>
-#include <gtsam/base/numericalDerivative.h>
 
 using namespace std;
 
@@ -34,8 +34,9 @@ void OrientedPlane3::print(const string& s) const {
 }
 
 /* ************************************************************************* */
-OrientedPlane3 OrientedPlane3::transform(const Pose3& xr, OptionalJacobian<3, 3> Hp,
-    OptionalJacobian<3, 6> Hr) const {
+OrientedPlane3 OrientedPlane3::transform(const Pose3& xr,
+                                         OptionalJacobian<3, 3> Hp,
+                                         OptionalJacobian<3, 6> Hr) const {
   Matrix23 D_rotated_plane;
   Matrix22 D_rotated_pose;
   Unit3 n_rotated = xr.rotation().unrotate(n_, D_rotated_plane, D_rotated_pose);
@@ -60,38 +61,44 @@ OrientedPlane3 OrientedPlane3::transform(const Pose3& xr, OptionalJacobian<3, 3>
 
 /* ************************************************************************* */
 Vector3 OrientedPlane3::error(const OrientedPlane3& plane,
-                              OptionalJacobian<3,3> H1,
-                              OptionalJacobian<3,3> H2) const {
-  // Numerically calculate the derivative since this function doesn't provide one.
+                              OptionalJacobian<3, 3> H1,
+                              OptionalJacobian<3, 3> H2) const {
+  // Numerically calculate the derivative since this function doesn't provide
+  // one.
   const auto f = boost::bind(&Unit3::localCoordinates, _1, _2);
 
   Vector2 n_error = -n_.localCoordinates(plane.n_);
 
   if (H1) {
     *H1 = I_3x3;
-    H1->block<2,2>(0,0) = -numericalDerivative21<Vector2, Unit3, Unit3>(f, n_, plane.n_);;
+    H1->block<2, 2>(0, 0) =
+        -numericalDerivative21<Vector2, Unit3, Unit3>(f, n_, plane.n_);
+    ;
   }
   if (H2) {
     *H2 = -I_3x3;
-    H2->block<2,2>(0,0) = -numericalDerivative22<Vector2, Unit3, Unit3>(f, n_, plane.n_);;
+    H2->block<2, 2>(0, 0) =
+        -numericalDerivative22<Vector2, Unit3, Unit3>(f, n_, plane.n_);
+    ;
   }
   return Vector3(n_error(0), n_error(1), d_ - plane.d_);
 }
 
 /* ************************************************************************* */
-Vector3 OrientedPlane3::errorVector(const OrientedPlane3& other, OptionalJacobian<3, 3> H1,
+Vector3 OrientedPlane3::errorVector(const OrientedPlane3& other,
+                                    OptionalJacobian<3, 3> H1,
                                     OptionalJacobian<3, 3> H2) const {
   Matrix22 H_n_error_this, H_n_error_other;
   Vector2 n_error = n_.errorVector(other.n_, H1 ? &H_n_error_this : 0,
-                                    H2 ? &H_n_error_other : 0);
+                                   H2 ? &H_n_error_other : 0);
 
   double d_error = d_ - other.d_;
 
   if (H1) {
-    *H1 << H_n_error_this, Vector2::Zero(), 0, 0, 1;
+    *H1 << H_n_error_this, Z_2x1, 0, 0, 1;
   }
   if (H2) {
-    *H2 << H_n_error_other, Vector2::Zero(), 0, 0, -1;
+    *H2 << H_n_error_other, Z_2x1, 0, 0, -1;
   }
 
   return Vector3(n_error(0), n_error(1), d_error);
@@ -103,7 +110,7 @@ OrientedPlane3 OrientedPlane3::retract(const Vector3& v,
   Matrix22 H_n;
   Unit3 n_retract (n_.retract(Vector2(v(0), v(1)), H? &H_n : nullptr));
   if (H) {
-    *H << H_n, Vector2::Zero(), 0, 0, 1;
+    *H << H_n, Z_2x1, 0, 0, 1;
   }
   return OrientedPlane3(n_retract, d_ + v(2));
 }

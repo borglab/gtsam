@@ -91,35 +91,16 @@ public:
    * @return the transformed plane
    */
   OrientedPlane3 transform(const Pose3& xr,
-      OptionalJacobian<3, 3> Hp = boost::none,
-      OptionalJacobian<3, 6> Hr = boost::none) const;
-
-  /**
-   * @deprecated the static method has wrong Jacobian order,
-   *    please use the member method transform()
-   * @param The raw plane
-   * @param xr a transformation in current coordiante
-   * @param Hr optional jacobian wrpt the pose transformation
-   * @param Hp optional Jacobian wrpt the destination plane
-   * @return the transformed plane
-   */
-  static OrientedPlane3 Transform(const OrientedPlane3& plane,
-      const Pose3& xr, OptionalJacobian<3, 6> Hr = boost::none,
-      OptionalJacobian<3, 3> Hp = boost::none) {
-      return plane.transform(xr, Hp, Hr);
-  }
+                           OptionalJacobian<3, 3> Hp = boost::none,
+                           OptionalJacobian<3, 6> Hr = boost::none) const;
 
   /** Computes the error between two planes.
    *  The error is a norm 1 difference in tangent space.
    * @param plane The other plane
    */
   Vector3 error(const OrientedPlane3& plane,
-                OptionalJacobian<3,3> H1 = boost::none,
-                OptionalJacobian<3,3> H2 = boost::none) const;
-
-  static Vector3 Error(const OrientedPlane3& plane1, const OrientedPlane3& plane2) {
-    return plane1.error(plane2);
-  }
+                OptionalJacobian<3, 3> H1 = boost::none,
+                OptionalJacobian<3, 3> H2 = boost::none) const;
 
   /** Computes the error between the two planes, with derivatives.
    *  This uses Unit3::errorVector, as opposed to the other .error() in this class, which uses
