@@ -1016,6 +1016,33 @@ TEST(Pose3, TransformCovariance6) {
 TEST(Pose3, interpolate) {
   EXPECT(assert_equal(T2, interpolate(T2,T3, 0.0)));
   EXPECT(assert_equal(T3, interpolate(T2,T3, 1.0)));
+
+  // Trivial example: start at origin and move to (1, 0, 0) while rotating pi/2
+  // about z-axis.
+  Pose3 start;
+  Pose3 end(Rot3::Rz(M_PI_2), Point3(1, 0, 0));
+  // This interpolation is easy to calculate by hand.
+  double t = 0.5;
+  Pose3 expected0(Rot3::Rz(M_PI_4), Point3(0.5, 0, 0));
+  EXPECT(assert_equal(expected0, start.interpolateRt(end, t)));
+
+  // Example from Peter Corke
+  // https://robotacademy.net.au/lesson/interpolating-pose-in-3d/
+  t = 0.0759;  // corresponds to the 10th element when calling `ctraj` in
+               // the video
+  Pose3 O;
+  Pose3 F(Rot3::Roll(0.6).compose(Rot3::Pitch(0.8)).compose(Rot3::Yaw(1.4)),
+          Point3(1, 2, 3));
+
+  // The expected answer matches the result presented in the video.
+  Pose3 expected1(interpolate(O.rotation(), F.rotation(), t),
+                  interpolate(O.translation(), F.translation(), t));
+  EXPECT(assert_equal(expected1, O.interpolateRt(F, t)));
+
+  // Non-trivial interpolation, translation value taken from output.
+  Pose3 expected2(interpolate(T2.rotation(), T3.rotation(), t),
+                  interpolate(T2.translation(), T3.translation(), t));
+  EXPECT(assert_equal(expected2, T2.interpolateRt(T3, t)));
 }
 
 /* ************************************************************************* */

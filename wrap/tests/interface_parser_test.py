@@ -4,7 +4,7 @@ import unittest
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from interface_parser import *
+from gtwrap.interface_parser import *
 
 
 class TestPyparsing(unittest.TestCase):
