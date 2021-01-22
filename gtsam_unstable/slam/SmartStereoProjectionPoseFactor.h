@@ -118,7 +118,7 @@ class SmartStereoProjectionPoseFactor : public SmartStereoProjectionFactor {
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const;
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override;
 
   /**
    * error calculates the error of the factor.
