@@ -43,6 +43,7 @@ class GncOptimizer {
   Values state_; ///< Initial values to be used at each iteration by GNC.
   GncParameters params_; ///< GNC parameters.
   Vector weights_;  ///< Weights associated to each factor in GNC (this could be a local variable in optimize, but it is useful to make it accessible from outside).
+  Vector barcSq_;  ///< Inlier thresholds. A factor is considered an inlier if factor.error() < barcSq. Note that factor.error() whitens by the covariance. Also note the code allows a threshold for each factor.
 
  public:
   /// Constructor.
@@ -53,6 +54,7 @@ class GncOptimizer {
 
     // make sure all noiseModels are Gaussian or convert to Gaussian
     nfg_.resize(graph.size());
+    barcSq_ = Vector::Ones(graph.size());
     for (size_t i = 0; i < graph.size(); i++) {
       if (graph[i]) {
         NoiseModelFactor::shared_ptr factor = boost::dynamic_pointer_cast<
@@ -63,6 +65,26 @@ class GncOptimizer {
         nfg_[i] = robust ? factor-> cloneWithNewNoiseModel(robust->noise()) : factor;
       }
     }
+  }
+
+  /** Set the maximum weighted residual error for an inlier (same for all factors). For a factor in the form f(x) = 0.5 * || r(x) ||^2_Omega,
+   * the inlier threshold is the largest value of f(x) for the corresponding measurement to be considered an inlier.
+   * In other words, an inlier at x is such that 0.5 * || r(x) ||^2_Omega <= barcSq.
+   * Assuming a isotropic measurement covariance sigma^2 * Identity, the cost becomes: 0.5 * 1/sigma^2 || r(x) ||^2 <= barcSq.
+   * Hence || r(x) ||^2 <= 2 * barcSq * sigma^2.
+   * */
+  void setInlierCostThresholds(const double inth) {
+    barcSq_ = inth * Vector::Ones(nfg_.size());
+  }
+
+  /** Set the maximum weighted residual error for an inlier (one for each factor). For a factor in the form f(x) = 0.5 * || r(x) ||^2_Omega,
+   * the inlier threshold is the largest value of f(x) for the corresponding measurement to be considered an inlier.
+   * In other words, an inlier at x is such that 0.5 * || r(x) ||^2_Omega <= barcSq.
+   * Assuming a isotropic measurement covariance sigma^2 * Identity, the cost becomes: 0.5 * 1/sigma^2 || r(x) ||^2 <= barcSq.
+   * Hence || r(x) ||^2 <= 2 * barcSq * sigma^2.
+   * */
+  void setInlierCostThresholds(const Vector& inthVec) {
+    barcSq_ = inthVec;
   }
 
   /// Access a copy of the internal factor graph.
@@ -76,6 +98,17 @@ class GncOptimizer {
 
   /// Access a copy of the GNC weights.
   const Vector& getWeights() const { return weights_;}
+
+  /// Get the inlier threshold.
+  const Vector& getInlierCostThresholds() const {return barcSq_;}
+
+  /// Equals.
+  bool equals(const GncOptimizer& other, double tol = 1e-9) const {
+    return nfg_.equals(other.getFactors())
+        && equal(weights_, other.getWeights())
+        && params_.equals(other.getParams())
+        && equal(barcSq_, other.getInlierCostThresholds());
+  }
 
   /// Compute optimal solution using graduated non-convexity.
   Values optimize() {
@@ -153,18 +186,18 @@ class GncOptimizer {
 
   /// Initialize the gnc parameter mu such that loss is approximately convex (remark 5 in GNC paper).
   double initializeMu() const {
-    // compute largest error across all factors
-    double rmax_sq = 0.0;
-    for (size_t i = 0; i < nfg_.size(); i++) {
-      if (nfg_[i]) {
-        rmax_sq = std::max(rmax_sq, nfg_[i]->error(state_));
-      }
-    }
+
+    double mu_init = 0.0;
     // set initial mu
     switch (params_.lossType) {
       case GncLossType::GM:
-        // surrogate cost is convex for large mu
-        return 2 * rmax_sq / params_.barcSq;  // initial mu
+        // surrogate cost is convex for large mu. initialize as in remark 5 in GNC paper
+        for (size_t k = 0; k < nfg_.size(); k++) {
+          if (nfg_[k]) {
+            mu_init = std::max(mu_init, 2 * nfg_[k]->error(state_) / barcSq_[k]);
+          }
+        }
+        return mu_init;  // initial mu
       case GncLossType::TLS:
         /* initialize mu to the value specified in Remark 5 in GNC paper.
          surrogate cost is convex for mu close to zero
@@ -172,9 +205,15 @@ class GncOptimizer {
          according to remark mu = params_.barcSq / (2 * rmax_sq - params_.barcSq) = params_.barcSq/ excessResidual
          however, if the denominator is 0 or negative, we return mu = -1 which leads to termination of the main GNC loop
          */
-        return
-            (2 * rmax_sq - params_.barcSq) > 0 ?
-                params_.barcSq / (2 * rmax_sq - params_.barcSq) : -1;
+        mu_init = std::numeric_limits<double>::infinity();
+        for (size_t k = 0; k < nfg_.size(); k++) {
+          if (nfg_[k]) {
+            double rk = nfg_[k]->error(state_);
+            mu_init = (2 * rk - barcSq_[k]) > 0 ? // if positive, update mu, otherwise keep same
+                std::min(mu_init, barcSq_[k] / (2 * rk - barcSq_[k]) ) : mu_init;
+          }
+        }
+        return mu_init > 0 && !isinf(mu_init) ? mu_init : -1;
       default:
         throw std::runtime_error(
             "GncOptimizer::initializeMu: called with unknown loss type.");
@@ -305,14 +344,14 @@ class GncOptimizer {
           if (nfg_[k]) {
             double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
             weights[k] = std::pow(
-                (mu * params_.barcSq) / (u2_k + mu * params_.barcSq), 2);
+                (mu * barcSq_[k]) / (u2_k + mu * barcSq_[k]), 2);
           }
         }
         return weights;
       }
       case GncLossType::TLS: {  // use eq (14) in GNC paper
-        double upperbound = (mu + 1) / mu * params_.barcSq;
-        double lowerbound = mu / (mu + 1) * params_.barcSq;
+        double upperbound = (mu + 1) / mu * barcSq_.maxCoeff();
+        double lowerbound = mu / (mu + 1) * barcSq_.minCoeff();
         for (size_t k : unknownWeights) {
           if (nfg_[k]) {
             double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
@@ -321,7 +360,7 @@ class GncOptimizer {
             } else if (u2_k <= lowerbound) {
               weights[k] = 1;
             } else {
-              weights[k] = std::sqrt(params_.barcSq * mu * (mu + 1) / u2_k)
+              weights[k] = std::sqrt(barcSq_[k] * mu * (mu + 1) / u2_k)
                   - mu;
             }
           }

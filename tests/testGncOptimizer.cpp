@@ -87,6 +87,12 @@ TEST(GncOptimizer, gncConstructor) {
   CHECK(gnc.getFactors().equals(fg));
   CHECK(gnc.getState().equals(initial));
   CHECK(gnc.getParams().equals(gncParams));
+
+  auto gnc2 = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                                 gncParams);
+
+  // check the equal works
+  CHECK(gnc.equals(gnc2));
 }
 
 /* ************************************************************************* */
@@ -340,9 +346,10 @@ TEST(GncOptimizer, calculateWeightsGM) {
   mu = 2.0;
   double barcSq = 5.0;
   weights_expected[3] = std::pow(mu * barcSq / (50.0 + mu * barcSq), 2);  // outlier, error = 50
-  gncParams.setInlierCostThreshold(barcSq);
+
   auto gnc2 = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
                                                          gncParams);
+  gnc2.setInlierCostThresholds(barcSq);
   weights_actual = gnc2.calculateWeights(initial, mu);
   CHECK(assert_equal(weights_expected, weights_actual, tol));
 }
@@ -398,9 +405,10 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
     GaussNewtonParams gnParams;
     GncParams<GaussNewtonParams> gncParams(gnParams);
     gncParams.setLossType(GncLossType::TLS);
-    gncParams.setInlierCostThreshold(0.51);  // if inlier threshold is slightly larger than 0.5, then measurement is inlier
     auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
                                                           gncParams);
+    gnc.setInlierCostThresholds(0.51);  // if inlier threshold is slightly larger than 0.5, then measurement is inlier
+
     double mu = 1e6;
     Vector weights_actual = gnc.calculateWeights(initial, mu);
     CHECK(assert_equal(weights_expected, weights_actual, tol));
@@ -414,9 +422,9 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
     GaussNewtonParams gnParams;
     GncParams<GaussNewtonParams> gncParams(gnParams);
     gncParams.setLossType(GncLossType::TLS);
-    gncParams.setInlierCostThreshold(0.49);  // if inlier threshold is slightly below 0.5, then measurement is outlier
     auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
                                                           gncParams);
+    gnc.setInlierCostThresholds(0.49);  // if inlier threshold is slightly below 0.5, then measurement is outlier
     double mu = 1e6;  // very large mu recovers original TLS cost
     Vector weights_actual = gnc.calculateWeights(initial, mu);
     CHECK(assert_equal(weights_expected, weights_actual, tol));
@@ -430,9 +438,9 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
     GaussNewtonParams gnParams;
     GncParams<GaussNewtonParams> gncParams(gnParams);
     gncParams.setLossType(GncLossType::TLS);
-    gncParams.setInlierCostThreshold(0.5);  // if inlier threshold is slightly below 0.5, then measurement is outlier
     auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
                                                           gncParams);
+    gnc.setInlierCostThresholds(0.5);  // if inlier threshold is slightly below 0.5, then measurement is outlier
     double mu = 1e6;  // very large mu recovers original TLS cost
     Vector weights_actual = gnc.calculateWeights(initial, mu);
     CHECK(assert_equal(weights_expected, weights_actual, 1e-5));
@@ -576,9 +584,9 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
     gncParams.setKnownInliers(knownInliers);
     gncParams.setLossType(GncLossType::TLS);
     //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::VALUES);
-    gncParams.setInlierCostThreshold(100.0);
     auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
                                                           gncParams);
+    gnc.setInlierCostThresholds(100.0);
 
     Values gnc_result = gnc.optimize();
     CHECK(assert_equal(Point2(0.25, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
@@ -589,6 +597,56 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
     DOUBLES_EQUAL(1.0, finalWeights[1], tol);
     DOUBLES_EQUAL(1.0, finalWeights[2], tol);
     DOUBLES_EQUAL(1.0, finalWeights[3], tol);
+  }
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, setWeights) {
+  auto fg = example::sharedNonRobustFactorGraphWithOutliers();
+
+  Point2 p0(1, 0);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  std::vector<size_t> knownInliers;
+  knownInliers.push_back(0);
+  knownInliers.push_back(1);
+  knownInliers.push_back(2);
+  {
+    GncParams<GaussNewtonParams> gncParams;
+    gncParams.setKnownInliers(knownInliers);
+    gncParams.setLossType(GncLossType::GM);
+    //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::SUMMARY);
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
+        gncParams);
+    gnc.setInlierCostThresholds(2.0);
+    Values gnc_result = gnc.optimize();
+    CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+
+    // check weights were actually fixed:
+    Vector finalWeights = gnc.getWeights();
+    DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[1], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+    CHECK(assert_equal(2.0 * Vector::Ones(fg.size()), gnc.getInlierCostThresholds(), 1e-3));
+  }
+  {
+    GncParams<GaussNewtonParams> gncParams;
+    gncParams.setKnownInliers(knownInliers);
+    gncParams.setLossType(GncLossType::GM);
+    //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::SUMMARY);
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
+        gncParams);
+    gnc.setInlierCostThresholds(2.0 * Vector::Ones(fg.size()));
+    Values gnc_result = gnc.optimize();
+    CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+
+    // check weights were actually fixed:
+    Vector finalWeights = gnc.getWeights();
+    DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[1], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+    CHECK(assert_equal(2.0 * Vector::Ones(fg.size()), gnc.getInlierCostThresholds(), 1e-3));
   }
 }
 

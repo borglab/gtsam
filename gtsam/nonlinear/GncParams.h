@@ -66,7 +66,6 @@ class GncParams {
   /// any other specific GNC parameters:
   GncLossType lossType = TLS;  ///< Default loss
   size_t maxIterations = 100;  ///<  Maximum number of iterations
-  double barcSq = 1.0;  ///< A factor is considered an inlier if factor.error() < barcSq. Note that factor.error() whitens by the covariance
   double muStep = 1.4;  ///< Multiplicative factor to reduce/increase the mu in gnc
   double relativeCostTol = 1e-5;  ///< If relative cost change is below this threshold, stop iterating
   double weightsTol = 1e-4;  ///< If the weights are within weightsTol from being binary, stop iterating (only for TLS)
@@ -84,16 +83,6 @@ class GncParams {
         << "setMaxIterations: changing the max nr of iters might lead to less accurate solutions and is not recommended! "
         << std::endl;
     maxIterations = maxIter;
-  }
-
-  /** Set the maximum weighted residual error for an inlier. For a factor in the form f(x) = 0.5 * || r(x) ||^2_Omega,
-   * the inlier threshold is the largest value of f(x) for the corresponding measurement to be considered an inlier.
-   * In other words, an inlier at x is such that 0.5 * || r(x) ||^2_Omega <= barcSq.
-   * Assuming a isotropic measurement covariance sigma^2 * Identity, the cost becomes: 0.5 * 1/sigma^2 || r(x) ||^2 <= barcSq.
-   * Hence || r(x) ||^2 <= 2 * barcSq * sigma^2.
-   * */
-  void setInlierCostThreshold(const double inth) {
-    barcSq = inth;
   }
 
   /// Set the graduated non-convexity step: at each GNC iteration, mu is updated as mu <- mu * muStep.
@@ -131,7 +120,6 @@ class GncParams {
   bool equals(const GncParams& other, double tol = 1e-9) const {
     return baseOptimizerParams.equals(other.baseOptimizerParams)
         && lossType == other.lossType && maxIterations == other.maxIterations
-        && std::fabs(barcSq - other.barcSq) <= tol
         && std::fabs(muStep - other.muStep) <= tol
         && verbosity == other.verbosity && knownInliers == other.knownInliers;
   }
@@ -150,7 +138,6 @@ class GncParams {
         throw std::runtime_error("GncParams::print: unknown loss type.");
     }
     std::cout << "maxIterations: " << maxIterations << "\n";
-    std::cout << "barcSq: " << barcSq << "\n";
     std::cout << "muStep: " << muStep << "\n";
     std::cout << "relativeCostTol: " << relativeCostTol << "\n";
     std::cout << "weightsTol: " << weightsTol << "\n";
