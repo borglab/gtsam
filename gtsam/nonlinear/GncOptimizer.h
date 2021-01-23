@@ -67,13 +67,6 @@ class GncOptimizer {
     nfg_.resize(graph.size());
     barcSq_ = Vector::Ones(graph.size());
 
-    boost::math::chi_squared_distribution<double> chi2inv(3.0);
-
-    std::cout << "chi2inv.degrees_of_freedom() = " << chi2inv.degrees_of_freedom() << std::endl;
-
-    double a = boost::math::quantile(chi2inv, 0.997);
-    std::cout << " a " << a << std::endl;
-
     double alpha = 0.99; // with this (default) probability, inlier residuals are smaller than barcSq_
 
     for (size_t i = 0; i < graph.size(); i++) {
