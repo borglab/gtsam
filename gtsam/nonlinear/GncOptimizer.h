@@ -29,7 +29,18 @@
 #include <gtsam/nonlinear/GncParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
+//#include <boost/math/distributions/inverse_chi_squared.hpp>
+#include <boost/math/distributions/chi_squared.hpp>
+
 namespace gtsam {
+/*
+ * Quantile of chi-squared distribution with given degrees of freedom at probability alpha.
+ * Equivalent to chi2inv in Matlab.
+ */
+static double Chi2inv(const double alpha, const size_t dofs) {
+  boost::math::chi_squared_distribution<double> chi2(dofs);
+  return boost::math::quantile(chi2, alpha);
+}
 
 /* ************************************************************************* */
 template<class GncParameters>
@@ -55,6 +66,16 @@ class GncOptimizer {
     // make sure all noiseModels are Gaussian or convert to Gaussian
     nfg_.resize(graph.size());
     barcSq_ = Vector::Ones(graph.size());
+
+    boost::math::chi_squared_distribution<double> chi2inv(3.0);
+
+    std::cout << "chi2inv.degrees_of_freedom() = " << chi2inv.degrees_of_freedom() << std::endl;
+
+    double a = boost::math::quantile(chi2inv, 0.997);
+    std::cout << " a " << a << std::endl;
+
+    double alpha = 0.99; // with this (default) probability, inlier residuals are smaller than barcSq_
+
     for (size_t i = 0; i < graph.size(); i++) {
       if (graph[i]) {
         NoiseModelFactor::shared_ptr factor = boost::dynamic_pointer_cast<
@@ -63,6 +84,7 @@ class GncOptimizer {
             noiseModel::Robust>(factor->noiseModel());
         // if the factor has a robust loss, we remove the robust loss
         nfg_[i] = robust ? factor-> cloneWithNewNoiseModel(robust->noise()) : factor;
+        barcSq_[i] = 0.5 * Chi2inv(alpha, nfg_[i]->dim()); // 0.5 derives from the error definition in gtsam
       }
     }
   }
