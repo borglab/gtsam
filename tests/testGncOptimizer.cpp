@@ -128,6 +128,7 @@ TEST(GncOptimizer, initializeMu) {
   gncParams.setLossType(GncLossType::GM);
   auto gnc_gm = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
                                                                   gncParams);
+  gnc_gm.setInlierCostThresholds(1.0);
   // according to rmk 5 in the gnc paper: m0 = 2 rmax^2 / barcSq
   // (barcSq=1 in this example)
   EXPECT_DOUBLES_EQUAL(gnc_gm.initializeMu(), 2 * 198.999, 1e-3);
@@ -136,6 +137,7 @@ TEST(GncOptimizer, initializeMu) {
   gncParams.setLossType(GncLossType::TLS);
   auto gnc_tls = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
                                                                    gncParams);
+  gnc_tls.setInlierCostThresholds(1.0);
   // according to rmk 5 in the gnc paper: m0 =  barcSq / (2 * rmax^2 - barcSq)
   // (barcSq=1 in this example)
   EXPECT_DOUBLES_EQUAL(gnc_tls.initializeMu(), 1 / (2 * 198.999 - 1), 1e-3);
@@ -339,6 +341,7 @@ TEST(GncOptimizer, calculateWeightsGM) {
   GncParams<GaussNewtonParams> gncParams(gnParams);
   gncParams.setLossType(GncLossType::GM);
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
+  gnc.setInlierCostThresholds(1.0);
   double mu = 1.0;
   Vector weights_actual = gnc.calculateWeights(initial, mu);
   CHECK(assert_equal(weights_expected, weights_actual, tol));
@@ -550,7 +553,7 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
     //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::SUMMARY);
     auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
                                                           gncParams);
-
+    gnc.setInlierCostThresholds(1.0);
     Values gnc_result = gnc.optimize();
     CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
 
